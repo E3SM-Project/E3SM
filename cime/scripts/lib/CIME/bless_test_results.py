@@ -1,6 +1,6 @@
 import CIME.compare_namelists, CIME.simple_compare
 from CIME.test_scheduler import NAMELIST_PHASE
-from CIME.utils import run_cmd, expect, get_scripts_root, get_model
+from CIME.utils import run_cmd, expect, get_scripts_root, get_model, EnvironmentContext
 from CIME.test_status import *
 from CIME.hist_utils import generate_baseline, compare_baseline
 from CIME.case import Case
@@ -31,9 +31,9 @@ def bless_namelists(test_name, test_dir, report_only, force, baseline_name, base
                 return False, "Could not determine baseline root"
 
         create_test_gen_args = " -g {} ".format(baseline_name if get_model() == "cesm" else " -g -b {} ".format(baseline_name))
-        stat, _, err = run_cmd("{}/create_test {} -n {} --baseline-root {} -o".format(get_scripts_root(), test_name, create_test_gen_args, baseline_root))
+        stat, out, _ = run_cmd("{}/create_test {} -n {} --baseline-root {} -o".format(get_scripts_root(), test_name, create_test_gen_args, baseline_root), combine_output=True)
         if stat != 0:
-            return False, "Namelist regen failed: '{}'".format(err)
+            return False, "Namelist regen failed: '{}'".format(out)
         else:
             return True, None
     else:
@@ -43,33 +43,35 @@ def bless_namelists(test_name, test_dir, report_only, force, baseline_name, base
 def bless_history(test_name, test_dir, baseline_name, baseline_root, report_only, force):
 ###############################################################################
     with Case(test_dir) as case:
-        if baseline_name is None:
-            baseline_name = case.get_value("BASELINE_NAME_CMP")
-            if not baseline_name:
-                baseline_name = CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root())
+        real_user = case.get_value("REALUSER")
+        with EnvironmentContext(USER=real_user):
+            if baseline_name is None:
+                baseline_name = case.get_value("BASELINE_NAME_CMP")
+                if not baseline_name:
+                    baseline_name = CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root())
 
-        if baseline_root is None:
-            baseline_root = case.get_value("BASELINE_ROOT")
+            if baseline_root is None:
+                baseline_root = case.get_value("BASELINE_ROOT")
 
-        baseline_full_dir = os.path.join(baseline_root, baseline_name, case.get_value("CASEBASEID"))
+            baseline_full_dir = os.path.join(baseline_root, baseline_name, case.get_value("CASEBASEID"))
 
-        cmp_result, cmp_comments = compare_baseline(case, baseline_dir=baseline_full_dir, outfile_suffix=None)
-        if cmp_result:
-            logger.info("Diff appears to have been already resolved.")
-            return True, None
-        else:
-            logger.info(cmp_comments)
-            if (not report_only and
-                (force or six.moves.input("Update this diff (y/n)? ").upper() in ["Y", "YES"])):
-                gen_result, gen_comments = generate_baseline(case, baseline_dir=baseline_full_dir)
-                if not gen_result:
-                    logger.warning("Hist file bless FAILED for test {}".format(test_name))
-                    return False, "Generate baseline failed: {}".format(gen_comments)
-                else:
-                    logger.info(gen_comments)
-                    return True, None
-            else:
+            cmp_result, cmp_comments = compare_baseline(case, baseline_dir=baseline_full_dir, outfile_suffix=None)
+            if cmp_result:
+                logger.info("Diff appears to have been already resolved.")
                 return True, None
+            else:
+                logger.info(cmp_comments)
+                if (not report_only and
+                    (force or six.moves.input("Update this diff (y/n)? ").upper() in ["Y", "YES"])):
+                    gen_result, gen_comments = generate_baseline(case, baseline_dir=baseline_full_dir)
+                    if not gen_result:
+                        logger.warning("Hist file bless FAILED for test {}".format(test_name))
+                        return False, "Generate baseline failed: {}".format(gen_comments)
+                    else:
+                        logger.info(gen_comments)
+                        return True, None
+                else:
+                    return True, None
 
 ###############################################################################
 def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_id=None, namelists_only=False, hist_only=False,
@@ -85,7 +87,7 @@ def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_i
         ts = TestStatus(test_dir=test_dir)
         test_name = ts.get_name()
         if test_name is None:
-            case_dir = os.path.basename(os.path.dirname(test_status_file))
+            case_dir = os.path.basename(test_dir)
             test_name = CIME.utils.normalize_case_id(case_dir)
             if (bless_tests in [[], None] or CIME.utils.match_any(test_name, bless_tests)):
                 broken_blesses.append((test_name, "test had invalid TestStatus file: '{}'".format(test_status_file)))
@@ -129,6 +131,7 @@ def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_i
 
                 logger.info("###############################################################################")
                 logger.info("Blessing results for test: {}, most recent result: {}".format(test_name, overall_result))
+                logger.info("Case dir: {}".format(test_dir))
                 logger.info("###############################################################################")
                 if not force:
                     time.sleep(2)

@@ -145,7 +145,11 @@ type MGPostProc
    procedure :: unpack_only => MGPostProc_unpack_only
    procedure :: finalize => MGPostProc_finalize
    procedure, private :: MGPostProc_copy
+! Sarat: Following results in a segfault with PGI(17.7) compilers on Summitdev.
+! This workaround is still needed for Intel compilers (v16 etc.) as of 12/19/2017.
+#if !defined(SUMMITDEV_PGI)   
    generic :: assignment(=) => MGPostProc_copy
+#endif
 end type MGPostProc
 
 interface MGPostProc

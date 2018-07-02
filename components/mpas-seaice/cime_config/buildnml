@@ -1,0 +1,789 @@
+#!/usr/bin/env python
+
+"""
+Namelist creator for E3SM's MPAS SEAICE component
+"""
+
+import os, sys
+
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
+sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
+
+from standard_script_setup import *
+from CIME.case import Case
+from CIME.utils import expect, run_cmd_no_fail, safe_copy
+from CIME.buildnml import create_namelist_infile, parse_input
+
+logger = logging.getLogger(__name__)
+
+###############################################################################
+def buildnml(case, caseroot, compname):
+###############################################################################
+    expect(compname == "mpascice", compname)
+
+    os.chdir(caseroot)
+
+    cimeroot         = case.get_value("CIMEROOT")
+    caseroot         = case.get_value("CASEROOT")
+    casebuild        = case.get_value("CASEBUILD")
+    srcroot          = case.get_value("SRCROOT")
+    din_loc_root     = case.get_value("DIN_LOC_ROOT")
+    ice_grid         = case.get_value("ICE_GRID")
+    ice_mask         = case.get_value("MASK_GRID")
+    ic_mode          = case.get_value("MPASSI_IC_MODE")
+    ice_bgc          = case.get_value("MPASSI_BGC")
+    surface_mode     = case.get_value("MPASSI_SURFACE_MODE")
+    ice_pio_typename = case.get_value("ICE_PIO_TYPENAME")
+    #ninst_ice       = case.get_value("NINST_ICE")
+    ninst_ice        = 1 # Change if you want multiple instances... though this isn't coded yet.
+    ninst_ice_real   = case.get_value("NINST_ICE")
+    ntasks_ice       = case.get_value("NTASKS_ICE")
+    rundir           = case.get_value("RUNDIR")
+    run_type         = case.get_value("RUN_TYPE")
+    run_refdate      = case.get_value("RUN_REFDATE")
+    run_reftod       = case.get_value("RUN_REFTOD")
+    stream_name      = 'streams.seaice'
+
+    mpassiconf_dir = os.path.join(casebuild, "mpassiconf")
+
+    if not os.path.isdir(mpassiconf_dir): os.mkdir(mpassiconf_dir)
+
+    #--------------------------------------------------------------------
+    # Determine date stamp, from grid names
+    #--------------------------------------------------------------------
+
+    grid_date = ''
+    grid_prefix = ''
+    decomp_date = ''
+    decomp_prefix = ''
+    points_file = ''
+
+    if ice_grid == 'oEC60to30':
+        grid_date += '151020'
+        grid_prefix += 'cice.EC60to30km'
+        decomp_date += '151020'
+        decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oEC60to30_ICG':
+        grid_date += '160827'
+        grid_prefix += 'cice.EC60to30km.restartFrom_eos1b'
+        decomp_date += '151020'
+        decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oEC60to30v3':
+        grid_date += '161222'
+        grid_prefix += 'seaice.EC60to30v3'
+        decomp_date += '161222'
+        decomp_prefix += 'mpas-cice.graph.info.'
+        if ice_bgc == 'ice_bgc':
+            grid_date = '180418'
+            grid_prefix = 'mpascice.rst.BCRC_CNPECACNT_1850_anvil02.0066-01-01.no-xtime'
+            points_file = 'seaice_points_EC.60to30v3_netcdf3_05152018.nc'
+
+    elif ice_grid == 'oEC60to30v3_ICG':
+        grid_date += '171101'
+        grid_prefix += 'seaice.EC60to30v3.restartFrom_anvil0926'
+        decomp_date += '161222'
+        decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oEC60to30wLI':
+        grid_date += '160830'
+        grid_prefix += 'cice.EC60to30wLI'
+        decomp_date += '160830'
+        decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oEC60to30v3wLI':
+        grid_date += '170913'
+        grid_prefix += 'seaice.EC60to30v3wLI'
+        decomp_date += '170905'
+        decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oEC60to30v3wLI_ICG':
+        grid_date += '171116'
+        grid_prefix += 'seaiceEC60to30v3wLI60lev.restart_theta_year26'
+        decomp_date += '170905'
+        decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'mpas120':
+        grid_date += '121116'
+        grid_prefix += 'cice120km'
+        decomp_date += '121116'
+        decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oQU120':
+        grid_date += '151209'
+        grid_prefix += 'seaice.oQU120km'
+        decomp_date += '151209'
+        decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oQU240':
+        grid_date += '151209'
+        grid_prefix += 'seaice.oQU240km'
+        decomp_date += '151209'
+        decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oQU240wLI':
+        grid_date += '160929'
+        grid_prefix += 'cice.QU240wLI'
+        decomp_date += '160929'
+        decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'mpasgx1':
+        grid_date += '121116'
+        grid_prefix += 'grid_gx1'
+        decomp_date += '121116'
+        decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oRRS30to10':
+        grid_date += '151031'
+        grid_prefix += 'seaice.RRS.30-10km'
+        decomp_date += '151031'
+        decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oRRS30to10v3':
+        grid_date += '171128'
+        grid_prefix += 'seaice.RRS30to10v3'
+        decomp_date += '171128'
+        decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oRRS30to10wLI':
+        grid_date += '160930'
+        grid_prefix += 'seaice.RRS30-10wLI'
+        decomp_date += '160930'
+        decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oRRS30to10v3wLI':
+        grid_date += '171109'
+        grid_prefix += 'seaice.RRS30to10v3wLI'
+        decomp_date += '171109'
+        decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oRRS18to6':
+        grid_date += '160830'
+        grid_prefix += 'seaice.RRS.18to6km'
+        decomp_date += '160830'
+        decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oRRS18to6v3':
+        grid_date += '170111'
+        grid_prefix += 'seaice.RRS18to6v3'
+        decomp_date += '180214'
+        decomp_prefix += 'mpas-seaice.v2.'
+    elif ice_grid == 'oRRS18to6v3_ICG':
+        grid_date += '171031'
+        grid_prefix += 'seaice.RRS18to6v3_80Layer.restartFromAnvil'
+        decomp_date += '180214'
+        decomp_prefix += 'mpas-seaice.v2.'
+    elif ice_grid == 'oRRS15to5':
+        grid_date += '151209'
+        grid_prefix += 'seaice.RRS.15to5km'
+        decomp_date += '151209'
+        decomp_prefix += 'mpas-cice.graph.info.'
+
+    #--------------------------------------------------------------------
+    # Set the initial file, changing to a restart file for branch and hybrid runs
+    # Note: this is not setup for multiple instances
+    #--------------------------------------------------------------------
+
+    input_file = "{}/ice/mpas-cice/{}/{}.{}.nc".format(din_loc_root, ice_mask, grid_prefix, grid_date)
+    if run_type == 'hybrid' or run_type == 'branch':
+        input_file = "{}/mpascice.rst.{}_{}.nc".format(rundir, run_refdate, run_reftod)
+        expect(os.path.exists(input_file), " ERROR mpassi buildnml: missing specified restart file for branch or hybrid run: {}".format(input_file))
+
+    #--------------------------------------------------------------------
+    # Generate input data file with stream-specified files
+    #--------------------------------------------------------------------
+
+    with open(os.path.join(casebuild, "mpassi.input_data_list"), "w") as input_list:
+        input_list.write("mesh = {}\n".format(input_file))
+        if points_file != '':
+            input_list.write("points = {}/ice/mpas-cice/{}/{}\n".format(din_loc_root, ice_mask, points_file))
+
+    #--------------------------------------------------------------------
+    # Invoke mpas build-namelist - output will go in $CASEBUILD/mpassiconf
+    #--------------------------------------------------------------------
+
+    inst_string = ""
+    for inst_counter in range(1, ninst_ice + 1):
+
+        # -----------------------------------------------------
+        # determine instance string
+        # -----------------------------------------------------
+
+        inst_string = ""
+        if ninst_ice > 1:
+            inst_string = "{0:04d}".format(inst_counter)
+
+            # If multi-instance case does not have restart file, use single-case restart
+            # for each instance
+            if not os.path.exists(os.path.join(rundir, "rpointer.ice{}".format(inst_string))) and \
+                   os.path.exists(os.path.join(rundir, "rpointer.ice")):
+                safe_copy(os.path.join(rundir, "rpointer.ice"),
+                          os.path.join(rundir, "rpointer.ice{}".format(inst_string)))
+
+        # -----------------------------------------------------
+        # create mpassiconf/cesm_namelist
+        # -----------------------------------------------------
+
+        create_namelist_infile(case,
+                               "{}/user_nl_mpascice{}".format(caseroot, inst_string),
+                               "{}/cesm_namelist".format(mpassiconf_dir))
+
+        # -----------------------------------------------------
+        # call build-namelist- output will go in $CASEBUILD/mpassiconf/mpassi_in
+        # -----------------------------------------------------
+
+        sysmod =  os.path.join(srcroot, "components/mpas-seaice/bld/build-namelist")
+        sysmod += " -infile {}/cesm_namelist".format(mpassiconf_dir)
+        sysmod += " -caseroot {}".format(caseroot)
+        sysmod += " -casebuild {}".format(casebuild)
+        sysmod += " -cimeroot {}".format(cimeroot)
+        sysmod += " -inst_string '{}'".format(inst_string)
+        sysmod += " -decomp_prefix '{}'".format(decomp_prefix)
+        sysmod += " -date_stamp '{}'".format(decomp_date)
+        sysmod += " -ice_grid '{}'".format(ice_mask)
+        sysmod += " -ic_mode '{}'".format(ic_mode)
+        sysmod += " -ice_bgc '{}'".format(ice_bgc)
+        sysmod += " -surface_mode '{}'".format(surface_mode)
+        sysmod += " -ntasks_ice '{}'".format(ntasks_ice)
+        sysmod += " -ninst_ice '{}'".format(ninst_ice_real)
+
+        # pass in ICE_MASK for now as a short-cut for the grid
+        # at some point, we may want to pass both -- but for now this is simpler
+        # also, pass in decomp_date for date_stamp, since that's the one required by the scripts
+
+        run_cmd_no_fail(sysmod, from_dir=mpassiconf_dir)
+
+        # -----------------------------------------------------
+        # Copy resolved namelist to $RUNDIR
+        # -----------------------------------------------------
+
+        default_in_filename = "mpassi_in"
+        in_filename = "{}{}".format(default_in_filename, inst_string)
+        if os.path.isdir(rundir):
+            safe_copy(os.path.join(mpassiconf_dir, "mpassi_in"), os.path.join(rundir, in_filename))
+
+    # Write streams file if there isn't one in SourceMods
+
+    if os.path.exists("{}/SourceMods/src.mpascice/{}".format(caseroot, stream_name)):
+        safe_copy("{}/SourceMods/src.mpascice/{}".format(caseroot, stream_name), rundir)
+
+    else:
+        lines = []
+        lines.append('<streams>')
+        lines.append('<immutable_stream name="mesh"')
+        lines.append('                  type="none"')
+        if ice_grid.startswith("oRRS1"):
+            lines.append('                  io_type="pnetcdf,cdf5"')
+        else:
+            lines.append('                  io_type="{}"'.format(ice_pio_typename))
+
+        lines.append('                  filename_template="mesh_variables.nc" />')
+        lines.append('')
+        lines.append('<immutable_stream name="input"')
+        lines.append('                  type="input"')
+        if ice_grid.startswith("oRRS1"):
+            lines.append('                  io_type="pnetcdf,cdf5"')
+        else:
+            lines.append('                  io_type="{}"'.format(ice_pio_typename))
+
+        lines.append('                  filename_interval="none"')
+        lines.append('                  filename_template="{}"'.format(input_file))
+        lines.append('                  input_interval="initial_only" />')
+        lines.append('')
+        lines.append("<!--")
+        lines.append("The restart stream is actually controlled via the coupler.")
+        lines.append("Changing output_interval here will not have any affect on")
+        lines.append("the frequency restart files are written.")
+        lines.append("")
+        lines.append("Changing the output_interval could cause loss of data.")
+        lines.append("")
+        lines.append("The output_interval is set to 1 second to ensure each restart frame has a")
+        lines.append("unique file.")
+        lines.append("-->")
+        lines.append('')
+        lines.append('<immutable_stream name="restart"')
+        lines.append('                  type="input;output"')
+        if ice_grid.startswith("oRRS1"):
+            lines.append('                  io_type="pnetcdf,cdf5"')
+        else:
+            lines.append('                  io_type="{}"'.format(ice_pio_typename))
+
+        lines.append('                  filename_template="mpascice.rst.$Y-$M-$D_$S.nc"')
+        lines.append('                  filename_interval="output_interval"')
+        lines.append('                  input_interval="initial_only"')
+        lines.append('                  clobber_mode="truncate"')
+        lines.append('                  reference_time="01-01-01_00:00:00"')
+        lines.append('                  output_interval="00-00-00_00:00:01" />')
+        lines.append('')
+
+        if ic_mode == 'spunup':
+            lines.append('<immutable_stream name="restart_ic"')
+            lines.append('                  type="input"')
+            if ice_grid.startswith("oRRS1"):
+                lines.append('                  io_type="pnetcdf,cdf5"')
+            else:
+                lines.append('                  io_type="{}"'.format(ice_pio_typename))
+
+            lines.append('                  filename_template="{}"'.format(input_file))
+            lines.append('                  filename_interval="none"')
+            lines.append('                  input_interval="initial_only" />')
+            lines.append('')
+
+        lines.append('<stream name="output"')
+        lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ice_pio_typename))
+        lines.append('        filename_template="mpascice.hist.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="00-01-00_00:00:00">')
+        lines.append('')
+        lines.append('    <stream name="mesh"/>')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var name="iceAreaCell"/>')
+        lines.append('    <var name="iceVolumeCell"/>')
+        lines.append('    <var name="snowVolumeCell"/>')
+        lines.append('    <var name="uVelocityGeo"/>')
+        lines.append('    <var name="vVelocityGeo"/>')
+        lines.append('')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<immutable_stream name="LYqSixHourlyForcing"')
+        lines.append('                  type="input"')
+        lines.append('                  io_type="{}"'.format(ice_pio_typename))
+        lines.append('                  filename_template="forcing/atmosphere_forcing_six_hourly.$Y.nc"')
+        lines.append('                  filename_interval="0001-00-00_00:00:00"')
+        lines.append('                  reference_time="2000-01-01_03:00:00"')
+        lines.append('                  input_interval="none" />')
+        lines.append('')
+        lines.append('<immutable_stream name="LYqMonthlyForcing"')
+        lines.append('                  type="input"')
+        lines.append('                  io_type="{}"'.format(ice_pio_typename))
+        lines.append('                  filename_template="forcing/atmosphere_forcing_monthly.nc"')
+        lines.append('                  filename_interval="none"')
+        lines.append('                  input_interval="none" />')
+        lines.append('')
+        lines.append('<immutable_stream name="NCARMonthlySSTForcing"')
+        lines.append('                  type="input"')
+        lines.append('                  io_type="{}"'.format(ice_pio_typename))
+        lines.append('                  filename_template="forcing/ocean_forcing_monthly.nc"')
+        lines.append('                  filename_interval="none"')
+        lines.append('                  input_interval="none" />')
+        lines.append('')
+        lines.append('<immutable_stream name="NCARMonthlyForcing"')
+        lines.append('                  type="input"')
+        lines.append('                  io_type="{}"'.format(ice_pio_typename))
+        lines.append('                  filename_template="forcing/ocean_forcing_monthly.nc"')
+        lines.append('                  filename_interval="none"')
+        lines.append('                  input_interval="none" />')
+        lines.append('')
+        lines.append('<immutable_stream name="StandardAerosolsInput"')
+        lines.append('                  type="input"')
+        lines.append('                  io_type="{}"'.format(ice_pio_typename))
+        lines.append('                  filename_template="standard_optics_mpas_cice.nc"')
+        lines.append('                  filename_interval="none"')
+        lines.append('                  input_interval="none" />')
+        lines.append('')
+        lines.append('<immutable_stream name="ModalAerosolsInput"')
+        lines.append('                  type="input"')
+        lines.append('                  io_type="{}"'.format(ice_pio_typename))
+        lines.append('                  filename_template="snicar_optics_5bnd_mam_c140303_mpas_cice.nc"')
+        lines.append('                  filename_interval="none"')
+        lines.append('                  input_interval="none" />')
+        lines.append('')
+        lines.append('<immutable_stream name="abort_contents"')
+        lines.append('                  type="none"')
+        lines.append('                  filename_template="abort_variables.nc" />')
+        lines.append('')
+        lines.append('<stream name="abort_block"')
+        lines.append('                  type="output"')
+        lines.append('                  filename_template="abort_seaice_$Y-$M-$D_$h.$m.$s_block_$B.nc"')
+        lines.append('                  filename_interval="none"')
+        lines.append('                  clobber_mode="truncate"')
+        lines.append('                  output_interval="none" >')
+        lines.append('')
+        lines.append('    <stream name="mesh"/>')
+        lines.append('    <stream name="abort_contents"/>')
+        lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var name="xtime"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="abort"')
+        lines.append('                  type="output"')
+        lines.append('                  filename_template="abort_seaice_$Y-$M-$D_$h.$m.$s.nc"')
+        lines.append('                  filename_interval="none"')
+        lines.append('                  clobber_mode="truncate"')
+        lines.append('                  output_interval="none" >')
+        lines.append('')
+        lines.append('    <stream name="mesh"/>')
+        lines.append('    <stream name="abort_contents"/>')
+        lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var name="xtime"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="highFrequencyOutput"')
+        lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ice_pio_typename))
+        lines.append('        filename_template="mpascice.hist.am.highFrequencyOutput.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="highFrequencyOutputAMPKG">')
+        lines.append('')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <stream name="mesh"/>')
+        lines.append('    <var name="iceAreaCellCategory1"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="regionalStatisticsOutput"')
+        lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ice_pio_typename))
+        lines.append('        filename_template="mpascice.hist.am.regionalStatistics.$Y.$M.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="00-00-01_00:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="regionalStatisticsAMPKG">')
+        lines.append('')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var name="totalIceArea"/>')
+        lines.append('    <var name="totalIceExtent"/>')
+        lines.append('    <var name="totalIceVolume"/>')
+        lines.append('    <var name="totalSnowVolume"/>')
+        lines.append('    <var name="totalKineticEnergy"/>')
+        lines.append('    <var name="rmsIceSpeed"/>')
+        lines.append('    <var name="averageAlbedo"/>')
+        lines.append('    <var name="maximumIceVolume"/>')
+        lines.append('    <var name="maximumIcePressure"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="conservationCheckOutput"')
+        lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ice_pio_typename))
+        lines.append('        filename_template="mpascice.hist.am.conservationCheck.$Y.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="00-01-00_00:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="conservationCheckAMPKG">')
+        lines.append('')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var name="initialEnergy"/>')
+        lines.append('    <var name="finalEnergy"/>')
+        lines.append('    <var name="energyChange"/>')
+        lines.append('    <var name="netEnergyFlux"/>')
+        lines.append('    <var name="absoluteEnergyError"/>')
+        lines.append('    <var name="relativeEnergyError"/>')
+        lines.append('    <var name="initialMass"/>')
+        lines.append('    <var name="finalMass"/>')
+        lines.append('    <var name="massChange"/>')
+        lines.append('    <var name="netMassFlux"/>')
+        lines.append('    <var name="absoluteMassError"/>')
+        lines.append('    <var name="relativeMassError"/>')
+        lines.append('    <var name="initialSalt"/>')
+        lines.append('    <var name="finalSalt"/>')
+        lines.append('    <var name="saltChange"/>')
+        lines.append('    <var name="netSaltFlux"/>')
+        lines.append('    <var name="absoluteSaltError"/>')
+        lines.append('    <var name="relativeSaltError"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="conservationCheckRestart"')
+        lines.append('        type="input;output"')
+        lines.append('        io_type="{}"'.format(ice_pio_typename))
+        lines.append('        filename_template="mpascice.rst.am.conservationCheck.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_interval="output_interval"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="conservationCheckAMPKG"')
+        lines.append('        input_interval="initial_only"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="stream:restart:output_interval">')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="loadBalanceOutput"')
+        lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ice_pio_typename))
+        lines.append('        filename_template="mpascice.hist.am.cice_loadBalance.$Y.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="00-00-00_01:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="loadBalanceAMPKG">')
+        lines.append('')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="nCellsProcWithSeaIce"/>')
+        lines.append('    <var name="nCellsProc"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="maximumIcePresenceOutput"')
+        lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ice_pio_typename))
+        lines.append('        filename_template="mpascice.hist.am.cice_maximumIcePresence.$Y.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="01-00-00_00:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="maximumIcePresenceAMPKG">')
+        lines.append('')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <stream name="mesh"/>')
+        lines.append('    <var name="maximumIcePresence"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="timeSeriesStatsDailyOutput"')
+        lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ice_pio_typename))
+        lines.append('        filename_template="mpascice.hist.am.timeSeriesStatsDaily.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="00-00-01_00:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="timeSeriesStatsDailyAMPKG">')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="timeSeriesStatsDailyRestart"')
+        lines.append('        type="input;output"')
+        lines.append('        io_type="{}"'.format(ice_pio_typename))
+        lines.append('        filename_template="mpascice.rst.am.timeSeriesStatsDaily.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_interval="output_interval"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="timeSeriesStatsDailyAMPKG"')
+        lines.append('        input_interval="none"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none">')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="timeSeriesStatsMonthlyOutput"')
+        lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ice_pio_typename))
+        lines.append('        filename_template="mpascice.hist.am.timeSeriesStatsMonthly.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="00-01-00_00:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="timeSeriesStatsMonthlyAMPKG">')
+        lines.append('')
+        lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var name="icePresent"/>')
+        lines.append('    <var name="iceAreaCell"/>')
+        lines.append('    <var name="iceVolumeCell"/>')
+        lines.append('    <var name="snowVolumeCell"/>')
+        lines.append('    <var name="surfaceTemperatureCell"/>')
+        lines.append('    <var name="uVelocityGeo"/>')
+        lines.append('    <var name="vVelocityGeo"/>')
+        lines.append('    <var name="shortwaveDown"/>')
+        lines.append('    <var name="longwaveDown"/>')
+        lines.append('    <var name="seaSurfaceTemperature"/>')
+        lines.append('    <var name="seaSurfaceSalinity"/>')
+        lines.append('    <var name="uOceanVelocityVertexGeo"/>')
+        lines.append('    <var name="vOceanVelocityVertexGeo"/>')
+        lines.append('    <var name="freezingMeltingPotential"/>')
+        lines.append('    <var name="shortwaveScalingFactor"/>')
+        lines.append('    <var name="airTemperature"/>')
+        lines.append('    <var name="congelation"/>')
+        lines.append('    <var name="frazilFormation"/>')
+        lines.append('    <var name="snowiceFormation"/>')
+        lines.append('    <var name="snowMelt"/>')
+        lines.append('    <var name="surfaceIceMelt"/>')
+        lines.append('    <var name="basalIceMelt"/>')
+        lines.append('    <var name="lateralIceMelt"/>')
+        lines.append('    <var name="airStressVertexUGeo"/>')
+        lines.append('    <var name="airStressVertexVGeo"/>')
+        lines.append('    <var name="icePressure"/>')
+        lines.append('    <var name="divergence"/>')
+        lines.append('    <var name="shear"/>')
+        lines.append('    <var name="principalStress1Var"/>')
+        lines.append('    <var name="principalStress2Var"/>')
+        lines.append('    <var name="iceVolumeTendencyThermodynamics"/>')
+        lines.append('    <var name="iceVolumeTendencyTransport"/>')
+        lines.append('    <var name="iceAreaTendencyThermodynamics"/>')
+        lines.append('    <var name="iceAreaTendencyTransport"/>')
+        lines.append('    <var name="iceAgeTendencyThermodynamics"/>')
+        lines.append('    <var name="iceAgeTendencyTransport"/>')
+        lines.append('    <var name="iceAgeCell"/>')
+        lines.append('    <var name="firstYearIceAreaCell"/>')
+        lines.append('    <var name="levelIceAreaCell"/>')
+        lines.append('    <var name="levelIceVolumeCell"/>')
+        lines.append('    <var name="ridgedIceAreaAverage"/>')
+        lines.append('    <var name="ridgedIceVolumeAverage"/>')
+        lines.append('    <var name="bulkSalinity"/>')
+        lines.append('    <var name="broadbandAlbedo"/>')
+        lines.append('    <var name="absorbedShortwaveFluxInitialArea"/>')
+        lines.append('    <var name="latentHeatFluxInitialArea"/>')
+        lines.append('    <var name="sensibleHeatFluxInitialArea"/>')
+        lines.append('    <var name="longwaveUpInitialArea"/>')
+        lines.append('    <var name="evaporativeWaterFluxInitialArea"/>')
+        lines.append('    <var name="meltPondAreaFinalArea"/>')
+        lines.append('    <var name="meltPondDepthFinalArea"/>')
+        lines.append('    <var name="meltPondLidThicknessFinalArea"/>')
+        lines.append('    <var name="oceanHeatFlux"/>')
+        lines.append('    <var name="oceanShortwaveFlux"/>')
+        lines.append('    <var name="oceanFreshWaterFlux"/>')
+        lines.append('    <var name="oceanSaltFlux"/>')
+        lines.append('    <var name="uAirVelocity"/>')
+        lines.append('    <var name="vAirVelocity"/>')
+        if ice_bgc == 'ice_bgc':
+            lines.append('    <var name="totalVerticalBiologyIce"/>')
+            lines.append('    <var name="totalChlorophyll"/>')
+            lines.append('    <var name="primaryProduction"/>')
+            lines.append('    <var name="bioShortwaveFlux"/>')
+            lines.append('    <var name="netBrineHeight"/>')
+            lines.append('    <var name="newlyFormedIce"/>')
+            lines.append('    <var name="pondAreaCell"/>')
+            lines.append('    <var name="snowThicknessChange"/>')
+            lines.append('    <var name="snowAlbedoCell"/>')
+            lines.append('    <var name="bareIceAlbedoCell"/>')
+            lines.append('    <var name="pondAlbedoCell"/>')
+            lines.append('    <var name="verticalAlgaeIceCell"/>')
+            lines.append('    <var name="verticalNitrateIceCell"/>')
+            lines.append('    <var name="verticalSilicateIceCell"/>')
+            lines.append('    <var name="verticalAmmoniumIceCell"/>')
+            lines.append('    <var name="verticalDMSIceCell"/>')
+            lines.append('    <var name="verticalDMSPdIceCell"/>')
+            lines.append('    <var name="verticalNonreactiveIceCell"/>')
+            lines.append('    <var name="verticalHumicsIceCell"/>')
+            lines.append('    <var name="verticalDissolvedIronIceCell"/>')
+            lines.append('    <var name="iceEnthalpyCell"/>')
+            lines.append('    <var name="iceSalinityCell"/>')
+            lines.append('    <var name="oceanBioFluxes"/>')
+            lines.append('    <var name="oceanBioConcentrations"/>')
+            lines.append('    <var name="netNitrateUptake"/>')
+            lines.append('    <var name="netAmmoniumUptake"/>')
+            lines.append('    <var name="netSpecificAlgalGrowthRate"/>')
+
+        lines.append('</stream>')
+        lines.append('')
+
+        if ice_bgc == 'ice_bgc':
+            if points_file != '':
+                lines.append('<immutable_stream name="pointLocationsInput"')
+                lines.append('                  type="input"')
+                lines.append('                  filename_template="{}/ice/mpas-cice/{}/{}"'.format(din_loc_root, ice_mask, points_file))
+                lines.append('                  input_interval="initial_only"')
+                lines.append('                  runtime_format="single_file" />')
+
+            lines.append('')
+
+            lines.append('<stream name="pointwiseStatsOutput"')
+            lines.append('        type="output"')
+            lines.append('        io_type="netcdf"')
+            lines.append('        filename_template="pointwiseStats.$Y-$M-$D.nc"')
+            lines.append('        filename_interval="00-01-00_00:00:00"')
+            lines.append('        reference_time="01-01-01_00:00:00"')
+            lines.append('        output_interval="00-00-01_00:00:00"')
+            lines.append('        clobber_mode="truncate"')
+            lines.append('        packages="pointwiseStatsAMPKG"')
+            lines.append('        runtime_format="single_file">')
+
+            lines.append('')
+
+            lines.append('    <var name="pointNames"/>')
+            lines.append('    <var name="pointCellGlobalID"/>')
+            lines.append('    <var name="xtime"/>')
+            lines.append('    <var name="latCell"/>')
+            lines.append('    <var name="lonCell"/>')
+            lines.append('    <var name="latPoint"/>')
+            lines.append('    <var name="lonPoint"/>')
+            lines.append('    <var name="xPoint"/>')
+            lines.append('    <var name="yPoint"/>')
+            lines.append('    <var name="zPoint"/>')
+            lines.append('    <var name="totalVerticalBiologyIce"/>')
+            lines.append('    <var name="brineFractionCell"/>')
+            lines.append('    <var name="netBrineHeight"/>')
+            lines.append('    <var name="firstYearIceAreaCell"/>')
+            lines.append('    <var name="levelIceAreaCell"/>')
+            lines.append('    <var name="pondAreaCell"/>')
+            lines.append('    <var name="surfaceIceMelt"/>')
+            lines.append('    <var name="basalIceMelt"/>')
+            lines.append('    <var name="lateralIceMelt"/>')
+            lines.append('    <var name="congelation"/>')
+            lines.append('    <var name="snowiceFormation"/>')
+            lines.append('    <var name="frazilFormation"/>')
+            lines.append('    <var name="snowThicknessChange"/>')
+            lines.append('    <var name="snowAlbedoCell"/>')
+            lines.append('    <var name="bareIceAlbedoCell"/>')
+            lines.append('    <var name="pondAlbedoCell"/>')
+            lines.append('    <var name="verticalAlgaeIceCell"/>')
+            lines.append('    <var name="verticalNitrateIceCell"/>')
+            lines.append('    <var name="verticalSilicateIceCell"/>')
+            lines.append('    <var name="verticalAmmoniumIceCell"/>')
+            lines.append('    <var name="verticalDMSIceCell"/>')
+            lines.append('    <var name="verticalDMSPdIceCell"/>')
+            lines.append('    <var name="verticalNonreactiveIceCell"/>')
+            lines.append('    <var name="verticalHumicsIceCell"/>')
+            lines.append('    <var name="verticalDissolvedIronIceCell"/>')
+            lines.append('    <var name="iceEnthalpyCell"/>')
+            lines.append('    <var name="iceSalinityCell"/>')
+            lines.append('    <var name="oceanBioFluxes"/>')
+            lines.append('    <var name="oceanBioConcentrations"/>')
+            lines.append('    <var name="primaryProduction"/>')
+            lines.append('    <var name="netNitrateUptake"/>')
+            lines.append('    <var name="netAmmoniumUptake"/>')
+            lines.append('    <var name="netSpecificAlgalGrowthRate"/>')
+            lines.append('    <var name="totalChlorophyll"/>')
+            lines.append('    <var name="iceAreaCell"/>')
+            lines.append('    <var name="iceVolumeCell"/>')
+            lines.append('    <var name="snowVolumeCell"/>')
+            lines.append('    <var name="iceVolumeRidged"/>')
+            lines.append('    <var name="oceanShortwaveFlux"/>')
+            lines.append('    <var name="shortwaveDown"/>')
+            lines.append('    <var name="bioShortwaveFlux"/>')
+            lines.append('    <var name="daysSinceStartOfSim"/>')
+            lines.append('    <var name="seaSurfaceSalinity"/>')
+            lines.append('</stream>')
+
+        lines.append('')
+
+        lines.append('<stream name="timeSeriesStatsMonthlyRestart"')
+        lines.append('        type="input;output"')
+        lines.append('        io_type="{}"'.format(ice_pio_typename))
+        lines.append('        filename_template="mpascice.rst.am.timeSeriesStatsMonthly.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_interval="output_interval"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="timeSeriesStatsMonthlyAMPKG"')
+        lines.append('        input_interval="none"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none">')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="timeSeriesStatsClimatologyOutput"')
+        lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ice_pio_typename))
+        lines.append('        filename_template="mpascice.hist.am.timeSeriesStatsClimatology.$Y.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="timeSeriesStatsClimatologyAMPKG"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="10-00-00_00:00:00" >')
+        lines.append('')
+        lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var name="icePresent"/>')
+        lines.append('    <var name="iceAreaCell"/>')
+        lines.append('    <var name="iceVolumeCell"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="timeSeriesStatsClimatologyRestart"')
+        lines.append('        type="input;output"')
+        lines.append('        io_type="{}"'.format(ice_pio_typename))
+        lines.append('        filename_template="mpascice.rst.am.timeSeriesStatsClimatology.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_interval="output_interval"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="timeSeriesStatsClimatologyAMPKG"')
+        lines.append('        input_interval="initial_only"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="stream:restart:output_interval">')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="landIceMasks"')
+        lines.append('        type="input"')
+        lines.append('        io_type="{}"'.format(ice_pio_typename))
+        lines.append('        input_interval="initial_only"')
+        lines.append('        filename_template="{}/ice/mpas-cice/{}/{}.{}.nc">'.format(din_loc_root, ice_mask, grid_prefix, grid_date))
+        lines.append('')
+        lines.append('       <var name="landIceMask"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('</streams>')
+        lines.append('')
+
+        with open(os.path.join(rundir, stream_name), "w") as fd:
+            fd.write("\n".join(lines))
+
+###############################################################################
+def _main_func():
+###############################################################################
+    caseroot = parse_input(sys.argv)
+    with Case(caseroot) as case:
+        buildnml(case, caseroot, "mpascice")
+
+if __name__ == "__main__":
+    _main_func()

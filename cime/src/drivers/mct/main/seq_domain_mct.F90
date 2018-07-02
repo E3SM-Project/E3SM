@@ -18,33 +18,33 @@ module seq_domain_mct
 #include <mpif.h>
   save
 
-!--------------------------------------------------------------------------
-! Public interfaces
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Public interfaces
+  !--------------------------------------------------------------------------
 
   public :: seq_domain_check
   public :: seq_domain_compare
   public :: seq_domain_areafactinit
 
-!--------------------------------------------------------------------------
-! Public variables
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Public variables
+  !--------------------------------------------------------------------------
 
   real(R8), parameter :: eps_tiny   = 1.0e-16_R8 ! roundoff eps
   real(R8), parameter :: eps_big    = 1.0e+02_R8 ! big eps
   real(R8), parameter :: eps_frac_samegrid = 1.0e-9_R8 ! epsilon for fractions for samegrid
 
-!--------------------------------------------------------------------------
-! Private interfaces
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Private interfaces
+  !--------------------------------------------------------------------------
 
   private :: seq_domain_check_grid
 
-!================================================================================
+  !================================================================================
 contains
-!================================================================================
+  !================================================================================
 
-!================================================================================
+  !================================================================================
 
   subroutine seq_domain_check( infodata, &
        atm, ice, lnd, ocn, rof, glc, &
@@ -82,13 +82,13 @@ contains
     type(seq_map)   , pointer :: mapper_l2g !
     type(seq_map)   , pointer :: mapper_a2l !
     type(seq_map)   , pointer :: mapper_l2a !
-                                            !
+    !
     type(mct_gGrid) , pointer :: atmdom_a   ! atm domain
     type(mct_gGrid) , pointer :: icedom_i   ! ice domain
     type(mct_gGrid) , pointer :: lnddom_l   ! lnd domain
     type(mct_gGrid) , pointer :: ocndom_o   ! ocn domain
     type(mct_gGrid) , pointer :: glcdom_g   ! glc domain
-                                            !
+    !
     type(mct_gsMap) , pointer :: gsMap_a    ! atm global seg map
     type(mct_gsMap) , pointer :: gsMap_i    ! ice global seg map
     type(mct_gsMap) , pointer :: gsMap_l    ! lnd global seg map
@@ -109,8 +109,7 @@ contains
     real(R8), pointer :: maski(:)            ! ice  mask on atm decomp (all grids same)
     real(R8), pointer :: masko(:)            ! ocn  mask on atm decomp (all grids same)
     !
-    integer(IN) :: n, kl, ko, ki             ! indicies
-    integer(IN) :: k1,k2,k3                  ! indicies
+    integer(IN) :: n            ! indicies
     !
     integer(IN) :: mpicom_cplid
     !
@@ -134,7 +133,6 @@ contains
     integer(IN)  :: gicesize                 ! global size of ice  grid
     integer(IN)  :: gglcsize                 ! global size of glc  grid
     integer(IN)  :: npts                     ! local size temporary
-    integer(IN)  :: ier                      ! error code
     real(R8)     :: diff,dmaxo,dmaxi         ! difference tracker
     logical      :: iamroot                  ! local masterproc
     real(R8)     :: eps_frac                 ! epsilon for fractions
@@ -145,7 +143,6 @@ contains
     real(R8)     :: eps_oigrid               ! epsilon for grid coords, ocn/ice
     real(R8)     :: eps_oiarea               ! epsilon for areas, ocn/ice
     real(R8)     :: my_eps_frac              ! local eps_frac value
-    real(R8)     :: rmin1,rmax1,rmin,rmax    ! local min max computation
     !
     real(R8),allocatable :: mask (:)         ! temporary real vector, domain mask
     !
@@ -350,8 +347,8 @@ contains
     ! Check ice/ocean grid consistency
     !------------------------------------------------------------------------------
 
-     if (ocn_present .and. ice_present) then
-!    if (samegrid_oi) then       ! doesn't yet exist
+    if (ocn_present .and. ice_present) then
+       !    if (samegrid_oi) then       ! doesn't yet exist
 
        npts = ocnsize
        allocate(mask(npts),stat=rcode)
@@ -369,8 +366,8 @@ contains
        deallocate(mask,stat=rcode)
        if(rcode /= 0) call shr_sys_abort(subname//' deallocate mask')
 
-!    endif
-     endif
+       !    endif
+    endif
 
     !------------------------------------------------------------------------------
     ! Check atm/lnd grid consistency
@@ -496,7 +493,7 @@ contains
 
   end subroutine seq_domain_check
 
-!===============================================================================
+  !===============================================================================
 
   subroutine seq_domain_compare(dom1, dom2, mpicom, eps)
 
@@ -529,7 +526,7 @@ contains
 
   end subroutine seq_domain_compare
 
-!===============================================================================
+  !===============================================================================
 
   subroutine seq_domain_check_fracmask(dom1)
 
@@ -565,7 +562,7 @@ contains
     ndiff = 0
     do n = 1,npts
        if (abs(dfrac(n)) > eps_tiny .and. abs(dmask(n)) < eps_tiny) then
-!debug            write(logunit,*)'n= ',n,' dfrac= ',dfrac(n),' dmask= ',dmask(n)
+          !debug            write(logunit,*)'n= ',n,' dfrac= ',dfrac(n),' dmask= ',dmask(n)
           ndiff = ndiff + 1
        endif
     enddo
@@ -581,9 +578,9 @@ contains
     deallocate(dfrac,stat=rcode)
     if(rcode /= 0) call shr_sys_abort(subname//' deallocate dfrac')
 
- end subroutine seq_domain_check_fracmask
+  end subroutine seq_domain_check_fracmask
 
-!===============================================================================
+  !===============================================================================
 
   subroutine seq_domain_check_grid(dom1, dom2, attr, eps, mpicom, mask)
 
@@ -645,7 +642,7 @@ contains
     lmask = 1.0_R8
     if (present(mask)) then
        if (size(mask) /= npts) then
-	  call shr_sys_abort(subName//" ERROR: mask size mis-match")
+          call shr_sys_abort(subName//" ERROR: mask size mis-match")
        endif
        lmask = mask
     endif
@@ -654,15 +651,15 @@ contains
 
     if (trim(attr) == "lon") then
        do n = 1,npts
-	  if (data2(n) > data1(n)) then
-	     do while ( (data1(n)+360.0_R8) < (data2(n)+180.0_R8) ) ! longitude is periodic
-		data1(n) = data1(n) + 360.0_R8
-	     end do
-	  else
-	     do while ( (data2(n)+360.0_R8) < (data1(n)+180.0_R8) ) ! longitude is periodic
-		data2(n) = data2(n) + 360.0_R8
-	     end do
-	  endif
+          if (data2(n) > data1(n)) then
+             do while ( (data1(n)+360.0_R8) < (data2(n)+180.0_R8) ) ! longitude is periodic
+                data1(n) = data1(n) + 360.0_R8
+             end do
+          else
+             do while ( (data2(n)+360.0_R8) < (data1(n)+180.0_R8) ) ! longitude is periodic
+                data2(n) = data2(n) + 360.0_R8
+             end do
+          endif
        enddo
     endif
 
@@ -672,12 +669,12 @@ contains
     ndiff = 0
     do n=1,npts
        if (lmask(n) > eps_tiny) then
-	  diff = abs(data1(n)-data2(n))
-	  max_diff = max(max_diff,diff)
-	  if (diff > eps) then
+          diff = abs(data1(n)-data2(n))
+          max_diff = max(max_diff,diff)
+          if (diff > eps) then
       !debug            write(logunit,*)'n= ',n,' data1= ',data1(n),' data2= ',data2(n),' diff= ',diff, ' eps= ',eps
-	     ndiff = ndiff + 1
-	  endif
+             ndiff = ndiff + 1
+          endif
        end if
     end do
 
@@ -704,7 +701,7 @@ contains
 
   end subroutine seq_domain_check_grid
 
-!===============================================================================
+  !===============================================================================
 
   subroutine seq_domain_areafactinit(domain, mdl2drv, drv2mdl, &
        samegrid, mpicom, iamroot, comment)
@@ -723,7 +720,7 @@ contains
     ! Local variables
     !
     integer                :: j1,j2,m1,n,rcode
-    integer                :: gridsize,m2dsize,d2msize
+    integer                :: gridsize
     real(R8)               :: rmin1,rmax1,rmin,rmax
     real(R8)               :: rmask,rarea,raream
     character(cl)          :: lcomment
@@ -788,6 +785,6 @@ contains
 
   end subroutine seq_domain_areafactinit
 
-!===============================================================================
+  !===============================================================================
 
 end module seq_domain_mct

@@ -18,25 +18,85 @@ class EnvBase(EntryID):
         else:
             fullpath = os.path.join(case_root, infile)
 
-        EntryID.__init__(self, fullpath, schema=schema)
+        EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+
+        self._id_map = None
+        self._group_map = None
+
         if not os.path.isfile(fullpath):
             headerobj = Headers()
             headernode = headerobj.get_header_node(os.path.basename(fullpath))
-            self.root.append(headernode)
+            self.add_child(headernode)
+        else:
+            self._setup_cache()
+
+    def _setup_cache(self):
+        self._id_map = {}    # map id directly to nodes
+        self._group_map = {} # map group name to entry id dict
+
+        group_elems = self.get_children("group")
+        for group_elem in group_elems:
+            group_name = self.get(group_elem, "id")
+            expect(group_name not in self._group_map, "Repeat group '{}'".format(group_name))
+            group_map = {}
+            self._group_map[group_name] = group_map
+            entry_elems = self.get_children("entry", root=group_elem)
+            for entry_elem in entry_elems:
+                entry_id = self.get(entry_elem, "id")
+                expect(entry_id not in group_map, "Repeat entry '{}' in group '{}'".format(entry_id, group_name))
+                group_map[entry_id] = entry_elem
+                if entry_id in self._id_map:
+                    self._id_map[entry_id].append(entry_elem)
+                else:
+                    self._id_map[entry_id] = [entry_elem]
+
+        self.lock()
+
+    def change_file(self, newfile, copy=False):
+        self.unlock()
+        EntryID.change_file(self, newfile, copy=copy)
+        self._setup_cache()
+
+    def get_children(self, name=None, attributes=None, root=None):
+        if self.locked and name == "entry" and attributes is not None and attributes.keys() == ["id"]:
+            entry_id = attributes["id"]
+            if root is None or self.name(root) == "file":
+                if entry_id in self._id_map:
+                    return self._id_map[entry_id]
+                else:
+                    return []
+            else:
+                expect(self.name(root) == "group", "Unexpected elem '{}' for {}, attrs {}".format(self.name(root), self.filename, self.attrib(root)))
+                group_id = self.get(root, "id")
+                if group_id in self._group_map and entry_id in self._group_map[group_id]:
+                    return [self._group_map[group_id][entry_id]]
+                else:
+                    return []
+
+        else:
+            # Non-compliant look up
+            return EntryID.get_children(self, name=name, attributes=attributes, root=root)
+
+    def scan_children(self, nodename, attributes=None, root=None):
+        if self.locked and nodename == "entry" and attributes is not None and attributes.keys() == ["id"]:
+            return EnvBase.get_children(self, name=nodename, attributes=attributes, root=root)
+        else:
+            return EntryID.scan_children(self, nodename, attributes=attributes, root=root)
 
     def set_components(self, components):
         if hasattr(self, '_components'):
             # pylint: disable=attribute-defined-outside-init
             self._components = components
 
-    def check_if_comp_var(self, vid, attribute=None):
-        nodes = self.get_nodes("entry", {"id" : vid})
-        node = None
+    def check_if_comp_var(self, vid, attribute=None, node=None):
         comp = None
-        if len(nodes):
-            node = nodes[0]
+        if node is None:
+            nodes = self.scan_children("entry", {"id" : vid})
+            if len(nodes):
+                node = nodes[0]
+
         if node:
-            valnodes = node.findall(".//value[@compclass]")
+            valnodes = self.scan_children("value", attributes={"compclass":None}, root=node)
             if len(valnodes) == 0:
                 logger.debug("vid {} is not a compvar".format(vid))
                 return vid, None, False
@@ -46,7 +106,7 @@ class EnvBase(EntryID):
                     comp = attribute["compclass"]
                 return vid, comp, True
         else:
-            if hasattr(self, "_components"):
+            if hasattr(self, "_components") and self._components:
                 new_vid = None
                 for comp in self._components:
                     if vid.endswith('_'+comp):
@@ -83,9 +143,11 @@ class EnvBase(EntryID):
                 attribute = {"compclass" : comp}
             else:
                 attribute["compclass"] = comp
-            node = self.get_optional_node("entry", {"id":vid})
+            node = self.scan_optional_child("entry", {"id":vid})
             if node is not None:
                 type_str = self._get_type_info(node)
+                values = self.get_optional_child("values", root=node)
+                node = values if values is not None else node
                 val = self.get_element_text("value", attribute, root=node)
                 if val is not None:
                     if val.startswith("$"):
@@ -93,6 +155,7 @@ class EnvBase(EntryID):
                     else:
                         value = convert_to_type(val,type_str, vid)
                 return value
+
         return EntryID.get_value(self, vid, attribute=attribute, resolved=resolved, subgroup=subgroup)
 
     def set_value(self, vid, value, subgroup=None, ignore_type=False):
@@ -103,8 +166,8 @@ class EnvBase(EntryID):
         """
         vid, comp, iscompvar = self.check_if_comp_var(vid, None)
         val = None
-        root = self.root if subgroup is None else self.get_optional_node("group", {"id":subgroup})
-        node = self.get_optional_node("entry", {"id":vid}, root=root)
+        root = self.root if subgroup is None else self.get_optional_child("group", {"id":subgroup})
+        node = self.scan_optional_child("entry", {"id":vid}, root=root)
         if node is not None:
             if iscompvar and comp is None:
                 # pylint: disable=no-member
@@ -117,12 +180,15 @@ class EnvBase(EntryID):
     # pylint: disable=arguments-differ
     def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False, compclass=None):
         if vid is None:
-            vid = node.get("id")
-        vid, _, iscompvar = self.check_if_comp_var(vid, None)
+            vid = self.get(node, "id")
+        vid, _, iscompvar = self.check_if_comp_var(vid, node=node)
 
         if iscompvar:
+            expect(compclass is not None, "compclass must be specified if is comp var")
             attribute = {"compclass":compclass}
             str_value = self.get_valid_value_string(node, value, vid, ignore_type)
+            values = self.get_optional_child("values", root=node)
+            node = values if values is not None else node
             val = self.set_element_text("value", str_value, attribute, root=node)
         else:
             val = EntryID._set_value(self, node, value, vid, subgroup, ignore_type)
@@ -136,26 +202,27 @@ class EnvBase(EntryID):
         """
         Remove the <group>, <file>, <values> and <value> childnodes from node
         """
-        fnode = node.find(".//file")
-        node.remove(fnode)
-        gnode = node.find(".//group")
-        node.remove(gnode)
-        dnode = node.find(".//default_value")
+        fnode = self.get_child("file", root=node)
+        self.remove_child(fnode, node)
+        gnode = self.get_child("group", root=node)
+        self.remove_child(gnode, node)
+        dnode = self.get_optional_child("default_value", root=node)
         if dnode is not None:
-            node.remove(dnode)
-        vnode = node.find(".//values")
+            self.remove_child(dnode, node)
+
+        vnode = self.get_optional_child("values", root=node)
         if vnode is not None:
-            componentatt = vnode.findall(".//value[@component=\"ATM\"]")
+            componentatt = self.get_children("value", attributes={"component":"ATM"}, root=vnode)
             # backward compatibility (compclasses and component were mixed
             # now we seperated into component and compclass)
             if len(componentatt) > 0:
-                for ccnode in vnode.findall(".//value[@component]"):
-                    val = ccnode.attrib.get("component")
-                    ccnode.attrib.pop("component")
-                    ccnode.set("compclass",val)
-            compclassatt = vnode.findall(".//value[@compclass]")
+                for ccnode in self.get_children("value", attributes={"component":None}, root=vnode):
+                    val = self.get(ccnode, "component")
+                    self.pop(ccnode, "component")
+                    self.set(ccnode, "compclass", val)
 
+            compclassatt = self.get_children("value", attributes={"compclass":None}, root=vnode)
             if len(compclassatt) == 0:
-                node.remove(vnode)
+                self.remove_child(vnode, root=node)
 
         return node

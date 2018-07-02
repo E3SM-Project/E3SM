@@ -37,7 +37,8 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     test_suite = machine.get_value("TESTS")
     proxy = machine.get_value("PROXY")
     test_suite = test_suite if arg_test_suite is None else arg_test_suite
-    test_root = os.path.join(scratch_root, "jenkins")
+    test_root = os.path.join(scratch_root, "J")
+    run_area = os.path.dirname(os.path.dirname(machine.get_value("RUNDIR")))
 
     if (use_batch):
         batch_system = machine.get_value("BATCH_SYSTEM")
@@ -70,23 +71,20 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     if (os.path.isdir("Testing")):
         shutil.rmtree("Testing")
 
-    # Remove the old build/run dirs
-    test_id_root = "jenkins_{}_{}".format(baseline_name, test_suite)
-    for old_dir in glob.glob("{}/*{}*{}*".format(scratch_root, mach_comp, test_id_root)):
-        shutil.rmtree(old_dir)
-
-    # Remove the old cases
-    for old_file in glob.glob("{}/*{}*{}*".format(test_root, mach_comp, test_id_root)):
-        if (os.path.isdir(old_file)):
-            shutil.rmtree(old_file)
-        else:
-            os.remove(old_file)
+    # Remove old dirs
+    test_id_root = "J{}{}".format(baseline_name.capitalize(), test_suite.replace("e3sm_", "").capitalize())
+    for clutter_area in [scratch_root, test_root, run_area]:
+        for old_file in glob.glob("{}/*{}*{}*".format(clutter_area, mach_comp, test_id_root)):
+            if (os.path.isdir(old_file)):
+                shutil.rmtree(old_file)
+            else:
+                os.remove(old_file)
 
     #
     # Set up create_test command and run it
     #
 
-    test_id = "%s_%s" % (test_id_root, CIME.utils.get_timestamp())
+    test_id = "%s%s" % (test_id_root, CIME.utils.get_timestamp())
     create_test_args = [test_suite, "--test-root %s" % test_root, "-t %s" % test_id, "--machine %s" % machine.get_machine_name(), "--compiler %s" % compiler]
     if (generate_baselines):
         create_test_args.append("-g -b " + real_baseline_name)
@@ -126,7 +124,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     os.environ["CIME_MACHINE"] = machine.get_machine_name()
 
     if submit_to_cdash:
-        logging.info("To resubmit to dashboard: wait_for_tests {}/*{}/TestStatus -b {}".format(test_root, test_id, cdash_build_name))
+        logging.info("To resubmit to dashboard: wait_for_tests {}/*{}/TestStatus --no-wait -b {}".format(test_root, test_id, cdash_build_name))
 
     tests_passed = CIME.wait_for_tests.wait_for_tests(glob.glob("{}/*{}/TestStatus".format(test_root, test_id)),
                                                  no_wait=not use_batch, # wait if using queue

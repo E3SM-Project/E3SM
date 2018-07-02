@@ -5,12 +5,14 @@
   <xs:attribute name="MACH" type="xs:NCName"/>
   <xs:attribute name="compiler" type="xs:string"/>
   <xs:attribute name="mpilib" type="xs:string"/>
+  <xs:attribute name="queue" type="xs:string"/>
   <xs:attribute name="DEBUG" type="upperBoolean"/>
   <xs:attribute name="threaded" type="xs:boolean"/>
   <xs:attribute name="unit_testing" type="xs:boolean"/>
   <xs:attribute name="type" type="xs:NCName"/>
   <xs:attribute name="lang" type="xs:NCName"/>
   <xs:attribute name="name" type="xs:NCName"/>
+  <xs:attribute name="allow_error" type="xs:boolean"/>
 
   <!-- simple elements -->
   <xs:simpleType name="upperBoolean">
@@ -21,6 +23,9 @@
   </xs:simpleType>
   <xs:element name="NODENAME_REGEX" type="xs:string"/>
   <xs:element name="DESC" type="xs:string"/>
+  <xs:element name="NODE_FAIL_REGEX" type="xs:string"/>
+  <xs:element name="MPIRUN_RETRY_REGEX" type="xs:string"/>
+  <xs:element name="MPIRUN_RETRY_COUNT" type="xs:integer"/>
   <xs:element name="OS" type="xs:NCName"/>
   <xs:element name="PROXY" type="xs:string"/>
   <xs:element name="SAVE_TIMING_DIR" type="xs:string" />
@@ -28,7 +33,7 @@
   <xs:element name="PROJECT" type="xs:NCName" />
   <xs:element name="CHARGE_ACCOUNT" type="xs:NCName" />
   <xs:element name="COMPILERS" type="xs:string"/>
-  <xs:element name="MPILIBS" type="xs:string"/>
+  <xs:element name="MPILIBS" type="AttrElement"/>
   <xs:element name="CIME_OUTPUT_ROOT" type="xs:string"/>
   <xs:element name="DIN_LOC_ROOT" type="xs:string"/>
   <xs:element name="DIN_LOC_ROOT_CLMFORC" type="xs:string"/>
@@ -37,6 +42,7 @@
   <xs:element name="CCSM_CPRNC" type="xs:string"/>
   <xs:element name="PERL5LIB" type="xs:string"/>
   <xs:element name="BATCH_SYSTEM" type="xs:NCName"/>
+  <xs:element name="ALLOCATE_SPARE_NODES" type="upperBoolean"/>
   <xs:element name="SUPPORTED_BY" type="xs:string"/>
   <xs:element name="GMAKE_J" type="xs:integer"/>
   <xs:element name="MAX_TASKS_PER_NODE" type="xs:integer"/>
@@ -50,6 +56,16 @@
   <xs:element name="default_run_misc_suffix" type="xs:string"/>
 
   <!-- complex elements -->
+
+  <xs:complexType name="AttrElement">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute ref="compiler">
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
 
   <xs:element name="config_machines">
     <xs:complexType>
@@ -69,6 +85,13 @@
 	  it must work on compute nodes as well as login nodes, use machine option
 	  to create_test or create_newcase if this flag is not available -->
         <xs:element ref="NODENAME_REGEX" minOccurs="0" maxOccurs="1"/>
+	<!-- regex to look for in log files that will triger retry of mpirun
+	     command on extra allocated nodes -->
+        <xs:element ref="NODE_FAIL_REGEX" minOccurs="0" maxOccurs="1"/>
+	<!-- regex to look for in log files that will triger retry of mpirun command -->
+        <xs:element ref="MPIRUN_RETRY_REGEX" minOccurs="0" maxOccurs="1"/>
+	<!-- Number of retry attempts to make if MPIRUN_RETRY_REGEX matches   -->
+        <xs:element ref="MPIRUN_RETRY_COUNT" minOccurs="0" maxOccurs="1"/>
 	<!-- OS: the operating system of this machine. -->
         <xs:element ref="OS" minOccurs="1" maxOccurs="1"/>
 	<!-- PROXY: optional http proxy for access to the internet-->
@@ -76,7 +99,7 @@
 	<!-- COMPILERS: compilers supported on this machine, comma seperated list, first is default -->
         <xs:element ref="COMPILERS" minOccurs="1" maxOccurs="1"/>
 	<!-- MPILIBS: mpilibs supported on this machine, comma seperated list, first is default -->
-        <xs:element ref="MPILIBS" minOccurs="1" maxOccurs="1"/>
+        <xs:element ref="MPILIBS" minOccurs="1" maxOccurs="unbounded"/>
 	<!-- PROJECT: A project or account number used for batch jobs
 	  can be overridden in environment or $HOME/.cime/config -->
 	<xs:element ref="PROJECT" minOccurs="0" maxOccurs="1"/>
@@ -110,6 +133,8 @@
         <xs:element ref="TESTS" minOccurs="0" maxOccurs="1"/>
 	<!-- BATCH_SYSTEM: batch system used on this machine (none is okay) -->
         <xs:element ref="BATCH_SYSTEM" minOccurs="1" maxOccurs="1"/>
+	<!-- ALLOCATE_SPARE_NODES: allocate spare nodes when job is launched default False-->
+        <xs:element ref="ALLOCATE_SPARE_NODES" minOccurs="0" maxOccurs="1"/>
 	<!-- SUPPORTED_BY: contact information for support for this system -->
         <xs:element ref="SUPPORTED_BY" minOccurs="1" maxOccurs="1"/>
 	<!-- MAX_TASKS_PER_NODE: maximum number of threads*tasks per
@@ -145,6 +170,7 @@
 	<xs:element ref="arguments" minOccurs="0"/>
       </xs:sequence>
       <xs:attribute ref="compiler"/>
+      <xs:attribute ref="queue"/>
       <xs:attribute ref="mpilib"/>
       <xs:attribute ref="threaded"/>
       <xs:attribute ref="unit_testing"/>
@@ -166,6 +192,7 @@
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="modules"/>
       </xs:sequence>
       <xs:attribute ref="type" use="required"/>
+      <xs:attribute ref="allow_error" />
     </xs:complexType>
   </xs:element>
   <xs:element name="init_path">

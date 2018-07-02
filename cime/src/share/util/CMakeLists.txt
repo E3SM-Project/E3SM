@@ -16,6 +16,7 @@ list(APPEND share_sources
   shr_orb_mod.F90
   shr_spfn_mod.F90
   shr_strconvert_mod.F90
+  shr_cal_mod.F90
   shr_nl_mod.F90
   shr_precip_mod.F90
   shr_string_mod.F90

@@ -1,9 +1,3 @@
-!===============================================================================
-! SVN $Id: seq_infodata_mod.F90 68253 2015-02-18 22:24:57Z mvertens $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq5_1_15/shr/seq_infodata_mod.F90 $
-!===============================================================================
-!BOP ===========================================================================
-!
 ! !MODULE: seq_infodata_mod --- Module for input data shared between CCSM components
 !
 ! !DESCRIPTION:
@@ -24,287 +18,292 @@
 
 MODULE seq_infodata_mod
 
-! !USES:
+  ! !USES:
 
-   use shr_kind_mod, only: SHR_KIND_CS, SHR_KIND_CL, SHR_KIND_IN,             &
-                           SHR_KIND_R8, SHR_KIND_I8
-   use shr_sys_mod,  only: shr_sys_flush, shr_sys_abort, shr_sys_getenv
-   use seq_comm_mct, only: logunit, loglevel, CPLID, seq_comm_gloroot
-   use seq_comm_mct, only: seq_comm_setptrs, seq_comm_iamroot, seq_comm_iamin
-   use seq_comm_mct, only: num_inst_atm, num_inst_lnd, num_inst_rof
-   use seq_comm_mct, only: num_inst_ocn, num_inst_ice, num_inst_glc
-   use seq_comm_mct, only: num_inst_wav
-   use shr_orb_mod,  only: SHR_ORB_UNDEF_INT, SHR_ORB_UNDEF_REAL, shr_orb_params
+  use shr_kind_mod, only: SHR_KIND_CS, SHR_KIND_CL, SHR_KIND_IN,             &
+       SHR_KIND_R8, SHR_KIND_I8
+  use shr_sys_mod,  only: shr_sys_flush, shr_sys_abort, shr_sys_getenv
+  use seq_comm_mct, only: logunit, loglevel, CPLID, seq_comm_gloroot
+  use seq_comm_mct, only: seq_comm_setptrs, seq_comm_iamroot, seq_comm_iamin
+  use seq_comm_mct, only: num_inst_atm, num_inst_lnd, num_inst_rof
+  use seq_comm_mct, only: num_inst_ocn, num_inst_ice, num_inst_glc
+  use seq_comm_mct, only: num_inst_wav
+  use shr_orb_mod,  only: SHR_ORB_UNDEF_INT, SHR_ORB_UNDEF_REAL, shr_orb_params
 
-   implicit none
+  implicit none
 
-   private  ! default private
+  private  ! default private
 
-! !PUBLIC TYPES:
+  ! !PUBLIC TYPES:
 
-   public :: seq_infodata_type
+  public :: seq_infodata_type
 
-! !PUBLIC MEMBER FUNCTIONS
+  ! !PUBLIC MEMBER FUNCTIONS
 
-   public :: seq_infodata_Init            ! Initialize
-   public :: seq_infodata_Init2           ! Init after clocks initialized
-   public :: seq_infodata_GetData         ! Get values from object
-   public :: seq_infodata_PutData         ! Change values
-   public :: seq_infodata_Print           ! print current info
-   public :: seq_infodata_Exchange        ! exchange data across pes
+  public :: seq_infodata_Init            ! Initialize
+  public :: seq_infodata_Init2           ! Init after clocks initialized
+  public :: seq_infodata_GetData         ! Get values from object
+  public :: seq_infodata_PutData         ! Change values
+  public :: seq_infodata_Print           ! print current info
+  public :: seq_infodata_Exchange        ! exchange data across pes
 
-! !PUBLIC DATA MEMBERS:
+  ! !PUBLIC DATA MEMBERS:
 
-!EOP
+  !EOP
 
-   ! Strings of valid start_type options
-   character(len=*), public, parameter :: seq_infodata_start_type_start = "startup"
-   character(len=*), public, parameter :: seq_infodata_start_type_cont  = "continue"
-   character(len=*), public, parameter :: seq_infodata_start_type_brnch = "branch"
-   character(len=*), public, parameter :: seq_infodata_orb_fixed_year       = 'fixed_year'
-   character(len=*), public, parameter :: seq_infodata_orb_variable_year    = 'variable_year'
-   character(len=*), public, parameter :: seq_infodata_orb_fixed_parameters = 'fixed_parameters'
+  ! Strings of valid start_type options
+  character(len=*), public, parameter :: seq_infodata_start_type_start = "startup"
+  character(len=*), public, parameter :: seq_infodata_start_type_cont  = "continue"
+  character(len=*), public, parameter :: seq_infodata_start_type_brnch = "branch"
+  character(len=*), public, parameter :: seq_infodata_orb_fixed_year       = 'fixed_year'
+  character(len=*), public, parameter :: seq_infodata_orb_variable_year    = 'variable_year'
+  character(len=*), public, parameter :: seq_infodata_orb_fixed_parameters = 'fixed_parameters'
 
-   ! Type to hold pause/resume signaling information
-   type seq_pause_resume_type
-      private
-      character(SHR_KIND_CL) :: atm_resume(num_inst_atm) = ' ' ! atm resume file
-      character(SHR_KIND_CL) :: lnd_resume(num_inst_lnd) = ' ' ! lnd resume file
-      character(SHR_KIND_CL) :: ice_resume(num_inst_ice) = ' ' ! ice resume file
-      character(SHR_KIND_CL) :: ocn_resume(num_inst_ocn) = ' ' ! ocn resume file
-      character(SHR_KIND_CL) :: glc_resume(num_inst_glc) = ' ' ! glc resume file
-      character(SHR_KIND_CL) :: rof_resume(num_inst_rof) = ' ' ! rof resume file
-      character(SHR_KIND_CL) :: wav_resume(num_inst_wav) = ' ' ! wav resume file
-      character(SHR_KIND_CL) :: cpl_resume = ' '               ! cpl resume file
-   end type seq_pause_resume_type
+  ! Type to hold pause/resume signaling information
+  type seq_pause_resume_type
+     private
+     character(SHR_KIND_CL) :: atm_resume(num_inst_atm) = ' ' ! atm resume file
+     character(SHR_KIND_CL) :: lnd_resume(num_inst_lnd) = ' ' ! lnd resume file
+     character(SHR_KIND_CL) :: ice_resume(num_inst_ice) = ' ' ! ice resume file
+     character(SHR_KIND_CL) :: ocn_resume(num_inst_ocn) = ' ' ! ocn resume file
+     character(SHR_KIND_CL) :: glc_resume(num_inst_glc) = ' ' ! glc resume file
+     character(SHR_KIND_CL) :: rof_resume(num_inst_rof) = ' ' ! rof resume file
+     character(SHR_KIND_CL) :: wav_resume(num_inst_wav) = ' ' ! wav resume file
+     character(SHR_KIND_CL) :: cpl_resume = ' '               ! cpl resume file
+  end type seq_pause_resume_type
 
-   ! InputInfo derived type
+  ! InputInfo derived type
 
-   type seq_infodata_type
-      private     ! This type is opaque
+  type seq_infodata_type
+     private     ! This type is opaque
 
-      !--- set via namelist and held fixed ----
-      character(SHR_KIND_CS)  :: cime_model      ! acme or cesm
-      character(SHR_KIND_CL)  :: start_type      ! Type of startup
-      character(SHR_KIND_CL)  :: case_name       ! Short case identification
-      character(SHR_KIND_CL)  :: case_desc       ! Long description of this case
-      character(SHR_KIND_CL)  :: model_version   ! Model version
-      character(SHR_KIND_CS)  :: username        ! Current user
-      character(SHR_KIND_CS)  :: hostname        ! Current machine
-      character(SHR_KIND_CL)  :: timing_dir      ! Dir for timing files
-      character(SHR_KIND_CL)  :: tchkpt_dir      ! Dir for timing checkpoint files
-      logical                 :: aqua_planet     ! No ice/lnd, analytic ocn, perpetual time
-      integer(SHR_KIND_IN)    :: aqua_planet_sst ! aqua planet analytic sst type
-      logical                 :: run_barriers    ! barrier component run calls
-      logical                 :: brnch_retain_casename   ! If branch and can use same casename
-      logical                 :: read_restart    ! read the restart file, based on start_type
-      character(SHR_KIND_CL)  :: restart_pfile   ! Restart pointer file
-      character(SHR_KIND_CL)  :: restart_file    ! Full archive path to restart file
-      logical                 :: single_column   ! single column mode
-      real (SHR_KIND_R8)      :: scmlat          ! single column lat
-      real (SHR_KIND_R8)      :: scmlon          ! single column lon
-      character(SHR_KIND_CS)  :: logFilePostFix  ! postfix for output log files
-      character(SHR_KIND_CL)  :: outPathRoot     ! root for output log files
-      logical                 :: perpetual       ! perpetual flag
-      integer(SHR_KIND_IN)    :: perpetual_ymd   ! perpetual date
-      integer(SHR_KIND_IN)    :: orb_iyear       ! orbital year
-      integer(SHR_KIND_IN)    :: orb_iyear_align ! model year associated with orb year
-      character(SHR_KIND_CL)  :: orb_mode        ! orbital mode
-      real(SHR_KIND_R8)       :: orb_eccen       ! See shr_orb_mod
-      real(SHR_KIND_R8)       :: orb_obliq       ! See shr_orb_mod
-      real(SHR_KIND_R8)       :: orb_mvelp       ! See shr_orb_mod
-      real(SHR_KIND_R8)       :: orb_obliqr      ! See shr_orb_mod
-      real(SHR_KIND_R8)       :: orb_lambm0      ! See shr_orb_mod
-      real(SHR_KIND_R8)       :: orb_mvelpp      ! See shr_orb_mod
-      character(SHR_KIND_CS)  :: wv_sat_scheme   ! Water vapor saturation pressure scheme
-      real(SHR_KIND_R8)       :: wv_sat_transition_start ! Saturation transition range
-      logical                 :: wv_sat_use_tables   ! Saturation pressure lookup tables
-      real(SHR_KIND_R8)       :: wv_sat_table_spacing! Saturation pressure table resolution
-      character(SHR_KIND_CS)  :: tfreeze_option  ! Freezing point calculation
-      character(SHR_KIND_CL)  :: flux_epbal      ! selects E,P,R adjustment technique
-      logical                 :: flux_albav      ! T => no diurnal cycle in ocn albedos
-      logical                 :: flux_diurnal    ! T => diurnal cycle in atm/ocn fluxes
-      real(SHR_KIND_R8)       :: gust_fac        ! wind gustiness factor
-      character(SHR_KIND_CL)  :: glc_renormalize_smb ! Whether to renormalize smb sent from lnd -> glc
-      real(SHR_KIND_R8)       :: wall_time_limit ! force stop time limit (hours)
-      character(SHR_KIND_CS)  :: force_stop_at   ! when to force a stop (month, day, etc)
-      character(SHR_KIND_CL)  :: atm_gnam        ! atm grid
-      character(SHR_KIND_CL)  :: lnd_gnam        ! lnd grid
-      character(SHR_KIND_CL)  :: ocn_gnam        ! ocn grid
-      character(SHR_KIND_CL)  :: ice_gnam        ! ice grid
-      character(SHR_KIND_CL)  :: rof_gnam        ! rof grid
-      character(SHR_KIND_CL)  :: glc_gnam        ! glc grid
-      character(SHR_KIND_CL)  :: wav_gnam        ! wav grid
-      logical                 :: shr_map_dopole  ! pole corrections in shr_map_mod
-      character(SHR_KIND_CL)  :: vect_map        ! vector mapping option, none, cart3d, cart3d_diag, cart3d_uvw, cart3d_uvw_diag
-      character(SHR_KIND_CS)  :: aoflux_grid     ! grid for atm ocn flux calc
-      integer                 :: cpl_decomp      ! coupler decomp
-      character(SHR_KIND_CL)  :: cpl_seq_option  ! coupler sequencing option
+     !--- set via namelist and held fixed ----
+     character(SHR_KIND_CS)  :: cime_model      ! e3sm or cesm
+     character(SHR_KIND_CL)  :: start_type      ! Type of startup
+     character(SHR_KIND_CL)  :: case_name       ! Short case identification
+     character(SHR_KIND_CL)  :: case_desc       ! Long description of this case
+     character(SHR_KIND_CL)  :: model_version   ! Model version
+     character(SHR_KIND_CS)  :: username        ! Current user
+     character(SHR_KIND_CS)  :: hostname        ! Current machine
+     character(SHR_KIND_CL)  :: timing_dir      ! Dir for timing files
+     character(SHR_KIND_CL)  :: tchkpt_dir      ! Dir for timing checkpoint files
+     logical                 :: aqua_planet     ! No ice/lnd, analytic ocn, perpetual time
+     integer(SHR_KIND_IN)    :: aqua_planet_sst ! aqua planet analytic sst type
+     logical                 :: run_barriers    ! barrier component run calls
+     logical                 :: brnch_retain_casename   ! If branch and can use same casename
+     logical                 :: read_restart    ! read the restart file, based on start_type
+     character(SHR_KIND_CL)  :: restart_pfile   ! Restart pointer file
+     character(SHR_KIND_CL)  :: restart_file    ! Full archive path to restart file
+     logical                 :: single_column   ! single column mode
+     real (SHR_KIND_R8)      :: scmlat          ! single column lat
+     real (SHR_KIND_R8)      :: scmlon          ! single column lon
+     character(SHR_KIND_CS)  :: logFilePostFix  ! postfix for output log files
+     character(SHR_KIND_CL)  :: outPathRoot     ! root for output log files
+     logical                 :: perpetual       ! perpetual flag
+     integer(SHR_KIND_IN)    :: perpetual_ymd   ! perpetual date
+     integer(SHR_KIND_IN)    :: orb_iyear       ! orbital year
+     integer(SHR_KIND_IN)    :: orb_iyear_align ! model year associated with orb year
+     character(SHR_KIND_CL)  :: orb_mode        ! orbital mode
+     real(SHR_KIND_R8)       :: orb_eccen       ! See shr_orb_mod
+     real(SHR_KIND_R8)       :: orb_obliq       ! See shr_orb_mod
+     real(SHR_KIND_R8)       :: orb_mvelp       ! See shr_orb_mod
+     real(SHR_KIND_R8)       :: orb_obliqr      ! See shr_orb_mod
+     real(SHR_KIND_R8)       :: orb_lambm0      ! See shr_orb_mod
+     real(SHR_KIND_R8)       :: orb_mvelpp      ! See shr_orb_mod
+     character(SHR_KIND_CS)  :: wv_sat_scheme   ! Water vapor saturation pressure scheme
+     real(SHR_KIND_R8)       :: wv_sat_transition_start ! Saturation transition range
+     logical                 :: wv_sat_use_tables   ! Saturation pressure lookup tables
+     real(SHR_KIND_R8)       :: wv_sat_table_spacing! Saturation pressure table resolution
+     character(SHR_KIND_CS)  :: tfreeze_option  ! Freezing point calculation
+     character(SHR_KIND_CL)  :: flux_epbal      ! selects E,P,R adjustment technique
+     logical                 :: flux_albav      ! T => no diurnal cycle in ocn albedos
+     logical                 :: flux_diurnal    ! T => diurnal cycle in atm/ocn fluxes
+     logical                 :: coldair_outbreak_mod ! (Mahrt & Sun 1995,MWR)
+     real(SHR_KIND_R8)       :: flux_convergence   ! atmocn flux calc convergence value
+     integer                 :: flux_max_iteration ! max number of iterations of atmocn flux loop
+     real(SHR_KIND_R8)       :: gust_fac        ! wind gustiness factor
+     character(SHR_KIND_CL)  :: glc_renormalize_smb ! Whether to renormalize smb sent from lnd -> glc
+     real(SHR_KIND_R8)       :: wall_time_limit ! force stop time limit (hours)
+     character(SHR_KIND_CS)  :: force_stop_at   ! when to force a stop (month, day, etc)
+     character(SHR_KIND_CL)  :: atm_gnam        ! atm grid
+     character(SHR_KIND_CL)  :: lnd_gnam        ! lnd grid
+     character(SHR_KIND_CL)  :: ocn_gnam        ! ocn grid
+     character(SHR_KIND_CL)  :: ice_gnam        ! ice grid
+     character(SHR_KIND_CL)  :: rof_gnam        ! rof grid
+     character(SHR_KIND_CL)  :: glc_gnam        ! glc grid
+     character(SHR_KIND_CL)  :: wav_gnam        ! wav grid
+     logical                 :: shr_map_dopole  ! pole corrections in shr_map_mod
+     character(SHR_KIND_CL)  :: vect_map        ! vector mapping option, none, cart3d, cart3d_diag, cart3d_uvw, cart3d_uvw_diag
+     character(SHR_KIND_CS)  :: aoflux_grid     ! grid for atm ocn flux calc
+     integer                 :: cpl_decomp      ! coupler decomp
+     character(SHR_KIND_CL)  :: cpl_seq_option  ! coupler sequencing option
 
-      logical                 :: do_budgets      ! do heat/water budgets diagnostics
-      logical                 :: do_histinit     ! write out initial history file
-      integer                 :: budget_inst     ! instantaneous budget level
-      integer                 :: budget_daily    ! daily budget level
-      integer                 :: budget_month    ! monthly budget level
-      integer                 :: budget_ann      ! annual budget level
-      integer                 :: budget_ltann    ! long term budget level written at end of year
-      integer                 :: budget_ltend    ! long term budget level written at end of run
-      logical                 :: drv_threading   ! is threading control in driver turned on
-      logical                 :: histaux_a2x     ! cpl writes aux hist files: a2x every c2a comm
-      logical                 :: histaux_a2x1hri ! cpl writes aux hist files: a2x 1hr instaneous values
-      logical                 :: histaux_a2x1hr  ! cpl writes aux hist files: a2x 1hr
-      logical                 :: histaux_a2x3hr  ! cpl writes aux hist files: a2x 3hr states
-      logical                 :: histaux_a2x3hrp ! cpl writes aux hist files: a2x 3hr precip
-      logical                 :: histaux_a2x24hr ! cpl writes aux hist files: a2x daily all
-      logical                 :: histaux_l2x1yr  ! cpl writes aux hist files: l2x annual all
-      logical                 :: histaux_l2x     ! cpl writes aux hist files: l2x every c2l comm
-      logical                 :: histaux_r2x     ! cpl writes aux hist files: r2x every c2o comm
-      logical                 :: histavg_atm     ! cpl writes atm fields in average history file
-      logical                 :: histavg_lnd     ! cpl writes lnd fields in average history file
-      logical                 :: histavg_ocn     ! cpl writes ocn fields in average history file
-      logical                 :: histavg_ice     ! cpl writes ice fields in average history file
-      logical                 :: histavg_rof     ! cpl writes rof fields in average history file
-      logical                 :: histavg_glc     ! cpl writes glc fields in average history file
-      logical                 :: histavg_wav     ! cpl writes wav fields in average history file
-      logical                 :: histavg_xao     ! cpl writes flux xao fields in average history file
-      real(SHR_KIND_R8)       :: eps_frac        ! fraction error tolerance
-      real(SHR_KIND_R8)       :: eps_amask       ! atm mask error tolerance
-      real(SHR_KIND_R8)       :: eps_agrid       ! atm grid error tolerance
-      real(SHR_KIND_R8)       :: eps_aarea       ! atm area error tolerance
-      real(SHR_KIND_R8)       :: eps_omask       ! ocn mask error tolerance
-      real(SHR_KIND_R8)       :: eps_ogrid       ! ocn grid error tolerance
-      real(SHR_KIND_R8)       :: eps_oarea       ! ocn area error tolerance
-      logical                 :: mct_usealltoall ! flag for mct alltoall
-      logical                 :: mct_usevector   ! flag for mct vector
+     logical                 :: do_budgets      ! do heat/water budgets diagnostics
+     logical                 :: do_histinit     ! write out initial history file
+     integer                 :: budget_inst     ! instantaneous budget level
+     integer                 :: budget_daily    ! daily budget level
+     integer                 :: budget_month    ! monthly budget level
+     integer                 :: budget_ann      ! annual budget level
+     integer                 :: budget_ltann    ! long term budget level written at end of year
+     integer                 :: budget_ltend    ! long term budget level written at end of run
+     logical                 :: drv_threading   ! is threading control in driver turned on
+     logical                 :: histaux_a2x     ! cpl writes aux hist files: a2x every c2a comm
+     logical                 :: histaux_a2x1hri ! cpl writes aux hist files: a2x 1hr instaneous values
+     logical                 :: histaux_a2x1hr  ! cpl writes aux hist files: a2x 1hr
+     logical                 :: histaux_a2x3hr  ! cpl writes aux hist files: a2x 3hr states
+     logical                 :: histaux_a2x3hrp ! cpl writes aux hist files: a2x 3hr precip
+     logical                 :: histaux_a2x24hr ! cpl writes aux hist files: a2x daily all
+     logical                 :: histaux_l2x1yrg ! cpl writes aux hist files: l2x annual glc forcings
+     logical                 :: histaux_l2x     ! cpl writes aux hist files: l2x every c2l comm
+     logical                 :: histaux_r2x     ! cpl writes aux hist files: r2x every c2o comm
+     logical                 :: histaux_double_precision ! if true, use double-precision for cpl aux hist files
+     logical                 :: histavg_atm     ! cpl writes atm fields in average history file
+     logical                 :: histavg_lnd     ! cpl writes lnd fields in average history file
+     logical                 :: histavg_ocn     ! cpl writes ocn fields in average history file
+     logical                 :: histavg_ice     ! cpl writes ice fields in average history file
+     logical                 :: histavg_rof     ! cpl writes rof fields in average history file
+     logical                 :: histavg_glc     ! cpl writes glc fields in average history file
+     logical                 :: histavg_wav     ! cpl writes wav fields in average history file
+     logical                 :: histavg_xao     ! cpl writes flux xao fields in average history file
+     real(SHR_KIND_R8)       :: eps_frac        ! fraction error tolerance
+     real(SHR_KIND_R8)       :: eps_amask       ! atm mask error tolerance
+     real(SHR_KIND_R8)       :: eps_agrid       ! atm grid error tolerance
+     real(SHR_KIND_R8)       :: eps_aarea       ! atm area error tolerance
+     real(SHR_KIND_R8)       :: eps_omask       ! ocn mask error tolerance
+     real(SHR_KIND_R8)       :: eps_ogrid       ! ocn grid error tolerance
+     real(SHR_KIND_R8)       :: eps_oarea       ! ocn area error tolerance
+     logical                 :: mct_usealltoall ! flag for mct alltoall
+     logical                 :: mct_usevector   ! flag for mct vector
 
-      logical                 :: reprosum_use_ddpdd  ! use ddpdd algorithm
-      real(SHR_KIND_R8)       :: reprosum_diffmax    ! maximum difference tolerance
-      logical                 :: reprosum_recompute  ! recompute reprosum with nonscalable algorithm
-                                                     ! if reprosum_diffmax is exceeded
+     logical                 :: reprosum_use_ddpdd  ! use ddpdd algorithm
+     real(SHR_KIND_R8)       :: reprosum_diffmax    ! maximum difference tolerance
+     logical                 :: reprosum_recompute  ! recompute reprosum with nonscalable algorithm
+     ! if reprosum_diffmax is exceeded
 
-      !--- set via namelist and may be time varying ---
-      integer(SHR_KIND_IN)    :: info_debug      ! debug level
-      logical                 :: bfbflag         ! turn on bfb option
-      logical                 :: esmf_map_flag   ! do we use esmf mapping
+     !--- set via namelist and may be time varying ---
+     integer(SHR_KIND_IN)    :: info_debug      ! debug level
+     logical                 :: bfbflag         ! turn on bfb option
+     logical                 :: esmf_map_flag   ! do we use esmf mapping
 
-      !--- set via components and held fixed ---
-      logical                 :: atm_present     ! does component model exist
-      logical                 :: atm_prognostic  ! does component model need input data from driver
-      logical                 :: lnd_present     ! does component model exist
-      logical                 :: lnd_prognostic  ! does component model need input data from driver
-      logical                 :: rof_present     ! does rof component exist
-      logical                 :: rofice_present  ! does rof have iceberg coupling on
-      logical                 :: rof_prognostic  ! does rof component need input data
-      logical                 :: flood_present   ! does rof have flooding on
-      logical                 :: ocn_present     ! does component model exist
-      logical                 :: ocn_prognostic  ! does component model need input data from driver
-      logical                 :: ocnrof_prognostic ! does component need rof data
-      logical                 :: ice_present     ! does component model exist
-      logical                 :: ice_prognostic  ! does component model need input data from driver
-      logical                 :: iceberg_prognostic ! does the ice model support icebergs
-      logical                 :: glc_present     ! does component model exist
-      logical                 :: glclnd_present  ! does glc have land coupling fields on
-      logical                 :: glcocn_present  ! does glc have ocean runoff on
-      logical                 :: glcice_present  ! does glc have iceberg coupling on
-      logical                 :: glc_prognostic  ! does component model need input data from driver
-      logical                 :: glc_coupled_fluxes ! does glc send fluxes to other components (only relevant if glc_present is .true.)
-      logical                 :: wav_present     ! does component model exist
-      logical                 :: wav_prognostic  ! does component model need input data from driver
-      logical                 :: esp_present     ! does component model exist
-      logical                 :: esp_prognostic  ! does component model need input data from driver
-      logical                 :: dead_comps      ! do we have dead models
-      integer(SHR_KIND_IN)    :: atm_nx          ! nx, ny of "2d" grid
-      integer(SHR_KIND_IN)    :: atm_ny          ! nx, ny of "2d" grid
-      integer(SHR_KIND_IN)    :: lnd_nx          ! nx, ny of "2d" grid
-      integer(SHR_KIND_IN)    :: lnd_ny          ! nx, ny of "2d" grid
-      integer(SHR_KIND_IN)    :: ice_nx          ! nx, ny of "2d" grid
-      integer(SHR_KIND_IN)    :: ice_ny          ! nx, ny of "2d" grid
-      integer(SHR_KIND_IN)    :: ocn_nx          ! nx, ny of "2d" grid
-      integer(SHR_KIND_IN)    :: ocn_ny          ! nx, ny of "2d" grid
-      integer(SHR_KIND_IN)    :: rof_nx          ! nx, ny of "2d" grid
-      integer(SHR_KIND_IN)    :: rof_ny          ! nx, ny of "2d" grid
-      integer(SHR_KIND_IN)    :: glc_nx          ! nx, ny of "2d" grid
-      integer(SHR_KIND_IN)    :: glc_ny          ! nx, ny of "2d" grid
-      integer(SHR_KIND_IN)    :: wav_nx          ! nx, ny of "2d" grid
-      integer(SHR_KIND_IN)    :: wav_ny          ! nx, ny of "2d" grid
+     !--- set via components and held fixed ---
+     logical                 :: atm_present     ! does component model exist
+     logical                 :: atm_prognostic  ! does component model need input data from driver
+     logical                 :: lnd_present     ! does component model exist
+     logical                 :: lnd_prognostic  ! does component model need input data from driver
+     logical                 :: rof_present     ! does rof component exist
+     logical                 :: rofice_present  ! does rof have iceberg coupling on
+     logical                 :: rof_prognostic  ! does rof component need input data
+     logical                 :: flood_present   ! does rof have flooding on
+     logical                 :: ocn_present     ! does component model exist
+     logical                 :: ocn_prognostic  ! does component model need input data from driver
+     logical                 :: ocnrof_prognostic ! does component need rof data
+     logical                 :: ice_present     ! does component model exist
+     logical                 :: ice_prognostic  ! does component model need input data from driver
+     logical                 :: iceberg_prognostic ! does the ice model support icebergs
+     logical                 :: glc_present     ! does component model exist
+     logical                 :: glclnd_present  ! does glc have land coupling fields on
+     logical                 :: glcocn_present  ! does glc have ocean runoff on
+     logical                 :: glcice_present  ! does glc have iceberg coupling on
+     logical                 :: glc_prognostic  ! does component model need input data from driver
+     logical                 :: glc_coupled_fluxes ! does glc send fluxes to other components (only relevant if glc_present is .true.)
+     logical                 :: wav_present     ! does component model exist
+     logical                 :: wav_prognostic  ! does component model need input data from driver
+     logical                 :: esp_present     ! does component model exist
+     logical                 :: esp_prognostic  ! does component model need input data from driver
+     logical                 :: dead_comps      ! do we have dead models
+     integer(SHR_KIND_IN)    :: atm_nx          ! nx, ny of "2d" grid
+     integer(SHR_KIND_IN)    :: atm_ny          ! nx, ny of "2d" grid
+     integer(SHR_KIND_IN)    :: lnd_nx          ! nx, ny of "2d" grid
+     integer(SHR_KIND_IN)    :: lnd_ny          ! nx, ny of "2d" grid
+     integer(SHR_KIND_IN)    :: ice_nx          ! nx, ny of "2d" grid
+     integer(SHR_KIND_IN)    :: ice_ny          ! nx, ny of "2d" grid
+     integer(SHR_KIND_IN)    :: ocn_nx          ! nx, ny of "2d" grid
+     integer(SHR_KIND_IN)    :: ocn_ny          ! nx, ny of "2d" grid
+     integer(SHR_KIND_IN)    :: rof_nx          ! nx, ny of "2d" grid
+     integer(SHR_KIND_IN)    :: rof_ny          ! nx, ny of "2d" grid
+     integer(SHR_KIND_IN)    :: glc_nx          ! nx, ny of "2d" grid
+     integer(SHR_KIND_IN)    :: glc_ny          ! nx, ny of "2d" grid
+     integer(SHR_KIND_IN)    :: wav_nx          ! nx, ny of "2d" grid
+     integer(SHR_KIND_IN)    :: wav_ny          ! nx, ny of "2d" grid
 
-      !--- set via components and may be time varying ---
-      real(SHR_KIND_R8)       :: nextsw_cday     ! calendar of next atm shortwave
-      real(SHR_KIND_R8)       :: precip_fact     ! precip factor
-      integer(SHR_KIND_IN)    :: atm_phase       ! atm phase
-      integer(SHR_KIND_IN)    :: lnd_phase       ! lnd phase
-      integer(SHR_KIND_IN)    :: ice_phase       ! ice phase
-      integer(SHR_KIND_IN)    :: ocn_phase       ! ocn phase
-      integer(SHR_KIND_IN)    :: glc_phase       ! glc phase
-      integer(SHR_KIND_IN)    :: rof_phase       ! rof phase
-      integer(SHR_KIND_IN)    :: wav_phase       ! wav phase
-      integer(SHR_KIND_IN)    :: esp_phase       ! esp phase
-      logical                 :: atm_aero        ! atmosphere aerosols
-      logical                 :: glc_g2lupdate   ! update glc2lnd fields in lnd model
-      type(seq_pause_resume_type), pointer :: pause_resume => NULL()
-      real(shr_kind_r8) :: max_cplstep_time  ! abort if cplstep time exceeds this value
-      !--- set from restart file ---
-      character(SHR_KIND_CL)  :: rest_case_name  ! Short case identification
-      !--- set by driver and may be time varying
-      logical                 :: glc_valid_input  ! is valid accumulated data being sent to prognostic glc
-   end type seq_infodata_type
+     !--- set via components and may be time varying ---
+     real(SHR_KIND_R8)       :: nextsw_cday     ! calendar of next atm shortwave
+     real(SHR_KIND_R8)       :: precip_fact     ! precip factor
+     integer(SHR_KIND_IN)    :: atm_phase       ! atm phase
+     integer(SHR_KIND_IN)    :: lnd_phase       ! lnd phase
+     integer(SHR_KIND_IN)    :: ice_phase       ! ice phase
+     integer(SHR_KIND_IN)    :: ocn_phase       ! ocn phase
+     integer(SHR_KIND_IN)    :: glc_phase       ! glc phase
+     integer(SHR_KIND_IN)    :: rof_phase       ! rof phase
+     integer(SHR_KIND_IN)    :: wav_phase       ! wav phase
+     integer(SHR_KIND_IN)    :: esp_phase       ! esp phase
+     logical                 :: atm_aero        ! atmosphere aerosols
+     logical                 :: glc_g2lupdate   ! update glc2lnd fields in lnd model
+     type(seq_pause_resume_type), pointer :: pause_resume => NULL()
+     real(shr_kind_r8) :: max_cplstep_time  ! abort if cplstep time exceeds this value
+     !--- set from restart file ---
+     character(SHR_KIND_CL)  :: rest_case_name  ! Short case identification
+     !--- set by driver and may be time varying
+     logical                 :: glc_valid_input  ! is valid accumulated data being sent to prognostic glc
+     character(SHR_KIND_CL)  :: model_doi_url
+  end type seq_infodata_type
 
-   ! --- public interfaces --------------------------------------------------------
-   interface seq_infodata_GetData
+  ! --- public interfaces --------------------------------------------------------
+  interface seq_infodata_GetData
      module procedure seq_infodata_GetData_explicit
 #ifndef CPRPGI
      module procedure seq_infodata_GetData_bytype
 #endif
-! ^ ifndef CPRPGI
-   end interface
+     ! ^ ifndef CPRPGI
+  end interface seq_infodata_GetData
 
-   interface seq_infodata_PutData
+  interface seq_infodata_PutData
      module procedure seq_infodata_PutData_explicit
 #ifndef CPRPGI
      module procedure seq_infodata_PutData_bytype
 #endif
-! ^ ifndef CPRPGI
-   end interface
+     ! ^ ifndef CPRPGI
+  end interface seq_infodata_PutData
 
-   ! --- Private local data -------------------------------------------------------
+  ! --- Private local data -------------------------------------------------------
 
-   character(len=*),parameter :: sp_str = 'str_undefined'
+  character(len=*),parameter :: sp_str = 'str_undefined'
 
-!===============================================================================
+  !===============================================================================
 CONTAINS
-!===============================================================================
+  !===============================================================================
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: seq_infodata_Init -- read in CIME shared namelist
-!
-! !DESCRIPTION:
-!
-!     Read in input from seq_infodata_inparm namelist, output cime derived type for
-!     miscillaneous info.
-!
-! !INTERFACE: ------------------------------------------------------------------
+  !===============================================================================
+  !BOP ===========================================================================
+  !
+  ! !IROUTINE: seq_infodata_Init -- read in CIME shared namelist
+  !
+  ! !DESCRIPTION:
+  !
+  !     Read in input from seq_infodata_inparm namelist, output cime derived type for
+  !     miscillaneous info.
+  !
+  ! !INTERFACE: ------------------------------------------------------------------
 
-SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
+  SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
 
-! !USES:
+    ! !USES:
 
-   use shr_file_mod,    only : shr_file_getUnit, shr_file_freeUnit
-   use shr_string_mod,  only : shr_string_toUpper, shr_string_listAppend
-   use shr_mpi_mod,     only : shr_mpi_bcast
-   use seq_timemgr_mod, only : seq_timemgr_pause_active
-   use seq_io_read_mod, only : seq_io_read
-   use pio,             only : file_desc_t
+    use shr_file_mod,    only : shr_file_getUnit, shr_file_freeUnit
+    use shr_string_mod,  only : shr_string_toUpper, shr_string_listAppend
+    use shr_mpi_mod,     only : shr_mpi_bcast
+    use seq_timemgr_mod, only : seq_timemgr_pause_active
+    use seq_io_read_mod, only : seq_io_read
+    use pio,             only : file_desc_t
 
-! !INPUT/OUTPUT PARAMETERS:
+    ! !INPUT/OUTPUT PARAMETERS:
 
-   type(seq_infodata_type), intent(INOUT) :: infodata  ! infodata object
-   character(len=*),        intent(IN)    :: nmlfile   ! Name-list filename
-   integer(SHR_KIND_IN),    intent(IN)    :: ID        ! seq_comm ID
-   type(file_desc_T) :: pioid
-   character(len=*), optional, intent(IN) :: cpl_tag   ! cpl instance suffix
-!EOP
+    type(seq_infodata_type), intent(INOUT) :: infodata  ! infodata object
+    character(len=*),        intent(IN)    :: nmlfile   ! Name-list filename
+    integer(SHR_KIND_IN),    intent(IN)    :: ID        ! seq_comm ID
+    type(file_desc_T) :: pioid
+    character(len=*), optional, intent(IN) :: cpl_tag   ! cpl instance suffix
+    !EOP
 
     !----- local -----
     character(len=*),    parameter :: subname = '(seq_infodata_Init) '
@@ -315,7 +314,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
     integer :: unitn              ! Namelist unit number to read
 
     !------ namelist -----
-    character(SHR_KIND_CS) :: cime_model         ! acme or cesm
+    character(SHR_KIND_CS) :: cime_model         ! e3sm or cesm
     character(SHR_KIND_CL) :: case_desc          ! Case long description
     character(SHR_KIND_CL) :: case_name          ! Case short name
     character(SHR_KIND_CL) :: model_version      ! Model version
@@ -358,6 +357,9 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
     character(SHR_KIND_CL) :: flux_epbal         ! selects E,P,R adjustment technique
     logical                :: flux_albav         ! T => no diurnal cycle in ocn albedos
     logical                :: flux_diurnal       ! T => diurnal cycle in atm/ocn fluxes
+    logical                 :: coldair_outbreak_mod ! (Mahrt & Sun 1995,MWR)
+    real(SHR_KIND_R8)       :: flux_convergence   ! atmocn flux calc convergence value
+    integer                 :: flux_max_iteration ! max number of iterations of atmocn flux loop
     real(SHR_KIND_R8)      :: gust_fac           ! wind gustiness factor
     character(SHR_KIND_CL) :: glc_renormalize_smb ! Whether to renormalize smb sent from lnd -> glc
     real(SHR_KIND_R8)      :: wall_time_limit    ! force stop time limit (hours)
@@ -389,9 +391,10 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
     logical                :: histaux_a2x3hr     ! cpl writes aux hist files: a2x 3hr states
     logical                :: histaux_a2x3hrp    ! cpl writes aux hist files: a2x 2hr precip
     logical                :: histaux_a2x24hr    ! cpl writes aux hist files: a2x daily all
-    logical                :: histaux_l2x1yr     ! cpl writes aux hist files: l2x annual all
+    logical                :: histaux_l2x1yrg    ! cpl writes aux hist files: l2x annual glc forcings
     logical                :: histaux_l2x        ! cpl writes aux hist files: l2x every c2l comm
     logical                :: histaux_r2x        ! cpl writes aux hist files: r2x every c2o comm
+    logical                :: histaux_double_precision ! if true, use double-precision for cpl aux hist files
     logical                :: histavg_atm        ! cpl writes atm fields in average history file
     logical                :: histavg_lnd        ! cpl writes lnd fields in average history file
     logical                :: histavg_ocn        ! cpl writes ocn fields in average history file
@@ -411,10 +414,11 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
     logical                :: reprosum_use_ddpdd ! use ddpdd algorithm
     real(SHR_KIND_R8)      :: reprosum_diffmax   ! maximum difference tolerance
     logical                :: reprosum_recompute ! recompute reprosum with nonscalable algorithm
-                                                 ! if reprosum_diffmax is exceeded
+    ! if reprosum_diffmax is exceeded
     logical                :: mct_usealltoall    ! flag for mct alltoall
     logical                :: mct_usevector      ! flag for mct vector
-    real(shr_kind_r8) :: max_cplstep_time  ! abort if cplstep time exceeds this value
+    real(shr_kind_r8)      :: max_cplstep_time   ! abort if cplstep time exceeds this value
+    character(SHR_KIND_CL) :: model_doi_url
 
     namelist /seq_infodata_inparm/  &
          cime_model, case_desc, case_name, start_type, tchkpt_dir,     &
@@ -423,7 +427,9 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
          brnch_retain_casename, info_debug, bfbflag,       &
          restart_pfile, restart_file, run_barriers,        &
          single_column, scmlat, force_stop_at,             &
-         scmlon, logFilePostFix, outPathRoot, flux_diurnal, gust_fac,&
+         scmlon, logFilePostFix, outPathRoot, flux_diurnal,&
+         coldair_outbreak_mod, &
+         flux_convergence, flux_max_iteration, gust_fac   ,&
          perpetual, perpetual_ymd, flux_epbal, flux_albav, &
          orb_iyear_align, orb_mode, wall_time_limit,       &
          orb_iyear, orb_obliq, orb_eccen, orb_mvelp,       &
@@ -439,16 +445,17 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
          histaux_a2x,histaux_a2x1hri,histaux_a2x1hr,       &
          histaux_a2x3hr,histaux_a2x3hrp,                   &
          histaux_a2x24hr,histaux_l2x   ,histaux_r2x,       &
+         histaux_double_precision,                         &
          histavg_atm, histavg_lnd, histavg_ocn, histavg_ice, &
          histavg_rof, histavg_glc, histavg_wav, histavg_xao, &
-         histaux_l2x1yr, cpl_seq_option,                   &
+         histaux_l2x1yrg, cpl_seq_option,                   &
          eps_frac, eps_amask,                   &
          eps_agrid, eps_aarea, eps_omask, eps_ogrid,       &
          eps_oarea, esmf_map_flag,                         &
          reprosum_use_ddpdd, reprosum_diffmax, reprosum_recompute, &
-         mct_usealltoall, mct_usevector, max_cplstep_time
+         mct_usealltoall, mct_usevector, max_cplstep_time, model_doi_url
 
-!-------------------------------------------------------------------------------
+    !-------------------------------------------------------------------------------
 
     call seq_comm_setptrs(ID,mpicom=mpicom)
 
@@ -499,6 +506,9 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
        flux_epbal            = 'off'
        flux_albav            = .false.
        flux_diurnal          = .false.
+       coldair_outbreak_mod = .false.
+       flux_convergence      = 0.0_SHR_KIND_R8
+       flux_max_iteration    = 2
        gust_fac              = huge(1.0_SHR_KIND_R8)
        glc_renormalize_smb   = 'on_if_glc_coupled_fluxes'
        wall_time_limit       = -1.0
@@ -529,9 +539,10 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
        histaux_a2x3hr        = .false.
        histaux_a2x3hrp       = .false.
        histaux_a2x24hr       = .false.
-       histaux_l2x1yr        = .false.
+       histaux_l2x1yrg       = .false.
        histaux_l2x           = .false.
        histaux_r2x           = .false.
+       histaux_double_precision = .false.
        histavg_atm           = .true.
        histavg_lnd           = .true.
        histavg_ocn           = .true.
@@ -554,6 +565,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
        mct_usealltoall       = .false.
        mct_usevector         = .false.
        max_cplstep_time      = 0.0
+       model_doi_url        = 'unset'
 
        !---------------------------------------------------------------------------
        ! Read in namelist
@@ -566,7 +578,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
           read(unitn,nml=seq_infodata_inparm,iostat=ierr)
           if (ierr < 0) then
              call shr_sys_abort( subname//':: namelist read returns an'// &
-                                 ' end of file or end of record condition' )
+                  ' end of file or end of record condition' )
           end if
        end do
        close(unitn)
@@ -594,7 +606,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
           if (len(cpl_tag) > 0) then
              if (trim(restart_file) /= trim(sp_str)) then
                 write(logunit,*) trim(subname),' ERROR: restart_file can '//&
-                'only be read from restart pointer files when using multiple couplers '
+                     'only be read from restart pointer files when using multiple couplers '
                 call shr_sys_abort(subname//' ERROR: invalid settings for restart_file ')
              end if
           end if
@@ -619,6 +631,9 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
        infodata%flux_epbal            = flux_epbal
        infodata%flux_albav            = flux_albav
        infodata%flux_diurnal          = flux_diurnal
+       infodata%flux_convergence      = flux_convergence
+       infodata%coldair_outbreak_mod      = coldair_outbreak_mod
+       infodata%flux_max_iteration    = flux_max_iteration
        infodata%gust_fac              = gust_fac
        infodata%glc_renormalize_smb   = glc_renormalize_smb
        infodata%wall_time_limit       = wall_time_limit
@@ -649,9 +664,10 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
        infodata%histaux_a2x3hr        = histaux_a2x3hr
        infodata%histaux_a2x3hrp       = histaux_a2x3hrp
        infodata%histaux_a2x24hr       = histaux_a2x24hr
-       infodata%histaux_l2x1yr        = histaux_l2x1yr
+       infodata%histaux_l2x1yrg       = histaux_l2x1yrg
        infodata%histaux_l2x           = histaux_l2x
        infodata%histaux_r2x           = histaux_r2x
+       infodata%histaux_double_precision = histaux_double_precision
        infodata%histavg_atm           = histavg_atm
        infodata%histavg_lnd           = histavg_lnd
        infodata%histavg_ocn           = histavg_ocn
@@ -742,6 +758,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
        nullify(infodata%pause_resume)
 
        infodata%max_cplstep_time = max_cplstep_time
+       infodata%model_doi_url = model_doi_url
        !---------------------------------------------------------------
        ! check orbital mode, reset unused parameters, validate settings
        !---------------------------------------------------------------
@@ -759,7 +776,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
           orb_eccen = SHR_ORB_UNDEF_REAL
           orb_mvelp = SHR_ORB_UNDEF_REAL
           if (orb_iyear       == SHR_ORB_UNDEF_INT .or. &
-              orb_iyear_align == SHR_ORB_UNDEF_INT) then
+               orb_iyear_align == SHR_ORB_UNDEF_INT) then
              write(logunit,*) trim(subname),' ERROR: invalid settings orb_mode =',trim(orb_mode)
              write(logunit,*) trim(subname),' ERROR: variable_year settings = ',orb_iyear,orb_iyear_align
              call shr_sys_abort(subname//' ERROR: invalid settings for orb_mode '//trim(orb_mode))
@@ -769,8 +786,8 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
           orb_iyear = SHR_ORB_UNDEF_INT
           orb_iyear_align = SHR_ORB_UNDEF_INT
           if (orb_eccen == SHR_ORB_UNDEF_REAL .or. &
-              orb_obliq == SHR_ORB_UNDEF_REAL .or. &
-              orb_mvelp == SHR_ORB_UNDEF_REAL) then
+               orb_obliq == SHR_ORB_UNDEF_REAL .or. &
+               orb_mvelp == SHR_ORB_UNDEF_REAL) then
              write(logunit,*) trim(subname),' ERROR: invalid settings orb_mode =',trim(orb_mode)
              write(logunit,*) trim(subname),' ERROR: orb_eccen = ',orb_eccen
              write(logunit,*) trim(subname),' ERROR: orb_obliq = ',orb_obliq
@@ -782,7 +799,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
        endif
 
        call shr_orb_params(orb_iyear, orb_eccen, orb_obliq, orb_mvelp, &
-                           orb_obliqr, orb_lambm0, orb_mvelpp, .true.)
+            orb_obliqr, orb_lambm0, orb_mvelpp, .true.)
 
        infodata%orb_mode   = orb_mode
        infodata%orb_iyear  = orb_iyear
@@ -798,7 +815,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
        infodata%rest_case_name = ' '
        infodata%read_restart = .false.
        if (trim(start_type) == trim(seq_infodata_start_type_cont) .or. &
-           trim(start_type) == trim(seq_infodata_start_type_brnch)) then
+            trim(start_type) == trim(seq_infodata_start_type_brnch)) then
           infodata%read_restart = .true.
        endif
 
@@ -814,7 +831,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
           if (trim(infodata%restart_file) == trim(sp_str)) then
              unitn = shr_file_getUnit()
              if (loglevel > 0) write(logunit,"(3A)") subname," read rpointer file ", &
-                trim(infodata%restart_pfile)
+                  trim(infodata%restart_pfile)
              open(unitn, file=infodata%restart_pfile, form='FORMATTED', status='old',iostat=ierr)
              if (ierr < 0) then
                 call shr_sys_abort( subname//':: rpointer file open returns an'// &
@@ -828,7 +845,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
              close(unitn)
              call shr_file_freeUnit( unitn )
              write(logunit,"(3A)") subname,' restart file from rpointer= ', &
-                trim(infodata%restart_file)
+                  trim(infodata%restart_file)
           endif
        endif
        call shr_mpi_bcast(infodata%restart_file,mpicom)
@@ -874,269 +891,278 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
 
     call seq_infodata_bcast(infodata,mpicom)
 
-END SUBROUTINE seq_infodata_Init
+  END SUBROUTINE seq_infodata_Init
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: seq_infodata_Init2 -- initialize infodata structures
-!
-! !DESCRIPTION:
-!
-!     Initialize infodata items that depend on the time manager setup
-!
-! !INTERFACE: ------------------------------------------------------------------
+  !===============================================================================
+  !BOP ===========================================================================
+  !
+  ! !IROUTINE: seq_infodata_Init2 -- initialize infodata structures
+  !
+  ! !DESCRIPTION:
+  !
+  !     Initialize infodata items that depend on the time manager setup
+  !
+  ! !INTERFACE: ------------------------------------------------------------------
 
-SUBROUTINE seq_infodata_Init2(infodata, ID)
+  SUBROUTINE seq_infodata_Init2(infodata, ID)
 
-! !USES:
+    ! !USES:
 
-   use seq_timemgr_mod, only : seq_timemgr_pause_active
+    use seq_timemgr_mod, only : seq_timemgr_pause_active
 
-! !INPUT/OUTPUT PARAMETERS:
+    ! !INPUT/OUTPUT PARAMETERS:
 
-   type(seq_infodata_type), intent(INOUT) :: infodata  ! infodata object
-   integer(SHR_KIND_IN),    intent(IN)    :: ID        ! seq_comm ID
-!EOP
+    type(seq_infodata_type), intent(INOUT) :: infodata  ! infodata object
+    integer(SHR_KIND_IN),    intent(IN)    :: ID        ! seq_comm ID
+    !EOP
 
-   !----- local -----
-   integer :: mpicom             ! MPI communicator
+    !----- local -----
+    integer :: mpicom             ! MPI communicator
 
-   call seq_comm_setptrs(ID, mpicom=mpicom)
-   !----------------------------------------------------------
-   !| If pause/resume is active, initialize the resume data
-   !----------------------------------------------------------
-   if (seq_timemgr_pause_active() .and. (.not. associated(infodata%pause_resume))) then
-      allocate(infodata%pause_resume)
-   end if
-   call seq_infodata_bcast(infodata, mpicom)
+    call seq_comm_setptrs(ID, mpicom=mpicom)
+    !----------------------------------------------------------
+    !| If pause/resume is active, initialize the resume data
+    !----------------------------------------------------------
+    if (seq_timemgr_pause_active() .and. (.not. associated(infodata%pause_resume))) then
+       allocate(infodata%pause_resume)
+    end if
+    call seq_infodata_bcast(infodata, mpicom)
 
-END SUBROUTINE seq_infodata_Init2
+  END SUBROUTINE seq_infodata_Init2
 
-!===============================================================================
-!===============================================================================
-! !IROUTINE: seq_infodata_GetData_explicit -- Get values from infodata object
-!
-! !DESCRIPTION:
-!
-!     Get values out of the infodata object.
-!
-! !INTERFACE: ------------------------------------------------------------------
+  !===============================================================================
+  !===============================================================================
+  ! !IROUTINE: seq_infodata_GetData_explicit -- Get values from infodata object
+  !
+  ! !DESCRIPTION:
+  !
+  !     Get values out of the infodata object.
+  !
+  ! !INTERFACE: ------------------------------------------------------------------
 
-SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_desc, timing_dir,  &
-           model_version, username, hostname, rest_case_name, tchkpt_dir,     &
-           start_type, restart_pfile, restart_file, perpetual, perpetual_ymd, &
-           aqua_planet,aqua_planet_sst, brnch_retain_casename, &
-           single_column, scmlat,scmlon,logFilePostFix, outPathRoot,          &
-           atm_present, atm_prognostic, lnd_present, lnd_prognostic, rof_prognostic, &
-           rof_present, ocn_present, ocn_prognostic, ocnrof_prognostic,       &
-           ice_present, ice_prognostic, glc_present, glc_prognostic,          &
-           glc_coupled_fluxes,                                                &
-           flood_present, wav_present, wav_prognostic, rofice_present,        &
-           glclnd_present, glcocn_present, glcice_present, iceberg_prognostic,&
-           esp_present, esp_prognostic,                                       &
-           bfbflag, lnd_gnam, cpl_decomp, cpl_seq_option,                     &
-           ice_gnam, rof_gnam, glc_gnam, wav_gnam,                            &
-           atm_gnam, ocn_gnam, info_debug, dead_comps, read_restart,          &
-           shr_map_dopole, vect_map, aoflux_grid, flux_epbalfact,             &
-           nextsw_cday, precip_fact, flux_epbal, flux_albav,                  &
-           glc_g2lupdate, atm_aero, run_barriers, esmf_map_flag,              &
-           do_budgets, do_histinit, drv_threading, flux_diurnal, gust_fac,    &
-           budget_inst, budget_daily, budget_month, wall_time_limit,          &
-           budget_ann, budget_ltann, budget_ltend , force_stop_at,            &
-           histaux_a2x    , histaux_a2x1hri, histaux_a2x1hr,                  &
-           histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yr,                  &
-           histaux_a2x24hr, histaux_l2x   , histaux_r2x     , orb_obliq,      &
-           histavg_atm, histavg_lnd, histavg_ocn, histavg_ice,                &
-           histavg_rof, histavg_glc, histavg_wav, histavg_xao,                &
-           orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
-           orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, wv_sat_scheme,      &
-           wv_sat_transition_start, wv_sat_use_tables, wv_sat_table_spacing,  &
-           tfreeze_option, glc_renormalize_smb,                               &
-           glc_phase, rof_phase, atm_phase, lnd_phase, ocn_phase, ice_phase,  &
-           wav_phase, esp_phase, wav_nx, wav_ny, atm_nx, atm_ny,              &
-           lnd_nx, lnd_ny, rof_nx, rof_ny, ice_nx, ice_ny, ocn_nx, ocn_ny,    &
-           glc_nx, glc_ny, eps_frac, eps_amask,                               &
-           eps_agrid, eps_aarea, eps_omask, eps_ogrid, eps_oarea,             &
-           reprosum_use_ddpdd, reprosum_diffmax, reprosum_recompute,          &
-           atm_resume, lnd_resume, ocn_resume, ice_resume,                    &
-           glc_resume, rof_resume, wav_resume, cpl_resume,                    &
-           mct_usealltoall, mct_usevector, max_cplstep_time, glc_valid_input)
+  SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_desc, timing_dir,  &
+       model_version, username, hostname, rest_case_name, tchkpt_dir,     &
+       start_type, restart_pfile, restart_file, perpetual, perpetual_ymd, &
+       aqua_planet,aqua_planet_sst, brnch_retain_casename, &
+       single_column, scmlat,scmlon,logFilePostFix, outPathRoot,          &
+       atm_present, atm_prognostic, lnd_present, lnd_prognostic, rof_prognostic, &
+       rof_present, ocn_present, ocn_prognostic, ocnrof_prognostic,       &
+       ice_present, ice_prognostic, glc_present, glc_prognostic,          &
+       glc_coupled_fluxes,                                                &
+       flood_present, wav_present, wav_prognostic, rofice_present,        &
+       glclnd_present, glcocn_present, glcice_present, iceberg_prognostic,&
+       esp_present, esp_prognostic,                                       &
+       bfbflag, lnd_gnam, cpl_decomp, cpl_seq_option,                     &
+       ice_gnam, rof_gnam, glc_gnam, wav_gnam,                            &
+       atm_gnam, ocn_gnam, info_debug, dead_comps, read_restart,          &
+       shr_map_dopole, vect_map, aoflux_grid, flux_epbalfact,             &
+       nextsw_cday, precip_fact, flux_epbal, flux_albav,                  &
+       glc_g2lupdate, atm_aero, run_barriers, esmf_map_flag,              &
+       do_budgets, do_histinit, drv_threading, flux_diurnal,              &
+       coldair_outbreak_mod, &
+       flux_convergence, flux_max_iteration, gust_fac,                    &
+       budget_inst, budget_daily, budget_month, wall_time_limit,          &
+       budget_ann, budget_ltann, budget_ltend , force_stop_at,            &
+       histaux_a2x    , histaux_a2x1hri, histaux_a2x1hr,                  &
+       histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yrg,                 &
+       histaux_a2x24hr, histaux_l2x   , histaux_r2x     , histaux_double_precision, &
+       orb_obliq, histavg_atm, histavg_lnd, histavg_ocn, histavg_ice,     &
+       histavg_rof, histavg_glc, histavg_wav, histavg_xao,                &
+       orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
+       orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, wv_sat_scheme,      &
+       wv_sat_transition_start, wv_sat_use_tables, wv_sat_table_spacing,  &
+       tfreeze_option, glc_renormalize_smb,                               &
+       glc_phase, rof_phase, atm_phase, lnd_phase, ocn_phase, ice_phase,  &
+       wav_phase, esp_phase, wav_nx, wav_ny, atm_nx, atm_ny,              &
+       lnd_nx, lnd_ny, rof_nx, rof_ny, ice_nx, ice_ny, ocn_nx, ocn_ny,    &
+       glc_nx, glc_ny, eps_frac, eps_amask,                               &
+       eps_agrid, eps_aarea, eps_omask, eps_ogrid, eps_oarea,             &
+       reprosum_use_ddpdd, reprosum_diffmax, reprosum_recompute,          &
+       atm_resume, lnd_resume, ocn_resume, ice_resume,                    &
+       glc_resume, rof_resume, wav_resume, cpl_resume,                    &
+       mct_usealltoall, mct_usevector, max_cplstep_time, model_doi_url,   &
+       glc_valid_input)
 
 
-   implicit none
+    implicit none
 
-! !INPUT/OUTPUT PARAMETERS:
+    ! !INPUT/OUTPUT PARAMETERS:
 
-   type(seq_infodata_type),          intent(IN)  :: infodata                ! Input CCSM structure
-   character(len=*),       optional, intent(OUT) :: cime_model              ! CIME model (acme or cesm)
-   character(len=*),       optional, intent(OUT) :: start_type              ! Start type
-   character(len=*),       optional, intent(OUT) :: case_name               ! Short case identification
-   character(len=*),       optional, intent(OUT) :: case_desc               ! Long case description
-   character(len=*),       optional, intent(OUT) :: model_version           ! Model version
-   character(len=*),       optional, intent(OUT) :: username                ! Username
-   character(len=*),       optional, intent(OUT) :: hostname                ! Hostname
-   character(len=*),       optional, intent(OUT) :: rest_case_name          ! restart casename
-   character(len=*),       optional, intent(OUT) :: timing_dir              ! timing dir name
-   character(len=*),       optional, intent(OUT) :: tchkpt_dir              ! timing checkpoint dir name
-   logical,                optional, intent(OUT) :: aqua_planet             ! aqua_planet mode
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: aqua_planet_sst         ! aqua_planet sst_type
-   logical,                optional, intent(OUT) :: run_barriers            ! barrier component run calls
-   logical,                optional, intent(OUT) :: brnch_retain_casename
-   logical,                optional, intent(OUT) :: read_restart            ! read restart flag
-   character(len=*),       optional, intent(OUT) :: restart_pfile           ! Restart pointer file
-   character(len=*),       optional, intent(OUT) :: restart_file            ! Restart file pathname
-   logical,                optional, intent(OUT) :: single_column
-   real (SHR_KIND_R8),     optional, intent(OUT) :: scmlat
-   real (SHR_KIND_R8),     optional, intent(OUT) :: scmlon
-   character(len=*),       optional, intent(OUT) :: logFilePostFix          ! output log file postfix
-   character(len=*),       optional, intent(OUT) :: outPathRoot             ! output file root
-   logical,                optional, intent(OUT) :: perpetual               ! If this is perpetual
-   integer,                optional, intent(OUT) :: perpetual_ymd           ! If perpetual, date
-   character(len=*),       optional, intent(OUT) :: orb_mode                ! orbital mode
-   integer,                optional, intent(OUT) :: orb_iyear               ! orbital year
-   integer,                optional, intent(OUT) :: orb_iyear_align         ! orbital year model year align
-   real(SHR_KIND_R8),      optional, intent(OUT) :: orb_eccen               ! See shr_orb_mod
-   real(SHR_KIND_R8),      optional, intent(OUT) :: orb_obliqr              ! See shr_orb_mod
-   real(SHR_KIND_R8),      optional, intent(OUT) :: orb_obliq               ! See shr_orb_mod
-   real(SHR_KIND_R8),      optional, intent(OUT) :: orb_lambm0              ! See shr_orb_mod
-   real(SHR_KIND_R8),      optional, intent(OUT) :: orb_mvelpp              ! See shr_orb_mod
-   real(SHR_KIND_R8),      optional, intent(OUT) :: orb_mvelp               ! See shr_orb_mod
-   character(len=*),       optional, intent(OUT) :: wv_sat_scheme           ! Water vapor saturation pressure scheme
-   real(SHR_KIND_R8),      optional, intent(OUT) :: wv_sat_transition_start ! Saturation transition range
-   logical,                optional, intent(OUT) :: wv_sat_use_tables       ! Saturation pressure lookup tables
-   real(SHR_KIND_R8),      optional, intent(OUT) :: wv_sat_table_spacing    ! Saturation pressure table resolution
-   character(len=*),       optional, intent(OUT) :: tfreeze_option          ! Freezing point of salt water
-   character(len=*),       optional, intent(OUT) :: flux_epbal              ! selects E,P,R adjustment technique
-   logical,                optional, intent(OUT) :: flux_albav              ! T => no diurnal cycle in ocn albedos
-   logical,                optional, intent(OUT) :: flux_diurnal            ! T => diurnal cycle in atm/ocn flux
-   real(SHR_KIND_R8),      optional, intent(OUT) :: gust_fac                ! wind gustiness factor
-   character(len=*),       optional, intent(OUT) :: glc_renormalize_smb     ! Whether to renormalize smb sent from lnd -> glc
-   real(SHR_KIND_R8),      optional, intent(OUT) :: wall_time_limit         ! force stop wall time (hours)
-   character(len=*),       optional, intent(OUT) :: force_stop_at           ! force stop at next (month, day, etc)
-   character(len=*),       optional, intent(OUT) :: atm_gnam                ! atm grid
-   character(len=*),       optional, intent(OUT) :: lnd_gnam                ! lnd grid
-   character(len=*),       optional, intent(OUT) :: ocn_gnam                ! ocn grid
-   character(len=*),       optional, intent(OUT) :: ice_gnam                ! ice grid
-   character(len=*),       optional, intent(OUT) :: rof_gnam                ! rof grid
-   character(len=*),       optional, intent(OUT) :: glc_gnam                ! glc grid
-   character(len=*),       optional, intent(OUT) :: wav_gnam                ! wav grid
-   logical,                optional, intent(OUT) :: shr_map_dopole          ! pole corrections in shr_map_mod
-   character(len=*),       optional, intent(OUT) :: vect_map                ! vector mapping option
-   character(len=*),       optional, intent(OUT) :: aoflux_grid             ! grid for atm ocn flux calc
-   integer,                optional, intent(OUT) :: cpl_decomp              ! coupler decomp
-   character(len=*),       optional, intent(OUT) :: cpl_seq_option          ! coupler sequencing option
-   logical,                optional, intent(OUT) :: do_budgets              ! heat/water budgets
-   logical,                optional, intent(OUT) :: do_histinit             ! initial history file
-   integer,                optional, intent(OUT) :: budget_inst             ! inst budget
-   integer,                optional, intent(OUT) :: budget_daily            ! daily budget
-   integer,                optional, intent(OUT) :: budget_month            ! month budget
-   integer,                optional, intent(OUT) :: budget_ann              ! ann budget
-   integer,                optional, intent(OUT) :: budget_ltann            ! ltann budget
-   integer,                optional, intent(OUT) :: budget_ltend            ! ltend budget
-   logical,                optional, intent(OUT) :: histaux_a2x
-   logical,                optional, intent(OUT) :: histaux_a2x1hri
-   logical,                optional, intent(OUT) :: histaux_a2x1hr
-   logical,                optional, intent(OUT) :: histaux_a2x3hr
-   logical,                optional, intent(OUT) :: histaux_a2x3hrp
-   logical,                optional, intent(OUT) :: histaux_a2x24hr
-   logical,                optional, intent(OUT) :: histaux_l2x1yr
-   logical,                optional, intent(OUT) :: histaux_l2x
-   logical,                optional, intent(OUT) :: histaux_r2x
-   logical,                optional, intent(OUT) :: histavg_atm
-   logical,                optional, intent(OUT) :: histavg_lnd
-   logical,                optional, intent(OUT) :: histavg_ocn
-   logical,                optional, intent(OUT) :: histavg_ice
-   logical,                optional, intent(OUT) :: histavg_rof
-   logical,                optional, intent(OUT) :: histavg_glc
-   logical,                optional, intent(OUT) :: histavg_wav
-   logical,                optional, intent(OUT) :: histavg_xao
-   logical,                optional, intent(OUT) :: drv_threading           ! driver threading control flag
-   real(SHR_KIND_R8),      optional, intent(OUT) :: eps_frac                ! fraction error tolerance
-   real(SHR_KIND_R8),      optional, intent(OUT) :: eps_amask               ! atm mask error tolerance
-   real(SHR_KIND_R8),      optional, intent(OUT) :: eps_agrid               ! atm grid error tolerance
-   real(SHR_KIND_R8),      optional, intent(OUT) :: eps_aarea               ! atm area error tolerance
-   real(SHR_KIND_R8),      optional, intent(OUT) :: eps_omask               ! ocn mask error tolerance
-   real(SHR_KIND_R8),      optional, intent(OUT) :: eps_ogrid               ! ocn grid error tolerance
-   real(SHR_KIND_R8),      optional, intent(OUT) :: eps_oarea               ! ocn area error tolerance
-   logical,                optional, intent(OUT) :: reprosum_use_ddpdd      ! use ddpdd algorithm
-   real(SHR_KIND_R8),      optional, intent(OUT) :: reprosum_diffmax        ! maximum difference tolerance
-   logical,                optional, intent(OUT) :: reprosum_recompute      ! recompute if tolerance exceeded
-   logical,                optional, intent(OUT) :: mct_usealltoall         ! flag for mct alltoall
-   logical,                optional, intent(OUT) :: mct_usevector           ! flag for mct vector
+    type(seq_infodata_type),          intent(IN)  :: infodata                ! Input CCSM structure
+    character(len=*),       optional, intent(OUT) :: cime_model              ! CIME model (e3sm or cesm)
+    character(len=*),       optional, intent(OUT) :: start_type              ! Start type
+    character(len=*),       optional, intent(OUT) :: case_name               ! Short case identification
+    character(len=*),       optional, intent(OUT) :: case_desc               ! Long case description
+    character(len=*),       optional, intent(OUT) :: model_version           ! Model version
+    character(len=*),       optional, intent(OUT) :: username                ! Username
+    character(len=*),       optional, intent(OUT) :: hostname                ! Hostname
+    character(len=*),       optional, intent(OUT) :: rest_case_name          ! restart casename
+    character(len=*),       optional, intent(OUT) :: timing_dir              ! timing dir name
+    character(len=*),       optional, intent(OUT) :: tchkpt_dir              ! timing checkpoint dir name
+    logical,                optional, intent(OUT) :: aqua_planet             ! aqua_planet mode
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: aqua_planet_sst         ! aqua_planet sst_type
+    logical,                optional, intent(OUT) :: run_barriers            ! barrier component run calls
+    logical,                optional, intent(OUT) :: brnch_retain_casename
+    logical,                optional, intent(OUT) :: read_restart            ! read restart flag
+    character(len=*),       optional, intent(OUT) :: restart_pfile           ! Restart pointer file
+    character(len=*),       optional, intent(OUT) :: restart_file            ! Restart file pathname
+    logical,                optional, intent(OUT) :: single_column
+    real (SHR_KIND_R8),     optional, intent(OUT) :: scmlat
+    real (SHR_KIND_R8),     optional, intent(OUT) :: scmlon
+    character(len=*),       optional, intent(OUT) :: logFilePostFix          ! output log file postfix
+    character(len=*),       optional, intent(OUT) :: outPathRoot             ! output file root
+    logical,                optional, intent(OUT) :: perpetual               ! If this is perpetual
+    integer,                optional, intent(OUT) :: perpetual_ymd           ! If perpetual, date
+    character(len=*),       optional, intent(OUT) :: orb_mode                ! orbital mode
+    integer,                optional, intent(OUT) :: orb_iyear               ! orbital year
+    integer,                optional, intent(OUT) :: orb_iyear_align         ! orbital year model year align
+    real(SHR_KIND_R8),      optional, intent(OUT) :: orb_eccen               ! See shr_orb_mod
+    real(SHR_KIND_R8),      optional, intent(OUT) :: orb_obliqr              ! See shr_orb_mod
+    real(SHR_KIND_R8),      optional, intent(OUT) :: orb_obliq               ! See shr_orb_mod
+    real(SHR_KIND_R8),      optional, intent(OUT) :: orb_lambm0              ! See shr_orb_mod
+    real(SHR_KIND_R8),      optional, intent(OUT) :: orb_mvelpp              ! See shr_orb_mod
+    real(SHR_KIND_R8),      optional, intent(OUT) :: orb_mvelp               ! See shr_orb_mod
+    character(len=*),       optional, intent(OUT) :: wv_sat_scheme           ! Water vapor saturation pressure scheme
+    real(SHR_KIND_R8),      optional, intent(OUT) :: wv_sat_transition_start ! Saturation transition range
+    logical,                optional, intent(OUT) :: wv_sat_use_tables       ! Saturation pressure lookup tables
+    real(SHR_KIND_R8),      optional, intent(OUT) :: wv_sat_table_spacing    ! Saturation pressure table resolution
+    character(len=*),       optional, intent(OUT) :: tfreeze_option          ! Freezing point of salt water
+    character(len=*),       optional, intent(OUT) :: flux_epbal              ! selects E,P,R adjustment technique
+    logical,                optional, intent(OUT) :: flux_albav              ! T => no diurnal cycle in ocn albedos
+    logical,                optional, intent(OUT) :: flux_diurnal            ! T => diurnal cycle in atm/ocn flux
+    real(SHR_KIND_R8), optional, intent(out)      :: flux_convergence   ! atmocn flux calc convergence value
+    logical, optional, intent(out) :: coldair_outbreak_mod        ! (Mahrt & Sun 1995, MWR)
+    integer, optional, intent(OUT)                :: flux_max_iteration ! max number of iterations of atmocn flux loop
 
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: info_debug
-   logical,                optional, intent(OUT) :: bfbflag
-   logical,                optional, intent(OUT) :: esmf_map_flag
-   logical,                optional, intent(OUT) :: dead_comps              ! do we have dead models
+    real(SHR_KIND_R8),      optional, intent(OUT) :: gust_fac                ! wind gustiness factor
+    character(len=*),       optional, intent(OUT) :: glc_renormalize_smb     ! Whether to renormalize smb sent from lnd -> glc
+    real(SHR_KIND_R8),      optional, intent(OUT) :: wall_time_limit         ! force stop wall time (hours)
+    character(len=*),       optional, intent(OUT) :: force_stop_at           ! force stop at next (month, day, etc)
+    character(len=*),       optional, intent(OUT) :: atm_gnam                ! atm grid
+    character(len=*),       optional, intent(OUT) :: lnd_gnam                ! lnd grid
+    character(len=*),       optional, intent(OUT) :: ocn_gnam                ! ocn grid
+    character(len=*),       optional, intent(OUT) :: ice_gnam                ! ice grid
+    character(len=*),       optional, intent(OUT) :: rof_gnam                ! rof grid
+    character(len=*),       optional, intent(OUT) :: glc_gnam                ! glc grid
+    character(len=*),       optional, intent(OUT) :: wav_gnam                ! wav grid
+    logical,                optional, intent(OUT) :: shr_map_dopole          ! pole corrections in shr_map_mod
+    character(len=*),       optional, intent(OUT) :: vect_map                ! vector mapping option
+    character(len=*),       optional, intent(OUT) :: aoflux_grid             ! grid for atm ocn flux calc
+    integer,                optional, intent(OUT) :: cpl_decomp              ! coupler decomp
+    character(len=*),       optional, intent(OUT) :: cpl_seq_option          ! coupler sequencing option
+    logical,                optional, intent(OUT) :: do_budgets              ! heat/water budgets
+    logical,                optional, intent(OUT) :: do_histinit             ! initial history file
+    integer,                optional, intent(OUT) :: budget_inst             ! inst budget
+    integer,                optional, intent(OUT) :: budget_daily            ! daily budget
+    integer,                optional, intent(OUT) :: budget_month            ! month budget
+    integer,                optional, intent(OUT) :: budget_ann              ! ann budget
+    integer,                optional, intent(OUT) :: budget_ltann            ! ltann budget
+    integer,                optional, intent(OUT) :: budget_ltend            ! ltend budget
+    logical,                optional, intent(OUT) :: histaux_a2x
+    logical,                optional, intent(OUT) :: histaux_a2x1hri
+    logical,                optional, intent(OUT) :: histaux_a2x1hr
+    logical,                optional, intent(OUT) :: histaux_a2x3hr
+    logical,                optional, intent(OUT) :: histaux_a2x3hrp
+    logical,                optional, intent(OUT) :: histaux_a2x24hr
+    logical,                optional, intent(OUT) :: histaux_l2x1yrg
+    logical,                optional, intent(OUT) :: histaux_l2x
+    logical,                optional, intent(OUT) :: histaux_r2x
+    logical,                optional, intent(OUT) :: histaux_double_precision
+    logical,                optional, intent(OUT) :: histavg_atm
+    logical,                optional, intent(OUT) :: histavg_lnd
+    logical,                optional, intent(OUT) :: histavg_ocn
+    logical,                optional, intent(OUT) :: histavg_ice
+    logical,                optional, intent(OUT) :: histavg_rof
+    logical,                optional, intent(OUT) :: histavg_glc
+    logical,                optional, intent(OUT) :: histavg_wav
+    logical,                optional, intent(OUT) :: histavg_xao
+    logical,                optional, intent(OUT) :: drv_threading           ! driver threading control flag
+    real(SHR_KIND_R8),      optional, intent(OUT) :: eps_frac                ! fraction error tolerance
+    real(SHR_KIND_R8),      optional, intent(OUT) :: eps_amask               ! atm mask error tolerance
+    real(SHR_KIND_R8),      optional, intent(OUT) :: eps_agrid               ! atm grid error tolerance
+    real(SHR_KIND_R8),      optional, intent(OUT) :: eps_aarea               ! atm area error tolerance
+    real(SHR_KIND_R8),      optional, intent(OUT) :: eps_omask               ! ocn mask error tolerance
+    real(SHR_KIND_R8),      optional, intent(OUT) :: eps_ogrid               ! ocn grid error tolerance
+    real(SHR_KIND_R8),      optional, intent(OUT) :: eps_oarea               ! ocn area error tolerance
+    logical,                optional, intent(OUT) :: reprosum_use_ddpdd      ! use ddpdd algorithm
+    real(SHR_KIND_R8),      optional, intent(OUT) :: reprosum_diffmax        ! maximum difference tolerance
+    logical,                optional, intent(OUT) :: reprosum_recompute      ! recompute if tolerance exceeded
+    logical,                optional, intent(OUT) :: mct_usealltoall         ! flag for mct alltoall
+    logical,                optional, intent(OUT) :: mct_usevector           ! flag for mct vector
 
-   logical,                optional, intent(OUT) :: atm_present             ! provide data
-   logical,                optional, intent(OUT) :: atm_prognostic          ! need data
-   logical,                optional, intent(OUT) :: lnd_present
-   logical,                optional, intent(OUT) :: lnd_prognostic
-   logical,                optional, intent(OUT) :: rof_present
-   logical,                optional, intent(OUT) :: rofice_present
-   logical,                optional, intent(OUT) :: rof_prognostic
-   logical,                optional, intent(OUT) :: flood_present
-   logical,                optional, intent(OUT) :: ocn_present
-   logical,                optional, intent(OUT) :: ocn_prognostic
-   logical,                optional, intent(OUT) :: ocnrof_prognostic
-   logical,                optional, intent(OUT) :: ice_present
-   logical,                optional, intent(OUT) :: ice_prognostic
-   logical,                optional, intent(OUT) :: iceberg_prognostic
-   logical,                optional, intent(OUT) :: glc_present
-   logical,                optional, intent(OUT) :: glclnd_present
-   logical,                optional, intent(OUT) :: glcocn_present
-   logical,                optional, intent(OUT) :: glcice_present
-   logical,                optional, intent(OUT) :: glc_prognostic
-   logical,                optional, intent(OUT) :: glc_coupled_fluxes
-   logical,                optional, intent(OUT) :: wav_present
-   logical,                optional, intent(OUT) :: wav_prognostic
-   logical,                optional, intent(OUT) :: esp_present
-   logical,                optional, intent(OUT) :: esp_prognostic
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: atm_nx                  ! nx,ny 2d grid size global
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: atm_ny                  ! nx,ny 2d grid size global
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: lnd_nx
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: lnd_ny
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: rof_nx
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: rof_ny
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: ice_nx
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: ice_ny
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: ocn_nx
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: ocn_ny
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: glc_nx
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: glc_ny
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: wav_nx
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: wav_ny
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: info_debug
+    logical,                optional, intent(OUT) :: bfbflag
+    logical,                optional, intent(OUT) :: esmf_map_flag
+    logical,                optional, intent(OUT) :: dead_comps              ! do we have dead models
 
-   real(SHR_KIND_R8),      optional, intent(OUT) :: nextsw_cday             ! calendar of next atm shortwave
-   real(SHR_KIND_R8),      optional, intent(OUT) :: precip_fact             ! precip factor
-   real(SHR_KIND_R8),      optional, intent(OUT) :: flux_epbalfact          ! adjusted precip factor
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: atm_phase               ! atm phase
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: lnd_phase               ! lnd phase
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: ice_phase               ! ice phase
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: ocn_phase               ! ocn phase
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: glc_phase               ! glc phase
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: rof_phase               ! rof phase
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: wav_phase               ! wav phase
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: esp_phase               ! wav phase
-   logical,                optional, intent(OUT) :: atm_aero                ! atmosphere aerosols
-   logical,                optional, intent(OUT) :: glc_g2lupdate           ! update glc2lnd fields in lnd model
-   real(shr_kind_r8),      optional, intent(out) :: max_cplstep_time
-   logical,                optional, intent(OUT) :: glc_valid_input
-   character(SHR_KIND_CL), optional, intent(OUT) :: atm_resume(:) ! atm read resume state
-   character(SHR_KIND_CL), optional, intent(OUT) :: lnd_resume(:) ! lnd read resume state
-   character(SHR_KIND_CL), optional, intent(OUT) :: ice_resume(:) ! ice read resume state
-   character(SHR_KIND_CL), optional, intent(OUT) :: ocn_resume(:) ! ocn read resume state
-   character(SHR_KIND_CL), optional, intent(OUT) :: glc_resume(:) ! glc read resume state
-   character(SHR_KIND_CL), optional, intent(OUT) :: rof_resume(:) ! rof read resume state
-   character(SHR_KIND_CL), optional, intent(OUT) :: wav_resume(:) ! wav read resume state
-   character(SHR_KIND_CL), optional, intent(OUT) :: cpl_resume ! cpl read resume state
+    logical,                optional, intent(OUT) :: atm_present             ! provide data
+    logical,                optional, intent(OUT) :: atm_prognostic          ! need data
+    logical,                optional, intent(OUT) :: lnd_present
+    logical,                optional, intent(OUT) :: lnd_prognostic
+    logical,                optional, intent(OUT) :: rof_present
+    logical,                optional, intent(OUT) :: rofice_present
+    logical,                optional, intent(OUT) :: rof_prognostic
+    logical,                optional, intent(OUT) :: flood_present
+    logical,                optional, intent(OUT) :: ocn_present
+    logical,                optional, intent(OUT) :: ocn_prognostic
+    logical,                optional, intent(OUT) :: ocnrof_prognostic
+    logical,                optional, intent(OUT) :: ice_present
+    logical,                optional, intent(OUT) :: ice_prognostic
+    logical,                optional, intent(OUT) :: iceberg_prognostic
+    logical,                optional, intent(OUT) :: glc_present
+    logical,                optional, intent(OUT) :: glclnd_present
+    logical,                optional, intent(OUT) :: glcocn_present
+    logical,                optional, intent(OUT) :: glcice_present
+    logical,                optional, intent(OUT) :: glc_prognostic
+    logical,                optional, intent(OUT) :: glc_coupled_fluxes
+    logical,                optional, intent(OUT) :: wav_present
+    logical,                optional, intent(OUT) :: wav_prognostic
+    logical,                optional, intent(OUT) :: esp_present
+    logical,                optional, intent(OUT) :: esp_prognostic
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: atm_nx                  ! nx,ny 2d grid size global
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: atm_ny                  ! nx,ny 2d grid size global
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: lnd_nx
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: lnd_ny
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: rof_nx
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: rof_ny
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: ice_nx
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: ice_ny
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: ocn_nx
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: ocn_ny
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: glc_nx
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: glc_ny
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: wav_nx
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: wav_ny
+
+    real(SHR_KIND_R8),      optional, intent(OUT) :: nextsw_cday             ! calendar of next atm shortwave
+    real(SHR_KIND_R8),      optional, intent(OUT) :: precip_fact             ! precip factor
+    real(SHR_KIND_R8),      optional, intent(OUT) :: flux_epbalfact          ! adjusted precip factor
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: atm_phase               ! atm phase
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: lnd_phase               ! lnd phase
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: ice_phase               ! ice phase
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: ocn_phase               ! ocn phase
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: glc_phase               ! glc phase
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: rof_phase               ! rof phase
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: wav_phase               ! wav phase
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: esp_phase               ! wav phase
+    logical,                optional, intent(OUT) :: atm_aero                ! atmosphere aerosols
+    logical,                optional, intent(OUT) :: glc_g2lupdate           ! update glc2lnd fields in lnd model
+    real(shr_kind_r8),      optional, intent(out) :: max_cplstep_time
+    character(SHR_KIND_CL), optional, intent(OUT) :: model_doi_url
+    logical,                optional, intent(OUT) :: glc_valid_input
+    character(SHR_KIND_CL), optional, intent(OUT) :: atm_resume(:) ! atm read resume state
+    character(SHR_KIND_CL), optional, intent(OUT) :: lnd_resume(:) ! lnd read resume state
+    character(SHR_KIND_CL), optional, intent(OUT) :: ice_resume(:) ! ice read resume state
+    character(SHR_KIND_CL), optional, intent(OUT) :: ocn_resume(:) ! ocn read resume state
+    character(SHR_KIND_CL), optional, intent(OUT) :: glc_resume(:) ! glc read resume state
+    character(SHR_KIND_CL), optional, intent(OUT) :: rof_resume(:) ! rof read resume state
+    character(SHR_KIND_CL), optional, intent(OUT) :: wav_resume(:) ! wav read resume state
+    character(SHR_KIND_CL), optional, intent(OUT) :: cpl_resume ! cpl read resume state
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_infodata_GetData_explicit) '
 
-!-------------------------------------------------------------------------------
+    !-------------------------------------------------------------------------------
 
     if ( present(cime_model)     ) cime_model     = infodata%cime_model
     if ( present(start_type)     ) start_type     = infodata%start_type
@@ -1181,6 +1207,9 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
     if ( present(flux_epbal)     ) flux_epbal     = infodata%flux_epbal
     if ( present(flux_albav)     ) flux_albav     = infodata%flux_albav
     if ( present(flux_diurnal)   ) flux_diurnal   = infodata%flux_diurnal
+    if ( present(coldair_outbreak_mod)) coldair_outbreak_mod = infodata%coldair_outbreak_mod
+    if ( present(flux_convergence)) flux_convergence = infodata%flux_convergence
+    if ( present(flux_max_iteration)) flux_max_iteration = infodata%flux_max_iteration
     if ( present(gust_fac)       ) gust_fac       = infodata%gust_fac
     if ( present(glc_renormalize_smb)) glc_renormalize_smb = infodata%glc_renormalize_smb
     if ( present(wall_time_limit)) wall_time_limit= infodata%wall_time_limit
@@ -1211,9 +1240,10 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
     if ( present(histaux_a2x3hr) ) histaux_a2x3hr = infodata%histaux_a2x3hr
     if ( present(histaux_a2x3hrp)) histaux_a2x3hrp= infodata%histaux_a2x3hrp
     if ( present(histaux_a2x24hr)) histaux_a2x24hr= infodata%histaux_a2x24hr
-    if ( present(histaux_l2x1yr) ) histaux_l2x1yr = infodata%histaux_l2x1yr
+    if ( present(histaux_l2x1yrg)) histaux_l2x1yrg= infodata%histaux_l2x1yrg
     if ( present(histaux_l2x)    ) histaux_l2x    = infodata%histaux_l2x
     if ( present(histaux_r2x)    ) histaux_r2x    = infodata%histaux_r2x
+    if ( present(histaux_double_precision)) histaux_double_precision = infodata%histaux_double_precision
     if ( present(histavg_atm)    ) histavg_atm    = infodata%histavg_atm
     if ( present(histavg_lnd)    ) histavg_lnd    = infodata%histavg_lnd
     if ( present(histavg_ocn)    ) histavg_ocn    = infodata%histavg_ocn
@@ -1289,9 +1319,9 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
        end if
        if (flux_epbalfact <= 0.0_SHR_KIND_R8) then
           if (loglevel > 0) write(logunit,'(2a,e16.6)') &
-             trim(subname),' WARNING: factor from ocn = ',flux_epbalfact
+               trim(subname),' WARNING: factor from ocn = ',flux_epbalfact
           if (loglevel > 0) write(logunit,'(2a)') &
-             trim(subname),' WARNING: resetting flux_epbalfact to 1.0'
+               trim(subname),' WARNING: resetting flux_epbalfact to 1.0'
           flux_epbalfact = 1.0_SHR_KIND_R8
        end if
     endif
@@ -1306,400 +1336,408 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
     if ( present(atm_aero)       ) atm_aero       = infodata%atm_aero
     if ( present(glc_g2lupdate)  ) glc_g2lupdate  = infodata%glc_g2lupdate
     if ( present(atm_resume) ) then
-      if (associated(infodata%pause_resume)) then
-        atm_resume(:)  = infodata%pause_resume%atm_resume(:)
-      else
-        atm_resume(:) = ' '
-      end if
+       if (associated(infodata%pause_resume)) then
+          atm_resume(:)  = infodata%pause_resume%atm_resume(:)
+       else
+          atm_resume(:) = ' '
+       end if
     end if
     if ( present(lnd_resume) ) then
-      if (associated(infodata%pause_resume)) then
-        lnd_resume(:)  = infodata%pause_resume%lnd_resume(:)
-      else
-        lnd_resume(:) = ' '
-      end if
+       if (associated(infodata%pause_resume)) then
+          lnd_resume(:)  = infodata%pause_resume%lnd_resume(:)
+       else
+          lnd_resume(:) = ' '
+       end if
     end if
     if ( present(ice_resume) ) then
-      if (associated(infodata%pause_resume)) then
-        ice_resume(:)  = infodata%pause_resume%ice_resume(:)
-      else
-        ice_resume(:) = ' '
-      end if
+       if (associated(infodata%pause_resume)) then
+          ice_resume(:)  = infodata%pause_resume%ice_resume(:)
+       else
+          ice_resume(:) = ' '
+       end if
     end if
     if ( present(ocn_resume) ) then
-      if (associated(infodata%pause_resume)) then
-        ocn_resume(:)  = infodata%pause_resume%ocn_resume(:)
-      else
-        ocn_resume(:) = ' '
-      end if
+       if (associated(infodata%pause_resume)) then
+          ocn_resume(:)  = infodata%pause_resume%ocn_resume(:)
+       else
+          ocn_resume(:) = ' '
+       end if
     end if
     if ( present(glc_resume) ) then
-      if (associated(infodata%pause_resume)) then
-        glc_resume(:)  = infodata%pause_resume%glc_resume(:)
-      else
-        glc_resume(:) = ' '
-      end if
+       if (associated(infodata%pause_resume)) then
+          glc_resume(:)  = infodata%pause_resume%glc_resume(:)
+       else
+          glc_resume(:) = ' '
+       end if
     end if
     if ( present(rof_resume) ) then
-      if (associated(infodata%pause_resume)) then
-        rof_resume(:)  = infodata%pause_resume%rof_resume(:)
-      else
-        rof_resume(:) = ' '
-      end if
+       if (associated(infodata%pause_resume)) then
+          rof_resume(:)  = infodata%pause_resume%rof_resume(:)
+       else
+          rof_resume(:) = ' '
+       end if
     end if
     if ( present(wav_resume) ) then
-      if (associated(infodata%pause_resume)) then
-        wav_resume(:)  = infodata%pause_resume%wav_resume(:)
-      else
-        wav_resume(:) = ' '
-      end if
+       if (associated(infodata%pause_resume)) then
+          wav_resume(:)  = infodata%pause_resume%wav_resume(:)
+       else
+          wav_resume(:) = ' '
+       end if
     end if
     if ( present(cpl_resume) ) then
-      if (associated(infodata%pause_resume)) then
-        cpl_resume     = infodata%pause_resume%cpl_resume
-      else
-        cpl_resume = ' '
-      end if
+       if (associated(infodata%pause_resume)) then
+          cpl_resume     = infodata%pause_resume%cpl_resume
+       else
+          cpl_resume = ' '
+       end if
     end if
     if ( present(max_cplstep_time) ) max_cplstep_time = infodata%max_cplstep_time
+    if ( present(model_doi_url) ) model_doi_url = infodata%model_doi_url
+
     if ( present(glc_valid_input)) glc_valid_input = infodata%glc_valid_input
 
-END SUBROUTINE seq_infodata_GetData_explicit
+  END SUBROUTINE seq_infodata_GetData_explicit
 
 #ifndef CPRPGI
-!===============================================================================
-! !IROUTINE: seq_infodata_GetData_bytype -- Get values from infodata object
-!
-! !DESCRIPTION:
-!
-!     Get values out of the infodata object.
-!
-! !INTERFACE: ------------------------------------------------------------------
+  !===============================================================================
+  ! !IROUTINE: seq_infodata_GetData_bytype -- Get values from infodata object
+  !
+  ! !DESCRIPTION:
+  !
+  !     Get values out of the infodata object.
+  !
+  ! !INTERFACE: ------------------------------------------------------------------
 
-SUBROUTINE seq_infodata_GetData_bytype( component_firstletter, infodata,      &
-           comp_present, comp_prognostic, comp_gnam, histavg_comp,            &
-           comp_phase, comp_nx, comp_ny, comp_resume)
+  SUBROUTINE seq_infodata_GetData_bytype( component_firstletter, infodata,      &
+       comp_present, comp_prognostic, comp_gnam, histavg_comp,            &
+       comp_phase, comp_nx, comp_ny, comp_resume)
 
 
-   implicit none
+    implicit none
 
-! !INPUT/OUTPUT PARAMETERS:
+    ! !INPUT/OUTPUT PARAMETERS:
 
-   character(len=1),                 intent(IN)  :: component_firstletter
-   type(seq_infodata_type),          intent(IN)  :: infodata        ! Input CCSM structure
-   logical,                optional, intent(OUT) :: comp_present    ! provide data
-   logical,                optional, intent(OUT) :: comp_prognostic ! need data
-   character(len=*),       optional, intent(OUT) :: comp_gnam       ! comp grid
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: comp_nx         ! nx,ny 2d grid size global
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: comp_ny         ! nx,ny 2d grid size global
-   integer(SHR_KIND_IN),   optional, intent(OUT) :: comp_phase
-   logical,                optional, intent(OUT) :: histavg_comp
-   character(SHR_KIND_CL), optional, intent(OUT) :: comp_resume(:)
+    character(len=1),                 intent(IN)  :: component_firstletter
+    type(seq_infodata_type),          intent(IN)  :: infodata        ! Input CCSM structure
+    logical,                optional, intent(OUT) :: comp_present    ! provide data
+    logical,                optional, intent(OUT) :: comp_prognostic ! need data
+    character(len=*),       optional, intent(OUT) :: comp_gnam       ! comp grid
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: comp_nx         ! nx,ny 2d grid size global
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: comp_ny         ! nx,ny 2d grid size global
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: comp_phase
+    logical,                optional, intent(OUT) :: histavg_comp
+    character(SHR_KIND_CL), optional, intent(OUT) :: comp_resume(:)
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_infodata_GetData_bytype) '
 
-!-------------------------------------------------------------------------------
+    !-------------------------------------------------------------------------------
 
     if (component_firstletter == 'a') then
-      call seq_infodata_GetData(infodata, atm_present=comp_present,           &
-           atm_prognostic=comp_prognostic, atm_gnam=comp_gnam,                &
-           atm_phase=comp_phase, atm_nx=comp_nx, atm_ny=comp_ny,              &
-           histavg_atm=histavg_comp, atm_resume=comp_resume)
+       call seq_infodata_GetData(infodata, atm_present=comp_present,           &
+            atm_prognostic=comp_prognostic, atm_gnam=comp_gnam,                &
+            atm_phase=comp_phase, atm_nx=comp_nx, atm_ny=comp_ny,              &
+            histavg_atm=histavg_comp, atm_resume=comp_resume)
     else if (component_firstletter == 'l') then
-      call seq_infodata_GetData(infodata, lnd_present=comp_present,           &
-           lnd_prognostic=comp_prognostic, lnd_gnam=comp_gnam,                &
-           lnd_phase=comp_phase, lnd_nx=comp_nx, lnd_ny=comp_ny,              &
-           histavg_lnd=histavg_comp, lnd_resume=comp_resume)
+       call seq_infodata_GetData(infodata, lnd_present=comp_present,           &
+            lnd_prognostic=comp_prognostic, lnd_gnam=comp_gnam,                &
+            lnd_phase=comp_phase, lnd_nx=comp_nx, lnd_ny=comp_ny,              &
+            histavg_lnd=histavg_comp, lnd_resume=comp_resume)
     else if (component_firstletter == 'i') then
-      call seq_infodata_GetData(infodata, ice_present=comp_present,           &
-           ice_prognostic=comp_prognostic, ice_gnam=comp_gnam,                &
-           ice_phase=comp_phase, ice_nx=comp_nx, ice_ny=comp_ny,              &
-           histavg_ice=histavg_comp, ice_resume=comp_resume)
+       call seq_infodata_GetData(infodata, ice_present=comp_present,           &
+            ice_prognostic=comp_prognostic, ice_gnam=comp_gnam,                &
+            ice_phase=comp_phase, ice_nx=comp_nx, ice_ny=comp_ny,              &
+            histavg_ice=histavg_comp, ice_resume=comp_resume)
     else if (component_firstletter == 'o') then
-      call seq_infodata_GetData(infodata, ocn_present=comp_present,           &
-           ocn_prognostic=comp_prognostic, ocn_gnam=comp_gnam,                &
-           ocn_phase=comp_phase, ocn_nx=comp_nx, ocn_ny=comp_ny,              &
-           histavg_ocn=histavg_comp, ocn_resume=comp_resume)
+       call seq_infodata_GetData(infodata, ocn_present=comp_present,           &
+            ocn_prognostic=comp_prognostic, ocn_gnam=comp_gnam,                &
+            ocn_phase=comp_phase, ocn_nx=comp_nx, ocn_ny=comp_ny,              &
+            histavg_ocn=histavg_comp, ocn_resume=comp_resume)
     else if (component_firstletter == 'r') then
-      call seq_infodata_GetData(infodata, rof_present=comp_present,           &
-           rof_prognostic=comp_prognostic, rof_gnam=comp_gnam,                &
-           rof_phase=comp_phase, rof_nx=comp_nx, rof_ny=comp_ny,              &
-           histavg_rof=histavg_comp, rof_resume=comp_resume)
+       call seq_infodata_GetData(infodata, rof_present=comp_present,           &
+            rof_prognostic=comp_prognostic, rof_gnam=comp_gnam,                &
+            rof_phase=comp_phase, rof_nx=comp_nx, rof_ny=comp_ny,              &
+            histavg_rof=histavg_comp, rof_resume=comp_resume)
     else if (component_firstletter == 'g') then
-      call seq_infodata_GetData(infodata, glc_present=comp_present,           &
-           glc_prognostic=comp_prognostic, glc_gnam=comp_gnam,                &
-           glc_phase=comp_phase, glc_nx=comp_nx, glc_ny=comp_ny,              &
-           histavg_glc=histavg_comp, glc_resume=comp_resume)
+       call seq_infodata_GetData(infodata, glc_present=comp_present,           &
+            glc_prognostic=comp_prognostic, glc_gnam=comp_gnam,                &
+            glc_phase=comp_phase, glc_nx=comp_nx, glc_ny=comp_ny,              &
+            histavg_glc=histavg_comp, glc_resume=comp_resume)
     else if (component_firstletter == 'w') then
-      call seq_infodata_GetData(infodata, wav_present=comp_present,           &
-           wav_prognostic=comp_prognostic, wav_gnam=comp_gnam,                &
-           wav_phase=comp_phase, wav_nx=comp_nx, wav_ny=comp_ny,              &
-           histavg_wav=histavg_comp, wav_resume=comp_resume)
+       call seq_infodata_GetData(infodata, wav_present=comp_present,           &
+            wav_prognostic=comp_prognostic, wav_gnam=comp_gnam,                &
+            wav_phase=comp_phase, wav_nx=comp_nx, wav_ny=comp_ny,              &
+            histavg_wav=histavg_comp, wav_resume=comp_resume)
     else if (component_firstletter == 'e') then
-      if (present(comp_gnam)) then
-        comp_gnam = ''
-        if ((loglevel > 1) .and. seq_comm_iamroot(1)) then
-          write(logunit,*) trim(subname),' Note: ESP type has no gnam property'
-        end if
-      end if
-      if (present(comp_nx)) then
-        comp_nx = 1
-        if ((loglevel > 1) .and. seq_comm_iamroot(1)) then
-          write(logunit,*) trim(subname),' Note: ESP type has no nx property'
-        end if
-      end if
-      if (present(comp_ny)) then
-        comp_ny = 1
-        if ((loglevel > 1) .and. seq_comm_iamroot(1)) then
-          write(logunit,*) trim(subname),' Note: ESP type has no ny property'
-        end if
-      end if
-      if (present(histavg_comp)) then
-        histavg_comp = .false.
-        if ((loglevel > 1) .and. seq_comm_iamroot(1)) then
-          write(logunit,*) trim(subname),' Note: ESP type has no histavg property'
-        end if
-      end if
-      if (present(comp_resume)) then
-        comp_resume = ' '
-        if ((loglevel > 1) .and. seq_comm_iamroot(1)) then
-          write(logunit,*) trim(subname),' Note: ESP type has no resume property'
-        end if
-      end if
+       if (present(comp_gnam)) then
+          comp_gnam = ''
+          if ((loglevel > 1) .and. seq_comm_iamroot(1)) then
+             write(logunit,*) trim(subname),' Note: ESP type has no gnam property'
+          end if
+       end if
+       if (present(comp_nx)) then
+          comp_nx = 1
+          if ((loglevel > 1) .and. seq_comm_iamroot(1)) then
+             write(logunit,*) trim(subname),' Note: ESP type has no nx property'
+          end if
+       end if
+       if (present(comp_ny)) then
+          comp_ny = 1
+          if ((loglevel > 1) .and. seq_comm_iamroot(1)) then
+             write(logunit,*) trim(subname),' Note: ESP type has no ny property'
+          end if
+       end if
+       if (present(histavg_comp)) then
+          histavg_comp = .false.
+          if ((loglevel > 1) .and. seq_comm_iamroot(1)) then
+             write(logunit,*) trim(subname),' Note: ESP type has no histavg property'
+          end if
+       end if
+       if (present(comp_resume)) then
+          comp_resume = ' '
+          if ((loglevel > 1) .and. seq_comm_iamroot(1)) then
+             write(logunit,*) trim(subname),' Note: ESP type has no resume property'
+          end if
+       end if
 
-      call seq_infodata_GetData(infodata, esp_present=comp_present,           &
-           esp_prognostic=comp_prognostic, esp_phase=comp_phase)
+       call seq_infodata_GetData(infodata, esp_present=comp_present,           &
+            esp_prognostic=comp_prognostic, esp_phase=comp_phase)
     else
        call shr_sys_abort( subname//": unknown component-type first letter,'"//component_firstletter//"', aborting")
     end if
   END SUBROUTINE seq_infodata_GetData_bytype
 #endif
-! ^ ifndef CPRPGI
+  ! ^ ifndef CPRPGI
 
-!===============================================================================
-! !IROUTINE: seq_infodata_PutData_explicit -- Put values into infodata object
-!
-! !DESCRIPTION:
-!
-!     Put values into the infodata object.
-!
-! !INTERFACE: ------------------------------------------------------------------
+  !===============================================================================
+  ! !IROUTINE: seq_infodata_PutData_explicit -- Put values into infodata object
+  !
+  ! !DESCRIPTION:
+  !
+  !     Put values into the infodata object.
+  !
+  ! !INTERFACE: ------------------------------------------------------------------
 
-SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_desc, timing_dir,  &
-           model_version, username, hostname, rest_case_name, tchkpt_dir,     &
-           start_type, restart_pfile, restart_file, perpetual, perpetual_ymd, &
-           aqua_planet,aqua_planet_sst, brnch_retain_casename, &
-           single_column, scmlat,scmlon,logFilePostFix, outPathRoot,          &
-           atm_present, atm_prognostic, lnd_present, lnd_prognostic, rof_prognostic, &
-           rof_present, ocn_present, ocn_prognostic, ocnrof_prognostic,       &
-           ice_present, ice_prognostic, glc_present, glc_prognostic,          &
-           glc_coupled_fluxes,                                                &
-           flood_present, wav_present, wav_prognostic, rofice_present,        &
-           glclnd_present, glcocn_present, glcice_present, iceberg_prognostic,&
-           esp_present, esp_prognostic,                                       &
-           bfbflag, lnd_gnam, cpl_decomp, cpl_seq_option,                     &
-           ice_gnam, rof_gnam, glc_gnam, wav_gnam,                            &
-           atm_gnam, ocn_gnam, info_debug, dead_comps, read_restart,          &
-           shr_map_dopole, vect_map, aoflux_grid, run_barriers,               &
-           nextsw_cday, precip_fact, flux_epbal, flux_albav,                  &
-           glc_g2lupdate, atm_aero, esmf_map_flag, wall_time_limit,           &
-           do_budgets, do_histinit, drv_threading, flux_diurnal, gust_fac,    &
-           budget_inst, budget_daily, budget_month, force_stop_at,            &
-           budget_ann, budget_ltann, budget_ltend ,                           &
-           histaux_a2x    , histaux_a2x1hri, histaux_a2x1hr,                  &
-           histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yr,                  &
-           histaux_a2x24hr, histaux_l2x   , histaux_r2x     , orb_obliq,      &
-           histavg_atm, histavg_lnd, histavg_ocn, histavg_ice,                &
-           histavg_rof, histavg_glc, histavg_wav, histavg_xao,                &
-           orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
-           orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, wv_sat_scheme,      &
-           wv_sat_transition_start, wv_sat_use_tables, wv_sat_table_spacing,  &
-           tfreeze_option, glc_renormalize_smb, &
-           glc_phase, rof_phase, atm_phase, lnd_phase, ocn_phase, ice_phase,  &
-           wav_phase, esp_phase, wav_nx, wav_ny, atm_nx, atm_ny,              &
-           lnd_nx, lnd_ny, rof_nx, rof_ny, ice_nx, ice_ny, ocn_nx, ocn_ny,    &
-           glc_nx, glc_ny, eps_frac, eps_amask,                               &
-           eps_agrid, eps_aarea, eps_omask, eps_ogrid, eps_oarea,             &
-           reprosum_use_ddpdd, reprosum_diffmax, reprosum_recompute,          &
-           atm_resume, lnd_resume, ocn_resume, ice_resume,                    &
-           glc_resume, rof_resume, wav_resume, cpl_resume,                    &
-           mct_usealltoall, mct_usevector, glc_valid_input)
+  SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_desc, timing_dir,  &
+       model_version, username, hostname, rest_case_name, tchkpt_dir,     &
+       start_type, restart_pfile, restart_file, perpetual, perpetual_ymd, &
+       aqua_planet,aqua_planet_sst, brnch_retain_casename, &
+       single_column, scmlat,scmlon,logFilePostFix, outPathRoot,          &
+       atm_present, atm_prognostic, lnd_present, lnd_prognostic, rof_prognostic, &
+       rof_present, ocn_present, ocn_prognostic, ocnrof_prognostic,       &
+       ice_present, ice_prognostic, glc_present, glc_prognostic,          &
+       glc_coupled_fluxes,                                                &
+       flood_present, wav_present, wav_prognostic, rofice_present,        &
+       glclnd_present, glcocn_present, glcice_present, iceberg_prognostic,&
+       esp_present, esp_prognostic,                                       &
+       bfbflag, lnd_gnam, cpl_decomp, cpl_seq_option,                     &
+       ice_gnam, rof_gnam, glc_gnam, wav_gnam,                            &
+       atm_gnam, ocn_gnam, info_debug, dead_comps, read_restart,          &
+       shr_map_dopole, vect_map, aoflux_grid, run_barriers,               &
+       nextsw_cday, precip_fact, flux_epbal, flux_albav,                  &
+       glc_g2lupdate, atm_aero, esmf_map_flag, wall_time_limit,           &
+       do_budgets, do_histinit, drv_threading, flux_diurnal,              &
+       coldair_outbreak_mod,                                                           &
+       flux_convergence, flux_max_iteration, gust_fac,                    &
+       budget_inst, budget_daily, budget_month, force_stop_at,            &
+       budget_ann, budget_ltann, budget_ltend ,                           &
+       histaux_a2x    , histaux_a2x1hri, histaux_a2x1hr,                  &
+       histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yrg,                 &
+       histaux_a2x24hr, histaux_l2x   , histaux_r2x     , histaux_double_precision,  &
+       orb_obliq, histavg_atm, histavg_lnd, histavg_ocn, histavg_ice,     &
+       histavg_rof, histavg_glc, histavg_wav, histavg_xao,                &
+       orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
+       orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, wv_sat_scheme,      &
+       wv_sat_transition_start, wv_sat_use_tables, wv_sat_table_spacing,  &
+       tfreeze_option, glc_renormalize_smb, &
+       glc_phase, rof_phase, atm_phase, lnd_phase, ocn_phase, ice_phase,  &
+       wav_phase, esp_phase, wav_nx, wav_ny, atm_nx, atm_ny,              &
+       lnd_nx, lnd_ny, rof_nx, rof_ny, ice_nx, ice_ny, ocn_nx, ocn_ny,    &
+       glc_nx, glc_ny, eps_frac, eps_amask,                               &
+       eps_agrid, eps_aarea, eps_omask, eps_ogrid, eps_oarea,             &
+       reprosum_use_ddpdd, reprosum_diffmax, reprosum_recompute,          &
+       atm_resume, lnd_resume, ocn_resume, ice_resume,                    &
+       glc_resume, rof_resume, wav_resume, cpl_resume,                    &
+       mct_usealltoall, mct_usevector, glc_valid_input)
 
 
-   implicit none
+    implicit none
 
-! !INPUT/OUTPUT PARAMETERS:
+    ! !INPUT/OUTPUT PARAMETERS:
 
-   type(seq_infodata_type),          intent(INOUT) :: infodata                ! Input CCSM structure
-   character(len=*),       optional, intent(IN)    :: cime_model              ! CIME model (acme or cesm)
-   character(len=*),       optional, intent(IN)    :: start_type              ! Start type
-   character(len=*),       optional, intent(IN)    :: case_name               ! Short case identification
-   character(len=*),       optional, intent(IN)    :: case_desc               ! Long case description
-   character(len=*),       optional, intent(IN)    :: model_version           ! Model version
-   character(len=*),       optional, intent(IN)    :: username                ! Username
-   character(len=*),       optional, intent(IN)    :: hostname                ! Hostname
-   character(len=*),       optional, intent(IN)    :: rest_case_name          ! restart casename
-   character(len=*),       optional, intent(IN)    :: timing_dir              ! timing dir name
-   character(len=*),       optional, intent(IN)    :: tchkpt_dir              ! timing checkpoint dir name
-   logical,                optional, intent(IN)    :: aqua_planet             ! aqua_planet mode
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: aqua_planet_sst         ! aqua_planet sst type
-   logical,                optional, intent(IN)    :: run_barriers            ! barrier component run calls
-   logical,                optional, intent(IN)    :: brnch_retain_casename
-   logical,                optional, intent(IN)    :: read_restart            ! read restart flag
-   character(len=*),       optional, intent(IN)    :: restart_pfile           ! Restart pointer file
-   character(len=*),       optional, intent(IN)    :: restart_file            ! Restart file pathname
-   logical,                optional, intent(IN)    :: single_column
-   real (SHR_KIND_R8),     optional, intent(IN)    :: scmlat
-   real (SHR_KIND_R8),     optional, intent(IN)    :: scmlon
-   character(len=*),       optional, intent(IN)    :: logFilePostFix          ! output log file postfix
-   character(len=*),       optional, intent(IN)    :: outPathRoot             ! output file root
-   logical,                optional, intent(IN)    :: perpetual               ! If this is perpetual
-   integer,                optional, intent(IN)    :: perpetual_ymd           ! If perpetual, date
-   character(len=*),       optional, intent(IN)    :: orb_mode                ! orbital mode
-   integer,                optional, intent(IN)    :: orb_iyear               ! orbital year
-   integer,                optional, intent(IN)    :: orb_iyear_align         ! orbital year model year align
-   real(SHR_KIND_R8),      optional, intent(IN)    :: orb_eccen               ! See shr_orb_mod
-   real(SHR_KIND_R8),      optional, intent(IN)    :: orb_obliqr              ! See shr_orb_mod
-   real(SHR_KIND_R8),      optional, intent(IN)    :: orb_obliq               ! See shr_orb_mod
-   real(SHR_KIND_R8),      optional, intent(IN)    :: orb_lambm0              ! See shr_orb_mod
-   real(SHR_KIND_R8),      optional, intent(IN)    :: orb_mvelpp              ! See shr_orb_mod
-   real(SHR_KIND_R8),      optional, intent(IN)    :: orb_mvelp               ! See shr_orb_mod
-   character(len=*),       optional, intent(IN)    :: wv_sat_scheme           ! Water vapor saturation pressure scheme
-   real(SHR_KIND_R8),      optional, intent(IN)    :: wv_sat_transition_start ! Saturation transition range
-   logical,                optional, intent(IN)    :: wv_sat_use_tables       ! Saturation pressure lookup tables
-   real(SHR_KIND_R8),      optional, intent(IN)    :: wv_sat_table_spacing    ! Saturation pressure table resolution
-   character(len=*),       optional, intent(IN)    :: tfreeze_option          ! Freezing point of salt water
-   character(len=*),       optional, intent(IN)    :: flux_epbal              ! selects E,P,R adjustment technique
-   logical,                optional, intent(IN)    :: flux_albav              ! T => no diurnal cycle in ocn albedos
-   logical,                optional, intent(IN)    :: flux_diurnal            ! T => diurnal cycle in atm/ocn flux
-   real(SHR_KIND_R8),      optional, intent(IN)    :: gust_fac                ! wind gustiness factor
-   character(len=*),       optional, intent(IN)    :: glc_renormalize_smb     ! Whether to renormalize smb sent from lnd -> glc
-   real(SHR_KIND_R8),      optional, intent(IN)    :: wall_time_limit         ! force stop wall time (hours)
-   character(len=*),       optional, intent(IN)    :: force_stop_at           ! force a stop at next (month, day, etc)
-   character(len=*),       optional, intent(IN)    :: atm_gnam                ! atm grid
-   character(len=*),       optional, intent(IN)    :: lnd_gnam                ! lnd grid
-   character(len=*),       optional, intent(IN)    :: ocn_gnam                ! ocn grid
-   character(len=*),       optional, intent(IN)    :: ice_gnam                ! ice grid
-   character(len=*),       optional, intent(IN)    :: rof_gnam                ! rof grid
-   character(len=*),       optional, intent(IN)    :: glc_gnam                ! glc grid
-   character(len=*),       optional, intent(IN)    :: wav_gnam                ! wav grid
-   logical,                optional, intent(IN)    :: shr_map_dopole          ! pole corrections in shr_map_mod
-   character(len=*),       optional, intent(IN)    :: vect_map                ! vector mapping option
-   character(len=*),       optional, intent(IN)    :: aoflux_grid             ! grid for atm ocn flux calc
-   integer,                optional, intent(IN)    :: cpl_decomp              ! coupler decomp
-   character(len=*),       optional, intent(IN)    :: cpl_seq_option          ! coupler sequencing option
-   logical,                optional, intent(IN)    :: do_budgets              ! heat/water budgets
-   logical,                optional, intent(IN)    :: do_histinit             ! initial history file
-   integer,                optional, intent(IN)    :: budget_inst             ! inst budget
-   integer,                optional, intent(IN)    :: budget_daily            ! daily budget
-   integer,                optional, intent(IN)    :: budget_month            ! month budget
-   integer,                optional, intent(IN)    :: budget_ann              ! ann budget
-   integer,                optional, intent(IN)    :: budget_ltann            ! ltann budget
-   integer,                optional, intent(IN)    :: budget_ltend            ! ltend budget
-   logical,                optional, intent(IN)    :: histaux_a2x
-   logical,                optional, intent(IN)    :: histaux_a2x1hri
-   logical,                optional, intent(IN)    :: histaux_a2x1hr
-   logical,                optional, intent(IN)    :: histaux_a2x3hr
-   logical,                optional, intent(IN)    :: histaux_a2x3hrp
-   logical,                optional, intent(IN)    :: histaux_a2x24hr
-   logical,                optional, intent(IN)    :: histaux_l2x1yr
-   logical,                optional, intent(IN)    :: histaux_l2x
-   logical,                optional, intent(IN)    :: histaux_r2x
-   logical,                optional, intent(IN)    :: histavg_atm
-   logical,                optional, intent(IN)    :: histavg_lnd
-   logical,                optional, intent(IN)    :: histavg_ocn
-   logical,                optional, intent(IN)    :: histavg_ice
-   logical,                optional, intent(IN)    :: histavg_rof
-   logical,                optional, intent(IN)    :: histavg_glc
-   logical,                optional, intent(IN)    :: histavg_wav
-   logical,                optional, intent(IN)    :: histavg_xao
-   logical,                optional, intent(IN)    :: drv_threading      ! driver threading control flag
-   real(SHR_KIND_R8),      optional, intent(IN)    :: eps_frac           ! fraction error tolerance
-   real(SHR_KIND_R8),      optional, intent(IN)    :: eps_amask          ! atm mask error tolerance
-   real(SHR_KIND_R8),      optional, intent(IN)    :: eps_agrid          ! atm grid error tolerance
-   real(SHR_KIND_R8),      optional, intent(IN)    :: eps_aarea          ! atm area error tolerance
-   real(SHR_KIND_R8),      optional, intent(IN)    :: eps_omask          ! ocn mask error tolerance
-   real(SHR_KIND_R8),      optional, intent(IN)    :: eps_ogrid          ! ocn grid error tolerance
-   real(SHR_KIND_R8),      optional, intent(IN)    :: eps_oarea          ! ocn area error tolerance
-   logical,                optional, intent(IN)    :: reprosum_use_ddpdd ! use ddpdd algorithm
-   real(SHR_KIND_R8),      optional, intent(IN)    :: reprosum_diffmax   ! maximum difference tolerance
-   logical,                optional, intent(IN)    :: reprosum_recompute ! recompute if tolerance exceeded
-   logical,                optional, intent(IN)    :: mct_usealltoall    ! flag for mct alltoall
-   logical,                optional, intent(IN)    :: mct_usevector      ! flag for mct vector
+    type(seq_infodata_type),          intent(INOUT) :: infodata                ! Input CCSM structure
+    character(len=*),       optional, intent(IN)    :: cime_model              ! CIME model (e3sm or cesm)
+    character(len=*),       optional, intent(IN)    :: start_type              ! Start type
+    character(len=*),       optional, intent(IN)    :: case_name               ! Short case identification
+    character(len=*),       optional, intent(IN)    :: case_desc               ! Long case description
+    character(len=*),       optional, intent(IN)    :: model_version           ! Model version
+    character(len=*),       optional, intent(IN)    :: username                ! Username
+    character(len=*),       optional, intent(IN)    :: hostname                ! Hostname
+    character(len=*),       optional, intent(IN)    :: rest_case_name          ! restart casename
+    character(len=*),       optional, intent(IN)    :: timing_dir              ! timing dir name
+    character(len=*),       optional, intent(IN)    :: tchkpt_dir              ! timing checkpoint dir name
+    logical,                optional, intent(IN)    :: aqua_planet             ! aqua_planet mode
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: aqua_planet_sst         ! aqua_planet sst type
+    logical,                optional, intent(IN)    :: run_barriers            ! barrier component run calls
+    logical,                optional, intent(IN)    :: brnch_retain_casename
+    logical,                optional, intent(IN)    :: read_restart            ! read restart flag
+    character(len=*),       optional, intent(IN)    :: restart_pfile           ! Restart pointer file
+    character(len=*),       optional, intent(IN)    :: restart_file            ! Restart file pathname
+    logical,                optional, intent(IN)    :: single_column
+    real (SHR_KIND_R8),     optional, intent(IN)    :: scmlat
+    real (SHR_KIND_R8),     optional, intent(IN)    :: scmlon
+    character(len=*),       optional, intent(IN)    :: logFilePostFix          ! output log file postfix
+    character(len=*),       optional, intent(IN)    :: outPathRoot             ! output file root
+    logical,                optional, intent(IN)    :: perpetual               ! If this is perpetual
+    integer,                optional, intent(IN)    :: perpetual_ymd           ! If perpetual, date
+    character(len=*),       optional, intent(IN)    :: orb_mode                ! orbital mode
+    integer,                optional, intent(IN)    :: orb_iyear               ! orbital year
+    integer,                optional, intent(IN)    :: orb_iyear_align         ! orbital year model year align
+    real(SHR_KIND_R8),      optional, intent(IN)    :: orb_eccen               ! See shr_orb_mod
+    real(SHR_KIND_R8),      optional, intent(IN)    :: orb_obliqr              ! See shr_orb_mod
+    real(SHR_KIND_R8),      optional, intent(IN)    :: orb_obliq               ! See shr_orb_mod
+    real(SHR_KIND_R8),      optional, intent(IN)    :: orb_lambm0              ! See shr_orb_mod
+    real(SHR_KIND_R8),      optional, intent(IN)    :: orb_mvelpp              ! See shr_orb_mod
+    real(SHR_KIND_R8),      optional, intent(IN)    :: orb_mvelp               ! See shr_orb_mod
+    character(len=*),       optional, intent(IN)    :: wv_sat_scheme           ! Water vapor saturation pressure scheme
+    real(SHR_KIND_R8),      optional, intent(IN)    :: wv_sat_transition_start ! Saturation transition range
+    logical,                optional, intent(IN)    :: wv_sat_use_tables       ! Saturation pressure lookup tables
+    real(SHR_KIND_R8),      optional, intent(IN)    :: wv_sat_table_spacing    ! Saturation pressure table resolution
+    character(len=*),       optional, intent(IN)    :: tfreeze_option          ! Freezing point of salt water
+    character(len=*),       optional, intent(IN)    :: flux_epbal              ! selects E,P,R adjustment technique
+    logical,                optional, intent(IN)    :: flux_albav              ! T => no diurnal cycle in ocn albedos
+    logical,                optional, intent(IN)    :: flux_diurnal            ! T => diurnal cycle in atm/ocn flux
+    logical, optional, intent(in) :: coldair_outbreak_mod
+    real(SHR_KIND_R8),      optional, intent(IN)    :: flux_convergence   ! atmocn flux calc convergence value
+    integer,                optional, intent(IN)    :: flux_max_iteration ! max number of iterations of atmocn flux loop
+    real(SHR_KIND_R8),      optional, intent(IN)    :: gust_fac                ! wind gustiness factor
+    character(len=*),       optional, intent(IN)    :: glc_renormalize_smb     ! Whether to renormalize smb sent from lnd -> glc
+    real(SHR_KIND_R8),      optional, intent(IN)    :: wall_time_limit         ! force stop wall time (hours)
+    character(len=*),       optional, intent(IN)    :: force_stop_at           ! force a stop at next (month, day, etc)
+    character(len=*),       optional, intent(IN)    :: atm_gnam                ! atm grid
+    character(len=*),       optional, intent(IN)    :: lnd_gnam                ! lnd grid
+    character(len=*),       optional, intent(IN)    :: ocn_gnam                ! ocn grid
+    character(len=*),       optional, intent(IN)    :: ice_gnam                ! ice grid
+    character(len=*),       optional, intent(IN)    :: rof_gnam                ! rof grid
+    character(len=*),       optional, intent(IN)    :: glc_gnam                ! glc grid
+    character(len=*),       optional, intent(IN)    :: wav_gnam                ! wav grid
+    logical,                optional, intent(IN)    :: shr_map_dopole          ! pole corrections in shr_map_mod
+    character(len=*),       optional, intent(IN)    :: vect_map                ! vector mapping option
+    character(len=*),       optional, intent(IN)    :: aoflux_grid             ! grid for atm ocn flux calc
+    integer,                optional, intent(IN)    :: cpl_decomp              ! coupler decomp
+    character(len=*),       optional, intent(IN)    :: cpl_seq_option          ! coupler sequencing option
+    logical,                optional, intent(IN)    :: do_budgets              ! heat/water budgets
+    logical,                optional, intent(IN)    :: do_histinit             ! initial history file
+    integer,                optional, intent(IN)    :: budget_inst             ! inst budget
+    integer,                optional, intent(IN)    :: budget_daily            ! daily budget
+    integer,                optional, intent(IN)    :: budget_month            ! month budget
+    integer,                optional, intent(IN)    :: budget_ann              ! ann budget
+    integer,                optional, intent(IN)    :: budget_ltann            ! ltann budget
+    integer,                optional, intent(IN)    :: budget_ltend            ! ltend budget
+    logical,                optional, intent(IN)    :: histaux_a2x
+    logical,                optional, intent(IN)    :: histaux_a2x1hri
+    logical,                optional, intent(IN)    :: histaux_a2x1hr
+    logical,                optional, intent(IN)    :: histaux_a2x3hr
+    logical,                optional, intent(IN)    :: histaux_a2x3hrp
+    logical,                optional, intent(IN)    :: histaux_a2x24hr
+    logical,                optional, intent(IN)    :: histaux_l2x1yrg
+    logical,                optional, intent(IN)    :: histaux_double_precision
+    logical,                optional, intent(IN)    :: histaux_l2x
+    logical,                optional, intent(IN)    :: histaux_r2x
+    logical,                optional, intent(IN)    :: histavg_atm
+    logical,                optional, intent(IN)    :: histavg_lnd
+    logical,                optional, intent(IN)    :: histavg_ocn
+    logical,                optional, intent(IN)    :: histavg_ice
+    logical,                optional, intent(IN)    :: histavg_rof
+    logical,                optional, intent(IN)    :: histavg_glc
+    logical,                optional, intent(IN)    :: histavg_wav
+    logical,                optional, intent(IN)    :: histavg_xao
+    logical,                optional, intent(IN)    :: drv_threading      ! driver threading control flag
+    real(SHR_KIND_R8),      optional, intent(IN)    :: eps_frac           ! fraction error tolerance
+    real(SHR_KIND_R8),      optional, intent(IN)    :: eps_amask          ! atm mask error tolerance
+    real(SHR_KIND_R8),      optional, intent(IN)    :: eps_agrid          ! atm grid error tolerance
+    real(SHR_KIND_R8),      optional, intent(IN)    :: eps_aarea          ! atm area error tolerance
+    real(SHR_KIND_R8),      optional, intent(IN)    :: eps_omask          ! ocn mask error tolerance
+    real(SHR_KIND_R8),      optional, intent(IN)    :: eps_ogrid          ! ocn grid error tolerance
+    real(SHR_KIND_R8),      optional, intent(IN)    :: eps_oarea          ! ocn area error tolerance
+    logical,                optional, intent(IN)    :: reprosum_use_ddpdd ! use ddpdd algorithm
+    real(SHR_KIND_R8),      optional, intent(IN)    :: reprosum_diffmax   ! maximum difference tolerance
+    logical,                optional, intent(IN)    :: reprosum_recompute ! recompute if tolerance exceeded
+    logical,                optional, intent(IN)    :: mct_usealltoall    ! flag for mct alltoall
+    logical,                optional, intent(IN)    :: mct_usevector      ! flag for mct vector
 
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: info_debug
-   logical,                optional, intent(IN)    :: bfbflag
-   logical,                optional, intent(IN)    :: esmf_map_flag
-   logical,                optional, intent(IN)    :: dead_comps         ! do we have dead models
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: info_debug
+    logical,                optional, intent(IN)    :: bfbflag
+    logical,                optional, intent(IN)    :: esmf_map_flag
+    logical,                optional, intent(IN)    :: dead_comps         ! do we have dead models
 
-   logical,                optional, intent(IN)    :: atm_present        ! provide data
-   logical,                optional, intent(IN)    :: atm_prognostic     ! need data
-   logical,                optional, intent(IN)    :: lnd_present
-   logical,                optional, intent(IN)    :: lnd_prognostic
-   logical,                optional, intent(IN)    :: rof_present
-   logical,                optional, intent(IN)    :: rofice_present
-   logical,                optional, intent(IN)    :: rof_prognostic
-   logical,                optional, intent(IN)    :: flood_present
-   logical,                optional, intent(IN)    :: ocn_present
-   logical,                optional, intent(IN)    :: ocn_prognostic
-   logical,                optional, intent(IN)    :: ocnrof_prognostic
-   logical,                optional, intent(IN)    :: ice_present
-   logical,                optional, intent(IN)    :: ice_prognostic
-   logical,                optional, intent(IN)    :: iceberg_prognostic
-   logical,                optional, intent(IN)    :: glc_present
-   logical,                optional, intent(IN)    :: glclnd_present
-   logical,                optional, intent(IN)    :: glcocn_present
-   logical,                optional, intent(IN)    :: glcice_present
-   logical,                optional, intent(IN)    :: glc_prognostic
-   logical,                optional, intent(IN)    :: glc_coupled_fluxes
-   logical,                optional, intent(IN)    :: wav_present
-   logical,                optional, intent(IN)    :: wav_prognostic
-   logical,                optional, intent(IN)    :: esp_present
-   logical,                optional, intent(IN)    :: esp_prognostic
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: atm_nx             ! nx,ny 2d grid size global
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: atm_ny             ! nx,ny 2d grid size global
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: lnd_nx
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: lnd_ny
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: rof_nx
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: rof_ny
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: ice_nx
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: ice_ny
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: ocn_nx
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: ocn_ny
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: glc_nx
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: glc_ny
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: wav_nx
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: wav_ny
+    logical,                optional, intent(IN)    :: atm_present        ! provide data
+    logical,                optional, intent(IN)    :: atm_prognostic     ! need data
+    logical,                optional, intent(IN)    :: lnd_present
+    logical,                optional, intent(IN)    :: lnd_prognostic
+    logical,                optional, intent(IN)    :: rof_present
+    logical,                optional, intent(IN)    :: rofice_present
+    logical,                optional, intent(IN)    :: rof_prognostic
+    logical,                optional, intent(IN)    :: flood_present
+    logical,                optional, intent(IN)    :: ocn_present
+    logical,                optional, intent(IN)    :: ocn_prognostic
+    logical,                optional, intent(IN)    :: ocnrof_prognostic
+    logical,                optional, intent(IN)    :: ice_present
+    logical,                optional, intent(IN)    :: ice_prognostic
+    logical,                optional, intent(IN)    :: iceberg_prognostic
+    logical,                optional, intent(IN)    :: glc_present
+    logical,                optional, intent(IN)    :: glclnd_present
+    logical,                optional, intent(IN)    :: glcocn_present
+    logical,                optional, intent(IN)    :: glcice_present
+    logical,                optional, intent(IN)    :: glc_prognostic
+    logical,                optional, intent(IN)    :: glc_coupled_fluxes
+    logical,                optional, intent(IN)    :: wav_present
+    logical,                optional, intent(IN)    :: wav_prognostic
+    logical,                optional, intent(IN)    :: esp_present
+    logical,                optional, intent(IN)    :: esp_prognostic
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: atm_nx             ! nx,ny 2d grid size global
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: atm_ny             ! nx,ny 2d grid size global
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: lnd_nx
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: lnd_ny
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: rof_nx
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: rof_ny
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: ice_nx
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: ice_ny
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: ocn_nx
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: ocn_ny
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: glc_nx
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: glc_ny
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: wav_nx
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: wav_ny
 
-   real(SHR_KIND_R8),      optional, intent(IN)    :: nextsw_cday        ! calendar of next atm shortwave
-   real(SHR_KIND_R8),      optional, intent(IN)    :: precip_fact        ! precip factor
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: atm_phase          ! atm phase
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: lnd_phase          ! lnd phase
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: ice_phase          ! ice phase
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: ocn_phase          ! ocn phase
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: glc_phase          ! glc phase
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: rof_phase          ! rof phase
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: wav_phase          ! wav phase
-   integer(SHR_KIND_IN),   optional, intent(IN) :: esp_phase             ! esp phase
-   logical,                optional, intent(IN) :: atm_aero              ! atm aerosols
-   logical,                optional, intent(IN) :: glc_g2lupdate         ! update glc2lnd fields in lnd model
-   logical,                optional, intent(IN) :: glc_valid_input
-   character(SHR_KIND_CL), optional, intent(IN) :: atm_resume(:)         ! atm resume
-   character(SHR_KIND_CL), optional, intent(IN) :: lnd_resume(:)         ! lnd resume
-   character(SHR_KIND_CL), optional, intent(IN) :: ice_resume(:)         ! ice resume
-   character(SHR_KIND_CL), optional, intent(IN) :: ocn_resume(:)         ! ocn resume
-   character(SHR_KIND_CL), optional, intent(IN) :: glc_resume(:)         ! glc resume
-   character(SHR_KIND_CL), optional, intent(IN) :: rof_resume(:)         ! rof resume
-   character(SHR_KIND_CL), optional, intent(IN) :: wav_resume(:)         ! wav resume
-   character(SHR_KIND_CL), optional, intent(IN) :: cpl_resume            ! cpl resume
+    real(SHR_KIND_R8),      optional, intent(IN)    :: nextsw_cday        ! calendar of next atm shortwave
+    real(SHR_KIND_R8),      optional, intent(IN)    :: precip_fact        ! precip factor
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: atm_phase          ! atm phase
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: lnd_phase          ! lnd phase
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: ice_phase          ! ice phase
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: ocn_phase          ! ocn phase
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: glc_phase          ! glc phase
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: rof_phase          ! rof phase
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: wav_phase          ! wav phase
+    integer(SHR_KIND_IN),   optional, intent(IN) :: esp_phase             ! esp phase
+    logical,                optional, intent(IN) :: atm_aero              ! atm aerosols
+    logical,                optional, intent(IN) :: glc_g2lupdate         ! update glc2lnd fields in lnd model
+    logical,                optional, intent(IN) :: glc_valid_input
+    character(SHR_KIND_CL), optional, intent(IN) :: atm_resume(:)         ! atm resume
+    character(SHR_KIND_CL), optional, intent(IN) :: lnd_resume(:)         ! lnd resume
+    character(SHR_KIND_CL), optional, intent(IN) :: ice_resume(:)         ! ice resume
+    character(SHR_KIND_CL), optional, intent(IN) :: ocn_resume(:)         ! ocn resume
+    character(SHR_KIND_CL), optional, intent(IN) :: glc_resume(:)         ! glc resume
+    character(SHR_KIND_CL), optional, intent(IN) :: rof_resume(:)         ! rof resume
+    character(SHR_KIND_CL), optional, intent(IN) :: wav_resume(:)         ! wav resume
+    character(SHR_KIND_CL), optional, intent(IN) :: cpl_resume            ! cpl resume
 
-!EOP
+    !EOP
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_infodata_PutData_explicit) '
 
-!-------------------------------------------------------------------------------
+    !-------------------------------------------------------------------------------
 
     if ( present(cime_model)     ) infodata%cime_model     = cime_model
     if ( present(start_type)     ) infodata%start_type     = start_type
@@ -1743,6 +1781,9 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
     if ( present(flux_epbal)     ) infodata%flux_epbal     = flux_epbal
     if ( present(flux_albav)     ) infodata%flux_albav     = flux_albav
     if ( present(flux_diurnal)   ) infodata%flux_diurnal   = flux_diurnal
+    if ( present(coldair_outbreak_mod)   ) infodata%coldair_outbreak_mod  = coldair_outbreak_mod
+    if ( present(flux_convergence)) infodata%flux_convergence  = flux_convergence
+    if ( present(flux_max_iteration)) infodata%flux_max_iteration   = flux_max_iteration
     if ( present(gust_fac)       ) infodata%gust_fac       = gust_fac
     if ( present(glc_renormalize_smb)) infodata%glc_renormalize_smb = glc_renormalize_smb
     if ( present(wall_time_limit)) infodata%wall_time_limit= wall_time_limit
@@ -1773,9 +1814,10 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
     if ( present(histaux_a2x3hr) ) infodata%histaux_a2x3hr = histaux_a2x3hr
     if ( present(histaux_a2x3hrp)) infodata%histaux_a2x3hrp= histaux_a2x3hrp
     if ( present(histaux_a2x24hr)) infodata%histaux_a2x24hr= histaux_a2x24hr
-    if ( present(histaux_l2x1yr) ) infodata%histaux_l2x1yr = histaux_l2x1yr
+    if ( present(histaux_l2x1yrg)) infodata%histaux_l2x1yrg= histaux_l2x1yrg
     if ( present(histaux_l2x)    ) infodata%histaux_l2x    = histaux_l2x
     if ( present(histaux_r2x)    ) infodata%histaux_r2x    = histaux_r2x
+    if ( present(histaux_double_precision)) infodata%histaux_double_precision = histaux_double_precision
     if ( present(histavg_atm)    ) infodata%histavg_atm    = histavg_atm
     if ( present(histavg_lnd)    ) infodata%histavg_lnd    = histavg_lnd
     if ( present(histavg_ocn)    ) infodata%histavg_ocn    = histavg_ocn
@@ -1856,271 +1898,270 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
     if ( present(glc_g2lupdate)  ) infodata%glc_g2lupdate  = glc_g2lupdate
     if ( present(glc_valid_input) ) infodata%glc_valid_input = glc_valid_input
     if ( present(atm_resume) ) then
-      if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%atm_resume(:) = atm_resume(:)
-      else if (ANY(len_trim(atm_resume(:)) > 0)) then
-        allocate(infodata%pause_resume)
-        infodata%pause_resume%atm_resume(:) = atm_resume(:)
-      end if
+       if (associated(infodata%pause_resume)) then
+          infodata%pause_resume%atm_resume(:) = atm_resume(:)
+       else if (ANY(len_trim(atm_resume(:)) > 0)) then
+          allocate(infodata%pause_resume)
+          infodata%pause_resume%atm_resume(:) = atm_resume(:)
+       end if
     end if
     if ( present(lnd_resume) ) then
-      if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%lnd_resume(:) = lnd_resume(:)
-      else if (ANY(len_trim(lnd_resume(:)) > 0)) then
-        allocate(infodata%pause_resume)
-        infodata%pause_resume%lnd_resume(:) = lnd_resume(:)
-      end if
+       if (associated(infodata%pause_resume)) then
+          infodata%pause_resume%lnd_resume(:) = lnd_resume(:)
+       else if (ANY(len_trim(lnd_resume(:)) > 0)) then
+          allocate(infodata%pause_resume)
+          infodata%pause_resume%lnd_resume(:) = lnd_resume(:)
+       end if
     end if
     if ( present(ice_resume) ) then
-      if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%ice_resume(:) = ice_resume(:)
-      else if (ANY(len_trim(ice_resume(:)) > 0)) then
-        allocate(infodata%pause_resume)
-        infodata%pause_resume%ice_resume(:) = ice_resume(:)
-      end if
+       if (associated(infodata%pause_resume)) then
+          infodata%pause_resume%ice_resume(:) = ice_resume(:)
+       else if (ANY(len_trim(ice_resume(:)) > 0)) then
+          allocate(infodata%pause_resume)
+          infodata%pause_resume%ice_resume(:) = ice_resume(:)
+       end if
     end if
     if ( present(ocn_resume) ) then
-      if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%ocn_resume(:) = ocn_resume(:)
-      else if (ANY(len_trim(ocn_resume(:)) > 0)) then
-        allocate(infodata%pause_resume)
-        infodata%pause_resume%ocn_resume(:) = ocn_resume(:)
-      end if
+       if (associated(infodata%pause_resume)) then
+          infodata%pause_resume%ocn_resume(:) = ocn_resume(:)
+       else if (ANY(len_trim(ocn_resume(:)) > 0)) then
+          allocate(infodata%pause_resume)
+          infodata%pause_resume%ocn_resume(:) = ocn_resume(:)
+       end if
     end if
     if ( present(glc_resume) ) then
-      if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%glc_resume(:) = glc_resume(:)
-      else if (ANY(len_trim(glc_resume(:)) > 0)) then
-        allocate(infodata%pause_resume)
-        infodata%pause_resume%glc_resume(:) = glc_resume(:)
-      end if
+       if (associated(infodata%pause_resume)) then
+          infodata%pause_resume%glc_resume(:) = glc_resume(:)
+       else if (ANY(len_trim(glc_resume(:)) > 0)) then
+          allocate(infodata%pause_resume)
+          infodata%pause_resume%glc_resume(:) = glc_resume(:)
+       end if
     end if
     if ( present(rof_resume) ) then
-      if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%rof_resume(:) = rof_resume(:)
-      else if (ANY(len_trim(rof_resume(:)) > 0)) then
-        allocate(infodata%pause_resume)
-        infodata%pause_resume%rof_resume(:) = rof_resume(:)
-      end if
+       if (associated(infodata%pause_resume)) then
+          infodata%pause_resume%rof_resume(:) = rof_resume(:)
+       else if (ANY(len_trim(rof_resume(:)) > 0)) then
+          allocate(infodata%pause_resume)
+          infodata%pause_resume%rof_resume(:) = rof_resume(:)
+       end if
     end if
     if ( present(wav_resume) ) then
-      if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%wav_resume(:) = wav_resume(:)
-      else if (ANY(len_trim(wav_resume(:)) > 0)) then
-        allocate(infodata%pause_resume)
-        infodata%pause_resume%wav_resume(:) = wav_resume(:)
-      end if
+       if (associated(infodata%pause_resume)) then
+          infodata%pause_resume%wav_resume(:) = wav_resume(:)
+       else if (ANY(len_trim(wav_resume(:)) > 0)) then
+          allocate(infodata%pause_resume)
+          infodata%pause_resume%wav_resume(:) = wav_resume(:)
+       end if
     end if
     if ( present(cpl_resume) ) then
-      if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%cpl_resume = cpl_resume
-      else if (len_trim(cpl_resume) > 0) then
-        allocate(infodata%pause_resume)
-        infodata%pause_resume%cpl_resume = cpl_resume
-      end if
+       if (associated(infodata%pause_resume)) then
+          infodata%pause_resume%cpl_resume = cpl_resume
+       else if (len_trim(cpl_resume) > 0) then
+          allocate(infodata%pause_resume)
+          infodata%pause_resume%cpl_resume = cpl_resume
+       end if
     end if
 
-END SUBROUTINE seq_infodata_PutData_explicit
+  END SUBROUTINE seq_infodata_PutData_explicit
 
 #ifndef CPRPGI
-!===============================================================================
-! !IROUTINE: seq_infodata_PutData_bytype -- Put values into infodata object
-!
-! !DESCRIPTION:
-!
-!     Put values into the infodata object.
-!
-! !INTERFACE: ------------------------------------------------------------------
+  !===============================================================================
+  ! !IROUTINE: seq_infodata_PutData_bytype -- Put values into infodata object
+  !
+  ! !DESCRIPTION:
+  !
+  !     Put values into the infodata object.
+  !
+  ! !INTERFACE: ------------------------------------------------------------------
 
-SUBROUTINE seq_infodata_PutData_bytype( component_firstletter, infodata,      &
-           comp_present, comp_prognostic, comp_gnam,                          &
-           histavg_comp, comp_phase, comp_nx, comp_ny, comp_resume)
+  SUBROUTINE seq_infodata_PutData_bytype( component_firstletter, infodata,      &
+       comp_present, comp_prognostic, comp_gnam,                          &
+       histavg_comp, comp_phase, comp_nx, comp_ny, comp_resume)
 
-   implicit none
+    implicit none
 
-! !INPUT/OUTPUT PARAMETERS:
+    ! !INPUT/OUTPUT PARAMETERS:
 
-   character(len=1),                 intent(IN)    :: component_firstletter
-   type(seq_infodata_type),          intent(INOUT) :: infodata        ! Input CCSM structure
-   logical,                optional, intent(IN)    :: comp_present    ! provide data
-   logical,                optional, intent(IN)    :: comp_prognostic ! need data
-   character(len=*),       optional, intent(IN)    :: comp_gnam       ! comp grid
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: comp_nx         ! nx,ny 2d grid size global
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: comp_ny         ! nx,ny 2d grid size global
-   integer(SHR_KIND_IN),   optional, intent(IN)    :: comp_phase
-   logical,                optional, intent(IN)    :: histavg_comp
-   character(SHR_KIND_CL), optional, intent(IN) :: comp_resume(:)
+    character(len=1),                 intent(IN)    :: component_firstletter
+    type(seq_infodata_type),          intent(INOUT) :: infodata        ! Input CCSM structure
+    logical,                optional, intent(IN)    :: comp_present    ! provide data
+    logical,                optional, intent(IN)    :: comp_prognostic ! need data
+    character(len=*),       optional, intent(IN)    :: comp_gnam       ! comp grid
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: comp_nx         ! nx,ny 2d grid size global
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: comp_ny         ! nx,ny 2d grid size global
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: comp_phase
+    logical,                optional, intent(IN)    :: histavg_comp
+    character(SHR_KIND_CL), optional, intent(IN)    :: comp_resume(:)
 
-!EOP
+    !EOP
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_infodata_PutData_bytype) '
 
-!-------------------------------------------------------------------------------
+    !-------------------------------------------------------------------------------
 
     if (component_firstletter == 'a') then
-      call seq_infodata_PutData(infodata, atm_present=comp_present,           &
-           atm_prognostic=comp_prognostic, atm_gnam=comp_gnam,                &
-           atm_phase=comp_phase, atm_nx=comp_nx, atm_ny=comp_ny,              &
-           histavg_atm=histavg_comp, atm_resume=comp_resume)
+       call seq_infodata_PutData(infodata, atm_present=comp_present,           &
+            atm_prognostic=comp_prognostic, atm_gnam=comp_gnam,                &
+            atm_phase=comp_phase, atm_nx=comp_nx, atm_ny=comp_ny,              &
+            histavg_atm=histavg_comp, atm_resume=comp_resume)
     else if (component_firstletter == 'l') then
-      call seq_infodata_PutData(infodata, lnd_present=comp_present,           &
-           lnd_prognostic=comp_prognostic, lnd_gnam=comp_gnam,                &
-           lnd_phase=comp_phase, lnd_nx=comp_nx, lnd_ny=comp_ny,              &
-           histavg_lnd=histavg_comp, lnd_resume=comp_resume)
+       call seq_infodata_PutData(infodata, lnd_present=comp_present,           &
+            lnd_prognostic=comp_prognostic, lnd_gnam=comp_gnam,                &
+            lnd_phase=comp_phase, lnd_nx=comp_nx, lnd_ny=comp_ny,              &
+            histavg_lnd=histavg_comp, lnd_resume=comp_resume)
     else if (component_firstletter == 'i') then
-      call seq_infodata_PutData(infodata, ice_present=comp_present,           &
-           ice_prognostic=comp_prognostic, ice_gnam=comp_gnam,                &
-           ice_phase=comp_phase, ice_nx=comp_nx, ice_ny=comp_ny,              &
-           histavg_ice=histavg_comp, ice_resume=comp_resume)
+       call seq_infodata_PutData(infodata, ice_present=comp_present,           &
+            ice_prognostic=comp_prognostic, ice_gnam=comp_gnam,                &
+            ice_phase=comp_phase, ice_nx=comp_nx, ice_ny=comp_ny,              &
+            histavg_ice=histavg_comp, ice_resume=comp_resume)
     else if (component_firstletter == 'o') then
-      call seq_infodata_PutData(infodata, ocn_present=comp_present,           &
-           ocn_prognostic=comp_prognostic, ocn_gnam=comp_gnam,                &
-           ocn_phase=comp_phase, ocn_nx=comp_nx, ocn_ny=comp_ny,              &
-           histavg_ocn=histavg_comp, ocn_resume=comp_resume)
+       call seq_infodata_PutData(infodata, ocn_present=comp_present,           &
+            ocn_prognostic=comp_prognostic, ocn_gnam=comp_gnam,                &
+            ocn_phase=comp_phase, ocn_nx=comp_nx, ocn_ny=comp_ny,              &
+            histavg_ocn=histavg_comp, ocn_resume=comp_resume)
     else if (component_firstletter == 'r') then
-      call seq_infodata_PutData(infodata, rof_present=comp_present,           &
-           rof_prognostic=comp_prognostic, rof_gnam=comp_gnam,                &
-           rof_phase=comp_phase, rof_nx=comp_nx, rof_ny=comp_ny,              &
-           histavg_rof=histavg_comp, rof_resume=comp_resume)
+       call seq_infodata_PutData(infodata, rof_present=comp_present,           &
+            rof_prognostic=comp_prognostic, rof_gnam=comp_gnam,                &
+            rof_phase=comp_phase, rof_nx=comp_nx, rof_ny=comp_ny,              &
+            histavg_rof=histavg_comp, rof_resume=comp_resume)
     else if (component_firstletter == 'g') then
-      call seq_infodata_PutData(infodata, glc_present=comp_present,           &
-           glc_prognostic=comp_prognostic, glc_gnam=comp_gnam,                &
-           glc_phase=comp_phase, glc_nx=comp_nx, glc_ny=comp_ny,              &
-           histavg_glc=histavg_comp, glc_resume=comp_resume)
+       call seq_infodata_PutData(infodata, glc_present=comp_present,           &
+            glc_prognostic=comp_prognostic, glc_gnam=comp_gnam,                &
+            glc_phase=comp_phase, glc_nx=comp_nx, glc_ny=comp_ny,              &
+            histavg_glc=histavg_comp, glc_resume=comp_resume)
     else if (component_firstletter == 'w') then
-      call seq_infodata_PutData(infodata, wav_present=comp_present,           &
-           wav_prognostic=comp_prognostic, wav_gnam=comp_gnam,                &
-           wav_phase=comp_phase, wav_nx=comp_nx, wav_ny=comp_ny,              &
-           histavg_wav=histavg_comp, wav_resume=comp_resume)
+       call seq_infodata_PutData(infodata, wav_present=comp_present,           &
+            wav_prognostic=comp_prognostic, wav_gnam=comp_gnam,                &
+            wav_phase=comp_phase, wav_nx=comp_nx, wav_ny=comp_ny,              &
+            histavg_wav=histavg_comp, wav_resume=comp_resume)
     else if (component_firstletter == 'e') then
-      if ((loglevel > 1) .and. seq_comm_iamroot(1)) then
-        if (present(comp_gnam)) then
-          write(logunit,*) trim(subname),' Note: ESP type has no gnam property'
-        end if
-        if (present(comp_nx)) then
-          write(logunit,*) trim(subname),' Note: ESP type has no nx property'
-        end if
-        if (present(comp_ny)) then
-          write(logunit,*) trim(subname),' Note: ESP type has no ny property'
-        end if
-        if (present(histavg_comp)) then
-          write(logunit,*) trim(subname),' Note: ESP type has no histavg property'
-        end if
-        if (present(comp_resume)) then
-          write(logunit,*) trim(subname),' Note: ESP type has no resume property'
-        end if
+       if ((loglevel > 1) .and. seq_comm_iamroot(1)) then
+          if (present(comp_gnam)) then
+             write(logunit,*) trim(subname),' Note: ESP type has no gnam property'
+          end if
+          if (present(comp_nx)) then
+             write(logunit,*) trim(subname),' Note: ESP type has no nx property'
+          end if
+          if (present(comp_ny)) then
+             write(logunit,*) trim(subname),' Note: ESP type has no ny property'
+          end if
+          if (present(histavg_comp)) then
+             write(logunit,*) trim(subname),' Note: ESP type has no histavg property'
+          end if
+          if (present(comp_resume)) then
+             write(logunit,*) trim(subname),' Note: ESP type has no resume property'
+          end if
 
-      end if
+       end if
 
-      call seq_infodata_PutData(infodata, esp_present=comp_present,           &
-           esp_prognostic=comp_prognostic, esp_phase=comp_phase)
+       call seq_infodata_PutData(infodata, esp_present=comp_present,           &
+            esp_prognostic=comp_prognostic, esp_phase=comp_phase)
     else
        call shr_sys_abort( subname//": unknown component-type first letter,'"//component_firstletter//"', aborting")
     end if
 
-END SUBROUTINE seq_infodata_PutData_bytype
+  END SUBROUTINE seq_infodata_PutData_bytype
 #endif
-! ^ ifndef CPRPGI
+  ! ^ ifndef CPRPGI
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: seq_infodata_pauseresume_bcast -- Broadcast pause/resume data from root pe
-!
-! !DESCRIPTION:
-!
-! Broadcast the pause_resume data from an infodata across pes
-!
-! !INTERFACE: ------------------------------------------------------------------
+  !===============================================================================
+  !BOP ===========================================================================
+  !
+  ! !IROUTINE: seq_infodata_pauseresume_bcast -- Broadcast pause/resume data from root pe
+  !
+  ! !DESCRIPTION:
+  !
+  ! Broadcast the pause_resume data from an infodata across pes
+  !
+  ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_infodata_pauseresume_bcast(infodata, mpicom, pebcast)
+  subroutine seq_infodata_pauseresume_bcast(infodata, mpicom, pebcast)
 
-   use shr_mpi_mod, only : shr_mpi_bcast
+    use shr_mpi_mod, only : shr_mpi_bcast
 
-! !INPUT/OUTPUT PARAMETERS:
+    ! !INPUT/OUTPUT PARAMETERS:
 
-  type(seq_infodata_type),        intent(INOUT) :: infodata ! assume valid on root pe
-  integer(SHR_KIND_IN),           intent(IN)    :: mpicom   ! MPI Communicator
-  integer(SHR_KIND_IN), optional, intent(IN)    :: pebcast  ! pe sending
+    type(seq_infodata_type),        intent(INOUT) :: infodata ! assume valid on root pe
+    integer(SHR_KIND_IN),           intent(IN)    :: mpicom   ! MPI Communicator
+    integer(SHR_KIND_IN), optional, intent(IN)    :: pebcast  ! pe sending
 
-!EOP
+    !EOP
 
-  !----- local -----
-  integer                     :: ind
-  integer(SHR_KIND_IN)        :: pebcast_local
-  character(len=*), parameter :: subname = '(seq_infodata_pauseresume_bcast) '
+    !----- local -----
+    integer                     :: ind
+    integer(SHR_KIND_IN)        :: pebcast_local
+    character(len=*), parameter :: subname = '(seq_infodata_pauseresume_bcast) '
 
-  if (present(pebcast)) then
-    pebcast_local = pebcast
-  else
-    pebcast_local = 0
-  end if
+    if (present(pebcast)) then
+       pebcast_local = pebcast
+    else
+       pebcast_local = 0
+    end if
 
-  if (associated(infodata%pause_resume)) then
-    do ind = 1, num_inst_atm
-      call shr_mpi_bcast(infodata%pause_resume%atm_resume(ind), mpicom,       &
-           pebcast=pebcast_local)
-    end do
-    do ind = 1, num_inst_lnd
-      call shr_mpi_bcast(infodata%pause_resume%lnd_resume(ind), mpicom,       &
-           pebcast=pebcast_local)
-    end do
-    do ind = 1, num_inst_ice
-      call shr_mpi_bcast(infodata%pause_resume%ice_resume(ind), mpicom,       &
-           pebcast=pebcast_local)
-    end do
-    do ind = 1, num_inst_ocn
-      call shr_mpi_bcast(infodata%pause_resume%ocn_resume(ind), mpicom,       &
-           pebcast=pebcast_local)
-    end do
-    do ind = 1, num_inst_glc
-      call shr_mpi_bcast(infodata%pause_resume%glc_resume(ind), mpicom,       &
-           pebcast=pebcast_local)
-    end do
-    do ind = 1, num_inst_rof
-      call shr_mpi_bcast(infodata%pause_resume%rof_resume(ind), mpicom,       &
-           pebcast=pebcast_local)
-    end do
-    do ind = 1, num_inst_wav
-      call shr_mpi_bcast(infodata%pause_resume%wav_resume(ind), mpicom,       &
-           pebcast=pebcast_local)
-    end do
-    call shr_mpi_bcast(infodata%pause_resume%cpl_resume,        mpicom,       &
-         pebcast=pebcast_local)
-  end if
-end subroutine seq_infodata_pauseresume_bcast
+    if (associated(infodata%pause_resume)) then
+       do ind = 1, num_inst_atm
+          call shr_mpi_bcast(infodata%pause_resume%atm_resume(ind), mpicom,       &
+               pebcast=pebcast_local)
+       end do
+       do ind = 1, num_inst_lnd
+          call shr_mpi_bcast(infodata%pause_resume%lnd_resume(ind), mpicom,       &
+               pebcast=pebcast_local)
+       end do
+       do ind = 1, num_inst_ice
+          call shr_mpi_bcast(infodata%pause_resume%ice_resume(ind), mpicom,       &
+               pebcast=pebcast_local)
+       end do
+       do ind = 1, num_inst_ocn
+          call shr_mpi_bcast(infodata%pause_resume%ocn_resume(ind), mpicom,       &
+               pebcast=pebcast_local)
+       end do
+       do ind = 1, num_inst_glc
+          call shr_mpi_bcast(infodata%pause_resume%glc_resume(ind), mpicom,       &
+               pebcast=pebcast_local)
+       end do
+       do ind = 1, num_inst_rof
+          call shr_mpi_bcast(infodata%pause_resume%rof_resume(ind), mpicom,       &
+               pebcast=pebcast_local)
+       end do
+       do ind = 1, num_inst_wav
+          call shr_mpi_bcast(infodata%pause_resume%wav_resume(ind), mpicom,       &
+               pebcast=pebcast_local)
+       end do
+       call shr_mpi_bcast(infodata%pause_resume%cpl_resume,        mpicom,       &
+            pebcast=pebcast_local)
+    end if
+  end subroutine seq_infodata_pauseresume_bcast
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: seq_infodata_bcast -- Broadcast an infodata from root pe
-!
-! !DESCRIPTION:
-!
-! Broadcast an infodata across pes
-!
-! !INTERFACE: ------------------------------------------------------------------
+  !===============================================================================
+  !BOP ===========================================================================
+  !
+  ! !IROUTINE: seq_infodata_bcast -- Broadcast an infodata from root pe
+  !
+  ! !DESCRIPTION:
+  !
+  ! Broadcast an infodata across pes
+  !
+  ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_infodata_bcast(infodata,mpicom)
+  subroutine seq_infodata_bcast(infodata,mpicom)
 
-   use shr_mpi_mod, only : shr_mpi_bcast
+    use shr_mpi_mod, only : shr_mpi_bcast
 
-  implicit none
+    implicit none
 
-! !INPUT/OUTPUT PARAMETERS:
+    ! !INPUT/OUTPUT PARAMETERS:
 
-  type(seq_infodata_type), intent(INOUT) :: infodata    ! assume valid on root pe
-  integer(SHR_KIND_IN),    intent(IN)    :: mpicom      ! mpi comm
+    type(seq_infodata_type), intent(INOUT) :: infodata    ! assume valid on root pe
+    integer(SHR_KIND_IN),    intent(IN)    :: mpicom      ! mpi comm
 
-!EOP
+    !EOP
 
-  !----- local -----
-  integer :: ind
+    !----- local -----
 
-!-------------------------------------------------------------------------------
-! Notes:
-!-------------------------------------------------------------------------------
+    !-------------------------------------------------------------------------------
+    ! Notes:
+    !-------------------------------------------------------------------------------
 
     call shr_mpi_bcast(infodata%cime_model,              mpicom)
     call shr_mpi_bcast(infodata%start_type,              mpicom)
@@ -2162,6 +2203,9 @@ subroutine seq_infodata_bcast(infodata,mpicom)
     call shr_mpi_bcast(infodata%flux_epbal,              mpicom)
     call shr_mpi_bcast(infodata%flux_albav,              mpicom)
     call shr_mpi_bcast(infodata%flux_diurnal,            mpicom)
+    call shr_mpi_bcast(infodata%coldair_outbreak_mod,            mpicom)
+    call shr_mpi_bcast(infodata%flux_convergence,        mpicom)
+    call shr_mpi_bcast(infodata%flux_max_iteration,      mpicom)
     call shr_mpi_bcast(infodata%gust_fac,                mpicom)
     call shr_mpi_bcast(infodata%glc_renormalize_smb,     mpicom)
     call shr_mpi_bcast(infodata%wall_time_limit,         mpicom)
@@ -2192,9 +2236,10 @@ subroutine seq_infodata_bcast(infodata,mpicom)
     call shr_mpi_bcast(infodata%histaux_a2x3hr        ,  mpicom)
     call shr_mpi_bcast(infodata%histaux_a2x3hrp       ,  mpicom)
     call shr_mpi_bcast(infodata%histaux_a2x24hr       ,  mpicom)
-    call shr_mpi_bcast(infodata%histaux_l2x1yr        ,  mpicom)
+    call shr_mpi_bcast(infodata%histaux_l2x1yrg       ,  mpicom)
     call shr_mpi_bcast(infodata%histaux_l2x           ,  mpicom)
     call shr_mpi_bcast(infodata%histaux_r2x           ,  mpicom)
+    call shr_mpi_bcast(infodata%histaux_double_precision,mpicom)
     call shr_mpi_bcast(infodata%histavg_atm           ,  mpicom)
     call shr_mpi_bcast(infodata%histavg_lnd           ,  mpicom)
     call shr_mpi_bcast(infodata%histavg_ocn           ,  mpicom)
@@ -2274,377 +2319,378 @@ subroutine seq_infodata_bcast(infodata,mpicom)
     call shr_mpi_bcast(infodata%atm_aero,                mpicom)
     call shr_mpi_bcast(infodata%glc_g2lupdate,           mpicom)
     call shr_mpi_bcast(infodata%glc_valid_input,         mpicom)
+    call shr_mpi_bcast(infodata%model_doi_url,           mpicom)
 
     call seq_infodata_pauseresume_bcast(infodata,        mpicom)
 
-end subroutine seq_infodata_bcast
+  end subroutine seq_infodata_bcast
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: seq_infodata_Exchange -- Broadcast a subset of infodata between pes
-!
-! !DESCRIPTION:
-!
-! Broadcast a subset of infodata data between pes to support "exchange" of information
-!
-! !INTERFACE: ------------------------------------------------------------------
+  !===============================================================================
+  !BOP ===========================================================================
+  !
+  ! !IROUTINE: seq_infodata_Exchange -- Broadcast a subset of infodata between pes
+  !
+  ! !DESCRIPTION:
+  !
+  ! Broadcast a subset of infodata data between pes to support "exchange" of information
+  !
+  ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_infodata_Exchange(infodata,ID,type)
+  subroutine seq_infodata_Exchange(infodata,ID,type)
 
-   use shr_mpi_mod, only : shr_mpi_bcast
+    use shr_mpi_mod, only : shr_mpi_bcast
 
-  implicit none
+    implicit none
 
-! !INPUT/OUTPUT PARAMETERS:
+    ! !INPUT/OUTPUT PARAMETERS:
 
-  type(seq_infodata_type), intent(INOUT) :: infodata    ! assume valid on root pe
-  integer(SHR_KIND_IN),    intent(IN)    :: ID          ! mpi comm
-  character(len=*),        intent(IN)    :: type        ! type
+    type(seq_infodata_type), intent(INOUT) :: infodata    ! assume valid on root pe
+    integer(SHR_KIND_IN),    intent(IN)    :: ID          ! mpi comm
+    character(len=*),        intent(IN)    :: type        ! type
 
-!EOP
+    !EOP
 
-  !----- local -----
-  integer(SHR_KIND_IN) :: mpicom     ! mpicom
-  integer(SHR_KIND_IN) :: cmppe      ! component 'root' for broadcast
-  integer(SHR_KIND_IN) :: cplpe      ! coupler 'root' for broadcast
-  logical :: atm2cpli,atm2cplr
-  logical :: lnd2cpli,lnd2cplr
-  logical :: rof2cpli,rof2cplr
-  logical :: ocn2cpli,ocn2cplr
-  logical :: ice2cpli,ice2cplr
-  logical :: glc2cpli,glc2cplr
-  logical :: wav2cpli,wav2cplr
-  logical :: esp2cpli,esp2cplr
-  logical :: cpl2i,cpl2r
-  logical :: logset
-  logical :: deads   ! local variable to hold info temporarily
-  character(len=*), parameter :: subname = '(seq_infodata_Exchange) '
+    !----- local -----
+    integer(SHR_KIND_IN) :: mpicom     ! mpicom
+    integer(SHR_KIND_IN) :: cmppe      ! component 'root' for broadcast
+    integer(SHR_KIND_IN) :: cplpe      ! coupler 'root' for broadcast
+    logical :: atm2cpli,atm2cplr
+    logical :: lnd2cpli,lnd2cplr
+    logical :: rof2cpli,rof2cplr
+    logical :: ocn2cpli,ocn2cplr
+    logical :: ice2cpli,ice2cplr
+    logical :: glc2cpli,glc2cplr
+    logical :: wav2cpli,wav2cplr
+    logical :: esp2cpli,esp2cplr
+    logical :: cpl2i,cpl2r
+    logical :: logset
+    logical :: deads   ! local variable to hold info temporarily
+    character(len=*), parameter :: subname = '(seq_infodata_Exchange) '
 
-!-------------------------------------------------------------------------------
-! Notes:
-!-------------------------------------------------------------------------------
+    !-------------------------------------------------------------------------------
+    ! Notes:
+    !-------------------------------------------------------------------------------
 
-  call seq_comm_setptrs(ID, mpicom=mpicom, cmppe=cmppe, cplpe=cplpe)
+    call seq_comm_setptrs(ID, mpicom=mpicom, cmppe=cmppe, cplpe=cplpe)
 
-  logset = .false.
+    logset = .false.
 
-  atm2cpli = .false.
-  atm2cplr = .false.
-  lnd2cpli = .false.
-  lnd2cplr = .false.
-  rof2cpli = .false.
-  rof2cplr = .false.
-  ocn2cpli = .false.
-  ocn2cplr = .false.
-  ice2cpli = .false.
-  ice2cplr = .false.
-  glc2cpli = .false.
-  glc2cplr = .false.
-  wav2cpli = .false.
-  wav2cplr = .false.
-  esp2cpli = .false.
-  esp2cplr = .false.
-  cpl2i = .false.
-  cpl2r = .false.
+    atm2cpli = .false.
+    atm2cplr = .false.
+    lnd2cpli = .false.
+    lnd2cplr = .false.
+    rof2cpli = .false.
+    rof2cplr = .false.
+    ocn2cpli = .false.
+    ocn2cplr = .false.
+    ice2cpli = .false.
+    ice2cplr = .false.
+    glc2cpli = .false.
+    glc2cplr = .false.
+    wav2cpli = .false.
+    wav2cplr = .false.
+    esp2cpli = .false.
+    esp2cplr = .false.
+    cpl2i = .false.
+    cpl2r = .false.
 
-  ! --- translate type into logicals ---
+    ! --- translate type into logicals ---
 
-  if (trim(type) == 'atm2cpl_init') then
-     atm2cpli = .true.
-     atm2cplr = .true.
-     logset = .true.
-  endif
-  if (trim(type) == 'atm2cpl_run') then
-     atm2cplr = .true.
-     logset = .true.
-  endif
+    if (trim(type) == 'atm2cpl_init') then
+       atm2cpli = .true.
+       atm2cplr = .true.
+       logset = .true.
+    endif
+    if (trim(type) == 'atm2cpl_run') then
+       atm2cplr = .true.
+       logset = .true.
+    endif
 
-  if (trim(type) == 'lnd2cpl_init') then
-     lnd2cpli = .true.
-     lnd2cplr = .true.
-     logset = .true.
-  endif
-  if (trim(type) == 'lnd2cpl_run') then
-     lnd2cplr = .true.
-     logset = .true.
-  endif
+    if (trim(type) == 'lnd2cpl_init') then
+       lnd2cpli = .true.
+       lnd2cplr = .true.
+       logset = .true.
+    endif
+    if (trim(type) == 'lnd2cpl_run') then
+       lnd2cplr = .true.
+       logset = .true.
+    endif
 
-  if (trim(type) == 'rof2cpl_init') then
-     rof2cpli = .true.
-     rof2cplr = .true.
-     logset = .true.
-  endif
-  if (trim(type) == 'rof2cpl_run') then
-     rof2cplr = .true.
-     logset = .true.
-  endif
+    if (trim(type) == 'rof2cpl_init') then
+       rof2cpli = .true.
+       rof2cplr = .true.
+       logset = .true.
+    endif
+    if (trim(type) == 'rof2cpl_run') then
+       rof2cplr = .true.
+       logset = .true.
+    endif
 
-  if (trim(type) == 'ocn2cpl_init') then
-     ocn2cpli = .true.
-     ocn2cplr = .true.
-     logset = .true.
-  endif
-  if (trim(type) == 'ocn2cpl_run') then
-     ocn2cplr = .true.
-     logset = .true.
-  endif
+    if (trim(type) == 'ocn2cpl_init') then
+       ocn2cpli = .true.
+       ocn2cplr = .true.
+       logset = .true.
+    endif
+    if (trim(type) == 'ocn2cpl_run') then
+       ocn2cplr = .true.
+       logset = .true.
+    endif
 
-  if (trim(type) == 'ice2cpl_init') then
-     ice2cpli = .true.
-     ice2cplr = .true.
-     logset = .true.
-  endif
-  if (trim(type) == 'ice2cpl_run') then
-     ice2cplr = .true.
-     logset = .true.
-  endif
+    if (trim(type) == 'ice2cpl_init') then
+       ice2cpli = .true.
+       ice2cplr = .true.
+       logset = .true.
+    endif
+    if (trim(type) == 'ice2cpl_run') then
+       ice2cplr = .true.
+       logset = .true.
+    endif
 
-  if (trim(type) == 'glc2cpl_init') then
-     glc2cpli = .true.
-     glc2cplr = .true.
-     logset = .true.
-  endif
-  if (trim(type) == 'glc2cpl_run') then
-     glc2cplr = .true.
-     logset = .true.
-  endif
+    if (trim(type) == 'glc2cpl_init') then
+       glc2cpli = .true.
+       glc2cplr = .true.
+       logset = .true.
+    endif
+    if (trim(type) == 'glc2cpl_run') then
+       glc2cplr = .true.
+       logset = .true.
+    endif
 
-  if (trim(type) == 'wav2cpl_init') then
-     wav2cpli = .true.
-     wav2cplr = .true.
-     logset = .true.
-  endif
-  if (trim(type) == 'wav2cpl_run') then
-     wav2cplr = .true.
-     logset = .true.
-  endif
+    if (trim(type) == 'wav2cpl_init') then
+       wav2cpli = .true.
+       wav2cplr = .true.
+       logset = .true.
+    endif
+    if (trim(type) == 'wav2cpl_run') then
+       wav2cplr = .true.
+       logset = .true.
+    endif
 
-  if (trim(type) == 'esp2cpl_init') then
-     esp2cpli = .true.
-     esp2cplr = .true.
-     logset = .true.
-  endif
-  if (trim(type) == 'esp2cpl_run') then
-     esp2cplr = .true.
-     logset = .true.
-  endif
+    if (trim(type) == 'esp2cpl_init') then
+       esp2cpli = .true.
+       esp2cplr = .true.
+       logset = .true.
+    endif
+    if (trim(type) == 'esp2cpl_run') then
+       esp2cplr = .true.
+       logset = .true.
+    endif
 
-  if (trim(type) == 'cpl2atm_init' .or. &
-      trim(type) == 'cpl2lnd_init' .or. &
-      trim(type) == 'cpl2rof_init' .or. &
-      trim(type) == 'cpl2ocn_init' .or. &
-      trim(type) == 'cpl2glc_init' .or. &
-      trim(type) == 'cpl2wav_init' .or. &
-      trim(type) == 'cpl2esp_init' .or. &
-      trim(type) == 'cpl2ice_init') then
-     cpl2i = .true.
-     cpl2r = .true.
-     logset = .true.
-  endif
+    if (trim(type) == 'cpl2atm_init' .or. &
+         trim(type) == 'cpl2lnd_init' .or. &
+         trim(type) == 'cpl2rof_init' .or. &
+         trim(type) == 'cpl2ocn_init' .or. &
+         trim(type) == 'cpl2glc_init' .or. &
+         trim(type) == 'cpl2wav_init' .or. &
+         trim(type) == 'cpl2esp_init' .or. &
+         trim(type) == 'cpl2ice_init') then
+       cpl2i = .true.
+       cpl2r = .true.
+       logset = .true.
+    endif
 
-  if (trim(type) == 'cpl2atm_run' .or. &
-      trim(type) == 'cpl2lnd_run' .or. &
-      trim(type) == 'cpl2rof_run' .or. &
-      trim(type) == 'cpl2ocn_run' .or. &
-      trim(type) == 'cpl2glc_run' .or. &
-      trim(type) == 'cpl2wav_run' .or. &
-      trim(type) == 'cpl2ice_run') then
-     cpl2r = .true.
-     logset = .true.
-  endif
+    if (trim(type) == 'cpl2atm_run' .or. &
+         trim(type) == 'cpl2lnd_run' .or. &
+         trim(type) == 'cpl2rof_run' .or. &
+         trim(type) == 'cpl2ocn_run' .or. &
+         trim(type) == 'cpl2glc_run' .or. &
+         trim(type) == 'cpl2wav_run' .or. &
+         trim(type) == 'cpl2ice_run') then
+       cpl2r = .true.
+       logset = .true.
+    endif
 
-  ! --- make sure the type was valid ---
+    ! --- make sure the type was valid ---
 
-  if (.not. logset) then
-     write(logunit,*) trim(subname),' ERROR: type invalid ',trim(type)
-     call shr_sys_abort()
-  endif
+    if (.not. logset) then
+       write(logunit,*) trim(subname),' ERROR: type invalid ',trim(type)
+       call shr_sys_abort()
+    endif
 
-  ! --- now execute exchange ---
+    ! --- now execute exchange ---
 
-  if (atm2cpli) then
-    call shr_mpi_bcast(infodata%atm_present,        mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%atm_prognostic,     mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%atm_nx,             mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%atm_ny,             mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%atm_aero,           mpicom, pebcast=cmppe)
-    ! dead_comps is true if it's ever set to true
-    deads = infodata%dead_comps
-    call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
-    if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
-  endif
+    if (atm2cpli) then
+       call shr_mpi_bcast(infodata%atm_present,        mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%atm_prognostic,     mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%atm_nx,             mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%atm_ny,             mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%atm_aero,           mpicom, pebcast=cmppe)
+       ! dead_comps is true if it's ever set to true
+       deads = infodata%dead_comps
+       call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
+       if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
+    endif
 
-  if (lnd2cpli) then
-    call shr_mpi_bcast(infodata%lnd_present,        mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%lnd_prognostic,     mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%lnd_nx,             mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%lnd_ny,             mpicom, pebcast=cmppe)
-    ! dead_comps is true if it's ever set to true
-    deads = infodata%dead_comps
-    call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
-    if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
-  endif
+    if (lnd2cpli) then
+       call shr_mpi_bcast(infodata%lnd_present,        mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%lnd_prognostic,     mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%lnd_nx,             mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%lnd_ny,             mpicom, pebcast=cmppe)
+       ! dead_comps is true if it's ever set to true
+       deads = infodata%dead_comps
+       call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
+       if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
+    endif
 
-  if (rof2cpli) then
-    call shr_mpi_bcast(infodata%rof_present,        mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%rofice_present,     mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%rof_prognostic,     mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%rof_nx,             mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%rof_ny,             mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%flood_present,      mpicom, pebcast=cmppe)
-    ! dead_comps is true if it's ever set to true
-    deads = infodata%dead_comps
-    call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
-    if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
-  endif
+    if (rof2cpli) then
+       call shr_mpi_bcast(infodata%rof_present,        mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%rofice_present,     mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%rof_prognostic,     mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%rof_nx,             mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%rof_ny,             mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%flood_present,      mpicom, pebcast=cmppe)
+       ! dead_comps is true if it's ever set to true
+       deads = infodata%dead_comps
+       call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
+       if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
+    endif
 
-  if (ocn2cpli) then
-    call shr_mpi_bcast(infodata%ocn_present,        mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%ocn_prognostic,     mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%ocnrof_prognostic,  mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%ocn_nx,             mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%ocn_ny,             mpicom, pebcast=cmppe)
-    ! dead_comps is true if it's ever set to true
-    deads = infodata%dead_comps
-    call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
-    if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
-  endif
+    if (ocn2cpli) then
+       call shr_mpi_bcast(infodata%ocn_present,        mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%ocn_prognostic,     mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%ocnrof_prognostic,  mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%ocn_nx,             mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%ocn_ny,             mpicom, pebcast=cmppe)
+       ! dead_comps is true if it's ever set to true
+       deads = infodata%dead_comps
+       call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
+       if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
+    endif
 
-  if (ice2cpli) then
-    call shr_mpi_bcast(infodata%ice_present,        mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%ice_prognostic,     mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%iceberg_prognostic, mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%ice_nx,             mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%ice_ny,             mpicom, pebcast=cmppe)
-    ! dead_comps is true if it's ever set to true
-    deads = infodata%dead_comps
-    call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
-    if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
-  endif
+    if (ice2cpli) then
+       call shr_mpi_bcast(infodata%ice_present,        mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%ice_prognostic,     mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%iceberg_prognostic, mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%ice_nx,             mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%ice_ny,             mpicom, pebcast=cmppe)
+       ! dead_comps is true if it's ever set to true
+       deads = infodata%dead_comps
+       call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
+       if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
+    endif
 
-  if (glc2cpli) then
-    call shr_mpi_bcast(infodata%glc_present,        mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%glclnd_present,     mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%glcocn_present,     mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%glcice_present,     mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%glc_prognostic,     mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%glc_coupled_fluxes, mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%glc_nx,             mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%glc_ny,             mpicom, pebcast=cmppe)
-    ! dead_comps is true if it's ever set to true
-    deads = infodata%dead_comps
-    call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
-    if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
-  endif
+    if (glc2cpli) then
+       call shr_mpi_bcast(infodata%glc_present,        mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%glclnd_present,     mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%glcocn_present,     mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%glcice_present,     mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%glc_prognostic,     mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%glc_coupled_fluxes, mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%glc_nx,             mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%glc_ny,             mpicom, pebcast=cmppe)
+       ! dead_comps is true if it's ever set to true
+       deads = infodata%dead_comps
+       call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
+       if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
+    endif
 
-  if (wav2cpli) then
-    call shr_mpi_bcast(infodata%wav_present,        mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%wav_prognostic,     mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%wav_nx,             mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%wav_ny,             mpicom, pebcast=cmppe)
-    ! dead_comps is true if it's ever set to true
-    deads = infodata%dead_comps
-    call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
-    if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
-  endif
+    if (wav2cpli) then
+       call shr_mpi_bcast(infodata%wav_present,        mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%wav_prognostic,     mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%wav_nx,             mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%wav_ny,             mpicom, pebcast=cmppe)
+       ! dead_comps is true if it's ever set to true
+       deads = infodata%dead_comps
+       call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
+       if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
+    endif
 
-  if (esp2cpli) then
-    call shr_mpi_bcast(infodata%esp_present,        mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%esp_prognostic,     mpicom, pebcast=cmppe)
-    call seq_infodata_pauseresume_bcast(infodata,   mpicom, pebcast=cmppe)
-  endif
+    if (esp2cpli) then
+       call shr_mpi_bcast(infodata%esp_present,        mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%esp_prognostic,     mpicom, pebcast=cmppe)
+       call seq_infodata_pauseresume_bcast(infodata,   mpicom, pebcast=cmppe)
+    endif
 
-  if (cpl2i) then
-    call shr_mpi_bcast(infodata%atm_present,        mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%atm_prognostic,     mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%lnd_present,        mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%lnd_prognostic,     mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%rof_present,        mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%rofice_present,     mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%rof_prognostic,     mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%flood_present,      mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%ocn_present,        mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%ocn_prognostic,     mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%ocnrof_prognostic,  mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%ice_present,        mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%ice_prognostic,     mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%iceberg_prognostic, mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%glc_present,        mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%glclnd_present,     mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%glcocn_present,     mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%glcice_present,     mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%glc_prognostic,     mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%glc_coupled_fluxes, mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%wav_present,        mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%wav_prognostic,     mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%esp_present,        mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%esp_prognostic,     mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%dead_comps,         mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%atm_aero,           mpicom, pebcast=cplpe)
-  endif
+    if (cpl2i) then
+       call shr_mpi_bcast(infodata%atm_present,        mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%atm_prognostic,     mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%lnd_present,        mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%lnd_prognostic,     mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%rof_present,        mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%rofice_present,     mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%rof_prognostic,     mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%flood_present,      mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%ocn_present,        mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%ocn_prognostic,     mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%ocnrof_prognostic,  mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%ice_present,        mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%ice_prognostic,     mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%iceberg_prognostic, mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%glc_present,        mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%glclnd_present,     mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%glcocn_present,     mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%glcice_present,     mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%glc_prognostic,     mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%glc_coupled_fluxes, mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%wav_present,        mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%wav_prognostic,     mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%esp_present,        mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%esp_prognostic,     mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%dead_comps,         mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%atm_aero,           mpicom, pebcast=cplpe)
+    endif
 
-  ! Run-time data exchanges
-  if (atm2cplr) then
-    call shr_mpi_bcast(infodata%nextsw_cday,        mpicom, pebcast=cmppe)
-  endif
+    ! Run-time data exchanges
+    if (atm2cplr) then
+       call shr_mpi_bcast(infodata%nextsw_cday,        mpicom, pebcast=cmppe)
+    endif
 
-  if (ocn2cplr) then
-    call shr_mpi_bcast(infodata%precip_fact,        mpicom, pebcast=cmppe)
-  endif
+    if (ocn2cplr) then
+       call shr_mpi_bcast(infodata%precip_fact,        mpicom, pebcast=cmppe)
+    endif
 
-  if (esp2cplr) then
-    call seq_infodata_pauseresume_bcast(infodata,   mpicom, pebcast=cmppe)
-  endif
+    if (esp2cplr) then
+       call seq_infodata_pauseresume_bcast(infodata,   mpicom, pebcast=cmppe)
+    endif
 
-  if (cpl2r) then
-    call shr_mpi_bcast(infodata%nextsw_cday,        mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%precip_fact,        mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%glc_g2lupdate,      mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%glc_valid_input,    mpicom, pebcast=cplpe)
-    call seq_infodata_pauseresume_bcast(infodata,   mpicom, pebcast=cplpe)
-  endif
+    if (cpl2r) then
+       call shr_mpi_bcast(infodata%nextsw_cday,        mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%precip_fact,        mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%glc_g2lupdate,      mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%glc_valid_input,    mpicom, pebcast=cplpe)
+       call seq_infodata_pauseresume_bcast(infodata,   mpicom, pebcast=cplpe)
+    endif
 
-end subroutine seq_infodata_Exchange
+  end subroutine seq_infodata_Exchange
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: seq_infodata_Check  -- Check that input InputInfo derived type is valid
-!
-! !DESCRIPTION:
-!
-! Check that input infodata object has reasonable values
-!
-! !INTERFACE: ------------------------------------------------------------------
+  !===============================================================================
+  !BOP ===========================================================================
+  !
+  ! !IROUTINE: seq_infodata_Check  -- Check that input InputInfo derived type is valid
+  !
+  ! !DESCRIPTION:
+  !
+  ! Check that input infodata object has reasonable values
+  !
+  ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_infodata_Check( infodata )
+  subroutine seq_infodata_Check( infodata )
 
-! !USES:
+    ! !USES:
 
-  use shr_assert_mod,   only: shr_assert_in_domain
-  use shr_string_mod,   only: shr_string_listIntersect
-  use shr_wv_sat_mod,   only: shr_wv_sat_get_scheme_idx, shr_wv_sat_valid_idx
+    use shr_assert_mod,   only: shr_assert_in_domain
+    use shr_string_mod,   only: shr_string_listIntersect
+    use shr_wv_sat_mod,   only: shr_wv_sat_get_scheme_idx, shr_wv_sat_valid_idx
 
-  implicit none
+    implicit none
 
-! !INPUT/OUTPUT PARAMETERS:
+    ! !INPUT/OUTPUT PARAMETERS:
 
     type(seq_infodata_type), intent(INOUT) :: infodata    ! Output CCSM structure
 
-!EOP
+    !EOP
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_infodata_Check) '
     integer :: lastchar                        ! Last character index
 
-!-------------------------------------------------------------------------------
-! Notes:
-!-------------------------------------------------------------------------------
+    !-------------------------------------------------------------------------------
+    ! Notes:
+    !-------------------------------------------------------------------------------
 
     ! --- CIME model ------
-    if ( trim(infodata%cime_model) /= 'acme' .and. trim(infodata%cime_model) /= 'cesm') then
-       call shr_sys_abort( subname//': cime_model must be set to acme or cesm, aborting')
+    if ( trim(infodata%cime_model) /= 'e3sm' .and. trim(infodata%cime_model) /= 'cesm') then
+       call shr_sys_abort( subname//': cime_model must be set to e3sm or cesm, aborting')
     end if
 
     ! --- Case name ------
@@ -2654,7 +2700,7 @@ subroutine seq_infodata_Check( infodata )
     end if
     if (infodata%case_name(lastchar:lastchar) /= ' ') then
        write(logunit,"(A,I4,A)")'ERROR: case_name must not exceed ', len(infodata%case_name)-1, &
-                 ' characters'
+            ' characters'
        call shr_sys_abort( subname//': variable case_name must be set, aborting')
     end if
 
@@ -2679,22 +2725,22 @@ subroutine seq_infodata_Check( infodata )
 
     ! --- Start-type ------
     if ((trim(infodata%start_type) /= seq_infodata_start_type_start) .and.  &
-        (trim(infodata%start_type) /= seq_infodata_start_type_cont ) .and.  &
-        (trim(infodata%start_type) /= seq_infodata_start_type_brnch)) then
+         (trim(infodata%start_type) /= seq_infodata_start_type_cont ) .and.  &
+         (trim(infodata%start_type) /= seq_infodata_start_type_brnch)) then
        call shr_sys_abort(subname//': start_type invalid = '//trim(infodata%start_type))
     end if
 
     if ((trim(infodata%start_type) == seq_infodata_start_type_cont ) .and.  &
-        (trim(infodata%case_name)  /= trim(infodata%rest_case_name))) then
+         (trim(infodata%case_name)  /= trim(infodata%rest_case_name))) then
        write(logunit,'(10a)') subname,' case_name =',trim(infodata%case_name),':', &
-                                      ' rest_case_name =',trim(infodata%rest_case_name),':'
+            ' rest_case_name =',trim(infodata%rest_case_name),':'
        call shr_sys_abort(subname//': invalid continue restart case name = '//trim(infodata%rest_case_name))
     endif
 
     if (infodata%orb_eccen  == SHR_ORB_UNDEF_REAL .or. &
-        infodata%orb_obliqr == SHR_ORB_UNDEF_REAL .or. &
-        infodata%orb_mvelpp == SHR_ORB_UNDEF_REAL .or. &
-        infodata%orb_lambm0 == SHR_ORB_UNDEF_REAL) then
+         infodata%orb_obliqr == SHR_ORB_UNDEF_REAL .or. &
+         infodata%orb_mvelpp == SHR_ORB_UNDEF_REAL .or. &
+         infodata%orb_lambm0 == SHR_ORB_UNDEF_REAL) then
        call shr_sys_abort(subname//': orb params incorrect')
     endif
 
@@ -2718,42 +2764,42 @@ subroutine seq_infodata_Check( infodata )
          msg="Invalid transition temperature range.")
 
     if ((trim(infodata%aoflux_grid) /= 'ocn') .and. &
-        (trim(infodata%aoflux_grid) /= 'atm') .and. &
-        (trim(infodata%aoflux_grid) /= 'exch')) then
+         (trim(infodata%aoflux_grid) /= 'atm') .and. &
+         (trim(infodata%aoflux_grid) /= 'exch')) then
        write(logunit,'(2a)') 'ERROR aoflux_grid not supported = ',trim(infodata%aoflux_grid)
        call shr_sys_abort(subname//': aoflux_grid invalid = '//trim(infodata%aoflux_grid))
     endif
 
     if ((trim(infodata%vect_map) /= 'none') .and. &
-        (trim(infodata%vect_map) /= 'cart3d') .and. &
-        (trim(infodata%vect_map) /= 'cart3d_diag') .and. &
-        (trim(infodata%vect_map) /= 'cart3d_uvw') .and. &
-        (trim(infodata%vect_map) /= 'cart3d_uvw_diag')) then
+         (trim(infodata%vect_map) /= 'cart3d') .and. &
+         (trim(infodata%vect_map) /= 'cart3d_diag') .and. &
+         (trim(infodata%vect_map) /= 'cart3d_uvw') .and. &
+         (trim(infodata%vect_map) /= 'cart3d_uvw_diag')) then
        write(logunit,'(2a)') 'ERROR vect_map not supported = ',trim(infodata%vect_map)
        call shr_sys_abort(subname//': vect_map invalid = '//trim(infodata%vect_map))
     endif
 
-END SUBROUTINE seq_infodata_Check
+  END SUBROUTINE seq_infodata_Check
 
-!===============================================================================
-!===============================================================================
-! !IROUTINE: seq_infodata_print -- Print out values to log file
-!
-! !DESCRIPTION:
-!
-!     Print derivied type out to screen.
-!
-! !INTERFACE: ------------------------------------------------------------------
+  !===============================================================================
+  !===============================================================================
+  ! !IROUTINE: seq_infodata_print -- Print out values to log file
+  !
+  ! !DESCRIPTION:
+  !
+  !     Print derivied type out to screen.
+  !
+  ! !INTERFACE: ------------------------------------------------------------------
 
-SUBROUTINE seq_infodata_print( infodata )
+  SUBROUTINE seq_infodata_print( infodata )
 
-   implicit none
+    implicit none
 
-! !INPUT/OUTPUT PARAMETERS:
+    ! !INPUT/OUTPUT PARAMETERS:
 
-   type(seq_infodata_type), intent(IN) :: infodata  ! Output CCSM structure
+    type(seq_infodata_type), intent(IN) :: infodata  ! Output CCSM structure
 
-!EOP
+    !EOP
 
     !----- local -----
     integer                     :: ind
@@ -2765,49 +2811,49 @@ SUBROUTINE seq_infodata_print( infodata )
     character(len=*), parameter ::  F0S = "(2A,I4)"
     character(len=*), parameter ::  F0R = "(2A,g22.14)"
 
-!-------------------------------------------------------------------------------
-! Notes:
-!-------------------------------------------------------------------------------
+    !-------------------------------------------------------------------------------
+    ! Notes:
+    !-------------------------------------------------------------------------------
 
-!    if (loglevel > 0) then
-       write(logunit,F0A) subname,'CIME model               = ', trim(infodata%cime_model)
-       write(logunit,F0A) subname,'Start type               = ', trim(infodata%start_type)
-       write(logunit,F0A) subname,'Case name                = ', trim(infodata%case_name)
-       write(logunit,F0A) subname,'Case description         = ', trim(infodata%case_desc)
-       write(logunit,F0A) subname,'Model version            = ', trim(infodata%model_version)
-       write(logunit,F0A) subname,'Username                 = ', trim(infodata%username)
-       write(logunit,F0A) subname,'Hostname                 = ', trim(infodata%hostname)
-       write(logunit,F0A) subname,'Timing Dir               = ', trim(infodata%timing_dir)
-       write(logunit,F0A) subname,'Timing Checkpoint Dir    = ', trim(infodata%tchkpt_dir)
-       write(logunit,F0A) subname,'Restart case name        = ', trim(infodata%rest_case_name)
+    !    if (loglevel > 0) then
+    write(logunit,F0A) subname,'CIME model               = ', trim(infodata%cime_model)
+    write(logunit,F0A) subname,'Start type               = ', trim(infodata%start_type)
+    write(logunit,F0A) subname,'Case name                = ', trim(infodata%case_name)
+    write(logunit,F0A) subname,'Case description         = ', trim(infodata%case_desc)
+    write(logunit,F0A) subname,'Model version            = ', trim(infodata%model_version)
+    write(logunit,F0A) subname,'Username                 = ', trim(infodata%username)
+    write(logunit,F0A) subname,'Hostname                 = ', trim(infodata%hostname)
+    write(logunit,F0A) subname,'Timing Dir               = ', trim(infodata%timing_dir)
+    write(logunit,F0A) subname,'Timing Checkpoint Dir    = ', trim(infodata%tchkpt_dir)
+    write(logunit,F0A) subname,'Restart case name        = ', trim(infodata%rest_case_name)
 
-       write(logunit,F0L) subname,'aqua_planet mode         = ', infodata%aqua_planet
-       write(logunit,F0I) subname,'aqua_planet analytic sst = ', infodata%aqua_planet_sst
-       write(logunit,F0L) subname,'brnch_retain_casename    = ', infodata%brnch_retain_casename
+    write(logunit,F0L) subname,'aqua_planet mode         = ', infodata%aqua_planet
+    write(logunit,F0I) subname,'aqua_planet analytic sst = ', infodata%aqua_planet_sst
+    write(logunit,F0L) subname,'brnch_retain_casename    = ', infodata%brnch_retain_casename
 
-       write(logunit,F0L) subname,'read_restart flag        = ', infodata%read_restart
-       write(logunit,F0A) subname,'Restart pointer file     = ', trim(infodata%restart_pfile)
-       write(logunit,F0A) subname,'Restart file (full path) = ', trim(infodata%restart_file)
+    write(logunit,F0L) subname,'read_restart flag        = ', infodata%read_restart
+    write(logunit,F0A) subname,'Restart pointer file     = ', trim(infodata%restart_pfile)
+    write(logunit,F0A) subname,'Restart file (full path) = ', trim(infodata%restart_file)
 
-       write(logunit,F0L) subname,'single_column            = ', infodata%single_column
-       write(logunit,F0R) subname,'scmlat                   = ', infodata%scmlat
-       write(logunit,F0R) subname,'scmlon                   = ', infodata%scmlon
+    write(logunit,F0L) subname,'single_column            = ', infodata%single_column
+    write(logunit,F0R) subname,'scmlat                   = ', infodata%scmlat
+    write(logunit,F0R) subname,'scmlon                   = ', infodata%scmlon
 
-       write(logunit,F0A) subname,'Log output end name      = ', trim(infodata%logFilePostFix)
-       write(logunit,F0A) subname,'Output path dir          = ', trim(infodata%outPathRoot)
+    write(logunit,F0A) subname,'Log output end name      = ', trim(infodata%logFilePostFix)
+    write(logunit,F0A) subname,'Output path dir          = ', trim(infodata%outPathRoot)
 
-       write(logunit,F0L) subname,'perpetual                = ', infodata%perpetual
-       write(logunit,F0I) subname,'perpetual_ymd            = ', infodata%perpetual_ymd
+    write(logunit,F0L) subname,'perpetual                = ', infodata%perpetual
+    write(logunit,F0I) subname,'perpetual_ymd            = ', infodata%perpetual_ymd
 
-       write(logunit,F0A) subname,'orb_mode                 = ', trim(infodata%orb_mode)
-     if (trim(infodata%orb_mode) == trim(seq_infodata_orb_fixed_parameters)) then
+    write(logunit,F0A) subname,'orb_mode                 = ', trim(infodata%orb_mode)
+    if (trim(infodata%orb_mode) == trim(seq_infodata_orb_fixed_parameters)) then
        write(logunit,F0R) subname,'orb_eccen                = ', infodata%orb_eccen
        write(logunit,F0R) subname,'orb_obliq                = ', infodata%orb_obliq
        write(logunit,F0R) subname,'orb_mvelp                = ', infodata%orb_mvelp
        write(logunit,F0R) subname,'orb_obliqr               = ', infodata%orb_obliqr
        write(logunit,F0R) subname,'orb_mvelpp               = ', infodata%orb_mvelpp
        write(logunit,F0R) subname,'orb_lambm0               = ', infodata%orb_lambm0
-     elseif (trim(infodata%orb_mode) == trim(seq_infodata_orb_fixed_year)) then
+    elseif (trim(infodata%orb_mode) == trim(seq_infodata_orb_fixed_year)) then
        write(logunit,F0I) subname,'orb_iyear                = ', infodata%orb_iyear
        write(logunit,F0R) subname,'orb_eccen                = ', infodata%orb_eccen
        write(logunit,F0R) subname,'orb_obliq                = ', infodata%orb_obliq
@@ -2815,182 +2861,186 @@ SUBROUTINE seq_infodata_print( infodata )
        write(logunit,F0R) subname,'orb_obliqr               = ', infodata%orb_obliqr
        write(logunit,F0R) subname,'orb_mvelpp               = ', infodata%orb_mvelpp
        write(logunit,F0R) subname,'orb_lambm0               = ', infodata%orb_lambm0
-     elseif (trim(infodata%orb_mode) == trim(seq_infodata_orb_variable_year)) then
+    elseif (trim(infodata%orb_mode) == trim(seq_infodata_orb_variable_year)) then
        write(logunit,F0I) subname,'orb_iyear                = ', infodata%orb_iyear
        write(logunit,F0I) subname,'orb_iyear_align          = ', infodata%orb_iyear_align
-     endif
+    endif
 
-       write(logunit,F0A) subname,'wv_sat_scheme            = ', trim(infodata%wv_sat_scheme)
-       write(logunit,F0R) subname,'wv_sat_transition_start  = ', infodata%wv_sat_transition_start
-       write(logunit,F0L) subname,'wv_sat_use_tables        = ', infodata%wv_sat_use_tables
-       write(logunit,F0R) subname,'wv_sat_table_spacing     = ', infodata%wv_sat_table_spacing
+    write(logunit,F0A) subname,'wv_sat_scheme            = ', trim(infodata%wv_sat_scheme)
+    write(logunit,F0R) subname,'wv_sat_transition_start  = ', infodata%wv_sat_transition_start
+    write(logunit,F0L) subname,'wv_sat_use_tables        = ', infodata%wv_sat_use_tables
+    write(logunit,F0R) subname,'wv_sat_table_spacing     = ', infodata%wv_sat_table_spacing
 
-       write(logunit,F0A) subname,'tfreeze_option           = ', trim(infodata%tfreeze_option)
-       write(logunit,F0A) subname,'flux_epbal               = ', trim(infodata%flux_epbal)
-       write(logunit,F0L) subname,'flux_albav               = ', infodata%flux_albav
-       write(logunit,F0L) subname,'flux_diurnal             = ', infodata%flux_diurnal
-       write(logunit,F0R) subname,'gust_fac                 = ', infodata%gust_fac
-       write(logunit,F0A) subname,'glc_renormalize_smb      = ', trim(infodata%glc_renormalize_smb)
-       write(logunit,F0R) subname,'wall_time_limit          = ', infodata%wall_time_limit
-       write(logunit,F0A) subname,'force_stop_at            = ', trim(infodata%force_stop_at)
-       write(logunit,F0A) subname,'atm_gridname             = ', trim(infodata%atm_gnam)
-       write(logunit,F0A) subname,'lnd_gridname             = ', trim(infodata%lnd_gnam)
-       write(logunit,F0A) subname,'ocn_gridname             = ', trim(infodata%ocn_gnam)
-       write(logunit,F0A) subname,'ice_gridname             = ', trim(infodata%ice_gnam)
-       write(logunit,F0A) subname,'rof_gridname             = ', trim(infodata%rof_gnam)
-       write(logunit,F0A) subname,'glc_gridname             = ', trim(infodata%glc_gnam)
-       write(logunit,F0A) subname,'wav_gridname             = ', trim(infodata%wav_gnam)
-       write(logunit,F0L) subname,'shr_map_dopole           = ', infodata%shr_map_dopole
-       write(logunit,F0A) subname,'vect_map                 = ', trim(infodata%vect_map)
-       write(logunit,F0A) subname,'aoflux_grid              = ', trim(infodata%aoflux_grid)
-       write(logunit,F0A) subname,'cpl_seq_option           = ', trim(infodata%cpl_seq_option)
-       write(logunit,F0S) subname,'cpl_decomp               = ', infodata%cpl_decomp
-       write(logunit,F0L) subname,'do_budgets               = ', infodata%do_budgets
-       write(logunit,F0L) subname,'do_histinit              = ', infodata%do_histinit
-       write(logunit,F0S) subname,'budget_inst              = ', infodata%budget_inst
-       write(logunit,F0S) subname,'budget_daily             = ', infodata%budget_daily
-       write(logunit,F0S) subname,'budget_month             = ', infodata%budget_month
-       write(logunit,F0S) subname,'budget_ann               = ', infodata%budget_ann
-       write(logunit,F0S) subname,'budget_ltann             = ', infodata%budget_ltann
-       write(logunit,F0S) subname,'budget_ltend             = ', infodata%budget_ltend
-       write(logunit,F0L) subname,'histaux_a2x              = ', infodata%histaux_a2x
-       write(logunit,F0L) subname,'histaux_a2x1hri          = ', infodata%histaux_a2x1hri
-       write(logunit,F0L) subname,'histaux_a2x1hr           = ', infodata%histaux_a2x1hr
-       write(logunit,F0L) subname,'histaux_a2x3hr           = ', infodata%histaux_a2x3hr
-       write(logunit,F0L) subname,'histaux_a2x3hrp          = ', infodata%histaux_a2x3hrp
-       write(logunit,F0L) subname,'histaux_a2x24hr          = ', infodata%histaux_a2x24hr
-       write(logunit,F0L) subname,'histaux_l2x1yr           = ', infodata%histaux_l2x1yr
-       write(logunit,F0L) subname,'histaux_l2x              = ', infodata%histaux_l2x
-       write(logunit,F0L) subname,'histaux_r2x              = ', infodata%histaux_r2x
-       write(logunit,F0L) subname,'histavg_atm              = ', infodata%histavg_atm
-       write(logunit,F0L) subname,'histavg_lnd              = ', infodata%histavg_lnd
-       write(logunit,F0L) subname,'histavg_ocn              = ', infodata%histavg_ocn
-       write(logunit,F0L) subname,'histavg_ice              = ', infodata%histavg_ice
-       write(logunit,F0L) subname,'histavg_rof              = ', infodata%histavg_rof
-       write(logunit,F0L) subname,'histavg_glc              = ', infodata%histavg_glc
-       write(logunit,F0L) subname,'histavg_wav              = ', infodata%histavg_wav
-       write(logunit,F0L) subname,'histavg_xao              = ', infodata%histavg_xao
-       write(logunit,F0L) subname,'drv_threading            = ', infodata%drv_threading
+    write(logunit,F0A) subname,'tfreeze_option           = ', trim(infodata%tfreeze_option)
+    write(logunit,F0A) subname,'flux_epbal               = ', trim(infodata%flux_epbal)
+    write(logunit,F0L) subname,'flux_albav               = ', infodata%flux_albav
+    write(logunit,F0L) subname,'flux_diurnal             = ', infodata%flux_diurnal
+    write(logunit,F0L) subname,'coldair_outbreak_mod            = ', infodata%coldair_outbreak_mod
+    write(logunit,F0R) subname,'flux_convergence         = ', infodata%flux_convergence
+    write(logunit,F0I) subname,'flux_max_iteration       = ', infodata%flux_max_iteration
+    write(logunit,F0R) subname,'gust_fac                 = ', infodata%gust_fac
+    write(logunit,F0A) subname,'glc_renormalize_smb      = ', trim(infodata%glc_renormalize_smb)
+    write(logunit,F0R) subname,'wall_time_limit          = ', infodata%wall_time_limit
+    write(logunit,F0A) subname,'force_stop_at            = ', trim(infodata%force_stop_at)
+    write(logunit,F0A) subname,'atm_gridname             = ', trim(infodata%atm_gnam)
+    write(logunit,F0A) subname,'lnd_gridname             = ', trim(infodata%lnd_gnam)
+    write(logunit,F0A) subname,'ocn_gridname             = ', trim(infodata%ocn_gnam)
+    write(logunit,F0A) subname,'ice_gridname             = ', trim(infodata%ice_gnam)
+    write(logunit,F0A) subname,'rof_gridname             = ', trim(infodata%rof_gnam)
+    write(logunit,F0A) subname,'glc_gridname             = ', trim(infodata%glc_gnam)
+    write(logunit,F0A) subname,'wav_gridname             = ', trim(infodata%wav_gnam)
+    write(logunit,F0L) subname,'shr_map_dopole           = ', infodata%shr_map_dopole
+    write(logunit,F0A) subname,'vect_map                 = ', trim(infodata%vect_map)
+    write(logunit,F0A) subname,'aoflux_grid              = ', trim(infodata%aoflux_grid)
+    write(logunit,F0A) subname,'cpl_seq_option           = ', trim(infodata%cpl_seq_option)
+    write(logunit,F0S) subname,'cpl_decomp               = ', infodata%cpl_decomp
+    write(logunit,F0L) subname,'do_budgets               = ', infodata%do_budgets
+    write(logunit,F0L) subname,'do_histinit              = ', infodata%do_histinit
+    write(logunit,F0S) subname,'budget_inst              = ', infodata%budget_inst
+    write(logunit,F0S) subname,'budget_daily             = ', infodata%budget_daily
+    write(logunit,F0S) subname,'budget_month             = ', infodata%budget_month
+    write(logunit,F0S) subname,'budget_ann               = ', infodata%budget_ann
+    write(logunit,F0S) subname,'budget_ltann             = ', infodata%budget_ltann
+    write(logunit,F0S) subname,'budget_ltend             = ', infodata%budget_ltend
+    write(logunit,F0L) subname,'histaux_a2x              = ', infodata%histaux_a2x
+    write(logunit,F0L) subname,'histaux_a2x1hri          = ', infodata%histaux_a2x1hri
+    write(logunit,F0L) subname,'histaux_a2x1hr           = ', infodata%histaux_a2x1hr
+    write(logunit,F0L) subname,'histaux_a2x3hr           = ', infodata%histaux_a2x3hr
+    write(logunit,F0L) subname,'histaux_a2x3hrp          = ', infodata%histaux_a2x3hrp
+    write(logunit,F0L) subname,'histaux_a2x24hr          = ', infodata%histaux_a2x24hr
+    write(logunit,F0L) subname,'histaux_l2x1yrg          = ', infodata%histaux_l2x1yrg
+    write(logunit,F0L) subname,'histaux_l2x              = ', infodata%histaux_l2x
+    write(logunit,F0L) subname,'histaux_r2x              = ', infodata%histaux_r2x
+    write(logunit,F0L) subname,'histaux_double_precision = ', infodata%histaux_double_precision
+    write(logunit,F0L) subname,'histavg_atm              = ', infodata%histavg_atm
+    write(logunit,F0L) subname,'histavg_lnd              = ', infodata%histavg_lnd
+    write(logunit,F0L) subname,'histavg_ocn              = ', infodata%histavg_ocn
+    write(logunit,F0L) subname,'histavg_ice              = ', infodata%histavg_ice
+    write(logunit,F0L) subname,'histavg_rof              = ', infodata%histavg_rof
+    write(logunit,F0L) subname,'histavg_glc              = ', infodata%histavg_glc
+    write(logunit,F0L) subname,'histavg_wav              = ', infodata%histavg_wav
+    write(logunit,F0L) subname,'histavg_xao              = ', infodata%histavg_xao
+    write(logunit,F0L) subname,'drv_threading            = ', infodata%drv_threading
 
-       write(logunit,F0R) subname,'eps_frac                 = ', infodata%eps_frac
-       write(logunit,F0R) subname,'eps_amask                = ', infodata%eps_amask
-       write(logunit,F0R) subname,'eps_agrid                = ', infodata%eps_agrid
-       write(logunit,F0R) subname,'eps_aarea                = ', infodata%eps_aarea
-       write(logunit,F0R) subname,'eps_omask                = ', infodata%eps_omask
-       write(logunit,F0R) subname,'eps_ogrid                = ', infodata%eps_ogrid
-       write(logunit,F0R) subname,'eps_oarea                = ', infodata%eps_oarea
+    write(logunit,F0R) subname,'eps_frac                 = ', infodata%eps_frac
+    write(logunit,F0R) subname,'eps_amask                = ', infodata%eps_amask
+    write(logunit,F0R) subname,'eps_agrid                = ', infodata%eps_agrid
+    write(logunit,F0R) subname,'eps_aarea                = ', infodata%eps_aarea
+    write(logunit,F0R) subname,'eps_omask                = ', infodata%eps_omask
+    write(logunit,F0R) subname,'eps_ogrid                = ', infodata%eps_ogrid
+    write(logunit,F0R) subname,'eps_oarea                = ', infodata%eps_oarea
 
-       write(logunit,F0L) subname,'reprosum_use_ddpdd       = ', infodata%reprosum_use_ddpdd
-       write(logunit,F0R) subname,'reprosum_diffmax         = ', infodata%reprosum_diffmax
-       write(logunit,F0L) subname,'reprosum_recompute       = ', infodata%reprosum_recompute
+    write(logunit,F0L) subname,'reprosum_use_ddpdd       = ', infodata%reprosum_use_ddpdd
+    write(logunit,F0R) subname,'reprosum_diffmax         = ', infodata%reprosum_diffmax
+    write(logunit,F0L) subname,'reprosum_recompute       = ', infodata%reprosum_recompute
 
-       write(logunit,F0L) subname,'mct_usealltoall          = ', infodata%mct_usealltoall
-       write(logunit,F0L) subname,'mct_usevector            = ', infodata%mct_usevector
+    write(logunit,F0L) subname,'mct_usealltoall          = ', infodata%mct_usealltoall
+    write(logunit,F0L) subname,'mct_usevector            = ', infodata%mct_usevector
 
-       write(logunit,F0S) subname,'info_debug               = ', infodata%info_debug
-       write(logunit,F0L) subname,'bfbflag                  = ', infodata%bfbflag
-       write(logunit,F0L) subname,'esmf_map_flag            = ', infodata%esmf_map_flag
-       write(logunit,F0L) subname,'dead_comps               = ', infodata%dead_comps
-       write(logunit,F0L) subname,'run_barriers             = ', infodata%run_barriers
+    write(logunit,F0S) subname,'info_debug               = ', infodata%info_debug
+    write(logunit,F0L) subname,'bfbflag                  = ', infodata%bfbflag
+    write(logunit,F0L) subname,'esmf_map_flag            = ', infodata%esmf_map_flag
+    write(logunit,F0L) subname,'dead_comps               = ', infodata%dead_comps
+    write(logunit,F0L) subname,'run_barriers             = ', infodata%run_barriers
 
-       write(logunit,F0L) subname,'atm_present              = ', infodata%atm_present
-       write(logunit,F0L) subname,'atm_prognostic           = ', infodata%atm_prognostic
-       write(logunit,F0L) subname,'lnd_present              = ', infodata%lnd_present
-       write(logunit,F0L) subname,'lnd_prognostic           = ', infodata%lnd_prognostic
-       write(logunit,F0L) subname,'rof_present              = ', infodata%rof_present
-       write(logunit,F0L) subname,'rofice_present           = ', infodata%rofice_present
-       write(logunit,F0L) subname,'rof_prognostic           = ', infodata%rof_prognostic
-       write(logunit,F0L) subname,'flood_present            = ', infodata%flood_present
-       write(logunit,F0L) subname,'ocn_present              = ', infodata%ocn_present
-       write(logunit,F0L) subname,'ocn_prognostic           = ', infodata%ocn_prognostic
-       write(logunit,F0L) subname,'ocnrof_prognostic        = ', infodata%ocnrof_prognostic
-       write(logunit,F0L) subname,'ice_present              = ', infodata%ice_present
-       write(logunit,F0L) subname,'ice_prognostic           = ', infodata%ice_prognostic
-       write(logunit,F0L) subname,'iceberg_prognostic       = ', infodata%iceberg_prognostic
-       write(logunit,F0L) subname,'glc_present              = ', infodata%glc_present
-       write(logunit,F0L) subname,'glclnd_present           = ', infodata%glclnd_present
-       write(logunit,F0L) subname,'glcocn_present           = ', infodata%glcocn_present
-       write(logunit,F0L) subname,'glcice_present           = ', infodata%glcice_present
-       write(logunit,F0L) subname,'glc_prognostic           = ', infodata%glc_prognostic
-       write(logunit,F0L) subname,'glc_coupled_fluxes       = ', infodata%glc_coupled_fluxes
-       write(logunit,F0L) subname,'wav_present              = ', infodata%wav_present
-       write(logunit,F0L) subname,'wav_prognostic           = ', infodata%wav_prognostic
-       write(logunit,F0L) subname,'esp_present              = ', infodata%esp_present
-       write(logunit,F0L) subname,'esp_prognostic           = ', infodata%esp_prognostic
+    write(logunit,F0L) subname,'atm_present              = ', infodata%atm_present
+    write(logunit,F0L) subname,'atm_prognostic           = ', infodata%atm_prognostic
+    write(logunit,F0L) subname,'lnd_present              = ', infodata%lnd_present
+    write(logunit,F0L) subname,'lnd_prognostic           = ', infodata%lnd_prognostic
+    write(logunit,F0L) subname,'rof_present              = ', infodata%rof_present
+    write(logunit,F0L) subname,'rofice_present           = ', infodata%rofice_present
+    write(logunit,F0L) subname,'rof_prognostic           = ', infodata%rof_prognostic
+    write(logunit,F0L) subname,'flood_present            = ', infodata%flood_present
+    write(logunit,F0L) subname,'ocn_present              = ', infodata%ocn_present
+    write(logunit,F0L) subname,'ocn_prognostic           = ', infodata%ocn_prognostic
+    write(logunit,F0L) subname,'ocnrof_prognostic        = ', infodata%ocnrof_prognostic
+    write(logunit,F0L) subname,'ice_present              = ', infodata%ice_present
+    write(logunit,F0L) subname,'ice_prognostic           = ', infodata%ice_prognostic
+    write(logunit,F0L) subname,'iceberg_prognostic       = ', infodata%iceberg_prognostic
+    write(logunit,F0L) subname,'glc_present              = ', infodata%glc_present
+    write(logunit,F0L) subname,'glclnd_present           = ', infodata%glclnd_present
+    write(logunit,F0L) subname,'glcocn_present           = ', infodata%glcocn_present
+    write(logunit,F0L) subname,'glcice_present           = ', infodata%glcice_present
+    write(logunit,F0L) subname,'glc_prognostic           = ', infodata%glc_prognostic
+    write(logunit,F0L) subname,'glc_coupled_fluxes       = ', infodata%glc_coupled_fluxes
+    write(logunit,F0L) subname,'wav_present              = ', infodata%wav_present
+    write(logunit,F0L) subname,'wav_prognostic           = ', infodata%wav_prognostic
+    write(logunit,F0L) subname,'esp_present              = ', infodata%esp_present
+    write(logunit,F0L) subname,'esp_prognostic           = ', infodata%esp_prognostic
 
-       write(logunit,F0I) subname,'atm_nx                   = ', infodata%atm_nx
-       write(logunit,F0I) subname,'atm_ny                   = ', infodata%atm_ny
-       write(logunit,F0I) subname,'lnd_nx                   = ', infodata%lnd_nx
-       write(logunit,F0I) subname,'lnd_ny                   = ', infodata%lnd_ny
-       write(logunit,F0I) subname,'rof_nx                   = ', infodata%rof_nx
-       write(logunit,F0I) subname,'rof_ny                   = ', infodata%rof_ny
-       write(logunit,F0I) subname,'ice_nx                   = ', infodata%ice_nx
-       write(logunit,F0I) subname,'ice_ny                   = ', infodata%ice_ny
-       write(logunit,F0I) subname,'ocn_nx                   = ', infodata%ocn_nx
-       write(logunit,F0I) subname,'ocn_ny                   = ', infodata%ocn_ny
-       write(logunit,F0I) subname,'glc_nx                   = ', infodata%glc_nx
-       write(logunit,F0I) subname,'glc_ny                   = ', infodata%glc_ny
-       write(logunit,F0I) subname,'wav_nx                   = ', infodata%wav_nx
-       write(logunit,F0I) subname,'wav_ny                   = ', infodata%wav_ny
+    write(logunit,F0I) subname,'atm_nx                   = ', infodata%atm_nx
+    write(logunit,F0I) subname,'atm_ny                   = ', infodata%atm_ny
+    write(logunit,F0I) subname,'lnd_nx                   = ', infodata%lnd_nx
+    write(logunit,F0I) subname,'lnd_ny                   = ', infodata%lnd_ny
+    write(logunit,F0I) subname,'rof_nx                   = ', infodata%rof_nx
+    write(logunit,F0I) subname,'rof_ny                   = ', infodata%rof_ny
+    write(logunit,F0I) subname,'ice_nx                   = ', infodata%ice_nx
+    write(logunit,F0I) subname,'ice_ny                   = ', infodata%ice_ny
+    write(logunit,F0I) subname,'ocn_nx                   = ', infodata%ocn_nx
+    write(logunit,F0I) subname,'ocn_ny                   = ', infodata%ocn_ny
+    write(logunit,F0I) subname,'glc_nx                   = ', infodata%glc_nx
+    write(logunit,F0I) subname,'glc_ny                   = ', infodata%glc_ny
+    write(logunit,F0I) subname,'wav_nx                   = ', infodata%wav_nx
+    write(logunit,F0I) subname,'wav_ny                   = ', infodata%wav_ny
 
-       write(logunit,F0R) subname,'nextsw_cday              = ', infodata%nextsw_cday
-       write(logunit,F0R) subname,'precip_fact              = ', infodata%precip_fact
-       write(logunit,F0L) subname,'atm_aero                 = ', infodata%atm_aero
+    write(logunit,F0R) subname,'nextsw_cday              = ', infodata%nextsw_cday
+    write(logunit,F0R) subname,'precip_fact              = ', infodata%precip_fact
+    write(logunit,F0L) subname,'atm_aero                 = ', infodata%atm_aero
 
-       write(logunit,F0S) subname,'atm_phase                = ', infodata%atm_phase
-       write(logunit,F0S) subname,'lnd_phase                = ', infodata%lnd_phase
-       write(logunit,F0S) subname,'ocn_phase                = ', infodata%ocn_phase
-       write(logunit,F0S) subname,'ice_phase                = ', infodata%ice_phase
-       write(logunit,F0S) subname,'glc_phase                = ', infodata%glc_phase
-       write(logunit,F0S) subname,'rof_phase                = ', infodata%rof_phase
-       write(logunit,F0S) subname,'wav_phase                = ', infodata%wav_phase
+    write(logunit,F0S) subname,'atm_phase                = ', infodata%atm_phase
+    write(logunit,F0S) subname,'lnd_phase                = ', infodata%lnd_phase
+    write(logunit,F0S) subname,'ocn_phase                = ', infodata%ocn_phase
+    write(logunit,F0S) subname,'ice_phase                = ', infodata%ice_phase
+    write(logunit,F0S) subname,'glc_phase                = ', infodata%glc_phase
+    write(logunit,F0S) subname,'rof_phase                = ', infodata%rof_phase
+    write(logunit,F0S) subname,'wav_phase                = ', infodata%wav_phase
 
-       write(logunit,F0L) subname,'glc_g2lupdate            = ', infodata%glc_g2lupdate
-       if (associated(infodata%pause_resume)) then
-         do ind = 1, num_inst_atm
-           if (len_trim(infodata%pause_resume%atm_resume(ind)) > 0) then
+    write(logunit,F0L) subname,'glc_g2lupdate            = ', infodata%glc_g2lupdate
+    if (associated(infodata%pause_resume)) then
+       do ind = 1, num_inst_atm
+          if (len_trim(infodata%pause_resume%atm_resume(ind)) > 0) then
              write(logunit,FIA) subname,'atm_resume(',ind,')        = ', trim(infodata%pause_resume%atm_resume(ind))
-           end if
-         end do
-         do ind = 1, num_inst_lnd
-           if (len_trim(infodata%pause_resume%lnd_resume(ind)) > 0) then
+          end if
+       end do
+       do ind = 1, num_inst_lnd
+          if (len_trim(infodata%pause_resume%lnd_resume(ind)) > 0) then
              write(logunit,FIA) subname,'lnd_resume(',ind,')        = ', trim(infodata%pause_resume%lnd_resume(ind))
-           end if
-         end do
-         do ind = 1, num_inst_ocn
-           if (len_trim(infodata%pause_resume%ocn_resume(ind)) > 0) then
+          end if
+       end do
+       do ind = 1, num_inst_ocn
+          if (len_trim(infodata%pause_resume%ocn_resume(ind)) > 0) then
              write(logunit,FIA) subname,'ocn_resume(',ind,')        = ', trim(infodata%pause_resume%ocn_resume(ind))
-           end if
-         end do
-         do ind = 1, num_inst_ice
-           if (len_trim(infodata%pause_resume%ice_resume(ind)) > 0) then
+          end if
+       end do
+       do ind = 1, num_inst_ice
+          if (len_trim(infodata%pause_resume%ice_resume(ind)) > 0) then
              write(logunit,FIA) subname,'ice_resume(',ind,')        = ', trim(infodata%pause_resume%ice_resume(ind))
-           end if
-         end do
-         do ind = 1, num_inst_glc
-           if (len_trim(infodata%pause_resume%glc_resume(ind)) > 0) then
+          end if
+       end do
+       do ind = 1, num_inst_glc
+          if (len_trim(infodata%pause_resume%glc_resume(ind)) > 0) then
              write(logunit,FIA) subname,'glc_resume(',ind,')        = ', trim(infodata%pause_resume%glc_resume(ind))
-           end if
-         end do
-         do ind = 1, num_inst_rof
-           if (len_trim(infodata%pause_resume%rof_resume(ind)) > 0) then
+          end if
+       end do
+       do ind = 1, num_inst_rof
+          if (len_trim(infodata%pause_resume%rof_resume(ind)) > 0) then
              write(logunit,FIA) subname,'rof_resume(',ind,')        = ', trim(infodata%pause_resume%rof_resume(ind))
-           end if
-         end do
-         do ind = 1, num_inst_wav
-           if (len_trim(infodata%pause_resume%wav_resume(ind)) > 0) then
+          end if
+       end do
+       do ind = 1, num_inst_wav
+          if (len_trim(infodata%pause_resume%wav_resume(ind)) > 0) then
              write(logunit,FIA) subname,'wav_resume(',ind,')        = ', trim(infodata%pause_resume%wav_resume(ind))
-           end if
-         end do
-         if (len_trim(infodata%pause_resume%cpl_resume) > 0) then
-           write(logunit,F0A) subname,'cpl_resume               = ', trim(infodata%pause_resume%cpl_resume)
-         end if
+          end if
+       end do
+       if (len_trim(infodata%pause_resume%cpl_resume) > 0) then
+          write(logunit,F0A) subname,'cpl_resume               = ', trim(infodata%pause_resume%cpl_resume)
        end if
-!     endif
+    end if
+    !     endif
 
-END SUBROUTINE seq_infodata_print
+  END SUBROUTINE seq_infodata_print
 
-!===============================================================================
-!===============================================================================
+  !===============================================================================
+  !===============================================================================
 
 END MODULE seq_infodata_mod

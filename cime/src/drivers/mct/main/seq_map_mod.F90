@@ -1,15 +1,15 @@
 module seq_map_mod
 
-!---------------------------------------------------------------------
-!
-! Purpose:
-!
-! General mapping routines
-! including self normalizing mapping routine with optional fraction
-!
-! Author: T. Craig, Jan-28-2011
-!
-!---------------------------------------------------------------------
+  !---------------------------------------------------------------------
+  !
+  ! Purpose:
+  !
+  ! General mapping routines
+  ! including self normalizing mapping routine with optional fraction
+  !
+  ! Author: T. Craig, Jan-28-2011
+  !
+  !---------------------------------------------------------------------
 
   use shr_kind_mod      ,only: R8 => SHR_KIND_R8, IN=>SHR_KIND_IN
   use shr_kind_mod      ,only: CL => SHR_KIND_CL, CX => SHR_KIND_CX
@@ -25,9 +25,9 @@ module seq_map_mod
   save
   private  ! except
 
-!--------------------------------------------------------------------------
-! Public interfaces
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Public interfaces
+  !--------------------------------------------------------------------------
 
   public :: seq_map_init_rcfile     ! cpl pes
   public :: seq_map_init_rearrolap  ! cpl pes
@@ -39,23 +39,23 @@ module seq_map_mod
   interface seq_map_avNorm
      module procedure seq_map_avNormArr
      module procedure seq_map_avNormAvF
-  end interface
+  end interface seq_map_avNorm
 
-!--------------------------------------------------------------------------
-! Public data
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Public data
+  !--------------------------------------------------------------------------
 
-!--------------------------------------------------------------------------
-! Private data
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Private data
+  !--------------------------------------------------------------------------
 
   character(*),parameter :: seq_map_stroff = 'variable_unset'
   character(*),parameter :: seq_map_stron  = 'StrinG_is_ON'
   real(R8),parameter,private :: deg2rad = shr_const_pi/180.0_R8  ! deg to rads
 
-!=======================================================================
+  !=======================================================================
 contains
-!=======================================================================
+  !=======================================================================
 
   subroutine seq_map_init_rcfile( mapper, comp_s, comp_d, &
        maprcfile, maprcname, maprctype, samegrid, string, esmf_map)
@@ -83,7 +83,6 @@ contains
     character(CX)               :: mapfile
     character(CL)               :: maptype
     integer(IN)                 :: mapid
-    integer(IN)                 :: ssize,dsize
     character(len=*),parameter  :: subname = "(seq_map_init_rcfile) "
     !-----------------------------------------------------
 
@@ -153,7 +152,7 @@ contains
 
     if (seq_comm_iamroot(CPLID)) then
        write(logunit,'(2A,I6,4A)') subname,' mapper counter, strategy, mapfile = ', &
-          mapper%counter,' ',trim(mapper%strategy),' ',trim(mapper%mapfile)
+            mapper%counter,' ',trim(mapper%strategy),' ',trim(mapper%mapfile)
        call shr_sys_flush(logunit)
     endif
 
@@ -224,7 +223,7 @@ contains
 
     if (seq_comm_iamroot(CPLID)) then
        write(logunit,'(2A,I6,4A)') subname,' mapper counter, strategy, mapfile = ', &
-          mapper%counter,' ',trim(mapper%strategy),' ',trim(mapper%mapfile)
+            mapper%counter,' ',trim(mapper%strategy),' ',trim(mapper%mapfile)
        call shr_sys_flush(logunit)
     endif
 
@@ -233,7 +232,7 @@ contains
   !=======================================================================
 
   subroutine seq_map_map( mapper, av_s, av_d, fldlist, norm, avwts_s, avwtsfld_s, &
-                          string, msgtag )
+       string, msgtag )
 
     implicit none
     !-----------------------------------------------------
@@ -345,7 +344,6 @@ contains
     type(mct_gGrid), pointer   :: dom_s
     type(mct_gGrid), pointer   :: dom_d
     integer(IN)                :: klon, klat, lsize, n
-    logical                    :: lnorm
     character(len=CL)          :: lstring
     character(len=*),parameter :: subname = "(seq_map_initvect) "
     !-----------------------------------------------------
@@ -365,7 +363,7 @@ contains
        !--- compute these up front for vector mapping ---
        lsize = mct_aVect_lsize(dom_s%data)
        allocate(mapper%slon_s(lsize),mapper%clon_s(lsize), &
-                mapper%slat_s(lsize),mapper%clat_s(lsize))
+            mapper%slat_s(lsize),mapper%clat_s(lsize))
        klon = mct_aVect_indexRa(dom_s%data, "lon" )
        klat = mct_aVect_indexRa(dom_s%data, "lat" )
        do n = 1,lsize
@@ -377,7 +375,7 @@ contains
 
        lsize = mct_aVect_lsize(dom_d%data)
        allocate(mapper%slon_d(lsize),mapper%clon_d(lsize), &
-                mapper%slat_d(lsize),mapper%clat_d(lsize))
+            mapper%slat_d(lsize),mapper%clat_d(lsize))
        klon = mct_aVect_indexRa(dom_d%data, "lon" )
        klat = mct_aVect_indexRa(dom_d%data, "lat" )
        do n = 1,lsize
@@ -527,13 +525,13 @@ contains
           uy = av3_d%rAttr(kuy,n)
           uz = av3_d%rAttr(kuz,n)
           ue = -mapper%slon_d(n)          *ux + &
-                mapper%clon_d(n)          *uy
+               mapper%clon_d(n)          *uy
           un = -mapper%clon_d(n)*mapper%slat_d(n)*ux - &
-                mapper%slon_d(n)*mapper%slat_d(n)*uy + &
-                mapper%clat_d(n)*uz
+               mapper%slon_d(n)*mapper%slat_d(n)*uy + &
+               mapper%clat_d(n)*uz
           ur =  mapper%clon_d(n)*mapper%clat_d(n)*ux + &
-                mapper%slon_d(n)*mapper%clat_d(n)*uy - &
-                mapper%slat_d(n)*uz
+               mapper%slon_d(n)*mapper%clat_d(n)*uy - &
+               mapper%slat_d(n)*uz
           speed = sqrt(ur*ur + ue*ue + un*un)
           if (trim(type) == 'cart3d_diag' .or. trim(type) == 'cart3d_uvw_diag') then
              if (speed /= 0.0_r8) then
@@ -575,25 +573,25 @@ contains
           endif
        endif
 
-      call mct_avect_clean(av3_s)
-      call mct_avect_clean(av3_d)
+       call mct_avect_clean(av3_s)
+       call mct_avect_clean(av3_d)
 
-   endif  ! ku,kv
+    endif  ! ku,kv
 
   end subroutine seq_map_cart3d
 
   !=======================================================================
 
   subroutine seq_map_readdata(maprcfile, maprcname, mpicom, ID, &
-         ni_s, nj_s, av_s, gsmap_s, avfld_s, filefld_s, &
-         ni_d, nj_d, av_d, gsmap_d, avfld_d, filefld_d, string)
+       ni_s, nj_s, av_s, gsmap_s, avfld_s, filefld_s, &
+       ni_d, nj_d, av_d, gsmap_d, avfld_d, filefld_d, string)
 
     !--- lifted from work by J Edwards, April 2011
 
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
     use pio, only : pio_openfile, pio_closefile, pio_read_darray, pio_inq_dimid, &
-       pio_inq_dimlen, pio_inq_varid, file_desc_t, io_desc_t, iosystem_desc_t, &
-       var_desc_t, pio_int, pio_get_var, pio_double, pio_initdecomp, pio_freedecomp
+         pio_inq_dimlen, pio_inq_varid, file_desc_t, io_desc_t, iosystem_desc_t, &
+         var_desc_t, pio_int, pio_get_var, pio_double, pio_initdecomp, pio_freedecomp
     implicit none
     !-----------------------------------------------------
     !
@@ -743,7 +741,7 @@ contains
 
   end subroutine seq_map_readdata
 
-!=======================================================================
+  !=======================================================================
 
   subroutine seq_map_avNormAvF(mapper, av_i, av_o, avf_i, avfifld, rList, norm)
 
@@ -760,8 +758,8 @@ contains
     character(len=*), intent(in),optional :: rList   ! fields list
     logical         , intent(in),optional :: norm    ! normalize at end
     !
-    integer(IN) :: lsize_i, lsize_f, lsize_o, kf, j
-    real(r8),allocatable :: frac_i(:),frac_o(:)
+    integer(IN) :: lsize_i, lsize_f, kf, j
+    real(r8),allocatable :: frac_i(:)
     logical :: lnorm
     character(*),parameter :: subName = '(seq_map_avNormAvF) '
     !-----------------------------------------------------
@@ -796,7 +794,7 @@ contains
 
   end subroutine seq_map_avNormAvF
 
-!=======================================================================
+  !=======================================================================
 
   subroutine seq_map_avNormArr(mapper, av_i, av_o, norm_i, rList, norm)
 
@@ -816,7 +814,7 @@ contains
     !
     type(mct_sMatp)        :: sMatp ! sMat
     type(mct_aVect)        :: avp_i , avp_o
-    integer(IN)            :: i,j,ier,kf
+    integer(IN)            :: j,kf
     integer(IN)            :: lsize_i,lsize_o
     real(r8)               :: normval
     character(CX)          :: lrList

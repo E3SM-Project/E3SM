@@ -7,6 +7,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.utils import run_cmd, run_cmd_no_fail, expect, get_cime_root, is_python_executable
 
 from multiprocessing.dummy import Pool as ThreadPool
+#pylint: disable=import-error
 from distutils.spawn import find_executable
 
 logger = logging.getLogger(__name__)

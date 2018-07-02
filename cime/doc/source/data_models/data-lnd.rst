@@ -150,5 +150,5 @@ In general, the stream input file should translate the stream input variable nam
    "topoNN", "Sl_topoNN"
    "qiceNN",  "Flgl_qiceNN"
 
-where NN = (01,02,..., ``glc_nec``), and ``glc_nec`` is the number of glacier elevation classes.
+where NN = (00,01,02,..., ``glc_nec``), and ``glc_nec`` is the number of glacier elevation classes.
 Note that the number of elevation classes on the input files must be the same as in the run.

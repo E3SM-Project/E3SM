@@ -53,7 +53,7 @@
       <value compset="RCP8.*_CLM"       >1850-2100_rcp8.5_transient</value> 
       <value compset="1850.*_CLM.*_CISM">1850_glacierMEC_control</value> 
       <value compset="2000.*_CLM.*_CISM">2000_glacierMEC_control</value> 
-      <value compset="2000.*_CLM.*_MPASLI">2000_glacierMEC_control</value>
+      <value compset="2000.*_CLM.*_MALI">2000_glacierMEC_control</value>
       <value compset="PDAY.*_CLM.*_CISM">2000_glacierMEC_control</value> 
       <value compset="4804.*_CLM.*_CISM">2000_glacierMEC_control</value> 
       <value compset="20TR.*_CLM.*_CISM">20thC_glacierMEC_transient</value> 
@@ -69,8 +69,14 @@
       <value compset="PIPD_CAM5"        >1850-2100_rcp4.5_transient</value>
       <value compset="2013.*_CLM"       >1850-2100_rcp4.5_transient</value> 
       <value compset="PDAY.*_CLM"       >1850-2100_rcp4.5_transient</value> 
-      <!-- CMIP6 DECK compsets -->
+      <!-- CMIP6 DECK compsets and related BGC compsets -->
       <value compset="1850_CAM5%CMIP6_CLM">1850_CMIP6_control</value>
+      <value compset="1850_CAM5%CMIP6_CLM45.*_BGC%BCRC">1850_CMIP6bgc_control</value>
+      <value compset="20TR_CAM5%CMIP6_CLM">20thC_CMIP6_transient</value>
+      <value compset="20TR_CAM5%CMIP6_CLM45.*_BGC%BCRC">20thC_CMIP6bgc_transient</value> 
+      <value compset="20TR.*_CLM45%[^_]*BGC">20thC_bgc_transient</value>
+      <value compset="1950_CAM5%CMIP6-LR*_CLM">1950_CMIP6LR_control</value>
+      <value compset="1950_CAM5%CMIP6-HR_CLM">1950_CMIP6HR_control</value>
     </values>
     <group>run_component_clm</group>
     <file>env_run.xml</file>
@@ -128,6 +134,10 @@
       <value compset="_CLM.*_BGC%BPRP">prognostic</value>
       <value compset="20TR.*_DATM"    >diagnostic</value>
       <value compset="RCP.*_DATM"     >diagnostic</value>
+      <value compset="_CLM.*_BGC%BCRC">constant</value>
+      <value compset="_CLM.*_BGC%BCRD">constant</value>
+      <value compset="_CLM.*_BGC%BDRC">diagnostic</value>
+      <value compset="20TR.*_DATM.*_BGC%BC"    >constant</value>
     </values>
     <group>run_component_clm</group>
     <file>env_run.xml</file>
@@ -183,7 +193,7 @@
     <values>
       <value compset="_CLM.+CISM"        >on</value>
       <value compset="4804.*_CLM.*_CISM1">off</value>
-      <value compset="_CLM.+MPASLI"        >on</value>
+      <value compset="_CLM.+MALI"        >on</value>
     </values>
     <group>run_component_clm</group>
     <file>env_run.xml</file>

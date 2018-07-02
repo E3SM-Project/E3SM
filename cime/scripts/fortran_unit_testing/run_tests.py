@@ -13,7 +13,6 @@ from CIME.XML.machines import Machines
 from CIME.XML.compilers import Compilers
 from CIME.XML.env_mach_specific import EnvMachSpecific
 from xml_test_list import TestSuiteSpec, suites_from_xml
-import subprocess
 import socket
 #=================================================
 # Standard library modules.
@@ -91,7 +90,7 @@ requires genf90.pl to be in the user's path."""
                         help="""MPI Library to use in build.
                         If not specified, use the default for this machine/compiler.
                         Must match an MPILIB option in config_compilers.xml.
-                        e.g., for yellowstone, can use 'mpich2'.
+                        e.g., for cheyenne, can use 'mpt'.
                         Only relevant if --use-mpi is specified."""
     )
 
@@ -180,6 +179,7 @@ def cmake_stage(name, test_spec_dir, build_optimized, use_mpiserial, mpirun_comm
             "cmake",
             "-C Macros.cmake",
             test_spec_dir,
+            "-DCIMEROOT="+_CIMEROOT,
             "-DCIME_CMAKE_MODULE_DIRECTORY="+os.path.abspath(os.path.join(_CIMEROOT,"src","CMake")),
             "-DCMAKE_BUILD_TYPE="+build_type,
             "-DPFUNIT_MPIRUN='"+mpirun_command+"'",
@@ -203,7 +203,7 @@ def cmake_stage(name, test_spec_dir, build_optimized, use_mpiserial, mpirun_comm
         if cmake_args is not None:
             cmake_command.extend(cmake_args.split(" "))
 
-        run_cmd_no_fail(" ".join(cmake_command), verbose=True, arg_stdout=None, arg_stderr=subprocess.STDOUT)
+        run_cmd_no_fail(" ".join(cmake_command), combine_output=True)
 
 def make_stage(name, output, make_j, clean=False, verbose=True):
     """Run make in the current working directory.
@@ -222,7 +222,7 @@ def make_stage(name, output, make_j, clean=False, verbose=True):
     if verbose:
         make_command.append("VERBOSE=1")
 
-    run_cmd_no_fail(" ".join(make_command), arg_stdout=None, arg_stderr=subprocess.STDOUT)
+    run_cmd_no_fail(" ".join(make_command), combine_output=True)
 
 def find_pfunit(compilerobj, mpilib, use_openmp):
     """Find the pfunit installation we'll be using, and print its path
@@ -242,8 +242,8 @@ def find_pfunit(compilerobj, mpilib, use_openmp):
     expect(pfunit_path is not None,
            """PFUNIT_PATH not found for this machine and compiler, with MPILIB={} and compile_threaded={}.
 You must specify PFUNIT_PATH in config_compilers.xml, with attributes MPILIB and compile_threaded.""".format(mpilib, attrs['compile_threaded']))
-    logger.info("Using PFUNIT_PATH: {}".format(pfunit_path.text))
-    return pfunit_path.text
+    logger.info("Using PFUNIT_PATH: {}".format(compilerobj.text(pfunit_path)))
+    return compilerobj.text(pfunit_path)
 
 #=================================================
 # Iterate over input suite specs, building the tests.
@@ -350,7 +350,7 @@ def _main():
         }
 
         # We can get away with specifying case=None since we're using exe_only=True
-        mpirun_command, _ = machspecific.get_mpirun(case=None, attribs=mpi_attribs, exe_only=True)
+        mpirun_command, _ = machspecific.get_mpirun(None, mpi_attribs, None, exe_only=True)
         mpirun_command = machspecific.get_resolved_value(mpirun_command)
         logger.info("mpirun command is '{}'".format(mpirun_command))
 
@@ -400,8 +400,7 @@ def _main():
             if ctest_args is not None:
                 ctest_command.extend(ctest_args.split(" "))
 
-            run_cmd_no_fail(" ".join(ctest_command), from_dir=label, arg_stdout=None, arg_stderr=subprocess.STDOUT)
-
+            run_cmd_no_fail(" ".join(ctest_command), from_dir=label, combine_output=True)
 
 if __name__ == "__main__":
     _main()

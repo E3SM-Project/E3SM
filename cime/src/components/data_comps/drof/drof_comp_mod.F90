@@ -17,6 +17,7 @@ module drof_comp_mod
   use shr_strdata_mod , only: shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod  , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
   use shr_dmodel_mod  , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
+  use shr_cal_mod     , only: shr_cal_ymdtod2string
   use seq_timemgr_mod , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
 
   use drof_shr_mod   , only: datamode       ! namelist input
@@ -87,8 +88,6 @@ CONTAINS
     logical                , intent(in)    :: read_restart        ! start from restart
 
     !--- local variables ---
-    integer(IN)   :: n,k         ! generic counters
-    integer(IN)   :: ierr        ! error code
     integer(IN)   :: lsize       ! local size
     logical       :: exists      ! file existance logical
     integer(IN)   :: nu          ! unit number
@@ -242,7 +241,7 @@ CONTAINS
     call t_adj_detailf(+2)
     call drof_comp_run(EClock, x2r, r2x, &
          SDROF, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, logunit, read_restart)
+         inst_suffix, logunit)
     call t_adj_detailf(-2)
 
     if (my_task == master_task) write(logunit,F00) 'drof_comp_init done'
@@ -255,7 +254,7 @@ CONTAINS
   !===============================================================================
   subroutine drof_comp_run(EClock, x2r, r2x, &
        SDROF, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, read_restart, case_name)
+       inst_suffix, logunit, case_name)
 
     ! !DESCRIPTION:  run method for drof model
     implicit none
@@ -273,7 +272,6 @@ CONTAINS
     integer(IN)            , intent(in)    :: master_task      ! task number of master task
     character(len=*)       , intent(in)    :: inst_suffix      ! char string associated with instance
     integer(IN)            , intent(in)    :: logunit          ! logging unit number
-    logical                , intent(in)    :: read_restart     ! start from restart
     character(CL)          , intent(in), optional :: case_name ! case name
 
     !--- local ---
@@ -282,11 +280,11 @@ CONTAINS
     integer(IN)   :: yy,mm,dd          ! year month day
     integer(IN)   :: n                 ! indices
     integer(IN)   :: nf                ! fields loop index
-    integer(IN)   :: nl                ! land frac index
     integer(IN)   :: lsize             ! size of attr vect
     logical       :: write_restart     ! restart now
     integer(IN)   :: nu                ! unit number
     integer(IN)   :: nflds_r2x
+    character(len=18) :: date_str
 
     character(*), parameter :: F00   = "('(drof_comp_run) ',8a)"
     character(*), parameter :: F04   = "('(drof_comp_run) ',2a,2i8,'s')"
@@ -362,12 +360,13 @@ CONTAINS
 
     if (write_restart) then
        call t_startf('drof_restart')
-       write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-            trim(case_name), '.drof'//trim(inst_suffix)//'.r.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
-       write(rest_file_strm,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-            trim(case_name), '.drof'//trim(inst_suffix)//'.rs1.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
+       call shr_cal_ymdtod2string(date_str, yy, mm, dd, currentTOD)
+       write(rest_file,"(6a)") &
+            trim(case_name), '.drof',trim(inst_suffix),'.r.', &
+            trim(date_str),'.nc'
+       write(rest_file_strm,"(6a)") &
+            trim(case_name), '.drof',trim(inst_suffix),'.rs1.', &
+            trim(date_str),'.bin'
        if (my_task == master_task) then
           nu = shr_file_getUnit()
           open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')

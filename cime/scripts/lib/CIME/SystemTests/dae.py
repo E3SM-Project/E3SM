@@ -1,6 +1,8 @@
 """
-Implementation of the CIME data assimilation test: Tests simple DA script
-which does not change the CAM input. Compares answers to non-DA run.
+Implementation of the CIME data assimilation test:
+Compares standard run with run broken into two data assimilation cycles.
+Runs a simple DA script on each cycle which performs checks but does not
+change any model state (restart files). Compares answers of two runs.
 
 """
 
@@ -12,14 +14,15 @@ import gzip
 import CIME.XML.standard_module_setup as sms
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
 from CIME.utils import expect
-from CIME.case_setup import case_setup
 
 ###############################################################################
 class DAE(SystemTestsCompareTwo):
 ###############################################################################
     """
-    Implementation of the CIME data assimilation test: Tests simple DA script
-    which does not change the CAM input. Compares answers to non-DA run.
+    Implementation of the CIME data assimilation test:
+    Compares standard run with a run broken into two data assimilation cycles.
+    Runs a simple DA script on each cycle which performs checks but does not
+    change any model state (restart files). Compares answers of two runs.
     Refers to a faux data assimilation script in the
     cime/scripts/data_assimilation directory
     """
@@ -36,7 +39,7 @@ class DAE(SystemTestsCompareTwo):
     ###########################################################################
     def _case_one_setup(self):
     ###########################################################################
-        case_setup(self._case, test_mode=True, reset=True)
+        pass
 
     ###########################################################################
     def _case_two_setup(self):
@@ -50,7 +53,6 @@ class DAE(SystemTestsCompareTwo):
         expect(os.path.isfile(da_file), "ERROR: da_file, '{}', does not exist".format(da_file))
 
         # Set up two data assimilation cycles each half of the full run
-        self._case.set_value("DATA_ASSIMILATION_ATM", "TRUE")
         self._case.set_value("DATA_ASSIMILATION_SCRIPT", da_file)
         self._case.set_value("DATA_ASSIMILATION_CYCLES", 2)
         stopn = self._case.get_value("STOP_N")
@@ -91,9 +93,17 @@ class DAE(SystemTestsCompareTwo):
                "ERROR: There were {:d} DA cycles in run but {:d} DA files were found".format(da_cycles, len(da_files) if da_files is not None else 0))
         da_files.sort()
         cycle_num = 0
+        compset = self._case.get_value("COMPSET")
+        is_dwav = '_DWAV' in compset
         for fname in da_files:
             found_caseroot = False
             found_cycle = False
+            found_signal = 0
+            if is_dwav and (cycle_num > 0):
+                expected_signal = self._case.get_value("NINST_WAV")
+            else:
+                expected_signal = 0
+
             with gzip.open(fname, "r") as dfile:
                 for bline in dfile:
                     line = bline.decode("utf-8")
@@ -104,11 +114,17 @@ class DAE(SystemTestsCompareTwo):
                         found_cycle = True
                         expect(int(line[7:]) == cycle_num,
                                "ERROR: Wrong cycle ({:d}) found in {} (expected {:d})".format(int(line[7:]), fname, cycle_num))
+                    elif 'resume signal' in line:
+                        found_signal = found_signal + 1
+                        expect('Post-DA resume signal found' in line[0:27],
+                               "ERROR: bad post-DA message found in {}".format(fname))
                     else:
                         expect(False, "ERROR: Unrecognized line ('{}') found in {}".format(line, fname))
 
                 # End of for loop
                 expect(found_caseroot, "ERROR: No caseroot found in {}".format(fname))
                 expect(found_cycle, "ERROR: No cycle found in {}".format(fname))
+                expect(found_signal == expected_signal,
+                       "ERROR: Expected {} post-DA resume signal message(s), {} found in {}".format(expected_signal, found_signal, fname))
             # End of with
             cycle_num = cycle_num + 1

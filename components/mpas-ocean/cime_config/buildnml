@@ -1,0 +1,1098 @@
+#!/usr/bin/env python
+
+"""
+Namelist creator for E3SM's MPAS OCEAN component
+"""
+
+import os, sys
+
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
+sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
+
+from standard_script_setup import *
+from CIME.case import Case
+from CIME.utils import expect, run_cmd_no_fail, safe_copy
+from CIME.buildnml import create_namelist_infile, parse_input
+
+logger = logging.getLogger(__name__)
+
+###############################################################################
+def buildnml(case, caseroot, compname):
+###############################################################################
+    expect(compname == "mpaso", compname)
+
+    os.chdir(caseroot)
+
+    cimeroot          = case.get_value("CIMEROOT")
+    caseroot          = case.get_value("CASEROOT")
+    casebuild         = case.get_value("CASEBUILD")
+    srcroot           = case.get_value("SRCROOT")
+    din_loc_root      = case.get_value("DIN_LOC_ROOT")
+    ocn_grid          = case.get_value("OCN_GRID")
+    ocn_mask          = case.get_value("MASK_GRID")
+    ocn_forcing       = case.get_value("MPASO_FORCING")
+    ocn_bgc           = case.get_value("MPASO_BGC")
+    ocn_co2_type      = case.get_value("OCN_CO2_TYPE")
+    atm_co2_const_val = case.get_value("CCSM_CO2_PPMV")
+    ice_bgc           = case.get_value("MPASI_BGC")
+    ocn_pio_typename  = case.get_value("OCN_PIO_TYPENAME")
+    ninst_ocn         = 1 # Change if you want multiple instances... though this isn't coded yet.
+    ninst_ocn_real    = case.get_value("NINST_OCN")
+    nthrds_ocn        = case.get_value("NTHRDS_OCN")
+    ntasks_ocn        = case.get_value("NTASKS_OCN")
+    rundir            = case.get_value("RUNDIR")
+    run_type          = case.get_value("RUN_TYPE")
+    run_refdate       = case.get_value("RUN_REFDATE")
+    run_reftod        = case.get_value("RUN_REFTOD")
+    stream_name       = 'streams.ocean'
+
+    mpasoconf_dir = os.path.join(casebuild, "mpasoconf")
+
+    if not os.path.isdir(mpasoconf_dir): os.mkdir(mpasoconf_dir)
+
+    #--------------------------------------------------------------------
+    # MPAS-O with active BGC fails bfb restart with more than 1 thread
+    # DO NOT run with ocean bgc turned on with more than 1 thread
+    #--------------------------------------------------------------------
+    expect(nthrds_ocn == 1 or ocn_bgc == 'no_bgc',
+           " ERROR mpas-o buildnml: ocn bgc cannot be run with more than 1 thread\n")
+
+    #--------------------------------------------------------------------
+    # Determine date stamp, from grid names
+    #--------------------------------------------------------------------
+
+    decomp_date = ''
+    decomp_prefix = ''
+    ic_date = ''
+    ic_prefix = ''
+    restoring_file = ''
+    analysis_mask_file = ''
+    eco_forcing_file = ''
+
+    if ocn_grid == 'oEC60to30':
+        ic_date += '151031'
+        ic_prefix += 'oEC60to30'
+        decomp_date += '151031'
+        decomp_prefix += 'mpas-o.graph.info.'
+    elif ocn_grid == 'oEC60to30_ICG':
+        ic_date += '160827'
+        ic_prefix += 'oEC60to30.restartFrom_eos1b'
+        decomp_date += '151031'
+        decomp_prefix += 'mpas-o.graph.info.'
+    elif ocn_grid == 'oEC60to30v3':
+        ic_date += '170905'
+        ic_prefix += 'oEC60to30v3_60layer'
+        #  modify initial condition file if ocean BGC is turned on
+        if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
+            ic_date = '180418'
+            ic_prefix = 'mpaso.rst.BCRC_CNPECACNT_1850_anvil02.0066-01-01.no-xtime'
+            eco_forcing_file = 'oEC60to30v3.monthlySurfaceForcingBGC.171120.nc'
+        decomp_date += '161222'
+        decomp_prefix += 'mpas-o.graph.info.'
+        restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3.nc'
+        analysis_mask_file += 'oEC60to30v3_Atlantic_region_and_southern_transect.nc'
+    elif ocn_grid == 'oEC60to30v3_ICG':
+        ic_date += '171101'
+        ic_prefix += 'oEC60to30v3_60layer.restartFrom_anvil0926'
+        decomp_date += '161222'
+        decomp_prefix += 'mpas-o.graph.info.'
+        analysis_mask_file += 'oEC60to30v3_Atlantic_region_and_southern_transect.nc'
+    elif ocn_grid == 'oEC60to30wLI':
+        ic_date += '160830'
+        ic_prefix += 'oEC60to30wLI'
+        decomp_date += '160830'
+        decomp_prefix += 'mpas-o.graph.info.'
+    elif ocn_grid == 'oEC60to30v3wLI':
+        ic_date += '170328'
+        ic_prefix += 'oEC60to30v3wLI'
+        decomp_date += '170328'
+        decomp_prefix += 'mpas-o.graph.info.'
+        restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3wLI.nc'
+        analysis_mask_file += 'masks_SingleRegionAtlanticWTransportTransects_EC60to30v3wLI_171116.nc'
+    elif ocn_grid == 'oEC60to30v3wLI_ICG':
+        ic_date += '171116'
+        ic_prefix += 'oEC60to30v3wLI60lev.restart_theta_year26'
+        decomp_date += '170328'
+        decomp_prefix += 'mpas-o.graph.info.'
+        restoring_file += 'sss.monthlyClimatology.PHC2_salx.EC60to30v3wLI.170328.nc'
+        analysis_mask_file += 'masks_SingleRegionAtlanticWTransportTransects_EC60to30v3wLI_171116.nc'
+    elif ocn_grid == 'oQU240':
+        ic_date += '151209'
+        ic_prefix += 'ocean.QU.240km'
+        decomp_date += '151209'
+        decomp_prefix += 'mpas-o.graph.info.'
+    elif ocn_grid == 'oQU240wLI':
+        ic_date += '160929'
+        ic_prefix += 'ocean.QU.240wLI'
+        decomp_date += '160929'
+        decomp_prefix += 'mpas-o.graph.info.'
+    elif ocn_grid == 'oQU120':
+        ic_date += '160318'
+        ic_prefix += 'ocean.QU.120km'
+        decomp_date += '160318'
+        decomp_prefix += 'mpas-o.graph.info.'
+    elif ocn_grid == 'mpas120':
+        ic_date += '151031'
+        ic_prefix += 'ocean120km'
+        decomp_date += '151031'
+        decomp_prefix += 'mpas-o.graph.info.'
+    elif ocn_grid == 'oRRS30to10':
+        ic_date += '151031'
+        ic_prefix += 'ocean.RRS.30-10km'
+        decomp_date += '151031'
+        decomp_prefix += 'mpas-o.graph.info.'
+    elif ocn_grid == 'oRRS30to10v3':
+        ic_date += '171128'
+        ic_prefix += 'oRRS30to10v3'
+        decomp_date += '171128'
+        decomp_prefix += 'mpas-o.graph.info.'
+        restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.oRRS30to10v3.nc'
+        analysis_mask_file += 'masks_SingleRegionAtlanticWTransportTransects_RRS30to10v3.nc'
+    elif ocn_grid == 'oRRS30to10v3wLI':
+        ic_date += '171109'
+        ic_prefix += 'oRRS30to10v3wLI'
+        decomp_date += '171109'
+        decomp_prefix += 'mpas-o.graph.info.'
+        restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.oRRS30to10v3wLI.nc'
+        analysis_mask_file += 'masks_SingleRegionAtlanticWTransportTransects_RRS30to10v3wLI.nc'
+    elif ocn_grid == 'oRRS18to6':
+        ic_date += '160830'
+        ic_prefix += 'ocean.RRS.18-6km'
+        decomp_date += '160830'
+        decomp_prefix += 'mpas-o.graph.info.'
+    elif ocn_grid == 'oRRS18to6v3':
+        ic_date += '171116'
+        ic_prefix += 'oRRS18to6v3'
+        decomp_date += '170111'
+        decomp_prefix += 'mpas-o.graph.info.'
+        restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.oRRS18to6v3.nc'
+        analysis_mask_file += 'oRRS18to6v3.170111.SingleRegionAtlanticWTransportTransects_masks.nc'
+    elif ocn_grid == 'oRRS18to6v3_ICG':
+        ic_date += '171031'
+        ic_prefix += 'oRRS18to6v3_80Layer.restartFromAnvil'
+        decomp_date += '170111'
+        decomp_prefix += 'mpas-o.graph.info.'
+        analysis_mask_file += 'oRRS18to6v3.170111.SingleRegionAtlanticWTransportTransects_masks.nc'
+    elif ocn_grid == 'oRRS15to5':
+        ic_date += '151209'
+        ic_prefix += 'ocean.RRS.15-5km'
+        decomp_date += '151209'
+        decomp_prefix += 'mpas-o.graph.info.'
+
+    #--------------------------------------------------------------------
+    # Set OCN_FORCING = core_forced_restoring if restoring file is available
+    #--------------------------------------------------------------------
+    if ocn_forcing == 'core_forced':
+        if restoring_file != '':
+            ocn_forcing = 'core_forced_restoring'
+        else:
+            logger.warning("WARNING: Should be running with salinity restoring on!")
+            logger.warning("         But no file available for this grid.")
+
+    #--------------------------------------------------------------------
+    # Set the initial file, changing to a restart file for branch and hybrid runs
+    # Note: this is not setup for multiple instances
+    #--------------------------------------------------------------------
+
+    input_file = "{}/ocn/mpas-o/{}/{}.{}.nc".format(din_loc_root, ocn_mask, ic_prefix, ic_date)
+    if run_type == 'hybrid' or run_type == 'branch':
+        input_file = "{}/mpaso.rst.{}_{}.nc".format(rundir, run_refdate, run_reftod)
+        expect(os.path.exists(input_file), "ERROR mpaso buildnml: missing specified restart file for branch or hybrid run: " + input_file)
+
+    #--------------------------------------------------------------------
+    # Generate input data file with stream-specified files
+    #--------------------------------------------------------------------
+
+    with open(os.path.join(casebuild, "mpaso.input_data_list"), "w") as input_list:
+
+        input_list.write("mesh = {}/ocn/mpas-o/{}/{}.{}.nc\n".format(din_loc_root, ocn_mask, ic_prefix, ic_date))
+        input_list.write("ic = {}\n".format(input_file))
+        if analysis_mask_file != '':
+            input_list.write("moc = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ocn_mask, analysis_mask_file))
+
+        if ocn_forcing == 'core_forced_restoring':
+            input_list.write("sss = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ocn_mask, restoring_file))
+
+        if eco_forcing_file != '':
+            input_list.write("eco_forcing = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ocn_mask, eco_forcing_file))
+
+    #--------------------------------------------------------------------
+    # Invoke mpas build-namelist - output will go in $CASEBUILD/mpasoconf
+    #--------------------------------------------------------------------
+
+    inst_string = ""
+    for inst_counter in range(1, ninst_ocn + 1):
+
+        # -----------------------------------------------------
+        # determine instance string
+        # -----------------------------------------------------
+
+        inst_string = ""
+        if ninst_ocn > 1:
+            inst_string = "{0:04d}".format(inst_counter)
+
+            # If multi-instance case does not have restart file, use single-case restart
+            # for each instance
+            if not os.path.exists(os.path.join(rundir, "rpointer.ocn{}".format(inst_string))) and \
+                   os.path.exists(os.path.join(rundir, "rpointer.ocn")):
+                safe_copy(os.path.join(rundir, "rpointer.ocn"),
+                          os.path.join(rundir, "rpointer.ocn{}".format(inst_string)))
+
+        # -----------------------------------------------------
+        # create mpasoconf/cesm_namelist
+        # -----------------------------------------------------
+
+        create_namelist_infile(case,
+                               "{}/user_nl_mpaso{}".format(caseroot, inst_string),
+                               "{}/cesm_namelist".format(mpasoconf_dir))
+
+        # -----------------------------------------------------
+        # call build-namelist- output will go in $CASEBUILD/mpasoconf/mpaso_in
+        # -----------------------------------------------------
+
+        sysmod =  "{}/components/mpas-ocean/bld/build-namelist".format(srcroot)
+        sysmod += " -infile {}/cesm_namelist".format(mpasoconf_dir)
+        sysmod += " -caseroot {}".format(caseroot)
+        sysmod += " -casebuild {}".format(casebuild)
+        sysmod += " -cimeroot {}".format(cimeroot)
+        sysmod += " -inst_string '{}'".format(inst_string)
+        sysmod += " -decomp_prefix '{}'".format(decomp_prefix)
+        sysmod += " -date_stamp '{}'".format(decomp_date)
+        sysmod += " -ocn_grid '{}'".format(ocn_mask)
+        sysmod += " -ocn_forcing '{}'".format(ocn_forcing)
+        sysmod += " -ocn_bgc '{}'".format(ocn_bgc)
+        sysmod += " -ocn_co2_type '{}'".format(ocn_co2_type)
+        sysmod += " -atm_co2_const_val '{}'".format(atm_co2_const_val)
+        sysmod += " -ice_bgc '{}'".format(ice_bgc)
+        sysmod += " -ntasks_ocn '{}'".format(ntasks_ocn)
+        sysmod += " -ninst_ocn '{}'".format(ninst_ocn_real)
+        # pass in OCN_MASK for now as a short-cut for the grid
+        # at some point, we may want to pass both -- but for now this is simpler
+
+        run_cmd_no_fail(sysmod, from_dir=mpasoconf_dir)
+
+        # -----------------------------------------------------
+        # Copy resolved namelist to $RUNDIR
+        # -----------------------------------------------------
+
+        default_in_filename = "mpaso_in"
+        in_filename = "{}{}".format(default_in_filename, inst_string)
+        if os.path.isdir(rundir):
+            safe_copy(os.path.join(mpasoconf_dir, "mpaso_in"), os.path.join(rundir, in_filename))
+
+    # Write streams file if there isn't one in SourceMods
+
+    if os.path.exists(os.path.join(caseroot, "SourceMods/src.mpaso", stream_name)):
+        safe_copy(os.path.join(caseroot, "SourceMods/src.mpaso", stream_name), os.path.join(rundir, stream_name))
+    else:
+        lines = []
+        lines.append('<streams>')
+        lines.append('')
+        lines.append('<immutable_stream name="mesh"')
+        lines.append('                  type="none"')
+        if ocn_grid.startswith("oRRS1"):
+            lines.append('                  io_type="pnetcdf,cdf5"')
+        else:
+            lines.append('                  io_type="{}"'.format(ocn_pio_typename))
+
+        lines.append('                  filename_template="{}/ocn/mpas-o/{}/{}.{}.nc"'.format(din_loc_root, ocn_mask, ic_prefix, ic_date))
+        lines.append('/>')
+        lines.append('<immutable_stream name="input"')
+        lines.append('                  type="input"')
+        if ocn_grid.startswith("oRRS1"):
+            lines.append('                  io_type="pnetcdf,cdf5"')
+        else:
+            lines.append('                  io_type="{}"'.format(ocn_pio_typename))
+
+        lines.append('                  input_interval="initial_only"')
+        lines.append('                  filename_template="{}"'.format(input_file))
+        lines.append('/>')
+        lines.append('')
+        lines.append('<!--')
+        lines.append('The restart stream is actually controlled via the coupler.')
+        lines.append('Changing output_interval here will not have any affect on')
+        lines.append('the frequency restart files are written.')
+        lines.append('')
+        lines.append('Changing the output_interval could cause loss of data.')
+        lines.append('')
+        lines.append('The output_interval is set to 1 second to ensure each restart frame has a')
+        lines.append('unique file.')
+        lines.append('-->')
+        lines.append('<immutable_stream name="restart"')
+        lines.append('                  type="input;output"')
+        if ocn_grid.startswith("oRRS1"):
+            lines.append('                  io_type="pnetcdf,cdf5"')
+        else:
+            lines.append('                  io_type="{}"'.format(ocn_pio_typename))
+
+        lines.append('                  filename_template="mpaso.rst.$Y-$M-$D_$S.nc"')
+        lines.append('                  filename_interval="output_interval"')
+        lines.append('                  clobber_mode="truncate"')
+        lines.append('                  input_interval="initial_only"')
+        lines.append('                  reference_time="01-01-01_00:00:00"')
+        lines.append('                  output_interval="00-00-00_00:00:01"/>')
+        lines.append('')
+        lines.append('<!--')
+        lines.append('output is the main history output stream. You can add auxiliary streams to')
+        lines.append('this stream to include more fields.')
+        lines.append('-->')
+        lines.append('')
+        lines.append('<stream name="output"')
+        lines.append('        type="output"')
+        if ocn_grid.startswith("oRRS1"):
+            lines.append('        io_type="pnetcdf,cdf5"')
+        else:
+            lines.append('        io_type="{}"'.format(ocn_pio_typename))
+
+        lines.append('        filename_template="mpaso.hist.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none">')
+        lines.append('')
+        lines.append('    <var_array name="activeTracerHorizontalAdvectionTendency"/>')
+        lines.append('    <var_array name="activeTracerVerticalAdvectionTendency"/>')
+        lines.append('    <var_array name="activeTracerVertMixTendency"/>')
+        lines.append('    <var_array name="activeTracerSurfaceFluxTendency"/>')
+        lines.append('    <var_array name="temperatureShortWaveTendency"/>')
+        lines.append('    <var_array name="activeTracerNonLocalTendency"/>')
+        lines.append('    <var name="salinitySurfaceRestoringTendency"/>')
+        lines.append('    <var name="vertTransportVelocityTop"/>')
+        lines.append('    <var name="vertGMBolusVelocityTop"/>')
+        lines.append('    <var name="vertAleTransportTop"/>')
+        lines.append('    <var name="tendSSH"/>')
+        lines.append('    <var_array name="activeTracers"/>')
+        lines.append('    <var name="layerThickness"/>')
+        lines.append('    <var name="normalVelocity"/>')
+        lines.append('    <var name="ssh"/>')
+        lines.append('    <var name="maxLevelEdgeTop"/>')
+        lines.append('    <var name="vertCoordMovementWeights"/>')
+        lines.append('    <var name="edgeMask"/>')
+        lines.append('    <var name="cellMask"/>')
+        lines.append('    <var name="vertexMask"/>')
+        lines.append('    <var name="refZMid"/>')
+        lines.append('    <var name="refLayerThickness"/>')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="kineticEnergyCell"/>')
+        lines.append('    <var name="relativeVorticityCell"/>')
+        lines.append('    <var name="relativeVorticity"/>')
+        lines.append('    <var name="divergence"/>')
+        lines.append('    <var name="areaCellGlobal"/>')
+        lines.append('    <var name="areaEdgeGlobal"/>')
+        lines.append('    <var name="areaTriangleGlobal"/>')
+        lines.append('    <var name="volumeCellGlobal"/>')
+        lines.append('    <var name="volumeEdgeGlobal"/>')
+        lines.append('    <var name="CFLNumberGlobal"/>')
+        lines.append('    <var name="BruntVaisalaFreqTop"/>')
+        lines.append('    <var name="vertVelocityTop"/>')
+        lines.append('    <var name="velocityZonal"/>')
+        lines.append('    <var name="velocityMeridional"/>')
+        lines.append('    <var name="displacedDensity"/>')
+        lines.append('    <var name="potentialDensity"/>')
+        lines.append('    <var name="pressure"/>')
+        lines.append('    <var name="refBottomDepth"/>')
+        lines.append('    <var name="zMid"/>')
+        lines.append('    <var name="bottomDepth"/>')
+        lines.append('    <var name="maxLevelCell"/>')
+        lines.append('    <var name="maxLevelEdgeTop"/>')
+        lines.append('    <var name="maxLevelEdgeBot"/>')
+        lines.append('    <var name="columnIntegratedSpeed"/>')
+        lines.append('    <var name="landIceFreshwaterFlux"/>')
+        lines.append('    <var name="landIceHeatFlux"/>')
+        lines.append('    <var name="heatFluxToLandIce"/>')
+        if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
+            lines.append('    <var_struct name="ecosysDiagFieldsLevel1"/>')
+            lines.append('    <var_struct name="ecosysAuxiliary"/>')
+
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<!--')
+        lines.append('Block debugging stream produces a file per core where errors have occured.')
+        lines.append('-->')
+        lines.append('')
+        lines.append('<stream name="block_debug_output"')
+        lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="mpaso.output_debug_block_$B.nc"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        filename_interval="1000-00-00_00:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        output_interval="1000-00-00_00:00:00">')
+        lines.append('')
+        lines.append('    <stream name="mesh"/>')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var_struct name="tracers"/>')
+        lines.append('    <var name="layerThickness"/>')
+        lines.append('    <var name="normalVelocity"/>')
+        lines.append('    <var name="ssh"/>')
+        lines.append('')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<!--')
+        lines.append('Streams between this line and the auxiliary stream line below are analysis member streams.')
+        lines.append('They can be used to perform online analysis of the simulation and control the output of')
+        lines.append('the analysis data.')
+        lines.append('-->')
+        lines.append('')
+        if ocn_forcing == 'core_forced_restoring':
+            lines.append('<stream name="surface_salinity_monthly_data"')
+            lines.append('       type="input"')
+            lines.append('       filename_template="{}/ocn/mpas-o/{}/{}"'.format(din_loc_root, ocn_mask, restoring_file))
+            lines.append('       input_interval="none"')
+            lines.append('       packages="activeTracersSurfaceRestoringPKG">')
+            lines.append('')
+            lines.append('       <var name="xtime"/>')
+            lines.append('       <var name="surfaceSalinityMonthlyClimatologyValue"/>')
+            lines.append('</stream>')
+            lines.append('')
+
+        if analysis_mask_file != '':
+            lines.append('<stream name="transectMasksInput"')
+            lines.append('        type="input"')
+            lines.append('        filename_template="{}/ocn/mpas-o/{}/{}"'.format(din_loc_root, ocn_mask, analysis_mask_file))
+            lines.append('        input_interval="initial_only">')
+            lines.append('')
+            lines.append('        <var name="transectEdgeMasks"/>')
+            lines.append('        <var name="transectNames"/>')
+            lines.append('        <var name="nTransectsInGroup"/>')
+            lines.append('        <var name="transectsInGroup"/>')
+            lines.append('        <var name="transectGroupNames"/>')
+            lines.append('        <var name="transectEdgeMaskSigns"/>')
+            lines.append('</stream>')
+            lines.append('')
+            lines.append('<stream name="regionalMasksInput"')
+            lines.append('        type="input"')
+            lines.append('        filename_template="{}/ocn/mpas-o/{}/{}"'.format(din_loc_root, ocn_mask, analysis_mask_file))
+            lines.append('        input_interval="initial_only">')
+            lines.append('')
+            lines.append('        <var name="regionCellMasks"/>')
+            lines.append('        <var name="regionNames"/>')
+            lines.append('        <var name="nRegionsInGroup"/>')
+            lines.append('        <var name="regionsInGroup"/>')
+            lines.append('        <var name="regionGroupNames"/>')
+            lines.append('</stream>')
+            lines.append('')
+
+        lines.append('<stream name="mocStreamfunctionOutput"')
+        lines.append('        type="output"')
+        lines.append('        filename_template="mpaso.hist.am.mocStreamfunctionOutput.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="01-00-00_00:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none"')
+        lines.append('        packages="mocStreamfunctionAMPKG">')
+        lines.append('')
+        lines.append('        <var name="xtime"/>')
+        lines.append('        <var name="mocStreamvalLatAndDepth"/>')
+        lines.append('        <var name="mocStreamvalLatAndDepthRegion"/>')
+        lines.append('        <var name="binBoundaryMocStreamfunction"/>')
+        lines.append('        <var name="refBottomDepth"/>')
+        lines.append('        <var name="regionGroupNames"/>')
+        lines.append('        <var name="minMaxLatRegion"/>')
+        lines.append('        <var name="regionNames"/>')
+        lines.append('        <var name="nRegionsInGroup"/>')
+        lines.append('        <var name="regionsInGroup"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="globalStatsOutput"')
+        lines.append('        type="output"')
+        lines.append('        io_type="netcdf"')
+        lines.append('        filename_template="mpaso.hist.am.globalStats.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="00-00-01_00:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="globalStatsAMPKG">')
+        lines.append('')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var_array name="minGlobalStats"/>')
+        lines.append('    <var_array name="maxGlobalStats"/>')
+        lines.append('    <var_array name="sumGlobalStats"/>')
+        lines.append('    <var_array name="rmsGlobalStats"/>')
+        lines.append('    <var_array name="avgGlobalStats"/>')
+        lines.append('    <var_array name="vertSumMinGlobalStats"/>')
+        lines.append('    <var_array name="vertSumMaxGlobalStats"/>')
+        lines.append('    <var name="volumeCellGlobal"/>')
+        lines.append('    <var name="CFLNumberGlobal"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="surfaceAreaWeightedAveragesOutput"')
+        lines.append('        type="output"')
+        lines.append('        io_type="netcdf"')
+        lines.append('        filename_template="mpaso.hist.am.surfaceAreaWeightedAverages.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="surfaceAreaWeightedAveragesAMPKG">')
+        lines.append('')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var_array name="minValueWithinOceanRegion"/>')
+        lines.append('    <var_array name="maxValueWithinOceanRegion"/>')
+        lines.append('    <var_array name="avgValueWithinOceanRegion"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="waterMassCensusOutput"')
+        lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="mpaso.hist.am.waterMassCensus.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="waterMassCensusAMPKG">')
+        lines.append('')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var_array name="waterMassCensusTemperatureValues"/>')
+        lines.append('    <var_array name="waterMassCensusSalinityValues"/>')
+        lines.append('    <var_array name="waterMassFractionalDistribution"/>')
+        lines.append('    <var_array name="potentialDensityOfTSDiagram"/>')
+        lines.append('    <var_array name="zPositionOfTSDiagram"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="layerVolumeWeightedAverageOutput"')
+        lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="mpaso.hist.am.layerVolumeWeightedAverage.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="layerVolumeWeightedAverageAMPKG">')
+        lines.append('')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var_array name="minValueWithinOceanLayerRegion"/>')
+        lines.append('    <var_array name="maxValueWithinOceanLayerRegion"/>')
+        lines.append('    <var_array name="avgValueWithinOceanLayerRegion"/>')
+        lines.append('    <var_array name="minValueWithinOceanVolumeRegion"/>')
+        lines.append('    <var_array name="maxValueWithinOceanVolumeRegion"/>')
+        lines.append('    <var_array name="avgValueWithinOceanVolumeRegion"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="zonalMeanOutput"')
+        lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="mpaso.hist.am.zonalMeans.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none"')
+        lines.append('        ulobber_mode="truncate"')
+        lines.append('        packages="zonalMeanAMPKG">')
+        lines.append('')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var_array name="tracersZonalMean"/>')
+        lines.append('    <var name="binCenterZonalMean"/>')
+        lines.append('    <var name="binBoundaryZonalMean"/>')
+        lines.append('    <var name="velocityZonalZonalMean"/>')
+        lines.append('    <var name="velocityMeridionalZonalMean"/>')
+        lines.append('    <var name="refZMid"/>')
+        lines.append('    <var name="refBottomDepth"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="meridionalHeatTransportOutput"')
+        lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="mpaso.hist.am.meridionalHeatTransport.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="00-01-00_00:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="meridionalHeatTransportAMPKG">')
+        lines.append('')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var name="binBoundaryMerHeatTrans"/>')
+        lines.append('    <var name="meridionalHeatTransportLatZ"/>')
+        lines.append('    <var name="meridionalHeatTransportLat"/>')
+        lines.append('    <var name="refZMid"/>')
+        lines.append('    <var name="refBottomDepth"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="eddyProductVariablesOutput"')
+        lines.append('        type="output"')
+        if ocn_grid.startswith("oRRS1"):
+            lines.append('        io_type="pnetcdf,cdf5"')
+        else:
+            lines.append('        io_type="{}"'.format(ocn_pio_typename))
+
+        lines.append('        filename_template="mpaso.hist.am.eddyProductVariables.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="eddyProductVariablesAMPKG">')
+        lines.append('')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="SSHSquared"/>')
+        lines.append('    <var name="velocityZonalSquared"/>')
+        lines.append('    <var name="velocityMeridionalSquared"/>')
+        lines.append('    <var name="velocityZonalTimesTemperature"/>')
+        lines.append('    <var name="velocityMeridionalTimesTemperature"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="highFrequencyOutput"')
+        lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="mpaso.hist.am.highFrequencyOutput.$Y-$M-$D_$h.$m.$s.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="00-00-05_00:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="highFrequencyOutputAMPKG">')
+        lines.append('')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var_array name="activeTracersAtSurface"/>')
+        lines.append('    <var_array name="activeTracersAt250m"/>')
+        lines.append('    <var_array name="activeTracersAtBottom"/>')
+        lines.append('    <var name="kineticEnergyAtSurface"/>')
+        lines.append('    <var name="kineticEnergyAt250m"/>')
+        lines.append('    <var name="relativeVorticityAt250m"/>')
+        lines.append('    <var name="ssh"/>')
+        lines.append('    <var name="pressureAdjustedSSH"/>')
+        lines.append('    <var name="boundaryLayerDepth"/>')
+        lines.append('    <var name="dThreshMLD"/>')
+        lines.append('    <var name="tThreshMLD"/>')
+        lines.append('    <var name="columnIntegratedSpeed"/>')
+        lines.append('    <var name="barotropicSpeed"/>')
+        lines.append('    <var name="landIceFreshwaterFlux"/>')
+        lines.append('    <var name="pressureAdjustedSSH"/>')
+        if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
+            lines.append('    <var name="CO2_gas_flux"/>')
+            lines.append('    <var name="CO2_alt_gas_flux"/>')
+            lines.append('    <var name="avgOceanSurfacePhytoC"/>')
+            lines.append('    <var name="avgOceanSurfaceDIC"/>')
+            lines.append('    <var name="avgOceanSurfaceNO3"/>')
+            lines.append('    <var name="avgOceanSurfaceSiO3"/>')
+            lines.append('    <var name="avgOceanSurfaceNH4"/>')
+            lines.append('    <var name="avgOceanSurfaceDOCr"/>')
+            lines.append('    <var name="avgOceanSurfaceFeDissolved"/>')
+            lines.append('    <var name="iceFluxPhytoC"/>')
+            lines.append('    <var name="iceFluxNO3"/>')
+            lines.append('    <var name="iceFluxSiO3"/>')
+            lines.append('    <var name="iceFluxNH4"/>')
+            lines.append('    <var name="iceFluxFeDissolved"/>')
+            lines.append('    <var name="iceFluxDOC"/>')
+            lines.append('    <var name="ecosys_diag_photoC_TOT_zint"/>')
+
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="mixedLayerDepthsOutput"')
+        lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="mpaso.hist.am.mixedLayerDepths.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="mixedLayerDepthsAMPKG">')
+        lines.append('')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var name="tThreshMLD"/>')
+        lines.append('    <var name="dThreshMLD"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="timeSeriesStatsDailyOutput"')
+        lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="mpaso.hist.am.timeSeriesStatsDaily.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="00-00-01_00:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="timeSeriesStatsDailyAMPKG"')
+        lines.append('        runtime_format="single_file">')
+        lines.append('')
+        lines.append('    <var_array name="tracersSurfaceValue"/>')
+        lines.append('    <var_array name="surfaceVelocity"/>')
+        lines.append('    <var_array name="SSHGradient"/>')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="pressureAdjustedSSH"/>')
+        lines.append('    <var name="normalVelocity"/>')
+        lines.append('    <var name="velocityZonal"/>')
+        lines.append('    <var name="velocityMeridional"/>')
+        lines.append('    <var name="vertVelocityTop"/>')
+        lines.append('    <var name="normalTransportVelocity"/>')
+        lines.append('    <var name="transportVelocityZonal"/>')
+        lines.append('    <var name="transportVelocityMeridional"/>')
+        lines.append('    <var name="vertTransportVelocityTop"/>')
+        lines.append('    <var_array name="activeTracerHorizontalAdvectionTendency"/>')
+        lines.append('    <var_array name="activeTracerVerticalAdvectionTendency"/>')
+        lines.append('    <var_array name="activeTracerVertMixTendency"/>')
+        lines.append('    <var_array name="avgValueWithinOceanLayerRegion"/>')
+        lines.append('    <var_array name="avgValueWithinOceanVolumeRegion"/>')
+        if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
+            lines.append('    <var name="CO2_gas_flux"/>')
+            lines.append('    <var name="CO2_alt_gas_flux"/>')
+            lines.append('    <var name="avgOceanSurfacePhytoC"/>')
+            lines.append('    <var name="avgOceanSurfaceDIC"/>')
+            lines.append('    <var name="avgOceanSurfaceNO3"/>')
+            lines.append('    <var name="avgOceanSurfaceSiO3"/>')
+            lines.append('    <var name="avgOceanSurfaceNH4"/>')
+            lines.append('    <var name="avgOceanSurfaceDOCr"/>')
+            lines.append('    <var name="avgOceanSurfaceFeDissolved"/>')
+            lines.append('    <var name="iceFluxPhytoC"/>')
+            lines.append('    <var name="iceFluxNO3"/>')
+            lines.append('    <var name="iceFluxSiO3"/>')
+            lines.append('    <var name="iceFluxNH4"/>')
+            lines.append('    <var name="iceFluxFeDissolved"/>')
+            lines.append('    <var name="iceFluxDOC"/>')
+            lines.append('    <var name="ecosys_diag_photoC_TOT_zint"/>')
+
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="timeSeriesStatsMonthlyOutput"')
+        lines.append('        type="output"')
+        if ocn_grid.startswith("oRRS1"):
+            lines.append('        io_type="pnetcdf,cdf5"')
+        else:
+            lines.append('        io_type="{}"'.format(ocn_pio_typename))
+
+        lines.append('        filename_template="mpaso.hist.am.timeSeriesStatsMonthly.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="00-01-00_00:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="timeSeriesStatsMonthlyAMPKG"')
+        lines.append('        runtime_format="single_file">')
+        lines.append('')
+        lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var name="binBoundaryMerHeatTrans"/>')
+        lines.append('    <var name="ssh"/>')
+        lines.append('    <var_struct name="tracers"/>')
+        lines.append('    <var name="velocityMeridional"/>')
+        lines.append('    <var name="velocityZonal"/>')
+        lines.append('    <var name="layerThickness"/>')
+        lines.append('    <var name="density"/>')
+        lines.append('    <var name="potentialDensity"/>')
+        lines.append('    <var name="windStressZonal"/>')
+        lines.append('    <var name="windStressMeridional"/>')
+        lines.append('    <var name="frazilLayerThicknessTendency"/>')
+        lines.append('    <var_array name="avgValueWithinOceanRegion"/>')
+        lines.append('    <var_array name="avgValueWithinOceanLayerRegion"/>')
+        lines.append('    <var_array name="avgValueWithinOceanVolumeRegion"/>')
+        lines.append('    <var name="meridionalHeatTransportLatZ"/>')
+        lines.append('    <var name="meridionalHeatTransportLat"/>')
+        lines.append('    <var_array name="minGlobalStats"/>')
+        lines.append('    <var_array name="maxGlobalStats"/>')
+        lines.append('    <var_array name="sumGlobalStats"/>')
+        lines.append('    <var_array name="rmsGlobalStats"/>')
+        lines.append('    <var_array name="avgGlobalStats"/>')
+        lines.append('    <var_array name="vertSumMinGlobalStats"/>')
+        lines.append('    <var_array name="vertSumMaxGlobalStats"/>')
+        lines.append('    <var name="tThreshMLD"/>')
+        lines.append('    <var name="dThreshMLD"/>')
+        lines.append('    <var name="normalVelocity"/>')
+        lines.append('    <var name="vertVelocityTop"/>')
+        if not ocn_grid.startswith("oRRS1"):
+            lines.append('    <var name="normalGMBolusVelocity"/>')
+            lines.append('    <var name="vertGMBolusVelocityTop"/>')
+
+        lines.append('    <var_struct name="tracersSurfaceFlux"/>')
+        lines.append('    <var name="penetrativeTemperatureFlux"/>')
+        lines.append('    <var name="latentHeatFlux"/>')
+        lines.append('    <var name="sensibleHeatFlux"/>')
+        lines.append('    <var name="longWaveHeatFluxUp"/>')
+        lines.append('    <var name="longWaveHeatFluxDown"/>')
+        lines.append('    <var name="seaIceHeatFlux"/>')
+        lines.append('    <var name="shortWaveHeatFlux"/>')
+        lines.append('    <var name="evaporationFlux"/>')
+        lines.append('    <var name="seaIceSalinityFlux"/>')
+        lines.append('    <var name="seaIceFreshWaterFlux"/>')
+        lines.append('    <var name="riverRunoffFlux"/>')
+        lines.append('    <var name="iceRunoffFlux"/>')
+        lines.append('    <var name="rainFlux"/>')
+        lines.append('    <var name="snowFlux"/>')
+        lines.append('    <var name="vertNonLocalFlux"/>')
+        lines.append('    <var_array name="activeTracersTend"/>')
+        lines.append('    <var name="salinitySurfaceRestoringTendency"/>')
+        lines.append('    <var_array name="activeTracerHorizontalAdvectionTendency"/>')
+        lines.append('    <var_array name="activeTracerVerticalAdvectionTendency"/>')
+        lines.append('    <var_array name="activeTracerVertMixTendency"/>')
+        lines.append('    <var_array name="activeTracerSurfaceFluxTendency"/>')
+        lines.append('    <var_array name="temperatureShortWaveTendency"/>')
+        lines.append('    <var_array name="activeTracerNonLocalTendency"/>')
+        lines.append('    <var name="areaCellGlobal"/>')
+        lines.append('    <var name="areaEdgeGlobal"/>')
+        lines.append('    <var name="areaTriangleGlobal"/>')
+        lines.append('    <var name="volumeCellGlobal"/>')
+        lines.append('    <var name="volumeEdgeGlobal"/>')
+        lines.append('    <var name="CFLNumberGlobal"/>')
+        lines.append('    <var name="vertDiffTopOfCell"/>')
+        lines.append('    <var name="vertViscTopOfCell"/>')
+        lines.append('    <var name="bulkRichardsonNumber"/>')
+        lines.append('    <var name="boundaryLayerDepth"/>')
+        lines.append('    <var name="columnIntegratedSpeed"/>')
+        lines.append('    <var name="landIceFreshwaterFlux"/>')
+        lines.append('    <var name="landIceHeatFlux"/>')
+        lines.append('    <var name="heatFluxToLandIce"/>')
+        lines.append('    <var name="mocStreamvalLatAndDepth"/>')
+        lines.append('    <var name="mocStreamvalLatAndDepthRegion"/>')
+        lines.append('    <var name="binBoundaryMocStreamfunction"/>')
+        lines.append('    <var name="surfaceBuoyancyForcing"/>')
+        lines.append('    <var name="tendLayerThickness"/>')
+        lines.append('    <var name="boundaryLayerDepthSmooth"/>')
+        lines.append('    <var name="pressureAdjustedSSH"/>')
+        lines.append('    <var name="SSHSquared"/>')
+        lines.append('    <var name="velocityZonalSquared"/>')
+        lines.append('    <var name="velocityMeridionalSquared"/>')
+        lines.append('    <var name="velocityZonalTimesTemperature"/>')
+        lines.append('    <var name="velocityMeridionalTimesTemperature"/>')
+        if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
+            lines.append('    <var name="PH_PREV_ALT_CO2_3D"/>')
+            lines.append('    <var name="dust_FLUX_IN"/>')
+            lines.append('    <var name="IRON_FLUX_IN"/>')
+            lines.append('    <var name="PAR_surface"/>')
+            lines.append('    <var name="windSpeedSquared10m"/>')
+            lines.append('    <var name="atmosphericCO2"/>')
+            lines.append('    <var name="atmosphericCO2_ALT_CO2"/>')
+            lines.append('    <var name="CO2_gas_flux"/>')
+            lines.append('    <var name="CO2_alt_gas_flux"/>')
+            lines.append('    <var name="iceFluxPhytoC"/>')
+            lines.append('    <var name="iceFluxNO3"/>')
+            lines.append('    <var name="iceFluxSiO3"/>')
+            lines.append('    <var name="iceFluxNH4"/>')
+            lines.append('    <var name="iceFluxFeDissolved"/>')
+            lines.append('    <var name="iceFluxDOC"/>')
+            lines.append('    <var name="ecosys_diag_photoC_TOT_zint"/>')
+            lines.append('    <var name="ecosys_diag_O2_ZMIN"/>')
+            lines.append('    <var name="ecosys_diag_O2_ZMIN_DEPTH"/>')
+            lines.append('    <var name="ecosys_diag_Jint_Ctot"/>')
+            lines.append('    <var name="ecosys_diag_Jint_100m_Ctot"/>')
+            lines.append('    <var name="ecosys_diag_Jint_Ntot"/>')
+            lines.append('    <var name="ecosys_diag_Jint_100m_Ntot"/>')
+            lines.append('    <var name="ecosys_diag_Jint_Ptot"/>')
+            lines.append('    <var name="ecosys_diag_Jint_100m_Ptot"/>')
+            lines.append('    <var name="ecosys_diag_Jint_Sitot"/>')
+            lines.append('    <var name="ecosys_diag_Jint_100m_Sitot"/>')
+            lines.append('    <var name="ecosys_diag_photoC_zint"/>')
+            lines.append('    <var name="ecosys_diag_photoC_NO3_zint"/>')
+            lines.append('    <var name="ecosys_diag_PAR_avg"/>')
+            lines.append('    <var name="ecosys_diag_POC_FLUX_IN"/>')
+            lines.append('    <var name="ecosys_diag_CaCO3_FLUX_IN"/>')
+            lines.append('    <var name="ecosys_diag_auto_graze_TOT"/>')
+            lines.append('    <var name="ecosys_diag_zoo_loss"/>')
+            lines.append('    <var name="ecosys_diag_photoC_TOT"/>')
+            lines.append('    <var name="ecosys_diag_photoC_NO3_TOT"/>')
+            lines.append('    <var name="ecosys_diag_NITRIF"/>')
+            lines.append('    <var name="ecosys_diag_DENITRIF"/>')
+            lines.append('    <var name="ecosys_diag_calcToSed"/>')
+            lines.append('    <var name="ecosys_diag_pocToSed"/>')
+            lines.append('    <var name="ecosys_diag_SedDenitrif"/>')
+            lines.append('    <var name="ecosys_diag_tot_Nfix"/>')
+            lines.append('    <var name="ecosys_diag_O2_PRODUCTION"/>')
+            lines.append('    <var name="ecosys_diag_O2_CONSUMPTION"/>')
+            lines.append('    <var name="ecosys_diag_pH_3D"/>')
+            lines.append('    <var name="ecosys_diag_POC_PROD"/>')
+            lines.append('    <var name="ecosys_diag_POC_REMIN"/>')
+            lines.append('    <var name="ecosys_diag_POC_ACCUM"/>')
+            lines.append('    <var name="ecosys_diag_N_lim"/>')
+            lines.append('    <var name="ecosys_diag_P_lim"/>')
+            lines.append('    <var name="ecosys_diag_Fe_lim"/>')
+            lines.append('    <var name="ecosys_diag_SiO3_lim"/>')
+            lines.append('    <var name="ecosys_diag_light_lim"/>')
+            lines.append('    <var name="ecosys_diag_photoC"/>')
+            lines.append('    <var name="ecosys_diag_photoC_NO3"/>')
+            lines.append('    <var name="ecosys_diag_photoFe"/>')
+            lines.append('    <var name="ecosys_diag_photoNO3"/>')
+            lines.append('    <var name="ecosys_diag_photoNH4"/>')
+            lines.append('    <var name="ecosys_diag_DOP_uptake"/>')
+            lines.append('    <var name="ecosys_diag_PO4_uptake"/>')
+            lines.append('    <var name="ecosys_diag_auto_graze"/>')
+            lines.append('    <var name="ecosys_diag_auto_loss"/>')
+            lines.append('    <var name="ecosys_diag_auto_agg"/>')
+            lines.append('    <var name="ecosys_diag_CO2star"/>')
+            lines.append('    <var name="ecosys_diag_dCO2star"/>')
+            lines.append('    <var name="ecosys_diag_pCO2surface"/>')
+            lines.append('    <var name="ecosys_diag_dpCO2"/>')
+            lines.append('    <var name="ecosys_diag_pistonVel_CO2"/>')
+            lines.append('    <var name="ecosys_diag_Schmidt_CO2"/>')
+            lines.append('    <var name="ecosys_diag_xkw"/>')
+            lines.append('    <var name="ecosys_diag_pistonVel_O2"/>')
+            lines.append('    <var name="ecosys_diag_O2_saturation"/>')
+            lines.append('    <var name="ecosys_diag_Schmidt_O2"/>')
+            lines.append('    <var name="ecosys_diag_CO2star_ALT_CO2"/>')
+            lines.append('    <var name="ecosys_diag_dCO2star_ALT_CO2"/>')
+            lines.append('    <var name="ecosys_diag_pCO2surface_ALT_CO2"/>')
+            lines.append('    <var name="ecosys_diag_dpCO2_ALT_CO2"/>')
+            lines.append('    <var name="ecosys_diag_tot_bSi_form"/>')
+            lines.append('    <var name="ecosys_diag_DOC_prod"/>')
+            lines.append('    <var name="ecosys_diag_DOC_remin"/>')
+            lines.append('    <var name="ecosys_diag_CaCO3_form_zint"/>')
+            lines.append('    <var name="ecosys_diag_CaCO3_PROD"/>')
+            lines.append('    <var name="ecosys_diag_CaCO3_REMIN"/>')
+            lines.append('    <var name="ecosys_diag_tot_CaCO3_form"/>')
+            lines.append('    <var name="ecosys_diag_co3_sat_calc"/>')
+            lines.append('    <var name="ecosys_diag_co3_sat_arag"/>')
+
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="timeSeriesStatsClimatologyOutput"')
+        lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="mpaso.hist.am.timeSeriesStatsClimatology.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="00-03-00_00:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="timeSeriesStatsClimatologyAMPKG"')
+        lines.append('        runtime_format="single_file">')
+        lines.append('')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="timeSeriesStatsCustomOutput"')
+        lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="mpaso.hist.am.timeSeriesStatsCustom.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="00-01-00_00:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="timeSeriesStatsCustomAMPKG"')
+        lines.append('        runtime_format="single_file">')
+        lines.append('')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="timeSeriesStatsDailyRestart"')
+        lines.append('        type="input;output"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="mpaso.rst.am.timeSeriesStatsDaily.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_interval="output_interval"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        input_interval="none"')
+        lines.append('        packages="timeSeriesStatsDailyAMPKG"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none">')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="timeSeriesStatsMonthlyRestart"')
+        lines.append('        type="input;output"')
+        if ocn_grid.startswith("oRRS1"):
+            lines.append('        io_type="pnetcdf,cdf5"')
+        else:
+            lines.append('        io_type="{}"'.format(ocn_pio_typename))
+
+        lines.append('        filename_template="mpaso.rst.am.timeSeriesStatsMonthly.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_interval="output_interval"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        input_interval="none"')
+        lines.append('        packages="timeSeriesStatsMonthlyAMPKG"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none">')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="timeSeriesStatsClimatologyRestart"')
+        lines.append('        type="input;output"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="mpaso.rst.am.timeSeriesStatsClimatology.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_interval="output_interval"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        input_interval="initial_only"')
+        lines.append('        packages="timeSeriesStatsClimatologyAMPKG"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="stream:restart:output_interval">')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="timeSeriesStatsCustomRestart"')
+        lines.append('        type="input;output"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="mpaso.rst.am.timeSeriesStatsCustom.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_interval="output_interval"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        input_interval="initial_only"')
+        lines.append('        packages="timeSeriesStatsCustomAMPKG"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="stream:restart:output_interval">')
+        lines.append('</stream>')
+        lines.append('')
+        if eco_forcing_file != '':
+            lines.append('<stream name="ecosys_monthly_flux"')
+            lines.append('        type="input"')
+            lines.append('        filename_template="{}/ocn/mpas-o/{}/{}"'.format(din_loc_root, ocn_mask, eco_forcing_file))
+            lines.append('        input_interval="none"')
+            lines.append('        packages="ecosysTracersPKG">')
+            lines.append('    <var name="xtime"/>')
+            lines.append('    <var name="depositionFluzNO3"/>')
+            lines.append('    <var name="depositionFluzNH4"/>')
+            lines.append('    <var name="IRON_FLUZ_IN"/>')
+            lines.append('    <var name="dust_FLUZ_IN"/>')
+            lines.append('    <var name="riverFluzNO3"/>')
+            lines.append('    <var name="riverFluzPO4"/>')
+            lines.append('    <var name="riverFluzDON"/>')
+            lines.append('    <var name="riverFluzDOP"/>')
+            lines.append('    <var name="riverFluzSiO3"/>')
+            lines.append('    <var name="riverFluzFe"/>')
+            lines.append('    <var name="riverFluzDIC"/>')
+            lines.append('    <var name="riverFluzALK"/>')
+            lines.append('    <var name="riverFluzDOC"/>')
+            lines.append('</stream>')
+            lines.append('')
+
+        lines.append('<!--')
+        lines.append('All streams below this line are auxiliary streams. They are provided as')
+        lines.append('groupings of fields that one might be interested in. You can either enable the')
+        lines.append('stream to write a file for the fileds, or add the stream to another stream that')
+        lines.append('will already be written.  ')
+        lines.append('-->')
+        lines.append('')
+        lines.append('<stream name="forcing"')
+        lines.append('        type="none"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="mpaso.hist.forcing_variables.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        clobber_mode="truncate">')
+        lines.append('')
+        lines.append('    <stream name="mesh"/>')
+        lines.append('    <var_struct name="tracersSurfaceFlux"/>')
+        lines.append('    <var_array name="tracersSurfaceValue"/>')
+        lines.append('    <var_array name="surfaceVelocity"/>')
+        lines.append('    <var_array name="SSHGradient"/>')
+        lines.append('    <var_array name="vertNonLocalFlux"/>')
+        lines.append('    <var name="surfaceStressMagnitude"/>')
+        lines.append('    <var name="surfaceStress"/>')
+        lines.append('    <var name="surfaceThicknessFlux"/>')
+        lines.append('    <var name="seaIceEnergy"/>')
+        lines.append('    <var name="penetrativeTemperatureFlux"/>')
+        lines.append('    <var name="fractionAbsorbed"/>')
+        lines.append('    <var name="windStressZonal"/>')
+        lines.append('    <var name="windStressMeridional"/>')
+        lines.append('    <var name="latentHeatFlux"/>')
+        lines.append('    <var name="sensibleHeatFlux"/>')
+        lines.append('    <var name="longWaveHeatFluxUp"/>')
+        lines.append('    <var name="longWaveHeatFluxDown"/>')
+        lines.append('    <var name="seaIceHeatFlux"/>')
+        lines.append('    <var name="shortWaveHeatFlux"/>')
+        lines.append('    <var name="evaporationFlux"/>')
+        lines.append('    <var name="seaIceSalinityFlux"/>')
+        lines.append('    <var name="seaIceFreshWaterFlux"/>')
+        lines.append('    <var name="riverRunoffFlux"/>')
+        lines.append('    <var name="iceRunoffFlux"/>')
+        lines.append('    <var name="rainFlux"/>')
+        lines.append('    <var name="snowFlux"/>')
+        lines.append('    <var name="iceFraction"/>')
+        lines.append('    <var name="nAccumulatedCoupled"/>')
+        lines.append('    <var name="thermalExpansionCoeff"/>')
+        lines.append('    <var name="salineContractionCoeff"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('</streams>')
+        lines.append('')
+
+        with open(os.path.join(rundir, stream_name), "w") as fd:
+            fd.write("\n".join(lines))
+
+###############################################################################
+def _main_func():
+###############################################################################
+    caseroot = parse_input(sys.argv)
+    with Case(caseroot) as case:
+        buildnml(case, caseroot, "mpaso")
+
+if __name__ == "__main__":
+    _main_func()

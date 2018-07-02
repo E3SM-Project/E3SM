@@ -1,0 +1,278 @@
+#!/usr/bin/env python
+
+"""
+Namelist creator for E3SM's MPAS ALBANY LANDICE component
+"""
+
+import os, sys
+
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
+sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
+
+from standard_script_setup import *
+from CIME.case import Case
+from CIME.utils import expect, run_cmd_no_fail, safe_copy
+from CIME.buildnml import create_namelist_infile, parse_input
+
+logger = logging.getLogger(__name__)
+
+###############################################################################
+def buildnml(case, caseroot, compname):
+###############################################################################
+    expect(compname == "mali", compname)
+
+    os.chdir(caseroot)
+
+    cimeroot          = case.get_value("CIMEROOT")
+    caseroot          = case.get_value("CASEROOT")
+    casebuild         = case.get_value("CASEBUILD")
+    srcroot           = case.get_value("SRCROOT")
+    din_loc_root      = case.get_value("DIN_LOC_ROOT")
+    glc_grid          = case.get_value("GLC_GRID")
+    #ninst_glc        = case.get_value("NINST_GLC")
+    ninst_glc = 1 # Change if you want multiple instances... though this isn't coded yet.
+    ninst_glc_real    = case.get_value("NINST_GLC")
+    ntasks_glc        = case.get_value("NTASKS_GLC")
+    rundir            = case.get_value("RUNDIR")
+    run_type          = case.get_value("RUN_TYPE")
+    run_refdate       = case.get_value("RUN_REFDATE")
+    run_reftod        = case.get_value("RUN_REFTOD")
+    mali_use_albany   = case.get_value("MALI_USE_ALBANY")
+    stream_name       = 'streams.landice'
+    albany_input_name = 'albany_input.xml'
+
+    maliconf_dir = os.path.join(casebuild, "maliconf")
+
+    if not os.path.isdir(maliconf_dir): os.mkdir(maliconf_dir)
+
+    #--------------------------------------------------------------------
+    # Determine date stamp, from grid names
+    #--------------------------------------------------------------------
+
+    grid_date = ''
+    grid_prefix = ''
+    decomp_prefix = ''
+
+    if glc_grid == 'mpas.gis20km':
+        grid_date += '150922'
+        grid_prefix += 'gis20km'
+        decomp_prefix += 'mpasli.graph.info.'
+    elif glc_grid == 'mpas.ais20km':
+        grid_date += '150910'
+        grid_prefix += 'ais20km'
+        decomp_prefix += 'mpasli.graph.info.'
+    else:
+        expect(False, "ERROR: mali buildnml encountered unknown GLC_GRID: " + glc_grid)
+
+    #--------------------------------------------------------------------
+    # Set the initial file, changing to a restart file for branch and hybrid runs
+    # Note: this is not setup for multiple instances
+    #--------------------------------------------------------------------
+
+    input_file = "{}/glc/mpasli/{}/{}.{}.nc".format(din_loc_root, glc_grid, grid_prefix, grid_date)
+    if run_type == 'hybrid' or run_type == 'branch':
+        input_file = "{}/mali.rst.{}_{}.nc".format(rundir, run_refdate, run_reftod)
+        expect(os.path.exists(input_file), " ERROR mali buildnml: missing specified restart file for branch or hybrid run: " + input_file)
+
+    #--------------------------------------------------------------------
+    # Generate input data file with stream-specified files
+    #--------------------------------------------------------------------
+
+    with open(os.path.join(casebuild, "mali.input_data_list"), "w") as input_list:
+        input_list.write("mesh = {}/glc/mpasli/{}/{}.{}.nc\n".format(din_loc_root, glc_grid, grid_prefix, grid_date))
+
+    #--------------------------------------------------------------------
+    # Invoke mpas build-namelist - output will go in $CASEBUILD/maliconf
+    #--------------------------------------------------------------------
+
+    inst_string = ""
+    for inst_counter in range(1, ninst_glc + 1):
+
+        # -----------------------------------------------------
+        # determine instance string
+        # -----------------------------------------------------
+
+        inst_string = ""
+        if ninst_glc > 1:
+            inst_string = "{0:04d}".format(inst_counter)
+
+            # If multi-instance case does not have restart file, use single-case restart
+            # for each instance
+            if not os.path.exists(os.path.join(rundir, "rpointer.glc{}".format(inst_string))) and \
+                   os.path.exists(os.path.join(rundir, "rpointer.glc")):
+                safe_copy(os.path.join(rundir, "rpointer.glc"),
+                          os.path.join(rundir, "rpointer.glc{}".format(inst_string)))
+
+        # -----------------------------------------------------
+        # create maliconf/cesm_namelist
+        # -----------------------------------------------------
+
+        create_namelist_infile(case,
+                               "{}/user_nl_mali{}".format(caseroot, inst_string),
+                               "{}/cesm_namelist".format(maliconf_dir))
+
+        # -----------------------------------------------------
+        # call build-namelist- output will go in $CASEBUILD/maliconf/mali_in
+        # -----------------------------------------------------
+
+        sysmod =  "{}/components/mpas-albany-landice/bld/build-namelist".format(srcroot)
+        sysmod += " -infile {}/cesm_namelist".format(maliconf_dir)
+        sysmod += " -caseroot {}".format(caseroot)
+        sysmod += " -casebuild {}".format(casebuild)
+        sysmod += " -cimeroot {}".format(cimeroot)
+        sysmod += " -inst_string '{}'".format(inst_string)
+        sysmod += " -decomp_prefix '{}'".format(decomp_prefix)
+        sysmod += " -date_stamp '{}'".format(grid_date)
+        sysmod += " -glc_grid '{}'".format(glc_grid)
+        sysmod += " -ntasks_glc '{}'".format(ntasks_glc)
+        sysmod += " -ninst_glc '{}'".format(ninst_glc_real)
+
+        run_cmd_no_fail(sysmod, from_dir=maliconf_dir)
+
+        # -----------------------------------------------------
+        # Copy resolved namelist to $RUNDIR
+        # -----------------------------------------------------
+
+        default_in_filename = "mali_in"
+        in_filename = "{}{}".format(default_in_filename, inst_string)
+        if os.path.isdir(rundir):
+            safe_copy(os.path.join(maliconf_dir, "mali_in"), os.path.join(rundir, in_filename))
+
+    # Write streams file if there isn't one in SourceMods
+
+    if os.path.exists("{}/SourceMods/src.mali/{}".format(caseroot, stream_name)):
+        safe_copy("{}/SourceMods/src.mali/{}".format(caseroot, stream_name), os.path.join(rundir, stream_name))
+    else:
+        lines = []
+
+        lines.append('    <streams>')
+        lines.append('')
+        lines.append('    <immutable_stream name="basicmesh"')
+        lines.append('                      type="none"')
+        lines.append('                      filename_template="not-to-be-used.nc"')
+        lines.append('    />')
+        lines.append('')
+        lines.append('    <immutable_stream name="input"')
+        lines.append('                      type="input"')
+        lines.append('                      filename_template="{}"'.format(input_file))
+        lines.append('                      input_interval="initial_only"/>')
+        lines.append('')
+        lines.append('    <!--')
+        lines.append('    The restart stream is actually controlled via the coupler.')
+        lines.append('    Changing output_interval here will not have any affect on')
+        lines.append('    the frequency restart files are written.')
+        lines.append('')
+        lines.append('    Changing the output_interval could cause loss of data.')
+        lines.append('')
+        lines.append('    The output_interval is set to 1 second to ensure each restart frame has a')
+        lines.append('    unique file.')
+        lines.append('    -->')
+        lines.append('    <immutable_stream name="restart"')
+        lines.append('                      type="input;output"')
+        lines.append('                      filename_template="mali.rst.$Y-$M-$D_$S.nc"')
+        lines.append('                      filename_interval="output_interval"')
+        lines.append('                      clobber_mode="truncate"')
+        lines.append('                      input_interval="initial_only"')
+        lines.append('                      output_interval="00-00-00_00:00:01"/>')
+        lines.append('')
+        lines.append('    <!--')
+        lines.append('    output is the main history output stream. You can add auxiliary streams to')
+        lines.append('    this stream to include more fields.')
+        lines.append('    -->')
+        lines.append('')
+        lines.append('    <stream name="output"')
+        lines.append('            type="output"')
+        lines.append('            filename_template="mali.hist.$Y-$M-$D_$S.nc"')
+        lines.append('            filename_interval="0001-00-00_00:00:00"')
+        lines.append('            clobber_mode="truncate"')
+        lines.append('            output_interval="0001-00-00_00:00:00">')
+        # Note: if output_interval is less than dt, then multiples of that interval will be checked.
+        # There is some performance hit for making this too small.  For now making it 1 day.
+        lines.append('')
+        lines.append('    <stream name="basicmesh"/>')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="layerCenterSigma"/>')
+        lines.append('    <var name="layerInterfaceSigma"/>')
+        lines.append('    <var name="thickness"/>')
+        lines.append('    <var name="lowerSurface"/>')
+        lines.append('    <var name="upperSurface"/>')
+        lines.append('    <var name="cellMask"/>')
+        lines.append('    <var name="edgeMask"/>')
+#    lines.append('    <var name="vertexMask"/>')
+#    lines.append('    <var name="normalVelocity"/>')
+        lines.append('    <var name="uReconstructX"/>')
+        lines.append('    <var name="uReconstructY"/>')
+        lines.append('    <var name="surfaceSpeed"/>')
+        lines.append('    <var name="basalSpeed"/>')
+        lines.append('    <var name="sfcMassBal"/>')
+        lines.append('    <var name="basalMassBal"/>')
+        lines.append('    <var name="calvingThickness"/>')
+        lines.append('    <var name="restoreThickness"/>')
+        lines.append('    <var name="deltat"/>')
+        lines.append('    <var name="daysSinceStart"/>')
+        lines.append('    <var name="simulationStartTime"/>')
+        lines.append('    <var name="allowableDtACFL"/>')
+        lines.append('    <var name="allowableDtDCFL"/>')
+        lines.append('')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<!--')
+        lines.append('Streams between this line and the auxiliary stream line below are analysis member streams.')
+        lines.append('They can be used to perform online analysis of the simulation and control the output of')
+        lines.append('the analysis data.')
+        lines.append('-->')
+        lines.append('')
+        lines.append('<stream name="globalStatsOutput"')
+        lines.append('        type="output"')
+        lines.append('        filename_template="mali.hist.am.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_interval="0001-00-00_00:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="globalStatsAMPKG"')
+        lines.append('        output_interval="0000_01:00:00">')
+        lines.append('')
+        lines.append('    <var name="daysSinceStart"/>')
+        lines.append('    <var name="totalIceVolume"/>')
+        lines.append('    <var name="totalIceArea"/>')
+        lines.append('    <var name="floatingIceVolume"/>')
+        lines.append('    <var name="floatingIceArea"/>')
+        lines.append('    <var name="groundedIceVolume"/>')
+        lines.append('    <var name="groundedIceArea"/>')
+        lines.append('    <var name="iceThicknessMin"/>')
+        lines.append('    <var name="iceThicknessMax"/>')
+        lines.append('    <var name="iceThicknessMean"/>')
+        lines.append('    <var name="totalSfcMassBal"/>')
+        lines.append('    <var name="totalBasalMassBal"/>')
+        lines.append('    <var name="totalCalvingFlux"/>')
+        lines.append('    <var name="xtime"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<!--')
+        lines.append('All streams below this line are auxiliary streams. They are provided as')
+        lines.append('groupings of fields that one might be interested in. You can either enable the')
+        lines.append('stream to write a file for the fileds, or add the stream to another stream that')
+        lines.append('will already be written.  ')
+        lines.append('-->')
+        lines.append('')
+        lines.append('</streams>')
+        lines.append('')
+
+        with open(os.path.join(rundir, stream_name), "w") as stream_file:
+            stream_file.write("\n".join(lines))
+
+    if mali_use_albany:
+        logger.info("Setting up albany_input.xml file for use with MALI.")
+        # Write albany_input.xml file if there isn't one in SourceMods
+        if os.path.exists("{}/SourceMods/src.mali/{}".format(caseroot, albany_input_name)):
+            safe_copy("{}/SourceMods/src.mali/{}".format(caseroot, albany_input_name), os.path.join(rundir, albany_input_name))
+        else:
+            safe_copy("{}/components/mpas-albany-landice/bld/namelist_files/{}".format(srcroot, albany_input_name), os.path.join(rundir, albany_input_name))
+
+###############################################################################
+def _main_func():
+###############################################################################
+    caseroot = parse_input(sys.argv)
+    with Case(caseroot) as case:
+        buildnml(case, caseroot, "mali")
+
+if __name__ == "__main__":
+    _main_func()

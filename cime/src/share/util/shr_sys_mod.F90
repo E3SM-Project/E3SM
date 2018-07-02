@@ -160,10 +160,11 @@ SUBROUTINE shr_sys_getenv(name, val, rcode)
    integer(SHR_KIND_IN),intent(out) :: rcode   ! return code
 
    !----- local -----
+#ifndef HAVE_GET_ENVIRONMENT
    integer(SHR_KIND_IN)             :: lenname ! length of env var name
    integer(SHR_KIND_IN)             :: lenval  ! length of env var value
    character(SHR_KIND_CL)           :: tmpval  ! temporary env var value
-
+#endif
    !----- formats -----
    character(*),parameter :: subName =   '(shr_sys_getenv) '
    character(*),parameter :: F00     = "('(shr_sys_getenv) ',4a)"
@@ -248,9 +249,10 @@ SUBROUTINE shr_sys_sleep(sec)
 
    !----- local -----
    integer(SHR_KIND_IN) :: isec   ! integer number of seconds
+#ifndef HAVE_SLEEP
    integer(SHR_KIND_IN) :: rcode  ! return code
    character(90)        :: str    ! system call string
-
+#endif
    !----- formats -----
    character(*),parameter :: subName =   '(shr_sys_sleep) '
    character(*),parameter :: F00     = "('(shr_sys_sleep) ',4a)"
@@ -288,8 +290,6 @@ SUBROUTINE shr_sys_flush(unit)
    integer(SHR_KIND_IN) :: unit  ! flush output buffer for this unit
 
    !----- local -----
-   integer(SHR_KIND_IN) :: ierr  ! error code
-
    !----- formats -----
    character(*),parameter :: subName =   '(shr_sys_flush) '
    character(*),parameter :: F00     = "('(shr_sys_flush) ',4a)"

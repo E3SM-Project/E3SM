@@ -26,8 +26,17 @@ AC_ARG_WITH([piobuffersize],
 AC_MSG_RESULT([$PIO_BUFFER_SIZE])
 AC_DEFINE_UNQUOTED([PIO_BUFFER_SIZE], [$PIO_BUFFER_SIZE], [buffer size for darray data.])
 
-# Need to allow user to set this.
-AC_DEFINE([PIO_ENABLE_LOGGING], [1], [log messages from library])
+# Does the user want to enable logging?
+AC_MSG_CHECKING([whether debug logging is enabled])
+AC_ARG_ENABLE([logging],
+              [AS_HELP_STRING([--enable-logging],
+                              [enable debug logging capability (will negatively impact performance). \
+			      This debugging feature is probably only of interest to PIO developers.])])
+test "x$enable_logging" = xyes || enable_logging=no
+AC_MSG_RESULT([$enable_logging])
+if test "x$enable_logging" = xyes; then
+   AC_DEFINE([PIO_ENABLE_LOGGING], 1, [If true, turn on logging.])
+fi
 
 # NetCDF (at least classic) is required for PIO to build.
 AC_DEFINE([_NETCDF], [1], [netCDF classic library available])

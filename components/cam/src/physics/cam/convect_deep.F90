@@ -351,7 +351,7 @@ subroutine convect_deep_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, &
       call zm_conv_tend_2( state,   ptend,  ztodt,  pbuf,mu, eu, &
      du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class) 
    else
-      call physics_ptend_init(ptend, state%psetcols, 'convect_deep')
+      call physics_ptend_init(ptend, state%psetcols, 'convect_deep2')
    end if
 
 

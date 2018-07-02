@@ -274,16 +274,16 @@ subroutine dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
 
   ! initialize output file
   if(next_sample_time == 0.0) then
-    open(unit=10,file=w_filename,    form="formatted",status="replace")
+    open(unit=10,file=w_filename,    form="formatted",status="UNKNOWN")
     close(10)
 
-    open(unit=11,file=precl_filename,form="formatted",status="replace")
+    open(unit=11,file=precl_filename,form="formatted",status="UNKNOWN")
     close(11)
 
-    open(unit=12,file=time_filename, form="formatted",status="replace")
+    open(unit=12,file=time_filename, form="formatted",status="UNKNOWN")
     close(12)
 
-    open(unit=12,file=ps_filename, form="formatted",status="replace")
+    open(unit=12,file=ps_filename, form="formatted",status="UNKNOWN")
     close(13)
   endif
 

@@ -141,8 +141,8 @@ CONTAINS
 
     datamode = trim(SDICE%dataMode)
     if (trim(datamode) == 'NULL' .or. &
-        trim(datamode) == 'SSTDATA' .or. &
-        trim(datamode) == 'COPYALL') then
+         trim(datamode) == 'SSTDATA' .or. &
+         trim(datamode) == 'COPYALL') then
        if (my_task == master_task) then
           write(logunit,F00) ' dice datamode = ',trim(datamode)
        end if

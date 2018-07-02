@@ -10,18 +10,96 @@ Running a Case
 Calling **case.submit**
 ========================
 
-Before you submit the case using **case.submit**, make sure
-the batch queue variables are set correctly for your run
-Those variables are contained in the file **$CASEROOT/env_batch.xml**
-under the XML ``<group id="case.run">`` and ``<group id="case.st_archive">``
-elements.
+The script `case.submit <../Tools_user/case.submit.html>`_  will submit your run to the batch queueing system on your machine.
+If you do not have a batch queueing system, `case.submit <../Tools_user/case.submit.html>`_ will start the job interactively, given that you have a proper MPI environment defined.
+Running `case.submit <../Tools_user/case.submit.html>`_ is the **ONLY** way you should start a job.
 
-Make sure that you have appropriate account numbers (``PROJECT``), time limits
-(``JOB_WALLCLOCK_TIME``), and queue (``JOB_QUEUE``) for those groups.
+To see the options to `case.submit <../Tools_user/case.submit.html>`_, issue the command
+::
 
-Also modify **$CASEROOT/env_run.xml** for your case using :ref:`xmlchange<modifying-an-xml-file>`.
+   > ./case.submit --help
 
-Once you have executed **case.setup** and **case.build**, run **case.submit**
+A good way to see what `case.submit <../Tools_user/case.submit.html>`_ will do, is to first call `preview_run <../Tools_user/preview_run.html>`_
+::
+
+   > ./preview_run
+
+which will output the environment for your run along with the batch submit and mpirun commands.
+As an example, on the NCAR machine, cheyenne, for an A compset at the f19_g17_rx1 resolution, the following is output from `preview_run <../Tools_user/preview_run.html>`_:
+::
+
+   CASE INFO:
+      nodes: 1
+      total tasks: 36
+      tasks per node: 36
+      thread count: 1
+
+   BATCH INFO:
+      FOR JOB: case.run
+   ENV:
+      module command is /glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/libexec/lmod python purge
+      module command is /glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/libexec/lmod python load ncarenv/1.2 intel/17.0.1 esmf_libs mkl esmf-7.0.0-defio-mpi-O mpt/2.16 netcdf-mpi/4.5.0 pnetcdf/1.9.0 ncarcompilers/0.4.1
+      Setting Environment OMP_STACKSIZE=256M
+      Setting Environment TMPDIR=/glade/scratch/mvertens
+      Setting Environment MPI_TYPE_DEPTH=16
+   SUBMIT CMD:
+      qsub    -q regular -l walltime=12:00:00 -A P93300606 .case.run
+
+   FOR JOB: case.st_archive
+      ENV:
+         module command is /glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/libexec/lmod python purge
+         module command is /glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/libexec/lmod python load ncarenv/1.2 intel/17.0.1 esmf_libs mkl esmf-7.0.0-defio-mpi-O mpt/2.16 netcdf-mpi/4.5.0 pnetcdf/1.9.0 ncarcompilers/0.4.1
+         Setting Environment OMP_STACKSIZE=256M
+         Setting Environment TMPDIR=/glade/scratch/mvertens
+         Setting Environment MPI_TYPE_DEPTH=16
+         Setting Environment TMPDIR=/glade/scratch/mvertens
+         Setting Environment MPI_USE_ARRAY=false
+   SUBMIT CMD:
+      qsub    -q share -l walltime=0:20:00 -A P93300606  -W depend=afterok:0 case.st_archive
+
+   MPIRUN:
+      mpiexec_mpt  -np 36 -p "%g:"  omplace -tm open64  /glade/scratch/mvertens/jim/bld/cesm.exe  >> cesm.log.$LID 2>&1
+
+Each of the above sections is defined in the various **$CASEROOT** xml files and the associated variables can be modified using the
+`xmlchange <../Tools_user/xmlchange.html>`_ command (or in the case of tasks and threads, this can also be done with the `pelayout <../Tools_user/pelayout.html>`_ command).
+
+- The PE layout is set by the xml variables **NTASKS**, **NTHRDS** and **ROOTPE**. To see the exact settings for each component, issue the command
+  ::
+
+     ./xmlquery NTASKS,NTHRDS,ROOTPE
+
+  To change all of the **NTASKS** settings to say 30 and all of the **NTHRDS** to 4, you can call
+  ::
+
+     ./xmlchange NTASKS=30,NTHRDS=4
+
+  To change JUST the ATM NTASKS to 8, you can call
+  ::
+
+     ./xmlchange NTASKS_ATM=8
+
+- Submit parameters are set by the xml variables in the file **env_batch.xml**. This file is special in certain xml variables can appear in more than one group.
+  NOTE: The groups are the list of jobs that are submittable for a case.
+  Normally, the minimum set of groups are  **case.run** and **case.st_archive**.
+  We will illustrate how to change an xml variable in **env_batch.xml** using the xml variable ``JOB_WALLCLOCK_TIME``.
+
+  - To change ``JOB_WALLCLOCK_TIME`` for all groups to 2 hours for cheyenne, use
+    ::
+
+       ./xmlchange JOB_WALLCLOCK_TIME=02:00:00
+
+  - To change ``JOB_WALLCLOCK_TIME`` to 20 minutes for cheyenne for just **case.run**, use
+    ::
+
+       ./xmlchange JOB_WALLCLOCK_TIME=00:20:00 --subgroup case.run
+
+
+Before you submit the case using `case.submit <../Tools_user/case.submit.html>`_, make sure the batch queue variables are set correctly for your run
+In particular, make sure that you have appropriate account numbers (``PROJECT``), time limits (``JOB_WALLCLOCK_TIME``), and queue (``JOB_QUEUE``).
+
+Also modify **$CASEROOT/env_run.xml** for your case using **xmlchange**.
+
+Once you have executed `case.setup <../Tools_user/case.setup.html>`_ and `case.build <../Tools_user/case.build.html>`_ , call `case.submit <../Tools_user/case.submit.html>`_
 to submit the run to your machine's batch queue system.
 ::
 
@@ -32,42 +110,35 @@ to submit the run to your machine's batch queue system.
 Result of running case.submit
 ---------------------------------
 
-When called, the **case.submit** script will:
+When called, the `case.submit <../Tools_user/case.submit.html>`_ script will:
 
 - Load the necessary environment.
 
 - Confirm that locked files are consistent with the current xml files.
 
-- Run **preview_namelist**, which in turn will run each component's **buildnml**.
+- Run `preview_namelist <../Tools_user/preview_namelist.html>`_, which in turn will run each component's **cime_config/buildnml** script.
 
-- Run :ref:`check_input_data<input_data>` to verify that the required
-  data are present.
+- Run :ref:`check_input_data<input_data>` to verify that the required data are present.
 
-- Submit the job to the batch queue. which in turn will run the **case.run** script.
+- Submit the job to the batch queue. which in turn will run the `case.run <../Tools_user/case.run.html>`_ script.
 
-Upon successful completion of the run, **case.run** will:
+Upon successful completion of the run, `case.run <../Tools_user/case.run.html>`_  will:
 
 - Put timing information in **$CASEROOT/timing**.
   See :ref:`model timing data<model-timing-data>` for details.
 
-- Copy log files back to ``$LOGDIR``.
+- Submit the short-term archiver script `case.st_archive <../Tools_user/case.st_archive.html>`_  to the batch queue if ``$DOUT_S`` is TRUE.
+  Short-term archiving will copy and move component history, log, diagnostic, and restart files from ``$RUNDIR`` to the short-term archive directory ``$DOUT_S_ROOT``.
 
-- Submit the short-term archiver script **case.st_archive**
-  to the batch queue if ``$DOUT_S`` is TRUE.
+- Resubmit `case.run <../Tools_user/case.run.html>`_ if ``$RESUBMIT`` > 0.
 
-- Resubmit **case.run** if ``$RESUBMIT`` > 0.
-
-Short-term archiving will copy and move component history, log,
-diagnostic, and restart files from ``$RUNDIR`` to the short-term
-archive directory ``$DOUT_S_ROOT``.
 
 ---------------------------------
 Monitoring case job statuses
 ---------------------------------
 
-The **$CASEROOT/CaseStatus** file contains a log of all the job states
-and **xmlchange** commands in chronological order. Here is an example of status
-messages:
+The **$CASEROOT/CaseStatus** file contains a log of all the job states and `xmlchange <../Tools_user/xmlchange.html>`_ commands in chronological order.
+Below is an example of status messages:
 ::
 
   2017-02-14 15:29:50: case.setup starting
@@ -91,10 +162,8 @@ messages:
   2017-02-14 16:20:58: st_archive success
   ---------------------------------------------------
 
-
 .. note::
-  After a successful first run, set the **env_run.xml** variable
-  ``$CONTINUE_RUN`` to ``TRUE`` before resubmitting or the job will not
+  After a successful first run, set the **env_run.xml** variable ``$CONTINUE_RUN`` to ``TRUE`` before resubmitting or the job will not
   progress.
 
   You may also need to modify the **env_run.xml** variables
@@ -102,8 +171,7 @@ messages:
   ``$REST_OPTION``, ``$REST_N`` and/or ``$REST_DATE``, and ``$RESUBMIT``
   before resubmitting.
 
-See :ref:`the basic example<use-cases-basic-example>` for a complete example
-of how to run a case.
+See the :ref:`basic example<basic_example>` for a complete example of how to run a case.
 
 ---------------------------------
 Troubleshooting a job that fails
@@ -117,8 +185,7 @@ hint.
 
 First, check **cpl.log.$datestamp**, which will often tell you
 *when* the model failed. Then check the rest of the component log
-files. See :ref:`troubleshooting run-time
-problems<troubleshooting>` for more information.
+files. See :ref:`troubleshooting run-time problems<troubleshooting>` for more information.
 
 .. _input_data:
 
@@ -128,15 +195,19 @@ Input data
 
 The **check_input_data** script determines if the required data files
 for your case exist on local disk in the appropriate subdirectory of
-``$DIN_LOC_ROOT``. It automatically downloads missing data.
+``$DIN_LOC_ROOT``. It automatically downloads missing data required for your simulation.
+
+.. note:: It is recommended that users on a given system share a common ``$DIN_LOC_ROOT`` directory to avoid duplication on
+	  disk of large amounts of input data. You may need to talk to your system administrator in order to set this up.
 
 The required input data sets needed for each component are found in the
 **$CASEROOT/Buildconf** directory. These files are generated by a call
 to **preview_namlists** and are in turn created by each component's
 **buildnml** script. For example, for compsets consisting only of data
-models (``A`` compsets), the following files are created:
+models (i.e. ``A`` compsets), the following files are created:
 ::
 
+   cpl.input_data_list
    datm.input_data_list
    dice.input_data_list
    docn.input_data_list
@@ -147,19 +218,40 @@ using the following commands:
 ::
 
    > cd $CASEROOT
-   > check_input_data --help
-   > check_input_data --inputdata $DIN_LOC_ROOT --check
+   > ./check_input_data --help
+   > ./check_input_data
 
-If data sets are missing, obtain them from the input data server:
+If data sets are missing, obtain them from the input data server(s) via the commands:
 ::
 
    > cd $CASEROOT
-   > check_input_data --inputdata $DIN_LOC_ROOT --export
+   > ./check_input_data --download
+
+``check_input_data`` is automatically called by the case control
+system, when the case is built and submitted.  So manual usage of this
+script is optional.
+
+-----------------------------------
+Distributed Input Data Repositories
+-----------------------------------
+
+CIME has the ability to utilize multiple input data repositories, with
+potentially different protocols.  The repositories are defined in the
+file **$CIMEROOT/config/$model/config_inputdata.xml**.  The currently
+supported server protocols are: ``gridftp``, ``subversion``, ``ftp`` and
+``wget``. These protocols may not all be supported on your machine,
+depending on software configuration.
+
+.. note:: You now have the ability to create your own input data
+          repository and add it to the **config_inputdata.xml**. This
+          will permit you to easily collaborate by sharing your
+          required inputdata with others.
+
 
 .. _controlling-start-stop-restart:
 
 ====================================================
-Controlling starting, stopping and restarting a run
+Starting, Stopping and Restarting a Run
 ====================================================
 
 The file **env_run.xml** contains variables that may be modified at
@@ -187,6 +279,7 @@ model years/day, set ``RESUBMIT=30, STOP_OPTION= nyears, and STOP_N=
 5``. The model will then run in five-year increments and stop after
 30 submissions.
 
+.. _run-type-init:
 
 ---------------------------------------------------
 Run-type initialization
@@ -195,13 +288,8 @@ Run-type initialization
 The case initialization type is set using the ``$RUN_TYPE`` variable in
 **env_run.xml**. A CIME run can be initialized in one of three ways:
 
-- startup
-
-- branch
-
-- hybrid
-
 ``startup``
+
   In a startup run (the default), all components are initialized using
   baseline states. These states are set independently by each component
   and can include the use of restart files, initial  files, external
@@ -212,6 +300,7 @@ The case initialization type is set using the ``$RUN_TYPE`` variable in
   ocean coupling step.
 
 ``branch``
+
   In a branch run, all components are initialized using a consistent
   set of restart files from a previous run (determined by the
   ``$RUN_REFCASE`` and ``$RUN_REFDATE`` variables in **env_run.xml**).
@@ -232,13 +321,13 @@ The case initialization type is set using the ``$RUN_TYPE`` variable in
   branch runs. To set up a branch run, locate the restart tar file or
   restart directory for ``$RUN_REFCASE`` and ``$RUN_REFDATE`` from a
   previous run, then place those files in the ``$RUNDIR``  directory.
-  See :ref:`setting up a branch
-  run<setting-up-a-branch-run>`.
+  See :ref:`setting up a branch run<setting-up-a-branch-run>`.
 
 ``hybrid``
+
   A hybrid run is initialized like a startup but it uses
   initialization data sets from a previous case. It is similar
-  to a branch run with relaxed restart  constraints.
+  to a branch run with relaxed restart constraints.
   A hybrid run allows users to bring together
   combinations of initial/restart files from a previous case
   (specified by ``$RUN_REFCASE``) at a given model output date
@@ -264,6 +353,30 @@ for either a startup run or a hybrid run. If the run is targeted to be
 a hybrid or branch run, you must specify values for ``$RUN_REFCASE`` and
 ``$RUN_REFDATE``.
 
+.. _starting_from_a_refcase:
+
+----------------------------------------
+Starting from a reference case (REFCASE)
+----------------------------------------
+
+There are several xml variables that control how either a branch or a hybrid case can start up from another case.
+The initial/restart files needed to start up a run from another case are required to be in $EXEROOT.
+The xml variable ``$GET_REFCASE`` is a flag that if set will automatically prestaging the refcase restart data.
+
+- If ``$GET_REFCASE`` is ``TRUE``, then the the values set by ``$RUN_REFDIR``, ``$RUN_REFCASE``, ``$RUN_REFDATE`` and  ``$RUN_TOD`` are
+  used to prestage the data by symbolic links to the appropriate path.
+
+  The location of the necessary data to start up from another case is controlled by the xml variable ``$RUN_REFDIR``.
+
+  - If ``$RUN_REFDIR`` is an absolute pathname, then it is expected that initial/restart files needed to start up a model run are in ``$RUN_REFDIR``.
+
+  - If ``$RUN_REFDIR`` is a relative pathname, then it is expected that initial/restart files needed to start up a model run are in a path relative to ``$DIN_LOC_ROOT`` with the absolute pathname  ``$DIN_LOC_ROOT/$RUN_REFDIR/$RUN_REFCASE/$RUN_REFDATE``.
+
+  - If ``$RUN_REFDIR`` is a relative pathname AND is not available in ``$DIN_LOC_ROOT`` then CIME will attempt to download the data from the input data repositories.
+
+
+- If ``$GET_REFCASE`` is ``FALSE`` then the data is assumed to already exist in ``$EXEROOT``.
+
 .. _controlling-output-data:
 
 =========================
@@ -271,17 +384,17 @@ Controlling output data
 =========================
 
 During a model run, each model component produces its own output
-data sets consisting of history, initial, restart, diagnostics, output
+data sets in ``$RUNDIR`` consisting of history, initial, restart, diagnostics, output
 log and rpointer files. Component history files and restart files are
 in netCDF format. Restart files are used to either restart the same
 model or to serve as initial conditions for other model cases. The
-rpointer files are text files that list the component history and
+rpointer files are ascii text files that list the component history and
 restart files that are required for restart.
 
-Archiving is the phase of a model run when output data are
+Archiving (referred to as short-term archiving here) is the phase of a model run when output data are
 moved from ``$RUNDIR`` to a local disk area (short-term archiving).
 It has no impact on the production run except to clean up disk space
-in the ``$RUNDIR`` and help manage user quotas.
+in the ``$RUNDIR`` which can help manage user disk quotas.
 
 Several variables in **env_run.xml** control the behavior of
 short-term archiving. This is an example of how to control the
@@ -308,16 +421,13 @@ in a  *log file*. Each time the model is run, a single coordinated datestamp
 is incorporated into the filename of each output log file.
 The run script generates the datestamp in the form YYMMDD-hhmmss, indicating
 the year, month, day, hour, minute and second that the run began
-(ocn.log.040526-082714, for example). Log files are copied to a user-specified
-directory using the variable ``$LOGDIR`` in **env_run.xml**. The default is a "logs"
-subdirectory in the **$CASEROOT** directory.
+(ocn.log.040526-082714, for example).
 
 By default, each component also periodically writes history files
 (usually monthly) in netCDF format and also writes netCDF or binary
 restart files in the ``$RUNDIR`` directory. The history and log files
 are controlled independently by each component. History output control
-(for example, output fields and frequency) is set in the
-**Buildconf/$component.buildnml.csh** files.
+(for example, output fields and frequency) is set in each component's namelists.
 
 The raw history data does not lend itself well to easy time-series
 analysis. For example, CAM writes one or more large netCDF history
@@ -399,11 +509,6 @@ have the same date.
 ============================
 Archiving model output data
 ============================
-
-When a job has run successfully, the component log files are copied
-to the directory specified by the **env_run.xml** variable ``$LOGDIR``,
-which is set to **$CASEROOT/logs** by default. If the job aborts, log
-files are NOT be copied out of the ``$RUNDIR`` directory.
 
 The output data flow from a successful run depends on whether or not
 short-term archiving is enabled, as it is by default.

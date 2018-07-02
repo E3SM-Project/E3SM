@@ -121,6 +121,19 @@ If TRUE, use new N2 fixation algorithm that comes with nu_com module
 If TRUE, run forest N/P fertilization experiment
 </entry>
 
+<entry id="ECA_Pconst_RGspin" type="logical" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+If TRUE, do not allow soil labile, secondary, occcluded, and 
+parent material phosphorus to change, during Regular Spinup,
+for ECA model
+</entry>
+
+<entry id="NFIX_PTASE_plant" type="logical" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+If TRUE consider priority of plant to get a fraction of 
+symbiotic N fixation and P phosphatase
+</entry>
+
 <entry id="create_crop_landunit" type="logical" category="clm_physics"
        group="clm_inparm" valid_values="" >
 If TRUE, separate the vegetated landunit into a crop landunit and a natural vegetation landunit
@@ -229,9 +242,9 @@ Toggle to turn on the BeTR
 (BETR = 'on' is EXPERIMENTAL NOT SUPPORTED!)
 </entry>
 
-<entry id="use_ed" type="logical" category="physics"
+<entry id="use_fates" type="logical" category="physics"
         group="clm_inparm" valid_values="" value=".false.">
-Toggle to turn on the ED (fates)
+Toggle to turn on the FATES
 (ED = 'on' is EXPERIMENTAL NOT SUPPORTED!)
 </entry>
 
@@ -288,7 +301,7 @@ Full pathname datafile with fates parameters
 </entry>
        
 <entry id="flanduse_timeseries" type="char*256" category="datasets"
-       input_pathname="abs" group="clm_inparm" valid_values="" >
+       input_pathname="abs" group="dynamic_subgrid" valid_values="" >
 Full pathname of time varying PFT data file. This causes the land-use types of
 the initial surface dataset to vary over time.
 </entry>
@@ -1167,7 +1180,7 @@ Representative concentration pathway for future scenarios [radiative forcing at 
 
 <entry id="mask" type="char*20" category="default_settings"
        group="default_settings"  
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,cruncep,oEC60to30,oEC60to30v3,oEC60to30wLI,oEC60to30v3wLI,oRRS18to6,oRRS18to6v3,oRRS15to5,mp120v1,oQU240,oQU240wLI,oQU120,oRRS30to10,oRRS30to10v3,oRRS30to10wLI,360x720cru,NLDASww3a,tx0.1v2">
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,cruncep,oEC60to30,oEC60to30v3,oEC60to30wLI,oEC60to30v3wLI,oRRS18to6,oRRS18to6v3,oRRS15to5,mp120v1,oQU240,oQU240wLI,oQU120,oRRS30to10,oRRS30to10v3,oRRS30to10wLI,oRRS30to10v3wLI,360x720cru,NLDASww3a,tx0.1v2">
 Land mask description
 </entry> 
 

@@ -27,19 +27,24 @@ class HOMME(SystemTestsCommon):
             procs    = self._case.get_value("TOTALPES")
             exeroot  = self._case.get_value("EXEROOT")
             baseline = self._case.get_value("BASELINE_ROOT")
-            basegen  = self._case.get_value("BASEGEN_CASE")
             basecmp  = self._case.get_value("BASECMP_CASE")
-            generate = self._case.get_value("GENERATE_BASELINE")
+            compare  = self._case.get_value("COMPARE_BASELINE")
             gmake    = self._case.get_value("GMAKE")
             cprnc    = self._case.get_value("CCSM_CPRNC")
 
-            basename = basegen if generate else basecmp
-            cmake_cmd = "cmake -C {}/components/homme/cmake/machineFiles/{}.cmake -DUSE_NUM_PROCS={} {}/components/homme -DHOMME_BASELINE_DIR={}/{} -DCPRNC_DIR={}/..".format(srcroot, mach, procs, srcroot, baseline, basename, cprnc)
+            if compare:
+                basename = basecmp
+                baselinedir = baseline
+            else:
+                basename = ""
+                baselinedir = exeroot
+
+            cmake_cmd = "cmake -C {}/components/homme/cmake/machineFiles/{}.cmake -DUSE_NUM_PROCS={} {}/components/homme -DHOMME_BASELINE_DIR={}/{} -DCPRNC_DIR={}/..".format(srcroot, mach, procs, srcroot, baselinedir, basename, cprnc)
 
             run_cmd_no_fail(cmake_cmd, arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)
             run_cmd_no_fail("{} -j8".format(gmake), arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)
 
-            post_build(self._case, [os.path.join(exeroot, "homme.bldlog")])
+            post_build(self._case, [os.path.join(exeroot, "homme.bldlog")], build_complete=True)
 
     def run_phase(self):
 
@@ -69,6 +74,7 @@ class HOMME(SystemTestsCommon):
 
         else:
             stat = run_cmd("{} -j 4 baseline".format(gmake), arg_stdout=log, combine_output=True, from_dir=exeroot)[0]
+            stat = run_cmd("{} -j 4 check".format(gmake), arg_stdout=log, combine_output=True, from_dir=exeroot)[0]
 
         # Add homme.log output to TestStatus.log so that it can
         # appear on the dashboard. Otherwise, the TestStatus.log
@@ -77,7 +83,7 @@ class HOMME(SystemTestsCommon):
 
         expect(stat == 0, "RUN FAIL for HOMME")
 
-    # Homme is a bit of an oddball test since it's not really running the ACME model
+    # Homme is a bit of an oddball test since it's not really running the E3SM model
     # We need to override some methods to make the core infrastructure work.
 
     def _generate_baseline(self):

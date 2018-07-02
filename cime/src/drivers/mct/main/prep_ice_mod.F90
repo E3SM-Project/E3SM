@@ -86,7 +86,7 @@ contains
     !
     ! Local Variables
     integer                          :: lsize_i
-    integer                          :: eai, eoi, egi, eri, eii
+    integer                          :: eai, eoi, egi, eri
     logical                          :: iamroot_CPLID ! .true. => CPLID masterproc
     logical                          :: samegrid_ig   ! samegrid glc and ice
     logical                          :: samegrid_ro   ! samegrid rof and ice/ocn
@@ -193,7 +193,7 @@ contains
     character(len=*)        , intent(in)    :: timer_mrg
     !
     ! Local Variables
-    integer                  :: eoi, eai, egi, efi, eii, eri
+    integer                  :: eoi, eai, egi, eii, eri
     real(r8)                 :: flux_epbalfact ! adjusted precip factor
     type(mct_avect), pointer :: x2i_ix
     character(*), parameter  :: subname = '(prep_ice_mrg)'
@@ -344,37 +344,37 @@ contains
 
        !--- document manual merges ---
        mrgstr(index_x2i_Faxa_rain) = trim(mrgstr(index_x2i_Faxa_rain))//' = '// &
-          '(a2x%Faxa_rainc + a2x%Faxa_rainl)*flux_epbalfact'
+            '(a2x%Faxa_rainc + a2x%Faxa_rainl)*flux_epbalfact'
        mrgstr(index_x2i_Faxa_snow) = trim(mrgstr(index_x2i_Faxa_snow))//' = '// &
-          '(a2x%Faxa_snowc + a2x%Faxa_snowl)*flux_epbalfact'
+            '(a2x%Faxa_snowc + a2x%Faxa_snowl)*flux_epbalfact'
        mrgstr(index_x2i_Fixx_rofi) = trim(mrgstr(index_x2i_Fixx_rofi))//' = '// &
-          '(g2x%Figg_rofi + r2x%Firr_rofi)*flux_epbalfact'
+            '(g2x%Figg_rofi + r2x%Firr_rofi)*flux_epbalfact'
 
        !--- water isotope document manual merges ---
        if ( index_x2i_Faxa_rain_16O /= 0 ) then
           mrgstr(index_x2i_Faxa_rain_16O) = trim(mrgstr(index_x2i_Faxa_rain_16O))//' = '// &
-             '(a2x%Faxa_rainc_16O + a2x%Faxa_rainl_16O)*flux_epbalfact'
+               '(a2x%Faxa_rainc_16O + a2x%Faxa_rainl_16O)*flux_epbalfact'
           mrgstr(index_x2i_Faxa_snow_16O) = trim(mrgstr(index_x2i_Faxa_snow_16O))//' = '// &
-             '(a2x%Faxa_snowc_16O + a2x%Faxa_snowl_16O)*flux_epbalfact'
+               '(a2x%Faxa_snowc_16O + a2x%Faxa_snowl_16O)*flux_epbalfact'
        end if
        if ( index_x2i_Faxa_rain_18O /= 0 ) then
           mrgstr(index_x2i_Faxa_rain_18O) = trim(mrgstr(index_x2i_Faxa_rain_18O))//' = '// &
-             '(a2x%Faxa_rainc_18O + a2x%Faxa_rainl_18O)*flux_epbalfact'
+               '(a2x%Faxa_rainc_18O + a2x%Faxa_rainl_18O)*flux_epbalfact'
           mrgstr(index_x2i_Faxa_snow_18O) = trim(mrgstr(index_x2i_Faxa_snow_18O))//' = '// &
-             '(a2x%Faxa_snowc_18O + a2x%Faxa_snowl_18O)*flux_epbalfact'
+               '(a2x%Faxa_snowc_18O + a2x%Faxa_snowl_18O)*flux_epbalfact'
        end if
        if ( index_x2i_Faxa_rain_HDO /= 0 ) then
           mrgstr(index_x2i_Faxa_rain_HDO) = trim(mrgstr(index_x2i_Faxa_rain_HDO))//' = '// &
-             '(a2x%Faxa_rainc_HDO + a2x%Faxa_rainl_HDO)*flux_epbalfact'
+               '(a2x%Faxa_rainc_HDO + a2x%Faxa_rainl_HDO)*flux_epbalfact'
           mrgstr(index_x2i_Faxa_snow_HDO) = trim(mrgstr(index_x2i_Faxa_snow_HDO))//' = '// &
-             '(a2x%Faxa_snowc_HDO + a2x%Faxa_snowl_HDO)*flux_epbalfact'
+               '(a2x%Faxa_snowc_HDO + a2x%Faxa_snowl_HDO)*flux_epbalfact'
        end if
 
     endif
 
-!    call mct_aVect_copy(aVin=o2x_i, aVout=x2i_i, vector=mct_usevector)
-!    call mct_aVect_copy(aVin=a2x_i, aVout=x2i_i, vector=mct_usevector)
-!    call mct_aVect_copy(aVin=g2x_i, aVout=x2i_i, vector=mct_usevector)
+    !    call mct_aVect_copy(aVin=o2x_i, aVout=x2i_i, vector=mct_usevector)
+    !    call mct_aVect_copy(aVin=a2x_i, aVout=x2i_i, vector=mct_usevector)
+    !    call mct_aVect_copy(aVin=g2x_i, aVout=x2i_i, vector=mct_usevector)
     call mct_aVect_copy(aVin=o2x_i, aVout=x2i_i, vector=mct_usevector, sharedIndices=o2x_SharedIndices)
     call mct_aVect_copy(aVin=a2x_i, aVout=x2i_i, vector=mct_usevector, sharedIndices=a2x_SharedIndices)
     call mct_aVect_copy(aVin=g2x_i, aVout=x2i_i, vector=mct_usevector, sharedIndices=g2x_SharedIndices)
@@ -384,11 +384,11 @@ contains
 
     do i = 1,lsize
        x2i_i%rAttr(index_x2i_Faxa_rain,i) = a2x_i%rAttr(index_a2x_Faxa_rainc,i) + &
-	                                    a2x_i%rAttr(index_a2x_Faxa_rainl,i)
+            a2x_i%rAttr(index_a2x_Faxa_rainl,i)
        x2i_i%rAttr(index_x2i_Faxa_snow,i) = a2x_i%rAttr(index_a2x_Faxa_snowc,i) + &
-	                                    a2x_i%rAttr(index_a2x_Faxa_snowl,i)
+            a2x_i%rAttr(index_a2x_Faxa_snowl,i)
        x2i_i%rAttr(index_x2i_Fixx_rofi,i) = g2x_i%rAttr(index_g2x_Figg_rofi,i) + &
-	                                    r2x_i%rAttr(index_r2x_Firr_rofi,i)
+            r2x_i%rAttr(index_r2x_Firr_rofi,i)
 
        x2i_i%rAttr(index_x2i_Faxa_rain,i) = x2i_i%rAttr(index_x2i_Faxa_rain,i) * flux_epbalfact
        x2i_i%rAttr(index_x2i_Faxa_snow,i) = x2i_i%rAttr(index_x2i_Faxa_snow,i) * flux_epbalfact
@@ -397,27 +397,27 @@ contains
        ! For water isotopes
        if ( index_x2i_Faxa_rain_16O /= 0 ) then
           x2i_i%rAttr(index_x2i_Faxa_rain_16O,i) = a2x_i%rAttr(index_a2x_Faxa_rainc_16O,i) + &
-                                               a2x_i%rAttr(index_a2x_Faxa_rainl_16O,i)
+               a2x_i%rAttr(index_a2x_Faxa_rainl_16O,i)
           x2i_i%rAttr(index_x2i_Faxa_snow_16O,i) = a2x_i%rAttr(index_a2x_Faxa_snowc_16O,i) + &
-                                               a2x_i%rAttr(index_a2x_Faxa_snowl_16O,i)
+               a2x_i%rAttr(index_a2x_Faxa_snowl_16O,i)
 
           x2i_i%rAttr(index_x2i_Faxa_rain_16O,i) = x2i_i%rAttr(index_x2i_Faxa_rain_16O,i) * flux_epbalfact
           x2i_i%rAttr(index_x2i_Faxa_snow_16O,i) = x2i_i%rAttr(index_x2i_Faxa_snow_16O,i) * flux_epbalfact
        end if
        if ( index_x2i_Faxa_rain_18O /= 0 ) then
           x2i_i%rAttr(index_x2i_Faxa_rain_18O,i) = a2x_i%rAttr(index_a2x_Faxa_rainc_18O,i) + &
-                                               a2x_i%rAttr(index_a2x_Faxa_rainl_18O,i)
+               a2x_i%rAttr(index_a2x_Faxa_rainl_18O,i)
           x2i_i%rAttr(index_x2i_Faxa_snow_18O,i) = a2x_i%rAttr(index_a2x_Faxa_snowc_18O,i) + &
-                                               a2x_i%rAttr(index_a2x_Faxa_snowl_18O,i)
+               a2x_i%rAttr(index_a2x_Faxa_snowl_18O,i)
 
           x2i_i%rAttr(index_x2i_Faxa_rain_18O,i) = x2i_i%rAttr(index_x2i_Faxa_rain_18O,i) * flux_epbalfact
           x2i_i%rAttr(index_x2i_Faxa_snow_18O,i) = x2i_i%rAttr(index_x2i_Faxa_snow_18O,i) * flux_epbalfact
        end if
        if ( index_x2i_Faxa_rain_HDO /= 0 ) then
           x2i_i%rAttr(index_x2i_Faxa_rain_HDO,i) = a2x_i%rAttr(index_a2x_Faxa_rainc_HDO,i) + &
-                                               a2x_i%rAttr(index_a2x_Faxa_rainl_HDO,i)
+               a2x_i%rAttr(index_a2x_Faxa_rainl_HDO,i)
           x2i_i%rAttr(index_x2i_Faxa_snow_HDO,i) = a2x_i%rAttr(index_a2x_Faxa_snowc_HDO,i) + &
-                                               a2x_i%rAttr(index_a2x_Faxa_snowl_HDO,i)
+               a2x_i%rAttr(index_a2x_Faxa_snowl_HDO,i)
 
           x2i_i%rAttr(index_x2i_Faxa_rain_HDO,i) = x2i_i%rAttr(index_x2i_Faxa_rain_HDO,i) * flux_epbalfact
           x2i_i%rAttr(index_x2i_Faxa_snow_HDO,i) = x2i_i%rAttr(index_x2i_Faxa_snow_HDO,i) * flux_epbalfact

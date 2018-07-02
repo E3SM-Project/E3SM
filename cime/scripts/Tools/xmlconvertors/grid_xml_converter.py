@@ -132,7 +132,7 @@ class GridmapNode(DataNode):
         for k in ['atm_grid', 'lnd_grid', 'ocn_grid', 'rof_grid', 'glc_grid']:
             if k in self.data:
                 node.set(k, self.data[k])
-        for key, value in self.data['maps'].iteritems():
+        for key, value in self.data['maps'].items():
             ET.SubElement(node, key).text = value
         return node
     def __str__(self):
@@ -142,7 +142,7 @@ class GridmapNode(DataNode):
             return False
         if len(self.data['maps']) != len(other.data['maps']):
             return False
-        for key, value in self.data['maps'].iteritems():
+        for key, value in self.data['maps'].items():
             if key not in other.data['maps'] or value != other.data['maps'][key]:
                 return False
         return True

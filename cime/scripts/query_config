@@ -7,7 +7,7 @@ information will be listed for each.
 """
 
 from Tools.standard_script_setup import *
-
+import re
 from CIME.utils         import expect
 from CIME.XML.files     import Files
 from CIME.XML.component import Component
@@ -15,8 +15,9 @@ from CIME.XML.compsets  import Compsets
 from CIME.XML.grids     import Grids
 #from CIME.XML.machines  import Machines
 import CIME.XML.machines
+from argparse           import RawTextHelpFormatter
 
-import re, argparse, doctest
+logger = logging.getLogger(__name__)
 
 def query_grids(long_output):
     """
@@ -125,16 +126,24 @@ def query_component(name, all_components=False):
     # and see if there is a match for the the target component in the component attribute
     match_found = False
     valid_components = []
+    config_exists = False
     for comp in components:
         string = "CONFIG_{}_FILE".format(comp)
-
+        config_file = None
         # determine all components in string
-        components = files.get_components(string)
+        root_dir_node_name = "COMP_ROOT_DIR_{}".format(comp)
+        components = files.get_components(root_dir_node_name)
+        if components is None:
+            components = files.get_components(string)
         for item in components:
             valid_components.append(item)
-
+        logger.debug ("{}: valid_components {}".format(comp, valid_components))
         # determine if config_file is on disk
-        config_file = files.get_value(string, attribute={"component":name})
+        if name is None:
+            config_file = files.get_value(string)
+        elif name in valid_components:
+            config_file = files.get_value(string, attribute={"component":name})
+            logger.debug("query {}".format(config_file))
         if config_file is not None:
             match_found = True
             config_exists = os.path.isfile(config_file)
@@ -164,7 +173,8 @@ def parse_command_line(args, description):
     """
     cime_model = CIME.utils.get_model()
 
-    parser = ArgumentParser(description=description)
+    parser = ArgumentParser(description=description,
+                            formatter_class=RawTextHelpFormatter)
 
     CIME.utils.setup_standard_logging_options(parser)
 
@@ -181,35 +191,36 @@ def parse_command_line(args, description):
     # Loop through the elements for each component class (in config_files.xml)
     valid_components = ['all']
     for comp in components:
-        string = "CONFIG_{}_FILE".format(comp)
+        if cime_model == "cesm":
+            string = "COMP_ROOT_DIR_{}".format(comp)
+        else:
+            string = "CONFIG_{}_FILE".format(comp)
 
         # determine all components in string
         components = files.get_components(string)
+
+
         for item in components:
             valid_components.append(item)
+
     parser.add_argument("--components", nargs='?', const='all', choices=valid_components,
                         help="Query component settings corresponding to the target component for {} model."
-                        " If no component is given, lists settings defined by all components".format(cime_model))
+                        "\nIf the option is empty, then the lists settings defined by all components is output".format(cime_model))
 
     parser.add_argument("--grids", action="store_true",
                         help="Query supported model grids for {} model.".format(cime_model))
-
-# what was the intent of this argument?
-#    parser.add_argument("--grids-alias",
-#                        help="Query model grids for input grid alias for {} model - not implemented yet".format(cime_model))
 
     config_file = files.get_value("MACHINES_SPEC_FILE")
     expect(os.path.isfile(config_file),
            "Cannot find config_file {} on disk".format(config_file))
     machines = Machines(config_file, machine="Query")
-    machines = machines.get_nodes(nodename="machine")
     machine_names = ['all', 'current']
-    for machine in machines:
-        machine_names.append(machine.get("MACH"))
+    machine_names.extend(machines.list_available_machines())
+
     parser.add_argument("--machines", nargs='?', const='all', choices=machine_names,
                         help="Query supported machines for {} model."
-                        " If option is left empty then all machines are listed,"
-                        " if current is given the current machine details are listed.".format(cime_model))
+                        "\nIf option is left empty then all machines are listed,"
+                        "\nIf the option is 'current' then only the current machine details are listed.".format(cime_model))
 
     parser.add_argument("--long", action="store_true",
                         help="Provide long output for queries")
@@ -287,34 +298,31 @@ class Machines(CIME.XML.machines.Machines):
             config_file = files.get_value("MACHINES_SPEC_FILE")
             print("Machine is not listed in config file: {}".format(config_file))
         else:  # write out machines
-            machines = self.get_nodes(nodename="machine")
-            print("Machine(s)")
-            for machine in machines:
-                name = machine.get("MACH")
-                desc = machine.find("DESC")
-                os_  = machine.find("OS")
-                compilers = machine.find("COMPILERS")
-                max_tasks_per_node = machine.find("MAX_TASKS_PER_NODE")
-                max_mpitasks_per_node = machine.find("MAX_MPITASKS_PER_NODE")
+            if single_machine:
+                machine_names = [machine_name]
+            else:
+                machine_names = self.list_available_machines()
+            print("Machine(s)\n")
+            for name in machine_names:
+                self.set_machine(name)
+                desc = self.text(self.get_child("DESC"))
+                os_  = self.text(self.get_child("OS"))
+                compilers = self.text(self.get_child("COMPILERS"))
+
+                max_tasks_per_node = self.text(self.get_child("MAX_TASKS_PER_NODE"))
+                mpitasks_node = self.get_optional_child("MAX_MPITASKS_PER_NODE")
+                max_mpitasks_per_node = self.text(mpitasks_node) if mpitasks_node else max_tasks_per_node
 
                 current_machine = self.probe_machine_name(warn=False)
-                if not single_machine:
-                    name += " (current)" if current_machine and current_machine in name else ""
-                    print("  {} : {} ".format(name, desc.text))
-                    print("      os             ", os_.text)
-                    print("      compilers      ",compilers.text)
-                    if max_mpitasks_per_node is not None:
-                        print("      pes/node       ",max_mpitasks_per_node.text)
-                    if max_tasks_per_node is not None:
-                        print("      max_tasks/node ",max_tasks_per_node.text)
-                elif single_machine and machine_name in name:
-                    print("  {} : {} ".format(name, desc.text))
-                    print("      os             ", os_.text)
-                    print("      compilers      ",compilers.text)
-                    if max_mpitasks_per_node is not None:
-                        print("      pes/node       ",max_mpitasks_per_node.text)
-                    if max_tasks_per_node is not None:
-                        print("      max_tasks/node ",max_tasks_per_node.text)
+                name += " (current)" if current_machine and current_machine in name else ""
+                print("  {} : {} ".format(name, desc))
+                print("      os             ", os_)
+                print("      compilers      ",compilers)
+                if max_mpitasks_per_node is not None:
+                    print("      pes/node       ",max_mpitasks_per_node)
+                if max_tasks_per_node is not None:
+                    print("      max_tasks/node ",max_tasks_per_node)
+                print('')
 
 def _main_func(description):
     """

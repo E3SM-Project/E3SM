@@ -70,24 +70,14 @@ module docn_comp_mod
   real(R8), pointer      :: xc(:), yc(:) ! arryas of model latitudes and longitudes
 
   !--------------------------------------------------------------------------
-  character(len=*),parameter :: flds_strm = 'strm_h:strm_qbot'
-
-  integer(IN),parameter :: ktrans = 29
-  character(12),parameter  :: avifld(1:ktrans) = &
-       (/ "ifrac       ","pslv        ","duu10n      ","taux        ","tauy        ", &
-       "swnet       ","lat         ","sen         ","lwup        ","lwdn        ", &
-       "melth       ","salt        ","prec        ","snow        ","rain        ", &
-       "evap        ","meltw       ","rofl        ","rofi        ",                &
-       "t           ","u           ","v           ","dhdx        ","dhdy        ", &
-       "s           ","q           ","h           ","qbot        ","fswpen      "  /)
-
-  character(12),parameter  :: avofld(1:ktrans) = &
-       (/ "Si_ifrac    ","Sa_pslv     ","So_duu10n   ","Foxx_taux   ","Foxx_tauy   ", &
-       "Foxx_swnet  ","Foxx_lat    ","Foxx_sen    ","Foxx_lwup   ","Faxa_lwdn   ", &
-       "Fioi_melth  ","Fioi_salt   ","Faxa_prec   ","Faxa_snow   ","Faxa_rain   ", &
-       "Foxx_evap   ","Fioi_meltw  ","Foxx_rofl   ","Foxx_rofi   ",                &
-       "So_t        ","So_u        ","So_v        ","So_dhdx     ","So_dhdy     ", &
-       "So_s        ","Fioo_q      ","strm_h      ","strm_qbot   ","So_fswpen   "  /)
+  integer(IN)     , parameter :: ktrans = 8
+  character(12)   , parameter :: avifld(1:ktrans) = &
+       (/ "t           ","u           ","v           ","dhdx        ",&
+          "dhdy        ","s           ","h           ","qbot        "/)
+  character(12)   , parameter  :: avofld(1:ktrans) = &
+       (/ "So_t        ","So_u        ","So_v        ","So_dhdx     ",&
+          "So_dhdy     ","So_s        ","strm_h      ","strm_qbot   "/)
+  character(len=*), parameter :: flds_strm = 'strm_h:strm_qbot'
   !--------------------------------------------------------------------------
 
   save
@@ -129,15 +119,11 @@ CONTAINS
     real(R8)               , intent(in)    :: scmLon              ! single column lon
 
     !--- local variables ---
-    integer(IN)   :: n,k      ! generic counters
-    integer(IN)   :: ierr     ! error code
     integer(IN)   :: lsize    ! local size
     logical       :: exists   ! file existance
     integer(IN)   :: nu       ! unit number
     integer(IN)   :: kmask    ! field reference
-    integer(IN)   :: kfrac    ! field reference
     character(CL) :: calendar ! model calendar
-    type(iosystem_desc_t), pointer :: ocn_pio_subsystem
 
     !--- formats ---
     character(*), parameter :: F00   = "('(docn_comp_init) ',8a)"
@@ -345,7 +331,7 @@ CONTAINS
   subroutine docn_comp_run(EClock, x2o, o2x, &
        SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, case_name)
-
+    use shr_cal_mod, only: shr_cal_ymdtod2string
     ! !DESCRIPTION:  run method for docn model
     implicit none
 
@@ -370,8 +356,6 @@ CONTAINS
     integer(IN)   :: CurrentTOD            ! model sec into model date
     integer(IN)   :: yy,mm,dd              ! year month day
     integer(IN)   :: n                     ! indices
-    integer(IN)   :: nf                    ! fields loop index
-    integer(IN)   :: nl                    ! ocn frac index
     integer(IN)   :: lsize                 ! size of attr vect
     integer(IN)   :: idt                   ! integer timestep
     real(R8)      :: dt                    ! timestep
@@ -381,10 +365,11 @@ CONTAINS
 
     real(R8), parameter :: &
          swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
-
+    character(len=18) :: date_str
     character(*), parameter :: F00   = "('(docn_comp_run) ',8a)"
     character(*), parameter :: F04   = "('(docn_comp_run) ',2a,2i8,'s')"
     character(*), parameter :: subName = "(docn_comp_run) "
+
     !-------------------------------------------------------------------------------
 
     call t_startf('DOCN_RUN')
@@ -575,12 +560,13 @@ CONTAINS
 
     if (write_restart) then
        call t_startf('docn_restart')
-       write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-            trim(case_name), '.docn'//trim(inst_suffix)//'.r.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
-       write(rest_file_strm,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-            trim(case_name), '.docn'//trim(inst_suffix)//'.rs1.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
+       call shr_cal_ymdtod2string(date_str, yy,mm,dd,currentTOD)
+       write(rest_file,"(6a)") &
+            trim(case_name), '.docn',trim(inst_suffix),'.r.', &
+            trim(date_str),'.nc'
+       write(rest_file_strm,"(6a)") &
+            trim(case_name), '.docn',trim(inst_suffix),'.rs1.', &
+            trim(date_str),'.bin'
        if (my_task == master_task) then
           nu = shr_file_getUnit()
           open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')

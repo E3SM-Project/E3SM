@@ -1,12 +1,12 @@
 module kissvec_mod
-! Fortran binding for the KISS vectorizable random number generator.
+  ! Fortran binding for the KISS vectorizable random number generator.
 
-implicit none
+  implicit none
 
-integer, parameter :: r8 = selected_real_kind(12)
+  integer, parameter :: r8 = selected_real_kind(12)
 
-private
-public :: kissvec
+  private
+  public :: kissvec
 
 contains
 

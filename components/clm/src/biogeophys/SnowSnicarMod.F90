@@ -1044,7 +1044,7 @@ contains
                ! Incident direct+diffuse radiation equals (absorbed+bulk_transmitted+bulk_reflected)
                energy_sum = (mu_not*pi*flx_slrd_lcl(bnd_idx)) + flx_slri_lcl(bnd_idx) - (F_abs_sum + F_btm_net + F_sfc_pls)
                if (abs(energy_sum) > 0.00001_r8) then
-                  write (iulog,"(a,e12.6,a,i6,a,i6)") "SNICAR ERROR: Energy conservation error of : ", energy_sum, &
+                  write (iulog,"(a,e13.6,a,i6,a,i6)") "SNICAR ERROR: Energy conservation error of : ", energy_sum, &
                        " at timestep: ", nstep, " at column: ", c_idx
                   call endrun(decomp_index=c_idx, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
                endif
@@ -1546,7 +1546,8 @@ contains
        write (iulog,*) 'SNICAR: Subset of Mie single scatter albedos for BC: ', &
             ss_alb_bc1(1,1), ss_alb_bc1(1,2), ss_alb_bc1(2,1), ss_alb_bc1(5,1), ss_alb_bc1(1,10), ss_alb_bc2(1,10)
        write (iulog,*) 'SNICAR: Subset of Mie mass extinction coefficients for BC: ', &
-            ext_cff_mss_bc2(1,1), ext_cff_mss_bc2(1,2), ext_cff_mss_bc2(2,1), ext_cff_mss_bc2(5,1), ext_cff_mss_bc2(1,10), ext_cff_mss_bc1(1,10)
+            ext_cff_mss_bc2(1,1), ext_cff_mss_bc2(1,2), ext_cff_mss_bc2(2,1), ext_cff_mss_bc2(5,1), ext_cff_mss_bc2(1,10),&
+            ext_cff_mss_bc1(1,10)
        write (iulog,*) 'SNICAR: Subset of Mie asymmetry parameters for BC: ', &
             asm_prm_bc1(1,1), asm_prm_bc1(1,2), asm_prm_bc1(2,1), asm_prm_bc1(5,1), asm_prm_bc1(1,10), asm_prm_bc2(1,10)
        write (iulog,*) 'SNICAR: Subset of BC absorption enhancement factors: ', &

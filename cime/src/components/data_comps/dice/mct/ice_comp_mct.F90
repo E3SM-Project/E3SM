@@ -40,13 +40,14 @@ module ice_comp_mct
   character(len=16)      :: inst_suffix         ! char string associated with instance (ie. "_0001" or "")
   integer(IN)            :: logunit             ! logging unit number
   integer(IN)            :: compid              ! mct comp id
+  logical                :: read_restart        ! start from restart
 
   character(*), parameter :: F00   = "('(dice_comp_init) ',8a)"
   integer(IN) , parameter :: master_task=0 ! task number of master task
   character(*), parameter :: subName = "(ice_init_mct) "
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   !===============================================================================
   subroutine ice_init_mct( EClock, cdata, x2i, i2x, NLFilename )
@@ -64,12 +65,10 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer           :: phase                     ! phase of method
     logical           :: ice_present               ! flag
     logical           :: ice_prognostic            ! flag
     integer(IN)       :: shrlogunit                ! original log unit
     integer(IN)       :: shrloglev                 ! original log level
-    logical           :: read_restart              ! start from restart
     integer(IN)       :: ierr                      ! error code
     logical           :: scmMode = .false.         ! single column mode
     real(R8)          :: scmLat  = shr_const_SPVAL ! single column lat
@@ -186,7 +185,6 @@ CONTAINS
     type(mct_gGrid)        , pointer :: ggrid
     integer(IN)                      :: shrlogunit   ! original log unit
     integer(IN)                      :: shrloglev    ! original log level
-    logical                          :: read_restart ! start from restart
     character(CL)                    :: case_name    ! case name
     character(*), parameter :: subName = "(ice_run_mct) "
     !-------------------------------------------------------------------------------

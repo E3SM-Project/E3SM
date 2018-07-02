@@ -12,6 +12,9 @@ module CNPrecisionControlMod
   use PhosphorusStateType , only : phosphorusstate_type
   use VegetationType           , only : veg_pp
   use ColumnType          , only : col_pp
+  use clm_varctl          , only : nu_com
+  use abortutils          , only : endrun
+  use shr_log_mod         , only : errMsg => shr_log_errMsg
   !
   implicit none
   save
@@ -33,10 +36,11 @@ contains
     ! they get too small.
     !
     ! !USES:
-    use clm_varctl , only : iulog, use_c13, use_c14, use_nitrif_denitrif, use_ed
+    use clm_varctl , only : iulog, use_c13, use_c14, use_nitrif_denitrif, use_fates
     use clm_varpar , only : nlevdecomp_full, crop_prog
     use pftvarcon  , only : nc3crop
     use tracer_varcon          , only : is_active_betr_bgc    
+    use CNDecompCascadeConType , only : decomp_cascade_con
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -50,7 +54,7 @@ contains
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     !
     ! !LOCAL VARIABLES:
-    integer :: c,p,j,k  ! indices
+    integer :: c,p,j,k,l  ! indices
     integer :: fp,fc    ! lake filter indices
     real(r8):: pc,pn,pp    ! truncation terms for patch-level corrections
     real(r8):: cc,cn,cp    ! truncation terms for column-level corrections
@@ -61,6 +65,9 @@ contains
     real(r8):: ccrit    ! critical carbon state value for truncation
     real(r8):: ncrit    ! critical nitrogen state value for truncation
     real(r8):: pcrit    ! critical phosphorus state value for truncation
+    real(r8):: cc_eca
+    real(r8):: cn_eca
+    real(r8):: cp_eca
     !-----------------------------------------------------------------------
 
     ! carbonstate_vars%ctrunc_vr_col                 Output:  [real(r8) (:,:)   ]  (gC/m3) column-level sink for C truncation      
@@ -176,7 +183,10 @@ contains
          ns    => nitrogenstate_vars   , &
          ps    => phosphorusstate_vars , &
          c13cs => c13_carbonstate_vars , &
-         c14cs => c14_carbonstate_vars   &
+         c14cs => c14_carbonstate_vars , &
+         floating_cn_ratio_decomp_pools   =>    decomp_cascade_con%floating_cn_ratio_decomp_pools , &
+         floating_cp_ratio_decomp_pools   =>    decomp_cascade_con%floating_cp_ratio_decomp_pools , &
+         initial_cn_ratio                 =>    decomp_cascade_con%initial_cn_ratio                 &
          )
 
       ! set the critical carbon state value for truncation (gC/m2)
@@ -189,7 +199,7 @@ contains
       pcrit = 1.e-8_r8
 
       ! patch loop
-      if (.not.use_ed) then
+      if (.not.use_fates) then
          do fp = 1,num_soilp
             p = filter_soilp(fp)
 
@@ -664,7 +674,7 @@ contains
             endif
 
          end do ! end of pft loop
-      end if ! end of if(not.use_ed)
+      end if ! end of if(not.use_fates)
 
       if (.not. is_active_betr_bgc) then
 
@@ -690,7 +700,7 @@ contains
                   if (abs(cs%decomp_cpools_vr_col(c,j,k)) < ccrit) then
                      cc = cc + cs%decomp_cpools_vr_col(c,j,k)
                      cs%decomp_cpools_vr_col(c,j,k) = 0._r8
-                     if (.not.use_ed) then
+                     if (.not.use_fates) then
                         cn = cn + ns%decomp_npools_vr_col(c,j,k)
                         ns%decomp_npools_vr_col(c,j,k) = 0._r8
                      endif
@@ -710,7 +720,7 @@ contains
                ! be getting the N truncation flux anyway.
 
                cs%ctrunc_vr_col(c,j) = cs%ctrunc_vr_col(c,j) + cc
-               if (.not.use_ed) then
+               if (.not.use_fates) then
                   ns%ntrunc_vr_col(c,j) = ns%ntrunc_vr_col(c,j) + cn
                endif
                if ( use_c13 ) then
@@ -745,6 +755,103 @@ contains
                   end if
                end do
             end do
+         endif
+
+         if (nu_com .eq. 'ECA') then
+            ! decompose P pool adjust according to C pool
+            !do fc = 1,num_soilc
+            !   c = filter_soilc(fc)
+            !   do j = 1,nlevdecomp_full
+            !      cp_eca = 0.0_r8
+            !      do l = 1,ndecomp_pools
+            !         if (abs(cs%decomp_cpools_vr_col(c,j,k)) < ccrit) then
+            !            if (.not.use_fates) then
+            !               cp_eca = cp_eca + ps%decomp_ppools_vr_col(c,j,k)
+            !               ps%decomp_ppools_vr_col(c,j,k) = 0._r8
+            !            endif
+            !         endif
+            !      end do
+            !      ps%ptrunc_vr_col(c,j) = ps%ptrunc_vr_col(c,j) + cp_eca
+            !   end do
+            !end do
+
+            ! fix soil CN ratio drift (normally < 0.01% drift)
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               do j = 1,nlevdecomp_full
+                  cn_eca = 0.0_r8
+                  do l = 1,ndecomp_pools
+                     if ( cs%decomp_cpools_vr_col(c,j,l) > 0.0_r8 .and.  &
+                          abs(cs%decomp_cpools_vr_col(c,j,l) / ns%decomp_npools_vr_col(c,j,l) - initial_cn_ratio(l) ) > 1.0e-3_r8 &
+                          .and. (.not. floating_cn_ratio_decomp_pools(l)) ) then
+                        cn_eca = cn_eca - ( cs%decomp_cpools_vr_col(c,j,l) / initial_cn_ratio(l) - ns%decomp_npools_vr_col(c,j,l) )
+                        ns%decomp_npools_vr_col(c,j,l) = cs%decomp_cpools_vr_col(c,j,l) / initial_cn_ratio(l)
+                     end if
+                  end do
+                  ns%ntrunc_vr_col(c,j) = ns%ntrunc_vr_col(c,j) + cn_eca
+               end do
+             end do
+
+            ! remove small negative perturbations for stability purposes, if any should arise in N,P pools
+            ! for floating CN, CP ratio pools
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               do j = 1,nlevdecomp_full
+
+                  cn_eca = 0.0_r8
+                  cp_eca = 0.0_r8
+                  do l = 1,ndecomp_pools
+                     if ( ns%decomp_npools_vr_col(c,j,l) < 0.0_r8 .and. floating_cn_ratio_decomp_pools(l) ) then
+                        if ( abs(ns%decomp_npools_vr_col(c,j,l))  < ncrit ) then
+                           cn_eca = cn_eca - ncrit + ns%decomp_npools_vr_col(c,j,l)
+                           ns%decomp_npools_vr_col(c,j,l) = ncrit
+                        else
+                           write(iulog, "(A,2I8,E8.1)") 'error decomp_npools is negative: ',j,l,ns%decomp_npools_vr_col(c,j,l)
+                           call endrun(msg=errMsg(__FILE__, __LINE__))
+                        end if
+                     end if
+                     if ( ps%decomp_ppools_vr_col(c,j,l)  < 0.0_r8 .and. floating_cp_ratio_decomp_pools(l) ) then
+                        if ( abs(ps%decomp_ppools_vr_col(c,j,l))  < ncrit/1e4_r8 ) then
+                           cp_eca = cp_eca - ncrit/1e4_r8 + ps%decomp_ppools_vr_col(c,j,l)
+                           ps%decomp_ppools_vr_col(c,j,l) = ncrit/1e4_r8
+                         else 
+                           write(iulog, "(A,2I8,E8.1)") 'error decomp_ppools is negative: ',j,l,ps%decomp_ppools_vr_col(c,j,l)
+                           call endrun(msg=errMsg(__FILE__, __LINE__))
+                         end if
+                     end if
+
+                  end do
+
+                  ns%ntrunc_vr_col(c,j) = ns%ntrunc_vr_col(c,j) + cn_eca
+                  ps%ptrunc_vr_col(c,j) = ps%ptrunc_vr_col(c,j) + cp_eca
+
+               end do
+            end do
+
+            do fp = 1,num_soilp
+               p = filter_soilp(fp)
+               if (ns%retransn_patch(p) < 0._r8) then
+                  write(iulog, *) 'error retransn_patch is negative: ',p
+                  write(iulog, *) 'retransn_patch: ', ns%retransn_patch(p)
+                  call endrun(msg=errMsg(__FILE__, __LINE__))
+               end if
+               if (ns%npool_patch(p) < 0._r8) then
+                  write(iulog, *) 'error npool_patch is negative: ',p
+                  write(iulog, *) 'npool_patch: ', ns%npool_patch(p)
+                  call endrun(msg=errMsg(__FILE__, __LINE__))
+               end if
+               if (ps%retransp_patch(p) < 0._r8) then
+                  write(iulog, *) 'error retransp_patch is negative: ',p
+                  write(iulog, *) 'retransp_patch: ', ps%retransp_patch(p)
+                  call endrun(msg=errMsg(__FILE__, __LINE__))
+               end if
+               if (ps%ppool_patch(p) < 0._r8) then
+                  write(iulog, *) 'error ppool_patch is negative: ',p
+                  write(iulog, *) 'ppool_patch: ', ps%ppool_patch(p)
+                  call endrun(msg=errMsg(__FILE__, __LINE__))
+               end if
+            end do
+
          endif
 
       endif ! if (.not. is_active_betr_bgc)

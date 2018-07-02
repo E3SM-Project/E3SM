@@ -52,12 +52,13 @@
     <desc>full pathname of case</desc>
   </entry>
 
-  <entry id="LOGDIR">
-    <type>char</type>
-    <default_value>$CASEROOT/logs</default_value>
-    <group>run_desc</group>
-    <file>env_run.xml</file>
-    <desc>Extra copies of the component log files will be saved here.</desc>
+  <entry id="NONLOCAL">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>user is not on the requested machine</desc>
   </entry>
 
   <entry id="CASETOOLS">
@@ -158,6 +159,14 @@
     <group>case_desc</group>
     <file>env_case.xml</file>
     <desc>case user name</desc>
+  </entry>
+
+  <entry id="REALUSER">
+    <type>char</type>
+    <default_value>$ENV{USER}</default_value>
+    <group>case_desc</group>
+    <file>env_case.xml</file>
+    <desc>username of user who created case</desc>
   </entry>
 
   <!-- ===================================================================== -->
@@ -381,13 +390,34 @@
     </desc>
   </entry>
 
+  <entry id="PAUSE_ACTIVE">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Pause the model at times specified by PAUSE_OPTION and PAUSE_N.
+      Components 'pause' by writing a restart file.
+    </desc>
+    <values>
+      <value compclass="ATM">FALSE</value>
+      <value compclass="CPL">FALSE</value>
+      <value compclass="OCN">FALSE</value>
+      <value compclass="WAV">FALSE</value>
+      <value compclass="GLC">FALSE</value>
+      <value compclass="ICE">FALSE</value>
+      <value compclass="ROF">FALSE</value>
+      <value compclass="LND">FALSE</value>
+    </values>
+  </entry>
+
   <entry id="BARRIER_N">
     <type>char</type>
     <default_value>1</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      sets periodic model barriers with BARRIER_OPTION and BARRIER_DATE for synchronization
+      Sets periodic model barriers with BARRIER_OPTION and BARRIER_DATE for synchronization
     </desc>
   </entry>
 
@@ -411,7 +441,7 @@
     <desc>
       ESP component runs after driver 'pause cycle' If any component
       'pauses' (see PAUSE_OPTION,
-      PAUSE_N and DATA_ASSIMILATION XML variables),
+      PAUSE_N and PAUSE_ACTIVE_XXX XML variables),
       the ESP component (if present) will be run to process the
       component 'pause' (restart) files and set any required 'resume'
       signals.  If true, esp_cpl_dt and esp_cpl_offset settings are
@@ -464,15 +494,6 @@
     </desc>
   </entry>
 
-  <entry id="RUN_WITH_SUBMIT">
-    <type>logical</type>
-    <group>run_begin_stop_restart</group>
-    <default_value>FALSE</default_value>
-    <valid_values>TRUE,FALSE</valid_values>
-    <file>env_run.xml</file>
-    <desc>Logical to determine whether CESM run has been submitted with the submit script or not</desc>
-  </entry>
-
  <entry id="JOB_IDS">
    <type>char</type>
    <default_value></default_value>
@@ -518,7 +539,7 @@
   <entry id="BATCH_SYSTEM">
      <type>char</type>
      <default_value>none</default_value>
-     <valid_values>lc_slurm,moab,pbs,lsf,slurm,cobalt,cobalt_theta,none</valid_values>
+     <valid_values>nersc_slurm,lc_slurm,moab,pbs,lsf,slurm,cobalt,cobalt_theta,none</valid_values>
      <group>config_batch</group>
      <file>env_batch.xml</file>
      <desc>The batch system type to use for this machine.</desc>
@@ -560,37 +581,6 @@
     <desc>Perl 5 library directory</desc>
   </entry>
 
-  <entry id="mpirun">
-    <type>char</type>
-    <default_value></default_value>
-    <group>config_batch</group>
-    <file>env_case.xml</file>
-    <desc>The mpi run command associated with the machine configured batch system</desc>
-  </entry>
-
-  <entry id="module_system">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>config_batch</group>
-    <file>env_case.xml</file>
-    <desc>The module system type defined for this machine</desc>
-  </entry>
-
-  <entry id="module_init_path">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>config_batch</group>
-    <file>env_case.xml</file>
-    <desc>The module initialization path for module system defined for this machine</desc>
-  </entry>
-
-  <entry id="module_cmd_path">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>config_batch</group>
-    <file>env_case.xml</file>
-    <desc>The module command path for module system defined for this machine</desc>
-  </entry>
 
 
   <!-- ===================================================================== -->
@@ -707,7 +697,7 @@
       runs (i.e., non-DEBUG), due to performance penalties associated with turning on these flags.</desc>
   </entry>
 
-  <entry id="BUILD_THREADED">
+  <entry id="FORCE_BUILD_SMP">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
@@ -749,9 +739,9 @@
     <desc>TRUE implies linking to the Albany library - set
     automatically by XXX_USE_ALBANY options (do not edit). Flag to
     turn on linking to the Albany library. Currently this is used by
-    MPASLI. Note that Albany is a C++ library, so setting this
+    MALI. Note that Albany is a C++ library, so setting this
     variable to TRUE will involve the inclusion of C++ code in the
-    MPASLI executable. This is currently only supported for certain
+    MALI executable. This is currently only supported for certain
     machines.</desc>
   </entry>
 
@@ -782,7 +772,7 @@
     <valid_values></valid_values>
     <default_value>gmake</default_value>
     <group>build_def</group>
-    <file>env_build.xml</file>
+    <file>env_run.xml</file>
     <desc>GNU make command</desc>
   </entry>
 
@@ -791,7 +781,7 @@
     <valid_values></valid_values>
     <default_value>1</default_value>
     <group>build_def</group>
-    <file>env_build.xml</file>
+    <file>env_run.xml</file>
     <desc>Number of processors for gmake</desc>
   </entry>
 
@@ -902,7 +892,7 @@
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
-    <group>run_cesm</group>
+    <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>Enables the papi hardware counters in gptl
     The papi library must be included in the build step for
@@ -913,7 +903,7 @@
     <type>char</type>
     <valid_values>ESMF_LOGKIND_SINGLE,ESMF_LOGKIND_MULTI,ESMF_LOGKIND_NONE</valid_values>
     <default_value>ESMF_LOGKIND_NONE</default_value>
-    <group>run_cesm</group>
+    <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>
       Determines what ESMF log files (if any) are generated when
@@ -1817,8 +1807,29 @@
     <group>run_din</group>
     <file>env_run.xml</file>
     <desc>
-      A regular expression to search for an indication that a run failure was caused by a node failure
-      and should therefore be re-attempted.
+      A regular expression to search for an indication that a run failure
+       was caused by a node failure and should therefore be re-attempted.
+    </desc>
+  </entry>
+
+  <entry id="MPIRUN_RETRY_REGEX">
+    <type>char</type>
+    <group>run_din</group>
+    <file>env_run.xml</file>
+    <desc>
+      A regular expression to search for an indication that a run failure
+      was caused by a known event such as a timeout and should therefore
+      be re-attempted.
+    </desc>
+  </entry>
+
+  <entry id="MPIRUN_RETRY_COUNT">
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>run_din</group>
+    <file>env_run.xml</file>
+    <desc>The number of times to reattempt the mpirun command if
+    MPIRUN_RETRY_REGEX is matched but ALLOCATE_SPARE_NODES is False
     </desc>
   </entry>
 
@@ -1909,15 +1920,15 @@
   <entry id="NTASKS">
     <type>integer</type>
     <values>
-      <value compclass="ATM"> 0</value>
-      <value compclass="CPL"> 0</value>
-      <value compclass="OCN"> 0</value>
-      <value compclass="WAV"> 0</value>
-      <value compclass="GLC"> 0</value>
-      <value compclass="ICE"> 0</value>
-      <value compclass="ROF"> 0</value>
-      <value compclass="LND"> 0</value>
-      <value compclass="ESP"> 0</value>
+      <value compclass="ATM"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="CPL"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="OCN"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="WAV"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="GLC"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ICE"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ROF"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="LND"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ESP"> $MAX_MPITASKS_PER_NODE</value>
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
@@ -2041,7 +2052,8 @@
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>Number of instances for each component</desc>
+    <desc>The mpi global processors stride associated with the mpi tasks for the a component</desc>
+
   </entry>
 
   <entry id="TOTALPES">
@@ -2049,7 +2061,7 @@
     <default_value>0</default_value>
     <group>mach_pes_last</group>
     <file>env_mach_pes.xml</file>
-    <desc>total number of MPI tasks (setup automatically - DO NOT EDIT)</desc>
+    <desc>total number of physical cores used (setup automatically - DO NOT EDIT)</desc>
   </entry>
 
   <entry id="MAX_TASKS_PER_NODE">
@@ -2475,14 +2487,6 @@
     <group>test</group>
     <file>env_test.xml</file>
     <desc>standard full pathname of the cprnc executable</desc>
-  </entry>
-
-  <entry id="USER_MODS_FULLPATH">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>user_mods</group>
-    <file>env_case.xml</file>
-    <desc>path to user mods under TESTS_MODS_DIR or USER_MODS_DIR</desc>
   </entry>
 
   <!-- ===================================================================== -->

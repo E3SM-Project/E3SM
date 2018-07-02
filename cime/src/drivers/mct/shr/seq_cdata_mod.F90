@@ -33,9 +33,9 @@ module seq_cdata_mod
 
   public seq_cdata
 
-!==============================================================================
+  !==============================================================================
 contains
-!==============================================================================
+  !==============================================================================
 
   subroutine seq_cdata_setptrs(cdata, ID, mpicom, dom, gsMap, infodata, name)
 
@@ -91,9 +91,9 @@ contains
     call seq_comm_setptrs(ID, mpicom=mpicom, iamroot=iamroot)
 
     if (present(name)) then
-      cdata%name   =  name
+       cdata%name   =  name
     else
-      cdata%name   =  'undefined'
+       cdata%name   =  'undefined'
     endif
     cdata%ID       =  ID
     cdata%mpicom   =  mpicom

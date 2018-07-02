@@ -94,6 +94,7 @@ contains
 
     !Local variables
     character(len=shr_kind_cl) :: filen, filepath
+    character(len = 512) :: msg
     logical :: need_first_ndx 
 
     integer :: ierr, ifld, errcode
@@ -112,7 +113,8 @@ contains
     !Currently only handles cyclic or serial data types; exit if some other data_type detected
     iscyclic = .false.
     if (trim(data_type).ne. 'SERIAL' .and. trim(data_type).ne. 'CYCLICAL') then
-       call endrun ('read_volc_radiation_data.F90:Only SERIAL or CYCLICAL data types supported, current data type is:'//trim(data_type))
+       msg = 'read_volc_radiation_data.F90:Only SERIAL or CYCLICAL data types supported, current data type is:'//trim(data_type)
+       call endrun (msg)
     endif
     if (trim(data_type).eq. 'CYCLICAL') then
        iscyclic = .true.

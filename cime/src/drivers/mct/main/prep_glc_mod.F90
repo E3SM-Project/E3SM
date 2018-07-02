@@ -40,6 +40,7 @@ module prep_glc_mod
 
   public :: prep_glc_get_l2x_gx
   public :: prep_glc_get_l2gacc_lx
+  public :: prep_glc_get_l2gacc_lx_one_instance
   public :: prep_glc_get_l2gacc_lx_cnt
   public :: prep_glc_get_mapper_Sl2g
   public :: prep_glc_get_mapper_Fl2g
@@ -108,7 +109,7 @@ contains
     logical                  , intent(in)    :: lnd_c2_glc ! .true.  => lnd to glc coupling on
     !
     ! Local Variables
-    integer                          :: eli, egi
+    integer                          :: eli
     integer                          :: lsize_l
     integer                          :: lsize_g
     logical                          :: samegrid_lg   ! samegrid land and glc
@@ -407,7 +408,6 @@ contains
     integer       :: index_lfrac
     integer       :: lsize
     logical       :: iamroot
-    real(r8)      :: lfrac
     logical, save :: first_time = .true.
     character(CL),allocatable :: mrgstr(:)   ! temporary string
     character(CL) :: field   ! string converted to char
@@ -847,7 +847,7 @@ contains
     real(r8) :: ablat_renorm_factor   ! ratio between global ablation on the two grids
 
     real(r8) :: effective_area  ! grid cell area multiplied by min(lfrac,Sg_icemask_l).
-                                ! This is the area that can contribute SMB to the ice sheet model.
+    ! This is the area that can contribute SMB to the ice sheet model.
 
 
     !---------------------------------------------------------------
@@ -1086,6 +1086,12 @@ contains
     type(mct_aVect), pointer :: prep_glc_get_l2gacc_lx(:)
     prep_glc_get_l2gacc_lx => l2gacc_lx(:)
   end function prep_glc_get_l2gacc_lx
+
+  function prep_glc_get_l2gacc_lx_one_instance(lnd_inst)
+    integer, intent(in) :: lnd_inst
+    type(mct_aVect), pointer :: prep_glc_get_l2gacc_lx_one_instance
+    prep_glc_get_l2gacc_lx_one_instance => l2gacc_lx(lnd_inst)
+  end function prep_glc_get_l2gacc_lx_one_instance
 
   function prep_glc_get_l2gacc_lx_cnt()
     integer, pointer :: prep_glc_get_l2gacc_lx_cnt

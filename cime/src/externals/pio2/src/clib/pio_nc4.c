@@ -401,6 +401,8 @@ int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, PIO_Offset *chunks
             if (!mpierr)
                 mpierr = MPI_Bcast(&storage_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
             if (!mpierr)
+                mpierr = MPI_Bcast(&ndims, 1, MPI_INT, ios->compmaster, ios->intercomm);
+            if (!mpierr)
                 mpierr = MPI_Bcast(&chunksizes_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
             LOG((2, "PIOc_inq_var_chunking ncid = %d varid = %d storage_present = %d chunksizes_present = %d",
                  ncid, varid, storage_present, chunksizes_present));

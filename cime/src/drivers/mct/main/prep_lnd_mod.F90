@@ -101,7 +101,7 @@ contains
     !
     ! Local Variables
     integer                  :: lsize_l
-    integer                  :: eai, eri, egi, eli
+    integer                  :: eai, eri, egi
     logical                  :: samegrid_al   ! samegrid atm and land
     logical                  :: samegrid_lr   ! samegrid land and rof
     logical                  :: samegrid_lg   ! samegrid land and glc
@@ -245,16 +245,16 @@ contains
     ! 'Flgg_hflx'), so that new fields can be added in seq_flds_mod without needing to
     ! change any other code.
     call shr_string_listDiff(seq_flds_g2x_fields_to_lnd, &
-                             glc2lnd_non_ec_fields, &
-                             glc2lnd_ec_extra_fields)
+         glc2lnd_non_ec_fields, &
+         glc2lnd_ec_extra_fields)
     temp_list = glc2lnd_ec_extra_fields
     call shr_string_listDiff(temp_list, &
-                             glc_frac_field, &
-                             glc2lnd_ec_extra_fields)
+         glc_frac_field, &
+         glc2lnd_ec_extra_fields)
     temp_list = glc2lnd_ec_extra_fields
     call shr_string_listDiff(temp_list, &
-                             glc_topo_field, &
-                             glc2lnd_ec_extra_fields)
+         glc_topo_field, &
+         glc2lnd_ec_extra_fields)
 
   end subroutine prep_lnd_set_glc2lnd_fields
 
@@ -271,7 +271,7 @@ contains
     character(len=*)     , intent(in)    :: timer_mrg
     !
     ! Local Variables
-    integer                  :: eai, eri, egi, eli, efi
+    integer                  :: eai, eri, egi, eli
     type(mct_aVect), pointer :: x2l_lx
     character(*), parameter  :: subname = '(prep_lnd_mrg)'
     !---------------------------------------------------------------

@@ -13,8 +13,6 @@ OR
 {0} --verbose
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Run \033[0m
@@ -49,12 +47,11 @@ def buildlib(bldroot, installpath, caseroot):
             " SHAREDPATH={}"\
             .format(gptl_dir , bldroot, os.path.join(caseroot,"Macros.make"),
                     gptl_dir, bldroot, installpath)
-        build_threaded = case.get_value("SMP") or case.get_value("BUILD_THREADED")
+        build_threaded = case.get_build_threaded()
         if build_threaded:
             gmake_opts += " compile_threaded=true "
 
         gmake_cmd = case.get_value("GMAKE")
-
 
         # This runs the gptl make command
         cmd = "{} {}".format(gmake_cmd, gmake_opts)
@@ -65,7 +62,4 @@ def _main(argv, documentation):
     buildlib(bldroot, installpath, caseroot)
 
 if (__name__ == "__main__"):
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
     _main(sys.argv, __doc__)

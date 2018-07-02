@@ -2,7 +2,7 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp
+import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp, fnmatch
 import errno, signal, warnings, filecmp
 import stat as statlib
 import six
@@ -21,7 +21,6 @@ def redirect_stdout(new_target):
         yield new_target # run some code with the replaced stdout
     finally:
         sys.stdout = old_target # restore to the previous value
-
 
 @contextmanager
 def redirect_stderr(new_target):
@@ -56,6 +55,56 @@ def redirect_logger(new_target, logger_name):
     finally:
         root_log.handlers = orig_root_loggers
         log.handlers = orig_handlers
+
+class IndentFormatter(logging.Formatter):
+    def __init__(self, indent, fmt=None, datefmt=None):
+        logging.Formatter.__init__(self, fmt, datefmt)
+        self._indent = indent
+
+    def format(self, record):
+        record.msg = "{}{}".format(self._indent, record.msg)
+        out = logging.Formatter.format(self, record)
+        return out
+
+def set_logger_indent(indent):
+    root_log = logging.getLogger()
+    root_log.handlers = []
+    formatter = IndentFormatter(indent)
+
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    root_log.addHandler(handler)
+
+class EnvironmentContext(object):
+    """
+    Context manager for environment variables
+    Usage:
+        os.environ['MYVAR'] = 'oldvalue'
+        with EnvironmentContex(MYVAR='myvalue', MYVAR2='myvalue2'):
+            print os.getenv('MYVAR')    # Should print myvalue.
+            print os.getenv('MYVAR2')    # Should print myvalue2.
+        print os.getenv('MYVAR')        # Should print oldvalue.
+        print os.getenv('MYVAR2')        # Should print None.
+
+    CREDIT: https://github.com/sakurai-youhei/envcontext
+    """
+
+    def __init__(self, **kwargs):
+        self.envs = kwargs
+        self.old_envs = {}
+
+    def __enter__(self):
+        self.old_envs = {}
+        for k, v in self.envs.items():
+            self.old_envs[k] = os.environ.get(k)
+            os.environ[k] = v
+
+    def __exit__(self, *args):
+        for k, v in self.old_envs.items():
+            if v:
+                os.environ[k] = v
+            else:
+                del os.environ[k]
 
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
     """
@@ -96,9 +145,15 @@ def check_name(fullname, additional_chars=None, fullpath=False):
     True
     >>> check_name("/some/file/path/case.name", fullpath=True)
     True
+    >>> check_name("mycase+mods")
+    False
+    >>> check_name("mycase?mods")
+    False
+    >>> check_name("mycase*mods")
+    False
     """
 
-    chars = '<>/{}[\]~`@:' # pylint: disable=anomalous-backslash-in-string
+    chars = '+*?<>/{}[\]~`@:' # pylint: disable=anomalous-backslash-in-string
     if additional_chars is not None:
         chars += additional_chars
     if fullpath:
@@ -116,15 +171,33 @@ def _read_cime_config_file():
     """
     READ the config file in ~/.cime, this file may contain
     [main]
-    CIME_MODEL=acme,cesm
+    CIME_MODEL=e3sm,cesm
     PROJECT=someprojectnumber
     """
+    allowed_sections = ("main", "create_test")
+
+    allowed_in_main = ("cime_model", "project", "charge_account", "srcroot", "mail_type",
+                       "mail_user", "machine", "mpilib", "compiler", "input_dir")
+    allowed_in_create_test = ("mail_type", "mail_user", "save_timing", "single_submit",
+                              "test_root", "output_root", "baseline_root", "clean",
+                              "machine", "mpilib", "compiler", "parallel_jobs", "proc_pool",
+                              "walltime", "job_queue", "allow_baseline_overwrite", "wait",
+                              "force_procs", "force_threads", "input_dir", "pesfile", "retry",
+                              "walltime")
 
     cime_config_file = os.path.abspath(os.path.join(os.path.expanduser("~"),
                                                   ".cime","config"))
     cime_config = configparser.SafeConfigParser()
     if(os.path.isfile(cime_config_file)):
         cime_config.read(cime_config_file)
+        for section in cime_config.sections():
+            expect(section in allowed_sections,"Unknown section {} in .cime/config\nallowed sections are {}".format(section, allowed_sections))
+        if cime_config.has_section('main'):
+            for item,_ in cime_config.items('main'):
+                expect(item in allowed_in_main,"Unknown option in config section \"main\": \"{}\"\nallowed options are {}".format(item, allowed_in_main))
+        if cime_config.has_section('create_test'):
+            for item,_ in cime_config.items('create_test'):
+                expect(item in allowed_in_create_test,"Unknown option in config section \"test\": \"{}\"\nallowed options are {}".format(item, allowed_in_create_test))
     else:
         logger.debug("File {} not found".format(cime_config_file))
         cime_config.add_section('main')
@@ -176,6 +249,8 @@ def set_model(model):
     Set the model to be used in this session
     """
     cime_config = get_cime_config()
+    if not cime_config.has_section('main'):
+        cime_config.add_section('main')
     cime_config.set('main','CIME_MODEL',model)
 
 def get_model():
@@ -202,11 +277,16 @@ def get_model():
 
     # One last try
     if (model is None):
-        srcroot = os.path.dirname(os.path.abspath(get_cime_root()))
-        if os.path.isfile(os.path.join(srcroot, "SVN_EXTERNAL_DIRECTORIES")):
+        srcroot = None
+        if cime_config.has_section('main') and cime_config.has_option('main', 'SRCROOT'):
+            srcroot = cime_config.get('main','SRCROOT')
+        if srcroot is None:
+            srcroot = os.path.dirname(os.path.abspath(get_cime_root()))
+        if os.path.isfile(os.path.join(srcroot, "SVN_EXTERNAL_DIRECTORIES")) \
+           or os.path.isdir(os.path.join(srcroot, "manage_externals")):
             model = 'cesm'
         else:
-            model = 'acme'
+            model = 'e3sm'
         # This message interfers with the correct operation of xmlquery
         # logger.debug("Guessing CIME_MODEL={}, set environment variable if this is incorrect".format(model))
 
@@ -222,61 +302,90 @@ def get_model():
                       and model != "xml_schemas"])
     expect(False, msg)
 
-def _convert_to_fd(filearg, from_dir):
+def _get_path(filearg, from_dir):
     if not filearg.startswith("/") and from_dir is not None:
         filearg = os.path.join(from_dir, filearg)
 
-    return open(filearg, "a")
+    return filearg
+
+def _convert_to_fd(filearg, from_dir, mode="a"):
+    filearg = _get_path(filearg, from_dir)
+
+    return open(filearg, mode)
 
 _hack=object()
 
 def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from_dir=None):
+    """
+    This code will try to import and run each cmd as a subroutine
+    if that fails it will run it as a program in a seperate shell
 
-    # This code will try to import and run each buildnml as a subroutine
-    # if that fails it will run it as a program in a seperate shell
-    do_run_cmd = False
-    stat = 0
-    output = ""
-    errput = ""
-    try:
-        mod = imp.load_source(subname, cmd)
-        logger.info("   Calling {}".format(cmd))
-        if logfile:
-            with redirect_logger(open(logfile,"w"), subname):
+    Raises exception on failure.
+    """
+    do_run_cmd = True
+
+    # Before attempting to load the script make sure it contains the subroutine
+    # we are expecting
+    with open(cmd, 'r') as fd:
+        for line in fd.readlines():
+            if re.search(r"^def {}\(".format(subname), line):
+                do_run_cmd = False
+                break
+
+    if not do_run_cmd:
+        try:
+            mod = imp.load_source(subname, cmd)
+            logger.info("   Calling {}".format(cmd))
+            if logfile:
+                with open(logfile,"w") as log_fd:
+                    with redirect_logger(log_fd, subname):
+                        with redirect_stdout_stderr(log_fd):
+                            getattr(mod, subname)(*subargs)
+            else:
                 getattr(mod, subname)(*subargs)
+
+        except (SyntaxError, AttributeError) as _:
+            pass # Need to try to run as shell command
+
+        except:
+            if logfile:
+                with open(logfile, "a") as log_fd:
+                    log_fd.write(str(sys.exc_info()[1]))
+
+                expect(False, "{} FAILED, cat {}".format(cmd, logfile))
+            else:
+                raise
+
         else:
-            getattr(mod, subname)(*subargs)
+            return # Running as python function worked, we're done
 
-    except SyntaxError:
-        do_run_cmd = True
+    logger.info("   Running {} ".format(cmd))
+    if case is not None:
+        case.flush()
 
-    except AttributeError:
-        do_run_cmd = True
+    fullcmd = cmd
+    if isinstance(cmdargs, list):
+        for arg in cmdargs:
+            fullcmd += " " + str(arg)
+    else:
+        fullcmd += " " + cmdargs
 
-    if do_run_cmd:
-        logger.info("   Running {} ".format(cmd))
-        if case is not None:
-            case.flush()
+    if logfile:
+        fullcmd += " >& {} ".format(logfile)
 
-        fullcmd = cmd
-        if isinstance(cmdargs, list):
-            for arg in cmdargs:
-                fullcmd += " " + str(arg)
-        else:
-            fullcmd += " " + cmdargs
-
-        if logfile:
-            fullcmd += " > {} ".format(logfile)
-
-        output = run_cmd_no_fail("{}".format(fullcmd),
-                                 combine_output=True,
-                                 from_dir=from_dir)
+    stat, output, _ = run_cmd("{}".format(fullcmd), combine_output=True, from_dir=from_dir)
+    if output: # Will be empty if logfile
         logger.info(output)
-        # refresh case xml object from file
-        if case is not None:
-            case.read_xml()
 
-    return stat, output, errput
+    if stat != 0:
+        if logfile:
+            expect(False, "{} FAILED, cat {}".format(fullcmd, logfile))
+        else:
+            expect(False, "{} FAILED, see above".format(fullcmd))
+
+    # refresh case xml object from file
+    if case is not None:
+        case.read_xml()
 
 def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
             arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
@@ -318,12 +427,12 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     output, errput = proc.communicate(input_str)
     if output is not None:
         try:
-            output = output.decode('utf-8').strip()
+            output = output.decode('utf-8', errors='ignore').strip()
         except AttributeError:
             pass
     if errput is not None:
         try:
-            errput = errput.decode('utf-8').strip()
+            errput = errput.decode('utf-8', errors='ignore').strip()
         except AttributeError:
             pass
 
@@ -361,7 +470,7 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
     >>> run_cmd_no_fail('echo THE ERROR >&2; false') # doctest:+ELLIPSIS
     Traceback (most recent call last):
         ...
-    SystemExit: ERROR: Command: 'echo THE ERROR >&2; false' failed with error 'THE ERROR' from dir ...
+    SystemExit: ERROR: Command: 'echo THE ERROR >&2; false' failed with error ...
 
     >>> run_cmd_no_fail('grep foo', input_str=b'foo') == 'foo'
     True
@@ -373,7 +482,18 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
         # If command produced no errput, put output in the exception since we
         # have nothing else to go on.
         errput = output if not errput else errput
-        expect(False, "Command: '{}' failed with error '{}' from dir '{}'".format(cmd, errput, os.getcwd() if from_dir is None else from_dir))
+        if errput is None:
+            if combine_output:
+                if isinstance(arg_stdout, six.string_types):
+                    errput = "See {}".format(_get_path(arg_stdout, from_dir))
+                else:
+                    errput = ""
+            elif isinstance(arg_stderr, six.string_types):
+                errput = "See {}".format(_get_path(arg_stderr, from_dir))
+            else:
+                errput = ""
+
+        expect(False, "Command: '{}' failed with error '{}' from dir '{}'".format(cmd, errput.encode('utf-8'), os.getcwd() if from_dir is None else from_dir))
 
     return output
 
@@ -534,7 +654,11 @@ def get_current_branch(repo=None):
     """
     Return the name of the current branch for a repository
 
-    >>> get_current_branch() is not None
+    >>> if "GIT_BRANCH" in os.environ:
+    ...     get_current_branch() is not None
+    ... else:
+    ...     os.environ["GIT_BRANCH"] = "foo"
+    ...     get_current_branch() == "foo"
     True
     """
     if ("GIT_BRANCH" in os.environ):
@@ -552,18 +676,19 @@ def get_current_branch(repo=None):
         else:
             return output.replace("refs/heads/", "")
 
-def get_current_commit(short=False, repo=None):
+def get_current_commit(short=False, repo=None, tag=False):
     """
     Return the sha1 of the current HEAD commit
 
     >>> get_current_commit() is not None
     True
     """
-    rc, output, _ = run_cmd("git rev-parse {} HEAD".format("--short" if short else ""), from_dir=repo)
-    if rc == 0:
-        return output
+    if tag:
+        rc, output, _ = run_cmd("git describe --tags $(git log -n1 --pretty='%h')", from_dir=repo)
     else:
-        return 'unknown'
+        rc, output, _ = run_cmd("git rev-parse {} HEAD".format("--short" if short else ""), from_dir=repo)
+
+    return output if rc == 0 else "unknown"
 
 def get_scripts_location_within_cime():
     """
@@ -571,9 +696,9 @@ def get_scripts_location_within_cime():
     """
     return "scripts"
 
-def get_cime_location_within_acme():
+def get_cime_location_within_e3sm():
     """
-    From within acme, return subdirectory where CIME lives.
+    From within e3sm, return subdirectory where CIME lives.
     """
     return "cime"
 
@@ -581,13 +706,13 @@ def get_model_config_location_within_cime(model=None):
     model = get_model() if model is None else model
     return os.path.join("config", model)
 
-def get_acme_root():
+def get_e3sm_root():
     """
-    Return the absolute path to the root of ACME that contains this script
+    Return the absolute path to the root of E3SM that contains this script
     """
     cime_absdir = get_cime_root()
-    assert cime_absdir.endswith(get_cime_location_within_acme()), cime_absdir
-    return os.path.normpath(cime_absdir[:len(cime_absdir)-len(get_cime_location_within_acme())])
+    assert cime_absdir.endswith(get_cime_location_within_e3sm()), cime_absdir
+    return os.path.normpath(cime_absdir[:len(cime_absdir)-len(get_cime_location_within_e3sm())])
 
 def get_scripts_root():
     """
@@ -642,7 +767,47 @@ def match_any(item, re_list):
 
     return False
 
-def safe_copy(src_dir, tgt_dir, file_map):
+def safe_copy(src_path, tgt_path):
+    """
+    A flexbile and safe copy routine. Will try to copy file and metadata, but this
+    can fail if the current user doesn't own the tgt file. A fallback data-only copy is
+    attempted in this case. Works even if overwriting a read-only file.
+
+    tgt_path can be a directory, src_path must be a file
+
+    most of the complexity here is handling the case where the tgt_path file already
+    exists. This problem does not exist for the tree operations so we don't need to wrap those.
+    """
+
+    tgt_path = os.path.join(tgt_path, os.path.basename(src_path)) if os.path.isdir(tgt_path) else tgt_path
+
+    # Handle pre-existing file
+    if os.path.isfile(tgt_path):
+        st = os.stat(tgt_path)
+        owner_uid = st.st_uid
+
+        # Handle read-only files if possible
+        if not os.access(tgt_path, os.W_OK):
+            if owner_uid == os.getuid():
+                # I am the owner, make writeable
+                os.chmod(st.st_mode | statlib.S_IWRITE)
+            else:
+                # I won't be able to copy this file
+                raise OSError("Cannot copy over file {}, it is readonly and you are not the owner".format(tgt_path))
+
+        if owner_uid == os.getuid():
+            # I am the owner, copy file contents, permissions, and metadata
+            shutil.copy2(src_path, tgt_path)
+        else:
+            # I am not the owner, just copy file contents
+            shutil.copyfile(src_path, tgt_path)
+
+    else:
+        # We are making a new file, copy file contents, permissions, and metadata.
+        # This can fail if the underlying directory is not writable by current user.
+        shutil.copy2(src_path, tgt_path)
+
+def safe_recursive_copy(src_dir, tgt_dir, file_map):
     """
     Copies a set of files from one dir to another. Works even if overwriting a
     read-only file. Files can be relative paths and the relative path will be
@@ -652,9 +817,7 @@ def safe_copy(src_dir, tgt_dir, file_map):
         full_tgt = os.path.join(tgt_dir, tgt_file)
         full_src = src_file if os.path.isabs(src_file) else os.path.join(src_dir, src_file)
         expect(os.path.isfile(full_src), "Source dir '{}' missing file '{}'".format(src_dir, src_file))
-        if (os.path.isfile(full_tgt)):
-            os.remove(full_tgt)
-        shutil.copy2(full_src, full_tgt)
+        safe_copy(full_src, full_tgt)
 
 def symlink_force(target, link_name):
     """
@@ -702,7 +865,7 @@ def find_proc_id(proc_name=None,
 
 def get_timestamp(timestamp_format="%Y%m%d_%H%M%S", utc_time=False):
     """
-    Get a string representing the current UTC time in format: YYMMDD_HHMMSS
+    Get a string representing the current UTC time in format: YYYYMMDD_HHMMSS
 
     The format can be changed if needed.
     """
@@ -799,6 +962,18 @@ def get_charge_account(machobj=None):
     logger.info("No charge_account info available, using value from PROJECT")
     return get_project(machobj)
 
+def find_files(rootdir, pattern):
+    """
+    recursively find all files matching a pattern
+    """
+    result = []
+    for root, _, files in os.walk(rootdir):
+        for filename in files:
+            if (fnmatch.fnmatch(filename, pattern)):
+                result.append(os.path.join(root, filename))
+
+    return result
+
 
 def setup_standard_logging_options(parser):
     helpfile = "{}.log".format(sys.argv[0])
@@ -844,7 +1019,8 @@ def parse_args_and_handle_standard_logging_options(args, parser=None):
 
     # scripts_regression_tests is the only thing that should pass a None argument in parser
     if parser is not None:
-        _check_for_invalid_args(args[1:])
+        if "--help" not in args[1:]:
+            _check_for_invalid_args(args[1:])
         args = parser.parse_args(args[1:])
 
     # --verbose adds to the message format but does not impact the log level
@@ -870,7 +1046,6 @@ def parse_args_and_handle_standard_logging_options(args, parser=None):
     else:
         root_logger.setLevel(logging.INFO)
     return args
-
 
 def get_logging_options():
     """
@@ -1153,11 +1328,11 @@ def append_status(msg, sfile, caseroot='.'):
 
     # Reduce empty lines in CaseStatus. It's a very concise file
     # and does not need extra newlines for readability
-    line_ending = "" if sfile == "CaseStatus" else "\n"
+    line_ending = "\n"
 
     with open(os.path.join(caseroot, sfile), "a") as fd:
         fd.write(ctime + msg + line_ending)
-        fd.write("\n ---------------------------------------------------\n" + line_ending)
+        fd.write(" ---------------------------------------------------" + line_ending)
 
 def append_testlog(msg, caseroot='.'):
     """
@@ -1298,12 +1473,10 @@ def find_system_test(testname, case):
     else:
         components = ["any"]
         components.extend( case.get_compset_components())
-        env_test = case.get_env("test")
         fdir = []
         for component in components:
-            tdir = env_test.get_value("SYSTEM_TESTS_DIR",
+            tdir = case.get_value("SYSTEM_TESTS_DIR",
                                       attribute={"component":component})
-
             if tdir is not None:
                 tdir = os.path.abspath(tdir)
                 system_test_file = os.path.join(tdir  ,"{}.py".format(testname.lower()))
@@ -1327,7 +1500,7 @@ def find_system_test(testname, case):
 
 def _get_most_recent_lid_impl(files):
     """
-    >>> files = ['/foo/bar/acme.log.20160905_111212', '/foo/bar/acme.log.20160906_111212.gz']
+    >>> files = ['/foo/bar/e3sm.log.20160905_111212', '/foo/bar/e3sm.log.20160906_111212.gz']
     >>> _get_most_recent_lid_impl(files)
     ['20160905_111212', '20160906_111212']
     """
@@ -1349,13 +1522,26 @@ def ls_sorted_by_mtime(path):
 
 def get_lids(case):
     model = case.get_value("MODEL")
-    logdir = case.get_value("LOGDIR")
-    return _get_most_recent_lid_impl(glob.glob("{}/{}.log*".format(logdir, model)))
+    rundir = case.get_value("RUNDIR")
+    return _get_most_recent_lid_impl(glob.glob("{}/{}.log*".format(rundir, model)))
 
 def new_lid():
     lid = time.strftime("%y%m%d-%H%M%S")
+    jobid = batch_jobid()
+    if jobid is not None:
+        lid = jobid+'.'+lid
     os.environ["LID"] = lid
     return lid
+
+def batch_jobid():
+    jobid = os.environ.get("PBS_JOBID")
+    if jobid is None:
+        jobid = os.environ.get("SLURM_JOB_ID")
+    if jobid is None:
+        jobid = os.environ.get("LSB_JOBID")
+    if jobid is None:
+        jobid = os.environ.get("COBALT_JOBID")
+    return jobid
 
 def analyze_build_log(comp, log, compiler):
     """
@@ -1410,7 +1596,7 @@ def copy_umask(src, dst):
     Preserves all file metadata except making sure new file obeys umask
     """
     curr_umask = get_umask()
-    shutil.copy2(src, dst)
+    safe_copy(src, dst)
     octal_base = 0o777 if os.access(src, os.X_OK) else 0o666
     dst = os.path.join(dst, os.path.basename(src)) if os.path.isdir(dst) else dst
     os.chmod(dst, octal_base - curr_umask)
@@ -1419,6 +1605,24 @@ def stringify_bool(val):
     val = False if val is None else val
     expect(type(val) is bool, "Wrong type for val '{}'".format(repr(val)))
     return "TRUE" if val else "FALSE"
+
+def indent_string(the_string, indent_level):
+    """Indents the given string by a given number of spaces
+
+    Args:
+       the_string: str
+       indent_level: int
+
+    Returns a new string that is the same as the_string, except that
+    each line is indented by 'indent_level' spaces.
+
+    In python3, this can be done with textwrap.indent.
+    """
+
+    lines = the_string.splitlines(True)
+    padding = ' ' * indent_level
+    lines_indented = [padding + line for line in lines]
+    return ''.join(lines_indented)
 
 def verbatim_success_msg(return_val):
     return return_val
@@ -1439,20 +1643,20 @@ def run_and_log_case_status(func, phase, caseroot='.', custom_success_msg_functo
     return rv
 
 def _check_for_invalid_args(args):
-    if get_model() != "acme":
+    if get_model() != "e3sm":
         for arg in args:
             # if arg contains a space then it was originally quoted and we can ignore it here.
             if " " in arg or arg.startswith("--"):
                 continue
             if arg.startswith("-") and len(arg) > 2:
-                sys.stderr.write( "WARNING: The {} argument is depricated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(arg))
+                sys.stderr.write( "WARNING: The {} argument is deprecated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(arg))
 
 def add_mail_type_args(parser):
-    parser.add_argument("--mail-user", help="email to be used for batch notification.")
+    parser.add_argument("--mail-user", help="Email to be used for batch notification.")
 
     parser.add_argument("-M", "--mail-type", action="append",
-                        help="when to send user email. Options are: never, all, begin, end, fail."
-                        "You can specify multiple types with either comma-separate args or multiple -M flags")
+                        help="When to send user email. Options are: never, all, begin, end, fail.\n"
+                        "You can specify multiple types with either comma-separated args or multiple -M flags.")
 
 def resolve_mail_type_args(args):
     if args.mail_type is not None:
@@ -1469,7 +1673,7 @@ def resolve_mail_type_args(args):
 def copyifnewer(src, dest):
     """ if dest does not exist or is older than src copy src to dest """
     if not os.path.isfile(dest) or not filecmp.cmp(src, dest):
-        shutil.copy2(src, dest)
+        safe_copy(src, dest)
 
 class SharedArea(object):
     """
@@ -1520,3 +1724,6 @@ def run_bld_cmd_ensure_logging(cmd, arg_logger, from_dir=None):
     arg_logger.info(output)
     arg_logger.info(errput)
     expect(stat == 0, filter_unicode(errput))
+
+def get_batch_script_for_job(job):
+    return job if "st_archive" in job else "." + job

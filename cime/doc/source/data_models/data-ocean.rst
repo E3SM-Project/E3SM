@@ -4,14 +4,20 @@
 Data Ocean (DOCN)
 ===================
 
-Data ocean can be run both as a prescribed component, simply reading in SST data from a stream, or as a prognostic slab ocean model component.
+Data ocean can be run both as a prescribed component, simply reading
+in SST data from a stream, or as a prognostic slab ocean model
+component.
 
-The data ocean component (DOCN) always returns SSTs to the driver. 
-The atmosphere/ocean fluxes are computed in the coupler. 
-Therefore, the data ocean model does not compute fluxes like the data ice (DICE) model. 
-DOCN has two distinct modes of operation. 
-DOCN can run as a pure data model, reading in ocean SSTs (normally climatological) from input datasets, performing time/spatial  interpolations, and passing these to the coupler. 
-Alternatively, DOCN can compute updated SSTs by running as a slab ocean model where bottom ocean heat flux convergence and boundary layer depths are read in and used with the atmosphere/ocean and ice/ocean fluxes obtained from the driver.
+The data ocean component (DOCN) always returns SSTs to the driver.
+The atmosphere/ocean fluxes are computed in the coupler.  Therefore,
+the data ocean model does not compute fluxes like the data ice (DICE)
+model.  DOCN has two distinct modes of operation.  DOCN can run as a
+pure data model, reading in ocean SSTs (normally climatological) from
+input datasets, performing time/spatial interpolations, and passing
+these to the coupler.  Alternatively, DOCN can compute updated SSTs by
+running as a slab ocean model where bottom ocean heat flux convergence
+and boundary layer depths are read in and used with the
+atmosphere/ocean and ice/ocean fluxes obtained from the driver.
 
 DOCN running in prescribed mode assumes that the only field in the
 input stream is SST and also that SST is in Celsius and must be
@@ -43,9 +49,7 @@ prognostic control runs.  For CESM, some of these are available in the
 The user then modifies the ``$DOCN_SOM_FILENAME`` variable in
 env_run.xml to point to the appropriate SOM forcing dataset.
 
-.. note:: A tool is available to derive valid `SOM forcing
-<http://www.cesm.ucar.edu/models/cesm1.2/data8/doc/SOM.pdf>`_ and more
-information on creating the SOM forcing is also available.
+.. note:: A tool is available to derive valid `SOM forcing <http://www.cesm.ucar.edu/models/cesm1.2/data8/doc/SOM.pdf>`_ and more information on creating the SOM forcing is also available.
 
 .. _docn-xml-vars:
 
@@ -188,41 +192,21 @@ Field names
 -----------
 
 DOCN defines a set of pre-defined internal field names as well as mappings for how those field names map to the fields sent to the coupler.
-In general, the stream input file should translate the stream input variable names into the ``docn_fld`` names below for use within the data ocn model.
+
+.. note:: In general, the stream input file should translate the stream input variable names into the ``docn_fld`` names below for use within the data ocn model.
 
 .. csv-table:: "DOCN internal field names"
    :header: "docn_fld (avifld)", "driver_fld (avofld)"
    :widths: 30, 30
 
-   "ifrac", "Si_ifrac" 
-   "pslv", "Sa_pslv" 
-   "duu10n", "So_duu10n" 
-   "taux", "Foxx_taux" 
-   "tauy", "Foxx_tauy" 
-   "swnet", "Foxx_swnet" 
-   "lat", "Foxx_lat" 
-   "sen", "Foxx_sen" 
-   "lwup", "Foxx_lwup" 
-   "lwdn", "Faxa_lwdn" 
-   "melth", "Fioi_melth" 
-   "salt", "Fioi_salt" 
-   "prec", "Faxa_prec" 
-   "snow", "Faxa_snow" 
-   "rain", "Faxa_rain" 
-   "evap", "Foxx_evap" 
-   "meltw", "Fioi_meltw" 
-   "rofl", "Foxx_rofl" 
-   "rofi", "Foxx_rofi" 
    "t", "So_t" 
    "u", "So_u" 
    "v", "So_v" 
    "dhdx", "So_dhdx" 
    "dhdy", "So_dhdy" 
    "s", "So_s" 
-   "q", "Fioo_q" 
-   "h", "strm_h" 
-   "qbot", "strm_qbot" 
-   "fswpen", "So_fswpen" 
+   "h", "strm_h (internal to docn_comp_mod only)"
+   "qbot", "strm_qbot (internal to docn_comp_mod only)"
 
 .. _creating-sstdata-input-from-prognostic-run:
 

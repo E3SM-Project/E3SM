@@ -40,17 +40,13 @@ SET(THETA_SRCS_F90
   ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
 )
 
-SET(THETHAH_SRCS_C
-  ${UTILS_SHARE_DIR}/shr_vmath_fwrap.c
-)
-
 # If the user specified a file for custom compiler options use those
 IF (DEFINED THETA_CUSTOM_FLAGS_FILE)
   setCustomCompilerFlags(THETA_CUSTOM_FLAGS_FILE THETA_SRCS_F90)
 ENDIF ()
 
 # Make SRCS global so the tests can access it
-SET(EXEC_SOURCES ${THETA_SRCS} ${THETA_SRCS_C} ${THETA_SRCS_F90} )
+SET(EXEC_SOURCES ${THETA_SRCS} ${THETA_SRCS_F90} )
 
 # Set up defaults
 IF (NOT PREQX_NP)

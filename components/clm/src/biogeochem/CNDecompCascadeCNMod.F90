@@ -11,7 +11,7 @@ module CNDecompCascadeCNMod
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use clm_varpar             , only : nlevsoi, nlevgrnd, nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
   use clm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-  use clm_varctl             , only : iulog, spinup_state, anoxia, use_lch4, use_vertsoilc, use_ed
+  use clm_varctl             , only : iulog, spinup_state, anoxia, use_lch4, use_vertsoilc, use_fates
   use clm_varcon             , only : zsoi
   use decompMod              , only : bounds_type
   use abortutils             , only : endrun
@@ -407,7 +407,7 @@ contains
       is_cellulose(i_litr3) = .false.
       is_lignin(i_litr3) = .true.
 
-      if (.not. use_ed) then
+      if (.not. use_fates) then
          floating_cn_ratio_decomp_pools(i_cwd) = .true.
          floating_cp_ratio_decomp_pools(i_cwd) = .true.
          decomp_pool_name_restart(i_cwd) = 'cwd'
@@ -425,7 +425,7 @@ contains
          is_lignin(i_cwd) = .false.
       end if
 
-      if ( .not. use_ed ) then
+      if ( .not. use_fates ) then
          i_soil1 = 5
       else
          i_soil1 = 4
@@ -446,7 +446,7 @@ contains
       is_cellulose(i_soil1) = .false.
       is_lignin(i_soil1) = .false.
 
-      if ( .not. use_ed ) then
+      if ( .not. use_fates ) then
          i_soil2 = 6
       else
          i_soil2 = 5
@@ -467,7 +467,7 @@ contains
       is_cellulose(i_soil2) = .false.
       is_lignin(i_soil2) = .false.
 
-      if ( .not. use_ed ) then
+      if ( .not. use_fates ) then
          i_soil3 = 7
       else
          i_soil3 = 6
@@ -488,7 +488,7 @@ contains
       is_cellulose(i_soil3) = .false.
       is_lignin(i_soil3) = .false.
 
-      if ( .not. use_ed ) then
+      if ( .not. use_fates ) then
          i_soil4 = 8
       else
          i_soil4 = 7
@@ -529,7 +529,7 @@ contains
       spinup_factor(i_litr1) = CNDecompCnParamsInst%spinup_vector(1)
       spinup_factor(i_litr2) = CNDecompCnParamsInst%spinup_vector(2)
       spinup_factor(i_litr3) = CNDecompCnParamsInst%spinup_vector(3)
-      if (.not. use_ed) then
+      if (.not. use_fates) then
          spinup_factor(i_cwd) =   CNDecompCnParamsInst%spinup_vector(8)
       end if
       spinup_factor(i_soil1) = CNDecompCnParamsInst%spinup_vector(4)
@@ -588,7 +588,7 @@ contains
       cascade_receiver_pool(i_s4atm) = i_atm
       pathfrac_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,i_s4atm) = 1.0_r8
 
-      if (.not. use_ed) then
+      if (.not. use_fates) then
          i_cwdl2 = 8
          cascade_step_name(i_cwdl2) = 'CWDL2'
          rf_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,i_cwdl2) = 0._r8
@@ -748,7 +748,7 @@ contains
        i_litr1 = 1
        i_litr2 = 2
        i_litr3 = 3
-       if (.not.use_ed) then
+       if (.not.use_fates) then
           i_soil1 = 5
           i_soil2 = 6
           i_soil3 = 7
@@ -764,7 +764,7 @@ contains
        decomp_k_pools(i_litr1) = k_l1 / dt
        decomp_k_pools(i_litr2) = k_l2 / dt
        decomp_k_pools(i_litr3) = k_l3 / dt
-       if (.not.use_ed) decomp_k_pools(i_cwd) = k_frag / dt
+       if (.not.use_fates) decomp_k_pools(i_cwd) = k_frag / dt
        decomp_k_pools(i_soil1) = k_s1 / dt
        decomp_k_pools(i_soil2) = k_s2 / dt
        decomp_k_pools(i_soil3) = k_s3 / dt
@@ -782,7 +782,7 @@ contains
           k_s2 = k_s2 * CNDecompCnParamsInst%spinup_vector(5)
           k_s3 = k_s3 * CNDecompCnParamsInst%spinup_vector(6)
           k_s4 = k_s4 * CNDecompCnParamsInst%spinup_vector(7)
-          if (.not.use_ed) k_frag = k_frag * CNDecompCnParamsInst%spinup_vector(8)
+          if (.not.use_fates) k_frag = k_frag * CNDecompCnParamsInst%spinup_vector(8)
        endif
 
        !--- time dependent coefficients-----!
@@ -1018,7 +1018,7 @@ contains
                 decomp_k(c,j,i_soil4) = k_s4 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j) / dt
              end do
           end do
-          if (.not.use_ed) then
+          if (.not.use_fates) then
              do j = 1,nlevdecomp
                 do fc = 1,num_soilc
                    c = filter_soilc(fc)
@@ -1039,7 +1039,7 @@ contains
                 decomp_k(c,j,i_soil4) = k_s4 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) / dt
              end do
           end do
-          if (.not.use_ed) then
+          if (.not.use_fates) then
              do j = 1,nlevdecomp
                 do fc = 1,num_soilc
                    c = filter_soilc(fc)
@@ -1061,7 +1061,7 @@ contains
                / cnstate_vars%scalaravg_col(c,j) 
              if ( decomp_cascade_con%spinup_factor(i_litr3) > 1._r8) decomp_k(c,j,i_litr3) = decomp_k(c,j,i_litr3)  &
                   / cnstate_vars%scalaravg_col(c,j) 
-             if ( .not. use_ed ) then
+             if ( .not. use_fates ) then
                 if ( decomp_cascade_con%spinup_factor(i_cwd)   > 1._r8) decomp_k(c,j,i_cwd)   = decomp_k(c,j,i_cwd)    &
                      / cnstate_vars%scalaravg_col(c,j) 
              endif

@@ -1,21 +1,13 @@
-[submodule "mpas-o"]
-	path = components/mpas-o/model
-	url = git@github.com:ACME-Climate/MPAS.git
-	branch = ocean/develop
-[submodule "mpas-li"]
-	path = components/mpasli/model
-	url = git@github.com:ACME-Climate/MPAS.git
-[submodule "mpas-cice"]
-	path = components/mpas-cice/model
-	url = git@github.com:ACME-Climate/MPAS.git
-	branch = cice/develop
 [submodule "components/clm/src/external_models/fates"]
 	path = components/clm/src/external_models/fates
-	url = git@github.com:ACME-Climate/fates.git
+	url = git@github.com:NGEET/fates-release.git
 [submodule "alm-mpp"]
 	path = components/clm/src/external_models/mpp
-	url = git@github.com:ACME-Climate/mpp.git
+	url = git@github.com:MPP-LSM/MPP.git
 	branch = alm/develop
 [submodule "sbetr"]
 	path = components/clm/src/external_models/sbetr
-	url = git@github.com:ACME-Climate/sbetr.git
+	url = git@github.com:BeTR-biogeochemistry-modeling/sbetr.git
+[submodule "components/mpas-source"]
+	path = components/mpas-source
+	url = git@github.com:MPAS-Dev/MPAS-Model.git

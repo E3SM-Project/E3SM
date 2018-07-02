@@ -101,9 +101,9 @@ module component_type_mod
 
   public :: component_type
 
-   !----------------------------------------------------------------------------
-   ! Component type instances
-   !----------------------------------------------------------------------------
+  !----------------------------------------------------------------------------
+  ! Component type instances
+  !----------------------------------------------------------------------------
 
   type(component_type), target :: atm(num_inst_atm)
   type(component_type), target :: lnd(num_inst_lnd)
@@ -150,7 +150,7 @@ contains
 
   function component_get_name(comp)
     type(component_type), intent(in), target :: comp
-    character(len=CL) :: component_get_name
+    character(len=seq_comm_namelen) :: component_get_name
     component_get_name = comp%name
   end function component_get_name
 

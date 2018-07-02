@@ -7,50 +7,41 @@ generate, or both) for this case.
 
 from standard_script_setup import *
 
-from CIME.case                  import Case
-from CIME.case_cmpgen_namelists import case_cmpgen_namelists
+from CIME.case           import Case
+from argparse            import RawTextHelpFormatter
 
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-        usage="""\n{0} [<casedir>] [--verbose]
-OR
-{0} --help
-OR
-{0} --test
-
-\033[1mEXAMPLES:\033[0m
-    \033[1;32m# Setup case \033[0m
-    > {0}
-""".format(os.path.basename(args[0])),
         description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
+        formatter_class=RawTextHelpFormatter)
 
     CIME.utils.setup_standard_logging_options(parser)
 
     parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
-                        help="Case directory to setup")
+                        help="Case directory for which namelists are compared/generated. "
+                        "\nDefault is current directory.")
 
     parser.add_argument("-c", "--compare", action="store_true",
                         help="Force a namelist comparison against baselines. "
-                        "Default will be to follow the case specification")
+                        "\nDefault is to follow the case specification.")
 
     parser.add_argument("-g", "--generate", action="store_true",
                         help="Force a generation of namelist baselines. "
-                        "Default will be to follow the case specification")
+                        "\nDefault is to follow the case specification.")
 
     parser.add_argument("--compare-name",
                         help="Force comparison to use baselines with this name. "
-                        "Default will be to follow the case specification")
+                        "\nDefault is to follow the case specification.")
 
     parser.add_argument("--generate-name",
                         help="Force generation to use baselines with this name. "
-                        "Default will be to follow the case specification")
+                        "\nDefault is to follow the case specification.")
 
     parser.add_argument("--baseline-root",
-                        help="Root of baselines. Default will be BASELINE_ROOT.")
+                        help="Root of baselines. "
+                        "\nDefault is the case's BASELINE_ROOT.")
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
@@ -59,14 +50,10 @@ OR
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if "--test" in sys.argv:
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
     caseroot, compare, generate, compare_name, generate_name, baseline_root \
         = parse_command_line(sys.argv, description)
     with Case(caseroot, read_only=True) as case:
-        success = case_cmpgen_namelists(case, compare, generate, compare_name, generate_name, baseline_root)
+        success = case.case_cmpgen_namelists(compare, generate, compare_name, generate_name, baseline_root)
 
     sys.exit(0 if success else CIME.utils.TESTS_FAILED_ERR_CODE)
 

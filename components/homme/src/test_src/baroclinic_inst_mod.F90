@@ -11,7 +11,6 @@
 !
 !  MT 2017-11: be sure to DSS the initial condition for NGGPS tracers
 !
-
 module baroclinic_inst_mod
 !
 !  This module contains the initial condititions for two baroclinic
@@ -42,7 +41,7 @@ module baroclinic_inst_mod
     use hybvcoord_mod, only : hvcoord_t 
     ! ====================
     use coordinate_systems_mod, only : spherical_polar_t
-    use viscosity_mod, only : compute_zeta_C0, make_C0
+    use viscosity_mod, only : compute_zeta_C0, make_c0
 
 
   implicit none

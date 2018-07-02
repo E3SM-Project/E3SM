@@ -9,7 +9,7 @@ module CNEcosystemDynBetrMod
   ! be enabled gradually.
   use shr_kind_mod              , only : r8 => shr_kind_r8
   use shr_sys_mod               , only : shr_sys_flush
-  use clm_varctl                , only : flanduse_timeseries, use_c13, use_c14, use_ed, use_dynroot
+  use clm_varctl                , only : use_c13, use_c14, use_fates, use_dynroot
   use decompMod                 , only : bounds_type
   use perf_mod                  , only : t_startf, t_stopf
   use spmdMod                   , only : masterproc
@@ -38,6 +38,7 @@ module CNEcosystemDynBetrMod
   use BetrTracerType            , only : betrtracer_type
   use PhosphorusFluxType        , only : phosphorusflux_type
   use PhosphorusStateType       , only : phosphorusstate_type
+  use dynSubgridControlMod      , only : get_do_harvest
 
   implicit none
 
@@ -133,7 +134,7 @@ module CNEcosystemDynBetrMod
     type(phosphorusflux_type)        , intent(inout) :: phosphorusflux_vars
     type(phosphorusstate_type)       , intent(inout) :: phosphorusstate_vars
 
-    if(.not. use_ed)then
+    if(.not. use_fates)then
        ! --------------------------------------------------
        ! zero the column-level C and N fluxes
        ! --------------------------------------------------
@@ -247,7 +248,7 @@ module CNEcosystemDynBetrMod
                 cnstate_vars, carbonstate_vars, carbonflux_vars     , &
                 c13_carbonflux_vars, c14_carbonflux_vars            , &
                 nitrogenstate_vars, nitrogenflux_vars               , &
-                phosphorusstate_vars, phosphorusflux_vars)
+                phosphorusstate_vars, phosphorusflux_vars, crop_vars)
       call t_stopf('CNAllocation - phase-3')
 
        !--------------------------------------------
@@ -293,8 +294,8 @@ module CNEcosystemDynBetrMod
           call t_startf('CNRootDyn')
 
           call CNRootDyn(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               carbonstate_vars, nitrogenstate_vars, carbonflux_vars,  &
-               cnstate_vars, crop_vars,  soilstate_vars)
+               canopystate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars,  &
+               cnstate_vars, crop_vars, energyflux_vars, soilstate_vars)
           call t_stopf('CNRootDyn')
        end if
 
@@ -341,15 +342,15 @@ module CNEcosystemDynBetrMod
        end if
 
        call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            cnstate_vars, carbonflux_vars, carbonstate_vars)
+            crop_vars, carbonflux_vars, carbonstate_vars)
 
        if ( use_c13 ) then
           call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               cnstate_vars, c13_carbonflux_vars, c13_carbonstate_vars)
+               crop_vars, c13_carbonflux_vars, c13_carbonstate_vars)
        end if
        if ( use_c14 ) then
           call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               cnstate_vars, c14_carbonflux_vars, c14_carbonstate_vars)
+               crop_vars, c14_carbonflux_vars, c14_carbonstate_vars)
        end if
 
        call NStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -404,7 +405,7 @@ module CNEcosystemDynBetrMod
        call PStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             phosphorusflux_vars, phosphorusstate_vars)
 
-       if (flanduse_timeseries /= ' ') then
+       if (get_do_harvest()) then
           call CNHarvest(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
                phosphorusstate_vars, phosphorusflux_vars)

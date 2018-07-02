@@ -18,7 +18,7 @@ module sl_advection
   use hybvcoord_mod, only      : hvcoord_t
   use time_mod, only           : TimeLevel_t, TimeLevel_Qdp
   use control_mod, only        : integration, test_case, hypervis_order, transport_alg, limiter_option
-  use edge_mod, only           : edgevpack, edgevunpack, initedgebuffer,&
+  use edge_mod, only           : edgevpack_nlyr, edgevunpack_nlyr, edge_g, &
                                  initghostbuffer3D, ghostVpack_unoriented, ghostVunpack_unoriented
   use edgetype_mod, only       : EdgeDescriptor_t, EdgeBuffer_t, ghostbuffer3D_t
   use hybrid_mod, only         : hybrid_t
@@ -36,8 +36,6 @@ module sl_advection
   save
 
   type (ghostBuffer3D_t)   :: ghostbuf_tr
-  type (EdgeBuffer_t)      :: edgeveloc, edgeQdp
-
   integer :: sl_mpi
   type (cartesian3D_t), allocatable :: dep_points_all(:,:,:,:) ! (np,np,nlev,nelemd)
 
@@ -63,15 +61,12 @@ subroutine sl_init1(par, elem)
   if (transport_alg > 0) then
      slmm = transport_alg > 1
      cisl = transport_alg == 2 .or. transport_alg >= 20
-     call initEdgeBuffer(par,edgeveloc,elem,2*nlev)
      nslots = nlev*qsize
      if (cisl) nslots = nslots + nlev
      sl_mpi = 0
      if (slmm .and. .not. cisl) call slmm_get_mpi_pattern(sl_mpi)
      if (sl_mpi == 0) call initghostbuffer3D(ghostbuf_tr,nslots,np)
      call interpolate_tracers_init()
-     ! All methods should DSS.
-     call initEdgeBuffer(par, edgeQdp, elem, qsize*nlev)
      if (slmm) then
         if (sl_mpi > 0) then
            ! Technically a memory leak, but the array persists for the entire
@@ -811,15 +806,15 @@ subroutine ALE_RKdss(elem, nets, nete, hy, deriv, dt, tl)
       elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%spheremp(:,:)
       elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%spheremp(:,:)
     enddo
-    call edgeVpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,ie)
+    call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%derived%vstar,2*nlev,0,2*nlev)
   enddo
 
   call t_startf('ALE_RKdss_bexchV')
-  call bndry_exchangeV(hy,edgeveloc)
+  call bndry_exchangeV(hy,edge_g)
   call t_stopf('ALE_RKdss_bexchV')
 
   do ie=nets,nete
-    call edgeVunpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,ie)
+    call edgeVunpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%derived%vstar,2*nlev,0,2*nlev)
     do k=1, nlev
       elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%rspheremp(:,:)
       elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)
@@ -1157,15 +1152,15 @@ subroutine dss_Qdp(elem, nets, nete, hybrid, np1_qdp)
            elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp)*elem(ie)%spheremp(:,:)
         end do
      end do
-     call edgeVpack(edgeQdp, elem(ie)%state%Qdp(:,:,:,:,np1_qdp), qsize*nlev, 0, ie)
+     call edgeVpack(edge_g, elem(ie)%state%Qdp(:,:,:,:,np1_qdp), qsize*nlev, 0, ie)
   enddo
 
   call t_startf('SLMM_bexchV')
-  call bndry_exchangeV(hybrid, edgeQdp)
+  call bndry_exchangeV(hybrid, edge_g)
   call t_stopf('SLMM_bexchV')
 
   do ie = nets, nete
-     call edgeVunpack(edgeQdp, elem(ie)%state%Qdp(:,:,:,:,np1_qdp), qsize*nlev, 0, ie)
+     call edgeVunpack(edge_g, elem(ie)%state%Qdp(:,:,:,:,np1_qdp), qsize*nlev, 0, ie)
      do q = 1, qsize
         do k = 1, nlev
            elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp)*elem(ie)%rspheremp(:,:)

@@ -68,6 +68,11 @@
   </test>
   <test name="SMS" grid="f19_g16" compset="X">
     <machines>
+      <machine name="cheyenne" compiler="intel" category="aux_cime_baselines">
+	<options>
+	  <option name="wallclock">00:10</option>
+	</options>
+      </machine>
       <machine name="cheyenne" compiler="intel" category="jim">
 	<options>
 	  <option name="wallclock">00:10</option>
@@ -612,24 +617,37 @@
           <option name="wallclock">00:30:00</option>
          </options>
       </machine>
+      <machine name="cheyenne" compiler="intel" category="aux_cime_baselines">
+        <options>
+          <option name="wallclock">00:30:00</option>
+        </options>
+      </machine>
     </machines>
+  </test>
+  <test name="DAE" grid="ww3a" compset="ADWAV">
+    <machines>
+      <machine name="hobart" compiler="nag" category="prealpha"/>
+    </machines>
+    <options>
+      <option name="wallclock"> 00:20:00 </option>
+    </options>
   </test>
   <test name="PRE" grid="f09_f09" compset="ADESP">
     <machines>
       <machine name="hobart" compiler="nag" category="pauseresume"/>
     </machines>
     <options>
-      <option name="wallclock"> 00:20 </option>
+      <option name="wallclock"> 00:20:00 </option>
     </options>
   </test>
-  <test name="PRE" grid="f09_f09" compset="ADESP_TEST">
+  <test name="PRE" grid="f19_f19" compset="ADESP_TEST">
     <machines>
       <machine name="hobart" compiler="gnu" category="prealpha"/>
       <machine name="hobart" compiler="nag" category="prealpha"/>
       <machine name="hobart" compiler="nag" category="pauseresume"/>
     </machines>
     <options>
-      <option name="wallclock"> 00:20 </option>
+      <option name="wallclock"> 00:20:00 </option>
     </options>
   </test>
 </testlist>

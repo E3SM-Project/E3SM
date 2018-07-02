@@ -31,9 +31,9 @@ contains
          canopystate_vars, soilstate_vars, temperature_vars, &
          ch4_vars, nitrogenflux_vars, nitrogenstate_vars, &
          phosphorusstate_vars, phosphorusflux_vars, &
-         alm_fates)
+         alm_fates, crop_vars)
       
-      use clm_varctl             , only : use_c13, use_c14, use_ed
+      use clm_varctl             , only : use_c13, use_c14, use_fates
       use decompMod              , only : bounds_type
       use clm_varpar             , only : nlevgrnd, nlevdecomp_full 
       use clm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools 
@@ -56,6 +56,7 @@ contains
       use PhosphorusFluxType     , only : phosphorusflux_type
       use CNDecompCascadeConType , only : decomp_cascade_con
       use CLMFatesInterfaceMod   , only : hlm_fates_interface_type
+      use CropType               , only : crop_type
 
     !
     ! !ARGUMENTS:
@@ -80,6 +81,7 @@ contains
     type(phosphorusstate_type), intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
     type(hlm_fates_interface_type),intent(inout) :: alm_fates
+    type(crop_type)          , intent(inout)  :: crop_vars
     
     !
     ! !LOCAL VARIABLES:
@@ -159,7 +161,7 @@ contains
     !--------------------------------------------
     if (use_century_decomp) then
        call decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
-               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
+               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars, cnstate_vars)
     else
        call decomp_rate_constants_cn(bounds, num_soilc, filter_soilc, &
              canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars, cnstate_vars)
@@ -241,7 +243,7 @@ contains
     ! Update all prognostic carbon state variables (except for gap-phase mortality and fire fluxes)
 
     call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            cnstate_vars, carbonflux_vars, carbonstate_vars)
+            crop_vars, carbonflux_vars, carbonstate_vars)
 
     call t_stopf('BNGCUpdate1')
 
@@ -265,7 +267,7 @@ contains
     
     ! Set controls on very low values in critical state variables 
     ! Added some new logical filters to prevent
-    ! above ground precision control calculations with use_ed, as well
+    ! above ground precision control calculations with use_fates, as well
     ! bypass on nitrogen calculations
     call CNPrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
           carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars,       &

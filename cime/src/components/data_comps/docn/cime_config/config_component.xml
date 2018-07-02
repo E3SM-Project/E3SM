@@ -96,7 +96,7 @@
     appropriate and is provided for testing and development purposes only.
     Users must create scientifically appropriate data for their particular
     application.  A tool is available to derive valid SOM forcing.
-    --- A setting of sst_aquapN (where “N” is an integer index value) is a
+    --- A setting of sst_aquapN (where "N" is an integer index value) is a
     type of prescribed SST mode used specifically for an aquaplanet setup in
     which global SSTs correspond to an analytic form set by the index value.
     Currently, indices for 10 SST profiles are supported [e.g., index 3 corresponds

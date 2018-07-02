@@ -5,9 +5,9 @@ Functions for actions pertaining to history files.
 from CIME.XML.standard_module_setup import *
 from CIME.test_status import TEST_NO_BASELINES_COMMENT
 
-from CIME.utils import get_current_commit, get_timestamp, get_model
+from CIME.utils import get_current_commit, get_timestamp, get_model, safe_copy
 
-import logging, glob, os, shutil, re, stat, filecmp
+import logging, glob, os, re, stat, filecmp
 logger = logging.getLogger(__name__)
 
 BLESS_LOG_NAME = "bless_log"
@@ -90,7 +90,7 @@ def copy(case, suffix):
             # because the test system will think that run1's files were output
             # by run2. But we live with that downside for the sake of the reason
             # noted above.)
-            shutil.copy(test_hist, new_file)
+            safe_copy(test_hist, new_file)
 
     expect(num_copied > 0, "copy failed: no hist files found in rundir '{}'".format(rundir))
 
@@ -219,8 +219,8 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
                 expected_log_file = os.path.join(casedir, os.path.basename(cprnc_log_file))
                 if not (os.path.exists(expected_log_file) and filecmp.cmp(cprnc_log_file, expected_log_file)):
                     try:
-                        shutil.copy(cprnc_log_file, casedir)
-                    except OSError:
+                        safe_copy(cprnc_log_file, casedir)
+                    except (OSError, IOError) as _:
                         logger.warning("Could not copy {} to {}".format(cprnc_log_file, casedir))
 
                 all_success = False
@@ -256,7 +256,8 @@ def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, out
     case - the case containing the files
     rundir - the rundir for the case
     outfile_suffix - if non-blank, then the output file name ends with this
-        suffix (with a '.' added before the given suffix)
+        suffix (with a '.' added before the given suffix).
+        Use None to avoid permissions issues in the case dir.
 
     returns (True if the files matched, log_name)
     """
@@ -322,7 +323,7 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
             return False, "ERROR {} baseline directory '{}' does not exist".format(TEST_NO_BASELINES_COMMENT,bdir)
 
     success, comments = _compare_hists(case, rundir, basecmp_dir, outfile_suffix=outfile_suffix)
-    if get_model() == "acme":
+    if get_model() == "e3sm":
         bless_log = os.path.join(basecmp_dir, BLESS_LOG_NAME)
         if os.path.exists(bless_log):
             last_line = open(bless_log, "r").readlines()[-1]
@@ -349,7 +350,7 @@ def get_extension(model, filepath):
     'h'
     >>> get_extension("clm","clm2_0002.h0.1850-01-06-00000.nc")
     '0002.h0'
-    >>> get_extension("pop","PFS.f09_g16.B1850.yellowstone_intel.allactive-default.GC.c2_0_b1f2_int.pop.h.ecosys.nday1.0001-01-02.nc")
+    >>> get_extension("pop","PFS.f09_g16.B1850.cheyenne_intel.allactive-default.GC.c2_0_b1f2_int.pop.h.ecosys.nday1.0001-01-02.nc")
     'h'
     """
     basename = os.path.basename(filepath)
@@ -403,29 +404,18 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
             if os.path.exists(baseline):
                 os.remove(baseline)
 
-            #special care for multi-instance cases,
-            #only keep first instance and
-            #remove instance string from filename
-            m = re.search("(.*%s.*)_([0-9]{4})(.h.*)" % model, baseline)
-            if m is not None:
-                if m.group(2) != '0001':
-                    continue
-                baseline = m.group(1)+m.group(3)
-
-                logger.debug("Found multiinstance hist file {}".format(hist))
-            shutil.copy(hist, baseline)
+            safe_copy(hist, baseline)
             comments += "    generating baseline '{}' from file {}\n".format(baseline, hist)
 
     # copy latest cpl log to baseline
     # drop the date so that the name is generic
-    newestcpllogfile = case.get_latest_cpl_log(coupler_log_path=case.get_value("LOGDIR"))
+    newestcpllogfile = case.get_latest_cpl_log(coupler_log_path=case.get_value("RUNDIR"))
     if newestcpllogfile is None:
-        logger.warning("No cpl.log file found in log directory {}".format(case.get_value("LOGDIR")))
+        logger.warning("No cpl.log file found in directory {}".format(case.get_value("RUNDIR")))
     else:
-        shutil.copyfile(newestcpllogfile,
-                    os.path.join(basegen_dir, "cpl.log.gz"))
+        safe_copy(newestcpllogfile, os.path.join(basegen_dir, "cpl.log.gz"))
 
-    expect(num_gen > 0, "Could not generate any hist files for case '{}', something is seriously wrong".format(testcase))
+    expect(num_gen > 0, "Could not generate any hist files for case '{}', something is seriously wrong".format(os.path.join(rundir, testcase)))
     #make sure permissions are open in baseline directory
     for root, _, files in os.walk(basegen_dir):
         for name in files:
@@ -435,7 +425,7 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
                 # We tried. Not worth hard failure here.
                 pass
 
-    if get_model() == "acme":
+    if get_model() == "e3sm":
         bless_log = os.path.join(basegen_dir, BLESS_LOG_NAME)
         with open(bless_log, "a") as fd:
             fd.write("sha:{} date:{}\n".format(get_current_commit(repo=case.get_value("CIMEROOT")),

@@ -6,7 +6,7 @@
    contain the root `toctree` directive.
 
 #######################################################################
-CIME User's Guide Part 3: Advanced - Building a Coupled Model with CIME
+Building a Coupled Model with CIME
 #######################################################################
 
 .. toctree::

@@ -2,8 +2,28 @@
 
 """
 This utility allows the CIME user to view and modify a case's PE layout.
+With this script, a user can:
 
-Interpreted format sequences are:"
+1) View the PE layout of a case
+   ./pelayout
+   ./pelayout --format "%C:  %06T/%+H" --header "Comp: Tasks /Th"
+2) Attempt to scale the number of tasks used by a case
+   ./pelayout --set-ntasks 144
+3) Set the number of threads used by a case
+   ./pelayout --set-nthrds 2
+
+The --set-ntasks option attempts to scale all components so that the
+job will run in the provided number of tasks. For a component using the
+maximum number of tasks, this will merely set that component to the new
+number. However, for components running in parallel using a portion of
+the maximum tasks, --set-ntasks will attempt to scale the tasks
+proportionally, changing the value of ROOTPE to maintain the same level
+of parallel behavior. If the --set-ntasks algorithm is unable to
+automatically find a new layout, it will print an error message
+indicating the component(s) it was unable to reset and no changes will
+be made to the case.
+
+Interpreted FORMAT sequences are:
 %%  a literal %
 %C  the component name
 %T  the task count for the component
@@ -11,61 +31,49 @@ Interpreted format sequences are:"
 %R  the PE root for the component
 
 Standard format extensions, such as a field length and padding are supported.
-Example:
-  For NTASKS_ATM=480, NTHREADS_ATM=2 and ROOTPE_ATM, \"%C: %06T/%+H\" will show
-ATM: 000480/+2
-Note that since %R was omitted, the root PE was not shown.
 Python dictionary-format strings are also supported. For instance,
 --format "{C:4}", will print the component name padded to 4 spaces.
-=======================
-If this tool is missing any feature that you need, please go to github and
-create an issue (https://github.com/ESMCI/cime/issues). Detailed
-information is available at https://github.com/ESMCI/cime.
 
-    COPYRIGHT AND LICENSE
-
-        This library is free software; you can redistribute it and/or modify
-        it under the same terms as Python itself.
+If  you encounter problems with this tool or find it is missing any
+feature that you need, please open an issue on https://github.com/ESMCI/cime
 """
 
 from standard_script_setup import *
 
 from CIME.case import Case
 from CIME.utils import expect, convert_to_string
-import textwrap
 import sys
 import re
 
-logger = logging.getLogger("xmlquery")
+logger = logging.getLogger(__name__)
 
 ###############################################################################
-def parse_command_line(args):
+def parse_command_line(args, description):
 ###############################################################################
-    parser = argparse.ArgumentParser(description="Display and/or change the case's PE layout." ,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter,
-                                     epilog=textwrap.dedent(__doc__) )
+    # Start with usage description
+    parser = argparse.ArgumentParser(description=description ,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     CIME.utils.setup_standard_logging_options(parser)
 
     # Set command line options
-    parser.add_argument("-format" , "--format",
+    parser.add_argument("--set-ntasks", default=None,
+                        help="Total number of tasks to set for the case")
+
+    parser.add_argument("--set-nthrds", "--set-nthreads", default=None,
+                        help="Number of threads to set for all components")
+
+    parser.add_argument("--format",
                         default="%4C: %6T/%6H; %6R",
                         help="Format the PE layout items for each component (see below)")
 
-    parser.add_argument("-set-nasks" ,  "--set-ntasks", default=None,
-                        help="Total number of tasks to set for the case")
-
-    parser.add_argument("-set-nthrds" ,  "--set-nthrds",
-                        "-set-nthreads", "--set-nthreads", default=None,
-                        help="Number of threads to set for all components")
-
-    parser.add_argument("-header" ,  "--header",
+    parser.add_argument("--header",
                         default="Comp  NTASKS  NTHRDS  ROOTPE",
                         help="Custom header for PE layout display")
 
-    parser.add_argument("-no-header", "--no-header", default=False , action="store_true" ,
+    parser.add_argument("--no-header", default=False , action="store_true" ,
                         help="Do not print any PE layout header")
 
-    parser.add_argument("-caseroot" , "--caseroot", default=os.getcwd(),
+    parser.add_argument("--caseroot", default=os.getcwd(),
                         help="Case directory to reference")
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
@@ -176,12 +184,17 @@ def modify_ntasks(case, new_tot_tasks):
         # End for
 
         # Check for valid recomputation
+        mod_ok = True
         for comp in comp_classes:
-            expect(new_tasks[comp] * curr_tot_tasks / new_tot_tasks == curr_tasks[comp],
-                   "Task change invalid for {}" % comp)
-            expect(new_roots[comp] * curr_tot_tasks / new_tot_tasks == curr_roots[comp],
-                   "Root PE change invalid for {}" % comp)
+            if (new_tasks[comp] * curr_tot_tasks / new_tot_tasks) != curr_tasks[comp]:
+                logger.error("Task change invalid for {}".format(comp))
+                mod_ok = False
+
+            if (new_roots[comp] * curr_tot_tasks / new_tot_tasks) != curr_roots[comp]:
+                logger.error("Root PE change invalid for {}".format(comp))
+                mod_ok = False
         # End for
+        expect(mod_ok, "pelayout unable to set ntasks to {}".format(new_tot_tasks))
 
         # We got this far? Go ahead and change PE layout
         for comp in comp_classes:
@@ -192,14 +205,10 @@ def modify_ntasks(case, new_tot_tasks):
 # End def modify_ntasks
 
 ###############################################################################
-def _main_func():
+def _main_func(description):
 ###############################################################################
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
     # Initialize command line parser and get command line options
-    arg_format, set_ntasks, set_nthrds, header, caseroot = parse_command_line(sys.argv)
+    arg_format, set_ntasks, set_nthrds, header, caseroot = parse_command_line(sys.argv, description)
 
     # Initialize case ; read in all xml files from caseroot
     with Case(caseroot) as case:
@@ -216,5 +225,5 @@ def _main_func():
 # End def _main_func
 
 if (__name__ == "__main__"):
-    _main_func()
+    _main_func(__doc__)
 # End if

@@ -646,7 +646,7 @@ contains
     type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
     type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
     type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    type(crop_type)          , intent(in)    :: crop_vars
+    type(crop_type)          , intent(inout) :: crop_vars
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
     !! add phosphorus --
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
@@ -823,7 +823,7 @@ contains
                 cnstate_vars, carbonstate_vars, carbonflux_vars     , &
                 c13_carbonflux_vars, c14_carbonflux_vars            , &
                 nitrogenstate_vars, nitrogenflux_vars               , &
-                phosphorusstate_vars, phosphorusflux_vars)
+                phosphorusstate_vars, phosphorusflux_vars, crop_vars)
       call t_stopf('CNAllocation - phase-3')
       !------------------------------------------------------------------
 

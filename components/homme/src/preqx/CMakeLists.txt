@@ -48,6 +48,7 @@ SET(PREQX_SRCS_F90
   ${UTILS_SHARE_DIR}/shr_vmath_mod.F90
 )
 
+<<<<<<< HEAD
 SET(PREQX_SRCS_C
   ${UTILS_SHARE_DIR}/shr_vmath_fwrap.c
 )
@@ -58,6 +59,13 @@ SET(PREQX_SRCS_CXX
   ${SRC_SHARE_DIR}/compose_test.cpp
 )
 
+||||||| merged common ancestors
+SET(PREQX_SRCS_C
+  ${UTILS_SHARE_DIR}/shr_vmath_fwrap.c
+)
+
+=======
+>>>>>>> master
 IF (${HOMME_USE_TRILINOS})
 SET (PREQX_SRCS_ZOLTAN   ${TRILINOS_ZOLTAN_DIR}/zoltan_interface.c  ${TRILINOS_ZOLTAN_DIR}/zoltan_cppinterface.cpp)
 SET_SOURCE_FILES_PROPERTIES( ${TRILINOS_ZOLTAN_DIR}/zoltan_cppinterface.cpp PROPERTIES LANGUAGE CXX )
@@ -70,7 +78,13 @@ IF (DEFINED PREQX_CUSTOM_FLAGS_FILE)
 ENDIF ()
 
 # Make SRCS global so the tests can access it
+<<<<<<< HEAD
 SET(EXEC_SOURCES ${PREQX_SRCS} ${PREQX_SRCS_C} ${PREQX_SRCS_CXX} ${PREQX_SRCS_F90} ${PREQX_SRCS_ZOLTAN})
+||||||| merged common ancestors
+SET(EXEC_SOURCES ${PREQX_SRCS} ${PREQX_SRCS_C} ${PREQX_SRCS_F90} ${PREQX_SRCS_ZOLTAN})
+=======
+SET(EXEC_SOURCES ${PREQX_SRCS} ${PREQX_SRCS_F90} ${PREQX_SRCS_ZOLTAN})
+>>>>>>> master
 
 # Set up defaults
 IF (NOT PREQX_NP)

@@ -10,6 +10,7 @@ module EnergyFluxType
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
   use VegetationType      , only : veg_pp                
+  use AnnualFluxDribbler, only : annual_flux_dribbler_type, annual_flux_dribbler_gridcell
   !
   implicit none
   save
@@ -18,6 +19,7 @@ module EnergyFluxType
   type, public :: energyflux_type
 
      ! Fluxes
+     real(r8), pointer :: eflx_h2osfc_to_snow_col (:)   ! col snow melt to h2osfc heat flux (W/m**2)
      real(r8), pointer :: eflx_sh_grnd_patch      (:)   ! patch sensible heat flux from ground (W/m**2) [+ to atm]
      real(r8), pointer :: eflx_sh_veg_patch       (:)   ! patch sensible heat flux from leaves (W/m**2) [+ to atm]
      real(r8), pointer :: eflx_sh_snow_patch      (:)   ! patch sensible heat flux from snow (W/m**2) [+ to atm]
@@ -111,6 +113,10 @@ module EnergyFluxType
      real(r8), pointer :: errlon_patch            (:)   ! longwave radiation conservation error (W/m**2)
      real(r8), pointer :: errlon_col              (:)   ! longwave radiation conservation error (W/m**2)
 
+     ! Objects that help convert once-per-year dynamic land cover changes into fluxes
+     ! that are dribbled throughout the year
+     type(annual_flux_dribbler_type) :: eflx_dynbal_dribbler
+
    contains
 
      procedure, public  :: Init         
@@ -165,6 +171,7 @@ contains
     begl = bounds%begl; endl= bounds%endl
     begg = bounds%begg; endg= bounds%endg
 
+    allocate( this%eflx_h2osfc_to_snow_col (begc:endc))             ; this%eflx_h2osfc_to_snow_col (:)   = nan
     allocate( this%eflx_sh_snow_patch      (begp:endp))             ; this%eflx_sh_snow_patch      (:)   = nan
     allocate( this%eflx_sh_soil_patch      (begp:endp))             ; this%eflx_sh_soil_patch      (:)   = nan
     allocate( this%eflx_sh_h2osfc_patch    (begp:endp))             ; this%eflx_sh_h2osfc_patch    (:)   = nan
@@ -248,6 +255,11 @@ contains
     allocate( this%errsol_col              (begc:endc))             ; this%errsol_col              (:)   = nan
     allocate( this%errlon_patch            (begp:endp))             ; this%errlon_patch            (:)   = nan
     allocate( this%errlon_col              (begc:endc))             ; this%errlon_col              (:)   = nan
+
+    this%eflx_dynbal_dribbler = annual_flux_dribbler_gridcell( &
+         bounds = bounds, &
+         name = 'eflx_dynbal', &
+         units = 'J/m**2')
 
   end subroutine InitAllocate
     
@@ -700,6 +712,8 @@ contains
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%btran2_patch) 
+
+    call this%eflx_dynbal_dribbler%Restart(bounds, ncid, flag)
 
   end subroutine Restart
 

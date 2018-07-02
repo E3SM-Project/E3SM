@@ -12,7 +12,7 @@ module datm_comp_mod
   use shr_sys_mod
   use shr_kind_mod   , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_file_mod   , only: shr_file_getunit, shr_file_freeunit
-  use shr_cal_mod    , only: shr_cal_date2julian
+  use shr_cal_mod    , only: shr_cal_date2julian, shr_cal_ymdtod2string
   use shr_mpi_mod    , only: shr_mpi_bcast
   use shr_precip_mod , only: shr_precip_partition_rain_snow_ramp
   use shr_strdata_mod, only: shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
@@ -51,14 +51,12 @@ module datm_comp_mod
 
   character(CS) :: myModelName = 'atm'   ! user defined model name
   logical       :: firstcall = .true.    ! first call logical
-  integer(IN)   :: dbug = 0              ! debug level (higher is more)
   real(R8)      :: tbotmax               ! units detector
   real(R8)      :: tdewmax               ! units detector
   real(R8)      :: anidrmax              ! existance detector
 
   character(len=*),parameter :: rpfile = 'rpointer.atm'
 
-  real(R8),parameter :: aerodep_spval = 1.e29_r8    ! special aerosol deposition
   real(R8),parameter :: tKFrz  = SHR_CONST_TKFRZ
   real(R8),parameter :: degtorad = SHR_CONST_PI/180.0_R8
   real(R8),parameter :: pstd   = SHR_CONST_PSTD     ! standard pressure ~ Pa
@@ -73,11 +71,10 @@ module datm_comp_mod
 
   real(R8)           :: dTarc(12)
   data   dTarc      / 0.49_R8, 0.06_R8,-0.73_R8,  -0.89_R8,-0.77_R8,-1.02_R8, &
-                     -1.99_R8,-0.91_R8, 1.72_R8,   2.30_R8, 1.81_R8, 1.06_R8/
+       -1.99_R8,-0.91_R8, 1.72_R8,   2.30_R8, 1.81_R8, 1.06_R8/
 
   integer(IN) :: kz,ktopo,ku,kv,ktbot,kptem,kshum,kdens,kpbot,kpslv,klwdn
-  integer(IN) :: krc,krl,ksc,ksl,kswndr,kswndf,kswvdr,kswvdf,kswnet,kco2p,kco2d
-  integer(IN) :: kbid,kbod,kbiw,koid,kood,koiw,kdw1,kdw2,kdw3,kdw4,kdd1,kdd2,kdd3,kdd4
+  integer(IN) :: krc,krl,ksc,ksl,kswndr,kswndf,kswvdr,kswvdf,kswnet
   integer(IN) :: kanidr,kanidf,kavsdr,kavsdf
   integer(IN) :: stbot,swind,sz,spbot,sshum,stdew,srh,slwdn,sswdn,sswdndf,sswdndr
   integer(IN) :: sprecc,sprecl,sprecn,sco2p,sco2d,sswup,sprec,starcf
@@ -88,10 +85,7 @@ module datm_comp_mod
   integer(IN) :: krl_18O, krl_HDO
   integer(IN) :: ksc_18O, ksc_HDO
   integer(IN) :: ksl_18O, ksl_HDO
-  integer(IN) :: sshum_16O, sshum_18O, sshum_HDO
   integer(IN) :: srh_16O, srh_18O, srh_HDO
-  integer(IN) :: sprecc_18O, sprecc_HDO
-  integer(IN) :: sprecl_18O, sprecl_HDO
   integer(IN) :: sprecn_16O, sprecn_18O, sprecn_HDO
 
   ! anomaly forcing
@@ -125,11 +119,11 @@ module datm_comp_mod
        "Faxx_taux       ","Faxx_tauy       ","Faxx_lat        ","Faxx_sen        ", &
        "Faxx_lwup       ","Faxx_evap       ","Fall_fco2_lnd   ","Faoo_fco2_ocn   ", &
        "Faoo_fdms_ocn   ",  &
-       ! add values for bias correction / anomaly forcing
+                                ! add values for bias correction / anomaly forcing
        "Sa_precsf       ", &
        "Sa_prec_af      ","Sa_u_af         ","Sa_v_af         ","Sa_tbot_af      ",&
        "Sa_pbot_af      ","Sa_shum_af      ","Sa_swdn_af      ","Sa_lwdn_af      ",&
-       ! isotopic forcing
+                                ! isotopic forcing
        "Faxa_rainc_18O  ","Faxa_rainc_HDO  ","Faxa_rainl_18O  ","Faxa_rainl_HDO  ",&
        "Faxa_snowc_18O  ","Faxa_snowc_HDO  ","Faxa_snowl_18O  ","Faxa_snowl_HDO  ",&
        "Sa_shum_16O     ","Sa_shum_18O     ","Sa_shum_HDO     " &
@@ -152,11 +146,11 @@ module datm_comp_mod
        "taux            ","tauy            ","lat             ","sen             ", &
        "lwup            ","evap            ","co2lnd          ","co2ocn          ", &
        "dms             ", &
-       ! add values for bias correction / anomaly forcing (add Sa_precsf for precip scale factor)
+                                ! add values for bias correction / anomaly forcing (add Sa_precsf for precip scale factor)
        "precsf          ", &
        "prec_af         ","u_af            ","v_af            ","tbot_af         ", &
        "pbot_af         ","shum_af         ","swdn_af         ","lwdn_af         ", &
-       ! isotopic forcing
+                                ! isotopic forcing
        "rainc_18O       ","rainc_HDO       ","rainl_18O       ","rainl_HDO       ", &
        "snowc_18O       ","snowc_HDO       ","snowl_18O       ","snowl_HDO       ", &
        "shum_16O        ","shum_18O        ","shum_HDO        " &
@@ -175,7 +169,7 @@ module datm_comp_mod
        "strm_swdn       ","strm_swdndf     ","strm_swdndr     ","strm_precc      ", &
        "strm_precl      ","strm_precn      ","strm_co2prog    ","strm_co2diag    ", &
        "strm_swup       ","strm_prec       ","strm_tarcf      ", &
-       ! add bias correction / anomaly forcing streams
+                                ! add bias correction / anomaly forcing streams
        "strm_precsf     ", &
        "strm_prec_af    ","strm_u_af       ","strm_v_af       ","strm_tbot_af    ", &
        "strm_pbot_af    ","strm_shum_af    ","strm_swdn_af    ","strm_lwdn_af    ", &
@@ -188,12 +182,12 @@ module datm_comp_mod
        "shum            ","tdew            ","rh              ","lwdn            ", &
        "swdn            ","swdndf          ","swdndr          ","precc           ", &
        "precl           ","precn           ","co2prog         ","co2diag         ", &
-       ! add precsf
+                                ! add precsf
        "swup            ","prec            ","tarcf           ","precsf          ", &
-       ! add anomaly forcing streams
+                                ! add anomaly forcing streams
        "prec_af         ","u_af            ","v_af            ","tbot_af         ", &
        "pbot_af         ","shum_af         ","swdn_af         ","lwdn_af         ", &
-       ! isotopic forcing
+                                ! isotopic forcing
        "rh_18O          ","rh_HDO          ", &
        "precn_16O       ","precn_18O       ","precn_HDO       "  &
        /)
@@ -207,9 +201,9 @@ module datm_comp_mod
 
   save
 
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   !===============================================================================
   subroutine datm_comp_init(Eclock, x2a, a2x, &
        seq_flds_x2a_fields, seq_flds_a2x_fields, &
@@ -247,7 +241,7 @@ CONTAINS
     integer                , intent(in)    :: phase               ! initialization phase index
     real(R8)               , intent(out)   :: nextsw_cday         ! calendar of next atm sw
 
-  !--- local variables ---
+    !--- local variables ---
     integer(IN)   :: n,k         ! generic counters
     integer(IN)   :: lsize     ! local size
     integer(IN)   :: kmask       ! field reference
@@ -318,9 +312,6 @@ CONTAINS
        k = mct_aVect_indexRA(SDATM%grid%data,'frac')
        SDATM%grid%data%rAttr(k,:) = 1.0_R8
 
-       !--- set data needed for cosz t-interp method ---
-       call shr_strdata_setOrbs(SDATM,orbEccen,orbMvelpp,orbLambm0,orbObliqr,idt)
-
        if (my_task == master_task) then
           call shr_strdata_print(SDATM,'ATM data')
        endif
@@ -387,8 +378,6 @@ CONTAINS
        kswvdr= mct_aVect_indexRA(a2x,'Faxa_swvdr')
        kswvdf= mct_aVect_indexRA(a2x,'Faxa_swvdf')
        kswnet= mct_aVect_indexRA(a2x,'Faxa_swnet')
-       kco2p = mct_aVect_indexRA(a2x,'Sa_co2prog',perrWith='quiet')
-       kco2d = mct_aVect_indexRA(a2x,'Sa_co2diag',perrWith='quiet')
 
        if (wiso_datm) then  ! water isotopic forcing
           kshum_16O = mct_aVect_indexRA(a2x,'Sa_shum_16O')
@@ -403,21 +392,6 @@ CONTAINS
           ksl_18O   = mct_aVect_indexRA(a2x,'Faxa_snowl_18O')
           ksl_HDO   = mct_aVect_indexRA(a2x,'Faxa_snowl_HDO')
        end if
-
-       kbid  = mct_aVect_indexRA(a2x,'Faxa_bcphidry')
-       kbod  = mct_aVect_indexRA(a2x,'Faxa_bcphodry')
-       kbiw  = mct_aVect_indexRA(a2x,'Faxa_bcphiwet')
-       koid  = mct_aVect_indexRA(a2x,'Faxa_ocphidry')
-       kood  = mct_aVect_indexRA(a2x,'Faxa_ocphodry')
-       koiw  = mct_aVect_indexRA(a2x,'Faxa_ocphiwet')
-       kdd1  = mct_aVect_indexRA(a2x,'Faxa_dstdry1')
-       kdd2  = mct_aVect_indexRA(a2x,'Faxa_dstdry2')
-       kdd3  = mct_aVect_indexRA(a2x,'Faxa_dstdry3')
-       kdd4  = mct_aVect_indexRA(a2x,'Faxa_dstdry4')
-       kdw1  = mct_aVect_indexRA(a2x,'Faxa_dstwet1')
-       kdw2  = mct_aVect_indexRA(a2x,'Faxa_dstwet2')
-       kdw3  = mct_aVect_indexRA(a2x,'Faxa_dstwet3')
-       kdw4  = mct_aVect_indexRA(a2x,'Faxa_dstwet4')
 
        call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
        call mct_aVect_zero(x2a)
@@ -574,9 +548,24 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     call t_adj_detailf(+2)
-    call datm_comp_run(EClock, x2a, a2x, &
-         SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, logunit, nextsw_cday)
+    call datm_comp_run( &
+         EClock = EClock, &
+         x2a = x2a, &
+         a2x = a2x, &
+         SDATM = SDATM, &
+         gsmap = gsmap, &
+         ggrid = ggrid, &
+         mpicom = mpicom, &
+         compid = compid, &
+         my_task = my_task, &
+         master_task = master_task, &
+         inst_suffix = inst_suffix, &
+         logunit = logunit, &
+         orbEccen = orbEccen, &
+         orbMvelpp = orbMvelpp, &
+         orbLambm0 = orbLambm0, &
+         orbObliqr = orbObliqr, &
+         nextsw_cday = nextsw_cday)
     call t_adj_detailf(-2)
 
     call t_stopf('DATM_INIT')
@@ -586,7 +575,9 @@ CONTAINS
   !===============================================================================
   subroutine datm_comp_run(EClock, x2a, a2x, &
        SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, nextsw_cday, case_name)
+       inst_suffix, logunit, &
+       orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
+       nextsw_cday, case_name)
 
     ! !DESCRIPTION: run method for datm model
 
@@ -605,6 +596,10 @@ CONTAINS
     integer(IN)            , intent(in)    :: master_task      ! task number of master task
     character(len=*)       , intent(in)    :: inst_suffix      ! char string associated with instance
     integer(IN)            , intent(in)    :: logunit          ! logging unit number
+    real(R8)               , intent(in)    :: orbEccen         ! orb eccentricity (unit-less)
+    real(R8)               , intent(in)    :: orbMvelpp        ! orb moving vernal eq (radians)
+    real(R8)               , intent(in)    :: orbLambm0        ! orb mean long of perhelion (radians)
+    real(R8)               , intent(in)    :: orbObliqr        ! orb obliquity (radians)
     real(R8)               , intent(out)   :: nextsw_cday      ! calendar of next atm sw
     character(CL)          , intent(in), optional :: case_name ! case name
 
@@ -621,7 +616,6 @@ CONTAINS
     character(CL) :: rest_file_strm    ! restart_file
     integer(IN)   :: nu                ! unit number
     integer(IN)   :: stepno            ! step number
-    integer(IN)   :: eday              ! elapsed day
     real(R8)      :: rday              ! elapsed day
     real(R8)      :: cosFactor         ! cosine factor
     real(R8)      :: factor            ! generic/temporary correction factor
@@ -629,9 +623,10 @@ CONTAINS
     real(R8)      :: tMin              ! minimum temperature
     character(CL) :: calendar          ! calendar type
 
+    character(len=18) :: date_str
     !--- temporaries
     real(R8)      :: uprime,vprime,swndr,swndf,swvdr,swvdf,ratio_rvrf
-    real(R8)      :: tbot,pbot,rtmp,vp,ea,e,qsat,frac,qsatT
+    real(R8)      :: tbot,pbot,rtmp,vp,ea,e,qsat,frac
 
     character(*), parameter :: F00   = "('(datm_comp_run) ',8a)"
     character(*), parameter :: F04   = "('(datm_comp_run) ',2a,2i8,'s')"
@@ -660,6 +655,9 @@ CONTAINS
 
     nextsw_cday = datm_shr_getNextRadCDay( CurrentYMD, CurrentTOD, stepno, idt, iradsw, calendar )
 
+    !--- set data needed for cosz t-interp method ---
+    call shr_strdata_setOrbs(SDATM,orbEccen,orbMvelpp,orbLambm0,orbObliqr,idt)
+
     !--- copy all fields from streams to a2x as default ---
 
     call t_startf('datm_strdata_advance')
@@ -669,25 +667,6 @@ CONTAINS
     call t_barrierf('datm_scatter_BARRIER',mpicom)
 
     call t_startf('datm_scatter')
-    if (trim(datamode) /= 'COPYALL') then
-       lsize = mct_avect_lsize(a2x)
-       do n = 1,lsize
-          a2x%rAttr(kbid,n) = aerodep_spval
-          a2x%rAttr(kbod,n) = aerodep_spval
-          a2x%rAttr(kbiw,n) = aerodep_spval
-          a2x%rAttr(koid,n) = aerodep_spval
-          a2x%rAttr(kood,n) = aerodep_spval
-          a2x%rAttr(koiw,n) = aerodep_spval
-          a2x%rAttr(kdd1,n) = aerodep_spval
-          a2x%rAttr(kdd2,n) = aerodep_spval
-          a2x%rAttr(kdd3,n) = aerodep_spval
-          a2x%rAttr(kdd4,n) = aerodep_spval
-          a2x%rAttr(kdw1,n) = aerodep_spval
-          a2x%rAttr(kdw2,n) = aerodep_spval
-          a2x%rAttr(kdw3,n) = aerodep_spval
-          a2x%rAttr(kdw4,n) = aerodep_spval
-       enddo
-    endif
     if (firstcall) then
        allocate(ilist_av(SDATM%nstreams))
        allocate(olist_av(SDATM%nstreams))
@@ -842,6 +821,74 @@ CONTAINS
              factor = MIN(1.0_R8, 0.1_R8*(yc(n)-60.0_R8) )
              a2x%rAttr(klwdn,n) = a2x%rAttr(klwdn,n) + factor * dLWarc
           endif
+
+       enddo   ! lsize
+
+    case('CORE_IAF_JRA')
+       if (firstcall) then
+          if (sprec < 1 .or. sswdn < 1) then
+             write(logunit,F00) 'ERROR: prec and swdn must be in streams for CORE_IAF_JRA'
+             call shr_sys_abort(trim(subname)//'ERROR: prec and swdn must be in streams for CORE_IAF_JRA')
+          endif
+          if (trim(datamode) == 'CORE_IAF_JRA' ) then
+             if (starcf < 1 ) then
+                write(logunit,F00) 'ERROR: tarcf must be in an input stream for CORE_IAF_JRA'
+                call shr_sys_abort(trim(subname)//'tarcf must be in an input stream for CORE_IAF_JRA')
+             endif
+          endif
+          if (trim(factorFn) == 'null') then
+             windFactor = 1.0_R8
+             winddFactor = 1.0_R8
+             qsatFactor = 1.0_R8
+          else
+             call datm_shr_CORE2getFactors(factorFn,windFactor,winddFactor,qsatFactor, &
+                  mpicom,compid,gsmap,ggrid,SDATM%nxg,SDATM%nyg)
+          endif
+       endif
+       call shr_cal_date2julian(currentYMD,currentTOD,rday,calendar)
+       rday = mod((rday - 1.0_R8),365.0_R8)
+       cosfactor = cos((2.0_R8*SHR_CONST_PI*rday)/365 - phs_c0)
+
+       lsize = mct_avect_lsize(a2x)
+       do n = 1,lsize
+          a2x%rAttr(kz,n) = 10.0_R8
+
+          !--- density, tbot, & pslv taken directly from input stream, set pbot ---
+          a2x%rAttr(kpbot,n) = a2x%rAttr(kpslv,n)
+
+          a2x%rAttr(kptem,n) = a2x%rAttr(ktbot,n)
+
+          !--- density computation for JRA55 forcing ---
+          a2x%rAttr(kdens,n) = a2x%rAttr(kpbot,n)/(rdair*a2x%rAttr(ktbot,n) &
+               *(1+0.608* a2x%rAttr(kshum,n)))
+
+          !-------------------------------------------------------------------------
+          ! PRECIPITATION DATA
+          !-------------------------------------------------------------------------
+
+          a2x%rAttr(krc,n) = 0.0_R8                    ! default zero
+          a2x%rAttr(ksc,n) = 0.0_R8
+          if (a2x%rAttr(ktbot,n) < tKFrz ) then        ! assign precip to rain/snow components
+             a2x%rAttr(krl,n) = 0.0_R8
+             a2x%rAttr(ksl,n) = avstrm%rAttr(sprec,n)
+          else
+             a2x%rAttr(krl,n) = avstrm%rAttr(sprec,n)
+             a2x%rAttr(ksl,n) = 0.0_R8
+          endif
+
+          !-------------------------------------------------------------------------
+          ! RADIATION DATA
+          !-------------------------------------------------------------------------
+
+          !--- fabricate required swdn components from net swdn ---
+          a2x%rAttr(kswvdr,n) = avstrm%rAttr(sswdn,n)*(0.28_R8)
+          a2x%rAttr(kswndr,n) = avstrm%rAttr(sswdn,n)*(0.31_R8)
+          a2x%rAttr(kswvdf,n) = avstrm%rAttr(sswdn,n)*(0.24_R8)
+          a2x%rAttr(kswndf,n) = avstrm%rAttr(sswdn,n)*(0.17_R8)
+
+          !--- compute net short-wave based on LY08 latitudinally-varying albedo ---
+          avg_alb = ( 0.069 - 0.011*cos(2.0_R8*yc(n)*degtorad ) )
+          a2x%rAttr(kswnet,n) = avstrm%rAttr(sswdn,n)*(1.0_R8 - avg_alb)
 
        enddo   ! lsize
 
@@ -1076,12 +1123,12 @@ CONTAINS
 
     if (write_restart) then
        call t_startf('datm_restart')
-       write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-            trim(case_name), '.datm'//trim(inst_suffix)//'.r.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
-       write(rest_file_strm,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-            trim(case_name), '.datm'//trim(inst_suffix)//'.rs1.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
+       call shr_cal_ymdtod2string(date_str, yy,mm,dd,currentTOD)
+
+       write(rest_file,"(6a)") &
+            trim(case_name), '.datm',trim(inst_suffix),'.r.', trim(date_str), '.nc'
+       write(rest_file_strm,"(6a)") &
+            trim(case_name), '.datm',trim(inst_suffix),'.rs1.', trim(date_str), '.bin'
        if (my_task == master_task) then
           nu = shr_file_getUnit()
           open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')

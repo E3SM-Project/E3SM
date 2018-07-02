@@ -30,11 +30,12 @@ CP    := cp
 exec_se: $(EXEC_SE)  Depends
 complib: $(COMPLIB)  Depends
 
+
 CIME_MODEL ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MODEL --value)
 EXEROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) EXEROOT --value)
-BUILD_THREADED ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) BUILD_THREADED --value)
+SMP_PRESENT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SMP_PRESENT --value)
 SMP ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SMP --value)
-LIBROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) BUILD_THREADED --value)
+LIBROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) LIBROOT --value)
 SHAREDLIBROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SHAREDLIBROOT --value)
 COMPILER ?=  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
 NINST_VALUE ?=  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
@@ -48,7 +49,7 @@ ifeq ($(strip $(SMP)),TRUE)
    THREADDIR = threads
    compile_threaded = true
 else
-   ifeq ($(strip $(BUILD_THREADED)),TRUE)
+   ifeq ($(strip $(SMP_PRESENT)),TRUE)
       THREADDIR = threads
       compile_threaded = true
    else
@@ -442,6 +443,10 @@ endif
 ifndef CISM_LIBDIR
   CISM_LIBDIR=$(GLC_DIR)/lib
 endif
+ifndef GLCROOT
+  # Backwards compatibility
+  GLCROOT=$(CIMEROOT)/../components/cism
+endif
 
 INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include
 
@@ -678,7 +683,7 @@ CMAKE_ENV_VARS += CC=$(CC) \
 .PHONY: $(GLC_DIR)/Makefile
 $(GLC_DIR)/Makefile:
 	cd $(GLC_DIR); \
-	$(CMAKE_ENV_VARS) cmake $(CMAKE_OPTS) $(CIMEROOT)/../components/cism/glimmer-cism
+	$(CMAKE_ENV_VARS) cmake $(CMAKE_OPTS) $(GLCROOT)/source_cism
 
 $(PIO_LIBDIR)/Makefile:
 	cd $(PIO_LIBDIR); \
@@ -845,21 +850,23 @@ $(MCTLIBS)  : $(MPISERIAL)
 $(PIOLIB) : $(MPISERIAL) $(GPTLLIB)
 
 $(CSMSHARELIB):  $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
+
 ifneq ($(MODEL),csm_share)
   $(OBJS):  $(CSMSHARELIB)
+else
+  complib: install_lib
 endif
+
+install_lib: $(COMPLIB)
+	$(CP) -p $(COMPLIB) $(CSMSHARELIB)
+	$(CP) -p *.$(MOD_SUFFIX) *.h $(INCLUDE_DIR)
+
 
 $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(LDFLAGS)
 
-ifdef INCLUDE_DIR
-  $(COMPLIB): $(OBJS)
+$(COMPLIB): $(OBJS)
 	$(AR) -r $(COMPLIB) $(OBJS)
-	$(CP) *.$(MOD_SUFFIX) *.h $(INCLUDE_DIR)
-else
-  $(COMPLIB): $(OBJS)
-	$(AR) -r $(COMPLIB) $(OBJS)
-endif
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS)  $<

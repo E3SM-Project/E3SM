@@ -16,14 +16,13 @@ class Compsets(GenericXML):
             files = Files()
         schema = files.get_schema("COMPSETS_SPEC_FILE")
         GenericXML.__init__(self, infile, schema=schema)
-        self.groups={}
 
     def get_compset_match(self, name):
         """
         science support is used in cesm to determine if this compset and grid
         is scientifically supported.   science_support is returned as an array of grids for this compset
         """
-        nodes = self.get_nodes("compset")
+        nodes = self.get_children("compset")
         alias = None
         lname = None
 
@@ -33,9 +32,9 @@ class Compsets(GenericXML):
             alias = self.get_element_text("alias",root=node)
             lname = self.get_element_text("lname",root=node)
             if alias == name or lname == name:
-                science_support_nodes = self.get_nodes("science_support", root=node)
+                science_support_nodes = self.get_children("science_support", root=node)
                 for snode in science_support_nodes:
-                    science_support.append(snode.get("grid"))
+                    science_support.append(self.get(snode, "grid"))
                 logger.debug("Found node match with alias: {} and lname: {}".format(alias, lname))
                 return (lname, alias, science_support)
         return (None, None, [False])
@@ -45,59 +44,55 @@ class Compsets(GenericXML):
         Variables can be set in config_compsets.xml in entry id settings with compset and grid attributes
         find and return id value pairs here
         '''
-        nodes = self.get_nodes("entry")
-        # Get an empty entryid obj to use
-        entryidobj = EntryID()
+        entries = self.get_optional_child("entries")
         result = []
-        for node in nodes:
-            value = entryidobj.get_default_value(node, {"grid":grid, "compset":compset})
-            if value is not None:
-                result.append((node.get("id"), value))
+        if entries is not None:
+            nodes = self.get_children("entry", root=entries)
+            # Get an empty entryid obj to use
+            entryidobj = EntryID()
+            for node in nodes:
+                value = entryidobj.get_default_value(node, {"grid":grid, "compset":compset})
+                if value is not None:
+                    result.append((self.get(node, "id"), value))
+
         return result
 
     #pylint: disable=arguments-differ
     def get_value(self, name, attribute=None, resolved=False, subgroup=None):
         expect(subgroup is None, "This class does not support subgroups")
         if name == "help":
-            rootnode = self.get_node("help")
-            helptext = rootnode.text
+            rootnode = self.get_child("help")
+            helptext = self.text(rootnode)
             return helptext
         else:
             compsets = {}
-            nodes = self.get_nodes(nodename="compset")
+            nodes = self.get_children("compset")
             for node in nodes:
                 for child in node:
-                    logger.debug ("Here child is {} with value {}".format(child.tag,child.text))
-                    if child.tag == "alias":
-                        alias = child.text
-                    if child.tag == "lname":
-                        lname = child.text
+                    logger.debug ("Here child is {} with value {}".format(self.name(child),self.text(child)))
+                    if self.name(child) == "alias":
+                        alias = self.text(child)
+                    if self.name(child) == "lname":
+                        lname = self.text(child)
                 compsets[alias] = lname
             return compsets
 
     def print_values(self, arg_help=True):
         help_text = self.get_value(name="help")
-        compsets_text = self.get_value("names")
+        compsets = self.get_children("compset")
         if arg_help:
             logger.info(" {} ".format(help_text))
 
         logger.info("       --------------------------------------")
         logger.info("       Compset Alias: Compset Long Name ")
         logger.info("       --------------------------------------")
-        for key in sorted(compsets_text.keys()):
-            logger.info("   {:20} : {}".format(key, compsets_text[key]))
+        for compset in compsets:
+            logger.info("   {:20} : {}".format(self.text(self.get_child("alias",root=compset)),
+                                               self.text(self.get_child("lname", root=compset))))
 
-    def return_all_values(self):
-        all_compsets = dict()
-        science_compsets = dict()
-        help_text = self.get_value(name="help")
-        compsets_text = self.get_value("names")
-        for key in sorted(compsets_text.keys()):
-            all_compsets[key] = compsets_text[key]
-
-        # get the matching science support grids
-        for alias in all_compsets.keys():
-            science_compsets[alias] = self.get_compset_match(alias)
-            
-        return help_text, all_compsets
-
+    def get_compset_longnames(self):
+        compset_nodes = self.get_children("compset")
+        longnames = []
+        for comp in compset_nodes:
+            longnames.append(self.text(self.get_child("lname", root=comp)))
+        return(longnames)

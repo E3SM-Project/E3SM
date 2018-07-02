@@ -1,11 +1,12 @@
 .. _load_balancing_tool:
 
 
-*************************
+=========================
  CIME Load Balancing Tool
-*************************
+=========================
+
  Originally Developed by Sheri Mickelson mickelso@ucar.edu
-              Yuri Alekseev (ALCF/Argonne National Laboratory
+ and Yuri Alekseev (ALCF/Argonne National Laboratory
 
  Updated 2017 Jason Sarich sarich@mcs.anl.gov (Argonne National Laboratory)
 
@@ -28,65 +29,33 @@ Also in this documentation is::
 
   4. Extending the solver for other models
 
+  5. Testing information for developers
 
 
-*****************
-For the impatient
-*****************
-
-set PYTHONPATH to include
-    $CIME_DIR/scripts:$CIME_DIR/tools/load_balancing_tool
-
-create PE XML <PESFILE> file to describe the PE layouts for the timing runs
-.. code-block:: sh
-
-$ ./load_balancing_submit.py --res <RESOLUTION> --compset <COMPSET> --pesfile <PESFILE>
-
-#  wait for jobs to run
-
-$ ./load_balancing_solve.py --total-tasks <N> --blocksize 8
+*For the impatient*
 
 
+1. set PYTHONPATH to include $CIME_DIR/scripts:$CIME_DIR/tools/load_balancing_tool
+   
+2. create PE XML <PESFILE> file to describe the PE layouts for the timing runs
 
-*******
-Testing
-*******
-.. code-block:: bash
+3. $ ./load_balancing_submit.py --res <RESOLUTION> --compset <COMPSET> --pesfile <PESFILE>
+   
+4. ...  wait for jobs to run ...
+   
+5. $ ./load_balancing_solve.py --total-tasks <N> --blocksize 8
 
-set PYTHONPATH to include
-    $CIME_DIR/scripts:$CIME_DIR/tools/load_balancing_tool
-
-# Run an example:
-$ ./load_balancing_solve.py --json-input tests/example.json --blocksize 8
-Solving Mixed Integer Linear Program using PuLP interface to COIN-CBC
-PuLP solver status: Solved
-COST_ATM = 22.567587
-COST_ICE = 1.375768
-COST_LND = 1.316000
-COST_OCN = 15.745000
-COST_TOTAL = 23.943355
-NBLOCKS_ATM = 124
-NBLOCKS_ICE = 109
-NBLOCKS_LND = 15
-NBLOCKS_OCN = 4
-NTASKS_ATM = 992
-NTASKS_ICE = 872
-NTASKS_LND = 120
-NTASKS_OCN = 32
-NTASKS_TOTAL = 1024
-
-# Run the test suite:
-$ ./tests/load_balancing_test.py
 
 
 ******************************************************************
-1. Running simulations using load_balancing_submit.py
+Running simulations using load_balancing_submit.py
 ******************************************************************
 
 Simulations can be run on a given system by executing the load_balancing_tool.py
 script, located in cime/tools/load_balancing_tool/load_balancing_tool_submit.py.
 This creates timing files in the case directory which will be used to solve
-a mixed integer linear program optimizing the layout.
+a mixed integer linear program optimizing the layout. If there is already timing
+information available, then a 
 
 As with the create_newcase and create_test scripts, command line options
 are used to tailor the simulations for a given model. These values will be
@@ -140,7 +109,7 @@ Other options include::
 
 
 ******************************************************************
-2. Optimizing the layout using load_balacing_solve.py
+Optimizing the layout using load_balacing_solve.py
 ******************************************************************
 
 Reads timing data created with load_balancing_submit.py (or otherwise,
@@ -157,11 +126,13 @@ model day assuming the layout::
 
 
 An IceLndWavAtmOcn layout is also available.  It is possible to extend
-this tool to solve for other layouts (See Section 4 Extending the Load
+this tool to solve for other layouts (See Section 1.4 Extending the Load
 Balancing Tool)
 
 Note -- threading is not considered part of this optimization, it is assumed that
-all timing data have the same threading structure (i.e. all ATM runs use two threads per PE)::
+all timing data have the same threading structure (i.e. all ATM runs use two threads per PE)
+
+Options recognized by the solver::
 
   --layout <class_name>
       Name of the class used to solve the layout problem. The only built-in
@@ -206,7 +177,7 @@ all timing data have the same threading structure (i.e. all ATM runs use two thr
 
 
 ***************************
-3. More about the algorithm
+More about the algorithm
 ***************************
 
 Before solving the mixed-integer linear program, a model of the cost vs ntasks
@@ -223,18 +194,19 @@ If N is between N_i and N_{i+1}, then the cost is on the line defined by the
 points (N_i, C_i) and (N_{i+1}, C_{i+1}.
 
 If N > Nn, then we want to extrapolate the cost at N=total_tasks
-  (we define N{n+1} = total_tasks, C{n+1} = estimated cost using all nodes)
-  Assuming perfect scalability is problematic at this level, so we instead
-  assume that the parallel efficiency drops at the same factor as it does
+(we define N{n+1} = total_tasks, C{n+1} = estimated cost using all nodes)
+Assuming perfect scalability is problematic at this level, so we instead
+assume that the parallel efficiency drops at the same factor as it does
+
   from N=N{n-1} to N = Nn
 
-  First solve for efficiency E:
-  C{n-1} - Cn = E * (C{n-1} * N{n-1} / Nn)
+      First solve for efficiency E:
+      C{n-1} - Cn = E * (C{n-1} * N{n-1} / Nn)
 
-  Then E to find C{n+1} (cost at ntasks N{n+1}):
-  Cn - Ct = E * (Cn * Nn / Nt)
+      Then E to find C{n+1} (cost at ntasks N{n+1}):
+      Cn - Ct = E * (Cn * Nn / Nt)
 
-  Now cost is on the line defined by (Nn,Cn) - (Nt,Ct)
+      Now cost is on the line defined by (Nn,Cn) - (Nt,Ct)
 
 Assuming that this piecewise linear function describes a convex function, we do
 not have to explicitly construct this piecewise function and can instead use
@@ -302,7 +274,7 @@ https://www.coin-or.org/Cbc/
 
 
 ************************************
-4. Extending the Load Balancing Tool
+Extending the Load Balancing Tool
 ************************************
 The file $CIME_DIR/tools/load_balancing_tool/optimize_model.py
 contains a base class OptimizeModel as well as an implementation class
@@ -311,58 +283,100 @@ except for the components involved and the layout-specific constraints.
 
 Example class and inherited methods that should be overridden:
 
-file my_new_layout.py:
-..code-block:: python
+file my_new_layout.py::
 
-import optimize_model
+  import optimize_model
 
-class MyNewLayout(optimize_model.OptimizeModel)
-   def get_required_components(self):
-       """
-       Should be overridden by derived class. Return a list of required
-       components (capitalized) used in the layout.
-       Example: return ['ATM', 'LND', 'ICE']
-       """
+  class MyNewLayout(optimize_model.OptimizeModel)
+     def get_required_components(self):
+         """
+         Should be overridden by derived class. Return a list of required
+         components (capitalized) used in the layout.
+         Example: return ['ATM', 'LND', 'ICE']
+         """
 
-   def optimize(self):
-        """
-        Run the optimization.
-        Must set self.state using LpStatus object
-        LpStatusOptimal    -> STATE_SOLVED_OK
-        LpStatusNotSolved  -> STATE_UNSOLVED
-        LpStatusInfeasible -> STATE_SOLVED_BAD
-        LpStatusUnbounded  -> STATE_SOLVED_BAD
-        LpStatusUndefined  -> STATE_UNDEFINED
-        -- use self.set_state(lpstatus) --
-        Returns state
+     def optimize(self):
+          """
+          Run the optimization.
+          Must set self.state using LpStatus object
+          LpStatusOptimal    -> STATE_SOLVED_OK
+          LpStatusNotSolved  -> STATE_UNSOLVED
+          LpStatusInfeasible -> STATE_SOLVED_BAD
+          LpStatusUnbounded  -> STATE_SOLVED_BAD
+          LpStatusUndefined  -> STATE_UNDEFINED
+          -- use self.set_state(lpstatus) --
+          Returns state
 
-        If solved, then solution will be stored in self.X dictionary, indexed
-        by variable name. Suggested convention:
-        'Tice', 'Tlnd', ... for cost per component
-        'Nice', 'Nlnd', ... for ntasks per component
-        'NBice', 'NBlnd', ... for number of blocks per component
+          If solved, then solution will be stored in self.X dictionary, indexed
+          by variable name. Suggested convention:
+          'Tice', 'Tlnd', ... for cost per component
+          'Nice', 'Nlnd', ... for ntasks per component
+          'NBice', 'NBlnd', ... for number of blocks per component
 
-        The default implementation of get_solution() returns a dictionary
-        of these variable keys and their values.
-        """
+          The default implementation of get_solution() returns a dictionary
+          of these variable keys and their values.
+          """
 
-   def get_solution(self):
-       """
-       Return a dictionary of the solution variables, can be overridden.
-       Default implementation returns values in self.X
-       """
+     def get_solution(self):
+         """
+         Return a dictionary of the solution variables, can be overridden.
+         Default implementation returns values in self.X
+         """
 
 
 To use this new layout:
    1. save the class MyNewLayout in file my_new_layout.py
    2. make sure that my_new_layout.py is in PYTHONPATH
    3. Use those names in your execution command line argument to --layout
-      $ ./load_balancing_solve.py ... --layout my_new_layout.MyNewLayout
+      ::
 
-   -- to permanently add to CIME --
+         $ ./load_balancing_solve.py ... --layout my_new_layout.MyNewLayout
+
+To permanently add to CIME:
 
    1. add MyNewLayout class to layouts.py
    2. run using '--layout MyNewLayout'
    3. add test in tests/load_balance_test.py that uses that name in command
       line argument (see test for atm_lnd)
    4. make pull request
+
+
+*******
+Testing
+*******
+
+To run the provided test suite: 
+
+  1. set PYTHONPATH to include CIME libraries::
+
+      $ export CIME_DIR=/path/to/cime
+      $ export PYTHONPATH=$CIME_DIR/scripts:$CIME_DIR/tools/load_balancing_tool
+
+  2. To run an example::
+
+      $ cd $CIME_DIR/tools/load_balancing_tool
+      $ ./load_balancing_solve.py --json-input tests/example.json --blocksize 8
+      Solving Mixed Integer Linear Program using PuLP interface to COIN-CBC
+      PuLP solver status: Solved
+      COST_ATM = 22.567587
+      COST_ICE = 1.375768
+      COST_LND = 1.316000
+      COST_OCN = 15.745000
+      COST_TOTAL = 23.943355
+      NBLOCKS_ATM = 124
+      NBLOCKS_ICE = 109
+      NBLOCKS_LND = 15
+      NBLOCKS_OCN = 4
+      NTASKS_ATM = 992
+      NTASKS_ICE = 872
+      NTASKS_LND = 120
+      NTASKS_OCN = 32
+      NTASKS_TOTAL = 1024
+
+  3. To run the test suite::
+
+	$ cd $CIME_DIR/tools/load_balancing_tool
+        $ ./tests/load_balancing_test.py
+
+
+      

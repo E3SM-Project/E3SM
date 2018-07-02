@@ -432,7 +432,8 @@ end subroutine convect_shallow_init_cnst
    use physics_buffer,  only : physics_buffer_desc, pbuf_get_field, pbuf_set_field, pbuf_old_tim_idx
    use cam_history,     only : outfld
    use physics_types,   only : physics_state, physics_ptend
-   use physics_types,   only : physics_ptend_init, physics_update
+   use physics_types,   only : physics_ptend_init
+   use physics_update_mod, only: physics_update
    use physics_types,   only : physics_state_copy, physics_state_dealloc
    use physics_types,   only : physics_ptend_dealloc
    use physics_types,   only : physics_ptend_sum
@@ -610,7 +611,7 @@ end subroutine convect_shallow_init_cnst
    case('off', 'CLUBB_SGS') ! None
 
       lq(:) = .TRUE.
-      call physics_ptend_init( ptend_loc, state%psetcols, 'convect_shallow (off)', ls=.true., lq=lq ) ! Initialize local ptend type
+      call physics_ptend_init( ptend_loc, state%psetcols, 'convect_shallow_off', ls=.true., lq=lq ) ! Initialize local ptend type
 
       cmfmc2      = 0._r8
       ptend_loc%q = 0._r8
@@ -942,7 +943,7 @@ end subroutine convect_shallow_init_cnst
 
     lq(1) = .TRUE.
     lq(2:) = .FALSE.
-    call physics_ptend_init(ptend_loc, state1%psetcols, 'zm_conv_evap', ls=.true., lq=lq)
+    call physics_ptend_init(ptend_loc, state1%psetcols, 'shallow_hack', ls=.true., lq=lq)
 
     call pbuf_get_field(pbuf, sh_flxprc_idx, flxprec    )
     call pbuf_get_field(pbuf, sh_flxsnw_idx, flxsnow    )

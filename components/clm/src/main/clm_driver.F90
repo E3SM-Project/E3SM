@@ -9,9 +9,9 @@ module clm_driver
   !
   ! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8
-  use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_ed
+  use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates
   use clm_varpar             , only : nlevtrc_soil, nlevsoi
-  use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_ed, use_betr  
+  use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr  
   use clm_varctl             , only : use_cn, use_cndv, use_lch4, use_voc, use_noio, use_c13, use_c14
   use clm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day, get_curr_time_string
   use clm_varpar             , only : nlevsno, nlevgrnd, crop_prog
@@ -217,7 +217,7 @@ contains
     ! Specified phenology
     ! ============================================================================
 
-    if (.not.use_ed) then
+    if (.not.use_fates) then
        if (use_cn) then 
           ! For dry-deposition need to call CLMSP so that mlaidiff is obtained
           if ( n_drydep > 0 .and. drydep_method == DD_XLND ) then
@@ -345,7 +345,7 @@ contains
        carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars,         &
        carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,            &
        nitrogenstate_vars, nitrogenflux_vars, glc2lnd_vars,                  &
-       phosphorusstate_vars,phosphorusflux_vars)
+       phosphorusstate_vars,phosphorusflux_vars, crop_vars)
     call t_stopf('dyn_subgrid')
 
     ! ============================================================================
@@ -463,7 +463,7 @@ contains
        ! The nourbanp filter is set in dySubgrid_driver (earlier in this call)
        ! over the patch index range defined by bounds_clump%begp:bounds_proc%endp
        
-       if(use_ed) then
+       if(use_fates) then
           call alm_fates%wrap_sunfrac(bounds_clump,atm2lnd_vars, canopystate_vars)
        else
           call CanopySunShadeFractions(filter(nc)%num_nourbanp, filter(nc)%nourbanp,    &
@@ -767,7 +767,7 @@ contains
        endif       
        
          ! FIX(SPM,032414)  push these checks into the routines below and/or make this consistent.
-       if (.not. use_ed) then 
+       if (.not. use_fates) then 
          if( .not. is_active_betr_bgc) then
            if (use_cn) then 
 
@@ -893,7 +893,7 @@ contains
 
           end if  ! end of if-use_cn
           end if ! end of is_active_betr_bgc
-        end if  ! end of if-use_ed
+        end if  ! end of if-use_fates
 
     
 
@@ -1008,7 +1008,7 @@ contains
        endif  !end use_betr        
 
        ! Execute FATES dynamics
-       if ( use_ed ) then
+       if ( use_fates ) then
           if ( is_beg_curr_day() ) then ! run ED at the start of each day
              
              if ( masterproc ) then
@@ -1041,7 +1041,7 @@ contains
                canopystate_vars, soilstate_vars, temperature_vars, &
                ch4_vars, nitrogenflux_vars, nitrogenstate_vars,    &
                phosphorusstate_vars, phosphorusflux_vars,          &
-               alm_fates)
+               alm_fates, crop_vars)
           
        end if
        
@@ -1049,12 +1049,12 @@ contains
        ! Check the energy and water balance, also carbon and nitrogen balance
        ! ============================================================================
 
-       if (.not. use_ed) then
+       if (.not. use_fates) then
 
           if (use_cn) then
             
             if (.not. is_active_betr_bgc)then
-             ! FIX(SPM,032414) there are use_ed checks in this routine...be consistent 
+             ! FIX(SPM,032414) there are use_fates checks in this routine...be consistent 
              ! (see comment above re: no leaching
                call CNEcosystemDynLeaching(bounds_clump,                &
                   filter(nc)%num_soilc, filter(nc)%soilc,               &
@@ -1072,7 +1072,7 @@ contains
              if (doalb) then   
                 call CNVegStructUpdate(filter(nc)%num_soilp, filter(nc)%soilp,   &
                      waterstate_vars, frictionvel_vars, dgvs_vars, cnstate_vars, &
-                     carbonstate_vars, canopystate_vars)
+                     carbonstate_vars, canopystate_vars, crop_vars)
              end if
                
           end if
@@ -1085,7 +1085,7 @@ contains
             waterstate_vars, energyflux_vars, canopystate_vars)
        call t_stopf('balchk')
 
-       if (.not. use_ed)then
+       if (.not. use_fates)then
           if (use_cn) then
              nstep = get_nstep()
 
@@ -1221,7 +1221,7 @@ contains
        end if
        
        if (crop_prog) then
-          call crop_vars%UpdateAccVars(bounds_proc, temperature_vars, cnstate_vars)
+          call crop_vars%UpdateAccVars(bounds_proc, temperature_vars)
        end if
        
        call t_stopf('accum')
@@ -1313,7 +1313,7 @@ contains
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
                waterflux_vars, waterstate_vars,                                               &
                phosphorusstate_vars,phosphorusflux_vars,                                      &
-               ep_betr, alm_fates, rdate=rdate )
+               ep_betr, alm_fates, crop_vars, rdate=rdate )
 
          !----------------------------------------------
          ! pflotran (off now)

@@ -78,7 +78,7 @@ contains
     logical                 , intent(in)    :: ice_c2_wav ! .true.  => ocn to wav coupling on
     !
     ! Local Variables
-    integer                     :: eai , eoi, eii, ewi
+    integer                     :: eai , eoi, eii
     integer                     :: lsize_w
     logical                     :: samegrid_ow   ! samegrid ocean and wave
     logical                     :: samegrid_aw   ! samegrid atm and wave

@@ -1,31 +1,43 @@
 #!/usr/bin/env python
 
 """
-preview_namelists runs the buildnml script for each case component
-which creates the namelist and other model input files, it then
-copies those files to the CaseDocs subdirectory for inspection
+Creates namelist and other model input files for each component (by running each
+component's buildnml script). Then copies the generated files to the CaseDocs
+subdirectory for inspection.
+
+It is not required to run this manually: namelists will be generated
+automatically when the run starts. However, this can be useful in order to
+review the namelists before submitting the case.
+
+case.setup must be run before this.
+
+Typical usage is simply:
+   ./preview_namelists
 """
 
 from standard_script_setup import *
 
-from CIME.preview_namelists import create_namelists
 from CIME.case              import Case
 from CIME.utils             import expect
 
-import argparse, doctest
+import argparse
 
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
-    parser = argparse.ArgumentParser(description=description)
+    parser = argparse.ArgumentParser(
+        description=description,
+        formatter_class=argparse.RawTextHelpFormatter)
+
     CIME.utils.setup_standard_logging_options(parser)
 
     parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
-                        help="Case directory to build")
+                        help="Case directory for which namelists are generated.\n"
+                        "Default is current directory.")
+
     parser.add_argument('--component',
-                        help="Specify component's namelist to build.")
-    parser.add_argument('--test', action='store_true',
-                        help="Run preview_namelist in test mode.")
+                        help="Specify component's namelist to build.\n"
+                        "If not specified, generates namelists for all components.")
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
@@ -35,14 +47,11 @@ def parse_command_line(args, description):
 def _main_func(description):
 ###############################################################################
     args = parse_command_line(sys.argv, description)
-    if args.test:
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
 
     expect(os.path.isfile(os.path.join(args.caseroot, "CaseStatus")),
            "case.setup must be run prior to running preview_namelists")
     with Case(args.caseroot, read_only=False) as case:
-        create_namelists(case, component=args.component)
+        case.create_namelists(component=args.component)
 
 if (__name__ == "__main__"):
     _main_func(__doc__)

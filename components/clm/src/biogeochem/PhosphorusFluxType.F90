@@ -231,7 +231,9 @@ module PhosphorusFluxType
 
      real(r8), pointer :: biochem_pmin_ppools_vr_col                (:,:,:) ! col vertically-resolved biochemical P mineralization for each soi pool (gP/m3/s)
      real(r8), pointer :: biochem_pmin_vr_col                       (:,:)   ! col vertically-resolved total biochemical P mineralization (gP/m3/s)
-     real(r8), pointer :: biochem_pmin_col                          (:)   ! col vert-int (diagnostic) total biochemical P mineralization (gP/m3/s)
+     real(r8), pointer :: biochem_pmin_to_plant_patch               (:)     ! biochemical P mineralization directly goes to plant (gP/m2/s)
+     real(r8), pointer :: biochem_pmin_to_ecosysp_vr_col            (:,:)   ! biochemical P mineralization directly goes to soil (gP/m3/s)
+     real(r8), pointer :: biochem_pmin_col                          (:)     ! col vert-int (diagnostic) total biochemical P mineralization (gP/m3/s)
 
 
      ! new variables for phosphorus code
@@ -317,6 +319,12 @@ module PhosphorusFluxType
      real(r8), pointer :: smin_p_to_plant_col                       (:)     ! for the purpose of mass balance check
      real(r8), pointer :: plant_to_litter_pflux                     (:)     ! for the purpose of mass balance check
      real(r8), pointer :: plant_to_cwd_pflux                        (:)     ! for the purpose of mass balance check
+     real(r8), pointer :: supplement_to_plantp                      (:)     ! supplementary P flux for plant 
+
+     real(r8), pointer :: gap_ploss_litter                          (:)     ! total ploss from veg to litter pool due to gap mortality
+     real(r8), pointer :: fire_ploss_litter                         (:)     ! total ploss from veg to litter pool due to fire
+     real(r8), pointer :: hrv_ploss_litter                          (:)     ! total ploss from veg to litter pool due to harvest mortality
+     real(r8), pointer :: sen_ploss_litter                          (:)     ! total ploss from veg to litter pool due to senescence
 
    contains
 
@@ -468,6 +476,7 @@ contains
     allocate(this%frootp_to_litter_patch                    (begp:endp)) ; this%frootp_to_litter_patch                    (:) = nan
     allocate(this%retransp_to_ppool_patch                   (begp:endp)) ; this%retransp_to_ppool_patch                   (:) = nan
     allocate(this%sminp_to_ppool_patch                      (begp:endp)) ; this%sminp_to_ppool_patch                      (:) = nan
+    allocate(this%biochem_pmin_to_plant_patch               (begp:endp)) ; this%biochem_pmin_to_plant_patch               (:) = nan
 
     allocate(this%ppool_to_leafp_patch              (begp:endp)) ; this%ppool_to_leafp_patch              (:) = nan
     allocate(this%ppool_to_leafp_storage_patch      (begp:endp)) ; this%ppool_to_leafp_storage_patch      (:) = nan
@@ -536,6 +545,7 @@ contains
     allocate(this%supplement_to_sminp_vr_col (begc:endc,1:nlevdecomp_full)) ; this%supplement_to_sminp_vr_col (:,:) = nan
     allocate(this%gross_pmin_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%gross_pmin_vr_col          (:,:) = nan
     allocate(this%net_pmin_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%net_pmin_vr_col            (:,:) = nan
+    allocate(this%biochem_pmin_to_ecosysp_vr_col(begc:endc,1:nlevdecomp_full)) ; this%biochem_pmin_to_ecosysp_vr_col(:,:) = nan
 
     allocate(this%biochem_pmin_ppools_vr_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
     allocate(this%biochem_pmin_vr_col       (begc:endc,1:nlevdecomp_full))
@@ -655,15 +665,26 @@ contains
     allocate(this%smin_p_to_plant_col         (begc:endc                   )) ; this%smin_p_to_plant_col         (:)   = nan
     allocate(this%plant_to_litter_pflux       (begc:endc                   )) ; this%plant_to_litter_pflux       (:)   = nan
     allocate(this%plant_to_cwd_pflux          (begc:endc                   )) ; this%plant_to_cwd_pflux          (:)   = nan
+    allocate(this%supplement_to_plantp        (begp:endp                   )) ; this%supplement_to_plantp        (:)   = 0.d0
 
+    allocate(this%gap_ploss_litter            (begp:endp)) ; this%gap_ploss_litter                  (:) = nan
+    allocate(this%fire_ploss_litter           (begp:endp)) ; this%fire_ploss_litter                 (:) = nan
+    allocate(this%hrv_ploss_litter            (begp:endp)) ; this%hrv_ploss_litter                  (:) = nan
+    allocate(this%sen_ploss_litter            (begp:endp)) ; this%sen_ploss_litter                  (:) = nan
     ! clm_interface & pflotran
     !------------------------------------------------------------------------
-    allocate(this%plant_pdemand_col                 (begc:endc))                                    ; this%plant_pdemand_col                 (:)     = nan
-    allocate(this%plant_pdemand_vr_col              (begc:endc,1:nlevdecomp_full))                  ; this%plant_pdemand_vr_col (:,:) = nan
-    allocate(this%externalp_to_decomp_ppools_col    (begc:endc, 1:nlevdecomp_full, 1:ndecomp_pools)); this%externalp_to_decomp_ppools_col    (:,:,:) = spval
-    allocate(this%externalp_to_decomp_delta_col     (begc:endc))                                    ; this%externalp_to_decomp_delta_col     (:)     = spval
-    allocate(this%sminp_net_transport_vr_col        (begc:endc, 1:nlevdecomp_full))                 ; this%sminp_net_transport_vr_col        (:,:)   = spval
-    allocate(this%sminp_net_transport_delta_col     (begc:endc))                                    ; this%sminp_net_transport_delta_col     (:)     = spval
+    allocate(this%plant_pdemand_col                 (begc:endc))
+    this%plant_pdemand_col                 (:)     = nan
+    allocate(this%plant_pdemand_vr_col              (begc:endc,1:nlevdecomp_full))
+    this%plant_pdemand_vr_col (:,:) = nan
+    allocate(this%externalp_to_decomp_ppools_col    (begc:endc, 1:nlevdecomp_full, 1:ndecomp_pools))
+    this%externalp_to_decomp_ppools_col    (:,:,:) = spval
+    allocate(this%externalp_to_decomp_delta_col     (begc:endc))                                    
+    this%externalp_to_decomp_delta_col     (:)     = spval
+    allocate(this%sminp_net_transport_vr_col        (begc:endc, 1:nlevdecomp_full))                 
+    this%sminp_net_transport_vr_col        (:,:)   = spval
+    allocate(this%sminp_net_transport_delta_col     (begc:endc))                                    
+    this%sminp_net_transport_delta_col     (:)     = spval
     !------------------------------------------------------------------------
   end subroutine InitAllocate
 
@@ -1093,6 +1114,23 @@ contains
     call hist_addfld1d (fname='PFT_FIRE_PLOSS', units='gP/m^2/s', &
          avgflag='A', long_name='total pft-level fire P loss', &
          ptr_patch=this%fire_ploss_patch, default='inactive')
+
+    this%gap_ploss_litter(begp:endp) = spval
+    call hist_addfld1d (fname='GAP_PLOSS_LITTER', units='gN/m^2/s', &
+         avgflag='A', long_name='total ploss from veg to litter due to gap mortality', &
+         ptr_patch=this%gap_ploss_litter, default='inactive')
+    this%fire_ploss_litter(begp:endp) = spval
+    call hist_addfld1d (fname='FIRE_PLOSS_LITTER', units='gN/m^2/s', &
+         avgflag='A', long_name='total ploss from veg to litter due to fire mortality', &
+         ptr_patch=this%fire_ploss_litter, default='inactive')
+    this%hrv_ploss_litter(begp:endp) = spval
+    call hist_addfld1d (fname='HRV_PLOSS_LITTER', units='gN/m^2/s', &
+         avgflag='A', long_name='total ploss from veg to litter due to harvest mortality', &
+         ptr_patch=this%hrv_ploss_litter, default='inactive')
+    this%sen_ploss_litter(begp:endp) = spval
+    call hist_addfld1d (fname='SEN_PLOSS_LITTER', units='gN/m^2/s', &
+         avgflag='A', long_name='total ploss from veg to litter pool due to senescence', &
+         ptr_patch=this%sen_ploss_litter, default='inactive')
 
     if (crop_prog) then
        this%fert_p_patch(begp:endp) = spval
@@ -1925,6 +1963,11 @@ contains
        this%poutputs_patch(i)                            = value_patch
        this%wood_harvestp_patch(i)                       = value_patch
        this%fire_ploss_patch(i)                          = value_patch
+       this%biochem_pmin_to_plant_patch(i)               = value_patch
+       this%gap_ploss_litter(i)                          = value_patch
+       this%fire_ploss_litter(i)                         = value_patch
+       this%hrv_ploss_litter(i)                          = value_patch
+       this%sen_ploss_litter(i)                          = value_patch
     end do
 
     if ( crop_prog )then
@@ -1981,6 +2024,7 @@ contains
           this%gross_pmin_vr_col(i,j)                    = value_column
           this%net_pmin_vr_col(i,j)                      = value_column
           this%biochem_pmin_vr_col(i,j)                  = value_column
+          this%biochem_pmin_to_ecosysp_vr_col(i,j)       = value_column
 
           ! bgc interface & pflotran
           this%plant_pdemand_vr_col(i,j)                 = value_column
@@ -2216,6 +2260,77 @@ contains
             this%m_deadcrootp_xfer_to_fire_patch(p)     + &
             this%m_retransp_to_fire_patch(p)            + &
             this%m_ppool_to_fire_patch(p)
+
+      this%gap_ploss_litter(p) = &
+           this%m_leafp_to_litter_patch(p)              + &
+           this%m_leafp_storage_to_litter_patch(p)      + &
+           this%m_leafp_xfer_to_litter_patch(p)         + &
+           this%m_frootp_to_litter_patch(p)             + &
+           this%m_frootp_storage_to_litter_patch(p)     + &
+           this%m_frootp_xfer_to_litter_patch(p)        + &
+           this%m_livestemp_to_litter_patch(p)          + &
+           this%m_livestemp_storage_to_litter_patch(p)  + &
+           this%m_livestemp_xfer_to_litter_patch(p)     + &
+           this%m_deadstemp_to_litter_patch(p)          + &
+           this%m_deadstemp_storage_to_litter_patch(p)  + &
+           this%m_deadstemp_xfer_to_litter_patch(p)     + &
+           this%m_livecrootp_to_litter_patch(p)         + &
+           this%m_livecrootp_storage_to_litter_patch(p) + &
+           this%m_livecrootp_xfer_to_litter_patch(p)    + &
+           this%m_deadcrootp_to_litter_patch(p)         + &
+           this%m_deadcrootp_storage_to_litter_patch(p) + &
+           this%m_deadcrootp_xfer_to_litter_patch(p)    + &
+           this%m_retransp_to_litter_patch(p)           + &
+           this%m_ppool_to_litter_patch(p)
+
+      this%fire_ploss_litter(p) = &
+           this%m_deadstemp_to_litter_fire_patch(p)     + &
+           this%m_deadcrootp_to_litter_fire_patch(p)    + &
+           this%m_retransp_to_litter_fire_patch(p)      + &
+           this%m_ppool_to_litter_fire_patch(p)         + &
+           this%m_leafp_to_litter_fire_patch(p)         + &
+           this%m_frootp_to_litter_fire_patch(p)        + &
+           this%m_livestemp_to_litter_fire_patch(p)     + &
+           this%m_livecrootp_to_litter_fire_patch(p)    + &
+           this%m_leafp_storage_to_litter_fire_patch(p) + &
+           this%m_frootp_storage_to_litter_fire_patch(p)       + &
+           this%m_livestemp_storage_to_litter_fire_patch(p)    + &
+           this%m_deadstemp_storage_to_litter_fire_patch(p)    + &
+           this%m_livecrootp_storage_to_litter_fire_patch(p)   + &
+           this%m_deadcrootp_storage_to_litter_fire_patch(p)   + &
+           this%m_leafp_xfer_to_litter_fire_patch(p)           + &
+           this%m_frootp_xfer_to_litter_fire_patch(p)          + &
+           this%m_livestemp_xfer_to_litter_fire_patch(p)       + &
+           this%m_deadstemp_xfer_to_litter_fire_patch(p)       + &
+           this%m_livecrootp_xfer_to_litter_fire_patch(p)      + &
+           this%m_deadcrootp_xfer_to_litter_fire_patch(p)
+
+      this%hrv_ploss_litter(p) = &
+           this%hrv_retransp_to_litter_patch(p)         + &
+           this%hrv_ppool_to_litter_patch(p)            + &
+           this%hrv_leafp_to_litter_patch(p)            + &
+           this%hrv_leafp_storage_to_litter_patch(p)    + &
+           this%hrv_leafp_xfer_to_litter_patch(p)       + &
+           this%hrv_frootp_to_litter_patch(p)           + &
+           this%hrv_frootp_storage_to_litter_patch(p)   + &
+           this%hrv_frootp_xfer_to_litter_patch(p)      + &
+           this%hrv_livestemp_to_litter_patch(p)        + &
+           this%hrv_livestemp_storage_to_litter_patch(p)+ &
+           this%hrv_livestemp_xfer_to_litter_patch(p)   + &
+           this%hrv_deadstemp_storage_to_litter_patch(p)+ &
+           this%hrv_deadstemp_xfer_to_litter_patch(p)   + &
+           this%hrv_livecrootp_to_litter_patch(p)       + &
+           this%hrv_livecrootp_storage_to_litter_patch(p)+ &
+           this%hrv_livecrootp_xfer_to_litter_patch(p)  + &
+           this%hrv_deadcrootp_to_litter_patch(p)       + &
+           this%hrv_deadcrootp_storage_to_litter_patch(p)+ &
+           this%hrv_deadcrootp_xfer_to_litter_patch(p)
+
+       this%sen_ploss_litter(p) = &
+           this%livestemp_to_litter_patch(p)            + &
+           this%leafp_to_litter_patch(p)                + &
+           this%frootp_to_litter_patch(p)
+
     end do
 
 

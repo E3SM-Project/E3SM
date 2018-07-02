@@ -30,27 +30,31 @@ add_subdirectory(utils drv_unit_test_utils)
 add_subdirectory(stubs drv_unit_test_stubs)
 
 # Build libraries containing stuff needed for the unit tests.
+#
 # Eventually, these add_library calls should probably be distributed into the
 # correct location, rather than being in this top-level CMakeLists.txt file.
+#
 # Note that we are including the stub pio in the csm_share library for simplicity.
+#
+# We include the esmf_wrf_timemgr_sources in the csm_share library
+# rather than building it into its own library because of circular
+# dependencies: shr_cal_mod (in share_sources) depends on esmf, but esmf
+# depends on shr_sys_mod (also in share_sources).
 add_library(csm_share ${share_sources} ${share_mct_sources} ${share_pio_sources}
-  ${pio_sources})
+  ${pio_sources} ${esmf_wrf_timemgr_sources})
 declare_generated_dependencies(csm_share "${share_genf90_sources}")
 declare_generated_dependencies(csm_share "${pio_genf90_sources}")
 add_dependencies(csm_share mct_project)
 
-add_library(esmf_wrf_timemgr ${esmf_wrf_timemgr_sources})
-add_dependencies(esmf_wrf_timemgr csm_share)
-
 add_library(drv ${drv_sources})
-add_dependencies(drv csm_share esmf_wrf_timemgr)
+add_dependencies(drv csm_share)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # Set the list of libraries needed for these unit tests. Note that not all unit
 # tests need all of these libraries, but it's easiest just to set the same list
 # for everyone.
-set(DRV_UNIT_TEST_LIBS drv;csm_share;esmf_wrf_timemgr;mct;mpeu)
+set(DRV_UNIT_TEST_LIBS drv;csm_share;mct;mpeu)
 if (USE_MPI_SERIAL)
   list(APPEND DRV_UNIT_TEST_LIBS mpi-serial)
 endif()

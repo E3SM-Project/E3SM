@@ -29,6 +29,11 @@ module clm_varsur
   ! (second dimension goes cft_lb:cft_ub)
   real(r8), pointer :: wt_cft(:,:)       
 
+  ! for each cft on the crop landunit prescribe annual fertilizer
+  ! landunit for all all grid cells, even  those without any crop)
+  ! (second dimension goes cft_lb:cft_ub)
+  real(r8), pointer :: fert_cft(:,:)
+
   ! for glc_mec landunits, weight of glacier in each elevation class (adds to 1.0 on the
   ! landunit for all grid cells, even those without any glacier)
   real(r8), pointer :: wt_glc_mec(:,:)   

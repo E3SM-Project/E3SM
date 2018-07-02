@@ -48,10 +48,9 @@ subroutine dead_setNewGrid(decomp_type,nxg,nyg,totpe,mype,lsize,gbuf,seg_len,npr
 !EOP
 
    !--- local ---
-   integer(IN)            :: ierr            ! error code
    logical                :: found
    integer(IN)            :: i,j,ig,jg
-   integer(IN)            :: n,ng,is,ie,js,je,nx,ny      ! indices
+   integer(IN)            :: n,is,ie,js,je,nx,ny      ! indices
    integer(IN)            :: npesx,npesy,mypex,mypey,nxp,nyp
    real   (R8)            :: hscore,bscore
    real   (R8)            :: dx,dy,deg2rad,ys,yc,yn,area,re

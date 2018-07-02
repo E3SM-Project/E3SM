@@ -58,11 +58,11 @@ module component_mod
   ! Private data
   !--------------------------------------------------------------------------
 
-   logical  :: iamroot_GLOID, iamroot_CPLID         ! GLOID, CPLID masterproc
-   logical  :: iamin_CPLID                          ! true => pe associated with CPLID
-   integer  :: mpicom_GLOID, mpicom_CPLID           ! GLOID, CPLID mpi communicator
-   integer  :: nthreads_GLOID, nthreads_CPLID
-   logical  :: drv_threading
+  logical  :: iamroot_GLOID, iamroot_CPLID         ! GLOID, CPLID masterproc
+  logical  :: iamin_CPLID                          ! true => pe associated with CPLID
+  integer  :: mpicom_GLOID, mpicom_CPLID           ! GLOID, CPLID mpi communicator
+  integer  :: nthreads_GLOID, nthreads_CPLID
+  logical  :: drv_threading
 
   !===============================================================================
 
@@ -72,6 +72,7 @@ contains
 
   subroutine component_init_pre(comp, compid, cplcompid, cplallcompid, &
        infodata, ntype)
+    use seq_timemgr_mod, only: seq_timemgr_data_assimilation_active
 
     !---------------------------------------------------------------
     ! Initialize driver rearrangers and AVs on driver
@@ -91,6 +92,7 @@ contains
     !
     ! Local Variables
     integer  :: eci       ! index
+    character(len=cl), allocatable :: comp_resume(:) ! Set if comp needs post-DA process
     character(*), parameter :: subname = '(component_init_pre)'
     !---------------------------------------------------------------
 
@@ -102,6 +104,7 @@ contains
     iamin_CPLID = seq_comm_iamin(CPLID)
 
     ! Initialize component type variables
+    allocate(comp_resume(size(comp)))
     do eci = 1,size(comp)
 
        comp(eci)%compid       = compid(eci)
@@ -141,21 +144,54 @@ contains
        comp(eci)%cdata_cc%gsmap    => comp(eci)%gsmap_cc
        comp(eci)%cdata_cc%infodata => infodata
 
-       ! Determine initial value of comp_present in infodata - to do - add this to component
+       ! Does this component need to do post-data assimilation processing?
+       if (seq_timemgr_data_assimilation_active(ntype(1:3))) then
+          comp_resume(:) = 'TRUE'
+       else
+          comp_resume(:) = ''
+       end if
 
+       ! Determine initial value of comp_present in infodata - to do - add this to component
 #ifdef CPRPGI
-       if (comp(1)%oneletterid == 'a') call seq_infodata_getData(infodata, atm_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'l') call seq_infodata_getData(infodata, lnd_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'i') call seq_infodata_getData(infodata, ice_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'o') call seq_infodata_getData(infodata, ocn_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'r') call seq_infodata_getData(infodata, rof_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'g') call seq_infodata_getData(infodata, glc_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'w') call seq_infodata_getData(infodata, wav_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'e') call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'a') then
+          call seq_infodata_getData(infodata, atm_present=comp(eci)%present)
+          call seq_infodata_PutData(infodata, atm_resume=comp_resume)
+       end if
+       if (comp(1)%oneletterid == 'l') then
+          call seq_infodata_getData(infodata, lnd_present=comp(eci)%present)
+          call seq_infodata_PutData(infodata, lnd_resume=comp_resume)
+       end if
+       if (comp(1)%oneletterid == 'i') then
+          call seq_infodata_getData(infodata, ice_present=comp(eci)%present)
+          call seq_infodata_PutData(infodata, ice_resume=comp_resume)
+       end if
+       if (comp(1)%oneletterid == 'o') then
+          call seq_infodata_getData(infodata, ocn_present=comp(eci)%present)
+          call seq_infodata_PutData(infodata, ocn_resume=comp_resume)
+       end if
+       if (comp(1)%oneletterid == 'r') then
+          call seq_infodata_getData(infodata, rof_present=comp(eci)%present)
+          call seq_infodata_PutData(infodata, rof_resume=comp_resume)
+       end if
+       if (comp(1)%oneletterid == 'g') then
+          call seq_infodata_getData(infodata, glc_present=comp(eci)%present)
+          call seq_infodata_PutData(infodata, glc_resume=comp_resume)
+       end if
+       if (comp(1)%oneletterid == 'w') then
+          call seq_infodata_getData(infodata, wav_present=comp(eci)%present)
+          call seq_infodata_PutData(infodata, wav_resume=comp_resume)
+       end if
+       if (comp(1)%oneletterid == 'e') then
+          call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+       end if
 #else
        call seq_infodata_getData(comp(1)%oneletterid, infodata, comp_present=comp(eci)%present)
+
+       ! Does this component need to do post-data assimilation processing?
+       call seq_infodata_PutData(comp(1)%oneletterid, infodata, comp_resume=comp_resume)
 #endif
     end do
+    deallocate(comp_resume)
 
   end subroutine component_init_pre
 
@@ -366,7 +402,7 @@ contains
                    call shr_sys_flush(logunit)
                 end if
                 call seq_mctext_gGridInit(comp(1))
-                call seq_map_map_exchange(comp(1), flow='c2x', dom_flag=.true., msgtag=comp(1)%cplcompid*100+1*10+1)
+                call seq_map_map_exchange(comp(1), flow='c2x', dom_flag=.true., msgtag=comp(1)%cplcompid*10000+1*10+1)
              else if (eci > 1) then
                 if (iamroot_CPLID) then
                    write(logunit,F0I) 'comparing comp domain ensemble number ',eci
@@ -550,7 +586,7 @@ contains
 
           ! Map component domain from coupler to component processes
           call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%dom_cx%data, &
-               comp(eci)%dom_cc%data, msgtag=comp(eci)%cplcompid*100+eci*10+5)
+               comp(eci)%dom_cc%data, msgtag=comp(eci)%cplcompid*10000+eci*10+5)
 
           ! For only component pes
           if (comp(eci)%iamin_compid) then
@@ -569,7 +605,7 @@ contains
 
           ! Map corrected initial component AVs from component to coupler pes
           call seq_map_map(comp(eci)%mapper_cc2x, comp(eci)%c2x_cc, &
-               comp(eci)%c2x_cx, msgtag=comp(eci)%cplcompid*100+eci*10+7)
+               comp(eci)%c2x_cx, msgtag=comp(eci)%cplcompid*10000+eci*10+7)
 
        endif
     enddo
@@ -828,10 +864,10 @@ contains
 
           if (flow == 'x2c') then ! coupler to component
              call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%x2c_cx, comp(eci)%x2c_cc, &
-                  msgtag=comp(eci)%cplcompid*100+eci*10+2)
+                  msgtag=comp(eci)%cplcompid*10000+eci*10+2)
           else if (flow == 'c2x') then ! component to coupler
              call seq_map_map(comp(eci)%mapper_Cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, &
-                  msgtag=comp(eci)%cplcompid*100+eci*10+4)
+                  msgtag=comp(eci)%cplcompid*10000+eci*10+4)
           end if
 
           if (present(timer_map_exch)) then

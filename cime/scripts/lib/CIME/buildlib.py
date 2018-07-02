@@ -5,16 +5,12 @@ common utilities for buildlib
 from CIME.XML.standard_module_setup import *
 from CIME.case import Case
 from CIME.utils import parse_args_and_handle_standard_logging_options, setup_standard_logging_options
-import sys, os, argparse, doctest
+import sys, os, argparse
 logger = logging.getLogger(__name__)
 
 ###############################################################################
 def parse_input(argv):
 ###############################################################################
-
-    if "--test" in argv:
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
 
     parser = argparse.ArgumentParser()
 
@@ -56,7 +52,6 @@ def build_cime_component_lib(case, compname, libroot, bldroot):
             out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps", "xshare") + "\n")
             out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps",compname, "cpl") + "\n")
         elif compname.startswith('s'):
-            out.write(os.path.join(cimeroot, "src", "components", "stub_comps", "xshare") + "\n")
             out.write(os.path.join(cimeroot, "src", "components", "stub_comps",compname, "cpl") + "\n")
 
     # Build the component
@@ -86,4 +81,5 @@ def run_gmake(case, compclass, libroot, bldroot, libname="", user_cppdefs=""):
     if user_cppdefs:
         cmd = cmd + "USER_CPPDEFS='{}'".format(user_cppdefs )
 
-    run_cmd_no_fail(cmd, combine_output=True)
+    _, out, _ = run_cmd(cmd, combine_output=True)
+    print(out.encode('utf-8'))

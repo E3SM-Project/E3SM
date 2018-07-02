@@ -173,7 +173,7 @@ ENDIF ()
 ##############################################################################
 OPTION(ENABLE_OPENMP "OpenMP across elements" TRUE)
 OPTION(ENABLE_HORIZ_OPENMP "OpenMP across elements" TRUE)
-OPTION(ENABLE_COLUMN_OPENMP "OpenMP within an element" TRUE)
+OPTION(ENABLE_COLUMN_OPENMP "OpenMP within an element" FALSE)
 
 # If OpenMP is turned off also turn off ENABLE_HORIZ_OPENMP
 IF (NOT ${ENABLE_OPENMP}) 
@@ -190,7 +190,7 @@ IF (ENABLE_HORIZ_OPENMP OR ENABLE_COLUMN_OPENMP)
       IF (CMAKE_Fortran_COMPILER_ID STREQUAL XL)
         SET(OpenMP_C_FLAGS "-qsmp=omp")
         IF (ENABLE_COLUMN_OPENMP)
-          SET(OpenMP_C_FLAGS "-qsmp=omp:nested_par -qsuppress=1520-045")
+          SET(OpenMP_C_FLAGS "-qsmp=omp:nested_par -qsuppress=1520-045:1506-793")
         ENDIF ()
       ENDIF ()
       # This file is needed for the timing library - this is currently

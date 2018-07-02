@@ -1,0 +1,4 @@
+#!/bin/bash
+./xmlchange --append CAM_CONFIG_OPTS='-cosp'
+if [ `./xmlquery -value MACH` == cetus ]; then sed s/64M/128M/ env_mach_specific.xml >tmp && mv tmp env_mach_specific.xml; fi
+if [ `./xmlquery --value MACH` == bebop ]; then ./xmlchange --id ATM_PIO_TYPENAME --val netcdf; fi

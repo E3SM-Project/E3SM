@@ -50,17 +50,13 @@ SET(PESE_SRCS_F90
   ${UTILS_SHARE_DIR}/shr_vmath_mod.F90
 )
 
-SET(PESE_SRCS_C
-  ${UTILS_SHARE_DIR}/shr_vmath_fwrap.c
-)
-
 # If the user specified a file for custom compiler options use those
 IF (DEFINED PESE_CUSTOM_FLAGS_FILE)
   setCustomCompilerFlags(PESE_CUSTOM_FLAGS_FILE PESE_SRCS_F90)
 ENDIF ()
 
 # Make SRCS global so the tests can access it
-SET(EXEC_SOURCES ${PESE_SRCS} ${PESE_SRCS_C} ${PESE_SRCS_F90} )
+SET(EXEC_SOURCES ${PESE_SRCS} ${PESE_SRCS_F90} )
 
 # Set up defaults
 IF (NOT PESE_NP)

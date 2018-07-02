@@ -29,6 +29,8 @@ module PDynamicsMod
   use ColumnType          , only : col_pp
   use VegetationType           , only : veg_pp
   use VegetationPropertiesType      , only : veg_vp
+  use clm_varctl          , only : NFIX_PTASE_plant
+
   !
   implicit none
   save
@@ -602,7 +604,8 @@ contains
     use pftvarcon              , only : noveg
     use clm_varpar             , only : ndecomp_pools
     use clm_time_manager       , only : get_step_size
-    
+    use CNDecompCascadeConType , only : decomp_cascade_con
+ 
     !
     ! !ARGUMENTS:
     type(bounds_type)          , intent(in)    :: bounds
@@ -616,40 +619,59 @@ contains
     integer  :: c,fc,p,j,l
     real(r8) :: lamda_up       ! nitrogen cost of phosphorus uptake
     real(r8) :: sop_profile(1:ndecomp_pools)
+    real(r8) :: biochem_pmin_to_ecosysp_vr_col_pot(bounds%begc:bounds%endc,1:nlevdecomp)
+    real(r8) :: biochem_pmin_to_plant_vr_patch(bounds%begp:bounds%endp,1:nlevdecomp)
     real(r8) :: sop_tot
     integer  :: dt
+    real(r8) :: ptase_tmp
     !-----------------------------------------------------------------------
 
     associate(                                                              &
          froot_prof           => cnstate_vars%froot_prof_patch            , & ! fine root vertical profile Zeng, X. 2001. Global vegetation root distribution for land modeling. J. Hydrometeor. 2:525-530
          biochem_pmin_vr      => phosphorusflux_vars%biochem_pmin_vr_col  , &
          biochem_pmin_ppools_vr_col  => phosphorusflux_vars%biochem_pmin_ppools_vr_col ,&
+         biochem_pmin_to_ecosysp_vr_col => phosphorusflux_vars%biochem_pmin_to_ecosysp_vr_col , &
+         biochem_pmin_to_plant_patch    => phosphorusflux_vars%biochem_pmin_to_plant_patch , &
          npimbalance          => nitrogenstate_vars%npimbalance_patch     , &
          vmax_ptase           => veg_vp%vmax_ptase                    , &
          km_ptase             => veg_vp%km_ptase                      , &
+         alpha_ptase          => veg_vp%alpha_ptase                   , &
          decomp_ppools_vr_col => phosphorusstate_vars%decomp_ppools_vr_col, &
          lamda_ptase          => veg_vp%lamda_ptase                   ,  & ! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
          cn_scalar             => cnstate_vars%cn_scalar               , &
-         cp_scalar             => cnstate_vars%cp_scalar                 &
+         cp_scalar             => cnstate_vars%cp_scalar               , &
+         is_soil               => decomp_cascade_con%is_soil             &
          )
 
     dt = real( get_step_size(), r8 )
 
     ! set initial values for potential C and N fluxes
     biochem_pmin_ppools_vr_col(bounds%begc : bounds%endc, :, :) = 0._r8
+    biochem_pmin_to_plant_vr_patch(bounds%begp:bounds%endp,1:nlevdecomp) = 0._r8
       
     do j = 1,nlevdecomp
         do fc = 1,num_soilc
             c = filter_soilc(fc)
             biochem_pmin_vr(c,j) = 0.0_r8
+            biochem_pmin_to_ecosysp_vr_col_pot(c,j) = 0._r8
             do p = col_pp%pfti(c), col_pp%pftf(c)
                 if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                     !lamda_up = npimbalance(p) ! partial_vcmax/partial_lpc / partial_vcmax/partial_lnc
                     lamda_up = cp_scalar(p)/max(cn_scalar(p),1e-20_r8)
                     lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
-                    biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + &
-                        vmax_ptase(veg_pp%itype(p)) * froot_prof(p,j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
-                        (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) * veg_pp%wtcol(p)
+                    ptase_tmp = vmax_ptase(veg_pp%itype(p)) * froot_prof(p,j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
+                        (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) 
+                    if (NFIX_PTASE_plant) then
+                       biochem_pmin_to_plant_vr_patch(p,j) = ptase_tmp * alpha_ptase(veg_pp%itype(p)) 
+                       biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp * veg_pp%wtcol(p) * &
+                            (1._r8 - alpha_ptase(veg_pp%itype(p)))
+                       biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + ptase_tmp  * veg_pp%wtcol(p)
+                    else
+                       biochem_pmin_to_plant_vr_patch(p,j) = 0._r8
+                       biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp * veg_pp%wtcol(p)
+                       biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + &
+                            ptase_tmp  * veg_pp%wtcol(p)
+                    endif
                 end if
             enddo
         enddo
@@ -658,51 +680,91 @@ contains
     do j = 1,nlevdecomp
         do fc = 1,num_soilc
             c = filter_soilc(fc)
+            ! sum total
             sop_tot = 0._r8
             do l = 1,ndecomp_pools
+              if (is_soil(l)) then
                 sop_tot = sop_tot + decomp_ppools_vr_col(c,j,l)
+              end if
             end do
+            ! get profile
             do l = 1,ndecomp_pools
+              if (is_soil(l)) then
                 if (sop_tot > 1e-12) then 
                     sop_profile(l) = decomp_ppools_vr_col(c,j,l)/sop_tot
                 else
                     sop_profile(l) = 0._r8
                 end if
+              end if
             end do
+            ! cauculation actual biochem_pmin_ppool
             do l = 1,ndecomp_pools
-                biochem_pmin_ppools_vr_col(c,j,l) = max(min(biochem_pmin_vr(c,j) * sop_profile(l), decomp_ppools_vr_col(c,j,l)),0._r8)
+                if (is_soil(l)) then
+                   biochem_pmin_ppools_vr_col(c,j,l) = max(min(biochem_pmin_to_ecosysp_vr_col_pot(c,j) * sop_profile(l)&
+                        , decomp_ppools_vr_col(c,j,l)/dt),0._r8)
+                end if
             end do
         end do
     end do
-
+    ! update biochem_pmin_to_ecosysp_vr_col,biochem_pmin_vr,biochem_pmin_to_plant_vr
     do j = 1,nlevdecomp
         do fc = 1,num_soilc
             c = filter_soilc(fc)
-            biochem_pmin_vr(c,j)=0._r8
+            biochem_pmin_to_ecosysp_vr_col(c,j)=0._r8
             do l = 1, ndecomp_pools
-               biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j)+ &
+               if (is_soil(l)) then
+                     biochem_pmin_to_ecosysp_vr_col(c,j) = biochem_pmin_to_ecosysp_vr_col(c,j)+ &
                                           biochem_pmin_ppools_vr_col(c,j,l)
+               end if
             enddo
         enddo
     end do
+    if (NFIX_PTASE_plant) then   
+      ! rescale biochem_pmin_vr, biochem_pmin_to_plant_vr if necessary
+      do j = 1,nlevdecomp
+        do fc = 1,num_soilc
+            c = filter_soilc(fc)
+               if ( (biochem_pmin_to_ecosysp_vr_col_pot(c,j) > biochem_pmin_to_ecosysp_vr_col(c,j)) ) then
+                  if ( biochem_pmin_to_ecosysp_vr_col_pot(c,j) > 0.0_r8 ) then
+                     biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) * &
+                        biochem_pmin_to_ecosysp_vr_col(c,j) / biochem_pmin_to_ecosysp_vr_col_pot(c,j)
+                     do p = col_pp%pfti(c), col_pp%pftf(c)
+                        biochem_pmin_to_plant_vr_patch(p,j) = biochem_pmin_to_plant_vr_patch(p,j) * &
+                           biochem_pmin_to_ecosysp_vr_col(c,j) / biochem_pmin_to_ecosysp_vr_col_pot(c,j)
+                     end do
+                  else
+                     biochem_pmin_vr(c,j) = 0.0_r8
+                     do p = col_pp%pfti(c), col_pp%pftf(c)
+                        biochem_pmin_to_plant_vr_patch(p,j) = 0.0_r8
+                     end do
+                  end if
+               end if
+        end do
+      end do 
+      ! sum up biochem_pmin_to_plant
+      do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       do p = col_pp%pfti(c), col_pp%pftf(c)
+        if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
+          biochem_pmin_to_plant_patch(p) = 0._r8
+          do j = 1,nlevdecomp
+             biochem_pmin_to_plant_patch(p) = biochem_pmin_to_plant_patch(p) + &
+                                              biochem_pmin_to_plant_vr_patch(p,j) * col_pp%dz(c,j)
+          end do
+        end if
+       end do
+      end do
+    else
+       do j = 1,nlevdecomp
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             biochem_pmin_vr(c,j) = biochem_pmin_to_ecosysp_vr_col(c,j)
+          enddo
+       end do
+    end if
 
-    
-    
     end associate
 
   end subroutine PBiochemMin_balance
 
 end module PDynamicsMod
-               
-                
-     
-
-      
-
-
-
-
-
-
-
-

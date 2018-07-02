@@ -75,9 +75,9 @@ use phys_control,   only: phys_getopts, use_hetfrz_classnuc
 
 use physics_types,  only: physics_state, physics_ptend, &
                           physics_ptend_init, physics_state_copy, &
-                          physics_update, physics_state_dealloc, &
+                          physics_state_dealloc, &
                           physics_ptend_sum, physics_ptend_scale
-
+use physics_update_mod, only: physics_update
 use physics_buffer, only: physics_buffer_desc, pbuf_add_field, dyn_time_lvls, &
                           pbuf_old_tim_idx, pbuf_get_index, dtype_r8, dtype_i4, &
                           pbuf_get_field, pbuf_set_field, col_type_subcol, &
@@ -1813,7 +1813,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
 
    ! the name 'cldwat' triggers special tests on cldliq
    ! and cldice in physics_update
-   call physics_ptend_init(ptend, psetcols, "cldwat", ls=.true., lq=lq)
+   call physics_ptend_init(ptend, psetcols, "cldwat_mic", ls=.true., lq=lq)
 
    select case (micro_mg_version)
    case (1)
@@ -2372,8 +2372,8 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    !! hard-coded as average of hard-coded values used for deep/shallow convective detrainment (near line 1502/1505)
    ! this needs to be replaced by clubb_liq_deep and clubb_ice+deep accordingly
 
-   cvreffliq(:ncol,top_lev:pver) = 9.0_r8
-   cvreffice(:ncol,top_lev:pver) = 37.0_r8
+   cvreffliq(:ncol,:pver) = 9.0_r8
+   cvreffice(:ncol,:pver) = 37.0_r8
 
    ! Reassign rate1 if modal aerosols
    if (rate1_cw2pr_st_idx > 0) then
@@ -2789,8 +2789,8 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       end do
    end do
 
-   mgreffrain_grid(:ngrdcol,top_lev:pver) = reff_rain_grid(:ngrdcol,top_lev:pver)
-   mgreffsnow_grid(:ngrdcol,top_lev:pver) = reff_snow_grid(:ngrdcol,top_lev:pver)
+   mgreffrain_grid(:ngrdcol,:pver) = reff_rain_grid(:ngrdcol,:pver)
+   mgreffsnow_grid(:ngrdcol,:pver) = reff_snow_grid(:ngrdcol,:pver)
 
    ! ------------------------------------- !
    ! Precipitation efficiency Calculation  !
