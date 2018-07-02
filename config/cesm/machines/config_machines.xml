@@ -583,7 +583,7 @@
 	<command name="load">cray-mpich/7.7.0</command>
       </modules>
       <modules mpilib="mpi-serial">
-	<command name="load">cray-hdf5/1.10.1,1</command>
+	<command name="load">cray-hdf5/1.10.1.1</command>
 	<command name="load">cray-netcdf/4.4.1.1.6</command>
       </modules>
       <modules mpilib="!mpi-serial">
