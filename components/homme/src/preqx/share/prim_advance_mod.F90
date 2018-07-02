@@ -580,40 +580,12 @@ contains
 
   call applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
 
-#if 0
-     ! disabled - energy fixers will be moving into CAM physics
-     ! energy fixer for FQps term
-     ! dp1 = dp0 + d(FQps)
-     ! dp0-dp1 = -d(FQps)
-     ! E0-E1 = sum( dp0*ED) - sum( dp1*ED) = sum( dp0-dp1) * ED )
-     ! compute E0-E1
-     E0=0
-     do k=1,nlev
-        ED(:,:) = ( 0.5d0* &
-             (elem(ie)%state%v(:,:,1,k,np1)**2 + elem(ie)%state%v(:,:,2,k,np1)**2)&
-             + cp*elem(ie)%state%T(:,:,k,np1)  &
-             + elem(ie)%state%phis(:,:) )
-
-        dp0m1(:,:) = -dt*( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%derived%FQps(:,:)
-
-        E0(:,:) = E0(:,:) + dp0m1(:,:)*ED(:,:)
-     enddo
-     ! energy fixer:
-     ! Tnew = T + beta
-     ! cp*dp*beta  = E0-E1   beta = (E0-E1)/(cp*sum(dp))
-
-     dpsum(:,:) = ( hvcoord%hyai(nlev+1) - hvcoord%hyai(1) )*hvcoord%ps0 + &
-          ( hvcoord%hybi(nlev+1) - hvcoord%hybi(1) )*elem(ie)%state%ps_v(:,:,np1)
-
-     beta(:,:)=E0(:,:)/(dpsum(:,:)*cp)
-     do k=1,nlev
-        elem(ie)%state%T(:,:,k,np1)=elem(ie)%state%T(:,:,k,np1)+beta(:,:)
-     enddo
-#endif
-
   call applyCAMforcing_dynamics(elem,hvcoord,np1,dt,nets,nete)
 
   end subroutine applyCAMforcing
+
+
+
 
   subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
 

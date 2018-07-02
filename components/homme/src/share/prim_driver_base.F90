@@ -931,50 +931,13 @@ contains
 
 
     call TimeLevel_Qdp(tl, qsplit, n0_qdp, np1_qdp)
-!og: dt_remap here?
 #ifndef CAM
-    ! Apply HOMME test case forcing
+    ! compute HOMME test case forcing
+    ! should this call stay here or be moved into prim_step?
+    ! if here, it mimics eam forcings computations, if in prim_step, it may make 
+    ! tests with physics look better without using minimal rsplit=1.
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
 #endif
-
-
-!moving all this code to prim step
-!#if 0
-!    ! Apply CAM Physics forcing
-!
-!    !   ftype= 2: Q was adjusted by physics, but apply u,T forcing here
-!    !   ftype= 1: forcing was applied time-split in CAM coupling layer
-!    !   ftype= 0: apply all forcing here
-!    !   ftype=-1: do not apply forcing
-!    if (ftype==0) then
-!      call t_startf("ApplyCAMForcing")
-!      call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
-!      call t_stopf("ApplyCAMForcing")
-!
-!    elseif ( ( ftype==2 ) .or. (ftype == 3) .or. (ftype == 4) ) then
-!      call t_startf("ApplyCAMForcing_dynamics")
-!      if (ftype == 2) call ApplyCAMForcing_dynamics   (elem, hvcoord, tl%n0, n0_qdp,dt_remap, nets, nete)
-!      if (ftype == 3) call ApplyCAMForcing_dynamics_dp(elem, hvcoord, tl%n0, n0_qdp,dt,       nets, nete)
-!      if (ftype == 4) call ApplyCAMForcing_dynamics   (elem, hvcoord, tl%n0, n0_qdp,dt,       nets, nete)
-!      call t_stopf("ApplyCAMForcing_dynamics")
-!    endif
-
-!    if (compute_diagnostics) then
-!    ! E(1) Energy after CAM forcing
-!      call t_startf("prim_energy_halftimes")
-!      call prim_energy_halftimes(elem,hvcoord,tl,1,.true.,nets,nete)
-!      call t_stopf("prim_energy_halftimes")
-!    ! qmass and variance, using Q(n0),Qdp(n0)
-!      call t_startf("prim_diag_scalars")
-!      call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
-!      call t_stopf("prim_diag_scalars")
-!    endif
-!#endif ! code to prim_step
-
-
-! the idea about dp3d vs ps_v is that dp3d is only valid in prim_step and lower
-! overall, only ps_v is a current variable, and dp3d is not updated and should
-! not be used.
 
     !initialize dp3d from ps
     do ie=nets,nete
@@ -992,29 +955,17 @@ contains
     call t_stopf("copy_qdp_h2d")
 #endif
 
-!if (hybrid%masterthread) print *,"ftype", ftype
-!if (hybrid%masterthread) print *,"dt_q", dt_q
-
     ! Loop over rsplit vertically lagrangian timesiteps
     call t_startf("prim_step_rX")
     call prim_step(elem, hybrid, nets, nete, dt, dt_remap, n0_qdp, tl, hvcoord, compute_diagnostics, 1)
     call t_stopf("prim_step_rX")
 
     do r=2,rsplit
-!      !put this i-fstatement above? branching
-!      !scaled version
-!#if 0
-!      if (ftype == 3) call ApplyCAMForcing_dynamics_dp(elem, hvcoord, tl%np1, n0_qdp,dt, nets, nete)
-!      !not scaled version
-!      if (ftype == 4) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%np1, n0_qdp,dt, nets, nete)
-!#endif
-
       call TimeLevel_update(tl,"leapfrog")
       call t_startf("prim_step_rX")
       call prim_step(elem, hybrid, nets, nete, dt, dt_remap, n0_qdp, tl, hvcoord, .false., r)
       call t_stopf("prim_step_rX")
     enddo
-
     ! defer final timelevel update until after remap and diagnostics
     !compute timelevels for tracers (no longer the same as dynamics)
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
@@ -1138,8 +1089,6 @@ contains
     real (kind=real_kind) :: dp_np1(np,np)
     logical :: compute_diagnostics
 
-
-!#if 1
     ! Apply CAM Physics forcing
 
     !   ftype= 2: Q was adjusted by physics, but apply u,T forcing here
@@ -1147,17 +1096,17 @@ contains
     !   ftype= 0: apply all forcing here
     !   ftype=-1: do not apply forcing
 
-! previously, standalone homme ran with ftype=0 logic only.
-! we want to add ftype=2,3,4. for that, we need to apply tracer forcings in
-! standalone version, in the same manner as in EAM, that is, only once per dt_remap.
-! thus in standalone homme ftype0 is the same as ftype2 (cause nsplit=1)
+    ! previously, standalone homme ran with ftype=0 logic only.
+    ! we want to add ftype=2,3,4. for that, we need to apply tracer forcings in
+    ! standalone version, in the same manner as in EAM, that is, only once per dt_remap.
+    ! thus in standalone homme ftype0 is the same as ftype2 (cause nsplit=1)
 #ifndef CAM
     if ( ( (ftype == 2 ) .or. (ftype == 3) .or. (ftype == 4) ) .and. (rstep == 1) ) then
       call ApplyCAMForcing_tracers(elem, hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
     endif
 #endif
 
-    if ((ftype == 0).and.(rstep == 1)) then ! r==1 is the first call of this sub withing prim_run_subcycle
+    if ((ftype == 0).and.(rstep == 1)) then ! r==1 is the first call of this sub within prim_run_subcycle
       call t_startf("ApplyCAMForcing")
       call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
       call t_stopf("ApplyCAMForcing")
