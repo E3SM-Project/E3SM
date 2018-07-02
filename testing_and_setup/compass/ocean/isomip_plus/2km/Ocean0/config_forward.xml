@@ -27,5 +27,11 @@
 			<argument flag="graph.info">136</argument>
 		</step>
 		<model_run procs="136" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<step executable="./update_evaporationFlux.py">
+			<argument flag="--in_forcing_file">forcing_data_init.nc</argument>
+			<argument flag="--out_forcing_file">forcing_data_updated.nc</argument>
+			<argument flag="--out_forcing_link">forcing_data.nc</argument>
+			<argument flag="--avg_months">3</argument>
+		</step>
 	</run_script>
 </config>
