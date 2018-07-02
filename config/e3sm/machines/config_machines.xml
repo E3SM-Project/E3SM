@@ -2792,7 +2792,7 @@
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <OS>LINUX</OS>
     <TESTS>e3sm_developer</TESTS>
-    <COMPILERS>intel</COMPILERS>
+    <COMPILERS>intel18</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <RUNDIR>$ENV{HOME}/projects/e3sm/scratch/$CASE/run</RUNDIR>
     <EXEROOT>$ENV{HOME}/projects/e3sm/scratch/$CASE/bld</EXEROOT>
