@@ -51,7 +51,8 @@ OPTIONS
                            If not defined, location is set as \$ProgDir or \$cwd
                            (Needed to run build-namelist from SourceMods dir)
      -inst_string          inst_string variable
-
+     -ntasks_glc           NTASKS_GLC for this case
+     -ninst_glc            NINST_GLC for this case
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
       1. namelist values set by specific command-line options, i.e. (none right now)
@@ -94,6 +95,8 @@ my %opts = ( help          => 0,
              decomp_prefix => undef,
              date_stamp    => undef,
              cfg_dir       => $cfgdir,
+             ntasks_glc    => 0,
+             ninst_glc     => 0,
            );
 
 GetOptions(
@@ -110,6 +113,9 @@ GetOptions(
     "date_stamp=s"    => \$opts{'date_stamp'},
     "cfg_dir=s"       => \$opts{'cfg_dir'},
     "preview"         => \$opts{'preview'},
+    "ntasks_glc=i"    => \$opts{'ntasks_glc'},
+    "ninst_glc=i"     => \$opts{'ninst_glc'},
+
 )  or usage();
 
 # Give usage message.
@@ -141,6 +147,8 @@ my $GLC_GRID      = $opts{'glc_grid'};
 my $decomp_prefix = $opts{'decomp_prefix'};
 my $date_stamp    = $opts{'date_stamp'};
 $cfgdir           = $opts{'cfg_dir'};
+my $NINST_GLC     = $opts{'ninst_glc'};
+my $NTASKS_GLC    = $opts{'ntasks_glc'};
 
 my $CIMEROOT;
 if ( defined $opts{'cimeroot'} ) {
@@ -373,8 +381,6 @@ my $CALENDAR               = "$xmlvars{'CALENDAR'}";
 my $NCPL_BASE_PERIOD       = "$xmlvars{'NCPL_BASE_PERIOD'}";
 my $GLC_NCPL               = "$xmlvars{'GLC_NCPL'}";
 my $GLC_COUPLING           = "$xmlvars{'GLC_COUPLING'}";
-my $NTASKS_GLC             = `$CASEROOT/xmlquery NTASKS_GLC -value -caseroot $CASEROOT`;
-my $NINST_GLC              = `$CASEROOT/xmlquery NINST_GLC -value -caseroot $CASEROOT`;
 my $INFO_DBUG              = "$xmlvars{'INFO_DBUG'}";
 my $RUN_TYPE               = "$xmlvars{'RUN_TYPE'}";
 my $RUN_STARTDATE          = "$xmlvars{'RUN_STARTDATE'}";

@@ -125,7 +125,7 @@
 
     <modules>
       <command name="rm">craype</command>
-      <command name="load">craype/2.5.12.3</command>
+      <command name="load">craype/2.5.12</command>
       <command name="load">craype-ivybridge</command>
       <command name="rm">pmi</command>
       <command name="load">pmi/5.0.12</command>
@@ -160,23 +160,23 @@
       <command name="rm">PrgEnv-intel</command>
       <command name="load">PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
-      <command name="load">gcc/7.2.0</command>
+      <command name="load">gcc/7.3.0</command>
       <command name="rm">cray-libsci</command>
-      <command name="load">cray-libsci/17.12.1</command>
+      <command name="load">cray-libsci/18.03.1</command>
     </modules>
 
     <modules mpilib="mpi-serial">
       <command name="rm">cray-netcdf-hdf5parallel</command>
       <command name="rm">cray-hdf5-parallel</command>
       <command name="rm">cray-parallel-netcdf</command>
-      <command name="load">cray-hdf5/1.8.16</command>
-      <command name="load">cray-netcdf/4.4.0</command>
+      <command name="load">cray-hdf5/1.10.1.1</command>
+      <command name="load">cray-netcdf/4.4.1.1.3</command>
     </modules>
     <modules mpilib="!mpi-serial">
       <command name="rm">cray-netcdf-hdf5parallel</command>
-      <command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
-      <command name="load">cray-hdf5-parallel/1.8.16</command>
-      <command name="load">cray-parallel-netcdf/1.6.1</command>
+      <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.3</command>
+      <command name="load">cray-hdf5-parallel/1.10.1.1</command>
+      <command name="load">cray-parallel-netcdf/1.8.1.3</command>
     </modules>
   </module_system>
 
@@ -188,6 +188,8 @@
     <env name="OMP_STACKSIZE">64M</env>
     <env name="OMP_PROC_BIND">spread</env>
     <env name="OMP_PLACES">threads</env>
+
+    <env name="HDF5_DISABLE_VERSION_CHECK">2</env>
   </environment_variables>
   <environment_variables compiler="intel">
     <env name="FORT_BUFFERED">yes</env>
@@ -437,12 +439,11 @@
     </modules>
 
     <modules compiler="gnu7">
-      <command name="rm">PrgEnv-intel</command>
-      <command name="load">PrgEnv-gnu/6.0.4</command>
+      <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
-      <command name="load">gcc/7.2.0</command>
+      <command name="load">gcc/7.3.0</command>
       <command name="rm">cray-libsci</command>
-      <command name="load">cray-libsci/17.12.1</command>
+      <command name="load">cray-libsci/18.03.1</command>
     </modules>
 
     <modules>
@@ -650,7 +651,7 @@
 
 <machine MACH="melvin">
     <DESC>Linux workstation for Jenkins testing</DESC>
-    <NODENAME_REGEX>(melvin|watson|s999964|climate|penn)</NODENAME_REGEX>
+    <NODENAME_REGEX>(melvin|watson|s999964|climate|penn|sems)</NODENAME_REGEX>
     <PROXY>sonproxy.sandia.gov:80</PROXY>
     <TESTS>e3sm_developer</TESTS>
     <OS>LINUX</OS>
@@ -751,7 +752,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -np {{ total_tasks }}</arg>
+        <arg name="num_tasks"> -l -np {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
     <module_system type="soft">
@@ -783,6 +784,9 @@
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE">
+      <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
 </machine>
 
@@ -1184,7 +1188,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks" > -n {{ total_tasks }}</arg>
+        <arg name="num_tasks" > -l -n {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="mpi-serial">
@@ -1557,7 +1561,7 @@
     <BASELINE_ROOT>/projects/$PROJECT/acme/baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/projects/ccsm/acme/tools/cprnc/cprnc</CCSM_CPRNC>
     <SAVE_TIMING_DIR>/projects/$PROJECT</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>OceanClimate,ClimateEnergy_2</SAVE_TIMING_DIR_PROJECTS>
+    <SAVE_TIMING_DIR_PROJECTS>OceanClimate,ClimateEnergy_2,OceanClimate_2</SAVE_TIMING_DIR_PROJECTS>
     <OS>CNL</OS>
     <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
     <SUPPORTED_BY>E3SM</SUPPORTED_BY>
@@ -1579,11 +1583,13 @@
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
-      <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
       <env name="MPAS_TOOL_DIR">/projects/ccsm/acme/tools/mpas</env>
       <env name="HDF5_DISABLE_VERSION_CHECK">2</env>
       <env name="labeling"> </env>
       <env name="SMP_VARS"> </env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE">
+      <env name="MPICH_CPUMASK_DISPLAY">1</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="intel">
       <env name="SMP_VARS">-e OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -e OMP_STACKSIZE=128M -e KMP_AFFINITY=granularity=thread,scatter</env>
@@ -1631,7 +1637,7 @@
         <command name="load">PrgEnv-cray/6.0.4</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gcc/6.3.0</command>
+        <command name="load">gcc/7.3.0</command>
         <command name="load">PrgEnv-gnu/6.0.4</command>
       </modules>
       <modules compiler="!intel">
@@ -1913,53 +1919,6 @@
 	 </environment_variables>
 </machine>
 
-<machine MACH="oic2">
-         <DESC>ORNL XK6, os is Linux, 8 pes/node, batch system is PBS</DESC>
-         <NODENAME_REGEX>oic2</NODENAME_REGEX>
-         <TESTS>e3sm_developer</TESTS>
-         <COMPILERS>gnu</COMPILERS>
-         <MPILIBS>mpich,openmpi</MPILIBS>
-         <RUNDIR>/home/$USER/models/ACME/run/$CASE/run</RUNDIR>
-         <EXEROOT>/home/$USER/models/ACME/run/$CASE/bld</EXEROOT>
-         <CIME_OUTPUT_ROOT>/home/$USER/models/ACME</CIME_OUTPUT_ROOT>
-         <DIN_LOC_ROOT>/home/zdr/models/ccsm_inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/home/zdr/models/ccsm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/home/$USER/models/ACME/run/archive/$CASE</DOUT_S_ROOT>
-         <OS>LINUX</OS>
-	 <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
-         <SUPPORTED_BY>dmricciuto</SUPPORTED_BY>
-         <GMAKE_J>8</GMAKE_J>
-	 <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
-         <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
-         <mpirun mpilib="mpich">
-              <executable args="default">/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpirun </executable>
-	      <arguments>
-			<arg name="num_tasks"> -np {{ total_tasks }}</arg>
-			<arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
-	      </arguments>
-         </mpirun>
-         <mpirun mpilib = "mpi-serial">
-              <executable> </executable>
-         </mpirun>
-	 <module_system type="module">
-	   <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
-	   <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
-	   <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
-	   <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
-	   <cmd_path lang="sh">module</cmd_path>
-	   <cmd_path lang="csh">module</cmd_path>
-	   <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
-	   <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
-
-	   <environment_variables>
-	     <env name="MPICH_ENV_DISPLAY">1</env>
-	     <env name="MPICH_VERSION_DISPLAY">1</env>
-	     <!-- This increases the stack size, which is necessary
-		  for CICE to run threaded on this machine -->
-	     <env name="OMP_STACKSIZE">64M</env>
-	   </environment_variables>
-	 </module_system>
-</machine>
 
 <machine MACH="oic5">
          <DESC>ORNL XK6, os is Linux, 32 pes/node, batch system is PBS</DESC>
@@ -2054,13 +2013,6 @@
       <!-- for CLM-PFLOTRAN coupling, the PETSC_PATH must be defined specifically upon machines -->
       <environment_variables compiler="gnu" mpilib="openmpi">
         <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc4pf/openmpi-1.10-gcc-5.3</env>
-      </environment_variables>
-      <environment_variables>
-       <!-- hack for PFLOTRAN coupling (this is a temporary solution, and user must manually edit it after case.setup)-->
-       <env name="CLM_PFLOTRAN_COUPLED">FALSE</env>
-       <env name="CLM_PFLOTRAN_COLMODE">FALSE</env>
-       <!-- dir for pflotran source code -->
-       <env name="CLM_PFLOTRAN_SOURCE_DIR">/lustre/or-hydra/cades-ccsi/$USER/models/pflotran-interface/src/clm-pflotran</env>
       </environment_variables>
 </machine>
 
@@ -2193,7 +2145,7 @@
       <modules mpilib="!mpi-serial">
         <command name="rm">cray-netcdf</command>
         <command name="rm">cray-netcdf-hdf5parallel</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.3</command>
+        <command name="load">cray-netcdf/4.4.1.1.3</command>
         <command name="load">cray-parallel-netcdf/1.8.1.3</command>
       </modules>
     </module_system>
@@ -2918,11 +2870,11 @@
 		<command name="load">netlib-lapack/3.6.1</command>
       </modules>
       <!-- List of modules elements, executing commands if compiler and mpilib condition applies -->
-      <modules compiler="pgi">
+      <modules compiler="pgi.*">
         <command name="load">pgi/18.3</command>
       </modules>
       <modules compiler="ibm">
-        <command name="load">xl/20180406-beta</command>
+        <command name="load">xl/20180502</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/6.4.0</command>
@@ -2935,17 +2887,17 @@
       <!-- mpi lib settings -->
 	  <!-- Sometimes,same versions of libraries are not available for different compilers, hence the split below -->
       <modules compiler="ibm" mpilib="!mpi-serial">
-        <command name="load">spectrum-mpi/10.2.0.0-20180406</command>
+        <command name="load">spectrum-mpi/10.2.0.0-20180508</command>
         <command name="load">parallel-netcdf/1.8.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
       </modules>
-      <modules compiler="pgi*" mpilib="!mpi-serial">
-        <command name="load">spectrum-mpi/10.2.0.0-20180406</command>
+      <modules compiler="pgi.*" mpilib="!mpi-serial">
+        <command name="load">spectrum-mpi/10.2.0.0-20180508</command>
         <command name="load">parallel-netcdf/1.8.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
       </modules>
       <modules compiler="gnu" mpilib="!mpi-serial">
-        <command name="load">spectrum-mpi/10.2.0.0-20180406</command>
+        <command name="load">spectrum-mpi/10.2.0.0-20180508</command>
         <command name="load">parallel-netcdf/1.8.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
       </modules>

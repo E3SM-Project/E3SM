@@ -7,7 +7,7 @@
 # Disable these because this is our standard setup
 # pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
 
-import os, shutil, sys, glob, itertools, re
+import os, sys, glob, itertools, re
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
@@ -15,7 +15,7 @@ sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 from standard_script_setup import *
 from CIME.case import Case
 from CIME.nmlgen import NamelistGenerator
-from CIME.utils import expect
+from CIME.utils import expect, safe_copy
 from CIME.utils import get_model, get_time_in_seconds, get_timestamp
 from CIME.buildnml import create_namelist_infile, parse_input
 from CIME.XML.files import Files
@@ -106,6 +106,14 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
                 expect(False, " {} ncpl doesn't divide base dt evenly".format(comp))
             nmlgen.add_default(comp.lower() + '_cpl_dt', value=cpl_dt)
             mindt = min(mindt, cpl_dt)
+
+    # sanity check
+    comp_atm = case.get_value("COMP_ATM")
+    if comp_atm is not None and comp_atm not in('datm', 'xatm', 'satm'):
+        atmdt = int(basedt / case.get_value('ATM_NCPL'))
+        expect(atmdt == mindt, 'Active atm should match shortest model timestep atmdt={} mindt={}'
+               .format(atmdt, mindt))
+            
 
     #--------------------------------
     # Overwrite: set start_ymd
@@ -386,15 +394,15 @@ def buildnml(case, caseroot, component):
     # copy drv_in, drv_flds_in, seq_maps.rc and all *modio* fiels to rundir
     rundir = case.get_value("RUNDIR")
 
-    shutil.copy(os.path.join(confdir,"drv_in"), rundir)
+    safe_copy(os.path.join(confdir,"drv_in"), rundir)
     drv_flds_in = os.path.join(caseroot, "CaseDocs", "drv_flds_in")
     if os.path.isfile(drv_flds_in):
-        shutil.copy(drv_flds_in, rundir)
+        safe_copy(drv_flds_in, rundir)
 
-    shutil.copy(os.path.join(confdir,"seq_maps.rc"), rundir)
+    safe_copy(os.path.join(confdir,"seq_maps.rc"), rundir)
 
     for filename in glob.glob(os.path.join(confdir, "*modelio*")):
-        shutil.copy(filename, rundir)
+        safe_copy(filename, rundir)
 
 ###############################################################################
 def _main_func():

@@ -291,7 +291,9 @@ contains
     type(ESMF_Time)             :: OffsetTime         ! local computed time
     type(ESMF_Time)             :: StopTime1          ! Stop time
     type(ESMF_Time)             :: StopTime2          ! Stop time
+    type(ESMF_Time)             :: StopTime, minStopTime ! Stop time
     type(ESMF_TimeInterval)     :: TimeStep           ! Clock time-step
+    type(ESMF_TimeInterval)     :: cplTimeStep           ! Clock time-step
     type(ESMF_CalKind_Flag)     :: esmf_caltype       ! local esmf calendar
     integer                     :: rc                 ! Return code
     integer                     :: n, i               ! index
@@ -311,6 +313,8 @@ contains
     integer(SHR_KIND_IN)    :: restart_ymd           ! Restart date (YYYYMMDD)
     character(SHR_KIND_CS)  :: pause_option          ! Pause option units
     integer(SHR_KIND_IN)    :: pause_n               ! Number between pause intervals
+    integer(SHR_KIND_IN)    :: RestInterval              ! Component Restart Interval
+    integer(SHR_KIND_IN)    :: drvrestinterval        ! Driver Restart Interval
 
     logical :: pause_active_atm
     logical :: pause_active_cpl
@@ -653,7 +657,6 @@ contains
                rof_cpl_dt, wav_cpl_dt, esp_cpl_dt
           call shr_sys_abort( subname//': ERROR coupling intervals invalid' )
        end if
-
        ! --- Coupling offsets --------------------------------------------------
        if ( abs(atm_cpl_offset) > atm_cpl_dt .or. &
             abs(lnd_cpl_offset) > lnd_cpl_dt .or. &
@@ -852,7 +855,7 @@ contains
           write(logunit,*) trim(subname),' ERROR: dtime inconsistent = ',dtime
           call shr_sys_abort( subname//' :coupling intervals not compatible' )
        endif
-       if (pause_active(n) .and. (dtime(n) < min_dt)) then
+       if (pause_active(n) .and. (dtime(n) <= min_dt)) then
           min_dt = dtime(n)
           seq_timemgr_pause_sig_index = n
        end if
@@ -868,9 +871,10 @@ contains
     end if
 
     ! --- Initialize component and driver clocks and alarms common to components and driver clocks ---
-
+    call ESMF_TimeIntervalSet( CplTimeStep, s=dtime(seq_timemgr_nclock_drv), rc=rc )
     do n = 1,max_clocks
        call ESMF_TimeIntervalSet( TimeStep, s=dtime(n), rc=rc )
+
        call seq_timemgr_ESMFCodeCheck( rc, subname//': error ESMF_TimeIntervalSet' )
 
        call seq_timemgr_EClockInit( TimeStep, StartTime, RefTime, CurrTime, SyncClock%ECP(n)%EClock)
@@ -889,6 +893,7 @@ contains
             opt_ymd = stop_ymd,            &
             opt_tod = stop_tod,            &
             RefTime = CurrTime,            &
+            cplTimeStep = cplTimeStep, &
             alarmname = trim(seq_timemgr_alarm_stop))
 
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
@@ -905,6 +910,7 @@ contains
             opt_n   = restart_n,           &
             opt_ymd = restart_ymd,         &
             RefTime = CurrTime,            &
+            cplTimeStep = cplTimeStep, &
             alarmname = trim(seq_timemgr_alarm_restart))
 
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
@@ -913,6 +919,7 @@ contains
             opt_n   = history_n,           &
             opt_ymd = history_ymd,         &
             RefTime = StartTime,           &
+            cplTimeStep = cplTimeStep, &
             alarmname = trim(seq_timemgr_alarm_history))
 
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
@@ -921,6 +928,7 @@ contains
             opt_n   = histavg_n,           &
             opt_ymd = histavg_ymd,         &
             RefTime = StartTime,           &
+            cplTimeStep = cplTimeStep, &
             alarmname = trim(seq_timemgr_alarm_histavg))
 
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
@@ -929,6 +937,7 @@ contains
             opt_n   = barrier_n,           &
             opt_ymd = barrier_ymd,         &
             RefTime = CurrTime,            &
+            cplTimeStep = cplTimeStep, &
             alarmname = trim(seq_timemgr_alarm_barrier))
 
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
@@ -937,15 +946,23 @@ contains
             opt_n   = tprof_n,             &
             opt_ymd = tprof_ymd,           &
             RefTime = StartTime,           &
+            cplTimeStep = cplTimeStep, &
             alarmname = trim(seq_timemgr_alarm_tprof))
 
        call ESMF_AlarmGet(SyncClock%EAlarm(n,seq_timemgr_nalarm_stop), RingTime=StopTime1, rc=rc )
        call ESMF_AlarmGet(SyncClock%EAlarm(n,seq_timemgr_nalarm_datestop), RingTime=StopTime2, rc=rc )
+
        if (StopTime2 < StopTime1) then
-          call ESMF_ClockSet(SyncClock%ECP(n)%EClock, StopTime=StopTime2)
+          StopTime = StopTime2
        else
-          call ESMF_ClockSet(SyncClock%ECP(n)%EClock, StopTime=StopTime1)
+          StopTime = StopTime1
        endif
+       if (n == 1) then
+          minStopTIme = StopTime
+       elseif (StopTime < minStopTime) then
+          minStopTime = StopTime
+       endif
+       call ESMF_ClockSet(SyncClock%ECP(n)%EClock, StopTime=StopTime)
 
        ! Set the pause option if pause/resume is active
        if (pause_active(n)) then
@@ -987,6 +1004,9 @@ contains
     offset(seq_timemgr_nclock_wav)     = wav_cpl_offset
     offset(seq_timemgr_nclock_esp)     = esp_cpl_offset
 
+    call seq_timemgr_alarmGet(SyncClock%EAlarm(seq_timemgr_nclock_drv, &
+         seq_timemgr_nalarm_restart), IntSec=drvRestInterval)
+
     do n = 1,max_clocks
        if (abs(offset(n)) > dtime(n)) then
           write(logunit,*) subname,' ERROR: offset too large',n,dtime(n),offset(n)
@@ -999,6 +1019,21 @@ contains
        if (mod(offset(n),dtime(seq_timemgr_nclock_drv)) /= 0) then
           write(logunit,*) subname,' ERROR: offset not multiple',n,dtime(seq_timemgr_nclock_drv),offset(n)
           call shr_sys_abort()
+       endif
+       call ESMF_TimeIntervalSet( TimeStep, s=dtime(n), rc=rc )
+       if(CurrTime + TimeStep > minStopTime ) then
+          write(logunit,*) subname//" WARNING: Stop time too short, not all components will be advanced &
+                                    &and restarts won't be written"
+       endif
+       if (n /= seq_timemgr_nclock_esp .and. trim(restart_option) .ne. &
+            trim(seq_timemgr_optNone) .and. &
+            trim(restart_option) .ne. trim(seq_timemgr_optNever)) then
+             call seq_timemgr_alarmGet(SyncClock%EAlarm(n,seq_timemgr_nalarm_restart), IntSec=RestInterval)
+             if (RestInterval .ne. drvRestInterval) then
+                write(logunit,*) subname, 'RestInterval=',RestInterval,&
+                     ' drvrestinterval=',drvrestinterval
+                call shr_sys_abort(trim(subname)//"Component RestInterval inconsistant with driver")
+             endif
        endif
     enddo
 
@@ -1393,7 +1428,7 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_timemgr_alarmInit( EClock, EAlarm, option, opt_n, opt_ymd, opt_tod, RefTime, alarmname)
+  subroutine seq_timemgr_alarmInit( EClock, EAlarm, option, opt_n, opt_ymd, opt_tod, RefTime, cplTimeStep, alarmname)
 
     implicit none
 
@@ -1405,6 +1440,7 @@ contains
     integer(SHR_KIND_IN),optional, intent(IN)    :: opt_n     ! alarm freq
     integer(SHR_KIND_IN),optional, intent(IN)    :: opt_ymd   ! alarm ymd
     integer(SHR_KIND_IN),optional, intent(IN)    :: opt_tod   ! alarm tod (sec)
+    type(ESMF_TimeInterval), optional, intent(IN) :: CplTimeStep ! coupler timestep for nstep alarm option
     type(ESMF_Time)     ,optional, intent(IN)    :: RefTime   ! ref time
     character(len=*)    ,optional, intent(IN)    :: alarmname ! alarm name
 
@@ -1497,13 +1533,21 @@ contains
        call ESMF_TimeSet( NextAlarm, yy=cyy, mm=cmm, dd=opt_n, s=0, calendar=seq_timemgr_cal, rc=rc )
 
     case (seq_timemgr_optNSteps)
-       call ESMF_ClockGet(EClock, TimeStep=AlarmInterval, rc=rc)
+       if (present(CplTimeStep)) then
+          AlarmInterval = CplTimeStep
+       else
+          call shr_sys_abort(subname//trim(option)//' requires CplTimeStep')
+       endif
        if (.not.present(opt_n)) call shr_sys_abort(subname//trim(option)//' requires opt_n')
        if (opt_n <= 0)  call shr_sys_abort(subname//trim(option)//' invalid opt_n')
        AlarmInterval = AlarmInterval * opt_n
 
     case (seq_timemgr_optNStep)
-       call ESMF_ClockGet(EClock, TimeStep=AlarmInterval, rc=rc)
+       if (present(CplTimeStep)) then
+          AlarmInterval = CplTimeStep
+       else
+          call shr_sys_abort(subname//trim(option)//' requires CplTimeStep')
+       endif
        if (.not.present(opt_n)) call shr_sys_abort(subname//trim(option)//' requires opt_n')
        if (opt_n <= 0)  call shr_sys_abort(subname//trim(option)//' invalid opt_n')
        AlarmInterval = AlarmInterval * opt_n

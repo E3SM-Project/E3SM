@@ -1,0 +1,17 @@
+{
+"IncludedVar": ["ANRAIN", "ANSNOW", "AQRAIN", "AQSNOW", "AREI", "AREL", "AWNC", "AWNI",
+"CCN3", "CLDICE", "CLDLIQ", "CLOUD", "DCQ", "DTCOND", "DTV", "FICE",
+"FREQI", "FREQL", "FREQR", "FREQS", "ICIMR", "ICWMR", "IWC", "NUMICE",
+"NUMLIQ", "OMEGA", "OMEGAT", "Q", "QRL", "QRS", "RELHUM", "T",
+"U", "UU", "V", "VQ", "VT", "VU", "VV", "WSUB",
+"Z3", "AODDUST1", "AODDUST3", "AODVIS", "BURDENBC", "BURDENDUST", "BURDENPOM",
+"BURDENSEASALT", "BURDENSO4", "BURDENSOA", "CDNUMC", "CLDHGH", "CLDLOW",
+"CLDMED", "CLDTOT", "DMS_SRF", "FLDS", "FLNS", "FLNSC", "FLNT", "FLNTC",
+"FLUT", "FLUTC", "FSDS", "FSDSC", "FSNS", "FSNSC", "FSNT", "FSNTC", "FSNTOA",
+"FSNTOAC", "H2O2_SRF", "LHFLX", "PBLH", "PRECC", "PRECL", "PRECSC", "PRECSL",
+"PS", "PSL", "QFLX", "QREFHT", "SHFLX", "SNOWHLND", "SO2_SRF", "SOAG_SRF",
+"TAUGWX", "TAUGWY", "TAUX", "TAUY", "TGCLDIWP", "TGCLDLWP", "TMQ", "TREFHT",
+"TS", "U10", "bc_a1_SRF", "dst_a1_SRF", "dst_a3_SRF", "ncl_a1_SRF", "ncl_a3_SRF",
+"num_a1_SRF", "num_a2_SRF", "num_a3_SRF", "pom_a1_SRF", "so4_a1_SRF", "so4_a2_SRF",
+"so4_a3_SRF", "soa_a1_SRF", "soa_a2_SRF"]
+}

@@ -57,6 +57,7 @@ RUN_PHASE             = "RUN"
 THROUGHPUT_PHASE      = "TPUTCOMP"
 MEMCOMP_PHASE         = "MEMCOMP"
 MEMLEAK_PHASE         = "MEMLEAK"
+STARCHIVE_PHASE       = "SHORT_TERM_ARCHIVER"
 COMPARE_PHASE         = "COMPARE" # This is one special, real phase will be COMPARE_$WHAT, this is for internal test comparisons, there could be multiple variations of this phase in one test
 BASELINE_PHASE        = "BASELINE"
 GENERATE_PHASE        = "GENERATE"
@@ -74,6 +75,7 @@ ALL_PHASES = [CREATE_NEWCASE_PHASE,
               THROUGHPUT_PHASE,
               MEMCOMP_PHASE,
               MEMLEAK_PHASE,
+              STARCHIVE_PHASE,
               GENERATE_PHASE]
 
 # These are mandatory phases that a test must go through
@@ -299,6 +301,10 @@ class TestStatus(object):
         'DIFF'
         >>> _test_helper2('FAIL ERS.foo.A BASELINE\nFAIL ERS.foo.A NLCOMP\nFAIL ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
         'FAIL'
+        >>> _test_helper2('PEND ERS.foo.A COMPARE_2\nFAIL ERS.foo.A RUN')
+        'FAIL'
+        >>> _test_helper2('PEND ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
+        'PEND'
         >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD')
         'PASS'
         >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD', wait_for_run=True)
@@ -320,7 +326,7 @@ class TestStatus(object):
                 run_phase_found = True
 
             if (status == TEST_PEND_STATUS):
-                return status
+                rv = TEST_PEND_STATUS
 
             elif (status == TEST_FAIL_STATUS):
                 if ( (not check_throughput and phase == THROUGHPUT_PHASE) or

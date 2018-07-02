@@ -162,7 +162,7 @@ for mct, etc.
 
 
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DCPRPGI </ADD_CPPDEFS>
-  <CFLAGS> -gopt -Mlist  -time </CFLAGS>
+  <CFLAGS> -gopt -time </CFLAGS>
 
   <ADD_CFLAGS compile_threaded="false"> </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="false"> </ADD_FFLAGS>
@@ -230,13 +230,12 @@ for mct, etc.
   <!--                     * inv: invalid operands         -->
   <!--                     * divz divide by zero           -->
   <!--                     * ovf: floating point overflow   -->
-  <!--  -Mlist          => Create a listing file             -->
   <!--  -F              => leaves file.f for each preprocessed file.F file  -->
   <!--  -time           => Print execution time for each compiler step  -->
 
 
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DUSE_CUDA_FORTRAN -DCPRPGI </ADD_CPPDEFS>
-  <CFLAGS> -Mlist -time </CFLAGS>
+  <CFLAGS> -time </CFLAGS>
 
   <ADD_CFLAGS compile_threaded="false"> </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="false"> </ADD_FFLAGS>
@@ -249,7 +248,7 @@ for mct, etc.
   <FREEFLAGS> -Mfree </FREEFLAGS>
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
 
-  <FFLAGS>  -i4 -Mlist  -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee  </FFLAGS>
+  <FFLAGS>  -i4 -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee  </FFLAGS>
   <ADD_FFLAGS MODEL="cam"> </ADD_FFLAGS>
   <FFLAGS_NOOPT> -O0 -g -Ktrap=fp -Mbounds -Kieee  </FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="false"> </ADD_FFLAGS_NOOPT>
@@ -868,20 +867,6 @@ for mct, etc.
   <ADD_LDFLAGS> -llapack -lblas</ADD_LDFLAGS>
 </compiler>
 
-<compiler MACH="oic2" COMPILER="gnu">
-  <NETCDF_PATH>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/</NETCDF_PATH>
-  <ADD_SLIBS>-L/user/lib64 -llapack -lblas -lnetcdff </ADD_SLIBS>
-  <SFC>/projects/cesm/devtools/gcc-4.8.1/bin/gfortran</SFC>
-  <SCC>/projects/cesm/devtools/gcc-4.8.1/bin/gcc</SCC>
-  <SCXX>/projects/cesm/devtools/gcc-4.8.1/bin/g++</SCXX>
-  <MPICC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpicc</MPICC>
-  <MPIFC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpif90</MPIFC>
-</compiler>
-
-<compiler MACH="oic2" COMPILER="pgi">
-  <NETCDF_PATH>/home/zdr/opt/netcdf-4.1.3_pgf95</NETCDF_PATH>
-</compiler>
-
 <compiler MACH="oic5" COMPILER="gnu">
   <NETCDF_PATH>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/</NETCDF_PATH>
   <ADD_SLIBS>-L/user/lib64 -llapack -lblas -lnetcdff </ADD_SLIBS>
@@ -1072,7 +1057,7 @@ for mct, etc.
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <ADD_FFLAGS> -qzerosize -qfree=f90 -qxlf2003=polymorphic</ADD_FFLAGS>
   <ADD_FFLAGS_NOOPT> -O0 -g -qfree=f90  </ADD_FFLAGS_NOOPT>
-  <ADD_LDFLAGS>-lxlfmath -lxlf90_r -lxlopt -lxl -lxlsmp -L$(NETCDF_C_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(ESSL_PATH)/lib64 -lessl -L$(NETLIB_LAPACK_PATH)/lib -llapack</ADD_LDFLAGS>
+  <ADD_LDFLAGS>-lxlopt -lxl -lxlsmp -L$(NETCDF_C_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(ESSL_PATH)/lib64 -lessl -L$(NETLIB_LAPACK_PATH)/lib -llapack</ADD_LDFLAGS>
   <ADD_LDFLAGS MPILIB="!mpi-serial"> -L$(PNETCDF_PATH)/lib -lpnetcdf -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 </ADD_LDFLAGS>
   <ADD_FFLAGS> -qspillsize=2500 -qextname=flush </ADD_FFLAGS>
   <ADD_CPPDEFS> -DLINUX  </ADD_CPPDEFS>
@@ -1198,6 +1183,8 @@ for mct, etc.
 <compiler COMPILER="gnu" MACH="theta">
   <ADD_SLIBS>$(shell nf-config --flibs)</ADD_SLIBS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
 </compiler>
 
 <compiler COMPILER="pgi" MACH="blues">

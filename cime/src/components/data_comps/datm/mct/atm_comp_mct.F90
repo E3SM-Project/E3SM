@@ -219,6 +219,10 @@ CONTAINS
     integer(IN)                      :: shrlogunit     ! original log unit
     integer(IN)                      :: shrloglev      ! original log level
     character(CL)                    :: case_name      ! case name
+    real(R8)                         :: orbEccen       ! orb eccentricity (unit-less)
+    real(R8)                         :: orbMvelpp      ! orb moving vernal eq (radians)
+    real(R8)                         :: orbLambm0      ! orb mean long of perhelion (radians)
+    real(R8)                         :: orbObliqr      ! orb obliquity (radians)
     real(R8)                         :: nextsw_cday    ! calendar of next atm sw
     character(*), parameter :: subName = "(atm_run_mct) "
     !-------------------------------------------------------------------------------
@@ -233,11 +237,32 @@ CONTAINS
          dom=ggrid, &
          infodata=infodata)
 
-    call seq_infodata_GetData(infodata, case_name=case_name)
+    call seq_infodata_GetData(infodata, &
+         case_name=case_name, &
+         orb_eccen=orbEccen, &
+         orb_mvelpp=orbMvelpp, &
+         orb_lambm0=orbLambm0, &
+         orb_obliqr=orbObliqr)
 
-    call datm_comp_run(EClock, x2a, a2x, &
-         SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, logunit, nextsw_cday, case_name)
+    call datm_comp_run( &
+         EClock = EClock, &
+         x2a = x2a, &
+         a2x = a2x, &
+         SDATM = SDATM, &
+         gsmap = gsmap, &
+         ggrid = ggrid, &
+         mpicom = mpicom, &
+         compid = compid, &
+         my_task = my_task, &
+         master_task = master_task, &
+         inst_suffix = inst_suffix, &
+         logunit = logunit, &
+         orbEccen = orbEccen, &
+         orbMvelpp = orbMvelpp, &
+         orbLambm0 = orbLambm0, &
+         orbObliqr = orbObliqr, &
+         nextsw_cday = nextsw_cday, &
+         case_name = case_name)
 
     call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday )
 
