@@ -2903,7 +2903,8 @@ sub write_cppdefs
 
     print $fh "$make_cppdefs";
 
-    if ($dyn eq 'se' and $opts{'dyn_target'} eq 'preqx_cxx') {
+    if ($dyn eq "se" and $opts{"dyn_target"} eq "preqx_cxx") {
+	print $fh " -DUSE_KOKKOS_KERNELS"
     }
 
     print $fh "\n";
