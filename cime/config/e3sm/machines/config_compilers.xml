@@ -690,6 +690,33 @@ for mct, etc.
   </FFLAGS>
 </compiler>
 
+<compiler COMPILER="intel18" MACH="snl-blake">
+  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
+  <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
+  <ADD_CXXFLAGS compile_threaded="true"> -qopenmp </ADD_CXXFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
+  <FREEFLAGS> -free </FREEFLAGS>
+  <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -g -debug minimal </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 -g -debug minimal </ADD_CFLAGS>
+  <ADD_CFLAGS DEBUG="TRUE"> -O0 -g </ADD_CFLAGS>
+  <FFLAGS> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent </FFLAGS>
+  <CFLAGS> -O2 -fp-model precise -std=gnu99 </CFLAGS>
+  <CXXFLAGS> -O2 -fp-model precise -std=c++11 </CXXFLAGS>
+  <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
+  <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
+  <FC_AUTO_R8> -r8 </FC_AUTO_R8>
+  <SFC> ifort </SFC>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CXX_LDFLAGS> -cxxlib </CXX_LDFLAGS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
+</compiler>
+
 <!-- Intel v18 is default on cori-knl and cori-haswell -->
 <compiler MACH="anlworkstation" COMPILER="gnu">
   <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
@@ -1792,7 +1819,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SFC> pgfortran </SFC>
 </compiler>
 
-<compiler COMPILER="intel" MACH="snl-blake">
+<compiler COMPILER="intel18" MACH="snl-blake">
   <KOKKOS_PATH>/ascldap/users/mdeakin/blake/kokkos-release</KOKKOS_PATH>
   <ADD_LDFLAGS MODEL="driver">-L$(NETCDF_FORTRAN_PATH)/lib64</ADD_LDFLAGS>
 </compiler>
