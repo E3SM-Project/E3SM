@@ -190,7 +190,7 @@ contains
             end if
 #if (defined HUM_HOL)
             if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)))   !at 30cm, hummock saturated at 5%
-            if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8)
+            if (c .eq. 2) fsat(c) = 1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)))   !min(1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8)
 #endif
          else
             if ( frost_table(c) > zwt_perched(c)) then 
@@ -198,7 +198,7 @@ contains
             endif
 #if (defined HUM_HOL)
             if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)))   !at 30cm, hummock saturated at 5%
-            if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8)
+            if (c .eq. 2) fsat(c) = 1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)))   !min(1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8)
 #endif   
          endif
          if (origflag == 1) then
@@ -220,7 +220,7 @@ contains
             qflx_surf(c) =  fcov(c) * qflx_top_soil(c)
 #if (defined HUM_HOL)
            if (c .eq. 1) then  !XS - only compute sfc runoff from hummock, send to hollow 
-             qflx_surf(c) =  fcov(c) * qflx_top_soil(c)
+             qflx_surf(c) = 0._r8 ! fcov(c) * qflx_top_soil(c)
            else
              qflx_surf(c) = 0._r8   !turn off surface runoff for hollow
            endif
@@ -287,7 +287,7 @@ contains
      use clm_varcon       , only : denh2o, denice, roverg, wimp, pc, mu, tfrz
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_sunwall, icol_shadewall, icol_road_perv
      use landunit_varcon  , only : istsoil, istcrop
-     use clm_time_manager , only : get_step_size
+     use clm_time_manager , only : get_step_size, get_curr_date, get_curr_time
      !
      ! !ARGUMENTS:
      type(bounds_type)        , intent(in)    :: bounds               
@@ -343,7 +343,9 @@ contains
      real(r8) :: ka_hu
      real(r8) :: zwt_ho, zwt_hu
      real(r8) :: s_node
-     integer  :: jwt(bounds%begc:bounds%endc)               !
+     integer  :: jwt(bounds%begc:bounds%endc)
+     integer  :: yr, mon, day, tod               !
+     integer  :: days, seconds               !
      !-----------------------------------------------------------------------
 
      associate(                                                                & 
@@ -459,8 +461,8 @@ contains
 
              !1. partition surface inputs between soil and h2osfc
 #if (defined HUM_HOL)
-             hum_frac = 0.75_r8
-             hol_frac = 0.25_r8
+             hum_frac = 0.50_r8
+             hol_frac = 0.50_r8
 
              if (c .eq. 1) then
                qflx_surf_input(1) = 0._r8            !hummock
@@ -610,23 +612,28 @@ contains
              if (c.eq.1) then
                zwt_hu = zwt(1)
                zwt_hu = zwt_hu - h2osfc(1)/1000._r8
+               !Replace zwt_ho with externally forced water height here
+               call get_curr_date(yr, mon, day, tod)
              endif
              if (c.eq.2) then
+               call get_curr_time(days, seconds)
                zwt_ho = zwt(2)
+               zwt_ho = zwt_ho - h2osfc(2)/1000._r8                           ! 0.00617*(sin((0.0000001408*seconds)+9.730504)+31.7481)+0.050562(sin(seconds/598923.1)+0.590905))
                ka_ho = max(ka_ho, 1e-5_r8)
                ka_hu = max(ka_hu, 1e-5_r8)
                !DMR 9/21/15 - only inlcude h2osfc if water table near surfce, use
                !harmonic mean 
                zwt_ho = zwt_ho - h2osfc(2)/1000._r8   !DMR 4/29/13
                !DMR 12/4/2015
+               call get_curr_time(days, seconds)
                if (maxval(icefrac(:,:)) .ge. 0.01_r8) then
                  !turn off lateral transport if any ice is present
                  qflx_lat_aqu(:) = 0._r8
                else
                  qflx_lat_aqu(1) =  2._r8/(1._r8/ka_hu+1._r8/ka_ho) * (zwt_hu-zwt_ho- &
-                     0.3_r8) / 1._r8 * sqrt(hol_frac/hum_frac)
+                     0.0_r8) / 1._r8 * sqrt(hol_frac/hum_frac)
                  qflx_lat_aqu(2) = -2._r8/(1._r8/ka_hu+1._r8/ka_ho) * (zwt_hu-zwt_ho- &
-                     0.3_r8) / 1._r8 * sqrt(hum_frac/hol_frac)
+                     0.0_r8) / 1._r8 * sqrt(hum_frac/hol_frac)
                endif
              endif
 #endif
@@ -1499,7 +1506,7 @@ contains
                 end if
              endif
 
-#if (defined HUM_HOL)
+#if (defined HUM_HOL_SPRUCE)
           !changes for hummock hollow topography
           if (c .eq. 1) then !hummock
             if (zwt(c) < 0.7_r8) then
