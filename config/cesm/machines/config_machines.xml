@@ -583,12 +583,12 @@
 	<command name="load">cray-mpich/7.7.0</command>
       </modules>
       <modules mpilib="mpi-serial">
-	<command name="load">cray-hdf5/1.10.0.3</command>
+	<command name="load">cray-hdf5/1.10.1,1</command>
 	<command name="load">cray-netcdf/4.4.1.1.6</command>
       </modules>
       <modules mpilib="!mpi-serial">
 	<command name="load">cray-netcdf-hdf5parallel/4.4.1.1.6</command>
-	<command name="load">cray-hdf5-parallel/1.10.0.3</command>
+	<command name="load">cray-hdf5-parallel/1.10.1.1</command>
 	<command name="load">cray-parallel-netcdf/1.8.1.3</command>
       </modules>
       <modules>
@@ -597,6 +597,8 @@
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">256M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
     </environment_variables>
   </machine>
   <machine MACH="cori-knl">
@@ -686,12 +688,12 @@
 	<command name="load">cray-mpich/7.7.0</command>
       </modules>
       <modules mpilib="mpi-serial">
-	<command name="load">cray-hdf5/1.10.0.3</command>
+	<command name="load">cray-hdf5/1.10.1.1</command>
 	<command name="load">cray-netcdf/4.4.1.1.6</command>
       </modules>
       <modules mpilib="!mpi-serial">
 	<command name="load">cray-netcdf-hdf5parallel/4.4.1.1.6</command>
-	<command name="load">cray-hdf5-parallel/1.10.0.3</command>
+	<command name="load">cray-hdf5-parallel/1.10.1.1</command>
 	<command name="load">cray-parallel-netcdf/1.8.1.3</command>
       </modules>
       <modules>
@@ -700,6 +702,8 @@
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">256M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
     </environment_variables>
   </machine>
 
@@ -844,18 +848,20 @@
 	<command name="load">cray-mpich/7.7.0</command>
       </modules>
       <modules mpilib="mpi-serial">
-	<command name="load">cray-hdf5/1.10.0.3</command>
+	<command name="load">cray-hdf5/1.10.1.1</command>
 	<command name="load">cray-netcdf/4.4.1.1.6</command>
       </modules>
       <modules mpilib="!mpi-serial">
 	<command name="load">cray-netcdf-hdf5parallel/4.4.1.1.6</command>
-	<command name="load">cray-hdf5-parallel/1.10.0.3</command>
+	<command name="load">cray-hdf5-parallel/1.10.1.1</command>
 	<command name="load">cray-parallel-netcdf/1.8.1.3</command>
       </modules>
     </module_system>
 
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
     </environment_variables>
 
   </machine>

@@ -179,7 +179,7 @@ class Case(object):
 
         os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
 
-        self.srun_binding = max_mpitasks_per_node / self.tasks_per_node
+        self.srun_binding = smt_factor*max_mpitasks_per_node / self.tasks_per_node
 
     # Define __enter__ and __exit__ so that we can use this as a context manager
     # and force a flush on exit.
