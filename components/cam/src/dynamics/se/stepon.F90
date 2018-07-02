@@ -538,12 +538,6 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    elem => dyn_out%elem
    
    if (single_column) then
-
-     ! Determine whether it is time for an IOP update;
-     ! doiopupdate set to true if model time step > next available IOP
-!     if (use_iop) then
-!       call setiopupdate
-!     end if
      
      ! Update IOP properties e.g. omega, divT, divQ
      

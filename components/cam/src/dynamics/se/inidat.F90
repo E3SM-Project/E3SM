@@ -126,10 +126,10 @@ contains
         scmposlon=scmlon
       endif 
       minpoint=10000.0_r8
-      ie_scm=1
-      i_scm=1
-      j_scm=1
-      indx_scm=1
+      ie_scm=0
+      i_scm=0
+      j_scm=0
+      indx_scm=0
       do ie=1, nelemd
         indx=1
         do j=1, np
@@ -149,6 +149,10 @@ contains
           enddo
         enddo
       enddo
+      
+      if (ie_scm == 0 .or. i_scm == 0 .or. j_scm == 0 .or. indx_scm == 0) then
+        call endrun('Could not find closest SCM point on input datafile')
+      endif
 
     endif
 
