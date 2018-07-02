@@ -558,8 +558,7 @@ contains
 
     call t_stopf('prim_advance_exp')
 !pw call t_adj_detailf(-1)
-    end subroutine prim_advance_exp
-
+  end subroutine prim_advance_exp
 
 
 
@@ -583,7 +582,6 @@ contains
   call applyCAMforcing_dynamics(elem,hvcoord,np1,dt,nets,nete)
 
   end subroutine applyCAMforcing
-
 
 
 

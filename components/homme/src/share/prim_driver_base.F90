@@ -873,7 +873,6 @@ contains
     use control_mod,        only: statefreq, ftype, qsplit, rsplit, disable_diagnostics
     use hybvcoord_mod,      only: hvcoord_t
     use parallel_mod,       only: abortmp
-!    use prim_advance_mod,   only: applycamforcing, applycamforcing_dynamics, applycamforcing_dynamics_dp
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use vertremap_mod,      only: vertical_remap
     use reduction_mod,      only: parallelmax
@@ -896,7 +895,6 @@ contains
 
     real(kind=real_kind) :: dp, dt_q , dt_remap
     real(kind=real_kind) :: dp_np1(np,np)
-!    real(kind=real_kind) :: dp_forcing(np,np,nlev,nets:nete) !store dp at time when forcing was received
     integer :: ie,i,j,k,n,q,t
     integer :: n0_qdp,np1_qdp,r,nstep_end
     logical :: compute_diagnostics
@@ -939,14 +937,6 @@ contains
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
 #endif
 
-    !initialize dp3d from ps
-    do ie=nets,nete
-      do k=1,nlev
-        elem(ie)%state%dp3d(:,:,k,tl%n0)=&
-             ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
-      enddo
-    enddo
 
 #if (USE_OPENACC)
 !    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
@@ -1100,6 +1090,7 @@ contains
     ! we want to add ftype=2,3,4. for that, we need to apply tracer forcings in
     ! standalone version, in the same manner as in EAM, that is, only once per dt_remap.
     ! thus in standalone homme ftype0 is the same as ftype2 (cause nsplit=1)
+
 #ifndef CAM
     if ( ( (ftype == 2 ) .or. (ftype == 3) .or. (ftype == 4) ) .and. (rstep == 1) ) then
       call ApplyCAMForcing_tracers(elem, hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
@@ -1110,7 +1101,6 @@ contains
       call t_startf("ApplyCAMForcing")
       call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
       call t_stopf("ApplyCAMForcing")
-
     elseif ( ( ftype==2 ) .or. (ftype == 3) .or. (ftype == 4) ) then
       call t_startf("ApplyCAMForcing_dynamics")
       if ((ftype == 2).and.(rstep == 1)) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%n0, dt_remap, nets, nete)
@@ -1118,6 +1108,16 @@ contains
       if (ftype == 4) call ApplyCAMForcing_dynamics(elem, hvcoord, tl%n0, dt, nets, nete)
       call t_stopf("ApplyCAMForcing_dynamics")
     endif
+
+    !initialize dp3d from ps
+    do ie=nets,nete
+      do k=1,nlev
+        elem(ie)%state%dp3d(:,:,k,tl%n0)=&
+             ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
+      enddo
+    enddo
+
 
     if (compute_diagnostics) then
     ! E(1) Energy after CAM forcing
@@ -1129,7 +1129,6 @@ contains
       call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
       call t_stopf("prim_diag_scalars")
     endif
-!#endif
 
     dt_q = dt*qsplit
  
