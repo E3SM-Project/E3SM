@@ -9,7 +9,7 @@ module element_state
 
   implicit none
   private
-  integer, public, parameter :: timelevels = 3
+  integer, public, parameter :: timelevels = 50
 
 ! =========== PRIMITIVE-EQUATION DATA-STRUCTURES =====================
 
@@ -21,15 +21,15 @@ module element_state
     ! vertically-lagrangian code advects dp3d instead of ps_v
     ! tracers Q, Qdp always use 2 level time scheme
 
-    real (kind=real_kind) :: v   (np,np,2,nlev,timelevels)        ! horizontal velocity 
+    real (kind=real_kind) :: v   (np,np,2,nlev,timelevels)        ! horizontal velocity
     real (kind=real_kind) :: w_i (np,np,nlevp,timelevels)         ! vertical velocity at interfaces
-    real (kind=real_kind) :: theta_dp_cp(np,np,nlev,timelevels)   ! potential temperature                       
+    real (kind=real_kind) :: theta_dp_cp(np,np,nlev,timelevels)   ! potential temperature
     real (kind=real_kind) :: phinh_i(np,np,nlevp,timelevels)      ! geopotential used by NH model at interfaces
-    real (kind=real_kind) :: dp3d(np,np,nlev,timelevels)          ! delta p on levels                  
-    real (kind=real_kind) :: ps_v(np,np,timelevels)               ! surface pressure                   
-    real (kind=real_kind) :: phis(np,np)                          ! surface geopotential (prescribed)  
-    real (kind=real_kind) :: Q   (np,np,nlev,qsize_d)             ! Tracer concentration               
-    real (kind=real_kind) :: Qdp (np,np,nlev,qsize_d,2)           ! Tracer mass                        
+    real (kind=real_kind) :: dp3d(np,np,nlev,timelevels)          ! delta p on levels
+    real (kind=real_kind) :: ps_v(np,np,timelevels)               ! surface pressure
+    real (kind=real_kind) :: phis(np,np)                          ! surface geopotential (prescribed)
+    real (kind=real_kind) :: Q   (np,np,nlev,qsize_d)             ! Tracer concentration
+    real (kind=real_kind) :: Qdp (np,np,nlev,qsize_d,2)           ! Tracer mass
 
   end type elem_state_t
 
@@ -45,7 +45,7 @@ module element_state
     real (kind=real_kind) :: dpdiss_biharmonic(np,np,nlev)            ! mean dp dissipation tendency, if nu_p>0
     real (kind=real_kind) :: dpdiss_ave(np,np,nlev)                   ! mean dp used to compute psdiss_tens
 
-    ! diagnostics 
+    ! diagnostics
     real (kind=real_kind) :: omega_p(np,np,nlev)                      ! vertical tendency (derived)
     real (kind=real_kind) :: eta_dot_dpdn(np,np,nlevp)                ! mean vertical flux from dynamics
     real (kind=real_kind) :: eta_dot_dpdn_prescribed(np,np,nlevp)     ! prescribed wind test cases
@@ -63,7 +63,7 @@ module element_state
     real (kind=real_kind) :: gradphis(np,np,2)   ! grad phi at the surface, computed once in model initialization
 
   end type derived_state_t
-  
+
 
   !___________________________________________________________________
   type, public :: elem_accum_t
@@ -117,4 +117,4 @@ module element_state
 
 
 contains
-end module 
+end module
