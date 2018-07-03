@@ -882,7 +882,6 @@ contains
 #endif
     use prim_advance_mod,   only: applycamforcing_ps
 
-!is this needed?
     implicit none
 
     type (element_t) ,    intent(inout) :: elem(:)
@@ -956,27 +955,7 @@ contains
 ! dp3d needs to be computed AFTER applyCAMforcing or applyCAMforcing_tracers
 
 
-   call applyCAMforcing_ps(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
-#if 0
-   !call applyCAMforcing_ps:
-    if (ftype==0) then
-      call t_startf("ApplyCAMForcing")
-      call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
-      call t_stopf("ApplyCAMForcing")
-!does not need dp3d...
-    elseif (ftype==2) then
-      call t_startf("ApplyCAMForcing_dynamics")
-      call ApplyCAMForcing_dynamics(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
-      call t_stopf("ApplyCAMForcing_dynamics")
-    endif
-#ifndef CAM
-    if ftype2,3,4
-!does standalone homme need these timers????
-      call t_startf("ApplyCAMForcing_tracers")
-      call ApplyCAMForcing_tracers(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
-      call t_stopf("ApplyCAMForcing_tracers")
-#endif
-#endif
+    call applyCAMforcing_ps(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 
     if (compute_diagnostics) then
     ! E(1) Energy after CAM forcing
@@ -1158,23 +1137,9 @@ contains
       elem(ie)%derived%dp(:,:,:)=elem(ie)%state%dp3d(:,:,:,tl%n0)
     enddo
 
-
-
 !applyCAMforcing_dp3d shoould be glued to the call of prim_advance_exp
 !energy diagnostics is broken for ftype 3,4
     call ApplyCAMforcing_dp3d(elem,hvcoord,tl%n0,dt,nets,nete)
-#if 0
-    !call applyCAMforcing_dp3d:
-    !notify the user to make sure they call it with valid dp3d
-    call t_startf("ApplyCAMForcing_dynamics")
-    if ftype3
-      call ApplyCAMForcing_dynamics_dp(elem,hvcoord,tl%n0,dt,nets,nete)
-    if ftype4
-      call ApplyCAMForcing_dynamics   (elem,hvcoord,tl%n0,dt,nets,nete)
-    call t_stopf("ApplyCAMForcing_dynamics")
-#endif
-
-
     ! ===============
     ! Dynamical Step
     ! ===============
@@ -1183,20 +1148,9 @@ contains
          hybrid, dt, tl, nets, nete, compute_diagnostics)
     do n=2,qsplit
        call TimeLevel_update(tl,"leapfrog")
-
 !applyCAMforcing_dp3d shoould be glued to the call of prim_advance_exp
 !energy diagnostics is broken for ftype 3,4
-#if 0
-       !call applyCAMforcing_dp3d:
-       !notify the user to make sure they call it with valid dp3d
-       call t_startf("ApplyCAMForcing_dynamics")
-       if ftype3
-         call ApplyCAMForcing_dynamics_dp(elem,hvcoord,tl%n0,dt_remap,nets,nete)
-       if ftype4
-         call ApplyCAMForcing_dynamics   (elem,hvcoord,tl%n0,dt_remap,nets,nete)
-       call t_stopf("ApplyCAMForcing_dynamics")
-#endif
-
+       call ApplyCAMforcing_dp3d(elem,hvcoord,tl%n0,dt,nets,nete)
        call prim_advance_exp(elem, deriv1, hvcoord,hybrid, dt, tl, nets, nete, .false.)
        ! defer final timelevel update until after Q update.
     enddo
