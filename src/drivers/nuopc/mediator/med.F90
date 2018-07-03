@@ -435,6 +435,7 @@ contains
     use ESMF  , only : ESMF_GridComp, ESMF_State, ESMF_Clock, ESMF_VM, ESMF_SUCCESS
     use ESMF  , only : ESMF_UtilString2Int, ESMF_GridCompGet, ESMF_VMGet, ESMF_AttributeGet
     use ESMF  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_METHOD_INITIALIZE
+    use ESMF , only : ESMF_GridCompGet
     use NUOPC , only : NUOPC_CompFilterPhaseMap
     type(ESMF_GridComp)   :: gcomp
     type(ESMF_State)      :: importState, exportState
@@ -451,9 +452,10 @@ contains
     !-----------------------------------------------------------
 
     rc = ESMF_SUCCESS
-
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_VMGet(vm, localPet=localPet, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     mastertask = .false.
     if (localPet == 0) mastertask=.true.
 
@@ -630,7 +632,7 @@ contains
     use MPI         , only : MPI_Comm_Dup
     use ESMF        , only : ESMF_GridComp, ESMF_State, ESMF_Clock, ESMF_VM, ESMF_SUCCESS
     use ESMF        , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_TimeInterval
-    use ESMF        , only : ESMF_VMGet, ESMF_StateIsCreated
+    use ESMF        , only : ESMF_VMGet, ESMF_StateIsCreated, ESMF_GridCompGet
     use shr_kind_mod,  only : shr_kind_cl, r8=> shr_kind_r8
     use med_internalstate_mod     , only: InternalState
     use esmFlds                   , only: ncomps, compname
@@ -672,6 +674,8 @@ contains
     ! Get the internal state from Component.
     nullify(is_local%wrap)
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Initialize the internal state members
