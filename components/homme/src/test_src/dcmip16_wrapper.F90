@@ -30,6 +30,7 @@ use time_mod,             only: time_at, TimeLevel_t
 
 implicit none
 
+! this cannot be made stack variable, nelemd is not compile option
 real(rl),dimension(:,:,:), allocatable :: precl ! storage for column precip
 real(rl):: zi(nlevp), zm(nlev)                                          ! z coordinates
 real(rl):: ddn_hyai(nlevp), ddn_hybi(nlevp)                             ! vertical derivativess of hybrid coefficients

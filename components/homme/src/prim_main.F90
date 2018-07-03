@@ -219,9 +219,6 @@ program prim_main
      nete=dom_mt(ithr)%end
      
      nstep = nextoutputstep(tl)
-
-  if(par%masterproc) print *,"NSTEP",nstep
-  if(par%masterproc) print *,"tl%nstep",tl%nstep
      do while(tl%nstep<nstep)
         call t_startf('prim_run')
         call prim_run_subcycle(elem, hybrid,nets,nete, tstep, tl, hvcoord,1)
@@ -232,13 +229,10 @@ program prim_main
 #endif
 
 #ifdef VERTICAL_INTERPOLATION
-  if(par%masterproc) print *,"BEFORE 1"
      call netcdf_interp_write(elem, tl, hybrid, hvcoord)
 #elif defined PIO_INTERP
-  if(par%masterproc) print *,"BEFORE 2"
      call interp_movie_output(elem, tl, par, 0d0,hvcoord=hvcoord)
 #else
-  if(par%masterproc) print *,"BEFORE 3"
      call prim_movie_output(elem, tl, hvcoord, par)
 #endif
 

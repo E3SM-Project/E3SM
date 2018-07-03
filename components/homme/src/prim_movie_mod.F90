@@ -351,10 +351,6 @@ contains
        end if
     end do
     deallocate(latp,lonp)
-
-
-if (par%masterproc) print *, 'end of prim_movie_init'
-
   end subroutine prim_movie_init
 
 
@@ -417,22 +413,11 @@ if (par%masterproc) print *, 'end of prim_movie_init'
     integer :: ncnt
     call t_startf('prim_movie_output:pio')
 
-if (par%masterproc) print *, 'beg movie_output'
-
     n0=tl%n0
     call TimeLevel_Qdp( tl, qsplit, n0_Q)
 
-
-if (par%masterproc) print *, 'movie_output mark 1',max_output_streams
-
     do ios=1,max_output_streams
-
-if (par%masterproc) print *, 'movie_output mark 2',ios,output_frequency(ios)
-
        if((output_frequency(ios) .gt. 0)) then
-if (par%masterproc) print *, 'movie_output mark 3',output_start_time(ios),tl%nstep,(output_start_time(ios).le.tl%nstep)
-if (par%masterproc) print *, 'movie_output mark 3b',output_end_time(ios),tl%nstep,(output_end_time(ios) .ge. tl%nstep)
-if (par%masterproc) print *, 'movie_output mark 3c', (MODULO(tl%nstep,output_frequency(ios)) .eq. 0)
           if ((output_start_time(ios) .le. tl%nstep) .and. &
                (output_end_time(ios) .ge. tl%nstep) .and. &
                MODULO(tl%nstep,output_frequency(ios)) .eq. 0) then
