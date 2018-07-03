@@ -27,6 +27,12 @@ module prescribed_volcaero
   public :: has_prescribed_volcaero
   public :: init_prescribed_volcaero_restart
 
+  ! true if cmip6 style volcanic file is read otherwise false; this is set as a
+  ! module variable so that it can be read by the aerosol optics routines
+  ! without having to pass it through  multiple levels of subroutines. This also
+  ! makes the connection between the aerosol optics and the volcanic aerosol
+  ! (this module) more explicit.
+  logical, public :: is_cmip6_volc
 
   logical :: has_prescribed_volcaero = .false.
   character(len=8), parameter :: volcaero_name = 'VOLC_MMR'
@@ -182,7 +188,7 @@ end subroutine prescribed_volcaero_readnl
 
 !-------------------------------------------------------------------
 !-------------------------------------------------------------------
-  subroutine prescribed_volcaero_init(is_cmip6_volc)
+  subroutine prescribed_volcaero_init()
 
     use tracer_data, only : trcdata_init
     use cam_history, only : addfld, horiz_only
@@ -194,9 +200,6 @@ end subroutine prescribed_volcaero_readnl
 
     implicit none
     
-    !Arguments
-    logical, intent(out):: is_cmip6_volc
-
     !Local variables
     integer :: ndx, istat
     integer :: errcode, ispf
@@ -209,6 +212,7 @@ end subroutine prescribed_volcaero_readnl
     else
        return
     endif
+
     is_cmip6_volc = .false.
     if (trim(adjustl(file_type))== 'VOLC_CMIP6') then
        is_cmip6_volc = .true.
