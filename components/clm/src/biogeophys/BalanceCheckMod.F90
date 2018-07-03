@@ -296,7 +296,7 @@ contains
        do c = bounds%begc,bounds%endc
           g = col_pp%gridcell(c)
           l = col_pp%landunit(c)       
-
+!          if(lun_pp%itype(l)==istdlak)cycle
           if (col_pp%itype(c) == icol_sunwall .or.  col_pp%itype(c) == icol_shadewall) then
              forc_rain_col(c) = 0.
              forc_snow_col(c) = 0.
@@ -309,7 +309,8 @@ contains
        ! Water balance check
 
        do c = bounds%begc, bounds%endc
-
+          l = col_pp%landunit(c)
+!          if(lun_pp%itype(l)==istdlak)cycle
           ! add qflx_drain_perched and qflx_flood
           if (col_pp%active(c)) then
 
@@ -341,6 +342,8 @@ contains
        
        do fc = 1,num_do_smb_c
           c = filter_do_smb_c(fc)
+          l = col_pp%landunit(c)
+!          if(lun_pp%itype(l)==istdlak)cycle
           g = col_pp%gridcell(c)
           if (glc_dyn_runoff_routing(g)) then
              errh2o(c) = errh2o(c) + qflx_glcice_frz(c)*dtime
@@ -350,6 +353,8 @@ contains
 
        found = .false.
        do c = bounds%begc, bounds%endc
+          l = col_pp%landunit(c)
+!          if(lun_pp%itype(l)==istdlak)cycle
           if (abs(errh2o(c)) > 1.e-7_r8) then
              found = .true.
              indexc = c
@@ -419,7 +424,7 @@ contains
           if (col_pp%active(c)) then
              g = col_pp%gridcell(c)
              l = col_pp%landunit(c)
-
+!             if(lun_pp%itype(l)==istdlak)cycle
              ! As defined here, snow_sources - snow_sinks will equal the change in h2osno at 
              ! any given time step but only if there is at least one snow layer.  h2osno 
              ! also includes snow that is part of the soil column (an initial snow layer is 
@@ -484,6 +489,8 @@ contains
 
        found = .false.
        do c = bounds%begc,bounds%endc
+          l = col_pp%landunit(c)
+!          if(lun_pp%itype(l)==istdlak)cycle
           if (col_pp%active(c)) then
              if (abs(errh2osno(c)) > 1.0e-7_r8) then
                 found = .true.
@@ -532,6 +539,7 @@ contains
           if (veg_pp%active(p)) then
              c = veg_pp%column(p)
              l = veg_pp%landunit(p)
+!             if(lun_pp%itype(l)==istdlak)cycle
              g = veg_pp%gridcell(p)
 
              ! Solar radiation energy balance
@@ -579,6 +587,9 @@ contains
 
        found = .false.
        do p = bounds%begp, bounds%endp
+          c = veg_pp%column(p)
+          l = col_pp%landunit(c)
+!          if(lun_pp%itype(l)==istdlak)cycle
           if (veg_pp%active(p)) then
              if ( (errsol(p) /= spval) .and. (abs(errsol(p)) > 1.e-7_r8) ) then
                 found = .true.
@@ -602,6 +613,7 @@ contains
              write(iulog,*)'forc_tot      = ',forc_solad(indexg,1)+forc_solad(indexg,2) &
                +forc_solai(indexg,1)+forc_solai(indexg,2)
              write(iulog,*)'clm model is stopping'
+             write(iulog,*)'lat, lon = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
              call endrun(decomp_index=indexp, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
           end if
        end if
@@ -610,6 +622,9 @@ contains
 
        found = .false.
        do p = bounds%begp, bounds%endp
+          c = veg_pp%column(p)
+          l = col_pp%landunit(c)
+!          if(lun_pp%itype(l)==istdlak)cycle
           if (veg_pp%active(p)) then
              if ( (errlon(p) /= spval) .and. (abs(errlon(p)) > 1.e-7_r8) ) then
                 found = .true.
@@ -621,8 +636,14 @@ contains
           write(iulog,*)'WARNING: BalanceCheck: longwave energy balance error (W/m2)' 
           write(iulog,*)'nstep        = ',nstep 
           write(iulog,*)'errlon       = ',errlon(indexp)
+          c = veg_pp%column(indexp);l = veg_pp%landunit(indexp)
+          write(iulog,*)'ltype=',lun_pp%itype(l)
+          write(iulog,*)'eflx_lwrad_out=', eflx_lwrad_out(indexp)
+          write(iulog,*)'eflx_lwrad_net=', eflx_lwrad_net(indexp)
+          write(iulog,*)'forc_lwrad    =', forc_lwrad(c)
           if (abs(errlon(indexp)) > 1.e-5_r8 ) then
-             write(iulog,*)'clm model is stopping - error is greater than 1e-5 (W/m2)'
+             write(iulog,*)'clm model is stopping - longwave energy balance error is greater than 1e-5 (W/m2)'
+             write(iulog,*)'lat, lon = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
              call endrun(decomp_index=indexp, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
           end if
        end if
@@ -631,6 +652,9 @@ contains
 
        found = .false.
        do p = bounds%begp, bounds%endp
+          c = veg_pp%column(p)
+          l = col_pp%landunit(c)
+!          if(lun_pp%itype(l)==istdlak)cycle
           if (veg_pp%active(p)) then
              if (abs(errseb(p)) > 1.e-7_r8 ) then
                 found = .true.
@@ -663,6 +687,7 @@ contains
              write(iulog,*)'ftii ftdd ftid = ' ,ftii(indexp,:), ftdd(indexp,:),ftid(indexp,:)
              write(iulog,*)'elai esai = '      ,elai(indexp),   esai(indexp)      
              write(iulog,*)'clm model is stopping'
+             write(iulog,*)'lat, lon = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
              call endrun(decomp_index=indexp, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
           end if
        end if
@@ -671,6 +696,8 @@ contains
 
        found = .false.
        do c = bounds%begc,bounds%endc
+          l = col_pp%landunit(c)
+!          if(lun_pp%itype(l)==istdlak)cycle
           if (col_pp%active(c)) then
              if (abs(errsoi_col(c)) > 1.0e-6_r8 ) then
                 found = .true.
@@ -684,6 +711,7 @@ contains
           write(iulog,*)'errsoi_col    = ',errsoi_col(indexc)
           if (abs(errsoi_col(indexc)) > 1.e-4_r8 .and. (nstep > 2) ) then
              write(iulog,*)'clm model is stopping'
+             write(iulog,*)'lat, lon = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
              call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
           end if
        end if

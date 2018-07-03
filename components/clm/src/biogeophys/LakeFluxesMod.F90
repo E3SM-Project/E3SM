@@ -47,12 +47,13 @@ contains
     use clm_varpar          , only : nlevlak
     use clm_varcon          , only : hvap, hsub, hfus, cpair, cpliq, tkwat, tkice, tkair
     use clm_varcon          , only : sb, vkc, grav, denh2o, tfrz, spval, zsno
-    use clm_varctl          , only : use_lch4
+    use clm_varctl          , only : use_lch4, iulog
     use LakeCon             , only : betavis, z0frzlake, tdmax, emg_lake
     use LakeCon             , only : lake_use_old_fcrit_minz0
     use LakeCon             , only : minz0lake, cur0, cus, curm, fcrit
     use QSatMod             , only : QSat
     use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni
+    use clm_time_manager , only : get_step_size,get_nstep
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds  
@@ -409,7 +410,22 @@ contains
                  + htvp(c)*forc_rho(c)/raw(p)*qsatgdT(c) + tksur(c)/dzsur(c)
 
             t_grnd(c) = ax/bx
-
+            if(t_grnd(c)>tgbef(c)+20._r8)then
+              t_grnd(c)=tgbef(c)+20._r8
+            elseif(t_grnd(c)<tgbef(c)-20._r8)then
+              t_grnd(c)=tgbef(c)-20._r8
+            endif
+!            if(p==3267)then
+!              write(*,'(A,2(X,F20.7))')'betaprime',betaprime(c),sabg(p)
+!              write(iulog,'(A,6(X,F16.7))')'ax',betaprime(c)*sabg(p), emg_lake*forc_lwrad(c),  3._r8*stftg3(p)*tgbef(c) ,&
+!                  forc_rho(c)*cpair/rah(p)*thm(p), &
+!                  htvp(c)*forc_rho(c)/raw(p)*(qsatg(c)-qsatgdT(c)*tgbef(c) - forc_q(c)), &
+!                  tksur(c)*tsur(c)/dzsur(c)
+!              write(iulog,'(A,4(X,F16.7))')'bx',4._r8*stftg3(p), forc_rho(c)*cpair/rah(p), &
+!                  htvp(c)*forc_rho(c)/raw(p)*qsatgdT(c),  tksur(c)/dzsur(c)
+!              write(iulog,'(A,5(X,F15.6))')'t_grnd ',ax,bx,tgbef(c),t_grnd(c),qsatgdT(c)
+!              write(iulog,'(A,2(X,F15.6))')'raw rah', raw(p),rah(p)
+!            endif
             ! Update htvp
             if (t_grnd(c) > tfrz) then
                htvp(c) = hvap
@@ -550,7 +566,12 @@ contains
          ! What is tgbef doing in this equation? Can't it be exact now? --Zack Subin, 4/14/09
 
          eflx_lwrad_out(p) = (1._r8-emg_lake)*forc_lwrad(c) + emg_lake*sb*t_grnd(c)**4._r8
-
+!         if(p==3267)then
+!           write(iulog,*)'lake'
+!           write(iulog,*)'emg_lake=',emg_lake
+!           write(iulog,*)'forc_lwrad=',forc_lwrad(c)
+!           write(iulog,*)'t_grnd=',t_grnd(c)
+!         endif
          ! Ground heat flux
 
          eflx_soil_grnd(p) = sabg(p) + forc_lwrad(c) - eflx_lwrad_out(p) - &
