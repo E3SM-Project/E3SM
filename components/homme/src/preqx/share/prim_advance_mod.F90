@@ -26,6 +26,7 @@ module prim_advance_mod
   save
   public :: prim_advance_exp, prim_advance_init1, &
             applyCAMforcing_dynamics, applyCAMforcing_dynamics_dp, applyCAMforcing, applyCAMforcing_tracers, &
+            applyCAMforcing_ps, applyCAMforcing_dp3d, &
             vertical_mesh_init2
 
   real (kind=real_kind), allocatable :: ur_weights(:)
@@ -561,27 +562,68 @@ contains
   end subroutine prim_advance_exp
 
 
-
+!tracers + dynamics, no ftype logic
   subroutine applyCAMforcing(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
-
-  use physical_constants, only: Cp
-
   implicit none
   type (element_t),       intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,nets,nete,np1_qdp
 
-  ! local
-  integer :: i,j,k,ie,q
-  real (kind=real_kind) :: v1,dp
-  real (kind=real_kind) :: beta(np,np),E0(np,np),ED(np,np),dp0m1(np,np),dpsum(np,np)
-
   call applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
-
   call applyCAMforcing_dynamics(elem,hvcoord,np1,dt,nets,nete)
 
   end subroutine applyCAMforcing
+
+!ftype logic
+!should be called with dt_remap, only before homme timestep
+  subroutine applyCAMforcing_ps(elem,hvcoord,dyn_timelev,n0_qdp,dt_remap,nets,nete)
+  use control_mod, only : ftype
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt_remap
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: dyn_timelev,nets,nete,n0_qdp
+
+  if (ftype==0) then
+    call t_startf("ApplyCAMForcing")
+    call ApplyCAMForcing(elem, hvcoord,dyn_timelev,n0_qdp,dt_remap,nets,nete)
+    call t_stopf("ApplyCAMForcing")
+  !does not need dp3d...
+  elseif (ftype==2) then
+    call t_startf("ApplyCAMForcing_dynamics")
+    call ApplyCAMForcing_dynamics(elem,hvcoord,dyn_timelev,dt_remap,nets,nete)
+    call t_stopf("ApplyCAMForcing_dynamics")
+  endif
+#ifndef CAM
+  if ( (ftype == 2) .or. (ftype == 3) .or. (ftype == 4) ) then
+    call t_startf("ApplyCAMForcing_tracers")
+    call ApplyCAMForcing_tracers(elem, hvcoord,dyn_timelev,n0_qdp,dt_remap,nets,nete)
+    call t_stopf("ApplyCAMForcing_tracers")
+  endif
+#endif
+  end subroutine applyCAMforcing_ps
+
+
+!ftype logic
+!should be called with dt_dynamics, only before dyn timestep
+!can only be called within lagrangian step, with valid dp3d
+  subroutine applyCAMforcing_dp3d(elem,hvcoord,dyn_timelev,dt_dyn,nets,nete)
+  use control_mod, only : ftype
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt_dyn
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: dyn_timelev,nets,nete
+
+  call t_startf("ApplyCAMForcing_dynamics")
+  if (ftype == 3) then
+    call ApplyCAMForcing_dynamics_dp(elem,hvcoord,dyn_timelev,dt_dyn,nets,nete)
+  elseif (ftype == 4) then
+    call ApplyCAMForcing_dynamics   (elem,hvcoord,dyn_timelev,dt_dyn,nets,nete)
+  endif
+  call t_stopf("ApplyCAMForcing_dynamics")
+  end subroutine applyCAMforcing_dp3d
 
 
 

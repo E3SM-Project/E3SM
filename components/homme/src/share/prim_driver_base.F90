@@ -880,6 +880,7 @@ contains
 #if USE_OPENACC
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
+    use prim_advance_mod,   only: applycamforcing_ps
 
 !is this needed?
     implicit none
@@ -954,6 +955,8 @@ contains
 ! things to consider: aplyCAMforcing_dynamics_dp needs dp3d,
 ! dp3d needs to be computed AFTER applyCAMforcing or applyCAMforcing_tracers
 
+
+   call applyCAMforcing_ps(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 #if 0
    !call applyCAMforcing_ps:
     if (ftype==0) then
@@ -1114,10 +1117,7 @@ contains
     use prim_advection_mod, only: prim_advec_tracers_remap
     use reduction_mod,      only: parallelmax
     use time_mod,           only: time_at,TimeLevel_t, timelevel_update, nsplit
-    use prim_advance_mod,   only: applycamforcing, applycamforcing_dynamics, applycamforcing_dynamics_dp
-#ifndef CAM
-    use prim_advance_mod,   only: applycamforcing_tracers
-#endif
+    use prim_advance_mod,   only: applycamforcing_dp3d
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
 
     type(element_t),      intent(inout) :: elem(:)
@@ -1162,14 +1162,15 @@ contains
 
 !applyCAMforcing_dp3d shoould be glued to the call of prim_advance_exp
 !energy diagnostics is broken for ftype 3,4
+    call ApplyCAMforcing_dp3d(elem,hvcoord,tl%n0,dt,nets,nete)
 #if 0
     !call applyCAMforcing_dp3d:
     !notify the user to make sure they call it with valid dp3d
     call t_startf("ApplyCAMForcing_dynamics")
     if ftype3
-      call ApplyCAMForcing_dynamics_dp(elem,hvcoord,tl%n0,dt_remap,nets,nete)
+      call ApplyCAMForcing_dynamics_dp(elem,hvcoord,tl%n0,dt,nets,nete)
     if ftype4
-      call ApplyCAMForcing_dynamics   (elem,hvcoord,tl%n0,dt_remap,nets,nete)
+      call ApplyCAMForcing_dynamics   (elem,hvcoord,tl%n0,dt,nets,nete)
     call t_stopf("ApplyCAMForcing_dynamics")
 #endif
 
