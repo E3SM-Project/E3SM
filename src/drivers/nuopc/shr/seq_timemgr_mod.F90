@@ -15,7 +15,7 @@ module seq_timemgr_mod
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use pio                   , only : file_desc_T
   use seq_comm_mct          , only : seq_comm_iamin, seq_comm_gloroot, CPLID
-  use seq_io_read_mod
+  use netcdf
 
   implicit none
   private    ! default private
@@ -26,7 +26,9 @@ module seq_timemgr_mod
   public :: seq_timemgr_clockInit              ! Setup the sync clock
   public :: seq_timemgr_EClockGetData          ! Get data from an ESMF clock
   public :: seq_timemgr_EClockDateInSync       ! compare EClock to ymd/tod
+  public :: seq_timemgr_EclockPrint            ! Print ESMF clock information
   public :: seq_timemgr_alarmInit              ! initialize an alarm
+  public :: seq_timemgr_alarmGet               ! get info about alarm
   public :: seq_timemgr_alarmSetOn             ! Turn an alarm on
   public :: seq_timemgr_alarmSetOff            ! Turn an alarm off
   public :: seq_timemgr_alarmIsOn              ! Is an alarm ringing
@@ -46,7 +48,6 @@ module seq_timemgr_mod
 
   public :: seq_timemgr_clockPrint ! Print sync clock information
 
-  private:: seq_timemgr_alarmGet
   private:: seq_timemgr_EClockInit
   private:: seq_timemgr_ESMFDebug
 
@@ -168,7 +169,10 @@ module seq_timemgr_mod
   integer                     :: seq_timemgr_pause_sig_index  ! Index of pause comp with smallest dt
   logical                     :: seq_timemgr_esp_run_on_pause ! Run ESP component on pause cycle
   logical                     :: seq_timemgr_end_restart      ! write restarts at end of run?
+  character(SHR_KIND_CL)      :: tmpstr
+  integer                     :: dbrc
   integer, parameter          :: dbug_flag = 10
+  character(len=*), parameter :: sp_str = 'str_undefined'
   character(len=*), parameter :: u_FILE_u =  __FILE__
 
 !===============================================================================
@@ -199,6 +203,7 @@ contains
     !----- local -----
     logical                     :: read_restart
     character(SHR_KIND_CL)      :: restart_file
+    character(SHR_KIND_CL)      :: restart_pfile
     character(SHR_KIND_CL)      :: cvalue
     type(ESMF_Time)             :: StartTime            ! Start time
     type(ESMF_Time)             :: RefTime              ! Reference time
@@ -210,6 +215,7 @@ contains
     integer                     :: rc                   ! Return code
     integer                     :: n, i                 ! index
     logical                     :: found
+    integer                     :: iam, unitn
     integer                     :: min_dt               ! smallest time step
     integer                     :: dtime(max_clocks)    ! time-step to use
     character(SHR_KIND_CS)      :: calendar             ! Calendar type
@@ -253,6 +259,7 @@ contains
     logical                     :: esp_run_on_pause     ! Run ESP on pause cycle
     logical                     :: end_restart          ! Write restart at end of run
     integer(SHR_KIND_IN)        :: ierr                 ! Return code
+    integer(SHR_KIND_IN)        :: status, ncid, varid  ! netcdf stuff
     character(len=*), parameter :: F0A = "(2A,A)"
     character(len=*), parameter :: F0I = "(2A,I10)"
     character(len=*), parameter :: F0L = "(2A,L3)"
@@ -264,12 +271,11 @@ contains
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
 
+    call MPI_COMM_RANK(mpicom,iam,ierr)
+
     call NUOPC_CompAttributeGet(driver, name='read_restart', value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) read_restart
-
-    call NUOPC_CompAttributeGet(driver, name="restart_file", value=restart_file, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) call shr_sys_abort()
 
     !---------------------------------------------------------------------------
     ! Get clock config attributes
@@ -439,22 +445,95 @@ contains
     !---------------------------------------------------------------------------
 
     if (read_restart) then
-       if (seq_comm_iamin(CPLID)) then
-          call seq_io_read(restart_file, pioid, start_ymd, 'seq_timemgr_start_ymd')
-          call seq_io_read(restart_file, pioid, start_tod, 'seq_timemgr_start_tod')
-          call seq_io_read(restart_file, pioid, ref_ymd  , 'seq_timemgr_ref_ymd')
-          call seq_io_read(restart_file, pioid, ref_tod  , 'seq_timemgr_ref_tod')
-          call seq_io_read(restart_file, pioid, curr_ymd , 'seq_timemgr_curr_ymd')
-          call seq_io_read(restart_file, pioid, curr_tod , 'seq_timemgr_curr_tod')
+       if (iam == 0) then
+
+          call NUOPC_CompAttributeGet(driver, name='driver_restart_file', value=restart_file, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          !--- read rpointer if restart_file is set to sp_str ---
+          if (trim(restart_file) == trim(sp_str)) then
+
+             ! Error check on restart_pfile
+             call NUOPC_CompAttributeGet(driver, name="driver_restart_pfile", value=restart_pfile, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+             if ( len_trim(restart_pfile) == 0 ) then
+                rc = ESMF_FAILURE
+                call ESMF_LogWrite(trim(subname)//' ERROR driver_restart_pfile must be defined', ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
+                return  
+             end if
+
+             unitn = shr_file_getUnit()
+             call ESMF_LogWrite(trim(subname)//" read rpointer file = "//trim(restart_pfile), ESMF_LOGMSG_INFO, rc=dbrc)
+             open(unitn, file=restart_pfile, form='FORMATTED', status='old',iostat=ierr)
+             if (ierr < 0) then
+                rc = ESMF_FAILURE
+                call ESMF_LogWrite(trim(subname)//' ERROR rpointer file open returns error', ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
+                return  
+             end if
+             read(unitn,'(a)', iostat=ierr) restart_file
+             if (ierr < 0) then
+                rc = ESMF_FAILURE
+                call ESMF_LogWrite(trim(subname)//' ERROR rpointer file read returns error', ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
+                return  
+             end if
+             close(unitn)
+             call shr_file_freeUnit( unitn )
+             call ESMF_LogWrite(trim(subname)//" read driver restart from file = "//trim(restart_file), ESMF_LOGMSG_INFO, rc=dbrc)
+          endif
+
+          ! tcraig, use netcdf here since it's serial and pio may not have been initialized yet
+          status = nf90_open(restart_file, NF90_NOWRITE, ncid)
+          if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_open')
+          status = nf90_inq_varid(ncid, 'seq_timemgr_start_ymd', varid)
+          if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_inq_varid start_ymd')
+          status = nf90_get_var(ncid, varid, start_ymd)
+          if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_get_var start_ymd')
+          status = nf90_inq_varid(ncid, 'seq_timemgr_start_tod', varid)
+          if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_inq_varid start_tod')
+          status = nf90_get_var(ncid, varid, start_tod)
+          if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_get_var start_tod')
+          status = nf90_inq_varid(ncid, 'seq_timemgr_ref_ymd', varid)
+          if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_inq_varid ref_ymd')
+          status = nf90_get_var(ncid, varid, ref_ymd)
+          if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_get_var ref_ymd')
+          status = nf90_inq_varid(ncid, 'seq_timemgr_ref_tod', varid)
+          if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_inq_varid ref_tod')
+          status = nf90_get_var(ncid, varid, ref_tod)
+          if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_get_var ref_tod')
+          status = nf90_inq_varid(ncid, 'seq_timemgr_curr_ymd', varid)
+          if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_inq_varid curr_ymd')
+          status = nf90_get_var(ncid, varid, curr_ymd)
+          if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_get_var curr_ymd')
+          status = nf90_inq_varid(ncid, 'seq_timemgr_curr_tod', varid)
+          if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_inq_varid curr_tod')
+          status = nf90_get_var(ncid, varid, curr_tod)
+          if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_get_var curr_tod')
+          status = nf90_close(ncid)
+          if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_close')
+
+          write(tmpstr,*) trim(subname)//" read start_ymd = ",start_ymd
+          call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+          write(tmpstr,*) trim(subname)//" read start_tod = ",start_tod
+          call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+          write(tmpstr,*) trim(subname)//" read ref_ymd   = ",ref_ymd
+          call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+          write(tmpstr,*) trim(subname)//" read ref_tod   = ",ref_tod
+          call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+          write(tmpstr,*) trim(subname)//" read curr_ymd  = ",curr_ymd
+          call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+          write(tmpstr,*) trim(subname)//" read curr_tod  = ",curr_tod
+          call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+
        endif
 
-       !--- Send from CPLID ROOT to GLOBALID ROOT, use bcast as surrogate
-       call shr_mpi_bcast(start_ymd, mpicom, pebcast=seq_comm_gloroot(CPLID))
-       call shr_mpi_bcast(start_tod, mpicom, pebcast=seq_comm_gloroot(CPLID))
-       call shr_mpi_bcast(  ref_ymd, mpicom, pebcast=seq_comm_gloroot(CPLID))
-       call shr_mpi_bcast(  ref_tod, mpicom, pebcast=seq_comm_gloroot(CPLID))
-       call shr_mpi_bcast( curr_ymd, mpicom, pebcast=seq_comm_gloroot(CPLID))
-       call shr_mpi_bcast( curr_tod, mpicom, pebcast=seq_comm_gloroot(CPLID))
+       call shr_mpi_bcast(start_ymd, mpicom)
+       call shr_mpi_bcast(start_tod, mpicom)
+       call shr_mpi_bcast(  ref_ymd, mpicom)
+       call shr_mpi_bcast(  ref_tod, mpicom)
+       call shr_mpi_bcast( curr_ymd, mpicom)
+       call shr_mpi_bcast( curr_tod, mpicom)
+
     endif
 
     !---------------------------------------------------------------------------
@@ -1726,6 +1805,7 @@ contains
 
     !----- local -----
     integer :: rc                             ! ESMF return code
+    integer :: ymd, tod                       ! time info
     character(len=SHR_KIND_CL) :: description ! Description of this clock
     type(ESMF_Time) :: clocktime              ! Current time
     character(len=*), parameter :: subname = '(seq_timemgr_EClockInit) '
@@ -1754,7 +1834,13 @@ contains
     end do
 
     if (clocktime /= CurrTime) then
-       if (loglevel > 0) write(logunit,*) trim(subname),' : WARNING clocktime and currtime inconsistent'
+       if (loglevel > 0) then
+          write(logunit,*) trim(subname),' : WARNING clocktime and currtime inconsistent'
+          call seq_timemgr_ETimeGet( clocktime, ymd=ymd, tod=tod )
+          write(logunit,*) trim(subname),' : clocktime = ',ymd,tod
+          call seq_timemgr_ETimeGet( currtime, ymd=ymd, tod=tod )
+          write(logunit,*) trim(subname),' : currtime  = ',ymd,tod
+       endif
     endif
 
   end subroutine seq_timemgr_EClockInit
@@ -1810,6 +1896,35 @@ contains
     type(seq_timemgr_type), intent(in) :: SyncClock   ! Input clock to print
 
     !----- local -----
+    integer(SHR_KIND_IN) :: n
+    character(len=*), parameter ::  F06 = "(2A,L3)"
+    character(len=*), parameter ::  F07 = "(3A)"
+    character(len=*), parameter :: subname = "(seq_timemgr_clockPrint) "
+    !-------------------------------------------------------------------------------
+    ! Notes:
+    !-------------------------------------------------------------------------------
+
+    if (loglevel <= 0) return
+
+    write(logunit,F07) subname,'calendar      = ', trim(seq_timemgr_calendar)
+    write(logunit,F06) subname,'end_restart   = ', seq_timemgr_end_restart
+    write(logunit,F07) ''
+
+    do n = 1,max_clocks
+       call seq_timemgr_EClockPrint(SyncClock%ECP(n)%EClock)
+    enddo
+
+  end subroutine seq_timemgr_clockPrint
+
+  !===============================================================================
+  subroutine seq_timemgr_EClockPrint( EClock )
+
+    ! !DESCRIPTION: Print clock information out.
+
+    ! !INPUT/OUTPUT PARAMETERS:
+    type(ESMF_Clock), intent(in) :: EClock   ! Input clock to print
+
+    !----- local -----
     integer(SHR_KIND_IN) :: m,n
     integer(SHR_KIND_IN) :: curr_ymd   ! Current date YYYYMMDD
     integer(SHR_KIND_IN) :: curr_tod   ! Current time of day (s)
@@ -1838,26 +1953,21 @@ contains
     character(len=*), parameter ::  F08 = "(2A,I8.8,3x,I5.5)"
     character(len=*), parameter ::  F09 = "(2A,2I8,I12)"
     character(len=*), parameter ::  F10 = "(2A,I2,2x,A)"
-    character(len=*), parameter :: subname = "(seq_timemgr_clockPrint) "
+    character(len=*), parameter :: subname = "(seq_timemgr_EClockPrint) "
     !-------------------------------------------------------------------------------
     ! Notes:
     !-------------------------------------------------------------------------------
 
     if (loglevel <= 0) return
 
-    write(logunit,F07) subname,'calendar      = ', trim(seq_timemgr_calendar)
-    write(logunit,F06) subname,'end_restart   = ', seq_timemgr_end_restart
-    write(logunit,F07) ''
-
-    do n = 1,max_clocks
-       call seq_timemgr_EClockGetData( SyncClock%ECP(n)%EClock, curr_ymd=curr_ymd, &
+       call seq_timemgr_EClockGetData( EClock, curr_ymd=curr_ymd, &
             curr_tod=curr_tod, start_ymd=start_ymd,    &
             start_tod=start_tod, StepNo=StepNo,            &
             ref_ymd=ref_ymd, ref_tod=ref_tod,              &
             stop_ymd=stop_ymd, stop_tod=stop_tod,          &
             dtime = dtime, alarmcount=AlarmCount)
        allocate(EAlarm_list(AlarmCount))
-       call ESMF_ClockGetAlarmList(SyncClock%ECP(n)%EClock, alarmListFlag=ESMF_ALARMLIST_ALL, &
+       call ESMF_ClockGetAlarmList(EClock, alarmListFlag=ESMF_ALARMLIST_ALL, &
             alarmList=EAlarm_list, alarmCount=AlarmCount, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -1881,9 +1991,8 @@ contains
 
        write(logunit,*) ''
        deallocate(EAlarm_list)
-    enddo
 
-  end subroutine seq_timemgr_clockPrint
+  end subroutine seq_timemgr_EClockPrint
 
   !===============================================================================
 

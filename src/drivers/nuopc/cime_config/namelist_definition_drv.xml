@@ -76,11 +76,12 @@
 	    #
             ATM -> MED :remapMethod=redist
             MED med_connectors_post_atm2med
-            MED med_phases_history
+            MED med_phases_history_write
 	  @
 	  OCN
   	  OCN -> MED :remapMethod=redist
 	  MED med_connectors_post_ocn2med
+          MED med_phases_restart_write
       @
       </value>
       <value COMP_OCN="socn">
@@ -123,8 +124,9 @@
             MED med_connectors_post_glc2med
             ATM -> MED :remapMethod=redist
             MED med_connectors_post_atm2med
-            MED med_phases_history
+            MED med_phases_history_write
 	  @
+          MED med_phases_restart_write
        @
       </value>
       <value COMP_ATM="cam" COMP_OCN="docn" COMP_WAV="swav">
@@ -167,8 +169,9 @@
 	    ATM
 	    ATM -> MED :remapMethod=redist
 	    MED med_connectors_post_atm2med
-            MED med_phases_history
+            MED med_phases_history_write
 	  @
+          MED med_phases_restart_write
        @
       </value>
     </values>
@@ -693,24 +696,24 @@
     </values>
   </entry>
 
-  <entry id="restart_pfile">
+  <entry id="driver_restart_pfile">
     <type>char</type>
     <category>expdef</category>
     <group>DRIVER_attributes</group>
     <desc>
-      Driver restart pointer file.
+      Mediator restart pointer file.
     </desc>
     <values>
-      <value>rpointer.drv</value>
+      <value>rpointer.med</value>
     </values>
   </entry>
 
-  <entry id="restart_file">
+  <entry id="driver_restart_file">
     <type>char</type>
     <category>expdef</category>
     <group>DRIVER_attributes</group>
     <desc>
-      Full archive path to restart file
+      Full archive path to restart file for mediator
     </desc>
     <values>
       <value>str_undefined</value>
@@ -954,6 +957,34 @@
     <desc>Freezing point calculation for salt water.</desc>
     <values>
       <value>$TFREEZE_SALTWATER_OPTION</value>
+    </values>
+  </entry>
+
+  <!-- =========================================== -->
+  <!-- MED general attributes                      -->
+  <!-- =========================================== -->
+
+  <entry id="restart_pfile">
+    <type>char</type>
+    <category>expdef</category>
+    <group>MED_attributes</group>
+    <desc>
+      Mediator restart pointer file.
+    </desc>
+    <values>
+      <value>rpointer.med</value>
+    </values>
+  </entry>
+
+  <entry id="restart_file">
+    <type>char</type>
+    <category>expdef</category>
+    <group>MED_attributes</group>
+    <desc>
+      Full archive path to restart file for mediator
+    </desc>
+    <values>
+      <value>str_undefined</value>
     </values>
   </entry>
 

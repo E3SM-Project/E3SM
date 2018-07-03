@@ -17,7 +17,7 @@ module drof_comp_mod
   use shr_strdata_mod , only: shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod  , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
   use shr_dmodel_mod  , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
-  use shr_cal_mod     , only: shr_cal_ymdtod2string
+  use shr_cal_mod     , only: shr_cal_datetod2string
   use seq_timemgr_mod , only: seq_timemgr_EClockGetData
 
   use drof_shr_mod   , only: datamode       ! namelist input
@@ -91,7 +91,7 @@ CONTAINS
     integer(IN)   :: n,k         ! generic counters
     integer(IN)   :: ierr        ! error code
     integer(IN)   :: lsize       ! local size
-    logical       :: exists      ! file existance logical
+    logical       :: exists, exists1      ! file existance logical
     integer(IN)   :: nu          ! unit number
     character(CL) :: calendar    ! model calendar
     integer(IN)   :: currentYMD  ! model date
@@ -202,22 +202,24 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     if (read_restart) then
-       if (trim(rest_file) == trim(nullstr) .and. trim(rest_file_strm) == trim(nullstr)) then
+       exists = .false.
+       exists1 = .false.
+       if (trim(rest_file)      == trim(nullstr) .and. &
+           trim(rest_file_strm) == trim(nullstr)) then
           if (my_task == master_task) then
-             write(logunit,F00) ' restart filenames from rpointer'
+             write(logunit,F00) ' restart filenames from rpointer = ',trim(rpfile)
              call shr_sys_flush(logunit)
              inquire(file=trim(rpfile)//trim(inst_suffix),exist=exists)
-             if (.not.exists) then
-                write(logunit,F00) ' ERROR: rpointer file does not exist'
-                call shr_sys_abort(trim(subname)//' ERROR: rpointer file missing')
+             if (exists) then
+                nu = shr_file_getUnit()
+                open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
+                read(nu,'(a)') rest_file
+                read(nu,'(a)') rest_file_strm
+                close(nu)
+                call shr_file_freeUnit(nu)
+                inquire(file=trim(rest_file_strm),exist=exists)
+                inquire(file=trim(rest_file),exist=exists1)
              endif
-             nu = shr_file_getUnit()
-             open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
-             read(nu,'(a)') rest_file
-             read(nu,'(a)') rest_file_strm
-             close(nu)
-             call shr_file_freeUnit(nu)
-             inquire(file=trim(rest_file_strm),exist=exists)
           endif
           call shr_mpi_bcast(rest_file,mpicom,'rest_file')
           call shr_mpi_bcast(rest_file_strm,mpicom,'rest_file_strm')
@@ -229,7 +231,18 @@ CONTAINS
              inquire(file=trim(rest_file_strm),exist=exists)
           endif
        end if
+
        call shr_mpi_bcast(exists,mpicom,'exists')
+       call shr_mpi_bcast(exists1,mpicom,'exists1')
+
+!       if (exists1) then
+!          if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
+!          call shr_pcdf_readwrite('read',SDROF%pio_subsystem, SDROF%io_type, &
+!               trim(rest_file),mpicom,gsmap=gsmap,rf1=water,rf1n='water',io_format=SDROF%io_format)
+!       else
+!          if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file)
+!       endif
+
        if (exists) then
           if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file_strm)
           call shr_strdata_restRead(trim(rest_file_strm),SDROF,mpicom)
@@ -267,7 +280,7 @@ CONTAINS
   subroutine drof_comp_run(EClock, x2r, r2x, &
        SDROF, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
-       currentYMD, currentTOD, case_name)
+       target_ymd, target_tod, case_name)
 
     ! !DESCRIPTION:  run method for drof model
     implicit none
@@ -287,8 +300,8 @@ CONTAINS
     integer(IN)            , intent(in)    :: logunit          ! logging unit number
     logical                , intent(in)    :: read_restart     ! start from restart
     logical                , intent(in)    :: write_restart    ! write restart
-    integer(IN)            , intent(in)    :: currentYMD       ! model date
-    integer(IN)            , intent(in)    :: currentTOD       ! model sec into model date
+    integer(IN)            , intent(in)    :: target_ymd       ! model date
+    integer(IN)            , intent(in)    :: target_tod       ! model sec into model date
     character(CL)          , intent(in), optional :: case_name ! case name
 
     !--- local ---
@@ -323,7 +336,7 @@ CONTAINS
 
     call t_startf('drof_r_strdata_advance')
 
-    call shr_strdata_advance(SDROF, currentYMD, currentTOD, mpicom, 'drof_r')
+    call shr_strdata_advance(SDROF, target_ymd, target_tod, mpicom, 'drof_r')
     call t_stopf('drof_r_strdata_advance')
 
     !--- copy streams to r2x ---
@@ -342,7 +355,7 @@ CONTAINS
           if (abs(r2x%rAttr(nf,n)) > 1.0e28) then
              r2x%rAttr(nf,n) = 0.0_r8
           end if
-          ! write(6,*)'crrentymd, currenttod, nf,n,r2x= ',currentymd, currenttod, nf,n,r2x%rattr(nf,n)
+          ! write(6,*)'crrentymd, target_tod, nf,n,r2x= ',target_ymd, target_tod, nf,n,r2x%rattr(nf,n)
        enddo
     enddo
 
@@ -367,7 +380,7 @@ CONTAINS
 
     if (write_restart) then
        call t_startf('drof_restart')
-       call shr_cal_ymdtod2string(date_str, yy,mm,dd,currentTOD)
+       call shr_cal_datetod2string(date_str, target_ymd, target_tod)
        write(rest_file,"(6a)") &
             trim(case_name), '.drof',trim(inst_suffix),'.r.', &
             trim(date_str),'.nc'
@@ -382,7 +395,7 @@ CONTAINS
           close(nu)
           call shr_file_freeUnit(nu)
        endif
-       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),currentYMD,currentTOD
+       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),target_ymd,target_tod
        call shr_strdata_restWrite(trim(rest_file_strm), SDROF, mpicom, trim(case_name), 'SDROF strdata')
        call shr_sys_flush(logunit)
        call t_stopf('drof_restart')
@@ -394,7 +407,7 @@ CONTAINS
 
     call t_startf('drof_run2')
     if (my_task == master_task) then
-       write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
+       write(logunit,F04) trim(myModelName),': model date ', target_ymd,target_tod
        call shr_sys_flush(logunit)
     end if
     call t_stopf('drof_run2')

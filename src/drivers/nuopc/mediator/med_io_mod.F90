@@ -1,8 +1,8 @@
 module med_io_mod
 
-  ! !DESCRIPTION: Writes attribute vectors to netcdf
-
-  ! !USES:
+  !-----------------------------------------------
+  ! Writes mediator history and restart files
+  !-----------------------------------------------
 
   use ESMF
   use seq_comm_mct          , only : CPLID
@@ -29,7 +29,7 @@ module med_io_mod
   implicit none
   private
 
-  ! !PUBLIC MEMBER FUNCTIONS:
+  ! public member functions:
   public med_io_wopen
   public med_io_close
   public med_io_redef
@@ -40,8 +40,9 @@ module med_io_mod
   public med_io_write
   public med_io_init
 
-  ! !PUBLIC DATA MEMBERS
+  ! public data members:
   interface med_io_read
+     module procedure med_io_read_FB
      module procedure med_io_read_int
      module procedure med_io_read_int1d
      module procedure med_io_read_r8
@@ -76,9 +77,6 @@ module med_io_mod
   integer                        :: pio_iotype
   integer                        :: pio_ioformat
   type(iosystem_desc_t), pointer :: io_subsystem
-  integer                        :: dbrc
-  character(CL)                  :: tmpstr
-  character(CL)                  :: charvar   ! buffer for string read/write
 
 !=================================================================================
 contains
@@ -291,8 +289,8 @@ contains
   end function med_io_sec2hms
 
   !===============================================================================
-  subroutine med_io_write_FB(filename, iam, FB, whead, wdata, nx, ny, nt, fillval, pre, tavg, &
-       use_float, file_ind, rc)
+  subroutine med_io_write_FB(filename, iam, FB, whead, wdata, nx, ny, nt, &
+       fillval, pre, tavg, use_float, file_ind, rc)
 
     ! !DESCRIPTION: Write FB to netcdf file
 
@@ -341,6 +339,8 @@ contains
     integer, pointer              :: Dof(:)
     integer                       :: lfile_ind
     real(r8), pointer             :: fldptr1(:)
+    character(CL)                 :: tmpstr
+    integer                       :: dbrc
     character(*),parameter :: subName = '(med_io_write_FB) '
     !-------------------------------------------------------------------------------
 
@@ -424,6 +424,7 @@ contains
     ng = maxval(maxIndexPTile)
     lnx = ng
     lny = 1
+    deallocate(minIndexPTile, maxIndexPTile)
 
     frame = -1
     if (present(nt)) then
@@ -779,6 +780,7 @@ contains
     integer          :: lnx
     logical          :: lwhead, lwdata
     integer          :: lfile_ind
+    character(CL)    :: charvar   ! buffer for string read/write
     character(*),parameter :: subName = '(med_io_write_char) '
     !-------------------------------------------------------------------------------
 
@@ -854,10 +856,12 @@ contains
        return
     endif
 
+    ! Write out header
     if (lwhead) then
        rcode = pio_def_dim(io_file(lfile_ind),'time',PIO_UNLIMITED,dimid(1))
        rcode = pio_def_var(io_file(lfile_ind),'time',PIO_DOUBLE,dimid,varid)
        rcode = pio_put_att(io_file(lfile_ind),varid,'units',trim(time_units))
+
        lcalendar = shr_cal_calendarName(time_cal,trap=.false.)
        if (trim(lcalendar) == trim(shr_cal_noleap)) then
           lcalendar = 'noleap'
@@ -865,15 +869,17 @@ contains
           lcalendar = 'gregorian'
        endif
        rcode = pio_put_att(io_file(lfile_ind),varid,'calendar',trim(lcalendar))
+
        if (present(tbnds)) then
+          dimid2(2) = dimid(1)
           rcode = pio_put_att(io_file(lfile_ind),varid,'bounds','time_bnds')
-          dimid2(2)=dimid(1)
           rcode = pio_def_dim(io_file(lfile_ind),'ntb',2,dimid2(1))
           rcode = pio_def_var(io_file(lfile_ind),'time_bnds',PIO_DOUBLE,dimid2,varid)
        endif
        if (lwdata) call med_io_enddef(filename, file_ind=lfile_ind)
     endif
 
+    ! Write out data
     if (lwdata) then
        start = 1
        count = 1
@@ -898,18 +904,189 @@ contains
   end subroutine med_io_write_time
 
   !===============================================================================
+  subroutine med_io_read_FB(filename, mpicom, iam, FB, pre, rc)
+
+    ! !DESCRIPTION: Read FB to netcdf file
+
+    ! !input/output arguments
+    character(len=*)          ,intent(in)  :: filename ! file
+    integer                   ,intent(in)  :: mpicom 
+    integer                   ,intent(in)  :: iam
+    type(ESMF_FieldBundle)    ,intent(in)  :: FB       ! data to be written
+    character(len=*),optional ,intent(in)  :: pre      ! prefix to variable name
+    integer                   ,intent(out) :: rc
+
+    ! local variables
+    type(ESMF_Field)    :: field
+    type(ESMF_Mesh)     :: mesh
+    type(ESMF_Distgrid) :: distgrid
+    integer             :: rcode
+    integer             :: nf,ns,ng
+    integer             :: k,n,ndims
+    integer, pointer    :: dimid(:)
+    type(file_desc_t)   :: pioid
+    type(var_desc_t)    :: varid
+    type(io_desc_t)     :: iodesc
+    character(CL)       :: itemc       ! string converted to char
+    character(CL)       :: name1       ! var name
+    character(CL)       :: lpre        ! local prefix
+    integer             :: lnx,lny
+    real(r8)            :: lfillvalue
+    logical             :: exists
+    integer, pointer    :: minIndexPTile(:,:)
+    integer, pointer    :: maxIndexPTile(:,:)
+    integer             :: dimCount, tileCount
+    integer, pointer    :: Dof(:)
+    real(r8), pointer   :: fldptr1(:)
+    character(CL)       :: tmpstr
+    integer             :: dbrc
+    character(*),parameter :: subName = '(med_io_read_FB) '
+    !-------------------------------------------------------------------------------
+
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    endif
+    rc = ESMF_Success
+
+    lpre = ' '
+    if (present(pre)) then
+       lpre = trim(pre)
+    endif
+
+    if (.not. ESMF_FieldBundleIsCreated(FB,rc=rc)) then
+       call ESMF_LogWrite(trim(subname)//" FB "//trim(lpre)//" not created", ESMF_LOGMSG_INFO, rc=dbrc)
+       if (dbug_flag > 5) then
+          call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+       endif
+       rc = ESMF_Success
+       return
+    endif
+
+    call ESMF_FieldBundleGet(FB, fieldCount=nf, rc=rc)
+    write(tmpstr,*) subname//' field count = '//trim(lpre),nf
+    call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+    if (nf < 1) then
+       call ESMF_LogWrite(trim(subname)//" FB "//trim(lpre)//" empty", ESMF_LOGMSG_INFO, rc=dbrc)
+       if (dbug_flag > 5) then
+          call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+       endif
+       rc = ESMF_Success
+       return
+    endif
+
+    if (iam==0) inquire(file=trim(filename),exist=exists)
+    call shr_mpi_bcast(exists,mpicom,'med_io_read_fb exists')
+    if (exists) then
+       rcode = pio_openfile(io_subsystem, pioid, pio_iotype, trim(filename),pio_nowrite)
+       call ESMF_LogWrite(trim(subname)//' open file '//trim(filename), ESMF_LOGMSG_INFO, rc=dbrc)
+    else
+       call ESMF_LogWrite(trim(subname)//' ERROR: file invalid '//trim(filename), &
+       ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+       rc = ESMF_Failure
+       return
+    endif
+
+    do k = 1,nf
+       call shr_nuopc_methods_FB_getNameN(FB, k, itemc, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_getFldPtr(FB, itemc, fldptr1=fldptr1, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       name1 = trim(lpre)//'_'//trim(itemc)
+       call ESMF_LogWrite(trim(subname)//' read field '//trim(name1), ESMF_LOGMSG_INFO, rc=dbrc)
+       call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+       rcode = pio_inq_varid(pioid,trim(name1),varid)
+       if (rcode == pio_noerr) then
+
+          if (k == 1) then
+             rcode = pio_inq_varndims(pioid, varid, ndims)
+             write(tmpstr,*) trim(subname),' ndims = ',ndims,k
+             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+             allocate(dimid(ndims))
+             rcode = pio_inq_vardimid(pioid, varid, dimid(1:ndims))
+             rcode = pio_inq_dimlen(pioid, dimid(1), lnx)
+             write(tmpstr,*) trim(subname),' lnx = ',lnx
+             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+             if (ndims>=2) then
+                rcode = pio_inq_dimlen(pioid, dimid(2), lny)
+             else
+                lny = 1
+             end if
+             deallocate(dimid)
+             write(tmpstr,*) trim(subname),' lny = ',lny
+             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+             ng = lnx * lny
+
+             call shr_nuopc_methods_FB_getFieldN(FB, k, field, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call ESMF_FieldGet(field, mesh=mesh, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call ESMF_MeshGet(mesh, elementDistgrid=distgrid, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call ESMF_DistGridGet(distgrid, dimCount=dimCount, tileCount=tileCount, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             allocate(minIndexPTile(dimCount, tileCount), &
+                      maxIndexPTile(dimCount, tileCount))
+             call ESMF_DistGridGet(distgrid, minIndexPTile=minIndexPTile, &
+                      maxIndexPTile=maxIndexPTile, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             !write(tmpstr,*) subname,' counts = ',dimcount,tilecount,minindexptile,maxindexptile
+             !call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+
+             if (ng > maxval(maxIndexPTile)) then
+                write(tmpstr,*) subname,' ERROR: dimensions do not match', lnx, lny, maxval(maxIndexPTile)
+                call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+                rc = ESMF_Failure
+                return
+             endif
+
+             call ESMF_DistGridGet(distgrid, localDE=0, elementCount=ns, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             allocate(dof(ns))
+             call ESMF_DistGridGet(distgrid, localDE=0, seqIndexList=dof, rc=rc)
+             write(tmpstr,*) subname,' dof = ',ns,size(dof),dof(1),dof(ns)  !,minval(dof),maxval(dof)
+             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+             call pio_initdecomp(io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
+             deallocate(dof)
+          endif
+
+          call pio_read_darray(pioid, varid, iodesc, fldptr1, rcode)
+          rcode = pio_get_att(pioid,varid,"_FillValue",lfillvalue)
+          if (rcode /= pio_noerr) then
+             lfillvalue = fillvalue
+          endif
+          do n = 1,size(fldptr1)
+             if (fldptr1(n) == lfillvalue) fldptr1(n) = 0.0_r8
+          enddo
+       else
+          fldptr1 = 0.0_r8
+       endif
+       call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
+    enddo
+
+    deallocate(minIndexPTile, maxIndexPTile)
+    call pio_freedecomp(pioid, iodesc)
+    call pio_closefile(pioid)
+
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    endif
+
+  end subroutine med_io_read_FB
+
+  !===============================================================================
   subroutine med_io_read_int(filename, mpicom, iam, idata, dname)
 
     ! !DESCRIPTION:  Read scalar integer from netcdf file
 
-    ! !INPUT/OUTPUT PARAMETERS:
+    ! input/output arguments
     character(len=*) , intent(in)    :: filename ! file
     integer          , intent(in)    :: mpicom 
     integer          , intent(in)    :: iam
     integer          , intent(inout) :: idata    ! integer data
     character(len=*) , intent(in)    :: dname    ! name of data
 
-    ! local varaibles
+    ! local variables
     integer :: i1d(1)
     character(*),parameter :: subName = '(med_io_read_int) '
     !-------------------------------------------------------------------------------
@@ -1055,6 +1232,7 @@ contains
     logical           :: exists
     character(CL)     :: lversion
     character(CL)     :: name1
+    character(CL)     :: charvar   ! buffer for string read/write
     character(*),parameter :: subName = '(med_io_read_char) '
     !-------------------------------------------------------------------------------
 

@@ -46,20 +46,19 @@ module med_phases_history_mod
   integer, parameter            :: SecPerDay = 86400    ! Seconds per day
   type(ESMF_Alarm)              :: AlarmHist
 
-  public  :: med_phases_history
+  public  :: med_phases_history_write
 
 !===============================================================================
 contains
 !===============================================================================
 
-  subroutine med_phases_history(gcomp, rc)
+  subroutine med_phases_history_write(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! Write mediator history file
 
     ! local variables
-    type(InternalState)     :: is_local
     type(ESMF_VM)           :: vm
     type(ESMF_Clock)        :: clock
     type(ESMF_Time)         :: currtime
@@ -70,13 +69,15 @@ contains
     type(ESMF_CalKind_Flag) :: calkindflag
     character(len=64)       :: currtimestr
     character(len=64)       :: nexttimestr
+    type(InternalState)     :: is_local
     integer                 :: i,j,m,n,n1,ncnt
-    logical,save            :: first_call = .true.
     integer(IN)             :: start_ymd      ! Starting date YYYYMMDD
     integer(IN)             :: start_tod      ! Starting time-of-day (s)
     integer(IN)             :: nx,ny          ! global grid size
     integer(IN)             :: yr,mon,day,sec ! time units
+    real(r8)                :: rval           ! real tmp value
     real(r8)                :: dayssince      ! Time interval since reference time
+    integer(IN)             :: fk             ! index
     character(CL)           :: time_units     ! units of time variable
     character(CL)           :: calendar       ! calendar type
     character(CL)           :: case_name      ! case name
@@ -88,8 +89,9 @@ contains
     logical                 :: alarmIsOn      ! generic alarm flag
     real(r8)                :: tbnds(2)       ! CF1.0 time bounds
     logical                 :: whead,wdata    ! for writing restart/history cdf files
-    integer                 :: mpicom, iam 
-    character(len=*), parameter :: subname='(med_phases_history)'
+    integer                 :: iam,mpicom     ! vm stuff
+    logical,save            :: first_call = .true.
+    character(len=*), parameter :: subname='(med_phases_history_write)'
     !---------------------------------------
 
     if (dbug_flag > 5) then
@@ -159,11 +161,12 @@ contains
     endif
 
     if (mastertask) then
-       call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
+       call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//&
+            " mediating for: ", rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
-    timediff = currtime - reftime
+    timediff = nexttime - reftime
     call ESMF_TimeIntervalGet(timediff, d=day, s=sec, rc=rc)
     dayssince = day + sec/real(SecPerDay,R8)
 
@@ -184,8 +187,10 @@ contains
        call NUOPC_CompAttributeGet(gcomp, name='history_n', value=cvalue, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) freq_n
-       call ESMF_LogWrite(trim(subname)//" init history alarm with option, n = "//trim(freq_option)//","//trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
-       call seq_timemgr_alarmInit(clock, AlarmHist, option=freq_option, opt_n=freq_n, RefTime=RefTime, alarmname='history', rc=rc)
+       call ESMF_LogWrite(trim(subname)//" init history alarm with option, n = "//&
+            trim(freq_option)//","//trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
+       call seq_timemgr_alarmInit(clock, AlarmHist, option=freq_option, opt_n=freq_n, &
+            RefTime=RefTime, alarmname='history', rc=rc)
     endif
 
     alarmIsOn = seq_timemgr_alarmIsOn(clock, 'history', rc)
@@ -270,6 +275,6 @@ contains
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
 
-  end subroutine med_phases_history
+  end subroutine med_phases_history_write
 
 end module med_phases_history_mod

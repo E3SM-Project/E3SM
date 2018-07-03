@@ -72,7 +72,8 @@ module MED
   use med_phases_prep_glc_mod   , only: med_phases_prep_glc
   use med_phases_ocnalb_mod     , only: med_phases_ocnalb_run
   use med_phases_aofluxes_mod   , only: med_phases_aofluxes_run
-  use med_phases_history_mod    , only: med_phases_history
+  use med_phases_history_mod    , only: med_phases_history_write
+  use med_phases_restart_mod    , only: med_phases_restart_write, med_phases_restart_read
   use med_fraction_mod          , only: med_fraction_init, med_fraction_set
   use med_constants_mod         , only: med_constants_dbug_flag
   use med_constants_mod         , only: med_constants_spval_init
@@ -189,10 +190,21 @@ contains
     !------------------
 
     call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-         phaseLabelList=(/"med_phases_history"/), userRoutine=mediator_routine_Run, rc=rc)
+         phaseLabelList=(/"med_phases_history_write"/), userRoutine=mediator_routine_Run, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-         specPhaseLabel="med_phases_history", specRoutine=med_phases_history, rc=rc)
+         specPhaseLabel="med_phases_history_write", specRoutine=med_phases_history_write, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !------------------
+    ! setup mediator restart phase
+    !------------------
+
+    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
+         phaseLabelList=(/"med_phases_restart_write"/), userRoutine=mediator_routine_Run, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
+         specPhaseLabel="med_phases_restart_write", specRoutine=med_phases_restart_write, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !------------------
@@ -1304,6 +1316,8 @@ contains
     character(ESMF_MAXSTR),allocatable :: fieldNameList(:)
     character(len=128)                 :: value
     character(SHR_KIND_CL)             :: cvalue
+    character(SHR_KIND_CL)             :: start_type
+    logical                            :: read_restart
     logical                            :: LocalDone
     logical,save                       :: atmDone = .false.
     logical,save                       :: ocnDone = .false.
@@ -1509,28 +1523,6 @@ contains
          enddo
       enddo
       if (mastertask) call shr_sys_flush(llogunit)
-
-#if (1 == 0)
-      !---------------------------------------
-      ! read mediator restarts
-      !---------------------------------------
-      !---tcraig, turn if on to force no mediator restarts for testing
-      !if (.not.coldstart) then
-        call Mediator_restart(gcomp,'read','mediator',rc)
-        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-      !endif
-
-      ! default initialize s_surf to work around limitations of current initialization sequence
-      call ESMF_StateGet(is_local%wrap%NStateExp(compice), itemName='s_surf', itemType=itemType, rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-      if (itemType /= ESMF_STATEITEM_NOTFOUND) then
-        if (NUOPC_IsConnected(is_local%wrap%NStateExp(compice),'s_surf',rc=rc)) then
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call State_SetFldPtr(is_local%wrap%NStateExp(compice), 's_surf', 34.0_ESMF_KIND_R8, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-        endif
-      endif
-#endif
 
       !---------------------------------------
       !--- Initialize route handles and required normalization field bunds
@@ -1776,6 +1768,23 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call med_io_init()
+
+      !---------------------------------------
+      ! read mediator restarts
+      !---------------------------------------
+
+       call NUOPC_CompAttributeGet(gcomp, name="read_restart", value=cvalue, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call ESMF_LogWrite(subname//' read_restart = '//trim(cvalue), ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       read(cvalue,*) read_restart
+
+       if (read_restart) then
+         call med_phases_restart_read(gcomp, rc)
+         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       endif
+
     else
        call NUOPC_CompAttributeSet(gcomp, name="InitializeDataComplete", value="false", rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1800,6 +1809,9 @@ contains
     type(ESMF_Clock)           :: mediatorClock, driverClock
     type(ESMF_Time)            :: currTime
     type(ESMF_TimeInterval)    :: timeStep
+    type(ESMF_Alarm),pointer   :: alarmList(:)
+    type(ESMF_Alarm)           :: dalarm
+    integer                    :: alarmcount, n
     character(len=*),parameter :: subname='(module_MED:SetRunClock)'
     !-----------------------------------------------------------
 
@@ -1834,196 +1846,47 @@ contains
     call NUOPC_CompCheckSetClock(gcomp, driverClock, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    !--------------------------------
+    ! copy alarms from driver to model clock if model clock has no alarms (do this only once!)
+    !--------------------------------
+
+    call ESMF_ClockGetAlarmList(mediatorClock, alarmlistflag=ESMF_ALARMLIST_ALL, alarmCount=alarmCount, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (alarmCount == 0) then
+      call ESMF_ClockGetAlarmList(driverClock, alarmlistflag=ESMF_ALARMLIST_ALL, alarmCount=alarmCount, rc=rc)
+      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+      allocate(alarmList(alarmCount))
+      call ESMF_ClockGetAlarmList(driverClock, alarmlistflag=ESMF_ALARMLIST_ALL, alarmList=alarmList, rc=rc)
+      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+      do n = 1, alarmCount
+         !call ESMF_AlarmPrint(alarmList(n), rc=rc)
+         !if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+         dalarm = ESMF_AlarmCreate(alarmList(n), rc=rc)
+         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+         call ESMF_AlarmSet(dalarm, clock=mediatorClock, rc=rc)
+         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+      enddo
+
+      deallocate(alarmList)
+    endif
+
+    !--------------------------------
+    ! Advance med clock to trigger alarms then reset model clock back to currtime
+    !--------------------------------
+
+    call ESMF_ClockAdvance(mediatorClock,rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_ClockSet(mediatorClock, currTime=currtime, timeStep=timestep, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
     endif
 
   end subroutine SetRunClock
-
-  !-----------------------------------------------------------------------------
-#if (1 == 0)
-
-  subroutine Mediator_restart(gcomp,mode,bfname,rc)
-    !
-    ! read/write mediator restart file
-    !
-    type(ESMF_GridComp)  :: gcomp
-    character(len=*), intent(in)    :: mode
-    character(len=*), intent(in)    :: bfname
-    integer         , intent(inout) :: rc
-
-    type(InternalState)  :: is_local
-    character(len=1280)  :: fname
-    integer              :: funit
-    logical              :: fexists
-    character(len=*),parameter :: subname='(module_MED:Mediator_restart)'
-    !-----------------------------------------------------------
-
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-    rc = ESMF_SUCCESS
-
-    if (mode /= 'write' .and. mode /= 'read') then
-       call ESMF_LogWrite(trim(subname)//": ERROR mode not allowed "//trim(mode), &
-            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-      rc = ESMF_FAILURE
-      return
-    endif
-
-    ! Get the internal state from Component.
-    nullify(is_local%wrap)
-    call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    fname = trim(bfname)//'_FBaccum(compatm)_restart.nc'
-    call FieldBundle_RWFields(mode,fname,is_local%wrap%FBaccum(compatm),read_rest_FBaccum(compatm),rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    fname = trim(bfname)//'_FBaccum(compocn)_restart.nc'
-    call FieldBundle_RWFields(mode,fname,is_local%wrap%FBaccum(compocn),read_rest_FBaccum(compocn),rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    fname = trim(bfname)//'_FBaccum(compice)_restart.nc'
-    call FieldBundle_RWFields(mode,fname,is_local%wrap%FBaccum(compice),read_rest_FBaccum(compice),rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    fname = trim(bfname)//'_FBaccum(complnd)_restart.nc'
-    call FieldBundle_RWFields(mode,fname,is_local%wrap%FBaccum(complnd),read_rest_FBaccum(complnd),rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    fname = trim(bfname)//'_FBaccum(comprof)_restart.nc'
-    call FieldBundle_RWFields(mode,fname,is_local%wrap%FBaccum(comprof),read_rest_FBaccum(comprof),rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    fname = trim(bfname)//'_FBaccum(compwav)_restart.nc'
-    call FieldBundle_RWFields(mode,fname,is_local%wrap%FBaccum(compwav),read_rest_FBaccum(compwav),rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    fname = trim(bfname)//'_FBaccum(compglc)_restart.nc'
-    call FieldBundle_RWFields(mode,fname,is_local%wrap%FBaccum(compglc),read_rest_FBaccum(compglc),rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    fname = trim(bfname)//'_FBaccumAOflux_restart.nc'
-    call FieldBundle_RWFields(mode,fname,is_local%wrap%FBaccumAOflux,read_rest_FBaccumAOflux,rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    fname = trim(bfname)//'_FBAtm_a_restart.nc'
-    call FieldBundle_RWFields(mode,fname,is_local%wrap%FBImp(compatm,compatm),read_rest_FBAtm_a,rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (mode == 'read') then
-      call shr_nuopc_methods_FB_copy(is_local%wrap%NStateImp(compatm), is_local%wrap%FBImp(compatm,compatm), rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-
-    fname = trim(bfname)//'_FBImp(compice,compice)_restart.nc'
-    call FieldBundle_RWFields(mode,fname,is_local%wrap%FBImp(compice,compice),read_rest_FBImp(compice,compice),rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (mode == 'read') then
-      call shr_nuopc_methods_FB_copy(is_local%wrap%NStateImp(compice), is_local%wrap%FBImp(compice,compice), rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-
-    fname = trim(bfname)//'_FBImp(compocn,compocn)_restart.nc'
-    call FieldBundle_RWFields(mode,fname,is_local%wrap%FBImp(compocn,compocn),read_rest_FBImp(compocn,compocn),rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (mode == 'read') then
-      call shr_nuopc_methods_FB_copy(is_local%wrap%NStateImp(compocn), is_local%wrap%FBImp(compocn,compocn), rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-
-    fname = trim(bfname)//'_FBImp(complnd,complnd)_restart.nc'
-    call FieldBundle_RWFields(mode,fname,is_local%wrap%FBImp(complnd,complnd),read_rest_FBImp(complnd,complnd),rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (mode == 'read') then
-      call shr_nuopc_methods_FB_copy(is_local%wrap%NStateImp(complnd), is_local%wrap%FBImp(complnd,complnd), rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-
-    fname = trim(bfname)//'_FBImp(comprof,comprof)_restart.nc'
-    call FieldBundle_RWFields(mode,fname,is_local%wrap%FBImp(comprof,comprof),read_rest_FBImp(comprof,comprof),rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (mode == 'read') then
-      call shr_nuopc_methods_FB_copy(is_local%wrap%NStateImp(comprof), is_local%wrap%FBImp(comprof,comprof), rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-
-    fname = trim(bfname)//'_FBImp(compwav,comprof)_restart.nc'
-    call FieldBundle_RWFields(mode,fname,is_local%wrap%FBImp(compwav,comprof),read_rest_FBImp(compwav,comprof),rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (mode == 'read') then
-      call shr_nuopc_methods_FB_copy(is_local%wrap%NStateImp(compwav), is_local%wrap%FBImp(compwav,comprof), rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-
-    fname = trim(bfname)//'_FBImp(compglc,comprof)_restart.nc'
-    call FieldBundle_RWFields(mode,fname,is_local%wrap%FBImp(compglc,comprof),read_rest_FBImp(compglc,comprof),rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (mode == 'read') then
-      call shr_nuopc_methods_FB_copy(is_local%wrap%NStateImp(compglc), is_local%wrap%FBImp(compglc,comprof), rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-
-    fname = trim(bfname)//'_FBAOFlux_o_restart.nc'
-    call FieldBundle_RWFields(mode,fname,is_local%wrap%FBaoflux_o,read_rest_FBaoflux_o,rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    funit = 1101
-    fname = trim(bfname)//'_scalars_restart.txt'
-    if (mode == 'write') then
-      call ESMF_LogWrite(trim(subname)//": write "//trim(fname), ESMF_LOGMSG_INFO, rc=dbrc)
-      open(funit,file=fname,form='formatted')
-      write(funit,*) is_local%wrap%FBaccumcnt(compatm)
-      write(funit,*) is_local%wrap%FBaccumcnt(compocn)
-      write(funit,*) is_local%wrap%FBaccumcnt(compice)
-      write(funit,*) is_local%wrap%FBaccumcntAOflux
-      write(funit,*) is_local%wrap%FBaccumcnt(complnd)
-      write(funit,*) is_local%wrap%FBaccumcnt(comprof)
-      write(funit,*) is_local%wrap%FBaccumcnt(compwav)
-      write(funit,*) is_local%wrap%FBaccumcnt(compglc)
-      close(funit)
-    elseif (mode == 'read') then
-      inquire(file=fname,exist=fexists)
-      if (fexists) then
-        call ESMF_LogWrite(trim(subname)//": read "//trim(fname), ESMF_LOGMSG_INFO, rc=dbrc)
-        open(funit,file=fname,form='formatted')
-        ! DCR - temporary skip reading Lnd and Rof until components are added to test case
-        !       restart files
-        is_local%wrap%FBaccumcnt(compatm)=0
-        is_local%wrap%FBaccumcnt(compocn)=0
-        is_local%wrap%FBaccumcnt(compice)=0
-        is_local%wrap%FBaccumcntAOflux=0
-        is_local%wrap%FBaccumcnt(complnd)=0
-        is_local%wrap%FBaccumcnt(comprof)=0
-        is_local%wrap%FBaccumcnt(compwav)=0
-        is_local%wrap%FBaccumcnt(compglc)=0
-        read (funit,*) is_local%wrap%FBaccumcnt(compatm)
-        read (funit,*) is_local%wrap%FBaccumcnt(compocn)
-        read (funit,*) is_local%wrap%FBaccumcnt(compice)
-        read (funit,*) is_local%wrap%FBaccumcntAOflux
-        read (funit,*) is_local%wrap%FBaccumcnt(complnd)
-        read (funit,*) is_local%wrap%FBaccumcnt(comprof)
-        read (funit,*) is_local%wrap%FBaccumcnt(compwav)
-        read (funit,*) is_local%wrap%FBaccumcnt(compglc)
-        close(funit)
-      else
-        read_rest_FBaccum(compatm) = .false.
-        read_rest_FBaccum(compocn) = .false.
-        read_rest_FBaccum(compice) = .false.
-        read_rest_FBaccum(complnd) = .false.
-        read_rest_FBaccum(comprof) = .false.
-        read_rest_FBaccum(compwav) = .false.
-        read_rest_FBaccum(compglc) = .false.
-        read_rest_FBaccumAOflux    = .false.
-      endif
-    endif
-
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-
-  end subroutine Mediator_restart
-#endif
 
   !-----------------------------------------------------------------------------
 

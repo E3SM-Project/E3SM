@@ -12,7 +12,7 @@ module datm_comp_mod
   use shr_sys_mod
   use shr_kind_mod   , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_file_mod   , only: shr_file_getunit, shr_file_freeunit
-  use shr_cal_mod    , only: shr_cal_date2julian, shr_cal_ymdtod2string
+  use shr_cal_mod    , only: shr_cal_date2julian, shr_cal_datetod2string
   use shr_mpi_mod    , only: shr_mpi_bcast
   use shr_precip_mod , only: shr_precip_partition_rain_snow_ramp
   use shr_strdata_mod, only: shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
@@ -249,7 +249,7 @@ CONTAINS
     integer(IN)   :: kfld        ! fld index
     integer(IN)   :: cnt         ! counter
     integer(IN)   :: idt         ! integer timestep
-    logical       :: exists      ! filename existance
+    logical       :: exists,exists1      ! filename existance
     integer(IN)   :: nu          ! unit number
     integer(IN)   :: CurrentYMD  ! model date
     integer(IN)   :: CurrentTOD  ! model sec into model date
@@ -484,23 +484,24 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     if (read_restart) then
+       exists = .false.
+       exists1 = .false.
        if (trim(rest_file)      == trim(nullstr) .and. &
-            trim(rest_file_strm) == trim(nullstr)) then
+           trim(rest_file_strm) == trim(nullstr)) then
           if (my_task == master_task) then
-             write(logunit,F00) ' restart filenames from rpointer'
+             write(logunit,F00) ' restart filenames from rpointer = ',trim(rpfile)
              call shr_sys_flush(logunit)
              inquire(file=trim(rpfile)//trim(inst_suffix),exist=exists)
-             if (.not.exists) then
-                write(logunit,F00) ' ERROR: rpointer file does not exist'
-                call shr_sys_abort(trim(subname)//' ERROR: rpointer file missing')
+             if (exists) then
+                nu = shr_file_getUnit()
+                open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
+                read(nu,'(a)') rest_file
+                read(nu,'(a)') rest_file_strm
+                close(nu)
+                call shr_file_freeUnit(nu)
+                inquire(file=trim(rest_file_strm),exist=exists)
+                inquire(file=trim(rest_file),exist=exists1)
              endif
-             nu = shr_file_getUnit()
-             open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
-             read(nu,'(a)') rest_file
-             read(nu,'(a)') rest_file_strm
-             close(nu)
-             call shr_file_freeUnit(nu)
-             inquire(file=trim(rest_file_strm),exist=exists)
           endif
           call shr_mpi_bcast(rest_file,mpicom,'rest_file')
           call shr_mpi_bcast(rest_file_strm,mpicom,'rest_file_strm')
@@ -514,6 +515,15 @@ CONTAINS
        endif
 
        call shr_mpi_bcast(exists,mpicom,'exists')
+       call shr_mpi_bcast(exists1,mpicom,'exists1')
+
+!       if (exists1) then
+!          if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
+!          call shr_pcdf_readwrite('read',SDATM%pio_subsystem, SDATM%io_type, &
+!               trim(rest_file),mpicom,gsmap=gsmap,rf1=water,rf1n='water',io_format=SDATM%io_format)
+!       else
+!          if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file)
+!       endif
 
        if (exists) then
           if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file_strm)
@@ -562,9 +572,8 @@ CONTAINS
          orbObliqr=orbObliqr, &
          nextsw_cday=nextsw_cday, &
          write_restart=write_restart, &
-         currentYMD=currentYMD, &
-         currentTOD=currentTOD)
-
+         target_ymd=currentYMD, &
+         target_tod=currentTOD)
     call t_adj_detailf(-2)
 
     write_restart = .false.
@@ -578,7 +587,7 @@ CONTAINS
        SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, &
        orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
-       nextsw_cday, write_restart, currentYMD, currentTOD, case_name)
+       nextsw_cday, write_restart, target_ymd, target_tod, case_name)
 
     ! !DESCRIPTION: run method for datm model
 
@@ -601,9 +610,9 @@ CONTAINS
     real(R8)               , intent(in)    :: orbObliqr        ! orb obliquity (radians)
     real(R8)               , intent(out)   :: nextsw_cday      ! calendar of next atm sw
     logical                , intent(in)    :: write_restart    ! restart alarm is on
-    integer(IN)            , intent(in)    :: currentYMD       ! model date
-    integer(IN)            , intent(in)    :: currentTOD       ! model sec into model date
-    character(CL)          , intent(in), optional :: case_name        ! case name
+    integer(IN)            , intent(in)    :: target_ymd       ! model date
+    integer(IN)            , intent(in)    :: target_tod       ! model sec into model date
+    character(CL)          , intent(in), optional :: case_name ! case name
 
     !--- local ---
     integer(IN)   :: yy,mm,dd,tod          ! year month day time-of-day
@@ -646,7 +655,7 @@ CONTAINS
          calendar=calendar,                 &
          stepno=stepno)
     dt = idt * 1.0_r8
-    nextsw_cday = datm_shr_getNextRadCDay( CurrentYMD, CurrentTOD, stepno, idt, iradsw, calendar )
+    nextsw_cday = datm_shr_getNextRadCDay( target_ymd, target_tod, stepno, idt, iradsw, calendar )
     call t_stopf('datm_run1')
 
     !--------------------
@@ -659,9 +668,12 @@ CONTAINS
     !--- set data needed for cosz t-interp method ---
     call shr_strdata_setOrbs(SDATM,orbEccen,orbMvelpp,orbLambm0,orbObliqr,idt)
 
+    call seq_timemgr_EClockGetData( EClock, calendar=calendar, stepno=stepno )
+    nextsw_cday = datm_shr_getNextRadCDay( target_ymd, target_tod, stepno, idt, iradsw, calendar )
+
     !--- copy all fields from streams to a2x as default ---
     call t_startf('datm_strdata_advance')
-    call shr_strdata_advance(SDATM,currentYMD,currentTOD,mpicom,'datm')
+    call shr_strdata_advance(SDATM,target_ymd,target_tod,mpicom,'datm')
     call t_stopf('datm_strdata_advance')
 
     call t_barrierf('datm_scatter_BARRIER',mpicom)
@@ -722,7 +734,7 @@ CONTAINS
           call datm_shr_CORE2getFactors(factorFn,windFactor,winddFactor,qsatFactor, &
                mpicom,compid,gsmap,ggrid,SDATM%nxg,SDATM%nyg)
        endif
-       call shr_cal_date2julian(currentYMD,currentTOD,rday,calendar)
+       call shr_cal_date2julian(target_ymd,target_tod,rday,calendar)
        rday = mod((rday - 1.0_R8),365.0_R8)
        cosfactor = cos((2.0_R8*SHR_CONST_PI*rday)/365 - phs_c0)
 
@@ -845,7 +857,7 @@ CONTAINS
                  mpicom,compid,gsmap,ggrid,SDATM%nxg,SDATM%nyg)
           endif
        endif
-       call shr_cal_date2julian(currentYMD,currentTOD,rday,calendar)
+       call shr_cal_date2julian(target_ymd,target_tod,rday,calendar)
        rday = mod((rday - 1.0_R8),365.0_R8)
        cosfactor = cos((2.0_R8*SHR_CONST_PI*rday)/365 - phs_c0)
 
@@ -1123,26 +1135,26 @@ CONTAINS
 
     if (dbug > 1 .and. my_task == master_task) then
        do n = 1,lsize
-          write(logunit,F01)'export: ymd,tod,n,Sa_z       = ',currentYMD, currentTOD, n,a2x%rAttr(kz,n)
-          write(logunit,F01)'export: ymd,tod,n,Sa_topo    = ',currentYMD, currentTOD, n,a2x%rAttr(ktopo,n)
-          write(logunit,F01)'export: ymd,tod,n,Sa_u       = ',currentYMD, currentTOD, n,a2x%rAttr(ku,n)
-          write(logunit,F01)'export: ymd,tod,n,Sa_v       = ',currentYMD, currentTOD, n,a2x%rAttr(kv,n)
-          write(logunit,F01)'export: ymd,tod,n,Sa_tbot    = ',currentYMD, currentTOD, n,a2x%rAttr(ktbot,n)
-          write(logunit,F01)'export: ymd,tod,n,Sa_ptem    = ',currentYMD, currentTOD, n,a2x%rAttr(kptem,n)
-          write(logunit,F01)'export: ymd,tod,n,Sa_shum    = ',currentYMD, currentTOD, n,a2x%rAttr(kshum,n)
-          write(logunit,F01)'export: ymd,tod,n,Sa_dens    = ',currentYMD, currentTOD, n,a2x%rAttr(kdens,n)
-          write(logunit,F01)'export: ymd,tod,n,Sa_pbot    = ',currentYMD, currentTOD, n,a2x%rAttr(kpbot,n)
-          write(logunit,F01)'export: ymd,tod,n,Sa_pslv    = ',currentYMD, currentTOD, n,a2x%rAttr(kpslv,n)
-          write(logunit,F01)'export: ymd,tod,n,Sa_lwdn    = ',currentYMD, currentTOD, n,a2x%rAttr(klwdn,n)
-          write(logunit,F01)'export: ymd,tod,n,Faxa_rainc = ',currentYMD, currentTOD, n,a2x%rAttr(krc,n)
-          write(logunit,F01)'export: ymd,tod,n,Faxa_rainl = ',currentYMD, currentTOD, n,a2x%rAttr(krl,n)
-          write(logunit,F01)'export: ymd,tod,n,Faxa_snowc = ',currentYMD, currentTOD, n,a2x%rAttr(ksc,n)
-          write(logunit,F01)'export: ymd,tod,n,Faxa_snowl = ',currentYMD, currentTOD, n,a2x%rAttr(ksl,n)
-          write(logunit,F01)'export: ymd,tod,n,Faxa_swndr = ',currentYMD, currentTOD, n,a2x%rAttr(kswndr,n)
-          write(logunit,F01)'export: ymd,tod,n,Faxa_swndf = ',currentYMD, currentTOD, n,a2x%rAttr(kswndf,n)
-          write(logunit,F01)'export: ymd,tod,n,Faxa_swvdr = ',currentYMD, currentTOD, n,a2x%rAttr(kswvdr,n)
-          write(logunit,F01)'export: ymd,tod,n,Faxa_swvdf = ',currentYMD, currentTOD, n,a2x%rAttr(kswvdf,n)
-          write(logunit,F01)'export: ymd,tod,n,Faxa_swnet = ',currentYMD, currentTOD, n,a2x%rAttr(kswnet,n)
+          write(logunit,F01)'export: ymd,tod,n,Sa_z       = ',target_ymd, target_tod, n,a2x%rAttr(kz,n)
+          write(logunit,F01)'export: ymd,tod,n,Sa_topo    = ',target_ymd, target_tod, n,a2x%rAttr(ktopo,n)
+          write(logunit,F01)'export: ymd,tod,n,Sa_u       = ',target_ymd, target_tod, n,a2x%rAttr(ku,n)
+          write(logunit,F01)'export: ymd,tod,n,Sa_v       = ',target_ymd, target_tod, n,a2x%rAttr(kv,n)
+          write(logunit,F01)'export: ymd,tod,n,Sa_tbot    = ',target_ymd, target_tod, n,a2x%rAttr(ktbot,n)
+          write(logunit,F01)'export: ymd,tod,n,Sa_ptem    = ',target_ymd, target_tod, n,a2x%rAttr(kptem,n)
+          write(logunit,F01)'export: ymd,tod,n,Sa_shum    = ',target_ymd, target_tod, n,a2x%rAttr(kshum,n)
+          write(logunit,F01)'export: ymd,tod,n,Sa_dens    = ',target_ymd, target_tod, n,a2x%rAttr(kdens,n)
+          write(logunit,F01)'export: ymd,tod,n,Sa_pbot    = ',target_ymd, target_tod, n,a2x%rAttr(kpbot,n)
+          write(logunit,F01)'export: ymd,tod,n,Sa_pslv    = ',target_ymd, target_tod, n,a2x%rAttr(kpslv,n)
+          write(logunit,F01)'export: ymd,tod,n,Sa_lwdn    = ',target_ymd, target_tod, n,a2x%rAttr(klwdn,n)
+          write(logunit,F01)'export: ymd,tod,n,Faxa_rainc = ',target_ymd, target_tod, n,a2x%rAttr(krc,n)
+          write(logunit,F01)'export: ymd,tod,n,Faxa_rainl = ',target_ymd, target_tod, n,a2x%rAttr(krl,n)
+          write(logunit,F01)'export: ymd,tod,n,Faxa_snowc = ',target_ymd, target_tod, n,a2x%rAttr(ksc,n)
+          write(logunit,F01)'export: ymd,tod,n,Faxa_snowl = ',target_ymd, target_tod, n,a2x%rAttr(ksl,n)
+          write(logunit,F01)'export: ymd,tod,n,Faxa_swndr = ',target_ymd, target_tod, n,a2x%rAttr(kswndr,n)
+          write(logunit,F01)'export: ymd,tod,n,Faxa_swndf = ',target_ymd, target_tod, n,a2x%rAttr(kswndf,n)
+          write(logunit,F01)'export: ymd,tod,n,Faxa_swvdr = ',target_ymd, target_tod, n,a2x%rAttr(kswvdr,n)
+          write(logunit,F01)'export: ymd,tod,n,Faxa_swvdf = ',target_ymd, target_tod, n,a2x%rAttr(kswvdf,n)
+          write(logunit,F01)'export: ymd,tod,n,Faxa_swnet = ',target_ymd, target_tod, n,a2x%rAttr(kswnet,n)
        end do
     end if
 
@@ -1152,7 +1164,7 @@ CONTAINS
 
     if (write_restart) then
        call t_startf('datm_restart')
-       call shr_cal_ymdtod2string(date_str, yy,mm,dd,currentTOD)
+       call shr_cal_datetod2string(date_str, target_ymd, target_tod)
 
        write(rest_file,"(6a)") &
             trim(case_name), '.datm',trim(inst_suffix),'.r.', trim(date_str), '.nc'
@@ -1167,7 +1179,7 @@ CONTAINS
           call shr_file_freeUnit(nu)
        endif
 
-       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),currentYMD,currentTOD
+       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),target_ymd,target_tod
        call shr_strdata_restWrite(trim(rest_file_strm),SDATM,mpicom,trim(case_name),'SDATM strdata')
        call shr_sys_flush(logunit)
        call t_stopf('datm_restart')
@@ -1182,7 +1194,7 @@ CONTAINS
 
     call t_startf('datm_run2')
     if (my_task == master_task) then
-       write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
+       write(logunit,F04) trim(myModelName),': model date ', target_ymd,target_tod
        call shr_sys_flush(logunit)
     end if
 

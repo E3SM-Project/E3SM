@@ -1212,49 +1212,6 @@ module ESM
     call NUOPC_CompAttributeSet(driver, name='read_restart', value=trim(cvalue), rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! TODO: Read Restart (seq_io_read must be called on all pes)
-
-    ! Error check on restart_pfile
-    call NUOPC_CompAttributeGet(driver, name="restart_pfile", value=restart_pfile, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if ( len_trim(restart_pfile) == 0 ) then
-       write (msgstr, *) subname//': restart_pfile must be set' 
-       call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=msgstr, line=__LINE__, file=__FILE__, rcToReturn=rc)
-       return  
-    end if
-
-    if (read_restart) then
-       if (mastertask) then
-          call NUOPC_CompAttributeGet(driver, name='restart_file', value=restart_file, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-          !--- read rpointer if restart_file is set to sp_str ---
-          if (trim(restart_file) == trim(sp_str)) then
-             call NUOPC_CompAttributeGet(driver, name='restart_pfile', value=restart_file, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-             unitn = shr_file_getUnit()
-             if (loglevel > 0) write(logunit,"(3A)") subname," read rpointer file ", trim(restart_pfile)
-             open(unitn, file=restart_pfile, form='FORMATTED', status='old',iostat=ierr)
-             if (ierr < 0) then
-                call shr_sys_abort( subname//':: rpointer file open returns an'// ' error condition' )
-             end if
-             read(unitn,'(a)', iostat=ierr) restart_file
-             if (ierr < 0) then
-                call shr_sys_abort( subname//':: rpointer file read returns an'// ' error condition' )
-             end if
-             close(unitn)
-             call shr_file_freeUnit( unitn )
-             write(logunit,"(3A)") subname,' restart file from rpointer= ', trim(restart_file)
-          endif
-       endif
-       call shr_mpi_bcast(restart_file, lmpicom)
-
-       call NUOPC_CompAttributeSet(driver, name='restart_pfile', value=restart_file, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-
   end subroutine InitRestart
 
   !================================================================================
