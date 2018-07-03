@@ -120,6 +120,10 @@ def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
     >>> hists2 = ['cam_0001.h0.1850-01-08-00000.nc.rest','cam_0002.h0.1850-01-08-00000.nc.rest']
     >>> _hists_match('cam', hists1, hists2, 'base', 'rest')
     ([], [], [('cam_0001.h0.1850-01-08-00000.nc.base', 'cam_0001.h0.1850-01-08-00000.nc.rest'), ('cam_0002.h0.1850-01-08-00000.nc.base', 'cam_0002.h0.1850-01-08-00000.nc.rest')])
+    >>> hists1 = ['20ccr4.mom6.frc._0001_001.nc', '20ccr4.mom6.hm._0001_006.nc','20ccr4.mom6.hmz._0001_006.nc','20ccr4.mom6.prog._0001_006.nc','20ccr4.mom6.sfc.day._0001_001.nc','20ccr4.mom6.static.nc']
+    >>> hists2 = ['mom6.prog._0001_006.nc','mom6.hmz._0001_006.nc', 'mom6.hm._0001_006.nc','mom6.sfc.day._0001_001.nc','mom6.frc._0001_001.nc','mom6.static.nc']
+    >>> _hists_match('mom', hists1, hists2)
+    ([], [], [('20ccr4.mom6.frc._0001_001.nc', 'mom6.frc._0001_001.nc'), ('20ccr4.mom6.hm._0001_006.nc', 'mom6.hm._0001_006.nc'), ('20ccr4.mom6.hmz._0001_006.nc', 'mom6.hmz._0001_006.nc'), ('20ccr4.mom6.prog._0001_006.nc', 'mom6.prog._0001_006.nc'), ('20ccr4.mom6.sfc.day._0001_001.nc', 'mom6.sfc.day._0001_001.nc'), ('20ccr4.mom6.static.nc', 'mom6.static.nc')])
     """
     normalized1, normalized2 = [], []
     multi_normalized1, multi_normalized2 = [], []
@@ -369,7 +373,7 @@ def get_extension(model, filepath):
     ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h.?)([.].*[^.])?[.]nc' % model)
     m = ext_regex.match(basename)
     if model == 'mom':
-        if (m is None): 
+        if (m is None):
             ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](frc)([.].*[^.])?[.]nc' % model)
             m = ext_regex.match(basename)
         if (m is None):
