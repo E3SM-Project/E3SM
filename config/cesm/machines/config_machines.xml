@@ -953,7 +953,7 @@
 	<arg name="num_tasks"> -n {{ total_tasks }} </arg>
       </arguments>
     </mpirun>
-    <module_system type="module">
+    <module_system type="module" allow_error="true">
       <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
       <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
       <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
@@ -993,14 +993,14 @@
       <modules compiler="gnu" mpilib="openmpi">
 	<command name="load">mpi/gcc/openmpi-3.1.0a</command>
       </modules>
+      <modules compiler="gnu" mpilib="mvapich2">
+	<command name="load">mpi/gcc/mvapich2-2.3rc2-qlc</command>
+      </modules>
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
-    <environment_variables compiler="intel">
-      <env name="LD_LIBRARY_PATH">$ENV{LD_LIBRARY_PATH}:/usr/local/intel-cluster-18.0.3/compilers_and_libraries_2018.3.222/linux/compiler/lib/intel64_lin/</env>
-    </environment_variables>
-      <resource_limits>
+    <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
     </resource_limits>
   </machine>
