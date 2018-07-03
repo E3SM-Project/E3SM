@@ -1501,7 +1501,7 @@ contains
                ! then an error occurs as follows
 
                call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(n1,n2), flds_scalar_name, &
-                    STgeom=is_local%wrap%NStateExp(n2), &
+                    STgeom=is_local%wrap%NStateImp(n2), &
                     STflds=is_local%wrap%NStateImp(n1), &
                     name='FBImp'//trim(compname(n1))//'_'//trim(compname(n2)), rc=rc)
                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
