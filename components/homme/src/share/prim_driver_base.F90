@@ -4,6 +4,7 @@
 ! Revisions:
 ! 08/2016: O. Guba Inserting code for "espilon bubble" reference element map
 ! 03/2018: M. Taylor  fix memory leak
+! 06/2018: O. Guba  code for new ftypes
 !
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -24,7 +25,7 @@ module prim_driver_base
 #ifndef CAM
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod ,  only : RestFile,readrestart
-  use test_mod,         only: set_test_initial_conditions, compute_test_forcing, finalize_test
+  use test_mod,         only : set_test_initial_conditions, compute_test_forcing
 #endif
 
   implicit none
@@ -893,7 +894,7 @@ contains
     type (TimeLevel_t),   intent(inout) :: tl
     integer,              intent(in)    :: nsubstep                     ! nsubstep = 1 .. nsplit
 
-    real(kind=real_kind) :: dp, dt_q , dt_remap
+    real(kind=real_kind) :: dp, dt_q, dt_remap
     real(kind=real_kind) :: dp_np1(np,np)
     integer :: ie,i,j,k,n,q,t
     integer :: n0_qdp,np1_qdp,r,nstep_end
@@ -931,29 +932,17 @@ contains
     call TimeLevel_Qdp(tl, qsplit, n0_qdp, np1_qdp)
 #ifndef CAM
     ! compute HOMME test case forcing
-    ! should this call stay here or be moved into prim_step?
-    ! if here, it mimics eam forcings computations, if in prim_step, it may make 
-    ! tests with physics look better without using minimal rsplit=1.
-! CHECK WHAT TESTS COMPUTE< most likely, not dp*FM, adjust depending on ftype
+    ! by calling it here, it mimics eam forcings computations in standalone.
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
 #endif
 
-
     ! Apply CAM Physics forcing
+    !   ftype= 4: Q was adjusted by physics, but apply u,T forcing here
+    !   ftype= 3: Q was adjusted by physics, but apply u,T forcing here, forcings are scaled by dp
     !   ftype= 2: Q was adjusted by physics, but apply u,T forcing here
     !   ftype= 1: forcing was applied time-split in CAM coupling layer
     !   ftype= 0: apply all forcing here
     !   ftype=-1: do not apply forcing
-    ! previously, standalone homme ran with ftype=0 logic only.
-    ! we want to add ftype=2,3,4. for that, we need to apply tracer forcings in
-    ! standalone version, in the same manner as in EAM, that is, only once per
-    ! dt_remap.
-    ! thus in standalone homme ftype0 is the same as ftype2 (cause nsplit=1)
-
-
-! things to consider: aplyCAMforcing_dynamics_dp needs dp3d,
-! dp3d needs to be computed AFTER applyCAMforcing or applyCAMforcing_tracers
-
 
     call applyCAMforcing_ps(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 
@@ -977,7 +966,6 @@ contains
        enddo
     enddo
 
-!has to be done after tracers are adjusted
 #if (USE_OPENACC)
 !    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
     call t_startf("copy_qdp_h2d")
@@ -987,14 +975,14 @@ contains
 
     ! Loop over rsplit vertically lagrangian timesiteps
     call t_startf("prim_step_rX")
-    call prim_step(elem, hybrid, nets, nete, dt, dt_remap, n0_qdp, tl, hvcoord, compute_diagnostics, 1)
+    call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, compute_diagnostics, 1)
     call t_stopf("prim_step_rX")
 
     do r=2,rsplit
-      call TimeLevel_update(tl,"leapfrog")
-      call t_startf("prim_step_rX")
-      call prim_step(elem, hybrid, nets, nete, dt, dt_remap, n0_qdp, tl, hvcoord, .false., r)
-      call t_stopf("prim_step_rX")
+       call TimeLevel_update(tl,"leapfrog")
+       call t_startf("prim_step_rX")
+       call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, .false., r)
+       call t_stopf("prim_step_rX")
     enddo
     ! defer final timelevel update until after remap and diagnostics
     !compute timelevels for tracers (no longer the same as dynamics)
@@ -1070,7 +1058,7 @@ contains
 
 
 
-  subroutine prim_step(elem, hybrid,nets,nete, dt, dt_remap, n0_qdp, tl, hvcoord, compute_diagnostics,rstep)
+  subroutine prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord, compute_diagnostics,rstep)
   !
   !   Take qsplit dynamics steps and one tracer step
   !   for vertically lagrangian option, this subroutine does only the horizontal step
@@ -1105,8 +1093,6 @@ contains
     integer,              intent(in)    :: nets     ! starting thread element number (private)
     integer,              intent(in)    :: nete     ! ending thread element number   (private)
     real(kind=real_kind), intent(in)    :: dt       ! "timestep dependent" timestep
-    real(kind=real_kind), intent(in)    :: dt_remap ! remap timestep, to know how much of forcing to apply for ftype 0, 2
-    integer,              intent(in)    :: n0_qdp   ! tracers time index, used only with ftype=0 and rstep=1
     type(TimeLevel_t),    intent(inout) :: tl
     integer,              intent(in)    :: rstep    ! vertical remap subcycling step
 
@@ -1137,7 +1123,7 @@ contains
       elem(ie)%derived%dp(:,:,:)=elem(ie)%state%dp3d(:,:,:,tl%n0)
     enddo
 
-!applyCAMforcing_dp3d shoould be glued to the call of prim_advance_exp
+!applyCAMforcing_dp3d should be glued to the call of prim_advance_exp
 !energy diagnostics is broken for ftype 3,4
     call ApplyCAMforcing_dp3d(elem,hvcoord,tl%n0,dt,nets,nete)
     ! ===============
@@ -1148,7 +1134,7 @@ contains
          hybrid, dt, tl, nets, nete, compute_diagnostics)
     do n=2,qsplit
        call TimeLevel_update(tl,"leapfrog")
-!applyCAMforcing_dp3d shoould be glued to the call of prim_advance_exp
+!applyCAMforcing_dp3d should be glued to the call of prim_advance_exp
 !energy diagnostics is broken for ftype 3,4
        call ApplyCAMforcing_dp3d(elem,hvcoord,tl%n0,dt,nets,nete)
        call prim_advance_exp(elem, deriv1, hvcoord,hybrid, dt, tl, nets, nete, .false.)
@@ -1203,7 +1189,6 @@ contains
 
 #endif
 
-    call finalize_test;
     ! ==========================
     ! end of the hybrid program
     ! ==========================

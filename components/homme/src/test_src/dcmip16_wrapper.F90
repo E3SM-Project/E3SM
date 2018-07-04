@@ -42,16 +42,15 @@ real(rl) :: sample_period  = 60.0_rl
 real(rl) :: rad2dg = 180.0_rl/pi
 contains
 
+!---------------------------------------------------------------------
 !init routine to call before any dcmip16 inin routines, including restart runs
 subroutine dcmip2016_init()
   implicit none
-! put here barrier and omp master, allocate precl which should be member of
-! dcmip16_mod
-
 !$OMP BARRIER
 !$OMP MASTER
   if (.not.allocated(precl)) then
     allocate(precl(np,np,nelemd))
+    precl(:,:,:) = 0.0
   else
     call abortmp('ERROR: in dcmip2016_init() precl has already been allocated') 
   endif
@@ -59,6 +58,7 @@ subroutine dcmip2016_init()
 !$OMP BARRIER
 
 end subroutine dcmip2016_init
+
 !_____________________________________________________________________
 subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
 
@@ -91,12 +91,6 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 1: moist baroclinic wave'
 
   if (qsize<5) call abortmp('ERROR: test requires qsize>=5')
-
-  if (allocated(precl)) then
-    precl(:,:,nets:nete) = 0.0
-  else
-    call abortmp('ERROR: in dcmip2016_test1() precl is not allocated')
-  endif
 
   ! set initial conditions
   do ie = nets,nete
@@ -150,12 +144,6 @@ subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 2: tropical cyclone'
   !use vertical levels specificed in cam30 file
-
-  if (allocated(precl)) then
-    precl(:,:,nets:nete) = 0.0
-  else
-    call abortmp('ERROR: in dcmip2016_test2() precl is not allocated')
-  endif
 
   ! set initial conditions
   do ie = nets,nete
@@ -214,12 +202,6 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
   real(rl) :: p1,thetav1,rho1,q1
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 3: supercell storm'
-
-  if (allocated(precl)) then
-    precl(:,:,nets:nete) = 0.0
-  else
-     call abortmp('ERROR: in dcmip2016_test3() precl is not allocated')
-  endif
 
   ! initialize hydrostatic state
   call supercell_init()
@@ -371,10 +353,6 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   max_precl = -huge(rl)
   min_ps    = +huge(rl)
 
-  if (.not.allocated(precl)) then
-     call abortmp('ERROR: in dcmip2016_test1_forcing() precl is not allocated')
-  endif
-
   do ie = nets,nete
 
     precl(:,:,ie) = -1.0d0
@@ -502,10 +480,6 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
   max_precl = -huge(rl)
   min_ps    = +huge(rl)
 
-  if (.not.allocated(precl)) then
-    call abortmp('ERROR: in dcmip2016_forcing() precl is not allocated')
-  endif
-
   do ie = nets,nete
 
     precl(:,:,ie) = -1.0d0
@@ -612,10 +586,6 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   max_w     = -huge(rl)
   max_precl = -huge(rl)
   min_ps    = +huge(rl)
-
-  if (.not.allocated(precl)) then
-    call abortmp('ERROR: in dcmip2016_test3_forcing() precl is not allocated')
-  endif
 
   do ie = nets,nete
 

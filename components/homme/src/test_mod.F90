@@ -47,8 +47,7 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
   type(timelevel_t),  intent(in)            :: tl                       ! time level sctructure
   integer,            intent(in)            :: nets,nete                ! start, end element index
  
-  ! init calls
-
+  ! init calls for any runtype
   select case(test_case)
     case('asp_baroclinic');
     case('asp_gravity_wave');
@@ -75,8 +74,7 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
     case default;               call abortmp('unrecognized test case')
   endselect
 
-
-  !initial conditions for initial run
+  !initial conditions for initial run, runtype=0
   if (runtype == 0) then
     select case(test_case)
  
@@ -105,41 +103,8 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
       case default;               call abortmp('unrecognized test case')
 
     endselect
-
   endif
 end subroutine
-
-!_______________________________________________________________________
-subroutine finalize_test
-
-  implicit none
-
-  select case(test_case)
-    case('asp_baroclinic');
-    case('asp_gravity_wave');
-    case('asp_mountain');
-    case('asp_rossby');
-    case('asp_tracer');
-    case('baroclinic');
-    case('dcmip2012_test1_1');
-    case('dcmip2012_test1_2');
-    case('dcmip2012_test1_3');
-    case('dcmip2012_test2_0');
-    case('dcmip2012_test2_1');
-    case('dcmip2012_test2_2');
-    case('dcmip2012_test3');
-    case('dcmip2012_test4');
-    case('dcmip2016_test1');    
-    case('dcmip2016_test2');    
-    case('dcmip2016_test3');    
-    case('mtest1');
-    case('mtest2');
-    case('mtest3');
-    case('held_suarez0');
-    case('jw_baroclinic');
-    case default;
-  endselect
-end subroutine finalize_test
 
 !_______________________________________________________________________
 subroutine set_test_prescribed_wind(elem, deriv, hybrid, hvcoord, dt, tl, nets, nete)
@@ -201,6 +166,9 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
   enddo
 
   ! get forcing terms from test case
+
+!NOTE need to understand logic begind old/new dp and ps_v in cam to see if this
+!code is correct, too.
   select case(test_case)
 
     case('dcmip2012_test2_1');  call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,nt,dt)
@@ -220,7 +188,7 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
 
   endselect
 
-
+!for ftype3 we scale tendencies by dp
   if(ftype == 3) then
     !initialize dp3d from ps
     do ie=nets,nete
@@ -234,8 +202,6 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
     enddo
   endif
     
-
-
 end subroutine
 
 

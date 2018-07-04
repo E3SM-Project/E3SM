@@ -806,6 +806,14 @@ module namelist_mod
     endif
 #endif
 
+#ifndef CAM
+!standalone homme does not support ftype=1 (cause it is identical to ftype=0).
+!also, standalone ftype=0 is the same as standalone ftype=2.
+    if ((ftype /= 0).or.(ftype /= 2).or.(ftype /= 3).or.(ftype /= 4)) then
+       call abortmp('Standalone homme supports only ftype=0,2,3,4')
+    endif
+#endif
+
     if((prescribed_wind/=0).and.(prescribed_wind/=1))then
           call abortmp('prescribed_wind should be either 0 or 1')
     endif
