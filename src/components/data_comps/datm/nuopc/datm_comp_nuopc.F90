@@ -687,7 +687,6 @@ module datm_comp_nuopc
   !===============================================================================
 
   subroutine ModelSetRunClock(gcomp, rc)
-    implicit none
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 

@@ -982,7 +982,7 @@ contains
     else
        call ESMF_LogWrite(trim(subname)//' ERROR: file invalid '//trim(filename), &
        ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-       rc = ESMF_Failure
+       rc = ESMF_FAILURE
        return
     endif
 
@@ -1036,8 +1036,10 @@ contains
              if (ng > maxval(maxIndexPTile)) then
                 write(tmpstr,*) subname,' ERROR: dimensions do not match', lnx, lny, maxval(maxIndexPTile)
                 call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-                rc = ESMF_Failure
-                return
+
+                !TODO: this should not be an error for say CTSM which does not send a global grid
+                !rc = ESMF_Failure
+                !return
              endif
 
              call ESMF_DistGridGet(distgrid, localDE=0, elementCount=ns, rc=rc)
