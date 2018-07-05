@@ -666,12 +666,12 @@
     <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DIN_LOC_ROOT>/sems-data-store/ACME/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/sems-data-store/ACME/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/sems-data-store/E3SM/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/sems-data-store/E3SM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <BASELINE_ROOT>/sems-data-store/ACME/baselines/$COMPILER</BASELINE_ROOT>
-    <SAVE_TIMING_DIR>/sems-data-store/ACME/timings</SAVE_TIMING_DIR>
+    <BASELINE_ROOT>/sems-data-store/E3SM/baselines/$COMPILER</BASELINE_ROOT>
+    <SAVE_TIMING_DIR>/sems-data-store/E3SM/timings</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
     <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build.new/cprnc</CCSM_CPRNC>
     <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
@@ -1045,8 +1045,8 @@
 	 <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/home/ccsm-data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/lcrc/project/ACME/$USER/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_MSROOT>/lcrc/project/ACME/$USER/archive/$CASE</DOUT_L_MSROOT>
+         <DOUT_S_ROOT>/lcrc/project/E3SM/$USER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_MSROOT>/lcrc/project/E3SM/$USER/archive/$CASE</DOUT_L_MSROOT>
          <BASELINE_ROOT>/lcrc/group/acme/acme_baselines/blues/$COMPILER</BASELINE_ROOT>
          <CCSM_CPRNC>/home/ccsm-data/tools/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
@@ -1056,7 +1056,7 @@
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
 	 <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-	 <PROJECT>ACME</PROJECT>
+	 <PROJECT>E3SM</PROJECT>
          <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
          <mpirun mpilib="mvapich">
            <executable>mpiexec</executable>
@@ -1150,7 +1150,7 @@
          <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/home/ccsm-data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/lcrc/group/acme/$USER/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_MSROOT>/lcrc/project/ACME/$USER/archive/$CASE</DOUT_L_MSROOT>
+         <DOUT_L_MSROOT>/lcrc/project/E3SM/$USER/archive/$CASE</DOUT_L_MSROOT>
          <BASELINE_ROOT>/lcrc/group/acme/acme_baselines/$COMPILER</BASELINE_ROOT>
          <CCSM_CPRNC>/home/ccsm-data/tools/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
@@ -1160,7 +1160,7 @@
          <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
 	 <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
          <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-	 <PROJECT>ACME</PROJECT>
+	 <PROJECT>E3SM</PROJECT>
          <mpirun mpilib="openmpi">
            <executable>mpiexec</executable>
            <arguments>
@@ -1461,7 +1461,7 @@
          <DESC>LLNL Linux Cluster, Linux (pgi), 36 pes/node, batch system is Slurm</DESC>
          <COMPILERS>intel</COMPILERS>
          <MPILIBS>mpich</MPILIBS>
-         <RUNDIR>/p/lscratchh/$CCSMUSER/ACME/$CASE/run</RUNDIR>
+         <RUNDIR>/p/lscratchh/$CCSMUSER/E3SM/$CASE/run</RUNDIR>
          <EXEROOT>/p/lscratchh/$CCSMUSER/$CASE/bld</EXEROOT>
          <CIME_OUTPUT_ROOT>/p/lscratchh/$USER</CIME_OUTPUT_ROOT>
          <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
@@ -1962,12 +1962,12 @@
          <TESTS>e3sm_developer</TESTS>
          <COMPILERS>gnu</COMPILERS>
          <MPILIBS>mpich,openmpi</MPILIBS>
-         <RUNDIR>/home/$USER/models/ACME/run/$CASE/run</RUNDIR>
-         <EXEROOT>/home/$USER/models/ACME/run/$CASE/bld</EXEROOT>
-         <CIME_OUTPUT_ROOT>/home/$USER/models/ACME</CIME_OUTPUT_ROOT>
+         <RUNDIR>/home/$USER/models/E3SM/run/$CASE/run</RUNDIR>
+         <EXEROOT>/home/$USER/models/E3SM/run/$CASE/bld</EXEROOT>
+         <CIME_OUTPUT_ROOT>/home/$USER/models/E3SM</CIME_OUTPUT_ROOT>
          <DIN_LOC_ROOT>/home/zdr/models/ccsm_inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/home/zdr/models/ccsm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/home/$USER/models/ACME/run/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>/home/$USER/models/E3SM/run/archive/$CASE</DOUT_S_ROOT>
          <OS>LINUX</OS>
 	 <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
          <SUPPORTED_BY>dmricciuto</SUPPORTED_BY>
@@ -1999,8 +1999,8 @@
       <CIME_OUTPUT_ROOT>/lustre/or-hydra/cades-ccsi/scratch/$USER</CIME_OUTPUT_ROOT>
       <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
       <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-      <DIN_LOC_ROOT>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata</DIN_LOC_ROOT>
-      <DIN_LOC_ROOT_CLMFORC>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+      <DIN_LOC_ROOT>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/E3SM_inputdata</DIN_LOC_ROOT>
+      <DIN_LOC_ROOT_CLMFORC>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/E3SM_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
       <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
       <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
       <BASELINE_ROOT>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/baselines/$COMPILER</BASELINE_ROOT>
@@ -2301,6 +2301,91 @@
 	 </environment_variables>
 </machine>
 
+<machine MACH="badger">
+	<DESC>LANL Linux Cluster, 36 pes/node, batch system slurm</DESC>
+        <NODENAME_REGEX>ba-fe.*.lanl.gov</NODENAME_REGEX>
+        <TESTS>e3sm_developer</TESTS>
+        <COMPILERS>gnu,intel</COMPILERS>
+        <MPILIBS>mvapich,openmpi</MPILIBS>
+	<OS>LINUX</OS>
+	<RUNDIR>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/cases/$CASE/run</RUNDIR>
+	<EXEROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/cases/$CASE/bld</EXEROOT>
+	<DIN_LOC_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data</DIN_LOC_ROOT>
+	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+	<DOUT_S_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
+	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
+	<BASELINE_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+	<CIME_OUTPUT_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/scratch</CIME_OUTPUT_ROOT>
+	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
+	<module_system type="module">
+		<init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+		<init_path lang="python">/usr/share/Modules/init/python.py</init_path>
+		<init_path lang="sh">/etc/profile.d/z00_lmod.sh</init_path>
+		<init_path lang="csh">/etc/profile.d/z00_lmod.csh</init_path>
+		<cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
+		<cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+		<cmd_path lang="sh">module</cmd_path>
+		<cmd_path lang="csh">module</cmd_path>
+
+		<modules>
+			<command name="purge"/>
+			<command name="use">/usr/projects/climate/SHARED_CLIMATE/modulefiles/all</command>
+			<command name="load">python/anaconda-2.7-climate</command>
+		</modules>
+
+		<modules compiler="gnu">
+			<command name="load">gcc/6.4.0</command>
+		</modules>
+		<modules compiler="intel">
+			<command name="load">intel/18.0.2</command>
+		</modules>
+		<modules mpilib="openmpi">
+			<command name="load">openmpi/2.1.2</command>
+		</modules>
+		<modules mpilib="mvapich">
+			<command name="load">mvapich2/2.2</command>
+		</modules>
+		<modules>
+			<command name="load">netcdf/4.4.1.1</command>
+		</modules>
+		<modules>
+			<command name="load">parallel-netcdf/1.8.1</command>
+		</modules>
+	</module_system>
+	<environment_variables>
+		<env name="PNETCDF_HINTS">romio_ds_write=disable;romio_ds_read=disable;romio_cb_write=enable;romio_cb_read=enable</env>
+	</environment_variables>
+
+	<BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+	<mpirun mpilib="default">
+		<executable>mpirun</executable>
+		<arguments>
+			<arg name="num_tasks"> -n {{ total_tasks }}</arg>
+		</arguments>
+	</mpirun>
+	<mpirun mpilib="mvapich">
+		<executable>srun</executable>
+		<arguments>
+			<arg name="num_tasks"> -n {{ total_tasks }}</arg>
+		</arguments>
+	</mpirun>
+	<mpirun mpilib="openmpi">
+		<executable>mpirun</executable>
+		<arguments>
+			<arg name="num_tasks"> -n {{ total_tasks }}</arg>
+		</arguments>
+	</mpirun>
+	<mpirun mpilib="mpi-serial">
+		<executable></executable>
+	</mpirun>
+	<GMAKE_J>4</GMAKE_J>
+	<MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
+	<MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
+	<PROJECT>climateacme</PROJECT>
+    	<PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+        <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+</machine>
+
 <machine MACH="grizzly">
 	<DESC>LANL Linux Cluster, 36 pes/node, batch system slurm</DESC>
         <NODENAME_REGEX>gr-fe.*.lanl.gov</NODENAME_REGEX>
@@ -2308,18 +2393,19 @@
         <COMPILERS>gnu,intel</COMPILERS>
         <MPILIBS>mvapich,openmpi</MPILIBS>
 	<OS>LINUX</OS>
-	<RUNDIR>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
-	<EXEROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
-	<DIN_LOC_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data</DIN_LOC_ROOT>
-	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-	<DOUT_S_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
+	<RUNDIR>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/cases/$CASE/run</RUNDIR>
+	<EXEROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/cases/$CASE/bld</EXEROOT>
+	<DIN_LOC_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data</DIN_LOC_ROOT>
+	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+	<DOUT_S_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
 	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-	<BASELINE_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-	<CIME_OUTPUT_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/scratch</CIME_OUTPUT_ROOT>
+	<BASELINE_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+	<CIME_OUTPUT_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/scratch</CIME_OUTPUT_ROOT>
 	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
 	<module_system type="module">
 		<init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
 		<init_path lang="python">/usr/share/Modules/init/python.py</init_path>
+		<init_path lang="sh">/etc/profile.d/z00_lmod.sh</init_path>
 		<init_path lang="csh">/etc/profile.d/z00_lmod.csh</init_path>
 		<cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
 		<cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
@@ -2391,10 +2477,10 @@
     <TESTS>e3sm_developer</TESTS>
 	<COMPILERS>intel,gnu</COMPILERS>
 	<MPILIBS>openmpi,mvapich</MPILIBS>
-	<CIME_OUTPUT_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/scratch</CIME_OUTPUT_ROOT>
-	<RUNDIR>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
-	<EXEROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
-	<DOUT_S_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
+	<CIME_OUTPUT_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/scratch</CIME_OUTPUT_ROOT>
+	<RUNDIR>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/cases/$CASE/run</RUNDIR>
+	<EXEROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/cases/$CASE/bld</EXEROOT>
+	<DOUT_S_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
 	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
 	<OS>LINUX</OS>
 	<BATCH_SYSTEM>slurm</BATCH_SYSTEM>
@@ -2404,9 +2490,9 @@
 	<MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
 	<PROJECT>climateacme</PROJECT>
 	<PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-	<DIN_LOC_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data</DIN_LOC_ROOT>
-	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-	<BASELINE_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+	<DIN_LOC_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data</DIN_LOC_ROOT>
+	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+	<BASELINE_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
 	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
 	<mpirun mpilib="default">
 		<executable>mpirun</executable>
@@ -2863,7 +2949,7 @@
 	 <MAX_TASKS_PER_NODE>84</MAX_TASKS_PER_NODE>
 	 <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 	 <PROJECT>csc190</PROJECT>
-	 <CHARGE_ACCOUNT>CSC190ACME</CHARGE_ACCOUNT>
+	 <CHARGE_ACCOUNT>CSC190E3SM</CHARGE_ACCOUNT>
 	 <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
 
 	 <mpirun mpilib="spectrum-mpi">
