@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<config case="analysis">
+	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/soma/32km/default/analysis/check_particle_sampling.py" dest="check_particle_sampling.py"/>
+	<add_link source="../forward/output/output.0001-01-01_00.00.00.nc" dest="output.nc"/>
+	<add_link source="../forward/analysis_members/lagrPartTrack.0001-01-01_00.00.00.nc" dest="particleoutput.nc"/>
+
+	<run_script name="run.py">
+		<step executable="./check_particle_sampling.py">
+		</step>
+	</run_script>
+</config>
