@@ -1,5 +1,81 @@
 ======================================================================
 
+Originator: Chris Fiscehr 
+Date: 7-5-2018
+Tag: cime5.6.9
+Answer Changes: None
+Tests: prealpha on edison, cori-haswell, cori-knl
+       scripts_regression_tests, ect-uf on bluewaters
+Dependencies:
+
+Brief Summary:
+    - Maint-5.6 nersc update.
+    - Maint-5.6 hobart update.
+    - Fix issue with rebuilding csm_share.
+    - Bluewaters update.
+    - Edit and cleanup parts of CCS users guide.
+    - Change -v to --env for theta.
+    - Fix unittest.
+    - Tryagain with tput code.
+    - ww3 data staging fix.
+    - Fix refcase logiv.
+    - Add and clarify pieces that describe adding a test to the prebeta testing.
+    - Archive test refinement.
+
+User interface changes: 
+    -  --test becomes --test-all and --test-case is added
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+3ee8b07 Merge pull request #2697 from jedwards4b/maint-5.6-nersc-update
+b76c449 Merge pull request #2701 from jedwards4b/maint-5.6-hobart-update
+34677a4 Merge pull request #2684 from jedwards4b/improve_shared_build_performance
+57c8924 Merge pull request #2675 from jedwards4b/bluewaters_update
+3a5281d Merge pull request #2662 from ESMCI/rljacob/doc/ug1-read
+f8cc2a7 Merge pull request #2666 from jedwards4b/theta_fix
+2e9973f fix unittest
+49f59b6 tryagain with tput code
+0819198 Merge branch 'ww3_data_staging' into maint-5.6
+7478f2f Merge branch 'fix_refcase_logic' into maint-5.6
+cd64838 Merge pull request #2647 from ESMCI/fischer/augment_testing_doc
+3016427 Merge pull request #2656 from jedwards4b/archive_test_refinement
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_batch.xml
+M       config/cesm/machines/config_compilers.xml
+M       config/cesm/machines/config_machines.xml
+M       config/cesm/machines/template.st_archive
+M       config/e3sm/machines/template.st_archive
+M       config/xml_schemas/config_machines.xsd
+M       config/xml_schemas/testlist.xsd
+M       doc/source/users_guide/building-a-case.rst
+M       doc/source/users_guide/cime-change-namelist.rst
+A       doc/source/users_guide/cime-dir.rst
+M       doc/source/users_guide/compsets.rst
+M       doc/source/users_guide/create-a-case.rst
+M       doc/source/users_guide/index.rst
+M       doc/source/users_guide/introduction-and-overview.rst
+M       doc/source/users_guide/pes-threads.rst
+M       doc/source/users_guide/running-a-case.rst
+M       doc/source/users_guide/setting-up-a-case.rst
+M       doc/source/users_guide/testing.rst
+M       scripts/Tools/Makefile
+M       scripts/Tools/preview_run
+M       scripts/lib/CIME/SystemTests/system_tests_common.py
+M       scripts/lib/CIME/XML/env_batch.py
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/case/case_st_archive.py
+M       scripts/lib/CIME/case/case_submit.py
+M       scripts/lib/CIME/case/check_input_data.py
+M       scripts/lib/CIME/test_scheduler.py
+M       scripts/lib/CIME/test_status.py
+M       scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two.py
+M       scripts/tests/scripts_regression_tests.py
+M       src/build_scripts/buildlib.csm_share
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer 
 Date: 6-5-2018
 Tag: cime_cesm2_0_rel_04
