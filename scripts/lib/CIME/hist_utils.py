@@ -26,6 +26,7 @@ def _get_all_hist_files(testcase, model, from_dir, suffix=""):
     test_hists.extend(glob.glob("{}/{}.{}*.h.nc{}".format(from_dir, testcase, model, suffix)))
     #for mom files - TODO need conforming file names from MOM
     # test_hists.extend(glob.glob("{}/{}.{}6.f*.nc".format(from_dir, testcase, model)))
+
     test_hists.extend(glob.glob("{}/{}.{}6*nc".format(from_dir, testcase, model)))
 
     # Match multi-instance files produced by run
@@ -39,6 +40,7 @@ def _get_all_hist_files(testcase, model, from_dir, suffix=""):
         test_hists.extend(glob.glob("{}/{}*.h?.nc".format(from_dir, model)))
         test_hists.extend(glob.glob("{}/{}*.h.*.nc".format(from_dir, model)))
         test_hists.extend(glob.glob("{}/{}*.h?.*.nc".format(from_dir, model)))
+        test_hists.extend(glob.glob("{}/{}6*nc".format(from_dir, model)))
 
     test_hists.sort()
     logger.debug("test_hists for model {} are {}".format(model, test_hists))
@@ -52,6 +54,8 @@ def _get_latest_hist_files(testcase, model, from_dir, suffix=""):
         ext = get_extension(model, hist)
         latest_files[ext] = hist
 
+    if model == 'mom':
+        print "latest_files = {}".format(latest_files)
     for key in latest_files.keys():
         histlist.append(latest_files[key])
     return histlist
@@ -120,10 +124,10 @@ def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
     >>> hists2 = ['cam_0001.h0.1850-01-08-00000.nc.rest','cam_0002.h0.1850-01-08-00000.nc.rest']
     >>> _hists_match('cam', hists1, hists2, 'base', 'rest')
     ([], [], [('cam_0001.h0.1850-01-08-00000.nc.base', 'cam_0001.h0.1850-01-08-00000.nc.rest'), ('cam_0002.h0.1850-01-08-00000.nc.base', 'cam_0002.h0.1850-01-08-00000.nc.rest')])
-    >>> hists1 = ['20ccr4.mom6.frc._0001_001.nc', '20ccr4.mom6.hm._0001_006.nc','20ccr4.mom6.hmz._0001_006.nc','20ccr4.mom6.prog._0001_006.nc','20ccr4.mom6.sfc.day._0001_001.nc','20ccr4.mom6.static.nc']
-    >>> hists2 = ['mom6.prog._0001_006.nc','mom6.hmz._0001_006.nc', 'mom6.hm._0001_006.nc','mom6.sfc.day._0001_001.nc','mom6.frc._0001_001.nc','mom6.static.nc']
+    >>> hists1 = ['SMS_Vnuopc_Ld5.f19_g16.BMOM.cheyenne_intel.allactive-nuopc_cap_io.C.20180705_094726_dpskzp.mom6.frc._0001_001.nc']
+    >>> hists2 = ['mom6.frc._0001_001.nc']
     >>> _hists_match('mom', hists1, hists2)
-    ([], [], [('20ccr4.mom6.frc._0001_001.nc', 'mom6.frc._0001_001.nc'), ('20ccr4.mom6.hm._0001_006.nc', 'mom6.hm._0001_006.nc'), ('20ccr4.mom6.hmz._0001_006.nc', 'mom6.hmz._0001_006.nc'), ('20ccr4.mom6.prog._0001_006.nc', 'mom6.prog._0001_006.nc'), ('20ccr4.mom6.sfc.day._0001_001.nc', 'mom6.sfc.day._0001_001.nc'), ('20ccr4.mom6.static.nc', 'mom6.static.nc')])
+    ([], [], [('SMS_Vnuopc_Ld5.f19_g16.BMOM.cheyenne_intel.allactive-nuopc_cap_io.C.20180705_094726_dpskzp.mom6.frc._0001_001.nc', 'mom6.frc._0001_001.nc')])
     """
     normalized1, normalized2 = [], []
     multi_normalized1, multi_normalized2 = [], []
@@ -206,6 +210,7 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
             continue
 
         one_not_two, two_not_one, match_ups = _hists_match(model, hists1, hists2, suffix1, suffix2)
+
         for item in one_not_two:
             comments += "    File '{}' had no counterpart in '{}' with suffix '{}'\n".format(item, from_dir2, suffix2)
             all_success = False
@@ -370,12 +375,10 @@ def get_extension(model, filepath):
     'prog'
     """
     basename = os.path.basename(filepath)
-    ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h.?)([.].*[^.])?[.]nc' % model)
-    m = ext_regex.match(basename)
+    m = None
     if model == 'mom':
-        if (m is None):
-            ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](frc)([.].*[^.])?[.]nc' % model)
-            m = ext_regex.match(basename)
+        ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](frc)([.].*[^.])?[.]nc' % model)
+        m = ext_regex.match(basename)
         if (m is None):
             ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](hmz)([.].*[^.])?[.]nc' % model)
             m = ext_regex.match(basename)
@@ -388,6 +391,9 @@ def get_extension(model, filepath):
         if (m is None):
             ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](static)([.].*[^.])?[.]nc' % model)
             m = ext_regex.match(basename)
+    if m is None:
+        ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h.?)([.].*[^.])?[.]nc' % model)
+        m = ext_regex.match(basename)
 
     expect(m is not None, "Failed to get extension for file '{}'".format(filepath))
 
