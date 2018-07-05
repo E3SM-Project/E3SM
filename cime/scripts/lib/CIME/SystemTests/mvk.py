@@ -8,10 +8,16 @@ This class inherits from SystemTestsCommon.
 
 import subprocess
 import importlib
+import shutil
+import stat
 
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case.case_setup import case_setup
+from CIME.hist_utils import _get_all_hist_files, BLESS_LOG_NAME
+from CIME.utils import append_testlog, get_current_commit, get_timestamp, get_model
+from CIME.test_status import *
+
 
 import CIME.test_status
 
@@ -88,13 +94,83 @@ class MVK(SystemTestsCommon):
         self.run_indv()
 
 
-    # def _generate_baseline(self):
-    #     run_dir = self._case.get_value("RUNDIR")
-    #     basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
-    #     logger.info('MVK:GENDIR: {}'.format(basegen_dir))
-    #
-    #     with self._test_status:
-    #         self._test_status.set_status(CIME.test_status.GENERATE_PHASE, CIME.test_status.TEST_PASS_STATUS)
+    def _generate_baseline(self):
+        """
+        generate a new baseline case based on the current test
+        """
+        with self._test_status:
+            # generate baseline
+
+            # BEGIN: modified CIME.hist_utils.generate_baseline
+            rundir = self._case.get_value("RUNDIR")
+            basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"),
+                                       self._case.get_value("BASEGEN_CASE"))
+            testcase = self._case.get_value("CASE")
+
+            if not os.path.isdir(basegen_dir):
+                os.makedirs(basegen_dir)
+
+            if os.path.isdir(os.path.join(basegen_dir, testcase)):
+                expect(False, " Cowardly refusing to overwrite existing baseline directory")
+
+            comments = "Generating baselines into '{}'\n".format(basegen_dir)
+            num_gen = 0
+
+            model = 'cam'
+            comments += "  generating for model '{}'\n".format(model)
+            hists = _get_all_hist_files(testcase, model, rundir)
+            logger.debug("mvk_hist_files: {}".format(hists))
+
+            num_gen += len(hists)
+            for hist in hists:
+                basename = hist[hist.rfind(model):]
+                baseline = os.path.join(basegen_dir, basename)
+                if os.path.exists(baseline):
+                    os.remove(baseline)
+
+                shutil.copy(hist, baseline)
+                comments += "    generating baseline '{}' from file {}\n".format(baseline, hist)
+
+            newestcpllogfile = self._case.get_latest_cpl_log(coupler_log_path=self._case.get_value("LOGDIR"))
+            if newestcpllogfile is None:
+                logger.warning("No cpl.log file found in log directory {}".format(self._case.get_value("LOGDIR")))
+            else:
+                shutil.copyfile(newestcpllogfile,
+                                os.path.join(basegen_dir, "cpl.log.gz"))
+
+            expect(num_gen > 0, "Could not generate any hist files for case '{}', something is seriously wrong".format(
+                os.path.join(rundir, testcase)))
+            # make sure permissions are open in baseline directory
+            for root, _, files in os.walk(basegen_dir):
+                for name in files:
+                    try:
+                        os.chmod(os.path.join(root, name),
+                                 stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH)
+                    except OSError:
+                        # We tried. Not worth hard failure here.
+                        pass
+
+            if get_model() == "e3sm":
+                bless_log = os.path.join(basegen_dir, BLESS_LOG_NAME)
+                with open(bless_log, "a") as fd:
+                    fd.write("sha:{} date:{}\n".format(get_current_commit(repo=self._case.get_value("CIMEROOT")),
+                                                       get_timestamp(timestamp_format="%Y-%m-%d_%H:%M:%S")))
+            # END: modified CIME.hist_utils.generate_baseline
+
+            append_testlog(comments)
+            status = TEST_PASS_STATUS
+            baseline_name = self._case.get_value("BASEGEN_CASE")
+            self._test_status.set_status("{}".format(GENERATE_PHASE), status, comments=os.path.dirname(baseline_name))
+            basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
+            # copy latest cpl log to baseline
+            # drop the date so that the name is generic
+            newestcpllogfiles = self._get_latest_cpl_logs()
+            for cpllog in newestcpllogfiles:
+                m = re.search(r"/(cpl.*.log).*.gz", cpllog)
+                if m is not None:
+                    baselog = os.path.join(basegen_dir, m.group(1)) + ".gz"
+                    shutil.copyfile(cpllog,
+                                    os.path.join(basegen_dir, baselog))
 
 
     # def _compare_baseline(self):
