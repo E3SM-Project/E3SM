@@ -419,10 +419,10 @@
 	<directives>
 		<directive>--nodes={{ num_nodes }}</directive>
 		<directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-		<directive>--qos=standard </directive>
+		<directive>--qos=interactive</directive>
 	</directives>
 	<queues>
-		<queue walltimemax="16:00:00" default="true">standard</queue>
+		<queue walltimemax="4:00:00" default="true">standard</queue>
 	</queues>
   </batch_system>
 
