@@ -2269,7 +2269,7 @@
         <NODENAME_REGEX>ba-fe.*.lanl.gov</NODENAME_REGEX>
         <TESTS>e3sm_developer</TESTS>
         <COMPILERS>gnu,intel</COMPILERS>
-        <MPILIBS>mvapich,openmpi</MPILIBS>
+        <MPILIBS>openmpi,mvapich</MPILIBS>
 	<OS>LINUX</OS>
 	<RUNDIR>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/cases/$CASE/run</RUNDIR>
 	<EXEROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/cases/$CASE/bld</EXEROOT>
