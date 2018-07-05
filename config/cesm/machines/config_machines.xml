@@ -942,7 +942,7 @@ This allows using a different mpirun command to launch unit tests
 	<arg name="num_tasks"> -n {{ total_tasks }} </arg>
       </arguments>
     </mpirun>
-    <module_system type="module">
+    <module_system type="module" allow_error="true">
       <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
       <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
       <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
@@ -955,28 +955,39 @@ This allows using a different mpirun command to launch unit tests
 	<command name="purge"></command>
       </modules>
       <modules compiler="intel">
-	<command name="load">compiler/intel/15.0.2.164</command>
+	<command name="load">compiler/intel/18.0.3</command>
+	<command name="load">tool/netcdf/4.6.1/intel</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich2">
-	<command name="load">  tool/parallel-netcdf/1.7.0/intel/mvapich2  </command>
+	<command name="load">mpi/intel/mvapich2-2.1-qlc</command>
       </modules>
       <modules compiler="pgi">
-	<command name="load">compiler/pgi/17.04</command>
-      </modules>
-      <modules  compiler="pgi" mpilib="mvapich2">
-	<command name="load">  tool/parallel-netcdf/1.6.1/pgi/mvapich2  </command>
+	<command name="load">compiler/pgi/18.1</command>
+	<command name="load">tool/netcdf/4.6.1/pgi</command>
       </modules>
       <modules compiler="nag">
-	<command name="load">compiler/nag/6.1</command>
+	<command name="load">compiler/nag/6.2</command>
+	<command name="load">tool/netcdf/4.6.1/nag</command>
+      </modules>
+      <modules compiler="nag" mpilib="mvapich2">
+	<command name="load">mpi/nag/mvapich2-2.3rc2</command>
+      </modules>
+      <modules compiler="nag" mpilib="openmpi">
+	<command name="load">mpi/nag/openmpi-3.1.0</command>
+      </modules>
+      <modules compiler="gnu">
+	<command name="load">compiler/gnu/8.1.0</command>
+	<command name="load">tool/netcdf/4.6.1/gcc</command>
       </modules>
       <modules compiler="gnu" mpilib="openmpi">
-	<command name="load">compiler/gnu/5.4.0</command>
-	<command name="load">  tool/parallel-netcdf/1.8.1/gnu-5.4.0/openmpi  </command>
+	<command name="load">mpi/gcc/openmpi-3.1.0a</command>
+      </modules>
+      <modules compiler="gnu" mpilib="mvapich2">
+	<command name="load">mpi/gcc/mvapich2-2.3rc2-qlc</command>
       </modules>
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
-      <!-- <env name="ESMFMKFILE">/home/fischer/ESMF_code/ESMF_7_1_0_beta_snapshot_42/lib/libg/Linux.intel.64.mvapich2.default/esmf.mk</env> -->
       <env name="ESMFMKFILE">/home/dunlap/ESMF-INSTALL/master/lib/libO/Linux.intel.64.mvapich2.default/esmf.mk</env>
     </environment_variables>
     <resource_limits>

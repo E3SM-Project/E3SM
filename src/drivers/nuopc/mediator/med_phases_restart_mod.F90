@@ -129,7 +129,7 @@ contains
     call seq_timemgr_AlarmSetOff(clock, seq_timemgr_alarm_restart, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call seq_timemgr_EClockPrint(clock)
+    !call seq_timemgr_EClockPrint(clock)
 
     if (alarmIsOn) then
 
@@ -165,8 +165,7 @@ contains
           call ESMF_LogWrite(trim(subname)//": nexttime = "//trim(nexttimestr), ESMF_LOGMSG_INFO, rc=dbrc)
        endif
 
-       call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//&
-            " mediating for: ", rc=rc)
+       call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        timediff = nexttime - reftime
