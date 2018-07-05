@@ -4,30 +4,14 @@ module med_merge_mod
   ! Performs merges from source field bundles to destination field bundle
   !-----------------------------------------------------------------------------
 
-  use ESMF
-  use shr_kind_mod  
-  use shr_string_mod        , only : shr_string_listGetNum
-  use shr_string_mod        , only : shr_string_listGetName
-  use esmFlds               , only : compmed, compname
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_type
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetNumFlds
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetFldInfo
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetNameN
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-  use med_internalstate_mod , only : logunit
-  use med_constants_mod
+  use med_constants_mod, only : dbug_flag => med_constants_dbug_flag
+  use med_constants_mod, only : spval_init => med_constants_spval_init
+  use med_constants_mod, only : spval => med_constants_spval
+  use med_constants_mod, only : czero => med_constants_czero
 
-  implicit none 
+  implicit none
   private
 
-  integer                       :: dbrc
-  integer           , parameter :: dbug_flag   = med_constants_dbug_flag
-  real(ESMF_KIND_R8), parameter :: spval_init  = med_constants_spval_init
-  real(ESMF_KIND_R8), parameter :: spval       = med_constants_spval
-  real(ESMF_KIND_R8), parameter :: czero       = med_constants_czero
   character(*),parameter :: u_FILE_u = &
        __FILE__
 
@@ -40,15 +24,31 @@ contains
 
   subroutine med_merge_auto(compout_name, FBOut, FBfrac, FBImp, fldListTo, FBMed1, FBMed2, &
        document, string, mastertask, rc)
+    use ESMF, only : ESMF_FieldBundle, ESMF_SUCCESS, ESMF_FAILURE, ESMF_LogWrite, ESMF_LogMsg_Info
+    use ESMF, only : ESMF_FieldBundleIsCreated, ESMF_FieldBundleGet
+    use shr_kind_mod, only : shr_kind_cl, shr_kind_cx, shr_kind_cs
+    use shr_string_mod        , only : shr_string_listGetNum
+    use shr_string_mod        , only : shr_string_listGetName
+    use esmFlds               , only : compmed, compname
+    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_type
+    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetNumFlds
+    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetFldInfo
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetNameN
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use med_internalstate_mod , only : logunit
+
     character(len=*)             , intent(in)            :: compout_name ! component name for FBOut
     type(ESMF_FieldBundle)       , intent(inout)         :: FBOut        ! Merged output field bundle
-    type(ESMF_FieldBundle)       , intent(inout)         :: FBfrac       ! Fraction data for FBOut 
+    type(ESMF_FieldBundle)       , intent(inout)         :: FBfrac       ! Fraction data for FBOut
     type(ESMF_FieldBundle)       , intent(in)            :: FBImp(:)     ! Array of field bundles each mapping to the FBOut mesh
     type(shr_nuopc_fldList_type) , intent(in)            :: fldListTo    ! Information for merging
     type(ESMF_FieldBundle)       , intent(in) , optional :: FBMed1       ! mediator field bundle
     type(ESMF_FieldBundle)       , intent(in) , optional :: FBMed2       ! mediator field bundle
     logical                      , intent(in)            :: document
-    character(len=*)             , intent(in)            :: string          
+    character(len=*)             , intent(in)            :: string
     logical                      , intent(in)            :: mastertask
     integer                      , intent(out)           :: rc
 
@@ -63,6 +63,7 @@ contains
     character(SHR_KIND_CL) :: mrgstr   ! temporary string
     logical                :: init_mrgstr
     character(len=*),parameter  :: subname='(med_merge_auto)'
+    ! integer                       :: dbrc
     !---------------------------------------
 
     ! if (dbug_flag > 5) then
@@ -110,7 +111,7 @@ contains
                       ! Document merging if appropriate
                       if (document) then
                          if (merge_type == 'merge' .or. merge_type == 'accumulate') then
-                            if (init_mrgstr) then 
+                            if (init_mrgstr) then
                                mrgstr = trim(string)//": "// trim(fldname) //'('//trim(compout_name)//')'//' = ' &
                                     // trim(merge_fracname)//'*'//trim(merge_field)//'('//trim(compname(compsrc))//')'
                                init_mrgstr = .false.
@@ -129,8 +130,8 @@ contains
                          end if
                       end if
 
-                      ! Perform merge 
-                      if (compsrc == compmed) then 
+                      ! Perform merge
+                      if (compsrc == compmed) then
 
                          if (present(FBMed1) .and. present(FBMed2)) then
                             if (shr_nuopc_methods_FB_FldChk(FBMed1, trim(merge_field), rc=rc)) then
@@ -159,7 +160,7 @@ contains
                                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                             end if
                          end if
-                         
+
                       else if (ESMF_FieldBundleIsCreated(FBImp(compsrc), rc=rc)) then
 
                          if (shr_nuopc_methods_FB_FldChk(FBImp(compsrc), trim(merge_field), rc=rc)) then
@@ -191,22 +192,30 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_merge(merge_type, FBout, FBoutfld, FB, FBfld, FBw, fldw, rc)
+    use ESMF, only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LogMsg_Error
+    use ESMF, only : ESMF_FieldBundle, ESMF_LogWrite, ESMF_LogMsg_Info
+    use shr_kind_mod, only : R8 => shr_kind_r8
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use med_internalstate_mod , only : logunit
 
     character(len=*)      ,intent(in)          :: merge_type
     type(ESMF_FieldBundle),intent(inout)       :: FBout
     character(len=*)      ,intent(in)          :: FBoutfld
     type(ESMF_FieldBundle),intent(in)          :: FB
-    character(len=*)      ,intent(in)          :: FBfld  
+    character(len=*)      ,intent(in)          :: FBfld
     type(ESMF_FieldBundle),intent(inout)          :: FBw !DEBUG - change back to in
     character(len=*)      ,intent(in)          :: fldw
     integer               ,intent(out)         :: rc
 
     ! local variables
-    real(ESMF_KIND_R8), pointer :: dp1 (:), dp2(:,:)
-    real(ESMF_KIND_R8), pointer :: dpf1(:), dpf2(:,:)
-    real(ESMF_KIND_R8), pointer :: dpw1(:), dpw2(:,:)
+    real(R8), pointer :: dp1 (:), dp2(:,:)
+    real(R8), pointer :: dpf1(:), dpf2(:,:)
+    real(R8), pointer :: dpw1(:), dpw2(:,:)
     integer                     :: lrank
     character(len=*),parameter  :: subname='(med_merge)'
+    integer                       :: dbrc
     !---------------------------------------
 
     rc = ESMF_SUCCESS
