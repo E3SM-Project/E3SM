@@ -773,16 +773,14 @@ contains
   contains  !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     subroutine realizeConnectedGrid(State,string,rc)
-      ! A bug in the ESMF F90 interface prevents using the only clause - the error from intel is:
-      ! This binary operation is invalid for this data type.   [ESMF_GEOMTYPE_GRID]
-      use ESMF
-      ! use ESMF, only : ESMF_STATE, ESMF_Field, ESMF_Grid, ESMF_DistGrid, ESMF_DistGridConnection
-      ! use ESMF, only : ESMF_MAXSTR, ESMF_FieldStatus_Flag, ESMF_GeomType_Flag, ESMF_StateGet
-      ! use ESMF, only : ESMF_FieldGet, ESMF_DistGridGet, ESMF_GridCompGet
-      ! use ESMF, only : ESMF_GeomType_Grid, ESMF_AttributeGet, ESMF_DistGridCreate, ESMF_FieldEmptySet
-      ! use ESMF, only : ESMF_GridCreate, ESMF_LogWrite, ESMF_LogMsg_Info, ESMF_GridGet, ESMF_Failure
-      ! use ESMF, only : ESMF_FieldStatus_Empty, ESMF_FieldStatus_Complete, ESMF_FieldStatus_GridSet
-      ! use ESMF, only : ESMF_GeomType_Mesh
+      use ESMF, only : operator(==)
+      use ESMF, only : ESMF_STATE, ESMF_Field, ESMF_Grid, ESMF_DistGrid, ESMF_DistGridConnection
+      use ESMF, only : ESMF_MAXSTR, ESMF_FieldStatus_Flag, ESMF_GeomType_Flag, ESMF_StateGet
+      use ESMF, only : ESMF_FieldGet, ESMF_DistGridGet, ESMF_GridCompGet
+      use ESMF, only : ESMF_GeomType_Grid, ESMF_AttributeGet, ESMF_DistGridCreate, ESMF_FieldEmptySet
+      use ESMF, only : ESMF_GridCreate, ESMF_LogWrite, ESMF_LogMsg_Info, ESMF_GridGet, ESMF_Failure
+      use ESMF, only : ESMF_FieldStatus_Empty, ESMF_FieldStatus_Complete, ESMF_FieldStatus_GridSet
+      use ESMF, only : ESMF_GeomType_Mesh
       use shr_nuopc_methods_mod     , only: shr_nuopc_methods_Field_GeomPrint
       type(ESMF_State)   , intent(inout) :: State
       character(len=*)   , intent(in)    :: string
@@ -1207,13 +1205,12 @@ contains
   contains  !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     subroutine completeFieldInitialization(State,rc)
-      ! use ESMF, only : ESMF_State, ESMF_MAXSTR, ESMF_Grid, ESMF_Mesh, ESMF_Field, ESMF_FieldStatus_Flag
-      ! use ESMF, only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_FieldGet, ESMF_FieldEmptyComplete
-      ! use ESMF, only : ESMF_GeomType_Flag, ESMF_FieldCreate, ESMF_GridToMeshCell, ESMF_GEOMTYPE_GRID
-      ! use ESMF, only : ESMF_MeshLoc_Element, ESMF_TYPEKIND_R8, ESMF_FIELDSTATUS_GRIDSET
-      ! A bug in the ESMF F90 interface prevents using the only clause - the error from intel is:
-      ! This binary operation is invalid for this data type.   [ESMF_GEOMTYPE_GRID]
-      use ESMF
+      use ESMF, only : operator(==)
+      use ESMF, only : ESMF_State, ESMF_MAXSTR, ESMF_Grid, ESMF_Mesh, ESMF_Field, ESMF_FieldStatus_Flag
+      use ESMF, only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_FieldGet, ESMF_FieldEmptyComplete
+      use ESMF, only : ESMF_GeomType_Flag, ESMF_FieldCreate, ESMF_GridToMeshCell, ESMF_GEOMTYPE_GRID
+      use ESMF, only : ESMF_MeshLoc_Element, ESMF_TYPEKIND_R8, ESMF_FIELDSTATUS_GRIDSET
+
       use NUOPC, only : NUOPC_getStateMemberLists, NUOPC_Realize
       use esmFlds                   , only: flds_scalar_name
       use esmFlds                   , only: flds_scalar_num
