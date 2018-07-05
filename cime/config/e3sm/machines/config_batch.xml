@@ -229,10 +229,10 @@
       <arg flag="--account" name="$PROJECT"/>
     </submit_args>
     <directives>
-      <directive> --job-name={{ job_id }}</directive>
-      <directive> --nodes={{ num_nodes }}</directive>
-      <directive> --output={{ job_id }}.%j </directive>
-      <directive> --exclusive </directive>
+      <directive>--job-name={{ job_id }}</directive>
+      <directive>--nodes={{ num_nodes }}</directive>
+      <directive>--output={{ job_id }}.%j </directive>
+      <directive>--exclusive </directive>
     </directives>
   </batch_system>
 
@@ -255,10 +255,10 @@
       <arg flag="--account" name="$PROJECT"/>
     </submit_args>
     <directives>
-      <directive> --job-name={{ job_id }}</directive>
-      <directive> --nodes={{ num_nodes }}</directive>
-      <directive> --output={{ job_id }}.%j </directive>
-      <directive> --exclusive </directive>
+      <directive>--job-name={{ job_id }}</directive>
+      <directive>--nodes={{ num_nodes }}</directive>
+      <directive>--output={{ job_id }}.%j </directive>
+      <directive>--exclusive </directive>
     </directives>
   </batch_system>
 
@@ -413,6 +413,17 @@
     <directives>
       <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
     </directives>
+  </batch_system>
+
+  <batch_system MACH="badger" type="slurm" >
+	<directives>
+		<directive>--nodes={{ num_nodes }}</directive>
+		<directive>--ntasks-per-node={{ tasks_per_node }}</directive>
+		<directive>--qos=standard </directive>
+	</directives>
+	<queues>
+		<queue walltimemax="16:00:00" default="true">standard</queue>
+	</queues>
   </batch_system>
 
   <batch_system MACH="grizzly" type="slurm" >

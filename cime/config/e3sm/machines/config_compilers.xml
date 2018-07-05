@@ -755,7 +755,7 @@ for mct, etc.
   <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">$SEMS_PFUNIT_ROOT</PFUNIT_PATH>
   <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -lblas -llapack</ADD_SLIBS>
   <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
-  <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+  <ALBANY_PATH>/projects/install/rhel6-x86_64/E3SM/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="intel" MACH="melvin">
@@ -766,7 +766,7 @@ for mct, etc.
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
   <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -lblas -llapack</ADD_SLIBS>
   <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
-  <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+  <ALBANY_PATH>/projects/install/rhel6-x86_64/E3SM/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="gnu" MACH="anlworkstation">
@@ -775,7 +775,7 @@ for mct, etc.
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -lblas -llapack</ADD_SLIBS>
   <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
-  <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+  <ALBANY_PATH>/projects/install/rhel6-x86_64/E3SM/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="intel" MACH="sandiatoss3">
@@ -1416,6 +1416,30 @@ for mct, etc.
   <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt</SLIBS>
 </compiler>
 
+<compiler MACH="badger" COMPILER="gnu">
+	<PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+        <MPICC>mpicc</MPICC>
+        <MPIFC>mpif90</MPIFC>
+        <MPICXX>mpic++</MPICXX>
+        <SFC>gfortran</SFC>
+        <SCC>gcc</SCC>
+        <SCXX>g++</SCXX>
+        <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+        <ADD_SLIBS> ${MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -z muldefs</ADD_SLIBS>
+        <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
+</compiler>
+
+<compiler MACH="badger" COMPILER="intel">
+	<PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+        <MPICC>mpicc</MPICC>
+        <MPIFC>mpif90</MPIFC>
+        <MPICXX>mpic++</MPICXX>
+        <SFC>ifort</SFC>
+        <SCC>icc</SCC>
+        <SCXX>icpc</SCXX>
+        <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+        <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
+</compiler>
 
 <compiler MACH="grizzly" COMPILER="gnu">
 	<PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
