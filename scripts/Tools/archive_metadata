@@ -84,6 +84,8 @@ _EXCLUDE_FILES = ['archive_metadata','case.build',
                   'README.archive','case.qstatus','pelayout','preview_run']
 _EXCLUDE_DIRS = ['archive_files','Tools','.svn','.git','tmp']
 
+# TODO get the paths, start and end years for diags
+_pp_xml_vars = []
 # -------------------------------------------------------------------------------
 class PasswordPromptAction(argparse.Action):
 # -------------------------------------------------------------------------------
@@ -110,10 +112,10 @@ class PasswordPromptAction(argparse.Action):
     def __call__(self, parser, args, values, option_string=None):
         # check if home .subversion/cmip6.conf
         home = expanduser("~")
-        if os.path.exists:
+        conf_path = os.path.join(home, ".subversion/cmip6.conf")
+        if os.path.exists(conf_path):
             # read the .cmip6.conf file
             config = config_parser()
-            conf_path = os.path.join(home, ".subversion/cmip6.conf")
             config.read(conf_path)
             password = config.get('svn','password')
         else:
@@ -225,6 +227,44 @@ def get_case_vars(case_dict, case):
     return case_dict
 
 # ---------------------------------------------------------------------
+def get_disk_size(start_path, exclude=None):
+# ---------------------------------------------------------------------
+    """get_disk_size
+    return the total disk usage for a given path
+
+    Arguments:
+        start_path - path to start 
+    """
+    logger.debug('get_disk_size')
+    total_size = 0
+    for dirpath, dirnames, filenames in os.walk(start_path):
+        if exclude and exclude in dirnames:
+            continue
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            total_size += os.path.getsize(fp)
+    return total_size
+
+# ---------------------------------------------------------------------
+def get_pp_path(root_path, comp, process):
+# ---------------------------------------------------------------------
+    """get_pp_path
+    return the path to postprocessing
+
+    Arguments:
+        root_path - path to start 
+        comp - component name
+        process
+    """
+    logger.debug('get_pp_path')
+    pp_path = ''
+
+    # TODO expand the paths and query the XML store with pp_config
+    # BUT... pp_config needs to expand the paths correctly
+
+    return pp_path
+
+# ---------------------------------------------------------------------
 def get_pp_status(case_dict):
 # ---------------------------------------------------------------------
     """ get_pp_status
@@ -256,37 +296,100 @@ def get_pp_status(case_dict):
     msg_diags['ocn'] = "Successfully completed generating ocean diagnostics"
 
     for comp in comps:
-        case_dict[comp+'_avg_status'] = 'Pending'
-        case_dict[comp+'_diag_status'] = 'Pending'
+        case_dict[comp+'_avg_status'] = 'Unknown'
+        case_dict[comp+'_diag_status'] = 'Unknown'
 
-        if os.path.exists(pp_log_dir+'/'+comp+'_averages.log'):
-            log_file = os.path.join(pp_log_dir,comp+'_averages.log')
+        case_dict[comp+'_avg_path'] = ''
+        case_dict[comp+'_avg_size'] = 0
+
+        case_dict[comp+'_diag_path'] = ''
+        case_dict[comp+'_diag_size'] = 0
+
+        avg_logs = list()
+        avg_file_pattern = ("{0}/{1}_averages.log.*".format(pp_log_dir,comp))
+        avg_logs = glob.glob(avg_file_pattern)
+
+        if (avg_logs):
+            log_file = max(avg_logs, key=os.path.getctime)
             if (is_last_process_complete(log_file, msg_avg[comp], 
                                          'Average list complies with standards.')):
                 case_dict[comp+'_avg_status'] = 'Complete'
             else:
                 case_dict[comp+'_avg_status'] = 'Started'
 
-        if os.path.exists(pp_log_dir+'/'+comp+'_diagnostics.log'):
-            log_file = os.path.join(pp_log_dir,comp+'_diagnostics.log')
+            # get path and the file sizes
+            case_dict[comp+'_avg_size'] = 0
+            case_dict[comp+'_avg_path'] = get_pp_path(case_dict['DOUT_S_ROOT'], comp, 'avg')
+            if case_dict[comp+'_avg_path'] is not None:
+                case_dict[comp+'_avg_size'] = get_disk_size(case_dict[comp+'_avg_path'])
+
+        diag_logs = list()
+        diag_file_pattern = ("{0}/{1}_diagnostics.log.*".format(pp_log_dir,comp))
+        diag_logs = glob.glob(diag_file_pattern)
+
+        if (diag_logs):
+            log_file = max(diag_logs, key=os.path.getctime)
             if (is_last_process_complete(log_file, msg_diags[comp], 'ncks version')):
                 case_dict[comp+'_diag_status'] = 'Complete'
             else:
                 case_dict[comp+'_diag_status'] = 'Started'
 
-    case_dict['tseries_status'] = 'Pending'
-    if os.path.exists(pp_log_dir+'/timeseries.log'):
-      log_file = os.path.join(pp_log_dir,'timeseries.log')
+            # get path and the file sizes
+            case_dict[comp+'_diag_size'] = 0
+            case_dict[comp+'_diag_path'] = get_pp_path(case_dict['DOUT_S_ROOT'], comp, 'diag')
+            if case_dict[comp+'_diag_path'] is not None:
+                case_dict[comp+'_diag_size'] = get_disk_size(case_dict[comp+'_diag_path'])
+
+
+    # get timeseries status
+    case_dict['timeseries_status'] = 'Unknown'
+    case_dict['timeseries_path'] = ''
+    case_dict['timeseries_size'] = 0
+
+    tseries_logs = list()
+    tseries_file_pattern = ("{0}/timeseries.log.*".format(pp_log_dir))
+    tseries_logs = glob.glob(tseries_file_pattern)
+    if (tseries_logs):
+      log_file = max(tseries_logs, key=os.path.getctime)
       if (is_last_process_complete(log_file, 'Successfully completed generating variable time-series files', 
-                                   'cesm_tseries_generator.py')):
+                                   'opening')):
           case_dict['tseries_status'] = 'Complete'
+          # TODO - get the timeseries size and pathusing TIMESERIES_OUTPUT_ROOTDIR
       else:
           case_dict['tseries_status'] = 'Started'
-              
-    case_dict['cmor_status'] = 'Pending'
-    if os.path.exists(pp_log_dir+'/cmor.log'):
-      log_file = os.path.join(pp_log_dir,'cmor.log')
-      #TODO - need to check the CMOR log when it becomes available
+
+    # get iconform status
+    case_dict['iconform_status'] = 'Unknown'
+    case_dict['iconform_path'] = ''
+    case_dict['iconform_size'] = 0
+
+    iconform_logs = list()
+    iconform_file_pattern = ("{0}/iconform.log.*".format(pp_log_dir))
+    iconform_logs = glob.glob(iconform_file_pattern)
+    if (iconform_logs):
+        log_file = max(iconform_logs, key=os.path.getctime)
+        if (is_last_process_complete(log_file, 'Successfully created the conform tool', 
+                                   'Running createOutputSpecs')):
+            case_dict['iconform_status'] = 'Complete'
+        else:
+            case_dict['iconform_status'] = 'Started'
+
+    # get xconform status
+    case_dict['xconform_status'] = 'Unknown'
+    case_dict['xconform_path'] = ''
+    case_dict['xconform_size'] = 0
+
+    xconform_logs = list()
+    xconform_file_pattern = ("{0}/xconform.log.*".format(pp_log_dir))
+    xconform_logs = glob.glob(xconform_file_pattern)
+    if (xconform_logs):
+        log_file = max(xconform_logs, key=os.path.getctime)
+        if (is_last_process_complete(log_file, 'Successfully completed converting all files', 
+                                   'cesm_conform_generator INFO')):
+            case_dict['xconform_status'] = 'Complete'
+            # TODO - get the conform size using CONFORM_OUTPUT_ROOTDIR
+        else:
+            case_dict['xconform_status'] = 'Started'
 
     return case_dict
 
@@ -303,21 +406,29 @@ def get_case_status(case_dict):
     logger.debug('get_case_status')
 
     # initialize status variables
-    case_dict['run_status'] = 'Pending'
-    case_dict['sta_status'] = 'Pending'
+    case_dict['run_status'] = 'Unknown'
+    case_dict['run_path'] = case_dict['RUNDIR']
+    case_dict['run_size'] = get_disk_size(case_dict['run_path'])
+
+    case_dict['sta_status'] = 'Unknown'
+    case_dict['sta_path'] = case_dict['DOUT_S_ROOT']
+    case_dict['sta_size'] = 0
+    if case_dict['DOUT_S'] == True:
+        # get only the history, rest and logs dir - ignoring the proc subdirs
+        case_dict['sta_size'] = get_disk_size(case_dict['sta_path'], exclude='proc')
 
     cs = case_dict['CASEROOT']+'/CaseStatus'
     if os.path.exists(cs):
         # get the run status
         status = is_last_process_complete(cs, "case.run success", "case.run starting")
-        case_dict['run_status'] = 'Complete'
+        case_dict['run_status'] = 'Succeeded'
         if status is False:
             case_dict['run_status'] = 'Unknown'
 
         # get the STA status
         if case_dict['DOUT_S']:
             status = is_last_process_complete(cs, "st_archive success", "st_archive starting")
-            case_dict['sta_status'] = 'Complete'
+            case_dict['sta_status'] = 'Succeeded'
             if status is False:
                 case_dict['sta_status'] = 'Unknown'
 
@@ -993,7 +1104,7 @@ def get_timing_data(case_dict):
     case_dict['model_cost'] = 'undefined'
     case_dict['model_throughput'] = 'undefined'
 
-    if case_dict['run_status'] == 'Complete':
+    if case_dict['run_status'] == 'Succeeded':
         timing_dir = case_dict['CASEROOT']+'/timing'
         last_time = ''
         if os.path.exists(timing_dir):
