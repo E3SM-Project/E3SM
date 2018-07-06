@@ -190,7 +190,7 @@ class CompilerBlock(object):
         # Create the setting object.
         append = self._db.name(elem) == "append" or (self._db.name(elem) == "base" and self._compiler and self._db.compiler != self._compiler)
         setting = ValueSetting(value_text, append,
-                               conditions, set_up, tear_down)
+                               conditions, set_up, tear_down, force_no_append=self._db.name(elem) == "base")
         return (setting, depends)
 
     def _add_elem_to_lists(self, name, elem, value_lists):
