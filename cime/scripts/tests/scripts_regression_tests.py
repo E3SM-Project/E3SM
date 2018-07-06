@@ -2357,9 +2357,10 @@ class H_TestMakeMacros(unittest.TestCase):
     (xml_to_tester) that converts XML input directly to a MakefileTester object.
     """
     def setUp(self):
-        self.test_os = "SomeOS"
-        self.test_machine = "mymachine"
+        self.test_os       = "SomeOS"
+        self.test_machine  = "mymachine"
         self.test_compiler = MACHINE.get_default_compiler() if TEST_COMPILER is None else TEST_COMPILER
+        self.test_mpilib   = MACHINE.get_default_MPIlib() if TEST_MPILIB is None else TEST_MPILIB
 
         self._maker = Compilers(MockMachines(self.test_machine, self.test_os), version=2.0)
 
@@ -2411,17 +2412,17 @@ class H_TestMakeMacros(unittest.TestCase):
         xml3 = """<compiler MACH="{}" COMPILER="{}"><CFLAGS><append>x y z</append></CFLAGS></compiler>""".format(self.test_machine,self.test_compiler)
         xml4 = """<compiler MACH="{}" COMPILER="{}"><CFLAGS><base>x y z</base></CFLAGS></compiler>""".format(self.test_machine,self.test_compiler)
         tester = self.xml_to_tester(xml1)
-        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":self.test_compiler})
         tester = self.xml_to_tester(xml1+xml2)
-        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":self.test_compiler})
         tester = self.xml_to_tester(xml2+xml1)
-        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":self.test_compiler})
         tester = self.xml_to_tester(xml1+xml3)
-        tester.assert_variable_equals("CFLAGS", "a b c x y z",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester.assert_variable_equals("CFLAGS", "a b c x y z",env={"COMPILER":self.test_compiler})
         tester = self.xml_to_tester(xml1+xml4)
-        tester.assert_variable_equals("CFLAGS", "x y z",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester.assert_variable_equals("CFLAGS", "x y z",env={"COMPILER":self.test_compiler})
         tester = self.xml_to_tester(xml4+xml1)
-        tester.assert_variable_equals("CFLAGS", "x y z",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester.assert_variable_equals("CFLAGS", "x y z",env={"COMPILER":self.test_compiler})
 
     def test_mach_beats_os(self):
         """The macro writer chooses machine-specific over os-specific matches."""
@@ -2638,6 +2639,28 @@ class H_TestMakeMacros(unittest.TestCase):
         with assertRaisesRegex(self,SystemExit, err_msg):
             self.xml_to_tester(xml1+xml2+xml3)
 
+    def test_conditional_override(self):
+        """Test that conditional overrides work correctly"""
+        xml1 = """
+<compiler COMPILER="{}">
+  <SCC>icc</SCC>
+  <MPICXX>mpicxx</MPICXX>
+  <MPIFC>mpif90</MPIFC>
+  <MPICC>mpicc</MPICC>
+</compiler>
+<compiler COMPILER="{}" MACH="{}">
+  <MPICXX>mpifoo</MPICXX>
+  <MPIFC MPILIB="{}">mpiffoo</MPIFC>
+  <MPICC MPILIB="NOT_MY_MPI">mpifouc</MPICC>
+</compiler>
+""".format(self.test_compiler, self.test_compiler, self.test_machine, self.test_mpilib)
+
+        tester = self.xml_to_tester(xml1)
+
+        tester.assert_variable_equals("SCC", "icc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPICXX", "mpifoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPIFC", "mpiffoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPICC", "mpicc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
 
 ###############################################################################
 class I_TestCMakeMacros(H_TestMakeMacros):
