@@ -6,7 +6,7 @@
 namespace {
 
 TEST_CASE("Coupler", "stub") {
-  int val = Scream::coupler_stub();
+  int val = Scream::Coupler::coupler_stub();
   REQUIRE(val == 42);
 }
 
