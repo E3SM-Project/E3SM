@@ -128,7 +128,7 @@ def buildnml(case, caseroot, compname):
 
         inst_string = ""
         if ninst_atm > 1:
-            inst_string = "{0:04d}".format(inst_counter)
+            inst_string = "_{0:04d}".format(inst_counter)
 
             # If multi-instance case does not have restart file, use single-case restart
             # for each instance
