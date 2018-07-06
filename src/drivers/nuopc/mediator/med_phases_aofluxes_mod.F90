@@ -1,28 +1,16 @@
 module med_phases_aofluxes_mod
-
+  use shr_kind_mod, only : R8 => shr_kind_r8, CL=>SHR_KIND_CL
+  use shr_const_mod         , only : shr_const_pi
+  use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
+  use med_constants_mod     , only : czero => med_constants_czero
+#ifdef DOTHIS
   use ESMF
   use NUOPC
-  use shr_kind_mod          , only : CL=>SHR_KIND_CL
-  use shr_flux_mod          , only : shr_flux_atmocn, shr_flux_atmocn_diurnal, shr_flux_adjust_constants
-  use shr_const_mod         , only : shr_const_spval, shr_const_pi
-  use esmFlds               , only : flds_scalar_name
-  use esmFlds               , only : flds_scalar_num
-  use esmFlds               , only : fldListFr, fldListTo
-  use esmFlds               , only : compatm, compocn, compname
-  use esmFlds               , only : fldListMed_aoflux_o
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldlist_getfldnames
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFieldN
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_GetScalar
-  use med_constants_mod     , only : med_constants_dbug_flag
-  use med_constants_mod     , only : med_constants_czero
-  use med_map_mod           , only : med_map_FB_Regrid_Norm
-  use med_internalstate_mod , only : InternalState
 
+
+
+
+#endif
   implicit none
   private
 
@@ -46,89 +34,86 @@ module med_phases_aofluxes_mod
 
   type aoflux_type
      integer            , pointer :: mask        (:) ! ocn domain mask: 0 <=> inactive cell
-     real(ESMF_KIND_R8) , pointer :: rmask       (:) ! ocn domain mask: 0 <=> inactive cell
-     real(ESMF_KIND_R8) , pointer :: lats        (:) ! latitudes  (degrees)
-     real(ESMF_KIND_R8) , pointer :: lons        (:) ! longitudes (degrees)
-     real(ESMF_KIND_R8) , pointer :: uocn        (:) ! ocn velocity, zonal
-     real(ESMF_KIND_R8) , pointer :: vocn        (:) ! ocn velocity, meridional
-     real(ESMF_KIND_R8) , pointer :: tocn        (:) ! ocean temperature
-     real(ESMF_KIND_R8) , pointer :: zbot        (:) ! atm level height
-     real(ESMF_KIND_R8) , pointer :: ubot        (:) ! atm velocity, zonal
-     real(ESMF_KIND_R8) , pointer :: vbot        (:) ! atm velocity, meridional
-     real(ESMF_KIND_R8) , pointer :: thbot       (:) ! atm potential T
-     real(ESMF_KIND_R8) , pointer :: shum        (:) ! atm specific humidity
-     real(ESMF_KIND_R8) , pointer :: shum_16O    (:) ! atm H2O tracer
-     real(ESMF_KIND_R8) , pointer :: shum_HDO    (:) ! atm HDO tracer
-     real(ESMF_KIND_R8) , pointer :: shum_18O    (:) ! atm H218O tracer
-     real(ESMF_KIND_R8) , pointer :: roce_16O    (:) ! ocn H2O ratio
-     real(ESMF_KIND_R8) , pointer :: roce_HDO    (:) ! ocn HDO ratio
-     real(ESMF_KIND_R8) , pointer :: roce_18O    (:) ! ocn H218O ratio
-     real(ESMF_KIND_R8) , pointer :: dens        (:) ! atm density
-     real(ESMF_KIND_R8) , pointer :: tbot        (:) ! atm bottom surface T
-     real(ESMF_KIND_R8) , pointer :: sen         (:) ! heat flux: sensible
-     real(ESMF_KIND_R8) , pointer :: lat         (:) ! heat flux: latent
-     real(ESMF_KIND_R8) , pointer :: lwup        (:) ! lwup over ocean
-     real(ESMF_KIND_R8) , pointer :: evap        (:) ! water flux: evaporation
-     real(ESMF_KIND_R8) , pointer :: evap_16O    (:) ! H2O flux: evaporation
-     real(ESMF_KIND_R8) , pointer :: evap_HDO    (:) ! HDO flux: evaporation
-     real(ESMF_KIND_R8) , pointer :: evap_18O    (:) ! H218O flux: evaporation
-     real(ESMF_KIND_R8) , pointer :: taux        (:) ! wind stress, zonal
-     real(ESMF_KIND_R8) , pointer :: tauy        (:) ! wind stress, meridional
-     real(ESMF_KIND_R8) , pointer :: tref        (:) ! diagnostic:  2m ref T
-     real(ESMF_KIND_R8) , pointer :: qref        (:) ! diagnostic:  2m ref Q
-     real(ESMF_KIND_R8) , pointer :: u10         (:) ! diagnostic: 10m wind speed
-     real(ESMF_KIND_R8) , pointer :: duu10n      (:) ! diagnostic: 10m wind speed squared
-     real(ESMF_KIND_R8) , pointer :: fswpen      (:) ! fraction of sw penetrating ocn surface layer
-     real(ESMF_KIND_R8) , pointer :: ocnsal      (:) ! ocean salinity
-     real(ESMF_KIND_R8) , pointer :: lwdn        (:) ! long  wave, downward
-     real(ESMF_KIND_R8) , pointer :: swdn        (:) ! short wave, downward
-     real(ESMF_KIND_R8) , pointer :: swup        (:) ! short wave, upward
-     real(ESMF_KIND_R8) , pointer :: rainc       (:) ! rainc
-     real(ESMF_KIND_R8) , pointer :: rainl       (:) ! rainl
-     real(ESMF_KIND_R8) , pointer :: snowc       (:) ! snowc
-     real(ESMF_KIND_R8) , pointer :: snowl       (:) ! snowl
-     real(ESMF_KIND_R8) , pointer :: tbulk       (:) ! diurnal diagnostic: ocn bulk T
-     real(ESMF_KIND_R8) , pointer :: tskin       (:) ! diurnal diagnostic: ocn skin T
-     real(ESMF_KIND_R8) , pointer :: tskin_night (:) ! diurnal diagnostic: ocn skin T
-     real(ESMF_KIND_R8) , pointer :: tskin_day   (:) ! diurnal diagnostic: ocn skin T
-     real(ESMF_KIND_R8) , pointer :: cSkin       (:) ! diurnal diagnostic: ocn cool skin
-     real(ESMF_KIND_R8) , pointer :: cSkin_night (:) ! diurnal diagnostic: ocn cool skin
-     real(ESMF_KIND_R8) , pointer :: warm        (:) ! diurnal diagnostic: ocn warming
-     real(ESMF_KIND_R8) , pointer :: warmMax     (:) ! diurnal diagnostic: ocn warming, max daily value
-     real(ESMF_KIND_R8) , pointer :: warmMaxInc  (:) ! diurnal diagnostic: ocn warming, max daily value, increment
-     real(ESMF_KIND_R8) , pointer :: salt        (:) ! diurnal diagnostic: ocn salting
-     real(ESMF_KIND_R8) , pointer :: speed       (:) ! diurnal diagnostic: ocn speed
-     real(ESMF_KIND_R8) , pointer :: regime      (:) ! diurnal diagnostic: ocn regime
-     real(ESMF_KIND_R8) , pointer :: windMax     (:) ! diurnal diagnostic: ocn wind   , max daily value
-     real(ESMF_KIND_R8) , pointer :: windAvg     (:) ! diurnal diagnostic: ocn wind   , daily avg
-     real(ESMF_KIND_R8) , pointer :: windMaxInc  (:) ! diurnal diagnostic: ocn wind   , max daily value, increment
-     real(ESMF_KIND_R8) , pointer :: QsolAvg     (:) ! diurnal diagnostic: ocn Qsol   , daily avg
-     real(ESMF_KIND_R8) , pointer :: qSolInc     (:) ! diurnal diagnostic: ocn Qsol   , daily avg, increment
-     real(ESMF_KIND_R8) , pointer :: windInc     (:) ! diurnal diagnostic: ocn wind   , daily avg, increment
-     real(ESMF_KIND_R8) , pointer :: nInc        (:) ! diurnal diagnostic: a/o flux   , increment
-     real(ESMF_KIND_R8) , pointer :: ustar       (:) ! saved ustar
-     real(ESMF_KIND_R8) , pointer :: re          (:) ! saved re
-     real(ESMF_KIND_R8) , pointer :: ssq         (:) ! saved sq
+     real(R8) , pointer :: rmask       (:) ! ocn domain mask: 0 <=> inactive cell
+     real(R8) , pointer :: lats        (:) ! latitudes  (degrees)
+     real(R8) , pointer :: lons        (:) ! longitudes (degrees)
+     real(R8) , pointer :: uocn        (:) ! ocn velocity, zonal
+     real(R8) , pointer :: vocn        (:) ! ocn velocity, meridional
+     real(R8) , pointer :: tocn        (:) ! ocean temperature
+     real(R8) , pointer :: zbot        (:) ! atm level height
+     real(R8) , pointer :: ubot        (:) ! atm velocity, zonal
+     real(R8) , pointer :: vbot        (:) ! atm velocity, meridional
+     real(R8) , pointer :: thbot       (:) ! atm potential T
+     real(R8) , pointer :: shum        (:) ! atm specific humidity
+     real(R8) , pointer :: shum_16O    (:) ! atm H2O tracer
+     real(R8) , pointer :: shum_HDO    (:) ! atm HDO tracer
+     real(R8) , pointer :: shum_18O    (:) ! atm H218O tracer
+     real(R8) , pointer :: roce_16O    (:) ! ocn H2O ratio
+     real(R8) , pointer :: roce_HDO    (:) ! ocn HDO ratio
+     real(R8) , pointer :: roce_18O    (:) ! ocn H218O ratio
+     real(R8) , pointer :: dens        (:) ! atm density
+     real(R8) , pointer :: tbot        (:) ! atm bottom surface T
+     real(R8) , pointer :: sen         (:) ! heat flux: sensible
+     real(R8) , pointer :: lat         (:) ! heat flux: latent
+     real(R8) , pointer :: lwup        (:) ! lwup over ocean
+     real(R8) , pointer :: evap        (:) ! water flux: evaporation
+     real(R8) , pointer :: evap_16O    (:) ! H2O flux: evaporation
+     real(R8) , pointer :: evap_HDO    (:) ! HDO flux: evaporation
+     real(R8) , pointer :: evap_18O    (:) ! H218O flux: evaporation
+     real(R8) , pointer :: taux        (:) ! wind stress, zonal
+     real(R8) , pointer :: tauy        (:) ! wind stress, meridional
+     real(R8) , pointer :: tref        (:) ! diagnostic:  2m ref T
+     real(R8) , pointer :: qref        (:) ! diagnostic:  2m ref Q
+     real(R8) , pointer :: u10         (:) ! diagnostic: 10m wind speed
+     real(R8) , pointer :: duu10n      (:) ! diagnostic: 10m wind speed squared
+     real(R8) , pointer :: fswpen      (:) ! fraction of sw penetrating ocn surface layer
+     real(R8) , pointer :: ocnsal      (:) ! ocean salinity
+     real(R8) , pointer :: lwdn        (:) ! long  wave, downward
+     real(R8) , pointer :: swdn        (:) ! short wave, downward
+     real(R8) , pointer :: swup        (:) ! short wave, upward
+     real(R8) , pointer :: rainc       (:) ! rainc
+     real(R8) , pointer :: rainl       (:) ! rainl
+     real(R8) , pointer :: snowc       (:) ! snowc
+     real(R8) , pointer :: snowl       (:) ! snowl
+     real(R8) , pointer :: tbulk       (:) ! diurnal diagnostic: ocn bulk T
+     real(R8) , pointer :: tskin       (:) ! diurnal diagnostic: ocn skin T
+     real(R8) , pointer :: tskin_night (:) ! diurnal diagnostic: ocn skin T
+     real(R8) , pointer :: tskin_day   (:) ! diurnal diagnostic: ocn skin T
+     real(R8) , pointer :: cSkin       (:) ! diurnal diagnostic: ocn cool skin
+     real(R8) , pointer :: cSkin_night (:) ! diurnal diagnostic: ocn cool skin
+     real(R8) , pointer :: warm        (:) ! diurnal diagnostic: ocn warming
+     real(R8) , pointer :: warmMax     (:) ! diurnal diagnostic: ocn warming, max daily value
+     real(R8) , pointer :: warmMaxInc  (:) ! diurnal diagnostic: ocn warming, max daily value, increment
+     real(R8) , pointer :: salt        (:) ! diurnal diagnostic: ocn salting
+     real(R8) , pointer :: speed       (:) ! diurnal diagnostic: ocn speed
+     real(R8) , pointer :: regime      (:) ! diurnal diagnostic: ocn regime
+     real(R8) , pointer :: windMax     (:) ! diurnal diagnostic: ocn wind   , max daily value
+     real(R8) , pointer :: windAvg     (:) ! diurnal diagnostic: ocn wind   , daily avg
+     real(R8) , pointer :: windMaxInc  (:) ! diurnal diagnostic: ocn wind   , max daily value, increment
+     real(R8) , pointer :: QsolAvg     (:) ! diurnal diagnostic: ocn Qsol   , daily avg
+     real(R8) , pointer :: qSolInc     (:) ! diurnal diagnostic: ocn Qsol   , daily avg, increment
+     real(R8) , pointer :: windInc     (:) ! diurnal diagnostic: ocn wind   , daily avg, increment
+     real(R8) , pointer :: nInc        (:) ! diurnal diagnostic: a/o flux   , increment
+     real(R8) , pointer :: ustar       (:) ! saved ustar
+     real(R8) , pointer :: re          (:) ! saved re
+     real(R8) , pointer :: ssq         (:) ! saved sq
 
      ! Fields that are not obtained via GetFldPtr
-     real(ESMF_KIND_R8) , pointer :: uGust       (:) ! wind gust
-     real(ESMF_KIND_R8) , pointer :: prec        (:) ! precip
-     real(ESMF_KIND_R8) , pointer :: prec_gust   (:) ! atm precip for convective gustiness (kg/m^3)
+     real(R8) , pointer :: uGust       (:) ! wind gust
+     real(R8) , pointer :: prec        (:) ! precip
+     real(R8) , pointer :: prec_gust   (:) ! atm precip for convective gustiness (kg/m^3)
   end type aoflux_type
 
   ! The following three variables are obtained as attributes from gcomp
-  logical       :: flds_wiso  ! use case
+
   logical       :: do_flux_diurnal
   character(3)  :: aoflux_grid
   logical       :: ocn_prognostic
 
   ! Conversion from degrees to radians
-  integer                        :: dbug_flag      = med_constants_dbug_flag
-  real(ESMF_KIND_R8) , parameter :: czero          = med_constants_czero
-  real(ESMF_KIND_R8) , parameter :: const_deg2rad  = shr_const_pi/180.0_ESMF_KIND_r8  ! deg to rads
+  real(R8) , parameter :: const_deg2rad  = shr_const_pi/180.0_R8  ! deg to rads
   character(*)       , parameter :: u_FILE_u       = __FILE__
   integer                        :: dbrc
-  character(len=1024)            :: tmpstr
   logical                        :: mastertask
 
 !================================================================================
@@ -136,7 +121,18 @@ contains
 !================================================================================
 
   subroutine med_phases_aofluxes_init(gcomp, aoflux, rc)
-
+    use ESMF, only : ESMF_GridComp, ESMF_VM, ESMF_VMGet, ESMF_GridCompGet
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LOGERR_PASSTHRU
+    use ESMF, only : ESMF_SUCCESS, ESMF_LogFoundError
+    use NUOPC, only : NUOPC_CompAttributeGet
+    use esmFlds               , only : flds_scalar_name
+    use esmFlds               , only : flds_scalar_num
+    use esmFlds               , only : fldListMed_aoflux_o
+    use esmFlds               , only : compatm, compocn
+    use med_internalstate_mod , only : InternalState
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
+    use shr_nuopc_fldList_mod , only : shr_nuopc_fldlist_getfldnames
     ! Initialize ocn/atm flux calculations
 
     ! input/output variables
@@ -171,7 +167,7 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Create module field bundles
-    
+
     call NUOPC_CompAttributeGet(gcomp, name='flux_diurnal', value=cvalue, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     read(cvalue,*) do_flux_diurnal
@@ -234,7 +230,16 @@ contains
 !================================================================================
 
   subroutine med_phases_aofluxes_run(gcomp, rc)
-
+    use ESMF, only : ESMF_GridComp, ESMF_Clock, ESMF_GridCompGet
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use NUOPC, only : NUOPC_IsConnected, NUOPC_CompAttributeGet
+    use med_internalstate_mod , only : InternalState
+    use med_map_mod           , only : med_map_FB_Regrid_Norm
+    use esmFlds               , only : fldListFr
+    use esmFlds               , only : compatm, compocn, compname
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -341,9 +346,20 @@ contains
 
   subroutine med_aofluxes_init(gcomp, aoflux, FBAtm, FBOcn, FBFrac, FBMed_ocnalb, &
        FBMed_aoflux, FBMed_aoflux_diurnl, rc)
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LogFoundError
+    use ESMF, only : ESMF_SUCCESS, ESMF_LOGERR_PASSTHRU, ESMF_FAILURE
+    use ESMF, only : ESMF_GridComp, ESMF_FieldBundle, ESMF_VM, ESMF_Field
+    use ESMF, only : ESMF_FieldGet, ESMF_VMGet, ESMF_GridCompGet
+    use ESMF, only : ESMF_Grid, ESMF_Mesh, ESMF_MeshGet, ESMF_GEOMTYPE_FLAG
+    use ESMF, only : operator(==), ESMF_GEOMTYPE_MESH
+    use NUOPC, only : NUOPC_CompAttributeGet
+    use shr_kind_mod, only : shr_kind_CX
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFieldN
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
 
     !-----------------------------------------------------------------------
-    ! Initialize pointers to the module variables 
+    ! Initialize pointers to the module variables
     !-----------------------------------------------------------------------
 
     ! Arguments
@@ -352,9 +368,9 @@ contains
     type(ESMF_FieldBundle) , intent(in)    :: FBAtm               ! Atm Import fields on aoflux grid
     type(ESMF_FieldBundle) , intent(in)    :: FBOcn               ! Ocn Import fields on aoflux grid
     type(ESMF_FieldBundle) , intent(in)    :: FBfrac              ! Fraction data for various components, on their grid
-    type(ESMF_FieldBundle) , intent(in)    :: FBMed_ocnalb        ! Ocn albedos computed in mediator 
-    type(ESMF_FieldBundle) , intent(inout) :: FBMed_aoflux        ! Ocn albedos computed in mediator 
-    type(ESMF_FieldBundle) , intent(inout) :: FBMed_aoflux_diurnl ! Ocn albedos computed in mediator 
+    type(ESMF_FieldBundle) , intent(in)    :: FBMed_ocnalb        ! Ocn albedos computed in mediator
+    type(ESMF_FieldBundle) , intent(inout) :: FBMed_aoflux        ! Ocn albedos computed in mediator
+    type(ESMF_FieldBundle) , intent(inout) :: FBMed_aoflux_diurnl ! Ocn albedos computed in mediator
     integer                , intent(out)   :: rc
     !
     ! Local variables
@@ -366,14 +382,16 @@ contains
     type(ESMF_GeomType_Flag)    :: geomtype
     integer                     :: n
     integer                     :: lsize
-    real(ESMF_KIND_R8), pointer :: ofrac(:)
-    real(ESMF_KIND_R8), pointer :: ifrac(:)
+    real(R8), pointer :: ofrac(:)
+    real(R8), pointer :: ifrac(:)
     integer                     :: dimCount
     integer                     :: spatialDim
     integer                     :: numOwnedElements
     character(CL)               :: cvalue
-    real(ESMF_KIND_R8), pointer :: ownedElemCoords(:)
+    real(R8), pointer :: ownedElemCoords(:)
     character(*),parameter   :: subName =   '(med_aofluxes_init) '
+    logical       :: flds_wiso  ! use case
+    character(len=SHR_KIND_CX)            :: tmpstr
     !-----------------------------------------------------------------------
 
     if (dbug_flag > 5) then
@@ -447,9 +465,9 @@ contains
        call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux, fldname='Faox_evap_HDO', fldptr1=aoflux%evap_HDO, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     else
-       allocate(aoflux%evap_16O(lsize)); aoflux%evap_16O(:) = 0._ESMF_KIND_r8
-       allocate(aoflux%evap_18O(lsize)); aoflux%evap_18O(:) = 0._ESMF_KIND_r8
-       allocate(aoflux%evap_HDO(lsize)); aoflux%evap_HDO(:) = 0._ESMF_KIND_r8
+       allocate(aoflux%evap_16O(lsize)); aoflux%evap_16O(:) = 0._R8
+       allocate(aoflux%evap_18O(lsize)); aoflux%evap_18O(:) = 0._R8
+       allocate(aoflux%evap_HDO(lsize)); aoflux%evap_HDO(:) = 0._R8
     end if
 
     call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux, fldname='Faox_lwup', fldptr1=aoflux%lwup, rc=rc)
@@ -523,9 +541,9 @@ contains
        call shr_nuopc_methods_FB_GetFldPtr(FBOcn, fldname='So_roce_HDO', fldptr1=aoflux%roce_HDO, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     else
-       allocate(aoflux%roce_16O(lsize)); aoflux%roce_16O(:) = 0._ESMF_KIND_r8
-       allocate(aoflux%roce_18O(lsize)); aoflux%roce_18O(:) = 0._ESMF_KIND_r8
-       allocate(aoflux%roce_HDO(lsize)); aoflux%roce_HDO(:) = 0._ESMF_KIND_r8
+       allocate(aoflux%roce_16O(lsize)); aoflux%roce_16O(:) = 0._R8
+       allocate(aoflux%roce_18O(lsize)); aoflux%roce_18O(:) = 0._R8
+       allocate(aoflux%roce_HDO(lsize)); aoflux%roce_HDO(:) = 0._R8
     end if
 
     !----------------------------------
@@ -553,9 +571,9 @@ contains
        call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_shum_HDO', fldptr1=aoflux%shum_HDO, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     else
-       allocate(aoflux%shum_16O(lsize)); aoflux%shum_16O(:) = 0._ESMF_KIND_r8
-       allocate(aoflux%shum_18O(lsize)); aoflux%shum_18O(:) = 0._ESMF_KIND_r8
-       allocate(aoflux%shum_HDO(lsize)); aoflux%shum_HDO(:) = 0._ESMF_KIND_r8
+       allocate(aoflux%shum_16O(lsize)); aoflux%shum_16O(:) = 0._R8
+       allocate(aoflux%shum_18O(lsize)); aoflux%shum_18O(:) = 0._R8
+       allocate(aoflux%shum_HDO(lsize)); aoflux%shum_HDO(:) = 0._R8
     end if
 
     call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_dens', fldptr1=aoflux%dens, rc=rc)
@@ -623,9 +641,9 @@ contains
     !----------------------------------
     ! Fields that are not obtained via GetFldPtr
     !----------------------------------
-    allocate(aoflux%uGust(lsize))     ; aoflux%uGust(:)     =  0.0_ESMF_KIND_r8
-    allocate(aoflux%prec(lsize))      ; aoflux%prec(:)      =  0.0_ESMF_KIND_r8
-    allocate(aoflux%prec_gust(lsize)) ; aoflux%prec_gust(:) =  0.0_ESMF_KIND_r8
+    allocate(aoflux%uGust(lsize))     ; aoflux%uGust(:)     =  0.0_R8
+    allocate(aoflux%prec(lsize))      ; aoflux%prec(:)      =  0.0_R8
+    allocate(aoflux%prec_gust(lsize)) ; aoflux%prec_gust(:) =  0.0_R8
 
     !----------------------------------
     ! setup the compute mask.
@@ -639,7 +657,7 @@ contains
     write(tmpstr,'(i12,g22.12,i12)') lsize,sum(aoflux%rmask),sum(aoflux%mask)
     call ESMF_LogWrite(trim(subname)//" : maskA= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
-    where (aoflux%rmask(:) == 0._ESMF_KIND_r8) aoflux%mask(:) = 0   ! like nint
+    where (aoflux%rmask(:) == 0._R8) aoflux%mask(:) = 0   ! like nint
 
     write(tmpstr,'(i12,g22.12,i12)') lsize,sum(aoflux%rmask),sum(aoflux%mask)
     call ESMF_LogWrite(trim(subname)//" : maskB= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
@@ -650,7 +668,7 @@ contains
     ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     ! call shr_nuopc_methods_FB_getFldPtr(FBFrac , fldname='ifrac' , fldptr1=ifrac, rc=rc)
     ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    ! where (ofrac(:) + ifrac(:) <= 0.0_ESMF_KIND_r8) mask(:) = 0
+    ! where (ofrac(:) + ifrac(:) <= 0.0_R8) mask(:) = 0
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -661,7 +679,14 @@ contains
 !===============================================================================
 
   subroutine med_aofluxes_run(gcomp, aoflux, rc)
-
+    use ESMF, only : ESMF_GridComp, ESMF_Clock, ESMF_Time, ESMF_TimeInterval
+    use ESMF, only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_TimeIntervalGet
+    use ESMF, only : ESMF_LogWrite, ESMF_LogMsg_Info
+    use NUOPC, only : NUOPC_CompAttributeGet
+    use shr_kind_mod          , only : SHR_KIND_CX
+    use shr_const_mod         , only : shr_const_spval
+    use shr_flux_mod          , only : shr_flux_atmocn, shr_flux_atmocn_diurnal, shr_flux_adjust_constants
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     !-----------------------------------------------------------------------
     ! Determine atm/ocn fluxes eother on atm or on ocean grid
     ! The module arrays are set via pointers the the mediator internal states
@@ -677,28 +702,29 @@ contains
     !
     ! Local variables
     type(ESMF_clock)        :: EClock
-    type(ESMF_Time)         :: ETime    
+    type(ESMF_Time)         :: ETime
     type(ESMF_TimeInterval) :: timeStep
     integer                 :: tod, dt
     character(CL)           :: cvalue
     integer                 :: n,i                     ! indices
     integer                 :: lsize                   ! local size
-    real(ESMF_KIND_R8)      :: gust_fac = huge(1.0_ESMF_KIND_r8) ! wind gust factor
+    real(R8)      :: gust_fac = huge(1.0_R8) ! wind gust factor
     logical                 :: cold_start              ! .true. to initialize internal fields in shr_flux diurnal
     logical                 :: read_restart            ! .true. => continue run
-    real(ESMF_KIND_R8)      :: flux_convergence        ! convergence criteria for imlicit flux computation
+    real(R8)      :: flux_convergence        ! convergence criteria for imlicit flux computation
     integer                 :: flux_max_iteration      ! maximum number of iterations for convergence
     logical                 :: coldair_outbreak_mod    ! cold air outbreak adjustment  (Mahrt & Sun 1995,MWR)
     logical,save            :: first_call = .true.
     character(*),parameter :: F01 = "('(med_aofluxes_run) ',a,i4,2x,d21.14)"
     character(*),parameter :: F02 = "('(med_aofluxes_run) ',a,i4,2x,i4)"
     character(*),parameter :: subName = '(med_fluxes_run) '
+    character(len=SHR_KIND_CX)            :: tmpstr
     !-----------------------------------------------------------------------
 
     call ESMF_GridCompGet(gcomp, clock=Eclock, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Get tod and dt 
+    ! Get tod and dt
     call ESMF_ClockGet( Eclock, currTime=ETime, timeStep=timeStep, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_TimeGet( ETime, s=tod, rc=rc )
@@ -764,7 +790,7 @@ contains
     call ESMF_LogWrite(trim(subname)//" : maskA= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
     aoflux%mask(:) = 1
-    where (aoflux%rmask(:) == 0._ESMF_KIND_r8) aoflux%mask(:) = 0   ! like nint
+    where (aoflux%rmask(:) == 0._R8) aoflux%mask(:) = 0   ! like nint
 
     write(tmpstr,'(i12,g22.12,i12)') lsize,sum(aoflux%rmask),sum(aoflux%mask)
     call ESMF_LogWrite(trim(subname)//" : maskB= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
@@ -779,8 +805,8 @@ contains
           if (aoflux%dens(n) < 1.0e-12 .or. aoflux%tocn(n) < 1.0) then
              aoflux%mask(n) = 0
           endif
-          !!uGust(n) = 1.5_ESMF_KIND_r8*sqrt(uocn(n)**2 + vocn(n)**2) ! there is no wind gust data from ocn
-          aoflux%uGust(n) = 0.0_ESMF_KIND_r8
+          !!uGust(n) = 1.5_R8*sqrt(uocn(n)**2 + vocn(n)**2) ! there is no wind gust data from ocn
+          aoflux%uGust(n) = 0.0_R8
           aoflux%prec(n) = aoflux%rainc(n) + aoflux%rainl(n) + aoflux%snowc(n) + aoflux%snowl(n)
           aoflux%prec_gust(n) = aoflux%rainc(n)
           ! Note: swdn and swup are set in flux_ocnalb using data from previous timestep
@@ -797,7 +823,7 @@ contains
 
     if (do_flux_diurnal) then
        do n = 1,lsize
-          aoflux%nInc(n) = 0._ESMF_KIND_r8 ! needed for minval/maxval calculation
+          aoflux%nInc(n) = 0._R8 ! needed for minval/maxval calculation
        end do
        call shr_flux_atmocn_diurnal (&
             lsize , aoflux%zbot, aoflux%ubot, aoflux%vbot, aoflux%thbot, &
