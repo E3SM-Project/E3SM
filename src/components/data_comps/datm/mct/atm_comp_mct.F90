@@ -275,14 +275,14 @@ CONTAINS
          master_task=master_task, &
          inst_suffix=inst_suffix, &
          logunit=logunit, &
-         orbEccen = orbEccen, &
-         orbMvelpp = orbMvelpp, &
-         orbLambm0 = orbLambm0, &
-         orbObliqr = orbObliqr, &
+         orbEccen=orbEccen, &
+         orbMvelpp=orbMvelpp, &
+         orbLambm0=orbLambm0, &
+         orbObliqr=orbObliqr, &
          nextsw_cday=nextsw_cday, &
          write_restart=write_restart, &
-         currentYMD=currentYMD, &
-         currentTOD=currentTOD, &
+         target_ymd=currentYMD, &
+         target_tod=currentTOD, &
          case_name=case_name)
 
     if (dbug > 1) then
