@@ -185,6 +185,7 @@ def _post_run_check(case, lid):
             cpl_logs.append(os.path.join(rundir, file_prefix + "_%04d.log." % (inst+1) + lid))
     else:
         cpl_logs = [os.path.join(rundir, file_prefix + ".log." + lid)]
+
     cpl_logfile = cpl_logs[0]
 
     # find the last model.log and cpl.log
@@ -274,6 +275,9 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
     data_assimilation = (data_assimilation_cycles > 0 and
                          len(data_assimilation_script) > 0 and
                          os.path.isfile(data_assimilation_script))
+
+    driver = self.get_value("COMP_INTERFACE")
+
     # set up the LID
     lid = new_lid()
 
