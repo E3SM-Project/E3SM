@@ -788,7 +788,7 @@ class Case(object):
             logging.debug("wdir is %s"%wdir)
             if os.path.exists(wdir):
                 expect(not test, "Directory %s already exists, aborting test"% wdir)
-                response = raw_input("\nDirectory %s already exists, (r)eplace, (a)bort, or (u)se existing?"% wdir)
+                response = "u" #raw_input("\nDirectory %s already exists, (r)eplace, (a)bort, or (u)se existing?"% wdir)
                 if response.startswith("r"):
                     shutil.rmtree(wdir)
                 else:

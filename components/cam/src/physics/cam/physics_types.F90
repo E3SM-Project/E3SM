@@ -15,12 +15,38 @@ module physics_types
   use phys_control, only: waccmx_is, use_mass_borrower
   use shr_const_mod,only: shr_const_rwv
   use perf_mod,     only: t_startf, t_stopf
-
+  use cam_history,  only: outfld, fieldname_len    
   implicit none
   private          ! Make default type private to the module
 
+  !Following arrays and variables are declared so that we can add all variables in a loop to the history files for pergro test.
+  !For adding any new variables, we need to do the following:
+  !
+  !1. Increment nvars_prtrb_hist
+  !2. Add variable name to 'hist_vars', its long name to 'hist_vars_desc' and its units to 'hist_vars_unit'. 
+  !3. It has to be in an order. For example, hist_vars(3) is QV, hist_vars_desc(3) is QV's long name and hist_vars_unit(3) has units of QV
+  !5. 'hist_vals'array in physics_types.F90 (physics_update subroutine) should be incremented by storing values of the new variables added.
+  integer, public, parameter :: nvars_prtrb_hist = 11
+  character(len=6), public, parameter :: hist_vars(11) = ['S     ', 'T     ', 'QV    ', 'V     ', 'CLDLIQ', &
+       'NUMLIQ', 'CLDICE', 'NUMICE', 'NUM_A1', 'NUM_A2','NUM_A3']
+  character(len=100), public, parameter :: hist_vars_desc(11) = &
+       ['Static Energy                        ', &
+       'Temperature                          ',&
+       'water vapor                          ',&
+       'Meridional wind                      ',&
+       'Grid box averaged cloud liquid amount',&
+       'Grid box averaged cloud liquid number',&
+       'Grid box averaged cloud ice amount   ',&
+       'Grid box averaged cloud ice number   ',&
+       'num_a1                               ',&
+       'num_a2                               ',&
+       'num_a3                               ']
+  character(len=fieldname_len), public, parameter ::hist_vars_unit(11) = ['K    ', 'K    ', 'kg/kg', 'm/s  ', 'kg/kg', 'kg/kg', '1/kg ', '1/kg ', '1/kg ', '1/kg ', '1/kg ' ]
+  
+
   logical, parameter :: adjust_te = .FALSE.
   logical            :: pergro_test_active = .FALSE.
+
 
 ! Public types:
 
@@ -212,7 +238,6 @@ contains
     use phys_control, only: phys_getopts
     use physconst,    only: physconst_update ! Routine which updates physconst variables (WACCM-X)
     use ppgrid,       only: begchunk, endchunk
-    use cam_history,  only: outfld, fieldname_len    
 
 !------------------------------Arguments--------------------------------
     type(physics_ptend), intent(inout)  :: ptend   ! Parameterization tendencies
@@ -225,10 +250,11 @@ contains
                     ! This is usually only needed by calls from physpkg.
 !
 !---------------------------Local storage-------------------------------
-    integer :: i,k,m                               ! column,level,constituent indices
+    integer :: i,k,m, ihist, ivar                               ! column,level,constituent indices
     integer :: ixcldice, ixcldliq                  ! indices for CLDICE and CLDLIQ
     integer :: ixnumice, ixnumliq
     integer :: ixnumsnow, ixnumrain
+    integer :: ixnuma1, ixnuma2, ixnuma3
     integer :: ncol                                ! number of columns
     character*40 :: name    ! param and tracer name for qneg3
 
@@ -238,6 +264,8 @@ contains
 
     real(r8),allocatable :: cpairv_loc(:,:,:)
     real(r8),allocatable :: rairv_loc(:,:,:)
+    real(r8) :: hist_vals(nvars_prtrb_hist, pcols,pver)
+    character(len=fieldname_len) :: varname
 
     ! PERGRO limits cldliq/ice for macro/microphysics:
     character(len=24), parameter :: pergro_cldlim_names(4) = &
@@ -458,23 +486,37 @@ contains
 
 
     if (pergro_test_active) then
-       !BSINGH - for pergrow
-       
        !BSINGH - Added these calls to output fields
-       str_T = 'T_'//trim(adjustl(ptend%name))
-       call outfld( trim(adjustl(str_T)), state%t, pcols, state%lchnk )
+
+       !The following code is not ideal. I decided to use this method to avoid using derived types and also to be able to call
+       !outfld calls in a loop. 'ivar' variable needs to start from 1 and MUST be incremented except for the last 'hist_vals' 
+       !update.
+       !The values should be populated in 'hist_vals' in the strict order as the variables are mentioned in 'hist_vars' array.
+
+       ivar = 1
+       hist_vals(ivar,:,:) = state%s;        ivar = ivar + 1
+       hist_vals(ivar,:,:) = state%t;        ivar = ivar + 1
+       hist_vals(ivar,:,:) = state%q(:,:,1); ivar = ivar + 1
+       hist_vals(ivar,:,:) = state%v;        ivar = ivar + 1
+       hist_vals(ivar,:,:) = state%q(:,:,ixcldliq); ivar = ivar + 1
+       hist_vals(ivar,:,:) = state%q(:,:,ixnumliq); ivar = ivar + 1
+       hist_vals(ivar,:,:) = state%q(:,:,ixcldice); ivar = ivar + 1
+       hist_vals(ivar,:,:) = state%q(:,:,ixnumice); ivar = ivar + 1       
+       call cnst_get_ind('num_a1', ixnuma1, abort=.false.)
+       hist_vals(ivar,:,:) = state%q(:,:,ixnuma1); ivar = ivar + 1
+       call cnst_get_ind('num_a2', ixnuma2, abort=.false.)
+       hist_vals(ivar,:,:) = state%q(:,:,ixnuma2); ivar = ivar + 1
+       call cnst_get_ind('num_a3', ixnuma3, abort=.false.)
+       hist_vals(ivar,:,:) = state%q(:,:,ixnuma3);
        
-       str_S = 'S_'//trim(adjustl(ptend%name))
-       call outfld( trim(adjustl(str_S)), state%s, pcols, state%lchnk )
-       
-       !str_Stend = 'St_'//trim(adjustl(ptend%name))
-       !call outfld( trim(adjustl(str_Stend)), ptend%s, pcols, state%lchnk )
-       
-       str_QV = 'QV_'//trim(adjustl(ptend%name))
-       call outfld( trim(adjustl(str_QV)), state%q(:,:,1), pcols, state%lchnk )
-       
-       !str_QVtend = 'QVt_'//trim(adjustl(ptend%name))
-       !call outfld( trim(adjustl(str_QVtend)), ptend%q(:,:,1), pcols, state%lchnk )
+       if(ivar .ne. nvars_prtrb_hist) then
+          write(iulog,*)'physics_types.F90-physics_update: ivar should be equal to nvars_prtrb_hist; ivar=',ivar,', nvars_prtrb_hist=',nvars_prtrb_hist
+          call endrun()
+       endif
+       do ihist = 1, nvars_prtrb_hist
+          varname = trim(adjustl(hist_vars(ihist)))//'_'//trim(adjustl(ptend%name))
+          call outfld( trim(adjustl(varname)), hist_vals(ihist,:,:), pcols, state%lchnk )
+       enddo       
     endif
 
     ! Deallocate ptend

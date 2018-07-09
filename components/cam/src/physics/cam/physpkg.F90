@@ -19,7 +19,8 @@ module physpkg
   use physics_types,    only: physics_state, physics_tend, physics_state_set_grid, &
        physics_ptend, physics_tend_init, physics_update,    &
        physics_type_alloc, physics_ptend_dealloc,&
-       physics_state_alloc, physics_state_dealloc, physics_tend_alloc, physics_tend_dealloc
+       physics_state_alloc, physics_state_dealloc, physics_tend_alloc, physics_tend_dealloc, &
+       nvars_prtrb_hist, hist_vars, hist_vars_desc, hist_vars_unit
   use phys_grid,        only: get_ncols_p, chunks, npchunks,knuhcs, ngcols_p, latlon_to_dyn_gcol_map !BSINGH-added  chunks
   use phys_gmean,       only: gmean_mass
   use ppgrid,           only: begchunk, endchunk, pcols, pver, pverp, psubcols
@@ -51,6 +52,8 @@ module physpkg
    use parrrsw,         only: nsubcolsw => ngptsw !BSINGH
 
    use cam_abortutils,      only : endrun !BSINGH
+
+   use module_perturb
 
   implicit none
   private
@@ -1569,10 +1572,10 @@ subroutine tphysac (ztodt,   cam_in,  &
     nstep = get_nstep()
 if(pergro_mods) then
     !BALLI- Temporary fix - bypass changes by surface model
-    cam_in%wsx(:)    = 0.0_r8 
-    cam_in%wsy(:)    = 0.0_r8 
-    cam_in%shf(:)    = 0.0_r8
-    cam_in%cflx(:,:) = 0.0_r8 
+   cam_in%wsx(:)    = 0.0_r8 
+   cam_in%wsy(:)    = 0.0_r8 
+   cam_in%shf(:)    = 0.0_r8
+   cam_in%cflx(:,:) = 0.0_r8 
     !BALLI ENDS
 endif
 
@@ -1683,8 +1686,11 @@ if (l_tracer_aero) then
     if (chem_is_active()) then
        call chem_timestep_tend(state, ptend, cam_in, cam_out, ztodt, &
             pbuf,  fh2o, fsds)
+       !if(icolprnt(state%lchnk)>0)write(102,*)'physpkg_2:',state%q(icolprnt(state%lchnk),kprnt,25),ptend%q(icolprnt(state%lchnk),kprnt,25),ptend%name
 
        call physics_update(state, ptend, ztodt, tend)
+       !if(icolprnt(state%lchnk)>0)write(102,*)'physpkg_1:',state%q(icolprnt(state%lchnk),kprnt,25)
+
        call check_energy_chng(state, tend, "chem", nstep, ztodt, fh2o, zero, zero, zero)
        call check_tracers_chng(state, tracerint, "chem_timestep_tend", nstep, ztodt, &
             cam_in%cflx)
@@ -2942,8 +2948,11 @@ subroutine add_fld_default_calls()
   
   character(len=fieldname_len) :: str_in(35), str_S,str_Stend,str_QV,str_QVtend, str_T
   character(len=1000) :: str_S_detail,str_Stend_detail,str_QV_detail,str_QVtend_detail,str_T_detail
+
+  character(len=fieldname_len) :: varname
+  character(len=100) :: longname
   
-  integer :: unitn, i, ntot
+  integer :: unitn, i, ntot, ihist
 
   
   if (masterproc) then
@@ -2965,40 +2974,18 @@ subroutine add_fld_default_calls()
   call mpibcast(ntot, 1, mpiint,  0, mpicom)
   call mpibcast(str_in,len(str_in(1))*ntot, mpichar, 0, mpicom)
 #endif
-  
-  do i = 1, ntot   
 
-     str_S        = 'S_'//trim(adjustl(str_in(i)))
-     str_S_detail = 'Static Energy from '// trim(adjustl(str_in(i)))
-
-     call addfld (trim(adjustl(str_S)), (/ 'lev' /), 'A', 'K', trim(adjustl(str_S_detail)),flag_xyfill=.true.)
-     call add_default (trim(adjustl(str_S)), 1, ' ')
-
-     str_T        = 'T_'//trim(adjustl(str_in(i)))
-     str_T_detail = 'Temprature from '// trim(adjustl(str_in(i)))
-     call addfld (trim(adjustl(str_T)), (/ 'lev' /), 'A', 'K', trim(adjustl(str_T_detail)),flag_xyfill=.true.)
-     call add_default (trim(adjustl(str_T)), 1, ' ')
-     
-     str_QV        = 'QV_'//trim(adjustl(str_in(i)))
-     str_QV_detail = 'water vapor from '// trim(adjustl(str_in(i)))
-     call addfld (str_QV, (/ 'lev' /), 'A', 'kg/kg',str_QV_detail, flag_xyfill=.true.)
-     call add_default (str_QV, 1, ' ')
-     
-     if(trim(adjustl(str_in(i))) .NE. 'topphysbc') then
-        !str_Stend        = 'St_'//trim(adjustl(str_in(i)))
-        !str_Stend_detail = 'Static Energy tend from '// trim(adjustl(str_in(i)))
-        !call addfld (str_Stend, (/ 'lev' /), 'A', 'K/s', str_Stend_detail,flag_xyfill=.true.)
-        !call add_default (str_Stend, 1, ' ')
+  !All the hist_* variables are declared in physics_types.F90 and are used here to avoid multiple declarations
+  do ihist = 1 , nvars_prtrb_hist
+     do i = 1, ntot   
         
-        !str_QVtend        = 'QVt_'//trim(adjustl(str_in(i)))
-        !str_QVtend_detail = 'water vapor tend from '// trim(adjustl(str_in(i)))
-        !call addfld (str_QVtend,(/ 'lev' /), 'A', 'kg/kg/s',str_QVtend_detail, flag_xyfill=.true.)
-        !call add_default (str_QVtend, 1, ' ')
-     endif
-     
-     
+        varname  = trim(adjustl(hist_vars(ihist)))//'_'//trim(adjustl(str_in(i))) ! form variable name 
+        longname = trim(adjustl(hist_vars_desc(ihist)))//' from '// trim(adjustl(str_in(i))) ! get long name for the variable
+        
+        call addfld (trim(adjustl(varname)), (/ 'lev' /), 'A', trim(adjustl(hist_vars_unit(ihist))), trim(adjustl(longname)),flag_xyfill=.true.)
+        call add_default (trim(adjustl(varname)), 1, ' ')
+     enddo
   enddo
-
 end subroutine add_fld_default_calls
 !BSINGH
 

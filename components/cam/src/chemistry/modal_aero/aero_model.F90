@@ -1630,14 +1630,14 @@ lphase_loop_aa: &
              if (sscav_tuning) then
                 sol_factb  = 0.03_r8   ! all below-cloud scav ON (0.1 "tuning factor")  ! tuned 1/6
              else
-                sol_factb  = 0.1_r8    ! all below-cloud scav ON (0.1 "tuning factor")
+                sol_factb  = sol_factb_interstitial  ! all below-cloud scav ON (0.1 "tuning factor")
              endif
 
              ! sol_factb = 0.03_r8 ! all below-cloud scav ON (0.1 "tuning factor") ! tuned 1/6
 
              sol_facti = 0.0_r8 ! strat in-cloud scav totally OFF for institial
 
-             sol_factic = 0.4_r8 ! xl 2010/05/20
+             sol_factic = sol_factic_interstitial  ! xl 2010/05/20
 
 #ifdef USE_UNICON
 ! UNICON version has these two sol_factb_interstitial/sol_factic_interstitial

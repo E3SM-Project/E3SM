@@ -121,11 +121,11 @@ def save_prerun_provenance_acme(case, lid=None):
             filename = "%s.%s" % (filename, lid)
             run_cmd_no_fail("%s > %s" % (cmd, filename), from_dir=full_timing_dir)
             gzip_existing_file(os.path.join(full_timing_dir, filename))
-    elif mach in ["edison", "cori-haswell", "cori-knl"]:
-        for cmd, filename in [("sqs -f", "sqsf"), ("sqs -w -a", "sqsw"), ("sqs -f %s" % job_id, "sqsf_jobid"), ("squeue", "squeuef")]:
-            filename = "%s.%s" % (filename, lid)
-            run_cmd_no_fail("%s > %s" % (cmd, filename), from_dir=full_timing_dir)
-            gzip_existing_file(os.path.join(full_timing_dir, filename))
+    #elif mach in ["edison", "cori-haswell", "cori-knl"]:
+    #    for cmd, filename in [("sqs -f", "sqsf"), ("sqs -w -a", "sqsw"), ("sqs -f %s" % job_id, "sqsf_jobid"), ("squeue", "squeuef")]:
+    #        filename = "%s.%s" % (filename, lid)
+    #        run_cmd_no_fail("%s > %s" % (cmd, filename), from_dir=full_timing_dir)
+    #        gzip_existing_file(os.path.join(full_timing_dir, filename))
     elif mach == "titan":
         for cmd, filename in [("xtdb2proc -f", "xtdb2proc"),
                               ("qstat -f >", "qstatf"),
