@@ -147,21 +147,5 @@
 <!-- sim_year used for CLM datasets and SSTs forcings -->
 <sim_year>1850-2000</sim_year>
 
-<!-- Output some diagnostics for monitoring time varying forcing -->
-<fincl1>
-  'cb_ozone_c', 'cb_sulf_c'
-</fincl1>
-<fincl1 dyn="fv">      
-  'cb_ozone_c', 'cb_sulf_c',
-  'MSKtem','VTH2d','UV2d','UW2d','U2d','V2d','TH2d','W2d','UTGWORO'
-</fincl1>
 
-<!-- Daily avg fields present in all runs -->
-<fincl2>'TREFHTMN','TREFHTMX','TREFHT','PRECC','PRECL','PSL'</fincl2>
-
-<!-- Fields for BGC runs -->
-<fincl3>'FSDS','FSNS','FLDS','FLNS','SHFLX','LHFLX',      
-        'TS','TBOT','QBOT','TREFHT','QREFHT','PBLH','SFCO2_LND','CO2_BOT'</fincl3>
-
-<fincl4>'CO2','PS','SFCO2_OCN','SFCO2_FFF'</fincl4>
 </namelist_defaults>
