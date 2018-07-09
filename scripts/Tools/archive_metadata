@@ -3,8 +3,6 @@
 Gather all the case metadata and send it to the experiments databases
 via a web post and SVN check-in
 
-Created September, 2016
-
 Author: CSEG <cseg@cgd.ucar.edu>
 """
 
@@ -44,9 +42,9 @@ logger = logging.getLogger(__name__)
 # define global variables
 _now = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
 
-_expdb_url = 'https://csegwebdev.cgd.ucar.edu/expdb2.0'
-_JSON_expdb_url = 'https://csegwebdev.cgd.ucar.edu/expdb2.0/cgi-bin/processJSON.cgi'
-_query_expdb_url = 'https://csegwebdev.cgd.ucar.edu/expdb2.0/cgi-bin/query.cgi'
+_expdb_url = 'https://csegweb.cgd.ucar.edu/expdb2.0'
+_JSON_expdb_url = 'https://csegweb.cgd.ucar.edu/expdb2.0/cgi-bin/processJSON.cgi'
+_query_expdb_url = 'https://csegweb.cgd.ucar.edu/expdb2.0/cgi-bin/query.cgi'
 _SVN_expdb_url = 'https://svn-cesm2-expdb.cgd.ucar.edu'
 _exp_types = ['CMIP6','production','tuning']
 
@@ -84,8 +82,16 @@ _EXCLUDE_FILES = ['archive_metadata','case.build',
                   'README.archive','case.qstatus','pelayout','preview_run']
 _EXCLUDE_DIRS = ['archive_files','Tools','.svn','.git','tmp']
 
-# TODO get the paths, start and end years for diags
-_pp_xml_vars = []
+# get the path settings for postprocessing
+_pp_xml_vars = { 'atm'        : 'ATMDIAG_OUTPUT_ROOT_PATH',
+                 'glc'        : '',
+                 'lnd'        : 'LNDDIAG_OUPTUT_ROOT_PATH',
+                 'ice'        : 'ICEDIAG_PATH_CLIMO_CONT',
+                 'ocn'        : 'OCNDIAG_TAVGDIR',
+                 'rof'        : '',
+                 'timeseries' : 'TIMESERIES_OUTPUT_ROOTDIR',
+                 'xconform'   : 'CONFORM_OUTPUT_DIR' }
+
 # -------------------------------------------------------------------------------
 class PasswordPromptAction(argparse.Action):
 # -------------------------------------------------------------------------------
@@ -230,10 +236,11 @@ def get_case_vars(case_dict, case):
 def get_disk_size(start_path, exclude=None):
 # ---------------------------------------------------------------------
     """get_disk_size
-    return the total disk usage for a given path
+    return the total disk usage for a given path ignoring symlinks.
 
     Arguments:
         start_path - path to start 
+        exclude - a directory to exclude - should this be a list?
     """
     logger.debug('get_disk_size')
     total_size = 0
@@ -242,11 +249,14 @@ def get_disk_size(start_path, exclude=None):
             continue
         for f in filenames:
             fp = os.path.join(dirpath, f)
+            if os.path.islink(fp):
+                continue
             total_size += os.path.getsize(fp)
+        
     return total_size
 
 # ---------------------------------------------------------------------
-def get_pp_path(root_path, comp, process):
+def get_pp_path(pp_dir, comp, subdir):
 # ---------------------------------------------------------------------
     """get_pp_path
     return the path to postprocessing
@@ -254,14 +264,41 @@ def get_pp_path(root_path, comp, process):
     Arguments:
         root_path - path to start 
         comp - component name
-        process
+        subdir - postprocess subdir
     """
     logger.debug('get_pp_path')
+
+    cwd = os.getcwd()
+    os.chdir(pp_dir)
+
     pp_path = ''
+    if comp == 'timeseries':
+        pp_path_var = _pp_xml_vars['timeseries']
+        subdir = ''
+    elif subdir == 'timeseries' or comp in ['glc','rof']:
+        pp_path_var = _pp_xml_vars['timeseries']
+        subdir = 'tseries'
+    elif comp == 'xconform':
+        pp_path_var = _pp_xml_vars['xconform']
+    elif comp == 'ocn' and subdir == 'diag':
+        pp_path_var = 'OCNDIAG_WORKDIR'
+    else:
+        pp_path_var = _pp_xml_vars[comp]
 
-    # TODO expand the paths and query the XML store with pp_config
-    # BUT... pp_config needs to expand the paths correctly
+    cmd = ['./pp_config', '--get', pp_path_var, '--value']
+    try:
+        pp_path = subprocess.check_output(cmd)
+    except subprocess.CalledProcessError as e:
+        msg = "Error executing command = '{0}'".format(cmd)
+        logger.warning(msg)
 
+    # construct the final path basaed on comp and subdir
+    pp_path = pp_path.rstrip()
+    if len(pp_path) > 2:
+        if comp not in ['timeseries', 'xconform']:
+            pp_path = os.path.join(pp_path, comp, 'proc', subdir)
+
+    os.chdir(cwd)
     return pp_path
 
 # ---------------------------------------------------------------------
@@ -279,8 +316,10 @@ def get_pp_status(case_dict):
     # initialize status variables
     msg_avg = dict()
     msg_diags = dict()
-    comps = ['atm','ice','lnd','ocn']
+    diag_comps = ['atm','ice','lnd','ocn']
+    tseries_comps = ['atm','glc','ice','lnd','ocn','rof']
 
+    pp_dir = os.path.join(case_dict['CASEROOT'],'postprocess')
     pp_log_dir =  os.path.join(case_dict['CASEROOT'],'postprocess','logs')
 
     msg_avg['atm'] = "Successfully completed generating atmosphere climatology averages"
@@ -295,7 +334,7 @@ def get_pp_status(case_dict):
     msg_avg['ocn'] = "Successfully completed generating ocean climatology averages"
     msg_diags['ocn'] = "Successfully completed generating ocean diagnostics"
 
-    for comp in comps:
+    for comp in diag_comps:
         case_dict[comp+'_avg_status'] = 'Unknown'
         case_dict[comp+'_diag_status'] = 'Unknown'
 
@@ -319,7 +358,7 @@ def get_pp_status(case_dict):
 
             # get path and the file sizes
             case_dict[comp+'_avg_size'] = 0
-            case_dict[comp+'_avg_path'] = get_pp_path(case_dict['DOUT_S_ROOT'], comp, 'avg')
+            case_dict[comp+'_avg_path'] = get_pp_path(pp_dir, comp, 'climo')
             if case_dict[comp+'_avg_path'] is not None:
                 case_dict[comp+'_avg_size'] = get_disk_size(case_dict[comp+'_avg_path'])
 
@@ -336,16 +375,15 @@ def get_pp_status(case_dict):
 
             # get path and the file sizes
             case_dict[comp+'_diag_size'] = 0
-            case_dict[comp+'_diag_path'] = get_pp_path(case_dict['DOUT_S_ROOT'], comp, 'diag')
+            case_dict[comp+'_diag_path'] = get_pp_path(pp_dir, comp, 'diag')
             if case_dict[comp+'_diag_path'] is not None:
                 case_dict[comp+'_diag_size'] = get_disk_size(case_dict[comp+'_diag_path'])
 
 
     # get timeseries status
     case_dict['timeseries_status'] = 'Unknown'
-    case_dict['timeseries_path'] = ''
+    case_dict['timeseries_path'] = get_pp_path(pp_dir, 'timeseries', '')
     case_dict['timeseries_size'] = 0
-
     tseries_logs = list()
     tseries_file_pattern = ("{0}/timeseries.log.*".format(pp_log_dir))
     tseries_logs = glob.glob(tseries_file_pattern)
@@ -353,12 +391,16 @@ def get_pp_status(case_dict):
       log_file = max(tseries_logs, key=os.path.getctime)
       if (is_last_process_complete(log_file, 'Successfully completed generating variable time-series files', 
                                    'opening')):
-          case_dict['tseries_status'] = 'Complete'
-          # TODO - get the timeseries size and pathusing TIMESERIES_OUTPUT_ROOTDIR
+          case_dict['timeseries_status'] = 'Complete'
       else:
-          case_dict['tseries_status'] = 'Started'
+          case_dict['timeseries_status'] = 'Started'
+    for comp in tseries_comps:
+        case_dict[comp+'_timeseries_path'] = get_pp_path(pp_dir, comp, 'timeseries')
+        case_dict[comp+'_timeseries_size'] = get_disk_size(case_dict[comp+'_timeseries_path'])
+        case_dict[comp+'_timeseries_status'] = case_dict['timeseries_status']
+        case_dict['timeseries_size'] = case_dict['timeseries_size'] + case_dict[comp+'_timeseries_size']
 
-    # get iconform status
+    # get iconform status = this initializes files in the POSTPROCESS_PATH
     case_dict['iconform_status'] = 'Unknown'
     case_dict['iconform_path'] = ''
     case_dict['iconform_size'] = 0
@@ -376,8 +418,8 @@ def get_pp_status(case_dict):
 
     # get xconform status
     case_dict['xconform_status'] = 'Unknown'
-    case_dict['xconform_path'] = ''
-    case_dict['xconform_size'] = 0
+    case_dict['xconform_path'] = get_pp_path(pp_dir, 'xconform', subdir=None)
+    case_dict['xconform_size'] = get_disk_size(case_dict['xconform_path'])
 
     xconform_logs = list()
     xconform_file_pattern = ("{0}/xconform.log.*".format(pp_log_dir))
@@ -387,7 +429,6 @@ def get_pp_status(case_dict):
         if (is_last_process_complete(log_file, 'Successfully completed converting all files', 
                                    'cesm_conform_generator INFO')):
             case_dict['xconform_status'] = 'Complete'
-            # TODO - get the conform size using CONFORM_OUTPUT_ROOTDIR
         else:
             case_dict['xconform_status'] = 'Started'
 
