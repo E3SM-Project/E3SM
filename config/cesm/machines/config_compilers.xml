@@ -241,7 +241,6 @@ using a fortran linker.
   <FREEFLAGS>
     <base> -free </base>
   </FREEFLAGS>
-  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
     <append compile_threaded="true"> -qopenmp </append>
   </LDFLAGS>
