@@ -27,9 +27,9 @@ module physics_types
   !3. It has to be in an order. For example, hist_vars(3) is QV, hist_vars_desc(3) is QV's long name and hist_vars_unit(3) has units of QV
   !5. 'hist_vals'array in physics_types.F90 (physics_update subroutine) should be incremented by storing values of the new variables added.
   integer, public, parameter :: nvars_prtrb_hist = 11
-  character(len=6), public, parameter :: hist_vars(11) = ['S     ', 'T     ', 'QV    ', 'V     ', 'CLDLIQ', &
+  character(len=fieldname_len), public, parameter :: hist_vars(nvars_prtrb_hist) = ['S     ', 'T     ', 'QV    ', 'V     ', 'CLDLIQ', &
        'NUMLIQ', 'CLDICE', 'NUMICE', 'NUM_A1', 'NUM_A2','NUM_A3']
-  character(len=100), public, parameter :: hist_vars_desc(11) = &
+  character(len=100), public, parameter :: hist_vars_desc(nvars_prtrb_hist) = &
        ['Static Energy                        ', &
        'Temperature                          ',&
        'water vapor                          ',&
@@ -41,7 +41,7 @@ module physics_types
        'num_a1                               ',&
        'num_a2                               ',&
        'num_a3                               ']
-  character(len=fieldname_len), public, parameter ::hist_vars_unit(11) = ['K    ', 'K    ', 'kg/kg', 'm/s  ', 'kg/kg', 'kg/kg', '1/kg ', '1/kg ', '1/kg ', '1/kg ', '1/kg ' ]
+  character(len=fieldname_len), public, parameter ::hist_vars_unit(nvars_prtrb_hist) = ['K    ', 'K    ', 'kg/kg', 'm/s  ', 'kg/kg', 'kg/kg', '1/kg ', '1/kg ', '1/kg ', '1/kg ', '1/kg ' ]
   
 
   logical, parameter :: adjust_te = .FALSE.
