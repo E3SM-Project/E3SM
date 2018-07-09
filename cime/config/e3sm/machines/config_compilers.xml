@@ -255,7 +255,7 @@ for mct, etc.
 <compiler COMPILER="intel">
   <CFLAGS>
     <base> -O2 -fp-model precise -std=gnu99 </base>
-    <append compile_threaded="true"> -openmp </append>
+    <append compile_threaded="true"> -qopenmp </append>
     <append DEBUG="FALSE"> -O2 -debug minimal </append>
     <append DEBUG="TRUE"> -O0 -g </append>
   </CFLAGS>
@@ -272,7 +272,7 @@ for mct, etc.
   </FC_AUTO_R8>
   <FFLAGS>
     <base>  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source </base>
-    <append compile_threaded="true"> -openmp </append>
+    <append compile_threaded="true"> -qopenmp </append>
     <!-- WJS (8-11-14): For some reason, yellowstone-intel has starting giving lots of
        messages about array temporaries, leading to a ton of standard output, and
        sometimes causing runs to die. Adding '-check noarg_temp_created' to suppress these
@@ -284,7 +284,7 @@ for mct, etc.
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
-    <append compile_threaded="true"> -openmp </append>
+    <append compile_threaded="true"> -qopenmp </append>
   </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -fixed -132 </base>
@@ -294,7 +294,7 @@ for mct, etc.
   </FREEFLAGS>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
-    <append compile_threaded="true"> -openmp </append>
+    <append compile_threaded="true"> -qopenmp </append>
   </LDFLAGS>
   <MPICC> mpicc  </MPICC>
   <MPICXX> mpicxx </MPICXX>
@@ -302,158 +302,6 @@ for mct, etc.
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
   <SFC> ifort </SFC>
-  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-</compiler>
-
-<compiler COMPILER="intel14">
-  <CFLAGS>
-    <base> -O2 -fp-model precise </base>
-    <append compile_threaded="true"> -openmp </append>
-  </CFLAGS>
-  <CPPDEFS>
-    <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
-    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</append>
-    <append> -DCPRINTEL </append>
-  </CPPDEFS>
-  <CXX_LDFLAGS>
-    <base> -cxxlib </base>
-  </CXX_LDFLAGS>
-  <CXX_LINKER>FORTRAN</CXX_LINKER>
-  <FC_AUTO_R8>
-    <base> -r8 </base>
-  </FC_AUTO_R8>
-  <FFLAGS>
-    <base> -fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs </base>
-    <append compile_threaded="true"> -openmp </append>
-    <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </append>
-    <append DEBUG="FALSE"> -O2 </append>
-  </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 </base>
-  </FFLAGS_NOOPT>
-  <FIXEDFLAGS>
-    <base> -fixed -132 </base>
-  </FIXEDFLAGS>
-  <FREEFLAGS>
-    <base> -free </base>
-  </FREEFLAGS>
-  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
-  <LDFLAGS>
-    <append compile_threaded="true"> -openmp </append>
-  </LDFLAGS>
-  <MPICC> mpicc  </MPICC>
-  <MPICXX> mpicxx </MPICXX>
-  <MPIFC> mpif90 </MPIFC>
-  <SCC> icc </SCC>
-  <SCXX> icpc </SCXX>
-  <SFC> ifort </SFC>
-  <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs}</append>
-  </SLIBS>
-  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-</compiler>
-
-<compiler COMPILER="intelmic">
-  <CFLAGS>
-    <base> -mmic -O2 -fp-model precise -DFORTRANUNDERSCOR </base>
-    <append compile_threaded="true"> -openmp </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base>--host=x86_64-k1om-linux --build=x86_64-unknown-linux</base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
-    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</append>
-    <append> -DCPRINTEL </append>
-  </CPPDEFS>
-  <CXX_LDFLAGS>
-    <base> -cxxlib </base>
-  </CXX_LDFLAGS>
-  <CXX_LINKER>FORTRAN</CXX_LINKER>
-  <FC_AUTO_R8>
-    <base> -r8 </base>
-  </FC_AUTO_R8>
-  <FFLAGS>
-    <base> -mmic -fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs </base>
-    <append compile_threaded="true"> -openmp </append>
-    <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </append>
-    <append DEBUG="FALSE"> -O2 </append>
-  </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 -mmic </base>
-  </FFLAGS_NOOPT>
-  <FIXEDFLAGS>
-    <base> -fixed -132 </base>
-  </FIXEDFLAGS>
-  <FREEFLAGS>
-    <base> -free </base>
-  </FREEFLAGS>
-  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
-  <LDFLAGS>
-    <append compile_threaded="true"> -openmp </append>
-    <append> -mmic </append>
-  </LDFLAGS>
-  <MPICC> mpiicc  </MPICC>
-  <MPICXX> mpiicpc </MPICXX>
-  <MPIFC> mpiifort</MPIFC>
-  <SCC> icc </SCC>
-  <SCXX> icpc </SCXX>
-  <SFC> ifort </SFC>
-  <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs}</append>
-  </SLIBS>
-  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-</compiler>
-
-<compiler COMPILER="intelmic14">
-  <CFLAGS>
-    <base> -mmic -O2 -fp-model precise -DFORTRANUNDERSCOR </base>
-    <append compile_threaded="true"> -openmp </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base>--host=x86_64-k1om-linux --build=x86_64-unknown-linux</base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
-    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</append>
-    <append> -DCPRINTEL </append>
-  </CPPDEFS>
-  <CXX_LDFLAGS>
-    <base> -cxxlib </base>
-  </CXX_LDFLAGS>
-  <CXX_LINKER>FORTRAN</CXX_LINKER>
-  <FC_AUTO_R8>
-    <base> -r8 </base>
-  </FC_AUTO_R8>
-  <FFLAGS>
-    <base> -mmic -fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs </base>
-    <append compile_threaded="true"> -openmp </append>
-    <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </append>
-    <append DEBUG="FALSE"> -O2 </append>
-  </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 -mmic </base>
-  </FFLAGS_NOOPT>
-  <FIXEDFLAGS>
-    <base> -fixed -132 </base>
-  </FIXEDFLAGS>
-  <FREEFLAGS>
-    <base> -free </base>
-  </FREEFLAGS>
-  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
-  <LDFLAGS>
-    <append compile_threaded="true"> -openmp </append>
-    <append> -mmic </append>
-  </LDFLAGS>
-  <MPICC> mpiicc  </MPICC>
-  <MPICXX> mpiicpc </MPICXX>
-  <MPIFC> mpiifort</MPIFC>
-  <SCC> icc </SCC>
-  <SCXX> icpc </SCXX>
-  <SFC> ifort </SFC>
-  <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs}</append>
-  </SLIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
@@ -874,7 +722,7 @@ for mct, etc.
 
 <compiler MACH="anvil" COMPILER="intel">
   <CFLAGS>
-    <append compile_threaded="true"> -qopenmp -static-intel</append>
+    <append compile_threaded="true"> -static-intel</append>
     <append compile_threaded="true" DEBUG="TRUE">-heap-arrays</append>
   </CFLAGS>
   <CPPDEFS>
@@ -882,14 +730,14 @@ for mct, etc.
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</append>
-    <append compile_threaded="true"> -qopenmp -static-intel</append>
+    <append compile_threaded="true"> -static-intel</append>
     <append compile_threaded="true" DEBUG="TRUE">-heap-arrays</append>
   </FFLAGS>
   <FFLAGS_NOOPT>
-    <append compile_threaded="true"> -qopenmp -static-intel</append>
+    <append compile_threaded="true"> -static-intel</append>
   </FFLAGS_NOOPT>
   <LDFLAGS>
-    <append compile_threaded="true"> -qopenmp -static-intel</append>
+    <append compile_threaded="true"> -static-intel</append>
   </LDFLAGS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
   <SLIBS>
@@ -908,9 +756,6 @@ for mct, etc.
 
 <compiler MACH="bebop" COMPILER="intel">
   <ALBANY_PATH>/soft/climate/AlbanyTrilinos_06262017/Albany/buildintel/install</ALBANY_PATH>
-  <CFLAGS>
-    <append compile_threaded="true"> -qopenmp </append>
-  </CFLAGS>
   <CPPDEFS>
     <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
@@ -919,14 +764,7 @@ for mct, etc.
   </CXX_LIBS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</append>
-    <append compile_threaded="true"> -qopenmp </append>
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <append compile_threaded="true"> -qopenmp </append>
-  </FFLAGS_NOOPT>
-  <LDFLAGS>
-    <append compile_threaded="true"> -qopenmp </append>
-  </LDFLAGS>
   <MPICC> mpiicc  </MPICC>
   <MPICXX> mpiicpc </MPICXX>
   <MPIFC> mpiifort </MPIFC>
@@ -1248,23 +1086,13 @@ for mct, etc.
 </compiler>
 
 <compiler MACH="cori-haswell" COMPILER="intel">
-  <CFLAGS>
-    <append compile_threaded="true"> -qopenmp </append>
-  </CFLAGS>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
   <FFLAGS>
     <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </base>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </append>
-    <append compile_threaded="true"> -qopenmp </append>
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <append compile_threaded="true"> -qopenmp </append>
-  </FFLAGS_NOOPT>
-  <LDFLAGS>
-    <append compile_threaded="true"> -qopenmp </append>
-  </LDFLAGS>
   <PETSC_PATH>$ENV{PETSC_DIR}</PETSC_PATH>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
@@ -1277,7 +1105,6 @@ for mct, etc.
 
 <compiler MACH="cori-knl" COMPILER="intel">
   <CFLAGS>
-    <append compile_threaded="true"> -qopenmp </append>
     <append MPILIB="impi"> -axMIC-AVX512 -xCORE-AVX2 </append>
   </CFLAGS>
   <CONFIG_ARGS>
@@ -1289,15 +1116,8 @@ for mct, etc.
   <FFLAGS>
     <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </base>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</append>
-    <append compile_threaded="true"> -qopenmp </append>
     <append MPILIB="impi"> -xMIC-AVX512 </append>
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <append compile_threaded="true"> -qopenmp </append>
-  </FFLAGS_NOOPT>
-  <LDFLAGS>
-    <append compile_threaded="true"> -qopenmp </append>
-  </LDFLAGS>
   <MPICC MPILIB="impi"> mpiicc </MPICC>
   <MPICXX MPILIB="impi"> mpiicpc </MPICXX>
   <MPIFC MPILIB="impi"> mpiifort </MPIFC>
@@ -1344,22 +1164,12 @@ for mct, etc.
 </compiler>
 
 <compiler MACH="edison" COMPILER="intel">
-  <CFLAGS>
-    <append compile_threaded="true"> -qopenmp </append>
-  </CFLAGS>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </append>
-    <append compile_threaded="true"> -qopenmp </append>
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <append compile_threaded="true"> -qopenmp </append>
-  </FFLAGS_NOOPT>
-  <LDFLAGS>
-    <append compile_threaded="true"> -qopenmp </append>
-  </LDFLAGS>
   <PETSC_PATH>$ENV{PETSC_DIR}</PETSC_PATH>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
@@ -1862,7 +1672,6 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
 <compiler MACH="stampede2" COMPILER="intel">
   <CFLAGS>
     <!--ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align -qopt-zmm-usage=high</ADD_FFLAGS-->
-    <append compile_threaded="true"> -qopenmp </append>
     <append> -xCORE-AVX2 </append>
   </CFLAGS>
   <CONFIG_ARGS>
@@ -1876,18 +1685,11 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <FFLAGS>
     <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </base>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</append>
-    <append compile_threaded="true"> -qopenmp </append>
     <!--ADD_FFLAGS> -xCORE-AVX512 </ADD_FFLAGS-->
     <!--ADD_CFLAGS> -xCORE-AVX512 </ADD_CFLAGS-->
     <append> -xCORE-AVX2 </append>
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <append compile_threaded="true"> -qopenmp </append>
-  </FFLAGS_NOOPT>
   <HDF5_PATH>$ENV{TACC_HDF5_DIR}</HDF5_PATH>
-  <LDFLAGS>
-    <append compile_threaded="true"> -qopenmp </append>
-  </LDFLAGS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpicxx </MPICXX>
   <MPIFC> mpif90 </MPIFC>
@@ -2116,9 +1918,6 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
 </compiler>
 
 <compiler MACH="theta" COMPILER="intel">
-  <CFLAGS>
-    <append compile_threaded="true"> -qopenmp </append>
-  </CFLAGS>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
@@ -2128,14 +1927,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <FFLAGS>
     <base>-convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent</base>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align -fp-speculation=off</append>
-    <append compile_threaded="true"> -qopenmp </append>
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <append compile_threaded="true"> -qopenmp </append>
-  </FFLAGS_NOOPT>
-  <LDFLAGS>
-    <append compile_threaded="true"> -qopenmp </append>
-  </LDFLAGS>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
   <SFC> ifort </SFC>
