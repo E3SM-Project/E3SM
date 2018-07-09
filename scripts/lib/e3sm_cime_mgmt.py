@@ -1,6 +1,6 @@
 from CIME.utils import run_cmd, run_cmd_no_fail, expect, get_timestamp
 
-import sys, getpass, logging
+import getpass, logging, os
 
 # Constants
 ESMCI_REMOTE_NAME = "esmci_remote_for_split"
@@ -81,13 +81,85 @@ def do_subtree_split(new_split_tag, merge_tag):
     return subtree_branch
 
 ###############################################################################
+def touches_file(start_range, end_range, filepath):
+###############################################################################
+    return run_cmd_no_fail("git log {}..{} {}".format(start_range, end_range, filepath)) != ""
+
+###############################################################################
+def has_non_local_commits(filepath, non_local_path, local_tag):
+###############################################################################
+    most_recent = get_tag(local_tag)
+    return run_cmd_no_fail("git diff MERGE_HEAD:{} {}:{}".format(non_local_path, most_recent, filepath)) != ""
+
+###############################################################################
+def reset_file(version, srcpath, dstpath):
+###############################################################################
+    os.remove(dstpath)
+    run_cmd_no_fail("git show {}:{} > {}".format(version, srcpath, dstpath))
+    run_cmd_no_fail("git add {}".format(dstpath))
+
+###############################################################################
+def get_last_merge(branch_name):
+###############################################################################
+    return run_cmd_no_fail("git log --first-parent ORIG_HEAD --grep='{}' -1 --oneline".format(branch_name)).split[0]
+
+###############################################################################
+def handle_easy_conflict(filepath, is_merge):
+###############################################################################
+    non_local_tag = MERGE_TAG_PREFIX if is_merge else SPLIT_TAG_PREFIX
+    local_tag     = MERGE_TAG_PREFIX if non_local_tag == SPLIT_TAG_PREFIX else SPLIT_TAG_PREFIX
+
+    local_branch = "branch-for-{}".format(non_local_tag)
+
+    non_local_path = filepath.replace("cime/", "", 1) if is_merge else os.path.join("cime", filepath)
+
+    last_merge = get_last_merge(local_branch)
+
+    if not touches_file(last_merge, "ORIG_HEAD", filepath):
+        logging.info("File '{}' appears to have had no recent local mods, setting to non-local".format(filepath))
+        reset_file("MERGE_HEAD", non_local_path, filepath)
+        return True
+    elif not has_non_local_commits(filepath, non_local_path, local_tag):
+        logging.info("File '{}' appears to have had no recent non-local mods, setting to local".format(filepath))
+        reset_file("ORIG_HEAD", filepath, filepath)
+        return True
+    else:
+        logging.info("File '{}' appears to have real conflicts".format(filepath))
+        return False
+
+###############################################################################
+def handle_easy_conflicts(is_merge):
+###############################################################################
+    conflicting_files = run_cmd_no_fail("git diff --name-only --diff-filter=U").splitlines()
+    if not conflicting_files:
+        expect(False, "Merge appears to have failed for reasons other than merge conflicts")
+
+    rv = []
+    for conflicting_file in conflicting_files:
+        able_to_handle = handle_easy_conflict(conflicting_file, is_merge)
+        if not able_to_handle:
+            rv.append(conflicting_file)
+
+    return rv
+
+###############################################################################
+def handle_conflicts(is_merge=False):
+###############################################################################
+    logging.info("There are conflicts, analyzing...")
+    remaining_conflicts = handle_easy_conflicts(is_merge)
+    if remaining_conflicts:
+        expect(False, "There are merge conflicts. Please fix, commit, and re-run this tool with --resume")
+    else:
+        logging.info("All conflicts were automatically resovled, continuing")
+        run_cmd_no_fail("git commit --no-edit")
+
+###############################################################################
 def do_subtree_pull(squash=False):
 ###############################################################################
     stat = run_cmd("git subtree pull {} --prefix=cime {} master".format("--squash" if squash else "", ESMCI_REMOTE_NAME),
                    verbose=True)[0]
     if stat != 0:
-        logging.info("There are merge conflicts. Please fix, commit, and re-run this tool with --resume")
-        sys.exit(1)
+        handle_conflicts(is_merge=True)
 
 ###############################################################################
 def make_pr_branch(branch, branch_head):
@@ -102,11 +174,7 @@ def merge_branch(branch, squash=False):
     stat = run_cmd("git merge {} -m 'Merge {}' -X rename-threshold=25 {}".format("--squash" if squash else "", branch, branch),
                    verbose=True)[0]
     if stat != 0:
-        logging.info("There are merge conflicts. Please fix, commit, and re-run this tool with --resume")
-        logging.info("If the histories are unrelated, you may need to rebase the branch manually:")
-        logging.info("git rebase $pr_branch --onto $merge_tag")
-        logging.info("Then repeat the above merge command")
-        sys.exit(1)
+        handle_conflicts()
 
 ###############################################################################
 def delete_tag(tag, remote="origin"):
