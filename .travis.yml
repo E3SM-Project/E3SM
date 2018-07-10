@@ -1,5 +1,5 @@
 language: c++
-compiler: gcc
+compiler: clang
 
 git:
   submodules: false
