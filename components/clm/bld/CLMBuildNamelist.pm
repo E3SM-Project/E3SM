@@ -289,6 +289,7 @@ sub process_commandline {
                note                  => undef,
                drydep                => 0,
                megan                 => 0,
+	       fan                   => "default",
                irrig                 => "default",
                res                   => "default",
                silent                => 0,
@@ -356,6 +357,7 @@ sub process_commandline {
              "nutrient=s"                => \$opts{'nutrient'},
              "nutrient_comp_pathway=s"   => \$opts{'nutrient_comp_pathway'},
              "soil_decomp=s"             => \$opts{'soil_decomp'},
+             "fan=s"                     => \$opts{'fan'},
             )  or usage();
 
   # Give usage message.
@@ -538,7 +540,8 @@ sub read_namelist_defaults {
   my @nl_defaults_files = ( "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_overall.xml",
                             "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_$phys.xml",
                             "$drvblddir/namelist_files/namelist_defaults_drv.xml",
-                            "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_drydep.xml" );
+                            "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_drydep.xml",
+			    "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_fan.xml" );
 
   # Add the location of the use case defaults files to the options hash
   $opts->{'use_case_dir'} = "$nl_flags->{'cfgdir'}/namelist_files/use_cases";
@@ -559,8 +562,12 @@ sub read_namelist_defaults {
   # values for variables contained in the input defaults file.  The
   # configuration object provides attribute values that are relevent
   # for the CLM executable for which the namelist is being produced.
+  print"here!!\n";
   my $defaults = Build::NamelistDefaults->new( shift( @nl_defaults_files ), $cfg);
+  print "done\n";
   foreach my $nl_defaults_file ( @nl_defaults_files ) {
+      print "add $nl_defaults_file\n";
+
     $defaults->add( "$nl_defaults_file" );
   }
   return $defaults;
@@ -1819,7 +1826,9 @@ sub process_namelist_commandline_clm_usr_name {
     # The one difference is that variables are expanded.
     # Create a new NamelistDefaults object.
     my $nl_defaults_file = "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_usr_files.xml";
+    print "here4\n";  
     my $uf_defaults = Build::NamelistDefaults->new("$nl_defaults_file", $cfg );
+    print "done4\n";  
     # Loop over the variables specified in the user files
     # Add each one to the namelist.
     my @vars = $uf_defaults->get_variable_names();
@@ -1868,9 +1877,10 @@ sub process_namelist_commandline_use_case {
   if (defined $opts->{'use_case'}) {
 
     # The use case definition is contained in an xml file with the same format as the defaults file.
-    # Create a new NamelistDefaults object.
+      # Create a new NamelistDefaults object.
+    print "here2\n";
     my $uc_defaults = Build::NamelistDefaults->new("$opts->{'use_case_dir'}/$opts->{'use_case'}.xml", $cfg);
-
+    print "done2\n";
     my %settings;
     $settings{'res'}            = $nl_flags->{'res'};
     $settings{'rcp'}            = $nl_flags->{'rcp'};
@@ -1954,7 +1964,7 @@ sub process_namelist_inline_logic {
   setup_logic_supplemental_nitrogen($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
 #  setup_logic_snowpack($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_fates($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
-
+  setup_logic_fan($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   #########################################
   # namelist group: clm_humanindex_inparm #
   #########################################
@@ -1979,7 +1989,8 @@ sub process_namelist_inline_logic {
   ###############################
   # namelist group: ndepdyn_nml #
   ###############################
-  setup_logic_nitrogen_deposition($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
+  setup_logic_nitrogen_deposition($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv, 'ndep');
+  setup_logic_nitrogen_deposition($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv, 'fan');
   
   ###############################
   # namelist group: pdepdyn_nml #
@@ -3017,58 +3028,70 @@ sub setup_logic_c_isotope {
 #-------------------------------------------------------------------------------
 
 sub setup_logic_nitrogen_deposition {
-  my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+  my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv, $deptype) = @_;
+  my $ndep;  
+  if ($deptype eq 'fan') {
+      if (!value_is_true( $nl_flags->{'use_fan'})) { print "no fan!!\n"; return; }
+      $ndep = 'fan';
+  } elsif ($deptype eq 'ndep') {
+      $ndep = 'ndep';
+  } else {
+      fatal_error('Allowed deptypes are fan and ndep');
+  }
 
   #
-  # Nitrogen deposition for bgc=CN
+  # Nitrogen deposition for bgc=CN (ndep) and FAN (ndep2)
   #
 
   if ( $physv->as_long() == $physv->as_long("clm4_0") && $nl_flags->{'bgc_mode'} ne "none" ) {
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'ndepmapalgo', 'phys'=>$nl_flags->{'phys'}, 
+      print "here444\n";
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "${ndep}mapalgo", 'phys'=>$nl_flags->{'phys'}, 
                 'bgc'=>$nl_flags->{'bgc_mode'}, 'hgrid'=>$nl_flags->{'res'} );
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_first_ndep', 'phys'=>$nl_flags->{'phys'},
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_year_first_${ndep}", 'phys'=>$nl_flags->{'phys'},
                 'bgc'=>$nl_flags->{'bgc_mode'}, 'sim_year'=>$nl_flags->{'sim_year'},
                 'sim_year_range'=>$nl_flags->{'sim_year_range'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_last_ndep', 'phys'=>$nl_flags->{'phys'},
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_year_last_${ndep}", 'phys'=>$nl_flags->{'phys'},
                 'bgc'=>$nl_flags->{'bgc_mode'}, 'sim_year'=>$nl_flags->{'sim_year'},
                 'sim_year_range'=>$nl_flags->{'sim_year_range'});
 
     # Set align year, if first and last years are different
-    if ( $nl->get_value('stream_year_first_ndep') != $nl->get_value('stream_year_last_ndep') ) {
-      add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'model_year_align_ndep', 'sim_year'=>$nl_flags->{'sim_year'},
+    if ( $nl->get_value('stream_year_first_${ndep}') != $nl->get_value('stream_year_last_${ndep}') ) {
+      add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "model_year_align_${ndep}", 'sim_year'=>$nl_flags->{'sim_year'},
                   'sim_year_range'=>$nl_flags->{'sim_year_range'});
     }
 
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_fldfilename_ndep', 'phys'=>$nl_flags->{'phys'},
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_fldfilename_${ndep}", 'phys'=>$nl_flags->{'phys'},
                 'bgc'=>$nl_flags->{'bgc_mode'}, 'rcp'=>$nl_flags->{'rcp'},
                 'hgrid'=>"1.9x2.5" );
 
   } elsif ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'bgc_mode'} =~/cn|bgc/ ) {
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'ndepmapalgo', 'phys'=>$nl_flags->{'phys'},
+      print "here555 $ndep\n";
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "${ndep}mapalgo", 'phys'=>$nl_flags->{'phys'},
                 'use_cn'=>$nl_flags->{'use_cn'}, 'hgrid'=>$nl_flags->{'res'} );
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_first_ndep', 'phys'=>$nl_flags->{'phys'},
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_year_first_${ndep}", 'phys'=>$nl_flags->{'phys'},
                 'use_cn'=>$nl_flags->{'use_cn'}, 'sim_year'=>$nl_flags->{'sim_year'},
                 'sim_year_range'=>$nl_flags->{'sim_year_range'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_last_ndep', 'phys'=>$nl_flags->{'phys'},
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_year_last_${ndep}", 'phys'=>$nl_flags->{'phys'},
                 'use_cn'=>$nl_flags->{'use_cn'}, 'sim_year'=>$nl_flags->{'sim_year'},
                 'sim_year_range'=>$nl_flags->{'sim_year_range'});
     # Set align year, if first and last years are different
-    if ( $nl->get_value('stream_year_first_ndep') != $nl->get_value('stream_year_last_ndep') ) {
-      add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'model_year_align_ndep', 'sim_year'=>$nl_flags->{'sim_year'},
+    if ( $nl->get_value('stream_year_first_${ndep}') != $nl->get_value('stream_year_last_${ndep}') ) {
+      add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "model_year_align_${ndep}", 'sim_year'=>$nl_flags->{'sim_year'},
                   'sim_year_range'=>$nl_flags->{'sim_year_range'});
     }
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_fldfilename_ndep', 'phys'=>$nl_flags->{'phys'},
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_fldfilename_${ndep}", 'phys'=>$nl_flags->{'phys'},
                 'use_cn'=>$nl_flags->{'use_cn'}, 'rcp'=>$nl_flags->{'rcp'},
                 'hgrid'=>"1.9x2.5" );
   } else {
+      print "no cn/cndv $physv->as_long() $nl_flags->{'bgc_mode'} \n";
     # If bgc is NOT CN/CNDV then make sure none of the ndep settings are set!
-    if ( defined($nl->get_value('stream_year_first_ndep')) ||
-         defined($nl->get_value('stream_year_last_ndep'))  ||
-         defined($nl->get_value('model_year_align_ndep'))  ||
-         defined($nl->get_value('stream_fldfilename_ndep'))
+    if ( defined($nl->get_value('stream_year_first_${ndep}')) ||
+         defined($nl->get_value('stream_year_last_${ndep}'))  ||
+         defined($nl->get_value('model_year_align_${ndep}'))  ||
+         defined($nl->get_value('stream_fldfilename_${ndep}'))
        ) {
-      fatal_error("When bgc is NOT CN or CNDV none of: stream_year_first_ndep," .
-                  "stream_year_last_ndep, model_year_align_ndep, nor stream_fldfilename_ndep" .
+      fatal_error("When bgc is NOT CN or CNDV none of: stream_year_first_${ndep}," .
+                  "stream_year_last_${ndep}, model_year_align_${ndep}, nor stream_fldfilename_${ndep}" .
                   " can be set!\n");
     }
   }
@@ -3134,6 +3157,30 @@ sub setup_logic_phosphorus_deposition {
     }
   }
 }
+
+#-------------------------------------------------------------------------------
+
+sub setup_logic_fan {
+  #
+  # Flags to control FAN (Flow of Agricultural Nitrogen) nitrogen deposition (manure and fertilizer)
+  #
+   my ($opts, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+   #print "FAN MODE: $opts->{'fan'}\n";
+   if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
+       if ( $opts->{'fan'} ) {
+	   add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fan',
+		       'use_cn'=>$nl_flags->{'use_cn'}, 'use_ed'=>$nl_flags->{'use_ed'} );
+	   $nl_flags->{'use_fan'} = $nl->get_value('use_fan');
+	   add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fan_nh3_to_atm',
+		       'fan_mode'=>$opts->{'fan'});
+	   $nl_flags->{'fan_nh3_to_atm'} = $nl->get_value('fan_nh3_to_atm');
+       }
+     if ( value_is_true( $nl_flags->{'use_ed'} ) && value_is_true( $nl_flags->{'use_fan'} ) ) {
+        fatal_error("Cannot turn use_fan on when use_ed is on\n" );
+     }
+   }
+}
+
 
 #-------------------------------------------------------------------------------
 
@@ -3387,6 +3434,7 @@ sub write_output_files {
     }
     if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
       push @groups, "clm_humanindex_inparm";
+      push @groups, "fan_nml";
     }
   }
 
@@ -3397,7 +3445,7 @@ sub write_output_files {
 
   # Drydep or MEGAN namelist
   if ($opts->{'drydep'} || $opts->{'megan'} ) {
-    @groups = qw(drydep_inparm megan_emis_nl);
+    @groups = qw(drydep_inparm megan_emis_nl fan_inparm);
     $outfile = "$opts->{'dir'}/drv_flds_in";
     $nl->write($outfile, 'groups'=>\@groups, 'note'=>"$note" );
     verbose_message("Writing @groups namelists to $outfile");
@@ -3746,7 +3794,10 @@ sub validate_options {
               } else {
                  fatal_error("Bad name for use case file = $file");
               }
+	      print "here3\n";
               my $uc_defaults = Build::NamelistDefaults->new("$file", $cfg);
+	      print "done3\n";
+
               printf "%15s = %s\n", $use_case, $uc_defaults->get_value("use_case_desc");
               push @ucases, $use_case;
            }
@@ -4030,6 +4081,7 @@ sub main {
   $nl_flags{'cfgdir'} = dirname(abs_path($0));
 
   my %opts = process_commandline(\%nl_flags);
+  print "FAN: $opts{'fan'}\n";
   my $cfgdir = $nl_flags{'cfgdir'};
   version($nl_flags{'cfgdir'}) if $opts{'version'};
   set_print_level(\%opts);

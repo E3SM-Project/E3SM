@@ -130,7 +130,7 @@ contains
     ! ----------------------------------------------------------------------
 
     ! Time step
-    namelist / clm_inparm/ &
+    namelist /clm_inparm/ &
          dtime
 
     ! CLM namelist settings
@@ -304,6 +304,7 @@ contains
        call shr_nl_find_group_name(unitn, 'clm_inparm', status=ierr)
        if (ierr == 0) then
           read(unitn, clm_inparm, iostat=ierr)
+          print *, 'ierr:', ierr
           if (ierr /= 0) then
              call endrun(msg='ERROR reading clm_inparm namelist'//errMsg(__FILE__, __LINE__))
           end if

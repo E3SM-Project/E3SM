@@ -9,7 +9,7 @@ module clm_driver
   !
   ! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8
-  use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_ed
+  use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_ed, use_fan
   use clm_varpar             , only : nlevtrc_soil, nlevsoi
   use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_ed, use_betr  
   use clm_varctl             , only : use_cn, use_cndv, use_lch4, use_voc, use_noio, use_c13, use_c14
@@ -124,6 +124,8 @@ module clm_driver
   use VegetationType         , only : veg_pp
   use shr_sys_mod            , only : shr_sys_flush
   use shr_log_mod            , only : errMsg => shr_log_errMsg
+
+  use FanStreamMod           , only : fanstream_interp
 
   !----------------------------------------------------------------------------
   ! bgc interface & pflotran:
@@ -404,6 +406,10 @@ contains
 
 #endif
 
+    if (use_fan) then
+       call fanstream_interp(bounds_proc, atm2lnd_vars)
+    end if
+    
     ! ============================================================================
     ! Initialize variables from previous time step, downscale atm forcings, and
     ! Determine canopy interception and precipitation onto ground surface.
@@ -757,7 +763,7 @@ contains
                  canopystate_vars, soilstate_vars, temperature_vars, crop_vars, &
                  dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,&
                  PlantMicKinetics_vars,                                         &
-                 phosphorusflux_vars, phosphorusstate_vars)
+                 phosphorusflux_vars, phosphorusstate_vars,frictionvel_vars)
 
            call CNAnnualUpdate(bounds_clump,            &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
@@ -790,7 +796,7 @@ contains
                        atm2lnd_vars, waterstate_vars, waterflux_vars,                   &
                        canopystate_vars, soilstate_vars, temperature_vars, crop_vars,   &
                        ch4_vars, photosyns_vars,                                        &
-                       phosphorusflux_vars,phosphorusstate_vars)
+                       phosphorusflux_vars,phosphorusstate_vars,frictionvel_vars)
 
              !--------------------------------------------------------------------------------
              if (use_clm_interface) then
