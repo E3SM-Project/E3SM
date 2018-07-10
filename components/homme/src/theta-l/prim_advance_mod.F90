@@ -22,7 +22,6 @@ module prim_advance_mod
   use element_ops,        only: get_cp_star, get_kappa_star, &
     get_temperature, set_theta_ref, state0
   use eos,                only: get_pnh_and_exner,get_dry_phinh,get_dirk_jacobian
-  use hevi_mod,           only: backsubstitution, elemstate_add, mgs, state_save,state_read
   use hybrid_mod,         only: hybrid_t
   use hybvcoord_mod,      only: hvcoord_t
   use kinds,              only: iulog, real_kind
