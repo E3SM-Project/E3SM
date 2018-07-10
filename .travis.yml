@@ -1,7 +1,21 @@
+matrix:
+  include:
+    # works on Precise and Trusty
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-6
+      env:
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+
 language: c++
 compiler: gcc
 
-before_install: sudo apt-get install g++-6
+before_install:
+ - eval "${MATRIX_EVAL}"
 
 git:
   submodules: false
