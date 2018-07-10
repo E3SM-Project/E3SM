@@ -153,6 +153,7 @@ contains
        if (comp(1)%oneletterid == 'g') call seq_infodata_getData(infodata, glc_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'w') call seq_infodata_getData(infodata, wav_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'e') call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'z') call seq_infodata_getData(infodata, iac_present=comp(iac)%present)
 #else
        call seq_infodata_getData(comp(1)%oneletterid, infodata, comp_present=comp(eci)%present)
 #endif
@@ -253,6 +254,7 @@ contains
        if (comp(1)%oneletterid == 'g') call seq_infodata_getData(infodata, glc_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'w') call seq_infodata_getData(infodata, wav_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'e') call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'z') call seq_infodata_getData(infodata, iac_present=comp(eci)%present)
 #else
        call seq_infodata_getData(comp(1)%oneletterid, infodata, comp_present=comp(eci)%present)
 #endif
@@ -650,6 +652,7 @@ contains
        if (comp(1)%oneletterid == 'g') call seq_infodata_putData(infodata, glc_phase=phase)
        if (comp(1)%oneletterid == 'w') call seq_infodata_putData(infodata, wav_phase=phase)
        if (comp(1)%oneletterid == 'e') call seq_infodata_putData(infodata, esp_phase=phase)
+       if (comp(1)%oneletterid == 'z') call seq_infodata_putData(infodata, iac_phase=phase)
 #else
        call seq_infodata_putData(comp(1)%oneletterid, infodata, comp_phase=phase)
 #endif

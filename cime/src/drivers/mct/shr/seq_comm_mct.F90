@@ -65,8 +65,8 @@ module seq_comm_mct
 
   !!! Note - NUM_COMP_INST_XXX are cpp variables set in buildlib.csm_share
 
-  integer, parameter :: ncomptypes = 8  ! total number of component types
-  integer, parameter :: nphysmod   = 7  ! number of physical component types
+  integer, parameter :: ncomptypes = 9  ! total number of component types
+  integer, parameter :: nphysmod   = 8  ! number of physical component types
   integer, parameter :: ncouplers  = 1  ! number of couplers
   integer, parameter, public :: num_inst_atm = NUM_COMP_INST_ATM
   integer, parameter, public :: num_inst_lnd = NUM_COMP_INST_LND
@@ -75,6 +75,7 @@ module seq_comm_mct
   integer, parameter, public :: num_inst_glc = NUM_COMP_INST_GLC
   integer, parameter, public :: num_inst_wav = NUM_COMP_INST_WAV
   integer, parameter, public :: num_inst_rof = NUM_COMP_INST_ROF
+  integer, parameter, public :: num_inst_iac = NUM_COMP_INST_IAC
   integer, parameter, public :: num_inst_esp = NUM_COMP_INST_ESP
 
   integer, parameter, public :: num_inst_total= num_inst_atm + &
@@ -84,6 +85,7 @@ module seq_comm_mct
                                                 num_inst_glc + &
                                                 num_inst_wav + &
                                                 num_inst_rof + &
+                                                num_inst_iac + &
                                                 num_inst_esp + 1
 
   integer, public :: num_inst_min, num_inst_max
@@ -100,11 +102,13 @@ module seq_comm_mct
   integer, parameter, public :: num_inst_phys = num_inst_atm + num_inst_lnd + &
                                                 num_inst_ocn + num_inst_ice + &
                                                 num_inst_glc + num_inst_rof + &
-                                                num_inst_wav + num_inst_esp
+                                                num_inst_wav + num_inst_esp + &
+                                                num_inst_iac
   integer, parameter, public :: num_cpl_phys  = num_inst_atm + num_inst_lnd + &
                                                 num_inst_ocn + num_inst_ice + &
                                                 num_inst_glc + num_inst_rof + &
-                                                num_inst_wav + num_inst_esp
+                                                num_inst_wav + num_inst_esp + &
+                                                num_inst_iac
   integer, parameter :: ncomps = (1 + ncouplers + ncomptypes + nphysmod + num_inst_phys + num_cpl_phys)
 
   integer, public :: GLOID
@@ -117,6 +121,7 @@ module seq_comm_mct
   integer, public :: ALLGLCID
   integer, public :: ALLROFID
   integer, public :: ALLWAVID
+  integer, public :: ALLIACID
   integer, public :: ALLESPID
 
   integer, public :: CPLALLATMID
@@ -126,6 +131,7 @@ module seq_comm_mct
   integer, public :: CPLALLGLCID
   integer, public :: CPLALLROFID
   integer, public :: CPLALLWAVID
+  integer, public :: CPLALLIACID
   integer, public :: CPLALLESPID
 
   integer, public :: ATMID(num_inst_atm)
@@ -135,6 +141,7 @@ module seq_comm_mct
   integer, public :: GLCID(num_inst_glc)
   integer, public :: ROFID(num_inst_rof)
   integer, public :: WAVID(num_inst_wav)
+  integer, public :: IACID(num_inst_iac)
   integer, public :: ESPID(num_inst_esp)
 
   integer, public :: CPLATMID(num_inst_atm)
@@ -144,6 +151,7 @@ module seq_comm_mct
   integer, public :: CPLGLCID(num_inst_glc)
   integer, public :: CPLROFID(num_inst_rof)
   integer, public :: CPLWAVID(num_inst_wav)
+  integer, public :: CPLIACID(num_inst_iac)
   integer, public :: CPLESPID(num_inst_esp)
 
   type(ESMF_LogKind_Flag), public :: esmf_logfile_kind
@@ -187,7 +195,7 @@ module seq_comm_mct
 
   character(len=32), public :: &
        atm_layout, lnd_layout, ice_layout, glc_layout, rof_layout, &
-       ocn_layout, wav_layout, esp_layout
+       ocn_layout, wav_layout, esp_layout, iac_layout
 
   logical :: seq_comm_mct_initialized = .false.  ! whether this module has been initialized
 
@@ -216,7 +224,8 @@ contains
     integer :: mpi_group_world   ! MPI_COMM_WORLD group
     integer :: mype,numpes,myncomps,max_threads,gloroot
     integer :: atm_inst_tasks, lnd_inst_tasks, ocn_inst_tasks, ice_inst_tasks, &
-               glc_inst_tasks, rof_inst_tasks, wav_inst_tasks, esp_inst_tasks
+               glc_inst_tasks, rof_inst_tasks, wav_inst_tasks, esp_inst_tasks, &
+               iac_inst_tasks
     integer :: current_task_rootpe, droot
     integer :: amin(num_inst_atm), amax(num_inst_atm), astr(num_inst_atm)
     integer :: lmin(num_inst_lnd), lmax(num_inst_lnd), lstr(num_inst_lnd)
@@ -225,6 +234,7 @@ contains
     integer :: gmin(num_inst_glc), gmax(num_inst_glc), gstr(num_inst_glc)
     integer :: wmin(num_inst_wav), wmax(num_inst_wav), wstr(num_inst_wav)
     integer :: rmin(num_inst_rof), rmax(num_inst_rof), rstr(num_inst_rof)
+    integer :: zmin(num_inst_iac), zmax(num_inst_iac), zstr(num_inst_iac)
     integer :: emin(num_inst_esp), emax(num_inst_esp), estr(num_inst_esp)
     integer :: cmin,cmax,cstr
     integer :: pelist(3,1)       ! start, stop, stride for group
@@ -241,6 +251,7 @@ contains
          rof_ntasks, rof_rootpe, rof_pestride, rof_nthreads, &
          ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, &
          esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, &
+         iac_ntasks, iac_rootpe, iac_pestride, iac_nthreads, &
          cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads
     character(len=24) :: esmf_logging
 
@@ -253,6 +264,7 @@ contains
          rof_ntasks, rof_rootpe, rof_pestride, rof_nthreads, rof_layout, &
          ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, ocn_layout, &
          esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, esp_layout, &
+         iac_ntasks, iac_rootpe, iac_pestride, iac_nthreads, iac_layout, &
          cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads, esmf_logging
     !----------------------------------------------------------
 
@@ -349,6 +361,12 @@ contains
        wav_nthreads = 1
        wav_layout = trim(layout_concurrent)
 
+       iac_ntasks = numpes
+       iac_rootpe = 0
+       iac_pestride = 1
+       iac_nthreads = 1
+       iac_layout = trim(layout_concurrent)
+
        esp_ntasks = numpes
        esp_rootpe = 0
        esp_pestride = 1
@@ -395,6 +413,7 @@ contains
     num_inst_min = min(num_inst_min, num_inst_glc)
     num_inst_min = min(num_inst_min, num_inst_wav)
     num_inst_min = min(num_inst_min, num_inst_rof)
+    num_inst_min = min(num_inst_min, num_inst_iac)
 ! ESP is currently limited to one instance, should not affect other comps
 !    num_inst_min = min(num_inst_min, num_inst_esp)
     num_inst_max = num_inst_atm
@@ -405,6 +424,7 @@ contains
     num_inst_max = max(num_inst_max, num_inst_wav)
     num_inst_max = max(num_inst_max, num_inst_rof)
     num_inst_max = max(num_inst_max, num_inst_esp)
+    num_inst_max = max(num_inst_max, num_inst_iac)
 
     if (num_inst_min /= num_inst_max .and. num_inst_min /= 1) error_state = .true.
     if (num_inst_atm /= num_inst_min .and. num_inst_atm /= num_inst_max) error_state = .true.
@@ -414,6 +434,7 @@ contains
     if (num_inst_glc /= num_inst_min .and. num_inst_glc /= num_inst_max) error_state = .true.
     if (num_inst_wav /= num_inst_min .and. num_inst_wav /= num_inst_max) error_state = .true.
     if (num_inst_rof /= num_inst_min .and. num_inst_rof /= num_inst_max) error_state = .true.
+    if (num_inst_iac /= num_inst_min .and. num_inst_iac /= num_inst_max) error_state = .true.
     if (num_inst_esp /= 1) then
        write(logunit,*) trim(subname),' ERROR: ESP restricted to one instance'
        error_state = .true.
@@ -448,6 +469,8 @@ contains
     count = count + 1
     ALLWAVID = count
     count = count + 1
+    ALLIACID = count
+    count = count + 1
     ALLESPID = count
 
     count = count + 1
@@ -464,6 +487,8 @@ contains
     CPLALLROFID = count
     count = count + 1
     CPLALLWAVID = count
+    count = count + 1
+    CPLALLIACID = count
     count = count + 1
     CPLALLESPID = count
 
@@ -516,6 +541,13 @@ contains
        CPLWAVID(n) = count
     end do
 
+    do n = 1, num_inst_iac
+       count = count + 1
+       IACID(n) = count
+       count = count + 1
+       CPLIACID(n) = count
+    end do
+
     do n = 1, num_inst_esp
        count = count + 1
        ESPID(n) = count
@@ -540,6 +572,7 @@ contains
        if (glc_rootpe < 0) error_state = .true.
        if (wav_rootpe < 0) error_state = .true.
        if (rof_rootpe < 0) error_state = .true.
+       if (iac_rootpe < 0) error_state = .true.
        if (esp_rootpe < 0) error_state = .true.
        if (cpl_rootpe < 0) error_state = .true.
 
@@ -692,6 +725,26 @@ contains
           current_task_rootpe = current_task_rootpe + droot
        end do
 
+       !! Integrated assessment instance tasks
+
+       if (trim(iac_layout) == trim(layout_concurrent)) then
+          iac_inst_tasks = iac_ntasks / num_inst_iac
+          droot = (iac_inst_tasks * iac_pestride)
+       elseif (trim(iac_layout) == trim(layout_sequential)) then
+          iac_inst_tasks = iac_ntasks
+          droot = 0
+       else
+          call shr_sys_abort(subname//' ERROR invalid iac_layout ')
+       endif
+       current_task_rootpe = iac_rootpe
+       do n = 1, num_inst_iac
+          zmin(n) = current_task_rootpe
+          zmax(n) = current_task_rootpe &
+                    + ((iac_inst_tasks - 1) * iac_pestride)
+          zstr(n) = iac_pestride
+          current_task_rootpe = current_task_rootpe + droot
+       end do
+
        !! External System Processing instance tasks
 
        if (trim(esp_layout) == trim(layout_concurrent)) then
@@ -726,6 +779,7 @@ contains
     call shr_mpi_bcast(glc_nthreads,GLOBAL_COMM,'glc_nthreads')
     call shr_mpi_bcast(wav_nthreads,GLOBAL_COMM,'wav_nthreads')
     call shr_mpi_bcast(rof_nthreads,GLOBAL_COMM,'rof_nthreads')
+    call shr_mpi_bcast(iac_nthreads,GLOBAL_COMM,'iac_nthreads')
     call shr_mpi_bcast(esp_nthreads,GLOBAL_COMM,'esp_nthreads')
     call shr_mpi_bcast(cpl_nthreads,GLOBAL_COMM,'cpl_nthreads')
 
@@ -837,6 +891,19 @@ contains
     end do
     call seq_comm_jcommarr(WAVID,ALLWAVID,'ALLWAVID',1,1)
     call seq_comm_joincomm(CPLID,ALLWAVID,CPLALLWAVID,'CPLALLWAVID',1,1)
+
+    do n = 1, num_inst_iac
+       if (mype == 0) then
+          pelist(1,1) = zmin(n)
+          pelist(2,1) = zmax(n)
+          pelist(3,1) = zstr(n)
+       end if
+       call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, GLOBAL_COMM, ierr)
+       call seq_comm_setcomm(IACID(n), pelist, iac_nthreads, 'IAC', n, num_inst_iac)
+       call seq_comm_joincomm(CPLID, IACID(n), CPLIACID(n), 'CPLIAC', n, num_inst_iac)
+    end do
+    call seq_comm_jcommarr(IACID,ALLIACID,'ALLIACID',1,1)
+    call seq_comm_joincomm(CPLID,ALLIACID,CPLALLIACID,'CPLALLIACID',1,1)
 
     do n = 1, num_inst_esp
        if (mype == 0) then

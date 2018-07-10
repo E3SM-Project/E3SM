@@ -1,3 +1,11 @@
+7/2/18
+
+@Xseq_com_mct.F90 mods are done - mostly cut and paste and mod to iac, IAC,
+  and 'z'.  It mostly is just counting up and assigning indeces to the
+  procs and stuff, so it's all the same for each component.
+
+? Next up is figuring out how to set an iac component type.
+
 6/27/18
 
 * Modifications to seq_infodata_mod.F90:
@@ -22,7 +30,33 @@
 * The final thing is seq_comm_mct.F90, I think, before I'm ready for the
   initial commit.
 
+  (okay, I committed without setting seq_comm_mct.F90.)
+
 ! Need to track down component type.
+
+@Xcomponent_type_mod.F90
+  
+  Trivial!  Just declare the iac(:) type and make sure num_inst_iac is
+  available, plus there was one  public thing.
+
+@Xcomponent_mod.F90
+
+  Also, pretty trivial - some "one letter" stuff to add in 'z' for iac, and
+  that's it.  But, this is where component_run() is, so it's worth looking
+  that function over (and adding a 'z' one-letterism to it).  Also,
+  component_exch() and component_diag(), which are things I need to build
+  hooks for, eventually.
+
+? There is some stuff in component_mod.F90 about "aream", in domains where
+  appropriate.  That includes most of the domains, apparently, but since I
+  don't understand waht it does yet I'ma going to leave out any iac
+  additions there.  But if it's something abouut "area matching", which it
+  might be because there's a lot of "samegrid_xy" stuff, then maybe it
+  makes sense to keep iac on the lnd grid and this is the infrastructure
+  for doing that?
+
+  I should review prep_lnd_get_mapper_Sa2l(), which suggests it's something
+  like mapping state variables from atmos to lnd or something.
 
 6/25/18
 
