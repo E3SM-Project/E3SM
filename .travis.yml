@@ -1,5 +1,7 @@
 language: c++
-compiler: clang
+compiler: gcc
+
+before_install: sudo apt-get install gcc-6
 
 git:
   submodules: false
