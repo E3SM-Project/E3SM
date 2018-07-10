@@ -3,10 +3,7 @@
 namespace Scream {
 namespace Coupler {
 
-int coupler_stub()
-{
-  return 42;
-}
+int coupler_stub() { return 42; }
 
-} // namespace Coupler
-} // namespace Scream
+}  // namespace Coupler
+}  // namespace Scream

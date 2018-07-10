@@ -6,7 +6,7 @@ namespace Coupler {
 
 int coupler_stub();
 
-} // namespace Coupler
-} // namespace Scream
+}  // namespace Coupler
+}  // namespace Scream
 
 #endif
