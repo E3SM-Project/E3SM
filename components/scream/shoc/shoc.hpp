@@ -2,11 +2,11 @@
 #define SCREAM_SHOC_HPP
 
 namespace Scream {
-namespace SHOC {
+namespace Shoc {
 
 int shoc_stub();
 
-} // namespace SHOC
-} // namespace Scream
+}  // namespace Shoc
+}  // namespace Scream
 
 #endif

@@ -9,7 +9,6 @@ ColumnLimit:       80
 Language:                    Cpp
 PointerAlignment:            Right
 DerivePointerAlignment:      false
-IndentPPDirectives:          true
 AlignConsecutiveAssignments: true
 AlignOperands:               true
 AlignTrailingComments:       true

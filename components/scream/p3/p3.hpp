@@ -6,7 +6,7 @@ namespace P3 {
 
 int p3_stub();
 
-} // namespace P3
-} // namespace Scream
+}  // namespace P3
+}  // namespace Scream
 
 #endif
