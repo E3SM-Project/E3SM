@@ -1,3 +1,7 @@
 language: c++
 compiler: gcc
+
+git:
+  submodules: false
+
 script: cmake components/scream && make && make test
