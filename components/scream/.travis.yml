@@ -1,0 +1,6 @@
+language: cpp
+compiler: g++
+
+script:
+  - cmake ./
+  - ctest
