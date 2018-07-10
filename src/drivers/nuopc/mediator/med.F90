@@ -1904,18 +1904,4 @@ contains
 
   !-----------------------------------------------------------------------------
 
-  subroutine med_finalize(gcomp, rc)
-    type(ESMF_GridComp)  :: gcomp
-    integer, intent(out) :: rc
-
-    rc = ESMF_SUCCESS
-    
-    if (mastertask) then
-       write(llogunit,*)' SUCCESSFUL TERMINATION '
-    end if
-
-  end subroutine med_finalize
-
-  !-----------------------------------------------------------------------------
-
 end module MED
