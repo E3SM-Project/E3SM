@@ -1,5 +1,7 @@
 
-file(GLOB SHOC_TEST_SRCS "*.cpp")
+set(SHOC_TEST_SRCS
+  shoc_tests.cpp
+)
 
 add_executable(shoc_tests ${SHOC_TEST_SRCS})
 
