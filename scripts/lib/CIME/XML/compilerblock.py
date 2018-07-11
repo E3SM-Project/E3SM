@@ -188,9 +188,9 @@ class CompilerBlock(object):
         value_text = self._handle_references(elem, set_up,
                                              tear_down, depends)
         # Create the setting object.
-        append = self._db.name(elem) == "append" or (self._db.name(elem) == "base" and self._compiler and self._db.compiler != self._compiler)
+        append = self._db.name(elem) == "append"
         setting = ValueSetting(value_text, append,
-                               conditions, set_up, tear_down, force_no_append=self._db.name(elem) == "base")
+                               conditions, set_up, tear_down)
 
         return (setting, depends)
 
