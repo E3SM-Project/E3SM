@@ -186,7 +186,12 @@ contains
     real(r8) :: ndep_org(3), orgpools(3), tanprod(3), watertend, fluxes(6,3), tanpools3(3), ratm, tandep, &
          fluxes2(6,2), fluxes3(6,3), fluxes4(6,4), tanpools2(2), tanpools4(4), fluxes_tmp(6), garbage_total
     real(r8), parameter :: water_init_grz = 0.005_r8, cnc_nh3_air = 0.0_r8, depth_slurry = 0.005_r8
-    real(r8), parameter :: fract_resist=0.225_r8, fract_unavail=0.025_r8, fract_avail=0.25_r8, fract_tan=0.6_r8
+
+    !real(r8), parameter :: fract_resist=0.225_r8, fract_unavail=0.025_r8, fract_avail=0.25_r8, fract_tan=0.6_r8
+
+    real(r8), parameter :: fract_tan=0.6_r8 ! of all N
+    real(r8), parameter :: fract_resist=0.45_r8, fract_unavail=0.05_r8, fract_avail=0.5_r8 ! of organic N
+
     real(r8), parameter :: dz_layer_fert = 0.02_r8, dz_layer_grz = 0.02_r8
     !real(r8), parameter :: fract_resist=0._r8, fract_unavail=0._r8, fract_avail=0._r8, fract_tan=1.0_r8
 
@@ -217,7 +222,7 @@ contains
     soilph_max = -999
     def_ph_count = 0
     do_balance_checks = mod(get_nstep(), balance_check_freq) == 0
-
+    
     associate(&
          ngrz => nitrogenflux_vars%man_n_grz_col, &
          man_u_grz => nitrogenstate_vars%man_u_grz_col, &
@@ -279,7 +284,8 @@ contains
        end if
 
     end do
-
+    !ngrz = 0
+    
     if(debug_fan) then
        write(iulog, *) 'nan count of storage 1', count(isnan(ns%man_n_stored_col))
        if (any(isnan(nf%man_n_appl_col))) then
@@ -296,7 +302,7 @@ contains
          nf%man_n_transf_col, ns%fan_grz_fract_col, &
          fract_tan, &
          filter_soilc, num_soilc)
-
+    
     if (debug_fan) then
        if (any(isnan(nf%nh3_stores_col))) then
           call endrun('nan nh3 stores')
@@ -371,13 +377,17 @@ contains
        evap_m_s = waterflux_vars%qflx_evap_grnd_col(c) * 1e-3
        runoff_m_s = max(waterflux_vars%qflx_runoff_col(c), 0.0) * 1e-3
 
+       !!
+       runoff_m_s = 0
+       !!
+       
        !
        ! grazing
        !
 
-       ndep_org(ind_avail) = ngrz(c) * fract_avail
-       ndep_org(ind_resist) = ngrz(c) * fract_resist
-       ndep_org(ind_unavail) = ngrz(c) * fract_unavail
+       ndep_org(ind_avail) = ngrz(c) * (1.0_r8-fract_tan) * fract_avail
+       ndep_org(ind_resist) = ngrz(c) * (1.0_r8-fract_tan) * fract_resist
+       ndep_org(ind_unavail) = ngrz(c) * (1.0_r8-fract_tan) * fract_unavail
        tandep = ngrz(c) * fract_tan
 
        orgpools(ind_avail) = man_a_grz(c)
@@ -449,9 +459,9 @@ contains
        ! Use the the same fractionation of organic N as for grazing, after removing the
        ! "explicitly" calculated TAN.
        if (1-fract_tan > 1e-6) then
-          ndep_org(ind_avail) = org_n_tot * fract_avail / (1-fract_tan)
-          ndep_org(ind_resist) = org_n_tot * fract_resist / (1-fract_tan)
-          ndep_org(ind_unavail) = org_n_tot * fract_unavail / (1-fract_tan)
+          ndep_org(ind_avail) = org_n_tot * fract_avail! / (1-fract_tan)
+          ndep_org(ind_resist) = org_n_tot * fract_resist! / (1-fract_tan)
+          ndep_org(ind_unavail) = org_n_tot * fract_unavail! / (1-fract_tan)
        else
           ndep_org = 0.0
        end if
@@ -492,7 +502,12 @@ contains
                poolranges_slr, tanpools4, Hconc_slr, fluxes4(1:5,:), garbage, dt / num_substeps, status)
           if (status /= 0) then
              write(iulog, *) 'status = ', status, tanpools4, tg, ratm, 'th', theta, &
-                  thetasat, tandep, 'tp', tanprod, 'fx', fluxes4
+                  thetasat, tandep, 'tp', tanprod, 'fx', fluxes4(1:5,:), 'roff', runoff_m_s
+             write(iulog, *) fluxes4(1:5,1)
+             write(iulog, *) fluxes4(1:5,2)
+             write(iulog, *) fluxes4(1:5,3)
+             write(iulog, *) fluxes4(1:5,4)
+             
              call endrun(msg='update_3pool status /= 0')
           end if
           fluxes_tmp = fluxes_tmp + sum(fluxes4, dim=2)
@@ -645,11 +660,11 @@ real(r8) function get_total_n(ns, nf, which) result(total)
      total = total - sum(nf%nh3_barns_col(soilc)) - sum(nf%man_n_transf_col(soilc))
 
   case('pools_manure')
-     total = total + sum(ns%tan_g1_col(soilc)) + sum(ns%tan_g2_col(soilc)) 
+     total = total + sum(ns%tan_g1_col(soilc)) + sum(ns%tan_g2_col(soilc)) + sum(ns%tan_g3_col(soilc)) 
      total = total + sum(ns%man_u_grz_col(soilc)) &
           + sum(ns%man_a_grz_col(soilc)) + sum(ns%man_r_grz_col(soilc))
      total = total + sum(ns%tan_s0_col(soilc)) &
-          + sum(ns%tan_s1_col(soilc)) + sum(ns%tan_s2_col(soilc))
+          + sum(ns%tan_s1_col(soilc)) + sum(ns%tan_s2_col(soilc)) + sum(ns%tan_s3_col(soilc))
      total = total + sum(ns%man_u_app_col(soilc)) &
           + sum(ns%man_a_app_col(soilc)) + sum(ns%man_r_app_col(soilc))
 
