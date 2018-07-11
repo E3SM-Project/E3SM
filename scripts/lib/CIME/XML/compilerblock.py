@@ -208,8 +208,7 @@ class CompilerBlock(object):
             value_lists[name] = PossibleValues(name, setting,
                                                self._specificity, depends)
         else:
-            specificity = 0 if len(elem.xml_element.attrib) else self._specificity
-            value_lists[name].add_setting(setting, specificity,depends)
+            value_lists[name].add_setting(setting, self._specificity,depends)
 
     def add_settings_to_lists(self, flag_vars, value_lists):
         """Add all data in the <compiler> element to lists of settings.
