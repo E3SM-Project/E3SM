@@ -39,7 +39,7 @@ module controlMod
   use SurfaceAlbedoMod        , only: albice, lake_melt_icealb
   use UrbanParamsType         , only: urban_hac, urban_traffic
   use clm_varcon              , only: h2osno_max
-  use clm_varctl              , only: use_dynroot
+  use clm_varctl              , only: use_dynroot, use_fan
   use CNAllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
   use clm_varctl              , only: nu_com, use_var_soil_thick
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
@@ -265,6 +265,9 @@ contains
     namelist /clm_inparm/ &
          use_petsc_thermal_model
 
+    namelist /clm_inparm/ &
+         use_fan
+    
     ! ----------------------------------------------------------------------
     ! Default values
     ! ----------------------------------------------------------------------
@@ -585,6 +588,8 @@ contains
     call mpi_bcast (use_vancouver, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_mexicocity, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_noio, 1, MPI_LOGICAL, 0, mpicom, ier)
+
+    call mpi_bcast (use_fan, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! initial file variables
     call mpi_bcast (nrevsn, len(nrevsn), MPI_CHARACTER, 0, mpicom, ier)
