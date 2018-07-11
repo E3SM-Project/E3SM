@@ -23,15 +23,17 @@ def parse_command_line(args, cimeroot, description):
     except:
         cime_config = None
 
-    parser.add_argument("--case", "-case", required=True,
+    parser.add_argument("--case", "-case", required=True, metavar="CASENAME",
                         help="(required) Specify the case name. "
-                        "\nIf not a full pathname, then the case is created under then current working directory.")
+                        "\nIf this is simply a name (not a path), the case directory is created in the current working directory."
+                        "\nThis can also be a relative or absolute path specifying where the case should be created;"
+                        "\nwith this usage, the name of the case will be the last component of the path.")
 
     parser.add_argument("--compset", "-compset", required=True,
                         help="(required) Specify a compset. "
                         "\nTo see list of current compsets, use the utility ./query_config --compsets in this directory.\n")
 
-    parser.add_argument("--res", "-res", required=True,
+    parser.add_argument("--res", "-res", required=True, metavar="GRID",
                         help="(required) Specify a model grid resolution. "
                         "\nTo see list of current model resolutions, use the utility "
                         "\n./query_config --grids in this directory.")
