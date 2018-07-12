@@ -188,9 +188,9 @@ class CompilerBlock(object):
         value_text = self._handle_references(elem, set_up,
                                              tear_down, depends)
         # Create the setting object.
-        append = self._db.name(elem) == "append" or (self._db.name(elem) == "base" and self._compiler and self._db.compiler != self._compiler)
+        append = self._db.name(elem) == "append"
         setting = ValueSetting(value_text, append,
-                               conditions, set_up, tear_down, force_no_append=self._db.name(elem) == "base")
+                               conditions, set_up, tear_down)
 
         return (setting, depends)
 
@@ -208,8 +208,7 @@ class CompilerBlock(object):
             value_lists[name] = PossibleValues(name, setting,
                                                self._specificity, depends)
         else:
-            specificity = 0 if len(elem.xml_element.attrib) else self._specificity
-            value_lists[name].add_setting(setting, specificity,depends)
+            value_lists[name].add_setting(setting, self._specificity,depends)
 
     def add_settings_to_lists(self, flag_vars, value_lists):
         """Add all data in the <compiler> element to lists of settings.

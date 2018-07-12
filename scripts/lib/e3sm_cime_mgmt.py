@@ -143,10 +143,10 @@ def handle_easy_conflicts(is_merge):
     return rv
 
 ###############################################################################
-def handle_conflicts(is_merge=False):
+def handle_conflicts(is_merge=False, auto_conf=False):
 ###############################################################################
     logging.info("There are conflicts, analyzing...")
-    remaining_conflicts = handle_easy_conflicts(is_merge)
+    remaining_conflicts = handle_easy_conflicts(is_merge) if auto_conf else True
     if remaining_conflicts:
         expect(False, "There are merge conflicts. Please fix, commit, and re-run this tool with --resume")
     else:
@@ -154,12 +154,12 @@ def handle_conflicts(is_merge=False):
         run_cmd_no_fail("git commit --no-edit")
 
 ###############################################################################
-def do_subtree_pull(squash=False):
+def do_subtree_pull(squash=False, auto_conf=False):
 ###############################################################################
     stat = run_cmd("git subtree pull {} --prefix=cime {} master".format("--squash" if squash else "", ESMCI_REMOTE_NAME),
                    verbose=True)[0]
     if stat != 0:
-        handle_conflicts(is_merge=True)
+        handle_conflicts(is_merge=True, auto_conf=auto_conf)
 
 ###############################################################################
 def make_pr_branch(branch, branch_head):
@@ -169,12 +169,12 @@ def make_pr_branch(branch, branch_head):
     return branch
 
 ###############################################################################
-def merge_branch(branch, squash=False):
+def merge_branch(branch, squash=False, auto_conf=False):
 ###############################################################################
     stat = run_cmd("git merge {} -m 'Merge {}' -X rename-threshold=25 {}".format("--squash" if squash else "", branch, branch),
                    verbose=True)[0]
     if stat != 0:
-        handle_conflicts()
+        handle_conflicts(auto_conf=auto_conf)
 
 ###############################################################################
 def delete_tag(tag, remote="origin"):
@@ -183,7 +183,7 @@ def delete_tag(tag, remote="origin"):
     run_cmd_no_fail("git push {} :refs/tags/{}".format(remote, tag), verbose=True)
 
 ###############################################################################
-def e3sm_cime_split(resume, squash=False):
+def e3sm_cime_split(resume, squash=False, auto_conf=False):
 ###############################################################################
     if not resume:
         setup()
@@ -205,7 +205,7 @@ def e3sm_cime_split(resume, squash=False):
             raise
 
         # upstream merge, potential conflicts
-        merge_branch("{}/master".format(ESMCI_REMOTE_NAME), squash=squash)
+        merge_branch("{}/master".format(ESMCI_REMOTE_NAME), squash=squash, auto_conf=auto_conf)
 
     else:
         old_split_tag, new_split_tag = get_split_tag(expected_num=2)
@@ -215,7 +215,7 @@ def e3sm_cime_split(resume, squash=False):
     run_cmd_no_fail("git push -u {} {}".format(ESMCI_REMOTE_NAME, pr_branch), verbose=True)
 
 ###############################################################################
-def e3sm_cime_merge(resume, squash=False):
+def e3sm_cime_merge(resume, squash=False, auto_conf=False):
 ###############################################################################
     if not resume:
         setup()
@@ -232,7 +232,7 @@ def e3sm_cime_merge(resume, squash=False):
             raise
 
         # potential conflicts
-        do_subtree_pull(squash=squash)
+        do_subtree_pull(squash=squash, auto_conf=auto_conf)
 
     else:
         old_merge_tag, new_merge_tag = get_merge_tag(expected_num=2)
