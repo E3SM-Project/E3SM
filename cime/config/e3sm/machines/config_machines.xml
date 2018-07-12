@@ -169,12 +169,12 @@
       <command name="rm">cray-netcdf-hdf5parallel</command>
       <command name="rm">cray-hdf5-parallel</command>
       <command name="rm">cray-parallel-netcdf</command>
+      <command name="load">cray-netcdf/4.4.1.1.6</command>
       <command name="load">cray-hdf5/1.10.1.1</command>
-      <command name="load">cray-netcdf/4.4.1.1.3</command>
     </modules>
     <modules mpilib="!mpi-serial">
       <command name="rm">cray-netcdf-hdf5parallel</command>
-      <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.3</command>
+      <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.6</command>
       <command name="load">cray-hdf5-parallel/1.10.1.1</command>
       <command name="load">cray-parallel-netcdf/1.8.1.3</command>
     </modules>
@@ -189,7 +189,8 @@
     <env name="OMP_PROC_BIND">spread</env>
     <env name="OMP_PLACES">threads</env>
 
-    <env name="HDF5_DISABLE_VERSION_CHECK">2</env>
+    <!--env name="HDF5_DISABLE_VERSION_CHECK">2</env-->
+    <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
   </environment_variables>
   <environment_variables compiler="intel">
     <env name="FORT_BUFFERED">yes</env>
@@ -304,13 +305,13 @@
       <command name="rm">cray-netcdf-hdf5parallel</command>
       <command name="rm">cray-hdf5-parallel</command>
       <command name="rm">cray-parallel-netcdf</command>
-      <command name="load">cray-hdf5/1.10.0.3</command>
-      <command name="load">cray-netcdf/4.4.1.1.3</command>
+      <command name="load">cray-netcdf/4.4.1.1.6</command>
+      <command name="load">cray-hdf5/1.10.1.1</command>
     </modules>
     <modules mpilib="!mpi-serial">
       <command name="rm">cray-netcdf-hdf5parallel</command>
-      <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.3</command>
-      <command name="load">cray-hdf5-parallel/1.10.0.3</command>
+      <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.6</command>
+      <command name="load">cray-hdf5-parallel/1.10.1.1</command>
       <command name="load">cray-parallel-netcdf/1.8.1.3</command>
     </modules>
 
@@ -326,11 +327,12 @@
 
     <env name="MPICH_ENV_DISPLAY">1</env>
     <env name="MPICH_VERSION_DISPLAY">1</env>
-    <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
+    <env name="MPICH_CPUMASK_DISPLAY">1</env>
 
     <env name="OMP_STACKSIZE">128M</env>
     <env name="OMP_PROC_BIND">spread</env>
     <env name="OMP_PLACES">threads</env>
+    <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
   </environment_variables>
   <environment_variables compiler="intel">
     <env name="FORT_BUFFERED">yes</env>
@@ -458,13 +460,13 @@
       <command name="rm">cray-netcdf-hdf5parallel</command>
       <command name="rm">cray-hdf5-parallel</command>
       <command name="rm">cray-parallel-netcdf</command>
-      <command name="load">cray-hdf5/1.10.0.3</command>
-      <command name="load">cray-netcdf/4.4.1.1.3</command>
+      <command name="load">cray-netcdf/4.4.1.1.6</command>
+      <command name="load">cray-hdf5/1.10.1.1</command>
     </modules>
     <modules mpilib="!mpi-serial">
       <command name="rm">cray-netcdf-hdf5parallel</command>
-      <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.3</command>
-      <command name="load">cray-hdf5-parallel/1.10.0.3</command>
+      <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.6</command>
+      <command name="load">cray-hdf5-parallel/1.10.1.1</command>
       <command name="load">cray-parallel-netcdf/1.8.1.3</command>
     </modules>
     <modules>
@@ -481,11 +483,12 @@
   <environment_variables>
     <env name="MPICH_ENV_DISPLAY">1</env>
     <env name="MPICH_VERSION_DISPLAY">1</env>
-    <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
+    <env name="MPICH_CPUMASK_DISPLAY">1</env>
 
     <env name="OMP_STACKSIZE">128M</env>
     <env name="OMP_PROC_BIND">spread</env>
     <env name="OMP_PLACES">threads</env>
+    <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
   </environment_variables>
 
   <environment_variables mpilib="mpt">

@@ -2542,14 +2542,14 @@ class H_TestMakeMacros(unittest.TestCase):
         tester = self.xml_to_tester(xml1+xml2)
         tester.assert_variable_matches("FFLAGS", "^(-delicious -cake|-cake -delicious)$")
 
-    def test_machine_specific_base_over_append_flags(self):
-        """Test that machine-specific base flags override default append flags."""
+    def test_machine_specific_base_keeps_append_flags(self):
+        """Test that machine-specific base flags don't override default append flags."""
         xml1 = """<compiler><FFLAGS><append>-delicious</append></FFLAGS></compiler>"""
         xml2 = """<compiler MACH="{}"><FFLAGS><base>-cake</base></FFLAGS></compiler>""".format(self.test_machine)
         tester = self.xml_to_tester(xml1+xml2)
-        tester.assert_variable_equals("FFLAGS", "-cake")
+        tester.assert_variable_equals("FFLAGS", "-cake -delicious")
         tester = self.xml_to_tester(xml2+xml1)
-        tester.assert_variable_equals("FFLAGS", "-cake")
+        tester.assert_variable_equals("FFLAGS", "-cake -delicious")
 
     def test_machine_specific_base_and_append_flags(self):
         """Test that machine-specific base flags coexist with machine-specific append flags."""
@@ -2639,28 +2639,139 @@ class H_TestMakeMacros(unittest.TestCase):
         with assertRaisesRegex(self,SystemExit, err_msg):
             self.xml_to_tester(xml1+xml2+xml3)
 
-    def test_conditional_override(self):
-        """Test that conditional overrides work correctly"""
+    def test_override_with_machine_and_new_attributes(self):
+        """Test that overrides with machine-specific settings with added attributes work correctly."""
         xml1 = """
 <compiler COMPILER="{}">
   <SCC>icc</SCC>
   <MPICXX>mpicxx</MPICXX>
   <MPIFC>mpif90</MPIFC>
   <MPICC>mpicc</MPICC>
-</compiler>
+</compiler>""".format(self.test_compiler)
+        xml2 = """
 <compiler COMPILER="{}" MACH="{}">
   <MPICXX>mpifoo</MPICXX>
   <MPIFC MPILIB="{}">mpiffoo</MPIFC>
   <MPICC MPILIB="NOT_MY_MPI">mpifouc</MPICC>
 </compiler>
-""".format(self.test_compiler, self.test_compiler, self.test_machine, self.test_mpilib)
+""".format(self.test_compiler, self.test_machine, self.test_mpilib)
 
-        tester = self.xml_to_tester(xml1)
+        tester = self.xml_to_tester(xml1+xml2)
 
         tester.assert_variable_equals("SCC", "icc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
         tester.assert_variable_equals("MPICXX", "mpifoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
         tester.assert_variable_equals("MPIFC", "mpiffoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
         tester.assert_variable_equals("MPICC", "mpicc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+
+        tester = self.xml_to_tester(xml2+xml1)
+
+        tester.assert_variable_equals("SCC", "icc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPICXX", "mpifoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPIFC", "mpiffoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPICC", "mpicc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+
+    def test_override_with_machine_and_same_attributes(self):
+        """Test that machine-specific conditional overrides with the same attribute work correctly."""
+        xml1 = """
+<compiler COMPILER="{}">
+  <MPIFC MPILIB="{}">mpifc</MPIFC>
+</compiler>""".format(self.test_compiler, self.test_mpilib)
+        xml2 = """
+<compiler MACH="{}" COMPILER="{}">
+  <MPIFC MPILIB="{}">mpif90</MPIFC>
+</compiler>
+""".format(self.test_machine, self.test_compiler, self.test_mpilib)
+
+        tester = self.xml_to_tester(xml1+xml2)
+
+        tester.assert_variable_equals("MPIFC", "mpif90", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+
+        tester = self.xml_to_tester(xml2+xml1)
+
+        tester.assert_variable_equals("MPIFC", "mpif90", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+
+    def test_appends_not_overriden(self):
+        """Test that machine-specific base value changes don't interfere with appends."""
+        xml1="""
+<compiler COMPILER="{}">
+ <FFLAGS>
+   <base>-base1</base>
+   <append DEBUG="FALSE">-debug1</append>
+ </FFLAGS>
+</compiler>""".format(self.test_compiler)
+
+        xml2="""
+<compiler MACH="{}" COMPILER="{}">
+ <FFLAGS>
+   <base>-base2</base>
+   <append DEBUG="TRUE">-debug2</append>
+ </FFLAGS>
+</compiler>""".format(self.test_machine, self.test_compiler)
+
+        tester = self.xml_to_tester(xml1+xml2)
+
+        tester.assert_variable_equals("FFLAGS", "-base2", env={"COMPILER": self.test_compiler})
+        tester.assert_variable_equals("FFLAGS", "-base2 -debug2", env={"COMPILER": self.test_compiler, "DEBUG": "TRUE"})
+        tester.assert_variable_equals("FFLAGS", "-base2 -debug1", env={"COMPILER": self.test_compiler, "DEBUG": "FALSE"})
+
+        tester = self.xml_to_tester(xml2+xml1)
+
+        tester.assert_variable_equals("FFLAGS", "-base2", env={"COMPILER": self.test_compiler})
+        tester.assert_variable_equals("FFLAGS", "-base2 -debug2", env={"COMPILER": self.test_compiler, "DEBUG": "TRUE"})
+        tester.assert_variable_equals("FFLAGS", "-base2 -debug1", env={"COMPILER": self.test_compiler, "DEBUG": "FALSE"})
+
+    def test_multilevel_specificity(self):
+        """Check that settings with multiple levels of machine-specificity can be resolved."""
+        xml1="""
+<compiler>
+ <MPIFC DEBUG="FALSE">mpifc</MPIFC>
+</compiler>"""
+
+        xml2="""
+<compiler OS="{}">
+ <MPIFC MPILIB="{}">mpif03</MPIFC>
+</compiler>""".format(self.test_os, self.test_mpilib)
+
+        xml3="""
+<compiler MACH="{}">
+ <MPIFC DEBUG="TRUE">mpif90</MPIFC>
+</compiler>""".format(self.test_machine)
+
+        # To verify order-independence, test every possible ordering of blocks.
+        testers = []
+        testers.append(self.xml_to_tester(xml1+xml2+xml3))
+        testers.append(self.xml_to_tester(xml1+xml3+xml2))
+        testers.append(self.xml_to_tester(xml2+xml1+xml3))
+        testers.append(self.xml_to_tester(xml2+xml3+xml1))
+        testers.append(self.xml_to_tester(xml3+xml1+xml2))
+        testers.append(self.xml_to_tester(xml3+xml2+xml1))
+
+        for tester in testers:
+            tester.assert_variable_equals("MPIFC", "mpif90", env={"COMPILER": self.test_compiler, "MPILIB": self.test_mpilib, "DEBUG": "TRUE"})
+            tester.assert_variable_equals("MPIFC", "mpif03", env={"COMPILER": self.test_compiler, "MPILIB": self.test_mpilib, "DEBUG": "FALSE"})
+            tester.assert_variable_equals("MPIFC", "mpifc", env={"COMPILER": self.test_compiler, "MPILIB": "NON_MATCHING_MPI", "DEBUG": "FALSE"})
+
+    def test_remove_dependency_issues(self):
+        """Check that overridden settings don't cause inter-variable dependencies."""
+        xml1="""
+<compiler>
+ <MPIFC>${SFC}</MPIFC>
+</compiler>"""
+
+        xml2="""
+<compiler MACH="{}">""".format(self.test_machine) + """
+ <SFC>${MPIFC}</SFC>
+ <MPIFC>mpif90</MPIFC>
+</compiler>"""
+
+        tester = self.xml_to_tester(xml1+xml2)
+        tester.assert_variable_equals("SFC", "mpif90")
+        tester.assert_variable_equals("MPIFC", "mpif90")
+
+        tester = self.xml_to_tester(xml2+xml1)
+        tester.assert_variable_equals("SFC", "mpif90")
+        tester.assert_variable_equals("MPIFC", "mpif90")
+
 
 ###############################################################################
 class I_TestCMakeMacros(H_TestMakeMacros):
