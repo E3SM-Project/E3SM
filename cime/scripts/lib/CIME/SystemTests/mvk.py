@@ -10,6 +10,7 @@ import subprocess
 import importlib
 import shutil
 import stat
+import json
 
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
@@ -173,27 +174,45 @@ class MVK(SystemTestsCommon):
                                     os.path.join(basegen_dir, baselog))
 
 
-    # def _compare_baseline(self):
-    #     logger.info('MVK:CMPR: {}'.format(self._case.get_value("COMPARE_BASELINE")))
-    #     logger.info('MVK:CMPR: {}'.format(type(self._case.get_value("COMPARE_BASELINE"))))
-    #
-    #     run_dir = self._case.get_value("RUNDIR")
-    #     case_name = self._case.get_value("CASE")
-    #     basegen_case = self._case.get_value("BASEGEN_CASE")
-    #     basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
-    #
-    #     eve_config = {
-    #         "MVK_{}".format(case_name): {
-    #             "module": os.path.join(eve_lib_dir, "extensions/ks.py"),
-    #             "case1": case_name,
-    #             "dir1": run_dir,
-    #             "case2": basegen_case,
-    #             "dir2": basegen_dir,
-    #             "ninst": ninst,
-    #             "critical": 13
-    #         }
-    #     }
-    #     logger.info('MVK:EVECONFIG: {}'.format(eve_config))
-    #
-    #     with self._test_status:
-    #         self._test_status.set_status(CIME.test_status.BASELINE_PHASE, CIME.test_status.TEST_PASS_STATUS)
+    def _compare_baseline(self):
+        with self._test_status:
+            resubmit = int(self._case.get_value("RESUBMIT"))
+            logger.info('MVK:CMPR: Resubmits: {}'.format(resubmit))
+            if resubmit > 0:
+                # This is here because the comparison is run for each submission
+                # and we only want to compare once the whole run is finished. We
+                # need to return a pass here to continue the submission process.
+                self._test_status.set_status(CIME.test_status.BASELINE_PHASE, CIME.test_status.TEST_PASS_STATUS)
+                return
+
+            # logger.info('MVK:CMPR: Compare basline? {}'.format(self._case.get_value("COMPARE_BASELINE")))
+            #              MVK:CMPR: Compare basline? True
+            # logger.info('MVK:CMPR: Baseline root: {}'.format(self._case.get_value("BASELINE_ROOT")))
+            #              MVK:CMPR: Baseline root: /lustre/atlas/proj-shared/cli106/kennedy/baselines
+            # logger.info('MVK:CMPR: Baseline comparison name: {}'.format(self._case.get_value("BASECMP_CASE")))
+            #              MVK:CMPR: Baseline comparison name: jhkennedy/cime/mvk/MVK_PL.ne4_oQU240.FC5AV1C-04P2.titan_pgi
+
+            run_dir = self._case.get_value("RUNDIR")
+            case_name = self._case.get_value("CASE")
+            basecmp_case = self._case.get_value("BASECMP_CASE")
+            base_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), basecmp_case)
+            base_name = os.path.basename(basecmp_case)
+
+            eve_config = {
+                "{}".format(case_name.split('.')[-1]): {
+                    "module": os.path.join(eve_lib_dir, "extensions/ks.py"),
+                    "case1": case_name,
+                    "dir1": run_dir,
+                    "case2": base_name,
+                    "dir2": base_dir,
+                    "ninst": ninst,
+                    "critical": 13
+                }
+            }
+
+            with open(os.path.join(run_dir, '.'.join([case_name,'json'])), 'w') as config_file:
+                json.dump(eve_config, config_file, indent=4)
+
+        self._test_status.set_status(CIME.test_status.BASELINE_PHASE, CIME.test_status.TEST_PASS_STATUS)
+
+
