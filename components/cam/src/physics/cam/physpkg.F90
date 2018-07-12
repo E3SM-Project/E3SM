@@ -713,7 +713,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use sslt_rebin,         only: sslt_rebin_init
     use tropopause,         only: tropopause_init
     use solar_data,         only: solar_data_init
-    use rad_solar_var,      only: rad_solar_var_init
     use nudging,            only: Nudge_Model,nudging_init
     use output_aerocom_aie, only: output_aerocom_aie_init, do_aerocom_ind3
 
@@ -835,8 +834,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call tsinti(tmelt, latvap, rair, stebol, latice)
 
     call radiation_init(phys_state)
-
-    call rad_solar_var_init()
 
     call cloud_diagnostics_init()
 

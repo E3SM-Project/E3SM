@@ -47,7 +47,9 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
                     qrs      ,qrsc       ,fsnt         ,fsntc        ,fsntoa,fsutoa, &
                     fsntoac  ,fsnirtoa   ,fsnrtoac     ,fsnrtoaq     ,fsns    , &
                     fsnsc    ,fsdsc      ,fsds         ,sols         ,soll    , &
-                    solsd    ,solld      ,fns          ,fcns         , &
+                    solsd    ,solld      , &
+                    fus      ,fds        ,fns          ,               &
+                    fusc     ,fdsc       ,fnsc         ,               &
                     Nday     ,Nnite      ,IdxDay       ,IdxNite      ,clm_rand_seed, &
                     su       ,sd         ,                             &
                     E_cld_tau, E_cld_tau_w, E_cld_tau_w_g, E_cld_tau_w_f,  &
@@ -156,8 +158,12 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    real(r8), intent(out) :: fsnrtoac(pcols)  ! Clear sky near-IR flux absorbed at toa
    real(r8), intent(out) :: fsnrtoaq(pcols)  ! Net near-IR flux at toa >= 0.7 microns
 
+   real(r8), intent(out) :: fus(pcols,pverp)   ! Upwelling flux at interfaces
+   real(r8), intent(out) :: fusc(pcols,pverp)  ! Upwelling clear-sky flux at interfaces
+   real(r8), intent(out) :: fds(pcols,pverp)   ! Downwelling flux at interfaces
+   real(r8), intent(out) :: fdsc(pcols,pverp)  ! Downwelling clear-sky flux at interfaces
    real(r8), intent(out) :: fns(pcols,pverp)   ! net flux at interfaces
-   real(r8), intent(out) :: fcns(pcols,pverp)  ! net clear-sky flux at interfaces
+   real(r8), intent(out) :: fnsc(pcols,pverp)  ! net clear-sky flux at interfaces
 
    real(r8), pointer, dimension(:,:,:) :: su ! shortwave spectral flux up
    real(r8), pointer, dimension(:,:,:) :: sd ! shortwave spectral flux down
@@ -262,12 +268,6 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    real(r8) :: ga(pcols,0:pver) ! aerosol assymetry parameter
    real(r8) :: fa(pcols,0:pver) ! aerosol forward scattered fraction
 
-   ! CRM
-   real(r8) :: fus(pcols,pverp)   ! Upward flux (added for CRM)
-   real(r8) :: fds(pcols,pverp)   ! Downward flux (added for CRM)
-   real(r8) :: fusc(pcols,pverp)  ! Upward clear-sky flux (added for CRM)
-   real(r8) :: fdsc(pcols,pverp)  ! Downward clear-sky flux (added for CRM)
-
    integer :: kk
 
    real(r8) :: pmidmb(pcols,rrtmg_levs)   ! Level pressure (hPa)
@@ -307,13 +307,11 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    qrs (1:ncol,1:pver) = 0.0_r8
    qrsc(1:ncol,1:pver) = 0.0_r8
    fns(1:ncol,1:pverp) = 0.0_r8
-   fcns(1:ncol,1:pverp) = 0.0_r8
-   if (single_column.and.scm_crm_mode) then 
-      fus(1:ncol,1:pverp) = 0.0_r8
-      fds(1:ncol,1:pverp) = 0.0_r8
-      fusc(:ncol,:pverp) = 0.0_r8
-      fdsc(:ncol,:pverp) = 0.0_r8
-   endif
+   fnsc(1:ncol,1:pverp) = 0.0_r8
+   fus(1:ncol,1:pverp) = 0.0_r8
+   fds(1:ncol,1:pverp) = 0.0_r8
+   fusc(:ncol,:pverp) = 0.0_r8
+   fdsc(:ncol,:pverp) = 0.0_r8
 
    if (associated(su)) su(1:ncol,:,:) = 0.0_r8
    if (associated(sd)) sd(1:ncol,:,:) = 0.0_r8
@@ -586,7 +584,7 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
 
    ! Set the net, up and down fluxes at model interfaces
    fns (1:Nday,pverp-rrtmg_levs+1:pverp) =  swdflx(1:Nday,rrtmg_levs:1:-1) -  swuflx(1:Nday,rrtmg_levs:1:-1)
-   fcns(1:Nday,pverp-rrtmg_levs+1:pverp) = swdflxc(1:Nday,rrtmg_levs:1:-1) - swuflxc(1:Nday,rrtmg_levs:1:-1)
+   fnsc(1:Nday,pverp-rrtmg_levs+1:pverp) = swdflxc(1:Nday,rrtmg_levs:1:-1) - swuflxc(1:Nday,rrtmg_levs:1:-1)
    fus (1:Nday,pverp-rrtmg_levs+1:pverp) =  swuflx(1:Nday,rrtmg_levs:1:-1)
    fusc(1:Nday,pverp-rrtmg_levs+1:pverp) = swuflxc(1:Nday,rrtmg_levs:1:-1)
    fds (1:Nday,pverp-rrtmg_levs+1:pverp) =  swdflx(1:Nday,rrtmg_levs:1:-1)
@@ -619,7 +617,11 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    call ExpDayNite(qrs,		Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pver)
    call ExpDayNite(qrsc,	Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pver)
    call ExpDayNite(fns,		Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
-   call ExpDayNite(fcns,	Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
+   call ExpDayNite(fnsc,	Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
+   call ExpDayNite(fus,    Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
+   call ExpDayNite(fds,    Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
+   call ExpDayNite(fusc,   Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
+   call ExpDayNite(fdsc,   Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
    call ExpDayNite(fsns,	Nday, IdxDay, Nnite, IdxNite, 1, pcols)
    call ExpDayNite(fsnt,	Nday, IdxDay, Nnite, IdxNite, 1, pcols)
    call ExpDayNite(fsntoa,	Nday, IdxDay, Nnite, IdxNite, 1, pcols)
@@ -647,19 +649,6 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    if (associated(sd)) then
       call ExpDayNite(sd,	Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp, 1, nbndsw)
    end if
-
-   !  these outfld calls don't work for spmd only outfield in scm mode (nonspmd)
-   if (single_column .and. scm_crm_mode) then 
-      ! Following outputs added for CRM
-      call ExpDayNite(fus,Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
-      call ExpDayNite(fds,Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
-      call ExpDayNite(fusc,Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
-      call ExpDayNite(fdsc,Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
-      call outfld('FUS     ',fus * 1.e-3_r8 ,pcols,lchnk)
-      call outfld('FDS     ',fds * 1.e-3_r8 ,pcols,lchnk)
-      call outfld('FUSC    ',fusc,pcols,lchnk)
-      call outfld('FDSC    ',fdsc,pcols,lchnk)
-   endif
 
 end subroutine rad_rrtmg_sw
 
