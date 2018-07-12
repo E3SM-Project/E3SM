@@ -1,5 +1,7 @@
 
-file(GLOB RRTMGP_TEST_SRCS "*.cpp")
+set(RRTMGP_TEST_SRCS
+  rrtmgp_tests.cpp
+)
 
 add_executable(rrtmgp_tests ${RRTMGP_TEST_SRCS})
 

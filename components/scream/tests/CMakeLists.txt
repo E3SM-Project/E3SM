@@ -1,5 +1,7 @@
 
-file(GLOB SCREAM_TEST_SRCS "*.cpp")
+set(SCREAM_TEST_SRCS
+  scream_tests.cpp
+)
 
 add_executable(scream_tests ${SCREAM_TEST_SRCS})
 

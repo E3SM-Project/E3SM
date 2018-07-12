@@ -1,5 +1,7 @@
 
-file(GLOB COUPLER_TEST_SRCS "*.cpp")
+set(COUPLER_TEST_SRCS
+  coupler_tests.cpp
+)
 
 add_executable(coupler_tests ${COUPLER_TEST_SRCS})
 

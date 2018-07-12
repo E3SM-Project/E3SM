@@ -1,5 +1,11 @@
 
-file(GLOB RRTMGP_SRCS "*.hpp" "*.cpp")
+set(RRTMGP_SRCS
+  rrtmgp.cpp
+)
+
+set(RRTMGP_HEADERS
+  rrtmgp.hpp
+)
 
 add_library(rrtmgp ${RRTMGP_SRCS})
 

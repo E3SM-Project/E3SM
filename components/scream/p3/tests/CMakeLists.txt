@@ -1,5 +1,7 @@
 
-file(GLOB P3_TEST_SRCS "*.cpp")
+set(P3_TEST_SRCS
+  p3_tests.cpp
+)
 
 add_executable(p3_tests ${P3_TEST_SRCS})
 
