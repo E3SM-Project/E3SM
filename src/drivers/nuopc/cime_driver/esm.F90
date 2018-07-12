@@ -1195,6 +1195,7 @@ module ESM
        return  
     end if
 
+    !TODO: this is hard-wired to CIME start/continue types in terms of gcomp
     read_restart = .false.
     if (trim(start_type) == trim(start_type_cont) .or. trim(start_type) == trim(start_type_brnch)) then
        read_restart = .true.

@@ -13,7 +13,6 @@ module med_phases_restart_mod
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_reset
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_GetFldPtr
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_accum
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_State_GetScalar
   use shr_cal_mod             , only : shr_cal_noleap, shr_cal_gregorian
   use shr_cal_mod             , only : shr_cal_ymd2date
@@ -279,6 +278,7 @@ contains
 
                 ! Write export accumulators 
                 if (ESMF_FieldBundleIsCreated(is_local%wrap%FBExpAccum(n),rc=rc)) then
+                   ! TODO: only write this out if actually have done accumulation
                    call med_infodata_GetData(med_infodata, ncomp=n, nx=nx, ny=ny)
                    !write(tmpstr,*) subname,' nx,ny = ',trim(compname(n)),nx,ny
                    !call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)

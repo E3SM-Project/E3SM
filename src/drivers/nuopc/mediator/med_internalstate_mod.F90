@@ -60,6 +60,7 @@ module med_internalstate_mod
     type(ESMF_FieldBundle):: FBExp(ncomps)                      ! Export data for various components, on their grid
     type(ESMF_FieldBundle):: FBExpAccum(ncomps)                 ! Accumulator for various components export on their grid
     integer               :: FBExpAccumcnt(ncomps)              ! Accumulator counter for each FBExpAccum
+    logical               :: FBExpAccumFlag(ncomps) = .false.   ! Accumulator flag, if true accumulation was done
     integer               :: conn_prep_cnt(ncomps)              ! Connector prep count
     integer               :: conn_post_cnt(ncomps)              ! Connector post count
     integer               :: mpicom

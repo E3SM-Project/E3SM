@@ -14,8 +14,12 @@ module med_phases_prep_ocn_mod
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_GetFldPtr
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_accum
+  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_average
+  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_copy
+  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_reset
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_FldChk
   use med_constants_mod       , only : med_constants_dbug_flag
+  use med_constants_mod       , only : med_constants_czero
   use med_merge_mod           , only : med_merge_auto
   use med_map_mod             , only : med_map_FB_Regrid_Norm 
   use med_internalstate_mod   , only : InternalState, logunit
@@ -178,31 +182,41 @@ contains
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_rain' , dataptr1, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        dataptr1(:) = dataptr1(:) * flux_epbalfact 
-       if (first_call) write(logunit,'(a)')'(merge_to_ocn): Scaling Foxx_rain by flux_epbalfact '
+       if (first_call .and. mastertask) then
+          write(logunit,'(a)')'(merge_to_ocn): Scaling Foxx_rain by flux_epbalfact '
+       end if
     end if
     if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'Foxx_snow', rc=rc)) then
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_snow' , dataptr1, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        dataptr1(:) = dataptr1(:) * flux_epbalfact 
-       if (first_call) write(logunit,'(a)')'(merge_to_ocn): Scaling Foxx_snow by flux_epbalfact '
+       if (first_call .and. mastertask) then
+          write(logunit,'(a)')'(merge_to_ocn): Scaling Foxx_snow by flux_epbalfact '
+       end if
     end if
     if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'Foxx_prec', rc=rc)) then
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_prec' , dataptr1, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        dataptr1(:) = dataptr1(:) * flux_epbalfact 
-       if (first_call) write(logunit,'(a)')'(merge_to_ocn): Scaling Foxx_prec by flux_epbalfact '
+       if (first_call .and. mastertask) then
+          write(logunit,'(a)')'(merge_to_ocn): Scaling Foxx_prec by flux_epbalfact '
+       end if
     end if
     if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'Foxx_rofl', rc=rc)) then
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_rofl' , dataptr1, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        dataptr1(:) = dataptr1(:) * flux_epbalfact 
-       if (first_call) write(logunit,'(a)')'(merge_to_ocn): Scaling Foxx_rofl by flux_epbalfact '
+       if (first_call .and. mastertask) then
+          write(logunit,'(a)')'(merge_to_ocn): Scaling Foxx_rofl by flux_epbalfact '
+       end if
     end if
     if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'Foxx_rofi', rc=rc)) then
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_rofi' , dataptr1, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        dataptr1(:) = dataptr1(:) * flux_epbalfact 
-       if (first_call) write(logunit,'(a)')'(merge_to_ocn): Scaling Foxx_rofi by flux_epbalfact '
+       if (first_call .and. mastertask) then
+          write(logunit,'(a)')'(merge_to_ocn): Scaling Foxx_rofi by flux_epbalfact '
+       end if
     end if
 
     !---------------
@@ -469,6 +483,49 @@ contains
        endif
        RETURN
     end if
+
+    !---------------------------------------
+    !--- average ocn accumulator
+    !---------------------------------------
+
+    if (dbug_flag > 5) then
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
+            string=trim(subname)//' FBExpAccum(compocn) before avg ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    endif
+
+    call shr_nuopc_methods_FB_average(is_local%wrap%FBExpAccum(compocn), &
+         is_local%wrap%FBExpAccumCnt(compocn), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (dbug_flag > 5) then
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
+            string=trim(subname)//' FBaccO_avg ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    endif
+
+    !---------------------------------------
+    !--- copy to FBExp(compocn)
+    !---------------------------------------
+
+    call shr_nuopc_methods_FB_copy(is_local%wrap%FBExp(compocn), &
+         is_local%wrap%FBExpAccum(compocn), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !---------------------------------------
+    !--- zero accumulator
+    !---------------------------------------
+
+    is_local%wrap%FBExpAccumFlag(compocn) = .true.
+    is_local%wrap%FBExpAccumCnt(compocn) = 0
+    call shr_nuopc_methods_FB_reset(is_local%wrap%FBExpAccum(compocn), value=med_constants_czero, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (dbug_flag > 5) then
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
+            string=trim(subname)//' FBExpAccum(compocn) after avg ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    endif
 
   end subroutine med_phases_prep_ocn_accum_avg
 
