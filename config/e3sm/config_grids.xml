@@ -1367,7 +1367,7 @@
       <nx>128</nx>
       <ny>64</ny>
       <file grid="atm|lnd" mask="usgs">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.T42_USGS.111004.nc</file>
-      <file grid="ocn" mask="usgs">$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.64x128_USGS_070807.nc</file>
+      <file grid="ice|ocn" mask="usgs">$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.64x128_USGS_070807.nc</file>
       <desc>T42 is Gaussian grid:</desc>
     </domain>
 
