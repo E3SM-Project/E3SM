@@ -282,15 +282,17 @@ class TestStatus(object):
         >>> _test_helper2('PASS ERS.foo.A SHAREDLIB_BUILD\nPEND ERS.foo.A RUN')
         'PEND'
         >>> _test_helper2('FAIL ERS.foo.A MODEL_BUILD\nPEND ERS.foo.A RUN')
-        'PEND'
+        'FAIL'
         >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPASS ERS.foo.A RUN')
         'PASS'
         >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A TPUTCOMP')
         'PASS'
         >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A TPUTCOMP', check_throughput=True)
         'FAIL'
-        >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A NLCOMP')
+        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPASS ERS.foo.A RUN\nFAIL ERS.foo.A NLCOMP')
         'NLFAIL'
+        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPEND ERS.foo.A RUN\nFAIL ERS.foo.A NLCOMP')
+        'PEND'
         >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A MEMCOMP')
         'PASS'
         >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A NLCOMP', ignore_namelists=True)
@@ -317,6 +319,8 @@ class TestStatus(object):
         'FAIL'
         >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPASS ERS.foo.A RUN', wait_for_run=True)
         'PASS'
+        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nFAIL ERS.foo.A RUN\nPEND ERS.foo.A COMPARE')
+        'FAIL'
         """
         rv = TEST_PASS_STATUS
         run_phase_found = False
@@ -341,6 +345,9 @@ class TestStatus(object):
 
                 elif (rv in [NAMELIST_FAIL_STATUS, TEST_PASS_STATUS] and phase == BASELINE_PHASE):
                     rv = TEST_DIFF_STATUS
+
+                elif phase in CORE_PHASES:
+                    return TEST_FAIL_STATUS
 
                 else:
                     rv = TEST_FAIL_STATUS
