@@ -1,5 +1,43 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 7-13-2018
+Tag: cime5.6.10
+Answer Changes: None
+Tests: hand test
+       code_checker on create_newcase; manually checked create_newcase --help
+       ERS_Ln9.f19_g17.X.hobart_intel , ERS_Ln9.f19_g17.X.hobart_gnu,
+       ERS_Ln9.f19_g17.X.hobart_nag
+Dependencies:
+
+Brief Summary:
+   - Add scripts/Tools/archive_metadata to CIME for use in CESM cases only. 
+   - Change DIN_LOC_ROOT_CLMFORC for new glade setup on cheyenne.
+   - Make docs more consistent.
+   - cprnc compiler updates for hobart.
+
+User interface changes: 
+    - archive_metadata --help stand_alone script.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+9f4377c Merge pull request #2715 from bertinia/maint-5.6_archive_metadata
+ef2f2e4 Merge pull request #2714 from ekluzek/newgladedinlocclmfrc
+154b475 Merge pull request #2693 from billsacks/make_docs_more_consistent
+631869c Merge pull request #2709 from ESMCI/fischer/hobart_cprnc
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_machines.xml
+M       doc/source/users_guide/create-a-case.rst
+A       scripts/Tools/archive_metadata
+M       scripts/create_newcase
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/utils.py
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fiscehr 
 Date: 7-5-2018
 Tag: cime5.6.9
