@@ -975,13 +975,13 @@ contains
 
     ! Loop over rsplit vertically lagrangian timesiteps
     call t_startf("prim_step_rX")
-    call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, compute_diagnostics, 1)
+    call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, compute_diagnostics, 1, n0_qdp, np1_qdp)
     call t_stopf("prim_step_rX")
 
     do r=2,rsplit
        call TimeLevel_update(tl,"leapfrog")
        call t_startf("prim_step_rX")
-       call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, .false., r)
+       call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, .false., r,n0_qdp,np1_qdp)
        call t_stopf("prim_step_rX")
     enddo
     ! defer final timelevel update until after remap and diagnostics
@@ -1058,7 +1058,7 @@ contains
 
 
 
-  subroutine prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord, compute_diagnostics,rstep)
+  subroutine prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord, compute_diagnostics,rstep,n0q,np1q)
   !
   !   Take qsplit dynamics steps and one tracer step
   !   for vertically lagrangian option, this subroutine does only the horizontal step
@@ -1094,12 +1094,11 @@ contains
     integer,              intent(in)    :: nete     ! ending thread element number   (private)
     real(kind=real_kind), intent(in)    :: dt       ! "timestep dependent" timestep
     type(TimeLevel_t),    intent(inout) :: tl
-    integer,              intent(in)    :: rstep    ! vertical remap subcycling step
+    integer,              intent(in)    :: rstep,n0q,np1q    ! vertical remap subcycling step
 
     real(kind=real_kind) :: st, st1, dp, dt_q
     integer :: ie, t, q,k,i,j,n
     real (kind=real_kind)                          :: maxcflx, maxcfly
-    real (kind=real_kind) :: dp_np1(np,np)
     logical :: compute_diagnostics
 
 
@@ -1126,6 +1125,23 @@ contains
 !applyCAMforcing_dp3d should be glued to the call of prim_advance_exp
 !energy diagnostics is broken for ftype 3,4
     call ApplyCAMforcing_dp3d(elem,hvcoord,tl%n0,dt,nets,nete)
+
+!temp test code
+!this only makes sense if qsplit=1
+if (ftype == 5) then
+if(qsize >= 8) then
+  do ie=nets,nete
+  do k=1,nlev
+    elem(ie)%state%Qdp(:,:,k,6,n0q)=elem(ie)%derived%FM(:,:,1,k)
+    elem(ie)%state%Qdp(:,:,k,7,n0q)=elem(ie)%derived%FM(:,:,2,k)
+    elem(ie)%state%Qdp(:,:,k,8,n0q)=elem(ie)%derived%FT(:,:,k)
+  enddo 
+  enddo
+else
+print *,'qsize is less than 8'
+stop
+endif
+endif
     ! ===============
     ! Dynamical Step
     ! ===============
@@ -1167,6 +1183,24 @@ contains
       call t_stopf("PAT_remap")
     end if
     call t_stopf("prim_step_advec")
+
+
+!temp test code
+!this only makes sense if qsplit=1
+if (ftype == 5) then
+if(qsize >= 8) then
+  do ie=nets,nete
+  do k=1,nlev
+    elem(ie)%derived%FM(:,:,1,k) = elem(ie)%state%Qdp(:,:,k,6,np1q)
+    elem(ie)%derived%FM(:,:,2,k) = elem(ie)%state%Qdp(:,:,k,7,np1q)
+    elem(ie)%derived%FT(:,:,k) = elem(ie)%state%Qdp(:,:,k,8,np1q)
+  enddo
+  enddo
+endif
+endif
+
+
+
 
   end subroutine prim_step
 
