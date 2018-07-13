@@ -157,6 +157,8 @@ contains
   end subroutine get_pottemp
   
 
+
+! why is hvcoord input here?
   !_____________________________________________________________________
   subroutine get_temperature(elem,temperature,hvcoord,nt,ntQ)
   !
@@ -368,7 +370,7 @@ contains
   end subroutine set_thermostate
 
 
-
+!zm,g is not used
   !_____________________________________________________________________
   subroutine set_state(u,v,w,T,ps,phis,p,dp,zm,g,i,j,k,elem,n0,n1)
   !
@@ -390,7 +392,7 @@ contains
 
   end subroutine set_state
 
-
+!bunch of input not used
   subroutine set_state_i(u,v,w,T,ps,phis,p,dp,zm,g,i,j,k,elem,n0,n1)
   !
   ! set state variables at node(i,j,k) at layer interfaces

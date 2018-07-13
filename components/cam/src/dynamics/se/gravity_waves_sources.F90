@@ -46,7 +46,7 @@ CONTAINS
 
   end subroutine gws_init
 
-  subroutine gws_src_fnct(elem, tl, frontgf, frontga)
+  subroutine gws_src_fnct(elem, tl, tlQ, frontgf, frontga)
     use derivative_mod, only  : derivinit
     use dimensions_mod, only  : npsq, nelemd
     use dof_mod, only         : UniquePoints
@@ -57,7 +57,7 @@ CONTAINS
     use thread_mod, only      : omp_get_thread_num
     implicit none
     type (element_t), intent(inout), dimension(:) :: elem
-    integer, intent(in)          :: tl
+    integer, intent(in)          :: tl, tlQ
     real (kind=real_kind), intent(out) :: frontgf(npsq,pver,nelemd)
     real (kind=real_kind), intent(out) :: frontga(npsq,pver,nelemd)
     
@@ -75,7 +75,7 @@ CONTAINS
     call derivinit(deriv(hybrid%ithr))
     allocate(frontgf_thr(np,np,nlev,nets:nete))
     allocate(frontga_thr(np,np,nlev,nets:nete))
-    call compute_frontogenesis(frontgf_thr,frontga_thr,tl,elem,deriv(hybrid%ithr),hybrid,nets,nete)
+    call compute_frontogenesis(frontgf_thr,frontga_thr,tl,tlQ,elem,deriv(hybrid%ithr),hybrid,nets,nete)
     do ie=nets,nete
        ncols = elem(ie)%idxP%NumUniquePts
        call UniquePoints(elem(ie)%idxP, nlev, frontgf_thr(:,:,:,ie), frontgf(1:ncols,:,ie))
@@ -87,7 +87,7 @@ CONTAINS
 
   end subroutine gws_src_fnct
   
-  subroutine compute_frontogenesis(frontgf,frontga,tl,elem,ederiv,hybrid,nets,nete)
+  subroutine compute_frontogenesis(frontgf,frontga,tl,tlQ,elem,ederiv,hybrid,nets,nete)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! compute frontogenesis function F
   !   F =  -gradth dot C
@@ -105,7 +105,7 @@ CONTAINS
   !   with dynamics when dyn_npes<npes
   ! 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    use physical_constants, only : kappa
+!    use physical_constants, only : kappa
     use derivative_mod, only : gradient_sphere, ugradv_sphere
     use edge_mod, only : edgevpack, edgevunpack
     use bndry_mod, only : bndry_exchangev
@@ -117,7 +117,7 @@ CONTAINS
     type (element_t)     , intent(inout), target :: elem(:)
     type (derivative_t)  , intent(in) :: ederiv
     integer, intent(in) :: nets,nete
-    integer, intent(in) :: tl ! timelevel to use
+    integer, intent(in) :: tl,tlQ ! timelevels to use
     real(kind=real_kind), intent(out) ::  frontgf(np,np,nlev,nets:nete)
     real(kind=real_kind), intent(out) ::  frontga(np,np,nlev,nets:nete)
   
@@ -125,10 +125,13 @@ CONTAINS
     integer :: k,kptr,i,j,ie,component
     real(kind=real_kind)  ::  gradth(np,np,2,nlev,nets:nete)  ! grad(theta)
     real(kind=real_kind)  :: p(np,np)        ! pressure at mid points
-    real(kind=real_kind)  :: theta(np,np)    ! potential temperature at mid points
+    real(kind=real_kind)  :: theta(np,np,nlev)    ! potential temperature at mid points
     real(kind=real_kind)  ::  C(np,np,2)     
     
     do ie=nets,nete
+
+       get_pottemp(elem(ie),pottemp,hvcoord,tl,tlQ)
+
        do k=1,nlev
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
         ! potential temperature: theta = T (p/p0)^kappa
@@ -136,7 +139,8 @@ CONTAINS
           
           ! pressure at mid points
           p(:,:)   = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
-          theta(:,:) = elem(ie)%state%T(:,:,k,tl)*(psurf_ref / p(:,:))**kappa
+!          theta(:,:) = elem(ie)%state%T(:,:,k,tl)*(psurf_ref / p(:,:))**kappa
+          theta(:,:) = pottemp(:,:,k)
           gradth(:,:,:,k,ie) = gradient_sphere(theta,ederiv,elem(ie)%Dinv)
           
           ! compute C = (grad(theta) dot grad ) u

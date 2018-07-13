@@ -279,8 +279,13 @@ CONTAINS
                 elem(ie)%state%ps_v(:,:,:) =dyn_ps0
 
                 elem(ie)%state%phis(:,:)=0.0_r8
+!not sure what to do here? 
+!the closest would be to move this line after assignment of q (so kappa is well
+!defined), and compute dp, then compute theta=Tinit/Exner, Exner=(p/po)^kappa,
+!then do thetacpdp=theta*cp*dp...
 
-                elem(ie)%state%T(:,:,:,:) =Tinit
+!disabling to get other calls
+!                elem(ie)%state%T(:,:,:,:) =Tinit
 
                 elem(ie)%state%v(:,:,:,:,:) =0.0_r8
 
