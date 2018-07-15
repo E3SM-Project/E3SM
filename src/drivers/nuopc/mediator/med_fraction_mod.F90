@@ -570,7 +570,6 @@ module med_fraction_mod
        ! set fractions_l(lfrac) from fractions_a(lfrac)
        if (is_local%wrap%comp_present(compatm)) then
           if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,complnd,mapconsf), rc=rc)) then
-             write(6,*)'DEBUG: creating route handle for atm->lnd'
              call med_map_Fractions_init( gcomp, compatm, complnd, &
                   FBSrc=is_local%wrap%FBImp(compatm,compatm), &
                   FBDst=is_local%wrap%FBImp(compatm,complnd), &
@@ -582,14 +581,6 @@ module med_fraction_mod
                is_local%wrap%FBfrac(complnd), 'lfrac', &
                is_local%wrap%RH(compatm,complnd,mapconsf), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-          ! DEBUG
-          call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(complnd), 'lfrac', dataPtr_lfrac, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          do n = 1,size(dataPtr_lfrac)
-             write(6,*)'DEBUG: n,lfrac lnd= ',n,dataPtr_lfrac(n)
-          end do
-          !DEBUG
        else
           call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(complnd), 'lfrin', dataPtr_lfrin, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -601,7 +592,6 @@ module med_fraction_mod
        ! set fractions_r(lfrac) from fractions_l(lfrac)
        if (is_local%wrap%comp_present(comprof)) then
           if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(complnd,comprof,mapconsf), rc=rc)) then
-             write(6,*)'DEBUG: creating route handle for lnd->rof'
              call med_map_Fractions_init( gcomp, complnd, comprof, &
                   FBSrc=is_local%wrap%FBImp(complnd,complnd), &
                   FBDst=is_local%wrap%FBImp(complnd,comprof), &
@@ -613,15 +603,6 @@ module med_fraction_mod
                is_local%wrap%FBfrac(comprof), 'lfrac', &
                is_local%wrap%RH(complnd,comprof,mapconsf), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          ! DEBUG
-          call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(comprof), 'lfrac', dataPtr_lfrac, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          do n = 1,size(dataPtr_lfrac)
-             write(6,*)'DEBUG: n,lfrac rof= ',n,dataPtr_lfrac(n)
-          end do
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBFrac(complnd), string=trim(subname)//' med_fraction_init FBFrac(complnd) ', rc=rc)
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBFrac(comprof), string=trim(subname)//' med_fraction_init FBFrac(comprof) ', rc=rc)
-          !DEBUG
        endif
 
        ! set fractions_g(lfrac) from fractions_l(lfrac)
