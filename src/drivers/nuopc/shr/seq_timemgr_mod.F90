@@ -6,15 +6,13 @@ module seq_timemgr_mod
   use ESMF
   use NUOPC
   use shr_cal_mod
-  use shr_kind_mod          , only : SHR_KIND_IN, SHR_KIND_R8, SHR_KIND_CS
-  use shr_kind_mod          , only : SHR_KIND_CL, SHR_KIND_I8
+  use shr_kind_mod          , only : SHR_KIND_IN, SHR_KIND_CS, SHR_KIND_CL, SHR_KIND_I8
   use shr_sys_mod           , only : shr_sys_abort
   use shr_log_mod           , only : logunit=>shr_log_Unit, loglevel=>shr_log_Level
   use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
   use shr_mpi_mod           , only : shr_mpi_bcast
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use pio                   , only : file_desc_T
-  use seq_comm_mct          , only : seq_comm_iamin, seq_comm_gloroot, CPLID
   use netcdf
 
   implicit none
@@ -183,7 +181,7 @@ contains
        EClock_drv, EClock_atm, EClock_lnd, EClock_ocn, &
        EClock_ice, Eclock_glc, Eclock_rof, EClock_wav, Eclock_esp)
 
-    ! !DESCRIPTION:  Initializes clock
+    ! !DESCRIPTION: Initializes clock
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_GridComp),     intent(inout) :: driver
@@ -439,14 +437,8 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) end_restart
 
-    !---------------------------------------------------------------------------
-    ! Read Restart (seq_io is called on all CPLID pes)
-    ! NOTE: slightly messy, seq_io is only valid on CPLID
-    !---------------------------------------------------------------------------
-
     if (read_restart) then
        if (iam == 0) then
-
           call NUOPC_CompAttributeGet(driver, name='driver_restart_file', value=restart_file, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -459,27 +451,32 @@ contains
 
              if ( len_trim(restart_pfile) == 0 ) then
                 rc = ESMF_FAILURE
-                call ESMF_LogWrite(trim(subname)//' ERROR driver_restart_pfile must be defined', ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
+                call ESMF_LogWrite(trim(subname)//' ERROR driver_restart_pfile must be defined', &
+                     ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
                 return  
              end if
 
              unitn = shr_file_getUnit()
-             call ESMF_LogWrite(trim(subname)//" read rpointer file = "//trim(restart_pfile), ESMF_LOGMSG_INFO, rc=dbrc)
+             call ESMF_LogWrite(trim(subname)//" read rpointer file = "//trim(restart_pfile), &
+                  ESMF_LOGMSG_INFO, rc=dbrc)
              open(unitn, file=restart_pfile, form='FORMATTED', status='old',iostat=ierr)
              if (ierr < 0) then
                 rc = ESMF_FAILURE
-                call ESMF_LogWrite(trim(subname)//' ERROR rpointer file open returns error', ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
+                call ESMF_LogWrite(trim(subname)//' ERROR rpointer file open returns error', &
+                     ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
                 return  
              end if
              read(unitn,'(a)', iostat=ierr) restart_file
              if (ierr < 0) then
                 rc = ESMF_FAILURE
-                call ESMF_LogWrite(trim(subname)//' ERROR rpointer file read returns error', ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
+                call ESMF_LogWrite(trim(subname)//' ERROR rpointer file read returns error', &
+                     ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
                 return  
              end if
              close(unitn)
              call shr_file_freeUnit( unitn )
-             call ESMF_LogWrite(trim(subname)//" read driver restart from file = "//trim(restart_file), ESMF_LOGMSG_INFO, rc=dbrc)
+             call ESMF_LogWrite(trim(subname)//" read driver restart from file = "//trim(restart_file), &
+                  ESMF_LOGMSG_INFO, rc=dbrc)
           endif
 
           ! tcraig, use netcdf here since it's serial and pio may not have been initialized yet
@@ -936,52 +933,52 @@ contains
     ! !DESCRIPTION: Get various values from the clock.
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock),     intent(IN)            :: EClock     ! Input clock object
-    integer(SHR_KIND_IN), intent(OUT), optional :: curr_yr    ! Current year
-    integer(SHR_KIND_IN), intent(OUT), optional :: curr_mon   ! Current month
-    integer(SHR_KIND_IN), intent(OUT), optional :: curr_day   ! Current day in month
-    integer(SHR_KIND_IN), intent(OUT), optional :: curr_ymd   ! Current date YYYYMMDD
-    integer(SHR_KIND_IN), intent(OUT), optional :: curr_tod   ! Current time of day (s)
-    integer(SHR_KIND_IN), intent(OUT), optional :: prev_ymd   ! Previous date YYYYMMDD
-    integer(SHR_KIND_IN), intent(OUT), optional :: prev_tod   ! Previous time of day (s)
-    integer(SHR_KIND_IN), intent(OUT), optional :: start_ymd  ! Starting date YYYYMMDD
-    integer(SHR_KIND_IN), intent(OUT), optional :: start_tod  ! Starting time-of-day (s)
-    integer(SHR_KIND_IN), intent(OUT), optional :: StepNo     ! Number of steps taken
-    integer(SHR_KIND_IN), intent(OUT), optional :: ref_ymd    ! Reference date YYYYMMDD
-    integer(SHR_KIND_IN), intent(OUT), optional :: ref_tod    ! Reference time-of-day (s)
-    integer(SHR_KIND_IN), intent(OUT), optional :: stop_ymd   ! Stop date YYYYMMDD
-    integer(SHR_KIND_IN), intent(OUT), optional :: stop_tod   ! Stop time-of-day (s)
-    integer(SHR_KIND_IN), intent(OUT), optional :: dtime      ! Time-step (seconds)
-    integer(SHR_KIND_IN), intent(OUT), optional :: alarmcount ! Number of Valid Alarms
-    type(ESMF_Time),      intent(OUT), optional :: ECurrTime  ! Current ESMF time
-    real(SHR_KIND_R8)   , intent(OUT), optional :: curr_cday  ! current calendar day
-    real(SHR_KIND_R8)   , intent(OUT), optional :: next_cday  ! current calendar day
-    real(SHR_KIND_R8)   , intent(OUT), optional :: curr_time  ! time interval between current time and reference date
-    real(SHR_KIND_R8)   , intent(OUT), optional :: prev_time  ! time interval between previous time and reference date
-    character(len=*)    , intent(OUT), optional :: calendar   ! calendar type
+    type(ESMF_Clock)     , intent(in)            :: EClock     ! Input clock object
+    integer(SHR_KIND_IN) , intent(out), optional :: curr_yr    ! Current year
+    integer(SHR_KIND_IN) , intent(out), optional :: curr_mon   ! Current month
+    integer(SHR_KIND_IN) , intent(out), optional :: curr_day   ! Current day in month
+    integer(SHR_KIND_IN) , intent(out), optional :: curr_ymd   ! Current date YYYYMMDD
+    integer(SHR_KIND_IN) , intent(out), optional :: curr_tod   ! Current time of day (s)
+    integer(SHR_KIND_IN) , intent(out), optional :: prev_ymd   ! Previous date YYYYMMDD
+    integer(SHR_KIND_IN) , intent(out), optional :: prev_tod   ! Previous time of day (s)
+    integer(SHR_KIND_IN) , intent(out), optional :: start_ymd  ! Starting date YYYYMMDD
+    integer(SHR_KIND_IN) , intent(out), optional :: start_tod  ! Starting time-of-day (s)
+    integer(SHR_KIND_IN) , intent(out), optional :: StepNo     ! Number of steps taken
+    integer(SHR_KIND_IN) , intent(out), optional :: ref_ymd    ! Reference date YYYYMMDD
+    integer(SHR_KIND_IN) , intent(out), optional :: ref_tod    ! Reference time-of-day (s)
+    integer(SHR_KIND_IN) , intent(out), optional :: stop_ymd   ! Stop date YYYYMMDD
+    integer(SHR_KIND_IN) , intent(out), optional :: stop_tod   ! Stop time-of-day (s)
+    integer(SHR_KIND_IN) , intent(out), optional :: dtime      ! Time-step (seconds)
+    integer(SHR_KIND_IN) , intent(out), optional :: alarmcount ! Number of Valid Alarms
+    type(ESMF_Time)      , intent(out), optional :: ECurrTime  ! Current ESMF time
+    real(ESMF_KIND_R8)   , intent(out), optional :: curr_cday  ! current calendar day
+    real(ESMF_KIND_R8)   , intent(out), optional :: next_cday  ! current calendar day
+    real(ESMF_KIND_R8)   , intent(out), optional :: curr_time  ! time interval between current time and reference date
+    real(ESMF_KIND_R8)   , intent(out), optional :: prev_time  ! time interval between previous time and reference date
+    character(len=*)     , intent(out), optional :: calendar   ! calendar type
 
     !----- local -----
-    type(ESMF_Time)             :: CurrentTime     ! Current time
-    type(ESMF_Time)             :: PreviousTime    ! Previous time
-    type(ESMF_Time)             :: StartTime       ! Start time
-    type(ESMF_Time)             :: StopTime        ! Stop time
-    type(ESMF_Time)             :: RefTime         ! Ref time
-    type(ESMF_TimeInterval)     :: timeStep        ! Clock, time-step
-    type(ESMF_TimeInterval)     :: timediff        ! Used to calculate curr_time
-    integer(SHR_KIND_IN)        :: rc              ! Return code
-    integer(SHR_KIND_I8)        :: advSteps        ! Number of time-steps that have advanced
-    integer(SHR_KIND_IN)        :: yy, mm, dd, sec ! Return time values
-    integer(SHR_KIND_IN)        :: ymd             ! Date (YYYYMMDD)
-    integer(SHR_KIND_IN)        :: tod             ! time of day (sec)
-    integer(SHR_KIND_IN)        :: ldtime          ! local dtime
-    integer(SHR_KIND_IN)        :: days            ! number of whole days in time interval
-    integer(SHR_KIND_IN)        :: seconds         ! number of seconds in time interval
-    integer(SHR_KIND_IN)        :: acount          ! number of valid alarms
-    real(SHR_KIND_R8)           :: doy, tmpdoy     ! day of year
-    type(ESMF_Time)             :: tmpTime         ! tmp time, needed for next_cday
-    type(ESMF_TimeInterval)     :: tmpDTime        ! tmp time interval, needed for next_cday
-    real(SHR_KIND_R8),parameter :: c1 = 1.0_SHR_KIND_R8
-    character(len=*), parameter :: subname = '(seq_timemgr_EClockGetData) '
+    type(ESMF_Time)               :: CurrentTime     ! Current time
+    type(ESMF_Time)               :: PreviousTime    ! Previous time
+    type(ESMF_Time)               :: StartTime       ! Start time
+    type(ESMF_Time)               :: StopTime        ! Stop time
+    type(ESMF_Time)               :: RefTime         ! Ref time
+    type(ESMF_TimeInterval)       :: timeStep        ! Clock, time-step
+    type(ESMF_TimeInterval)       :: timediff        ! Used to calculate curr_time
+    integer(SHR_KIND_IN)          :: rc              ! Return code
+    integer(SHR_KIND_I8)          :: advSteps        ! Number of time-steps that have advanced
+    integer(SHR_KIND_IN)          :: yy, mm, dd, sec ! Return time values
+    integer(SHR_KIND_IN)          :: ymd             ! Date (YYYYMMDD)
+    integer(SHR_KIND_IN)          :: tod             ! time of day (sec)
+    integer(SHR_KIND_IN)          :: ldtime          ! local dtime
+    integer(SHR_KIND_IN)          :: days            ! number of whole days in time interval
+    integer(SHR_KIND_IN)          :: seconds         ! number of seconds in time interval
+    integer(SHR_KIND_IN)          :: acount          ! number of valid alarms
+    real(ESMF_KIND_R8)            :: doy, tmpdoy     ! day of year
+    type(ESMF_Time)               :: tmpTime         ! tmp time, needed for next_cday
+    type(ESMF_TimeInterval)       :: tmpDTime        ! tmp time interval, needed for next_cday
+    real(ESMF_KIND_R8), parameter :: c1 = 1.0_ESMF_KIND_R8
+    character(len=*)  , parameter :: subname = '(seq_timemgr_EClockGetData) '
     !-------------------------------------------------------------------------------
 
     if (present(calendar)) calendar = trim(seq_timemgr_calendar)
@@ -1025,7 +1022,7 @@ contains
        timediff = CurrentTime - RefTime
        call ESMF_TimeIntervalGet(timediff, d=days, s=seconds, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       curr_time = days + seconds/real(SecPerDay,SHR_KIND_R8)
+       curr_time = days + seconds/real(SecPerDay,ESMF_KIND_R8)
     end if
 
     ! ---Previous Time (the time interval between the previous date and the reference date) ---
@@ -1033,7 +1030,7 @@ contains
        timediff = PreviousTime - RefTime
        call ESMF_TimeIntervalGet(timediff, d=days, s=seconds, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       prev_time = days + seconds/real(SecPerDay,SHR_KIND_R8)
+       prev_time = days + seconds/real(SecPerDay,ESMF_KIND_R8)
     end if
 
     ! --- Previous time --------------------------------------------------------
@@ -1075,12 +1072,12 @@ contains
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)             , intent(INOUT) :: EClock    ! clock
     type(ESMF_Alarm)             , intent(INOUT) :: EAlarm    ! alarm
-    character(len=*)             , intent(IN)    :: option    ! alarm option
-    integer(SHR_KIND_IN),optional, intent(IN)    :: opt_n     ! alarm freq
-    integer(SHR_KIND_IN),optional, intent(IN)    :: opt_ymd   ! alarm ymd
-    integer(SHR_KIND_IN),optional, intent(IN)    :: opt_tod   ! alarm tod (sec)
-    type(ESMF_Time)     ,optional, intent(IN)    :: RefTime   ! ref time
-    character(len=*)    ,optional, intent(IN)    :: alarmname ! alarm name
+    character(len=*)             , intent(in)    :: option    ! alarm option
+    integer(SHR_KIND_IN),optional, intent(in)    :: opt_n     ! alarm freq
+    integer(SHR_KIND_IN),optional, intent(in)    :: opt_ymd   ! alarm ymd
+    integer(SHR_KIND_IN),optional, intent(in)    :: opt_tod   ! alarm tod (sec)
+    type(ESMF_Time)     ,optional, intent(in)    :: RefTime   ! ref time
+    character(len=*)    ,optional, intent(in)    :: alarmname ! alarm name
     integer                      , intent(INOUT) :: rc        ! Return code
 
     !----- local -----
@@ -1320,14 +1317,14 @@ contains
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Alarm)    , intent(INOUT)            :: EAlarm   ! Input Alarm object
-    integer(SHR_KIND_IN), intent(OUT), optional :: next_ymd ! alarm date yyyymmdd
-    integer(SHR_KIND_IN), intent(OUT), optional :: next_tod ! alarm tod sec
-    integer(SHR_KIND_IN), intent(OUT), optional :: prev_ymd ! alarm date yyyymmdd
-    integer(SHR_KIND_IN), intent(OUT), optional :: prev_tod ! alarm tod sec
-    integer(SHR_KIND_IN), intent(OUT), optional :: IntSec   ! alarm int sec
-    integer(SHR_KIND_IN), intent(OUT), optional :: IntMon   ! alarm int mon
-    integer(SHR_KIND_IN), intent(OUT), optional :: IntYrs   ! alarm int yrs
-    character(len=*)    , intent(OUT), optional :: name     ! alarm name
+    integer(SHR_KIND_IN), intent(out), optional :: next_ymd ! alarm date yyyymmdd
+    integer(SHR_KIND_IN), intent(out), optional :: next_tod ! alarm tod sec
+    integer(SHR_KIND_IN), intent(out), optional :: prev_ymd ! alarm date yyyymmdd
+    integer(SHR_KIND_IN), intent(out), optional :: prev_tod ! alarm tod sec
+    integer(SHR_KIND_IN), intent(out), optional :: IntSec   ! alarm int sec
+    integer(SHR_KIND_IN), intent(out), optional :: IntMon   ! alarm int mon
+    integer(SHR_KIND_IN), intent(out), optional :: IntYrs   ! alarm int yrs
+    character(len=*)    , intent(out), optional :: name     ! alarm name
 
     !----- local -----
     integer                 :: yy, mm, dd, sec ! Return time values
@@ -1381,7 +1378,7 @@ contains
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock), intent(INOUT) :: EClock      ! clock/alarm
-    character(len=*), intent(IN), optional :: alarmname  ! alarmname
+    character(len=*), intent(in), optional :: alarmname  ! alarmname
 
     !----- local -----
     integer                     :: n
@@ -1448,7 +1445,7 @@ contains
     ! !INPUT/OUTPUT PARAMETERS:
 
     type(ESMF_Clock), intent(INOUT) :: EClock      ! clock/alarm
-    character(len=*), intent(IN), optional :: alarmname  ! alarmname
+    character(len=*), intent(in), optional :: alarmname  ! alarmname
     integer         , intent(INOUT) :: rc
 
     !----- local -----
@@ -1508,8 +1505,8 @@ contains
     ! !DESCRIPTION: check if an alarm is ringing
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock), intent(IN)    :: EClock     ! clock/alarm
-    character(len=*), intent(IN)    :: alarmname  ! which alarm
+    type(ESMF_Clock), intent(in)    :: EClock     ! clock/alarm
+    character(len=*), intent(in)    :: alarmname  ! which alarm
     integer         , intent(INOUT) :: rc         ! return code
 
     !----- local -----
@@ -1577,7 +1574,7 @@ contains
     ! !DESCRIPTION: check if restart alarm is ringing
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock) , intent(IN) :: EClock     ! clock/alarm
+    type(ESMF_Clock) , intent(in) :: EClock     ! clock/alarm
 
     !----- local -----
     integer :: rc                    ! return code
@@ -1594,7 +1591,7 @@ contains
     ! !DESCRIPTION: check if stop alarm is ringing
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock) , intent(IN) :: EClock     ! clock/alarm
+    type(ESMF_Clock) , intent(in) :: EClock     ! clock/alarm
 
     !----- local -----
     integer :: rc                    ! return code
@@ -1611,7 +1608,7 @@ contains
     ! !DESCRIPTION: check if history alarm is ringing
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock) , intent(IN) :: EClock     ! clock/alarm
+    type(ESMF_Clock) , intent(in) :: EClock     ! clock/alarm
 
     !----- local -----
     integer :: rc                    ! return code
@@ -1628,7 +1625,7 @@ contains
     ! !DESCRIPTION: check if pause alarm is ringing
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock) , intent(IN) :: EClock     ! clock/alarm
+    type(ESMF_Clock) , intent(in) :: EClock     ! clock/alarm
 
     !----- local -----
     integer :: rc                    ! return code
@@ -1654,7 +1651,7 @@ contains
     ! !DESCRIPTION: Look up a component's internal index for faster processing
 
     ! !INPUT/OUTPUT PARAMETERS:
-    character(len=*), intent(IN) :: component_name
+    character(len=*), intent(in) :: component_name
 
     !----- local -----
     integer                     :: ind
@@ -1685,7 +1682,7 @@ contains
     ! !DESCRIPTION: Return .true. if component is active in driver pause
 
     ! !INPUT/OUTPUT PARAMETERS:
-    integer, intent(IN) :: component_index
+    integer, intent(in) :: component_index
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_timemgr_pause_component_active) '
@@ -1748,10 +1745,10 @@ contains
     ! !DESCRIPTION: Get the date in YYYYMMDD format from a ESMF time object.
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Time),   intent(IN)  :: ETime   ! Input ESMF time
-    integer, optional, intent(IN)  :: offset  ! Offset from input time (sec)
-    integer, optional, intent(OUT) :: ymd     ! date of day
-    integer, optional, intent(OUT) :: tod     ! Time of day
+    type(ESMF_Time),   intent(in)  :: ETime   ! Input ESMF time
+    integer, optional, intent(in)  :: offset  ! Offset from input time (sec)
+    integer, optional, intent(out) :: ymd     ! date of day
+    integer, optional, intent(out) :: tod     ! Time of day
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_timemgr_ETimeGet) '
@@ -1797,17 +1794,17 @@ contains
     ! !DESCRIPTION: Setup the ESMF clock
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_TimeInterval), intent(IN)  :: TimeStep    ! Time-step of clock
-    type(ESMF_Time)        , intent(IN)  :: StartTime   ! Start time
-    type(ESMF_Time)        , intent(IN)  :: RefTime     ! Reference time
-    type(ESMF_Time)        , intent(IN)  :: CurrTime    ! Current time
-    type(ESMF_Clock)       , intent(OUT) :: EClock      ! Output ESMF clock
+    type(ESMF_TimeInterval), intent(in)  :: TimeStep    ! Time-step of clock
+    type(ESMF_Time)        , intent(in)  :: StartTime   ! Start time
+    type(ESMF_Time)        , intent(in)  :: RefTime     ! Reference time
+    type(ESMF_Time)        , intent(in)  :: CurrTime    ! Current time
+    type(ESMF_Clock)       , intent(out) :: EClock      ! Output ESMF clock
 
     !----- local -----
-    integer :: rc                             ! ESMF return code
-    integer :: ymd, tod                       ! time info
-    character(len=SHR_KIND_CL) :: description ! Description of this clock
-    type(ESMF_Time) :: clocktime              ! Current time
+    integer                     :: rc          ! ESMF return code
+    integer                     :: ymd, tod    ! time info
+    character(len=SHR_KIND_CL)  :: description ! Description of this clock
+    type(ESMF_Time)             :: clocktime   ! Current time
     character(len=*), parameter :: subname = '(seq_timemgr_EClockInit) '
     !-------------------------------------------------------------------------------
 
@@ -1851,10 +1848,10 @@ contains
     ! !DESCRIPTION: Check that the given input date/time is in sync with clock time
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock), intent(IN) :: Eclock   ! Input clock to compare
-    integer,          intent(IN) :: ymd     ! Date (YYYYMMDD)
-    integer,          intent(IN) :: tod     ! Time of day (sec)
-    logical, optional,intent(IN) :: prev    ! If should get previous time
+    type(ESMF_Clock), intent(in) :: Eclock   ! Input clock to compare
+    integer,          intent(in) :: ymd     ! Date (YYYYMMDD)
+    integer,          intent(in) :: tod     ! Time of day (sec)
+    logical, optional,intent(in) :: prev    ! If should get previous time
 
     !----- local -----
     type(ESMF_Time) :: ETime
