@@ -6,18 +6,14 @@ module med_phases_restart_mod
 
   use ESMF
   use NUOPC
-  use shr_kind_mod            , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8
-  use shr_kind_mod            , only : CL=>SHR_KIND_CL, CS=>SHR_KIND_CS
-  use esmFlds                 , only : ncomps, compname 
+  use shr_file_mod            , only : shr_file_getUnit, shr_file_freeUnit
+  use shr_mpi_mod             , only : shr_mpi_bcast
+  use esmFlds                 , only : ncomps, compname, compocn 
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_reset
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_GetFldPtr
   use shr_nuopc_methods_mod   , only : shr_nuopc_methods_State_GetScalar
-  use shr_cal_mod             , only : shr_cal_noleap, shr_cal_gregorian
-  use shr_cal_mod             , only : shr_cal_ymd2date
-  use shr_file_mod            , only : shr_file_getUnit, shr_file_freeUnit
-  use shr_mpi_mod             , only : shr_mpi_bcast
   use med_constants_mod       , only : med_constants_dbug_flag
   use med_constants_mod       , only : med_constants_czero
   use med_infodata_mod        , only : med_infodata, med_infodata_GetData
@@ -26,7 +22,7 @@ module med_phases_restart_mod
   use med_io_mod              , only : med_io_sec2hms, med_io_read
   use med_internalstate_mod   , only : InternalState
   !
-  use seq_timemgr_mod         , only : seq_timemgr_AlarmIsOn, seq_timemgr_EClockPrint
+  use seq_timemgr_mod         , only : seq_timemgr_AlarmIsOn
   use seq_timemgr_mod         , only : seq_timemgr_AlarmSetOff, seq_timemgr_alarm_restart
 
   implicit none
@@ -34,10 +30,13 @@ module med_phases_restart_mod
 
   integer            , parameter :: dbug_flag = med_constants_dbug_flag
   real(ESMF_KIND_R8) , parameter :: czero     = med_constants_czero
-  character(*)       , parameter :: u_FILE_u  = __FILE__
-  integer                        :: dbrc
   integer            , parameter :: SecPerDay = 86400    ! Seconds per day
   character(len=*)   , parameter :: sp_str = 'str_undefined'
+  character(len=*)   , parameter :: shr_cal_noleap    = 'NO_LEAP'
+  character(len=*)   , parameter :: shr_cal_gregorian = 'GREGORIAN'
+  integer                        :: dbrc
+  character(*)       , parameter :: u_FILE_u  = &
+       __FILE__
 
   public  :: med_phases_restart_read
   public  :: med_phases_restart_write
@@ -61,31 +60,31 @@ contains
     character(len=64)          :: currtimestr, nexttimestr
     type(InternalState)        :: is_local
     integer                    :: i,j,m,n,n1,ncnt
-    integer(IN)                :: curr_ymd       ! Current date YYYYMMDD
-    integer(IN)                :: curr_tod       ! Current time-of-day (s)
-    integer(IN)                :: start_ymd      ! Starting date YYYYMMDD
-    integer(IN)                :: start_tod      ! Starting time-of-day (s)
-    integer(IN)                :: ref_ymd        ! Reference date YYYYMMDD
-    integer(IN)                :: ref_tod        ! Reference time-of-day (s)
-    integer(IN)                :: next_ymd       ! Starting date YYYYMMDD
-    integer(IN)                :: next_tod       ! Starting time-of-day (s)
-    integer(IN)                :: nx,ny          ! global grid size
-    integer(IN)                :: yr,mon,day,sec ! time units
-    real(r8)                   :: dayssince      ! Time interval since reference time
-    integer(IN)                :: unitn          ! unit number
+    integer                    :: curr_ymd       ! Current date YYYYMMDD
+    integer                    :: curr_tod       ! Current time-of-day (s)
+    integer                    :: start_ymd      ! Starting date YYYYMMDD
+    integer                    :: start_tod      ! Starting time-of-day (s)
+    integer                    :: ref_ymd        ! Reference date YYYYMMDD
+    integer                    :: ref_tod        ! Reference time-of-day (s)
+    integer                    :: next_ymd       ! Starting date YYYYMMDD
+    integer                    :: next_tod       ! Starting time-of-day (s)
+    integer                    :: nx,ny          ! global grid size
+    integer                    :: yr,mon,day,sec ! time units
+    real(ESMF_KIND_R8)         :: dayssince      ! Time interval since reference time
+    integer                    :: unitn          ! unit number
     character(ESMF_MAXSTR)     :: time_units     ! units of time variable
     character(ESMF_MAXSTR)     :: calendar       ! calendar type
     character(ESMF_MAXSTR)     :: case_name      ! case name
     character(ESMF_MAXSTR)     :: restart_file   ! Local path to restart filename
     character(ESMF_MAXSTR)     :: restart_pfile  ! Local path to restart pointer filename
-    character(CS)              :: cpl_inst_tag   ! instance tag
+    character(ESMF_MAXSTR)     :: cpl_inst_tag   ! instance tag
     character(ESMF_MAXSTR)     :: cvalue         ! attribute string
     character(ESMF_MAXSTR)     :: freq_option    ! freq_option setting (ndays, nsteps, etc)
-    integer(IN)                :: freq_n         ! freq_n setting relative to freq_option
+    integer                    :: freq_n         ! freq_n setting relative to freq_option
     logical                    :: alarmIsOn      ! generic alarm flag
-    real(r8)                   :: tbnds(2)       ! CF1.0 time bounds
+    real(ESMF_KIND_R8)         :: tbnds(2)       ! CF1.0 time bounds
     logical                    :: whead,wdata    ! for writing restart/restart cdf files
-    integer(IN)                :: iam,mpicom     ! vm stuff
+    integer                    :: iam,mpicom     ! vm stuff
     character(len=ESMF_MAXSTR) :: tmpstr
     character(len=*), parameter :: subname='(med_phases_restart_write)'
     !---------------------------------------
@@ -128,8 +127,6 @@ contains
     call seq_timemgr_AlarmSetOff(clock, seq_timemgr_alarm_restart, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    !call seq_timemgr_EClockPrint(clock)
-
     if (alarmIsOn) then
 
        call ESMF_ClockGet(clock, currtime=currtime, reftime=reftime, starttime=starttime, rc=rc)
@@ -169,24 +166,24 @@ contains
 
        timediff = nexttime - reftime
        call ESMF_TimeIntervalGet(timediff, d=day, s=sec, rc=rc)
-       dayssince = day + sec/real(SecPerDay,R8)
+       dayssince = day + sec/real(SecPerDay,ESMF_KIND_R8)
 
        call ESMF_TimeGet(reftime, yy=yr, mm=mon, dd=day, s=sec, rc=dbrc)
-       call shr_cal_ymd2date(yr,mon,day,start_ymd)
+       call ymd2date(yr,mon,day,start_ymd)
        start_tod = sec
        time_units = 'days since ' &
           // trim(med_io_date2yyyymmdd(start_ymd)) // ' ' // med_io_sec2hms(start_tod)
 
        call ESMF_TimeGet(nexttime, yy=yr, mm=mon, dd=day, s=sec, rc=dbrc)
-       call shr_cal_ymd2date(yr,mon,day,next_ymd)
+       call ymd2date(yr,mon,day,next_ymd)
        next_tod = sec
 
        call ESMF_TimeGet(reftime, yy=yr, mm=mon, dd=day, s=sec, rc=dbrc)
-       call shr_cal_ymd2date(yr,mon,day,ref_ymd)
+       call ymd2date(yr,mon,day,ref_ymd)
        ref_tod = sec
 
        call ESMF_TimeGet(currtime, yy=yr, mm=mon, dd=day, s=sec, rc=dbrc)
-       call shr_cal_ymd2date(yr,mon,day,curr_ymd)
+       call ymd2date(yr,mon,day,curr_ymd)
        curr_tod = sec
 
        !---------------------------------------
@@ -289,6 +286,16 @@ contains
              endif
           enddo
 
+          ! Write ocn albedo field bundle (CESM only)
+          ! if (ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_ocnalb_o,rc=rc)) then
+          !    call med_infodata_GetData(med_infodata, ncomp=compocn, nx=nx, ny=ny)
+          !    !write(tmpstr,*) subname,' nx,ny = ',trim(compname(n)),nx,ny
+          !    !call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+          !    call med_io_write(restart_file, iam, is_local%wrap%FBMed_ocnalb_o, &
+          !         nx=nx, ny=ny, nt=1, whead=whead, wdata=wdata, pre='MedOcnAlb_o', rc=rc)
+          !    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          ! end if
+
        enddo
 
        ! Close file
@@ -319,13 +326,13 @@ contains
     character(len=64)      :: currtimestr
     type(InternalState)    :: is_local
     integer                :: i,j,m,n,n1,ncnt
-    integer(IN)            :: ierr, unitn
-    integer(IN)            :: yr,mon,day,sec ! time units
-    integer(IN)            :: iam,mpicom     ! vm stuff
+    integer                :: ierr, unitn
+    integer                :: yr,mon,day,sec ! time units
+    integer                :: iam,mpicom     ! vm stuff
     character(ESMF_MAXSTR) :: case_name      ! case name
     character(ESMF_MAXSTR) :: restart_file   ! Local path to restart filename
     character(ESMF_MAXSTR) :: restart_pfile  ! Local path to restart pointer filename
-    character(CS)          :: cpl_inst_tag   ! instance tag
+    character(ESMF_MAXSTR) :: cpl_inst_tag   ! instance tag
     character(len=*), parameter :: subname='(med_phases_restart_read)'
     !---------------------------------------
 
@@ -379,7 +386,8 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if ( len_trim(restart_pfile) == 0 ) then
-       call ESMF_LogWrite(trim(subname)//' ERROR restart_pfile must be set', ESMF_LOGMSG_ERROR, line=__LINE__, file=__FILE__, rc=rc)
+       call ESMF_LogWrite(trim(subname)//' ERROR restart_pfile must be set', &
+            ESMF_LOGMSG_ERROR, line=__LINE__, file=__FILE__, rc=rc)
        rc = ESMF_FAILURE
        return
     end if
@@ -410,7 +418,8 @@ contains
           end if
           close(unitn)
           call shr_file_freeUnit( unitn )
-          call ESMF_LogWrite(trim(subname)//' restart file from rpointer = '//trim(restart_file), ESMF_LOGMSG_INFO, rc=dbrc)
+          call ESMF_LogWrite(trim(subname)//' restart file from rpointer = '//trim(restart_file), &
+               ESMF_LOGMSG_INFO, rc=dbrc)
        endif
     endif
     call shr_mpi_bcast(restart_file, mpicom)
@@ -444,6 +453,13 @@ contains
        endif
     enddo
 
+    ! read ocn albedo field bundle (CESM only)
+    ! if (ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_ocnalb_o,rc=rc)) then
+    !    call med_io_read(restart_file, mpicom, iam, is_local%wrap%FBMed_ocnalb_o, &
+    !         pre='MedOcnAlb_o', rc=rc) 
+    !    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    ! end if
+
     !---------------------------------------
     !--- clean up
     !---------------------------------------
@@ -453,5 +469,22 @@ contains
     endif
 
   end subroutine med_phases_restart_read
+
+
+  !===============================================================================
+  subroutine ymd2date(year,month,day,date)
+    ! Converts  year, month, day to coded-date
+    ! NOTE: this calendar has a year zero (but no day or month zero)
+
+    integer,intent(in ) :: year,month,day  ! calendar year,month,day
+    integer,intent(out) :: date            ! coded (yyyymmdd) calendar date
+
+    ! local variables
+    character(*),parameter :: subName = "(ymd2date)"
+    !---------------------------------------
+
+    date = abs(year)*10000 + month*100 + day  ! coded calendar date
+    if (year < 0) date = -date
+  end subroutine ymd2date
 
 end module med_phases_restart_mod

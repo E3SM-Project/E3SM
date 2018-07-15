@@ -22,9 +22,6 @@ module med_map_mod
   use shr_nuopc_methods_mod , only: shr_nuopc_methods_ChkErr
   use med_internalstate_mod , only: InternalState
   use med_constants_mod           
-  !DEBUG
-  use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_getnameN
-  !DEBUG
 
   implicit none
   private
@@ -313,9 +310,6 @@ contains
     integer                     :: DstMaskValue
     real(ESMF_KIND_R8), pointer :: factorList(:)
     character(len=*), parameter :: subname=' (module_med_map: Fractions_init) '
-    !DEBUG
-    character(len=ESMF_MAXSTR) :: name
-    !DEBUG
     !---------------------------------------------
 
     if (dbug_flag > 1) then
@@ -331,15 +325,6 @@ contains
 
     call shr_nuopc_methods_FB_getFieldN(FBDst, 1, flddst, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !DEBUG
-    call shr_nuopc_methods_FB_getNameN(FBSrc, 1, name, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    write(6,*)'DEBUG: FBSrc name is ',trim(name)
-    call shr_nuopc_methods_FB_getNameN(FBDst, 1, name, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    write(6,*)'DEBUG: FBDst name is ',trim(name)
-    !DEBUG
 
     dstMaskValue = ispval_mask
     srcMaskValue = ispval_mask

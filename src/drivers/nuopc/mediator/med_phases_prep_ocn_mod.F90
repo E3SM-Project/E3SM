@@ -219,70 +219,70 @@ contains
        end if
     end if
 
-    !---------------
-    ! Compute swnet to send to ocean
-    !---------------
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ifrac' , ifrac, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ofrac' , ofrac, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ifrad' , ifracr, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ofrad' , ofracr, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, 'So_avsdr' , avsdr, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, 'So_anidr' , anidr, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, 'So_avsdf' , avsdf, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, 'So_anidf' , anidf, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swvdr', swvdr, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swndr', swndr, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swvdf', swvdf, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swndf', swndf, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (is_local%wrap%comp_present(compice)) then
-       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen', swpen, rc=rc)
+    ! Compute swnet to send to ocean if appropriate
+    if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'Foxx_swnet', rc=rc)) then
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet',  swnet, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
-    call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet',  swnet, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    do n = 1,size(ofrac)
-       ifrac_scaled = ifrac(n)
-       ofrac_scaled = ofrac(n)
-       frac_sum = ifrac(n) + ofrac(n)
-       if (frac_sum /= 0._ESMF_KIND_r8) then
-          ifrac_scaled = ifrac(n) / (frac_sum)
-          ofrac_scaled = ofrac(n) / (frac_sum)
-       endif
-       ifracr_scaled = ifracr(n)
-       ofracr_scaled = ofracr(n)
-       frac_sum = ifracr(n) + ofracr(n)
-       if (frac_sum /= 0._ESMF_KIND_r8) then
-          ifracr_scaled = ifracr(n) / (frac_sum)
-          ofracr_scaled = ofracr(n) / (frac_sum)
-       endif
-       fswabsv =  swvdr(n) * (1.0_ESMF_KIND_R8 - avsdr(n)) + &
-                  swvdf(n) * (1.0_ESMF_KIND_R8 - avsdf(n))
-       fswabsi =  swndr(n) * (1.0_ESMF_KIND_R8 - anidr(n)) + &
-                  swndf(n) * (1.0_ESMF_KIND_R8 - anidf(n))
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ifrac' , ifrac, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ofrac' , ofrac, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ifrad' , ifracr, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ofrad' , ofracr, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, 'So_avsdr' , avsdr, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, 'So_anidr' , anidr, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, 'So_avsdf' , avsdf, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, 'So_anidf' , anidf, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swvdr', swvdr, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swndr', swndr, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swvdf', swvdf, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swndf', swndf, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        if (is_local%wrap%comp_present(compice)) then
-          swnet(n) = ofracr_scaled*(fswabsv + fswabsi) + ifrac_scaled*swpen(n)
-       else
-          swnet(n) = ofracr_scaled*(fswabsv + fswabsi)
+          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen', swpen, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
-       ! if (i2o_per_cat) then
-       !   Sf_ofrac(n)  = ofrac(n)
-       !   Sf_ofracr(n) = ofracr(n)
-       !   Foxx_swnet_ofracr(n) = (fswabsv + fswabsi) * ofracr_scaled
-       ! end if
-    end do
+       
+       do n = 1,size(ofrac)
+          ifrac_scaled = ifrac(n)
+          ofrac_scaled = ofrac(n)
+          frac_sum = ifrac(n) + ofrac(n)
+          if (frac_sum /= 0._ESMF_KIND_r8) then
+             ifrac_scaled = ifrac(n) / (frac_sum)
+             ofrac_scaled = ofrac(n) / (frac_sum)
+          endif
+          ifracr_scaled = ifracr(n)
+          ofracr_scaled = ofracr(n)
+          frac_sum = ifracr(n) + ofracr(n)
+          if (frac_sum /= 0._ESMF_KIND_r8) then
+             ifracr_scaled = ifracr(n) / (frac_sum)
+             ofracr_scaled = ofracr(n) / (frac_sum)
+          endif
+          fswabsv =  swvdr(n) * (1.0_ESMF_KIND_R8 - avsdr(n)) + swvdf(n) * (1.0_ESMF_KIND_R8 - avsdf(n))
+          fswabsi =  swndr(n) * (1.0_ESMF_KIND_R8 - anidr(n)) + swndf(n) * (1.0_ESMF_KIND_R8 - anidf(n))
+          if (is_local%wrap%comp_present(compice)) then
+             swnet(n) = ofracr_scaled*(fswabsv + fswabsi) + ifrac_scaled*swpen(n)
+          else
+             swnet(n) = ofracr_scaled*(fswabsv + fswabsi) 
+             swnet(n) = ofracr_scaled*(fswabsv + fswabsi) 
+          end if
+          ! if (i2o_per_cat) then
+          !   Sf_ofrac(n)  = ofrac(n)
+          !   Sf_ofracr(n) = ofracr(n)
+          !   Foxx_swnet_ofracr(n) = (fswabsv + fswabsi) * ofracr_scaled
+          ! end if
+       end do
+    end if
+
     ! TODO: document merging
 
 #if (1 == 0)
