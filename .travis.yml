@@ -26,10 +26,12 @@ cache:
   - kokkos
 
 before_script:
-- git clone http://github.com/kokkos/kokkos
+- if [[ ! -d ${PWD}/kokkos/.git ]]; then rm -rf ${PWD}/kokkos; git clone http://github.com/kokkos/kokkos; fi
 - cd kokkos
+- git reset --hard HEAD
+- git pull
 - mkdir install
-- cmake -D CMAKE_INSTALL_PREFIX=${PWD}/install -D CMAKE_BUILD_TYPE=Debug -D KOKKOS_ARCH="SNB" -D KOKKOS_ENABLE_DEBUG=ON -D KOKKOS_ENABLE_AGGRESSIVE_VECTORIZATION=OFF -D KOKKOS_ENABLE_OPENMP=OFF -D KOKKOS_ENABLE_PROFILING=OFF -D KOKKOS_ENABLE_SERIAL=ON -D KOKKOS_ENABLE_DEPRECATED_CODE=OFF ./
+- cmake -D CMAKE_INSTALL_PREFIX=${PWD}/install -D CMAKE_BUILD_TYPE=Debug -D KOKKOS_ENABLE_DEBUG=ON -D KOKKOS_ENABLE_AGGRESSIVE_VECTORIZATION=OFF -D KOKKOS_ENABLE_OPENMP=OFF -D KOKKOS_ENABLE_PROFILING=OFF -D KOKKOS_ENABLE_SERIAL=ON -D KOKKOS_ENABLE_DEPRECATED_CODE=OFF ./
 - make -j 2 install
 - cd ..
 - if [[ "${TRAVIS_OS_NAME" == "linux" ]]; then ln -s $(which g++-6) g++; export PATH="${PWD}:${PATH}"; fi
