@@ -275,11 +275,11 @@
 
     <modules>
       <command name="rm">craype</command>
-      <command name="load">craype/2.5.13</command>
+      <command name="load">craype/2.5.14</command>
       <command name="load">pmi/5.0.13</command>
 
       <command name="rm">cray-mpich</command>
-      <command name="load">cray-mpich/7.6.2</command>
+      <command name="load">cray-mpich/7.7.0</command>
     </modules>
 
     <modules compiler="intel">
@@ -291,9 +291,9 @@
     <modules compiler="gnu">
       <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
-      <command name="load">gcc/6.3.0</command>
+      <command name="load">gcc/7.3.0</command>
       <command name="rm">cray-libsci</command>
-      <command name="load">cray-libsci/17.09.1</command>
+      <command name="load">cray-libsci/18.03.1</command>
     </modules>
 
     <modules>
@@ -419,11 +419,11 @@
     </modules>
 
     <modules mpilib="mpt">
-      <command name="swap">cray-mpich cray-mpich/7.6.2</command>
+      <command name="swap">cray-mpich cray-mpich/7.7.0</command>
     </modules>
 
     <modules mpilib="impi">
-      <command name="swap">cray-mpich impi/2018.up1</command>
+      <command name="swap">cray-mpich impi/2018.up2</command>
     </modules>
 
     <modules compiler="intel">
@@ -435,9 +435,9 @@
     <modules compiler="gnu">
       <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
-      <command name="load">gcc/6.3.0</command>
+      <command name="load">gcc/7.3.0</command>
       <command name="rm">cray-libsci</command>
-      <command name="load">cray-libsci/17.09.1</command>
+      <command name="load">cray-libsci/18.03.1</command>
     </modules>
 
     <modules compiler="gnu7">
@@ -449,7 +449,7 @@
     </modules>
 
     <modules>
-      <command name="swap">craype craype/2.5.13</command>
+      <command name="swap">craype craype/2.5.14</command>
       <command name="rm">pmi</command>
       <command name="load">pmi/5.0.13</command>
       <command name="rm">craype-haswell</command>
@@ -498,7 +498,7 @@
     <env name="I_MPI_FABRICS">ofi</env>
     <env name="I_MPI_OFI_PROVIDER">gni</env>
     <env name="I_MPI_PRINT_VERSION">yes</env>
-    <env name="I_MPI_OFI_LIBRARY">/global/common/cori/software/libfabric/1.5.0/gnu/lib/libfabric.so</env>
+    <env name="I_MPI_OFI_LIBRARY">/global/common/cori/software/libfabric/1.6.1/gnu/lib/libfabric.so</env>
     <env name="I_MPI_PMI_LIBRARY">/usr/lib64/slurmpmi/libpmi.so</env>
   </environment_variables>
   <environment_variables compiler="intel">
