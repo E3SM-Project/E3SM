@@ -189,7 +189,7 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
   endselect
 
 !for ftype3 we scale tendencies by dp
-  if((ftype == 3).or.(ftype=5)) then
+  if((ftype == 3).or.(ftype==5)) then
     !initialize dp3d from ps
     do ie=nets,nete
       do k=1,nlev
