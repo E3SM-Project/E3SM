@@ -4,7 +4,6 @@ dist: trusty
 
 os:
 - linux
-- osx
 
 addons:
   apt:
@@ -30,11 +29,11 @@ before_script:
 - cd kokkos
 - git reset --hard HEAD
 - git pull
-- mkdir install
+- mkdir -p install
 - cmake -D CMAKE_INSTALL_PREFIX=${PWD}/install -D CMAKE_BUILD_TYPE=Debug -D KOKKOS_ENABLE_DEBUG=ON -D KOKKOS_ENABLE_AGGRESSIVE_VECTORIZATION=OFF -D KOKKOS_ENABLE_OPENMP=OFF -D KOKKOS_ENABLE_PROFILING=OFF -D KOKKOS_ENABLE_SERIAL=ON -D KOKKOS_ENABLE_DEPRECATED_CODE=OFF ./
 - make -j 2 install
 - cd ..
-- if [[ "${TRAVIS_OS_NAME" == "linux" ]]; then ln -s $(which g++-6) g++; export PATH="${PWD}:${PATH}"; fi
+- if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then ln -s $(which g++-6) g++; export PATH="${PWD}:${PATH}"; fi
 
 script:
 - cmake -D CMAKE_BUILD_TYPE=Debug -D CMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage" -D KOKKOS_DIR=${PWD}/kokkos/install components/scream
