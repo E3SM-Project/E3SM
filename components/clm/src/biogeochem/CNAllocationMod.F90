@@ -3039,6 +3039,8 @@ contains
          grain_flag                   => cnstate_vars%grain_flag_patch                         , &
          cn_scalar                    => cnstate_vars%cn_scalar                                , &
          cp_scalar                    => cnstate_vars%cp_scalar                                , &
+         cn_scalar_runmean            => cnstate_vars%cn_scalar_runmean                        , &
+         cp_scalar_runmean            => cnstate_vars%cp_scalar_runmean                        , &
          annmax_retransp              => cnstate_vars%annmax_retransp_patch                    , &
          cpool_to_xsmrpool            => carbonflux_vars%cpool_to_xsmrpool_patch               , &
          w_scalar                     => carbonflux_vars%w_scalar_col                          , &
@@ -3288,8 +3290,8 @@ contains
              ! 'ECA' or 'MIC' mode
              ! dynamic allocation based on light limitation (more woody growth) vs nutrient limitations (more fine root growth)
              ! set allocation coefficients
-             N_lim_factor(p) = cn_scalar(p) ! N stress factor
-             P_lim_factor(p) = cp_scalar(p) ! P stress factor
+             N_lim_factor(p) = cn_scalar_runmean(p) ! N stress factor
+             P_lim_factor(p) = cp_scalar_runmean(p) ! P stress factor
 
              if (cnallocate_carbon_only()) then
                  N_lim_factor(p) = 0.0_r8
@@ -4239,7 +4241,8 @@ contains
     ! if lai greater than laimax then no allocation to leaf; leaf allocation goes to stem or fine root
     if (laindex > laimax) then 
        if (woody == 1.0_r8) then
-          alloc_stem = alloc_stem + alloc_leaf - 0.01_r8
+          alloc_stem = alloc_stem + alloc_leaf/2._r8 - 0.005_r8
+          alloc_froot = alloc_froot + alloc_leaf/2._r8 - 0.005_r8
        else
           alloc_froot = alloc_froot + alloc_leaf - 0.01_r8
        end if

@@ -1223,6 +1223,8 @@ contains
        if (crop_prog) then
           call crop_vars%UpdateAccVars(bounds_proc, temperature_vars)
        end if
+
+       call cnstate_vars%UpdateAccVars(bounds_proc)
        
        call t_stopf('accum')
 
