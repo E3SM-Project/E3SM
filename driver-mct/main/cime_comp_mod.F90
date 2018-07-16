@@ -417,6 +417,7 @@ module cime_comp_mod
   logical  :: shr_map_dopole         ! logical for dopole in shr_map_mod
   logical  :: domain_check           ! .true.  => check consistency of domains
   logical  :: reprosum_use_ddpdd     ! setup reprosum, use ddpdd
+  logical  :: reprosum_allow_infnan  ! setup reprosum, allow INF and NaN in summands
   real(r8) :: reprosum_diffmax       ! setup reprosum, set rel_diff_max
   logical  :: reprosum_recompute     ! setup reprosum, recompute if tolerance exceeded
 
@@ -935,6 +936,7 @@ contains
          wall_time_limit=wall_time_limit           , &
          force_stop_at=force_stop_at               , &
          reprosum_use_ddpdd=reprosum_use_ddpdd     , &
+         reprosum_allow_infnan=reprosum_allow_infnan, &
          reprosum_diffmax=reprosum_diffmax         , &
          reprosum_recompute=reprosum_recompute, &
          max_cplstep_time=max_cplstep_time)
@@ -946,6 +948,7 @@ contains
 
     call shr_reprosum_setopts(&
          repro_sum_use_ddpdd_in    = reprosum_use_ddpdd, &
+         repro_sum_allow_infnan_in = reprosum_allow_infnan, &
          repro_sum_rel_diff_max_in = reprosum_diffmax, &
          repro_sum_recompute_in    = reprosum_recompute)
 
