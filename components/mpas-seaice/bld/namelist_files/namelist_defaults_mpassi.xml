@@ -5,6 +5,7 @@
 
 <!-- seaice_model -->
 <config_dt>1800.0</config_dt>
+<config_dt ice_grid="oQU480">7200.0</config_dt>
 <config_dt ice_grid="oQU240">7200.0</config_dt>
 <config_dt ice_grid="oQU240wLI">7200.0</config_dt>
 <config_dt ice_grid="oQU120">3600.0</config_dt>
@@ -93,6 +94,7 @@
 
 <!-- velocity_solver -->
 <config_dynamics_subcycle_number>1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="oQU480">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oQU240">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oQU120">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="mpas120">1</config_dynamics_subcycle_number>
