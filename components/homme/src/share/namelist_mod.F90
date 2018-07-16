@@ -809,7 +809,7 @@ module namelist_mod
 #ifndef CAM
 !standalone homme does not support ftype=1 (cause it is identical to ftype=0).
 !also, standalone ftype=0 is the same as standalone ftype=2.
-    if ((ftype == 0).or.(ftype == 2).or.(ftype == 3).or.(ftype == 4)) then
+    if ((ftype == 0).or.(ftype == 2).or.(ftype == 3).or.(ftype == 4).or.(ftype==5)) then
     else
        call abortmp('Standalone homme supports only se_ftype=0,2,3,4')
     endif
