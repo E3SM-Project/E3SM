@@ -80,7 +80,7 @@ _TESTS = {
 		           ("SMS_D_Ld1.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6","allactive-v1cmip6"),
                            "ERS_Ln9.ne4_ne4.FC5AV1C-L",
                           #"ERT_Ld31.ne16_g37.B1850C5",#add this line back in with the new correct compset
-                           "NCK.ne4_oQU240.A_WCYCL1850",
+                           "NCK.ne11_oQU240.A_WCYCL1850",
                            ("PET.f19_g16.X","allactive-mach-pet"),
                            ("PET.f45_g37_rx1.A","allactive-mach-pet"),
                            ("PET_Ln9_PS.ne30_oECv3_ICG.A_WCYCL1850S","allactive-mach-pet"),
