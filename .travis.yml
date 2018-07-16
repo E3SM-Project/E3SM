@@ -20,19 +20,22 @@ branches:
   only:
   - master
 
+cache:
+  directories:
+  - kokkos
+
 before_script:
 - git clone http://github.com/kokkos/kokkos
-- mkdir kokkos-build
-- cd kokkos-build
+- cd kokkos
 - mkdir install
-- cmake -D CMAKE_INSTALL_PREFIX=${PWD}/install -D CMAKE_BUILD_TYPE=Debug -D KOKKOS_ARCH="SNB" -D KOKKOS_ENABLE_DEBUG=ON -D KOKKOS_ENABLE_AGGRESSIVE_VECTORIZATION=OFF -D KOKKOS_ENABLE_OPENMP=OFF -D KOKKOS_ENABLE_PROFILING=OFF -D KOKKOS_ENABLE_SERIAL=ON -D KOKKOS_ENABLE_DEPRECATED_CODE=OFF ../kokkos
+- cmake -D CMAKE_INSTALL_PREFIX=${PWD}/install -D CMAKE_BUILD_TYPE=Debug -D KOKKOS_ARCH="SNB" -D KOKKOS_ENABLE_DEBUG=ON -D KOKKOS_ENABLE_AGGRESSIVE_VECTORIZATION=OFF -D KOKKOS_ENABLE_OPENMP=OFF -D KOKKOS_ENABLE_PROFILING=OFF -D KOKKOS_ENABLE_SERIAL=ON -D KOKKOS_ENABLE_DEPRECATED_CODE=OFF ./
 - make -j 2 install
 - cd ..
 - ln -s $(which g++-6) g++
 - export PATH="${PWD}:${PATH}"
 
 script:
-- cmake -D CMAKE_BUILD_TYPE=Debug -D CMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage" -D KOKKOS_DIR=${PWD}/kokkos-build/install components/scream
+- cmake -D CMAKE_BUILD_TYPE=Debug -D CMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage" -D KOKKOS_DIR=${PWD}/kokkos/install components/scream
 - make -j 2
 - make test
 
@@ -43,6 +46,5 @@ after_success:
 - lcov --remove coverage.info '/usr/*' --output-file coverage.info
 - lcov --remove coverage.info 'extern/*' --output-file coverage.info
 - lcov --remove coverage.info 'kokkos/*' --output-file coverage.info
-- lcov --remove coverage.info 'kokkos-build/*' --output-file coverage.info
 - lcov --list coverage.info
 - bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
