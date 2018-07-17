@@ -564,6 +564,19 @@ if ( `lowercase $case_run_dir` == default ) then
   set case_run_dir = ${e3sm_simulations_dir}/${case_name}/run
 endif
 
+# Default group and permissions on NERSC can be a pain for sharing data
+# within the project. This should take care of it. Create top level 
+# directory and set the default group to 'acme', permissions for 
+# group read access for top level and all files underneath (Chris Golaz).
+if ( $machine == 'cori*' || $machine == 'edison' ) then
+  mkdir -p ${e3sm_simulations_dir}/${case_name}
+  cd ${e3sm_simulations_dir}
+  chgrp acme ${case_name}
+  chmod 750 ${case_name}
+  chmod g+s ${case_name}
+  setfacl -d -m g::rx ${case_name}
+endif
+
 mkdir -p ${case_build_dir}
 set build_root = `cd ${case_build_dir}/..; pwd -P`
 mkdir -p ${case_run_dir}
