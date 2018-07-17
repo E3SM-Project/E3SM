@@ -16,3 +16,4 @@ exclude_paths:
 - 'LICENSE'
 - 'README.md'
 - 'run_e3sm.template.csh'
+- 'components/scream/extern/**'
