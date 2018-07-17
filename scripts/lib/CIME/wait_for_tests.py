@@ -290,10 +290,6 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
     else:
         test_status_filepath = test_path
 
-
-    import pdb
-    pdb.set_trace()
-
     logging.debug("Watching file: '{}'".format(test_status_filepath))
 
     while (True):
