@@ -142,7 +142,7 @@ class Compilers(GenericXML):
 
     def write_macros_file(self, macros_file="Macros.make", output_format="make", xml=None):
         if self._version <= 1.0:
-            expect(False, "No longer supported")
+            expect(False, "config_compilers.xml version '{}' is no longer supported".format(self._version))
         else:
             if output_format == "make":
                 format_ = "Makefile"
