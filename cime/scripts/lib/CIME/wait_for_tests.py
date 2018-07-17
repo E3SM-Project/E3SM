@@ -283,12 +283,16 @@ NightlyStartTime: {5} UTC
     run_cmd_no_fail("ctest -VV -D NightlySubmit", verbose=True)
 
 ###############################################################################
-def wait_for_test(test_path, results, wait, check_throughput, check_memory, ignore_namelists, ignore_memleak):
+def wait_for_test(test_path, results, wait, check_throughput, check_memory, ignore_namelists, ignore_memleak, no_run):
 ###############################################################################
     if (os.path.isdir(test_path)):
         test_status_filepath = os.path.join(test_path, TEST_STATUS_FILENAME)
     else:
         test_status_filepath = test_path
+
+
+    import pdb
+    pdb.set_trace()
 
     logging.debug("Watching file: '{}'".format(test_status_filepath))
 
@@ -296,7 +300,8 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
         if (os.path.exists(test_status_filepath)):
             ts = TestStatus(test_dir=os.path.dirname(test_status_filepath))
             test_name = ts.get_name()
-            test_status = ts.get_overall_test_status(wait_for_run=True, # Important
+            test_status = ts.get_overall_test_status(wait_for_run=not no_run, # Important
+                                                     no_run=no_run,
                                                      check_throughput=check_throughput,
                                                      check_memory=check_memory, ignore_namelists=ignore_namelists,
                                                      ignore_memleak=ignore_memleak)
@@ -318,12 +323,12 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
                 break
 
 ###############################################################################
-def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check_memory=False, ignore_namelists=False, ignore_memleak=False):
+def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check_memory=False, ignore_namelists=False, ignore_memleak=False, no_run=False):
 ###############################################################################
     results = queue.Queue()
 
     for test_path in test_paths:
-        t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait, check_throughput, check_memory, ignore_namelists, ignore_memleak))
+        t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait, check_throughput, check_memory, ignore_namelists, ignore_memleak, no_run))
         t.daemon = True
         t.start()
 
@@ -360,14 +365,15 @@ def wait_for_tests(test_paths,
                    cdash_project=E3SM_MAIN_CDASH,
                    cdash_build_group=CDASH_DEFAULT_BUILD_GROUP,
                    timeout=None,
-                   force_log_upload=False):
+                   force_log_upload=False,
+                   no_run=True):
 ###############################################################################
     # Set up signal handling, we want to print results before the program
     # is terminated
     set_up_signal_handlers()
 
     with Timeout(timeout, action=signal_handler):
-        test_results = wait_for_tests_impl(test_paths, no_wait, check_throughput, check_memory, ignore_namelists, ignore_memleak)
+        test_results = wait_for_tests_impl(test_paths, no_wait, check_throughput, check_memory, ignore_namelists, ignore_memleak, no_run)
 
     all_pass = True
     for test_name, test_data in sorted(test_results.items()):
