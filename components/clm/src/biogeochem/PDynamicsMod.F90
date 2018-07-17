@@ -648,6 +648,7 @@ contains
     ! set initial values for potential C and N fluxes
     biochem_pmin_ppools_vr_col(bounds%begc : bounds%endc, :, :) = 0._r8
     biochem_pmin_to_plant_vr_patch(bounds%begp:bounds%endp,1:nlevdecomp) = 0._r8
+    biochem_pmin_to_plant_patch(bounds%begp:bounds%endp) = 0._r8
       
     do j = 1,nlevdecomp
         do fc = 1,num_soilc
@@ -746,7 +747,7 @@ contains
        c = filter_soilc(fc)
        do p = col_pp%pfti(c), col_pp%pftf(c)
         if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
-          biochem_pmin_to_plant_patch(p) = 0._r8
+          !biochem_pmin_to_plant_patch(p) = 0._r8
           do j = 1,nlevdecomp
              biochem_pmin_to_plant_patch(p) = biochem_pmin_to_plant_patch(p) + &
                                               biochem_pmin_to_plant_vr_patch(p,j) * col_pp%dz(c,j)
@@ -762,6 +763,15 @@ contains
           enddo
        end do
     end if
+
+    do j = 1, nlevdecomp
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          do l = 1, ndecomp_pools
+             decomp_ppools_vr_col(c,j,l) = decomp_ppools_vr_col(c,j,l)- biochem_pmin_ppools_vr_col(c,j,l)*dt
+          end do
+       end do
+    end do
 
     end associate
 
