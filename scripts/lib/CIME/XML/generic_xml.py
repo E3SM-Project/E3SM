@@ -453,7 +453,7 @@ class GenericXML(object):
 
             # The overridden versions of this method do not simply return None
             # so the pylint should not be flagging this
-            ref = self.get_value(var) # pylint disable=assignment-from-none
+            ref = self.get_value(var) # pylint: disable=assignment-from-none
 
             if ref is not None:
                 logger.debug("resolve: " + str(ref))
