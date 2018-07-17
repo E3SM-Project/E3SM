@@ -530,7 +530,7 @@ umask 022
 set cime_dir = ${code_root_dir}/${tag_name}/cime
 set create_newcase_exe = $cime_dir/scripts/create_newcase
 if ( -f ${create_newcase_exe} ) then
-  set e3sm_exe = acme.exe
+  set e3sm_exe = e3sm.exe
   set case_setup_exe = $case_scripts_dir/case.setup
   set case_build_exe = $case_scripts_dir/case.build
   set case_run_exe = $case_scripts_dir/.case.run
