@@ -8,6 +8,7 @@ from CIME.Servers.generic_server import GenericServer
 logger = logging.getLogger(__name__)
 
 class SVN(GenericServer):
+
     def __init__(self, address, user='', passwd=''):
         self._args = ''
         if user:
@@ -54,7 +55,3 @@ To check connection and store your credential run 'svn ls {0}' and permanently s
         else:
             logging.info("SUCCESS\n")
             return True
-
-
-
-        
