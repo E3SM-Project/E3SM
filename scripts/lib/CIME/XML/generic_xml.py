@@ -400,7 +400,7 @@ class GenericXML(object):
         for node in valnodes:
             self.set_text(node, value)
 
-        return value
+        return value if valnodes else None
 
     def get_resolved_value(self, raw_value, allow_unresolved_envvars=False):
         """
