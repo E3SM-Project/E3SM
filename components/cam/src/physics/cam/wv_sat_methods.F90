@@ -32,6 +32,7 @@ private
 save
 
 integer, parameter :: r8 = selected_real_kind(12) ! 8 byte real
+integer, parameter :: r4 = selected_real_kind( 6)
 
 real(r8) :: tmelt   ! Melting point of water at 1 atm (K)
 real(r8) :: h2otrip ! Triple point temperature of water (K)
@@ -286,7 +287,7 @@ elemental function wv_sat_svp_water(t, idx) result(es)
 
   select case (use_idx)
   case(GoffGratch_idx)
-     es = GoffGratch_svp_water(t)
+     es = GoffGratch_svp_water_r4(t)
   case(MurphyKoop_idx)
      es = MurphyKoop_svp_water(t)
   case(OldGoffGratch_idx)
@@ -366,18 +367,31 @@ end function wv_sat_svp_trans
 
 ! Goff & Gratch (1946)
 
-elemental function GoffGratch_svp_water(t) result(es)
-  real(r8), intent(in) :: t  ! Temperature in Kelvin
-  real(r8) :: es             ! SVP in Pa
+elemental function GoffGratch_svp_water_r4(t) result(es)
+  real(r8), intent(in) :: t ! Temperature in Kelvin
+  real(r4) :: es, t4, tboil4 ! SVP in Pa
+  t4 = real(t)
+  tboil4 = real(tboil)
+  es = 10._r4**(-7.90298_r4*(tboil4/t4-1._r4)+ &
+       5.02808_r4*log10(tboil4/t4)- &
+       1.3816e-7_r4*(10._r4**(11.344_r4*(1._r4-t4/tboil4))-1._r4)+ &
+       8.1328e-3_r4*(10._r4**(-3.49149_r4*(tboil4/t4-1._r4))-1._r4)+ &
+       log10(1013.246_r4))*100._r4
 
-  ! uncertain below -70 C
-  es = 10._r8**(-7.90298_r8*(tboil/t-1._r8)+ &
-       5.02808_r8*log10(tboil/t)- &
-       1.3816e-7_r8*(10._r8**(11.344_r8*(1._r8-t/tboil))-1._r8)+ &
-       8.1328e-3_r8*(10._r8**(-3.49149_r8*(tboil/t-1._r8))-1._r8)+ &
-       log10(1013.246_r8))*100._r8
+end function GoffGratch_svp_water_r4
 
-end function GoffGratch_svp_water
+!elemental function GoffGratch_svp_water(t) result(es)
+!  real(r8), intent(in) :: t  ! Temperature in Kelvin
+!  real(r8) :: es             ! SVP in Pa
+!
+!  ! uncertain below -70 C
+!  es = 10._r8**(-7.90298_r8*(tboil/t-1._r8)+ &
+!       5.02808_r8*log10(tboil/t)- &
+!       1.3816e-7_r8*(10._r8**(11.344_r8*(1._r8-t/tboil))-1._r8)+ &
+!       8.1328e-3_r8*(10._r8**(-3.49149_r8*(tboil/t-1._r8))-1._r8)+ &
+!       log10(1013.246_r8))*100._r8
+
+!end function GoffGratch_svp_water
 
 elemental function GoffGratch_svp_ice(t) result(es)
   real(r8), intent(in) :: t  ! Temperature in Kelvin
