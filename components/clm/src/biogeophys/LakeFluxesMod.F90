@@ -409,7 +409,12 @@ contains
                  + htvp(c)*forc_rho(c)/raw(p)*qsatgdT(c) + tksur(c)/dzsur(c)
 
             t_grnd(c) = ax/bx
-
+            !prevent too large numerical step
+            if(t_grnd(c)>tgbef(c)+20._r8)then
+              t_grnd(c)=tgbef(c)+20._r8
+            elseif(t_grnd(c)<tgbef(c)-20._r8)then
+              t_grnd(c)=tgbef(c)-20._r8
+            endif
             ! Update htvp
             if (t_grnd(c) > tfrz) then
                htvp(c) = hvap
