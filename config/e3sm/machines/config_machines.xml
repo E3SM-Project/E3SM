@@ -2124,7 +2124,7 @@
         <command name="rm">cray-libsci</command>
         <command name="rm">cray-mpich</command>
         <command name="rm">atp</command>
-        <command name="load">intel/18.0.0.128</command>
+        <command name="load">intel/18.0.1.163</command>
         <command name="load">cray-mpich/7.6.3</command>
         <command name="load">atp/2.1.1</command>
       </modules>
