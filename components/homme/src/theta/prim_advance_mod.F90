@@ -45,7 +45,7 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-       applyCAMforcing_dynamics, applyCAMforcing, vertical_mesh_init2
+       applyCAMforcing_dp3d, applyCAMforcing_ps, vertical_mesh_init2
 
 !  type (EdgeBuffer_t) :: edge5
   type (EdgeBuffer_t) :: edge6
@@ -470,9 +470,17 @@ contains
 
 
 
+!placeholder
+  subroutine applyCAMforcing_dp3d(elem,hvcoord,np1,dt,nets,nete)
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: np1,nets,nete
+  end subroutine applyCAMforcing_dp3d
 
-
-  subroutine applyCAMforcing(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
+!temp solution for theta+ftype0
+  subroutine applyCAMforcing_ps(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
 
   implicit none
   type (element_t),       intent(inout) :: elem(:)
@@ -569,7 +577,7 @@ contains
 
     enddo
     call applyCAMforcing_dynamics(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
-  end subroutine applyCAMforcing
+  end subroutine applyCAMforcing_ps
 
 
 
