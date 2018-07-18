@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 <namelist_defaults>
 
+<!-- Set default output options for CMIP6 simulations -->
+<cosp_lite>.true.</cosp_lite>
+
 <!-- Solar constant from CMIP6 input4MIPS -->
 <solar_data_file>atm/cam/solar/Solar_1850control_input4MIPS_c20171101.nc</solar_data_file>
 <solar_data_ymd>18500101</solar_data_ymd>
@@ -19,28 +22,6 @@
 <prescribed_volcaero_filetype>VOLC_CMIP6					       </prescribed_volcaero_filetype>
 <prescribed_volcaero_type    >CYCLICAL						       </prescribed_volcaero_type    >
 <prescribed_volcaero_cycle_yr>1                                                        </prescribed_volcaero_cycle_yr>
-
-<!-- Add sub-monthly output for CMIP6 runs -->
-<mfilt>1,365,120,30</mfilt>
-<nhtfrq>0,-24,-1,-24</nhtfrq>
-
-<!-- Output some diagnostics for monitoring time varying forcing -->
-<fincl1>
-  'cb_ozone_c', 'cb_sulf_c'
-</fincl1>
-<fincl1 dyn="fv">
-  'cb_ozone_c', 'cb_sulf_c',
-  'MSKtem','VTH2d','UV2d','UW2d','U2d','V2d','TH2d','W2d','UTGWORO'
-</fincl1>
-
-<!-- Daily avg fields present in all runs -->
-<fincl2>'TREFHTMN','TREFHTMX','TREFHT','PRECC','PRECL','PSL'</fincl2>
-
-<!-- Fields for BGC runs -->
-<fincl3>'FSDS','FSNS','FLDS','FLNS','SHFLX','LHFLX',
-        'TS','TBOT','QBOT','TREFHT','QREFHT','PBLH','SFCO2_LND','CO2_BOT'</fincl3>
-
-<fincl4>'CO2','PS','SFCO2_OCN','SFCO2_FFF'</fincl4>
 
 <!-- Ice nucleation mods-->
 <use_hetfrz_classnuc    >.true.</use_hetfrz_classnuc>
@@ -109,7 +90,7 @@
 <prc_exp                 > 3.19D0    </prc_exp>
 <prc_exp1                > -1.2D0    </prc_exp1>
 <se_ftype                > 2         </se_ftype>
-<clubb_C14               > 1.06D0     </clubb_C14>
+<clubb_C14               > 1.17D0     </clubb_C14>
 <relvar_fix              > .true.    </relvar_fix>
 <mg_prc_coeff_fix        > .true.    </mg_prc_coeff_fix>
 <rrtmg_temp_fix          > .true.    </rrtmg_temp_fix>
