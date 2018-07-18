@@ -2360,7 +2360,7 @@ class H_TestMakeMacros(unittest.TestCase):
         self.test_os       = "SomeOS"
         self.test_machine  = "mymachine"
         self.test_compiler = MACHINE.get_default_compiler() if TEST_COMPILER is None else TEST_COMPILER
-        self.test_mpilib   = MACHINE.get_default_MPIlib() if TEST_MPILIB is None else TEST_MPILIB
+        self.test_mpilib   = MACHINE.get_default_MPIlib(attributes={"compiler":self.test_compiler}) if TEST_MPILIB is None else TEST_MPILIB
 
         self._maker = Compilers(MockMachines(self.test_machine, self.test_os), version=2.0)
 
