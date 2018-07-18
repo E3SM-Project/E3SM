@@ -1,34 +1,12 @@
 module med_phases_prep_atm_mod
 
+  implicit none
+  private
+  character(*)      , parameter :: u_FILE_u  = __FILE__
+
   !-----------------------------------------------------------------------------
   ! Mediator Phases
   !-----------------------------------------------------------------------------
-
-  use ESMF
-  use NUOPC
-  use esmFlds                 , only : compatm, compocn, compice, ncomps, compname 
-  use esmFlds                 , only : fldListFr, fldListTo
-  use esmFlds                 , only : fldListMed_aoflux_a, fldListMed_aoflux_o
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_init
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_reset
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_GetFldPtr
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_FldChk
-  use med_constants_mod       , only : med_constants_dbug_flag
-  use med_merge_mod           , only : med_merge_auto
-  use med_map_mod             , only : med_map_FB_Regrid_Norm 
-  use med_phases_ocnalb_mod   , only : med_phases_ocnalb_mapo2a
-  use med_internalstate_mod   , only : InternalState
-
-  implicit none
-  private
-
-  integer           , parameter :: dbug_flag = med_constants_dbug_flag
-  character(*)      , parameter :: u_FILE_u  = __FILE__
-  integer                       :: dbrc
-  logical                       :: mastertask
-
   public  :: med_phases_prep_atm
 
 !-----------------------------------------------------------------------------
@@ -36,6 +14,24 @@ module med_phases_prep_atm_mod
 !-----------------------------------------------------------------------------
 
   subroutine med_phases_prep_atm(gcomp, rc)
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF, only : ESMF_FieldBundleGet, ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet
+    use ESMF, only : ESMF_GridComp, ESMF_Clock, ESMF_Time, ESMF_ClockPrint
+    use shr_kind_mod, only : R8=>shr_kind_r8
+    use esmFlds                 , only : compatm, compocn, compice, ncomps, compname
+    use esmFlds                 , only : fldListFr, fldListTo
+    use esmFlds                 , only : fldListMed_aoflux_a, fldListMed_aoflux_o
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_init
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_reset
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_GetFldPtr
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_FldChk
+    use med_constants_mod       , only : dbug_flag=>med_constants_dbug_flag
+    use med_merge_mod           , only : med_merge_auto
+    use med_map_mod             , only : med_map_FB_Regrid_Norm
+    use med_phases_ocnalb_mod   , only : med_phases_ocnalb_mapo2a
+    use med_internalstate_mod   , only : InternalState
 
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -47,12 +43,16 @@ module med_phases_prep_atm_mod
     type(ESMF_Time)             :: time
     character(len=64)           :: timestr
     type(InternalState)         :: is_local
-    real(ESMF_KIND_R8), pointer :: dataPtr1(:),dataPtr2(:)
-    real(ESMF_KIND_R8), pointer :: ocnwgt(:),icewgt(:)
+    real(R8), pointer :: dataPtr1(:),dataPtr2(:)
+    real(R8), pointer :: ocnwgt(:),icewgt(:)
     integer                     :: mapindex
     integer                     :: i, j, n, n1, ncnt, lsize
     logical,save                :: first_call = .true.
     character(len=*),parameter  :: subname='(med_phases_prep_atm)'
+    integer                       :: dbrc
+    logical                       :: mastertask
+
+
     !---------------------------------------
 
     if (dbug_flag > 5) then
@@ -209,7 +209,7 @@ module med_phases_prep_atm_mod
     do j=lbound(icewgt,2),ubound(icewgt,2)
        do i=lbound(icewgt,1),ubound(icewgt,1)
           !TODO: the sizes here are inconsistent with the declarations
-          ocnwgt(i,j) = 1.0_ESMF_KIND_R8 - icewgt(i,j)
+          ocnwgt(i,j) = 1.0_R8 - icewgt(i,j)
        enddo
     enddo
     !--- merges
