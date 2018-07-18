@@ -13,6 +13,7 @@ module med_internalstate_mod
 
   integer, public :: logunit  ! logunit for mediator log output
   integer, public :: loglevel ! loglevel for mediator log output
+  logical, public :: mastertask=.false. ! is this the mastertask
 
   ! Active coupling definitions
   ! This defines the med_mapping_allowed is a starting point for what is
