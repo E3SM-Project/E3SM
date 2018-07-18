@@ -1196,11 +1196,21 @@ if (defined $opts{'scam'}) {
 }
 my $scam = $cfg_ref->get('scam') ? "ON" : "OFF";
 
-# The only dycore supported in SCAM mode is Eulerian
-if ($scam eq 'ON' and $dyn_pkg ne 'eul') {
+# Currently only Eulerian and Spectral Element dycores support SCM
+if ($scam eq 'ON' and $dyn_pkg ne 'eul' and $dyn_pkg ne 'se') {
     die <<"EOF";
-**  ERROR: SCAM mode only works with Eulerian dycore.
+**  ERROR: SCAM mode only works with Eulerian dycore or Spectral Element dycore.
 **         Requested dycore is: $dyn_pkg
+EOF
+}
+
+# Check that model is configured for serial execution.  Note that configuring with spmd
+# and running with 1 task doesn't work because the EUL dycore expects at least 2 tasks.
+# The model should run if built for threading.
+if ($scam eq 'ON' and $dyn_pkg eq 'eul' and $spmd ne 'OFF') {
+    die <<"EOF";
+**  ERROR: SCAM mode assumes a serial build.
+**         Requested parallel modes are: spmd=$spmd  smp=$smp
 EOF
 }
 

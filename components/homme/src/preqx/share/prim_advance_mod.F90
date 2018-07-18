@@ -128,7 +128,48 @@ contains
 #endif
 
   !_____________________________________________________________________
-  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
+  subroutine set_prescribed_scm(elem,hv,dt,tl)
+
+    use dimensions_mod, only: qsize
+    use time_mod, only: timelevel_qdp
+    use control_mod, only: qsplit  
+
+    type (element_t),      intent(inout), target  :: elem(:) 
+    type (hvcoord_t),      intent(inout)          :: hv
+    real (kind=real_kind), intent(in)             :: dt
+    type (TimeLevel_t)   , intent(in)             :: tl
+    
+    real (kind=real_kind) :: dp(np,np)! pressure thickness, vflux
+    real(kind=real_kind)  :: eta_dot_dpdn(np,np,nlevp)
+    
+    integer :: ie,k,p,n0,np1,n0_qdp,np1_qdp
+
+    n0    = tl%n0
+    np1   = tl%np1
+
+    call TimeLevel_Qdp(tl, qsplit, n0_qdp, np1_qdp)
+    
+    do k=1,nlev
+      eta_dot_dpdn(:,:,k)=elem(1)%derived%omega_p(1,1,k)   
+    enddo  
+    eta_dot_dpdn(:,:,nlev+1) = eta_dot_dpdn(:,:,nlev) 
+    
+    do k=1,nlev
+      elem(1)%state%dp3d(:,:,k,np1) = elem(1)%state%dp3d(:,:,k,n0) &
+        + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))    
+    enddo       
+
+    do p=1,qsize
+      do k=1,nlev
+        elem(1)%state%Qdp(:,:,k,p,np1_qdp)=elem(1)%state%Q(:,:,k,p)*elem(1)%state%dp3d(:,:,k,np1)
+      enddo
+    enddo
+    
+  end subroutine       
+
+  !_____________________________________________________________________
+  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics, &
+               single_column)
 
     use bndry_mod,      only: bndry_exchangev
     use control_mod,    only: prescribed_wind, qsplit, tstep_type, rsplit, qsplit, integration
@@ -152,6 +193,7 @@ contains
     integer              , intent(in)            :: nets
     integer              , intent(in)            :: nete
     logical,               intent(in)            :: compute_diagnostics
+    logical,               intent(in)            :: single_column
 
     real (kind=real_kind) ::  dt2, time, dt_vis, x, eta_ave_w
 
@@ -237,6 +279,11 @@ contains
        eta_ave_w=ur_weights(qsplit_stage+1)
     else
        method = tstep_type                ! other RK variants
+    endif
+    
+    if (single_column) then
+      call set_prescribed_scm(elem,hvcoord,dt,tl)
+      return
     endif
 
 #ifndef CAM
