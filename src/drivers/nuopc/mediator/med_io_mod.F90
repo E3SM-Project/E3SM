@@ -1,30 +1,9 @@
 module med_io_mod
+  ! !DESCRIPTION: Writes attribute vectors to netcdf
 
-  !-----------------------------------------------
-  ! Writes mediator history and restart files
-  !-----------------------------------------------
-
-  use ESMF
-  use seq_comm_mct          , only : CPLID
-  use shr_kind_mod          , only : r4 => shr_kind_r4, r8 => shr_kind_r8
+  ! !USES:
   use shr_kind_mod          , only : cl => shr_kind_cl
-  use shr_sys_mod           , only : shr_sys_abort
-  use shr_mpi_mod           , only : shr_mpi_bcast
-  use shr_const_mod         , only : SHR_CONST_SPVAL
-  use shr_cal_mod           , only : shr_cal_datetod2string
-  use shr_cal_mod           , only : shr_cal_calMaxLen
-  use shr_cal_mod           , only : shr_cal_calendarName
-  use shr_cal_mod           , only : shr_cal_noleap
-  use shr_cal_mod           , only : shr_cal_gregorian
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFieldN
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getNameN
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFldPtr
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
-  use med_internalstate_mod , only : logunit
-  use med_constants_mod     , only : med_constants_dbug_flag
-  use shr_pio_mod           , only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
-  use pio
+  use pio, only : file_desc_t, iosystem_desc_t
 
   implicit none
   private
@@ -66,8 +45,7 @@ module med_io_mod
   character(*),parameter :: prefix    = "med_io_"
   character(*),parameter :: modName   = "(med_io_mod) "
   character(*),parameter :: version   = "cmeps0"
-  integer     ,parameter :: dbug_flag = med_constants_dbug_flag
-  real(r8)    ,parameter :: fillvalue = SHR_CONST_SPVAL
+
   integer    , parameter :: file_desc_t_cnt = 20 ! Note - this is hard-wired for now
   character(*),parameter :: u_file_u = &
        __FILE__
@@ -83,7 +61,8 @@ contains
 !=================================================================================
 
   subroutine med_io_init()
-
+    use seq_comm_mct          , only : CPLID
+    use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
     io_subsystem => shr_pio_getiosys(CPLID)
     pio_iotype   =  shr_pio_getiotype(CPLID)
     pio_ioformat =  shr_pio_getioformat(CPLID)
@@ -92,12 +71,16 @@ contains
 
   !===============================================================================
   subroutine med_io_wopen(filename, mpicom, iam, clobber, file_ind, model_doi_url)
-
     ! !DESCRIPTION: open netcdf file
-
+    use shr_mpi_mod, only : shr_mpi_bcast
+    use pio, only : PIO_IOTYPE_PNETCDF, PIO_IOTYPE_NETCDF, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
+    use pio, only : pio_openfile, pio_createfile, PIO_GLOBAL, pio_enddef, pio_put_att, pio_redef, pio_get_att
+    use pio, only : pio_seterrorhandling, pio_file_is_open, pio_clobber, pio_write, pio_noclobber
+    use shr_sys_mod, only : shr_sys_abort
+    use med_internalstate_mod, only : logunit
     ! input/output arguments
     character(*),            intent(in) :: filename
-    integer,                 intent(in) :: mpicom 
+    integer,                 intent(in) :: mpicom
     integer,                 intent(in) :: iam
     logical,       optional, intent(in) :: clobber
     integer,       optional, intent(in) :: file_ind
@@ -185,7 +168,9 @@ contains
 
   !===============================================================================
   subroutine med_io_close(filename, iam, file_ind)
-
+    use pio, only: pio_file_is_open, pio_closefile
+    use med_internalstate_mod, only : logunit
+    use shr_sys_mod, only : shr_sys_abort
     ! !DESCRIPTION: close netcdf file
 
     ! input/output variables
@@ -217,6 +202,7 @@ contains
 
   !===============================================================================
   subroutine med_io_redef(filename,file_ind)
+    use pio, only : pio_redef
     character(len=*), intent(in) :: filename
     integer,optional,intent(in):: file_ind
 
@@ -231,6 +217,8 @@ contains
 
   !===============================================================================
   subroutine med_io_enddef(filename,file_ind)
+    use med_internalstate_mod, only : logunit
+    use pio, only : pio_enddef
     character(len=*), intent(in) :: filename
     integer,optional,intent(in):: file_ind
     integer :: lfile_ind
@@ -244,7 +232,7 @@ contains
 
   !===============================================================================
   character(len=24) function med_io_date2yyyymmdd (date)
-
+    use shr_cal_mod, only : shr_cal_datetod2string
     ! input arguments
     integer, intent(in) :: date  ! date expressed as an integer: yyyymmdd
     !----------------------------------------------------------------------
@@ -254,7 +242,8 @@ contains
 
   !===============================================================================
   character(len=8) function med_io_sec2hms (seconds)
-
+    use shr_sys_mod, only : shr_sys_abort
+    use med_internalstate_mod , only : logunit
     ! Input arguments
     integer, intent(in) :: seconds
 
@@ -293,7 +282,20 @@ contains
        fillval, pre, tavg, use_float, file_ind, rc)
 
     ! !DESCRIPTION: Write FB to netcdf file
-
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF, only : ESMF_FieldBundleIsCreated, ESMF_FieldBundle, ESMF_Field, ESMF_Mesh, ESMF_DistGrid
+    use ESMF, only : ESMF_FieldBundleGet, ESMF_FieldGet, ESMF_MeshGet, ESMF_DistGridGet
+    use shr_kind_mod, only : R4=>shr_kind_r4, R8=> shr_kind_r8
+    use shr_const_mod         , only : fillvalue=>SHR_CONST_SPVAL
+    use pio, only : var_desc_t, io_desc_t, pio_offset_kind
+    use med_constants_mod, only : dbug_flag=>med_constants_dbug_flag
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getFieldN
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getFldPtr
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getNameN
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
+    use pio, only : pio_def_dim, pio_inq_dimid, pio_real, pio_def_var, pio_put_att, pio_double
+    use pio, only : pio_inq_varid, pio_setframe, pio_write_darray, pio_initdecomp, pio_freedecomp
     ! input/output variables
     character(len=*),           intent(in) :: filename  ! file
     integer,                    intent(in) :: iam       ! local pet
@@ -418,7 +420,7 @@ contains
     !    write(tmpstr,*) subname,' counts = ',dimcount,tilecount,minindexptile,maxindexptile
     !    call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
 
-    ! TODO: this is not getting the global size correct for a FB coming in that does not have 
+    ! TODO: this is not getting the global size correct for a FB coming in that does not have
     ! all the global grid values in the distgrid - e.g. CTSM
 
     ng = maxval(maxIndexPTile)
@@ -529,7 +531,8 @@ contains
 
   !===============================================================================
   subroutine med_io_write_int(filename, iam, idata, dname, whead, wdata, file_ind)
-
+    use pio, only : var_desc_t, pio_def_var, pio_put_att, pio_int, pio_inq_varid, pio_put_var
+    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
     ! !DESCRIPTION:  Write scalar integer to netcdf file
 
     ! intput/output variables
@@ -585,6 +588,9 @@ contains
 
   !===============================================================================
   subroutine med_io_write_int1d(filename, iam, idata, dname, whead, wdata, file_ind)
+    use pio, only : var_desc_t, pio_def_dim, pio_def_var, pio_put_att, pio_inq_varid, pio_put_var
+    use pio, only : pio_int, pio_def_var
+    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
 
     ! !DESCRIPTION: Write 1d integer array to netcdf file
 
@@ -644,12 +650,14 @@ contains
 
   !===============================================================================
   subroutine med_io_write_r8(filename, iam, rdata, dname, whead, wdata, file_ind)
-
+    use shr_kind_mod, only : R8=>shr_kind_r8
+    use pio, only : var_desc_t, pio_def_var, pio_put_att, pio_double, pio_noerr, pio_inq_varid, pio_put_var
+    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
     ! !DESCRIPTION: Write scalar double to netcdf file
 
     ! input/output arguments
     character(len=*),intent(in) :: filename ! file
-    integer         ,intent(in) :: iam      ! local pet 
+    integer         ,intent(in) :: iam      ! local pet
     real(r8)        ,intent(in) :: rdata    ! data to be written
     character(len=*),intent(in) :: dname    ! name of data
     logical,optional,intent(in) :: whead    ! write header
@@ -701,8 +709,10 @@ contains
 
   !===============================================================================
   subroutine med_io_write_r81d(filename, iam, rdata, dname, whead, wdata, file_ind)
-
     ! !DESCRIPTION: Write 1d double array to netcdf file
+    use shr_kind_mod, only : R8=>shr_kind_r8
+    use pio, only : var_desc_t, pio_def_dim, pio_def_var, pio_inq_varid, pio_put_var, pio_double, pio_put_att
+    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
 
     ! !INPUT/OUTPUT PARAMETERS:
     character(len=*),intent(in) :: filename ! file
@@ -758,9 +768,10 @@ contains
 
   !===============================================================================
   subroutine med_io_write_char(filename, iam, rdata, dname, whead, wdata, file_ind)
-
     ! !DESCRIPTION:  Write char string to netcdf file
-
+    use pio, only : var_desc_t, pio_def_dim, pio_put_att, pio_def_var, pio_inq_varid
+    use pio, only : pio_char, pio_put_var
+    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
     ! input/output arguments
     character(len=*),intent(in) :: filename ! file
     integer         ,intent(in) :: iam      ! local pet
@@ -817,12 +828,18 @@ contains
   !===============================================================================
   subroutine med_io_write_time(filename, iam, time_units, time_cal, time_val, nt,&
        whead, wdata, tbnds, file_ind)
-
+    use shr_kind_mod, only : R8=>shr_kind_r8
+    use shr_cal_mod, only : shr_cal_calMaxLen
+    use shr_cal_mod           , only : shr_cal_noleap
+    use shr_cal_mod           , only : shr_cal_gregorian
+    use shr_cal_mod, only : shr_cal_calendarName
+    use pio, only : var_desc_t, PIO_UNLIMITED, pio_double, pio_def_dim, pio_def_var, pio_put_att
+    use pio, only : pio_inq_varid, pio_put_var
     ! !DESCRIPTION: Write time variable to netcdf file
 
     ! input/output variables
     character(len=*),      intent(in) :: filename   ! file
-    integer,               intent(in) :: iam        ! local pet    
+    integer,               intent(in) :: iam        ! local pet
     character(len=*),      intent(in) :: time_units ! units of time
     character(len=*),      intent(in) :: time_cal   ! calendar type
     real(r8)        ,      intent(in) :: time_val   ! data to be written
@@ -910,7 +927,7 @@ contains
 
     ! !input/output arguments
     character(len=*)          ,intent(in)  :: filename ! file
-    integer                   ,intent(in)  :: mpicom 
+    integer                   ,intent(in)  :: mpicom
     integer                   ,intent(in)  :: iam
     type(ESMF_FieldBundle)    ,intent(in)  :: FB       ! data to be written
     character(len=*),optional ,intent(in)  :: pre      ! prefix to variable name
@@ -1083,7 +1100,7 @@ contains
 
     ! input/output arguments
     character(len=*) , intent(in)    :: filename ! file
-    integer          , intent(in)    :: mpicom 
+    integer          , intent(in)    :: mpicom
     integer          , intent(in)    :: iam
     integer          , intent(inout) :: idata    ! integer data
     character(len=*) , intent(in)    :: dname    ! name of data
@@ -1100,12 +1117,18 @@ contains
 
   !===============================================================================
   subroutine med_io_read_int1d(filename, mpicom, iam, idata, dname)
-
     ! !DESCRIPTION: Read 1d integer array from netcdf file
+    use shr_sys_mod, only : shr_sys_abort
+    use shr_mpi_mod, only : shr_mpi_bcast
+    use shr_kind_mod, only : R8=>shr_kind_r8
+    use pio, only : var_desc_t, file_desc_t, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, pio_seterrorhandling
+    use pio, only : pio_get_var, pio_inq_varid, pio_get_att, pio_openfile, pio_nowrite, pio_openfile, pio_global
+    use pio, only : pio_closefile
+    use med_internalstate_mod, only : logunit
 
     ! input/output arguments
     character(len=*), intent(in)    :: filename ! file
-    integer,          intent(in)    :: mpicom 
+    integer,          intent(in)    :: mpicom
     integer,          intent(in)    :: iam
     integer         , intent(inout) :: idata(:) ! integer data
     character(len=*), intent(in)    :: dname    ! name of data
@@ -1148,12 +1171,13 @@ contains
 
   !===============================================================================
   subroutine med_io_read_r8(filename, mpicom, iam, rdata, dname)
+    use shr_kind_mod, only : R8=>shr_kind_r8
 
     ! !DESCRIPTION: Read scalar double from netcdf file
 
     ! input/output arguments
     character(len=*) , intent(in)    :: filename ! file
-    integer          , intent(in)    :: mpicom 
+    integer          , intent(in)    :: mpicom
     integer          , intent(in)    :: iam
     real(r8)         , intent(inout) :: rdata    ! real data
     character(len=*) , intent(in)    :: dname    ! name of data
@@ -1169,12 +1193,18 @@ contains
 
   !===============================================================================
   subroutine med_io_read_r81d(filename, mpicom, iam, rdata, dname)
-
+    use shr_kind_mod, only : R8=>shr_kind_r8
+    use pio, only : file_desc_t, var_desc_t, pio_openfile, pio_closefile, pio_seterrorhandling
+    use pio, only : PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, pio_inq_varid, pio_get_var
+    use pio, only : pio_nowrite, pio_openfile, pio_global, pio_get_att
+    use med_internalstate_mod, only : logunit
+    use shr_sys_mod, only : shr_sys_abort
+    use shr_mpi_mod, only : shr_mpi_bcast
     ! !DESCRIPTION: Read 1d double array from netcdf file
 
     ! input/output arguments
     character(len=*), intent(in)    :: filename ! file
-    integer,          intent(in)    :: mpicom 
+    integer,          intent(in)    :: mpicom
     integer,          intent(in)    :: iam
     real(r8)        , intent(inout) :: rdata(:) ! real data
     character(len=*), intent(in)    :: dname    ! name of data
@@ -1217,12 +1247,17 @@ contains
 
   !===============================================================================
   subroutine med_io_read_char(filename, mpicom, iam, rdata, dname)
-
+    use pio, only : file_desc_t, var_desc_t, pio_seterrorhandling, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
+    use pio, only : pio_closefile, pio_inq_varid, pio_get_var
+    use pio, only : pio_openfile, pio_global, pio_get_att, pio_nowrite
+    use shr_mpi_mod, only : shr_mpi_bcast
+    use med_internalstate_mod, only : logunit
+    use shr_sys_mod, only : shr_sys_abort
     ! !DESCRIPTION: Read char string from netcdf file
 
     ! input/output arguments
     character(len=*), intent(in)    :: filename ! file
-    integer,          intent(in)    :: mpicom 
+    integer,          intent(in)    :: mpicom
     integer,          intent(in)    :: iam
     character(len=*), intent(inout) :: rdata    ! character data
     character(len=*), intent(in)    :: dname    ! name of data
@@ -1234,7 +1269,7 @@ contains
     logical           :: exists
     character(CL)     :: lversion
     character(CL)     :: name1
-    character(CL)     :: charvar   ! buffer for string read/write
+    character(CL)                  :: charvar   ! buffer for string read/write
     character(*),parameter :: subName = '(med_io_read_char) '
     !-------------------------------------------------------------------------------
 
