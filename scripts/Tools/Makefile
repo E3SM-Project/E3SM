@@ -418,7 +418,7 @@ else
        # nagfor runtime to get autoconf
        # tests to work.
          CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
-         SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
+         SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf62rts
        endif
     endif
   endif
