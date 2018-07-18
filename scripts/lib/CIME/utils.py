@@ -1355,7 +1355,7 @@ def does_file_have_string(filepath, text):
 
 def is_last_process_complete(filepath, expect_text, fail_text ):
     """
-    Search the filepath in reverse order looking for expect_text 
+    Search the filepath in reverse order looking for expect_text
     before finding fail_text.
     """
     complete = False
@@ -1375,7 +1375,7 @@ def is_last_process_complete(filepath, expect_text, fail_text ):
         eindex = 0
     else:
         eindex = eindex.start()
-    
+
     if findex > eindex:
         complete = True
 
