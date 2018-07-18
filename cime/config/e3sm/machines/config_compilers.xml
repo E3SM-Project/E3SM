@@ -691,30 +691,52 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="intel18" MACH="snl-blake">
-  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
-  <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
-  <ADD_CXXFLAGS compile_threaded="true"> -qopenmp </ADD_CXXFLAGS>
-  <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
-  <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
-  <FREEFLAGS> -free </FREEFLAGS>
-  <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
-  <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </ADD_FFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 -g -debug minimal </ADD_FFLAGS>
-  <ADD_CFLAGS DEBUG="FALSE"> -O2 -g -debug minimal </ADD_CFLAGS>
-  <ADD_CFLAGS DEBUG="TRUE"> -O0 -g </ADD_CFLAGS>
-  <FFLAGS> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent </FFLAGS>
-  <CFLAGS> -O2 -fp-model precise -std=gnu99 </CFLAGS>
-  <CXXFLAGS> -O2 -fp-model precise -std=c++11 </CXXFLAGS>
-  <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
-  <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
-  <FC_AUTO_R8> -r8 </FC_AUTO_R8>
+  <CPPDEFS>
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL </append>
+  </CPPDEFS>
+  <CFLAGS>
+    <base> -O2 -fp-model precise -std=gnu99 </base>
+    <append compile_threaded="true"> -qopenmp </append>
+    <append DEBUG="FALSE"> -O2 -g -debug minimal </append>
+    <append DEBUG="TRUE"> -O0 -g </append>
+  </CFLAGS>
+  <CXXFLAGS>
+    <base> -O2 -fp-model precise -std=c++11 </base>
+    <append compile_threaded="true"> -qopenmp </append>
+  </CXXFLAGS>
+  <FFLAGS>
+    <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent </base>
+    <append compile_threaded="true"> -qopenmp </append>
+    <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
+    <append DEBUG="FALSE"> -O2 -g -debug minimal </append>
+  </FFLAGS>
+  <LDFLAGS>
+    <append compile_threaded="true"> -qopenmp </append>
+    <append MODEL="driver">-L$(NETCDF_FORTRAN_PATH)/lib64</append>
+  </LDFLAGS>
+  <FREEFLAGS>
+    <base> -free </base>
+  </FREEFLAGS>
+  <FIXEDFLAGS>
+    <base> -fixed -132 </base>
+  </FIXEDFLAGS>
+  <FFLAGS_NOOPT>
+    <base> -O0 </base>
+    <append compile_threaded="true"> -qopenmp </append>
+  </FFLAGS_NOOPT>
+  <FC_AUTO_R8>
+    <base> -r8 </base>
+  </FC_AUTO_R8>
   <SFC> ifort </SFC>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
-  <CXX_LDFLAGS> -cxxlib </CXX_LDFLAGS>
+  <CXX_LDFLAGS>
+    <base> -cxxlib </base>
+  </CXX_LDFLAGS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
+  <KOKKOS_PATH>/ascldap/users/mdeakin/blake/kokkos-release</KOKKOS_PATH>
 </compiler>
 
 <!-- Intel v18 is default on cori-knl and cori-haswell -->
@@ -1819,15 +1841,12 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SFC> pgfortran </SFC>
 </compiler>
 
-<compiler COMPILER="intel18" MACH="snl-blake">
-  <KOKKOS_PATH>/ascldap/users/mdeakin/blake/kokkos-release</KOKKOS_PATH>
-  <ADD_LDFLAGS MODEL="driver">-L$(NETCDF_FORTRAN_PATH)/lib64</ADD_LDFLAGS>
-</compiler>
-
 <compiler COMPILER="gnu" MACH="snl-white">
   <MPICXX>/ascldap/users/mdeakin/tpl-sources/kokkos/bin/nvcc_wrapper</MPICXX>
   <KOKKOS_PATH>/ascldap/users/mdeakin/white/kokkos-release</KOKKOS_PATH>
-  <ADD_CXXFLAGS> -expt-extended-lambda -DCUDA_BUILD </ADD_CXXFLAGS>
+  <CXXFLAGS>
+    <append>-expt-extended-lambda -DCUDA_BUILD</append>
+  </CXXFLAGS>
 </compiler>
 
 <compiler MACH="summitdev" COMPILER="ibm">
