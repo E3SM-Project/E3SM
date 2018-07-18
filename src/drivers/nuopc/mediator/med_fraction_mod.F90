@@ -112,30 +112,12 @@ module med_fraction_mod
   !
   !-----------------------------------------------------------------------------
 
-  use ESMF
-  use esmFlds               , only : compatm, compocn, compice, complnd
-  use esmFlds               , only : comprof, compglc, compwav, compname, ncomps
-  use esmFlds               , only : flds_scalar_name
-  use shr_nuopc_fldList_mod , only : mapconsf, mapfcopy
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFldPtr
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FieldRegrid
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-  use med_map_mod           , only : med_map_Fractions_init
-  use med_internalstate_mod , only : InternalState
-  use med_constants_mod
+  use shr_kind_mod      , only : R8 => shr_kind_r8
+  use esmFlds, only : ncomps
 
   implicit none
   private
 
-  integer                       :: dbrc
-  integer           , parameter :: dbug_flag   = med_constants_dbug_flag
-  real(ESMF_KIND_R8), parameter :: spval_init  = med_constants_spval_init
-  real(ESMF_KIND_R8), parameter :: spval       = med_constants_spval
-  real(ESMF_KIND_R8), parameter :: czero       = med_constants_czero
-  logical           , parameter :: statewrite_flag = med_constants_statewrite_flag
   character(*)      , parameter :: u_FILE_u =  __FILE__
 
   ! Note - everything is private in this module other than these routines
@@ -153,21 +135,21 @@ module med_fraction_mod
   character(len=5),parameter,dimension(1) :: fraclist_w = (/'wfrac'/)
 
   !--- standard ---
-  real(ESMF_KIND_R8),parameter :: eps_fracsum = 1.0e-02      ! allowed error in sum of fracs
-  real(ESMF_KIND_R8),parameter :: eps_fracval = 1.0e-02      ! allowed error in any frac +- 0,1
-  real(ESMF_KIND_R8),parameter :: eps_fraclim = 1.0e-03      ! truncation limit in fractions_a(lfrac)
+  real(R8),parameter :: eps_fracsum = 1.0e-02      ! allowed error in sum of fracs
+  real(R8),parameter :: eps_fracval = 1.0e-02      ! allowed error in any frac +- 0,1
+  real(R8),parameter :: eps_fraclim = 1.0e-03      ! truncation limit in fractions_a(lfrac)
   logical           ,parameter :: atm_frac_correct = .false. ! turn on frac correction on atm grid
 
   !--- standard plus atm fraction consistency ---
-  !  real(ESMF_KIND_R8),parameter :: eps_fracsum = 1.0e-12   ! allowed error in sum of fracs
-  !  real(ESMF_KIND_R8),parameter :: eps_fracval = 1.0e-02   ! allowed error in any frac +- 0,1
-  !  real(ESMF_KIND_R8),parameter :: eps_fraclim = 1.0e-03   ! truncation limit in fractions_a(lfrac)
+  !  real(R8),parameter :: eps_fracsum = 1.0e-12   ! allowed error in sum of fracs
+  !  real(R8),parameter :: eps_fracval = 1.0e-02   ! allowed error in any frac +- 0,1
+  !  real(R8),parameter :: eps_fraclim = 1.0e-03   ! truncation limit in fractions_a(lfrac)
   !  logical ,parameter :: atm_frac_correct = .true. ! turn on frac correction on atm grid
 
   !--- unconstrained and area conserving? ---
-  !  real(ESMF_KIND_R8),parameter :: eps_fracsum = 1.0e-12   ! allowed error in sum of fracs
-  !  real(ESMF_KIND_R8),parameter :: eps_fracval = 1.0e-02   ! allowed error in any frac +- 0,1
-  !  real(ESMF_KIND_R8),parameter :: eps_fraclim = 1.0e-20   ! truncation limit in fractions_a(lfrac)
+  !  real(R8),parameter :: eps_fracsum = 1.0e-12   ! allowed error in sum of fracs
+  !  real(R8),parameter :: eps_fracval = 1.0e-02   ! allowed error in any frac +- 0,1
+  !  real(R8),parameter :: eps_fraclim = 1.0e-20   ! truncation limit in fractions_a(lfrac)
   !  logical ,parameter :: atm_frac_correct = .true. ! turn on frac correction on atm grid
 
 !-----------------------------------------------------------------------------
@@ -175,6 +157,24 @@ module med_fraction_mod
 !-----------------------------------------------------------------------------
 
   subroutine med_fraction_init(gcomp, rc)
+    use med_constants_mod, only : czero=>med_constants_czero
+    use med_constants_mod, only : dbug_flag=>med_constants_dbug_flag
+    use ESMF, only : ESMF_GridComp, ESMF_Clock, ESMF_Time, ESMF_State, ESMF_Field
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF, only : ESMF_GridCompGet, ESMF_StateIsCreated, ESMF_RouteHandleIsCreated
+    use med_internalstate_mod , only : InternalState
+    use esmFlds               , only : compatm, compocn, compice, complnd
+    use esmFlds               , only : comprof, compglc, compwav, compname
+    use esmFlds               , only : flds_scalar_name
+    use shr_nuopc_fldList_mod , only : mapconsf, mapfcopy
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFldPtr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FieldRegrid
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
+    use med_map_mod           , only : med_map_Fractions_init
+
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -187,15 +187,14 @@ module med_fraction_mod
     type(ESMF_State)            :: importState, exportState
     type(ESMF_Field)            :: field
     type(InternalState)         :: is_local
-    real(ESMF_KIND_R8), pointer :: dataPtr(:)
-    real(ESMF_KIND_R8), pointer :: dataPtr1(:),dataPtr2(:),dataPtr3(:),dataPtr4(:)
-    real(ESMF_KIND_R8), pointer :: dataPtr_lfrac(:)
-    real(ESMF_KIND_R8), pointer :: dataPtr_lfrin(:)
-    real(ESMF_KIND_R8), pointer :: dataPtr_ofrac(:)
+    real(R8), pointer :: dataPtr(:)
+    real(R8), pointer :: dataPtr1(:),dataPtr2(:),dataPtr3(:),dataPtr4(:)
     integer                     :: i,j,n,n1
     logical, save               :: first_call = .true.
     integer                     :: maptype
     character(len=*),parameter  :: subname='(med_fraction_init)'
+    integer                       :: dbrc
+
     !---------------------------------------
 
     if (dbug_flag > 5) then
@@ -257,7 +256,7 @@ module med_fraction_mod
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
       ! Set atm 'afrac' to 1.
-      dataPtr(:) = 1.0_ESMF_KIND_R8
+      dataPtr(:) = 1.0_R8
 
       if (is_local%wrap%comp_present(compocn)) then
          ! map atm 'afrac' to ocn 'afrac' conservatively or redist
@@ -384,7 +383,7 @@ module med_fraction_mod
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        ! Set 'frac' in FBfrac(comprof) to 1.
-       dataPtr1(:) = 1.0_ESMF_KIND_R8
+       dataPtr1(:) = 1.0_R8
 
        ! TODO: should this be uncommented?
        ! call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImp(comprof,comprof) , 'frac' , dataPtr2, rc=rc)
@@ -400,7 +399,7 @@ module med_fraction_mod
     if (is_local%wrap%comp_present(compwav)) then
        call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compwav), 'wfrac', dataPtr, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       dataPtr(:) = 1.0_ESMF_KIND_R8
+       dataPtr(:) = 1.0_R8
     endif
 
     !---------------------------------------
@@ -550,11 +549,11 @@ module med_fraction_mod
        call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'ofrac', dataPtr_ofrac, rc=rc)
        do n = 1,size(dataPtr_lfrac)
           dataPtr_lfrac(n) = dataPtr_lfrin(n)
-          dataPtr_ofrac(n) = 1.0_ESMF_KIND_R8 - dataPtr_lfrac(n)
+          dataPtr_ofrac(n) = 1.0_R8 - dataPtr_lfrac(n)
           if (abs(dataPtr_ofrac(n)) < eps_fraclim) then
-             dataPtr_ofrac(n) = 0.0_ESMF_KIND_R8
+             dataPtr_ofrac(n) = 0.0_R8
              if (atm_frac_correct) then
-                dataPtr_lfrac(n) = 1.0_ESMF_KIND_R8
+                dataPtr_lfrac(n) = 1.0_R8
              endif
           end if
        end do
@@ -632,6 +631,19 @@ module med_fraction_mod
   !-----------------------------------------------------------------------------
 
   subroutine med_fraction_set(gcomp, rc)
+    use ESMF, only : ESMF_GridComp, ESMF_Clock, ESMF_Time, ESMF_State, ESMF_Field
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF, only : ESMF_GridCompGet, ESMF_FieldBundleIsCreated
+    use esmFlds               , only : compatm, compocn, compice, complnd
+    use esmFlds               , only : comprof, compglc, compwav, compname
+    use med_constants_mod, only : dbug_flag=>med_constants_dbug_flag
+    use med_internalstate_mod , only : InternalState
+    use shr_nuopc_fldList_mod , only : mapconsf, mapfcopy
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFldPtr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FieldRegrid
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
+
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -644,10 +656,12 @@ module med_fraction_mod
     type(ESMF_State)            :: importState, exportState
     type(ESMF_Field)            :: field
     type(InternalState)         :: is_local
-    real(ESMF_KIND_R8), pointer :: dataPtr(:)
-    real(ESMF_KIND_R8), pointer :: dataPtr1(:),dataPtr2(:),dataPtr3(:),dataPtr4(:)
+    real(R8), pointer :: dataPtr(:)
+    real(R8), pointer :: dataPtr1(:),dataPtr2(:),dataPtr3(:),dataPtr4(:)
     integer                     :: i,j,n,n1
     character(len=*),parameter  :: subname='(med_fraction_set)'
+    integer                       :: dbrc
+
     !---------------------------------------
 
     if (dbug_flag > 5) then
@@ -738,13 +752,12 @@ module med_fraction_mod
 
              call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'lfrac', dataPtr3, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-             where (dataPtr1 + dataPtr2 > 0.0_ESMF_KIND_R8)
-                dataPtr1 = dataPtr1 * ((1.0_ESMF_KIND_R8 - dataPtr3)/(dataPtr2+dataPtr1))
-                dataPtr2 = dataPtr2 * ((1.0_ESMF_KIND_R8 - dataPtr3)/(dataPtr2+dataPtr1))
+             where (dataPtr1 + dataPtr2 > 0.0_R8)
+                dataPtr1 = dataPtr1 * ((1.0_R8 - dataPtr3)/(dataPtr2+dataPtr1))
+                dataPtr2 = dataPtr2 * ((1.0_R8 - dataPtr3)/(dataPtr2+dataPtr1))
              elsewhere
-                dataPtr1 = 0.0_ESMF_KIND_R8
-                dataPtr2 = 0.0_ESMF_KIND_R8
+                dataPtr1 = 0.0_R8
+                dataPtr2 = 0.0_R8
              end where
           endif
        endif
