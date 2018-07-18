@@ -1457,7 +1457,9 @@ contains
           nf = f_area  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_o
           nf = f_wmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_meltw,n)
           nf = f_hmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_melth,n)
-          nf = f_wsalt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_salt,n) * SFLXtoWFLX
+          if (trim(cime_model) == 'cesm') then
+             nf = f_wsalt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_salt,n) * SFLXtoWFLX
+          endif
           nf = f_hswnet; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Foxx_swnet,n)
           nf = f_hlwdn ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Faxa_lwdn,n)
           nf = f_wrain ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Faxa_rain,n)
@@ -1615,7 +1617,9 @@ contains
           nf = f_area  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i
           nf = f_hmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*i2x_i%rAttr(index_i2x_Fioi_melth,n)
           nf = f_wmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*i2x_i%rAttr(index_i2x_Fioi_meltw,n)
-          nf = f_wsalt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*i2x_i%rAttr(index_i2x_Fioi_salt,n) * SFLXtoWFLX
+          if (trim(cime_model) == 'cesm') then
+             nf = f_wsalt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*i2x_i%rAttr(index_i2x_Fioi_salt,n) * SFLXtoWFLX
+          endif
           nf = f_hswnet; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*i2x_i%rAttr(index_i2x_Faii_swnet,n) &
                - ca_i*i2x_i%rAttr(index_i2x_Fioi_swpen,n)
           nf = f_hlwup ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*i2x_i%rAttr(index_i2x_Faii_lwup,n)
@@ -1752,7 +1756,7 @@ contains
 
   SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
        budg_print_inst,  budg_print_daily,  budg_print_month,  &
-       budg_print_ann,  budg_print_ltann,  budg_print_ltend)
+       budg_print_ann,  budg_print_ltann,  budg_print_ltend, infodata)
 
     implicit none
 
@@ -1766,6 +1770,7 @@ contains
     integer          , intent(in) :: budg_print_ann
     integer          , intent(in) :: budg_print_ltann
     integer          , intent(in) :: budg_print_ltend
+    type(seq_infodata_type) , intent(in) :: infodata
 
     !EOP
 
@@ -1779,6 +1784,7 @@ contains
     integer(in)      :: plev        ! print level
     logical          :: sumdone     ! has a sum been computed yet
     character(len=40):: str         ! string
+    character(len=cs):: cime_model
     real(r8) :: dataGpr (f_size,c_size,p_size) ! values to print, scaled and such
     integer, parameter :: nisotopes = 3
     character(len=5), parameter :: isoname(nisotopes) = (/ 'H216O',   'H218O',   '  HDO'   /)
@@ -1795,6 +1801,12 @@ contains
     character(*),parameter :: FA1= "('    ',a12,6f15.8)"
     character(*),parameter :: FA0r="('    ',12x,8(6x,a8,1x))"
     character(*),parameter :: FA1r="('    ',a12,8f15.8)"
+
+    !-------------------------------------------------------------------------------
+    !
+    !-------------------------------------------------------------------------------
+
+    call seq_infodata_GetData(infodata, cime_model=cime_model)
 
     !-------------------------------------------------------------------------------
     ! print instantaneous budget data
@@ -1898,6 +1910,7 @@ contains
                 write(logunit,FAH) subname,trim(str)//' WATER BUDGET (kg/m2s*1e6): period = ',trim(pname(ip)),': date = ',cdate,sec
                 write(logunit,FA0) cname(ica),cname(icl),cname(icn),cname(ics),cname(ico),' *SUM*  '
                 do nf = f_w, f_w_end
+                   if (nf == f_wsalt .and. trim(cime_model) == 'e3sm') cycle
                    write(logunit,FA1)    fname(nf),dataGpr(nf,ica,ip),dataGpr(nf,icl,ip), &
                         dataGpr(nf,icn,ip),dataGpr(nf,ics,ip),dataGpr(nf,ico,ip), &
                         dataGpr(nf,ica,ip)+dataGpr(nf,icl,ip)+ &
@@ -1988,6 +2001,7 @@ contains
                 write(logunit,FAH) subname,trim(str)//' WATER BUDGET (kg/m2s*1e6): period = ',trim(pname(ip)),': date = ',cdate,sec
                 write(logunit,FA0) cname(icar),cname(icxs),cname(icxr),cname(icas),' *SUM*  '
                 do nf = f_w, f_w_end
+                   if (nf == f_wsalt .and. trim(cime_model) == 'e3sm') cycle
                    write(logunit,FA1)    fname(nf),-dataGpr(nf,icar,ip),dataGpr(nf,icxs,ip), &
                         dataGpr(nf,icxr,ip),-dataGpr(nf,icas,ip), &
                         -dataGpr(nf,icar,ip)+dataGpr(nf,icxs,ip)+ &
@@ -2101,6 +2115,7 @@ contains
              write(logunit,FAH) subname,'NET WATER BUDGET (kg/m2s*1e6): period = ',trim(pname(ip)),': date = ',cdate,sec
              write(logunit,FA0r) '     atm','     lnd','     rof','     ocn','  ice nh','  ice sh','     glc',' *SUM*  '
              do nf = f_w, f_w_end
+                if (nf == f_wsalt .and. trim(cime_model) == 'e3sm') cycle
                 write(logunit,FA1r)   fname(nf),dataGpr(nf,c_atm_ar,ip)+dataGpr(nf,c_atm_as,ip), &
                      dataGpr(nf,c_lnd_lr,ip)+dataGpr(nf,c_lnd_ls,ip), &
                      dataGpr(nf,c_rof_rr,ip)+dataGpr(nf,c_rof_rs,ip), &
