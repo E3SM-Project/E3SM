@@ -4,33 +4,10 @@ module med_phases_prep_ice_mod
   ! Mediator Phases
   !-----------------------------------------------------------------------------
 
-  use ESMF
-  use NUOPC
-  use shr_kind_mod            , only : CL=>SHR_KIND_CL, CS=>SHR_KIND_CS
-  use esmFlds                 , only : compatm, compice, comprof, compglc, ncomps, compname  
-  use esmFlds                 , only : fldListFr, fldListTo
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_reset
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_GetFldPtr
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_FldChk
-  use med_constants_mod       , only : med_constants_dbug_flag
-  use med_constants_mod       , only : med_constants_czero
-  use med_merge_mod           , only : med_merge_auto
-  use med_map_mod             , only : med_map_FB_Regrid_Norm 
-  use med_internalstate_mod   , only : InternalState, logunit
-
   implicit none
   private
 
-  integer           , parameter :: dbug_flag = med_constants_dbug_flag
-  real(ESMF_KIND_R8), parameter :: czero     = med_constants_czero
   character(*)      , parameter :: u_FILE_u  = __FILE__
-  integer                       :: dbrc
-  logical                       :: mastertask
-
-  ! TODO: the calculation needs to be set at run time based on receiving it from the ocean
-  real(ESMF_KIND_R8)            :: flux_epbalfact = 1._ESMF_KIND_R8 
 
   public  :: med_phases_prep_ice
 
@@ -39,6 +16,23 @@ module med_phases_prep_ice_mod
 !-----------------------------------------------------------------------------
 
   subroutine med_phases_prep_ice(gcomp, rc)
+    use ESMF, only : ESMF_GridComp, ESMF_Clock, ESMF_Time
+    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF, only: ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
+    use ESMF, only: ESMF_FieldBundleGet
+    use shr_kind_mod            , only : CL=>SHR_KIND_CL, CS=>SHR_KIND_CS, R8=>shr_kind_r8
+    use esmFlds                 , only : compatm, compice, comprof, compglc, ncomps, compname
+    use esmFlds                 , only : fldListFr, fldListTo
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_reset
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_GetFldPtr
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_FldChk
+    use med_constants_mod       , only : dbug_flag=>med_constants_dbug_flag
+    use med_merge_mod           , only : med_merge_auto
+    use med_map_mod             , only : med_map_FB_Regrid_Norm
+    use med_internalstate_mod   , only : InternalState, logunit, mastertask
+
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -49,13 +43,17 @@ module med_phases_prep_ice_mod
     type(ESMF_Time)             :: time
     character(len=64)           :: timestr
     type(InternalState)         :: is_local
-    real(ESMF_KIND_R8), pointer :: dataPtr1(:), dataPtr2(:), dataPtr3(:), dataPtr4(:)
+    real(R8), pointer :: dataPtr1(:), dataPtr2(:), dataPtr3(:), dataPtr4(:)
     integer                     :: i,n,n1,ncnt
     logical,save                :: first_call = .true.
-    character(len=CS)           :: fldname         
-    real(ESMF_KIND_R8), pointer :: dataptr(:)      
-    character(len=1024)         :: msgString       
+    character(len=CS)           :: fldname
+    real(R8), pointer :: dataptr(:)
+    character(len=1024)         :: msgString
     character(len=*),parameter  :: subname='(med_phases_prep_ice)'
+    integer :: dbrc
+    ! TODO: the calculation needs to be set at run time based on receiving it from the ocean
+    real(R8)            :: flux_epbalfact = 1._R8
+
     !---------------------------------------
 
     if (dbug_flag > 5) then
@@ -150,7 +148,7 @@ module med_phases_prep_ice_mod
     if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compice), 'Faxa_rain', rc=rc)) then
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Faxa_rain' , dataptr1, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       dataptr1(:) = dataptr1(:) * flux_epbalfact 
+       dataptr1(:) = dataptr1(:) * flux_epbalfact
        if (first_call) then
           write(logunit,'(a)')'(merge_to_ice): Scaling Faxa_rain by flux_epbalfact '
        end if
@@ -158,7 +156,7 @@ module med_phases_prep_ice_mod
     if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compice), 'Faxa_snow', rc=rc)) then
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Faxa_snow' , dataptr1, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       dataptr1(:) = dataptr1(:) * flux_epbalfact 
+       dataptr1(:) = dataptr1(:) * flux_epbalfact
        if (first_call) then
           write(logunit,'(a)')'(merge_to_ice): Scaling Faxa_snow by flux_epbalfact '
        end if
@@ -166,7 +164,7 @@ module med_phases_prep_ice_mod
     if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compice), 'Fixx_rofi', rc=rc)) then
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Fixx_rofi' , dataptr1, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       dataptr1(:) = dataptr1(:) * flux_epbalfact 
+       dataptr1(:) = dataptr1(:) * flux_epbalfact
        if (first_call) then
           write(logunit,'(a)')'(merge_to_ice): Scaling Fixx_rofi by flux_epbalfact '
        end if
