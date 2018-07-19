@@ -211,7 +211,6 @@ contains
 
     lfile_ind = 0
     if (present(file_ind)) lfile_ind=file_ind
-
     rcode = pio_redef(io_file(lfile_ind))
   end subroutine med_io_redef
 

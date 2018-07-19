@@ -228,7 +228,7 @@ contains
           endif
 
           tbnds = dayssince
-          !------- tcx nov 2011 tbnds of same values causes problems in ferret
+
           call ESMF_LogWrite(trim(subname)//": time "//trim(time_units), ESMF_LOGMSG_INFO, rc=dbrc)
           if (tbnds(1) >= tbnds(2)) then
              call med_io_write(hist_file, iam, &
@@ -244,18 +244,12 @@ contains
              if (is_local%wrap%comp_present(n)) then
                 if (ESMF_FieldBundleIsCreated(is_local%wrap%FBimp(n,n),rc=rc)) then
                    call med_infodata_GetData(med_infodata, ncomp=n, nx=nx, ny=ny)
-                   !write(tmpstr,*) subname,' nx,ny = ',trim(compname(n)),nx,ny
-                   !call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
-
                    call med_io_write(hist_file, iam, is_local%wrap%FBimp(n,n), &
                        nx=nx, ny=ny, nt=1, whead=whead, wdata=wdata, pre=trim(compname(n))//'Imp', rc=rc)
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                 endif
                 if (ESMF_FieldBundleIsCreated(is_local%wrap%FBexp(n),rc=rc)) then
                    call med_infodata_GetData(med_infodata, ncomp=n, nx=nx, ny=ny)
-                   !write(tmpstr,*) subname,' nx,ny = ',trim(compname(n)),nx,ny
-                   !call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
-
                    call med_io_write(hist_file, iam, is_local%wrap%FBexp(n), &
                        nx=nx, ny=ny, nt=1, whead=whead, wdata=wdata, pre=trim(compname(n))//'Exp', rc=rc)
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
