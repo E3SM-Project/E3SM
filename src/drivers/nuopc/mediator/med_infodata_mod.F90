@@ -3,23 +3,11 @@ module med_infodata_mod
   ! !DESCRIPTION: A module to get, put, and store some standard scalar data
 
   ! !USES:
-  use ESMF
-  use NUOPC
-  use mpi
-  use shr_kind_mod          , only: SHR_KIND_CS, SHR_KIND_CL, SHR_KIND_IN, SHR_KIND_R8, SHR_KIND_I8
-  use shr_sys_mod           , only: shr_sys_flush, shr_sys_abort
+
+  use shr_kind_mod, only: shr_kind_CL, R8=>SHR_KIND_R8
   use seq_comm_mct          , only: num_inst_atm, num_inst_lnd, num_inst_rof
   use seq_comm_mct          , only: num_inst_ocn, num_inst_ice, num_inst_glc, num_inst_wav
-  use esmFlds               , only: ncomps, compname
-  use esmFlds               , only: flds_scalar_num, flds_scalar_name
-  use esmFlds               , only: flds_scalar_index_nx,  flds_scalar_index_ny
-  use esmFlds               , only: flds_scalar_index_flood_present
-  use esmFlds               , only: flds_scalar_index_rofice_present
-  use esmFlds               , only: flds_scalar_index_precip_fact
-  use esmFlds               , only: flds_scalar_index_nextsw_cday
-  use shr_nuopc_methods_mod , only: shr_nuopc_methods_chkErr
-  use med_internalstate_mod , only: logunit, loglevel
-
+  use esmFlds               , only: ncomps
   implicit none
   private  ! default private
 
@@ -70,8 +58,8 @@ module med_infodata_mod
                                                              ! (only relevant if glc_present is .true.)
 
      !--- set via components and may be time varying ---
-     real(SHR_KIND_R8)       :: nextsw_cday = -1.0_SHR_KIND_R8 ! calendar of next atm shortwave
-     real(SHR_KIND_R8)       :: precip_fact =  1.0_SHR_KIND_R8 ! precip factor
+     real(R8)       :: nextsw_cday = -1.0_R8 ! calendar of next atm shortwave
+     real(R8)       :: precip_fact =  1.0_R8 ! precip factor
      type(seq_pause_resume_type), pointer :: pause_resume => NULL()
 
      !--- set by driver and may be time varying
@@ -81,8 +69,7 @@ module med_infodata_mod
   type (med_infodata_type), target :: med_infodata ! single instance for cpl and all comps
 
   ! used/reused in module
-  integer                :: dbrc
-  character(len=1024)    :: msgString
+
   character(*),parameter :: u_FILE_u = &
     __FILE__
 
@@ -130,6 +117,19 @@ CONTAINS
 
   !================================================================================
   subroutine med_infodata_CopyStateToInfodata(State, infodata, type, mpicom, rc)
+    use ESMF, only : ESMF_State, ESMF_Field, ESMF_StateItem_Flag
+    use ESMF, only: ESMF_StateGet, ESMF_FieldGet, ESMF_LogWrite
+    use ESMF, only: ESMF_SUCCESS, ESMF_FAILURE, ESMF_LOGMSG_INFO
+    use ESMF, only: ESMF_STATEITEM_NOTFOUND, operator(==)
+    use esmFlds               , only: flds_scalar_num, flds_scalar_name, compname
+    use esmFlds               , only: flds_scalar_index_nx,  flds_scalar_index_ny
+    use esmFlds               , only: flds_scalar_index_nextsw_cday
+    use esmFlds               , only: flds_scalar_index_flood_present
+    use esmFlds               , only: flds_scalar_index_rofice_present
+    use esmFlds               , only: flds_scalar_index_precip_fact
+    use mpi, only: mpi_comm_rank, MPI_ERROR_STRING, mpi_bcast, mpi_real8, MPI_SUCCESS
+    use mpi, only : MPI_MAX_ERROR_STRING
+    use shr_nuopc_methods_mod , only: shr_nuopc_methods_chkErr
     ! ----------------------------------------------
     ! Copy scalar data from State to local data on root then broadcast data
     ! to all PETs in component.
@@ -146,9 +146,11 @@ CONTAINS
     character(MPI_MAX_ERROR_STRING) :: lstring
     type(ESMF_Field)                :: field
     type(ESMF_StateItem_Flag)       :: itemType
-    real(ESMF_KIND_R8), pointer     :: farrayptr(:,:)
-    real(ESMF_KIND_R8)              :: data(flds_scalar_num)
+    real(R8), pointer     :: farrayptr(:,:)
+    real(R8)              :: data(flds_scalar_num)
     character(len=32)               :: ntype
+    integer                :: dbrc
+    character(len=1024)    :: msgString
     character(len=*), parameter     :: subname='(med_infodata_CopyStateToInfodata)'
     !----------------------------------------------------------
 
@@ -250,6 +252,14 @@ CONTAINS
 
   !================================================================================
   subroutine med_infodata_CopyInfodataToState(infodata, State, type, mpicom, rc)
+    use ESMF, only : ESMF_State, ESMF_StateGet, ESMF_Field, ESMF_StateItem_Flag, ESMF_FieldGet
+    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_STATEITEM_NOTFOUND
+    use ESMF, only: operator(==), ESMF_FAILURE
+    use mpi, only : mpi_comm_rank
+    use shr_nuopc_methods_mod , only: shr_nuopc_methods_chkErr
+    use esmFlds               , only: flds_scalar_num, flds_scalar_name
+    use esmFlds               , only: flds_scalar_index_nextsw_cday
+    use esmFlds               , only: flds_scalar_index_precip_fact
     ! ----------------------------------------------
     ! Copy local scalar data into State, root only,
     ! but called on all PETs in component
@@ -264,8 +274,9 @@ CONTAINS
     integer                     :: mytask
     type(ESMF_Field)            :: field
     type(ESMF_StateItem_Flag)   :: ItemType
-    real(ESMF_KIND_R8), pointer :: farrayptr(:,:)
-    real(ESMF_KIND_R8)          :: nextsw_cday, precip_fact
+    real(R8), pointer :: farrayptr(:,:)
+    real(R8)          :: nextsw_cday, precip_fact
+    integer :: dbrc
     character(len=*), parameter :: subname='(med_infodata_CopyInfodataToState)'
     !----------------------------------------------------------
 
@@ -307,12 +318,14 @@ CONTAINS
   !===============================================================================
   subroutine med_infodata_GetData( infodata, ncomp, flux_epbal, flux_epbalfact, nx, ny)
     ! Get values out of the infodata object.
-
+    use shr_kind_mod, only : shr_kind_cl, shr_kind_in
+    use med_internalstate_mod , only: logunit, loglevel
+    use shr_sys_mod, only : shr_sys_abort
     ! !INPUT/OUTPUT PARAMETERS:
     type(med_infodata_type),          intent(IN)  :: infodata       ! Input CCSM structure
     integer(SHR_KIND_IN),   optional, intent(IN)  :: ncomp          ! Component ID
     character(SHR_KIND_CL), optional, intent(IN)  :: flux_epbal     ! selects E,P,R adjustment technique
-    real(SHR_KIND_R8),      optional, intent(OUT) :: flux_epbalfact ! adjusted precip factor
+    real(R8),      optional, intent(OUT) :: flux_epbalfact ! adjusted precip factor
     integer(SHR_KIND_IN),   optional, intent(OUT) :: nx             ! nx
     integer(SHR_KIND_IN),   optional, intent(OUT) :: ny             ! ny
 
@@ -325,15 +338,15 @@ CONTAINS
           call shr_sys_abort(subname // "Must provide flux_epbal as an input argument to determine infodata%precip_fact")
        end if
 
-       flux_epbalfact = 1.0_SHR_KIND_R8
+       flux_epbalfact = 1.0_R8
        if (trim(flux_epbal) == 'ocn') then
           flux_epbalfact = infodata%precip_fact
-          if (flux_epbalfact <= 0.0_SHR_KIND_R8) then
+          if (flux_epbalfact <= 0.0_R8) then
              if (loglevel > 0) then
                 write(logunit,'(2a,e16.6)') trim(subname),' WARNING: factor from ocn = ',flux_epbalfact
                 write(logunit,'(2a)') trim(subname),' WARNING: resetting flux_epbalfact to 1.0'
              end if
-             flux_epbalfact = 1.0_SHR_KIND_R8
+             flux_epbalfact = 1.0_R8
           end if
        end if
     endif
