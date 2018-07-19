@@ -4,45 +4,12 @@ module med_phases_history_mod
   ! Mediator Phases
   !-----------------------------------------------------------------------------
 
-  use ESMF
-  use NUOPC
-  use shr_kind_mod            , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8
-  use shr_kind_mod            , only : CL=>SHR_KIND_CL, CS=>SHR_KIND_CS
-  use shr_cal_mod             , only : shr_cal_noleap, shr_cal_gregorian
-  use shr_cal_mod             , only : shr_cal_ymd2date
-  use seq_timemgr_mod         , only : seq_timemgr_AlarmInit, seq_timemgr_AlarmIsOn
-  use seq_timemgr_mod         , only : seq_timemgr_AlarmSetOff
-  use esmFlds                 , only : compatm, complnd, compocn, compice, comprof, compglc
-  use esmFlds                 , only : ncomps, compname 
-  use esmFlds                 , only : fldListFr, fldListTo
-  use esmFlds                 , only : fldListMed_aoflux_a, fldListMed_aoflux_o
-  use esmFlds                 , only : flds_scalar_name, flds_scalar_num
-  use esmFlds                 , only : flds_scalar_index_nx, flds_scalar_index_ny
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_reset
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_GetFldPtr
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_accum
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_State_GetScalar
-  use med_constants_mod       , only : med_constants_dbug_flag
-  use med_constants_mod       , only : med_constants_czero
-  use med_infodata_mod        , only : med_infodata, med_infodata_GetData
-  use med_merge_mod           , only : med_merge_auto
-  use med_map_mod             , only : med_map_FB_Regrid_Norm 
-  use med_internalstate_mod   , only : InternalState
-  use med_io_mod              , only : med_io_write, med_io_wopen, med_io_enddef
-  use med_io_mod              , only : med_io_close, med_io_date2yyyymmdd
-  use med_io_mod              , only : med_io_sec2hms
+  use ESMF, only : ESMF_Alarm
 
   implicit none
   private
 
-  integer           , parameter :: dbug_flag = med_constants_dbug_flag
-  real(ESMF_KIND_R8), parameter :: czero     = med_constants_czero
   character(*)      , parameter :: u_FILE_u  = __FILE__
-  character(len=ESMF_MAXSTR)    :: tmpstr
-  integer                       :: dbrc
-  logical                       :: mastertask
   integer, parameter            :: SecPerDay = 86400    ! Seconds per day
   type(ESMF_Alarm)              :: AlarmHist
 
@@ -53,6 +20,41 @@ contains
 !===============================================================================
 
   subroutine med_phases_history_write(gcomp, rc)
+    use ESMF, only : ESMF_GridComp, ESMF_VM, ESMF_Clock, ESMF_Time, ESMF_TimeInterval, ESMF_CalKind_Flag
+    use ESMF, only: ESMF_GridCompGet, ESMF_ClockGet, ESMF_ClockGetNextTime, ESMF_VMGet, ESMF_TimeGet
+    use ESMF, only: ESMF_TimeIntervalGet, ESMF_CALKIND_GREGORIAN, ESMF_CALKIND_NOLEAP
+    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LOGMSG_ERROR, ESMF_SUCCESS, ESMF_FAILURE
+    use ESMF, only: operator(==), operator(-)
+    use ESMF, only: ESMF_FieldBundleIsCreated, ESMF_MAXSTR, ESMF_ClockPrint, ESMF_AlarmIsCreated
+    use NUOPC, only : NUOPC_CompAttributeGet
+    use shr_kind_mod            , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8
+    use shr_kind_mod            , only : CL=>SHR_KIND_CL, CS=>SHR_KIND_CS
+    use shr_cal_mod             , only : shr_cal_noleap, shr_cal_gregorian
+    use shr_cal_mod             , only : shr_cal_ymd2date
+    use seq_timemgr_mod         , only : seq_timemgr_AlarmInit, seq_timemgr_AlarmIsOn
+    use seq_timemgr_mod         , only : seq_timemgr_AlarmSetOff
+    use esmFlds                 , only : compatm, complnd, compocn, compice, comprof, compglc
+    use esmFlds                 , only : ncomps, compname
+    use esmFlds                 , only : fldListFr, fldListTo
+    use esmFlds                 , only : fldListMed_aoflux_a, fldListMed_aoflux_o
+    use esmFlds                 , only : flds_scalar_name, flds_scalar_num
+    use esmFlds                 , only : flds_scalar_index_nx, flds_scalar_index_ny
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_reset
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_GetFldPtr
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_accum
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_State_GetScalar
+    use med_constants_mod       , only : dbug_flag =>med_constants_dbug_flag
+    use med_infodata_mod        , only : med_infodata, med_infodata_GetData
+    use med_merge_mod           , only : med_merge_auto
+    use med_map_mod             , only : med_map_FB_Regrid_Norm
+    use med_internalstate_mod   , only : InternalState, mastertask
+    use med_io_mod              , only : med_io_write, med_io_wopen, med_io_enddef
+    use med_io_mod              , only : med_io_close, med_io_date2yyyymmdd
+    use med_io_mod              , only : med_io_sec2hms
+
+>>>>>>> cleanup history_mod
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -89,9 +91,11 @@ contains
     logical                 :: alarmIsOn      ! generic alarm flag
     real(r8)                :: tbnds(2)       ! CF1.0 time bounds
     logical                 :: whead,wdata    ! for writing restart/history cdf files
-    integer                 :: iam,mpicom     ! vm stuff
     logical,save            :: first_call = .true.
+    character(len=ESMF_MAXSTR)    :: tmpstr
+    integer                       :: dbrc
     character(len=*), parameter :: subname='(med_phases_history_write)'
+
     !---------------------------------------
 
     if (dbug_flag > 5) then
@@ -200,7 +204,7 @@ contains
 
     !---------------------------------------
     ! --- History File
-    ! Use nexttimestr rather than currtimestr here since that is the time at the end of 
+    ! Use nexttimestr rather than currtimestr here since that is the time at the end of
     ! the timestep and is preferred for history file names
     !---------------------------------------
 
@@ -224,7 +228,7 @@ contains
           endif
 
           tbnds = dayssince
-          !------- tcx nov 2011 tbnds of same values causes problems in ferret                  
+          !------- tcx nov 2011 tbnds of same values causes problems in ferret
           call ESMF_LogWrite(trim(subname)//": time "//trim(time_units), ESMF_LOGMSG_INFO, rc=dbrc)
           if (tbnds(1) >= tbnds(2)) then
              call med_io_write(hist_file, iam, &
