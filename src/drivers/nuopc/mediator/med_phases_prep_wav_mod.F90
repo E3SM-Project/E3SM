@@ -4,24 +4,10 @@ module med_phases_prep_wav_mod
   ! Mediator Phases
   !-----------------------------------------------------------------------------
 
-  use ESMF
-  use NUOPC
-  use esmFlds                 , only : compwav, ncomps, compname 
-  use esmFlds                 , only : fldListFr, fldListTo
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
-  use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
-  use med_constants_mod       , only : med_constants_dbug_flag
-  use med_merge_mod           , only : med_merge_auto
-  use med_map_mod             , only : med_map_FB_Regrid_Norm 
-  use med_internalstate_mod   , only : InternalState
-
   implicit none
   private
 
-  integer           , parameter :: dbug_flag = med_constants_dbug_flag
   character(*)      , parameter :: u_FILE_u  = __FILE__
-  integer                       :: dbrc
-  logical                       :: mastertask
 
   public  :: med_phases_prep_wav
 
@@ -30,6 +16,20 @@ module med_phases_prep_wav_mod
 !-----------------------------------------------------------------------------
 
   subroutine med_phases_prep_wav(gcomp, rc)
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF, only : ESMF_GridComp, ESMF_Clock, ESMF_Time
+    use ESMF, only : ESMF_GridCompGet, ESMF_FieldBundleGet, ESMF_ClockGet, ESMF_TimeGet
+    use ESMF, only : ESMF_ClockPrint
+    use shr_kind_mod, only : shr_kind_cs
+    use esmFlds                 , only : compwav, ncomps, compname
+    use esmFlds                 , only : fldListFr, fldListTo
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
+    use med_constants_mod       , only : dbug_flag=>med_constants_dbug_flag
+    use med_merge_mod           , only : med_merge_auto
+    use med_map_mod             , only : med_map_FB_Regrid_Norm
+    use med_internalstate_mod   , only : InternalState, mastertask
+
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -38,10 +38,11 @@ module med_phases_prep_wav_mod
     ! local variables
     type(ESMF_Clock)            :: clock
     type(ESMF_Time)             :: time
-    character(len=64)           :: timestr
+    character(len=shr_kind_CS)           :: timestr
     type(InternalState)         :: is_local
     integer                     :: i,j,n,n1,ncnt
     logical,save                :: first_call = .true.
+    integer :: dbrc
     character(len=*),parameter  :: subname='(med_phases_prep_wav)'
     !---------------------------------------
 
