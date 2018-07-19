@@ -2768,12 +2768,12 @@
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="python">module</cmd_path>
       <modules>
-        <command name="load">zlib/1.2.8</command>
-        <command name="load">cuda/8.0.44</command>
-        <command name="load">openmpi/1.10.4/gcc/5.4.0/cuda/8.0.44</command>
-        <command name="load">openblas/0.2.19/gcc/5.4.0</command>
-        <command name="load">netcdf/4.4.1/openmpi/1.10.4/gcc/5.4.0/cuda/8.0.44</command>
-        <command name="load">netcdf-f/4.4.4/openmpi/1.10.4/gcc/5.4.0/cuda/8.0.44</command>
+	<command name="load">cuda/9.0.176</command>
+	<command name="load">gcc/7.2.0</command>
+	<command name="load">zlib/1.2.8</command>
+	<command name="load">openblas/0.2.20/gcc/7.2.0</command>
+	<command name="load">openmpi/2.1.2/gcc/7.2.0/cuda/9.0.176</command>
+	<command name="load">netcdf-exo/4.4.1.1/openmpi/2.1.2/gcc/7.2.0/cuda/9.0.176</command>
       </modules>
     </module_system>
     <environment_variables>
