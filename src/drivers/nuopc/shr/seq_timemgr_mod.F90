@@ -3,17 +3,12 @@ module seq_timemgr_mod
   ! !DESCRIPTION: A module to create derived types to manage time and clock information
 
   ! !USES:
-  use ESMF
-  use NUOPC
-  use shr_cal_mod
-  use shr_kind_mod          , only : SHR_KIND_IN, SHR_KIND_CS, SHR_KIND_CL, SHR_KIND_I8
-  use shr_sys_mod           , only : shr_sys_abort
-  use shr_log_mod           , only : logunit=>shr_log_Unit, loglevel=>shr_log_Level
-  use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
-  use shr_mpi_mod           , only : shr_mpi_bcast
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-  use pio                   , only : file_desc_T
-  use netcdf
+  use shr_kind_mod, only : shr_kind_cl, SHR_KIND_IN
+  use ESMF, only  : ESMF_Clock, ESMF_Alarm, ESMF_Calendar
+  use ESMF, only: operator(<), operator(/=), operator(+), operator(-), operator(*) , operator(>=)
+  use ESMF, only: operator(<=), operator(>), operator(==)
+  use shr_cal_mod, only : seq_timemgr_noleap => shr_cal_noleap
+  use shr_cal_mod, only: seq_timemgr_gregorian=>shr_cal_gregorian
 
   implicit none
   private    ! default private
@@ -50,10 +45,6 @@ module seq_timemgr_mod
   private:: seq_timemgr_ESMFDebug
 
   ! PARAMETERS:
-
-  ! Calendar options
-  character(SHR_KIND_CL) ,public ,parameter :: seq_timemgr_noleap      = shr_cal_noleap
-  character(SHR_KIND_CL) ,public ,parameter :: seq_timemgr_gregorian   = shr_cal_gregorian
 
   ! History output types
   integer(SHR_KIND_IN)   ,public            :: seq_timemgr_histavg_type
@@ -181,7 +172,21 @@ contains
        EClock_drv, EClock_atm, EClock_lnd, EClock_ocn, &
        EClock_ice, Eclock_glc, Eclock_rof, EClock_wav, Eclock_esp)
 
-    ! !DESCRIPTION: Initializes clock
+    ! !DESCRIPTION:  Initializes clock
+    use shr_kind_mod, only : shr_kind_cs, shr_kind_in, shr_kind_cl
+    use NUOPC, only : NUOPC_CompAttributeGet
+    use ESMF, only : ESMF_GridComp, ESMF_ClockSet, ESMF_CalendarCreate
+    use ESMF, only : ESMF_Time, ESMF_TimeInterval, ESMF_CalKind_Flag
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_LOGERR_PASSTHRU
+    use ESMF, only : ESMF_LogFoundError, ESMF_TimeIntervalSet, ESMF_AlarmGet
+    use ESMF, only : ESMF_CALKIND_NOLEAP, ESMF_CALKIND_GREGORIAN, ESMF_CalKind_Flag
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
+    use pio, only : file_desc_t
+    use seq_io_read_mod, only : seq_io_read
+    use shr_mpi_mod, only : shr_mpi_bcast
+    use shr_sys_mod, only : shr_sys_abort
+    use seq_comm_mct, only : seq_comm_iamin, CPLID, logunit, seq_comm_gloroot
+    use shr_cal_mod, only : shr_cal_calendarName
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_GridComp),     intent(inout) :: driver
@@ -453,7 +458,7 @@ contains
                 rc = ESMF_FAILURE
                 call ESMF_LogWrite(trim(subname)//' ERROR driver_restart_pfile must be defined', &
                      ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
-                return  
+                return
              end if
 
              unitn = shr_file_getUnit()
@@ -464,14 +469,14 @@ contains
                 rc = ESMF_FAILURE
                 call ESMF_LogWrite(trim(subname)//' ERROR rpointer file open returns error', &
                      ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
-                return  
+                return
              end if
              read(unitn,'(a)', iostat=ierr) restart_file
              if (ierr < 0) then
                 rc = ESMF_FAILURE
                 call ESMF_LogWrite(trim(subname)//' ERROR rpointer file read returns error', &
                      ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
-                return  
+                return
              end if
              close(unitn)
              call shr_file_freeUnit( unitn )
@@ -931,6 +936,11 @@ contains
        curr_cday, next_cday, curr_time, prev_time, calendar)
 
     ! !DESCRIPTION: Get various values from the clock.
+    use ESMF, only: ESMF_Clock, ESMF_Time, ESMF_TimeInterval
+    use ESMF, only: ESMF_ClockGet, ESMF_TimeGet, ESMF_TimeIntervalGet
+    use ESMF, only: ESMF_TimeSet, ESMF_TimeIntervalSet
+    use shr_kind_mod, only : shr_kind_in, shr_kind_r8, shr_kind_i8
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)     , intent(in)            :: EClock     ! Input clock object
@@ -1068,7 +1078,11 @@ contains
   subroutine seq_timemgr_alarmInit( EClock, EAlarm, option, opt_n, opt_ymd, opt_tod, RefTime, alarmname, rc)
 
     ! !DESCRIPTION: Setup an alarm in a clock
-
+    use shr_sys_mod, only : shr_sys_abort
+    use ESMF, only : ESMF_Clock, ESMF_Alarm, ESMF_ClockGet, ESMF_Time, ESMF_TimeGet
+    use ESMF, only : ESMF_TimeIntervalSet, ESMF_TimeSet, ESMF_TimeInterval
+    use ESMF, only: ESMF_AlarmCreate
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)             , intent(INOUT) :: EClock    ! clock
     type(ESMF_Alarm)             , intent(INOUT) :: EAlarm    ! alarm
@@ -1314,6 +1328,10 @@ contains
        IntSec, IntMon, IntYrs, name)
 
     ! !DESCRIPTION: Get informationn from the alarm
+    use shr_kind_mod, only : shr_kind_in
+    use ESMF, only: ESMF_Alarm, ESMF_Time, ESMF_TimeInterval, ESMF_AlarmGet, ESMF_TimeIntervalGet
+    use ESMF, only: ESMF_ALARMLIST_ALL
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Alarm)    , intent(INOUT)            :: EAlarm   ! Input Alarm object
@@ -1375,7 +1393,11 @@ contains
   subroutine seq_timemgr_AlarmSetOn( EClock, alarmname)
 
     ! !DESCRIPTION: turn alarm on
-
+    use shr_sys_mod, only : shr_sys_abort
+    use ESMF, only : ESMF_Alarm, ESMF_Clock, ESMF_AlarmRingerOn
+    use ESMF, only : ESMF_AlarmGet, ESMF_ClockGetAlarmList
+    use ESMF, only : ESMF_ALARMLIST_ALL
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock), intent(INOUT) :: EClock      ! clock/alarm
     character(len=*), intent(in), optional :: alarmname  ! alarmname
@@ -1441,7 +1463,13 @@ contains
   subroutine seq_timemgr_AlarmSetOff( EClock, alarmname, rc)
 
     ! !DESCRIPTION: turn alarm off
-
+    use shr_kind_mod, only : shr_kind_in
+    use shr_sys_mod, only : shr_sys_abort
+    use ESMF, only : ESMF_Clock, ESMF_Alarm, ESMF_AlarmRingerOff
+    use ESMF, only : ESMF_ClockGetAlarmList, ESMF_AlarmGet
+    use ESMF, only : ESMF_ALARMLIST_ALL
+    use seq_comm_mct, only: logunit
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
     ! !INPUT/OUTPUT PARAMETERS:
 
     type(ESMF_Clock), intent(INOUT) :: EClock      ! clock/alarm
@@ -1503,6 +1531,12 @@ contains
   logical function seq_timemgr_alarmIsOn( EClock, alarmname, rc)
 
     ! !DESCRIPTION: check if an alarm is ringing
+    use shr_sys_mod, only : shr_sys_abort
+    use ESMF, only : ESMF_Clock, ESMF_Time, ESMF_Alarm, ESMF_AlarmIsRinging
+    use ESMF, only : ESMF_ClockGetAlarmList, ESMF_AlarmGet, ESMF_ClockGet
+    use ESMF, only : ESMF_ALARMLIST_ALL
+    use seq_comm_mct, only : logunit
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock), intent(in)    :: EClock     ! clock/alarm
@@ -1572,7 +1606,7 @@ contains
   logical function seq_timemgr_restartAlarmIsOn( EClock)
 
     ! !DESCRIPTION: check if restart alarm is ringing
-
+    use ESMF, only : ESMF_Clock
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock) , intent(in) :: EClock     ! clock/alarm
 
@@ -1589,6 +1623,7 @@ contains
   logical function seq_timemgr_stopAlarmIsOn( EClock)
 
     ! !DESCRIPTION: check if stop alarm is ringing
+    use ESMF, only : ESMF_Clock
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock) , intent(in) :: EClock     ! clock/alarm
@@ -1606,6 +1641,7 @@ contains
   logical function seq_timemgr_historyAlarmIsOn( EClock)
 
     ! !DESCRIPTION: check if history alarm is ringing
+    use ESMF, only : ESMF_Clock
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock) , intent(in) :: EClock     ! clock/alarm
@@ -1623,6 +1659,7 @@ contains
   logical function seq_timemgr_pauseAlarmIsOn( EClock)
 
     ! !DESCRIPTION: check if pause alarm is ringing
+    use ESMF, only : ESMF_Clock
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock) , intent(in) :: EClock     ! clock/alarm
@@ -1649,6 +1686,7 @@ contains
   integer function seq_timemgr_pause_component_index(component_name)
 
     ! !DESCRIPTION: Look up a component's internal index for faster processing
+    use shr_sys_mod, only : shr_sys_abort
 
     ! !INPUT/OUTPUT PARAMETERS:
     character(len=*), intent(in) :: component_name
@@ -1680,6 +1718,7 @@ contains
   logical function seq_timemgr_pause_component_active(component_index)
 
     ! !DESCRIPTION: Return .true. if component is active in driver pause
+    use shr_sys_mod, only : shr_sys_abort
 
     ! !INPUT/OUTPUT PARAMETERS:
     integer, intent(in) :: component_index
@@ -1697,7 +1736,11 @@ contains
 
   !===============================================================================
   subroutine seq_timemgr_ETimeInit( ETime, ymd, tod, desc )
-
+    use shr_sys_mod, only : shr_sys_abort
+    use ESMF, only : ESMF_Time, ESMF_TimeSet
+    use shr_cal_mod, only : shr_cal_date2ymd
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
+    use seq_comm_mct, only : logunit
     ! !DESCRIPTION: Create the ESMF_Time object corresponding to the given input time, given in
     !               YMD (Year Month Day) and TOD (Time-of-day) format.
     !               Set the time by an integer as YYYYMMDD and integer seconds in the day
@@ -1743,7 +1786,10 @@ contains
   subroutine seq_timemgr_ETimeGet( ETime, offset, ymd, tod )
 
     ! !DESCRIPTION: Get the date in YYYYMMDD format from a ESMF time object.
-
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
+    use ESMF, only : ESMF_Time, ESMF_TimeInterval, ESMF_TimeIntervalGet, ESMF_TimeIntervalSet
+    use ESMF, only : ESMF_TimeGet
+    use shr_cal_mod, only : shr_cal_ymd2date
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Time),   intent(in)  :: ETime   ! Input ESMF time
     integer, optional, intent(in)  :: offset  ! Offset from input time (sec)
@@ -1792,7 +1838,11 @@ contains
   subroutine seq_timemgr_EClockInit( TimeStep, StartTime, RefTime, CurrTime, EClock )
 
     ! !DESCRIPTION: Setup the ESMF clock
-
+    use shr_kind_mod, only : shr_kind_CL
+    use ESMF, only: ESMF_Time, ESMF_TimeInterval, ESMF_Clock
+    use ESMF, only: ESMF_ClockGet, ESMF_ClockAdvance, ESMF_ClockCreate
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
+    use seq_comm_mct, only : loglevel, logunit
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_TimeInterval), intent(in)  :: TimeStep    ! Time-step of clock
     type(ESMF_Time)        , intent(in)  :: StartTime   ! Start time
@@ -1846,7 +1896,7 @@ contains
   logical function seq_timemgr_EClockDateInSync( EClock, ymd, tod, prev)
 
     ! !DESCRIPTION: Check that the given input date/time is in sync with clock time
-
+    use ESMF, only : ESMF_Clock, ESMF_ClockGet, ESMF_Time
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock), intent(in) :: Eclock   ! Input clock to compare
     integer,          intent(in) :: ymd     ! Date (YYYYMMDD)
@@ -1888,7 +1938,11 @@ contains
   subroutine seq_timemgr_clockPrint( SyncClock )
 
     ! !DESCRIPTION: Print clock information out.
-
+    use shr_kind_mod, only : shr_kind_in
+    use ESMF, only : ESMF_Alarm, ESMF_ClockGetAlarmList
+    use ESMF, only : ESMF_ALARMLIST_ALL
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
+    use seq_comm_mct, only : loglevel, logunit
     ! !INPUT/OUTPUT PARAMETERS:
     type(seq_timemgr_type), intent(in) :: SyncClock   ! Input clock to print
 
@@ -1996,7 +2050,11 @@ contains
   subroutine seq_timemgr_ESMFDebug( EClock, ETime, ETimeInterval, istring )
 
     ! !DESCRIPTION: Print ESMF stuff for debugging
-
+    use shr_kind_mod, only : shr_kind_i8
+    use ESMF, only : ESMF_Time, ESMF_TimeInterval, ESMF_TimeGet, ESMF_TimeIntervalGet
+    use ESMF, only : ESMF_Clock, ESMF_ClockGet, ESMF_TimeIntervalGet
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
+    use seq_comm_mct, only : logunit
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)        , optional, intent(in)    :: EClock        ! ESMF Clock
     type(ESMF_Time)         , optional, intent(inout) :: ETime         ! ESMF Time
