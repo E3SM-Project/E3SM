@@ -362,7 +362,7 @@ def wait_for_tests(test_paths,
                    cdash_build_group=CDASH_DEFAULT_BUILD_GROUP,
                    timeout=None,
                    force_log_upload=False,
-                   no_run=True):
+                   no_run=False):
 ###############################################################################
     # Set up signal handling, we want to print results before the program
     # is terminated
