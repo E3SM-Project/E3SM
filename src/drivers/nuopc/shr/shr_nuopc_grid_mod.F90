@@ -1,15 +1,6 @@
 !================================================================================
 module shr_nuopc_grid_mod
 
-  use shr_kind_mod          , only : r8 => SHR_KIND_r8, IN => SHR_KIND_I4, CXX => SHR_KIND_CXX
-  use shr_kind_mod          , only : CL => SHR_KIND_CL, CX => SHR_KIND_CX, CS => SHR_KIND_CS
-  use shr_sys_mod           , only : shr_sys_abort
-  use shr_string_mod        , only : shr_string_listGetName
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_reset, shr_nuopc_methods_ChkErr
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_Distgrid_Match
-  use ESMF
-  use NUOPC
-
   implicit none
   private
 
@@ -25,7 +16,6 @@ module shr_nuopc_grid_mod
 
  !integer             :: dbug_flag = 6
   integer             :: dbug_flag = 0
-  integer             :: dbrc
   character(len=1024) :: tmpstr
   character(len=1024) :: msgString
   character(len=*), parameter :: u_FILE_u = &
@@ -40,7 +30,13 @@ contains
     !-----------------------------------------
     ! create a Egrid object for Fields
     !-----------------------------------------
-
+    use ESMF, only : ESMF_Grid, ESMF_SUCCESS, ESMF_LOGERR_PASSTHRU
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_GridAddItem
+    use ESMF, only : ESMF_GridCreate1PeriDim, ESMF_GridAddCoord, ESMF_LogFoundError
+    use ESMF, only : ESMF_GRIDITEM_AREA, ESMF_GRIDITEM_MASK, ESMF_COORDSYS_SPH_DEG
+    use ESMF, only : ESMF_STAGGERLOC_CENTER, ESMF_GridCreate1PeriDim
+    use ESMF, only : ESMF_TYPEKIND_R8, ESMF_TYPEKIND_I4
+    use mpi, only : mpi_comm_rank
     integer         , intent(in)    :: nx_global
     integer         , intent(in)    :: ny_global
     integer         , intent(in)    :: mpicom
@@ -53,7 +49,7 @@ contains
     integer          :: iam,ierr
     integer          :: lsize
     integer, pointer :: localArbIndex(:,:)
-
+    integer :: dbrc
     character(len=*),parameter :: subname='(shr_nuopc_grid_ArbInit)'
     !--------------------------------------------------------------
 
@@ -103,6 +99,19 @@ contains
     !-----------------------------------------
     ! create a Egrid object for Fields
     !-----------------------------------------
+    use shr_kind_mod, only : R8=>shr_kind_r8
+    use ESMF, only : ESMF_GridComp, ESMF_Grid, ESMF_GridCompGet, ESMF_VM, ESMF_VMGet
+    use ESMF, only : ESMF_GridGetCoord, ESMF_GRIDITEM_MASK, ESMF_GridGet, ESMF_GridGetItem
+    use ESMF, only : ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU, ESMF_LogWrite
+    use ESMF, only : ESMF_VMAllReduce, ESMF_DistGridConnectionSet, ESMF_DistGrid, ESMF_DELayout
+    use ESMF, only : ESMF_DistGridGet, ESMF_DistGridPrint, ESMF_GridAddCoord, ESMF_GridAddItem
+    use ESMF, only : ESMF_GRIDITEM_AREA, ESMF_TYPEKIND_R8, ESMF_TYPEKIND_I4
+    use ESMF, only : ESMF_STAGGERLOC_CENTER, ESMF_DELayoutCreate, ESMF_VMAllReduce
+    use ESMF, only : ESMF_REDUCE_SUM, ESMF_LOGMSG_INFO, ESMF_DistGridConnection, ESMF_Grid
+    use ESMF, only : ESMF_GridCreate, ESMF_COORDSYS_SPH_DEG
+    use ESMF, only : ESMF_DistGridCreate
+    use mpi, only : mpi_comm_rank
+    use shr_sys_mod, only : shr_sys_abort
 
     type(ESMF_GridComp)             :: gcomp
     integer         , intent(in)    :: nx_global
@@ -133,6 +142,7 @@ contains
     type(ESMF_VM)       :: vm
     integer             :: petCount
     type(ESMF_DistGridConnection), allocatable :: connectionList(:)
+    integer :: dbrc
     character(len=*),parameter :: subname='(shr_nuopc_grid_DEInit)'
     !--------------------------------------------------------------
 
@@ -309,7 +319,11 @@ contains
     !-----------------------------------------
     ! create a Grid object for Fields
     !-----------------------------------------
-
+    use shr_kind_mod, only : R8=>shr_kind_r8
+    use mpi, only : mpi_comm_rank
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU
+    use ESMF, only : ESMF_GridCreateNoPeriDimUfrm, ESMF_COORDSYS_SPH_DEG, ESMF_STAGGERLOC_CENTER
+    use ESMF, only : ESMF_Grid, ESMF_SUCCESS
     integer         , intent(in)    :: nx_global
     integer         , intent(in)    :: ny_global
     integer         , intent(in)    :: mpicom
@@ -318,6 +332,7 @@ contains
 
     !--- local ---
     integer :: iam,ierr
+    integer :: dbrc
     character(len=*),parameter :: subname='(shr_nuopc_grid_RegInit)'
     !--------------------------------------------------------------
 
@@ -327,8 +342,8 @@ contains
     call ESMF_LogWrite(subname, ESMF_LOGMSG_INFO, rc=dbrc)
 
     Egrid = ESMF_GridCreateNoPeriDimUfrm(maxIndex=(/nx_global, ny_global/), &
-         minCornerCoord=(/0._ESMF_KIND_R8, -180._ESMF_KIND_R8/), &
-         maxCornerCoord=(/360._ESMF_KIND_R8, 180._ESMF_KIND_R8/), &
+         minCornerCoord=(/0._R8, -180._R8/), &
+         maxCornerCoord=(/360._R8, 180._R8/), &
          coordSys=ESMF_COORDSYS_SPH_DEG, staggerLocList=(/ESMF_STAGGERLOC_CENTER/), &
          rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -345,6 +360,14 @@ contains
     !-----------------------------------------
     ! create an Emesh object for Fields
     !-----------------------------------------
+    use shr_kind_mod, only : R8=>shr_kind_r8
+    use ESMF, only : ESMF_GridComp, ESMF_VM, ESMF_Mesh
+    use ESMF, only : ESMF_VMGet, ESMF_GridCompGet, ESMF_VMBroadCast, ESMF_VMAllGatherV
+    use ESMF, only : ESMF_SUCCESS, ESMF_LOGMSG_INFO, ESMF_LogWrite
+    use ESMF, only : ESMF_VMGather, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU
+    use ESMF, only : ESMF_MeshCreate, ESMF_COORDSYS_SPH_DEG, ESMF_REDUCE_SUM
+    use ESMF, only : ESMF_VMAllReduce, ESMF_MESHELEMTYPE_QUAD
+    use mpi, only : mpi_comm_rank
 
     type(ESMF_GridComp)               :: gcomp
     integer           , intent(in)    :: nx_global
@@ -381,6 +404,7 @@ contains
     integer          :: sendData(1)
     type(ESMF_VM)    :: vm
     integer          :: petCount
+    integer :: dbrc
     character(len=*),parameter :: subname='(shr_nuopc_grid_MeshInit)'
     !--------------------------------------------------------------
 
@@ -580,7 +604,12 @@ contains
   subroutine shr_nuopc_grid_ArrayToState(array, rList, state, grid_option, rc)
 
     ! copy array data to state fields
-
+    use shr_kind_mod, only : R8=>shr_kind_r8, CS=>shr_kind_cs, IN=>shr_kind_in
+    use ESMF, only : ESMF_State, ESMF_Field, ESMF_SUCCESS
+    use ESMF, only : ESMF_LogWrite, ESMF_FieldGet, ESMF_StateGet
+    use ESMF, only : ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU, ESMF_LOGMSG_INFO
+    use shr_string_mod, only : shr_string_listGetName
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_State_reset
     implicit none
 
     !----- arguments -----
@@ -594,9 +623,9 @@ contains
     integer(IN) :: nflds, lsize, n, nf, DE
     character(len=CS)  :: fldname
     type(ESMF_Field)   :: lfield
-    real(ESMF_KIND_R8), pointer :: farray2(:,:)
-    real(ESMF_KIND_R8), pointer :: farray1(:)
-
+    real(R8), pointer :: farray2(:,:)
+    real(R8), pointer :: farray1(:)
+    integer :: dbrc
     character(*),parameter :: subName = "(shr_nuopc_grid_ArrayToState)"
     !----------------------------------------------------------
 
@@ -662,7 +691,11 @@ contains
   subroutine shr_nuopc_grid_StateToArray(state, array, rList, grid_option, rc)
 
     ! copy state fields to array data
-
+    use ESMF, only : ESMF_State, ESMF_Field
+    use ESMF, only : ESMF_StateGet, ESMF_FieldGet, ESMF_LogFoundError, ESMF_LogWrite
+    use ESMF, only : ESMF_LOGERR_PASSTHRU, ESMF_SUCCESS, ESMF_LOGMSG_INFO
+    use shr_kind_mod, only : R8=>shr_kind_r8, CS=>shr_kind_CS, IN=>shr_kind_in
+    use shr_string_mod, only : shr_string_listGetName
     implicit none
 
     !----- arguments -----
@@ -676,9 +709,9 @@ contains
     integer(IN) :: nflds, lsize, n, nf, DE
     character(len=CS)  :: fldname
     type(ESMF_Field)   :: lfield
-    real(ESMF_KIND_R8), pointer :: farray2(:,:)
-    real(ESMF_KIND_R8), pointer :: farray1(:)
-
+    real(R8), pointer :: farray2(:,:)
+    real(R8), pointer :: farray1(:)
+    integer :: dbrc
     character(*),parameter :: subName = "(shr_nuopc_grid_StateToArray)"
     !----------------------------------------------------------
 
@@ -743,7 +776,13 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_grid_CreateCoords(gridNew, gridOld, rc)
+    use shr_kind_mod, only : R8=>shr_kind_r8
+    use ESMF, only : ESMF_Grid, ESMF_DistGrid, ESMF_CoordSys_Flag, ESMF_Index_Flag
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_GridGet, ESMF_GridAddCoord
+    use ESMF, only : ESMF_GridGetCoord, ESMF_GridAddCoord, ESMF_STAGGERLOC_CENTER
+    use ESMF, only : ESMF_GridCreate, ESMF_SUCCESS, ESMF_STAGGERLOC_CORNER
 
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
     ! ----------------------------------------------
     type(ESMF_Grid), intent(inout) :: gridNew
     type(ESMF_Grid), intent(inout) :: gridOld
@@ -754,10 +793,11 @@ contains
     type(ESMF_DistGrid)        :: distgrid
     type(ESMF_CoordSys_Flag)   :: coordSys
     type(ESMF_Index_Flag)      :: indexflag
-    real(ESMF_KIND_R8),pointer :: dataPtr1(:,:), dataPtr2(:,:)
+    real(R8),pointer :: dataPtr1(:,:), dataPtr2(:,:)
     integer                    :: dimCount
     integer, pointer           :: gridEdgeLWidth(:), gridEdgeUWidth(:)
     character(len=*),parameter :: subname='(shr_nuopc_methods_grid_createcoords)'
+    integer :: dbrc
     ! ----------------------------------------------
 
     if (dbug_flag > 10) then
@@ -845,6 +885,18 @@ contains
 
   subroutine shr_nuopc_grid_CopyCoord(gridcomp, gridSrc, gridDst, staggerloc, &
        tolerance, compare, invert, rc)
+    use shr_kind_mod, only : I8=>shr_kind_i8, I4=> shr_kind_in
+    use ESMF, only : ESMF_GridComp, ESMF_Grid, ESMF_StaggerLoc, ESMF_VM, ESMF_DistGrid, ESMF_Array
+    use ESMF, only : ESMF_TypeKind_Flag, ESMF_CoordSys_Flag, ESMF_RouteHandle
+    use ESMF, only : ESMF_GridGet, ESMF_LogSetError, ESMF_VMGet, ESMF_GridAddCoord, ESMF_GridGetCoord
+    use ESMF, only : ESMF_RC_ARG_BAD, ESMF_ArrayGet, ESMF_DistGridGet
+    use ESMF, only : ESMF_LogWrite, ESMF_SUCCESS, ESMF_LOGMSG_INFO
+    use ESMF, only : ESMF_ArraySMMStore, ESMF_GridCompGet
+    use ESMF, only : ESMF_ArraySMM, ESMF_ArraySMMRelease
+    use ESMF, only : ESMF_ArrayRedist, ESMF_ArrayRedistStore, ESMF_ArrayRedistRelease
+    use ESMF, only : ESMF_RC_NOT_IMPL, ESMF_LogSetError
+    use ESMF, only : operator(/=)
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_Distgrid_Match, shr_nuopc_methods_ChkErr
 
     ! Arguments
     type(ESMF_GridComp) ,  intent(in)           :: gridcomp
@@ -864,19 +916,20 @@ contains
     type(ESMF_VM)                     :: vm
     type(ESMF_DistGrid)               :: distGridSrc, distGridDst
     type(ESMF_Array)                  :: coordArraySrc, coordArrayDst
-    integer(ESMF_KIND_I4),allocatable :: factorList(:)
+    integer(I4),allocatable :: factorList(:)
     integer, allocatable              :: factorIndexList(:,:)
     type(ESMF_RouteHandle)            :: routehandle
     integer                           :: dimCountSrc, dimCountDst
     integer                           :: deCountDst
     integer, allocatable              :: elementCountPDeDst(:)
-    integer(ESMF_KIND_I8)             :: sumElementCountPDeDst
+    integer(I8)             :: sumElementCountPDeDst
     type(ESMF_TypeKind_Flag)          :: coordTypeKindSrc, coordTypeKindDst
     type(ESMF_CoordSys_Flag)          :: coordSysSrc, coordSysDst
     logical                           :: isPresentSrc, isPresentDst
     integer                           :: dimIndex, staggerlocIndex
     integer                           :: localPet
     character(len=10)                 :: numString
+    integer :: dbrc
     character(len=*), parameter       :: subname='(shr_nuopc_methods_Grid_CopyCoord)'
     ! ----------------------------------------------
 
@@ -1066,6 +1119,15 @@ contains
 
   subroutine shr_nuopc_grid_CopyItem(gridcomp, gridSrc, gridDst, item, &
        tolerance, compare, invert, rc)
+    use ESMF, only : ESMF_GridComp, ESMF_Grid, ESMF_GridItem_Flag, ESMF_StaggerLoc
+    use ESMF, only : ESMF_GridGetItem, ESMF_GridAddItem
+    use ESMF, only : ESMF_DistGrid, ESMF_Array, ESMF_RouteHandle, ESMF_TypeKind_Flag
+    use ESMF, only : ESMF_CoordSys_Flag, ESMF_LogWrite, ESMF_LOGMSG_INFO
+    use ESMF, only : ESMF_LogSetError, ESMF_GridGet, ESMF_ArrayRedist, ESMF_ArrayRedistStore
+    use ESMF, only : ESMF_ArrayRedistRelease, ESMF_GridGetItem, ESMF_STAGGERLOC_CENTER
+    use ESMF, only : ESMF_RC_ARG_BAD, ESMF_RC_NOT_IMPL, ESMF_ArrayGet
+    use ESMF, only : operator(/=)
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_Distgrid_Match, shr_nuopc_methods_ChkErr
 
     ! ----------------------------------------------
     type(ESMF_GridComp),      intent(in)           :: gridcomp
@@ -1092,6 +1154,7 @@ contains
     integer                     :: itemIndex
     integer                     :: localPet
     character(len=10)           :: numString
+    integer :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_Grid_CopyItem)'
     ! ----------------------------------------------
 
