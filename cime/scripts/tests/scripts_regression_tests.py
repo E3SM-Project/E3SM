@@ -672,24 +672,39 @@ class M_TestWaitForTests(unittest.TestCase):
     def setUp(self):
     ###########################################################################
         self._testroot = os.path.join(TEST_ROOT,"TestWaitForTests")
+
+        # basic tests
         self._testdir_all_pass    = os.path.join(self._testroot, 'scripts_regression_tests.testdir_all_pass')
         self._testdir_with_fail   = os.path.join(self._testroot, 'scripts_regression_tests.testdir_with_fail')
         self._testdir_unfinished  = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished')
         self._testdir_unfinished2 = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished2')
-        testdirs = [self._testdir_all_pass, self._testdir_with_fail, self._testdir_unfinished, self._testdir_unfinished2]
-        for testdir in testdirs:
+
+        # live tests
+        self._testdir_teststatus1 = os.path.join(self._testroot, 'scripts_regression_tests.testdir_teststatus1')
+        self._testdir_teststatus2 = os.path.join(self._testroot, 'scripts_regression_tests.testdir_teststatus2')
+
+        self._testdirs = [self._testdir_all_pass, self._testdir_with_fail, self._testdir_unfinished, self._testdir_unfinished2,
+                          self._testdir_teststatus1, self._testdir_teststatus2]
+        basic_tests = self._testdirs[:self._testdirs.index(self._testdir_teststatus1)]
+
+        for testdir in self._testdirs:
             if os.path.exists(testdir):
                 shutil.rmtree(testdir)
             os.makedirs(testdir)
 
         for r in range(10):
-            for testdir in testdirs:
+            for testdir in basic_tests:
                 os.makedirs(os.path.join(testdir, str(r)))
                 make_fake_teststatus(os.path.join(testdir, str(r)), "Test_%d" % r, TEST_PASS_STATUS, RUN_PHASE)
 
         make_fake_teststatus(os.path.join(self._testdir_with_fail,   "5"), "Test_5", TEST_FAIL_STATUS, RUN_PHASE)
         make_fake_teststatus(os.path.join(self._testdir_unfinished,  "5"), "Test_5", TEST_PEND_STATUS, RUN_PHASE)
         make_fake_teststatus(os.path.join(self._testdir_unfinished2, "5"), "Test_5", TEST_PASS_STATUS, SUBMIT_PHASE)
+
+        integration_tests = self._testdirs[len(basic_tests):]
+        for integration_test in integration_tests:
+            os.makedirs(os.path.join(integration_test, "0"))
+            make_fake_teststatus(os.path.join(integration_test, "0"), "Test_0", TEST_PASS_STATUS, CORE_PHASES[0])
 
         # Set up proxy if possible
         self._unset_proxy = setup_proxy()
@@ -699,9 +714,11 @@ class M_TestWaitForTests(unittest.TestCase):
     ###########################################################################
     def tearDown(self):
     ###########################################################################
-        shutil.rmtree(self._testdir_all_pass)
-        shutil.rmtree(self._testdir_with_fail)
-        shutil.rmtree(self._testdir_unfinished)
+        do_teardown = sys.exc_info() == (None, None, None)
+
+        if do_teardown:
+            for testdir in self._testdirs:
+                shutil.rmtree(testdir)
 
         kill_subprocesses()
 
@@ -720,7 +737,7 @@ class M_TestWaitForTests(unittest.TestCase):
                                        from_dir=testdir, expected_stat=expected_stat)
 
         lines = [line for line in output.splitlines() if line.startswith("Test '")]
-        self.assertEqual(len(lines), 10)
+        self.assertEqual(len(lines), len(expected_results))
         for idx, line in enumerate(lines):
             testname, status = parse_test_status(line)
             self.assertEqual(status, expected_results[idx])
@@ -872,6 +889,42 @@ class M_TestWaitForTests(unittest.TestCase):
             self.assertTrue(r'<Test Status="failed"><Name>Test_5</Name>' in xml_contents)
 
             # TODO: Any further checking of xml output worth doing?
+
+    ###########################################################################
+    def live_test_impl(self, testdir, expected_results, last_phase, last_status):
+    ###########################################################################
+        run_thread = threading.Thread(target=self.threaded_test, args=(testdir, expected_results))
+        run_thread.daemon = True
+        run_thread.start()
+
+        time.sleep(5)
+
+        self.assertTrue(run_thread.isAlive(), msg="wait_for_tests should have waited")
+
+        for core_phase in CORE_PHASES[1:]:
+            with TestStatus(test_dir=os.path.join(self._testdir_teststatus1, "0")) as ts:
+                ts.set_status(core_phase, last_status if core_phase == last_phase else TEST_PASS_STATUS)
+
+            time.sleep(5)
+
+            if core_phase != last_phase:
+                self.assertTrue(run_thread.isAlive(), msg="wait_for_tests should have waited after passing phase {}".format(core_phase))
+            else:
+                run_thread.join(timeout=10)
+                self.assertFalse(run_thread.isAlive(), msg="wait_for_tests should have finished after phase {}".format(core_phase))
+                break
+
+        self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
+
+    ###########################################################################
+    def test_wait_for_test_test_status_integration_pass(self):
+    ###########################################################################
+        self.live_test_impl(self._testdir_teststatus1, ["PASS"], RUN_PHASE, TEST_PASS_STATUS)
+
+    ###########################################################################
+    def test_wait_for_test_test_status_integration_submit_fail(self):
+    ###########################################################################
+        self.live_test_impl(self._testdir_teststatus1, ["FAIL"], SUBMIT_PHASE, TEST_FAIL_STATUS)
 
 ###############################################################################
 class TestCreateTestCommon(unittest.TestCase):
