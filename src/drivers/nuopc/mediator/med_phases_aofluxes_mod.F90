@@ -1,16 +1,7 @@
 module med_phases_aofluxes_mod
-  use shr_kind_mod, only : R8 => shr_kind_r8, CL=>SHR_KIND_CL
-  use shr_const_mod         , only : shr_const_pi
+  use shr_kind_mod, only : R8 => shr_kind_r8
   use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
-  use med_constants_mod     , only : czero => med_constants_czero
-#ifdef DOTHIS
-  use ESMF
-  use NUOPC
 
-
-
-
-#endif
   implicit none
   private
 
@@ -110,11 +101,7 @@ module med_phases_aofluxes_mod
   character(3)  :: aoflux_grid
   logical       :: ocn_prognostic
 
-  ! Conversion from degrees to radians
-  real(R8) , parameter :: const_deg2rad  = shr_const_pi/180.0_R8  ! deg to rads
   character(*)       , parameter :: u_FILE_u       = __FILE__
-  integer                        :: dbrc
-  logical                        :: mastertask
 
 !================================================================================
 contains
@@ -129,10 +116,11 @@ contains
     use esmFlds               , only : flds_scalar_num
     use esmFlds               , only : fldListMed_aoflux_o
     use esmFlds               , only : compatm, compocn
-    use med_internalstate_mod , only : InternalState
+    use med_internalstate_mod , only : InternalState, mastertask
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
     use shr_nuopc_fldList_mod , only : shr_nuopc_fldlist_getfldnames
+    use shr_kind_mod, only : CL=>SHR_KIND_CL
     ! Initialize ocn/atm flux calculations
 
     ! input/output variables
@@ -148,6 +136,7 @@ contains
     integer                :: localPet
     type(ESMF_VM)          :: vm
     character(CL), pointer :: fldnames(:)
+    integer :: dbrc
     character(len=*),parameter :: subname='(med_phases_aofluxes_init)'
     !---------------------------------------
 
@@ -240,6 +229,8 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
+    use shr_kind_mod, only : CL=>SHR_KIND_CL
+
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -250,6 +241,7 @@ contains
     character(CL)           :: aoflux_grid
     type(aoflux_type), save :: aoflux
     logical, save           :: first_call = .true.
+    integer :: dbrc
     character(len=*),parameter :: subname='(med_phases_aofluxes)'
     !---------------------------------------
 
@@ -354,6 +346,7 @@ contains
     use ESMF, only : operator(==), ESMF_GEOMTYPE_MESH
     use NUOPC, only : NUOPC_CompAttributeGet
     use shr_kind_mod, only : shr_kind_CX
+    use shr_kind_mod, only : CL=>SHR_KIND_CL
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFieldN
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
@@ -391,6 +384,7 @@ contains
     real(R8), pointer :: ownedElemCoords(:)
     character(*),parameter   :: subName =   '(med_aofluxes_init) '
     logical       :: flds_wiso  ! use case
+    integer :: dbrc
     character(len=SHR_KIND_CX)            :: tmpstr
     !-----------------------------------------------------------------------
 
@@ -683,7 +677,7 @@ contains
     use ESMF, only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_TimeIntervalGet
     use ESMF, only : ESMF_LogWrite, ESMF_LogMsg_Info
     use NUOPC, only : NUOPC_CompAttributeGet
-    use shr_kind_mod          , only : SHR_KIND_CX
+    use shr_kind_mod          , only : SHR_KIND_CX, CL=>SHR_KIND_CL
     use shr_const_mod         , only : shr_const_spval
     use shr_flux_mod          , only : shr_flux_atmocn, shr_flux_atmocn_diurnal, shr_flux_adjust_constants
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
