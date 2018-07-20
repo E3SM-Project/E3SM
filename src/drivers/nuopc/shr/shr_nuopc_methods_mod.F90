@@ -3874,7 +3874,7 @@ module shr_nuopc_methods_mod
 
     shr_nuopc_methods_ChkErr = .false.
     lrc = rc
-    if (mpierr) then
+    if (present(mpierr) .and. mpierr) then
        if (rc == MPI_SUCCESS) then
           shr_nuopc_methods_ChkErr = .true.
           return
