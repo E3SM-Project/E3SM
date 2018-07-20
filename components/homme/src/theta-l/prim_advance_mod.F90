@@ -19,6 +19,7 @@ module prim_advance_mod
   use edge_mod,           only: edgeDGVunpack, edgevpack, edgevunpack, initEdgeBuffer
   use edgetype_mod,       only: EdgeBuffer_t,  EdgeDescriptor_t, edgedescriptor_t
   use element_mod,        only: element_t
+  use element_state,      only: max_itercnt_perstep,avg_itercnt,max_itererr_perstep
   use element_ops,        only: get_cp_star, get_kappa_star, &
     get_temperature, set_theta_ref, state0
   use eos,                only: get_pnh_and_exner,get_dry_phinh,get_dirk_jacobian
@@ -230,7 +231,8 @@ contains
 
       ahat4 = 1.
       ahat1 = 0.
-
+      max_itercnt_perstep = 0
+      max_itererr_perstep = 0.0  
       ! IMEX-KGNO243
       dhat2 = (1.+sqrt(3.)/3.)/2.
       dhat3 = dhat2
@@ -240,23 +242,25 @@ contains
 
       call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w*a1,1d0,0d0,1d0)
+  
 
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
- !     print *, maxiter
- !     print *, itertol
-
+      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
+ 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w*a2,1d0,ahat2/a2,1d0)
 
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
- !     print *, maxiter
- !     print *, itertol
+        deriv,nets,nete,maxiter,itertol) 
+      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
+
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w*a3,1d0,ahat3/a3,1d0)
@@ -265,16 +269,22 @@ contains
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
- !     print *, maxiter
- !     print *, itertol
+      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w*a4,1d0,ahat4/a4,1d0)
+
+      avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 
       call t_stopf("IMEX-KG243_timestep")
 !==============================================================================================
     elseif (tstep_type == 7) then 
       call t_startf("IMEX-KG254_timestep")
+
+      max_itercnt_perstep = 0
+      max_itererr_perstep = 0.0
+
       a1 = 1./4.
       a2 = 1./6.
       a3 = 3./8.
@@ -300,7 +310,6 @@ contains
 !       (ahat5-dhat3-dhat2-dhat4)
 
 
-
       ! IMEX-KG254
       ahat3 = (- ahat4*ahat5*dhat1 - ahat4*ahat5*dhat2+ ahat5*dhat1*dhat2 + ahat5*dhat1*dhat3 +&
         ahat5*dhat2*dhat3- dhat1*dhat2*dhat3 - dhat1*dhat2*dhat4 - dhat1*dhat3*dhat4- &
@@ -315,8 +324,8 @@ contains
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-!      print *, maxiter
-!      print *, itertol
+      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w*a2,1d0,ahat2/a2,1d0)
@@ -324,8 +333,8 @@ contains
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-!      print *, maxiter
-!      print *, itertol
+      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w*a3,1d0,ahat3/a3,1d0)
@@ -333,8 +342,8 @@ contains
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-!      print *, maxiter
-!      print *, itertol
+      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w*a4,1d0,ahat4/a4,1d0)
@@ -342,11 +351,14 @@ contains
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-!      print *, maxiter
-!      print *, itertol
+      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w*a5,1d0,ahat5/a5,1d0)
+
+      avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
+
       call t_stopf("IMEX-KG254_timestep")
     else
        call abortmp('ERROR: bad choice of tstep_type')
@@ -1597,9 +1609,9 @@ contains
   type (element_t)     , intent(inout), target :: elem(:)
   type (derivative_t)  , intent(in) :: deriv
 
+
   ! local
   real (kind=real_kind), pointer, dimension(:,:,:)   :: phi_np1
-
   real (kind=real_kind), pointer, dimension(:,:,:)   :: dp3d
   real (kind=real_kind), pointer, dimension(:,:,:)   :: theta_dp_cp
   real (kind=real_kind), pointer, dimension(:,:)   :: phis
@@ -1616,7 +1628,7 @@ contains
   real (kind=real_kind) :: Fn(np,np,nlev),x(nlev,np,np)
   real (kind=real_kind) :: pnh_i(np,np,nlevp)
   real (kind=real_kind) :: itererr,itererrtemp(np,np)
-  real (kind=real_kind) :: itererrmat,itercountmax,itererrmax
+  real (kind=real_kind) :: itercountmax,itererrmax
   real (kind=real_kind) :: norminfr0(np,np),norminfJ0(np,np)
   real (kind=real_kind) :: maxnorminfJ0r0
   real (kind=real_kind) :: alpha1(np,np),alpha2(np,np)
@@ -1760,9 +1772,10 @@ contains
 !        itererrmax = itererr
 !      end if
   end do ! end do for the ie=nets,nete loop
-!  maxiter=itercountmax
-!  itertol=itererrmax
+  maxiter=itercount
+  itertol=itererr
 !  print *, 'max itercount', itercountmax, 'maxitererr ', itererrmax
+
   call t_stopf('compute_stage_value_dirk')
 
   end subroutine compute_stage_value_dirk

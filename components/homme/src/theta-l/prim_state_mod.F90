@@ -18,6 +18,7 @@ module prim_state_mod
   use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
   use element_mod,      only: element_t
   use element_ops,      only: get_field, get_kappa_star, get_phi
+  use element_state,    only: max_itercnt_perstep,max_itererr_perstep,avg_itercnt
   use eos,              only: get_pnh_and_exner
   use viscosity_mod,    only: compute_zeta_C0
   use reduction_mod,    only: parallelmax,parallelmin
@@ -718,7 +719,6 @@ contains
           write(iulog,'(a,i3,a,E22.14,a,2E15.7)') "Q",q,",Q diss, dQ^2/dt:",Qmass(q,2)," kg/m^2",&
                (Qmass(q,2)-Qmass(q,1))/dt,(Qvar(q,2)-Qvar(q,1))/dt
        enddo
-       
        write(iulog,'(a)') 'Physics tendencies applied by dycore:'
        write(iulog,'(a,2e15.7)') 'dKE/dt(W/m^2): ',(KEner(1)-KEner(3))/dt
        write(iulog,'(a,2e15.7)') 'dIE/dt(W/m^2): ',(IEner(1)-IEner(3))/dt
@@ -740,6 +740,12 @@ contains
              end if
           enddo
        endif
+
+      ! IMEX diagnostics
+      write(iulog,'(a)')        'IMEX diagnostics:                  '
+      write(iulog,'(a,I2)')     'Max iterations in last time-step   :', max_itercnt_perstep
+      write(iulog,'(a,F8.2)')   'Running average of max iterations  :', avg_itercnt
+      write(iulog,'(a,E23.15)') 'Max error in last time-step        :', max_itererr_perstep
     endif
     
 100 format (A10,3(E23.15))
@@ -756,6 +762,7 @@ contains
        enddo
        time0=time1
     endif
+       
 
   call t_stopf('prim_printstate')
   end subroutine prim_printstate
