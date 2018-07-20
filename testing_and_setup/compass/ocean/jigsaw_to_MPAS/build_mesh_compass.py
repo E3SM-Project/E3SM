@@ -47,20 +47,7 @@ args = ['./MpasMeshConverter.x',
 print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
 
-print 'Step 4.1 Inject correct meshDensity variable into base mesh file'
-args = ['./inject_meshDensity.py',
-        'cellWidthVsLatLon.mat',
-        'base_mesh.nc']
-print "running", ' '.join(args)
-subprocess.check_call(args, env=os.environ.copy())
-
-print 'Step 5. Injecting bathymetry'
-args = ['./inject_bathymetry.py',
-        'base_mesh.nc']
-print "running", ' '.join(args)
-subprocess.check_call(args, env=os.environ.copy())
-
-#print 'Step 6. Create vtk file for visualization'
+#print 'Step 5. Create vtk file for visualization'
 #args = ['./paraview_vtk_field_extractor.py',
 #        '--ignore_time',
 #				'-d','maxEdges=0',
@@ -69,21 +56,4 @@ subprocess.check_call(args, env=os.environ.copy())
 #        '-o', 'base_mesh_vtk']
 #print "running", ' '.join(args)
 #subprocess.check_call(args, env=os.environ.copy())
-
-print 'Step 7. Cull land cells'
-args = ['./MpasCellCuller.x',
-        'base_mesh.nc',
-        'base_mesh_culled.nc']
-print "running",' '.join(args)
-subprocess.check_call(args, env=os.environ.copy())
-
-print 'Step 8. Injecting bathymetry'
-args = ['./inject_bathymetry.py',
-        'base_mesh_culled.nc']
-print "running", ' '.join(args)
-subprocess.check_call(args, env=os.environ.copy())
-
-print "***********************************************"
-print "**    The global mesh file is base_mesh.nc   **"
-print "***********************************************"
 

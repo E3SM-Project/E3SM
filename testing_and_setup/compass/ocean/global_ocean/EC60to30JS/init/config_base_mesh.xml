@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<config case="base_mesh">
+
+	<add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
+
+	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/jigsaw_to_MPAS/build_mesh_compass.py" dest="build_mesh.py"/>
+	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/jigsaw_to_MPAS/jigsaw_driver.m" dest="jigsaw_driver.m"/>
+	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/jigsaw_to_MPAS/triangle_jigsaw_to_netcdf.py" dest="triangle_jigsaw_to_netcdf.py"/>
+	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/jigsaw_to_MPAS/mesh_definition_tools.py" dest="mesh_definition_tools.py"/>
+	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/global_ocean/EC60to30JS/init/define_base_mesh.py" dest="define_base_mesh.py"/>
+	<add_link source_path="jigsaw-geo-matlab" source="." dest="jigsaw-geo-matlab"/>
+
+	<run_script name="run.py">
+		<step executable="./build_mesh.py">
+		</step>
+	</run_script>
+</config>
