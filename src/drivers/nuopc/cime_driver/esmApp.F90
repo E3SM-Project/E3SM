@@ -4,8 +4,12 @@ program esmApp
   ! Generic ESM application driver
   !-----------------------------------------------------------------------------
 
-  use ESMF
-  use ESM, only: esmSS => SetServices
+  use ESMF, only : ESMF_Initialize, ESMF_LOGKIND_MULTI, ESMF_CALKIND_GREGORIAN
+  use ESMF, only : ESMF_END_ABORT, ESMF_LogFoundError, ESMF_Finalize, ESMF_LOGERR_PASSTHRU
+  use ESMF, only : ESMF_GridCompSetServices, ESMF_GridCompFinalize, ESMF_LogSet, ESMF_LogWrite
+  use ESMF, only : ESMF_GridCompDestroy, ESMF_LOGMSG_INFO, ESMF_GridComp, ESMF_GridCompRun
+  use ESMF, only : ESMF_GridCompFinalize, ESMF_GridCompCreate, ESMF_GridCompInitialize
+  use ESM,  only: esmSS => SetServices
 
   implicit none
 
