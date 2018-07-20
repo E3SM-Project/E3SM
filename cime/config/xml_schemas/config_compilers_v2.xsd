@@ -141,6 +141,7 @@
     <xs:choice>
       <xs:element name="ALBANY_PATH" type="systemPath"/>
       <xs:element name="CFLAGS" type="flagsVar"/>
+      <xs:element name="CXXFLAGS" type="flagsVar"/>
       <xs:element name="CMAKE_OPTS" type="flagsVar"/>
       <xs:element name="CONFIG_ARGS" type="flagsVar"/>
       <xs:element name="CONFIG_SHELL" type="systemPath"/>
@@ -157,6 +158,7 @@
       <xs:element name="FREEFLAGS" type="flagsVar"/>
       <xs:element name="HAS_F2008_CONTIGUOUS" type="upperBoolean"/>
       <xs:element name="HDF5_PATH" type="systemPath"/>
+      <xs:element name="KOKKOS_PATH" type="systemPath"/>
       <xs:element name="LAPACK_LIBDIR" type="systemPath"/>
       <xs:element name="LD" type="systemPath"/>
       <xs:element name="LDFLAGS" type="flagsVar"/>
