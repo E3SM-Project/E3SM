@@ -1,4 +1,4 @@
-module datm_comp_nuopc
+module atm_comp_nuopc
 
   !----------------------------------------------------------------------------
   ! This is the NUOPC cap for DATM
@@ -50,7 +50,7 @@ module datm_comp_nuopc
   implicit none
   private ! except
 
-  public  :: SetServices
+  public  :: ATMSetServices
 
   private :: InitializeP0
   private :: InitializeAdvertise
@@ -97,20 +97,20 @@ module datm_comp_nuopc
   real(R8)                   :: orbObliqr                 ! orb obliquity (radians)
 
   !----- formats -----
-  character(*),parameter :: modName =  "(datm_comp_nuopc)"
+  character(*),parameter :: modName =  "(atm_comp_nuopc)"
   character(*),parameter :: u_FILE_u = __FILE__
 
   !===============================================================================
   contains
   !===============================================================================
 
-  subroutine SetServices(gcomp, rc)
+  subroutine ATMSetServices(gcomp, rc)
     implicit none
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! local variables
-    character(len=*),parameter  :: subname=trim(modName)//':(SetServices) '
+    character(len=*),parameter  :: subname=trim(modName)//':(ATMSetServices) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -153,7 +153,7 @@ module datm_comp_nuopc
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
-  end subroutine SetServices
+  end subroutine ATMSetServices
 
   !-----------------------------------------------------------------------------
 
@@ -191,7 +191,7 @@ module datm_comp_nuopc
     character(CL)      :: cvalue
     character(CS)      :: stdname, shortname
     logical            :: activefld
-    integer(IN)        :: n,nflds       
+    integer(IN)        :: n,nflds
     integer(IN)        :: ierr       ! error code
     integer(IN)        :: shrlogunit ! original log unit
     integer(IN)        :: shrloglev  ! original log level
@@ -226,7 +226,7 @@ module datm_comp_nuopc
 
     call NUOPC_CompAttributeGet(gcomp, name="inst_index", value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) inst_index 
+    read(cvalue,*) inst_index
 
     call ESMF_AttributeGet(gcomp, name="inst_suffix", isPresent=isPresent, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -418,7 +418,7 @@ module datm_comp_nuopc
 
     call NUOPC_CompAttributeGet(gcomp, name='MCTID', value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) compid  
+    read(cvalue,*) compid
 
     call datm_comp_init(clock, x2d, d2x, &
          flds_x2a, flds_a2x, &
@@ -789,4 +789,4 @@ module datm_comp_nuopc
 
   !===============================================================================
 
-end module datm_comp_nuopc
+end module atm_comp_nuopc

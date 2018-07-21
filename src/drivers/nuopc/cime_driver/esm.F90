@@ -128,6 +128,7 @@ module ESM
     use shr_file_mod          , only : shr_file_getlogunit, shr_file_setLogunit
     use shr_file_mod          , only : shr_file_getlogLevel, shr_file_setLogLevel
     use shr_file_mod          , only : shr_file_getUnit, shr_file_freeUnit
+    use atm_comp_nuopc, only: ATMSetServices
 #ifdef ESMFUSE_cam
   use  cam_comp_nuopc, only:   cam_SS => SetServices
 #endif
@@ -156,9 +157,6 @@ module ESM
   use cism_comp_nuopc, only:   cism_SS => SetServices
 #endif
 
-#ifdef ESMFUSE_datm
-  use datm_comp_nuopc, only: datm_SS => SetServices
-#endif
 #ifdef ESMFUSE_docn
   use docn_comp_nuopc, only: docn_SS => SetServices
 #endif
@@ -179,10 +177,6 @@ module ESM
 #endif
 #ifdef ESMFUSE_desp
   use desp_comp_nuopc, only: desp_SS => SetServices
-#endif
-
-#ifdef ESMFUSE_xatm
-  use xatm_comp_nuopc, only: xatm_SS => SetServices
 #endif
 #ifdef ESMFUSE_xocn
   use xocn_comp_nuopc, only: xocn_SS => SetServices
@@ -422,29 +416,10 @@ module ESM
         call seq_comm_petlist(compid, petList)
 
         is_set = .false.
-        if (trim(model) == "datm") then
-#ifdef ESMFUSE_datm
-          call NUOPC_DriverAddComp(driver, "ATM", datm_SS, petList=petList, comp=child, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          is_set = .true.
-#endif
-        elseif (trim(model) == "xatm") then
-#ifdef ESMFUSE_xatm
-          call NUOPC_DriverAddComp(driver, "ATM", xatm_SS, petList=petList, comp=child, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          is_set = .true.
-#endif
-        elseif (trim(model) == "cam") then
-#ifdef ESMFUSE_cam
-          call NUOPC_DriverAddComp(driver, "ATM",  cam_SS, petList=petList, comp=child, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          is_set = .true.
-#endif
-        else
-          call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=subname//' invalid model = ATM:'//trim(model), &
-               line=__LINE__, file=u_FILE_u, rcToReturn=rc)
-          return  ! bail out
-        endif
+        call NUOPC_DriverAddComp(driver, "ATM", ATMSetServices, petList=petList, comp=child, rc=rc)
+        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+        is_set = .true.
+
         if (.not. is_set) then
            call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=subname//' model unavailable = ATM:'//trim(model), &
                 line=__LINE__, file=u_FILE_u, rcToReturn=rc)

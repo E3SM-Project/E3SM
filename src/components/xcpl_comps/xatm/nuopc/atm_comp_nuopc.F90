@@ -1,4 +1,4 @@
-module xatm_comp_nuopc
+module atm_comp_nuopc
 
   !----------------------------------------------------------------------------
   ! This is the NUOPC cap for XATM
@@ -46,7 +46,7 @@ module xatm_comp_nuopc
   implicit none
   private ! except
 
-  public :: SetServices
+  public :: ATMSetServices
 
   !--------------------------------------------------------------------------
   ! Private module data
@@ -77,17 +77,17 @@ module xatm_comp_nuopc
   character(CXX)             :: flds_x2a = ''
 
   !----- formats -----
-  character(*),parameter :: modName =  "(xatm_comp_nuopc)"
+  character(*),parameter :: modName =  "(atm_comp_nuopc)"
   character(*),parameter :: u_FILE_u = __FILE__
 
   !===============================================================================
   contains
   !===============================================================================
 
-  subroutine SetServices(gcomp, rc)
+  subroutine ATMSetServices(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
-    character(len=*),parameter  :: subname=trim(modName)//':(SetServices) '
+    character(len=*),parameter  :: subname=trim(modName)//':(ATMSetServices) '
 
     rc = ESMF_SUCCESS
     if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
@@ -125,7 +125,7 @@ module xatm_comp_nuopc
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
-  end subroutine SetServices
+  end subroutine ATMSetServices
 
   !-----------------------------------------------------------------------------
 
@@ -159,7 +159,7 @@ module xatm_comp_nuopc
     character(CL)      :: cvalue
     character(CS)      :: stdname, shortname
     logical            :: activefld
-    integer            :: n,nflds       
+    integer            :: n,nflds
     integer            :: lsize       ! local array size
     integer            :: ierr        ! error code
     integer            :: shrlogunit  ! original log unit
@@ -195,7 +195,7 @@ module xatm_comp_nuopc
 
     call NUOPC_CompAttributeGet(gcomp, name="inst_index", value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) inst_index 
+    read(cvalue,*) inst_index
 
     call ESMF_AttributeGet(gcomp, name="inst_suffix", isPresent=isPresent, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -227,7 +227,7 @@ module xatm_comp_nuopc
     call shr_file_setLogUnit (logunit)
 
     !--------------------------------
-    ! create import and export field list 
+    ! create import and export field list
     !--------------------------------
 
     call shr_nuopc_fldList_Concat(fldListFr(compatm), fldListTo(compatm), flds_a2x, flds_x2a, flds_scalar_name)
@@ -607,4 +607,4 @@ module xatm_comp_nuopc
 
   end subroutine ModelFinalize
 
-end module xatm_comp_nuopc
+end module atm_comp_nuopc
