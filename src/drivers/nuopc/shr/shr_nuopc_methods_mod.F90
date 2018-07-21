@@ -3712,8 +3712,7 @@ module shr_nuopc_methods_mod
 !================================================================================
 
   subroutine shr_nuopc_methods_State_GetScalar(State, scalar_id, value, mpicom, flds_scalar_name, flds_scalar_num, rc)
-    use mpi, only : MPI_MAX_ERROR_STRING, mpi_comm_rank, mpi_bcast
-    use mpi, only : MPI_SUCCESS, MPI_REAL8
+    use mpi, only :  mpi_comm_rank, mpi_bcast, MPI_REAL8
     use ESMF, only : ESMF_SUCCESS, ESMF_State, ESMF_StateGet, ESMF_Field, ESMF_FieldGet
     use ESMF, only : ESMF_FAILURE, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU, ESMF_LogWrite
     use ESMF, only : ESMF_LOGMSG_INFO
@@ -3875,10 +3874,7 @@ module shr_nuopc_methods_mod
     shr_nuopc_methods_ChkErr = .false.
     lrc = rc
     if (present(mpierr) .and. mpierr) then
-       if (rc == MPI_SUCCESS) then
-          shr_nuopc_methods_ChkErr = .true.
-          return
-       endif
+       if (rc == MPI_SUCCESS) return
        call MPI_ERROR_STRING(rc, lstring, len, ierr)
        call ESMF_LogWrite("ERROR: "//trim(lstring), ESMF_LOGMSG_INFO, line=line, file=file, rc=dbrc)
        lrc = ESMF_FAILURE
