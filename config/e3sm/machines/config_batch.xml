@@ -517,6 +517,18 @@
      </queues>
    </batch_system>
 
+   <batch_system MACH="snl-white" type="lsf" >
+     <queues>
+       <queue walltimemax="02:00" default="true">rhel7G</queue>
+     </queues>
+   </batch_system>
+
+   <batch_system MACH="snl-blake" type="slurm" >
+     <queues>
+       <queue walltimemax="02:00" default="true">blake</queue>
+     </queues>
+   </batch_system>
+
    <batch_system MACH="lawrencium-lr2" type="slurm" >
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
