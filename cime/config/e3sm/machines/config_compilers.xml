@@ -1444,6 +1444,65 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
+<compiler COMPILER="gnu" MACH="snl-white">
+  <MPICXX>/ascldap/users/mdeakin/tpl-sources/kokkos/bin/nvcc_wrapper</MPICXX>
+  <KOKKOS_PATH>/ascldap/users/mdeakin/white/kokkos-release</KOKKOS_PATH>
+  <CXXFLAGS>
+    <append>-expt-extended-lambda -DCUDA_BUILD</append>
+  </CXXFLAGS>
+</compiler>
+
+<compiler COMPILER="intel18" MACH="snl-blake">
+  <CPPDEFS>
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL </append>
+  </CPPDEFS>
+  <CFLAGS>
+    <base> -xCORE_AVX512 -mkl -std=gnu99 </base>
+    <append DEBUG="FALSE"> -O3 -g -debug minimal </append>
+    <append DEBUG="TRUE"> -O0 -g </append>
+  </CFLAGS>
+  <CXXFLAGS>
+    <base> -xCORE_AVX512 -mkl -std=c++11 </base>
+    <append DEBUG="FALSE"> -O3 -g -debug minimal </append>
+    <append DEBUG="TRUE"> -O0 -g </append>
+    <append compile_threaded="true"> -qopenmp </append>
+  </CXXFLAGS>
+  <FFLAGS>
+    <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -xCORE_AVX512 -mkl </base>
+    <append compile_threaded="true"> -qopenmp </append>
+    <append DEBUG="FALSE"> -O3 -g -debug minimal </append>
+    <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
+  </FFLAGS>
+  <LDFLAGS>
+    <base> -mkl </base>
+    <append compile_threaded="true"> -qopenmp </append>
+    <append MODEL="driver">-L$(NETCDF_FORTRAN_PATH)/lib64</append>
+  </LDFLAGS>
+  <FFLAGS_NOOPT>
+    <base> -O0 </base>
+    <append compile_threaded="true"> -qopenmp </append>
+  </FFLAGS_NOOPT>
+  <FIXEDFLAGS>
+    <base> -fixed -132 </base>
+  </FIXEDFLAGS>
+  <FREEFLAGS>
+    <base> -free </base>
+  </FREEFLAGS>
+  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
+  <FC_AUTO_R8>
+    <base> -r8 </base>
+  </FC_AUTO_R8>
+  <SFC> ifort </SFC>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CXX_LDFLAGS>
+    <base> -cxxlib </base>
+  </CXX_LDFLAGS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <KOKKOS_PATH>/ascldap/users/mdeakin/blake/kokkos-release</KOKKOS_PATH>
+</compiler>
+
 <compiler MACH="mesabi" COMPILER="intel">
   <CFLAGS>
     <base> -O2 -fp-model precise -I/soft/intel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/inc
