@@ -4,7 +4,8 @@
     <rest_file_extension>[ri]</rest_file_extension>
     <rest_file_extension>rh\d*</rest_file_extension>
     <rest_file_extension>rs</rest_file_extension>
-    <hist_file_extension>[eh]</hist_file_extension>
+    <hist_file_extension>h\d*.*\.nc$</hist_file_extension>
+    <hist_file_extension>e</hist_file_extension>
     <rest_history_varname>nhfil</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.atm$NINST_STRING</rpointer_file>
@@ -24,7 +25,8 @@
   <comp_archive_spec compname="clm" compclass="lnd">
     <rest_file_extension>r</rest_file_extension>
     <rest_file_extension>rh\d?</rest_file_extension>
-    <hist_file_extension>h\d*</hist_file_extension>
+    <hist_file_extension>h\d*.*\.nc$</hist_file_extension>
+    <hist_file_extension>e</hist_file_extension>
     <rest_history_varname>locfnh</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.lnd$NINST_STRING</rpointer_file>
@@ -73,6 +75,7 @@
 
   <comp_archive_spec compname="mpascice" compclass="ice">
     <rest_file_extension>rst</rest_file_extension>
+    <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
@@ -92,6 +95,7 @@
 
   <comp_archive_spec compname="mpaso" compclass="ocn">
     <rest_file_extension>rst</rest_file_extension>
+    <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
@@ -111,6 +115,7 @@
 
   <comp_archive_spec compname="mali" compclass="glc">
     <rest_file_extension>rst</rest_file_extension>
+    <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
