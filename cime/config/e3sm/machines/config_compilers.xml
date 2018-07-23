@@ -1411,6 +1411,9 @@ for mct, etc.
   <CXXFLAGS>
     <append>-expt-extended-lambda -DCUDA_BUILD</append>
   </CXXFLAGS>
+  <LDFLAGS>
+    <append> -lstdc++ -lcudart </append>
+  </LDFLAGS>
 </compiler>
 
 <compiler COMPILER="intel18" MACH="snl-blake">
@@ -1435,7 +1438,7 @@ for mct, etc.
     <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
   </FFLAGS>
   <LDFLAGS>
-    <base> -mkl </base>
+    <base> -mkl -lstdc++ </base>
     <append compile_threaded="true"> -qopenmp </append>
     <append MODEL="driver">-L$(NETCDF_FORTRAN_PATH)/lib64</append>
   </LDFLAGS>
