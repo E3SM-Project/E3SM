@@ -183,7 +183,7 @@
   <environment_variables>
     <env name="MPICH_ENV_DISPLAY">1</env>
     <env name="MPICH_VERSION_DISPLAY">1</env>
-    <env name="MPICH_CPUMASK_DISPLAY">1</env>
+    <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
 
     <env name="OMP_STACKSIZE">64M</env>
     <env name="OMP_PROC_BIND">spread</env>
@@ -327,7 +327,7 @@
 
     <env name="MPICH_ENV_DISPLAY">1</env>
     <env name="MPICH_VERSION_DISPLAY">1</env>
-    <env name="MPICH_CPUMASK_DISPLAY">1</env>
+    <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
 
     <env name="OMP_STACKSIZE">128M</env>
     <env name="OMP_PROC_BIND">spread</env>
@@ -483,7 +483,7 @@
   <environment_variables>
     <env name="MPICH_ENV_DISPLAY">1</env>
     <env name="MPICH_VERSION_DISPLAY">1</env>
-    <env name="MPICH_CPUMASK_DISPLAY">1</env>
+    <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
 
     <env name="OMP_STACKSIZE">128M</env>
     <env name="OMP_PROC_BIND">spread</env>
@@ -1245,7 +1245,7 @@
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" mpilib="mvapich">
       <!--e.g. 6 threads: MV2_CPU_MAPPING=0-5:6-11:12-17:18-23:24-29:30-35: -->
-      <env name="MV2_CPU_MAPPING">$SHELL{t=$ENV{OMP_NUM_THREADS};b=0;r=$[36/$t];while [ $r -gt 0 ];do printf "$b-$[$b+$t-1]:";((r--));((b=b+t));done;}</env>
+      <!--env name="MV2_CPU_MAPPING">$SHELL{t=$ENV{OMP_NUM_THREADS};b=0;r=$[36/$t];while [ $r -gt 0 ];do printf "$b-$[$b+$t-1]:";((r--));((b=b+t));done;}</env-->
     </environment_variables>
     <environment_variables DEBUG="TRUE" mpilib="mvapich">
       <env name="MV2_SHOW_CPU_BINDING">1</env>
@@ -1681,7 +1681,7 @@
       <env name="SMP_VARS"> </env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
-      <env name="MPICH_CPUMASK_DISPLAY">1</env>
+      <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="intel">
       <env name="SMP_VARS">-e OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -e OMP_STACKSIZE=128M -e KMP_AFFINITY=granularity=thread,scatter</env>
@@ -2247,7 +2247,7 @@
         <env name="MPILIB">$MPILIB</env>
         <env name="MPICH_ENV_DISPLAY">1</env>
         <env name="MPICH_VERSION_DISPLAY">1</env>
-        <env name="MPICH_CPUMASK_DISPLAY">1</env>
+        <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
         <env name="MPSTKZ">128M</env>
         <env name="OMP_STACKSIZE">128M</env>
       </environment_variables>
