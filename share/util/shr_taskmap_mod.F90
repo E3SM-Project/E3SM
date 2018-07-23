@@ -1,0 +1,308 @@
+module shr_taskmap_mod
+!-----------------------------------------------------------------------
+!
+! Purpose:
+! Output mapping of MPI tasks to nodes for a specified
+! communicator
+!
+! Methods: 
+!  Use mpi_get_processor_name to identify the node that an MPI 
+!  task for a given communicator is assigned to. Gather these
+!  data to task 0 and then write out the list of MPI 
+!  tasks associated with each node using the designated unit
+!  number
+!
+! Author: P. Worley 
+!
+!-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!- use statements ------------------------------------------------------
+!-----------------------------------------------------------------------
+   use shr_sys_mod, only: shr_sys_abort
+
+!-----------------------------------------------------------------------
+!- module boilerplate --------------------------------------------------
+!-----------------------------------------------------------------------
+   implicit none
+   include 'mpif.h'
+   private
+   save                             ! Make the default access private
+
+!-----------------------------------------------------------------------
+! Public interfaces ----------------------------------------------------
+!-----------------------------------------------------------------------
+   public :: &
+      shr_taskmap_write             ! write out list of nodes
+                                    !  with list of assigned MPI tasks
+                                    !  for a given communicator
+
+   CONTAINS
+
+!
+!========================================================================
+!
+   subroutine shr_taskmap_write (unit_num, comm_id, comm_name, &
+                                 save_nnodes, save_task_node_map)
+
+!-----------------------------------------------------------------------
+! Purpose: Write out list of nodes used by processes in a given
+!          communicator. For each node output the list of MPI tasks
+!          assigned to it.
+! Author: P. Worley
+!-----------------------------------------------------------------------
+!------------------------------Arguments--------------------------------
+      integer, intent(in)      :: unit_num   ! unit number for output
+      integer, intent(in)      :: comm_id    ! MPI communicator
+      character(*), intent(in) :: comm_name  ! MPI communicator label
+
+      integer, intent(out), optional :: save_nnodes
+                                             ! return number of nodes
+      integer, intent(out), optional :: save_task_node_map(:)
+                                             ! return task-to-node map
+
+!---------------------------Local Workspace-----------------------------
+      integer :: iam                    ! task id in comm_id
+      integer :: npes                   ! number of MPI tasks in comm_id
+      integer :: ier                    ! return error status    
+      integer :: max_len                ! maximum name length
+      integer :: length                 ! node name length
+      integer :: c, i, j                ! loop indices
+      integer :: nnodes                 ! number of nodes
+
+      ! flag to indicate whether returning number of nodes
+      logical :: broadcast_nnodes
+
+      ! flag to indicate whether returning task-to-node mapping
+      logical :: broadcast_task_node_map
+
+      ! mapping of tasks to ordered list of nodes
+      integer, allocatable :: task_node_map(:)
+
+      ! number of MPI tasks per node
+      integer, allocatable :: node_task_cnt(:)    
+      integer, allocatable :: node_task_tmpcnt(:)
+
+      ! MPI tasks ordered by nodes to which they are assigned
+      integer, allocatable :: node_task_map(:)    
+
+      ! offset into node_task_map for processes assigned to given node
+      integer, allocatable :: node_task_offset(:)
+
+      logical :: masterproc             ! masterproc flag
+      logical :: done                   ! search completion flag
+
+      ! node names for each mpi task
+      character(len=mpi_max_processor_name) :: tmp_name
+      character, allocatable :: task_node_name(:)  ! for this task
+      character, allocatable :: task_node_names(:) ! for all tasks
+
+      ! node names without duplicates
+      character(len=mpi_max_processor_name), allocatable :: node_names(:)  
+
+      ! routine name, for error reporting
+      character(*),parameter :: subname = "(shr_taskmap_write)"
+
+!-----------------------------------------------------------------------
+      !
+      ! Get my id  
+      !
+      call mpi_comm_rank (comm_id, iam, ier) 
+      if (iam == 0) then 
+         masterproc = .true.
+      else
+         masterproc = .false.
+      end if
+
+      !
+      ! Get number of MPI tasks
+      !
+      call mpi_comm_size (comm_id, npes, ier)
+
+      !
+      ! Determine whether returning number of nodes
+      !
+      broadcast_nnodes = .false.
+      if (present(save_nnodes)) then
+         broadcast_nnodes = .true.
+      endif
+
+      !
+      ! Determine whether returning task-to-node mapping information
+      !
+      broadcast_task_node_map = .false.
+      if (present(save_task_node_map)) then
+         if (size(save_task_node_map) >= npes) then
+            broadcast_task_node_map = .true.
+         else
+            call shr_sys_abort(trim(subname)//': array for task-to-node mapping data too small')
+         endif
+      endif
+
+      ! 
+      ! Allocate arrays for collecting node names
+      !
+      max_len = mpi_max_processor_name
+      allocate ( task_node_name(max_len), stat=ier )
+      if (ier /= 0) &
+         call shr_sys_abort(trim(subname)//': allocate task_node_name failed')
+
+      allocate ( task_node_names(max_len*npes), stat=ier )
+      if (ier /= 0) &
+         call shr_sys_abort(trim(subname)//': allocate task_node_names failed')
+ 
+      !
+      ! Get node names and send to root. 
+      ! (Assume that processor names are node names.)
+      !
+      call mpi_get_processor_name (tmp_name, length, ier)
+      task_node_name(:) = ' '
+      do i = 1, length
+         task_node_name(i) = tmp_name(i:i)
+      end do
+
+      !
+      ! Gather node names
+      !
+      task_node_names(:) = ' '
+      call mpi_gather (task_node_name,  max_len, mpi_character, &
+                       task_node_names, max_len, mpi_character, &
+                       0, comm_id, ier)
+
+      if (masterproc) then
+         !
+         ! Identify nodes and task/node mapping.
+         !
+         allocate ( task_node_map(0:npes-1), stat=ier )
+         if (ier /= 0) &
+            call shr_sys_abort(trim(subname)//': allocate task_node_map failed')
+         task_node_map(:) = -1
+
+         allocate ( node_names(0:npes-1), stat=ier )
+         if (ier /= 0) &
+            call shr_sys_abort(trim(subname)//': allocate node_names failed')
+         node_names(:) = ' '
+
+         allocate ( node_task_cnt(0:npes-1), stat=ier )
+         if (ier /= 0) &
+            call shr_sys_abort(trim(subname)//': allocate node_task_cnt failed')
+         node_task_cnt(:) = 0
+
+         do c=1,max_len
+            tmp_name(c:c) = task_node_names(c)
+         enddo
+
+         node_names(0) = trim(tmp_name)
+         task_node_map(0) = 0
+         node_task_cnt(0) = 1
+         nnodes = 1
+
+         do i=1,npes-1
+            do c=1,max_len
+               tmp_name(c:c) = task_node_names(i*max_len+c)
+            enddo
+
+            j = 0
+            done = .false.
+            do while ((.not. done) .and. (j < nnodes))
+               if (trim(node_names(j)) .eq. trim(tmp_name)) then
+                  task_node_map(i) = j
+                  node_task_cnt(j) = node_task_cnt(j) + 1
+                  done = .true.
+               endif
+               j = j + 1
+            enddo
+
+            if (.not. done) then
+               node_names(nnodes) = trim(tmp_name)
+               task_node_map(i) = nnodes
+               node_task_cnt(nnodes) = 1
+               nnodes = nnodes + 1
+            endif
+
+         enddo
+
+         !
+         ! Identify node/task mapping.
+         !
+         allocate ( node_task_offset(0:nnodes-1), stat=ier )
+         if (ier /= 0) &
+            call shr_sys_abort(trim(subname)//': allocate node_task_offset failed')
+         node_task_offset(:) = 0
+
+         do j=1,nnodes-1
+            node_task_offset(j) = node_task_offset(j-1) + node_task_cnt(j-1)
+         enddo
+
+         allocate ( node_task_tmpcnt(0:nnodes-1), stat=ier )
+         if (ier /= 0) &
+            call shr_sys_abort(trim(subname)//': allocate node_task_tmpcnt failed')
+         node_task_tmpcnt(:) = 0
+
+         allocate ( node_task_map(0:npes-1), stat=ier )
+         if (ier /= 0) &
+            call shr_sys_abort(trim(subname)//': allocate node_task_map failed')
+         node_task_map(:) = -1
+
+         do i=0,npes-1
+            j = task_node_map(i)
+            node_task_map(node_task_offset(j) + node_task_tmpcnt(j)) = i
+            node_task_tmpcnt(j) = node_task_tmpcnt(j) + 1
+         enddo
+
+         !
+         ! Output node/task mapping
+         !
+         write(unit_num,*) '-----------------------------------'
+         write(unit_num,*) trim(comm_name),': ',nnodes,' NODES, ',npes,' MPI TASKS'
+         write(unit_num,*) 'NODE NAME : ',trim(comm_name),' TASK #'
+         do j=0,nnodes-1
+            write(unit_num,101,advance='no') trim(node_names(j))
+101 format(a," : ")
+            do i=node_task_offset(j),node_task_offset(j)+node_task_cnt(j)-1
+               write(unit_num,102,advance='no') node_task_map(i)
+            enddo
+102 format(I7, " ")
+            write(unit_num,103,advance='no')
+103 format(/)
+         enddo
+         write(unit_num,*) '-----------------------------------'
+
+         if (broadcast_nnodes) then
+            save_nnodes = nnodes
+         endif
+
+         if (broadcast_task_node_map) then
+            do i=0,npes-1
+               save_task_node_map(i+1) = task_node_map(i)
+            enddo
+         endif
+
+         deallocate(node_task_map)
+         deallocate(node_task_tmpcnt)
+         deallocate(node_task_offset)
+         deallocate(node_task_cnt)
+         deallocate(node_names)
+         deallocate(task_node_map)
+
+      else
+
+      endif
+
+      if (broadcast_nnodes) then
+         call mpi_bcast(save_nnodes, 1, mpi_integer, 0, comm_id, ier)
+      endif
+
+      if (broadcast_task_node_map) then
+         call mpi_bcast(save_task_node_map, npes, mpi_integer, 0, comm_id, ier)
+      endif
+
+      deallocate(task_node_name)
+      deallocate(task_node_names)
+
+   end subroutine shr_taskmap_write
+
+!
+!========================================================================
+!
+end module shr_taskmap_mod
