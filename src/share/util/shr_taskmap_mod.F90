@@ -253,20 +253,22 @@ module shr_taskmap_mod
          !
          ! Output node/task mapping
          !
-         write(unit_num,*) '-----------------------------------'
-         write(unit_num,*) trim(comm_name),': ',nnodes,' NODES, ',npes,' MPI TASKS'
-         write(unit_num,*) 'NODE NAME : ',trim(comm_name),' TASK #'
+         write(unit_num,100) '--------------------------------------------------------------'
+100 format(a)
+         write(unit_num,101) trim(comm_name),nnodes,npes
+101 format(a,' communicator : ',I6,' nodes, ',I7,' MPI tasks')
+         write(unit_num,100) 'COMMUNICATOR NODE # [NODE NAME] : (# OF MPI TASKS) TASK # LIST'
          do j=0,nnodes-1
-            write(unit_num,101,advance='no') trim(node_names(j))
-101 format(a," : ")
+            write(unit_num,102,advance='no') trim(comm_name),j,trim(node_names(j)), node_task_cnt(j)
+102 format(a,' NODE ',I6,' [ ',a,' ] : ( ',I7,' MPI TASKS )')
             do i=node_task_offset(j),node_task_offset(j)+node_task_cnt(j)-1
-               write(unit_num,102,advance='no') node_task_map(i)
+               write(unit_num,103,advance='no') node_task_map(i)
             enddo
-102 format(I7, " ")
-            write(unit_num,103,advance='no')
-103 format(/)
+103 format(I7, " ")
+            write(unit_num,104,advance='no')
+104 format(/)
          enddo
-         write(unit_num,*) '-----------------------------------'
+         write(unit_num,100) '--------------------------------------------------------------'
 
          if (broadcast_nnodes) then
             save_nnodes = nnodes
