@@ -1245,7 +1245,7 @@
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" mpilib="mvapich">
       <!--e.g. 6 threads: MV2_CPU_MAPPING=0-5:6-11:12-17:18-23:24-29:30-35: -->
-      <!--env name="MV2_CPU_MAPPING">$SHELL{t=$ENV{OMP_NUM_THREADS};b=0;r=$[36/$t];while [ $r -gt 0 ];do printf "$b-$[$b+$t-1]:";((r--));((b=b+t));done;}</env-->
+      <env name="MV2_CPU_MAPPING">$SHELL{t=$ENV{OMP_NUM_THREADS};b=0;r=$[36/$t];while [ $r -gt 0 ];do printf "$b-$[$b+$t-1]:";((r--));((b=b+t));done;}</env>
     </environment_variables>
     <environment_variables DEBUG="TRUE" mpilib="mvapich">
       <env name="MV2_SHOW_CPU_BINDING">1</env>
