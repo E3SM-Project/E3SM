@@ -1,4 +1,4 @@
-module drof_comp_nuopc
+module rof_comp_nuopc
 
   !----------------------------------------------------------------------------
   ! This is the NUOPC cap for DROF
@@ -48,7 +48,7 @@ module drof_comp_nuopc
 
   implicit none
 
-  public :: SetServices
+  public :: ROFSetServices
 
   private :: InitializeP0
   private :: InitializeAdvertise
@@ -94,14 +94,14 @@ module drof_comp_nuopc
   character(CXX)             :: flds_x2r = ''
 
   !----- formats -----
-  character(*),parameter :: modName =  "(drof_comp_nuopc)"
+  character(*),parameter :: modName =  "(rof_comp_nuopc)"
   character(*),parameter :: u_FILE_u = __FILE__
 
   !===============================================================================
   contains
   !===============================================================================
 
-  subroutine SetServices(gcomp, rc)
+  subroutine ROFSetServices(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -145,7 +145,7 @@ module drof_comp_nuopc
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
-  end subroutine SetServices
+  end subroutine ROFSetServices
 
   !===============================================================================
 
@@ -180,7 +180,7 @@ module drof_comp_nuopc
     logical            :: exists
     character(CS)      :: stdname, shortname
     logical            :: activefld
-    integer(IN)        :: n,nflds       
+    integer(IN)        :: n,nflds
     integer(IN)        :: ierr       ! error code
     integer(IN)        :: shrlogunit ! original log unit
     integer(IN)        :: shrloglev  ! original log level
@@ -215,7 +215,7 @@ module drof_comp_nuopc
 
     call NUOPC_CompAttributeGet(gcomp, name="inst_index", value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) inst_index 
+    read(cvalue,*) inst_index
 
     call ESMF_AttributeGet(gcomp, name="inst_suffix", isPresent=isPresent, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -361,7 +361,7 @@ module drof_comp_nuopc
 
     call NUOPC_CompAttributeGet(gcomp, name='MCTID', value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) compid 
+    read(cvalue,*) compid
 
     call drof_comp_init(clock, x2d, d2x, &
          flds_x2r, flds_r2x, &
@@ -722,4 +722,4 @@ module drof_comp_nuopc
 
   !===============================================================================
 
-end module drof_comp_nuopc
+end module rof_comp_nuopc

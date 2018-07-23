@@ -1,4 +1,4 @@
-module dwav_comp_nuopc
+module wav_comp_nuopc
 
   !----------------------------------------------------------------------------
   ! This is the NUOPC cap for DWAV
@@ -48,7 +48,7 @@ module dwav_comp_nuopc
 
   implicit none
 
-  public :: SetServices
+  public :: WAVSetServices
 
   private :: InitializeP0
   private :: InitializeAdvertise
@@ -91,14 +91,14 @@ module dwav_comp_nuopc
   character(CXX)             :: flds_x2w = ''
 
   !----- formats -----
-  character(*),parameter :: modName =  "(dwav_comp_nuopc)"
+  character(*),parameter :: modName =  "(wav_comp_nuopc)"
   character(*),parameter :: u_FILE_u = __FILE__
 
   !===============================================================================
   contains
   !===============================================================================
 
-  subroutine SetServices(gcomp, rc)
+  subroutine WAVSetServices(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
     character(len=*),parameter  :: subname=trim(modName)//':(SetServices) '
@@ -139,7 +139,7 @@ module dwav_comp_nuopc
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
-  end subroutine SetServices
+  end subroutine WAVSetServices
 
   !===============================================================================
 
@@ -173,7 +173,7 @@ module dwav_comp_nuopc
     character(CL)      :: cvalue
     character(CS)      :: stdname, shortname
     logical            :: activefld
-    integer(IN)        :: n,nflds       
+    integer(IN)        :: n,nflds
     integer(IN)        :: ierr        ! error code
     integer(IN)        :: shrlogunit  ! original log unit
     integer(IN)        :: shrloglev   ! original log level
@@ -208,7 +208,7 @@ module dwav_comp_nuopc
 
     call NUOPC_CompAttributeGet(gcomp, name="inst_index", value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) inst_index 
+    read(cvalue,*) inst_index
 
     call ESMF_AttributeGet(gcomp, name="inst_suffix", isPresent=isPresent, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -352,7 +352,7 @@ module dwav_comp_nuopc
 
     call NUOPC_CompAttributeGet(gcomp, name='MCTID', value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) compid  
+    read(cvalue,*) compid
 
     call dwav_comp_init(clock, x2d, d2x, &
          SDWAV, gsmap, ggrid, mpicom, compid, my_task, master_task, &
@@ -680,4 +680,4 @@ module dwav_comp_nuopc
 
   !===============================================================================
 
-end module dwav_comp_nuopc
+end module wav_comp_nuopc
