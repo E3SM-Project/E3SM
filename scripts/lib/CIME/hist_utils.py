@@ -27,7 +27,7 @@ def _get_all_hist_files(testcase, model, from_dir, suffix=""):
     #for mom files - TODO need conforming file names from MOM
     # test_hists.extend(glob.glob("{}/{}.{}6.f*.nc".format(from_dir, testcase, model)))
 
-    test_hists.extend(glob.glob("{}/{}.{}6*nc".format(from_dir, testcase, model)))
+    test_hists.extend(glob.glob("{}/{}.{}6\.[sf].*nc".format(from_dir, testcase, model)))
 
     # Match multi-instance files produced by run
     test_hists.extend(glob.glob("{}/{}.{}*.h?.*.nc{}".format(from_dir, testcase, model, suffix)))

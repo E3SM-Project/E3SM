@@ -307,13 +307,15 @@ module med_fraction_mod
     !---------------------------------------
 
     if (is_local%wrap%comp_present(compglc)) then
-       ! copy glc FBImp 'frac' to FBFrac 'gfrac'
-       ! TODO: implement a more general scheme that hard-wiring the name 'frac'
-       call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImp(compglc,compglc), 'frac' , dataPtr2, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compglc), 'gfrac', dataPtr1, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       dataPtr1(:) = dataPtr2(:)
+       ! If 'gfrac' and 'frac' exists, then copy 'frac' to 'gfrac'
+       ! TODO: implement a more general scheme that hard-wiring the name 'frac'
+       if (.not. shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) then
+          call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImp(compglc,compglc), 'frac' , dataPtr2, rc=rc)
+          if (.not. shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) then
+             dataPtr1 = dataPtr2
+          endif
+       endif
     endif
 
     !---------------------------------------

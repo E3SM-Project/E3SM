@@ -50,7 +50,7 @@ module docn_comp_mod
   logical       :: firstcall = .true.    ! first call logical
 
   character(len=*),parameter :: rpfile = 'rpointer.ocn'
-  integer(IN)   :: dbug = 2              ! debug level (higher is more)
+  integer(IN)   :: dbug = 1              ! debug level (higher is more)
 
   real(R8),parameter :: cpsw    = shr_const_cpsw        ! specific heat of sea h2o ~ J/kg/K
   real(R8),parameter :: rhosw   = shr_const_rhosw       ! density of sea water ~ kg/m^3
@@ -605,7 +605,6 @@ CONTAINS
     ! Debug output
     !----------------------------------------------------------
 
-#if (1 == 0)
     if (dbug > 1 .and. my_task == master_task) then
        do n = 1,lsize
           write(logunit,F01)'import: ymd,tod,n,Foxx_swnet = ', target_ymd, target_tod, n, x2o%rattr(kswnet,n)    
@@ -626,7 +625,6 @@ CONTAINS
           write(logunit,F01)'export: ymd,tod,n,Fioo_q     = ', target_ymd, target_tod, n, o2x%rattr(kq,n)    
        end do
     end if
-#endif
 
     !--------------------
     ! Write restart
