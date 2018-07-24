@@ -24,15 +24,12 @@ def _get_all_hist_files(testcase, model, from_dir, suffix="", file_extensions=No
     # Match hist files produced by run
     for extension in file_extensions:
         if extension.endswith('$'):
-            pfile = re.compile(model+r"\."+extension[:-1]+suffix+r'$')
-            test_hists.extend([os.path.join(from_dir,f) for f in os.listdir(from_dir) if pfile.search(f)])
-        else:
-            pfile = re.compile(model+r"\."+extension+suffix+r'$')
-            test_hists.extend([os.path.join(from_dir,f) for f in os.listdir(from_dir) if pfile.search(f)])
-
+            extension = extension[:-1]
+            
+        pfile = re.compile(model+r'\d?_?\d*\.'+extension+suffix+r'$')
+        test_hists.extend([os.path.join(from_dir,f) for f in os.listdir(from_dir) if pfile.search(f)])
     test_hists = list(set(test_hists))
     test_hists.sort()
-    print "test_hists {}".format(test_hists)
     return test_hists
 
 def _get_latest_hist_files(testcase, model, from_dir, suffix="", file_extensions=None):
@@ -60,11 +57,16 @@ def copy(case, suffix):
     testcase = case.get_value("CASE")
 
     # Loop over models
+    archive = case.get_env("archive")
     comments = "Copying hist files to suffix '{}'\n".format(suffix)
     num_copied = 0
     for model in _iter_model_file_substrs(case):
         comments += "  Copying hist files for model '{}'\n".format(model)
-        test_hists = _get_latest_hist_files(testcase, model, rundir)
+        if model == 'cpl':
+            file_extensions = archive.get_hist_file_extensions(archive.get_entry('drv'))
+        else:
+            file_extensions = archive.get_hist_file_extensions(archive.get_entry(model))
+        test_hists = _get_latest_hist_files(testcase, model, rundir, file_extensions=file_extensions)
         num_copied += len(test_hists)
         for test_hist in test_hists:
             new_file = "{}.{}".format(test_hist, suffix)
