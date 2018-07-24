@@ -1268,8 +1268,8 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
    ! modified from what exist in the physics_state object, i.e. to clip
    ! temperatures to make sure they are within the valid range.
    real(r8) :: coszrs_day(pcols)  ! cosine solar zenith angle
-   real(r8), dimension(pcols,num_rad_layers) :: tmid, tmid_day, pmid, pmid_day
-   real(r8), dimension(pcols,num_rad_layers+1) :: pint, pint_day
+   real(r8), dimension(pcols,num_rad_layers) :: tmid, tmid_day, pmid, pmid_day, tint_cam
+   real(r8), dimension(pcols,num_rad_layers+1) :: pint, pint_day, tint
    real(r8) :: surface_emissivity(nlwbands,pcols)
 
    ! Scaling factor for total sky irradiance; used to account for orbital
@@ -1530,14 +1530,16 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
       call handle_error(aerosol_optics_lw%alloc_1scl(ncol, nlay, k_dist_lw%get_band_lims_wavenumber()))
       call aerosol_optics_lw%set_name('longwave aerosol optics')
 
-      ! Initialize cloud optics object
+      ! Initialize cloud optics object; cloud_optics_lw will be indexed by
+      ! g-point, rather than by band, and subcolumn routines will associate each
+      ! g-point with a stochastically-sampled cloud state
       call handle_error(cloud_optics_lw%alloc_1scl(ncol, nlay, k_dist_lw))
       call cloud_optics_lw%set_name('longwave cloud optics')
 
       ! Allocate longwave outputs; why is this not part of the
       ! ty_fluxes_byband object?
       ! NOTE: fluxes defined at interfaces, so initialize to have vertical
-      ! dimension pver+1
+      ! dimension nlay+1
       call initialize_rrtmgp_fluxes( &
          ncol, nlay+1, nlwbands, &
          flux_lw_allsky &
@@ -1547,6 +1549,9 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
          flux_lw_clearsky &
       )
         
+      ! Calculate interface temperature explicitly
+      call set_interface_temperature(state, cam_in, tint_cam)
+
       ! Populate state variables
       call map_cam_to_rad_levels(state%t(:ncol,:pver), &
                                  tmid(:ncol,:nlay), &
@@ -1556,6 +1561,9 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
                                  cam_layers(:nlay)) 
       call map_cam_to_rad_levels(state%pint(:ncol,:pver+1), &
                                  pint(:ncol,:nlay+1), &
+                                 cam_interfaces(:nlay+1)) 
+      call map_cam_to_rad_levels(tint_cam(:ncol,:pver+1), &
+                                 tint(:ncol,:nlay+1), &
                                  cam_interfaces(:nlay+1)) 
 
       ! Special case for top-most rad level, which is an extra level above
@@ -1611,12 +1619,13 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
             call t_startf('longwave radiation calculations')
             call handle_error(rte_lw( &
                k_dist_lw, gas_concentrations_lw, &
-               pmid(:ncol,:nlay), tmid(:ncol,:nlay), &
-               pint(:ncol,:nlay+1), t_sfc(:ncol), &
-               surface_emissivity(:nlwbands,:ncol), &
+               pmid(1:ncol,1:nlay), tmid(1:ncol,1:nlay), &
+               pint(1:ncol,1:nlay+1), t_sfc(1:ncol), &
+               surface_emissivity(1:nlwbands,1:ncol), &
                cloud_optics_lw, &
                flux_lw_allsky, flux_lw_clearsky, &
-               aer_props=aerosol_optics_lw &
+               aer_props=aerosol_optics_lw, &
+               t_lev=tint(1:ncol,1:nlay+1) &
             ))
             call t_stopf('longwave radiation calculations')
 
@@ -2783,14 +2792,18 @@ subroutine output_fluxes_lw(icall, state, flux_all, flux_clr, lev_indices)
    call outfld('FNLC'//diag(icall), flux_net(:ncol,:pver+1), ncol, state%lchnk)
 
    ! All-sky fluxes
-   call outfld('FLNT'//diag(icall), flux_all%flux_net(:ncol,ktop_rad), ncol, state%lchnk)
-   call outfld('FLNS'//diag(icall), flux_all%flux_net(:ncol,kbot_rad), ncol, state%lchnk)
+   ! NOTE: sign change on net fluxes because internally net fluxes are assumed
+   ! to down minus up, but for longwave outputs we want upward positive
+   call outfld('FLNT'//diag(icall), -flux_all%flux_net(:ncol,ktop_rad), ncol, state%lchnk)
+   call outfld('FLNS'//diag(icall), -flux_all%flux_net(:ncol,kbot_rad), ncol, state%lchnk)
    call outfld('FLUT'//diag(icall), flux_all%flux_up(:ncol,ktop_rad), ncol, state%lchnk)
    call outfld('FLDS'//diag(icall), flux_all%flux_dn(:ncol,kbot_rad), ncol, state%lchnk)
 
    ! Clear-sky fluxes
-   call outfld('FLNTC'//diag(icall), flux_clr%flux_net(:ncol,ktop_rad), ncol, state%lchnk)
-   call outfld('FLNSC'//diag(icall), flux_clr%flux_net(:ncol,kbot_rad), ncol, state%lchnk)
+   ! NOTE: sign change on net fluxes because internally net fluxes are assumed
+   ! to down minus up, but for longwave outputs we want upward positive
+   call outfld('FLNTC'//diag(icall), -flux_clr%flux_net(:ncol,ktop_rad), ncol, state%lchnk)
+   call outfld('FLNSC'//diag(icall), -flux_clr%flux_net(:ncol,kbot_rad), ncol, state%lchnk)
    call outfld('FLUTC'//diag(icall), flux_clr%flux_up(:ncol,ktop_rad), ncol, state%lchnk)
    call outfld('FLDSC'//diag(icall), flux_clr%flux_dn(:ncol,kbot_rad), ncol, state%lchnk)
 
