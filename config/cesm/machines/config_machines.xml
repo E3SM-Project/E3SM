@@ -2009,7 +2009,7 @@
       <executable>aprun</executable>
       <arguments>
 	<arg name="num_tasks" >-n {{ total_tasks }}</arg>
-	<arg name="tasks_per_node" >-N $MAX_MPITASKS_PER_NODE</arg>
+	<arg name="tasks_per_node" >-N {{ tasks_per_node }} </arg>
 	<arg name="thread_count">--cc depth -d $OMP_NUM_THREADS</arg>
 	<arg name="env_omp_stacksize">-e OMP_STACKSIZE=64M</arg>
 	<arg name="env_thread_count">-e OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>
