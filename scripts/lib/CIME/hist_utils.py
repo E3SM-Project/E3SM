@@ -4,7 +4,6 @@ Functions for actions pertaining to history files.
 
 from CIME.XML.standard_module_setup import *
 from CIME.test_status import TEST_NO_BASELINES_COMMENT
-
 from CIME.utils import get_current_commit, get_timestamp, get_model, safe_copy
 
 import logging, glob, os, re, stat, filecmp
@@ -18,30 +17,26 @@ def _iter_model_file_substrs(case):
     for model in models:
         yield model
 
-def _get_all_hist_files(testcase, model, from_dir, suffix=""):
+def _get_all_hist_files(testcase, model, from_dir, suffix="", file_extensions=None):
     suffix = (".{}".format(suffix) if suffix else "")
 
+    test_hists = []
     # Match hist files produced by run
-    test_hists = glob.glob("{}/{}.{}*.h?.nc{}".format(from_dir, testcase, model, suffix))
-    test_hists.extend(glob.glob("{}/{}.{}*.h.nc{}".format(from_dir, testcase, model, suffix)))
+    for extension in file_extensions:
+        if extension.endswith('$'):
+            pfile = re.compile(model+r"\."+extension[:-1]+suffix+r'$')
+            test_hists.extend([os.path.join(from_dir,f) for f in os.listdir(from_dir) if pfile.search(f)])
+        else:
+            pfile = re.compile(model+r"\."+extension+suffix+r'$')
+            test_hists.extend([os.path.join(from_dir,f) for f in os.listdir(from_dir) if pfile.search(f)])
 
-    # Match multi-instance files produced by run
-    test_hists.extend(glob.glob("{}/{}.{}*.h?.*.nc{}".format(from_dir, testcase, model, suffix)))
-    test_hists.extend(glob.glob("{}/{}.{}*.h.*.nc{}".format(from_dir, testcase, model, suffix)))
-
-    # suffix == "" implies baseline comparison, baseline hist files have simpler names
-
-    if suffix == "":
-        test_hists.extend(glob.glob("{}/{}*.h.nc".format(from_dir, model)))
-        test_hists.extend(glob.glob("{}/{}*.h?.nc".format(from_dir, model)))
-        test_hists.extend(glob.glob("{}/{}*.h.*.nc".format(from_dir, model)))
-        test_hists.extend(glob.glob("{}/{}*.h?.*.nc".format(from_dir, model)))
-
+    test_hists = list(set(test_hists))
     test_hists.sort()
+    print "test_hists {}".format(test_hists)
     return test_hists
 
-def _get_latest_hist_files(testcase, model, from_dir, suffix=""):
-    test_hists = _get_all_hist_files(testcase, model, from_dir, suffix)
+def _get_latest_hist_files(testcase, model, from_dir, suffix="", file_extensions=None):
+    test_hists = _get_all_hist_files(testcase, model, from_dir, suffix, file_extensions)
     latest_files = {}
     histlist = []
     for hist in test_hists:
@@ -187,12 +182,18 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
     num_compared = 0
     comments = "Comparing hists for case '{}' dir1='{}', suffix1='{}',  dir2='{}' suffix2='{}'\n".format(testcase, from_dir1, suffix1, from_dir2, suffix2)
     multiinst_driver_compare = False
+    archive = case.get_env('archive')
     for model in _iter_model_file_substrs(case):
         if model == 'cpl' and suffix2 == 'multiinst':
             multiinst_driver_compare = True
         comments += "  comparing model '{}'\n".format(model)
-        hists1 = _get_latest_hist_files(testcase, model, from_dir1, suffix1)
-        hists2 = _get_latest_hist_files(testcase, model, from_dir2, suffix2)
+        if model == 'cpl':
+            file_extensions = archive.get_hist_file_extensions(archive.get_entry('drv'))
+        else:
+            file_extensions = archive.get_hist_file_extensions(archive.get_entry(model))
+        print "HERE model {} file_ext {}".format(model, file_extensions)
+        hists1 = _get_latest_hist_files(testcase, model, from_dir1, suffix1, file_extensions)
+        hists2 = _get_latest_hist_files(testcase, model, from_dir2, suffix2, file_extensions)
         if len(hists1) == 0 and len(hists2) == 0:
             comments += "    no hist files found for model {}\n".format(model)
             continue
@@ -383,6 +384,7 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
     else:
         basegen_dir = baseline_dir
     testcase = case.get_value("CASE")
+    archive = case.get_env('archive')
 
     if not os.path.isdir(basegen_dir):
         os.makedirs(basegen_dir)
@@ -395,7 +397,12 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
     num_gen = 0
     for model in _iter_model_file_substrs(case):
         comments += "  generating for model '{}'\n".format(model)
-        hists =  _get_latest_hist_files(testcase, model, rundir)
+        if model == 'cpl':
+            file_extensions = archive.get_hist_file_extensions(archive.get_entry('drv'))
+        else:
+            file_extensions = archive.get_hist_file_extensions(archive.get_entry(model))
+        print "HERE model {} file_ext {}".format(model, file_extensions)
+        hists =  _get_latest_hist_files(testcase, model, rundir, file_extensions=file_extensions)
         logger.debug("latest_files: {}".format(hists))
         num_gen += len(hists)
         for hist in hists:
