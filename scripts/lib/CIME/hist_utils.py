@@ -193,7 +193,6 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
             file_extensions = archive.get_hist_file_extensions(archive.get_entry('drv'))
         else:
             file_extensions = archive.get_hist_file_extensions(archive.get_entry(model))
-        print "HERE model {} file_ext {}".format(model, file_extensions)
         hists1 = _get_latest_hist_files(testcase, model, from_dir1, suffix1, file_extensions)
         hists2 = _get_latest_hist_files(testcase, model, from_dir2, suffix2, file_extensions)
         if len(hists1) == 0 and len(hists2) == 0:
@@ -403,7 +402,6 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
             file_extensions = archive.get_hist_file_extensions(archive.get_entry('drv'))
         else:
             file_extensions = archive.get_hist_file_extensions(archive.get_entry(model))
-        print "HERE model {} file_ext {}".format(model, file_extensions)
         hists =  _get_latest_hist_files(testcase, model, rundir, file_extensions=file_extensions)
         logger.debug("latest_files: {}".format(hists))
         num_gen += len(hists)
