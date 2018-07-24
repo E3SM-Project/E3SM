@@ -8,8 +8,8 @@
 # Modules
 #-------------------------------------------------------------------------------
 
-  source /opt/modules/default/init/bash
-  export MODULEPATH=${MODULEPATH}:/ccs/home/norton/.modules
+  #-source /opt/modules/default/init/bash
+  #-export MODULEPATH=${MODULEPATH}:/ccs/home/norton/.modules
   module rm PrgEnv-intel
   module rm pgi
   module rm PrgEnv-pgi
@@ -30,22 +30,25 @@
   module rm cray-netcdf
   module rm cray-netcdf-hdf5parallel
   module rm cray-parallel-netcdf
+  module rm cray-hdf5-parallel
+
     module load PrgEnv-pgi
 #   module switch pgi pgi/14.2.0
-    module switch pgi pgi/15.10.0
-    module switch cray-mpich cray-mpich/7.4.0
-    module switch cray-libsci cray-libsci/16.06.1
-    module switch atp atp/2.0.2
+    module switch pgi pgi/17.5.0
+    module switch cray-mpich cray-mpich/7.6.3
+    module switch cray-libsci cray-libsci/16.11.1
+    module switch atp atp/2.1.1
     module add cudatoolkit
     export CRAY_CUDA_MPS=1
 
     export CRAY_CPU_TARGET=istanbul
-    module load cray-netcdf-hdf5parallel/4.4.0
-    module load cray-parallel-netcdf/1.7.0
-    module load cray-hdf5-parallel
-    module load curl/7.30.0
+    module load cray-netcdf-hdf5parallel/4.4.1.1.3
+    module load cray-parallel-netcdf/1.8.1.3
+    #-module load cray-hdf5-parallel
+    module load curl/7.50.3
   module load subversion
-  module load cmake/2.8.10.2
+  #-module load cmake/2.8.10.2
+  module load cmake3/3.9.0
 
 module list
 

@@ -4,7 +4,7 @@ do_cmake=1
 do_clean=1
 do_make=1
  
-HOMME_ROOT=/ccs/home/$USER/ACME/components/homme
+HOMME_ROOT=/ccs/home/mxu/cli115/scratch/consulting/src/test_homme/components/homme
 NLEVELS=64
 
 source ./env_mach_specific.cpu
