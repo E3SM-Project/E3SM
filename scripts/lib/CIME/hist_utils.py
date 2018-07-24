@@ -25,11 +25,14 @@ def _get_all_hist_files(testcase, model, from_dir, suffix="", file_extensions=No
     for extension in file_extensions:
         if extension.endswith('$'):
             extension = extension[:-1]
-
-        pfile = re.compile(model+r'\d?_?\d*\.'+extension+suffix+r'$')
+        string = model+r'\d?_?\d*\.'+extension+suffix+r'$'
+        logger.debug ("Regex is {}".format(string))
+        pfile = re.compile(string)
         test_hists.extend([os.path.join(from_dir,f) for f in os.listdir(from_dir) if pfile.search(f)])
+        
     test_hists = list(set(test_hists))
     test_hists.sort()
+    logger.debug("_get_all_hist_files returns {} for model {}".format(test_hists, model))
     return test_hists
 
 def _get_latest_hist_files(testcase, model, from_dir, suffix="", file_extensions=None):
