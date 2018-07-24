@@ -6,7 +6,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.test_status import TEST_NO_BASELINES_COMMENT
 from CIME.utils import get_current_commit, get_timestamp, get_model, safe_copy
 
-import logging, glob, os, re, stat, filecmp
+import logging, os, re, stat, filecmp
 logger = logging.getLogger(__name__)
 
 BLESS_LOG_NAME = "bless_log"
