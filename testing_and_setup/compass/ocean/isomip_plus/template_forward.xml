@@ -139,7 +139,6 @@
 				<member name="layerThickness" type="var"/>
 				<member name="zMid" type="var"/>
 				<member name="ssh" type="var"/>
-				<member name="landIcePressure" type="var"/>
 				<member name="seaIcePressure" type="var"/>
 				<member name="atmosphericPressure" type="var"/>
 				<member name="tracersSurfaceValue" type="var_array"/>
