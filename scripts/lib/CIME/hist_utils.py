@@ -29,7 +29,7 @@ def _get_all_hist_files(testcase, model, from_dir, suffix="", file_extensions=No
         logger.debug ("Regex is {}".format(string))
         pfile = re.compile(string)
         test_hists.extend([os.path.join(from_dir,f) for f in os.listdir(from_dir) if pfile.search(f)])
-        
+
     test_hists = list(set(test_hists))
     test_hists.sort()
     logger.debug("_get_all_hist_files returns {} for model {}".format(test_hists, model))
