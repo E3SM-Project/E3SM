@@ -1,6 +1,36 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 7-24-2018
+Tag: cime_cesm2_0_rel_05
+Answer Changes: None
+Tests: scripts_regression_tests.py 
+Dependencies:
+
+Brief Summary:
+    - Theta enviroment updates.
+    - Fix wget option for directories.
+    - Remove trailing whitespace.
+    - Correct mpich for intel, clean up cprnc on hobart.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+59ef62860 (HEAD -> maint-5.6, origin/maint-5.6) Merge pull request #2727 from jedwards4b/more_theta_config
+d44d58a82 Merge pull request #2700 from jedwards4b/wget_fix
+41842b411 remove trailing whitespace
+1af4f4569 Merge pull request #2718 from jedwards4b/hobart_machine_cleanup
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_machines.xml
+M       scripts/lib/CIME/Servers/wget.py
+M       scripts/lib/CIME/utils.py
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 7-13-2018
 Tag: cime5.6.10
 Answer Changes: None
