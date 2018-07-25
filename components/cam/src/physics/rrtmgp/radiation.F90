@@ -1796,7 +1796,11 @@ subroutine set_interface_temperature(state, cam_in, tint)
 
    ! Calculate interface temperatures (following method used in radtpl for the
    ! longwave), using surface upward flux and stebol constant in mks units.
-   ! NOTE: this code copied from RRTMG implementation
+   ! NOTE: this code copied from RRTMG implementation, and DIFFERS from what is
+   ! done in RRTMGP if interface temperatures are omitted! Letting RRTMGP handle
+   ! this leads to large differences in near-surface fluxes with RRTMG. TODO:
+   ! why is this? Are we doing something wrong here? Maybe it's just the surface
+   ! temperature (tint(:,pverp)) that is to blame?
    do i = 1,state%ncol
       tint(i,1) = state%t(i,1)
       tint(i,pverp) = sqrt(sqrt(cam_in%lwup(i)/stebol))
@@ -2091,9 +2095,6 @@ subroutine set_aerosol_optics_sw(icall, state, pbuf, &
    ncol = state%ncol
    nbnd = nswbands
 
-   ! Check dimensions
-   call assert(nbnd == nswbands, 'nbnd /= nswbands')
-
    ! Get aerosol absorption optical depth from CAM routine
    tau = 0.0
    tau_w = 0.0
@@ -2123,7 +2124,7 @@ subroutine set_aerosol_optics_sw(icall, state, pbuf, &
          ! grid, then skip this index (leave optical properties at initial
          ! values, 0 for tau and g, 1 for ssa).
          k_cam = cam_layers(k_rad)
-         if (k_cam < 0) cycle
+         if (k_cam < 1) cycle
 
          ! Copy cloud optical depth over directly
          optics_out%tau(iday,k_rad,1:nbnd) = tau(icol,k_cam,1:nbnd)
@@ -3091,13 +3092,16 @@ subroutine set_cloud_optics_sw(state, pbuf, col_indices, lev_indices, kdist, opt
    type(cam_optics_type) :: optics_cam
 
    ! Pointer to cloud fraction on physics buffer
-   real(r8), pointer :: cloud_fraction(:,:)
+   real(r8), pointer :: cloud_fraction(:,:), snow_fraction(:,:)
+
+   ! Combined cloud and snow fraction
+   real(r8) :: combined_cloud_fraction(pcols,pver)
 
    ! For MCICA sampling routine
    integer, parameter :: changeseed = 1
 
    ! Dimension sizes
-   integer :: nbnd, ngpt, ncol, nday, nlay
+   integer :: ngpt, ncol, nday, nlay
 
    ! McICA subcolumn cloud flag
    logical, dimension(nswgpts,pcols,pver) :: iscloudy
@@ -3109,7 +3113,6 @@ subroutine set_cloud_optics_sw(state, pbuf, col_indices, lev_indices, kdist, opt
 
    ncol = state%ncol
    ngpt = kdist%get_ngpt()
-   nbnd = kdist%get_nband()
 
    ! Retrieve the mean in-cloud optical properties via CAM cloud radiative
    ! properties interface (cloud_rad_props). This retrieves cloud optical
@@ -3139,12 +3142,18 @@ subroutine set_cloud_optics_sw(state, pbuf, col_indices, lev_indices, kdist, opt
    optics_out%ssa = 1.0
    optics_out%g = 0.0
 
+   ! Get cloud and snow fractions, and combine
+   call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cloud_fraction)
+   call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), snow_fraction)
+   combined_cloud_fraction(1:ncol,1:pver) = max(cloud_fraction(1:ncol,1:pver), &
+                                                snow_fraction(1:ncol,1:pver))
+
    ! Do MCICA sampling of optics here. This will map bands to gpoints,
    ! while doing stochastic sampling of cloud state
-   call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cloud_fraction)
    call mcica_subcol_mask(ngpt, ncol, pver, changeseed, &
-                          state%pmid(:ncol,:pver), cloud_fraction(:ncol,:pver), &
-                          iscloudy(:ngpt,:ncol,:pver))
+                          state%pmid(1:ncol,1:pver), &
+                          combined_cloud_fraction(1:ncol,1:pver), &
+                          iscloudy(1:ngpt,1:ncol,1:pver))
    
    ! -- generate subcolumns for homogeneous clouds -----
    ! where there is a cloud, set the subcolumn cloud properties;
@@ -3169,7 +3178,7 @@ subroutine set_cloud_optics_sw(state, pbuf, col_indices, lev_indices, kdist, opt
          ! McICA assumptions: simultaneously sampling over cloud state and
          ! g-point.
          do igpt = 1,ngpt
-            if (iscloudy(igpt,icol_cam,ilev_cam) .and. (cloud_fraction(icol_cam,ilev_cam) > 0._r8) ) then
+            if (iscloudy(igpt,icol_cam,ilev_cam)) then
                ibnd = kdist%convert_gpt2band(igpt)
                optics_out%tau(icol,ilev,igpt) = optics_cam%optical_depth(icol_cam,ilev_cam,ibnd)
                optics_out%ssa(icol,ilev,igpt) = optics_cam%single_scattering_albedo(icol_cam,ilev_cam,ibnd)
@@ -3240,12 +3249,14 @@ subroutine set_cloud_optics_lw(state, pbuf, lev_indices, kdist, optics_out)
 
    type(cam_optics_type) :: optics_cam
    real(r8), pointer :: cloud_fraction(:,:)
+   real(r8), pointer :: snow_fraction(:,:)
+   real(r8) :: combined_cloud_fraction(pcols,pver)
 
    ! For MCICA sampling routine
    integer, parameter :: changeseed = 1
 
    ! Dimension sizes
-   integer :: nbnd, ngpt, ncol
+   integer :: ngpt, ncol
 
    ! Temporary arrays to hold mcica-sampled cloud optics (ngpt,ncol,pver)
    real(r8), dimension(pcols,pver,nlwgpts) :: optical_depth_gpt
@@ -3257,32 +3268,58 @@ subroutine set_cloud_optics_lw(state, pbuf, lev_indices, kdist, optics_out)
    ! Initialize (or reset) output cloud optics object
    optics_out%tau = 0.0
 
+   ! Set dimension size working variables
    ngpt = kdist%get_ngpt()
-   nbnd = kdist%get_nband()
    ncol = state%ncol
 
+   ! Get cloud optics using CAM routines. This should combine cloud with snow
+   ! optics, if "snow clouds" are being considered
    call optics_cam%initialize(nlwbands, ncol, pver)
    call get_cloud_optics_lw(state, pbuf, optics_cam)
+
+   ! Check values
+   call assert_range(optics_cam%optical_depth, 0._r8, 1e20_r8, &
+                     'set_cloud_optics_lw: optics_cam%optical_depth')
+
+   ! Send cloud optics to history buffer
    call output_cloud_optics_lw(state, optics_cam)
+
+   ! Get cloud and snow fractions, and combine
+   call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cloud_fraction)
+   call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), snow_fraction)
+
+   ! Combine cloud and snow fractions for MCICA sampling
+   combined_cloud_fraction(1:ncol,1:pver) = max(cloud_fraction(1:ncol,1:pver), &
+                                                snow_fraction(1:ncol,1:pver))
 
    ! Do MCICA sampling of optics here. This will map bands to gpoints,
    ! while doing stochastic sampling of cloud state
-   call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cloud_fraction)
+   !
+   ! First, just get the stochastic subcolumn cloudy mask...
    call mcica_subcol_mask(ngpt, ncol, pver, changeseed, &
-                          state%pmid(:ncol,:pver), cloud_fraction(:ncol,:pver), &
-                          iscloudy(:ngpt,:ncol,:pver))
+                          state%pmid(1:ncol,1:pver), &
+                          combined_cloud_fraction(1:ncol,1:pver), &
+                          iscloudy(1:ngpt,1:ncol,1:pver))
 
-   ! -- generate subcolumns for homogeneous clouds -----
-   ! where there is a cloud, set the subcolumn cloud properties;
-   ! incoming tauc should be in-cloud quantites and not grid-averaged quantities
+   ! ... and now map optics to g-points, selecting a single subcolumn for each
+   ! g-point. This implementation generates homogeneous clouds, but it would be
+   ! straightforward to extend this to handle horizontally heterogeneous clouds
+   ! as well.
+   ! NOTE: incoming optics should be in-cloud quantites and not grid-averaged 
+   ! quantities!
+   optics_out%tau = 0
    do ilev = 1,size(lev_indices)
 
+      ! Get level index on CAM grid (i.e., the index that this rad level
+      ! corresponds to in CAM fields). If this index is above the model top
+      ! (index less than 0) then skip setting the optical properties for this
+      ! level (leave set to zero)
       ilev_cam = lev_indices(ilev)
-      if (ilev < 1) cycle
+      if (ilev_cam < 1) cycle
 
       do icol = 1,ncol
          do igpt = 1,ngpt
-            if (iscloudy(igpt,icol,ilev_cam) .and. (cloud_fraction(icol,ilev_cam) > 0._r8) ) then
+            if (iscloudy(igpt,icol,ilev_cam) .and. (combined_cloud_fraction(icol,ilev_cam) > 0._r8) ) then
                ibnd = kdist%convert_gpt2band(igpt)
                optics_out%tau(icol,ilev,igpt) = optics_cam%optical_depth(icol,ilev_cam,ibnd)
             else
@@ -3300,6 +3337,10 @@ subroutine set_cloud_optics_lw(state, pbuf, lev_indices, kdist, optics_out)
    ! this. This just requires modifying the get_cloud_optics_lw procedures to also
    ! pass the foward scattering fraction that the CAM cloud optics_lw assumes.
    !call handle_error(optics_out%delta_scale())
+
+   ! Check values
+   call assert_range(optics_out%tau, 0._r8, 1e20_r8, &
+                     'set_cloud_optics_lw: optics_out%tau')
 
    ! Check cloud optics
    call handle_error(optics_out%validate())

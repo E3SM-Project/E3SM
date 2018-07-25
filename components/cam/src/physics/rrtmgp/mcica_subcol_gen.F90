@@ -134,4 +134,3 @@ subroutine mcica_subcol_mask( &
 end subroutine mcica_subcol_mask
 
 end module mcica_subcol_gen
-

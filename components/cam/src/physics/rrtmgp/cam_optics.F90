@@ -216,19 +216,21 @@ contains
       real(r8), dimension(nswbands,pcols,pver) :: &
             liquid_tau, liquid_tau_ssa, liquid_tau_ssa_g, liquid_tau_ssa_f, &
             ice_tau, ice_tau_ssa, ice_tau_ssa_g, ice_tau_ssa_f, &
+            cloud_tau, cloud_tau_ssa, cloud_tau_ssa_g, cloud_tau_ssa_f, &
             snow_tau, snow_tau_ssa, snow_tau_ssa_g, snow_tau_ssa_f, &
             combined_tau, combined_tau_ssa, combined_tau_ssa_g, combined_tau_ssa_f
 
       ! Pointers to fields on the physics buffer
       real(r8), pointer :: iciwp(:,:), dei(:,:)
+      real(r8), pointer :: cloud_fraction(:,:), snow_fraction(:,:)
 
       ! Flag to see if we should be doing snow optics. To set this, we can look for
       ! the "snow cloud fraction" on the physics buffer, and if found then set this
       ! to .true.
-      logical :: do_snow_optics = .false.
+      logical :: do_snow_optics = .true.
       integer :: err
 
-      integer :: nbnd, ncol, i
+      integer :: ncol, iband
 
       ! Initialize
       ice_tau = 0
@@ -251,24 +253,25 @@ contains
       ! Get ice cloud optics
       !call pbuf_get_field(pbuf, pbuf_get_index('ICIWP'), iciwp)
       !call pbuf_get_field(pbuf, pbuf_get_index('DEI'), dei)
+      ncol = state%ncol
       call get_ice_optics_sw(state, pbuf, &
                              ice_tau, ice_tau_ssa, &
                              ice_tau_ssa_g, ice_tau_ssa_f)
-      call assert_range(ice_tau(:nswbands,:ncol,:pver), 0._r8, 1e20_r8, &
+      call assert_range(ice_tau(1:nswbands,1:ncol,1:pver), 0._r8, 1e20_r8, &
                         'get_cloud_optics_sw: ice_tau')
       
       ! Get liquid cloud optics
       call get_liquid_optics_sw(state, pbuf, &
                                 liquid_tau, liquid_tau_ssa, &
                                 liquid_tau_ssa_g, liquid_tau_ssa_f)
-      call assert_range(liquid_tau(:nswbands,:ncol,:pver), 0._r8, 1e20_r8, &
+      call assert_range(liquid_tau(1:nswbands,1:ncol,1:pver), 0._r8, 1e20_r8, &
                         'get_cloud_optics_sw: liquid_tau')
 
       ! Should we do snow optics? Check for existence of "cldfsnow" variable
       ! NOTE: turned off for now...we need to figure out how to adjust the cloud
       ! fraction seen by the mcica sampling as well when we are doing snow optics.
       ! The thing to do then is probably to set this at the module level.
-      !call pbuf_get_index(pbuf, 'cldfsnow', err=err)
+      !call pbuf_get_index(pbuf, 'CLDFSNOW', err=err)
       !if (err > 0) then
       !   do_snow_optics = .true.
       !else
@@ -290,29 +293,52 @@ contains
          snow_tau_ssa_f(:,:,:) = 0.0
       end if
 
-      ! Combine all cloud optics from CAM routines
-      combined_tau = ice_tau + liquid_tau + snow_tau
-      combined_tau_ssa = ice_tau_ssa + liquid_tau_ssa + snow_tau_ssa
-      combined_tau_ssa_g = ice_tau_ssa_g + liquid_tau_ssa_g + snow_tau_ssa_g
+      ! Get cloud and snow fractions. This is used to weight the contribution to
+      ! the total lw absorption by the fraction of the column that contains
+      ! cloud vs snow. TODO: is this the right thing to do here?
+      call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cloud_fraction)
+      call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), snow_fraction)
 
+      ! Combine all cloud optics from CAM routines
+      cloud_tau = ice_tau + liquid_tau
+      cloud_tau_ssa = ice_tau_ssa + liquid_tau_ssa
+      cloud_tau_ssa_g = ice_tau_ssa_g + liquid_tau_ssa_g
+      call combine_properties( &
+         nswbands, ncol, pver, &
+         cloud_fraction(1:ncol,1:pver), cloud_tau(1:nswbands,1:ncol,1:pver), &
+         snow_fraction(1:ncol,1:pver), snow_tau(1:nswbands,1:ncol,1:pver), &
+         combined_tau(1:nswbands,1:ncol,1:pver) &
+      )
+      call combine_properties( &
+         nswbands, ncol, pver, &
+         cloud_fraction(1:ncol,1:pver), cloud_tau_ssa(1:nswbands,1:ncol,1:pver), &
+         snow_fraction(1:ncol,1:pver), snow_tau_ssa(1:nswbands,1:ncol,1:pver), &
+         combined_tau_ssa(1:nswbands,1:ncol,1:pver) &
+      )
+      call combine_properties( &
+         nswbands, ncol, pver, &
+         cloud_fraction(1:ncol,1:pver), cloud_tau_ssa_g(1:nswbands,1:ncol,1:pver), &
+         snow_fraction(1:ncol,1:pver), snow_tau_ssa_g(1:nswbands,1:ncol,1:pver), &
+         combined_tau_ssa_g(1:nswbands,1:ncol,1:pver) &
+      )
+      
       ! Copy to output arrays, converting to optical depth, single scattering
       ! albedo, and assymmetry parameter from the products that the CAM routines
       ! return. Make sure we do not try to divide by zero...
       ncol = state%ncol
-      nbnd = nswbands
-      do i = 1,nbnd
-         optics_out%optical_depth(:ncol,:pver,i) = combined_tau(i,:ncol,:pver)
-         where (combined_tau(i,:ncol,:pver) > 0)
-            optics_out%single_scattering_albedo(:ncol,:pver,i) &
-               = combined_tau_ssa(i,:ncol,:pver) / combined_tau(i,:ncol,:pver)
+      do iband = 1,nswbands
+         optics_out%optical_depth(:ncol,:pver,iband) = combined_tau(iband,:ncol,:pver)
+         where (combined_tau(iband,:ncol,:pver) > 0)
+            optics_out%single_scattering_albedo(:ncol,:pver,iband) &
+               = combined_tau_ssa(iband,:ncol,:pver) / combined_tau(iband,:ncol,:pver)
          elsewhere
-            optics_out%single_scattering_albedo(:ncol,:pver,i) = 1.0
+            optics_out%single_scattering_albedo(:ncol,:pver,iband) = 1.0
          endwhere
-         where (combined_tau_ssa(i,:ncol,:pver) > 0)
-            optics_out%assymmetry_parameter(:ncol,:pver,i) &
-               = combined_tau_ssa_g(i,:ncol,:pver) / combined_tau_ssa(i,:ncol,:pver)
+         where (combined_tau_ssa(iband,:ncol,:pver) > 0)
+            optics_out%assymmetry_parameter(:ncol,:pver,iband) &
+               = combined_tau_ssa_g(iband,:ncol,:pver) / combined_tau_ssa(iband,:ncol,:pver)
          elsewhere
-            optics_out%assymmetry_parameter(:ncol,:pver,i) = 0.0
+            optics_out%assymmetry_parameter(:ncol,:pver,iband) = 0.0
          end where
       end do
 
@@ -330,7 +356,8 @@ contains
 
       use ppgrid, only: pcols, pver
       use physics_types, only: physics_state
-      use physics_buffer, only: physics_buffer_desc
+      use physics_buffer, only: physics_buffer_desc, pbuf_get_field, &
+                                pbuf_get_index
       use cloud_rad_props, only: get_liquid_optics_lw, &
                                  get_ice_optics_lw, &
                                  get_snow_optics_lw
@@ -340,16 +367,24 @@ contains
       type(physics_buffer_desc), pointer :: pbuf(:)
       type(cam_optics_type), intent(inout) :: optics_out
 
+      ! Cloud and snow fractions, used to weight optical properties by
+      ! contributions due to cloud vs snow
+      real(r8), pointer :: cloud_fraction(:,:), snow_fraction(:,:)
+
       ! Temporary variables to hold absorption optical depth
       real(r8), dimension(nlwbands,pcols,pver) :: &
-            ice_tau, liq_tau, snow_tau, combined_tau
+            ice_tau, liq_tau, snow_tau, cloud_tau, combined_tau
 
-      integer :: i
+      integer :: iband, ncol
+
+      ! Number of columns in this chunk
+      ncol = state%ncol
 
       ! initialize
       ice_tau(:,:,:) = 0.0
       liq_tau(:,:,:) = 0.0
       snow_tau(:,:,:) = 0.0
+      cloud_tau(:,:,:) = 0.0
       combined_tau(:,:,:) = 0.0
 
       ! Get ice optics
@@ -359,16 +394,82 @@ contains
       call get_liquid_optics_lw(state, pbuf, liq_tau)
 
       ! Get snow optics?
+      call get_snow_optics_lw(state, pbuf, snow_tau)
 
-      combined_tau = ice_tau + liq_tau + snow_tau
+      ! Get cloud and snow fractions. This is used to weight the contribution to
+      ! the total lw absorption by the fraction of the column that contains
+      ! cloud vs snow. TODO: is this the right thing to do here?
+      call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cloud_fraction)
+      call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), snow_fraction)
+
+      ! Combined cloud optics
+      cloud_tau = liq_tau + ice_tau
+      call combine_properties(nlwbands, ncol, pver, &
+         cloud_fraction(1:ncol,1:pver), cloud_tau(1:nlwbands,1:ncol,1:pver), &
+         snow_fraction(1:ncol,1:pver), snow_tau(1:nlwbands,1:ncol,1:pver), &
+         combined_tau(1:nlwbands,1:ncol,1:pver) &
+      )
 
       ! Set optics_out
-      do i = 1,nlwbands
-         optics_out%optical_depth(:state%ncol,:pver,i) &
-            = combined_tau(i,:state%ncol,:pver)
+      do iband = 1,nlwbands
+         optics_out%optical_depth(1:ncol,1:pver,iband) &
+            = combined_tau(iband,1:ncol,1:pver)
       end do
+
+      ! Check values
+      call assert_range(optics_out%optical_depth, 0._r8, 1e20_r8, &
+                        'get_cloud_optics_lw: optics_out%optical_depth')
 
    end subroutine get_cloud_optics_lw
 
+
+   ! Provide a procedure to combine cloud optical properties by weighting
+   ! contributions by fraction present. I.e., for combining cloud and snow
+   ! optical properties, we weight the cloud and snow properties by the fraction
+   ! of cloud and snow present.
+   subroutine combine_properties(nbands, ncols, nlevs, &
+                                 fraction1, property1, &
+                                 fraction2, property2, &
+                                 combined_property)
+      
+      ! Input dimensions for automatic error checking
+      integer, intent(in) :: nbands, ncols, nlevs
+
+      ! Input fractions of each type of constituent
+      real(r8), intent(in) :: fraction1(ncols,nlevs), fraction2(ncols,nlevs)
+
+      ! Individual optical properties for each constituent
+      real(r8), intent(in) :: property1(nbands,ncols,nlevs), property2(nbands,ncols,nlevs)
+
+      ! Combined optical property
+      real(r8), intent(out) :: combined_property(nbands,ncols,nlevs)
+
+      ! Combined fraction (max of property 1 and 2)
+      real(r8) :: combined_fraction(ncols,nlevs)
+
+      ! Loop variables
+      integer :: iband, icol, ilev
+
+      ! Combined fraction
+      combined_fraction = max(fraction1, fraction2)
+
+      ! Combine optical properties by weighting by amount of cloud and snow
+      combined_property = 0
+      do ilev = 1,nlevs
+         do icol = 1,ncols
+            do iband = 1,nbands
+               if (combined_fraction(icol,ilev) > 0) then
+                  combined_property(iband,icol,ilev) = ( &
+                     fraction1(icol,ilev) * property1(iband,icol,ilev) &
+                   + fraction2(icol,ilev) * property2(iband,icol,ilev) &
+                  ) / combined_fraction(icol,ilev)
+               else
+                  combined_property(iband,icol,ilev) = 0
+               end if
+            end do
+         end do
+      end do
+
+   end subroutine combine_properties
 
 end module cam_optics

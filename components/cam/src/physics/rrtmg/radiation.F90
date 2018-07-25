@@ -840,7 +840,7 @@ end function radiation_nextsw_cday
     real(r8) :: snow_tau_w  (nbndsw,pcols,pver) ! snow single scattering albedo * tau
     real(r8) :: snow_tau_w_g(nbndsw,pcols,pver) ! snow assymetry parameter * tau * w
     real(r8) :: snow_tau_w_f(nbndsw,pcols,pver) ! snow forward scattered fraction * tau * w
-    real(r8) :: snow_lw_abs (nbndlw,pcols,pver)   ! snow absorption optics depth (LW)
+    real(r8) :: snow_lw_abs (nbndlw,pcols,pver) ! snow absorption optics depth (LW)
     real(r8) :: gb_snow_tau        (pcols,pver) ! grid-box mean snow_tau for COSP only
     real(r8) :: gb_snow_lw         (pcols,pver) ! grid-box mean LW snow optical depth for COSP only
 
