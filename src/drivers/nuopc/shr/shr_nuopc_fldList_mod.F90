@@ -123,7 +123,8 @@ contains
     do n = 1,size(FldsTo%flds)
        if (trim(FldsTo%flds(n)%shortname) /= flds_scalar_name) then
           if (len_trim(concat_dst) + len_trim(FldsTo%flds(n)%shortname) + 1 >= len(concat_dst)) then
-             call ESMF_LogWrite(subname//': ERROR: max len of fldlist has been exceeded', ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
+             call ESMF_LogWrite(subname//': ERROR: max len of fldlist has been exceeded', &
+                  ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
              return
           end if
           if (trim(concat_dst) == '') then
@@ -154,7 +155,8 @@ contains
     !-------------------------------------------------------------------------------
 
     if (len_trim(fldlist) + len_trim(fldname) + 1 >= len(fldlist)) then
-       call ESMF_LogWrite(subname//': ERROR: max len of fldlist has been exceeded', ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
+       call ESMF_LogWrite(subname//': ERROR: max len of fldlist has been exceeded', &
+            ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
        return
     end if
 

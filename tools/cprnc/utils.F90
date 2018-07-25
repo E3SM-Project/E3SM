@@ -54,13 +54,17 @@ end subroutine get_dim_str
 
 
 
-subroutine checknf90(ierr,returnflag)
+subroutine checknf90(ierr,returnflag,err_str)
   use netcdf, only : nf90_noerr, nf90_strerror
   integer, intent(in) :: ierr
   logical, optional, intent(in) :: returnflag
+  character(len=*), optional, intent(in) :: err_str
 
   if(ierr/=NF90_NOERR) then
      print *, trim(nf90_strerror(ierr))
+     if(present(err_str)) then
+        print *, trim(err_str)
+     end if
      if(present(returnflag)) then
         if(returnflag) return
      end if

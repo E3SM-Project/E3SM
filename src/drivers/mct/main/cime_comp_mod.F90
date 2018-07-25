@@ -33,6 +33,7 @@ module cime_comp_mod
   use shr_mpi_mod,       only: shr_mpi_bcast, shr_mpi_commrank, shr_mpi_commsize
   use shr_mem_mod,       only: shr_mem_init, shr_mem_getusage
   use shr_cal_mod,       only: shr_cal_date2ymd, shr_cal_ymd2date, shr_cal_advdateInt
+  use shr_cal_mod,       only: shr_cal_ymds2rday_offset
   use shr_orb_mod,       only: shr_orb_params
   use shr_frz_mod,       only: shr_frz_freezetemp_init
   use shr_reprosum_mod,  only: shr_reprosum_setopts
@@ -200,12 +201,6 @@ module cime_comp_mod
   character(len=CL) :: suffix
   logical           :: iamin_id
   character(len=seq_comm_namelen) :: compname
-
-  !----------------------------------------------------------------------------
-  ! gptl timer lookup variables
-  !----------------------------------------------------------------------------
-  integer, parameter :: hashcnt=7
-  integer            :: hashint(hashcnt)
 
   !----------------------------------------------------------------------------
   ! domains & related
@@ -435,7 +430,7 @@ module cime_comp_mod
   logical :: do_hist_r2x             ! create aux files: r2x
   logical :: do_hist_l2x             ! create aux files: l2x
   logical :: do_hist_a2x24hr         ! create aux files: a2x
-  logical :: do_hist_l2x1yr          ! create aux files: l2x
+  logical :: do_hist_l2x1yrg         ! create aux files: l2x 1yr glc forcings
   logical :: do_hist_a2x             ! create aux files: a2x
   logical :: do_hist_a2x3hrp         ! create aux files: a2x 3hr precip
   logical :: do_hist_a2x3hr          ! create aux files: a2x 3hr states
@@ -920,7 +915,7 @@ contains
          histaux_a2x3hrp=do_hist_a2x3hrp           , &
          histaux_a2x24hr=do_hist_a2x24hr           , &
          histaux_l2x=do_hist_l2x                   , &
-         histaux_l2x1yr=do_hist_l2x1yr             , &
+         histaux_l2x1yrg=do_hist_l2x1yrg           , &
          histaux_r2x=do_hist_r2x                   , &
          run_barriers=run_barriers                 , &
          mct_usealltoall=mct_usealltoall           , &
@@ -2102,6 +2097,9 @@ contains
     use shr_string_mod, only: shr_string_listGetIndexF
     use seq_comm_mct, only: num_inst_driver
 
+    ! gptl timer lookup variables
+    integer, parameter :: hashcnt=7
+    integer            :: hashint(hashcnt)
     ! Driver pause/resume
     logical            :: drv_pause  ! Driver writes pause restart file
     character(len=CL)  :: drv_resume ! Driver resets state from restart file
@@ -2289,7 +2287,7 @@ contains
        ! accumulates ocn input and computes ocean albedos
        if (ocn_present) then
           if (trim(cpl_seq_option) == 'RASM_OPTION1') then
-             call cime_run_atmocn_setup()
+             call cime_run_atmocn_setup(hashint)
           end if
        endif
 
@@ -2414,7 +2412,7 @@ contains
               trim(cpl_seq_option) == 'CESM1_MOD_TIGHT' .or. &
               trim(cpl_seq_option) == 'NUOPC'           .or. &
               trim(cpl_seq_option) == 'NUOPC_TIGHT' ) then
-             call cime_run_atmocn_setup()
+             call cime_run_atmocn_setup(hashint)
           end if
        endif
 
@@ -2465,7 +2463,7 @@ contains
        ! accumulates ocn input and computes ocean albedos
        if (ocn_present) then
           if (trim(cpl_seq_option) == 'RASM_OPTION2') then
-             call cime_run_atmocn_setup()
+             call cime_run_atmocn_setup(hashint)
           end if
        endif
 
@@ -2981,7 +2979,8 @@ contains
   !*******************************************************************************
   !===============================================================================
 
-  subroutine cime_run_atmocn_fluxes()
+  subroutine cime_run_atmocn_fluxes(hashint)
+    integer, intent(inout) :: hashint(:)
 
     !----------------------------------------------------------
     !| atm/ocn flux on atm grid
@@ -2991,7 +2990,7 @@ contains
        ! do not use fractions because fractions here are NOT consistent with fractions in atm_mrg
        if (ocn_c2_atm) call prep_atm_calc_o2x_ax(timer='CPL:atmoca_ocn2atm')
        
-       call t_drvstartf ('CPL:atmocna_fluxa',barrier=mpicom_CPLID)
+       call t_drvstartf ('CPL:atmocna_fluxa',barrier=mpicom_CPLID, hashint=hashint(6))
        do exi = 1,num_inst_xao
           eai = mod((exi-1),num_inst_atm) + 1
           eoi = mod((exi-1),num_inst_ocn) + 1
@@ -3001,7 +3000,7 @@ contains
           xao_ax => prep_aoflux_get_xao_ax() ! array over all instances
           call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ax, o2x_ax(eoi), xao_ax(exi))
        enddo
-       call t_drvstopf  ('CPL:atmocna_fluxa')
+       call t_drvstopf  ('CPL:atmocna_fluxa',hashint=hashint(6))
        
        if (atm_c2_ocn) call prep_aoflux_calc_xao_ox(timer='CPL:atmocna_atm2ocn')
     endif  ! aoflux_grid
@@ -3010,7 +3009,7 @@ contains
     !| atm/ocn flux on ocn grid
     !----------------------------------------------------------
     if (trim(aoflux_grid) == 'ocn') then
-       call t_drvstartf ('CPL:atmocnp_fluxo',barrier=mpicom_CPLID)
+       call t_drvstartf ('CPL:atmocnp_fluxo',barrier=mpicom_CPLID, hashint=hashint(6))
        do exi = 1,num_inst_xao
           eai = mod((exi-1),num_inst_atm) + 1
           eoi = mod((exi-1),num_inst_ocn) + 1
@@ -3020,16 +3019,17 @@ contains
           xao_ox => prep_aoflux_get_xao_ox()
           call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ox(eai), o2x_ox, xao_ox(exi))
        enddo
-       call t_drvstopf  ('CPL:atmocnp_fluxo')
+       call t_drvstopf  ('CPL:atmocnp_fluxo',hashint=hashint(6))
     endif  ! aoflux_grid
     
   end subroutine cime_run_atmocn_fluxes
 
 !----------------------------------------------------------------------------------
 
-  subroutine cime_run_ocn_albedos()
+  subroutine cime_run_ocn_albedos(hashint)
+    integer, intent(inout) :: hashint(:)
 
-    call t_drvstartf ('CPL:atmocnp_ocnalb', barrier=mpicom_CPLID)
+    call t_drvstartf ('CPL:atmocnp_ocnalb', barrier=mpicom_CPLID, hashint=hashint(5))
     do exi = 1,num_inst_xao
        efi = mod((exi-1),num_inst_frc) + 1
        eai = mod((exi-1),num_inst_atm) + 1
@@ -3037,7 +3037,7 @@ contains
        a2x_ox => prep_ocn_get_a2x_ox()
        call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
     enddo
-    call t_drvstopf  ('CPL:atmocnp_ocnalb')
+    call t_drvstopf  ('CPL:atmocnp_ocnalb', hashint=hashint(5))
 
   end subroutine cime_run_ocn_albedos
 
@@ -3215,7 +3215,8 @@ contains
 
 !----------------------------------------------------------------------------------
 
-  subroutine cime_run_atmocn_setup()
+  subroutine cime_run_atmocn_setup(hashint)
+    integer, intent(inout) :: hashint(:)
 
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCNP_BARRIER')
@@ -3237,7 +3238,7 @@ contains
        end if
 
        ! atm/ocn flux on atm grid 
-       call cime_run_atmocn_fluxes()
+       call cime_run_atmocn_fluxes(hashint)
        
        if (ocn_prognostic) then
           ! ocn prep-merge 
@@ -3252,7 +3253,7 @@ contains
        ! ocn albedos 
        ! (MUST BE AFTER prep_ocn_mrg for swnet to ocn to be computed properly
        !----------------------------------------------------------
-       call cime_run_ocn_albedos()
+       call cime_run_ocn_albedos(hashint)
 
        !----------------------------------------------------------
        ! ocn budget 
@@ -3773,7 +3774,19 @@ contains
 !----------------------------------------------------------------------------------
 
   subroutine cime_run_write_history()
+
+    ! local variables
+    logical            :: lnd2glc_averaged_now  ! Whether lnd2glc averages were taken this timestep
+    type(ESMF_Time)    :: etime_curr            ! Current model time
+    real(r8)           :: tbnds1_offset         ! Time offset for call to seq_hist_writeaux
+
+    !----------------------------------------------------------
+    !| Write history file, only AVs on CPLID
+    !----------------------------------------------------------
+
     if (iamin_CPLID) then
+
+       lnd2glc_averaged_now = .false.
 
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:HISTORY_BARRIER')
        call t_drvstartf ('CPL:HISTORY',cplrun=.true.,barrier=mpicom_CPLID)
@@ -3797,6 +3810,7 @@ contains
                atm, lnd, ice, ocn, rof, glc, wav, histavg_alarm, &
                trim(cpl_inst_tag))
        endif
+
        if (do_hist_a2x) then
           do eai = 1,num_inst_atm
              suffix =  component_get_suffix(atm(eai))
@@ -3811,6 +3825,7 @@ contains
              endif
           enddo
        endif
+
        if (do_hist_a2x1hri .and. t1hr_alarm) then
           do eai = 1,num_inst_atm
              suffix =  component_get_suffix(atm(eai))
@@ -3825,6 +3840,7 @@ contains
              endif
           enddo
        endif
+
        if (do_hist_a2x1hr) then
           do eai = 1,num_inst_atm
              suffix =  component_get_suffix(atm(eai))
@@ -3839,6 +3855,7 @@ contains
              endif
           enddo
        endif
+
        if (do_hist_a2x3hr) then
           do eai = 1,num_inst_atm
              suffix =  component_get_suffix(atm(eai))
@@ -3853,6 +3870,7 @@ contains
              endif
           enddo
        endif
+
        if (do_hist_a2x3hrp) then
           do eai = 1,num_inst_atm
              suffix = component_get_suffix(atm(eai))
@@ -3867,6 +3885,7 @@ contains
              endif
           enddo
        endif
+
        if (do_hist_a2x24hr) then
           do eai = 1,num_inst_atm
              suffix = component_get_suffix(atm(eai))
@@ -3881,16 +3900,63 @@ contains
              endif
           enddo
        endif
-       if (do_hist_l2x1yr .and. glcrun_alarm) then
-          ! Use yr_offset=-1 so the file with fields from year 1 has time stamp
-          ! 0001-01-01 rather than 0002-01-01, etc.
-          do eli = 1,num_inst_lnd
-             suffix = component_get_suffix(lnd(eli))
-             call seq_hist_writeaux(infodata, EClock_d, lnd(eli), flow='c2x', &
-                  aname='l2x'//trim(suffix), dname='doml', &
-                  nx=lnd_nx, ny=lnd_ny, nt=1, write_now=t1yr_alarm, yr_offset=-1)
-          enddo
+
+       if (do_hist_l2x1yrg) then
+          ! We use a different approach here than for other aux hist files: For other
+          ! files, we let seq_hist_writeaux accumulate fields in time. However, if we
+          ! stop in the middle of an accumulation period, these accumulated fields get
+          ! reset (because they aren't written to the cpl restart file); this is
+          ! potentially a problem for this year-long accumulation. Thus, here, we use
+          ! the existing accumulated fields from prep_glc_mod, because those *do*
+          ! continue properly through a restart.
+
+          ! The logic here assumes that we average the lnd2glc fields exactly at the
+          ! year boundary - no more and no less. If that's not the case, we're likely
+          ! to be writing the wrong thing to these aux files, so we check that
+          ! assumption here.
+          if (t1yr_alarm .and. .not. lnd2glc_averaged_now) then
+             write(logunit,*) 'ERROR: histaux_l2x1yrg requested;'
+             write(logunit,*) 'it is the year boundary, but lnd2glc fields were not averaged this time step.'
+             write(logunit,*) 'One possible reason is that you are running with a stub glc model.'
+             write(logunit,*) '(It only works to request histaux_l2x1yrg if running with a prognostic glc model.)'
+             call shr_sys_abort(subname// &
+                  ' do_hist_l2x1yrg and t1yr_alarm are true, but lnd2glc_averaged_now is false')
+          end if
+          if (lnd2glc_averaged_now .and. .not. t1yr_alarm) then
+             ! If we're averaging more frequently than yearly, then just writing the
+             ! current values of the averaged fields once per year won't give the true
+             ! annual averages.
+             write(logunit,*) 'ERROR: histaux_l2x1yrg requested;'
+             write(logunit,*) 'lnd2glc fields were averaged this time step, but it is not the year boundary.'
+             write(logunit,*) '(It only works to request histaux_l2x1yrg if GLC_AVG_PERIOD is yearly.)'
+             call shr_sys_abort(subname// &
+                  ' do_hist_l2x1yrg and lnd2glc_averaged_now are true, but t1yr_alarm is false')
+          end if
+
+          if (t1yr_alarm) then
+             call seq_timemgr_EClockGetData( EClock_d, ECurrTime = etime_curr)
+             ! We need to pass in tbnds1_offset because (unlike with most
+             ! seq_hist_writeaux calls) here we don't call seq_hist_writeaux every time
+             ! step, so the automatically determined lower time bound can be wrong. For
+             ! typical runs with a noleap calendar, we want tbnds1_offset =
+             ! -365. However, to determine this more generally, based on the calendar
+             ! we're using, we call this shr_cal routine.
+             call shr_cal_ymds2rday_offset(etime=etime_curr, &
+                  rdays_offset = tbnds1_offset, &
+                  years_offset = -1)
+             do eli = 1,num_inst_lnd
+                suffix = component_get_suffix(lnd(eli))
+                ! Use yr_offset=-1 so the file with fields from year 1 has time stamp
+                ! 0001-01-01 rather than 0002-01-01, etc.
+                call seq_hist_writeaux(infodata, EClock_d, lnd(eli), flow='c2x', &
+                     aname='l2x1yr_glc'//trim(suffix), dname='doml', &
+                     nx=lnd_nx, ny=lnd_ny, nt=1, write_now=.true., &
+                     tbnds1_offset = tbnds1_offset, yr_offset=-1, &
+                     av_to_write=prep_glc_get_l2gacc_lx_one_instance(eli))
+             enddo
+          endif
        endif
+
        if (do_hist_l2x) then
           do eli = 1,num_inst_lnd
              suffix =  component_get_suffix(lnd(eli))
@@ -3901,9 +3967,12 @@ contains
        endif
        call t_drvstopf  ('CPL:HISTORY',cplrun=.true.)
 
-    end if
+    endif
+
 104 format( A, i10.8, i8)
   end subroutine cime_run_write_history
+
+!----------------------------------------------------------------------------------
 
   subroutine cime_run_write_restart()
     if (iamin_CPLID) then

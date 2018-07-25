@@ -19,7 +19,7 @@ module dlnd_comp_mod
   use shr_strdata_mod   , only: shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod    , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
   use shr_dmodel_mod    , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
-  use shr_cal_mod       , only: shr_cal_ymdtod2string
+  use shr_cal_mod       , only: shr_cal_datetod2string
   use seq_timemgr_mod   , only: seq_timemgr_EClockGetData
   use glc_elevclass_mod , only: glc_get_num_elevation_classes, glc_elevclass_as_string
 
@@ -27,6 +27,7 @@ module dlnd_comp_mod
   use dlnd_shr_mod   , only: decomp         ! namelist input
   use dlnd_shr_mod   , only: rest_file      ! namelist input
   use dlnd_shr_mod   , only: rest_file_strm ! namelist input
+  use dlnd_shr_mod   , only: domain_fracname ! namelist input
   use dlnd_shr_mod   , only: nullstr
 
   ! !PUBLIC TYPES:
@@ -71,7 +72,7 @@ module dlnd_comp_mod
        "lfrac       ","fv          ","ram1        ",                               &
        "flddst1     ","flxdst2     ","flxdst3     ","flxdst4     "                 /)
 
-  integer(IN), parameter :: nflds_snow = 3   ! number of snow fields in each elevation class
+  integer(IN), parameter :: nflds_snow  = 3   ! number of snow fields in each elevation class
   integer(IN), parameter :: nec_len    = 2   ! length of elevation class index in field names
   ! for these snow fields, the actual field names will have the elevation class index at
   ! the end (e.g., Sl_tsrf01, tsrf01)
@@ -125,10 +126,11 @@ CONTAINS
     integer(IN)        :: n,k        ! generic counters
     integer(IN)        :: ierr       ! error code
     integer(IN)        :: lsize      ! local size
-    logical            :: exists     ! file existance
+    logical            :: exists, exists1     ! file existance
     integer(IN)        :: nu         ! unit number
     character(CL)      :: calendar   ! model calendar
     integer(IN)        :: glc_nec    ! number of elevation classes
+    integer(IN)        :: nflds_glc_nec  ! number of snow fields separated by elev class
     integer(IN)        :: field_num  ! field number
     character(nec_len) :: nec_str    ! elevation class, as character string
     integer(IN)        :: kfrac      ! AV index
@@ -172,9 +174,11 @@ CONTAINS
        if (my_task == master_task) &
             write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
        call shr_strdata_init(SDLND,mpicom,compid,name='lnd', &
-            scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, calendar=calendar)
+            scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, calendar=calendar, &
+            dmodel_domain_fracname_from_stream=domain_fracname)
     else
-       call shr_strdata_init(SDLND,mpicom,compid,name='lnd', calendar=calendar)
+       call shr_strdata_init(SDLND,mpicom,compid,name='lnd', calendar=calendar, &
+            dmodel_domain_fracname_from_stream=domain_fracname)
     endif
 
     if (my_task == master_task) then
@@ -188,25 +192,32 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     glc_nec = glc_get_num_elevation_classes()
+    if (glc_nec == 0) then
+       nflds_glc_nec = 0
+    else
+       nflds_glc_nec = (glc_nec+1)*nflds_snow
+    end if
 
     ! Start with non-snow fields
-    allocate(avofld(nflds_nosnow + glc_nec*nflds_snow))
-    allocate(avifld(nflds_nosnow + glc_nec*nflds_snow))
+    allocate(avofld(nflds_nosnow + nflds_glc_nec))
+    allocate(avifld(nflds_nosnow + nflds_glc_nec))
     avofld(1:nflds_nosnow) = avofld_nosnow
     avifld(1:nflds_nosnow) = avifld_nosnow
     field_num = nflds_nosnow
 
     ! Append each snow field
-    do k = 1, nflds_snow
-       do n = 1, glc_nec
-          ! nec_str will be something like '02' or '10'
-          nec_str = glc_elevclass_as_string(n)
+    if (glc_nec > 0) then
+       do k = 1, nflds_snow
+          do n = 0, glc_nec
+             ! nec_str will be something like '02' or '10'
+             nec_str = glc_elevclass_as_string(n)
 
-          field_num = field_num + 1
-          avofld(field_num) = trim(avofld_snow(k))//nec_str
-          avifld(field_num) = trim(avifld_snow(k))//nec_str
+             field_num = field_num + 1
+             avofld(field_num) = trim(avofld_snow(k))//nec_str
+             avifld(field_num) = trim(avifld_snow(k))//nec_str
+          end do
        end do
-    end do
+    end if
 
     !----------------------------------------------------------------------------
     ! Initialize MCT global seg map, 1d decomp
@@ -264,22 +275,24 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     if (read_restart) then
-       if (trim(rest_file) == trim(nullstr) .and. trim(rest_file_strm) == trim(nullstr)) then
+       exists = .false.
+       exists1 = .false.
+       if (trim(rest_file)      == trim(nullstr) .and. &
+           trim(rest_file_strm) == trim(nullstr)) then
           if (my_task == master_task) then
-             write(logunit,F00) ' restart filenames from rpointer'
+             write(logunit,F00) ' restart filenames from rpointer = ',trim(rpfile)
              call shr_sys_flush(logunit)
              inquire(file=trim(rpfile)//trim(inst_suffix),exist=exists)
-             if (.not.exists) then
-                write(logunit,F00) ' ERROR: rpointer file does not exist'
-                call shr_sys_abort(trim(subname)//' ERROR: rpointer file missing')
+             if (exists) then
+                nu = shr_file_getUnit()
+                open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
+                read(nu,'(a)') rest_file
+                read(nu,'(a)') rest_file_strm
+                close(nu)
+                call shr_file_freeUnit(nu)
+                inquire(file=trim(rest_file_strm),exist=exists)
+                inquire(file=trim(rest_file),exist=exists1)
              endif
-             nu = shr_file_getUnit()
-             open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
-             read(nu,'(a)') rest_file
-             read(nu,'(a)') rest_file_strm
-             close(nu)
-             call shr_file_freeUnit(nu)
-             inquire(file=trim(rest_file_strm),exist=exists)
           endif
           call shr_mpi_bcast(rest_file,mpicom,'rest_file')
           call shr_mpi_bcast(rest_file_strm,mpicom,'rest_file_strm')
@@ -291,9 +304,18 @@ CONTAINS
              inquire(file=trim(rest_file_strm),exist=exists)
           endif
        endif
+
        call shr_mpi_bcast(exists,mpicom,'exists')
-       !if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
-       !call shr_pcdf_readwrite('read',trim(rest_file),mpicom,gsmap,rf1=somtp,rf1n='somtp')
+       call shr_mpi_bcast(exists1,mpicom,'exists1')
+
+       if (exists1) then
+          if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
+          call shr_pcdf_readwrite('read',SDLND%pio_subsystem, SDLND%io_type, &
+               trim(rest_file),mpicom,gsmap=gsmap,rf1=water,rf1n='water',io_format=SDLND%io_format)
+       else
+          if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file)
+       endif
+
        if (exists) then
           if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file_strm)
           call shr_strdata_restRead(trim(rest_file_strm),SDLND,mpicom)
@@ -331,7 +353,7 @@ CONTAINS
   subroutine dlnd_comp_run(EClock, x2l, l2x, &
        SDLND, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
-       currentYMD, currentTOD, case_name)
+       target_ymd, target_tod, case_name)
 
     ! !DESCRIPTION:  run method for dlnd model
     implicit none
@@ -351,8 +373,8 @@ CONTAINS
     integer(IN)            , intent(in)    :: logunit          ! logging unit number
     logical                , intent(in)    :: read_restart     ! start from restart
     logical                , intent(in)    :: write_restart    ! write restart
-    integer(IN)            , intent(in)    :: currentYMD       ! model date
-    integer(IN)            , intent(in)    :: currentTOD       ! model sec into model date
+    integer(IN)            , intent(in)    :: target_ymd       ! model date
+    integer(IN)            , intent(in)    :: target_tod       ! model sec into model date
     character(CL)          , intent(in), optional :: case_name ! case name
 
     !--- local ---
@@ -393,7 +415,7 @@ CONTAINS
           l2x%rAttr(kf,n) = lfrac(n)
        enddo
     end if
-    call shr_strdata_advance(SDLND,currentYMD,currentTOD,mpicom,'dlnd')
+    call shr_strdata_advance(SDLND,target_ymd,target_tod,mpicom,'dlnd')
     call t_stopf('dlnd_strdata_advance')
 
     call t_barrierf('dlnd_scatter_BARRIER',mpicom)
@@ -424,8 +446,7 @@ CONTAINS
 
     if (write_restart) then
        call t_startf('dlnd_restart')
-       call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd)
-       call shr_cal_ymdtod2string(date_str, yy,mm,dd,currentTOD)
+       call shr_cal_datetod2string(date_str, target_ymd, target_tod)
        write(rest_file,"(6a)") &
             trim(case_name), '.dlnd',trim(inst_suffix),'.r.', &
             trim(date_str),'.nc'
@@ -440,10 +461,10 @@ CONTAINS
           close(nu)
           call shr_file_freeUnit(nu)
        endif
-       !if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),currentYMD,currentTOD
+       !if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),target_ymd,target_tod
        !call shr_pcdf_readwrite('write',trim(rest_file),mpicom,gsmap,clobber=.true., &
        !   rf1=somtp,rf1n='somtp')
-       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),currentYMD,currentTOD
+       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),target_ymd,target_tod
        call shr_strdata_restWrite(trim(rest_file_strm),SDLND,mpicom,trim(case_name),'SDLND strdata')
        call shr_sys_flush(logunit)
        call t_stopf('dlnd_restart')
@@ -455,7 +476,7 @@ CONTAINS
 
     call t_startf('dlnd_run2')
     if (my_task == master_task) then
-       write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
+       write(logunit,F04) trim(myModelName),': model date ', target_ymd,target_tod
        call shr_sys_flush(logunit)
     end if
     call t_stopf('dlnd_run2')

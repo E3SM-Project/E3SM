@@ -434,7 +434,12 @@ class TestScheduler(object):
 
         if test_mods is not None:
             files = Files()
-            (component, modspath) = test_mods.split('/',1)
+            if test_mods.find('/') != -1:
+                (component, modspath) = test_mods.split('/', 1)
+            else:
+                error = "Missing testmod component. Testmods are specified as '${component}-${testmod}'"
+                self._log_output(test, error)
+                return False, error
 
             # TODO: to get the right attributes of COMP_ROOT_DIR_CPL in evaluating definition_file - need
             # to do the following first - this needs to be changed so that the following two lines are not needed!
@@ -760,7 +765,7 @@ class TestScheduler(object):
 
         if not success:
             status_str += "\n    Case dir: {}\n".format(self._get_test_dir(test))
-            status_str += "    Errors were:\n        {}\n".format("\n        ".join(errors.splitlines()))
+            status_str += "    Errors were:\n        {}\n".format("\n        ".join(errors.encode('utf-8').splitlines()))
 
         logger.info(status_str)
 

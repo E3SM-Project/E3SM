@@ -60,7 +60,6 @@ class Files(EntryID):
                 expect(comp_interface != None, "comp_interface must have valid value for vid = {}".format(vid))
                 value = value.replace("$COMP_INTERFACE", comp_interface)
             value = self.get_resolved_value(value)
-
         return value
 
     def set_value(self, vid, value,subgroup=None,ignore_type=False):

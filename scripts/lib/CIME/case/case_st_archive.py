@@ -385,17 +385,15 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
     for suffix in archive.get_rest_file_extensions(archive_entry):
 #        logger.debug("suffix is {} ninst {}".format(suffix, ninst))
         restfiles = ""
-        print ("HERE compname {} suffix {}".format(compname, suffix))
         if compname.find("mpas") == 0:
             pattern = compname + r'\.' + suffix + r'\.' + '_'.join(datename_str.rsplit('-', 1))
             pfile = re.compile(pattern)
             restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
-            print ("HERE pfile {} restfiles {}".format(pfile, restfiles))
         else:
-            pattern = r"^{}.{}[\d_]*\..*".format(casename, compname)
+            pattern = r"^{}\.{}[\d_]*\.".format(casename, compname)
             pfile = re.compile(pattern)
             files = [f for f in os.listdir(rundir) if pfile.search(f)]
-            pattern =  r'_?' + r'\d*'  +  r'\.' + suffix + r'\.' + datename_str
+            pattern =  r'_?' + r'\d*' + r'\.' + suffix + r'\.' + r'[^\.]*' + r'\.?' + datename_str
             pfile = re.compile(pattern)
             restfiles = [f for f in files if pfile.search(f)]
             logger.debug("pattern is {} restfiles {}".format(pattern, restfiles))
@@ -592,7 +590,7 @@ def archive_last_restarts(self, archive_restdir, rundir, last_date=None, link_to
                                link_to_last_restart_files=link_to_restart_files)
 
 ###############################################################################
-def case_st_archive(self, last_date_str=None, archive_incomplete_logs=True, copy_only=False, no_resubmit=False):
+def case_st_archive(self, last_date_str=None, archive_incomplete_logs=True, copy_only=False, resubmit=True):
 ###############################################################################
     """
     Create archive object and perform short term archiving
@@ -631,9 +629,10 @@ def case_st_archive(self, last_date_str=None, archive_incomplete_logs=True, copy
     logger.info("st_archive completed")
 
     # resubmit case if appropriate
-    resubmit = self.get_value("RESUBMIT")
-    if resubmit > 0 and not no_resubmit:
-        logger.info("resubmitting from st_archive, resubmit={:d}".format(resubmit))
+    resubmit_cnt = self.get_value("RESUBMIT")
+    logger.debug("resubmit_cnt {} resubmit {}".format(resubmit_cnt, resubmit))
+    if resubmit_cnt > 0 and resubmit:
+        logger.info("resubmitting from st_archive, resubmit={:d}".format(resubmit_cnt))
         if self.get_value("MACH") == "mira":
             expect(os.path.isfile(".original_host"), "ERROR alcf host file not found")
             with open(".original_host", "r") as fd:

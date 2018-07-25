@@ -256,12 +256,7 @@ contains
     ! that nextsw_cday could be passed to the other components - this
     ! assumed that atmosphere component was ALWAYS initialized first.
     ! In the nuopc version it will be easier to assume that on startup
-    ! - nextsw_cday is just what cam was setting it as the current
-    ! calendar day
-
-    ! TODO: need to determine how to handle restart and branch runs -
-    ! for now will just assume that nextsw_cday is not computed on
-    ! initialization and is read from the restart file.
+    ! - nextsw_cday is just what cam was setting it as the current calendar day
 
     if (first_call) then
 
@@ -282,16 +277,20 @@ contains
           call shr_sys_abort( subname//' ERROR: unknown starttype' )
        end if
 
-       if (trim(runtype) /= 'initial') then
-          nextsw_cday = -1.0_ESMF_KIND_R8
-       else
+       if (trim(runtype) == 'initial') then
           call ESMF_GridCompGet(gcomp, clock=clock)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
           call ESMF_ClockGet( clock, currTime=currTime, rc=rc )
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
           call ESMF_TimeGet( currTime, dayOfYear_r8=nextsw_cday, rc=rc )
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+       else
+          call shr_nuopc_methods_State_GetScalar(is_local%wrap%NstateImp(compatm), &
+               flds_scalar_name=flds_scalar_name, flds_scalar_num=flds_scalar_num, &
+               scalar_id=flds_scalar_index_nextsw_cday, value=nextsw_cday, mpicom=is_local%wrap%mpicom, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
+
        first_call = .false.
 
     else

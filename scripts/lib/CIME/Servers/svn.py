@@ -1,5 +1,5 @@
 """
-SVN Server class.  Interact with a server using SVN protocal
+SVN Server class.  Interact with a server using SVN protocol
 """
 # pylint: disable=super-init-not-called
 from CIME.XML.standard_module_setup import *

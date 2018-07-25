@@ -313,7 +313,8 @@ contains
     !---------------------------------------------
 
     if (dbug_flag > 1) then
-       call ESMF_LogWrite("Starting to initialize RHs", ESMF_LOGMSG_INFO)
+       call ESMF_LogWrite("Initializing RHs not yet created and needed for mapping fractions", &
+            ESMF_LOGMSG_INFO)
        call ESMF_LogFlush()
     endif
 

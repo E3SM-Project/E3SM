@@ -108,6 +108,19 @@ def parse_command_line(args):
            % compiler)
     opts['compiler'] = compiler
     opts['os'] = machobj.get_value('OS')
+
+    if args.clean:
+        files = ["Macros.make", "Macros.cmake", "env_mach_specific.xml", ".env_mach_specific.sh",
+                 ".env_mach_specific.csh", "Depends.%s"%compiler, "Depends.%s"%args.machine,
+                  "Depends.%s.%s"%(args.machine,compiler)]
+        for file_ in files:
+            if os.path.isfile(file_):
+                logger.warn("Removing file %s"%file_)
+                os.remove(file_)
+        if argcnt == 2:
+            opts['clean_only'] = True
+            return opts
+
     # Set MPI library.
     if args.mpilib is not None:
         mpilib = args.mpilib
@@ -117,7 +130,7 @@ def parse_command_line(args):
         mpilib = machobj.get_default_MPIlib(attributes={"compiler":compiler})
         os.environ["MPILIB"] = mpilib
 
-    expect(opts['machobj'].is_valid_MPIlib(mpilib),
+    expect(opts['machobj'].is_valid_MPIlib(mpilib, attributes={"compiler":compiler}),
            "Invalid MPI library name given in MPILIB environment variable: %s" %
            mpilib)
     opts['mpilib'] = mpilib
@@ -133,17 +146,6 @@ def parse_command_line(args):
         os.environ["DEBUG"] = "FALSE"
     opts['debug'] = debug
 
-
-    if args.clean:
-        files = ["Macros.make", "Macros.cmake", "env_mach_specific.xml", ".env_mach_specific.sh",
-                 ".env_mach_specific.csh", "Depends.%s"%compiler, "Depends.%s"%args.machine,
-                  "Depends.%s.%s"%(args.machine,compiler)]
-        for file_ in files:
-            if os.path.isfile(file_):
-                logger.warn("Removing file %s"%file_)
-                os.remove(file_)
-        if argcnt == 2:
-            opts['clean_only'] = True
 
     return opts
 

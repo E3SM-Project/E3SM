@@ -20,7 +20,7 @@ module docn_comp_mod
   use shr_strdata_mod , only: shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod  , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
   use shr_dmodel_mod  , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
-  use shr_cal_mod     , only: shr_cal_ymdtod2string
+  use shr_cal_mod     , only: shr_cal_datetod2string
   use seq_timemgr_mod , only: seq_timemgr_EClockGetData
 
   use docn_shr_mod   , only: datamode       ! namelist input
@@ -50,7 +50,7 @@ module docn_comp_mod
   logical       :: firstcall = .true.    ! first call logical
 
   character(len=*),parameter :: rpfile = 'rpointer.ocn'
-  integer(IN)   :: dbug = 2              ! debug level (higher is more)
+  integer(IN)   :: dbug = 1              ! debug level (higher is more)
 
   real(R8),parameter :: cpsw    = shr_const_cpsw        ! specific heat of sea h2o ~ J/kg/K
   real(R8),parameter :: rhosw   = shr_const_rhosw       ! density of sea water ~ kg/m^3
@@ -124,7 +124,7 @@ CONTAINS
     integer(IN)   :: n,k      ! generic counters
     integer(IN)   :: ierr     ! error code
     integer(IN)   :: lsize    ! local size
-    logical       :: exists   ! file existance
+    logical       :: exists, exists1   ! file existance
     integer(IN)   :: nu       ! unit number
     character(CL) :: calendar ! model calendar
     integer(IN)   :: currentYMD    ! model date
@@ -282,22 +282,24 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     if (read_restart) then
-       if (trim(rest_file) == trim(nullstr) .and. trim(rest_file_strm) == trim(nullstr)) then
+       exists = .false.
+       exists1 = .false.
+       if (trim(rest_file)      == trim(nullstr) .and. &
+           trim(rest_file_strm) == trim(nullstr)) then
           if (my_task == master_task) then
-             write(logunit,F00) ' restart filenames from rpointer'
+             write(logunit,F00) ' restart filenames from rpointer = ',trim(rpfile)
              call shr_sys_flush(logunit)
              inquire(file=trim(rpfile)//trim(inst_suffix),exist=exists)
-             if (.not.exists) then
-                write(logunit,F00) ' ERROR: rpointer file does not exist'
-                call shr_sys_abort(trim(subname)//' ERROR: rpointer file missing')
+             if (exists) then
+                nu = shr_file_getUnit()
+                open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
+                read(nu,'(a)') rest_file
+                read(nu,'(a)') rest_file_strm
+                close(nu)
+                call shr_file_freeUnit(nu)
+                inquire(file=trim(rest_file_strm),exist=exists)
+                inquire(file=trim(rest_file),exist=exists1)
              endif
-             nu = shr_file_getUnit()
-             open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
-             read(nu,'(a)') rest_file
-             read(nu,'(a)') rest_file_strm
-             close(nu)
-             call shr_file_freeUnit(nu)
-             inquire(file=trim(rest_file_strm),exist=exists)
           endif
           call shr_mpi_bcast(rest_file,mpicom,'rest_file')
           call shr_mpi_bcast(rest_file_strm,mpicom,'rest_file_strm')
@@ -309,12 +311,20 @@ CONTAINS
              inquire(file=trim(rest_file_strm),exist=exists)
           endif
        endif
+
        call shr_mpi_bcast(exists,mpicom,'exists')
+       call shr_mpi_bcast(exists1,mpicom,'exists1')
+
        if (trim(datamode) == 'SOM' .or. trim(datamode) == 'SOM_AQUAP') then
+       if (exists1) then
           if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
           call shr_pcdf_readwrite('read',SDOCN%pio_subsystem, SDOCN%io_type, &
                trim(rest_file), mpicom, gsmap=gsmap, rf1=somtp, rf1n='somtp', io_format=SDOCN%io_format)
+       else
+          if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file)
        endif
+       endif
+
        if (exists) then
           if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file_strm)
           call shr_strdata_restRead(trim(rest_file_strm),SDOCN,mpicom)
@@ -358,7 +368,7 @@ CONTAINS
   subroutine docn_comp_run(EClock, x2o, o2x, &
        SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
-       currentYMD, currentTOD, case_name)
+       target_ymd, target_tod, case_name)
 
     ! !DESCRIPTION:  run method for docn model
     implicit none
@@ -378,8 +388,8 @@ CONTAINS
     integer(IN)            , intent(in)    :: logunit       ! logging unit number
     logical                , intent(in)    :: read_restart  ! start from restart
     logical                , intent(in)    :: write_restart ! restart alarm is on
-    integer(IN)            , intent(in)    :: currentYMD    ! model date
-    integer(IN)            , intent(in)    :: currentTOD    ! model sec into model date
+    integer(IN)            , intent(in)    :: target_ymd    ! model date
+    integer(IN)            , intent(in)    :: target_tod    ! model sec into model date
     character(len=*)       , intent(in), optional :: case_name ! case name
 
     !--- local ---
@@ -438,7 +448,7 @@ CONTAINS
     ! and thereby shr_strdata_advance does nothing
 
     call t_startf('docn_strdata_advance')
-    call shr_strdata_advance(SDOCN, currentYMD, currentTOD, mpicom, 'docn')
+    call shr_strdata_advance(SDOCN, target_ymd, target_tod, mpicom, 'docn')
     call t_stopf('docn_strdata_advance')
 
     !--- copy streams to o2x ---
@@ -597,22 +607,22 @@ CONTAINS
 
     if (dbug > 1 .and. my_task == master_task) then
        do n = 1,lsize
-          write(logunit,F01)'import: ymd,tod,n,Foxx_swnet = ', currentYMD, currentTOD, n, x2o%rattr(kswnet,n)    
-          write(logunit,F01)'import: ymd,tod,n,Foxx_lwup  = ', currentYMD, currentTOD, n, x2o%rattr(klwup,n)    
-          write(logunit,F01)'import: ymd,tod,n,Foxx_lwdn  = ', currentYMD, currentTOD, n, x2o%rattr(klwdn,n)    
-          write(logunit,F01)'import: ymd,tod,n,Fioi_melth = ', currentYMD, currentTOD, n, x2o%rattr(kmelth,n)    
-          write(logunit,F01)'import: ymd,tod,n,Foxx_sen   = ', currentYMD, currentTOD, n, x2o%rattr(ksen,n)    
-          write(logunit,F01)'import: ymd,tod,n,Foxx_lat   = ', currentYMD, currentTOD, n, x2o%rattr(klat,n)    
-          write(logunit,F01)'import: ymd,tod,n,Foxx_rofi  = ', currentYMD, currentTOD, n, x2o%rattr(krofi,n)    
+          write(logunit,F01)'import: ymd,tod,n,Foxx_swnet = ', target_ymd, target_tod, n, x2o%rattr(kswnet,n)    
+          write(logunit,F01)'import: ymd,tod,n,Foxx_lwup  = ', target_ymd, target_tod, n, x2o%rattr(klwup,n)    
+          write(logunit,F01)'import: ymd,tod,n,Foxx_lwdn  = ', target_ymd, target_tod, n, x2o%rattr(klwdn,n)    
+          write(logunit,F01)'import: ymd,tod,n,Fioi_melth = ', target_ymd, target_tod, n, x2o%rattr(kmelth,n)    
+          write(logunit,F01)'import: ymd,tod,n,Foxx_sen   = ', target_ymd, target_tod, n, x2o%rattr(ksen,n)    
+          write(logunit,F01)'import: ymd,tod,n,Foxx_lat   = ', target_ymd, target_tod, n, x2o%rattr(klat,n)    
+          write(logunit,F01)'import: ymd,tod,n,Foxx_rofi  = ', target_ymd, target_tod, n, x2o%rattr(krofi,n)    
 
-          write(logunit,F01)'export: ymd,tod,n,So_t       = ', currentYMD, currentTOD, n, o2x%rattr(kt,n)    
-          write(logunit,F01)'export: ymd,tod,n,So_s       = ', currentYMD, currentTOD, n, o2x%rattr(ks,n)    
-          write(logunit,F01)'export: ymd,tod,n,So_u       = ', currentYMD, currentTOD, n, o2x%rattr(ku,n)    
-          write(logunit,F01)'export: ymd,tod,n,So_v       = ', currentYMD, currentTOD, n, o2x%rattr(kv,n)    
-          write(logunit,F01)'export: ymd,tod,n,So_dhdx    = ', currentYMD, currentTOD, n, o2x%rattr(kdhdx,n)    
-          write(logunit,F01)'export: ymd,tod,n,So_dhdy    = ', currentYMD, currentTOD, n, o2x%rattr(kdhdy,n)    
-          write(logunit,F01)'export: ymd,tod,n,So_fswpen  = ', currentYMD, currentTOD, n, o2x%rattr(kswp,n)    
-          write(logunit,F01)'export: ymd,tod,n,Fioo_q     = ', currentYMD, currentTOD, n, o2x%rattr(kq,n)    
+          write(logunit,F01)'export: ymd,tod,n,So_t       = ', target_ymd, target_tod, n, o2x%rattr(kt,n)    
+          write(logunit,F01)'export: ymd,tod,n,So_s       = ', target_ymd, target_tod, n, o2x%rattr(ks,n)    
+          write(logunit,F01)'export: ymd,tod,n,So_u       = ', target_ymd, target_tod, n, o2x%rattr(ku,n)    
+          write(logunit,F01)'export: ymd,tod,n,So_v       = ', target_ymd, target_tod, n, o2x%rattr(kv,n)    
+          write(logunit,F01)'export: ymd,tod,n,So_dhdx    = ', target_ymd, target_tod, n, o2x%rattr(kdhdx,n)    
+          write(logunit,F01)'export: ymd,tod,n,So_dhdy    = ', target_ymd, target_tod, n, o2x%rattr(kdhdy,n)    
+          write(logunit,F01)'export: ymd,tod,n,So_fswpen  = ', target_ymd, target_tod, n, o2x%rattr(kswp,n)    
+          write(logunit,F01)'export: ymd,tod,n,Fioo_q     = ', target_ymd, target_tod, n, o2x%rattr(kq,n)    
        end do
     end if
 
@@ -622,8 +632,7 @@ CONTAINS
 
     if (write_restart) then
        call t_startf('docn_restart')
-       call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd, curr_tod=tod)
-       call shr_cal_ymdtod2string(date_str, yy,mm,dd,currentTOD)
+       call shr_cal_datetod2string(date_str, target_ymd, target_tod)
        write(rest_file,"(6a)") &
             trim(case_name), '.docn',trim(inst_suffix),'.r.', &
             trim(date_str),'.nc'
@@ -639,11 +648,11 @@ CONTAINS
           call shr_file_freeUnit(nu)
        endif
        if (trim(datamode) == 'SOM' .or. trim(datamode) == 'SOM_AQUAP') then
-          if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),currentYMD,currentTOD
+          if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),target_ymd,target_tod
           call shr_pcdf_readwrite('write', SDOCN%pio_subsystem, SDOCN%io_type,&
                trim(rest_file), mpicom, gsmap, clobber=.true., rf1=somtp,rf1n='somtp')
        endif
-       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),currentYMD,currentTOD
+       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),target_ymd,target_tod
        call shr_strdata_restWrite(trim(rest_file_strm), SDOCN, mpicom, trim(case_name), 'SDOCN strdata')
        call shr_sys_flush(logunit)
        call t_stopf('docn_restart')
@@ -657,7 +666,7 @@ CONTAINS
 
     call t_startf('docn_run2')
     if (my_task == master_task) then
-       write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
+       write(logunit,F04) trim(myModelName),': model date ', target_ymd,target_tod
        call shr_sys_flush(logunit)
     end if
 

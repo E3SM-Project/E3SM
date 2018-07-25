@@ -2751,7 +2751,7 @@ contains
     call shr_nuopc_fldList_Concat(fldListFr(comprof), fldListTo(comprof), concatFr, concatTo, flds_scalar_name)
     write(logunit, "(A)") subname//': flds_r2x        = ',trim(concatFr)
     write(logunit, "(A)") '-------------------------------------------------'
-    write(logunit, "(A)") subname//': flds_r2x        = ',trim(concatTo)
+    write(logunit, "(A)") subname//': flds_x2r        = ',trim(concatTo)
     write(logunit, "(A)") '-------------------------------------------------'
     concatFr = ''; concatTo = ''
     call shr_nuopc_fldList_Concat(fldListFr(compwav), fldListTo(compwav), concatFr, concatTo, flds_scalar_name)
