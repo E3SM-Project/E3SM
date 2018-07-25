@@ -357,11 +357,22 @@ def get_extension(model, filepath):
     '0002.h0'
     >>> get_extension("pop","PFS.f09_g16.B1850.cheyenne_intel.allactive-default.GC.c2_0_b1f2_int.pop.h.ecosys.nday1.0001-01-02.nc")
     'h'
+    >>> get_extension("mom", "ga0xnw.mom6.frc._0001_001.nc")
+    'frc'
+    >>> get_extension("mom", "ga0xnw.mom6.sfc.day._0001_001.nc")
+    'sfc.day'
     """
     basename = os.path.basename(filepath)
-    ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h.?)([.].*[^.])?[.]nc' % model)
+    if model == "mom":
+        ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](frc.?)([.].*[^.])?[.]nc' % model)
+        m = ext_regex.match(basename)
+        if m is None:
+            ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](sfc.day.?)([.].*[^.])?[.]nc' % model)
+            m = ext_regex.match(basename)
+    else:
+        ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h.?)([.].*[^.])?[.]nc' % model)
+        m = ext_regex.match(basename)
 
-    m = ext_regex.match(basename)
     expect(m is not None, "Failed to get extension for file '{}'".format(filepath))
 
     if m.group(1) is not None:
