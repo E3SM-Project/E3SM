@@ -1,10 +1,10 @@
 module wav_comp_nuopc  ! This is only needed here to satisfy the current cime build requirements
-  public :: WAVSetServices
+  public :: SetServices
   contains
-    subroutine WAVSetServices(gcomp, rc)
+    subroutine SetServices(gcomp, rc)
       use ESMF, only : ESMF_GridComp
       implicit none
       type(ESMF_GridComp)  :: gcomp
       integer, intent(out) :: rc
-    end subroutine WAVSetServices
+    end subroutine SetServices
 end module wav_comp_nuopc

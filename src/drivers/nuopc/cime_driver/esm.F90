@@ -128,12 +128,12 @@ module ESM
     use shr_file_mod          , only : shr_file_getlogunit, shr_file_setLogunit
     use shr_file_mod          , only : shr_file_getlogLevel, shr_file_setLogLevel
     use shr_file_mod          , only : shr_file_getUnit, shr_file_freeUnit
-    use atm_comp_nuopc        , only : ATMSetServices
-    use ice_comp_nuopc        , only : ICESetServices
-    use lnd_comp_nuopc        , only : LNDSetServices
-    use ocn_comp_nuopc        , only : OCNSetServices
-    use wav_comp_nuopc        , only : WAVSetServices
-    use rof_comp_nuopc        , only : ROFSetServices
+    use atm_comp_nuopc        , only : ATMSetServices => SetServices
+    use ice_comp_nuopc        , only : ICESetServices => SetServices
+    use lnd_comp_nuopc        , only : LNDSetServices => SetServices
+    use ocn_comp_nuopc        , only : OCNSetServices => SetServices
+    use wav_comp_nuopc        , only : WAVSetServices => SetServices
+    use rof_comp_nuopc        , only : ROFSetServices => SetServices
 
 
     type(ESMF_GridComp)  :: driver

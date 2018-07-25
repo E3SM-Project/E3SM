@@ -46,7 +46,7 @@ module atm_comp_nuopc
   implicit none
   private ! except
 
-  public :: ATMSetServices
+  public :: SetServices
 
   !--------------------------------------------------------------------------
   ! Private module data
@@ -84,10 +84,10 @@ module atm_comp_nuopc
   contains
   !===============================================================================
 
-  subroutine ATMSetServices(gcomp, rc)
+  subroutine SetServices(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
-    character(len=*),parameter  :: subname=trim(modName)//':(ATMSetServices) '
+    character(len=*),parameter  :: subname=trim(modName)//':(SetServices) '
 
     rc = ESMF_SUCCESS
     if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
@@ -125,7 +125,7 @@ module atm_comp_nuopc
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
-  end subroutine ATMSetServices
+  end subroutine SetServices
 
   !-----------------------------------------------------------------------------
 

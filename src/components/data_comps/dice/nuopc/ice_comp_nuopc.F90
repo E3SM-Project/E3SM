@@ -49,7 +49,7 @@ module ice_comp_nuopc
 
   implicit none
 
-  public :: ICESetServices
+  public :: SetServices
 
   private :: InitializeP0
   private :: InitializeAdvertise
@@ -103,7 +103,7 @@ module ice_comp_nuopc
   contains
   !===============================================================================
 
-  subroutine ICESetServices(gcomp, rc)
+  subroutine SetServices(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
     character(len=*),parameter  :: subname=trim(modName)//':(SetServices) '
@@ -147,7 +147,7 @@ module ice_comp_nuopc
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
-  end subroutine ICESetServices
+  end subroutine SetServices
 
   !-----------------------------------------------------------------------------
 

@@ -48,7 +48,7 @@ module rof_comp_nuopc
 
   implicit none
 
-  public :: ROFSetServices
+  public :: SetServices
 
   private :: InitializeP0
   private :: InitializeAdvertise
@@ -101,7 +101,7 @@ module rof_comp_nuopc
   contains
   !===============================================================================
 
-  subroutine ROFSetServices(gcomp, rc)
+  subroutine SetServices(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -145,7 +145,7 @@ module rof_comp_nuopc
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
-  end subroutine ROFSetServices
+  end subroutine SetServices
 
   !===============================================================================
 
@@ -650,17 +650,17 @@ module rof_comp_nuopc
     call ESMF_ClockGet(mclock, currTime=mcurrtime, timeStep=mtimestep, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    !--------------------------------                                                                                 
-    ! force model clock currtime and timestep to match driver and set stoptime                                        
-    !--------------------------------                                                                                 
+    !--------------------------------
+    ! force model clock currtime and timestep to match driver and set stoptime
+    !--------------------------------
 
     mstoptime = mcurrtime + dtimestep
     call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    !--------------------------------                                                                                 
-    ! copy alarms from driver to model clock if model clock has no alarms (do this only once!)                        
-    !--------------------------------                                                                                 
+    !--------------------------------
+    ! copy alarms from driver to model clock if model clock has no alarms (do this only once!)
+    !--------------------------------
 
     call ESMF_ClockGetAlarmList(mclock, alarmlistflag=ESMF_ALARMLIST_ALL, alarmCount=alarmCount, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -684,9 +684,9 @@ module rof_comp_nuopc
       deallocate(alarmList)
     endif
 
-    !--------------------------------                                                                                 
-    ! Advance model clock to trigger alarms then reset model clock back to currtime                                   
-    !--------------------------------                                                                                 
+    !--------------------------------
+    ! Advance model clock to trigger alarms then reset model clock back to currtime
+    !--------------------------------
 
     call ESMF_ClockAdvance(mclock,rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

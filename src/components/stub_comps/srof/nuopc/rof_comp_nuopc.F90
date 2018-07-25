@@ -1,16 +1,16 @@
 module rof_comp_nuopc
 
   ! This is only needed here to satisfy the current cime build requirements
-  public :: ROFSetServices
+  public :: SetServices
 
   contains
 
-  subroutine ROFSetServices(gcomp, rc)
+  subroutine SetServices(gcomp, rc)
     use ESMF, only : ESMF_GridComp
     implicit none
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
-  end subroutine ROFSetServices
+  end subroutine SetServices
 
 
 end module rof_comp_nuopc

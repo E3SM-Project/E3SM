@@ -1,4 +1,4 @@
-module xice_comp_nuopc
+module ice_comp_nuopc
 
   !----------------------------------------------------------------------------
   ! This is the NUOPC cap for XICE
@@ -159,7 +159,7 @@ module xice_comp_nuopc
     character(CL)      :: cvalue
     character(CS)      :: stdname, shortname
     logical            :: activefld
-    integer            :: n,nflds       
+    integer            :: n,nflds
     integer            :: lsize       ! local array size
     integer            :: ierr        ! error code
     integer            :: shrlogunit  ! original log unit
@@ -195,7 +195,7 @@ module xice_comp_nuopc
 
     call NUOPC_CompAttributeGet(gcomp, name="inst_index", value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) inst_index 
+    read(cvalue,*) inst_index
 
     call ESMF_AttributeGet(gcomp, name="inst_suffix", isPresent=isPresent, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -608,4 +608,4 @@ module xice_comp_nuopc
 
   !===============================================================================
 
-end module xice_comp_nuopc
+end module ice_comp_nuopc
