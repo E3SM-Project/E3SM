@@ -54,7 +54,6 @@ contains
     use med_io_mod              , only : med_io_close, med_io_date2yyyymmdd
     use med_io_mod              , only : med_io_sec2hms
 
->>>>>>> cleanup history_mod
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -73,6 +72,7 @@ contains
     character(len=64)       :: nexttimestr
     type(InternalState)     :: is_local
     integer                 :: i,j,m,n,n1,ncnt
+    integer                 :: mpicom, iam
     integer(IN)             :: start_ymd      ! Starting date YYYYMMDD
     integer(IN)             :: start_tod      ! Starting time-of-day (s)
     integer(IN)             :: nx,ny          ! global grid size

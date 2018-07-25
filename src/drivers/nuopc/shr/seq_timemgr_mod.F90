@@ -175,18 +175,20 @@ contains
     ! !DESCRIPTION:  Initializes clock
     use shr_kind_mod, only : shr_kind_cs, shr_kind_in, shr_kind_cl
     use NUOPC, only : NUOPC_CompAttributeGet
-    use ESMF, only : ESMF_GridComp, ESMF_ClockSet, ESMF_CalendarCreate
+    use ESMF, only : ESMF_GridComp, ESMF_ClockSet, ESMF_CalendarCreate, ESMF_FAILURE
     use ESMF, only : ESMF_Time, ESMF_TimeInterval, ESMF_CalKind_Flag
     use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_LOGERR_PASSTHRU
     use ESMF, only : ESMF_LogFoundError, ESMF_TimeIntervalSet, ESMF_AlarmGet
     use ESMF, only : ESMF_CALKIND_NOLEAP, ESMF_CALKIND_GREGORIAN, ESMF_CalKind_Flag
     use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
     use pio, only : file_desc_t
-    use seq_io_read_mod, only : seq_io_read
     use shr_mpi_mod, only : shr_mpi_bcast
     use shr_sys_mod, only : shr_sys_abort
     use seq_comm_mct, only : seq_comm_iamin, CPLID, logunit, seq_comm_gloroot
     use shr_cal_mod, only : shr_cal_calendarName
+    use netcdf, only : nf90_open, nf90_nowrite, nf90_noerr, nf90_inq_varid, nf90_get_var
+    use netcdf, only : nf90_close
+    use shr_file_mod, only : shr_file_getUnit, shr_file_freeUnit
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_GridComp),     intent(inout) :: driver
@@ -939,7 +941,7 @@ contains
     use ESMF, only: ESMF_Clock, ESMF_Time, ESMF_TimeInterval
     use ESMF, only: ESMF_ClockGet, ESMF_TimeGet, ESMF_TimeIntervalGet
     use ESMF, only: ESMF_TimeSet, ESMF_TimeIntervalSet
-    use shr_kind_mod, only : shr_kind_in, shr_kind_r8, shr_kind_i8
+    use shr_kind_mod, only : shr_kind_in, R8=>shr_kind_r8, shr_kind_i8
     use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -961,10 +963,10 @@ contains
     integer(SHR_KIND_IN) , intent(out), optional :: dtime      ! Time-step (seconds)
     integer(SHR_KIND_IN) , intent(out), optional :: alarmcount ! Number of Valid Alarms
     type(ESMF_Time)      , intent(out), optional :: ECurrTime  ! Current ESMF time
-    real(ESMF_KIND_R8)   , intent(out), optional :: curr_cday  ! current calendar day
-    real(ESMF_KIND_R8)   , intent(out), optional :: next_cday  ! current calendar day
-    real(ESMF_KIND_R8)   , intent(out), optional :: curr_time  ! time interval between current time and reference date
-    real(ESMF_KIND_R8)   , intent(out), optional :: prev_time  ! time interval between previous time and reference date
+    real(R8)   , intent(out), optional :: curr_cday  ! current calendar day
+    real(R8)   , intent(out), optional :: next_cday  ! current calendar day
+    real(R8)   , intent(out), optional :: curr_time  ! time interval between current time and reference date
+    real(R8)   , intent(out), optional :: prev_time  ! time interval between previous time and reference date
     character(len=*)     , intent(out), optional :: calendar   ! calendar type
 
     !----- local -----
@@ -984,10 +986,10 @@ contains
     integer(SHR_KIND_IN)          :: days            ! number of whole days in time interval
     integer(SHR_KIND_IN)          :: seconds         ! number of seconds in time interval
     integer(SHR_KIND_IN)          :: acount          ! number of valid alarms
-    real(ESMF_KIND_R8)            :: doy, tmpdoy     ! day of year
+    real(R8)            :: doy, tmpdoy     ! day of year
     type(ESMF_Time)               :: tmpTime         ! tmp time, needed for next_cday
     type(ESMF_TimeInterval)       :: tmpDTime        ! tmp time interval, needed for next_cday
-    real(ESMF_KIND_R8), parameter :: c1 = 1.0_ESMF_KIND_R8
+    real(R8), parameter :: c1 = 1.0_R8
     character(len=*)  , parameter :: subname = '(seq_timemgr_EClockGetData) '
     !-------------------------------------------------------------------------------
 
@@ -1032,7 +1034,7 @@ contains
        timediff = CurrentTime - RefTime
        call ESMF_TimeIntervalGet(timediff, d=days, s=seconds, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       curr_time = days + seconds/real(SecPerDay,ESMF_KIND_R8)
+       curr_time = days + seconds/real(SecPerDay,R8)
     end if
 
     ! ---Previous Time (the time interval between the previous date and the reference date) ---
@@ -1040,7 +1042,7 @@ contains
        timediff = PreviousTime - RefTime
        call ESMF_TimeIntervalGet(timediff, d=days, s=seconds, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       prev_time = days + seconds/real(SecPerDay,ESMF_KIND_R8)
+       prev_time = days + seconds/real(SecPerDay,R8)
     end if
 
     ! --- Previous time --------------------------------------------------------
@@ -1969,7 +1971,10 @@ contains
 
   !===============================================================================
   subroutine seq_timemgr_EClockPrint( EClock )
-
+    use ESMF, only : ESMF_ClockGetAlarmList, ESMF_Clock, ESMF_Alarm
+    use ESMF, only : ESMF_ALARMLIST_ALL
+    use seq_comm_mct, only : loglevel, logunit
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
     ! !DESCRIPTION: Print clock information out.
 
     ! !INPUT/OUTPUT PARAMETERS:

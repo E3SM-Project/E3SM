@@ -1,4 +1,4 @@
-module xrof_comp_nuopc
+module rof_comp_nuopc
 
   !----------------------------------------------------------------------------
   ! This is the NUOPC cap for XROF
@@ -162,7 +162,7 @@ module xrof_comp_nuopc
     character(CL)      :: cvalue
     character(CS)      :: stdname, shortname
     logical            :: activefld
-    integer            :: n,nflds       
+    integer            :: n,nflds
     integer            :: lsize       ! local array size
     integer            :: ierr        ! error code
     integer            :: shrlogunit  ! original log unit
@@ -198,7 +198,7 @@ module xrof_comp_nuopc
 
     call NUOPC_CompAttributeGet(gcomp, name="inst_index", value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) inst_index 
+    read(cvalue,*) inst_index
 
     call ESMF_AttributeGet(gcomp, name="inst_suffix", isPresent=isPresent, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -230,7 +230,7 @@ module xrof_comp_nuopc
     call shr_file_setLogUnit (logunit)
 
     !--------------------------------
-    ! create import and export field list 
+    ! create import and export field list
     !--------------------------------
 
     call shr_nuopc_fldList_Concat(fldListFr(comprof), fldListTo(comprof), flds_r2x, flds_x2r, flds_scalar_name)
@@ -619,4 +619,4 @@ module xrof_comp_nuopc
 
   !===============================================================================
 
-end module xrof_comp_nuopc
+end module rof_comp_nuopc

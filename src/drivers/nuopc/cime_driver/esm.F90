@@ -134,6 +134,7 @@ module ESM
     use ocn_comp_nuopc        , only : OCNSetServices => SetServices
     use wav_comp_nuopc        , only : WAVSetServices => SetServices
     use rof_comp_nuopc        , only : ROFSetServices => SetServices
+    use glc_comp_nuopc        , only : GLCSetServices => SetServices
 
 
     type(ESMF_GridComp)  :: driver
@@ -462,29 +463,8 @@ module ESM
         compid = GLCID(1)
         call seq_comm_petlist(compid, petList)
 
-        is_set = .false.
-        if (trim(model) == "cism") then
-#ifdef ESMFUSE_NOTYET_cism
-          call NUOPC_DriverAddComp(driver, "GLC", cism_SS, petList=petList, comp=child, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          is_set = .true.
-#endif
-        elseif (trim(model) == "xglc") then
-#ifdef ESMFUSE_xglc
-          call NUOPC_DriverAddComp(driver, "GLC", xglc_SS, petList=petList, comp=child, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          is_set = .true.
-#endif
-        else
-           call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=subname//' invalid model = GLC:'//trim(model), &
-                line=__LINE__, file=u_FILE_u, rcToReturn=rc)
-           return
-        endif
-        if (.not. is_set) then
-           call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=subname//' model unavailable = GLC:'//trim(model), &
-                line=__LINE__, file=u_FILE_u, rcToReturn=rc)
-           return
-        end if
+        call NUOPC_DriverAddComp(driver, "GLC", GLCSetServices, petList=petList, comp=child, rc=rc)
+        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
         call AddAttributes(child, driver, config, compid, 'GLC', rc=rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

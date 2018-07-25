@@ -1,5 +1,5 @@
 module ocn_comp_nuopc
-
+  contains
   ! This is only needed here to satisfy the current cime build requirements
   subroutine SetServices(gcomp, rc)
     use ESMF, only : ESMF_GridComp

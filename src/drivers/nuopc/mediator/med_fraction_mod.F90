@@ -189,6 +189,9 @@ module med_fraction_mod
     type(InternalState)         :: is_local
     real(R8), pointer :: dataPtr(:)
     real(R8), pointer :: dataPtr1(:),dataPtr2(:),dataPtr3(:),dataPtr4(:)
+    real(R8), pointer :: dataPtr_lfrac(:)
+    real(R8), pointer :: dataPtr_lfrin(:)
+    real(R8), pointer :: dataPtr_ofrac(:)
     integer                     :: i,j,n,n1
     logical, save               :: first_call = .true.
     integer                     :: maptype
@@ -534,11 +537,11 @@ module med_fraction_mod
        call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'lfrac', dataPtr_lfrac, rc=rc)
        call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'ofrac', dataPtr_ofrac, rc=rc)
        do n = 1,size(dataPtr_lfrac)
-          dataPtr_lfrac(n) = 1.0_ESMF_KIND_R8 - dataPtr_ofrac(n)
+          dataPtr_lfrac(n) = 1.0_R8 - dataPtr_ofrac(n)
           if (abs(dataPtr_lfrac(n)) < eps_fraclim) then
-             dataPtr_lfrac(n) = 0.0_ESMF_KIND_R8
+             dataPtr_lfrac(n) = 0.0_R8
              if (atm_frac_correct) then
-                dataPtr_ofrac(n) = 1.0_ESMF_KIND_R8
+                dataPtr_ofrac(n) = 1.0_R8
              end if
           end if
        end do

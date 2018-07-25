@@ -921,7 +921,24 @@ contains
 
   !===============================================================================
   subroutine med_io_read_FB(filename, mpicom, iam, FB, pre, rc)
-
+    use shr_kind_mod, only : R8=>shr_kind_r8, CL=>shr_kind_cl
+    use shr_const_mod         , only : fillvalue=>SHR_CONST_SPVAL
+    use ESMF, only : ESMF_FieldBundle, ESMF_Field, ESMF_Mesh, ESMF_DistGrid
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF, only : ESMF_LOGMSG_ERROR, ESMF_FAILURE
+    use ESMF, only : ESMF_FieldBundleIsCreated, ESMF_FieldBundleGet
+    use ESMF, only : ESMF_FieldGet, ESMF_MeshGet, ESMF_DistGridGet
+    use pio, only : file_desc_T, var_desc_t, io_desc_t, pio_nowrite, pio_openfile
+    use pio, only : pio_noerr, pio_inq_varndims, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
+    use pio, only : pio_inq_dimid, pio_inq_dimlen, pio_inq_varid, pio_inq_vardimid
+    use pio, only : pio_double, pio_get_att, pio_seterrorhandling, pio_freedecomp, pio_closefile
+    use pio, only : pio_read_darray, pio_initdecomp
+    use shr_mpi_mod, only : shr_mpi_bcast
+    use med_constants_mod, only : dbug_flag=>med_constants_dbug_flag
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getNameN
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getFldPtr
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getFieldN
     ! !DESCRIPTION: Read FB to netcdf file
 
     ! !input/output arguments

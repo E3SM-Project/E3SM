@@ -103,10 +103,11 @@ contains
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
 
     use shr_kind_mod, only : R8=>shr_kind_r8
-    use med_internalstate_mod   , only : InternalState, mastertask
+    use med_internalstate_mod   , only : InternalState, mastertask, logunit
     use med_merge_mod           , only : med_merge_auto
     use esmFlds                 , only : fldListTo
     use esmFlds                 , only : compocn, compname, compatm, compice
+
 
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -261,19 +262,19 @@ contains
           ifrac_scaled = ifrac(n)
           ofrac_scaled = ofrac(n)
           frac_sum = ifrac(n) + ofrac(n)
-          if (frac_sum /= 0._ESMF_KIND_r8) then
+          if (frac_sum /= 0._R8) then
              ifrac_scaled = ifrac(n) / (frac_sum)
              ofrac_scaled = ofrac(n) / (frac_sum)
           endif
           ifracr_scaled = ifracr(n)
           ofracr_scaled = ofracr(n)
           frac_sum = ifracr(n) + ofracr(n)
-          if (frac_sum /= 0._ESMF_KIND_r8) then
+          if (frac_sum /= 0._R8) then
              ifracr_scaled = ifracr(n) / (frac_sum)
              ofracr_scaled = ofracr(n) / (frac_sum)
           endif
-          fswabsv =  swvdr(n) * (1.0_ESMF_KIND_R8 - avsdr(n)) + swvdf(n) * (1.0_ESMF_KIND_R8 - avsdf(n))
-          fswabsi =  swndr(n) * (1.0_ESMF_KIND_R8 - anidr(n)) + swndf(n) * (1.0_ESMF_KIND_R8 - anidf(n))
+          fswabsv =  swvdr(n) * (1.0_R8 - avsdr(n)) + swvdf(n) * (1.0_R8 - avsdf(n))
+          fswabsi =  swndr(n) * (1.0_R8 - anidr(n)) + swndf(n) * (1.0_R8  - anidf(n))
           if (is_local%wrap%comp_present(compice)) then
              swnet(n) = ofracr_scaled*(fswabsv + fswabsi) + ifrac_scaled*swpen(n)
           else
@@ -457,8 +458,13 @@ contains
     use ESMF, only : ESMF_GridComp, ESMF_Clock, ESMF_Time
     use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF, only: ESMF_FieldBundleGet
+    use med_constants_mod, only : czero=>med_constants_czero
     use med_internalstate_mod   , only : InternalState
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_average
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_copy
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_reset
     use esmFlds, only : compocn
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -540,7 +546,7 @@ contains
 
     is_local%wrap%FBExpAccumFlag(compocn) = .true.
     is_local%wrap%FBExpAccumCnt(compocn) = 0
-    call shr_nuopc_methods_FB_reset(is_local%wrap%FBExpAccum(compocn), value=med_constants_czero, rc=rc)
+    call shr_nuopc_methods_FB_reset(is_local%wrap%FBExpAccum(compocn), value=czero, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug_flag > 5) then

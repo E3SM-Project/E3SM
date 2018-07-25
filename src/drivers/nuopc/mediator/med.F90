@@ -45,7 +45,8 @@ contains
     use NUOPC_Mediator, only:      mediator_label_TimestampExport  => label_TimestampExport
     use NUOPC_Mediator, only:      mediator_label_SetRunClock      => label_SetRunClock
     use NUOPC_Mediator, only:      mediator_label_Finalize         => label_Finalize
-    use med_phases_history_mod    , only: med_phases_history
+    use med_phases_history_mod    , only: med_phases_history_write
+    use med_phases_restart_mod    , only: med_phases_restart_write
     use med_connectors_mod        , only: med_connectors_prep_med2atm
     use med_connectors_mod        , only: med_connectors_prep_med2ocn
     use med_connectors_mod        , only: med_connectors_prep_med2ice
@@ -1331,6 +1332,7 @@ contains
     use ESMF, only : ESMF_GridCompGet, ESMF_AttributeGet, ESMF_ClockGet, ESMF_Success
     use ESMF, only : ESMF_StateIsCreated, ESMF_StateGet, ESMF_LogFlush
     use NUOPC, only : NUOPC_CompAttributeSet, NUOPC_IsAtTime, NUOPC_SetAttribute
+    use NUOPC, only : NUOPC_CompAttributeGet
     use med_internalstate_mod     , only: InternalState
     use med_internalstate_mod     , only: med_coupling_allowed, llogunit=>logunit
     use shr_sys_mod               , only: shr_sys_flush
@@ -1350,6 +1352,7 @@ contains
     use med_infodata_mod          , only: med_infodata_CopyStateToInfodata
     use med_infodata_mod          , only: med_infodata
     use med_fraction_mod          , only: med_fraction_init, med_fraction_set
+    use med_phases_restart_mod    , only: med_phases_restart_read
     use med_phases_prep_atm_mod   , only: med_phases_prep_atm
     use med_phases_prep_ice_mod   , only: med_phases_prep_ice
     use med_phases_prep_lnd_mod   , only: med_phases_prep_lnd
@@ -1886,7 +1889,8 @@ contains
   subroutine SetRunClock(gcomp, rc)
     use ESMF, only : ESMF_GridComp, ESMF_CLOCK, ESMF_Time, ESMF_TimeInterval
     use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_ClockGet, ESMF_ClockSet
-    use ESMF, only : ESMF_Success
+    use ESMF, only : ESMF_Success, ESMF_Alarm, ESMF_ALARMLIST_ALL, ESMF_ClockGetAlarmList
+    use ESMF, only : ESMF_AlarmCreate, ESMF_AlarmSet, ESMF_ClockAdvance
     use NUOPC, only : NUOPC_CompCheckSetClock
     use NUOPC_Mediator, only:      NUOPC_MediatorGet
     use shr_nuopc_methods_mod     , only: shr_nuopc_methods_clock_timeprint
