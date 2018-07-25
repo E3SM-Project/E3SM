@@ -1603,9 +1603,14 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
 
 <compiler MACH="sandiatoss3" COMPILER="intel">
   <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
+  <KOKKOS_PATH>/ascldap/users/mdeakin/kokkos-install</KOKKOS_PATH>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
+  <CXXFLAGS>
+    <base> -std=c++11 -g </base>
+    <append compile_threaded="true"> -qopenmp </append>
+  </CXXFLAGS>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
