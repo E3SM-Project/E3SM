@@ -363,15 +363,21 @@ def get_extension(model, filepath):
     'sfc.day'
     """
     basename = os.path.basename(filepath)
+    m = None
     if model == "mom":
         ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](frc.?)([.].*[^.])?[.]nc' % model)
         m = ext_regex.match(basename)
         if m is None:
             ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](sfc.day.?)([.].*[^.])?[.]nc' % model)
             m = ext_regex.match(basename)
-    else:
+    elif model == 'cice':
+        ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h_inst.?)([.].*[^.])?[.]nc' % model)
+        m = ext_regex.match(basename)
+
+    if m is None:
         ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h.?)([.].*[^.])?[.]nc' % model)
         m = ext_regex.match(basename)
+
 
     expect(m is not None, "Failed to get extension for file '{}'".format(filepath))
 

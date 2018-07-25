@@ -12,11 +12,11 @@ module med_fraction_mod
   !    ifrad = fraction of ocn on a grid at last radiation time
   !    ofrad = fraction of ice on a grid at last radiation time
   !
-  !    afrac, lfrac, ifrac, and ofrac: 
+  !    afrac, lfrac, ifrac, and ofrac:
   !       are the self-consistent values in the system
-  !    lfrin: 
+  !    lfrin:
   !       is the fraction on the land grid and is allowed to
-  !       vary from the self-consistent value as descibed below.  
+  !       vary from the self-consistent value as descibed below.
   !    ifrad and ofrad:
   !       are needed for the swnet calculation.
   !
@@ -87,7 +87,7 @@ module med_fraction_mod
   !
   !  fractions used in merging are as follows
   !  merge to atm   uses fractions_a(lfrac,ofrac,ifrac)
-  !  merge to ocean uses fractions_o(ofrac,ifrac) normalized to one 
+  !  merge to ocean uses fractions_o(ofrac,ifrac) normalized to one
   !
   !  fraction corrections in mapping are as follows
   !    mapo2a uses *fractions_o(ofrac) and /fractions_a(ofrac)
@@ -102,19 +102,19 @@ module med_fraction_mod
   !      0.0-eps < fractions_*(*) < 1.0+eps
   !
   ! Note that the following FBImp field names are current hard-wired below
-  ! TODO: this needs to be generalized - these names should be set dynamically at run time in the 
+  ! TODO: this needs to be generalized - these names should be set dynamically at run time in the
   ! source component
-  !    is_local%wrap%FBImp(compglc,compglc) => 'frac' 
-  !    is_local%wrap%FBImp(complnd,complnd) => 'Sl_lfrin' 
+  !    is_local%wrap%FBImp(compglc,compglc) => 'frac'
+  !    is_local%wrap%FBImp(complnd,complnd) => 'Sl_lfrin'
   !    is_local%wrap%FBImp(compice,compice) => 'Si_imask'
-  !    is_local%wrap%FBImp(compocn,compocn) => 'So_omask' 
+  !    is_local%wrap%FBImp(compocn,compocn) => 'So_omask'
   !    is_local%wrap%FBImp(compice,compice) => 'Si_ifrac' (runtime)
-  !   
+  !
   !-----------------------------------------------------------------------------
 
   use ESMF
   use esmFlds               , only : compatm, compocn, compice, complnd
-  use esmFlds               , only : comprof, compglc, compwav, compname, ncomps 
+  use esmFlds               , only : comprof, compglc, compwav, compname, ncomps
   use esmFlds               , only : flds_scalar_name
   use shr_nuopc_fldList_mod , only : mapconsf, mapfcopy
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
@@ -213,9 +213,9 @@ module med_fraction_mod
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (first_call) then
-       !--------------------------------------- 
+       !---------------------------------------
        ! Initialize the fraclist arrays
-       !--------------------------------------- 
+       !---------------------------------------
        fraclist(:,:) = ' '
        fraclist(1:size(fraclist_a),compatm) = fraclist_a
        fraclist(1:size(fraclist_o),compocn) = fraclist_o
@@ -225,9 +225,9 @@ module med_fraction_mod
        fraclist(1:size(fraclist_w),compwav) = fraclist_w
        fraclist(1:size(fraclist_g),compglc) = fraclist_g
 
-       !--------------------------------------- 
-       !--- Initialize mediator FBfrac entries 
-       !--------------------------------------- 
+       !---------------------------------------
+       !--- Initialize mediator FBfrac entries
+       !---------------------------------------
 
        ! Note - must use import state here - since export state might not
        ! contain anything other than scalar data if the component is not prognostic
@@ -263,7 +263,7 @@ module med_fraction_mod
          ! map atm 'afrac' to ocn 'afrac' conservatively or redist
           if (ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,compocn,mapfcopy), rc=rc)) then
              maptype = mapfcopy
-          else 
+          else
              maptype = mapconsf
              if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,compocn,mapconsf), rc=rc)) then
                 call med_map_Fractions_init( gcomp, compatm, compocn, &
@@ -284,7 +284,7 @@ module med_fraction_mod
          ! map atm 'afrac' to ice 'afrac' conservatively or redist
           if (ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,compocn,mapfcopy), rc=rc)) then
              maptype = mapfcopy
-          else 
+          else
              maptype = mapconsf
              if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,compice,mapconsf), rc=rc)) then
                 call med_map_Fractions_init( gcomp, compatm, compocn, &
@@ -337,7 +337,7 @@ module med_fraction_mod
           ! map atm 'afrac' to lnd 'afrac' conservatively or redist
           if (ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,complnd,mapfcopy), rc=rc)) then
              maptype = mapfcopy
-          else 
+          else
              maptype = mapconsf
              if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,complnd,mapconsf), rc=rc)) then
                 call med_map_Fractions_init( gcomp, compatm, complnd, &
@@ -356,7 +356,7 @@ module med_fraction_mod
           ! map lnd 'lfrin' to atm 'lfrin' conservatively or redist
           if (ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,complnd,mapfcopy), rc=rc)) then
              maptype = mapfcopy
-          else 
+          else
              maptype = mapconsf
              if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(complnd,compatm,maptype), rc=rc)) then
                 call med_map_Fractions_init( gcomp, complnd, compatm, &
@@ -378,21 +378,21 @@ module med_fraction_mod
     !---------------------------------------
     !--- Initialize fractions on rof grid/decomp
     !---------------------------------------
-    
+
     if (is_local%wrap%comp_present(comprof)) then
        call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(comprof), 'rfrac', dataPtr1, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       
+
        ! Set 'frac' in FBfrac(comprof) to 1.
        dataPtr1(:) = 1.0_ESMF_KIND_R8
-       
+
        ! TODO: should this be uncommented?
        ! call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImp(comprof,comprof) , 'frac' , dataPtr2, rc=rc)
        ! if (.not. shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) then
        !   dataPtr1 = dataPtr2
        ! endif
     endif
-    
+
     !---------------------------------------
     !--- Initialize fractions on wav grid decomp - FBFrac(compwav)
     !---------------------------------------
@@ -425,7 +425,7 @@ module med_fraction_mod
           ! Reset FBFrac(compatm) 'ofrac' by mapping ice 'ofrac' to atm 'ofrac' conservatively or redist
           if (ESMF_RouteHandleIsCreated(is_local%wrap%RH(compice,compatm,mapfcopy), rc=rc)) then
              maptype = mapfcopy
-          else 
+          else
              maptype = mapconsf
              if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compice,compatm,mapconsf), rc=rc)) then
                 call med_map_Fractions_init( gcomp, compice, compatm, &
@@ -444,7 +444,7 @@ module med_fraction_mod
           ! Reset FBFrac(compice) 'afrac' by mapping atm 'afrac' to ice 'afrac' conservatively or redist
           if (ESMF_RouteHandleIsCreated(is_local%wrap%RH(compice,compatm,mapfcopy), rc=rc)) then
              maptype = mapfcopy
-          else 
+          else
              maptype = mapconsf
              if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,compice,mapconsf), rc=rc)) then
                 call med_map_Fractions_init( gcomp, compatm, compice, &
@@ -507,7 +507,7 @@ module med_fraction_mod
                is_local%wrap%FBfrac(compatm), 'ofrac', &
                is_local%wrap%RH(compocn,compatm,mapconsf), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          
+
           ! map atm 'afrac' to ocn 'afrac' conservatively
           if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,compocn,mapconsf), rc=rc)) then
              call med_map_Fractions_init( gcomp, compatm, compocn, &
