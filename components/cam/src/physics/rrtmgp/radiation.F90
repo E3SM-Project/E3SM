@@ -641,9 +641,13 @@ subroutine radiation_init(state)
 
    ! Band-by-band cloud optical properties
    call addfld('CLOUD_TAU_SW', (/'lev','swband'/), 'I', '1', &
-               'Cloud extinction optical depth', sampling_seq='rad_lwsw') 
+               'Cloud shortwave extinction optical depth', sampling_seq='rad_lwsw') 
+   call addfld('CLOUD_SSA_SW', (/'lev','swband'/), 'I', '1', &
+               'Cloud shortwave single scattering albedo', sampling_seq='rad_lwsw') 
+   call addfld('CLOUD_G_SW', (/'lev','swband'/), 'I', '1', &
+               'Cloud shortwave assymmetry parameter', sampling_seq='rad_lwsw') 
    call addfld('CLOUD_TAU_LW', (/'lev','lwband'/), 'I', '1', &
-               'Cloud absorption optical depth', sampling_seq='rad_lwsw') 
+               'Cloud longwave absorption optical depth', sampling_seq='rad_lwsw') 
 
    ! Band-by-band shortwave albedos
    call addfld('SW_ALBEDO_DIR', (/'swband'/), 'I', '1', &
@@ -1836,12 +1840,15 @@ subroutine export_surface_fluxes(fluxes, cam_out, band)
    ! sols(pcols)      Direct solar rad on surface (< 0.7)
    ! soll(pcols)      Direct solar rad on surface (>= 0.7)
    !
-   ! Near-IR bands (1-9 and 14), 820-16000 cm-1, 0.625-12.195 microns
+   ! Near-IR bands (1-10), 820-16000 cm-1, 0.625-12.195 microns
    !
-   ! Put half of band 9 in each of the UV/visible and near-IR values,
+   ! Put half of band 10 in each of the UV/visible and near-IR values,
    ! since this band straddles 0.7 microns:
    !
-   ! UV/visible bands 10-13, 16000-50000 cm-1, 0.200-0.625 micron
+   ! UV/visible bands 11-14, 16000-50000 cm-1, 0.200-0.625 micron
+   !
+   ! NOTE: bands are shifted relative to RRTMG! Band 10 used to be band 9, band
+   ! 1 used to be band 14.
    kbot = size(fluxes%flux_dn, 2)
    if (trim(band) == 'shortwave') then
       cam_out%soll = 0
@@ -1850,13 +1857,12 @@ subroutine export_surface_fluxes(fluxes, cam_out, band)
       cam_out%solsd = 0
       do i = 1,size(fluxes%bnd_flux_dn, 1)
          cam_out%soll(i) &
-            = sum(fluxes%bnd_flux_dn(i,kbot,1:8)) &
-            + 0.5_r8 * fluxes%bnd_flux_dn(i,kbot,9) &
-            + fluxes%bnd_flux_dn(i,kbot,14)
+            = sum(fluxes%bnd_flux_dn(i,kbot,1:9)) &
+            + 0.5_r8 * fluxes%bnd_flux_dn(i,kbot,10)
 
          cam_out%sols(i) &
-            = 0.5_r8 * fluxes%bnd_flux_dn(i,kbot,9) &
-            + sum(fluxes%bnd_flux_dn(i,kbot,10:13))
+            = 0.5_r8 * fluxes%bnd_flux_dn(i,kbot,10) &
+            + sum(fluxes%bnd_flux_dn(i,kbot,11:14))
 
          cam_out%netsw(i) = fluxes%flux_net(i,kbot)
       end do
@@ -2294,11 +2300,25 @@ subroutine output_cloud_optics_sw(state, optics)
 
    type(physics_state), intent(in) :: state
    type(cam_optics_type), intent(in) :: optics
+   character(len=*), parameter :: subname = 'output_cloud_optics_sw'
 
-   ! Output 
-   call assert_valid(optics%optical_depth(:state%ncol,:pver,:nswbands), 'cloud_tau_sw')
+   ! Check values
+   call assert_valid(optics%optical_depth(:state%ncol,:pver,:nswbands), &
+                     trim(subname) // ': optics%optical_depth')
+   call assert_valid(optics%single_scattering_albedo(:state%ncol,:pver,:nswbands), &
+                     trim(subname) // ': optics%single_scattering_albedo')
+   call assert_valid(optics%assymmetry_parameter(:state%ncol,:pver,:nswbands), &
+                     trim(subname) // ': optics%assymmetry_parameter')
+
+   ! Send outputs to history buffer
    call outfld('CLOUD_TAU_SW', &
                optics%optical_depth(:state%ncol,:pver,:nswbands), &
+               state%ncol, state%lchnk)
+   call outfld('CLOUD_SSA_SW', &
+               optics%single_scattering_albedo(:state%ncol,:pver,:nswbands), &
+               state%ncol, state%lchnk)
+   call outfld('CLOUD_G_SW', &
+               optics%assymmetry_parameter(:state%ncol,:pver,:nswbands), &
                state%ncol, state%lchnk)
    call outfld('TOT_ICLD_VISTAU', &
                optics%optical_depth(:state%ncol,:pver,idx_sw_diag), &
@@ -3178,7 +3198,9 @@ subroutine set_cloud_optics_sw(state, pbuf, col_indices, lev_indices, kdist, opt
          ! McICA assumptions: simultaneously sampling over cloud state and
          ! g-point.
          do igpt = 1,ngpt
-            if (iscloudy(igpt,icol_cam,ilev_cam)) then
+            if (iscloudy(igpt,icol_cam,ilev_cam) .and. &
+                combined_cloud_fraction(icol_cam,ilev_cam) > 0._r8) then
+            
                ibnd = kdist%convert_gpt2band(igpt)
                optics_out%tau(icol,ilev,igpt) = optics_cam%optical_depth(icol_cam,ilev_cam,ibnd)
                optics_out%ssa(icol,ilev,igpt) = optics_cam%single_scattering_albedo(icol_cam,ilev_cam,ibnd)
@@ -3199,7 +3221,7 @@ subroutine set_cloud_optics_sw(state, pbuf, col_indices, lev_indices, kdist, opt
    ! omitted in the function call. In the future, we should explicitly pass
    ! this. This just requires modifying the get_cloud_optics_sw procedures to also
    ! pass the foward scattering fraction that the CAM cloud optics_sw assumes.
-   !call handle_error(optics_out%delta_scale())
+   call handle_error(optics_out%delta_scale())
 
    ! Check cloud optics_sw
    call handle_error(optics_out%validate())
@@ -3336,7 +3358,7 @@ subroutine set_cloud_optics_lw(state, pbuf, lev_indices, kdist, optics_out)
    ! omitted in the function call. In the future, we should explicitly pass
    ! this. This just requires modifying the get_cloud_optics_lw procedures to also
    ! pass the foward scattering fraction that the CAM cloud optics_lw assumes.
-   !call handle_error(optics_out%delta_scale())
+   call handle_error(optics_out%delta_scale())
 
    ! Check values
    call assert_range(optics_out%tau, 0._r8, 1e20_r8, &

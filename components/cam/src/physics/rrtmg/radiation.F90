@@ -313,6 +313,7 @@ end function radiation_nextsw_cday
     use physics_buffer, only: pbuf_get_index
     use phys_grid,      only: npchunks, get_ncols_p, chunks, knuhcs, ngcols_p, latlon_to_dyn_gcol_map
     use cam_history,    only: addfld, horiz_only, add_default
+    use cam_history_support, only: add_hist_coord
     use constituents,   only: cnst_get_ind
     use physconst,      only: gravit, stebol, &
                               pstd, mwdry, mwco2, mwo3
@@ -332,6 +333,10 @@ end function radiation_nextsw_cday
     use mpishorthand,   only: mpi_integer, mpicom, mpi_comm_world
 #endif
     use rad_solar_var,      only: rad_solar_var_init
+
+    use radconstants, only: nswbands, nlwbands, &
+                            get_sw_spectral_midpoints, &
+                            get_lw_spectral_midpoints
 
     type(physics_state), intent(in) :: phys_state(begchunk:endchunk)
 
@@ -354,6 +359,8 @@ end function radiation_nextsw_cday
     integer, allocatable, dimension(:,:) :: clm_id
     integer :: id, lchnk, ncol, ilchnk, astat, iseed, ipes, ipes_tmp
     integer :: igcol, imap, chunkid, icol, iown, tot_cols, ierr, max_chnks_in_blk
+
+    real(r8) :: sw_band_midpoints(nswbands), lw_band_midpoints(nlwbands)
     !-----------------------------------------------------------------------
 
     call rrtmg_state_init()
@@ -663,6 +670,11 @@ end function radiation_nextsw_cday
 
     call addfld('EMIS', (/ 'lev' /), 'A', '1', 'Cloud longwave emissivity')
 
+    ! Cosine of solar zenith angle (primarily for debugging)
+    call addfld('COSZRS', horiz_only, 'A', 'None', &
+                'Cosine of solar zenith angle', &
+                sampling_seq='rad_lwsw')
+
     if (single_column.and.scm_crm_mode) then
        call add_default ('FUL     ', 1, ' ')
        call add_default ('FULC    ', 1, ' ')
@@ -718,6 +730,21 @@ end function radiation_nextsw_cday
        call addfld('SNOW_ICLD_VISTAU', (/ 'lev' /), 'A', '1', 'Snow in-cloud extinction visible sw optical depth', &
                                                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
     endif
+
+   ! Band-by-band cloud optical properties
+   ! Register new dimensions
+   call get_sw_spectral_midpoints(sw_band_midpoints, 'm')
+   call get_lw_spectral_midpoints(lw_band_midpoints, 'm')
+   call add_hist_coord('swband', nswbands, 'Shortwave band', 'wavelength', sw_band_midpoints)
+   call add_hist_coord('lwband', nlwbands, 'Longwave band', 'wavelength', lw_band_midpoints)
+   call addfld('CLOUD_TAU_SW', (/'lev','swband'/), 'I', '1', &
+               'Cloud extinction optical depth', sampling_seq='rad_lwsw')
+   call addfld('CLOUD_SSA_SW', (/'lev','swband'/), 'I', '1', &
+               'Cloud shortwave single scattering albedo', sampling_seq='rad_lwsw')
+   call addfld('CLOUD_G_SW', (/'lev','swband'/), 'I', '1', &
+               'Cloud shortwave assymmetry parameter', sampling_seq='rad_lwsw')
+   call addfld('CLOUD_TAU_LW', (/'lev','lwband'/), 'I', '1', &
+               'Cloud absorption optical depth', sampling_seq='rad_lwsw')
 
   end subroutine radiation_init
 
@@ -1037,6 +1064,9 @@ end function radiation_nextsw_cday
        coszrs(:)=0._r8 ! coszrs is only output for zenith
     endif
 
+    ! Send values for this chunk to history buffer
+    call outfld('COSZRS', coszrs(:ncol), ncol, state%lchnk)
+
     call output_rad_data(  pbuf, state, cam_in, coszrs )
 
     ! Gather night/day column indices.
@@ -1133,6 +1163,8 @@ end function radiation_nextsw_cday
              call pbuf_set_field(pbuf,cld_tau_idx,cld_tau(rrtmg_sw_cloudsim_band, :, :))
           end if
 
+          ! Output cloud optical properies (for debugging mostly)
+          call output_cloud_optics_sw(state, c_cld_tau, c_cld_tau_w, c_cld_tau_w_g, c_cld_tau_w_f)
        endif
 
        if (dolw) then
@@ -1180,6 +1212,8 @@ end function radiation_nextsw_cday
           endif
        endif
 
+       call output_cloud_optics_lw(state, c_cld_lw_abs(1:nlwbands,1:ncol,1:pver))
+       
        if (.not.(cldfsnow_idx > 0)) then
           cldfprime(1:ncol,:)=cld(1:ncol,:)
        endif
@@ -1607,6 +1641,81 @@ end function radiation_nextsw_cday
  end subroutine radiation_tend
 
 !===============================================================================
+subroutine output_cloud_optics_sw(state, tau, tau_w, tau_w_g, tau_w_f)
+   use cam_history, only: outfld
+   type(physics_state), intent(in) :: state
+   real(r8), intent(in) :: tau(:,:,:)
+   real(r8), intent(in) :: tau_w(:,:,:)
+   real(r8), intent(in) :: tau_w_g(:,:,:)
+   real(r8), intent(in) :: tau_w_f(:,:,:)
+
+   real(r8), dimension(size(tau,1), size(tau,2), size(tau,3)) :: &
+      single_scattering_albedo, &
+      assymmetry_parameter
+
+   real(r8), allocatable :: tau_reordered(:,:,:)
+   real(r8), allocatable :: single_scattering_albedo_reordered(:,:,:)
+   real(r8), allocatable :: assymmetry_parameter_reordered(:,:,:)
+   integer :: ncol, iband
+
+   ncol = state%ncol
+
+   ! Convert products into optics
+   where (tau > 0)
+      single_scattering_albedo = tau_w / tau
+   elsewhere
+      single_scattering_albedo = 1
+   end where
+   where (tau_w > 0)
+      assymmetry_parameter = tau_w_g / tau_w
+   elsewhere
+      assymmetry_parameter = 0
+   end where
+
+   ! Reorder optical depth array
+   allocate(tau_reordered(ncol,pver,nswbands), &
+            single_scattering_albedo_reordered(ncol,pver,nswbands), &
+            assymmetry_parameter_reordered(ncol,pver,nswbands))
+   do iband = 1,nswbands
+      tau_reordered(1:ncol,1:pver,iband) = tau(iband,1:ncol,1:pver)
+      single_scattering_albedo_reordered(1:ncol,1:pver,iband) = single_scattering_albedo(iband,1:ncol,1:pver)
+      assymmetry_parameter_reordered(1:ncol,1:pver,iband) = assymmetry_parameter(iband,1:ncol,1:pver)
+   end do
+
+   ! Output
+   call outfld('CLOUD_TAU_SW', tau_reordered, state%ncol, state%lchnk)
+   call outfld('CLOUD_SSA_SW', single_scattering_albedo_reordered, state%ncol, state%lchnk)
+   call outfld('CLOUD_G_SW', assymmetry_parameter_reordered, state%ncol, state%lchnk)
+
+   ! Free memory
+   deallocate(tau_reordered, &
+              single_scattering_albedo_reordered, &
+              assymmetry_parameter_reordered)
+
+end subroutine output_cloud_optics_sw
+!-------------------------------------------------------------------------------
+subroutine output_cloud_optics_lw(state, tau)
+
+   use cam_history, only: outfld
+   type(physics_state), intent(in) :: state
+   real(r8), intent(in) :: tau(:,:,:)
+
+   real(r8), allocatable :: tau_reordered(:,:,:)
+   integer :: ncol, iband
+
+   ncol = state%ncol
+   allocate(tau_reordered(ncol,pver,nlwbands))
+   do iband = 1,nlwbands
+      tau_reordered(1:ncol,1:pver,iband) = tau(iband,1:ncol,1:pver)
+   end do
+
+   call outfld('CLOUD_TAU_LW', tau_reordered(1:ncol,1:pver,1:nlwbands), state%ncol, state%lchnk) 
+
+   deallocate(tau_reordered)
+
+end subroutine output_cloud_optics_lw
+
+!-----------------------------------------------------------------------
 
 subroutine radinp(ncol, pmid, pint, pmidrd, pintrd, eccf)
 !-----------------------------------------------------------------------
