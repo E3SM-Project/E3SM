@@ -3153,8 +3153,6 @@ subroutine set_cloud_optics_sw(state, pbuf, col_indices, lev_indices, kdist, opt
    end do
 
    ! Send in-cloud optical depth for visible band to history buffer
-   ! TODO: send single scattering albedo and assymmetry parameter for
-   ! diagnostic purposes as well?
    call output_cloud_optics_sw(state, optics_cam)
 
    ! Initialize (or reset) output cloud optics object
@@ -3191,7 +3189,7 @@ subroutine set_cloud_optics_sw(state, pbuf, col_indices, lev_indices, kdist, opt
       ! (daytime-only columns)
       do icol = 1,size(col_indices)
          icol_cam = col_indices(icol)
-         call assert(icol_cam > 0, trim(subname) // ': col_indices < 0')
+         call assert(icol_cam > 0, trim(subname) // ': col_indices <= 0')
 
          ! Loop over g-points and map bands to g-points; each subcolumn
          ! corresponds to a single g-point. This is how this code implements the
