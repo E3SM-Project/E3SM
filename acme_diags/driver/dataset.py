@@ -137,10 +137,17 @@ class Dataset():
                     # Ex: {('PRECC', 'PRECL'): func, ('pr',): func1, ...}, is an OrderedDict.
                     possible_vars_and_funcs = self.derived_vars[var]
 
-                    # Get the first valid variables and functions from possible vars.
-                    # Ex: {('PRECC', 'PRECL'): func}
-                    # These are checked to be in data_file.
-                    vars_to_func_dict = self._get_first_valid_vars_climo(possible_vars_and_funcs, data_file)
+                    try:
+                        # Get the first valid variables and functions from possible vars.
+                        # Ex: {('PRECC', 'PRECL'): func}
+                        # These are checked to be in data_file.
+                        vars_to_func_dict = self._get_first_valid_vars_climo(possible_vars_and_funcs, data_file)
+                    except RuntimeError:
+                        # If there are no valid set of original vars in the derived vars,
+                        # try to just get the variable from the file.
+                        # Ex: In GPCP_v2.2_ANN_climo.nc, when getting PRECT, there is neither ('pr') nor ('PRECC', 'PRECL').
+                        #     So we just need to get PRECT directly from the file.
+                        vars_to_func_dict = {(var,): lambda x: x}
 
                     # Get the variables as cdms2.TransientVariables.
                     # Ex: variables is [PRECC, PRECL], where both are cdms2.TransientVariables.
