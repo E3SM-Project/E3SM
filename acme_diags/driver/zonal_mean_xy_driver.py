@@ -9,7 +9,7 @@ import acme_diags
 from acme_diags.plot import plot
 from acme_diags.derivations import acme
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
-from acme_diags.driver import utils
+from acme_diags.driver import utils, dataset
 
 
 def regrid_to_lower_res_1d(mv1, mv2):
@@ -68,6 +68,30 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     return metrics_dict
 
 
+def _convert_to_pressure_levels(mv, plevs, dataset, season):
+    """
+    Given either test or reference data with a z-axis,
+    convert to the desired pressure levels.
+    """
+    mv_plv = mv.getLevel()
+    # var(time,lev,lon,lat) convert from hybrid level to pressure
+    if mv_plv.long_name.lower().find('hybrid') != -1:
+        hyam = dataset.get_variable('hyam', season)
+        hybm = dataset.get_variable('hybm', season)
+        ps = dataset.get_variable('PS', season)  # Pa
+        mv_p = utils.hybrid_to_plevs(mv, hyam, hybm, ps, plevs)
+
+    # levels are pressure levels
+    elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1:
+        mv_p = utils.pressure_to_plevs(mv, plevs)
+
+    else:
+        raise RuntimeError(
+            "Vertical level is neither hybrid nor pressure. Aborting.")
+
+    return mv_p
+
+
 def run_diag(parameter):
     parameter.reference_data_path
     parameter.test_data_path
@@ -77,53 +101,42 @@ def run_diag(parameter):
     ref_name = parameter.ref_name
     regions = parameter.regions
 
+    test_data = dataset.Dataset(parameter, test=True)
+    ref_data = dataset.Dataset(parameter, ref=True)    
+    # test_data.get_variable(var, season)
+
     for season in seasons:
-        try:
-            filename1 = utils.get_test_filename(parameter, season)
-            filename2 = utils.get_ref_filename(parameter, season)
-        except IOError as e:
-            print(e)
-            # the file for the current parameters wasn't found, move to next
-            # parameters
-            continue
-
-        print('test file: {}'.format(filename1))
-        print('reference file: {}'.format(filename2))
-
-        f_mod = cdms2.open(filename1)
-        f_obs = cdms2.open(filename2)
-
         if parameter.short_test_name:
             parameter.test_name_yrs = parameter.short_test_name
         else:
             parameter.test_name_yrs = parameter.test_name
 
+        
         try:
-            yrs_averaged =  f_mod.getglobal('yrs_averaged')
-            parameter.test_name_yrs = parameter.test_name_yrs + ' (' + yrs_averaged +')'
-
+            # yrs_averaged = f_mod.getglobal('yrs_averaged')
+            # parameter.test_name_yrs = parameter.test_name_yrs + ' (' + yrs_averaged +')'
+            # Raising an exception b/c we don't have an f_mod variable.
+            raise Exception()
         except:
             print('No yrs_averaged exists in global attributes')
             parameter.test_name_yrs = parameter.test_name_yrs
 
         # save land/ocean fraction for masking
         try:
-            f_mod('LANDFRAC')
-            f_mod('OCNFRAC')
-        except BaseException:
+            test_data.get_variable('LANDFRAC', season)
+            test_data.get_variable('OCNFRAC', season)
+        except:
             mask_path = os.path.join(acme_diags.INSTALL_PATH, 'acme_ne30_ocean_land_mask.nc')
-            f0 = cdms2.open(mask_path)
-            f0('LANDFRAC')
-            f0('OCNFRAC')
-            f0.close()
+            with cdms2.open(mask_path) as f:
+                f('LANDFRAC')
+                f('OCNFRAC')
 
+        
         for var in variables:
             print('Variable: {}'.format(var))
             parameter.var_id = var
-            mv1 = acme.process_derived_var(
-                var, acme.derived_variables, f_mod, parameter)
-            mv2 = acme.process_derived_var(
-                var, acme.derived_variables, f_obs, parameter)
+            mv1 = test_data.get_variable(var, season)
+            mv2 = ref_data.get_variable(var, season)
 
             parameter.viewer_descr[var] = mv1.long_name if hasattr(
                 mv1, 'long_name') else 'No long_name attr in test data.'
@@ -160,30 +173,10 @@ def run_diag(parameter):
             if mv1.getLevel() and mv2.getLevel():  # for variables with z axis:
                 plev = parameter.plevs
                 print('Selected pressure level: {}'.format(plev))
-                f_ins = [f_mod, f_obs]
-                for f_ind, mv in enumerate([mv1, mv2]):
-                    mv_plv = mv.getLevel()
-                    # var(time,lev,lon,lat) convert from hybrid level to
-                    # pressure
-                    if mv_plv.long_name.lower().find('hybrid') != -1:
-                        f_in = f_ins[f_ind]
-                        hyam = f_in('hyam')
-                        hybm = f_in('hybm')
-                        ps = f_in('PS')  # Pa
+                
+                mv1_p = _convert_to_pressure_levels(mv1, plev, test_data, season)
+                mv2_p = _convert_to_pressure_levels(mv2, plev, test_data, season)
 
-                        mv_p = utils.hybrid_to_plevs(mv, hyam, hybm, ps, plev)
-
-                    # levels are presure levels
-                    elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1:
-                        mv_p = utils.pressure_to_plevs(mv, plev)
-
-                    else:
-                        raise RuntimeError(
-                            "Vertical level is neither hybrid nor pressure. Abort")
-                    if f_ind == 0:
-                        mv1_p = mv_p
-                    if f_ind == 1:
-                        mv2_p = mv_p
                 # select plev
                 for ilev in range(len(plev)):
                     mv1 = mv1_p[ilev, ]
@@ -303,6 +296,5 @@ def run_diag(parameter):
             else:
                 raise RuntimeError(
                     "Dimensions of two variables are difference. Abort")
-        f_obs.close()
-        f_mod.close()
+
     return parameter
