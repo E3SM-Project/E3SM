@@ -224,6 +224,7 @@ contains
     integer, pointer :: comps(:) ! array with component ids
     integer, pointer :: comms(:) ! array with mpicoms
     integer :: nu
+    character(len=8) :: c_global_numpes ! global number of pes
     character(len=seq_comm_namelen) :: valid_comps(ncomps)
 
     integer :: &
@@ -295,8 +296,9 @@ contains
 
     ! output task-to-node mapping
     if (mype == 0) then
-       write(logunit,100) global_numpes
-100    format(//,i7,' pes participating in computation of coupled model')
+       write(c_global_numpes,'(i8)') global_numpes
+       write(logunit,100) trim(adjustl(c_global_numpes))
+100    format(/,a,' pes participating in computation of coupled model')
        call shr_sys_flush(logunit)
     endif
     call t_startf("shr_taskmap_write")
