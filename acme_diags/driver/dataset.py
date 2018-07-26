@@ -93,12 +93,12 @@ class Dataset():
         elif self.ref:
             # Get the reference variable from climo files.
             filename = utils.get_ref_filename(self.parameters, self.season)
-            return self._get_climo_var(filename)
+            return self._get_climo_var(filename)[0]
 
         elif self.test:
             # Get the test variable from climo files.
             filename = utils.get_test_filename(self.parameters, self.season)
-            return self._get_climo_var(filename)
+            return self._get_climo_var(filename)[0]
 
         else:
             msg = '''
@@ -128,7 +128,7 @@ class Dataset():
         """
         vars_to_get = [self.var]
         vars_to_get.extend(self.extra_vars)
-        variables = []
+        return_variables = []
 
         with cdms2.open(filename) as data_file:
             for var in vars_to_get:
@@ -170,9 +170,9 @@ class Dataset():
                     msg += ' it defined in the derived variables dictionary.'
                     raise RuntimeError(msg)
 
-                variables.append(derived_var)
+                return_variables.append(derived_var)
 
-        return variables
+        return return_variables
 
 
     def _get_first_valid_vars_climo(self, vars_to_func_dict, data_file):

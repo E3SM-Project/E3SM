@@ -88,7 +88,7 @@ def _convert_to_pressure_levels(mv, plevs, dataset, season):
     else:
         raise RuntimeError(
             "Vertical level is neither hybrid nor pressure. Aborting.")
-
+            
     return mv_p
 
 
@@ -103,7 +103,6 @@ def run_diag(parameter):
 
     test_data = dataset.Dataset(parameter, test=True)
     ref_data = dataset.Dataset(parameter, ref=True)    
-    # test_data.get_variable(var, season)
 
     for season in seasons:
         if parameter.short_test_name:
@@ -120,17 +119,6 @@ def run_diag(parameter):
         except:
             print('No yrs_averaged exists in global attributes')
             parameter.test_name_yrs = parameter.test_name_yrs
-
-        # save land/ocean fraction for masking
-        try:
-            test_data.get_variable('LANDFRAC', season)
-            test_data.get_variable('OCNFRAC', season)
-        except:
-            mask_path = os.path.join(acme_diags.INSTALL_PATH, 'acme_ne30_ocean_land_mask.nc')
-            with cdms2.open(mask_path) as f:
-                f('LANDFRAC')
-                f('OCNFRAC')
-
         
         for var in variables:
             print('Variable: {}'.format(var))
@@ -152,11 +140,9 @@ def run_diag(parameter):
                 # this is cdms2 for bad mask, denise's fix should fix
                 mv2 = MV2.masked_where(mv2 > 1e+20, mv2)
             if ref_name == 'WILLMOTT' or ref_name == 'CLOUDSAT':
-                print(mv2.fill_value)
                 # mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
                 # this is cdms2 for bad mask, denise's fix should fix
                 mv2 = MV2.masked_where(mv2 == -999., mv2)
-                print(mv2.fill_value)
 
                 # following should move to derived variable
                 if var == 'PRECT_LAND':
@@ -173,7 +159,7 @@ def run_diag(parameter):
             if mv1.getLevel() and mv2.getLevel():  # for variables with z axis:
                 plev = parameter.plevs
                 print('Selected pressure level: {}'.format(plev))
-                
+
                 mv1_p = _convert_to_pressure_levels(mv1, plev, test_data, season)
                 mv2_p = _convert_to_pressure_levels(mv2, plev, test_data, season)
 
@@ -232,7 +218,6 @@ def run_diag(parameter):
 
             # for variables without z axis:
             elif mv1.getLevel() is None and mv2.getLevel() is None:
-
                 # select region
                 if len(regions) == 0:
                     regions = ['global']
