@@ -975,13 +975,13 @@ contains
 
     ! Loop over rsplit vertically lagrangian timesiteps
     call t_startf("prim_step_rX")
-    call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, compute_diagnostics, 1)
+    call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, compute_diagnostics)
     call t_stopf("prim_step_rX")
 
     do r=2,rsplit
        call TimeLevel_update(tl,"leapfrog")
        call t_startf("prim_step_rX")
-       call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, .false., r)
+       call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, .false.)
        call t_stopf("prim_step_rX")
     enddo
     ! defer final timelevel update until after remap and diagnostics
@@ -1058,7 +1058,7 @@ contains
 
 
 
-  subroutine prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord, compute_diagnostics,rstep)
+  subroutine prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord, compute_diagnostics)
   !
   !   Take qsplit dynamics steps and one tracer step
   !   for vertically lagrangian option, this subroutine does only the horizontal step
@@ -1094,7 +1094,6 @@ contains
     integer,              intent(in)    :: nete     ! ending thread element number   (private)
     real(kind=real_kind), intent(in)    :: dt       ! "timestep dependent" timestep
     type(TimeLevel_t),    intent(inout) :: tl
-    integer,              intent(in)    :: rstep    ! vertical remap subcycling step
 
     real(kind=real_kind) :: st, st1, dp, dt_q
     integer :: ie, t, q,k,i,j,n
