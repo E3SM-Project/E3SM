@@ -2,7 +2,7 @@ module med_io_mod
   ! !DESCRIPTION: Writes attribute vectors to netcdf
 
   ! !USES:
-  use shr_kind_mod          , only : cl => shr_kind_cl
+  use med_constants_mod          , only : CL
   use pio, only : file_desc_t, iosystem_desc_t
 
   implicit none
@@ -284,7 +284,7 @@ contains
     use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF, only : ESMF_FieldBundleIsCreated, ESMF_FieldBundle, ESMF_Field, ESMF_Mesh, ESMF_DistGrid
     use ESMF, only : ESMF_FieldBundleGet, ESMF_FieldGet, ESMF_MeshGet, ESMF_DistGridGet
-    use shr_kind_mod, only : R4=>shr_kind_r4, R8=> shr_kind_r8
+    use med_constants_mod, only : R4, R8
     use shr_const_mod         , only : fillvalue=>SHR_CONST_SPVAL
     use pio, only : var_desc_t, io_desc_t, pio_offset_kind
     use med_constants_mod, only : dbug_flag=>med_constants_dbug_flag
@@ -649,7 +649,7 @@ contains
 
   !===============================================================================
   subroutine med_io_write_r8(filename, iam, rdata, dname, whead, wdata, file_ind)
-    use shr_kind_mod, only : R8=>shr_kind_r8
+    use med_constants_mod, only : R8
     use pio, only : var_desc_t, pio_def_var, pio_put_att, pio_double, pio_noerr, pio_inq_varid, pio_put_var
     use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
     ! !DESCRIPTION: Write scalar double to netcdf file
@@ -709,7 +709,7 @@ contains
   !===============================================================================
   subroutine med_io_write_r81d(filename, iam, rdata, dname, whead, wdata, file_ind)
     ! !DESCRIPTION: Write 1d double array to netcdf file
-    use shr_kind_mod, only : R8=>shr_kind_r8
+    use med_constants_mod, only : R8
     use pio, only : var_desc_t, pio_def_dim, pio_def_var, pio_inq_varid, pio_put_var, pio_double, pio_put_att
     use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
 
@@ -827,7 +827,7 @@ contains
   !===============================================================================
   subroutine med_io_write_time(filename, iam, time_units, time_cal, time_val, nt,&
        whead, wdata, tbnds, file_ind)
-    use shr_kind_mod, only : R8=>shr_kind_r8
+    use med_constants_mod, only : R8
     use shr_cal_mod, only : shr_cal_calMaxLen
     use shr_cal_mod           , only : shr_cal_noleap
     use shr_cal_mod           , only : shr_cal_gregorian
@@ -921,7 +921,7 @@ contains
 
   !===============================================================================
   subroutine med_io_read_FB(filename, mpicom, iam, FB, pre, rc)
-    use shr_kind_mod, only : R8=>shr_kind_r8, CL=>shr_kind_cl
+    use med_constants_mod, only : R8, CL
     use shr_const_mod         , only : fillvalue=>SHR_CONST_SPVAL
     use ESMF, only : ESMF_FieldBundle, ESMF_Field, ESMF_Mesh, ESMF_DistGrid
     use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
@@ -1136,7 +1136,7 @@ contains
     ! !DESCRIPTION: Read 1d integer array from netcdf file
     use shr_sys_mod, only : shr_sys_abort
     use shr_mpi_mod, only : shr_mpi_bcast
-    use shr_kind_mod, only : R8=>shr_kind_r8
+    use med_constants_mod, only : R8
     use pio, only : var_desc_t, file_desc_t, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, pio_seterrorhandling
     use pio, only : pio_get_var, pio_inq_varid, pio_get_att, pio_openfile, pio_nowrite, pio_openfile, pio_global
     use pio, only : pio_closefile
@@ -1187,7 +1187,7 @@ contains
 
   !===============================================================================
   subroutine med_io_read_r8(filename, mpicom, iam, rdata, dname)
-    use shr_kind_mod, only : R8=>shr_kind_r8
+    use med_constants_mod, only : R8
 
     ! !DESCRIPTION: Read scalar double from netcdf file
 
@@ -1209,7 +1209,7 @@ contains
 
   !===============================================================================
   subroutine med_io_read_r81d(filename, mpicom, iam, rdata, dname)
-    use shr_kind_mod, only : R8=>shr_kind_r8
+    use med_constants_mod, only : R8
     use pio, only : file_desc_t, var_desc_t, pio_openfile, pio_closefile, pio_seterrorhandling
     use pio, only : PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, pio_inq_varid, pio_get_var
     use pio, only : pio_nowrite, pio_openfile, pio_global, pio_get_att

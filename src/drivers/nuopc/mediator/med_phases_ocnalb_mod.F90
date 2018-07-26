@@ -1,5 +1,5 @@
 module med_phases_ocnalb_mod
-  use shr_kind_mod, only : R8 => SHR_KIND_R8
+  use med_constants_mod, only : R8
 
   implicit none
   private
@@ -51,7 +51,7 @@ contains
     use ESMF, only : ESMF_GridCompGet, ESMF_VMGet, ESMF_FieldGet, ESMF_GEOMTYPE_MESH
     use ESMF, only : ESMF_MeshGet
     use ESMF, only: operator(==)
-    use shr_kind_mod, only : CL=>shr_kind_cl
+    use med_constants_mod, only : CL
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFieldN
     use esmFlds               , only : compatm, compocn
@@ -193,7 +193,7 @@ contains
     use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_LogFoundError
     use ESMF, only : ESMF_LOGERR_PASSTHRU, ESMF_RouteHandleIsCreated, ESMF_LOGMSG_ERROR, ESMF_FAILURE
     use NUOPC, only : NUOPC_CompAttributeGet
-    use shr_kind_mod          , only : cs=>shr_kind_cs, cl=>shr_kind_cl
+    use med_constants_mod          , only : CS, CL
     use shr_const_mod         , only : shr_const_pi
     use shr_sys_mod           , only : shr_sys_abort
     use shr_orb_mod           , only : shr_orb_cosz, shr_orb_decl

@@ -4,7 +4,7 @@ module med_infodata_mod
 
   ! !USES:
 
-  use shr_kind_mod, only: shr_kind_CL, R8=>SHR_KIND_R8
+  use med_constants_mod, only: CL, R8
   use seq_comm_mct          , only: num_inst_atm, num_inst_lnd, num_inst_rof
   use seq_comm_mct          , only: num_inst_ocn, num_inst_ice, num_inst_glc, num_inst_wav
   use esmFlds               , only: ncomps
@@ -29,14 +29,14 @@ module med_infodata_mod
   ! Type to hold pause/resume signaling information
   type seq_pause_resume_type
      private
-     character(SHR_KIND_CL) :: atm_resume(num_inst_atm) = ' ' ! atm resume file
-     character(SHR_KIND_CL) :: lnd_resume(num_inst_lnd) = ' ' ! lnd resume file
-     character(SHR_KIND_CL) :: ice_resume(num_inst_ice) = ' ' ! ice resume file
-     character(SHR_KIND_CL) :: ocn_resume(num_inst_ocn) = ' ' ! ocn resume file
-     character(SHR_KIND_CL) :: glc_resume(num_inst_glc) = ' ' ! glc resume file
-     character(SHR_KIND_CL) :: rof_resume(num_inst_rof) = ' ' ! rof resume file
-     character(SHR_KIND_CL) :: wav_resume(num_inst_wav) = ' ' ! wav resume file
-     character(SHR_KIND_CL) :: cpl_resume = ' '               ! cpl resume file
+     character(CL) :: atm_resume(num_inst_atm) = ' ' ! atm resume file
+     character(CL) :: lnd_resume(num_inst_lnd) = ' ' ! lnd resume file
+     character(CL) :: ice_resume(num_inst_ice) = ' ' ! ice resume file
+     character(CL) :: ocn_resume(num_inst_ocn) = ' ' ! ocn resume file
+     character(CL) :: glc_resume(num_inst_glc) = ' ' ! glc resume file
+     character(CL) :: rof_resume(num_inst_rof) = ' ' ! rof resume file
+     character(CL) :: wav_resume(num_inst_wav) = ' ' ! wav resume file
+     character(CL) :: cpl_resume = ' '               ! cpl resume file
   end type seq_pause_resume_type
 
   ! InputInfo derived type
@@ -318,16 +318,16 @@ CONTAINS
   !===============================================================================
   subroutine med_infodata_GetData( infodata, ncomp, flux_epbal, flux_epbalfact, nx, ny)
     ! Get values out of the infodata object.
-    use shr_kind_mod, only : shr_kind_cl, shr_kind_in
+    use med_constants_mod, only : CL, IN
     use med_internalstate_mod , only: logunit, loglevel
     use shr_sys_mod, only : shr_sys_abort
     ! !INPUT/OUTPUT PARAMETERS:
     type(med_infodata_type),          intent(IN)  :: infodata       ! Input CCSM structure
-    integer(SHR_KIND_IN),   optional, intent(IN)  :: ncomp          ! Component ID
-    character(SHR_KIND_CL), optional, intent(IN)  :: flux_epbal     ! selects E,P,R adjustment technique
+    integer(IN),   optional, intent(IN)  :: ncomp          ! Component ID
+    character(CL), optional, intent(IN)  :: flux_epbal     ! selects E,P,R adjustment technique
     real(R8),      optional, intent(OUT) :: flux_epbalfact ! adjusted precip factor
-    integer(SHR_KIND_IN),   optional, intent(OUT) :: nx             ! nx
-    integer(SHR_KIND_IN),   optional, intent(OUT) :: ny             ! ny
+    integer(IN),   optional, intent(OUT) :: nx             ! nx
+    integer(IN),   optional, intent(OUT) :: ny             ! ny
 
     !----- local -----
     character(len=*), parameter :: subname = '(med_infodata_GetData) '

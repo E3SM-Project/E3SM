@@ -102,7 +102,7 @@ contains
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
 
-    use shr_kind_mod, only : R8=>shr_kind_r8
+    use med_constants_mod, only : R8
     use med_internalstate_mod   , only : InternalState, mastertask, logunit
     use med_merge_mod           , only : med_merge_auto
     use esmFlds                 , only : fldListTo

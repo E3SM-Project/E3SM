@@ -14,9 +14,10 @@ module med_phases_mod
 !-----------------------------------------------------------------------------
 
   subroutine med_phases_init(gcomp, llogunit, rc)
-    use ESMF                    ,only : ESMF_GridCompGet, ESMF_VMGet
+    use ESMF                    ,only : ESMF_GridCompGet, ESMF_VMGet, ESMF_LogWrite, ESMF_LogFlush
     use ESMF                    ,only : ESMF_GRIDCOMP, ESMF_VM, ESMF_LOGMSG_INFO, ESMF_SUCCESS
-    use shr_kind_mod            ,only : CL=>SHR_KIND_CL, R8 => SHR_KIND_R8
+    use med_constants_mod            ,only : CL, R8
+    use med_constants_mod            ,only : dbug_flag => med_constants_dbug_flag
     use esmFlds                 , only : compatm, complnd, compocn
     use esmFlds                 , only : compice, comprof, compglc
     use esmFlds                 , only : ncomps, compname
@@ -53,9 +54,6 @@ module med_phases_mod
     integer                :: n, n1, n2, ncomp, nflds
     character(CL), pointer :: fldnames(:)
     logical                       :: mastertask
-
-    integer           , parameter :: dbug_flag = med_constants_dbug_flag
-    real(R8)         , parameter :: czero     = med_constants_czero
     character(*)      , parameter :: u_FILE_u  = __FILE__
 
     !-----------------------------------------------------------

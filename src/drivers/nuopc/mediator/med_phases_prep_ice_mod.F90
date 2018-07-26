@@ -20,7 +20,7 @@ module med_phases_prep_ice_mod
     use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF, only: ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
     use ESMF, only: ESMF_FieldBundleGet
-    use shr_kind_mod            , only : CL=>SHR_KIND_CL, CS=>SHR_KIND_CS, R8=>shr_kind_r8
+    use med_constants_mod            , only : CL, CS, R8
     use esmFlds                 , only : compatm, compice, comprof, compglc, ncomps, compname
     use esmFlds                 , only : fldListFr, fldListTo
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr

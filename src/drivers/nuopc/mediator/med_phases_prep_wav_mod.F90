@@ -20,7 +20,7 @@ module med_phases_prep_wav_mod
     use ESMF, only : ESMF_GridComp, ESMF_Clock, ESMF_Time
     use ESMF, only : ESMF_GridCompGet, ESMF_FieldBundleGet, ESMF_ClockGet, ESMF_TimeGet
     use ESMF, only : ESMF_ClockPrint
-    use shr_kind_mod, only : shr_kind_cs
+    use med_constants_mod, only : CS
     use esmFlds                 , only : compwav, ncomps, compname
     use esmFlds                 , only : fldListFr, fldListTo
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
@@ -38,7 +38,7 @@ module med_phases_prep_wav_mod
     ! local variables
     type(ESMF_Clock)            :: clock
     type(ESMF_Time)             :: time
-    character(len=shr_kind_CS)           :: timestr
+    character(len=CS)           :: timestr
     type(InternalState)         :: is_local
     integer                     :: i,j,n,n1,ncnt
     logical,save                :: first_call = .true.

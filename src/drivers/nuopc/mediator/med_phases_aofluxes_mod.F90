@@ -1,5 +1,5 @@
 module med_phases_aofluxes_mod
-  use shr_kind_mod, only : R8 => shr_kind_r8
+  use med_constants_mod, only : R8
   use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
 
   implicit none
@@ -120,7 +120,7 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
     use shr_nuopc_fldList_mod , only : shr_nuopc_fldlist_getfldnames
-    use shr_kind_mod, only : CL=>SHR_KIND_CL
+    use med_constants_mod, only : CL
     ! Initialize ocn/atm flux calculations
 
     ! input/output variables
@@ -229,7 +229,7 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
-    use shr_kind_mod, only : CL=>SHR_KIND_CL
+    use med_constants_mod, only : CL
 
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -345,8 +345,7 @@ contains
     use ESMF, only : ESMF_Grid, ESMF_Mesh, ESMF_MeshGet, ESMF_GEOMTYPE_FLAG
     use ESMF, only : operator(==), ESMF_GEOMTYPE_MESH
     use NUOPC, only : NUOPC_CompAttributeGet
-    use shr_kind_mod, only : shr_kind_CX
-    use shr_kind_mod, only : CL=>SHR_KIND_CL
+    use med_constants_mod, only : CL, CX
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFieldN
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
@@ -385,7 +384,7 @@ contains
     character(*),parameter   :: subName =   '(med_aofluxes_init) '
     logical       :: flds_wiso  ! use case
     integer :: dbrc
-    character(len=SHR_KIND_CX)            :: tmpstr
+    character(len=CX)            :: tmpstr
     !-----------------------------------------------------------------------
 
     if (dbug_flag > 5) then
@@ -677,7 +676,7 @@ contains
     use ESMF, only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_TimeIntervalGet
     use ESMF, only : ESMF_LogWrite, ESMF_LogMsg_Info
     use NUOPC, only : NUOPC_CompAttributeGet
-    use shr_kind_mod          , only : SHR_KIND_CX, CL=>SHR_KIND_CL
+    use med_constants_mod          , only : CX, CL
     use shr_const_mod         , only : shr_const_spval
     use shr_flux_mod          , only : shr_flux_atmocn, shr_flux_atmocn_diurnal, shr_flux_adjust_constants
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
@@ -712,7 +711,7 @@ contains
     character(*),parameter :: F01 = "('(med_aofluxes_run) ',a,i4,2x,d21.14)"
     character(*),parameter :: F02 = "('(med_aofluxes_run) ',a,i4,2x,i4)"
     character(*),parameter :: subName = '(med_fluxes_run) '
-    character(len=SHR_KIND_CX)            :: tmpstr
+    character(len=CX)            :: tmpstr
     !-----------------------------------------------------------------------
 
     call ESMF_GridCompGet(gcomp, clock=Eclock, rc=rc)

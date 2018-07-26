@@ -33,7 +33,7 @@ contains
 
     character(len=*) , intent(in)  :: NLFileName
     character(len=CX), intent(out) :: carma_fields
-    integer          , intent(in)  :: mpicom 
+    integer          , intent(in)  :: mpicom
     logical          , intent(in)  :: mastertask
 
     integer :: unitn            ! namelist unit number
@@ -62,9 +62,11 @@ contains
           else
              write(logunit,*) 'shr_carma_readnl:  no carma_inparm namelist found in ',NLFilename
           end if
+          close( unitn )
+          call shr_file_freeUnit( unitn )
+       else
+          write(logunit,*) 'shr_carma_readnl:  no file ',NLFilename, ' found'
        end if
-       close( unitn )
-       call shr_file_freeUnit( unitn )
     end if
     call shr_mpi_bcast( carma_fields, mpicom )
 

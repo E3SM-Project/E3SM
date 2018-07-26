@@ -3,8 +3,8 @@ module MED
   !-----------------------------------------------------------------------------
   ! Mediator Component.
   !-----------------------------------------------------------------------------
-  use shr_kind_mod              , only: SHR_KIND_CX, R8=>SHR_KIND_R8
-  use med_constants_mod         , only: med_constants_dbug_flag
+  use med_constants_mod         , only: CX, R8
+  use med_constants_mod         , only: dbug_flag => med_constants_dbug_flag
   use med_constants_mod         , only: spval_init => med_constants_spval_init
   use med_constants_mod         , only: spval => med_constants_spval
   use med_constants_mod         , only: czero => med_constants_czero
@@ -16,8 +16,7 @@ module MED
 
   character(len=*)  , parameter :: grid_arbopt = "grid_reg"   ! grid_reg or grid_arb
   character(*)      , parameter :: u_FILE_u    = __FILE__
-  integer :: dbug_flag = med_constants_dbug_flag
-  logical            :: mastertask
+
   public  SetServices
 
   private InitializeP0
@@ -438,6 +437,8 @@ contains
     use ESMF  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_METHOD_INITIALIZE
     use ESMF , only : ESMF_GridCompGet
     use NUOPC , only : NUOPC_CompFilterPhaseMap
+    use med_internalstate_mod, only : mastertask
+
     type(ESMF_GridComp)   :: gcomp
     type(ESMF_State)      :: importState, exportState
     type(ESMF_Clock)      :: clock
@@ -449,7 +450,7 @@ contains
     character(len=128)         :: value
     integer            :: dbrc
     integer            :: localPet
-    character(len=SHR_KIND_CX):: msgString
+    character(len=CX):: msgString
     !-----------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -493,7 +494,7 @@ contains
     use ESMF, only : ESMF_GridComp, ESMF_State, ESMF_Clock, ESMF_SUCCESS, ESMF_LogFoundAllocError
     use ESMF, only : ESMF_LogMsg_Info, ESMF_LogWrite
     use NUOPC   , only : NUOPC_AddNamespace, NUOPC_Advertise
-    use shr_kind_mod, only : shr_kind_cs
+    use med_constants_mod, only : CS
     use med_internalstate_mod     , only: InternalState
     use esmFlds                   , only: flds_scalar_name
     use esmFlds                   , only: flds_scalar_num
@@ -512,10 +513,10 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    character(len=SHR_KIND_CS) :: stdname, shortname
+    character(len=CS) :: stdname, shortname
     logical                    :: activefld
     integer                    :: n, n1, n2, ncomp, nflds
-    character(len=SHR_KIND_CS) :: transferOffer
+    character(len=CS) :: transferOffer
     type(InternalState)        :: is_local
     character(len=*),parameter :: subname='(module_MED:InitializeIPDv03p1)'
     integer            :: dbrc
@@ -634,7 +635,7 @@ contains
     use ESMF        , only : ESMF_GridComp, ESMF_State, ESMF_Clock, ESMF_VM, ESMF_SUCCESS
     use ESMF        , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_TimeInterval
     use ESMF        , only : ESMF_VMGet, ESMF_StateIsCreated, ESMF_GridCompGet
-    use shr_kind_mod,  only : shr_kind_cl, r8=> shr_kind_r8
+    use med_constants_mod,  only : CL, R8
     use med_internalstate_mod     , only: InternalState
     use esmFlds                   , only: ncomps, compname
     use esmFlds                   , only: fldListFr, fldListTo
@@ -660,7 +661,7 @@ contains
     ! type(ESMF_XGrid)              :: xgrid
     type(ESMF_VM)      :: vm
     integer                         :: n, n1, n2
-    character(SHR_KIND_CL)          :: cvalue
+    character(CL)          :: cvalue
     logical                         :: connected
     character(len=*),parameter      :: subname='(module_MED:InitializeIPDv03p3)'
     integer            :: dbrc
@@ -806,7 +807,7 @@ contains
       type(ESMF_FieldStatus_Flag)   :: fieldStatus
       character(len=*),parameter :: subname='(module_MEDIATOR:realizeConnectedGrid)'
       integer :: dbrc
-      character(len=SHR_KIND_CX):: msgString
+      character(len=CX):: msgString
 
       !NOTE: All of the Fields that set their TransferOfferGeomObject Attribute
       !NOTE: to "cannot provide" should now have the accepted Grid available.
@@ -1335,8 +1336,9 @@ contains
     use NUOPC, only : NUOPC_CompAttributeGet
     use med_internalstate_mod     , only: InternalState
     use med_internalstate_mod     , only: med_coupling_allowed, llogunit=>logunit
+    use med_internalstate_mod, only : mastertask
     use shr_sys_mod               , only: shr_sys_flush
-    use shr_kind_mod              , only : shr_kind_cl
+    use med_constants_mod              , only : CL
     use esmFlds                   , only: ncomps, compname
     use esmFlds                   , only: flds_scalar_name
     use esmFlds                   , only: flds_scalar_num
@@ -1395,11 +1397,11 @@ contains
     integer                            :: n1,n2,n
     integer                            :: cntn1, cntn2
     integer                            :: fieldCount
-    character(SHR_KIND_CL), pointer    :: fldnames(:)
+    character(CL), pointer    :: fldnames(:)
     character(ESMF_MAXSTR),allocatable :: fieldNameList(:)
     character(len=128)                 :: value
-    character(SHR_KIND_CL)             :: cvalue
-    character(SHR_KIND_CL)             :: start_type
+    character(CL)             :: cvalue
+    character(CL)             :: start_type
     logical                            :: read_restart
     logical                            :: LocalDone
     logical,save                       :: atmDone = .false.
@@ -1408,7 +1410,7 @@ contains
     logical,save                       :: first_call = .true.
     character(len=*), parameter        :: subname='(module_MED:DataInitialize)'
     integer :: dbrc
-    character(len=SHR_KIND_CX):: msgString
+    character(len=CX):: msgString
     !-----------------------------------------------------------
 
     if (dbug_flag > 5) then
@@ -1987,7 +1989,7 @@ contains
 
   subroutine med_finalize(gcomp, rc)
     use ESMF, only : ESMF_GridComp, ESMF_SUCCESS
-    use med_internalstate_mod     , only: llogunit=>logunit
+    use med_internalstate_mod     , only: llogunit=>logunit, mastertask
 
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc

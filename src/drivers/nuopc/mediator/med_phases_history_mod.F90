@@ -10,7 +10,6 @@ module med_phases_history_mod
   private
 
   character(*)      , parameter :: u_FILE_u  = __FILE__
-  integer, parameter            :: SecPerDay = 86400    ! Seconds per day
   type(ESMF_Alarm)              :: AlarmHist
 
   public  :: med_phases_history_write
@@ -27,9 +26,6 @@ contains
     use ESMF, only: operator(==), operator(-)
     use ESMF, only: ESMF_FieldBundleIsCreated, ESMF_MAXSTR, ESMF_ClockPrint, ESMF_AlarmIsCreated
     use NUOPC, only : NUOPC_CompAttributeGet
-    use shr_kind_mod            , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8
-    use shr_kind_mod            , only : CL=>SHR_KIND_CL, CS=>SHR_KIND_CS
-    use shr_cal_mod             , only : shr_cal_noleap, shr_cal_gregorian
     use shr_cal_mod             , only : shr_cal_ymd2date
     use seq_timemgr_mod         , only : seq_timemgr_AlarmInit, seq_timemgr_AlarmIsOn
     use seq_timemgr_mod         , only : seq_timemgr_AlarmSetOff
@@ -46,6 +42,9 @@ contains
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_accum
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_State_GetScalar
     use med_constants_mod       , only : dbug_flag =>med_constants_dbug_flag
+    use med_constants_mod       , only : SecPerDay =>med_constants_SecPerDay
+    use med_constants_mod       , only : R8, CL, CS, IN
+    use med_constants_mod       , only : med_constants_noleap, med_constants_gregorian
     use med_infodata_mod        , only : med_infodata, med_infodata_GetData
     use med_merge_mod           , only : med_merge_auto
     use med_map_mod             , only : med_map_FB_Regrid_Norm
@@ -141,9 +140,9 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (calkindflag == ESMF_CALKIND_GREGORIAN) then
-      calendar = shr_cal_gregorian
+      calendar = med_constants_gregorian
     elseif (calkindflag == ESMF_CALKIND_NOLEAP) then
-      calendar = shr_cal_noleap
+      calendar = med_constants_noleap
     else
       call ESMF_LogWrite(trim(subname)//' ERROR: calendar not supported', ESMF_LOGMSG_ERROR, rc=dbrc)
       rc=ESMF_Failure

@@ -112,7 +112,7 @@ module med_fraction_mod
   !
   !-----------------------------------------------------------------------------
 
-  use shr_kind_mod      , only : R8 => shr_kind_r8
+  use med_constants_mod      , only : R8
   use esmFlds, only : ncomps
 
   implicit none

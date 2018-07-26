@@ -1,6 +1,6 @@
 module med_map_mod
 
-  use shr_kind_mod          , only: SHR_KIND_CX, SHR_KIND_CL, SHR_KIND_CS, R8=>SHR_KIND_R8
+  use med_constants_mod          , only: CX, CS, CL, R8
   use med_constants_mod, only : ispval_mask => med_constants_ispval_mask
   use med_constants_mod, only : czero => med_constants_czero
   use med_constants_mod, only : dbug_flag => med_constants_dbug_flag
@@ -25,7 +25,7 @@ contains
 !================================================================================
 
   subroutine med_map_RouteHandles_init(gcomp, llogunit, rc)
-    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_LogFlush
     use ESMF, only: ESMF_GridComp, ESMF_VM, ESMF_Field, ESMF_PoleMethod_Flag, ESMF_POLEMETHOD_ALLAVG
     use ESMF, only: ESMF_GridCompGet, ESMF_VMGet, ESMF_FieldSMMStore, ESMF_RouteHandleIsCreated
     use ESMF, only: ESMF_FieldRedistStore, ESMF_FieldRegridStore, ESMF_REGRIDMETHOD_BILINEAR
@@ -84,14 +84,14 @@ contains
     character(len=128)               :: value
     character(len=128)               :: rhname
     character(len=128)               :: rhname_file
-    character(len=SHR_KIND_CS)       :: mapname
-    character(len=SHR_KIND_CX)       :: mapfile
-    character(len=SHR_KIND_CS)       :: string
+    character(len=CS)       :: mapname
+    character(len=CX)       :: mapfile
+    character(len=CS)       :: string
     integer                          :: mapindex
     logical                          :: rhprint_flag = .false.
     logical                       :: mastertask
     real(R8)     , pointer :: factorList(:)
-    character(SHR_KIND_CL) , pointer :: fldnames(:)
+    character(CL) , pointer :: fldnames(:)
     type(ESMF_PoleMethod_Flag), parameter :: polemethod=ESMF_POLEMETHOD_ALLAVG
     character(len=*), parameter :: subname=' (module_med_map: RouteHandles_init) '
     integer                       :: dbrc
@@ -305,9 +305,9 @@ contains
     type(ESMF_Field)            :: fldsrc
     type(ESMF_Field)            :: flddst
     character(len=128)          :: rhname
-    character(len=SHR_KIND_CS)  :: mapname
-    character(len=SHR_KIND_CX)  :: mapfile
-    character(len=SHR_KIND_CS)  :: string
+    character(len=CS)  :: mapname
+    character(len=CX)  :: mapfile
+    character(len=CS)  :: string
     integer                     :: SrcMaskValue
     integer                     :: DstMaskValue
     real(R8), pointer :: factorList(:)
@@ -409,7 +409,7 @@ contains
     type(InternalState)         :: is_local
     type(ESMF_FieldBundle)      :: FBTmp
     integer                     :: n1, n2, m
-    character(len=SHR_KIND_CS)  :: normname
+    character(len=CS)  :: normname
     character(len=1)            :: cn1,cn2,cm
     real(R8), pointer :: dataptr(:)
     character(len=*),parameter :: subname='(module_MED_MAP:MapNorm_init)'
@@ -486,7 +486,7 @@ contains
 
   subroutine med_map_FB_Regrid_Norm(fldsSrc, srccomp, destcomp, &
        FBSrc, FBDst, FBFrac, FBNormOne, RouteHandles, string, rc)
-    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_LogFlush
+    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF, only: ESMF_LOGMSG_ERROR, ESMF_FAILURE
     use ESMF, only: ESMF_FieldBundle, ESMF_RouteHandle, ESMF_FieldBundleIsCreated
     use ESMF, only: ESMF_RouteHandleIsCreated
@@ -523,10 +523,10 @@ contains
     type(ESMF_FieldBundle)      :: FBNormSrc       ! temporary
     type(ESMF_FieldBundle)      :: FBNormDst       ! temporary
     integer                     :: mapindex
-    character(len=SHR_KIND_CS)  :: lstring
-    character(len=SHR_KIND_CS)  :: mapnorm
-    character(len=SHR_KIND_CS)  :: fldname
-    character(len=SHR_KIND_CS)  :: csize1, csize2
+    character(len=CS)  :: lstring
+    character(len=CS)  :: mapnorm
+    character(len=CS)  :: fldname
+    character(len=CS)  :: csize1, csize2
     real(R8), pointer :: data_srctmp(:)  ! temporary
     real(R8), pointer :: data_src(:)     ! temporary
     real(R8), pointer :: data_dst(:)     ! temporary

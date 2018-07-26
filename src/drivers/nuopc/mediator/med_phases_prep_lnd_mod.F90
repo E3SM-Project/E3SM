@@ -22,7 +22,7 @@ module med_phases_prep_lnd_mod
     use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF, only: ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
     use ESMF, only: ESMF_FieldBundleGet
-    use shr_kind_mod            , only : CL=>SHR_KIND_CL, CS=>SHR_KIND_CS, CX=>SHR_KIND_CX
+    use med_constants_mod            , only : CL, CS, CX
     use esmFlds                 , only : complnd, ncomps, compname
     use esmFlds                 , only : fldListFr, fldListTo
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr

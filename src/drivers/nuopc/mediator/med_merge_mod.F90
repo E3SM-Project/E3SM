@@ -26,7 +26,7 @@ contains
        document, string, mastertask, rc)
     use ESMF, only : ESMF_FieldBundle, ESMF_SUCCESS, ESMF_FAILURE, ESMF_LogWrite, ESMF_LogMsg_Info
     use ESMF, only : ESMF_FieldBundleIsCreated, ESMF_FieldBundleGet
-    use shr_kind_mod, only : shr_kind_cl, shr_kind_cx, shr_kind_cs
+    use med_constants_mod, only : CL, CX, CS
     use shr_string_mod        , only : shr_string_listGetNum
     use shr_string_mod        , only : shr_string_listGetName
     use esmFlds               , only : compmed, compname
@@ -55,12 +55,12 @@ contains
     ! local variables
     integer                :: cnt
     integer                :: n,nf,nm,compsrc
-    character(SHR_KIND_CX) :: fldname, stdname
-    character(SHR_KIND_CX) :: merge_fields
-    character(SHR_KIND_CX) :: merge_field
-    character(SHR_KIND_CS) :: merge_type
-    character(SHR_KIND_CS) :: merge_fracname
-    character(SHR_KIND_CL) :: mrgstr   ! temporary string
+    character(CX) :: fldname, stdname
+    character(CX) :: merge_fields
+    character(CX) :: merge_field
+    character(CS) :: merge_type
+    character(CS) :: merge_fracname
+    character(CL) :: mrgstr   ! temporary string
     logical                :: init_mrgstr
     character(len=*),parameter  :: subname='(med_merge_auto)'
     ! integer                       :: dbrc
@@ -194,7 +194,7 @@ contains
   subroutine med_merge(merge_type, FBout, FBoutfld, FB, FBfld, FBw, fldw, rc)
     use ESMF, only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LogMsg_Error
     use ESMF, only : ESMF_FieldBundle, ESMF_LogWrite, ESMF_LogMsg_Info
-    use shr_kind_mod, only : R8 => shr_kind_r8
+    use med_constants_mod, only : R8
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
