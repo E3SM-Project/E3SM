@@ -69,7 +69,7 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     return metrics_dict
 
 
-def _convert_to_pressure_levels(mv, plevs, dataset, season):
+def _convert_to_pressure_levels(mv, plevs, dataset, var, season):
     """
     Given either test or reference data with a z-axis,
     convert to the desired pressure levels.
@@ -77,9 +77,8 @@ def _convert_to_pressure_levels(mv, plevs, dataset, season):
     mv_plv = mv.getLevel()
     # var(time,lev,lon,lat) convert from hybrid level to pressure
     if mv_plv.long_name.lower().find('hybrid') != -1:
-        hyam = dataset.get_variable('hyam', season)
-        hybm = dataset.get_variable('hybm', season)
-        ps = dataset.get_variable('PS', season)  # Pa
+        extra_vars = ['hyam', 'hybm', 'PS']
+        hyam, hybm, ps = dataset.get_extra_variables_only(var, season, extra_vars=extra_vars)
         mv_p = utils.hybrid_to_plevs(mv, hyam, hybm, ps, plevs)
 
     # levels are pressure levels
@@ -168,8 +167,8 @@ def run_diag(parameter):
                 plev = parameter.plevs
                 print('Selected pressure level: {}'.format(plev))
 
-                mv1_p = _convert_to_pressure_levels(mv1, plev, test_data, season)
-                mv2_p = _convert_to_pressure_levels(mv2, plev, test_data, season)
+                mv1_p = _convert_to_pressure_levels(mv1, plev, test_data, var, season)
+                mv2_p = _convert_to_pressure_levels(mv2, plev, test_data, var, season)
 
                 # select plev
                 for ilev in range(len(plev)):
@@ -203,27 +202,6 @@ def run_diag(parameter):
                         utils.save_ncfiles(
                             parameter.current_set, mv1_zonal, mv2_zonal, diff, parameter)
 
-#                        mv1_domain, mv2_domain = utils.select_region(region, mv1, mv2, land_frac,ocean_frac,parameter)
-#
-#                        parameter.output_file = '-'.join(
-#                            [ref_name, var, str(int(plev[ilev])), season, region])
-#                        parameter.main_title = str(
-#                            ' '.join([var, str(int(plev[ilev])), 'mb', season, region]))
-#
-#                        # Regrid towards lower resolution of two variables for
-#                        # calculating difference
-#                        mv1_reg, mv2_reg = utils.regrid_to_lower_res(
-#                            mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
-#
-#                        # Plotting
-#                        diff = mv1_reg - mv2_reg
-#                        metrics_dict = create_metrics(
-#                            mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
-#
-#                        parameter.var_region = region
-#                        plot(parameter.current_set, mv2_zonal, mv1_zonal, diff parameter)
-#                        utils.save_ncfiles(parameter.current_set, mv1_domain, mv2_domain, diff, parameter)
-
             # for variables without z axis:
             elif mv1.getLevel() is None and mv2.getLevel() is None:
                 # select region
@@ -251,40 +229,6 @@ def run_diag(parameter):
                          mv1_zonal, diff, {}, parameter)
                     utils.save_ncfiles(parameter.current_set,
                                        mv1_zonal, mv2_zonal, diff, parameter)
-
-
-#                    mv1_domain, mv2_domain = utils.select_region(region, mv1, mv2, land_frac,ocean_frac,parameter)
-#
-#                    parameter.output_file = '-'.join(
-#                        [ref_name, var, season, region])
-#                    parameter.main_title = str(' '.join([var, season, region]))
-#
-#                    # regrid towards lower resolution of two variables for
-#                    # calculating difference
-#                    mv1_reg, mv2_reg = utils.regrid_to_lower_res(
-#                        mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
-#
-#                    # if var is 'SST' or var is 'TREFHT_LAND': #special case
-#
-#                    if var == 'TREFHT_LAND'or var == 'SST':  # use "==" instead of "is"
-#                        if ref_name == 'WILLMOTT':
-#                            mv2_reg = MV2.masked_where(
-#                                mv2_reg == mv2_reg.fill_value, mv2_reg)
-#                            print(ref_name)
-#
-#                            # if mv.mask is False:
-#                            #    mv = MV2.masked_less_equal(mv, mv._FillValue)
-#                            #    print("*************",mv.count())
-#                        land_mask = MV2.logical_or(mv1_reg.mask, mv2_reg.mask)
-#                        mv1_reg = MV2.masked_where(land_mask, mv1_reg)
-#                        mv2_reg = MV2.masked_where(land_mask, mv2_reg)
-#
-#                    diff = mv1_reg - mv2_reg
-#                    metrics_dict = create_metrics(
-#                        mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
-#                    parameter.var_region = region
-#                    plot('5', mv2_domain, mv1_domain, diff, metrics_dict, parameter)
-#                    utils.save_ncfiles('5', mv1_domain, mv2_domain, diff, parameter)
 
             else:
                 raise RuntimeError(

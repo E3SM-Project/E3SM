@@ -80,24 +80,24 @@ class Dataset():
             data_path = self.parameters.ref_data_path
             start_yr = self.parameters.parameters.ref_start_yr
             end_yr = self.parameters.ref_end_yr
-            return self._get_timeseries_var(data_path, start_yr, end_yr)
+            variables = self._get_timeseries_var(data_path, start_yr, end_yr)
             
         elif self.test and self.is_timeseries():
             # Get the test variable from timeseries files.
             data_path = self.parameters.test_data_path
             start_yr = self.parameters.test_start_yr
             end_yr = self.parameters.test_end_yr
-            return self._get_timeseries_var(data_path, start_yr, end_yr)
+            variables = self._get_timeseries_var(data_path, start_yr, end_yr)
 
         elif self.ref:
             # Get the reference variable from climo files.
             filename = utils.get_ref_filename(self.parameters, season)
-            return self._get_climo_var(filename)[0]
+            variables = self._get_climo_var(filename)
 
         elif self.test:
             # Get the test variable from climo files.
             filename = utils.get_test_filename(self.parameters, season)
-            return self._get_climo_var(filename)[0]
+            variables = self._get_climo_var(filename)
 
         else:
             msg = '''
@@ -105,6 +105,12 @@ class Dataset():
             where to get it from (climo or timeseries files).
             '''
             raise RuntimeError(msg)
+
+        # Needed so we can do:
+        #   v1 = Dataset.get_variable('v1', season)
+        # and also:
+        #   v1, v2, v3 = Dataset.get_variable('v1', season, extra_vars=['v2', 'v3'])
+        return variables[0] if len(variables) == 1 else variables
 
 
     def is_timeseries(self):
@@ -129,10 +135,10 @@ class Dataset():
         For a given season, get only the extra variables.
         These can either be from the test data or reference data.
         """
-        # Do something like this:
-        # stuff = self.get_variable(var, season, extra_vars)
-        # return stuff[1:]
-        pass
+        if not extra_vars:
+            raise RuntimeError('Extra variables cannot be empty.')
+
+        return self.get_variable(var, season, extra_vars)[1:]
 
 
     def get_attr_from_climo(self, attr, season):
