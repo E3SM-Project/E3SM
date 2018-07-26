@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import os
 import sys
+import traceback
 import cdms2
 import MV2
 import cdutil
@@ -112,11 +113,18 @@ def run_diag(parameter):
 
         
         try:
+            if test_data.is_climo():
+                yrs_averaged = test_data.get_attr_from_climo('yrs_averaged', season)
+            else:
+                # It's timeseries, so manually get the yrs_averaged
+                # from the start_yr and end_yr parameters.
+                # We raise an exception b/c it's not implemented yet.
+                raise Exception()
+
             # yrs_averaged = f_mod.getglobal('yrs_averaged')
-            # parameter.test_name_yrs = parameter.test_name_yrs + ' (' + yrs_averaged +')'
-            # Raising an exception b/c we don't have an f_mod variable.
-            raise Exception()
+            parameter.test_name_yrs = parameter.test_name_yrs + ' (' + yrs_averaged +')'
         except:
+            traceback.print_exc()
             print('No yrs_averaged exists in global attributes')
             parameter.test_name_yrs = parameter.test_name_yrs
         

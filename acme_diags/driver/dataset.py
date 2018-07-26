@@ -63,12 +63,11 @@ class Dataset():
         These variables can either be from the test data or reference data.
         """
         self.var = var
-        self.season = season
         self.extra_vars = extra_vars
 
         if not self.var:
             raise RuntimeError('Variable is invalid.')
-        if not self.season:
+        if not season:
             raise RuntimeError('Season is invalid.')
 
         # We need to make two decisions:
@@ -76,14 +75,14 @@ class Dataset():
         #    - This is done with self.ref and self.test.
         # 2) Are the files being used climo or timeseries files?
         #   - This is done with the ref_timeseries_input and test_timeseries_input parameters.
-        if self.ref and getattr(self.parameters, 'ref_timeseries_input', False) is True:
+        if self.ref and self.is_timeseries():
             # Get the reference variable from timeseries files.
             data_path = self.parameters.ref_data_path
             start_yr = self.parameters.parameters.ref_start_yr
             end_yr = self.parameters.ref_end_yr
             return self._get_timeseries_var(data_path, start_yr, end_yr)
             
-        elif self.test and getattr(self.parameters, 'test_timeseries_input', False) is True:
+        elif self.test and self.is_timeseries():
             # Get the test variable from timeseries files.
             data_path = self.parameters.test_data_path
             start_yr = self.parameters.test_start_yr
@@ -92,12 +91,12 @@ class Dataset():
 
         elif self.ref:
             # Get the reference variable from climo files.
-            filename = utils.get_ref_filename(self.parameters, self.season)
+            filename = utils.get_ref_filename(self.parameters, season)
             return self._get_climo_var(filename)[0]
 
         elif self.test:
             # Get the test variable from climo files.
-            filename = utils.get_test_filename(self.parameters, self.season)
+            filename = utils.get_test_filename(self.parameters, season)
             return self._get_climo_var(filename)[0]
 
         else:
@@ -106,7 +105,24 @@ class Dataset():
             where to get it from (climo or timeseries files).
             '''
             raise RuntimeError(msg)
-    
+
+
+    def is_timeseries(self):
+        """
+        Return True if this dataset is for timeseries data.
+        """
+        if self.ref:
+            return getattr(self.parameters, 'ref_timeseries_input', False)
+        else:
+            return getattr(self.parameters, 'test_timeseries_input', False)
+
+
+    def is_climo(self):
+        """
+        Return True if this dataset is for climo data.
+        """
+        return not self.is_timeseries()
+
 
     def get_extra_variables_only(self, var, season, extra_vars):
         """
@@ -119,10 +135,27 @@ class Dataset():
         pass
 
 
+    def get_attr_from_climo(self, attr, season):
+        """
+        For the given season, get the global attribute
+        from the corresponding climo file.
+        """
+        if self.is_timeseries():
+            raise RuntimeError('Cannot get a global attribute from timeseries files.')
+
+        if self.ref:
+            filename = utils.get_ref_filename(self.parameters, season)
+        else:
+            filename = utils.get_test_filename(self.parameters, season)
+        
+        with cdms2.open(filename) as f:
+            return f.getglobal(attr)
+
+
     def _get_climo_var(self, filename):
         """
-        For a given season (self.season) and climo
-        input data, get the variable (self.var).
+        For a given season and climo input data,
+        get the variable (self.var).
 
         If self.extra_vars is also defined, get them as well.
         """
@@ -147,6 +180,9 @@ class Dataset():
                         # try to just get the variable from the file.
                         # Ex: In GPCP_v2.2_ANN_climo.nc, when getting PRECT, there is neither ('pr') nor ('PRECC', 'PRECL').
                         #     So we just need to get PRECT directly from the file.
+                        traceback.print_exc()
+                        msg = 'Getting {} directly from the files, without any derivations.'.format(var)
+                        print(msg)
                         vars_to_func_dict = {(var,): lambda x: x}
 
                     # Get the variables as cdms2.TransientVariables.
@@ -221,8 +257,8 @@ class Dataset():
  
     def _get_timeseries_var(self, data_path, start_yr, end_yr):
         """
-        For a given season (self.season) and timeseries
-        input data, get the variable (self.var).
+        For a given season and timeseries input data,
+        get the variable (self.var).
 
         If self.extra_vars is also defined, get them as well.
         """
