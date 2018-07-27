@@ -23,9 +23,11 @@ def _get_all_hist_files(testcase, model, from_dir, suffix="", file_extensions=No
     test_hists = []
     # Match hist files produced by run
     for extension in file_extensions:
+        if 'initial' in extension:
+            continue
         if extension.endswith('$'):
             extension = extension[:-1]
-        string = model+r'\d?_?\d*\.'+extension+suffix+r'$'
+        string = model+'\d?_?\d*\.'+extension+suffix+'$'
         logger.debug ("Regex is {}".format(string))
         pfile = re.compile(string)
         test_hists.extend([os.path.join(from_dir,f) for f in os.listdir(from_dir) if pfile.search(f)])
@@ -347,9 +349,9 @@ def get_extension(model, filepath):
     'hi'
     >>> get_extension("cpl", "cpl.h.nc")
     'h'
-    >>> get_extension("cpl", "cpl.h1.nc")
+    >>> get_extension("cpl", "cpl.h1.nc.base")
     'h1'
-    >>> get_extension("cpl", "TESTRUNDIFF_Mmpi-serial.f19_g16_rx1.A.melvin_gnu.C.fake_testing_only_20160816_164150-20160816_164240.cpl.hi.0.nc.base")
+    >>> get_extension("cpl", "TESTRUNDIFF.cpl.hi.0.nc.base")
     'hi'
     >>> get_extension("cpl", "TESTRUNDIFF_Mmpi-serial.f19_g16_rx1.A.melvin_gnu.C.fake_testing_only_20160816_164150-20160816_164240.cpl.h.nc")
     'h'
@@ -360,18 +362,12 @@ def get_extension(model, filepath):
     >>> get_extension("mom", "ga0xnw.mom6.frc._0001_001.nc")
     'frc'
     >>> get_extension("mom", "ga0xnw.mom6.sfc.day._0001_001.nc")
-    'sfc.day'
+    'sfc'
     """
     basename = os.path.basename(filepath)
-    if model == "mom":
-        ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](frc.?)([.].*[^.])?[.]nc' % model)
-        m = ext_regex.match(basename)
-        if m is None:
-            ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](sfc.day.?)([.].*[^.])?[.]nc' % model)
-            m = ext_regex.match(basename)
-    else:
-        ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h.?)([.].*[^.])?[.]nc' % model)
-        m = ext_regex.match(basename)
+    regex = model+r'\d?_?(\d{4})?\.(\w+)[-\w\.]*\.nc\.?'
+    ext_regex = re.compile(regex)
+    m = ext_regex.search(basename)
 
     expect(m is not None, "Failed to get extension for file '{}'".format(filepath))
 
