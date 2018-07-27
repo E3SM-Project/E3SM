@@ -1,9 +1,5 @@
 module shr_nuopc_fldList_mod
-
-  use ESMF
-  use NUOPC
-  use shr_kind_mod   , only : CX => shr_kind_CX, CXX => shr_kind_CXX, CS=>shr_kind_CS, CL=>shr_kind_CL
-  use shr_string_mod , only : shr_string_lastindex
+  use shr_kind_mod   , only : CX => shr_kind_CX, CS=>shr_kind_CS, CL=>shr_kind_cl
 
   implicit none
   private
@@ -33,7 +29,7 @@ module shr_nuopc_fldList_mod
   character(len=CSS)           :: shr_nuopc_fldList_Metadata(nmax,4) = undef
 
   !-----------------------------------------------
-  ! Maximum number of components, mappers 
+  ! Maximum number of components, mappers
   !-----------------------------------------------
 
   integer          , public, parameter :: ncomps_max = 8
@@ -67,7 +63,7 @@ module shr_nuopc_fldList_mod
   public :: shr_nuopc_fldList_entry_type
 
   ! The above would be the field name to merge from
-  ! e.g. for Sa_z in lnd 
+  ! e.g. for Sa_z in lnd
   !    merge_field(compatm) = 'Sa_z'
   !    merge_type(comptm) = 'copy'  (could also have 'copy_with_weighting')
 
@@ -93,19 +89,19 @@ contains
 
   subroutine shr_nuopc_fldList_Concat(fldsFr, fldsTo, concat_src, concat_dst, flds_scalar_name)
     ! Returns new concatentated colon delimited field lists
-    
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_ERROR
     ! input/output parameters:
     type(shr_nuopc_fldList_type) , intent(in)    :: fldsFr
     type(shr_nuopc_fldList_type) , intent(in)    :: fldsTo
     character(len=*)             , intent(in)    :: flds_scalar_name
     character(len=*)             , intent(inout) :: concat_src
     character(len=*)             , intent(inout) :: concat_dst
-    
+
     ! local variables
     integer :: n
     character(len=*),parameter :: subname = '(shr_nuopc_fldList_concat) '
     !-------------------------------------------------------------------------------
-    
+
     do n = 1,size(FldsFr%flds)
        if (trim(FldsFr%flds(n)%shortname) /= flds_scalar_name) then
           if (len_trim(concat_src) + len_trim(FldsFr%flds(n)%shortname) + 1 >= len(concat_src)) then
@@ -119,7 +115,7 @@ contains
           end if
        end if
     end do
-    
+
     do n = 1,size(FldsTo%flds)
        if (trim(FldsTo%flds(n)%shortname) /= flds_scalar_name) then
           if (len_trim(concat_dst) + len_trim(FldsTo%flds(n)%shortname) + 1 >= len(concat_dst)) then
@@ -134,7 +130,7 @@ contains
           end if
        end if
     end do
-    
+
   end subroutine shr_nuopc_fldList_Concat
 
   !===============================================================================
@@ -142,7 +138,7 @@ contains
   subroutine shr_nuopc_fldList_AddDomain(fldlist, fldname, longname, stdname, units)
 
     ! Returns new concatentated field and map lists
-
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_ERROR
     ! input/output parameters:
     character(len=*),intent(inout)       :: fldlist   ! output field name
     character(len=*),intent(in)          :: fldname   ! fldname to add to fldlist
@@ -173,9 +169,11 @@ contains
   end subroutine shr_nuopc_fldList_AddDomain
 
   !===============================================================================
-  
-  subroutine shr_nuopc_fldList_AddMetadata(fldname , longname, stdname, units)
 
+  subroutine shr_nuopc_fldList_AddMetadata(fldname , longname, stdname, units)
+    use NUOPC, only : NUOPC_FieldDictionaryAddEntry, NUOPC_FieldDictionaryHasEntry
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU
+    use ESMF, only : ESMF_LOGMSG_ERROR, ESMF_FAILURE
     ! input/output parameters:
     character(len=*), intent(in) :: fldname
     character(len=*), intent(in) :: longname
@@ -198,7 +196,7 @@ contains
     endif
 
     found = .false.
-    ! only do the search if it was already in the FD.  If it wasn't, 
+    ! only do the search if it was already in the FD.  If it wasn't,
     ! then assume it's also not in the metadata table.
     if (FDfound) then
        n = 1
@@ -231,6 +229,7 @@ contains
   subroutine shr_nuopc_fldList_GetMetadata(shortname, longname, stdname, units)
 
     ! !USES:
+    use shr_string_mod , only : shr_string_lastindex
     implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -430,9 +429,9 @@ contains
     integer                            , intent(in)    :: mapindex
     character(len=*)                   , intent(in)    :: mapnorm
     character(len=*)                   , intent(in)    :: mapfile
-    
+
     ! local variables
-    logical :: mapset 
+    logical :: mapset
     character(len=*),parameter  :: subname='(fldList_AddMap)'
     ! ----------------------------------------------
 
@@ -460,7 +459,13 @@ contains
 
   subroutine shr_nuopc_fldList_Realize(state, fldList, flds_scalar_name, flds_scalar_num, &
        grid, mesh, tag, rc)
-
+    use NUOPC, only : NUOPC_GetStateMemberLists, NUOPC_IsConnected, NUOPC_Realize
+    use NUOPC, only : NUOPC_GetAttribute
+    use ESMF, only : ESMF_MeshLoc_Element, ESMF_FieldCreate, ESMF_TYPEKIND_R8
+    use ESMF, only : ESMF_MAXSTR, ESMF_Field, ESMF_State, ESMF_Grid, ESMF_Mesh
+    use ESMF, only : ESMF_StateGet, ESMF_LogFoundError
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_ERROR, ESMF_FAILURE, ESMF_LOGERR_PASSTHRU
+    use ESMF, only : ESMF_LOGMSG_INFO, ESMF_StateRemove, ESMF_SUCCESS
     type(ESMF_State)            , intent(inout)            :: state
     type(shr_nuopc_fldlist_type), intent(in)               :: fldList
     character(len=*)            , intent(in)               :: flds_scalar_name
@@ -547,7 +552,7 @@ contains
           ! call ESMF_LogWrite(subname//' fld = '//trim(shortname), ESMF_LOGMSG_INFO, rc=dbrc)
 
           if (NUOPC_IsConnected(state, fieldName=shortname)) then
-             
+
              call ESMF_StateGet(state, field=field, itemName=trim(shortname), rc=rc)
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
 
@@ -595,14 +600,14 @@ contains
              endif
 
           else
-             
+
              call ESMF_LogWrite(subname // trim(tag) // " Field = "// trim(shortname) // " is not connected.", &
                   ESMF_LOGMSG_INFO, rc=dbrc)
              call ESMF_StateRemove(state, (/shortname/), rc=rc)
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
 
           end if
-             
+
        end if
     end do
 
@@ -614,6 +619,9 @@ contains
       ! ----------------------------------------------
       ! create a field with scalar data on the root pe
       ! ----------------------------------------------
+      use ESMF, only : ESMF_Field, ESMF_DistGrid, ESMF_Grid
+      use ESMF, only : ESMF_DistGridCreate, ESMF_GridCreate, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU
+      use ESMF, only : ESMF_FieldCreate, ESMF_GridCreate, ESMF_TYPEKIND_R8
       type(ESMF_Field) , intent(inout) :: field
       character(len=*) , intent(in)    :: flds_scalar_name
       integer          , intent(in)    :: flds_scalar_num
@@ -638,7 +646,7 @@ contains
            grid=grid, &
            typekind=ESMF_TYPEKIND_R8, &
            ungriddedLBound=(/1/), &
-           ungriddedUBound=(/flds_scalar_num/), rc=rc)  
+           ungriddedUBound=(/flds_scalar_num/), rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
 
     end subroutine SetScalarField
@@ -677,7 +685,7 @@ contains
     logical                      , intent(out) :: active
     character(len=*)             , intent(out) :: stdname
     character(len=*)             , intent(out) :: shortname
-    
+
     ! local variables
     character(len=*), parameter :: subname='(shr_nuopc_fldList_GetFldInfo_general)'
     ! ----------------------------------------------
@@ -694,7 +702,7 @@ contains
     type(shr_nuopc_fldList_type) , intent(in)  :: fldList
     integer                      , intent(in)  :: fldindex
     character(len=*)             , intent(out) :: stdname
-    
+
     ! local variables
     character(len=*), parameter :: subname='(shr_nuopc_fldList_GetFldInfo_stdname)'
     ! ----------------------------------------------
@@ -712,7 +720,7 @@ contains
     character(len=*)             , intent(out) :: merge_field
     character(len=*)             , intent(out) :: merge_type
     character(len=*)             , intent(out) :: merge_fracname
-    
+
     ! local variables
     character(len=*), parameter :: subname='(shr_nuopc_fldList_GetFldInfo_merging)'
     ! ----------------------------------------------

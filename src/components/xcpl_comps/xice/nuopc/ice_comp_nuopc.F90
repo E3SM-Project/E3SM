@@ -1,23 +1,21 @@
-module xglc_comp_nuopc
+module ice_comp_nuopc
 
   !----------------------------------------------------------------------------
-  ! This is the NUOPC cap for XGLC
+  ! This is the NUOPC cap for XICE
   !----------------------------------------------------------------------------
 
-  use shr_kind_mod          , only : R8=>SHR_KIND_R8
+  use shr_kind_mod          , only:  R8=>SHR_KIND_R8
   use shr_kind_mod          , only : CS=>SHR_KIND_CS, CL=>SHR_KIND_CL, CXX => SHR_KIND_CXX
   use shr_file_mod          , only : shr_file_getlogunit, shr_file_setlogunit
   use shr_file_mod          , only : shr_file_getloglevel, shr_file_setloglevel
   use shr_file_mod          , only : shr_file_getUnit
   use shr_string_mod        , only : shr_string_listGetNum
-  use esmFlds               , only : fldListFr, fldListTo, compglc, compname
+  use esmFlds               , only : fldListFr, fldListTo, compice, compname
   use esmFlds               , only : flds_scalar_name
   use esmFlds               , only : flds_scalar_num
   use esmFlds               , only : flds_scalar_index_nx
   use esmFlds               , only : flds_scalar_index_ny
-  use esmFlds               , only : flds_scalar_index_glcocn_present
-  use esmFlds               , only : flds_scalar_index_glcice_present
-  use esmFlds               , only : flds_scalar_index_glclnd_present
+  use esmFlds               , only : flds_scalar_index_iceberg_prognostic
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Realize
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Concat
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Deactivate
@@ -66,22 +64,21 @@ module xglc_comp_nuopc
   integer                    :: mpicom               ! mpi communicator
   integer                    :: my_task              ! my task in mpi communicator mpicom
   integer                    :: inst_index           ! number of current instance (ie. 1)
-  character(len=16)          :: inst_name            ! fullname of current instance (ie. "glc_0001")
+  character(len=16)          :: inst_name            ! fullname of current instance (ie. "lnd_0001")
   character(len=16)          :: inst_suffix = ""     ! char string associated with instance (ie. "_0001" or "")
   integer                    :: logunit              ! logging unit number
   integer    ,parameter      :: master_task=0        ! task number of master task
   character(len=*),parameter :: grid_option = "mesh" ! grid_de, grid_arb, grid_reg, mesh
   integer, parameter         :: dbug = 10
   integer                    :: dbrc
-  logical                    :: glc_prognostic
-  logical                    :: glcocn_present
-  logical                    :: glcice_present
-  logical                    :: glclnd_present
-  character(CXX)             :: flds_g2x = ''
-  character(CXX)             :: flds_x2g = ''
+  logical                    :: ice_prognostic
+  logical                    :: iceberg_prognostic
+  character(CXX)             :: flds_i2x = ''
+  character(CXX)             :: flds_x2i = ''
+
   !----- formats -----
-  character(*),parameter :: modName =  "(xglc_comp_nuopc)"
-  character(*),parameter :: u_FILE_u = __FILE__
+  character(*),parameter :: modName =  "(xice_comp_nuopc)"
+  character(*),parameter :: u_FILE_u =  __FILE__
 
   !===============================================================================
   contains
@@ -101,32 +98,29 @@ module xglc_comp_nuopc
 
     ! switching to IPD versions
     call ESMF_GridCompSetEntryPoint(gcomp, ESMF_METHOD_INITIALIZE, &
-      userRoutine=InitializeP0, phase=0, rc=rc)
+         userRoutine=InitializeP0, phase=0, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! set entry point for methods that require specific implementation
-    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_INITIALIZE, &
-      phaseLabelList=(/"IPDv01p1"/), userRoutine=InitializeAdvertise, rc=rc)
+    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_INITIALIZE, phaseLabelList=(/"IPDv01p1"/), &
+         userRoutine=InitializeAdvertise, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_INITIALIZE, &
-      phaseLabelList=(/"IPDv01p3"/), userRoutine=InitializeRealize, rc=rc)
+    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_INITIALIZE, phaseLabelList=(/"IPDv01p3"/), &
+         userRoutine=InitializeRealize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! attach specializing method(s)
-    call NUOPC_CompSpecialize(gcomp, specLabel=model_label_Advance, &
-      specRoutine=ModelAdvance, rc=rc)
+    call NUOPC_CompSpecialize(gcomp, specLabel=model_label_Advance, specRoutine=ModelAdvance, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_MethodRemove(gcomp, label=model_label_SetRunClock, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call NUOPC_CompSpecialize(gcomp, specLabel=model_label_SetRunClock, &
-      specRoutine=ModelSetRunClock, rc=rc)
+    call NUOPC_CompSpecialize(gcomp, specLabel=model_label_SetRunClock, specRoutine=ModelSetRunClock, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call NUOPC_CompSpecialize(gcomp, specLabel=model_label_Finalize, &
-      specRoutine=ModelFinalize, rc=rc)
+    call NUOPC_CompSpecialize(gcomp, specLabel=model_label_Finalize, specRoutine=ModelFinalize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
@@ -145,7 +139,6 @@ module xglc_comp_nuopc
     rc = ESMF_SUCCESS
 
     ! Switch to IPDv01 by filtering all other phaseMap entries
-
     call NUOPC_CompFilterPhaseMap(gcomp, ESMF_METHOD_INITIALIZE, &
       acceptStringList=(/"IPDv01p"/), rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -166,7 +159,7 @@ module xglc_comp_nuopc
     character(CL)      :: cvalue
     character(CS)      :: stdname, shortname
     logical            :: activefld
-    integer            :: n,nflds       
+    integer            :: n,nflds
     integer            :: lsize       ! local array size
     integer            :: ierr        ! error code
     integer            :: shrlogunit  ! original log unit
@@ -202,7 +195,7 @@ module xglc_comp_nuopc
 
     call NUOPC_CompAttributeGet(gcomp, name="inst_index", value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) inst_index 
+    read(cvalue,*) inst_index
 
     call ESMF_AttributeGet(gcomp, name="inst_suffix", isPresent=isPresent, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -237,17 +230,17 @@ module xglc_comp_nuopc
     ! create import and export field list
     !--------------------------------
 
-    call shr_nuopc_fldList_Concat(fldListFr(compglc), fldListTo(compglc), flds_g2x, flds_x2g, flds_scalar_name)
+    call shr_nuopc_fldList_Concat(fldListFr(compice), fldListTo(compice), flds_i2x, flds_x2i, flds_scalar_name)
 
     !----------------------------------------------------------------------------
-    ! Initialize xglc
+    ! Initialize xice
     !----------------------------------------------------------------------------
 
-    call dead_init_nuopc('glc', mpicom, my_task, master_task, &
+    call dead_init_nuopc('ice', mpicom, my_task, master_task, &
          inst_index, inst_suffix, inst_name, logunit, lsize, gbuf, nxg, nyg)
 
-    nflds_d2x = shr_string_listGetNum(flds_g2x)
-    nflds_x2d = shr_string_listGetNum(flds_x2g)
+    nflds_d2x = shr_string_listGetNum(flds_i2x)
+    nflds_x2d = shr_string_listGetNum(flds_x2i)
 
     allocate(gindex(lsize))
     allocate(lon(lsize))
@@ -262,45 +255,41 @@ module xglc_comp_nuopc
     x2d(:,:)  = 0._r8
 
     if (nxg == 0 .and. nyg == 0) then
-       glc_prognostic = .false.
-       glclnd_present = .false.
-       glcocn_present = .false.
-       glcice_present = .false.
+       ice_prognostic= .false.
+       iceberg_prognostic = .false.
     else
-       glc_prognostic = .true.
-       glclnd_present = .true.
-       glcocn_present = .false.
-       glcice_present = .false.
+       ice_prognostic=.true.
+       iceberg_prognostic = .true.
     end if
 
     !--------------------------------
     ! advertise import and export fields
     !--------------------------------
 
-    ! First deactivate fldListTo(compglc) if glc_prognostic is .false.
-    if (.not. glc_prognostic) then
-       call shr_nuopc_fldList_Deactivate(fldListTo(compglc), flds_scalar_name)
+    ! First deactivate fldListTo(compice) if ice_prognostic is .false.
+    if (.not. ice_prognostic) then
+       call shr_nuopc_fldList_Deactivate(fldListTo(compice), flds_scalar_name)
     end if
 
-    nflds = shr_nuopc_fldList_Getnumflds(fldListFr(compglc))
+    nflds = shr_nuopc_fldList_Getnumflds(fldListFr(compice))
     do n = 1,nflds
-       call shr_nuopc_fldList_Getfldinfo(fldListFr(compglc), n, activefld, stdname, shortname)
+       call shr_nuopc_fldList_Getfldinfo(fldListFr(compice), n, activefld, stdname, shortname)
        if (activefld) then
           call NUOPC_Advertise(exportState, standardName=stdname, shortname=shortname, name=shortname, &
                TransferOfferGeomObject='will provide', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_LogWrite(subname//':Fr_'//trim(compname(compglc))//': '//trim(shortname), ESMF_LOGMSG_INFO)
+          call ESMF_LogWrite(subname//':Fr_'//trim(compname(compice))//': '//trim(shortname), ESMF_LOGMSG_INFO)
        end if
     end do
 
-    nflds = shr_nuopc_fldList_Getnumflds(fldListTo(compglc))
+    nflds = shr_nuopc_fldList_Getnumflds(fldListTo(compice))
     do n = 1,nflds
-       call shr_nuopc_fldList_Getfldinfo(fldListTo(compglc), n, activefld, stdname, shortname)
+       call shr_nuopc_fldList_Getfldinfo(fldListTo(compice), n, activefld, stdname, shortname)
        if (activefld) then
           call NUOPC_Advertise(importState, standardName=stdname, shortname=shortname, name=shortname, &
                TransferOfferGeomObject='will provide', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_LogWrite(subname//':To_'//trim(compname(compglc))//': '//trim(shortname), ESMF_LOGMSG_INFO)
+          call ESMF_LogWrite(subname//':To_'//trim(compname(compice))//': '//trim(shortname), ESMF_LOGMSG_INFO)
        end if
     end do
 
@@ -325,14 +314,12 @@ module xglc_comp_nuopc
 
     ! local variables
     character(ESMF_MAXSTR) :: convCIM, purpComp
-    type(ESMF_Grid)        :: Egrid
     type(ESMF_Mesh)        :: Emesh
     integer                :: shrlogunit                ! original log unit
     integer                :: shrloglev                 ! original log level
     type(ESMF_VM)          :: vm
     integer                :: n
-    logical                :: connected                 ! is field connected?
-    real(R8)               :: scalar                    ! temporary
+    real(r8)               :: scalar                    ! temporary
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
@@ -345,11 +332,11 @@ module xglc_comp_nuopc
 
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogUnit (logunit)
+    call shr_file_setLogLevel(max(shrloglev,1))
+    call shr_file_setLogUnit (logUnit)
 
     !--------------------------------
     ! generate the mesh
-    ! grid_option specifies grid or mesh
     !--------------------------------
 
     call shr_nuopc_grid_MeshInit(gcomp, nxg, nyg, mpicom, gindex, lon, lat, Emesh, rc)
@@ -359,12 +346,12 @@ module xglc_comp_nuopc
     ! realize the actively coupled fields
     !--------------------------------
 
-    call shr_nuopc_fldList_Realize(importState, fldListTo(compglc), flds_scalar_name, flds_scalar_num, &
-         mesh=Emesh, tag=subname//':xglcImport', rc=rc)
+    call shr_nuopc_fldList_Realize(importState, fldListTo(compice), flds_scalar_name, flds_scalar_num, &
+         mesh=Emesh, tag=subname//':xiceImport', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_fldList_Realize(exportState, fldListFr(compglc), flds_scalar_name, flds_scalar_num, &
-         mesh=Emesh, tag=subname//':xglcExport', rc=rc)
+    call shr_nuopc_fldList_Realize(exportState, fldListFr(compice), flds_scalar_name, flds_scalar_num, &
+         mesh=Emesh, tag=subname//':xiceExport', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
@@ -373,7 +360,7 @@ module xglc_comp_nuopc
     ! Set the coupling scalars
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(d2x, flds_g2x, exportState, grid_option, rc=rc)
+    call shr_nuopc_grid_ArrayToState(d2x, flds_i2x, exportState, grid_option, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call shr_nuopc_methods_State_SetScalar(dble(nxg),flds_scalar_index_nx, exportState, mpicom, &
@@ -384,30 +371,12 @@ module xglc_comp_nuopc
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (glcocn_present) then
+    if (iceberg_prognostic) then
        scalar = 1.0_r8
     else
        scalar = 0.0_r8
     end if
-    call shr_nuopc_methods_State_SetScalar(scalar, flds_scalar_index_glcocn_present, exportState, mpicom, &
-         flds_scalar_name, flds_scalar_num, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (glcice_present) then
-       scalar = 1.0_r8
-    else
-       scalar = 0.0_r8
-    end if
-    call shr_nuopc_methods_State_SetScalar(scalar, flds_scalar_index_glcice_present, exportState, mpicom, &
-         flds_scalar_name, flds_scalar_num, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (glclnd_present) then
-       scalar = 1.0_r8
-    else
-       scalar = 0.0_r8
-    end if
-    call shr_nuopc_methods_State_SetScalar(scalar, flds_scalar_index_glclnd_present, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(scalar, flds_scalar_index_iceberg_prognostic, exportState, mpicom, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -418,7 +387,7 @@ module xglc_comp_nuopc
     if (dbug > 1) then
        if (my_task == master_task) then
           call shr_nuopc_methods_Print_FieldExchInfo(flag=2, values=d2x, logunit=logunit, &
-               fldlist=flds_g2x, nflds=nflds_d2x, istr="InitializeRealize: glc->mediator")
+               fldlist=flds_i2x, nflds=nflds_d2x, istr="InitializeRealize: ice->mediator")
        end if
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -428,13 +397,13 @@ module xglc_comp_nuopc
     convCIM  = "CIM"
     purpComp = "Model Component Simulation Description"
     call ESMF_AttributeAdd(comp,  convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ShortName", "XGLC", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "LongName", "Land-Ice Dead Model", convention=convCIM, purpose=purpComp, rc=rc)
+    call ESMF_AttributeSet(comp, "ShortName", "XICE", convention=convCIM, purpose=purpComp, rc=rc)
+    call ESMF_AttributeSet(comp, "LongName", "Sea Ice Dead Model", convention=convCIM, purpose=purpComp, rc=rc)
     call ESMF_AttributeSet(comp, "Description", &
          "The dead models stand in as test model for active components." // &
          "Coupling data is artificially generated ", convention=convCIM, purpose=purpComp, rc=rc)
     call ESMF_AttributeSet(comp, "ReleaseDate", "2017", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ModelType", "Land-Ice", convention=convCIM, purpose=purpComp, rc=rc)
+    call ESMF_AttributeSet(comp, "ModelType", "Sea Ice", convention=convCIM, purpose=purpComp, rc=rc)
 #endif
 
     call shr_file_setLogLevel(shrloglev)
@@ -458,6 +427,7 @@ module xglc_comp_nuopc
     integer                  :: shrlogunit     ! original log unit
     integer                  :: shrloglev      ! original log level
     character(CL)            :: case_name      ! case name
+    character(len=128)       :: calendar
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
@@ -473,8 +443,7 @@ module xglc_comp_nuopc
     ! query the Component for its clock, importState and exportState
     !--------------------------------
 
-    call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, &
-      exportState=exportState, rc=rc)
+    call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug > 1) then
@@ -485,20 +454,20 @@ module xglc_comp_nuopc
     ! Unpack export state
     !--------------------------------
 
-    call shr_nuopc_grid_StateToArray(importState, x2d, flds_x2g, grid_option, rc=rc)
+    call shr_nuopc_grid_StateToArray(importState, x2d, flds_x2i, grid_option, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
     ! Run model
     !--------------------------------
 
-    call dead_run_nuopc('glc', clock, x2d, d2x, gbuf, flds_g2x, my_task, master_task, logunit)
+    call dead_run_nuopc('ice', clock, x2d, d2x, gbuf, flds_i2x, my_task, master_task, logunit)
 
     !--------------------------------
     ! Pack export state
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(d2x, flds_g2x, exportState, grid_option, rc=rc)
+    call shr_nuopc_grid_ArrayToState(d2x, flds_i2x, exportState, grid_option, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
@@ -508,13 +477,13 @@ module xglc_comp_nuopc
     if (dbug > 1) then
        if (my_task == master_task) then
           call shr_nuopc_methods_Print_FieldExchInfo(flag=2, values=d2x, logunit=logunit, &
-               fldlist=flds_g2x, nflds=nflds_d2x, istr="ModelAdvance: glc->mediator")
+               fldlist=flds_i2x, nflds=nflds_d2x, istr="ModelAdvance: ice->mediator")
        end if
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
 
-    call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing GLC from: ", rc=rc)
+    call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing ICE from: ", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
@@ -553,6 +522,7 @@ module xglc_comp_nuopc
 
     call ESMF_ClockGet(dclock, currTime=dcurrtime, timeStep=dtimestep, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     call ESMF_ClockGet(mclock, currTime=mcurrtime, timeStep=mtimestep, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -566,7 +536,7 @@ module xglc_comp_nuopc
       call ESMF_TimeGet(mcurrtime, timeString=mtimestring, rc=rc)
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
       rc=ESMF_Failure
-      call ESMF_LogWrite(subname//" ERROR in time consistency; "//trim(dtimestring)//" ne "//trim(mtimestring), &
+      call ESMF_LogWrite(subname//" ERROR in time consistency; "//trim(dtimestring)//" ne "//trim(mtimestring),  &
            ESMF_LOGMSG_ERROR, rc=dbrc)
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
@@ -598,8 +568,8 @@ module xglc_comp_nuopc
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
       do n = 1, alarmCount
-!         call ESMF_AlarmPrint(alarmList(n), rc=rc)
-!         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+         ! call ESMF_AlarmPrint(alarmList(n), rc=rc)
+         ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
          dalarm = ESMF_AlarmCreate(alarmList(n), rc=rc)
          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
          call ESMF_AlarmSet(dalarm, clock=mclock, rc=rc)
@@ -630,7 +600,7 @@ module xglc_comp_nuopc
     rc = ESMF_SUCCESS
     if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
-    call dead_final_nuopc('glc', my_task, master_task, logunit)
+    call dead_final_nuopc('ice', my_task, master_task, logunit)
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
@@ -638,4 +608,4 @@ module xglc_comp_nuopc
 
   !===============================================================================
 
-end module xglc_comp_nuopc
+end module ice_comp_nuopc

@@ -14,20 +14,10 @@ module seq_comm_mct
 !!! user-provided number of processes and threads are consistent
 !!! (or else, only accept one entry for these quantities when reading
 !!! the namelist).  ARE OTHER PROTECTIONS/CHECKS NEEDED???
-
-
-  use mct_mod     , only : mct_world_init, mct_die
-  use shr_sys_mod , only : shr_sys_abort, shr_sys_flush
-  use shr_mpi_mod , only : shr_mpi_chkerr, shr_mpi_bcast, shr_mpi_max
-  use shr_file_mod, only : shr_file_getUnit, shr_file_freeUnit
-  use esmf        , only : ESMF_LogKind_Flag, ESMF_LOGKIND_NONE
-  use esmf        , only : ESMF_LOGKIND_SINGLE, ESMF_LOGKIND_MULTI
-
+  use ESMF, only : ESMF_LogKind_Flag
   implicit none
 
   private
-#include <mpif.h>
-  save
 
 !--------------------------------------------------------------------------
 ! Public interfaces
@@ -130,6 +120,13 @@ contains
 !======================================================================
 
   subroutine seq_comm_init(Comm_in, nmlfile)
+    use shr_sys_mod, only : shr_sys_abort
+    use shr_file_mod, only : shr_file_getUnit, shr_file_freeUnit
+    use shr_mpi_mod, only : shr_mpi_max, shr_mpi_chkerr, shr_mpi_bcast
+    use mpi, only : mpi_comm_rank, mpi_comm_size, mpi_comm_null, MPI_INTEGER, MPI_CHARACTER
+    use mpi, only : mpi_comm_null, mpi_group_null
+    use ESMF, only : ESMF_LOGKIND_NONE, ESMF_LOGKIND_MULTI, ESMF_LOGKIND_SINGLE
+    use mct_mod, only: mct_die, mct_world_init
     !----------------------------------------------------------
     ! Arguments
     integer, intent(in) :: Comm_in
@@ -751,7 +748,10 @@ contains
 
 !---------------------------------------------------------
   subroutine seq_comm_setcomm(ID,pelist,nthreads,iname,inst,tinst)
-
+    use shr_sys_mod, only : shr_sys_abort
+    use mpi, only : MPI_COMM_NULL, mpi_comm_group, mpi_comm_create, mpi_group_range_incl
+    use mpi, only: mpi_comm_size, mpi_comm_rank
+    use shr_mpi_mod, only : shr_mpi_chkerr
     implicit none
     integer,intent(IN) :: ID
     integer,intent(IN) :: pelist(:,:)
@@ -858,7 +858,7 @@ contains
 
 !---------------------------------------------------------
   subroutine seq_comm_printcomms()
-
+    use shr_sys_mod, only : shr_sys_flush
     integer :: n
     character(*),parameter :: subName =   '(seq_comm_printcomms) '
 
@@ -874,7 +874,7 @@ contains
 !---------------------------------------------------------
 
   subroutine seq_comm_setptrs(ID,mpicom,mpigrp,npes,nthreads,iam,iamroot,gloroot, pethreads, name)
-
+    use mpi, only : mpi_comm_null, mpi_group_null
     implicit none
     integer,intent(in) :: ID
     integer,intent(out),optional :: mpicom
@@ -1029,7 +1029,7 @@ contains
   end function seq_comm_iamroot
 !---------------------------------------------------------
   integer function seq_comm_mpicom(ID)
-
+    use mpi, only : mpi_comm_null
     implicit none
     integer,intent(in) :: ID
     character(*),parameter :: subName =   '(seq_comm_mpicom) '
@@ -1130,6 +1130,7 @@ contains
   end function seq_comm_inst
 !---------------------------------------------------------
   subroutine seq_comm_mkname(oname,str1,num)
+    use shr_sys_mod, only : shr_sys_abort
     implicit none
     character(len=*),intent(out) :: oname
     character(len=*),intent(in)  :: str1
