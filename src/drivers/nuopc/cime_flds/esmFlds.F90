@@ -74,7 +74,6 @@ module esmFlds
   type (shr_nuopc_fldList_type) :: fldListMed_aoflux_a
   type (shr_nuopc_fldList_type) :: fldListMed_aoflux_o
   type (shr_nuopc_fldList_type) :: fldListMed_ocnalb_o
-  type (shr_nuopc_fldList_type) :: fldListMed_aoflux_diurnl
   type (shr_nuopc_fldList_type) :: fldListMed_l2x_to_glc
   type (shr_nuopc_fldList_type) :: fldListMed_x2l_fr_glc
   type (shr_nuopc_fldList_type) :: fldListMed_g2x_to_lnd
@@ -158,7 +157,6 @@ contains
     logical                :: flds_co2b  ! use case
     logical                :: flds_co2c  ! use case
     logical                :: flds_wiso  ! use case
-    logical                :: do_flux_diurnal
     integer                :: glc_nec
     integer                :: mpicom
     character(len=*), parameter :: subname='(shr_nuopc_fldList_Init)'
@@ -210,11 +208,6 @@ contains
     read(cvalue,*) glc_nec
     call glc_elevclass_init(glc_nec)
     call ESMF_LogWrite('glc_nec = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
-
-    call NUOPC_CompAttributeGet(gcomp, name='flux_diurnal', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) do_flux_diurnal
-    call ESMF_LogWrite('flux_diurnal = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
 
     !----------------------------------------------------------
     ! Initialize mapping file names
@@ -1529,15 +1522,6 @@ contains
          merge_from1=compocn, merge_field1='So_bldepth', merge_type1='copy')
     call shr_nuopc_fldList_AddMap(fldListFr(compocn)%flds(n1), compocn, compwav,  mapbilnr, 'one', 'ocn2wav_smapname')
 
-    longname = 'Fraction of sw penetrating surface layer for diurnal cycle'
-    stdname  = 'Fraction_of_sw_penetrating_surface_layer'
-    units    = '1'
-    call shr_nuopc_fldList_AddMetadata(fldname="So_fswpen", longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddFld(fldListFr(compocn)%flds , 'So_fswpen', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListMed_aoflux_a%flds, 'So_fswpen')
-    call shr_nuopc_fldList_AddFld(fldListMed_aoflux_o%flds, 'So_fswpen')
-    call shr_nuopc_fldList_AddMap(fldListFr(compocn)%flds(n1), compocn, compice,  mapfcopy, 'unset', 'unset')
-
     longname = 'Ocean melt and freeze potential'
     stdname  = 'surface_snow_and_ice_melt_heat_flux'
     units    = 'W m-2'
@@ -1767,126 +1751,6 @@ contains
     call shr_nuopc_fldList_AddMetadata(fldname="Faox_swup", longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(FldListMed_ocnalb_o%flds, 'Faox_swup', fldindex=n1) 
     call shr_nuopc_fldList_AddMap(fldListMed_ocnalb_o%flds(n1), compocn, compatm, mapconsf, 'ofrac', ocn2atm_smapname)
-
-    !-----------------------------
-    ! fields for history output only
-    !-----------------------------
-
-    if (do_flux_diurnal) then
-       longname = 'atm/ocn flux temperature bulk'
-       stdname  = 'aoflux_tbulk'
-       units    = 'K'
-       call shr_nuopc_fldList_AddMetadata(fldname="So_tbulk_diurn", longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(FldListMed_aoflux_diurnl%flds, 'So_tbulk_diurn')
-
-       longname = 'atm/ocn flux temperature skin'
-       stdname  = 'aoflux_tskin'
-       units    = 'K'
-       call shr_nuopc_fldList_AddMetadata(fldname="So_tskin_diurn", longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(FldListMed_aoflux_diurnl%flds,  'So_tskin_diurn')
-
-       longname = 'atm/ocn flux temperature skin at night'
-       stdname  = 'aoflux_tskin_night'
-       units    = 'K'
-       call shr_nuopc_fldList_AddMetadata(fldname="So_tskin_night_diurn", longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(FldListMed_aoflux_diurnl%flds, 'So_tskin_night_diurn')
-
-       longname = 'atm/ocn flux temperature skin at day'
-       stdname  = 'aoflux_tskin_day'
-       units    = 'K'
-       call shr_nuopc_fldList_AddMetadata(fldname="So_tskin_day_diurn", longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(FldListMed_aoflux_diurnl%flds, 'So_tskin_day_diurn')
-
-       longname = 'atm/ocn flux cool skin'
-       stdname  = 'aoflux_cskin'
-       units    = 'K'
-       call shr_nuopc_fldList_AddMetadata(fldname="So_cskin_diurn", longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(FldListMed_aoflux_diurnl%flds, 'So_cskin_diurn')
-
-       longname = 'atm/ocn flux cool skin at night'
-       stdname  = 'aoflux_cskin_night'
-       units    = 'K'
-       call shr_nuopc_fldList_AddMetadata(fldname="So_cskin_night_diurn", longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(FldListMed_aoflux_diurnl%flds, 'So_cskin_night_diurn')
-
-       longname = 'atm/ocn flux warming'
-       stdname  = 'aoflux_warm'
-       units    = 'unitless'
-       call shr_nuopc_fldList_AddMetadata(fldname="So_warm_diurn", longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(FldListMed_aoflux_diurnl%flds, 'So_warm_diurn')
-
-       longname = 'atm/ocn flux salting'
-       stdname  = 'aoflux_salt'
-       units    = 'unitless'
-       call shr_nuopc_fldList_AddMetadata(fldname="So_salt_diurn", longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(FldListMed_aoflux_diurnl%flds, 'So_salt_diurn')
-
-       longname = 'atm/ocn flux speed'
-       stdname  = 'aoflux_speed'
-       units    = 'unitless'
-       call shr_nuopc_fldList_AddMetadata(fldname="So_speed_diurn", longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(FldListMed_aoflux_diurnl%flds, 'So_speed_diurn')
-
-       longname = 'atm/ocn flux regime'
-       stdname  = 'aoflux_regime'
-       units    = 'unitless'
-       call shr_nuopc_fldList_AddMetadata(fldname="So_regime_diurn", longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(FldListMed_aoflux_diurnl%flds, 'So_regime_diurn')
-
-       longname = 'atm/ocn flux warming dialy max'
-       stdname  = 'aoflux_warmmax'
-       units    = 'unitless'
-       call shr_nuopc_fldList_AddMetadata(fldname="So_warmmax_diurn", longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(FldListMed_aoflux_diurnl%flds, 'So_warmmax_diurn')
-
-       longname = 'atm/ocn flux wind daily max'
-       stdname  = 'aoflux_windmax'
-       units    = 'unitless'
-       call shr_nuopc_fldList_AddMetadata(fldname="So_windmax_diurn", longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(FldListMed_aoflux_diurnl%flds, 'So_windmax_diurn')
-
-       longname = 'atm/ocn flux q-solar daily avg'
-       stdname  = 'aoflux_qsolavg'
-       units    = 'unitless'
-       call shr_nuopc_fldList_AddMetadata(fldname="So_qsolvavg_diurn", longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(FldListMed_aoflux_diurnl%flds, 'So_qsolvavg_diurn')
-
-       longname = 'atm/ocn flux wind daily avg'
-       stdname  = 'aoflux_windavg'
-       units    = 'unitless'
-       call shr_nuopc_fldList_AddMetadata(fldname="So_windavg_diurn", longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(FldListMed_aoflux_diurnl%flds, 'So_windavg_diurn')
-
-       longname = 'atm/ocn flux daily max increment'
-       stdname  = 'aoflux_warmmaxinc'
-       units    = 'unitless'
-       call shr_nuopc_fldList_AddMetadata(fldname="So_warmmaxinc_diurn", longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(FldListMed_aoflux_diurnl%flds, 'So_warmmaxinc_diurn')
-
-       longname = 'atm/ocn flux wind daily max increment'
-       stdname  = 'aoflux_windmaxinc'
-       units    = 'unitless'
-       call shr_nuopc_fldList_AddMetadata(fldname="So_windmaxinc_diurn", longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(FldListMed_aoflux_diurnl%flds, 'So_windmaxinc_diurn')
-
-       longname = 'atm/ocn flux q-solar increment'
-       stdname  = 'aoflux_qsolinc'
-       units    = 'unitless'
-       call shr_nuopc_fldList_AddMetadata(fldname="So_qsolinc_diurn", longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(FldListMed_aoflux_diurnl%flds, 'So_qsolinc_diurn')
-
-       longname = 'atm/ocn flux wind increment'
-       stdname  = 'aoflux_windinc'
-       units    = 'unitless'
-       call shr_nuopc_fldList_AddMetadata(fldname="So_windinc_diurn", longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(FldListMed_aoflux_diurnl%flds, 'So_windinc_diurn')
-
-       longname = 'atm/ocn flux increment counter'
-       stdname  = 'aoflux_ninc'
-       units    = 'unitless'
-       call shr_nuopc_fldList_AddMetadata(fldname="So_ninc_diurn", longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(FldListMed_aoflux_diurnl%flds, 'So_ninc_diurn')
-    end if
 
     !-----------------------------
     ! glc -> ocn

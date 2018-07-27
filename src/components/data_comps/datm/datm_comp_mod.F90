@@ -256,7 +256,6 @@ CONTAINS
     integer(IN)   :: stepno      ! step number
     character(CL) :: calendar    ! calendar type
     character(CL) :: flds_strm
-    logical       :: write_restart
 
     !--- formats ---
     character(*), parameter :: F00   = "('(datm_comp_init) ',8a)"
@@ -571,12 +570,11 @@ CONTAINS
          orbLambm0=orbLambm0, &
          orbObliqr=orbObliqr, &
          nextsw_cday=nextsw_cday, &
-         write_restart=write_restart, &
+         write_restart=.false., &
          target_ymd=currentYMD, &
          target_tod=currentTOD)
     call t_adj_detailf(-2)
 
-    write_restart = .false.
     call t_stopf('DATM_INIT')
 
   end subroutine datm_comp_init

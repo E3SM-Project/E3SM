@@ -1,6 +1,7 @@
 module med_phases_aofluxes_mod
-  use med_constants_mod, only : R8
-  use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
+
+  use med_constants_mod , only : R8
+  use med_constants_mod , only : dbug_flag => med_constants_dbug_flag
 
   implicit none
   private
@@ -57,7 +58,6 @@ module med_phases_aofluxes_mod
      real(R8) , pointer :: qref        (:) ! diagnostic:  2m ref Q
      real(R8) , pointer :: u10         (:) ! diagnostic: 10m wind speed
      real(R8) , pointer :: duu10n      (:) ! diagnostic: 10m wind speed squared
-     real(R8) , pointer :: fswpen      (:) ! fraction of sw penetrating ocn surface layer
      real(R8) , pointer :: ocnsal      (:) ! ocean salinity
      real(R8) , pointer :: lwdn        (:) ! long  wave, downward
      real(R8) , pointer :: swdn        (:) ! short wave, downward
@@ -66,25 +66,6 @@ module med_phases_aofluxes_mod
      real(R8) , pointer :: rainl       (:) ! rainl
      real(R8) , pointer :: snowc       (:) ! snowc
      real(R8) , pointer :: snowl       (:) ! snowl
-     real(R8) , pointer :: tbulk       (:) ! diurnal diagnostic: ocn bulk T
-     real(R8) , pointer :: tskin       (:) ! diurnal diagnostic: ocn skin T
-     real(R8) , pointer :: tskin_night (:) ! diurnal diagnostic: ocn skin T
-     real(R8) , pointer :: tskin_day   (:) ! diurnal diagnostic: ocn skin T
-     real(R8) , pointer :: cSkin       (:) ! diurnal diagnostic: ocn cool skin
-     real(R8) , pointer :: cSkin_night (:) ! diurnal diagnostic: ocn cool skin
-     real(R8) , pointer :: warm        (:) ! diurnal diagnostic: ocn warming
-     real(R8) , pointer :: warmMax     (:) ! diurnal diagnostic: ocn warming, max daily value
-     real(R8) , pointer :: warmMaxInc  (:) ! diurnal diagnostic: ocn warming, max daily value, increment
-     real(R8) , pointer :: salt        (:) ! diurnal diagnostic: ocn salting
-     real(R8) , pointer :: speed       (:) ! diurnal diagnostic: ocn speed
-     real(R8) , pointer :: regime      (:) ! diurnal diagnostic: ocn regime
-     real(R8) , pointer :: windMax     (:) ! diurnal diagnostic: ocn wind   , max daily value
-     real(R8) , pointer :: windAvg     (:) ! diurnal diagnostic: ocn wind   , daily avg
-     real(R8) , pointer :: windMaxInc  (:) ! diurnal diagnostic: ocn wind   , max daily value, increment
-     real(R8) , pointer :: QsolAvg     (:) ! diurnal diagnostic: ocn Qsol   , daily avg
-     real(R8) , pointer :: qSolInc     (:) ! diurnal diagnostic: ocn Qsol   , daily avg, increment
-     real(R8) , pointer :: windInc     (:) ! diurnal diagnostic: ocn wind   , daily avg, increment
-     real(R8) , pointer :: nInc        (:) ! diurnal diagnostic: a/o flux   , increment
      real(R8) , pointer :: ustar       (:) ! saved ustar
      real(R8) , pointer :: re          (:) ! saved re
      real(R8) , pointer :: ssq         (:) ! saved sq
@@ -96,10 +77,8 @@ module med_phases_aofluxes_mod
   end type aoflux_type
 
   ! The following three variables are obtained as attributes from gcomp
-
-  logical       :: do_flux_diurnal
+  logical       :: flds_wiso  ! use case
   character(3)  :: aoflux_grid
-  logical       :: ocn_prognostic
 
   character(*)       , parameter :: u_FILE_u       = __FILE__
 
@@ -129,14 +108,13 @@ contains
     integer           , intent(out)   :: rc
 
     ! local variables
-    character(CL)          :: cvalue
-    character(3)           :: aoflux_grid
-    type(InternalState)    :: is_local
-    integer                :: nflds
-    integer                :: localPet
-    type(ESMF_VM)          :: vm
-    character(CL), pointer :: fldnames(:)
-    integer :: dbrc
+    character(CL)       :: cvalue
+    character(3)        :: aoflux_grid
+    type(InternalState) :: is_local
+    integer             :: nflds
+    integer             :: localPet
+    type(ESMF_VM)       :: vm
+    integer             :: dbrc
     character(len=*),parameter :: subname='(med_phases_aofluxes_init)'
     !---------------------------------------
 
@@ -155,27 +133,6 @@ contains
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Create module field bundles
-
-    call NUOPC_CompAttributeGet(gcomp, name='flux_diurnal', value=cvalue, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    read(cvalue,*) do_flux_diurnal
-
-    nflds = size(fldListMed_aoflux_o%flds)
-    allocate(fldnames(nflds))
-    call shr_nuopc_fldList_getfldnames(fldListMed_aoflux_o%flds, fldnames)
-
-    if (do_flux_diurnal) then
-       call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_diurnl_o, flds_scalar_name, &
-            STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_diurnl_o_accum', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_diurnl_a, flds_scalar_name, &
-            STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_diurnl_a_accum', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
-    deallocate(fldnames)
-
     ! Determine src and dst comps depending on the aoflux_grid setting
 
     call NUOPC_CompAttributeGet(gcomp, name='aoflux_grid', value=cvalue, rc=rc)
@@ -191,7 +148,7 @@ contains
             FBFrac=is_local%wrap%FBfrac(compocn), &
             FBMed_ocnalb=is_local%wrap%FBMed_ocnalb_o, &
             FBMed_aoflux=is_local%wrap%FBMed_aoflux_o, &
-            FBMed_aoflux_diurnl=is_local%wrap%FBMed_aoflux_diurnl_o, rc=rc)
+            rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     else if (trim(aoflux_grid) == 'atm') then
@@ -203,7 +160,7 @@ contains
             FBFrac=is_local%wrap%FBfrac(compatm), &
             FBMed_ocnalb=is_local%wrap%FBMed_ocnalb_a, &
             FBMed_aoflux=is_local%wrap%FBMed_aoflux_a, &
-            FBMed_aoflux_diurnl=is_local%wrap%FBMed_aoflux_diurnl_a, rc=rc)
+            rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     else
@@ -219,9 +176,9 @@ contains
 !================================================================================
 
   subroutine med_phases_aofluxes_run(gcomp, rc)
-    use ESMF, only : ESMF_GridComp, ESMF_Clock, ESMF_GridCompGet
-    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
-    use NUOPC, only : NUOPC_IsConnected, NUOPC_CompAttributeGet
+    use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_GridCompGet
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use NUOPC                 , only : NUOPC_IsConnected, NUOPC_CompAttributeGet
     use med_internalstate_mod , only : InternalState
     use med_map_mod           , only : med_map_FB_Regrid_Norm
     use esmFlds               , only : fldListFr
@@ -229,7 +186,7 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
-    use med_constants_mod, only : CL
+    use med_constants_mod     , only : CL
 
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -241,7 +198,7 @@ contains
     character(CL)           :: aoflux_grid
     type(aoflux_type), save :: aoflux
     logical, save           :: first_call = .true.
-    integer :: dbrc
+    integer                 :: dbrc
     character(len=*),parameter :: subname='(med_phases_aofluxes)'
     !---------------------------------------
 
@@ -262,10 +219,6 @@ contains
     ! Initialize aoflux instance
     if (first_call) then
        call med_phases_aofluxes_init(gcomp, aoflux, rc)
-
-       ! Determine if ocean is prognostic - TODO: the following is not really correct
-       ocn_prognostic = NUOPC_IsConnected(is_local%wrap%NStateImp(compocn))
-
        first_call = .false.
     end if
 
@@ -292,7 +245,8 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBMed_aoflux_o, string=trim(subname) //' FBAMed_aoflux_o' , rc=rc)
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBMed_aoflux_o, &
+               string=trim(subname) //' FBAMed_aoflux_o' , rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
 
@@ -336,16 +290,15 @@ contains
 
 !================================================================================
 
-  subroutine med_aofluxes_init(gcomp, aoflux, FBAtm, FBOcn, FBFrac, FBMed_ocnalb, &
-       FBMed_aoflux, FBMed_aoflux_diurnl, rc)
-    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LogFoundError
-    use ESMF, only : ESMF_SUCCESS, ESMF_LOGERR_PASSTHRU, ESMF_FAILURE
-    use ESMF, only : ESMF_GridComp, ESMF_FieldBundle, ESMF_VM, ESMF_Field
-    use ESMF, only : ESMF_FieldGet, ESMF_VMGet, ESMF_GridCompGet
-    use ESMF, only : ESMF_Grid, ESMF_Mesh, ESMF_MeshGet, ESMF_GEOMTYPE_FLAG
-    use ESMF, only : operator(==), ESMF_GEOMTYPE_MESH
-    use NUOPC, only : NUOPC_CompAttributeGet
-    use med_constants_mod, only : CL, CX
+  subroutine med_aofluxes_init(gcomp, aoflux, FBAtm, FBOcn, FBFrac, FBMed_ocnalb, FBMed_aoflux, rc)
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LogFoundError
+    use ESMF                  , only : ESMF_SUCCESS, ESMF_LOGERR_PASSTHRU, ESMF_FAILURE
+    use ESMF                  , only : ESMF_GridComp, ESMF_FieldBundle, ESMF_VM, ESMF_Field
+    use ESMF                  , only : ESMF_FieldGet, ESMF_VMGet, ESMF_GridCompGet
+    use ESMF                  , only : ESMF_Grid, ESMF_Mesh, ESMF_MeshGet, ESMF_GEOMTYPE_FLAG
+    use ESMF                  , only : operator(==), ESMF_GEOMTYPE_MESH
+    use NUOPC                 , only : NUOPC_CompAttributeGet
+    use med_constants_mod     , only : CL, CX
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFieldN
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
@@ -362,7 +315,6 @@ contains
     type(ESMF_FieldBundle) , intent(in)    :: FBfrac              ! Fraction data for various components, on their grid
     type(ESMF_FieldBundle) , intent(in)    :: FBMed_ocnalb        ! Ocn albedos computed in mediator
     type(ESMF_FieldBundle) , intent(inout) :: FBMed_aoflux        ! Ocn albedos computed in mediator
-    type(ESMF_FieldBundle) , intent(inout) :: FBMed_aoflux_diurnl ! Ocn albedos computed in mediator
     integer                , intent(out)   :: rc
     !
     ! Local variables
@@ -465,49 +417,6 @@ contains
 
     call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux, fldname='Faox_lwup', fldptr1=aoflux%lwup, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux, fldname='So_fswpen', fldptr1=aoflux%fswpen, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (do_flux_diurnal) then
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux_diurnl, fldname='So_warm_diurn', fldptr1=aoflux%warm, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux_diurnl, fldname='So_salt_diurn', fldptr1=aoflux%salt, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux_diurnl, fldname='So_speed_diurn', fldptr1=aoflux%speed, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux_diurnl, fldname='So_regime_diurn', fldptr1=aoflux%regime, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux_diurnl, fldname='So_warmmax_diurn', fldptr1=aoflux%warmMax, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux_diurnl, fldname='So_windmax_diurn', fldptr1=aoflux%windMax, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux_diurnl, fldname='So_warmmaxinc_diurn', fldptr1=aoflux%warmMaxInc, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux_diurnl, fldname='So_qsolinc_diurn', fldptr1=aoflux%qSolInc, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux_diurnl, fldname='So_windinc_diurn', fldptr1=aoflux%windInc, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux_diurnl, fldname='So_ninc_diurn', fldptr1=aoflux%nInc, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux_diurnl, fldname='So_tbulk_diurn', fldptr1=aoflux%tbulk, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux_diurnl, fldname='So_tskin_diurn', fldptr1=aoflux%tskin, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux_diurnl, fldname='So_tskin_day_diurn', fldptr1=aoflux%tskin_day, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux_diurnl, fldname='So_tskin_night_diurn', fldptr1=aoflux%tskin_night, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux_diurnl, fldname='So_cskin_diurn', fldptr1=aoflux%cskin, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux_diurnl, fldname='So_cskin_night_diurn', fldptr1=aoflux%cskin_night, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux_diurnl, fldname='So_windavg_diurn', fldptr1=aoflux%windAvg, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux_diurnl, fldname='So_qsolavg_diurn', fldptr1=aoflux%qSolAvg, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux_diurnl, fldname='So_windmaxinc_diurn', fldptr1=aoflux%windmaxinc, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
 
     !----------------------------------
     ! Ocn import fields
@@ -523,9 +432,6 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call shr_nuopc_methods_FB_GetFldPtr(FBOcn, fldname='So_s', fldptr1=aoflux%ocnsal, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBOcn, fldname='So_fswpen', fldptr1=aoflux%fswpen, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     if (flds_wiso) then
        call shr_nuopc_methods_FB_GetFldPtr(FBOcn, fldname='So_roce_16O', fldptr1=aoflux%roce_16O, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -582,55 +488,6 @@ contains
     call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Faxa_snowl', fldptr1=aoflux%snowl, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! !----------------------------------
-    ! ! Get lat, lon, which are time-invariant
-    ! !----------------------------------
-
-    if (do_flux_diurnal) then
-       ! Get the first field from the field bundle - assumes that all fields
-       ! in FBMed_aoflux have the same grid - so only need to query field 1
-       call shr_nuopc_methods_FB_getFieldN(FBMed_aoflux, fieldnum=1, field=lfield, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       ! Determine if first field is on a grid or a mesh - default will be mesh
-       call ESMF_FieldGet(lfield, geomtype=geomtype, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       if (geomtype == ESMF_GEOMTYPE_MESH) then
-          if (dbug_flag > 5) then
-             call ESMF_LogWrite(trim(subname)//" : FBAtm is on a mesh ", ESMF_LOGMSG_INFO, rc=rc)
-          end if
-          call ESMF_FieldGet(lfield, mesh=lmesh, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-          call ESMF_MeshGet(lmesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          if (numOwnedElements /= lsize) then
-             call ESMF_LogWrite(trim(subname)//": ERROR numOwnedElements not equal to local size", ESMF_LOGMSG_INFO, rc=rc)
-             rc = ESMF_FAILURE
-             return
-          end if
-          allocate(ownedElemCoords(spatialDim*numOwnedElements))
-          allocate(aoflux%lons(numOwnedElements))
-          allocate(aoflux%lats(numOwnedElements))
-          call ESMF_MeshGet(lmesh, ownedElemCoords=ownedElemCoords)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) then
-             !TODO: the following is only needed for MOM6 until ESMF is updated - uncomment if you are using MOM6
-             aoflux%lons(:) = 0.0
-             aoflux%lats(:) = 0.0
-          else
-             do n = 1,lsize
-                aoflux%lons(n) = ownedElemCoords(2*n-1)
-                aoflux%lats(n) = ownedElemCoords(2*n)
-             end do
-          end if
-       else
-          call ESMF_LogWrite(trim(subname)//": ERROR FBATM must be either on a mesh", ESMF_LOGMSG_INFO, rc=rc)
-          rc = ESMF_FAILURE
-          return
-       end if
-    end if
-
     !----------------------------------
     ! Fields that are not obtained via GetFldPtr
     !----------------------------------
@@ -672,14 +529,15 @@ contains
 !===============================================================================
 
   subroutine med_aofluxes_run(gcomp, aoflux, rc)
-    use ESMF, only : ESMF_GridComp, ESMF_Clock, ESMF_Time, ESMF_TimeInterval
-    use ESMF, only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_TimeIntervalGet
-    use ESMF, only : ESMF_LogWrite, ESMF_LogMsg_Info
-    use NUOPC, only : NUOPC_CompAttributeGet
-    use med_constants_mod          , only : CX, CL
+    use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time, ESMF_TimeInterval
+    use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_TimeIntervalGet
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LogMsg_Info
+    use NUOPC                 , only : NUOPC_CompAttributeGet
+    use med_constants_mod     , only : CX, CL
     use shr_const_mod         , only : shr_const_spval
     use shr_flux_mod          , only : shr_flux_atmocn, shr_flux_atmocn_diurnal, shr_flux_adjust_constants
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+
     !-----------------------------------------------------------------------
     ! Determine atm/ocn fluxes eother on atm or on ocean grid
     ! The module arrays are set via pointers the the mediator internal states
@@ -701,17 +559,15 @@ contains
     character(CL)           :: cvalue
     integer                 :: n,i                     ! indices
     integer                 :: lsize                   ! local size
-    real(R8)      :: gust_fac = huge(1.0_R8) ! wind gust factor
-    logical                 :: cold_start              ! .true. to initialize internal fields in shr_flux diurnal
-    logical                 :: read_restart            ! .true. => continue run
-    real(R8)      :: flux_convergence        ! convergence criteria for imlicit flux computation
+    real(R8)                :: gust_fac = huge(1.0_R8) ! wind gust factor
+    real(R8)                :: flux_convergence        ! convergence criteria for imlicit flux computation
     integer                 :: flux_max_iteration      ! maximum number of iterations for convergence
     logical                 :: coldair_outbreak_mod    ! cold air outbreak adjustment  (Mahrt & Sun 1995,MWR)
+    character(len=CX)       :: tmpstr
     logical,save            :: first_call = .true.
-    character(*),parameter :: F01 = "('(med_aofluxes_run) ',a,i4,2x,d21.14)"
-    character(*),parameter :: F02 = "('(med_aofluxes_run) ',a,i4,2x,i4)"
-    character(*),parameter :: subName = '(med_fluxes_run) '
-    character(len=CX)            :: tmpstr
+    character(*),parameter  :: F01 = "('(med_aofluxes_run) ',a,i4,2x,d21.14)"
+    character(*),parameter  :: F02 = "('(med_aofluxes_run) ',a,i4,2x,i4)"
+    character(*),parameter  :: subName = '(med_fluxes_run) '
     !-----------------------------------------------------------------------
 
     call ESMF_GridCompGet(gcomp, clock=Eclock, rc=rc)
@@ -727,7 +583,6 @@ contains
     write(tmpstr,'(2i12)') tod,dt
     call ESMF_LogWrite(trim(subname)//" : tod,dt= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
-    cold_start = .false.   ! use restart data or data from last timestep
     if (first_call) then
        call NUOPC_CompAttributeGet(gcomp, name='gust_fac', value=cvalue, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -750,13 +605,6 @@ contains
             flux_convergence_max_iteration=flux_max_iteration, &
             coldair_outbreak_mod=coldair_outbreak_mod)
 
-       call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       read(cvalue,*) read_restart
-       if (.not.read_restart) then
-          cold_start = .true.
-       end if
-
        first_call = .false.
     end if
 
@@ -775,9 +623,6 @@ contains
     ! could be less that 100% covered in ice.
 
     lsize = size(aoflux%mask)
-
-    write(tmpstr,'(3L4,i12)') cold_start,first_call,lsize
-    call ESMF_LogWrite(trim(subname)//" : coldstart,firstcall,lsize= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
     write(tmpstr,'(i12,g22.12,i12)') lsize,sum(aoflux%rmask),sum(aoflux%mask)
     call ESMF_LogWrite(trim(subname)//" : maskA= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
@@ -814,56 +659,18 @@ contains
        aoflux%qref(n) = shr_const_spval
     end do
 
-    if (do_flux_diurnal) then
-       do n = 1,lsize
-          aoflux%nInc(n) = 0._R8 ! needed for minval/maxval calculation
-       end do
-       call shr_flux_atmocn_diurnal (&
-            lsize , aoflux%zbot, aoflux%ubot, aoflux%vbot, aoflux%thbot, &
-            aoflux%shum, aoflux%shum_16O, aoflux%shum_HDO, aoflux%shum_18O, &
-            aoflux%dens, aoflux%tbot, aoflux%uocn, aoflux%vocn , &
-            aoflux%tocn , aoflux%mask, aoflux%sen , aoflux%lat , aoflux%lwup , &
-            aoflux%roce_16O, aoflux%roce_HDO, aoflux%roce_18O,    &
-            aoflux%evap, aoflux%evap_16O, aoflux%evap_HDO, aoflux%evap_18O, &
-            aoflux%taux , aoflux%tauy, aoflux%tref, aoflux%qref, &
-            aoflux%uGust, aoflux%lwdn, aoflux%swdn, aoflux%swup, aoflux%prec, &
-            aoflux%fswpen, aoflux%ocnsal, ocn_prognostic, do_flux_diurnal, &
-            aoflux%lats, aoflux%lons, aoflux%warm, aoflux%salt, aoflux%speed, aoflux%regime, &
-            aoflux%warmMax, aoflux%windMax, aoflux%qSolAvg, aoflux%windAvg, &
-            aoflux%warmMaxInc, aoflux%windMaxInc, aoflux%qSolInc, aoflux%windInc, aoflux%nInc, &
-            aoflux%tbulk, aoflux%tskin, aoflux%tskin_day, aoflux%tskin_night, &
-            aoflux%cskin, aoflux%cskin_night, tod, dt, &
-            aoflux%duu10n, aoflux%ustar, aoflux%re, aoflux%ssq, cold_start=cold_start)
-    else
-       write(tmpstr,'(3i12)') lsize,size(aoflux%mask),sum(aoflux%mask)
-       call ESMF_LogWrite(trim(subname)//" : mask= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
+    write(tmpstr,'(3i12)') lsize,size(aoflux%mask),sum(aoflux%mask)
+    call ESMF_LogWrite(trim(subname)//" : mask= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
-       call shr_flux_atmocn (&
-            lsize, aoflux%zbot, aoflux%ubot, aoflux%vbot, aoflux%thbot, aoflux%prec_gust, gust_fac, &
-            aoflux%shum, aoflux%shum_16O, aoflux%shum_HDO, aoflux%shum_18O, aoflux%dens , &
-            aoflux%tbot, aoflux%uocn, aoflux%vocn, &
-            aoflux%tocn, aoflux%mask, aoflux%sen, aoflux%lat, aoflux%lwup, &
-            aoflux%roce_16O, aoflux%roce_HDO, aoflux%roce_18O, &
-            aoflux%evap, aoflux%evap_16O, aoflux%evap_HDO, aoflux%evap_18O, &
-            aoflux%taux, aoflux%tauy, aoflux%tref, aoflux%qref, &
-            aoflux%duu10n, aoflux%ustar, aoflux%re, aoflux%ssq)
-
-       !        do n = 1,lsize
-       !           write(6,100)'import: n,zbot      = ',n,aoflux%zbot(n)
-       !           write(6,100)'import: n,ubot      = ',n,aoflux%ubot(n)
-       !           write(6,100)'import: n,vbot      = ',n,aoflux%vbot(n)
-       !           write(6,100)'import: n,thbot     = ',n,aoflux%thbot(n)
-       !           write(6,100)'import: n,prec_gust = ',n,aoflux%prec_gust(n)
-       !           write(6,100)'import: n,tocn      = ',n,aoflux%tocn(n)
-       !           write(6,100)'import: n,uocn      = ',n,aoflux%uocn(n)
-       !           write(6,100)'import: n,vocn      = ',n,aoflux%vocn(n)
-       !           write(6,100)'export: n,latent    = ',n,aoflux%lat(n)
-       !           write(6,100)'export: n,sensible  = ',n,aoflux%sen(n)
-       !           write(6,100)'export: n,taux      = ',n,aoflux%taux(n)
-       !           write(6,100)'export: n,tauy      = ',n,aoflux%tauy(n)
-       !        end do
-       ! 100    format ('(atmocn_flux) ',a,i8,d21.14)
-    endif
+    call shr_flux_atmocn (&
+         lsize, aoflux%zbot, aoflux%ubot, aoflux%vbot, aoflux%thbot, aoflux%prec_gust, gust_fac, &
+         aoflux%shum, aoflux%shum_16O, aoflux%shum_HDO, aoflux%shum_18O, aoflux%dens , &
+         aoflux%tbot, aoflux%uocn, aoflux%vocn, &
+         aoflux%tocn, aoflux%mask, aoflux%sen, aoflux%lat, aoflux%lwup, &
+         aoflux%roce_16O, aoflux%roce_HDO, aoflux%roce_18O, &
+         aoflux%evap, aoflux%evap_16O, aoflux%evap_HDO, aoflux%evap_18O, &
+         aoflux%taux, aoflux%tauy, aoflux%tref, aoflux%qref, &
+         aoflux%duu10n, aoflux%ustar, aoflux%re, aoflux%ssq)
 
     do n = 1,lsize
        if (aoflux%mask(n) /= 0) then
