@@ -12,13 +12,11 @@ import shutil
 import stat
 import json
 
-from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case.case_setup import case_setup
 from CIME.hist_utils import _get_all_hist_files, BLESS_LOG_NAME
 from CIME.utils import append_testlog, get_current_commit, get_timestamp, get_model
 from CIME.test_status import *
-
 
 import CIME.test_status
 
@@ -35,7 +33,7 @@ except ImportError:
 # FIXME: remove once eve is a package, or inc. eve into CIME/SystemTest/Test_utils
 eve_lib_dir = '/ccs/home/kennedy/EVE/eve'
 sys.path.append(eve_lib_dir)
-import eve
+from eve.__main__ import main as eve
 
 
 # Build executable with multiple instances
@@ -50,7 +48,16 @@ class MVK(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, case)
 
-        logger.info('MVK:INIT: {}'.format(self._compare_baseline()))
+        logger.info('MVK:INIT: CMPR: {}'.format(self._case.get_value("COMPARE_BASELINE")))
+        resubmit = int(self._case.get_value("RESUBMIT"))
+        logger.info('MVK:INIT: RESUBMIT: {}'.format(resubmit))
+        logger.info('MVK:INIT: GENERATE_BASELINE: {}'.format(self._case.get_value("GENERATE_BASELINE")))
+
+        if resubmit == 0 and self._case.get_value("GENERATE_BASELINE") is False:
+            self._case.set_value("COMPARE_BASELINE", True)
+        else:
+            self._case.set_value("COMPARE_BASELINE", False)
+        logger.info('MVK:INIT: CMPR_F: {}'.format(resubmit))
 
 
     def build_phase(self, sharedlib_only=False, model_only=False):
@@ -185,34 +192,42 @@ class MVK(SystemTestsCommon):
                 self._test_status.set_status(CIME.test_status.BASELINE_PHASE, CIME.test_status.TEST_PASS_STATUS)
                 return
 
-            # logger.info('MVK:CMPR: Compare basline? {}'.format(self._case.get_value("COMPARE_BASELINE")))
-            #              MVK:CMPR: Compare basline? True
-            # logger.info('MVK:CMPR: Baseline root: {}'.format(self._case.get_value("BASELINE_ROOT")))
-            #              MVK:CMPR: Baseline root: /lustre/atlas/proj-shared/cli106/kennedy/baselines
-            # logger.info('MVK:CMPR: Baseline comparison name: {}'.format(self._case.get_value("BASECMP_CASE")))
-            #              MVK:CMPR: Baseline comparison name: jhkennedy/cime/mvk/MVK_PL.ne4_oQU240.FC5AV1C-04P2.titan_pgi
+            self._test_status.set_status(CIME.test_status.BASELINE_PHASE, CIME.test_status.TEST_FAIL_STATUS)
 
             run_dir = self._case.get_value("RUNDIR")
             case_name = self._case.get_value("CASE")
             basecmp_case = self._case.get_value("BASECMP_CASE")
             base_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), basecmp_case)
-            base_name = os.path.basename(basecmp_case)
+            # base_name = os.path.basename(basecmp_case)
 
+            test_name = "{}".format(case_name.split('.')[-1])
             eve_config = {
-                "{}".format(case_name.split('.')[-1]): {
+                test_name: {
                     "module": os.path.join(eve_lib_dir, "extensions/ks.py"),
-                    "case1": case_name,
+                    "case1": "Test",
                     "dir1": run_dir,
-                    "case2": base_name,
+                    "case2": "Baseline",
                     "dir2": base_dir,
                     "ninst": ninst,
                     "critical": 13
                 }
             }
 
-            with open(os.path.join(run_dir, '.'.join([case_name,'json'])), 'w') as config_file:
+            json_file = os.path.join(run_dir, '.'.join([case_name, 'json']))
+            with open(json_file, 'w') as config_file:
                 json.dump(eve_config, config_file, indent=4)
 
-        self._test_status.set_status(CIME.test_status.BASELINE_PHASE, CIME.test_status.TEST_PASS_STATUS)
+            eve_out_dir = os.path.join(run_dir, '.'.join([case_name, 'eve']))
+            eve(['-e', json_file, '-o', eve_out_dir])
 
+            with open(os.path.join(eve_out_dir, 'index.json'), 'r') as eve_f:
+                eve_status = json.load(eve_f)
+
+            for eve_elem in eve_status['Data']['Elements']:
+                if eve_elem['Type'] == 'ValSummary':
+                    if eve_elem['TableTitle'] == 'Kolmogorov-Smirnov':
+                        if eve_elem['Data'][test_name]['']['Ensembles'] == 'identical':
+                            self._test_status.set_status(CIME.test_status.BASELINE_PHASE,
+                                                         CIME.test_status.TEST_PASS_STATUS)
+                            break
 
