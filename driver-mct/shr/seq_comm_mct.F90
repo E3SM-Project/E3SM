@@ -20,8 +20,6 @@ module seq_comm_mct
   use shr_sys_mod , only : shr_sys_abort, shr_sys_flush
   use shr_mpi_mod , only : shr_mpi_chkerr, shr_mpi_bcast, shr_mpi_max
   use shr_file_mod, only : shr_file_getUnit, shr_file_freeUnit
-  use esmf        , only : ESMF_LogKind_Flag, ESMF_LOGKIND_NONE
-  use esmf        , only : ESMF_LOGKIND_SINGLE, ESMF_LOGKIND_MULTI
 
   implicit none
 
@@ -143,8 +141,6 @@ module seq_comm_mct
   integer, public :: CPLROFID(num_inst_rof)
   integer, public :: CPLWAVID(num_inst_wav)
   integer, public :: CPLESPID(num_inst_esp)
-
-  type(ESMF_LogKind_Flag), public :: esmf_logfile_kind
 
   integer, parameter, public :: seq_comm_namelen=16
 
