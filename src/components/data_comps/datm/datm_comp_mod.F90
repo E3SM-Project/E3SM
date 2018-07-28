@@ -74,7 +74,7 @@ module datm_comp_mod
   data   dTarc      / 0.49_R8, 0.06_R8,-0.73_R8,  -0.89_R8,-0.77_R8,-1.02_R8, &
                      -1.99_R8,-0.91_R8, 1.72_R8,   2.30_R8, 1.81_R8, 1.06_R8/
 
-  integer(IN) :: kz,ktopo,ku,kv,ktbot,kptem,kshum,kdens,kpbot,kpslv,klwdn
+  integer(IN) :: kz,ku,kv,ktbot,kptem,kshum,kdens,kpbot,kpslv,klwdn
   integer(IN) :: krc,krl,ksc,ksl,kswndr,kswndf,kswvdr,kswvdf,kswnet
   integer(IN) :: kanidr,kanidf,kavsdr,kavsdf
   integer(IN) :: stbot,swind,sz,spbot,sshum,stdew,srh,slwdn,sswdn,sswdndf,sswdndr
@@ -101,25 +101,15 @@ module datm_comp_mod
   real(R8), pointer    :: winddFactor(:)
   real(R8), pointer    :: qsatFactor(:)
 
-  integer(IN),parameter :: ktrans  = 77
+  integer(IN),parameter :: ktrans  = 41
 
   character(16),parameter  :: avofld(1:ktrans) = &
-       (/"Sa_z            ","Sa_topo         ", &
-       "Sa_u            ","Sa_v            ","Sa_tbot         ", &
+     (/"Sa_z            ","Sa_u            ","Sa_v            ","Sa_tbot         ", &
        "Sa_ptem         ","Sa_shum         ","Sa_dens         ","Sa_pbot         ", &
        "Sa_pslv         ","Faxa_lwdn       ","Faxa_rainc      ","Faxa_rainl      ", &
        "Faxa_snowc      ","Faxa_snowl      ","Faxa_swndr      ","Faxa_swvdr      ", &
        "Faxa_swndf      ","Faxa_swvdf      ","Faxa_swnet      ","Sa_co2prog      ", &
-       "Sa_co2diag      ","Faxa_bcphidry   ","Faxa_bcphodry   ","Faxa_bcphiwet   ", &
-       "Faxa_ocphidry   ","Faxa_ocphodry   ","Faxa_ocphiwet   ","Faxa_dstwet1    ", &
-       "Faxa_dstwet2    ","Faxa_dstwet3    ","Faxa_dstwet4    ","Faxa_dstdry1    ", &
-       "Faxa_dstdry2    ","Faxa_dstdry3    ","Faxa_dstdry4    ",                    &
-       "Sx_tref         ","Sx_qref         ","Sx_avsdr        ","Sx_anidr        ", &
-       "Sx_avsdf        ","Sx_anidf        ","Sx_t            ","So_t            ", &
-       "Sl_snowh        ","Sf_lfrac        ","Sf_ifrac        ","Sf_ofrac        ", &
-       "Faxx_taux       ","Faxx_tauy       ","Faxx_lat        ","Faxx_sen        ", &
-       "Faxx_lwup       ","Faxx_evap       ","Fall_fco2_lnd   ","Faoo_fco2_ocn   ", &
-       "Faoo_fdms_ocn   ",  &
+       "Sa_co2diag      ",
        ! add values for bias correction / anomaly forcing
        "Sa_precsf       ", &
        "Sa_prec_af      ","Sa_u_af         ","Sa_v_af         ","Sa_tbot_af      ",&
@@ -127,26 +117,16 @@ module datm_comp_mod
        ! isotopic forcing
        "Faxa_rainc_18O  ","Faxa_rainc_HDO  ","Faxa_rainl_18O  ","Faxa_rainl_HDO  ",&
        "Faxa_snowc_18O  ","Faxa_snowc_HDO  ","Faxa_snowl_18O  ","Faxa_snowl_HDO  ",&
-       "Sa_shum_16O     ","Sa_shum_18O     ","Sa_shum_HDO     " &
+       "Sa_shum_16O     ","Sa_shum_18O     ","Sa_shum_HDO     " 
        /)
 
   character(16),parameter  :: avifld(1:ktrans) = &
-       (/"z               ","topo            ", &
-       "u               ","v               ","tbot            ", &
+     (/"z               ","u               ","v               ","tbot            ", &
        "ptem            ","shum            ","dens            ","pbot            ", &
        "pslv            ","lwdn            ","rainc           ","rainl           ", &
        "snowc           ","snowl           ","swndr           ","swvdr           ", &
        "swndf           ","swvdf           ","swnet           ","co2prog         ", &
-       "co2diag         ","bcphidry        ","bcphodry        ","bcphiwet        ", &
-       "ocphidry        ","ocphodry        ","ocphiwet        ","dstwet1         ", &
-       "dstwet2         ","dstwet3         ","dstwet4         ","dstdry1         ", &
-       "dstdry2         ","dstdry3         ","dstdry4         ",                    &
-       "tref            ","qref            ","avsdr           ","anidr           ", &
-       "avsdf           ","anidf           ","ts              ","to              ", &
-       "snowhl          ","lfrac           ","ifrac           ","ofrac           ", &
-       "taux            ","tauy            ","lat             ","sen             ", &
-       "lwup            ","evap            ","co2lnd          ","co2ocn          ", &
-       "dms             ", &
+       "co2diag         ",
        ! add values for bias correction / anomaly forcing (add Sa_precsf for precip scale factor)
        "precsf          ", &
        "prec_af         ","u_af            ","v_af            ","tbot_af         ", &
@@ -154,7 +134,7 @@ module datm_comp_mod
        ! isotopic forcing
        "rainc_18O       ","rainc_HDO       ","rainl_18O       ","rainl_HDO       ", &
        "snowc_18O       ","snowc_HDO       ","snowl_18O       ","snowl_HDO       ", &
-       "shum_16O        ","shum_18O        ","shum_HDO        " &
+       "shum_16O        ","shum_18O        ","shum_HDO        " 
        /)
 
   ! The stofld and stifld lists are used for fields that are read but not passed to the
@@ -165,7 +145,7 @@ module datm_comp_mod
   integer(IN),parameter :: ktranss = 33
 
   character(16),parameter  :: stofld(1:ktranss) = &
-       (/"strm_tbot       ","strm_wind       ","strm_z          ","strm_pbot       ", &
+     (/"strm_tbot       ","strm_wind       ","strm_z          ","strm_pbot       ", &
        "strm_shum       ","strm_tdew       ","strm_rh         ","strm_lwdn       ", &
        "strm_swdn       ","strm_swdndf     ","strm_swdndr     ","strm_precc      ", &
        "strm_precl      ","strm_precn      ","strm_co2prog    ","strm_co2diag    ", &
@@ -179,7 +159,7 @@ module datm_comp_mod
        /)
 
   character(16),parameter  :: stifld(1:ktranss) = &
-       (/"tbot            ","wind            ","z               ","pbot            ", &
+     (/"tbot            ","wind            ","z               ","pbot            ", &
        "shum            ","tdew            ","rh              ","lwdn            ", &
        "swdn            ","swdndf          ","swdndr          ","precc           ", &
        "precl           ","precn           ","co2prog         ","co2diag         ", &
@@ -357,7 +337,6 @@ CONTAINS
     call mct_aVect_zero(a2x)
 
     kz    = mct_aVect_indexRA(a2x,'Sa_z')
-    ktopo = mct_aVect_indexRA(a2x,'Sa_topo')
     ku    = mct_aVect_indexRA(a2x,'Sa_u')
     kv    = mct_aVect_indexRA(a2x,'Sa_v')
     ktbot = mct_aVect_indexRA(a2x,'Sa_tbot')
@@ -744,9 +723,9 @@ CONTAINS
           uprime    = a2x%rAttr(ku,n)*windFactor(n)
           vprime    = a2x%rAttr(kv,n)*windFactor(n)
           a2x%rAttr(ku,n) = uprime*cos(winddFactor(n)*degtorad)- &
-               vprime*sin(winddFactor(n)*degtorad)
+                            vprime*sin(winddFactor(n)*degtorad)
           a2x%rAttr(kv,n) = uprime*sin(winddFactor(n)*degtorad)+ &
-               vprime*cos(winddFactor(n)*degtorad)
+                            vprime*cos(winddFactor(n)*degtorad)
 
           !--- density, tbot, & pslv taken directly from input stream, set pbot ---
           a2x%rAttr(kpbot,n) = a2x%rAttr(kpslv,n)
@@ -1011,9 +990,9 @@ CONTAINS
              a2x%rAttr(kswnet,n) = 0.0_R8
           else
              a2x%rAttr(kswnet,n) = (1.0_R8-x2a%rAttr(kanidr,n))*a2x%rAttr(kswndr,n) + &
-                  (1.0_R8-x2a%rAttr(kavsdr,n))*a2x%rAttr(kswvdr,n) + &
-                  (1.0_R8-x2a%rAttr(kanidf,n))*a2x%rAttr(kswndf,n) + &
-                  (1.0_R8-x2a%rAttr(kavsdf,n))*a2x%rAttr(kswvdf,n)
+                                   (1.0_R8-x2a%rAttr(kavsdr,n))*a2x%rAttr(kswvdr,n) + &
+                                   (1.0_R8-x2a%rAttr(kanidf,n))*a2x%rAttr(kswndf,n) + &
+                                   (1.0_R8-x2a%rAttr(kavsdf,n))*a2x%rAttr(kswvdf,n)
           endif
 
           !--- rain and snow ---
@@ -1134,7 +1113,6 @@ CONTAINS
     if (dbug > 1 .and. my_task == master_task) then
        do n = 1,lsize
           write(logunit,F01)'export: ymd,tod,n,Sa_z       = ',target_ymd, target_tod, n,a2x%rAttr(kz,n)
-          write(logunit,F01)'export: ymd,tod,n,Sa_topo    = ',target_ymd, target_tod, n,a2x%rAttr(ktopo,n)
           write(logunit,F01)'export: ymd,tod,n,Sa_u       = ',target_ymd, target_tod, n,a2x%rAttr(ku,n)
           write(logunit,F01)'export: ymd,tod,n,Sa_v       = ',target_ymd, target_tod, n,a2x%rAttr(kv,n)
           write(logunit,F01)'export: ymd,tod,n,Sa_tbot    = ',target_ymd, target_tod, n,a2x%rAttr(ktbot,n)

@@ -25,7 +25,7 @@ module med_phases_aofluxes_mod
   !--------------------------------------------------------------------------
 
   type aoflux_type
-     integer            , pointer :: mask        (:) ! ocn domain mask: 0 <=> inactive cell
+     integer  , pointer :: mask        (:) ! ocn domain mask: 0 <=> inactive cell
      real(R8) , pointer :: rmask       (:) ! ocn domain mask: 0 <=> inactive cell
      real(R8) , pointer :: lats        (:) ! latitudes  (degrees)
      real(R8) , pointer :: lons        (:) ! longitudes (degrees)
@@ -58,7 +58,6 @@ module med_phases_aofluxes_mod
      real(R8) , pointer :: qref        (:) ! diagnostic:  2m ref Q
      real(R8) , pointer :: u10         (:) ! diagnostic: 10m wind speed
      real(R8) , pointer :: duu10n      (:) ! diagnostic: 10m wind speed squared
-     real(R8) , pointer :: ocnsal      (:) ! ocean salinity
      real(R8) , pointer :: lwdn        (:) ! long  wave, downward
      real(R8) , pointer :: swdn        (:) ! short wave, downward
      real(R8) , pointer :: swup        (:) ! short wave, upward
@@ -87,10 +86,10 @@ contains
 !================================================================================
 
   subroutine med_phases_aofluxes_init(gcomp, aoflux, rc)
-    use ESMF, only : ESMF_GridComp, ESMF_VM, ESMF_VMGet, ESMF_GridCompGet
-    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LOGERR_PASSTHRU
-    use ESMF, only : ESMF_SUCCESS, ESMF_LogFoundError
-    use NUOPC, only : NUOPC_CompAttributeGet
+    use ESMF                  , only : ESMF_GridComp, ESMF_VM, ESMF_VMGet, ESMF_GridCompGet
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LOGERR_PASSTHRU
+    use ESMF                  , only : ESMF_SUCCESS, ESMF_LogFoundError
+    use NUOPC                 , only : NUOPC_CompAttributeGet
     use esmFlds               , only : flds_scalar_name
     use esmFlds               , only : flds_scalar_num
     use esmFlds               , only : fldListMed_aoflux_o
@@ -99,7 +98,7 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
     use shr_nuopc_fldList_mod , only : shr_nuopc_fldlist_getfldnames
-    use med_constants_mod, only : CL
+    use med_constants_mod     , only : CL
     ! Initialize ocn/atm flux calculations
 
     ! input/output variables
@@ -299,7 +298,6 @@ contains
     use ESMF                  , only : operator(==), ESMF_GEOMTYPE_MESH
     use NUOPC                 , only : NUOPC_CompAttributeGet
     use med_constants_mod     , only : CL, CX
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFieldN
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
 
@@ -318,25 +316,25 @@ contains
     integer                , intent(out)   :: rc
     !
     ! Local variables
-    type(ESMF_VM)               :: vm
-    integer                     :: iam
-    type(ESMF_Field)            :: lfield
-    type(ESMF_Grid)             :: lgrid
-    type(ESMF_Mesh)             :: lmesh
-    type(ESMF_GeomType_Flag)    :: geomtype
-    integer                     :: n
-    integer                     :: lsize
-    real(R8), pointer :: ofrac(:)
-    real(R8), pointer :: ifrac(:)
-    integer                     :: dimCount
-    integer                     :: spatialDim
-    integer                     :: numOwnedElements
-    character(CL)               :: cvalue
-    real(R8), pointer :: ownedElemCoords(:)
+    type(ESMF_VM)            :: vm
+    integer                  :: iam
+    type(ESMF_Field)         :: lfield
+    type(ESMF_Grid)          :: lgrid
+    type(ESMF_Mesh)          :: lmesh
+    type(ESMF_GeomType_Flag) :: geomtype
+    integer                  :: n
+    integer                  :: lsize
+    real(R8), pointer        :: ofrac(:)
+    real(R8), pointer        :: ifrac(:)
+    integer                  :: dimCount
+    integer                  :: spatialDim
+    integer                  :: numOwnedElements
+    character(CL)            :: cvalue
+    real(R8), pointer        :: ownedElemCoords(:)
     character(*),parameter   :: subName =   '(med_aofluxes_init) '
-    logical       :: flds_wiso  ! use case
-    integer :: dbrc
-    character(len=CX)            :: tmpstr
+    logical                  :: flds_wiso  ! use case
+    integer                  :: dbrc
+    character(len=CX)        :: tmpstr
     !-----------------------------------------------------------------------
 
     if (dbug_flag > 5) then
@@ -429,8 +427,6 @@ contains
     call shr_nuopc_methods_FB_GetFldPtr(FBOcn, fldname='So_u', fldptr1=aoflux%uocn, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call shr_nuopc_methods_FB_GetFldPtr(FBOcn, fldname='So_v', fldptr1=aoflux%vocn, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBOcn, fldname='So_s', fldptr1=aoflux%ocnsal, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     if (flds_wiso) then
        call shr_nuopc_methods_FB_GetFldPtr(FBOcn, fldname='So_roce_16O', fldptr1=aoflux%roce_16O, rc=rc)
