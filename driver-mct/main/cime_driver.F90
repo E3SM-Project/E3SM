@@ -28,6 +28,7 @@ program cime_driver
   use ESMF,          only : ESMF_Initialize, ESMF_Finalize
   use ESMF,          only : ESMF_LogKind_Flag, ESMF_LOGKIND_NONE
   use ESMF,          only : ESMF_LOGKIND_SINGLE, ESMF_LOGKIND_MULTI
+  use ESMF,          only : ESMF_LOGKIND_MULTI_ON_ERROR
   use cime_comp_mod, only : cime_pre_init1
   use cime_comp_mod, only : cime_pre_init2
   use cime_comp_mod, only : cime_init
@@ -72,6 +73,8 @@ program cime_driver
      esmf_logfile_kind = ESMF_LOGKIND_SINGLE
   case('ESMF_LOGKIND_MULTI')
      esmf_logfile_kind = ESMF_LOGKIND_MULTI
+  case('ESMF_LOGKIND_MULTI_ON_ERROR')
+     esmf_logfile_kind = ESMF_LOGKIND_MULTI_ON_ERROR
   case('ESMF_LOGKIND_NONE')
      esmf_logfile_kind = ESMF_LOGKIND_NONE
   case default
