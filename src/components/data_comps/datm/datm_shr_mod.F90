@@ -197,11 +197,11 @@ CONTAINS
     implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
-    integer(IN), intent(IN)    :: ymd
-    integer(IN), intent(IN)    :: tod
-    integer(IN), intent(IN)    :: stepno
-    integer(IN), intent(IN)    :: dtime
-    integer(IN), intent(IN)    :: iradsw
+    integer(IN), intent(in)    :: ymd
+    integer(IN), intent(in)    :: tod
+    integer(IN), intent(in)    :: stepno
+    integer(IN), intent(in)    :: dtime
+    integer(IN), intent(in)    :: iradsw
     character(*),intent(in)    :: calendar
 
     !----- local -----
@@ -421,8 +421,8 @@ CONTAINS
     deallocate(start,length)
     lsizei = mct_gsmap_lsize(gsmapi,mpicom)
     lsizeo = mct_gsmap_lsize(gsmapo,mpicom)
-    call mct_gGrid_init(GGrid=gGridi, CoordChars=trim(shr_flds_dom_coord), &
-         OtherChars=trim(shr_flds_dom_other), lsize=lsizei )
+    call mct_gGrid_init(GGrid=gGridi, CoordChars=trim(shr_flds_dom_coord), OtherChars=trim(shr_flds_dom_other), &
+         lsize=lsizei )
     call mct_aVect_init(avi,rList="wind:windd:qsat",lsize=lsizei)
     avi%rAttr = SHR_CONST_SPVAL
 

@@ -4,9 +4,10 @@ module atm_comp_nuopc
   ! This is the NUOPC cap for DATM
   !----------------------------------------------------------------------------
 
-  use shr_kind_mod          , only : R8=>SHR_KIND_R8, CXX => shr_kind_CXX
+  use shr_kind_mod          , only : CXX => shr_kind_CXX
+  use med_constants_mod     , only : IN, R8, I8
   use shr_log_mod           , only : shr_log_Unit
-  use shr_cal_mod           , only : shr_cal_ymd2date
+  use shr_cal_mod           , only : shr_cal_ymd2date, shr_cal_noleap, shr_cal_gregorian
   use shr_file_mod          , only : shr_file_getlogunit, shr_file_setlogunit
   use shr_file_mod          , only : shr_file_getloglevel, shr_file_setloglevel
   use shr_file_mod          , only : shr_file_setIO, shr_file_getUnit
@@ -39,10 +40,11 @@ module atm_comp_nuopc
     model_label_SetRunClock => label_SetRunClock, &
     model_label_Finalize  => label_Finalize
 
-  use datm_shr_mod , only: presaero
   use datm_shr_mod , only: datm_shr_read_namelists
+  use datm_shr_mod , only: iradsw         ! namelist input
+  use datm_shr_mod , only: presaero       ! namelist input
+  use datm_shr_mod , only: datm_shr_getNextRadCDay
   use datm_comp_mod, only: datm_comp_init, datm_comp_run, datm_comp_final
-  use perf_mod
   use mct_mod
 
   implicit none
@@ -86,13 +88,9 @@ module atm_comp_nuopc
   integer                    :: dbrc
   integer, parameter         :: dbug = 10
   character(len=*),parameter :: grid_option = "mesh"      ! grid_de, grid_arb, grid_reg, mesh
+  character(len=80)          :: calendar                  ! calendar name
   character(CXX)             :: flds_a2x = ''
   character(CXX)             :: flds_x2a = ''
-  !TODO: need to have the following orbital values come in through infodata at runtime
-  real(R8)                   :: orbEccen                  ! orb eccentricity (unit-less)
-  real(R8)                   :: orbMvelpp                 ! orb moving vernal eq (radians)
-  real(R8)                   :: orbLambm0                 ! orb mean long of perhelion (radians)
-  real(R8)                   :: orbObliqr                 ! orb obliquity (radians)
 
   !----- formats -----
   character(*),parameter :: modName =  "(atm_comp_nuopc)"
@@ -329,27 +327,42 @@ module atm_comp_nuopc
     integer, intent(out) :: rc
 
     ! local variables
-    character(ESMF_MAXSTR)       :: convCIM, purpComp
-    type(ESMF_Grid)              :: Egrid
-    type(ESMF_Mesh)              :: Emesh
-    integer                      :: nx_global, ny_global
-    type(ESMF_VM)                :: vm
-    integer                      :: n
-    character(len=256)           :: cvalue
-    integer                      :: shrlogunit                ! original log unit
-    integer                      :: shrloglev                 ! original log level
-    logical                      :: read_restart              ! start from restart
-    integer                      :: ierr                      ! error code
-    logical                      :: scmMode = .false.         ! single column mode
-    real(R8)                     :: scmLat  = shr_const_SPVAL ! single column lat
-    real(R8)                     :: scmLon  = shr_const_SPVAL ! single column lon
-    real(R8)                     :: nextsw_cday               ! calendar of next atm sw
-    logical                      :: connected                 ! is field connected?
-    integer                      :: klon, klat
-    integer                      :: lsize
-    integer                      :: iam
-    real(r8), pointer            :: lon(:),lat(:)
-    integer , pointer            :: gindex(:)
+    character(ESMF_MAXSTR)  :: convCIM, purpComp
+    type(ESMF_Grid)         :: Egrid
+    type(ESMF_TIME)         :: currTime
+    type(ESMF_TimeInterval) :: timeStep
+    type(ESMF_Mesh)         :: Emesh
+    type(ESMF_Calendar)     :: esmf_calendar             ! esmf calendar
+    type(ESMF_CalKind_Flag) :: esmf_caltype              ! esmf calendar type
+    type(ESMF_VM)           :: vm
+    integer                 :: nx_global, ny_global
+    integer                 :: n
+    character(len=256)      :: cvalue
+    integer                 :: shrlogunit                ! original log unit
+    integer                 :: shrloglev                 ! original log level
+    logical                 :: read_restart              ! start from restart
+    integer                 :: ierr                      ! error code
+    logical                 :: scmMode = .false.         ! single column mode
+    real(R8)                :: scmLat  = shr_const_SPVAL ! single column lat
+    real(R8)                :: scmLon  = shr_const_SPVAL ! single column lon
+    integer                 :: current_ymd               ! model date
+    integer                 :: current_year              ! model year
+    integer                 :: current_mon               ! model month
+    integer                 :: current_day               ! model day
+    integer                 :: current_tod               ! model sec into model date
+    integer(I8)             :: stepno                    ! step number
+    integer                 :: modeldt                   ! integer timestep
+    real(R8)                :: nextsw_cday               ! calendar of next atm sw
+    logical                 :: connected                 ! is field connected?
+    integer                 :: klon, klat
+    integer                 :: lsize
+    integer                 :: iam
+    real(r8), pointer       :: lon(:),lat(:)
+    integer , pointer       :: gindex(:)
+    real(R8)                :: orbEccen                  ! orb eccentricity (unit-less)
+    real(R8)                :: orbMvelpp                 ! orb moving vernal eq (radians)
+    real(R8)                :: orbLambm0                 ! orb mean long of perhelion (radians)
+    real(R8)                :: orbObliqr                 ! orb obliquity (radians)
     character(len=*) , parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
@@ -378,22 +391,6 @@ module atm_comp_nuopc
     call NUOPC_CompAttributeGet(gcomp, name='case_name', value=case_name, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call NUOPC_CompAttributeGet(gcomp, name='orb_eccen', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) orbEccen
-
-    call NUOPC_CompAttributeGet(gcomp, name='orb_obliqr', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) orbObliqr
-
-    call NUOPC_CompAttributeGet(gcomp, name='orb_lambm0', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) orbLambm0
-
-    call NUOPC_CompAttributeGet(gcomp, name='orb_mvelpp', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) orbMvelpp
-
     call NUOPC_CompAttributeGet(gcomp, name='scmlon', value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) scmlon
@@ -414,12 +411,70 @@ module atm_comp_nuopc
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) compid
 
+    !----------------------------------------------------------------------------
+    ! Determine orbital values (these might change dynamically)
+    !----------------------------------------------------------------------------
+
+    call NUOPC_CompAttributeGet(gcomp, name='orb_eccen', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) orbEccen
+    call NUOPC_CompAttributeGet(gcomp, name='orb_obliqr', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) orbObliqr
+    call NUOPC_CompAttributeGet(gcomp, name='orb_lambm0', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) orbLambm0
+    call NUOPC_CompAttributeGet(gcomp, name='orb_mvelpp', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) orbMvelpp
+
+    !----------------------------------------------------------------------------
+    ! Determine calendar info
+    !----------------------------------------------------------------------------
+
+    call ESMF_ClockGet( clock, currTime=currTime, timeStep=timeStep, advanceCount=stepno, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_TimeGet( currTime, yy=current_year, mm=current_mon, dd=current_day, s=current_tod, &
+         calkindflag=esmf_caltype, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call shr_cal_ymd2date(current_year, current_mon, current_day, current_ymd)
+
+    if (esmf_caltype == ESMF_CALKIND_NOLEAP) then
+       calendar = shr_cal_noleap
+    else if (esmf_caltype == ESMF_CALKIND_GREGORIAN) then
+       calendar = shr_cal_gregorian
+    else
+       call ESMF_LogWrite(subname//" ERROR bad ESMF calendar name "//trim(calendar), ESMF_LOGMSG_ERROR, rc=dbrc)
+       rc = ESMF_Failure
+       return
+    end if
+
+    call ESMF_TimeIntervalGet( timeStep, s=modeldt, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     call datm_comp_init(clock, x2d, d2x, &
          flds_x2a, flds_a2x, &
          SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
          scmMode, scmlat, scmlon, &
-         orbEccen, orbMvelpp, orbLambm0, orbObliqr, nextsw_cday=nextsw_cday)
+         orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
+         calendar, modeldt, current_ymd, current_tod, current_mon)
+
+    !----------------------------------------------------------------------------
+    ! Set nextsw_cday
+    !----------------------------------------------------------------------------
+
+    call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) read_restart
+
+    if (read_restart) then
+       nextsw_cday = datm_shr_getNextRadCDay( current_ymd, current_tod, stepno, modeldt, iradsw, calendar )
+    else
+       ! For a startup run the nextsw_cday is just the current calendar day
+       call ESMF_TimeGet( currTime, dayofyear_r8=nextsw_cday, rc=rc )
+    endif
 
     !--------------------------------
     ! Generate the mesh
@@ -546,22 +601,29 @@ module atm_comp_nuopc
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)         :: clock
-    type(ESMF_Time)          :: time
-    type(ESMF_State)         :: importState, exportState
-    type(ESMF_Alarm)         :: alarm
-    integer                  :: shrlogunit     ! original log unit
-    integer                  :: shrloglev      ! original log level
-    real(r8)                 :: nextsw_cday
-    character(len=128)       :: calendar
-    logical                  :: write_restart ! restart alarm is ringing
-    integer                  :: nextymd       ! model date
-    integer                  :: nexttod       ! model sec into model date
-    integer                  :: yr            ! year
-    integer                  :: mon           ! month
-    integer                  :: day           ! day in month
-    type(ESMF_Time)          :: currTime, nextTime
-    type(ESMF_TimeInterval)  :: timeStep
+    type(ESMF_Clock)        :: clock
+    type(ESMF_Time)         :: time
+    type(ESMF_State)        :: importState, exportState
+    type(ESMF_Alarm)        :: alarm
+    integer                 :: shrlogunit    ! original log unit
+    integer                 :: shrloglev     ! original log level
+    real(r8)                :: nextsw_cday
+    logical                 :: write_restart ! restart alarm is ringing
+    integer                 :: nextymd       ! model date
+    integer                 :: nexttod       ! model sec into model date
+    integer                 :: yr            ! year
+    integer                 :: mon           ! month
+    integer                 :: day           ! day in month
+    type(ESMF_Time)         :: currTime
+    type(ESMF_Time)         :: nextTime
+    type(ESMF_TimeInterval) :: timeStep
+    integer(I8)             :: stepno        ! step number
+    integer                 :: modeldt       ! model timestep
+    real(R8)                :: orbEccen      ! orb eccentricity (unit-less)
+    real(R8)                :: orbMvelpp     ! orb moving vernal eq (radians)
+    real(R8)                :: orbLambm0     ! orb mean long of perhelion (radians)
+    real(R8)                :: orbObliqr     ! orb obliquity (radians)
+    character(len=256)      :: cvalue
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
@@ -604,6 +666,23 @@ module atm_comp_nuopc
     ! Run model
     !--------------------------------
 
+    ! Get orbital parameters (these can be changed by the mediator)
+    ! TODO: need to put in capability for these to be modified for variable orbitals
+    call NUOPC_CompAttributeGet(gcomp, name='orb_eccen', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) orbEccen
+    call NUOPC_CompAttributeGet(gcomp, name='orb_obliqr', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) orbObliqr
+    call NUOPC_CompAttributeGet(gcomp, name='orb_lambm0', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) orbLambm0
+    call NUOPC_CompAttributeGet(gcomp, name='orb_mvelpp', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) orbMvelpp
+
+    ! Determine if need to write restarts
+
     call ESMF_ClockGetAlarm(clock, alarmname='alarm_restart', alarm=alarm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -620,13 +699,18 @@ module atm_comp_nuopc
     ! For these to match for now - need to advance nuopc one timestep ahead for
     ! shr_strdata time interpolation
 
-    call ESMF_ClockGet( clock, currTime=currTime, timeStep=timeStep, rc=rc)
+    call ESMF_ClockGet( clock, currTime=currTime, timeStep=timeStep, advanceCount=stepno, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     nextTime = currTime + timeStep
     call ESMF_TimeGet( nextTime, yy=yr, mm=mon, dd=day, s=nexttod, rc=rc )
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call shr_cal_ymd2date(yr, mon, day, nextymd)
+
+    call ESMF_TimeIntervalGet( timeStep, s=modeldt, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Advance the model
 
     call datm_comp_run(clock, &
          x2a=x2d, &
@@ -644,11 +728,16 @@ module atm_comp_nuopc
          orbMvelpp=orbMvelpp, &
          orbLambm0=orbLambm0, &
          orbObliqr=orbObliqr, &
-         nextsw_cday=nextsw_cday, &
          write_restart=write_restart, &
          target_ymd=nextYMD, &
          target_tod=nextTOD, &
+         target_mon=mon, &
+         calendar=calendar, &
+         modeldt=modeldt, &
          case_name=case_name)
+
+    ! Use nextYMD and nextTOD here since since the component - clock is advance at the END of the time interval
+    nextsw_cday = datm_shr_getNextRadCDay( nextYMD, nextTOD, stepno, modeldt, iradsw, calendar )
 
     !--------------------------------
     ! Pack export state

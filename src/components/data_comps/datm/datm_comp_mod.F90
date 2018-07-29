@@ -20,9 +20,8 @@ module datm_comp_mod
   use shr_strdata_mod, only: shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
   use shr_dmodel_mod , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list
-  use seq_timemgr_mod, only: seq_timemgr_EClockGetData
 
-  use datm_shr_mod   , only: datm_shr_getNextRadCDay, datm_shr_esat, datm_shr_CORE2getFactors
+  use datm_shr_mod   , only: datm_shr_esat, datm_shr_CORE2getFactors
   use datm_shr_mod   , only: datamode       ! namelist input
   use datm_shr_mod   , only: decomp         ! namelist input
   use datm_shr_mod   , only: wiso_datm      ! namelist input
@@ -49,12 +48,11 @@ module datm_comp_mod
   ! Private data
   !--------------------------------------------------------------------------
 
-  character(CS) :: myModelName = 'atm'   ! user defined model name
-  logical       :: firstcall = .true.    ! first call logical
-  integer(IN)   :: dbug = 1              ! debug level (higher is more)
-  real(R8)      :: tbotmax               ! units detector
-  real(R8)      :: tdewmax               ! units detector
-  real(R8)      :: anidrmax              ! existance detector
+  character(len=3) :: myModelName = 'atm'   ! user defined model name
+  integer          :: dbug = 1              ! debug level (higher is more)
+  real(R8)         :: tbotmax               ! units detector
+  real(R8)         :: tdewmax               ! units detector
+  real(R8)         :: anidrmax              ! existance detector
 
   character(len=*),parameter :: rpfile = 'rpointer.atm'
 
@@ -74,7 +72,7 @@ module datm_comp_mod
   data   dTarc      / 0.49_R8, 0.06_R8,-0.73_R8,  -0.89_R8,-0.77_R8,-1.02_R8, &
                      -1.99_R8,-0.91_R8, 1.72_R8,   2.30_R8, 1.81_R8, 1.06_R8/
 
-  integer(IN) :: kz,ku,kv,ktbot,kptem,kshum,kdens,kpbot,kpslv,klwdn
+  integer(IN) :: kz,ktopo,ku,kv,ktbot,kptem,kshum,kdens,kpbot,kpslv,klwdn
   integer(IN) :: krc,krl,ksc,ksl,kswndr,kswndf,kswvdr,kswvdf,kswnet
   integer(IN) :: kanidr,kanidf,kavsdr,kavsdf
   integer(IN) :: stbot,swind,sz,spbot,sshum,stdew,srh,slwdn,sswdn,sswdndf,sswdndr
@@ -95,21 +93,32 @@ module datm_comp_mod
 
   type(mct_rearr)      :: rearr
   type(mct_avect)      :: avstrm   ! av of data from stream
+
   integer(IN), pointer :: imask(:)
   real(R8), pointer    :: yc(:)
   real(R8), pointer    :: windFactor(:)
   real(R8), pointer    :: winddFactor(:)
   real(R8), pointer    :: qsatFactor(:)
 
-  integer(IN),parameter :: ktrans  = 41
+  integer(IN),parameter :: ktrans  = 77
 
   character(16),parameter  :: avofld(1:ktrans) = &
-     (/"Sa_z            ","Sa_u            ","Sa_v            ","Sa_tbot         ", &
+       (/"Sa_z            ","Sa_topo         ", &
+       "Sa_u            ","Sa_v            ","Sa_tbot         ", &
        "Sa_ptem         ","Sa_shum         ","Sa_dens         ","Sa_pbot         ", &
        "Sa_pslv         ","Faxa_lwdn       ","Faxa_rainc      ","Faxa_rainl      ", &
        "Faxa_snowc      ","Faxa_snowl      ","Faxa_swndr      ","Faxa_swvdr      ", &
        "Faxa_swndf      ","Faxa_swvdf      ","Faxa_swnet      ","Sa_co2prog      ", &
-       "Sa_co2diag      ",
+       "Sa_co2diag      ","Faxa_bcphidry   ","Faxa_bcphodry   ","Faxa_bcphiwet   ", &
+       "Faxa_ocphidry   ","Faxa_ocphodry   ","Faxa_ocphiwet   ","Faxa_dstwet1    ", &
+       "Faxa_dstwet2    ","Faxa_dstwet3    ","Faxa_dstwet4    ","Faxa_dstdry1    ", &
+       "Faxa_dstdry2    ","Faxa_dstdry3    ","Faxa_dstdry4    ",                    &
+       "Sx_tref         ","Sx_qref         ","Sx_avsdr        ","Sx_anidr        ", &
+       "Sx_avsdf        ","Sx_anidf        ","Sx_t            ","So_t            ", &
+       "Sl_snowh        ","Sf_lfrac        ","Sf_ifrac        ","Sf_ofrac        ", &
+       "Faxx_taux       ","Faxx_tauy       ","Faxx_lat        ","Faxx_sen        ", &
+       "Faxx_lwup       ","Faxx_evap       ","Fall_fco2_lnd   ","Faoo_fco2_ocn   ", &
+       "Faoo_fdms_ocn   ",  &
        ! add values for bias correction / anomaly forcing
        "Sa_precsf       ", &
        "Sa_prec_af      ","Sa_u_af         ","Sa_v_af         ","Sa_tbot_af      ",&
@@ -117,16 +126,26 @@ module datm_comp_mod
        ! isotopic forcing
        "Faxa_rainc_18O  ","Faxa_rainc_HDO  ","Faxa_rainl_18O  ","Faxa_rainl_HDO  ",&
        "Faxa_snowc_18O  ","Faxa_snowc_HDO  ","Faxa_snowl_18O  ","Faxa_snowl_HDO  ",&
-       "Sa_shum_16O     ","Sa_shum_18O     ","Sa_shum_HDO     " 
+       "Sa_shum_16O     ","Sa_shum_18O     ","Sa_shum_HDO     " &
        /)
 
   character(16),parameter  :: avifld(1:ktrans) = &
-     (/"z               ","u               ","v               ","tbot            ", &
+       (/"z               ","topo            ", &
+       "u               ","v               ","tbot            ", &
        "ptem            ","shum            ","dens            ","pbot            ", &
        "pslv            ","lwdn            ","rainc           ","rainl           ", &
        "snowc           ","snowl           ","swndr           ","swvdr           ", &
        "swndf           ","swvdf           ","swnet           ","co2prog         ", &
-       "co2diag         ",
+       "co2diag         ","bcphidry        ","bcphodry        ","bcphiwet        ", &
+       "ocphidry        ","ocphodry        ","ocphiwet        ","dstwet1         ", &
+       "dstwet2         ","dstwet3         ","dstwet4         ","dstdry1         ", &
+       "dstdry2         ","dstdry3         ","dstdry4         ",                    &
+       "tref            ","qref            ","avsdr           ","anidr           ", &
+       "avsdf           ","anidf           ","ts              ","to              ", &
+       "snowhl          ","lfrac           ","ifrac           ","ofrac           ", &
+       "taux            ","tauy            ","lat             ","sen             ", &
+       "lwup            ","evap            ","co2lnd          ","co2ocn          ", &
+       "dms             ", &
        ! add values for bias correction / anomaly forcing (add Sa_precsf for precip scale factor)
        "precsf          ", &
        "prec_af         ","u_af            ","v_af            ","tbot_af         ", &
@@ -134,7 +153,7 @@ module datm_comp_mod
        ! isotopic forcing
        "rainc_18O       ","rainc_HDO       ","rainl_18O       ","rainl_HDO       ", &
        "snowc_18O       ","snowc_HDO       ","snowl_18O       ","snowl_HDO       ", &
-       "shum_16O        ","shum_18O        ","shum_HDO        " 
+       "shum_16O        ","shum_18O        ","shum_HDO        " &
        /)
 
   ! The stofld and stifld lists are used for fields that are read but not passed to the
@@ -187,12 +206,14 @@ CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   !===============================================================================
+
   subroutine datm_comp_init(Eclock, x2a, a2x, &
        seq_flds_x2a_fields, seq_flds_a2x_fields, &
        SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
        scmMode, scmlat, scmlon, &
-       orbEccen, orbMvelpp, orbLambm0, orbObliqr, nextsw_cday)
+       orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
+       calendar, modeldt, currentYMD, currentTOD, currentMON)
 
     ! !DESCRIPTION: initialize data atm model
 
@@ -219,34 +240,27 @@ CONTAINS
     real(R8)               , intent(in)    :: orbMvelpp           ! orb moving vernal eq (radians)
     real(R8)               , intent(in)    :: orbLambm0           ! orb mean long of perhelion (radians)
     real(R8)               , intent(in)    :: orbObliqr           ! orb obliquity (radians)
-    real(R8)               , intent(out)   :: nextsw_cday         ! calendar of next atm sw
+    character(len=*)       , intent(in)    :: calendar            ! calendar type
+    integer                , intent(in)    :: modeldt             ! model time step
+    integer                , intent(in)    :: CurrentYMD          ! model date
+    integer                , intent(in)    :: CurrentTOD          ! model sec into model date
+    integer                , intent(in)    :: CurrentMON          ! model month
 
     !--- local variables ---
-    integer(IN)   :: n,k         ! generic counters
-    integer(IN)   :: lsize       ! local size
-    integer(IN)   :: kmask       ! field reference
-    integer(IN)   :: klat        ! field reference
-    integer(IN)   :: kfld        ! fld index
-    integer(IN)   :: cnt         ! counter
-    integer(IN)   :: idt         ! integer timestep
-    logical       :: exists,exists1      ! filename existance
-    integer(IN)   :: nu          ! unit number
-    integer(IN)   :: CurrentYMD  ! model date
-    integer(IN)   :: CurrentTOD  ! model sec into model date
-    integer(IN)   :: stepno      ! step number
-    character(CL) :: calendar    ! calendar type
+    integer(IN)   :: n,k            ! generic counters
+    integer(IN)   :: lsize          ! local size
+    integer(IN)   :: kmask          ! field reference
+    integer(IN)   :: klat           ! field reference
+    integer(IN)   :: kfld           ! fld index
+    integer(IN)   :: cnt            ! counter
+    logical       :: exists,exists1 ! filename existance
+    integer(IN)   :: nu             ! unit number
+    integer(IN)   :: stepno         ! step number
     character(CL) :: flds_strm
 
     !--- formats ---
     character(*), parameter :: F00   = "('(datm_comp_init) ',8a)"
-    character(*), parameter :: F0L   = "('(datm_comp_init) ',a, l2)"
-    character(*), parameter :: F01   = "('(datm_comp_init) ',a,5i8)"
-    character(*), parameter :: F02   = "('(datm_comp_init) ',a,4es13.6)"
-    character(*), parameter :: F03   = "('(datm_comp_init) ',a,i8,a)"
-    character(*), parameter :: F04   = "('(datm_comp_init) ',2a,2i8,'s')"
     character(*), parameter :: F05   = "('(datm_comp_init) ',a,2f10.4)"
-    character(*), parameter :: F90   = "('(datm_comp_init) ',73('='))"
-    character(*), parameter :: F91   = "('(datm_comp_init) ',73('-'))"
     character(*), parameter :: subName = "(datm_comp_init) "
     !-------------------------------------------------------------------------------
 
@@ -263,8 +277,6 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Initialize SDATM
     !----------------------------------------------------------------------------
-
-    call seq_timemgr_EClockGetData( EClock, dtime=idt, calendar=calendar )
 
     ! NOTE: shr_strdata_init calls shr_dmodel_readgrid which reads the data model
     ! grid and from that computes SDATM%gsmap and SDATM%ggrid. DATM%gsmap is created
@@ -495,13 +507,13 @@ CONTAINS
        call shr_mpi_bcast(exists,mpicom,'exists')
        call shr_mpi_bcast(exists1,mpicom,'exists1')
 
-!       if (exists1) then
-!          if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
-!          call shr_pcdf_readwrite('read',SDATM%pio_subsystem, SDATM%io_type, &
-!               trim(rest_file),mpicom,gsmap=gsmap,rf1=water,rf1n='water',io_format=SDATM%io_format)
-!       else
-!          if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file)
-!       endif
+       ! if (exists1) then
+       !    if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
+       !    call shr_pcdf_readwrite('read',SDATM%pio_subsystem, SDATM%io_type, &
+       !         trim(rest_file),mpicom,gsmap=gsmap,rf1=water,rf1n='water',io_format=SDATM%io_format)
+       ! else
+       !    if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file)
+       ! endif
 
        if (exists) then
           if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file_strm)
@@ -510,20 +522,6 @@ CONTAINS
           if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file_strm)
        endif
        call shr_sys_flush(logunit)
-    endif
-
-    !----------------------------------------------------------------------------
-    ! Set nextsw_cday, CurrentYMD and CurrenntTOD
-    !----------------------------------------------------------------------------
-
-    if (read_restart) then
-       call seq_timemgr_EClockGetData( EClock, &
-            curr_ymd=CurrentYMD, curr_tod=CurrentTOD, stepno=stepno, dtime=idt, calendar=calendar)
-       nextsw_cday = datm_shr_getNextRadCDay( CurrentYMD, CurrentTOD, stepno, idt, iradsw, calendar )
-    else
-       ! For a startup run the nextsw_cday is just the current calendar day
-       call seq_timemgr_EClockGetData( EClock, &
-            curr_cday=nextsw_cday, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
     endif
 
     !----------------------------------------------------------------------------
@@ -548,10 +546,12 @@ CONTAINS
          orbMvelpp=orbMvelpp, &
          orbLambm0=orbLambm0, &
          orbObliqr=orbObliqr, &
-         nextsw_cday=nextsw_cday, &
          write_restart=.false., &
          target_ymd=currentYMD, &
-         target_tod=currentTOD)
+         target_tod=currentTOD, &
+         target_mon=currentMON, &
+         calendar=calendar, &
+         modeldt=modeldt)
     call t_adj_detailf(-2)
 
     call t_stopf('DATM_INIT')
@@ -564,7 +564,8 @@ CONTAINS
        SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, &
        orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
-       nextsw_cday, write_restart, target_ymd, target_tod, case_name)
+       write_restart, target_ymd, target_tod, target_mon, modeldt, calendar, &
+       case_name)
 
     ! !DESCRIPTION: run method for datm model
 
@@ -585,34 +586,30 @@ CONTAINS
     real(R8)               , intent(in)    :: orbMvelpp        ! orb moving vernal eq (radians)
     real(R8)               , intent(in)    :: orbLambm0        ! orb mean long of perhelion (radians)
     real(R8)               , intent(in)    :: orbObliqr        ! orb obliquity (radians)
-    real(R8)               , intent(out)   :: nextsw_cday      ! calendar of next atm sw
     logical                , intent(in)    :: write_restart    ! restart alarm is on
     integer(IN)            , intent(in)    :: target_ymd       ! model date
     integer(IN)            , intent(in)    :: target_tod       ! model sec into model date
-    character(CL)          , intent(in), optional :: case_name ! case name
+    integer(IN)            , intent(in)    :: target_mon       ! model month
+    character(len=*)       , intent(in)    :: calendar         ! calendar type
+    Integer(IN)            , intent(in)    :: modeldt          ! model time step
+    character(len=*)       , intent(in), optional :: case_name ! case name
 
     !--- local ---
-    integer(IN)   :: yy,mm,dd,tod          ! year month day time-of-day
-    integer(IN)   :: n                 ! indices
-    integer(IN)   :: lsize             ! size of attr vect
-    integer(IN)   :: idt               ! integer timestep
-    real(R8)      :: dt                ! timestep
-    character(CL) :: rest_file         ! restart_file
-    character(CL) :: rest_file_strm    ! restart_file
-    integer(IN)   :: nu                ! unit number
-    integer(IN)   :: stepno            ! step number
-    integer(IN)   :: eday              ! elapsed day
-    real(R8)      :: rday              ! elapsed day
-    real(R8)      :: cosFactor         ! cosine factor
-    real(R8)      :: factor            ! generic/temporary correction factor
-    real(R8)      :: avg_alb           ! average albedo
-    real(R8)      :: tMin              ! minimum temperature
-    character(CL) :: calendar          ! calendar type
-
-    !--- temporaries
+    integer(IN)       :: n                 ! indices
+    integer(IN)       :: lsize             ! size of attr vect
+    character(CL)     :: rest_file         ! restart_file
+    character(CL)     :: rest_file_strm    ! restart_file
+    integer(IN)       :: nu                ! unit number
+    integer(IN)       :: eday              ! elapsed day
+    real(R8)          :: rday              ! elapsed day
+    real(R8)          :: cosFactor         ! cosine factor
+    real(R8)          :: factor            ! generic/temporary correction factor
+    real(R8)          :: avg_alb           ! average albedo
+    real(R8)          :: tMin              ! minimum temperature
     character(len=18) :: date_str
-    real(R8)      :: uprime,vprime,swndr,swndf,swvdr,swvdf,ratio_rvrf
-    real(R8)      :: tbot,pbot,rtmp,vp,ea,e,qsat,frac,qsatT
+    real(R8)          :: uprime,vprime,swndr,swndf,swvdr,swvdf,ratio_rvrf
+    real(R8)          :: tbot,pbot,rtmp,vp,ea,e,qsat,frac,qsatT
+    logical           :: firstcall = .true.    ! first call logical
 
     character(*), parameter :: F00   = "('(datm_comp_run) ',8a)"
     character(*), parameter :: F01   = "('(datm_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
@@ -620,33 +617,16 @@ CONTAINS
     character(*), parameter :: subName = "(datm_comp_run) "
     !-------------------------------------------------------------------------------
 
-    call t_startf('DATM_RUN')
-
-    call t_startf('datm_run1')
-    call seq_timemgr_EClockGetData( EClock, &
-         dtime=idt,                         &
-         curr_yr=yy,                        &
-         curr_mon=mm,                       &
-         curr_day=dd,                       &
-         curr_tod=tod,                      &
-         calendar=calendar,                 &
-         stepno=stepno)
-    dt = idt * 1.0_r8
-    nextsw_cday = datm_shr_getNextRadCDay( target_ymd, target_tod, stepno, idt, iradsw, calendar )
-    call t_stopf('datm_run1')
-
     !--------------------
     ! ADVANCE ATM
     !--------------------
 
+    call t_startf('DATM_RUN')
     call t_barrierf('datm_BARRIER',mpicom)
     call t_startf('datm')
 
     !--- set data needed for cosz t-interp method ---
-    call shr_strdata_setOrbs(SDATM,orbEccen,orbMvelpp,orbLambm0,orbObliqr,idt)
-
-    call seq_timemgr_EClockGetData( EClock, calendar=calendar, stepno=stepno )
-    nextsw_cday = datm_shr_getNextRadCDay( target_ymd, target_tod, stepno, idt, iradsw, calendar )
+    call shr_strdata_setOrbs(SDATM,orbEccen,orbMvelpp,orbLambm0,orbObliqr,modeldt)
 
     !--- copy all fields from streams to a2x as default ---
     call t_startf('datm_strdata_advance')
@@ -736,7 +716,7 @@ CONTAINS
              a2x%rAttr(ktbot,n) = max(a2x%rAttr(ktbot,n), tMin)
           else if ( yc(n) > 60.0_R8 ) then
              factor = MIN(1.0_R8, 0.1_R8*(yc(n)-60.0_R8) )
-             a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + factor * dTarc(mm)
+             a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + factor * dTarc(target_mon)
           endif
           a2x%rAttr(kptem,n) = a2x%rAttr(ktbot,n)
 
@@ -1017,8 +997,6 @@ CONTAINS
 
     end select
 
-    call t_stopf('datm_datamode')
-
     !----------------------------------------------------------
     ! bias correction / anomaly forcing ( start block )
     !----------------------------------------------------------
@@ -1105,6 +1083,7 @@ CONTAINS
     !----------------------------------------------------------
     ! bias correction / anomaly forcing ( end block )
     !----------------------------------------------------------
+    call t_stopf('datm_datamode')
 
     !----------------------------------------------------------
     ! Debug output
@@ -1113,6 +1092,7 @@ CONTAINS
     if (dbug > 1 .and. my_task == master_task) then
        do n = 1,lsize
           write(logunit,F01)'export: ymd,tod,n,Sa_z       = ',target_ymd, target_tod, n,a2x%rAttr(kz,n)
+          write(logunit,F01)'export: ymd,tod,n,Sa_topo    = ',target_ymd, target_tod, n,a2x%rAttr(ktopo,n)
           write(logunit,F01)'export: ymd,tod,n,Sa_u       = ',target_ymd, target_tod, n,a2x%rAttr(ku,n)
           write(logunit,F01)'export: ymd,tod,n,Sa_v       = ',target_ymd, target_tod, n,a2x%rAttr(kv,n)
           write(logunit,F01)'export: ymd,tod,n,Sa_tbot    = ',target_ymd, target_tod, n,a2x%rAttr(ktbot,n)
@@ -1161,22 +1141,19 @@ CONTAINS
        call t_stopf('datm_restart')
     endif
 
-    call t_stopf('datm')
-
     !----------------------------------------------------------------------------
     ! Log output for model date
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
 
-    call t_startf('datm_run2')
     if (my_task == master_task) then
        write(logunit,F04) trim(myModelName),': model date ', target_ymd,target_tod
        call shr_sys_flush(logunit)
     end if
 
     firstcall = .false.
-    call t_stopf('datm_run2')
 
+    call t_stopf('datm')
     call t_stopf('DATM_RUN')
 
   end subroutine datm_comp_run
