@@ -11,7 +11,6 @@ module atm_comp_nuopc
   use shr_file_mod          , only : shr_file_getlogunit, shr_file_setlogunit
   use shr_file_mod          , only : shr_file_getloglevel, shr_file_setloglevel
   use shr_file_mod          , only : shr_file_setIO, shr_file_getUnit
-  use esmFlds               , only : fldListFr, fldListTo, compatm, compname
   use esmFlds               , only : flds_scalar_name
   use esmFlds               , only : flds_scalar_num
   use esmFlds               , only : flds_scalar_index_nx
@@ -35,10 +34,10 @@ module atm_comp_nuopc
   use ESMF
   use NUOPC
   use NUOPC_Model, &
-    model_routine_SS      => SetServices, &
-    model_label_Advance   => label_Advance, &
+    model_routine_SS        => SetServices, &
+    model_label_Advance     => label_Advance, &
     model_label_SetRunClock => label_SetRunClock, &
-    model_label_Finalize  => label_Finalize
+    model_label_Finalize    => label_Finalize
 
   use datm_shr_mod , only: datm_shr_read_namelists
   use datm_shr_mod , only: iradsw         ! namelist input
@@ -62,6 +61,16 @@ module atm_comp_nuopc
   !--------------------------------------------------------------------------
   ! Private module data
   !--------------------------------------------------------------------------
+
+  type fld_list_type
+    character(len=128) :: stdname
+  end type fld_list_type
+
+  integer,parameter          :: fldsMax = 100
+  integer                    :: fldsToAtm_num = 0
+  integer                    :: fldsFrAtm_num = 0
+  type (fld_list_type)       :: fldsToAtm(fldsMax)
+  type (fld_list_type)       :: fldsFrAtm(fldsMax)
 
   character(len=80)          :: myModelName = 'atm'       ! user defined model name
   type(shr_strdata_type)     :: SDATM
@@ -89,8 +98,8 @@ module atm_comp_nuopc
   integer, parameter         :: dbug = 10
   character(len=*),parameter :: grid_option = "mesh"      ! grid_de, grid_arb, grid_reg, mesh
   character(len=80)          :: calendar                  ! calendar name
-  character(CXX)             :: flds_a2x = ''
-  character(CXX)             :: flds_x2a = ''
+  character(len=CXX)         :: flds_a2x = ''
+  character(len=CXX)         :: flds_x2a = ''
 
   !----- formats -----
   character(*),parameter :: modName =  "(atm_comp_nuopc)"
@@ -192,6 +201,10 @@ module atm_comp_nuopc
     logical            :: isPresent
     character(len=512) :: diro
     character(len=512) :: logfile
+    logical            :: flds_co2a  ! use case
+    logical            :: flds_co2b  ! use case
+    logical            :: flds_co2c  ! use case
+    logical            :: flds_wiso  ! use case
     character(len=*),parameter :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
@@ -271,41 +284,112 @@ module atm_comp_nuopc
     end if
 
     !--------------------------------
-    ! create import and export field list needed by data models
+    ! determine necessary toggles for below
     !--------------------------------
 
-    call shr_nuopc_fldList_Concat(fldListFr(compatm), fldListTo(compatm), flds_a2x, flds_x2a, flds_scalar_name)
+    call NUOPC_CompAttributeGet(gcomp, name='flds_co2a', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) flds_co2a
+    call ESMF_LogWrite('flds_co2a = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
+
+    call NUOPC_CompAttributeGet(gcomp, name='flds_co2b', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) flds_co2b
+    call ESMF_LogWrite('flds_co2b = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
+
+    call NUOPC_CompAttributeGet(gcomp, name='flds_co2c', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) flds_co2c
+    call ESMF_LogWrite('flds_co2c = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
+
+    call NUOPC_CompAttributeGet(gcomp, name='flds_wiso', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) flds_wiso
+    call ESMF_LogWrite('flds_wiso = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
 
     !--------------------------------
     ! advertise import and export fields
     !--------------------------------
 
-    ! First deactivate fldListTo(compatm) if atm_prognostic is .false.
-    if (.not. atm_prognostic) then
-       call shr_nuopc_fldList_Deactivate(fldListTo(compatm), flds_scalar_name)
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, trim(flds_scalar_name)) 
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_topo'    , flds_concat=flds_a2x)
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_z'       , flds_concat=flds_a2x)
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_u'       , flds_concat=flds_a2x)
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_v'       , flds_concat=flds_a2x)
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_tbot'    , flds_concat=flds_a2x)
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_ptem'    , flds_concat=flds_a2x)
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_shum'    , flds_concat=flds_a2x)
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_pbot'    , flds_concat=flds_a2x)
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_dens'    , flds_concat=flds_a2x)
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_pslv'    , flds_concat=flds_a2x)
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_rainc' , flds_concat=flds_a2x)
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_rainl' , flds_concat=flds_a2x)
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_snowc' , flds_concat=flds_a2x)
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_snowl' , flds_concat=flds_a2x)
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_lwdn'  , flds_concat=flds_a2x)
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_swndr' , flds_concat=flds_a2x)
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_swvdr' , flds_concat=flds_a2x)
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_swndf' , flds_concat=flds_a2x)
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_swvdf' , flds_concat=flds_a2x)
+    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_swnet' , flds_concat=flds_a2x)  ! only diagnostic
+    if (presaero) then
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_bcphidry' , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_bcphodry' , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_bcphiwet' , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_ocphidry' , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_ocphodry' , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_ocphiwet' , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstwet1'  , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstwet2'  , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstwet3'  , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstwet4'  , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstdry1'  , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstdry2'  , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstdry3'  , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstdry4'  , flds_concat=flds_a2x)
+    end if
+    if (flds_co2a .or. flds_co2b .or. flds_co2c) then
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_co2prog'  , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_co2diag'  , flds_concat=flds_a2x)
     end if
 
-    nflds = shr_nuopc_fldList_Getnumflds(fldListFr(compatm))
-    do n = 1,nflds
-       call shr_nuopc_fldList_Getfldinfo(fldListFr(compatm), n, activefld, stdname, shortname)
-       if (activefld) then
-          call NUOPC_Advertise(exportState, standardName=stdname, shortname=shortname, name=shortname, &
-               TransferOfferGeomObject='will provide', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_LogWrite(subname//':Fr_'//trim(compname(compatm))//': '//trim(shortname), ESMF_LOGMSG_INFO)
-       end if
-    end do
+    call fld_list_add(fldsToAtm_num, fldsToAtm, trim(flds_scalar_name))
+    if (atm_prognostic) then
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_anidr'  , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_avsdf'  , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_anidf'  , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_avsdr'  , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sl_lfrac'  , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Si_ifrac'  , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'So_ofrac'  , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_tref'   , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_qref'   , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_t'      , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'So_t'      , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sl_fv'     , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sl_ram1'   , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sl_snowh'  , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Si_snowh'  , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'So_ssq'    , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'So_re'     , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_u10'    , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_taux' , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_tauy' , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_lat'  , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_sen'  , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_lwup' , flds_concat=flds_x2a)
+       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_evap' , flds_concat=flds_x2a)
+    end if
 
-    nflds = shr_nuopc_fldList_Getnumflds(fldListTo(compatm))
-    do n = 1,nflds
-       call shr_nuopc_fldList_Getfldinfo(fldListTo(compatm), n, activefld, stdname, shortname)
-       if (activefld) then
-          call NUOPC_Advertise(importState, standardName=stdname, shortname=shortname, name=shortname, &
-               TransferOfferGeomObject='will provide', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_LogWrite(subname//':To_'//trim(compname(compatm))//': '//trim(shortname), ESMF_LOGMSG_INFO)
-       end if
-    end do
+    ! Now advertise these fields
+    do n = 1,fldsFrAtm_num
+      call NUOPC_Advertise(exportState, standardName=fldsFrAtm(n)%stdname, TransferOfferGeomObject='will provide', rc=rc)
+      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    enddo
+    do n = 1,fldsToAtm_num
+      call NUOPC_Advertise(importState, standardName=fldsToAtm(n)%stdname, TransferOfferGeomObject='will provide', rc=rc)
+      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    enddo
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
@@ -354,7 +438,6 @@ module atm_comp_nuopc
     integer                 :: modeldt                   ! integer timestep
     real(R8)                :: nextsw_cday               ! calendar of next atm sw
     logical                 :: connected                 ! is field connected?
-    integer                 :: klon, klat
     integer                 :: lsize
     integer                 :: iam
     real(r8), pointer       :: lon(:),lat(:)
@@ -459,7 +542,7 @@ module atm_comp_nuopc
          inst_suffix, inst_name, logunit, read_restart, &
          scmMode, scmlat, scmlon, &
          orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
-         calendar, modeldt, current_ymd, current_tod, current_mon)
+         calendar, modeldt, current_ymd, current_tod, current_mon, atm_prognostic)
 
     !----------------------------------------------------------------------------
     ! Set nextsw_cday
@@ -486,8 +569,7 @@ module atm_comp_nuopc
     allocate(lon(lsize))
     allocate(lat(lsize))
     allocate(gindex(lsize))
-    klat = mct_aVect_indexRA(ggrid%data, 'lat')
-    klon = mct_aVect_indexRA(ggrid%data, 'lon')
+
     call mpi_comm_rank(mpicom, iam, ierr)
     call mct_gGrid_exportRattr(ggrid,'lon',lon,lsize)
     call mct_gGrid_exportRattr(ggrid,'lat',lat,lsize)
@@ -502,24 +584,34 @@ module atm_comp_nuopc
 
     !--------------------------------
     ! realize the actively coupled fields, now that a mesh is established
-    ! Note: shr_nuopc_fldList_Realize does the following:
-    ! 1) loops over all of the entries in fldListTo and fldListFr creates a field
-    !    for each one via one of the following commands:
-    !     field = ESMF_FieldCreate(grid, ESMF_TYPEKIND_R8, name=shortname, rc=rc)
-    !     field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=shortname, meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
+    ! Note: the following will occur in the realize call
+    ! 1) loop over all of the entries in fldsToAtm and fldsFrAtm to creates a field via the following call:
+    !    field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=shortname, meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
     ! 2) realizes the field via the following call
-    !     call NUOPC_Realize(state, field=field, rc=rc)
+    !    call NUOPC_Realize(state, field=field, rc=rc)
     !    where state is either importState or exportState
     !  NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
     !  by replacing the advertised fields with the newly created fields of the same name.
     !--------------------------------
 
-    call shr_nuopc_fldList_Realize(importState, fldListTo(compatm), flds_scalar_name, flds_scalar_num, &
-         mesh=Emesh, tag=subname//':datmImport', rc=rc)
+    call fld_list_realize( &
+         state=ExportState, &
+         fldList=fldsFrAtm, &
+         numflds=fldsFrAtm_num, &
+         flds_scalar_name=flds_scalar_name, &
+         flds_scalar_num=flds_scalar_num, &
+         tag=subname//':datmExport',&
+         mesh=Emesh, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_fldList_Realize(exportState, fldListFr(compatm), flds_scalar_name, flds_scalar_num, &
-         mesh=Emesh, tag=subname//':datmExport', rc=rc)
+    call fld_list_realize( &
+         state=importState, &
+         fldList=fldsToAtm, &
+         numflds=fldsToAtm_num, &
+         flds_scalar_name=flds_scalar_name, &
+         flds_scalar_num=flds_scalar_num, &
+         tag=subname//':datmImport',&
+         mesh=Emesh, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
@@ -734,7 +826,8 @@ module atm_comp_nuopc
          target_mon=mon, &
          calendar=calendar, &
          modeldt=modeldt, &
-         case_name=case_name)
+         case_name=case_name, &
+         atm_prognostic=atm_prognostic)
 
     ! Use nextYMD and nextTOD here since since the component - clock is advance at the END of the time interval
     nextsw_cday = datm_shr_getNextRadCDay( nextYMD, nextTOD, stepno, modeldt, iradsw, calendar )
@@ -826,7 +919,7 @@ module atm_comp_nuopc
        call NUOPC_CompAttributeGet(gcomp, name="restart_option", value=restart_option, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       call NUOPC_CompAttributeGet(gcomp,  name="restart_n", value=cvalue, rc=rc)
+       call NUOPC_CompAttributeGet(gcomp, name="restart_n", value=cvalue, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) restart_n
 
@@ -886,5 +979,136 @@ module atm_comp_nuopc
   end subroutine ModelFinalize
 
   !===============================================================================
+
+  subroutine fld_list_add(num, fldlist, stdname, flds_concat)
+    integer,                    intent(inout) :: num
+    type(fld_list_type),        intent(inout) :: fldlist(:)
+    character(len=*),           intent(in)    :: stdname
+    character(len=*), optional, intent(inout) :: flds_concat
+
+    ! local variables
+    integer :: rc
+    character(len=*), parameter :: subname='(atm_comp_nuopc:fld_list_add)'
+    !-------------------------------------------------------------------------------
+
+    ! Set up a list of field information
+
+    num = num + 1
+    if (num > fldsMax) then
+      call ESMF_LogWrite(trim(subname)//": ERROR num > fldsMax "//trim(stdname), &
+        ESMF_LOGMSG_ERROR, line=__LINE__, file=__FILE__, rc=dbrc)
+      return
+    endif
+    fldlist(num)%stdname        = trim(stdname)
+
+    if (present(flds_concat)) then
+       if (len_trim(flds_concat) + len_trim(stdname) + 1 >= len(flds_concat)) then
+          call ESMF_LogWrite(subname//': ERROR: max len of flds_concat has been exceeded', &
+               ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
+       end if
+       if (trim(flds_concat) == '') then
+          flds_concat = trim(stdname)
+       else
+          flds_concat = trim(flds_concat)//':'//trim(stdname)
+       end if
+    end if
+
+  end subroutine fld_list_add
+
+  !===============================================================================
+
+  subroutine fld_list_realize(state, fldList, numflds, flds_scalar_name, flds_scalar_num, mesh, tag, rc)
+
+    use NUOPC , only : NUOPC_IsConnected, NUOPC_Realize
+    use ESMF  , only : ESMF_MeshLoc_Element, ESMF_FieldCreate, ESMF_TYPEKIND_R8
+    use ESMF  , only : ESMF_MAXSTR, ESMF_Field, ESMF_State, ESMF_Mesh, ESMF_StateRemove 
+    use ESMF  , only : ESMF_LogFoundError, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF  , only : ESMF_LogWrite, ESMF_LOGMSG_ERROR, ESMF_LOGERR_PASSTHRU
+
+    type(ESMF_State)    , intent(inout) :: state
+    type(fld_list_type) , intent(in)    :: fldList(:)
+    integer             , intent(in)    :: numflds
+    character(len=*)    , intent(in)    :: flds_scalar_name
+    integer             , intent(in)    :: flds_scalar_num
+    character(len=*)    , intent(in)    :: tag
+    type(ESMF_Mesh)     , intent(in)    :: mesh
+    integer             , intent(inout) :: rc
+
+    ! local variables
+    integer                :: n
+    type(ESMF_Field)       :: field
+    character(len=80)      :: stdname
+    character(len=*),parameter  :: subname='(atm_comp_nuopc:fld_list_realize)'
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    do n = 1, numflds
+       stdname = fldList(n)%stdname
+       if (NUOPC_IsConnected(state, fieldName=stdname)) then
+          if (stdname == trim(flds_scalar_name)) then
+             call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(stdname)//" is connected on root pe", &
+                  ESMF_LOGMSG_INFO, rc=dbrc)
+             ! Create the scalar field
+             call SetScalarField(field, flds_scalar_name, flds_scalar_num, rc=rc)
+             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+          else
+             call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(stdname)//" is connected using mesh", &
+                  ESMF_LOGMSG_INFO, rc=dbrc)
+             ! Create the field
+             field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=stdname, meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
+             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+          endif
+
+          ! NOW call NUOPC_Realize
+          call NUOPC_Realize(state, field=field, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+       else
+          if (stdname /= trim(flds_scalar_name)) then
+             call ESMF_LogWrite(subname // trim(tag) // " Field = "// trim(stdname) // " is not connected.", &
+                  ESMF_LOGMSG_INFO, rc=dbrc)
+             call ESMF_StateRemove(state, (/stdname/), rc=rc)
+             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+          end if
+       end if
+    end do
+
+  contains  !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    subroutine SetScalarField(field, flds_scalar_name, flds_scalar_num, rc)
+      ! ----------------------------------------------
+      ! create a field with scalar data on the root pe
+      ! ----------------------------------------------
+      use ESMF, only : ESMF_Field, ESMF_DistGrid, ESMF_Grid
+      use ESMF, only : ESMF_DistGridCreate, ESMF_GridCreate, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU
+      use ESMF, only : ESMF_FieldCreate, ESMF_GridCreate, ESMF_TYPEKIND_R8
+
+      type(ESMF_Field) , intent(inout) :: field
+      character(len=*) , intent(in)    :: flds_scalar_name
+      integer          , intent(in)    :: flds_scalar_num
+      integer          , intent(inout) :: rc
+
+      ! local variables
+      type(ESMF_Distgrid) :: distgrid
+      type(ESMF_Grid)     :: grid
+      character(len=*), parameter :: subname='(SetScalarField)'
+      ! ----------------------------------------------
+
+      rc = ESMF_SUCCESS
+
+      ! create a DistGrid with a single index space element, which gets mapped onto DE 0.
+      distgrid = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/1/), rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+
+      grid = ESMF_GridCreate(distgrid, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+
+      field = ESMF_FieldCreate(name=trim(flds_scalar_name), grid=grid, typekind=ESMF_TYPEKIND_R8, &
+           ungriddedLBound=(/1/), ungriddedUBound=(/flds_scalar_num/), rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+
+    end subroutine SetScalarField
+
+  end subroutine fld_list_realize
 
 end module atm_comp_nuopc

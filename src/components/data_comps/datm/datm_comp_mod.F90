@@ -213,7 +213,7 @@ CONTAINS
        inst_suffix, inst_name, logunit, read_restart, &
        scmMode, scmlat, scmlon, &
        orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
-       calendar, modeldt, currentYMD, currentTOD, currentMON)
+       calendar, modeldt, currentYMD, currentTOD, currentMON, atm_prognostic)
 
     ! !DESCRIPTION: initialize data atm model
 
@@ -245,6 +245,7 @@ CONTAINS
     integer                , intent(in)    :: CurrentYMD          ! model date
     integer                , intent(in)    :: CurrentTOD          ! model sec into model date
     integer                , intent(in)    :: CurrentMON          ! model month
+    logical                , intent(in)    :: atm_prognostic      ! if true, need x2a data
 
     !--- local variables ---
     integer(IN)   :: n,k            ! generic counters
@@ -385,10 +386,12 @@ CONTAINS
     call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
     call mct_aVect_zero(x2a)
 
-    kanidr = mct_aVect_indexRA(x2a,'Sx_anidr')
-    kanidf = mct_aVect_indexRA(x2a,'Sx_anidf')
-    kavsdr = mct_aVect_indexRA(x2a,'Sx_avsdr')
-    kavsdf = mct_aVect_indexRA(x2a,'Sx_avsdf')
+    if (atm_prognostic) then 
+       kanidr = mct_aVect_indexRA(x2a,'Sx_anidr')
+       kanidf = mct_aVect_indexRA(x2a,'Sx_anidf')
+       kavsdr = mct_aVect_indexRA(x2a,'Sx_avsdr')
+       kavsdf = mct_aVect_indexRA(x2a,'Sx_avsdf')
+    end if
 
     !--- figure out what's on the standard streams ---
     cnt = 0
@@ -551,7 +554,8 @@ CONTAINS
          target_tod=currentTOD, &
          target_mon=currentMON, &
          calendar=calendar, &
-         modeldt=modeldt)
+         modeldt=modeldt, &
+         atm_prognostic=atm_prognostic)
     call t_adj_detailf(-2)
 
     call t_stopf('DATM_INIT')
@@ -565,7 +569,7 @@ CONTAINS
        inst_suffix, logunit, &
        orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
        write_restart, target_ymd, target_tod, target_mon, modeldt, calendar, &
-       case_name)
+       atm_prognostic, case_name)
 
     ! !DESCRIPTION: run method for datm model
 
@@ -592,6 +596,7 @@ CONTAINS
     integer(IN)            , intent(in)    :: target_mon       ! model month
     character(len=*)       , intent(in)    :: calendar         ! calendar type
     Integer(IN)            , intent(in)    :: modeldt          ! model time step
+    logical                , intent(in)    :: atm_prognostic
     character(len=*)       , intent(in), optional :: case_name ! case name
 
     !--- local ---
@@ -869,8 +874,12 @@ CONTAINS
           endif
           rtmp = maxval(a2x%rAttr(ktbot,:))
           call shr_mpi_max(rtmp,tbotmax,mpicom,'datm_tbot',all=.true.)
-          rtmp = maxval(x2a%rAttr(kanidr,:))
-          call shr_mpi_max(rtmp,anidrmax,mpicom,'datm_ani',all=.true.)
+          if (atm_prognostic) then
+             rtmp = maxval(x2a%rAttr(kanidr,:))
+             call shr_mpi_max(rtmp,anidrmax,mpicom,'datm_ani',all=.true.)
+          else
+             anidrmax = SHR_CONST_SPVAL ! see below for use
+          end if
           if (stdew > 0) then
              rtmp = maxval(avstrm%rAttr(stdew,:))
              call shr_mpi_max(rtmp,tdewmax,mpicom,'datm_tdew',all=.true.)
