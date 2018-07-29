@@ -892,7 +892,7 @@
 
   <entry id="ESMF_LOGFILE_KIND">
     <type>char</type>
-    <valid_values>ESMF_LOGKIND_SINGLE,ESMF_LOGKIND_MULTI,ESMF_LOGKIND_NONE</valid_values>
+    <valid_values>ESMF_LOGKIND_SINGLE,ESMF_LOGKIND_MULTI,ESMF_LOGKIND_MULTI_ON_ERROR,ESMF_LOGKIND_NONE</valid_values>
     <default_value>ESMF_LOGKIND_NONE</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
