@@ -81,6 +81,9 @@ contains
   !this subroutine returns the proper
   !locations for nm1 and n0 for Qdp - because
   !it only has 2 levels for storage
+
+!qsplit is global, can we put in qsplit into timelevel,
+!and use n0, np1 to compute n0q, npq?
   subroutine TimeLevel_Qdp(tl, qsplit, n0, np1)
     type (TimeLevel_t) :: tl
     integer, intent(in) :: qsplit

@@ -3,7 +3,7 @@ Module dyn_comp
   use shr_kind_mod, only: r8 => shr_kind_r8
   use domain_mod, only : domain1d_t
   use element_mod, only : element_t
-  use time_mod, only : TimeLevel_t, se_nsplit=>nsplit
+  use time_mod, only : TimeLevel_t, TimeLevel_Qdp, se_nsplit=>nsplit
   use hybvcoord_mod, only : hvcoord_t, set_layer_locations
   use hybrid_mod, only : hybrid_t
   use thread_mod, only: nthreads, hthreads, vthreads, omp_get_max_threads, omp_get_thread_num
@@ -285,6 +285,7 @@ CONTAINS
 !then do thetacpdp=theta*cp*dp...
 
 !disabling to get other calls
+!use set_thermostate here
 !                elem(ie)%state%T(:,:,:,:) =Tinit
 
                 elem(ie)%state%v(:,:,:,:,:) =0.0_r8

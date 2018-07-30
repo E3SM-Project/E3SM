@@ -159,6 +159,7 @@ contains
 
 
 ! why is hvcoord input here?
+! ps routine. however it makes sense to move all interfaces to use dp as input?
   !_____________________________________________________________________
   subroutine get_temperature(elem,temperature,hvcoord,nt,ntQ)
   !
