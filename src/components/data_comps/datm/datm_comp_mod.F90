@@ -4,32 +4,45 @@
 module datm_comp_mod
 
   ! !USES:
+  use perf_mod       , only : t_startf, t_stopf
+  use perf_mod       , only : t_adj_detailf, t_barrierf
+  use mct_mod        , only : mct_rearr
+  use mct_mod        , only : mct_avect
+  use mct_mod        , only : mct_gsmap
+  use mct_mod        , only : mct_ggrid
+  use mct_mod        , only : mct_avect_indexRA 
+  use mct_mod        , only : mct_gsmap_lsize
+  use mct_mod        , only : mct_rearr_init
+  use mct_mod        , only : mct_avect_init
+  use mct_mod        , only : mct_avect_zero
+  use mct_mod        , only : mct_avect_lsize
+  use shr_const_mod  , only : SHR_CONST_SPVAL
+  use shr_const_mod  , only : SHR_CONST_TKFRZ
+  use shr_const_mod  , only : SHR_CONST_PI
+  use shr_const_mod  , only : SHR_CONST_PSTD  
+  use shr_const_mod  , only : SHR_CONST_STEBOL
+  use shr_const_mod  , only : SHR_CONST_RDAIR 
+  use shr_kind_mod   , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
+  use shr_sys_mod    , only : shr_sys_flush, shr_sys_abort 
+  use shr_file_mod   , only : shr_file_getunit, shr_file_freeunit
+  use shr_cal_mod    , only : shr_cal_date2julian, shr_cal_datetod2string
+  use shr_mpi_mod    , only : shr_mpi_bcast, shr_mpi_max
+  use shr_precip_mod , only : shr_precip_partition_rain_snow_ramp
+  use shr_strdata_mod, only : shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
+  use shr_strdata_mod, only : shr_strdata_setOrbs, shr_strdata_print, shr_strdata_restRead
+  use shr_strdata_mod, only : shr_strdata_advance, shr_strdata_restWrite
+  use shr_dmodel_mod , only : shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
+  use shr_dmodel_mod , only : shr_dmodel_translate_list, shr_dmodel_translateAV_list
 
-  use mct_mod
-  use esmf
-  use perf_mod
-  use shr_const_mod
-  use shr_sys_mod
-  use shr_kind_mod   , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
-  use shr_file_mod   , only: shr_file_getunit, shr_file_freeunit
-  use shr_cal_mod    , only: shr_cal_date2julian, shr_cal_datetod2string
-  use shr_mpi_mod    , only: shr_mpi_bcast
-  use shr_precip_mod , only: shr_precip_partition_rain_snow_ramp
-  use shr_strdata_mod, only: shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
-  use shr_strdata_mod, only: shr_strdata_setOrbs, shr_strdata_print, shr_strdata_restRead
-  use shr_strdata_mod, only: shr_strdata_advance, shr_strdata_restWrite
-  use shr_dmodel_mod , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
-  use shr_dmodel_mod , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list
-
-  use datm_shr_mod   , only: datm_shr_esat, datm_shr_CORE2getFactors
-  use datm_shr_mod   , only: datamode       ! namelist input
-  use datm_shr_mod   , only: decomp         ! namelist input
-  use datm_shr_mod   , only: wiso_datm      ! namelist input
-  use datm_shr_mod   , only: rest_file      ! namelist input
-  use datm_shr_mod   , only: rest_file_strm ! namelist input
-  use datm_shr_mod   , only: factorfn       ! namelist input
-  use datm_shr_mod   , only: iradsw         ! namelist input
-  use datm_shr_mod   , only: nullstr
+  use datm_shr_mod   , only : datm_shr_esat, datm_shr_CORE2getFactors
+  use datm_shr_mod   , only : datamode       ! namelist input
+  use datm_shr_mod   , only : decomp         ! namelist input
+  use datm_shr_mod   , only : wiso_datm      ! namelist input
+  use datm_shr_mod   , only : rest_file      ! namelist input
+  use datm_shr_mod   , only : rest_file_strm ! namelist input
+  use datm_shr_mod   , only : factorfn       ! namelist input
+  use datm_shr_mod   , only : iradsw         ! namelist input
+  use datm_shr_mod   , only : nullstr
 
   ! !PUBLIC TYPES:
 
@@ -103,7 +116,7 @@ module datm_comp_mod
   integer(IN),parameter :: ktrans  = 77
 
   character(16),parameter  :: avofld(1:ktrans) = &
-       (/"Sa_z            ","Sa_topo         ", &
+     (/"Sa_z            ","Sa_topo         ", &
        "Sa_u            ","Sa_v            ","Sa_tbot         ", &
        "Sa_ptem         ","Sa_shum         ","Sa_dens         ","Sa_pbot         ", &
        "Sa_pslv         ","Faxa_lwdn       ","Faxa_rainc      ","Faxa_rainl      ", &
@@ -130,7 +143,7 @@ module datm_comp_mod
        /)
 
   character(16),parameter  :: avifld(1:ktrans) = &
-       (/"z               ","topo            ", &
+     (/"z               ","topo            ", &
        "u               ","v               ","tbot            ", &
        "ptem            ","shum            ","dens            ","pbot            ", &
        "pslv            ","lwdn            ","rainc           ","rainl           ", &
@@ -207,7 +220,7 @@ CONTAINS
 
   !===============================================================================
 
-  subroutine datm_comp_init(Eclock, x2a, a2x, &
+  subroutine datm_comp_init(x2a, a2x, &
        x2a_fields, a2x_fields, &
        SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
@@ -218,7 +231,6 @@ CONTAINS
     ! !DESCRIPTION: initialize data atm model
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock)       , intent(in)    :: EClock
     type(mct_aVect)        , intent(inout) :: x2a
     type(mct_aVect)        , intent(inout) :: a2x
     character(len=*)       , intent(in)    :: x2a_fields     ! fields from mediator
@@ -534,7 +546,6 @@ CONTAINS
 
     call t_adj_detailf(+2)
     call datm_comp_run(&
-         Eclock=EClock, &
          x2a=x2a, &
          a2x=a2x, &
          SDATM=SDATM, &
@@ -565,7 +576,7 @@ CONTAINS
 
   !===============================================================================
 
-  subroutine datm_comp_run(EClock, x2a, a2x, &
+  subroutine datm_comp_run(x2a, a2x, &
        SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, &
        orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
@@ -575,7 +586,6 @@ CONTAINS
     ! !DESCRIPTION: run method for datm model
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock)       , intent(in)    :: EClock
     type(mct_aVect)        , intent(inout) :: x2a
     type(mct_aVect)        , intent(inout) :: a2x
     type(shr_strdata_type) , intent(inout) :: SDATM

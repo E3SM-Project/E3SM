@@ -5,16 +5,16 @@ module atm_comp_nuopc
   !----------------------------------------------------------------------------
 
   use med_constants_mod     , only : IN, R8, I8, CXX
-  use shr_log_mod           , only : shr_log_Unit
-  use shr_cal_mod           , only : shr_cal_ymd2date, shr_cal_noleap, shr_cal_gregorian
-  use shr_file_mod          , only : shr_file_getlogunit, shr_file_setlogunit
-  use shr_file_mod          , only : shr_file_getloglevel, shr_file_setloglevel
-  use shr_file_mod          , only : shr_file_setIO, shr_file_getUnit
-  use esmFlds               , only : flds_scalar_name
-  use esmFlds               , only : flds_scalar_num
-  use esmFlds               , only : flds_scalar_index_nx
-  use esmFlds               , only : flds_scalar_index_ny
-  use esmFlds               , only : flds_scalar_index_nextsw_cday
+  use med_constants_mod     , only : shr_log_Unit
+  use med_constants_mod     , only : shr_cal_ymd2date, shr_cal_noleap, shr_cal_gregorian
+  use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
+  use med_constants_mod     , only : shr_file_getloglevel, shr_file_setloglevel
+  use med_constants_mod     , only : shr_file_setIO, shr_file_getUnit
+  use shr_nuopc_scalars_mod , only : flds_scalar_name
+  use shr_nuopc_scalars_mod , only : flds_scalar_num
+  use shr_nuopc_scalars_mod , only : flds_scalar_index_nx
+  use shr_nuopc_scalars_mod , only : flds_scalar_index_ny
+  use shr_nuopc_scalars_mod , only : flds_scalar_index_nextsw_cday
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Realize
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Concat
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Deactivate
@@ -56,8 +56,8 @@ module atm_comp_nuopc
   private :: ModelAdvance
   private :: ModelSetRunClock
   private :: ModelFinalize
-  private :: flds_list_add
-  private :: flds_list_realize
+  private :: fld_list_add
+  private :: fld_list_realize
 
   !--------------------------------------------------------------------------
   ! Private module data
@@ -537,13 +537,39 @@ module atm_comp_nuopc
     call ESMF_TimeIntervalGet( timeStep, s=modeldt, rc=rc )
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call datm_comp_init(clock, x2d, d2x, &
-         flds_x2a, flds_a2x, &
-         SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, inst_name, logunit, read_restart, &
-         scmMode, scmlat, scmlon, &
-         orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
-         calendar, modeldt, current_ymd, current_tod, current_mon, atm_prognostic)
+    !----------------------------------------------------------------------------
+    ! Initialize model
+    !----------------------------------------------------------------------------
+
+    call datm_comp_init(&
+         x2d, &
+         d2x, &
+         flds_x2a, &
+         flds_a2x, &
+         SDATM, &
+         gsmap, &
+         ggrid, &
+         mpicom, &
+         compid, &
+         my_task,&
+         master_task, &
+         inst_suffix, &
+         inst_name, &
+         logunit, &
+         read_restart, &
+         scmMode, &
+         scmlat, &
+         scmlon, &
+         orbEccen, &
+         orbMvelpp, &
+         orbLambm0, &
+         orbObliqr, &
+         calendar, &
+         modeldt, &
+         current_ymd, &
+         current_tod, &
+         current_mon, &
+         atm_prognostic)
 
     !----------------------------------------------------------------------------
     ! Set nextsw_cday
@@ -805,7 +831,7 @@ module atm_comp_nuopc
 
     ! Advance the model
 
-    call datm_comp_run(clock, &
+    call datm_comp_run(&
          x2a=x2d, &
          a2x=d2x, &
          SDATM=SDATM, &
