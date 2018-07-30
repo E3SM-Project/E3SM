@@ -266,11 +266,13 @@ contains
          rh_leaf       => photosyns_vars%rh_leaf_patch             , & ! Output: [real(r8) (:)   ]  fractional humidity at leaf surface (dimensionless)                   
          
          leafn         => nitrogenstate_vars%leafn_patch           , &
-         leafn_storage => nitrogenstate_vars%leafn_storage_patch   , &
-         leafn_xfer    => nitrogenstate_vars%leafn_xfer_patch      , &
-         leafp         => phosphorusstate_vars%leafp_patch         , &
-         leafp_storage => phosphorusstate_vars%leafp_storage_patch , &
-         leafp_xfer    => phosphorusstate_vars%leafp_xfer_patch    , &
+         leafn_runmean => nitrogenstate_vars%leafn_runmean_patch   , &
+         !leafn_storage => nitrogenstate_vars%leafn_storage_patch   , &
+         !leafn_xfer    => nitrogenstate_vars%leafn_xfer_patch      , &
+         !leafp         => phosphorusstate_vars%leafp_patch         , &
+         leafp_runmean => phosphorusstate_vars%leafp_runmean_patch , &
+         !leafp_storage => phosphorusstate_vars%leafp_storage_patch , &
+         !leafp_xfer    => phosphorusstate_vars%leafp_xfer_patch    , &
          i_vcmax       => veg_vp%i_vc                          , &
          s_vcmax       => veg_vp%s_vc                            &
          )
@@ -464,7 +466,7 @@ contains
                   ! dividing by LAI to convert total leaf nitrogen
                   ! from m2 ground to m2 leaf; dividing by sum_nscaler to
                   ! convert total leaf N to leaf N at canopy top
-                  lnc(p) = leafn(p) / (total_lai * sum_nscaler)
+                  lnc(p) = leafn_runmean(p) / (total_lai * sum_nscaler)
                   lnc(p) = min(max(lnc(p),0.25_r8),3.0_r8) ! based on doi: 10.1002/ece3.1173
                else                                                                    
                   lnc(p) = 0.0_r8                                                      
@@ -505,8 +507,8 @@ contains
                      ! dividing by LAI to convert total leaf nitrogen
                      ! from m2 ground to m2 leaf; dividing by sum_nscaler to
                      ! convert total leaf N to leaf N at canopy top
-                     lnc(p) = leafn(p) / (total_lai * sum_nscaler)
-                     lpc(p) = leafp(p) / (total_lai * sum_nscaler)
+                     lnc(p) = leafn_runmean(p) / (total_lai * sum_nscaler)
+                     lpc(p) = leafp_runmean(p) / (total_lai * sum_nscaler)
                      lnc(p) = min(max(lnc(p),0.25_r8),3.0_r8) ! based on doi: 10.1002/ece3.1173
                      lpc(p) = min(max(lpc(p),0.014_r8),0.85_r8) ! based on doi: 10.1002/ece3.1173
                      vcmax25top = exp(vcmax_np1(veg_pp%itype(p)) + vcmax_np2(veg_pp%itype(p))*log(lnc(p)) + &
