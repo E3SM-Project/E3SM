@@ -17,7 +17,7 @@ def _iter_model_file_substrs(case):
     for model in models:
         yield model
 
-def _get_all_hist_files(model, from_dir, suffix="", file_extensions=None, ref_case=None):
+def _get_all_hist_files(model, from_dir, file_extensions, suffix="", ref_case=None):
     suffix = (".{}".format(suffix) if suffix else "")
 
     test_hists = []
@@ -27,7 +27,7 @@ def _get_all_hist_files(model, from_dir, suffix="", file_extensions=None, ref_ca
             continue
         if extension.endswith('$'):
             extension = extension[:-1]
-        string = model+r'\d?_?\d*\.'+extension+suffix+'$'
+        string = model+r'\d?_?(\d{4})?\.'+extension+suffix+'$'
         logger.debug ("Regex is {}".format(string))
         pfile = re.compile(string)
         test_hists.extend([os.path.join(from_dir,f) for f in os.listdir(from_dir) if pfile.search(f)])
@@ -42,8 +42,8 @@ def _get_all_hist_files(model, from_dir, suffix="", file_extensions=None, ref_ca
     logger.debug("_get_all_hist_files returns {} for model {}".format(test_hists, model))
     return test_hists
 
-def _get_latest_hist_files(model, from_dir, suffix="", file_extensions=None, ref_case=None):
-    test_hists = _get_all_hist_files(model, from_dir, suffix=suffix, file_extensions=file_extensions, ref_case=ref_case)
+def _get_latest_hist_files(model, from_dir, file_extensions, suffix="", ref_case=None):
+    test_hists = _get_all_hist_files(model, from_dir, file_extensions, suffix=suffix, ref_case=ref_case)
     latest_files = {}
     histlist = []
     for hist in test_hists:
@@ -75,7 +75,7 @@ def copy(case, suffix):
             file_extensions = archive.get_hist_file_extensions(archive.get_entry('drv'))
         else:
             file_extensions = archive.get_hist_file_extensions(archive.get_entry(model))
-        test_hists = _get_latest_hist_files(model, rundir, file_extensions=file_extensions, ref_case=ref_case)
+        test_hists = _get_latest_hist_files(model, rundir, file_extensions, ref_case=ref_case)
         num_copied += len(test_hists)
         for test_hist in test_hists:
             new_file = "{}.{}".format(test_hist, suffix)
@@ -203,8 +203,8 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
             file_extensions = archive.get_hist_file_extensions(archive.get_entry('drv'))
         else:
             file_extensions = archive.get_hist_file_extensions(archive.get_entry(model))
-        hists1 = _get_latest_hist_files(model, from_dir1, suffix1, file_extensions, ref_case)
-        hists2 = _get_latest_hist_files(model, from_dir2, suffix2, file_extensions, ref_case)
+        hists1 = _get_latest_hist_files(model, from_dir1, file_extensions, suffix1, ref_case)
+        hists2 = _get_latest_hist_files(model, from_dir2, file_extensions, suffix2, ref_case)
         if len(hists1) == 0 and len(hists2) == 0:
             comments += "    no hist files found for model {}\n".format(model)
             continue
@@ -418,7 +418,7 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
             file_extensions = archive.get_hist_file_extensions(archive.get_entry('drv'))
         else:
             file_extensions = archive.get_hist_file_extensions(archive.get_entry(model))
-        hists =  _get_latest_hist_files(model, rundir, file_extensions=file_extensions, ref_case=ref_case)
+        hists =  _get_latest_hist_files(model, rundir, file_extensions, ref_case=ref_case)
         logger.debug("latest_files: {}".format(hists))
         num_gen += len(hists)
         for hist in hists:
