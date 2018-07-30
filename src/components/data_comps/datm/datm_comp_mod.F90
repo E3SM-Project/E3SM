@@ -208,7 +208,7 @@ CONTAINS
   !===============================================================================
 
   subroutine datm_comp_init(Eclock, x2a, a2x, &
-       seq_flds_x2a_fields, seq_flds_a2x_fields, &
+       x2a_fields, a2x_fields, &
        SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
        scmMode, scmlat, scmlon, &
@@ -219,33 +219,34 @@ CONTAINS
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)       , intent(in)    :: EClock
-    type(mct_aVect)        , intent(inout) :: x2a, a2x
-    character(len=*)       , intent(in)    :: seq_flds_x2a_fields ! fields from mediator
-    character(len=*)       , intent(in)    :: seq_flds_a2x_fields ! fields to mediator
-    type(shr_strdata_type) , intent(inout) :: SDATM               ! model shr_strdata instance (output)
-    type(mct_gsMap)        , pointer       :: gsMap               ! model global sep map (output)
-    type(mct_gGrid)        , pointer       :: ggrid               ! model ggrid (output)
-    integer(IN)            , intent(in)    :: mpicom              ! mpi communicator
-    integer(IN)            , intent(in)    :: compid              ! mct comp id
-    integer(IN)            , intent(in)    :: my_task             ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task         ! task number of master task
-    character(len=*)       , intent(in)    :: inst_suffix         ! char string associated with instance
-    character(len=*)       , intent(in)    :: inst_name           ! fullname of current instance (ie. "lnd_0001")
-    integer(IN)            , intent(in)    :: logunit             ! logging unit number
-    logical                , intent(in)    :: read_restart        ! start from restart
-    logical                , intent(in)    :: scmMode             ! single column mode
-    real(R8)               , intent(in)    :: scmLat              ! single column lat
-    real(R8)               , intent(in)    :: scmLon              ! single column lon
-    real(R8)               , intent(in)    :: orbEccen            ! orb eccentricity (unit-less)
-    real(R8)               , intent(in)    :: orbMvelpp           ! orb moving vernal eq (radians)
-    real(R8)               , intent(in)    :: orbLambm0           ! orb mean long of perhelion (radians)
-    real(R8)               , intent(in)    :: orbObliqr           ! orb obliquity (radians)
-    character(len=*)       , intent(in)    :: calendar            ! calendar type
-    integer                , intent(in)    :: modeldt             ! model time step
-    integer                , intent(in)    :: CurrentYMD          ! model date
-    integer                , intent(in)    :: CurrentTOD          ! model sec into model date
-    integer                , intent(in)    :: CurrentMON          ! model month
-    logical                , intent(in)    :: atm_prognostic      ! if true, need x2a data
+    type(mct_aVect)        , intent(inout) :: x2a
+    type(mct_aVect)        , intent(inout) :: a2x
+    character(len=*)       , intent(in)    :: x2a_fields     ! fields from mediator
+    character(len=*)       , intent(in)    :: a2x_fields     ! fields to mediator
+    type(shr_strdata_type) , intent(inout) :: SDATM          ! model shr_strdata instance (output)
+    type(mct_gsMap)        , pointer       :: gsMap          ! model global sep map (output)
+    type(mct_gGrid)        , pointer       :: ggrid          ! model ggrid (output)
+    integer(IN)            , intent(in)    :: mpicom         ! mpi communicator
+    integer(IN)            , intent(in)    :: compid         ! mct comp id
+    integer(IN)            , intent(in)    :: my_task        ! my task in mpi communicator mpicom
+    integer(IN)            , intent(in)    :: master_task    ! task number of master task
+    character(len=*)       , intent(in)    :: inst_suffix    ! char string associated with instance
+    character(len=*)       , intent(in)    :: inst_name      ! fullname of current instance (ie. "lnd_0001")
+    integer(IN)            , intent(in)    :: logunit        ! logging unit number
+    logical                , intent(in)    :: read_restart   ! start from restart
+    logical                , intent(in)    :: scmMode        ! single column mode
+    real(R8)               , intent(in)    :: scmLat         ! single column lat
+    real(R8)               , intent(in)    :: scmLon         ! single column lon
+    real(R8)               , intent(in)    :: orbEccen       ! orb eccentricity (unit-less)
+    real(R8)               , intent(in)    :: orbMvelpp      ! orb moving vernal eq (radians)
+    real(R8)               , intent(in)    :: orbLambm0      ! orb mean long of perhelion (radians)
+    real(R8)               , intent(in)    :: orbObliqr      ! orb obliquity (radians)
+    character(len=*)       , intent(in)    :: calendar       ! calendar type
+    integer                , intent(in)    :: modeldt        ! model time step
+    integer                , intent(in)    :: CurrentYMD     ! model date
+    integer                , intent(in)    :: CurrentTOD     ! model sec into model date
+    integer                , intent(in)    :: CurrentMON     ! model month
+    logical                , intent(in)    :: atm_prognostic ! if true, need x2a data
 
     !--- local variables ---
     integer(IN)   :: n,k            ! generic counters
@@ -346,7 +347,7 @@ CONTAINS
     if (my_task == master_task) write(logunit,F00) 'allocate AVs'
     call shr_sys_flush(logunit)
 
-    call mct_aVect_init(a2x, rList=seq_flds_a2x_fields, lsize=lsize)
+    call mct_aVect_init(a2x, rList=a2x_fields, lsize=lsize)
     call mct_aVect_zero(a2x)
 
     kz    = mct_aVect_indexRA(a2x,'Sa_z')
@@ -383,7 +384,7 @@ CONTAINS
        ksl_HDO   = mct_aVect_indexRA(a2x,'Faxa_snowl_HDO')
     end if
 
-    call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
+    call mct_aVect_init(x2a, rList=x2a_fields, lsize=lsize)
     call mct_aVect_zero(x2a)
 
     if (atm_prognostic) then 

@@ -4,8 +4,7 @@ module atm_comp_nuopc
   ! This is the NUOPC cap for DATM
   !----------------------------------------------------------------------------
 
-  use shr_kind_mod          , only : CXX => shr_kind_CXX
-  use med_constants_mod     , only : IN, R8, I8
+  use med_constants_mod     , only : IN, R8, I8, CXX
   use shr_log_mod           , only : shr_log_Unit
   use shr_cal_mod           , only : shr_cal_ymd2date, shr_cal_noleap, shr_cal_gregorian
   use shr_file_mod          , only : shr_file_getlogunit, shr_file_setlogunit
@@ -57,6 +56,8 @@ module atm_comp_nuopc
   private :: ModelAdvance
   private :: ModelSetRunClock
   private :: ModelFinalize
+  private :: flds_list_add
+  private :: flds_list_realize
 
   !--------------------------------------------------------------------------
   ! Private module data

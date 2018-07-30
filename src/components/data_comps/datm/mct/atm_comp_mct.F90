@@ -15,7 +15,9 @@ module atm_comp_mct
   use shr_file_mod    , only: shr_file_freeunit
   use datm_comp_mod   , only: datm_comp_init, datm_comp_run, datm_comp_final
   use datm_shr_mod    , only: datm_shr_read_namelists
-  use datm_shr_mod    , only: presaero
+  use datm_shr_mod    , only: datm_shr_getNextRadCDay
+  use datm_shr_mod    , only: iradsw         ! namelist input
+  use datm_shr_mod    , only: presaero       ! namelist input
   use seq_flds_mod    , only: seq_flds_a2x_fields, seq_flds_x2a_fields
   use seq_timemgr_mod , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
 
@@ -34,6 +36,7 @@ module atm_comp_mct
   !--------------------------------------------------------------------------
   ! Private module data
   !--------------------------------------------------------------------------
+
   type(shr_strdata_type) :: SDATM
   character(CS)          :: myModelName = 'atm' ! user defined model name
   integer(IN)            :: mpicom              ! mpi communicator
@@ -43,6 +46,8 @@ module atm_comp_mct
   character(len=16)      :: inst_suffix = ""    ! char string associated with instance (ie. "_0001" or "")
   integer(IN)            :: logunit             ! logging unit number
   integer(IN)            :: compid              ! mct comp id
+  character(len=CL)      :: calendar            ! calendar type
+  logical                :: atm_prognostic      ! flag
   integer(IN),parameter  :: master_task=0       ! task number of master task
   integer    ,parameter  :: dbug = 10
 
@@ -67,21 +72,25 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    logical           :: atm_present               ! flag
-    logical           :: atm_prognostic            ! flag
-    integer(IN)       :: shrlogunit                ! original log unit
-    integer(IN)       :: shrloglev                 ! original log level
-    logical           :: read_restart              ! start from restart
-    integer(IN)       :: ierr                      ! error code
-    logical           :: scmMode = .false.         ! single column mode
-    real(R8)          :: scmLat  = shr_const_SPVAL ! single column lat
-    real(R8)          :: scmLon  = shr_const_SPVAL ! single column lon
-    real(R8)          :: orbEccen                  ! orb eccentricity (unit-less)
-    real(R8)          :: orbMvelpp                 ! orb moving vernal eq (radians)
-    real(R8)          :: orbLambm0                 ! orb mean long of perhelion (radians)
-    real(R8)          :: orbObliqr                 ! orb obliquity (radians)
-    real(R8)          :: nextsw_cday               ! calendar of next atm sw
-    integer           :: first_time = .true.
+    logical                          :: atm_present               ! flag
+    integer(IN)                      :: shrlogunit                ! original log unit
+    integer(IN)                      :: shrloglev                 ! original log level
+    logical                          :: read_restart              ! start from restart
+    integer(IN)                      :: ierr                      ! error code
+    logical                          :: scmMode = .false.         ! single column mode
+    real(R8)                         :: scmLat  = shr_const_SPVAL ! single column lat
+    real(R8)                         :: scmLon  = shr_const_SPVAL ! single column lon
+    integer                          :: current_ymd               ! model date
+    integer                          :: current_tod               ! model sec into model date
+    integer                          :: current_mon               ! model month
+    integer                          :: stepno                    ! step number
+    integer                          :: modeldt                   ! model timestep
+    real(R8)                         :: nextsw_cday               ! calendar day of next atm sw
+    real(R8)                         :: orbEccen                  ! orb eccentricity (unit-less)
+    real(R8)                         :: orbMvelpp                 ! orb moving vernal eq (radians)
+    real(R8)                         :: orbLambm0                 ! orb mean long of perhelion (radians)
+    real(R8)                         :: orbObliqr                 ! orb obliquity (radians)
+    integer                          :: first_time = .true.
 
     !--- formats ---
     character(*), parameter :: F00   = "('(datm_comp_init) ',8a)"
@@ -165,15 +174,53 @@ CONTAINS
     ! NOTE: the following will never be called if atm_present is .false.
 
     !----------------------------------------------------------------------------
+    ! Determine nextsw_cday
+    !----------------------------------------------------------------------------
+
+    call seq_timemgr_EClockGetData( EClock, &
+         curr_ymd=current_ymd, curr_tod=current_tod, curr_mon=current_mon, &
+         dtime=modeldt, stepno=stepno, calendar=calendar)
+
+    if (read_restart) then
+       nextsw_cday = datm_shr_getNextRadCDay( current_ymd, current_tod, stepno, modeldt, iradsw, calendar )
+    else
+       ! For a startup run the nextsw_cday is just the current calendar day
+       call seq_timemgr_EClockGetData( EClock, curr_cday=nextsw_cday)
+    endif
+
+    !----------------------------------------------------------------------------
     ! Initialize datm
     !----------------------------------------------------------------------------
 
-    call datm_comp_init(Eclock, x2a, a2x, &
-         seq_flds_x2a_fields, seq_flds_a2x_fields, &
-         SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, inst_name, logunit, read_restart, &
-         scmMode, scmlat, scmlon, &
-         orbEccen, orbMvelpp, orbLambm0, orbObliqr, nextsw_cday)
+    call datm_comp_init(Eclock, &
+         x2a=x2a, &
+         a2x=a2x, &
+         x2a_fields=seq_flds_x2a_fields, &
+         a2x_fields=seq_flds_a2x_fields, &
+         SDATM=SDATM, &
+         gsmap=gsmap, &
+         ggrid=ggrid, &
+         mpicom=mpicom, &
+         compid=compid, &
+         my_task=my_task, &
+         master_task=master_task, &
+         inst_suffix=inst_suffix, &
+         inst_name=inst_name, &
+         logunit=logunit, &
+         read_restart=read_restart, &
+         scmMode=scmMode, &
+         scmlat=scmlat, &
+         scmlon=scmlon, &
+         orbEccen=orbEccen, &
+         orbMvelpp=orbMvelpp, &
+         orbLambm0=orbLambm0, &
+         orbObliqr=orbObliqr, &
+         calendar=calendar, &
+         modeldt=modeldt, &
+         currentYMD=current_ymd, &
+         currentTOD=current_tod, &
+         currentMON=current_mon, &
+         atm_prognostic=atm_prognostic)
 
     !----------------------------------------------------------------------------
     ! Fill infodata that needs to be returned from datm
@@ -225,17 +272,20 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer(IN)                      :: shrlogunit     ! original log unit
-    integer(IN)                      :: shrloglev      ! original log level
-    character(CL)                    :: case_name      ! case name
-    real(R8)                         :: orbEccen       ! orb eccentricity (unit-less)
-    real(R8)                         :: orbMvelpp      ! orb moving vernal eq (radians)
-    real(R8)                         :: orbLambm0      ! orb mean long of perhelion (radians)
-    real(R8)                         :: orbObliqr      ! orb obliquity (radians)
-    real(R8)                         :: nextsw_cday    ! calendar of next atm sw
-    logical                          :: write_restart  ! restart now
-    integer(IN)                      :: currentYMD    ! model date
-    integer(IN)                      :: currentTOD    ! model sec into model date
+    integer(IN)                      :: shrlogunit    ! original log unit
+    integer(IN)                      :: shrloglev     ! original log level
+    character(CL)                    :: case_name     ! case name
+    real(R8)                         :: orbEccen      ! orb eccentricity (unit-less)
+    real(R8)                         :: orbMvelpp     ! orb moving vernal eq (radians)
+    real(R8)                         :: orbLambm0     ! orb mean long of perhelion (radians)
+    real(R8)                         :: orbObliqr     ! orb obliquity (radians)
+    real(R8)                         :: nextsw_cday   ! calendar of next atm sw
+    logical                          :: write_restart ! restart now
+    integer                          :: stepno        ! step number
+    integer(IN)                      :: current_ymd   ! model date
+    integer(IN)                      :: current_tod   ! model sec into model date
+    integer(IN)                      :: current_mon   ! model sec into model date
+    integer                          :: modeldt       ! integer timestep
     character(*), parameter :: subName = "(atm_run_mct) "
     !-------------------------------------------------------------------------------
 
@@ -257,10 +307,22 @@ CONTAINS
          orb_lambm0=orbLambm0, &
          orb_obliqr=orbObliqr)
 
-    ! For mct - the component clock is advance at the beginning of the time interval
-    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
+    !--------------------------------
+    ! Set nextsw_cday
+    !--------------------------------
 
-    write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
+    ! Use currentYMD and currentTOD here since since the component
+    ! clock is advance at the BEGINNING of the time interval
+
+    call seq_timemgr_EClockGetData( EClock, &
+         curr_ymd=current_ymd, curr_tod=current_tod, curr_mon=current_mon, stepno=stepno, dtime=modeldt )
+    nextsw_cday = datm_shr_getNextRadCDay( current_ymd, current_tod, stepno, modeldt, iradsw, calendar )
+
+    call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday )
+
+    !--------------------------------
+    ! Run datm as part of initialization
+    !--------------------------------
 
     call datm_comp_run(&
          Eclock=EClock, &
@@ -279,10 +341,13 @@ CONTAINS
          orbMvelpp=orbMvelpp, &
          orbLambm0=orbLambm0, &
          orbObliqr=orbObliqr, &
-         nextsw_cday=nextsw_cday, &
-         write_restart=write_restart, &
-         target_ymd=currentYMD, &
-         target_tod=currentTOD, &
+         write_restart=.false., &
+         target_ymd=current_ymd, &
+         target_tod=current_tod, &
+         target_mon=current_mon, &
+         modeldt=modeldt, &
+         calendar=calendar, &
+         atm_prognostic=atm_prognostic, &
          case_name=case_name)
 
     if (dbug > 1) then
@@ -291,14 +356,13 @@ CONTAINS
        end if
     end if
 
-    call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday )
-
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
 
   end subroutine atm_run_mct
 
   !===============================================================================
+
   subroutine atm_final_mct(EClock, cdata, x2a, a2x)
 
     ! !DESCRIPTION: finalize method for dead atm model
