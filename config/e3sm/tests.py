@@ -21,6 +21,10 @@ _TESTS = {
                              ("ERS.f09_g16.I1850CLM45CN","clm-bgcinterface"),
                               "ERS.ne11_oQU240.I20TRCLM45",
                              ("ERS.f19_g16.I1850CNRDCTCBC","clm-rd"),
+                             ("ERS.f19_g16.I1850GSWCNPECACNTBC","clm-eca_f19_g16_I1850GSWCNPECACNTBC"),
+                             ("ERS.f19_g16.I20TRGSWCNPECACNTBC","clm-eca_f19_g16_I20TRGSWCNPECACNTBC"),
+                             ("ERS.f19_g16.I1850GSWCNPRDCTCBC","clm-ctc_f19_g16_I1850GSWCNPRDCTCBC"),
+                             ("ERS.f19_g16.I20TRGSWCNPRDCTCBC","clm-ctc_f19_g16_I20TRGSWCNPRDCTCBC"),
                               "ERS.f09_g16.ICLM45BC")
                              ),
 
