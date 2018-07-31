@@ -805,6 +805,10 @@
 <do_clubb_sgs                > .false. </do_clubb_sgs>
 <do_clubb_sgs  clubb_sgs="1" > .true.  </do_clubb_sgs>
 
+<!-- SHOC_SGS -->
+<do_shoc_sgs                 > .false. </do_shoc_sgs>
+<do_shoc_sgs   shoc_sgs="1"  > .true. </do_shoc_sgs>
+
 <!-- CLUBB options -->
 <clubb_rainevap_turb                              > .false. </clubb_rainevap_turb>
 <clubb_rainevap_turb microphys="mg2" clubb_sgs="1"> .false.  </clubb_rainevap_turb>
@@ -858,6 +862,7 @@
 <micro_mg_sub_version microphys="mg2">                                 0          </micro_mg_sub_version>
 <micro_mg_num_steps   microphys="mg2">                                 2          </micro_mg_num_steps>
 <micro_mg_num_steps   microphys="mg2" clubb_sgs="1">                   1          </micro_mg_num_steps>
+<micro_mg_num_steps   microphys="mg2" shoc_sgs="1">                   1          </micro_mg_num_steps>
 <micro_mg_dcs         microphys="mg2">                                 150.D-6    </micro_mg_dcs>
 <micro_mg_dcs         microphys="mg2" clubb_sgs="1">                   195.D-6    </micro_mg_dcs>
 <micro_mg_dcs         microphys="mg2" clubb_sgs="1" clubb_do_deep="1"> 195.D-6    </micro_mg_dcs>
@@ -883,6 +888,7 @@
 
 <cld_macmic_num_steps>                               1 </cld_macmic_num_steps>
 <cld_macmic_num_steps microphys="mg2" clubb_sgs="1"> 6 </cld_macmic_num_steps>
+<cld_macmic_num_steps microphys="mg2" shoc_sgs="1"> 6 </cld_macmic_num_steps>
 
 <microp_uniform>.false.</microp_uniform>
 <!-- Added flags for regenration and liq cld frac bug fixes    -->
@@ -902,6 +908,7 @@
 <macrop_scheme macrophys="rk"        >rk</macrop_scheme>
 <macrop_scheme macrophys="park"      >park</macrop_scheme>
 <macrop_scheme macrophys="clubb_sgs" >CLUBB_SGS</macrop_scheme>
+<macrop_scheme macrophys="shoc_sgs"  >SHOC_SGS</macrop_scheme>
 
 <!-- Vertical limit on troposphere cloud physics -->
 
@@ -1020,18 +1027,21 @@
 <eddy_scheme pbl="hb"             >HB       </eddy_scheme>
 <eddy_scheme pbl="hbr"            >HBR      </eddy_scheme>
 <eddy_scheme pbl="clubb_sgs"      >CLUBB_SGS</eddy_scheme>
+<eddy_scheme pbl="shoc_sgs"       >SHOC_SGS</eddy_scheme>
 
 <shallow_scheme pbl="uw"          >UW       </shallow_scheme>
 <shallow_scheme pbl="uw" unicon="1">UNICON   </shallow_scheme>
 <shallow_scheme pbl="hb"          >Hack     </shallow_scheme>
 <shallow_scheme pbl="hbr"         >Hack     </shallow_scheme>
 <shallow_scheme pbl="clubb_sgs"   >CLUBB_SGS</shallow_scheme>
+<shallow_scheme pbl="shoc_sgs"    >SHOC_SGS</shallow_scheme>
 
 <!-- Surface flux averaging -->
 <srf_flux_avg eddy_scheme="HB"       >0</srf_flux_avg>
 <srf_flux_avg eddy_scheme="HBR"      >0</srf_flux_avg>
 <srf_flux_avg eddy_scheme="diag_TKE" >0</srf_flux_avg>
 <srf_flux_avg eddy_scheme="CLUBB_SGS">0</srf_flux_avg>
+<srf_flux_avg eddy_scheme="SHOC_SGS">0</srf_flux_avg>
 
 <!-- Cloud fraction -->
 <cldfrc_freeze_dry             >.true.</cldfrc_freeze_dry>

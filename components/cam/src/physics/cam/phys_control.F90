@@ -94,6 +94,7 @@ integer           :: history_budget_histfile_num = 1   ! output history file num
 logical           :: history_waccm        = .true.     ! output variables of interest for WACCM runs
 logical           :: history_clubb        = .true.     ! output default CLUBB-related variables
 logical           :: do_clubb_sgs
+logical           :: do_shoc_sgs
 logical           :: do_aerocom_ind3      = .false.    ! true to write aerocom
 real(r8)          :: prc_coef1            = huge(1.0_r8)
 real(r8)          :: prc_exp              = huge(1.0_r8)
@@ -177,7 +178,7 @@ subroutine phys_ctl_readnl(nlfile)
       use_subcol_microp, atm_dep_flux, history_amwg, history_verbose, history_vdiag, &
       history_aerosol, history_aero_optics, &
       history_eddy, history_budget,  history_budget_histfile_num, history_waccm, &
-      conv_water_in_rad, history_clubb, do_clubb_sgs, do_tms, state_debug_checks, &
+      conv_water_in_rad, history_clubb, do_clubb_sgs, do_shoc_sgs, do_tms, state_debug_checks, &
       use_mass_borrower, do_aerocom_ind3, &
       l_ieflx_fix, &
       ieflx_opt, &
@@ -232,6 +233,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(history_waccm,                   1 , mpilog,  0, mpicom)
    call mpibcast(history_clubb,                   1 , mpilog,  0, mpicom)
    call mpibcast(do_clubb_sgs,                    1 , mpilog,  0, mpicom)
+   call mpibcast(do_shoc_sgs,                     1 , mpilog,  0, mpicom)
    call mpibcast(do_aerocom_ind3,                 1 , mpilog,  0, mpicom)
    call mpibcast(conv_water_in_rad,               1 , mpiint,  0, mpicom)
    call mpibcast(do_tms,                          1 , mpilog,  0, mpicom)
@@ -329,6 +331,12 @@ subroutine phys_ctl_readnl(nlfile)
       write(iulog,*)'CLUBB is only compatible with MG microphysics.  Quiting'
       call endrun('CLUBB and microphysics schemes incompatible')
    endif
+   
+   ! Add a check to make sure SHOC and MG are used together
+   if ( do_shoc_sgs .and. ( microp_scheme .ne. 'MG')) then
+      write(iulog,*)'SHOC is only compatible with MG microphysics.  Quiting'
+      call endrun('SHOC and microphysics schemes incompatible')
+   endif   
 
    ! Check that eddy_scheme, macrop_scheme, shallow_scheme are all set to CLUBB_SGS if do_clubb_sgs is true
    if (do_clubb_sgs) then
@@ -337,10 +345,19 @@ subroutine phys_ctl_readnl(nlfile)
          call endrun('CLUBB and eddy, macrop or shallow schemes incompatible')
       endif
    endif
+   
+   ! Check that eddy_scheme, macrop_scheme, shallow_scheme are all set to SHOC_SGS if do_shoc_sgs is true
+   if (do_shoc_sgs) then
+      if (eddy_scheme .ne. 'SHOC_SGS' .or. macrop_scheme .ne. 'SHOC_SGS' .or. shallow_scheme .ne. 'SHOC_SGS') then
+         write(iulog,*)'eddy_scheme, macrop_scheme and shallow_scheme must all be SHOC_SGS.  Quiting'
+         call endrun('SHOC and eddy, macrop or shallow schemes incompatible')
+      endif
+   endif   
 
    ! Macro/micro co-substepping support.
    if (cld_macmic_num_steps > 1) then
-      if (microp_scheme /= "MG" .or. (macrop_scheme /= "park" .and. macrop_scheme /= "CLUBB_SGS")) then
+      if (microp_scheme /= "MG" .or. (macrop_scheme /= "park" .and. macrop_scheme /= "CLUBB_SGS") &
+         (macrop_scheme /= "CLUBB_SGS")) then
          call endrun ("Setting cld_macmic_num_steps > 1 is only &
               &supported with Park or CLUBB macrophysics and MG microphysics.")
       end if
@@ -410,7 +427,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         history_budget_out, history_budget_histfile_num_out, history_waccm_out, &
                         history_clubb_out, ieflx_opt_out, conv_water_in_rad_out, cam_chempkg_out, &
                         prog_modal_aero_out, macrop_scheme_out, &
-                        do_clubb_sgs_out, do_tms_out, state_debug_checks_out, &
+                        do_clubb_sgs_out, do_shoc_sgs_out, do_tms_out, state_debug_checks_out, &
                         do_aerocom_ind3_out,  &
                         use_mass_borrower_out, & 
                         l_ieflx_fix_out, & 
@@ -452,6 +469,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: history_waccm_out
    logical,           intent(out), optional :: history_clubb_out
    logical,           intent(out), optional :: do_clubb_sgs_out
+   logical,           intent(out), optional :: do_shoc_sgs_out
    logical,           intent(out), optional :: do_aerocom_ind3_out
    logical,           intent(out), optional :: micro_do_icesupersat_out
    integer,           intent(out), optional :: ieflx_opt_out
@@ -518,6 +536,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(history_waccm_out       ) ) history_waccm_out        = history_waccm
    if ( present(history_clubb_out       ) ) history_clubb_out        = history_clubb
    if ( present(do_clubb_sgs_out        ) ) do_clubb_sgs_out         = do_clubb_sgs
+   if ( present(do_shoc_sgs_out        ) ) do_shoc_sgs_out         = do_shoc_sgs
    if ( present(do_aerocom_ind3_out ) ) do_aerocom_ind3_out = do_aerocom_ind3
    if ( present(micro_do_icesupersat_out )) micro_do_icesupersat_out = micro_do_icesupersat
    if ( present(conv_water_in_rad_out   ) ) conv_water_in_rad_out    = conv_water_in_rad
