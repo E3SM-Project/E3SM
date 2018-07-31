@@ -183,8 +183,10 @@ ENDIF ()
 ##############################################################################
 IF (ENABLE_HORIZ_OPENMP OR ENABLE_COLUMN_OPENMP)
   IF(NOT ${CMAKE_Fortran_COMPILER_ID} STREQUAL Cray) 
-    FIND_PACKAGE(OpenMP)
-    IF(OPENMP_FOUND)
+
+    #-mxu no need to find openmp in cray system such as in Titan
+    #-FIND_PACKAGE(OpenMP)
+    #-IF(OPENMP_FOUND)
       MESSAGE(STATUS "Found OpenMP Flags")
       IF (CMAKE_Fortran_COMPILER_ID STREQUAL XL)
         SET(OpenMP_C_FLAGS "-qsmp=omp")
@@ -192,6 +194,18 @@ IF (ENABLE_HORIZ_OPENMP OR ENABLE_COLUMN_OPENMP)
           SET(OpenMP_C_FLAGS "-qsmp=omp:nested_par -qsuppress=1520-045:1506-793")
         ENDIF ()
       ENDIF ()
+
+      #+mxu
+      IF (CMAKE_Fortran_COMPILER_ID STREQUAL PGI)
+         set(OpenMP_C_FLAGS "-mp")
+         set(OpenMP_CXX_FLAGS "-mp")
+         set(OpenMP_EXE_LINKER_FLAGS "-mp")
+      ELSE ()
+         set(OpenMP_C_FLAGS "-fopenmp")
+         set(OpenMP_CXX_FLAGS "-fopenmp")
+         set(OpenMP_EXE_LINKER_FLAGS "-fopenmp")
+      ENDIF ()
+      #.mxu
       # This file is needed for the timing library - this is currently
       # inaccessible from the timing CMake script
       SET(OpenMP_Fortran_FLAGS "${OpenMP_C_FLAGS}")
@@ -204,9 +218,11 @@ IF (ENABLE_HORIZ_OPENMP OR ENABLE_COLUMN_OPENMP)
       SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
       SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
       SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-    ELSE ()
-      MESSAGE(FATAL_ERROR "Unable to find OpenMP")
-    ENDIF()
+    #-mxu
+    #-ELSE ()
+    #-  MESSAGE(FATAL_ERROR "Unable to find OpenMP")
+    #-ENDIF()
+    #.mxu
   ENDIF()
  IF (${ENABLE_HORIZ_OPENMP})
    # Set this as global so it can be picked up by all executables

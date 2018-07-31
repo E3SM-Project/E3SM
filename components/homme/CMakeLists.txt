@@ -116,15 +116,17 @@ ELSE()
   OPTION(HOMME_FIND_BLASLAPACK "Whether to use system blas/lapack" FALSE)
   MESSAGE(STATUS "HOMME_FIND_BLASLAPACK=${HOMME_FIND_BLASLAPACK}")
 
-  IF(${HOMME_FIND_BLASLAPACK})
-    FIND_PACKAGE(BLAS REQUIRED)
-    FIND_PACKAGE(LAPACK REQUIRED)
-  ELSE()
-    SET(HOMME_FIND_BLASLAPACK FALSE)
-    # Build the blas and lapack provided with homme
-    ADD_SUBDIRECTORY(libs/blas)
-    ADD_SUBDIRECTORY(libs/lapack)
-  ENDIF()
+  #-mxu no need if cray-libsci is loaded
+  #-IF(${HOMME_FIND_BLASLAPACK})
+  #-  FIND_PACKAGE(BLAS REQUIRED)
+  #-  FIND_PACKAGE(LAPACK REQUIRED)
+  #-ELSE()
+  #-  SET(HOMME_FIND_BLASLAPACK FALSE)
+  #-  # Build the blas and lapack provided with homme
+  #-  ADD_SUBDIRECTORY(libs/blas)
+  #-  ADD_SUBDIRECTORY(libs/lapack)
+  #-ENDIF()
+  #.mxu
 ENDIF()
 
 IF (${HOMME_USE_TRILINOS})
