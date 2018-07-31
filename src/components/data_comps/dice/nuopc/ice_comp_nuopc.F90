@@ -4,15 +4,12 @@ module ice_comp_nuopc
   ! This is the NUOPC cap for DICE
   !----------------------------------------------------------------------------
 
-  use shr_kind_mod          , only : R8=>SHR_KIND_R8, IN=>SHR_KIND_IN
-  use shr_kind_mod          , only : CS=>SHR_KIND_CS, CL=>SHR_KIND_CL, CXX => shr_kind_CXX
+  use shr_kind_mod          , only : R8=>SHR_KIND_R8
   use shr_log_mod           , only : shr_log_Unit
   use shr_file_mod          , only : shr_file_getlogunit, shr_file_setlogunit
   use shr_file_mod          , only : shr_file_getloglevel, shr_file_setloglevel
   use shr_file_mod          , only : shr_file_setIO, shr_file_getUnit
-  use seq_timemgr_mod       , only : seq_timemgr_EClockPrint, seq_timemgr_AlarmGet
-  use seq_timemgr_mod       , only : seq_timemgr_ETimeGet, seq_timemgr_alarmSetOff
-  use seq_timemgr_mod       , only : seq_timemgr_alarm_restart, seq_timemgr_alarmIsOn
+  use shr_cal_mod           , only : shr_cal_ymd2date
   use esmFlds               , only : fldListFr, fldListTo, compice, compname
   use esmFlds               , only : flds_scalar_name
   use esmFlds               , only : flds_scalar_num
@@ -32,24 +29,24 @@ module ice_comp_nuopc
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_Meshinit
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
+  use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
   use shr_strdata_mod       , only : shr_strdata_type
 
   use ESMF
   use NUOPC
   use NUOPC_Model, &
-    model_routine_SS      => SetServices, &
-    model_label_Advance   => label_Advance, &
+    model_routine_SS        => SetServices, &
+    model_label_Advance     => label_Advance, &
     model_label_SetRunClock => label_SetRunClock, &
-    model_label_Finalize  => label_Finalize
+    model_label_Finalize    => label_Finalize
 
   use dice_shr_mod , only: dice_shr_read_namelists
   use dice_comp_mod, only: dice_comp_init, dice_comp_run, dice_comp_final
-  use perf_mod
   use mct_mod
 
   implicit none
 
-  public :: SetServices
+  public  :: SetServices
 
   private :: InitializeP0
   private :: InitializeAdvertise
@@ -64,7 +61,7 @@ module ice_comp_nuopc
   ! Private module data
   !--------------------------------------------------------------------------
 
-  character(CS)              :: myModelName = 'ice'       ! user defined model name
+  character(len=80)          :: myModelName = 'ice'       ! user defined model name
   type(shr_strdata_type)     :: SDICE
   type(mct_gsMap), target    :: gsMap_target
   type(mct_gGrid), target    :: ggrid_target
@@ -72,28 +69,28 @@ module ice_comp_nuopc
   type(mct_gGrid), pointer   :: ggrid
   type(mct_aVect)            :: x2d
   type(mct_aVect)            :: d2x
-  integer(IN)                :: compid                    ! mct comp id
-  integer(IN)                :: mpicom                    ! mpi communicator
-  integer(IN)                :: my_task                   ! my task in mpi communicator mpicom
+  integer                    :: compid                    ! mct comp id
+  integer                    :: mpicom                    ! mpi communicator
+  integer                    :: my_task                   ! my task in mpi communicator mpicom
   integer                    :: inst_index                ! number of current instance (ie. 1)
   character(len=16)          :: inst_name                 ! fullname of current instance (ie. "lnd_0001")
   character(len=16)          :: inst_suffix = ""          ! char string associated with instance (ie. "_0001" or "")
-  integer(IN)                :: logunit                   ! logging unit number
-  integer(IN),parameter      :: master_task=0             ! task number of master task
-  integer(IN)                :: localPet
+  integer                    :: logunit                   ! logging unit number
+  integer, parameter         :: master_task=0             ! task number of master task
+  integer                    :: localPet
   logical                    :: ice_prognostic            ! flag
   logical                    :: unpack_import
   logical                    :: read_restart              ! start from restart
-  character(CL)              :: case_name                 ! case name
-  character(CL)              :: tmpstr                    ! tmp string
+  character(len=256)         :: case_name                 ! case name
+  character(len=256)         :: tmpstr                    ! tmp string
   integer                    :: dbrc
   integer, parameter         :: dbug = 10
   character(len=*),parameter :: grid_option = "mesh"      ! grid_de, grid_arb, grid_reg, mesh
   logical                    :: iceberg_prognostic = .false.
   logical                    :: flds_i2o_per_cat          ! .true. if select per ice thickness
                                                           ! category fields are passed from ice to ocean
-  character(CXX)             :: flds_i2x = ''
-  character(CXX)             :: flds_x2i = ''
+  character(len=4096)        :: flds_i2x = ''
+  character(len=4096)        :: flds_x2i = ''
 
   !----- formats -----
   character(*),parameter :: modName =  "(ice_comp_nuopc)"
@@ -178,15 +175,15 @@ module ice_comp_nuopc
     ! local variables
     logical            :: ice_present ! flag
     type(ESMF_VM)      :: vm
-    integer(IN)        :: lmpicom
-    character(CL)      :: cvalue
+    integer            :: lmpicom
+    character(len=256) :: cvalue
     logical            :: exists
-    character(CS)      :: stdname, shortname
+    character(len=80)  :: stdname, shortname
     logical            :: activefld
-    integer(IN)        :: n,nflds
-    integer(IN)        :: ierr       ! error code
-    integer(IN)        :: shrlogunit ! original log unit
-    integer(IN)        :: shrloglev  ! original log level
+    integer            :: n,nflds
+    integer            :: ierr       ! error code
+    integer            :: shrlogunit ! original log unit
+    integer            :: shrloglev  ! original log level
     logical            :: isPresent
     character(len=512) :: diro
     character(len=512) :: logfile
@@ -330,10 +327,10 @@ module ice_comp_nuopc
     integer                :: nx_global, ny_global
     type(ESMF_VM)          :: vm
     integer                :: n
-    character(CL)          :: cvalue
-    integer(IN)            :: shrlogunit                ! original log unit
-    integer(IN)            :: shrloglev                 ! original log level
-    integer(IN)            :: ierr                      ! error code
+    character(len=256)     :: cvalue
+    integer                :: shrlogunit                ! original log unit
+    integer                :: shrloglev                 ! original log level
+    integer                :: ierr                      ! error code
     logical                :: scmMode = .false.         ! single column mode
     real(R8)               :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)               :: scmLon  = shr_const_SPVAL ! single column lon
@@ -533,16 +530,17 @@ module ice_comp_nuopc
     type(ESMF_Time)         :: time
     type(ESMF_State)        :: importState, exportState
     type(ESMF_Alarm)        :: alarm
-    integer(IN)             :: shrlogunit    ! original log unit
-    integer(IN)             :: shrloglev     ! original log level
+    integer                 :: shrlogunit    ! original log unit
+    integer                 :: shrloglev     ! original log level
     character(len=128)      :: calendar
     logical                 :: write_restart ! restart alarm is ringing
-    integer(IN)             :: currentYMD    ! model date
-    integer(IN)             :: currentTOD    ! model sec into model date
-    integer(IN)             :: nextYMD       ! model date
-    integer(IN)             :: nextTOD       ! model sec into model date
+    integer                 :: nextYMD       ! model date
+    integer                 :: nextTOD       ! model sec into model date
     type(ESMF_Time)         :: currTime, nextTime
     type(ESMF_TimeInterval) :: timeStep
+    integer                 :: yr            ! year
+    integer                 :: mon           ! month
+    integer                 :: day           ! day in month
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
@@ -580,19 +578,29 @@ module ice_comp_nuopc
     ! Run model
     !--------------------------------
 
-    write_restart = seq_timemgr_alarmIsOn(clock, seq_timemgr_alarm_restart, rc)
+    call ESMF_ClockGetAlarm(clock, alarmname='alarm_restart', alarm=alarm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call seq_timemgr_AlarmSetOff(clock, seq_timemgr_alarm_restart, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (ESMF_AlarmIsRinging(alarm, rc=rc)) then
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       write_restart = .true.
+       call ESMF_AlarmRingerOff( alarm, rc=rc )
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       write_restart = .false.
+    endif
 
     ! For nuopc - the component clock is advanced at the end of the time interval
     ! For these to match for now - need to advance nuopc one timestep ahead for
     ! shr_strdata time interpolation
+
     call ESMF_ClockGet( clock, currTime=currTime, timeStep=timeStep, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     nextTime = currTime + timeStep
-    call seq_timemgr_ETimeGet( currTime, ymd=CurrentYMD, tod=CurrentTOD )
-    call seq_timemgr_ETimeGet( nextTime, ymd=NextYMD, tod=NextTOD )
+    call ESMF_TimeGet( nextTime, yy=yr, mm=mon, dd=day, s=nexttod, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call shr_cal_ymd2date(yr, mon, day, nextymd)
 
     call dice_comp_run(clock, x2d, d2x, &
          flds_i2o_per_cat, &
@@ -650,9 +658,12 @@ module ice_comp_nuopc
     type(ESMF_Time)          :: mstoptime
     type(ESMF_TimeInterval)  :: mtimestep, dtimestep
     character(len=128)       :: mtimestring, dtimestring
-    type(ESMF_Alarm),pointer :: alarmList(:)
-    type(ESMF_Alarm)         :: dalarm
-    integer                  :: alarmcount, n
+    character(len=256)       :: cvalue
+    character(len=256)       :: restart_option       ! Restart option units
+    integer                  :: restart_n            ! Number until restart interval
+    integer                  :: restart_ymd          ! Restart date (YYYYMMDD)
+    type(ESMF_ALARM)         :: restart_alarm
+    integer                  :: first_time = .true.
     character(len=*),parameter :: subname=trim(modName)//':(ModelSetRunClock) '
     !-------------------------------------------------------------------------------
 
@@ -662,9 +673,6 @@ module ice_comp_nuopc
     ! query the Component for its clock, importState and exportState
     call NUOPC_ModelGet(gcomp, driverClock=dclock, modelClock=mclock, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-!    call shr_nuopc_methods_Clock_TimePrint(dClock,trim(subname)//'driver clock1',rc)
-!    call shr_nuopc_methods_Clock_TimePrint(mclock,trim(subname)//'model  clock1',rc)
 
     call ESMF_ClockGet(dclock, currTime=dcurrtime, timeStep=dtimestep, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -680,31 +688,36 @@ module ice_comp_nuopc
     call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    !--------------------------------
-    ! copy alarms from driver to model clock if model clock has no alarms (do this only once!)
-    !--------------------------------
+    !--------------------------------                                                                                 
+    ! set restart alarm
+    !--------------------------------                                                                                 
 
-    call ESMF_ClockGetAlarmList(mclock, alarmlistflag=ESMF_ALARMLIST_ALL, alarmCount=alarmCount, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (alarmCount == 0) then
-       call ESMF_ClockGetAlarmList(dclock, alarmlistflag=ESMF_ALARMLIST_ALL, alarmCount=alarmCount, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       allocate(alarmList(alarmCount))
-       call ESMF_ClockGetAlarmList(dclock, alarmlistflag=ESMF_ALARMLIST_ALL, alarmList=alarmList, rc=rc)
+    if (first_time) then
+       call NUOPC_CompAttributeGet(gcomp, name="restart_option", value=restart_option, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       do n = 1, alarmCount
-          !call ESMF_AlarmPrint(alarmList(n), rc=rc)
-          !if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          dalarm = ESMF_AlarmCreate(alarmList(n), rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_AlarmSet(dalarm, clock=mclock, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       enddo
+       call NUOPC_CompAttributeGet(gcomp,  name="restart_n", value=cvalue, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       read(cvalue,*) restart_n
 
-       deallocate(alarmList)
-    endif
+       call NUOPC_CompAttributeGet(gcomp, name="restart_ymd", value=cvalue, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       read(cvalue,*) restart_ymd
+
+       call shr_nuopc_time_alarmInit(mclock,  &
+            alarm   = restart_alarm,       &
+            option  = restart_option,      &
+            opt_n   = restart_n,           &
+            opt_ymd = restart_ymd,         &
+            RefTime = mcurrTime,            &
+            alarmname = 'alarm_restart', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call ESMF_AlarmSet(restart_alarm, clock=mclock, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       first_time = .false.
+    end if
 
     !--------------------------------
     ! Advance model clock to trigger alarms then reset model clock back to currtime

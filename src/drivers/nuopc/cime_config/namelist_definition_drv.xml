@@ -2179,7 +2179,7 @@ n    </desc>
   <entry id="flds_co2a">
     <type>logical</type>
     <category>flds</category>
-    <group>FLDS_attributes</group>
+    <group>ALLCOMP_attributes</group>
     <desc>
       Previously, new fields that were needed to be passed between components
       for certain compsets were specified by cpp-variables. This has been
@@ -2196,7 +2196,7 @@ n    </desc>
   <entry id="flds_co2b">
     <type>logical</type>
     <category>flds</category>
-    <group>FLDS_attributes</group>
+    <group>ALLCOMP_attributes</group>
     <desc>
       Previously, new fields that were needed to be passed between components
       for certain compsets were specified by cpp-variables. This has been
@@ -2213,7 +2213,7 @@ n    </desc>
   <entry id="flds_co2c">
     <type>logical</type>
     <category>flds</category>
-    <group>FLDS_attributes</group>
+    <group>ALLCOMP_attributes</group>
     <desc>
       Previously, new fields that were needed to be passed between components
       for certain compsets were specified by cpp-variables. This has been
@@ -2230,7 +2230,7 @@ n    </desc>
   <entry id="flds_bgc_oi">
     <type>logical</type>
     <category>seq_flds</category>
-    <group>seq_cplflds_inparm</group>
+    <group>ALLCOMP_attributes</group>
     <desc>
       If set to .true. BGC fields will be passed back and forth between the ocean and seaice
       via the coupler.
@@ -2245,7 +2245,7 @@ n    </desc>
   <entry  id="flds_wiso" modify_via_xml="FLDS_WISO">
     <type>logical</type>
     <category>flds</category>
-    <group>FLDS_attributes</group>
+    <group>ALLCOMP_attributes</group>
     <desc>
       Pass water isotopes between components
     </desc>
@@ -2257,7 +2257,7 @@ n    </desc>
   <entry  id="glc_nec" modify_via_xml="GLC_NEC">
     <type>integer</type>
     <category>flds</category>
-    <group>FLDS_attributes</group>
+    <group>ALLCOMP_attributes</group>
     <desc>
       Number of cism elevation classes. Set by the xml variable GLC_NEC in env_run.xml
     </desc>
@@ -2269,7 +2269,7 @@ n    </desc>
   <entry id="ice_ncat" modify_via_xml="ICE_NCAT">
     <type>integer</type>
     <category>flds</category>
-    <group>FLDS_attributes</group>
+    <group>ALLCOMP_attributes</group>
     <desc>
       Number of sea ice thickness categories. Set by the xml variable ICE_NCAT in env_build.xml
     </desc>
@@ -2277,20 +2277,6 @@ n    </desc>
       <value>$ICE_NCAT</value>
     </values>
   </entry>
-
-  <entry id="flux_diurnal">
-    <type>logical</type>
-    <category>control</category>
-    <group>FLDS_attributes</group>
-    <desc>
-      If true, turn on diurnal cycle in computing atm/ocn fluxes
-      default: false
-    </desc>
-    <values>
-      <value>.false.</value>
-    </values>
-  </entry>
-
 
   <!-- =========================== -->
   <!-- CLOCK Attributes            -->

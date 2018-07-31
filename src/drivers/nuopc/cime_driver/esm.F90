@@ -4,9 +4,9 @@ module ESM
   ! Code that specializes generic ESM Component code.
   !-----------------------------------------------------------------------------
 
-  use ESMF, only : ESMF_Clock
-  use med_constants_mod, only : dbug_flag => med_constants_dbug_flag
-  use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
+  use ESMF                  , only : ESMF_Clock
+  use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
+  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
 
   use shr_kind_mod          , only : SHR_KIND_R8, SHR_KIND_CS, SHR_KIND_CL
   use shr_log_mod           , only : shr_log_Unit, shr_log_Level
@@ -14,16 +14,6 @@ module ESM
 
   implicit none
   private
-
-  character(len=512)             :: msgstr
-  logical                        :: mastertask ! master processor for driver gcomp
-  integer                        :: componentCount
-  character(len=32), allocatable :: compLabels(:)
-  character(len=8)               :: atm_present, lnd_present, ocn_present
-  character(len=8)               :: ice_present, rof_present, wav_present
-  character(len=8)               :: glc_present, med_present
-  character(*), parameter        :: nlfilename = "drv_in" ! input namelist filename
-  character(*), parameter        :: u_FILE_u = __FILE__
 
   type(ESMF_Clock), target :: EClock_d
   type(ESMF_Clock), target :: EClock_a
@@ -34,6 +24,17 @@ module ESM
   type(ESMF_Clock), target :: EClock_r
   type(ESMF_Clock), target :: EClock_w
   type(ESMF_Clock), target :: EClock_e
+
+  character(len=512)             :: msgstr
+  logical                        :: mastertask ! master processor for driver gcomp
+  integer                        :: componentCount
+  character(len=32), allocatable :: compLabels(:)
+  character(len=8)               :: atm_present, lnd_present, ocn_present
+  character(len=8)               :: ice_present, rof_present, wav_present
+  character(len=8)               :: glc_present, med_present
+  character(*), parameter        :: nlfilename = "drv_in" ! input namelist filename
+  character(*), parameter        :: u_FILE_u = &
+       __FILE__
 
   public  :: SetServices
 
@@ -50,20 +51,20 @@ module ESM
 !================================================================================
 
   subroutine SetServices(driver, rc)
-    use NUOPC, only : NUOPC_CompDerive, NUOPC_CompSpecialize, NUOPC_CompSetInternalEntryPoint
-    use NUOPC_Driver, only : driver_routine_SS                    => SetServices
-    use NUOPC_Driver, only : driver_label_SetModelServices => label_SetModelServices
-    use NUOPC_Driver, only : driver_label_SetRunSequence  => label_SetRunSequence
-    use ESMF, only : ESMF_GridComp, ESMF_Config, ESMF_GridCompSet, ESMF_ConfigLoadFile
-    use ESMF, only : ESMF_ConfigCreate, ESMF_METHOD_INITIALIZE
-    use ESMF, only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO
+    use NUOPC        , only : NUOPC_CompDerive, NUOPC_CompSpecialize, NUOPC_CompSetInternalEntryPoint
+    use NUOPC_Driver , only : driver_routine_SS             => SetServices
+    use NUOPC_Driver , only : driver_label_SetModelServices => label_SetModelServices
+    use NUOPC_Driver , only : driver_label_SetRunSequence   => label_SetRunSequence
+    use ESMF         , only : ESMF_GridComp, ESMF_Config, ESMF_GridCompSet, ESMF_ConfigLoadFile
+    use ESMF         , only : ESMF_ConfigCreate, ESMF_METHOD_INITIALIZE
+    use ESMF         , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO
 
     type(ESMF_GridComp)  :: driver
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Config)           :: config
-    integer :: dbrc
+    type(ESMF_Config) :: config
+    integer           :: dbrc
     character(len=*), parameter :: subname = "(esm.F90:SetServices)"
     !---------------------------------------
 
@@ -109,22 +110,22 @@ module ESM
   !================================================================================
 
   subroutine SetModelServices(driver, rc)
-    use ESMF, only : ESMF_GridComp, ESMF_VM, ESMF_Config, ESMF_VMBarrier
-    use ESMF, only : ESMF_GridCompGet, ESMF_VMGet, ESMF_ConfigGetAttribute
-    use ESMF, only : ESMF_ConfigGetLen, ESMF_RC_NOT_VALID, ESMF_LogFoundAllocError
-    use ESMF, only : ESMF_LogSetError, ESMF_LogWrite, ESMF_LOGMSG_INFO
-    use ESMF, only : ESMF_GridCompSet, ESMF_SUCCESS, ESMF_METHOD_INITIALIZE
-    use NUOPC, only : NUOPC_CompSetInternalEntryPoint, NUOPC_CompAttributeGet
-    use NUOPC_Driver, only : NUOPC_DriverAddComp
+    use ESMF                  , only : ESMF_GridComp, ESMF_VM, ESMF_Config, ESMF_VMBarrier
+    use ESMF                  , only : ESMF_GridCompGet, ESMF_VMGet, ESMF_ConfigGetAttribute
+    use ESMF                  , only : ESMF_ConfigGetLen, ESMF_RC_NOT_VALID, ESMF_LogFoundAllocError
+    use ESMF                  , only : ESMF_LogSetError, ESMF_LogWrite, ESMF_LOGMSG_INFO
+    use ESMF                  , only : ESMF_GridCompSet, ESMF_SUCCESS, ESMF_METHOD_INITIALIZE
+    use NUOPC                 , only : NUOPC_CompSetInternalEntryPoint, NUOPC_CompAttributeGet
+    use NUOPC_Driver          , only : NUOPC_DriverAddComp
     use MED                   , only : med_SS => SetServices
     use esmFlds               , only : esmFlds_Init, esmFlds_Concat
     use seq_comm_mct          , only : CPLID, GLOID, ATMID, LNDID, OCNID, ICEID, GLCID, ROFID, WAVID, ESPID
-    use seq_comm_mct, only : num_inst_total
-    use seq_comm_mct, only : seq_comm_init, seq_comm_printcomms, seq_comm_petlist
+    use seq_comm_mct          , only : num_inst_total
+    use seq_comm_mct          , only : seq_comm_init, seq_comm_printcomms, seq_comm_petlist
     use seq_comm_mct          , only : seq_comm_getinfo => seq_comm_setptrs
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
     use shr_pio_mod           , only : shr_pio_init1
-    use mpi, only : MPI_COMM_WORLD
+    use mpi                   , only : MPI_COMM_WORLD
     use shr_file_mod          , only : shr_file_getlogunit, shr_file_setLogunit
     use shr_file_mod          , only : shr_file_getlogLevel, shr_file_setLogLevel
     use shr_file_mod          , only : shr_file_getUnit, shr_file_freeUnit
@@ -136,29 +137,28 @@ module ESM
     use rof_comp_nuopc        , only : ROFSetServices => SetServices
     use glc_comp_nuopc        , only : GLCSetServices => SetServices
 
-
-    type(ESMF_GridComp)  :: driver
-    integer, intent(out) :: rc
+    type(ESMF_GridComp)    :: driver
+    integer, intent(out)   :: rc
 
     ! local variables
-    type(ESMF_VM)                  :: vm
-    type(ESMF_GridComp)            :: child
-    type(ESMF_Config)              :: config
-    integer                        :: compid
-    integer                        :: n, n1, stat
-    integer, pointer               :: petList(:)
-    character(len=20)              :: model, prefix
-    integer                        :: petCount, i
-    integer                        :: localPet
-    logical                        :: is_set
-    character(SHR_KIND_CS)         :: cvalue
-    character(len=512)             :: diro
-    character(len=512)             :: logfile
-    integer                        :: shrlogunit ! original log unit
-    integer                        :: shrloglev  ! original log level
-    integer                        :: global_comm
-    logical                        :: iamroot_med           ! mediator masterproc
-    integer :: dbrc
+    type(ESMF_VM)          :: vm
+    type(ESMF_GridComp)    :: child
+    type(ESMF_Config)      :: config
+    integer                :: compid
+    integer                :: n, n1, stat
+    integer, pointer       :: petList(:)
+    character(len=20)      :: model, prefix
+    integer                :: petCount, i
+    integer                :: localPet
+    logical                :: is_set
+    character(SHR_KIND_CS) :: cvalue
+    character(len=512)     :: diro
+    character(len=512)     :: logfile
+    integer                :: shrlogunit  ! original log unit
+    integer                :: shrloglev   ! original log level
+    integer                :: global_comm
+    logical                :: iamroot_med ! mediator masterproc
+    integer                :: dbrc
     character(len=*), parameter    :: subname = "(esm.F90:SetModelServices)"
     !-------------------------------------------
 
@@ -564,27 +564,27 @@ module ESM
   !================================================================================
 
   subroutine SetRunSequence(driver, rc)
-    use ESMF, only : ESMF_GridComp, ESMF_LogWrite, ESMF_SUCCESS, ESMF_LOGMSG_INFO
-    use ESMF, only : ESMF_Time, ESMF_TimeInterval, ESMF_Clock, ESMF_Config
-    use ESMF, only : ESMF_GridCompGet
-    use NUOPC, only : NUOPC_FreeFormat, NUOPC_FreeFormatPrint, NUOPC_FreeFormatDestroy
-    use NUOPC, only : NUOPC_FreeFormatCreate
-    use NUOPC_Driver, only : NUOPC_DriverIngestRunSequence, NUOPC_DriverSetRunSequence
-    use NUOPC_Driver, only : NUOPC_DriverPrint
+    use ESMF                  , only : ESMF_GridComp, ESMF_LogWrite, ESMF_SUCCESS, ESMF_LOGMSG_INFO
+    use ESMF                  , only : ESMF_Time, ESMF_TimeInterval, ESMF_Clock, ESMF_Config
+    use ESMF                  , only : ESMF_GridCompGet
+    use NUOPC                 , only : NUOPC_FreeFormat, NUOPC_FreeFormatPrint, NUOPC_FreeFormatDestroy
+    use NUOPC                 , only : NUOPC_FreeFormatCreate
+    use NUOPC_Driver          , only : NUOPC_DriverIngestRunSequence, NUOPC_DriverSetRunSequence
+    use NUOPC_Driver          , only : NUOPC_DriverPrint
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
 
     type(ESMF_GridComp)  :: driver
     integer, intent(out) :: rc
 
     ! local variables
-    integer                       :: localrc
-    type(ESMF_Time)               :: startTime
-    type(ESMF_Time)               :: stopTime
-    type(ESMF_TimeInterval)       :: timeStep
-    type(ESMF_Clock)              :: internalClock
-    type(ESMF_Config)             :: config
-    type(NUOPC_FreeFormat)        :: runSeqFF
-    integer :: dbrc
+    integer                 :: localrc
+    type(ESMF_Time)         :: startTime
+    type(ESMF_Time)         :: stopTime
+    type(ESMF_TimeInterval) :: timeStep
+    type(ESMF_Clock)        :: internalClock
+    type(ESMF_Config)       :: config
+    type(NUOPC_FreeFormat)  :: runSeqFF
+    integer                 :: dbrc
     character(len=*), parameter :: subname = "(esm.F90:SetRunSequence)"
 
     rc = ESMF_SUCCESS
@@ -652,10 +652,11 @@ module ESM
   !================================================================================
 
   recursive subroutine ModifyCplLists(driver, importState, exportState, clock, rc)
-    use ESMF, only : ESMF_GridComp, ESMF_State, ESMF_Clock, ESMF_LogWrite
-    use ESMF, only : ESMF_LOGMSG_INFO, ESMF_CplComp, ESMF_SUCCESS
-    use NUOPC, only : NUOPC_CompAttributeGet, NUOPC_CompAttributeSet
-    use NUOPC_Driver, only : NUOPC_DriverGetComp
+
+    use ESMF         , only : ESMF_GridComp, ESMF_State, ESMF_Clock, ESMF_LogWrite
+    use ESMF         , only : ESMF_LOGMSG_INFO, ESMF_CplComp, ESMF_SUCCESS
+    use NUOPC        , only : NUOPC_CompAttributeGet, NUOPC_CompAttributeSet
+    use NUOPC_Driver , only : NUOPC_DriverGetComp
 
     type(ESMF_GridComp)  :: driver
     type(ESMF_State)     :: importState, exportState
@@ -666,7 +667,7 @@ module ESM
     integer                         :: i, j, cplListSize
     character(len=160), allocatable :: cplList(:)
     character(len=160)              :: tempString
-    integer :: dbrc
+    integer                         :: dbrc
     character(len=*), parameter :: subname = "(esm.F90:ModifyCplLists)"
 
     rc = ESMF_SUCCESS
@@ -729,20 +730,20 @@ module ESM
     !----------------------------------------------------------
     ! Initialize MPI communicators,  IO and threading
     !----------------------------------------------------------
-    use ESMF, only : ESMF_GridComp, ESMF_LOGMSG_INFO, ESMF_LogWrite, ESMF_SUCCESS
-    use NUOPC, only : NUOPC_CompAttributeGet
-    use shr_pio_mod           , only : shr_pio_init2
-    use mpi, only : MPI_COMM_NULL
-    use seq_comm_mct          , only : CPLID, GLOID, ATMID, LNDID, OCNID, ICEID, GLCID, ROFID, WAVID, ESPID
-    use seq_comm_mct          , only : num_inst_atm, num_inst_lnd, num_inst_rof
-    use seq_comm_mct          , only : num_inst_ocn, num_inst_ice, num_inst_glc
-    use seq_comm_mct          , only : num_inst_wav, num_inst_esp, num_inst_total
-    use shr_mem_mod           , only : shr_mem_init
-    use seq_comm_mct          , only : seq_comm_inst, seq_comm_name, seq_comm_suffix
-    use seq_comm_mct          , only : seq_comm_setnthreads, seq_comm_getnthreads
-    use seq_comm_mct          , only : seq_comm_iamin, seq_comm_name, seq_comm_namelen, seq_comm_iamroot
-    use seq_comm_mct          , only : seq_comm_getinfo => seq_comm_setptrs
-    use perf_mod,  only : t_initf
+    use ESMF         , only : ESMF_GridComp, ESMF_LOGMSG_INFO, ESMF_LogWrite, ESMF_SUCCESS
+    use NUOPC        , only : NUOPC_CompAttributeGet
+    use shr_pio_mod  , only : shr_pio_init2
+    use mpi          , only : MPI_COMM_NULL
+    use seq_comm_mct , only : CPLID, GLOID, ATMID, LNDID, OCNID, ICEID, GLCID, ROFID, WAVID, ESPID
+    use seq_comm_mct , only : num_inst_atm, num_inst_lnd, num_inst_rof
+    use seq_comm_mct , only : num_inst_ocn, num_inst_ice, num_inst_glc
+    use seq_comm_mct , only : num_inst_wav, num_inst_esp, num_inst_total
+    use shr_mem_mod  , only : shr_mem_init
+    use seq_comm_mct , only : seq_comm_inst, seq_comm_name, seq_comm_suffix
+    use seq_comm_mct , only : seq_comm_setnthreads, seq_comm_getnthreads
+    use seq_comm_mct , only : seq_comm_iamin, seq_comm_name, seq_comm_namelen, seq_comm_iamroot
+    use seq_comm_mct , only : seq_comm_getinfo => seq_comm_setptrs
+    use perf_mod     , only : t_initf
 
     ! input/output variables
     type(ESMF_GridComp), intent(inout) :: driver
@@ -927,14 +928,14 @@ module ESM
     ! Determine if will restart and read pointer file
     ! if appropriate
     !-----------------------------------------------------
-    use shr_sys_mod           , only : shr_sys_abort
-    use ESMF, only : ESMF_GridComp, ESMF_VM, ESMF_GridCompGet, ESMF_VMGet, ESMF_SUCCESS
-    use ESMF, only : ESMF_LogSetError, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_RC_NOT_VALID
-    use NUOPC, only : NUOPC_CompAttributeGet, NUOPC_CompAttributeSet, NUOPC_CompAttributeAdd
-    use shr_file_mod          , only : shr_file_getUnit, shr_file_freeUnit
-    use shr_mpi_mod           , only : shr_mpi_bcast
+    use ESMF         , only : ESMF_GridComp, ESMF_VM, ESMF_GridCompGet, ESMF_VMGet, ESMF_SUCCESS
+    use ESMF         , only : ESMF_LogSetError, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_RC_NOT_VALID
+    use NUOPC        , only : NUOPC_CompAttributeGet, NUOPC_CompAttributeSet, NUOPC_CompAttributeAdd
+    use shr_sys_mod  , only : shr_sys_abort
+    use shr_file_mod , only : shr_file_getUnit, shr_file_freeUnit
+    use shr_mpi_mod  , only : shr_mpi_bcast
 
-  ! input/output variables
+    ! input/output variables
     type(ESMF_GridComp)    , intent(inout) :: driver
     integer                , intent(out)   :: rc
 
@@ -1016,10 +1017,10 @@ module ESM
     !----------------------------------------------------------
     ! Initialize time manager
     !----------------------------------------------------------
-    use ESMF, only : ESMF_GridComp, ESMF_Clock, ESMF_VM, ESMF_GridCompGet, ESMF_VMGet
-    use ESMF, only : ESMF_LogWrite, ESMF_SUCCESS, ESMF_LOGMSG_INFO
-    use pio, only : pio_file_is_open, pio_closefile, file_desc_t
-    use seq_timemgr_mod       , only : seq_timemgr_clockInit
+    use ESMF            , only : ESMF_GridComp, ESMF_Clock, ESMF_VM, ESMF_GridCompGet, ESMF_VMGet
+    use ESMF            , only : ESMF_LogWrite, ESMF_SUCCESS, ESMF_LOGMSG_INFO
+    use pio             , only : pio_file_is_open, pio_closefile, file_desc_t
+    use seq_timemgr_mod , only : seq_timemgr_clockInit
 
     ! INPUT/OUTPUT PARAMETERS:
     type(ESMF_GridComp)    , intent(inout) :: driver
@@ -1070,24 +1071,24 @@ module ESM
   !================================================================================
 
   subroutine InitAttributes(driver, rc)
-    use shr_sys_mod           , only : shr_sys_abort
-    use ESMF, only : ESMF_GridComp, ESMF_SUCCESS, ESMF_LogWrite, ESMF_LogSetError, ESMF_LOGMSG_INFO
-    use ESMF, only : ESMF_RC_NOT_VALID
-    use NUOPC, only : NUOPC_CompAttributeGet, NUOPC_CompAttributeSet, NUOPC_CompAttributeAdd
-    use shr_orb_mod           , only : shr_orb_params, SHR_ORB_UNDEF_INT, SHR_ORB_UNDEF_REAL
-    use seq_comm_mct          , only : CPLID, OCNID
-    use seq_comm_mct          , only : seq_comm_getinfo => seq_comm_setptrs
-    use shr_assert_mod        , only : shr_assert_in_domain
-    use shr_cal_mod           , only : shr_cal_date2ymd
-    use shr_const_mod         , only : shr_const_tkfrz, shr_const_tktrip
-    use shr_const_mod         , only : shr_const_mwwv, shr_const_mwdair
-    use shr_frz_mod           , only : shr_frz_freezetemp_init
-    use shr_reprosum_mod      , only : shr_reprosum_setopts
-    use seq_timemgr_mod       , only : seq_timemgr_EClockGetData
-    use shr_wv_sat_mod        , only : shr_wv_sat_set_default, shr_wv_sat_init
-    use shr_wv_sat_mod        , only : shr_wv_sat_make_tables, ShrWVSatTableSpec
-    use shr_wv_sat_mod        , only : shr_wv_sat_get_scheme_idx, shr_wv_sat_valid_idx
-!    use shr_scam_mod          , only : shr_scam_checkSurface
+    use shr_sys_mod      , only : shr_sys_abort
+    use ESMF             , only : ESMF_GridComp, ESMF_SUCCESS, ESMF_LogWrite, ESMF_LogSetError, ESMF_LOGMSG_INFO
+    use ESMF             , only : ESMF_RC_NOT_VALID
+    use NUOPC            , only : NUOPC_CompAttributeGet, NUOPC_CompAttributeSet, NUOPC_CompAttributeAdd
+    use shr_orb_mod      , only : shr_orb_params, SHR_ORB_UNDEF_INT, SHR_ORB_UNDEF_REAL
+    use seq_comm_mct     , only : CPLID, OCNID
+    use seq_comm_mct     , only : seq_comm_getinfo => seq_comm_setptrs
+    use shr_assert_mod   , only : shr_assert_in_domain
+    use shr_cal_mod      , only : shr_cal_date2ymd
+    use shr_const_mod    , only : shr_const_tkfrz, shr_const_tktrip
+    use shr_const_mod    , only : shr_const_mwwv, shr_const_mwdair
+    use shr_frz_mod      , only : shr_frz_freezetemp_init
+    use shr_reprosum_mod , only : shr_reprosum_setopts
+    use seq_timemgr_mod  , only : seq_timemgr_EClockGetData
+    use shr_wv_sat_mod   , only : shr_wv_sat_set_default, shr_wv_sat_init
+    use shr_wv_sat_mod   , only : shr_wv_sat_make_tables, ShrWVSatTableSpec
+    use shr_wv_sat_mod   , only : shr_wv_sat_get_scheme_idx, shr_wv_sat_valid_idx
+   !use shr_scam_mod     , only : shr_scam_checkSurface
 
     ! input/output variables
     type(ESMF_GridComp) , intent(inout) :: driver
@@ -1103,7 +1104,6 @@ module ESM
     logical                         :: reprosum_use_ddpdd    ! setup reprosum, use ddpdd
     real(SHR_KIND_R8)               :: reprosum_diffmax      ! setup reprosum, set rel_diff_max
     logical                         :: reprosum_recompute    ! setup reprosum, recompute if tolerance exceeded
-    logical                         :: output_perf = .false. ! require timing data output for this pe
     integer                         :: ymd                   ! Current date (YYYYMMDD)
     integer                         :: year                  ! Current date (YYYY)
     integer                         :: month                 ! Current date (MM)
@@ -1136,13 +1136,13 @@ module ESM
     logical                         :: flag
     integer                         :: i, it, n
     integer                         :: unitn                 ! Namelist unit number to read
+    integer                         :: dbrc
     integer          , parameter    :: ens1=1                ! use first instance of ensemble only
     integer          , parameter    :: fix1=1                ! temporary hard-coding to first ensemble, needs to be fixed
     real(SHR_KIND_R8), parameter    :: epsilo = shr_const_mwwv/shr_const_mwdair
     character(len=*) , parameter    :: orb_fixed_year       = 'fixed_year'
     character(len=*) , parameter    :: orb_variable_year    = 'variable_year'
     character(len=*) , parameter    :: orb_fixed_parameters = 'fixed_parameters'
-    integer :: dbrc
     character(len=*) , parameter    :: subname = '(SetAttributes_and_InitClocks)'
     !----------------------------------------------------------
 
@@ -1521,13 +1521,14 @@ module ESM
     call ReadAttributes(gcomp, config, trim(compname)//"_modelio::", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    call ReadAttributes(gcomp, config, "CLOCK_attributes::", rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     if (compname == 'MED') then
 
        call ReadAttributes(gcomp, config, "MED_history_attributes::", rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       call ReadAttributes(gcomp, config, "CLOCK_attributes::", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call ReadAttributes(gcomp, config, "FLDS_attributes::", rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

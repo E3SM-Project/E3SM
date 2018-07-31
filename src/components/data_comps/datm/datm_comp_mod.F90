@@ -4,33 +4,45 @@
 module datm_comp_mod
 
   ! !USES:
+  use perf_mod       , only : t_startf, t_stopf
+  use perf_mod       , only : t_adj_detailf, t_barrierf
+  use mct_mod        , only : mct_rearr
+  use mct_mod        , only : mct_avect
+  use mct_mod        , only : mct_gsmap
+  use mct_mod        , only : mct_ggrid
+  use mct_mod        , only : mct_avect_indexRA 
+  use mct_mod        , only : mct_gsmap_lsize
+  use mct_mod        , only : mct_rearr_init
+  use mct_mod        , only : mct_avect_init
+  use mct_mod        , only : mct_avect_zero
+  use mct_mod        , only : mct_avect_lsize
+  use shr_const_mod  , only : SHR_CONST_SPVAL
+  use shr_const_mod  , only : SHR_CONST_TKFRZ
+  use shr_const_mod  , only : SHR_CONST_PI
+  use shr_const_mod  , only : SHR_CONST_PSTD  
+  use shr_const_mod  , only : SHR_CONST_STEBOL
+  use shr_const_mod  , only : SHR_CONST_RDAIR 
+  use shr_kind_mod   , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
+  use shr_sys_mod    , only : shr_sys_flush, shr_sys_abort 
+  use shr_file_mod   , only : shr_file_getunit, shr_file_freeunit
+  use shr_cal_mod    , only : shr_cal_date2julian, shr_cal_datetod2string
+  use shr_mpi_mod    , only : shr_mpi_bcast, shr_mpi_max
+  use shr_precip_mod , only : shr_precip_partition_rain_snow_ramp
+  use shr_strdata_mod, only : shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
+  use shr_strdata_mod, only : shr_strdata_setOrbs, shr_strdata_print, shr_strdata_restRead
+  use shr_strdata_mod, only : shr_strdata_advance, shr_strdata_restWrite
+  use shr_dmodel_mod , only : shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
+  use shr_dmodel_mod , only : shr_dmodel_translate_list, shr_dmodel_translateAV_list
 
-  use mct_mod
-  use esmf
-  use perf_mod
-  use shr_const_mod
-  use shr_sys_mod
-  use shr_kind_mod   , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
-  use shr_file_mod   , only: shr_file_getunit, shr_file_freeunit
-  use shr_cal_mod    , only: shr_cal_date2julian, shr_cal_datetod2string
-  use shr_mpi_mod    , only: shr_mpi_bcast
-  use shr_precip_mod , only: shr_precip_partition_rain_snow_ramp
-  use shr_strdata_mod, only: shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
-  use shr_strdata_mod, only: shr_strdata_setOrbs, shr_strdata_print, shr_strdata_restRead
-  use shr_strdata_mod, only: shr_strdata_advance, shr_strdata_restWrite
-  use shr_dmodel_mod , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
-  use shr_dmodel_mod , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list
-  use seq_timemgr_mod, only: seq_timemgr_EClockGetData
-
-  use datm_shr_mod   , only: datm_shr_getNextRadCDay, datm_shr_esat, datm_shr_CORE2getFactors
-  use datm_shr_mod   , only: datamode       ! namelist input
-  use datm_shr_mod   , only: decomp         ! namelist input
-  use datm_shr_mod   , only: wiso_datm      ! namelist input
-  use datm_shr_mod   , only: rest_file      ! namelist input
-  use datm_shr_mod   , only: rest_file_strm ! namelist input
-  use datm_shr_mod   , only: factorfn       ! namelist input
-  use datm_shr_mod   , only: iradsw         ! namelist input
-  use datm_shr_mod   , only: nullstr
+  use datm_shr_mod   , only : datm_shr_esat, datm_shr_CORE2getFactors
+  use datm_shr_mod   , only : datamode       ! namelist input
+  use datm_shr_mod   , only : decomp         ! namelist input
+  use datm_shr_mod   , only : wiso_datm      ! namelist input
+  use datm_shr_mod   , only : rest_file      ! namelist input
+  use datm_shr_mod   , only : rest_file_strm ! namelist input
+  use datm_shr_mod   , only : factorfn       ! namelist input
+  use datm_shr_mod   , only : iradsw         ! namelist input
+  use datm_shr_mod   , only : nullstr
 
   ! !PUBLIC TYPES:
 
@@ -49,12 +61,11 @@ module datm_comp_mod
   ! Private data
   !--------------------------------------------------------------------------
 
-  character(CS) :: myModelName = 'atm'   ! user defined model name
-  logical       :: firstcall = .true.    ! first call logical
-  integer(IN)   :: dbug = 1              ! debug level (higher is more)
-  real(R8)      :: tbotmax               ! units detector
-  real(R8)      :: tdewmax               ! units detector
-  real(R8)      :: anidrmax              ! existance detector
+  character(len=3) :: myModelName = 'atm'   ! user defined model name
+  integer          :: dbug = 1              ! debug level (higher is more)
+  real(R8)         :: tbotmax               ! units detector
+  real(R8)         :: tdewmax               ! units detector
+  real(R8)         :: anidrmax              ! existance detector
 
   character(len=*),parameter :: rpfile = 'rpointer.atm'
 
@@ -95,6 +106,7 @@ module datm_comp_mod
 
   type(mct_rearr)      :: rearr
   type(mct_avect)      :: avstrm   ! av of data from stream
+
   integer(IN), pointer :: imask(:)
   real(R8), pointer    :: yc(:)
   real(R8), pointer    :: windFactor(:)
@@ -104,7 +116,7 @@ module datm_comp_mod
   integer(IN),parameter :: ktrans  = 77
 
   character(16),parameter  :: avofld(1:ktrans) = &
-       (/"Sa_z            ","Sa_topo         ", &
+     (/"Sa_z            ","Sa_topo         ", &
        "Sa_u            ","Sa_v            ","Sa_tbot         ", &
        "Sa_ptem         ","Sa_shum         ","Sa_dens         ","Sa_pbot         ", &
        "Sa_pslv         ","Faxa_lwdn       ","Faxa_rainc      ","Faxa_rainl      ", &
@@ -131,7 +143,7 @@ module datm_comp_mod
        /)
 
   character(16),parameter  :: avifld(1:ktrans) = &
-       (/"z               ","topo            ", &
+     (/"z               ","topo            ", &
        "u               ","v               ","tbot            ", &
        "ptem            ","shum            ","dens            ","pbot            ", &
        "pslv            ","lwdn            ","rainc           ","rainl           ", &
@@ -165,7 +177,7 @@ module datm_comp_mod
   integer(IN),parameter :: ktranss = 33
 
   character(16),parameter  :: stofld(1:ktranss) = &
-       (/"strm_tbot       ","strm_wind       ","strm_z          ","strm_pbot       ", &
+     (/"strm_tbot       ","strm_wind       ","strm_z          ","strm_pbot       ", &
        "strm_shum       ","strm_tdew       ","strm_rh         ","strm_lwdn       ", &
        "strm_swdn       ","strm_swdndf     ","strm_swdndr     ","strm_precc      ", &
        "strm_precl      ","strm_precn      ","strm_co2prog    ","strm_co2diag    ", &
@@ -179,7 +191,7 @@ module datm_comp_mod
        /)
 
   character(16),parameter  :: stifld(1:ktranss) = &
-       (/"tbot            ","wind            ","z               ","pbot            ", &
+     (/"tbot            ","wind            ","z               ","pbot            ", &
        "shum            ","tdew            ","rh              ","lwdn            ", &
        "swdn            ","swdndf          ","swdndr          ","precc           ", &
        "precl           ","precn           ","co2prog         ","co2diag         ", &
@@ -207,67 +219,62 @@ CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   !===============================================================================
-  subroutine datm_comp_init(Eclock, x2a, a2x, &
-       seq_flds_x2a_fields, seq_flds_a2x_fields, &
+
+  subroutine datm_comp_init(x2a, a2x, &
+       x2a_fields, a2x_fields, &
        SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
        scmMode, scmlat, scmlon, &
-       orbEccen, orbMvelpp, orbLambm0, orbObliqr, nextsw_cday)
+       orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
+       calendar, modeldt, currentYMD, currentTOD, currentMON, atm_prognostic)
 
     ! !DESCRIPTION: initialize data atm model
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock)       , intent(in)    :: EClock
-    type(mct_aVect)        , intent(inout) :: x2a, a2x
-    character(len=*)       , intent(in)    :: seq_flds_x2a_fields ! fields from mediator
-    character(len=*)       , intent(in)    :: seq_flds_a2x_fields ! fields to mediator
-    type(shr_strdata_type) , intent(inout) :: SDATM               ! model shr_strdata instance (output)
-    type(mct_gsMap)        , pointer       :: gsMap               ! model global sep map (output)
-    type(mct_gGrid)        , pointer       :: ggrid               ! model ggrid (output)
-    integer(IN)            , intent(in)    :: mpicom              ! mpi communicator
-    integer(IN)            , intent(in)    :: compid              ! mct comp id
-    integer(IN)            , intent(in)    :: my_task             ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task         ! task number of master task
-    character(len=*)       , intent(in)    :: inst_suffix         ! char string associated with instance
-    character(len=*)       , intent(in)    :: inst_name           ! fullname of current instance (ie. "lnd_0001")
-    integer(IN)            , intent(in)    :: logunit             ! logging unit number
-    logical                , intent(in)    :: read_restart        ! start from restart
-    logical                , intent(in)    :: scmMode             ! single column mode
-    real(R8)               , intent(in)    :: scmLat              ! single column lat
-    real(R8)               , intent(in)    :: scmLon              ! single column lon
-    real(R8)               , intent(in)    :: orbEccen            ! orb eccentricity (unit-less)
-    real(R8)               , intent(in)    :: orbMvelpp           ! orb moving vernal eq (radians)
-    real(R8)               , intent(in)    :: orbLambm0           ! orb mean long of perhelion (radians)
-    real(R8)               , intent(in)    :: orbObliqr           ! orb obliquity (radians)
-    real(R8)               , intent(out)   :: nextsw_cday         ! calendar of next atm sw
+    type(mct_aVect)        , intent(inout) :: x2a
+    type(mct_aVect)        , intent(inout) :: a2x
+    character(len=*)       , intent(in)    :: x2a_fields     ! fields from mediator
+    character(len=*)       , intent(in)    :: a2x_fields     ! fields to mediator
+    type(shr_strdata_type) , intent(inout) :: SDATM          ! model shr_strdata instance (output)
+    type(mct_gsMap)        , pointer       :: gsMap          ! model global sep map (output)
+    type(mct_gGrid)        , pointer       :: ggrid          ! model ggrid (output)
+    integer(IN)            , intent(in)    :: mpicom         ! mpi communicator
+    integer(IN)            , intent(in)    :: compid         ! mct comp id
+    integer(IN)            , intent(in)    :: my_task        ! my task in mpi communicator mpicom
+    integer(IN)            , intent(in)    :: master_task    ! task number of master task
+    character(len=*)       , intent(in)    :: inst_suffix    ! char string associated with instance
+    character(len=*)       , intent(in)    :: inst_name      ! fullname of current instance (ie. "lnd_0001")
+    integer(IN)            , intent(in)    :: logunit        ! logging unit number
+    logical                , intent(in)    :: read_restart   ! start from restart
+    logical                , intent(in)    :: scmMode        ! single column mode
+    real(R8)               , intent(in)    :: scmLat         ! single column lat
+    real(R8)               , intent(in)    :: scmLon         ! single column lon
+    real(R8)               , intent(in)    :: orbEccen       ! orb eccentricity (unit-less)
+    real(R8)               , intent(in)    :: orbMvelpp      ! orb moving vernal eq (radians)
+    real(R8)               , intent(in)    :: orbLambm0      ! orb mean long of perhelion (radians)
+    real(R8)               , intent(in)    :: orbObliqr      ! orb obliquity (radians)
+    character(len=*)       , intent(in)    :: calendar       ! calendar type
+    integer                , intent(in)    :: modeldt        ! model time step
+    integer                , intent(in)    :: CurrentYMD     ! model date
+    integer                , intent(in)    :: CurrentTOD     ! model sec into model date
+    integer                , intent(in)    :: CurrentMON     ! model month
+    logical                , intent(in)    :: atm_prognostic ! if true, need x2a data
 
     !--- local variables ---
-    integer(IN)   :: n,k         ! generic counters
-    integer(IN)   :: lsize       ! local size
-    integer(IN)   :: kmask       ! field reference
-    integer(IN)   :: klat        ! field reference
-    integer(IN)   :: kfld        ! fld index
-    integer(IN)   :: cnt         ! counter
-    integer(IN)   :: idt         ! integer timestep
-    logical       :: exists,exists1      ! filename existance
-    integer(IN)   :: nu          ! unit number
-    integer(IN)   :: CurrentYMD  ! model date
-    integer(IN)   :: CurrentTOD  ! model sec into model date
-    integer(IN)   :: stepno      ! step number
-    character(CL) :: calendar    ! calendar type
+    integer(IN)   :: n,k            ! generic counters
+    integer(IN)   :: lsize          ! local size
+    integer(IN)   :: kmask          ! field reference
+    integer(IN)   :: klat           ! field reference
+    integer(IN)   :: kfld           ! fld index
+    integer(IN)   :: cnt            ! counter
+    logical       :: exists,exists1 ! filename existance
+    integer(IN)   :: nu             ! unit number
+    integer(IN)   :: stepno         ! step number
     character(CL) :: flds_strm
-    logical       :: write_restart
 
     !--- formats ---
     character(*), parameter :: F00   = "('(datm_comp_init) ',8a)"
-    character(*), parameter :: F0L   = "('(datm_comp_init) ',a, l2)"
-    character(*), parameter :: F01   = "('(datm_comp_init) ',a,5i8)"
-    character(*), parameter :: F02   = "('(datm_comp_init) ',a,4es13.6)"
-    character(*), parameter :: F03   = "('(datm_comp_init) ',a,i8,a)"
-    character(*), parameter :: F04   = "('(datm_comp_init) ',2a,2i8,'s')"
     character(*), parameter :: F05   = "('(datm_comp_init) ',a,2f10.4)"
-    character(*), parameter :: F90   = "('(datm_comp_init) ',73('='))"
-    character(*), parameter :: F91   = "('(datm_comp_init) ',73('-'))"
     character(*), parameter :: subName = "(datm_comp_init) "
     !-------------------------------------------------------------------------------
 
@@ -284,8 +291,6 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Initialize SDATM
     !----------------------------------------------------------------------------
-
-    call seq_timemgr_EClockGetData( EClock, dtime=idt, calendar=calendar )
 
     ! NOTE: shr_strdata_init calls shr_dmodel_readgrid which reads the data model
     ! grid and from that computes SDATM%gsmap and SDATM%ggrid. DATM%gsmap is created
@@ -354,11 +359,10 @@ CONTAINS
     if (my_task == master_task) write(logunit,F00) 'allocate AVs'
     call shr_sys_flush(logunit)
 
-    call mct_aVect_init(a2x, rList=seq_flds_a2x_fields, lsize=lsize)
+    call mct_aVect_init(a2x, rList=a2x_fields, lsize=lsize)
     call mct_aVect_zero(a2x)
 
     kz    = mct_aVect_indexRA(a2x,'Sa_z')
-    ktopo = mct_aVect_indexRA(a2x,'Sa_topo')
     ku    = mct_aVect_indexRA(a2x,'Sa_u')
     kv    = mct_aVect_indexRA(a2x,'Sa_v')
     ktbot = mct_aVect_indexRA(a2x,'Sa_tbot')
@@ -392,13 +396,15 @@ CONTAINS
        ksl_HDO   = mct_aVect_indexRA(a2x,'Faxa_snowl_HDO')
     end if
 
-    call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
+    call mct_aVect_init(x2a, rList=x2a_fields, lsize=lsize)
     call mct_aVect_zero(x2a)
 
-    kanidr = mct_aVect_indexRA(x2a,'Sx_anidr')
-    kanidf = mct_aVect_indexRA(x2a,'Sx_anidf')
-    kavsdr = mct_aVect_indexRA(x2a,'Sx_avsdr')
-    kavsdf = mct_aVect_indexRA(x2a,'Sx_avsdf')
+    if (atm_prognostic) then 
+       kanidr = mct_aVect_indexRA(x2a,'Sx_anidr')
+       kanidf = mct_aVect_indexRA(x2a,'Sx_anidf')
+       kavsdr = mct_aVect_indexRA(x2a,'Sx_avsdr')
+       kavsdf = mct_aVect_indexRA(x2a,'Sx_avsdf')
+    end if
 
     !--- figure out what's on the standard streams ---
     cnt = 0
@@ -517,13 +523,13 @@ CONTAINS
        call shr_mpi_bcast(exists,mpicom,'exists')
        call shr_mpi_bcast(exists1,mpicom,'exists1')
 
-!       if (exists1) then
-!          if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
-!          call shr_pcdf_readwrite('read',SDATM%pio_subsystem, SDATM%io_type, &
-!               trim(rest_file),mpicom,gsmap=gsmap,rf1=water,rf1n='water',io_format=SDATM%io_format)
-!       else
-!          if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file)
-!       endif
+       ! if (exists1) then
+       !    if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
+       !    call shr_pcdf_readwrite('read',SDATM%pio_subsystem, SDATM%io_type, &
+       !         trim(rest_file),mpicom,gsmap=gsmap,rf1=water,rf1n='water',io_format=SDATM%io_format)
+       ! else
+       !    if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file)
+       ! endif
 
        if (exists) then
           if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file_strm)
@@ -535,26 +541,11 @@ CONTAINS
     endif
 
     !----------------------------------------------------------------------------
-    ! Set nextsw_cday, CurrentYMD and CurrenntTOD
-    !----------------------------------------------------------------------------
-
-    if (read_restart) then
-       call seq_timemgr_EClockGetData( EClock, &
-            curr_ymd=CurrentYMD, curr_tod=CurrentTOD, stepno=stepno, dtime=idt, calendar=calendar)
-       nextsw_cday = datm_shr_getNextRadCDay( CurrentYMD, CurrentTOD, stepno, idt, iradsw, calendar )
-    else
-       ! For a startup run the nextsw_cday is just the current calendar day
-       call seq_timemgr_EClockGetData( EClock, &
-            curr_cday=nextsw_cday, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
-    endif
-
-    !----------------------------------------------------------------------------
     ! Set initial atm state
     !----------------------------------------------------------------------------
 
     call t_adj_detailf(+2)
     call datm_comp_run(&
-         Eclock=EClock, &
          x2a=x2a, &
          a2x=a2x, &
          SDATM=SDATM, &
@@ -570,29 +561,31 @@ CONTAINS
          orbMvelpp=orbMvelpp, &
          orbLambm0=orbLambm0, &
          orbObliqr=orbObliqr, &
-         nextsw_cday=nextsw_cday, &
-         write_restart=write_restart, &
+         write_restart=.false., &
          target_ymd=currentYMD, &
-         target_tod=currentTOD)
+         target_tod=currentTOD, &
+         target_mon=currentMON, &
+         calendar=calendar, &
+         modeldt=modeldt, &
+         atm_prognostic=atm_prognostic)
     call t_adj_detailf(-2)
 
-    write_restart = .false.
     call t_stopf('DATM_INIT')
 
   end subroutine datm_comp_init
 
   !===============================================================================
 
-  subroutine datm_comp_run(EClock, x2a, a2x, &
+  subroutine datm_comp_run(x2a, a2x, &
        SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, &
        orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
-       nextsw_cday, write_restart, target_ymd, target_tod, case_name)
+       write_restart, target_ymd, target_tod, target_mon, modeldt, calendar, &
+       atm_prognostic, case_name)
 
     ! !DESCRIPTION: run method for datm model
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock)       , intent(in)    :: EClock
     type(mct_aVect)        , intent(inout) :: x2a
     type(mct_aVect)        , intent(inout) :: a2x
     type(shr_strdata_type) , intent(inout) :: SDATM
@@ -608,34 +601,31 @@ CONTAINS
     real(R8)               , intent(in)    :: orbMvelpp        ! orb moving vernal eq (radians)
     real(R8)               , intent(in)    :: orbLambm0        ! orb mean long of perhelion (radians)
     real(R8)               , intent(in)    :: orbObliqr        ! orb obliquity (radians)
-    real(R8)               , intent(out)   :: nextsw_cday      ! calendar of next atm sw
     logical                , intent(in)    :: write_restart    ! restart alarm is on
     integer(IN)            , intent(in)    :: target_ymd       ! model date
     integer(IN)            , intent(in)    :: target_tod       ! model sec into model date
-    character(CL)          , intent(in), optional :: case_name ! case name
+    integer(IN)            , intent(in)    :: target_mon       ! model month
+    character(len=*)       , intent(in)    :: calendar         ! calendar type
+    Integer(IN)            , intent(in)    :: modeldt          ! model time step
+    logical                , intent(in)    :: atm_prognostic
+    character(len=*)       , intent(in), optional :: case_name ! case name
 
     !--- local ---
-    integer(IN)   :: yy,mm,dd,tod          ! year month day time-of-day
-    integer(IN)   :: n                 ! indices
-    integer(IN)   :: lsize             ! size of attr vect
-    integer(IN)   :: idt               ! integer timestep
-    real(R8)      :: dt                ! timestep
-    character(CL) :: rest_file         ! restart_file
-    character(CL) :: rest_file_strm    ! restart_file
-    integer(IN)   :: nu                ! unit number
-    integer(IN)   :: stepno            ! step number
-    integer(IN)   :: eday              ! elapsed day
-    real(R8)      :: rday              ! elapsed day
-    real(R8)      :: cosFactor         ! cosine factor
-    real(R8)      :: factor            ! generic/temporary correction factor
-    real(R8)      :: avg_alb           ! average albedo
-    real(R8)      :: tMin              ! minimum temperature
-    character(CL) :: calendar          ! calendar type
-
-    !--- temporaries
+    integer(IN)       :: n                 ! indices
+    integer(IN)       :: lsize             ! size of attr vect
+    character(CL)     :: rest_file         ! restart_file
+    character(CL)     :: rest_file_strm    ! restart_file
+    integer(IN)       :: nu                ! unit number
+    integer(IN)       :: eday              ! elapsed day
+    real(R8)          :: rday              ! elapsed day
+    real(R8)          :: cosFactor         ! cosine factor
+    real(R8)          :: factor            ! generic/temporary correction factor
+    real(R8)          :: avg_alb           ! average albedo
+    real(R8)          :: tMin              ! minimum temperature
     character(len=18) :: date_str
-    real(R8)      :: uprime,vprime,swndr,swndf,swvdr,swvdf,ratio_rvrf
-    real(R8)      :: tbot,pbot,rtmp,vp,ea,e,qsat,frac,qsatT
+    real(R8)          :: uprime,vprime,swndr,swndf,swvdr,swvdf,ratio_rvrf
+    real(R8)          :: tbot,pbot,rtmp,vp,ea,e,qsat,frac,qsatT
+    logical           :: firstcall = .true.    ! first call logical
 
     character(*), parameter :: F00   = "('(datm_comp_run) ',8a)"
     character(*), parameter :: F01   = "('(datm_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
@@ -643,33 +633,16 @@ CONTAINS
     character(*), parameter :: subName = "(datm_comp_run) "
     !-------------------------------------------------------------------------------
 
-    call t_startf('DATM_RUN')
-
-    call t_startf('datm_run1')
-    call seq_timemgr_EClockGetData( EClock, &
-         dtime=idt,                         &
-         curr_yr=yy,                        &
-         curr_mon=mm,                       &
-         curr_day=dd,                       &
-         curr_tod=tod,                      &
-         calendar=calendar,                 &
-         stepno=stepno)
-    dt = idt * 1.0_r8
-    nextsw_cday = datm_shr_getNextRadCDay( target_ymd, target_tod, stepno, idt, iradsw, calendar )
-    call t_stopf('datm_run1')
-
     !--------------------
     ! ADVANCE ATM
     !--------------------
 
+    call t_startf('DATM_RUN')
     call t_barrierf('datm_BARRIER',mpicom)
     call t_startf('datm')
 
     !--- set data needed for cosz t-interp method ---
-    call shr_strdata_setOrbs(SDATM,orbEccen,orbMvelpp,orbLambm0,orbObliqr,idt)
-
-    call seq_timemgr_EClockGetData( EClock, calendar=calendar, stepno=stepno )
-    nextsw_cday = datm_shr_getNextRadCDay( target_ymd, target_tod, stepno, idt, iradsw, calendar )
+    call shr_strdata_setOrbs(SDATM,orbEccen,orbMvelpp,orbLambm0,orbObliqr,modeldt)
 
     !--- copy all fields from streams to a2x as default ---
     call t_startf('datm_strdata_advance')
@@ -746,9 +719,9 @@ CONTAINS
           uprime    = a2x%rAttr(ku,n)*windFactor(n)
           vprime    = a2x%rAttr(kv,n)*windFactor(n)
           a2x%rAttr(ku,n) = uprime*cos(winddFactor(n)*degtorad)- &
-               vprime*sin(winddFactor(n)*degtorad)
+                            vprime*sin(winddFactor(n)*degtorad)
           a2x%rAttr(kv,n) = uprime*sin(winddFactor(n)*degtorad)+ &
-               vprime*cos(winddFactor(n)*degtorad)
+                            vprime*cos(winddFactor(n)*degtorad)
 
           !--- density, tbot, & pslv taken directly from input stream, set pbot ---
           a2x%rAttr(kpbot,n) = a2x%rAttr(kpslv,n)
@@ -759,7 +732,7 @@ CONTAINS
              a2x%rAttr(ktbot,n) = max(a2x%rAttr(ktbot,n), tMin)
           else if ( yc(n) > 60.0_R8 ) then
              factor = MIN(1.0_R8, 0.1_R8*(yc(n)-60.0_R8) )
-             a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + factor * dTarc(mm)
+             a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + factor * dTarc(target_mon)
           endif
           a2x%rAttr(kptem,n) = a2x%rAttr(ktbot,n)
 
@@ -912,8 +885,12 @@ CONTAINS
           endif
           rtmp = maxval(a2x%rAttr(ktbot,:))
           call shr_mpi_max(rtmp,tbotmax,mpicom,'datm_tbot',all=.true.)
-          rtmp = maxval(x2a%rAttr(kanidr,:))
-          call shr_mpi_max(rtmp,anidrmax,mpicom,'datm_ani',all=.true.)
+          if (atm_prognostic) then
+             rtmp = maxval(x2a%rAttr(kanidr,:))
+             call shr_mpi_max(rtmp,anidrmax,mpicom,'datm_ani',all=.true.)
+          else
+             anidrmax = SHR_CONST_SPVAL ! see below for use
+          end if
           if (stdew > 0) then
              rtmp = maxval(avstrm%rAttr(stdew,:))
              call shr_mpi_max(rtmp,tdewmax,mpicom,'datm_tdew',all=.true.)
@@ -1013,9 +990,9 @@ CONTAINS
              a2x%rAttr(kswnet,n) = 0.0_R8
           else
              a2x%rAttr(kswnet,n) = (1.0_R8-x2a%rAttr(kanidr,n))*a2x%rAttr(kswndr,n) + &
-                  (1.0_R8-x2a%rAttr(kavsdr,n))*a2x%rAttr(kswvdr,n) + &
-                  (1.0_R8-x2a%rAttr(kanidf,n))*a2x%rAttr(kswndf,n) + &
-                  (1.0_R8-x2a%rAttr(kavsdf,n))*a2x%rAttr(kswvdf,n)
+                                   (1.0_R8-x2a%rAttr(kavsdr,n))*a2x%rAttr(kswvdr,n) + &
+                                   (1.0_R8-x2a%rAttr(kanidf,n))*a2x%rAttr(kswndf,n) + &
+                                   (1.0_R8-x2a%rAttr(kavsdf,n))*a2x%rAttr(kswvdf,n)
           endif
 
           !--- rain and snow ---
@@ -1039,8 +1016,6 @@ CONTAINS
        enddo
 
     end select
-
-    call t_stopf('datm_datamode')
 
     !----------------------------------------------------------
     ! bias correction / anomaly forcing ( start block )
@@ -1128,6 +1103,7 @@ CONTAINS
     !----------------------------------------------------------
     ! bias correction / anomaly forcing ( end block )
     !----------------------------------------------------------
+    call t_stopf('datm_datamode')
 
     !----------------------------------------------------------
     ! Debug output
@@ -1185,22 +1161,19 @@ CONTAINS
        call t_stopf('datm_restart')
     endif
 
-    call t_stopf('datm')
-
     !----------------------------------------------------------------------------
     ! Log output for model date
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
 
-    call t_startf('datm_run2')
     if (my_task == master_task) then
        write(logunit,F04) trim(myModelName),': model date ', target_ymd,target_tod
        call shr_sys_flush(logunit)
     end if
 
     firstcall = .false.
-    call t_stopf('datm_run2')
 
+    call t_stopf('datm')
     call t_stopf('DATM_RUN')
 
   end subroutine datm_comp_run

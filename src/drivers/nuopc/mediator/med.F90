@@ -33,46 +33,46 @@ contains
 !-----------------------------------------------------------------------------
 
   subroutine SetServices(gcomp, rc)
-    use ESMF    , only: ESMF_SUCCESS, ESMF_GridCompSetEntryPoint, ESMF_METHOD_INITIALIZE, ESMF_METHOD_RUN
-    use ESMF    , only: ESMF_GridComp, ESMF_MethodRemove
-    use NUOPC   , only: NUOPC_CompDerive, NUOPC_CompSetEntryPoint, NUOPC_CompSpecialize, NUOPC_NOOP
-    use NUOPC_Mediator, only:  mediator_routine_SS             => SetServices
-    use NUOPC_Mediator, only:      mediator_routine_Run            => routine_Run
-    use NUOPC_Mediator, only:      mediator_label_DataInitialize   => label_DataInitialize
-    use NUOPC_Mediator, only:      mediator_label_Advance          => label_Advance
-    use NUOPC_Mediator, only:      mediator_label_CheckImport      => label_CheckImport
-    use NUOPC_Mediator, only:      mediator_label_TimestampExport  => label_TimestampExport
-    use NUOPC_Mediator, only:      mediator_label_SetRunClock      => label_SetRunClock
-    use NUOPC_Mediator, only:      mediator_label_Finalize         => label_Finalize
-    use med_phases_history_mod    , only: med_phases_history_write
-    use med_phases_restart_mod    , only: med_phases_restart_write
-    use med_connectors_mod        , only: med_connectors_prep_med2atm
-    use med_connectors_mod        , only: med_connectors_prep_med2ocn
-    use med_connectors_mod        , only: med_connectors_prep_med2ice
-    use med_connectors_mod        , only: med_connectors_prep_med2lnd
-    use med_connectors_mod        , only: med_connectors_prep_med2rof
-    use med_connectors_mod        , only: med_connectors_prep_med2wav
-    use med_connectors_mod        , only: med_connectors_prep_med2glc
-    use med_connectors_mod        , only: med_connectors_post_atm2med
-    use med_connectors_mod        , only: med_connectors_post_ocn2med
-    use med_connectors_mod        , only: med_connectors_post_ice2med
-    use med_connectors_mod        , only: med_connectors_post_lnd2med
-    use med_connectors_mod        , only: med_connectors_post_rof2med
-    use med_connectors_mod        , only: med_connectors_post_wav2med
-    use med_connectors_mod        , only: med_connectors_post_glc2med
-    use med_phases_prep_atm_mod   , only: med_phases_prep_atm
-    use med_phases_prep_ice_mod   , only: med_phases_prep_ice
-    use med_phases_prep_lnd_mod   , only: med_phases_prep_lnd
-    use med_phases_prep_rof_mod   , only: med_phases_prep_rof
-    use med_phases_prep_wav_mod   , only: med_phases_prep_wav
-    use med_phases_prep_glc_mod   , only: med_phases_prep_glc
-    use med_phases_prep_ocn_mod   , only: med_phases_prep_ocn_map
-    use med_phases_prep_ocn_mod   , only: med_phases_prep_ocn_merge
-    use med_phases_prep_ocn_mod   , only: med_phases_prep_ocn_accum_fast
-    use med_phases_prep_ocn_mod   , only: med_phases_prep_ocn_accum_avg
-    use med_phases_ocnalb_mod     , only: med_phases_ocnalb_run
-    use med_phases_aofluxes_mod   , only: med_phases_aofluxes_run
-    use med_fraction_mod          , only: med_fraction_init, med_fraction_set
+    use ESMF                    , only: ESMF_SUCCESS, ESMF_GridCompSetEntryPoint, ESMF_METHOD_INITIALIZE, ESMF_METHOD_RUN
+    use ESMF                    , only: ESMF_GridComp, ESMF_MethodRemove
+    use NUOPC                   , only: NUOPC_CompDerive, NUOPC_CompSetEntryPoint, NUOPC_CompSpecialize, NUOPC_NOOP
+    use NUOPC_Mediator          , only: mediator_routine_SS             => SetServices
+    use NUOPC_Mediator          , only: mediator_routine_Run            => routine_Run
+    use NUOPC_Mediator          , only: mediator_label_DataInitialize   => label_DataInitialize
+    use NUOPC_Mediator          , only: mediator_label_Advance          => label_Advance
+    use NUOPC_Mediator          , only: mediator_label_CheckImport      => label_CheckImport
+    use NUOPC_Mediator          , only: mediator_label_TimestampExport  => label_TimestampExport
+    use NUOPC_Mediator          , only: mediator_label_SetRunClock      => label_SetRunClock
+    use NUOPC_Mediator          , only: mediator_label_Finalize         => label_Finalize
+    use med_phases_history_mod  , only: med_phases_history_write
+    use med_phases_restart_mod  , only: med_phases_restart_write
+    use med_connectors_mod      , only: med_connectors_prep_med2atm
+    use med_connectors_mod      , only: med_connectors_prep_med2ocn
+    use med_connectors_mod      , only: med_connectors_prep_med2ice
+    use med_connectors_mod      , only: med_connectors_prep_med2lnd
+    use med_connectors_mod      , only: med_connectors_prep_med2rof
+    use med_connectors_mod      , only: med_connectors_prep_med2wav
+    use med_connectors_mod      , only: med_connectors_prep_med2glc
+    use med_connectors_mod      , only: med_connectors_post_atm2med
+    use med_connectors_mod      , only: med_connectors_post_ocn2med
+    use med_connectors_mod      , only: med_connectors_post_ice2med
+    use med_connectors_mod      , only: med_connectors_post_lnd2med
+    use med_connectors_mod      , only: med_connectors_post_rof2med
+    use med_connectors_mod      , only: med_connectors_post_wav2med
+    use med_connectors_mod      , only: med_connectors_post_glc2med
+    use med_phases_prep_atm_mod , only: med_phases_prep_atm
+    use med_phases_prep_ice_mod , only: med_phases_prep_ice
+    use med_phases_prep_lnd_mod , only: med_phases_prep_lnd
+    use med_phases_prep_rof_mod , only: med_phases_prep_rof
+    use med_phases_prep_wav_mod , only: med_phases_prep_wav
+    use med_phases_prep_glc_mod , only: med_phases_prep_glc
+    use med_phases_prep_ocn_mod , only: med_phases_prep_ocn_map
+    use med_phases_prep_ocn_mod , only: med_phases_prep_ocn_merge
+    use med_phases_prep_ocn_mod , only: med_phases_prep_ocn_accum_fast
+    use med_phases_prep_ocn_mod , only: med_phases_prep_ocn_accum_avg
+    use med_phases_ocnalb_mod   , only: med_phases_ocnalb_run
+    use med_phases_aofluxes_mod , only: med_phases_aofluxes_run
+    use med_fraction_mod        , only: med_fraction_init, med_fraction_set
 
 
     type(ESMF_GridComp)  :: gcomp

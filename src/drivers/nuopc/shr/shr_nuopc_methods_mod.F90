@@ -4,18 +4,13 @@ module shr_nuopc_methods_mod
   ! Generic operation methods used by the Mediator Component.
   !-----------------------------------------------------------------------------
 
-  use shr_kind_mod, only : R8=>shr_kind_r8
-  use ESMF, only : ESMF_GeomType_Flag, ESMF_FieldStatus_Flag, ESMF_PoleMethod_Flag
-  use ESMF, only: operator(<), operator(/=), operator(+), operator(-), operator(*) , operator(>=)
-  use ESMF, only: operator(<=), operator(>), operator(==)
-  use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_FAILURE
-  use ESMF, only : ESMF_LOGERR_PASSTHRU, ESMF_LogFoundError, ESMF_LOGMSG_ERROR
-  use ESMF, only : ESMF_MAXSTR, ESMF_LOGMSG_WARNING, ESMF_POLEMETHOD_ALLAVG
-  use med_constants_mod, only : dbug_flag => med_constants_dbug_flag
-  use med_constants_mod, only : czero => med_constants_czero
-  use med_constants_mod, only : spval => med_constants_spval
-  use med_constants_mod, only : spval_init => med_constants_spval_init
-  use med_constants_mod, only : ispval_mask => med_constants_ispval_mask
+  use ESMF              , only : operator(<), operator(/=), operator(+), operator(-), operator(*) , operator(>=)
+  use ESMF              , only : operator(<=), operator(>), operator(==)
+  use ESMF              , only : ESMF_GeomType_Flag, ESMF_FieldStatus_Flag, ESMF_PoleMethod_Flag
+  use ESMF              , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_FAILURE
+  use ESMF              , only : ESMF_LOGERR_PASSTHRU, ESMF_LogFoundError, ESMF_LOGMSG_ERROR
+  use ESMF              , only : ESMF_MAXSTR, ESMF_LOGMSG_WARNING, ESMF_POLEMETHOD_ALLAVG
+  use med_constants_mod , only : dbug_flag => med_constants_dbug_flag
 
   implicit none
   private
@@ -199,11 +194,13 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_FB_init(FBout, flds_scalar_name, fieldNameList, FBgeom, STgeom, FBflds, STflds, name, rc)
-    use ESMF, only : ESMF_Field, ESMF_FieldBundle, ESMF_FieldBundleCreate, ESMF_FieldBundleGet
-    use ESMF, only : ESMF_State, ESMF_Grid, ESMF_Mesh, ESMF_StaggerLoc, ESMF_MeshLoc
-    use ESMF, only : ESMF_StateGet, ESMF_FieldGet, ESMF_FieldBundleAdd, ESMF_FieldCreate
-    use ESMF, only : ESMF_TYPEKIND_R8, ESMF_GEOMTYPE_MESH, ESMF_GEOMTYPE_GRID
-    use ESMF, only : ESMF_FIELDSTATUS_EMPTY
+    use ESMF              , only : ESMF_Field, ESMF_FieldBundle, ESMF_FieldBundleCreate, ESMF_FieldBundleGet
+    use ESMF              , only : ESMF_State, ESMF_Grid, ESMF_Mesh, ESMF_StaggerLoc, ESMF_MeshLoc
+    use ESMF              , only : ESMF_StateGet, ESMF_FieldGet, ESMF_FieldBundleAdd, ESMF_FieldCreate
+    use ESMF              , only : ESMF_TYPEKIND_R8, ESMF_GEOMTYPE_MESH, ESMF_GEOMTYPE_GRID
+    use ESMF              , only : ESMF_FIELDSTATUS_EMPTY
+    use med_constants_mod , only : spval_init => med_constants_spval_init
+
     ! ----------------------------------------------
     ! Create FBout from fieldNameList, FBflds, STflds, FBgeom or STgeom in that order or priority
     ! Pass in FBgeom OR STgeom, get grid/mesh from that object
@@ -473,7 +470,7 @@ module shr_nuopc_methods_mod
     ! local variables
     integer                         :: fieldCount
     character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
-    integer :: dbrc
+    integer                         :: dbrc
     character(len=*),parameter      :: subname='(shr_nuopc_methods_FB_getNameN)'
     ! ----------------------------------------------
 
@@ -511,6 +508,7 @@ module shr_nuopc_methods_mod
 
   subroutine shr_nuopc_methods_FB_getFieldN(FB, fieldnum, field, rc)
     use ESMF, only : ESMF_Field, ESMF_FieldBundle, ESMF_FieldBundleGet
+
     ! ----------------------------------------------
     ! Get field number fieldnum out of FB
     ! ----------------------------------------------
@@ -521,7 +519,7 @@ module shr_nuopc_methods_mod
 
     ! local variables
     character(len=ESMF_MAXSTR) :: name
-    integer :: dbrc
+    integer                    :: dbrc
     character(len=*),parameter :: subname='(shr_nuopc_methods_FB_getFieldN)'
     ! ----------------------------------------------
 
@@ -588,7 +586,7 @@ module shr_nuopc_methods_mod
     ! local variables
     integer                         :: fieldCount
     character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
-    integer :: dbrc
+    integer                         :: dbrc
     character(len=*),parameter      :: subname='(shr_nuopc_methods_State_getNameN)'
     ! ----------------------------------------------
 
@@ -625,9 +623,9 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_State_getNumFields(State, fieldnum, rc)
-    use NUOPC, only : NUOPC_GetStateMemberLists
-    use ESMF, only : ESMF_State, ESMF_Field, ESMF_StateGet, ESMF_STATEITEM_FIELD
-    use ESMF, only : ESMF_StateItem_Flag
+    use NUOPC , only : NUOPC_GetStateMemberLists
+    use ESMF  , only : ESMF_State, ESMF_Field, ESMF_StateGet, ESMF_STATEITEM_FIELD
+    use ESMF  , only : ESMF_StateItem_Flag
     ! ----------------------------------------------
     ! Get field number fieldnum name out of State
     ! ----------------------------------------------
@@ -640,7 +638,7 @@ module shr_nuopc_methods_mod
     type(ESMF_Field), pointer          :: fieldList(:)
     type(ESMF_StateItem_Flag), pointer :: itemTypeList(:)
     logical, parameter                 :: use_NUOPC_method = .true.
-    integer :: dbrc
+    integer                            :: dbrc
     character(len=*),parameter         :: subname='(shr_nuopc_methods_State_getNumFields)'
     ! ----------------------------------------------
 
@@ -758,7 +756,7 @@ module shr_nuopc_methods_mod
     ! ----------------------------------------------
     ! Destroy fields in FB and FB
     ! ----------------------------------------------
-    use shr_kind_mod, only : R8 => shr_kind_r8
+    use med_constants_mod, only : R8
     use ESMF, only : ESMF_FieldBundle, ESMF_FieldBundleGet, ESMF_FieldDestroy
     use ESMF, only : ESMF_FieldBundleDestroy, ESMF_Field
 
@@ -807,8 +805,10 @@ module shr_nuopc_methods_mod
     ! Set all fields to value in FB
     ! If value is not provided, reset to 0.0
     ! ----------------------------------------------
-    use shr_kind_mod, only : R8 => shr_kind_r8
-    use ESMF, only : ESMF_FieldBundle, ESMF_FieldBundleGet
+    use med_constants_mod , only : czero => med_constants_czero
+    use med_constants_mod , only : R8
+    use ESMF              , only : ESMF_FieldBundle, ESMF_FieldBundleGet
+
     type(ESMF_FieldBundle), intent(inout)        :: FB
     real(R8)    , intent(in), optional :: value
     integer               , intent(out)          :: rc
@@ -854,7 +854,7 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_FB_FieldCopy(FBin,fldin,FBout,fldout,rc)
-    use shr_kind_mod, only : R8 => shr_kind_r8
+    use med_constants_mod, only : R8
     use ESMF, only : ESMF_FieldBundle, ESMF_FAILURE, ESMF_LOGMSG_ERROR
     ! ----------------------------------------------
     ! Copy a field in a field bundle to another field in a field bundle
@@ -1173,34 +1173,37 @@ module shr_nuopc_methods_mod
     ! ----------------------------------------------
     ! Supports up to a five way merge
     ! ----------------------------------------------
-    use ESMF, only : ESMF_FieldBundle
-    type(ESMF_FieldBundle), intent(inout)                 :: FBout
-    character(len=*)      , intent(in)                    :: fnameout
-    type(ESMF_FieldBundle), intent(in), optional          :: FBinA
-    character(len=*)      , intent(in), optional          :: fnameA
-    real(R8)    , intent(in), optional, pointer :: wgtA(:,:)
-    type(ESMF_FieldBundle), intent(in), optional          :: FBinB
-    character(len=*)      , intent(in), optional          :: fnameB
-    real(R8)    , intent(in), optional, pointer :: wgtB(:,:)
-    type(ESMF_FieldBundle), intent(in), optional          :: FBinC
-    character(len=*)      , intent(in), optional          :: fnameC
-    real(R8)    , intent(in), optional, pointer :: wgtC(:,:)
-    type(ESMF_FieldBundle), intent(in), optional          :: FBinD
-    character(len=*)      , intent(in), optional          :: fnameD
-    real(R8)    , intent(in), optional, pointer :: wgtD(:,:)
-    type(ESMF_FieldBundle), intent(in), optional          :: FBinE
-    character(len=*)      , intent(in), optional          :: fnameE
-    real(R8)    , intent(in), optional, pointer :: wgtE(:,:)
-    integer               , intent(out)                   :: rc
+    use med_constants_mod , only : R8
+    use ESMF              , only : ESMF_FieldBundle
+    use med_constants_mod , only : czero => med_constants_czero
+
+    type(ESMF_FieldBundle), intent(inout)        :: FBout
+    character(len=*)      , intent(in)           :: fnameout
+    type(ESMF_FieldBundle), intent(in), optional :: FBinA
+    character(len=*)      , intent(in), optional :: fnameA
+    real(R8)    , intent(in), optional, pointer  :: wgtA(:,:)
+    type(ESMF_FieldBundle), intent(in), optional :: FBinB
+    character(len=*)      , intent(in), optional :: fnameB
+    real(R8)    , intent(in), optional, pointer  :: wgtB(:,:)
+    type(ESMF_FieldBundle), intent(in), optional :: FBinC
+    character(len=*)      , intent(in), optional :: fnameC
+    real(R8)    , intent(in), optional, pointer  :: wgtC(:,:)
+    type(ESMF_FieldBundle), intent(in), optional :: FBinD
+    character(len=*)      , intent(in), optional :: fnameD
+    real(R8)    , intent(in), optional, pointer  :: wgtD(:,:)
+    type(ESMF_FieldBundle), intent(in), optional :: FBinE
+    character(len=*)      , intent(in), optional :: fnameE
+    real(R8)    , intent(in), optional, pointer  :: wgtE(:,:)
+    integer               , intent(out)          :: rc
 
     ! local variables
-    real(R8), pointer :: dataOut(:,:)
-    real(R8), pointer :: dataPtr(:,:)
-    real(R8), pointer :: wgt(:,:)
-    integer                     :: lb1,ub1,lb2,ub2,i,j,n
-    logical                     :: wgtfound, FBinfound
-    integer :: dbrc
-    character(len=*),parameter  :: subname='(shr_nuopc_methods_FB_FieldMerge_2D)'
+    real(R8), pointer          :: dataOut(:,:)
+    real(R8), pointer          :: dataPtr(:,:)
+    real(R8), pointer          :: wgt(:,:)
+    integer                    :: lb1,ub1,lb2,ub2,i,j,n
+    logical                    :: wgtfound, FBinfound
+    integer                    :: dbrc
+    character(len=*),parameter :: subname='(shr_nuopc_methods_FB_FieldMerge_2D)'
     ! ----------------------------------------------
 
     if (dbug_flag > 10) then
@@ -1359,8 +1362,9 @@ module shr_nuopc_methods_mod
     ! ----------------------------------------------
     ! Supports up to a five way merge
     ! ----------------------------------------------
-    use shr_kind_mod, only : R8 => SHR_KIND_R8
-    use ESMF, only : ESMF_FieldBundle
+    use med_constants_mod , only : R8
+    use med_constants_mod , only : czero => med_constants_czero
+    use ESMF              , only : ESMF_FieldBundle
 
     type(ESMF_FieldBundle), intent(inout)                 :: FBout
     character(len=*)      , intent(in)                    :: fnameout
@@ -1538,12 +1542,13 @@ module shr_nuopc_methods_mod
     ! Set all fields to value in State
     ! If value is not provided, reset to 0.0
     ! ----------------------------------------------
-    use shr_kind_mod, only : R8 => shr_kind_r8
-    use ESMF, only : ESMF_State, ESMF_StateGet
+    use med_constants_mod , only : czero => med_constants_czero
+    use med_constants_mod , only : R8
+    use ESMF              , only : ESMF_State, ESMF_StateGet
 
-    type(ESMF_State)  , intent(inout)        :: State
-    real(R8), intent(in), optional :: value
-    integer           , intent(out)          :: rc
+    type(ESMF_State) , intent(inout)        :: State
+    real(R8)         , intent(in), optional :: value
+    integer          , intent(out)          :: rc
 
     ! local variables
     integer                         :: i,j,n
@@ -1589,8 +1594,8 @@ module shr_nuopc_methods_mod
     ! ----------------------------------------------
     ! Set all fields to zero in FB
     ! ----------------------------------------------
-    use shr_kind_mod, only : R8 => shr_kind_r8
-    use ESMF, only : ESMF_FieldBundle, ESMF_FieldBundleGet
+    use med_constants_mod , only : R8
+    use ESMF              , only : ESMF_FieldBundle, ESMF_FieldBundleGet
 
     type(ESMF_FieldBundle), intent(inout) :: FB
     integer               , intent(in)    :: count
@@ -1600,9 +1605,9 @@ module shr_nuopc_methods_mod
     integer                         :: i,j,n
     integer                         :: fieldCount, lrank
     character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
-    real(R8), pointer     :: dataPtr1(:)
-    real(R8), pointer     :: dataPtr2(:,:)
-    integer :: dbrc
+    real(R8), pointer               :: dataPtr1(:)
+    real(R8), pointer               :: dataPtr2(:,:)
+    integer                         :: dbrc
     character(len=*),parameter      :: subname='(shr_nuopc_methods_FB_average)'
     ! ----------------------------------------------
 
@@ -1666,21 +1671,21 @@ module shr_nuopc_methods_mod
     ! ----------------------------------------------
     ! Diagnose status of FB
     ! ----------------------------------------------
-    use shr_kind_mod, only : R8 => shr_kind_r8
-    use ESMF, only : ESMF_FieldBundle, ESMF_FieldBundleGet
+    use med_constants_mod , only : R8
+    use ESMF              , only : ESMF_FieldBundle, ESMF_FieldBundleGet
 
-    type(ESMF_FieldBundle), intent(inout) :: FB
-    character(len=*)      , intent(in), optional :: string
-    integer               , intent(out)   :: rc
+    type(ESMF_FieldBundle) , intent(inout)        :: FB
+    character(len=*)       , intent(in), optional :: string
+    integer                , intent(out)          :: rc
 
     ! local variables
     integer                         :: i,j,n
     integer                         :: fieldCount, lrank
     character(ESMF_MAXSTR), pointer :: lfieldnamelist(:)
     character(len=64)               :: lstring
-    real(R8), pointer     :: dataPtr1d(:)
-    real(R8), pointer     :: dataPtr2d(:,:)
-    integer :: dbrc
+    real(R8), pointer               :: dataPtr1d(:)
+    real(R8), pointer               :: dataPtr2d(:,:)
+    integer                         :: dbrc
     character(len=*), parameter     :: subname='(shr_nuopc_methods_FB_diagnose)'
     ! ----------------------------------------------
 
@@ -1756,7 +1761,7 @@ module shr_nuopc_methods_mod
     ! ----------------------------------------------
     ! Diagnose status of Array
     ! ----------------------------------------------
-    use shr_kind_mod, only : R8 => shr_kind_r8
+    use med_constants_mod, only : R8
     use ESMF, only : ESMF_Array, ESMF_ArrayGet
 
     type(ESMF_Array), intent(inout)        :: array
@@ -1805,7 +1810,7 @@ module shr_nuopc_methods_mod
     ! ----------------------------------------------
     ! Diagnose status of State
     ! ----------------------------------------------
-    use shr_kind_mod, only : R8 => shr_kind_r8
+    use med_constants_mod, only : R8
     use ESMF, only : ESMF_State, ESMF_StateGet
 
     type(ESMF_State), intent(in)           :: State
@@ -1891,7 +1896,7 @@ module shr_nuopc_methods_mod
     ! ----------------------------------------------
     ! Diagnose status of State
     ! ----------------------------------------------
-    use shr_kind_mod, only : R8 => shr_kind_r8
+    use med_constants_mod, only : R8
     use ESMF, only : ESMF_FieldBundle
 
     type(ESMF_FieldBundle), intent(inout)  :: FB
@@ -2048,8 +2053,9 @@ module shr_nuopc_methods_mod
     ! Accumulate common field names from FBin to FBout
     ! If copy is passed in and true, the this is a copy
     ! ----------------------------------------------
-    use ESMF, only : ESMF_FieldBundle
-    use ESMF, only : ESMF_FieldBundleGet
+    use med_constants_mod , only : R8
+    use ESMF              , only : ESMF_FieldBundle
+    use ESMF              , only : ESMF_FieldBundleGet
 
     type(ESMF_FieldBundle), intent(inout) :: FBout
     type(ESMF_FieldBundle), intent(in)    :: FBin
@@ -2057,15 +2063,15 @@ module shr_nuopc_methods_mod
     integer               , intent(out)   :: rc
 
     ! local variables
-    integer                     :: i,j,n
-    integer                     :: fieldCount, lranki, lranko
-    character(ESMF_MAXSTR) ,pointer  :: lfieldnamelist(:)
-    logical                     :: exists
-    logical                     :: lcopy
-    real(R8), pointer :: dataPtri1(:)  , dataPtro1(:)
-    real(R8), pointer :: dataPtri2(:,:), dataPtro2(:,:)
-    integer :: dbrc
-    character(len=*), parameter :: subname='(shr_nuopc_methods_FB_accumFB2FB)'
+    integer                         :: i,j,n
+    integer                         :: fieldCount, lranki, lranko
+    character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
+    logical                         :: exists
+    logical                         :: lcopy
+    real(R8), pointer               :: dataPtri1(:)  , dataPtro1(:)
+    real(R8), pointer               :: dataPtri2(:,:), dataPtro2(:,:)
+    integer                         :: dbrc
+    character(len=*), parameter     :: subname='(shr_nuopc_methods_FB_accumFB2FB)'
 
     if (dbug_flag > 10) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -2162,7 +2168,7 @@ module shr_nuopc_methods_mod
     ! Accumulate common field names from State to FB
     ! If copy is passed in and true, the this is a copy
     ! ----------------------------------------------
-    use shr_kind_mod, only : R8 => shr_kind_r8
+    use med_constants_mod, only : R8
     use ESMF, only : ESMF_State, ESMF_FieldBundle
     use ESMF, only : ESMF_StateGet, ESMF_FieldBundleGet
     use ESMF, only : ESMF_STATEITEM_NOTFOUND, ESMF_StateItem_Flag
@@ -2281,9 +2287,10 @@ module shr_nuopc_methods_mod
     ! Accumulate common field names from FB to State
     ! If copy is passed in and true, the this is a copy
     ! ----------------------------------------------
-    use ESMF, only : ESMF_State, ESMF_FieldBundle
-    use ESMF, only : ESMF_StateGet, ESMF_FieldBundleGet
-    use ESMF, only : ESMF_STATEITEM_NOTFOUND, ESMF_StateItem_Flag
+    use med_constants_mod , only : R8
+    use ESMF              , only : ESMF_State, ESMF_FieldBundle
+    use ESMF              , only : ESMF_StateGet, ESMF_FieldBundleGet
+    use ESMF              , only : ESMF_STATEITEM_NOTFOUND, ESMF_StateItem_Flag
 
     type(ESMF_State)      , intent(inout) :: STout
     type(ESMF_FieldBundle), intent(in)    :: FBin
@@ -2432,22 +2439,22 @@ module shr_nuopc_methods_mod
     ! abort is true by default and will abort if fldptr is not yet allocated in field
     ! rank returns 0, 1, or 2.  0 means fldptr not allocated and abort=false
     ! ----------------------------------------------
-    use shr_kind_mod, only : R8=>shr_kind_r8
-    use ESMF, only : ESMF_Field,ESMF_Mesh, ESMF_FieldGet, ESMF_MeshGet
-    use ESMF, only : ESMF_GEOMTYPE_MESH, ESMF_GEOMTYPE_GRID, ESMF_FIELDSTATUS_COMPLETE
+    use med_constants_mod , only : R8
+    use ESMF              , only : ESMF_Field,ESMF_Mesh, ESMF_FieldGet, ESMF_MeshGet
+    use ESMF              , only : ESMF_GEOMTYPE_MESH, ESMF_GEOMTYPE_GRID, ESMF_FIELDSTATUS_COMPLETE
 
-    type(ESMF_Field)           , intent(in)              :: field
-    real(R8), pointer, intent(inout), optional :: fldptr1(:)
-    real(R8), pointer, intent(inout), optional :: fldptr2(:,:)
-    integer                    , intent(out)  , optional :: rank
-    logical                    , intent(in)   , optional :: abort
-    integer                    , intent(out)  , optional :: rc
+    type(ESMF_Field)  , intent(in)              :: field
+    real(R8), pointer , intent(inout), optional :: fldptr1(:)
+    real(R8), pointer , intent(inout), optional :: fldptr2(:,:)
+    integer           , intent(out)  , optional :: rank
+    logical           , intent(in)   , optional :: abort
+    integer           , intent(out)  , optional :: rc
 
     ! local variables
-    type(ESMF_Mesh)            :: lmesh
-    integer                    :: lrank, nnodes, nelements
-    logical                    :: labort
-    integer :: dbrc
+    type(ESMF_Mesh) :: lmesh
+    integer         :: lrank, nnodes, nelements
+    logical         :: labort
+    integer         :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_Field_GetFldPtr)'
     ! ----------------------------------------------
 
@@ -2547,22 +2554,23 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_FB_GetFldPtr(FB, fldname, fldptr1, fldptr2, rank, rc)
-    use shr_kind_mod, only : R8=>shr_kind_r8
-    use ESMF, only : ESMF_FieldBundle, ESMF_FieldBundleGet, ESMF_Field
+    use med_constants_mod , only : R8
+    use ESMF              , only : ESMF_FieldBundle, ESMF_FieldBundleGet, ESMF_Field
+
     ! ----------------------------------------------
     ! Get pointer to a field bundle field
     ! ----------------------------------------------
-    type(ESMF_FieldBundle),      intent(in)              :: FB
-    character(len=*)      ,      intent(in)              :: fldname
-    real(R8), pointer, intent(inout), optional :: fldptr1(:)
-    real(R8), pointer, intent(inout), optional :: fldptr2(:,:)
-    integer               ,      intent(out),   optional :: rank
-    integer               ,      intent(out),   optional :: rc
+    type(ESMF_FieldBundle) , intent(in)              :: FB
+    character(len=*)       , intent(in)              :: fldname
+    real(R8), pointer      , intent(inout), optional :: fldptr1(:)
+    real(R8), pointer      , intent(inout), optional :: fldptr2(:,:)
+    integer                , intent(out),   optional :: rank
+    integer                , intent(out),   optional :: rc
 
     ! local variables
-    type(ESMF_Field)           :: lfield
-    integer                    :: lrank
-    integer :: dbrc
+    type(ESMF_Field) :: lfield
+    integer          :: lrank
+    integer          :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_FB_GetFldPtr)'
     ! ----------------------------------------------
 
@@ -2606,7 +2614,7 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_FB_SetFldPtr(FB, fldname, val, rc)
-    use shr_kind_mod, only : R8=>shr_kind_r8
+    use med_constants_mod, only : R8
     use ESMF, only : ESMF_FieldBundle, ESMF_Field
 
     type(ESMF_FieldBundle), intent(in)  :: FB
@@ -2655,7 +2663,7 @@ module shr_nuopc_methods_mod
     ! ----------------------------------------------
     ! Get pointer to a state field
     ! ----------------------------------------------
-    use shr_kind_mod, only : R8=>shr_kind_r8
+    use med_constants_mod, only : R8
     use ESMF, only : ESMF_State, ESMF_Field, ESMF_StateGet
 
     type(ESMF_State),            intent(in)              :: ST
@@ -2705,7 +2713,7 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_State_SetFldPtr(ST, fldname, val, rc)
-    use shr_kind_mod, only : R8=>shr_kind_r8
+    use med_constants_mod, only : R8
     use ESMF, only : ESMF_State, ESMF_Field
 
     type(ESMF_State)  , intent(in)  :: ST
@@ -2751,7 +2759,7 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   logical function shr_nuopc_methods_FieldPtr_Compare1(fldptr1, fldptr2, cstring, rc)
-    use shr_kind_mod, only : R8=>shr_kind_r8
+    use med_constants_mod, only : R8
     real(R8), pointer, intent(in)  :: fldptr1(:)
     real(R8), pointer, intent(in)  :: fldptr2(:)
     character(len=*)           , intent(in)  :: cstring
@@ -2788,7 +2796,7 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   logical function shr_nuopc_methods_FieldPtr_Compare2(fldptr1, fldptr2, cstring, rc)
-    use shr_kind_mod, only : R8=>shr_kind_r8
+    use med_constants_mod, only : R8
     real(R8), pointer, intent(in)  :: fldptr1(:,:)
     real(R8), pointer, intent(in)  :: fldptr2(:,:)
     character(len=*)           , intent(in)  :: cstring
@@ -2899,7 +2907,7 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_Field_GeomPrint(field, string, rc)
-    use shr_kind_mod, only : R8=>shr_kind_r8
+    use med_constants_mod, only : R8
     use ESMF, only : ESMF_Field, ESMF_Grid, ESMF_Mesh
     use ESMF, only : ESMF_FieldGet, ESMF_GEOMTYPE_MESH, ESMF_GEOMTYPE_GRID, ESMF_FIELDSTATUS_EMPTY
 
@@ -3058,7 +3066,7 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_Grid_Print(grid, string, rc)
-    use shr_kind_mod, only : R8 => shr_kind_r8
+    use med_constants_mod, only : R8
     use ESMF, only : ESMF_Grid, ESMF_DistGrid, ESMF_StaggerLoc
     use ESMF, only : ESMF_GridGet, ESMF_DistGridGet, ESMF_GridGetCoord
     use ESMF, only : ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER
@@ -3255,7 +3263,7 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_Mesh_Write(mesh, string, rc)
-    use shr_kind_mod, only : R8=>shr_kind_r8
+    use med_constants_mod, only : R8
     use ESMF, only : ESMF_Mesh, ESMF_MeshGet, ESMF_Array, ESMF_ArrayWrite, ESMF_DistGrid
 
     type(ESMF_Mesh) ,intent(in)  :: mesh
@@ -3712,27 +3720,31 @@ module shr_nuopc_methods_mod
 !================================================================================
 
   subroutine shr_nuopc_methods_State_GetScalar(State, scalar_id, value, mpicom, flds_scalar_name, flds_scalar_num, rc)
-    use mpi, only :  mpi_comm_rank, mpi_bcast, MPI_REAL8
-    use ESMF, only : ESMF_SUCCESS, ESMF_State, ESMF_StateGet, ESMF_Field, ESMF_FieldGet
-    use ESMF, only : ESMF_FAILURE, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU, ESMF_LogWrite
-    use ESMF, only : ESMF_LOGMSG_INFO
+    use med_constants_mod , only : R8
+   !use mpi               , only : mpi_comm_rank, MPI_REAL8, mpi_bcast !TODO: mpi_bcast use does not seem to work on hobart
+    use mpi
+    use ESMF              , only : ESMF_SUCCESS, ESMF_State, ESMF_StateGet, ESMF_Field, ESMF_FieldGet
+    use ESMF              , only : ESMF_FAILURE, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU, ESMF_LogWrite
+    use ESMF              , only : ESMF_LOGMSG_INFO
+
     ! ----------------------------------------------
     ! Get scalar data from State for a particular name and broadcast it to all other pets
     ! in mpicom
     ! ----------------------------------------------
-    type(ESMF_State),  intent(in)     :: State
-    integer,           intent(in)     :: scalar_id
-    real(R8),intent(out)    :: value
-    integer,           intent(in)     :: mpicom
-    character(len=*),  intent(in)     :: flds_scalar_name
-    integer,           intent(in)     :: flds_scalar_num
-    integer,           intent(inout)  :: rc
+
+    type(ESMF_State), intent(in)     :: State
+    integer,          intent(in)     :: scalar_id
+    real(R8),         intent(out)    :: value
+    integer,          intent(in)     :: mpicom
+    character(len=*), intent(in)     :: flds_scalar_name
+    integer,          intent(in)     :: flds_scalar_num
+    integer,          intent(inout)  :: rc
 
     ! local variables
-    integer :: mytask, ierr, len
-    type(ESMF_Field) :: field
+    integer           :: mytask, ierr, len
+    type(ESMF_Field)  :: field
     real(R8), pointer :: farrayptr(:,:)
-    integer :: dbrc
+    integer           :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_State_GetScalar)'
 
     rc = ESMF_SUCCESS
@@ -3764,22 +3776,23 @@ module shr_nuopc_methods_mod
     ! ----------------------------------------------
     ! Set scalar data from State for a particular name
     ! ----------------------------------------------
-    use shr_kind_mod, only : R8=>shr_kind_r8
-    use ESMF, only : ESMF_Field, ESMF_State, ESMF_StateGet, ESMF_FieldGet
-    use mpi, only : MPI_COMM_RANK
-    real(R8),intent(in)     :: value
-    integer,           intent(in)     :: scalar_id
-    type(ESMF_State),  intent(inout)  :: State
-    integer,           intent(in)     :: mpicom
-    character(len=*),  intent(in)     :: flds_scalar_name
-    integer,           intent(in)     :: flds_scalar_num
-    integer,           intent(inout)  :: rc
+    use med_constants_mod , only : R8
+    use ESMF              , only : ESMF_Field, ESMF_State, ESMF_StateGet, ESMF_FieldGet
+    use mpi               , only : MPI_COMM_RANK
+
+    real(R8),         intent(in)     :: value
+    integer,          intent(in)     :: scalar_id
+    type(ESMF_State), intent(inout)  :: State
+    integer,          intent(in)     :: mpicom
+    character(len=*), intent(in)     :: flds_scalar_name
+    integer,          intent(in)     :: flds_scalar_num
+    integer,          intent(inout)  :: rc
 
     ! local variables
-    integer :: mytask
-    type(ESMF_Field) :: field
+    integer           :: mytask
+    type(ESMF_Field)  :: field
     real(R8), pointer :: farrayptr(:,:)
-    integer :: dbrc
+    integer           :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_State_SetScalar)'
 
     rc = ESMF_SUCCESS
@@ -3805,17 +3818,17 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_State_UpdateTimestamp(state, time, rc)
-    use NUOPC, only : NUOPC_GetStateMemberLists
-    use ESMF, only : ESMF_State, ESMF_Time, ESMF_Field, ESMF_SUCCESS
+    use NUOPC , only : NUOPC_GetStateMemberLists
+    use ESMF  , only : ESMF_State, ESMF_Time, ESMF_Field, ESMF_SUCCESS
 
-    type(ESMF_State), intent(inout) :: state
-    type(ESMF_Time), intent(in)     :: time
-    integer, intent(out)  :: rc
+    type(ESMF_State) , intent(inout) :: state
+    type(ESMF_Time)  , intent(in)    :: time
+    integer          , intent(out)   :: rc
 
     ! local variables
-    integer :: i
-    type(ESMF_Field),pointer    :: fieldList(:)
-    integer :: dbrc
+    integer                  :: i
+    type(ESMF_Field),pointer :: fieldList(:)
+    integer                  :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_State_UpdateTimestamp)'
 
     rc = ESMF_SUCCESS
@@ -3834,12 +3847,13 @@ module shr_nuopc_methods_mod
 
   subroutine shr_nuopc_methods_Field_UpdateTimestamp(field, time, rc)
     use ESMF, only : ESMF_Field, ESMF_Time, ESMF_TimeGet, ESMF_AttributeSet, ESMF_ATTNEST_ON, ESMF_SUCCESS
-    type(ESMF_Field), intent(inout) :: field
-    type(ESMF_Time) , intent(in)    :: time
-    integer, intent(out)  :: rc
+
+    type(ESMF_Field) , intent(inout) :: field
+    type(ESMF_Time)  , intent(in)    :: time
+    integer          , intent(out)   :: rc
 
     ! local variables
-    integer               :: yy, mm, dd, h, m, s, ms, us, ns
+    integer :: yy, mm, dd, h, m, s, ms, us, ns
     integer :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_Field_UpdateTimestamp)'
 
@@ -3859,7 +3873,7 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   logical function shr_nuopc_methods_ChkErr(rc, line, file, mpierr)
-    use mpi, only : MPI_ERROR_STRING, MPI_MAX_ERROR_STRING, MPI_SUCCESS
+    use mpi , only : MPI_ERROR_STRING, MPI_MAX_ERROR_STRING, MPI_SUCCESS
     use ESMF, only : ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU, ESMF_LOGMSG_INFO
 
     integer, intent(in) :: rc
@@ -3889,9 +3903,10 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_Print_FieldExchInfo(flag, values, logunit, fldlist, nflds, istr)
-    use shr_string_mod, only : shr_string_listGetName
-    use shr_kind_mod, only : R8 => shr_kind_r8
-    use ESMF, only : ESMF_MAXSTR
+    use shr_nuopc_utils_mod , only : shr_nuopc_string_listGetName
+    use med_constants_mod   , only : R8
+    use ESMF                , only : ESMF_MAXSTR
+
     ! !DESCRIPTION:
     ! Print out information about values to stdount
     ! - flag sets the level of information:
@@ -3901,18 +3916,18 @@ module shr_nuopc_methods_mod
 
 
     ! !INPUT/OUTPUT PARAMETERS:
-    integer            , intent(in)          :: flag  ! info level flag
-    real(R8) , intent(in)          :: values(:,:) ! arrays sent to/recieved from mediator
-    integer            , intent(in)          :: logunit
-    character(len=*)   , intent(in)          :: fldlist
-    integer            , intent(in)          :: nflds
-    character(*)       , intent(in),optional :: istr  ! string for print
+    integer          , intent(in)          :: flag  ! info level flag
+    real(R8)         , intent(in)          :: values(:,:) ! arrays sent to/recieved from mediator
+    integer          , intent(in)          :: logunit
+    character(len=*) , intent(in)          :: fldlist
+    integer          , intent(in)          :: nflds
+    character(*)     , intent(in),optional :: istr  ! string for print
 
     !--- local ---
     integer                    :: n           ! generic indicies
     integer                    :: nsize       ! grid point in values array
-    real(R8)         :: minl(nflds) ! local min
-    real(R8)         :: maxl(nflds) ! local max
+    real(R8)                   :: minl(nflds) ! local min
+    real(R8)                   :: maxl(nflds) ! local max
     character(len=ESMF_MAXSTR) :: name
 
     !--- formats ---
@@ -3936,7 +3951,7 @@ module shr_nuopc_methods_mod
        do n = 1, nflds
           minl(n) = minval(values(n,:))
           maxl(n) = maxval(values(n,:))
-          call shr_string_listGetName(fldlist, n, name)
+          call shr_nuopc_string_listGetName(fldlist, n, name)
           write(logunit,F03) 'l min/max ',minl(n),maxl(n),n,trim(name)
        enddo
     endif

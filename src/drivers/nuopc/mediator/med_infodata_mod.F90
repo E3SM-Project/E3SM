@@ -4,10 +4,11 @@ module med_infodata_mod
 
   ! !USES:
 
-  use med_constants_mod, only: CL, R8
-  use seq_comm_mct          , only: num_inst_atm, num_inst_lnd, num_inst_rof
-  use seq_comm_mct          , only: num_inst_ocn, num_inst_ice, num_inst_glc, num_inst_wav
-  use esmFlds               , only: ncomps
+  use med_constants_mod , only: CL, R8
+  use seq_comm_mct      , only: num_inst_atm, num_inst_lnd, num_inst_rof
+  use seq_comm_mct      , only: num_inst_ocn, num_inst_ice, num_inst_glc, num_inst_wav
+  use esmFlds           , only: ncomps
+
   implicit none
   private  ! default private
 
@@ -42,20 +43,19 @@ module med_infodata_mod
   ! InputInfo derived type
   type med_infodata_type
      private
-
      !--- set via components and held fixed after initialization ---
-     integer                 :: nx(ncomps) = -1              ! global nx
-     integer                 :: ny(ncomps) = -1              ! global ny
-     logical                 :: rofice_present = .false.     ! does rof have iceberg coupling on
-     logical                 :: rof_prognostic = .false.     ! does rof component need input data
-     logical                 :: flood_present = .false.      ! does rof have flooding on
-     logical                 :: ocnrof_prognostic            ! does component need rof data
-     logical                 :: iceberg_prognostic = .false. ! does the ice model support icebergs
-     logical                 :: glclnd_present = .false.     ! does glc have land coupling fields on
-     logical                 :: glcocn_present = .false.     ! does glc have ocean runoff on
-     logical                 :: glcice_present = .false.     ! does glc have iceberg coupling on
-     logical                 :: glc_coupled_fluxes = .false. ! does glc send fluxes to other components
-                                                             ! (only relevant if glc_present is .true.)
+     integer :: nx(ncomps) = -1              ! global nx
+     integer :: ny(ncomps) = -1              ! global ny
+     logical :: rofice_present = .false.     ! does rof have iceberg coupling on
+     logical :: rof_prognostic = .false.     ! does rof component need input data
+     logical :: flood_present = .false.      ! does rof have flooding on
+     logical :: ocnrof_prognostic            ! does component need rof data
+     logical :: iceberg_prognostic = .false. ! does the ice model support icebergs
+     logical :: glclnd_present = .false.     ! does glc have land coupling fields on
+     logical :: glcocn_present = .false.     ! does glc have ocean runoff on
+     logical :: glcice_present = .false.     ! does glc have iceberg coupling on
+     logical :: glc_coupled_fluxes = .false. ! does glc send fluxes to other components
+                                             ! (only relevant if glc_present is .true.)
 
      !--- set via components and may be time varying ---
      real(R8)       :: nextsw_cday = -1.0_R8 ! calendar of next atm shortwave
@@ -117,28 +117,31 @@ CONTAINS
 
   !================================================================================
   subroutine med_infodata_CopyStateToInfodata(State, infodata, type, mpicom, rc)
-    use ESMF, only : ESMF_State, ESMF_Field, ESMF_StateItem_Flag
-    use ESMF, only: ESMF_StateGet, ESMF_FieldGet, ESMF_LogWrite
-    use ESMF, only: ESMF_SUCCESS, ESMF_FAILURE, ESMF_LOGMSG_INFO
-    use ESMF, only: ESMF_STATEITEM_NOTFOUND, operator(==)
-    use esmFlds               , only: flds_scalar_num, flds_scalar_name, compname
-    use esmFlds               , only: flds_scalar_index_nx,  flds_scalar_index_ny
-    use esmFlds               , only: flds_scalar_index_nextsw_cday
-    use esmFlds               , only: flds_scalar_index_flood_present
-    use esmFlds               , only: flds_scalar_index_rofice_present
-    use esmFlds               , only: flds_scalar_index_precip_fact
-    use mpi, only: mpi_comm_rank, MPI_ERROR_STRING, mpi_bcast, mpi_real8, MPI_SUCCESS
-    use mpi, only : MPI_MAX_ERROR_STRING
-    use shr_nuopc_methods_mod , only: shr_nuopc_methods_chkErr
+    use ESMF                  , only : ESMF_State, ESMF_Field, ESMF_StateItem_Flag
+    use ESMF                  , only : ESMF_StateGet, ESMF_FieldGet, ESMF_LogWrite
+    use ESMF                  , only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LOGMSG_INFO
+    use ESMF                  , only : ESMF_STATEITEM_NOTFOUND, operator(==)
+    use esmFlds               , only : flds_scalar_num, flds_scalar_name, compname
+    use esmFlds               , only : flds_scalar_index_nx,  flds_scalar_index_ny
+    use esmFlds               , only : flds_scalar_index_nextsw_cday
+    use esmFlds               , only : flds_scalar_index_flood_present
+    use esmFlds               , only : flds_scalar_index_rofice_present
+    use esmFlds               , only : flds_scalar_index_precip_fact
+    ! use mpi                   , only : mpi_comm_rank, MPI_ERROR_STRING, mpi_bcast, mpi_real8, MPI_SUCCESS
+    ! use mpi                   , only : MPI_MAX_ERROR_STRING
+    use mpi  ! TODO - have an only for mpi_bcast does not work on hobart
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_chkErr
+
     ! ----------------------------------------------
     ! Copy scalar data from State to local data on root then broadcast data
     ! to all PETs in component.
     ! ----------------------------------------------
-    type(ESMF_State),  intent(in)     :: State
-    type(med_infodata_type),intent(inout)  :: infodata
-    character(len=*),  intent(in)     :: type
-    integer,           intent(in)     :: mpicom
-    integer,           intent(inout)  :: rc
+
+    type(ESMF_State),        intent(in)     :: State
+    type(med_infodata_type), intent(inout)  :: infodata
+    character(len=*),        intent(in)     :: type
+    integer,                 intent(in)     :: mpicom
+    integer,                 intent(inout)  :: rc
 
     ! local variables
     integer                         :: n
@@ -146,11 +149,11 @@ CONTAINS
     character(MPI_MAX_ERROR_STRING) :: lstring
     type(ESMF_Field)                :: field
     type(ESMF_StateItem_Flag)       :: itemType
-    real(R8), pointer     :: farrayptr(:,:)
-    real(R8)              :: data(flds_scalar_num)
+    real(R8), pointer               :: farrayptr(:,:)
+    real(R8)                        :: data(flds_scalar_num)
     character(len=32)               :: ntype
-    integer                :: dbrc
-    character(len=1024)    :: msgString
+    integer                         :: dbrc
+    character(len=1024)             :: msgString
     character(len=*), parameter     :: subname='(med_infodata_CopyStateToInfodata)'
     !----------------------------------------------------------
 
@@ -252,18 +255,20 @@ CONTAINS
 
   !================================================================================
   subroutine med_infodata_CopyInfodataToState(infodata, State, type, mpicom, rc)
-    use ESMF, only : ESMF_State, ESMF_StateGet, ESMF_Field, ESMF_StateItem_Flag, ESMF_FieldGet
-    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_STATEITEM_NOTFOUND
-    use ESMF, only: operator(==), ESMF_FAILURE
-    use mpi, only : mpi_comm_rank
-    use shr_nuopc_methods_mod , only: shr_nuopc_methods_chkErr
-    use esmFlds               , only: flds_scalar_num, flds_scalar_name
-    use esmFlds               , only: flds_scalar_index_nextsw_cday
-    use esmFlds               , only: flds_scalar_index_precip_fact
+    use ESMF                  , only : ESMF_State, ESMF_StateGet, ESMF_Field, ESMF_StateItem_Flag, ESMF_FieldGet
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_STATEITEM_NOTFOUND
+    use ESMF                  , only : operator(==), ESMF_FAILURE
+    use mpi                   , only : mpi_comm_rank
+    use esmFlds               , only : flds_scalar_num, flds_scalar_name
+    use esmFlds               , only : flds_scalar_index_nextsw_cday
+    use esmFlds               , only : flds_scalar_index_precip_fact
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_chkErr
+
     ! ----------------------------------------------
     ! Copy local scalar data into State, root only,
     ! but called on all PETs in component
     ! ----------------------------------------------
+
     type(med_infodata_type),intent(in):: infodata
     type(ESMF_State),  intent(inout)  :: State
     character(len=*),  intent(in)     :: type
@@ -317,17 +322,19 @@ CONTAINS
 
   !===============================================================================
   subroutine med_infodata_GetData( infodata, ncomp, flux_epbal, flux_epbalfact, nx, ny)
+
     ! Get values out of the infodata object.
-    use med_constants_mod, only : CL, IN
-    use med_internalstate_mod , only: logunit, loglevel
-    use shr_sys_mod, only : shr_sys_abort
+    use med_constants_mod     , only : CL, IN
+    use med_internalstate_mod , only : logunit, loglevel
+    use shr_sys_mod           , only : shr_sys_abort
+
     ! !INPUT/OUTPUT PARAMETERS:
-    type(med_infodata_type),          intent(IN)  :: infodata       ! Input CCSM structure
-    integer(IN),   optional, intent(IN)  :: ncomp          ! Component ID
-    character(CL), optional, intent(IN)  :: flux_epbal     ! selects E,P,R adjustment technique
-    real(R8),      optional, intent(OUT) :: flux_epbalfact ! adjusted precip factor
-    integer(IN),   optional, intent(OUT) :: nx             ! nx
-    integer(IN),   optional, intent(OUT) :: ny             ! ny
+    type(med_infodata_type) , intent(IN)  :: infodata       ! Input CCSM structure
+    integer(IN),   optional , intent(IN)  :: ncomp          ! Component ID
+    character(CL), optional , intent(IN)  :: flux_epbal     ! selects E,P,R adjustment technique
+    real(R8),      optional , intent(OUT) :: flux_epbalfact ! adjusted precip factor
+    integer(IN),   optional , intent(OUT) :: nx             ! nx
+    integer(IN),   optional , intent(OUT) :: ny             ! ny
 
     !----- local -----
     character(len=*), parameter :: subname = '(med_infodata_GetData) '
