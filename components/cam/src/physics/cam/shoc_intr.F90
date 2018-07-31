@@ -16,18 +16,43 @@ module shoc_intr
 
   use shr_kind_mod,  only: r8=>shr_kind_r8
   use ppgrid,        only: pver, pverp
+  use phys_control,  only: phys_getopts
   use physconst,     only: rair, cpair, gravit, latvap, latice, zvir, &
                            rh2o, karman, tms_orocnst, tms_z0fac  
   use constituents,  only: pcnst, cnst_add
+  use pbl_utils,     only: calc_ustar, calc_obklen
+  use perf_mod,      only: t_startf, t_stopf
   
   implicit none			   
 
   ! define physics buffer indicies here
   integer :: tke_idx, &     ! turbulent kinetic energy
-  integer :: wthv_idx,&     ! buoyancy flux
+             wthv_idx, &       ! buoyancy flux
+             cld_idx, &          ! Cloud fraction
+             concld_idx, &       ! Convective cloud fraction
+             ast_idx, &          ! Stratiform cloud fraction
+             alst_idx, &         ! Liquid stratiform cloud fraction
+             aist_idx, &         ! Ice stratiform cloud fraction
+             qlst_idx, &         ! Physical in-cloud LWC
+             qist_idx, &         ! Physical in-cloud IWC
+             dp_frac_idx, &      ! deep convection cloud fraction
+	     cmeliq_idx, &       ! cmeliq_idx index in physics buffer
+	     icwmrdp_idx, &      ! In cloud mixing ratio for deep convection
+             sh_frac_idx, &      ! shallow convection cloud fraction
+             relvar_idx, &       ! relative cloud water variance
+	     kvh_idx, &          ! CLUBB eddy diffusivity on thermo levels
+             kvm_idx, &          ! CLUBB eddy diffusivity on mom levels
+             pblh_idx, &         ! PBL pbuf
+             accre_enhan_idx, &  ! optional accretion enhancement factor for MG
+             naai_idx, &         ! ice number concentration
+             prer_evap_idx, &    ! rain evaporation rate
+             qrl_idx, &          ! longwave cooling rate
+             radf_idx 	     	     
   
-  ! integer, public :: &
+  integer, public :: &
     ixtke = 0
+
+  integer :: cmfmc_sh_idx = 0
     
   real, parameter :: tke_tol = (2.e-2_r8)**2
   
@@ -42,8 +67,26 @@ module shoc_intr
       shoc_ice_deep = 25.e-6, &
       shoc_ice_sh = 50.e-6  
       
+  logical      :: do_tms    
   logical      :: lq(pcnst)
   logical      :: lq2(pcnst)
+  
+  logical            :: history_budget
+  integer            :: history_budget_histfile_num  
+  logical            :: micro_do_icesupersat
+  
+  character(len=16)  :: eddy_scheme      ! Default set in phys_control.F90
+  character(len=16)  :: deep_scheme      ! Default set in phys_control.F90  
+  
+  real(r8) :: dp1
+  
+  integer :: edsclr_dim
+  
+  logical      :: prog_modal_aero
+  real(r8) :: micro_mg_accre_enhan_fac = huge(1.0_r8) !Accretion enhancement factor from namelist
+  
+  logical :: liqcf_fix = .FALSE.  ! HW for liquid cloud fraction fix
+  logical :: relvar_fix = .FALSE. !PMA for relvar fix  
   
   contains
   
@@ -57,16 +100,24 @@ module shoc_intr
     ! Add SHOC fields to pbuf
     use physics_buffer,  only: pbuf_add_field, dtype_r8, dyn_time_lvls
     use ppgrid,          only: pver, pverp, pcols  
+    
+    call phys_getopts( eddy_scheme_out                 = eddy_scheme, &
+                       deep_scheme_out                 = deep_scheme, & 
+                       do_tms_out                      = do_tms,      &
+                       history_budget_out              = history_budget, &
+                       history_budget_histfile_num_out = history_budget_histfile_num, &
+                       micro_do_icesupersat_out        = micro_do_icesupersat, &
+                       micro_mg_accre_enhan_fac_out    = micro_mg_accre_enhan_fac)    
   
     ! TKE is prognostic in SHOC and should be advected by dynamics
-    call cnst_add('TKE',0._r8,0._r8,0._r8,longname='turbulent kinetic energy',cam_outfield=.true.)
+    call cnst_add('TKE',0._r8,0._r8,0._r8,ixtke,longname='turbulent kinetic energy',cam_outfld=.true.)
   
     ! Fields that are not prognostic should be added to PBUF
     call pbuf_add_field('WTHV', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wthv_idx) 
   
 #endif
   
-  end shoc_register_e3sm
+  end subroutine shoc_register_e3sm
   ! =============================================================================== !
   !                                                                                 !
   ! =============================================================================== !
@@ -97,6 +148,8 @@ module shoc_intr
   ! Read in any namelist parameters here                               !
   !   (currently none)                                                 !
   !------------------------------------------------------------------- !  
+
+    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
   
   end subroutine shoc_readnl   
   
@@ -104,7 +157,7 @@ module shoc_intr
   !                                                                                 !
   ! =============================================================================== !
   
-  subroutine shoc_init_e3sm(pbuf2d)
+  subroutine shoc_init_e3sm(pbuf2d, dp1_in)
 
   !------------------------------------------------------------------- !
   ! Initialize SHOC for E3SM                                           !
@@ -112,14 +165,37 @@ module shoc_intr
 
     use physics_types,          only: physics_state, physics_ptend
     use ppgrid,                 only: pver, pverp, pcols
-    use time_manager,              only: is_first_step
+    use time_manager,           only: is_first_step
+    use physics_buffer,         only: pbuf_get_index, pbuf_set_field, &
+                                      physics_buffer_desc
+    use rad_constituents,       only: rad_cnst_get_info, rad_cnst_get_mode_num_idx, &
+                                      rad_cnst_get_mam_mmr_idx	
+    use constituents,           only: cnst_get_ind				      			      
     
     implicit none
     !  Input Variables
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
     
+    real(r8) :: dp1_in
+    
+    integer :: lptr
+    integer :: nmodes, nspec, m, l
+    integer :: ixnumliq
+    
     lq(1:pcnst) = .true.
     edsclr_dim = pcnst
+    
+    !----- Begin Code -----
+
+    ! ----------------------------------------------------------------- !
+    ! Determine how many constituents SHOC will transport.  Note that  
+    ! SHOC does not transport aerosol consituents.  Therefore, need to 
+    ! determine how many aerosols constituents there are and subtract that
+    ! off of pcnst (the total consituents) 
+    ! ----------------------------------------------------------------- !
+
+    call phys_getopts(prog_modal_aero_out=prog_modal_aero, &
+                      liqcf_fix_out   = liqcf_fix)    
     
     ! Define physics buffers indexes
     cld_idx     = pbuf_get_index('CLD')         ! Cloud fraction
@@ -139,7 +215,7 @@ module shoc_intr
     cmfmc_sh_idx    = pbuf_get_index('CMFMC_SH')
     
     if (is_first_step()) then
-      call pbuf_set_field(pbuf2, wthv_idx, 0.0_r8) 
+      call pbuf_set_field(pbuf2d, wthv_idx, 0.0_r8) 
     endif
     
     if (prog_modal_aero) then
@@ -170,7 +246,9 @@ module shoc_intr
     ! --------------- !
     ! End             !
     ! Initialization  !
-    ! --------------- !    
+    ! --------------- !  
+    
+    dp1 = dp1_in  
   
   end subroutine shoc_init_e3sm   
   
@@ -205,7 +283,10 @@ module shoc_intr
     use time_manager,   only: is_first_step   
     use cam_abortutils, only: endrun
     use wv_saturation,  only: qsat
-    use micro_mg_cam,   only: micro_mg_version    	
+    use micro_mg_cam,   only: micro_mg_version  
+    use cldfrc2m,                  only: aist_vector 
+    use hb_diff,                   only: pblintd
+    use trb_mtn_stress,            only: compute_tms
     
     implicit none
     
@@ -242,6 +323,8 @@ module shoc_intr
    ! --------------- !
    ! Local Variables !
    ! --------------- !
+
+   integer :: shoctop(pcols)
    
 #ifdef SHOC_SGS
 
@@ -258,20 +341,45 @@ module shoc_intr
    
    real(r8) :: dtime                            ! SHOC time step                              [s]   
    real(r8) :: edsclr_in(pverp,edsclr_dim)      ! Scalars to be diffused through SHOC         [units vary]   
+   real(r8) :: edsclr_out(pcols,pverp,edsclr_dim)
    real(r8) :: tke_in(pcols,pverp)
    real(r8) :: thlm_in(pcols,pverp)
    real(r8) :: qv_in(pcols,pverp)
    real(r8) :: rcm_in(pcols,pverp)
+   real(r8) :: rvm_in(pcols,pverp)
+   real(r8) :: wthv_in(pcols,pverp)
    real(r8) :: pres_in(pcols,pverp)
    real(r8) :: um_in(pcols,pverp)
    real(r8) :: vm_in(pcols,pverp)
    real(r8) :: cloudfrac_shoc(pcols,pverp)
    real(r8) :: rcm_shoc(pcols,pverp)
+   real(r8) :: newfice(pcols,pver)              ! fraction of ice in cloud at CLUBB start       [-]
+   real(r8) :: exner(pcols,pverp)
+   real(r8) :: thlm(pcols,pverp)
+   real(r8) :: rvm(pcols,pverp)
+   real(r8) :: rcm(pcols,pverp)
+   real(r8) :: tke(pcols,pverp)
+   real(r8) :: ksrftms(pcols)                   ! Turbulent mountain stress surface drag        [kg/s/m2]
+   real(r8) :: tautmsx(pcols)                   ! U component of turbulent mountain stress      [N/m2]
+   real(r8) :: tautmsy(pcols)                   ! V component of turbulent mountain stress      [N/m2]
+   real(r8) :: wm_zt(pcols,pverp)
+   real(r8) :: zt_g(pcols,pverp)
+   real(r8) :: dz_g(pcols,pverp)
+   real(r8) :: zi_g(pcols,pverp)
+   real(r8) :: cloud_frac(pcols,pverp)          ! CLUBB cloud fraction                          [fraction]
+   real(r8) :: dlf2(pcols,pverp)
+   
+   real(r8) :: obklen(pcols), ustar2(pcols), kinheat(pcols), kinwat(pcols)
+   real(r8) :: dummy2(pcols), dummy3(pcols), kbfs(pcols), th(pcols,pverp), thv(pcols,pverp)
+   
+   real(r8) :: minqn, rrho                      ! minimum total cloud liquid + ice threshold    [kg/kg]
+   real(r8) :: cldthresh, frac_limit
+   real(r8) :: ic_limit, dum1
    
    ! Variables below are needed to compute energy integrals for conservation
    real(r8) :: ke_a(pcols), ke_b(pcols), te_a(pcols), te_b(pcols)
    real(r8) :: wv_a(pcols), wv_b(pcols), wl_b(pcols), wl_a(pcols)
-   real(r8) :: se_dis, se_a(pcols), se_b(pcols), clubb_s(pver)
+   real(r8) :: se_dis(pcols), se_a(pcols), se_b(pcols), shoc_s(pcols,pver)
    
    ! --------------- !
    ! Pointers        !
@@ -284,7 +392,9 @@ module shoc_intr
    real(r8), pointer, dimension(:,:) :: concld   ! convective cloud fraction                    [fraction]
    real(r8), pointer, dimension(:,:) :: ast      ! stratiform cloud fraction                    [fraction]
    real(r8), pointer, dimension(:,:) :: alst     ! liquid stratiform cloud fraction             [fraction]
-   real(r8), pointer, dimension(:,:) :: aist     ! ice stratiform cloud fraction                [fraction]         
+   real(r8), pointer, dimension(:,:) :: aist     ! ice stratiform cloud fraction                [fraction] 
+   real(r8), pointer, dimension(:,:) :: cmeliq 
+           
    real(r8), pointer, dimension(:,:) :: qlst     ! Physical in-stratus LWC                      [kg/kg]
    real(r8), pointer, dimension(:,:) :: qist     ! Physical in-stratus IWC                      [kg/kg]
    real(r8), pointer, dimension(:,:) :: deepcu   ! deep convection cloud fraction               [fraction]
@@ -292,6 +402,14 @@ module shoc_intr
    real(r8), pointer, dimension(:,:) :: khzt     ! eddy diffusivity on thermo levels            [m^2/s]
    real(r8), pointer, dimension(:,:) :: khzm     ! eddy diffusivity on momentum levels          [m^2/s]
    real(r8), pointer, dimension(:) :: pblh     ! planetary boundary layer height                [m]
+   real(r8), pointer, dimension(:,:) :: dp_icwmr ! deep convection in cloud mixing ratio        [kg/kg] 
+   real(r8), pointer, dimension(:,:) :: cmfmc_sh ! Shallow convective mass flux--m subc (pcols,pverp) [kg/m2/s/]     
+
+   real(r8), pointer, dimension(:,:) :: prer_evap 
+   real(r8), pointer, dimension(:,:) :: accre_enhan
+   real(r8), pointer, dimension(:,:) :: relvar
+   
+   logical :: lqice(pcnst)   
 
 #endif
    det_s(:)   = 0.0_r8
@@ -307,7 +425,9 @@ module shoc_intr
    !------------------------------------------------------------------!   
    
  !  Get indicees for cloud and ice mass and cloud and ice number
-
+   ic_limit   = 1.e-12_r8
+   frac_limit = 0.01_r8
+   
    call cnst_get_ind('Q',ixq)
    call cnst_get_ind('CLDLIQ',ixcldliq)
    call cnst_get_ind('CLDICE',ixcldice)
@@ -414,12 +534,12 @@ module shoc_intr
      enddo
    enddo    
    
-   rvm(1:ncol,pverp) = rtm(1:ncol,pver)
+   rvm(1:ncol,pverp) = rvm(1:ncol,pver)
    rcm(1:ncol,pverp) = rcm(1:ncol,pver)
    um(1:ncol,pverp) = um(1:ncol,pver)
    vm(1:ncol,pverp) = vm(1:ncol,pver)
    thlm(1:ncol,pverp) = thlm(1:ncol,pver) 
-   tke(1:col,pverp) = tke(1:ncol,pver)     
+   tke(1:ncol,pverp) = tke(1:ncol,pver)     
    
    ! Compute integrals of static energy, kinetic energy, water vapor, and liquid water
    ! for the computation of total energy before CLUBB is called.  This is for an 
@@ -458,18 +578,25 @@ module shoc_intr
    ! Prepare inputs for SHOC call                      !
    ! ------------------------------------------------- ! 
    
+   do k=1,pver
+     do i=1,ncol
+       dz_g(i,k) = state1%zi(i,k)-state1%zi(i,k+1)  ! compute thickness
+     enddo
+   enddo
+   
    !  Define the CLUBB thermodynamic grid (in units of m)
    wm_zt(:,1) = 0._r8
    do k=1,pver
      do i=1,ncol
        zt_g(i,k+1) = state1%zm(i,pver-k+1)-state1%zi(i,pver+1)
-       wm_zt(i,k+1) = -1._r8*state1%omega(i,pver-k+1)/(rho(i,k+1)*gravit)
+       rrho=(1._r8/gravit)*(state1%pdel(i,pver-k+1)/dz_g(i,pver-k+1))
+       wm_zt(i,k+1) = -1._r8*state1%omega(i,pver-k+1)/(rrho*gravit)
      enddo
    enddo
      
    do k=1,pverp
      do i=1,ncol
-       zi_g(k) = state1%zi(i,pverp-k+1)-state1%zi(i,pver+1)
+       zi_g(i,k) = state1%zi(i,pverp-k+1)-state1%zi(i,pver+1)
      enddo
    enddo       
    
@@ -528,7 +655,7 @@ module shoc_intr
           (pcols, pverp, dtime, &
 	  zt_g, zi_g, pres_in, &
 	  tke_in, thlm_in, rvm_in, wm_zt, &
-	  um_in, vm_in rcm_in, edsclr_in, &
+	  um_in, vm_in, rcm_in, edsclr_in, &
 	  edsclr_dim, wthv_in, &
 	  cloudfrac_shoc, rcm_shoc) 
    
@@ -538,17 +665,17 @@ module shoc_intr
    
    do k=1,pverp
      do i=1,ncol 
-       um(i,k) = um_in(pverp-k+1)
-       vm(i,k) = vm_in(pverp-k+1)
-       thlm(i,k) = thlm_in(pverp-k+1)
-       rvm(i,k) = rvm_in(pverp-k+1)
-       rcm(i,k) = rcm_shoc(pverp-k+1)
-       cloud_frac(i,k) = min(cloudfrac_shoc(pverp-k+1),1._r8)
-       wthv(i,k) = wthv_in(pverp-k+1)
-       tke(i,k) = tke_in(pverp-k+1)
+       um(i,k) = um_in(i,pverp-k+1)
+       vm(i,k) = vm_in(i,pverp-k+1)
+       thlm(i,k) = thlm_in(i,pverp-k+1)
+       rvm(i,k) = rvm_in(i,pverp-k+1)
+       rcm(i,k) = rcm_shoc(i,pverp-k+1)
+       cloud_frac(i,k) = min(cloudfrac_shoc(i,pverp-k+1),1._r8)
+       wthv(i,k) = wthv_in(i,pverp-k+1)
+       tke(i,k) = tke_in(i,pverp-k+1)
        
        do ixind=1,edsclr_dim
-         edsclr_out(k,ixind) = edsclr_in(pverp-k+1,ixind)
+         edsclr_out(i,k,ixind) = edsclr_in(pverp-k+1,ixind)
        enddo       
        
      enddo
@@ -562,11 +689,11 @@ module shoc_intr
    wl_a = 0._r8
    do k=1,pver
      do i=1,ncol
-       clubb_s(i,k) = cpair*((thlm(i,k)+(latvap/cpair)*rcm(i,k))/exner(i,k))+ &
+       shoc_s(i,k) = cpair*((thlm(i,k)+(latvap/cpair)*rcm(i,k))/exner(i,k))+ &
                       gravit*state1%zm(i,k)+state1%phis(i)
-       se_a(i) = se_a(i) + clubb_s(i,k)*state1%pdel(i,k)/gravit
+       se_a(i) = se_a(i) + shoc_s(i,k)*state1%pdel(i,k)/gravit
        ke_a(i) = ke_a(i) + 0.5_r8*(um(i,k)**2+vm(i,k)**2)*state1%pdel(i,k)/gravit
-       wv_a(i) = wv_a(i) + (rvm(i,k)*state1%pdel(i,k)/gravit
+       wv_a(i) = wv_a(i) + (rvm(i,k))*state1%pdel(i,k)/gravit
        wl_a(i) = wl_a(i) + (rcm(i,k))*state1%pdel(i,k)/gravit
      enddo    
    enddo     
@@ -582,7 +709,7 @@ module shoc_intr
    ! Find first level where wp2 is higher than lowest threshold
    do i=1,ncol
       shoctop(i) = 1
-     do while (tke(i,clubbtop) .eq. tke_tol .and. shoctop .lt. pver-1)
+     do while (tke(i,clubbtop) .eq. tke_tol .and. shoctop(i) .lt. pver-1)
        shoctop(i) = shoctop(i) + 1
      enddo   
    
@@ -622,9 +749,8 @@ module shoc_intr
    do ixind=1,pcnst
      if (lq(ixind)) then
        icnt=icnt+1
-       if ((ixind /= ixq)       .and. (ixind /= ixcldliq) .and.&
-          (ixind /= ixtke) )
-          ptend_loc%q(i,k,ixind) = (edsclr_out(k,icnt)-state1%q(i,k,ixind))/hdtime ! transported constituents 
+       if ((ixind /= ixq) .and. (ixind /= ixcldliq) .and. (ixind /= ixtke)) then
+          ptend_loc%q(i,k,ixind) = (edsclr_out(i,k,icnt)-state1%q(i,k,ixind))/hdtime ! transported constituents 
        end if
      end if
    enddo   
@@ -649,6 +775,15 @@ module shoc_intr
    !  COMPUTE THE ICE CLOUD DETRAINMENT                                                !
    !  Detrainment of convective condensate into the environment or stratiform cloud    !
    ! --------------------------------------------------------------------------------- !
+   
+   !  Initialize the shallow convective detrainment rate, will always be zero
+   dlf2(:,:) = 0.0_r8
+
+   lqice(:)        = .false.
+   lqice(ixcldliq) = .true.
+   lqice(ixcldice) = .true.
+   lqice(ixnumliq) = .true.
+   lqice(ixnumice) = .true.   
    
    call physics_ptend_init(ptend_loc,state%psetcols, 'clubb_det', ls=.true., lq=lqice)   
    do k=1,pver
@@ -804,7 +939,7 @@ module shoc_intr
  
     ! diagnose surface friction and obukhov length (inputs to diagnose PBL depth)
     do i=1,ncol
-      rrho = (1._r8/gravit)*(state1%pdel(i,pver)/dz_g(pver))
+      rrho = (1._r8/gravit)*(state1%pdel(i,pver)/dz_g(i,pver))
       call calc_ustar( state1%t(i,pver), state1%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), &
                        rrho, ustar2(i) )
       call calc_obklen( th(i,pver), thv(i,pver), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar2(i), &

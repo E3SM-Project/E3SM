@@ -123,6 +123,7 @@ subroutine phys_register
     use microp_aero,        only: microp_aero_register
     use macrop_driver,      only: macrop_driver_register
     use clubb_intr,         only: clubb_register_cam
+    use shoc_intr,          only: shoc_register_e3sm
     use conv_water,         only: conv_water_register
     use physconst,          only: mwdry, cpair, mwh2o, cpwv
     use tracers,            only: tracers_register
@@ -1856,6 +1857,7 @@ subroutine tphysbc (ztodt,               &
     use mo_gas_phase_chemdr,only: map2chm
     use clybry_fam,         only: clybry_fam_adj
     use clubb_intr,      only: clubb_tend_cam
+    use shoc_intr,       only: shoc_tend_e3sm
     use sslt_rebin,      only: sslt_rebin_adv
     use tropopause,      only: tropopause_output
     use output_aerocom_aie, only: do_aerocom_ind3, cloud_top_aerocom
@@ -2492,7 +2494,7 @@ end if
 	   endif
 	   
 	   if (do_shoc_sgs) then
-             call shoc_tend_cam(state,ptend,pbuf,cld_macmic_ztodt,&
+             call shoc_tend_e3sm(state,ptend,pbuf,cld_macmic_ztodt,&
                 cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, & 
                 dlf, det_s, det_ice, lcldo)
 	   endif	   

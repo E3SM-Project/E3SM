@@ -356,10 +356,10 @@ subroutine phys_ctl_readnl(nlfile)
 
    ! Macro/micro co-substepping support.
    if (cld_macmic_num_steps > 1) then
-      if (microp_scheme /= "MG" .or. (macrop_scheme /= "park" .and. macrop_scheme /= "CLUBB_SGS") &
-         (macrop_scheme /= "CLUBB_SGS")) then
+      if (microp_scheme /= "MG" .or. (macrop_scheme /= "park" .and. macrop_scheme /= "CLUBB_SGS" .and. &
+         macrop_scheme /= "SHOC_SGS")) then
          call endrun ("Setting cld_macmic_num_steps > 1 is only &
-              &supported with Park or CLUBB macrophysics and MG microphysics.")
+              &supported with Park or CLUBB or SHOC macrophysics and MG microphysics.")
       end if
    end if
 
