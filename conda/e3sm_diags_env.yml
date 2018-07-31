@@ -135,8 +135,8 @@ dependencies:
   - vcsaddons=8.0
   - vtk-cdat=8.0.1.8.0=py27_mesalib_1
   - cdat_info=8.0
-  - cdms2=3.0
-  - cdtime=3.0
+  - cdms2=3.0=py27_6
+  - cdtime=3.0=py27_0
   - cdutil=8.0
   - clapack=3.2.1
   - distarray=2.12.2
@@ -144,10 +144,10 @@ dependencies:
   - esmpy=7.1.0r
   - genutil=8.0
   - lapack=3.6.1
-  - libcdms=3.0
+  - libcdms=3.0=1
   - libcf=1.0.1
-  - libdrs=3.0
-  - libdrs_f=3.0
+  - libdrs=3.0=0
+  - libdrs_f=3.0=0
   - llvm-meta=6.0.0
   - llvmdev=6.0.0
   - mesalib=17.2.0
