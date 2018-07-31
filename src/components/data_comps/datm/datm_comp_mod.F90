@@ -226,7 +226,7 @@ CONTAINS
        inst_suffix, inst_name, logunit, read_restart, &
        scmMode, scmlat, scmlon, &
        orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
-       calendar, modeldt, currentYMD, currentTOD, currentMON, atm_prognostic)
+       calendar, modeldt, current_ymd, current_tod, current_mon, atm_prognostic)
 
     ! !DESCRIPTION: initialize data atm model
 
@@ -255,9 +255,9 @@ CONTAINS
     real(R8)               , intent(in)    :: orbObliqr      ! orb obliquity (radians)
     character(len=*)       , intent(in)    :: calendar       ! calendar type
     integer                , intent(in)    :: modeldt        ! model time step
-    integer                , intent(in)    :: CurrentYMD     ! model date
-    integer                , intent(in)    :: CurrentTOD     ! model sec into model date
-    integer                , intent(in)    :: CurrentMON     ! model month
+    integer                , intent(in)    :: current_ymd    ! model date
+    integer                , intent(in)    :: current_tod    ! model sec into model date
+    integer                , intent(in)    :: current_mon    ! model month
     logical                , intent(in)    :: atm_prognostic ! if true, need x2a data
 
     !--- local variables ---
@@ -562,9 +562,9 @@ CONTAINS
          orbLambm0=orbLambm0, &
          orbObliqr=orbObliqr, &
          write_restart=.false., &
-         target_ymd=currentYMD, &
-         target_tod=currentTOD, &
-         target_mon=currentMON, &
+         target_ymd=current_ymd, &
+         target_tod=current_tod, &
+         target_mon=current_mon, &
          calendar=calendar, &
          modeldt=modeldt, &
          atm_prognostic=atm_prognostic)
