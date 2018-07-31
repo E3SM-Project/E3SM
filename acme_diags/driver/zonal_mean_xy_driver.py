@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import os
 import sys
-import traceback
+import numpy
 import cdms2
 import MV2
 import cdutil
@@ -15,7 +15,6 @@ from acme_diags.driver import utils, dataset
 
 def regrid_to_lower_res_1d(mv1, mv2):
     """Regrid 1-D transient variable toward lower resolution of two variables."""
-    import numpy
 
     if mv1 is None or mv2 is None:
         return None
@@ -69,33 +68,7 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     return metrics_dict
 
 
-def _convert_to_pressure_levels(mv, plevs, dataset, var, season):
-    """
-    Given either test or reference data with a z-axis,
-    convert to the desired pressure levels.
-    """
-    mv_plv = mv.getLevel()
-    # var(time,lev,lon,lat) convert from hybrid level to pressure
-    if mv_plv.long_name.lower().find('hybrid') != -1:
-        extra_vars = ['hyam', 'hybm', 'PS']
-        hyam, hybm, ps = dataset.get_extra_variables_only(var, season, extra_vars=extra_vars)
-        mv_p = utils.hybrid_to_plevs(mv, hyam, hybm, ps, plevs)
-
-    # levels are pressure levels
-    elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1:
-        mv_p = utils.pressure_to_plevs(mv, plevs)
-
-    else:
-        raise RuntimeError(
-            "Vertical level is neither hybrid nor pressure. Aborting.")
-            
-    return mv_p
-
-
 def run_diag(parameter):
-    parameter.reference_data_path
-    parameter.test_data_path
-
     variables = parameter.variables
     seasons = parameter.seasons
     ref_name = parameter.ref_name
@@ -109,7 +82,6 @@ def run_diag(parameter):
             parameter.test_name_yrs = parameter.short_test_name
         else:
             parameter.test_name_yrs = parameter.test_name
-
         
         try:
             if test_data.is_climo():
@@ -119,11 +91,8 @@ def run_diag(parameter):
                 # from the start_yr and end_yr parameters.
                 # We raise an exception b/c it's not implemented yet.
                 raise Exception()
-
-            # yrs_averaged = f_mod.getglobal('yrs_averaged')
             parameter.test_name_yrs = parameter.test_name_yrs + ' (' + yrs_averaged +')'
         except:
-            traceback.print_exc()
             print('No yrs_averaged exists in global attributes')
             parameter.test_name_yrs = parameter.test_name_yrs
         
@@ -136,48 +105,42 @@ def run_diag(parameter):
             parameter.viewer_descr[var] = mv1.long_name if hasattr(
                 mv1, 'long_name') else 'No long_name attr in test data.'
 
-            # special case, cdms didn't properly convert mask with fill value
-            # -999.0, filed issue with denise
+            # Special case, cdms didn't properly convert mask with fill value
+            # -999.0, filed issue with Denis.
             if ref_name == 'WARREN':
-                # this is cdms2 for bad mask, denise's fix should fix
+                # This is cdms2 fix for bad mask, Denis' fix should fix this.
                 mv2 = MV2.masked_where(mv2 == -0.9, mv2)
-                # following should move to derived variable
+            # The following should be moved to a derived variable.
             if ref_name == 'AIRS':
-                # mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
-                # this is cdms2 for bad mask, denise's fix should fix
+                # This is cdms2 fix for bad mask, Denis' fix should fix this.
                 mv2 = MV2.masked_where(mv2 > 1e+20, mv2)
             if ref_name == 'WILLMOTT' or ref_name == 'CLOUDSAT':
-                # mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
-                # this is cdms2 for bad mask, denise's fix should fix
+                # This is cdms2 fix for bad mask, Denis' fix should fix this.
                 mv2 = MV2.masked_where(mv2 == -999., mv2)
 
-                # following should move to derived variable
+                # The following should be moved to a derived variable.
                 if var == 'PRECT_LAND':
                     days_season = {'ANN': 365, 'DJF': 90,
                                    'MAM': 92, 'JJA': 92, 'SON': 91}
                     # mv1 = mv1 * days_season[season] * 0.1 #following AMWG
-                    # approximate way to convert to seasonal cumulative
+                    # Approximate way to convert to seasonal cumulative
                     # precipitation, need to have solution in derived variable,
-                    # unit convert from mm/day to cm
+                    # unit convert from mm/day to cm.
                     mv2 = mv2 / days_season[season] / \
-                        0.1  # convert cm to mm/day instead
+                        0.1  # Convert cm to mm/day instead.
                     mv2.units = 'mm/day'
 
             if mv1.getLevel() and mv2.getLevel():  # for variables with z axis:
                 plev = parameter.plevs
                 print('Selected pressure level: {}'.format(plev))
 
-                mv1_p = _convert_to_pressure_levels(mv1, plev, test_data, var, season)
-                mv2_p = _convert_to_pressure_levels(mv2, plev, test_data, var, season)
+                mv1_p = utils.convert_to_pressure_levels(mv1, plev, test_data, var, season)
+                mv2_p = utils.convert_to_pressure_levels(mv2, plev, test_data, var, season)
 
                 # select plev
                 for ilev in range(len(plev)):
                     mv1 = mv1_p[ilev, ]
                     mv2 = mv2_p[ilev, ]
-
-                    # select region
-                    if len(regions) == 0:
-                        regions = ['global']
 
                     for region in regions:
                         print("Selected region: {}".format(region))
@@ -204,16 +167,11 @@ def run_diag(parameter):
 
             # for variables without z axis:
             elif mv1.getLevel() is None and mv2.getLevel() is None:
-                # select region
-                if len(regions) == 0:
-                    regions = ['global']
-
                 for region in regions:
                     print("Selected region: {}".format(region))
                     mv1_zonal = cdutil.averager(mv1, axis='x')
                     mv2_zonal = cdutil.averager(mv2, axis='x')
 
-                    print(mv1_zonal.shape, mv2_zonal.shape)
                     mv1_reg, mv2_reg = regrid_to_lower_res_1d(
                         mv1_zonal, mv2_zonal)
 
@@ -232,6 +190,6 @@ def run_diag(parameter):
 
             else:
                 raise RuntimeError(
-                    "Dimensions of two variables are difference. Abort")
+                    "Dimensions of two variables are different. Aborting.")
 
     return parameter

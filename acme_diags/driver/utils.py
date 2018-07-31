@@ -42,7 +42,7 @@ def _findfile(path_name, data_name, season):
     for filename in dir_files:
         if filename.startswith(data_name) and season in filename:
             return os.path.join(path_name, filename)
-    raise IOError("No file found for {} and {}".format(data_name, season))
+    raise IOError("No file found for {} and {} in {}".format(data_name, season, path_name))
 
 
 def _chown(path, user, group=-1):
@@ -77,6 +77,29 @@ def get_ref_filename(parameters, season):
         fnm = _findfile(parameters.reference_data_path,
                         parameters.ref_name, season)
     return fnm
+
+
+def convert_to_pressure_levels(mv, plevs, dataset, var, season):
+    """
+    Given either test or reference data with a z-axis,
+    convert to the desired pressure levels.
+    """
+    mv_plv = mv.getLevel()
+    # var(time,lev,lon,lat) convert from hybrid level to pressure
+    if mv_plv.long_name.lower().find('hybrid') != -1:
+        extra_vars = ['hyam', 'hybm', 'PS']
+        hyam, hybm, ps = dataset.get_extra_variables_only(var, season, extra_vars=extra_vars)
+        mv_p = hybrid_to_plevs(mv, hyam, hybm, ps, plevs)
+
+    # levels are pressure levels
+    elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1:
+        mv_p = pressure_to_plevs(mv, plevs)
+
+    else:
+        raise RuntimeError(
+            "Vertical level is neither hybrid nor pressure. Aborting.")
+            
+    return mv_p
 
 
 def hybrid_to_plevs(var, hyam, hybm, ps, plev):
@@ -127,7 +150,6 @@ def select_region(region, var1, var2, land_frac, ocean_frac, parameter):
         elif region.find('ocean') != -1:
             land_ocean_frac = ocean_frac
         region_value = regions_specs[region]['value']
-        print('region_value', region_value)
 
         var1_domain = mask_by(
             var1, land_ocean_frac, low_limit=region_value)
