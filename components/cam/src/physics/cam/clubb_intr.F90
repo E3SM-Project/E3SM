@@ -29,7 +29,8 @@ module clubb_intr
   use mpishorthand
   use cam_history_support, only: fillvalue
 #ifdef FIVE
-  use five_intr,     only: pver_five, pverp_five
+  use five_intr,     only: pver_five, pverp_five, &
+                           pmid_five, pint_five
 #endif
 
   implicit none
@@ -207,8 +208,11 @@ module clubb_intr
   real(r8) :: micro_mg_accre_enhan_fac = huge(1.0_r8) !Accretion enhancement factor from namelist
   
 #ifdef FIVE
-   pverp_clubb = pverp_five
-   pver_clubb = pver_five
+   integer, parameter :: pverp_clubb = pverp_five
+   integer, parameter :: pver_clubb = pver_five
+#else
+   integer, parameter :: pverp_clubb = pverp
+   integer, parameter :: pver_clubb = pver
 #endif
 
   contains
@@ -295,7 +299,7 @@ module clubb_intr
 !    call pbuf_add_field('UM',         'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), um_idx)
 !    call pbuf_add_field('VM',         'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), vm_idx)   
     call pbuf_add_field('RAD_CLUBB',  'global', dtype_r8, (/pcols,pver_five/),               radf_idx) 
-#elseif  
+#else   
     call pbuf_add_field('WP2_nadv',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wp2_idx)
     call pbuf_add_field('WP3_nadv',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wp3_idx)
     call pbuf_add_field('WPTHLP_nadv',     'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wpthlp_idx)
@@ -566,7 +570,6 @@ end subroutine clubb_init_cnst
     integer :: nmodes, nspec, pmam_ncnst, m
     integer :: ixnumliq
     integer :: lptr
-    integer :: pverp_clubb, pver_clubb
 
 #ifdef FIVE
     real(r8)  :: zt_g(pverp_five)                        ! Height dummy array
@@ -1055,7 +1058,6 @@ end subroutine clubb_init_cnst
    real(r8) :: wprtp_mc_out(pverp_clubb)
    real(r8) :: wpthlp_mc_out(pverp_clubb)
    real(r8) :: rtpthlp_mc_out(pverp_clubb)
-   real(r8) :: rcm_pre(pverp_clubb)
    real(r8) :: rcm_out(pverp_clubb)                   ! CLUBB output of liquid water mixing ratio     [kg/kg]
    real(r8) :: rcm_out_zm(pverp_clubb)
    real(r8) :: wprcp_out(pverp_clubb)                 ! CLUBB output of flux of liquid water          [kg/kg m/s]
@@ -1065,7 +1067,7 @@ end subroutine clubb_init_cnst
    real(r8) :: thlprcp_out(pverp_clubb)
    real(r8) :: rho_ds_zm(pverp_clubb)                 ! Dry, static density on momentum levels        [kg/m^3]
    real(r8) :: rho_ds_zt(pverp_clubb)                 ! Dry, static density on thermodynamic levels   [kg/m^3]
-   real(r8) :: rho_dz_zt_pre(pverp)
+   real(r8) :: rho_ds_zt_pre(pverp)
    real(r8) :: invrs_rho_ds_zm(pverp_clubb)           ! Inv. dry, static density on momentum levels   [m^3/kg]
    real(r8) :: invrs_rho_ds_zt(pverp_clubb)           ! Inv. dry, static density on thermo. levels    [m^3/kg]
    real(r8) :: invrs_rho_ds_zt_pre(pverp_clubb)
@@ -1086,11 +1088,21 @@ end subroutine clubb_init_cnst
    real(r8) :: thv_ds_zt_in(pverp_clubb)
    real(r8) :: rfrzm_in(pverp_clubb)
    real(r8) :: rad_in(pverp_clubb)
+
+#ifdef FIVE
+   real(r8) :: thlm_five(pcols,pverp_clubb)
+   real(r8) :: rtm_five(pcols,pverp_clubb)
+   real(r8) :: um_five(pcols,pverp_clubb)
+   real(r8) :: vm_five(pcols,pverp_clubb)
+#endif
    
-   real(r8) :: thlm_pre(pverp_clubb)
-   real(r8) :: rtm_pre(pverp_clubb)
-   real(r8) :: um_pre(pverp_clubb)
-   real(r8) :: vm_pre(pverp_clubb)
+   real(r8) :: p_in_pa_in(pverp_clubb)
+   real(r8) :: rad_pre(pverp_clubb)
+   real(r8) :: rad(pverp_clubb)
+   real(r8) :: thlm_pre(pcols,pverp_clubb)
+   real(r8) :: rtm_pre(pcols,pverp_clubb)
+   real(r8) :: um_pre(pcols,pverp_clubb)
+   real(r8) :: vm_pre(pcols,pverp_clubb)
    real(r8) :: rcm_pre(pverp_clubb)
    real(r8) :: wprcp_pre(pverp_clubb)
    real(r8) :: cloud_frac_pre(pverp_clubb)
@@ -1217,7 +1229,7 @@ end subroutine clubb_init_cnst
    real(r8) :: latsub
    real(r8) :: qrl_clubb(pverp)
    real(r8) :: qrl_zm(pverp)
-   real(r8) :: thlp2_rad_out(pverp)
+   real(r8) :: thlp2_rad_out(pverp_clubb)
    real(r8) :: apply_const
 
    integer  :: ktop(pcols,pver)
@@ -1562,7 +1574,7 @@ end subroutine clubb_init_cnst
    rtm_pre(:,1:pver_five) = rtm_five(:,1:pver_five)
    um_pre(:,1:pver_five) = um_five(:,1:pver_five)
    vm_pre(:,1:pver_five) = vm_five(:,1:pver_five)
-#elseif
+#else
    thlm_pre(:,1:pver) = thlm(:,1:pver)
    rtm_pre(:,1:pver) = rtm(:,1:pver)
    um_pre(:,1:pver) = um(:,1:pver)
@@ -1737,7 +1749,7 @@ end subroutine clubb_init_cnst
       call linear_interp(state1%pmid(i,:),pmid_five,invrs_rho_ds_zt_pre,invrs_rho_ds_zt,pverp,pverp_five)
       call linear_interp(state1%pmid(i,:),pmid_five,thv_ds_zt_pre,thv_ds_zt,pverp,pverp_five)
       call linear_interp(state1%pmid(i,:),pmid_five,rfrzm_pre,rfrzm,pverp,pverp_five)
-      call linear_interp(state1%pmid(i,:),pmid_five,rad_pre,rad,pverp,pverp_five)
+      call linear_interp(state1%pmid(i,:),pmid_five,radf_pre,rad,pverp,pverp_five)
       
      icnt=0
      do ixind=1,pcnst
@@ -1856,13 +1868,6 @@ end subroutine clubb_init_cnst
       call setup_parameters(zi_g(2), clubb_params, pverp, grid_type, &
         zi_g(begin_height:end_height), zt_g(begin_height:end_height), err_code)
  
-      !  Compute some inputs from the thermodynamic grid
-      !  to the momentum grid
-      rho_ds_zm       = zt2zm(rho_ds_zt)
-      rho_zm          = zt2zm(rho_zt)
-      invrs_rho_ds_zm = zt2zm(invrs_rho_ds_zt)
-      thv_ds_zm       = zt2zm(thv_ds_zt)
-      wm_zm           = zt2zm(wm_zt)
       
       !  Surface fluxes provided by host model
       wpthlp_sfc = cam_in%shf(i)/(cpair*rho_ds_zm(1))       ! Sensible heat flux
@@ -1899,16 +1904,17 @@ end subroutine clubb_init_cnst
          rtm_in(k)     = rtm_pre(i,pverp_clubb-k+1)
          rvm_in(k)     = rvm(i,pverp_clubb-k+1)
 	 
-	 zi_g_in(k) = zi_g_pre(pverp_clubb-k+1)
-         zt_g_in(k) = zt_g_pre(pverp_clubb-k+1)
-         wm_zt_in(k) = wm_zt_pre(pverp_clubb-k+1)
-         rho_zt_in(k) = rho_zt_pre(pverp_clubb-k+1)
-         rad_in(k) = rad_pre(pverp_clubb-k+1)
-         exner_in(k) = exner_pre(pverp_clubb-k+1)
-         rho_ds_zt_in(k) = rho_ds_zt_pre(pverp_clubb-k+1)
-         thv_ds_zt_in(k) = thv_ds_zt_pre(pverp_clubb-k+1)
-         invrs_rho_ds_zt_in(k) = Invrs_rho_ds_zt_pre(pverp_clubb-k+1)
-         rfrzm_in(k) = rfrzm_pre(pverp_clubb-k+1)
+	 zi_g_in(k) = zi_g(pverp_clubb-k+1)
+         zt_g_in(k) = zt_g(pverp_clubb-k+1)
+         wm_zt_in(k) = wm_zt(pverp_clubb-k+1)
+         rho_zt_in(k) = rho_zt(pverp_clubb-k+1)
+         rad_in(k) = rad(pverp_clubb-k+1)
+         exner_in(k) = exner(pverp_clubb-k+1)
+         rho_ds_zt_in(k) = rho_ds_zt(pverp_clubb-k+1)
+         thv_ds_zt_in(k) = thv_ds_zt(pverp_clubb-k+1)
+         invrs_rho_ds_zt_in(k) = invrs_rho_ds_zt(pverp_clubb-k+1)
+         rfrzm_in(k) = rfrzm(pverp_clubb-k+1)
+	 p_in_pa_in(k) = p_in_pa(pverp_clubb-k+1)
  
          if (k .ne. 1) then
             pre_in(k)    = prer_evap(i,pverp_clubb-k+1)
@@ -1939,6 +1945,14 @@ end subroutine clubb_init_cnst
          thlphmp_zt(k,:)     = 0._r8
  
       enddo
+      
+      !  Compute some inputs from the thermodynamic grid
+      !  to the momentum grid
+      rho_ds_zm       = zt2zm(rho_ds_zt_in)
+      rho_zm          = zt2zm(rho_zt_in)
+      invrs_rho_ds_zm = zt2zm(invrs_rho_ds_zt_in)
+      thv_ds_zm       = zt2zm(thv_ds_zt_in)
+      wm_zm           = zt2zm(wm_zt_in)
      
       pre_in(1) = pre_in(2)
      
@@ -1969,7 +1983,7 @@ end subroutine clubb_init_cnst
          if (lq(ixind))  then 
             icnt=icnt+1
             do k=1,pverp_clubb
-               edsclr_in(k+1,icnt) = edsclr(pverp_clubb-k+1)
+               edsclr_in(k+1,icnt) = edsclr(icnt,pverp_clubb-k+1)
             enddo
             edsclr_in(1,icnt) = edsclr_in(2,icnt)
          end if
@@ -1985,7 +1999,7 @@ end subroutine clubb_init_cnst
         edsclr_in(1,icnt+2) = edsclr_in(2,icnt+2)  
       endif    
 
-      rho_in(:) = rho(i,:)
+!      rho_in(:) = rho(i,:)
      
       ! --------------------------------------------------------- !
       ! Compute cloud-top radiative cooling contribution to CLUBB !
@@ -2037,10 +2051,10 @@ end subroutine clubb_init_cnst
             rtpthlp_forcing, wm_zm, wm_zt, &      
             wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, &
             wpsclrp_sfc, wpedsclrp_sfc, &       
-            p_in_Pa_in, rho_zm_in, rho_zt_in, exner_in, &
-            rho_ds_zm_in, rho_ds_zt_in, invrs_rho_ds_zm_in, &
-            invrs_rho_ds_zt_in, thv_ds_zm_in, thv_ds_zt_in, hydromet, &
-            rfrzm_in, radf_in, do_expldiff, &
+            p_in_Pa_in, rho_zm, rho_zt_in, exner_in, &
+            rho_ds_zm, rho_ds_zt_in, invrs_rho_ds_zm, &
+            invrs_rho_ds_zt_in, thv_ds_zm, thv_ds_zt_in, hydromet, &
+            rfrzm_in, rad_in, do_expldiff, &
 #ifdef CLUBBND_CAM
             varmu2, &
 #endif

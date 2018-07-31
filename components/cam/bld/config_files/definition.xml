@@ -47,6 +47,9 @@ Macrophysics package: RK, Park, CLUBB_SGS.
 <entry id="clubb_sgs" valid_values="0,1" value="0">
 Switch to turn on/off CLUBB_SGS package: 0 => no, 1 => yes
 </entry>
+<entry id="five" valid_values="0,1" value="0">
+Switch to turn on/off FIVE package: 0 => no, 1 => yes
+</entry>
 <entry id="unicon" valid_values="0,1" value="0">
 Switch to turn on UNICON package: 0 => off, 1 => on
 </entry>
