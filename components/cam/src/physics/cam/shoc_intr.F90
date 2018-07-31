@@ -170,7 +170,8 @@ module shoc_intr
                                       physics_buffer_desc
     use rad_constituents,       only: rad_cnst_get_info, rad_cnst_get_mode_num_idx, &
                                       rad_cnst_get_mam_mmr_idx	
-    use constituents,           only: cnst_get_ind				      			      
+    use constituents,           only: cnst_get_ind	
+    use shoc,                   only: shoc_init			      			      
     
     implicit none
     !  Input Variables
@@ -241,7 +242,11 @@ module shoc_intr
        call cnst_get_ind('NUMLIQ',ixnumliq)
        lq(ixnumliq) = .false.
        edsclr_dim = edsclr_dim-1
-    endif    
+    endif 
+    
+    call shoc_init( &
+          gravit, rair, rh2o, cpair, &
+	  latvap)   
     
     ! --------------- !
     ! End             !
@@ -287,6 +292,7 @@ module shoc_intr
     use cldfrc2m,                  only: aist_vector 
     use hb_diff,                   only: pblintd
     use trb_mtn_stress,            only: compute_tms
+    use shoc,           only: shoc_main
     
     implicit none
     

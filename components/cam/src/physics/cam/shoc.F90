@@ -43,6 +43,28 @@ real, parameter :: maxtke = 5.0_r8
 contains
 !==============================================================
 
+subroutine shoc_init( &
+             gravit, rair, rh2o, cpair, &
+	     latvap)
+
+  implicit none
+  
+  ! Purpose:  Initialize constants for SHOC
+	     
+  real(r8), intent(in)  :: gravit
+  real(r8), intent(in)  :: rair
+  real(r8), intent(in)  :: rh2o
+  real(r8), intent(in)  :: cpair
+  real(r8), intent(in)  :: latvap
+  
+  ggr = gravit
+  rgas = rair
+  rv = rh2o
+  cp = cpair
+  lcond = latvap
+  
+end subroutine shoc_init	     				   
+
 !==============================================================
 ! Main driver for the SHOC scheme
 
