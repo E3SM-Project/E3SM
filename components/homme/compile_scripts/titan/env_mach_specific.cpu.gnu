@@ -32,19 +32,24 @@
   module rm cray-parallel-netcdf
   module rm cray-hdf5-parallel
 
-    module load PrgEnv-gnu
+#   module load PrgEnv-pgi
+#   module switch pgi pgi/14.2.0
+    module load PrgEnv-gnu/5.2.82
+    #module switch pgi pgi/17.5.0
     module switch cray-mpich cray-mpich/7.6.3
     module switch cray-libsci cray-libsci/16.11.1
     module switch atp atp/2.1.1
-    module add cudatoolkit
-    export CRAY_CUDA_MPS=1
+    #-module add cudatoolkit
+    #-export CRAY_CUDA_MPS=1
 
     export CRAY_CPU_TARGET=istanbul
     module load cray-netcdf-hdf5parallel/4.4.1.1.3
     module load cray-parallel-netcdf/1.8.1.3
+    #-module load cray-hdf5-parallel
     module load curl/7.50.3
-    module load subversion
-    module load cmake3/3.9.0
+  module load subversion
+  #-module load cmake/2.8.10.2
+  module load cmake3/3.9.0
 
 module list
 
@@ -61,3 +66,4 @@ export OMP_STACKSIZE=64M
 export MPICH_ENV_DISPLAY=1
 export MPICH_VERSION_DISPLAY=1
 export MPICH_CPUMASK_DISPLAY=1
+# export MPICH_RANK_REORDER_DISPLAY=1

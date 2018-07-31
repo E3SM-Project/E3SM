@@ -8,7 +8,7 @@ HOMME_ROOT=/ccs/home/mxu/cli115/scratch/consulting/src/test_homme/components/hom
 #HOMME_ROOT=$PROJWORK/cli115/4ue/E3SM/components/homme
 NLEVELS=64
 
-source ./env_mach_specific.cpu
+source ./env_mach_specific.cpu.gnu
 
 mkdir -p titan-cpu     || exit -1
 cd titan-cpu
