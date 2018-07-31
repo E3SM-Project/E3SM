@@ -175,11 +175,8 @@ integer :: nswbands, nlwbands
 integer :: nswgpts, nlwgpts
 
 ! Number of vertical levels in radiation calculations. This will generally
-! include an extra layer above the model top (num_rad_layers = pver + 1).
-integer :: num_rad_layers
-
-! Indices to map levels on the radiation grid to levels on the cam grid
-integer, allocatable :: cam_layers(:), cam_interfaces(:)
+! include an extra layer above the model top (nlev_rad = pver + 1).
+integer :: nlev_rad
 
 ! Set name for this module (for purpose of writing output and log files)
 character(len=*), parameter :: module_name = 'radiation'
@@ -220,6 +217,13 @@ integer, dimension(14) :: map_rrtmg_to_rrtmgp_swbands = (/ &
    14, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 &
 /)
 
+! Indices to the top and bottom of the model vertical grid. This is to handle
+! cases where we want to add an extra layer ABOVE the model grid. In the case of
+! 1 level above the model top, ktop would be 2 and kbot would be pver, since the
+! top model level would be the second level in the radiation grid. The bottom
+! level should always be kbot = pver
+integer :: ktop, kbot
+
 ! Interface blocks for overloaded procedures
 interface clip_values
    module procedure clip_values_1d, clip_values_2d
@@ -228,6 +232,10 @@ end interface clip_values
 interface compress_day_columns
    module procedure compress_day_columns_1d, compress_day_columns_2d
 end interface compress_day_columns
+
+interface expand_day_columns
+   module procedure expand_day_columns_1d, expand_day_columns_2d
+end interface expand_day_columns
 !===============================================================================
 
 contains
@@ -554,12 +562,17 @@ subroutine radiation_init(state)
    nlwgpts = k_dist_lw%get_ngpt()
 
    ! Set number of levels used in radiation calculations
-   num_rad_layers = pver + 1
+#ifdef DO_EXTRA_RAD_LEVEL
+   nlev_rad = pver + 1
+#else
+   nlev_rad = pver
+#endif
 
-   ! Setup a mapping from the RRTMGP grid back to the CAM grid
-   allocate(cam_layers(num_rad_layers), cam_interfaces(num_rad_layers+1))
-   cam_layers(:) = get_cam_layers(num_rad_layers, pver)
-   cam_interfaces(:) = get_cam_layers(num_rad_layers+1, pver+1)
+   ! Indices on radiation grid that correspond to top and bottom of the model
+   ! grid...this is for cases where we want to add an extra layer above the
+   ! model top to deal with radiative heating above the model top...why???
+   ktop = nlev_rad - pver + 1
+   kbot = nlev_rad
 
    ! Set the radiation timestep for cosz calculations if requested using the 
    ! adjusted iradsw value from radiation
@@ -568,6 +581,7 @@ subroutine radiation_init(state)
       dt_avg = iradsw*dtime
    end if
 
+   ! Get options for history file outputs
    call phys_getopts(history_amwg_out = history_amwg,    &
                      history_vdiag_out = history_vdiag,   &
                      history_budget_out = history_budget,  &
@@ -619,8 +633,6 @@ subroutine radiation_init(state)
    call assert(all(sw_band_midpoints > 0), subname // ': negative sw_band_midpoints')
    call add_hist_coord('swband', nswbands, 'Shortwave band', 'wavelength', sw_band_midpoints)
    call add_hist_coord('lwband', nlwbands, 'Longwave band', 'wavelength', lw_band_midpoints)
-   call add_hist_coord('rad_lay', num_rad_layers, 'Radiation layers', '1')
-   call add_hist_coord('rad_lev', num_rad_layers+1, 'Radiation layers', '1')
 
    ! Shortwave radiation
    call addfld('TOT_CLD_VISTAU', (/ 'lev' /), 'A',   '1', &
@@ -911,26 +923,6 @@ subroutine radiation_init(state)
                   sampling_seq='rad_lwsw', flag_xyfill=.true.)
    endif
 
-   ! Inputs to radiation for debugging
-   call addfld('RAD_TMID', (/'rad_lay'/), 'I', 'K', &
-               'Temperature input to radiation', &
-               flag_xyfill=.true., sampling_seq='rad_lwsw')
-   call addfld('RAD_PMID', (/'rad_lay'/), 'I', 'Pa', &
-               'Pressure input to radiation', &
-               flag_xyfill=.true., sampling_seq='rad_lwsw')
-   call addfld('RAD_TINT', (/'rad_lev'/), 'I', 'K', &
-               'Temperature input to radiation', &
-               flag_xyfill=.true., sampling_seq='rad_lwsw')
-   call addfld('RAD_PINT', (/'rad_lev'/), 'I', 'Pa', &
-               'Pressure input to radiation', &
-               flag_xyfill=.true., sampling_seq='rad_lwsw')
-   call addfld('RAD_COLDRY', (/'rad_lay'/), 'I', '1', &
-               'COLDRY input to radiation', &
-               flag_xyfill=.true., sampling_seq='rad_lwsw')
-   call addfld('RAD_H2OVMR', (/'rad_lay'/), 'I', '1', &
-               'H2O volumn mixing ratio input to radiation', &
-               flag_xyfill=.true., sampling_seq='rad_lwsw')
-   
 end subroutine radiation_init
 
 
@@ -1070,12 +1062,12 @@ subroutine set_available_gases(gases, gas_concentrations)
 
    type(ty_gas_concs), intent(inout) :: gas_concentrations
    character(len=*), intent(in) :: gases(:)
-   integer :: i
+   integer :: igas
 
    ! Use set_vmr method to set gas names. This just sets the vmr to zero, since
    ! this routine is just used to build a list of available gas names.
-   do i = 1,size(gases)
-      call handle_error(gas_concentrations%set_vmr(trim(lower_case(gases(i))), 0._wp))
+   do igas = 1,size(gases)
+      call handle_error(gas_concentrations%set_vmr(trim(lower_case(gases(igas))), 0._wp))
    end do
 
 end subroutine set_available_gases
@@ -1237,21 +1229,19 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
    ! TODO: what does this mean?
    logical :: conserve_energy = .true.
 
-   ! Loop variables; i is used to loop over columns, and k is used to loop over
-   ! levels
-   integer :: i, k, k_cam
+   ! Diagnostic call number (???)
    integer :: icall
 
-   ! nlay is number of layers used in radiation calculation, nlev is number of
-   ! interface levels between those layers
-   integer :: ncol, nlay, nlev
+   ! Number of columns
+   integer :: ncol
+
+   ! Loop indices
+   integer :: icol, ilev, iband
 
    ! Gathered indicies of day and night columns 
    ! chunk_column_index = day_indices(daylight_column_index)
    integer :: nday, nnight     ! Number of daylight columns
    integer :: day_indices(pcols), night_indices(pcols)   ! Indicies of daylight coumns
-
-   integer :: model_top
 
    character(*), parameter :: subroutine_name = 'radiation_tend'
 
@@ -1265,15 +1255,12 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
    ! and earth-sun distance
    real(r8) :: solar_irradiance_by_gpt(pcols,nswgpts)
 
-   ! Blackbody temperature
-   real(r8) :: t_sfc(pcols)
-
    ! State fields that are passed into RRTMGP. Some of these may need to
    ! modified from what exist in the physics_state object, i.e. to clip
    ! temperatures to make sure they are within the valid range.
    real(r8) :: coszrs_day(pcols)  ! cosine solar zenith angle
-   real(r8), dimension(pcols,num_rad_layers) :: tmid, tmid_day, pmid, pmid_day, tint_cam
-   real(r8), dimension(pcols,num_rad_layers+1) :: pint, pint_day, tint
+   real(r8), dimension(pcols,nlev_rad) :: tmid, pmid
+   real(r8), dimension(pcols,nlev_rad+1) :: pint, tint
    real(r8) :: surface_emissivity(nlwbands,pcols)
 
    ! Scaling factor for total sky irradiance; used to account for orbital
@@ -1282,7 +1269,7 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
    real(r8) :: tsi_scaling
 
    ! Temporary heating rates on radiation vertical grid
-   real(r8), dimension(pcols,num_rad_layers) :: qrs_rad, qrsc_rad, &
+   real(r8), dimension(pcols,nlev_rad) :: qrs_rad, qrsc_rad, &
                                                 qrl_rad, qrlc_rad
 
    ! Albedo for shortwave calculations
@@ -1290,7 +1277,7 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
    real(r8) :: albedo_diffuse(nswbands,pcols), albedo_diffuse_day(nswbands,pcols)
 
    ! RRTMGP types
-   type(ty_gas_concs) :: gas_concentrations_sw, gas_concentrations_lw
+   type(ty_gas_concs) :: gas_concentrations
    type(ty_optical_props_1scl) :: aerosol_optics_lw
    type(ty_optical_props_1scl) :: cloud_optics_lw
    type(ty_optical_props_2str) :: aerosol_optics_sw
@@ -1316,29 +1303,11 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
                        start=(/1,1,pbuf_old_tim_idx()/), &
                        kount=(/pcols,pver,1/))
 
-   ! Figure out which vertical levels to use; only use those between the min and
-   ! max of press_ref read from the coefficients file. I think the implementation 
-   ! that Brian Eaton at NCAR used was to look at the reference pressure pref. We
-   ! could also look at the min and max over all columns in this chunk. That
-   ! might be the most transparent thing to do. Note that this code here finds
-   ! the indices to the top and bottom interfaces, not model midpoints. Note
-   ! also that in the CESM implementation (and also in the RRTMG implementation)
-   ! an extra layer is added above the RRTMGP topmost layer. I am not 100% sure
-   ! why this is, but I think maybe it is to get "top of atmosphere" vs "top of
-   ! model" heating and fluxes? TODO.
-   !
-   ! Size of grid for radiation; note kbot > ktop because CAM grid goes from TOA
-   ! to surface. RRTMGP grid will go from surface to TOA internally, but this is
-   ! handled automatically so we do not worry about this here. Note that nlay is
-   ! the number of *layers* used, so the number of *interfaces* should be nlay+1
-   ! TODO: set more intelligently
-   nlay = num_rad_layers !pver + 1
-
    ! Get cosine solar zenith angle for current time step. 
-   call set_cosine_solar_zenith_angle(state, dt_avg, coszrs(:ncol))
+   call set_cosine_solar_zenith_angle(state, dt_avg, coszrs(1:ncol))
 
    ! Send values for this chunk to history buffer
-   call outfld('COSZRS', coszrs(:ncol), ncol, state%lchnk)
+   call outfld('COSZRS', coszrs(1:ncol), ncol, state%lchnk)
 
    ! Get orbital eccentricity factor to scale total sky irradiance
    tsi_scaling = get_eccentricity_factor()
@@ -1352,9 +1321,9 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
    ! do the shortwave radiative transfer during the daytime to save
    ! computational cost (and because RRTMGP will fail for cosine solar zenith
    ! angles less than or equal to zero)
-   call set_daynight_indices(coszrs(:ncol), day_indices(:ncol), night_indices(:ncol))
-   nday = count(day_indices(:ncol) > 0)
-   nnight = count(night_indices(:ncol) > 0)
+   call set_daynight_indices(coszrs(1:ncol), day_indices(1:ncol), night_indices(1:ncol))
+   nday = count(day_indices(1:ncol) > 0)
+   nnight = count(night_indices(1:ncol) > 0)
 
    ! Do shortwave stuff...
    if (radiation_do('sw') .and. nday > 0) then
@@ -1362,60 +1331,46 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
       ! Populate RRTMGP input variables. Use the day_indices index array to
       ! map CAM variables on all columns to the daytime-only arrays, and take
       ! only the ktop:kbot vertical levels (mapping CAM vertical grid to
-      ! RRTMGP vertical grid).
-
-      ! Map CAM to rad levels
-      call map_cam_to_rad_levels(state%t(:ncol,:pver), &
-                                 tmid(:ncol,:nlay), &
-                                 cam_layers(:nlay)) 
-      call map_cam_to_rad_levels(state%pmid(:ncol,:pver), &
-                                 pmid(:ncol,:nlay), &
-                                 cam_layers(:nlay)) 
-      call map_cam_to_rad_levels(state%pint(:ncol,:pver+1), &
-                                 pint(:ncol,:nlay+1), &
-                                 cam_interfaces(:nlay+1)) 
-
-      ! Fill layer above model top; this is done 
-      ! consistent with the RRTMG implementation
-      if (nlay > pver) then
-         tmid(:ncol,1) = state%t(:ncol,1)
-         pmid(:ncol,1) = 0.5_r8 * state%pint(:ncol,1)
-         pint(:ncol,1) = 1.01_r8
-      end if
+      ! RRTMGP vertical grid). Note that we populate the state separately for
+      ! shortwave and longwave, because we need to compress to just the daytime
+      ! columns for the shortwave, but the longwave uses all columns
+      call set_rad_state(state, cam_in, &
+                         tmid(1:nday,1:nlev_rad), & 
+                         tint(1:nday,1:nlev_rad+1), &
+                         pmid(1:nday,1:nlev_rad), &
+                         pint(1:nday,1:nlev_rad+1), &
+                         col_indices=day_indices(1:nday))
 
       ! Get albedo. This uses CAM routines internally and just provides a
       ! wrapper to improve readability of the code here.
-      call set_albedo(cam_in, albedo_direct(:nswbands,:ncol), albedo_diffuse(:nswbands,:ncol))
+      call set_albedo(cam_in, albedo_direct(1:nswbands,1:ncol), albedo_diffuse(1:nswbands,1:ncol))
 
       ! Send albedos to history buffer (useful for debugging)
-      call outfld('SW_ALBEDO_DIR', transpose(albedo_direct(:nswbands,:ncol)), ncol, state%lchnk)
-      call outfld('SW_ALBEDO_DIF', transpose(albedo_diffuse(:nswbands,:ncol)), ncol, state%lchnk)
+      call outfld('SW_ALBEDO_DIR', transpose(albedo_direct(1:nswbands,1:ncol)), ncol, state%lchnk)
+      call outfld('SW_ALBEDO_DIF', transpose(albedo_diffuse(1:nswbands,1:ncol)), ncol, state%lchnk)
 
       ! Compress to daytime-only arrays
-      do i = 1,nswbands
-         call compress_day_columns(albedo_direct(i,:ncol), albedo_direct_day(i,:nday), day_indices(:nday))
-         call compress_day_columns(albedo_diffuse(i,:ncol), albedo_diffuse_day(i,:nday), day_indices(:nday))
+      do iband = 1,nswbands
+         call compress_day_columns(albedo_direct(iband,1:ncol), albedo_direct_day(iband,1:nday), day_indices(1:nday))
+         call compress_day_columns(albedo_diffuse(iband,1:ncol), albedo_diffuse_day(iband,1:nday), day_indices(1:nday))
       end do
-      call compress_day_columns(tmid(:ncol,:nlay), tmid_day(:nday,:nlay), day_indices(:nday))
-      call compress_day_columns(pmid(:ncol,:nlay), pmid_day(:nday,:nlay), day_indices(:nday))
-      call compress_day_columns(pint(:ncol,:nlay+1), pint_day(:nday,:nlay+1), day_indices(:nday))
-      call compress_day_columns(coszrs(:ncol), coszrs_day(:nday), day_indices(:nday))
+      call compress_day_columns(coszrs(1:ncol), coszrs_day(1:nday), day_indices(1:nday))
 
       ! Allocate shortwave fluxes (allsky and clearsky)
       ! TODO: why do I need to provide my own routines to do this? Why is 
       ! this not part of the ty_fluxes_byband object?
       !
       ! NOTE: fluxes defined at interfaces, so initialize to have vertical
-      ! dimension nlay+1, while we initialized the RRTMGP input variables to
-      ! have vertical dimension nlay (defined at midpoints).
-      call initialize_rrtmgp_fluxes(nday, nlay+1, nswbands, flux_sw_allsky_day, do_direct=.true.)
-      call initialize_rrtmgp_fluxes(nday, nlay+1, nswbands, flux_sw_clearsky_day, do_direct=.true.)
-      call initialize_rrtmgp_fluxes(ncol, nlay+1, nswbands, flux_sw_allsky, do_direct=.true.)
-      call initialize_rrtmgp_fluxes(ncol, nlay+1, nswbands, flux_sw_clearsky, do_direct=.true.)
+      ! dimension nlev_rad+1, while we initialized the RRTMGP input variables to
+      ! have vertical dimension nlev_rad (defined at midpoints).
+      call initialize_rrtmgp_fluxes(nday, nlev_rad+1, nswbands, flux_sw_allsky_day, do_direct=.true.)
+      call initialize_rrtmgp_fluxes(nday, nlev_rad+1, nswbands, flux_sw_clearsky_day, do_direct=.true.)
+      call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nswbands, flux_sw_allsky, do_direct=.true.)
+      call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nswbands, flux_sw_clearsky, do_direct=.true.)
 
       ! Do shortwave cloud optics calculations
       call t_startf('shortwave cloud optics')
-      call handle_error(cloud_optics_sw%alloc_2str(nday, nlay, k_dist_sw))
+      call handle_error(cloud_optics_sw%alloc_2str(nday, nlev_rad, k_dist_sw))
       call cloud_optics_sw%set_name('shortwave cloud optics')
 
       ! TODO: refactor the set_cloud_optics codes to allow passing arrays
@@ -1423,7 +1378,7 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
       ! simulations...or alternatively add logic within the set_cloud_optics
       ! routines to handle this.
       call set_cloud_optics_sw(state, pbuf, &
-                               day_indices(:nday), cam_layers(:nlay), &
+                               day_indices(1:nday), &
                                k_dist_sw, cloud_optics_sw)
       call t_stopf('shortwave cloud optics')
 
@@ -1434,7 +1389,7 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
       ! treatment of aerosol optics in the model, and prevents us from having to
       ! map bands to g-points ourselves since that will all be handled by the
       ! private routines internal to the optics class.
-      call handle_error(aerosol_optics_sw%alloc_2str(nday, nlay, k_dist_sw%get_band_lims_wavenumber()))
+      call handle_error(aerosol_optics_sw%alloc_2str(nday, nlev_rad, k_dist_sw%get_band_lims_wavenumber()))
       call aerosol_optics_sw%set_name('shortwave aerosol optics')
 
       ! Loop over diagnostic calls 
@@ -1447,35 +1402,33 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
          if (active_calls(icall)) then
 
             ! Get shortwave aerosol optics
-            ! NOTE: this gets vertical dimension nlay since cloud optics are
+            ! NOTE: this gets vertical dimension nlev_rad since cloud optics are
             ! defined at model midpoints (representing optics through the whole
             ! layer)
             call t_startf('shortwave aerosol optics')
             call set_aerosol_optics_sw(icall, state, pbuf, &
-                                       day_indices(:nday), &
-                                       night_indices(:nnight), &
-                                       cam_layers(:nlay), &
+                                       day_indices(1:nday), &
+                                       night_indices(1:nnight), &
                                        aerosol_optics_sw)
             call t_stopf('shortwave aerosol optics')
 
             ! Set gas concentrations (I believe the gases may change for
             ! different values of icall, which is why we do this within the
             ! loop)
-            call set_gas_concentrations(icall, state, pbuf, nlay, &
-                                        gas_concentrations_sw, &
-                                        cam_layers(:nlay), &
-                                        day_indices=day_indices(:nday))
+            call set_gas_concentrations(icall, state, pbuf, &
+                                        gas_concentrations, &
+                                        day_indices=day_indices(1:nday))
 
             ! Do shortwave radiative transfer calculations
             call t_startf('shortwave radiation calculations')
             call handle_error(rte_sw( &
-               k_dist_sw, gas_concentrations_sw, &
-               pmid_day(:nday,:nlay), &
-               tmid_day(:nday,:nlay), &
-               pint_day(:nday,:nlay+1), &
-               coszrs_day(:nday), &
-               albedo_direct_day(:nswbands,:nday), &
-               albedo_diffuse_day(:nswbands,:nday), &
+               k_dist_sw, gas_concentrations, &
+               pmid(1:nday,1:nlev_rad), &
+               tmid(1:nday,1:nlev_rad), &
+               pint(1:nday,1:nlev_rad+1), &
+               coszrs_day(1:nday), &
+               albedo_direct_day(1:nswbands,1:nday), &
+               albedo_diffuse_day(1:nswbands,1:nday), &
                cloud_optics_sw, &
                flux_sw_allsky_day, flux_sw_clearsky_day, &
                aer_props=aerosol_optics_sw, &
@@ -1483,33 +1436,36 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
             ))
             call t_stopf('shortwave radiation calculations')
 
+            ! Calculate heating rates on the DAYTIME columns
+            call calculate_heating_rate(flux_sw_allsky_day, pint(1:nday,1:nlev_rad+1), &
+                                        qrs_rad(1:nday,1:nlev_rad))
+            call calculate_heating_rate(flux_sw_clearsky_day, pint(1:nday,1:nlev_rad+1), &
+                                        qrsc_rad(1:nday,1:nlev_rad))
+
             ! Expand fluxes from daytime-only arrays to full chunk arrays
-            call expand_daytime_fluxes(flux_sw_allsky_day, flux_sw_allsky, day_indices(:nday))
-            call expand_daytime_fluxes(flux_sw_clearsky_day, flux_sw_clearsky, day_indices(:nday))
+            call expand_day_fluxes(flux_sw_allsky_day, flux_sw_allsky, day_indices(1:nday))
+            call expand_day_fluxes(flux_sw_clearsky_day, flux_sw_clearsky, day_indices(1:nday))
 
-            ! Calculate heating rates
-            call calculate_heating_rate(flux_sw_allsky, pint(:ncol,:nlay+1), qrs_rad(:ncol,:nlay))
-            call calculate_heating_rate(flux_sw_clearsky, pint(:ncol,:nlay+1), qrsc_rad(:ncol,:nlay))
-
-            ! Map heating rates to CAM columns and levels
-            call map_rad_to_cam_levels(qrs_rad(:ncol,:nlay), qrs(:ncol,:pver), cam_layers(:nlay))
-            call map_rad_to_cam_levels(qrsc_rad(:ncol,:nlay), qrsc(:ncol,:pver), cam_layers(:nlay))
+            ! Expand heating rates to all columns and map back to CAM levels
+            call expand_day_columns(qrs_rad(1:nday,ktop:kbot), qrs(1:ncol,1:pver), day_indices(1:nday))
+            call expand_day_columns(qrsc_rad(1:nday,ktop:kbot), qrsc(1:ncol,1:pver), day_indices(1:nday))
 
             ! Send solar insolation to history buffer
-            call outfld('SOLIN'//diag(icall), flux_sw_clearsky%flux_dn(:ncol,1), ncol, state%lchnk)
+            call outfld('SOLIN'//diag(icall), flux_sw_clearsky%flux_dn(1:ncol,1), ncol, state%lchnk)
                         
             ! Send heating rates to history buffer
-            call outfld('QRS'//diag(icall), qrs(:ncol,:pver)/cpair, ncol, state%lchnk)
-            call outfld('QRSC'//diag(icall), qrsc(:ncol,:pver)/cpair, ncol, state%lchnk)
+            call outfld('QRS'//diag(icall), qrs(1:ncol,1:pver)/cpair, ncol, state%lchnk)
+            call outfld('QRSC'//diag(icall), qrsc(1:ncol,1:pver)/cpair, ncol, state%lchnk)
 
             ! Send fluxes to history buffer
-            call output_fluxes_sw(icall, state, &
-                                  flux_sw_allsky, flux_sw_clearsky, &
-                                  cam_interfaces(:nlay+1))
+            call output_fluxes_sw(icall, state, flux_sw_allsky, flux_sw_clearsky)
 
             ! Copy outputs to pbuf fields that are used by other model
             ! components (i.e., land)
             call copy_fluxes_to_pbuf(pbuf, flux_sw_allsky, 'shortwave')
+
+            ! Set surface fluxes that are used by the land model
+            call export_surface_fluxes(flux_sw_allsky, cam_out, 'shortwave')
 
          end if
       end do
@@ -1517,7 +1473,7 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
    else
       ! Conserve energy
       if (conserve_energy) then
-         qrs(:ncol,:pver) = qrs(:ncol,:pver) / state%pdel(:ncol,:pver)
+         qrs(1:ncol,1:pver) = qrs(1:ncol,1:pver) / state%pdel(1:ncol,1:pver)
       end if
    end if  ! dosw
 
@@ -1531,62 +1487,32 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
       ! treatment of aerosol optics in the model, and prevents us from having to
       ! map bands to g-points ourselves since that will all be handled by the
       ! private routines internal to the optics class.
-      call handle_error(aerosol_optics_lw%alloc_1scl(ncol, nlay, k_dist_lw%get_band_lims_wavenumber()))
+      call handle_error(aerosol_optics_lw%alloc_1scl(ncol, nlev_rad, k_dist_lw%get_band_lims_wavenumber()))
       call aerosol_optics_lw%set_name('longwave aerosol optics')
 
       ! Initialize cloud optics object; cloud_optics_lw will be indexed by
       ! g-point, rather than by band, and subcolumn routines will associate each
       ! g-point with a stochastically-sampled cloud state
-      call handle_error(cloud_optics_lw%alloc_1scl(ncol, nlay, k_dist_lw))
+      call handle_error(cloud_optics_lw%alloc_1scl(ncol, nlev_rad, k_dist_lw))
       call cloud_optics_lw%set_name('longwave cloud optics')
 
       ! Allocate longwave outputs; why is this not part of the
       ! ty_fluxes_byband object?
       ! NOTE: fluxes defined at interfaces, so initialize to have vertical
-      ! dimension nlay+1
-      call initialize_rrtmgp_fluxes( &
-         ncol, nlay+1, nlwbands, &
-         flux_lw_allsky &
-      )
-      call initialize_rrtmgp_fluxes( &
-         ncol, nlay+1, nlwbands, &
-         flux_lw_clearsky &
-      )
-        
-      ! Calculate interface temperature explicitly
-      call set_interface_temperature(state, cam_in, tint_cam)
+      ! dimension nlev_rad+1
+      call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nlwbands, flux_lw_allsky)
+      call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nlwbands, flux_lw_clearsky)
 
-      ! Populate state variables
-      call map_cam_to_rad_levels(state%t(:ncol,:pver), &
-                                 tmid(:ncol,:nlay), &
-                                 cam_layers(:nlay)) 
-      call map_cam_to_rad_levels(state%pmid(:ncol,:pver), &
-                                 pmid(:ncol,:nlay), &
-                                 cam_layers(:nlay)) 
-      call map_cam_to_rad_levels(state%pint(:ncol,:pver+1), &
-                                 pint(:ncol,:nlay+1), &
-                                 cam_interfaces(:nlay+1)) 
-      call map_cam_to_rad_levels(tint_cam(:ncol,:pver+1), &
-                                 tint(:ncol,:nlay+1), &
-                                 cam_interfaces(:nlay+1)) 
-
-      ! Special case for top-most rad level, which is an extra level above
-      ! model top; fill temperatures in extra level with temperatures from
-      ! model top, set interface pressure at top of extra level to be a small
-      ! number, and set midpoint pressure to be half of the pressure at the
-      ! top most model interface.
-      if (nlay > pver) then
-         tmid(:ncol,1) = state%t(:ncol,1)
-         pmid(:ncol,1) = 0.5 * state%pint(:ncol,1)
-         pint(:ncol,1) = 1.01_r8
-      end if
-
-      ! Blackbody temperature of surface
-      t_sfc(:ncol) = sqrt(sqrt(cam_in%lwup(:ncol)/stebol))
-
+      ! Set rad state variables
+      call set_rad_state(state, cam_in, &
+                              tmid(1:ncol,1:nlev_rad), &
+                              tint(1:ncol,1:nlev_rad+1), &
+                              pmid(1:ncol,1:nlev_rad), &
+                              pint(1:ncol,1:nlev_rad+1))
+       
       ! Do longwave cloud optics calculations
       call t_startf('longwave cloud optics')
-      call set_cloud_optics_lw(state, pbuf, cam_layers(:nlay), k_dist_lw, &
+      call set_cloud_optics_lw(state, pbuf, k_dist_lw, &
                                cloud_optics_lw)
       call t_stopf('longwave cloud optics')
 
@@ -1596,7 +1522,7 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
       ! a lot of difference either way, but if a more intelligent value
       ! exists or is assumed in the model we should use it here as well.
       ! TODO: set this more intelligently?
-      surface_emissivity(:nlwbands,:ncol) = 1.0_r8
+      surface_emissivity(1:nlwbands,1:ncol) = 1.0_r8
 
       ! get list of active radiation calls
       call rad_cnst_get_call_list(active_calls)
@@ -1609,49 +1535,51 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
             ! for different values of icall, which is why we do this within
             ! the loop).
             call t_startf('longwave gas concentrations')
-            call set_gas_concentrations(icall, state, pbuf, nlay, &
-                                        gas_concentrations_lw, &
-                                        cam_layers(:nlay))
+            call set_gas_concentrations(icall, state, pbuf, gas_concentrations)
             call t_stopf('longwave gas concentrations')
 
             ! Get longwave aerosol optics
             call t_startf('longwave aerosol optics')
-            call set_aerosol_optics_lw(icall, state, pbuf, cam_layers(:nlay), aerosol_optics_lw)
+            call set_aerosol_optics_lw(icall, state, pbuf, aerosol_optics_lw)
             call t_stopf('longwave aerosol optics')
 
             ! Do longwave radiative transfer calculations
             call t_startf('longwave radiation calculations')
             call handle_error(rte_lw( &
-               k_dist_lw, gas_concentrations_lw, &
-               pmid(1:ncol,1:nlay), tmid(1:ncol,1:nlay), &
-               pint(1:ncol,1:nlay+1), t_sfc(1:ncol), &
+               k_dist_lw, gas_concentrations, &
+               pmid(1:ncol,1:nlev_rad), tmid(1:ncol,1:nlev_rad), &
+               pint(1:ncol,1:nlev_rad+1), tint(1:ncol,nlev_rad+1), &
                surface_emissivity(1:nlwbands,1:ncol), &
                cloud_optics_lw, &
                flux_lw_allsky, flux_lw_clearsky, &
                aer_props=aerosol_optics_lw, &
-               t_lev=tint(1:ncol,1:nlay+1) &
+               t_lev=tint(1:ncol,1:nlev_rad+1), &
+               n_gauss_angles=3 & ! For consistency with RRTMG
             ))
             call t_stopf('longwave radiation calculations')
 
             ! Calculate heating rates
-            call calculate_heating_rate(flux_lw_allsky, pint(:ncol,:nlay+1), &
-                                        qrl_rad(:ncol,:nlay))
-            call calculate_heating_rate(flux_lw_clearsky, pint(:ncol,:nlay+1), &
-                                        qrlc_rad(:ncol,:nlay))
+            call calculate_heating_rate(flux_lw_allsky, pint(1:ncol,1:nlev_rad+1), &
+                                        qrl_rad(1:ncol,1:nlev_rad))
+            call calculate_heating_rate(flux_lw_clearsky, pint(1:ncol,1:nlev_rad+1), &
+                                        qrlc_rad(1:ncol,1:nlev_rad))
 
             ! Map heating rates to CAM columns and levels
-            call map_rad_to_cam_levels(qrl_rad(:ncol,:nlay), qrl(:ncol,:pver), cam_layers(:nlay))
-            call map_rad_to_cam_levels(qrlc_rad(:ncol,:nlay), qrlc(:ncol,:pver), cam_layers(:nlay))
+            qrl(1:ncol,1:pver) = qrl_rad(1:ncol,ktop:kbot)
+            qrlc(1:ncol,1:pver) = qrlc_rad(1:ncol,ktop:kbot)
                         
             ! Send heating rates to history buffer
-            call outfld('QRL'//diag(icall), qrl(:ncol,:pver)/cpair, ncol, state%lchnk)
-            call outfld('QRLC'//diag(icall), qrlc(:ncol,:pver)/cpair, ncol, state%lchnk)
+            call outfld('QRL'//diag(icall), qrl(1:ncol,1:pver)/cpair, ncol, state%lchnk)
+            call outfld('QRLC'//diag(icall), qrlc(1:ncol,1:pver)/cpair, ncol, state%lchnk)
 
             ! Copy fluxes to pbuf
             call copy_fluxes_to_pbuf(pbuf, flux_lw_allsky, 'longwave')
 
             ! Send fluxes to history buffer
-            call output_fluxes_lw(icall, state, flux_lw_allsky, flux_lw_clearsky, cam_interfaces(:nlay+1))
+            call output_fluxes_lw(icall, state, flux_lw_allsky, flux_lw_clearsky)
+
+            ! Export surface fluxes that are used by the land model
+            call export_surface_fluxes(flux_lw_allsky, cam_out, 'longwave')
 
          end if  ! active calls
       end do  ! loop over diagnostic calls
@@ -1659,7 +1587,7 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
    else
       ! Conserve energy (what does this mean exactly?)
       if (conserve_energy) then
-         qrl(:ncol,:pver) = qrl(:ncol,:pver) / state%pdel(:ncol,:pver)
+         qrl(1:ncol,1:pver) = qrl(1:ncol,1:pver) / state%pdel(1:ncol,1:pver)
       end if
    end if  ! dolw
 
@@ -1678,112 +1606,71 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
    ! convert radiative heating rates to Q*dp for energy conservation
    ! TODO: this gets converted back here? what is going on here?
    if (conserve_energy) then
-      do k = 1,pver
-         do i = 1,ncol
-            qrs(i,k) = qrs(i,k)*state%pdel(i,k)
-            qrl(i,k) = qrl(i,k)*state%pdel(i,k)
+      do ilev = 1,pver
+         do icol = 1,ncol
+            qrs(icol,ilev) = qrs(icol,ilev)*state%pdel(icol,ilev)
+            qrl(icol,ilev) = qrl(icol,ilev)*state%pdel(icol,ilev)
          end do
       end do
    end if
 
-   ! copy surface fluxes to cam_out structure
-   call export_surface_fluxes(flux_sw_allsky, cam_out, 'shortwave')
-   call export_surface_fluxes(flux_lw_allsky, cam_out, 'longwave')
-
 end subroutine radiation_tend
 
 
-subroutine output_rad_state(state, tmid, tint, pmid, pint, coldry, h2ovmr)
+subroutine set_rad_state(state, cam_in, tmid, tint, pmid, pint, col_indices)
 
    use physics_types, only: physics_state
-   use cam_history, only: outfld
+   use camsrfexch, only: cam_in_t
+   use physconst, only: stebol
+
    type(physics_state), intent(in) :: state
-   real(r8), intent(in) :: tmid(:,:), tint(:,:), pmid(:,:), pint(:,:)
-   real(r8), intent(in), optional :: coldry(:,:), h2ovmr(:,:)
-   integer :: ncol, lchnk
+   type(cam_in_t), intent(in) :: cam_in
+   real(r8), intent(out) :: tmid(:,:)
+   real(r8), intent(out) :: tint(:,:)
+   real(r8), intent(out) :: pmid(:,:)
+   real(r8), intent(out) :: pint(:,:)
+   integer, intent(in), optional :: col_indices(:)
+
+   real(r8) :: tint_cam(pcols,pver+1)
+   integer :: ncol, nday
 
    ncol = state%ncol
-   lchnk = state%lchnk
-   call outfld('RAD_TMID', tmid(:ncol,:num_rad_layers), ncol, lchnk)
-   call outfld('RAD_PMID', pmid(:ncol,:num_rad_layers), ncol, lchnk)
-   call outfld('RAD_TINT', tint(:ncol,:num_rad_layers+1), ncol, lchnk)
-   call outfld('RAD_PINT', pint(:ncol,:num_rad_layers+1), ncol, lchnk)
-   if (present(coldry)) then
-      call outfld('RAD_COLDRY', coldry(:ncol,:num_rad_layers), ncol, lchnk)
-   end if
-   if (present(h2ovmr)) then
-      call outfld('RAD_H2OVMR', h2ovmr(:ncol,:num_rad_layers), ncol, lchnk)
+
+   if (present(col_indices)) then
+      nday = count(col_indices > 0)
+   else
+      nday = ncol
    end if
 
-end subroutine output_rad_state
+   ! Map CAM to rad fields
+   if (present(col_indices)) then
+      call compress_day_columns(state%t(1:ncol,1:pver), tmid(1:nday,ktop:kbot), col_indices(1:nday))
+      call compress_day_columns(state%pmid(1:ncol,1:pver), pmid(1:nday,ktop:kbot), col_indices(1:nday))
+      call compress_day_columns(state%pint(1:ncol,1:pver+1), pint(1:nday,ktop:kbot+1), col_indices(1:nday))
+   else
+      tmid(1:ncol,ktop:kbot) = state%t(1:ncol,1:pver)
+      pmid(1:ncol,ktop:kbot) = state%pmid(1:ncol,1:pver)
+      pint(1:ncol,ktop:kbot+1) = state%pint(1:ncol,1:pver+1)
+   end if
 
+   ! Calculate interface temperature explicitly
+   call set_interface_temperature(state, cam_in, tint_cam(1:ncol,1:pver+1))
+   if (present(col_indices)) then
+      call compress_day_columns(tint_cam(1:ncol,1:pver+1), tint(1:nday,ktop:kbot+1), col_indices(1:nday))
+   else
+      tint(1:ncol,ktop:kbot+1) = tint_cam(1:ncol,1:pver+1)
+   end if
 
-! Old calculation from RRTMG...seems to be inconsistent with internal RRTMGP
-! function to calculation dry column amount
-subroutine set_coldry(p_lev, h2ovmr, coldry)
+   ! Fill layer above model top; this is done 
+   ! consistent with the RRTMG implementation
+   if (nlev_rad > pver) then
+      tmid(:,1) = tmid(:,ktop) !state%t(:ncol,1)
+      tint(:,1) = tint(:,ktop)
+      pmid(:,1) = 0.5_r8 * pint(:,ktop) !state%pint(:ncol,1)
+      pint(:,1) = 1.01_r8
+   end if
 
-   use shr_const_mod, only: shr_const_avogad
-   use physconst, only: grav=>gravit
-
-   real(r8), intent(in) :: p_lev(:,:)
-   real(r8), intent(in) :: h2ovmr(:,:)
-   real(r8), intent(inout) :: coldry(:,:)
-
-   real(r8), parameter :: amd = 28.9660_r8      ! Effective molecular weight of dry air (g/mol)
-   real(r8), parameter :: amw = 18.0160_r8      ! Molecular weight of water vapor (g/mol)
-   real(r8) :: amm
-
-   ! CIME Avogadro's constant in units of molecules / kmole ... convert to the
-   ! normal molecules / mole here
-   real(r8), parameter :: avogad = shr_const_avogad * 1.e-3_r8
-
-   real(r8) :: dp
-   integer :: i, l
-
-   call assert(all(shape(h2ovmr) == shape(coldry)), 'set_coldry: inconsistent shapes')
-   call assert(all(shape(p_lev) == (/size(h2ovmr, 1), size(h2ovmr, 2)+1/)), &
-               'set_coldry: p_lev inconsistent shape')
-   call assert_range(p_lev, 1._r8, 1.e10_r8, 'set_coldry: p_lev out of bounds.')
-
-   coldry(:,:) = 0._r8
-   do i = 1,size(h2ovmr, 1)
-      do l = 1,size(h2ovmr, 2)
-
-         ! Mass of air (mass of dry air plus mass of water vapor)?
-         ! (g/mol)
-         amm = (1._r8 - h2ovmr(i,l)) * amd + h2ovmr(i,l) * amw
-
-         ! Pressure thickness (Pa)
-         dp = abs(p_lev(i,l+1) - p_lev(i,l))
-
-         ! Hydrostatic equation
-         coldry(i,l) = 1.e-2_r8 * dp * 1.e3_r8 * avogad / (1.e2_r8 * grav * amm * (1._r8 + h2ovmr(i,l)))
-         if (coldry(i,l) < 0 .or. coldry(i,l) >= huge(coldry)) then
-            print *, 'coldry invalid at ', i, l, coldry(i,l)
-            print *, '    dp = ', dp
-            print *, '    h2ovmr = ', h2ovmr(i,l)
-            print *, '    10._r8 * dp * avogad = ', 10._r8 * dp * avogad
-            print *, '    amm = ', amm
-            call endrun('coldry')
-         end if
-      enddo
-
-      ! This is weird...top level uses interface pressure from the bottom
-      ! interface of the top level, and the h2o volumn mixing ratio of the
-      ! second level? Why? This seems to handle the extra level above model
-      ! top...dp here is taken to be the pressure difference between the last
-      ! real model interface and ZERO, which is why p_lev appears by itself.
-      ! h2ovmr should be the same for the top TWO levels, based on how we set
-      ! h2ovmr in set_gas_concentrations, so we should be able to take
-      ! h2ovmr(i,1) or h2ovmr(i,2) with no difference here. Note that we take
-      ! p_lev(i,2) instead of p_lev(i,1) here because p_lev(i,1) is the "fake"
-      ! top interface level that we added above model top.
-      coldry(i,1) = 1.e-2_r8 * (p_lev(i,2)) * 1.e3_r8 * avogad / (1.e2_r8 * grav * amm * (1._r8 + h2ovmr(i,2)))
-   end do
-
-   call assert(all(coldry >= 0), 'set_coldry: coldry has negative values')
-   call assert_valid(coldry, 'set_coldry: coldry has inf or NaNs')
-end subroutine set_coldry
+end subroutine set_rad_state
 
 
 subroutine set_interface_temperature(state, cam_in, tint)
@@ -1806,12 +1693,21 @@ subroutine set_interface_temperature(state, cam_in, tint)
    ! why is this? Are we doing something wrong here? Maybe it's just the surface
    ! temperature (tint(:,pverp)) that is to blame?
    do i = 1,state%ncol
+
+      ! Set top level interface temperature
       tint(i,1) = state%t(i,1)
-      tint(i,pverp) = sqrt(sqrt(cam_in%lwup(i)/stebol))
+
+      ! Calculate interface temperatures between top and bottom
       do k = 2,pver
          dy = (state%lnpint(i,k) - state%lnpmid(i,k)) / (state%lnpmid(i,k-1) - state%lnpmid(i,k))
          tint(i,k) = state%t(i,k) - dy * (state%t(i,k) - state%t(i,k-1))
       end do
+
+      ! Surface temperature
+      ! TODO: we should *not* be doing this like this here! Land model ought to
+      ! say *something* about emissivity or surface temperature, but this
+      ! assumes that the emissivity is 1, all the time, regardless! This is bad!
+      tint(i,pver+1) = sqrt(sqrt(cam_in%lwup(i)/stebol))
    end do
 
 end subroutine set_interface_temperature
@@ -1824,7 +1720,7 @@ subroutine export_surface_fluxes(fluxes, cam_out, band)
    type(ty_fluxes_byband), intent(in) :: fluxes
    type(cam_out_t), intent(inout) :: cam_out
    character(len=*), intent(in) :: band
-   integer :: i, kbot
+   integer :: icol
 
    ! TODO: check this code! This seems to differ from what is in RRTMG. Also, I
    ! think RRTMGP lets us break output into direct and diffuse beam now, so much
@@ -1832,10 +1728,13 @@ subroutine export_surface_fluxes(fluxes, cam_out, band)
    !
    ! Export surface fluxes
    !
-   ! The RRTMGP output isn't broken down into direct and diffuse.  For first cut
-   ! put entire flux into direct and leave the diffuse set to zero.  To break the
-   ! fluxes into the UV/vis and near-IR bands use the same scheme as for the albedos
-   ! which is hardcoded for 14 spectral bands.
+   ! NOTE: this code assumes that the fluxes are not broken into direct and
+   ! diffuse, and so puts the entire flux into direct and leaves the diffuse set
+   ! to zero. This is no longer the case! RRTMGP *does* break the flux into
+   ! direct and diffuse, so we can set direct and diffuse separately now.
+   !
+   ! To break the fluxes into the UV/vis and near-IR bands use the same scheme 
+   ! as for the albedos which is hardcoded for 14 spectral bands.
    !
    ! sols(pcols)      Direct solar rad on surface (< 0.7)
    ! soll(pcols)      Direct solar rad on surface (>= 0.7)
@@ -1849,26 +1748,25 @@ subroutine export_surface_fluxes(fluxes, cam_out, band)
    !
    ! NOTE: bands are shifted relative to RRTMG! Band 10 used to be band 9, band
    ! 1 used to be band 14.
-   kbot = size(fluxes%flux_dn, 2)
    if (trim(band) == 'shortwave') then
       cam_out%soll = 0
       cam_out%sols = 0
       cam_out%solld = 0
       cam_out%solsd = 0
-      do i = 1,size(fluxes%bnd_flux_dn, 1)
-         cam_out%soll(i) &
-            = sum(fluxes%bnd_flux_dn(i,kbot,1:9)) &
-            + 0.5_r8 * fluxes%bnd_flux_dn(i,kbot,10)
+      do icol = 1,size(fluxes%bnd_flux_dn, 1)
+         cam_out%soll(icol) &
+            = sum(fluxes%bnd_flux_dn(icol,kbot+1,1:9)) &
+            + 0.5_r8 * fluxes%bnd_flux_dn(icol,kbot+1,10)
 
-         cam_out%sols(i) &
-            = 0.5_r8 * fluxes%bnd_flux_dn(i,kbot,10) &
-            + sum(fluxes%bnd_flux_dn(i,kbot,11:14))
+         cam_out%sols(icol) &
+            = 0.5_r8 * fluxes%bnd_flux_dn(icol,kbot+1,10) &
+            + sum(fluxes%bnd_flux_dn(icol,kbot+1,11:14))
 
-         cam_out%netsw(i) = fluxes%flux_net(i,kbot)
+         cam_out%netsw(icol) = fluxes%flux_net(icol,kbot+1)
       end do
    else if (trim(band) == 'longwave') then
-      do i = 1,size(fluxes%flux_dn, 1)
-         cam_out%flwds(i) = fluxes%flux_dn(i,kbot)
+      do icol = 1,size(fluxes%flux_dn, 1)
+         cam_out%flwds(icol) = fluxes%flux_dn(icol,kbot+1)
       end do
    else
       call endrun('flux_type ' // band // ' not known.')
@@ -1893,13 +1791,10 @@ subroutine copy_fluxes_to_pbuf(pbuf, fluxes, band)
    real(r8), pointer :: flns(:)
    real(r8), pointer :: flnt(:)
 
-   integer :: ncol, nlevels, ktop, kbot
+   integer :: ncol
    character(len=32) :: subname = 'copy_fluxes_to_pbuf'
 
    ncol = size(fluxes%flux_up, 1)
-   nlevels = size(fluxes%flux_up, 2)
-   ktop = 1
-   kbot = nlevels
    if (trim(band) == 'shortwave') then
       ! Associate pointers
       call pbuf_get_field(pbuf, pbuf_get_index('FSDS'), fsds)
@@ -1907,74 +1802,32 @@ subroutine copy_fluxes_to_pbuf(pbuf, fluxes, band)
       call pbuf_get_field(pbuf, pbuf_get_index('FSNT'), fsnt)
 
       ! Copy data
-      fsds(:ncol) = fluxes%flux_dn(:ncol,kbot)
-      fsns(:ncol) = fluxes%flux_dn(:ncol,kbot) - fluxes%flux_up(:ncol,kbot) !fluxes%flux_net(:ncol,kbot)
-      fsnt(:ncol) = fluxes%flux_dn(:ncol,ktop) - fluxes%flux_up(:ncol,kbot) !fluxes%flux_net(:ncol,ktop)
+      fsds(1:ncol) = fluxes%flux_dn(1:ncol,kbot+1)
+      fsns(1:ncol) = fluxes%flux_dn(1:ncol,kbot+1) - fluxes%flux_up(1:ncol,kbot+1)
+      fsnt(1:ncol) = fluxes%flux_dn(1:ncol,ktop) - fluxes%flux_up(1:ncol,ktop)
 
       ! Check values
-      call assert_valid(fsds(:ncol), 'fsds')
-      call assert_valid(fsns(:ncol), 'fsns')
-      call assert_valid(fsnt(:ncol), 'fsnt')
+      call assert_valid(fsds(1:ncol), 'fsds')
+      call assert_valid(fsns(1:ncol), 'fsns')
+      call assert_valid(fsnt(1:ncol), 'fsnt')
    else if (trim(band) == 'longwave') then
       ! Associate pointers
       call pbuf_get_field(pbuf, pbuf_get_index('FLNS'), flns)
       call pbuf_get_field(pbuf, pbuf_get_index('FLNT'), flnt)
 
       ! Copy data
-      flns(:ncol) = fluxes%flux_up(:ncol,kbot) - fluxes%flux_dn(:ncol,kbot) !fluxes%flux_net(:ncol,kbot)
-      flnt(:ncol) = fluxes%flux_up(:ncol,ktop) - fluxes%flux_dn(:ncol,ktop) !fluxes%flux_net(:ncol,ktop)
+      flns(1:ncol) = fluxes%flux_up(1:ncol,kbot+1) - fluxes%flux_dn(1:ncol,kbot+1)
+      flnt(1:ncol) = fluxes%flux_up(1:ncol,ktop) - fluxes%flux_dn(1:ncol,ktop)
+
+      ! Check values
+      call assert_valid(flns(1:ncol), 'flns')
+      call assert_valid(flnt(1:ncol), 'flnt')
    else
       call endrun(trim(subname) // ': flux_type ' // trim(band) // ' not known.')
    end if
 
 end subroutine copy_fluxes_to_pbuf
 
-!-------------------------------------------------------------------------------
-! Map fields from CAM vertical grid to radiation vertical grid, which may
-! contain more or less vertical levels than CAM (more when we add an extra layer
-! above the top of the model, less when not all pressures are above the minimum
-! threshold required by RRTMGP lookup tables).
-subroutine map_cam_to_rad_levels(xcam, xrad, indices)
-   real(r8), intent(in) :: xcam(:,:)
-   real(r8), intent(inout) :: xrad(:,:)
-   integer, intent(in) :: indices(:)
-   integer :: krad, kcam
-   character(len=32) :: subname = 'map_cam_to_rad_levels'
-
-   ! Check sizes
-   call assert(size(xcam, 1) == size(xrad, 1), &
-               trim(subname) // ': dim 1 inconsistent.')
-   call assert(size(xrad, 2) == size(indices), &
-               trim(subname) // ': dim 2 inconsistent.')
-
-   do krad = 1,size(indices)
-      kcam = max(1, indices(krad))
-      xrad(:,krad) = xcam(:,kcam)
-   end do
-end subroutine map_cam_to_rad_levels
-!-------------------------------------------------------------------------------
-! Map fields from radiation vertical grid back to CAM vertical grid. Uses the
-! same indices as above subroutine, which specify the CAM levels corresponding
-! to the radiation levels. I.e., indices(1) = 0 means that the first radiation
-! level corresponds to a level above the top of the CAM grid.
-subroutine map_rad_to_cam_levels(xrad, xcam, indices)
-   real(r8), intent(in) :: xrad(:,:)
-   real(r8), intent(inout) :: xcam(:,:)
-   integer, intent(in) :: indices(:)
-   integer :: krad, kcam
-   character(len=32) :: subname = 'map_rad_to_cam_levels'
-
-   ! Check sizes
-   call assert(size(xcam, 1) == size(xrad, 1), &
-               trim(subname) // ': dim 1 inconsistent.')
-   call assert(size(xrad, 2) == size(indices), &
-               trim(subname) // ': dim 2 inconsistent.')
-
-   do krad = 1,size(indices)
-      kcam = max(1, indices(krad))
-      xcam(:,kcam) = xrad(:,krad)
-   end do
-end subroutine map_rad_to_cam_levels
 !-------------------------------------------------------------------------------
 
 subroutine calculate_heating_rate(fluxes, pint, heating_rate)
@@ -1990,7 +1843,7 @@ subroutine calculate_heating_rate(fluxes, pint, heating_rate)
    real(r8), intent(out) :: heating_rate(:,:)
 
    ! Loop indices
-   integer :: i, k
+   integer :: icol, ilev
 
    ! Everyone needs a name
    character(len=32) :: subname = 'calculate_heating_rate'
@@ -2016,19 +1869,19 @@ subroutine calculate_heating_rate(fluxes, pint, heating_rate)
    !
    ! Why? Something to do with convenience with applying the fluxes to the
    ! heating tendency?
-   do k = 1,size(pint,2)-1
-      do i = 1,size(pint,1)
-         heating_rate(i,k) = ( &
-            fluxes%flux_up(i,k+1) - fluxes%flux_up(i,k) - &
-            fluxes%flux_dn(i,k+1) + fluxes%flux_dn(i,k) &
-         ) * gravit / (pint(i,k+1) - pint(i,k))
+   do ilev = 1,size(pint,2)-1
+      do icol = 1,size(pint,1)
+         heating_rate(icol,ilev) = ( &
+            fluxes%flux_up(icol,ilev+1) - fluxes%flux_up(icol,ilev) - &
+            fluxes%flux_dn(icol,ilev+1) + fluxes%flux_dn(icol,ilev) &
+         ) * gravit / (pint(icol,ilev+1) - pint(icol,ilev))
       end do
    end do
 
 end subroutine calculate_heating_rate
     
 
-subroutine set_aerosol_optics_lw(icall, state, pbuf, cam_layers, optics_out)
+subroutine set_aerosol_optics_lw(icall, state, pbuf, optics_out)
    use physics_types, only: physics_state
    use physics_buffer, only: physics_buffer_desc, pbuf_get_index, &
                              pbuf_get_field
@@ -2039,7 +1892,6 @@ subroutine set_aerosol_optics_lw(icall, state, pbuf, cam_layers, optics_out)
    integer, intent(in) :: icall
    type(physics_state), intent(in) :: state
    type(physics_buffer_desc), pointer :: pbuf(:)
-   integer, intent(in) :: cam_layers(:)
    type(ty_optical_props_1scl), intent(inout) :: optics_out
 
    ! Subroutine name for error messages
@@ -2048,8 +1900,9 @@ subroutine set_aerosol_optics_lw(icall, state, pbuf, cam_layers, optics_out)
    ! Output from CAM routines; expected to have dimension pcols
    real(r8) :: absorption_tau(pcols,pver,nlwbands)
 
-   ! Loop variable
-   integer :: k
+   ! Loop variables
+   integer :: ilev
+   integer :: ncol
 
    ! Get aerosol absorption optical depth from CAM routine
    absorption_tau = 0.0
@@ -2057,17 +1910,14 @@ subroutine set_aerosol_optics_lw(icall, state, pbuf, cam_layers, optics_out)
 
    ! Populate the RRTMGP optical properties object with CAM optical depth
    optics_out%tau(:,:,:) = 0.0
-   do k = 1,size(cam_layers)
-      if (cam_layers(k) > 0) then
-         optics_out%tau(:,k,:) = absorption_tau(:,cam_layers(k),:)
-      end if
-   end do
+   ncol = state%ncol
+   optics_out%tau(1:ncol,ktop:kbot,1:nlwbands) = absorption_tau(1:ncol,1:pver,1:nlwbands)
 
 end subroutine set_aerosol_optics_lw
 
 
 subroutine set_aerosol_optics_sw(icall, state, pbuf, &
-                                 day_indices, night_indices, cam_layers, &
+                                 day_indices, night_indices, &
                                  optics_out)
    use ppgrid, only: pcols, pver
    use physics_types, only: physics_state
@@ -2079,7 +1929,6 @@ subroutine set_aerosol_optics_sw(icall, state, pbuf, &
    type(physics_state), intent(in) :: state
    type(physics_buffer_desc), pointer :: pbuf(:)
    integer, intent(in) :: day_indices(:), night_indices(:)
-   integer, intent(in) :: cam_layers(:)
    type(ty_optical_props_2str), intent(inout) :: optics_out
 
    ! NOTE: aer_rad_props expects 0:pver indexing on these! It appears this is to
@@ -2091,15 +1940,13 @@ subroutine set_aerosol_optics_sw(icall, state, pbuf, &
    ! NOTE: dimension ordering is different than for cloud optics!
    real(r8), dimension(pcols,0:pver,nswbands) :: tau, tau_w, tau_w_g, tau_w_f
 
-   integer :: ncol, nbnd, nlay
+   integer :: ncol
    integer :: iday, icol, ilay
-   integer :: k_rad, k_cam
 
    ! Everyone needs a name
    character(len=*), parameter :: subroutine_name = 'set_aerosol_optics_sw'
 
    ncol = state%ncol
-   nbnd = nswbands
 
    ! Get aerosol absorption optical depth from CAM routine
    tau = 0.0
@@ -2122,36 +1969,24 @@ subroutine set_aerosol_optics_sw(icall, state, pbuf, &
       ! Get index into full chunk-wide array for this daytime index
       icol = day_indices(iday)
 
-      ! Loop over levels to map CAM grid to radiation grid (radiation grid might
-      ! contain extra levels, or vice versa)
-      do k_rad = 1,size(cam_layers)
+      ! Copy cloud optical depth over directly
+      optics_out%tau(iday,ktop:kbot,1:nswbands) = tau(icol,1:pver,1:nswbands)
 
-         ! Get location of rad level on CAM grid. If this level is ABOVE the CAM
-         ! grid, then skip this index (leave optical properties at initial
-         ! values, 0 for tau and g, 1 for ssa).
-         k_cam = cam_layers(k_rad)
-         if (k_cam < 1) cycle
+      ! Extract single scattering albedo from the product-defined fields
+      where (tau(icol,1:pver,1:nswbands) > 0)
+         optics_out%ssa(iday,ktop:kbot,1:nswbands) &
+            = tau_w(icol,1:pver,1:nswbands) / tau(icol,1:pver,1:nswbands)
+      elsewhere
+         optics_out%ssa(iday,ktop:kbot,1:nswbands) = 1
+      endwhere
 
-         ! Copy cloud optical depth over directly
-         optics_out%tau(iday,k_rad,1:nbnd) = tau(icol,k_cam,1:nbnd)
-
-         ! Extract single scattering albedo from the product-defined fields
-         where (tau(icol,k_cam,1:nbnd) > 0)
-            optics_out%ssa(iday,k_rad,1:nbnd) &
-               = tau_w(icol,k_cam,1:nbnd) / tau(icol,k_cam,1:nbnd)
-         elsewhere
-            optics_out%ssa(iday,k_rad,1:nbnd) = 1
-         endwhere
-
-         ! Extract assymmetry parameter from the product-defined fields
-         where (tau_w(icol,k_cam,1:nbnd) > 0)
-            optics_out%g(iday,k_rad,1:nbnd) &
-               = tau_w_g(icol,k_cam,1:nbnd) / tau_w(icol,k_cam,1:nbnd)
-         elsewhere
-            optics_out%g(iday,k_rad,1:nbnd) = 0
-         endwhere
-
-      end do
+      ! Extract assymmetry parameter from the product-defined fields
+      where (tau_w(icol,1:pver,1:nswbands) > 0)
+         optics_out%g(iday,ktop:kbot,1:nswbands) &
+            = tau_w_g(icol,1:pver,1:nswbands) / tau_w(icol,1:pver,1:nswbands)
+      elsewhere
+         optics_out%g(iday,ktop:kbot,1:nswbands) = 0
+      endwhere
 
    end do
 
@@ -2213,9 +2048,53 @@ subroutine compress_day_columns_2d(xcol, xday, day_indices)
 
 end subroutine
 !-------------------------------------------------------------------------------
+subroutine expand_day_columns_1d(xday, xcol, day_indices)
 
+   real(r8), intent(in) :: xday(:)
+   real(r8), intent(inout) :: xcol(:)
+   integer, intent(in) :: day_indices(:)
+   integer :: icol, iday
+   character(len=32) :: subname = 'expand_day_columns_1d'
 
-subroutine expand_daytime_fluxes(daytime_fluxes, expanded_fluxes, day_indices)
+   ! Check dimensions
+   call assert(size(xday, 1) == size(day_indices, 1), trim(subname) // ': inconsistent sizes')
+   call assert(size(xcol, 1) >= size(day_indices, 1), trim(subname) // ': inconsistent sizes')
+
+   ! We need to reset to zero because we only populate the daytime columns
+   xcol(:) = 0._r8
+
+   ! Do mapping
+   do iday = 1,count(day_indices>0)
+      icol = day_indices(iday)
+      xcol(icol) = xday(iday)
+   end do
+end subroutine expand_day_columns_1d
+!-------------------------------------------------------------------------------
+subroutine expand_day_columns_2d(xday, xcol, day_indices)
+
+   real(r8), intent(in) :: xday(:,:)
+   real(r8), intent(inout) :: xcol(:,:)
+   integer, intent(in) :: day_indices(:)
+   integer :: icol, iday
+   character(len=32) :: subname = 'expand_day_columns_2d'
+
+   ! Check dimensions
+   call assert(size(xday, 1) == size(day_indices, 1), trim(subname) // ': inconsistent sizes')
+   call assert(size(xcol, 1) >= size(day_indices, 1), trim(subname) // ': inconsistent sizes')
+   call assert(size(xday, 2) == size(xcol, 2), trim(subname) // ': inconsistent sizes')
+
+   ! We need to reset to zero because we only populate the daytime columns
+   xcol(:,:) = 0._r8
+
+   ! Do mapping
+   do iday = 1,count(day_indices>0)
+      icol = day_indices(iday)
+      xcol(icol,:) = xday(iday,:)
+   end do
+
+end subroutine expand_day_columns_2d
+
+subroutine expand_day_fluxes(daytime_fluxes, expanded_fluxes, day_indices)
    use mo_rte_kind, only: wp
    use mo_fluxes_byband, only: ty_fluxes_byband
    type(ty_fluxes_byband), intent(in) :: daytime_fluxes
@@ -2254,10 +2133,11 @@ subroutine expand_daytime_fluxes(daytime_fluxes, expanded_fluxes, day_indices)
 
    end do
 
-end subroutine expand_daytime_fluxes
+end subroutine expand_day_fluxes
 
 
 subroutine reset_fluxes(fluxes)
+
    use mo_rte_kind, only: wp
    use mo_fluxes_byband, only: ty_fluxes_byband
    type(ty_fluxes_byband), intent(inout) :: fluxes
@@ -2278,6 +2158,7 @@ end subroutine reset_fluxes
 
 
 subroutine output_cloud_optics_lw(state, optics)
+
    use physics_types, only: physics_state
    use cam_optics, only: cam_optics_type
    use cam_history, only: outfld
@@ -2286,8 +2167,8 @@ subroutine output_cloud_optics_lw(state, optics)
    type(cam_optics_type), intent(in) :: optics
    
    ! Output 
-   call assert_valid(optics%optical_depth(:state%ncol,:pver,:nlwbands), 'cloud_tau_lw')
-   call outfld('CLOUD_TAU_LW', optics%optical_depth(:state%ncol,:pver,:nlwbands), state%ncol, state%lchnk)
+   call assert_valid(optics%optical_depth(1:state%ncol,1:pver,1:nlwbands), 'cloud_tau_lw')
+   call outfld('CLOUD_TAU_LW', optics%optical_depth(1:state%ncol,1:pver,1:nlwbands), state%ncol, state%lchnk)
 
 end subroutine output_cloud_optics_lw
 
@@ -2303,25 +2184,25 @@ subroutine output_cloud_optics_sw(state, optics)
    character(len=*), parameter :: subname = 'output_cloud_optics_sw'
 
    ! Check values
-   call assert_valid(optics%optical_depth(:state%ncol,:pver,:nswbands), &
+   call assert_valid(optics%optical_depth(1:state%ncol,1:pver,1:nswbands), &
                      trim(subname) // ': optics%optical_depth')
-   call assert_valid(optics%single_scattering_albedo(:state%ncol,:pver,:nswbands), &
+   call assert_valid(optics%single_scattering_albedo(1:state%ncol,1:pver,1:nswbands), &
                      trim(subname) // ': optics%single_scattering_albedo')
-   call assert_valid(optics%assymmetry_parameter(:state%ncol,:pver,:nswbands), &
+   call assert_valid(optics%assymmetry_parameter(1:state%ncol,1:pver,1:nswbands), &
                      trim(subname) // ': optics%assymmetry_parameter')
 
    ! Send outputs to history buffer
    call outfld('CLOUD_TAU_SW', &
-               optics%optical_depth(:state%ncol,:pver,:nswbands), &
+               optics%optical_depth(1:state%ncol,1:pver,1:nswbands), &
                state%ncol, state%lchnk)
    call outfld('CLOUD_SSA_SW', &
-               optics%single_scattering_albedo(:state%ncol,:pver,:nswbands), &
+               optics%single_scattering_albedo(1:state%ncol,1:pver,1:nswbands), &
                state%ncol, state%lchnk)
    call outfld('CLOUD_G_SW', &
-               optics%assymmetry_parameter(:state%ncol,:pver,:nswbands), &
+               optics%assymmetry_parameter(1:state%ncol,1:pver,1:nswbands), &
                state%ncol, state%lchnk)
    call outfld('TOT_ICLD_VISTAU', &
-               optics%optical_depth(:state%ncol,:pver,idx_sw_diag), &
+               optics%optical_depth(1:state%ncol,1:pver,idx_sw_diag), &
                state%ncol, state%lchnk)
 end subroutine output_cloud_optics_sw
 
@@ -2355,21 +2236,14 @@ subroutine set_daynight_indices(coszrs, day_indices, night_indices)
    do icol = 1,size(coszrs)
       if (coszrs(icol) > 0._r8) then
          iday = iday + 1
-         if (iday <= size(day_indices)) then
-            day_indices(iday) = icol
-         else
-            call endrun(trim(subname) // ': iday > size(day_indices)')
-         end if
+         day_indices(iday) = icol
       else
          inight = inight + 1
-         if (inight <= size(night_indices)) then
-            night_indices(inight) = icol
-         else
-            call endrun(trim(subname) // ': inight > size(night_indices)')
-         end if
+         night_indices(inight) = icol
       end if
    end do
 
+#ifdef DEBUG
    ! Check indices
    call assert(count(day_indices > 0) == count(coszrs > 0), &
                trim(subname) // ': count(day_indices > 0) != count(coszrs > 0)')
@@ -2378,6 +2252,7 @@ subroutine set_daynight_indices(coszrs, day_indices, night_indices)
    call assert(count(day_indices > 0) + count(night_indices > 0) == size(coszrs), &
                trim(subname) // ': day_indices + night_indices != size(coszrs)')
    call assert_range(day_indices, 0, size(coszrs), trim(subname) // 'day_indices')
+#endif
 
 end subroutine set_daynight_indices
 
@@ -2440,14 +2315,14 @@ subroutine set_cosine_solar_zenith_angle(state, dt, coszrs)
    ! in the current physics "chunk", so we use CAM routines to retrieve those
    ! values here.
    calday = get_curr_calday()
-   call get_rlat_all_p(state%lchnk, state%ncol, clat(:state%ncol))
-   call get_rlon_all_p(state%lchnk, state%ncol, clon(:state%ncol))
+   call get_rlat_all_p(state%lchnk, state%ncol, clat(1:state%ncol))
+   call get_rlon_all_p(state%lchnk, state%ncol, clon(1:state%ncol))
 
    ! Call zenith to calculate cosine solar zenith angle. Note we only pass the
    ! first state%ncol columns in case coszrs was allocated to be larger than
    ! ncol in the calling routine (i.e, pcols).
-   call zenith(calday, clat(:state%ncol), clon(:state%ncol), &
-               coszrs(:state%ncol), state%ncol, dt)
+   call zenith(calday, clat(1:state%ncol), clon(1:state%ncol), &
+               coszrs(1:state%ncol), state%ncol, dt)
 end subroutine set_cosine_solar_zenith_angle
 
 
@@ -2462,7 +2337,7 @@ subroutine set_albedo(cam_in, albedo_direct, albedo_diffuse)
 
    ! Local namespace
    real(r8) :: wavenumber_limits(2,nswbands)
-   integer :: ncol, ibnd
+   integer :: ncol, iband
 
    ! Check dimension sizes of output arrays.
    ! albedo_direct and albedo_diffuse should have sizes nswbands,ncol, but ncol
@@ -2488,60 +2363,31 @@ subroutine set_albedo(cam_in, albedo_direct, albedo_diffuse)
 
    ! Loop over bands, and determine for each band whether it is broadly in the
    ! visible or infrared part of the spectrum (visible or "not visible")
-   do ibnd = 1,nswbands
-      if (is_visible(wavenumber_limits(1,ibnd)) .and. &
-          is_visible(wavenumber_limits(2,ibnd))) then
+   do iband = 1,nswbands
+      if (is_visible(wavenumber_limits(1,iband)) .and. &
+          is_visible(wavenumber_limits(2,iband))) then
 
          ! Entire band is in the visible
-         albedo_direct(ibnd,:ncol) = cam_in%asdir(:ncol)
-         albedo_diffuse(ibnd,:ncol) = cam_in%asdif(:ncol)
+         albedo_direct(iband,:ncol) = cam_in%asdir(1:ncol)
+         albedo_diffuse(iband,:ncol) = cam_in%asdif(1:ncol)
 
-      else if (.not.is_visible(wavenumber_limits(1,ibnd)) .and. &
-               .not.is_visible(wavenumber_limits(2,ibnd))) then
+      else if (.not.is_visible(wavenumber_limits(1,iband)) .and. &
+               .not.is_visible(wavenumber_limits(2,iband))) then
 
          ! Entire band is in the longwave
-         albedo_direct(ibnd,:ncol) = cam_in%aldir(:ncol)
-         albedo_diffuse(ibnd,:ncol) = cam_in%aldif(:ncol)
+         albedo_direct(iband,:ncol) = cam_in%aldir(1:ncol)
+         albedo_diffuse(iband,:ncol) = cam_in%aldif(1:ncol)
 
       else
 
          ! Band straddles the visible to near-infrared transition, so we take
          ! the albedo to be the average of the visible and near-infrared
          ! broadband albedos
-         albedo_direct(ibnd,:ncol) = 0.5 * (cam_in%aldir(:ncol) + cam_in%asdir(:ncol))
-         albedo_diffuse(ibnd,:ncol) = 0.5 * (cam_in%aldif(:ncol) + cam_in%asdif(:ncol))
+         albedo_direct(iband,:ncol) = 0.5 * (cam_in%aldir(1:ncol) + cam_in%asdir(1:ncol))
+         albedo_diffuse(iband,:ncol) = 0.5 * (cam_in%aldif(1:ncol) + cam_in%asdif(1:ncol))
 
       end if
    end do
-
-#ifdef DO_FRAGILE_BAND_MAPPING
-   ! Surface albedo (band mapping is hardcoded for RRTMG(P) code)
-   ! This mapping assumes nswbands=14.
-   ! TODO: we should handle this more intelligently
-   if (nswbands /= 14) then
-      call endrun(module_name //': ERROR: albedo band mapping assumes nswbands=14')
-   end if
-
-   ! Code lifted from RRTMG implementation
-   do icol = 1,size(albedo_direct, 2)
-
-      do ibnd = 1,9
-         albedo_direct(ibnd,icol) = cam_in%aldir(icol)
-         albedo_diffuse(ibnd,icol) = cam_in%aldif(icol)
-      enddo
-
-      ! Set band 25 (or, band 10 counting from 1) to use linear average of UV/visible
-      ! and near-IR values, since this band straddles 0.7 microns:
-      albedo_direct(10,icol) = 0.5*(cam_in%aldir(icol) + cam_in%asdir(icol))
-      albedo_diffuse(10,icol) = 0.5*(cam_in%aldif(icol) + cam_in%asdif(icol))
-
-      ! UV/visible bands 25-28 (11-14), 16000-50000 cm-1, 0.200-0.625 micron
-      do ibnd = 11,nswbands
-         albedo_direct(ibnd,icol) = cam_in%asdir(icol)
-         albedo_diffuse(ibnd,icol) = cam_in%asdif(icol)
-      enddo
-   end do
-#endif
 
    ! Check values and clip if necessary (albedos should not be larger than 1)
    ! NOTE: this does actually issue warnings for albedos larger than 1, but this
@@ -2639,7 +2485,6 @@ subroutine clip_values_2d(x, min_x, max_x, varname, warn)
    character(len=*), intent(in), optional :: varname
    logical, intent(in), optional :: warn
 
-   integer :: i, j, nbad
    logical :: warn_local
 
    warn_local = .false.
@@ -2691,7 +2536,7 @@ end subroutine clip_values_2d
 
 
 ! Send shortwave fluxes and heating rates to history buffer
-subroutine output_fluxes_sw(icall, state, flux_all, flux_clr, lev_indices)
+subroutine output_fluxes_sw(icall, state, flux_all, flux_clr)
    use physconst, only: cpair
    use physics_types, only: physics_state
    use cam_history, only: outfld
@@ -2701,63 +2546,46 @@ subroutine output_fluxes_sw(icall, state, flux_all, flux_clr, lev_indices)
    type(physics_state), intent(in) :: state
    type(ty_fluxes_byband), intent(in) :: flux_all
    type(ty_fluxes_byband), intent(in) :: flux_clr
-   integer, intent(in) :: lev_indices(:)
 
    ! Working variables
-   integer :: ncol, nlev
-   integer :: ktop_cam, kbot_cam
-   integer :: ktop_rad, kbot_rad
-   integer :: k
+   integer :: ncol
+   integer :: ktop_rad = 1
 
    ncol = state%ncol
-   nlev = size(flux_all%flux_up,2)
-   ktop_rad = 1
-   kbot_rad = nlev
-
-   ! Find index to top of model
-   ktop_cam = 0
-   do k = 1,size(lev_indices)
-      if (lev_indices(k) == 1) then
-         ktop_cam = k
-         exit
-      end if
-   end do
-   call assert(ktop_cam > 0, ': no layer top found.')
-   kbot_cam = kbot_rad
 
    ! All-sky flux_all%fluxes at model interfaces
-   call outfld('FDS'//diag(icall), flux_all%flux_dn(:ncol,ktop_cam:), ncol, state%lchnk)
-   call outfld('FUS'//diag(icall), flux_all%flux_up(:ncol,ktop_cam:), ncol, state%lchnk)
-   call outfld('FNS'//diag(icall), flux_all%flux_net(:ncol,ktop_cam:), ncol, state%lchnk)
-   call outfld('FDS_DIR'//diag(icall), flux_all%flux_dn_dir(:ncol,ktop_cam:), ncol, state%lchnk)
+   call outfld('FDS'//diag(icall), flux_all%flux_dn(1:ncol,ktop:kbot+1), ncol, state%lchnk)
+   call outfld('FUS'//diag(icall), flux_all%flux_up(1:ncol,ktop:kbot+1), ncol, state%lchnk)
+   call outfld('FNS'//diag(icall), flux_all%flux_net(1:ncol,ktop:kbot+1), ncol, state%lchnk)
+   call outfld('FDS_DIR'//diag(icall), flux_all%flux_dn_dir(1:ncol,ktop:kbot+1), ncol, state%lchnk)
 
-   ! Clear-sky flux_all%fluxes at model interfaces
-   call outfld('FDSC'//diag(icall), flux_clr%flux_dn(:ncol,ktop_cam:), ncol, state%lchnk)
-   call outfld('FUSC'//diag(icall), flux_clr%flux_up(:ncol,ktop_cam:), ncol, state%lchnk)
-   call outfld('FNSC'//diag(icall), flux_clr%flux_net(:ncol,ktop_cam:), ncol, state%lchnk)
-   call outfld('FDSC_DIR'//diag(icall), flux_clr%flux_dn_dir(:ncol,ktop_cam:), ncol, state%lchnk)
+   ! Clear-sky fluxes at model interfaces
+   call outfld('FDSC'//diag(icall), flux_clr%flux_dn(1:ncol,ktop:kbot+1), ncol, state%lchnk)
+   call outfld('FUSC'//diag(icall), flux_clr%flux_up(1:ncol,ktop:kbot+1), ncol, state%lchnk)
+   call outfld('FNSC'//diag(icall), flux_clr%flux_net(1:ncol,ktop:kbot+1), ncol, state%lchnk)
+   call outfld('FDSC_DIR'//diag(icall), flux_clr%flux_dn_dir(1:ncol,ktop:kbot+1), ncol, state%lchnk)
 
-   ! All-sky flux_all%fluxes
-   call outfld('FSNT'//diag(icall), flux_all%flux_net(:ncol,ktop_cam), ncol, state%lchnk)
-   call outfld('FSNS'//diag(icall), flux_all%flux_net(:ncol,kbot_cam), ncol, state%lchnk)
-   call outfld('FSDS'//diag(icall), flux_all%flux_dn(:ncol,kbot_cam), ncol, state%lchnk)
+   ! All-sky fluxes
+   call outfld('FSNT'//diag(icall), flux_all%flux_net(1:ncol,ktop), ncol, state%lchnk)
+   call outfld('FSNS'//diag(icall), flux_all%flux_net(1:ncol,kbot+1), ncol, state%lchnk)
+   call outfld('FSDS'//diag(icall), flux_all%flux_dn(1:ncol,kbot+1), ncol, state%lchnk)
 
-   ! TOA flux_all%fluxes (above model top, use index to rad top)
-   call outfld('FSUTOA'//diag(icall), flux_all%flux_up(:ncol,ktop_rad), ncol, state%lchnk)
-   call outfld('FSNTOA'//diag(icall), flux_all%flux_net(:ncol,ktop_rad), ncol, state%lchnk)
+   ! TOA fluxes (above model top, use index to rad top)
+   call outfld('FSUTOA'//diag(icall), flux_all%flux_up(1:ncol,ktop_rad), ncol, state%lchnk)
+   call outfld('FSNTOA'//diag(icall), flux_all%flux_net(1:ncol,ktop_rad), ncol, state%lchnk)
 
-   ! Clear-sky flux_all%fluxes
-   call outfld('FSNTC'//diag(icall), flux_clr%flux_net(:ncol,ktop_cam), ncol, state%lchnk)
-   call outfld('FSNSC'//diag(icall), flux_clr%flux_net(:ncol,kbot_cam), ncol, state%lchnk)
-   call outfld('FSDSC'//diag(icall), flux_clr%flux_dn(:ncol,kbot_cam), ncol, state%lchnk)
-   call outfld('FSUTOAC'//diag(icall), flux_clr%flux_up(:ncol,ktop_rad), ncol, state%lchnk)
-   call outfld('FSNTOAC'//diag(icall), flux_clr%flux_net(:ncol,ktop_rad), ncol, state%lchnk)
+   ! Clear-sky fluxes
+   call outfld('FSNTC'//diag(icall), flux_clr%flux_net(1:ncol,ktop), ncol, state%lchnk)
+   call outfld('FSNSC'//diag(icall), flux_clr%flux_net(1:ncol,kbot+1), ncol, state%lchnk)
+   call outfld('FSDSC'//diag(icall), flux_clr%flux_dn(1:ncol,kbot+1), ncol, state%lchnk)
+   call outfld('FSUTOAC'//diag(icall), flux_clr%flux_up(1:ncol,ktop_rad), ncol, state%lchnk)
+   call outfld('FSNTOAC'//diag(icall), flux_clr%flux_net(1:ncol,ktop_rad), ncol, state%lchnk)
 
 end subroutine output_fluxes_sw
 
 
 ! Send longwave fluxes and heating rates to history buffer
-subroutine output_fluxes_lw(icall, state, flux_all, flux_clr, lev_indices)
+subroutine output_fluxes_lw(icall, state, flux_all, flux_clr)
    use physconst, only: cpair
    use physics_types, only: physics_state
    use cam_history, only: outfld
@@ -2767,66 +2595,46 @@ subroutine output_fluxes_lw(icall, state, flux_all, flux_clr, lev_indices)
    type(physics_state), intent(in) :: state
    type(ty_fluxes_byband), intent(in) :: flux_all
    type(ty_fluxes_byband), intent(in) :: flux_clr
-   integer, intent(in) :: lev_indices(:)
 
    ! Working arrays
    real(r8), dimension(pcols,pver+1) :: flux_up, flux_dn, flux_net
-
-   integer :: ncol, nlev
-   integer :: ktop_cam, kbot_cam
-   integer :: ktop_rad, kbot_rad
-   integer :: k
+   integer :: ncol
 
    ncol = state%ncol
-   nlev = size(flux_all%flux_up, 2)
-
-   ! Do error checking here
-
-   ktop_rad = 1
-   kbot_rad = nlev
-
-   ! Find index to top of model
-   do k = 1,size(lev_indices)
-      if (lev_indices(k) == 1) then
-         ktop_cam = k
-         exit
-      end if
-   end do
-   kbot_cam = nlev
 
    ! Do all-sky fluxes, map first
-   call map_rad_to_cam_levels(flux_all%flux_up(:ncol,:nlev), flux_up(:ncol,:pver+1), lev_indices(:nlev))
-   call map_rad_to_cam_levels(flux_all%flux_dn(:ncol,:nlev), flux_dn(:ncol,:pver+1), lev_indices(:nlev))
-   flux_net(:ncol,:pver+1) = flux_up(:ncol,:pver+1) - flux_dn(:ncol,:pver+1)
+   flux_up(1:ncol,1:pver+1) = flux_all%flux_up(1:ncol,ktop:kbot+1)
+   flux_dn(1:ncol,1:pver+1) = flux_all%flux_dn(1:ncol,ktop:kbot+1)
+   flux_net(1:ncol,1:pver+1) = flux_up(1:ncol,1:pver+1) - flux_dn(1:ncol,1:pver+1)
 
    ! All-sky fluxes at model interfaces
-   call outfld('FDL'//diag(icall), flux_dn(:ncol,:pver+1), ncol, state%lchnk)
-   call outfld('FUL'//diag(icall), flux_up(:ncol,:pver+1), ncol, state%lchnk)
-   call outfld('FNL'//diag(icall), flux_net(:ncol,:pver+1), ncol, state%lchnk)
+   call outfld('FDL'//diag(icall), flux_dn(1:ncol,1:pver+1), ncol, state%lchnk)
+   call outfld('FUL'//diag(icall), flux_up(1:ncol,1:pver+1), ncol, state%lchnk)
+   call outfld('FNL'//diag(icall), flux_net(1:ncol,1:pver+1), ncol, state%lchnk)
 
    ! Clear-sky fluxes at model interfaces
-   call map_rad_to_cam_levels(flux_clr%flux_up(:ncol,:nlev), flux_up(:ncol,:pver+1), lev_indices(:nlev))
-   call map_rad_to_cam_levels(flux_clr%flux_dn(:ncol,:nlev), flux_dn(:ncol,:pver+1), lev_indices(:nlev))
-   flux_net(:ncol,:pver+1) = flux_up(:ncol,:pver+1) - flux_dn(:ncol,:pver+1)
-   call outfld('FDLC'//diag(icall), flux_dn(:ncol,:pver+1), ncol, state%lchnk)
-   call outfld('FULC'//diag(icall), flux_up(:ncol,:pver+1), ncol, state%lchnk)
-   call outfld('FNLC'//diag(icall), flux_net(:ncol,:pver+1), ncol, state%lchnk)
+   flux_up(1:ncol,1:pver+1) = flux_clr%flux_up(1:ncol,ktop:kbot+1)
+   flux_dn(1:ncol,1:pver+1) = flux_clr%flux_dn(1:ncol,ktop:kbot+1)
+   flux_net(1:ncol,1:pver+1) = flux_up(1:ncol,1:pver+1) - flux_dn(1:ncol,1:pver+1)
+   call outfld('FDLC'//diag(icall), flux_dn(1:ncol,1:pver+1), ncol, state%lchnk)
+   call outfld('FULC'//diag(icall), flux_up(1:ncol,1:pver+1), ncol, state%lchnk)
+   call outfld('FNLC'//diag(icall), flux_net(1:ncol,1:pver+1), ncol, state%lchnk)
 
    ! All-sky fluxes
    ! NOTE: sign change on net fluxes because internally net fluxes are assumed
    ! to down minus up, but for longwave outputs we want upward positive
-   call outfld('FLNT'//diag(icall), -flux_all%flux_net(:ncol,ktop_rad), ncol, state%lchnk)
-   call outfld('FLNS'//diag(icall), -flux_all%flux_net(:ncol,kbot_rad), ncol, state%lchnk)
-   call outfld('FLUT'//diag(icall), flux_all%flux_up(:ncol,ktop_rad), ncol, state%lchnk)
-   call outfld('FLDS'//diag(icall), flux_all%flux_dn(:ncol,kbot_rad), ncol, state%lchnk)
+   call outfld('FLNT'//diag(icall), -flux_all%flux_net(1:ncol,ktop), ncol, state%lchnk)
+   call outfld('FLNS'//diag(icall), -flux_all%flux_net(1:ncol,kbot+1), ncol, state%lchnk)
+   call outfld('FLUT'//diag(icall), flux_all%flux_up(1:ncol,ktop), ncol, state%lchnk)
+   call outfld('FLDS'//diag(icall), flux_all%flux_dn(1:ncol,kbot+1), ncol, state%lchnk)
 
    ! Clear-sky fluxes
    ! NOTE: sign change on net fluxes because internally net fluxes are assumed
    ! to down minus up, but for longwave outputs we want upward positive
-   call outfld('FLNTC'//diag(icall), -flux_clr%flux_net(:ncol,ktop_rad), ncol, state%lchnk)
-   call outfld('FLNSC'//diag(icall), -flux_clr%flux_net(:ncol,kbot_rad), ncol, state%lchnk)
-   call outfld('FLUTC'//diag(icall), flux_clr%flux_up(:ncol,ktop_rad), ncol, state%lchnk)
-   call outfld('FLDSC'//diag(icall), flux_clr%flux_dn(:ncol,kbot_rad), ncol, state%lchnk)
+   call outfld('FLNTC'//diag(icall), -flux_clr%flux_net(1:ncol,ktop), ncol, state%lchnk)
+   call outfld('FLNSC'//diag(icall), -flux_clr%flux_net(1:ncol,kbot+1), ncol, state%lchnk)
+   call outfld('FLUTC'//diag(icall), flux_clr%flux_up(1:ncol,ktop), ncol, state%lchnk)
+   call outfld('FLDSC'//diag(icall), flux_clr%flux_dn(1:ncol,kbot+1), ncol, state%lchnk)
 
 end subroutine output_fluxes_lw
 
@@ -2874,9 +2682,8 @@ subroutine initialize_rrtmgp_fluxes(ncol, nlevels, nbands, fluxes, do_direct)
 end subroutine initialize_rrtmgp_fluxes
 
 
-subroutine set_gas_concentrations(icall, state, pbuf, nlayers, &
+subroutine set_gas_concentrations(icall, state, pbuf, &
                                   gas_concentrations, &
-                                  lev_indices, &
                                   day_indices)
 
    use physics_types, only: physics_state
@@ -2888,15 +2695,13 @@ subroutine set_gas_concentrations(icall, state, pbuf, nlayers, &
    integer, intent(in) :: icall
    type(physics_state), intent(in) :: state
    type(physics_buffer_desc), pointer :: pbuf(:)
-   integer, intent(in) :: nlayers
-   type(ty_gas_concs), intent(inout) :: gas_concentrations
-   integer, intent(in) :: lev_indices(:)
+   type(ty_gas_concs), intent(out) :: gas_concentrations
    integer, intent(in), optional :: day_indices(:)
 
    ! Local variables
-   real(r8), dimension(pcols,nlayers) :: vol_mix_ratio, &
-                                         vol_mix_ratio_day, &
-                                         vol_mix_ratio_out
+   real(r8), dimension(pcols,pver) :: vol_mix_ratio
+   real(r8), dimension(pcols,nlev_rad) :: vol_mix_ratio_day, &
+                                          vol_mix_ratio_out
    real(r8), pointer :: mass_mix_ratio(:,:)
    character(len=3), dimension(8) :: gas_species = (/ &
       'H2O', 'CO2', 'O3 ', 'N2O', &
@@ -2925,11 +2730,11 @@ subroutine set_gas_concentrations(icall, state, pbuf, nlayers, &
    ! Indices to model top on the RADIATION VERTICAL GRID
    integer :: k, k_cam
    
-   ! Check sizes
-   call assert(size(lev_indices) == nlayers, trim(subname) // ': inconsistent sizes')
-
    ! Number of columns in chunk
    ncol = state%ncol
+
+   ! Reset gas concentrations
+   call gas_concentrations%reset()
 
    ! For each gas species needed for RRTMGP, read the mass mixing ratio from the
    ! CAM rad_constituents interface, convert to volume mixing ratios, and
@@ -2940,19 +2745,19 @@ subroutine set_gas_concentrations(icall, state, pbuf, nlayers, &
       if (.not.string_in_list(gas_species(igas), active_gases)) cycle
 
       ! initialize
-      vol_mix_ratio = 0._r8
+      vol_mix_ratio(:,:) = 0._r8
 
       select case(trim(gas_species(igas)))
 
          case('CO')
 
             ! CO not available, use default
-            vol_mix_ratio(:,:) = co_vol_mix_ratio
+            vol_mix_ratio(1:ncol,1:pver) = co_vol_mix_ratio
 
          case('N2')
 
             ! N2 not available, use default
-            vol_mix_ratio(:,:) = n2_vol_mix_ratio
+            vol_mix_ratio(1:ncol,1:pver) = n2_vol_mix_ratio
 
          case('H2O')
 
@@ -2966,8 +2771,8 @@ subroutine set_gas_concentrations(icall, state, pbuf, nlayers, &
             ! first specific humidity (held in the mass_mix_ratio array read
             ! from rad_constituents) is converted to an actual mass mixing
             ! ratio.
-            vol_mix_ratio(:ncol,:pver) = mass_mix_ratio(:ncol,:pver) / ( &
-               1._r8 - mass_mix_ratio(:ncol,:pver) &
+            vol_mix_ratio(1:ncol,1:pver) = mass_mix_ratio(1:ncol,1:pver) / ( &
+               1._r8 - mass_mix_ratio(1:ncol,1:pver) &
             )  * mol_weight_air / mol_weight_gas(igas)
 
          case DEFAULT
@@ -2978,26 +2783,25 @@ subroutine set_gas_concentrations(icall, state, pbuf, nlayers, &
 
             ! Convert to volume mixing ratio by multiplying by the ratio of
             ! molecular weight of dry air to molecular weight of gas
-            vol_mix_ratio(:ncol,:pver) = mass_mix_ratio(:ncol,:pver) &
-                                       * mol_weight_air / mol_weight_gas(igas)
+            vol_mix_ratio(1:ncol,1:pver) = mass_mix_ratio(1:ncol,1:pver) &
+                                         * mol_weight_air / mol_weight_gas(igas)
 
       end select
 
       ! If this gas is not in list of active gases, then zero out (useful for
       ! debugging)
       if (.not.string_in_list(gas_species(igas), active_gases)) then
-         vol_mix_ratio(:,:) = 0._r8
+         vol_mix_ratio(1:ncol,1:pver) = 0._r8
       end if
 
       ! Make sure we do not have any negative volume mixing ratios
-      call assert(all(vol_mix_ratio(:ncol,:pver) >= 0), &
+      call assert(all(vol_mix_ratio(1:ncol,1:pver) >= 0), &
                   trim(subname) // ': invalid gas concentration for ' // &
                   trim(gas_species(igas)))
 
       ! Map to radiation grid
-      call map_cam_to_rad_levels(vol_mix_ratio(:ncol,:pver), &
-                                 vol_mix_ratio_out(:ncol,:nlayers), &
-                                 lev_indices(:nlayers))
+      vol_mix_ratio_out(1:ncol,ktop:kbot) = vol_mix_ratio(1:ncol,1:pver)
+      vol_mix_ratio_out(1:ncol,1) = vol_mix_ratio(1:ncol,ktop)
 
       ! Populate the RRTMGP gas concentration object with values for this gas.
       ! NOTE: RRTMGP makes some assumptions about gas names internally, so we
@@ -3009,20 +2813,20 @@ subroutine set_gas_concentrations(icall, state, pbuf, nlayers, &
          nday = count(day_indices > 0)
 
          ! Populate compressed array with just daytime values
-         call compress_day_columns(vol_mix_ratio_out(:ncol,:nlayers), &
-                                   vol_mix_ratio_day(:nday,:nlayers), &
-                                   day_indices(:nday))
+         call compress_day_columns(vol_mix_ratio_out(1:ncol,1:nlev_rad), &
+                                   vol_mix_ratio_day(1:nday,1:nlev_rad), &
+                                   day_indices(1:nday))
          
          ! Set volumn mixing ratio in gas concentration object for just daytime
          ! columns in this chunk
-         call handle_error( &
-            gas_concentrations%set_vmr(trim(lower_case(gas_species(igas))),vol_mix_ratio_day(:nday,:nlayers)) & 
+         call handle_error(gas_concentrations%set_vmr( &
+            trim(lower_case(gas_species(igas))), vol_mix_ratio_day(1:nday,1:nlev_rad)) & 
          )
       else
          ! Set volumn mixing ratio in gas concentration object for just columns
          ! in this chunk
-         call handle_error( &
-            gas_concentrations%set_vmr(trim(lower_case(gas_species(igas))),vol_mix_ratio_out(:ncol,:nlayers)) & 
+         call handle_error(gas_concentrations%set_vmr( &
+            trim(lower_case(gas_species(igas))), vol_mix_ratio_out(1:ncol,1:nlev_rad)) & 
          )
       end if
 
@@ -3031,34 +2835,18 @@ subroutine set_gas_concentrations(icall, state, pbuf, nlayers, &
 end subroutine set_gas_concentrations
 
 
-function get_cam_layers(nlay_rad, nlay_cam) result(cam_layers)
-
-   integer, intent(in) :: nlay_rad, nlay_cam
-   integer :: cam_layers(nlay_rad)
-   integer :: k
-
-   ! CAM layers that correspond to RRTMGP layers; note that an extra layer above
-   ! the model top may be used for the RRTMGP grid.
-   cam_layers(:) = 0
-   do k = 1,nlay_rad
-      cam_layers(k) = nlay_cam-nlay_rad+k
-   end do
-
-end function get_cam_layers
-
-
 logical function string_in_list(string, list)
    character(len=*), intent(in) :: string
    character(len=*), intent(in) :: list(:)
-   integer :: i
+   integer :: list_index
    
    ! Set to false initially
    string_in_list = .false.
 
    ! Loop over items in list, and if we find a match then set flag to true and
    ! exit loop
-   do i = 1,size(list)
-      if (trim(list(i)) == trim(string)) then
+   do list_index = 1,size(list)
+      if (trim(list(list_index)) == trim(string)) then
          string_in_list = .true.
          exit 
       end if
@@ -3090,7 +2878,7 @@ subroutine handle_error(error_message, stop_on_error)
 end subroutine handle_error
 
 
-subroutine set_cloud_optics_sw(state, pbuf, col_indices, lev_indices, kdist, optics_out)
+subroutine set_cloud_optics_sw(state, pbuf, day_indices, kdist, optics_out)
    
    use ppgrid, only: pcols, pver, pverp
    use physics_types, only: physics_state
@@ -3104,7 +2892,7 @@ subroutine set_cloud_optics_sw(state, pbuf, col_indices, lev_indices, kdist, opt
 
    type(physics_state), intent(in) :: state
    type(physics_buffer_desc), pointer :: pbuf(:)
-   integer, intent(in) :: col_indices(:), lev_indices(:)
+   integer, intent(in) :: day_indices(:)
    type(ty_gas_optics), intent(in) :: kdist
    type(ty_optical_props_2str), intent(inout) :: optics_out
 
@@ -3127,8 +2915,9 @@ subroutine set_cloud_optics_sw(state, pbuf, col_indices, lev_indices, kdist, opt
    logical, dimension(nswgpts,pcols,pver) :: iscloudy
 
    ! Loop variables
-   integer :: icol, ilev, igpt, ibnd, icol_cam, ilev_cam
+   integer :: icol, ilev, igpt, iband, iday, ilev_cam, ilev_rad
 
+   ! Set a name for this subroutine to write to error messages
    character(len=32) :: subname = 'set_cloud_optics_sw'
 
    ncol = state%ncol
@@ -3146,9 +2935,15 @@ subroutine set_cloud_optics_sw(state, pbuf, col_indices, lev_indices, kdist, opt
    ! TODO: fix the input files themselves!
    do icol = 1,size(optics_cam%optical_depth,1)
       do ilev = 1,size(optics_cam%optical_depth,2)
-         optics_cam%optical_depth(icol,ilev,:) = reordered(optics_cam%optical_depth(icol,ilev,:), map_rrtmg_to_rrtmgp_swbands)
-         optics_cam%single_scattering_albedo(icol,ilev,:) = reordered(optics_cam%single_scattering_albedo(icol,ilev,:), map_rrtmg_to_rrtmgp_swbands)
-         optics_cam%assymmetry_parameter(icol,ilev,:) = reordered(optics_cam%assymmetry_parameter(icol,ilev,:), map_rrtmg_to_rrtmgp_swbands)
+         optics_cam%optical_depth(icol,ilev,:) = reordered( &
+            optics_cam%optical_depth(icol,ilev,:), map_rrtmg_to_rrtmgp_swbands &
+         )
+         optics_cam%single_scattering_albedo(icol,ilev,:) = reordered( &
+            optics_cam%single_scattering_albedo(icol,ilev,:), map_rrtmg_to_rrtmgp_swbands &
+         )
+         optics_cam%assymmetry_parameter(icol,ilev,:) = reordered( &
+            optics_cam%assymmetry_parameter(icol,ilev,:), map_rrtmg_to_rrtmgp_swbands &
+         )
       end do
    end do
 
@@ -3178,39 +2973,38 @@ subroutine set_cloud_optics_sw(state, pbuf, col_indices, lev_indices, kdist, opt
    optics_out%tau(:,:,:) = 0
    optics_out%ssa(:,:,:) = 1
    optics_out%g(:,:,:) = 0
-   do ilev = 1,size(lev_indices)
+   do ilev_cam = 1,pver  ! Loop over indices on the CAM grid
 
-      ! Map vertical levels; if this level is above model top, skip it (leave set
-      ! to initial values of tau = 0, ssa = 1, g = 0).
-      ilev_cam = lev_indices(ilev)
-      if (ilev_cam < 1) cycle
+      ! Index to radiation grid
+      ilev_rad = ilev_cam + (nlev_rad - pver)
 
       ! Loop over columns and map CAM columns to those on radiation grid
       ! (daytime-only columns)
-      do icol = 1,size(col_indices)
-         icol_cam = col_indices(icol)
-         call assert(icol_cam > 0, trim(subname) // ': col_indices <= 0')
+      do iday = 1,size(day_indices)
+
+         ! Map daytime to column indices
+         icol = day_indices(iday)
 
          ! Loop over g-points and map bands to g-points; each subcolumn
          ! corresponds to a single g-point. This is how this code implements the
          ! McICA assumptions: simultaneously sampling over cloud state and
          ! g-point.
          do igpt = 1,ngpt
-            if (iscloudy(igpt,icol_cam,ilev_cam) .and. &
-                combined_cloud_fraction(icol_cam,ilev_cam) > 0._r8) then
+            if (iscloudy(igpt,icol,ilev_cam) .and. &
+                combined_cloud_fraction(icol,ilev_cam) > 0._r8) then
             
-               ibnd = kdist%convert_gpt2band(igpt)
-               optics_out%tau(icol,ilev,igpt) = optics_cam%optical_depth(icol_cam,ilev_cam,ibnd)
-               optics_out%ssa(icol,ilev,igpt) = optics_cam%single_scattering_albedo(icol_cam,ilev_cam,ibnd)
-               optics_out%g(icol,ilev,igpt) = optics_cam%assymmetry_parameter(icol_cam,ilev_cam,ibnd)
+               iband = kdist%convert_gpt2band(igpt)
+               optics_out%tau(iday,ilev_rad,igpt) = optics_cam%optical_depth(icol,ilev_cam,iband)
+               optics_out%ssa(iday,ilev_rad,igpt) = optics_cam%single_scattering_albedo(icol,ilev_cam,iband)
+               optics_out%g(iday,ilev_rad,igpt) = optics_cam%assymmetry_parameter(icol,ilev_cam,iband)
             else
-               optics_out%tau(icol,ilev,igpt) = 0._r8
-               optics_out%ssa(icol,ilev,igpt) = 1._r8
-               optics_out%g(icol,ilev,igpt) = 0._r8
+               optics_out%tau(iday,ilev_rad,igpt) = 0._r8
+               optics_out%ssa(iday,ilev_rad,igpt) = 1._r8
+               optics_out%g(iday,ilev_rad,igpt) = 0._r8
             end if
-         end do
-      end do
-   end do
+         end do  ! igpt
+      end do  ! iday
+   end do  ! ilev_cam
 
    ! Apply delta scaling to account for forward-scattering
    ! TODO: delta_scale takes the forward scattering fraction as an optional
@@ -3250,7 +3044,7 @@ function reordered(array_in, new_indexing) result(array_out)
 end function reordered
 
 
-subroutine set_cloud_optics_lw(state, pbuf, lev_indices, kdist, optics_out)
+subroutine set_cloud_optics_lw(state, pbuf, kdist, optics_out)
    
    use ppgrid, only: pcols, pver
    use physics_types, only: physics_state
@@ -3263,7 +3057,6 @@ subroutine set_cloud_optics_lw(state, pbuf, lev_indices, kdist, optics_out)
 
    type(physics_state), intent(in) :: state
    type(physics_buffer_desc), pointer :: pbuf(:)
-   integer, intent(in) :: lev_indices(:)
    type(ty_gas_optics), intent(in) :: kdist
    type(ty_optical_props_1scl), intent(inout) :: optics_out
 
@@ -3283,7 +3076,7 @@ subroutine set_cloud_optics_lw(state, pbuf, lev_indices, kdist, optics_out)
    logical, dimension(nlwgpts,pcols,pver) :: iscloudy
 
    ! Loop variables
-   integer :: icol, ilev, igpt, ibnd, ilev_cam
+   integer :: icol, ilev_rad, igpt, iband, ilev_cam
 
    ! Initialize (or reset) output cloud optics object
    optics_out%tau = 0.0
@@ -3328,22 +3121,21 @@ subroutine set_cloud_optics_lw(state, pbuf, lev_indices, kdist, optics_out)
    ! NOTE: incoming optics should be in-cloud quantites and not grid-averaged 
    ! quantities!
    optics_out%tau = 0
-   do ilev = 1,size(lev_indices)
+   do ilev_cam = 1,pver
 
       ! Get level index on CAM grid (i.e., the index that this rad level
       ! corresponds to in CAM fields). If this index is above the model top
       ! (index less than 0) then skip setting the optical properties for this
       ! level (leave set to zero)
-      ilev_cam = lev_indices(ilev)
-      if (ilev_cam < 1) cycle
+      ilev_rad = ilev_cam + (nlev_rad - pver)
 
       do icol = 1,ncol
          do igpt = 1,ngpt
             if (iscloudy(igpt,icol,ilev_cam) .and. (combined_cloud_fraction(icol,ilev_cam) > 0._r8) ) then
-               ibnd = kdist%convert_gpt2band(igpt)
-               optics_out%tau(icol,ilev,igpt) = optics_cam%optical_depth(icol,ilev_cam,ibnd)
+               iband = kdist%convert_gpt2band(igpt)
+               optics_out%tau(icol,ilev_rad,igpt) = optics_cam%optical_depth(icol,ilev_cam,iband)
             else
-               optics_out%tau(icol,ilev,igpt) = 0._r8
+               optics_out%tau(icol,ilev_rad,igpt) = 0._r8
             end if
          end do
       end do
@@ -3368,41 +3160,6 @@ subroutine set_cloud_optics_lw(state, pbuf, lev_indices, kdist, optics_out)
    call optics_cam%finalize()
 
 end subroutine set_cloud_optics_lw
-
-
-! Get index to highest vertical level above a minimum pressure. This function is
-! provided to determine the highest CAM level to use in the radiation
-! calculation for a given chunk, such that all levels are above some minimum
-! pressure and thus within range of the RRTMGP lookup tables.
-integer function min_pressure_index(pressure, min_pressure)
-   real(r8), intent(in) :: pressure(:,:)
-   real(r8), intent(in) :: min_pressure
-   integer :: k
-
-   do k = 1,size(pressure,2)
-      if (all(pressure(:,k) > min_pressure)) then
-         min_pressure_index = k
-         exit
-      end if
-   end do
-end function
-
-! Get index to lowest vertical level with a pressure below a max pressure value.
-! This function is provided to determine the lowest CAM level to use in the
-! radiation calculation for a given chunk, such that all levels are below some
-! maximum pressure and thus within range of the RRTMGP lookup tables.
-integer function max_pressure_index(pressure, max_pressure)
-   real(r8), intent(in) :: pressure(:,:)
-   real(r8), intent(in) :: max_pressure
-   integer :: k
-
-   do k = size(pressure,2),1,-1
-      if (all(pressure(:,k) < max_pressure)) then
-         max_pressure_index = k
-         exit
-      end if
-   end do
-end function
 
 
 end module radiation
