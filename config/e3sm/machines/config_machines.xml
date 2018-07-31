@@ -130,6 +130,7 @@
       <command name="rm">pmi</command>
       <command name="load">pmi/5.0.12</command>
       <command name="rm">cray-mpich</command>
+      <command name="load">pe_archive</command>
       <command name="load">cray-mpich/7.6.0</command>
     </modules>
 
