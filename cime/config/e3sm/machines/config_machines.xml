@@ -1675,13 +1675,11 @@
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
+      <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
       <env name="MPAS_TOOL_DIR">/projects/ccsm/acme/tools/mpas</env>
       <env name="HDF5_DISABLE_VERSION_CHECK">2</env>
       <env name="labeling"> </env>
       <env name="SMP_VARS"> </env>
-    </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
-      <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="intel">
       <env name="SMP_VARS">-e OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -e OMP_STACKSIZE=128M -e KMP_AFFINITY=granularity=thread,scatter</env>
