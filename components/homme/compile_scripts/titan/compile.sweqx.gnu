@@ -4,14 +4,13 @@ do_cmake=1
 do_clean=1
 do_make=1
  
-HOMME_ROOT=/ccs/home/mxu/cli115/scratch/consulting/src/test_homme/components/homme
-#HOMME_ROOT=$PROJWORK/cli115/4ue/E3SM/components/homme
+HOMME_ROOT=$PROJWORK/cli115/4ue/E3SM/components/homme
 NLEVELS=64
 
-source ./env_mach_specific.cpu
+source ./env_mach_specific.cpu.gnu
 
-mkdir -p titan-cpu     || exit -1
-cd titan-cpu
+mkdir -p titan-cpu-gnu     || exit -1
+cd titan-cpu-gnu
  
 if [ $do_cmake -eq 1 ]; then
 rm -rf CMakeFiles CMakeCache.txt
@@ -29,9 +28,9 @@ cmake                                                                          \
   -DSWEQX_PLEV=$NLEVELS                                                        \
   -DBUILD_HOMME_SWEQX=TRUE                                                     \
   -DBUILD_HOMME_PREQX=FALSE                                                    \
-  -DENABLE_OPENMP=TRUE                                                         \
   -DHOMME_PROJID=STF006                                                        \
   -DENABLE_OPENACC=FALSE                                                       \
+  -DENABLE_OPENMP=TRUE                                                         \
   -DENABLE_CUDA_FORTRAN=FALSE                                                  \
   -DHOMME_FIND_BLASLAPACK=TRUE                                                 \
   -DNetcdf_NC_CONFIG_BIN="/opt/cray/netcdf/4.3.3.1/bin"                        \
@@ -46,5 +45,5 @@ fi
 if [ $do_make -eq 1 ]; then
 make -j16 sweqx                                             || exit -1
 mkdir -p $HOMME_ROOT/build/sweqx
-cp ./src/sweqx/sweqx $HOMME_ROOT/build/sweqx/sweqx.cpu      || exit -1
+cp ./src/sweqx/sweqx $HOMME_ROOT/build/sweqx/sweqx.cpu.gnu      || exit -1
 fi

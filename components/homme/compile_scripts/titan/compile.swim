@@ -1,13 +1,14 @@
 #!/bin/bash
 
 # Change next two lines to your paths
-export ACME_ROOT=/ccs/home/$USER/tmp
-export Install_DIR=/ccs/home/$USER/test_bld_swim
+export HOMME_ROOT=$PROJWORK/cli115/4ue/E3SM/components/homme
+export Install_DIR=$HOMME_ROOT/build/titan-swim-cpu
+
+source ./env_mach_specific.cpu
 
 # Start Build #
-source $ACME_ROOT/ACME/components/homme/compile_scripts/titan/env_mach_specific.cpu
-export Trilinos_DIR=/lustre/atlas1/cli900/world-shared/cesm/software/Trilinos/Trilinos-11.12.1_gptl/titan-pgi-acme-ci-nophal_15.10.lustre/install
-export HOMME_ROOT=$ACME_ROOT/ACME/components/homme
+source $HOMME_ROOT/compile_scripts/titan/env_mach_specific.cpu
+export Trilinos_DIR=/lustre/atlas1/cli106/proj-shared/4ue/Trilinos/Trilinos/pgi_build/install
 export CRAYPE_LINK_TYPE='dynamic'
 
 rm -rf $Install_DIR

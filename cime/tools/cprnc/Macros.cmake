@@ -1,0 +1,1 @@
+#dummy Macros file for non-CIME machines
