@@ -4,8 +4,8 @@ do_cmake=1
 do_clean=1
 do_make=1
  
-HOMME_ROOT=/ccs/home/mxu/cli115/scratch/consulting/src/test0731/components/homme
-#HOMME_ROOT=$PROJWORK/cli115/4ue/E3SM/components/homme
+#HOMME_ROOT=/ccs/home/mxu/cli115/scratch/consulting/src/test0731/components/homme
+HOMME_ROOT=$PROJWORK/cli115/4ue/E3SM/components/homme
 NLEVELS=64
 
 source ./env_mach_specific.cpu.gnu
