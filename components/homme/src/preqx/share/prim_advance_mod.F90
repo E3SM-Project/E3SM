@@ -584,7 +584,8 @@ contains
   ! for ftypes of interest, 2,3,4.
   ! standalone homme does not support ftype=1 (because in standalone version,
   ! it is identical to ftype=0).
-  if (ftype /= 0 ) then
+  ! leaving option ftype=-1 for standalone homme when no forcing is applied ever
+  if ((ftype /= 0 ).and.(ftype > 0)) then
     call ApplyCAMForcing_tracers (elem, hvcoord,dyn_timelev,tr_timelev,dt_remap,nets,nete)
   endif
 #endif
