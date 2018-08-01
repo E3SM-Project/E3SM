@@ -6,10 +6,10 @@ module atm_comp_nuopc
 
   use med_constants_mod     , only : IN, R8, I8, CXX
   use med_constants_mod     , only : shr_log_Unit
-  use med_constants_mod     , only : shr_cal_ymd2date, shr_cal_noleap, shr_cal_gregorian
   use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
   use med_constants_mod     , only : shr_file_getloglevel, shr_file_setloglevel
   use med_constants_mod     , only : shr_file_setIO, shr_file_getUnit
+  use med_constants_mod     , only : shr_cal_ymd2date, shr_cal_noleap, shr_cal_gregorian
   use shr_nuopc_scalars_mod , only : flds_scalar_name
   use shr_nuopc_scalars_mod , only : flds_scalar_num
   use shr_nuopc_scalars_mod , only : flds_scalar_index_nx
@@ -532,34 +532,34 @@ module atm_comp_nuopc
     !----------------------------------------------------------------------------
 
     call datm_comp_init(&
-         x2d, &
-         d2x, &
-         flds_x2a, &
-         flds_a2x, &
-         SDATM, &
-         gsmap, &
-         ggrid, &
-         mpicom, &
-         compid, &
-         my_task,&
-         master_task, &
-         inst_suffix, &
-         inst_name, &
-         logunit, &
-         read_restart, &
-         scmMode, &
-         scmlat, &
-         scmlon, &
-         orbEccen, &
-         orbMvelpp, &
-         orbLambm0, &
-         orbObliqr, &
-         calendar, &
-         modeldt, &
-         current_ymd, &
-         current_tod, &
-         current_mon, &
-         atm_prognostic)
+         x2a=x2d, &
+         a2x=d2x, &
+         x2a_fields=flds_x2a, &
+         a2x_fields=flds_a2x, &
+         SDATM=SDATM, &
+         gsmap=gsmap, &
+         ggrid=ggrid, &
+         mpicom=mpicom, &
+         compid=compid, &
+         my_task=my_task,&
+         master_task=master_task, &
+         inst_suffix=inst_suffix, &
+         inst_name=inst_name, &
+         logunit=logunit, &
+         read_restart=read_restart, &
+         scmMode=scmMode, &
+         scmlat=scmlat, &
+         scmlon=scmlon, &
+         orbEccen=orbEccen, &
+         orbMvelpp=orbMvelpp, &
+         orbLambm0=orbLambm0, &
+         orbObliqr=orbObliqr, &
+         calendar=calendar, &
+         modeldt=modeldt, &
+         current_ymd=current_ymd, &
+         current_tod=current_tod, &
+         current_mon=current_mon, &
+         atm_prognostic=atm_prognostic)
 
     !----------------------------------------------------------------------------
     ! Set nextsw_cday

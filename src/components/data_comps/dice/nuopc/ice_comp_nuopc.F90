@@ -4,19 +4,17 @@ module ice_comp_nuopc
   ! This is the NUOPC cap for DICE
   !----------------------------------------------------------------------------
 
-  use shr_kind_mod          , only : R8=>SHR_KIND_R8
-  use shr_log_mod           , only : shr_log_Unit
-  use shr_file_mod          , only : shr_file_getlogunit, shr_file_setlogunit
-  use shr_file_mod          , only : shr_file_getloglevel, shr_file_setloglevel
-  use shr_file_mod          , only : shr_file_setIO, shr_file_getUnit
-  use shr_cal_mod           , only : shr_cal_ymd2date
-  use esmFlds               , only : fldListFr, fldListTo, compice, compname
-  use esmFlds               , only : flds_scalar_name
-  use esmFlds               , only : flds_scalar_num
-  use esmFlds               , only : flds_scalar_index_nx
-  use esmFlds               , only : flds_scalar_index_ny
-  use esmFlds               , only : flds_scalar_index_iceberg_prognostic
-  use esmFlds               , only : flds_scalar_index_nextsw_cday
+  use med_constants_mod     , only : R8, CXX
+  use med_constants_mod     , only : shr_log_Unit
+  use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
+  use med_constants_mod     , only : shr_file_getloglevel, shr_file_setloglevel
+  use med_constants_mod     , only : shr_file_setIO, shr_file_getUnit
+  use med_constants_mod     , only : shr_cal_ymd2date, shr_cal_noleap, shr_cal_gregorian
+  use shr_nuopc_scalars_mod , only : flds_scalar_name
+  use shr_nuopc_scalars_mod , only : flds_scalar_num
+  use shr_nuopc_scalars_mod , only : flds_scalar_index_nx
+  use shr_nuopc_scalars_mod , only : flds_scalar_index_ny
+  use shr_nuopc_scalars_mod , only : flds_scalar_index_iceberg_prognostic
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Realize
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Concat
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Deactivate
@@ -54,12 +52,24 @@ module ice_comp_nuopc
   private :: ModelAdvance
   private :: ModelSetRunClock
   private :: ModelFinalize
+  private :: fld_list_add
+  private :: fld_list_realize
 
   private ! except
 
   !--------------------------------------------------------------------------
   ! Private module data
   !--------------------------------------------------------------------------
+
+  type fld_list_type
+    character(len=128) :: stdname
+  end type fld_list_type
+
+  integer,parameter          :: fldsMax = 100
+  integer                    :: fldsToIce_num = 0
+  integer                    :: fldsFrIce_num = 0
+  type (fld_list_type)       :: fldsToIce(fldsMax)
+  type (fld_list_type)       :: fldsFrIce(fldsMax)
 
   character(len=80)          :: myModelName = 'ice'       ! user defined model name
   type(shr_strdata_type)     :: SDICE
@@ -89,16 +99,18 @@ module ice_comp_nuopc
   logical                    :: iceberg_prognostic = .false.
   logical                    :: flds_i2o_per_cat          ! .true. if select per ice thickness
                                                           ! category fields are passed from ice to ocean
-  character(len=4096)        :: flds_i2x = ''
-  character(len=4096)        :: flds_x2i = ''
+  character(len=80)          :: calendar                  ! calendar name
+  integer                    :: modeldt                   ! integer timestep
+  character(len=CXX)         :: flds_i2x = ''
+  character(len=CXX)         :: flds_x2i = ''
 
   !----- formats -----
   character(*),parameter :: modName =  "(ice_comp_nuopc)"
   character(*),parameter :: u_FILE_u = __FILE__
 
-  !===============================================================================
-  contains
-  !===============================================================================
+!===============================================================================
+contains
+!===============================================================================
 
   subroutine SetServices(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
@@ -265,41 +277,74 @@ module ice_comp_nuopc
     end if
 
     !--------------------------------
-    ! create import and export field list needed by data models
-    !--------------------------------
-
-    call shr_nuopc_fldList_Concat(fldListFr(compice), fldListTo(compice), flds_i2x, flds_x2i, flds_scalar_name)
-
-    !--------------------------------
     ! advertise import and export fields
     !--------------------------------
 
-    ! First deactivate fldListTo(compatm) if atm_prognostic is .false.
-    if (.not. ice_prognostic) then
-       call shr_nuopc_fldList_Deactivate(fldListTo(compice), flds_scalar_name)
-    end if
+    call fld_list_add(fldsToice_num, fldsToice, trim(flds_scalar_name)) 
+    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_swvdr'    , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_swndr'    , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_swvdf'    , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_swndf'    , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Fioo_q'        , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Sa_z'          , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Sa_u'          , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Sa_v'          , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Sa_ptem'       , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Sa_shum'       , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Sa_dens'       , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Sa_tbot'       , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'So_s'          , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_bcphidry' , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_bcphodry' , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_bcphiwet' , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_ocphidry' , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_ocphodry' , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_ocphiwet' , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstdry1'  , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstdry2'  , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstdry3'  , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstdry4'  , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstwet1'  , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstwet2'  , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstwet3'  , flds_concat=flds_x2i)
+    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstwet4'  , flds_concat=flds_x2i)
 
-    nflds = shr_nuopc_fldList_Getnumflds(fldListFr(compice))
-    do n = 1,nflds
-       call shr_nuopc_fldList_Getfldinfo(fldListFr(compice), n, activefld, stdname, shortname)
-       if (activefld) then
-          call NUOPC_Advertise(exportState, standardName=stdname, shortname=shortname, name=shortname, &
-               TransferOfferGeomObject='will provide', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_LogWrite(subname//':Fr_'//trim(compname(compice))//': '//trim(shortname), ESMF_LOGMSG_INFO)
-       end if
-    end do
+    call fld_list_add(fldsFrice_num, fldsFrice, trim(flds_scalar_name)) 
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_imask'      , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_ifrac'      , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_t'          , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_tref'       , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_qref'       , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_avsdr'      , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_anidr'      , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_avsdf'      , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_anidf'      , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_swnet'    , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_sen'      , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_lat'      , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_lwup'     , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_evap'     , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_taux'     , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_tauy'     , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_melth'    , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_meltw'    , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_swpen'    , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_taux'     , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_tauy'     , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_salt'     , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_bcpho'    , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_bcphi'    , flds_concat=flds_i2x)
+    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_flxdst'   , flds_concat=flds_i2x)
 
-    nflds = shr_nuopc_fldList_Getnumflds(fldListTo(compice))
-    do n = 1,nflds
-       call shr_nuopc_fldList_Getfldinfo(fldListTo(compice), n, activefld, stdname, shortname)
-       if (activefld) then
-          call NUOPC_Advertise(importState, standardName=stdname, shortname=shortname, name=shortname, &
-               TransferOfferGeomObject='will provide', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_LogWrite(subname//':To_'//trim(compname(compice))//': '//trim(shortname), ESMF_LOGMSG_INFO)
-       end if
-    end do
+    ! Now advertise these fields
+    do n = 1,fldsFrIce_num
+      call NUOPC_Advertise(exportState, standardName=fldsFrIce(n)%stdname, TransferOfferGeomObject='will provide', rc=rc)
+      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    enddo
+    do n = 1,fldsToIce_num
+      call NUOPC_Advertise(importState, standardName=fldsToIce(n)%stdname, TransferOfferGeomObject='will provide', rc=rc)
+      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    enddo
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
@@ -321,26 +366,35 @@ module ice_comp_nuopc
     integer, intent(out) :: rc
 
     ! local variables
-    character(ESMF_MAXSTR) :: convCIM, purpComp
-    type(ESMF_Grid)        :: Egrid
-    type(ESMF_Mesh)        :: Emesh
-    integer                :: nx_global, ny_global
-    type(ESMF_VM)          :: vm
-    integer                :: n
-    character(len=256)     :: cvalue
-    integer                :: shrlogunit                ! original log unit
-    integer                :: shrloglev                 ! original log level
-    integer                :: ierr                      ! error code
-    logical                :: scmMode = .false.         ! single column mode
-    real(R8)               :: scmLat  = shr_const_SPVAL ! single column lat
-    real(R8)               :: scmLon  = shr_const_SPVAL ! single column lon
-    logical                :: connected                 ! is field connected?
-    real(R8)               :: scalar
-    integer                :: klon, klat
-    integer                :: lsize
-    integer                :: iam
-    real(r8), pointer      :: lon(:),lat(:)
-    integer , pointer      :: gindex(:)
+    character(ESMF_MAXSTR)  :: convCIM, purpComp
+    type(ESMF_Grid)         :: Egrid
+    type(ESMF_Mesh)         :: Emesh
+    type(ESMF_TIME)         :: currTime
+    type(ESMF_TimeInterval) :: timeStep
+    type(ESMF_Calendar)     :: esmf_calendar             ! esmf calendar
+    type(ESMF_CalKind_Flag) :: esmf_caltype              ! esmf calendar type
+    integer                 :: nx_global, ny_global
+    type(ESMF_VM)           :: vm
+    integer                 :: n
+    character(len=256)      :: cvalue
+    integer                 :: shrlogunit                ! original log unit
+    integer                 :: shrloglev                 ! original log level
+    integer                 :: ierr                      ! error code
+    logical                 :: scmMode = .false.         ! single column mode
+    real(R8)                :: scmLat  = shr_const_SPVAL ! single column lat
+    real(R8)                :: scmLon  = shr_const_SPVAL ! single column lon
+    logical                 :: connected                 ! is field connected?
+    real(R8)                :: scalar
+    integer                 :: klon, klat
+    integer                 :: lsize
+    integer                 :: iam
+    real(r8), pointer       :: lon(:),lat(:)
+    integer , pointer       :: gindex(:)
+    integer                 :: current_ymd               ! model date
+    integer                 :: current_year              ! model year
+    integer                 :: current_mon               ! model month
+    integer                 :: current_day               ! model day
+    integer                 :: current_tod               ! model sec into model date
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
@@ -390,11 +444,41 @@ module ice_comp_nuopc
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) compid
 
-    call dice_comp_init(clock, x2d, d2x, &
+    !----------------------------------------------------------------------------
+    ! Determine calendar info
+    !----------------------------------------------------------------------------
+
+    call ESMF_ClockGet( clock, currTime=currTime, timeStep=timeStep, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_TimeGet( currTime, yy=current_year, mm=current_mon, dd=current_day, s=current_tod, &
+         calkindflag=esmf_caltype, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call shr_cal_ymd2date(current_year, current_mon, current_day, current_ymd)
+
+    if (esmf_caltype == ESMF_CALKIND_NOLEAP) then
+       calendar = shr_cal_noleap
+    else if (esmf_caltype == ESMF_CALKIND_GREGORIAN) then
+       calendar = shr_cal_gregorian
+    else
+       call ESMF_LogWrite(subname//" ERROR bad ESMF calendar name "//trim(calendar), ESMF_LOGMSG_ERROR, rc=dbrc)
+       rc = ESMF_Failure
+       return
+    end if
+
+    call ESMF_TimeIntervalGet( timeStep, s=modeldt, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !--------------------------------
+    ! Initialize model
+    !--------------------------------
+
+    call dice_comp_init(x2d, d2x, &
          flds_x2i, flds_i2x, flds_i2o_per_cat, &
          SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
-         scmMode, scmlat, scmlon)
+         scmMode, scmlat, scmlon, &
+         calendar, modeldt, current_ymd, current_tod, current_day, current_mon)
 
     !--------------------------------
     ! Generate the mesh
@@ -421,25 +505,35 @@ module ice_comp_nuopc
     deallocate(gindex)
 
     !--------------------------------
-    ! realize the actively coupled fields, now that a grid or mesh is established
-    ! Note: shr_nuopc_fldList_Realize does the following:
-    ! 1) loops over all of the entries in fldsToIce and creates a field
-    !    for each one via one of the following commands:
-    !     field = ESMF_FieldCreate(grid, ESMF_TYPEKIND_R8, name=fldlist%shortname(n), rc=rc)
-    !     field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=fldlist%shortname(n), meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
+    ! realize the actively coupled fields, now that a mesh is established
+    ! Note: the following will occur in the realize call
+    ! 1) loop over all of the entries in fldsToIce and fldsFrIce to creates a field via the following call:
+    !    field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=shortname, meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
     ! 2) realizes the field via the following call
-    !     call NUOPC_Realize(state, field=field, rc=rc)
+    !    call NUOPC_Realize(state, field=field, rc=rc)
     !    where state is either importState or exportState
     !  NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
-    !  by replacing the advertised fields with the fields in fldsToIce of the same name.
+    !  by replacing the advertised fields with the newly created fields of the same name.
     !--------------------------------
 
-    call shr_nuopc_fldList_Realize(importState, fldListTo(compice), flds_scalar_name, flds_scalar_num, &
-         mesh=Emesh, tag=subname//':diceImport', rc=rc)
+    call fld_list_realize( &
+         state=ExportState, &
+         fldList=fldsFrIce, &
+         numflds=fldsFrIce_num, &
+         flds_scalar_name=flds_scalar_name, &
+         flds_scalar_num=flds_scalar_num, &
+         tag=subname//':diceExport',&
+         mesh=Emesh, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_fldList_Realize(exportState, fldListFr(compice), flds_scalar_name, flds_scalar_num, &
-         mesh=Emesh, tag=subname//':diceExport', rc=rc)
+    call fld_list_realize( &
+         state=importState, &
+         fldList=fldsToIce, &
+         numflds=fldsToIce_num, &
+         flds_scalar_name=flds_scalar_name, &
+         flds_scalar_num=flds_scalar_num, &
+         tag=subname//':diceImport',&
+         mesh=Emesh, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
@@ -532,7 +626,6 @@ module ice_comp_nuopc
     type(ESMF_Alarm)        :: alarm
     integer                 :: shrlogunit    ! original log unit
     integer                 :: shrloglev     ! original log level
-    character(len=128)      :: calendar
     logical                 :: write_restart ! restart alarm is ringing
     integer                 :: nextYMD       ! model date
     integer                 :: nextTOD       ! model sec into model date
@@ -594,7 +687,7 @@ module ice_comp_nuopc
     ! For these to match for now - need to advance nuopc one timestep ahead for
     ! shr_strdata time interpolation
 
-    call ESMF_ClockGet( clock, currTime=currTime, timeStep=timeStep, rc=rc)
+    call ESMF_ClockGet( clock, currTime=currTime, timeStep=timeStep, rc=rc )
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     nextTime = currTime + timeStep
@@ -602,11 +695,28 @@ module ice_comp_nuopc
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call shr_cal_ymd2date(yr, mon, day, nextymd)
 
-    call dice_comp_run(clock, x2d, d2x, &
-         flds_i2o_per_cat, &
-         SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, logunit, read_restart, write_restart, &
-         nextymd, nexttod, case_name=case_name)
+    call dice_comp_run(&
+         x2i=x2d, &
+         i2x=d2x, &
+         flds_i2o_per_cat=flds_i2o_per_cat, &
+         SDICE=SDICE, &
+         gsmap=gsmap, &
+         ggrid=ggrid, &
+         mpicom=mpicom, &
+         compid=compid, &
+         my_task=my_task, &
+         master_task=master_task, &
+         inst_suffix=inst_suffix, &
+         logunit=logunit, &
+         read_restart=read_restart, &
+         write_restart=write_restart, &
+         target_ymd=nextymd, &
+         target_tod=nexttod, &
+         target_mon=mon, &
+         target_day=day, &
+         calendar=calendar, &
+         modeldt=modeldt, &
+         case_name=case_name)
 
     !--------------------------------
     ! Pack export state
@@ -757,5 +867,138 @@ module ice_comp_nuopc
   end subroutine ModelFinalize
 
   !===============================================================================
+
+  !===============================================================================
+
+  subroutine fld_list_add(num, fldlist, stdname, flds_concat)
+    integer,                    intent(inout) :: num
+    type(fld_list_type),        intent(inout) :: fldlist(:)
+    character(len=*),           intent(in)    :: stdname
+    character(len=*), optional, intent(inout) :: flds_concat
+
+    ! local variables
+    integer :: rc
+    character(len=*), parameter :: subname='(ice_comp_nuopc:fld_list_add)'
+    !-------------------------------------------------------------------------------
+
+    ! Set up a list of field information
+
+    num = num + 1
+    if (num > fldsMax) then
+      call ESMF_LogWrite(trim(subname)//": ERROR num > fldsMax "//trim(stdname), &
+        ESMF_LOGMSG_ERROR, line=__LINE__, file=__FILE__, rc=dbrc)
+      return
+    endif
+    fldlist(num)%stdname        = trim(stdname)
+
+    if (present(flds_concat)) then
+       if (len_trim(flds_concat) + len_trim(stdname) + 1 >= len(flds_concat)) then
+          call ESMF_LogWrite(subname//': ERROR: max len of flds_concat has been exceeded', &
+               ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
+       end if
+       if (trim(flds_concat) == '') then
+          flds_concat = trim(stdname)
+       else
+          flds_concat = trim(flds_concat)//':'//trim(stdname)
+       end if
+    end if
+
+  end subroutine fld_list_add
+
+  !===============================================================================
+
+  subroutine fld_list_realize(state, fldList, numflds, flds_scalar_name, flds_scalar_num, mesh, tag, rc)
+
+    use NUOPC , only : NUOPC_IsConnected, NUOPC_Realize
+    use ESMF  , only : ESMF_MeshLoc_Element, ESMF_FieldCreate, ESMF_TYPEKIND_R8
+    use ESMF  , only : ESMF_MAXSTR, ESMF_Field, ESMF_State, ESMF_Mesh, ESMF_StateRemove 
+    use ESMF  , only : ESMF_LogFoundError, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF  , only : ESMF_LogWrite, ESMF_LOGMSG_ERROR, ESMF_LOGERR_PASSTHRU
+
+    type(ESMF_State)    , intent(inout) :: state
+    type(fld_list_type) , intent(in)    :: fldList(:)
+    integer             , intent(in)    :: numflds
+    character(len=*)    , intent(in)    :: flds_scalar_name
+    integer             , intent(in)    :: flds_scalar_num
+    character(len=*)    , intent(in)    :: tag
+    type(ESMF_Mesh)     , intent(in)    :: mesh
+    integer             , intent(inout) :: rc
+
+    ! local variables
+    integer                :: n
+    type(ESMF_Field)       :: field
+    character(len=80)      :: stdname
+    character(len=*),parameter  :: subname='(ice_comp_nuopc:fld_list_realize)'
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    do n = 1, numflds
+       stdname = fldList(n)%stdname
+       if (NUOPC_IsConnected(state, fieldName=stdname)) then
+          if (stdname == trim(flds_scalar_name)) then
+             call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(stdname)//" is connected on root pe", &
+                  ESMF_LOGMSG_INFO, rc=dbrc)
+             ! Create the scalar field
+             call SetScalarField(field, flds_scalar_name, flds_scalar_num, rc=rc)
+             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+          else
+             call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(stdname)//" is connected using mesh", &
+                  ESMF_LOGMSG_INFO, rc=dbrc)
+             ! Create the field
+             field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=stdname, meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
+             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+          endif
+
+          ! NOW call NUOPC_Realize
+          call NUOPC_Realize(state, field=field, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+       else
+          if (stdname /= trim(flds_scalar_name)) then
+             call ESMF_LogWrite(subname // trim(tag) // " Field = "// trim(stdname) // " is not connected.", &
+                  ESMF_LOGMSG_INFO, rc=dbrc)
+             call ESMF_StateRemove(state, (/stdname/), rc=rc)
+             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+          end if
+       end if
+    end do
+
+  contains  !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    subroutine SetScalarField(field, flds_scalar_name, flds_scalar_num, rc)
+      ! ----------------------------------------------
+      ! create a field with scalar data on the root pe
+      ! ----------------------------------------------
+      use ESMF, only : ESMF_Field, ESMF_DistGrid, ESMF_Grid
+      use ESMF, only : ESMF_DistGridCreate, ESMF_GridCreate, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU
+      use ESMF, only : ESMF_FieldCreate, ESMF_GridCreate, ESMF_TYPEKIND_R8
+
+      type(ESMF_Field) , intent(inout) :: field
+      character(len=*) , intent(in)    :: flds_scalar_name
+      integer          , intent(in)    :: flds_scalar_num
+      integer          , intent(inout) :: rc
+
+      ! local variables
+      type(ESMF_Distgrid) :: distgrid
+      type(ESMF_Grid)     :: grid
+      character(len=*), parameter :: subname='(SetScalarField)'
+      ! ----------------------------------------------
+
+      rc = ESMF_SUCCESS
+
+      ! create a DistGrid with a single index space element, which gets mapped onto DE 0.
+      distgrid = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/1/), rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+
+      grid = ESMF_GridCreate(distgrid, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+
+      field = ESMF_FieldCreate(name=trim(flds_scalar_name), grid=grid, typekind=ESMF_TYPEKIND_R8, &
+           ungriddedLBound=(/1/), ungriddedUBound=(/flds_scalar_num/), rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+
+    end subroutine SetScalarField
+
+  end subroutine fld_list_realize
 
 end module ice_comp_nuopc

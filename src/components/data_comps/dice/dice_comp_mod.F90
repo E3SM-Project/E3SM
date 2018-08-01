@@ -5,7 +5,6 @@
 module dice_comp_mod
 
   ! !USES:
-  use esmf
   use mct_mod
   use perf_mod
   use shr_pcdf_mod
@@ -13,17 +12,16 @@ module dice_comp_mod
   use shr_sys_mod
   use shr_kind_mod    , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_file_mod    , only: shr_file_getunit, shr_file_freeunit
-  use shr_cal_mod     , only: shr_cal_date2julian
   use shr_mpi_mod     , only: shr_mpi_bcast
   use shr_frz_mod     , only: shr_frz_freezetemp
   use shr_cal_mod     , only: shr_cal_ymd2julian
+  use shr_cal_mod     , only: shr_cal_date2julian
+  use shr_cal_mod     , only: shr_cal_datetod2string
   use shr_strdata_mod , only: shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
   use shr_strdata_mod , only: shr_strdata_print, shr_strdata_restRead
   use shr_strdata_mod , only: shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod  , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
   use shr_dmodel_mod  , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
-  use shr_cal_mod     , only: shr_cal_datetod2string
-  use seq_timemgr_mod , only: seq_timemgr_EClockGetData
 
   use dice_shr_mod    , only: datamode       ! namelist input
   use dice_shr_mod    , only: decomp         ! namelist input
@@ -111,59 +109,52 @@ CONTAINS
 
   !===============================================================================
 
-  subroutine dice_comp_init(Eclock, x2i, i2x, &
-       seq_flds_x2i_fields, seq_flds_i2x_fields, seq_flds_i2o_per_cat, &
+  subroutine dice_comp_init(x2i, i2x, &
+       flds_x2i_fields, flds_i2x_fields, flds_i2o_per_cat, &
        SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
-       scmMode, scmlat, scmlon)
+       scmMode, scmlat, scmlon, &
+       calendar, modeldt, current_ymd, current_tod, current_day, current_mon)
 
     ! !DESCRIPTION: initialize dice model
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock)       , intent(in)    :: EClock
-    type(mct_aVect)        , intent(inout) :: x2i, i2x             ! input/output attribute vectors
-    character(len=*)       , intent(in)    :: seq_flds_x2i_fields  ! fields from mediator
-    character(len=*)       , intent(in)    :: seq_flds_i2x_fields  ! fields to mediator
-    logical                , intent(in)    :: seq_flds_i2o_per_cat ! .true. if select per ice thickness fields from ice
-    type(shr_strdata_type) , intent(inout) :: SDICE                ! dice shr_strdata instance (output)
-    type(mct_gsMap)        , pointer       :: gsMap                ! model global seg map (output)
-    type(mct_gGrid)        , pointer       :: ggrid                ! model ggrid (output)
-    integer(IN)            , intent(in)    :: mpicom               ! mpi communicator
-    integer(IN)            , intent(in)    :: compid               ! mct comp id
-    integer(IN)            , intent(in)    :: my_task              ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task          ! task number of master task
-    character(len=*)       , intent(in)    :: inst_suffix          ! char string associated with instance
-    character(len=*)       , intent(in)    :: inst_name            ! fullname of current instance (ie. "lnd_0001")
-    integer(IN)            , intent(in)    :: logunit              ! logging unit number
-    logical                , intent(in)    :: read_restart         ! start from restart
-    logical                , intent(in)    :: scmMode              ! single column mode
-    real(R8)               , intent(in)    :: scmLat               ! single column lat
-    real(R8)               , intent(in)    :: scmLon               ! single column lon
+    type(mct_aVect)        , intent(inout) :: x2i, i2x         ! input/output attribute vectors
+    character(len=*)       , intent(in)    :: flds_x2i_fields  ! fields from mediator
+    character(len=*)       , intent(in)    :: flds_i2x_fields  ! fields to mediator
+    logical                , intent(in)    :: flds_i2o_per_cat ! .true. if select per ice thickness fields from ice
+    type(shr_strdata_type) , intent(inout) :: SDICE            ! dice shr_strdata instance (output)
+    type(mct_gsMap)        , pointer       :: gsMap            ! model global seg map (output)
+    type(mct_gGrid)        , pointer       :: ggrid            ! model ggrid (output)
+    integer(IN)            , intent(in)    :: mpicom           ! mpi communicator
+    integer(IN)            , intent(in)    :: compid           ! mct comp id
+    integer(IN)            , intent(in)    :: my_task          ! my task in mpi communicator mpicom
+    integer(IN)            , intent(in)    :: master_task      ! task number of master task
+    character(len=*)       , intent(in)    :: inst_suffix      ! char string associated with instance
+    character(len=*)       , intent(in)    :: inst_name        ! fullname of current instance (ie. "lnd_0001")
+    integer(IN)            , intent(in)    :: logunit          ! logging unit number
+    logical                , intent(in)    :: read_restart     ! start from restart
+    logical                , intent(in)    :: scmMode          ! single column mode
+    real(R8)               , intent(in)    :: scmLat           ! single column lat
+    real(R8)               , intent(in)    :: scmLon           ! single column lon
+    character(len=*)       , intent(in)    :: calendar         ! calendar type
+    integer                , intent(in)    :: modeldt          ! model time step
+    integer                , intent(in)    :: current_ymd      ! model date
+    integer                , intent(in)    :: current_mon      ! model sec into model date
+    integer                , intent(in)    :: current_day      ! model sec into model date
+    integer                , intent(in)    :: current_tod      ! model sec into model date
 
     !--- local variables ---
-    integer(IN)   :: n,k         ! generic counters
-    integer(IN)   :: ierr        ! error code
-    integer(IN)   :: lsize       ! local size
-    integer(IN)   :: kfld        ! field reference
-    logical       :: exists,exists1      ! file existance logical
-    integer(IN)   :: nu          ! unit number
-    character(CL) :: calendar    ! calendar type
-    logical       :: write_restart
-    integer(IN)   :: currentYMD    ! model date
-    integer(IN)   :: currentTOD    ! model sec into model date
+    integer(IN)   :: n,k            ! generic counters
+    integer(IN)   :: ierr           ! error code
+    integer(IN)   :: lsize          ! local size
+    integer(IN)   :: kfld           ! field reference
+    logical       :: exists,exists1 ! file existance logical
+    integer(IN)   :: nu             ! unit number
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dice_comp_init) ',8a)"
-    character(*), parameter :: F0L   = "('(dice_comp_init) ',a, l2)"
-    character(*), parameter :: F01   = "('(dice_comp_init) ',a,5i8)"
-    character(*), parameter :: F02   = "('(dice_comp_init) ',a,4es13.6)"
-    character(*), parameter :: F03   = "('(dice_comp_init) ',a,i8,a)"
-    character(*), parameter :: F04   = "('(dice_comp_init) ',2a,2i8,'s')"
     character(*), parameter :: F05   = "('(dice_comp_init) ',a,2f10.4)"
-    character(*), parameter :: F06   = "('(dice_comp_init) ',a,5l3)"
-    character(*), parameter :: F90   = "('(dice_comp_init) ',73('='))"
-    character(*), parameter :: F91   = "('(dice_comp_init) ',73('-'))"
     character(*), parameter :: subName = "(dice_comp_init) "
     !-------------------------------------------------------------------------------
 
@@ -176,8 +167,6 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     call t_startf('dice_strdata_init')
-
-    call seq_timemgr_EClockGetData( EClock, calendar=calendar )
 
     ! NOTE: shr_strdata_init calls shr_dmodel_readgrid which reads the data model
     ! grid and from that computes SDICE%gsmap and SDICE%ggrid. DICE%gsmap is created
@@ -238,7 +227,7 @@ CONTAINS
     if (my_task == master_task) write(logunit,F00) 'allocate AVs'
     call shr_sys_flush(logunit)
 
-    call mct_aVect_init(i2x, rList=seq_flds_i2x_fields, lsize=lsize)
+    call mct_aVect_init(i2x, rList=flds_i2x_fields, lsize=lsize)
     call mct_aVect_zero(i2x)
 
     km     = mct_aVect_indexRA(i2x,'Si_imask', perrwith='quiet')
@@ -269,12 +258,12 @@ CONTAINS
 
     ! optional per thickness category fields
 
-    if (seq_flds_i2o_per_cat) then
+    if (flds_i2o_per_cat) then
        kiFrac_01       = mct_aVect_indexRA(i2x,'Si_ifrac_01')
        kswpen_iFrac_01 = mct_aVect_indexRA(i2x,'PFioi_swpen_ifrac_01')
     end if
 
-    call mct_aVect_init(x2i, rList=seq_flds_x2i_fields, lsize=lsize)
+    call mct_aVect_init(x2i, rList=flds_x2i_fields, lsize=lsize)
     call mct_aVect_zero(x2i)
 
     kswvdr    = mct_aVect_indexRA(x2i,'Faxa_swvdr')
@@ -385,6 +374,7 @@ CONTAINS
     ! On initial call, x2i is unset, so set for use in run method
     !  These values should have no impact on the solution!!
     !----------------------------------------------------------------------------
+
     x2i%rAttr(kz,:)    = 10.0_R8
     x2i%rAttr(kua,:)   = 5.0_R8
     x2i%rAttr(kva,:)   = 5.0_R8
@@ -399,14 +389,27 @@ CONTAINS
 
     call t_adj_detailf(+2)
 
-    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
-
-    write_restart = .false.
-    call dice_comp_run(EClock, x2i, i2x, &
-         seq_flds_i2o_per_cat, &
-         SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, logunit, read_restart, write_restart, &
-         currentYMD, currentTOD)
+    call dice_comp_run(&
+         x2i=x2i, &
+         i2x=i2x, &
+         flds_i2o_per_cat=flds_i2o_per_cat, &
+         SDICE=SDICE, &
+         gsmap=gsmap, &
+         ggrid=ggrid, &
+         mpicom=mpicom, &
+         compid=compid, &
+         my_task=my_task, &
+         master_task=master_task, &
+         inst_suffix=inst_suffix, &
+         logunit=logunit, &
+         read_restart=read_restart, &
+         write_restart=.false., &
+         target_ymd=current_ymd, &
+         target_mon=current_mon, &
+         target_day=current_day, &
+         target_tod=current_tod, &
+         calendar=calendar, &
+         modeldt=modeldt)
 
     call t_adj_detailf(-2)
 
@@ -416,20 +419,18 @@ CONTAINS
 
   !===============================================================================
 
-  subroutine dice_comp_run(EClock, x2i, i2x, &
-       seq_flds_i2o_per_cat, &
+  subroutine dice_comp_run(x2i, i2x, flds_i2o_per_cat, &
        SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
-       target_ymd, target_tod, case_name)
+       target_ymd, target_mon, target_day, target_tod, &
+       calendar, modeldt, case_name )
 
     ! !DESCRIPTION: run method for dice model
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock)       , intent(in)    :: EClock
     type(mct_aVect)        , intent(inout) :: x2i
     type(mct_aVect)        , intent(inout) :: i2x
-    logical                , intent(in)    :: seq_flds_i2o_per_cat ! .true. if select per ice thickness fields from ice
+    logical                , intent(in)    :: flds_i2o_per_cat     ! .true. if select per ice thickness fields from ice
     type(shr_strdata_type) , intent(inout) :: SDICE
     type(mct_gsMap)        , pointer       :: gsMap
     type(mct_gGrid)        , pointer       :: ggrid
@@ -443,19 +444,20 @@ CONTAINS
     logical                , intent(in)    :: write_restart        ! restart now
     integer(IN)            , intent(in)    :: target_ymd
     integer(IN)            , intent(in)    :: target_tod
+    integer(IN)            , intent(in)    :: target_mon
+    integer(IN)            , intent(in)    :: target_day
+    character(len=*)       , intent(in)    :: calendar 
+    integer(IN)            , intent(in)    :: modeldt
     character(CL)          , intent(in), optional :: case_name     ! case name
 
     !--- local ---
-    integer(IN)   :: yy,mm,dd,tod      ! year month day time-of-day
     integer(IN)   :: n                 ! indices
     integer(IN)   :: lsize             ! size of attr vect
-    integer(IN)   :: idt               ! integer timestep
     real(R8)      :: dt                ! timestep
     integer(IN)   :: nu                ! unit number
     real(R8)      :: qmeltall          ! q that would melt all accumulated water
     real(R8)      :: cosarg            ! for setting ice temp pattern
     real(R8)      :: jday, jday0       ! elapsed day counters
-    character(CS) :: calendar          ! calendar type
     character(len=18) :: date_str
 
     character(*), parameter :: F00   = "('(dice_comp_run) ',8a)"
@@ -464,20 +466,15 @@ CONTAINS
     character(*), parameter :: subName = "(dice_comp_run) "
     !-------------------------------------------------------------------------------
 
-    call t_startf('DICE_RUN')
-
-    call t_startf('dice_run1')
-    call seq_timemgr_EClockGetData( EClock, dtime=idt, calendar=calendar)
-    dt = idt * 1.0_r8
-
-    call t_stopf('dice_run1')
-
     !--------------------
     ! ADVANCE ICE
     !--------------------
 
+    call t_startf('DICE_RUN')
     call t_barrierf('dice_BARRIER',mpicom)
     call t_startf('dice')
+
+    dt = modeldt * 1.0_r8
 
     !--- copy all fields from streams to i2x as default ---
 
@@ -499,8 +496,6 @@ CONTAINS
     ! Determine data model behavior based on the mode
     !-------------------------------------------------
 
-    call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd, curr_tod=tod)
-
     call t_startf('dice_datamode')
     select case (trim(datamode))
 
@@ -520,8 +515,8 @@ CONTAINS
        !      call shr_cal_ymd2eday(0,09,01,eDay0,calendar)    ! sept 1st
        !      cosArg = 2.0_R8*pi*(real(eDay,R8) + real(target_tod,R8)/cDay - real(eDay0,R8))/365.0_R8
 
-       call shr_cal_ymd2julian(0, mm, dd, target_tod, jDay , calendar)    ! julian day for model
-       call shr_cal_ymd2julian(0,  9,  1,          0, jDay0, calendar)    ! julian day for Sept 1
+       call shr_cal_ymd2julian(0, target_mon, target_day, target_tod, jDay , calendar)    ! julian day for model
+       call shr_cal_ymd2julian(0,  9,         1,          0,          jDay0, calendar)    ! julian day for Sept 1
 
        cosArg = 2.0_R8*pi*(jday - jday0)/365.0_R8
 
@@ -668,7 +663,7 @@ CONTAINS
     ! optional per thickness category fields
     !-------------------------------------------------
 
-    if (seq_flds_i2o_per_cat) then
+    if (flds_i2o_per_cat) then
        do n=1,lsize
           i2x%rAttr(kiFrac_01,n)       = i2x%rAttr(kiFrac,n)
           i2x%rAttr(kswpen_iFrac_01,n) = i2x%rAttr(kswpen,n) * i2x%rAttr(kiFrac,n)
@@ -793,7 +788,6 @@ CONTAINS
   subroutine dice_comp_final(my_task, master_task, logunit)
 
     ! !DESCRIPTION:  finalize method for dice model
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
     integer(IN) , intent(in) :: my_task     ! my task in mpi communicator mpicom
@@ -818,4 +812,5 @@ CONTAINS
 
   end subroutine dice_comp_final
   !===============================================================================
+
 end module dice_comp_mod
