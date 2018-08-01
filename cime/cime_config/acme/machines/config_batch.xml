@@ -189,7 +189,7 @@
       <directive>-l  nodes={{ num_nodes }}</directive>
     </directives>
     <queues>
-      <queue jobmin="1" jobmax="9999" default="true">batch</queue>
+      <queue walltimemax="00:30:00" default="true">batch</queue>
     </queues>
    </batch_system>
 

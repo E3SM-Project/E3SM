@@ -1127,60 +1127,63 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           rnglw_mstr(1:nsubcollw,1:pcols,1:pver,1:max_chnks_in_blk,1:npes) = huge(1.0_r8)
           rngsw_mstr(1:nsubcolsw,1:pcols,1:pver,1:max_chnks_in_blk,1:npes) = huge(1.0_r8)
           
-
-          do igcol = 1, ngcols_p
-             i = latlon_to_dyn_gcol_map(igcol)
-             chunkid  = knuhcs(i)%chunkid
-             icol = knuhcs(i)%col
-             iown  = chunks(chunkid)%owner
-             ilchnk = (chunks(chunkid)%lcid - lastblock) - tot_chnk_till_this_prc(iown)
-             
-             do ilev = 1, pver
-                do isubcol = 1, nsubcollw
-                   call kissvec(s1,s2,s3,s4,rng)
-                   rnglw_mstr(isubcol,icol,ilev,ilchnk,iown+1) = rng !long wave
-                enddo
-                do isubcol = 1, nsubcolsw
-                   call kissvec(s1,s2,s3,s4,rng)
-                   rngsw_mstr(isubcol,icol,ilev,ilchnk,iown+1) = rng !short wave
+          if(pergro_mods) then
+             do igcol = 1, ngcols_p
+                i = latlon_to_dyn_gcol_map(igcol)
+                chunkid  = knuhcs(i)%chunkid
+                icol = knuhcs(i)%col
+                iown  = chunks(chunkid)%owner
+                ilchnk = (chunks(chunkid)%lcid - lastblock) - tot_chnk_till_this_prc(iown)
+                
+                do ilev = 1, pver
+                   do isubcol = 1, nsubcollw
+                      call kissvec(s1,s2,s3,s4,rng)
+                      rnglw_mstr(isubcol,icol,ilev,ilchnk,iown+1) = rng !long wave
+                   enddo
+                   do isubcol = 1, nsubcolsw
+                      call kissvec(s1,s2,s3,s4,rng)
+                      rngsw_mstr(isubcol,icol,ilev,ilchnk,iown+1) = rng !short wave
+                   enddo
                 enddo
              enddo
-          enddo
-          !store seeds in the restart file variables
-          seedrst(1) = s1
-          seedrst(2) = s2
-          seedrst(3) = s3
-          seedrst(4) = s4
+             !store seeds in the restart file variables
+             seedrst(1) = s1
+             seedrst(2) = s2
+             seedrst(3) = s3
+             seedrst(4) = s4
+          endif
        endif
        !BSINGH -ENDS [Allow it to sync in the next call ]
-
-
+       
+       
        call t_barrierf('sync_bc_physics', mpicom)
        call t_startf ('bc_physics')
        !call t_adj_detailf(+1)
        
        !BSINGH - broadcast data
 #ifdef SPMD
-       !Broadcast seeds
-       call mpibcast(seedrst,4, mpi_integer, 0, mpicom)
+       if(pergro_mods) then
+          !Broadcast seeds
+          call mpibcast(seedrst,4, mpi_integer, 0, mpicom)
        
-       tot_colslw = pcols*nsubcollw*pver*max_chnks_in_blk
-       tot_colssw = pcols*nsubcolsw*pver*max_chnks_in_blk
-       !Scatter 
-       call MPI_Scatter( rnglw_mstr, tot_colslw,  mpi_real8, &
-            rnglw,    tot_colslw,  mpi_real8, 0,             &
-            MPI_COMM_WORLD,ierr)
-       
-       call MPI_Scatter( rngsw_mstr, tot_colssw,  mpi_real8, &
-            rngsw,    tot_colssw,  mpi_real8, 0,             &
-            MPI_COMM_WORLD,ierr)
+          tot_colslw = pcols*nsubcollw*pver*max_chnks_in_blk
+          tot_colssw = pcols*nsubcolsw*pver*max_chnks_in_blk
+          !Scatter 
+          call MPI_Scatter( rnglw_mstr, tot_colslw,  mpi_real8, &
+               rnglw,    tot_colslw,  mpi_real8, 0,             &
+               MPI_COMM_WORLD,ierr)
+          
+          call MPI_Scatter( rngsw_mstr, tot_colssw,  mpi_real8, &
+               rngsw,    tot_colssw,  mpi_real8, 0,             &
+               MPI_COMM_WORLD,ierr)
 #else
-       !BSINGH - Havn't tested it.....
-       call endrun('BSINGH: PHYSPKG.F90: I havent tested it yet')
-       rnglw = rnglw_mstr(:,:,:,1)
-       rngsw = rngsw_mstr(:,:,:,1)
+          !BSINGH - Havn't tested it.....
+          call endrun('BSINGH: PHYSPKG.F90: I havent tested it yet')
+          rnglw = rnglw_mstr(:,:,:,1)
+          rngsw = rngsw_mstr(:,:,:,1)
 #endif
-       !BSINGH - ENDS
+       endif
+          !BSINGH - ENDS
 
 
 !$OMP PARALLEL DO PRIVATE (C, phys_buffer_chunk, ilchnk)
