@@ -4,24 +4,20 @@ module lnd_comp_nuopc
   ! This is the NUOPC cap for DLND
   !----------------------------------------------------------------------------
 
-  use shr_kind_mod          , only : R8=>SHR_KIND_R8, IN=>SHR_KIND_IN
-  use shr_kind_mod          , only : CS=>SHR_KIND_CS, CL=>SHR_KIND_CL, CXX => shr_kind_CXX
+  use med_constants_mod     , only : IN, R8, I8, CXX
+  use med_constants_mod     , only : shr_log_Unit
+  use med_constants_mod     , only : shr_cal_ymd2date, shr_cal_noleap, shr_cal_gregorian
+  use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
+  use med_constants_mod     , only : shr_file_getloglevel, shr_file_setloglevel
+  use med_constants_mod     , only : shr_file_setIO, shr_file_getUnit
   use shr_log_mod           , only : shr_log_Unit
   use shr_file_mod          , only : shr_file_getlogunit, shr_file_setlogunit
   use shr_file_mod          , only : shr_file_getloglevel, shr_file_setloglevel
-  use shr_file_mod          , only : shr_file_setIO, shr_file_getUnit
-  use seq_timemgr_mod       , only : seq_timemgr_EClockPrint
-  use seq_timemgr_mod       , only : seq_timemgr_ETimeGet, seq_timemgr_alarmSetOff
-  use seq_timemgr_mod       , only : seq_timemgr_alarm_restart, seq_timemgr_alarmIsOn
-  use esmFlds               , only : fldListFr, fldListTo, complnd, compname
-  use esmFlds               , only : flds_scalar_name
-  use esmFlds               , only : flds_scalar_num
-  use esmFlds               , only : flds_scalar_index_nx
-  use esmFlds               , only : flds_scalar_index_ny
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Realize
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Concat
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Deactivate
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Getnumflds
+  use shr_file_mod          , only : shr_file_getUnit
+  use shr_nuopc_scalars_mod , only : flds_scalar_name
+  use shr_nuopc_scalars_mod , only : flds_scalar_num
+  use shr_nuopc_scalars_mod , only : flds_scalar_index_nx
+  use shr_nuopc_scalars_mod , only : flds_scalar_index_ny
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Getfldinfo
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
@@ -31,6 +27,11 @@ module lnd_comp_nuopc
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
   use shr_strdata_mod       , only : shr_strdata_type
+  use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
+  use shr_strdata_mod       , only : shr_strdata_type
+  use dshr_nuopc_mod        , only : fld_list_type, fldsMax
+  use dshr_nuopc_mod        , only : fld_list_add
+  use dshr_nuopc_mod        , only : fld_list_realize
 
   use ESMF
   use NUOPC
@@ -42,7 +43,6 @@ module lnd_comp_nuopc
 
   use dlnd_shr_mod , only: dlnd_shr_read_namelists
   use dlnd_comp_mod, only: dlnd_comp_init, dlnd_comp_run, dlnd_comp_final
-  use perf_mod
   use mct_mod
 
   implicit none
@@ -60,6 +60,11 @@ module lnd_comp_nuopc
   !--------------------------------------------------------------------------
   ! Private module data
   !--------------------------------------------------------------------------
+
+  integer                    :: fldsToLnd_num = 0
+  integer                    :: fldsFrLnd_num = 0
+  type (fld_list_type)       :: fldsToLnd(fldsMax)
+  type (fld_list_type)       :: fldsFrLnd(fldsMax)
 
   character(CS)              :: myModelName = 'lnd'       ! user defined model name
   type(shr_strdata_type)     :: SDLND
@@ -87,6 +92,7 @@ module lnd_comp_nuopc
   character(len=*),parameter :: grid_option = "mesh"      ! grid_de, grid_arb, grid_reg, mesh
   character(CXX)             :: flds_l2x = ''
   character(CXX)             :: flds_x2l = ''
+  character(len=80)          :: calendar                  ! calendar name
 
   !----- formats -----
   character(*),parameter :: modName =  "(lnd_comp_nuopc)"
@@ -251,41 +257,46 @@ module lnd_comp_nuopc
          logunit, shrlogunit, SDLND, lnd_present, lnd_prognostic)
 
     !--------------------------------
-    ! create import and export field list needed by data models
-    !--------------------------------
-
-    call shr_nuopc_fldList_Concat(fldListFr(complnd), fldListTo(complnd), flds_l2x, flds_x2l, flds_scalar_name)
-
-    !--------------------------------
     ! advertise import and export fields
     !--------------------------------
 
-    ! First deactivate fldListTo(compatm) if atm_prognostic is .false.
-    if (.not. lnd_prognostic) then
-       call shr_nuopc_fldList_Deactivate(fldListTo(complnd), flds_scalar_name)
+    ! The following is used in cplhist mode - which is not activated now
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, trim(flds_scalar_name))
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_t        "
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_tref     "
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_qref     "
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_avsdr    "
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_anidr    "
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_avsdf    "
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_anidf    "
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_snowh    "
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_taux   "
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_tauy   "
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_lat    "
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_sen    "
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_lwup   "
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_evap   "
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_swnet  "
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_landfrac "
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_fv       "
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_ram1     "
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_flxdst1"
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_flxdst2"
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_flxdst3"
+    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_flxdst4"
+
+    glc_nec = glc_get_num_elevation_classes()
+    if (glc_nec > 0) then
+       do n = 0, glc_nec
+          nec_str = glc_elevclass_as_string(n)
+          fld_name = "Sl_tsrf" // nec_str
+          call fld_list_add(fldsFrLnd_num, fldsFrLnd, trim(fld+name))
+          fld_name = "Sl_topo" // nec_str
+          call fld_list_add(fldsFrLnd_num, fldsFrLnd, trim(fld+name))
+          fld_name = "Flgl_qice" // nec_str
+          call fld_list_add(fldsFrLnd_num, fldsFrLnd, trim(fld+name))
+       end do
     end if
-
-    nflds = shr_nuopc_fldList_Getnumflds(fldListFr(complnd))
-    do n = 1,nflds
-       call shr_nuopc_fldList_Getfldinfo(fldListFr(complnd), n, activefld, stdname, shortname)
-       if (activefld) then
-          call NUOPC_Advertise(exportState, standardName=stdname, shortname=shortname, name=shortname, &
-               TransferOfferGeomObject='will provide', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_LogWrite(subname//':Fr_'//trim(compname(complnd))//': '//trim(shortname), ESMF_LOGMSG_INFO)
-       end if
-    end do
-
-    nflds = shr_nuopc_fldList_Getnumflds(fldListTo(complnd))
-    do n = 1,nflds
-       call shr_nuopc_fldList_Getfldinfo(fldListTo(complnd), n, activefld, stdname, shortname)
-       if (activefld) then
-          call NUOPC_Advertise(importState, standardName=stdname, shortname=shortname, name=shortname, &
-               TransferOfferGeomObject='will provide', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_LogWrite(subname//':To_'//trim(compname(complnd))//': '//trim(shortname), ESMF_LOGMSG_INFO)
-       end if
-    end do
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 

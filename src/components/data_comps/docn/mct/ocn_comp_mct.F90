@@ -63,19 +63,23 @@ CONTAINS
     character(len=*), optional  , intent(in)    :: NLFilename ! Namelist filename
 
     !--- local ---
-    type(seq_infodata_type), pointer :: infodata
-    type(mct_gsMap)        , pointer :: gsMap
-    type(mct_gGrid)        , pointer :: ggrid
-    integer           :: phase                     ! phase of method
-    logical           :: ocn_present               ! flag
-    logical           :: ocn_prognostic            ! flag
-    logical           :: ocnrof_prognostic         ! flag
-    integer(IN)       :: shrlogunit                ! original log unit
-    integer(IN)       :: shrloglev                 ! original log level
-    integer(IN)       :: ierr                      ! error code
-    logical           :: scmMode = .false.         ! single column mode
-    real(R8)          :: scmLat  = shr_const_SPVAL ! single column lat
-    real(R8)          :: scmLon  = shr_const_SPVAL ! single column lon
+    type(seq_infodata_type), pointer	:: infodata
+    type(mct_gsMap)        , pointer	:: gsMap
+    type(mct_gGrid)        , pointer	:: ggrid
+    integer		:: phase			! phase of method
+    logical		:: ocn_present			! flag
+    logical		:: ocn_prognostic		! flag
+    logical		:: ocnrof_prognostic		! flag
+    integer(IN)		:: shrlogunit			! original log unit
+    integer(IN)		:: shrloglev			! original log level
+    integer(IN)		:: ierr				! error code
+    logical		:: scmMode = .false.		! single column mode
+    real(R8)		:: scmLat  = shr_const_SPVAL	! single column lat
+    real(R8)		:: scmLon  = shr_const_SPVAL	! single column lon
+    character(CL)	:: calendar			! model calendar
+    integer(IN)		:: currentYMD			! model date
+    integer(IN)		:: currentTOD			! model sec into model date
+
     character(*), parameter :: F00   = "('(docn_comp_init) ',8a)"
     character(*), parameter :: subName = "(ocn_init_mct) "
     !-------------------------------------------------------------------------------
@@ -150,11 +154,15 @@ CONTAINS
     ! Initialize docn
     !----------------------------------------------------------------------------
 
+    call seq_timemgr_EClockGetData( EClock, &
+        calendar=calendar, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
+
     call docn_comp_init(Eclock, x2o, o2x, &
          seq_flds_x2o_fields, seq_flds_o2x_fields, &
          SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
-         scmMode, scmlat, scmlon)
+         scmMode, scmlat, scmlon, &
+	 calendar, CurrentYMD, CurrentTOD)
 
     !----------------------------------------------------------------------------
     ! Fill infodata that needs to be returned from docn
@@ -210,6 +218,7 @@ CONTAINS
     logical                          :: write_restart ! restart alarm is ringing
     integer(IN)                      :: currentYMD    ! model date
     integer(IN)                      :: currentTOD    ! model sec into model date
+    integer                          :: modeldt       ! model timestep
     character(*), parameter :: subName = "(ocn_run_mct) "
     !-------------------------------------------------------------------------------
 
@@ -229,12 +238,13 @@ CONTAINS
     write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
 
     ! For mct - the component clock is advance at the beginning of the time interval
-    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
+    call seq_timemgr_EClockGetData( EClock, &
+        curr_ymd=CurrentYMD, curr_tod=CurrentTOD, modeldt=modeldt)
 
     call docn_comp_run(EClock, x2o, o2x, &
        SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
-       currentYMD, currentTOD, case_name=case_name)
+       currentYMD, currentTOD, modeldt, 4case_name=case_name)
 
     if (dbug > 1) then
        if (my_task == master_task) then
