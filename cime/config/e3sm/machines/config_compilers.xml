@@ -604,6 +604,7 @@ for mct, etc.
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
   <PETSC_PATH>$(PETSC_DIR)</PETSC_PATH>
+  <ALBANY_PATH>/global/project/projectdirs/acme/software/AlbanyTrilinos_07302018/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <!-- Intel v18 is default on cori-knl and cori-haswell -->
@@ -704,8 +705,6 @@ for mct, etc.
   <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -lblas -llapack</ADD_SLIBS>
-  <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
-  <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="intel" MACH="sandiatoss3">
@@ -721,7 +720,7 @@ for mct, etc.
   <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
   <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
-  <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
+  <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_07302018/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="intel" MACH="ghost">
@@ -737,7 +736,7 @@ for mct, etc.
   <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
   <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
-  <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
+  <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_07302017/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="pgi" MACH="cab">
@@ -897,7 +896,6 @@ for mct, etc.
   <MPIFC> ftn </MPIFC>
   <MPICC> cc </MPICC>
   <MPICXX> CC </MPICXX>
-  <ALBANY_PATH>/ccs/proj/cli106/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="pgiacc" MACH="titan">
@@ -984,7 +982,6 @@ for mct, etc.
   <CXX_LIBS> -llapack -lblas -L$(IBM_MAIN_DIR)/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$(IBM_MAIN_DIR)/xlsmp/bg/3.1/bglib64 -lxlsmp </CXX_LIBS>
   <ADD_CPPDEFS> -DMPASLI_EXTERNAL_INTERFACE_DISABLE_MANGLING </ADD_CPPDEFS>
   <MPICXX> /soft/compilers/bgclang/mpi/bgclang/bin/mpic++11 </MPICXX>
-  <ALBANY_PATH>/projects/ccsm/libs/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="ibm" MACH="summitdev">
@@ -1046,7 +1043,6 @@ for mct, etc.
   <CXX_LIBS> -llapack -lblas -L$(IBM_MAIN_DIR)/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$(IBM_MAIN_DIR)/xlsmp/bg/3.1/bglib64 -lxlsmp </CXX_LIBS>
   <ADD_CPPDEFS> -DMPASLI_EXTERNAL_INTERFACE_DISABLE_MANGLING </ADD_CPPDEFS>
   <MPICXX> /soft/compilers/bgclang/mpi/bgclang/bin/mpic++11 </MPICXX>
-  <ALBANY_PATH>/projects/ccsm/libs/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="intel" MACH="theta">
@@ -1127,7 +1123,6 @@ for mct, etc.
   <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY</GPTL_CPPDEFS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
   <CXX_LIBS>-lstdc++</CXX_LIBS>
-  <ALBANY_PATH>/soft/climate/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="nag" MACH="blues">
@@ -1151,6 +1146,7 @@ for mct, etc.
   <ADD_SLIBS>-mkl</ADD_SLIBS>
   <GPTL_CPPDEFS> -DHAVE_SLASHPROC </GPTL_CPPDEFS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
+  <ALBANY_PATH>/soft/climate/AlbanyTrilinos_07302018/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="gnu" MACH="anvil">
@@ -1177,7 +1173,7 @@ for mct, etc.
   <MPICC> mpiicc  </MPICC>
   <MPICXX> mpiicpc </MPICXX>
   <CXX_LIBS>-lstdc++</CXX_LIBS>
-  <ALBANY_PATH>/soft/climate/AlbanyTrilinos_06262017/Albany/buildintel/install</ALBANY_PATH>
+  <ALBANY_PATH>/soft/climate/AlbanyTrilinos_07302018/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="pgi" MACH="eastwind">
