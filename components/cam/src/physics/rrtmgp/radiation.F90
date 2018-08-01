@@ -187,14 +187,14 @@ character(len=*), parameter :: module_name = 'radiation'
 ! change which gases are used at some point, this needs to be changed here, or
 ! we need to come up with a more clever way of getting these from the model,
 ! since this is kind of a hack to hard-code them in here.
-!character(len=3), dimension(8) :: active_gases = (/ &
-!   'H2O', 'CO2', 'O3 ', 'N2O', &
-!   'CO ', 'CH4', 'O2 ', 'N2 ' &
-!/)
-character(len=3), dimension(6) :: active_gases = (/ &
+character(len=3), dimension(8) :: active_gases = (/ &
    'H2O', 'CO2', 'O3 ', 'N2O', &
-   'CH4', 'O2 ' &
+   'CO ', 'CH4', 'O2 ', 'N2 ' &
 /)
+!character(len=3), dimension(6) :: active_gases = (/ &
+!   'H2O', 'CO2', 'O3 ', 'N2O', &
+!   'CH4', 'O2 ' &
+!/)
 
 ! Stuff to generate random numbers for perturbation growth tests. This needs to
 ! be public module data because restart_physics needs to read it to write it to
@@ -237,6 +237,25 @@ interface expand_day_columns
    module procedure expand_day_columns_1d, expand_day_columns_2d
 end interface expand_day_columns
 !===============================================================================
+
+! Dummy type to hold allocatales as targets for flux pointers
+! This is done solely so that we can manage the memory associated with the
+! ty_fluxes class, because members in the ty_fluxes class are declared as
+! pointers.
+type cam_flux_type
+   real(r8), allocatable :: flux_up(:,:)
+   real(r8), allocatable :: flux_dn(:,:)
+   real(r8), allocatable :: flux_net(:,:)
+   real(r8), allocatable :: flux_dn_dir(:,:)
+
+   real(r8), allocatable :: bnd_flux_up(:,:,:)
+   real(r8), allocatable :: bnd_flux_dn(:,:,:)
+   real(r8), allocatable :: bnd_flux_net(:,:,:)
+   real(r8), allocatable :: bnd_flux_dn_dir(:,:,:)
+contains
+   procedure :: initialize => cam_flux_initialize
+   procedure :: finalize => cam_flux_finalize
+end type cam_flux_type
 
 contains
 
@@ -630,7 +649,9 @@ subroutine radiation_init(state)
    ! Register new dimensions
    sw_band_midpoints(:) = get_band_midpoints(nswbands, k_dist_sw)
    lw_band_midpoints(:) = get_band_midpoints(nlwbands, k_dist_lw)
+#ifdef DEBUG
    call assert(all(sw_band_midpoints > 0), subname // ': negative sw_band_midpoints')
+#endif
    call add_hist_coord('swband', nswbands, 'Shortwave band', 'wavelength', sw_band_midpoints)
    call add_hist_coord('lwband', nlwbands, 'Longwave band', 'wavelength', lw_band_midpoints)
 
@@ -1082,9 +1103,12 @@ function get_band_midpoints(nbands, kdist) result(band_midpoints)
    integer :: i
    character(len=32) :: subname = 'get_band_midpoints'
 
+#ifdef DEBUG
    call assert(kdist%get_nband() == nbands, trim(subname) // ': kdist%get_nband() /= nbands')
+#endif
 
    band_limits = kdist%get_band_lims_wavelength()
+#ifdef DEBUG
    call assert(size(band_limits, 1) == size(kdist%get_band_lims_wavelength(), 1), &
                subname // ': band_limits and kdist inconsistently sized')
    call assert(size(band_limits, 2) == size(kdist%get_band_lims_wavelength(), 2), &
@@ -1092,11 +1116,14 @@ function get_band_midpoints(nbands, kdist) result(band_midpoints)
    call assert(size(band_limits, 2) == size(band_midpoints), &
                subname // ': band_limits and band_midpoints inconsistently sized')
    call assert(all(band_limits > 0), subname // ': negative band limit wavelengths!')
+#endif
    band_midpoints(:) = 0._r8
    do i = 1,nbands
       band_midpoints(i) = (band_limits(1,i) + band_limits(2,i)) / 2._r8
    end do
+#ifdef DEBUG
    call assert(all(band_midpoints > 0), subname // ': negative band_midpoints!')
+#endif
 
 end function get_band_midpoints
 
@@ -1270,7 +1297,7 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
 
    ! Temporary heating rates on radiation vertical grid
    real(r8), dimension(pcols,nlev_rad) :: qrs_rad, qrsc_rad, &
-                                                qrl_rad, qrlc_rad
+                                          qrl_rad, qrlc_rad
 
    ! Albedo for shortwave calculations
    real(r8) :: albedo_direct(nswbands,pcols), albedo_direct_day(nswbands,pcols)
@@ -1402,9 +1429,6 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
          if (active_calls(icall)) then
 
             ! Get shortwave aerosol optics
-            ! NOTE: this gets vertical dimension nlev_rad since cloud optics are
-            ! defined at model midpoints (representing optics through the whole
-            ! layer)
             call t_startf('shortwave aerosol optics')
             call set_aerosol_optics_sw(icall, state, pbuf, &
                                        day_indices(1:nday), &
@@ -1470,6 +1494,13 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
          end if
       end do
 
+      ! Free fluxes and optical properties
+      call free_optics_sw(cloud_optics_sw)
+      call free_optics_sw(aerosol_optics_sw)
+      call free_fluxes(flux_sw_allsky)
+      call free_fluxes(flux_sw_clearsky)
+      call free_fluxes(flux_sw_allsky_day)
+      call free_fluxes(flux_sw_clearsky_day)
    else
       ! Conserve energy
       if (conserve_energy) then
@@ -1584,6 +1615,11 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
          end if  ! active calls
       end do  ! loop over diagnostic calls
             
+      ! Free fluxes and optical properties
+      call free_optics_lw(cloud_optics_lw)
+      call free_optics_lw(aerosol_optics_lw)
+      call free_fluxes(flux_lw_allsky)
+      call free_fluxes(flux_lw_clearsky)
    else
       ! Conserve energy (what does this mean exactly?)
       if (conserve_energy) then
@@ -1670,6 +1706,12 @@ subroutine set_rad_state(state, cam_in, tmid, tint, pmid, pint, col_indices)
       pint(:,1) = 1.01_r8
    end if
 
+#ifdef DEBUG
+   ! Make sure top is less than immediately below?
+   call assert(all(pint(:,1) <= pint(:,2)), 'pint inconsistent.')
+   call assert(all(pint(:,1) <= pmid(:,1)), 'pint and pmid inconsistent.')
+#endif
+
 end subroutine set_rad_state
 
 
@@ -1721,17 +1763,13 @@ subroutine export_surface_fluxes(fluxes, cam_out, band)
    type(cam_out_t), intent(inout) :: cam_out
    character(len=*), intent(in) :: band
    integer :: icol
+   real(r8), dimension(size(fluxes%bnd_flux_dn,1), &
+                       size(fluxes%bnd_flux_dn,2), &
+                       size(fluxes%bnd_flux_dn,3)) :: flux_dn_diffuse
 
-   ! TODO: check this code! This seems to differ from what is in RRTMG. Also, I
-   ! think RRTMGP lets us break output into direct and diffuse beam now, so much
-   ! of this might be able to be simplified.
+   ! TODO: check this code! This seems to differ from what is in RRTMG. 
    !
    ! Export surface fluxes
-   !
-   ! NOTE: this code assumes that the fluxes are not broken into direct and
-   ! diffuse, and so puts the entire flux into direct and leaves the diffuse set
-   ! to zero. This is no longer the case! RRTMGP *does* break the flux into
-   ! direct and diffuse, so we can set direct and diffuse separately now.
    !
    ! To break the fluxes into the UV/vis and near-IR bands use the same scheme 
    ! as for the albedos which is hardcoded for 14 spectral bands.
@@ -1748,20 +1786,41 @@ subroutine export_surface_fluxes(fluxes, cam_out, band)
    !
    ! NOTE: bands are shifted relative to RRTMG! Band 10 used to be band 9, band
    ! 1 used to be band 14.
+   !
+   ! TODO: this hard-coded band mapping is BAD! We need to do this more
+   ! intelligently.
    if (trim(band) == 'shortwave') then
+
+      ! Reset fluxes
       cam_out%soll = 0
       cam_out%sols = 0
       cam_out%solld = 0
       cam_out%solsd = 0
+
+      ! Calculate diffuse flux from total and direct
+      flux_dn_diffuse = fluxes%bnd_flux_dn - fluxes%bnd_flux_dn_dir
+
+      ! Calculate broadband surface solar fluxes (UV/visible vs near IR) for
+      ! each column.
       do icol = 1,size(fluxes%bnd_flux_dn, 1)
+
+         ! Direct fluxes
          cam_out%soll(icol) &
-            = sum(fluxes%bnd_flux_dn(icol,kbot+1,1:9)) &
-            + 0.5_r8 * fluxes%bnd_flux_dn(icol,kbot+1,10)
-
+            = sum(fluxes%bnd_flux_dn_dir(icol,kbot+1,1:9)) &
+            + 0.5_r8 * fluxes%bnd_flux_dn_dir(icol,kbot+1,10)
          cam_out%sols(icol) &
-            = 0.5_r8 * fluxes%bnd_flux_dn(icol,kbot+1,10) &
-            + sum(fluxes%bnd_flux_dn(icol,kbot+1,11:14))
+            = 0.5_r8 * fluxes%bnd_flux_dn_dir(icol,kbot+1,10) &
+            + sum(fluxes%bnd_flux_dn_dir(icol,kbot+1,11:14))
 
+         ! Diffuse fluxes
+         cam_out%solld(icol) &
+            = sum(flux_dn_diffuse(icol,kbot+1,1:9)) &
+            + 0.5_r8 * flux_dn_diffuse(icol,kbot+1,10)
+         cam_out%solsd(icol) &
+            = 0.5_r8 * flux_dn_diffuse(icol,kbot+1,10) &
+            + sum(flux_dn_diffuse(icol,kbot+1,11:14))
+
+         ! Net shortwave flux at surface
          cam_out%netsw(icol) = fluxes%flux_net(icol,kbot+1)
       end do
    else if (trim(band) == 'longwave') then
@@ -1806,10 +1865,12 @@ subroutine copy_fluxes_to_pbuf(pbuf, fluxes, band)
       fsns(1:ncol) = fluxes%flux_dn(1:ncol,kbot+1) - fluxes%flux_up(1:ncol,kbot+1)
       fsnt(1:ncol) = fluxes%flux_dn(1:ncol,ktop) - fluxes%flux_up(1:ncol,ktop)
 
+#ifdef DEBUG
       ! Check values
       call assert_valid(fsds(1:ncol), 'fsds')
       call assert_valid(fsns(1:ncol), 'fsns')
       call assert_valid(fsnt(1:ncol), 'fsnt')
+#endif
    else if (trim(band) == 'longwave') then
       ! Associate pointers
       call pbuf_get_field(pbuf, pbuf_get_index('FLNS'), flns)
@@ -1819,9 +1880,11 @@ subroutine copy_fluxes_to_pbuf(pbuf, fluxes, band)
       flns(1:ncol) = fluxes%flux_up(1:ncol,kbot+1) - fluxes%flux_dn(1:ncol,kbot+1)
       flnt(1:ncol) = fluxes%flux_up(1:ncol,ktop) - fluxes%flux_dn(1:ncol,ktop)
 
+#ifdef DEBUG
       ! Check values
       call assert_valid(flns(1:ncol), 'flns')
       call assert_valid(flnt(1:ncol), 'flnt')
+#endif
    else
       call endrun(trim(subname) // ': flux_type ' // trim(band) // ' not known.')
    end if
@@ -1848,11 +1911,13 @@ subroutine calculate_heating_rate(fluxes, pint, heating_rate)
    ! Everyone needs a name
    character(len=32) :: subname = 'calculate_heating_rate'
 
+#ifdef DEBUG
    ! Get dimension sizes and make sure arrays conform
    call assert(size(pint,1) == size(fluxes%flux_up,1), subname // ': sizes do not conform.')
    call assert(size(pint,2) == size(fluxes%flux_up,2), subname // ': sizes do not conform.')
    call assert(size(heating_rate,1) == size(fluxes%flux_up,1), subname // ': sizes do not conform.')
    call assert(size(heating_rate,2) == size(fluxes%flux_up,2)-1, subname // ': sizes do not conform.')
+#endif
 
    ! Loop over levels and calculate heating rates; note that the fluxes *should*
    ! be defined at interfaces, so the loop ktop,kbot and grabbing the current
@@ -2015,9 +2080,11 @@ subroutine compress_day_columns_1d(xcol, xday, day_indices)
    integer :: icol, iday
    character(len=32) :: subname = 'compress_day_columns'
 
+#ifdef DEBUG
    ! Check dimensions
    call assert(size(xday, 1) == size(day_indices, 1), trim(subname) // ': inconsistent sizes')
    call assert(size(xcol, 1) >= size(day_indices, 1), trim(subname) // ': inconsistent sizes')
+#endif
    
    ! Do mapping
    do iday = 1,count(day_indices>0)
@@ -2035,10 +2102,12 @@ subroutine compress_day_columns_2d(xcol, xday, day_indices)
    integer :: icol, iday
    character(len=32) :: subname = 'compress_day_columns'
 
+#ifdef DEBUG
    ! Check dimensions
    call assert(size(xday, 1) == size(day_indices, 1), trim(subname) // ': inconsistent sizes')
    call assert(size(xcol, 1) >= size(day_indices, 1), trim(subname) // ': inconsistent sizes')
    call assert(size(xday, 2) == size(xcol, 2), trim(subname) // ': inconsistent sizes')
+#endif
 
    ! Do mapping
    do iday = 1,count(day_indices>0)
@@ -2056,9 +2125,11 @@ subroutine expand_day_columns_1d(xday, xcol, day_indices)
    integer :: icol, iday
    character(len=32) :: subname = 'expand_day_columns_1d'
 
+#ifdef DEBUG
    ! Check dimensions
    call assert(size(xday, 1) == size(day_indices, 1), trim(subname) // ': inconsistent sizes')
    call assert(size(xcol, 1) >= size(day_indices, 1), trim(subname) // ': inconsistent sizes')
+#endif
 
    ! We need to reset to zero because we only populate the daytime columns
    xcol(:) = 0._r8
@@ -2078,10 +2149,12 @@ subroutine expand_day_columns_2d(xday, xcol, day_indices)
    integer :: icol, iday
    character(len=32) :: subname = 'expand_day_columns_2d'
 
+#ifdef DEBUG
    ! Check dimensions
    call assert(size(xday, 1) == size(day_indices, 1), trim(subname) // ': inconsistent sizes')
    call assert(size(xcol, 1) >= size(day_indices, 1), trim(subname) // ': inconsistent sizes')
    call assert(size(xday, 2) == size(xcol, 2), trim(subname) // ': inconsistent sizes')
+#endif
 
    ! We need to reset to zero because we only populate the daytime columns
    xcol(:,:) = 0._r8
@@ -2166,8 +2239,10 @@ subroutine output_cloud_optics_lw(state, optics)
    type(physics_state), intent(in) :: state
    type(cam_optics_type), intent(in) :: optics
    
+#ifdef DEBUG
    ! Output 
    call assert_valid(optics%optical_depth(1:state%ncol,1:pver,1:nlwbands), 'cloud_tau_lw')
+#endif
    call outfld('CLOUD_TAU_LW', optics%optical_depth(1:state%ncol,1:pver,1:nlwbands), state%ncol, state%lchnk)
 
 end subroutine output_cloud_optics_lw
@@ -2183,6 +2258,7 @@ subroutine output_cloud_optics_sw(state, optics)
    type(cam_optics_type), intent(in) :: optics
    character(len=*), parameter :: subname = 'output_cloud_optics_sw'
 
+#ifdef DEBUG
    ! Check values
    call assert_valid(optics%optical_depth(1:state%ncol,1:pver,1:nswbands), &
                      trim(subname) // ': optics%optical_depth')
@@ -2190,6 +2266,7 @@ subroutine output_cloud_optics_sw(state, optics)
                      trim(subname) // ': optics%single_scattering_albedo')
    call assert_valid(optics%assymmetry_parameter(1:state%ncol,1:pver,1:nswbands), &
                      trim(subname) // ': optics%assymmetry_parameter')
+#endif
 
    ! Send outputs to history buffer
    call outfld('CLOUD_TAU_SW', &
@@ -2305,10 +2382,12 @@ subroutine set_cosine_solar_zenith_angle(state, dt, coszrs)
    real(r8) :: clat(size(coszrs))  ! current latitudes(radians)
    real(r8) :: clon(size(coszrs))  ! current longitudes(radians)
 
+#ifdef DEBUG
    ! Make sure desired coszrs has the correct shape. The "zenith" subroutine
    ! expects input arrays to have shape state%ncol, although this should
    ! probably be relaxed to take assumed-shape arrays.
    call assert(size(coszrs) >= state%ncol, 'size(coszrs) < ncol')
+#endif
 
    ! Get solar zenith angle from CAM utility routine. The "zenith" routine needs
    ! the current calendar day, and the latitude and longitudes for all columns
@@ -2339,6 +2418,7 @@ subroutine set_albedo(cam_in, albedo_direct, albedo_diffuse)
    real(r8) :: wavenumber_limits(2,nswbands)
    integer :: ncol, iband
 
+#ifdef DEBUG
    ! Check dimension sizes of output arrays.
    ! albedo_direct and albedo_diffuse should have sizes nswbands,ncol, but ncol
    ! can change so we just check that it is less than or equal to pcols (the
@@ -2349,6 +2429,7 @@ subroutine set_albedo(cam_in, albedo_direct, albedo_diffuse)
                'set_albedo: size(albedo_direct, 2) > pcols')
    call assert(all(shape(albedo_direct) == shape(albedo_diffuse)), &
                'set_albedo: albedo_direct and albedo_diffuse have inconsistent shapes')
+#endif
    
    ncol = size(albedo_direct, 2)
 
@@ -2681,6 +2762,77 @@ subroutine initialize_rrtmgp_fluxes(ncol, nlevels, nbands, fluxes, do_direct)
 
 end subroutine initialize_rrtmgp_fluxes
 
+subroutine cam_flux_initialize(this, ncol, nlev, nbands, do_direct)
+
+   class(cam_flux_type), intent(inout) :: this
+   integer, intent(in) :: ncol, nlev, nbands
+   logical, optional, intent(in) :: do_direct
+   logical :: do_direct_local
+
+   if (present(do_direct)) then
+      do_direct_local = .true.
+   else
+      do_direct_local = .false.
+   end if
+
+
+   if (.not. allocated(this%flux_up)) allocate(this%flux_up(ncol,nlev))
+   if (.not. allocated(this%flux_dn)) allocate(this%flux_dn(ncol,nlev))
+   if (.not. allocated(this%flux_net)) allocate(this%flux_net(ncol,nlev))
+   if (do_direct_local) then
+      if (.not. allocated(this%flux_dn_dir)) allocate(this%flux_dn_dir(ncol,nlev))
+   end if
+
+   if (.not. allocated(this%bnd_flux_up)) allocate(this%bnd_flux_up(ncol,nlev,nbands))
+   if (.not. allocated(this%bnd_flux_dn)) allocate(this%bnd_flux_dn(ncol,nlev,nbands))
+   if (.not. allocated(this%bnd_flux_net)) allocate(this%bnd_flux_net(ncol,nlev,nbands))
+   if (do_direct_local) then
+      if (.not. allocated(this%bnd_flux_dn_dir)) allocate(this%bnd_flux_dn_dir(ncol,nlev,nbands))
+   end if
+
+end subroutine cam_flux_initialize
+!-------------------------------------------------------------------------------
+subroutine cam_flux_finalize(this)
+   class(cam_flux_type), intent(inout) :: this
+   if (allocated(this%flux_up)) deallocate(this%flux_up)
+   if (allocated(this%flux_dn)) deallocate(this%flux_dn)
+   if (allocated(this%flux_net)) deallocate(this%flux_net)
+   if (allocated(this%flux_dn_dir)) deallocate(this%flux_dn_dir)
+
+   if (allocated(this%bnd_flux_up)) deallocate(this%bnd_flux_up)
+   if (allocated(this%bnd_flux_dn)) deallocate(this%bnd_flux_dn)
+   if (allocated(this%bnd_flux_net)) deallocate(this%bnd_flux_net)
+   if (allocated(this%bnd_flux_dn_dir)) deallocate(this%bnd_flux_dn_dir)
+end subroutine cam_flux_finalize
+
+subroutine free_fluxes(fluxes)
+   use mo_fluxes_byband, only: ty_fluxes_byband
+   type(ty_fluxes_byband), intent(inout) :: fluxes
+   if (associated(fluxes%flux_up)) deallocate(fluxes%flux_up)
+   if (associated(fluxes%flux_dn)) deallocate(fluxes%flux_dn)
+   if (associated(fluxes%flux_net)) deallocate(fluxes%flux_net)
+   if (associated(fluxes%flux_dn_dir)) deallocate(fluxes%flux_dn_dir)
+   if (associated(fluxes%bnd_flux_up)) deallocate(fluxes%bnd_flux_up)
+   if (associated(fluxes%bnd_flux_dn)) deallocate(fluxes%bnd_flux_dn)
+   if (associated(fluxes%bnd_flux_net)) deallocate(fluxes%bnd_flux_net)
+   if (associated(fluxes%bnd_flux_dn_dir)) deallocate(fluxes%bnd_flux_dn_dir)
+end subroutine free_fluxes
+
+subroutine free_optics_sw(optics)
+   use mo_optical_props, only: ty_optical_props_2str
+   type(ty_optical_props_2str), intent(inout) :: optics
+   if (allocated(optics%tau)) deallocate(optics%tau)
+   if (allocated(optics%ssa)) deallocate(optics%ssa)
+   if (allocated(optics%g)) deallocate(optics%g)
+   call optics%finalize()
+end subroutine free_optics_sw
+
+subroutine free_optics_lw(optics)
+   use mo_optical_props, only: ty_optical_props_1scl
+   type(ty_optical_props_1scl), intent(inout) :: optics
+   if (allocated(optics%tau)) deallocate(optics%tau)
+   call optics%finalize()
+end subroutine free_optics_lw
 
 subroutine set_gas_concentrations(icall, state, pbuf, &
                                   gas_concentrations, &
@@ -2703,6 +2855,10 @@ subroutine set_gas_concentrations(icall, state, pbuf, &
    real(r8), dimension(pcols,nlev_rad) :: vol_mix_ratio_day, &
                                           vol_mix_ratio_out
    real(r8), pointer :: mass_mix_ratio(:,:)
+
+   ! Gases and molecular weights. Note that we do NOT have CFCs yet (I think
+   ! this is coming soon in RRTMGP). RRTMGP also allows for absorption due to
+   ! CO and N2, which RRTMG did not have.
    character(len=3), dimension(8) :: gas_species = (/ &
       'H2O', 'CO2', 'O3 ', 'N2O', &
       'CO ', 'CH4', 'O2 ', 'N2 ' &
@@ -2794,10 +2950,12 @@ subroutine set_gas_concentrations(icall, state, pbuf, &
          vol_mix_ratio(1:ncol,1:pver) = 0._r8
       end if
 
+#ifdef DEBUG
       ! Make sure we do not have any negative volume mixing ratios
       call assert(all(vol_mix_ratio(1:ncol,1:pver) >= 0), &
                   trim(subname) // ': invalid gas concentration for ' // &
                   trim(gas_species(igas)))
+#endif
 
       ! Map to radiation grid
       vol_mix_ratio_out(1:ncol,ktop:kbot) = vol_mix_ratio(1:ncol,1:pver)
@@ -3018,6 +3176,7 @@ subroutine set_cloud_optics_sw(state, pbuf, day_indices, kdist, optics_out)
    ! Check cloud optics_sw
    call handle_error(optics_out%validate())
 
+   call optics_cam%finalize()
 end subroutine set_cloud_optics_sw
 
 
@@ -3033,8 +3192,10 @@ function reordered(array_in, new_indexing) result(array_out)
    ! Loop index
    integer :: ii
 
+#ifdef DEBUG
    ! Check inputs
    call assert(size(array_in) == size(new_indexing), 'reorder_array: sizes inconsistent')
+#endif
 
    ! Reorder array based on input index mapping, which maps old indices to new
    do ii = 1,size(new_indexing)
@@ -3090,9 +3251,11 @@ subroutine set_cloud_optics_lw(state, pbuf, kdist, optics_out)
    call optics_cam%initialize(nlwbands, ncol, pver)
    call get_cloud_optics_lw(state, pbuf, optics_cam)
 
+#ifdef DEBUG
    ! Check values
    call assert_range(optics_cam%optical_depth, 0._r8, 1e20_r8, &
                      'set_cloud_optics_lw: optics_cam%optical_depth')
+#endif
 
    ! Send cloud optics to history buffer
    call output_cloud_optics_lw(state, optics_cam)
@@ -3150,9 +3313,11 @@ subroutine set_cloud_optics_lw(state, pbuf, kdist, optics_out)
    ! pass the foward scattering fraction that the CAM cloud optics_lw assumes.
    call handle_error(optics_out%delta_scale())
 
+#ifdef DEBUG
    ! Check values
    call assert_range(optics_out%tau, 0._r8, 1e20_r8, &
                      'set_cloud_optics_lw: optics_out%tau')
+#endif
 
    ! Check cloud optics
    call handle_error(optics_out%validate())
