@@ -3744,7 +3744,9 @@ struct InputParser {
 
 #define THREAD_QLT_RUN
 #ifndef QLT_MAIN
+#ifdef HAVE_CONFIG_H
 # include "config.h.c"
+#endif
 #endif
 
 // These Homme-specific CEDR::CDR::run() impls interact nicely with Homme's

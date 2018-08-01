@@ -2,7 +2,9 @@
 #include <cassert>
 #include <memory>
 
+#ifdef HAVE_CONFIG_H
 #include "config.h.c"
+#endif
 
 #include <Kokkos_Core.hpp>
 

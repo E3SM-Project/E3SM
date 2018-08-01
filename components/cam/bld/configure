@@ -2569,7 +2569,7 @@ if ($print) { print "creating $cam_bld/$fp_filename\n"; }
 if (($ccsm_seq)) {
 
     # Write the file for cam's cppdefs needed in ccsm.
-    write_cppdefs("$cam_bld/$cpp_filename", $make_cppdefs);
+    write_cppdefs("$cam_bld/$cpp_filename", $make_cppdefs, $cfg_ref);
     if ($print) { print "creating $cam_bld/$cpp_filename\n"; }
 
 } else {
@@ -2770,7 +2770,7 @@ sub write_filepath
     print $fh "$camsrcdir/cam/src/dynamics/$dyn\n";
     if($dyn eq 'se') {
 	    print $fh "$camsrcdir/homme/src/share\n";
-      if ($opts{'dyn_target'} eq 'preqx') {
+      if ($opts{'dyn_target'} eq 'preqx' or $opts{'dyn_target'} eq 'preqx-sl') {
 	      print $fh "$camsrcdir/homme/src/preqx\n";
         print $fh "$camsrcdir/homme/src/preqx/share\n";
       } 
@@ -2875,7 +2875,7 @@ sub write_filepath
 
 sub write_cppdefs
 {
-    my ($file, $make_cppdefs) = @_;
+    my ($file, $make_cppdefs, $cfg_ref) = @_;
     my  $fh = new IO::File;
 
     $fh->open(">$file") or die "** can't open cpp defs file: $file\n";

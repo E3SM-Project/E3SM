@@ -2761,11 +2761,19 @@ int main (int argc, char** argv) {
 }
 #endif
 
+#ifdef CAM
+#define QSIZE_D PCNST
+#else
+
 #ifndef IR_MAIN
+#ifdef HAVE_CONFIG_H
 # include "config.h.c"
+#endif
 #else
 # define QSIZE_D 64
 #endif
+
+#endif //CAM
 
 namespace homme {
 typedef ir::Int Int;
