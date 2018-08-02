@@ -6,11 +6,9 @@ conduct an ensemble of simulations starting from different initial conditions.
 This class inherits from SystemTestsCommon.
 """
 
-import subprocess
-import importlib
-import shutil
 import stat
 import json
+import shutil
 
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case.case_setup import case_setup
@@ -20,21 +18,11 @@ from CIME.test_status import *
 
 import CIME.test_status
 
+import evv4esm
+from evv4esm.__main__ import main as evv
 
+evv_lib_dir = os.path.abspath(os.path.dirname(evv4esm.__file__))
 logger = logging.getLogger(__name__)
-
-try:
-    import livvkit
-except ImportError:
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--user', 'livvkit'])
-    livvkit = importlib.import_module('livvkit')
-    logger.info('Installed LIVVkit v{} via pip.'.format(livvkit.__version__))
-
-# FIXME: remove once eve is a package, or inc. eve into CIME/SystemTest/Test_utils
-eve_lib_dir = '/ccs/home/kennedy/EVE/eve'
-sys.path.append(eve_lib_dir)
-from eve.__main__ import main as eve
-
 
 # Build executable with multiple instances
 ninst = 20
@@ -48,16 +36,11 @@ class MVK(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, case)
 
-        logger.info('MVK:INIT: CMPR: {}'.format(self._case.get_value("COMPARE_BASELINE")))
-        resubmit = int(self._case.get_value("RESUBMIT"))
-        logger.info('MVK:INIT: RESUBMIT: {}'.format(resubmit))
-        logger.info('MVK:INIT: GENERATE_BASELINE: {}'.format(self._case.get_value("GENERATE_BASELINE")))
-
-        if resubmit == 0 and self._case.get_value("GENERATE_BASELINE") is False:
+        if self._case.get_value("RESUBMIT") == 0 \
+                and self._case.get_value("GENERATE_BASELINE") is False:
             self._case.set_value("COMPARE_BASELINE", True)
         else:
             self._case.set_value("COMPARE_BASELINE", False)
-        logger.info('MVK:INIT: CMPR_F: {}'.format(resubmit))
 
 
     def build_phase(self, sharedlib_only=False, model_only=False):
@@ -201,9 +184,9 @@ class MVK(SystemTestsCommon):
             # base_name = os.path.basename(basecmp_case)
 
             test_name = "{}".format(case_name.split('.')[-1])
-            eve_config = {
+            evv_config = {
                 test_name: {
-                    "module": os.path.join(eve_lib_dir, "extensions/ks.py"),
+                    "module": os.path.join(evv_lib_dir, "extensions", "ks.py"),
                     "case1": "Test",
                     "dir1": run_dir,
                     "case2": "Baseline",
@@ -215,19 +198,18 @@ class MVK(SystemTestsCommon):
 
             json_file = os.path.join(run_dir, '.'.join([case_name, 'json']))
             with open(json_file, 'w') as config_file:
-                json.dump(eve_config, config_file, indent=4)
+                json.dump(evv_config, config_file, indent=4)
 
-            eve_out_dir = os.path.join(run_dir, '.'.join([case_name, 'eve']))
-            eve(['-e', json_file, '-o', eve_out_dir])
+            evv_out_dir = os.path.join(run_dir, '.'.join([case_name, 'eve']))
+            evv(['-e', json_file, '-o', evv_out_dir])
 
-            with open(os.path.join(eve_out_dir, 'index.json'), 'r') as eve_f:
-                eve_status = json.load(eve_f)
+            with open(os.path.join(evv_out_dir, 'index.json'), 'r') as evv_f:
+                evv_status = json.load(evv_f)
 
-            for eve_elem in eve_status['Data']['Elements']:
-                if eve_elem['Type'] == 'ValSummary':
-                    if eve_elem['TableTitle'] == 'Kolmogorov-Smirnov':
-                        if eve_elem['Data'][test_name]['']['Ensembles'] == 'identical':
+            for evv_elem in evv_status['Data']['Elements']:
+                if evv_elem['Type'] == 'ValSummary':
+                    if evv_elem['TableTitle'] == 'Kolmogorov-Smirnov':
+                        if evv_elem['Data'][test_name]['']['Ensembles'] == 'identical':
                             self._test_status.set_status(CIME.test_status.BASELINE_PHASE,
                                                          CIME.test_status.TEST_PASS_STATUS)
                             break
-
