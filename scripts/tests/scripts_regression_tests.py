@@ -734,7 +734,7 @@ class M_TestWaitForTests(unittest.TestCase):
 
         expected_stat = 0 if expected_results == ["PASS"]*len(expected_results) else CIME.utils.TESTS_FAILED_ERR_CODE
         output = run_cmd_assert_result(self, "%s/wait_for_tests -p ACME_test */TestStatus %s" % (TOOLS_DIR, extra_args),
-                                       from_dir=testdir, expected_stat=expected_stat, verbose=True)
+                                       from_dir=testdir, expected_stat=expected_stat)
 
         lines = [line for line in output.splitlines() if line.startswith("Test '")]
         self.assertEqual(len(lines), len(expected_results))
