@@ -198,9 +198,9 @@ def create_cdash_xml_fakes(results, cdash_build_name, cdash_build_group, utc_tim
 
     data_rel_path = os.path.join("Testing", utc_time)
 
-    # create_cdash_config_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit)
+    create_cdash_config_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit)
 
-    #create_cdash_build_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit)
+    create_cdash_build_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit)
 
     create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit)
 
