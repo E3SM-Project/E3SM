@@ -477,9 +477,7 @@
     <valid_values>0,1,3,5,10,36</valid_values>
     <default_value>10</default_value>
     <values match="last">
-      <!-- TODO: this needs to be changed back to original value once CTSM code is updated to master -->
-      <!-- <value compset="_CLM40.*_SGLC">0</value> -->
-      <value compset="_SGLC_">0</value>
+      <value compset="_CLM40.*_SGLC">0</value>
     </values>
     <group>run_glc</group>
     <file>env_run.xml</file>

@@ -76,11 +76,12 @@
 	    #
             ATM -> MED :remapMethod=redist
             MED med_connectors_post_atm2med
-            MED med_phases_history
+            MED med_phases_history_write
 	  @
 	  OCN
   	  OCN -> MED :remapMethod=redist
 	  MED med_connectors_post_ocn2med
+          MED med_phases_restart_write
       @
       </value>
       <value COMP_OCN="socn">
@@ -123,8 +124,9 @@
             MED med_connectors_post_glc2med
             ATM -> MED :remapMethod=redist
             MED med_connectors_post_atm2med
-            MED med_phases_history
+            MED med_phases_history_write
 	  @
+          MED med_phases_restart_write
        @
       </value>
       <value COMP_ATM="cam" COMP_OCN="docn" COMP_WAV="swav">
@@ -167,8 +169,9 @@
 	    ATM
 	    ATM -> MED :remapMethod=redist
 	    MED med_connectors_post_atm2med
-            MED med_phases_history
+            MED med_phases_history_write
 	  @
+          MED med_phases_restart_write
        @
       </value>
     </values>
@@ -422,6 +425,7 @@
     </desc>
     <values>
       <value>fixed_year</value>
+      <value iyear='HIST' cime_model='cesm'>variable_year</value>
     </values>
   </entry>
 
@@ -435,6 +439,8 @@
     <values>
       <value>1990</value>
       <value iyear="1850" cime_model="cesm">1850</value>
+      <value iyear="2000" cime_model="cesm">2000</value>
+      <value iyear='HIST' cime_model='cesm'>1850</value>
     </values>
   </entry>
 
@@ -448,6 +454,8 @@
     <values>
       <value>1990</value>
       <value iyear="1850" cime_model="cesm">1850</value>
+      <value iyear="2000" cime_model="cesm">2000</value>
+      <value iyear='HIST' cime_model='cesm'>1850</value>
     </values>
   </entry>
 
@@ -688,24 +696,24 @@
     </values>
   </entry>
 
-  <entry id="restart_pfile">
+  <entry id="driver_restart_pfile">
     <type>char</type>
     <category>expdef</category>
     <group>DRIVER_attributes</group>
     <desc>
-      Driver restart pointer file.
+      Mediator restart pointer file.
     </desc>
     <values>
-      <value>rpointer.drv</value>
+      <value>rpointer.med</value>
     </values>
   </entry>
 
-  <entry id="restart_file">
+  <entry id="driver_restart_file">
     <type>char</type>
     <category>expdef</category>
     <group>DRIVER_attributes</group>
     <desc>
-      Full archive path to restart file
+      Full archive path to restart file for mediator
     </desc>
     <values>
       <value>str_undefined</value>
@@ -956,10 +964,34 @@
   <!-- MED general attributes                      -->
   <!-- =========================================== -->
 
+  <entry id="restart_pfile">
+    <type>char</type>
+    <category>expdef</category>
+    <group>MED_attributes</group>
+    <desc>
+      Mediator restart pointer file.
+    </desc>
+    <values>
+      <value>rpointer.med</value>
+    </values>
+  </entry>
+
+  <entry id="restart_file">
+    <type>char</type>
+    <category>expdef</category>
+    <group>MED_attributes</group>
+    <desc>
+      Full archive path to restart file for mediator
+    </desc>
+    <values>
+      <value>str_undefined</value>
+    </values>
+  </entry>
+
   <entry id="flux_convergence">
     <type>real</type>
     <category>control</category>
-    <group>MED_attributes</group>
+    <group>ALLCOMP_attributes</group>
     <desc>
       Iterate atmocn flux calculation to this % difference
       Setting this to zero will always do flux_max_iteration
@@ -973,7 +1005,7 @@
   <entry id="flux_max_iteration">
     <type>integer</type>
     <category>control</category>
-    <group>MED_attributes</group>
+    <group>ALLCOMP_attributes</group>
     <desc>
       Iterate atmocn flux calculation a max of this value
     </desc>
@@ -986,15 +1018,19 @@
   <entry id="coldair_outbreak_mod">
     <type>logical</type>
     <category>control</category>
-    <group>MED_attributes</group>
+    <group>ALLCOMP_attributes</group>
     <desc>
       if true use  Mahrt and Sun 1995,MWR modification to surface flux calculation
     </desc>
     <values>
-      <value cime_model='e3sm'>.false.</value>
       <value cime_model='cesm'>.true.</value>
+      <value cime_model='e3sm'>.false.</value>
     </values>
   </entry>
+
+  <!-- =========================================== -->
+  <!-- MED general attributes                      -->
+  <!-- =========================================== -->
 
   <entry id="info_debug" modify_via_xml="INFO_DBUG">
     <type>integer</type>
@@ -2143,7 +2179,7 @@ n    </desc>
   <entry id="flds_co2a">
     <type>logical</type>
     <category>flds</category>
-    <group>FLDS_attributes</group>
+    <group>ALLCOMP_attributes</group>
     <desc>
       Previously, new fields that were needed to be passed between components
       for certain compsets were specified by cpp-variables. This has been
@@ -2160,7 +2196,7 @@ n    </desc>
   <entry id="flds_co2b">
     <type>logical</type>
     <category>flds</category>
-    <group>FLDS_attributes</group>
+    <group>ALLCOMP_attributes</group>
     <desc>
       Previously, new fields that were needed to be passed between components
       for certain compsets were specified by cpp-variables. This has been
@@ -2177,7 +2213,7 @@ n    </desc>
   <entry id="flds_co2c">
     <type>logical</type>
     <category>flds</category>
-    <group>FLDS_attributes</group>
+    <group>ALLCOMP_attributes</group>
     <desc>
       Previously, new fields that were needed to be passed between components
       for certain compsets were specified by cpp-variables. This has been
@@ -2194,7 +2230,7 @@ n    </desc>
   <entry id="flds_bgc_oi">
     <type>logical</type>
     <category>seq_flds</category>
-    <group>seq_cplflds_inparm</group>
+    <group>ALLCOMP_attributes</group>
     <desc>
       If set to .true. BGC fields will be passed back and forth between the ocean and seaice
       via the coupler.
@@ -2209,7 +2245,7 @@ n    </desc>
   <entry  id="flds_wiso" modify_via_xml="FLDS_WISO">
     <type>logical</type>
     <category>flds</category>
-    <group>FLDS_attributes</group>
+    <group>ALLCOMP_attributes</group>
     <desc>
       Pass water isotopes between components
     </desc>
@@ -2221,7 +2257,7 @@ n    </desc>
   <entry  id="glc_nec" modify_via_xml="GLC_NEC">
     <type>integer</type>
     <category>flds</category>
-    <group>FLDS_attributes</group>
+    <group>ALLCOMP_attributes</group>
     <desc>
       Number of cism elevation classes. Set by the xml variable GLC_NEC in env_run.xml
     </desc>
@@ -2233,7 +2269,7 @@ n    </desc>
   <entry id="ice_ncat" modify_via_xml="ICE_NCAT">
     <type>integer</type>
     <category>flds</category>
-    <group>FLDS_attributes</group>
+    <group>ALLCOMP_attributes</group>
     <desc>
       Number of sea ice thickness categories. Set by the xml variable ICE_NCAT in env_build.xml
     </desc>
@@ -2241,20 +2277,6 @@ n    </desc>
       <value>$ICE_NCAT</value>
     </values>
   </entry>
-
-  <entry id="flux_diurnal">
-    <type>logical</type>
-    <category>control</category>
-    <group>FLDS_attributes</group>
-    <desc>
-      If true, turn on diurnal cycle in computing atm/ocn fluxes
-      default: false
-    </desc>
-    <values>
-      <value>.false.</value>
-    </values>
-  </entry>
-
 
   <!-- =========================== -->
   <!-- CLOCK Attributes            -->

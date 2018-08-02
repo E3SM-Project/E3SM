@@ -4,15 +4,16 @@ module med_internalstate_mod
   ! Mediator Internal State Datatype.
   !-----------------------------------------------------------------------------
 
-  use ESMF
+  use ESMF, only : ESMF_RouteHandle, ESMF_FieldBundle, ESMF_State
   use esmFlds               , only: ncomps
   use shr_nuopc_fldList_mod , only: nmappers
 
   implicit none
-  public
+  private
 
-  integer :: logunit  ! logunit for mediator log output
-  integer :: loglevel ! loglevel for mediator log output
+  integer, public :: logunit  ! logunit for mediator log output
+  integer, public :: loglevel ! loglevel for mediator log output
+  logical, public :: mastertask=.false. ! is this the mastertask
 
   ! Active coupling definitions
   ! This defines the med_mapping_allowed is a starting point for what is
@@ -27,7 +28,7 @@ module med_internalstate_mod
   ! doesn't have it's own grid and only acts as a hub.
 
   ! tcraig, turned off glc2ocn and glc2ice for time being
-  logical, parameter :: med_coupling_allowed(ncomps,ncomps) = &
+  logical, public, parameter :: med_coupling_allowed(ncomps,ncomps) = &
    (/ .false., .false., .false., .false., .false., .false., .false., .false., &  ! med
       .false., .false., .true. , .true. , .true. , .false., .false., .false., &  ! atm
       .false., .true. , .false., .false., .false., .true. , .false., .true. , &  ! lnd
@@ -60,6 +61,7 @@ module med_internalstate_mod
     type(ESMF_FieldBundle):: FBExp(ncomps)                      ! Export data for various components, on their grid
     type(ESMF_FieldBundle):: FBExpAccum(ncomps)                 ! Accumulator for various components export on their grid
     integer               :: FBExpAccumcnt(ncomps)              ! Accumulator counter for each FBExpAccum
+    logical               :: FBExpAccumFlag(ncomps) = .false.   ! Accumulator flag, if true accumulation was done
     integer               :: conn_prep_cnt(ncomps)              ! Connector prep count
     integer               :: conn_post_cnt(ncomps)              ! Connector post count
     integer               :: mpicom
@@ -73,11 +75,11 @@ module med_internalstate_mod
     type(ESMF_FieldBundle):: FBMed_aoflux_diurnl_a              ! Ocn/Atm flux fields only needed for history
     type(ESMF_FieldBundle):: FBMed_l2x_to_glc_l                 ! FB only in mediator- Land->glc on lnd grid
     type(ESMF_FieldBundle):: FBMed_l2x_to_glc_accum_l           ! FB only in mediator- Land->glc accumulator on lnd grid
-  end type
+ end type InternalStateStruct
 
-  type InternalState
+  type, public :: InternalState
     type(InternalStateStruct), pointer :: wrap
-  end type
+ end type InternalState
 
   !-----------------------------------------------------------------------------
 

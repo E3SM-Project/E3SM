@@ -1,35 +1,14 @@
 module med_io_mod
-
   ! !DESCRIPTION: Writes attribute vectors to netcdf
 
   ! !USES:
-
-  use ESMF
-  use seq_comm_mct          , only : CPLID
-  use shr_kind_mod          , only : r4 => shr_kind_r4, r8 => shr_kind_r8
-  use shr_kind_mod          , only : cl => shr_kind_cl
-  use shr_sys_mod           , only : shr_sys_abort
-  use shr_mpi_mod           , only : shr_mpi_bcast
-  use shr_const_mod         , only : SHR_CONST_SPVAL
-  use shr_cal_mod           , only : shr_cal_datetod2string
-  use shr_cal_mod           , only : shr_cal_calMaxLen
-  use shr_cal_mod           , only : shr_cal_calendarName
-  use shr_cal_mod           , only : shr_cal_noleap
-  use shr_cal_mod           , only : shr_cal_gregorian
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFieldN
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getNameN
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFldPtr
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
-  use med_internalstate_mod , only : logunit
-  use med_constants_mod     , only : med_constants_dbug_flag
-  use shr_pio_mod           , only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
-  use pio
+  use med_constants_mod          , only : CL
+  use pio, only : file_desc_t, iosystem_desc_t
 
   implicit none
   private
 
-  ! !PUBLIC MEMBER FUNCTIONS:
+  ! public member functions:
   public med_io_wopen
   public med_io_close
   public med_io_redef
@@ -40,8 +19,9 @@ module med_io_mod
   public med_io_write
   public med_io_init
 
-  ! !PUBLIC DATA MEMBERS
+  ! public data members:
   interface med_io_read
+     module procedure med_io_read_FB
      module procedure med_io_read_int
      module procedure med_io_read_int1d
      module procedure med_io_read_r8
@@ -65,8 +45,7 @@ module med_io_mod
   character(*),parameter :: prefix    = "med_io_"
   character(*),parameter :: modName   = "(med_io_mod) "
   character(*),parameter :: version   = "cmeps0"
-  integer     ,parameter :: dbug_flag = med_constants_dbug_flag
-  real(r8)    ,parameter :: fillvalue = SHR_CONST_SPVAL
+
   integer    , parameter :: file_desc_t_cnt = 20 ! Note - this is hard-wired for now
   character(*),parameter :: u_file_u = &
        __FILE__
@@ -76,16 +55,14 @@ module med_io_mod
   integer                        :: pio_iotype
   integer                        :: pio_ioformat
   type(iosystem_desc_t), pointer :: io_subsystem
-  integer                        :: dbrc
-  character(CL)                  :: tmpstr
-  character(CL)                  :: charvar   ! buffer for string read/write
 
 !=================================================================================
 contains
 !=================================================================================
 
   subroutine med_io_init()
-
+    use seq_comm_mct          , only : CPLID
+    use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
     io_subsystem => shr_pio_getiosys(CPLID)
     pio_iotype   =  shr_pio_getiotype(CPLID)
     pio_ioformat =  shr_pio_getioformat(CPLID)
@@ -94,12 +71,16 @@ contains
 
   !===============================================================================
   subroutine med_io_wopen(filename, mpicom, iam, clobber, file_ind, model_doi_url)
-
     ! !DESCRIPTION: open netcdf file
-
+    use shr_mpi_mod, only : shr_mpi_bcast
+    use pio, only : PIO_IOTYPE_PNETCDF, PIO_IOTYPE_NETCDF, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
+    use pio, only : pio_openfile, pio_createfile, PIO_GLOBAL, pio_enddef, pio_put_att, pio_redef, pio_get_att
+    use pio, only : pio_seterrorhandling, pio_file_is_open, pio_clobber, pio_write, pio_noclobber
+    use shr_sys_mod, only : shr_sys_abort
+    use med_internalstate_mod, only : logunit
     ! input/output arguments
     character(*),            intent(in) :: filename
-    integer,                 intent(in) :: mpicom 
+    integer,                 intent(in) :: mpicom
     integer,                 intent(in) :: iam
     logical,       optional, intent(in) :: clobber
     integer,       optional, intent(in) :: file_ind
@@ -187,7 +168,9 @@ contains
 
   !===============================================================================
   subroutine med_io_close(filename, iam, file_ind)
-
+    use pio, only: pio_file_is_open, pio_closefile
+    use med_internalstate_mod, only : logunit
+    use shr_sys_mod, only : shr_sys_abort
     ! !DESCRIPTION: close netcdf file
 
     ! input/output variables
@@ -219,6 +202,7 @@ contains
 
   !===============================================================================
   subroutine med_io_redef(filename,file_ind)
+    use pio, only : pio_redef
     character(len=*), intent(in) :: filename
     integer,optional,intent(in):: file_ind
 
@@ -227,12 +211,13 @@ contains
 
     lfile_ind = 0
     if (present(file_ind)) lfile_ind=file_ind
-
     rcode = pio_redef(io_file(lfile_ind))
   end subroutine med_io_redef
 
   !===============================================================================
   subroutine med_io_enddef(filename,file_ind)
+    use med_internalstate_mod, only : logunit
+    use pio, only : pio_enddef
     character(len=*), intent(in) :: filename
     integer,optional,intent(in):: file_ind
     integer :: lfile_ind
@@ -246,7 +231,7 @@ contains
 
   !===============================================================================
   character(len=24) function med_io_date2yyyymmdd (date)
-
+    use shr_cal_mod, only : shr_cal_datetod2string
     ! input arguments
     integer, intent(in) :: date  ! date expressed as an integer: yyyymmdd
     !----------------------------------------------------------------------
@@ -256,7 +241,8 @@ contains
 
   !===============================================================================
   character(len=8) function med_io_sec2hms (seconds)
-
+    use shr_sys_mod, only : shr_sys_abort
+    use med_internalstate_mod , only : logunit
     ! Input arguments
     integer, intent(in) :: seconds
 
@@ -291,11 +277,24 @@ contains
   end function med_io_sec2hms
 
   !===============================================================================
-  subroutine med_io_write_FB(filename, iam, FB, whead, wdata, nx, ny, nt, fillval, pre, tavg, &
-       use_float, file_ind, rc)
+  subroutine med_io_write_FB(filename, iam, FB, whead, wdata, nx, ny, nt, &
+       fillval, pre, tavg, use_float, file_ind, rc)
 
     ! !DESCRIPTION: Write FB to netcdf file
-
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF, only : ESMF_FieldBundleIsCreated, ESMF_FieldBundle, ESMF_Field, ESMF_Mesh, ESMF_DistGrid
+    use ESMF, only : ESMF_FieldBundleGet, ESMF_FieldGet, ESMF_MeshGet, ESMF_DistGridGet
+    use med_constants_mod, only : R4, R8
+    use shr_const_mod         , only : fillvalue=>SHR_CONST_SPVAL
+    use pio, only : var_desc_t, io_desc_t, pio_offset_kind
+    use med_constants_mod, only : dbug_flag=>med_constants_dbug_flag
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getFieldN
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getFldPtr
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getNameN
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
+    use pio, only : pio_def_dim, pio_inq_dimid, pio_real, pio_def_var, pio_put_att, pio_double
+    use pio, only : pio_inq_varid, pio_setframe, pio_write_darray, pio_initdecomp, pio_freedecomp
     ! input/output variables
     character(len=*),           intent(in) :: filename  ! file
     integer,                    intent(in) :: iam       ! local pet
@@ -341,6 +340,8 @@ contains
     integer, pointer              :: Dof(:)
     integer                       :: lfile_ind
     real(r8), pointer             :: fldptr1(:)
+    character(CL)                 :: tmpstr
+    integer                       :: dbrc
     character(*),parameter :: subName = '(med_io_write_FB) '
     !-------------------------------------------------------------------------------
 
@@ -418,12 +419,13 @@ contains
     !    write(tmpstr,*) subname,' counts = ',dimcount,tilecount,minindexptile,maxindexptile
     !    call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
 
-    ! TODO: this is not getting the global size correct for a FB coming in that does not have 
+    ! TODO: this is not getting the global size correct for a FB coming in that does not have
     ! all the global grid values in the distgrid - e.g. CTSM
 
     ng = maxval(maxIndexPTile)
     lnx = ng
     lny = 1
+    deallocate(minIndexPTile, maxIndexPTile)
 
     frame = -1
     if (present(nt)) then
@@ -528,7 +530,8 @@ contains
 
   !===============================================================================
   subroutine med_io_write_int(filename, iam, idata, dname, whead, wdata, file_ind)
-
+    use pio, only : var_desc_t, pio_def_var, pio_put_att, pio_int, pio_inq_varid, pio_put_var
+    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
     ! !DESCRIPTION:  Write scalar integer to netcdf file
 
     ! intput/output variables
@@ -584,6 +587,9 @@ contains
 
   !===============================================================================
   subroutine med_io_write_int1d(filename, iam, idata, dname, whead, wdata, file_ind)
+    use pio, only : var_desc_t, pio_def_dim, pio_def_var, pio_put_att, pio_inq_varid, pio_put_var
+    use pio, only : pio_int, pio_def_var
+    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
 
     ! !DESCRIPTION: Write 1d integer array to netcdf file
 
@@ -643,12 +649,14 @@ contains
 
   !===============================================================================
   subroutine med_io_write_r8(filename, iam, rdata, dname, whead, wdata, file_ind)
-
+    use med_constants_mod, only : R8
+    use pio, only : var_desc_t, pio_def_var, pio_put_att, pio_double, pio_noerr, pio_inq_varid, pio_put_var
+    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
     ! !DESCRIPTION: Write scalar double to netcdf file
 
     ! input/output arguments
     character(len=*),intent(in) :: filename ! file
-    integer         ,intent(in) :: iam      ! local pet 
+    integer         ,intent(in) :: iam      ! local pet
     real(r8)        ,intent(in) :: rdata    ! data to be written
     character(len=*),intent(in) :: dname    ! name of data
     logical,optional,intent(in) :: whead    ! write header
@@ -700,8 +708,10 @@ contains
 
   !===============================================================================
   subroutine med_io_write_r81d(filename, iam, rdata, dname, whead, wdata, file_ind)
-
     ! !DESCRIPTION: Write 1d double array to netcdf file
+    use med_constants_mod, only : R8
+    use pio, only : var_desc_t, pio_def_dim, pio_def_var, pio_inq_varid, pio_put_var, pio_double, pio_put_att
+    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
 
     ! !INPUT/OUTPUT PARAMETERS:
     character(len=*),intent(in) :: filename ! file
@@ -757,9 +767,10 @@ contains
 
   !===============================================================================
   subroutine med_io_write_char(filename, iam, rdata, dname, whead, wdata, file_ind)
-
     ! !DESCRIPTION:  Write char string to netcdf file
-
+    use pio, only : var_desc_t, pio_def_dim, pio_put_att, pio_def_var, pio_inq_varid
+    use pio, only : pio_char, pio_put_var
+    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
     ! input/output arguments
     character(len=*),intent(in) :: filename ! file
     integer         ,intent(in) :: iam      ! local pet
@@ -779,6 +790,7 @@ contains
     integer          :: lnx
     logical          :: lwhead, lwdata
     integer          :: lfile_ind
+    character(CL)    :: charvar   ! buffer for string read/write
     character(*),parameter :: subName = '(med_io_write_char) '
     !-------------------------------------------------------------------------------
 
@@ -815,12 +827,18 @@ contains
   !===============================================================================
   subroutine med_io_write_time(filename, iam, time_units, time_cal, time_val, nt,&
        whead, wdata, tbnds, file_ind)
-
+    use med_constants_mod, only : R8
+    use shr_cal_mod, only : shr_cal_calMaxLen
+    use shr_cal_mod           , only : shr_cal_noleap
+    use shr_cal_mod           , only : shr_cal_gregorian
+    use shr_cal_mod, only : shr_cal_calendarName
+    use pio, only : var_desc_t, PIO_UNLIMITED, pio_double, pio_def_dim, pio_def_var, pio_put_att
+    use pio, only : pio_inq_varid, pio_put_var
     ! !DESCRIPTION: Write time variable to netcdf file
 
     ! input/output variables
     character(len=*),      intent(in) :: filename   ! file
-    integer,               intent(in) :: iam        ! local pet    
+    integer,               intent(in) :: iam        ! local pet
     character(len=*),      intent(in) :: time_units ! units of time
     character(len=*),      intent(in) :: time_cal   ! calendar type
     real(r8)        ,      intent(in) :: time_val   ! data to be written
@@ -854,10 +872,12 @@ contains
        return
     endif
 
+    ! Write out header
     if (lwhead) then
        rcode = pio_def_dim(io_file(lfile_ind),'time',PIO_UNLIMITED,dimid(1))
        rcode = pio_def_var(io_file(lfile_ind),'time',PIO_DOUBLE,dimid,varid)
        rcode = pio_put_att(io_file(lfile_ind),varid,'units',trim(time_units))
+
        lcalendar = shr_cal_calendarName(time_cal,trap=.false.)
        if (trim(lcalendar) == trim(shr_cal_noleap)) then
           lcalendar = 'noleap'
@@ -865,15 +885,17 @@ contains
           lcalendar = 'gregorian'
        endif
        rcode = pio_put_att(io_file(lfile_ind),varid,'calendar',trim(lcalendar))
+
        if (present(tbnds)) then
+          dimid2(2) = dimid(1)
           rcode = pio_put_att(io_file(lfile_ind),varid,'bounds','time_bnds')
-          dimid2(2)=dimid(1)
           rcode = pio_def_dim(io_file(lfile_ind),'ntb',2,dimid2(1))
           rcode = pio_def_var(io_file(lfile_ind),'time_bnds',PIO_DOUBLE,dimid2,varid)
        endif
        if (lwdata) call med_io_enddef(filename, file_ind=lfile_ind)
     endif
 
+    ! Write out data
     if (lwdata) then
        start = 1
        count = 1
@@ -898,18 +920,208 @@ contains
   end subroutine med_io_write_time
 
   !===============================================================================
+  subroutine med_io_read_FB(filename, mpicom, iam, FB, pre, rc)
+    use med_constants_mod, only : R8, CL
+    use shr_const_mod         , only : fillvalue=>SHR_CONST_SPVAL
+    use ESMF, only : ESMF_FieldBundle, ESMF_Field, ESMF_Mesh, ESMF_DistGrid
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF, only : ESMF_LOGMSG_ERROR, ESMF_FAILURE
+    use ESMF, only : ESMF_FieldBundleIsCreated, ESMF_FieldBundleGet
+    use ESMF, only : ESMF_FieldGet, ESMF_MeshGet, ESMF_DistGridGet
+    use pio, only : file_desc_T, var_desc_t, io_desc_t, pio_nowrite, pio_openfile
+    use pio, only : pio_noerr, pio_inq_varndims, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
+    use pio, only : pio_inq_dimid, pio_inq_dimlen, pio_inq_varid, pio_inq_vardimid
+    use pio, only : pio_double, pio_get_att, pio_seterrorhandling, pio_freedecomp, pio_closefile
+    use pio, only : pio_read_darray, pio_initdecomp
+    use shr_mpi_mod, only : shr_mpi_bcast
+    use med_constants_mod, only : dbug_flag=>med_constants_dbug_flag
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getNameN
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getFldPtr
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getFieldN
+    ! !DESCRIPTION: Read FB to netcdf file
+
+    ! !input/output arguments
+    character(len=*)          ,intent(in)  :: filename ! file
+    integer                   ,intent(in)  :: mpicom
+    integer                   ,intent(in)  :: iam
+    type(ESMF_FieldBundle)    ,intent(in)  :: FB       ! data to be written
+    character(len=*),optional ,intent(in)  :: pre      ! prefix to variable name
+    integer                   ,intent(out) :: rc
+
+    ! local variables
+    type(ESMF_Field)    :: field
+    type(ESMF_Mesh)     :: mesh
+    type(ESMF_Distgrid) :: distgrid
+    integer             :: rcode
+    integer             :: nf,ns,ng
+    integer             :: k,n,ndims
+    integer, pointer    :: dimid(:)
+    type(file_desc_t)   :: pioid
+    type(var_desc_t)    :: varid
+    type(io_desc_t)     :: iodesc
+    character(CL)       :: itemc       ! string converted to char
+    character(CL)       :: name1       ! var name
+    character(CL)       :: lpre        ! local prefix
+    integer             :: lnx,lny
+    real(r8)            :: lfillvalue
+    logical             :: exists
+    integer, pointer    :: minIndexPTile(:,:)
+    integer, pointer    :: maxIndexPTile(:,:)
+    integer             :: dimCount, tileCount
+    integer, pointer    :: Dof(:)
+    real(r8), pointer   :: fldptr1(:)
+    character(CL)       :: tmpstr
+    integer             :: dbrc
+    character(*),parameter :: subName = '(med_io_read_FB) '
+    !-------------------------------------------------------------------------------
+
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    endif
+    rc = ESMF_Success
+
+    lpre = ' '
+    if (present(pre)) then
+       lpre = trim(pre)
+    endif
+
+    if (.not. ESMF_FieldBundleIsCreated(FB,rc=rc)) then
+       call ESMF_LogWrite(trim(subname)//" FB "//trim(lpre)//" not created", ESMF_LOGMSG_INFO, rc=dbrc)
+       if (dbug_flag > 5) then
+          call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+       endif
+       rc = ESMF_Success
+       return
+    endif
+
+    call ESMF_FieldBundleGet(FB, fieldCount=nf, rc=rc)
+    write(tmpstr,*) subname//' field count = '//trim(lpre),nf
+    call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+    if (nf < 1) then
+       call ESMF_LogWrite(trim(subname)//" FB "//trim(lpre)//" empty", ESMF_LOGMSG_INFO, rc=dbrc)
+       if (dbug_flag > 5) then
+          call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+       endif
+       rc = ESMF_Success
+       return
+    endif
+
+    if (iam==0) inquire(file=trim(filename),exist=exists)
+    call shr_mpi_bcast(exists,mpicom,'med_io_read_fb exists')
+    if (exists) then
+       rcode = pio_openfile(io_subsystem, pioid, pio_iotype, trim(filename),pio_nowrite)
+       call ESMF_LogWrite(trim(subname)//' open file '//trim(filename), ESMF_LOGMSG_INFO, rc=dbrc)
+    else
+       call ESMF_LogWrite(trim(subname)//' ERROR: file invalid '//trim(filename), &
+       ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+       rc = ESMF_FAILURE
+       return
+    endif
+
+    do k = 1,nf
+       call shr_nuopc_methods_FB_getNameN(FB, k, itemc, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_getFldPtr(FB, itemc, fldptr1=fldptr1, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       name1 = trim(lpre)//'_'//trim(itemc)
+       call ESMF_LogWrite(trim(subname)//' read field '//trim(name1), ESMF_LOGMSG_INFO, rc=dbrc)
+       call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+       rcode = pio_inq_varid(pioid,trim(name1),varid)
+       if (rcode == pio_noerr) then
+
+          if (k == 1) then
+             rcode = pio_inq_varndims(pioid, varid, ndims)
+             write(tmpstr,*) trim(subname),' ndims = ',ndims,k
+             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+             allocate(dimid(ndims))
+             rcode = pio_inq_vardimid(pioid, varid, dimid(1:ndims))
+             rcode = pio_inq_dimlen(pioid, dimid(1), lnx)
+             write(tmpstr,*) trim(subname),' lnx = ',lnx
+             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+             if (ndims>=2) then
+                rcode = pio_inq_dimlen(pioid, dimid(2), lny)
+             else
+                lny = 1
+             end if
+             deallocate(dimid)
+             write(tmpstr,*) trim(subname),' lny = ',lny
+             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+             ng = lnx * lny
+
+             call shr_nuopc_methods_FB_getFieldN(FB, k, field, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call ESMF_FieldGet(field, mesh=mesh, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call ESMF_MeshGet(mesh, elementDistgrid=distgrid, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call ESMF_DistGridGet(distgrid, dimCount=dimCount, tileCount=tileCount, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             allocate(minIndexPTile(dimCount, tileCount), &
+                      maxIndexPTile(dimCount, tileCount))
+             call ESMF_DistGridGet(distgrid, minIndexPTile=minIndexPTile, &
+                      maxIndexPTile=maxIndexPTile, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             !write(tmpstr,*) subname,' counts = ',dimcount,tilecount,minindexptile,maxindexptile
+             !call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+
+             if (ng > maxval(maxIndexPTile)) then
+                write(tmpstr,*) subname,' ERROR: dimensions do not match', lnx, lny, maxval(maxIndexPTile)
+                call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+
+                !TODO: this should not be an error for say CTSM which does not send a global grid
+                !rc = ESMF_Failure
+                !return
+             endif
+
+             call ESMF_DistGridGet(distgrid, localDE=0, elementCount=ns, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             allocate(dof(ns))
+             call ESMF_DistGridGet(distgrid, localDE=0, seqIndexList=dof, rc=rc)
+             write(tmpstr,*) subname,' dof = ',ns,size(dof),dof(1),dof(ns)  !,minval(dof),maxval(dof)
+             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+             call pio_initdecomp(io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
+             deallocate(dof)
+          endif
+
+          call pio_read_darray(pioid, varid, iodesc, fldptr1, rcode)
+          rcode = pio_get_att(pioid,varid,"_FillValue",lfillvalue)
+          if (rcode /= pio_noerr) then
+             lfillvalue = fillvalue
+          endif
+          do n = 1,size(fldptr1)
+             if (fldptr1(n) == lfillvalue) fldptr1(n) = 0.0_r8
+          enddo
+       else
+          fldptr1 = 0.0_r8
+       endif
+       call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
+    enddo
+
+    deallocate(minIndexPTile, maxIndexPTile)
+    call pio_freedecomp(pioid, iodesc)
+    call pio_closefile(pioid)
+
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    endif
+
+  end subroutine med_io_read_FB
+
+  !===============================================================================
   subroutine med_io_read_int(filename, mpicom, iam, idata, dname)
 
     ! !DESCRIPTION:  Read scalar integer from netcdf file
 
-    ! !INPUT/OUTPUT PARAMETERS:
+    ! input/output arguments
     character(len=*) , intent(in)    :: filename ! file
-    integer          , intent(in)    :: mpicom 
+    integer          , intent(in)    :: mpicom
     integer          , intent(in)    :: iam
     integer          , intent(inout) :: idata    ! integer data
     character(len=*) , intent(in)    :: dname    ! name of data
 
-    ! local varaibles
+    ! local variables
     integer :: i1d(1)
     character(*),parameter :: subName = '(med_io_read_int) '
     !-------------------------------------------------------------------------------
@@ -921,12 +1133,18 @@ contains
 
   !===============================================================================
   subroutine med_io_read_int1d(filename, mpicom, iam, idata, dname)
-
     ! !DESCRIPTION: Read 1d integer array from netcdf file
+    use shr_sys_mod, only : shr_sys_abort
+    use shr_mpi_mod, only : shr_mpi_bcast
+    use med_constants_mod, only : R8
+    use pio, only : var_desc_t, file_desc_t, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, pio_seterrorhandling
+    use pio, only : pio_get_var, pio_inq_varid, pio_get_att, pio_openfile, pio_nowrite, pio_openfile, pio_global
+    use pio, only : pio_closefile
+    use med_internalstate_mod, only : logunit
 
     ! input/output arguments
     character(len=*), intent(in)    :: filename ! file
-    integer,          intent(in)    :: mpicom 
+    integer,          intent(in)    :: mpicom
     integer,          intent(in)    :: iam
     integer         , intent(inout) :: idata(:) ! integer data
     character(len=*), intent(in)    :: dname    ! name of data
@@ -969,12 +1187,13 @@ contains
 
   !===============================================================================
   subroutine med_io_read_r8(filename, mpicom, iam, rdata, dname)
+    use med_constants_mod, only : R8
 
     ! !DESCRIPTION: Read scalar double from netcdf file
 
     ! input/output arguments
     character(len=*) , intent(in)    :: filename ! file
-    integer          , intent(in)    :: mpicom 
+    integer          , intent(in)    :: mpicom
     integer          , intent(in)    :: iam
     real(r8)         , intent(inout) :: rdata    ! real data
     character(len=*) , intent(in)    :: dname    ! name of data
@@ -990,12 +1209,18 @@ contains
 
   !===============================================================================
   subroutine med_io_read_r81d(filename, mpicom, iam, rdata, dname)
-
+    use med_constants_mod, only : R8
+    use pio, only : file_desc_t, var_desc_t, pio_openfile, pio_closefile, pio_seterrorhandling
+    use pio, only : PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, pio_inq_varid, pio_get_var
+    use pio, only : pio_nowrite, pio_openfile, pio_global, pio_get_att
+    use med_internalstate_mod, only : logunit
+    use shr_sys_mod, only : shr_sys_abort
+    use shr_mpi_mod, only : shr_mpi_bcast
     ! !DESCRIPTION: Read 1d double array from netcdf file
 
     ! input/output arguments
     character(len=*), intent(in)    :: filename ! file
-    integer,          intent(in)    :: mpicom 
+    integer,          intent(in)    :: mpicom
     integer,          intent(in)    :: iam
     real(r8)        , intent(inout) :: rdata(:) ! real data
     character(len=*), intent(in)    :: dname    ! name of data
@@ -1038,12 +1263,17 @@ contains
 
   !===============================================================================
   subroutine med_io_read_char(filename, mpicom, iam, rdata, dname)
-
+    use pio, only : file_desc_t, var_desc_t, pio_seterrorhandling, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
+    use pio, only : pio_closefile, pio_inq_varid, pio_get_var
+    use pio, only : pio_openfile, pio_global, pio_get_att, pio_nowrite
+    use shr_mpi_mod, only : shr_mpi_bcast
+    use med_internalstate_mod, only : logunit
+    use shr_sys_mod, only : shr_sys_abort
     ! !DESCRIPTION: Read char string from netcdf file
 
     ! input/output arguments
     character(len=*), intent(in)    :: filename ! file
-    integer,          intent(in)    :: mpicom 
+    integer,          intent(in)    :: mpicom
     integer,          intent(in)    :: iam
     character(len=*), intent(inout) :: rdata    ! character data
     character(len=*), intent(in)    :: dname    ! name of data
@@ -1055,6 +1285,7 @@ contains
     logical           :: exists
     character(CL)     :: lversion
     character(CL)     :: name1
+    character(CL)                  :: charvar   ! buffer for string read/write
     character(*),parameter :: subName = '(med_io_read_char) '
     !-------------------------------------------------------------------------------
 

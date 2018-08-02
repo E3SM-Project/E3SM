@@ -1,6 +1,7 @@
 module t_drv_timers_mod
 
-  use perf_mod
+  implicit none
+  public :: t_drvstopf, t_drvstartf
   integer, private :: cpl_run_hash=0, cpl_comm_hash=0, cpl_budget_hash=0
   character(len=*),parameter :: strcpl = 'CPL:RUN'
   character(len=*),parameter :: strcom = 'CPL:COMM'
@@ -11,7 +12,7 @@ contains
   !===============================================================================
 
   subroutine t_drvstartf(string,cplrun,cplcom,budget,barrier, hashint)
-
+    use perf_mod, only : t_barrierf, t_startf, t_adj_detailf
     implicit none
 
     character(len=*),intent(in) :: string
@@ -67,7 +68,7 @@ contains
   !===============================================================================
 
   subroutine t_drvstopf(string,cplrun,cplcom,budget,hashint)
-
+    use perf_mod, only : t_stopf, t_adj_detailf
     implicit none
 
     character(len=*),intent(in) :: string

@@ -64,6 +64,10 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--test", default=False, action="store_true",
                         help="Run tests of st_archiver functionality")
 
+    parser.add_argument("--resubmit", default=False, action="store_true",
+                        help="If RESUBMIT is set, this performs the resubmissions."
+                        "This is primarily meant for use by case.submit")
+
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     if args.caseroot is not None:
@@ -75,20 +79,21 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     if args.force_move is True:
         args.copy_only = False
 
-    return args.caseroot, args.last_date, args.no_incomplete_logs, args.copy_only, args.test
+    return (args.caseroot, args.last_date, args.no_incomplete_logs, args.copy_only,
+            args.test, args.resubmit)
 
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    caseroot, last_date, no_incomplete_logs, copy_only, test = parse_command_line(sys.argv, description)
+    caseroot, last_date, no_incomplete_logs, copy_only, test, resubmit = parse_command_line(sys.argv, description)
     with Case(caseroot, read_only=False) as case:
         if test:
             success = case.test_st_archive()
         else:
             success = case.case_st_archive(last_date_str=last_date,
                                            archive_incomplete_logs=not no_incomplete_logs,
-                                           copy_only=copy_only)
+                                           copy_only=copy_only, resubmit=resubmit)
 
     sys.exit(0 if success else 1)
 
