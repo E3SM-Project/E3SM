@@ -291,32 +291,49 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
         test_status_filepath = test_path
 
     logging.debug("Watching file: '{}'".format(test_status_filepath))
+    test_log_path = os.path.join(os.path.dirname(test_status_filepath), ".internal_test_status.log")
 
-    while (True):
-        if (os.path.exists(test_status_filepath)):
-            ts = TestStatus(test_dir=os.path.dirname(test_status_filepath))
-            test_name = ts.get_name()
-            test_status = ts.get_overall_test_status(wait_for_run=not no_run, # Important
-                                                     no_run=no_run,
-                                                     check_throughput=check_throughput,
-                                                     check_memory=check_memory, ignore_namelists=ignore_namelists,
-                                                     ignore_memleak=ignore_memleak)
+    # We don't want to make it a requirement that wait_for_tests has write access
+    # to all case directories
+    try:
+        fd = open(test_log_path, "w")
+        fd.close()
+    except:
+        test_log_path = "/dev/null"
 
-            if (test_status == TEST_PEND_STATUS and (wait and not SIGNAL_RECEIVED)):
-                time.sleep(SLEEP_INTERVAL_SEC)
-                logging.debug("Waiting for test to finish")
+    prior_ts = None
+    with open(test_log_path, "w") as log_fd:
+        while (True):
+            if (os.path.exists(test_status_filepath)):
+                ts = TestStatus(test_dir=os.path.dirname(test_status_filepath))
+                test_name = ts.get_name()
+                test_status = ts.get_overall_test_status(wait_for_run=not no_run, # Important
+                                                         no_run=no_run,
+                                                         check_throughput=check_throughput,
+                                                         check_memory=check_memory, ignore_namelists=ignore_namelists,
+                                                         ignore_memleak=ignore_memleak)
+
+                if prior_ts is not None and prior_ts != ts:
+                    log_fd.write(ts.phase_statuses_dump())
+                    log_fd.write("OVERALL: {}\n\n".format(test_status))
+
+                prior_ts = ts
+
+                if (test_status == TEST_PEND_STATUS and (wait and not SIGNAL_RECEIVED)):
+                    time.sleep(SLEEP_INTERVAL_SEC)
+                    logging.debug("Waiting for test to finish")
+                else:
+                    results.put( (test_name, test_path, test_status) )
+                    break
+
             else:
-                results.put( (test_name, test_path, test_status) )
-                break
-
-        else:
-            if (wait and not SIGNAL_RECEIVED):
-                logging.debug("File '{}' does not yet exist".format(test_status_filepath))
-                time.sleep(SLEEP_INTERVAL_SEC)
-            else:
-                test_name = os.path.abspath(test_status_filepath).split("/")[-2]
-                results.put( (test_name, test_path, "File '{}' doesn't exist".format(test_status_filepath)) )
-                break
+                if (wait and not SIGNAL_RECEIVED):
+                    logging.debug("File '{}' does not yet exist".format(test_status_filepath))
+                    time.sleep(SLEEP_INTERVAL_SEC)
+                else:
+                    test_name = os.path.abspath(test_status_filepath).split("/")[-2]
+                    results.put( (test_name, test_path, "File '{}' doesn't exist".format(test_status_filepath)) )
+                    break
 
 ###############################################################################
 def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check_memory=False, ignore_namelists=False, ignore_memleak=False, no_run=False):
