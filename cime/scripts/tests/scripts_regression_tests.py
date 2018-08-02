@@ -48,10 +48,10 @@ os.environ["CIME_GLOBAL_WALLTIME"] = "0:05:00"
 
 # pragma pylint: disable=protected-access
 ###############################################################################
-def run_cmd_assert_result(test_obj, cmd, from_dir=None, expected_stat=0, env=None):
+def run_cmd_assert_result(test_obj, cmd, from_dir=None, expected_stat=0, env=None, verbose=False):
 ###############################################################################
     from_dir = os.getcwd() if from_dir is None else from_dir
-    stat, output, errput = run_cmd(cmd, from_dir=from_dir, env=env)
+    stat, output, errput = run_cmd(cmd, from_dir=from_dir, env=env, verbose=verbose)
     if expected_stat == 0:
         expectation = "SHOULD HAVE WORKED, INSTEAD GOT STAT %s" % stat
     else:
@@ -734,7 +734,7 @@ class M_TestWaitForTests(unittest.TestCase):
 
         expected_stat = 0 if expected_results == ["PASS"]*len(expected_results) else CIME.utils.TESTS_FAILED_ERR_CODE
         output = run_cmd_assert_result(self, "%s/wait_for_tests -p ACME_test */TestStatus %s" % (TOOLS_DIR, extra_args),
-                                       from_dir=testdir, expected_stat=expected_stat)
+                                       from_dir=testdir, expected_stat=expected_stat, verbose=True)
 
         lines = [line for line in output.splitlines() if line.startswith("Test '")]
         self.assertEqual(len(lines), len(expected_results))

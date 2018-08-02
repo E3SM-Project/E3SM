@@ -51,20 +51,8 @@ def get_test_output(test_path):
         return ""
 
 ###############################################################################
-def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname):
+def create_cdash_xml_boiler(phase, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, git_commit):
 ###############################################################################
-    # We assume all cases were created from the same code repo
-    first_result_case = os.path.dirname(list(results.items())[0][1][0])
-    try:
-        srcroot = run_cmd_no_fail("./xmlquery --value CIMEROOT", from_dir=first_result_case)
-    except:
-        # Use repo containing this script as last resort
-        srcroot = CIME.utils.get_cime_root()
-
-    git_commit = CIME.utils.get_current_commit(repo=srcroot)
-
-    data_rel_path = os.path.join("Testing", utc_time)
-
     site_elem = xmlet.Element("Site")
 
     if ("JENKINS_START_TIME" in os.environ):
@@ -79,40 +67,90 @@ def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time
     site_elem.attrib["Hostname"] = hostname
     site_elem.attrib["OSVersion"] = "Commit: {}{}".format(git_commit, time_info_str)
 
-    testing_elem = xmlet.SubElement(site_elem, "Testing")
+    phase_elem = xmlet.SubElement(site_elem, phase)
 
-    start_date_time_elem = xmlet.SubElement(testing_elem, "StartDateTime")
-    start_date_time_elem.text = time.ctime(current_time)
+    xmlet.SubElement(phase_elem, "StartDateTime").text = time.ctime(current_time)
+    xmlet.SubElement(phase_elem, "Start{}Time".format("Test" if phase == "Testing" else phase)).text = str(int(current_time))
 
-    start_test_time_elem = xmlet.SubElement(testing_elem, "StartTestTime")
-    start_test_time_elem.text = str(int(current_time))
+    return site_elem, phase_elem
+
+###############################################################################
+def create_cdash_config_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit):
+###############################################################################
+    site_elem, config_elem = create_cdash_xml_boiler("Configure", cdash_build_name, cdash_build_group, utc_time, current_time, hostname, git_commit)
+
+    xmlet.SubElement(config_elem, "ConfigureCommand").text = "namelists"
+
+    config_results = []
+    for test_name in sorted(results):
+        test_status = results[test_name][1]
+        config_results.append("{} Config {}".format(test_name, "PASS" if test_status != NAMELIST_FAIL_STATUS else "NML DIFF"))
+
+    xmlet.SubElement(config_elem, "Log").text = "\n".join(config_results)
+
+    for test_name in sorted(results):
+        test_status = results[test_name][1]
+        if test_status == NAMELIST_FAIL_STATUS:
+            xmlet.SubElement(config_elem, "Warning").text = "{} Config NML DIFF".format(test_name)
+
+    xmlet.SubElement(config_elem, "ConfigureStatus").text = "0"
+    xmlet.SubElement(config_elem, "ElapsedMinutes").text = "0" # Skip for now
+
+    etree = xmlet.ElementTree(site_elem)
+    etree.write(os.path.join(data_rel_path, "Configure.xml"))
+
+###############################################################################
+def create_cdash_build_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit):
+###############################################################################
+    site_elem, build_elem = create_cdash_xml_boiler("Build", cdash_build_name, cdash_build_group, utc_time, current_time, hostname, git_commit)
+
+    xmlet.SubElement(build_elem, "ConfigureCommand").text = "case.build"
+
+    # build_results = []
+    # for test_name in sorted(results):
+    #     test_status = results[test_name][1]
+    #     config_results.append("{} Config {}".format(test_name, "PASS" if test_status != NAMELIST_FAIL_STATUS else "NML DIFF"))
+
+    # xmlet.SubElement(build_elem, "Log").text = "\n".join(config_results)
+
+    for test_name in sorted(results):
+        test_path = results[test_name][0]
+        test_norm_path = test_path if os.path.isdir(test_path) else os.path.dirname(test_path)
+        if get_test_time(test_norm_path) == 0:
+            xmlet.SubElement(build_elem, "Error").text = "{} Pre-run errors".format(test_name)
+
+    xmlet.SubElement(build_elem, "ElapsedMinutes").text = "0" # Skip for now
+
+    etree = xmlet.ElementTree(site_elem)
+    etree.write(os.path.join(data_rel_path, "Build.xml"))
+
+###############################################################################
+def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit):
+###############################################################################
+    site_elem, testing_elem = create_cdash_xml_boiler("Testing", cdash_build_name, cdash_build_group, utc_time, current_time, hostname, git_commit)
 
     test_list_elem = xmlet.SubElement(testing_elem, "TestList")
     for test_name in sorted(results):
-        test_elem = xmlet.SubElement(test_list_elem, "Test")
-        test_elem.text = test_name
+        xmlet.SubElement(test_list_elem, "Test").text = test_name
 
     for test_name in sorted(results):
         test_path, test_status = results[test_name]
-        test_passed = test_status == TEST_PASS_STATUS
+        test_passed = test_status in [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS]
         test_norm_path = test_path if os.path.isdir(test_path) else os.path.dirname(test_path)
 
         full_test_elem = xmlet.SubElement(testing_elem, "Test")
-        if (test_passed):
+        if test_passed:
             full_test_elem.attrib["Status"] = "passed"
-        elif (test_status == NAMELIST_FAIL_STATUS):
+        elif (test_status == TEST_PEND_STATUS):
             full_test_elem.attrib["Status"] = "notrun"
         else:
             full_test_elem.attrib["Status"] = "failed"
 
-        name_elem = xmlet.SubElement(full_test_elem, "Name")
-        name_elem.text = test_name
+        xmlet.SubElement(full_test_elem, "Name").text = test_name
 
-        path_elem = xmlet.SubElement(full_test_elem, "Path")
-        path_elem.text = test_norm_path
+        xmlet.SubElement(full_test_elem, "Path").text = test_norm_path
 
-        full_name_elem = xmlet.SubElement(full_test_elem, "FullName")
-        full_name_elem.text = test_name
+        xmlet.SubElement(full_test_elem, "FullName").text = test_name
 
         xmlet.SubElement(full_test_elem, "FullCommandLine")
         # text ?
@@ -132,20 +170,39 @@ def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time
             named_measurement_elem.attrib["type"] = type_attr
             named_measurement_elem.attrib["name"] = name_attr
 
-            value_elem = xmlet.SubElement(named_measurement_elem, "Value")
-            value_elem.text = value
+            xmlet.SubElement(named_measurement_elem, "Value").text = value
 
         measurement_elem = xmlet.SubElement(results_elem, "Measurement")
 
         value_elem = xmlet.SubElement(measurement_elem, "Value")
         value_elem.text = ''.join([item for item in get_test_output(test_norm_path) if ord(item) < 128])
 
-    elapsed_time_elem = xmlet.SubElement(testing_elem, "ElapsedMinutes")
-    elapsed_time_elem.text = "0" # Skip for now
+    xmlet.SubElement(testing_elem, "ElapsedMinutes").text = "0" # Skip for now
 
     etree = xmlet.ElementTree(site_elem)
 
     etree.write(os.path.join(data_rel_path, "Test.xml"))
+
+###############################################################################
+def create_cdash_xml_fakes(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname):
+###############################################################################
+    # We assume all cases were created from the same code repo
+    first_result_case = os.path.dirname(list(results.items())[0][1][0])
+    try:
+        srcroot = run_cmd_no_fail("./xmlquery --value CIMEROOT", from_dir=first_result_case)
+    except:
+        # Use repo containing this script as last resort
+        srcroot = CIME.utils.get_cime_root()
+
+    git_commit = CIME.utils.get_current_commit(repo=srcroot)
+
+    data_rel_path = os.path.join("Testing", utc_time)
+
+    # create_cdash_config_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit)
+
+    #create_cdash_build_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit)
+
+    create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit)
 
 ###############################################################################
 def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_time, hostname, force_log_upload):
@@ -276,7 +333,7 @@ NightlyStartTime: {5} UTC
     with open("Testing/TAG", "w") as tag_fd:
         tag_fd.write("{}\n{}\n".format(utc_time, cdash_build_group))
 
-    create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname)
+    create_cdash_xml_fakes(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname)
 
     create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_time, hostname, force_log_upload)
 
