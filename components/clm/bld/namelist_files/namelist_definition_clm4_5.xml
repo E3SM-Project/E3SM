@@ -351,62 +351,62 @@ If TRUE, indicates do NOT output any default history fields (requires you to use
 hist_fincl* to set the exact output fields to use)..
 </entry>
 
-<entry id="hist_fexcl1" type="char*34(1000)" category="history"
+<entry id="hist_fexcl1" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to exclude from history tape series 1.
 </entry>
 
-<entry id="hist_fexcl2" type="char*34(1000)" category="history"
+<entry id="hist_fexcl2" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to exclude from history tape series  2.
 </entry>
 
-<entry id="hist_fexcl3" type="char*34(1000)" category="history"
+<entry id="hist_fexcl3" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to exclude from history tape series  3.
 </entry>
 
-<entry id="hist_fexcl4" type="char*34(1000)" category="history"
+<entry id="hist_fexcl4" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to exclude from history tape series  4.
 </entry>
 
-<entry id="hist_fexcl5" type="char*34(1000)" category="history"
+<entry id="hist_fexcl5" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to exclude from history tape series  5.
 </entry>
 
-<entry id="hist_fexcl6" type="char*34(1000)" category="history"
+<entry id="hist_fexcl6" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to exclude from history tape series  6.
 </entry>
 
-<entry id="hist_fincl1" type="char*34(1000)" category="history"
+<entry id="hist_fincl1" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to add to history tape series  1.
 </entry>
 
-<entry id="hist_fincl2" type="char*34(1000)" category="history"
+<entry id="hist_fincl2" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to add to history tape series  2.
 </entry>
 
-<entry id="hist_fincl3" type="char*34(1000)" category="history"
+<entry id="hist_fincl3" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to add to history tape series  3.
 </entry>
 
-<entry id="hist_fincl4" type="char*34(1000)" category="history"
+<entry id="hist_fincl4" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to add to history tape series  4.
 </entry>
 
-<entry id="hist_fincl5" type="char*34(1000)" category="history"
+<entry id="hist_fincl5" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to add to history tape series  5.
 </entry>
 
-<entry id="hist_fincl6" type="char*34(1000)" category="history"
+<entry id="hist_fincl6" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to add to history tape series  6.
 </entry>
