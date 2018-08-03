@@ -84,14 +84,9 @@ def create_cdash_config_xml(results, cdash_build_name, cdash_build_group, utc_ti
     config_results = []
     for test_name in sorted(results):
         test_status = results[test_name][1]
-        config_results.append("{} Config {}".format(test_name, "PASS" if test_status != NAMELIST_FAIL_STATUS else "NML DIFF"))
+        config_results.append("{} {} Config {}".format("" if test_status != NAMELIST_FAIL_STATUS else "CMake Warning:\n", test_name, "PASS" if test_status != NAMELIST_FAIL_STATUS else "NML DIFF"))
 
     xmlet.SubElement(config_elem, "Log").text = "\n".join(config_results)
-
-    for test_name in sorted(results):
-        test_status = results[test_name][1]
-        if test_status == NAMELIST_FAIL_STATUS:
-            xmlet.SubElement(config_elem, "Warning").text = "{} Config NML DIFF".format(test_name)
 
     xmlet.SubElement(config_elem, "ConfigureStatus").text = "0"
     xmlet.SubElement(config_elem, "ElapsedMinutes").text = "0" # Skip for now
@@ -113,11 +108,22 @@ def create_cdash_build_xml(results, cdash_build_name, cdash_build_group, utc_tim
 
     # xmlet.SubElement(build_elem, "Log").text = "\n".join(config_results)
 
+    build_results = []
     for test_name in sorted(results):
+        build_results.append(test_name)
+
+    xmlet.SubElement(build_elem, "Log").text = "\n".join(build_results)
+
+    for idx, test_name in enumerate(sorted(results)):
         test_path = results[test_name][0]
         test_norm_path = test_path if os.path.isdir(test_path) else os.path.dirname(test_path)
         if get_test_time(test_norm_path) == 0:
-            xmlet.SubElement(build_elem, "Error").text = "{} Pre-run errors".format(test_name)
+            error_elem = xmlet.SubElement(build_elem, "Error")
+            xmlet.SubElement(error_elem, "Text").text = test_name
+            xmlet.SubElement(error_elem, "BuildLogLine").text = str(idx)
+            xmlet.SubElement(error_elem, "PreContext").text = test_name
+            xmlet.SubElement(error_elem, "PostContext").text = ""
+            xmlet.SubElement(error_elem, "RepeatCount").text = "0"
 
     xmlet.SubElement(build_elem, "ElapsedMinutes").text = "0" # Skip for now
 
