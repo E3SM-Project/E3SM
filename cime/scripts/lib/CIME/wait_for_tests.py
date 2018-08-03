@@ -101,13 +101,6 @@ def create_cdash_build_xml(results, cdash_build_name, cdash_build_group, utc_tim
 
     xmlet.SubElement(build_elem, "ConfigureCommand").text = "case.build"
 
-    # build_results = []
-    # for test_name in sorted(results):
-    #     test_status = results[test_name][1]
-    #     config_results.append("{} Config {}".format(test_name, "PASS" if test_status != NAMELIST_FAIL_STATUS else "NML DIFF"))
-
-    # xmlet.SubElement(build_elem, "Log").text = "\n".join(config_results)
-
     build_results = []
     for test_name in sorted(results):
         build_results.append(test_name)
