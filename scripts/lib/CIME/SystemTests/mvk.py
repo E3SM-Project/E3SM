@@ -52,7 +52,6 @@ class MVK(SystemTestsCommon):
                 self._case.set_value('NTHRDS_{}'.format(comp), 1)
 
                 ntasks = self._case.get_value("NTASKS_{}".format(comp))
-                logger.info('MVK:NTASKS_{}: {}'.format(comp, ntasks))
 
                 self._case.set_value('NTASKS_{}'.format(comp), ntasks*ninst)
                 if comp != 'CPL':
@@ -166,9 +165,7 @@ class MVK(SystemTestsCommon):
 
     def _compare_baseline(self):
         with self._test_status:
-            resubmit = int(self._case.get_value("RESUBMIT"))
-            logger.info('MVK:CMPR: Resubmits: {}'.format(resubmit))
-            if resubmit > 0:
+            if int(self._case.get_value("RESUBMIT")) > 0:
                 # This is here because the comparison is run for each submission
                 # and we only want to compare once the whole run is finished. We
                 # need to return a pass here to continue the submission process.
@@ -181,7 +178,6 @@ class MVK(SystemTestsCommon):
             case_name = self._case.get_value("CASE")
             basecmp_case = self._case.get_value("BASECMP_CASE")
             base_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), basecmp_case)
-            # base_name = os.path.basename(basecmp_case)
 
             test_name = "{}".format(case_name.split('.')[-1])
             evv_config = {
