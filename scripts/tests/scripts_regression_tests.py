@@ -1329,8 +1329,6 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
     ###########################################################################
     def test_jenkins_generic_job(self):
     ###########################################################################
-        # Unfortunately, this test is very long-running
-
         # Generate fresh baselines so that this test is not impacted by
         # unresolved diffs
         self.simple_test(True, "-t cime_test_only_pass -g -b %s" % self._baseline_name)
@@ -1362,7 +1360,8 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
     ###########################################################################
     def test_jenkins_generic_job_realistic_dash(self):
     ###########################################################################
-        # Unfortunately, this test is very long-running
+        # The actual quality of the cdash results for this test can only
+        # be inspected manually
 
         # Generate fresh baselines so that this test is not impacted by
         # unresolved diffs
