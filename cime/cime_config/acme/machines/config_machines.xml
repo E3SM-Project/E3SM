@@ -60,13 +60,13 @@
   <TESTS>acme_developer</TESTS>
   <COMPILERS>intel,intel18,gnu</COMPILERS>
   <MPILIBS>mpt,mpi-serial</MPILIBS>
-  <CIME_OUTPUT_ROOT>$ENV{CSCRATCH}/acme_scratch/edison</CIME_OUTPUT_ROOT>
-  <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
-  <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-  <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+  <CESMSCRATCHROOT>$ENV{SCRATCH}/acme_scratch/edison</CESMSCRATCHROOT>
+  <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+  <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+  <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
   <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
   <OS>CNL</OS>
-  <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+  <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>acme</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
@@ -75,15 +75,15 @@
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
   <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
   <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-  <BASELINE_ROOT>/project/projectdirs/acme/baselines</BASELINE_ROOT>
+  <CCSM_BASELINE>/project/projectdirs/acme/baselines</CCSM_BASELINE>
   <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.edison/cprnc</CCSM_CPRNC>
   <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
   <mpirun mpilib="default">
     <executable>srun</executable>
     <arguments>
       <arg name="label"> --label</arg>
-      <arg name="num_tasks" > -n $TOTALPES</arg>
-      <arg name="thread_count"> -c {{ thread_count }}</arg>
+      <arg name="num_tasks" > -n {{ num_tasks }}</arg>
+      <arg name="thread_count" > -c {{ thread_count }}</arg>
     </arguments>
   </mpirun>
   <module_system type="module">
@@ -121,7 +121,7 @@
 
     <modules>
       <command name="rm">craype</command>
-      <command name="load">craype/2.5.12.3</command>
+      <command name="load">craype/2.5.12</command>
       <command name="load">craype-ivybridge</command>
       <command name="rm">pmi</command>
       <command name="load">pmi/5.0.12</command>
@@ -130,40 +130,40 @@
     </modules>
 
     <modules compiler="intel">
-      <command name="load">PrgEnv-intel</command>
+      <command name="load">PrgEnv-intel/6.0.4</command>
       <command name="rm">intel</command>
       <command name="load">intel/17.0.2.174</command>
       <command name="rm">cray-libsci</command>
     </modules>
 
     <modules compiler="intel18">
-      <command name="load">PrgEnv-intel</command>
+      <command name="load">PrgEnv-intel/6.0.4</command>
       <command name="rm">intel</command>
-      <command name="load">intel/2018.beta</command>
+      <command name="load">intel/18.0.1.163</command>
       <command name="rm">cray-libsci</command>
     </modules>
 
     <modules compiler="gnu">
       <command name="rm">PrgEnv-intel</command>
-      <command name="load">PrgEnv-gnu</command>
+      <command name="load">PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
-      <command name="load">gcc/6.3.0</command>
+      <command name="load">gcc/7.3.0</command>
       <command name="rm">cray-libsci</command>
-      <command name="load">cray-libsci/17.06.1</command>
+      <command name="load">cray-libsci/18.03.1</command>
     </modules>
 
     <modules mpilib="mpi-serial">
       <command name="rm">cray-netcdf-hdf5parallel</command>
       <command name="rm">cray-hdf5-parallel</command>
       <command name="rm">cray-parallel-netcdf</command>
-      <command name="load">cray-hdf5/1.8.16</command>
-      <command name="load">cray-netcdf/4.4.0</command>
+      <command name="load">cray-hdf5/1.10.1.1</command>
+      <command name="load">cray-netcdf/4.4.1.1.6</command>
     </modules>
     <modules mpilib="!mpi-serial">
       <command name="rm">cray-netcdf-hdf5parallel</command>
-      <command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
-      <command name="load">cray-hdf5-parallel/1.8.16</command>
-      <command name="load">cray-parallel-netcdf/1.6.1</command>
+      <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.6</command>
+      <command name="load">cray-hdf5-parallel/1.10.1.1</command>
+      <command name="load">cray-parallel-netcdf/1.8.1.3</command>
     </modules>
   </module_system>
 
@@ -181,12 +181,13 @@
 
 </machine>
 
+
 <machine MACH="cori-haswell">
   <DESC>Cori. XC40 Cray system at NERSC. Haswell partition. os is CNL, 32 pes/node, batch system is SLURM</DESC>
-  <NODENAME_REGEX>cori</NODENAME_REGEX>
+  <NODENAME_REGEX>cori-knl-is-default</NODENAME_REGEX>
   <TESTS>acme_developer</TESTS>
-  <COMPILERS>intel,intel18,gnu</COMPILERS>
-  <MPILIBS>mpt,mpi-serial</MPILIBS>
+  <COMPILERS>intel,gnu</COMPILERS>
+  <MPILIBS>mpt</MPILIBS>
   <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-haswell</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
   <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
@@ -194,26 +195,27 @@
   <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
   <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
   <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-  <BASELINE_ROOT>/project/projectdirs/acme/baselines</BASELINE_ROOT>
+  <BASELINE_ROOT>/project/projectdirs/acme/baselines/$COMPILER</BASELINE_ROOT>
   <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
-  <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
+  <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
+  <SAVE_TIMING_DIR_PROJECTS>acme,m2830,m2833</SAVE_TIMING_DIR_PROJECTS>
   <OS>CNL</OS>
-  <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-  <SUPPORTED_BY>acme</SUPPORTED_BY>
+  <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
+  <SUPPORTED_BY>e3sm</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
-  <PES_PER_NODE>32</PES_PER_NODE>
+  <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
   <PROJECT>acme</PROJECT>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
   <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
+  <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
   <mpirun mpilib="default">
     <executable>srun</executable>
     <arguments>
       <arg name="label"> --label</arg>
       <arg name="num_tasks" > -n $TOTALPES</arg>
-      <!--NOTE: hard-coding -c 2 for now, which is only optimal when using full node with no hyper-threading. (ndk) -->
-      <arg name="thread_count" > -c 2 </arg>
-      <arg name="binding" > --cpu_bind=cores</arg>
+      <arg name="thread_count">-c $SHELL{echo 64/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
+      <arg name="binding"> $SHELL{if [ 32 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
     </arguments>
   </mpirun>
   <module_system type="module">
@@ -253,23 +255,17 @@
 
     <modules>
       <command name="rm">craype</command>
-      <command name="load">craype/2.5.12</command>
-      <command name="load">pmi/5.0.12</command>
+      <command name="load">craype/2.5.13</command>
+      <command name="load">pmi/5.0.13</command>
 
       <command name="rm">cray-mpich</command>
-      <command name="load">cray-mpich/7.6.0</command>
+      <command name="load">cray-mpich/7.6.2</command>
     </modules>
 
     <modules compiler="intel">
       <command name="load">PrgEnv-intel</command>
       <command name="rm">intel</command>
-      <command name="load">intel/17.0.2.174</command>
-    </modules>
-
-    <modules compiler="intel18">
-      <command name="load">PrgEnv-intel</command>
-      <command name="rm">intel</command>
-      <command name="load">intel/2018.beta</command>
+      <command name="load">intel/18.0.1.163</command>
     </modules>
 
     <modules compiler="gnu">
@@ -277,7 +273,8 @@
       <command name="load">PrgEnv-gnu</command>
       <command name="rm">gcc</command>
       <command name="load">gcc/6.3.0</command>
-      <command name="load">cray-libsci/17.06.1</command>
+      <command name="rm">cray-libsci</command>
+      <command name="load">cray-libsci/17.09.1</command>
     </modules>
 
     <modules>
@@ -289,14 +286,14 @@
       <command name="rm">cray-netcdf-hdf5parallel</command>
       <command name="rm">cray-hdf5-parallel</command>
       <command name="rm">cray-parallel-netcdf</command>
-      <command name="load">cray-hdf5/1.8.16</command>
-      <command name="load">cray-netcdf/4.4.0</command>
+      <command name="load">cray-hdf5/1.10.0.3</command>
+      <command name="load">cray-netcdf/4.4.1.1.3</command>
     </modules>
     <modules mpilib="!mpi-serial">
       <command name="rm">cray-netcdf-hdf5parallel</command>
-      <command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
-      <command name="load">cray-hdf5-parallel/1.8.16</command>
-      <command name="load">cray-parallel-netcdf/1.7.0</command>
+      <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.3</command>
+      <command name="load">cray-hdf5-parallel/1.10.0.3</command>
+      <command name="load">cray-parallel-netcdf/1.8.1.3</command>
     </modules>
 
     <modules>
@@ -315,18 +312,20 @@
     <env name="OMP_STACKSIZE">128M</env>
     <env name="OMP_PROC_BIND">spread</env>
     <env name="OMP_PLACES">threads</env>
-    <env name="FORT_BUFFERED" compiler="intel18">yes</env>
-    <env name="FORT_BUFFERED" compiler="intel">yes</env>
+  </environment_variables>
+  <environment_variables compiler="intel">
+    <env name="FORT_BUFFERED">yes</env>
   </environment_variables>
 </machine>
+
 
 <!-- KNL nodes of Cori -->
 <machine MACH="cori-knl">
   <DESC>Cori. XC40 Cray system at NERSC. KNL partition. os is CNL, 68 pes/node (for now only use 64), batch system is SLURM</DESC>
-  <NODENAME_REGEX>cori-knl-haswell-is-default</NODENAME_REGEX>
+  <NODENAME_REGEX>cori</NODENAME_REGEX>
   <TESTS>acme_developer</TESTS>
-  <COMPILERS>intel,intel18,gnu</COMPILERS>
-  <MPILIBS>mpt,mpi-serial</MPILIBS>
+  <COMPILERS>intel,gnu</COMPILERS>
+  <MPILIBS>mpt,impi</MPILIBS>
   <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-knl</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
   <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
@@ -334,26 +333,27 @@
   <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
   <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
   <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-  <BASELINE_ROOT>/project/projectdirs/acme/baselines</BASELINE_ROOT>
+  <BASELINE_ROOT>/project/projectdirs/acme/baselines/$COMPILER</BASELINE_ROOT>
   <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
-  <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
+  <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
+  <SAVE_TIMING_DIR_PROJECTS>acme,m2830,m2833</SAVE_TIMING_DIR_PROJECTS>
   <OS>CNL</OS>
-  <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-  <SUPPORTED_BY>acme</SUPPORTED_BY>
+  <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
+  <SUPPORTED_BY>e3sm</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
-  <MAX_TASKS_PER_NODE>256</MAX_TASKS_PER_NODE>
-  <PES_PER_NODE>64</PES_PER_NODE>
+  <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
+  <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
   <PROJECT>acme</PROJECT>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
   <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
+  <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
   <mpirun mpilib="default">
     <executable>srun</executable>
     <arguments>
       <arg name="label"> --label</arg>
       <arg name="num_tasks" > -n $TOTALPES</arg>
-      <!--NOTE: hard-coding -c 4 for now, which is only optimal when using full node with no hyper-threading.  (ndk) -->
-      <arg name="thread_count" > -c 4 </arg>
-      <arg name="binding" > --cpu_bind=cores</arg>
+      <arg name="thread_count">-c $SHELL{echo 272/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
+      <arg name="binding"> $SHELL{if [ 68 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
     </arguments>
   </mpirun>
   <module_system type="module">
@@ -366,70 +366,64 @@
     <cmd_path lang="sh">module</cmd_path>
     <cmd_path lang="csh">module</cmd_path>
     <modules>
+      <command name="rm">craype</command>
+      <command name="rm">craype-mic-knl</command>
+      <command name="rm">craype-haswell</command>
+
+      <command name="rm">PrgEnv-intel</command>
+      <command name="rm">PrgEnv-cray</command>
+      <command name="rm">PrgEnv-gnu</command>
       <command name="rm">intel</command>
       <command name="rm">cce</command>
       <command name="rm">gcc</command>
       <command name="rm">cray-parallel-netcdf</command>
       <command name="rm">cray-parallel-hdf5</command>
       <command name="rm">pmi</command>
-      <command name="rm">cray-libsci</command>
       <command name="rm">cray-mpich2</command>
       <command name="rm">cray-mpich</command>
       <command name="rm">cray-netcdf</command>
       <command name="rm">cray-hdf5</command>
       <command name="rm">cray-netcdf-hdf5parallel</command>
-      <command name="rm">craype-sandybridge</command>
-      <command name="rm">craype-ivybridge</command>
-      <command name="rm">craype</command>
       <command name="rm">cray-libsci</command>
       <command name="rm">papi</command>
       <command name="rm">cmake</command>
       <command name="rm">cray-petsc</command>
       <command name="rm">esmf</command>
+
+      <!-- first load basic defaults, then remove/swap/load as necessary -->
+      <command name="load">craype</command>
+      <command name="load">PrgEnv-intel</command>
+      <command name="load">cray-mpich</command>
+      <command name="rm">craype-haswell</command>
+      <command name="load">craype-mic-knl</command>
+    </modules>
+
+    <modules mpilib="mpt">
+      <command name="swap">cray-mpich cray-mpich/7.6.2</command>
+    </modules>
+
+    <modules mpilib="impi">
+      <command name="swap">cray-mpich impi/2018.up1</command>
     </modules>
 
     <modules compiler="intel">
       <command name="load">PrgEnv-intel</command>
       <command name="rm">intel</command>
-      <command name="load">intel/17.0.2.174</command>
-      <command name="rm">craype</command>
-      <command name="load">craype/2.5.12</command>
-      <command name="rm">cray-mpich</command>
-      <command name="load">cray-mpich/7.6.0</command>
-    </modules>
-
-    <modules compiler="intel18">
-      <!-- A bug in the modules is not letting us unload/load mpich 7.6 with intel18, so first load intel17 here, then correct below -->
-      <command name="load">PrgEnv-intel</command>
-      <command name="rm">intel</command>
-      <command name="load">intel/17.0.2.174</command>
-
-      <command name="rm">craype</command>
-      <command name="load">craype/2.5.12</command>
-      <command name="rm">cray-mpich</command>
-      <command name="load">cray-mpich/7.6.0</command>
-
-      <command name="load">PrgEnv-intel</command>
-      <command name="rm">intel</command>
-      <command name="load">intel/2018.beta</command>
+      <command name="load">intel/18.0.1.163</command>
     </modules>
 
     <modules compiler="gnu">
-      <command name="rm">PrgEnv-intel</command>
-      <command name="load">PrgEnv-gnu</command>
+      <command name="swap">PrgEnv-intel PrgEnv-gnu</command>
       <command name="rm">gcc</command>
       <command name="load">gcc/6.3.0</command>
-      <command name="load">cray-libsci/17.06.1</command>
-
-      <command name="rm">craype</command>
-      <command name="load">craype/2.5.12</command>
-      <command name="rm">cray-mpich</command>
-      <command name="load">cray-mpich/7.6.0</command>
+      <command name="rm">cray-libsci</command>
+      <command name="load">cray-libsci/17.09.1</command>
     </modules>
 
     <modules>
+      <command name="swap">craype craype/2.5.13</command>
       <command name="rm">pmi</command>
-      <command name="load">pmi/5.0.12</command>
+      <command name="load">pmi/5.0.13</command>
       <command name="rm">craype-haswell</command>
       <command name="load">craype-mic-knl</command>
     </modules>
@@ -438,20 +432,23 @@
       <command name="rm">cray-netcdf-hdf5parallel</command>
       <command name="rm">cray-hdf5-parallel</command>
       <command name="rm">cray-parallel-netcdf</command>
-      <command name="load">cray-hdf5/1.8.16</command>
-      <command name="load">cray-netcdf/4.4.0</command>
+      <command name="load">cray-hdf5/1.10.0.3</command>
+      <command name="load">cray-netcdf/4.4.1.1.3</command>
     </modules>
     <modules mpilib="!mpi-serial">
       <command name="rm">cray-netcdf-hdf5parallel</command>
-      <command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
-      <command name="load">cray-hdf5-parallel/1.8.16</command>
-      <command name="load">cray-parallel-netcdf/1.7.0</command>
+      <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.3</command>
+      <command name="load">cray-hdf5-parallel/1.10.0.3</command>
+      <command name="load">cray-parallel-netcdf/1.8.1.3</command>
     </modules>
     <modules>
       <command name="load">git/2.9.1</command>
       <command name="load">cmake/3.3.2</command>
       <command name="load">zlib/1.2.8</command>
     </modules>
+
+    <!--command name="list">&gt;&amp; ml.txt</command-->
+
   </module_system>
 
   <environment_variables>
@@ -462,15 +459,19 @@
     <env name="OMP_STACKSIZE">128M</env>
     <env name="OMP_PROC_BIND">spread</env>
     <env name="OMP_PLACES">threads</env>
-
-    <env name="MPICH_MEMORY_REPORT" compiler="intel18">1</env>
-
-    <env name="FORT_BUFFERED" compiler="intel">yes</env>
-    <env name="FORT_BUFFERED" compiler="intel18">yes</env>
-
-    </environment_variables>
+  </environment_variables>
+  <environment_variables mpilib="impi">
+    <env name="I_MPI_FABRICS">ofi</env>
+    <env name="I_MPI_OFI_PROVIDER">gni</env>
+    <env name="I_MPI_PRINT_VERSION">yes</env>
+    <env name="I_MPI_OFI_LIBRARY">/global/common/cori/software/libfabric/1.5.0/gnu/lib/libfabric.so</env>
+    <env name="I_MPI_PMI_LIBRARY">/usr/lib64/slurmpmi/libpmi.so</env>
+  </environment_variables>
+  <environment_variables compiler="intel">
+    <env name="FORT_BUFFERED">yes</env>
+    <env name="MPICH_MEMORY_REPORT">1</env>
+  </environment_variables>
 </machine>
-
 
 
 <machine MACH="mac">
