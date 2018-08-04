@@ -939,6 +939,7 @@ subroutine micro_mg_cam_init(pbuf2d)
 
    ! determine the add_default fields
    call phys_getopts(history_amwg_out           = history_amwg         , &
+                     history_verbose_out        = history_verbose      , &
                      history_budget_out         = history_budget       , &
                      history_budget_histfile_num_out = budget_histfile)
 
