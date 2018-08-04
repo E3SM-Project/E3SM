@@ -84,12 +84,12 @@ contains
   !----------------------------------------------------------------------------
   !----------------------------------------------------------------------------
 
-  subroutine physics_update(state, ptend, dt, tend)
+  subroutine physics_update(state, ptend, dt, tend, chunk_smry, do_hole_fill)
     !purpose: This subroutine calls physics_update_main (old physics_update)
     !and also output variables for pergro test
 
     use time_manager,  only: is_first_step
-
+    use glb_verif_smry,only: tp_stat_smry
     
     !Arguments
     type(physics_ptend), intent(inout)  :: ptend   ! Parameterization tendencies
@@ -97,7 +97,10 @@ contains
     real(r8),            intent(in)     :: dt      ! time step
     
     !optional arguments
+    logical, optional, intent(in) :: do_hole_fill
     type(physics_tend ), intent(inout), optional  :: tend  ! Physics tendencies over timestep
+    type(tp_stat_smry),intent(inout), optional :: chunk_smry(:)
+
     
     !Local vars
     character(len = fieldname_len)   :: pname, varname, vsuffix
@@ -120,7 +123,7 @@ contains
     if (.not. (any(ptend%lq(:)) .or. ptend%ls .or. ptend%lu .or. ptend%lv)) outfld_active = .false.
     
     !call the old physics update call
-    call physics_update_main (state, ptend, dt, tend)
+    call physics_update_main (state, ptend, dt, tend, chunk_smry, do_hole_fill)
     
     if (pergro_test_active .and. outfld_active) then
        

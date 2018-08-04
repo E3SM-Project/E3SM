@@ -478,8 +478,6 @@ subroutine micro_mg_tend ( &
 					     
   logical, intent(in)  :: precip_off					     
 
-  logical, intent(in)  :: precip_off					     
-
   real(r8), intent(in) :: p(:,:)        ! air pressure (pa)
   real(r8), intent(in) :: pdel(:,:)     ! pressure difference across level (pa)
 

@@ -379,7 +379,7 @@ subroutine micro_mg_cam_readnl(nlfile)
   call mpibcast(micro_mg_precip_frac_method, 16, mpichar,0, mpicom)
   call mpibcast(micro_mg_mass_gradient_alpha, 1, mpir8, 0, mpicom)
   call mpibcast(micro_mg_mass_gradient_beta, 1, mpir8,  0, mpicom)
-call mpibcast(do_icesuper,                 1, mpilog, 0, mpicom)
+  call mpibcast(do_icesuper,                 1, mpilog, 0, mpicom)
 
 #endif
 
@@ -2479,6 +2479,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf, chunk_smry)
                cldfsnow(i,k) = 0.25_r8
             endif
          endif
+
          ! Calculate in-cloud snow water path
          icswp(i,k) = qsout(i,k) / max( mincld, cldfsnow(i,k) ) * state_loc%pdel(i,k) / gravit
       end do

@@ -2045,7 +2045,10 @@ subroutine tphysbc (ztodt,               &
 
     real(r8)  :: lcldo(pcols,pver)              !Pass old liqclf from macro_driver to micro_driver
 
-
+    real(r8) :: ftem(pcols,pver)         ! tmp space
+    real(r8), pointer, dimension(:) :: static_ener_ac_2d ! Vertically integrated static energy
+    real(r8), pointer, dimension(:) :: water_vap_ac_2d   ! Vertically integrated water vapor
+    real(r8) :: CIDiff(pcols)            ! Difference in vertically integrated static energy
 
     !HuiWan (2014/15): added for a short-term time step convergence test ++ 
     logical :: l_bc_energy_fix
@@ -2054,7 +2057,6 @@ subroutine tphysbc (ztodt,               &
     logical :: l_st_mac
     logical :: l_st_mic
     logical :: l_rad
-    character(len=16) :: deep_scheme    ! default set in phys_control.F90, use namelist to change
     !HuiWan (2014/15): added for a short-term time step convergence test ==
 
 
