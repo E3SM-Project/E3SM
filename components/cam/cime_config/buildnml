@@ -137,3 +137,78 @@ def buildnml(case, caseroot, compname):
                 safe_copy(os.path.join(rundir, "rpointer.atm"),
                           os.path.join(rundir, "rpointer.atm{}".format(inst_string)))
 
+        # -----------------------------------------------------
+        # create camconf/cesm_namelist
+        # -----------------------------------------------------
+
+        ncdata = ""
+        if run_type == 'hybrid':
+            if os.path.exists("{}.cam{}.i.{}-{}.nc".format(run_refcase, inst_string, run_refdate, run_reftod)):
+                ncdata = "'{}.cam{}.i.{}-{}.nc'".format(run_refcase, inst_string, run_refdate, run_reftod)
+            else:
+                ncdata = "'{}.cam.i.{}-{}.nc'".format(run_refcase, run_refdate, run_reftod)
+
+            if inst_string != "":
+                logger.warning("WARNING: {} is being used".format(ncdata))
+
+        cam_branch_file = ""
+        if run_type == 'branch':
+            if os.path.exists("{}/{}.cam{}.r.{}-{}.nc".format(rundir, run_refcase, inst_string, run_refdate, run_reftod)):
+                cam_branch_file = "'{}/{}.cam{}.r.{}-{}.nc'".format(rundir, run_refcase, inst_string, run_refdate, run_reftod)
+            else:
+                cam_branch_file = "'{}/{}.cam.r.{}-{}.nc'".format(rundir, run_refcase, run_refdate, run_reftod)
+                if inst_string != "":
+                    logger.warning("WARNING: {} is being used".format(cam_branch_file))
+
+        dtime = ( 3600 * 24 ) / atm_ncpl
+        start_ymd = run_startdate.replace("-", "")
+        ntasks = ntasks_atm / ninst_atm
+
+        infile_text = ""
+        infile_text += " dtime = {} \n".format(dtime)
+        infile_text += " co2vmr = {:f}e-6\n".format(ccsm_co2_ppmv)
+        infile_text += " start_ymd = {}".format(start_ymd)
+
+        if ncdata:          infile_text += " ncdata = {} \n".format(ncdata)
+        if cam_branch_file: infile_text += " cam_branch_file = {} \n".format(cam_branch_file)
+        if debug:           infile_text += " state_debug_checks = .true. \n"
+
+        create_namelist_infile(case,
+                               "{}/user_nl_cam{}".format(caseroot, inst_string),
+                               "{}/cesm_namelist".format(camconf_dir),
+                               infile_text=infile_text)
+
+        # -----------------------------------------------------
+        # call build-namelist
+        # -----------------------------------------------------
+
+        if os.path.exists(os.path.join(casebuild, "cam.input_data_list")):
+            os.remove(os.path.join(casebuild, "cam.input_data_list"))
+
+        cam_buildnml_cmd =  os.path.join(srcroot, "components/cam/bld/build-namelist")
+        cam_buildnml_cmd += " -infile {}/cesm_namelist".format(camconf_dir)
+        cam_buildnml_cmd += " -csmdata {} {} {}".format(din_loc_root, ignore, usecase)
+        cam_buildnml_cmd += " -inputdata {}/cam.input_data_list".format(casebuild)
+        cam_buildnml_cmd += " -ntasks {}".format(ntasks)
+        cam_buildnml_cmd += ' -namelist " &atmexp {} /" '.format(cam_namelist_opts)
+
+        # TODO: cam/bld/build-namelist needs to be converted to python
+        run_cmd_no_fail(cam_buildnml_cmd, from_dir=camconf_dir)
+
+        # -----------------------------------------------------
+        # move atm_in to $RUNDIR
+        # -----------------------------------------------------
+
+        if os.path.exists(rundir):
+            safe_copy(os.path.join(camconf_dir, "atm_in"), os.path.join(rundir, "atm_in{}".format(inst_string)))
+            safe_copy(os.path.join(camconf_dir, "drv_flds_in"), os.path.join(rundir, "drv_flds_in"))
+
+###############################################################################
+def _main_func():
+###############################################################################
+    caseroot = parse_input(sys.argv)
+    with Case(caseroot) as case:
+        buildnml(case, caseroot, "cam")
+
+if __name__ == "__main__":
+    _main_func()

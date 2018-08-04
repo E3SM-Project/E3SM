@@ -58,8 +58,8 @@
 
   <entry id="CICE_AUTO_DECOMP">
     <type>logical</type>
-    <valid_values>true,false</valid_values>
-    <default_value>true</default_value>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>TRUE</default_value>
     <group>build_component_cice</group>
     <file>env_build.xml</file>
     <desc>This is for experts only - if CICE_AUTO_DECOMP is set to false, then

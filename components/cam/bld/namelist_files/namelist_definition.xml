@@ -1122,8 +1122,6 @@ IEFLX fixer options
 Default: 0
 </entry>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 <entry id="l_ieflx_fix" type="logical"  category="fixers"
        group="phys_ctl_nl" valid_values="">
 Whether or not to turn on IEFLX fixer
@@ -1131,9 +1129,6 @@ Default: false
 </entry>
 
 
-=======
->>>>>>> PR1592 for SCM
-=======
 <entry id="glb_verif_smry_level" type="integer" category="diagnostics"
        group="phys_ctl_nl" valid_values="" >
 Level of detail of the summary report.
@@ -1169,7 +1164,6 @@ Let QNEG4 write out worst negative flux excess of each grid chunk.
 Default: .false.
 </entry>
 
->>>>>>> add global_summary
 <!-- Gravity Wave Drag -->
 
 <entry id="use_gw_oro" type="logical" category="gw_drag"
@@ -4394,19 +4388,11 @@ Use relaxation.
 Default: FALSE
 </entry>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> PR1592 for SCM
 <entry id="scm_relaxation_low" type="real" category="scam"
        group="cam_inparm" valid_values="">
 Lowest layer to apply relaxation.  Keep to default value to apply relaxation 
 at the surface.   
-<<<<<<< HEAD
 Default: 1050.0 (hPa)
-=======
-Default: 100.e3 (hPa)
->>>>>>> PR1592 for SCM
 </entry>
 
 <entry id="scm_relaxation_high" type="real" category="scam"
@@ -4416,11 +4402,6 @@ at the model top.
 Default: 0.e3 (hPa)
 </entry>
 
-<<<<<<< HEAD
-=======
->>>>>>> modified configuration files for SCM enhancement
-=======
->>>>>>> PR1592 for SCM
 <entry id="scm_observed_aero" type="logical" category="scam"
        group="cam_inparm" valid_values="">
 Initialize with observed aerosols from IOP file. 
@@ -4438,10 +4419,6 @@ Default: FALSE
 Turn off LW radiation computation.
 Default: FALSE
 </entry>
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> PR1592 for SCM
 
 <entry id="precip_off" type="logical" category="scm"
        group="cam_inparm" valid_values="">
@@ -4449,11 +4426,6 @@ Turn off microphysics computation.
 Default: FALSE
 </entry>
 
-<<<<<<< HEAD
-=======
->>>>>>> modified configuration files for SCM enhancement
-=======
->>>>>>> PR1592 for SCM
 <!-- Solar Parameters -->
 
 <entry id="solar_const" type="real" category="solar"
