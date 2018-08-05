@@ -150,13 +150,15 @@ module cime_comp_mod
   use seq_flds_mod, only : seq_flds_set
 
   ! component type and accessor functions
-  use component_type_mod , only: component_get_iamin_compid, component_get_suffix
-  use component_type_mod , only: component_get_name, component_get_c2x_cx
-  use component_type_mod , only: atm, lnd, ice, ocn, rof, glc, wav, esp
-  use component_mod      , only: component_init_pre
-  use component_mod      , only: component_init_cc, component_init_cx, component_run, component_final
-  use component_mod      , only: component_init_areacor, component_init_aream
-  use component_mod      , only: component_exch, component_diag
+  use component_type_mod, only: component_get_iamin_compid, component_get_suffix
+  use component_type_mod, only: component_get_iamroot_compid
+  use component_type_mod, only: component_get_name, component_get_c2x_cx
+  use component_type_mod, only: atm, lnd, ice, ocn, rof, glc, wav, esp
+  use component_mod,      only: component_init_pre
+  use component_mod,      only: component_init_cc, component_init_cx
+  use component_mod,      only: component_run, component_final
+  use component_mod,      only: component_init_areacor, component_init_aream
+  use component_mod,      only: component_exch, component_diag
 
   ! prep routines (includes mapping routines between components and merging routines)
   use prep_lnd_mod
@@ -469,6 +471,7 @@ module cime_comp_mod
 
   ! --- other ---
 
+  integer  :: driver_id              ! ID for multi-driver setup
   integer  :: ocnrun_count           ! number of times ocn run alarm went on
   logical  :: exists                 ! true if file exists
   integer  :: ierr                   ! MPI error return
@@ -591,7 +594,6 @@ contains
     logical :: comp_iamin(num_inst_total)
     character(len=seq_comm_namelen) :: comp_name(num_inst_total)
     integer :: it
-    integer :: driver_id
     integer :: driver_comm
 
     call mpi_init(ierr)
@@ -1134,8 +1136,6 @@ contains
   !===============================================================================
 
   subroutine cime_init()
-
-    character(CL), allocatable :: comp_resume(:)
 
 
 104 format( A, i10.8, i8)
@@ -2028,22 +2028,6 @@ contains
     endif
 
     !----------------------------------------------------------
-    !| Clear all resume signals
-    !----------------------------------------------------------
-    allocate(comp_resume(num_inst_max))
-    comp_resume = ''
-    call seq_infodata_putData(infodata,          &
-         atm_resume=comp_resume(1:num_inst_atm), &
-         lnd_resume=comp_resume(1:num_inst_lnd), &
-         ocn_resume=comp_resume(1:num_inst_ocn), &
-         ice_resume=comp_resume(1:num_inst_ice), &
-         glc_resume=comp_resume(1:num_inst_glc), &
-         rof_resume=comp_resume(1:num_inst_rof), &
-         wav_resume=comp_resume(1:num_inst_wav), &
-         cpl_resume=comp_resume(1))
-    deallocate(comp_resume)
-
-    !----------------------------------------------------------
     !| Write histinit output file
     !----------------------------------------------------------
 
@@ -2086,21 +2070,24 @@ contains
   !===============================================================================
 
   subroutine cime_run()
-    use seq_comm_mct,   only: atm_layout, lnd_layout, ice_layout, glc_layout,  &
-         rof_layout, ocn_layout, wav_layout, esp_layout
-    use shr_string_mod, only: shr_string_listGetIndexF
-    use seq_comm_mct, only: num_inst_driver
+    use shr_string_mod,      only: shr_string_listGetIndexF
+    use seq_comm_mct,        only: atm_layout, lnd_layout, ice_layout
+    use seq_comm_mct,        only: glc_layout, rof_layout, ocn_layout
+    use seq_comm_mct,        only: wav_layout, esp_layout, num_inst_driver
+    use seq_pauseresume_mod, only: seq_resume_store_comp, seq_resume_get_files
+    use seq_pauseresume_mod, only: seq_resume_free
 
     ! gptl timer lookup variables
-    integer, parameter :: hashcnt=7
-    integer            :: hashint(hashcnt)
-    ! Driver pause/resume
-    logical            :: drv_pause  ! Driver writes pause restart file
-    character(len=CL)  :: drv_resume ! Driver resets state from restart file
+    integer, parameter    :: hashcnt=7
+    integer               :: hashint(hashcnt)
+                                                  ! Driver pause/resume
+    logical               :: drv_pause            ! Driver writes pause restart file
+    character(len=CL)     :: drv_resume           ! Driver resets state from restart file
+    character(len=CL), pointer :: resume_files(:) ! Component resume files
 
-    type(ESMF_Time)    :: etime_curr            ! Current model time
-    real(r8)           :: tbnds1_offset         ! Time offset for call to seq_hist_writeaux
-    logical            :: lnd2glc_averaged_now  ! Whether lnd2glc averages were taken this timestep
+    type(ESMF_Time)       :: etime_curr           ! Current model time
+    real(r8)              :: tbnds1_offset        ! Time offset for call to seq_hist_writeaux
+    logical               :: lnd2glc_averaged_now ! Whether lnd2glc averages were taken this timestep
 
 101 format( A, i10.8, i8, 12A, A, F8.2, A, F8.2 )
 102 format( A, i10.8, i8, A, 8L3 )
@@ -3602,10 +3589,18 @@ contains
           call seq_rest_write(EClock_d, seq_SyncClock, infodata,       &
                atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
                fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-               fractions_rx, fractions_gx, fractions_wx, trim(cpl_inst_tag))
+               fractions_rx, fractions_gx, fractions_wx,               &
+               trim(cpl_inst_tag), drv_resume)
+
+          if (iamroot_CPLID) then
+             write(logunit,103) ' Restart filename: ',trim(drv_resume)
+             call shr_sys_flush(logunit)
+          endif
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
           call t_drvstopf  ('CPL:RESTART',cplrun=.true.)
+       else
+          drv_resume = ''
        endif
 
        !----------------------------------------------------------
@@ -3801,21 +3796,104 @@ contains
           ! Make sure that all couplers are here in multicoupler mode before running ESP component
           if (num_inst_driver > 1) then
              call mpi_barrier(global_comm, ierr)
-          endif
-          call component_run(Eclock_e, esp, esp_run, infodata, &
-               comp_prognostic=esp_prognostic, comp_num=comp_num_esp, &
+          end if
+          ! Gather up each instance's 'resume' files (written before 'pause')
+          do eai = 1, num_inst_atm
+             call seq_resume_store_comp(atm(eai)%oneletterid,                 &
+                  atm(eai)%cdata_cc%resume_filename, num_inst_atm,            &
+                  atm(eai)%instn, component_get_iamroot_compid(atm(eai)))
+          end do
+          do eli = 1, num_inst_lnd
+             call seq_resume_store_comp(lnd(eli)%oneletterid,                 &
+                  lnd(eli)%cdata_cc%resume_filename, num_inst_lnd,            &
+                  lnd(eli)%instn, component_get_iamroot_compid(lnd(eli)))
+          end do
+          do eoi = 1, num_inst_ocn
+             call seq_resume_store_comp(ocn(eoi)%oneletterid,                 &
+                  ocn(eoi)%cdata_cc%resume_filename, num_inst_ocn,            &
+                  ocn(eoi)%instn, component_get_iamroot_compid(ocn(eoi)))
+          end do
+          do eii = 1, num_inst_ice
+             call seq_resume_store_comp(ice(eii)%oneletterid,                 &
+                  ice(eii)%cdata_cc%resume_filename, num_inst_ice,            &
+                  ice(eii)%instn, component_get_iamroot_compid(ice(eii)))
+          end do
+          do eri = 1, num_inst_rof
+             call seq_resume_store_comp(rof(eri)%oneletterid,                 &
+                  rof(eri)%cdata_cc%resume_filename, num_inst_rof,            &
+                  rof(eri)%instn, component_get_iamroot_compid(rof(eri)))
+          end do
+          do egi = 1, num_inst_glc
+             call seq_resume_store_comp(glc(egi)%oneletterid,                 &
+                  glc(egi)%cdata_cc%resume_filename, num_inst_glc,            &
+                  glc(egi)%instn, component_get_iamroot_compid(glc(egi)))
+          end do
+          do ewi = 1, num_inst_wav
+             call seq_resume_store_comp(wav(ewi)%oneletterid,                 &
+                  wav(ewi)%cdata_cc%resume_filename, num_inst_wav,            &
+                  wav(ewi)%instn, component_get_iamroot_compid(wav(ewi)))
+          end do
+          ! Here we pass 1 as num_inst_driver as num_inst_driver is used inside
+          call seq_resume_store_comp('x', drv_resume, 1,                      &
+               driver_id, iamroot_CPLID)
+          call component_run(Eclock_e, esp, esp_run, infodata,                &
+               comp_prognostic=esp_prognostic, comp_num=comp_num_esp,         &
                timer_barrier= 'CPL:ESP_RUN_BARRIER', timer_comp_run='CPL:ESP_RUN', &
                run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=esp_layout)
           !---------------------------------------------------------------------
           !| ESP computes resume options for other components -- update everyone
           !---------------------------------------------------------------------
-          call seq_infodata_exchange(infodata, CPLALLESPID, 'esp2cpl_run')
-       endif
+          call seq_resume_get_files('a', resume_files)
+          if (associated(resume_files)) then
+             do eai = 1, num_inst_atm
+                atm(eai)%cdata_cc%resume_filename = resume_files(atm(eai)%instn)
+             end do
+          end if
+          call seq_resume_get_files('l', resume_files)
+          if (associated(resume_files)) then
+             do eli = 1, num_inst_lnd
+                lnd(eli)%cdata_cc%resume_filename = resume_files(lnd(eli)%instn)
+             end do
+          end if
+          call seq_resume_get_files('o', resume_files)
+          if (associated(resume_files)) then
+             do eoi = 1, num_inst_ocn
+                ocn(eoi)%cdata_cc%resume_filename = resume_files(ocn(eoi)%instn)
+             end do
+          end if
+          call seq_resume_get_files('i', resume_files)
+          if (associated(resume_files)) then
+             do eii = 1, num_inst_ice
+                ice(eii)%cdata_cc%resume_filename = resume_files(ice(eii)%instn)
+             end do
+          end if
+          call seq_resume_get_files('r', resume_files)
+          if (associated(resume_files)) then
+             do eri = 1, num_inst_rof
+                rof(eri)%cdata_cc%resume_filename = resume_files(rof(eri)%instn)
+             end do
+          end if
+          call seq_resume_get_files('g', resume_files)
+          if (associated(resume_files)) then
+             do egi = 1, num_inst_glc
+                glc(egi)%cdata_cc%resume_filename = resume_files(glc(egi)%instn)
+             end do
+          end if
+          call seq_resume_get_files('w', resume_files)
+          if (associated(resume_files)) then
+             do ewi = 1, num_inst_wav
+                wav(ewi)%cdata_cc%resume_filename = resume_files(wav(ewi)%instn)
+             end do
+          end if
+          call seq_resume_get_files('x', resume_files)
+          if (associated(resume_files)) then
+             drv_resume = resume_files(driver_id)
+          end if
+       end if
 
        !----------------------------------------------------------
        !| RESUME (read restart) if signaled
        !----------------------------------------------------------
-       call seq_infodata_GetData(infodata, cpl_resume=drv_resume)
        if (len_trim(drv_resume) > 0) then
           if (iamroot_CPLID) then
              write(logunit,103) subname,' Reading restart (resume) file ',trim(drv_resume)
@@ -3829,7 +3907,6 @@ contains
           end if
           ! Clear the resume file so we don't try to read it again
           drv_resume = ' '
-          call seq_infodata_PutData(infodata, cpl_resume=drv_resume)
        end if
 
        !----------------------------------------------------------
@@ -3971,6 +4048,7 @@ contains
     call mpi_barrier(mpicom_GLOID,ierr)
     call t_stopf ('CPL:RUN_LOOP_BSTOP')
 
+    call seq_resume_free()
     Time_end = mpi_wtime()
 
   end subroutine cime_run
