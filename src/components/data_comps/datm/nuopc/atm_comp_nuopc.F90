@@ -4,6 +4,14 @@ module atm_comp_nuopc
   ! This is the NUOPC cap for DATM
   !----------------------------------------------------------------------------
 
+  use ESMF
+  use NUOPC                 , only : NUOPC_CompDerive, NUOPC_CompSetEntryPoint, NUOPC_CompSpecialize
+  use NUOPC                 , only : NUOPC_CompAttributeGet, NUOPC_Advertise
+  use NUOPC_Model           , only : model_routine_SS        => SetServices
+  use NUOPC_Model           , only : model_label_Advance     => label_Advance
+  use NUOPC_Model           , only : model_label_SetRunClock => label_SetRunClock
+  use NUOPC_Model           , only : model_label_Finalize    => label_Finalize
+  use NUOPC_Model           , only : NUOPC_ModelGet
   use med_constants_mod     , only : IN, R8, I8, CXX
   use med_constants_mod     , only : shr_log_Unit
   use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
@@ -27,20 +35,15 @@ module atm_comp_nuopc
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax
   use dshr_nuopc_mod        , only : fld_list_add
   use dshr_nuopc_mod        , only : fld_list_realize
+  use dshr_nuopc_mod        , only : ModelInitPhase
+  use dshr_nuopc_mod        , only : ModelSetRunClock
+  use dshr_nuopc_mod        , only : ModelSetMetaData
 
-  use ESMF
-  use NUOPC
-  use NUOPC_Model, &
-    model_routine_SS        => SetServices, &
-    model_label_Advance     => label_Advance, &
-    model_label_SetRunClock => label_SetRunClock, &
-    model_label_Finalize    => label_Finalize
-
-  use datm_shr_mod , only: datm_shr_read_namelists
-  use datm_shr_mod , only: iradsw         ! namelist input
-  use datm_shr_mod , only: presaero       ! namelist input
-  use datm_shr_mod , only: datm_shr_getNextRadCDay
-  use datm_comp_mod, only: datm_comp_init, datm_comp_run, datm_comp_final
+  use datm_shr_mod          , only: datm_shr_read_namelists
+  use datm_shr_mod          , only: iradsw         ! namelist input
+  use datm_shr_mod          , only: presaero       ! namelist input
+  use datm_shr_mod          , only: datm_shr_getNextRadCDay
+  use datm_comp_mod         , only: datm_comp_init, datm_comp_run, datm_comp_final
   use mct_mod
 
   implicit none
@@ -48,11 +51,9 @@ module atm_comp_nuopc
 
   public  :: SetServices
 
-  private :: InitializeP0
   private :: InitializeAdvertise
   private :: InitializeRealize
   private :: ModelAdvance
-  private :: ModelSetRunClock
   private :: ModelFinalize
 
   !--------------------------------------------------------------------------
@@ -64,7 +65,7 @@ module atm_comp_nuopc
   type (fld_list_type)       :: fldsToAtm(fldsMax)
   type (fld_list_type)       :: fldsFrAtm(fldsMax)
 
-  character(len=80)          :: myModelName = 'atm'       ! user defined model name
+  character(len=3)           :: myModelName = 'atm'       ! user defined model name
   type(shr_strdata_type)     :: SDATM
   type(mct_gsMap), target    :: gsMap_target
   type(mct_gGrid), target    :: ggrid_target
@@ -88,12 +89,11 @@ module atm_comp_nuopc
   character(len=256)         :: tmpstr                    ! tmp string
   integer                    :: dbrc
   integer, parameter         :: dbug = 10
-  character(len=*),parameter :: grid_option = "mesh"      ! grid_de, grid_arb, grid_reg, mesh
   character(len=80)          :: calendar                  ! calendar name
   character(len=CXX)         :: flds_a2x = ''
   character(len=CXX)         :: flds_x2a = ''
 
-  !----- formats -----
+  logical                :: use_esmf_metadata = .false.
   character(*),parameter :: modName =  "(atm_comp_nuopc)"
   character(*),parameter :: u_FILE_u = __FILE__
 
@@ -106,7 +106,7 @@ module atm_comp_nuopc
     integer, intent(out) :: rc
 
     ! local variables
-    character(len=*),parameter  :: subname=trim(modName)//':(ATMSetServices) '
+    character(len=*),parameter  :: subname=trim(modName)//':(SetServices) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -118,7 +118,7 @@ module atm_comp_nuopc
 
     ! switching to IPD versions
     call ESMF_GridCompSetEntryPoint(gcomp, ESMF_METHOD_INITIALIZE, &
-         userRoutine=InitializeP0, phase=0, rc=rc)
+         userRoutine=ModelInitPhase, phase=0, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! set entry point for methods that require specific implementation
@@ -131,14 +131,12 @@ module atm_comp_nuopc
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! attach specializing method(s)
-
     call NUOPC_CompSpecialize(gcomp, specLabel=model_label_Advance, &
          specRoutine=ModelAdvance, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_MethodRemove(gcomp, label=model_label_SetRunClock, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     call NUOPC_CompSpecialize(gcomp, specLabel=model_label_SetRunClock, &
          specRoutine=ModelSetRunClock, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -150,27 +148,6 @@ module atm_comp_nuopc
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine SetServices
-
-  !-----------------------------------------------------------------------------
-
-  subroutine InitializeP0(gcomp, importState, exportState, clock, rc)
-    type(ESMF_GridComp)   :: gcomp
-    type(ESMF_State)      :: importState, exportState
-    type(ESMF_Clock)      :: clock
-    integer, intent(out)  :: rc
-    !-------------------------------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    !----------------------------------------------------------------------------
-    ! Switch to IPDv01 by filtering all other phaseMap entries
-    !----------------------------------------------------------------------------
-
-    call NUOPC_CompFilterPhaseMap(gcomp, ESMF_METHOD_INITIALIZE, &
-         acceptStringList=(/"IPDv01p"/), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-  end subroutine InitializeP0
 
   !===============================================================================
 
@@ -302,85 +279,90 @@ module atm_comp_nuopc
     ! advertise import and export fields
     !--------------------------------
 
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, trim(flds_scalar_name))
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_topo'    , flds_concat=flds_a2x)
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_z'       , flds_concat=flds_a2x)
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_u'       , flds_concat=flds_a2x)
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_v'       , flds_concat=flds_a2x)
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_tbot'    , flds_concat=flds_a2x)
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_ptem'    , flds_concat=flds_a2x)
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_shum'    , flds_concat=flds_a2x)
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_pbot'    , flds_concat=flds_a2x)
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_dens'    , flds_concat=flds_a2x)
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_pslv'    , flds_concat=flds_a2x)
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_rainc' , flds_concat=flds_a2x)
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_rainl' , flds_concat=flds_a2x)
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_snowc' , flds_concat=flds_a2x)
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_snowl' , flds_concat=flds_a2x)
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_lwdn'  , flds_concat=flds_a2x)
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_swndr' , flds_concat=flds_a2x)
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_swvdr' , flds_concat=flds_a2x)
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_swndf' , flds_concat=flds_a2x)
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_swvdf' , flds_concat=flds_a2x)
-    call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_swnet' , flds_concat=flds_a2x)  ! only diagnostic
-    if (presaero) then
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_bcphidry' , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_bcphodry' , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_bcphiwet' , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_ocphidry' , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_ocphodry' , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_ocphiwet' , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstwet1'  , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstwet2'  , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstwet3'  , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstwet4'  , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstdry1'  , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstdry2'  , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstdry3'  , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstdry4'  , flds_concat=flds_a2x)
-    end if
-    if (flds_co2a .or. flds_co2b .or. flds_co2c) then
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_co2prog'  , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_co2diag'  , flds_concat=flds_a2x)
-    end if
+    if (atm_present) then
+       ! export fields
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, trim(flds_scalar_name))
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_topo'    , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_z'       , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_u'       , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_v'       , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_tbot'    , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_ptem'    , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_shum'    , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_pbot'    , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_dens'    , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_pslv'    , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_rainc' , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_rainl' , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_snowc' , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_snowl' , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_lwdn'  , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_swndr' , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_swvdr' , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_swndf' , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_swvdf' , flds_concat=flds_a2x)
+       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_swnet' , flds_concat=flds_a2x)  ! only diagnostic
+       if (presaero) then
+          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_bcphidry' , flds_concat=flds_a2x)
+          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_bcphodry' , flds_concat=flds_a2x)
+          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_bcphiwet' , flds_concat=flds_a2x)
+          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_ocphidry' , flds_concat=flds_a2x)
+          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_ocphodry' , flds_concat=flds_a2x)
+          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_ocphiwet' , flds_concat=flds_a2x)
+          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstwet1'  , flds_concat=flds_a2x)
+          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstwet2'  , flds_concat=flds_a2x)
+          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstwet3'  , flds_concat=flds_a2x)
+          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstwet4'  , flds_concat=flds_a2x)
+          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstdry1'  , flds_concat=flds_a2x)
+          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstdry2'  , flds_concat=flds_a2x)
+          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstdry3'  , flds_concat=flds_a2x)
+          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstdry4'  , flds_concat=flds_a2x)
+       end if
+       if (flds_co2a .or. flds_co2b .or. flds_co2c) then
+          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_co2prog'  , flds_concat=flds_a2x)
+          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_co2diag'  , flds_concat=flds_a2x)
+       end if
 
-    call fld_list_add(fldsToAtm_num, fldsToAtm, trim(flds_scalar_name))
-    if (atm_prognostic) then
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_anidr'  , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_avsdf'  , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_anidf'  , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_avsdr'  , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sl_lfrac'  , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Si_ifrac'  , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'So_ofrac'  , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_tref'   , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_qref'   , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_t'      , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'So_t'      , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sl_fv'     , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sl_ram1'   , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sl_snowh'  , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Si_snowh'  , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'So_ssq'    , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'So_re'     , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_u10'    , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_taux' , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_tauy' , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_lat'  , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_sen'  , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_lwup' , flds_concat=flds_x2a)
-       call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_evap' , flds_concat=flds_x2a)
-    end if
+       do n = 1,fldsFrAtm_num
+          call NUOPC_Advertise(exportState, standardName=fldsFrAtm(n)%stdname, &
+               TransferOfferGeomObject='will provide', rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       enddo
 
-    ! Now advertise these fields
-    do n = 1,fldsFrAtm_num
-      call NUOPC_Advertise(exportState, standardName=fldsFrAtm(n)%stdname, TransferOfferGeomObject='will provide', rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    enddo
-    do n = 1,fldsToAtm_num
-      call NUOPC_Advertise(importState, standardName=fldsToAtm(n)%stdname, TransferOfferGeomObject='will provide', rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    enddo
+       ! Import fields
+       if (atm_prognostic) then
+          call fld_list_add(fldsToAtm_num, fldsToAtm, trim(flds_scalar_name))
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_anidr'  , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_avsdf'  , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_anidf'  , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_avsdr'  , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sl_lfrac'  , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Si_ifrac'  , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'So_ofrac'  , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_tref'   , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_qref'   , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_t'      , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'So_t'      , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sl_fv'     , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sl_ram1'   , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sl_snowh'  , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Si_snowh'  , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'So_ssq'    , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'So_re'     , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_u10'    , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_taux' , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_tauy' , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_lat'  , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_sen'  , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_lwup' , flds_concat=flds_x2a)
+          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_evap' , flds_concat=flds_x2a)
+
+          do n = 1,fldsToAtm_num
+             call NUOPC_Advertise(importState, standardName=fldsToAtm(n)%stdname, TransferOfferGeomObject='will provide', rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          enddo
+       end if
+    end if
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
@@ -409,7 +391,14 @@ module atm_comp_nuopc
     type(ESMF_Mesh)         :: Emesh
     type(ESMF_Calendar)     :: esmf_calendar             ! esmf calendar
     type(ESMF_CalKind_Flag) :: esmf_caltype              ! esmf calendar type
-    type(ESMF_VM)           :: vm
+    integer                 :: current_ymd               ! model date
+    integer                 :: current_year              ! model year
+    integer                 :: current_mon               ! model month
+    integer                 :: current_day               ! model day
+    integer                 :: current_tod               ! model sec into model date
+    integer(I8)             :: stepno                    ! step number
+    integer                 :: modeldt                   ! integer timestep
+    real(R8)                :: nextsw_cday               ! calendar of next atm sw
     integer                 :: nx_global, ny_global
     integer                 :: n
     character(len=256)      :: cvalue
@@ -420,14 +409,6 @@ module atm_comp_nuopc
     logical                 :: scmMode = .false.         ! single column mode
     real(R8)                :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)                :: scmLon  = shr_const_SPVAL ! single column lon
-    integer                 :: current_ymd               ! model date
-    integer                 :: current_year              ! model year
-    integer                 :: current_mon               ! model month
-    integer                 :: current_day               ! model day
-    integer                 :: current_tod               ! model sec into model date
-    integer(I8)             :: stepno                    ! step number
-    integer                 :: modeldt                   ! integer timestep
-    real(R8)                :: nextsw_cday               ! calendar of next atm sw
     logical                 :: connected                 ! is field connected?
     integer                 :: lsize
     integer                 :: iam
@@ -456,11 +437,8 @@ module atm_comp_nuopc
     call shr_file_setLogUnit (logUnit)
 
     !--------------------------------
-    ! call datm init routine
+    ! Determine necessary config variables
     !--------------------------------
-
-    gsmap => gsmap_target
-    ggrid => ggrid_target
 
     call NUOPC_CompAttributeGet(gcomp, name='case_name', value=case_name, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -485,10 +463,7 @@ module atm_comp_nuopc
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) compid
 
-    !----------------------------------------------------------------------------
     ! Determine orbital values (these might change dynamically)
-    !----------------------------------------------------------------------------
-
     call NUOPC_CompAttributeGet(gcomp, name='orb_eccen', value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) orbEccen
@@ -530,6 +505,9 @@ module atm_comp_nuopc
     !----------------------------------------------------------------------------
     ! Initialize model
     !----------------------------------------------------------------------------
+
+    gsmap => gsmap_target
+    ggrid => ggrid_target
 
     call datm_comp_init(&
          x2a=x2d, &
@@ -631,7 +609,7 @@ module atm_comp_nuopc
     ! Set the coupling scalars
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_a2x, exportState, grid_option, rc=rc)
+    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_a2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call shr_nuopc_methods_State_SetScalar(dble(nx_global),flds_scalar_index_nx, exportState, mpicom, &
@@ -658,34 +636,6 @@ module atm_comp_nuopc
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
 
-#ifdef USE_ESMF_METADATA
-    convCIM  = "CIM"
-    purpComp = "Model Component Simulation Description"
-    call ESMF_AttributeAdd(comp, convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ShortName", "DATM", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "LongName", "Climatological Atmosphere Data Model", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "Description", &
-         "The CIME data models perform the basic function of " // &
-         "reading external data, modifying that data, and then " // &
-         "sending it to the driver via coupling " // &
-         "interfaces. The driver and other models have no " // &
-         "fundamental knowledge of whether another component " // &
-         "is fully active or just a data model.  In some cases, " // &
-         "data models are prognostic and also receive and use " // &
-         "some data sent by the driver to the data model.  But " // &
-         "in most cases, the data models are not running " // &
-         "prognostically and have no need to receive any data " // &
-         "from the driver.", &
-         convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ReleaseDate", "2010", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ModelType", "Atmosphere", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "Name", "TBD", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "EmailAddress", "TBD", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ResponsiblePartyRole", "contact", convention=convCIM, purpose=purpComp, rc=rc)
-#endif
-
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
-
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
@@ -693,6 +643,12 @@ module atm_comp_nuopc
     call shr_file_setLogLevel(shrloglev)
     call shr_file_setLogUnit (shrlogunit)
 
+    if (use_esmf_metadata) then
+       call ModelSetMetaData(gcomp, name='DATM', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
+
+    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine InitializeRealize
 
@@ -760,7 +716,7 @@ module atm_comp_nuopc
     !--------------------------------
 
     if (unpack_import) then
-       call shr_nuopc_grid_StateToArray(importState, x2d%rattr, flds_x2a, grid_option, rc=rc)
+       call shr_nuopc_grid_StateToArray(importState, x2d%rattr, flds_x2a, grid_option='mesh', rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
@@ -846,7 +802,7 @@ module atm_comp_nuopc
     ! Pack export state
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_a2x, exportState, grid_option, rc=rc)
+    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_a2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call shr_nuopc_methods_State_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState, mpicom, &
@@ -863,106 +819,28 @@ module atm_comp_nuopc
        end if
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
 
-    if (my_task == master_task) then
-       call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing ATM from: ", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (my_task == master_task) then
+          call ESMF_ClockPrint(clock, options="currTime", &
+               preString="------>Advancing ATM from: ", rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          
+          call ESMF_ClockPrint(clock, options="stopTime", &
+               preString="--------------------------------> to: ", rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
     end if
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    !----------------------------------------------------------------------------
+    ! Reset shr logging to original values
+    !----------------------------------------------------------------------------
 
     call shr_file_setLogLevel(shrloglev)
     call shr_file_setLogUnit (shrlogunit)
 
-  end subroutine ModelAdvance
-
-  !===============================================================================
-
-  subroutine ModelSetRunClock(gcomp, rc)
-    type(ESMF_GridComp)  :: gcomp
-    integer, intent(out) :: rc
-
-    ! local variables
-    type(ESMF_Clock)         :: mclock, dclock
-    type(ESMF_Time)          :: mcurrtime, dcurrtime
-    type(ESMF_Time)          :: mstoptime
-    type(ESMF_TimeInterval)  :: mtimestep, dtimestep
-    character(len=256)       :: cvalue
-    character(len=256)       :: restart_option       ! Restart option units
-    integer                  :: restart_n            ! Number until restart interval
-    integer                  :: restart_ymd          ! Restart date (YYYYMMDD)
-    type(ESMF_ALARM)         :: restart_alarm
-    integer                  :: first_time = .true.
-    character(len=*),parameter :: subname=trim(modName)//':(ModelSetRunClock) '
-    !-------------------------------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-
-    ! query the Component for its clocks
-    call NUOPC_ModelGet(gcomp, driverClock=dclock, modelClock=mclock, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_ClockGet(dclock, currTime=dcurrtime, timeStep=dtimestep, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_ClockGet(mclock, currTime=mcurrtime, timeStep=mtimestep, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !--------------------------------
-    ! force model clock currtime and timestep to match driver and set stoptime
-    !--------------------------------
-
-    mstoptime = mcurrtime + dtimestep
-    call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !--------------------------------
-    ! set restart alarm
-    !--------------------------------
-
-    if (first_time) then
-       call NUOPC_CompAttributeGet(gcomp, name="restart_option", value=restart_option, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call NUOPC_CompAttributeGet(gcomp, name="restart_n", value=cvalue, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       read(cvalue,*) restart_n
-
-       call NUOPC_CompAttributeGet(gcomp, name="restart_ymd", value=cvalue, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       read(cvalue,*) restart_ymd
-
-       call shr_nuopc_time_alarmInit(mclock, restart_alarm, restart_option, &
-            opt_n   = restart_n,           &
-            opt_ymd = restart_ymd,         &
-            RefTime = mcurrTime,           &
-            alarmname = 'alarm_restart', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call ESMF_AlarmSet(restart_alarm, clock=mclock, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       first_time = .false.
-    end if
-
-    !--------------------------------
-    ! Advance model clock to trigger alarms then reset model clock back to currtime
-    !--------------------------------
-
-    call ESMF_ClockAdvance(mclock,rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
-  end subroutine ModelSetRunClock
+  end subroutine ModelAdvance
 
   !===============================================================================
 

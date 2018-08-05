@@ -173,22 +173,22 @@ contains
        EClock_ice, Eclock_glc, Eclock_rof, EClock_wav, Eclock_esp)
 
     ! !DESCRIPTION:  Initializes clock
-    use med_constants_mod, only : CS, CL, IN
-    use NUOPC, only : NUOPC_CompAttributeGet
-    use ESMF, only : ESMF_GridComp, ESMF_ClockSet, ESMF_CalendarCreate, ESMF_FAILURE
-    use ESMF, only : ESMF_Time, ESMF_TimeInterval, ESMF_CalKind_Flag
-    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_LOGERR_PASSTHRU
-    use ESMF, only : ESMF_LogFoundError, ESMF_TimeIntervalSet, ESMF_AlarmGet
-    use ESMF, only : ESMF_CALKIND_NOLEAP, ESMF_CALKIND_GREGORIAN, ESMF_CalKind_Flag
-    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
-    use pio, only : file_desc_t
-    use shr_mpi_mod, only : shr_mpi_bcast
-    use shr_sys_mod, only : shr_sys_abort
-    use seq_comm_mct, only : seq_comm_iamin, CPLID, logunit, seq_comm_gloroot
-    use shr_cal_mod, only : shr_cal_calendarName
-    use netcdf, only : nf90_open, nf90_nowrite, nf90_noerr, nf90_inq_varid, nf90_get_var
-    use netcdf, only : nf90_close
-    use shr_file_mod, only : shr_file_getUnit, shr_file_freeUnit
+    use med_constants_mod     , only : CS, CL, IN
+    use NUOPC                 , only : NUOPC_CompAttributeGet
+    use ESMF                  , only : ESMF_GridComp, ESMF_ClockSet, ESMF_CalendarCreate, ESMF_FAILURE
+    use ESMF                  , only : ESMF_Time, ESMF_TimeInterval, ESMF_CalKind_Flag
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_LOGERR_PASSTHRU
+    use ESMF                  , only : ESMF_LogFoundError, ESMF_TimeIntervalSet, ESMF_AlarmGet
+    use ESMF                  , only : ESMF_CALKIND_NOLEAP, ESMF_CALKIND_GREGORIAN, ESMF_CalKind_Flag
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use pio                   , only : file_desc_t
+    use shr_mpi_mod           , only : shr_mpi_bcast
+    use shr_sys_mod           , only : shr_sys_abort
+    use seq_comm_mct          , only : seq_comm_iamin, CPLID, logunit, seq_comm_gloroot
+    use shr_cal_mod           , only : shr_cal_calendarName
+    use netcdf                , only : nf90_open, nf90_nowrite, nf90_noerr, nf90_inq_varid, nf90_get_var
+    use netcdf                , only : nf90_close
+    use shr_file_mod          , only : shr_file_getUnit, shr_file_freeUnit
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_GridComp),     intent(inout) :: driver
@@ -206,65 +206,65 @@ contains
     type(ESMF_clock),target, intent(in)    :: EClock_esp   ! esp clock
 
     !----- local -----
-    logical                     :: read_restart
-    character(CL)      :: restart_file
-    character(CL)      :: restart_pfile
-    character(CL)      :: cvalue
-    type(ESMF_Time)             :: StartTime            ! Start time
-    type(ESMF_Time)             :: RefTime              ! Reference time
-    type(ESMF_Time)             :: CurrTime             ! Current time
-    type(ESMF_Time)             :: StopTime1            ! Stop time
-    type(ESMF_Time)             :: StopTime2            ! Stop time
-    type(ESMF_TimeInterval)     :: TimeStep             ! Clock time-step
-    type(ESMF_CalKind_Flag)     :: esmf_caltype         ! local esmf calendar
-    integer                     :: rc                   ! Return code
-    integer                     :: n, i                 ! index
-    logical                     :: found
-    integer                     :: iam, unitn
-    integer                     :: min_dt               ! smallest time step
-    integer                     :: dtime(max_clocks)    ! time-step to use
-    character(CS)      :: calendar             ! Calendar type
-    character(CS)      :: stop_option          ! Stop option units
-    integer(IN)        :: stop_n               ! Number until stop
-    integer(IN)        :: stop_ymd             ! Stop date (YYYYMMDD)
-    integer(IN)        :: stop_tod             ! Stop time-of-day
-    character(CS)      :: restart_option       ! Restart option units
-    integer(IN)        :: restart_n            ! Number until restart interval
-    integer(IN)        :: restart_ymd          ! Restart date (YYYYMMDD)
-    character(CS)      :: pause_option         ! Pause option units
-    integer(IN)        :: pause_n              ! Number between pause intervals
-    character(CS)      :: pause_component_list ! Pause - resume components
-    character(CS)      :: history_option       ! History option units
-    integer(IN)        :: history_n            ! Number until history interval
-    integer(IN)        :: history_ymd          ! History date (YYYYMMDD)
-    character(CS)      :: histavg_option       ! Histavg option units
-    integer(IN)        :: histavg_n            ! Number until histavg interval
-    integer(IN)        :: histavg_ymd          ! Histavg date (YYYYMMDD)
-    character(CS)      :: barrier_option       ! Barrier option units
-    integer(IN)        :: barrier_n            ! Number until barrier interval
-    integer(IN)        :: barrier_ymd          ! Barrier date (YYYYMMDD)
-    character(CS)      :: tprof_option         ! tprof option units
-    integer(IN)        :: tprof_n              ! Number until tprof interval
-    integer(IN)        :: tprof_ymd            ! tprof date (YYYYMMDD)
-    integer(IN)        :: start_ymd            ! Start date (YYYYMMDD)
-    integer(IN)        :: start_tod            ! Start time of day (seconds)
-    integer(IN)        :: curr_ymd             ! Current ymd (YYYYMMDD)
-    integer(IN)        :: curr_tod             ! Current tod (seconds)
-    integer(IN)        :: ref_ymd              ! Reference date (YYYYMMDD)
-    integer(IN)        :: ref_tod              ! Reference time of day (seconds)
-    integer(IN)        :: atm_cpl_dt           ! Atmosphere coupling interval
-    integer(IN)        :: lnd_cpl_dt           ! Land coupling interval
-    integer(IN)        :: ice_cpl_dt           ! Sea-Ice coupling interval
-    integer(IN)        :: ocn_cpl_dt           ! Ocean coupling interval
-    integer(IN)        :: glc_cpl_dt           ! Glc coupling interval
-    integer(IN)        :: rof_cpl_dt           ! Runoff coupling interval
-    integer(IN)        :: wav_cpl_dt           ! Wav coupling interval
-    integer(IN)        :: esp_cpl_dt           ! Esp coupling interval
-    character(CS)      :: glc_avg_period       ! Glc avering coupling period
-    logical                     :: esp_run_on_pause     ! Run ESP on pause cycle
-    logical                     :: end_restart          ! Write restart at end of run
-    integer(IN)        :: ierr                 ! Return code
-    integer(IN)        :: status, ncid, varid  ! netcdf stuff
+    logical                 :: read_restart
+    character(CL)           :: restart_file
+    character(CL)           :: restart_pfile
+    character(CL)           :: cvalue
+    type(ESMF_Time)         :: StartTime            ! Start time
+    type(ESMF_Time)         :: RefTime              ! Reference time
+    type(ESMF_Time)         :: CurrTime             ! Current time
+    type(ESMF_Time)         :: StopTime1            ! Stop time
+    type(ESMF_Time)         :: StopTime2            ! Stop time
+    type(ESMF_TimeInterval) :: TimeStep             ! Clock time-step
+    type(ESMF_CalKind_Flag) :: esmf_caltype         ! local esmf calendar
+    integer                 :: rc                   ! Return code
+    integer                 :: n, i                 ! index
+    logical                 :: found
+    integer                 :: iam, unitn
+    integer                 :: min_dt               ! smallest time step
+    integer                 :: dtime(max_clocks)    ! time-step to use
+    character(CS)           :: calendar             ! Calendar type
+    character(CS)           :: stop_option          ! Stop option units
+    integer(IN)             :: stop_n               ! Number until stop
+    integer(IN)             :: stop_ymd             ! Stop date (YYYYMMDD)
+    integer(IN)             :: stop_tod             ! Stop time-of-day
+    character(CS)           :: restart_option       ! Restart option units
+    integer(IN)             :: restart_n            ! Number until restart interval
+    integer(IN)             :: restart_ymd          ! Restart date (YYYYMMDD)
+    character(CS)           :: pause_option         ! Pause option units
+    integer(IN)             :: pause_n              ! Number between pause intervals
+    character(CS)           :: pause_component_list ! Pause - resume components
+    character(CS)           :: history_option       ! History option units
+    integer(IN)             :: history_n            ! Number until history interval
+    integer(IN)             :: history_ymd          ! History date (YYYYMMDD)
+    character(CS)           :: histavg_option       ! Histavg option units
+    integer(IN)             :: histavg_n            ! Number until histavg interval
+    integer(IN)             :: histavg_ymd          ! Histavg date (YYYYMMDD)
+    character(CS)           :: barrier_option       ! Barrier option units
+    integer(IN)             :: barrier_n            ! Number until barrier interval
+    integer(IN)             :: barrier_ymd          ! Barrier date (YYYYMMDD)
+    character(CS)           :: tprof_option         ! tprof option units
+    integer(IN)             :: tprof_n              ! Number until tprof interval
+    integer(IN)             :: tprof_ymd            ! tprof date (YYYYMMDD)
+    integer(IN)             :: start_ymd            ! Start date (YYYYMMDD)
+    integer(IN)             :: start_tod            ! Start time of day (seconds)
+    integer(IN)             :: curr_ymd             ! Current ymd (YYYYMMDD)
+    integer(IN)             :: curr_tod             ! Current tod (seconds)
+    integer(IN)             :: ref_ymd              ! Reference date (YYYYMMDD)
+    integer(IN)             :: ref_tod              ! Reference time of day (seconds)
+    integer(IN)             :: atm_cpl_dt           ! Atmosphere coupling interval
+    integer(IN)             :: lnd_cpl_dt           ! Land coupling interval
+    integer(IN)             :: ice_cpl_dt           ! Sea-Ice coupling interval
+    integer(IN)             :: ocn_cpl_dt           ! Ocean coupling interval
+    integer(IN)             :: glc_cpl_dt           ! Glc coupling interval
+    integer(IN)             :: rof_cpl_dt           ! Runoff coupling interval
+    integer(IN)             :: wav_cpl_dt           ! Wav coupling interval
+    integer(IN)             :: esp_cpl_dt           ! Esp coupling interval
+    character(CS)           :: glc_avg_period       ! Glc avering coupling period
+    logical                 :: esp_run_on_pause     ! Run ESP on pause cycle
+    logical                 :: end_restart          ! Write restart at end of run
+    integer(IN)             :: ierr                 ! Return code
+    integer(IN)             :: status, ncid, varid  ! netcdf stuff
     character(len=*), parameter :: F0A = "(2A,A)"
     character(len=*), parameter :: F0I = "(2A,I10)"
     character(len=*), parameter :: F0L = "(2A,L3)"
@@ -489,27 +489,27 @@ contains
           ! tcraig, use netcdf here since it's serial and pio may not have been initialized yet
           status = nf90_open(restart_file, NF90_NOWRITE, ncid)
           if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_open')
-          status = nf90_inq_varid(ncid, 'seq_timemgr_start_ymd', varid)
+          status = nf90_inq_varid(ncid, 'start_ymd', varid)
           if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_inq_varid start_ymd')
           status = nf90_get_var(ncid, varid, start_ymd)
           if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_get_var start_ymd')
-          status = nf90_inq_varid(ncid, 'seq_timemgr_start_tod', varid)
+          status = nf90_inq_varid(ncid, 'start_tod', varid)
           if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_inq_varid start_tod')
           status = nf90_get_var(ncid, varid, start_tod)
           if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_get_var start_tod')
-          status = nf90_inq_varid(ncid, 'seq_timemgr_ref_ymd', varid)
+          status = nf90_inq_varid(ncid, 'ref_ymd', varid)
           if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_inq_varid ref_ymd')
           status = nf90_get_var(ncid, varid, ref_ymd)
           if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_get_var ref_ymd')
-          status = nf90_inq_varid(ncid, 'seq_timemgr_ref_tod', varid)
+          status = nf90_inq_varid(ncid, 'ref_tod', varid)
           if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_inq_varid ref_tod')
           status = nf90_get_var(ncid, varid, ref_tod)
           if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_get_var ref_tod')
-          status = nf90_inq_varid(ncid, 'seq_timemgr_curr_ymd', varid)
+          status = nf90_inq_varid(ncid, 'curr_ymd', varid)
           if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_inq_varid curr_ymd')
           status = nf90_get_var(ncid, varid, curr_ymd)
           if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_get_var curr_ymd')
-          status = nf90_inq_varid(ncid, 'seq_timemgr_curr_tod', varid)
+          status = nf90_inq_varid(ncid, 'curr_tod', varid)
           if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_inq_varid curr_tod')
           status = nf90_get_var(ncid, varid, curr_tod)
           if (status /= nf90_NoErr) call shr_sys_abort(trim(subname)//' ERROR: nf90_get_var curr_tod')
@@ -970,26 +970,26 @@ contains
     character(len=*)     , intent(out), optional :: calendar   ! calendar type
 
     !----- local -----
-    type(ESMF_Time)               :: CurrentTime     ! Current time
-    type(ESMF_Time)               :: PreviousTime    ! Previous time
-    type(ESMF_Time)               :: StartTime       ! Start time
-    type(ESMF_Time)               :: StopTime        ! Stop time
-    type(ESMF_Time)               :: RefTime         ! Ref time
-    type(ESMF_TimeInterval)       :: timeStep        ! Clock, time-step
-    type(ESMF_TimeInterval)       :: timediff        ! Used to calculate curr_time
-    integer(IN)          :: rc              ! Return code
-    integer(I8)          :: advSteps        ! Number of time-steps that have advanced
-    integer(IN)          :: yy, mm, dd, sec ! Return time values
-    integer(IN)          :: ymd             ! Date (YYYYMMDD)
-    integer(IN)          :: tod             ! time of day (sec)
-    integer(IN)          :: ldtime          ! local dtime
-    integer(IN)          :: days            ! number of whole days in time interval
-    integer(IN)          :: seconds         ! number of seconds in time interval
-    integer(IN)          :: acount          ! number of valid alarms
-    real(R8)            :: doy, tmpdoy     ! day of year
-    type(ESMF_Time)               :: tmpTime         ! tmp time, needed for next_cday
-    type(ESMF_TimeInterval)       :: tmpDTime        ! tmp time interval, needed for next_cday
-    real(R8), parameter :: c1 = 1.0_R8
+    type(ESMF_Time)         :: CurrentTime     ! Current time
+    type(ESMF_Time)         :: PreviousTime    ! Previous time
+    type(ESMF_Time)         :: StartTime       ! Start time
+    type(ESMF_Time)         :: StopTime        ! Stop time
+    type(ESMF_Time)         :: RefTime         ! Ref time
+    type(ESMF_TimeInterval) :: timeStep        ! Clock, time-step
+    type(ESMF_TimeInterval) :: timediff        ! Used to calculate curr_time
+    integer(IN)             :: rc              ! Return code
+    integer(I8)             :: advSteps        ! Number of time-steps that have advanced
+    integer(IN)             :: yy, mm, dd, sec ! Return time values
+    integer(IN)             :: ymd             ! Date (YYYYMMDD)
+    integer(IN)             :: tod             ! time of day (sec)
+    integer(IN)             :: ldtime          ! local dtime
+    integer(IN)             :: days            ! number of whole days in time interval
+    integer(IN)             :: seconds         ! number of seconds in time interval
+    integer(IN)             :: acount          ! number of valid alarms
+    real(R8)                :: doy, tmpdoy     ! day of year
+    type(ESMF_Time)         :: tmpTime         ! tmp time, needed for next_cday
+    type(ESMF_TimeInterval) :: tmpDTime        ! tmp time interval, needed for next_cday
+    real(R8), parameter     :: c1 = 1.0_R8
     character(len=*)  , parameter :: subname = '(seq_timemgr_EClockGetData) '
     !-------------------------------------------------------------------------------
 
@@ -1738,11 +1738,13 @@ contains
 
   !===============================================================================
   subroutine seq_timemgr_ETimeInit( ETime, ymd, tod, desc )
-    use shr_sys_mod, only : shr_sys_abort
-    use ESMF, only : ESMF_Time, ESMF_TimeSet
-    use shr_cal_mod, only : shr_cal_date2ymd
-    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
-    use seq_comm_mct, only : logunit
+
+    use shr_sys_mod           , only : shr_sys_abort
+    use ESMF                  , only : ESMF_Time, ESMF_TimeSet
+    use shr_cal_mod           , only : shr_cal_date2ymd
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use seq_comm_mct          , only : logunit
+
     ! !DESCRIPTION: Create the ESMF_Time object corresponding to the given input time, given in
     !               YMD (Year Month Day) and TOD (Time-of-day) format.
     !               Set the time by an integer as YYYYMMDD and integer seconds in the day

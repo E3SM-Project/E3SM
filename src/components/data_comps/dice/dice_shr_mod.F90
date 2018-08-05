@@ -31,7 +31,6 @@ module dice_shr_mod
   real(R8)      , public :: flux_Qmin             ! bound on melt rate
   logical       , public :: flux_Qacc             ! activates water accumulation/melt wrt Q
   real(R8)      , public :: flux_Qacc0            ! initial water accumulation value
-  logical       , public :: force_prognostic_true ! if true set prognostic true
 
   ! variables obtained from namelist read
   character(CL) , public :: rest_file             ! restart filename
@@ -69,7 +68,6 @@ CONTAINS
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dice_comp_init) ',8a)"
-    character(*), parameter :: F0L   = "('(dice_comp_init) ',a, l2)"
     character(*), parameter :: F01   = "('(dice_comp_init) ',a,5i8)"
     character(*), parameter :: F02   = "('(dice_comp_init) ',a,4es13.6)"
     character(*), parameter :: F06   = "('(dice_comp_init) ',a,5l3)"
@@ -78,8 +76,7 @@ CONTAINS
 
     !----- define namelist -----
     namelist / dice_nml / &
-         decomp, flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0, restfilm, restfils, &
-         force_prognostic_true
+         decomp, flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0, restfilm, restfils
 
     !----------------------------------------------------------------------------
     ! Determine input filenamname
@@ -99,7 +96,6 @@ CONTAINS
     flux_Qacc0 =     0.0_R8  ! no water
     restfilm   = trim(nullstr)
     restfils   = trim(nullstr)
-    force_prognostic_true = .false.
     if (my_task == master_task) then
        nunit = shr_file_getUnit() ! get unused unit number
        open (nunit,file=trim(filename),status="old",action="read")
@@ -117,7 +113,6 @@ CONTAINS
        write(logunit,F02)' flux_Qacc0 = ',flux_Qacc0
        write(logunit,F00)' restfilm   = ',trim(restfilm)
        write(logunit,F00)' restfils   = ',trim(restfils)
-       write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
     endif
     call shr_mpi_bcast(decomp    ,mpicom,'decomp')
     call shr_mpi_bcast(flux_swpf ,mpicom,'flux_swpf')
@@ -126,7 +121,6 @@ CONTAINS
     call shr_mpi_bcast(flux_Qacc0,mpicom,'flux_Qacc0')
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfils,mpicom,'restfils')
-    call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
 
     rest_file = trim(restfilm)
     rest_file_strm = trim(restfils)
@@ -141,8 +135,8 @@ CONTAINS
 
     datamode = trim(SDICE%dataMode)
     if (trim(datamode) == 'NULL' .or. &
-         trim(datamode) == 'SSTDATA' .or. &
-         trim(datamode) == 'COPYALL') then
+        trim(datamode) == 'SSTDATA' .or. &
+        trim(datamode) == 'COPYALL') then
        if (my_task == master_task) then
           write(logunit,F00) ' dice datamode = ',trim(datamode)
        end if
@@ -155,18 +149,13 @@ CONTAINS
     ! Determine present and prognostic flag
     !----------------------------------------------------------------------------
 
-    ice_present = .false.
-    ice_prognostic = .false.
-    if (force_prognostic_true) then
-       ice_present    = .true.
-       ice_prognostic = .true.
-    endif
-    if (trim(datamode) /= 'NULL') then
+    if (trim(datamode) == 'NULL') then
+       ice_present = .false.
+       ice_prognostic = .false.
+    else
        ice_present = .true.
-    end if
-    if (trim(datamode) == 'SSTDATA' .or. trim(datamode) == 'COPYALL') then
        ice_prognostic = .true.
-    endif
+    end if
 
   end subroutine dice_shr_read_namelists
 

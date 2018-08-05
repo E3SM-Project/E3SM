@@ -24,6 +24,8 @@ module docn_comp_mod
   use shr_const_mod   , only : shr_const_TkFrzSw
   use shr_const_mod   , only : shr_const_latice
   use shr_const_mod   , only : shr_const_ocn_ref_sal
+  use shr_const_mod   , only : shr_const_zsrflyr
+  use shr_const_mod   , only : shr_const_pi
   use shr_sys_mod     , only : shr_sys_flush, shr_sys_abort
   use shr_file_mod    , only : shr_file_getunit, shr_file_freeunit
   use shr_mpi_mod     , only : shr_mpi_bcast
@@ -85,16 +87,14 @@ module docn_comp_mod
   integer(IN), pointer :: imask(:)
   real(R8), pointer    :: xc(:), yc(:) ! arryas of model latitudes and longitudes
 
-  !--------------------------------------------------------------------------
   integer(IN)     , parameter :: ktrans = 8
   character(12)   , parameter :: avifld(1:ktrans) = &
        (/ "t           ","u           ","v           ","dhdx        ",&
           "dhdy        ","s           ","h           ","qbot        "/)
-  character(12)   , parameter  :: avofld(1:ktrans) = &
+  character(12)   , parameter :: avofld(1:ktrans) = &
        (/ "So_t        ","So_u        ","So_v        ","So_dhdx     ",&
           "So_dhdy     ","So_s        ","strm_h      ","strm_qbot   "/)
   character(len=*), parameter :: flds_strm = 'strm_h:strm_qbot'
-  !--------------------------------------------------------------------------
 
 !===============================================================================
 contains
@@ -105,34 +105,35 @@ contains
        SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
        scmMode, scmlat, scmlon, &
-       calendar, current_ymd, current_tod, modeldt)
+       calendar, current_ymd, current_tod, modeldt, ocn_prognostic)
 
     ! !DESCRIPTION: initialize docn model
     use pio        , only : iosystem_desc_t
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(mct_aVect)        , intent(inout) :: x2o, o2x     ! input/output attribute vectors
-    character(len=*)       , intent(in)    :: flds_x2o     ! fields from mediator
-    character(len=*)       , intent(in)    :: flds_o2x     ! fields to mediator
-    type(shr_strdata_type) , intent(inout) :: SDOCN        ! model shr_strdata instance (output)
-    type(mct_gsMap)        , pointer       :: gsMap        ! model global seg map (output)
-    type(mct_gGrid)        , pointer       :: ggrid        ! model ggrid (output)
-    integer(IN)            , intent(in)    :: mpicom       ! mpi communicator
-    integer(IN)            , intent(in)    :: compid       ! mct comp id
-    integer(IN)            , intent(in)    :: my_task      ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task  ! task number of master task
-    character(len=*)       , intent(in)    :: inst_suffix  ! char string associated with instance
-    character(len=*)       , intent(in)    :: inst_name    ! fullname of current instance (ie. "lnd_0001")
-    integer(IN)            , intent(in)    :: logunit      ! logging unit number
-    logical                , intent(in)    :: read_restart ! start from restart
-    logical                , intent(in)    :: scmMode      ! single column mode
-    real(R8)               , intent(in)    :: scmLat       ! single column lat
-    real(R8)               , intent(in)    :: scmLon       ! single column lon
-    character(len=*)       , intent(in)    :: calendar     ! model calendar type
-    integer                , intent(in)    :: current_ymd  ! model date
-    integer                , intent(in)    :: current_tod  ! model sec into model date
-    integer                , intent(in)    :: modeldt      ! model time step
+    type(mct_aVect)        , intent(inout) :: x2o, o2x       ! input/output attribute vectors
+    character(len=*)       , intent(in)    :: flds_x2o       ! fields from mediator
+    character(len=*)       , intent(in)    :: flds_o2x       ! fields to mediator
+    type(shr_strdata_type) , intent(inout) :: SDOCN          ! model shr_strdata instance (output)
+    type(mct_gsMap)        , pointer       :: gsMap          ! model global seg map (output)
+    type(mct_gGrid)        , pointer       :: ggrid          ! model ggrid (output)
+    integer(IN)            , intent(in)    :: mpicom         ! mpi communicator
+    integer(IN)            , intent(in)    :: compid         ! mct comp id
+    integer(IN)            , intent(in)    :: my_task        ! my task in mpi communicator mpicom
+    integer(IN)            , intent(in)    :: master_task    ! task number of master task
+    character(len=*)       , intent(in)    :: inst_suffix    ! char string associated with instance
+    character(len=*)       , intent(in)    :: inst_name      ! fullname of current instance (ie. "lnd_0001")
+    integer(IN)            , intent(in)    :: logunit        ! logging unit number
+    logical                , intent(in)    :: read_restart   ! start from restart
+    logical                , intent(in)    :: scmMode        ! single column mode
+    real(R8)               , intent(in)    :: scmLat         ! single column lat
+    real(R8)               , intent(in)    :: scmLon         ! single column lon
+    character(len=*)       , intent(in)    :: calendar       ! model calendar type
+    integer                , intent(in)    :: current_ymd    ! model date
+    integer                , intent(in)    :: current_tod    ! model sec into model date
+    integer                , intent(in)    :: modeldt        ! model time step
+    logical                , intent(in)    :: ocn_prognostic ! True=> import data used
 
     !--- local variables ---
     integer(IN)   :: n,k      ! generic counters
@@ -233,7 +234,7 @@ contains
     kv    = mct_aVect_indexRA(o2x,'So_v')
     kdhdx = mct_aVect_indexRA(o2x,'So_dhdx')
     kdhdy = mct_aVect_indexRA(o2x,'So_dhdy')
-    kswp  = mct_aVect_indexRA(o2x,'So_fswpen')
+    kswp  = mct_aVect_indexRA(o2x,'So_fswpen', perrwith='quiet') 
     kq    = mct_aVect_indexRA(o2x,'Fioo_q')
 
     if (ocn_prognostic) then
@@ -360,8 +361,8 @@ contains
          logunit=logunit, &
          read_restart=read_restart, &
          write_restart=.false., &
-         current_ymd=current_ymd, &
-         current_tod=current_tod, &
+         target_ymd=current_ymd, &
+         target_tod=current_tod, &
          modeldt=modeldt)
 
     if (my_task == master_task) then
@@ -449,7 +450,9 @@ contains
        o2x%rAttr(kdhdx,n) = 0.0_R8
        o2x%rAttr(kdhdy,n) = 0.0_R8
        o2x%rAttr(kq   ,n) = 0.0_R8
-       o2x%rAttr(kswp ,n) = swp
+       if (kswp /= 0) then
+          o2x%rAttr(kswp ,n) = swp
+       end if
     enddo
 
     ! NOTE: for SST_AQUAPANAL, the docn buildnml sets the stream to "null"
@@ -487,7 +490,9 @@ contains
           o2x%rAttr(kdhdx,n) = 0.0_R8
           o2x%rAttr(kdhdy,n) = 0.0_R8
           o2x%rAttr(kq   ,n) = 0.0_R8
-          o2x%rAttr(kswp ,n) = swp
+          if (kswp /= 0) then
+             o2x%rAttr(kswp ,n) = swp
+          end if
        enddo
 
     case('SST_AQUAPANAL')
@@ -516,7 +521,9 @@ contains
           o2x%rAttr(kdhdx,n) = 0.0_R8
           o2x%rAttr(kdhdy,n) = 0.0_R8
           o2x%rAttr(kq   ,n) = 0.0_R8
-          o2x%rAttr(kswp ,n) = swp
+          if (kswp /= 0) then
+             o2x%rAttr(kswp ,n) = swp
+          end if
        enddo
 
     case('IAF')
@@ -529,7 +536,9 @@ contains
           o2x%rAttr(kdhdx,n) = 0.0_R8
           o2x%rAttr(kdhdy,n) = 0.0_R8
           o2x%rAttr(kq   ,n) = 0.0_R8
-          o2x%rAttr(kswp ,n) = swp
+          if (kswp /= 0) then
+             o2x%rAttr(kswp ,n) = swp
+          end if
        enddo
 
     case('SOM')
@@ -585,8 +594,6 @@ contains
        else   ! firstcall
           tfreeze = shr_frz_freezetemp(o2x%rAttr(ks,:)) + TkFrz
           do n = 1,lsize
-             !--- pull out h from av for resuse below ---
-             hn = avstrm%rAttr(kh,n)
              !--- compute new temp ---
              o2x%rAttr(kt,n) = somtp(n) + &
                   (x2o%rAttr(kswnet,n) + &  ! shortwave
@@ -597,9 +604,9 @@ contains
                   x2o%rAttr(kmelth,n) - &  ! ice melt
                   avstrm%rAttr(kqbot ,n) - &  ! flux at bottom
                   (x2o%rAttr(ksnow,n)+x2o%rAttr(krofi,n))*latice) * &  ! latent by prec and roff
-                  dt/(cpsw*rhosw*hn)
+                  dt/(cpsw*rhosw*avstrm%rAttr(kh,n))
              !--- compute ice formed or melt potential ---
-             o2x%rAttr(kq,n) = (tfreeze(n) - o2x%rAttr(kt,n))*(cpsw*rhosw*hn)/dt  ! ice formed q>0
+             o2x%rAttr(kq,n) = (tfreeze(n) - o2x%rAttr(kt,n))*(cpsw*rhosw*avstrm%rAttr(kh,n))/dt  ! ice formed q>0
              somtp(n) = o2x%rAttr(kt,n)                                        ! save temp
           enddo
        endif   ! firstcall
@@ -628,7 +635,6 @@ contains
           write(logunit,F01)'export: ymd,tod,n,So_v       = ', target_ymd, target_tod, n, o2x%rattr(kv,n)
           write(logunit,F01)'export: ymd,tod,n,So_dhdx    = ', target_ymd, target_tod, n, o2x%rattr(kdhdx,n)
           write(logunit,F01)'export: ymd,tod,n,So_dhdy    = ', target_ymd, target_tod, n, o2x%rattr(kdhdy,n)
-          write(logunit,F01)'export: ymd,tod,n,So_fswpen  = ', target_ymd, target_tod, n, o2x%rattr(kswp,n)
           write(logunit,F01)'export: ymd,tod,n,Fioo_q     = ', target_ymd, target_tod, n, o2x%rattr(kq,n)
        end do
     end if
@@ -666,7 +672,7 @@ contains
        end if
        call shr_strdata_restWrite(trim(rest_file_strm), SDOCN, mpicom, trim(case_name), 'SDOCN strdata')
        call shr_sys_flush(logunit)
-       call t_stopf'(docn_restart')
+       call t_stopf('docn_restart')
     endif
 
     !----------------------------------------------------------------------------

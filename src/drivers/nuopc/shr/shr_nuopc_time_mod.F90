@@ -8,7 +8,6 @@ module shr_nuopc_time_mod
   use ESMF                  , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO
   use ESMF                  , only : operator(<), operator(/=), operator(+), operator(-), operator(*) , operator(>=)
   use ESMF                  , only : operator(<=), operator(>), operator(==)
-  use med_constants_mod     , only : CL
   use shr_nuopc_utils_mod   , only : shr_nuopc_abort
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
 
@@ -119,8 +118,6 @@ contains
 
     ! Determine calendar
     call ESMF_ClockGet(clock, calendar=cal)
-
-    write(6,*)'DEBUG: in alarm routine option = ',trim(option)
 
     ! Determine inputs for call to create alarm
     selectcase (trim(option))
@@ -388,7 +385,7 @@ contains
     ! local varaibles
     integer                     :: yr, mon, day ! Year, month, day as integers
     integer                     :: ltod         ! local tod
-    character(CL)               :: ldesc        ! local desc
+    character(len=256)          :: ldesc        ! local desc
     integer                     :: rc           ! return code
     character(len=*), parameter :: subname = '(shr_nuopc_time_m_ETimeInit) '
     !-------------------------------------------------------------------------------

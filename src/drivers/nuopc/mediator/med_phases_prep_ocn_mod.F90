@@ -95,46 +95,45 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_phases_prep_ocn_merge(gcomp, rc)
-    use ESMF, only : ESMF_GridComp, ESMF_FieldBundleGet
-    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_FldChk
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_GetFldPtr
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
 
-    use med_constants_mod, only : R8
-    use med_internalstate_mod   , only : InternalState, mastertask, logunit
-    use med_merge_mod           , only : med_merge_auto
-    use esmFlds                 , only : fldListTo
-    use esmFlds                 , only : compocn, compname, compatm, compice
+    use ESMF                  , only : ESMF_GridComp, ESMF_FieldBundleGet
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
+    use med_constants_mod     , only : R8
+    use med_internalstate_mod , only : InternalState, mastertask, logunit
+    use med_merge_mod         , only : med_merge_auto
+    use esmFlds               , only : fldListTo
+    use esmFlds               , only : compocn, compname, compatm, compice
 
-
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! local variables
-    logical,save                :: first_call = .true.
     type(InternalState)         :: is_local
     integer                     :: n, n1, ncnt
     integer                     :: lsize
-    real(R8), pointer :: dataptr1(:)
-    real(R8), pointer :: ifrac(:), ofrac(:)
-    real(R8), pointer :: ifracr(:), ofracr(:)
-    real(R8), pointer :: avsdr(:), avsdf(:)
-    real(R8), pointer :: anidr(:), anidf(:)
-    real(R8), pointer :: swvdf(:), swndf(:)
-    real(R8), pointer :: swvdr(:), swndr(:)
-    real(R8), pointer :: swpen(:), swnet(:)
-    real(R8)          :: ifrac_scaled, ofrac_scaled
-    real(R8)          :: ifracr_scaled, ofracr_scaled
-    real(R8)          :: frac_sum
-    real(R8)          :: fswabsv, fswabsi
+    real(R8), pointer           :: dataptr1(:)
+    real(R8), pointer           :: ifrac(:), ofrac(:)
+    real(R8), pointer           :: ifracr(:), ofracr(:)
+    real(R8), pointer           :: avsdr(:), avsdf(:)
+    real(R8), pointer           :: anidr(:), anidf(:)
+    real(R8), pointer           :: swvdf(:), swndf(:)
+    real(R8), pointer           :: swvdr(:), swndr(:)
+    real(R8), pointer           :: swpen(:), swnet(:)
+    real(R8)                    :: ifrac_scaled, ofrac_scaled
+    real(R8)                    :: ifracr_scaled, ofracr_scaled
+    real(R8)                    :: frac_sum
+    real(R8)                    :: fswabsv, fswabsi
+    integer                     :: dbrc
+    logical,save                :: first_call = .true.
     character(len=*), parameter :: ice_fraction_name = 'Si_ifrac'
     character(len=*), parameter :: subname='(med_phases_prep_ocn_merge)'
-    integer :: dbrc
-
     ! TODO: the calculation needs to be set at run time based on receiving it from the ocean
-    real(R8)            :: flux_epbalfact = 1._R8
+    real(R8)                    :: flux_epbalfact = 1._R8
     !---------------------------------------
 
     if (dbug_flag > 5) then

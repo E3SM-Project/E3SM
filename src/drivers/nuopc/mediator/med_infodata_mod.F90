@@ -49,7 +49,6 @@ module med_infodata_mod
      logical :: rofice_present = .false.     ! does rof have iceberg coupling on
      logical :: rof_prognostic = .false.     ! does rof component need input data
      logical :: flood_present = .false.      ! does rof have flooding on
-     logical :: ocnrof_prognostic            ! does component need rof data
      logical :: iceberg_prognostic = .false. ! does the ice model support icebergs
      logical :: glclnd_present = .false.     ! does glc have land coupling fields on
      logical :: glcocn_present = .false.     ! does glc have ocean runoff on
@@ -121,14 +120,15 @@ CONTAINS
     use ESMF                  , only : ESMF_StateGet, ESMF_FieldGet, ESMF_LogWrite
     use ESMF                  , only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LOGMSG_INFO
     use ESMF                  , only : ESMF_STATEITEM_NOTFOUND, operator(==)
-    use esmFlds               , only : flds_scalar_num, flds_scalar_name, compname
-    use esmFlds               , only : flds_scalar_index_nx,  flds_scalar_index_ny
-    use esmFlds               , only : flds_scalar_index_nextsw_cday
-    use esmFlds               , only : flds_scalar_index_flood_present
-    use esmFlds               , only : flds_scalar_index_rofice_present
-    use esmFlds               , only : flds_scalar_index_precip_fact
-    ! use mpi                   , only : mpi_comm_rank, MPI_ERROR_STRING, mpi_bcast, mpi_real8, MPI_SUCCESS
-    ! use mpi                   , only : MPI_MAX_ERROR_STRING
+    use esmFlds               , only : compname
+    use shr_nuopc_scalars_mod , only : flds_scalar_num, flds_scalar_name
+    use shr_nuopc_scalars_mod , only : flds_scalar_index_nx, flds_scalar_index_ny
+    use shr_nuopc_scalars_mod , only : flds_scalar_index_nextsw_cday
+    use shr_nuopc_scalars_mod , only : flds_scalar_index_flood_present
+    use shr_nuopc_scalars_mod , only : flds_scalar_index_rofice_present
+    use shr_nuopc_scalars_mod , only : flds_scalar_index_precip_fact
+    ! use mpi                 , only : mpi_comm_rank, MPI_ERROR_STRING, mpi_bcast, mpi_real8, MPI_SUCCESS
+    ! use mpi                 , only : MPI_MAX_ERROR_STRING
     use mpi  ! TODO - have an only for mpi_bcast does not work on hobart
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_chkErr
 
@@ -259,9 +259,10 @@ CONTAINS
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_STATEITEM_NOTFOUND
     use ESMF                  , only : operator(==), ESMF_FAILURE
     use mpi                   , only : mpi_comm_rank
-    use esmFlds               , only : flds_scalar_num, flds_scalar_name
-    use esmFlds               , only : flds_scalar_index_nextsw_cday
-    use esmFlds               , only : flds_scalar_index_precip_fact
+    use shr_nuopc_scalars_mod , only : flds_scalar_num, flds_scalar_name
+    use shr_nuopc_scalars_mod , only : flds_scalar_index_nx, flds_scalar_index_ny
+    use shr_nuopc_scalars_mod , only : flds_scalar_index_nextsw_cday
+    use shr_nuopc_scalars_mod , only : flds_scalar_index_precip_fact
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_chkErr
 
     ! ----------------------------------------------

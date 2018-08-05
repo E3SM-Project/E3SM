@@ -4,6 +4,14 @@ module ice_comp_nuopc
   ! This is the NUOPC cap for DICE
   !----------------------------------------------------------------------------
 
+  use ESMF
+  use NUOPC                 , only : NUOPC_CompDerive, NUOPC_CompSetEntryPoint, NUOPC_CompSpecialize
+  use NUOPC                 , only : NUOPC_CompAttributeGet, NUOPC_Advertise
+  use NUOPC_Model           , only : model_routine_SS        => SetServices
+  use NUOPC_Model           , only : model_label_Advance     => label_Advance
+  use NUOPC_Model           , only : model_label_SetRunClock => label_SetRunClock
+  use NUOPC_Model           , only : model_label_Finalize    => label_Finalize
+  use NUOPC_Model           , only : NUOPC_ModelGet
   use med_constants_mod     , only : R8, CXX
   use med_constants_mod     , only : shr_log_Unit
   use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
@@ -29,43 +37,32 @@ module ice_comp_nuopc
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
   use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
   use shr_strdata_mod       , only : shr_strdata_type
+  use dshr_nuopc_mod        , only : fld_list_type, fldsMax
+  use dshr_nuopc_mod        , only : fld_list_add
+  use dshr_nuopc_mod        , only : fld_list_realize
+  use dshr_nuopc_mod        , only : ModelInitPhase
+  use dshr_nuopc_mod        , only : ModelSetRunClock
+  use dshr_nuopc_mod        , only : ModelSetMetaData
 
-  use ESMF
-  use NUOPC
-  use NUOPC_Model, &
-    model_routine_SS        => SetServices, &
-    model_label_Advance     => label_Advance, &
-    model_label_SetRunClock => label_SetRunClock, &
-    model_label_Finalize    => label_Finalize
-
-  use dice_shr_mod , only: dice_shr_read_namelists
-  use dice_comp_mod, only: dice_comp_init, dice_comp_run, dice_comp_final
+  use dice_shr_mod          , only : dice_shr_read_namelists
+  use dice_comp_mod         , only : dice_comp_init, dice_comp_run, dice_comp_final
   use mct_mod
 
   implicit none
+  private :: ModelFinalize
+
+  private ! except
 
   public  :: SetServices
 
-  private :: InitializeP0
   private :: InitializeAdvertise
   private :: InitializeRealize
   private :: ModelAdvance
-  private :: ModelSetRunClock
-  private :: ModelFinalize
-  private :: fld_list_add
-  private :: fld_list_realize
-
-  private ! except
 
   !--------------------------------------------------------------------------
   ! Private module data
   !--------------------------------------------------------------------------
 
-  type fld_list_type
-    character(len=128) :: stdname
-  end type fld_list_type
-
-  integer,parameter          :: fldsMax = 100
   integer                    :: fldsToIce_num = 0
   integer                    :: fldsFrIce_num = 0
   type (fld_list_type)       :: fldsToIce(fldsMax)
@@ -95,8 +92,6 @@ module ice_comp_nuopc
   character(len=256)         :: tmpstr                    ! tmp string
   integer                    :: dbrc
   integer, parameter         :: dbug = 10
-  character(len=*),parameter :: grid_option = "mesh"      ! grid_de, grid_arb, grid_reg, mesh
-  logical                    :: iceberg_prognostic = .false.
   logical                    :: flds_i2o_per_cat          ! .true. if select per ice thickness
                                                           ! category fields are passed from ice to ocean
   character(len=80)          :: calendar                  ! calendar name
@@ -104,7 +99,7 @@ module ice_comp_nuopc
   character(len=CXX)         :: flds_i2x = ''
   character(len=CXX)         :: flds_x2i = ''
 
-  !----- formats -----
+  logical                :: use_esmf_metadata = .false.
   character(*),parameter :: modName =  "(ice_comp_nuopc)"
   character(*),parameter :: u_FILE_u = __FILE__
 
@@ -126,7 +121,7 @@ contains
 
     ! switching to IPD versions
     call ESMF_GridCompSetEntryPoint(gcomp, ESMF_METHOD_INITIALIZE, &
-         userRoutine=InitializeP0, phase=0, rc=rc)
+         userRoutine=ModelInitPhase, phase=0, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! set entry point for methods that require specific implementation
@@ -157,24 +152,6 @@ contains
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine SetServices
-
-  !-----------------------------------------------------------------------------
-
-  subroutine InitializeP0(gcomp, importState, exportState, clock, rc)
-    type(ESMF_GridComp)   :: gcomp
-    type(ESMF_State)      :: importState, exportState
-    type(ESMF_Clock)      :: clock
-    integer, intent(out)  :: rc
-    !-------------------------------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    ! Switch to IPDv01 by filtering all other phaseMap entries
-    call NUOPC_CompFilterPhaseMap(gcomp, ESMF_METHOD_INITIALIZE, &
-         acceptStringList=(/"IPDv01p"/), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-  end subroutine InitializeP0
 
   !===============================================================================
 
@@ -280,73 +257,79 @@ contains
     ! advertise import and export fields
     !--------------------------------
 
-    call fld_list_add(fldsToice_num, fldsToice, trim(flds_scalar_name)) 
-    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_swvdr'    , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_swndr'    , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_swvdf'    , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_swndf'    , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Fioo_q'        , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Sa_z'          , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Sa_u'          , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Sa_v'          , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Sa_ptem'       , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Sa_shum'       , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Sa_dens'       , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Sa_tbot'       , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'So_s'          , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_bcphidry' , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_bcphodry' , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_bcphiwet' , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_ocphidry' , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_ocphodry' , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_ocphiwet' , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstdry1'  , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstdry2'  , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstdry3'  , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstdry4'  , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstwet1'  , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstwet2'  , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstwet3'  , flds_concat=flds_x2i)
-    call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstwet4'  , flds_concat=flds_x2i)
+    if (ice_present) then
+       ! export fields
+       call fld_list_add(fldsFrice_num, fldsFrice, trim(flds_scalar_name)) 
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_imask'      , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_ifrac'      , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_t'          , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_tref'       , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_qref'       , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_avsdr'      , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_anidr'      , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_avsdf'      , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_anidf'      , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_swnet'    , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_sen'      , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_lat'      , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_lwup'     , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_evap'     , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_taux'     , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_tauy'     , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_melth'    , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_meltw'    , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_swpen'    , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_taux'     , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_tauy'     , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_salt'     , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_bcpho'    , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_bcphi'    , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_flxdst'   , flds_concat=flds_i2x)
 
-    call fld_list_add(fldsFrice_num, fldsFrice, trim(flds_scalar_name)) 
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_imask'      , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_ifrac'      , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_t'          , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_tref'       , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_qref'       , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_avsdr'      , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_anidr'      , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_avsdf'      , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_anidf'      , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_swnet'    , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_sen'      , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_lat'      , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_lwup'     , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_evap'     , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_taux'     , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_tauy'     , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_melth'    , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_meltw'    , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_swpen'    , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_taux'     , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_tauy'     , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_salt'     , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_bcpho'    , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_bcphi'    , flds_concat=flds_i2x)
-    call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_flxdst'   , flds_concat=flds_i2x)
+       do n = 1,fldsFrIce_num
+          call NUOPC_Advertise(exportState, standardName=fldsFrIce(n)%stdname, &
+               TransferOfferGeomObject='will provide', rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       enddo
 
-    ! Now advertise these fields
-    do n = 1,fldsFrIce_num
-      call NUOPC_Advertise(exportState, standardName=fldsFrIce(n)%stdname, TransferOfferGeomObject='will provide', rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    enddo
-    do n = 1,fldsToIce_num
-      call NUOPC_Advertise(importState, standardName=fldsToIce(n)%stdname, TransferOfferGeomObject='will provide', rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    enddo
+       ! Import fields
+       if (ice_prognostic) then
+          call fld_list_add(fldsToice_num, fldsToice, trim(flds_scalar_name)) 
+          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_swvdr'    , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_swndr'    , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_swvdf'    , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_swndf'    , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Fioo_q'        , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Sa_z'          , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Sa_u'          , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Sa_v'          , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Sa_ptem'       , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Sa_shum'       , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Sa_dens'       , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Sa_tbot'       , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'So_s'          , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_bcphidry' , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_bcphodry' , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_bcphiwet' , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_ocphidry' , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_ocphodry' , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_ocphiwet' , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstdry1'  , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstdry2'  , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstdry3'  , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstdry4'  , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstwet1'  , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstwet2'  , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstwet3'  , flds_concat=flds_x2i)
+          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstwet4'  , flds_concat=flds_x2i)
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+          do n = 1,fldsToIce_num
+             call NUOPC_Advertise(importState, standardName=fldsToIce(n)%stdname, &
+                  TransferOfferGeomObject='will provide', rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          enddo
+       end if
+    end if
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
@@ -354,6 +337,8 @@ contains
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
+
+    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine InitializeAdvertise
 
@@ -366,7 +351,6 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    character(ESMF_MAXSTR)  :: convCIM, purpComp
     type(ESMF_Grid)         :: Egrid
     type(ESMF_Mesh)         :: Emesh
     type(ESMF_TIME)         :: currTime
@@ -542,7 +526,7 @@ contains
     ! Set the coupling scalars
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_i2x, exportState, grid_option, rc=rc)
+    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_i2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call shr_nuopc_methods_State_SetScalar(dble(nx_global),flds_scalar_index_nx, exportState, mpicom, &
@@ -552,20 +536,11 @@ contains
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (iceberg_prognostic) then
-       scalar = 1.0_r8
-    else
-       scalar = 0.0_r8
-    end if
-    call shr_nuopc_methods_State_SetScalar(scalar, flds_scalar_index_iceberg_prognostic, exportState, mpicom, &
-         flds_scalar_name, flds_scalar_num, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     !--------------------------------
     ! diagnostics
     !--------------------------------
 
-    if (dbug > 1) then
+    if (dbug > 5) then
        if (my_task == master_task) then
           call mct_aVect_info(2, d2x, istr=subname//':AV')
        end if
@@ -573,43 +548,19 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
 
-#ifdef USE_ESMF_METADATA
-    convCIM  = "CIM"
-    purpComp = "Model Component Simulation Description"
-    call ESMF_AttributeAdd(comp, convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ShortName", "DICE", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "LongName", "Climatological SeaIce Data Model", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "Description", &
-         "The CIME data models perform the basic function of " // &
-         "reading external data, modifying that data, and then " // &
-         "sending it to the driver via coupling " // &
-         "interfaces. The driver and other models have no " // &
-         "fundamental knowledge of whether another component " // &
-         "is fully active or just a data model.  In some cases, " // &
-         "data models are prognostic and also receive and use " // &
-         "some data sent by the driver to the data model.  But " // &
-         "in most cases, the data models are not running " // &
-         "prognostically and have no need to receive any data " // &
-         "from the driver.", &
-         convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ReleaseDate", "2010", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ModelType", "SeaIce", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "Name", "TBD", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "EmailAddress", "TBD", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ResponsiblePartyRole", "contact", convention=convCIM, purpose=purpComp, rc=rc)
-#endif
-
-    call shr_file_setLogLevel(shrloglev)
-    call shr_file_setLogUnit (shrlogunit)
-
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
-
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
 
     call shr_file_setLogLevel(shrloglev)
     call shr_file_setLogUnit (shrlogunit)
+
+    if (use_esmf_metadata) then
+       call ModelSetMetaData(gcomp, name='DICE', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
+
+    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine InitializeRealize
 
@@ -656,7 +607,7 @@ contains
     call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug > 1) then
+    if (dbug > 5) then
       call shr_nuopc_methods_Clock_TimePrint(clock,subname//'clock',rc=rc)
     endif
 
@@ -664,7 +615,7 @@ contains
     ! Unpack export state
     !--------------------------------
 
-    call shr_nuopc_grid_StateToArray(importState, x2d%rattr, flds_x2i, grid_option, rc=rc)
+    call shr_nuopc_grid_StateToArray(importState, x2d%rattr, flds_x2i, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
@@ -722,14 +673,14 @@ contains
     ! Pack export state
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_i2x, exportState, grid_option, rc=rc)
+    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_i2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
     ! diagnostics
     !--------------------------------
 
-    if (dbug > 1) then
+    if (dbug > 5) then
        if (my_task == master_task) then
           call mct_aVect_info(2, d2x, istr=subname//':AV', pe=localPet)
        end if
@@ -758,93 +709,6 @@ contains
 
   !===============================================================================
 
-  subroutine ModelSetRunClock(gcomp, rc)
-    type(ESMF_GridComp)  :: gcomp
-    integer, intent(out) :: rc
-
-    ! local variables
-    type(ESMF_Clock)         :: mclock, dclock
-    type(ESMF_Time)          :: mcurrtime, dcurrtime
-    type(ESMF_Time)          :: mstoptime
-    type(ESMF_TimeInterval)  :: mtimestep, dtimestep
-    character(len=128)       :: mtimestring, dtimestring
-    character(len=256)       :: cvalue
-    character(len=256)       :: restart_option       ! Restart option units
-    integer                  :: restart_n            ! Number until restart interval
-    integer                  :: restart_ymd          ! Restart date (YYYYMMDD)
-    type(ESMF_ALARM)         :: restart_alarm
-    integer                  :: first_time = .true.
-    character(len=*),parameter :: subname=trim(modName)//':(ModelSetRunClock) '
-    !-------------------------------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-
-    ! query the Component for its clock, importState and exportState
-    call NUOPC_ModelGet(gcomp, driverClock=dclock, modelClock=mclock, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_ClockGet(dclock, currTime=dcurrtime, timeStep=dtimestep, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_ClockGet(mclock, currTime=mcurrtime, timeStep=mtimestep, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !--------------------------------
-    ! force model clock currtime and timestep to match driver and set stoptime
-    !--------------------------------
-
-    mstoptime = mcurrtime + dtimestep
-    call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !--------------------------------                                                                                 
-    ! set restart alarm
-    !--------------------------------                                                                                 
-
-    if (first_time) then
-       call NUOPC_CompAttributeGet(gcomp, name="restart_option", value=restart_option, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call NUOPC_CompAttributeGet(gcomp,  name="restart_n", value=cvalue, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       read(cvalue,*) restart_n
-
-       call NUOPC_CompAttributeGet(gcomp, name="restart_ymd", value=cvalue, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       read(cvalue,*) restart_ymd
-
-       call shr_nuopc_time_alarmInit(mclock,  &
-            alarm   = restart_alarm,       &
-            option  = restart_option,      &
-            opt_n   = restart_n,           &
-            opt_ymd = restart_ymd,         &
-            RefTime = mcurrTime,            &
-            alarmname = 'alarm_restart', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call ESMF_AlarmSet(restart_alarm, clock=mclock, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       first_time = .false.
-    end if
-
-    !--------------------------------
-    ! Advance model clock to trigger alarms then reset model clock back to currtime
-    !--------------------------------
-
-    call ESMF_ClockAdvance(mclock,rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
-
-  end subroutine ModelSetRunClock
-
-  !===============================================================================
-
   subroutine ModelFinalize(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -865,140 +729,5 @@ contains
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelFinalize
-
-  !===============================================================================
-
-  !===============================================================================
-
-  subroutine fld_list_add(num, fldlist, stdname, flds_concat)
-    integer,                    intent(inout) :: num
-    type(fld_list_type),        intent(inout) :: fldlist(:)
-    character(len=*),           intent(in)    :: stdname
-    character(len=*), optional, intent(inout) :: flds_concat
-
-    ! local variables
-    integer :: rc
-    character(len=*), parameter :: subname='(ice_comp_nuopc:fld_list_add)'
-    !-------------------------------------------------------------------------------
-
-    ! Set up a list of field information
-
-    num = num + 1
-    if (num > fldsMax) then
-      call ESMF_LogWrite(trim(subname)//": ERROR num > fldsMax "//trim(stdname), &
-        ESMF_LOGMSG_ERROR, line=__LINE__, file=__FILE__, rc=dbrc)
-      return
-    endif
-    fldlist(num)%stdname        = trim(stdname)
-
-    if (present(flds_concat)) then
-       if (len_trim(flds_concat) + len_trim(stdname) + 1 >= len(flds_concat)) then
-          call ESMF_LogWrite(subname//': ERROR: max len of flds_concat has been exceeded', &
-               ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
-       end if
-       if (trim(flds_concat) == '') then
-          flds_concat = trim(stdname)
-       else
-          flds_concat = trim(flds_concat)//':'//trim(stdname)
-       end if
-    end if
-
-  end subroutine fld_list_add
-
-  !===============================================================================
-
-  subroutine fld_list_realize(state, fldList, numflds, flds_scalar_name, flds_scalar_num, mesh, tag, rc)
-
-    use NUOPC , only : NUOPC_IsConnected, NUOPC_Realize
-    use ESMF  , only : ESMF_MeshLoc_Element, ESMF_FieldCreate, ESMF_TYPEKIND_R8
-    use ESMF  , only : ESMF_MAXSTR, ESMF_Field, ESMF_State, ESMF_Mesh, ESMF_StateRemove 
-    use ESMF  , only : ESMF_LogFoundError, ESMF_LOGMSG_INFO, ESMF_SUCCESS
-    use ESMF  , only : ESMF_LogWrite, ESMF_LOGMSG_ERROR, ESMF_LOGERR_PASSTHRU
-
-    type(ESMF_State)    , intent(inout) :: state
-    type(fld_list_type) , intent(in)    :: fldList(:)
-    integer             , intent(in)    :: numflds
-    character(len=*)    , intent(in)    :: flds_scalar_name
-    integer             , intent(in)    :: flds_scalar_num
-    character(len=*)    , intent(in)    :: tag
-    type(ESMF_Mesh)     , intent(in)    :: mesh
-    integer             , intent(inout) :: rc
-
-    ! local variables
-    integer                :: n
-    type(ESMF_Field)       :: field
-    character(len=80)      :: stdname
-    character(len=*),parameter  :: subname='(ice_comp_nuopc:fld_list_realize)'
-    ! ----------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    do n = 1, numflds
-       stdname = fldList(n)%stdname
-       if (NUOPC_IsConnected(state, fieldName=stdname)) then
-          if (stdname == trim(flds_scalar_name)) then
-             call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(stdname)//" is connected on root pe", &
-                  ESMF_LOGMSG_INFO, rc=dbrc)
-             ! Create the scalar field
-             call SetScalarField(field, flds_scalar_name, flds_scalar_num, rc=rc)
-             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-          else
-             call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(stdname)//" is connected using mesh", &
-                  ESMF_LOGMSG_INFO, rc=dbrc)
-             ! Create the field
-             field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=stdname, meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
-             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-          endif
-
-          ! NOW call NUOPC_Realize
-          call NUOPC_Realize(state, field=field, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-       else
-          if (stdname /= trim(flds_scalar_name)) then
-             call ESMF_LogWrite(subname // trim(tag) // " Field = "// trim(stdname) // " is not connected.", &
-                  ESMF_LOGMSG_INFO, rc=dbrc)
-             call ESMF_StateRemove(state, (/stdname/), rc=rc)
-             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-          end if
-       end if
-    end do
-
-  contains  !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    subroutine SetScalarField(field, flds_scalar_name, flds_scalar_num, rc)
-      ! ----------------------------------------------
-      ! create a field with scalar data on the root pe
-      ! ----------------------------------------------
-      use ESMF, only : ESMF_Field, ESMF_DistGrid, ESMF_Grid
-      use ESMF, only : ESMF_DistGridCreate, ESMF_GridCreate, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU
-      use ESMF, only : ESMF_FieldCreate, ESMF_GridCreate, ESMF_TYPEKIND_R8
-
-      type(ESMF_Field) , intent(inout) :: field
-      character(len=*) , intent(in)    :: flds_scalar_name
-      integer          , intent(in)    :: flds_scalar_num
-      integer          , intent(inout) :: rc
-
-      ! local variables
-      type(ESMF_Distgrid) :: distgrid
-      type(ESMF_Grid)     :: grid
-      character(len=*), parameter :: subname='(SetScalarField)'
-      ! ----------------------------------------------
-
-      rc = ESMF_SUCCESS
-
-      ! create a DistGrid with a single index space element, which gets mapped onto DE 0.
-      distgrid = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/1/), rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-
-      grid = ESMF_GridCreate(distgrid, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-
-      field = ESMF_FieldCreate(name=trim(flds_scalar_name), grid=grid, typekind=ESMF_TYPEKIND_R8, &
-           ungriddedLBound=(/1/), ungriddedUBound=(/flds_scalar_num/), rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-
-    end subroutine SetScalarField
-
-  end subroutine fld_list_realize
 
 end module ice_comp_nuopc

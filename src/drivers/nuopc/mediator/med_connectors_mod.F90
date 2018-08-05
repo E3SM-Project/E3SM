@@ -4,18 +4,18 @@ module med_connectors_mod
   ! Connector phases
   !-----------------------------------------------------------------------------
 
-  use ESMF, only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_Failure
-  use ESMF, only : ESMF_State, ESMF_Clock, ESMF_GridComp
-  use med_internalstate_mod, only : InternalState
-  use shr_nuopc_methods_mod , only: shr_nuopc_methods_ChkErr
-  use med_constants_mod , only : spval => med_constants_spval
-  use med_constants_mod , only : czero => med_constants_czero
-  use med_constants_mod , only : statewrite_flag => med_constants_statewrite_flag
-  use med_constants_mod , only : dbug_flag => med_constants_dbug_flag
+  use ESMF                  , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_Failure
+  use ESMF                  , only : ESMF_State, ESMF_Clock, ESMF_GridComp
+  use med_internalstate_mod , only : InternalState
+  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+  use med_constants_mod     , only : spval => med_constants_spval
+  use med_constants_mod     , only : czero => med_constants_czero
+  use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
 
   implicit none
   private
-  character(*)      , parameter :: u_FILE_u = __FILE__
+  character(*)      , parameter :: u_FILE_u = &
+       __FILE__
 
   !--------------------------------------------------------------------------
   ! Public interfaces
@@ -49,26 +49,30 @@ contains
 !-----------------------------------------------------------------------------
 
   subroutine med_connectors_prep_generic(gcomp, type, rc)
-    use ESMF, only : ESMF_GridCompGet
-    use esmFlds               , only: compatm, compocn, compice
-    use esmFlds               , only: complnd, comprof, compwav, compglc
-    use med_infodata_mod      , only: med_infodata_CopyStateToInfodata
-    use med_infodata_mod      , only: med_infodata_CopyInfodataToState
-    use med_infodata_mod      , only: med_infodata
-    use shr_nuopc_methods_mod , only: shr_nuopc_methods_State_reset
-    use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_copy
-    type(ESMF_GridComp)  :: gcomp
+
+    use ESMF                  , only : ESMF_GridCompGet
+    use esmFlds               , only : compatm, compocn, compice
+    use esmFlds               , only : complnd, comprof, compwav, compglc
+    use med_infodata_mod      , only : med_infodata_CopyStateToInfodata
+    use med_infodata_mod      , only : med_infodata_CopyInfodataToState
+    use med_infodata_mod      , only : med_infodata
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_reset
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_copy
+
+    ! input/output variables
+    type(ESMF_GridComp)          :: gcomp
     character(len=*), intent(in) :: type
-    integer, intent(out) :: rc
+    integer, intent(out)         :: rc
 
     ! local variables
-    type(ESMF_Clock)           :: clock
-    type(InternalState)        :: is_local
-    logical                    :: diagnose
-    logical                    :: connected
-    integer                    :: n
+    type(ESMF_Clock)    :: clock
+    type(InternalState) :: is_local
+    logical             :: diagnose
+    logical             :: connected
+    integer             :: n
+    integer             :: dbrc
     character(len=*),parameter :: subname='(med_connectors_prep_generic)'
-    integer                       :: dbrc
+    !---------------------------------------------
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//trim(type)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -198,22 +202,26 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_connectors_post_generic(gcomp, type, rc)
-    use ESMF, only : ESMF_GridCompGet
-    use esmFlds               , only: compatm, compocn, compice
-    use esmFlds               , only: complnd, comprof, compwav, compglc
-    use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_copy
-    use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_reset
-    use med_infodata_mod,      only : med_infodata
-    use med_infodata_mod,      only : med_infodata_CopyStateToInfodata
+
+    use ESMF                  , only : ESMF_GridCompGet
+    use esmFlds               , only : compatm, compocn, compice
+    use esmFlds               , only : complnd, comprof, compwav, compglc
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_copy
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
+    use med_infodata_mod      , only : med_infodata
+    use med_infodata_mod      , only : med_infodata_CopyStateToInfodata
+
+    ! input/output variables
     type(ESMF_GridComp)           :: gcomp
     character(len=*), intent(in)  :: type
     integer,          intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)           :: clock
-    type(InternalState)        :: is_local
+    type(ESMF_Clock)    :: clock
+    type(InternalState) :: is_local
+    integer             :: dbrc
     character(len=*),parameter :: subname='(med_connectors_post_generic)'
-    integer                       :: dbrc
+    !---------------------------------------------
 
     ! Note: for information obtained by the mediator always write out the state
     ! if statewrite_flag is .true.
@@ -331,16 +339,13 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_connectors_prep_med2atm(gcomp, rc)
-
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)            :: clock
-    type(ESMF_State)            :: importState, exportState
-    type(InternalState)         :: is_local
+    integer             :: dbrc
     character(len=*),parameter :: subname='(med_connectors_prep_med2atm)'
-    integer                       :: dbrc
+    !---------------------------------------------
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -363,11 +368,9 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)            :: clock
-    type(ESMF_State)            :: importState, exportState
-    type(InternalState)         :: is_local
+    integer             :: dbrc
     character(len=*),parameter :: subname='(med_connectors_prep_med2ocn)'
-    integer                       :: dbrc
+    !---------------------------------------------
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -386,17 +389,13 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_connectors_prep_med2ice(gcomp, rc)
-    use ESMF, only : ESMF_State, ESMF_Clock, ESMF_GridComp
-    use med_internalstate_mod, only : InternalState
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)            :: clock
-    type(ESMF_State)            :: importState, exportState
-    type(InternalState)         :: is_local
+    integer             :: dbrc
     character(len=*),parameter :: subname='(med_connectors_prep_med2ice)'
-    integer                       :: dbrc
+    !---------------------------------------------
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -415,17 +414,13 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_connectors_prep_med2lnd(gcomp, rc)
-    use ESMF, only : ESMF_State, ESMF_Clock, ESMF_GridComp
-    use med_internalstate_mod, only : InternalState
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)            :: clock
-    type(ESMF_State)            :: importState, exportState
-    type(InternalState)         :: is_local
+    integer             :: dbrc
     character(len=*),parameter :: subname='(med_connectors_prep_med2lnd)'
-    integer                       :: dbrc
+    !---------------------------------------------
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -444,17 +439,13 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_connectors_prep_med2rof(gcomp, rc)
-    use ESMF, only : ESMF_State, ESMF_Clock, ESMF_GridComp
-    use med_internalstate_mod, only : InternalState
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)            :: clock
-    type(ESMF_State)            :: importState, exportState
-    type(InternalState)         :: is_local
-    character(len=*),parameter :: subname='(med_connectors_prep_med2rof)'
     integer                       :: dbrc
+    character(len=*),parameter :: subname='(med_connectors_prep_med2rof)'
+    !---------------------------------------------
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -473,17 +464,13 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_connectors_prep_med2wav(gcomp, rc)
-    use ESMF, only : ESMF_State, ESMF_Clock, ESMF_GridComp
-    use med_internalstate_mod, only : InternalState
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)            :: clock
-    type(ESMF_State)            :: importState, exportState
-    type(InternalState)         :: is_local
-    character(len=*),parameter :: subname='(med_connectors_prep_med2wav)'
     integer                       :: dbrc
+    character(len=*),parameter :: subname='(med_connectors_prep_med2wav)'
+    !---------------------------------------------
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -502,17 +489,13 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_connectors_prep_med2glc(gcomp, rc)
-    use ESMF, only : ESMF_State, ESMF_Clock, ESMF_GridComp
-    use med_internalstate_mod, only : InternalState
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)            :: clock
-    type(ESMF_State)            :: importState, exportState
-    type(InternalState)         :: is_local
+    integer :: dbrc
     character(len=*),parameter :: subname='(med_connectors_prep_med2glc)'
-    integer                       :: dbrc
+    !---------------------------------------------
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -531,17 +514,13 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_connectors_post_atm2med(gcomp, rc)
-    use ESMF, only : ESMF_State, ESMF_Clock, ESMF_GridComp
-    use med_internalstate_mod, only : InternalState
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)            :: clock
-    type(ESMF_State)            :: importState, exportState
-    type(InternalState)         :: is_local
+    integer :: dbrc
     character(len=*),parameter :: subname='(med_connectors_post_atm2med)'
-    integer                       :: dbrc
+    !---------------------------------------------
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -560,17 +539,13 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_connectors_post_ocn2med(gcomp, rc)
-    use ESMF, only : ESMF_State, ESMF_Clock, ESMF_GridComp
-    use med_internalstate_mod, only : InternalState
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)            :: clock
-    type(ESMF_State)            :: importState, exportState
-    type(InternalState)         :: is_local
+    integer             :: dbrc
     character(len=*),parameter :: subname='(med_connectors_post_ocn2med)'
-    integer                       :: dbrc
+    !---------------------------------------------
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -593,11 +568,9 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)            :: clock
-    type(ESMF_State)            :: importState, exportState
-    type(InternalState)         :: is_local
+    integer :: dbrc
     character(len=*),parameter :: subname='(med_connectors_post_ice2med)'
-    integer                       :: dbrc
+    !---------------------------------------------
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -620,11 +593,9 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)            :: clock
-    type(ESMF_State)            :: importState, exportState
-    type(InternalState)         :: is_local
+    integer :: dbrc
     character(len=*),parameter :: subname='(med_connectors_post_lnd2med)'
-    integer                       :: dbrc
+    !---------------------------------------------
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -647,11 +618,9 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)            :: clock
-    type(ESMF_State)            :: importState, exportState
-    type(InternalState)         :: is_local
+    integer :: dbrc
     character(len=*),parameter :: subname='(med_connectors_post_rof2med)'
-    integer                       :: dbrc
+    !---------------------------------------------
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -674,11 +643,9 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)            :: clock
-    type(ESMF_State)            :: importState, exportState
-    type(InternalState)         :: is_local
+    integer             :: dbrc
     character(len=*),parameter :: subname='(med_connectors_post_wav2med)'
-    integer                       :: dbrc
+    !---------------------------------------------
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -701,11 +668,9 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)            :: clock
-    type(ESMF_State)            :: importState, exportState
-    type(InternalState)         :: is_local
+    integer             :: dbrc
     character(len=*),parameter :: subname='(med_connectors_post_glc2med)'
-    integer                       :: dbrc
+    !---------------------------------------------
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -724,19 +689,24 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_connectors_diagnose(State, cntr, string, rc)
-    use ESMF, only : ESMF_State, ESMF_MAXSTR, ESMF_StateGet
-    use NUOPC, only : NUOPC_Write
-    use shr_nuopc_methods_mod, only : shr_nuopc_methods_State_diagnose
+
+    use ESMF                  , only : ESMF_State, ESMF_MAXSTR, ESMF_StateGet
+    use NUOPC                 , only : NUOPC_Write
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_diagnose
+    use med_constants_mod     , only : statewrite_flag => med_constants_statewrite_flag
+
+    ! input/output variables
     type(ESMF_State), intent(in)    :: State
     integer         , intent(inout) :: cntr
     character(len=*), intent(in)    :: string
     integer         , intent(out)   :: rc
 
     ! local variables
-    integer :: fieldCount
+    integer                        :: fieldCount
     character(ESMF_MAXSTR),pointer :: fieldnamelist(:)
-    character(len=*),parameter :: subname='(med_connectors_diagnose)'
-    integer                       :: dbrc
+    integer                        :: dbrc
+    character(len=*),parameter     :: subname='(med_connectors_diagnose)'
+    !---------------------------------------------
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//trim(string)//": called", ESMF_LOGMSG_INFO, rc=dbrc)

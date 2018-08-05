@@ -9,21 +9,6 @@ module esmFlds
   use ESMF
   use NUOPC
   use med_constants_mod     , only : IN, R8, I8, CXX, CX, CS, CL
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_nx
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_ny
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_precip_fact
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_nextsw_cday
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_dead_comps
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_rofice_present
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_flood_present
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_ocnrof_prognostic
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_iceberg_prognostic
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_glclnd_present
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_glcocn_present
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_glcice_present
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_glc_valid_input
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_glc_coupled
-  use shr_nuopc_scalars_mod , only : flds_scalar_num
   use shr_nuopc_scalars_mod , only : flds_scalar_name
   use shr_nuopc_fldList_mod , only : mapbilnr, mapconsf, mapconsd, mappatch, mapfcopy, mapunset, mapfiler
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_type

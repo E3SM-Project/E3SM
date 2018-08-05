@@ -1,5 +1,11 @@
 module dshr_nuopc_mod
 
+  use ESMF
+  use NUOPC
+  use NUOPC_Model           , only : NUOPC_ModelGet
+  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+  use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
+
   implicit none
   public
 
@@ -7,13 +13,25 @@ module dshr_nuopc_mod
     character(len=128) :: stdname
   end type fld_list_type
 
-  integer,parameter          :: fldsMax = 100
+  public :: fld_list_add
+  public :: fld_list_realize
+  public :: ModelInitPhase
+  public :: ModelSetRunClock
+  public :: ModelSetMetaData
+
+  integer     , parameter :: fldsMax = 100
+  integer     , parameter :: dbug = 10
+  character(*), parameter :: u_FILE_u = &
+       __FILE__
 
 !===============================================================================
 contains
 !===============================================================================
 
   subroutine fld_list_add(num, fldlist, stdname, flds_concat)
+
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_ERROR
+
     integer,                    intent(inout) :: num
     type(fld_list_type),        intent(inout) :: fldlist(:)
     character(len=*),           intent(in)    :: stdname
@@ -21,7 +39,8 @@ contains
 
     ! local variables
     integer :: rc
-    character(len=*), parameter :: subname='(atm_comp_nuopc:fld_list_add)'
+    integer :: dbrc
+    character(len=*), parameter :: subname='(dshr_nuopc_mod:fld_list_add)'
     !-------------------------------------------------------------------------------
 
     ! Set up a list of field information
@@ -32,7 +51,7 @@ contains
         ESMF_LOGMSG_ERROR, line=__LINE__, file=__FILE__, rc=dbrc)
       return
     endif
-    fldlist(num)%stdname        = trim(stdname)
+    fldlist(num)%stdname = trim(stdname)
 
     if (present(flds_concat)) then
        if (len_trim(flds_concat) + len_trim(stdname) + 1 >= len(flds_concat)) then
@@ -45,7 +64,7 @@ contains
           flds_concat = trim(flds_concat)//':'//trim(stdname)
        end if
     end if
-
+       
   end subroutine fld_list_add
 
   !===============================================================================
@@ -68,10 +87,11 @@ contains
     integer             , intent(inout) :: rc
 
     ! local variables
+    integer                :: dbrc
     integer                :: n
     type(ESMF_Field)       :: field
     character(len=80)      :: stdname
-    character(len=*),parameter  :: subname='(atm_comp_nuopc:fld_list_realize)'
+    character(len=*),parameter  :: subname='(dshr_nuopc_mod:fld_list_realize)'
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -124,7 +144,7 @@ contains
       ! local variables
       type(ESMF_Distgrid) :: distgrid
       type(ESMF_Grid)     :: grid
-      character(len=*), parameter :: subname='(SetScalarField)'
+      character(len=*), parameter :: subname='(dshr_nuopc_mod:SetScalarField)'
       ! ----------------------------------------------
 
       rc = ESMF_SUCCESS
@@ -143,5 +163,171 @@ contains
     end subroutine SetScalarField
 
   end subroutine fld_list_realize
+
+  !===============================================================================
+
+  subroutine ModelInitPhase(gcomp, importState, exportState, clock, rc)
+    type(ESMF_GridComp)   :: gcomp
+    type(ESMF_State)      :: importState, exportState
+    type(ESMF_Clock)      :: clock
+    integer, intent(out)  :: rc
+    !-------------------------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    ! Switch to IPDv01 by filtering all other phaseMap entries
+    call NUOPC_CompFilterPhaseMap(gcomp, ESMF_METHOD_INITIALIZE, acceptStringList=(/"IPDv01p"/), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine ModelInitPhase
+
+  !===============================================================================
+
+  subroutine ModelSetRunClock(gcomp, rc)
+    type(ESMF_GridComp)  :: gcomp
+    integer, intent(out) :: rc
+
+    ! local variables
+    type(ESMF_Clock)         :: mclock, dclock
+    type(ESMF_Time)          :: mcurrtime, dcurrtime
+    type(ESMF_Time)          :: mstoptime
+    type(ESMF_TimeInterval)  :: mtimestep, dtimestep
+    character(len=256)       :: cvalue
+    character(len=256)       :: restart_option       ! Restart option units
+    integer                  :: restart_n            ! Number until restart interval
+    integer                  :: restart_ymd          ! Restart date (YYYYMMDD)
+    type(ESMF_ALARM)         :: restart_alarm
+    integer                  :: dbrc
+    character(len=128)       :: name
+    integer                  :: alarmcount
+    character(len=*),parameter :: subname='dshr_nuopc_mod:(ModelSetRunClock) '
+    !-------------------------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+
+    ! query the Component for its clocks
+    call NUOPC_ModelGet(gcomp, driverClock=dclock, modelClock=mclock, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_ClockGet(dclock, currTime=dcurrtime, timeStep=dtimestep, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_ClockGet(mclock, currTime=mcurrtime, timeStep=mtimestep, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !--------------------------------
+    ! force model clock currtime and timestep to match driver and set stoptime
+    !--------------------------------
+
+    mstoptime = mcurrtime + dtimestep
+    call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !--------------------------------
+    ! set restart alarm
+    !--------------------------------
+
+    call ESMF_ClockGetAlarmList(mclock, alarmlistflag=ESMF_ALARMLIST_ALL, alarmCount=alarmCount, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (alarmCount == 0) then
+
+       call ESMF_GridCompGet(gcomp, name=name, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_LogWrite(subname//'setting alarms for' // trim(name), ESMF_LOGMSG_INFO, rc=dbrc)
+
+       call NUOPC_CompAttributeGet(gcomp, name="restart_option", value=restart_option, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call NUOPC_CompAttributeGet(gcomp, name="restart_n", value=cvalue, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       read(cvalue,*) restart_n
+
+       call NUOPC_CompAttributeGet(gcomp, name="restart_ymd", value=cvalue, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       read(cvalue,*) restart_ymd
+
+       call shr_nuopc_time_alarmInit(mclock, restart_alarm, restart_option, &
+            opt_n   = restart_n,           &
+            opt_ymd = restart_ymd,         &
+            RefTime = mcurrTime,           &
+            alarmname = 'alarm_restart', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call ESMF_AlarmSet(restart_alarm, clock=mclock, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    end if
+
+    !--------------------------------
+    ! Advance model clock to trigger alarms then reset model clock back to currtime
+    !--------------------------------
+
+    call ESMF_ClockAdvance(mclock,rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+
+  end subroutine ModelSetRunClock
+
+  !===============================================================================
+
+  subroutine ModelSetMetadata(gcomp, name, rc)
+
+    type(ESMF_GridComp)            :: gcomp
+    character(len=*) , intent(in)  :: name
+    integer          , intent(out) :: rc
+
+    ! local variables
+    character(ESMF_MAXSTR)  :: convCIM, purpComp
+
+    rc = ESMF_SUCCESS
+
+    convCIM  = "CIM"
+    purpComp = "Model Component Simulation Description"
+    call ESMF_AttributeAdd(gcomp, convention=convCIM, purpose=purpComp, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_AttributeSet(gcomp, "ShortName", trim(name), convention=convCIM, purpose=purpComp, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_AttributeSet(gcomp, "LongName", "Climatological SeaIce Data Model", convention=convCIM, purpose=purpComp, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_AttributeSet(gcomp, "Description", &
+         "The CIME data models perform the basic function of " // &
+         "reading external data, modifying that data, and then " // &
+         "sending it to the driver via coupling " // &
+         "interfaces. The driver and other models have no " // &
+         "fundamental knowledge of whether another component " // &
+         "is fully active or just a data model.  In some cases, " // &
+         "data models are prognostic and also receive and use " // &
+         "some data sent by the driver to the data model.  But " // &
+         "in most cases, the data models are not running " // &
+         "prognostically and have no need to receive any data " // &
+         "from the driver.", &
+         convention=convCIM, purpose=purpComp, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_AttributeSet(gcomp, "ReleaseDate", "2010", convention=convCIM, purpose=purpComp, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_AttributeSet(gcomp, "ModelType", "SeaIce", convention=convCIM, purpose=purpComp, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_AttributeSet(gcomp, "Name", "TBD", convention=convCIM, purpose=purpComp, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_AttributeSet(gcomp, "EmailAddress", "TBD", convention=convCIM, purpose=purpComp, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_AttributeSet(gcomp, "ResponsiblePartyRole", "contact", convention=convCIM, purpose=purpComp, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine ModelSetMetadata
 
 end module dshr_nuopc_mod

@@ -163,13 +163,14 @@ CONTAINS
     ocn_present       = .false.
     ocn_prognostic    = .false.
     ocnrof_prognostic = .false.
+
     if (force_prognostic_true) then
-       ocn_present    = .true.
-       ocn_prognostic = .true.
+       ocn_present       = .true.
+       ocn_prognostic    = .true.
        ocnrof_prognostic = .true.
     endif
     if (trim(datamode) /= 'NULL') then
-       ocn_present = .true.
+       ocn_present       = .true.
     end if
     if (trim(datamode) == 'IAF') then
        ocn_prognostic = .true.

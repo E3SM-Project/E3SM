@@ -652,18 +652,6 @@
     </values>
   </entry>
 
-  <entry id="force_prognostic_true">
-    <type>logical</type>
-    <category>dice</category>
-    <group>dice_nml</group>
-    <desc>
-      If true, prognostic is forced to true.
-    </desc>
-    <values>
-      <value>.false.</value>
-    </values>
-  </entry>
-
   <entry id="restfilm">
     <type>char</type>
     <category>dice</category>

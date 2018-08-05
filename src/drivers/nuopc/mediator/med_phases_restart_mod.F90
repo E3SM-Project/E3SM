@@ -7,52 +7,53 @@ module med_phases_restart_mod
   implicit none
   private
 
-  character(*)       , parameter :: u_FILE_u  = &
-       __FILE__
-
   public  :: med_phases_restart_read
   public  :: med_phases_restart_write
+
+  character(*), parameter :: u_FILE_u  = &
+       __FILE__
 
 !=================================================================================
 contains
 !=================================================================================
 
   subroutine med_phases_restart_write(gcomp, rc)
-    use ESMF, only: ESMF_GridComp, ESMF_VM, ESMF_Clock, ESMF_Time
-    use ESMF, only: ESMF_TimeInterval, ESMF_CalKind_Flag, ESMF_MAXSTR
-    use ESMF, only: ESMF_CALKIND_NOLEAP, ESMF_CALKIND_GREGORIAN
-    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_FAILURE
-    use ESMF, only: ESMF_LOGMSG_ERROR, operator(==), operator(-)
-    use ESMF, only: ESMF_GridCompGet, ESMF_VMGet, ESMF_ClockGet, ESMF_ClockGetNextTime
-    use ESMF, only: ESMF_TimeGet, ESMF_ClockPrint, ESMF_TimeIntervalGet
-    use ESMF, only: ESMF_FieldBundleIsCreated
-    use med_constants_mod, only : dbug_flag => med_constants_dbug_flag
-    use med_constants_mod, only : SecPerDay => med_constants_SecPerDay
-    use med_constants_mod, only : med_constants_noleap
-    use med_constants_mod, only : med_constants_gregorian
-    use med_constants_mod, only : R8
-    use NUOPC, only : NUOPC_CompAttributeGet
-    use esmFlds                 , only : ncomps, compname
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
-    use seq_timemgr_mod         , only : seq_timemgr_AlarmIsOn
-    use seq_timemgr_mod         , only : seq_timemgr_AlarmSetOff, seq_timemgr_alarm_restart
-    use med_internalstate_mod   , only : InternalState
-    use med_infodata_mod        , only : med_infodata, med_infodata_GetData
-    use shr_file_mod            , only : shr_file_getUnit, shr_file_freeUnit
-    use med_io_mod              , only : med_io_write, med_io_wopen, med_io_enddef
-    use med_io_mod              , only : med_io_close, med_io_date2yyyymmdd
-    use med_io_mod              , only : med_io_sec2hms
 
+    ! Write mediator restart
+
+    use ESMF                  , only : ESMF_GridComp, ESMF_VM, ESMF_Clock, ESMF_Time, ESMF_Alarm
+    use ESMF                  , only : ESMF_TimeInterval, ESMF_CalKind_Flag, ESMF_MAXSTR
+    use ESMF                  , only : ESMF_CALKIND_NOLEAP, ESMF_CALKIND_GREGORIAN
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_FAILURE
+    use ESMF                  , only : ESMF_LOGMSG_ERROR, operator(==), operator(-)
+    use ESMF                  , only : ESMF_GridCompGet, ESMF_VMGet, ESMF_ClockGet, ESMF_ClockGetNextTime
+    use ESMF                  , only : ESMF_TimeGet, ESMF_ClockGetAlarm, ESMF_ClockPrint, ESMF_TimeIntervalGet
+    use ESMF                  , only : ESMF_AlarmIsRinging, ESMF_AlarmRingerOff, ESMF_FieldBundleIsCreated
+    use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
+    use med_constants_mod     , only : SecPerDay => med_constants_SecPerDay
+    use med_constants_mod     , only : med_constants_noleap
+    use med_constants_mod     , only : med_constants_gregorian
+    use med_constants_mod     , only : R8
+    use NUOPC                 , only : NUOPC_CompAttributeGet
+    use esmFlds               , only : ncomps, compname
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use med_internalstate_mod , only : InternalState
+    use med_infodata_mod      , only : med_infodata, med_infodata_GetData
+    use shr_file_mod          , only : shr_file_getUnit, shr_file_freeUnit
+    use med_io_mod            , only : med_io_write, med_io_wopen, med_io_enddef
+    use med_io_mod            , only : med_io_close, med_io_date2yyyymmdd
+    use med_io_mod            , only : med_io_sec2hms
+
+    ! Input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
-
-    ! Carry out fast accumulation for the ocean
 
     ! local variables
     type(ESMF_VM)              :: vm
     type(ESMF_Clock)           :: clock
     type(ESMF_Time)            :: currtime, reftime, starttime, nexttime
     type(ESMF_TimeInterval)    :: timediff       ! Used to calculate curr_time
+    type(ESMF_Alarm)           :: alarm
     type(ESMF_CalKind_Flag)    :: calkindflag
     character(len=64)          :: currtimestr, nexttimestr
     type(InternalState)        :: is_local
@@ -67,7 +68,7 @@ contains
     integer                    :: next_tod       ! Starting time-of-day (s)
     integer                    :: nx,ny          ! global grid size
     integer                    :: yr,mon,day,sec ! time units
-    real(R8)         :: dayssince      ! Time interval since reference time
+    real(R8)                   :: dayssince      ! Time interval since reference time
     integer                    :: unitn          ! unit number
     character(ESMF_MAXSTR)     :: time_units     ! units of time variable
     character(ESMF_MAXSTR)     :: calendar       ! calendar type
@@ -79,11 +80,11 @@ contains
     character(ESMF_MAXSTR)     :: freq_option    ! freq_option setting (ndays, nsteps, etc)
     integer                    :: freq_n         ! freq_n setting relative to freq_option
     logical                    :: alarmIsOn      ! generic alarm flag
-    real(R8)         :: tbnds(2)       ! CF1.0 time bounds
+    real(R8)                   :: tbnds(2)       ! CF1.0 time bounds
     logical                    :: whead,wdata    ! for writing restart/restart cdf files
     integer                    :: iam,mpicom     ! vm stuff
     character(len=ESMF_MAXSTR) :: tmpstr
-    integer                        :: dbrc
+    integer                    :: dbrc
     character(len=*), parameter :: subname='(med_phases_restart_write)'
     !---------------------------------------
 
@@ -120,13 +121,19 @@ contains
     ! --- Restart Alarm
     !---------------------------------------
 
-    alarmIsOn = seq_timemgr_alarmIsOn(clock, seq_timemgr_alarm_restart, rc)
+    call ESMF_ClockGetAlarm(clock, alarmname='alarm_restart', alarm=alarm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call seq_timemgr_AlarmSetOff(clock, seq_timemgr_alarm_restart, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (ESMF_AlarmIsRinging(alarm, rc=rc)) then
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       alarmIsOn = .true.
+       call ESMF_AlarmRingerOff( alarm, rc=rc )
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       AlarmIsOn = .false.
+    endif
 
     if (alarmIsOn) then
-
        call ESMF_ClockGet(clock, currtime=currtime, reftime=reftime, starttime=starttime, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -135,6 +142,7 @@ contains
 
        call ESMF_ClockGet(clock, calkindflag=calkindflag, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
        if (calkindflag == ESMF_CALKIND_GREGORIAN) then
          calendar = med_constants_gregorian
        elseif (calkindflag == ESMF_CALKIND_NOLEAP) then
@@ -238,12 +246,12 @@ contains
           ! the current timestep and that is where we want to start
           ! the next run.
 
-          call med_io_write(restart_file, iam, start_ymd, 'seq_timemgr_start_ymd', whead=whead, wdata=wdata)
-          call med_io_write(restart_file, iam, start_tod, 'seq_timemgr_start_tod', whead=whead, wdata=wdata)
-          call med_io_write(restart_file, iam, ref_ymd  , 'seq_timemgr_ref_ymd'  , whead=whead, wdata=wdata)
-          call med_io_write(restart_file, iam, ref_tod  , 'seq_timemgr_ref_tod'  , whead=whead, wdata=wdata)
-          call med_io_write(restart_file, iam, next_ymd , 'seq_timemgr_curr_ymd' , whead=whead, wdata=wdata)
-          call med_io_write(restart_file, iam, next_tod , 'seq_timemgr_curr_tod' , whead=whead, wdata=wdata)
+          call med_io_write(restart_file, iam, start_ymd, 'start_ymd', whead=whead, wdata=wdata)
+          call med_io_write(restart_file, iam, start_tod, 'start_tod', whead=whead, wdata=wdata)
+          call med_io_write(restart_file, iam, ref_ymd  , 'ref_ymd'  , whead=whead, wdata=wdata)
+          call med_io_write(restart_file, iam, ref_tod  , 'ref_tod'  , whead=whead, wdata=wdata)
+          call med_io_write(restart_file, iam, next_ymd , 'curr_ymd' , whead=whead, wdata=wdata)
+          call med_io_write(restart_file, iam, next_tod , 'curr_tod' , whead=whead, wdata=wdata)
 
           call med_io_write(restart_file, iam, is_local%wrap%FBExpAccumCnt, dname='ExpAccumCnt', &
                whead=whead, wdata=wdata)
@@ -312,25 +320,28 @@ contains
 
   !===============================================================================
   subroutine med_phases_restart_read(gcomp, rc)
-    use ESMF, only : ESMF_GridComp, ESMF_VM, ESMF_Clock, ESMF_Time, ESMF_MAXSTR
-    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_FAILURE
-    use ESMF, only: ESMF_LOGMSG_ERROR
-    use ESMF, only: ESMF_GridCompGet, ESMF_VMGet, ESMF_ClockGet, ESMF_ClockPrint
-    use ESMF, only: ESMF_FieldBundleIsCreated, ESMF_TimeGet
-    use med_constants_mod       , only : dbug_flag => med_constants_dbug_flag
-    use NUOPC, only : NUOPC_CompAttributeGet
-    use esmFlds                 , only : ncomps, compname
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
-    use med_internalstate_mod   , only : InternalState
-    use shr_file_mod            , only : shr_file_getUnit, shr_file_freeUnit
-    use shr_mpi_mod             , only : shr_mpi_bcast
-    use med_io_mod, only : med_io_read
-    type(ESMF_GridComp)  :: gcomp
-    integer, intent(out) :: rc
 
-    ! Carry out fast accumulation for the ocean
+    ! Read mediator restart
 
-    ! local variables
+    use ESMF                  , only : ESMF_GridComp, ESMF_VM, ESMF_Clock, ESMF_Time, ESMF_MAXSTR
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_FAILURE
+    use ESMF                  , only : ESMF_LOGMSG_ERROR
+    use ESMF                  , only : ESMF_GridCompGet, ESMF_VMGet, ESMF_ClockGet, ESMF_ClockPrint
+    use ESMF                  , only : ESMF_FieldBundleIsCreated, ESMF_TimeGet
+    use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
+    use NUOPC                 , only : NUOPC_CompAttributeGet
+    use esmFlds               , only : ncomps, compname
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use med_internalstate_mod , only : InternalState
+    use shr_file_mod          , only : shr_file_getUnit, shr_file_freeUnit
+    use shr_mpi_mod           , only : shr_mpi_bcast
+    use med_io_mod            , only : med_io_read
+
+    ! Input/output variables
+    type(ESMF_GridComp)              :: gcomp
+    integer, intent(out)             :: rc
+
+    ! Local variables
     type(ESMF_VM)          :: vm
     type(ESMF_Clock)       :: clock
     type(ESMF_Time)        :: currtime

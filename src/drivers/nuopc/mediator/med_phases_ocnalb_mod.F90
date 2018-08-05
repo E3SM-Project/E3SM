@@ -46,18 +46,19 @@ contains
 !===============================================================================
 
   subroutine med_phases_ocnalb_init(gcomp, ocnalb, rc)
-    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_FAILURE
-    use ESMF, only : ESMF_GridComp, ESMF_VM, ESMF_Field, ESMF_Grid, ESMF_Mesh, ESMF_GeomType_Flag
-    use ESMF, only : ESMF_GridCompGet, ESMF_VMGet, ESMF_FieldGet, ESMF_GEOMTYPE_MESH
-    use ESMF, only : ESMF_MeshGet
-    use ESMF, only: operator(==)
-    use med_constants_mod, only : CL
+
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_FAILURE
+    use ESMF                  , only : ESMF_GridComp, ESMF_VM, ESMF_Field, ESMF_Grid, ESMF_Mesh, ESMF_GeomType_Flag
+    use ESMF                  , only : ESMF_GridCompGet, ESMF_VMGet, ESMF_FieldGet, ESMF_GEOMTYPE_MESH
+    use ESMF                  , only : ESMF_MeshGet
+    use ESMF                  , only : operator(==)
+    use esmFlds               , only : compatm, compocn
+    use med_constants_mod     , only : CL
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFieldN
-    use esmFlds               , only : compatm, compocn
-    use med_internalstate_mod , only : InternalState
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use med_constants_mod     , only : dbug_flag =>med_constants_dbug_flag
+    use med_internalstate_mod , only : InternalState
 
     !-----------------------------------------------------------------------
     ! Initialize pointers to the module variables and then use the module
@@ -187,63 +188,64 @@ contains
   !===============================================================================
 
   subroutine med_phases_ocnalb_run(gcomp, rc)
+
     ! Compute ocean albedos (on the ocean grid)
-    use ESMF, only : ESMF_GridComp, ESMF_Clock, ESMF_Time
-    use ESMF, only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet
-    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_LogFoundError
-    use ESMF, only : ESMF_LOGERR_PASSTHRU, ESMF_RouteHandleIsCreated, ESMF_LOGMSG_ERROR, ESMF_FAILURE
-    use NUOPC, only : NUOPC_CompAttributeGet
-    use med_constants_mod          , only : CS, CL
+
+    use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time
+    use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_LogFoundError
+    use ESMF                  , only : ESMF_LOGERR_PASSTHRU, ESMF_RouteHandleIsCreated, ESMF_LOGMSG_ERROR, ESMF_FAILURE
+    use NUOPC                 , only : NUOPC_CompAttributeGet
     use shr_const_mod         , only : shr_const_pi
     use shr_sys_mod           , only : shr_sys_abort
     use shr_orb_mod           , only : shr_orb_cosz, shr_orb_decl
-    use esmFlds               , only : flds_scalar_name
-    use esmFlds               , only : flds_scalar_num
-    use esmFlds               , only : flds_scalar_index_nextsw_cday
     use esmFlds               , only : compatm, compocn
+    use shr_nuopc_scalars_mod , only : flds_scalar_name, flds_scalar_num, flds_scalar_index_nextsw_cday
     use shr_nuopc_fldList_mod , only : mapconsf, mapnames
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_GetScalar
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FieldRegrid
-    use med_internalstate_mod , only : InternalState
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use med_internalstate_mod , only : InternalState
+    use med_constants_mod     , only : CS, CL
     use med_constants_mod     , only : dbug_flag =>med_constants_dbug_flag
 
+    ! Input/output/variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! local variables
-    type(ocnalb_type), save       :: ocnalb
-    logical                       :: update_alb
-    type(InternalState)           :: is_local
-    type(ESMF_Clock)              :: clock
-    type(ESMF_Time)               :: currTime
-    character(CL)                 :: cvalue
-    character(CS)                 :: starttype        ! config start type
-    character(CL)                 :: runtype          ! initial, continue, hybrid, branch
-    character(CL)                 :: aoflux_grid
-    logical                       :: flux_albav       ! flux avg option
-    real(R8)            :: nextsw_cday      ! calendar day of next atm shortwave
-    real(R8), pointer   :: ofrac(:)
-    real(R8), pointer   :: ofrad(:)
-    real(R8), pointer   :: ifrac(:)
-    real(R8), pointer   :: ifrad(:)
-    integer                       :: lsize            ! local size
-    integer                       :: n,i              ! indices
-    real(R8)            :: rlat             ! gridcell latitude in radians
-    real(R8)            :: rlon             ! gridcell longitude in radians
-    real(R8)            :: cosz             ! Cosine of solar zenith angle
-    real(R8)            :: eccen            ! Earth orbit eccentricity
-    real(R8)            :: mvelpp           ! Earth orbit
-    real(R8)            :: lambm0           ! Earth orbit
-    real(R8)            :: obliqr           ! Earth orbit
-    real(R8)            :: delta            ! Solar declination angle  in radians
-    real(R8)            :: eccf             ! Earth orbit eccentricity factor
-    logical                       :: first_call = .true.
-    real(R8), parameter :: albdif = 0.06_r8 ! 60 deg reference albedo, diffuse
-    real(R8), parameter :: albdir = 0.07_r8 ! 60 deg reference albedo, direct
-    real(R8)    , parameter :: const_deg2rad = shr_const_pi/180.0_R8  ! deg to rads
+    type(ocnalb_type), save :: ocnalb
+    logical                 :: update_alb
+    type(InternalState)     :: is_local
+    type(ESMF_Clock)        :: clock
+    type(ESMF_Time)         :: currTime
+    character(CL)           :: cvalue
+    character(CS)           :: starttype        ! config start type
+    character(CL)           :: runtype          ! initial, continue, hybrid, branch
+    character(CL)           :: aoflux_grid
+    logical                 :: flux_albav       ! flux avg option
+    real(R8)                :: nextsw_cday      ! calendar day of next atm shortwave
+    real(R8), pointer       :: ofrac(:)
+    real(R8), pointer       :: ofrad(:)
+    real(R8), pointer       :: ifrac(:)
+    real(R8), pointer       :: ifrad(:)
+    integer                 :: lsize            ! local size
+    integer                 :: n,i              ! indices
+    real(R8)                :: rlat             ! gridcell latitude in radians
+    real(R8)                :: rlon             ! gridcell longitude in radians
+    real(R8)                :: cosz             ! Cosine of solar zenith angle
+    real(R8)                :: eccen            ! Earth orbit eccentricity
+    real(R8)                :: mvelpp           ! Earth orbit
+    real(R8)                :: lambm0           ! Earth orbit
+    real(R8)                :: obliqr           ! Earth orbit
+    real(R8)                :: delta            ! Solar declination angle  in radians
+    real(R8)                :: eccf             ! Earth orbit eccentricity factor
+    logical                 :: first_call = .true.
+    real(R8), parameter     :: albdif = 0.06_r8 ! 60 deg reference albedo, diffuse
+    real(R8), parameter     :: albdir = 0.07_r8 ! 60 deg reference albedo, direct
+    real(R8), parameter     :: const_deg2rad = shr_const_pi/180.0_R8  ! deg to rads
     character(len=*)  , parameter :: subname='(med_phases_ocnalb_run)'
     !---------------------------------------
 

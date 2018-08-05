@@ -4,8 +4,6 @@
 module drof_comp_mod
 
   ! !USES:
-
-  use esmf
   use mct_mod
   use perf_mod
   use shr_sys_mod     , only: shr_sys_flush, shr_sys_abort
@@ -18,7 +16,6 @@ module drof_comp_mod
   use shr_dmodel_mod  , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
   use shr_dmodel_mod  , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
   use shr_cal_mod     , only: shr_cal_datetod2string
-  use seq_timemgr_mod , only: seq_timemgr_EClockGetData
 
   use drof_shr_mod   , only: datamode       ! namelist input
   use drof_shr_mod   , only: decomp         ! namelist input
@@ -43,70 +40,55 @@ module drof_comp_mod
   ! Private data
   !--------------------------------------------------------------------------
 
-  character(CS) :: myModelName = 'rof'   ! user defined model name
+  character(len=3) :: myModelName = 'rof'   ! user defined model name
+  type(mct_rearr)  :: rearr
   character(len=*), parameter :: rpfile = 'rpointer.rof'
-  type(mct_rearr) :: rearr
 
-  !--------------------------------------------------------------------------
-  integer(IN),parameter :: ktrans = 2
+  integer      , parameter :: ktrans = 2
+  character(12), parameter :: avofld(1:ktrans) = (/ "Forr_rofl   ","Forr_rofi   "/)
+  character(12), parameter :: avifld(1:ktrans) = (/ "rofl        ","rofi        "/)
 
-  character(12),parameter  :: avofld(1:ktrans) = &
-       (/ "Forr_rofl   ","Forr_rofi   "/)
+!===============================================================================
+contains
+!===============================================================================
 
-  character(12),parameter  :: avifld(1:ktrans) = &
-       (/ "rofl        ","rofi        "/)
-  !--------------------------------------------------------------------------
-
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-CONTAINS
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  !===============================================================================
-  subroutine drof_comp_init(Eclock, x2r, r2x, &
-       seq_flds_x2r_fields, seq_flds_r2x_fields, &
+  subroutine drof_comp_init(x2r, r2x, &
+       x2r_fields, r2x_fields, &
        SDROF, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, inst_name, logunit, read_restart)
+       inst_suffix, inst_name, logunit, read_restart, &
+       target_ymd, target_tod, calendar)
 
     ! !DESCRIPTION: initialize drof model
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock)       , intent(in)    :: EClock
-    type(mct_aVect)        , intent(inout) :: x2r, r2x            ! input/output attribute vectors
-    character(len=*)       , intent(in)    :: seq_flds_x2r_fields ! fields from mediator
-    character(len=*)       , intent(in)    :: seq_flds_r2x_fields ! fields to mediator
-    type(shr_strdata_type) , intent(inout) :: SDROF               ! model shr_strdata instance (output)
-    type(mct_gsMap)        , pointer       :: gsMap               ! model global seg map (output)
-    type(mct_gGrid)        , pointer       :: ggrid               ! model ggrid (output)
-    integer(IN)            , intent(in)    :: mpicom              ! mpi communicator
-    integer(IN)            , intent(in)    :: compid              ! mct comp id
-    integer(IN)            , intent(in)    :: my_task             ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task         ! task number of master task
-    character(len=*)       , intent(in)    :: inst_suffix         ! char string associated with instance
-    character(len=*)       , intent(in)    :: inst_name           ! fullname of current instance (ie. "lnd_0001")
-    integer(IN)            , intent(in)    :: logunit             ! logging unit number
-    logical                , intent(in)    :: read_restart        ! start from restart
+    type(mct_aVect)        , intent(inout) :: x2r, r2x     ! input/output attribute vectors
+    character(len=*)       , intent(in)    :: x2r_fields   ! fields from mediator
+    character(len=*)       , intent(in)    :: r2x_fields   ! fields to mediator
+    type(shr_strdata_type) , intent(inout) :: SDROF        ! model shr_strdata instance (output)
+    type(mct_gsMap)        , pointer       :: gsMap        ! model global seg map (output)
+    type(mct_gGrid)        , pointer       :: ggrid        ! model ggrid (output)
+    integer(IN)            , intent(in)    :: mpicom       ! mpi communicator
+    integer(IN)            , intent(in)    :: compid       ! mct comp id
+    integer(IN)            , intent(in)    :: my_task      ! my task in mpi communicator mpicom
+    integer(IN)            , intent(in)    :: master_task  ! task number of master task
+    character(len=*)       , intent(in)    :: inst_suffix  ! char string associated with instance
+    character(len=*)       , intent(in)    :: inst_name    ! fullname of current instance (ie. "lnd_0001")
+    integer(IN)            , intent(in)    :: logunit      ! logging unit number
+    logical                , intent(in)    :: read_restart ! start from restart
+    integer                , intent(in)    :: target_ymd   ! model date
+    integer                , intent(in)    :: target_tod   ! model sec into model date
+    character(len=*)       , intent(in)    :: calendar     ! model calendar
 
     !--- local variables ---
-    integer(IN)   :: n,k         ! generic counters
-    integer(IN)   :: ierr        ! error code
-    integer(IN)   :: lsize       ! local size
-    logical       :: exists, exists1      ! file existance logical
-    integer(IN)   :: nu          ! unit number
-    character(CL) :: calendar    ! model calendar
-    integer(IN)   :: currentYMD  ! model date
-    integer(IN)   :: currentTOD  ! model sec into model date
-    logical       :: write_restart
+    integer(IN)   :: n,k     ! generic counters
+    integer(IN)   :: ierr    ! error code
+    integer(IN)   :: lsize   ! local size
+    logical       :: exists  ! file existance logical
+    logical       :: exists1 ! file existance logical
+    integer(IN)   :: nu      ! unit number
 
     !--- formats ---
     character(*), parameter :: F00   = "('(drof_comp_init) ',8a)"
-    character(*), parameter :: F0L   = "('(drof_comp_init) ',a, l2)"
-    character(*), parameter :: F01   = "('(drof_comp_init) ',a,5i8)"
-    character(*), parameter :: F02   = "('(drof_comp_init) ',a,4es13.6)"
-    character(*), parameter :: F03   = "('(drof_comp_init) ',a,i8,a)"
-    character(*), parameter :: F05   = "('(drof_comp_init) ',a,2f10.4)"
-    character(*), parameter :: F90   = "('(drof_comp_init) ',73('='))"
-    character(*), parameter :: F91   = "('(drof_comp_init) ',73('-'))"
     character(*), parameter :: subName = "(drof_comp_init) "
     !-------------------------------------------------------------------------------
 
@@ -123,8 +105,6 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     call t_startf('drof_strdata_init')
-
-    call seq_timemgr_EClockGetData( EClock, calendar=calendar )
 
     ! NOTE: shr_strdata_init calls shr_dmodel_readgrid which reads the data model
     ! grid and from that computes SDROF%gsmap and SDROF%ggrid. DROF%gsmap is created
@@ -177,10 +157,10 @@ CONTAINS
     if (my_task == master_task) write(logunit,F00) 'allocate AVs'
     call shr_sys_flush(logunit)
 
-    call mct_aVect_init(x2r, rList=seq_flds_x2r_fields, lsize=lsize)
+    call mct_aVect_init(x2r, rList=x2r_fields, lsize=lsize)
     call mct_aVect_zero(x2r)
 
-    call mct_aVect_init(r2x, rList=seq_flds_r2x_fields, lsize=lsize)
+    call mct_aVect_init(r2x, rList=r2x_fields, lsize=lsize)
     call mct_aVect_zero(r2x)
     call t_stopf('drof_initmctavs')
 
@@ -202,7 +182,7 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     if (read_restart) then
-       exists = .false.
+       exists  = .false.
        exists1 = .false.
        if (trim(rest_file)      == trim(nullstr) .and. &
            trim(rest_file_strm) == trim(nullstr)) then
@@ -235,13 +215,13 @@ CONTAINS
        call shr_mpi_bcast(exists,mpicom,'exists')
        call shr_mpi_bcast(exists1,mpicom,'exists1')
 
-!       if (exists1) then
-!          if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
-!          call shr_pcdf_readwrite('read',SDROF%pio_subsystem, SDROF%io_type, &
-!               trim(rest_file),mpicom,gsmap=gsmap,rf1=water,rf1n='water',io_format=SDROF%io_format)
-!       else
-!          if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file)
-!       endif
+       ! if (exists1) then
+       !    if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
+       !    call shr_pcdf_readwrite('read',SDROF%pio_subsystem, SDROF%io_type, &
+       !         trim(rest_file),mpicom,gsmap=gsmap,rf1=water,rf1n='water',io_format=SDROF%io_format)
+       ! else
+       !    if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file)
+       ! endif
 
        if (exists) then
           if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file_strm)
@@ -258,13 +238,22 @@ CONTAINS
 
     call t_adj_detailf(+2)
 
-    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
-
-    write_restart = .false.
-    call drof_comp_run(EClock, x2r, r2x, &
-         SDROF, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, logunit, read_restart, write_restart, &
-         currentYMD, currentTOD)
+    call drof_comp_run(&
+         x2r=x2r, & 
+         r2x=r2x, &
+         SDROF=SDROF, &
+         gsmap=gsmap, &
+         ggrid=ggrid, &
+         mpicom=mpicom, &
+         compid=compid, &
+         my_task=my_task, &
+         master_task=master_task, &
+         inst_suffix=inst_suffix, &
+         logunit=logunit, &
+         read_restart=read_restart, &
+         write_restart=.false., &
+         target_ymd=target_ymd, &
+         target_tod=target_tod)
 
     if (my_task == master_task) write(logunit,F00) 'drof_comp_init done'
     call shr_sys_flush(logunit)
@@ -277,16 +266,14 @@ CONTAINS
 
   !===============================================================================
 
-  subroutine drof_comp_run(EClock, x2r, r2x, &
+  subroutine drof_comp_run(x2r, r2x, &
        SDROF, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
        target_ymd, target_tod, case_name)
 
     ! !DESCRIPTION:  run method for drof model
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock)       , intent(in)    :: EClock
     type(mct_aVect)        , intent(inout) :: x2r
     type(mct_aVect)        , intent(inout) :: r2x
     type(shr_strdata_type) , intent(inout) :: SDROF
@@ -305,13 +292,9 @@ CONTAINS
     character(CL)          , intent(in), optional :: case_name ! case name
 
     !--- local ---
-    integer(IN)   :: yy,mm,dd,tod      ! year month day time-of-day
-    integer(IN)   :: n                 ! indices
-    integer(IN)   :: nf                ! fields loop index
-    integer(IN)   :: nl                ! land frac index
-    integer(IN)   :: lsize             ! size of attr vect
-    integer(IN)   :: nu                ! unit number
-    integer(IN)   :: nflds_r2x
+    integer(IN)   :: n  ! indices
+    integer(IN)   :: nf ! fields loop index
+    integer(IN)   :: nu ! unit number
     character(len=18) :: date_str
 
     character(*), parameter :: F00   = "('(drof_comp_run) ',8a)"
@@ -335,7 +318,6 @@ CONTAINS
     call t_startf('drof_r')
 
     call t_startf('drof_r_strdata_advance')
-
     call shr_strdata_advance(SDROF, target_ymd, target_tod, mpicom, 'drof_r')
     call t_stopf('drof_r_strdata_advance')
 
@@ -348,14 +330,11 @@ CONTAINS
     call t_stopf('drof_r_scatter')
 
     ! zero out "special values"
-    lsize = mct_avect_lsize(r2x)
-    nflds_r2x = mct_avect_nRattr(r2x)
-    do nf=1,nflds_r2x
-       do n=1,lsize
+    do nf = 1, mct_avect_nRattr(r2x)
+       do n = 1, mct_avect_lsize(r2x)
           if (abs(r2x%rAttr(nf,n)) > 1.0e28) then
              r2x%rAttr(nf,n) = 0.0_r8
           end if
-          ! write(6,*)'crrentymd, target_tod, nf,n,r2x= ',target_ymd, target_tod, nf,n,r2x%rattr(nf,n)
        enddo
     enddo
 
@@ -405,12 +384,10 @@ CONTAINS
     ! Log output for model date
     !----------------------------------------------------------------------------
 
-    call t_startf('drof_run2')
     if (my_task == master_task) then
        write(logunit,F04) trim(myModelName),': model date ', target_ymd,target_tod
        call shr_sys_flush(logunit)
     end if
-    call t_stopf('drof_run2')
 
     call t_stopf('DROF_RUN')
 
@@ -420,7 +397,6 @@ CONTAINS
   subroutine drof_comp_final(my_task, master_task, logunit)
 
     ! !DESCRIPTION:  finalize method for drof model
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
     integer(IN) , intent(in) :: my_task     ! my task in mpi communicator mpicom
