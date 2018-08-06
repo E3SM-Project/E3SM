@@ -1,10 +1,10 @@
 import CIME.wait_for_tests
-from CIME.utils import expect
+from CIME.utils import expect, run_cmd_no_fail
 from CIME.case import Case
 
-import os, shutil, glob, signal, logging
+import os, shutil, glob, signal, logging, threading, sys, re
 
-###############################################################################
+##############################################################################
 def cleanup_queue(test_root, test_id):
 ###############################################################################
     """
@@ -20,6 +20,90 @@ def cleanup_queue(test_root, test_id):
                 jobkills.append(jobid)
 
             case.cancel_batch_jobs(jobkills)
+
+###############################################################################
+def delete_old_test_data(mach_comp, test_id_root, scratch_root, test_root, run_area, build_area, archive_area):
+###############################################################################
+    # Remove old dirs
+    for clutter_area in [scratch_root, test_root, run_area, build_area, archive_area]:
+        for old_file in glob.glob("{}/*{}*{}*".format(clutter_area, mach_comp, test_id_root)):
+            logging.info("Removing {}".format(old_file))
+            if (os.path.isdir(old_file)):
+                shutil.rmtree(old_file)
+            else:
+                os.remove(old_file)
+
+###############################################################################
+def scan_for_test_ids(old_test_archive, mach_comp, test_id_root):
+###############################################################################
+    results = set([])
+    test_id_re = re.compile(".+[.]([^.]+)")
+    for item in glob.glob("{}/{}/*{}*{}*".format(old_test_archive, "old_cases", mach_comp, test_id_root)):
+        filename = os.path.basename(item)
+        the_match = test_id_re.match(filename)
+        if the_match:
+            test_id = the_match.groups()[0]
+            results.add(test_id)
+
+    return list(results)
+
+###############################################################################
+def archive_old_test_data(machine, mach_comp, test_id_root, scratch_root, test_root, old_test_archive):
+###############################################################################
+
+    # Remove old cs.status, cs.submit. I don't think there's any value to leaving these around
+    # or archiving them
+    for old_cs_file in glob.glob("{}/cs.*".format(scratch_root)):
+        logging.info("Removing {}".format(old_cs_file))
+        os.remove(old_cs_file)
+
+    # Remove the old CTest XML, same reason as above
+    if (os.path.isdir("Testing")):
+        logging.info("Removing {}".format(os.path.join(os.getcwd(), "Testing")))
+        shutil.rmtree("Testing")
+
+    # Archive old data by looking at old test cases
+    for old_case in glob.glob("{}/*{}*{}*".format(test_root, mach_comp, test_id_root)):
+        exeroot, rundir, archdir = run_cmd_no_fail("./xmlquery EXEROOT RUNDIR DOUT_S_ROOT --value", from_dir=old_case).split(",")
+
+        for the_dir, target_area in [(exeroot, "old_builds"), (rundir, "old_runs"), (archdir, "old_archives")]:
+            if os.path.exists(the_dir):
+                os.rename(the_dir, os.path.join(old_test_archive, target_area))
+
+        os.rename(old_case, os.path.join(old_test_archive, "old_cases"))
+
+    # Check size of archive
+    bytes_of_old_test_data = run_cmd_no_fail("du -s {}".format(old_test_archive)).split()[0]
+    bytes_allowed = machine.get_value("MAX_GB_OLD_TEST_DATA") * 1000000000
+    if bytes_of_old_test_data > bytes_allowed:
+        logging.info("Too much test data, {}GB > {}GB".format(bytes_of_old_test_data / 1000000000, bytes_allowed / 1000000000))
+        old_test_ids = scan_for_test_ids(old_test_archive, mach_comp, test_id_root)
+        for old_test_id in sorted(old_test_ids):
+            logging.info("  Removing old data for test {}".format(old_test_id))
+            for item in ["old_cases", "old_builds", "old_runs", "old_archives"]:
+                for dir_to_rm in glob.glob("{}/{}/*{}*{}*".format(old_test_archive, item, mach_comp, old_test_id)):
+                    logging.info("    Removing {}".format(dir_to_rm))
+                    shutil.rmtree(dir_to_rm)
+
+            bytes_of_old_test_data = run_cmd_no_fail("du -s {}".format(old_test_archive)).split()[0]
+            if bytes_of_old_test_data < bytes_allowed:
+                break
+
+###############################################################################
+def handle_old_test_data(machine, compiler, test_id_root, scratch_root, test_root):
+###############################################################################
+    run_area = os.path.dirname(os.path.dirname(machine.get_value("RUNDIR"))) # Assumes XXX/$CASE/run
+    build_area = os.path.dirname(os.path.dirname(machine.get_value("EXEROOT"))) # Assumes XXX/$CASE/build
+    archive_area = os.path.dirname(machine.get_value("DOUT_S_ROOT")) # Assumes XXX/archive/$CASE
+    old_test_archive = os.path.join(scratch_root, "old_test_archive")
+
+    mach_comp = "{}_{}".format(machine.get_machine_name(), compiler)
+
+    try:
+        archive_old_test_data(machine, mach_comp, test_id_root, scratch_root, test_root, old_test_archive)
+    except:
+        logging.warning("Archiving of old test data FAILED: {}\nDeleting data instead".format(sys.exc_info()[1]))
+        delete_old_test_data(mach_comp, test_id_root, scratch_root, test_root, run_area, build_area, archive_area)
 
 ###############################################################################
 def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
@@ -38,7 +122,6 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     proxy = machine.get_value("PROXY")
     test_suite = test_suite if arg_test_suite is None else arg_test_suite
     test_root = os.path.join(scratch_root, "J")
-    run_area = os.path.dirname(os.path.dirname(machine.get_value("RUNDIR")))
 
     if (use_batch):
         batch_system = machine.get_value("BATCH_SYSTEM")
@@ -65,20 +148,9 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     # the Jenkins jobs with timeouts to avoid this.
     #
 
-    mach_comp = "{}_{}".format(machine.get_machine_name(), compiler)
-
-    # Remove the old CTest XML
-    if (os.path.isdir("Testing")):
-        shutil.rmtree("Testing")
-
-    # Remove old dirs
     test_id_root = "J{}{}".format(baseline_name.capitalize(), test_suite.replace("e3sm_", "").capitalize())
-    for clutter_area in [scratch_root, test_root, run_area]:
-        for old_file in glob.glob("{}/*{}*{}*".format(clutter_area, mach_comp, test_id_root)):
-            if (os.path.isdir(old_file)):
-                shutil.rmtree(old_file)
-            else:
-                os.remove(old_file)
+    archiver_thread = threading.Thread(target=handle_old_test_data, args=(machine, compiler, test_id_root, scratch_root, test_root))
+    archiver_thread.start()
 
     #
     # Set up create_test command and run it
@@ -134,6 +206,10 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
                                                  cdash_build_name=cdash_build_name,
                                                  cdash_project=cdash_project,
                                                  cdash_build_group=cdash_build_group)
+
+    logging.info("Waiting for archiver thread")
+    archiver_thread.join()
+    logging.info("Waiting for archiver finished")
 
     if use_batch and CIME.wait_for_tests.SIGNAL_RECEIVED:
         # Cleanup

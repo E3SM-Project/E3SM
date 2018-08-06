@@ -645,6 +645,14 @@
     If set to on, this component set/ grid specification is scientifically supported</desc>
   </entry>
 
+  <entry id="MAX_GB_OLD_TEST_DATA">
+    <type>integer</type>
+    <default_value>500</default_value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>How much old test to allow</desc>
+  </entry>
+
   <entry id="GLC_NEC">
     <type>integer</type>
     <valid_values>0,1,3,5,10,36</valid_values>
