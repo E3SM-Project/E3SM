@@ -13,6 +13,7 @@ module atm_comp_mct
   use shr_file_mod    , only: shr_file_getunit, shr_file_getlogunit, shr_file_getloglevel
   use shr_file_mod    , only: shr_file_setlogunit, shr_file_setloglevel, shr_file_setio
   use shr_file_mod    , only: shr_file_freeunit
+
   use datm_comp_mod   , only: datm_comp_init, datm_comp_run, datm_comp_final
   use datm_shr_mod    , only: datm_shr_read_namelists
   use datm_shr_mod    , only: datm_shr_getNextRadCDay
@@ -192,7 +193,7 @@ CONTAINS
     ! Initialize datm
     !----------------------------------------------------------------------------
 
-    call datm_comp_init(Eclock, &
+    call datm_comp_init( &
          x2a=x2a, &
          a2x=a2x, &
          x2a_fields=seq_flds_x2a_fields, &
@@ -217,9 +218,9 @@ CONTAINS
          orbObliqr=orbObliqr, &
          calendar=calendar, &
          modeldt=modeldt, &
-         currentYMD=current_ymd, &
-         currentTOD=current_tod, &
-         currentMON=current_mon, &
+         current_ymd=current_ymd, &
+         current_tod=current_tod, &
+         current_mon=current_mon, &
          atm_prognostic=atm_prognostic)
 
     !----------------------------------------------------------------------------
@@ -325,7 +326,6 @@ CONTAINS
     !--------------------------------
 
     call datm_comp_run(&
-         Eclock=EClock, &
          x2a=x2a, &
          a2x=a2x, &
          SDATM=SDATM, &
@@ -345,8 +345,8 @@ CONTAINS
          target_ymd=current_ymd, &
          target_tod=current_tod, &
          target_mon=current_mon, &
-         modeldt=modeldt, &
          calendar=calendar, &
+         modeldt=modeldt, &
          atm_prognostic=atm_prognostic, &
          case_name=case_name)
 

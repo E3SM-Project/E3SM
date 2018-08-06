@@ -357,26 +357,28 @@ module med_fraction_mod
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
           ! map lnd 'lfrin' to atm 'lfrin' conservatively or redist
-          if (ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,complnd,mapfcopy), rc=rc)) then
-             maptype = mapfcopy
-          else
-             maptype = mapconsf
-             if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(complnd,compatm,maptype), rc=rc)) then
-                call med_map_Fractions_init( gcomp, complnd, compatm, &
-                     FBSrc=is_local%wrap%FBImp(complnd,complnd), &
-                     FBDst=is_local%wrap%FBImp(complnd,compatm), &
-                     RouteHandle=is_local%wrap%RH(complnd,compatm,maptype), rc=rc)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (is_local%wrap%med_coupling_active(complnd,compatm)) then
+             if (ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,complnd,mapfcopy), rc=rc)) then
+                maptype = mapfcopy
+             else
+                maptype = mapconsf
+                if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(complnd,compatm,maptype), rc=rc)) then
+                   call med_map_Fractions_init( gcomp, complnd, compatm, &
+                        FBSrc=is_local%wrap%FBImp(complnd,complnd), &
+                        FBDst=is_local%wrap%FBImp(complnd,compatm), &
+                        RouteHandle=is_local%wrap%RH(complnd,compatm,maptype), rc=rc)
+                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                end if
              end if
+             call shr_nuopc_methods_FB_FieldRegrid(&
+                  is_local%wrap%FBfrac(complnd), 'lfrin', &
+                  is_local%wrap%FBfrac(compatm), 'lfrin', &
+                  is_local%wrap%RH(complnd,compatm,maptype), rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           end if
-          call shr_nuopc_methods_FB_FieldRegrid(&
-               is_local%wrap%FBfrac(complnd), 'lfrin', &
-               is_local%wrap%FBfrac(compatm), 'lfrin', &
-               is_local%wrap%RH(complnd,compatm,maptype), rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       endif
-    endif
+       end if
+    end if
 
     !---------------------------------------
     !--- Initialize fractions on rof grid/decomp

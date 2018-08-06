@@ -457,12 +457,32 @@ contains
     ! Initialize model
     !--------------------------------
 
-    call dice_comp_init(x2d, d2x, &
-         flds_x2i, flds_i2x, flds_i2o_per_cat, &
-         SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, inst_name, logunit, read_restart, &
-         scmMode, scmlat, scmlon, &
-         calendar, modeldt, current_ymd, current_tod, current_day, current_mon)
+    call dice_comp_init(&
+         x2i=x2d, &
+         i2x=d2x, &
+         flds_x2i_fields=flds_x2i, &
+         flds_i2x_fields=flds_i2x, &
+         flds_i2o_per_cat=flds_i2o_per_cat, &
+         SDICE=SDICE, &
+         gmap=gsmap, &
+         ggrid=ggrid, &
+         mpicom=mpicom, &
+         compid=compid, &
+         my_task=my_task, &
+         master_task=master_task, &
+         inst_suffix=inst_suffix, &
+         inst_name=inst_name, &
+         logunit=logunit, &
+         read_restart=read_restart, &
+         scmMod=scmMode, &
+         scmlat=scmlat, &
+         scmlon=scmlon, &
+         calendar=calendar, &
+         modeldt=modeldt, &
+         current_ymd=current_ymd, &
+         current_tod=current_tod, &
+         current_day=current_day, &
+         current_mon=current_mon)
 
     !--------------------------------
     ! Generate the mesh
@@ -490,14 +510,8 @@ contains
 
     !--------------------------------
     ! realize the actively coupled fields, now that a mesh is established
-    ! Note: the following will occur in the realize call
-    ! 1) loop over all of the entries in fldsToIce and fldsFrIce to creates a field via the following call:
-    !    field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=shortname, meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
-    ! 2) realizes the field via the following call
-    !    call NUOPC_Realize(state, field=field, rc=rc)
-    !    where state is either importState or exportState
-    !  NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
-    !  by replacing the advertised fields with the newly created fields of the same name.
+    ! NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
+    ! by replacing the advertised fields with the newly created fields of the same name.
     !--------------------------------
 
     call fld_list_realize( &
@@ -659,7 +673,7 @@ contains
          master_task=master_task, &
          inst_suffix=inst_suffix, &
          logunit=logunit, &
-         read_restart=read_restart, &
+         read_restart=.false., &
          write_restart=write_restart, &
          target_ymd=nextymd, &
          target_tod=nexttod, &

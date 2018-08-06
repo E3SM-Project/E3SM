@@ -35,25 +35,23 @@ module rof_comp_mct
   !--------------------------------------------------------------------------
 
   type(shr_strdata_type) :: SDROF
-  integer(IN)            :: mpicom              ! mpi communicator
-  integer(IN)            :: my_task             ! my task in mpi communicator mpicom
+  integer                :: mpicom              ! mpi communicator
+  integer                :: my_task             ! my task in mpi communicator mpicom
   integer                :: inst_index          ! number of current instance (ie. 1)
   character(len=16)      :: inst_name           ! fullname of current instance (ie. "lnd_0001")
   character(len=16)      :: inst_suffix         ! char string associated with instance (ie. "_0001" or "")
-  integer(IN)            :: logunit             ! logging unit number
-  integer(IN)            :: compid              ! mct comp id
-  integer(IN),parameter  :: master_task=0       ! task number of master task
+  integer                :: logunit             ! logging unit number
+  integer                :: compid              ! mct comp id
+  integer    ,parameter  :: master_task=0       ! task number of master task
   integer    ,parameter  :: dbug = 10
 
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-CONTAINS
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!===============================================================================
+contains
+!===============================================================================
 
-  !===============================================================================
   subroutine rof_init_mct( EClock, cdata, x2r, r2x, NLFilename )
 
     ! !DESCRIPTION:  initialize drof model
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            , intent(inout) :: EClock
@@ -65,15 +63,19 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer           :: phase                     ! phase of method
-    logical           :: rof_present               ! flag
-    logical           :: rof_prognostic            ! flag
-    logical           :: rofice_present            ! flag
-    logical           :: flood_present             ! flag
-    integer(IN)       :: shrlogunit                ! original log unit
-    integer(IN)       :: shrloglev                 ! original log level
-    logical           :: read_restart              ! start from restart
-    integer(IN)       :: ierr                      ! error code
+    integer                          :: phase                     ! phase of method
+    logical                          :: rof_present               ! flag
+    logical                          :: rof_prognostic            ! flag
+    logical                          :: rofice_present            ! flag
+    logical                          :: flood_present             ! flag
+    integer                          :: shrlogunit                ! original log unit
+    integer                          :: shrloglev                 ! original log level
+    logical                          :: read_restart              ! start from restart
+    integer                          :: ierr                      ! error code
+    integer                          :: currentYMD		  ! model date
+    integer                          :: currentTOD		  ! model sec into model date
+    character(CL)                    :: calendar		  ! model calendar
+    integer                          :: modeldt                   ! model timestep
     character(*), parameter :: F00   = "('(drof_comp_init) ',8a)"
     character(*), parameter :: subName = "(rof_init_mct) "
     !-------------------------------------------------------------------------------
@@ -135,16 +137,32 @@ CONTAINS
        RETURN
     end if
 
-    ! NOTE: the following will never be called if rof_present is .false.
-
     !----------------------------------------------------------------------------
     ! Initialize drof
     !----------------------------------------------------------------------------
 
-    call drof_comp_init(Eclock, x2r, r2x, &
-         seq_flds_x2r_fields, seq_flds_r2x_fields, &
-         SDROF, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, inst_name, logunit, read_restart)
+    call seq_timemgr_EClockGetData( EClock, &
+        calendar=calendar, curr_ymd=CurrentYMD, curr_tod=CurrentTOD, dtime=modeldt)
+
+    call drof_comp_init(&
+         x2r=x2r, &
+         r2x=r2x, &
+         x2r_fields=seq_flds_x2r_fields, &
+         r2x_fields=seq_flds_r2x_fields, &
+         SDROF=SDROF, &
+         gsmap=gsmap, &
+         ggrid=ggrid, &
+         mpicom=mpicom, &
+         compid=compid, &
+         my_task=my_task, &
+         master_task=master_task, &
+         inst_suffix=inst_suffix, &
+         inst_name=inst_name, &
+         logunit=logunit, &
+         read_restart=read_restart, &
+         target_ymd=currentYMD, &
+         target_tod=currentTOD, &
+         calendar=calendar)
 
     !----------------------------------------------------------------------------
     ! Fill infodata that needs to be returned from drof
@@ -189,13 +207,13 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer(IN)                      :: shrlogunit    ! original log unit
-    integer(IN)                      :: shrloglev     ! original log level
+    integer                          :: shrlogunit    ! original log unit
+    integer                          :: shrloglev     ! original log level
     logical                          :: read_restart  ! start from restart
     character(CL)                    :: case_name     ! case name
     logical                          :: write_restart ! restart now
-    integer(IN)                      :: currentYMD    ! model date
-    integer(IN)                      :: currentTOD    ! model sec into model date
+    integer                          :: currentYMD    ! model date
+    integer                          :: currentTOD    ! model sec into model date
     character(*), parameter :: subName = "(rof_run_mct) "
     !-------------------------------------------------------------------------------
 
@@ -217,10 +235,23 @@ CONTAINS
     ! For mct - the component clock is advance at the beginning of the time interval
     call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
 
-    call drof_comp_run(EClock, x2r, r2x, &
-       SDROF, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, read_restart, write_restart, &
-       currentYMD, currentTOD, case_name=case_name)
+    call drof_comp_run(&
+         x2r=x2r, &
+         r2x=r2x, &
+         SDROF=SDROF, &
+         gsmap=gsmap, &
+         ggrid=ggrid, &
+         mpicom=mpicom, &
+         compid=compid, &
+         my_task=my_task, &
+         master_task=master_task, &
+         inst_suffix=inst_suffix, &
+         logunit=logunit, &
+         read_restart=.false., &
+         write_restart=write_restart, &
+         target_ymd=CurrentYMD, &
+         target_tod=CurrentTOD, &
+         case_name=case_name)
 
     if (dbug > 1) then
        if (my_task == master_task) then

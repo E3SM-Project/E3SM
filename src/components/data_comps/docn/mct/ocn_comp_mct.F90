@@ -46,15 +46,13 @@ module ocn_comp_mct
   integer(IN) , parameter :: master_task=0 ! task number of master task
   integer     , parameter :: dbug = 10
 
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-CONTAINS
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!===============================================================================
+contains
+!===============================================================================
 
-  !===============================================================================
   subroutine ocn_init_mct( EClock, cdata, x2o, o2x, NLFilename )
 
     ! !DESCRIPTION:  initialize docn model
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            , intent(inout) :: EClock
@@ -63,23 +61,23 @@ CONTAINS
     character(len=*), optional  , intent(in)    :: NLFilename ! Namelist filename
 
     !--- local ---
-    type(seq_infodata_type), pointer	:: infodata
-    type(mct_gsMap)        , pointer	:: gsMap
-    type(mct_gGrid)        , pointer	:: ggrid
-    integer		:: phase			! phase of method
-    logical		:: ocn_present			! flag
-    logical		:: ocn_prognostic		! flag
-    logical		:: ocnrof_prognostic		! flag
-    integer(IN)		:: shrlogunit			! original log unit
-    integer(IN)		:: shrloglev			! original log level
-    integer(IN)		:: ierr				! error code
-    logical		:: scmMode = .false.		! single column mode
-    real(R8)		:: scmLat  = shr_const_SPVAL	! single column lat
-    real(R8)		:: scmLon  = shr_const_SPVAL	! single column lon
-    character(CL)	:: calendar			! model calendar
-    integer(IN)		:: currentYMD			! model date
-    integer(IN)		:: currentTOD			! model sec into model date
-
+    type(seq_infodata_type), pointer :: infodata
+    type(mct_gsMap)        , pointer :: gsMap
+    type(mct_gGrid)        , pointer :: ggrid
+    integer                          :: phase                     ! phase of method
+    logical                          :: ocn_present		  ! flag
+    logical                          :: ocn_prognostic            ! flag
+    logical                          :: ocnrof_prognostic	  ! flag
+    integer(IN)                      :: shrlogunit		  ! original log unit
+    integer(IN)                      :: shrloglev		  ! original log level
+    integer(IN)                      :: ierr			  ! error code
+    logical                          :: scmMode = .false.	  ! single column mode
+    real(R8)                         :: scmLat  = shr_const_SPVAL ! single column lat
+    real(R8)                         :: scmLon  = shr_const_SPVAL ! single column lon
+    character(CL)                    :: calendar		  ! model calendar
+    integer(IN)                      :: currentYMD		  ! model date
+    integer(IN)                      :: currentTOD		  ! model sec into model date
+    integer                          :: modeldt                   ! model timestep
     character(*), parameter :: F00   = "('(docn_comp_init) ',8a)"
     character(*), parameter :: subName = "(ocn_init_mct) "
     !-------------------------------------------------------------------------------
@@ -148,21 +146,19 @@ CONTAINS
        RETURN
     end if
 
-    ! NOTE: the following will never be called if ocn_present is .false.
-
     !----------------------------------------------------------------------------
     ! Initialize docn
     !----------------------------------------------------------------------------
 
     call seq_timemgr_EClockGetData( EClock, &
-        calendar=calendar, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
+        calendar=calendar, curr_ymd=CurrentYMD, curr_tod=CurrentTOD, dtime=modeldt)
 
-    call docn_comp_init(Eclock, x2o, o2x, &
+    call docn_comp_init(x2o, o2x, &
          seq_flds_x2o_fields, seq_flds_o2x_fields, &
          SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
          scmMode, scmlat, scmlon, &
-	 calendar, CurrentYMD, CurrentTOD)
+         calendar, CurrentYMD, CurrentTOD,  modeldt, ocn_prognostic)
 
     !----------------------------------------------------------------------------
     ! Fill infodata that needs to be returned from docn
@@ -200,7 +196,6 @@ CONTAINS
   subroutine ocn_run_mct( EClock, cdata,  x2o, o2x)
 
     ! !DESCRIPTION: run method for docn model
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            ,intent(inout) :: EClock
@@ -239,12 +234,12 @@ CONTAINS
 
     ! For mct - the component clock is advance at the beginning of the time interval
     call seq_timemgr_EClockGetData( EClock, &
-        curr_ymd=CurrentYMD, curr_tod=CurrentTOD, modeldt=modeldt)
+        curr_ymd=CurrentYMD, curr_tod=CurrentTOD, dtime=modeldt)
 
-    call docn_comp_run(EClock, x2o, o2x, &
-       SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, read_restart, write_restart, &
-       currentYMD, currentTOD, modeldt, 4case_name=case_name)
+    call docn_comp_run(x2o, o2x, &
+         SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+         inst_suffix, logunit, read_restart, write_restart, &
+         currentYMD, currentTOD, modeldt, case_name=case_name)
 
     if (dbug > 1) then
        if (my_task == master_task) then
@@ -261,7 +256,6 @@ CONTAINS
   subroutine ocn_final_mct(EClock, cdata, x2o, o2x)
 
     ! !DESCRIPTION: finalize method for docn model
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            ,intent(inout) :: EClock     ! clock
