@@ -148,7 +148,7 @@ class TestStatus(object):
             yield phase, data[0]
 
     def __eq__(self, rhs):
-        return self._phase_statuses == rhs._phase_statuses
+        return self._phase_statuses == rhs._phase_statuses # pylint: disable=protected-access
 
     def __ne__(self, rhs):
         return not self.__eq__(rhs)
