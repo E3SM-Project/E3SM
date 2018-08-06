@@ -8,14 +8,12 @@ INCLUDE_DIRECTORIES ( ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
 LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
 
 SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/swim)
-SET(SRC_BASE          ${HOMME_SOURCE_DIR}/src)
-SET(SRC_SHARE         ${HOMME_SOURCE_DIR}/src/share)
+SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
+SET(SRC_SHARE_DIR     ${HOMME_SOURCE_DIR}/src/share)
 SET(SRC_SHARE_SWEQX   ${HOMME_SOURCE_DIR}/src/sweqx)
-SET(SRC_UTILS         ${HOMME_SOURCE_DIR}/utils/csm_share)
-SET(UTILS_TIMING_DIR  ${CMAKE_BINARY_DIR}/utils/timing)
+SET(UTILS_SHARE_DIR   ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(UTILS_TRILINOS_DIR ${HOMME_SOURCE_DIR}/utils/trilinos)
-SET(UTILS_TIMING_DIR ${CMAKE_BINARY_DIR}/utils/timing)
-
+SET(UTILS_TIMING_DIR  ${CMAKE_BINARY_DIR}/utils/cime/src/share/timing)
 
 SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
                        ${UTILS_TIMING_DIR} )
@@ -31,7 +29,12 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${SRC_DIR}/pio_io_mod.F90
                ${SRC_DIR}/repro_sum_mod.F90
                ${SRC_DIR}/restart_io_mod.F90
+               ${SRC_DIR}/linear_algebra_mod.F90
                ${SRC_DIR}/sweqx/advance_mod.F90
+               ${SRC_DIR}/sweqx/bndry_mod.F90
+               ${SRC_DIR}/sweqx/derivative_mod.F90
+               ${SRC_DIR}/sweqx/element_state.F90
+               ${SRC_DIR}/sweqx/edge_mod.F90
                ${SRC_DIR}/sweqx/init_mod.F90
                ${SRC_DIR}/sweqx/restart_mod.F90
                ${SRC_DIR}/sweqx/rk_mod.F90
@@ -40,22 +43,23 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${SRC_DIR}/sweqx/state_mod.F90
                ${SRC_DIR}/sweqx/sweq_mod.F90
                ${SRC_DIR}/sweqx/types_mod.F90
-               ${SRC_SHARE_DIR}/bndry_mod.F90
+               ${SRC_DIR}/sweqx/viscosity_mod.F90
+               ${SRC_SHARE_DIR}/bndry_mod_base.F90
                ${SRC_SHARE_DIR}/cg_mod.F90
                ${SRC_SHARE_DIR}/control_mod.F90
                ${SRC_SHARE_DIR}/coordinate_systems_mod.F90
                ${SRC_SHARE_DIR}/cube_mod.F90
-               ${SRC_SHARE_DIR}/derivative_mod.F90
+               ${SRC_SHARE_DIR}/derivative_mod_base.F90
                ${SRC_SHARE_DIR}/dimensions_mod.F90
                ${SRC_SHARE_DIR}/dof_mod.F90
                ${SRC_SHARE_DIR}/domain_mod.F90
-               ${SRC_SHARE_DIR}/edge_mod.F90
+               ${SRC_SHARE_DIR}/edge_mod_base.F90
                ${SRC_SHARE_DIR}/element_mod.F90
                ${SRC_SHARE_DIR}/global_norms_mod.F90
                ${SRC_SHARE_DIR}/gridgraph_mod.F90
                ${SRC_SHARE_DIR}/hybrid_mod.F90
+               ${SRC_SHARE_DIR}/hybvcoord_mod.F90
                ${SRC_SHARE_DIR}/interpolate_mod.F90
-               ${SRC_SHARE_DIR}/linear_algebra_mod.F90
                ${SRC_SHARE_DIR}/ll_mod.F90
                ${SRC_SHARE_DIR}/mass_matrix_mod.F90
                ${SRC_SHARE_DIR}/mesh_mod.F90
@@ -74,8 +78,10 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${SRC_SHARE_DIR}/spacecurve_mod.F90
                ${SRC_SHARE_DIR}/thread_mod.F90
                ${SRC_SHARE_DIR}/time_mod.F90
-               ${SRC_SHARE_DIR}/viscosity_mod.F90
+               ${SRC_SHARE_DIR}/vertremap_base.F90
+               ${SRC_SHARE_DIR}/viscosity_base.F90
                ${SRC_SHARE_DIR}/unit_tests_mod.F90
+               ${SRC_SHARE_DIR}/zoltan_mod.F90
                ${UTILS_SHARE_DIR}/shr_file_mod.F90
                ${UTILS_SHARE_DIR}/shr_kind_mod.F90
                ${UTILS_SHARE_DIR}/shr_mpi_mod.F90
@@ -83,19 +89,27 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${UTILS_SHARE_DIR}/shr_vmath_mod.F90
                ${UTILS_SHARE_DIR}/shr_const_mod.F90
                ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
-               ${SRC_SHARE_DIR}/perfmodel_mod.F90
+               ${UTILS_TRILINOS_DIR}/block_precon_interface.cpp
+               ${UTILS_TRILINOS_DIR}/BlockPreconditioner_Op.cpp
+               ${UTILS_TRILINOS_DIR}/BlockPreconditioner_Dense.cpp
+               ${UTILS_TRILINOS_DIR}/BlockPreconditioner_Sparse.cpp
+               ${UTILS_TRILINOS_DIR}/BlockPreconditioner_SparseML.cpp
+               ${UTILS_TRILINOS_DIR}/GMRESPreconditioner_Sparse.cpp
+               ${UTILS_TRILINOS_DIR}/GMRESkPreconditioner_Op.cpp
+               ${UTILS_TRILINOS_DIR}/IdentityPreconditioner.cpp
+               ${UTILS_TRILINOS_DIR}/MLPreconditioner.cpp
+               ${UTILS_TRILINOS_DIR}/precon_interface.cpp
+               ${UTILS_TRILINOS_DIR}/Precon_Operator.cpp
                ${UTILS_TRILINOS_DIR}/trilinosNoxSolver.cpp
                ${UTILS_TRILINOS_DIR}/trilinosModelEvaluator.cpp
-               ${UTILS_TRILINOS_DIR}/block_precon_interface.cpp
-               ${UTILS_TRILINOS_DIR}/precon_interface.cpp
                ${SRC_DIR}/derived_type_mod.F90
-               ${SRC_DIR}/precon_type_mod.F90
-               ${SRC_DIR}/implicit_mod.F90
-               ${SRC_DIR}/precon_mod.F90
+               ${TARGET_DIR}/implicit_mod.F90
+               ${TARGET_DIR}/precon_mod.F90
+               ${TARGET_DIR}/precon_type_mod.F90
                ${UTILS_TRILINOS_DIR}/belos_helm.cpp
 )
 
-SET(EXEC_SOURCES ${SWIM_SRCS} ${SRC_DIR}/main.F90 )
+SET(EXEC_SOURCES ${SWIM_SRCS} ${SRC_SHARE_SWEQX}/main.F90 )
 
 #Set up defaults
 IF (NOT SWIM_NP)

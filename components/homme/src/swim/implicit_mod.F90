@@ -9,7 +9,7 @@ contains
        hybrid, dt, pmean, tl, nets, nete, xstate)
     
     use kinds, only : real_kind
-    use dimensions_mod, only : np, nlev, nvar
+    use dimensions_mod, only : np, nlev
     use physical_constants, only : g
     use element_mod, only : element_t
     use parallel_mod, only : parallel_t, abortmp
@@ -192,7 +192,7 @@ contains
 
     use ,intrinsic :: iso_c_binding 
     use kinds, only : real_kind
-    use dimensions_mod, only : np, nlev, nvar, nelem
+    use dimensions_mod, only : np, nlev, nelem
     use element_mod, only : element_t
     use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only: EdgeBuffer_t
@@ -513,7 +513,7 @@ contains
 
     use ,intrinsic :: iso_c_binding
     use kinds, only : real_kind
-    use dimensions_mod, only : np, nlev, nvar, nelem
+    use dimensions_mod, only : np, nlev, nelem
     use physical_constants, only : g
     use element_mod, only : element_t
 !    use parallel_mod, only : parallel_t
@@ -615,7 +615,7 @@ contains
     use ,intrinsic :: iso_c_binding 
     use kinds, only : real_kind
     use physical_constants, only : rearth, g
-    use dimensions_mod, only : np, nlev, nvar, nelem
+    use dimensions_mod, only : np, nlev, nelem
     use element_mod, only : element_t
     use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
@@ -892,7 +892,7 @@ contains
 
     use ,intrinsic :: iso_c_binding 
     use kinds, only : real_kind
-    use dimensions_mod, only : np, nlev, nvar, nelem
+    use dimensions_mod, only : np, nlev, nelem
     use element_mod, only : element_t
     use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
@@ -1174,20 +1174,16 @@ contains
     ! ===========================================================
 
     lx = 0
-    !    do n=1,nvar
     do ie=ns,ne
        do k=1,nlev
           do j=1,np
              do i=1,np
                 lx = lx+1
-                !              if (n==1) fx(lx) = 0.0d0
-                !              if (n==2) fx(lx) = 0.0d0
                 fx(lx) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie) 
              end do
           end do
        end do
     end do !ie
-    !     end do
     
     call t_stopf('Precon Schur')
 
@@ -1199,7 +1195,7 @@ contains
 
     use ,intrinsic :: iso_c_binding 
     use kinds, only : real_kind
-    use dimensions_mod, only : np, nlev, nvar, nelem
+    use dimensions_mod, only : np, nlev, nelem
     use element_mod, only : element_t
     use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
@@ -1256,7 +1252,6 @@ contains
 
     lx = 0
     shiftv = np*np*nlev*(ne-ns+1)
-    !     do n=1,nvar
     do ie=ns,ne
        do k=1,nlev
           do j=1,np
@@ -1377,7 +1372,7 @@ contains
 
     use ,intrinsic :: iso_c_binding 
     use kinds, only : real_kind
-    use dimensions_mod, only : np, nlev, nvar, nelem
+    use dimensions_mod, only : np, nlev, nelem
     use element_mod, only : element_t
     use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
@@ -1587,7 +1582,7 @@ contains
 
     use ,intrinsic :: iso_c_binding 
     use kinds, only : real_kind
-    use dimensions_mod, only : np, nlev, nvar, nelem
+    use dimensions_mod, only : np, nlev, nelem
     use element_mod, only : element_t
     use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
@@ -1760,7 +1755,7 @@ contains
     
     use ,intrinsic :: iso_c_binding 
     use kinds, only : real_kind
-    use dimensions_mod, only : np, nlev, nvar, nelem
+    use dimensions_mod, only : np, nlev, nelem
     use element_mod, only : element_t
     use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
@@ -2037,7 +2032,7 @@ contains
 
     use ,intrinsic :: iso_c_binding 
     use kinds, only : real_kind
-    use dimensions_mod, only : np, nlev, nvar, nelem
+    use dimensions_mod, only : np, nlev, nelem
     use element_mod, only : element_t
     use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
@@ -2092,7 +2087,7 @@ contains
     
     use ,intrinsic :: iso_c_binding 
     use kinds, only : real_kind
-    use dimensions_mod, only : np, nlev, nvar, nelem
+    use dimensions_mod, only : np, nlev, nelem
     use element_mod, only : element_t
     use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
@@ -2145,7 +2140,7 @@ contains
     
     use ,intrinsic :: iso_c_binding
     use kinds, only : real_kind
-    use dimensions_mod, only :  np, nlev, nvar, nelem
+    use dimensions_mod, only :  np, nlev, nelem
     use element_mod, only : element_t
     use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
@@ -2209,7 +2204,7 @@ contains
     
     use ,intrinsic :: iso_c_binding
     use kinds, only : real_kind
-    use dimensions_mod, only :  np, nlev, nvar, nelem
+    use dimensions_mod, only :  np, nlev, nelem
     use element_mod, only : element_t
     use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
