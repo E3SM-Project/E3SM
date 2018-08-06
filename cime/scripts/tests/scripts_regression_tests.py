@@ -43,15 +43,16 @@ FAST_ONLY   = False
 NO_BATCH    = False
 NO_CMAKE    = False
 TEST_ROOT   = None
+NO_TEARDOWN = False
 
 os.environ["CIME_GLOBAL_WALLTIME"] = "0:05:00"
 
 # pragma pylint: disable=protected-access
 ###############################################################################
-def run_cmd_assert_result(test_obj, cmd, from_dir=None, expected_stat=0, env=None):
+def run_cmd_assert_result(test_obj, cmd, from_dir=None, expected_stat=0, env=None, verbose=False):
 ###############################################################################
     from_dir = os.getcwd() if from_dir is None else from_dir
-    stat, output, errput = run_cmd(cmd, from_dir=from_dir, env=env)
+    stat, output, errput = run_cmd(cmd, from_dir=from_dir, env=env, verbose=verbose)
     if expected_stat == 0:
         expectation = "SHOULD HAVE WORKED, INSTEAD GOT STAT %s" % stat
     else:
@@ -129,10 +130,10 @@ def make_fake_teststatus(path, testname, status, phase):
     with TestStatus(test_dir=path, test_name=testname) as ts:
         for core_phase in CORE_PHASES:
             if core_phase == phase:
-                ts.set_status(core_phase, status)
+                ts.set_status(core_phase, status, comments=("time=42" if phase == RUN_PHASE else ""))
                 break
             else:
-                ts.set_status(core_phase, TEST_PASS_STATUS)
+                ts.set_status(core_phase, TEST_PASS_STATUS, comments=("time=42" if phase == RUN_PHASE else ""))
 
 ###############################################################################
 def parse_test_status(line):
@@ -246,7 +247,7 @@ class N_TestUnitTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None)
+        do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None) and not NO_TEARDOWN
 
         teardown_root = True
         for tfile in cls._testdirs:
@@ -655,7 +656,7 @@ class J_TestCreateNewcase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None)
+        do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None) and not NO_TEARDOWN
 
         for tfile in cls._testdirs:
             if tfile not in cls._do_teardown:
@@ -714,7 +715,7 @@ class M_TestWaitForTests(unittest.TestCase):
     ###########################################################################
     def tearDown(self):
     ###########################################################################
-        do_teardown = sys.exc_info() == (None, None, None)
+        do_teardown = sys.exc_info() == (None, None, None) and not NO_TEARDOWN
 
         if do_teardown:
             for testdir in self._testdirs:
@@ -886,7 +887,7 @@ class M_TestWaitForTests(unittest.TestCase):
             xml_contents = open(xml_file, "r").read()
             self.assertTrue(r'<TestList><Test>Test_0</Test><Test>Test_1</Test><Test>Test_2</Test><Test>Test_3</Test><Test>Test_4</Test><Test>Test_5</Test><Test>Test_6</Test><Test>Test_7</Test><Test>Test_8</Test><Test>Test_9</Test></TestList>'
                             in xml_contents)
-            self.assertTrue(r'<Test Status="failed"><Name>Test_5</Name>' in xml_contents)
+            self.assertTrue(r'<Test Status="notrun"><Name>Test_5</Name>' in xml_contents)
 
             # TODO: Any further checking of xml output worth doing?
 
@@ -941,7 +942,7 @@ class TestCreateTestCommon(unittest.TestCase):
         self._baseline_area     = os.path.join(TEST_ROOT, "baselines")
         self._testroot          = TEST_ROOT
         self._hasbatch          = MACHINE.has_batch_system() and not NO_BATCH
-        self._do_teardown       = True # Will never do teardown if test failed
+        self._do_teardown       = not NO_TEARDOWN
 
     ###########################################################################
     def tearDown(self):
@@ -1280,6 +1281,14 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
         self._jenkins_root = os.path.join(self._testdir, "J")
 
     ###########################################################################
+    def tearDown(self):
+    ###########################################################################
+        TestCreateTestCommon.tearDown(self)
+
+        if "TESTRUNDIFF_ALTERNATE" in os.environ:
+            del os.environ["TESTRUNDIFF_ALTERNATE"]
+
+    ###########################################################################
     def simple_test(self, expect_works, extra_args, build_name=None):
     ###########################################################################
         if NO_BATCH:
@@ -1289,7 +1298,7 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
         if CIME.utils.get_model() == "e3sm" and build_name is not None:
             extra_args += " -p ACME_test --submit-to-cdash --cdash-build-group=Nightly -c %s" % build_name
 
-        run_cmd_assert_result(self, "%s/jenkins_generic_job -r %s %s" % (TOOLS_DIR, self._testdir, extra_args),
+        run_cmd_assert_result(self, "%s/jenkins_generic_job -r %s %s -B %s" % (TOOLS_DIR, self._testdir, extra_args, self._baseline_area),
                               from_dir=self._testdir, expected_stat=(0 if expect_works else CIME.utils.TESTS_FAILED_ERR_CODE))
 
     ###########################################################################
@@ -1301,9 +1310,9 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
             self._thread_error = str(e)
 
     ###########################################################################
-    def assert_num_leftovers(self):
+    def assert_num_leftovers(self, suite):
     ###########################################################################
-        num_tests_in_tiny = len(get_tests.get_test_suite("cime_test_only_pass"))
+        num_tests_in_tiny = len(get_tests.get_test_suite(suite))
 
         jenkins_dirs = glob.glob("%s/*%s*/" % (self._jenkins_root, self._baseline_name.capitalize())) # case dirs
         # scratch_dirs = glob.glob("%s/*%s*/" % (self._testroot, test_id)) # blr/run dirs
@@ -1320,16 +1329,14 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
     ###########################################################################
     def test_jenkins_generic_job(self):
     ###########################################################################
-        # Unfortunately, this test is very long-running
-
         # Generate fresh baselines so that this test is not impacted by
         # unresolved diffs
         self.simple_test(True, "-t cime_test_only_pass -g -b %s" % self._baseline_name)
-        self.assert_num_leftovers()
+        self.assert_num_leftovers("cime_test_only_pass")
 
         build_name = "jenkins_generic_job_pass_%s" % CIME.utils.get_timestamp()
         self.simple_test(True, "-t cime_test_only_pass -b %s" % self._baseline_name, build_name=build_name)
-        self.assert_num_leftovers() # jenkins_generic_job should have automatically cleaned up leftovers from prior run
+        self.assert_num_leftovers("cime_test_only_pass") # jenkins_generic_job should have automatically cleaned up leftovers from prior run
         assert_dashboard_has_build(self, build_name)
 
     ###########################################################################
@@ -1348,6 +1355,44 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
 
         self.assertFalse(run_thread.isAlive(), msg="jenkins_generic_job should have finished")
         self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
+        assert_dashboard_has_build(self, build_name)
+
+    ###########################################################################
+    def test_jenkins_generic_job_realistic_dash(self):
+    ###########################################################################
+        # The actual quality of the cdash results for this test can only
+        # be inspected manually
+
+        # Generate fresh baselines so that this test is not impacted by
+        # unresolved diffs
+        self.simple_test(False, "-t cime_test_all -g -b %s" % self._baseline_name)
+        self.assert_num_leftovers("cime_test_all")
+
+        # Should create a diff
+        os.environ["TESTRUNDIFF_ALTERNATE"] = "True"
+
+        # Should create a nml diff
+        # Modify namelist
+        fake_nl = """
+ &fake_nml
+   fake_item = 'fake'
+   fake = .true.
+/"""
+        baseline_glob = glob.glob(os.path.join(self._baseline_area, self._baseline_name, "TESTRUNPASS*"))
+        self.assertEqual(len(baseline_glob), 1, msg="Expected one match, got:\n%s" % "\n".join(baseline_glob))
+
+        import stat
+        for baseline_dir in baseline_glob:
+            nl_path = os.path.join(baseline_dir, "CaseDocs", "datm_in")
+            self.assertTrue(os.path.isfile(nl_path), msg="Missing file %s" % nl_path)
+
+            os.chmod(nl_path, stat.S_IRUSR | stat.S_IWUSR)
+            with open(nl_path, "a") as nl_file:
+                nl_file.write(fake_nl)
+
+        build_name = "jenkins_generic_job_mixed_%s" % CIME.utils.get_timestamp()
+        self.simple_test(False, "-t cime_test_all -b %s" % self._baseline_name, build_name=build_name)
+        self.assert_num_leftovers("cime_test_all") # jenkins_generic_job should have automatically cleaned up leftovers from prior run
         assert_dashboard_has_build(self, build_name)
 
 ###############################################################################
@@ -2931,6 +2976,7 @@ def _main_func(description):
     global TEST_MPILIB
     global TEST_ROOT
     global GLOBAL_TIMEOUT
+    global NO_TEARDOWN
     config = CIME.utils.get_cime_config()
 
     help_str = \
@@ -2964,6 +3010,9 @@ OR
     parser.add_argument("--no-cmake", action="store_true",
                         help="Do not run cmake tests")
 
+    parser.add_argument("--no-teardown", action="store_true",
+                        help="Do not delete directories left behind by testing")
+
     parser.add_argument("--machine",
                         help="Select a specific machine setting for cime")
 
@@ -2988,6 +3037,7 @@ OR
     NO_BATCH       = ns.no_batch
     NO_CMAKE       = ns.no_cmake
     GLOBAL_TIMEOUT = ns.timeout
+    NO_TEARDOWN    = ns.no_teardown
 
     if ns.machine is not None:
         MACHINE = Machines(machine=ns.machine)
@@ -3054,7 +3104,7 @@ OR
             print("Detected failures, leaving directory:", TEST_ROOT)
         else:
             print("All pass, removing directory:", TEST_ROOT)
-            if os.path.exists(TEST_ROOT):
+            if os.path.exists(TEST_ROOT) and not NO_TEARDOWN:
                 shutil.rmtree(TEST_ROOT)
 
         raise
