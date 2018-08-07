@@ -1083,7 +1083,7 @@ def process_model_run_step(model_run_tag, configs, script):  # {{{
                              config.get('executables', executable_name),
                              link_path],
                             stdout=dev_null, stderr=dev_null)
-                        grandchild.text = executable_link
+                        grandchild.text = './{}'.format(executable_link)
                     elif arg_text.find('attr_') >= 0:
                         attr_array = arg_text.split('_')
                         try:
