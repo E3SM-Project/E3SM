@@ -15,6 +15,8 @@ class FTP(GenericServer):
         logger.info("server address {} root path {}".format(ftp_server, root_address))
         self.ftp = FTPpy(ftp_server)
 
+        self._ftp_server = address
+
         stat = self.ftp.login(user, passwd)
         logger.debug("login stat {}".format(stat))
         if "Login successful" not in stat:
@@ -25,7 +27,6 @@ class FTP(GenericServer):
         if "Directory successfully changed" not in stat:
             logging.warning("FAIL: Could not cd to server root directory {}\n error {}".format(root_address, stat))
             return None
-        self._ftp_server = address
 
     def fileexists(self, rel_path):
         try:
