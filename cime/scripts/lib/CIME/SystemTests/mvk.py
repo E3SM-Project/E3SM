@@ -6,20 +6,24 @@ conduct an ensemble of simulations starting from different initial conditions.
 This class inherits from SystemTestsCommon.
 """
 
+import os
+import re
 import stat
 import json
 import shutil
+import logging
 
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case.case_setup import case_setup
 from CIME.hist_utils import _get_all_hist_files, BLESS_LOG_NAME
 from CIME.utils import append_testlog, get_current_commit, get_timestamp, get_model
-from CIME.test_status import *
+from CIME.utils import expect
 
 import CIME.test_status
 
 import evv4esm
 from evv4esm.__main__ import main as evv
+
 
 evv_lib_dir = os.path.abspath(os.path.dirname(evv4esm.__file__))
 logger = logging.getLogger(__name__)
@@ -77,11 +81,6 @@ class MVK(SystemTestsCommon):
                 nl_atm_file.write('new_random = .true.\n')
                 nl_atm_file.write('pertlim = 1.0e-10\n')
                 nl_atm_file.write('seed_custom = {}\n'.format(iinst))
-
-
-    def run_phase(self):
-
-        self.run_indv()
 
 
     def _generate_baseline(self):
@@ -148,9 +147,10 @@ class MVK(SystemTestsCommon):
             # END: modified CIME.hist_utils.generate_baseline
 
             append_testlog(comments)
-            status = TEST_PASS_STATUS
+            status = CIME.test_status.TEST_PASS_STATUS
             baseline_name = self._case.get_value("BASEGEN_CASE")
-            self._test_status.set_status("{}".format(GENERATE_PHASE), status, comments=os.path.dirname(baseline_name))
+            self._test_status.set_status("{}".format(CIME.test_status.GENERATE_PHASE), status,
+                                         comments=os.path.dirname(baseline_name))
             basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
             # copy latest cpl log to baseline
             # drop the date so that the name is generic
