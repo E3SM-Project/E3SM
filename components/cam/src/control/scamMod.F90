@@ -22,6 +22,7 @@ module scamMod
   use string_utils, only: to_lower
   use cam_abortutils,   only: endrun
   use phys_control, only: phys_getopts
+  use dycore, only: dycore_is
 !
   implicit none
 
@@ -107,6 +108,7 @@ module scamMod
   real(r8), public ::      precobs(1)          ! observed precipitation 
   real(r8), public ::      lhflxobs(1)         ! observed surface latent heat flux 
   real(r8), public ::      shflxobs(1)         ! observed surface sensible heat flux
+  real(r8), public ::      heat_glob_scm(1)    ! global energy fixer 
   real(r8), public ::      q1obs(plev)         ! observed apparent heat source
   real(r8), public ::      q2obs(plev)         ! observed apparent heat sink
   real(r8), public ::      tdiff(plev)         ! model minus observed temp 
@@ -186,6 +188,7 @@ module scamMod
   logical*4, public ::  precip_off    ! turn off precipitation processes
   logical*4, public ::  use_camiop    ! use cam generated forcing 
   logical*4, public ::  use_3dfrc     ! use 3d forcing
+  logical*4, public ::  have_heat_glob ! dataset contains global energy fixer
 
   character(len=200), public ::  scm_clubb_iop_name   ! IOP name for CLUBB
 
@@ -327,10 +330,19 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
            call endrun('SCAM_SETOPTS: must specify IOP file for single column mode')
         endif
         call wrap_open (iopfile, NF90_NOWRITE, ncid)
-        call wrap_inq_dimid( ncid, 'lon', londimid   )
-        call wrap_inq_dimid( ncid, 'lat', latdimid   )
-        call wrap_inq_dimlen( ncid, londimid, lonsiz   )
-        call wrap_inq_dimlen( ncid, latdimid, latsiz   )
+        if (dycore_is('EUL')) then
+          call wrap_inq_dimid( ncid, 'lon', londimid   )
+          call wrap_inq_dimid( ncid, 'lat', latdimid   )
+          call wrap_inq_dimlen( ncid, londimid, lonsiz   )
+          call wrap_inq_dimlen( ncid, latdimid, latsiz   )	  
+	endif
+	
+	if (dycore_is('SE')) then
+	  call wrap_inq_dimid( ncid, 'ncol', londimid   )
+	  call wrap_inq_dimlen( ncid, londimid, lonsiz   )
+	  latsiz=lonsiz
+	endif
+
         call wrap_inq_varid( ncid, 'lon', lonid   )
         call wrap_inq_varid( ncid, 'lat', latid   )
         if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'CAM_GENERATED_FORCING', attnum=i ).EQ. NF90_NOERR ) then
@@ -874,9 +886,15 @@ endif !scm_observed_aero
    call wrap_inq_dimid(ncid, 'lev', levid)
    call wrap_inq_dimid(ncid, 'time', timeid)
 
-   strt4(1) = closelonidx
-   strt4(2) = closelatidx
-   strt4(3) = iopTimeIdx
+   if (dycore_is('EUL')) then 
+     strt4(1) = closelonidx
+     strt4(2) = closelatidx
+     strt4(3) = iopTimeIdx
+   elseif (dycore_is('SE')) then
+     strt4(1) = closelonidx
+     strt4(2) = iopTimeIdx
+     strt4(3) = 1
+   endif  
    strt4(4) = 1
    cnt4(1)  = 1
    cnt4(2)  = 1
@@ -973,6 +991,23 @@ endif !scm_observed_aero
      else
        have_t = .true.
      endif
+     
+     status = nf90_inq_varid( ncid, 'Tg', varid   )
+!     status = nf90_inq_varid( ncid, 'trefht', varid )
+     if (status .ne. nf90_noerr) then
+       write(iulog,*)'Could not find variable Tg'
+       if ( have_tsair ) then
+         write(iulog,*) 'UsingTsair'
+         tground = tsair     ! use surface value from T field
+       else
+         write(iulog,*) 'UsingTat lowest level'
+         tground = tobs(plev) 
+       endif
+     else
+       call wrap_get_vara_realx (ncid,varid,strt4,cnt4,tground)
+       have_tg = .true.
+       write(*,*) 'UsingTground', tground
+     endif     
 
      status = nf90_inq_varid( ncid, 'qsrf', varid   )
      if ( status .ne. nf90_noerr ) then
@@ -1259,22 +1294,6 @@ endif !scm_observed_aero
        ptend= srf(1)
      endif
 
-     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-       'omega', .true., ptend, fill_ends, scm_crm_mode, &
-       dplevs, nlev,psobs, hyam, hybm, wfld, status )
-     if ( status .ne. nf90_noerr ) then
-       have_omega = .false.
-       write(iulog,*)'Could not find variable omega'
-       if ( .not. use_userdata ) then
-         status = nf90_close( ncid )
-         return
-       else
-         write(iulog,*) 'Using value from Analysis Dataset'
-       endif
-     else
-       have_omega = .true.
-     endif
-
      call plevs0(1    ,plon   ,plev    ,psobs   ,pint,pmid ,pdel)
      call shr_sys_flush( iulog )
 !
@@ -1412,20 +1431,29 @@ endif !scm_observed_aero
    
    else ! if read in surface information
    
-     status = nf90_inq_varid( ncid, 'Tg', varid   )
-     if (status .ne. nf90_noerr) then
-       write(iulog,*)'Could not find variable Tg'
-       if ( have_tsair ) then
-         write(iulog,*) 'Using Tsair'
-         tground = tsair     ! use surface value from T field
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
+       'omega', .true., ptend, fill_ends, scm_crm_mode, &
+       dplevs, nlev,psobs, hyam, hybm, wfld, status )
+     if ( status .ne. nf90_noerr ) then
+       have_omega = .false.
+       write(iulog,*)'Could not find variable omega'
+       if ( .not. use_userdata ) then
+         status = nf90_close( ncid )
+         return
        else
-         write(iulog,*) 'Using T at lowest level'
-         tground = tobs(plev) 
+         write(iulog,*) 'Using value from Analysis Dataset'
        endif
      else
-       call wrap_get_vara_realx (ncid,varid,strt4,cnt4,tground)
-       have_tg = .true.
-     endif 
+       have_omega = .true.
+     endif  
+     
+     status = nf90_inq_varid( ncid, 'heat_glob', varid   )
+     if (status .ne. nf90_noerr) then
+       write(*,*) 'NASTY'
+     else
+       call wrap_get_vara_realx (ncid,varid,strt4,cnt4,heat_glob_scm)
+       have_heat_glob = .true.
+     endif
    
      status = nf90_inq_varid( ncid, 'lhflx', varid   )
      if ( status .ne. nf90_noerr ) then

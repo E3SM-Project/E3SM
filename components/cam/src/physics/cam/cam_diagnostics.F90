@@ -1063,11 +1063,7 @@ end subroutine diag_conv_tend_ini
 
 ! Vertical velocity and advection
 
-    if (single_column) then
-       call outfld('OMEGA   ',wfld,    pcols,   lchnk     )
-    else
-       call outfld('OMEGA   ',state%omega,    pcols,   lchnk     )
-    endif
+    call outfld('OMEGA   ',state%omega,    pcols,   lchnk     )
 
 #if (defined BFB_CAM_SCAM_IOP )
     call outfld('omega   ',state%omega,    pcols,   lchnk     )
