@@ -20,6 +20,7 @@ module ice_comp_mct
    use shr_file_mod 
    use shr_cal_mod,       only : shr_cal_date2ymd
    use shr_sys_mod
+   use shr_taskmap_mod,   only : shr_taskmap_write
    use shr_pio_mod
    use perf_mod
 
@@ -146,12 +147,13 @@ contains
     character(len=StrKIND) :: cpl_seq_option
 
     type (MPAS_Time_Type) :: currTime
-    integer :: iam, ierr, ierr_local
+    integer :: iam, npes, ierr, ierr_local
     integer :: iyear0, imonth0
     character(len=StrKIND)  :: starttype          ! infodata start type
     character(len=StrKIND)  :: timeStamp
     character(len=StrKIND)  :: nml_filename
     character(len=16) :: inst_suffix
+    integer :: inst_index
     integer :: lbnum
 
     type (MPAS_Time_Type) :: alarmStartTime
@@ -176,6 +178,8 @@ contains
     character(kind=c_char), dimension(StrKIND+1) :: c_ref_time_temp
     character(kind=c_char), dimension(StrKIND+1) :: c_filename_interval_temp
     character(kind=c_char), dimension(StrKIND+1) :: c_iotype
+    character(len=8) :: c_inst_index ! instance number
+    character(len=8) :: c_npes       ! number of pes
     type (MPAS_Time_type) :: start_time
     type (MPAS_Time_type) :: ref_time
     type (MPAS_TimeInterval_type) :: filename_interval
@@ -296,6 +300,24 @@ contains
     if (iam==0) write(iceLogUnit,'(a,i6)') '=== Beginning ice_init_mct: rank=',iam
 
     call mpas_framework_init_phase1(domain % dminfo, mpicom_i)
+
+    ! Identify SMP nodes and process/SMP mapping for this instance
+    ! (Assume that processor names are SMP node names on SMP clusters.)
+    call MPI_comm_size(mpicom_i,npes,ierr)
+    write(c_npes,'(i8)') npes
+
+    inst_index = seq_comm_inst(iceID)
+    write(c_inst_index,'(i8)') inst_index
+
+    if (iam==0) then
+       write(iceLogUnit,100) trim(adjustl(c_npes)), trim(adjustl(c_inst_index))
+100    format(/,a,' pes participating in computation of MPAS-SEAICE instance #',a)
+       call flush(iceLogUnit)
+    endif
+
+    call t_startf("shr_taskmap_write")
+    call shr_taskmap_write(iceLogUnit, mpicom_i, 'ICE #'//trim(adjustl(c_inst_index)))
+    call t_stopf("shr_taskmap_write")
 
     ! Setup function pointers for MPASSI core and domain types
     call seaice_setup_core(corelist)
