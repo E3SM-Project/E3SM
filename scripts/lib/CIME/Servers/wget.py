@@ -15,9 +15,11 @@ class WGET(GenericServer):
         if passwd:
             self._args += "--password {}".format(passwd)
 
+        self._server_loc = address
+
         err = run_cmd("wget {} --spider {}".format(self._args, address))[0]
         expect(err == 0,"Could not connect to repo '{0}'\nThis is most likely either a proxy, or network issue .")
-        self._server_loc = address
+
 
     def fileexists(self, rel_path):
         full_url = os.path.join(self._server_loc, rel_path)
