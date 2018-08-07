@@ -12,6 +12,7 @@ module rof_comp_mct
                                 shr_file_getLogUnit, shr_file_getLogLevel, &
                                 shr_file_getUnit, shr_file_setIO
   use shr_const_mod    , only : SHR_CONST_REARTH
+  use shr_taskmap_mod  , only : shr_taskmap_write
   use seq_cdata_mod    , only : seq_cdata, seq_cdata_setptrs
   use seq_timemgr_mod  , only : seq_timemgr_EClockGetData, seq_timemgr_StopAlarmIsOn, &
                                 seq_timemgr_RestartAlarmIsOn, seq_timemgr_EClockDateInSync
@@ -107,6 +108,8 @@ contains
     character(len=SHR_KIND_CL) :: hostname           ! hostname of machine running on
     character(len=SHR_KIND_CL) :: version            ! Model version
     character(len=SHR_KIND_CL) :: username           ! user running the model
+    character(len=8)           :: c_inst_index       ! instance number
+    character(len=8)           :: c_npes             ! number of pes
     character(len=32), parameter :: sub = 'rof_init_mct'
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
     !---------------------------------------------------------------------------
@@ -129,11 +132,11 @@ contains
     endif
 #endif                      
 
-    ! Initialize io log unit
     inst_name   = seq_comm_name(ROFID)
     inst_index  = seq_comm_inst(ROFID)
     inst_suffix = seq_comm_suffix(ROFID)
 
+    ! Initialize io log unit
     call shr_file_getLogUnit (shrlogunit)
     if (masterproc) then
        inquire(file='rof_modelio.nml'//trim(inst_suffix),exist=exists)
@@ -154,6 +157,22 @@ contains
        write(iulog,*) ' mosart iam  = ',iam
        write(iulog,*) ' inst_name = ',trim(inst_name)
     endif
+
+    ! Identify SMP nodes and process/SMP mapping for this instance.
+    ! (Assume that processor names are SMP node names on SMP clusters.)
+
+    write(c_inst_index,'(i8)') inst_index
+       write(c_npes,'(i8)') npes
+
+    if (masterproc) then
+       write(iulog,100) trim(adjustl(c_npes)), trim(adjustl(c_inst_index))
+100    format(/,a,' pes participating in computation of MOSART instance #',a)
+       call flush(iulog)
+    endif
+
+    call t_startf("shr_taskmap_write")
+    call shr_taskmap_write(iulog, mpicom_rof, 'ROF #'//trim(adjustl(c_inst_index)))
+    call t_stopf("shr_taskmap_write")
 
     ! Initialize mosart
     call seq_timemgr_EClockGetData(EClock,                               &
