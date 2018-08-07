@@ -221,7 +221,8 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
                 test_case_dir = os.path.dirname(test_path)
                 ts = TestStatus(test_case_dir)
 
-                build_status    = ts.get_status(MODEL_BUILD_PHASE)
+                build_status    = ts.get_status(SHAREDLIB_BUILD_PHASE)
+                build_status    = TEST_FAIL_STATUS if build_status == TEST_FAIL_STATUS else ts.get_status(MODEL_BUILD_PHASE)
                 run_status      = ts.get_status(RUN_PHASE)
                 baseline_status = ts.get_status(BASELINE_PHASE)
 
