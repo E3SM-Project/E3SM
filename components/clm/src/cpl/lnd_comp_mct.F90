@@ -52,6 +52,7 @@ contains
     use shr_file_mod     , only : shr_file_setLogUnit, shr_file_setLogLevel
     use shr_file_mod     , only : shr_file_getLogUnit, shr_file_getLogLevel
     use shr_file_mod     , only : shr_file_getUnit, shr_file_setIO
+    use shr_taskmap_mod  , only : shr_taskmap_write
     use seq_cdata_mod    , only : seq_cdata, seq_cdata_setptrs
     use seq_timemgr_mod  , only : seq_timemgr_EClockGetData
     use seq_infodata_mod , only : seq_infodata_type, seq_infodata_GetData, seq_infodata_PutData, &
@@ -59,9 +60,10 @@ contains
                                   seq_infodata_start_type_brnch
     use seq_comm_mct     , only : seq_comm_suffix, seq_comm_inst, seq_comm_name
     use seq_flds_mod     , only : seq_flds_x2l_fields, seq_flds_l2x_fields
-    use spmdMod          , only : masterproc, spmd_init
+    use spmdMod          , only : masterproc, npes, spmd_init
     use clm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
     use clm_cpl_indices  , only : clm_cpl_indices_set
+    use perf_mod         , only : t_startf, t_stopf
     use mct_mod
     use ESMF
     !
@@ -94,6 +96,8 @@ contains
     character(len=SHR_KIND_CL) :: hostname           ! hostname of machine running on
     character(len=SHR_KIND_CL) :: version            ! Model version
     character(len=SHR_KIND_CL) :: username           ! user running the model
+    character(len=8)           :: c_inst_index       ! instance number           
+    character(len=8)           :: c_npes             ! number of pes
     integer :: nsrest                                ! clm restart type
     integer :: ref_ymd                               ! reference date (YYYYMMDD)
     integer :: ref_tod                               ! reference time of day (sec)
@@ -151,6 +155,22 @@ contains
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogUnit (iulog)
     
+    ! Identify SMP nodes and process/SMP mapping for this instance
+    ! (Assume that processor names are SMP node names on SMP clusters.)
+
+    write(c_inst_index,'(i8)') inst_index
+    write(c_npes,'(i8)') npes
+
+    if (masterproc) then
+       write(iulog,100) trim(adjustl(c_npes)), trim(adjustl(c_inst_index))
+100    format(/,a,' pes participating in computation of CLM instance #',a)
+       call flush(iulog)
+    endif
+
+    call t_startf("shr_taskmap_write")
+    call shr_taskmap_write(iulog, mpicom_lnd, 'LND #'//trim(adjustl(c_inst_index)))
+    call t_stopf("shr_taskmap_write")
+
     ! Use infodata to set orbital values
 
     call seq_infodata_GetData( infodata, orb_eccen=eccen, orb_mvelpp=mvelpp, &

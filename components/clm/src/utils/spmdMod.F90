@@ -15,8 +15,7 @@ module spmdMod
 !EOP
 !-----------------------------------------------------------------------
 
-  use shr_kind_mod, only: r8 => shr_kind_r8
-  use clm_varctl  , only: iulog
+  use shr_kind_mod   , only: r8 => shr_kind_r8
   implicit none
 
   private
@@ -82,12 +81,6 @@ contains
 !EOP
     integer :: i,j         ! indices
     integer :: ier         ! return error status
-    integer :: mylength    ! my processor length
-    logical :: mpi_running ! temporary
-    integer, allocatable :: length(:)
-    integer, allocatable :: displ(:)
-    character*(MPI_MAX_PROCESSOR_NAME), allocatable :: procname(:)
-    character*(MPI_MAX_PROCESSOR_NAME)              :: myprocname
 !-----------------------------------------------------------------------
 
     ! Initialize mpi communicator group
@@ -108,34 +101,6 @@ contains
     ! Get number of processors
 
     call mpi_comm_size(mpicom, npes, ier)
-
-    ! Get my processor names
-
-    allocate (length(0:npes-1), displ(0:npes-1), procname(0:npes-1))
-
-    call mpi_get_processor_name (myprocname, mylength, ier)
-    call mpi_allgather(mylength,1,MPI_INTEGER,length,1,MPI_INTEGER,mpicom,ier)
-
-    do i = 0,npes-1
-       displ(i)=i*MPI_MAX_PROCESSOR_NAME
-    end do
-    call mpi_gatherv (myprocname,mylength,MPI_CHARACTER, &
-                      procname,length,displ,MPI_CHARACTER,0,mpicom,ier)
-    if (masterproc) then
-       write(iulog,100)npes
-       write(iulog,200)
-       write(iulog,220)
-       do i=0,min(100,npes-1)
-          write(iulog,250)i,(procname((i))(j:j),j=1,length(i))
-       end do
-    endif
-
-    deallocate (length, displ, procname)
-
-100 format(//,i7," pes participating in computation for CLM")
-200 format(/,35('-'))
-220 format(/,"NODE#",2x,"NAME")
-250 format("(",i5,")",2x,100a1,//)
 
   end subroutine spmd_init
 
