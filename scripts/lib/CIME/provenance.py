@@ -437,7 +437,7 @@ def get_recommended_test_time_based_on_past(baseline_root, test, raw=False):
                 return convert_to_babylonian_time(best_walltime)
         except:
             # We NEVER want a failure here to kill the run
-            logger.warning("Failed to read test time: {}".format(sys.exc_info()[0]))
+            logger.warning("Failed to read test time: {}".format(sys.exc_info()[1]))
 
     return None
 
@@ -453,4 +453,4 @@ def save_test_time(baseline_root, test, time_seconds):
                 fd.write("{}\n".format(int(time_seconds)))
         except:
             # We NEVER want a failure here to kill the run
-            logger.warning("Failed to store test time: {}".format(sys.exc_info()[0]))
+            logger.warning("Failed to store test time: {}".format(sys.exc_info()[1]))
