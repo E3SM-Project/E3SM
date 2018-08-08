@@ -671,6 +671,7 @@
     <SAVE_TIMING_DIR>/sems-data-store/ACME/timings</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
     <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build.new/cprnc</CCSM_CPRNC>
+    <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
 <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
     <GMAKE_J>32</GMAKE_J>
