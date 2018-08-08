@@ -45,6 +45,7 @@ module seq_diag_mct
   use component_type_mod, only : COMPONENT_GET_DOM_CX, COMPONENT_GET_C2X_CX, &
        COMPONENT_GET_X2C_CX, COMPONENT_TYPE
   use seq_infodata_mod, only : seq_infodata_type, seq_infodata_getdata
+  use shr_reprosum_mod, only: shr_reprosum_calc
 
   implicit none
   save
@@ -2237,7 +2238,9 @@ contains
     integer(in)                      :: iam         ! pe number
     integer(in)                      :: km,ka       ! field indices
     integer(in)                      :: ns          ! size of local AV
+    integer(in)                      :: rcode       ! allocate return code
     real(r8),                pointer :: weight(:)   ! weight
+    real(r8), allocatable            :: weighted_data(:,:) ! weighted data
     type(mct_string)                 :: mstring     ! mct char type
     character(CL)                    :: lcomment    ! should be long enough
     character(CL)                    :: itemc       ! string converted to char
@@ -2250,11 +2253,8 @@ contains
     ! print instantaneous budget data
     !-------------------------------------------------------------------------------
 
-    call seq_comm_setptrs(ID,&
-         mpicom=mpicom, iam=iam)
-
-    call seq_infodata_GetData(infodata,&
-         bfbflag=bfbflag)
+    call seq_comm_setptrs(ID, mpicom=mpicom, iam=iam)
+    call seq_infodata_GetData(infodata, bfbflag=bfbflag)
 
     lcomment = ''
     if (present(comment)) then
@@ -2267,82 +2267,44 @@ contains
     km = mct_aVect_indexRA(dom%data,'mask')
     ka = mct_aVect_indexRA(dom%data,afldname)
     kflds = mct_aVect_nRattr(AV)
-    allocate(sumbuf(kflds),sumbufg(kflds))
+    allocate(sumbufg(kflds),stat=rcode)
+    if (rcode /= 0) call shr_sys_abort(trim(subname)//' allocate sumbufg')
 
-    sumbuf =       0.0_r8
+    npts = mct_aVect_lsize(AV)
+    allocate(weight(npts),stat=rcode)
+    if (rcode /= 0) call shr_sys_abort(trim(subname)//' allocate weight')
+
+    weight(:) = 1.0_r8
+    do n = 1,npts
+       if (dom%data%rAttr(km,n) <= 1.0e-06_R8) then
+          weight(n) = 0.0_r8
+       else
+          weight(n) = dom%data%rAttr(ka,n)*shr_const_rearth*shr_const_rearth
+       endif
+    enddo
 
     if (bfbflag) then
+       allocate(weighted_data(npts,kflds),stat=rcode)
+       if (rcode /= 0) call shr_sys_abort(trim(subname)//' allocate weighted_data')
 
-       npts = mct_aVect_lsize(AV)
-       allocate(weight(npts))
-       weight(:) = 1.0_r8
-       do n = 1,npts
-          if (dom%data%rAttr(km,n) <= 1.0e-06_R8) then
-             weight(n) = 0.0_r8
-          else
-             weight(n) = dom%data%rAttr(ka,n)*shr_const_rearth*shr_const_rearth
-          endif
-       enddo
-
-       allocate(maxbuf(kflds),maxbufg(kflds))
-       maxbuf = 0.0_r8
-
+       weighted_data = 0.0_r8
        do n = 1,npts
           do k = 1,kflds
              if (.not. shr_const_isspval(AV%rAttr(k,n))) then
-                maxbuf(k) = max(maxbuf(k),abs(AV%rAttr(k,n)*weight(n)))
+                weighted_data(n,k) = AV%rAttr(k,n)*weight(n)
              endif
           enddo
        enddo
 
-       call shr_mpi_max(maxbuf,maxbufg,mpicom,subname,all=.true.)
-       call shr_mpi_sum(npts,nptsg,mpicom,subname,all=.true.)
+       call shr_reprosum_calc (weighted_data, sumbufg, npts, npts, kflds, &
+                               commid=mpicom)
 
-       do k = 1,kflds
-          if (maxbufg(k) < 1000.0*TINY(maxbufg(k)) .or. &
-               maxbufg(k) > HUGE(maxbufg(k))/(2.0_r8*nptsg)) then
-             maxbufg(k) = 0.0_r8
-          else
-             maxbufg(k) = (1.1_r8) * maxbufg(k) * nptsg
-          endif
-       enddo
-
-       allocate(isumbuf(kflds),isumbufg(kflds))
-       isumbuf = 0
-       ihuge = HUGE(isumbuf)
-
-       do n = 1,npts
-          do k = 1,kflds
-             if (.not. shr_const_isspval(AV%rAttr(k,n))) then
-                if (abs(maxbufg(k)) > 1000.0_r8 * TINY(maxbufg)) then
-                   isumbuf(k) = isumbuf(k) + int((AV%rAttr(k,n)*weight(n)/maxbufg(k))*ihuge,i8)
-                endif
-             endif
-          enddo
-       enddo
-
-       call shr_mpi_sum(isumbuf,isumbufg,mpicom,subname)
-
-       do k = 1,kflds
-          sumbufg(k) = isumbufg(k)*maxbufg(k)/ihuge
-       enddo
-
-       deallocate(weight)
-       deallocate(maxbuf,maxbufg)
-       deallocate(isumbuf,isumbufg)
+       deallocate(weighted_data)
 
     else
-
-       npts = mct_aVect_lsize(AV)
-       allocate(weight(npts))
-       weight(:) = 1.0_r8
-       do n = 1,npts
-          if (dom%data%rAttr(km,n) <= 1.0e-06_R8) then
-             weight(n) = 0.0_r8
-          else
-             weight(n) = dom%data%rAttr(ka,n)*shr_const_rearth*shr_const_rearth
-          endif
-       enddo
+       allocate(sumbuf(kflds),stat=rcode)
+       if (rcode /= 0) call shr_sys_abort(trim(subname)//' allocate sumbuf')
+       sumbuf = 0.0_r8
 
        do n = 1,npts
           do k = 1,kflds
@@ -2355,9 +2317,10 @@ contains
        !--- global reduction ---
        call shr_mpi_sum(sumbuf,sumbufg,mpicom,subname)
 
-       deallocate(weight)
+       deallocate(sumbuf)
 
     endif
+    deallocate(weight)
 
     if (iam == 0) then
        !      write(logunit,*) 'sdAV: *** writing ',trim(lcomment),': k fld min/max/sum ***'
@@ -2374,7 +2337,7 @@ contains
        call shr_sys_flush(logunit)
     endif
 
-    deallocate(sumbuf,sumbufg)
+    deallocate(sumbufg)
 
 100 format('comm_diag ',a3,1x,a4,1x,i3,es26.19,1x,a,1x,a)
 101 format('comm_diag ',a3,1x,a4,1x,i3,es26.19,1x,a)
