@@ -410,7 +410,7 @@ contains
      elem(ie)%derived%FQps(:,:)=0
 
      ! apply forcing to temperature
-     call get_temperature(elem(ie),temperature,hvcoord,np1,np1_qdp)
+     call get_temperature(elem(ie),temperature,hvcoord,np1)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
