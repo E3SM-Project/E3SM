@@ -3,6 +3,9 @@
 /* Energy Diagnostics */
 #cmakedefine ENERGY_DIAGNOSTICS
 
+/* Lorenz model */
+#define MODEL_THETA_C
+
 /* Using PRIMITIVE */
 #define _PRIM
 

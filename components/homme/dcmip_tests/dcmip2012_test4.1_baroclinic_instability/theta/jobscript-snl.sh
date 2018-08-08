@@ -1,12 +1,16 @@
 #!/bin/tcsh 
 #
+#SBATCH -p ec
 #SBATCH --job-name dcmip4
 #SBATCH --account=FY150001
 #SBATCH -N 12
 #SBATCH --time=1:30:00
 #XXSBATCH -N 20
 #XXSBATCH --time=5:00:00
-#SBATCH -p ec
+#PBS -l walltime=60:00
+#PBS -l nodes=20
+#PBS -q acme
+
 #
 #  nonhydro x1:  54 nodes, 7.4h        KG5 dt=.5
 #           x1:  20 nodes, 2.5h        ars232  dt=120
@@ -18,6 +22,10 @@
 
 set OMP_NUM_THREADS = 1
 set NCPU = 40 
+if ( ${?PBS_ENVIRONMENT} ) then   # anvil
+  set NCPU = $PBS_NNODES
+  if ( $PBS_ENVIRONMENT == PBS_BATCH ) cd $PBS_O_WORKDIR     
+endif
 if ( ${?SLURM_NNODES} ) then   # redsky
     set NCPU = $SLURM_NNODES
     @ NCPU *= 16
@@ -46,7 +54,7 @@ ncl plot_zeta.ncl 'fname="movies/nonhydro-X1000-dcmip2012_test41.nc"'
 
 # nonhydro X100
 set EXEC = ../../../test_execs/theta-nlev30/theta-nlev30
-set namelist = nh-x100.nl        #  64800  timesteps, 12 nodes - 51min 
+set namelist = nh-x100.nl        
 cp -f $namelist input.nl
 mpirun -np $NCPU $EXEC < input.nl
 ncl plot_ps.ncl  'fname="movies/nonhydro-X100-dcmip2012_test41.nc"'
@@ -54,12 +62,10 @@ ncl plot_zeta.ncl 'fname="movies/nonhydro-X100-dcmip2012_test41.nc"'
 \mv -f zeta.pdf nonhydro-X100-zeta.pdf
 \mv -f ps.pdf nonhydro-X100-ps.pdf
 
-exit
 
-# these are very expensive - increase nodes and time before submitting:
 # nonhydro X10
 set EXEC = ../../../test_execs/theta-nlev30/theta-nlev30
-set namelist = nh-x10.nl          #  648000 timsteps,  54 nodes - 115min
+set namelist = nh-x10.nl         
 cp -f $namelist input.nl
 mpirun -np $NCPU $EXEC < input.nl
 ncl plot_ps.ncl  'fname="movies/nonhydro-X10-dcmip2012_test41.nc"'
@@ -69,7 +75,7 @@ ncl plot_zeta.ncl 'fname="movies/nonhydro-X10-dcmip2012_test41.nc"'
 
 # nonhydro X1
 set EXEC = ../../../test_execs/theta-nlev30/theta-nlev30
-set namelist = nh-x1.nl           # 2592000 timesteps, 54 nodes - 7.4h
+set namelist = nh-x1.nl          
 cp -f $namelist input.nl
 mpirun -np $NCPU $EXEC < input.nl
 ncl plot_ps.ncl  'fname="movies/nonhydro-X1-dcmip2012_test41.nc"'

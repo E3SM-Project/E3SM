@@ -100,6 +100,10 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
                             lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
   logical :: abort=.false.
 
+  if (vert_remap_q_alg == -1) then
+     call remap1_nofilter(qdp,nx,qsize,dp1,dp2)
+     return
+  endif
   if (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2 .or. vert_remap_q_alg == 3) then
      call remap_Q_ppm(qdp,nx,qsize,dp1,dp2)
      return

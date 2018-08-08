@@ -91,6 +91,59 @@ contains
 
 
 
+  subroutine preq_vertadv_v1(v,eta_dot_dp_deta, dp,v_vadv)
+    use kinds,              only : real_kind
+    use dimensions_mod,     only : nlev, np, nlevp
+    implicit none
+
+    real (kind=real_kind), intent(in) :: v(np,np,2,nlev)
+    real (kind=real_kind), intent(in) :: eta_dot_dp_deta(np,np,nlevp)
+    real (kind=real_kind), intent(in) :: dp(np,np,nlev)
+    real (kind=real_kind), intent(out) :: v_vadv(np,np,2,nlev)
+
+    ! ========================
+    ! Local Variables
+    ! ========================
+
+    integer :: k,nf
+    real (kind=real_kind) :: facp(np,np), facm(np,np)
+
+    ! ===========================================================
+    ! Compute vertical advection of T and v from eq. (3.b.1)
+    !
+    ! k = 1 case:
+    ! ===========================================================
+    k=1
+    facp            = 0.5_real_kind*eta_dot_dp_deta(:,:,k+1)/dp(:,:,k)
+    v_vadv(:,:,1,k)   = facp(:,:)*(v(:,:,1,k+1)- v(:,:,1,k))
+    v_vadv(:,:,2,k)   = facp(:,:)*(v(:,:,2,k+1)- v(:,:,2,k))
+    
+    ! ===========================================================
+    ! vertical advection
+    !
+    ! 1 < k < nlev case:
+    ! ===========================================================
+#if (defined COLUMN_OPENMP)
+    !$omp parallel do private(k,nf,facp,facm)
+#endif
+    do k=2,nlev-1
+       facp(:,:)   = 0.5_real_kind*eta_dot_dp_deta(:,:,k+1)/dp(:,:,k)
+       facm(:,:)   = 0.5_real_kind*eta_dot_dp_deta(:,:,k)/dp(:,:,k)
+       v_vadv(:,:,1,k)=facp*(v(:,:,1,k+1)- v(:,:,1,k)) + facm*(v(:,:,1,k)- v(:,:,1,k-1))
+       v_vadv(:,:,2,k)=facp*(v(:,:,2,k+1)- v(:,:,2,k)) + facm*(v(:,:,2,k)- v(:,:,2,k-1))
+    end do
+    
+    ! ===========================================================
+    ! vertical advection
+    !
+    ! k = nlev case:
+    ! ===========================================================
+    k=nlev
+    facm            = 0.5_real_kind*eta_dot_dp_deta(:,:,k)/dp(:,:,k)
+    v_vadv(:,:,1,k)   = facm*(v(:,:,1,k)- v(:,:,1,k-1))
+    v_vadv(:,:,2,k)   = facm*(v(:,:,2,k)- v(:,:,2,k-1))
+    end subroutine preq_vertadv_v1
+
 
 
   subroutine preq_vertadv_v(v,T,nfields,eta_dot_dp_deta, dp,v_vadv,T_vadv)

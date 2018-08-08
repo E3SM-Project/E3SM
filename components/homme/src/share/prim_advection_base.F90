@@ -819,7 +819,7 @@ OMP_SIMD
                 elem(ie)%state%Qdp(:,:,k,q,nt_qdp)/elem(ie)%state%dp3d(:,:,k,nt) -  &
                          state0(ie)%Qdp(:,:,k,q,1)/state0(ie)%dp3d(:,:,k,1) )
         enddo
-        call laplace_z(Q_prime(:,:,:),Qt(:,:,:),1,delz)
+        call laplace_z(Q_prime(:,:,:),Qt(:,:,:),1,nlev,delz)
         ! apply mass matrix and add in horiz laplacian (which has mass matrix built in)
         do k=1,nlev
            elem(ie)%state%Qdp(:,:,k,q,nt_qdp)=elem(ie)%state%Qdp(:,:,k,q,nt_qdp)  + mu*dt*Qt(:,:,k)
