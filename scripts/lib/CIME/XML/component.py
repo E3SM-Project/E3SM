@@ -283,7 +283,6 @@ class Component(EntryID):
             text = self.text(self.get_child("desc", root=entry))
             logger.info("   {:20s} : {}".format(name, text.encode('utf-8')))
 
-
     def return_values(self):
         """
         return a list of hashes from target config_component.xml file
@@ -295,7 +294,6 @@ class Component(EntryID):
             helptext = self.text(helpnode)
         except:
             helptext = ''
-            
         entries = self.get_children("entry")
         for entry in entries:
             item = dict()

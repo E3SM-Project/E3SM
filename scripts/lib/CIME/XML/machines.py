@@ -328,7 +328,6 @@ class Machines(GenericXML):
         logger.debug("Machines return values")
         for machine in machines:
             name = self.get(machine, "MACH")
-            
             desc = self.get_child("DESC", root=machine)
             mach_dict[(name,"description")] = self.text(desc)
             
