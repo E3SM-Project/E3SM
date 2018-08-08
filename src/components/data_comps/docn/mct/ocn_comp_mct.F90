@@ -158,7 +158,7 @@ contains
          SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
          scmMode, scmlat, scmlon, &
-         calendar, CurrentYMD, CurrentTOD,  modeldt, ocn_prognostic)
+         calendar, CurrentYMD, CurrentTOD,  modeldt, init_import=.true.)
 
     !----------------------------------------------------------------------------
     ! Fill infodata that needs to be returned from docn
@@ -193,7 +193,7 @@ contains
 
   !===============================================================================
 
-  subroutine ocn_run_mct( EClock, cdata,  x2o, o2x)
+  subroutine ocn_run_mct( EClock, cdata, x2o, o2x)
 
     ! !DESCRIPTION: run method for docn model
 

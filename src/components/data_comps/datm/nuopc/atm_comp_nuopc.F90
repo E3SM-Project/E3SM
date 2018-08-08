@@ -280,7 +280,10 @@ module atm_comp_nuopc
     !--------------------------------
 
     if (atm_present) then
+       !-----------------
        ! export fields
+       !-----------------
+
        call fld_list_add(fldsFrAtm_num, fldsFrAtm, trim(flds_scalar_name))
        call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_topo'    , flds_concat=flds_a2x)
        call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_z'       , flds_concat=flds_a2x)
@@ -329,7 +332,10 @@ module atm_comp_nuopc
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        enddo
 
+       !-----------------
        ! Import fields
+       !-----------------
+
        if (atm_prognostic) then
           call fld_list_add(fldsToAtm_num, fldsToAtm, trim(flds_scalar_name))
           call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_anidr'  , flds_concat=flds_x2a)

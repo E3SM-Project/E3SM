@@ -595,7 +595,6 @@ module rof_comp_nuopc
           call ESMF_ClockPrint(clock, options="currTime", &
                preString="------>Advancing ROF from: ", rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          
           call ESMF_ClockPrint(clock, options="stopTime", &
                preString="--------------------------------> to: ", rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

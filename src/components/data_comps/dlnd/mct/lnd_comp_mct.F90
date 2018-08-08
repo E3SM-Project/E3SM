@@ -45,15 +45,13 @@ module lnd_comp_mct
   integer(IN),parameter  :: master_task=0       ! task number of master task
   integer    ,parameter  :: dbug = 10
 
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-CONTAINS
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!===============================================================================
+contains
+!===============================================================================
 
-  !===============================================================================
   subroutine lnd_init_mct( EClock, cdata, x2l, l2x, NLFilename )
 
     ! !DESCRIPTION:  initialize dlnd model
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            , intent(inout) :: EClock
@@ -65,17 +63,20 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer           :: phase                     ! phase of method
-    logical           :: lnd_present               ! flag
-    logical           :: lnd_prognostic            ! flag
-    integer(IN)       :: shrlogunit                ! original log unit
-    integer(IN)       :: shrloglev                 ! original log level
-    logical           :: read_restart              ! start from restart
-    integer(IN)       :: ierr                      ! error code
-    logical           :: scmMode = .false.         ! single column mode
-    real(R8)          :: scmLat  = shr_const_SPVAL ! single column lat
-    real(R8)          :: scmLon  = shr_const_SPVAL ! single column lon
-    character(*), parameter :: F00   = "('(dlnd_comp_init) ',8a)"
+    integer                          :: phase                     ! phase of method
+    logical                          :: lnd_present               ! flag
+    logical                          :: lnd_prognostic            ! flag
+    integer(IN)                      :: shrlogunit                ! original log unit
+    integer(IN)                      :: shrloglev                 ! original log level
+    logical                          :: read_restart              ! start from restart
+    integer(IN)                      :: ierr                      ! error code
+    logical                          :: scmMode = .false.         ! single column mode
+    real(R8)                         :: scmLat  = shr_const_SPVAL ! single column lat
+    real(R8)                         :: scmLon  = shr_const_SPVAL ! single column lon
+    integer                          :: current_ymd
+    integer                          :: current_tod
+    character(len=80)                :: calendar
+    character(*), parameter :: F00   = "('(lnd_comp_init) ',8a)"
     character(*), parameter :: subName = "(lnd_init_mct) "
     !-------------------------------------------------------------------------------
 
@@ -142,34 +143,33 @@ CONTAINS
        RETURN
     end if
 
-    ! NOTE: the following will never be called if lnd_present is .false.
-
     !----------------------------------------------------------------------------
     ! Initialize dlnd
     !----------------------------------------------------------------------------
 
-    call dlnd_comp_init(Eclock, x2l, l2x, &
+    ! For mct - the component clock is advance at the beginning of the time interval
+    call seq_timemgr_EClockGetData( EClock, &
+         curr_ymd=Current_ymd, curr_tod=Current_tod, calendar=calendar)
+
+    call dlnd_comp_init(x2l, l2x, &
          seq_flds_x2l_fields, seq_flds_l2x_fields, &
          SDLND, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
-         scmMode, scmlat, scmlon)
+         scmMode, scmlat, scmlon, &
+         calendar, current_ymd, current_tod)
 
     !----------------------------------------------------------------------------
     ! Fill infodata that needs to be returned from dlnd
     !----------------------------------------------------------------------------
 
-    call seq_infodata_PutData(infodata, &
-         lnd_nx=SDLND%nxg, &
-         lnd_ny=SDLND%nyg )
+    call seq_infodata_PutData(infodata, lnd_nx=SDLND%nxg, lnd_ny=SDLND%nyg )
 
     !----------------------------------------------------------------------------
     ! diagnostics
     !----------------------------------------------------------------------------
 
-    if (dbug > 1) then
-       if (my_task == master_task) then
-          call mct_aVect_info(2, l2x, istr="initial diag"//':AV')
-       end if
+    if (dbug > 1 .and. my_task == master_task) then
+       call mct_aVect_info(2, l2x, istr="initial diag"//':AV')
     endif
 
     !----------------------------------------------------------------------------
@@ -185,10 +185,10 @@ CONTAINS
   end subroutine lnd_init_mct
 
   !===============================================================================
+
   subroutine lnd_run_mct( EClock, cdata, x2l, l2x)
 
     ! !DESCRIPTION: run method for dlnd model
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            ,intent(inout) :: EClock
@@ -205,8 +205,8 @@ CONTAINS
     logical                          :: read_restart  ! start from restart
     character(CL)                    :: case_name     ! case name
     logical                          :: write_restart ! restart now
-    integer(IN)                      :: currentYMD    ! model date
-    integer(IN)                      :: currentTOD    ! model sec into model date
+    integer(IN)                      :: current_ymd   ! model date
+    integer(IN)                      :: current_tod   ! model sec into model date
     character(*), parameter :: subName = "(lnd_run_mct) "
     !-------------------------------------------------------------------------------
 
@@ -226,12 +226,12 @@ CONTAINS
     write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
 
     ! For mct - the component clock is advance at the beginning of the time interval
-    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
+    call seq_timemgr_EClockGetData( EClock, curr_ymd=current_ymd, curr_tod=current_tod)
 
-    call dlnd_comp_run(EClock, x2l, l2x, &
+    call dlnd_comp_run(x2l, l2x, &
        SDLND, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
-       currentYMD, currentTOD, case_name=case_name)
+       current_ymd, current_tod, case_name=case_name)
 
     if (dbug > 1) then
        if (my_task == master_task) then
@@ -250,7 +250,6 @@ CONTAINS
   subroutine lnd_final_mct(EClock, cdata, x2l, l2x)
 
     ! !DESCRIPTION: finalize method for dlnd model
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            ,intent(inout) :: EClock     ! clock

@@ -4,21 +4,24 @@ module lnd_comp_nuopc
   ! This is the NUOPC cap for DLND
   !----------------------------------------------------------------------------
 
-  use med_constants_mod     , only : IN, R8, I8, CXX
+  use ESMF
+  use NUOPC                 , only : NUOPC_CompDerive, NUOPC_CompSetEntryPoint, NUOPC_CompSpecialize
+  use NUOPC                 , only : NUOPC_CompAttributeGet, NUOPC_Advertise
+  use NUOPC_Model           , only : model_routine_SS        => SetServices
+  use NUOPC_Model           , only : model_label_Advance     => label_Advance
+  use NUOPC_Model           , only : model_label_SetRunClock => label_SetRunClock
+  use NUOPC_Model           , only : model_label_Finalize    => label_Finalize
+  use NUOPC_Model           , only : NUOPC_ModelGet
+  use med_constants_mod     , only : R8, CXX, CL, CS
   use med_constants_mod     , only : shr_log_Unit
-  use med_constants_mod     , only : shr_cal_ymd2date, shr_cal_noleap, shr_cal_gregorian
   use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
   use med_constants_mod     , only : shr_file_getloglevel, shr_file_setloglevel
   use med_constants_mod     , only : shr_file_setIO, shr_file_getUnit
-  use shr_log_mod           , only : shr_log_Unit
-  use shr_file_mod          , only : shr_file_getlogunit, shr_file_setlogunit
-  use shr_file_mod          , only : shr_file_getloglevel, shr_file_setloglevel
-  use shr_file_mod          , only : shr_file_getUnit
+  use med_constants_mod     , only : shr_cal_ymd2date, shr_cal_noleap, shr_cal_gregorian
   use shr_nuopc_scalars_mod , only : flds_scalar_name
   use shr_nuopc_scalars_mod , only : flds_scalar_num
   use shr_nuopc_scalars_mod , only : flds_scalar_index_nx
   use shr_nuopc_scalars_mod , only : flds_scalar_index_ny
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Getfldinfo
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
@@ -26,23 +29,18 @@ module lnd_comp_nuopc
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_Meshinit
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
-  use shr_strdata_mod       , only : shr_strdata_type
   use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
   use shr_strdata_mod       , only : shr_strdata_type
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax
   use dshr_nuopc_mod        , only : fld_list_add
   use dshr_nuopc_mod        , only : fld_list_realize
+  use dshr_nuopc_mod        , only : ModelInitPhase
+  use dshr_nuopc_mod        , only : ModelSetRunClock
+  use dshr_nuopc_mod        , only : ModelSetMetaData
 
-  use ESMF
-  use NUOPC
-  use NUOPC_Model, &
-    model_routine_SS      => SetServices, &
-    model_label_Advance   => label_Advance, &
-    model_label_SetRunClock => label_SetRunClock, &
-    model_label_Finalize  => label_Finalize
-
-  use dlnd_shr_mod , only: dlnd_shr_read_namelists
-  use dlnd_comp_mod, only: dlnd_comp_init, dlnd_comp_run, dlnd_comp_final
+  use dlnd_shr_mod          , only: dlnd_shr_read_namelists
+  use dlnd_comp_mod         , only: dlnd_comp_init, dlnd_comp_run, dlnd_comp_final
+  use glc_elevclass_mod     , only: glc_get_num_elevation_classes, glc_elevclass_as_string
   use mct_mod
 
   implicit none
@@ -50,11 +48,9 @@ module lnd_comp_nuopc
 
   public  :: SetServices
 
-  private :: InitializeP0
   private :: InitializeAdvertise
   private :: InitializeRealize
   private :: ModelAdvance
-  private :: ModelSetRunClock
   private :: ModelFinalize
 
   !--------------------------------------------------------------------------
@@ -66,7 +62,7 @@ module lnd_comp_nuopc
   type (fld_list_type)       :: fldsToLnd(fldsMax)
   type (fld_list_type)       :: fldsFrLnd(fldsMax)
 
-  character(CS)              :: myModelName = 'lnd'       ! user defined model name
+  character(len=3)           :: myModelName = 'lnd'       ! user defined model name
   type(shr_strdata_type)     :: SDLND
   type(mct_gsMap), target    :: gsMap_target
   type(mct_gGrid), target    :: ggrid_target
@@ -74,18 +70,18 @@ module lnd_comp_nuopc
   type(mct_gGrid), pointer   :: ggrid
   type(mct_aVect)            :: x2d
   type(mct_aVect)            :: d2x
-  integer(IN)                :: compid                    ! mct comp id
-  integer(IN)                :: mpicom                    ! mpi communicator
-  integer(IN)                :: my_task                   ! my task in mpi communicator mpicom
+  integer                    :: compid                    ! mct comp id
+  integer                    :: mpicom                    ! mpi communicator
+  integer                    :: my_task                   ! my task in mpi communicator mpicom
   integer                    :: inst_index                ! number of current instance (ie. 1)
   character(len=16)          :: inst_name                 ! fullname of current instance (ie. "lnd_0001")
   character(len=16)          :: inst_suffix = ""          ! char string associated with instance (ie. "_0001" or "")
-  integer(IN)                :: logunit                   ! logging unit number
-  integer(IN),parameter      :: master_task=0             ! task number of master task
-  integer(IN)                :: localPet
+  integer                    :: logunit                   ! logging unit number
+  integer    ,parameter      :: master_task=0             ! task number of master task
+  integer                    :: localPet
   logical                    :: lnd_prognostic            ! flag
   logical                    :: unpack_import
-  logical                    :: read_restart              ! start from restart
+  character(CL)              :: case_name                 ! case name
   character(CL)              :: tmpstr                    ! tmp string
   integer                    :: dbrc
   integer, parameter         :: dbug = 10
@@ -93,14 +89,14 @@ module lnd_comp_nuopc
   character(CXX)             :: flds_l2x = ''
   character(CXX)             :: flds_x2l = ''
   character(len=80)          :: calendar                  ! calendar name
+  logical                    :: use_esmf_metadata = .false.
+  character(*),parameter     :: modName =  "(lnd_comp_nuopc)"
+  character(*),parameter     :: u_FILE_u = &
+       __FILE__
 
-  !----- formats -----
-  character(*),parameter :: modName =  "(lnd_comp_nuopc)"
-  character(*),parameter :: u_FILE_u = __FILE__
-
-  !===============================================================================
-  contains
-  !===============================================================================
+!===============================================================================
+contains
+!===============================================================================
 
   subroutine SetServices(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
@@ -117,7 +113,7 @@ module lnd_comp_nuopc
 
     ! switching to IPD versions
     call ESMF_GridCompSetEntryPoint(gcomp, ESMF_METHOD_INITIALIZE, &
-         userRoutine=InitializeP0, phase=0, rc=rc)
+         userRoutine=ModelInitPhase, phase=0, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! set entry point for methods that require specific implementation
@@ -130,11 +126,6 @@ module lnd_comp_nuopc
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! attach specializing method(s)
-#if (1 == 0)
-    call NUOPC_CompSpecialize(gcomp, specLabel=model_label_SetClock, specRoutine=SetClock, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-#endif
-
     call NUOPC_CompSpecialize(gcomp, specLabel=model_label_Advance, specRoutine=ModelAdvance, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -152,23 +143,6 @@ module lnd_comp_nuopc
 
   !===============================================================================
 
-  subroutine InitializeP0(gcomp, importState, exportState, clock, rc)
-    type(ESMF_GridComp)   :: gcomp
-    type(ESMF_State)      :: importState, exportState
-    type(ESMF_Clock)      :: clock
-    integer, intent(out)  :: rc
-    !-------------------------------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    ! Switch to IPDv01 by filtering all other phaseMap entries
-    call NUOPC_CompFilterPhaseMap(gcomp, ESMF_METHOD_INITIALIZE, acceptStringList=(/"IPDv01p"/), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-  end subroutine InitializeP0
-
-  !===============================================================================
-
   subroutine InitializeAdvertise(gcomp, importState, exportState, clock, rc)
     type(ESMF_GridComp)  :: gcomp
     type(ESMF_State)     :: importState, exportState
@@ -176,19 +150,23 @@ module lnd_comp_nuopc
     integer, intent(out) :: rc
 
     ! local variables
-    logical            :: lnd_present       ! flag
+    logical            :: lnd_present   ! flag
     type(ESMF_VM)      :: vm
-    integer(IN)        :: lmpicom
+    integer            :: lmpicom
     character(CL)      :: cvalue
     character(CS)      :: stdname, shortname
     logical            :: activefld
-    integer(IN)        :: n,nflds
-    integer(IN)        :: ierr       ! error code
-    integer(IN)        :: shrlogunit ! original log unit
-    integer(IN)        :: shrloglev  ! original log level
+    integer            :: n,nflds
+    integer            :: ierr          ! error code
+    integer            :: shrlogunit    ! original log unit
+    integer            :: shrloglev     ! original log level
     logical            :: isPresent
     character(len=512) :: diro
     character(len=512) :: logfile
+    integer            :: glc_nec       ! number of elevation classes
+    integer            :: nflds_glc_nec ! number of snow fields separated by elev class
+    character(len=256) :: fld_name
+    character(len=2)   :: nec_str       ! elevation class, as character string
     character(len=*),parameter  :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
@@ -260,42 +238,55 @@ module lnd_comp_nuopc
     ! advertise import and export fields
     !--------------------------------
 
-    ! The following is used in cplhist mode - which is not activated now
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, trim(flds_scalar_name))
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_t        "
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_tref     "
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_qref     "
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_avsdr    "
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_anidr    "
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_avsdf    "
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_anidf    "
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_snowh    "
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_taux   "
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_tauy   "
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_lat    "
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_sen    "
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_lwup   "
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_evap   "
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_swnet  "
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_landfrac "
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_fv       "
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_ram1     "
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_flxdst1"
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_flxdst2"
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_flxdst3"
-    ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_flxdst4"
+    if (lnd_present) then
+       !-----------------
+       ! export fields
+       !-----------------
 
-    glc_nec = glc_get_num_elevation_classes()
-    if (glc_nec > 0) then
-       do n = 0, glc_nec
-          nec_str = glc_elevclass_as_string(n)
-          fld_name = "Sl_tsrf" // nec_str
-          call fld_list_add(fldsFrLnd_num, fldsFrLnd, trim(fld+name))
-          fld_name = "Sl_topo" // nec_str
-          call fld_list_add(fldsFrLnd_num, fldsFrLnd, trim(fld+name))
-          fld_name = "Flgl_qice" // nec_str
-          call fld_list_add(fldsFrLnd_num, fldsFrLnd, trim(fld+name))
-       end do
+       call fld_list_add(fldsFrLnd_num, fldsFrLnd, trim(flds_scalar_name))
+       call fld_list_add(fldsFrLnd_num, fldsFrLnd, 'Sl_lfrin')
+
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, trim(flds_scalar_name))
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_t        "
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_tref     "
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_qref     "
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_avsdr    "
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_anidr    "
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_avsdf    "
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_anidf    "
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_snowh    "
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_taux   "
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_tauy   "
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_lat    "
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_sen    "
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_lwup   "
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_evap   "
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_swnet  "
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_landfrac "
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_fv       "
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_ram1     "
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_flxdst1"
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_flxdst2"
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_flxdst3"
+       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_flxdst4"
+       
+       glc_nec = glc_get_num_elevation_classes()
+       if (glc_nec > 0) then
+          do n = 0, glc_nec
+             nec_str = glc_elevclass_as_string(n)
+             fld_name = "Sl_tsrf" // nec_str
+             call fld_list_add(fldsFrLnd_num, fldsFrLnd, trim(fld_name))
+             fld_name = "Sl_topo" // nec_str
+             call fld_list_add(fldsFrLnd_num, fldsFrLnd, trim(fld_name))
+             fld_name = "Flgl_qice" // nec_str
+             call fld_list_add(fldsFrLnd_num, fldsFrLnd, trim(fld_name))
+          end do
+       end if
+
+       do n = 1,fldsFrLnd_num
+          call NUOPC_Advertise(exportState, standardName=fldsFrLnd(n)%stdname, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       enddo
     end if
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
@@ -318,25 +309,31 @@ module lnd_comp_nuopc
     integer, intent(out) :: rc
 
     ! local variables
-    character(ESMF_MAXSTR)   :: convCIM, purpComp
-    type(ESMF_Grid)          :: Egrid
-    type(ESMF_Mesh)          :: Emesh
-    integer                  :: nx_global, ny_global
-    type(ESMF_VM)            :: vm
-    integer                  :: n
-    character(CL)            :: cvalue
-    integer(IN)              :: shrlogunit                ! original log unit
-    integer(IN)              :: shrloglev                 ! original log level
-    integer(IN)              :: ierr                      ! error code
-    logical                  :: scmMode = .false.         ! single column mode
-    real(R8)                 :: scmLat  = shr_const_SPVAL ! single column lat
-    real(R8)                 :: scmLon  = shr_const_SPVAL ! single column lon
-    logical                  :: connected                 ! is field connected?
-    integer                  :: klon, klat
-    integer                  :: lsize
-    integer                  :: iam
-    real(r8), pointer        :: lon(:),lat(:)
-    integer , pointer        :: gindex(:)
+    character(ESMF_MAXSTR)  :: convCIM, purpComp
+    type(ESMF_Mesh)         :: Emesh
+    type(ESMF_TIME)         :: currTime
+    type(ESMF_TimeInterval) :: timeStep
+    type(ESMF_Calendar)     :: esmf_calendar             ! esmf calendar
+    type(ESMF_CalKind_Flag) :: esmf_caltype              ! esmf calendar type
+    integer                 :: current_ymd               ! model date
+    integer                 :: current_year              ! model year
+    integer                 :: current_mon               ! model month
+    integer                 :: current_day               ! model day
+    integer                 :: current_tod               ! model sec into model date
+    integer                 :: nx_global, ny_global
+    character(CL)           :: cvalue
+    integer                 :: shrlogunit                ! original log unit
+    integer                 :: shrloglev                 ! original log level
+    integer                 :: ierr                      ! error code
+    logical                 :: scmMode = .false.         ! single column mode
+    real(R8)                :: scmLat  = shr_const_SPVAL ! single column lat
+    real(R8)                :: scmLon  = shr_const_SPVAL ! single column lon
+    integer                 :: n, klon, klat
+    integer                 :: lsize
+    integer                 :: iam
+    real(r8), pointer       :: lon(:),lat(:)
+    integer , pointer       :: gindex(:)
+    logical                 :: read_restart              ! start from restart
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
@@ -353,11 +350,11 @@ module lnd_comp_nuopc
     call shr_file_setLogUnit (logUnit)
 
     !--------------------------------
-    ! call dlnd init routine
+    ! Determine necessary config variables
     !--------------------------------
 
-    gsmap => gsmap_target
-    ggrid => ggrid_target
+    call NUOPC_CompAttributeGet(gcomp, name='case_name', value=case_name, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -367,11 +364,41 @@ module lnd_comp_nuopc
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) compid
 
-    call dlnd_comp_init(clock, x2d, d2x, &
+    !----------------------------------------------------------------------------
+    ! Determine calendar info
+    !----------------------------------------------------------------------------
+
+    call ESMF_ClockGet( clock, currTime=currTime, timeStep=timeStep, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_TimeGet( currTime, yy=current_year, mm=current_mon, dd=current_day, s=current_tod, &
+         calkindflag=esmf_caltype, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call shr_cal_ymd2date(current_year, current_mon, current_day, current_ymd)
+
+    if (esmf_caltype == ESMF_CALKIND_NOLEAP) then
+       calendar = shr_cal_noleap
+    else if (esmf_caltype == ESMF_CALKIND_GREGORIAN) then
+       calendar = shr_cal_gregorian
+    else
+       call ESMF_LogWrite(subname//" ERROR bad ESMF calendar name "//trim(calendar), ESMF_LOGMSG_ERROR, rc=dbrc)
+       rc = ESMF_Failure
+       return
+    end if
+
+    !----------------------------------------------------------------------------
+    ! Initialize model
+    !----------------------------------------------------------------------------
+
+    gsmap => gsmap_target
+    ggrid => ggrid_target
+
+    call dlnd_comp_init(x2d, d2x, &
          flds_x2l, flds_l2x, &
          SDLND, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
-         scmMode, scmlat, scmlon)
+         scmMode, scmlat, scmlon, &
+         calendar, current_ymd, current_tod)
 
     !--------------------------------
     ! generate the grid or mesh from the gsmap and ggrid
@@ -399,25 +426,29 @@ module lnd_comp_nuopc
     deallocate(gindex)
 
     !--------------------------------
-    ! realize the actively coupled fields, now that a grid or mesh is established
-    ! Note: shr_nuopc_fldList_Realize does the following:
-    ! 1) loops over all of the entries in fldsToLnd and creates a field
-    !    for each one via one of the following commands:
-    !     field = ESMF_FieldCreate(grid, ESMF_TYPEKIND_R8, name=fldlist%shortname(n), rc=rc)
-    !     field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=fldlist%shortname(n), meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
-    ! 2) realizes the field via the following call
-    !     call NUOPC_Realize(state, field=field, rc=rc)
-    !    where state is either importState or exportState
-    !  NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
-    !  by replacing the advertised fields with the fields in fldsToLnd of the same name.
+    ! realize the actively coupled fields, now that a mesh is established
+    ! NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
+    ! by replacing the advertised fields with the newly created fields of the same name.
     !--------------------------------
 
-    call shr_nuopc_fldList_Realize(importState, fldListTo(complnd), flds_scalar_name, flds_scalar_num, &
-         mesh=Emesh, tag=subname//':dlndImport', rc=rc)
+    call fld_list_realize( &
+         state=ExportState, &
+         fldList=fldsFrLnd, &
+         numflds=fldsFrLnd_num, &
+         flds_scalar_name=flds_scalar_name, &
+         flds_scalar_num=flds_scalar_num, &
+         tag=subname//':dlndExport',&
+         mesh=Emesh, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_fldList_Realize(exportState, fldListFr(complnd), flds_scalar_name, flds_scalar_num, &
-         mesh=Emesh, tag=subname//':dlndExport', rc=rc)
+    call fld_list_realize( &
+         state=importState, &
+         fldList=fldsToLnd, &
+         numflds=fldsToLnd_num, &
+         flds_scalar_name=flds_scalar_name, &
+         flds_scalar_num=flds_scalar_num, &
+         tag=subname//':dlndImport',&
+         mesh=Emesh, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
@@ -441,42 +472,18 @@ module lnd_comp_nuopc
     ! diagnostics
     !--------------------------------
 
-    if (dbug > 1) then
-       if (my_task == master_task) then
-          call mct_aVect_info(2, d2x, istr='initial diag'//':AV')
-       end if
+    if (dbug > 5) then
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
 
-#ifdef USE_ESMF_METADATA
-    convCIM  = "CIM"
-    purpComp = "Model Component Simulation Description"
-    call ESMF_AttributeAdd(comp, convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ShortName", "DLND", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "LongName", "Climatological Land Data Model", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "Description", &
-         "The CIME data models perform the basic function of " // &
-         "reading external data, modifying that data, and then " // &
-         "sending it to the driver via coupling " // &
-         "interfaces. The driver and other models have no " // &
-         "fundamental knowledge of whether another component " // &
-         "is fully active or just a data model.  In some cases, " // &
-         "data models are prognostic and also receive and use " // &
-         "some data sent by the driver to the data model.  But " // &
-         "in most cases, the data models are not running " // &
-         "prognostically and have no need to receive any data " // &
-         "from the driver.", &
-         convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ReleaseDate", "2010", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ModelType", "Land", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "Name", "TBD", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "EmailAddress", "TBD", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ResponsiblePartyRole", "contact", convention=convCIM, purpose=purpComp, rc=rc)
-#endif
-
     call shr_file_setLogLevel(shrloglev)
     call shr_file_setLogUnit (shrlogunit)
+
+    if (use_esmf_metadata) then
+       call ModelSetMetaData(gcomp, name='DLND', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
@@ -491,17 +498,18 @@ module lnd_comp_nuopc
     ! local variables
     type(ESMF_Clock)        :: clock
     type(ESMF_Alarm)        :: alarm
+    type(ESMF_TimeInterval) :: timeStep
+    type(ESMF_Time)         :: currTime, nextTime
     type(ESMF_State)        :: importState, exportState
-    integer(IN)             :: shrlogunit    ! original log unit
-    integer(IN)             :: shrloglev     ! original log level
+    integer                 :: shrlogunit    ! original log unit
+    integer                 :: shrloglev     ! original log level
     character(CL)           :: case_name     ! case name
     logical                 :: write_restart ! write restart
-    integer(IN)             :: currentYMD    ! model date
-    integer(IN)             :: currentTOD    ! model sec into model date
-    integer(IN)             :: nextYMD       ! model date
-    integer(IN)             :: nextTOD       ! model sec into model date
-    type(ESMF_Time)         :: currTime, nextTime
-    type(ESMF_TimeInterval) :: timeStep
+    integer                 :: nextYMD       ! model date
+    integer                 :: nextTOD       ! model sec into model date
+    integer                 :: yr            ! year
+    integer                 :: mon           ! month
+    integer                 :: day           ! day in month
     character(len=*),parameter :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
@@ -520,10 +528,8 @@ module lnd_comp_nuopc
     call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug > 1) then
-       if (master_task) then
-          call shr_nuopc_methods_Clock_TimePrint(clock,subname//'clock',rc=rc)
-       end if
+    if (dbug > 5 .and. master_task) then
+       call shr_nuopc_methods_Clock_TimePrint(clock,subname//'clock',rc=rc)
     endif
 
     !--------------------------------
@@ -539,24 +545,34 @@ module lnd_comp_nuopc
     ! Run model
     !--------------------------------
 
-    write_restart = seq_timemgr_alarmIsOn(clock, seq_timemgr_alarm_restart, rc)
+    call ESMF_ClockGetAlarm(clock, alarmname='alarm_restart', alarm=alarm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call seq_timemgr_AlarmSetOff(clock, seq_timemgr_alarm_restart, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (ESMF_AlarmIsRinging(alarm, rc=rc)) then
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       write_restart = .true.
+       call ESMF_AlarmRingerOff( alarm, rc=rc )
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       write_restart = .false.
+    endif
 
     ! For nuopc - the component clock is advanced at the end of the time interval
     ! For these to match for now - need to advance nuopc one timestep ahead for
     ! shr_strdata time interpolation
-    call ESMF_ClockGet( clock, currTime=currTime, timeStep=timeStep, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    nextTime = currTime + timeStep
-    call seq_timemgr_ETimeGet( currTime, ymd=CurrentYMD, tod=CurrentTOD )
-    call seq_timemgr_ETimeGet( nextTime, ymd=NextYMD, tod=NextTOD )
 
-    call dlnd_comp_run(Clock, x2d, d2x, &
+    call ESMF_ClockGet( clock, currTime=currTime, timeStep=timeStep, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    nextTime = currTime + timeStep
+    call ESMF_TimeGet( nextTime, yy=yr, mm=mon, dd=day, s=nexttod, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call shr_cal_ymd2date(yr, mon, day, nextymd)
+
+    call dlnd_comp_run(x2d, d2x, &
        SDLND, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, read_restart, write_restart, &
-       nextYMD, nextTOD, case_name=case_name)
+       inst_suffix, logunit, read_restart=.false., write_restart=write_restart, &
+       target_ymd=nextYMD, target_tod=nextTOD, case_name=case_name)
 
     !--------------------------------
     ! Pack export state
@@ -569,107 +585,24 @@ module lnd_comp_nuopc
     ! diagnostics
     !--------------------------------
 
-    if (dbug > 1) then
-       if (my_task == master_task) then
-          call mct_aVect_info(2, d2x, istr='run diag'//':AV')
-       end if
+    if (dbug > 5) then
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
 
-    if (master_task) then
-       call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing LND from: ", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (my_task == master_task) then
+          call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing LND from: ", rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
 
-       call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
     end if
-
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
     call shr_file_setLogLevel(shrloglev)
     call shr_file_setLogUnit (shrlogunit)
 
   end subroutine ModelAdvance
-
-  !===============================================================================
-
-  subroutine ModelSetRunClock(gcomp, rc)
-    type(ESMF_GridComp)  :: gcomp
-    integer, intent(out) :: rc
-
-    ! local variables
-    type(ESMF_Clock)         :: mclock, dclock
-    type(ESMF_Time)          :: mcurrtime, dcurrtime
-    type(ESMF_Time)          :: mstoptime
-    type(ESMF_TimeInterval)  :: mtimestep, dtimestep
-    character(len=128)       :: mtimestring, dtimestring
-    type(ESMF_Alarm),pointer :: alarmList(:)
-    type(ESMF_Alarm)         :: dalarm
-    integer                  :: alarmcount, n
-    character(len=*),parameter :: subname=trim(modName)//':(ModelSetRunClock) '
-
-    rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-
-    ! query the Component for its clock, importState and exportState
-    call NUOPC_ModelGet(gcomp, driverClock=dclock, modelClock=mclock, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_ClockGet(dclock, currTime=dcurrtime, timeStep=dtimestep, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_ClockGet(mclock, currTime=mcurrtime, timeStep=mtimestep, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !--------------------------------
-    ! force model clock currtime and timestep to match driver and set stoptime
-    !--------------------------------
-
-    mstoptime = mcurrtime + dtimestep
-    call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !--------------------------------
-    ! copy alarms from driver to model clock if model clock has no alarms (do this only once!)
-    !--------------------------------
-
-    call ESMF_ClockGetAlarmList(mclock, alarmlistflag=ESMF_ALARMLIST_ALL, alarmCount=alarmCount, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (alarmCount == 0) then
-      call ESMF_ClockGetAlarmList(dclock, alarmlistflag=ESMF_ALARMLIST_ALL, alarmCount=alarmCount, rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-      allocate(alarmList(alarmCount))
-
-      call ESMF_ClockGetAlarmList(dclock, alarmlistflag=ESMF_ALARMLIST_ALL, alarmList=alarmList, rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-      do n = 1, alarmCount
-         !call ESMF_AlarmPrint(alarmList(n), rc=rc)
-         !if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-         dalarm = ESMF_AlarmCreate(alarmList(n), rc=rc)
-         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-         call ESMF_AlarmSet(dalarm, clock=mclock, rc=rc)
-         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-      enddo
-
-      deallocate(alarmList)
-    endif
-
-    !--------------------------------
-    ! Advance model clock to trigger alarms then reset model clock back to currtime
-    !--------------------------------
-
-    call ESMF_ClockAdvance(mclock,rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
-
-  end subroutine ModelSetRunClock
 
   !===============================================================================
 

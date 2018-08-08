@@ -173,6 +173,7 @@ module ocn_comp_nuopc
     character(len=512) :: diro
     character(len=512) :: logfile
     logical            :: ocnrof_prognostic ! flag
+    logical            :: init_import ! flag
     character(len=*),parameter :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
@@ -410,12 +411,18 @@ module ocn_comp_nuopc
     gsmap => gsmap_target
     ggrid => ggrid_target
 
+    if (ocn_prognostic) then
+       init_import=.true.
+    else
+       init_import=.false.
+    end if
+
     call docn_comp_init(x2d, d2x, &
          flds_x2o, flds_o2x, &
          SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
          scmMode, scmlat, scmlon, &
-         calendar, current_ymd, current_tod, modeldt, ocn_prognostic)
+         calendar, current_ymd, current_tod, modeldt, init_import)
 
     !--------------------------------
     ! generate the mesh

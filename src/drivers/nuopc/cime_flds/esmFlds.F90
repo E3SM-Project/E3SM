@@ -1789,6 +1789,14 @@ contains
     ! lnd -> glc
     !-----------------------------
 
+    ! initialize number of elevation classes
+
+    call NUOPC_CompAttributeGet(gcomp, name='glc_nec', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) glc_nec
+    call ESMF_LogWrite('glc_nec = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
+    call glc_elevclass_init(glc_nec)
+
     ! glc fields with multiple elevation classes: lnd->glc
     ! - fields sent from lnd->med are in multiple elevation classes
     ! - fields sent from med->glc do NOT have elevation classes

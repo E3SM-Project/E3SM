@@ -4,19 +4,25 @@ module atm_comp_nuopc
   ! This is the NUOPC cap for XATM
   !----------------------------------------------------------------------------
 
-  use shr_kind_mod          , only : R8=>SHR_KIND_R8, IN=>SHR_KIND_IN
-  use shr_kind_mod          , only : CS=>SHR_KIND_CS, CL=>SHR_KIND_CL, CXX => SHR_KIND_CXX
-  use shr_file_mod          , only : shr_file_getlogunit, shr_file_setlogunit
-  use shr_file_mod          , only : shr_file_getloglevel, shr_file_setloglevel
-  use shr_file_mod          , only : shr_file_getUnit
+  use ESMF
+  use NUOPC                 , only : NUOPC_CompDerive, NUOPC_CompSetEntryPoint, NUOPC_CompSpecialize
+  use NUOPC                 , only : NUOPC_CompAttributeGet, NUOPC_Advertise
+  use NUOPC_Model           , only : model_routine_SS        => SetServices
+  use NUOPC_Model           , only : model_label_Advance     => label_Advance
+  use NUOPC_Model           , only : model_label_SetRunClock => label_SetRunClock
+  use NUOPC_Model           , only : model_label_Finalize    => label_Finalize
+  use NUOPC_Model           , only : NUOPC_ModelGet
+  use med_constants_mod     , only : IN, R8, I8, CXX
+  use med_constants_mod     , only : shr_log_Unit
+  use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
+  use med_constants_mod     , only : shr_file_getloglevel, shr_file_setloglevel
+  use med_constants_mod     , only : shr_file_setIO, shr_file_getUnit
   use shr_string_mod        , only : shr_string_listGetNum
-  use seq_timemgr_mod       , only : seq_timemgr_EClockGetData
-  use esmFlds               , only : fldListFr, fldListTo, compatm, compname
-  use esmFlds               , only : flds_scalar_name
-  use esmFlds               , only : flds_scalar_num
-  use esmFlds               , only : flds_scalar_index_nx
-  use esmFlds               , only : flds_scalar_index_ny
-  use esmFlds               , only : flds_scalar_index_nextsw_cday
+  use shr_nuopc_scalars_mod , only : flds_scalar_name
+  use shr_nuopc_scalars_mod , only : flds_scalar_num
+  use shr_nuopc_scalars_mod , only : flds_scalar_index_nx
+  use shr_nuopc_scalars_mod , only : flds_scalar_index_ny
+  use shr_nuopc_scalars_mod , only : flds_scalar_index_nextsw_cday
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Realize
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Concat
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Deactivate
@@ -31,17 +37,12 @@ module atm_comp_nuopc
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
 
-  use ESMF
-  use NUOPC
-  use NUOPC_Model, &
-    model_routine_SS      => SetServices, &
-    model_label_SetClock  => label_SetClock, &
-    model_label_Advance   => label_Advance, &
-    model_label_SetRunClock => label_SetRunClock, &
-    model_label_Finalize  => label_Finalize
+  ! TODO: remove this
+  use esmFlds               , only : fldListFr, fldListTo, compatm, compname
 
   use dead_data_mod , only : dead_grid_lat, dead_grid_lon, dead_grid_index
   use dead_nuopc_mod, only : dead_init_nuopc, dead_run_nuopc, dead_final_nuopc
+  use dead_nuopc_mod, only : ModelSetRunClock
 
   implicit none
   private ! except
@@ -313,6 +314,7 @@ module atm_comp_nuopc
     ! local variables
     character(ESMF_MAXSTR) :: convCIM, purpComp
     type(ESMF_Mesh)        :: Emesh
+    type(ESMF_Time)        :: nextTime
     real(r8)               :: nextsw_cday
     integer                :: shrlogunit                ! original log unit
     integer                :: shrloglev                 ! original log level
@@ -369,8 +371,12 @@ module atm_comp_nuopc
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Set time of next radiadtion computation
-    call seq_timemgr_EClockGetData (clock, next_cday=nextsw_cday)
+    ! Set time of next radiation computation
+
+    call ESMF_ClockGetNextTime(clock, nextTime)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_TimeGet(nextTime, dayOfYear_r8=nextsw_cday)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call shr_nuopc_methods_State_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState, mpicom, &
          flds_scalar_name, flds_scalar_num, rc)
@@ -416,14 +422,22 @@ module atm_comp_nuopc
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)         :: clock
-    type(ESMF_Time)          :: time
-    type(ESMF_State)         :: importState, exportState
-    integer                  :: CurrentYMD, CurrentTOD
-    integer                  :: shrlogunit     ! original log unit
-    integer                  :: shrloglev      ! original log level
-    character(CL)            :: case_name      ! case name
-    real(r8)                 :: nextsw_cday
+    type(ESMF_Clock) :: clock
+    type(ESMF_Time)  :: nexttime
+    type(ESMF_State) :: importState, exportState
+    integer          :: CurrentYMD, CurrentTOD
+    real(r8)         :: nextsw_cday
+    integer          :: shrlogunit ! original log unit
+    integer          :: shrloglev  ! original log level
+    integer(IN)      :: n          ! index
+    integer(IN)      :: nf         ! fields loop index
+    integer(IN)      :: ki         ! index
+    integer(IN)      :: lsize      ! size of AttrVect
+    real(R8)         :: lat        ! latitude
+    real(R8)         :: lon        ! longitude
+    integer          :: nflds_x2d
+    integer          :: nflds_d2x
+    integer          :: ncomp
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
@@ -447,7 +461,7 @@ module atm_comp_nuopc
     endif
 
     !--------------------------------
-    ! Unpack export state
+    ! unpack import state
     !--------------------------------
 
     call shr_nuopc_grid_StateToArray(importState, x2d, flds_x2a, grid_option, rc=rc)
@@ -457,7 +471,41 @@ module atm_comp_nuopc
     ! Run model
     !--------------------------------
 
-    call dead_run_nuopc('atm', clock, x2d, d2x, gbuf, flds_a2x, my_task, master_task, logunit)
+    nflds_x2d = size(x2d, dim=1)
+    nflds_d2x = size(d2x, dim=1)
+    lsize     = size(d2x, dim=2)
+    ncomp     = 1
+
+    do nf=1,nflds_d2x
+       do n=1,lsize
+          lon = gbuf(n,dead_grid_lon)
+          lat = gbuf(n,dead_grid_lat)
+          d2x(nf,n) = (nf*100)                          &
+               *  cos (SHR_CONST_PI*lat/180.0_R8)       &
+               *  sin((SHR_CONST_PI*lon/180.0_R8)       &
+               -      (ncomp-1)*(SHR_CONST_PI/3.0_R8) ) &
+               + (ncomp*10.0_R8)
+       enddo
+    enddo
+
+    ! log output for model date
+
+    if (my_task == master_task) then
+       call ESMF_ClockGet(clock, currTime, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+
+       call ESMF_TimeGet( currTime, yy=current_year, mm=current_mon, dd=current_day, s=current_tod, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+       call shr_cal_ymd2date(current_year, current_mon, current_day, current_ymd)
+
+       write(logunit,F04) model,trim(model),': model date ', Current_ymd,Current_tod
+    end if
 
     !--------------------------------
     ! Pack export state
@@ -466,7 +514,10 @@ module atm_comp_nuopc
     call shr_nuopc_grid_ArrayToState(d2x, flds_a2x, exportState, grid_option, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call seq_timemgr_EClockGetData (clock, next_cday=nextsw_cday)
+    call ESMF_ClockGetNextTime(clock, nextTime)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_TimeGet(nextTime, dayOfYear_r8=nextsw_cday)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call shr_nuopc_methods_State_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState, mpicom, &
          flds_scalar_name, flds_scalar_num, rc)
@@ -497,92 +548,6 @@ module atm_comp_nuopc
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelAdvance
-
-  !===============================================================================
-
-  subroutine ModelSetRunClock(gcomp, rc)
-    type(ESMF_GridComp)  :: gcomp
-    integer, intent(out) :: rc
-
-    ! local variables
-    type(ESMF_Clock)         :: mclock, dclock
-    type(ESMF_Time)          :: mcurrtime, dcurrtime
-    type(ESMF_Time)          :: mstoptime
-    type(ESMF_TimeInterval)  :: mtimestep, dtimestep
-    character(len=128)       :: mtimestring, dtimestring
-    type(ESMF_Alarm),pointer :: alarmList(:)
-    type(ESMF_Alarm)         :: dalarm
-    integer                  :: alarmcount, n
-    character(len=*),parameter :: subname=trim(modName)//':(ModelSetRunClock) '
-
-    rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-
-    ! query the Component for its clock, importState and exportState
-    call NUOPC_ModelGet(gcomp, driverClock=dclock, modelClock=mclock, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_ClockGet(dclock, currTime=dcurrtime, timeStep=dtimestep, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_ClockGet(mclock, currTime=mcurrtime, timeStep=mtimestep, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !--------------------------------
-    ! check that the current time in the model and driver are the same
-    !--------------------------------
-
-    if (mcurrtime /= dcurrtime) then
-      call ESMF_TimeGet(dcurrtime, timeString=dtimestring, rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-      call ESMF_TimeGet(mcurrtime, timeString=mtimestring, rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-      rc=ESMF_Failure
-      call ESMF_LogWrite(subname//" ERROR in time consistency; "//trim(dtimestring)//" ne "//trim(mtimestring),  &
-           ESMF_LOGMSG_ERROR, rc=dbrc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-
-    !--------------------------------
-    ! force the driver timestep into the model clock for consistency
-    ! by default, the model timestep is probably the slowest timestep in the system
-    ! while the driver timestep will be the timestep for this NUOPC slot
-    ! also update the model stop time for this timestep
-    !--------------------------------
-
-    mstoptime = mcurrtime + dtimestep
-
-    call ESMF_ClockSet(mclock, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_ClockGetAlarmList(mclock, alarmlistflag=ESMF_ALARMLIST_ALL, alarmCount=alarmCount, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !--------------------------------
-    ! copy alarms from driver to model clock if model clock has no alarms (do this only once!)
-    !--------------------------------
-
-    if (alarmCount == 0) then
-       call ESMF_ClockGetAlarmList(dclock, alarmlistflag=ESMF_ALARMLIST_ALL, alarmCount=alarmCount, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       allocate(alarmList(alarmCount))
-       call ESMF_ClockGetAlarmList(dclock, alarmlistflag=ESMF_ALARMLIST_ALL, alarmList=alarmList, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       do n = 1, alarmCount
-          ! call ESMF_AlarmPrint(alarmList(n), rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          dalarm = ESMF_AlarmCreate(alarmList(n), rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_AlarmSet(dalarm, clock=mclock, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       enddo
-
-       deallocate(alarmList)
-    endif
-
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
-
-  end subroutine ModelSetRunClock
 
   !===============================================================================
 

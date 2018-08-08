@@ -4,43 +4,39 @@ module wav_comp_nuopc
   ! This is the NUOPC cap for DWAV
   !----------------------------------------------------------------------------
 
-  use shr_kind_mod          , only : R8=>SHR_KIND_R8, IN=>SHR_KIND_IN
-  use shr_kind_mod          , only : CS=>SHR_KIND_CS, CL=>SHR_KIND_CL, CXX => shr_kind_CXX
-  use shr_log_mod           , only : shr_log_Unit
-  use shr_file_mod          , only : shr_file_getlogunit, shr_file_setlogunit
-  use shr_file_mod          , only : shr_file_getloglevel, shr_file_setloglevel
-  use shr_file_mod          , only : shr_file_setIO, shr_file_getUnit
-  use seq_timemgr_mod       , only : seq_timemgr_EClockPrint
-  use seq_timemgr_mod       , only : seq_timemgr_ETimeGet, seq_timemgr_alarmSetOff
-  use seq_timemgr_mod       , only : seq_timemgr_alarm_restart, seq_timemgr_alarmIsOn
-  use esmFlds               , only : fldListFr, fldListTo, compwav, compname
-  use esmFlds               , only : flds_scalar_name
-  use esmFlds               , only : flds_scalar_num
-  use esmFlds               , only : flds_scalar_index_nx
-  use esmFlds               , only : flds_scalar_index_ny
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Realize
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Concat
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Deactivate
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Getnumflds
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Getfldinfo
+  use ESMF
+  use NUOPC                 , only : NUOPC_CompDerive, NUOPC_CompSetEntryPoint, NUOPC_CompSpecialize
+  use NUOPC                 , only : NUOPC_CompAttributeGet, NUOPC_Advertise
+  use NUOPC_Model           , only : model_routine_SS        => SetServices
+  use NUOPC_Model           , only : model_label_Advance     => label_Advance
+  use NUOPC_Model           , only : model_label_SetRunClock => label_SetRunClock
+  use NUOPC_Model           , only : model_label_Finalize    => label_Finalize
+  use NUOPC_Model           , only : NUOPC_ModelGet
+  use med_constants_mod     , only : R8, CXX, CL, CS
+  use med_constants_mod     , only : shr_log_Unit
+  use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
+  use med_constants_mod     , only : shr_file_getloglevel, shr_file_setloglevel
+  use med_constants_mod     , only : shr_file_setIO, shr_file_getUnit
+  use med_constants_mod     , only : shr_cal_ymd2date, shr_cal_noleap, shr_cal_gregorian
+  use shr_nuopc_scalars_mod , only : flds_scalar_name
+  use shr_nuopc_scalars_mod , only : flds_scalar_num
+  use shr_nuopc_scalars_mod , only : flds_scalar_index_nx
+  use shr_nuopc_scalars_mod , only : flds_scalar_index_ny
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar, shr_nuopc_methods_State_Diagnose
+  use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
+  use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_Diagnose
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_Meshinit
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
-  use shr_file_mod          , only : shr_file_getlogunit, shr_file_setlogunit
-  use shr_file_mod          , only : shr_file_getloglevel, shr_file_setloglevel
-  use shr_file_mod          , only : shr_file_setIO, shr_file_getUnit
+  use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
   use shr_strdata_mod       , only : shr_strdata_type
-
-  use ESMF
-  use NUOPC
-  use NUOPC_Model, &
-    model_routine_SS      => SetServices, &
-    model_label_Advance   => label_Advance, &
-    model_label_SetRunClock => label_SetRunClock, &
-    model_label_Finalize  => label_Finalize
+  use dshr_nuopc_mod        , only : fld_list_type, fldsMax
+  use dshr_nuopc_mod        , only : fld_list_add
+  use dshr_nuopc_mod        , only : fld_list_realize
+  use dshr_nuopc_mod        , only : ModelInitPhase
+  use dshr_nuopc_mod        , only : ModelSetRunClock
+  use dshr_nuopc_mod        , only : ModelSetMetaData
 
   use dwav_shr_mod , only: dwav_shr_read_namelists
   use dwav_comp_mod, only: dwav_comp_init, dwav_comp_run, dwav_comp_final
@@ -48,13 +44,11 @@ module wav_comp_nuopc
 
   implicit none
 
-  public :: SetServices
+  public  :: SetServices
 
-  private :: InitializeP0
   private :: InitializeAdvertise
   private :: InitializeRealize
   private :: ModelAdvance
-  private :: ModelSetRunClock
   private :: ModelFinalize
 
   private ! except
@@ -63,7 +57,12 @@ module wav_comp_nuopc
   ! Private module data
   !--------------------------------------------------------------------------
 
-  character(CS)              :: myModelName = 'wav'       ! user defined model name
+  integer                    :: fldsToWav_num = 0
+  integer                    :: fldsFrWav_num = 0
+  type (fld_list_type)       :: fldsToWav(fldsMax)
+  type (fld_list_type)       :: fldsFrWav(fldsMax)
+
+  character(len=3)           :: myModelName = 'wav'       ! user defined model name
   type(shr_strdata_type)     :: SDWAV
   type(mct_gsMap), target    :: gsMap_target
   type(mct_gGrid), target    :: ggrid_target
@@ -71,15 +70,15 @@ module wav_comp_nuopc
   type(mct_gGrid), pointer   :: ggrid
   type(mct_aVect)            :: x2d
   type(mct_aVect)            :: d2x
-  integer(IN)                :: compid                    ! mct comp id
-  integer(IN)                :: mpicom                    ! mpi communicator
-  integer(IN)                :: my_task                   ! my task in mpi communicator mpicom
+  integer                    :: compid                    ! mct comp id
+  integer                    :: mpicom                    ! mpi communicator
+  integer                    :: my_task                   ! my task in mpi communicator mpicom
   integer                    :: inst_index                ! number of current instance (ie. 1)
   character(len=16)          :: inst_name                 ! fullname of current instance (ie. "wav_0001")
   character(len=16)          :: inst_suffix = ""          ! char string associated with instance (ie. "_0001" or "")
-  integer(IN)                :: logunit                   ! logging unit number
-  integer(IN),parameter      :: master_task=0             ! task number of master task
-  integer(IN)                :: localPet
+  integer                    :: logunit                   ! logging unit number
+  integer    ,parameter      :: master_task=0             ! task number of master task
+  integer                    :: localPet
   logical                    :: read_restart              ! start from restart
   logical                    :: wav_prognostic            ! flag
   logical                    :: unpack_import
@@ -112,7 +111,8 @@ module wav_comp_nuopc
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! switching to IPD versions
-    call ESMF_GridCompSetEntryPoint(gcomp, ESMF_METHOD_INITIALIZE, userRoutine=InitializeP0, phase=0, rc=rc)
+    call ESMF_GridCompSetEntryPoint(gcomp, ESMF_METHOD_INITIALIZE, &
+         userRoutine=ModelInitPhase, phase=0, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! set entry point for methods that require specific implementation
@@ -143,23 +143,6 @@ module wav_comp_nuopc
 
   !===============================================================================
 
-  subroutine InitializeP0(gcomp, importState, exportState, clock, rc)
-    type(ESMF_GridComp)   :: gcomp
-    type(ESMF_State)      :: importState, exportState
-    type(ESMF_Clock)      :: clock
-    integer, intent(out)  :: rc
-    !-------------------------------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    ! Switch to IPDv01 by filtering all other phaseMap entries
-    call NUOPC_CompFilterPhaseMap(gcomp, ESMF_METHOD_INITIALIZE, acceptStringList=(/"IPDv01p"/), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-  end subroutine InitializeP0
-
-  !===============================================================================
-
   subroutine InitializeAdvertise(gcomp, importState, exportState, clock, rc)
     type(ESMF_GridComp)  :: gcomp
     type(ESMF_State)     :: importState, exportState
@@ -169,14 +152,14 @@ module wav_comp_nuopc
     ! local variables
     logical            :: wav_present ! flag
     type(ESMF_VM)      :: vm
-    integer(IN)        :: lmpicom
+    integer            :: lmpicom
     character(CL)      :: cvalue
     character(CS)      :: stdname, shortname
     logical            :: activefld
-    integer(IN)        :: n,nflds
-    integer(IN)        :: ierr        ! error code
-    integer(IN)        :: shrlogunit  ! original log unit
-    integer(IN)        :: shrloglev   ! original log level
+    integer            :: n,nflds
+    integer            :: ierr        ! error code
+    integer            :: shrlogunit  ! original log unit
+    integer            :: shrloglev   ! original log level
     logical            :: isPresent
     character(len=512) :: diro
     character(len=512) :: logfile
@@ -248,41 +231,20 @@ module wav_comp_nuopc
          logunit, shrlogunit, SDWAV, wav_present, wav_prognostic)
 
     !--------------------------------
-    ! create import and export field list needed by data models
-    !--------------------------------
-
-    call shr_nuopc_fldList_Concat(fldListFr(compwav), fldListTo(compwav), flds_w2x, flds_x2w, flds_scalar_name)
-
-    !--------------------------------
     ! advertise import and export fields
     !--------------------------------
 
-    ! First deactivate fldListTo(compatm) if atm_prognostic is .false.
-    if (.not. wav_prognostic) then
-       call shr_nuopc_fldList_Deactivate(fldListTo(compwav), flds_scalar_name)
+    if (wav_present) then
+       !-----------------
+       ! export fields
+       !-----------------
+
+       call fld_list_add(fldsFrWav_num, fldsFrWav, trim(flds_scalar_name))
+       call fld_list_add(fldsFrWav_num, fldsFrWav, 'Sw_lamult')
+       call fld_list_add(fldsFrWav_num, fldsFrWav, 'Sw_ustokes')
+       call fld_list_add(fldsFrWav_num, fldsFrWav, 'Sw_vstokes')
+
     end if
-
-    nflds = shr_nuopc_fldList_Getnumflds(fldListFr(compwav))
-    do n = 1,nflds
-       call shr_nuopc_fldList_Getfldinfo(fldListFr(compwav), n, activefld, stdname, shortname)
-       if (activefld) then
-          call NUOPC_Advertise(exportState, standardName=stdname, shortname=shortname, name=shortname, &
-               TransferOfferGeomObject='will provide', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_LogWrite(subname//':Fr_'//trim(compname(compwav))//': '//trim(shortname), ESMF_LOGMSG_INFO)
-       end if
-    end do
-
-    nflds = shr_nuopc_fldList_Getnumflds(fldListTo(compwav))
-    do n = 1,nflds
-       call shr_nuopc_fldList_Getfldinfo(fldListTo(compwav), n, activefld, stdname, shortname)
-       if (activefld) then
-          call NUOPC_Advertise(importState, standardName=stdname, shortname=shortname, name=shortname, &
-               TransferOfferGeomObject='will provide', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_LogWrite(subname//':To_'//trim(compname(compwav))//': '//trim(shortname), ESMF_LOGMSG_INFO)
-       end if
-    end do
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
@@ -311,10 +273,10 @@ module wav_comp_nuopc
     type(ESMF_VM)            :: vm
     integer                  :: n
     character(CL)            :: cvalue
-    integer(IN)              :: shrlogunit                ! original log unit
-    integer(IN)              :: shrloglev                 ! original log level
+    integer                  :: shrlogunit                ! original log unit
+    integer                  :: shrloglev                 ! original log level
     logical                  :: read_restart              ! start from restart
-    integer(IN)              :: ierr                      ! error code
+    integer                  :: ierr                      ! error code
     logical                  :: scmMode = .false.         ! single column mode
     real(R8)                 :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)                 :: scmLon  = shr_const_SPVAL ! single column lon
@@ -478,14 +440,14 @@ module wav_comp_nuopc
     type(ESMF_Clock)        :: clock
     type(ESMF_Alarm)        :: alarm
     type(ESMF_State)        :: importState, exportState
-    integer(IN)             :: shrlogunit    ! original log unit
-    integer(IN)             :: shrloglev     ! original log level
+    integer                 :: shrlogunit    ! original log unit
+    integer                 :: shrloglev     ! original log level
     character(CL)           :: case_name     ! case name
     logical                 :: write_restart ! write a restart
-    integer(IN)             :: currentYMD    ! model date
-    integer(IN)             :: currentTOD    ! model sec into model date
-    integer(IN)             :: nextYMD       ! model date
-    integer(IN)             :: nextTOD       ! model sec into model date
+    integer                 :: currentYMD    ! model date
+    integer                 :: currentTOD    ! model sec into model date
+    integer                 :: nextYMD       ! model date
+    integer                 :: nextTOD       ! model sec into model date
     type(ESMF_Time)         :: currTime, nextTime
     type(ESMF_TimeInterval) :: timeStep
     character(len=*),parameter :: subname=trim(modName)//':(ModelAdvance) '

@@ -586,16 +586,15 @@ contains
 
     ! local variables
     type(ESMF_Clock)        :: clock
-    type(ESMF_Time)         :: time
-    type(ESMF_State)        :: importState, exportState
     type(ESMF_Alarm)        :: alarm
+    type(ESMF_Time)         :: currTime, nextTime
+    type(ESMF_TimeInterval) :: timeStep
+    type(ESMF_State)        :: importState, exportState
     integer                 :: shrlogunit    ! original log unit
     integer                 :: shrloglev     ! original log level
     logical                 :: write_restart ! restart alarm is ringing
     integer                 :: nextYMD       ! model date
     integer                 :: nextTOD       ! model sec into model date
-    type(ESMF_Time)         :: currTime, nextTime
-    type(ESMF_TimeInterval) :: timeStep
     integer                 :: yr            ! year
     integer                 :: mon           ! month
     integer                 :: day           ! day in month

@@ -105,7 +105,7 @@ contains
        SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
        scmMode, scmlat, scmlon, &
-       calendar, current_ymd, current_tod, modeldt, ocn_prognostic)
+       calendar, current_ymd, current_tod, modeldt, init_import)
 
     ! !DESCRIPTION: initialize docn model
     use pio        , only : iosystem_desc_t
@@ -133,7 +133,7 @@ contains
     integer                , intent(in)    :: current_ymd    ! model date
     integer                , intent(in)    :: current_tod    ! model sec into model date
     integer                , intent(in)    :: modeldt        ! model time step
-    logical                , intent(in)    :: ocn_prognostic ! True=> import data used
+    logical                , intent(in)    :: init_import    ! True=> initialize import avs
 
     !--- local variables ---
     integer(IN)   :: n,k      ! generic counters
@@ -237,7 +237,7 @@ contains
     kswp  = mct_aVect_indexRA(o2x,'So_fswpen', perrwith='quiet') 
     kq    = mct_aVect_indexRA(o2x,'Fioo_q')
 
-    if (ocn_prognostic) then
+    if (init_import) then
        call mct_aVect_init(x2o, rList=flds_x2o, lsize=lsize)
        call mct_aVect_zero(x2o)
 

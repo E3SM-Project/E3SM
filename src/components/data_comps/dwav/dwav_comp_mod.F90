@@ -4,10 +4,9 @@
 module dwav_comp_mod
 
   ! !USES:
-  use esmf
+
   use mct_mod
   use perf_mod
-  use shr_pcdf_mod
   use shr_sys_mod
   use shr_kind_mod      , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_file_mod      , only: shr_file_getunit, shr_file_freeunit
@@ -18,7 +17,6 @@ module dwav_comp_mod
   use shr_dmodel_mod    , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
   use shr_dmodel_mod    , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
   use shr_cal_mod       , only: shr_cal_datetod2string
-  use seq_timemgr_mod   , only: seq_timemgr_EClockGetData
 
   use dwav_shr_mod   , only: datamode       ! namelist input
   use dwav_shr_mod   , only: decomp         ! namelist input
@@ -47,65 +45,48 @@ module dwav_comp_mod
   character(len=*),parameter :: rpfile = 'rpointer.wav'
   type(mct_rearr)            :: rearr
 
-  !--------------------------------------------------------------------------
-  integer(IN),parameter :: ktrans = 3
+  integer    ,parameter :: ktrans = 3
   character(12),parameter  :: avofld(1:ktrans) =  (/"Sw_lamult   ","Sw_ustokes  ","Sw_vstokes  "/)
   character(12),parameter  :: avifld(1:ktrans) =  (/"lamult      ","ustokes     ","vstokes     "/)
-  !--------------------------------------------------------------------------
 
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-CONTAINS
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!===============================================================================
+contains
+!===============================================================================
 
-  !===============================================================================
-  subroutine dwav_comp_init(Eclock, x2w, w2x, &
+  subroutine dwav_comp_init(x2w, w2x, &
+       w2x_fields, x2w_fields, &
        SDWAV, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
-       seq_flds_w2x_fields, seq_flds_x2w_fields)
+       calendar, current_ymd, current_tod)
 
     ! !DESCRIPTION: initialize dwav model
-    use pio        , only : iosystem_desc_t
-    use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock)       , intent(in)    :: EClock
     type(mct_aVect)        , intent(inout) :: x2w, w2x            ! input/output attribute vectors
+    character(len=*)       , intent(in)    :: x2w_fields          ! fields to mediator
+    character(len=*)       , intent(in)    :: w2x_fields          ! fields from mediator
     type(shr_strdata_type) , intent(inout) :: SDWAV               ! model
     type(mct_gsMap)        , pointer       :: gsMap               ! model global seg map (output)
     type(mct_gGrid)        , pointer       :: ggrid               ! model ggrid (output)
-    integer(IN)            , intent(in)    :: mpicom              ! mpi communicator
-    integer(IN)            , intent(in)    :: compid              ! mct comp id
-    integer(IN)            , intent(in)    :: my_task             ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task         ! task number of master task
+    integer                , intent(in)    :: mpicom              ! mpi communicator
+    integer                , intent(in)    :: compid              ! mct comp id
+    integer                , intent(in)    :: my_task             ! my task in mpi communicator mpicom
+    integer                , intent(in)    :: master_task         ! task number of master task
     character(len=*)       , intent(in)    :: inst_suffix         ! char string associated with instance
     character(len=*)       , intent(in)    :: inst_name           ! fullname of current instance (ie. "wav_0001")
-    integer(IN)            , intent(in)    :: logunit             ! logging unit number
+    integer                , intent(in)    :: logunit             ! logging unit number
     logical                , intent(in)    :: read_restart        ! start from restart
-    character(len=*)       , intent(in)    :: seq_flds_x2w_fields ! fields to mediator
-    character(len=*)       , intent(in)    :: seq_flds_w2x_fields ! fields from mediator
+    character(len=*)       , intent(in)    :: calendar            ! model calendar
+    integer                , intent(in)    :: current_ymd         ! model date
+    integer                , intent(in)    :: current_tod         ! model sec into model date
 
     !--- local variables ---
-    integer(IN)   :: n,k       ! generic counters
-    integer(IN)   :: ierr      ! error code
-    integer(IN)   :: lsize     ! local size
-    logical       :: exists, exists1    ! file existance
-    integer(IN)   :: nu        ! unit number
-    character(CL) :: calendar  ! model calendar
-    integer(IN)   :: currentYMD ! model date
-    integer(IN)   :: currentTOD ! model sec into model date
+    integer       :: n,k       ! generic counters
+    integer       :: lsize     ! local size
+    logical       :: exists    ! file existance
+    integer       :: nu        ! unit number
     logical       :: write_restart
-
-    !--- formats ---
     character(*), parameter :: F00   = "('(dwav_comp_init) ',8a)"
-    character(*), parameter :: F0L   = "('(dwav_comp_init) ',a, l2)"
-    character(*), parameter :: F01   = "('(dwav_comp_init) ',a,5i8)"
-    character(*), parameter :: F02   = "('(dwav_comp_init) ',a,4es13.6)"
-    character(*), parameter :: F03   = "('(dwav_comp_init) ',a,i8,a)"
-    character(*), parameter :: F04   = "('(dwav_comp_init) ',2a,2i8,'s')"
-    character(*), parameter :: F05   = "('(dwav_comp_init) ',a,2f10.4)"
-    character(*), parameter :: F90   = "('(dwav_comp_init) ',73('='))"
-    character(*), parameter :: F91   = "('(dwav_comp_init) ',73('-'))"
     character(*), parameter :: subName = "(dwav_comp_init) "
     !-------------------------------------------------------------------------------
 
@@ -115,15 +96,13 @@ CONTAINS
     ! Initialize pio
     !----------------------------------------------------------------------------
 
-    call shr_strdata_pioinit(SDWAV, COMPID)
+    call shr_strdata_pioinit(SDWAV, compid)
 
     !----------------------------------------------------------------------------
     ! Initialize SDWAV
     !----------------------------------------------------------------------------
 
     call t_startf('dwav_strdata_init')
-
-    call seq_timemgr_EClockGetData( EClock, calendar=calendar )
 
     ! NOTE: shr_strdata_init calls shr_dmodel_readgrid which reads the data model
     ! grid and from that computes SDWAV%gsmap and SDWAV%ggrid. DWAV%gsmap is created
@@ -144,7 +123,6 @@ CONTAINS
     call t_startf('dwav_initgsmaps')
 
     if (my_task == master_task) write(logunit,F00) ' initialize gsmaps'
-    call shr_sys_flush(logunit)
 
     ! create a data model global seqmap (gsmap) given the data model global grid sizes
     ! NOTE: gsmap is initialized using the decomp read in from the dwav_in namelist
@@ -156,7 +134,6 @@ CONTAINS
     call mct_rearr_init(SDWAV%gsmap,gsmap,mpicom,rearr)
 
     write(logunit,*)'lsize= ',lsize
-    call shr_sys_flush(logunit)
 
     call t_stopf('dwav_initgsmaps')
 
@@ -168,7 +145,6 @@ CONTAINS
     !write(logunit,F00)' dwav_initmctdom...'
 
     if (my_task == master_task) write(logunit,F00) 'copy domains'
-    call shr_sys_flush(logunit)
 
     call shr_dmodel_rearrGGrid(SDWAV%grid, ggrid, gsmap, rearr, mpicom)
 
@@ -178,43 +154,33 @@ CONTAINS
     ! Initialize MCT attribute vectors
     !----------------------------------------------------------------------------
 
-    call t_startf('dwav_initmctavs')
-    !write(logunit,F00)' dwav_initmctavs...'
-
     if (my_task == master_task) write(logunit,F00) 'allocate AVs'
-    call shr_sys_flush(logunit)
 
-    call mct_avect_init(w2x, rlist=seq_flds_w2x_fields, lsize=lsize)
+    call mct_avect_init(w2x, rlist=w2x_fields, lsize=lsize)
     call mct_avect_zero(w2x)
-
-    call mct_avect_init(x2w, rlist=seq_flds_x2w_fields, lsize=lsize)
+    call mct_avect_init(x2w, rlist=x2w_fields, lsize=lsize)
     call mct_avect_zero(x2w)
-
-    call t_stopf('dwav_initmctavs')
 
     !----------------------------------------------------------------------------
     ! Read restart
     !----------------------------------------------------------------------------
 
     if (read_restart) then
-       exists = .false.
-       exists1 = .false.
-       if (trim(rest_file)      == trim(nullstr) .and. &
-           trim(rest_file_strm) == trim(nullstr)) then
+       if (trim(rest_file) == trim(nullstr) .and. trim(rest_file_strm) == trim(nullstr)) then
           if (my_task == master_task) then
-             write(logunit,F00) ' restart filenames from rpointer = ',trim(rpfile)
-             call shr_sys_flush(logunit)
+             write(logunit,F00) ' restart filenames from rpointer'
              inquire(file=trim(rpfile)//trim(inst_suffix),exist=exists)
-             if (exists) then
-                nu = shr_file_getUnit()
-                open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
-                read(nu,'(a)') rest_file
-                read(nu,'(a)') rest_file_strm
-                close(nu)
-                call shr_file_freeUnit(nu)
-                inquire(file=trim(rest_file_strm),exist=exists)
-                inquire(file=trim(rest_file),exist=exists1)
+             if (.not.exists) then
+                write(logunit,F00) ' ERROR: rpointer file does not exist'
+                call shr_sys_abort(trim(subname)//' ERROR: rpointer file missing')
              endif
+             nu = shr_file_getUnit()
+             open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
+             read(nu,'(a)') rest_file
+             read(nu,'(a)') rest_file_strm
+             close(nu)
+             call shr_file_freeUnit(nu)
+             inquire(file=trim(rest_file_strm),exist=exists)
           endif
           call shr_mpi_bcast(rest_file,mpicom,'rest_file')
           call shr_mpi_bcast(rest_file_strm,mpicom,'rest_file_strm')
@@ -222,29 +188,16 @@ CONTAINS
           ! use namelist already read
           if (my_task == master_task) then
              write(logunit,F00) ' restart filenames from namelist '
-             call shr_sys_flush(logunit)
              inquire(file=trim(rest_file_strm),exist=exists)
           endif
        endif
-
        call shr_mpi_bcast(exists,mpicom,'exists')
-       call shr_mpi_bcast(exists1,mpicom,'exists1')
-
-       if (exists1) then
-          if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
-          call shr_pcdf_readwrite('read',SDWAV%pio_subsystem, SDWAV%io_type, &
-               trim(rest_file),mpicom,gsmap=gsmap,rf1=water,rf1n='water',io_format=SDWAV%io_format)
-       else
-          if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file)
-       endif
-
-        if (exists) then
+       if (exists) then
           if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file_strm)
           call shr_strdata_restRead(trim(rest_file_strm),SDWAV,mpicom)
        else
           if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file_strm)
        endif
-       call shr_sys_flush(logunit)
     endif
 
     !----------------------------------------------------------------------------
@@ -253,18 +206,15 @@ CONTAINS
 
     call t_adj_detailf(+2)
 
-    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
-
     write_restart = .false.
     call dwav_comp_run(EClock, x2w, w2x, &
          SDWAV, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, logunit, read_restart, write_restart, &
-         currentYMD, currentTOD)
+         current_ymd, current_tod)
 
     call t_adj_detailf(-2)
 
     if (my_task == master_task) write(logunit, F00) 'dwav_comp_init done'
-    call shr_sys_flush(logunit)
 
     call t_stopf('DWAV_INIT')
 
@@ -287,24 +237,24 @@ CONTAINS
     type(shr_strdata_type) , intent(inout) :: SDWAV
     type(mct_gsMap)        , pointer       :: gsMap
     type(mct_gGrid)        , pointer       :: ggrid
-    integer(IN)            , intent(in)    :: mpicom           ! mpi communicator
-    integer(IN)            , intent(in)    :: compid           ! mct comp id
-    integer(IN)            , intent(in)    :: my_task          ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task      ! task number of master task
+    integer                , intent(in)    :: mpicom           ! mpi communicator
+    integer                , intent(in)    :: compid           ! mct comp id
+    integer                , intent(in)    :: my_task          ! my task in mpi communicator mpicom
+    integer                , intent(in)    :: master_task      ! task number of master task
     character(len=*)       , intent(in)    :: inst_suffix      ! char string associated with instance
-    integer(IN)            , intent(in)    :: logunit          ! logging unit number
+    integer                , intent(in)    :: logunit          ! logging unit number
     logical                , intent(in)    :: read_restart     ! start from restart
     logical                , intent(in)    :: write_restart    ! write restart
-    integer(IN)            , intent(in)    :: target_ymd       ! model date
-    integer(IN)            , intent(in)    :: target_tod       ! model sec into model date
+    integer                , intent(in)    :: target_ymd       ! model date
+    integer                , intent(in)    :: target_tod       ! model sec into model date
     character(CL)          , intent(in), optional :: case_name ! case name
 
     !--- local ---
-    integer(IN)   :: yy,mm,dd,tod          ! year month day time-of-day
-    integer(IN)   :: n                     ! indices
-    integer(IN)   :: idt                   ! integer timestep
+    integer       :: yy,mm,dd,tod          ! year month day time-of-day
+    integer       :: n                     ! indices
+    integer       :: idt                   ! integer timestep
     real(R8)      :: dt                    ! timestep
-    integer(IN)   :: nu                    ! unit number
+    integer       :: nu                    ! unit number
     character(len=18) :: date_str
 
     character(*), parameter :: F00   = "('(dwav_comp_run) ',8a)"
@@ -366,8 +316,7 @@ CONTAINS
 
     if (write_restart) then
        call t_startf('dwav_restart')
-       call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd)
-       call shr_cal_datetod2string(date_str, target_ymd, target_tod)
+       call shr_cal_ymdtod2string(date_str, yy,mm,dd,currentTOD)
        write(rest_file,"(6a)") &
             trim(case_name), '.dwav',trim(inst_suffix),'.r.', &
             trim(date_str),'.nc'
@@ -382,9 +331,8 @@ CONTAINS
           close(nu)
           call shr_file_freeUnit(nu)
        endif
-       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),target_ymd,target_tod
+       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),currentYMD,currentTOD
        call shr_strdata_restWrite(trim(rest_file_strm),SDWAV,mpicom,trim(case_name),'SDWAV strdata')
-       call shr_sys_flush(logunit)
        call t_stopf('dwav_restart')
     endif
 
@@ -395,12 +343,9 @@ CONTAINS
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
 
-    call t_startf('dwav_run2')
     if (my_task == master_task) then
        write(logunit,F04) trim(myModelName),': model date ', target_ymd,target_tod
-       call shr_sys_flush(logunit)
     end if
-    call t_stopf('dwav_run2')
 
     call t_stopf('DWAV_RUN')
 
@@ -410,12 +355,11 @@ CONTAINS
   subroutine dwav_comp_final(my_task, master_task, logunit)
 
     ! !DESCRIPTION:  finalize method for dwav model
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
-    integer(IN) , intent(in) :: my_task     ! my task in mpi communicator mpicom
-    integer(IN) , intent(in) :: master_task ! task number of master task
-    integer(IN) , intent(in) :: logunit     ! logging unit number
+    integer , intent(in) :: my_task     ! my task in mpi communicator mpicom
+    integer , intent(in) :: master_task ! task number of master task
+    integer , intent(in) :: logunit     ! logging unit number
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dwav_comp_final) ',8a)"

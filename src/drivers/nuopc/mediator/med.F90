@@ -26,8 +26,8 @@ module MED
   private SetRunClock
   private med_finalize
 
-  character(len=*)  , parameter :: grid_arbopt = "grid_reg"   ! grid_reg or grid_arb
-  character(*), parameter :: u_FILE_u  = &
+  character(len=*), parameter :: grid_arbopt = "grid_reg"   ! grid_reg or grid_arb
+  character(len=*), parameter :: u_FILE_u  = &
        __FILE__
 
 !-----------------------------------------------------------------------------
@@ -1766,7 +1766,7 @@ contains
     !---------------------------------------
 
     if (.not. is_local%wrap%comp_present(compocn)) ocnDone = .true.
-    if (.not. is_local%wrap%comp_present(compocn)) atmDone = .true.
+    if (.not. is_local%wrap%comp_present(compatm)) atmDone = .true.
 
     if (.not. atmDone .and. ocnDone .and. is_local%wrap%comp_present(compatm)) then
        atmDone = .true.  ! reset if an item is found that is not done
@@ -1828,10 +1828,12 @@ contains
           call ESMF_LogWrite("MED - Initialize-Data-Dependency Sending Data to ATM", ESMF_LOGMSG_INFO, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
       endif
-   else
-      ! Copy the NstateImp(compatm) to FBImp(compatm)
-      call med_connectors_post_atm2med(gcomp, rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       if (is_local%wrap%comp_present(compatm)) then
+          ! Copy the NstateImp(compatm) to FBImp(compatm)
+          call med_connectors_post_atm2med(gcomp, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
     endif
 
     allDone = .true.
