@@ -183,7 +183,7 @@ def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
 
     return one_not_two, two_not_one, match_ups
 
-def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_suffix=""):
+def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_suffix="", add_bfail=False):
     if from_dir1 == from_dir2:
         expect(suffix1 != suffix2, "Comparing files to themselves?")
 
@@ -211,8 +211,10 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
 
         one_not_two, two_not_one, match_ups = _hists_match(model, hists1, hists2, suffix1, suffix2)
         for item in one_not_two:
-            comments += "    File '{}' had no counterpart in '{}' with suffix '{}'\n".format(item, from_dir2, suffix2)
+            comments += "    {}File '{}' had no counterpart in '{}' with suffix '{}'\n".format(
+                (TEST_NO_BASELINES_COMMENT + " ") if add_bfail else "", item, from_dir2, suffix2)
             all_success = False
+
         for item in two_not_one:
             comments += "    File '{}' had no counterpart in '{}' with suffix '{}'\n".format(item, from_dir1, suffix1)
             all_success = False
@@ -334,7 +336,7 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
         if not os.path.isdir(bdir):
             return False, "ERROR {} baseline directory '{}' does not exist".format(TEST_NO_BASELINES_COMMENT,bdir)
 
-    success, comments = _compare_hists(case, rundir, basecmp_dir, outfile_suffix=outfile_suffix)
+    success, comments = _compare_hists(case, rundir, basecmp_dir, outfile_suffix=outfile_suffix, add_bfail=True)
     if get_model() == "e3sm":
         bless_log = os.path.join(basecmp_dir, BLESS_LOG_NAME)
         if os.path.exists(bless_log):
