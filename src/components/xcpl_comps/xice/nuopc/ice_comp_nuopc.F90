@@ -461,7 +461,7 @@ module ice_comp_nuopc
     ! Run model
     !--------------------------------
 
-    call dead_run_nuopc('ice', clock, x2d, d2x, gbuf, flds_i2x, my_task, master_task, logunit)
+    call dead_run_nuopc('ice', d2x, gbuf, flds_i2x)
 
     !--------------------------------
     ! Pack export state

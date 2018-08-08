@@ -127,7 +127,7 @@ contains
 
     call dlnd_shr_read_namelists(mpicom, my_task, master_task, &
          inst_index, inst_suffix, inst_name,  &
-         logunit, shrlogunit, SDLND, lnd_present, lnd_prognostic)
+         logunit, SDLND, lnd_present, lnd_prognostic)
 
     call seq_infodata_PutData(infodata, &
          lnd_present=lnd_present, &

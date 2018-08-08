@@ -40,7 +40,7 @@ CONTAINS
 
   subroutine drof_shr_read_namelists(mpicom, my_task, master_task, &
        inst_index, inst_suffix, inst_name, &
-       logunit, shrlogunit, SDROF, rof_present, rof_prognostic, rofice_present, flood_present)
+       logunit, SDROF, rof_present, rof_prognostic, rofice_present, flood_present)
 
     ! !DESCRIPTION: Read in drof namelists
     implicit none
@@ -53,12 +53,11 @@ CONTAINS
     character(len=16)      , intent(in)    :: inst_suffix       ! char string associated with instance
     character(len=16)      , intent(in)    :: inst_name         ! fullname of current instance (ie. "lnd_0001")
     integer(IN)            , intent(in)    :: logunit           ! logging unit number
-    integer(IN)            , intent(in)    :: shrlogunit        ! original log unit and level
     type(shr_strdata_type) , intent(inout) :: SDROF
     logical                , intent(out)   :: rof_present       ! flag
     logical                , intent(out)   :: rof_prognostic    ! flag
-    logical                , intent(out)   :: rofice_present    ! flag
-    logical                , intent(out)   :: flood_present     ! flag
+    logical, optional      , intent(out)   :: rofice_present    ! flag
+    logical, optional      , intent(out)   :: flood_present     ! flag
 
     !--- local variables ---
     character(CL) :: fileName    ! generic file name
@@ -140,17 +139,25 @@ CONTAINS
     ! Determine present and prognostic flags
     !----------------------------------------------------------------------------
 
-    rof_present    = .false.
-    rofice_present = .false.
+    rof_present = .true.
+    if (trim(datamode) == 'NULL') then
+       rof_present = .false.
+    end if
+
     rof_prognostic = .false.
-    flood_present  = .false.
     if (force_prognostic_true) then
-       rof_present    = .true.
        rof_prognostic = .true.
-    endif
-    if (trim(datamode) /= 'NULL') then
-       rof_present = .true.
-       rofice_present = .true.
+    end if
+
+    if (present(rofice_present)) then
+       rofice_present = .false.
+       if (trim(datamode) /= 'NULL') then
+          rofice_present = .true.
+       end if
+    end if
+
+    if (present(flood_present)) then 
+       flood_present  = .false.
     end if
 
   end subroutine drof_shr_read_namelists

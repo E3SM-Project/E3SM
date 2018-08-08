@@ -471,41 +471,7 @@ module atm_comp_nuopc
     ! Run model
     !--------------------------------
 
-    nflds_x2d = size(x2d, dim=1)
-    nflds_d2x = size(d2x, dim=1)
-    lsize     = size(d2x, dim=2)
-    ncomp     = 1
-
-    do nf=1,nflds_d2x
-       do n=1,lsize
-          lon = gbuf(n,dead_grid_lon)
-          lat = gbuf(n,dead_grid_lat)
-          d2x(nf,n) = (nf*100)                          &
-               *  cos (SHR_CONST_PI*lat/180.0_R8)       &
-               *  sin((SHR_CONST_PI*lon/180.0_R8)       &
-               -      (ncomp-1)*(SHR_CONST_PI/3.0_R8) ) &
-               + (ncomp*10.0_R8)
-       enddo
-    enddo
-
-    ! log output for model date
-
-    if (my_task == master_task) then
-       call ESMF_ClockGet(clock, currTime, rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, &
-            file=__FILE__)) &
-            return  ! bail out
-
-       call ESMF_TimeGet( currTime, yy=current_year, mm=current_mon, dd=current_day, s=current_tod, rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, &
-            file=__FILE__)) &
-            return  ! bail out
-       call shr_cal_ymd2date(current_year, current_mon, current_day, current_ymd)
-
-       write(logunit,F04) model,trim(model),': model date ', Current_ymd,Current_tod
-    end if
+    call dead_run_nuopc('atm', d2x, gbuf, flds_d2x)
 
     !--------------------------------
     ! Pack export state

@@ -43,7 +43,7 @@ CONTAINS
 
   subroutine dice_shr_read_namelists(mpicom, my_task, master_task, &
        inst_index, inst_suffix, inst_name, &
-       logunit, shrlogunit, SDICE, ice_present, ice_prognostic)
+       logunit, SDICE, ice_present, ice_prognostic)
 
     ! !DESCRIPTION: Read in dice namelists
     implicit none
@@ -56,7 +56,6 @@ CONTAINS
     character(len=16)      , intent(in)    :: inst_suffix    ! char string associated with instance
     character(len=16)      , intent(in)    :: inst_name      ! fullname of current instance (ie. "lnd_0001")
     integer(IN)            , intent(in)    :: logunit        ! logging unit number
-    integer(IN)            , intent(in)    :: shrlogunit     ! original log unit and level
     type(shr_strdata_type) , intent(inout) :: SDICE
     logical                , intent(out)   :: ice_present    ! flag
     logical                , intent(out)   :: ice_prognostic ! flag

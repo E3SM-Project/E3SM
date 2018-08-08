@@ -239,7 +239,7 @@ module ocn_comp_nuopc
 
     call docn_shr_read_namelists(mpicom, my_task, master_task, &
          inst_index, inst_suffix, inst_name, &
-         logunit, shrlogunit, SDOCN, ocn_present, ocn_prognostic, ocnrof_prognostic)
+         logunit, SDOCN, ocn_present, ocn_prognostic, ocnrof_prognostic)
 
     ! TODO: - hard wire prognostic for now to get atm/ocn flux
     ! computation and ocn albedos computed in mediator
@@ -337,6 +337,7 @@ module ocn_comp_nuopc
     real(r8), pointer       :: lon(:),lat(:)
     integer , pointer       :: gindex(:)
     integer                 :: dbrc
+    logical                 :: init_import
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 

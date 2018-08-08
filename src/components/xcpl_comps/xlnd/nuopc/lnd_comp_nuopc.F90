@@ -4,17 +4,24 @@ module lnd_comp_nuopc
   ! This is the NUOPC cap for xlnd
   !----------------------------------------------------------------------------
 
-  use shr_kind_mod          , only:  R8=>SHR_KIND_R8
-  use shr_kind_mod          , only : CS=>SHR_KIND_CS, CL=>SHR_KIND_CL, CXX => SHR_KIND_CXX
-  use shr_file_mod          , only : shr_file_getlogunit, shr_file_setlogunit
-  use shr_file_mod          , only : shr_file_getloglevel, shr_file_setloglevel
-  use shr_file_mod          , only : shr_file_getUnit
+  use ESMF
+  use NUOPC                 , only : NUOPC_CompDerive, NUOPC_CompSetEntryPoint, NUOPC_CompSpecialize
+  use NUOPC                 , only : NUOPC_CompAttributeGet, NUOPC_Advertise
+  use NUOPC_Model           , only : model_routine_SS        => SetServices
+  use NUOPC_Model           , only : model_label_Advance     => label_Advance
+  use NUOPC_Model           , only : model_label_SetRunClock => label_SetRunClock
+  use NUOPC_Model           , only : model_label_Finalize    => label_Finalize
+  use NUOPC_Model           , only : NUOPC_ModelGet
+  use med_constants_mod     , only : IN, R8, I8, CXX
+  use med_constants_mod     , only : shr_log_Unit
+  use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
+  use med_constants_mod     , only : shr_file_getloglevel, shr_file_setloglevel
+  use med_constants_mod     , only : shr_file_setIO, shr_file_getUnit
   use shr_string_mod        , only : shr_string_listGetNum
-  use esmFlds               , only : fldListFr, fldListTo, complnd, compname
-  use esmFlds               , only : flds_scalar_name
-  use esmFlds               , only : flds_scalar_num
-  use esmFlds               , only : flds_scalar_index_nx
-  use esmFlds               , only : flds_scalar_index_ny
+  use shr_nuopc_scalars_mod , only : flds_scalar_name
+  use shr_nuopc_scalars_mod , only : flds_scalar_num
+  use shr_nuopc_scalars_mod , only : flds_scalar_index_nx
+  use shr_nuopc_scalars_mod , only : flds_scalar_index_ny
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Realize
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Concat
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Deactivate
@@ -29,14 +36,8 @@ module lnd_comp_nuopc
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
 
-  use ESMF
-  use NUOPC
-  use NUOPC_Model, &
-    model_routine_SS      => SetServices, &
-    model_label_SetClock  => label_SetClock, &
-    model_label_Advance   => label_Advance, &
-    model_label_SetRunClock => label_SetRunClock, &
-    model_label_Finalize  => label_Finalize
+  ! TODO: remove this
+  use esmFlds               , only : fldListFr, fldListTo, complnd, compname
 
   use dead_data_mod , only : dead_grid_lat, dead_grid_lon, dead_grid_index
   use dead_nuopc_mod, only : dead_init_nuopc, dead_run_nuopc, dead_final_nuopc
@@ -448,7 +449,7 @@ module lnd_comp_nuopc
     ! Run model
     !--------------------------------
 
-    call dead_run_nuopc('lnd', clock, x2d, d2x, gbuf, flds_l2x, my_task, master_task, logunit)
+    call dead_run_nuopc('lnd', clock, d2x, gbuf, flds_l2x)
 
     !--------------------------------
     ! Pack export state

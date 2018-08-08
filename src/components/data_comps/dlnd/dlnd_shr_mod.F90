@@ -41,7 +41,7 @@ CONTAINS
 
   subroutine dlnd_shr_read_namelists(mpicom, my_task, master_task, &
        inst_index, inst_suffix, inst_name, &
-       logunit, shrlogunit, SDLND, lnd_present, lnd_prognostic)
+       logunit, SDLND, lnd_present, lnd_prognostic)
 
     ! !DESCRIPTION: Read in dlnd namelists
     implicit none
@@ -54,7 +54,6 @@ CONTAINS
     character(len=16)      , intent(in)    :: inst_suffix       ! char string associated with instance
     character(len=16)      , intent(in)    :: inst_name         ! fullname of current instance (ie. "lnd_0001")
     integer(IN)            , intent(in)    :: logunit           ! logging unit number
-    integer(IN)            , intent(in)    :: shrlogunit        ! original log unit and level
     type(shr_strdata_type) , intent(inout) :: SDLND
     logical                , intent(out)   :: lnd_present       ! flag
     logical                , intent(out)   :: lnd_prognostic    ! flag

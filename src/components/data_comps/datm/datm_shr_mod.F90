@@ -62,7 +62,7 @@ CONTAINS
 
   subroutine datm_shr_read_namelists(mpicom, my_task, master_task, &
        inst_index, inst_suffix, inst_name, &
-       logunit, shrlogunit, SDATM, atm_present, atm_prognostic)
+       logunit, SDATM, atm_present, atm_prognostic)
 
     ! !INPUT/OUTPUT PARAMETERS:
     integer(IN)            , intent(in)    :: mpicom         ! mpi communicator
@@ -72,7 +72,6 @@ CONTAINS
     character(len=16)      , intent(in)    :: inst_suffix    ! char string associated with instance
     character(len=16)      , intent(in)    :: inst_name      ! fullname of current instance (ie. "lnd_0001")
     integer(IN)            , intent(in)    :: logunit        ! logging unit number
-    integer(IN)            , intent(in)    :: shrlogunit     ! original log unit and level
     type(shr_strdata_type) , intent(inout) :: SDATM
     logical                , intent(out)   :: atm_present    ! flag
     logical                , intent(out)   :: atm_prognostic ! flag
@@ -152,7 +151,6 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     call shr_strdata_readnml(SDATM, trim(filename), mpicom=mpicom)
-    call shr_sys_flush(shrlogunit)
 
     ! Validate mode
 

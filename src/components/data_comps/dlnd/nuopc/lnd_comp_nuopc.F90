@@ -79,7 +79,6 @@ module lnd_comp_nuopc
   integer                    :: logunit                   ! logging unit number
   integer    ,parameter      :: master_task=0             ! task number of master task
   integer                    :: localPet
-  logical                    :: lnd_prognostic            ! flag
   logical                    :: unpack_import
   character(CL)              :: case_name                 ! case name
   character(CL)              :: tmpstr                    ! tmp string
@@ -150,23 +149,22 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    logical            :: lnd_present   ! flag
+    logical            :: lnd_present    ! flag
+    logical            :: lnd_prognostic ! flag
     type(ESMF_VM)      :: vm
     integer            :: lmpicom
     character(CL)      :: cvalue
-    character(CS)      :: stdname, shortname
-    logical            :: activefld
-    integer            :: n,nflds
-    integer            :: ierr          ! error code
-    integer            :: shrlogunit    ! original log unit
-    integer            :: shrloglev     ! original log level
+    integer            :: n
+    integer            :: ierr           ! error code
+    integer            :: shrlogunit     ! original log unit
+    integer            :: shrloglev      ! original log level
     logical            :: isPresent
     character(len=512) :: diro
     character(len=512) :: logfile
-    integer            :: glc_nec       ! number of elevation classes
-    integer            :: nflds_glc_nec ! number of snow fields separated by elev class
+    integer            :: glc_nec        ! number of elevation classes
+    integer            :: nflds_glc_nec  ! number of snow fields separated by elev class
     character(len=256) :: fld_name
-    character(len=2)   :: nec_str       ! elevation class, as character string
+    character(len=2)   :: nec_str        ! elevation class, as character string
     character(len=*),parameter  :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
@@ -232,7 +230,7 @@ contains
 
     call dlnd_shr_read_namelists(mpicom, my_task, master_task, &
          inst_index, inst_suffix, inst_name,  &
-         logunit, shrlogunit, SDLND, lnd_present, lnd_prognostic)
+         logunit, SDLND, lnd_present, lnd_prognostic)
 
     !--------------------------------
     ! advertise import and export fields
@@ -411,6 +409,7 @@ contains
     allocate(lon(lsize))
     allocate(lat(lsize))
     allocate(gindex(lsize))
+
     klat = mct_aVect_indexRA(ggrid%data, 'lat')
     klon = mct_aVect_indexRA(ggrid%data, 'lon')
     call mpi_comm_rank(mpicom, iam, ierr)
@@ -503,7 +502,6 @@ contains
     type(ESMF_State)        :: importState, exportState
     integer                 :: shrlogunit    ! original log unit
     integer                 :: shrloglev     ! original log level
-    character(CL)           :: case_name     ! case name
     logical                 :: write_restart ! write restart
     integer                 :: nextYMD       ! model date
     integer                 :: nextTOD       ! model sec into model date

@@ -25,27 +25,27 @@ contains
 
     ! !INPUT/OUTPUT PARAMETERS:
     character(len=*) , intent(in)    :: model
-    integer(IN)      , intent(in)    :: mpicom      ! mpi communicator
-    integer(IN)      , intent(in)    :: my_task     ! my task in mpi communicator mpicom
-    integer(IN)      , intent(in)    :: master_task ! task number of master task
-    integer(IN)      , intent(in)    :: inst_index  ! instance number
+    integer          , intent(in)    :: mpicom      ! mpi communicator
+    integer          , intent(in)    :: my_task     ! my task in mpi communicator mpicom
+    integer          , intent(in)    :: master_task ! task number of master task
+    integer          , intent(in)    :: inst_index  ! instance number
     character(len=*) , intent(in)    :: inst_suffix ! char string associated with instance
     character(len=*) , intent(in)    :: inst_name   ! fullname of current instance (ie. "lnd_0001")
-    integer(IN)      , intent(in)    :: logunit     ! logging unit number
-    integer(IN)      , intent(out)   :: lsize       ! logging unit number
+    integer          , intent(in)    :: logunit     ! logging unit number
+    integer          , intent(out)   :: lsize       ! logging unit number
     real(r8)         , pointer       :: gbuf(:,:)   ! model grid
     integer          , pointer       :: gindex(:)   ! global index space
-    integer(IN)      , intent(out)   :: nxg         ! global dim i-direction
-    integer(IN)      , intent(out)   :: nyg         ! global dim j-direction
+    integer          , intent(out)   :: nxg         ! global dim i-direction
+    integer          , intent(out)   :: nyg         ! global dim j-direction
 
     !--- local variables ---
-    integer(IN)              :: ierr          ! error code
-    integer(IN)              :: local_comm    ! local communicator
-    integer(IN)              :: mype          ! pe info
-    integer(IN)              :: totpe         ! total number of pes
-    integer(IN)              :: nproc_x
-    integer(IN)              :: seg_len
-    integer(IN)              :: decomp_type
+    integer                  :: ierr          ! error code
+    integer                  :: local_comm    ! local communicator
+    integer                  :: mype          ! pe info
+    integer                  :: totpe         ! total number of pes
+    integer                  :: nproc_x
+    integer                  :: seg_len
+    integer                  :: decomp_type
     logical                  :: flood=.false. ! rof flood flag
 
     !--- formats ---
@@ -77,40 +77,29 @@ contains
   end subroutine dead_init_nuopc
 
   !===============================================================================
-  subroutine dead_run_nuopc(model, EClock, x2d, d2x, gbuf, flds_d2x, my_task, master_task, logunit)
-
-    implicit none
+  subroutine dead_run_nuopc(model, d2x, gbuf, flds_d2x)
 
     ! !DESCRIPTION: run method for dead model
 
     ! !INPUT/OUTPUT PARAMETERS:
     character(len=*) , intent(in)    :: model
-    type(ESMF_Clock) , intent(inout) :: EClock
-    real(r8)         , intent(inout) :: x2d(:,:)    ! driver -> dead
     real(r8)         , intent(inout) :: d2x(:,:)    ! dead   -> driver
     real(r8)         , pointer       :: gbuf(:,:)   ! model grid
     character(len=*) , intent(in)    :: flds_d2x    ! list of fields to dead -> driver
-    integer(IN)      , intent(in)    :: my_task     ! my task in mpi communicator mpicom
-    integer(IN)      , intent(in)    :: master_task ! task number of master task
-    integer(IN)      , intent(in)    :: logunit     ! logging unit number
 
     !--- local ---
-    integer(IN)             :: CurrentYMD        ! model date
-    integer(IN)             :: CurrentTOD        ! model sec into model date
-    integer(IN)             :: n                 ! index
-    integer(IN)             :: nf                ! fields loop index
-    integer(IN)             :: ki                ! index
-    integer(IN)             :: lsize             ! size of AttrVect
+    integer                 :: n                 ! index
+    integer                 :: nf                ! fields loop index
+    integer                 :: ki                ! index
+    integer                 :: lsize             ! size of AttrVect
     real(R8)                :: lat               ! latitude
     real(R8)                :: lon               ! longitude
-    integer                 :: nflds_x2d
     integer                 :: nflds_d2x
     integer                 :: ncomp
     character(*), parameter :: F04   = "('(',a,'_run_nuopc) ',2a,2i8,'s')"
     character(*), parameter :: subName = "(dead_run_nuopc) "
     !-------------------------------------------------------------------------------
 
-    nflds_x2d = size(x2d, dim=1)
     nflds_d2x = size(d2x, dim=1)
 
     ! PACK (currently no unpacking)
@@ -133,7 +122,6 @@ contains
     end select
 
     nflds_d2x = size(d2x, dim=1)
-    nflds_x2d = size(x2d, dim=1)
     lsize = size(d2x, dim=2)
 
     if (model.eq.'rof') then
@@ -207,40 +195,18 @@ contains
 
     end select
 
-    ! log output for model date
-
-    if (my_task == master_task) then
-
-       call ESMF_ClockGet(clock, currTime, rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, &
-            file=__FILE__)) &
-            return  ! bail out
-
-       call ESMF_TimeGet( currTime, yy=current_year, mm=current_mon, dd=current_day, s=current_tod, rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, &
-            file=__FILE__)) &
-            return  ! bail out
-       call shr_cal_ymd2date(current_year, current_mon, current_day, current_ymd)
-
-       write(logunit,F04) model,trim(model),': model date ', Current_ymd,Current_tod
-       call shr_sys_flush(logunit)
-    end if
-
   end subroutine dead_run_nuopc
 
   !===============================================================================
   subroutine dead_final_nuopc(model, my_task, master_task, logunit)
 
     ! !DESCRIPTION: finalize method for datm model
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
     character(len=*) , intent(in) :: model
-    integer(IN)      , intent(in) :: my_task     ! my task in mpi communicator mpicom
-    integer(IN)      , intent(in) :: master_task ! task number of master task
-    integer(IN)      , intent(in) :: logunit     ! logging unit number
+    integer          , intent(in) :: my_task     ! my task in mpi communicator mpicom
+    integer          , intent(in) :: master_task ! task number of master task
+    integer          , intent(in) :: logunit     ! logging unit number
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dead_comp_final) ',8a)"

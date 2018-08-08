@@ -118,7 +118,7 @@ module ESM
     use NUOPC                 , only : NUOPC_CompSetInternalEntryPoint, NUOPC_CompAttributeGet
     use NUOPC_Driver          , only : NUOPC_DriverAddComp
     use MED                   , only : med_SS => SetServices
-    use esmFlds               , only : esmFlds_Init, esmFlds_Concat
+    use esmFlds               , only : esmFlds_Init
     use seq_comm_mct          , only : CPLID, GLOID, ATMID, LNDID, OCNID, ICEID, GLCID, ROFID, WAVID, ESPID
     use seq_comm_mct          , only : num_inst_total
     use seq_comm_mct          , only : seq_comm_init, seq_comm_printcomms, seq_comm_petlist
@@ -515,10 +515,6 @@ module ESM
            write(logunit,*) trim(subname)//":wav_present="//trim(wav_present)
            write(logunit,*) trim(subname)//":glc_present="//trim(glc_present)
            write(logunit,*) trim(subname)//":med_present="//trim(med_present)
-
-           ! Print out colon delimited string of fields from mediator log file
-           call esmFlds_Concat(logunit, rc)
-           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
         end if
 
       else

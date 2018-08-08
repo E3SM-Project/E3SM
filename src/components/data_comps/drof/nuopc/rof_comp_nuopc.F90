@@ -150,20 +150,15 @@ module rof_comp_nuopc
 
     ! local variables
     logical            :: rof_present    ! flag
+    logical            :: rof_prognostic ! flag
     type(ESMF_VM)      :: vm
     integer            :: lmpicom
     character(CL)      :: cvalue
-    logical            :: exists
-    character(CL)      :: stdname, shortname
-    logical            :: activefld
-    integer            :: n,nflds
+    integer            :: n
     integer            :: ierr           ! error code
     integer            :: shrlogunit     ! original log unit
     integer            :: shrloglev      ! original log level
     logical            :: isPresent
-    logical            :: rof_prognostic ! flag
-    logical            :: rofice_present ! flag
-    logical            :: flood_present  ! flag
     character(len=512) :: diro
     character(len=512) :: logfile
     character(len=*),parameter  :: subname=trim(modName)//':(InitializeAdvertise) '
@@ -231,19 +226,17 @@ module rof_comp_nuopc
 
     call drof_shr_read_namelists(mpicom, my_task, master_task, &
          inst_index, inst_suffix, inst_name,  &
-         logunit, shrlogunit, SDROF, rof_present, &
-         rof_prognostic, rofice_present, flood_present)
-
-    ! TODO: rofice_present and flood_present just need to be implemented on the ice and land side
-    ! and mediator to route fields appropriately - here runoff will always send the following two fields if
-    ! rof is present
+         logunit, SDROF, rof_present, rof_prognostic)
 
     !--------------------------------
     ! advertise import and export fields
     !--------------------------------
 
     if (rof_present) then
+       !-----------------
        ! export fields
+       !-----------------
+
        call fld_list_add(fldsFrRof_num, fldsFrRof, trim(flds_scalar_name))
        call fld_list_add(fldsFrRof_num, fldsFrRof, 'Forr_rofl' , flds_concat=flds_r2x)
        call fld_list_add(fldsFrRof_num, fldsFrRof, 'Forr_rofi' , flds_concat=flds_r2x)

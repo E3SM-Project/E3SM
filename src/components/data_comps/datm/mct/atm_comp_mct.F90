@@ -156,7 +156,7 @@ CONTAINS
 
     call datm_shr_read_namelists(mpicom, my_task, master_task, &
          inst_index, inst_suffix, inst_name, &
-         logunit, shrlogunit, SDATM, atm_present, atm_prognostic)
+         logunit, SDATM, atm_present, atm_prognostic)
 
     call seq_infodata_PutData(infodata, &
          atm_present=atm_present, &

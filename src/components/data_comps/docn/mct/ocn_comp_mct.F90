@@ -129,7 +129,7 @@ contains
 
     call docn_shr_read_namelists(mpicom, my_task, master_task, &
          inst_index, inst_suffix, inst_name,  &
-         logunit, shrlogunit, SDOCN, ocn_present, ocn_prognostic, ocnrof_prognostic)
+         logunit, SDOCN, ocn_present, ocn_prognostic, ocnrof_prognostic)
 
     call seq_infodata_PutData(infodata, &
          ocn_present=ocn_present, &

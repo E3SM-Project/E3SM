@@ -82,14 +82,13 @@ module atm_comp_nuopc
   integer                    :: logunit                   ! logging unit number
   integer    ,parameter      :: master_task=0             ! task number of master task
   integer                    :: localPet
-  logical                    :: atm_present               ! flag
-  logical                    :: atm_prognostic            ! flag
   logical                    :: unpack_import
   character(len=256)         :: case_name                 ! case name
   character(len=256)         :: tmpstr                    ! tmp string
   integer                    :: dbrc
   integer, parameter         :: dbug = 10
   character(len=80)          :: calendar                  ! calendar name
+  logical                    :: atm_prognostic            ! data is sent back to datm
   character(len=CXX)         :: flds_a2x = ''
   character(len=CXX)         :: flds_x2a = ''
 
@@ -158,21 +157,21 @@ module atm_comp_nuopc
     integer, intent(out) :: rc
 
     ! local variables
+    logical            :: atm_present    ! flag
     type(ESMF_VM)      :: vm
     integer            :: lmpicom
     character(len=256) :: cvalue
-    character(len=80)  :: stdname, shortname
-    integer            :: n,nflds
-    integer            :: ierr       ! error code
-    integer            :: shrlogunit ! original log unit
-    integer            :: shrloglev  ! original log level
+    integer            :: n
+    integer            :: ierr           ! error code
+    integer            :: shrlogunit     ! original log unit
+    integer            :: shrloglev      ! original log level
     logical            :: isPresent
     character(len=512) :: diro
     character(len=512) :: logfile
-    logical            :: flds_co2a  ! use case
-    logical            :: flds_co2b  ! use case
-    logical            :: flds_co2c  ! use case
-    logical            :: flds_wiso  ! use case
+    logical            :: flds_co2a      ! use case
+    logical            :: flds_co2b      ! use case
+    logical            :: flds_co2c      ! use case
+    logical            :: flds_wiso      ! use case
     character(len=*),parameter :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
@@ -238,7 +237,7 @@ module atm_comp_nuopc
 
     call datm_shr_read_namelists(mpicom, my_task, master_task, &
          inst_index, inst_suffix, inst_name, &
-         logunit, shrlogunit, SDATM, atm_present, atm_prognostic)
+         logunit, SDATM, atm_present, atm_prognostic)
 
     ! NOTE: atm_present flag is not needed - since the run sequence
     ! will have no call to this routine for the atm_present flag being

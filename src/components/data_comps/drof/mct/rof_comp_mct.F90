@@ -119,7 +119,8 @@ contains
 
     call drof_shr_read_namelists(mpicom, my_task, master_task, &
          inst_index, inst_suffix, inst_name,  &
-         logunit, shrlogunit, SDROF, rof_present, rof_prognostic, rofice_present, flood_present)
+         logunit, SDROF, rof_present, rof_prognostic, &
+         rofice_present=rofice_present, flood_present=flood_present)
 
     call seq_infodata_PutData(infodata, &
          rof_present=rof_present, &

@@ -41,7 +41,7 @@ CONTAINS
 
   subroutine docn_shr_read_namelists(mpicom, my_task, master_task, &
        inst_index, inst_suffix, inst_name, &
-       logunit, shrlogunit, SDOCN, ocn_present, ocn_prognostic, ocnrof_prognostic)
+       logunit, SDOCN, ocn_present, ocn_prognostic, ocnrof_prognostic)
 
     ! !DESCRIPTION: Read in docn namelists
     implicit none
@@ -54,7 +54,6 @@ CONTAINS
     character(len=16)      , intent(in)    :: inst_suffix       ! char string associated with instance
     character(len=16)      , intent(in)    :: inst_name         ! fullname of current instance (ie. "lnd_0001")
     integer(IN)            , intent(in)    :: logunit           ! logging unit number
-    integer(IN)            , intent(in)    :: shrlogunit        ! original log unit and level
     type(shr_strdata_type) , intent(inout) :: SDOCN
     logical                , intent(out)   :: ocn_present       ! flag
     logical                , intent(out)   :: ocn_prognostic    ! flag
@@ -160,26 +159,27 @@ CONTAINS
     ! Determine present and prognostic flag
     !----------------------------------------------------------------------------
 
-    ocn_present       = .false.
-    ocn_prognostic    = .false.
-    ocnrof_prognostic = .false.
+    ocn_present = .true.
+    if (trim(datamode) == 'NULL') then
+       ocn_present = .false.
+    end if
 
+    ocn_prognostic = .false.
     if (force_prognostic_true) then
-       ocn_present       = .true.
-       ocn_prognostic    = .true.
-       ocnrof_prognostic = .true.
-    endif
-    if (trim(datamode) /= 'NULL') then
-       ocn_present       = .true.
+       ocn_prognostic  = .true.
     end if
     if (trim(datamode) == 'IAF') then
        ocn_prognostic = .true.
-       ocnrof_prognostic = .true.
-    endif
+    end if
     if (trim(datamode) == 'SOM' .or. trim(datamode) == 'SOM_AQUAP') then
        ocn_prognostic = .true.
     endif
 
+    ocnrof_prognostic = .false.
+    if (force_prognostic_true .or. (trim(datamode) == 'IAF')) then
+       ocnrof_prognostic = .true.
+    end if
+       
   end subroutine docn_shr_read_namelists
 
 end module docn_shr_mod

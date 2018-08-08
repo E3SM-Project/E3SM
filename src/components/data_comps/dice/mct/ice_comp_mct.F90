@@ -124,7 +124,7 @@ CONTAINS
 
     call dice_shr_read_namelists(mpicom, my_task, master_task, &
          inst_index, inst_suffix, inst_name,  &
-         logunit, shrlogunit, SDICE, ice_present, ice_prognostic)
+         logunit, SDICE, ice_present, ice_prognostic)
 
     call seq_infodata_PutData(infodata, &
          ice_present=ice_present, &

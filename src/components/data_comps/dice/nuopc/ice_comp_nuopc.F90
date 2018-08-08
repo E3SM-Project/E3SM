@@ -22,12 +22,6 @@ module ice_comp_nuopc
   use shr_nuopc_scalars_mod , only : flds_scalar_num
   use shr_nuopc_scalars_mod , only : flds_scalar_index_nx
   use shr_nuopc_scalars_mod , only : flds_scalar_index_ny
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_iceberg_prognostic
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Realize
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Concat
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Deactivate
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Getnumflds
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Getfldinfo
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
@@ -85,7 +79,6 @@ module ice_comp_nuopc
   integer                    :: logunit                   ! logging unit number
   integer, parameter         :: master_task=0             ! task number of master task
   integer                    :: localPet
-  logical                    :: ice_prognostic            ! flag
   logical                    :: unpack_import
   logical                    :: read_restart              ! start from restart
   character(len=256)         :: case_name                 ! case name
@@ -162,17 +155,15 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    logical            :: ice_present ! flag
+    logical            :: ice_present    ! flag
+    logical            :: ice_prognostic ! flag
     type(ESMF_VM)      :: vm
     integer            :: lmpicom
     character(len=256) :: cvalue
-    logical            :: exists
-    character(len=80)  :: stdname, shortname
-    logical            :: activefld
-    integer            :: n,nflds
-    integer            :: ierr       ! error code
-    integer            :: shrlogunit ! original log unit
-    integer            :: shrloglev  ! original log level
+    integer            :: n
+    integer            :: ierr           ! error code
+    integer            :: shrlogunit     ! original log unit
+    integer            :: shrloglev      ! original log level
     logical            :: isPresent
     character(len=512) :: diro
     character(len=512) :: logfile
@@ -241,7 +232,7 @@ contains
 
     call dice_shr_read_namelists(mpicom, my_task, master_task, &
          inst_index, inst_suffix, inst_name, &
-         logunit, shrlogunit, SDICE, ice_present, ice_prognostic)
+         logunit, SDICE, ice_present, ice_prognostic)
 
     ! NOTE: ice_present flag is not needed - since the run sequence will have no call to this routine
     ! for the ice_present flag being set to false (i.e. null mode)
@@ -464,7 +455,7 @@ contains
          flds_i2x_fields=flds_i2x, &
          flds_i2o_per_cat=flds_i2o_per_cat, &
          SDICE=SDICE, &
-         gmap=gsmap, &
+         gsmap=gsmap, &
          ggrid=ggrid, &
          mpicom=mpicom, &
          compid=compid, &
@@ -474,7 +465,7 @@ contains
          inst_name=inst_name, &
          logunit=logunit, &
          read_restart=read_restart, &
-         scmMod=scmMode, &
+         scmMode=scmMode, &
          scmlat=scmlat, &
          scmlon=scmlon, &
          calendar=calendar, &
