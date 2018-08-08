@@ -5,6 +5,50 @@ function (prc var)
   message("${var} ${${var}}")
 endfunction ()
 
+# Macro to create config file. The macro creates a temporary config
+# file first. If the config file in the build directory does not
+# exist or it is different from the temporary one, then the config
+# file is updated. This avoid rebuilding the (almost) entire homme
+# every time cmake is run.
+
+MACRO (HommeConfigFile CONFIG_FILE_IN CONFIG_FILE_C CONFIG_FILE_F90)
+
+  CONFIGURE_FILE (${CONFIG_FILE_IN} ${CONFIG_FILE_C}.tmp)
+
+  # Assume by default that config file is out of date
+  SET (OUT_OF_DATE TRUE)
+
+  # If config file in binary dir exists, we check whether the new one would be different
+  IF (EXISTS ${CONFIG_FILE_C})
+
+    # We rely on FILE macro rather than running diff, since it is
+    # more portable (guaranteed to work regardless of underlying system)
+    FILE (READ ${CONFIG_FILE_C} CONFIG_FILE_C_STR)
+    FILE (READ ${CONFIG_FILE_C}.tmp CONFIG_FILE_C_TMP_STR)
+
+    IF (${CONFIG_FILE_C_STR} STREQUAL ${CONFIG_FILE_C_TMP_STR})
+      # config file was present and appears unchanged
+      SET (OUT_OF_DATE FALSE)
+    ENDIF()
+
+    FILE (REMOVE ${CONFIG_FILE_C}.tmp)
+  ENDIF ()
+
+  # If out of date (either missing or different), adjust
+  IF (OUT_OF_DATE)
+
+    # Run the configure macro
+    CONFIGURE_FILE (${CONFIG_FILE_IN} ${CONFIG_FILE_C})
+
+    # Run sed to change '/*...*/' comments into '!/*...*/'
+    EXECUTE_PROCESS(COMMAND sed "s;^/;!/;g"
+                    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                    INPUT_FILE ${CONFIG_FILE_C}
+                    OUTPUT_FILE ${CONFIG_FILE_F90})
+  ENDIF()
+
+ENDMACRO (HommeConfigFile)
+
 # Macro to create the individual tests
 macro(createTestExec execName execType macroNP macroNC 
                      macroPLEV macroUSE_PIO macroWITH_ENERGY macroQSIZE_D)
@@ -54,26 +98,34 @@ macro(createTestExec execName execType macroNP macroNC
 
 
   # This is needed to compile the test executables with the correct options
+  SET(THIS_CONFIG_IN ${HOMME_SOURCE_DIR}/src/${execType}/config.h.cmake.in)
   SET(THIS_CONFIG_HC ${CMAKE_CURRENT_BINARY_DIR}/config.h.c)
   SET(THIS_CONFIG_H ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
   # First configure the file (which formats the file as C)
-  CONFIGURE_FILE(${HOMME_SOURCE_DIR}/src/${execType}/config.h.cmake.in ${THIS_CONFIG_HC})
-
-  # Next reformat the file as Fortran by appending comment lines with an exclamation mark
-  EXECUTE_PROCESS(COMMAND sed "s;^/;!/;g"
-                     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-                     INPUT_FILE ${THIS_CONFIG_HC}
-                     OUTPUT_FILE ${THIS_CONFIG_H})
+  HommeConfigFile (${THIS_CONFIG_IN} ${THIS_CONFIG_HC} ${THIS_CONFIG_H} )
 
   ADD_DEFINITIONS(-DHAVE_CONFIG_H)
   
   ADD_EXECUTABLE(${execName} ${EXEC_SOURCES})
+  IF (${CXXLIB_SUPPORTED})
+    MESSAGE(STATUS "   Linking Fortran with -cxxlib")
+    TARGET_LINK_LIBRARIES(${execName} -cxxlib)
+  ENDIF ()
+
+  STRING(TOUPPER "${PERFORMANCE_PROFILE}" PERF_PROF_UPPER)
+  IF ("${PERF_PROF_UPPER}" STREQUAL "VTUNE")
+    TARGET_LINK_LIBRARIES(${execName} ittnotify)
+  ENDIF ()
 
   # Add this executable to a list 
   SET(EXEC_LIST ${EXEC_LIST} ${execName} CACHE INTERNAL "List of configured executables")
 
   TARGET_LINK_LIBRARIES(${execName} pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+  IF (DEFINED USE_KOKKOS_KERNELS)
+    MESSAGE ("exec ${execName} will link to kokkos")
+    link_to_kokkos(${execName})
+  ENDIF ()
 
   # Move the module files out of the way so the parallel build 
   # doesn't have a race condition
@@ -101,12 +153,14 @@ macro(createTestExec execName execType macroNP macroNC
 
 endmacro(createTestExec)
 
-
-
 macro (copyDirFiles testDir)
   # Copy all of the files into the binary dir
   FOREACH (singleFile ${NAMELIST_FILES}) 
-    FILE(COPY ${singleFile} DESTINATION ${testDir})
+    # Some namelist contain cmake variable, to generate
+    # multiple testcases with different ne or ndays,
+    # so use CONFIGURE_FILE, to replace variables with values
+    GET_FILENAME_COMPONENT(fileName ${singleFile} NAME)
+    CONFIGURE_FILE(${singleFile} ${testDir}/${fileName})
   ENDFOREACH () 
   FOREACH (singleFile ${VCOORD_FILES}) 
     FILE(COPY ${singleFile} DESTINATION ${testDir}/vcoord)
@@ -356,12 +410,65 @@ macro(printTestSummary)
  
 endmacro(printTestSummary)
 
+macro (set_homme_tests_parameters testFile profile)
+  if ("${testFile}" MATCHES ".*-moist.*")
+    if ("${profile}" STREQUAL "dev")
+      set (HOMME_TEST_NE 2)
+      set (HOMME_TEST_NDAYS 1)
+    elseif ("${profile}" STREQUAL "short")
+      set (HOMME_TEST_NE 4)
+      set (HOMME_TEST_NDAYS 1)
+    else ()
+      set (HOMME_TEST_NE 4)
+      set (HOMME_TEST_NDAYS 2)
+    endif ()
+  elseif ("${testFile}" MATCHES ".*-tensorhv-dry.*" )
+    if ("${profile}" STREQUAL "dev")
+      set (HOMME_TEST_NE 2)
+      set (HOMME_TEST_NDAYS 1)
+    elseif ("${profile}" STREQUAL "short")
+      set (HOMME_TEST_NE 4)
+      set (HOMME_TEST_NDAYS 1)
+    else ()
+      set (HOMME_TEST_NE 4)
+      set (HOMME_TEST_NDAYS 2)
+    endif ()
+  elseif ("${testFile}" MATCHES ".*-q6-dry.*" )
+    if ("${profile}" STREQUAL "dev")
+      set (HOMME_TESTS_NE 2)
+      set (HOMME_TESTS_NDAYS 1)
+    elseif ("${profile}" STREQUAL "short")
+      set (HOMME_TESTS_NE 4)
+      set (HOMME_TESTS_NDAYS 1)
+    else ()
+      set (HOMME_TESTS_NE 12)
+      set (HOMME_TESTS_NDAYS 1)
+    endif ()
+  else ()
+    if ("${profile}" STREQUAL "dev")
+      set (HOMME_TESTS_NE 2)
+      set (HOMME_TESTS_NDAYS 1)
+    elseif ("${profile}" STREQUAL "short")
+      set (HOMME_TESTS_NE 4)
+      set (HOMME_TESTS_NDAYS 9)
+    else ()
+      set (HOMME_TESTS_NE 12)
+      set (HOMME_TESTS_NDAYS 9)
+    endif ()
+  endif ()
+endmacro ()
+
 # Macro to create the individual tests
 macro(createTest testFile)
 
   SET (THIS_TEST_INPUT ${HOMME_SOURCE_DIR}/test/reg_test/run_tests/${testFile})
 
   resetTestVariables()
+
+  IF (DEFINED PROFILE)
+    set_homme_tests_parameters(${testFile} ${PROFILE})
+    set (TEST_NAME "${TEST_NAME}-ne${HOMME_TESTS_NE}-ndays${HOMME_TESTS_NDAYS}")
+  ENDIF ()
 
   SET(HOMME_ROOT ${HOMME_SOURCE_DIR})
 
@@ -427,6 +534,10 @@ macro(createTest testFile)
     # Force cprnc to be built when the individual test is run
     SET_TESTS_PROPERTIES(${THIS_TEST} PROPERTIES DEPENDS cprnc)
 
+    IF (DEFINED PROFILE)
+      SET_TESTS_PROPERTIES(${THIS_TEST} PROPERTIES LABELS ${PROFILE})
+    ENDIF()
+
     # Individual target to rerun and diff the tests
     SET(THIS_TEST_INDIV "test-${TEST_NAME}")
 
@@ -444,6 +555,11 @@ macro(createTest testFile)
     # Force cprnc to be built when the individual test is run
     ADD_DEPENDENCIES(${THIS_TEST_INDIV} cprnc)
 
+    # This helped in some builds on GPU, where the test hanged for a VERY long time
+    IF (NOT "${TIMEOUT}" STREQUAL "")
+      SET_TESTS_PROPERTIES(${THIS_TEST} PROPERTIES TIMEOUT ${TIMEOUT})
+    ENDIF ()
+
     # Now make the Individual targets
     #ADD_CUSTOM_COMMAND(TARGET ${THIS_TEST_INDIV}
     #                   COMMENT "Running the HOMME regression test: ${THIS_TEST}"
@@ -453,13 +569,70 @@ macro(createTest testFile)
   ENDIF ()
 endmacro(createTest)
 
-macro(createTests testList)
- 
+macro (createTests testList)
   FOREACH (test ${${testList}})
     createTest(${test})
   ENDFOREACH ()
-endmacro(createTests)
+endmacro (createTests)
 
+macro(createTestsWithProfile testList testsProfile)
+  SET (PROFILE ${testsProfile})
+  FOREACH (test ${${testList}})
+    createTest(${test})
+  ENDFOREACH ()
+  UNSET(PROFILE)
+endmacro(createTestsWithProfile)
+
+# Make a list of all testing profiles no more intensive than the given profile.
+function (make_profiles_up_to profile profiles)
+  string (TOLOWER "${profile}" profile_ci)
+  set (tmp)
+  if ("${profile_ci}" STREQUAL "dev")
+    list (APPEND tmp "dev")
+  elseif ("${profile_ci}" STREQUAL "short")
+    list (APPEND tmp "dev")
+    list (APPEND tmp "short")
+  elseif ("${profile_ci}" STREQUAL "nightly")
+    list (APPEND tmp "dev")
+    list (APPEND tmp "short")
+    list (APPEND tmp "nightly")
+  else ()
+    message (FATAL_ERROR "Testing profile '${profile}' not implemented.")
+  endif ()
+  set (profiles "${tmp}" PARENT_SCOPE)
+endfunction ()
+
+MACRO(CREATE_CXX_VS_F90_TESTS_WITH_PROFILE TESTS_LIST testProfile)
+
+  FOREACH (TEST ${${TESTS_LIST}})
+    SET (TEST_FILE_F90 "${TEST}-f.cmake")
+
+    set_homme_tests_parameters(${TEST} ${testProfile})
+    set (PROFILE ${testProfile})
+    INCLUDE (${HOMME_SOURCE_DIR}/test/reg_test/run_tests/${TEST_FILE_F90})
+
+    SET (TEST_NAME_SUFFIX "ne${HOMME_TESTS_NE}-ndays${HOMME_TESTS_NDAYS}")
+    SET (F90_TEST_NAME "${TEST}-f-${TEST_NAME_SUFFIX}")
+    SET (CXX_TEST_NAME "${TEST}-c-${TEST_NAME_SUFFIX}")
+    SET (F90_DIR ${HOMME_BINARY_DIR}/tests/${F90_TEST_NAME})
+    SET (CXX_DIR ${HOMME_BINARY_DIR}/tests/${CXX_TEST_NAME})
+
+    # Compare netcdf output files bit-for-bit AND compare diagnostic lines
+    # in the raw output files
+    SET (TEST_NAME "${TEST}-${TEST_NAME_SUFFIX}_cxx_vs_f90")
+    MESSAGE ("-- Creating cxx-f90 comparison test ${TEST_NAME}")
+
+    CONFIGURE_FILE (${HOMME_SOURCE_DIR}/cmake/CxxVsF90.cmake.in
+                    ${HOMME_BINARY_DIR}/tests/${CXX_TEST_NAME}/CxxVsF90.cmake @ONLY)
+
+    ADD_TEST (NAME "${TEST_NAME}"
+              COMMAND ${CMAKE_COMMAND} -P CxxVsF90.cmake
+              WORKING_DIRECTORY ${HOMME_BINARY_DIR}/tests/${CXX_TEST_NAME})
+
+    SET_TESTS_PROPERTIES(${TEST_NAME} PROPERTIES DEPENDS "${F90_TEST_NAME};${CXX_TEST_NAME}"
+      LABELS ${testProfile})
+  ENDFOREACH ()
+ENDMACRO(CREATE_CXX_VS_F90_TESTS_WITH_PROFILE)
 
 macro(testQuadPrec HOMME_QUAD_PREC)
 

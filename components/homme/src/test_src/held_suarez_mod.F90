@@ -62,7 +62,7 @@ contains
     
     elemin%derived%FM(:,:,1:2,:)= elemin%derived%FM(:,:,1:2,:) + &
          hs_v_forcing(hvcoord,psfrc(1,1),& 
-         elemin%state%v(1,1,1,1,nm1),np,nlev)
+         elemin%state%v(:,:,:,:,nm1),np,nlev)
 
     if (qsize>=1) then
        ! HS with tracer  (Galewsky type forcing, with flux of  2.3e-5 kg/m^2/s
