@@ -8,11 +8,11 @@
   <xs:attribute name="queue" type="xs:string"/>
   <xs:attribute name="DEBUG" type="upperBoolean"/>
   <xs:attribute name="threaded" type="xs:boolean"/>
+  <xs:attribute name="allow_error" type="xs:boolean"/>
   <xs:attribute name="unit_testing" type="xs:boolean"/>
   <xs:attribute name="type" type="xs:NCName"/>
   <xs:attribute name="lang" type="xs:NCName"/>
   <xs:attribute name="name" type="xs:NCName"/>
-  <xs:attribute name="allow_error" type="xs:boolean"/>
 
   <!-- simple elements -->
   <xs:simpleType name="upperBoolean">
