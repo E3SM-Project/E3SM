@@ -260,6 +260,11 @@ contains
 
 ! this should go in openACC's element_state.F90, but it cant because that
 ! module doesn't know about element_t.  
+! LB: this should go in prim_driver_mod in preqx_acc, and that module
+!     should define its own version of prim_init1, which would be pretty
+!     much the same as the version in prim_driver_base, with the addition
+!     of a call to this subroutine (which should be removed from the base
+!     version of prim_init1
   subroutine setup_element_pointers(elem)
     use dimensions_mod, only: nelemd, qsize
 #if USE_OPENACC
