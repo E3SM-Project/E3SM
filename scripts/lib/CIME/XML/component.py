@@ -282,3 +282,46 @@ class Component(EntryID):
             name = self.get(entry, "id")
             text = self.text(self.get_child("desc", root=entry))
             logger.info("   {:20s} : {}".format(name, text.encode('utf-8')))
+
+
+    def return_values(self):
+        """
+        return a list of hashes from target config_component.xml file
+        """
+        entry_dict = dict()
+        items = list()
+        try:
+            helpnode = self.get_child("help")
+            helptext = self.text(helpnode)
+        except:
+            helptext = ''
+            
+        entries = self.get_children("entry")
+        for entry in entries:
+            item = dict()
+            name = self.get(entry, "id")
+            datatype = self.text(self.get_child("type", root=entry))
+            try:
+                valid_values = self.text(self.get_child("valid_values", root=entry))
+            except:
+                valid_values = ''
+
+            try:
+                value = self.get_value(name)
+            except:
+                value = ''
+            
+            group = self.text(self.get_child("group", root=entry))
+            filename = self.text(self.get_child("file", root=entry))
+            text = self.text(self.get_child("desc", root=entry))
+            item = { "name":name,
+                     "datatype":datatype,
+                     "valid_values":valid_values,
+                     "value":value,
+                     "group":group,
+                     "filename":filename,
+                     "desc":text.encode('utf-8')}
+            items.append(item)
+        
+        entry_dict = { "items" : items }
+        return helptext, entry_dict
