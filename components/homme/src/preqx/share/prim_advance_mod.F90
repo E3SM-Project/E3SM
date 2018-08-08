@@ -1180,7 +1180,7 @@ contains
 ! dont thread this because of k-1 dependence:
      p(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0 + dp(:,:,1)/2
      do k=2,nlev
-        p(:,:,k)=p(:,:,k-1) + dp(:,:,k-1)/2 + dp(:,:,k)/2
+        p(:,:,k)=p(:,:,k-1) + (dp(:,:,k-1) + dp(:,:,k))/2
      enddo
 
 #if (defined COLUMN_OPENMP)
@@ -1377,13 +1377,13 @@ contains
 
               vtens1(i,j,k) =   - v_vadv(i,j,1,k)                           &
                    + v2*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
-                   - vtemp(i,j,1) - glnps1
+                   - (vtemp(i,j,1) + glnps1)
               !
               ! phl: add forcing term to zonal wind u
               !
               vtens2(i,j,k) =   - v_vadv(i,j,2,k)                            &
                    - v1*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
-                   - vtemp(i,j,2) - glnps2
+                   - (vtemp(i,j,2) + glnps2)
               !
               ! phl: add forcing term to meridional wind v
               !
