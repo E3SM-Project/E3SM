@@ -23,6 +23,8 @@ def _get_batch_job_id_for_syslog(case):
             return os.environ["SLURM_JOB_ID"]
         elif mach in ['mira', 'theta']:
             return os.environ["COBALT_JOBID"]
+        elif mach in ['summit']:
+            return os.environ["LSB_JOBID"]
     except:
         pass
 
@@ -195,6 +197,13 @@ def _save_prerun_timing_e3sm(case, lid):
                 full_cmd = cmd + " " + filename
                 run_cmd_no_fail(full_cmd + "." + lid, from_dir=full_timing_dir)
                 gzip_existing_file(os.path.join(full_timing_dir, filename + "." + lid))
+        elif mach == "summit":
+            for cmd, filename in [("bjobs -u all >", "bjobsu_all"),
+                                  ("bjobs -r -u all -o 'jobid slots exec_host' >", "bjobsru_allo"),
+                                  ("bjobs -l -UF %s >" % job_id, "bjobslUF_jobid")]:
+                full_cmd = cmd + " " + filename
+                run_cmd_no_fail(full_cmd + "." + lid, from_dir=full_timing_dir)
+                gzip_existing_file(os.path.join(full_timing_dir, filename + "." + lid))
 
     # copy/tar SourceModes
     source_mods_dir = os.path.join(caseroot, "SourceMods")
@@ -360,6 +369,9 @@ def _save_postrun_timing_e3sm(case, lid):
             globs_to_copy.append("%s*cobaltlog" % job_id)
         elif mach in ["edison", "cori-haswell", "cori-knl"]:
             globs_to_copy.append("%s*run*%s" % (case.get_value("CASE"), job_id))
+        elif mach == "summit":
+            globs_to_copy.append("e3sm.stderr.%s" % job_id)
+            globs_to_copy.append("e3sm.stdout.%s" % job_id)
 
     globs_to_copy.append("logs/run_environment.txt.{}".format(lid))
     globs_to_copy.append(os.path.join(rundir, "e3sm.log.{}.gz".format(lid)))
@@ -425,7 +437,7 @@ def get_recommended_test_time_based_on_past(baseline_root, test, raw=False):
                 return convert_to_babylonian_time(best_walltime)
         except:
             # We NEVER want a failure here to kill the run
-            logger.warning("Failed to read test time: {}".format(sys.exc_info()[0]))
+            logger.warning("Failed to read test time: {}".format(sys.exc_info()[1]))
 
     return None
 
@@ -441,4 +453,4 @@ def save_test_time(baseline_root, test, time_seconds):
                 fd.write("{}\n".format(int(time_seconds)))
         except:
             # We NEVER want a failure here to kill the run
-            logger.warning("Failed to store test time: {}".format(sys.exc_info()[0]))
+            logger.warning("Failed to store test time: {}".format(sys.exc_info()[1]))

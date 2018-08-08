@@ -1030,34 +1030,18 @@ subroutine mct_avect_vecmult(av,vec,avlist,mask_spval)
 
      if (lmspval) then
 
-#ifdef CPP_VECTOR
-        do m=1,nfld
-!CDIR SELECT(VECTOR)
-!DIR$ CONCURRENT
+        !$omp simd
         do n=1,npts
-#else
-        do n=1,npts
-        do m=1,nfld
-#endif
-           if (.not. shr_const_isspval(av%rAttr(kfldin(m),n))) then
-              av%rAttr(kfldin(m),n) = av%rAttr(kfldin(m),n)*vec(n)
-           endif
-        enddo
+	   where (.not. shr_const_isspval(av%rAttr(kfldin(:),n)))
+              av%rAttr(kfldin(:),n) = av%rAttr(kfldin(:),n)*vec(n)
+           endwhere
         enddo
 
      else  ! lmspval
 
-#ifdef CPP_VECTOR
-        do m=1,nfld
-!CDIR SELECT(VECTOR)
-!DIR$ CONCURRENT
+        !$omp simd
         do n=1,npts
-#else
-        do n=1,npts
-        do m=1,nfld
-#endif
-           av%rAttr(kfldin(m),n) = av%rAttr(kfldin(m),n)*vec(n)
-        enddo
+           av%rAttr(kfldin(:),n) = av%rAttr(kfldin(:),n)*vec(n)
         enddo
 
      endif  ! lmspval
@@ -1070,34 +1054,18 @@ subroutine mct_avect_vecmult(av,vec,avlist,mask_spval)
 
      if (lmspval) then
 
-#ifdef CPP_VECTOR
-        do m=1,nfld
-!CDIR SELECT(VECTOR)
-!DIR$ CONCURRENT
+        !$omp simd
         do n=1,npts
-#else
-        do n=1,npts
-        do m=1,nfld
-#endif
-           if (.not. shr_const_isspval(av%rAttr(m,n))) then
-              av%rAttr(m,n) = av%rAttr(m,n)*vec(n)
-           endif
-        enddo
+	   where (.not. shr_const_isspval(av%rAttr(:,n)))
+              av%rAttr(:,n) = av%rAttr(:,n)*vec(n)
+           endwhere
         enddo
 
      else  ! lmspval
 
-#ifdef CPP_VECTOR
-        do m=1,nfld
-!CDIR SELECT(VECTOR)
-!DIR$ CONCURRENT
+        !$omp simd
         do n=1,npts
-#else
-        do n=1,npts
-        do m=1,nfld
-#endif
-           av%rAttr(m,n) = av%rAttr(m,n)*vec(n)
-        enddo
+           av%rAttr(:,n) = av%rAttr(:,n)*vec(n)
         enddo
 
      endif   ! lmspval
