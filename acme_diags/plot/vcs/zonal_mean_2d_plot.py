@@ -6,7 +6,7 @@ import numpy
 import vcs
 import acme_diags
 import acme_diags.plot.vcs as utils
-from acme_diags.driver.utils import get_output_dir, _chown
+from acme_diags.driver.utils.general import get_output_dir, _chown
 
 textcombined_objs = {}
 

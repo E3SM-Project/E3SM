@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
 from cdp.cdp_viewer import OutputViewer
 import acme_diags
-from acme_diags.driver.utils import get_set_name
+from acme_diags.driver.utils.general import get_set_name
 from acme_diags.plot.cartopy.taylor_diagram import TaylorDiagram
 
 # Dict of

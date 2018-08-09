@@ -9,8 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import cartopy.crs as ccrs
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
-
-from acme_diags.driver.utils import get_output_dir, _chown
+from acme_diags.driver.utils.general import get_output_dir, _chown
 from acme_diags.plot import get_colormap
 
 plotTitle = {'fontsize': 11.5}

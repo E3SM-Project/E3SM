@@ -134,8 +134,8 @@ def run_diag(parameter):
                 plev = parameter.plevs
                 print('Selected pressure level: {}'.format(plev))
 
-                mv1_p = utils.convert_to_pressure_levels(mv1, plev, test_data, var, season)
-                mv2_p = utils.convert_to_pressure_levels(mv2, plev, test_data, var, season)
+                mv1_p = utils.general.convert_to_pressure_levels(mv1, plev, test_data, var, season)
+                mv2_p = utils.general.convert_to_pressure_levels(mv2, plev, test_data, var, season)
 
                 # Select plev.
                 for ilev in range(len(plev)):
@@ -161,7 +161,7 @@ def run_diag(parameter):
                         parameter.var_region = region
                         plot(parameter.current_set, mv2_zonal,
                              mv1_zonal, diff, {}, parameter)
-                        utils.save_ncfiles(
+                        utils.general.save_ncfiles(
                             parameter.current_set, mv1_zonal, mv2_zonal, diff, parameter)
 
             # For variables without a z-axis.
@@ -184,7 +184,7 @@ def run_diag(parameter):
 
                     plot(parameter.current_set, mv2_zonal,
                          mv1_zonal, diff, {}, parameter)
-                    utils.save_ncfiles(parameter.current_set,
+                    utils.general.save_ncfiles(parameter.current_set,
                                        mv1_zonal, mv2_zonal, diff, parameter)
 
             else:

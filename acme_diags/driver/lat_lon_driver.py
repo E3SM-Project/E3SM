@@ -125,8 +125,8 @@ def run_diag(parameter):
                 plev = parameter.plevs
                 print('Selected pressure level: {}'.format(plev))
 
-                mv1_p = utils.convert_to_pressure_levels(mv1, plev, test_data, var, season)
-                mv2_p = utils.convert_to_pressure_levels(mv2, plev, test_data, var, season)
+                mv1_p = utils.general.convert_to_pressure_levels(mv1, plev, test_data, var, season)
+                mv2_p = utils.general.convert_to_pressure_levels(mv2, plev, test_data, var, season)
 
                 # Select plev.
                 for ilev in range(len(plev)):
@@ -136,7 +136,7 @@ def run_diag(parameter):
                     for region in regions:
                         print("Selected region: {}".format(region))
 
-                        mv1_domain, mv2_domain = utils.select_region(
+                        mv1_domain, mv2_domain = utils.general.select_region(
                             region, mv1, mv2, land_frac, ocean_frac, parameter)
 
                         parameter.output_file = '-'.join(
@@ -146,7 +146,7 @@ def run_diag(parameter):
 
                         # Regrid towards the lower resolution of the two
                         # variables for calculating the difference.
-                        mv1_reg, mv2_reg = utils.regrid_to_lower_res(
+                        mv1_reg, mv2_reg = utils.general.regrid_to_lower_res(
                             mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
 
                         diff = mv1_reg - mv2_reg
@@ -155,7 +155,7 @@ def run_diag(parameter):
 
                         # Saving the metrics as a json.
                         metrics_dict['unit'] = mv1_reg.units
-                        fnm = os.path.join(utils.get_output_dir(
+                        fnm = os.path.join(utils.general.get_output_dir(
                             parameter.current_set, parameter), parameter.output_file)
                         with open(fnm + '.json' , 'w') as outfile:
                              json.dump(metrics_dict,outfile)
@@ -164,7 +164,7 @@ def run_diag(parameter):
                         parameter.var_region = region
                         plot(parameter.current_set, mv2_domain,
                              mv1_domain, diff, metrics_dict, parameter)
-                        utils.save_ncfiles(
+                        utils.general.save_ncfiles(
                             parameter.current_set, mv1_domain, mv2_domain, diff, parameter)
 
 
@@ -173,7 +173,7 @@ def run_diag(parameter):
                 for region in regions:
                     print("Selected region: {}".format(region))
 
-                    mv1_domain, mv2_domain = utils.select_region(
+                    mv1_domain, mv2_domain = utils.general.select_region(
                         region, mv1, mv2, land_frac, ocean_frac, parameter)
 
                     parameter.output_file = '-'.join(
@@ -182,7 +182,7 @@ def run_diag(parameter):
 
                     # Regrid towards the lower resolution of the two
                     # variables for calculating the difference.
-                    mv1_reg, mv2_reg = utils.regrid_to_lower_res(
+                    mv1_reg, mv2_reg = utils.general.regrid_to_lower_res(
                         mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
 
                     # Special case.
@@ -201,7 +201,7 @@ def run_diag(parameter):
 
                     # Saving the metrics as a json.
                     metrics_dict['unit'] = mv1_reg.units
-                    fnm = os.path.join(utils.get_output_dir(
+                    fnm = os.path.join(utils.general.get_output_dir(
                         parameter.current_set, parameter), parameter.output_file)
                     with open(fnm + '.json' , 'w') as outfile:
                          json.dump(metrics_dict,outfile)
@@ -210,7 +210,7 @@ def run_diag(parameter):
                     parameter.var_region = region
                     plot(parameter.current_set, mv2_domain,
                          mv1_domain, diff, metrics_dict, parameter)
-                    utils.save_ncfiles(parameter.current_set,
+                    utils.general.save_ncfiles(parameter.current_set,
                                        mv1_domain, mv2_domain, diff, parameter)
 
             else:

@@ -7,7 +7,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from cartopy.mpl.ticker import LatitudeFormatter
-from acme_diags.driver.utils import get_output_dir, _chown
+from acme_diags.driver.utils.general import get_output_dir, _chown
 
 plotTitle = {'fontsize': 12.5}
 plotSideTitle = {'fontsize': 11.5}

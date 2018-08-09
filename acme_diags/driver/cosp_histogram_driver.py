@@ -86,7 +86,7 @@ def run_diag(parameter):
             for region in regions:
                 print("Selected region: {}".format(region))
 
-                mv1_domain, mv2_domain = utils.select_region(
+                mv1_domain, mv2_domain = utils.general.select_region(
                     region, mv1, mv2, land_frac, ocean_frac, parameter)
 
                 parameter.output_file = '-'.join(
@@ -104,7 +104,7 @@ def run_diag(parameter):
                 parameter.backend = 'mpl'  # For now, there's no vcs support for this set.
                 plot(parameter.current_set, mv2_domain_mean,
                      mv1_domain_mean, diff, {}, parameter)
-                utils.save_ncfiles(parameter.current_set,
+                utils.general.save_ncfiles(parameter.current_set,
                                    mv1_domain, mv2_domain, diff, parameter)
 
     return parameter

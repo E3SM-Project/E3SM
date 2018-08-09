@@ -139,8 +139,8 @@ def run_diag(parameter):
                 plev = numpy.logspace(2.0, 3.0, num=17)
                 print('Selected pressure level: {}'.format(plev))
 
-                mv1_p = utils.convert_to_pressure_levels(mv1, plev, test_data, var, season)
-                mv2_p = utils.convert_to_pressure_levels(mv2, plev, test_data, var, season)
+                mv1_p = utils.general.convert_to_pressure_levels(mv1, plev, test_data, var, season)
+                mv2_p = utils.general.convert_to_pressure_levels(mv2, plev, test_data, var, season)
 
                 mv1_p = cdutil.averager(mv1_p, axis='x')
                 mv2_p = cdutil.averager(mv2_p, axis='x')
@@ -179,7 +179,7 @@ def run_diag(parameter):
 
                 plot(parameter.current_set, mv2_p, mv1_p,
                      diff, metrics_dict, parameter)
-                utils.save_ncfiles(parameter.current_set,
+                utils.general.save_ncfiles(parameter.current_set,
                                    mv1_p, mv2_p, diff, parameter)
 
             # For variables without a z-axis.
@@ -187,7 +187,7 @@ def run_diag(parameter):
                 for region in regions:
                     print("Selected region: {}".format(region))
 
-                    mv1_domain, mv2_domain = utils.select_region(
+                    mv1_domain, mv2_domain = utils.general.select_region(
                         region, mv1, mv2, land_frac, ocean_frac, parameter)
 
                     parameter.output_file = '-'.join(
@@ -196,7 +196,7 @@ def run_diag(parameter):
 
                     # Regrid towards the lower resolution of the two
                     # variables for calculating the difference.
-                    mv1_reg, mv2_reg = utils.regrid_to_lower_res(
+                    mv1_reg, mv2_reg = utils.general.regrid_to_lower_res(
                         mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
 
                     # Special case.
@@ -215,7 +215,7 @@ def run_diag(parameter):
 
                     plot(parameter.current_set, mv2_domain,
                          mv1_domain, diff, metrics_dict, parameter)
-                    utils.save_ncfiles(parameter.current_set,
+                    utils.general.save_ncfiles(parameter.current_set,
                                        mv1_domain, mv2_domain, diff, parameter)
 
             else:

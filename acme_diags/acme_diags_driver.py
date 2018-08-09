@@ -19,14 +19,14 @@ import cdp.cdp_run
 import acme_diags
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_viewer import create_viewer
-from acme_diags.driver.utils import get_set_name, SET_NAMES
+from acme_diags.driver import utils
 
 
 def _get_default_diags(set_num, dataset, run_type):
     """
     Returns the path for the default diags corresponding to set_num.
     """
-    set_num = get_set_name(set_num)
+    set_num = utils.general.get_set_name(set_num)
 
     if dataset and run_type == 'model_vs_obs':  # either 'ACME' or 'AMWG', use the jsons
         fnm = '{}_{}.json'.format(set_num, dataset)
@@ -142,7 +142,7 @@ def run_diag(parameters):
     """
     results = []
     for pset in parameters.sets:
-        set_name = get_set_name(pset)
+        set_name = utils.general.get_set_name(pset)
 
         parameters.current_set = set_name
         mod_str = 'acme_diags.driver.{}_driver'.format(set_name)
@@ -180,7 +180,7 @@ def main():
         if hasattr(cmdline_parameter, 'sets'):
             original_parameter.sets = cmdline_parameter.sets
         elif not hasattr(original_parameter, 'sets'):
-            original_parameter.sets = SET_NAMES
+            original_parameter.sets = utils.general.SET_NAMES
 
         # load the default cfg files
         default_diags_paths = []
