@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import os
-import sys
 import numpy
 import cdutil
 import cdms2
@@ -135,7 +134,8 @@ def run_diag(parameter):
                         0.1  # Convert cm to mm/day instead.
                     mv2.units = 'mm/day'
 
-            if mv1.getLevel() and mv2.getLevel():  # For variables with z-axis.
+            # For variables with a z-axis.
+            if mv1.getLevel() and mv2.getLevel():
                 plev = numpy.logspace(2.0, 3.0, num=17)
                 print('Selected pressure level: {}'.format(plev))
 
@@ -151,7 +151,7 @@ def run_diag(parameter):
                     ' '.join([var, season]))
 
                 # Regrid towards the lower resolution of the two
-                # variables for calculating difference.
+                # variables for calculating the difference.
                 if len(mv1_p.getLatitude()) <= len(mv2_p.getLatitude()):
                     mv1_reg = mv1_p
                     lev_out = mv1_p.getLevel()
@@ -195,7 +195,7 @@ def run_diag(parameter):
                     parameter.main_title = str(' '.join([var, season, region]))
 
                     # Regrid towards the lower resolution of the two
-                    # variables for calculating difference.
+                    # variables for calculating the difference.
                     mv1_reg, mv2_reg = utils.regrid_to_lower_res(
                         mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
 
@@ -220,6 +220,6 @@ def run_diag(parameter):
 
             else:
                 raise RuntimeError(
-                    "Dimensions of two variables are different. Aborting.")
+                    "Dimensions of the two variables are different. Aborting.")
 
     return parameter

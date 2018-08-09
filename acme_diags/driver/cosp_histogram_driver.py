@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import os
-import sys
 import cdms2
 import acme_diags
 from acme_diags.plot import plot

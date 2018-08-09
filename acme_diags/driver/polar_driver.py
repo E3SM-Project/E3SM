@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import os
-import sys
 import cdms2
 import MV2
 import acme_diags
@@ -111,7 +110,8 @@ def run_diag(parameter):
                         0.1  # Convert cm to mm/day instead.
                     mv2.units = 'mm/day'
 
-            if mv1.getLevel() and mv2.getLevel():  # for variables with z axis:
+            # For variables with a z-axis.
+            if mv1.getLevel() and mv2.getLevel():
                 plev = parameter.plevs
                 print('Selected pressure level: {}'.format(plev))
 
@@ -135,7 +135,7 @@ def run_diag(parameter):
                             ' '.join([var, str(int(plev[ilev])), 'mb', season, region]))
 
                         # Regrid towards the lower resolution of the two
-                        # variables for calculating difference.
+                        # variables for calculating the difference.
                         mv1_reg, mv2_reg = utils.regrid_to_lower_res(
                             mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
 
@@ -164,12 +164,12 @@ def run_diag(parameter):
                     parameter.main_title = str(' '.join([var, season, region]))
 
                     # Regrid towards the lower resolution of the two
-                    # variables for calculating difference.
+                    # variables for calculating the difference.
                     mv1_reg, mv2_reg = utils.regrid_to_lower_res(
                         mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
 
                     # Special case.
-                    if var == 'TREFHT_LAND'or var == 'SST':
+                    if var == 'TREFHT_LAND' or var == 'SST':
                         if ref_name == 'WILLMOTT':
                             mv2_reg = MV2.masked_where(
                                 mv2_reg == mv2_reg.fill_value, mv2_reg)
@@ -190,6 +190,6 @@ def run_diag(parameter):
 
             else:
                 raise RuntimeError(
-                    "Dimensions of two variables are difference. Abort")
+                    "Dimensions of the two variables are different. Aborting.")
 
     return parameter

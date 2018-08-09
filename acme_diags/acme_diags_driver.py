@@ -75,7 +75,6 @@ def run_diag(parameters):
         mod_str = 'acme_diags.driver.{}_driver'.format(set_name)
         try:
             module = importlib.import_module(mod_str)
-            print('Starting to run E3SM Diagnostics.')
             single_result = module.run_diag(parameters)
             print('')
             results.append(single_result)

@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import os
-import sys
 import numpy
 import cdms2
 import MV2
@@ -122,7 +121,7 @@ def run_diag(parameter):
                 if var == 'PRECT_LAND':
                     days_season = {'ANN': 365, 'DJF': 90,
                                    'MAM': 92, 'JJA': 92, 'SON': 91}
-                    # mv1 = mv1 * days_season[season] * 0.1 #following AMWG
+                    # mv1 = mv1 * days_season[season] * 0.1 # following AMWG
                     # Approximate way to convert to seasonal cumulative
                     # precipitation, need to have solution in derived variable,
                     # unit convert from mm/day to cm.
@@ -130,14 +129,15 @@ def run_diag(parameter):
                         0.1  # Convert cm to mm/day instead.
                     mv2.units = 'mm/day'
 
-            if mv1.getLevel() and mv2.getLevel():  # for variables with z axis:
+            # For variables with a z-axis.
+            if mv1.getLevel() and mv2.getLevel():
                 plev = parameter.plevs
                 print('Selected pressure level: {}'.format(plev))
 
                 mv1_p = utils.convert_to_pressure_levels(mv1, plev, test_data, var, season)
                 mv2_p = utils.convert_to_pressure_levels(mv2, plev, test_data, var, season)
 
-                # select plev
+                # Select plev.
                 for ilev in range(len(plev)):
                     mv1 = mv1_p[ilev, ]
                     mv2 = mv2_p[ilev, ]
@@ -147,9 +147,8 @@ def run_diag(parameter):
                         mv1_zonal = cdutil.averager(mv1, axis='x')
                         mv2_zonal = cdutil.averager(mv2, axis='x')
 
-                        # Regrid towards lower resolution of two variables for
-                        # calculating difference
-                        print(mv1_zonal.shape, mv2_zonal.shape)
+                        # Regrid towards the lower resolution of the two
+                        # variables for calculating the difference.
                         mv1_reg, mv2_reg = regrid_to_lower_res_1d(
                             mv1_zonal, mv2_zonal)
 
@@ -165,7 +164,7 @@ def run_diag(parameter):
                         utils.save_ncfiles(
                             parameter.current_set, mv1_zonal, mv2_zonal, diff, parameter)
 
-            # for variables without z axis:
+            # For variables without a z-axis.
             elif mv1.getLevel() is None and mv2.getLevel() is None:
                 for region in regions:
                     print("Selected region: {}".format(region))
@@ -190,6 +189,6 @@ def run_diag(parameter):
 
             else:
                 raise RuntimeError(
-                    "Dimensions of two variables are different. Aborting.")
+                    "Dimensions of the two variables are different. Aborting.")
 
     return parameter
