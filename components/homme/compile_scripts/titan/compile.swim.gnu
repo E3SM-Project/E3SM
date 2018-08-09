@@ -13,7 +13,7 @@ export Trilinos_DIR=/lustre/atlas1/cli106/proj-shared/4ue/Trilinos/reg_build/ins
 #export Trilinos_DIR=/opt/cray/trilinos/12.12.1.0/GNU/7.1/x86_64
 
 # leaving this in causes dlopen link errors, leaving it out causes "undefined reference to `main' "
-export CRAYPE_LINK_TYPE='dynamic' 
+#export CRAYPE_LINK_TYPE='dynamic'  link errors if uncommented
 
 export TARGET='titan-swim-cpu-gnu'
 
@@ -56,5 +56,5 @@ if [ $do_make -eq 1 ]; then
 #VERBOSE=1 
 make -j16 swim                                            || exit -1
 mkdir -p $HOMME_ROOT/build/swim
-cp ./src/sweqx/swim $HOMME_ROOT/build/swim/swim.cpu.gnu  || exit -1
+cp src/sweqx/swim $HOMME_ROOT/build/swim/swim.cpu.gnu  || exit -1
 fi

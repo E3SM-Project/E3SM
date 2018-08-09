@@ -90,18 +90,11 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${UTILS_SHARE_DIR}/shr_const_mod.F90
                ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
                ${UTILS_TRILINOS_DIR}/block_precon_interface.cpp
-               ${UTILS_TRILINOS_DIR}/BlockPreconditioner_Op.cpp
-               ${UTILS_TRILINOS_DIR}/BlockPreconditioner_Dense.cpp
-               ${UTILS_TRILINOS_DIR}/BlockPreconditioner_Sparse.cpp
-               ${UTILS_TRILINOS_DIR}/BlockPreconditioner_SparseML.cpp
-               ${UTILS_TRILINOS_DIR}/GMRESPreconditioner_Sparse.cpp
-               ${UTILS_TRILINOS_DIR}/GMRESkPreconditioner_Op.cpp
                ${UTILS_TRILINOS_DIR}/IdentityPreconditioner.cpp
-               ${UTILS_TRILINOS_DIR}/MLPreconditioner.cpp
                ${UTILS_TRILINOS_DIR}/precon_interface.cpp
-               ${UTILS_TRILINOS_DIR}/Precon_Operator.cpp
                ${UTILS_TRILINOS_DIR}/trilinosNoxSolver.cpp
                ${UTILS_TRILINOS_DIR}/trilinosModelEvaluator.cpp
+               ${UTILS_TRILINOS_DIR}/trilinosUtils.cpp
                ${SRC_DIR}/derived_type_mod.F90
                ${TARGET_DIR}/implicit_mod.F90
                ${TARGET_DIR}/precon_mod.F90
