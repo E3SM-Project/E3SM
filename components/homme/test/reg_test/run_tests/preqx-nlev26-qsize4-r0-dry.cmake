@@ -5,7 +5,7 @@ SET(EXEC_NAME preqx-nlev26)
 
 SET(NUM_CPUS 16)
 
-SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/preqx-nlev26-qsize4-r0-dry.nl)
+SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/preqx.nl)
 SET(VCOORD_FILES ${HOMME_ROOT}/test/vcoord/cam*-26.ascii)
 
 # compare all of these files against baselines:
