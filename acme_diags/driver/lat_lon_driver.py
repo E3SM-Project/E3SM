@@ -8,7 +8,7 @@ import acme_diags
 from acme_diags.plot import plot
 from acme_diags.derivations import acme
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean, std
-from acme_diags.driver import utils, dataset
+from acme_diags.driver import utils
 
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
@@ -54,8 +54,8 @@ def run_diag(parameter):
     ref_name = parameter.ref_name
     regions = parameter.regions
 
-    test_data = dataset.Dataset(parameter, test=True)
-    ref_data = dataset.Dataset(parameter, ref=True)    
+    test_data = utils.dataset.Dataset(parameter, test=True)
+    ref_data = utils.dataset.Dataset(parameter, ref=True)    
 
     for season in seasons:
         if parameter.short_test_name:

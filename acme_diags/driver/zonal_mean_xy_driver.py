@@ -9,7 +9,7 @@ import acme_diags
 from acme_diags.plot import plot
 from acme_diags.derivations import acme
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
-from acme_diags.driver import utils, dataset
+from acme_diags.driver import utils
 
 
 def regrid_to_lower_res_1d(mv1, mv2):
@@ -73,8 +73,8 @@ def run_diag(parameter):
     ref_name = parameter.ref_name
     regions = parameter.regions
 
-    test_data = dataset.Dataset(parameter, test=True)
-    ref_data = dataset.Dataset(parameter, ref=True)    
+    test_data = utils.dataset.Dataset(parameter, test=True)
+    ref_data = utils.dataset.Dataset(parameter, ref=True)    
 
     for season in seasons:
         if parameter.short_test_name:
