@@ -34,7 +34,7 @@ def get_set_name(set_name):
 
 def _findfile(path_name, data_name, season):
     """Locate file name based on data_name and season."""
-    dir_files = os.listdir(path_name)
+    dir_files = sorted(os.listdir(path_name))
     for filename in dir_files:
         if filename.startswith(data_name + '_' + season):
             return os.path.join(path_name, filename)

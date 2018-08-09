@@ -2,9 +2,12 @@
 from __future__ import print_function
 
 import os
-# Must be done before any CDAT library is called
+# Must be done before any CDAT library is called.
 if 'UVCDAT_ANONYMOUS_LOG' not in os.environ:
     os.environ['UVCDAT_ANONYMOUS_LOG'] = 'no'
+# Needed for when using hdf5 >= 1.10.0,
+# without this, errors are thrown on Edison compute nodes.
+os.environ['HDF5_USE_FILE_LOCKING'] = 'FALSE'
 
 import sys
 import getpass
@@ -20,10 +23,12 @@ from acme_diags.driver.utils import get_set_name, SET_NAMES
 
 
 def _get_default_diags(set_num, dataset, run_type):
-    """Returns the path for the default diags corresponding to set_num"""
+    """
+    Returns the path for the default diags corresponding to set_num.
+    """
     set_num = get_set_name(set_num)
 
-    if dataset and run_type in ['model_vs_obs', 'obs_vs_model']:  # either 'ACME' or 'AMWG', use the jsons
+    if dataset and run_type == 'model_vs_obs':  # either 'ACME' or 'AMWG', use the jsons
         fnm = '{}_{}.json'.format(set_num, dataset)
     else:  # use the cfgs
         fnm = '{}_{}.cfg'.format(set_num, run_type)
@@ -37,9 +42,11 @@ def _get_default_diags(set_num, dataset, run_type):
     return pth
 
 
-def _collaspse_results(parameters):
-    """When using cdp_run, parameters is a list of lists: [[Parameters], ...].
-       Make this just a list: [Parameters]."""
+def _collapse_results(parameters):
+    """
+    When using cdp_run, parameters is a list of lists: [[Parameters], ...].
+    Make this just a list: [Parameters, ...].
+    """
     output_parameters = []
 
     for p1 in parameters:
@@ -52,21 +59,87 @@ def _collaspse_results(parameters):
     return output_parameters
 
 
-def provenance(results_dir):
-    """Store a JSON of the environmental provenance in results_dir"""
-    cmd = 'conda list'
-    p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+def _save_env_yml(results_dir):
+    """
+    Save the yml to recreate the environment in results_dir.
+    """
+    cmd = 'conda env export'
+    p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     output, err = p.communicate()
-    fnm = os.path.join(results_dir, 'env_prov.txt')
 
+    if err:
+        print('Error when creating env yml file:')
+        print(err)
+
+    else:
+        fnm = os.path.join(results_dir, 'environment.yml')
+        with open(fnm, 'w') as f:
+            f.write(output.decode('utf-8'))
+
+        print('Saved environment yml file to: {}'.format(fnm))
+
+
+def _save_parameter_files(results_dir, parser):
+    """
+    Save the command line arguments used, and any py or cfg files.
+    """
+    cmd_used = ' '.join(sys.argv)
+    fnm = os.path.join(results_dir, 'cmd_used.txt')
     with open(fnm, 'w') as f:
-        f.write(output.decode('utf-8'))
-        f.write(err.decode('utf-8'))
-    print('Saving provenance data in: {}'.format(fnm))
+        f.write(cmd_used)
+    print('Saved command used to: {}'.format(fnm))
+
+    args = parser.view_args()
+
+    if hasattr(args, 'parameters') and args.parameters:
+        fnm = args.parameters
+        if not os.path.isfile(fnm):
+            print('File does not exist: {}'.format(fnm))
+        else:
+            with open(fnm, 'r') as f:
+                contents = ''.join(f.readlines())
+            # Remove any path, just keep the filename
+            new_fnm = fnm.split('/')[-1]
+            new_fnm = os.path.join(results_dir, new_fnm)
+            with open(new_fnm, 'w') as f:
+                f.write(contents)
+            print('Saved py file to: {}'.format(new_fnm))
+
+    if hasattr(args, 'other_parameters') and args.other_parameters:
+        fnm = args.other_parameters[0]
+        if not os.path.isfile(fnm):
+            print('File does not exist: {}'.format(fnm))
+        else:
+            with open(fnm, 'r') as f:
+                contents = ''.join(f.readlines())
+            # Remove any path, just keep the filename
+            new_fnm = fnm.split('/')[-1]
+            new_fnm = os.path.join(results_dir, new_fnm)
+            with open(new_fnm, 'w') as f:
+                f.write(contents)
+            print('Saved cfg file to: {}'.format(new_fnm))
+
+
+def save_provenance(results_dir, parser):
+    """
+    Store the provenance in results_dir.
+    """
+    results_dir = os.path.join(results_dir, 'prov')
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir, 0o775)
+
+    try:
+        _save_env_yml(results_dir)
+    except:
+        traceback.print_exc()
+
+    _save_parameter_files(results_dir, parser)
 
 
 def run_diag(parameters):
-    """For a single set of parameters, run the corresponding diags."""
+    """
+    For a single set of parameters, run the corresponding diags.
+    """
     results = []
     for pset in parameters.sets:
         set_name = get_set_name(pset)
@@ -78,7 +151,7 @@ def run_diag(parameters):
             single_result = module.run_diag(parameters)
             print('')
             results.append(single_result)
-        except Exception as e:
+        except:
             print('Error in {}'.format(mod_str))
             traceback.print_exc()
             if parameters.debug:
@@ -90,6 +163,11 @@ def run_diag(parameters):
 def main():
     parser = ACMEParser()
     args = parser.view_args()
+
+    # There weren't any arguments defined
+    if not any(getattr(args, arg) for arg in vars(args)):
+        parser.print_help()
+        sys.exit()
 
     if args.parameters and not args.other_parameters:  # -p only
         cmdline_parameter = parser.get_cmdline_parameters()
@@ -131,10 +209,7 @@ def main():
         parameters = parser.get_parameters(cmdline_parameters=cmdline_parameter, 
             other_parameters=other_parameters, cmd_default_vars=False)
 
-    elif args.parameters and args.other_parameters:  # -p and -d
-        parameters = parser.get_parameters(cmd_default_vars=False)
-
-    else:  # command line args without -p or -d
+    else:  # -p and -d, or just command line arguments
         parameters = parser.get_parameters(cmd_default_vars=False)
 
     dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -148,6 +223,9 @@ def main():
 
     if not os.path.exists(parameters[0].results_dir):
         os.makedirs(parameters[0].results_dir, 0o775)
+    if not parameters[0].no_viewer:  # Only save provenance for full runs.
+        save_provenance(parameters[0].results_dir, parser)
+
     if parameters[0].multiprocessing:
         parameters = cdp.cdp_run.multiprocess(run_diag, parameters)
     elif parameters[0].distributed:
@@ -155,13 +233,11 @@ def main():
     else:
         parameters = cdp.cdp_run.serial(run_diag, parameters)
 
-    parameters = _collaspse_results(parameters)
+    parameters = _collapse_results(parameters)
 
     if not parameters:
         print('There was not a single valid diagnostics run, no viewer created.')
-    else:
-        provenance(parameters[0].results_dir)
-        
+    else:        
         if parameters[0].no_viewer:
             print('Viewer not created because the no_viewer parameter is True.')
         else:
@@ -173,4 +249,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

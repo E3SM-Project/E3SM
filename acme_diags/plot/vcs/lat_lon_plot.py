@@ -44,10 +44,13 @@ def plot(reference, test, diff, metrics_dict, parameter):
 
     reference_isofill = vcs.getisofill('reference_isofill')
     reference_isofill.missing = 'grey'
+    reference_isofill.yticlabels1 = {-90:"90$^\circ$S", -60:"60$^\circ$S", -30:"30$^\circ$S", 0:"0$^\circ$", 30:"30$^\circ$N", 60:"60$^\circ$N", 90:"90$^\circ$N"}
     test_isofill = vcs.getisofill('test_isofill')
     test_isofill.missing = 'grey'
+    test_isofill.yticlabels1 = {-90:"90$^\circ$S", -60:"60$^\circ$S", -30:"30$^\circ$S", 0:"0$^\circ$", 30:"30$^\circ$N", 60:"60$^\circ$N", 90:"90$^\circ$N"}
     diff_isofill = vcs.getisofill('diff_isofill')
     diff_isofill.missing = 'grey'
+    diff_isofill.yticlabels1 = {-90:"90$^\circ$S", -60:"60$^\circ$S", -30:"30$^\circ$S", 0:"0$^\circ$", 30:"30$^\circ$N", 60:"60$^\circ$N", 90:"90$^\circ$N"}
 
     utils.set_levels_of_graphics_method(
         reference_isofill, parameter.contour_levels, reference, test)
