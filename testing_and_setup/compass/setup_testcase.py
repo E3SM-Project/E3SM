@@ -1135,7 +1135,7 @@ def wrap_subprocess_comment(command_args, indentation):  # {{{
 def wrap_subprocess_command(command_args, indentation, quiet):  # {{{
     # Setup command redirection
     if quiet:
-        redirect = ", stdout=dev_null, stderr=dev_null"
+        redirect = ", stdout=dev_null, stderr=None"
     else:
         redirect = ""
 
