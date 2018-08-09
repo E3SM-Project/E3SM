@@ -302,7 +302,7 @@ contains
        call shr_sys_flush(logunit)
     endif
     call t_startf("shr_taskmap_write")
-    call shr_taskmap_write(logunit, GLOBAL_COMM_IN, 'GLOBAL')
+    call shr_taskmap_write(logunit, GLOBAL_COMM_IN, 'GLOBAL', verbose=.true.)
     call t_stopf("shr_taskmap_write")
 
     ! Initialize gloiam on all IDs
