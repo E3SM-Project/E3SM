@@ -577,10 +577,10 @@ subroutine radiation_init(state)
    nlwgpts = k_dist_lw%get_ngpt()
 
    ! Set number of levels used in radiation calculations
-#ifdef DO_EXTRA_RAD_LEVEL
-   nlev_rad = pver + 1
-#else
+#ifdef NO_EXTRA_RAD_LEVEL
    nlev_rad = pver
+#else
+   nlev_rad = pver + 1
 #endif
 
    ! Indices on radiation grid that correspond to top and bottom of the model
