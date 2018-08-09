@@ -1,7 +1,7 @@
 module datm_shr_mod
 
   ! !USES:
-  use shr_kind_mod   , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8
+  use shr_kind_mod   , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, I8=>SHR_KIND_I8
   use shr_kind_mod   , only : CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_const_mod  , only : SHR_CONST_CDAY,SHR_CONST_TKFRZ,SHR_CONST_SPVAL
   use shr_file_mod   , only : shr_file_getlogunit, shr_file_getunit, shr_file_freeunit
@@ -21,6 +21,11 @@ module datm_shr_mod
   !--------------------------------------------------------------------------
   ! Public interfaces
   !--------------------------------------------------------------------------
+
+  interface datm_shr_getNextRadCday  
+     module procedure datm_shr_getNextRadCDay_i8
+     module procedure datm_shr_getNextRadCDay_i4
+  end interface datm_shr_getNextRadCday
 
   public :: datm_shr_getNextRadCDay
   public :: datm_shr_CORE2getFactors
@@ -189,17 +194,15 @@ CONTAINS
   end subroutine datm_shr_read_namelists
 
   !===============================================================================
-  real(R8) function datm_shr_getNextRadCDay( ymd, tod, stepno, dtime, iradsw, calendar )
+  real(R8) function datm_shr_getNextRadCDay_i8( ymd, tod, stepno, dtime, iradsw, calendar )
 
-    ! !DESCRIPTION:
     !  Return the calendar day of the next radiation time-step.
     !  General Usage: nextswday = datm_shr_getNextRadCDay(curr_date)
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
     integer(IN), intent(in)    :: ymd
     integer(IN), intent(in)    :: tod
-    integer(IN), intent(in)    :: stepno
+    integer(I8), intent(in)    :: stepno
     integer(IN), intent(in)    :: dtime
     integer(IN), intent(in)    :: iradsw
     character(*),intent(in)    :: calendar
@@ -226,15 +229,54 @@ CONTAINS
     else
        nextsw_cday = julday + dtime/SHR_CONST_CDAY
     end if
-    datm_shr_getNextRadCDay = nextsw_cday
+    datm_shr_getNextRadCDay_i8 = nextsw_cday
 
-  end function datm_shr_getNextRadCDay
+  end function datm_shr_getNextRadCDay_i8
+
+  real(R8) function datm_shr_getNextRadCDay_i4( ymd, tod, stepno, dtime, iradsw, calendar )
+
+    !  Return the calendar day of the next radiation time-step.
+    !  General Usage: nextswday = datm_shr_getNextRadCDay(curr_date)
+
+    ! !INPUT/OUTPUT PARAMETERS:
+    integer(IN), intent(in)    :: ymd
+    integer(IN), intent(in)    :: tod
+    integer    , intent(in)    :: stepno
+    integer(IN), intent(in)    :: dtime
+    integer(IN), intent(in)    :: iradsw
+    character(*),intent(in)    :: calendar
+
+    !----- local -----
+    real(R8) :: nextsw_cday
+    real(R8) :: julday
+    integer  :: liradsw
+    integer  :: yy,mm,dd
+    character(*),parameter :: subName =  '(datm_shr_getNextRadCDay) '
+    !-------------------------------------------------------------------------------
+
+    liradsw = iradsw
+    if (liradsw < 0) liradsw  = nint((-liradsw *3600._r8)/dtime)
+
+    call shr_cal_date2julian(ymd,tod,julday,calendar)
+
+    if (liradsw > 1) then
+       if (mod(stepno+1,liradsw) == 0 .and. stepno > 0) then
+          nextsw_cday = julday + 2*dtime/SHR_CONST_CDAY
+       else
+          nextsw_cday = -1._r8
+       end if
+    else
+       nextsw_cday = julday + dtime/SHR_CONST_CDAY
+    end if
+    datm_shr_getNextRadCDay_i4 = nextsw_cday
+
+  end function datm_shr_getNextRadCDay_i4
 
   !===============================================================================
   subroutine datm_shr_CORE2getFactors(fileName,windF,winddF,qsatF,mpicom,compid, &
        gsmap,ggrid,nxg,nyg)
 
-    implicit none
+    
 
     !--- arguments ---
     character(*)    ,intent(in)    :: fileName   ! file name string
@@ -282,7 +324,7 @@ CONTAINS
   subroutine datm_shr_TN460getFactors(fileName,windF,qsatF,mpicom,compid, &
        gsmap,ggrid,nxg,nyg)
 
-    implicit none
+    
 
     !--- arguments ---
     character(*)    ,intent(in)    :: fileName   ! file name string
@@ -331,8 +373,6 @@ CONTAINS
        gsmapo,ggrido,nxgo,nygo)
 
     use shr_map_mod
-
-    implicit none
 
     !--- arguments ---
     character(*)    ,intent(in)    :: fileName   ! file name string

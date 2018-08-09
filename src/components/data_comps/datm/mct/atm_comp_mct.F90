@@ -192,7 +192,7 @@ CONTAINS
     ! Initialize datm
     !----------------------------------------------------------------------------
 
-    call datm_comp_init(Eclock, &
+    call datm_comp_init(&
          x2a=x2a, &
          a2x=a2x, &
          x2a_fields=seq_flds_x2a_fields, &
@@ -325,7 +325,6 @@ CONTAINS
     !--------------------------------
 
     call datm_comp_run(&
-         Eclock=EClock, &
          x2a=x2a, &
          a2x=a2x, &
          SDATM=SDATM, &
