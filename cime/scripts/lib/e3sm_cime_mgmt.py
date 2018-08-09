@@ -101,7 +101,7 @@ def reset_file(version, srcpath, dstpath):
 ###############################################################################
 def get_last_merge(branch_name):
 ###############################################################################
-    return run_cmd_no_fail("git log --first-parent ORIG_HEAD --grep='{}' -1 --oneline".format(branch_name)).split[0]
+    return run_cmd_no_fail("git log --first-parent ORIG_HEAD --grep='{}' -1 --oneline".format(branch_name)).split()[0]
 
 ###############################################################################
 def handle_easy_conflict(filepath, is_merge):
@@ -239,7 +239,7 @@ def e3sm_cime_merge(resume, squash=False, auto_conf=False):
         logging.info("Resuming merge with old tag {} and new tag {}".format(old_merge_tag, new_merge_tag))
         pr_branch = get_branch_from_tag(new_merge_tag)
 
-    run_cmd_no_fail("git push -u origin {}".format(pr_branch))
+    run_cmd_no_fail("git push -u origin {}".format(pr_branch), verbose=True)
 
 ###############################################################################
 def abort_split():

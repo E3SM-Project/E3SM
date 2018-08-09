@@ -1352,6 +1352,35 @@ def does_file_have_string(filepath, text):
     """
     return os.path.isfile(filepath) and text in open(filepath).read()
 
+
+def is_last_process_complete(filepath, expect_text, fail_text ):
+    """
+    Search the filepath in reverse order looking for expect_text
+    before finding fail_text.
+    """
+    complete = False
+    fh = open(filepath, 'r')
+    fb = fh.readlines()
+
+    rfb = ''.join(reversed(fb))
+
+    findex = re.search(fail_text, rfb)
+    if findex is None:
+        findex = 0
+    else:
+        findex = findex.start()
+
+    eindex = re.search(expect_text, rfb)
+    if eindex is None:
+        eindex = 0
+    else:
+        eindex = eindex.start()
+
+    if findex > eindex:
+        complete = True
+
+    return complete
+
 def transform_vars(text, case=None, subgroup=None, overrides=None, default=None):
     """
     Do the variable substitution for any variables that need transforms
