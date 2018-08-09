@@ -4165,13 +4165,13 @@ Default: none
 </entry>
 
 <!-- RRTMGP gaseous absorption coefficients -->
-<entry id="rrtmgp_coefficients_file_lw" type="char*256" category="radiation" 
-       group="radiation_nl" valid_values="">
+<entry id="rrtmgp_coefficients_file_lw" type="char*256" input_pathname="abs" 
+       category="radiation" group="radiation_nl" valid_values="">
 File path for RRTMGP longwave gaseous absorption coefficients file.
 </entry>
 
-<entry id="rrtmgp_coefficients_file_sw" type="char*256" category="radiation" 
-       group="radiation_nl" valid_values="">
+<entry id="rrtmgp_coefficients_file_sw" type="char*256" input_pathname="abs"
+       category="radiation" group="radiation_nl" valid_values="">
 File path for RRTMGP shortwave gaseous absorption coefficients file.
 </entry>
 
