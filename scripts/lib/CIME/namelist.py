@@ -898,9 +898,10 @@ class Namelist(object):
         if groups is not None:
             for group_name in groups:
                 expect(group_name is not None, " Got None in groups {}".format(groups))
-                self._groups[group_name] = collections.OrderedDict()
+                group_lc = group_name.lower()
+                self._groups[group_lc] = collections.OrderedDict()
                 for variable_name in groups[group_name]:
-                    self._groups[group_name][variable_name] = groups[group_name][variable_name]
+                    self._groups[group_lc][variable_name.lower()] = groups[group_name][variable_name]
 
     def clean_groups(self):
         self._groups = collections.OrderedDict()
@@ -932,6 +933,7 @@ class Namelist(object):
         >>> sorted(x.get_variable_names('fOo'))
         ['bar(::)', 'bazz', 'bazz(2)', 'bazz(:2:)']
         """
+        group_name = group_name.lower()
         if group_name not in self._groups:
             return []
         return list(self._groups[group_name].keys())
@@ -950,6 +952,8 @@ class Namelist(object):
         >>> parse(text='&foo bar=1,2 /').get_variable_value('foO', 'Bar')
         ['1', '2']
         """
+        group_name = group_name.lower()
+        variable_name = variable_name.lower()
         if group_name not in self._groups or \
            variable_name not in self._groups[group_name]:
             return ['']
@@ -974,6 +978,7 @@ class Namelist(object):
         >>> parse(text='&foo / &bazz /').get_value('bar')
         ['']
         """
+        variable_name = variable_name.lower()
         possible_groups = [group_name for group_name in self._groups
                            if variable_name in self._groups[group_name]]
         expect(len(possible_groups) <= 1,
@@ -1010,10 +1015,10 @@ class Namelist(object):
         ['', '2', '', '4', '', '6']
         """
         minindex, maxindex, step = get_fortran_variable_indices(variable_name, var_size)
-        variable_name = get_fortran_name_only(variable_name)
+        variable_name = get_fortran_name_only(variable_name.lower())
 
         expect(minindex > 0, "Indices < 1 not supported in CIME interface to fortran namelists... lower bound={}".format(minindex))
-
+        group_name = group_name.lower()
         if group_name not in self._groups:
             self._groups[group_name] = {}
         tlen = 1
@@ -1048,6 +1053,8 @@ class Namelist(object):
         >>> x.get_variable_names('brack')
         []
         """
+        group_name = group_name.lower()
+        variable_name = variable_name.lower()
         if group_name in self._groups and \
            variable_name in self._groups[group_name]:
             del self._groups[group_name][variable_name]
@@ -1122,7 +1129,7 @@ class Namelist(object):
         return group_variables
 
     def write(self, out_file, groups=None, append=False, format_='nml', sorted_groups=True,
-              skip_comps=None, prognostic_comps=None, atm_cpl_dt=None, ocn_cpl_dt=None):
+              skip_comps=None, atm_cpl_dt=None, ocn_cpl_dt=None):
         """Write a the output data (normally fortran namelist) to the  out_file
 
         As with `parse`, the `out_file` argument can be either a file name, or a
@@ -1151,7 +1158,7 @@ class Namelist(object):
         else:
             logger.debug("Writing namelist to file object")
             if format_ == 'nuopc':
-                self._write_noupc(out_file, groups, sorted_groups=sorted_groups,
+                self._write_nuopc(out_file, groups, sorted_groups=sorted_groups,
                                   skip_comps=skip_comps, atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt)
             else:
                 self._write(out_file, groups, format_, sorted_groups=sorted_groups)
@@ -1165,7 +1172,7 @@ class Namelist(object):
         elif format_ == 'rc':
             equals = ':'
         if (sorted_groups):
-            group_names = sorted(group for group in groups)
+            group_names = sorted(group.lower() for group in groups)
         else:
             group_names = groups
         for group_name in group_names:
@@ -1229,7 +1236,6 @@ class Namelist(object):
                     for skip_comp in skip_comps:
                         if skip_comp in values[0]:
                             values[0] = values[0].replace(skip_comp,"")
-                components = values[0]
 
                 # @ is used in a namelist to put the same namelist variable in multiple groups
                 # in the write phase, all characters in the namelist variable name after

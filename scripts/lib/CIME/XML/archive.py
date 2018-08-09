@@ -34,7 +34,7 @@ class Archive(ArchiveBase):
 
         for comp in components:
             expect(driver != None, "must specify driver to acceptable value")
-            infile = files.get_value("ARCHIVE_SPEC_FILE", {"component":comp}, comp_interface=driver)
+            infile = files.get_value("ARCHIVE_SPEC_FILE", {"component":comp})
 
             if infile is not None and os.path.isfile(infile):
                 arch = Archive(infile=infile, files=files)

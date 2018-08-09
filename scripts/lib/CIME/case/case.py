@@ -432,7 +432,7 @@ class Case(object):
         logger.debug(" Possible components for COMPSETS_SPEC_FILE are {}".format(components))
 
         self.set_lookup_value("COMP_INTERFACE", driver)
-        comp_root_dir_cpl = files.get_value("COMP_ROOT_DIR_CPL", comp_interface=driver)
+        comp_root_dir_cpl = files.get_value("COMP_ROOT_DIR_CPL")
         self.set_lookup_value("COMP_ROOT_DIR_CPL",comp_root_dir_cpl)
 
         # Loop through all of the files listed in COMPSETS_SPEC_FILE and find the file
@@ -440,7 +440,7 @@ class Case(object):
         for component in components:
 
             # Determine the compsets file for this component
-            compsets_filename = files.get_value("COMPSETS_SPEC_FILE", {"component":component}, comp_interface=driver)
+            compsets_filename = files.get_value("COMPSETS_SPEC_FILE", {"component":component})
 
             # If the file exists, read it and see if there is a match for the compset alias or longname
             if (os.path.isfile(compsets_filename)):
@@ -518,7 +518,7 @@ class Case(object):
         return primary_component
 
 
-    def _set_info_from_primary_component(self, files, pesfile=None, driver=None):
+    def _set_info_from_primary_component(self, files, pesfile=None):
         """
         Sets file and directory paths that depend on the primary component of
         this compset.
@@ -532,7 +532,7 @@ class Case(object):
 
         self.set_lookup_value("COMPSETS_SPEC_FILE" ,compset_spec_file)
         if pesfile is None:
-            self._pesfile = files.get_value("PES_SPEC_FILE", {"component":component}, comp_interface=driver)
+            self._pesfile = files.get_value("PES_SPEC_FILE", {"component":component})
             pesfile_unresolved = files.get_value("PES_SPEC_FILE", {"component":component}, resolved=False)
             logger.info("Pes     specification file is {}".format(self._pesfile))
         else:
@@ -597,13 +597,12 @@ class Case(object):
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(files, attlist)
 
-        comp_interface = self.lookups["COMP_INTERFACE"]
-        drv_config_file = files.get_value("CONFIG_CPL_FILE", {"component":comp_interface}, comp_interface=driver)
+        drv_config_file = files.get_value("CONFIG_CPL_FILE")
         drv_comp = Component(drv_config_file, "CPL")
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(drv_comp, attributes=attlist)
 
-        drv_config_file_model_specific = files.get_value("CONFIG_CPL_FILE_MODEL_SPECIFIC", comp_interface=driver)
+        drv_config_file_model_specific = files.get_value("CONFIG_CPL_FILE_MODEL_SPECIFIC")
         drv_comp_model_specific = Component(drv_config_file_model_specific, 'CPL')
 
         self._component_description["forcing"] = drv_comp_model_specific.get_forcing_description(self._compsetname)
@@ -625,7 +624,7 @@ class Case(object):
 
         # will need a change here for new cpl components
         root_dir_node_name = 'COMP_ROOT_DIR_CPL'
-        comp_root_dir = files.get_value(root_dir_node_name, {"component":comp_interface}, resolved=False)
+        comp_root_dir = files.get_value(root_dir_node_name, {"component":driver}, resolved=False)
 
         if comp_root_dir is not None:
             self.set_value(root_dir_node_name, comp_root_dir)
@@ -644,7 +643,7 @@ class Case(object):
             comp_config_file = files.get_value(node_name, compatt, resolved=False)
             expect(comp_config_file is not None,"No component {} found for class {}".format(comp_name, comp_class))
             self.set_value(node_name, comp_config_file)
-            comp_config_file =  files.get_value(node_name, compatt, comp_interface=driver)
+            comp_config_file =  files.get_value(node_name, compatt)
             expect(comp_config_file is not None and os.path.isfile(comp_config_file),
                    "Config file {} for component {} not found.".format(comp_config_file, comp_name))
             compobj = Component(comp_config_file, comp_class)
@@ -773,7 +772,7 @@ class Case(object):
         #--------------------------------------------
         # compset, pesfile, and compset components
         #--------------------------------------------
-        files = Files()
+        files = Files(comp_interface=driver)
 
         compset_alias, science_support = self._set_compset(compset_name, files, driver)
 
@@ -801,7 +800,7 @@ class Case(object):
         # from self._get_component_config_data
         self._primary_component = self.get_primary_component()
 
-        self._set_info_from_primary_component(files, pesfile=pesfile, driver=driver)
+        self._set_info_from_primary_component(files, pesfile=pesfile)
 
         self.clean_up_lookups(allow_undefined=True)
 
