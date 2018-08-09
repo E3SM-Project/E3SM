@@ -44,6 +44,7 @@ _CIME_TESTS = {
                    ("TESTBUILDFAIL_P1.f19_g16_rx1.A",
                     "TESTBUILDFAILEXC_P1.f19_g16_rx1.A",
                     "TESTRUNFAIL_P1.f19_g16_rx1.A",
+                    "TESTRUNSTARCFAIL_P1.f19_g16_rx1.A",
                     "TESTRUNFAILEXC_P1.f19_g16_rx1.A",
                     "TESTRUNPASS_P1.f19_g16_rx1.A",
                     "TESTTESTDIFF_P1.f19_g16_rx1.A",
