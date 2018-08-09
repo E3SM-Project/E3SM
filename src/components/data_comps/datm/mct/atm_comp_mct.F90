@@ -179,15 +179,9 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     call seq_timemgr_EClockGetData( EClock, &
-         curr_ymd=current_ymd, curr_tod=current_tod, curr_mon=current_mon, &
-         dtime=modeldt, stepno=stepno, calendar=calendar)
-
-    if (read_restart) then
-       nextsw_cday = datm_shr_getNextRadCDay( current_ymd, current_tod, stepno, modeldt, iradsw, calendar )
-    else
-       ! For a startup run the nextsw_cday is just the current calendar day
-       call seq_timemgr_EClockGetData( EClock, curr_cday=nextsw_cday)
-    endif
+         curr_ymd=current_ymd, curr_mon=current_mon, curr_tod=current_tod, &
+         stepno=stepno, dtime=modeldt, calendar=calendar)
+    nextsw_cday = datm_shr_getNextRadCDay( current_ymd, current_tod, stepno, modeldt, iradsw, calendar )
 
     !----------------------------------------------------------------------------
     ! Initialize datm

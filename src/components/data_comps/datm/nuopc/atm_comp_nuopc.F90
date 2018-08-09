@@ -508,6 +508,12 @@ module atm_comp_nuopc
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !----------------------------------------------------------------------------
+    ! Set nextsw_cday
+    !----------------------------------------------------------------------------
+
+    nextsw_cday = datm_shr_getNextRadCDay( current_ymd, current_tod, stepno, modeldt, iradsw, calendar )
+
+    !----------------------------------------------------------------------------
     ! Initialize model
     !----------------------------------------------------------------------------
 
@@ -543,21 +549,6 @@ module atm_comp_nuopc
          current_tod=current_tod, &
          current_mon=current_mon, &
          atm_prognostic=atm_prognostic)
-
-    !----------------------------------------------------------------------------
-    ! Set nextsw_cday
-    !----------------------------------------------------------------------------
-
-    call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) read_restart
-
-    if (read_restart) then
-       nextsw_cday = datm_shr_getNextRadCDay( current_ymd, current_tod, stepno, modeldt, iradsw, calendar )
-    else
-       ! For a startup run the nextsw_cday is just the current calendar day
-       call ESMF_TimeGet( currTime, dayofyear_r8=nextsw_cday, rc=rc )
-    endif
 
     !--------------------------------
     ! Generate the mesh
