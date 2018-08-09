@@ -973,7 +973,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
         tests = get_tests.get_full_test_names(["cime_test_only",
                                                        "^TESTMEMLEAKFAIL_P1.f09_g16.X",
                                                        "^TESTMEMLEAKPASS_P1.f09_g16.X",
-                                                       "^TESTRUNSTARCFAIL_P1.f09_g16.X",
+                                                       "^TESTRUNSTARCFAIL_P1.f19_g16_rx1.A",
                                                        "^TESTTESTDIFF_P1.f19_g16_rx1.A",
                                                        "^TESTBUILDFAILEXC_P1.f19_g16_rx1.A",
                                                        "^TESTRUNFAILEXC_P1.f19_g16_rx1.A"],
