@@ -48,7 +48,9 @@ class WGET(GenericServer):
     def getdirectory(self, rel_path, full_path):
         full_url = os.path.join(self._server_loc, rel_path)
         stat, output, errput = \
-                run_cmd("wget  {} {} -P {}".format(self._args, full_url+os.sep+'*', full_path+os.sep))
+            run_cmd("wget  {} {} -r -N --no-directories ".format(self._args, full_url+os.sep), from_dir=full_path)
+        logger.debug(output)
+        logger.debug(errput)
         if (stat != 0):
             logging.warning("wget failed with output: {} and errput {}\n".format(output, errput))
             # wget puts an empty file if it fails.
