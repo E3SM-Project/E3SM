@@ -7,7 +7,6 @@ FOREACH (NC_FILE_NAME @NC_OUTPUT_FILES@)
                    RESULT_VARIABLE ERROR_CODE
                    OUTPUT_VARIABLE cprnc_stdout
                    ERROR_VARIABLE cprnc_stderr)
-  MESSAGE ("${cprnc_stdout}")
 
   # Search stdout for "IDENTICAL". -1 means it does not exist. Use REVERSE on
   # the off chance that makes it faster, since "IDENTICAL", if it exists, is
@@ -16,9 +15,12 @@ FOREACH (NC_FILE_NAME @NC_OUTPUT_FILES@)
 
   # If cprnc does not return 0, then the test failed
   IF (identical_pos EQUAL -1)
-    MESSAGE (FATAL_ERROR "Test did not succeed. Netcdf outputs differ.")
+    MESSAGE (FATAL_ERROR "Test did not succeed. Netcdf outputs '${NC_FILE_NAME}' differ.")
+    MESSAGE ("${cprnc_stdout}")
   ENDIF()
 ENDFOREACH()
+
+MESSAGE ("CXX and F90 netcdf outputs match.\n")
 
 # Grep F90 and CXX raw output for all lines containing the string '/dt'.
 # As of today, these are all and only the lines where diagnostics are printed.
@@ -34,8 +36,8 @@ EXECUTE_PROCESS (COMMAND grep ^diagnostics> @CXX_DIR@/@CXX_TEST_NAME@_1.out
                  OUTPUT_VARIABLE grep_cxx_stdout
                  ERROR_VARIABLE  grep_cxx_stderr)
 
-IF (NOT ${grep_f90_stdout} STREQUAL ${grep_cxx_stdout})
+IF (NOT "${grep_f90_stdout}" STREQUAL "${grep_cxx_stdout}")
   MESSAGE (FATAL_ERROR "Test did not succeed. CXX and F90 diagnostics outputs differ:\nf90:\n${grep_f90_stdout}\ncxx:\n${grep_cxx_stdout}")
 ELSE ()
-  MESSAGE ("CXX and F90 diagnostics output match.\nf90:\n${grep_f90_stdout}\ncxx:\n${grep_cxx_stdout}")
+  MESSAGE ("CXX and F90 diagnostics outputs match.\n")
 ENDIF()
