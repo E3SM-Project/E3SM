@@ -1,38 +1,39 @@
 &ctl_nl
-vthreads  = 1
+vthreads          = 1
 NThreads          = 1
 partmethod        = 4
 topology          = "cube"
 test_case         = "jw_baroclinic"
 u_perturb         = 1
 rotate_grid       = 0
-ne                = ${HOMME_TESTS_NE}
+ne                = ${HOMME_TEST_NE}
 qsize             = ${HOMME_TEST_QSIZE}
-ndays             = ${HOMME_TESTS_NDAYS}
+ndays             = ${HOMME_TEST_NDAYS}
 statefreq         = 9999
 restartfreq       = 43200
 restartfile       = "./R0001"
 runtype           = 0
 mesh_file         = '/dev/null'
-tstep             = 50
-rsplit            = 3
-qsplit            = 1
+tstep             = 100
+rsplit            = ${HOMME_TEST_RSPLIT}
+qsplit            = 6
 tstep_type        = 5
-energy_fixer      = -1
 integration       = "explicit"
 smooth            = 0
-nu                = 1e-9
-nu_div            = 1e-9
-nu_p              = 1e-9
-nu_q              = 1e-9
-nu_s              = 1e-9
+nu                = 7e15
+nu_div            = 7e15
+nu_p              = 7e15
+nu_q              = 7e15
+nu_s              =-1
+nu_top            = 2.5e5
 se_ftype          = 0
 limiter_option    = 8
 vert_remap_q_alg  = 1
-hypervis_power    = 0
+hypervis_scaling  = 0
 hypervis_order    = 2
-hypervis_subcycle = 2
-hypervis_scaling = 3.2
+hypervis_subcycle = 3
+hypervis_subcycle = 3
+moisture          = '${HOMME_TEST_MOISTURE}'
 /
 &solver_nl
 precon_method = "identity"
@@ -51,8 +52,8 @@ kcut_fm       = 2
 /
 &vert_nl
 vform     = "ccm"
-vfile_mid = './vcoord/acme-72m.ascii'
-vfile_int = './vcoord/acme-72i.ascii'
+vfile_mid = './vcoord/${HOMME_TEST_VCOORD_MID_FILE}'
+vfile_int = './vcoord/${HOMME_TEST_VCOORD_INT_FILE}'
 /
 
 &prof_inparm

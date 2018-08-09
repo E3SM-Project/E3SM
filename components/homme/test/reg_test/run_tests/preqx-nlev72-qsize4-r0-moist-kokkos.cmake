@@ -1,7 +1,7 @@
 # The name of this test (should be the basename of this file)
 SET(TEST_NAME preqx-nlev72-qsize4-r0-moist-kokkos)
 # The specifically compiled executable that this test uses
-SET(EXEC_NAME preqx-nlev72-kokko)
+SET(EXEC_NAME preqx-nlev72-kokkos)
 
 SET(NUM_CPUS 16)
 

@@ -47,8 +47,8 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
     preqx-nlev72-qsize4-r3-q6-dry-kokkos.cmake
     preqx-nlev72-qsize4-r3-tensorhv-dry.cmake
     preqx-nlev72-qsize4-r3-tensorhv-dry-kokkos.cmake
-    preqx-nlev72-qsize10-r3-lim9-dry-f.cmake
-    preqx-nlev72-qsize10-r3-lim9-dry-c.cmake
+    preqx-nlev72-qsize10-r3-lim9-dry.cmake
+    preqx-nlev72-qsize10-r3-lim9-dry-kokkos.cmake
   )
 
   #This list (COMPARE_F_C_TEST) contains tests for which
