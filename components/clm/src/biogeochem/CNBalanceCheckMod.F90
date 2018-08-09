@@ -211,7 +211,7 @@ contains
     real(r8) :: dt             ! radiation time step (seconds)
     real(r8) :: col_cinputs
     real(r8) :: col_coutputs
-    real(r8) :: err_blg
+    real(r8) :: err_blg,err_abg
     !-----------------------------------------------------------------------
 
     associate(                                                                   & 
@@ -290,9 +290,14 @@ contains
             write(iulog,*)'runoff som c          = ',som_c_runoff_col(c)*dt
             write(iulog,*)'begcb                 = ',col_begcb(c)
             write(iulog,*)'endcb                 = ',col_endcb(c),carbonstate_vars%totsomc_col(c)
+            write(iulog,*)'begabg                = ',carbonstate_vars%begabgc_col(c)
+            write(iulog,*)'begblg                = ',carbonstate_vars%begblgc_col(c)
             write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
             write(iulog,*)'abgc                  = ',carbonstate_vars%totabgc_col(c)
             write(iulog,*)'blgc                  = ',carbonstate_vars%totblgc_col(c)
+            write(iulog,*)'abg_fire_loss         = ',carbonflux_vars%fire_closs_p2c_col(c)*dt
+            write(iulog,*)'blg_fire_loss         = ',carbonflux_vars%fire_decomp_closs_col(c)*dt
+            write(iulog,*)'ar                    = ',(er(c)-carbonflux_vars%hr_col(c))*dt
             write(iulog,*)'plt2soi               = ',carbonflux_vars%cflx_plant_to_soilbgc_col(c)*dt
             if (use_pflotran .and. pf_cmode) then
                write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
@@ -300,7 +305,12 @@ contains
             err_blg=carbonstate_vars%begblgc_col(c)+carbonflux_vars%cflx_plant_to_soilbgc_col(c)*dt-&
                carbonflux_vars%fire_decomp_closs_col(c)*dt- &
                carbonflux_vars%hr_col(c)*dt-som_c_leached(c)*dt-som_c_runoff_col(c)*dt-carbonstate_vars%totblgc_col(c)
-            write(iulog,*)'errlbg                = ',err_blg
+            write(iulog,*)'errblg                = ',err_blg
+            err_abg=carbonstate_vars%begabgc_col(c)-carbonstate_vars%totabgc_col(c) &
+               +gpp(c)*dt-(er(c)-carbonflux_vars%hr_col(c))*dt &
+               -carbonflux_vars%cflx_plant_to_soilbgc_col(c)*dt-dwt_closs(c)*dt-product_closs(c)*dt-col_hrv_xsmrpool_to_atm(c)*dt &
+               -carbonflux_vars%fire_closs_p2c_col(c)*dt
+            write(iulog,*)'errabg                = ',err_abg
             call endrun(msg=errMsg(__FILE__, __LINE__))
          end if
       end if !use_fates
@@ -444,44 +454,12 @@ contains
             ! here is '-' adjustment. It says that the adding to PF decomp n pools was less.
          end if
 
-         if (abs(col_errnb(c)) > 1e-8_r8 .or. nitrogenstate_vars%sminn_col(c)>1000._r8) then
+         if (abs(col_errnb(c)) > 1e-8_r8)then ! .or. nitrogenstate_vars%sminn_col(c)>1000._r8) then
             err_found = .true.
             err_index = c
             exit
          end if
 
-!      if (err_found) then
-!         c = err_index
-!         write(*,*)'column nbalance error = ', col_errnb(c), c, get_nstep()
-!         write(*,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
-!         write(*,*)'begnb                 = ',col_begnb(c)
-!         write(*,*)'endnb                 = ',col_endnb(c)
-!         write(*,*)'delta_store           = ',col_endnb(c)-col_begnb(c)
-!         write(*,*)'net_flux              = ',(col_ninputs(c)-col_noutputs(c))*dt
-!         write(*,*)'input_mass            = ',col_ninputs(c)*dt
-!         write(*,*)'ndep                  = ',ndep_to_sminn(c)*dt
-!         write(*,*)'nfix                  = ', nfix_to_sminn(c)*dt
-!         write(*,*)'nsup                  = ',supplement_to_sminn(c)*dt
-!         if(crop_prog) then
-!            write(*,*)'fertm                 = ',fert_to_sminn(c)*dt
-!            write(*,*)'soyfx                 = ',soyfixn_to_sminn(c)*dt
-!         endif
-!         write(*,*)'fire                  = ',col_fire_nloss(c)*dt
-!         write(*,*)'dwt                   = ',dwt_nloss(c)*dt
-!         write(*,*)'prod                  = ',product_nloss(c)*dt
-!         write(*,*)'output_mass           = ',col_noutputs(c)*dt
-!         write(*,*)'denit                 = ',denit(c)*dt
-!         write(*,*)'n2onit                = ',f_n2o_nit(c)*dt
-!         write(*,*)'no3_leach             = ', smin_no3_leached(c)*dt
-!         write(*,*)'no3_runof             = ', smin_no3_runoff(c)*dt
-!         write(*,*)'som_n_leach           = ', -som_n_leached(c)*dt
-!         write(*,*)'decompfireloss        = ',nitrogenflux_vars%fire_decomp_nloss_col(c)*dt
-!         write(*,*)'plt2soil              = ',nitrogenflux_vars%nflx_plant_to_soilbgc_col(c)*dt
-!         write(*,*)'soil2plt              = ',nitrogenflux_vars%sminn_to_plant_col(c)*dt
-!         write(*,*)'abgn                  = ',nitrogenstate_vars%totabgn_col(c)
-!         write(*,*)'blgn                  = ',totcoln(c)-nitrogenstate_vars%totabgn_col(c)
-!         call endrun(msg=errMsg(__FILE__, __LINE__))
-!      end if
 
       end do ! end of columns loop
 
@@ -498,7 +476,7 @@ contains
          write(iulog,*)'input_mass            = ',col_ninputs(c)*dt
          write(iulog,*)'ndep                  = ',ndep_to_sminn(c)*dt
          write(iulog,*)'nfix_to_ecosys        = ',nfix_to_ecosysn(c)*dt
-         write(iulog,*)'nfix_to soil          = ',nfix_to_sminn(c)*dt
+         write(iulog,*)'nfix_to_soil          = ',nfix_to_sminn(c)*dt
          write(iulog,*)'nsup                  = ',supplement_to_sminn(c)*dt
          if(crop_prog) then
             write(iulog,*)'fertm                 = ',fert_to_sminn(c)*dt
@@ -517,19 +495,31 @@ contains
          write(iulog,*)'decompfireloss        = ',nitrogenflux_vars%fire_decomp_nloss_col(c)*dt
          write(iulog,*)'plt2soil              = ',nitrogenflux_vars%nflx_plant_to_soilbgc_col(c)*dt
          write(iulog,*)'soil2plt              = ',nitrogenflux_vars%sminn_to_plant_col(c)*dt
+         write(iulog,*)'nsup_to_surf          = ',nitrogenflux_vars%supplement_to_sminn_surf_col(c)*dt
          write(iulog,*)'abgn                  = ',nitrogenstate_vars%totabgn_col(c)
          write(iulog,*)'blgn                  = ',nitrogenstate_vars%totblgn_col(c)
          if (use_pflotran .and. pf_cmode) then
             write(iulog,*)'pf_delta_decompn      = ',col_decompn_delta(c)*dt
          end if
-         err_blg=nitrogenstate_vars%begblgn_col(c)+ndep_to_sminn(c)*dt+nfix_to_sminn(c)*dt+supplement_to_sminn(c)*dt+&
-            fert_to_sminn(c)*dt+soyfixn_to_sminn(c)*dt-denit(c)*dt-f_n2o_nit(c)*dt-smin_no3_leached(c)*dt-&
-            smin_no3_runoff(c)*dt+som_n_leached(c)*dt-som_n_runoff_col(c)*dt-nitrogenflux_vars%fire_decomp_nloss_col(c)*dt+&
-            nitrogenflux_vars%nflx_plant_to_soilbgc_col(c)*dt-nitrogenflux_vars%sminn_to_plant_col(c)*dt-nitrogenstate_vars%totblgn_col(c)
+         err_blg=nitrogenstate_vars%begblgn_col(c)-nitrogenstate_vars%totblgn_col(c) &
+            + ndep_to_sminn(c)*dt+nfix_to_sminn(c)*dt+supplement_to_sminn(c)*dt       &
+            + fert_to_sminn(c)*dt+soyfixn_to_sminn(c)*dt &
+            + nitrogenflux_vars%nflx_plant_to_soilbgc_col(c)*dt &
+            - denit(c)*dt-f_n2o_nit(c)*dt-smin_no3_leached(c)*dt &
+            - smin_no3_runoff(c)*dt+som_n_leached(c)*dt-som_n_runoff_col(c)*dt &
+            - nitrogenflux_vars%fire_decomp_nloss_col(c)*dt &
+            - nitrogenflux_vars%sminn_to_plant_col(c)*dt
          write(iulog,*)'errblg =',err_blg
-         err_abg = nitrogenstate_vars%begabgn_col(c) + (nfix_to_ecosysn(c)-nfix_to_sminn(c))*dt-nitrogenflux_vars%nflx_plant_to_soilbgc_col(c)*dt + &
-           nitrogenflux_vars%sminn_to_plant_col(c)*dt +nitrogenflux_vars%supplement_to_sminn_surf_col(c)*dt- nitrogenstate_vars%totabgn_col(c)
+         err_abg = nitrogenstate_vars%begabgn_col(c) - nitrogenstate_vars%totabgn_col(c)  &
+            + (nfix_to_ecosysn(c)-nfix_to_sminn(c))*dt &
+            + nitrogenflux_vars%sminn_to_plant_col(c)*dt  &
+            + nitrogenflux_vars%supplement_to_sminn_surf_col(c)*dt &
+            - nitrogenflux_vars%nflx_plant_to_soilbgc_col(c)*dt &
+            - dwt_nloss(c)*dt &
+            - product_nloss(c)*dt
          write(iulog,*)'errabg =',err_abg
+
+
          call endrun(msg=errMsg(__FILE__, __LINE__))
 
       end if
@@ -715,34 +705,6 @@ contains
             exit
          end if
       end do ! end of columns loop
-
-
-!      if (err_found) then
-!         c = err_index
-!         write(*,*)'column pbalance error = ', col_errpb(c), c,  get_nstep()
-!         write(*,*)'Latdeg,Londeg=',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
-!         write(*,*)'occlu p        = ',phosphorusstate_vars%occlp_col(c)
-!         write(*,*)'begpb          = ',col_begpb(c)+phosphorusstate_vars%occlp_col(c)-secondp_to_occlp(c) * dt,col_begpb(c)
-!         write(*,*)'endpb          = ',col_endpb(c)+phosphorusstate_vars%occlp_col(c)
-!         write(*,*)'delta store    = ',col_endpb(c)-col_begpb(c)
-!         write(*,*)'input mass     = ',col_pinputs(c)*dt
-!         write(*,*)'output mass    = ',col_poutputs(c)*dt
-!         write(*,*)'net flux       = ',(col_pinputs(c)-col_poutputs(c))*dt
-!         write(*,*)'weathering p   = ', primp_to_labilep(c) * dt
-!         write(*,*)'supp p         = ', supplement_to_sminp(c) * dt
-!         write(*,*)'supp p abv     = ', supplement_to_sminp_surf_col(c) * dt
-!         write(*,*)'2nd2occl p     = ', secondp_to_occlp(c) * dt
-!        write(*,*)'leached min p  = ',sminp_leached(c) * dt
-!         write(*,*)'lost to fire   = ', col_fire_ploss(c) * dt
-!         write(*,*)'harvest loss   = ', dwt_ploss(c) * dt
-!         write(*,*)'woodpro loss   = ', product_ploss(c) * dt
-!         write(*,*)'plant2bgcp     = ', phosphorusflux_vars%pflx_plant_to_soilbgc_col(c)*dt
-!         write(*,*)'leached som_p  = ', -som_p_leached(c) * dt
-!         write(*,*)'soil2plant     = ', phosphorusflux_vars%sminp_to_plant_col(c)*dt
-!         write(*,*)'abgp           = ', phosphorusstate_vars%totabgp_col(c)
-!         write(*,*)'blgp           = ', phosphorusstate_vars%totblgp_col(c)+phosphorusstate_vars%occlp_col(c)
-!         call endrun(msg=errMsg(__FILE__, __LINE__))
-!      end if
 
 
       if (err_found) then

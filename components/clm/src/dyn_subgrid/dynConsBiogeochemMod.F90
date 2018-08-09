@@ -53,7 +53,7 @@ contains
     use clm_varpar         , only : numveg, nlevdecomp, max_patch_per_col
     use pftvarcon          , only : pconv, pprod10, pprod100
     use clm_varcon         , only : c13ratio, c14ratio
-    use clm_time_manager   , only : get_step_size
+    use clm_time_manager   , only : get_step_size,get_nstep
     use dynPriorWeightsMod , only : prior_weights_type
     !
     ! !ARGUMENTS:
@@ -578,7 +578,7 @@ contains
                 ns%storvegn_patch(p)           = 0._r8
                 ns%totvegn_patch(p)            = 0._r8
                 ns%totpftn_patch (p)           = 0._r8
-                
+                ns%plant_n_buffer_patch(p)     = 0._r8 
                 ! pft-level phosphorus state variables
                 ps%leafp_patch(p)	       = 0._r8
                 ps%leafp_storage_patch(p)      = 0._r8
@@ -605,7 +605,7 @@ contains
                 ps%storvegp_patch(p)           = 0._r8
                 ps%totvegp_patch(p)            = 0._r8
                 ps%totpftp_patch (p)           = 0._r8
-
+                ps%plant_p_buffer_patch(p)     = 0._r8
                 ! initialize same flux and epv variables that are set
                 canopystate_vars%laisun_patch(p) = 0._r8
                 canopystate_vars%laisha_patch(p) = 0._r8
@@ -934,7 +934,7 @@ contains
              ns%storvegn_patch(p)	    = ns%storvegn_patch(p)           * t1
              ns%totvegn_patch(p) 	    = ns%totvegn_patch(p)            * t1
              ns%totpftn_patch(p) 	    = ns%totpftn_patch(p)            * t1
-             
+             ns%plant_n_buffer_patch(p)     = ns%plant_n_buffer_patch(p)     * t1 
              ! add phosphorus -X.YANG
              tot_leaf = ps%leafp_patch(p) + ps%leafp_storage_patch(p) + ps%leafp_xfer_patch(p)
              pleaf = 0._r8
@@ -978,8 +978,8 @@ contains
              ps%storvegp_patch(p)	    = ps%storvegp_patch(p)           * t1
              ps%totvegp_patch(p) 	    = ps%totvegp_patch(p)            * t1
              ps%totpftp_patch(p) 	    = ps%totpftp_patch(p)            * t1
-
-
+             ps%plant_p_buffer_patch(p)     = ps%plant_p_buffer_patch(p)     * t1
+    
              ! update temporary seed source arrays
              ! These are calculated in terms of the required contributions from
              ! column-level seed source
@@ -2222,7 +2222,18 @@ contains
                 dwt_ptr1 = dwt_ptr1 - init_state
              end if
 
-
+             !plant_n_buffer_patch
+             ptr => ns%plant_n_buffer_patch(p)
+             init_state = ptr*wt_old
+             change_state = ptr*dwt
+             new_state = init_state+change_state
+             if (wt_new /= 0._r8) then
+                ptr = new_state/wt_new
+                dwt_ptr1 = dwt_ptr1 + change_state
+             else
+                ptr = 0._r8
+                dwt_ptr1 = dwt_ptr1 - init_state
+             end if             
              !---------------
              ! P state update  X.YANG
              !---------------
@@ -2512,7 +2523,20 @@ contains
                 ptr = 0._r8
                 dwt_ptr1 = dwt_ptr1 - init_state
              end if
-             
+
+             !plant_p_buffer_patch
+             ptr => ps%plant_p_buffer_patch(p)
+             init_state = ptr*wt_old
+             change_state = ptr*dwt
+             new_state = init_state+change_state
+             if (wt_new /= 0._r8) then
+                ptr = new_state/wt_new
+                dwt_ptr1 = dwt_ptr1 + change_state
+             else
+                ptr = 0._r8
+                dwt_ptr1 = dwt_ptr1 - init_state
+             end if 
+
           end if       ! weight decreasing
        end if           ! is soil
     end do               ! patch loop
