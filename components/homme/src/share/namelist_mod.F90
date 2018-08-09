@@ -808,7 +808,7 @@ module namelist_mod
        if (ftype>0) call abortmp('user specified se_phys_tscale requires se_ftype<=0')
     endif
     if (limiter_option==8 .or. limiter_option==84 .or. limiter_option == 9) then
-       if (hypervis_subcycle_q/=1) then
+       if (hypervis_subcycle_q/=1 .and. transport_alg == 0) then
           call abortmp('limiter 8,84,9 require hypervis_subcycle_q=1')
        endif
     endif

@@ -2,7 +2,6 @@
 #include "config.h"
 #endif
 
-
 module sl_advection
 !
 !  classic semi-lagrange advection
@@ -30,6 +29,8 @@ module sl_advection
   use coordinate_systems_mod, only : cartesian3D_t
   use compose_mod
 
+  use prim_advection_base, only : advance_hypervis_scalar
+
   implicit none
 
   private
@@ -47,20 +48,32 @@ contains
 
 !=================================================================================================!
 
+subroutine sl_parse_transport_alg(transport_alg, slmm, cisl, qos)
+  integer, intent(in) :: transport_alg
+  logical, intent(out) :: slmm, cisl, qos
+
+  slmm = transport_alg > 1
+  cisl = transport_alg == 2 .or. transport_alg == 3 .or. transport_alg >= 20
+  qos  = cisl .and. (transport_alg == 3 .or. transport_alg == 39)  
+end subroutine sl_parse_transport_alg
+
 subroutine sl_init1(par, elem)
   use interpolate_mod,        only : interpolate_tracers_init
-  use control_mod,            only : transport_alg, semi_lagrange_cdr_alg
+  use control_mod,            only : transport_alg, semi_lagrange_cdr_alg, cubed_sphere_map, nu_q
   use element_state,          only : timelevels
   use coordinate_systems_mod, only : cartesian3D_t, change_coordinates
   type (parallel_t) :: par
   type (element_t) :: elem(:)
   type (cartesian3D_t) :: pinside
-  integer :: nslots, ie, num_neighbors, need_conservation
-  logical :: slmm, cisl
+  integer :: nslots, ie, num_neighbors, need_conservation, i, j
+  logical :: slmm, cisl, qos
   
   if (transport_alg > 0) then
-     slmm = transport_alg > 1
-     cisl = transport_alg == 2 .or. transport_alg >= 20
+     if (par%masterproc .and. nu_q > 0) print *, 'COMPOSE> use HV'
+     if (cubed_sphere_map /= 2) then
+        call abortmp('transport_alg > 0 requires cubed_sphere_map = 2')
+     end if
+     call sl_parse_transport_alg(transport_alg, slmm, cisl, qos)
      nslots = nlev*qsize
      if (cisl) nslots = nslots + nlev
      sl_mpi = 0
@@ -79,24 +92,32 @@ subroutine sl_init1(par, elem)
            num_neighbors = elem(ie)%desc%actual_neigh_edges + 1
            call slmm_init_local_mesh(ie, elem(ie)%desc%neigh_corners, num_neighbors, &
                 pinside)
+           if (.false.) then
+              do j = 1,np
+                 do i = 1,np
+                    pinside = change_coordinates(elem(ie)%spherep(i,j))
+                    call slmm_check_ref2sphere(ie, pinside)
+                 end do
+              end do
+           end if
         end do
      end if
      if (semi_lagrange_cdr_alg > 1) then
         need_conservation = 1
         ! The IR method is locally conservative, so we don't need QLT to handle
         ! conservation.
-        if (cisl) need_conservation = 0
+        if (cisl .and. .not. qos) need_conservation = 0
         call cedr_sl_init(np, nlev, qsize, qsize_d, timelevels, need_conservation)
      end if
   endif
 end subroutine
 
-subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets , nete )
+subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hvcoord, hybrid , dt , tl , nets , nete )
   use coordinate_systems_mod, only : cartesian3D_t, cartesian2D_t
   use dimensions_mod,         only : max_neigh_edges
   use bndry_mod,              only : ghost_exchangevfull
   use interpolate_mod,        only : interpolate_tracers, minmax_tracers
-  use control_mod   ,         only : qsplit
+  use control_mod   ,         only : qsplit, nu_q
   use global_norms_mod,       only : wrap_repro_sum
   use parallel_mod,           only : global_shared_buf, global_shared_sum, syncmp
   use control_mod,            only : use_semi_lagrange_transport_local_conservation
@@ -107,6 +128,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
   implicit none
   type (element_t)     , intent(inout) :: elem(:)
   type (derivative_t)  , intent(in   ) :: deriv
+  type (hvcoord_t)     , intent(in   ) :: hvcoord
   type (hybrid_t)      , intent(in   ) :: hybrid
   real(kind=real_kind) , intent(in   ) :: dt
   type (TimeLevel_t)   , intent(in   ) :: tl
@@ -134,13 +156,12 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
 
   integer                                       :: i,j,k,l,n,q,ie,kptr, n0_qdp, np1_qdp
   integer                                       :: num_neighbors, scalar_q_bounds
-  logical :: slmm, cisl
-  
+  logical :: slmm, cisl, qos
+
   call t_barrierf('Prim_Advec_Tracers_remap_ALE', hybrid%par%comm)
   call t_startf('Prim_Advec_Tracers_remap_ALE')
 
-  slmm = transport_alg > 1
-  cisl = transport_alg == 2 .or. transport_alg >= 20
+  call sl_parse_transport_alg(transport_alg, slmm, cisl, qos)
 
   call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
 
@@ -187,21 +208,34 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
 #endif
            do k = 1, nlev
               kptr = (k-1)*n
-              ! Send rho*Jacobian[ref elem -> sphere].
-              elem(ie)%state%Q(:,:,k,1) = elem(ie)%derived%dp(:,:,k) * elem(ie)%metdet(:,:)
-              call amb_ghostVpack_unoriented(ghostbuf_tr, elem(ie)%state%Q(:,:,k,1), np, &
-                   1, kptr, elem(ie)%desc)
-              kptr = kptr + 1
-              do q = 1, qsize
-                 ! Remap the curious quantity
-                 !     (tracer density)*Jacobian[ref elem -> sphere],
-                 ! not simply the tracer mixing ratio.
-                 elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,n0_qdp) * &
-                      elem(ie)%metdet(:,:)
-                 call amb_ghostVpack_unoriented(ghostbuf_tr, elem(ie)%state%Q(:,:,k,q), &
-                      np, 1, kptr, elem(ie)%desc)
+              if (qos) then
+                 elem(ie)%state%Q(:,:,k,1) = elem(ie)%derived%dp(:,:,k)
+                 call amb_ghostVpack_unoriented(ghostbuf_tr, elem(ie)%state%Q(:,:,k,1), np, &
+                      1, kptr, elem(ie)%desc)
                  kptr = kptr + 1
-              enddo
+                 do q = 1, qsize
+                    elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,n0_qdp)
+                    call amb_ghostVpack_unoriented(ghostbuf_tr, elem(ie)%state%Q(:,:,k,q), &
+                         np, 1, kptr, elem(ie)%desc)
+                    kptr = kptr + 1
+                 enddo
+              else
+                 ! Send rho*Jacobian[ref elem -> sphere].
+                 elem(ie)%state%Q(:,:,k,1) = elem(ie)%derived%dp(:,:,k) * elem(ie)%metdet(:,:)
+                 call amb_ghostVpack_unoriented(ghostbuf_tr, elem(ie)%state%Q(:,:,k,1), np, &
+                      1, kptr, elem(ie)%desc)
+                 kptr = kptr + 1
+                 do q = 1, qsize
+                    ! Remap the curious quantity
+                    !     (tracer density)*Jacobian[ref elem -> sphere],
+                    ! not simply the tracer mixing ratio.
+                    elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,n0_qdp) * &
+                         elem(ie)%metdet(:,:)
+                    call amb_ghostVpack_unoriented(ghostbuf_tr, elem(ie)%state%Q(:,:,k,q), &
+                         np, 1, kptr, elem(ie)%desc)
+                    kptr = kptr + 1
+                 enddo
+              end if
            enddo
         end do
      else
@@ -243,10 +277,14 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
            ! Unpack all tracer neighbor data on level k.
            kptr = (k-1)*n
            if (cisl) then
-              u(:,:,1        ) = elem(ie)%derived%dp(:,:,k) * elem(ie)%metdet(:,:)
+              if (qos) then
+                 u(:,:,1) = elem(ie)%derived%dp(:,:,k)
+              else
+                 u(:,:,1) = elem(ie)%derived%dp(:,:,k) * elem(ie)%metdet(:,:)
+              end if
               u(:,:,2:qsize+1) = elem(ie)%state%Q(:,:,k,1:qsize)
               call amb_ghostVunpack_unoriented(ghostbuf_tr, neigh_q, &
-                np, n, kptr, elem(ie)%desc, elem(ie)%GlobalId, u)
+                   np, n, kptr, elem(ie)%desc, elem(ie)%GlobalId, u)
            else
               u(:,:,1:qsize) = elem(ie)%state%Q(:,:,k,1:qsize)
               call amb_ghostVunpack_unoriented(ghostbuf_tr, neigh_q(:,:,1:qsize,:), &
@@ -255,7 +293,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
 
            call slmm_advect(k, ie, num_neighbors, np, nlev, qsize, nets, nete, &
                 dep_points, &
-                ! cisl: (tracer density)*Jacobian[ref elem -> sphere] on source mesh.
+                ! cisl: (tracer density)*(if qos 1 else Jacobian[ref elem -> sphere]) on source mesh.
                 !  csl: Mixing ratios.
                 neigh_q, &
                 ! cisl: Jacobian[ref elem -> sphere] on target element.
@@ -333,6 +371,33 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
      call t_stopf('Prim_Advec_Tracers_remap_ALE_ghost_exchange')
   end if
 
+  if (nu_q > 0) then
+     do ie = nets, nete
+        do k = 1, nlev
+           do q = 1, qsize
+              elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%state%Q(:,:,k,q) * &
+                   elem(ie)%state%dp3d(:,:,k,tl%np1)
+           enddo
+        enddo
+     end do
+     ! TODO We should skip the call to limiter2d_zero since we'll apply a CDR in
+     ! the next step. More generally, we probably should write our own hypervis
+     ! routine to strip it to what is essential. Hypervis *isn't* being applied
+     ! because the tracers need it, but rather b/c tracer interactions with
+     ! physics and dynamics, independent of tracer advection scheme, appears to
+     ! need some tracer dissipation to be well behaved. This apparent
+     ! requirement should be understood better.
+     call advance_hypervis_scalar(elem, hvcoord, hybrid, deriv, tl%np1, np1_qdp, nets, nete, dt)
+     do ie = nets, nete
+        do k = 1, nlev
+           do q = 1, qsize
+              elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp) / &
+                   elem(ie)%state%dp3d(:,:,k,tl%np1)
+           enddo
+        enddo
+     end do
+  end if
+
   ! CEDR works with either classical SL or IR.
   if (semi_lagrange_cdr_alg > 1) then
      scalar_q_bounds = 0
@@ -347,7 +412,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
         call cedr_sl_set_Q(ie, elem(ie)%state%Q)
      end do
      call cedr_sl_set_pointers_end()
-     if (.true.) then
+     if (semi_lagrange_cdr_alg .ne. 42) then
         call t_startf('CEDR')
         call cedr_sl_run(minq, maxq, nets, nete)
         if (barrier) call perf_barrier(hybrid)
@@ -366,9 +431,6 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
            enddo
         end do
      end if
-     ! All transport algs should DSS. I still permit the CSL-Cobra code path not
-     ! to; they commented out the DSS code long ago for some reason. Maybe Cobra
-     ! does it.
      call t_startf('SL_dss')
      call dss_Qdp(elem, nets, nete, hybrid, np1_qdp)
      if (barrier) call perf_barrier(hybrid)
@@ -852,8 +914,7 @@ subroutine ALE_departure_from_gll(acart, vstar, elem, dt, normalize)
 
   real (kind=real_kind)                 :: uxyz (np,np,3), norm
 
-   ! convert velocity from lat/lon to cartesian 3D
-
+  ! convert velocity from lat/lon to cartesian 3D
   do i=1,3
      ! Summing along the third dimension is a sum over components for each point.
      ! (This is just a faster way of doing a dot product for each grid point,

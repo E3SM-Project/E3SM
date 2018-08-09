@@ -36,7 +36,7 @@ namespace ko = Kokkos;
 
 #define pr(m) do {                              \
     std::stringstream _ss_;                     \
-    _ss_ << m << std::endl;                     \
+    _ss_ << "slmm: " <<  m << std::endl;        \
     std::cerr << _ss_.str();                    \
   } while (0)
 #define prc(m) pr(#m << " | " << (m))
@@ -278,6 +278,71 @@ namespace siqk {
    2.28197277938737758e-01, 2.13777432530059680e-01, 5.58025289531202562e-01, \
    2.88796329020881648e-01, 4.09786577770025306e-01, 3.01417093209092990e-01}
 
+#define SIQK_QUADRATURE_TRISYM_ORDER14_COORD \
+  {0.3333333333333333148296162562473910, 0.3333333333333333148296162562473910, 0.3333333333333333148296162562473910, \
+   0.0099797608064584319986778382371995, 0.0099797608064584319986778382371995, 0.9800404783870830804914930922677740, \
+   0.0099797608064584319986778382371995, 0.9800404783870830804914930922677740, 0.0099797608064584319986778382371995, \
+   0.9800404783870830804914930922677740, 0.0099797608064584319986778382371995, 0.0099797608064584319986778382371995, \
+   0.4799778935211884145495275788562139, 0.4799778935211884145495275788562139, 0.0400442129576231709009448422875721, \
+   0.4799778935211884145495275788562139, 0.0400442129576231709009448422875721, 0.4799778935211884145495275788562139, \
+   0.0400442129576231709009448422875721, 0.4799778935211884145495275788562139, 0.4799778935211884145495275788562139, \
+   0.1538119591769669114444951674158801, 0.1538119591769669114444951674158801, 0.6923760816460662326221608964260668, \
+   0.1538119591769669114444951674158801, 0.6923760816460662326221608964260668, 0.1538119591769669114444951674158801, \
+   0.6923760816460662326221608964260668, 0.1538119591769669114444951674158801, 0.1538119591769669114444951674158801, \
+   0.0740234771169878125185448425327195, 0.0740234771169878125185448425327195, 0.8519530457660243749629103149345610, \
+   0.0740234771169878125185448425327195, 0.8519530457660243749629103149345610, 0.0740234771169878125185448425327195, \
+   0.8519530457660243749629103149345610, 0.0740234771169878125185448425327195, 0.0740234771169878125185448425327195, \
+   0.1303546825033299882967696703417460, 0.1303546825033299882967696703417460, 0.7392906349933400234064606593165081, \
+   0.1303546825033299882967696703417460, 0.7392906349933400234064606593165081, 0.1303546825033299882967696703417460, \
+   0.7392906349933400234064606593165081, 0.1303546825033299882967696703417460, 0.1303546825033299882967696703417460, \
+   0.2306172260266531326422523306973744, 0.2306172260266531326422523306973744, 0.5387655479466937347154953386052512, \
+   0.2306172260266531326422523306973744, 0.5387655479466937347154953386052512, 0.2306172260266531326422523306973744, \
+   0.5387655479466937347154953386052512, 0.2306172260266531326422523306973744, 0.2306172260266531326422523306973744, \
+   0.4223320834191477968211358984262915, 0.4223320834191477968211358984262915, 0.1553358331617044063577282031474169, \
+   0.4223320834191477968211358984262915, 0.1553358331617044063577282031474169, 0.4223320834191477968211358984262915, \
+   0.1553358331617044063577282031474169, 0.4223320834191477968211358984262915, 0.4223320834191477968211358984262915, \
+   0.7862373859346609705767150444444269, 0.1906163600319009110428680742188590, 0.0231462540334381183804168813367141, \
+   0.7862373859346609705767150444444269, 0.0231462540334381183804168813367141, 0.1906163600319009110428680742188590, \
+   0.1906163600319009110428680742188590, 0.7862373859346609705767150444444269, 0.0231462540334381183804168813367141, \
+   0.1906163600319009110428680742188590, 0.0231462540334381183804168813367141, 0.7862373859346609705767150444444269, \
+   0.0231462540334381183804168813367141, 0.7862373859346609705767150444444269, 0.1906163600319009110428680742188590, \
+   0.0231462540334381183804168813367141, 0.1906163600319009110428680742188590, 0.7862373859346609705767150444444269, \
+   0.6305521436606074114905595706659369, 0.3623231377435471300962888108188054, 0.0071247185958454584131516185152577, \
+   0.6305521436606074114905595706659369, 0.0071247185958454584131516185152577, 0.3623231377435471300962888108188054, \
+   0.3623231377435471300962888108188054, 0.6305521436606074114905595706659369, 0.0071247185958454584131516185152577, \
+   0.3623231377435471300962888108188054, 0.0071247185958454584131516185152577, 0.6305521436606074114905595706659369, \
+   0.0071247185958454584131516185152577, 0.6305521436606074114905595706659369, 0.3623231377435471300962888108188054, \
+   0.0071247185958454584131516185152577, 0.3623231377435471300962888108188054, 0.6305521436606074114905595706659369, \
+   0.6265773298563063198329814440512564, 0.2907712058836673940653838599246228, 0.0826514642600262861016346960241208, \
+   0.6265773298563063198329814440512564, 0.0826514642600262861016346960241208, 0.2907712058836673940653838599246228, \
+   0.2907712058836673940653838599246228, 0.6265773298563063198329814440512564, 0.0826514642600262861016346960241208, \
+   0.2907712058836673940653838599246228, 0.0826514642600262861016346960241208, 0.6265773298563063198329814440512564, \
+   0.0826514642600262861016346960241208, 0.6265773298563063198329814440512564, 0.2907712058836673940653838599246228, \
+   0.0826514642600262861016346960241208, 0.2907712058836673940653838599246228, 0.6265773298563063198329814440512564, \
+   0.9142099849296254632236014003865421, 0.0711657108777507679819862573822320, 0.0146243041926237687944123422312259, \
+   0.9142099849296254632236014003865421, 0.0146243041926237687944123422312259, 0.0711657108777507679819862573822320, \
+   0.0711657108777507679819862573822320, 0.9142099849296254632236014003865421, 0.0146243041926237687944123422312259, \
+   0.0711657108777507679819862573822320, 0.0146243041926237687944123422312259, 0.9142099849296254632236014003865421, \
+   0.0146243041926237687944123422312259, 0.9142099849296254632236014003865421, 0.0711657108777507679819862573822320, \
+   0.0146243041926237687944123422312259, 0.0711657108777507679819862573822320, 0.9142099849296254632236014003865421}
+#define SIQK_QUADRATURE_TRISYM_ORDER14_WEIGHT \
+  {0.0585962852260285965710906452841300,0.0017351512297252675524200649093132,0.0017351512297252675524200649093132, \
+   0.0017351512297252675524200649093132,0.0261637825586145227052536910150593,0.0261637825586145227052536910150593, \
+   0.0261637825586145227052536910150593,0.0039197292424018289128118119890587,0.0039197292424018289128118119890587, \
+   0.0039197292424018289128118119890587,0.0122473597569408669538670864085361,0.0122473597569408669538670864085361, \
+   0.0122473597569408669538670864085361,0.0281996285032579604989955157634540,0.0281996285032579604989955157634540, \
+   0.0281996285032579604989955157634540,0.0508870871859594883779287499692146,0.0508870871859594883779287499692146, \
+   0.0508870871859594883779287499692146,0.0504534399016036000373830461285252,0.0504534399016036000373830461285252, \
+   0.0504534399016036000373830461285252,0.0170636442122334523741056244716674,0.0170636442122334523741056244716674, \
+   0.0170636442122334523741056244716674,0.0170636442122334523741056244716674,0.0170636442122334523741056244716674, \
+   0.0170636442122334523741056244716674,0.0096834664255066003890615178306689,0.0096834664255066003890615178306689, \
+   0.0096834664255066003890615178306689,0.0096834664255066003890615178306689,0.0096834664255066003890615178306689, \
+   0.0096834664255066003890615178306689,0.0363857559284850029523994408009457,0.0363857559284850029523994408009457, \
+   0.0363857559284850029523994408009457,0.0363857559284850029523994408009457,0.0363857559284850029523994408009457, \
+   0.0363857559284850029523994408009457,0.0069646633735184126576256424812073,0.0069646633735184126576256424812073, \
+   0.0069646633735184126576256424812073,0.0069646633735184126576256424812073,0.0069646633735184126576256424812073, \
+   0.0069646633735184126576256424812073}
+
 #define SIQK_QUADRATURE_TRITAY_ORDER12_WEIGHT                           \
   {4.888049814660050e-03, 6.675900027367356e-03, 6.845534654343699e-03, \
    7.119751436080721e-03, 7.714492373624846e-03, 9.654708742436301e-03, \
@@ -319,6 +384,8 @@ class TriangleQuadrature {
   const Real trisym_order8_weight_ [ 16] = SIQK_QUADRATURE_TRISYM_ORDER8_WEIGHT;
   const Real tritay_order12_coord_ [ 96] = SIQK_QUADRATURE_TRITAY_ORDER12_COORD;
   const Real tritay_order12_weight_[ 32] = SIQK_QUADRATURE_TRITAY_ORDER12_WEIGHT;
+  const Real trisym_order14_coord_ [138] = SIQK_QUADRATURE_TRISYM_ORDER14_COORD;
+  const Real trisym_order14_weight_[ 46] = SIQK_QUADRATURE_TRISYM_ORDER14_WEIGHT;
 
 public:
   KOKKOS_INLINE_FUNCTION TriangleQuadrature () {}
@@ -342,6 +409,10 @@ public:
     case 12:
       coord = RawConstVec3s(tritay_order12_coord_, 32, 3);
       weight = RawConstArray(tritay_order12_weight_, 32);
+      break;
+    case 14:
+      coord = RawConstVec3s(trisym_order14_coord_, 46, 3);
+      weight = RawConstArray(trisym_order14_weight_, 46);
       break;
     default:
       ko::abort("TriangleQuadrature::get_coef: order not supported.");
@@ -2386,6 +2457,18 @@ int dpotrs (char uplo, int n, int nrhs, const double* a, int lda, double* bx,
   return info;
 }
 
+void copy_vertices (
+  const siqk::ConstVec3s::HostMirror& p, const siqk::ConstIdxs::HostMirror& c2n,
+  const Int ci, Real* ps)
+{
+  const auto cell = slice(c2n, ci);
+  for (Int i = 0; i < szslice(c2n); ++i) {
+    const auto n = slice(p, cell[i]);
+    for (Int k = 0; k < 3; ++k) ps[k] = n[k];
+    ps += 3;
+  }
+}
+
 struct Advecter {
   typedef std::shared_ptr<Advecter> Ptr;
   typedef siqk::sh::Mesh<ko::HostSpace> Mesh;
@@ -2393,25 +2476,28 @@ struct Advecter {
   struct Alg {
     enum Enum {
       jct,             // Cell-integrated Jacobian-combined transport.
+      qos,             // Cell-integrated quadrature-on-sphere transport.
       csl_gll,         // Intended to mimic original Fortran CSL.
-      csl_gll_subgrid, // Stable np=4 subgrid reconstruction.
-      csl_gll_exp
+      csl_gll_subgrid, // Stable np=4 subgrid bilinear interp.
+      csl_gll_exp,     // Stabilized np=4 subgrid reconstruction.
     };
     static Enum convert (Int alg) {
       switch (alg) {
-      case 2: case 29: return jct;
+      case 2: case 29:  return jct;
+      case 3: case 39:  return qos;
       case 10: case 18: return csl_gll;
-      case 11: return csl_gll_subgrid;
+      case 11: case 17: return csl_gll_subgrid;
       case 12: case 19: return csl_gll_exp;
       default: slmm_throw_if(true, "transport_alg " << alg << " is invalid.");
       }
     }
-    static bool is_cisl (const Enum& alg) { return alg == jct; }
+    static bool is_cisl (const Enum& alg) { return alg == jct || alg == qos; }
   };
 
   Advecter (const Int np, const Int nelem, const Int transport_alg)
     : alg_(Alg::convert(transport_alg)),
-      np_(np), np2_(np*np), np4_(np2_*np2_), tq_order_(12)
+      np_(np), np2_(np*np), np4_(np2_*np2_),
+      tq_order_(alg_ == Alg::qos ? 14 : 12)
   {
     local_mesh_.resize(nelem);
     local_mesh_tgt_elem_.resize(nelem);
@@ -2452,7 +2538,31 @@ struct Advecter {
                 local_mesh_tgt_elem_[ie] < ncell);
   }
 
+  // Check that our ref <-> sphere map agrees with Homme's. p_homme is a GLL
+  // point on the sphere. Check that we map it to a GLL ref point.
+  void check_ref2sphere (const Int ie, const Real* p_homme) {
+    const auto& m = local_mesh(ie);
+    const auto& me = local_mesh_tgt_elem(ie);
+    Real ref_coord[2];
+    siqk::sqr::Info info;
+    siqk::sqr::calc_sphere_to_ref(m.p, slice(m.e, me), p_homme,
+                                  ref_coord[0], ref_coord[1], &info);
+    const ir::Basis basis(4, 0);
+    const ir::GLL gll;
+    const Real* x, * wt;
+    gll.get_coef(basis, x, wt);
+    int fnd[2] = {0};
+    for (int i = 0; i < 4; ++i)
+      for (int j = 0; j < 2; ++j)
+        if (std::abs(ref_coord[j] - x[i]) < 1e-12)
+          fnd[j] = 1;
+    if ( ! fnd[0] || ! fnd[1])
+      printf("COMPOSE check_ref2sphere: %1.15e %1.15e %d %d\n",
+             ref_coord[0], ref_coord[1], info.success, info.n_iterations);
+  }
+
   void init_M_tgt_if_needed () {
+    if ( ! Alg::is_cisl(alg_)) return;
     if ( ! mass_tgt_.empty()) return;
 
     siqk::TriangleQuadrature tq;
@@ -2461,42 +2571,99 @@ struct Advecter {
     tq.get_coef(tq_order(), tq_bary, tq_w);
     const Int nq = ir::len(tq_w);
 
-    mass_tgt_.resize(np4_);
-    Real* M_tgt = mass_tgt_.data();
-    for (Int i = 0; i < np4_; ++i) M_tgt[i] = 0;
-
     const ir::Basis basis(np_, 0);
     ir::GLL gll;
-    const Real* const ps = siqk::sqr::get_ref_vertices();
-    Real tgj[ir::GLL::np_max], tgi[ir::GLL::np_max], tvo_coord[2];
+    Real tgj[ir::GLL::np_max], tgi[ir::GLL::np_max];
 
-    for (Int k = 1; k <= 2; ++k) {
-      const Real t_area = siqk::PlaneGeometry::calc_tri_jacobian(
-        ps, ps+2*k, ps+2*(k+1));
+    slmm_assert(Alg::is_cisl(alg_));
+    if (alg_ == Alg::jct) {
+      mass_tgt_.resize(np4_);
+      Real* M_tgt = mass_tgt_.data();
+      for (Int i = 0; i < np4_; ++i)
+        M_tgt[i] = 0;
 
-      for (Int qp = 0; qp < nq; ++qp) {
-        siqk::PlaneGeometry::bary2coord(
-          ps, ps+2*k, ps+2*(k+1), slice(tq_bary, qp), tvo_coord);
-        gll.eval(basis, tvo_coord[0], tgi);
-        gll.eval(basis, tvo_coord[1], tgj);
+      const Real* const ps = siqk::sqr::get_ref_vertices();
+      for (Int k = 1; k <= 2; ++k) {
+        const Real t_area = siqk::PlaneGeometry::calc_tri_jacobian(
+          ps, ps+2*k, ps+2*(k+1));
 
-        const Real d0 = 0.5 * t_area * tq_w[qp];
-        for (Int aj = 0, a_basis_idx = 0; aj < np_; ++aj) {
-          const Real d1 = d0 * tgj[aj];
-          for (Int ai = 0; ai < np_; ++ai, ++a_basis_idx) {
-            Real d2 = d1 * tgi[ai];
-            for (Int b_basis_idx = a_basis_idx; b_basis_idx < np2_; ++b_basis_idx) {
-              const Int bj = b_basis_idx / np_;
-              const Int bi = b_basis_idx % np_;
-              M_tgt[np2_*a_basis_idx + b_basis_idx] += d2 * tgi[bi] *tgj[bj];
+        for (Int qp = 0; qp < nq; ++qp) {
+          Real tvo_coord[2];
+          siqk::PlaneGeometry::bary2coord(
+            ps, ps+2*k, ps+2*(k+1), slice(tq_bary, qp), tvo_coord);
+          gll.eval(basis, tvo_coord[0], tgi);
+          gll.eval(basis, tvo_coord[1], tgj);
+
+          const Real d0 = 0.5 * t_area * tq_w[qp];
+          for (Int aj = 0, a_basis_idx = 0; aj < np_; ++aj) {
+            const Real d1 = d0 * tgj[aj];
+            for (Int ai = 0; ai < np_; ++ai, ++a_basis_idx) {
+              Real d2 = d1 * tgi[ai];
+              for (Int b_basis_idx = a_basis_idx; b_basis_idx < np2_; ++b_basis_idx) {
+                const Int bj = b_basis_idx / np_;
+                const Int bi = b_basis_idx % np_;
+                M_tgt[np2_*a_basis_idx + b_basis_idx] += d2 * tgi[bi] *tgj[bj];
+              }
             }
           }
         }
       }
-    }
 
-    int info = ir::dpotrf('L', np2_, M_tgt, np2_);
-    slmm_assert(info == 0);
+      int info = ir::dpotrf('L', np2_, M_tgt, np2_);
+      slmm_assert(info == 0);
+    } else {
+      const Int ne = nelem();
+      slmm_assert(ne > 0);
+      const Int sz = np4_ * ne;
+      mass_tgt_.resize(sz);
+      Real* M_tgt = mass_tgt_.data();
+
+      for (Int ie = 0; ie < ne; ++ie) {
+        // Local mesh.
+        const auto& mesh = local_mesh_[ie];
+        // Target cell in this local mesh.
+        const auto ci = local_mesh_tgt_elem_[ie];
+        slmm_assert(ci >= 0 && ci < nslices(mesh.e));
+        const auto cell = slice(mesh.e, ci);
+        // Sphere coordinates of cell corners.
+        Real ps[12];
+        copy_vertices(mesh.p, mesh.e, ci, ps);
+
+        for (Int i = 0; i < np4_; ++i)
+          M_tgt[i] = 0;
+        for (Int k = 1; k <= 2; ++k) {
+          for (Int qp = 0; qp < nq; ++qp) {
+            // Ref -> sphere.
+            Real sphere_coord[3];
+            const Real jac_reftri2sphere = siqk::SphereGeometry::calc_tri_jacobian(
+              ps, ps+3*k, ps+3*(k+1), slice(tq_bary, qp), sphere_coord);
+            // Eval basis functions.
+            Real a, b;
+            siqk::sqr::calc_sphere_to_ref(mesh.p, cell, sphere_coord, a, b);
+            gll.eval(basis, a, tgi);
+            gll.eval(basis, b, tgj);
+            // Integrate.
+            const Real d0 = 0.5 * tq_w[qp] * jac_reftri2sphere;
+            for (Int aj = 0, a_basis_idx = 0; aj < np_; ++aj) {
+              const Real d1 = d0 * tgj[aj];
+              for (Int ai = 0; ai < np_; ++ai, ++a_basis_idx) {
+                Real d2 = d1 * tgi[ai];
+                for (Int b_basis_idx = a_basis_idx; b_basis_idx < np2_; ++b_basis_idx) {
+                  const Int bj = b_basis_idx / np_;
+                  const Int bi = b_basis_idx % np_;
+                  M_tgt[np2_*a_basis_idx + b_basis_idx] += d2 * tgi[bi] *tgj[bj];
+                }
+              }
+            }
+          }
+        }
+
+        int info = ir::dpotrf('L', np2_, M_tgt, np2_);
+        slmm_assert(info == 0);
+
+        M_tgt += np4_;
+      }
+    }
   }
 
   const Mesh& local_mesh (const Int ie) const {
@@ -2514,14 +2681,19 @@ struct Advecter {
   }
 
   std::vector<Real>& mass_mix_buffer () { return mass_mix_; }
-  const Real* M_tgt () { return mass_tgt_.data(); }
+  const Real* M_tgt (const Int& ie) {
+    slmm_assert(ie >= 0 && ie < nelem());
+    return alg_ == Alg::jct ?
+      mass_tgt_.data() :
+      mass_tgt_.data() + ie*np4_;
+  }
 
 private:
   const Alg::Enum alg_;
   const Int np_, np2_, np4_;
   std::vector<Mesh> local_mesh_;
   std::vector<Int> local_mesh_tgt_elem_;
-  // For JCT:
+  // For CISL:
   const Int tq_order_;
   std::vector<Real> mass_tgt_, mass_mix_, rhs_;
 };
@@ -2596,6 +2768,29 @@ void gll_np4_eval (const Real x, Real y[4]) {
   y[3] = (1.0 + x)*(5.0*x2 - 1.0)*oo8;
 }
 
+// Linear interp in each region.
+void gll_np4_subgrid_eval (const Real& x, Real y[4]) {
+  if (x > 0) {
+    gll_np4_subgrid_eval(-x, y);
+    std::swap(y[0], y[3]);
+    std::swap(y[1], y[2]);    
+    return;
+  }
+  if (x < -oosqrt5) {
+    const Real alpha = (x + 1)/(1 - oosqrt5);
+    y[0] = 1 - alpha;
+    y[1] = alpha;
+    y[2] = 0;
+    y[3] = 0;
+  } else {
+    const Real alpha = (x + oosqrt5)/(2*oosqrt5);
+    y[0] = 0;
+    y[1] = 1 - alpha;
+    y[2] = alpha;
+    y[3] = 0;
+  }
+}
+
 // Quadratic interpolant across nodes 1,2,3 -- i.e., excluding node 0 -- of the
 // np=4 reference element.
 void outer_eval (const Real& x, Real v[4]) {
@@ -2611,19 +2806,9 @@ void outer_eval (const Real& x, Real v[4]) {
 }
 
 // In the middle region, use the standard GLL np=4 interpolant; in the two outer
-// regions, use an order-reduced interpolant, but one that makes the resulting
-// classical SL method stable.
-void gll_np4_subgrid_eval (const Real& x, Real v[4]) {
-  if (x < -oosqrt5) {
-    outer_eval(-x, v);
-    std::swap(v[0], v[3]);
-    std::swap(v[1], v[2]);
-  } else if (x < oosqrt5)
-    gll_np4_eval(x, v);
-  else
-    outer_eval(x, v);
-}
-
+// regions, use an order-reduced interpolant, but one that stabilizes the
+// resulting classical SL method stable for the uniform-flow problem on a
+// uniform mesh.
 void gll_np4_subgrid_exp_eval (const Real& x, Real y[4]) {
   static constexpr Real
     alpha = 0.5527864045000416708,
@@ -2838,7 +3023,7 @@ void slmm_project_np4 (
   static constexpr Int max_num_intersections = 8;
   static constexpr Int my_np = 4, my_np2 = my_np*my_np,
     my_np4 = my_np2*my_np2;
-  static constexpr Int max_qsize = 40;
+  static constexpr Int max_qsize = QSIZE_D;
   const Int ie0 = ie - nets;
 
   FA2<const Real>
@@ -2854,7 +3039,7 @@ void slmm_project_np4 (
     q_min(q_min_r, np, np, nlev, qsize, ie0+1),
     q_max(q_max_r, np, np, nlev, qsize, ie0+1);
 
-  const Real* const M_tgt = g_advecter->M_tgt();
+  const Real* const M_tgt = g_advecter->M_tgt(ie);
   IR_ALIGN(M_mix[my_np4]);
   IR_ALIGN(rhs_r[my_np2*max_qsize]);
   IR_ALIGN(vi_buf[3*max_num_vertices]);
@@ -2881,6 +3066,7 @@ void slmm_project_np4 (
 
   const auto& m = g_advecter->local_mesh(ie);
   bool first = true;
+  const auto alg = g_advecter->alg();
   for (Int sci = 0; sci < nnc; ++sci) { // For each source cell:
     // Intersect.
     const siqk::RawVec3s vi(vi_buf, max_num_vertices, 3);
@@ -2922,61 +3108,96 @@ void slmm_project_np4 (
     }
     first = false;
 
-    // Get overlap element vertices in ref elements.
-    Real* const tvo = wrk_buf;
-    Real* const svo = tvo + 2*no;
-    for (Int k = 0; k < no; ++k) {
-      static const Real tol = std::numeric_limits<Real>::epsilon();
-      static const int max_nits = 10;
-      siqk::sqr::calc_sphere_to_ref(m.p, slice(m.e, sci), slice(vo,k),
-                                    svo[2*k], svo[2*k+1],
-                                    nullptr, max_nits, tol);
-      static const Int vie[] = {0, 1, 2, 3};
-      siqk::sqr::calc_sphere_to_ref(vi, vie, slice(vo,k),
-                                    tvo[2*k], tvo[2*k+1],
-                                    nullptr, max_nits, tol);
-    }
+    for (Int i = 0; i < my_np4; ++i)
+      M_mix[i] = 0;
+    if (alg == ir::Advecter::Alg::jct) {
+      // Get overlap element vertices in ref elements.
+      Real* const tvo = wrk_buf;
+      Real* const svo = tvo + 2*no;
+      for (Int k = 0; k < no; ++k) {
+        static const Real tol = std::numeric_limits<Real>::epsilon();
+        static const int max_nits = 10;
+        siqk::sqr::calc_sphere_to_ref(m.p, slice(m.e, sci), slice(vo,k),
+                                      svo[2*k], svo[2*k+1],
+                                      nullptr, max_nits, tol);
+        static const Int vie[] = {0, 1, 2, 3};
+        siqk::sqr::calc_sphere_to_ref(vi, vie, slice(vo,k),
+                                      tvo[2*k], tvo[2*k+1],
+                                      nullptr, max_nits, tol);
+      }
+      
+      for (Int ktri = 1; ktri < no-1; ++ktri) { // triangles in vo
+        const Real s_area = siqk::PlaneGeometry::calc_tri_jacobian(
+          svo, svo+2*ktri, svo+2*(ktri+1));
 
-    for (Int i = 0; i < my_np4; ++i) M_mix[i] = 0;
-    for (Int ktri = 1; ktri < no-1; ++ktri) { // triangles in vo
-      const Real s_area = siqk::PlaneGeometry::calc_tri_jacobian(
-        svo, svo+2*ktri, svo+2*(ktri+1));
-
-      for (Int qp = 0; qp < nq; ++qp) { // quad point
-        siqk::PlaneGeometry::bary2coord(tvo, tvo+2*ktri, tvo+2*(ktri+1),
-                                        slice(tq_bary, qp), tvo_coord);
-        csl::gll_np4_eval(tvo_coord[0], tgi);
-        csl::gll_np4_eval(tvo_coord[1], tgj);
-        siqk::PlaneGeometry::bary2coord(svo, svo+2*ktri, svo+2*(ktri+1),
-                                        slice(tq_bary, qp), svo_coord);
-        csl::gll_np4_eval(svo_coord[0], sgi);
-        csl::gll_np4_eval(svo_coord[1], sgj);
-
-        {
-          Int os = 0;
-          const Real d0 = 0.5 * s_area * tq_w[qp];
-          for (Int tj = 0; tj < my_np; ++tj) {
-            const Real d1 = d0 * tgj[tj];
-            for (Int ti = 0; ti < my_np; ++ti) {
-              Real d2 = d1 * tgi[ti];
-              {
-                const Real d30 = d2*sgj[0];
-                M_mix[os   ] += d30*sgi[0]; M_mix[os+ 1] += d30*sgi[1];
-                M_mix[os+ 2] += d30*sgi[2]; M_mix[os+ 3] += d30*sgi[3];
-              } {
-                const Real d31 = d2*sgj[1];
-                M_mix[os+ 4] += d31*sgi[0]; M_mix[os+ 5] += d31*sgi[1];
-                M_mix[os+ 6] += d31*sgi[2]; M_mix[os+ 7] += d31*sgi[3];
-              } {
-                const Real d32 = d2*sgj[2];
-                M_mix[os+ 8] += d32*sgi[0]; M_mix[os+ 9] += d32*sgi[1];
-                M_mix[os+10] += d32*sgi[2]; M_mix[os+11] += d32*sgi[3];
-              } {
-                const Real d33 = d2*sgj[3];
-                M_mix[os+12] += d33*sgi[0]; M_mix[os+13] += d33*sgi[1];
-                M_mix[os+14] += d33*sgi[2]; M_mix[os+15] += d33*sgi[3];
+        for (Int qp = 0; qp < nq; ++qp) { // quad point
+          siqk::PlaneGeometry::bary2coord(tvo, tvo+2*ktri, tvo+2*(ktri+1),
+                                          slice(tq_bary, qp), tvo_coord);
+          csl::gll_np4_eval(tvo_coord[0], tgi);
+          csl::gll_np4_eval(tvo_coord[1], tgj);
+          siqk::PlaneGeometry::bary2coord(svo, svo+2*ktri, svo+2*(ktri+1),
+                                          slice(tq_bary, qp), svo_coord);
+          csl::gll_np4_eval(svo_coord[0], sgi);
+          csl::gll_np4_eval(svo_coord[1], sgj);
+          {
+            Int os = 0;
+            const Real d0 = 0.5 * s_area * tq_w[qp];
+            for (Int tj = 0; tj < my_np; ++tj) {
+              const Real d1 = d0 * tgj[tj];
+              for (Int ti = 0; ti < my_np; ++ti) {
+                Real d2 = d1 * tgi[ti];
+                {
+                  const Real d30 = d2*sgj[0];
+                  M_mix[os   ] += d30*sgi[0]; M_mix[os+ 1] += d30*sgi[1];
+                  M_mix[os+ 2] += d30*sgi[2]; M_mix[os+ 3] += d30*sgi[3];
+                } {
+                  const Real d31 = d2*sgj[1];
+                  M_mix[os+ 4] += d31*sgi[0]; M_mix[os+ 5] += d31*sgi[1];
+                  M_mix[os+ 6] += d31*sgi[2]; M_mix[os+ 7] += d31*sgi[3];
+                } {
+                  const Real d32 = d2*sgj[2];
+                  M_mix[os+ 8] += d32*sgi[0]; M_mix[os+ 9] += d32*sgi[1];
+                  M_mix[os+10] += d32*sgi[2]; M_mix[os+11] += d32*sgi[3];
+                } {
+                  const Real d33 = d2*sgj[3];
+                  M_mix[os+12] += d33*sgi[0]; M_mix[os+13] += d33*sgi[1];
+                  M_mix[os+14] += d33*sgi[2]; M_mix[os+15] += d33*sgi[3];
+                }
+                os += 16;
               }
-              os += 16;
+            }
+          }
+        }
+      }
+    } else {
+      //here
+      static const Int tcell[] = {0, 1, 2, 3};
+      const auto scell = slice(m.e, sci);
+      for (Int ktri = 1; ktri < no-1; ++ktri) {
+        for (Int qp = 0; qp < nq; ++qp) {
+          Real sphere_coord[3];
+          const Real jac_reftri2sphere = siqk::SphereGeometry::calc_tri_jacobian(
+            slice(vo, 0), slice(vo, ktri), slice(vo, ktri+1), slice(tq_bary, qp),
+            sphere_coord);
+          Real ta, tb, sa, sb;
+          siqk::sqr::calc_sphere_to_ref(vi, tcell, sphere_coord, ta, tb);
+          gll.eval(basis, ta, tgi);
+          gll.eval(basis, tb, tgj);
+          siqk::sqr::calc_sphere_to_ref(m.p, scell, sphere_coord, sa, sb);
+          gll.eval(basis, sa, sgi);
+          gll.eval(basis, sb, sgj);
+          Real d0 = 0.5 * tq_w[qp] * jac_reftri2sphere;
+          for (Int tj = 0, t_basis_idx = 0; tj < my_np; ++tj) {
+            const Real d1 = d0 * tgj[tj];
+            for (Int ti = 0; ti < my_np; ++ti, ++t_basis_idx) {
+              Real d2 = d1 * tgi[ti];
+              for (Int sj = 0, s_basis_idx = 0; sj < my_np; ++sj) {
+                const Real d3 = d2 * sgj[sj];
+                for (Int si = 0; si < my_np; ++si, ++s_basis_idx) {
+                  const Real d = d3 * sgi[si];
+                  M_mix[my_np2*t_basis_idx + s_basis_idx] += d;
+                }
+              }
             }
           }
         }
@@ -3004,11 +3225,18 @@ void slmm_project_np4 (
   int info = ir::dpotrs('L', np2, qsize, M_tgt, np2, rhs_r, np2);
   slmm_assert(info == 0);
 
-  // Load q with Qj_tgt / (jac_tgt rho_tgt).
-  for (Int tq = 0; tq < qsize; ++tq)
-    for (Int j = 0; j < np; ++j)
-      for (Int i = 0; i < np; ++i)
-        q(i,j,lev,tq) = rhs(i,j,tq) / (rho_tgt(i,j,lev,tl_np1) * jac_tgt(i,j));
+  // Load q.
+  if (alg == ir::Advecter::Alg::jct) {
+    for (Int tq = 0; tq < qsize; ++tq)
+      for (Int j = 0; j < np; ++j)
+        for (Int i = 0; i < np; ++i)
+          q(i,j,lev,tq) = rhs(i,j,tq) / (rho_tgt(i,j,lev,tl_np1) * jac_tgt(i,j));
+  } else {
+    for (Int tq = 0; tq < qsize; ++tq)
+      for (Int j = 0; j < np; ++j)
+        for (Int i = 0; i < np; ++i)
+          q(i,j,lev,tq) = rhs(i,j,tq) / rho_tgt(i,j,lev,tl_np1);
+  }
 
   // This method assigns the same q_{min,max} to all GLL points.
   for (Int q = 0; q < qsize; ++q) {
@@ -3089,7 +3317,7 @@ void slmm_project (
   auto& rhs_r = g_advecter->rhs_buffer(qsize);
   for (Int i = 0, n = qsize*np2; i < n; ++i) rhs_r[i] = 0;
   FA3<Real> rhs(rhs_r.data(), np, np, qsize);
-  const Real* const M_tgt = g_advecter->M_tgt();
+  const Real* const M_tgt = g_advecter->M_tgt(ie);
   auto& M_mix = g_advecter->mass_mix_buffer();
 
   const auto& m = g_advecter->local_mesh(ie);
@@ -4483,7 +4711,9 @@ Experiment get_options () {
 
 static homme::cslmpi::CslMpi::Ptr g_csl_mpi;
 
-extern "C" void slmm_init_impl_ (
+extern "C" {
+
+void slmm_init_impl_ (
   const homme::Int* fcomm, homme::Int* transport_alg, homme::Int* np,
   homme::Int* nlev, homme::Int* qsize, homme::Int* qsized, homme::Int* nelemd,
   homme::Int** nbr_id_rank, homme::Int** nirptr)
@@ -4499,12 +4729,12 @@ extern "C" void slmm_init_impl_ (
   }
 }
 
-extern "C" void slmm_get_mpi_pattern_ (homme::Int* sl_mpi) {
+void slmm_get_mpi_pattern_ (homme::Int* sl_mpi) {
   *sl_mpi = g_csl_mpi ? 1 : 0;
 }
 
 // Figure shtuff out.
-extern "C" void slmm_study_ (
+void slmm_study_ (
   homme::Int* elem_global_id, homme::Cartesian3D* corners,
   homme::Int** desc_global_ids, homme::Cartesian3D** desc_neigh_corners,
   homme::Int* n)
@@ -4515,7 +4745,7 @@ extern "C" void slmm_study_ (
   homme::study(*elem_global_id, corners, *desc_global_ids, *desc_neigh_corners, *n + 1);
 }
 
-extern "C" void slmm_init_local_mesh_ (
+void slmm_init_local_mesh_ (
   homme::Int* ie, homme::Cartesian3D** neigh_corners, homme::Int* nnc,
   homme::Cartesian3D* p_inside)
 {
@@ -4523,10 +4753,16 @@ extern "C" void slmm_init_local_mesh_ (
     *ie - 1, homme::FA3<const homme::Real>(
       reinterpret_cast<const homme::Real*>(*neigh_corners), 3, 4, *nnc),
     reinterpret_cast<const homme::Real*>(p_inside));
-  homme::g_advecter->init_M_tgt_if_needed();
+  if (*ie == homme::g_advecter->nelem())
+    homme::g_advecter->init_M_tgt_if_needed();
 }
 
-extern "C" void slmm_advect_ (
+void slmm_check_ref2sphere_ (homme::Int* ie, homme::Cartesian3D* p) {
+  homme::g_advecter->check_ref2sphere(
+    *ie - 1, reinterpret_cast<const homme::Real*>(p));
+}
+
+void slmm_advect_ (
   homme::Int* lev, homme::Int* ie, homme::Int* nnc, homme::Int* np, homme::Int* nlev,
   homme::Int* qsize, homme::Int* nets, homme::Int* nete,
   homme::Cartesian3D* dep_points, homme::Real* neigh_q, homme::Real* J_t,
@@ -4547,7 +4783,7 @@ extern "C" void slmm_advect_ (
   }
 }
 
-extern "C" void slmm_csl_set_elem_data_ (
+void slmm_csl_set_elem_data_ (
   homme::Int* ie, homme::Real* metdet, homme::Real* qdp, homme::Real* dp,
   homme::Real* q, homme::Int* nelem_in_patch)
 {
@@ -4556,11 +4792,13 @@ extern "C" void slmm_csl_set_elem_data_ (
                                *nelem_in_patch);
 }
 
-extern "C" void slmm_csl_ (
+void slmm_csl_ (
   homme::Int* nets, homme::Int* nete, homme::Cartesian3D* dep_points,
   homme::Real* minq, homme::Real* maxq)
 {
   slmm_assert(g_csl_mpi);
   homme::cslmpi::step<4>(*g_csl_mpi, *nets - 1, *nete - 1,
                          dep_points, minq, maxq);
+}
+
 }

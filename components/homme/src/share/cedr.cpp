@@ -4127,6 +4127,7 @@ struct CDR {
       case 20: return qlt_super_level;
       case 3:  return caas;
       case 30: return caas_super_level;
+      case 42: return qlt;
       default: cedr_throw_if(true,  "cdr_alg " << cdr_alg << " is invalid.");
       }
     }
@@ -4401,13 +4402,13 @@ void run_local (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_
               cedr::local::caas(np2, wa, Qm, qlo, qhi, y, x);
             }
           } else {
+            for (Int j = 0, cnt = 0; j < np; ++j)
+              for (Int i = 0; i < np; ++i, ++cnt) {
+                qlo[cnt] = q_min(i,j,k,q,ie0);
+                qhi[cnt] = q_max(i,j,k,q,ie0);
+              }
             for (int trial = 0; trial < 2; ++trial) {
               int info;
-              for (Int j = 0, cnt = 0; j < np; ++j)
-                for (Int i = 0; i < np; ++i, ++cnt) {
-                  qlo[cnt] = q_min(i,j,k,q,ie0);
-                  qhi[cnt] = q_max(i,j,k,q,ie0);
-                }
               if (limiter_option == 8)
                 info = cedr::local::solve_1eq_bc_qp(
                   np2, wa, wa, Qm, qlo, qhi, y, x);

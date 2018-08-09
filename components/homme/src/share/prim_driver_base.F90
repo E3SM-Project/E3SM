@@ -490,7 +490,7 @@ contains
     call kokkos_init()
     if (transport_alg > 0 .and. semi_lagrange_cdr_alg > 1) then
        call compose_init(par%comm, elem, GridVertex)
-       call cedr_unittest(par%comm, ierr)
+       !call cedr_unittest(par%comm, ierr)
        if (par%masterproc) then
           write(iulog,*) "CEDR unittest returned", ierr
        end if

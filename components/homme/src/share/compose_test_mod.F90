@@ -62,18 +62,20 @@ end interface
 contains
 
   ! For comprehensive testing.
-  subroutine compose_test(par, dom_mt, elem)
+  subroutine compose_test(par, hvcoord, dom_mt, elem)
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
     use element_mod, only: element_t
     use thread_mod, only: hthreads, vthreads, omp_set_num_threads, omp_get_thread_num
     use hybrid_mod, only: hybrid_t, hybrid_create
     use derivative_mod, only: derivative_t, derivinit
+    use hybvcoord_mod, only: hvcoord_t
     implicit none
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), pointer, intent(in) :: dom_mt(:)
     type (element_t), intent(inout) :: elem(:)
+    type (hvcoord_t) , intent(in) :: hvcoord
 
     type (hybrid_t) :: hybrid
     type (derivative_t) :: deriv
@@ -97,13 +99,13 @@ contains
 
     ! 2. Standalone tracer advection test, useful as a basic but comprehensive
     ! correctness test and also as part of a convergence test.
-    call compose_stt(hybrid, nets, nete, deriv, elem)
+    call compose_stt(hybrid, nets, nete, hvcoord, deriv, elem)
 #if (defined HORIZ_OPENMP)
     !$omp end parallel
 #endif
   end subroutine compose_test
 
-  subroutine compose_stt(hybrid, nets, nete, deriv, elem)
+  subroutine compose_stt(hybrid, nets, nete, hvcoord, deriv, elem)
     use parallel_mod, only: parallel_t
     use hybrid_mod, only: hybrid_t
     use element_mod, only: element_t
@@ -115,12 +117,14 @@ contains
     use coordinate_systems_mod, only: spherical_polar_t
     use control_mod, only: qsplit
     use time_mod, only: nmax
+    use hybvcoord_mod, only: hvcoord_t
     use sl_advection
     implicit none
 
     type (hybrid_t), intent(in) :: hybrid
     type (derivative_t), intent(in) :: deriv
     type (element_t), intent(inout) :: elem(:)
+    type (hvcoord_t) , intent(in) :: hvcoord
     integer, intent(in) :: nets, nete
 
     real (kind=real_kind), parameter :: twelve_days = 3600.d0 * 24 * 12
@@ -160,7 +164,7 @@ contains
                elem(ie)%state%v(:,:,:,:,tl%np1))
        end do
        tl%nstep = tl%nstep + qsplit
-       call prim_advec_tracers_remap_ale(elem, deriv, hybrid, dt, tl, nets, nete)
+       call prim_advec_tracers_remap_ale(elem, deriv, hvcoord, hybrid, dt, tl, nets, nete)
     end do
     ! Record final q values.
     call compose_stt_begin_record()

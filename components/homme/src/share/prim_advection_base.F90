@@ -73,7 +73,7 @@ module prim_advection_base
   public :: Prim_Advec_Init1_rk2
   public :: Prim_Advec_Tracers_remap
   public :: Prim_Advec_Tracers_remap_rk2   
-
+  public :: advance_hypervis_scalar ! so sl_advection can use it
 
   type (EdgeBuffer_t)      :: edgeAdvQminmax
 
