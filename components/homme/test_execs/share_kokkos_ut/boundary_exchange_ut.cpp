@@ -22,7 +22,7 @@ void init_connectivity_f90 (const int& num_min_max_fields_1d, const int& num_sca
                             const int& num_scalar_fields_3d,  const int& num_vector_fields_3d,
                             const int& vector_dim);
 void cleanup_f90 ();
-void boundary_exchange_test_f90 (F90Ptr& field_1d_ptr,
+void boundary_exchange_test_f90 (F90Ptr& field_min_1d_ptr, F90Ptr& field_max_1d_ptr,
                                  F90Ptr& field_2d_ptr, F90Ptr& field_3d_ptr, F90Ptr& field_4d_ptr,
                                  const int& inner_dim_4d, const int& num_time_levels,
                                  const int& idim_2d, const int& idim_3d, const int& idim_4d,
@@ -71,8 +71,9 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
   int rank = connectivity->get_comm().rank();
 
   // Create input data arrays
-  HostViewManaged<Real*[num_min_max_fields_1d][2][NUM_PHYSICAL_LEV]> field_1d_f90("", num_elements);
-  ExecViewManaged<Scalar*[num_min_max_fields_1d][2][NUM_LEV]>        field_1d_cxx("", num_elements);
+  HostViewManaged<Real*[num_min_max_fields_1d][NUM_PHYSICAL_LEV]> field_min_1d_f90("", num_elements);
+  HostViewManaged<Real*[num_min_max_fields_1d][NUM_PHYSICAL_LEV]> field_max_1d_f90("", num_elements);
+  ExecViewManaged<Scalar*[num_min_max_fields_1d][2][NUM_LEV]>     field_1d_cxx("", num_elements);
   auto field_1d_cxx_host = Kokkos::create_mirror_view(field_1d_cxx);
 
   HostViewManaged<Real*[NUM_TIME_LEVELS][NP][NP]> field_2d_f90("", num_elements);
@@ -119,16 +120,18 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
     int minmax_split = dint(engine);
 
     // Initialize input data to random values
-    genRandArray(field_1d_f90,engine,dreal_minmax);
+    genRandArray(field_min_1d_f90,engine,dreal_minmax);
+    genRandArray(field_max_1d_f90,engine,dreal_minmax);
     for (int ie=0; ie<num_elements; ++ie) {
       for (int ifield=0; ifield<num_min_max_fields_1d; ++ifield) {
         for (int level=0; level<NUM_PHYSICAL_LEV; ++level) {
           const int ilev = level / VECTOR_SIZE;
           const int ivec = level % VECTOR_SIZE;
-          if (field_1d_f90(ie,ifield,0,level) > field_1d_f90(ie,ifield,1,level))
-            std::swap(field_1d_f90(ie,ifield,0,level), field_1d_f90(ie,ifield,1,level));
-          for (int k = 0; k < 2; ++k)
-            field_1d_cxx_host(ie,ifield,k,ilev)[ivec] = field_1d_f90(ie,ifield,k,level);
+          if (field_min_1d_f90(ie,ifield,level) > field_max_1d_f90(ie,ifield,level)) {
+            std::swap(field_min_1d_f90(ie,ifield,level), field_max_1d_f90(ie,ifield,level));
+          }
+          field_1d_cxx_host(ie,ifield,MIN_ID,ilev)[ivec] = field_min_1d_f90(ie,ifield,level);
+          field_1d_cxx_host(ie,ifield,MAX_ID,ilev)[ivec] = field_max_1d_f90(ie,ifield,level);
     }}}
     Kokkos::deep_copy(field_1d_cxx, field_1d_cxx_host);
 
@@ -167,7 +170,7 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
     Kokkos::deep_copy(field_4d_cxx, field_4d_cxx_host);
 
     // Perform boundary exchange
-    boundary_exchange_test_f90(field_1d_f90.data(),
+    boundary_exchange_test_f90(field_min_1d_f90.data(), field_max_1d_f90.data(),
                                field_2d_f90.data(), field_3d_f90.data(), field_4d_f90.data(),
                                DIM, NUM_TIME_LEVELS, field_2d_idim+1, field_3d_idim+1, field_4d_outer_idim+1, minmax_split);
     minmax_split = 1;
@@ -194,13 +197,17 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
         for (int level=0; level<NUM_PHYSICAL_LEV; ++level) {
           const int ilev = level / VECTOR_SIZE;
           const int ivec = level % VECTOR_SIZE;
-          for (int k = 0; k < 2; ++k) {
-            REQUIRE(compare_answers(field_1d_f90(ie,ifield,k,level),field_1d_cxx_host(ie,ifield,k,ilev)[ivec]) < test_tolerance);
-            if(compare_answers(field_1d_f90(ie,ifield,k,level),field_1d_cxx_host(ie,ifield,k,ilev)[ivec]) >= test_tolerance) {
-              std::cout << std::setprecision(17) << "rank,ie,ifield,ilev,iv: " << rank << ", " << ie << ", " << ifield << ", " << ilev << ", " << ivec << "\n";
-              std::cout << std::setprecision(17) << "f90: " << field_1d_f90(ie,ifield,k,level) << "\n";
-              std::cout << std::setprecision(17) << "cxx: " << field_1d_cxx_host(ie,ifield,k,ilev)[ivec] << "\n";
-            }
+          REQUIRE(compare_answers(field_min_1d_f90(ie,ifield,level),field_1d_cxx_host(ie,ifield,MIN_ID,ilev)[ivec]) < test_tolerance);
+          if(compare_answers(field_min_1d_f90(ie,ifield,level),field_1d_cxx_host(ie,ifield,MIN_ID,ilev)[ivec]) >= test_tolerance) {
+            std::cout << std::setprecision(17) << "rank,ie,ifield,ilev,iv: " << rank << ", " << ie << ", " << ifield << ", " << ilev << ", " << ivec << "\n";
+            std::cout << std::setprecision(17) << "f90: " << field_min_1d_f90(ie,ifield,level) << "\n";
+            std::cout << std::setprecision(17) << "cxx: " << field_1d_cxx_host(ie,ifield,MIN_ID,ilev)[ivec] << "\n";
+          }
+          REQUIRE(compare_answers(field_max_1d_f90(ie,ifield,level),field_1d_cxx_host(ie,ifield,MAX_ID,ilev)[ivec]) < test_tolerance);
+          if(compare_answers(field_max_1d_f90(ie,ifield,level),field_1d_cxx_host(ie,ifield,MAX_ID,ilev)[ivec]) >= test_tolerance) {
+            std::cout << std::setprecision(17) << "rank,ie,ifield,ilev,iv: " << rank << ", " << ie << ", " << ifield << ", " << ilev << ", " << ivec << "\n";
+            std::cout << std::setprecision(17) << "f90: " << field_max_1d_f90(ie,ifield,level) << "\n";
+            std::cout << std::setprecision(17) << "cxx: " << field_1d_cxx_host(ie,ifield,MAX_ID,ilev)[ivec] << "\n";
           }
     }}}
 
