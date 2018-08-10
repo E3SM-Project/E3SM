@@ -187,7 +187,7 @@ TESTRUNFAILEXC    Insta-fail run step via exception. Used to test correct
                   correct behavior when exceptions are generated.
 
 TESTRUNSTARCFAIL  Insta-fail st_archive step via exception. Used to test correct
-                  correct behavior when exceptions are generated within in run_phase
+                  behavior when exceptions are generated within in run_phase
                   for phases other than RUN.
 
 TESTRUNPASS       Insta-pass run step. Used to test that run that work
