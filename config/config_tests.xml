@@ -186,6 +186,10 @@ TESTRUNFAIL       Insta-fail run step. Used to confirm that model run
 TESTRUNFAILEXC    Insta-fail run step via exception. Used to test correct
                   correct behavior when exceptions are generated.
 
+TESTRUNSTARCFAIL  Insta-fail st_archive step via exception. Used to test correct
+                  behavior when exceptions are generated within in run_phase
+                  for phases other than RUN.
+
 TESTRUNPASS       Insta-pass run step. Used to test that run that work
                   are reported correctly.
 
@@ -391,6 +395,15 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
 
   <test NAME="TESTRUNFAIL" INFRASTRUCTURE_TEST="TRUE">
     <DESC>For testing infra only. Insta-fail run step.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="TESTRUNSTARCFAIL" INFRASTRUCTURE_TEST="TRUE">
+    <DESC>For testing infra only. Insta-fail st archive test with exception.</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <STOP_OPTION>ndays</STOP_OPTION>
     <STOP_N>11</STOP_N>
