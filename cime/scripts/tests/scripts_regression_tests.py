@@ -2458,7 +2458,7 @@ class H_TestMakeMacros(unittest.TestCase):
         self.test_os       = "SomeOS"
         self.test_machine  = "mymachine"
         self.test_compiler = MACHINE.get_default_compiler() if TEST_COMPILER is None else TEST_COMPILER
-        self.test_mpilib   = MACHINE.get_default_MPIlib() if TEST_MPILIB is None else TEST_MPILIB
+        self.test_mpilib   = MACHINE.get_default_MPIlib(attributes={"compiler":self.test_compiler}) if TEST_MPILIB is None else TEST_MPILIB
 
         self._maker = Compilers(MockMachines(self.test_machine, self.test_os), version=2.0)
 
@@ -2936,7 +2936,7 @@ def make_pylint_test(pyfile, all_files):
     def test(self):
         if B_CheckCode.all_results is None:
             B_CheckCode.all_results = check_code(all_files)
-        result = B_CheckCode.all_results[pyfile]
+        result = B_CheckCode.all_results[pyfile] # pylint: disable=unsubscriptable-object
         self.assertTrue(result == "", msg=result)
 
     return test
