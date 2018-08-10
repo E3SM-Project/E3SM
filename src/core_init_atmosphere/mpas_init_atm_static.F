@@ -44,6 +44,9 @@
  character(len=StrKIND), pointer :: config_geog_data_path
  character(len=StrKIND), pointer :: config_landuse_data
  character(len=StrKIND), pointer :: config_topo_data
+ character(len=StrKIND), pointer :: config_vegfrac_data
+ character(len=StrKIND), pointer :: config_albedo_data
+ character(len=StrKIND), pointer :: config_maxsnowalbedo_data
  character(len=StrKIND+1) :: geog_data_path      ! same as config_geog_data_path, but guaranteed to have a trailing slash
  character(len=StrKIND+1) :: geog_sub_path       ! subdirectory names in config_geog_data_path, with trailing slash
 
@@ -92,6 +95,7 @@
  real (kind=RKIND), dimension(:), pointer :: shdmin, shdmax
  real (kind=RKIND), dimension(:,:), pointer :: greenfrac
  real (kind=RKIND), dimension(:,:), pointer :: albedo12m
+ real (kind=RKIND) :: msgval, fillval
  integer, dimension(:), pointer :: lu_index
  integer, dimension(:), pointer :: soilcat_top
  integer, dimension(:), pointer :: landmask
@@ -106,6 +110,9 @@
  call mpas_pool_get_config(configs, 'config_geog_data_path', config_geog_data_path)
  call mpas_pool_get_config(configs, 'config_landuse_data', config_landuse_data)
  call mpas_pool_get_config(configs, 'config_topo_data', config_topo_data)
+ call mpas_pool_get_config(configs, 'config_vegfrac_data', config_vegfrac_data)
+ call mpas_pool_get_config(configs, 'config_albedo_data', config_albedo_data)
+ call mpas_pool_get_config(configs, 'config_maxsnowalbedo_data', config_maxsnowalbedo_data)
 
  write(geog_data_path, '(a)') config_geog_data_path
  i = len_trim(geog_data_path)
@@ -303,8 +310,10 @@
 !
  surface_input_select1: select case(trim(config_landuse_data))
     case('USGS')
+       call mpas_log_write('Using 24-class USGS 30-arc-second land cover dataset')
        geog_sub_path = 'landuse_30s/'
     case('MODIFIED_IGBP_MODIS_NOAH')
+       call mpas_log_write('Using 20-class MODIS 30-arc-second land cover dataset')
        geog_sub_path = 'modis_landuse_20class_30s/'
     case default
        call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
@@ -543,213 +552,472 @@ if (rarray(i,j,1) == 0) cycle
 !
 ! Interpolate SNOALB
 !
- nx = 186
- ny = 186
- nz = 1
- isigned     = 0
- endian      = 0
- wordsize    = 1
- scalefactor = 1.0
- allocate(rarray(nx,ny,nz))
- allocate(maxsnowalb(-2:363,-2:183))
- snoalb(:) = 0.0
+ if (trim(config_maxsnowalbedo_data) == 'MODIS') then
 
- call map_set(PROJ_LATLON, proj,  &
-              latinc = 1.0_RKIND, &
-              loninc = 1.0_RKIND, &
-              knowni = 1.0_RKIND, &
-              knownj = 1.0_RKIND, &
-              lat1 = -89.5_RKIND, &
-              lon1 = -179.5_RKIND)
+    call mpas_log_write('Using MODIS 0.05-deg data for maximum snow albedo')
 
- write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
-       'maxsnowalb/',1,'-',180,'.',1,'-',180
- call mpas_log_write(trim(fname))
+    nx = 1206
+    ny = 1206
+    nz = 1
+    isigned  = 1
+    endian   = 0
+    wordsize = 2
+    scalefactor = 0.01
+    msgval = real(-999.0,kind=R4KIND)*real(0.01,kind=R4KIND)
+    fillval = 0.0
+    allocate(rarray(nx,ny,nz))
+    allocate(nhs(nCells))
+    nhs(:) = 0
+    snoalb(:) = 0.0
+ 
+    start_lat = 89.975
+    start_lon = -179.975
+    geog_sub_path = 'maxsnowalb_modis/'
 
- call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, & 
-                   scalefactor,wordsize,istatus)
- call init_atm_check_read_error(istatus,fname)
- maxsnowalb(-2:180,-2:183) = rarray(1:183,1:186,1)
+    do jTileStart = 1,02401,ny-6
+       jTileEnd = jTileStart + ny - 1 - 6
 
- write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
-       'maxsnowalb/',181,'-',360,'.',1,'-',180
- call mpas_log_write(trim(fname))
+       do iTileStart=1,06001,nx-6
+          iTileEnd = iTileStart + nx - 1 - 6
+          write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)//trim(geog_sub_path), &
+                       iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
+          call mpas_log_write(trim(fname))
 
- call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
-                   scalefactor,wordsize,istatus)
- call init_atm_check_read_error(istatus, fname)
- maxsnowalb(181:363,-2:183) = rarray(4:186,1:186,1)
+          call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
+                            scalefactor,wordsize,istatus)
+          call init_atm_check_read_error(istatus, fname)
 
- interp_list(1) = FOUR_POINT
- interp_list(2) = W_AVERAGE4
- interp_list(3) = W_AVERAGE16
- interp_list(4) = SEARCH
- interp_list(5) = 0
+          iPoint = 1
+          do j=4,ny-3
+          do i=4,nx-3
+             lat_pt = start_lat - (jTileStart + j - 5) * 0.05
+             lon_pt = start_lon + (iTileStart + i - 5) * 0.05
+             lat_pt = lat_pt * PI / 180.0
+             lon_pt = lon_pt * PI / 180.0
 
- do iCell = 1,nCells
-  
-    if(landmask(iCell) == 1) then
-       lat = latCell(iCell) * DEG_PER_RAD
-       lon = lonCell(iCell) * DEG_PER_RAD
-       call latlon_to_ij(proj, lat, lon, x, y)
-       if(x < 0.5) then
-          lon = lon + 360.0
+             iPoint = nearest_cell(lat_pt,lon_pt,iPoint,nCells,maxEdges, &
+                                   nEdgesOnCell,cellsOnCell, &
+                                   latCell,lonCell)
+             if (landmask(iPoint) == 1) then
+                if (rarray(i,j,1) /= msgval) then
+                   snoalb(iPoint) = snoalb(iPoint) + rarray(i,j,1)
+                   nhs(iPoint) = nhs(iPoint) + 1
+                end if
+             else
+                snoalb(iPoint) = snoalb(iPoint) + fillval
+                nhs(iPoint) = nhs(iPoint) + 1
+             end if
+          end do
+          end do
+
+       end do
+    end do
+
+    do iCell = 1,nCells
+       snoalb(iCell) = snoalb(iCell) / real(nhs(iCell))
+       snoalb(iCell) = 0.01_RKIND * snoalb(iCell)        ! Convert from percent to fraction
+    end do
+    deallocate(rarray)
+    deallocate(nhs)
+
+ else if (trim(config_maxsnowalbedo_data) == 'NCEP') then
+
+    call mpas_log_write('Using NCEP 1.0-deg data for maximum snow albedo')
+
+    nx = 186
+    ny = 186
+    nz = 1
+    isigned     = 0
+    endian      = 0
+    wordsize    = 1
+    scalefactor = 1.0
+    allocate(rarray(nx,ny,nz))
+    allocate(maxsnowalb(-2:363,-2:183))
+    snoalb(:) = 0.0
+
+    call map_set(PROJ_LATLON, proj,  &
+                 latinc = 1.0_RKIND, &
+                 loninc = 1.0_RKIND, &
+                 knowni = 1.0_RKIND, &
+                 knownj = 1.0_RKIND, &
+                 lat1 = -89.5_RKIND, &
+                 lon1 = -179.5_RKIND)
+
+    write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
+          'maxsnowalb/',1,'-',180,'.',1,'-',180
+    call mpas_log_write(trim(fname))
+
+    call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
+                      scalefactor,wordsize,istatus)
+    call init_atm_check_read_error(istatus,fname)
+    maxsnowalb(-2:180,-2:183) = rarray(1:183,1:186,1)
+
+    write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
+          'maxsnowalb/',181,'-',360,'.',1,'-',180
+    call mpas_log_write(trim(fname))
+
+    call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
+                      scalefactor,wordsize,istatus)
+    call init_atm_check_read_error(istatus, fname)
+    maxsnowalb(181:363,-2:183) = rarray(4:186,1:186,1)
+
+    interp_list(1) = FOUR_POINT
+    interp_list(2) = W_AVERAGE4
+    interp_list(3) = W_AVERAGE16
+    interp_list(4) = SEARCH
+    interp_list(5) = 0
+
+    do iCell = 1,nCells
+
+       if(landmask(iCell) == 1) then
+          lat = latCell(iCell) * DEG_PER_RAD
+          lon = lonCell(iCell) * DEG_PER_RAD
           call latlon_to_ij(proj, lat, lon, x, y)
-       else if (x >= 360.5) then
-          lon = lon - 360.0
-          call latlon_to_ij(proj, lat, lon, x, y)
+          if(x < 0.5) then
+             lon = lon + 360.0
+             call latlon_to_ij(proj, lat, lon, x, y)
+          else if (x >= 360.5) then
+             lon = lon - 360.0
+             call latlon_to_ij(proj, lat, lon, x, y)
+          end if
+          if (y < 1.0) y = 1.0
+          if (y > 179.0) y = 179.0
+          snoalb(iCell) = interp_sequence(x,y,1,maxsnowalb,-2,363,-2,183, &
+                                            1,1,0.0_RKIND,interp_list,1)
+       else
+          snoalb(iCell) = 0.0
        end if
-       if (y < 1.0) y = 1.0
-       if (y > 179.0) y = 179.0
-       snoalb(iCell) = interp_sequence(x,y,1,maxsnowalb,-2,363,-2,183, &
-                                         1,1,0.0_RKIND,interp_list,1)
-    else
-       snoalb(iCell) = 0.0
-    end if
 
- end do
- snoalb(:) = snoalb(:) / 100.0
- deallocate(rarray)
- deallocate(maxsnowalb)
+    end do
+    snoalb(:) = snoalb(:) / 100.0
+    deallocate(rarray)
+    deallocate(maxsnowalb)
+
+ else
+
+    call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
+    call mpas_log_write('Invalid maximum snow albedo dataset '''//trim(config_maxsnowalbedo_data) &
+                                  //''' selected for config_maxsnowalbedo_data',             messageType=MPAS_LOG_ERR)
+    call mpas_log_write('   Possible options are: ''MODIS'', ''NCEP''',                      messageType=MPAS_LOG_ERR)
+    call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
+    call mpas_log_write('Please correct the namelist.', messageType=MPAS_LOG_CRIT)
+
+ end if
+
  call mpas_log_write('--- end interpolate SNOALB')
 
 
 !
 ! Interpolate GREENFRAC
 !
- nx = 1256
- ny = 1256
- nz = 12
- isigned     = 0
- endian      = 0
- wordsize    = 1
- scalefactor = 1.0
- allocate(rarray(nx,ny,nz))
- allocate(vegfra(-2:2503,-2:1253,12))
- greenfrac(:,:) = 0.0
+ if (trim(config_vegfrac_data) == 'MODIS') then
 
- call map_set(PROJ_LATLON, proj,    &
-              latinc = 0.144_RKIND, &
-              loninc = 0.144_RKIND, &
-              knowni = 1.0_RKIND,   &
-              knownj = 1.0_RKIND,   &
-              lat1 = -89.928_RKIND, &
-              lon1 = -179.928_RKIND)
+    call mpas_log_write('Using MODIS FPAR 30-arc-second data for climatological monthly vegetation fraction')
 
- write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
-       'greenfrac/',1,'-',1250,'.',1,'-',1250
- call mpas_log_write(trim(fname))
+    nx = 1200
+    ny = 1200
+    nz = 12
+    isigned  = 0
+    endian   = 0
+    wordsize = 1
+    scalefactor = 1.0
+    msgval = 200.0
+    fillval = 0.0
+    allocate(vegfra(nx,ny,nz))
+    allocate(nhs(nCells))
+    nhs(:) = 0
+    greenfrac(:,:) = 0.0
 
- call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, & 
-                   scalefactor,wordsize,istatus)
- call init_atm_check_read_error(istatus,fname)
- vegfra(-2:1250,-2:1253,1:12) = rarray(1:1253,1:1256,1:12)
+    start_lat = -89.99583
+    start_lon = -179.99583
+    geog_sub_path = 'greenfrac_fpar_modis/'
 
- write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
-       'greenfrac/',1251,'-',2500,'.',1,'-',1250
- call mpas_log_write(trim(fname))
+    do jTileStart = 1,20401,ny
+       jTileEnd = jTileStart + ny - 1
 
- call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
-                   scalefactor,wordsize,istatus)
- call init_atm_check_read_error(istatus,fname)
- vegfra(1251:2503,-2:1253,1:12) = rarray(4:1256,1:1256,1:12)
+       do iTileStart=1,42001,nx
+          iTileEnd = iTileStart + nx - 1
+          write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)//trim(geog_sub_path), &
+                       iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
+          call mpas_log_write(trim(fname))
 
- do iCell = 1,nCells
+          call read_geogrid(fname,len_trim(fname),vegfra,nx,ny,nz,isigned,endian, &
+                            scalefactor,wordsize,istatus)
+          call init_atm_check_read_error(istatus, fname)
 
-    if (landmask(iCell) == 1) then
-       lat = latCell(iCell) * DEG_PER_RAD
-       lon = lonCell(iCell) * DEG_PER_RAD
-       call latlon_to_ij(proj, lat, lon, x, y)
-       if(x < 0.5) then
-          lon = lon + 360.0
-          call latlon_to_ij(proj, lat, lon, x, y)
-       else if(x >= 2500.5) then
-          lon = lon - 360.0
-          call latlon_to_ij(proj, lat, lon, x, y)
-       end if
-       if (y < 1.0) y = 1.0
-       if (y > 1249.0) y = 1249.0
-       do k = 1,12
-          greenfrac(k,iCell) = interp_sequence(x,y,k,vegfra,-2,2503,-2,1253, &
-                                                 1,12,-1.e30_RKIND,interp_list,1)
+          iPoint = 1
+          do j=1,ny
+          do i=1,nx
+             lat_pt = start_lat + (jTileStart + j - 2) * 0.0083333333
+             lon_pt = start_lon + (iTileStart + i - 2) * 0.0083333333
+             lat_pt = lat_pt * PI / 180.0
+             lon_pt = lon_pt * PI / 180.0
+
+             iPoint = nearest_cell(lat_pt,lon_pt,iPoint,nCells,maxEdges, &
+                                   nEdgesOnCell,cellsOnCell, &
+                                   latCell,lonCell)
+             if (landmask(iPoint) == 1) then
+                do k=1,nz
+                   if (vegfra(i,j,k) == msgval) then
+                      vegfra(i,j,k) = fillval
+                   end if
+                   greenfrac(k,iPoint) = greenfrac(k,iPoint) + vegfra(i,j,k)
+                end do
+             else
+                greenfrac(:,iPoint) = greenfrac(:,iPoint) + fillval
+             end if
+             nhs(iPoint) = nhs(iPoint) + 1
+          end do
+          end do
+
        end do
-    else
-       greenfrac(:,iCell) = 0.0
-    end if
-    shdmin(iCell) = minval(greenfrac(:,iCell))
-    shdmax(iCell) = maxval(greenfrac(:,iCell))
-      
- end do
- deallocate(rarray)
- deallocate(vegfra)
+    end do
+
+    do iCell = 1,nCells
+       greenfrac(:,iCell) = greenfrac(:,iCell) / real(nhs(iCell))
+       shdmin(iCell) = minval(greenfrac(:,iCell))
+       shdmax(iCell) = maxval(greenfrac(:,iCell))
+    end do
+    deallocate(vegfra)
+    deallocate(nhs)
+
+ else if (trim(config_vegfrac_data) == 'NCEP') then
+
+    call mpas_log_write('Using NCEP 0.144-deg data for climatological monthly vegetation fraction')
+
+    nx = 1256
+    ny = 1256
+    nz = 12
+    isigned     = 0
+    endian      = 0
+    wordsize    = 1
+    scalefactor = 1.0
+    allocate(rarray(nx,ny,nz))
+    allocate(vegfra(-2:2503,-2:1253,12))
+    greenfrac(:,:) = 0.0
+
+    call map_set(PROJ_LATLON, proj,    &
+                 latinc = 0.144_RKIND, &
+                 loninc = 0.144_RKIND, &
+                 knowni = 1.0_RKIND,   &
+                 knownj = 1.0_RKIND,   &
+                 lat1 = -89.928_RKIND, &
+                 lon1 = -179.928_RKIND)
+
+    write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
+          'greenfrac/',1,'-',1250,'.',1,'-',1250
+    call mpas_log_write(trim(fname))
+
+    call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
+                      scalefactor,wordsize,istatus)
+    call init_atm_check_read_error(istatus,fname)
+    vegfra(-2:1250,-2:1253,1:12) = rarray(1:1253,1:1256,1:12)
+
+    write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
+          'greenfrac/',1251,'-',2500,'.',1,'-',1250
+    call mpas_log_write(trim(fname))
+
+    call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
+                      scalefactor,wordsize,istatus)
+    call init_atm_check_read_error(istatus,fname)
+    vegfra(1251:2503,-2:1253,1:12) = rarray(4:1256,1:1256,1:12)
+
+    do iCell = 1,nCells
+
+       if (landmask(iCell) == 1) then
+          lat = latCell(iCell) * DEG_PER_RAD
+          lon = lonCell(iCell) * DEG_PER_RAD
+          call latlon_to_ij(proj, lat, lon, x, y)
+          if(x < 0.5) then
+             lon = lon + 360.0
+             call latlon_to_ij(proj, lat, lon, x, y)
+          else if(x >= 2500.5) then
+             lon = lon - 360.0
+             call latlon_to_ij(proj, lat, lon, x, y)
+          end if
+          if (y < 1.0) y = 1.0
+          if (y > 1249.0) y = 1249.0
+          do k = 1,12
+             greenfrac(k,iCell) = interp_sequence(x,y,k,vegfra,-2,2503,-2,1253, &
+                                                    1,12,-1.e30_RKIND,interp_list,1)
+          end do
+       else
+          greenfrac(:,iCell) = 0.0
+       end if
+       shdmin(iCell) = minval(greenfrac(:,iCell))
+       shdmax(iCell) = maxval(greenfrac(:,iCell))
+
+    end do
+    deallocate(rarray)
+    deallocate(vegfra)
+
+ else
+
+    call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
+    call mpas_log_write('Invalid monthly vegetation fraction dataset '''//trim(config_vegfrac_data) &
+                                  //''' selected for config_vegfrac_data',                   messageType=MPAS_LOG_ERR)
+    call mpas_log_write('   Possible options are: ''MODIS'', ''NCEP''',                      messageType=MPAS_LOG_ERR)
+    call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
+    call mpas_log_write('Please correct the namelist.', messageType=MPAS_LOG_CRIT)
+
+ end if
+
  call mpas_log_write('--- end interpolate GREENFRAC')
 
 
 !
 ! Interpolate ALBEDO12M
 !
- nx = 1256
- ny = 1256
- nz = 12
- isigned     = 0
- endian      = 0
- wordsize    = 1
- scalefactor = 1.0
- allocate(rarray(nx,ny,nz))
- allocate(vegfra(-2:2503,-2:1253,12))
- albedo12m(:,:) = 0.0
+ if (trim(config_albedo_data) == 'MODIS') then
 
- call map_set(PROJ_LATLON, proj,    &
-              latinc = 0.144_RKIND, &
-              loninc = 0.144_RKIND, &
-              knowni = 1.0_RKIND,   &
-              knownj = 1.0_RKIND,   &
-              lat1 = -89.928_RKIND, &
-              lon1 = -179.928_RKIND)
+    call mpas_log_write('Using MODIS 0.05-deg data for climatological monthly albedo')
 
- write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
-       'albedo_ncep/',1,'-',1250,'.',1,'-',1250
- call mpas_log_write(trim(fname))
+    nx = 1206
+    ny = 1206
+    nz = 12
+    isigned  = 1
+    endian   = 0
+    wordsize = 2
+    scalefactor = 0.01
+    msgval = real(-999.0,kind=R4KIND)*real(0.01,kind=R4KIND)
+    fillval = 8.0
+    allocate(rarray(nx,ny,nz))
+    allocate(nhs(nCells))
+    nhs(:) = 0
+    albedo12m(:,:) = 0.0
 
- call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
-                   scalefactor, wordsize, istatus)
- call init_atm_check_read_error(istatus,fname)
- vegfra(-2:1250,-2:1253,1:12) = rarray(1:1253,1:1256,1:12)
+    start_lat = 89.975
+    start_lon = -179.975
+    geog_sub_path = 'albedo_modis/'
 
- write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
-       'albedo_ncep/',1251,'-',2500,'.',1,'-',1250
- call mpas_log_write(trim(fname))
+    do jTileStart = 1,02401,ny-6
+       jTileEnd = jTileStart + ny - 1 - 6
 
- call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, & 
-                   scalefactor,wordsize,istatus)
- call init_atm_check_read_error(istatus,fname)
- vegfra(1251:2503,-2:1253,1:12) = rarray(4:1256,1:1256,1:12)
+       do iTileStart=1,06001,nx-6
+          iTileEnd = iTileStart + nx - 1 - 6
+          write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)//trim(geog_sub_path), &
+                       iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
+          call mpas_log_write(trim(fname))
 
- do iCell = 1,nCells
+          call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
+                            scalefactor,wordsize,istatus)
+          call init_atm_check_read_error(istatus, fname)
 
-    if (landmask(iCell) == 1) then
-       lat = latCell(iCell) * DEG_PER_RAD
-       lon = lonCell(iCell) * DEG_PER_RAD
-       call latlon_to_ij(proj, lat, lon, x, y)
-       if(x < 0.5) then
-          lon = lon + 360.0
-          call latlon_to_ij(proj, lat, lon, x, y)
-       else if(x >= 2500.5) then
-          lon = lon - 360.0
-          call latlon_to_ij(proj, lat, lon, x, y)
-       end if
-       if (y < 1.0) y = 1.0
-       if (y > 1249.0) y = 1249.0
-       do k = 1,12
-          albedo12m(k,iCell) = interp_sequence(x,y,k,vegfra,-2,2503,-2,1253, &
-                                                 1,12,0.0_RKIND,interp_list,1)
+          iPoint = 1
+          do j=4,ny-3
+          do i=4,nx-3
+             lat_pt = start_lat - (jTileStart + j - 5) * 0.05
+             lon_pt = start_lon + (iTileStart + i - 5) * 0.05
+             lat_pt = lat_pt * PI / 180.0
+             lon_pt = lon_pt * PI / 180.0
+
+             iPoint = nearest_cell(lat_pt,lon_pt,iPoint,nCells,maxEdges, &
+                                   nEdgesOnCell,cellsOnCell, &
+                                   latCell,lonCell)
+             if (landmask(iPoint) == 1) then
+                do k=1,nz
+                   if (rarray(i,j,k) == msgval) then
+                      rarray(i,j,k) = fillval
+                   end if
+                   albedo12m(k,iPoint) = albedo12m(k,iPoint) + rarray(i,j,k)
+                end do
+             else
+                albedo12m(:,iPoint) = albedo12m(:,iPoint) + fillval
+             end if
+             nhs(iPoint) = nhs(iPoint) + 1
+          end do
+          end do
+
        end do
-    else
-       albedo12m(:,iCell) = 8.0
-    end if
- end do
- deallocate(rarray)
- deallocate(vegfra)
+    end do
+
+    do iCell = 1,nCells
+       albedo12m(:,iCell) = albedo12m(:,iCell) / real(nhs(iCell))
+       if (lu_index(iCell) == isice_lu) then
+          albedo12m(:,iCell) = 70.0
+       end if
+    end do
+    deallocate(rarray)
+    deallocate(nhs)
+
+ else if (trim(config_albedo_data) == 'NCEP') then
+
+    call mpas_log_write('Using NCEP 0.144-deg data for climatological monthly albedo')
+
+    nx = 1256
+    ny = 1256
+    nz = 12
+    isigned     = 0
+    endian      = 0
+    wordsize    = 1
+    scalefactor = 1.0
+    allocate(rarray(nx,ny,nz))
+    allocate(vegfra(-2:2503,-2:1253,12))
+    albedo12m(:,:) = 0.0
+
+    call map_set(PROJ_LATLON, proj,    &
+                 latinc = 0.144_RKIND, &
+                 loninc = 0.144_RKIND, &
+                 knowni = 1.0_RKIND,   &
+                 knownj = 1.0_RKIND,   &
+                 lat1 = -89.928_RKIND, &
+                 lon1 = -179.928_RKIND)
+
+    write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
+          'albedo_ncep/',1,'-',1250,'.',1,'-',1250
+    call mpas_log_write(trim(fname))
+
+    call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
+                      scalefactor, wordsize, istatus)
+    call init_atm_check_read_error(istatus,fname)
+    vegfra(-2:1250,-2:1253,1:12) = rarray(1:1253,1:1256,1:12)
+
+    write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
+          'albedo_ncep/',1251,'-',2500,'.',1,'-',1250
+    call mpas_log_write(trim(fname))
+
+    call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
+                      scalefactor,wordsize,istatus)
+    call init_atm_check_read_error(istatus,fname)
+    vegfra(1251:2503,-2:1253,1:12) = rarray(4:1256,1:1256,1:12)
+
+    do iCell = 1,nCells
+
+       if (landmask(iCell) == 1) then
+          lat = latCell(iCell) * DEG_PER_RAD
+          lon = lonCell(iCell) * DEG_PER_RAD
+          call latlon_to_ij(proj, lat, lon, x, y)
+          if(x < 0.5) then
+             lon = lon + 360.0
+             call latlon_to_ij(proj, lat, lon, x, y)
+          else if(x >= 2500.5) then
+             lon = lon - 360.0
+             call latlon_to_ij(proj, lat, lon, x, y)
+          end if
+          if (y < 1.0) y = 1.0
+          if (y > 1249.0) y = 1249.0
+          do k = 1,12
+             albedo12m(k,iCell) = interp_sequence(x,y,k,vegfra,-2,2503,-2,1253, &
+                                                    1,12,0.0_RKIND,interp_list,1)
+          end do
+       else
+          albedo12m(:,iCell) = 8.0
+       end if
+    end do
+    deallocate(rarray)
+    deallocate(vegfra)
+
+ else
+
+    call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
+    call mpas_log_write('Invalid monthly albedo dataset '''//trim(config_albedo_data) &
+                                  //''' selected for config_albedo_data',                    messageType=MPAS_LOG_ERR)
+    call mpas_log_write('   Possible options are: ''MODIS'', ''NCEP''',                      messageType=MPAS_LOG_ERR)
+    call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
+    call mpas_log_write('Please correct the namelist.', messageType=MPAS_LOG_CRIT)
+
+ end if
+
  call mpas_log_write('--- end interpolate ALBEDO12M')
 
 
