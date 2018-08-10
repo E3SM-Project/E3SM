@@ -302,7 +302,7 @@ class Machines(GenericXML):
         tmproot = self.root
         self.root = self.machine_node
         result = super(Machines, self).set_value(vid, value, subgroup=subgroup,
-                                               ignore_type=ignore_type) #pylint disable=assignment-from-no-return
+                                               ignore_type=ignore_type)
         self.root = tmproot
         return result
 
