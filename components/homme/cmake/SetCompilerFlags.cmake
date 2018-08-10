@@ -47,7 +47,7 @@ IF (DEFINED BASE_FFLAGS)
   SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${BASE_FFLAGS}")
 ELSE ()
   IF (CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
-    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffree-line-length-none")
+    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffree-line-length-none ${FP_MODEL_FLAG}")
   ELSEIF (CMAKE_Fortran_COMPILER_ID STREQUAL PGI)
     SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Mextend -Mflushz")
     # Needed by csm_share
