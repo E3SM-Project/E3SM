@@ -11,6 +11,8 @@
 
 namespace Homme {
 
+class HybridVCoord;
+
 /* Per element data - specific velocity, temperature, pressure, etc. */
 class Elements {
 public:
@@ -126,6 +128,7 @@ public:
   void init(const int num_elems, const bool consthv);
 
   void random_init(int num_elems, Real max_pressure = 1.0);
+  void random_init(int num_elems, Real max_pressure, const HybridVCoord& hvcoord);
 
   KOKKOS_INLINE_FUNCTION
   int num_elems() const { return m_num_elems; }

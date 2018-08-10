@@ -6,10 +6,10 @@
 
 #include "Context.hpp"
 
-#include "mpi/BoundaryExchange.hpp"
 #include "mpi/BuffersManager.hpp"
 #include "mpi/Comm.hpp"
 #include "mpi/Connectivity.hpp"
+#include "mpi/MpiContext.hpp"
 
 #include "CaarFunctor.hpp"
 #include "Derivative.hpp"
@@ -30,6 +30,22 @@ Context::Context() {}
 
 Context::~Context() {}
 
+MpiContext& Context::get_mpi_context() {
+  return MpiContext::singleton();
+}
+
+void Context::create_comm(const int f_comm) {
+  get_mpi_context().create_comm(f_comm);
+}
+
+std::shared_ptr<BuffersManager> Context::get_buffers_manager(short int exchange_type) {
+  return get_mpi_context().get_buffers_manager(exchange_type);
+}
+
+std::shared_ptr<Connectivity> Context::get_connectivity() {
+  return get_mpi_context().get_connectivity();
+}
+
 CaarFunctor& Context::get_caar_functor() {
   if ( ! caar_functor_) {
     caar_functor_.reset(new CaarFunctor());
@@ -38,18 +54,7 @@ CaarFunctor& Context::get_caar_functor() {
 }
 
 Comm& Context::get_comm() {
-  if ( ! comm_) {
-    comm_.reset(new Comm());
-  }
-  return *comm_;
-}
-
-void Context::create_comm(const int f_comm) {
-  // You should NOT create a C MPI_Comm from F90 twice during the same execution
-  assert (!comm_);
-
-  MPI_Comm c_comm = MPI_Comm_f2c(f_comm);
-  comm_.reset(new Comm(c_comm));
+  return get_mpi_context().get_comm();
 }
 
 Diagnostics& Context::get_diagnostics() {
@@ -108,22 +113,6 @@ VerticalRemapManager& Context::get_vertical_remap_manager() {
   return *vertical_remap_mgr_;
 }
 
-std::shared_ptr<BuffersManager> Context::get_buffers_manager(short int exchange_type) {
-  if ( ! buffers_managers_) {
-    buffers_managers_.reset(new BMMap());
-  }
-
-  if (!(*buffers_managers_)[exchange_type]) {
-    (*buffers_managers_)[exchange_type] = std::make_shared<BuffersManager>(get_connectivity());
-  }
-  return (*buffers_managers_)[exchange_type];
-}
-
-std::shared_ptr<Connectivity> Context::get_connectivity() {
-  if ( ! connectivity_) connectivity_.reset(new Connectivity());
-  return connectivity_;
-}
-
 SphereOperators& Context::get_sphere_operators() {
   if ( ! sphere_operators_) {
     Elements&   elements   = get_elements();
@@ -139,15 +128,12 @@ EulerStepFunctor& Context::get_euler_step_functor() {
 }
 
 void Context::clear() {
-  comm_ = nullptr;
   elements_ = nullptr;
   tracers_ = nullptr;
   derivative_ = nullptr;
   diagnostics_ = nullptr;
   hvcoord_ = nullptr;
   hyperviscosity_functor_ = nullptr;
-  connectivity_ = nullptr;
-  buffers_managers_ = nullptr;
   simulation_params_ = nullptr;
   sphere_operators_ = nullptr;
   time_level_ = nullptr;
@@ -163,6 +149,8 @@ Context& Context::singleton() {
 
 void Context::finalize_singleton() {
   singleton().clear();
+
+  MpiContext::finalize_singleton();
 }
 
 } // namespace Homme

@@ -8,8 +8,16 @@
 #include "Hommexx_Session.hpp"
 #include "ExecSpaceDefs.hpp"
 #include "profiling.hpp"
-#include "Context.hpp"
 #include "mpi/Comm.hpp"
+
+// If possible, avoid including MpiContext
+#ifndef HOMMEXX_NO_MPI_CONTEXT
+  #include "mpi/MpiContext.hpp"
+  // If possible, avoid including Context
+  #ifndef HOMMEXX_NO_CONTEXT
+    #include "Context.hpp"
+  #endif
+#endif
 
 #include "vector/vector_pragmas.hpp"
 
@@ -41,7 +49,17 @@ void initialize_hommexx_session ()
    * threads/processors Kokkos uses */
   initialize_kokkos();
 
-  const auto comm = Context::singleton().get_comm();
+#ifdef HOMMEXX_NO_MPI_CONTEXT
+  // In the unit tests, we may not need the MpiContext object.
+  // Forcing to use MpiContext, also forces to compile the src code for
+  // all the object that context stores (or else, undef ref linking errors).
+  // If a test *does* need the context, that test can add the MpiContext and
+  // all its sources to the set of files to compile.
+  // For the initialization purpose, however, the whole MPI_COMM_WORLD is fine.
+  const Comm comm(MPI_COMM_WORLD);
+#else
+  const auto comm = MpiContext::singleton().get_comm();
+#endif
   if (comm.root()) {
     ExecSpace::print_configuration(std::cout, true);
     // Print configure-time settings.
@@ -74,7 +92,13 @@ void initialize_hommexx_session ()
 
 void finalize_hommexx_session ()
 {
-  Context::finalize_singleton();
+#ifndef HOMMEXX_NO_MPI_CONTEXT
+  MpiContext::finalize_singleton();
+  #ifndef HOMMEXX_NO_CONTEXT
+    Context::finalize_singleton();
+  #endif
+#endif
+
   Kokkos::finalize();
 }
 
