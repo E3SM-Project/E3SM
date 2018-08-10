@@ -1,0 +1,420 @@
+<streams>
+<immutable_stream name="mesh"
+                  type="none"
+                  filename_template="mesh_variables.nc" />
+
+<immutable_stream name="input"
+                  type="input"
+                  filename_template="grid.nc"
+                  filename_interval="none"
+                  input_interval="initial_only" />
+
+<immutable_stream name="regions"
+                  type="input"
+                  filename_template="regions.nc"
+                  filename_interval="none"
+                  input_interval="initial_only" />
+
+<immutable_stream name="restart_contents"
+                  type="none"
+                  filename_template="restart_variables.nc" />
+
+<immutable_stream name="restart"
+                  type="input;output"
+                  filename_template="restarts/restart.$Y-$M-$D_$h.$m.$s.nc"
+                  filename_interval="00_00:00:01"
+                  input_interval="initial_only"
+                  output_interval="00-03-00_00:00:00" />
+
+<immutable_stream name="restart_ic"
+                  type="input"
+                  filename_template="seaice_ic.nc"
+                  filename_interval="none"
+                  input_interval="initial_only"
+                  output_interval="none" />
+
+<stream name="output"
+        type="output"
+        filename_template="output/output.$Y.nc"
+        filename_interval="01-00-00_00:00:00"
+        clobber_mode="replace_files"
+        output_interval="00-01-00_00:00:00" >
+
+</stream>
+
+<immutable_stream name="LYqSixHourlyForcing"
+                  type="input"
+                  filename_template="forcing/atmosphere_forcing_six_hourly.$Y.nc"
+                  filename_interval="0001-00-00_00:00:00"
+                  reference_time="2000-01-01_03:00:00"
+                  input_interval="none" />
+
+<immutable_stream name="LYqMonthlyForcing"
+                  type="input"
+                  filename_template="forcing/atmosphere_forcing_monthly.nc"
+                  filename_interval="none"
+                  input_interval="none" />
+
+<immutable_stream name="NCARMonthlySSTForcing"
+                  type="input"
+                  filename_template="forcing/ocean_forcing_monthly.nc"
+                  filename_interval="none"
+                  input_interval="none" />
+
+<immutable_stream name="NCARMonthlyForcing"
+                  type="input"
+                  filename_template="forcing/ocean_forcing_monthly.nc"
+                  filename_interval="none"
+                  input_interval="none" />
+
+<immutable_stream name="StandardAerosolsInput"
+                  type="input"
+                  filename_template="standard_optics_mpas_cice.nc"
+                  filename_interval="none"
+                  input_interval="initial_only" />
+
+<immutable_stream name="ModalAerosolsInput"
+                  type="input"
+                  filename_template="snicar_optics_5bnd_mam_c140303_mpas_cice.nc"
+                  filename_interval="none"
+                  input_interval="initial_only" />
+
+<immutable_stream name="SnicarInput"
+                  type="input"
+                  filename_template="snicar_optics_5bnd_c090915_ice_only.nc"
+                  filename_interval="none"
+                  input_interval="initial_only" />
+
+<immutable_stream name="pointLocationsInput"
+                  type="input"
+                  filename_template="points.nc"
+                  input_interval="initial_only" />
+
+<immutable_stream name="abort_contents"
+                  type="none"
+                  filename_template="abort_variables.nc" />
+
+<stream name="abort_block"
+        type="output"
+        filename_template="abort_seaice_$Y-$M-$D_$h.$m.$s_block_$B.nc"
+        filename_interval="none"
+        clobber_mode="truncate"
+        output_interval="none" >
+
+	<stream name="mesh"/>
+	<stream name="abort_contents"/>
+	<var name="daysSinceStartOfSim"/>
+	<var name="xtime"/>
+</stream>
+
+<stream name="abort"
+        type="output"
+        filename_template="abort_seaice_$Y-$M-$D_$h.$m.$s.nc"
+        filename_interval="none"
+        clobber_mode="truncate"
+        output_interval="none" >
+
+	<stream name="mesh"/>
+	<stream name="abort_contents"/>
+	<var name="daysSinceStartOfSim"/>
+	<var name="xtime"/>
+</stream>
+
+<stream name="highFrequencyOutput"
+        type="output"
+        filename_template="analysis_members/seaice_highFrequencyOutput.$Y-$M-$D.nc"
+        filename_interval="01-00-00_00:00:00"
+        reference_time="0000-01-01_00:00:00"
+        clobber_mode="truncate"
+        packages="highFrequencyOutputAMPKG"
+        output_interval="00-00-01_00:00:00" >
+
+	<stream name="mesh"/>
+	<var name="xtime"/>
+	<var name="iceAreaCellCategory1"/>
+</stream>
+
+<stream name="regionalStatisticsOutput"
+        type="output"
+        filename_template="analysis_members/regionalStatistics.nc"
+        filename_interval="none"
+        clobber_mode="replace_files"
+        packages="regionalStatisticsAMPKG"
+        output_interval="00-00-00_01:00:00" >
+
+	<var name="xtime"/>
+	<var name="daysSinceStartOfSim"/>
+	<var name="regionNames"/>
+	<var name="totalIceArea"/>
+	<var name="totalIceExtent"/>
+	<var name="totalIceVolume"/>
+	<var name="totalSnowVolume"/>
+	<var name="totalKineticEnergy"/>
+	<var name="rmsIceSpeed"/>
+	<var name="averageAlbedo"/>
+	<var name="maximumIceVolume"/>
+	<var name="maximumIceVolumeLocked"/>
+	<var name="maximumIceVolumeNotLocked"/>
+	<var name="maximumIcePressure"/>
+	<var name="maximumIceSpeed"/>
+</stream>
+
+<stream name="regionalStatistics_ice_aggregate"
+        type="none"
+        filename_template="none"
+        filename_interval="none"
+        packages="regionalStatisticsAMPKG"
+        output_interval="none" >
+
+</stream>
+
+<stream name="regionalStatistics_cell_aggregate"
+        type="none"
+        filename_template="none"
+        filename_interval="none"
+        packages="regionalStatisticsAMPKG"
+        output_interval="none" >
+
+</stream>
+
+<stream name="regionalStatistics_ice_areal_average"
+        type="none"
+        filename_template="none"
+        filename_interval="none"
+        packages="regionalStatisticsAMPKG"
+        output_interval="none" >
+
+</stream>
+
+<stream name="regionalStatistics_cell_areal_average"
+        type="none"
+        filename_template="none"
+        filename_interval="none"
+        packages="regionalStatisticsAMPKG"
+        output_interval="none" >
+
+</stream>
+
+<stream name="regionalStatistics_min"
+        type="none"
+        filename_template="none"
+        filename_interval="none"
+        packages="regionalStatisticsAMPKG"
+        output_interval="none" >
+
+</stream>
+
+<stream name="regionalStatistics_max"
+        type="none"
+        filename_template="none"
+        filename_interval="none"
+        packages="regionalStatisticsAMPKG"
+        output_interval="none" >
+
+</stream>
+
+<stream name="conservationCheckOutput"
+        type="output"
+        filename_template="analysis_members/conservationCheck.nc"
+        filename_interval="none"
+        clobber_mode="replace_files"
+        packages="conservationCheckAMPKG"
+        output_interval="00-00-00_01:00:00" >
+
+	<var name="xtime"/>
+	<var name="initialEnergy"/>
+	<var name="finalEnergy"/>
+	<var name="energyChange"/>
+	<var name="accumulatedSurfaceHeatFlux"/>
+	<var name="accumulatedOceanHeatFlux"/>
+	<var name="accumulatedFreezingPotential"/>
+	<var name="accumulatedSnowfallHeat"/>
+	<var name="accumulatedLatentHeat"/>
+	<var name="netEnergyFlux"/>
+	<var name="absoluteEnergyError"/>
+	<var name="relativeEnergyError"/>
+	<var name="initialMass"/>
+	<var name="finalMass"/>
+	<var name="massChange"/>
+	<var name="accumulatedRainfallRate"/>
+	<var name="accumulatedSnowfallRate"/>
+	<var name="accumulatedEvaporation"/>
+	<var name="accumulatedFreshWater"/>
+	<var name="accumulatedFrazilWater"/>
+	<var name="netMassFlux"/>
+	<var name="absoluteMassError"/>
+	<var name="relativeMassError"/>
+	<var name="initialSalt"/>
+	<var name="finalSalt"/>
+	<var name="saltChange"/>
+	<var name="accumulatedOceanSaltFlux"/>
+	<var name="accumulatedFrazilSaltFlux"/>
+	<var name="netSaltFlux"/>
+	<var name="absoluteSaltError"/>
+	<var name="relativeSaltError"/>
+</stream>
+
+<immutable_stream name="conservationCheckRestart"
+                  type="input;output"
+                  filename_template="restarts/restart.AM.conservationCheck.$Y-$M-$D_$h.$m.$s.nc"
+                  filename_interval="output_interval"
+                  clobber_mode="replace_files"
+                  packages="conservationCheckAMPKG"
+                  input_interval="initial_only"
+                  output_interval="stream:restart:output_interval" />
+
+<stream name="loadBalanceOutput"
+        type="output"
+        filename_template="analysis_members/seaice_loadBalance.nc"
+        filename_interval="none"
+        reference_time="0000-01-01_00:00:00"
+        clobber_mode="truncate"
+        packages="loadBalanceAMPKG"
+        output_interval="00-00-00_01:00:00" >
+
+	<var name="xtime"/>
+	<var name="nCellsProcWithSeaIce"/>
+	<var name="nCellsProc"/>
+</stream>
+
+<stream name="maximumIcePresenceOutput"
+        type="output"
+        filename_template="analysis_members/seaice_maximumIcePresence.$Y.nc"
+        filename_interval="01-00-00_00:00:00"
+        reference_time="0000-01-01_00:00:00"
+        clobber_mode="truncate"
+        packages="maximumIcePresenceAMPKG"
+        output_interval="01-00-00_00:00:00" >
+
+	<stream name="mesh"/>
+	<var name="xtime"/>
+	<var name="maximumIcePresence"/>
+</stream>
+
+<stream name="pointwiseStatsOutput"
+        type="output"
+        filename_template="analysis_members/pointwiseStats.$Y-$M-$D.nc"
+        filename_interval="01-00-00_00:00:00"
+        reference_time="0000-01-01_00:00:00"
+        clobber_mode="truncate"
+        packages="pointwiseStatsAMPKG"
+        output_interval="00-00-01_00:00:00" >
+
+	<var name="pointNames"/>
+	<var name="pointCellGlobalID"/>
+	<var name="xtime"/>
+	<var name="latCell"/>
+	<var name="lonCell"/>
+	<var name="latPoint"/>
+	<var name="lonPoint"/>
+	<var name="xPoint"/>
+	<var name="yPoint"/>
+	<var name="zPoint"/>
+</stream>
+
+<stream name="iceShelvesOutput"
+        type="output"
+        filename_template="analysis_members/seaice_iceShelves.$Y-$M-$D.nc"
+        filename_interval="01-00-00_00:00:00"
+        reference_time="0000-01-01_00:00:00"
+        clobber_mode="truncate"
+        packages="iceShelvesAMPKG"
+        output_interval="00-00-01_00:00:00" >
+
+	<var name="xtime"/>
+	<var name="iceAreaOverIceShelves"/>
+</stream>
+
+<stream name="timeSeriesStatsDailyRestart"
+        type="input;output"
+        filename_template="restarts/restart.AM.timeSeriesStatsDaily.$Y-$M-$D_$h.$m.$s.nc"
+        filename_interval="output_interval"
+        reference_time="0000-01-01_00:00:00"
+        clobber_mode="truncate"
+        packages="timeSeriesStatsDailyAMPKG"
+        input_interval="initial_only"
+        output_interval="stream:restart:output_interval" >
+
+</stream>
+
+<stream name="timeSeriesStatsDailyOutput"
+        type="output"
+        filename_template="analysis_members/timeSeriesStatsDaily.$Y-$M.nc"
+        filename_interval="00-01-00_00:00:00"
+        reference_time="0000-01-01_00:00:00"
+        clobber_mode="truncate"
+        packages="timeSeriesStatsDailyAMPKG"
+        output_interval="00-00-01_00:00:00" >
+
+</stream>
+
+<stream name="timeSeriesStatsMonthlyRestart"
+        type="input;output"
+        filename_template="restarts/restart.AM.timeSeriesStatsMonthly.$Y-$M-$D_$h.$m.$s.nc"
+        filename_interval="output_interval"
+        reference_time="0000-01-01_00:00:00"
+        clobber_mode="truncate"
+        packages="timeSeriesStatsMonthlyAMPKG"
+        input_interval="initial_only"
+        output_interval="stream:restart:output_interval" >
+
+</stream>
+
+<stream name="timeSeriesStatsMonthlyOutput"
+        type="output"
+        filename_template="analysis_members/timeSeriesStatsMonthly.$Y.nc"
+        filename_interval="01-00-00_00:00:00"
+        reference_time="0000-01-01_00:00:00"
+        clobber_mode="truncate"
+        packages="timeSeriesStatsMonthlyAMPKG"
+        output_interval="00-01-00_00:00:00" >
+
+</stream>
+
+<stream name="timeSeriesStatsClimatologyOutput"
+        type="output"
+        filename_template="analysis_members/timeSeriesStatsClimatology.$Y.nc"
+        filename_interval="01-00-00_00:00:00"
+        reference_time="0000-03-01_00:00:00"
+        clobber_mode="truncate"
+        packages="timeSeriesStatsClimatologyAMPKG"
+        output_interval="00-03-00_00:00:00" >
+
+</stream>
+
+<stream name="timeSeriesStatsClimatologyRestart"
+        type="input;output"
+        filename_template="restarts/restart.AM.timeSeriesStatsClimatology.$Y-$M-$D_$h.$m.$s.nc"
+        filename_interval="output_interval"
+        reference_time="0000-01-01_00:00:00"
+        clobber_mode="truncate"
+        packages="timeSeriesStatsClimatologyAMPKG"
+        input_interval="initial_only"
+        output_interval="stream:restart:output_interval" >
+
+</stream>
+
+<stream name="timeSeriesStatsCustomOutput"
+        type="output"
+        filename_template="analysis_members/timeSeriesStatsCustom.$Y$M-$D.nc"
+        filename_interval="00-00-07_00:00:00"
+        reference_time="0000-01-01_00:00:00"
+        clobber_mode="truncate"
+        packages="timeSeriesStatsCustomAMPKG"
+        output_interval="00-00-01_00:00:00" >
+
+</stream>
+
+<stream name="timeSeriesStatsCustomRestart"
+        type="input;output"
+        filename_template="restarts/restart.AM.timeSeriesStatsCustom.$Y-$M-$D_$h.$m.$s.nc"
+        filename_interval="output_interval"
+        reference_time="0000-01-01_00:00:00"
+        clobber_mode="truncate"
+        packages="timeSeriesStatsCustomAMPKG"
+        input_interval="initial_only"
+        output_interval="stream:restart:output_interval" >
+
+</stream>
+
+</streams>
