@@ -305,10 +305,7 @@ class Component(EntryID):
                 valid_values = self.text(self.get_child("valid_values", root=entry))
             else:
                 valid_values = ''
-            try:
-                value = self.get_value(name)
-            except:
-                value = ''
+            value = self.get_value(name)
             group = self.text(self.get_child("group", root=entry))
             filename = self.text(self.get_child("file", root=entry))
             text = self.text(self.get_child("desc", root=entry))
