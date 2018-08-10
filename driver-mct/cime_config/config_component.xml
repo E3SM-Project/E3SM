@@ -136,7 +136,7 @@
     <desc>Model grid - DO NOT EDIT (for experts only)</desc>
   </entry>
 
-  <entry id="SUPPORTED_BY">
+  <entry id="MACHINE_SUPPORTED_BY">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>case_def</group>
@@ -384,6 +384,7 @@
   <entry id="PAUSE_ACTIVE">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
@@ -626,7 +627,7 @@
     Must be explicitly set in env_build.xml for userdefined machine.</desc>
   </entry>
 
-  <entry id="SUPPORTED_BY">
+  <entry id="SOFTWARE_SUPPORTED_BY">
     <type>char</type>
     <valid_values></valid_values>
     <default_value></default_value>
@@ -1910,6 +1911,7 @@
 
   <entry id="NTASKS">
     <type>integer</type>
+    <default_value>1</default_value>
     <values>
       <value compclass="ATM"> $MAX_MPITASKS_PER_NODE</value>
       <value compclass="CPL"> $MAX_MPITASKS_PER_NODE</value>
@@ -1928,6 +1930,7 @@
 
   <entry id="NTASKS_PER_INST">
     <type>integer</type>
+    <default_value>0</default_value>
     <values>
       <value compclass="ATM"> 0</value>
       <value compclass="OCN"> 0</value>
@@ -1945,6 +1948,7 @@
 
   <entry id="NTHRDS">
     <type>integer</type>
+    <default_value>1</default_value>
     <values>
       <value compclass="ATM">1</value>
       <value compclass="CPL">1</value>
@@ -1963,6 +1967,7 @@
 
   <entry id="ROOTPE">
     <type>integer</type>
+    <default_value>0</default_value>
     <values>
       <value compclass="ATM">0</value>
       <value compclass="CPL">0</value>
@@ -1993,6 +1998,7 @@
 
   <entry id="NINST">
     <type>integer</type>
+    <default_value>1</default_value>
     <values>
       <value compclass="ATM">1</value>
       <value compclass="OCN">1</value>
@@ -2030,6 +2036,7 @@
 
   <entry id="PSTRID">
     <type>integer</type>
+    <default_value>1</default_value>
     <values>
       <value compclass="ATM">1</value>
       <value compclass="CPL">1</value>
@@ -2256,6 +2263,7 @@
      stride in compute comm of io tasks for each component, if this value is -99 it will
      be computed based on PIO_NUMTASKS and number of compute tasks
     </desc>
+    <default_value>-99</default_value>
     <values>
       <value compclass="ATM"></value>
       <value compclass="CPL"></value>
@@ -2271,6 +2279,7 @@
 
   <entry id="PIO_REARRANGER">
     <type>integer</type>
+    <default_value>1</default_value>
     <valid_values>1,2</valid_values>
     <group>run_pio</group>
     <file>env_run.xml</file>
@@ -2291,6 +2300,7 @@
 
   <entry id="PIO_ROOT">
     <type>integer</type>
+    <default_value>1</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio root processor relative to component root</desc>
@@ -2309,6 +2319,7 @@
 
   <entry id="PIO_NUMTASKS">
     <type>integer</type>
+    <default_value>-99</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>
@@ -2579,6 +2590,7 @@
 
   <entry id="DATA_ASSIMILATION">
     <type>logical</type>
+    <default_value>FALSE</default_value>
     <valid_values>TRUE,FALSE</valid_values>
     <group>external_tools</group>
     <file>env_run.xml</file>
