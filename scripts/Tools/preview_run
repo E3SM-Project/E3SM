@@ -68,6 +68,8 @@ def _main_func(description):
             print("  FOR JOB: {}".format(job_id))
             print("    ENV:")
             case.load_env(job=job_id, reset=True, verbose=True)
+            if "OMP_NUM_THREADS" in os.environ:
+                print("      Setting Environment OMP_NUM_THREADS={}".format(os.environ["OMP_NUM_THREADS"]))
             print("    SUBMIT CMD:")
             print("      {}".format(case.get_resolved_value(cmd)))
             print("")
