@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="seaice" core_abbrev="seaice" version="6.0">
+<registry model="mpas" core="seaice" core_abbrev="seaice" version="6.1">
 
 	<dims>
 		<dim name="nCells"
@@ -288,6 +288,17 @@
 			definition="4"
 			description="The maximum number of forcing groups defined in the core."
 		/>
+		<dim name="nSpectralIntervalsSNICAR"
+		   definition="5"
+		   units="unitless"
+		   description="The number of shortwave spectral bands used in snow SNICAR model (1 visible band and 4 near-IR bands) for radiative transfer calculation"
+		/>
+		<dim name="nSnowGrainRadiusSNICAR"
+		   definition="1471"
+		   units="unitless"
+		   description="The number of snow grain radius used in SNICAR model, radius are ranging from 30 to 150 microns with 1 micron interval"
+		/>
+
 	</dims>
 
 	<nml_record name="seaice_model" in_defaults="true">
@@ -342,6 +353,7 @@
 			possible_values="true or false"
 		/>
 	</nml_record>
+
 	<nml_record name="decomposition" in_defaults="true">
 		<nml_option name="config_block_decomp_file_prefix" type="character" default_value="graphs/graph.info.part." units="unitless"
 			description="Defines the prefix for the block decomposition file. Can include a path. The number of blocks is appended to the end of the prefix at run-time."
@@ -1640,6 +1652,15 @@
 		/>
 	</nml_record>
 
+	<!-- snicar variable namelist record -->
+	<nml_record name="snicar_variables" in_defaults="true">
+		 <nml_option name="config_turn_snicar_system_on" type="logical" default_value="false" units="unitless"
+	        	description="If true turn on snicar system"
+	        	possible_values="true or false"
+		/>
+	</nml_record>
+
+
 	<nml_record name="diagnostics" in_defaults="true">
 		<nml_option name="config_check_state" type="logical" default_value="false" units="unitless"
 			description="If true perform a check at runtime of the model state."
@@ -1896,6 +1917,22 @@
 			<var name="modalMassExtinctionCrossSection"/>
 			<var name="modalSingleScatterAlbedo"/>
 		</stream>
+
+                <!-- snicar input stream name -->
+	 	<stream name="SnicarInput"
+			        type="input"
+		        	filename_template="snicar_optics_5bnd_c090915_ice_only.nc"
+		        	filename_interval="none"
+		        	input_interval="initial_only"
+		        	immutable="true">
+            		<var name="iceAsymmtryParameterDirect"/>
+            		<var name="iceAsymmtryParameterDiffuse"/>
+            		<var name="iceSingleScatterAlbedoDirect"/>
+            		<var name="iceSingleScatterAlbedoDiffuse"/>
+            		<var name="iceMassExtinctionCrossSectionDirect"/>
+            		<var name="iceMassExtinctionCrossSectionDiffuse"/>
+		</stream>
+
 
 		<stream name="pointLocationsInput"
 				type="input"
@@ -2165,6 +2202,10 @@
 
 		<!-- forcing -->
 		<package name="pkgForcing" description="On if the framework forcing is being used"/>
+
+        <!-- Snicar -->
+        <package name="pkgSnicarSystem" description="add snicar 5 bands snow SSP in CICE"/>
+
 
 	</packages>
 
@@ -3747,6 +3788,22 @@
 		<var name="testArrayParallelism"		type="real"	dimensions="nCells Time"/>
 		<var name="testArrayRestartability"		type="real"	dimensions="nCells Time"/>
 	</var_struct>
+
+	<!-- Snicar ice optical property varables -->
+	<var_struct name="snicar_variables" time_levs="1" packages="pkgSnicarSystem">
+        	<var name="iceAsymmtryParameterDirect"		type="real"	 dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR" 	 name_in_code="iceAsymmtryParameterDirect"/>
+        
+        	<var name="iceAsymmtryParameterDiffuse" 	type="real" 	 dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	name_in_code="iceAsymmtryParameterDiffuse"/>
+        
+       		 <var name="iceSingleScatterAlbedoDirect"	type="real"	dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	 name_in_code="iceSingleScatterAlbedoDirect"/>
+        
+        	<var name="iceSingleScatterAlbedoDiffuse"	 type="real"	 dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	 name_in_code="iceSingleScatterAlbedoDiffuse"/>
+        
+        	<var name="iceMassExtinctionCrossSectionDirect"		type="real"	 dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	 name_in_code="iceMassExtinctionCrossSectionDirect"/>
+        
+        	<var name="iceMassExtinctionCrossSectionDiffuse"	type="real" 	dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	name_in_code="iceMassExtinctionCrossSectionDiffuse"/>
+	</var_struct>
+
 
 	<!-- Point diagnostics -->
 	<var_struct name="pointLocations" time_levs="1">
