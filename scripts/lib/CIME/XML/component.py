@@ -303,12 +303,10 @@ class Component(EntryID):
                 valid_values = self.text(self.get_child("valid_values", root=entry))
             except:
                 valid_values = ''
-
             try:
                 value = self.get_value(name)
             except:
                 value = ''
-            
             group = self.text(self.get_child("group", root=entry))
             filename = self.text(self.get_child("file", root=entry))
             text = self.text(self.get_child("desc", root=entry))
@@ -320,6 +318,6 @@ class Component(EntryID):
                      "filename":filename,
                      "desc":text.encode('utf-8')}
             items.append(item)
-        
         entry_dict = { "items" : items }
+
         return helptext, entry_dict
