@@ -101,7 +101,6 @@ def archive_old_test_data(machine, mach_comp, test_id_root, scratch_root, test_r
     else:
         logging.info("TEST ARCHIVER: Test data is with accepted bounds, {}GB (actual) < {}GB (limit)".format(bytes_of_old_test_data / 1000000000, bytes_allowed / 1000000000))
 
-
 ###############################################################################
 def handle_old_test_data(machine, compiler, test_id_root, scratch_root, test_root, avoid_test_id):
 ###############################################################################
@@ -114,7 +113,7 @@ def handle_old_test_data(machine, compiler, test_id_root, scratch_root, test_roo
 
     try:
         archive_old_test_data(machine, mach_comp, test_id_root, scratch_root, test_root, old_test_archive, avoid_test_id)
-    except:
+    except Exception:
         logging.warning("TEST ARCHIVER: Archiving of old test data FAILED: {}\nDeleting data instead".format(sys.exc_info()[1]))
         delete_old_test_data(mach_comp, test_id_root, scratch_root, test_root, run_area, build_area, archive_area, avoid_test_id)
 
