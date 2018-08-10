@@ -13,7 +13,7 @@
 
 namespace Homme {
 
-class BoundaryExchange;
+class MpiContext;
 class BuffersManager;
 class CaarFunctor;
 class Comm;
@@ -47,15 +47,13 @@ public:
 private:
   // Note: using uniqe_ptr disables copy construction
   std::unique_ptr<CaarFunctor>            caar_functor_;
-  std::unique_ptr<Comm>                   comm_;
+  std::unique_ptr<MpiContext>             comm_;
   std::unique_ptr<Elements>               elements_;
   std::unique_ptr<Tracers>                tracers_;
   std::unique_ptr<Derivative>             derivative_;
   std::unique_ptr<Diagnostics>            diagnostics_;
   std::unique_ptr<HybridVCoord>           hvcoord_;
   std::unique_ptr<HyperviscosityFunctor>  hyperviscosity_functor_;
-  std::shared_ptr<Connectivity>           connectivity_;
-  std::shared_ptr<BMMap>                  buffers_managers_;
   std::unique_ptr<SimulationParams>       simulation_params_;
   std::unique_ptr<TimeLevel>              time_level_;
   std::unique_ptr<VerticalRemapManager>   vertical_remap_mgr_;
@@ -70,6 +68,7 @@ public:
   virtual ~Context();
 
   // Getters for each managed object.
+  MpiContext& get_mpi_context();
   CaarFunctor& get_caar_functor();
   void create_comm(const int f_comm);
   Comm& get_comm();

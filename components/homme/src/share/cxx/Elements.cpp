@@ -9,7 +9,6 @@
 #include "utilities/SyncUtils.hpp"
 #include "utilities/TestUtils.hpp"
 #include "HybridVCoord.hpp"
-#include "Context.hpp"
 
 #include <limits>
 #include <random>
@@ -181,8 +180,14 @@ void Elements::init_2d(const int ie, CF90Ptr &D, CF90Ptr &Dinv, CF90Ptr &fcor,
 }
 
 //test for tensor hv is needed
+void Elements::random_init(int num_elems, Real max_pressure) {
+  std::random_device rd;
+  HybridVCoord hv;
+  hv.random_init(rd());
+  random_init(num_elems,max_pressure,hv);
+}
 
-void Elements::random_init(const int num_elems, const Real max_pressure) {
+void Elements::random_init(int num_elems, Real max_pressure, const HybridVCoord& hvcoord) {
   // arbitrary minimum value to generate and minimum determinant allowed
   constexpr const Real min_value = 0.015625;
   // 1 is for const hv
@@ -208,7 +213,6 @@ void Elements::random_init(const int num_elems, const Real max_pressure) {
 
   // Generate ps_v so that it is >> ps0.
   // Note: make sure you init hvcoord before calling this method!
-  const auto& hvcoord = Context::singleton().get_hvcoord();
   genRandArray(m_ps_v, engine, std::uniform_real_distribution<Real>(100*hvcoord.ps0,1000*hvcoord.ps0));
 
   // This ensures the pressure in a single column is monotonically increasing

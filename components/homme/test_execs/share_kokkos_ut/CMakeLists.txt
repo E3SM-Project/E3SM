@@ -8,28 +8,14 @@ SET(UTILS_TIMING_DIR ${HOMME_SOURCE_DIR}/utils/cime/src/share/timing)
 ### Infrastructure unit stest
 
 SET (INFRASTRUCTURE_UT_CXX_SRCS
-  ${SRC_SHARE_DIR}/cxx/VerticalRemapManager.cpp
-  ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
-  ${SRC_SHARE_DIR}/cxx/CaarFunctor.cpp
-  ${SRC_SHARE_DIR}/cxx/Context.cpp
-  ${SRC_SHARE_DIR}/cxx/EulerStepFunctor.cpp
-  ${SRC_SHARE_DIR}/cxx/Derivative.cpp
-  ${SRC_SHARE_DIR}/cxx/Diagnostics.cpp
-  ${SRC_SHARE_DIR}/cxx/Elements.cpp
-  ${SRC_SHARE_DIR}/cxx/Tracers.cpp
   ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
-  ${SRC_SHARE_DIR}/cxx/HyperviscosityFunctor.cpp
-  ${SRC_SHARE_DIR}/cxx/HyperviscosityFunctorImpl.cpp
   ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
-  ${SRC_SHARE_DIR}/cxx/mpi/BoundaryExchange.cpp
-  ${SRC_SHARE_DIR}/cxx/mpi/BuffersManager.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
-  ${SRC_SHARE_DIR}/cxx/mpi/Connectivity.cpp
   ${SHARE_UT_DIR}/infrastructure_ut.cpp
 )
 SET (INFRASTRUCTURE_UT_F90_SRCS)
 
-SET (CONFIG_DEFINES PIO_INTERP NP=4 QSIZE_D=1 PLEV=8)
+SET (CONFIG_DEFINES PIO_INTERP NP=4 QSIZE_D=1 PLEV=8 HOMMEXX_NO_MPI_CONTEXT)
 SET (INFRASTRUCTURE_UT_INCLUDE_DIRS
   ${SRC_SHARE_DIR}
   ${SRC_SHARE_DIR}/cxx
@@ -45,28 +31,17 @@ cxx_unit_test (infrastructure_ut "${INFRASTRUCTURE_UT_F90_SRCS}" "${INFRASTRUCTU
 ### Random initialization unit stest
 
 SET (RANDOM_INIT_UT_CXX_SRCS
-  ${SRC_SHARE_DIR}/cxx/CaarFunctor.cpp
-  ${SRC_SHARE_DIR}/cxx/Context.cpp
-  ${SRC_SHARE_DIR}/cxx/EulerStepFunctor.cpp
-  ${SRC_SHARE_DIR}/cxx/VerticalRemapManager.cpp
   ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
-  ${SRC_SHARE_DIR}/cxx/Derivative.cpp
-  ${SRC_SHARE_DIR}/cxx/Diagnostics.cpp
   ${SRC_SHARE_DIR}/cxx/Elements.cpp
-  ${SRC_SHARE_DIR}/cxx/Tracers.cpp
   ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
   ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
-  ${SRC_SHARE_DIR}/cxx/HyperviscosityFunctor.cpp
-  ${SRC_SHARE_DIR}/cxx/HyperviscosityFunctorImpl.cpp
-  ${SRC_SHARE_DIR}/cxx/mpi/BoundaryExchange.cpp
-  ${SRC_SHARE_DIR}/cxx/mpi/BuffersManager.cpp
+  ${SRC_SHARE_DIR}/cxx/HybridVCoord.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
-  ${SRC_SHARE_DIR}/cxx/mpi/Connectivity.cpp
   ${SHARE_UT_DIR}/random_init_ut.cpp
 )
 SET (RANDOM_INIT_UT_F90_SRCS)
 
-SET (CONFIG_DEFINES PIO_INTERP NP=4 PLEV=8 QSIZE_D=4)
+SET (CONFIG_DEFINES PIO_INTERP NP=4 PLEV=8 QSIZE_D=4 HOMMEXX_NO_MPI_CONTEXT)
 SET (RANDOM_INIT_UT_INCLUDE_DIRS
   ${SRC_SHARE_DIR}
   ${SRC_SHARE_DIR}/cxx
@@ -118,26 +93,19 @@ SET (BOUNDARY_EXCHANGE_UT_F90_SRCS
   ${UTILS_TIMING_DIR}/perf_utils.F90
 )
 SET (BOUNDARY_EXCHANGE_UT_CXX_SRCS
-  ${SRC_SHARE_DIR}/cxx/VerticalRemapManager.cpp
   ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
-  ${SRC_SHARE_DIR}/cxx/CaarFunctor.cpp
-  ${SRC_SHARE_DIR}/cxx/Context.cpp
-  ${SRC_SHARE_DIR}/cxx/Tracers.cpp
-  ${SRC_SHARE_DIR}/cxx/EulerStepFunctor.cpp
-  ${SRC_SHARE_DIR}/cxx/Derivative.cpp
   ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
   ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
-  ${SRC_SHARE_DIR}/cxx/HyperviscosityFunctor.cpp
-  ${SRC_SHARE_DIR}/cxx/HyperviscosityFunctorImpl.cpp
+  ${SRC_SHARE_DIR}/cxx/mpi/mpi_cxx_f90_interface.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/BoundaryExchange.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/BuffersManager.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Connectivity.cpp
-  ${SRC_SHARE_DIR}/cxx/mpi/mpi_cxx_f90_interface.cpp
+  ${SRC_SHARE_DIR}/cxx/mpi/MpiContext.cpp
   ${SHARE_UT_DIR}/boundary_exchange_ut.cpp
 )
 
-SET (CONFIG_DEFINES NP=4 NC=4 PLEV=16 QSIZE_D=4 _MPI=1 _PRIM)
+SET (CONFIG_DEFINES NP=4 NC=4 PLEV=16 QSIZE_D=4 _MPI=1 _PRIM HOMMEXX_NO_CONTEXT)
 SET (BOUNDARY_EXCHANGE_UT_INCLUDE_DIRS
   ${SRC_SHARE_DIR}
   ${SRC_SHARE_DIR}/cxx

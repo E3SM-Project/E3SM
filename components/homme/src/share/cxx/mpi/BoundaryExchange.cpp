@@ -7,7 +7,6 @@
 #include "BoundaryExchange.hpp"
 
 #include "BuffersManager.hpp"
-#include "Context.hpp"
 #include "KernelVariables.hpp"
 #include "profiling.hpp"
 
