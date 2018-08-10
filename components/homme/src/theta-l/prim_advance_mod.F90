@@ -410,7 +410,7 @@ contains
      elem(ie)%derived%FQps(:,:)=0
 
      ! apply forcing to temperature
-     call get_temperature(elem(ie),temperature,hvcoord,np1,np1_qdp)
+     call get_temperature(elem(ie),temperature,hvcoord,np1)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
@@ -472,8 +472,8 @@ contains
      enddo
 
      ! now that we have updated Qdp and dp, compute theta_dp_cp from temperature
-     call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,np1_qdp),dp)
-     call get_cp_star(cp_star,elem(ie)%state%Qdp(:,:,:,1,np1_qdp),dp)
+     call get_kappa_star(kappa_star,elem(ie)%state%Q(:,:,:,1))
+     call get_cp_star(cp_star,elem(ie)%state%Q(:,:,:,1))
      call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp,&
          elem(ie)%state%phinh_i(:,:,:,np1),kappa_star,pnh,exner,dpnh_dp_i)
 
@@ -1066,7 +1066,7 @@ contains
      theta_cp(:,:,:) = theta_dp_cp(:,:,:)/dp3d(:,:,:)
      phi_i => elem(ie)%state%phinh_i(:,:,:,n0)
 
-     call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
+     call get_kappa_star(kappa_star,elem(ie)%state%Q(:,:,:,1))
      call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi_i,&
              kappa_star,pnh,exner,dpnh_dp_i)
 
@@ -1654,7 +1654,7 @@ contains
     phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
     phis => elem(ie)%state%phis(:,:)
 
-    call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
+    call get_kappa_star(kappa_star,elem(ie)%state%Q(:,:,:,1))
     call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi_np1,&
          kappa_star,pnh,exner,dpnh_dp_i,pnh_i_out=pnh_i)
 
