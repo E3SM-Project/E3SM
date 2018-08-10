@@ -232,7 +232,7 @@ CONTAINS
     kv    = mct_aVect_indexRA(o2x,'So_v')
     kdhdx = mct_aVect_indexRA(o2x,'So_dhdx')
     kdhdy = mct_aVect_indexRA(o2x,'So_dhdy')
-    kswp  = mct_aVect_indexRA(o2x,'So_fswpen')
+    kswp  = mct_aVect_indexRA(o2x,'So_fswpen', perrwith='quiet') 
     kq    = mct_aVect_indexRA(o2x,'Fioo_q')
 
     call mct_aVect_init(x2o, rList=seq_flds_x2o_fields, lsize=lsize)
@@ -441,7 +441,9 @@ CONTAINS
        o2x%rAttr(kdhdx,n) = 0.0_R8
        o2x%rAttr(kdhdy,n) = 0.0_R8
        o2x%rAttr(kq   ,n) = 0.0_R8
-       o2x%rAttr(kswp ,n) = swp
+       if (kswp /= 0) then
+          o2x%rAttr(kswp ,n) = swp
+       end if
     enddo
 
     ! NOTE: for SST_AQUAPANAL, the docn buildnml sets the stream to "null"
@@ -479,7 +481,9 @@ CONTAINS
           o2x%rAttr(kdhdx,n) = 0.0_R8
           o2x%rAttr(kdhdy,n) = 0.0_R8
           o2x%rAttr(kq   ,n) = 0.0_R8
-          o2x%rAttr(kswp ,n) = swp
+          if (kswp /= 0) then
+             o2x%rAttr(kswp ,n) = swp
+          end if
        enddo
 
     case('SST_AQUAPANAL')
@@ -508,7 +512,9 @@ CONTAINS
           o2x%rAttr(kdhdx,n) = 0.0_R8
           o2x%rAttr(kdhdy,n) = 0.0_R8
           o2x%rAttr(kq   ,n) = 0.0_R8
-          o2x%rAttr(kswp ,n) = swp
+          if (kswp /= 0) then
+             o2x%rAttr(kswp ,n) = swp
+          end if
        enddo
 
     case('IAF')
@@ -521,7 +527,9 @@ CONTAINS
           o2x%rAttr(kdhdx,n) = 0.0_R8
           o2x%rAttr(kdhdy,n) = 0.0_R8
           o2x%rAttr(kq   ,n) = 0.0_R8
-          o2x%rAttr(kswp ,n) = swp
+          if (kswp /= 0) then
+             o2x%rAttr(kswp ,n) = swp
+          end if
        enddo
 
     case('SOM')
@@ -621,7 +629,6 @@ CONTAINS
           write(logunit,F01)'export: ymd,tod,n,So_v       = ', target_ymd, target_tod, n, o2x%rattr(kv,n)    
           write(logunit,F01)'export: ymd,tod,n,So_dhdx    = ', target_ymd, target_tod, n, o2x%rattr(kdhdx,n)    
           write(logunit,F01)'export: ymd,tod,n,So_dhdy    = ', target_ymd, target_tod, n, o2x%rattr(kdhdy,n)    
-          write(logunit,F01)'export: ymd,tod,n,So_fswpen  = ', target_ymd, target_tod, n, o2x%rattr(kswp,n)    
           write(logunit,F01)'export: ymd,tod,n,Fioo_q     = ', target_ymd, target_tod, n, o2x%rattr(kq,n)    
        end do
     end if
