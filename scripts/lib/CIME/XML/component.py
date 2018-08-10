@@ -289,19 +289,21 @@ class Component(EntryID):
         """
         entry_dict = dict()
         items = list()
-        try:
+        exists = self.child_exists("help")
+        if exists:
             helpnode = self.get_child("help")
             helptext = self.text(helpnode)
-        except:
+        else:
             helptext = ''
         entries = self.get_children("entry")
         for entry in entries:
             item = dict()
             name = self.get(entry, "id")
             datatype = self.text(self.get_child("type", root=entry))
-            try:
+            exists = self.child_exists("valid_values", root=entry)
+            if exists:
                 valid_values = self.text(self.get_child("valid_values", root=entry))
-            except:
+            else:
                 valid_values = ''
             try:
                 value = self.get_value(name)

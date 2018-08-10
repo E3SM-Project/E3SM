@@ -250,6 +250,13 @@ class GenericXML(object):
 
         return children
 
+    def child_exists(self, name=None, attributes=None, root=None):
+        exists = False
+        children = self.get_children(root=root, name=name, attributes=attributes)
+        if len(children):
+            exists = True
+        return exists
+
     def get_child(self, name=None, attributes=None, root=None, err_msg=None):
         children = self.get_children(root=root, name=name, attributes=attributes)
         expect(len(children) == 1, err_msg if err_msg else "Expected one child")
