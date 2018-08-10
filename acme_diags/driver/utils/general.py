@@ -160,19 +160,28 @@ def select_region(region, var1, var2, land_frac, ocean_frac, parameter):
     else:
         var1_domain = var1
         var2_domain = var2
-
+    print('IN SELECT_REGION()')
+    print('var1_domain.getGrid()', var1_domain.getGrid())
+    print('var2_domain.getGrid()', var2_domain.getGrid())
     try:
         # if region.find('global') == -1:
         domain = regions_specs[region]['domain']
-        print(domain)
-    except BaseException:
-        print("no domain selector")
-    var1_domain = var1_domain(domain)
-    var2_domain = var2_domain(domain)
-    var1_domain.units = var1.units
-    var2_domain.units = var1.units
+        print('Domain: ', domain)
+    except:
+        print("No domain selector.")
+    var1_domain_selected = var1_domain(domain)
+    var2_domain_selected = var2_domain(domain)
+    var1_domain_selected.units = var1.units
+    var2_domain_selected.units = var1.units
 
-    return var1_domain, var2_domain
+    var1_domain_selected.setGrid(var1_domain.getGrid())
+    var2_domain_selected.setGrid(var2_domain.getGrid())
+
+    print('var1_domain_selected.getGrid()', var1_domain_selected.getGrid())
+    print('var2_domain_selected.getGrid()', var2_domain_selected.getGrid())
+
+
+    return var1_domain_selected, var2_domain_selected
 
 
 def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
@@ -191,6 +200,9 @@ def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
     else:
         mv_grid = mv2.getGrid()
         mv2_reg = mv2
+        print('type(mv1)', type(mv1))
+        print('type(mv_grid)', type(mv_grid))
+        print('type(mv1.getGrid())', type(mv1.getGrid()))
         mv1_reg = mv1.regrid(mv_grid, regridTool=regrid_tool,
                              regridMethod=regrid_method)
     return mv1_reg, mv2_reg

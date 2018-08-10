@@ -1,11 +1,13 @@
-import time
+import copy
 import numpy as np
 import numpy.ma as ma
+import cdms2
 
 
 def climo(var, season):
     """
     Compute the climatology for var for the given season.
+    The returned variable must be 2 dimensional.
     """
     season_idx = {
         '01': [1,0,0,0,0,0,0,0,0,0,0,0],
@@ -54,4 +56,53 @@ def climo(var, season):
                           for i in range(len(var_time_absolute)) ], dtype=np.int).nonzero()
         climo[n] = ma.average(v[idx], axis=0, weights=dt[idx])
 
-    return climo
+    print('in climo.py')
+
+    temp = cdms2.asVariable(climo)(squeeze=1)
+
+    temp.attributes = var.attributes
+    temp.units = var.units
+    temp.setGrid(var.getGrid())
+    temp.setAxis(0, var.getAxis(1))
+    temp.setAxis(1, var.getAxis(2))
+    return temp
+
+    """
+    t_var = copy.deepcopy(var)
+    t_var = t_var(squeeze=1)  # Doesn't do anything b/c shape is (6000, _, _)
+    #climo = climo(squeeze=1)
+    #t_var.data = climo.data
+    stuff = cdms2.asVariable(climo)(squeeze=1)
+    print(stuff.shape)
+    print(t_var._data.shape)
+    print(stuff._data.shape)
+    t_var._data = stuff._data
+    return t_var
+
+    #print(type(var))
+    #print('dir(climo)', dir(climo))
+    print(var.data.shape)
+    print(climo.data.shape)
+    var[:,] = climo
+    var = var[:1]
+    #var.data = climo.data
+    #quit()
+    return var
+    """
+    '''
+    t_var = cdms2.asVariable(climo)
+    print(dir(t_var))
+    quit()
+    t_var = t_var(squeeze=1)
+    #print(type(t_var))
+    #print(dir(t_var))
+    t_var.attributes = var.attributes
+    t_var.units = var.units
+    print('t_var.getGrid()', t_var.getGrid())
+    t_var.setGrid(var.getGrid())
+    print('t_var.getGrid()', t_var.getGrid())
+    #print(type(t_var))
+    #print(type(t_var(squeeze=1)))
+    # return t_var(squeeze=1)
+    return t_var
+    '''
