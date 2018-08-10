@@ -506,13 +506,17 @@ contains
          config_shortwave_type
 
     logical, pointer :: &
-         config_do_restart
+         config_do_restart, &
+         config_turn_snicar_system_on
 
     character(len=strKINDWarnings), dimension(:), allocatable :: &
          warnings
 
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
+    call MPAS_pool_get_config(domain % configs, "config_turn_snicar_system_on", config_turn_snicar_system_on)
+    print *, '518MPAS_seaice_column: config_turn_snicar_system_on =', config_turn_snicar_system_on
+
 
     if (trim(config_shortwave_type) == "dEdd") then
 
@@ -2141,7 +2145,8 @@ contains
          shortwave, &
          ponds, &
          aerosols, &
-         biogeochemistry
+         biogeochemistry, &
+         snicar_variables
 
     ! configs
     real(kind=RKIND), pointer :: &
@@ -2199,7 +2204,15 @@ contains
          albedoVisibleDiffuseCategory, &
          albedoIRDirectCategory, &
          albedoIRDiffuseCategory, &
-         snowFractionCategory
+         snowFractionCategory,&
+         iceAsymmtryParameterDirect,     &
+         iceAsymmtryParameterDiffuse,     &
+         iceSingleScatterAlbedoDirect,      &
+         iceSingleScatterAlbedoDiffuse,      &
+         iceMassExtinctionCrossSectionDirect, &
+         iceMassExtinctionCrossSectionDiffuse
+         !radius_um
+
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -2284,6 +2297,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "ponds", ponds)
        call MPAS_pool_get_subpool(block % structs, "aerosols", aerosols)
        call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
+       call MPAS_pool_get_subpool(block % structs, "snicar_variables", snicar_variables)
 
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
 
@@ -2352,6 +2366,14 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "bioTracerShortwave", bioTracerShortwave)
        call MPAS_pool_get_array(biogeochemistry, "verticalShortwaveGrid", verticalShortwaveGrid)
        call MPAS_pool_get_array(biogeochemistry, "verticalGrid", verticalGrid)
+
+       ! snicar 5-band snow IOPs
+       call MPAS_pool_get_array(snicar_variables, "iceAsymmtryParameterDirect",iceAsymmtryParameterDirect)
+       call MPAS_pool_get_array(snicar_variables, "iceAsymmtryParameterDiffuse",iceAsymmtryParameterDiffuse)
+       call MPAS_pool_get_array(snicar_variables, "iceSingleScatterAlbedoDirect", iceSingleScatterAlbedoDirect)
+       call MPAS_pool_get_array(snicar_variables, "iceSingleScatterAlbedoDiffuse", iceSingleScatterAlbedoDiffuse)
+       call MPAS_pool_get_array(snicar_variables, "iceMassExtinctionCrossSectionDirect", iceMassExtinctionCrossSectionDirect)
+       call MPAS_pool_get_array(snicar_variables, "iceMassExtinctionCrossSectionDiffuse", iceMassExtinctionCrossSectionDiffuse)
 
        ! calendar type
        call MPAS_pool_get_config(block % configs, "config_calendar_type", config_calendar_type)
@@ -2465,7 +2487,14 @@ contains
                pondSnowDepthDifference(:,iCell), &
                pondLidMeltFluxFraction(:,iCell), &
                .false., &
-               lInitialization)
+               lInitialization,          &
+               iceAsymmtryParameterDirect(:,:),     &
+               iceAsymmtryParameterDiffuse(:,:),     &
+               iceSingleScatterAlbedoDirect(:,:),      &
+               iceSingleScatterAlbedoDiffuse(:,:),      &
+               iceMassExtinctionCrossSectionDirect(:,:), &
+               iceMassExtinctionCrossSectionDiffuse(:,:))!, &
+               !radius_um(1,:))
           call colpkg_get_warnings(warnings)
           call column_write_warnings(warnings)
 
@@ -2618,6 +2647,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
        call MPAS_pool_get_subpool(block % structs, "initial", initial)
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
+
 
        call MPAS_pool_get_config(block % configs, "config_dynamics_subcycle_number", config_dynamics_subcycle_number)
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
@@ -8812,7 +8842,8 @@ contains
          config_use_shortwave_bioabsorption, &
          config_use_skeletal_biochemistry, &
          config_use_vertical_zsalinity, &
-         config_use_modal_aerosols
+         config_use_modal_aerosols, &
+         config_turn_snicar_system_on
 
     real(kind=RKIND), pointer :: &
          config_min_friction_velocity, &
@@ -8980,6 +9011,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_slow_mode_critical_porosity", config_slow_mode_critical_porosity)
     call MPAS_pool_get_config(domain % configs, "config_congelation_ice_porosity", config_congelation_ice_porosity)
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
+    call MPAS_pool_get_config(domain % configs, "config_turn_snicar_system_on", config_turn_snicar_system_on)
     call MPAS_pool_get_config(domain % configs, "config_albedo_type", config_albedo_type)
     call MPAS_pool_get_config(domain % configs, "config_visible_ice_albedo", config_visible_ice_albedo)
     call MPAS_pool_get_config(domain % configs, "config_infrared_ice_albedo", config_infrared_ice_albedo)
@@ -9158,6 +9190,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_scales_absorption_phaeocystis", config_scales_absorption_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_proteins", config_ratio_C_to_N_proteins)
 
+
     call colpkg_init_parameters(&
          config_cice_int("config_thermodynamics_type", config_thermodynamics_type), &
          config_heat_conductivity_type, &
@@ -9171,6 +9204,7 @@ contains
          config_slow_mode_critical_porosity, &
          config_congelation_ice_porosity, &
          config_shortwave_type, &
+         config_turn_snicar_system_on, &
          config_albedo_type, &
          config_visible_ice_albedo, &
          config_infrared_ice_albedo, &

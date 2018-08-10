@@ -2688,8 +2688,15 @@
                                         albpndn,  apeffn,    &
                                         snowfracn,           &
                                         dhsn,     ffracn,    &
-                                        l_print_point, &
-                                        initonly)
+                                        l_print_point,       &
+                                        initonly,           &
+                                        asm_prm_ice_drc,     &
+                                        asm_prm_ice_dfs,     &
+                                        ss_alb_ice_drc,      &
+                                        ss_alb_ice_dfs,      &
+                                        ext_cff_mss_ice_drc, &
+                                        ext_cff_mss_ice_dfs)!, &
+                                        !radius_um)
 
       use ice_constants_colpkg, only: c0, puny
       use ice_shortwave, only: run_dEdd, shortwave_ccsm3, compute_shortwave_trcr
@@ -2804,6 +2811,18 @@
       logical (kind=log_kind), optional :: &
          initonly         ! flag to indicate init only, default is false
 
+
+      ! snow grain single-scattering properties for
+      ! direct (drc) and diffuse (dfs) shortwave incidents
+      real (kind=dbl_kind), dimension(:,:), intent(in) :: & ! Model SNICAR snow SSP
+        asm_prm_ice_drc,     & ! snow asymmetry factor (cos(theta))
+        asm_prm_ice_dfs,     & ! snow asymmetry factor (cos(theta))
+        ss_alb_ice_drc,      & ! snow single scatter albedo (fraction)
+        ss_alb_ice_dfs,      & ! snow single scatter albedo (fraction)
+        ext_cff_mss_ice_drc, & ! snow mass extinction cross section (m2/kg)
+        ext_cff_mss_ice_dfs    ! snow mass extinction cross section (m2/kg)
+
+
       ! local variables
 
       integer (kind=int_kind) :: &
@@ -2908,7 +2927,14 @@
                           snowfracn,                    &
                           dhsn,         ffracn,         &
                           l_print_point,                &
-                          linitonly)
+                          linitonly,                    &
+                          asm_prm_ice_drc,              &
+                          asm_prm_ice_dfs,              &
+                          ss_alb_ice_drc,               &
+                          ss_alb_ice_dfs,               &
+                          ext_cff_mss_ice_drc,          &
+                          ext_cff_mss_ice_dfs,          &
+                          snicar_system)
  
          else  ! .not. dEdd
 
@@ -3626,6 +3652,7 @@
            phi_c_slow_mode_in, &
            phi_i_mushy_in, &
            shortwave_in, &
+           snicar_system_in, &
            albedo_type_in, &
            albicev_in, &
            albicei_in, &
@@ -3809,6 +3836,7 @@
              phi_c_slow_mode, &
              phi_i_mushy, &
              shortwave, &
+             snicar_system, &
              albedo_type, &
              albicev, &
              albicei, &
@@ -4036,6 +4064,12 @@
                              ! radius change (C)
              rsnw_mlt_in , & ! maximum melting snow grain radius (10^-6 m)
              kalg_in         ! algae absorption coefficient for 0.5 m thick layer
+
+        ! snicar 5 band system, set in namelist
+        logical (kind=log_kind), intent(in) :: &
+             snicar_system_in ! if true, use 5-band snicar IOPs for
+                              ! shortwave radiative calculation of
+                              ! snow-coverd sea ice
 
 !-----------------------------------------------------------------------
 ! Parameters for ridging and strength
@@ -4286,6 +4320,7 @@
         phi_c_slow_mode = phi_c_slow_mode_in
         phi_i_mushy = phi_i_mushy_in
         shortwave = shortwave_in
+        snicar_system = snicar_system_in
         albedo_type = albedo_type_in
         albicev = albicev_in
         albicei = albicei_in
