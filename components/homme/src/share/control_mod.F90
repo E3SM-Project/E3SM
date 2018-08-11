@@ -29,6 +29,11 @@ module control_mod
   ! If true, check mass conservation and shape preservation. The second
   ! implicitly checks tracer consistency.
   logical, public  :: semi_lagrange_cdr_check = .false.
+  ! If true and nu_q > 0, apply hyperviscosity to all the tracers, rather than
+  ! just those that couple to the dynamics at the dynamical time step. These
+  ! latter are 'active' tracers, in contrast to 'passive' tracers that directly
+  ! couple only to the physics.
+  logical, public  :: semi_lagrange_hv_q_all = .false.
   ! Leftover for transport_alg = 1
   logical, public  :: use_semi_lagrange_transport_local_conservation  = .false.
 

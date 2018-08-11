@@ -22,14 +22,10 @@ module sl_advection
   use edgetype_mod, only       : EdgeDescriptor_t, EdgeBuffer_t, ghostbuffer3D_t
   use hybrid_mod, only         : hybrid_t
   use bndry_mod, only          : bndry_exchangev
-  use viscosity_mod, only      : biharmonic_wk_scalar, neighbor_minmax, &
-                                 neighbor_minmax_start, neighbor_minmax_finish
   use perf_mod, only           : t_startf, t_stopf, t_barrierf ! _EXTERNAL
   use parallel_mod, only       : abortmp, parallel_t
   use coordinate_systems_mod, only : cartesian3D_t
   use compose_mod
-
-  use prim_advection_base, only : advance_hypervis_scalar
 
   implicit none
 
@@ -59,7 +55,8 @@ end subroutine sl_parse_transport_alg
 
 subroutine sl_init1(par, elem)
   use interpolate_mod,        only : interpolate_tracers_init
-  use control_mod,            only : transport_alg, semi_lagrange_cdr_alg, cubed_sphere_map, nu_q
+  use control_mod,            only : transport_alg, semi_lagrange_cdr_alg, cubed_sphere_map, &
+       nu_q, semi_lagrange_hv_q_all
   use element_state,          only : timelevels
   use coordinate_systems_mod, only : cartesian3D_t, change_coordinates
   type (parallel_t) :: par
@@ -69,7 +66,8 @@ subroutine sl_init1(par, elem)
   logical :: slmm, cisl, qos
   
   if (transport_alg > 0) then
-     if (par%masterproc .and. nu_q > 0) print *, 'COMPOSE> use HV'
+     if (par%masterproc .and. nu_q > 0) &
+          print *, 'COMPOSE> use HV; nu_q, all:', nu_q, semi_lagrange_hv_q_all
      if (cubed_sphere_map /= 2) then
         call abortmp('transport_alg > 0 requires cubed_sphere_map = 2')
      end if
@@ -117,7 +115,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hvcoord, hybrid , dt , 
   use dimensions_mod,         only : max_neigh_edges
   use bndry_mod,              only : ghost_exchangevfull
   use interpolate_mod,        only : interpolate_tracers, minmax_tracers
-  use control_mod   ,         only : qsplit, nu_q
+  use control_mod   ,         only : qsplit, nu_q, semi_lagrange_hv_q_all
   use global_norms_mod,       only : wrap_repro_sum
   use parallel_mod,           only : global_shared_buf, global_shared_sum, syncmp
   use control_mod,            only : use_semi_lagrange_transport_local_conservation
@@ -372,25 +370,23 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hvcoord, hybrid , dt , 
   end if
 
   if (nu_q > 0) then
+     if (semi_lagrange_hv_q_all) then
+        n = qsize
+     else
+        n = 1
+     end if
      do ie = nets, nete
-        do k = 1, nlev
-           do q = 1, qsize
+        do q = 1, n
+           do k = 1, nlev
               elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%state%Q(:,:,k,q) * &
                    elem(ie)%state%dp3d(:,:,k,tl%np1)
            enddo
         enddo
      end do
-     ! TODO We should skip the call to limiter2d_zero since we'll apply a CDR in
-     ! the next step. More generally, we probably should write our own hypervis
-     ! routine to strip it to what is essential. Hypervis *isn't* being applied
-     ! because the tracers need it, but rather b/c tracer interactions with
-     ! physics and dynamics, independent of tracer advection scheme, appears to
-     ! need some tracer dissipation to be well behaved. This apparent
-     ! requirement should be understood better.
-     call advance_hypervis_scalar(elem, hvcoord, hybrid, deriv, tl%np1, np1_qdp, nets, nete, dt)
+     call advance_hypervis_scalar(elem, hvcoord, hybrid, deriv, tl%np1, np1_qdp, nets, nete, dt, n)
      do ie = nets, nete
-        do k = 1, nlev
-           do q = 1, qsize
+        do q = 1, n
+           do k = 1, nlev
               elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp) / &
                    elem(ie)%state%dp3d(:,:,k,tl%np1)
            enddo
@@ -1301,5 +1297,197 @@ subroutine perf_barrier(hybrid)
   !$OMP BARRIER
 #endif
 end subroutine perf_barrier
+
+subroutine advance_hypervis_scalar(elem, hvcoord , hybrid , deriv , nt , nt_qdp , nets , nete , dt2, nq)
+!  hyperviscsoity operator for foward-in-time scheme
+!  take one timestep of:
+!          Q(:,:,:,np) = Q(:,:,:,np) +  dt2*nu*laplacian**order ( Q )
+!
+!  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
+  use kinds          , only : real_kind
+  use dimensions_mod , only : np, nlev
+  use hybrid_mod     , only : hybrid_t
+  use element_mod    , only : element_t
+  use derivative_mod , only : derivative_t
+  use bndry_mod      , only : bndry_exchangev
+  use perf_mod       , only : t_startf, t_stopf                          ! _EXTERNAL
+  use control_mod    , only : nu_q, nu_p, hypervis_subcycle_q
+  implicit none
+  type (element_t)     , intent(inout), target :: elem(:)
+  type (hvcoord_t)     , intent(in   )         :: hvcoord
+  type (hybrid_t)      , intent(in   )         :: hybrid
+  type (derivative_t)  , intent(in   )         :: deriv
+  integer              , intent(in   )         :: nt
+  integer              , intent(in   )         :: nt_qdp
+  integer              , intent(in   )         :: nets
+  integer              , intent(in   )         :: nete
+  integer              , intent(in   )         :: nq
+  real (kind=real_kind), intent(in   )         :: dt2
+
+  ! local
+  real (kind=real_kind), dimension(np,np,nlev,qsize,nets:nete) :: Qtens
+  real (kind=real_kind), dimension(np,np,nlev                ) :: dp
+  real (kind=real_kind) :: dt
+  integer :: k , i , j , ie , ic , q
+
+  if ( nu_q           == 0 ) return
+  if ( hypervis_order /= 2 ) return
+  !   call t_barrierf('sync_advance_hypervis_scalar', hybrid%par%comm)
+  call t_startf('advance_hypervis_scalar')
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ !  hyper viscosity
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  dt = dt2 / hypervis_subcycle_q
+
+  do ic = 1 , hypervis_subcycle_q
+     do ie = nets , nete
+        ! Qtens = Q/dp   (apply hyperviscsoity to dp0 * Q, not Qdp)
+        ! various options:
+        !   1)  biharmonic( Qdp )
+        !   2)  dp0 * biharmonic( Qdp/dp )
+        !   3)  dpave * biharmonic(Q/dp)
+        ! For trace mass / mass consistenciy, we use #2 when nu_p=0
+        ! and #e when nu_p>0, where dpave is the mean mass flux from the nu_p
+        ! contribution from dynamics.
+
+        if (nu_p>0) then
+#if (defined COLUMN_OPENMP)
+           !$omp parallel do private(q,k) collapse(2)
+#endif
+           do q = 1 , nq
+              do k = 1 , nlev
+                 dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - dt2*elem(ie)%derived%divdp_proj(:,:,k)
+                 Qtens(:,:,k,q,ie) = elem(ie)%derived%dpdiss_ave(:,:,k)*&
+                      elem(ie)%state%Qdp(:,:,k,q,nt_qdp) / dp(:,:,k)
+              enddo
+           enddo
+
+        else
+#if (defined COLUMN_OPENMP)
+           !$omp parallel do private(q,k) collapse(2)
+#endif
+           do q = 1 , nq
+              do k = 1 , nlev
+                 dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - dt2*elem(ie)%derived%divdp_proj(:,:,k)
+                 Qtens(:,:,k,q,ie) = hvcoord%dp0(k)*elem(ie)%state%Qdp(:,:,k,q,nt_qdp) / dp(:,:,k)
+              enddo
+           enddo
+        endif
+     enddo ! ie loop
+
+     ! compute biharmonic operator. Qtens = input and output
+     call biharmonic_wk_scalar( elem , Qtens , deriv , edge_g , hybrid , nets , nete, nq )
+
+     do ie = nets , nete
+#if (defined COLUMN_OPENMP)
+        !$omp parallel do private(q,k,j,i)
+#endif
+        do q = 1 , nq
+           do k = 1 , nlev
+              do j = 1 , np
+                 do i = 1 , np
+                    ! advection Qdp.  For mass advection consistency:
+                    ! DIFF( Qdp) ~   dp0 DIFF (Q)  =  dp0 DIFF ( Qdp/dp )
+                    elem(ie)%state%Qdp(i,j,k,q,nt_qdp) = elem(ie)%state%Qdp(i,j,k,q,nt_qdp) * elem(ie)%spheremp(i,j) &
+                         - dt * nu_q * Qtens(i,j,k,q,ie)
+                 enddo
+              enddo
+           enddo
+
+        enddo
+        call edgeVpack_nlyr(edge_g , elem(ie)%desc, elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , nq*nlev , 0 , nq*nlev )
+     enddo ! ie loop
+
+     call t_startf('ah_scalar_bexchV')
+     call bndry_exchangeV( hybrid , edge_g )
+     call t_stopf('ah_scalar_bexchV')
+
+     do ie = nets , nete
+        call edgeVunpack_nlyr(edge_g , elem(ie)%desc, elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , nq*nlev , 0, nq*nlev)
+#if (defined COLUMN_OPENMP)
+        !$omp parallel do private(q,k) collapse(2)
+#endif
+        do q = 1 , nq
+           ! apply inverse mass matrix
+           do k = 1 , nlev
+              elem(ie)%state%Qdp(:,:,k,q,nt_qdp) = elem(ie)%rspheremp(:,:) * elem(ie)%state%Qdp(:,:,k,q,nt_qdp)
+           enddo
+        enddo
+     enddo ! ie loop
+#ifdef DEBUGOMP
+#if (defined HORIZ_OPENMP)
+     !$OMP BARRIER
+#endif
+#endif
+  enddo
+  call t_stopf('advance_hypervis_scalar')
+end subroutine advance_hypervis_scalar
+subroutine biharmonic_wk_scalar(elem,qtens,deriv,edgeq,hybrid,nets,nete,nq)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! compute weak biharmonic operator
+!    input:  qtens = Q
+!    output: qtens = weak biharmonic of Q
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  use control_mod, only : hypervis_scaling
+  use derivative_mod, only : laplace_sphere_wk
+
+  type (hybrid_t)      , intent(in) :: hybrid
+  type (element_t)     , intent(inout), target :: elem(:)
+  integer :: nets,nete,nq
+  real (kind=real_kind), dimension(np,np,nlev,qsize,nets:nete) :: qtens
+  type (EdgeBuffer_t)  , intent(inout) :: edgeq
+  type (derivative_t)  , intent(in) :: deriv
+
+  ! local
+  integer :: k,kptr,i,j,ie,ic,q
+  real (kind=real_kind), dimension(np,np) :: lap_p
+  logical var_coef1
+
+  !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
+  !so tensor is only used on second call to laplace_sphere_wk
+  var_coef1 = .true.
+  if(hypervis_scaling > 0)    var_coef1 = .false.
+
+  do ie=nets,nete
+#if (defined COLUMN_OPENMP)
+     !$omp parallel do private(k, q, lap_p)
+#endif
+     do q=1,nq
+        do k=1,nlev    !  Potential loop inversion (AAM)
+           lap_p(:,:)=qtens(:,:,k,q,ie)
+           ! Original use of qtens on left and right hand sides caused OpenMP errors (AAM)
+           qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=var_coef1)
+        enddo
+        call edgeVpack_nlyr(edgeq, elem(ie)%desc, qtens(:,:,:,q,ie),nlev,nlev*(q-1),nq*nlev)
+     enddo
+  enddo
+
+  call t_startf('biwksc_bexchV')
+  call bndry_exchangeV(hybrid,edgeq)
+  call t_stopf('biwksc_bexchV')
+
+  do ie=nets,nete
+
+     ! apply inverse mass matrix, then apply laplace again
+#if (defined COLUMN_OPENMP)
+     !$omp parallel do private(k, q, lap_p)
+#endif
+     do q=1,nq      
+        call edgeVunpack_nlyr(edgeq,elem(ie)%desc,qtens(:,:,:,q,ie),nlev,nlev*(q-1),nq*nlev)
+        do k=1,nlev    !  Potential loop inversion (AAM)
+           lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
+           qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
+        enddo
+     enddo
+  enddo
+#ifdef DEBUGOMP
+#if (defined HORIZ_OPENMP)
+  !$OMP BARRIER
+#endif
+#endif
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+end subroutine biharmonic_wk_scalar
 
 end module 
