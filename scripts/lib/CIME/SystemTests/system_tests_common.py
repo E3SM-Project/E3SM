@@ -482,10 +482,7 @@ class SystemTestsCommon(object):
             append_testlog(comments)
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
             baseline_name = self._case.get_value("BASECMP_CASE")
-            ts_comments = (os.path.dirname(baseline_name) + ": " + comments) if "\n" not in comments else os.path.dirname(baseline_name)
-            if ts_comments == os.path.dirname(baseline_name) and TEST_NO_BASELINES_COMMENT in comments:
-                ts_comments += " {} some baseline files were missing".format(TEST_NO_BASELINES_COMMENT)
-
+            ts_comments = os.path.dirname(baseline_name) + ": " + get_ts_synopsis(comments)
             self._test_status.set_status(BASELINE_PHASE, status, comments=ts_comments)
 
     def _generate_baseline(self):

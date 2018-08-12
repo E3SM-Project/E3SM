@@ -183,7 +183,7 @@ def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
 
     return one_not_two, two_not_one, match_ups
 
-def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_suffix="", add_bfail=False):
+def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_suffix=""):
     if from_dir1 == from_dir2:
         expect(suffix1 != suffix2, "Comparing files to themselves?")
 
@@ -211,12 +211,11 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
 
         one_not_two, two_not_one, match_ups = _hists_match(model, hists1, hists2, suffix1, suffix2)
         for item in one_not_two:
-            comments += "    {}File '{}' had no counterpart in '{}' with suffix '{}'\n".format(
-                (TEST_NO_BASELINES_COMMENT + " ") if add_bfail else "", item, from_dir2, suffix2)
+            comments += "    File '{}' had no compare counterpart in '{}' with suffix '{}'\n".format(item, from_dir2, suffix2)
             all_success = False
 
         for item in two_not_one:
-            comments += "    File '{}' had no counterpart in '{}' with suffix '{}'\n".format(item, from_dir1, suffix1)
+            comments += "    File '{}' had no original counterpart in '{}' with suffix '{}'\n".format(item, from_dir1, suffix1)
             all_success = False
 
         num_compared += len(match_ups)
@@ -336,7 +335,7 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
         if not os.path.isdir(bdir):
             return False, "ERROR {} baseline directory '{}' does not exist".format(TEST_NO_BASELINES_COMMENT,bdir)
 
-    success, comments = _compare_hists(case, rundir, basecmp_dir, outfile_suffix=outfile_suffix, add_bfail=True)
+    success, comments = _compare_hists(case, rundir, basecmp_dir, outfile_suffix=outfile_suffix)
     if get_model() == "e3sm":
         bless_log = os.path.join(basecmp_dir, BLESS_LOG_NAME)
         if os.path.exists(bless_log):
@@ -457,3 +456,41 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
                                                get_timestamp(timestamp_format="%Y-%m-%d_%H:%M:%S")))
 
     return True, comments
+
+def get_ts_synopsis(comments):
+    r"""
+    Reduce case diff comments down to a single line synopsis so that we can put
+    something in the TestStatus file
+
+    >>> get_ts_synopsis('')
+    ''
+    >>> get_ts_synopsis('big error')
+    'big error'
+    >>> get_ts_synopsis('big error\n')
+    'big error'
+    >>> get_ts_synopsis('stuff\n    File foo had no compare counterpart in bar with suffix baz\nPass\n')
+    'ERROR BFAIL some baseline files were missing'
+    >>> get_ts_synopsis('stuff\n    File foo did NOT match bar with suffix baz\nPass\n')
+    'DIFF'
+    >>> get_ts_synopsis('stuff\n    File foo did NOT match bar with suffix baz\n    File foo had no compare counterpart in bar with suffix baz\nPass\n')
+    'DIFF'
+    """
+    if not comments:
+        return ""
+    elif "\n" not in comments.strip():
+        return comments.strip()
+    else:
+        has_bfails = False
+        has_real_fails = False
+        for line in comments.splitlines():
+            if "no compare counterpart" in line:
+                has_bfails = True
+            elif "did NOT match" in line:
+                has_real_fails = True
+
+        if has_real_fails:
+            return "DIFF"
+        elif has_bfails:
+            return "ERROR {} some baseline files were missing".format(TEST_NO_BASELINES_COMMENT)
+        else:
+            return ""
