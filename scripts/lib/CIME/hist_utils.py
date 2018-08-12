@@ -10,6 +10,9 @@ import logging, os, re, stat, filecmp
 logger = logging.getLogger(__name__)
 
 BLESS_LOG_NAME = "bless_log"
+NO_COMPARE     = "had no compare counterpart"
+NO_ORIGINAL    = "had no original counterpart"
+DIFF_COMMENT   = "did NOT match"
 
 def _iter_model_file_substrs(case):
     models = case.get_compset_components()
@@ -211,11 +214,11 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
 
         one_not_two, two_not_one, match_ups = _hists_match(model, hists1, hists2, suffix1, suffix2)
         for item in one_not_two:
-            comments += "    File '{}' had no compare counterpart in '{}' with suffix '{}'\n".format(item, from_dir2, suffix2)
+            comments += "    File '{}' {} in '{}' with suffix '{}'\n".format(item, NO_COMPARE, from_dir2, suffix2)
             all_success = False
 
         for item in two_not_one:
-            comments += "    File '{}' had no original counterpart in '{}' with suffix '{}'\n".format(item, from_dir1, suffix1)
+            comments += "    File '{}' {} in '{}' with suffix '{}'\n".format(item, NO_ORIGINAL, from_dir1, suffix1)
             all_success = False
 
         num_compared += len(match_ups)
@@ -227,7 +230,7 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
             if success:
                 comments += "    {} matched {}\n".format(hist1, hist2)
             else:
-                comments += "    {} did NOT match {}\n".format(hist1, hist2)
+                comments += "    {} {} {}\n".format(hist1, DIFF_COMMENT, hist2)
                 comments += "    cat " + cprnc_log_file + "\n"
                 expected_log_file = os.path.join(casedir, os.path.basename(cprnc_log_file))
                 if not (os.path.exists(expected_log_file) and filecmp.cmp(cprnc_log_file, expected_log_file)):
@@ -483,9 +486,9 @@ def get_ts_synopsis(comments):
         has_bfails = False
         has_real_fails = False
         for line in comments.splitlines():
-            if "no compare counterpart" in line:
+            if NO_COMPARE in line:
                 has_bfails = True
-            elif "did NOT match" in line:
+            elif DIFF_COMMENT in line:
                 has_real_fails = True
 
         if has_real_fails:
