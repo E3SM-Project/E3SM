@@ -884,6 +884,7 @@ contains
     deallocate( wght_d )
 
     if (.not. local_dp_map) then
+
        !
        ! allocate and initialize data structures for transposes
        !  
@@ -4874,7 +4875,7 @@ logical function phys_grid_initialized ()
    integer :: blockids(plev+1)           ! block indices
    integer :: bcids(plev+1)              ! block column indices
    integer :: ntsks_smpx(0:nsmpx-1)      ! number of processes per virtual SMP
-   integer :: smp_proc_mapx(0:nsmpx-1,max_nproc_smpx)   
+   integer :: smp_proc_mapx(max_nproc_smpx,0:nsmpx-1)   
                                          ! virtual smp to process id map
    integer :: cid_offset(0:nsmpx)        ! chunk id virtual smp offset
    integer :: ntmp1_smp(0:nsmpx-1)       ! minimum number of chunks per thread
@@ -4894,6 +4895,15 @@ logical function phys_grid_initialized ()
    integer :: column_count(0:npes-1)     ! number of columns from current chunk
                                          !  assigned to each process in dynamics
                                          !  decomposition
+   integer :: first_nonfull              ! first process (in smp_proc_mapx 
+                                         !  ordering) that has room to be assigned
+                                         !  another chunk
+   integer :: ndyn_task                  ! number of processes in the dynamics 
+                                         !  decomposition that were assigned columns
+                                         !  in the current chunk
+   integer :: dyn_task(npes)             ! list of process ids that were assigned
+                                         !  columns in the current chunk in the
+                                         !  dynamics decomposition
 !-----------------------------------------------------------------------
 !
 ! Count number of processes per virtual SMP and determine virtual SMP
@@ -4904,7 +4914,7 @@ logical function phys_grid_initialized ()
    do p=0,npes-1
       smp = proc_smp_mapx(p)
       ntsks_smpx(smp) = ntsks_smpx(smp) + 1
-      smp_proc_mapx(smp,ntsks_smpx(smp)) = p
+      smp_proc_mapx(ntsks_smpx(smp),smp) = p
    enddo
 !
 ! Determine chunk id ranges for each virtual SMP
@@ -4961,52 +4971,96 @@ logical function phys_grid_initialized ()
 !
 ! Assign chunks to processes: 
 !
+!  First, initialize number of chunks assigned to each process.
+!  Then initialize number of chunk columns assigned to each process 
+!  in the dynamics decomposition (column_count). column_count is
+!  chunk-specific, and is reset for each chunk in the loop over
+!  chunks below, except that '-1' values are retained, where '-1' indicates
+!  that the process has already been assigned its quota of chunks.
+!
    cur_npchunks(:) = 0
+   column_count(:) = 0
 !
    do smp=0,nsmpx-1
+!
+!  Initialize pointer to first process (in smp_proc_mapx ordering) that
+!  has room to be assigned another chunk
+      first_nonfull = 1
+!
       do cid=cid_offset(smp),cid_offset(smp+1)-1
 !
-         do i=1,ntsks_smpx(smp)
-            p = smp_proc_mapx(smp,i)
-            column_count(p) = 0
-         enddo
-!
-!  For each chunk, determine number of columns in each
-!  process within the dynamics.
+!  Determine number of chunk columns assigned to each process in
+!  the dynamics decomposition (excepting processes that have already been
+!  assigned their quota of chunks). Also build a list of these processes.
+         ndyn_task = 0
          do i=1,chunks(cid)%ncols
             curgcol = chunks(cid)%gcol(i)
             block_cnt = get_gcol_block_cnt_d(curgcol)
             call get_gcol_block_d(curgcol,block_cnt,blockids,bcids)
             do jb=1,block_cnt
                p = get_block_owner_d(blockids(jb)) 
-               column_count(p) = column_count(p) + 1
+               if (column_count(p) > -1) then
+                  column_count(p) = column_count(p) + 1
+                  if (column_count(p) == 1) then
+                     ndyn_task = ndyn_task + 1
+                     dyn_task(ndyn_task) = p
+                  endif
+               endif
             enddo
          enddo
-!
-!  Eliminate processes that already have their quota of chunks
-         do i=1,ntsks_smpx(smp)
-            p = smp_proc_mapx(smp,i)
-            if (cur_npchunks(p) == npchunks(p)) then
-               column_count(p) = -1
-            endif
-         enddo
-!
-!  Assign chunk to process with most
-!  columns from chunk, from among those still available
+!                              
+!  Identify process with most chunk columns in dynamics decomposition,
+!  from among those that do not already have their assigned chunk quota 
          ntmp1 = -1
          ntmp2 = -1
-         do i=1,ntsks_smpx(smp)
-            p = smp_proc_mapx(smp,i)
+         do i=1,ndyn_task
+            p = dyn_task(i)
             if (column_count(p) > ntmp1) then
                ntmp1 = column_count(p)
                ntmp2 = p
             endif
          enddo
-         cur_npchunks(ntmp2) = cur_npchunks(ntmp2) + 1
+!
+!  If no processes found that qualify, identify some other process that can
+!  accept a new chunk
+         if (ntmp1 == -1) then
+            do i=first_nonfull,ntsks_smpx(smp)
+               p = smp_proc_mapx(i,smp)
+               if (column_count(p) /= -1) then
+                  ntmp2 = p
+                  exit
+               endif
+            enddo
+         endif
+!
+!  Assign chunk to indicated process, and check whether process now
+!  has its quota of chunks
          chunks(cid)%owner   = ntmp2
-
+         cur_npchunks(ntmp2) = cur_npchunks(ntmp2) + 1
+         if (cur_npchunks(ntmp2) == npchunks(ntmp2)) then
+            column_count(ntmp2) = -1
+         endif
+!
 !  Update total number of columns assigned to this process
          gs_col_num(ntmp2)   = gs_col_num(ntmp2) + chunks(cid)%ncols
+!
+!  Zero out per process chunk columns counts, but retain -1 value
+!  (indicating that process cannot accept any more chunks)
+         do i=1,ndyn_task
+            p = dyn_task(i)
+            if (column_count(p) > 0) then
+               column_count(p) = 0
+            endif
+         enddo
+!
+!  Update pointer to first nonfull process
+         do i=first_nonfull,ntsks_smpx(smp)
+            p = smp_proc_mapx(i,smp)
+            if (column_count(p) /= -1) then
+               first_nonfull = i
+               exit
+            endif
+         enddo
 !
       enddo
 !
