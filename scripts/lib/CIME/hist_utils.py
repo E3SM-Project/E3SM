@@ -463,7 +463,8 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
 def get_ts_synopsis(comments):
     r"""
     Reduce case diff comments down to a single line synopsis so that we can put
-    something in the TestStatus file
+    something in the TestStatus file. It's expected that the comments provided
+    to this function came from _compare_hists (compare_test or compare_baseline).
 
     >>> get_ts_synopsis('')
     ''
