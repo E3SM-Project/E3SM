@@ -86,6 +86,7 @@ module component_type_mod
      integer                         :: mpicom_compid
      integer                         :: mpicom_cplcompid
      integer                         :: mpicom_cplallcompid
+     integer                         :: mbcpid
      logical                         :: iamin_compid
      logical                         :: iamin_cplcompid
      logical                         :: iamin_cplallcompid

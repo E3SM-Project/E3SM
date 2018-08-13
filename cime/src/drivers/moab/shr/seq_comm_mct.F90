@@ -197,6 +197,11 @@ module seq_comm_mct
 
   logical :: seq_comm_mct_initialized = .false.  ! whether this module has been initialized
 
+  integer, external :: iMOAB_InitializeFortran
+  integer, public :: mhid, mhfid, mpoid
+  integer, public :: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
+  integer, public :: mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
+  integer, public :: mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere
   !=======================================================================
 contains
   !======================================================================
@@ -503,6 +508,15 @@ contains
     endif
 
     call mct_world_init(ncomps, DRIVER_COMM, comms, comps)
+    ierr = iMOAB_InitializeFortran()
+    if (ierr /= 0) then
+       write(logunit,*) trim(subname),' ERROR initialize MOAB '
+    endif
+    mhid = -1
+    mpoid = -1
+    mbaxid = -1 ! iMOAB id for atm migrated mesh to coupler pes
+    mboxid = -1  ! iMOAB id for mpas ocean migrated mesh to coupler pes
+    mbintxoa = -1 ! iMOAB id for atm intx with mpas ocean
 
     deallocate(comps,comms)
 
