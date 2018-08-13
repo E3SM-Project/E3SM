@@ -289,9 +289,8 @@ class Component(EntryID):
         """
         entry_dict = dict()
         items = list()
-        exists = self.get_optional_child("help")
-        if exists:
-            helpnode = self.get_child("help")
+        helpnode = self.get_optional_child("help")
+        if helpnode:
             helptext = self.text(helpnode)
         else:
             helptext = ''
