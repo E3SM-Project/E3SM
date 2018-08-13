@@ -300,23 +300,15 @@ class Component(EntryID):
             item = dict()
             name = self.get(entry, "id")
             datatype = self.text(self.get_child("type", root=entry))
-            exists = self.get_optional_child("valid_values", root=entry)
-            if exists:
-                valid_values = self.text(self.get_child("valid_values", root=entry))
-            else:
-                valid_values = ''
-            exists = self.get_optional_child("default_value", root=entry)
-            if exists:
-                value = self.text(self.get_child("default_value", root=entry))
-            else:
-                value = ''
+            valid_values = self.get_valid_values(name)
+            default_value = self.get_default_value(node=entry)
             group = self.text(self.get_child("group", root=entry))
             filename = self.text(self.get_child("file", root=entry))
             text = self.text(self.get_child("desc", root=entry))
             item = {"name":name,
                     "datatype":datatype,
                     "valid_values":valid_values,
-                    "value":value,
+                    "value":default_value,
                     "group":group,
                     "filename":filename,
                     "desc":text.encode('utf-8')}
