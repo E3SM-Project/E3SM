@@ -203,7 +203,7 @@ contains
     gp =gausslobatto(np)
 
 !   some test code
-#if 1
+#if 0
     if (hybrid%masterthread) print *,'** running CG solver test **'
     call solver_test(elem,edge1,red,hybrid,deriv,nets,nete)
 #ifdef TRILINOS

@@ -35,7 +35,7 @@ cmake                                                                          \
   -DHDF5_DIR=$HDF5_DIR                                                         \
   -DSWIM_NP=4                                                                  \
   -DBUILD_HOMME_SWIM=TRUE                                                      \
-  -DBUILD_HOMME_SWEQX=FALSE                                                    \
+  -DBUILD_HOMME_SWEQX=FALSE                                                     \
   -DBUILD_HOMME_PRIM=FALSE                                                     \
   -DBUILD_HOMME_PREQX=FALSE                                                    \
   -DENABLE_OPENMP=TRUE                                                         \
@@ -56,5 +56,6 @@ if [ $do_make -eq 1 ]; then
 #VERBOSE=1 
 make -j16 swim                                            || exit -1
 mkdir -p $HOMME_ROOT/build/swim
-cp src/sweqx/swim $HOMME_ROOT/build/swim/swim.cpu.gnu  || exit -1
+pwd
+cp src/swim/swim $HOMME_ROOT/build/swim/swim.cpu.gnu  || exit -1
 fi
