@@ -671,7 +671,7 @@
     <default_value>mct</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
-    <desc>use MCT component interface</desc>
+    <desc>use given component interface</desc>
   </entry>
 
   <entry id="USE_ESMF_LIB">
