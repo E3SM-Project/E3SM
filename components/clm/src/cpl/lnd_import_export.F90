@@ -32,7 +32,7 @@ contains
     use domainMod        , only: ldomain
     use shr_kind_mod     , only: r8 => shr_kind_r8, CL => shr_kind_CL
     use fileutils        , only: getavu, relavu
-    use spmdmod          , only: masterproc, mpicom, MPI_REAL8
+    use spmdmod          , only: masterproc, mpicom, iam, npes, MPI_REAL8, MPI_INTEGER, MPI_STATUS_SIZE
     use clm_nlUtilsMod   , only : find_nlgroup_name
     use netcdf
     !
@@ -43,6 +43,7 @@ contains
     type(glc2lnd_type) , intent(inout) :: glc2lnd_vars      ! clm internal input data type
     !
     ! !LOCAL VARIABLES:
+    integer status(MPI_STATUS_SIZE)
     integer  :: g,i,m,thism,nstep,ier  ! indices, number of steps, and error code
     real(r8) :: forc_rainc           ! rainxy Atm flux mm/s
     real(r8) :: e, ea                ! vapor pressure (Pa)
@@ -62,7 +63,8 @@ contains
     real(r8) :: a0,a1,a2,a3,a4,a5,a6 ! coefficients for esat over water
     real(r8) :: b0,b1,b2,b3,b4,b5,b6 ! coefficients for esat over ice
     real(r8) :: tdc, t               ! Kelvins to Celcius function and its input
-    integer  :: num, nu_nml, nml_error                 
+    integer  :: thisng, np, num, nu_nml, nml_error                 
+    integer  :: ng_all(100000)
     real(r8) :: swndf, swndr, swvdf, swvdr, ratio_rvrf, frac, q
     real(r8) :: thiscosz, avgcosz, szenith
     real(r8) :: timetemp(2)
@@ -79,10 +81,11 @@ contains
     real(r8) :: tbot, tempndep(1,1,158), thiscalday, wt1(14), wt2(14), thisdoy
     real(r8) :: site_metdata(14,12)
     real(r8) :: var_month_mean(12)
-    real(r8) :: hdm1(720,360,1), hdm2(720,360,1) 
-    real(r8) :: lnfm1(192,94,2920)
-    real(r8) :: ndep1(144,96,1), ndep2(144,96,1)
-    real(r8) :: aerodata(14,144,96,14)
+    !real(r8) :: hdm1(720,360,1), hdm2(720,360,1) 
+    !real(r8) :: lnfm1(192,94,2920)
+    !real(r8) :: ndep1(144,96,1), ndep2(144,96,1)
+    !real(r8) :: aerodata(14,144,96,14)
+    integer  :: lnfmind(2)
     integer  :: var_month_count(12)
     integer*2 :: temp(1,500000)
     integer :: xtoget, ytoget, thisx, thisy, calday_start
@@ -164,10 +167,10 @@ contains
     ! by 1000 mm/m resulting in an overall factor of unity.
     ! Below the units are therefore given in mm/s.
 
-
+    thisng = bounds%endg - bounds%begg + 1
     do g = bounds%begg,bounds%endg
        i = 1 + (g - bounds%begg)
-
+       
        ! Determine flooding input, sign convention is positive downward and
        ! hierarchy is atm/glc/lnd/rof/ice/ocn.  so water sent from rof to land is negative,
        ! change the sign to indicate addition of water to system.
@@ -404,6 +407,8 @@ contains
             counti(1) = atm2lnd_vars%timelen_spinup(v)
             counti(2) = 1
             if (yr .ge. 1850 .or. use_sitedata) counti(1) = atm2lnd_vars%timelen(v)
+
+            if (g == bounds%begg)  allocate(atm2lnd_vars%atm_input       (met_nvars,bounds%begg:bounds%endg,1,1:counti(1)))
  
             ierr = nf90_get_var(met_ncids(v), varid, atm2lnd_vars%atm_input(v,g:g,1,1:counti(1)), starti(1:2), counti(1:2))
             ierr = nf90_close(met_ncids(v))
@@ -699,19 +704,19 @@ contains
               counti(1) = 720
               counti(2) = 360
               counti(3) = 1       
-              ierr = nf90_get_var(ncid, varid, hdm1, starti, counti)
+              ierr = nf90_get_var(ncid, varid, atm2lnd_vars%hdm1, starti, counti)
               starti(3) = nindex(2)
               if (nindex(1) .ne. nindex(2)) then 
-                  ierr = nf90_get_var(ncid, varid, hdm2, starti, counti)
+                  ierr = nf90_get_var(ncid, varid, atm2lnd_vars%hdm2, starti, counti)
               else
-                  hdm2 = hdm1 
+                  atm2lnd_vars%hdm2 = atm2lnd_vars%hdm1 
               end if
               ierr = nf90_close(ncid)
           end if
 
           if (i .eq. 1) then 
-              call mpi_bcast (hdm1, 360*720, MPI_REAL8, 0, mpicom, ier)
-              call mpi_bcast (hdm2, 360*720, MPI_REAL8, 0, mpicom, ier)
+              call mpi_bcast (atm2lnd_vars%hdm1, 360*720, MPI_REAL8, 0, mpicom, ier)
+              call mpi_bcast (atm2lnd_vars%hdm2, 360*720, MPI_REAL8, 0, mpicom, ier)
               call mpi_bcast (smap05_lon, 720, MPI_REAL8, 0, mpicom, ier)
               call mpi_bcast (smap05_lat, 360, MPI_REAL8, 0, mpicom, ier)
           end if
@@ -740,8 +745,8 @@ contains
         !get weights for interpolation
         wt1(1) = 1._r8 - (thiscalday -1._r8)/365._r8
         wt2(1) = 1._r8 - wt1(1)
-        atm2lnd_vars%forc_hdm(g) = hdm1(atm2lnd_vars%hdmind(g,1),atm2lnd_vars%hdmind(g,2),1)*wt1(1) + &
-                                   hdm2(atm2lnd_vars%hdmind(g,1),atm2lnd_vars%hdmind(g,2),1)*wt2(1)
+        atm2lnd_vars%forc_hdm(g) = atm2lnd_vars%hdm1(atm2lnd_vars%hdmind(g,1),atm2lnd_vars%hdmind(g,2),1)*wt1(1) + &
+                                   atm2lnd_vars%hdm2(atm2lnd_vars%hdmind(g,1),atm2lnd_vars%hdmind(g,2),1)*wt2(1)
 
         if (nstep .eq. 0 .and. masterproc .and. i .eq. 1) then 
           ! Read light_streams namelist to get filename
@@ -757,17 +762,18 @@ contains
           close(nu_nml)
           call relavu( nu_nml )
 
+          !Get all of the data (master processor only)
+          allocate(atm2lnd_vars%lnfm_all       (192,94,2920))
           ierr = nf90_open(trim(stream_fldFileName_lightng), NF90_NOWRITE, ncid)
           ierr = nf90_inq_varid(ncid, 'lat', varid)
           ierr = nf90_get_var(ncid, varid, smapt62_lat)
           ierr = nf90_inq_varid(ncid, 'lon', varid)
           ierr = nf90_get_var(ncid, varid, smapt62_lon)
           ierr = nf90_inq_varid(ncid, 'lnfm', varid)
-          ierr = nf90_get_var(ncid, varid, lnfm1)
+          ierr = nf90_get_var(ncid, varid, atm2lnd_vars%lnfm_all)
           ierr = nf90_close(ncid)
         end if
         if (nstep .eq. 0 .and. i .eq. 1) then
-            call mpi_bcast(lnfm1, 192*94*2920, MPI_REAL8, 0, mpicom, ier)
             call mpi_bcast (smapt62_lon, 192, MPI_REAL8, 0, mpicom, ier)
             call mpi_bcast (smapt62_lat, 94, MPI_REAL8, 0, mpicom, ier)
         end if
@@ -784,16 +790,33 @@ contains
                             (smapt62_lon(thisx) - ldomain%lonc(g))**2)**0.5
               if (thisdist .lt. mindist) then
                 mindist = thisdist
-                atm2lnd_vars%lnfmind(g,1) = thisx
-                atm2lnd_vars%lnfmind(g,2) = thisy
+                lnfmind(1) = thisx
+                lnfmind(2) = thisy
               end if
             end do
           end do
+          if (masterproc) then
+            atm2lnd_vars%lnfm(g,:) = atm2lnd_vars%lnfm_all(lnfmind(1),lnfmind(2),:)
+            do np = 1,npes-1
+              if (i == 1) then 
+                call mpi_recv(thisng,  1, MPI_INTEGER, np, 100000+np, mpicom, status, ier)
+                ng_all(np) = thisng
+              end if
+              if (i <= ng_all(np)) then 
+                 call mpi_recv(lnfmind, 2, MPI_INTEGER, np, 200000+np, mpicom, status, ier)
+                 call mpi_send(atm2lnd_vars%lnfm_all(lnfmind(1),lnfmind(2),:), 2920, &
+                            MPI_REAL8, np, 300000+np, mpicom, ier)
+              end if
+            end do
+          else
+            if (i == 1)  call mpi_send(thisng,  1, MPI_INTEGER, 0, 100000+iam, mpicom, ier)
+            call mpi_send(lnfmind, 2, MPI_INTEGER, 0, 200000+iam, mpicom, ier) 
+            call mpi_recv(atm2lnd_vars%lnfm(g,:), 2920, MPI_REAL8, 0, 300000+iam, mpicom, status, ier)
+          end if
         end if
 
         !Lightning data is 3-hourly.  Does not currently interpolate.
-        atm2lnd_vars%forc_lnfm(g) = lnfm1(atm2lnd_vars%lnfmind(g,1),atm2lnd_vars%lnfmind(g,2), &
-                                         ((int(thiscalday)-1)*8+tod/(3600*3))+1)
+        atm2lnd_vars%forc_lnfm(g) = atm2lnd_vars%lnfm(g, ((int(thiscalday)-1)*8+tod/(3600*3))+1)
 
    !------------------------------------Nitrogen deposition----------------------------------------------
 
@@ -827,18 +850,18 @@ contains
             counti(1)   = 144
             counti(2)   = 96
             counti(3)   = 1
-            ierr = nf90_get_var(ncid, varid, ndep1, starti, counti)
+            ierr = nf90_get_var(ncid, varid, atm2lnd_vars%ndep1, starti, counti)
             if (nindex(1) .ne. nindex(2)) then 
               starti(3) = nindex(2)
-              ierr = nf90_get_var(ncid, varid, ndep2, starti, counti)
+              ierr = nf90_get_var(ncid, varid, atm2lnd_vars%ndep2, starti, counti)
             else
-              ndep2 = ndep1
+              atm2lnd_vars%ndep2 = atm2lnd_vars%ndep1
             end if
             ierr = nf90_close(ncid)
            end if
            if (i .eq. 1) then
-              call mpi_bcast (ndep1, 144*96, MPI_REAL8, 0, mpicom, ier)
-              call mpi_bcast (ndep2, 144*96, MPI_REAL8, 0, mpicom, ier)
+              call mpi_bcast (atm2lnd_vars%ndep1, 144*96, MPI_REAL8, 0, mpicom, ier)
+              call mpi_bcast (atm2lnd_vars%ndep2, 144*96, MPI_REAL8, 0, mpicom, ier)
               call mpi_bcast (smap2_lon, 144, MPI_REAL8, 0, mpicom, ier)
               call mpi_bcast (smap2_lat, 96, MPI_REAL8, 0, mpicom, ier)
            end if
@@ -869,8 +892,8 @@ contains
         wt1(1) = 1._r8 - (thiscalday -1._r8)/365._r8
         wt2(1) = 1._r8 - wt1(1)
   
-        atm2lnd_vars%forc_ndep_grc(g)    = (ndep1(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt1(1) + &
-                                            ndep2(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt2(1)) / (365._r8 * 86400._r8)
+        atm2lnd_vars%forc_ndep_grc(g)    = (atm2lnd_vars%ndep1(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt1(1) + &
+                                            atm2lnd_vars%ndep2(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt2(1)) / (365._r8 * 86400._r8)
 
    !------------------------------------Aerosol forcing--------------------------------------------------
        if (nstep .eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then 
@@ -901,12 +924,12 @@ contains
             counti(3)   = 14
             do av=1,14
               ierr = nf90_inq_varid(ncid, trim(aerovars(av)), varid)
-              ierr = nf90_get_var(ncid, varid, aerodata(av,:,:,:), starti, counti)
+              ierr = nf90_get_var(ncid, varid, atm2lnd_vars%aerodata(av,:,:,:), starti, counti)
             end do
             ierr = nf90_close(ncid)
           end if
           if (i .eq. 1) then 
-             call mpi_bcast (aerodata, 14*144*96*14, MPI_REAL8, 0, mpicom, ier)
+             call mpi_bcast (atm2lnd_vars%aerodata, 14*144*96*14, MPI_REAL8, 0, mpicom, ier)
           end if
        end if
 
@@ -925,8 +948,9 @@ contains
         wt2(1) = 1._r8 - wt1(1)
 
         do av = 1,14
-          atm2lnd_vars%forc_aer_grc(g,av)  =  aerodata(av,atm2lnd_vars%ndepind(g,1), atm2lnd_vars%ndepind(g,2),aindex(1))*wt1(1)+ &
-                                              aerodata(av,atm2lnd_vars%ndepind(g,1), atm2lnd_vars%ndepind(g,2),aindex(2))*wt2(1)
+          atm2lnd_vars%forc_aer_grc(g,av)  =  atm2lnd_vars%aerodata(av,atm2lnd_vars%ndepind(g,1), &
+            atm2lnd_vars%ndepind(g,2),aindex(1))*wt1(1)+atm2lnd_vars%aerodata(av,atm2lnd_vars%ndepind(g,1), &
+            atm2lnd_vars%ndepind(g,2),aindex(2))*wt2(1)
         end do     
        
   !-----------------------------------------------------------------------------------------------------
