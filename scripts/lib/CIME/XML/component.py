@@ -289,7 +289,7 @@ class Component(EntryID):
         """
         entry_dict = dict()
         items = list()
-        exists = self.child_exists("help")
+        exists = self.get_optional_child("help")
         if exists:
             helpnode = self.get_child("help")
             helptext = self.text(helpnode)
@@ -300,23 +300,27 @@ class Component(EntryID):
             item = dict()
             name = self.get(entry, "id")
             datatype = self.text(self.get_child("type", root=entry))
-            exists = self.child_exists("valid_values", root=entry)
+            exists = self.get_optional_child("valid_values", root=entry)
             if exists:
                 valid_values = self.text(self.get_child("valid_values", root=entry))
             else:
                 valid_values = ''
-            value = self.get_value(name)
+            exists = self.get_optional_child("default_value", root=entry)
+            if exists:
+                value = self.text(self.get_child("default_value", root=entry))
+            else:
+                value = ''
             group = self.text(self.get_child("group", root=entry))
             filename = self.text(self.get_child("file", root=entry))
             text = self.text(self.get_child("desc", root=entry))
-            item = { "name":name,
-                     "datatype":datatype,
-                     "valid_values":valid_values,
-                     "value":value,
-                     "group":group,
-                     "filename":filename,
-                     "desc":text.encode('utf-8')}
+            item = {"name":name,
+                    "datatype":datatype,
+                    "valid_values":valid_values,
+                    "value":value,
+                    "group":group,
+                    "filename":filename,
+                    "desc":text.encode('utf-8')}
             items.append(item)
-        entry_dict = { "items" : items }
+        entry_dict = {"items" : items}
 
         return helptext, entry_dict

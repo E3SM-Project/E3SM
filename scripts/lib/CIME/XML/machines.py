@@ -335,10 +335,8 @@ class Machines(GenericXML):
             compilers = self.get_child("COMPILERS", root=machine)
             mach_dict[(name,"compilers")] = self.text(compilers)
             max_tasks_per_node = self.get_child("MAX_TASKS_PER_NODE", root=machine)
-            if max_tasks_per_node is not None:
-                mach_dict[(name,"max_tasks_per_node")] = self.text(max_tasks_per_node)
+            mach_dict[(name,"max_tasks_per_node")] = self.text(max_tasks_per_node)
             max_mpitasks_per_node = self.get_child("MAX_MPITASKS_PER_NODE", root=machine)
-            if max_mpitasks_per_node is not None:
-                mach_dict[(name,"max_mpitasks_per_node")] = self.text( max_mpitasks_per_node)
+            mach_dict[(name,"max_mpitasks_per_node")] = self.text(max_mpitasks_per_node)
 
         return mach_dict
