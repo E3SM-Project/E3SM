@@ -9,6 +9,7 @@ program esmApp
   use ESMF, only : ESMF_GridCompSetServices, ESMF_GridCompFinalize, ESMF_LogSet, ESMF_LogWrite
   use ESMF, only : ESMF_GridCompDestroy, ESMF_LOGMSG_INFO, ESMF_GridComp, ESMF_GridCompRun
   use ESMF, only : ESMF_GridCompFinalize, ESMF_GridCompCreate, ESMF_GridCompInitialize
+  use ESMF, only : ESMF_LOGKIND_MULTI_ON_ERROR
   use ESM,  only: esmSS => SetServices
 
   implicit none
