@@ -17,9 +17,10 @@ module LakeFluxesMod
   use TemperatureType      , only : temperature_type
   use WaterfluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
-  use GridcellType         , only : grc_pp                
+  use GridcellType         , only : grc_pp   
+  use TopounitType         , only : top_as  
   use ColumnType           , only : col_pp                
-  use VegetationType            , only : veg_pp                
+  use VegetationType       , only : veg_pp                
   !    
   ! !PUBLIC TYPES:
   implicit none
@@ -76,7 +77,7 @@ contains
     integer , parameter  :: niters = 4             ! maximum number of iterations for surface temperature
     real(r8), parameter :: beta1 = 1._r8           ! coefficient of convective velocity (in computing W_*) [-]
     real(r8), parameter :: zii = 1000._r8          ! convective boundary height [m]
-    integer  :: i,fc,fp,g,c,p                      ! do loop or array index
+    integer  :: i,fc,fp,g,t,c,p                    ! do loop or array index
     integer  :: fncopy                             ! number of values in pft filter copy
     integer  :: fnold                              ! previous number of pft filter values
     integer  :: fpcopy(num_lakep)                  ! patch filter copy for iteration loop
@@ -151,7 +152,7 @@ contains
          dz_lake          =>    col_pp%dz_lake                            , & ! Input:  [real(r8) (:,:) ]  layer thickness for lake (m)                    
          lakedepth        =>    col_pp%lakedepth                          , & ! Input:  [real(r8) (:)   ]  variable lake depth (m)                           
          
-         forc_t           =>    atm2lnd_vars%forc_t_downscaled_col     , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                  
+         forc_t           =>    top_as%tbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                  
          forc_pbot        =>    atm2lnd_vars%forc_pbot_downscaled_col  , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
          forc_th          =>    atm2lnd_vars%forc_th_downscaled_col    , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)        
          forc_q           =>    atm2lnd_vars%forc_q_downscaled_col     , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)             
@@ -230,6 +231,7 @@ contains
       do fp = 1, num_lakep
          p = filter_lakep(fp)
          c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
          g = col_pp%gridcell(c)
 
          ! Set fetch for prognostic roughness length-- if not found in surface data.
@@ -304,7 +306,7 @@ contains
          ! Potential, virtual potential temperature, and wind speed at the
          ! reference height
 
-         thm(p) = forc_t(c) + 0.0098_r8*forc_hgt_t_patch(p)   ! intermediate variable
+         thm(p) = forc_t(t) + 0.0098_r8*forc_hgt_t_patch(p)   ! intermediate variable
          thv(c) = forc_th(c)*(1._r8+0.61_r8*forc_q(c))     ! virtual potential T
       end do
 
@@ -617,7 +619,9 @@ contains
       do fp = 1, num_lakep
          p = filter_lakep(fp)
          c = veg_pp%column(p)
-         t_veg(p) = forc_t(c)
+         t = veg_pp%topounit(p)
+         
+         t_veg(p) = forc_t(t)
          eflx_lwrad_net(p)  = eflx_lwrad_out(p) - forc_lwrad(c)
          qflx_prec_grnd(p) = forc_rain(c) + forc_snow(c)
 

@@ -61,7 +61,8 @@ Module DryDepVelocity
   use FrictionVelocityType , only : frictionvel_type
   use PhotosynthesisType   , only : photosyns_type
   use WaterstateType       , only : waterstate_type
-  use GridcellType         , only : grc_pp                
+  use GridcellType         , only : grc_pp
+  use TopounitType         , only : top_as  
   use LandunitType         , only : lun_pp                
   use VegetationType            , only : veg_pp                
   !
@@ -154,7 +155,7 @@ CONTAINS
     ! !LOCAL VARIABLES:
     integer  :: c
     real(r8) :: soilw, var_soilw, fact_h2, dv_soil_h2
-    integer  :: pi,g, l
+    integer  :: pi,g,t,l
     integer  :: ispec 
     integer  :: length 
     integer  :: wesveg       !wesely vegegation index  
@@ -216,7 +217,7 @@ CONTAINS
     associate(                                                    & 
          forc_solai =>    atm2lnd_vars%forc_solai_grc           , & ! Input:  [real(r8) (:,:) ] direct beam radiation (visible only)             
          forc_solad =>    atm2lnd_vars%forc_solad_grc           , & ! Input:  [real(r8) (:,:) ] direct beam radiation (visible only)             
-         forc_t     =>    atm2lnd_vars%forc_t_downscaled_col    , & ! Input:  [real(r8) (:)   ] downscaled atmospheric temperature (Kelvin)                   
+         forc_t     =>    top_as%tbot                           , & ! Input:  [real(r8) (:)   ] atmospheric temperature (Kelvin)                   
          forc_q     =>    atm2lnd_vars%forc_q_downscaled_col    , & ! Input:  [real(r8) (:)   ] downscaled atmospheric specific humidity (kg/kg)              
          forc_psrf  =>    atm2lnd_vars%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ] downscaled surface pressure (Pa)                              
          forc_rain  =>    atm2lnd_vars%forc_rain_downscaled_col , & ! Input:  [real(r8) (:)   ] downscaled rain rate [mm/s]                                   
@@ -248,13 +249,14 @@ CONTAINS
          active: if (veg_pp%active(pi)) then
 
             c = veg_pp%column(pi)
+            t = veg_pp%topounit(pi)
             g = veg_pp%gridcell(pi)
             !solar_flux = forc_lwrad  !rename CLM variables to fit with Dry Dep variables 
 
             pg         = forc_psrf(c)  
             spec_hum   = forc_q(c)
             rain       = forc_rain(c) 
-            sfc_temp   = forc_t(c) 
+            sfc_temp   = forc_t(t) 
             solar_flux = forc_solad(g,1) 
             lat        = grc_pp%latdeg(g) 
             lon        = grc_pp%londeg(g) 

@@ -43,9 +43,10 @@ module CNFireMod
   use SoilHydrologyType      , only : soilhydrology_type  
   use TemperatureType        , only : temperature_type
   use WaterstateType         , only : waterstate_type
-  use GridcellType           , only : grc_pp                
+  use GridcellType           , only : grc_pp
+  use TopounitType           , only : top_as  
   use ColumnType             , only : col_pp                
-  use VegetationType              , only : veg_pp                
+  use VegetationType         , only : veg_pp                
   use mct_mod
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
@@ -161,7 +162,7 @@ contains
     ! non-boreal peat fires (was different in paper)
     real(r8), parameter :: non_boreal_peatfire_c = 0.001_r8
     !
-    integer  :: g,l,c,p,pi,j,fc,fp,kyr, kmo, kda, mcsec   ! index variables
+    integer  :: g,t,l,c,p,pi,j,fc,fp,kyr, kmo, kda, mcsec   ! index variables
     real(r8) :: dt       ! time step variable (s)
     real(r8) :: m        ! top-layer soil moisture (proportion)
     real(r8) :: dayspyr  ! days per year
@@ -192,7 +193,7 @@ contains
          
          forc_rh            =>    atm2lnd_vars%forc_rh_grc                  , & ! Input:  [real(r8) (:)     ]  relative humidity                                 
          forc_wind          =>    atm2lnd_vars%forc_wind_grc                , & ! Input:  [real(r8) (:)     ]  atmospheric wind speed (m/s)                       
-         forc_t             =>    atm2lnd_vars%forc_t_downscaled_col        , & ! Input:  [real(r8) (:)     ]  downscaled atmospheric temperature (Kelvin)                  
+         forc_t             =>    top_as%tbot                               , & ! Input:  [real(r8) (:)     ]  atmospheric temperature (Kelvin)                  
          forc_rain          =>    atm2lnd_vars%forc_rain_downscaled_col     , & ! Input:  [real(r8) (:)     ]  downscaled rain                                              
          forc_snow          =>    atm2lnd_vars%forc_snow_downscaled_col     , & ! Input:  [real(r8) (:)     ]  downscaled snow                                              
 #ifdef CPL_BYPASS
@@ -498,12 +499,13 @@ contains
      do pi = 1,max_patch_per_col
         do fc = 1,num_soilc
            c = filter_soilc(fc)
-           g= col_pp%gridcell(c)
+           g = col_pp%gridcell(c)
+           t = col_pp%topounit(c)
            hdmlf=forc_hdm(g)
            if (pi <=  col_pp%npfts(c)) then
               p = col_pp%pfti(c) + pi - 1
               ! For crop
-              if( forc_t(c)  >=  SHR_CONST_TKFRZ .and. veg_pp%itype(p)  >  nc4_grass .and.  &
+              if( forc_t(t)  >=  SHR_CONST_TKFRZ .and. veg_pp%itype(p)  >  nc4_grass .and.  &
                    kmo == abm_lf(c) .and. forc_rain(c)+forc_snow(c) == 0._r8  .and. &
                    burndate(p) >= 999 .and. veg_pp%wtcol(p)  >  0._r8 )then ! catch  crop burn time
 
@@ -564,6 +566,7 @@ contains
      do fc = 1, num_soilc
         c = filter_soilc(fc)
         g = col_pp%gridcell(c)
+        t = col_pp%topounit(c)
         hdmlf=forc_hdm(g)
         if( cropf_col(c)  <  1.0 )then
            if (trotr1_col(c)+trotr2_col(c)>0.6_r8) then
@@ -587,7 +590,7 @@ contains
               m        = max(0._r8,wf(c))
               fire_m   = exp(-SHR_CONST_PI *(m/0.69_r8)**2)*(1.0_r8 - max(0._r8, &
                    min(1._r8,(forc_rh(g)-30._r8)/(80._r8-30._r8))))*  &
-                   min(1._r8,exp(SHR_CONST_PI*(forc_t(c)-SHR_CONST_TKFRZ)/10._r8))
+                   min(1._r8,exp(SHR_CONST_PI*(forc_t(t)-SHR_CONST_TKFRZ)/10._r8))
               lh       = 0.0035_r8*6.8_r8*hdmlf**(0.43_r8)/30._r8/24._r8
               fs       = 1._r8-(0.01_r8+0.98_r8*exp(-0.025_r8*hdmlf))
               ig       = (lh+forc_lnfm(g)/(5.16_r8+2.16_r8*cos(3._r8*grc_pp%lat(g)))*0.25_r8)*(1._r8-fs)*(1._r8-cropf_col(c)) 

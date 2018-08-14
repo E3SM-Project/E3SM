@@ -22,7 +22,8 @@ module UrbanFluxesMod
   use FrictionVelocityType , only : frictionvel_type
   use EnergyFluxType       , only : energyflux_type
   use WaterfluxType        , only : waterflux_type
-  use GridcellType         , only : grc_pp                
+  use GridcellType         , only : grc_pp
+  use TopounitType         , only : top_as  
   use LandunitType         , only : lun_pp                
   use ColumnType           , only : col_pp                
   use VegetationType            , only : veg_pp                
@@ -82,7 +83,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     character(len=*), parameter :: sub="UrbanFluxes"
-    integer  :: fp,fc,fl,f,p,c,l,g,j,pi,i     ! indices
+    integer  :: fp,fc,fl,f,p,c,l,t,g,j,pi,i     ! indices
 
     real(r8) :: canyontop_wind(bounds%begl:bounds%endl)              ! wind at canyon top (m/s) 
     real(r8) :: canyon_u_wind(bounds%begl:bounds%endl)               ! u-component of wind speed inside canyon (m/s)
@@ -190,7 +191,7 @@ contains
          canyon_hwr          =>   lun_pp%canyon_hwr                            , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width          
          wtroad_perv         =>   lun_pp%wtroad_perv                           , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road            
 
-         forc_t              =>   atm2lnd_vars%forc_t_not_downscaled_grc    , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (K)                       
+         forc_t              =>   top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (K)                       
          forc_th             =>   atm2lnd_vars%forc_th_not_downscaled_grc   , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (K)             
          forc_rho            =>   atm2lnd_vars%forc_rho_not_downscaled_grc  , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                 
          forc_q              =>   atm2lnd_vars%forc_q_not_downscaled_grc    , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)             
@@ -336,9 +337,10 @@ contains
 
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
+         t = lun_pp%topounit(l)
          g = lun_pp%gridcell(l)
 
-         thm_g(l) = forc_t(g) + lapse_rate*forc_hgt_t_patch(lun_pp%pfti(l))
+         thm_g(l) = forc_t(t) + lapse_rate*forc_hgt_t_patch(lun_pp%pfti(l))
          thv_g(l) = forc_th(g)*(1._r8+0.61_r8*forc_q(g))
          dth(l)   = thm_g(l)-taf(l)
          dqh(l)   = forc_q(g)-qaf(l)
@@ -813,6 +815,8 @@ contains
             write(iulog,*)'eflx_scale    = ',eflx_scale(indexl)
             write(iulog,*)'eflx_sh_grnd_scale: ',eflx_sh_grnd_scale(lun_pp%pfti(indexl):lun_pp%pftf(indexl))
             write(iulog,*)'eflx          = ',eflx(indexl)
+            ! test code, PET
+            write(iulog,*)'tbot          = ',forc_t(lun_pp%topounit(indexl))
             call endrun(decomp_index=indexl, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
       end if
@@ -882,6 +886,7 @@ contains
          p = filter_urbanp(f)
          c = veg_pp%column(p)
          g = veg_pp%gridcell(p)
+         t = veg_pp%topounit(p)
          l = veg_pp%landunit(p)
 
          ! Use urban canopy air temperature and specific humidity to represent 
@@ -899,7 +904,7 @@ contains
 
          ! Variables needed by history tape
 
-         t_veg(p) = forc_t(g)
+         t_veg(p) = forc_t(t)
 
       end do
 
