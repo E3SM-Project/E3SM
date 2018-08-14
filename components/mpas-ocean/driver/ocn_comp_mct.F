@@ -37,7 +37,9 @@ module ocn_comp_mct
    use mpas_dmpar
    use mpas_constants
    use mpas_log
-
+#ifdef HAVE_MOAB
+   use mpas_moabmesh
+#endif
    use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
    use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
 
@@ -557,6 +559,10 @@ contains
     if ( ierr /= 0 ) then
        call mpas_log_write('Core init failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
+#ifdef HAVE_MOAB
+    call mpas_moab_instance(domain_ptr) ! should return MPOID ..
+    call mpas_log_write('initialized MOAB MPAS ocean instance... ')
+#endif
     call t_stopf('mpaso_init2')
 
 !-----------------------------------------------------------------------

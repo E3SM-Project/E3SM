@@ -102,6 +102,8 @@ module phys_grid
    use cam_abortutils,   only: endrun
    use perf_mod
    use cam_logfile,      only: iulog
+   ! debug chunks
+   use shr_file_mod,     only: shr_file_getUnit, shr_file_freeUnit
    use scamMod,          only: single_column, scmlat, scmlon
    use shr_const_mod,    only: SHR_CONST_PI
    use dycore,           only: dycore_is
@@ -437,6 +439,11 @@ contains
     character(len=hcoord_len)           :: copy_gridname
     logical                             :: unstructured
     real(r8)                            :: lonmin, latmin
+
+!  debug chunks
+    integer :: unitn
+    character (len=32) localmeshfile, lnum
+!  debug
 
 #if ( defined _OPENMP )
     integer omp_get_max_threads
@@ -1250,6 +1257,20 @@ contains
 
     ! Clean-up
     deallocate(npthreads)
+
+    if (masterproc) then
+        unitn = shr_file_getUnit()
+
+        localmeshfile = 'chunks_on_proc.txt'
+        open( unitn, file=trim(localmeshfile))
+        do cid = 1, nchunks
+          ncols = chunks(cid)%ncols
+          write (unitn, *)chunks(cid)%owner, chunks(cid)%lcid, ncols, (chunks(cid)%gcol(i), i=1, ncols)
+        enddo
+
+        close(unitn)
+        call shr_file_freeUnit( unitn )
+    endif
 
     call t_stopf("phys_grid_init")
     call t_adj_detailf(+2)

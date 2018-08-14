@@ -255,6 +255,10 @@ contains
     use physical_constants, only : dd_pi
     ! --------------------------------
 
+#ifdef HAVE_MOAB
+    use semoab_mod,         only :  create_moab_mesh_fine
+#endif
+
     implicit none
     !
     ! Locals
@@ -650,6 +654,17 @@ contains
     type (parallel_t),  intent(in)  :: par
 
     integer :: edgesz, sendsz, recvsz, n, den
+
+    allocate(dom_mt(0:hthreads-1))
+    do ith=0,hthreads-1
+       dom_mt(ith)=decompose(1,nelemd,hthreads,ith)
+    end do
+    ith=0
+    nets=1
+    nete=nelemd
+#ifdef HAVE_MOAB
+    call create_moab_mesh_fine(par, elem, nets, nete)
+#endif
 
     call prim_advance_init1(par,elem,integration)
 #ifdef TRILINOS
