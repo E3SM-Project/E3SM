@@ -269,7 +269,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
 
         # Now create drv_flds_in
         config = {}
-        definition_dir = os.path.dirname(files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"drv"},comp_interface="nuopc"))
+        definition_dir = os.path.dirname(files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"drv"}))
         definition_file = [os.path.join(definition_dir, "namelist_definition_drv_flds.xml")]
         nmlgen = NamelistGenerator(case, definition_file, files=files)
         skip_entry_loop = True
@@ -293,7 +293,7 @@ def _create_component_modelio_namelists(confdir, case, files):
 
     # will need to create a new namelist generator
     infiles = []
-    definition_dir = os.path.dirname(files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"drv"},comp_interface="nuopc"))
+    definition_dir = os.path.dirname(files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"drv"}))
     definition_file = [os.path.join(definition_dir, "namelist_definition_modelio.xml")]
 
     confdir = os.path.join(case.get_value("CASEBUILD"), "cplconf")
