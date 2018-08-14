@@ -4,6 +4,7 @@ import numpy.ma as ma
 import cdms2
 
 
+# @profile
 def climo(var, season):
     """
     Compute the climatology for var for the given season.

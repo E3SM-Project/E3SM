@@ -4,6 +4,7 @@ import os
 import copy
 import pwd
 import grp
+# import netCDF4
 import cdutil
 import MV2
 import genutil
@@ -174,8 +175,9 @@ def select_region(region, var1, var2, land_frac, ocean_frac, parameter):
     var1_domain_selected.units = var1.units
     var2_domain_selected.units = var1.units
 
-    var1_domain_selected.setGrid(var1_domain.getGrid())
-    var2_domain_selected.setGrid(var2_domain.getGrid())
+    # The below doesn't work on cdms 2.12
+    # var1_domain_selected.setGrid(var1_domain.getGrid())
+    # var2_domain_selected.setGrid(var2_domain.getGrid())
 
     print('var1_domain_selected.getGrid()', var1_domain_selected.getGrid())
     print('var2_domain_selected.getGrid()', var2_domain_selected.getGrid())

@@ -6,6 +6,7 @@ Derived variables are also supported.
 import os
 import collections
 import traceback
+# import netCDF4
 import cdms2
 import acme_diags.derivations.acme
 from . import general, climo
@@ -62,6 +63,7 @@ class Dataset():
                 self.derived_vars[derived_var] = original_vars
 
 
+    # @profile
     def get_variable(self, var, season, extra_vars=[]):
         """
         For a given season, get the variable and any extra variables.
@@ -146,6 +148,7 @@ class Dataset():
         return self.get_variable(var, season, extra_vars)[1:]
 
 
+    # @profile
     def get_attr_from_climo(self, attr, season):
         """
         For the given season, get the global attribute
@@ -159,10 +162,19 @@ class Dataset():
         else:
             filename = general.get_test_filename(self.parameters, season)
         
-        with cdms2.open(filename) as f:
-            return f.getglobal(attr)
+        try:
+            f = cdms2.open(filename)
+            f_attr = f.getglobal(attr)
+        finally:
+            f.close()
+
+        return f_attr
+
+        # with cdms2.open(filename) as f:
+        #     return f.getglobal(attr)
 
 
+    # @profile
     def _get_climo_var(self, filename):
         """
         For a given season and climo input data,
@@ -174,7 +186,9 @@ class Dataset():
         vars_to_get.extend(self.extra_vars)
         return_variables = []
 
-        with cdms2.open(filename) as data_file:
+        # with cdms2.open(filename) as data_file:
+        try:
+            data_file = cdms2.open(filename)
             for var in vars_to_get:
                 # If it's a derived var, get that.
                 if var in self.derived_vars:
@@ -209,9 +223,13 @@ class Dataset():
 
                 return_variables.append(derived_var)
 
+        finally:
+            data_file.close()
+
         return return_variables
 
 
+    # @profile
     def _get_first_valid_vars_climo(self, vars_to_func_dict, data_file, var):
         """
         Given an OrderedDict of a list of variables to a function
@@ -243,6 +261,7 @@ class Dataset():
         raise RuntimeError(msg)
 
 
+    # @profile
     def _get_original_vars_climo(self, vars_to_func_dict, data_file):
         """
         Given a dictionary in the form {(vars): func}, get the vars
@@ -259,6 +278,7 @@ class Dataset():
         return variables
 
 
+    # @profile
     def _get_func(self, vars_to_func_dict):
         """
         Get the function from the first and only entry in vars_to_func_dict,
@@ -267,7 +287,8 @@ class Dataset():
         for k in vars_to_func_dict:
             return vars_to_func_dict[k]
 
- 
+
+    # @profile 
     def _get_timeseries_var(self, data_path, start_yr, end_yr, season):
         """
         For a given season and timeseries input data,
@@ -335,6 +356,7 @@ class Dataset():
         return [self.climo_fcn(v, season) for v in return_variables]
 
 
+    # @profile
     def _get_first_valid_vars_timeseries(self, vars_to_func_dict, data_path, start_yr, end_yr):
         """
         Given an OrderedDict of a list of variables to a function
@@ -370,6 +392,7 @@ class Dataset():
         raise RuntimeError(msg)
 
 
+    # @profile
     def _does_timeseries_file_exist(self, var, data_path, start_yr, end_yr):
         """
         Returns True if a file exists in data_path in the form:
@@ -380,6 +403,7 @@ class Dataset():
         return os.path.exists(file_name)
 
 
+    # @profile
     def _get_original_vars_timeseries(self, vars_to_func_dict, data_path, start_yr, end_yr):
         """
         Given a dictionary in the form {(vars): func}, get the vars
@@ -400,6 +424,7 @@ class Dataset():
         return variables
 
 
+    # @profile
     def _get_var_from_timeseries_file(self, var, data_path, start_yr, end_yr, var_to_get=''):
         """
         Get var from this file located in data_path:
@@ -409,6 +434,16 @@ class Dataset():
         file_name = '{}_{}01_{}12.nc'.format(var, start_yr, end_yr)
         file_name = os.path.join(data_path, file_name)
 
-        with cdms2.open(file_name) as f:
+        try:
+            f = cdms2.open(file_name)
             var = var_to_get if var_to_get else var
-            return f(var)(squeeze=1)
+            v = f(var)(squeeze=1)
+        finally:
+            f.close()
+
+        return v
+
+        # with cdms2.open(file_name) as f:
+        #     var = var_to_get if var_to_get else var
+
+
