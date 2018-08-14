@@ -140,8 +140,7 @@ contains
          forc_pbot        =>    atm2lnd_vars%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ] atmospheric pressure (Pa)                
          forc_q           =>    atm2lnd_vars%forc_q_downscaled_col    , & ! Input:  [real(r8) (:)   ] atmospheric specific humidity (kg/kg)    
          forc_t           =>    top_as%tbot                           , & ! Input:  [real(r8) (:)   ] atmospheric temperature (Kelvin)         
-         forc_th          =>    atm2lnd_vars%forc_th_downscaled_col   , & ! Input:  [real(r8) (:)   ] atmospheric potential temperature (Kelvin)
-
+         forc_th          =>    top_as%thbot                          , & ! Input:  [real(r8) (:)   ] atmospheric potential temperature (Kelvin)
 
          frac_h2osfc      =>    waterstate_vars%frac_h2osfc_col       , & ! Input:  [real(r8) (:)   ] fraction of ground covered by surface water (0 to 1)
          frac_sno_eff     =>    waterstate_vars%frac_sno_eff_col      , & ! Input:  [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)
@@ -233,6 +232,7 @@ contains
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          l = col_pp%landunit(c)
+         t = col_pp%topounit(c)
 
          if (col_pp%itype(c) == icol_road_perv) then
             hr_road_perv = 0._r8
@@ -395,7 +395,7 @@ contains
 
          beta(c) = 1._r8
          zii(c)  = 1000._r8
-         thv(c)  = forc_th(c)*(1._r8+0.61_r8*forc_q(c))
+         thv(c)  = forc_th(t)*(1._r8+0.61_r8*forc_q(c))
 
       end do ! (end of columns loop)
 

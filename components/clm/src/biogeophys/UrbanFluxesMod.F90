@@ -192,7 +192,7 @@ contains
          wtroad_perv         =>   lun_pp%wtroad_perv                           , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road            
 
          forc_t              =>   top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (K)                       
-         forc_th             =>   atm2lnd_vars%forc_th_not_downscaled_grc   , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (K)             
+         forc_th             =>   top_as%thbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (K)             
          forc_rho            =>   atm2lnd_vars%forc_rho_not_downscaled_grc  , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                 
          forc_q              =>   atm2lnd_vars%forc_q_not_downscaled_grc    , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)             
          forc_pbot           =>   atm2lnd_vars%forc_pbot_not_downscaled_grc , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
@@ -341,10 +341,10 @@ contains
          g = lun_pp%gridcell(l)
 
          thm_g(l) = forc_t(t) + lapse_rate*forc_hgt_t_patch(lun_pp%pfti(l))
-         thv_g(l) = forc_th(g)*(1._r8+0.61_r8*forc_q(g))
+         thv_g(l) = forc_th(t)*(1._r8+0.61_r8*forc_q(g))
          dth(l)   = thm_g(l)-taf(l)
          dqh(l)   = forc_q(g)-qaf(l)
-         dthv     = dth(l)*(1._r8+0.61_r8*forc_q(g))+0.61_r8*forc_th(g)*dqh(l)
+         dthv     = dth(l)*(1._r8+0.61_r8*forc_q(g))+0.61_r8*forc_th(t)*dqh(l)
          zldis(l) = forc_hgt_u_patch(lun_pp%pfti(l)) - z_d_town(l)
 
          ! Initialize Monin-Obukhov length and wind speed including convective velocity
@@ -636,13 +636,14 @@ contains
          ! TODO: Some of these constants replicate what is in FrictionVelocity and BareGround fluxes should consildate. EBK
          do fl = 1, num_urbanl
             l = filter_urbanl(fl)
+            t = lun_pp%topounit(l)
             g = lun_pp%gridcell(l)
 
             dth(l) = thm_g(l)-taf(l)
             dqh(l) = forc_q(g)-qaf(l)
             tstar = temp1(l)*dth(l)
             qstar = temp2(l)*dqh(l)
-            thvstar = tstar*(1._r8+0.61_r8*forc_q(g)) + 0.61_r8*forc_th(g)*qstar
+            thvstar = tstar*(1._r8+0.61_r8*forc_q(g)) + 0.61_r8*forc_th(t)*qstar
             zeta = zldis(l)*vkc*grav*thvstar/(ustar(l)**2*thv_g(l))
 
             if (zeta >= 0._r8) then                   !stable
