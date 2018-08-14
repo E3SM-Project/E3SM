@@ -23,8 +23,8 @@ are specified as a comma separated list with no embedded white space.
 <entry id="ccsm_seq" valid_values="0,1" value="0">
 Switch specifies whether CAM is being built by the CCSM sequential scripts.  0 => no, 1 => yes.
 </entry>
-<entry id="comp_intf" valid_values="mct,esmf" value="mct">
-Component interfaces: mct or esmf.  Default: mct.
+<entry id="comp_intf" valid_values="mct,esmf,moab" value="mct">
+Component interfaces: mct, esmf, or moab.  Default: mct.
 </entry>
 <entry id="dyn" valid_values="eul,sld,fv,homme,se" value="">
 Dynamics package: eul, sld, fv, or se.

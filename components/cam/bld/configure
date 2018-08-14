@@ -133,7 +133,7 @@ OPTIONS
                         options are: clubb_do_adv(Advect CLUBB moments), clubb_do_deep(CLUBB does the deep convection) 
      -co2_cycle         This option is meant to be used with the -ccsm_seq option.  It modifies the
                         CAM configuration by increasing the number of advected constituents by 4.
-     -comp_intf         Specify the component interfaces [mct | esmf] (default: mct).
+     -comp_intf         Specify the component interfaces [mct | esmf | moab] (default: mct).
      -cppdefs <string>  A string of user specified CPP defines.  Appended to
                         Makefile defaults.  E.g. -cppdefs '-DVAR1 -DVAR2'
      -dyn <name>        Build CAM with specified dynamical core [eul | sld | fv | se].
