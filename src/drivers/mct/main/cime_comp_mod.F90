@@ -2048,6 +2048,7 @@ contains
     use seq_comm_mct,        only: atm_layout, lnd_layout, ice_layout
     use seq_comm_mct,        only: glc_layout, rof_layout, ocn_layout
     use seq_comm_mct,        only: wav_layout, esp_layout, num_inst_driver
+    use seq_comm_mct,        only: seq_comm_inst
     use seq_pauseresume_mod, only: seq_resume_store_comp, seq_resume_get_files
     use seq_pauseresume_mod, only: seq_resume_free
 
@@ -3775,37 +3776,37 @@ contains
           do eai = 1, num_inst_atm
              call seq_resume_store_comp(atm(eai)%oneletterid,                 &
                   atm(eai)%cdata_cc%resume_filename, num_inst_atm,            &
-                  atm(eai)%instn, component_get_iamroot_compid(atm(eai)))
+                  ATMID(eai), component_get_iamroot_compid(atm(eai)))
           end do
           do eli = 1, num_inst_lnd
              call seq_resume_store_comp(lnd(eli)%oneletterid,                 &
                   lnd(eli)%cdata_cc%resume_filename, num_inst_lnd,            &
-                  lnd(eli)%instn, component_get_iamroot_compid(lnd(eli)))
+                  LNDID(eli), component_get_iamroot_compid(lnd(eli)))
           end do
           do eoi = 1, num_inst_ocn
              call seq_resume_store_comp(ocn(eoi)%oneletterid,                 &
                   ocn(eoi)%cdata_cc%resume_filename, num_inst_ocn,            &
-                  ocn(eoi)%instn, component_get_iamroot_compid(ocn(eoi)))
+                  OCNID(eoi), component_get_iamroot_compid(ocn(eoi)))
           end do
           do eii = 1, num_inst_ice
              call seq_resume_store_comp(ice(eii)%oneletterid,                 &
                   ice(eii)%cdata_cc%resume_filename, num_inst_ice,            &
-                  ice(eii)%instn, component_get_iamroot_compid(ice(eii)))
+                  ICEID(eii), component_get_iamroot_compid(ice(eii)))
           end do
           do eri = 1, num_inst_rof
              call seq_resume_store_comp(rof(eri)%oneletterid,                 &
                   rof(eri)%cdata_cc%resume_filename, num_inst_rof,            &
-                  rof(eri)%instn, component_get_iamroot_compid(rof(eri)))
+                  ROFID(eri), component_get_iamroot_compid(rof(eri)))
           end do
           do egi = 1, num_inst_glc
              call seq_resume_store_comp(glc(egi)%oneletterid,                 &
                   glc(egi)%cdata_cc%resume_filename, num_inst_glc,            &
-                  glc(egi)%instn, component_get_iamroot_compid(glc(egi)))
+                  GLCID(egi), component_get_iamroot_compid(glc(egi)))
           end do
           do ewi = 1, num_inst_wav
              call seq_resume_store_comp(wav(ewi)%oneletterid,                 &
                   wav(ewi)%cdata_cc%resume_filename, num_inst_wav,            &
-                  wav(ewi)%instn, component_get_iamroot_compid(wav(ewi)))
+                  WAVID(ewi), component_get_iamroot_compid(wav(ewi)))
           end do
           ! Here we pass 1 as num_inst_driver as num_inst_driver is used inside
           call seq_resume_store_comp('x', drv_resume, 1,                      &
@@ -3820,43 +3821,43 @@ contains
           call seq_resume_get_files('a', resume_files)
           if (associated(resume_files)) then
              do eai = 1, num_inst_atm
-                atm(eai)%cdata_cc%resume_filename = resume_files(atm(eai)%instn)
+                atm(eai)%cdata_cc%resume_filename = resume_files(ATMID(eai))
              end do
           end if
           call seq_resume_get_files('l', resume_files)
           if (associated(resume_files)) then
              do eli = 1, num_inst_lnd
-                lnd(eli)%cdata_cc%resume_filename = resume_files(lnd(eli)%instn)
+                lnd(eli)%cdata_cc%resume_filename = resume_files(LNDID(eli))
              end do
           end if
           call seq_resume_get_files('o', resume_files)
           if (associated(resume_files)) then
              do eoi = 1, num_inst_ocn
-                ocn(eoi)%cdata_cc%resume_filename = resume_files(ocn(eoi)%instn)
+                ocn(eoi)%cdata_cc%resume_filename = resume_files(OCNID(eoi))
              end do
           end if
           call seq_resume_get_files('i', resume_files)
           if (associated(resume_files)) then
              do eii = 1, num_inst_ice
-                ice(eii)%cdata_cc%resume_filename = resume_files(ice(eii)%instn)
+                ice(eii)%cdata_cc%resume_filename = resume_files(ICEID(eii))
              end do
           end if
           call seq_resume_get_files('r', resume_files)
           if (associated(resume_files)) then
              do eri = 1, num_inst_rof
-                rof(eri)%cdata_cc%resume_filename = resume_files(rof(eri)%instn)
+                rof(eri)%cdata_cc%resume_filename = resume_files(ROFID(eri))
              end do
           end if
           call seq_resume_get_files('g', resume_files)
           if (associated(resume_files)) then
              do egi = 1, num_inst_glc
-                glc(egi)%cdata_cc%resume_filename = resume_files(glc(egi)%instn)
+                glc(egi)%cdata_cc%resume_filename = resume_files(GLCID(egi))
              end do
           end if
           call seq_resume_get_files('w', resume_files)
           if (associated(resume_files)) then
              do ewi = 1, num_inst_wav
-                wav(ewi)%cdata_cc%resume_filename = resume_files(wav(ewi)%instn)
+                wav(ewi)%cdata_cc%resume_filename = resume_files(WAVID(ewi))
              end do
           end if
           call seq_resume_get_files('x', resume_files)
@@ -4206,7 +4207,7 @@ contains
     call shr_mpi_commsize(comm_in, numpes, ' cime_cpl_init')
 
     num_inst_driver = 1
-    id    = 0
+    id    = 1 ! For compatiblity with component instance numbering
 
     if (mype == 0) then
        ! Read coupler namelist if it exists

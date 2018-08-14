@@ -423,7 +423,8 @@ CONTAINS
              rfilename = wav_resume(inst_index)
              varname = 'T'
           case('drv')
-             rfilename = cpl_resume(inst_index)
+             ! The driver is special, there may only be one (not multi-driver)
+             rfilename = cpl_resume(min(inst_index,size(cpl_resume,1)))
              varname = 'x2oacc_ox_Foxx_swnet'
           case default
              call shr_sys_abort(subname//'Unrecognized ind')
