@@ -18,7 +18,7 @@ Root directory of CLM source distribution (directory above CLM configure).
 </entry>
 
 <entry id="comp_intf" 
-       valid_values="ESMF,MCT,cpl_\$COMP" 
+       valid_values="ESMF,MCT,MOAB,cpl_\$COMP" 
        value="MCT"
        category="directories">
 Component framework interface to use 
