@@ -384,7 +384,6 @@
   <entry id="PAUSE_ACTIVE">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
@@ -1903,7 +1902,6 @@
   <entry id="NTASKS">
     <type>integer</type>
     <values>
-      <value>1</value>
       <value compclass="ATM"> $MAX_MPITASKS_PER_NODE</value>
       <value compclass="CPL"> $MAX_MPITASKS_PER_NODE</value>
       <value compclass="OCN"> $MAX_MPITASKS_PER_NODE</value>
@@ -1922,7 +1920,6 @@
   <entry id="NTASKS_PER_INST">
     <type>integer</type>
     <values>
-      <value>0</value>
       <value compclass="ATM"> 0</value>
       <value compclass="OCN"> 0</value>
       <value compclass="WAV"> 0</value>
@@ -1940,7 +1937,6 @@
   <entry id="NTHRDS">
     <type>integer</type>
     <values>
-      <value>1</value>
       <value compclass="ATM">1</value>
       <value compclass="CPL">1</value>
       <value compclass="OCN">1</value>
@@ -1959,7 +1955,6 @@
   <entry id="ROOTPE">
     <type>integer</type>
     <values>
-      <value>0</value>
       <value compclass="ATM">0</value>
       <value compclass="CPL">0</value>
       <value compclass="OCN">0</value>
@@ -1989,7 +1984,6 @@
 
   <entry id="NINST">
     <type>integer</type>
-    <default_value>1</default_value>
     <values>
       <value compclass="ATM">1</value>
       <value compclass="OCN">1</value>
@@ -2028,7 +2022,6 @@
   <entry id="PSTRID">
     <type>integer</type>
     <values>
-      <value>1</value>
       <value compclass="ATM">1</value>
       <value compclass="CPL">1</value>
       <value compclass="OCN">1</value>
@@ -2255,7 +2248,6 @@
      be computed based on PIO_NUMTASKS and number of compute tasks
     </desc>
     <values>
-      <value>-99</value>
       <value compclass="ATM"></value>
       <value compclass="CPL"></value>
       <value compclass="OCN"></value>
@@ -2294,7 +2286,6 @@
     <file>env_run.xml</file>
     <desc>pio root processor relative to component root</desc>
     <values>
-      <value>1</value>
       <value component="ATM">1</value>
       <value component="CPL">1</value>
       <value component="OCN">1</value>
@@ -2316,7 +2307,6 @@
       number of tasks
     </desc>
     <values>
-      <value>-99</value>
       <value compclass="ATM">-99</value>
       <value compclass="CPL">-99</value>
       <value compclass="OCN">-99</value>
@@ -2580,7 +2570,6 @@
 
   <entry id="DATA_ASSIMILATION">
     <type>logical</type>
-    <default_value>FALSE</default_value>
     <valid_values>TRUE,FALSE</valid_values>
     <group>external_tools</group>
     <file>env_run.xml</file>
