@@ -38,7 +38,7 @@ contains
   !
   ! ================================
   ! --------------------------
-  function global_integral(elem, h,hybrid,npts,nets,nete) result(I_sphere)
+  function global_integral(elem, h,hybrid,npts,nets,nete, which) result(I_sphere)
     use kinds,       only : real_kind
     use hybrid_mod,  only : hybrid_t
     use element_mod, only : element_t
@@ -50,6 +50,7 @@ contains
     integer              , intent(in) :: npts,nets,nete
     real (kind=real_kind), intent(in) :: h(npts,npts,nets:nete)
     type (hybrid_t)      , intent(in) :: hybrid
+    character(len=*)     , intent(in) ,optional :: which  ! which field causes nans    
 
     real (kind=real_kind) :: I_sphere
 
@@ -83,7 +84,7 @@ contains
       global_shared_buf(ie,1) = J_tmp(ie)
     enddo
 !JMD    print *,'global_integral: before wrap_repro_sum'
-    call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
+    call wrap_repro_sum(nvars=1, comm=hybrid%par%comm, which=which)
 !JMD    print *,'global_integral: after wrap_repro_sum'
     I_tmp = global_shared_sum(1)
 !JMD    print *,'global_integral: after global_shared_sum'
@@ -135,7 +136,7 @@ contains
 
     ! Calculate surface area by integrating 1.0d0 over sphere and dividing by 4*DD_PI
     ! (Should be 1)
-    I_sphere = global_integral(elem, h(:,:,nets:nete),hybrid,np,nets,nete)
+    I_sphere = global_integral(elem,h(:,:,nets:nete),hybrid,np,nets,nete,which='test: int. sphere')
 
     min_area=1d99
     max_area=0
@@ -182,7 +183,7 @@ contains
     min_min_dx=ParallelMin(min_min_dx,hybrid)
     max_min_dx=ParallelMax(max_min_dx,hybrid)
 
-    call wrap_repro_sum(nvars=2, comm=hybrid%par%comm)
+    call wrap_repro_sum(nvars=2, comm=hybrid%par%comm, which='area and dx_short')
 
     avg_area = global_shared_sum(1)/dble(nelem)
     avg_min_dx = global_shared_sum(2)/dble(nelem)
@@ -409,7 +410,7 @@ contains
 
         min_hypervis = ParallelMin(min_hypervis, hybrid)
         max_hypervis = ParallelMax(max_hypervis, hybrid)
-        call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
+        call wrap_repro_sum(nvars=1, comm=hybrid%par%comm, which='variable hypervisc')
         avg_hypervis = global_shared_sum(1)/dble(nelem)
 
         normDinv_hypervis = ParallelMax(normDinv_hypervis, hybrid)
@@ -641,8 +642,8 @@ contains
        end do
     end do
 
-    dhabs_int = global_integral(elem, dhabs(:,:,nets:nete),hybrid,npts,nets,nete)
-    htabs_int = global_integral(elem, htabs(:,:,nets:nete),hybrid,npts,nets,nete)
+    dhabs_int = global_integral(elem, dhabs(:,:,nets:nete),hybrid,npts,nets,nete,which='dhabs_int')
+    htabs_int = global_integral(elem, htabs(:,:,nets:nete),hybrid,npts,nets,nete,which='htabs_int')
 
     l1 = dhabs_int/htabs_int
 
@@ -706,8 +707,8 @@ contains
        end do
     end do
 
-    dvsq_int = global_integral(elem, dvsq(:,:,nets:nete),hybrid,npts,nets,nete)
-    vtsq_int = global_integral(elem, vtsq(:,:,nets:nete),hybrid,npts,nets,nete)
+    dvsq_int = global_integral(elem,dvsq(:,:,nets:nete),hybrid,npts,nets,nete,which='dvsq')
+    vtsq_int = global_integral(elem,vtsq(:,:,nets:nete),hybrid,npts,nets,nete,which='vtsq')
 
     l1 = dvsq_int/vtsq_int
 
@@ -726,7 +727,7 @@ contains
     use element_mod, only : element_t
     use hybrid_mod, only : hybrid_t
 
-    type(element_t), intent(in) :: elem(:)	
+    type(element_t), intent(in) :: elem(:)
     integer              , intent(in) :: npts,nets,nete
     real (kind=real_kind), intent(in) :: h(npts,npts,nets:nete)  ! computed soln
     real (kind=real_kind), intent(in) :: ht(npts,npts,nets:nete) ! true soln
@@ -750,8 +751,8 @@ contains
        end do
     end do
 
-    dh2_int = global_integral(elem,dh2(:,:,nets:nete),hybrid,npts,nets,nete)
-    ht2_int = global_integral(elem,ht2(:,:,nets:nete),hybrid,npts,nets,nete)
+    dh2_int = global_integral(elem,dh2(:,:,nets:nete),hybrid,npts,nets,nete,which='dh2')
+    ht2_int = global_integral(elem,ht2(:,:,nets:nete),hybrid,npts,nets,nete,which='ht2')
 
     l2 = SQRT(dh2_int)/SQRT(ht2_int)
 
@@ -814,8 +815,8 @@ contains
        end do
     end do
 
-    dvsq_int = global_integral(elem, dvsq(:,:,nets:nete),hybrid,npts,nets,nete)
-    vtsq_int = global_integral(elem, vtsq(:,:,nets:nete),hybrid,npts,nets,nete)
+    dvsq_int = global_integral(elem,dvsq(:,:,nets:nete),hybrid,npts,nets,nete,which='dvsq_l2')
+    vtsq_int = global_integral(elem,vtsq(:,:,nets:nete),hybrid,npts,nets,nete,which='vtsq_l2')
 
     l2 = SQRT(dvsq_int)/SQRT(vtsq_int)
 
@@ -929,7 +930,7 @@ contains
   end function linf_vnorm
 
 
-  subroutine wrap_repro_sum (nvars, comm, nsize)
+  subroutine wrap_repro_sum (nvars, comm, nsize, which)
     use dimensions_mod, only: nelemd
 #ifdef CAM
     use shr_reprosum_mod, only: repro_sum => shr_reprosum_calc
@@ -943,8 +944,16 @@ contains
     integer :: nvars            !  number of variables to be summed (cannot exceed nrepro_vars)
     integer :: comm             !  mpi communicator
     integer, optional :: nsize  !  local buffer size (defaults to nelemd - number of elements in mpi task)
+    character(len=*), optional :: which  ! which field causes nans    
 
     integer nsize_use,n,i
+
+!app this print removes all issues with nans
+!#ifndef CAM
+!    if(present(which)) then
+!       write(iulog,'(a)') 'which is ', which
+!    endif
+!#endif
 
     if (present(nsize)) then
        nsize_use = nsize
@@ -956,8 +965,15 @@ contains
     ! CAM already does this, no need to do it twice
     do n=1,nvars
        do i=1,nsize_use
-          if (global_shared_buf(i,n) /= global_shared_buf(i,n) ) &
+          if (global_shared_buf(i,n) /= global_shared_buf(i,n) ) then
+             if (present(which)) then 
+               write(iulog,'(a,i,a,i)') 'wrap_repro_sum failed for nvar=',n,' out of ',nvars
+               call abortmp('NaNs detected in repro sum input and marker is '//which)
+             else  
+               write(iulog,'(a,i,a,i)') 'wrap_repro_sum failed for nvar=',n,' out of ',nvars 
                call abortmp('NaNs detected in repro sum input')
+             endif
+          endif
        enddo
     enddo
 #endif    

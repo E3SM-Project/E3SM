@@ -463,7 +463,23 @@ contains
        elem(ie)%accum%Q1mass=0
        elem(ie)%accum%KEner=0
        elem(ie)%accum%IEner=0
+       elem(ie)%accum%IEner_wet=0
        elem(ie)%accum%PEner=0
+       elem(ie)%accum%IEvert1=0
+       elem(ie)%accum%IEvert2=0
+       elem(ie)%accum%KEhorz1=0
+       elem(ie)%accum%KEhorz2=0
+       elem(ie)%accum%KEvert2=0
+       elem(ie)%accum%KEvert2=0
+       elem(ie)%accum%IEhorz1_wet=0
+       elem(ie)%accum%IEhorz2_wet=0
+       elem(ie)%accum%IEvert1_wet=0
+       elem(ie)%accum%IEvert2_wet=0
+       elem(ie)%accum%T1=0
+       elem(ie)%accum%T2=0
+       elem(ie)%accum%T2_s=0
+       elem(ie)%accum%S1=0
+       elem(ie)%accum%S1_wet=0
 
        elem(ie)%derived%Omega_p=0
        elem(ie)%state%dp3d=0

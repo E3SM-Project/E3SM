@@ -226,7 +226,7 @@ contains
                      cg%wts(i,ie)*cg%state(ie)%r(i,k)*cg%state(ie)%r(i,k) ! <b  ,b  >
              end do
           end do
-          call wrap_repro_sum(nvars=3, comm=cg%hybrid%par%comm)
+          call wrap_repro_sum(nvars=3, comm=cg%hybrid%par%comm,which='__FILE__ __LINE__')
           
           red%buf(3*k-2,1) = global_shared_sum(1)
           red%buf(3*k-1,1) = global_shared_sum(2)
@@ -301,7 +301,7 @@ contains
                         cg%wts(i,ie)*cg%state(ie)%r(i,k)*cg%state(ie)%r(i,k)
                 end do
              end do
-             call wrap_repro_sum(nvars=3, comm=cg%hybrid%par%comm)
+             call wrap_repro_sum(nvars=3,comm=cg%hybrid%par%comm,which='__FILE__ __LINE')
              red%buf(3*k-2,1) = global_shared_sum(1)
              red%buf(3*k-1,1) = global_shared_sum(2)
              red%buf(3*k  ,1) = global_shared_sum(3)

@@ -177,7 +177,7 @@ contains
        do ie=nets,nete
           global_shared_buf(ie,1) = SUM(elem(ie)%state%Q(:,:,:,q))
        enddo
-       call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
+       call wrap_repro_sum(nvars=1, comm=hybrid%par%comm, which='tracer')
        qvsum_p(q) = global_shared_sum(1)
     enddo
 
@@ -290,7 +290,7 @@ contains
     Omegamin_p = ParallelMin(Omegamin_local,hybrid)
     Omegamax_p = ParallelMax(Omegamax_local,hybrid)
 
-    call wrap_repro_sum(nvars=10, comm=hybrid%par%comm)
+    call wrap_repro_sum(nvars=10, comm=hybrid%par%comm, which='psmin_p,...,Omegamax_p block')
     usum_p = global_shared_sum(1)
     vsum_p = global_shared_sum(2)
     tsum_p = global_shared_sum(3)
@@ -313,7 +313,7 @@ contains
     do ie=nets,nete
        tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0) 
     enddo
-    Mass2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    Mass2 = global_integral(elem,tmp(:,:,nets:nete),hybrid,npts,nets,nete,which='mass2')
     do ie=nets,nete
        tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,np1) 
     enddo
@@ -352,7 +352,7 @@ contains
        allocate(tmp3d(np,np,nlev,nets:nete))
        call compute_zeta_C0(tmp3d,elem,hybrid,nets,nete,n0)
        tmp=tmp3d(:,:,nlev,:)**2
-       relvort = SQRT(global_integral(elem, tmp,hybrid,npts,nets,nete))
+       relvort = SQRT(global_integral(elem,tmp,hybrid,npts,nets,nete,which='relvort'))
        deallocate(tmp3d)
     endif
 
@@ -400,25 +400,25 @@ contains
 !BUG To observe the prim_advance_si_bug1 uncomment the following line.  It
 !BUG should after several iterations generate NaN's
 !BUG       print *,'IAM: ',iam,' prim_printstate: SUM(tmp): ',SUM(tmp)
-       IEner(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+       IEner(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete,which='IEner')
        IEner(n) = IEner(n)*scale
        
        do ie=nets,nete
           tmp(:,:,ie)=elem(ie)%accum%IEner_wet(:,:,n)
        enddo
-       IEner_wet(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+       IEner_wet(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete,which='IEner wet')
        IEner_wet(n) = IEner_wet(n)*scale
        
        do ie=nets,nete
           tmp(:,:,ie)=elem(ie)%accum%KEner(:,:,n)
        enddo
-       KEner(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+       KEner(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete,which='KEner')
        KEner(n) = KEner(n)*scale
        
        do ie=nets,nete
           tmp(:,:,ie)=elem(ie)%accum%PEner(:,:,n)
        enddo
-       PEner(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+       PEner(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete,which='PEner')
        PEner(n) = PEner(n)*scale
        TOTE(n)=IEner(n)+PEner(n)+KEner(n)
        
@@ -427,20 +427,20 @@ contains
           do ie=nets,nete
              tmp(:,:,ie)=elem(ie)%accum%Qvar(:,:,q,n)
           enddo
-          Qvar(q,n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+          Qvar(q,n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete,which='Qvar')
           Qvar(q,n) = Qvar(q,n)*scale
           
           do ie=nets,nete
              tmp(:,:,ie)=elem(ie)%accum%Qmass(:,:,q,n)
           enddo
-          Qmass(q,n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+          Qmass(q,n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete,which='Qmass')
           Qmass(q,n) = Qmass(q,n)*scale
           
           if (n==2) then
              do ie=nets,nete
                 tmp(:,:,ie)=elem(ie)%accum%Q1mass(:,:,q)
              enddo
-             Q1mass(q) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+             Q1mass(q) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete,which='Q1mass')
              Q1mass(q) = Q1mass(q)*scale
           endif
        enddo
@@ -456,73 +456,73 @@ contains
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%KEvert1 + elem(ie)%accum%KEvert2
     enddo
-    KEvert = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    KEvert = global_integral(elem,tmp(:,:,nets:nete),hybrid,npts,nets,nete,which='KEvert')
     KEvert = KEvert*scale
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%IEvert1 + elem(ie)%accum%IEvert2
     enddo
-    IEvert = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    IEvert = global_integral(elem,tmp(:,:,nets:nete),hybrid,npts,nets,nete,which='IEvert')
     IEvert = IEvert*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%KEhorz1 + elem(ie)%accum%KEhorz2
     enddo
-    KEhorz = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    KEhorz = global_integral(elem,tmp(:,:,nets:nete),hybrid,npts,nets,nete,which='KEhorz')
     KEhorz = KEhorz*scale
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%IEhorz1 + elem(ie)%accum%IEhorz2
     enddo
-    IEhorz = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    IEhorz = global_integral(elem,tmp(:,:,nets:nete),hybrid,npts,nets,nete,which='IEhorz')
     IEhorz = IEhorz*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%IEhorz1_wet + elem(ie)%accum%IEhorz2_wet
     enddo
-    IEhorz_wet = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    IEhorz_wet = global_integral(elem,tmp(:,:,nets:nete),hybrid,npts,nets,nete,which='IEhorz_wet')
     IEhorz_wet = IEhorz_wet*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%IEvert1_wet + elem(ie)%accum%IEvert2_wet
     enddo
-    IEvert_wet = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    IEvert_wet = global_integral(elem,tmp(:,:,nets:nete),hybrid,npts,nets,nete,which='IEvert_wet')
     IEvert_wet = IEvert_wet*scale
 
     !   KE->PE
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%T1
     enddo
-    T1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    T1 = global_integral(elem,tmp(:,:,nets:nete),hybrid,npts,nets,nete,which='T1')
     T1 = T1*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%T2
     enddo
-    T2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    T2 = global_integral(elem,tmp(:,:,nets:nete),hybrid,npts,nets,nete,which='T2')
     T2 = T2*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%T2_s
     enddo
-    T2_s = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    T2_s = global_integral(elem,tmp(:,:,nets:nete),hybrid,npts,nets,nete,which='T2_s')
     T2_s = T2_s*scale
     T2_m = T2 - T2_s
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%S1
     enddo
-    S1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    S1 = global_integral(elem,tmp(:,:,nets:nete),hybrid,npts,nets,nete,which='S1')
     S1 = S1*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%S1_wet
     enddo
-    S1_wet = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    S1_wet = global_integral(elem,tmp(:,:,nets:nete),hybrid,npts,nets,nete,which='S1_wet')
     S1_wet = S1_wet*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%S2
     enddo
-    S2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    S2 = global_integral(elem,tmp(:,:,nets:nete),hybrid,npts,nets,nete,which='S2')
     S2 = S2*scale
 
 

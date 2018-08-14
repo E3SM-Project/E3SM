@@ -1090,7 +1090,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
        global_shared_buf(ie,1) = a1(ie)
        global_shared_buf(ie,2) = a2(ie)
     enddo
-    call wrap_repro_sum(nvars=2, comm=hybrid%par%comm)
+    call wrap_repro_sum(nvars=2, comm=hybrid%par%comm,which='surfaces call 1')
     sphere1 = global_shared_sum(1)
     sphere2 = global_shared_sum(2)
 
@@ -1602,7 +1602,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
      global_shared_buf(ie,1) = nskipie(ie)
      global_shared_buf(ie,2) = npentie(ie)
     enddo
-    call wrap_repro_sum(nvars=2, comm=hybrid%par%comm)
+    call wrap_repro_sum(nvars=2, comm=hybrid%par%comm,which='surfaces call 2')
     nskip = global_shared_sum(1)
     npent = global_shared_sum(2)
     if (hybrid%masterthread) then
@@ -2077,7 +2077,7 @@ end subroutine  construct_cv_gll
           enddo
        enddo
     enddo
-    call wrap_repro_sum(nvars=6, comm=hybrid%par%comm)
+    call wrap_repro_sum(nvars=6, comm=hybrid%par%comm,which='surfaces call 3')
 
     ptot=0_real_kind
     _DBG_
