@@ -115,7 +115,6 @@ contains
          forc_u           =>    atm2lnd_vars%forc_u_grc               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)                        
          forc_v           =>    atm2lnd_vars%forc_v_grc               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)                       
          forc_th          =>    atm2lnd_vars%forc_th_downscaled_col   , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)                            
-         forc_t           =>    atm2lnd_vars%forc_t_downscaled_col    , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin) 
          forc_pbot        =>    atm2lnd_vars%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
          forc_rho         =>    atm2lnd_vars%forc_rho_downscaled_col  , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                                     
          forc_q           =>    atm2lnd_vars%forc_q_downscaled_col    , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)                                 

@@ -34,7 +34,8 @@ module ch4Mod
   use TemperatureType    , only : temperature_type
   use WaterfluxType      , only : waterflux_type
   use WaterstateType     , only : waterstate_type
-  use GridcellType       , only : grc_pp                
+  use GridcellType       , only : grc_pp
+  use TopounitType       , only : top_as  ! for topounit-level atmospheric state forcing  
   use LandunitType       , only : lun_pp                
   use ColumnType         , only : col_pp                
   use VegetationType          , only : veg_pp                
@@ -1306,7 +1307,7 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: sat                                    ! 0 = unsatured, 1 = saturated
     logical  :: lake                                   ! lake or not lake
-    integer  :: j,fc,c,g,fp,p                          ! indices
+    integer  :: j,fc,c,g,fp,p,t                        ! indices
     real(r8) :: dtime                                  ! land model time step (sec)
     real(r8) :: dtime_ch4                              ! ch4 model time step (sec)
     integer  :: nstep
@@ -1339,7 +1340,7 @@ contains
          zi                   =>   col_pp%zi                                    , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)           
          z                    =>   col_pp%z                                     , & ! Input:  [real(r8) (:,:) ]  layer depth (m) (-nlevsno+1:nlevsoi)            
 
-         forc_t               =>   atm2lnd_vars%forc_t_not_downscaled_grc    , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                  
+         forc_t               =>   top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                  
          forc_pbot            =>   atm2lnd_vars%forc_pbot_not_downscaled_grc , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
          forc_po2             =>   atm2lnd_vars%forc_po2_grc                 , & ! Input:  [real(r8) (:)   ]  O2 partial pressure (Pa)                          
          forc_pco2            =>   atm2lnd_vars%forc_pco2_grc                , & ! Input:  [real(r8) (:)   ]  CO2 partial pressure (Pa)                         
@@ -1440,10 +1441,13 @@ contains
                     errMsg(__FILE__, __LINE__))
             end if
          end if
-
-         c_atm(g,1) =  forc_pch4(g) / rgasm / forc_t(g) ! [mol/m3 air]
-         c_atm(g,2) =  forc_po2(g)  / rgasm / forc_t(g) ! [mol/m3 air]
-         c_atm(g,3) =  forc_pco2(g) / rgasm / forc_t(g) ! [mol/m3 air]
+         ! using the first topounit on this gridcell for access to atmospheric forcing
+         ! PET 8/10/2018 - replace this later once gas concentrations (c_atm) are also being tracked at
+         ! topounit level
+         t = grc_pp%topi(g)
+         c_atm(g,1) =  forc_pch4(g) / rgasm / forc_t(t) ! [mol/m3 air]
+         c_atm(g,2) =  forc_po2(g)  / rgasm / forc_t(t) ! [mol/m3 air]
+         c_atm(g,3) =  forc_pco2(g) / rgasm / forc_t(t) ! [mol/m3 air]
       end do
 
       ! Initialize CH4 balance and calculate finundated
@@ -1576,9 +1580,13 @@ contains
          c = filter_soilc(fc)
          g = col_pp%gridcell(c)
 
-         c_atm(g,1) =  forc_pch4(g) / rgasm / forc_t(g) ! [mol/m3 air]
-         c_atm(g,2) =  forc_po2(g)  / rgasm / forc_t(g) ! [mol/m3 air]
-        !c_atm(g,3) =  forc_pco2(g) / rgasm / forc_t(g) ! [mol/m3 air] - Not currently used
+         ! using the first topounit on this gridcell for access to atmospheric forcing
+         ! PET 8/10/2018 - replace this later once gas concentrations (c_atm) are also being tracked at
+         ! topounit level
+         t = grc_pp%topi(g)
+         c_atm(g,1) =  forc_pch4(g) / rgasm / forc_t(t) ! [mol/m3 air]
+         c_atm(g,2) =  forc_po2(g)  / rgasm / forc_t(t) ! [mol/m3 air]
+        !c_atm(g,3) =  forc_pco2(g) / rgasm / forc_t(t) ! [mol/m3 air] - Not currently used
       enddo
 
       !-------------------------------------------------

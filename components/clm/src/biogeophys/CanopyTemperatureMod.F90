@@ -29,6 +29,7 @@ module CanopyTemperatureMod
   use TemperatureType      , only : temperature_type
   use WaterfluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
+  use TopounitType         , only : top_as
   use LandunitType         , only : lun_pp                
   use ColumnType           , only : col_pp                
   use VegetationType       , only : veg_pp
@@ -96,7 +97,7 @@ contains
     type(hlm_fates_interface_type) , intent(inout) :: alm_fates
     !
     ! !LOCAL VARIABLES:
-    integer  :: g,l,c,p      ! indices
+    integer  :: g,t,l,c,p    ! indices
     integer  :: nlevbed      ! number of layers to bedrock
     integer  :: j            ! soil/snow level index
     integer  :: fp           ! lake filter pft index
@@ -138,7 +139,7 @@ contains
          forc_hgt_q       =>    atm2lnd_vars%forc_hgt_q_grc           , & ! Input:  [real(r8) (:)   ] observational height of specific humidity [m]
          forc_pbot        =>    atm2lnd_vars%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ] atmospheric pressure (Pa)                
          forc_q           =>    atm2lnd_vars%forc_q_downscaled_col    , & ! Input:  [real(r8) (:)   ] atmospheric specific humidity (kg/kg)    
-         forc_t           =>    atm2lnd_vars%forc_t_downscaled_col    , & ! Input:  [real(r8) (:)   ] atmospheric temperature (Kelvin)         
+         forc_t           =>    top_as%tbot                           , & ! Input:  [real(r8) (:)   ] atmospheric temperature (Kelvin)         
          forc_th          =>    atm2lnd_vars%forc_th_downscaled_col   , & ! Input:  [real(r8) (:)   ] atmospheric potential temperature (Kelvin)
 
 
@@ -494,8 +495,9 @@ contains
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
          c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
 
-         thm(p)  = forc_t(c) + 0.0098_r8*forc_hgt_t_patch(p)
+         thm(p)  = forc_t(t) + 0.0098_r8*forc_hgt_t_patch(p)
       end do
 
     end associate

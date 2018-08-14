@@ -3,21 +3,23 @@ module TopounitType
   ! -------------------------------------------------------- 
   ! ALM sub-grid hierarchy:
   ! Define topographic unit data types, with Init and Clean for each
+  ! Init() calls allocate memory and set history fields
   ! -------------------------------------------------------- 
   ! 3 Aug 2015, PET
   
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use landunit_varcon, only : max_lunit
-  use clm_varcon     , only : ispval
+  use clm_varcon     , only : ispval, spval
   use clm_varpar     , only : numrad
+  use histFileMod    , only : hist_addfld1d
 
   implicit none
   save
   private
   
   ! sub-grid topology and physical properties defined at the topographic unit level
-  type, public :: topounit_properties
+  type, public :: topounit_physical_properties
 
     ! indices and weights for higher subgrid level (gridcell)
     integer , pointer :: gridcell   (:) => null() ! index into gridcell level quantities
@@ -54,18 +56,27 @@ module TopounitType
   contains
     procedure, public :: Init  => init_top_pp
     procedure, public :: Clean => clean_top_pp  
-  end type topounit_properties
+  end type topounit_physical_properties
     
+  ! Define the data structure that passes atmospheric state information to the land model.
+  ! Primary point of exchange is assumed to be at the topounit level, where the influences
+  ! of topography can be represented
+  type, public :: topounit_atmospheric_state
+    real(r8), pointer :: tbot       (:) => null() ! temperature of air at atmospheric forcing height (K)
+    real(r8), pointer :: thbot      (:) => null() ! potential temperature of air at atmospheric forcing height (K)
+  contains
+    procedure, public :: Init  => init_top_as
+    procedure, public :: Clean => clean_top_as
+  end type topounit_atmospheric_state
+  
+  ! Define the data structure that holds energy state information for land at the level of topographic unit.
   type, public :: topounit_energy_state
-    real(r8), pointer :: t_atm      (:) => null() ! temperature of air at atmospheric forcing height (K)
-    real(r8), pointer :: th_atm     (:) => null() ! potential temperature of air at atmospheric forcing height (K)
-    real(r8), pointer :: t_ref2m    (:) => null() ! mean temperature of air at 2m above surface (K)
     real(r8), pointer :: t_rad      (:) => null() ! mean radiative temperature of land surface (K)
   contains
     procedure, public :: Init  => init_top_es
     procedure, public :: Clean => clean_top_es
   end type topounit_energy_state
-  
+
   type, public :: topounit_water_state
     real(r8), pointer :: vp_atm     (:) => null() ! vapor pressure of air at atmospheric forcing height (Pa)
     real(r8), pointer :: q_atm      (:) => null() ! specific humidity of air at atmopspheric forcing height (kg H2O/ kg dry air)
@@ -77,14 +88,15 @@ module TopounitType
   end type topounit_water_state
 
   ! declare the public instances of topounit types
-  type(topounit_properties)  , public, target :: top_pp
-  type(topounit_energy_state), public, target :: top_es
-  type(topounit_water_state) , public, target :: top_ws
+  type(topounit_physical_properties),  public, target :: top_pp
+  type(topounit_atmospheric_state),    public, target :: top_as
+  type(topounit_energy_state),         public, target :: top_es
+  type(topounit_water_state),          public, target :: top_ws
   
   contains
   
   subroutine init_top_pp(this, begt, endt)
-    class(topounit_properties) :: this
+    class(topounit_physical_properties) :: this
     integer, intent(in) :: begt   ! beginning topographic unit index
     integer, intent(in) :: endt   ! ending topographic unit index
     
@@ -114,7 +126,7 @@ module TopounitType
   end subroutine init_top_pp
   
   subroutine clean_top_pp(this)
-    class(topounit_properties) :: this
+    class(topounit_physical_properties) :: this
   
     deallocate(this%gridcell    )
     deallocate(this%wtgcell     )
@@ -140,14 +152,39 @@ module TopounitType
     deallocate(this%surfalb_dif )
   end subroutine clean_top_pp
   
+  subroutine init_top_as(this, begt, endt)
+    class(topounit_atmospheric_state) :: this
+    integer, intent(in) :: begt   ! beginning topographic unit index
+    integer, intent(in) :: endt   ! ending topographic unit index
+   
+    ! Allocate for atmospheric state forcing variables, initialize to special value
+    allocate(this%tbot    (begt:endt)) ; this%tbot   (:) = spval
+    allocate(this%thbot   (begt:endt)) ; this%thbot  (:) = spval
+    
+    ! Set history fields for atmospheric state forcing variables
+    !call hist_addfld1d (fname='TBOT', units='K',  &
+    !     avgflag='A', long_name='temperature of air at atmospheric forcing height', &
+    !     ptr_lnd=this%tbot)
+
+    !call hist_addfld1d (fname='THBOT', units='K',  &
+    !     avgflag='A', long_name='potential temperature of air at atmospheric forcing height', &
+    !     ptr_lnd=this%thbot)
+  end subroutine init_top_as
+
+  subroutine clean_top_as(this, begt, endt)
+    class(topounit_atmospheric_state) :: this
+    integer, intent(in) :: begt   ! beginning topographic unit index
+    integer, intent(in) :: endt   ! ending topographic unit index
+
+    deallocate(this%tbot)
+    deallocate(this%thbot)
+  end subroutine clean_top_as
+
   subroutine init_top_es(this, begt, endt)
     class(topounit_energy_state) :: this
     integer, intent(in) :: begt   ! beginning topographic unit index
     integer, intent(in) :: endt   ! ending topographic unit index
 
-    allocate(this%t_atm   (begt:endt)) ; this%t_atm   (:) = nan
-    allocate(this%th_atm  (begt:endt)) ; this%th_atm  (:) = nan
-    allocate(this%t_ref2m (begt:endt)) ; this%t_ref2m (:) = nan
     allocate(this%t_rad   (begt:endt)) ; this%t_rad   (:) = nan
   end subroutine init_top_es
   
@@ -156,9 +193,6 @@ module TopounitType
     integer, intent(in) :: begt   ! beginning topographic unit index
     integer, intent(in) :: endt   ! ending topographic unit index
     
-    deallocate(this%t_atm    )
-    deallocate(this%th_atm   )
-    deallocate(this%t_ref2m  )
     deallocate(this%t_rad    )
   end subroutine clean_top_es
   

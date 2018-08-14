@@ -27,6 +27,7 @@ module DUSTMod
   use CanopyStateType      , only : canopystate_type
   use WaterstateType       , only : waterstate_type
   use FrictionVelocityType , only : frictionvel_type
+  use TopounitType         , only : top_as
   use LandunitType         , only : lun_pp
   use ColumnType           , only : col_pp
   use VegetationType            , only : veg_pp
@@ -493,7 +494,7 @@ contains
     type(dust_type)        , intent(inout) :: dust_vars
     !
     ! !LOCAL VARIABLES
-    integer  :: p,c,g,m,n                             ! indices
+    integer  :: p,c,t,g,m,n                           ! indices
     real(r8) :: vsc_dyn_atm(bounds%begp:bounds%endp)  ! [kg m-1 s-1] Dynamic viscosity of air
     real(r8) :: vsc_knm_atm(bounds%begp:bounds%endp)  ! [m2 s-1] Kinematic viscosity of atmosphere
     real(r8) :: shm_nbr_xpn                           ! [frc] Sfc-dep exponent for aerosol-diffusion dependence on Schmidt number
@@ -512,7 +513,7 @@ contains
     associate(                                                   & 
          forc_pbot =>    atm2lnd_vars%forc_pbot_downscaled_col , & ! Input:  [real(r8)  (:)   ]  atm pressure (Pa)                                 
          forc_rho  =>    atm2lnd_vars%forc_rho_downscaled_col  , & ! Input:  [real(r8)  (:)   ]  atm density (kg/m**3)                             
-         forc_t    =>    atm2lnd_vars%forc_t_downscaled_col    , & ! Input:  [real(r8)  (:)   ]  atm temperature (K)                               
+         forc_t    =>    top_as%tbot                           , & ! Input:  [real(r8)  (:)   ]  atm temperature (K)                               
          
          ram1      =>    frictionvel_vars%ram1_patch           , & ! Input:  [real(r8)  (:)   ]  aerodynamical resistance (s/m)                    
          fv        =>    frictionvel_vars%fv_patch             , & ! Input:  [real(r8)  (:)   ]  friction velocity (m/s)                           
@@ -527,6 +528,7 @@ contains
       do p = bounds%begp,bounds%endp
          if (veg_pp%active(p)) then
             g = veg_pp%gridcell(p)
+            t = veg_pp%topounit(p)
             c = veg_pp%column(p)
 
             ! from subroutine dst_dps_dry (consider adding sanity checks from line 212)
@@ -536,10 +538,10 @@ contains
             ! Quasi-laminar layer resistance: call rss_lmn_get
             ! Size-independent thermokinetic properties
 
-            vsc_dyn_atm(p) = 1.72e-5_r8 * ((forc_t(c)/273.0_r8)**1.5_r8) * 393.0_r8 / &
-                 (forc_t(c)+120.0_r8)      ![kg m-1 s-1] RoY94 p. 102
+            vsc_dyn_atm(p) = 1.72e-5_r8 * ((forc_t(t)/273.0_r8)**1.5_r8) * 393.0_r8 / &
+                 (forc_t(t)+120.0_r8)      ![kg m-1 s-1] RoY94 p. 102
             mfp_atm = 2.0_r8 * vsc_dyn_atm(p) / &   ![m] SeP97 p. 455
-                 (forc_pbot(c)*sqrt(8.0_r8/(SHR_CONST_PI*SHR_CONST_RDAIR*forc_t(c))))
+                 (forc_pbot(c)*sqrt(8.0_r8/(SHR_CONST_PI*SHR_CONST_RDAIR*forc_t(t))))
             vsc_knm_atm(p) = vsc_dyn_atm(p) / forc_rho(c) ![m2 s-1] Kinematic viscosity of air
 
             do m = 1, ndst
@@ -557,10 +559,11 @@ contains
          do p = bounds%begp,bounds%endp
             if (veg_pp%active(p)) then
                g = veg_pp%gridcell(p)
+               t = veg_pp%topounit(p)
                c = veg_pp%column(p)
 
                stk_nbr = vlc_grv(p,m) * fv(p) * fv(p) / (grav * vsc_knm_atm(p))  ![frc] SeP97 p.965
-               dff_aer = SHR_CONST_BOLTZ * forc_t(c) * slp_crc(p,m) / &          ![m2 s-1]
+               dff_aer = SHR_CONST_BOLTZ * forc_t(t) * slp_crc(p,m) / &          ![m2 s-1]
                     (3.0_r8*SHR_CONST_PI * vsc_dyn_atm(p) * dmt_vwr(m))          !SeP97 p.474
                shm_nbr = vsc_knm_atm(p) / dff_aer                                ![frc] SeP97 p.972
                shm_nbr_xpn = shm_nbr_xpn_lnd                                     ![frc]

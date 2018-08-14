@@ -37,7 +37,8 @@ module CanopyFluxesMod
   use WaterstateType        , only : waterstate_type
   use ch4Mod                , only : ch4_type
   use PhotosynthesisType    , only : photosyns_type
-  use GridcellType          , only : grc_pp                
+  use GridcellType          , only : grc_pp 
+  use TopounitType          , only : top_as  
   use ColumnType            , only : col_pp                
   use VegetationType        , only : veg_pp                
   use PhosphorusStateType   , only : phosphorusstate_type
@@ -262,6 +263,7 @@ contains
     integer  :: p                                    ! patch index
     integer  :: c                                    ! column index
     integer  :: l                                    ! landunit index
+    integer  :: t                                    ! topounit index
     integer  :: g                                    ! gridcell index
     integer  :: fp                                   ! lake filter pft index
     integer  :: fn_noveg                             ! number of values in bare ground pft filter
@@ -326,7 +328,7 @@ contains
          forc_pbot            => atm2lnd_vars%forc_pbot_downscaled_col     , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
          forc_th              => atm2lnd_vars%forc_th_downscaled_col       , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)                            
          forc_rho             => atm2lnd_vars%forc_rho_downscaled_col      , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                                     
-         forc_t               => atm2lnd_vars%forc_t_downscaled_col        , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                                      
+         forc_t               => top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                                      
          forc_u               => atm2lnd_vars%forc_u_grc                   , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)                        
          forc_v               => atm2lnd_vars%forc_v_grc                   , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)                       
          forc_pco2            => atm2lnd_vars%forc_pco2_grc                , & ! Input:  [real(r8) (:)   ]  partial pressure co2 (Pa)                                             
@@ -449,9 +451,10 @@ contains
       do fp = 1,num_nolakeurbanp
          p = filter_nolakeurbanp(fp)
          c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
          if (frac_veg_nosno(p) == 0) then
             btran(p) = 0._r8     
-            t_veg(p) = forc_t(c) 
+            t_veg(p) = forc_t(t) 
             cf_bare  = forc_pbot(c)/(SHR_CONST_RGAS*0.001_r8*thm(p))*1.e06_r8
             rssun(p) = 1._r8/1.e15_r8 * cf_bare
             rssha(p) = 1._r8/1.e15_r8 * cf_bare

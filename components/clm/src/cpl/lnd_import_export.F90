@@ -6,7 +6,9 @@ module lnd_import_export
   use lnd2atmType  , only: lnd2atm_type
   use lnd2glcMod   , only: lnd2glc_type
   use atm2lndType  , only: atm2lnd_type
-  use glc2lndMod   , only: glc2lnd_type 
+  use glc2lndMod   , only: glc2lnd_type
+  use GridcellType , only: grc_pp         ! for access to gridcell topology
+  use TopounitType , only: top_as         ! atmospheric state forcings at topounit level  
   use clm_cpl_indices
   use mct_mod
   !
@@ -43,7 +45,7 @@ contains
     type(glc2lnd_type) , intent(inout) :: glc2lnd_vars      ! clm internal input data type
     !
     ! !LOCAL VARIABLES:
-    integer  :: g,i,m,thism,nstep,ier  ! indices, number of steps, and error code
+    integer  :: g,topo,i,m,thism,nstep,ier  ! indices, number of steps, and error code
     real(r8) :: forc_rainc           ! rainxy Atm flux mm/s
     real(r8) :: e, ea                ! vapor pressure (Pa)
     real(r8) :: qsat                 ! saturation specific humidity (kg/kg)
@@ -966,6 +968,13 @@ contains
        atm2lnd_vars%forc_aer_grc(g,12) =  x2l(index_x2l_Faxa_dstdry3,i)
        atm2lnd_vars%forc_aer_grc(g,13) =  x2l(index_x2l_Faxa_dstwet4,i)
        atm2lnd_vars%forc_aer_grc(g,14) =  x2l(index_x2l_Faxa_dstdry4,i)
+       
+       !set the topounit-level atmospheric state forcings
+       do topo = grc_pp%topi(g), grc_pp%topf(g)
+         top_as%tbot(topo)  = x2l(index_x2l_Sa_tbot,i)      ! forc_txy  Atm state K
+         top_as%thbot(topo) = x2l(index_x2l_Sa_ptem,i)      ! forc_thxy Atm state K
+       end do
+         
 #endif
 
        ! Determine optional receive fields
