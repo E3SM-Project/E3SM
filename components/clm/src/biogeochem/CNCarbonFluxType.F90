@@ -838,8 +838,8 @@ contains
     use clm_varpar , only : nlevdecomp, nlevdecomp_full, crop_prog, nlevgrnd
     use clm_varctl , only : hist_wrtch4diag
     use histFileMod, only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp 
-    use tracer_varcon    , only : is_active_betr_bgc
-    use clm_varctl,  only : get_carbontag
+    use clm_varctl , only : is_active_betr_bgc
+    use clm_varctl , only : get_carbontag
     !
     ! !ARGUMENTS:
     class(carbonflux_type) :: this    
@@ -4444,8 +4444,10 @@ contains
     use clm_varcon       , only : secspday
     use clm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
     use subgridAveMod    , only : p2c
-    use tracer_varcon    , only : is_active_betr_bgc
+#ifdef CLM_SBTR
     use MathfuncMod      , only : dot_sum
+#endif
+    use clm_varctl       , only : is_active_betr_bgc
     use clm_varpar       , only : nlevdecomp_full
     !
     ! !ARGUMENTS:
@@ -4884,13 +4886,14 @@ contains
                this%somhr_col(c)
        end do
 
-
+#ifdef CLM_SBTR
     elseif (is_active_betr_bgc) then
 
        do fc = 1, num_soilc
           c = filter_soilc(fc)
           this%hr_col(c) = dot_sum(this%hr_vr_col(c,1:nlevdecomp),dzsoi_decomp(1:nlevdecomp)) 
        enddo
+#endif
     endif
     
     ! some zeroing
@@ -5404,7 +5407,7 @@ end subroutine CSummary_interface
 
   !summarize heterotrophic respiration for methane calculation
   !
-    use tracer_varcon    , only : is_active_betr_bgc
+    use clm_varctl       , only : is_active_betr_bgc
     use clm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
   ! !ARGUMENTS:
     class(carbonflux_type) :: this

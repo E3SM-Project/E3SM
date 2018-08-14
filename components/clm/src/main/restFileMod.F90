@@ -49,14 +49,18 @@ module restFileMod
   use lnd2atmType          , only : lnd2atm_type
   use glc2lndMod           , only : glc2lnd_type
   use lnd2glcMod           , only : lnd2glc_type
+#ifdef CLM_SBTR
   use BeTRTracerType       , only : BeTRTracer_Type    
   use TracerStateType      , only : TracerState_type
   use TracerFluxType       , only : TracerFlux_Type
   use tracercoefftype      , only : tracercoeff_type
+#endif
   use ncdio_pio            , only : file_desc_t, ncd_pio_createfile, ncd_pio_openfile, ncd_global
   use ncdio_pio            , only : ncd_pio_closefile, ncd_defdim, ncd_putatt, ncd_enddef, check_dim
   use ncdio_pio            , only : check_att, ncd_getatt
+#ifdef CLM_SBTR
   use BeTRSimulationALM    , only : betr_simulation_alm_type
+#endif
   use CropType             , only : crop_type
   !
   ! !PUBLIC TYPES:
@@ -101,7 +105,9 @@ contains
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
        waterflux_vars, waterstate_vars,                                               &
        phosphorusstate_vars, phosphorusflux_vars,                                     &
+#ifdef CLM_SBTR
        ep_betr,                                                                       &
+#endif
        alm_fates, crop_vars,                                                          &
        rdate, noptr)
     !
@@ -136,7 +142,9 @@ contains
     type(waterflux_type)           , intent(in)    :: waterflux_vars
     type(phosphorusstate_type)     , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)      , intent(in)    :: phosphorusflux_vars
+#ifdef CLM_SBTR
     class(betr_simulation_alm_type), intent(inout):: ep_betr
+#endif
     type(hlm_fates_interface_type) , intent(inout) :: alm_fates
     type(crop_type)                , intent(inout) :: crop_vars
     character(len=*)               , intent(in), optional :: rdate     ! restart file time stamp for name
@@ -262,9 +270,11 @@ contains
        call dgvs_vars%Restart(bounds, ncid, flag='define')
     end if
 
+#ifdef CLM_SBTR
     if (use_betr) then
        call ep_betr%BeTRRestart(bounds, ncid, flag='define')
     endif
+#endif
 
     if (present(rdate)) then 
        call hist_restart_ncd (bounds, ncid, flag='define', rdate=rdate )
@@ -372,9 +382,11 @@ contains
        call dgvs_vars%Restart(bounds, ncid, flag='write')
     end if
 
+#ifdef CLM_SBTR
     if (use_betr) then
        call ep_betr%BeTRRestart(bounds, ncid, flag='write')
     endif
+#endif
 
     call hist_restart_ncd (bounds, ncid, flag='write' )
 
@@ -407,7 +419,9 @@ contains
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
        waterflux_vars, waterstate_vars,                                               &
        phosphorusstate_vars,phosphorusflux_vars,                                      &
+#ifdef CLM_SBTR
        ep_betr,                                                                       &
+#endif
        alm_fates, glc2lnd_vars, crop_vars)
     !
     ! !DESCRIPTION:
@@ -450,7 +464,9 @@ contains
     type(waterflux_type)           , intent(inout) :: waterflux_vars
     type(phosphorusstate_type)     , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)      , intent(inout) :: phosphorusflux_vars
+#ifdef CLM_SBTR
     class(betr_simulation_alm_type), intent(inout) :: ep_betr
+#endif
     type(hlm_fates_interface_type) , intent(inout) :: alm_fates
     type(glc2lnd_type)             , intent(inout) :: glc2lnd_vars
     type(crop_type)                , intent(inout) :: crop_vars
@@ -580,9 +596,11 @@ contains
        call dgvs_vars%Restart(bounds, ncid, flag='read')
     end if
 
+#ifdef CLM_SBTR
     if (use_betr) then
        call ep_betr%BeTRRestart(bounds, ncid, flag='read')
     endif
+#endif
         
     call hist_restart_ncd (bounds, ncid, flag='read')
 

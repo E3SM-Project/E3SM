@@ -111,7 +111,9 @@ contains
     use fileutils                 , only : getavu, relavu
     use shr_string_mod            , only : shr_string_getParentDir
     use clm_interface_pflotranMod , only : clm_pf_readnl
+#ifdef CLM_SBTR
     use ALMBeTRNLMod              , only : betr_readNL
+#endif
     !
     implicit none
     !
@@ -448,9 +450,11 @@ contains
        call clm_pf_readnl(NLFilename)
     end if
 
+#ifdef CLM_SBTR
     if (use_betr) then
        call betr_readNL( NLFilename, use_c13, use_c14)
     endif    
+#endif
 
     ! ----------------------------------------------------------------------
     ! consistency checks

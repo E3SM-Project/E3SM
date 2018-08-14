@@ -5,9 +5,6 @@
 	path = components/clm/src/external_models/mpp
 	url = https://github.com/MPP-LSM/MPP.git
 	branch = alm/develop
-[submodule "sbetr"]
-	path = components/clm/src/external_models/sbetr
-	url = https://github.com/BeTR-biogeochemistry-modeling/sbetr.git
 [submodule "components/mpas-source"]
 	path = components/mpas-source
 	url = https://github.com/MPAS-Dev/MPAS-Model.git

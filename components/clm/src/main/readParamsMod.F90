@@ -94,8 +94,7 @@ contains
     use fileutils                , only : getfil
     use ncdio_pio                , only : ncd_pio_closefile, ncd_pio_openfile, &
                                           file_desc_t, ncd_inqdid, ncd_inqdlen
-    use tracer_varcon            , only : is_active_betr_bgc                                         
-    
+    use clm_varctl               , only : is_active_betr_bgc
     !
     ! !ARGUMENTS:
     implicit none

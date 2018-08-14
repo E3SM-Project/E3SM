@@ -16,7 +16,7 @@ module CNCStateUpdate2Mod
   use pftvarcon        , only : npcropmin
   use clm_varctl       , only : use_pflotran, pf_cmode
   use VegetationType           , only : veg_pp   
-  use tracer_varcon    , only : is_active_betr_bgc
+  use clm_varctl       , only : is_active_betr_bgc
   !
   implicit none
   save
@@ -37,7 +37,7 @@ contains
     ! On the radiation time step, update all the prognostic carbon state
     ! variables affected by gap-phase mortality fluxes
     !
-    use tracer_varcon, only : is_active_betr_bgc      
+    use clm_varctl   , only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -126,7 +126,7 @@ contains
     ! Update all the prognostic carbon state
     ! variables affected by harvest mortality fluxes
     !
-    use tracer_varcon,  only : is_active_betr_bgc      
+    use clm_varctl   ,  only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns

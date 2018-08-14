@@ -85,7 +85,7 @@ contains
     ! On the radiation time step, update all the prognostic carbon state
     ! variables (except for gap-phase mortality and fire fluxes)
     !
-    use tracer_varcon       , only : is_active_betr_bgc
+    use clm_varctl          , only : is_active_betr_bgc
     use subgridAveMod       , only : p2c
     use decompMod           , only : bounds_type    
     ! !ARGUMENTS:

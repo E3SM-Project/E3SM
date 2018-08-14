@@ -41,7 +41,8 @@ contains
     ! !DESCRIPTION:
     ! On the radiation time step, calculate the radioactive decay of C14
     !
-    use tracer_varcon, only : is_active_betr_bgc      
+    use clm_varctl     , only : is_active_betr_bgc
+
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns

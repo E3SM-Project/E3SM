@@ -37,7 +37,11 @@ contains
        num_urbanc, filter_urbanc,         &
        num_do_smb_c, filter_do_smb_c,     &
        atm2lnd_vars, glc2lnd_vars, temperature_vars,    &
-       soilhydrology_vars, soilstate_vars, waterstate_vars, waterflux_vars, ep_betr)
+       soilhydrology_vars, soilstate_vars, waterstate_vars, waterflux_vars &
+#ifdef CLM_SBTR
+       ,ep_betr &
+#endif
+       )
     !
     ! !DESCRIPTION:
     ! Calculates soil/snow hydrology with drainage (subsurface runoff)
@@ -51,7 +55,9 @@ contains
     use clm_time_manager , only : get_step_size, get_nstep
     use SoilHydrologyMod , only : CLMVICMap, Drainage
     use clm_varctl       , only : use_vsfm
+#ifdef CLM_SBTR
     use BeTRSimulationALM, only : betr_simulation_alm_type
+#endif
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds               
@@ -70,7 +76,9 @@ contains
     type(soilstate_type)     , intent(inout) :: soilstate_vars
     type(waterstate_type)    , intent(inout) :: waterstate_vars
     type(waterflux_type)     , intent(inout) :: waterflux_vars
+#ifdef CLM_SBTR
     class(betr_simulation_alm_type), intent(inout) :: ep_betr
+#endif
     !
     ! !LOCAL VARIABLES:
     integer  :: g,l,c,j,fc                 ! indices
@@ -126,10 +134,12 @@ contains
               soilhydrology_vars, waterstate_vars)
       endif
 
+#ifdef CLM_SBTR
       if (use_betr) then
         call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars)
         call ep_betr%PreDiagSoilColWaterFlux(num_hydrologyc, filter_hydrologyc)
       endif
+#endif
 
       if (.not. use_vsfm) then
          call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
@@ -138,12 +148,14 @@ contains
               waterstate_vars, waterflux_vars)
       endif
 
+#ifdef CLM_SBTR
       if (use_betr) then
         call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars, &
           waterflux_vars=waterflux_vars)
         call ep_betr%DiagDrainWaterFlux(num_hydrologyc, filter_hydrologyc)
         call ep_betr%RetrieveBiogeoFlux(bounds, 1, nlevsoi, waterflux_vars=waterflux_vars)
       endif
+#endif
 
       do j = 1, nlevgrnd
          do fc = 1, num_nolakec

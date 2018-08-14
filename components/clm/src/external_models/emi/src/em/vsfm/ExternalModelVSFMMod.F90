@@ -682,7 +682,7 @@ end subroutine EM_VSFM_Populate_E2L_List
     ncols_ghost   = 0
     horz_nconn    = 0
 
-#if 0
+#ifdef CLM_SBTR
     if (lateral_connectivity) then
 
        call this%vsfm_mpp%GetMPIRank(mpi_rank)
@@ -877,7 +877,7 @@ end subroutine EM_VSFM_Populate_E2L_List
 
   !------------------------------------------------------------------------
 
-#if 0
+#ifdef CLM_SBTR
   subroutine update_mesh_information (ncells_ghost, ncols_ghost,  &
        xc_col, yc_col, zc_col, area_col, &
        grid_owner, mpi_rank &
@@ -2224,7 +2224,7 @@ end subroutine EM_VSFM_Populate_E2L_List
                                             )
 
 
-#if 0
+#ifdef CLM_SBTR
       if (vsfm_lateral_model_type == 'source_sink') then
 
          call get_proc_bounds(bounds_proc)
@@ -2427,7 +2427,7 @@ end subroutine EM_VSFM_Populate_E2L_List
 
             qflx_seepage(:) = 0._r8
 
-#if 0
+#ifdef CLM_SBTR
             if (vsfm_lateral_model_type == 'source_sink') then
 
                ! Get following fluxes from VSFM:
@@ -2649,7 +2649,7 @@ end subroutine EM_VSFM_Populate_E2L_List
 
       end do
 
-#if 0
+#ifdef CLM_SBTR
       ! Add seepage flux from VSFM to surface runoff
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
