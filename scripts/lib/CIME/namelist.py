@@ -1060,9 +1060,9 @@ class Namelist(object):
         """
         gn = string_in_list(group_name,self._groups)
         if gn:
-           vn=string_in_list(variable_name,self._groups[gn])
-           if vn:
-               del self._groups[gn][vn]
+            vn=string_in_list(variable_name,self._groups[gn])
+            if vn:
+                del self._groups[gn][vn]
 
     def merge_nl(self, other, overwrite=False):
         """Merge this namelist object with another.
@@ -1134,7 +1134,7 @@ class Namelist(object):
         return group_variables
 
     def write(self, out_file, groups=None, append=False, format_='nml', sorted_groups=True,
-              skip_comps=None, prognostic_comps=None, atm_cpl_dt=None, ocn_cpl_dt=None):
+              skip_comps=None, atm_cpl_dt=None, ocn_cpl_dt=None):
         """Write a the output data (normally fortran namelist) to the  out_file
 
         As with `parse`, the `out_file` argument can be either a file name, or a
@@ -1163,7 +1163,7 @@ class Namelist(object):
         else:
             logger.debug("Writing namelist to file object")
             if format_ == 'nuopc':
-                self._write_noupc(out_file, groups, sorted_groups=sorted_groups,
+                self._write_nuopc(out_file, groups, sorted_groups=sorted_groups,
                                   skip_comps=skip_comps, atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt)
             else:
                 self._write(out_file, groups, format_, sorted_groups=sorted_groups)
@@ -1240,7 +1240,6 @@ class Namelist(object):
                     for skip_comp in skip_comps:
                         if skip_comp in values[0]:
                             values[0] = values[0].replace(skip_comp,"")
-                components = values[0]
 
                 # @ is used in a namelist to put the same namelist variable in multiple groups
                 # in the write phase, all characters in the namelist variable name after
