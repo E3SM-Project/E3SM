@@ -44,6 +44,18 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             dest='ref_end_yr',
             help="End year for the reference timeseries files.",
             required=False)
+
+        self.add_argument(
+            '--ref_start_time_slice',
+            dest='ref_start_time_slice',
+            help="Starting time slice year for the reference timeseries files.",
+            required=False)
+
+        self.add_argument(
+            '--ref_end_time_slice',
+            dest='ref_end_time_slice',
+            help="Ending time slice year for the reference timeseries files.",
+            required=False)
         
         self.add_argument(
             '--ref_name',
@@ -90,6 +102,18 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             '--test_end_yr',
             dest='test_end_yr',
             help="End year for the test timeseries files.",
+            required=False)
+
+        self.add_argument(
+            '--test_start_time_slice',
+            dest='test_start_time_slice',
+            help="Starting time slice year for the test timeseries files.",
+            required=False)
+
+        self.add_argument(
+            '--test_end_time_slice',
+            dest='test_end_time_slice',
+            help="Ending time slice year for the test timeseries files.",
             required=False)
 
         self.add_argument(

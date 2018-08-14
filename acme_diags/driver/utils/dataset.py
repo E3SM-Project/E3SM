@@ -431,13 +431,25 @@ class Dataset():
             {var}_{start_yr}01_{end_yr}12.nc
         If var_to_get is defined, get that from the file instead of var.
         """
+        # If neither *_start_time_slice or *_end_time_slice are defined,
+        # then get the entire set of years.
+        if self.ref:
+            start_time_slice = getattr(self.parameters, 'ref_start_time_slice', start_yr)
+            end_time_slice = getattr(self.parameters, 'ref_end_time_slice', end_yr)
+        else:
+            start_time_slice = getattr(self.parameters, 'test_start_time_slice', start_yr)
+            end_time_slice = getattr(self.parameters, 'test_end_time_slice', end_yr)
+        
+        start_time_slice = int(start_time_slice)
+        end_time_slice = int(end_time_slice)
+        
         file_name = '{}_{}01_{}12.nc'.format(var, start_yr, end_yr)
         file_name = os.path.join(data_path, file_name)
 
         try:
             f = cdms2.open(file_name)
             var = var_to_get if var_to_get else var
-            v = f(var)(squeeze=1)
+            v = f(var,time=slice(start_time_slice, end_time_slice+1))(squeeze=1)
         finally:
             f.close()
 
@@ -445,5 +457,3 @@ class Dataset():
 
         # with cdms2.open(file_name) as f:
         #     var = var_to_get if var_to_get else var
-
-
