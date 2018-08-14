@@ -3075,6 +3075,69 @@
 
 </machine>
 
+<machine MACH="wren">
+  <DESC>Cray test system, 20 pes/node, batch system is SLURM</DESC>
+  <NODENAME_REGEX>wren</NODENAME_REGEX>
+  <TESTS>e3sm_developer</TESTS>
+  <COMPILERS>intel</COMPILERS>
+  <MPILIBS>impi</MPILIBS>
+  <CIME_OUTPUT_ROOT>/cray/css/users/$USER</CIME_OUTPUT_ROOT>
+  <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+  <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+  <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+  <OS>LINUX</OS>
+  <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+  <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+  <GMAKE_J>8</GMAKE_J>
+  <MAX_TASKS_PER_NODE>20</MAX_TASKS_PER_NODE>
+  <MAX_MPITASKS_PER_NODE>20</MAX_MPITASKS_PER_NODE>
+  <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+  <DIN_LOC_ROOT>/cray/css/users/rjacob/inputdata</DIN_LOC_ROOT>
+  <DIN_LOC_ROOT_CLMFORC>/cray/css/users/rjacob/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+  <BASELINE_ROOT>/cray/css/users/rjacob/baselines/$COMPILER</BASELINE_ROOT>
+  <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.edison/cprnc</CCSM_CPRNC>
+  <SAVE_TIMING_DIR>/cray/css/users/rjacob/timing</SAVE_TIMING_DIR>
+  <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+  <mpirun mpilib="default">
+	<executable>srun</executable>
+   	  <arguments>
+		<arg name="num_tasks"> -n {{ total_tasks }}</arg>
+	  </arguments>
+  </mpirun>
+  <module_system type="module">
+    <init_path lang="perl">/usr/Modules/3.2.10/init/perl.pm</init_path>
+    <init_path lang="python">/usr/Modules/3.2.10/init/python.py</init_path>
+    <init_path lang="sh">/usr/Modules/3.2.10/init/sh</init_path>
+    <init_path lang="csh">/usr/Modules/3.2.10/init/csh</init_path>
+    <cmd_path lang="perl">/usr/Modules/3.2.10/bin/modulecmd perl</cmd_path>
+    <cmd_path lang="python">/usr/Modules/3.2.10/bin/modulecmd python</cmd_path>
+    <cmd_path lang="sh">module</cmd_path>
+    <cmd_path lang="csh">module</cmd_path>
+    <modules>
+      <command name="load">cmake</command>
+    </modules>
+
+    <modules compiler="intel">
+      <command name="load">intel/ics-18.0.3.222</command>
+      <command name="load">netcdf4/4.3.3.1_intel</command>
+      <command name="load">hdf5/1.8.16_intel</command>
+    </modules>
+    <modules compiler="intel" mpilib="impi">
+      <command name="load">intel/impi-2018.3.222</command>
+    </modules>
+
+  </module_system>
+
+  <environment_variables>
+    <env name="NETCDF_PATH">$SHELL{which nf-config | xargs dirname | xargs dirname}</env>
+  </environment_variables>
+  <environment_variables compiler="intel">
+    <env name="FORT_BUFFERED">yes</env>
+  </environment_variables>
+
+</machine>
+
+
 <default_run_suffix>
   <default_run_exe>${EXEROOT}/e3sm.exe </default_run_exe>
   <default_run_misc_suffix> >> e3sm.log.$LID 2>&amp;1 </default_run_misc_suffix>
