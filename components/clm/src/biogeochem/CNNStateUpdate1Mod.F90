@@ -17,7 +17,7 @@ module CNNStateUpdate1Mod
   use CNNitrogenFluxType     , only : nitrogenflux_type
   use CNNitrogenStateType    , only : nitrogenstate_type
   use VegetationType              , only : veg_pp
-  use tracer_varcon          , only : is_active_betr_bgc
+  use clm_varctl             , only : is_active_betr_bgc
   ! bgc interface & pflotran:
   use clm_varctl             , only : use_pflotran, pf_cmode
   ! forest fertilization experiment
@@ -46,7 +46,7 @@ contains
     ! On the radiation time step, update all the prognostic nitrogen state
     ! variables (except for gap-phase mortality and fire fluxes)
     !
-    use tracer_varcon, only : is_active_betr_bgc      
+    use clm_varctl   , only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns

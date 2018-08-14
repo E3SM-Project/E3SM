@@ -286,7 +286,7 @@ contains
     ! On the radiation time step, perform nitrogen mass conservation check
     ! for column and pft
     !
-    use tracer_varcon,  only : is_active_betr_bgc
+    use clm_varctl     , only : is_active_betr_bgc
     ! !ARGUMENTS:
     type(bounds_type)         , intent(in)    :: bounds          
     integer                   , intent(in)    :: num_soilc       ! number of soil columns in filter

@@ -12,7 +12,7 @@ module lnd2atmMod
   use clm_varpar           , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
   use clm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
   use clm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc
-  use tracer_varcon        , only : is_active_betr_bgc
+  use clm_varctl           , only : is_active_betr_bgc
   use seq_drydep_mod       , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
   use subgridAveMod        , only : p2g, c2g 

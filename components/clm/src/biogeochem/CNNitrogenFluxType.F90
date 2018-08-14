@@ -2785,8 +2785,8 @@ contains
     use clm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
     use pftvarcon     , only : npcropmin 
-    use tracer_varcon , only: is_active_betr_bgc
-    use clm_varpar    , only: nlevdecomp_full
+    use clm_varctl    , only : is_active_betr_bgc
+    use clm_varpar    , only : nlevdecomp_full
     !
     ! !ARGUMENTS:
     class (nitrogenflux_type) :: this

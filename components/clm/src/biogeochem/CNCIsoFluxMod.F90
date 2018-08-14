@@ -44,7 +44,7 @@ contains
     ! !DESCRIPTION:
     ! On the radiation time step, set the carbon isotopic flux
     ! variables (except for gap-phase mortality and fire fluxes)
-    use tracer_varcon, only : is_active_betr_bgc  
+    use clm_varctl   , only : is_active_betr_bgc
     !
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
@@ -419,7 +419,7 @@ contains
     ! !DESCRIPTION:
     ! On the radiation time step, set the carbon isotopic fluxes for gap mortality
     !
-    use tracer_varcon, only : is_active_betr_bgc      
+    use clm_varctl   , only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -702,7 +702,7 @@ contains
     !
     ! !DESCRIPTION:
     ! On the radiation time step, set the carbon isotopic fluxes for fire mortality
-    use tracer_varcon, only : is_active_betr_bgc  
+    use clm_varctl   , only : is_active_betr_bgc
     !
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter

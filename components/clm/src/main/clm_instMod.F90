@@ -56,8 +56,10 @@ module clm_instMod
 
   use clm_interface_dataType     , only : clm_interface_data_type
   use ChemStateType              , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
+#ifdef CLM_SBTR
   use BeTRSimulationALM          , only : betr_simulation_alm_type
   use PlantMicKineticsMod        , only : PlantMicKinetics_type
+#endif
   use CLMFatesInterfaceMod       , only : hlm_fates_interface_type
 
 
@@ -112,8 +114,10 @@ module clm_instMod
   type(clm_interface_data_type)                       :: clm_interface_data
   type(chemstate_type)                                :: chemstate_vars
   type(hlm_fates_interface_type)                      :: alm_fates
+#ifdef CLM_SBTR
   class(betr_simulation_alm_type), pointer            :: ep_betr
   type(PlantMicKinetics_type)                         :: PlantMicKinetics_vars
+#endif
   public :: clm_inst_biogeochem
   public :: clm_inst_biogeophys
   public :: alm_fates
@@ -204,9 +208,12 @@ contains
 
        call crop_vars%Init(bounds_proc)
 
+#ifdef CLM_SBTR
        if(use_betr)then
          call PlantMicKinetics_vars%Init(bounds_proc)
        endif
+#endif
+
     end if
     
     ! Initialize the Functionaly Assembled Terrestrial Ecosystem Simulator (FATES)

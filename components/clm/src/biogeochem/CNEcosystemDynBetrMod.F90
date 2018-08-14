@@ -33,9 +33,11 @@ module CNEcosystemDynBetrMod
   use EnergyFluxType            , only : energyflux_type
   use SoilHydrologyType         , only : soilhydrology_type
   use FrictionVelocityType      , only : frictionvel_type
+#ifdef CLM_SBTR
   use tracerfluxType            , only : tracerflux_type
   use tracerstatetype           , only : tracerstate_type
   use BetrTracerType            , only : betrtracer_type
+#endif
   use PhosphorusFluxType        , only : phosphorusflux_type
   use PhosphorusStateType       , only : phosphorusstate_type
   use dynSubgridControlMod      , only : get_do_harvest

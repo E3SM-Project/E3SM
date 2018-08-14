@@ -33,7 +33,7 @@ contains
     ! On the radiation time step, update all the prognostic carbon state
     ! variables affected by fire fluxes
     !
-    use tracer_varcon       , only : is_active_betr_bgc
+    use clm_varctl          , only : is_active_betr_bgc
     use subgridAveMod       , only : p2c        
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter

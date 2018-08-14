@@ -200,6 +200,7 @@ module clm_varctl
   !  BeTR switches
   !----------------------------------------------------------
   logical, public :: use_betr = .false.          ! true=> use BeTR
+  logical, public :: is_active_betr_bgc = .false.          ! true=> use BeTR's bgc
 
   !----------------------------------------------------------
   ! lai streams switch for Sat. Phenology

@@ -1362,7 +1362,7 @@ contains
 
     use restUtilMod
     use ncdio_pio
-    use tracer_varcon  , only : is_active_betr_bgc
+    use clm_varctl     , only : is_active_betr_bgc
     !
     ! !ARGUMENTS:
     class (carbonstate_type) :: this

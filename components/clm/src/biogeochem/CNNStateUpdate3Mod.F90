@@ -36,7 +36,7 @@ contains
     ! NOTE - associate statements have been removed where there are
     ! no science equations. This increases readability and maintainability.
     !
-    use tracer_varcon, only : is_active_betr_bgc      
+    use clm_varctl    , only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns

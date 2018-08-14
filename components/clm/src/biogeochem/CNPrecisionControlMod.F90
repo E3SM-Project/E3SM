@@ -39,7 +39,7 @@ contains
     use clm_varctl , only : iulog, use_c13, use_c14, use_nitrif_denitrif, use_fates
     use clm_varpar , only : nlevdecomp_full, crop_prog
     use pftvarcon  , only : nc3crop
-    use tracer_varcon          , only : is_active_betr_bgc    
+    use clm_varctl , only : is_active_betr_bgc
     use CNDecompCascadeConType , only : decomp_cascade_con
     !
     ! !ARGUMENTS:
