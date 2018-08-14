@@ -303,6 +303,7 @@ contains
                                                 trim(dm1), orderATM, trim(dm2), orderOCN, &
                                                 volumetric, noConserve, validate, &
                                                 trim(dofnameATM), trim(dofnameOCN) )
+    endif
   end subroutine prep_atm_ocn_moab
 
   subroutine prep_atm_migrate_moab(infodata)
