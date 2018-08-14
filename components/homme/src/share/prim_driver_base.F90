@@ -115,6 +115,10 @@ contains
     use prim_implicit_mod,  only : prim_implicit_init
 #endif
 
+#ifdef HAVE_MOAB
+    use semoab_mod,         only :  create_moab_mesh_fine
+#endif
+
     implicit none
 
     type (element_t),   pointer     :: elem(:)
@@ -517,6 +521,9 @@ contains
     ith=0
     nets=1
     nete=nelemd
+#ifdef HAVE_MOAB
+    call create_moab_mesh_fine(par, elem, nets, nete)
+#endif
     call prim_advance_init1(par,elem,integration)
 #ifdef TRILINOS
     call prim_implicit_init(par, elem)
