@@ -949,13 +949,14 @@ endif !scm_observed_aero
 !      with capital T defined in cam
 !
 
+!!!!!!!force fill_end to be .true in getinterpncdata () for temperature !!!!!!!!
      if ( use_camiop ) then
        call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,'t', have_tsair, &
-          tsair(1), fill_ends, scm_crm_mode, &
+          tsair(1), .true. , scm_crm_mode, &
           dplevs, nlev, psobs, hyam, hybm, tobs, status )
      else
        call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,'T', have_tsair, &
-          tsair(1), fill_ends, scm_crm_mode, &
+          tsair(1), .true. , scm_crm_mode, &
           dplevs, nlev, psobs, hyam, hybm, tobs, status )
      endif
      if ( status .ne. nf90_noerr ) then
@@ -982,8 +983,9 @@ endif !scm_observed_aero
        have_srf = .true.
      endif
 !
+!!!!!!!force fill_end to be .true in getinterpncdata () for humidity!!!!!!!!
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,  'q', have_srf, &
-       srf(1), fill_ends, scm_crm_mode, &
+       srf(1), .true., scm_crm_mode, &
        dplevs, nlev,psobs, hyam, hybm, qobs, status )
      if ( status .ne. nf90_noerr ) then
        have_q = .false.
@@ -1299,8 +1301,9 @@ endif !scm_observed_aero
        have_srf = .true.
      endif
 
+!!!!!!!force fill_end to be .true in getinterpncdata () for u-wind !!!!!!!!
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-       'u', have_srf, srf(1), fill_ends, scm_crm_mode, &
+       'u', have_srf, srf(1), .true. , scm_crm_mode, &
        dplevs, nlev,psobs, hyam, hybm, uobs, status )
      if ( status .ne. nf90_noerr ) then
        have_u = .false.
@@ -1316,8 +1319,9 @@ endif !scm_observed_aero
        have_srf = .true.
      endif
 
+!!!!!!!force fill_end to be .true in getinterpncdata () for v-wind !!!!!!!!
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-       'v', have_srf, srf(1), fill_ends, scm_crm_mode, &
+       'v', have_srf, srf(1), .true. , scm_crm_mode, &
        dplevs, nlev,psobs, hyam, hybm, vobs, status )
      if ( status .ne. nf90_noerr ) then
        have_v = .false.
