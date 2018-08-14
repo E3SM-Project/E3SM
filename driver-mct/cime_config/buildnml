@@ -295,7 +295,7 @@ def _create_component_modelio_namelists(case, files):
 
     # will need to create a new namelist generator
     infiles = []
-    definition_dir = os.path.dirname(files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"drv"}, comp_interface="mct"))
+    definition_dir = os.path.dirname(files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"drv"}))
     definition_file = [os.path.join(definition_dir, "namelist_definition_modelio.xml")]
 
     confdir = os.path.join(case.get_value("CASEBUILD"), "cplconf")
