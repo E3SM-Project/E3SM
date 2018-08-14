@@ -17,6 +17,7 @@ module BareGroundFluxesMod
   use TemperatureType      , only : temperature_type
   use WaterfluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
+  use TopounitType         , only : top_as
   use LandunitType         , only : lun_pp                
   use ColumnType           , only : col_pp                
   use VegetationType            , only : veg_pp                
@@ -66,8 +67,8 @@ contains
     type(waterstate_type)  , intent(inout) :: waterstate_vars
     !
     ! !LOCAL VARIABLES:
-    integer, parameter  :: niters = 3      ! maximum number of iterations for surface temperature
-    integer  :: p,c,g,f,j,l                ! indices
+    integer, parameter  :: niters = 3            ! maximum number of iterations for surface temperature
+    integer  :: p,c,t,g,f,j,l                    ! indices
     integer  :: filterp(bounds%endp-bounds%begp+1) ! patch filter for vegetated patches
     integer  :: fn                               ! number of values in local pft filter
     integer  :: fp                               ! lake filter pft index
@@ -114,7 +115,7 @@ contains
 
          forc_u           =>    atm2lnd_vars%forc_u_grc               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)                        
          forc_v           =>    atm2lnd_vars%forc_v_grc               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)                       
-         forc_th          =>    atm2lnd_vars%forc_th_downscaled_col   , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)                            
+         forc_th          =>    top_as%thbot                          , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)                            
          forc_pbot        =>    atm2lnd_vars%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
          forc_rho         =>    atm2lnd_vars%forc_rho_downscaled_col  , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                                     
          forc_q           =>    atm2lnd_vars%forc_q_downscaled_col    , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)                                 
@@ -199,6 +200,7 @@ contains
       do f = 1, fn
          p = filterp(f)
          c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
          g = veg_pp%gridcell(p)
 
          ! Initialization variables
@@ -210,7 +212,7 @@ contains
          ur(p)    = max(1.0_r8,sqrt(forc_u(g)*forc_u(g)+forc_v(g)*forc_v(g)))
          dth(p)   = thm(p)-t_grnd(c)
          dqh(p)   = forc_q(c) - qg(c)
-         dthv     = dth(p)*(1._r8+0.61_r8*forc_q(c))+0.61_r8*forc_th(c)*dqh(p)
+         dthv     = dth(p)*(1._r8+0.61_r8*forc_q(c))+0.61_r8*forc_th(t)*dqh(p)
          zldis(p) = forc_hgt_u_patch(p)
 
          ! Copy column roughness to local pft-level arrays
@@ -240,13 +242,14 @@ contains
          do f = 1, fn
             p = filterp(f)
             c = veg_pp%column(p)
+            t = veg_pp%topounit(p)
             g = veg_pp%gridcell(p)
 
             tstar = temp1(p)*dth(p)
             qstar = temp2(p)*dqh(p)
             z0hg_patch(p) = z0mg_patch(p)/exp(0.13_r8 * (ustar(p)*z0mg_patch(p)/1.5e-5_r8)**0.45_r8)
             z0qg_patch(p) = z0hg_patch(p)
-            thvstar = tstar*(1._r8+0.61_r8*forc_q(c)) + 0.61_r8*forc_th(c)*qstar
+            thvstar = tstar*(1._r8+0.61_r8*forc_q(c)) + 0.61_r8*forc_th(t)*qstar
             zeta = zldis(p)*vkc*grav*thvstar/(ustar(p)**2*thv(c))
 
             if (zeta >= 0._r8) then                   !stable

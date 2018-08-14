@@ -154,7 +154,7 @@ contains
          
          forc_t           =>    top_as%tbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                  
          forc_pbot        =>    atm2lnd_vars%forc_pbot_downscaled_col  , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
-         forc_th          =>    atm2lnd_vars%forc_th_downscaled_col    , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)        
+         forc_th          =>    top_as%thbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)        
          forc_q           =>    atm2lnd_vars%forc_q_downscaled_col     , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)             
          forc_rho         =>    atm2lnd_vars%forc_rho_downscaled_col   , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                 
          forc_lwrad       =>    atm2lnd_vars%forc_lwrad_downscaled_col , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)   
@@ -307,7 +307,7 @@ contains
          ! reference height
 
          thm(p) = forc_t(t) + 0.0098_r8*forc_hgt_t_patch(p)   ! intermediate variable
-         thv(c) = forc_th(c)*(1._r8+0.61_r8*forc_q(c))     ! virtual potential T
+         thv(c) = forc_th(t)*(1._r8+0.61_r8*forc_q(c))     ! virtual potential T
       end do
 
 
@@ -315,6 +315,7 @@ contains
       do fp = 1, num_lakep
          p = filter_lakep(fp)
          c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
          g = veg_pp%gridcell(p)
 
          nmozsgn(p) = 0
@@ -335,7 +336,7 @@ contains
          ur(p)    = max(1.0_r8,sqrt(forc_u(g)*forc_u(g)+forc_v(g)*forc_v(g)))
          dth(p)   = thm(p)-t_grnd(c)
          dqh(p)   = forc_q(c)-qsatg(c)
-         dthv     = dth(p)*(1._r8+0.61_r8*forc_q(c))+0.61_r8*forc_th(c)*dqh(p)
+         dthv     = dth(p)*(1._r8+0.61_r8*forc_q(c))+0.61_r8*forc_th(t)*dqh(p)
          zldis(p) = forc_hgt_u_patch(p) - 0._r8
 
          ! Initialize Monin-Obukhov length and wind speed
@@ -364,6 +365,7 @@ contains
          do fp = 1, fncopy
             p = fpcopy(fp)
             c = veg_pp%column(p)
+            t = veg_pp%topounit(p)
             g = veg_pp%gridcell(p)
 
             tgbef(c) = t_grnd(c)
@@ -441,7 +443,7 @@ contains
             tstar = temp1(p)*dth(p)
             qstar = temp2(p)*dqh(p)
 
-            thvstar=tstar*(1._r8+0.61_r8*forc_q(c)) + 0.61_r8*forc_th(c)*qstar
+            thvstar=tstar*(1._r8+0.61_r8*forc_q(c)) + 0.61_r8*forc_th(t)*qstar
             zeta=zldis(p)*vkc * grav*thvstar/(ustar(p)**2*thv(c))
 
             if (zeta >= 0._r8) then     !stable

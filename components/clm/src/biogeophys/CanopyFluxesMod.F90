@@ -326,7 +326,7 @@ contains
          forc_lwrad           => atm2lnd_vars%forc_lwrad_downscaled_col    , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)                       
          forc_q               => atm2lnd_vars%forc_q_downscaled_col        , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)                                 
          forc_pbot            => atm2lnd_vars%forc_pbot_downscaled_col     , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
-         forc_th              => atm2lnd_vars%forc_th_downscaled_col       , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)                            
+         forc_th              => top_as%thbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)                            
          forc_rho             => atm2lnd_vars%forc_rho_downscaled_col      , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                                     
          forc_t               => top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                                      
          forc_u               => atm2lnd_vars%forc_u_grc                   , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)                        
@@ -671,6 +671,7 @@ contains
       do f = 1, fn
          p = filterp(f)
          c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
          g = veg_pp%gridcell(p)
 
          ! Net absorbed longwave radiation by canopy and ground
@@ -705,7 +706,7 @@ contains
          dth(p) = thm(p)-taf(p)
          dqh(p) = forc_q(c)-qaf(p)
          delq(p) = qg(c) - qaf(p)
-         dthv(p) = dth(p)*(1._r8+0.61_r8*forc_q(c))+0.61_r8*forc_th(c)*dqh(p)
+         dthv(p) = dth(p)*(1._r8+0.61_r8*forc_q(c))+0.61_r8*forc_th(t)*dqh(p)
          zldis(p) = forc_hgt_u_patch(p) - displa(p)
 
          ! Check to see if the forcing height is below the canopy height
@@ -898,6 +899,7 @@ contains
          do f = 1, fn
             p = filterp(f)
             c = veg_pp%column(p)
+            t = veg_pp%topounit(p)
             g = veg_pp%gridcell(p)
 
             ! Sensible heat conductance for air, leaf and ground
@@ -1066,7 +1068,7 @@ contains
             tstar = temp1(p)*dth(p)
             qstar = temp2(p)*dqh(p)
 
-            thvstar = tstar*(1._r8+0.61_r8*forc_q(c)) + 0.61_r8*forc_th(c)*qstar
+            thvstar = tstar*(1._r8+0.61_r8*forc_q(c)) + 0.61_r8*forc_th(t)*qstar
             zeta = zldis(p)*vkc*grav*thvstar/(ustar(p)**2*thv(c))
 
             if (zeta >= 0._r8) then     !stable
