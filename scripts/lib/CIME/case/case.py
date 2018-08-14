@@ -1397,7 +1397,7 @@ directory, NOT in this subdirectory."""
         self._files.remove(old_object)
         self._files.append(new_object)
 
-    def get_latest_cpl_log(self, coupler_log_path=None):
+    def get_latest_cpl_log(self, coupler_log_path=None, cplname="med"):
         """
         find and return the latest cpl log file in the
         coupler_log_path directory
@@ -1405,7 +1405,7 @@ directory, NOT in this subdirectory."""
         if coupler_log_path is None:
             coupler_log_path = self.get_value("RUNDIR")
         cpllog = None
-        cpllogs = glob.glob(os.path.join(coupler_log_path, 'cpl.log.*'))
+        cpllogs = glob.glob(os.path.join(coupler_log_path, '{}.log.*'.format(cplname)))
         if cpllogs:
             cpllog = max(cpllogs, key=os.path.getctime)
             return cpllog

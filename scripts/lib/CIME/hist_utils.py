@@ -435,11 +435,15 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
 
     # copy latest cpl log to baseline
     # drop the date so that the name is generic
-    newestcpllogfile = case.get_latest_cpl_log(coupler_log_path=case.get_value("RUNDIR"))
-    if newestcpllogfile is None:
-        logger.warning("No cpl.log file found in directory {}".format(case.get_value("RUNDIR")))
+    if case.get_value("COMP_INTERFACE") == "nuopc":
+        cplname = "med"
     else:
-        safe_copy(newestcpllogfile, os.path.join(basegen_dir, "cpl.log.gz"))
+        cplname = "cpl"
+    newestcpllogfile = case.get_latest_cpl_log(coupler_log_path=case.get_value("RUNDIR"), cplname=cplname)
+    if newestcpllogfile is None:
+        logger.warning("No {}.log file found in directory {}".format(cplname,case.get_value("RUNDIR")))
+    else:
+        safe_copy(newestcpllogfile, os.path.join(basegen_dir, "{}.log.gz".format(cplname)))
 
     expect(num_gen > 0, "Could not generate any hist files for case '{}', something is seriously wrong".format(os.path.join(rundir, testcase)))
     #make sure permissions are open in baseline directory
