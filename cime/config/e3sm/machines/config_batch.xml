@@ -529,6 +529,17 @@
      </queues>
    </batch_system>
 
+    <batch_system MACH="osprey" type="slurm">
+      <directives>
+        <directive>-n {{ total_tasks }}</directive>
+      </directives>
+      <queues>
+        <queue walltimemax="01:00:00" nodemax="64" default="true">skl20</queue>
+        <queue walltimemax="01:00:00" nodemax="64" >bdw18</queue>
+        <queue walltimemax="01:00:00" nodemax="8" >npl32</queue>
+      </queues>
+    </batch_system>
+
    <batch_system MACH="lawrencium-lr2" type="slurm" >
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
