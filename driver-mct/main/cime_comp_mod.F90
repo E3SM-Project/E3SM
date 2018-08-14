@@ -637,8 +637,6 @@ contains
          iam=comp_comm_iam(it))
     if (iamroot_CPLID) output_perf = .true.
 
-    if (iamin_CPLID) complist = trim(complist)//' cpl'
-
     comp_id(it)    = CPLID
     comp_comm(it)  = mpicom_CPLID
     iamin_CPLID    = seq_comm_iamin(CPLID)
@@ -652,9 +650,6 @@ contains
        comp_name(it)  = seq_comm_name(comp_id(it))
        call seq_comm_getinfo(ATMID(eai), mpicom=comp_comm(it), &
             nthreads=nthreads_ATMID, iam=comp_comm_iam(it))
-       if (seq_comm_iamin(ATMID(eai))) then
-          complist = trim(complist)//' '//trim(seq_comm_name(ATMID(eai)))
-       endif
        if (seq_comm_iamroot(ATMID(eai))) output_perf = .true.
     enddo
     call seq_comm_getinfo(CPLALLATMID, mpicom=mpicom_CPLALLATMID)
@@ -667,9 +662,6 @@ contains
        comp_name(it)  = seq_comm_name(comp_id(it))
        call seq_comm_getinfo(LNDID(eli), mpicom=comp_comm(it), &
             nthreads=nthreads_LNDID, iam=comp_comm_iam(it))
-       if (seq_comm_iamin(LNDID(eli))) then
-          complist = trim(complist)//' '//trim(seq_comm_name(LNDID(eli)))
-       endif
        if (seq_comm_iamroot(LNDID(eli))) output_perf = .true.
     enddo
     call seq_comm_getinfo(CPLALLLNDID, mpicom=mpicom_CPLALLLNDID)
@@ -682,9 +674,6 @@ contains
        comp_name(it)  = seq_comm_name(comp_id(it))
        call seq_comm_getinfo(OCNID(eoi), mpicom=comp_comm(it), &
             nthreads=nthreads_OCNID, iam=comp_comm_iam(it))
-       if (seq_comm_iamin (OCNID(eoi))) then
-          complist = trim(complist)//' '//trim(seq_comm_name(OCNID(eoi)))
-       endif
        if (seq_comm_iamroot(OCNID(eoi))) output_perf = .true.
     enddo
     call seq_comm_getinfo(CPLALLOCNID, mpicom=mpicom_CPLALLOCNID)
@@ -697,9 +686,6 @@ contains
        comp_name(it)  = seq_comm_name(comp_id(it))
        call seq_comm_getinfo(ICEID(eii), mpicom=comp_comm(it), &
             nthreads=nthreads_ICEID, iam=comp_comm_iam(it))
-       if (seq_comm_iamin (ICEID(eii))) then
-          complist = trim(complist)//' '//trim(seq_comm_name(ICEID(eii)))
-       endif
        if (seq_comm_iamroot(ICEID(eii))) output_perf = .true.
     enddo
     call seq_comm_getinfo(CPLALLICEID, mpicom=mpicom_CPLALLICEID)
@@ -711,9 +697,6 @@ contains
        comp_iamin(it) = seq_comm_iamin(comp_id(it))
        comp_name(it)  = seq_comm_name(comp_id(it))
        call seq_comm_getinfo(GLCID(egi), mpicom=comp_comm(it), nthreads=nthreads_GLCID, iam=comp_comm_iam(it))
-       if (seq_comm_iamin (GLCID(egi))) then
-          complist = trim(complist)//' '//trim(seq_comm_name(GLCID(egi)))
-       endif
        if (seq_comm_iamroot(GLCID(egi))) output_perf = .true.
     enddo
     call seq_comm_getinfo(CPLALLGLCID, mpicom=mpicom_CPLALLGLCID)
@@ -726,9 +709,6 @@ contains
        comp_name(it)  = seq_comm_name(comp_id(it))
        call seq_comm_getinfo(ROFID(eri), mpicom=comp_comm(it), &
             nthreads=nthreads_ROFID, iam=comp_comm_iam(it))
-       if (seq_comm_iamin(ROFID(eri))) then
-          complist = trim(complist)//' '//trim( seq_comm_name(ROFID(eri)))
-       endif
        if (seq_comm_iamroot(ROFID(eri))) output_perf = .true.
     enddo
     call seq_comm_getinfo(CPLALLROFID, mpicom=mpicom_CPLALLROFID)
@@ -741,9 +721,6 @@ contains
        comp_name(it)  = seq_comm_name(comp_id(it))
        call seq_comm_getinfo(WAVID(ewi), mpicom=comp_comm(it), &
             nthreads=nthreads_WAVID, iam=comp_comm_iam(it))
-       if (seq_comm_iamin(WAVID(ewi))) then
-          complist = trim(complist)//' '//trim(seq_comm_name(WAVID(ewi)))
-       endif
        if (seq_comm_iamroot(WAVID(ewi))) output_perf = .true.
     enddo
     call seq_comm_getinfo(CPLALLWAVID, mpicom=mpicom_CPLALLWAVID)
@@ -756,9 +733,6 @@ contains
        comp_name(it)  = seq_comm_name(comp_id(it))
        call seq_comm_getinfo(ESPID(eei), mpicom=comp_comm(it), &
             nthreads=nthreads_ESPID, iam=comp_comm_iam(it))
-       if (seq_comm_iamin (ESPID(eei))) then
-          complist = trim(complist)//' '//trim(seq_comm_name(ESPID(eei)))
-       endif
     enddo
     ! ESP components do not use the coupler (they are 'external')
 
