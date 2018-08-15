@@ -79,6 +79,7 @@ def climo(var, season):
     trans_var.attributes = var.attributes
     trans_var.units = var.units
     trans_var.id = var.id
+    trans_var.long_name = var.long_name
 
     return trans_var
 
