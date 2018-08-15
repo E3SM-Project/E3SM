@@ -378,10 +378,12 @@ module shoc_intr
    real(r8) :: obklen(pcols), ustar2(pcols), kinheat(pcols), kinwat(pcols)
    real(r8) :: dummy2(pcols), dummy3(pcols), kbfs(pcols), th(pcols,pverp), thv(pcols,pverp)
    
-   real(r8) :: minqn, rrho                      ! minimum total cloud liquid + ice threshold    [kg/kg]
+   real(r8) :: minqn, rrho(pcols,pverp)                      ! minimum total cloud liquid + ice threshold    [kg/kg]
    real(r8) :: cldthresh, frac_limit
    real(r8) :: ic_limit, dum1
-   
+ 
+   real(r8) :: wpthlp_sfc(pcols), wprtp_sfc(pcols), upwp_sfc(pcols), vpwp_sfc(pcols)
+  
    ! Variables below are needed to compute energy integrals for conservation
    real(r8) :: ke_a(pcols), ke_b(pcols), te_a(pcols), te_b(pcols)
    real(r8) :: wv_a(pcols), wv_b(pcols), wl_b(pcols), wl_a(pcols)
@@ -595,8 +597,8 @@ module shoc_intr
    do k=1,pver
      do i=1,ncol
        zt_g(i,k+1) = state1%zm(i,pver-k+1)-state1%zi(i,pver+1)
-       rrho=(1._r8/gravit)*(state1%pdel(i,pver-k+1)/dz_g(i,pver-k+1))
-       wm_zt(i,k+1) = -1._r8*state1%omega(i,pver-k+1)/(rrho*gravit)
+       rrho(i,k)=(1._r8/gravit)*(state1%pdel(i,pver-k+1)/dz_g(i,pver-k+1))
+       wm_zt(i,k+1) = -1._r8*state1%omega(i,pver-k+1)/(rrho(i,k)*gravit)
      enddo
    enddo
      
@@ -610,19 +612,21 @@ module shoc_intr
    
    ! Figure out way to deal with surface fluxes
    ! and TMS
-   
+   do i=1,ncol
       !  Surface fluxes provided by host model
-      wpthlp_sfc = cam_in%shf(i)/(cpair*rho_ds_zm(1))       ! Sensible heat flux
-      wprtp_sfc  = cam_in%cflx(i,1)/(rho_ds_zm(1))      ! Latent heat flux
-      upwp_sfc   = cam_in%wsx(i)/rho_ds_zm(1)               ! Surface meridional momentum flux
-      vpwp_sfc   = cam_in%wsy(i)/rho_ds_zm(1)               ! Surface zonal momentum flux  
-      
+      wpthlp_sfc(i) = cam_in%shf(i)/(cpair*rrho(i,1))       ! Sensible heat flux
+      wprtp_sfc(i)  = cam_in%cflx(i,1)/(rrho(i,1))      ! Latent heat flux
+      upwp_sfc(i)   = cam_in%wsx(i)/rrho(i,1)               ! Surface meridional momentum flux
+      vpwp_sfc(i)   = cam_in%wsy(i)/rrho(i,1)               ! Surface zonal momentum flux  
+   enddo   
       ! ------------------------------------------------- !
       ! Apply TMS                                         !
       ! ------------------------------------------------- !    
       if ( do_tms) then
-        upwp_sfc = upwp_sfc-((ksrftms(i)*state1%u(i,pver))/rho_ds_zm(1))
-        vpwp_sfc = vpwp_sfc-((ksrftms(i)*state1%v(i,pver))/rho_ds_zm(1)) 
+        do i=1,ncol
+          upwp_sfc(i) = upwp_sfc(i)-((ksrftms(i)*state1%u(i,pver))/rrho(i,1))
+          vpwp_sfc(i) = vpwp_sfc(i)-((ksrftms(i)*state1%v(i,pver))/rrho(i,1))
+        enddo 
       endif           
 
     ! Need to flip arrays around for SHOC 
@@ -946,10 +950,10 @@ module shoc_intr
  
     ! diagnose surface friction and obukhov length (inputs to diagnose PBL depth)
     do i=1,ncol
-      rrho = (1._r8/gravit)*(state1%pdel(i,pver)/dz_g(i,pver))
+      rrho(i,1) = (1._r8/gravit)*(state1%pdel(i,pver)/dz_g(i,pver))
       call calc_ustar( state1%t(i,pver), state1%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), &
-                       rrho, ustar2(i) )
-      call calc_obklen( th(i,pver), thv(i,pver), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar2(i), &
+                       rrho(i,1), ustar2(i) )
+      call calc_obklen( th(i,pver), thv(i,pver), cam_in%cflx(i,1), cam_in%shf(i), rrho(i,1), ustar2(i), &
                         kinheat(i), kinwat(i), kbfs(i), obklen(i) )  
     enddo
    

@@ -162,7 +162,8 @@ subroutine shoc_main ( &
 	 isotropy,tkh,tk,shoc_mix,&           ! Input
 	 adz_zt,adz_zm, dz,&                  ! Input
 	 zt_grid,zm_grid,&                    ! Input
-	 w_sec,thl_sec,qw_sec,&               ! Output
+	 wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,&     ! Input
+         w_sec,thl_sec,qw_sec,&               ! Output
 	 wthl_sec,wqw_sec,&                   ! Output
 	 qwthl_sec,uw_sec,vw_sec,wtke_sec,&   ! Output
 	 wtracer_sec)
@@ -419,12 +420,12 @@ subroutine diag_second_shoc_moments(shcol,nlev, &   ! Input
   
   ! apply the surface fluxes (these may need to go into a 0 k dimension)
   do i=1,shcol
-    wthl_sec(i,0) = wthl_srf(i)
-    wqw_sec(i,0) = wqw_srf(i)
-    uw_sec(i,0) = uw_srf(i)
-    vw_sec(i,0) = vw_srf(i)
+    wthl_sec(i,0) = wthl_sfc(i)
+    wqw_sec(i,0) = wqw_sfc(i)
+    uw_sec(i,0) = uw_sfc(i)
+    vw_sec(i,0) = vw_sfc(i)
     wtracer_sec(i,0,:) = 0._r8
-    wtke_sec(i,0,:) = 0._r8
+    wtke_sec(i,:) = 0._r8
   enddo
 
 end subroutine diag_second_shoc_moments
