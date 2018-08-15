@@ -971,8 +971,9 @@ contains
        
        !set the topounit-level atmospheric state forcings
        do topo = grc_pp%topi(g), grc_pp%topf(g)
-         top_as%tbot(topo)  = x2l(index_x2l_Sa_tbot,i)      ! forc_txy  Atm state K
-         top_as%thbot(topo) = x2l(index_x2l_Sa_ptem,i)      ! forc_thxy Atm state K
+         top_as%tbot(topo)    = x2l(index_x2l_Sa_tbot,i)      ! forc_txy  Atm state K
+         top_as%thbot(topo)   = x2l(index_x2l_Sa_ptem,i)      ! forc_thxy Atm state K
+         top_as%pbot(topo)    = x2l(index_x2l_Sa_pbot,i)      ! ptcmxy    Atm state Pa
        end do
          
 #endif
