@@ -20,6 +20,8 @@ module seq_comm_mct
   use shr_sys_mod    , only : shr_sys_abort, shr_sys_flush
   use shr_mpi_mod    , only : shr_mpi_chkerr, shr_mpi_bcast, shr_mpi_max
   use shr_file_mod   , only : shr_file_getUnit, shr_file_freeUnit
+  ! gptl timing library is not built for unit tests but it is on
+  ! by default for Makefile (model) builds.
 #ifdef TIMING
   use shr_taskmap_mod, only : shr_taskmap_write
   use perf_mod       , only : t_startf, t_stopf
