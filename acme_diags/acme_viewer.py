@@ -483,7 +483,8 @@ def create_metadata(parameter):
     From a set of parameters, extract the metadata.
     """
     metadata = collections.OrderedDict()
-    metadata['Command to run'] = ''
+    msg = 'Use this command to recreate this image:'
+    metadata[msg] = ''
     cmd = 'e3sm_diags --no_viewer '
 
     from acme_diags.acme_parser import ACMEParser
@@ -525,7 +526,7 @@ def create_metadata(parameter):
             else:
                 cmd += "--{} '{}' ".format(param_name, param)
     
-    metadata['Command to run'] = cmd
+    metadata[msg] = cmd
 
     return metadata
 

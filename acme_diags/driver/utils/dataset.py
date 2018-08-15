@@ -6,7 +6,6 @@ Derived variables are also supported.
 import os
 import collections
 import traceback
-# import netCDF4
 import cdms2
 import acme_diags.derivations.acme
 from . import general, climo
@@ -63,7 +62,6 @@ class Dataset():
                 self.derived_vars[derived_var] = original_vars
 
 
-    # @profile
     def get_variable(self, var, season, extra_vars=[]):
         """
         For a given season, get the variable and any extra variables.
@@ -85,7 +83,7 @@ class Dataset():
         if self.ref and self.is_timeseries():
             # Get the reference variable from timeseries files.
             data_path = self.parameters.ref_data_path
-            start_yr = self.parameters.parameters.ref_start_yr
+            start_yr = self.parameters.ref_start_yr
             end_yr = self.parameters.ref_end_yr
             variables = self._get_timeseries_var(data_path, start_yr, end_yr, season)
             
@@ -148,7 +146,6 @@ class Dataset():
         return self.get_variable(var, season, extra_vars)[1:]
 
 
-    # @profile
     def get_attr_from_climo(self, attr, season):
         """
         For the given season, get the global attribute
@@ -162,19 +159,38 @@ class Dataset():
         else:
             filename = general.get_test_filename(self.parameters, season)
         
-        try:
-            f = cdms2.open(filename)
-            f_attr = f.getglobal(attr)
-        finally:
-            f.close()
-
-        return f_attr
-
-        # with cdms2.open(filename) as f:
-        #     return f.getglobal(attr)
+        with cdms2.open(filename) as f:
+            return f.getglobal(attr)
 
 
-    # @profile
+    def get_start_end_time_slice(self):
+        """
+        Get the start and end years used when
+        slicing the timeseries input data.
+        """
+        if not self.is_timeseries():
+            msg = 'Input data is not timeseries, can\'t get start and end years.'
+            raise RuntimeError(msg)
+
+        # If neither *_start_time_slice or *_end_time_slice are defined,
+        # then just used start_yr and end_yr.
+        if self.ref:
+            start_yr = self.parameters.ref_start_yr
+            end_yr = self.parameters.ref_end_yr
+
+            start_time_slice = getattr(self.parameters, 'ref_start_time_slice', start_yr)
+            end_time_slice = getattr(self.parameters, 'ref_end_time_slice', end_yr)
+
+        else:
+            start_yr = self.parameters.test_start_yr
+            end_yr = self.parameters.test_end_yr
+
+            start_time_slice = getattr(self.parameters, 'test_start_time_slice', start_yr)
+            end_time_slice = getattr(self.parameters, 'test_end_time_slice', end_yr)
+
+        return start_time_slice, end_time_slice
+
+
     def _get_climo_var(self, filename):
         """
         For a given season and climo input data,
@@ -186,9 +202,7 @@ class Dataset():
         vars_to_get.extend(self.extra_vars)
         return_variables = []
 
-        # with cdms2.open(filename) as data_file:
-        try:
-            data_file = cdms2.open(filename)
+        with cdms2.open(filename) as data_file:
             for var in vars_to_get:
                 # If it's a derived var, get that.
                 if var in self.derived_vars:
@@ -223,13 +237,9 @@ class Dataset():
 
                 return_variables.append(derived_var)
 
-        finally:
-            data_file.close()
-
         return return_variables
 
 
-    # @profile
     def _get_first_valid_vars_climo(self, vars_to_func_dict, data_file, var):
         """
         Given an OrderedDict of a list of variables to a function
@@ -261,7 +271,6 @@ class Dataset():
         raise RuntimeError(msg)
 
 
-    # @profile
     def _get_original_vars_climo(self, vars_to_func_dict, data_file):
         """
         Given a dictionary in the form {(vars): func}, get the vars
@@ -278,7 +287,6 @@ class Dataset():
         return variables
 
 
-    # @profile
     def _get_func(self, vars_to_func_dict):
         """
         Get the function from the first and only entry in vars_to_func_dict,
@@ -288,7 +296,6 @@ class Dataset():
             return vars_to_func_dict[k]
 
 
-    # @profile 
     def _get_timeseries_var(self, data_path, start_yr, end_yr, season):
         """
         For a given season and timeseries input data,
@@ -356,7 +363,6 @@ class Dataset():
         return [self.climo_fcn(v, season) for v in return_variables]
 
 
-    # @profile
     def _get_first_valid_vars_timeseries(self, vars_to_func_dict, data_path, start_yr, end_yr):
         """
         Given an OrderedDict of a list of variables to a function
@@ -392,7 +398,6 @@ class Dataset():
         raise RuntimeError(msg)
 
 
-    # @profile
     def _does_timeseries_file_exist(self, var, data_path, start_yr, end_yr):
         """
         Returns True if a file exists in data_path in the form:
@@ -403,7 +408,6 @@ class Dataset():
         return os.path.exists(file_name)
 
 
-    # @profile
     def _get_original_vars_timeseries(self, vars_to_func_dict, data_path, start_yr, end_yr):
         """
         Given a dictionary in the form {(vars): func}, get the vars
@@ -424,36 +428,21 @@ class Dataset():
         return variables
 
 
-    # @profile
     def _get_var_from_timeseries_file(self, var, data_path, start_yr, end_yr, var_to_get=''):
         """
         Get var from this file located in data_path:
             {var}_{start_yr}01_{end_yr}12.nc
         If var_to_get is defined, get that from the file instead of var.
         """
-        # If neither *_start_time_slice or *_end_time_slice are defined,
-        # then get the entire set of years.
-        if self.ref:
-            start_time_slice = getattr(self.parameters, 'ref_start_time_slice', start_yr)
-            end_time_slice = getattr(self.parameters, 'ref_end_time_slice', end_yr)
-        else:
-            start_time_slice = getattr(self.parameters, 'test_start_time_slice', start_yr)
-            end_time_slice = getattr(self.parameters, 'test_end_time_slice', end_yr)
-        
+        start_time_slice, end_time_slice = self.get_start_end_time_slice()
+
         start_time_slice = int(start_time_slice)
         end_time_slice = int(end_time_slice)
         
         file_name = '{}_{}01_{}12.nc'.format(var, start_yr, end_yr)
         file_name = os.path.join(data_path, file_name)
 
-        try:
-            f = cdms2.open(file_name)
-            var = var_to_get if var_to_get else var
-            v = f(var,time=slice(start_time_slice, end_time_slice+1))(squeeze=1)
-        finally:
-            f.close()
+        var = var_to_get if var_to_get else var
+        with cdms2.open(file_name) as f:
+            return f(var, time=slice(start_time_slice, end_time_slice+1))(squeeze=1)
 
-        return v
-
-        # with cdms2.open(file_name) as f:
-        #     var = var_to_get if var_to_get else var

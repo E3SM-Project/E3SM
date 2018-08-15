@@ -67,10 +67,8 @@ def run_diag(parameter):
             if test_data.is_climo():
                 yrs_averaged = test_data.get_attr_from_climo('yrs_averaged', season)
             else:
-                # It's timeseries, so manually get the yrs_averaged
-                # from the start_yr and end_yr parameters.
-                # We raise an exception b/c it's not implemented yet.
-                raise Exception()
+                start_time_slice, end_time_slice = test_data.get_start_end_time_slice()
+                yrs_averaged = '{}-{}'.format(start_time_slice, end_time_slice)
             parameter.test_name_yrs = parameter.test_name_yrs + ' (' + yrs_averaged +')'
         except:
             print('No yrs_averaged exists in global attributes')
@@ -89,11 +87,10 @@ def run_diag(parameter):
         for var in variables:
             print('Variable: {}'.format(var))
             parameter.var_id = var
+
             mv1 = test_data.get_variable(var, season)
             mv2 = ref_data.get_variable(var, season)
 
-            print('first mv1.getGrid()', mv1.getGrid())
-            print('first mv2.getGrid()', mv2.getGrid())
             parameter.viewer_descr[var] = mv1.long_name if hasattr(
                 mv1, 'long_name') else 'No long_name attr in test data.'
 
@@ -175,14 +172,8 @@ def run_diag(parameter):
                 for region in regions:
                     print("Selected region: {}".format(region))
 
-                    print('mv1.getGrid()', mv1.getGrid())
-                    print('mv2.getGrid()', mv2.getGrid())
-
                     mv1_domain, mv2_domain = utils.general.select_region(
                         region, mv1, mv2, land_frac, ocean_frac, parameter)
-
-                    print('mv1_domain.getGrid()', mv1_domain.getGrid())
-                    print('mv2_domain.getGrid()', mv2_domain.getGrid())
 
                     parameter.output_file = '-'.join(
                         [ref_name, var, season, region])

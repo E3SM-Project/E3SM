@@ -4,7 +4,6 @@ import os
 import copy
 import pwd
 import grp
-# import netCDF4
 import cdutil
 import MV2
 import genutil
@@ -138,6 +137,7 @@ def pressure_to_plevs(var, plev):
         levels_orig = levels_orig(lev=slice(-1, None, -1))
     var_p = cdutil.vertical.logLinearInterpolation(
         var(squeeze=1), levels_orig(squeeze=1), plev)
+
     return var_p
 
 
@@ -161,27 +161,18 @@ def select_region(region, var1, var2, land_frac, ocean_frac, parameter):
     else:
         var1_domain = var1
         var2_domain = var2
-    print('IN SELECT_REGION()')
-    print('var1_domain.getGrid()', var1_domain.getGrid())
-    print('var2_domain.getGrid()', var2_domain.getGrid())
+
     try:
         # if region.find('global') == -1:
         domain = regions_specs[region]['domain']
         print('Domain: ', domain)
     except:
         print("No domain selector.")
+
     var1_domain_selected = var1_domain(domain)
     var2_domain_selected = var2_domain(domain)
     var1_domain_selected.units = var1.units
     var2_domain_selected.units = var1.units
-
-    # The below doesn't work on cdms 2.12
-    # var1_domain_selected.setGrid(var1_domain.getGrid())
-    # var2_domain_selected.setGrid(var2_domain.getGrid())
-
-    print('var1_domain_selected.getGrid()', var1_domain_selected.getGrid())
-    print('var2_domain_selected.getGrid()', var2_domain_selected.getGrid())
-
 
     return var1_domain_selected, var2_domain_selected
 
@@ -202,9 +193,6 @@ def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
     else:
         mv_grid = mv2.getGrid()
         mv2_reg = mv2
-        print('type(mv1)', type(mv1))
-        print('type(mv_grid)', type(mv_grid))
-        print('type(mv1.getGrid())', type(mv1.getGrid()))
         mv1_reg = mv1.regrid(mv_grid, regridTool=regrid_tool,
                              regridMethod=regrid_method)
     return mv1_reg, mv2_reg
@@ -235,7 +223,10 @@ def mask_by(input_var, maskvar, low_limit=None, high_limit=None):
 
 
 def save_ncfiles(set_num, test, ref, diff, parameter):
-    """Saves the test, reference, and difference nc files."""
+    """
+    Saves the test, reference, and difference
+    data being plotted as nc files.
+    """
     if parameter.save_netcdf:
         # Save files being plotted
         # Set cdms preferences - no compression, no shuffling, no complaining
@@ -244,29 +235,28 @@ def save_ncfiles(set_num, test, ref, diff, parameter):
         cdms2.setNetcdfDeflateLevelFlag(0)
         cdms2.setNetcdfShuffleFlag(0)
         cdms2.setCompressionWarnings(0)  # Turn off warning messages
-        # Save test file
+
         pth = get_output_dir(set_num, parameter)
-        test_pth = os.path.join(pth, parameter.output_file + '_test.nc')
-        file_test = cdms2.open(test_pth, 'w+')
+
+        # Save test file
         test.id = parameter.var_id
-        file_test.write(test)
-        file_test.close()
+        test_pth = os.path.join(pth, parameter.output_file + '_test.nc')
+        with cdms2.open(test_pth, 'w+') as file_test:
+            file_test.write(test)
         _chown(test_pth, parameter.user)
 
         # Save reference file
-        ref_pth = os.path.join(pth, parameter.output_file + '_ref.nc')
-        file_ref = cdms2.open(ref_pth, 'w+')
         ref.id = parameter.var_id
-        file_ref.write(ref)
-        file_ref.close()
+        ref_pth = os.path.join(pth, parameter.output_file + '_ref.nc')
+        with cdms2.open(ref_pth, 'w+') as file_ref:
+            file_ref.write(ref)
         _chown(ref_pth, parameter.user)
 
         # Save difference file
-        diff_pth = os.path.join(pth, parameter.output_file + '_diff.nc')
-        file_diff = cdms2.open(diff_pth, 'w+')
         diff.id = parameter.var_id + '(test - reference)'
-        file_diff.write(diff)
-        file_diff.close()
+        diff_pth = os.path.join(pth, parameter.output_file + '_diff.nc')
+        with cdms2.open(diff_pth, 'w+') as file_diff:
+            file_diff.write(diff)
         _chown(diff_pth, parameter.user)
 
 

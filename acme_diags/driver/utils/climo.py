@@ -3,13 +3,11 @@ import numpy.ma as ma
 import cdms2
 
 
-# @profile
 def climo(var, season):
     """
     Compute the climatology for var for the given season.
     The returned variable must be 2 dimensional.
     """
-    print('in climo.py')
     season_idx = {
         '01': [1,0,0,0,0,0,0,0,0,0,0,0],
         '02': [0,1,0,0,0,0,0,0,0,0,0,0],
@@ -50,7 +48,7 @@ def climo(var, season):
     if season == 'ANNUALCYCLE':
         cycle = ['01','02','03','04','05','06','07','08','09','10','11','12']
     elif season == 'SEASONALCYCLE':
-        cycle = ['DJF','MAM','JJA', 'SON']
+        cycle = ['DJF','MAM','JJA','SON']
     else:
         cycle = [season]
 

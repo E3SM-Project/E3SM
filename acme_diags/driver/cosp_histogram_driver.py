@@ -55,10 +55,8 @@ def run_diag(parameter):
             if test_data.is_climo():
                 yrs_averaged = test_data.get_attr_from_climo('yrs_averaged', season)
             else:
-                # It's timeseries, so manually get the yrs_averaged
-                # from the start_yr and end_yr parameters.
-                # We raise an exception b/c it's not implemented yet.
-                raise Exception()
+                start_time_slice, end_time_slice = test_data.get_start_end_time_slice()
+                yrs_averaged = '{}-{}'.format(start_time_slice, end_time_slice)
             parameter.test_name_yrs = parameter.test_name_yrs + ' (' + yrs_averaged +')'
         except:
             print('No yrs_averaged exists in global attributes')
@@ -77,6 +75,7 @@ def run_diag(parameter):
         for var in variables:
             print('Variable: {}'.format(var))
             parameter.var_id = var
+
             mv1 = test_data.get_variable(var, season)
             mv2 = ref_data.get_variable(var, season)
 
