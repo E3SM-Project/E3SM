@@ -20,7 +20,7 @@ module seq_comm_mct
   use shr_sys_mod    , only : shr_sys_abort, shr_sys_flush
   use shr_mpi_mod    , only : shr_mpi_chkerr, shr_mpi_bcast, shr_mpi_max
   use shr_file_mod   , only : shr_file_getUnit, shr_file_freeUnit
-#ifdef TASK_NODE_MAP
+#ifdef TIMING
   use shr_taskmap_mod, only : shr_taskmap_write
   use perf_mod       , only : t_startf, t_stopf
 #endif
@@ -296,7 +296,7 @@ contains
        call shr_sys_abort(trim(subname)//' ERROR decomposition error ')
     endif
 
-#ifdef TASK_NODE_MAP
+#ifdef TIMING
     ! output task-to-node mapping
     if (mype == 0) then
        write(c_global_numpes,'(i8)') global_numpes
