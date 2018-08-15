@@ -30,7 +30,7 @@ module DUSTMod
   use TopounitType         , only : top_as
   use LandunitType         , only : lun_pp
   use ColumnType           , only : col_pp
-  use VegetationType            , only : veg_pp
+  use VegetationType       , only : veg_pp
   !  
   ! !PUBLIC TYPES
   implicit none
@@ -511,7 +511,7 @@ contains
     !------------------------------------------------------------------------
 
     associate(                                                   & 
-         forc_pbot =>    atm2lnd_vars%forc_pbot_downscaled_col , & ! Input:  [real(r8)  (:)   ]  atm pressure (Pa)                                 
+         forc_pbot =>    top_as%pbot                           , & ! Input:  [real(r8)  (:)   ]  atm pressure (Pa)                                 
          forc_rho  =>    atm2lnd_vars%forc_rho_downscaled_col  , & ! Input:  [real(r8)  (:)   ]  atm density (kg/m**3)                             
          forc_t    =>    top_as%tbot                           , & ! Input:  [real(r8)  (:)   ]  atm temperature (K)                               
          
@@ -541,7 +541,7 @@ contains
             vsc_dyn_atm(p) = 1.72e-5_r8 * ((forc_t(t)/273.0_r8)**1.5_r8) * 393.0_r8 / &
                  (forc_t(t)+120.0_r8)      ![kg m-1 s-1] RoY94 p. 102
             mfp_atm = 2.0_r8 * vsc_dyn_atm(p) / &   ![m] SeP97 p. 455
-                 (forc_pbot(c)*sqrt(8.0_r8/(SHR_CONST_PI*SHR_CONST_RDAIR*forc_t(t))))
+                 (forc_pbot(t)*sqrt(8.0_r8/(SHR_CONST_PI*SHR_CONST_RDAIR*forc_t(t))))
             vsc_knm_atm(p) = vsc_dyn_atm(p) / forc_rho(c) ![m2 s-1] Kinematic viscosity of air
 
             do m = 1, ndst

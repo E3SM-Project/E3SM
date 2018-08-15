@@ -121,23 +121,23 @@ contains
     !------------------------------------------------------------------------------
 
     associate(                                                          & 
-         snl              =>    col_pp%snl                               , & ! Input:  [integer  (:)   ] number of snow layers                     
-         dz               =>    col_pp%dz                                , & ! Input:  [real(r8) (:,:) ] layer depth (m)                        
-         zii              =>    col_pp%zii                               , & ! Output: [real(r8) (:)   ] convective boundary height [m]           
-         z_0_town         =>    lun_pp%z_0_town                          , & ! Input:  [real(r8) (:)   ] momentum roughness length of urban landunit (m)
-         z_d_town         =>    lun_pp%z_d_town                          , & ! Input:  [real(r8) (:)   ] displacement height of urban landunit (m)
-         urbpoi           =>    lun_pp%urbpoi                            , & ! Input:  [logical  (:)   ] true => landunit is an urban point       
-         nlev2bed         =>    col_pp%nlevbed                           , & ! Input:  [integer  (:)   ] number of layers to bedrock
+         snl              =>    col_pp%snl                            , & ! Input:  [integer  (:)   ] number of snow layers                     
+         dz               =>    col_pp%dz                             , & ! Input:  [real(r8) (:,:) ] layer depth (m)                        
+         zii              =>    col_pp%zii                            , & ! Output: [real(r8) (:)   ] convective boundary height [m]           
+         z_0_town         =>    lun_pp%z_0_town                       , & ! Input:  [real(r8) (:)   ] momentum roughness length of urban landunit (m)
+         z_d_town         =>    lun_pp%z_d_town                       , & ! Input:  [real(r8) (:)   ] displacement height of urban landunit (m)
+         urbpoi           =>    lun_pp%urbpoi                         , & ! Input:  [logical  (:)   ] true => landunit is an urban point       
+         nlev2bed         =>    col_pp%nlevbed                        , & ! Input:  [integer  (:)   ] number of layers to bedrock
 
-         z0mr             =>    veg_vp%z0mr                       , & ! Input:  [real(r8) (:)   ] ratio of momentum roughness length to canopy top height (-)
-         displar          =>    veg_vp%displar                    , & ! Input:  [real(r8) (:)   ] ratio of displacement height to canopy top height (-)
-
+         z0mr             =>    veg_vp%z0mr                           , & ! Input:  [real(r8) (:)   ] ratio of momentum roughness length to canopy top height (-)
+         displar          =>    veg_vp%displar                        , & ! Input:  [real(r8) (:)   ] ratio of displacement height to canopy top height (-)
+   
          forc_hgt_t       =>    atm2lnd_vars%forc_hgt_t_grc           , & ! Input:  [real(r8) (:)   ] observational height of temperature [m]  
          forc_u           =>    atm2lnd_vars%forc_u_grc               , & ! Input:  [real(r8) (:)   ] atmospheric wind speed in east direction (m/s)
          forc_v           =>    atm2lnd_vars%forc_v_grc               , & ! Input:  [real(r8) (:)   ] atmospheric wind speed in north direction (m/s)
          forc_hgt_u       =>    atm2lnd_vars%forc_hgt_u_grc           , & ! Input:  [real(r8) (:)   ] observational height of wind [m]         
          forc_hgt_q       =>    atm2lnd_vars%forc_hgt_q_grc           , & ! Input:  [real(r8) (:)   ] observational height of specific humidity [m]
-         forc_pbot        =>    atm2lnd_vars%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ] atmospheric pressure (Pa)                
+         forc_pbot        =>    top_as%pbot                           , & ! Input:  [real(r8) (:)   ] atmospheric pressure (Pa)                
          forc_q           =>    atm2lnd_vars%forc_q_downscaled_col    , & ! Input:  [real(r8) (:)   ] atmospheric specific humidity (kg/kg)    
          forc_t           =>    top_as%tbot                           , & ! Input:  [real(r8) (:)   ] atmospheric temperature (Kelvin)         
          forc_th          =>    top_as%thbot                          , & ! Input:  [real(r8) (:)   ] atmospheric potential temperature (Kelvin)
@@ -311,7 +311,7 @@ contains
          ! compute humidities individually for snow, soil, h2osfc for vegetated landunits
          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
-            call QSat(t_soisno(c,snl(c)+1), forc_pbot(c), eg, degdT, qsatg, qsatgdT)
+            call QSat(t_soisno(c,snl(c)+1), forc_pbot(t), eg, degdT, qsatg, qsatgdT)
             if (qsatg > forc_q(c) .and. forc_q(c) > qsatg) then
                qsatg = forc_q(c)
                qsatgdT = 0._r8
@@ -320,7 +320,7 @@ contains
             qg_snow(c) = qsatg
             dqgdT(c) = frac_sno(c)*qsatgdT
 
-            call QSat(t_soisno(c,1) , forc_pbot(c), eg, degdT, qsatg, qsatgdT)
+            call QSat(t_soisno(c,1) , forc_pbot(t), eg, degdT, qsatg, qsatgdT)
             if (qsatg > forc_q(c) .and. forc_q(c) > hr*qsatg) then
                qsatg = forc_q(c)
                qsatgdT = 0._r8
@@ -335,7 +335,7 @@ contains
                dqgdT(c) = (1._r8 - frac_h2osfc(c))*hr*dqgdT(c)
             endif
 
-            call QSat(t_h2osfc(c), forc_pbot(c), eg, degdT, qsatg, qsatgdT)
+            call QSat(t_h2osfc(c), forc_pbot(t), eg, degdT, qsatg, qsatgdT)
             if (qsatg > forc_q(c) .and. forc_q(c) > qsatg) then
                qsatg = forc_q(c)
                qsatgdT = 0._r8
@@ -348,7 +348,7 @@ contains
                  + frac_h2osfc(c) * qg_h2osfc(c)
 
          else
-            call QSat(t_grnd(c), forc_pbot(c), eg, degdT, qsatg, qsatgdT)
+            call QSat(t_grnd(c), forc_pbot(t), eg, degdT, qsatg, qsatgdT)
             qg(c) = qred*qsatg
             dqgdT(c) = qred*qsatgdT
 

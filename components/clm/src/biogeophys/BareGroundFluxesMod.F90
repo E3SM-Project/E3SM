@@ -20,7 +20,7 @@ module BareGroundFluxesMod
   use TopounitType         , only : top_as
   use LandunitType         , only : lun_pp                
   use ColumnType           , only : col_pp                
-  use VegetationType            , only : veg_pp                
+  use VegetationType       , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -116,7 +116,7 @@ contains
          forc_u           =>    atm2lnd_vars%forc_u_grc               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)                        
          forc_v           =>    atm2lnd_vars%forc_v_grc               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)                       
          forc_th          =>    top_as%thbot                          , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)                            
-         forc_pbot        =>    atm2lnd_vars%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
+         forc_pbot        =>    top_as%pbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
          forc_rho         =>    atm2lnd_vars%forc_rho_downscaled_col  , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                                     
          forc_q           =>    atm2lnd_vars%forc_q_downscaled_col    , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)                                 
 
@@ -269,6 +269,7 @@ contains
          p = filterp(f)
          c = veg_pp%column(p)
          g = veg_pp%gridcell(p)
+         t = veg_pp%topounit(p)
          l = veg_pp%landunit(p)
 
          ! Determine aerodynamic resistances
@@ -331,7 +332,7 @@ contains
          q_ref2m(p) = forc_q(c) + temp2(p)*dqh(p)*(1._r8/temp22m(p) - 1._r8/temp2(p))
 
          ! 2 m height relative humidity
-         call QSat(t_ref2m(p), forc_pbot(c), e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)
+         call QSat(t_ref2m(p), forc_pbot(t), e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)
 
          rh_ref2m(p) = min(100._r8, q_ref2m(p) / qsat_ref2m * 100._r8)
 

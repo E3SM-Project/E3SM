@@ -57,8 +57,8 @@ contains
     integer                             :: count
 
     associate(& 
-         forc_pbot_downscaled => atm2lndtype_vars%forc_pbot_downscaled_col , &
-         forc_t_downscaled    => top_as%tbot                                 &
+         forc_pbot_downscaled => top_as%pbot , &
+         forc_t_downscaled    => top_as%tbot   &
          )
 
     count = 0
@@ -82,7 +82,8 @@ contains
           case (L2E_STATE_FORC_PBOT_DOWNSCALED)
              do fc = 1, num_filter
                 c = filter(fc)
-                cur_data%data_real_1d(c) = forc_pbot_downscaled(c)
+                t = col_pp%topounit(c)
+                cur_data%data_real_1d(c) = forc_pbot_downscaled(t)
              enddo
              cur_data%is_set = .true.
 

@@ -23,7 +23,7 @@ module CanopyFluxesMod
   use SoilMoistStressMod    , only : calc_root_moist_stress, set_perchroot_opt
   use SimpleMathMod         , only : array_div_vector
   use SurfaceResistanceMod  , only : do_soilevap_beta
-   use VegetationPropertiesType        , only : veg_vp
+  use VegetationPropertiesType        , only : veg_vp
   use atm2lndType           , only : atm2lnd_type
   use CanopyStateType       , only : canopystate_type
   use CNStateType           , only : cnstate_type
@@ -325,7 +325,7 @@ contains
 
          forc_lwrad           => atm2lnd_vars%forc_lwrad_downscaled_col    , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)                       
          forc_q               => atm2lnd_vars%forc_q_downscaled_col        , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)                                 
-         forc_pbot            => atm2lnd_vars%forc_pbot_downscaled_col     , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
+         forc_pbot            => top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
          forc_th              => top_as%thbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)                            
          forc_rho             => atm2lnd_vars%forc_rho_downscaled_col      , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                                     
          forc_t               => top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                                      
@@ -455,7 +455,7 @@ contains
          if (frac_veg_nosno(p) == 0) then
             btran(p) = 0._r8     
             t_veg(p) = forc_t(t) 
-            cf_bare  = forc_pbot(c)/(SHR_CONST_RGAS*0.001_r8*thm(p))*1.e06_r8
+            cf_bare  = forc_pbot(t)/(SHR_CONST_RGAS*0.001_r8*thm(p))*1.e06_r8
             rssun(p) = 1._r8/1.e15_r8 * cf_bare
             rssha(p) = 1._r8/1.e15_r8 * cf_bare
             lbl_rsc_h2o(p)=0._r8
@@ -684,7 +684,7 @@ contains
          ! Saturated vapor pressure, specific humidity, and their derivatives
          ! at the leaf surface
 
-         call QSat (t_veg(p), forc_pbot(c), el(p), deldT, qsatl(p), qsatldT(p))
+         call QSat (t_veg(p), forc_pbot(t), el(p), deldT, qsatl(p), qsatldT(p))
 
          ! Determine atmospheric co2 and o2
 
@@ -757,6 +757,7 @@ contains
          do f = 1, fn
             p = filterp(f)
             c = veg_pp%column(p)
+            t = veg_pp%topounit(p)
             g = veg_pp%gridcell(p)
 
             tlbef(p) = t_veg(p)
@@ -822,7 +823,7 @@ contains
             ! Done each iteration to account for differences in eah, tv.
 
             svpts(p) = el(p)                         ! pa
-            eah(p) = forc_pbot(c) * qaf(p) / 0.622_r8   ! pa
+            eah(p) = forc_pbot(t) * qaf(p) / 0.622_r8   ! pa
             rhaf(p) = eah(p)/svpts(p)
          end do
 
@@ -1049,7 +1050,7 @@ contains
             ! Re-calculate saturated vapor pressure, specific humidity, and their
             ! derivatives at the leaf surface
 
-            call QSat(t_veg(p), forc_pbot(c), el(p), deldT, qsatl(p), qsatldT(p))
+            call QSat(t_veg(p), forc_pbot(t), el(p), deldT, qsatl(p), qsatldT(p))
 
             ! Update vegetation/ground surface temperature, canopy air
             ! temperature, canopy vapor pressure, aerodynamic temperature, and
@@ -1122,6 +1123,7 @@ contains
       do f = 1, fn
          p = filterp(f)
          c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
          g = veg_pp%gridcell(p)
 
          ! Energy balance check in canopy
@@ -1173,7 +1175,7 @@ contains
 
          ! 2 m height relative humidity
 
-         call QSat(t_ref2m(p), forc_pbot(c), e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)
+         call QSat(t_ref2m(p), forc_pbot(t), e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)
          rh_ref2m(p) = min(100._r8, q_ref2m(p) / qsat_ref2m * 100._r8)
          rh_ref2m_r(p) = rh_ref2m(p)
 

@@ -85,7 +85,8 @@ module CLMFatesInterfaceMod
    use decompMod         , only : get_proc_bounds,   &
                                   get_proc_clumps,   &
                                   get_clump_bounds
-   use GridCellType      , only : grc_pp
+   use GridcellType      , only : grc_pp
+   use TopounitType      , only : top_as
    use ColumnType        , only : col_pp
    use LandunitType      , only : lun_pp
    use landunit_varcon   , only : istsoil
@@ -1611,7 +1612,7 @@ contains
     type(photosyns_type)   , intent(inout)         :: photosyns_inst
 
     integer                                        :: nlevsoil
-    integer                                        :: s,c,p,ifp,j,icp,nc
+    integer                                        :: s,t,c,p,ifp,j,icp,nc
     real(r8)                                       :: dtime
 
     call t_startf('edpsn')
@@ -1619,10 +1620,10 @@ contains
           t_soisno  => temperature_inst%t_soisno_col , &
           t_veg     => temperature_inst%t_veg_patch  , &
           tgcm      => temperature_inst%thm_patch    , &
-          forc_pbot => atm2lnd_inst%forc_pbot_downscaled_col, &
-          rssun     => photosyns_inst%rssun_patch  , &
-          rssha     => photosyns_inst%rssha_patch,   &
-          psnsun    => photosyns_inst%psnsun_patch,  &
+          forc_pbot => top_as%pbot                   , &
+          rssun     => photosyns_inst%rssun_patch    , &
+          rssha     => photosyns_inst%rssha_patch    , &
+          psnsun    => photosyns_inst%psnsun_patch   , &
           psnsha    => photosyns_inst%psnsha_patch)
       
 
@@ -1631,12 +1632,14 @@ contains
       do s = 1, this%fates(nc)%nsites
          
          c = this%f2hmap(nc)%fcolumn(s)
+         t = col_pp%topounit(c)
+
          nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
 
          do j = 1,nlevsoil
             this%fates(nc)%bc_in(s)%t_soisno_sl(j)   = t_soisno(c,j)  ! soil temperature (Kelvin)
          end do
-         this%fates(nc)%bc_in(s)%forc_pbot           = forc_pbot(c)   ! atmospheric pressure (Pa)
+         this%fates(nc)%bc_in(s)%forc_pbot           = forc_pbot(t)   ! atmospheric pressure (Pa)
 
          do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
             

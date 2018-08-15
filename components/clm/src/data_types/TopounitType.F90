@@ -64,6 +64,7 @@ module TopounitType
   type, public :: topounit_atmospheric_state
     real(r8), pointer :: tbot       (:) => null() ! temperature of air at atmospheric forcing height (K)
     real(r8), pointer :: thbot      (:) => null() ! potential temperature of air at atmospheric forcing height (K)
+    real(r8), pointer :: pbot       (:) => null() ! air pressure at atmospheric forcing height (Pa)
   contains
     procedure, public :: Init  => init_top_as
     procedure, public :: Clean => clean_top_as
@@ -160,6 +161,7 @@ module TopounitType
     ! Allocate for atmospheric state forcing variables, initialize to special value
     allocate(this%tbot    (begt:endt)) ; this%tbot   (:) = spval
     allocate(this%thbot   (begt:endt)) ; this%thbot  (:) = spval
+    allocate(this%pbot    (begt:endt)) ; this%pbot   (:) = spval
     
     ! Set history fields for atmospheric state forcing variables
     !call hist_addfld1d (fname='TBOT', units='K',  &
@@ -178,6 +180,7 @@ module TopounitType
 
     deallocate(this%tbot)
     deallocate(this%thbot)
+    deallocate(this%pbot)
   end subroutine clean_top_as
 
   subroutine init_top_es(this, begt, endt)

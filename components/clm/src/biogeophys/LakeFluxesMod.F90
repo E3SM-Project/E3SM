@@ -153,8 +153,8 @@ contains
          lakedepth        =>    col_pp%lakedepth                          , & ! Input:  [real(r8) (:)   ]  variable lake depth (m)                           
          
          forc_t           =>    top_as%tbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                  
-         forc_pbot        =>    atm2lnd_vars%forc_pbot_downscaled_col  , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
          forc_th          =>    top_as%thbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)        
+         forc_pbot        =>    top_as%pbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
          forc_q           =>    atm2lnd_vars%forc_q_downscaled_col     , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)             
          forc_rho         =>    atm2lnd_vars%forc_rho_downscaled_col   , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                 
          forc_lwrad       =>    atm2lnd_vars%forc_lwrad_downscaled_col , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)   
@@ -257,7 +257,7 @@ contains
 
          if (t_grnd(c) > tfrz) then   ! for unfrozen lake
             z0mg(p) = z0mg_col(c)
-            kva = kva0 * (t_grnd(c)/kva0temp)**1.5_r8 * kva0pres/forc_pbot(c) ! kinematic viscosity of air
+            kva = kva0 * (t_grnd(c)/kva0temp)**1.5_r8 * kva0pres/forc_pbot(t) ! kinematic viscosity of air
             sqre0 = (max(z0mg(p)*ust_lake(c)/kva,0.1_r8))**0.5_r8   ! Square root of roughness Reynolds number
             z0hg(p) = z0mg(p) * exp( -vkc/prn*( 4._r8*sqre0 - 3.2_r8) ) ! SH roughness length
             z0qg(p) = z0mg(p) * exp( -vkc/sch*( 4._r8*sqre0 - 4.2_r8) ) ! LH roughness length
@@ -301,7 +301,7 @@ contains
          ! Saturated vapor pressure, specific humidity and their derivatives
          ! at lake surface
 
-         call QSat(t_grnd(c), forc_pbot(c), eg, degdT, qsatg(c), qsatgdT(c))
+         call QSat(t_grnd(c), forc_pbot(t), eg, degdT, qsatg(c), qsatgdT(c))
 
          ! Potential, virtual potential temperature, and wind speed at the
          ! reference height
@@ -435,7 +435,7 @@ contains
             ! Re-calculate saturated vapor pressure, specific humidity and their
             ! derivatives at lake surface
 
-            call QSat(t_grnd(c), forc_pbot(c), eg, degdT, qsatg(c), qsatgdT(c))
+            call QSat(t_grnd(c), forc_pbot(t), eg, degdT, qsatg(c), qsatgdT(c))
 
             dth(p)=thm(p)-t_grnd(c)
             dqh(p)=forc_q(c)-qsatg(c)
@@ -477,7 +477,7 @@ contains
                end if
 
 
-               kva = kva0 * (t_grnd(c)/kva0temp)**1.5_r8 * kva0pres/forc_pbot(c) ! kinematic viscosity of air
+               kva = kva0 * (t_grnd(c)/kva0temp)**1.5_r8 * kva0pres/forc_pbot(t) ! kinematic viscosity of air
                z0mg(p) = max(cus*kva/max(ustar(p),1.e-4_r8), cur*ustar(p)*ustar(p)/grav) ! momentum roughness length
                ! This lower limit on ustar is just to prevent floating point exceptions and
                ! should not be important
@@ -520,6 +520,7 @@ contains
       do fp = 1, num_lakep
          p = filter_lakep(fp)
          c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
          g = veg_pp%gridcell(p)
 
          ! If there is snow on the ground or lake is frozen and t_grnd > tfrz: reset t_grnd = tfrz.
@@ -587,7 +588,7 @@ contains
 
          ! 2 m height relative humidity
 
-         call QSat(t_ref2m(p), forc_pbot(c), e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)
+         call QSat(t_ref2m(p), forc_pbot(t), e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)
          rh_ref2m(p) = min(100._r8, q_ref2m(p) / qsat_ref2m * 100._r8)
 
 

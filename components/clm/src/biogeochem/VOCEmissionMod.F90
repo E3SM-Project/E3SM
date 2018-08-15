@@ -29,7 +29,8 @@ module VOCEmissionMod
   use SoilStateType      , only : soilstate_type
   use SolarAbsorbedType  , only : solarabs_type
   use TemperatureType    , only : temperature_type
-  use VegetationType          , only : veg_pp                
+  use TopounitType       , only : top_as
+  use VegetationType     , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -419,7 +420,7 @@ contains
     !                           and read in MEGAN factors from file.
     !
     ! !LOCAL VARIABLES:
-    integer  :: fp,p,g,c                ! indices
+    integer  :: fp,p,g,t,c              ! indices
     real(r8) :: epsilon                 ! emission factor [ug m-2 h-1]
     real(r8) :: gamma                   ! activity factor (accounting for light, T, age, LAI conditions)
     real(r8) :: gamma_p                 ! activity factor for PPFD
@@ -476,7 +477,7 @@ contains
          
          forc_solad    => atm2lnd_vars%forc_solad_grc           , & ! Input:  [real(r8) (:,:) ]  direct beam radiation (visible only)            
          forc_solai    => atm2lnd_vars%forc_solai_grc           , & ! Input:  [real(r8) (:,:) ]  diffuse radiation     (visible only)            
-         forc_pbot     => atm2lnd_vars%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ]  downscaled atmospheric pressure (Pa)                          
+         forc_pbot     => top_as%pbot                           , & ! Input:  [real(r8) (:)   ]  downscaled atmospheric pressure (Pa)                          
          forc_solad24  => atm2lnd_vars%fsd24_patch              , & ! Input:  [real(r8) (:)   ]  direct beam radiation last 24hrs  (visible only)  
          forc_solad240 => atm2lnd_vars%fsd240_patch             , & ! Input:  [real(r8) (:)   ]  direct beam radiation last 240hrs (visible only)  
          forc_solai24  => atm2lnd_vars%fsi24_patch              , & ! Input:  [real(r8) (:)   ]  diffuse radiation  last 24hrs     (visible only)  
@@ -529,6 +530,7 @@ contains
     do fp = 1,num_soilp
        p = filter_soilp(fp)
        g = veg_pp%gridcell(p)
+       t = veg_pp%topounit(p)
        c = veg_pp%column(p)
 
        ! initialize EF
@@ -594,7 +596,7 @@ contains
 
              ! Activity factor for CO2 (only for isoprene)
              if (trim(meg_cmp%name) == 'isoprene') then 
-                gamma_c = get_gamma_C(cisun_z(p,1),cisha_z(p,1),forc_pbot(c),fsun(p))
+                gamma_c = get_gamma_C(cisun_z(p,1),cisha_z(p,1),forc_pbot(t),fsun(p))
              else
                 gamma_c = 1._r8
              end if

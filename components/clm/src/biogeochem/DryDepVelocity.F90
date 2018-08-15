@@ -64,7 +64,7 @@ Module DryDepVelocity
   use GridcellType         , only : grc_pp
   use TopounitType         , only : top_as  
   use LandunitType         , only : lun_pp                
-  use VegetationType            , only : veg_pp                
+  use VegetationType       , only : veg_pp                
   !
   implicit none 
   save 
@@ -219,7 +219,7 @@ CONTAINS
          forc_solad =>    atm2lnd_vars%forc_solad_grc           , & ! Input:  [real(r8) (:,:) ] direct beam radiation (visible only)             
          forc_t     =>    top_as%tbot                           , & ! Input:  [real(r8) (:)   ] atmospheric temperature (Kelvin)                   
          forc_q     =>    atm2lnd_vars%forc_q_downscaled_col    , & ! Input:  [real(r8) (:)   ] downscaled atmospheric specific humidity (kg/kg)              
-         forc_psrf  =>    atm2lnd_vars%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ] downscaled surface pressure (Pa)                              
+         forc_psrf  =>    top_as%pbot                           , & ! Input:  [real(r8) (:)   ] surface pressure (Pa)                              
          forc_rain  =>    atm2lnd_vars%forc_rain_downscaled_col , & ! Input:  [real(r8) (:)   ] downscaled rain rate [mm/s]                                   
 
          h2osoi_vol =>    waterstate_vars%h2osoi_vol_col        , & ! Input:  [real(r8) (:,:) ] volumetric soil water (0<=h2osoi_vol<=watsat)   
@@ -253,7 +253,7 @@ CONTAINS
             g = veg_pp%gridcell(pi)
             !solar_flux = forc_lwrad  !rename CLM variables to fit with Dry Dep variables 
 
-            pg         = forc_psrf(c)  
+            pg         = forc_psrf(t)  
             spec_hum   = forc_q(c)
             rain       = forc_rain(c) 
             sfc_temp   = forc_t(t) 
