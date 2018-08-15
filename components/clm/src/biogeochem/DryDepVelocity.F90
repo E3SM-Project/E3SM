@@ -218,7 +218,7 @@ CONTAINS
          forc_solai =>    atm2lnd_vars%forc_solai_grc           , & ! Input:  [real(r8) (:,:) ] direct beam radiation (visible only)             
          forc_solad =>    atm2lnd_vars%forc_solad_grc           , & ! Input:  [real(r8) (:,:) ] direct beam radiation (visible only)             
          forc_t     =>    top_as%tbot                           , & ! Input:  [real(r8) (:)   ] atmospheric temperature (Kelvin)                   
-         forc_q     =>    atm2lnd_vars%forc_q_downscaled_col    , & ! Input:  [real(r8) (:)   ] downscaled atmospheric specific humidity (kg/kg)              
+         forc_q     =>    top_as%qbot                           , & ! Input:  [real(r8) (:)   ] atmospheric specific humidity (kg/kg)              
          forc_psrf  =>    top_as%pbot                           , & ! Input:  [real(r8) (:)   ] surface pressure (Pa)                              
          forc_rain  =>    atm2lnd_vars%forc_rain_downscaled_col , & ! Input:  [real(r8) (:)   ] downscaled rain rate [mm/s]                                   
 
@@ -254,7 +254,7 @@ CONTAINS
             !solar_flux = forc_lwrad  !rename CLM variables to fit with Dry Dep variables 
 
             pg         = forc_psrf(t)  
-            spec_hum   = forc_q(c)
+            spec_hum   = forc_q(t)
             rain       = forc_rain(c) 
             sfc_temp   = forc_t(t) 
             solar_flux = forc_solad(g,1) 

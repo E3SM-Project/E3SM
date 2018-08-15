@@ -138,7 +138,7 @@ contains
          forc_hgt_u       =>    atm2lnd_vars%forc_hgt_u_grc           , & ! Input:  [real(r8) (:)   ] observational height of wind [m]         
          forc_hgt_q       =>    atm2lnd_vars%forc_hgt_q_grc           , & ! Input:  [real(r8) (:)   ] observational height of specific humidity [m]
          forc_pbot        =>    top_as%pbot                           , & ! Input:  [real(r8) (:)   ] atmospheric pressure (Pa)                
-         forc_q           =>    atm2lnd_vars%forc_q_downscaled_col    , & ! Input:  [real(r8) (:)   ] atmospheric specific humidity (kg/kg)    
+         forc_q           =>    top_as%qbot                           , & ! Input:  [real(r8) (:)   ] atmospheric specific humidity (kg/kg)    
          forc_t           =>    top_as%tbot                           , & ! Input:  [real(r8) (:)   ] atmospheric temperature (Kelvin)         
          forc_th          =>    top_as%thbot                          , & ! Input:  [real(r8) (:)   ] atmospheric potential temperature (Kelvin)
 
@@ -312,8 +312,8 @@ contains
          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
             call QSat(t_soisno(c,snl(c)+1), forc_pbot(t), eg, degdT, qsatg, qsatgdT)
-            if (qsatg > forc_q(c) .and. forc_q(c) > qsatg) then
-               qsatg = forc_q(c)
+            if (qsatg > forc_q(t) .and. forc_q(t) > qsatg) then
+               qsatg = forc_q(t)
                qsatgdT = 0._r8
             end if
 
@@ -321,8 +321,8 @@ contains
             dqgdT(c) = frac_sno(c)*qsatgdT
 
             call QSat(t_soisno(c,1) , forc_pbot(t), eg, degdT, qsatg, qsatgdT)
-            if (qsatg > forc_q(c) .and. forc_q(c) > hr*qsatg) then
-               qsatg = forc_q(c)
+            if (qsatg > forc_q(t) .and. forc_q(t) > hr*qsatg) then
+               qsatg = forc_q(t)
                qsatgdT = 0._r8
             end if
             qg_soil(c) = hr*qsatg
@@ -336,8 +336,8 @@ contains
             endif
 
             call QSat(t_h2osfc(c), forc_pbot(t), eg, degdT, qsatg, qsatgdT)
-            if (qsatg > forc_q(c) .and. forc_q(c) > qsatg) then
-               qsatg = forc_q(c)
+            if (qsatg > forc_q(t) .and. forc_q(t) > qsatg) then
+               qsatg = forc_q(t)
                qsatgdT = 0._r8
             end if
             qg_h2osfc(c) = qsatg
@@ -352,8 +352,8 @@ contains
             qg(c) = qred*qsatg
             dqgdT(c) = qred*qsatgdT
 
-            if (qsatg > forc_q(c) .and. forc_q(c) > qred*qsatg) then
-               qg(c) = forc_q(c)
+            if (qsatg > forc_q(t) .and. forc_q(t) > qred*qsatg) then
+               qg(c) = forc_q(t)
                dqgdT(c) = 0._r8
             end if
 
@@ -395,7 +395,7 @@ contains
 
          beta(c) = 1._r8
          zii(c)  = 1000._r8
-         thv(c)  = forc_th(t)*(1._r8+0.61_r8*forc_q(c))
+         thv(c)  = forc_th(t)*(1._r8+0.61_r8*forc_q(t))
 
       end do ! (end of columns loop)
 
