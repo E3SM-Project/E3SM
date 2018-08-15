@@ -3,8 +3,7 @@ from __future__ import print_function
 
 import os
 # Must be done before any CDAT library is called.
-if 'UVCDAT_ANONYMOUS_LOG' not in os.environ:
-    os.environ['UVCDAT_ANONYMOUS_LOG'] = 'no'
+os.environ['UVCDAT_ANONYMOUS_LOG'] = 'no'
 # Needed for when using hdf5 >= 1.10.0,
 # without this, errors are thrown on Edison compute nodes.
 os.environ['HDF5_USE_FILE_LOCKING'] = 'FALSE'
