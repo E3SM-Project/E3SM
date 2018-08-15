@@ -196,8 +196,8 @@ contains
          forc_rho            =>   atm2lnd_vars%forc_rho_not_downscaled_grc  , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                 
          forc_q              =>   top_as%qbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)             
          forc_pbot           =>   top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
-         forc_u              =>   atm2lnd_vars%forc_u_grc                   , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)    
-         forc_v              =>   atm2lnd_vars%forc_v_grc                   , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)   
+         forc_u              =>   top_as%ubot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)    
+         forc_v              =>   top_as%vbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)   
 
          wind_hgt_canyon     =>   urbanparams_vars%wind_hgt_canyon          , & ! Input:  [real(r8) (:)   ]  height above road at which wind in canyon is to be computed (m)
          eflx_traffic_factor =>   urbanparams_vars%eflx_traffic_factor      , & ! Input:  [real(r8) (:)   ]  multiplicative urban traffic factor for sensible heat flux
@@ -284,6 +284,7 @@ contains
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
          g = lun_pp%gridcell(l)
+         t = lun_pp%topounit(l)
 
          local_secp1(l)        = secs + nint((grc_pp%londeg(g)/degpsec)/dtime)*dtime
          local_secp1(l)        = mod(local_secp1(l),isecspday)
@@ -309,7 +310,7 @@ contains
 
          ! Magnitude of atmospheric wind
 
-         ur(l) = max(1.0_r8,sqrt(forc_u(g)*forc_u(g)+forc_v(g)*forc_v(g)))
+         ur(l) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
 
          ! Canyon top wind
 
@@ -673,6 +674,7 @@ contains
          p = filter_urbanp(f)
          c = veg_pp%column(p)
          g = veg_pp%gridcell(p)
+         t = veg_pp%topounit(p)
          l = veg_pp%landunit(p)
 
          ram1(p) = ramu(l)  !pass value to global variable
@@ -721,8 +723,8 @@ contains
 
          ! Surface fluxes of momentum, sensible and latent heat
 
-         taux(p)          = -forc_rho(g)*forc_u(g)/ramu(l)
-         tauy(p)          = -forc_rho(g)*forc_v(g)/ramu(l)
+         taux(p)          = -forc_rho(g)*forc_u(t)/ramu(l)
+         tauy(p)          = -forc_rho(g)*forc_v(t)/ramu(l)
 
          ! Use new canopy air temperature
          dth(l) = taf(l) - t_grnd(c)

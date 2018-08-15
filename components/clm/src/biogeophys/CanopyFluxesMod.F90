@@ -329,8 +329,8 @@ contains
          forc_th              => top_as%thbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)                            
          forc_rho             => atm2lnd_vars%forc_rho_downscaled_col      , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                                     
          forc_t               => top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                                      
-         forc_u               => atm2lnd_vars%forc_u_grc                   , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)                        
-         forc_v               => atm2lnd_vars%forc_v_grc                   , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)                       
+         forc_u               => top_as%ubot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)                        
+         forc_v               => top_as%vbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)                       
          forc_pco2            => atm2lnd_vars%forc_pco2_grc                , & ! Input:  [real(r8) (:)   ]  partial pressure co2 (Pa)                                             
          forc_pc13o2          => atm2lnd_vars%forc_pc13o2_grc              , & ! Input:  [real(r8) (:)   ]  partial pressure c13o2 (Pa)                                           
          forc_po2             => atm2lnd_vars%forc_po2_grc                 , & ! Input:  [real(r8) (:)   ]  partial pressure o2 (Pa)                                              
@@ -702,7 +702,7 @@ contains
          taf(p) = (t_grnd(c) + thm(p))/2._r8
          qaf(p) = (forc_q(t)+qg(c))/2._r8
 
-         ur(p) = max(1.0_r8,sqrt(forc_u(g)*forc_u(g)+forc_v(g)*forc_v(g)))
+         ur(p) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
          dth(p) = thm(p)-taf(p)
          dqh(p) = forc_q(t)-qaf(p)
          delq(p) = qg(c) - qaf(p)
@@ -1139,8 +1139,8 @@ contains
          ! Fluxes from ground to canopy space
 
          delt    = wtal(p)*t_grnd(c)-wtl0(p)*t_veg(p)-wta0(p)*thm(p)
-         taux(p) = -forc_rho(c)*forc_u(g)/ram1(p)
-         tauy(p) = -forc_rho(c)*forc_v(g)/ram1(p)
+         taux(p) = -forc_rho(c)*forc_u(t)/ram1(p)
+         tauy(p) = -forc_rho(c)*forc_v(t)/ram1(p)
          eflx_sh_grnd(p) = cpair*forc_rho(c)*wtg(p)*delt
 
          ! compute individual sensible heat fluxes
