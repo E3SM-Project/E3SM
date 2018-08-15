@@ -7,11 +7,14 @@ module shr_nuopc_fldList_mod
   integer, parameter, public :: CSS = 256  ! use longer short character
   integer, parameter, public :: CLL = 1024
 
+  public :: shr_nuopc_fldList_Concat
   public :: shr_nuopc_fldList_Realize
   public :: shr_nuopc_fldList_AddFld
+  public :: shr_nuopc_fldList_AddDomain
   public :: shr_nuopc_fldList_AddMetadata
   public :: shr_nuopc_fldList_GetMetadata
   public :: shr_nuopc_fldList_AddMap
+  public :: shr_nuopc_fldList_Deactivate
   public :: shr_nuopc_fldList_GetFldNames
   public :: shr_nuopc_fldList_GetNumFlds
   public :: shr_nuopc_fldList_GetFldInfo
@@ -84,14 +87,93 @@ module shr_nuopc_fldList_mod
 contains
 !================================================================================
 
+  subroutine shr_nuopc_fldList_Concat(fldsFr, fldsTo, concat_src, concat_dst, flds_scalar_name)
+    ! Returns new concatentated colon delimited field lists
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_ERROR
+    ! input/output parameters:
+    type(shr_nuopc_fldList_type) , intent(in)    :: fldsFr
+    type(shr_nuopc_fldList_type) , intent(in)    :: fldsTo
+    character(len=*)             , intent(in)    :: flds_scalar_name
+    character(len=*)             , intent(inout) :: concat_src
+    character(len=*)             , intent(inout) :: concat_dst
+
+    ! local variables
+    integer :: n
+    character(len=*),parameter :: subname = '(shr_nuopc_fldList_concat) '
+    !-------------------------------------------------------------------------------
+
+    do n = 1,size(FldsFr%flds)
+       if (trim(FldsFr%flds(n)%shortname) /= flds_scalar_name) then
+          if (len_trim(concat_src) + len_trim(FldsFr%flds(n)%shortname) + 1 >= len(concat_src)) then
+             call ESMF_LogWrite(subname//': ERROR: max len of fldlist has been exceeded', ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
+             return
+          end if
+          if (trim(concat_src) == '') then
+             concat_src = trim(FldsFr%flds(n)%shortname)
+          else
+             concat_src = trim(concat_src)//':'//trim(FldsFr%flds(n)%shortname)
+          end if
+       end if
+    end do
+
+    do n = 1,size(FldsTo%flds)
+       if (trim(FldsTo%flds(n)%shortname) /= flds_scalar_name) then
+          if (len_trim(concat_dst) + len_trim(FldsTo%flds(n)%shortname) + 1 >= len(concat_dst)) then
+             call ESMF_LogWrite(subname//': ERROR: max len of fldlist has been exceeded', &
+                  ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
+             return
+          end if
+          if (trim(concat_dst) == '') then
+             concat_dst = trim(FldsTo%flds(n)%shortname)
+          else
+             concat_dst = trim(concat_dst)//':'//trim(FldsTo%flds(n)%shortname)
+          end if
+       end if
+    end do
+
+  end subroutine shr_nuopc_fldList_Concat
+
+  !===============================================================================
+
+  subroutine shr_nuopc_fldList_AddDomain(fldlist, fldname, longname, stdname, units)
+
+    ! Returns new concatentated field and map lists
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_ERROR
+    ! input/output parameters:
+    character(len=*),intent(inout)       :: fldlist   ! output field name
+    character(len=*),intent(in)          :: fldname   ! fldname to add to fldlist
+    character(len=*),intent(in),optional :: longname
+    character(len=*),intent(in),optional :: stdname
+    character(len=*),intent(in),optional :: units
+
+    ! local variables
+    character(len=*),parameter :: subname = '(fldList_AddDomain) '
+    !-------------------------------------------------------------------------------
+
+    if (len_trim(fldlist) + len_trim(fldname) + 1 >= len(fldlist)) then
+       call ESMF_LogWrite(subname//': ERROR: max len of fldlist has been exceeded', &
+            ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
+       return
+    end if
+
+    if (trim(fldlist) == '') then
+       fldlist = trim(fldname)
+    else
+       fldlist = trim(fldlist)//':'//trim(fldname)
+    end if
+
+    if (present(longname) .and. present(stdname) .and. present(units)) then
+       call shr_nuopc_fldList_AddMetadata(trim(fldname), longname, stdname, units)
+    endif
+
+  end subroutine shr_nuopc_fldList_AddDomain
+
   !===============================================================================
 
   subroutine shr_nuopc_fldList_AddMetadata(fldname , longname, stdname, units)
-
-    use NUOPC , only : NUOPC_FieldDictionaryAddEntry, NUOPC_FieldDictionaryHasEntry
-    use ESMF  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU
-    use ESMF  , only : ESMF_LOGMSG_ERROR, ESMF_FAILURE
-
+    use NUOPC, only : NUOPC_FieldDictionaryAddEntry, NUOPC_FieldDictionaryHasEntry
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU
+    use ESMF, only : ESMF_LOGMSG_ERROR, ESMF_FAILURE
     ! input/output parameters:
     character(len=*), intent(in) :: fldname
     character(len=*), intent(in) :: longname
@@ -377,7 +459,6 @@ contains
 
   subroutine shr_nuopc_fldList_Realize(state, fldList, flds_scalar_name, flds_scalar_num, &
        grid, mesh, tag, rc)
-
     use NUOPC, only : NUOPC_GetStateMemberLists, NUOPC_IsConnected, NUOPC_Realize
     use NUOPC, only : NUOPC_GetAttribute
     use ESMF, only : ESMF_MeshLoc_Element, ESMF_FieldCreate, ESMF_TYPEKIND_R8
@@ -385,7 +466,6 @@ contains
     use ESMF, only : ESMF_StateGet, ESMF_LogFoundError
     use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_ERROR, ESMF_FAILURE, ESMF_LOGERR_PASSTHRU
     use ESMF, only : ESMF_LOGMSG_INFO, ESMF_StateRemove, ESMF_SUCCESS
-
     type(ESMF_State)            , intent(inout)            :: state
     type(shr_nuopc_fldlist_type), intent(in)               :: fldList
     character(len=*)            , intent(in)               :: flds_scalar_name
@@ -575,6 +655,27 @@ contains
 
   !================================================================================
 
+  subroutine shr_nuopc_fldList_Deactivate(fldList, flds_scalar_name)
+    ! ----------------------------------------------
+    ! set active flag to .false. for all fields other than flds_scalar_name
+    ! ----------------------------------------------
+    type(shr_nuopc_fldList_type) , intent(in) :: fldList
+    character(len=*)             , intent(in) :: flds_scalar_name
+
+    ! local variables
+    integer :: n
+    character(len=*), parameter :: subname='(shr_nuopc_fldList_Deactivate)'
+    ! ----------------------------------------------
+
+    do n = 1,size(fldList%flds)
+       if (trim(fldList%flds(n)%shortname) /= flds_scalar_name) then
+          fldList%flds(n)%active = .false.
+       end if
+    end do
+  end subroutine shr_nuopc_fldList_Deactivate
+
+  !================================================================================
+
   subroutine shr_nuopc_fldList_GetFldInfo_general(fldList, fldindex, active, stdname, shortname)
     ! ----------------------------------------------
     ! Get field info
@@ -594,8 +695,6 @@ contains
     shortname = fldList%flds(fldindex)%shortname
   end subroutine shr_nuopc_fldList_GetFldInfo_general
 
-  !================================================================================
-
   subroutine shr_nuopc_fldList_GetFldInfo_stdname(fldList, fldindex, stdname)
     ! ----------------------------------------------
     ! Get field info
@@ -610,8 +709,6 @@ contains
 
     stdname   = fldList%flds(fldindex)%stdname
   end subroutine shr_nuopc_fldList_GetFldInfo_stdname
-
-  !================================================================================
 
   subroutine shr_nuopc_fldList_GetFldInfo_merging(fldList, fldindex, compsrc, merge_field, merge_type, merge_fracname)
     ! ----------------------------------------------

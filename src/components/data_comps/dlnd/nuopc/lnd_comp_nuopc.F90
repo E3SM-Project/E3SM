@@ -40,7 +40,7 @@ module lnd_comp_nuopc
 
   use dlnd_shr_mod          , only: dlnd_shr_read_namelists
   use dlnd_comp_mod         , only: dlnd_comp_init, dlnd_comp_run, dlnd_comp_final
-  use glc_elevclass_mod     , only: glc_get_num_elevation_classes, glc_elevclass_as_string
+  use glc_elevclass_mod     , only: glc_get_num_elevation_classes, glc_elevclass_as_string, glc_elevclass_init 
   use mct_mod
 
   implicit none
@@ -268,7 +268,13 @@ contains
        ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_flxdst3"
        ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_flxdst4"
        
-       glc_nec = glc_get_num_elevation_classes()
+       call NUOPC_CompAttributeGet(gcomp, name='glc_nec', value=cvalue, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       read(cvalue,*) glc_nec
+       call ESMF_LogWrite('glc_nec = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
+
+       call glc_elevclass_init(glc_nec)
+
        if (glc_nec > 0) then
           do n = 0, glc_nec
              nec_str = glc_elevclass_as_string(n)
@@ -280,6 +286,7 @@ contains
              call fld_list_add(fldsFrLnd_num, fldsFrLnd, trim(fld_name))
           end do
        end if
+       call glc_elevclass_init(glc_nec) 
 
        do n = 1,fldsFrLnd_num
           call NUOPC_Advertise(exportState, standardName=fldsFrLnd(n)%stdname, rc=rc)

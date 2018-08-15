@@ -23,7 +23,7 @@ module esmFlds
   use shr_ndep_mod          , only : shr_ndep_readnl
   use shr_flds_mod          , only : shr_flds_dom_coord, shr_flds_dom_other
   use shr_string_mod        , only : shr_string_listGetNum, shr_string_listGetName
-  use glc_elevclass_mod     , only : glc_elevclass_init, glc_get_num_elevation_classes, glc_elevclass_as_string
+  use glc_elevclass_mod     , only : glc_elevclass_as_string
 
   implicit none
   public
@@ -1704,6 +1704,12 @@ contains
     ! glc -> lnd
     !-----------------------------
 
+    ! initialize number of elevation classes
+    call NUOPC_CompAttributeGet(gcomp, name='glc_nec', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) glc_nec
+    call ESMF_LogWrite('glc_nec = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
+
     ! for glc fields with multiple elevation classes in glc->lnd
     ! fields from glc->med do NOT have elevation classes
     ! fields from med->lnd are BROKEN into multiple elevation classes
@@ -1735,8 +1741,8 @@ contains
     call shr_nuopc_fldList_AddMetadata(fldname='Sg_ice_covered', longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compglc)%flds, 'Sg_ice_covered', fldindex=n1)
     call shr_nuopc_fldList_AddMap(FldListFr(compglc)%flds(n1), compglc, complnd, mapconsf, 'unset', glc2lnd_fmapname) ! TODO: normalization?
-    if (glc_get_num_elevation_classes() > 0) then
-       do num = 0, glc_get_num_elevation_classes()
+    if (glc_nec > 0) then
+       do num = 0, glc_nec
           cnum = glc_elevclass_as_string(num)
           call shr_nuopc_fldList_AddMetadata(fldname= 'Sg_ice_covered'//trim(cnum), &
                longname = trim(longname)//' of elevation class '//trim(cnum), stdname =stdname, units=units)
@@ -1753,8 +1759,8 @@ contains
     call shr_nuopc_fldList_AddMetadata(fldname='Sg_topo', longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compglc)%flds, 'Sg_topo', fldindex=n1)
     call shr_nuopc_fldList_AddMap(FldListFr(compglc)%flds(n1), compglc, compglc, mapconsf, 'custom', glc2lnd_fmapname)
-    if (glc_get_num_elevation_classes() > 0) then
-       do num = 0, glc_get_num_elevation_classes()
+    if (glc_nec > 0) then
+       do num = 0, glc_nec
           cnum = glc_elevclass_as_string(num)
           call shr_nuopc_fldList_AddMetadata(fldname= 'Sg_topo'//trim(cnum), &
                longname = trim(longname)//' of elevation class '//trim(cnum), stdname =stdname, units=units)
@@ -1772,8 +1778,8 @@ contains
     call shr_nuopc_fldList_AddMetadata(fldname='Flgg_hflx', longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compglc)%flds, 'Flgg_hflx', fldindex=n1)
     call shr_nuopc_fldList_AddMap(FldListFr(compglc)%flds(n1), compglc, compglc, mapconsf, 'custom', glc2lnd_fmapname)
-    if (glc_get_num_elevation_classes() > 0) then
-       do num = 0, glc_get_num_elevation_classes()
+    if (glc_nec > 0) then
+       do num = 0, glc_nec
           cnum = glc_elevclass_as_string(num)
           call shr_nuopc_fldList_AddMetadata(fldname= 'Flgg_hflx'//trim(cnum), &
                longname = trim(longname)//' of elevation class '//trim(cnum), stdname =stdname, units=units)
@@ -1786,14 +1792,6 @@ contains
     !-----------------------------
     ! lnd -> glc
     !-----------------------------
-
-    ! initialize number of elevation classes
-
-    call NUOPC_CompAttributeGet(gcomp, name='glc_nec', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) glc_nec
-    call ESMF_LogWrite('glc_nec = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
-    call glc_elevclass_init(glc_nec)
 
     ! glc fields with multiple elevation classes: lnd->glc
     ! - fields sent from lnd->med are in multiple elevation classes
@@ -1809,8 +1807,8 @@ contains
     longname = 'New glacier ice flux'
     stdname  = 'ice_flux_out_of_glacier'
     units    = 'kg m-2 s-1'
-    if (glc_get_num_elevation_classes() > 0) then
-       do num = 0, glc_get_num_elevation_classes()
+    if (glc_nec > 0) then
+       do num = 0, glc_nec
           cnum = glc_elevclass_as_string(num)
           call shr_nuopc_fldList_AddMetadata(fldname = 'Flgl_qice'//trim(cnum), &
                longname = trim(longname)//' of elevation class '//trim(cnum), stdname =stdname, units=units)
@@ -1827,8 +1825,8 @@ contains
     longname = 'Surface temperature of glacier'
     stdname  = 'surface_temperature'
     units    = 'deg C'
-    if (glc_get_num_elevation_classes() > 0) then
-       do num = 0, glc_get_num_elevation_classes()
+    if (glc_nec > 0) then
+       do num = 0, glc_nec
           cnum = glc_elevclass_as_string(num)
           call shr_nuopc_fldList_AddMetadata(fldname  = 'Sl_tsrf'//trim(cnum), &
                longname = trim(longname)//' of elevation class '//trim(cnum), stdname =stdname, units=units)
@@ -1847,8 +1845,8 @@ contains
     longname = 'Surface height'
     stdname  = 'height'
     units    = 'm'
-    if (glc_get_num_elevation_classes() > 0) then
-       do num = 0, glc_get_num_elevation_classes()
+    if (glc_nec > 0) then
+       do num = 0, glc_nec
           cnum = glc_elevclass_as_string(num)
           call shr_nuopc_fldList_AddMetadata(fldname  = 'Sl_topo'//trim(cnum), &
                longname = trim(longname)//' of elevation class '//trim(cnum), stdname =stdname, units=units)

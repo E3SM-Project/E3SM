@@ -1,14 +1,13 @@
 module datm_shr_mod
 
   ! !USES:
-  use shr_kind_mod   , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, I8=>SHR_KIND_I8
+  use shr_kind_mod   , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8
   use shr_kind_mod   , only : CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_const_mod  , only : SHR_CONST_CDAY,SHR_CONST_TKFRZ,SHR_CONST_SPVAL
   use shr_file_mod   , only : shr_file_getlogunit, shr_file_getunit, shr_file_freeunit
   use shr_sys_mod    , only : shr_sys_flush, shr_sys_abort
   use shr_strdata_mod, only : shr_strdata_readnml
   use shr_dmodel_mod , only : shr_dmodel_mapset
-  use shr_flds_mod   , only : shr_flds_dom_coord, shr_flds_dom_other
   use shr_cal_mod    , only : shr_cal_date2julian
   use shr_ncread_mod , only : shr_ncread_varExists, shr_ncread_varDimSizes, shr_ncread_field4dG
   use shr_strdata_mod, only : shr_strdata_type
@@ -21,11 +20,6 @@ module datm_shr_mod
   !--------------------------------------------------------------------------
   ! Public interfaces
   !--------------------------------------------------------------------------
-
-  interface datm_shr_getNextRadCday  
-     module procedure datm_shr_getNextRadCDay_i8
-     module procedure datm_shr_getNextRadCDay_i4
-  end interface datm_shr_getNextRadCday
 
   public :: datm_shr_getNextRadCDay
   public :: datm_shr_CORE2getFactors
@@ -55,19 +49,13 @@ module datm_shr_mod
   character(CL) , public :: datamode              ! mode
   character(len=*), public, parameter :: nullstr = 'undefined'
 
-  !--------------------------------------------------------------------------
-  ! Private data
-  !--------------------------------------------------------------------------
-
-  save
-
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   subroutine datm_shr_read_namelists(mpicom, my_task, master_task, &
        inst_index, inst_suffix, inst_name, &
-       logunit, SDATM, atm_present, atm_prognostic)
+       logunit, shrlogunit, SDATM, atm_present, atm_prognostic)
 
     ! !INPUT/OUTPUT PARAMETERS:
     integer(IN)            , intent(in)    :: mpicom         ! mpi communicator
@@ -77,6 +65,7 @@ CONTAINS
     character(len=16)      , intent(in)    :: inst_suffix    ! char string associated with instance
     character(len=16)      , intent(in)    :: inst_name      ! fullname of current instance (ie. "lnd_0001")
     integer(IN)            , intent(in)    :: logunit        ! logging unit number
+    integer(IN)            , intent(in)    :: shrlogunit     ! original log unit and level
     type(shr_strdata_type) , intent(inout) :: SDATM
     logical                , intent(out)   :: atm_present    ! flag
     logical                , intent(out)   :: atm_prognostic ! flag
@@ -156,16 +145,17 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     call shr_strdata_readnml(SDATM, trim(filename), mpicom=mpicom)
+    call shr_sys_flush(shrlogunit)
 
     ! Validate mode
 
     datamode = trim(SDATM%dataMode)
     if (trim(datamode) == 'NULL'      .or. &
-        trim(datamode) == 'CORE2_NYF' .or. &
-        trim(datamode) == 'CORE2_IAF' .or. &
-        trim(datamode) == 'CORE_IAF_JRA' .or. &
-        trim(datamode) == 'CLMNCEP'   .or. &
-        trim(datamode) == 'COPYALL'   ) then
+         trim(datamode) == 'CORE2_NYF' .or. &
+         trim(datamode) == 'CORE2_IAF' .or. &
+         trim(datamode) == 'CORE_IAF_JRA' .or. &
+         trim(datamode) == 'CLMNCEP'   .or. &
+         trim(datamode) == 'COPYALL'   ) then
        if (my_task == master_task) then
           write(logunit,F00) ' datm datamode = ',trim(datamode)
           call shr_sys_flush(logunit)
@@ -192,24 +182,25 @@ CONTAINS
   end subroutine datm_shr_read_namelists
 
   !===============================================================================
-  real(R8) function datm_shr_getNextRadCDay_i8( ymd, tod, stepno, dtime, iradsw, calendar )
+  real(R8) function datm_shr_getNextRadCDay( ymd, tod, stepno, dtime, iradsw, calendar )
 
+    ! !DESCRIPTION:
     !  Return the calendar day of the next radiation time-step.
     !  General Usage: nextswday = datm_shr_getNextRadCDay(curr_date)
+    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
-    integer(IN), intent(in)    :: ymd
-    integer(IN), intent(in)    :: tod
-    integer(I8), intent(in)    :: stepno
-    integer(IN), intent(in)    :: dtime
-    integer(IN), intent(in)    :: iradsw
+    integer(IN), intent(IN)    :: ymd
+    integer(IN), intent(IN)    :: tod
+    integer(IN), intent(IN)    :: stepno
+    integer(IN), intent(IN)    :: dtime
+    integer(IN), intent(IN)    :: iradsw
     character(*),intent(in)    :: calendar
 
     !----- local -----
     real(R8) :: nextsw_cday
     real(R8) :: julday
     integer  :: liradsw
-    integer  :: yy,mm,dd
     character(*),parameter :: subName =  '(datm_shr_getNextRadCDay) '
     !-------------------------------------------------------------------------------
 
@@ -227,54 +218,15 @@ CONTAINS
     else
        nextsw_cday = julday + dtime/SHR_CONST_CDAY
     end if
-    datm_shr_getNextRadCDay_i8 = nextsw_cday
+    datm_shr_getNextRadCDay = nextsw_cday
 
-  end function datm_shr_getNextRadCDay_i8
-
-  real(R8) function datm_shr_getNextRadCDay_i4( ymd, tod, stepno, dtime, iradsw, calendar )
-
-    !  Return the calendar day of the next radiation time-step.
-    !  General Usage: nextswday = datm_shr_getNextRadCDay(curr_date)
-
-    ! !INPUT/OUTPUT PARAMETERS:
-    integer(IN), intent(in)    :: ymd
-    integer(IN), intent(in)    :: tod
-    integer    , intent(in)    :: stepno
-    integer(IN), intent(in)    :: dtime
-    integer(IN), intent(in)    :: iradsw
-    character(*),intent(in)    :: calendar
-
-    !----- local -----
-    real(R8) :: nextsw_cday
-    real(R8) :: julday
-    integer  :: liradsw
-    integer  :: yy,mm,dd
-    character(*),parameter :: subName =  '(datm_shr_getNextRadCDay) '
-    !-------------------------------------------------------------------------------
-
-    liradsw = iradsw
-    if (liradsw < 0) liradsw  = nint((-liradsw *3600._r8)/dtime)
-
-    call shr_cal_date2julian(ymd,tod,julday,calendar)
-
-    if (liradsw > 1) then
-       if (mod(stepno+1,liradsw) == 0 .and. stepno > 0) then
-          nextsw_cday = julday + 2*dtime/SHR_CONST_CDAY
-       else
-          nextsw_cday = -1._r8
-       end if
-    else
-       nextsw_cday = julday + dtime/SHR_CONST_CDAY
-    end if
-    datm_shr_getNextRadCDay_i4 = nextsw_cday
-
-  end function datm_shr_getNextRadCDay_i4
+  end function datm_shr_getNextRadCDay
 
   !===============================================================================
   subroutine datm_shr_CORE2getFactors(fileName,windF,winddF,qsatF,mpicom,compid, &
        gsmap,ggrid,nxg,nyg)
 
-    
+    implicit none
 
     !--- arguments ---
     character(*)    ,intent(in)    :: fileName   ! file name string
@@ -322,7 +274,7 @@ CONTAINS
   subroutine datm_shr_TN460getFactors(fileName,windF,qsatF,mpicom,compid, &
        gsmap,ggrid,nxg,nyg)
 
-    
+    implicit none
 
     !--- arguments ---
     character(*)    ,intent(in)    :: fileName   ! file name string
@@ -372,6 +324,8 @@ CONTAINS
 
     use shr_map_mod
 
+    implicit none
+
     !--- arguments ---
     character(*)    ,intent(in)    :: fileName   ! file name string
     real(R8)        ,intent(inout) :: windF(:)   ! wind adjustment factor
@@ -386,7 +340,6 @@ CONTAINS
 
     !--- data that describes the local model domain ---
     integer(IN)      :: ni0,nj0       ! dimensions of global bundle0
-    integer(IN)      :: ni1,nj1,nf1   ! dimensions of global bundle1
     integer(IN)      :: i,j,n         ! generic indicies
     integer(IN)      :: my_task       ! local pe number
     integer(IN)      :: ier           ! error code
@@ -459,8 +412,8 @@ CONTAINS
     deallocate(start,length)
     lsizei = mct_gsmap_lsize(gsmapi,mpicom)
     lsizeo = mct_gsmap_lsize(gsmapo,mpicom)
-    call mct_gGrid_init(GGrid=gGridi, CoordChars=trim(shr_flds_dom_coord), OtherChars=trim(shr_flds_dom_other), &
-         lsize=lsizei )
+    call mct_gGrid_init(GGrid=gGridi, &
+         CoordChars='lat:lon:hgt', OtherChars='area:aream:mask:frac', lsize=lsizei )
     call mct_aVect_init(avi,rList="wind:windd:qsat",lsize=lsizei)
     avi%rAttr = SHR_CONST_SPVAL
 

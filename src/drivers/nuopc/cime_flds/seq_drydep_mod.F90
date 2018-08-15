@@ -509,12 +509,16 @@ CONTAINS
     !========================================================================
     ! reads drydep_inparm namelist and sets up CCSM driver list of fields for
     ! land-atmosphere communications.
+    !
+    ! !REVISION HISTORY:
+    !  2009-Feb-20 - E. Kluzek - Separate out as subroutine from previous input_init
     !========================================================================
 
-    use shr_file_mod, only : shr_file_getUnit, shr_file_freeUnit
-    use shr_log_mod , only : s_logunit => shr_log_Unit
-    use shr_mpi_mod , only : shr_mpi_bcast
-    use shr_nl_mod  , only : shr_nl_find_group_name
+    use shr_file_mod,only : shr_file_getUnit, shr_file_freeUnit
+    use shr_log_mod, only : s_logunit => shr_log_Unit
+    use shr_mpi_mod, only : shr_mpi_bcast
+    use shr_nl_mod, only : shr_nl_find_group_name
+    implicit none
 
     character(len=*), intent(in)  :: NLFilename ! Namelist filename
     integer         , intent(in)  :: mpicom
@@ -571,8 +575,9 @@ CONTAINS
     call shr_mpi_bcast( drydep_list, mpicom )
     call shr_mpi_bcast( drydep_method, mpicom )
 
-    !--- Loop over species to fill list of fields to communicate for drydep ---
     n_drydep = 0
+
+    !--- Loop over species to fill list of fields to communicate for drydep ---
     seq_drydep_fields = ' '
     do i=1,maxspc
        if ( len_trim(drydep_list(i))==0 ) exit

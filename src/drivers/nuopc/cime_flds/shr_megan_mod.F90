@@ -32,8 +32,10 @@ module shr_megan_mod
   public :: shr_megan_mapped_emisfctrs ! switch to use mapped emission factors
   public :: shr_megan_comp_ptr
 
-  character(len=CS), public :: shr_megan_fields_token = ''   ! First drydep fields token
-  character(len=CL), public :: shr_megan_factors_file = ''
+  logical          , public :: megan_initialized       = .false. ! true => shr_megan_readnl alreay called
+  character(len=CS), public :: shr_megan_fields_token  = ''      ! First drydep fields token
+  character(len=CL), public :: shr_megan_factors_file  = ''
+  character(len=CX), public :: shr_megan_fields        = '' 
 
   ! MEGAN compound data structure (or user defined type)
   type shr_megan_megcomp_t
@@ -125,6 +127,13 @@ contains
     character(*),parameter :: F00   = "('(shr_megan_readnl) ',2a)"
 
     namelist /megan_emis_nl/ megan_specifier, megan_factors_file, megan_mapped_emisfctrs
+
+    ! If other processes have already initialized megan - then just return
+    ! the megan_fields that have already been set
+    if (megan_initialized) then
+       megan_fields = trim(shr_megan_fields)
+       return
+    end if
 
     if (mastertask) then
        inquire( file=trim(NLFileName), exist=exists)
@@ -222,6 +231,9 @@ contains
        i = i+1
     enddo
     if (associated(items_list)) call shr_exp_list_destroy(items_list)
+
+    megan_initialized = .true.
+    shr_megan_fields = trim(megan_fields)
 
     ! Need to explicitly add Fl_ based on naming convention
 333 format ('Fall_voc',i3.3)
