@@ -16,7 +16,7 @@
 !  --------------------------------------------------------------------------
 
 ! --------- Modules ----------
-
+        use module_perturb
       use shr_kind_mod, only: r8 => shr_kind_r8
 
 !      use parkind, only : jpim, jprb 
@@ -35,7 +35,7 @@
                         cldfmc, taucmc, planklay, planklev, plankbnd, &
                         pwvcm, fracs, taut, &
                         totuflux, totdflux, fnet, htr, &
-                        totuclfl, totdclfl, fnetc, htrc, totufluxs, totdfluxs ) 
+                        totuclfl, totdclfl, fnetc, htrc, totufluxs, totdfluxs, iplon,lchnk ) 
 !-----------------------------------------------------------------------------
 !
 !  Original version:   E. J. Mlawer, et al. RRTM_V3.0
@@ -59,7 +59,7 @@
 ! ------- Declarations -------
 
 ! ----- Input -----
-      integer, intent(in) :: nlayers                    ! total number of layers
+      integer, intent(in) :: nlayers,iplon,lchnk                    ! total number of layers
       integer, intent(in) :: istart                     ! beginning band of calculation
       integer, intent(in) :: iend                       ! ending band of calculation
       integer, intent(in) :: iout                       ! output option flag
@@ -267,6 +267,9 @@
 
 ! Change to band loop?
          do ig = 1, ngptlw
+            !if(icolprnt(lchnk) == iplon .and. lay==3 .and. ig==79) then
+            !   write(102,*)'rrtmg_lw_rtrnmc.f90_14:',cldfmc(ig,lay),ig,lay
+            !endif
             if (cldfmc(ig,lay) .eq. 1._r8) then
                ib = ngb(ig)
                odcld(lay,ig) = secdiff(ib) * taucmc(ig,lay)
@@ -311,6 +314,9 @@
                if (icldlyr(lev).eq.1) then
                   iclddn = 1
                   odtot = odepth + odcld(lev,igc)
+                  !if(icolprnt(lchnk) == iplon .and. lev-1==2) then
+                  !   write(102,*)'rrtmg_lw_rtrnmc.f90_13:',odcld(lev,igc),lev,igc
+                  !endif
                   if (odtot .lt. 0.06_r8) then
                      atrans(lev) = odepth - 0.5_r8*odepth*odepth
                      odepth_rec = rec_6*odepth
@@ -324,7 +330,15 @@
                          efclfrac(lev,igc) * (1. - atrans(lev))) + &
                          gassrc + cldfmc(igc,lev) * &
                          (bbdtot * atot(lev) - gassrc)
+
+                     !if(icolprnt(lchnk) == iplon .and. lev-1==2) then
+                     !   write(102,*)'rrtmg_lw_rtrnmc.f90_5:',odtot,odepth!,drad(lev-1),radld,odtot
+                     !endif
                      drad(lev-1) = drad(lev-1) + radld
+                     !if(icolprnt(lchnk) == iplon .and. lev-1==2) then
+                     !   write(102,*)'rrtmg_lw_rtrnmc.f90_6:'!,drad(lev-1)
+                     !endif
+
                   
                      bbugas(lev) =  plfrac * (blay+dplankup*odepth_rec)
                      bbutot(lev) =  plfrac * (blay+dplankup*odtot_rec)
@@ -346,7 +360,13 @@
                          efclfrac(lev,igc) * (1._r8 - atrans(lev))) + &
                          gassrc + cldfmc(igc,lev) * &
                          (bbdtot * atot(lev) - gassrc)
+                     !if(icolprnt(lchnk) == iplon .and. lev-1==2) then
+                     !   write(102,*)'rrtmg_lw_rtrnmc.f90_7:',odtot,odepth!,drad(lev-1),radld,odepth
+                     !endif
                      drad(lev-1) = drad(lev-1) + radld
+                     !if(icolprnt(lchnk) == iplon .and. lev-1==2) then
+                     !   write(102,*)'rrtmg_lw_rtrnmc.f90_8:'!,drad(lev-1)
+                     !endif
 
                      bbugas(lev) = plfrac * (blay + dplankup*odepth_rec)
                      bbutot(lev) = plfrac * (blay + tfactot * dplankup)
@@ -372,7 +392,14 @@
                     efclfrac(lev,igc) * (1._r8 - atrans(lev))) + &
                     gassrc + cldfmc(igc,lev) * &
                     (bbdtot * atot(lev) - gassrc)
+                  !if(icolprnt(lchnk) == iplon .and. lev-1==2) then
+                  !   write(102,*)'rrtmg_lw_rtrnmc.f90_9:'!,drad(lev-1),radld
+                  !endif
                   drad(lev-1) = drad(lev-1) + radld
+                  !if(icolprnt(lchnk) == iplon .and. lev-1==2) then
+                  !   write(102,*)'rrtmg_lw_rtrnmc.f90_10:'!,drad(lev-1)
+                  !endif
+
                   bbugas(lev) = plfrac * (blay + tfacgas * dplankup)
                   bbutot(lev) = plfrac * (blay + tfactot * dplankup)
                   endif
@@ -393,7 +420,15 @@
                      bbugas(lev) = plfrac * (blay + tausfac * dplankup)
                   endif   
                   radld = radld + (bbd-radld)*atrans(lev)
+                  !if(icolprnt(lchnk) == iplon .and. lev-1==2) then
+                  !   write(102,*)'rrtmg_lw_rtrnmc.f90_11:'!,drad(lev-1),radld,'clear'
+                  !endif
+
                   drad(lev-1) = drad(lev-1) + radld
+                  !if(icolprnt(lchnk) == iplon .and. lev-1==2) then
+                  !   write(102,*)'rrtmg_lw_rtrnmc.f90_12:'!,drad(lev-1)
+                  !endif
+
                endif
 !  Set clear sky stream to total sky stream as long as layers
 !  remain clear.  Streams diverge when a cloud is reached (iclddn=1),
@@ -464,7 +499,15 @@
             urad(lev) = 0.0_r8
             drad(lev) = 0.0_r8
             totuflux(lev) = totuflux(lev) + uflux(lev) * delwave(iband)
+            !if(icolprnt(lchnk) == iplon .and. lev == 2) then
+               !write(102,*)'rrtmg_lw_rtrnmc.f90_3:',totdflux(lev)
+            !endif
+
             totdflux(lev) = totdflux(lev) + dflux(lev) * delwave(iband)
+            !if(icolprnt(lchnk) == iplon .and. lev==2) then
+            !   write(102,*)'rrtmg_lw_rtrnmc.f90_2:',totdflux(lev),dflux(lev),delwave(iband),drad(lev),wtdiff,iband,istart, iend
+            !endif
+
             uclfl(lev) = clrurad(lev)*wtdiff
             dclfl(lev) = clrdrad(lev)*wtdiff
             clrurad(lev) = 0.0_r8
@@ -491,6 +534,12 @@
 ! Calculate fluxes at model levels
       do lev = 1, nlayers
          totuflux(lev) = totuflux(lev) * fluxfac
+         !if(icolprnt(lchnk) == iplon) then
+         !   if(lev==2) then
+         !      write(102,*)'rrtmg_lw_rtrnmc.f90_4:',totdflux(lev), fluxfac,totdflux(lev) * fluxfac
+         !   endif
+         !endif
+
          totdflux(lev) = totdflux(lev) * fluxfac
          totufluxs(:,lev) = totufluxs(:,lev) * fluxfac
          totdfluxs(:,lev) = totdfluxs(:,lev) * fluxfac
@@ -501,7 +550,13 @@
          l = lev - 1
 
 ! Calculate heating rates at model layers
-         htr(l)=heatfac*(fnet(l)-fnet(lev))/(pz(l)-pz(lev)) 
+         htr(l)=heatfac*(fnet(l)-fnet(lev))/(pz(l)-pz(lev))          
+         !if(icolprnt(lchnk) == iplon) then
+            !write(102,*)'rrtmg_lw_rtrnmc.f90_2:',fnet(l),fnet(lev),l,lev
+         !   if(l==1) then
+         !      write(102,*)'rrtmg_lw_rtrnmc.f90_1:',htr(l),fnet(l),fnet(lev),lev,totuflux(lev),totdflux(lev),totuflux(l),totdflux(l)
+         !   endif
+         !endif
          htrc(l)=heatfac*(fnetc(l)-fnetc(lev))/(pz(l)-pz(lev)) 
       enddo
 

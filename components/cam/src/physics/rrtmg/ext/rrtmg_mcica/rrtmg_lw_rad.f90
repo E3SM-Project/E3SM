@@ -53,7 +53,7 @@
 ! ****************************************************************************
 
 ! -------- Modules --------
-
+         use module_perturb
       use shr_kind_mod, only: r8 => shr_kind_r8
       use ppgrid,       only: pcols, begchunk, endchunk
 
@@ -421,6 +421,10 @@
 
 !  This is the main longitude/column loop within RRTMG.
       do iplon = 1, ncol
+         !if(icolprnt(lchnk) == iplon) then
+         !   write(102,*)'rrtmg_lw_rad.f90_2:',cldfmcl(79,iplon,28)
+         !endif
+
 
 !  Prepare atmospheric profile from GCM for use in RRTMG, and define
 !  other input parameters.  
@@ -432,7 +436,7 @@
               cldfmcl, taucmcl, ciwpmcl, clwpmcl, reicmcl, relqmcl, tauaer, &
               pavel, pz, tavel, tz, tbound, semiss, coldry, &
               wkl, wbrodl, wx, pwvcm, inflag, iceflag, liqflag, &
-              cldfmc, taucmc, ciwpmc, clwpmc, reicmc, dgesmc, relqmc, taua)
+              cldfmc, taucmc, ciwpmc, clwpmc, reicmc, dgesmc, relqmc, taua,lchnk)
 
 !  For cloudy atmosphere, use cldprop to set cloud optical properties based on
 !  input cloud physical properties.  Select method based on choices described
@@ -496,11 +500,15 @@
 ! to be used.  Clear sky calculation is done simultaneously.
 ! For McICA, RTRNMC is called for clear and cloudy calculations.
 
+         !if(icolprnt(lchnk) == iplon) then
+         !   write(102,*)'rrtmg_lw_rad.f90_3:',cldfmc(79,3)
+         !endif
+
          call rtrnmc(nlay, istart, iend, iout, pz, semiss, ncbands, &
                      cldfmc, taucmc, planklay, planklev, plankbnd, &
                      pwvcm, fracs, taut, &
                      totuflux, totdflux, fnet, htr, &
-                     totuclfl, totdclfl, fnetc, htrc, totufluxs, totdfluxs )
+                     totuclfl, totdclfl, fnetc, htrc, totufluxs, totdfluxs, iplon,lchnk )
 
 !  Transfer up and down fluxes and heating rate to output arrays.
 !  Vertical indexing goes from bottom to top
@@ -517,6 +525,11 @@
             hr(iplon,k+1) = htr(k)
             hrc(iplon,k+1) = htrc(k)
          enddo
+         !if(icolprnt(lchnk) == iplon) then
+         !   write(102,*)'rrtmg_lw_rad.f90_1:',htr(1)
+         !endif
+
+
 
       enddo
 
@@ -530,7 +543,7 @@
               cldfmcl, taucmcl, ciwpmcl, clwpmcl, reicmcl, relqmcl, tauaer, &
               pavel, pz, tavel, tz, tbound, semiss, coldry, &
               wkl, wbrodl, wx, pwvcm, inflag, iceflag, liqflag, &
-              cldfmc, taucmc, ciwpmc, clwpmc, reicmc, dgesmc, relqmc, taua)
+              cldfmc, taucmc, ciwpmc, clwpmc, reicmc, dgesmc, relqmc, taua,lchnk)
 !***************************************************************************
 !
 !  Input atmospheric profile from GCM, and prepare it for use in RRTMG_LW.
@@ -547,7 +560,7 @@
 ! ------- Declarations -------
 
 ! ----- Input -----
-      integer, intent(in) :: iplon                      ! column loop index
+      integer, intent(in) :: iplon,lchnk                      ! column loop index
       integer, intent(in) :: nlay                       ! Number of model layers
       integer, intent(in) :: icld                       ! clear/cloud and cloud overlap flag
       integer, intent(in) :: iaer                       ! aerosol option flag
@@ -678,6 +691,12 @@
       integer :: isp, l, ix, n, imol, ib, ig            ! Loop indices
       real(kind=r8) :: amm, amttl, wvttl, wvsh, summol  
 
+      !if(icolprnt(lchnk) == iplon) then
+      !   write(102,*)'rrtmg_lw_rad.f90_inatm:',cldfmcl(79,iplon,28),iplon
+      !endif
+
+
+
 !  Initialize all molecular amounts and cloud properties to zero here, then pass input amounts
 !  into RRTM arrays below.
 
@@ -803,6 +822,9 @@
 
          do l = 1, nlay-1
             do ig = 1, ngptlw
+               !if(icolprnt(lchnk) == iplon .and. ig==79 .and. l==3 ) then
+               !   write(102,*)'rrtmg_lw_rad.f90_inatm:',cldfmcl(ig,iplon,nlay-l),nlay-l, nlay, l,iplon
+               !endif
                cldfmc(ig,l) = cldfmcl(ig,iplon,nlay-l)
                taucmc(ig,l) = taucmcl(ig,iplon,nlay-l)
                ciwpmc(ig,l) = ciwpmcl(ig,iplon,nlay-l)

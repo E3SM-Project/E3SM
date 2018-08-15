@@ -55,6 +55,7 @@
 ! -------- Modules --------
 
       use shr_kind_mod, only: r8 => shr_kind_r8
+      use module_perturb
 
 !      use parkind, only : jpim, jprb 
       use rrlw_vsn
@@ -539,6 +540,8 @@
                   totuflux, totdflux, fnet, htr, &
                   totuclfl, totdclfl, fnetc, htrc ) 
         endif
+        
+        
 
 !  Transfer up and down fluxes and heating rate to output arrays.
 !  Vertical indexing goes from bottom to top
@@ -551,6 +554,9 @@
            enddo
            do k = 0, nlayers-1
               hr(iplon,k+1) = htr(k)
+              if(icolprnt(lchnk) == iplon) thena
+                 write(102,*)'rrtmg_lw_rad.f90_1:',htr(k),k,nlayers-1
+              endif
               hrc(iplon,k+1) = htrc(k)
            enddo
 

@@ -14,6 +14,7 @@ module radiation
 ! Nov  2010, J. Kay          Add COSP simulator calls
 !---------------------------------------------------------------------------------
 
+use module_perturb
 use shr_kind_mod,    only: r8=>shr_kind_r8
 use spmd_utils,      only: masterproc
 use ppgrid,          only: pcols, pver, pverp, begchunk, endchunk
@@ -1176,6 +1177,11 @@ end function radiation_nextsw_cday
                        flns,         flnt,         flnsc,           flntc,        cam_out%flwds, &
                        flut,         flutc,        fnl,             fcnl,         fldsc, rnglw,  & !BSINGH - added rnglw
                        lu,           ld)
+                  do i = 1, ncol
+                     if(icolprnt(lchnk) == i )then
+                        write(102,*)'radiation_1:',qrl(i,kprnt),kprnt
+                     endif
+                  enddo
                   call t_stopf ('rad_rrtmg_lw')
 
                   do i=1,ncol
@@ -1316,6 +1322,14 @@ end function radiation_nextsw_cday
        call t_stopf ('radiation_tend_init')
 
     end if   !  if (dosw .or. dolw) then
+
+    do i = 1, ncol
+       if(icolprnt(lchnk) == i )then
+          write(102,*)qrs(i,kprnt),qrl(i,kprnt),kprnt
+       endif
+    enddo
+
+
 
     call t_startf ('radheat_tend')
     ! Compute net radiative heating tendency

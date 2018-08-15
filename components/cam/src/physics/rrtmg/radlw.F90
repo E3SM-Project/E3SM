@@ -5,6 +5,8 @@ module radlw
 ! Purpose: Longwave radiation calculations.
 !
 !-----------------------------------------------------------------------
+  use module_perturb
+
 use shr_kind_mod,      only: r8 => shr_kind_r8
 use ppgrid,            only: pcols, pver, pverp
 use scamMod,           only: single_column, scm_crm_mode
@@ -173,6 +175,11 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
       cld(:, pverp-rrtmg_levs+1:pverp-1), cicewp, cliqwp, rei, rel, tauc_lw(:, :ncol, pverp-rrtmg_levs+1:pverp-1), &
       cld_stolw, cicewp_stolw, cliqwp_stolw, rei_stolw, rel_stolw, tauc_stolw, rnglw, pergro_mods)
 
+   !if(icolprnt(lchnk) >0) then
+   !   write(102,*)'radlw_2:',cld_stolw(79,icolprnt(lchnk),28)
+   !endif
+
+
    call t_stopf('mcica_subcol_lw')
 
    
@@ -274,6 +281,12 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
    qrlc = 0._r8
    qrl (:ncol,pverp-rrtmg_levs+1:pver)=hr (:ncol,rrtmg_levs-1:1:-1)*cpair*dps
    qrlc(:ncol,pverp-rrtmg_levs+1:pver)=hrc(:ncol,rrtmg_levs-1:1:-1)*cpair*dps
+   !do i = 1, ncol
+   !   if(icolprnt(lchnk) == i) then
+   !      write(102,*)'radlw.f90_1:',hr(i,2)
+   !   endif
+   !enddo
+
 
    ! Return 0 above solution domain
    if ( ntoplw > 1 )then

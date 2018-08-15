@@ -123,7 +123,7 @@ module phys_grid
    integer, public :: ngcols_p         ! global column count in physics grid 
                                        ! (without holes)
 
-   integer, dimension(:), allocatable, private :: dyn_to_latlon_gcol_map
+   integer, dimension(:), allocatable, public :: dyn_to_latlon_gcol_map
                                        ! map from unsorted (dynamics) to lat/lon sorted grid indices
    integer, dimension(:), allocatable, public :: latlon_to_dyn_gcol_map
                                        ! map from lat/lon sorted grid to unsorted (dynamics) indices
@@ -439,6 +439,7 @@ contains
           ngcols_p = ngcols_p + 1
        endif
     enddo
+    write(102,*)ngcols,ngcols_p
 
     ! sort over longitude and identify unique longitude coordinates
     call IndexSet(ngcols,cdex)

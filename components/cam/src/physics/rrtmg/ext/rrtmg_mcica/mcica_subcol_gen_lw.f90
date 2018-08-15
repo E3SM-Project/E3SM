@@ -27,7 +27,7 @@
 !    yet available, ssac and asmc are for future expansion)
 
 ! --------- Modules ----------
-
+  use module_perturb
       use shr_kind_mod, only: r8 => shr_kind_r8
       use cam_abortutils,   only: endrun
 
@@ -152,14 +152,14 @@
 
 !  Generate the stochastic subcolumns of cloud optical properties for the longwave;
       call generate_stochastic_clouds (ncol, nlay, nsubclw, icld, pmid, cldfrac, clwp, ciwp, tauc, &
-                               cldfmcl, clwpmcl, ciwpmcl, taucmcl, permuteseed, rnglw, pergro_mods)!BSINGH
+                               cldfmcl, clwpmcl, ciwpmcl, taucmcl, permuteseed, rnglw, pergro_mods,lchnk)!BSINGH
 
       end subroutine mcica_subcol_lw
 
 
 !-------------------------------------------------------------------------------------------------
       subroutine generate_stochastic_clouds(ncol, nlay, nsubcol, icld, pmid, cld, clwp, ciwp, tauc, &
-                                   cld_stoch, clwp_stoch, ciwp_stoch, tauc_stoch, changeSeed,rnglw, pergro_mods)!BSINGH  
+                                   cld_stoch, clwp_stoch, ciwp_stoch, tauc_stoch, changeSeed,rnglw, pergro_mods,lchnk)!BSINGH  
 !-------------------------------------------------------------------------------------------------
 
   !----------------------------------------------------------------------------------------------------------------
@@ -225,7 +225,7 @@
 
 ! -- Arguments
 
-      integer, intent(in) :: ncol            ! number of columns
+      integer, intent(in) :: ncol,lchnk            ! number of columns
       integer, intent(in) :: nlay            ! number of layers
       integer, intent(in) :: icld            ! clear/cloud, cloud overlap flag
       integer, intent(in) :: nsubcol         ! number of sub-columns (g-point intervals)
@@ -384,6 +384,9 @@
                   call kissvec(seed1, seed2, seed3, seed4, rand_num) 
                   CDF(isubcol,:,ilev) = rand_num !BSINGH -commented this line
                   if(pergro_mods)CDF(isubcol,:,ilev) = rnglw(isubcol,1:ncol,ilev) !BSINGH - added this line
+                  !if(icolprnt(lchnk) >0 .and. ilev==28 .and. isubcol==79) then
+                     !write(102,*)'mcica_2:',CDF(isubcol,icolprnt(lchnk) ,ilev),rnglw(isubcol,icolprnt(lchnk),ilev)
+                  !endif
                enddo
             enddo
          elseif (irnd.eq.1) then
@@ -471,6 +474,9 @@
 ! -- generate subcolumns for homogeneous clouds -----
       do ilev = 1,nlay
          iscloudy(:,:,ilev) = (CDF(:,:,ilev) >= 1._r8 - spread(cldf(:,ilev), dim=1, nCopies=nsubcol) )
+         !if(icolprnt(lchnk) >0 .and. ilev==28) then
+         !   write(102,*)'mcica_1:', iscloudy(79,icolprnt(lchnk),ilev),CDF(79,icolprnt(lchnk),ilev),cldf(icolprnt(lchnk),ilev), 1.0_r8-cldf(icolprnt(lchnk),ilev)
+         !endif
       enddo
 
 ! where the subcolumn is cloudy, the subcolumn cloud fraction is 1;
