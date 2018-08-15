@@ -324,7 +324,7 @@ contains
          max_dayl             => grc_pp%max_dayl                              , & ! Input:  [real(r8) (:)   ]  maximum daylength for this grid cell (s)
 
          forc_lwrad           => atm2lnd_vars%forc_lwrad_downscaled_col    , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)                       
-         forc_q               => atm2lnd_vars%forc_q_downscaled_col        , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)                                 
+         forc_q               => top_as%qbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)                                 
          forc_pbot            => top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
          forc_th              => top_as%thbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)                            
          forc_rho             => atm2lnd_vars%forc_rho_downscaled_col      , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                                     
@@ -700,13 +700,13 @@ contains
          nmozsgn(p) = 0
 
          taf(p) = (t_grnd(c) + thm(p))/2._r8
-         qaf(p) = (forc_q(c)+qg(c))/2._r8
+         qaf(p) = (forc_q(t)+qg(c))/2._r8
 
          ur(p) = max(1.0_r8,sqrt(forc_u(g)*forc_u(g)+forc_v(g)*forc_v(g)))
          dth(p) = thm(p)-taf(p)
-         dqh(p) = forc_q(c)-qaf(p)
+         dqh(p) = forc_q(t)-qaf(p)
          delq(p) = qg(c) - qaf(p)
-         dthv(p) = dth(p)*(1._r8+0.61_r8*forc_q(c))+0.61_r8*forc_th(t)*dqh(p)
+         dthv(p) = dth(p)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(p)
          zldis(p) = forc_hgt_u_patch(p) - displa(p)
 
          ! Check to see if the forcing height is below the canopy height
@@ -987,7 +987,7 @@ contains
             dc2 = hvap*forc_rho(c)*wtlq
 
             efsh   = dc1*(wtga*t_veg(p)-wtg0*t_grnd(c)-wta0(p)*thm(p))
-            efe(p) = dc2*(wtgaq*qsatl(p)-wtgq0*qg(c)-wtaq0(p)*forc_q(c))
+            efe(p) = dc2*(wtgaq*qsatl(p)-wtgq0*qg(c)-wtaq0(p)*forc_q(t))
 
             ! Evaporation flux from foliage
 
@@ -1024,7 +1024,7 @@ contains
             ! "efe + dc2*wtgaq*qsatdt_veg"
 
             efpot = forc_rho(c)*wtl*(wtgaq*(qsatl(p)+qsatldT(p)*dt_veg(p)) &
-                 -wtgq0*qg(c)-wtaq0(p)*forc_q(c))
+                 -wtgq0*qg(c)-wtaq0(p)*forc_q(t))
             qflx_evap_veg(p) = rpp*efpot
 
             ! Calculation of evaporative potentials (efpot) and
@@ -1057,19 +1057,19 @@ contains
             ! Monin-Obukhov stability parameter for next iteration.
 
             taf(p) = wtg0*t_grnd(c) + wta0(p)*thm(p) + wtl0(p)*t_veg(p)
-            qaf(p) = wtlq0(p)*qsatl(p) + wtgq0*qg(c) + forc_q(c)*wtaq0(p)
+            qaf(p) = wtlq0(p)*qsatl(p) + wtgq0*qg(c) + forc_q(t)*wtaq0(p)
 
             ! Update Monin-Obukhov length and wind speed including the
             ! stability effect
 
             dth(p) = thm(p)-taf(p)
-            dqh(p) = forc_q(c)-qaf(p)
-            delq(p) = wtalq(p)*qg(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(c)
+            dqh(p) = forc_q(t)-qaf(p)
+            delq(p) = wtalq(p)*qg(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
 
             tstar = temp1(p)*dth(p)
             qstar = temp2(p)*dqh(p)
 
-            thvstar = tstar*(1._r8+0.61_r8*forc_q(c)) + 0.61_r8*forc_th(t)*qstar
+            thvstar = tstar*(1._r8+0.61_r8*forc_q(t)) + 0.61_r8*forc_th(t)*qstar
             zeta = zldis(p)*vkc*grav*thvstar/(ustar(p)**2*thv(c))
 
             if (zeta >= 0._r8) then     !stable
@@ -1155,13 +1155,13 @@ contains
          qflx_evap_soi(p) = forc_rho(c)*wtgq(p)*delq(p)
 
          ! compute individual latent heat fluxes
-         delq_snow = wtalq(p)*qg_snow(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(c)
+         delq_snow = wtalq(p)*qg_snow(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
          qflx_ev_snow(p) = forc_rho(c)*wtgq(p)*delq_snow
 
-         delq_soil = wtalq(p)*qg_soil(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(c)
+         delq_soil = wtalq(p)*qg_soil(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
          qflx_ev_soil(p) = forc_rho(c)*wtgq(p)*delq_soil
 
-         delq_h2osfc = wtalq(p)*qg_h2osfc(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(c)
+         delq_h2osfc = wtalq(p)*qg_h2osfc(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
          qflx_ev_h2osfc(p) = forc_rho(c)*wtgq(p)*delq_h2osfc
 
          ! 2 m height air temperature
@@ -1171,7 +1171,7 @@ contains
 
          ! 2 m height specific humidity
 
-         q_ref2m(p) = forc_q(c) + temp2(p)*dqh(p)*(1._r8/temp22m(p) - 1._r8/temp2(p))
+         q_ref2m(p) = forc_q(t) + temp2(p)*dqh(p)*(1._r8/temp22m(p) - 1._r8/temp2(p))
 
          ! 2 m height relative humidity
 

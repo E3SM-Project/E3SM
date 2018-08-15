@@ -194,7 +194,7 @@ contains
          forc_t              =>   top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (K)                       
          forc_th             =>   top_as%thbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (K)             
          forc_rho            =>   atm2lnd_vars%forc_rho_not_downscaled_grc  , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                 
-         forc_q              =>   atm2lnd_vars%forc_q_not_downscaled_grc    , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)             
+         forc_q              =>   top_as%qbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)             
          forc_pbot           =>   top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
          forc_u              =>   atm2lnd_vars%forc_u_grc                   , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)    
          forc_v              =>   atm2lnd_vars%forc_v_grc                   , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)   
@@ -341,10 +341,10 @@ contains
          g = lun_pp%gridcell(l)
 
          thm_g(l) = forc_t(t) + lapse_rate*forc_hgt_t_patch(lun_pp%pfti(l))
-         thv_g(l) = forc_th(t)*(1._r8+0.61_r8*forc_q(g))
+         thv_g(l) = forc_th(t)*(1._r8+0.61_r8*forc_q(t))
          dth(l)   = thm_g(l)-taf(l)
-         dqh(l)   = forc_q(g)-qaf(l)
-         dthv     = dth(l)*(1._r8+0.61_r8*forc_q(g))+0.61_r8*forc_th(t)*dqh(l)
+         dqh(l)   = forc_q(t)-qaf(l)
+         dthv     = dth(l)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(l)
          zldis(l) = forc_hgt_u_patch(lun_pp%pfti(l)) - z_d_town(l)
 
          ! Initialize Monin-Obukhov length and wind speed including convective velocity
@@ -420,11 +420,12 @@ contains
          ! and specific humidity (numerator) and is a landunit quantity
          do fl = 1, num_urbanl
             l = filter_urbanl(fl)
+            t = lun_pp%topounit(l)
             g = lun_pp%gridcell(l)
 
             taf_numer(l) = thm_g(l)/rahu(l)
             taf_denom(l) = 1._r8/rahu(l)
-            qaf_numer(l) = forc_q(g)/rawu(l)
+            qaf_numer(l) = forc_q(t)/rawu(l)
             qaf_denom(l) = 1._r8/rawu(l)
 
             ! First term needed for derivative of heat fluxes
@@ -640,10 +641,10 @@ contains
             g = lun_pp%gridcell(l)
 
             dth(l) = thm_g(l)-taf(l)
-            dqh(l) = forc_q(g)-qaf(l)
+            dqh(l) = forc_q(t)-qaf(l)
             tstar = temp1(l)*dth(l)
             qstar = temp2(l)*dqh(l)
-            thvstar = tstar*(1._r8+0.61_r8*forc_q(g)) + 0.61_r8*forc_th(t)*qstar
+            thvstar = tstar*(1._r8+0.61_r8*forc_q(t)) + 0.61_r8*forc_th(t)*qstar
             zeta = zldis(l)*vkc*grav*thvstar/(ustar(l)**2*thv_g(l))
 
             if (zeta >= 0._r8) then                   !stable
@@ -790,9 +791,10 @@ contains
       ! the scaled heat fluxes above
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
+         t = lun_pp%topounit(l)
          g = lun_pp%gridcell(l)
          eflx(l)       = -(forc_rho(g)*cpair/rahu(l))*(thm_g(l) - taf(l))
-         qflx(l)       = -(forc_rho(g)/rawu(l))*(forc_q(g) - qaf(l))
+         qflx(l)       = -(forc_rho(g)/rawu(l))*(forc_q(t) - qaf(l))
          eflx_scale(l) = sum(eflx_sh_grnd_scale(lun_pp%pfti(l):lun_pp%pftf(l)))
          qflx_scale(l) = sum(qflx_evap_soi_scale(lun_pp%pfti(l):lun_pp%pftf(l)))
          eflx_err(l)   = eflx_scale(l) - eflx(l)

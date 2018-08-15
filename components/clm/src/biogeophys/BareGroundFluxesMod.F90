@@ -118,7 +118,7 @@ contains
          forc_th          =>    top_as%thbot                          , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)                            
          forc_pbot        =>    top_as%pbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
          forc_rho         =>    atm2lnd_vars%forc_rho_downscaled_col  , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                                     
-         forc_q           =>    atm2lnd_vars%forc_q_downscaled_col    , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)                                 
+         forc_q           =>    top_as%qbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)                                 
 
          forc_hgt_u_patch =>    frictionvel_vars%forc_hgt_u_patch     , & ! Input:
 
@@ -211,8 +211,8 @@ contains
 
          ur(p)    = max(1.0_r8,sqrt(forc_u(g)*forc_u(g)+forc_v(g)*forc_v(g)))
          dth(p)   = thm(p)-t_grnd(c)
-         dqh(p)   = forc_q(c) - qg(c)
-         dthv     = dth(p)*(1._r8+0.61_r8*forc_q(c))+0.61_r8*forc_th(t)*dqh(p)
+         dqh(p)   = forc_q(t) - qg(c)
+         dthv     = dth(p)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(p)
          zldis(p) = forc_hgt_u_patch(p)
 
          ! Copy column roughness to local pft-level arrays
@@ -249,7 +249,7 @@ contains
             qstar = temp2(p)*dqh(p)
             z0hg_patch(p) = z0mg_patch(p)/exp(0.13_r8 * (ustar(p)*z0mg_patch(p)/1.5e-5_r8)**0.45_r8)
             z0qg_patch(p) = z0hg_patch(p)
-            thvstar = tstar*(1._r8+0.61_r8*forc_q(c)) + 0.61_r8*forc_th(t)*qstar
+            thvstar = tstar*(1._r8+0.61_r8*forc_q(t)) + 0.61_r8*forc_th(t)*qstar
             zeta = zldis(p)*vkc*grav*thvstar/(ustar(p)**2*thv(c))
 
             if (zeta >= 0._r8) then                   !stable
@@ -321,15 +321,15 @@ contains
          qflx_evap_tot(p)  = qflx_evap_soi(p)
 
          ! compute latent heat fluxes individually
-         qflx_ev_snow(p)   = -raiw*(forc_q(c) - qg_snow(c))
-         qflx_ev_soil(p)   = -raiw*(forc_q(c) - qg_soil(c))
-         qflx_ev_h2osfc(p) = -raiw*(forc_q(c) - qg_h2osfc(c))
+         qflx_ev_snow(p)   = -raiw*(forc_q(t) - qg_snow(c))
+         qflx_ev_soil(p)   = -raiw*(forc_q(t) - qg_soil(c))
+         qflx_ev_h2osfc(p) = -raiw*(forc_q(t) - qg_h2osfc(c))
 
          ! 2 m height air temperature
          t_ref2m(p) = thm(p) + temp1(p)*dth(p)*(1._r8/temp12m(p) - 1._r8/temp1(p))
 
          ! 2 m height specific humidity
-         q_ref2m(p) = forc_q(c) + temp2(p)*dqh(p)*(1._r8/temp22m(p) - 1._r8/temp2(p))
+         q_ref2m(p) = forc_q(t) + temp2(p)*dqh(p)*(1._r8/temp22m(p) - 1._r8/temp2(p))
 
          ! 2 m height relative humidity
          call QSat(t_ref2m(p), forc_pbot(t), e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)

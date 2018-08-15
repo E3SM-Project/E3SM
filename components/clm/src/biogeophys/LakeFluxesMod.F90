@@ -155,7 +155,7 @@ contains
          forc_t           =>    top_as%tbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                  
          forc_th          =>    top_as%thbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)        
          forc_pbot        =>    top_as%pbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
-         forc_q           =>    atm2lnd_vars%forc_q_downscaled_col     , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)             
+         forc_q           =>    top_as%qbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)             
          forc_rho         =>    atm2lnd_vars%forc_rho_downscaled_col   , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                 
          forc_lwrad       =>    atm2lnd_vars%forc_lwrad_downscaled_col , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)   
          forc_snow        =>    atm2lnd_vars%forc_snow_downscaled_col  , & ! Input:  [real(r8) (:)   ]  snow rate [mm/s]                                  
@@ -307,7 +307,7 @@ contains
          ! reference height
 
          thm(p) = forc_t(t) + 0.0098_r8*forc_hgt_t_patch(p)   ! intermediate variable
-         thv(c) = forc_th(t)*(1._r8+0.61_r8*forc_q(c))     ! virtual potential T
+         thv(c) = forc_th(t)*(1._r8+0.61_r8*forc_q(t))     ! virtual potential T
       end do
 
 
@@ -335,8 +335,8 @@ contains
 
          ur(p)    = max(1.0_r8,sqrt(forc_u(g)*forc_u(g)+forc_v(g)*forc_v(g)))
          dth(p)   = thm(p)-t_grnd(c)
-         dqh(p)   = forc_q(c)-qsatg(c)
-         dthv     = dth(p)*(1._r8+0.61_r8*forc_q(c))+0.61_r8*forc_th(t)*dqh(p)
+         dqh(p)   = forc_q(t)-qsatg(c)
+         dthv     = dth(p)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(p)
          zldis(p) = forc_hgt_u_patch(p) - 0._r8
 
          ! Initialize Monin-Obukhov length and wind speed
@@ -406,7 +406,7 @@ contains
             ! from SNICAR is assigned to the surface skin.
             ax  = betaprime(c)*sabg(p) + emg_lake*forc_lwrad(c) + 3._r8*stftg3(p)*tgbef(c) &
                  + forc_rho(c)*cpair/rah(p)*thm(p) &
-                 - htvp(c)*forc_rho(c)/raw(p)*(qsatg(c)-qsatgdT(c)*tgbef(c) - forc_q(c)) &
+                 - htvp(c)*forc_rho(c)/raw(p)*(qsatg(c)-qsatgdT(c)*tgbef(c) - forc_q(t)) &
                  + tksur(c)*tsur(c)/dzsur(c)
             !Changed sabg(p) to betaprime(c)*sabg(p).
             bx  = 4._r8*stftg3(p) + forc_rho(c)*cpair/rah(p) &
@@ -430,7 +430,7 @@ contains
             ! using ground temperatures from previous time step
 
             eflx_sh_grnd(p) = forc_rho(c)*cpair*(t_grnd(c)-thm(p))/rah(p)
-            qflx_evap_soi(p) = forc_rho(c)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-tgbef(c))-forc_q(c))/raw(p)
+            qflx_evap_soi(p) = forc_rho(c)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-tgbef(c))-forc_q(t))/raw(p)
 
             ! Re-calculate saturated vapor pressure, specific humidity and their
             ! derivatives at lake surface
@@ -438,12 +438,12 @@ contains
             call QSat(t_grnd(c), forc_pbot(t), eg, degdT, qsatg(c), qsatgdT(c))
 
             dth(p)=thm(p)-t_grnd(c)
-            dqh(p)=forc_q(c)-qsatg(c)
+            dqh(p)=forc_q(t)-qsatg(c)
 
             tstar = temp1(p)*dth(p)
             qstar = temp2(p)*dqh(p)
 
-            thvstar=tstar*(1._r8+0.61_r8*forc_q(c)) + 0.61_r8*forc_th(t)*qstar
+            thvstar=tstar*(1._r8+0.61_r8*forc_q(t)) + 0.61_r8*forc_th(t)*qstar
             zeta=zldis(p)*vkc * grav*thvstar/(ustar(p)**2*thv(c))
 
             if (zeta >= 0._r8) then     !stable
@@ -538,14 +538,14 @@ contains
             t_grnd_temp = t_grnd(c)
             t_grnd(c) = tfrz
             eflx_sh_grnd(p) = forc_rho(c)*cpair*(t_grnd(c)-thm(p))/rah(p)
-            qflx_evap_soi(p) = forc_rho(c)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-t_grnd_temp) - forc_q(c))/raw(p)
+            qflx_evap_soi(p) = forc_rho(c)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-t_grnd_temp) - forc_q(t))/raw(p)
          else if ( (t_lake(c,1) > t_grnd(c) .and. t_grnd(c) > tdmax) .or. &
               (t_lake(c,1) < t_grnd(c) .and. t_lake(c,1) > tfrz .and. t_grnd(c) < tdmax) ) then
             ! Convective mixing will occur at surface
             t_grnd_temp = t_grnd(c)
             t_grnd(c) = t_lake(c,1)
             eflx_sh_grnd(p) = forc_rho(c)*cpair*(t_grnd(c)-thm(p))/rah(p)
-            qflx_evap_soi(p) = forc_rho(c)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-t_grnd_temp) - forc_q(c))/raw(p)
+            qflx_evap_soi(p) = forc_rho(c)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-t_grnd_temp) - forc_q(t))/raw(p)
          end if
 
          ! Update htvp
@@ -584,7 +584,7 @@ contains
          t_ref2m(p) = thm(p) + temp1(p)*dth(p)*(1._r8/temp12m(p) - 1._r8/temp1(p))
 
          ! 2 m height specific humidity
-         q_ref2m(p) = forc_q(c) + temp2(p)*dqh(p)*(1._r8/temp22m(p) - 1._r8/temp2(p))
+         q_ref2m(p) = forc_q(t) + temp2(p)*dqh(p)*(1._r8/temp22m(p) - 1._r8/temp2(p))
 
          ! 2 m height relative humidity
 
