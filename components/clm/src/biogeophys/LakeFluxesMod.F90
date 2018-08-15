@@ -160,8 +160,8 @@ contains
          forc_lwrad       =>    atm2lnd_vars%forc_lwrad_downscaled_col , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)   
          forc_snow        =>    atm2lnd_vars%forc_snow_downscaled_col  , & ! Input:  [real(r8) (:)   ]  snow rate [mm/s]                                  
          forc_rain        =>    atm2lnd_vars%forc_rain_downscaled_col  , & ! Input:  [real(r8) (:)   ]  rain rate [mm/s]                                  
-         forc_u           =>    atm2lnd_vars%forc_u_grc                , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)    
-         forc_v           =>    atm2lnd_vars%forc_v_grc                , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)   
+         forc_u           =>    top_as%ubot                            , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)    
+         forc_v           =>    top_as%vbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)   
          
          fsds_nir_d       =>    solarabs_vars%fsds_nir_d_patch         , & ! Input:  [real(r8) (:)   ]  incident direct beam nir solar radiation (W/m**2) 
          fsds_nir_i       =>    solarabs_vars%fsds_nir_i_patch         , & ! Input:  [real(r8) (:)   ]  incident diffuse nir solar radiation (W/m**2)     
@@ -333,7 +333,7 @@ contains
 
          ! Initialize stability variables
 
-         ur(p)    = max(1.0_r8,sqrt(forc_u(g)*forc_u(g)+forc_v(g)*forc_v(g)))
+         ur(p)    = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
          dth(p)   = thm(p)-t_grnd(c)
          dqh(p)   = forc_q(t)-qsatg(c)
          dthv     = dth(p)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(p)
@@ -572,8 +572,8 @@ contains
          ! The variable eflx_gnet will be used to pass the actual heat flux
          !from the ground interface into the lake.
 
-         taux(p) = -forc_rho(c)*forc_u(g)/ram(p)
-         tauy(p) = -forc_rho(c)*forc_v(g)/ram(p)
+         taux(p) = -forc_rho(c)*forc_u(t)/ram(p)
+         tauy(p) = -forc_rho(c)*forc_v(t)/ram(p)
 
          eflx_sh_tot(p)   = eflx_sh_grnd(p)
          qflx_evap_tot(p) = qflx_evap_soi(p)

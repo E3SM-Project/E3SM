@@ -133,8 +133,6 @@ contains
          displar          =>    veg_vp%displar                        , & ! Input:  [real(r8) (:)   ] ratio of displacement height to canopy top height (-)
    
          forc_hgt_t       =>    atm2lnd_vars%forc_hgt_t_grc           , & ! Input:  [real(r8) (:)   ] observational height of temperature [m]  
-         forc_u           =>    atm2lnd_vars%forc_u_grc               , & ! Input:  [real(r8) (:)   ] atmospheric wind speed in east direction (m/s)
-         forc_v           =>    atm2lnd_vars%forc_v_grc               , & ! Input:  [real(r8) (:)   ] atmospheric wind speed in north direction (m/s)
          forc_hgt_u       =>    atm2lnd_vars%forc_hgt_u_grc           , & ! Input:  [real(r8) (:)   ] observational height of wind [m]         
          forc_hgt_q       =>    atm2lnd_vars%forc_hgt_q_grc           , & ! Input:  [real(r8) (:)   ] observational height of specific humidity [m]
          forc_pbot        =>    top_as%pbot                           , & ! Input:  [real(r8) (:)   ] atmospheric pressure (Pa)                
