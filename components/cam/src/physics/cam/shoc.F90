@@ -72,6 +72,7 @@ subroutine shoc_main ( &
      shcol, nlev, dtime, &
      zt_grid,zm_grid,pres,&
      tke, thetal, qv, w_field,&
+     wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &
      u_wind, v_wind,cldliq,qtracers,&
      num_qtracers,wthv_sec,&
      shoc_cldfrac,shoc_ql )
@@ -91,6 +92,11 @@ subroutine shoc_main ( &
   real(r8), intent(in) :: cldliq(shcol,nlev) ! cloud liquid mixing ratio [kg/kg]
   real(r8), intent(in) :: qv(shcol,nlev) ! water vapor mixing ratio [kg/kg]
   real(r8), intent(in) :: w_field(shcol,nlev)
+  
+  real(r8), intent(in) :: wthl_sfc(shcol)
+  real(r8), intent(in) :: wqw_sfc(shcol)
+  real(r8), intent(in) :: uw_sfc(shcol)
+  real(r8), intent(in) :: vw_sfc(shcol)
 
   ! input/output variables  
   real(r8), intent(inout) :: tke(shcol,nlev)  ! turbulent kinetic energy [m2/s2]
@@ -115,12 +121,12 @@ subroutine shoc_main ( &
   real(r8) :: w_sec(shcol,nlev)
   real(r8) :: thl_sec(shcol,nlev)
   real(r8) :: qw_sec(shcol,nlev)
-  real(r8) :: qwthl_sec(shcol,nlev)
-  real(r8) :: wthl_sec(shcol,nlev)
-  real(r8) :: wqw_sec(shcol,nlev)
-  real(r8) :: wtke_sec(shcol,nlev)
-  real(r8) :: uw_sec(shcol,nlev)
-  real(r8) :: vw_sec(shcol,nlev)
+  real(r8) :: qwthl_sec(shcol,0:nlev)
+  real(r8) :: wthl_sec(shcol,0:nlev)
+  real(r8) :: wqw_sec(shcol,0:nlev)
+  real(r8) :: wtke_sec(shcol,0:nlev)
+  real(r8) :: uw_sec(shcol,0:nlev)
+  real(r8) :: vw_sec(shcol,0:nlev)
   real(r8) :: w3(shcol,nlev)
   real(r8) :: brunt(shcol,nlev)
   real(r8) :: qw(shcol,nlev)
@@ -256,12 +262,12 @@ subroutine update_prognostics(shcol,nlev,num_tracer,& ! Input
   real(r8), intent(in) :: adz_zt(shcol,nlev)
   real(r8), intent(in) :: adz_zm(shcol,nlev)
   real(r8), intent(in) :: dz(shcol)
-  real(r8), intent(in) :: wthl_sec(shcol,nlev)
-  real(r8), intent(in) :: wqw_sec(shcol,nlev)
-  real(r8), intent(in) :: wtracer_sec(shcol,nlev,num_tracer)
-  real(r8), intent(in) :: uw_sec(shcol,nlev)
-  real(r8), intent(in) :: vw_sec(shcol,nlev)
-  real(r8), intent(in) :: wtke_sec(shcol,nlev)
+  real(r8), intent(in) :: wthl_sec(shcol,0:nlev)
+  real(r8), intent(in) :: wqw_sec(shcol,0:nlev)
+  real(r8), intent(in) :: wtracer_sec(shcol,0:nlev,num_tracer)
+  real(r8), intent(in) :: uw_sec(shcol,0:nlev)
+  real(r8), intent(in) :: vw_sec(shcol,0:nlev)
+  real(r8), intent(in) :: wtke_sec(shcol,0:nlev)
 
 ! In/out variables  
   real(r8), intent(inout) :: thetal(shcol,nlev)
@@ -276,7 +282,7 @@ subroutine update_prognostics(shcol,nlev,num_tracer,& ! Input
   real(r8) :: thedz, thedz_zm
   
   do i=1,shcol
-    do k=2,nlev
+    do k=1,nlev
       kb=k-1
       thedz=1._r8/(dz(i)*adz_zt(i,k))
       thedz_zm=1._r8/(dz(i)*adz_zm(i,k))
@@ -306,7 +312,8 @@ subroutine diag_second_shoc_moments(shcol,nlev, &   ! Input
 	     u_wind,v_wind,tracer,tke, &            ! Input
 	     isotropy,tkh,tk,shoc_mix,&             ! Input
 	     adz,adzw,dz,&                          ! Input   
-	     zt_grid,zm_grid,&                      ! Input       
+	     zt_grid,zm_grid,&                      ! Input
+	     wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &   ! Input    
 	     w_sec, thl_sec, qw_sec,&               ! Output
 	     wthl_sec,wqw_sec,&                     ! Output
 	     qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Output
@@ -335,18 +342,23 @@ subroutine diag_second_shoc_moments(shcol,nlev, &   ! Input
   real(r8), intent(in) :: adzw(shcol,nlev)
   real(r8), intent(in) :: adz(shcol,nlev) ! grid difference ratio
   real(r8), intent(in) :: dz(shcol) ! difference of lowest layers
+  
+  real(r8), intent(in) :: wthl_sfc(shcol)
+  real(r8), intent(in) :: wqw_sfc(shcol)
+  real(r8), intent(in) :: uw_sfc(shcol)
+  real(r8), intent(in) :: vw_sfc(shcol)  
 
 ! Output variables
   real(r8), intent(out) :: w_sec(shcol,nlev)	! second order vertical velocity
   real(r8), intent(out) :: thl_sec(shcol,nlev)  ! second order liquid wat. potential temp.
   real(r8), intent(out) :: qw_sec(shcol,nlev)   ! second order total water mixing rat.
-  real(r8), intent(out) :: qwthl_sec(shcol,nlev) ! covariance of temp and moisture
-  real(r8), intent(out) :: wthl_sec(shcol,nlev) ! vertical flux of heat
-  real(r8), intent(out) :: wqw_sec(shcol,nlev) ! vertical flux of total water
-  real(r8), intent(out) :: uw_sec(shcol,nlev) ! vertical flux of u
-  real(r8), intent(out) :: vw_sec(shcol,nlev) ! vertical flux of v
-  real(r8), intent(out) :: wtke_sec(shcol,nlev) ! vertical flux of tke
-  real(r8), intent(out) :: wtracer_sec(shcol,nlev,num_tracer) ! vertical flux
+  real(r8), intent(out) :: qwthl_sec(shcol,0:nlev) ! covariance of temp and moisture
+  real(r8), intent(out) :: wthl_sec(shcol,0:nlev) ! vertical flux of heat
+  real(r8), intent(out) :: wqw_sec(shcol,0:nlev) ! vertical flux of total water
+  real(r8), intent(out) :: uw_sec(shcol,0:nlev) ! vertical flux of u
+  real(r8), intent(out) :: vw_sec(shcol,0:nlev) ! vertical flux of v
+  real(r8), intent(out) :: wtke_sec(shcol,0:nlev) ! vertical flux of tke
+  real(r8), intent(out) :: wtracer_sec(shcol,0:nlev,num_tracer) ! vertical flux
                                                               ! of tracer
 
 ! Local variables  
@@ -404,6 +416,16 @@ subroutine diag_second_shoc_moments(shcol,nlev, &   ! Input
     
     enddo ! end i loop (column loop)
   enddo  ! end k loop (vertical loop)
+  
+  ! apply the surface fluxes (these may need to go into a 0 k dimension)
+  do i=1,shcol
+    wthl_sec(i,0) = wthl_srf(i)
+    wqw_sec(i,0) = wqw_srf(i)
+    uw_sec(i,0) = uw_srf(i)
+    vw_sec(i,0) = vw_srf(i)
+    wtracer_sec(i,0,:) = 0._r8
+    wtke_sec(i,0,:) = 0._r8
+  enddo
 
 end subroutine diag_second_shoc_moments
 
@@ -428,7 +450,7 @@ subroutine diag_third_shoc_moments(shcol,nlev, &  ! Input
   real(r8), intent(in) :: thl_sec(shcol,nlev)  ! second order liquid wat. potential temp.
   real(r8), intent(in) :: qw_sec(shcol,nlev)   ! second order total water mixing rat.
   real(r8), intent(in) :: qwthl_sec(shcol,nlev) ! covariance of temp and moisture  
-  real(r8), intent(in) :: wthl_sec(shcol,nlev) ! vertical flux of heat 
+  real(r8), intent(in) :: wthl_sec(shcol,0:nlev) ! vertical flux of heat 
   real(r8), intent(in) :: isotropy(shcol,nlev)
   real(r8), intent(in) :: brunt(shcol,nlev)
   real(r8), intent(in) :: thetal(shcol,nlev)
@@ -589,9 +611,9 @@ subroutine shoc_assumed_pdf(shcol,nlev, &       ! Input
   real(r8), intent(in) :: qw(shcol,nlev)
   real(r8), intent(in) :: thl_sec(shcol,nlev)
   real(r8), intent(in) :: qw_sec(shcol,nlev)
-  real(r8), intent(in) :: wthl_sec(shcol,nlev)
+  real(r8), intent(in) :: wthl_sec(shcol,0:nlev)
   real(r8), intent(in) :: w_sec(shcol,nlev)
-  real(r8), intent(in) :: wqw_sec(shcol,nlev)
+  real(r8), intent(in) :: wqw_sec(shcol,0:nlev)
   real(r8), intent(in) :: qwthl_sec(shcol,nlev)
   real(r8), intent(in) :: w3(shcol,nlev)
   real(r8), intent(in) :: w_field(shcol,nlev)
@@ -651,9 +673,9 @@ subroutine shoc_assumed_pdf(shcol,nlev, &       ! Input
 
   call linear_interp(zm_grid,zt_grid,w3,w3_zt,nlev,nlev,shcol)  
   call linear_interp(zm_grid,zt_grid,thl_sec,thl_sec_zt,nlev,nlev,shcol)
-  call linear_interp(zm_grid,zt_grid,wthl_sec,wthl_sec_zt,nlev,nlev,shcol)
+  call linear_interp(zm_grid,zt_grid,wthl_sec(:,1:nlev),wthl_sec_zt,nlev,nlev,shcol)
   call linear_interp(zm_grid,zt_grid,qwthl_sec,qwthl_sec_zt,nlev,nlev,shcol)
-  call linear_interp(zm_grid,zt_grid,wqw_sec,wqw_sec_zt,nlev,nlev,shcol)
+  call linear_interp(zm_grid,zt_grid,wqw_sec(:,1:nlev),wqw_sec_zt,nlev,nlev,shcol)
   call linear_interp(zm_grid,zt_grid,qw_sec,qw_sec_zt,nlev,nlev,shcol)  
   call linear_interp(zm_grid,zt_grid,w_field,w_field_zt,nlev,nlev,shcol)
   
@@ -1246,7 +1268,7 @@ subroutine linear_interp(x1,x2,y1,y2,km1,km2,ncol)
     enddo ! end k2 loop
   enddo ! i loop
 
-end subroutine linear_interp 
+end subroutine linear_interp
 
 !==============================================================
 ! 

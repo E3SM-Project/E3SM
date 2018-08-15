@@ -612,18 +612,18 @@ module shoc_intr
    ! and TMS
    
       !  Surface fluxes provided by host model
-!      wpthlp_sfc = cam_in%shf(i)/(cpair*rho_ds_zm(1))       ! Sensible heat flux
-!      wprtp_sfc  = cam_in%cflx(i,1)/(rho_ds_zm(1))      ! Latent heat flux
-!      upwp_sfc   = cam_in%wsx(i)/rho_ds_zm(1)               ! Surface meridional momentum flux
-!      vpwp_sfc   = cam_in%wsy(i)/rho_ds_zm(1)               ! Surface zonal momentum flux  
+      wpthlp_sfc = cam_in%shf(i)/(cpair*rho_ds_zm(1))       ! Sensible heat flux
+      wprtp_sfc  = cam_in%cflx(i,1)/(rho_ds_zm(1))      ! Latent heat flux
+      upwp_sfc   = cam_in%wsx(i)/rho_ds_zm(1)               ! Surface meridional momentum flux
+      vpwp_sfc   = cam_in%wsy(i)/rho_ds_zm(1)               ! Surface zonal momentum flux  
       
       ! ------------------------------------------------- !
       ! Apply TMS                                         !
       ! ------------------------------------------------- !    
-!       if ( do_tms) then
-!          upwp_sfc = upwp_sfc-((ksrftms(i)*state1%u(i,pver))/rho_ds_zm(1))
-!          vpwp_sfc = vpwp_sfc-((ksrftms(i)*state1%v(i,pver))/rho_ds_zm(1)) 
-!	endif           
+      if ( do_tms) then
+        upwp_sfc = upwp_sfc-((ksrftms(i)*state1%u(i,pver))/rho_ds_zm(1))
+        vpwp_sfc = vpwp_sfc-((ksrftms(i)*state1%v(i,pver))/rho_ds_zm(1)) 
+      endif           
 
     ! Need to flip arrays around for SHOC 
     do k=1,pverp
@@ -661,6 +661,7 @@ module shoc_intr
           (pcols, pverp, dtime, &
 	  zt_g, zi_g, pres_in, &
 	  tke_in, thlm_in, rvm_in, wm_zt, &
+	  wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, &
 	  um_in, vm_in, rcm_in, edsclr_in, &
 	  edsclr_dim, wthv_in, &
 	  cloudfrac_shoc, rcm_shoc) 
