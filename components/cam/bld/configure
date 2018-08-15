@@ -1518,6 +1518,11 @@ else {
             if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
 	}
 
+        if ($shoc_sgs){
+            $nadv += 1;
+            if ($print>=2) { print "Advected constituents added by SHOC: 1$eol";}
+        }
+
         # co2_cycle
         if ($co2_cycle) {
             $nadv += 4;

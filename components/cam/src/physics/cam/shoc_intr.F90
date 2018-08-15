@@ -47,7 +47,9 @@ module shoc_intr
              naai_idx, &         ! ice number concentration
              prer_evap_idx, &    ! rain evaporation rate
              qrl_idx, &          ! longwave cooling rate
-             radf_idx 	     	     
+             radf_idx, &
+             tpert_idx, &
+             fice_idx 	     	     
   
   integer, public :: &
     ixtke = 0
@@ -110,10 +112,26 @@ module shoc_intr
                        micro_mg_accre_enhan_fac_out    = micro_mg_accre_enhan_fac)    
   
     ! TKE is prognostic in SHOC and should be advected by dynamics
-    call cnst_add('TKE',0._r8,0._r8,0._r8,ixtke,longname='turbulent kinetic energy',cam_outfld=.true.)
+    call cnst_add('SHOC_TKE',0._r8,0._r8,0._r8,ixtke,longname='turbulent kinetic energy',cam_outfld=.true.)
   
     ! Fields that are not prognostic should be added to PBUF
     call pbuf_add_field('WTHV', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wthv_idx) 
+
+    call pbuf_add_field('pblh',       'global', dtype_r8, (/pcols/), pblh_idx)
+    call pbuf_add_field('tke',        'global', dtype_r8, (/pcols, pverp/), tke_idx)
+    call pbuf_add_field('kvh',        'global', dtype_r8, (/pcols, pverp/), kvh_idx)
+    call pbuf_add_field('kvm',        'global', dtype_r8, (/pcols, pverp/), kvm_idx)
+    call pbuf_add_field('tpert',      'global', dtype_r8, (/pcols/), tpert_idx)
+    call pbuf_add_field('AST',        'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    ast_idx)
+    call pbuf_add_field('AIST',       'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    aist_idx)
+    call pbuf_add_field('ALST',       'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    alst_idx)
+    call pbuf_add_field('QIST',       'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    qist_idx)
+    call pbuf_add_field('QLST',       'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    qlst_idx)
+    call pbuf_add_field('CONCLD',     'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    concld_idx)
+    call pbuf_add_field('CLD',        'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    cld_idx)
+    call pbuf_add_field('FICE',       'physpkg',dtype_r8, (/pcols,pver/), fice_idx)
+    call pbuf_add_field('RAD_CLUBB',  'global', dtype_r8, (/pcols,pver/), radf_idx)
+    call pbuf_add_field('CMELIQ',     'physpkg',dtype_r8, (/pcols,pver/), cmeliq_idx)
   
 #endif
   
@@ -133,7 +151,7 @@ module shoc_intr
     integer,          intent(in)  :: gcid(:)  ! global column id
     
 #ifdef SHOC_SGS
-    if (trim(name) == trim('TKE')) q = tke_tol
+    if (trim(name) == trim('SHOC_TKE')) q = tke_tol
 #endif  
 
   end subroutine shoc_init_cnst

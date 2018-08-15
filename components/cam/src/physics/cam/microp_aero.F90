@@ -191,6 +191,8 @@ subroutine microp_aero_init
    select case(trim(eddy_scheme))
    case ('diag_TKE')
       tke_idx      = pbuf_get_index('tke')   
+   case ('SHOC_SGS')
+      call cnst_get_ind('SHOC_TKE', tke_idx)
    case ('CLUBB_SGS')
       wp2_idx = pbuf_get_index('WP2_nadv')
    case default
@@ -588,6 +590,8 @@ subroutine microp_aero_run ( &
    select case (trim(eddy_scheme))
    case ('diag_TKE')
       call pbuf_get_field(pbuf, tke_idx, tke)
+   case ('SHOC_SGS')
+      tke(:,:) = state%q(:,:,tke_idx)
    case ('CLUBB_SGS')
       itim_old = pbuf_old_tim_idx()
       call pbuf_get_field(pbuf, wp2_idx, wp2, start=(/1,1,itim_old/),kount=(/pcols,pverp,1/))

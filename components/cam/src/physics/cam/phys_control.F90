@@ -294,13 +294,13 @@ subroutine phys_ctl_readnl(nlfile)
       call endrun('waccm: illegal value of waccmx_opt')
    endif
    if (.not. (shallow_scheme .eq. 'Hack' .or. shallow_scheme .eq. 'UW' .or. &
-              shallow_scheme .eq. 'CLUBB_SGS' .or. shallow_scheme == 'UNICON' &
-       .or. shallow_scheme.eq.'off')) then
+              shallow_scheme .eq. 'CLUBB_SGS' .or. shallow_scheme == 'UNICON'.or. &
+              shallow_scheme .eq. 'SHOC_SGS' .or. shallow_scheme.eq.'off')) then
       write(iulog,*)'phys_setopts: illegal value of shallow_scheme:', shallow_scheme
       call endrun('phys_setopts: illegal value of shallow_scheme')
    endif
    if (.not. (eddy_scheme .eq. 'HB' .or. eddy_scheme .eq. 'HBR' .or. eddy_scheme .eq. 'diag_TKE' .or. &
-              eddy_scheme .eq. 'CLUBB_SGS') ) then
+              eddy_scheme .eq. 'SHOC_SGS' .or. eddy_scheme .eq. 'CLUBB_SGS') ) then
       write(iulog,*)'phys_setopts: illegal value of eddy_scheme:', eddy_scheme
       call endrun('phys_setopts: illegal value of eddy_scheme')
    endif

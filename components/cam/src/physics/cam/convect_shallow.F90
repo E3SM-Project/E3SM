@@ -608,7 +608,7 @@ end subroutine convect_shallow_init_cnst
 
    select case (shallow_scheme)
 
-   case('off', 'CLUBB_SGS') ! None
+   case('off', 'CLUBB_SGS', 'SHOC_SGS') ! None
 
       lq(:) = .TRUE.
       call physics_ptend_init( ptend_loc, state%psetcols, 'convect_shallow_off', ls=.true., lq=lq ) ! Initialize local ptend type
