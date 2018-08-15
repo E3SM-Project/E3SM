@@ -439,7 +439,6 @@ contains
           ngcols_p = ngcols_p + 1
        endif
     enddo
-    write(102,*)ngcols,ngcols_p
 
     ! sort over longitude and identify unique longitude coordinates
     call IndexSet(ngcols,cdex)

@@ -21,7 +21,7 @@ module physpkg
        physics_type_alloc, physics_ptend_dealloc,&
        physics_state_alloc, physics_state_dealloc, physics_tend_alloc, physics_tend_dealloc, &
        nvars_prtrb_hist, hist_vars, hist_vars_desc, hist_vars_unit
-  use phys_grid,        only: get_ncols_p, chunks, npchunks,knuhcs, ngcols_p, latlon_to_dyn_gcol_map,get_rlat_p, get_rlon_p,dyn_to_latlon_gcol_map !BSINGH-added  chunks
+  use phys_grid,        only: get_ncols_p, chunks, npchunks,knuhcs, ngcols_p, dyn_to_latlon_gcol_map !BSINGH-added  chunks
   use phys_gmean,       only: gmean_mass
   use ppgrid,           only: begchunk, endchunk, pcols, pver, pverp, psubcols
   use constituents,     only: pcnst, cnst_name, cnst_get_ind
@@ -1135,8 +1135,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
                    icol = knuhcs(igcol)%col
                    iown  = chunks(chunkid)%owner
                    ilchnk = (chunks(chunkid)%lcid - lastblock) - tot_chnk_till_this_prc(iown)
-                   !write(102,'(7(i6,3x))'),igcol,i!, chunkid,chunks(chunkid)%lcid!icol,iown,ilchnk,ngcols_p
-                   !write(102,'(2(F8.4,3x))')get_rlat_p(chunkid, icol),get_rlon_p(chunkid, icol)
                    
                    do ilev = 1, pver
                       do isubcol = 1, nsubcollw
@@ -1150,8 +1148,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
                    enddo
                 endif
              enddo
-             !write(iulog,*)'BALLI-forced-3'
-             !call endrun
              !store seeds in the restart file variables
              seedrst(1) = s1
              seedrst(2) = s2
@@ -2801,11 +2797,6 @@ if (l_rad) then
     !===================================================
     call t_startf('radiation')
 
-    if(icolprnt(lchnk) >0 ) then
-       !do i = 1, ncol
-          write(102,*)'phys_2:',rnglw(79,icolprnt(lchnk),28),icolprnt(lchnk),lchnk
-       !enddo
-    endif
 
     call radiation_tend(state,ptend, pbuf, &
          cam_out, cam_in, &
@@ -2815,19 +2806,9 @@ if (l_rad) then
 
     ! Set net flux used by spectral dycores
     do i=1,ncol
-       if(icolprnt(lchnk) == i) then
-          write(102,*)'bef_rad:',state%t(i,kprnt)
-       endif
        tend%flx_net(i) = net_flx(i)
     end do
     call physics_update(state, ptend, ztodt, tend)
-    do i=1,ncol
-       if(icolprnt(lchnk) == i) then
-          write(102,*)'aft_rad:',state%t(i,kprnt)
-       endif
-    end do
-    call endrun('BALLI-forced exit')
-
     call check_energy_chng(state, tend, "radheat", nstep, ztodt, zero, zero, zero, net_flx)
 
     call t_stopf('radiation')
