@@ -8,7 +8,8 @@ createTestExec(preqx-nlev72 preqx 4 4 72 FALSE FALSE 35)
 # directory is usable. Since that namelist should be used for development
 # and/or debugging purposes only, we make the test 'small' (ne=2, ndays=1),
 # and pick qsize 4, rsplit 3 and moisture='notdry'.
-SET (HOMME_TEST_VCOORD_FILE_ROOT acme-72)
+SET (HOMME_TEST_VCOORD_INT_FILE acme-72i.ascii)
+SET (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
 SET (HOMME_TEST_NE 2)
 SET (HOMME_TEST_NDAYS 1)
 SET (HOMME_TEST_QSIZE 4)
