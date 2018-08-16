@@ -2244,7 +2244,7 @@ int unittest () {
       std::stringstream _ss_;                                           \
       _ss_ << __FILE__ << ":" << __LINE__ << ": FAIL:\n" << #condition  \
         << "\n";                                                        \
-        throw std::logic_error(_ss_.str());                             \
+      throw std::logic_error(_ss_.str());                               \
     }                                                                   \
   } while (0)
 #else
@@ -2255,7 +2255,7 @@ int unittest () {
       std::stringstream _ss_;                                           \
       _ss_ << __FILE__ << ":" << __LINE__ << ": The condition:\n"       \
            << #condition "\nled to the exception\n" << message << "\n"; \
-        throw std::logic_error(_ss_.str());                             \
+      throw std::logic_error(_ss_.str());                               \
     }                                                                   \
   } while (0)
 
@@ -2753,6 +2753,31 @@ int unittest () {
   nerr += test_gll();
   return nerr;
 }
+
+std::string to_string (const Advecter::Mesh& m) {
+  std::stringstream ss;
+  ss.precision(17);
+  ss << "(mesh nnode " << nslices(m.p) << " nelem " << nslices(m.e);
+  for (Int ie = 0; ie < nslices(m.e); ++ie) {
+    ss << "\n  (elem " << ie;
+    ss << " (";
+    for (Int iv = 0; iv < szslice(m.e); ++iv) ss << " " << m.e(ie,iv);
+    ss << ")";
+    for (Int iv = 0; iv < szslice(m.e); ++iv) {
+      ss << "\n     (p";
+      for (Int d = 0; d < 3; ++d)
+        ss << " " << m.p(iv,m.e(ie,iv));
+      ss << ")";
+      ss << "\n     (nml";
+      for (Int d = 0; d < 3; ++d)
+        ss << " " << m.nml(iv,m.en(ie,iv));
+      ss << ")";
+    }
+    ss << "))";
+  }
+  ss << ")";
+  return ss.str();
+}
 } // namespace ir
 
 namespace csl {
@@ -2854,8 +2879,9 @@ inline bool is_inside (const siqk::sh::Mesh<siqk::ko::HostSpace>& m,
   return inside;
 }
 
-int get_src_cell (const siqk::sh::Mesh<siqk::ko::HostSpace>& m, const Real* v,
-                  const Int my_ic) {
+int get_src_cell (const siqk::sh::Mesh<siqk::ko::HostSpace>& m, // Local mesh.
+                  const Real* v, // 3D Cartesian point.
+                  const Int my_ic) { // Target cell in the local mesh.
   using ir::len;
   const Int nc = len(m.e);
   Real atol = 0;
@@ -2867,7 +2893,7 @@ int get_src_cell (const siqk::sh::Mesh<siqk::ko::HostSpace>& m, const Real* v,
         // on the unit sphere, so we don't have to worry about a radius in the
         // following.
         //   Get a representative edge length.
-        const int ic = my_ic == -1 ? 0 : ic;
+        const int ic = my_ic == -1 ? 0 : my_ic;
         const auto cell = slice(m.e, ic);
         Real d[3];
         siqk::SphereGeometry::axpbyz(1, slice(m.p, cell[1]),
@@ -2947,7 +2973,12 @@ int main (int argc, char** argv) {
 #endif
 
 #ifndef IR_MAIN
-# include "config.h.c"
+# ifdef HAVE_CONFIG_H
+#  include "config.h.c"
+# endif
+# ifdef CAM
+#  define QSIZE_D PCNST
+# endif
 #else
 # define QSIZE_D 64
 #endif
@@ -4277,11 +4308,19 @@ void analyze_dep_points (CslMpi& cm, const Int& nets, const Int& nete,
     for (Int lev = 0; lev < cm.nlev; ++lev)
       for (Int k = 0; k < cm.np2; ++k) {
         Int sci = csl::get_src_cell(mesh, &dep_points(0,k,lev,tci), tgt_idx);
-        slmm_throw_if(sci == -1,
-                      "Departure point is outside of halo:"
-                      << " elem LID " << tci
-                      << " elem GID " << ed.me->gid
-                      << " (lev, k) (" << lev << ", " << k << ")");
+        if (sci == -1) {
+          std::stringstream ss;
+          ss.precision(17);
+          const auto* v = &dep_points(0,k,lev,tci);
+          ss << "Departure point is outside of halo:\n"
+             << " elem LID " << tci
+             << " elem GID " << ed.me->gid
+             << " (lev, k) (" << lev << ", " << k << ")"
+             << " v " << v[0] << " " << v[1] << " " << v[2] << "\n"
+             << " tgt_idx " << tgt_idx
+             << " local mesh: " << ir::to_string(mesh) << "\n";
+          slmm_throw_if(sci == -1, ss.str());
+        }
         ed.src(lev,k) = sci;
         if (ed.nbrs(sci).rank == myrank) {
           ed.own.inc();
@@ -4712,7 +4751,6 @@ Experiment get_options () {
 static homme::cslmpi::CslMpi::Ptr g_csl_mpi;
 
 extern "C" {
-
 void slmm_init_impl_ (
   const homme::Int* fcomm, homme::Int* transport_alg, homme::Int* np,
   homme::Int* nlev, homme::Int* qsize, homme::Int* qsized, homme::Int* nelemd,
@@ -4794,11 +4832,16 @@ void slmm_csl_set_elem_data_ (
 
 void slmm_csl_ (
   homme::Int* nets, homme::Int* nete, homme::Cartesian3D* dep_points,
-  homme::Real* minq, homme::Real* maxq)
+  homme::Real* minq, homme::Real* maxq, homme::Int* info)
 {
   slmm_assert(g_csl_mpi);
-  homme::cslmpi::step<4>(*g_csl_mpi, *nets - 1, *nete - 1,
-                         dep_points, minq, maxq);
+  *info = 0;
+  try {
+    homme::cslmpi::step<4>(*g_csl_mpi, *nets - 1, *nete - 1,
+                           dep_points, minq, maxq);
+  } catch (const std::exception& e) {
+    std::cerr << e.what();
+    *info = -1;
+  }
 }
-
-}
+} // extern "C"

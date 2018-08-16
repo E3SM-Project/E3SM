@@ -100,6 +100,12 @@ module compose_mod
        type(cartesian3D_t), intent(in) :: neigh_corners(:,:), pinside
      end subroutine slmm_init_local_mesh
 
+     subroutine slmm_check_ref2sphere(ie, sphere_cart_coord)
+       use coordinate_systems_mod, only : cartesian3D_t
+       integer, intent(in) :: ie
+       type(cartesian3D_t), intent(in) :: sphere_cart_coord
+     end subroutine slmm_check_ref2sphere
+
      subroutine slmm_study(globalID, corners, globalIDs, neigh_corners, n)
        use coordinate_systems_mod, only : cartesian3D_t
        integer, intent(in) :: globalID, globalIDs(:), n
@@ -128,7 +134,7 @@ module compose_mod
        integer, intent(in) :: ie, nelem_in_patch
      end subroutine slmm_csl_set_elem_data
 
-     subroutine slmm_csl(nets, nete, dep_points, minq, maxq)
+     subroutine slmm_csl(nets, nete, dep_points, minq, maxq, info)
        use kinds         , only : real_kind
        use dimensions_mod, only : np, nlev, nelemd, qsize
        use coordinate_systems_mod, only : cartesian3D_t
@@ -136,6 +142,7 @@ module compose_mod
        type(cartesian3D_t), intent(in) :: dep_points(np,np,nlev,nelemd)
        real(kind=real_kind), intent(in) :: &
             minq(np,np,nlev,qsize,nets:nete), maxq(np,np,nlev,qsize,nets:nete)
+       integer, intent(out) :: info
      end subroutine slmm_csl
 
      ! Temporary for work on and characterization of the SL MPI pattern.

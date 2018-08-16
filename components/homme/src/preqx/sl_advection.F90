@@ -153,7 +153,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hvcoord, hybrid , dt , 
   real(kind=real_kind)                          :: u           (np,np,qsize+1)
 
   integer                                       :: i,j,k,l,n,q,ie,kptr, n0_qdp, np1_qdp
-  integer                                       :: num_neighbors, scalar_q_bounds
+  integer                                       :: num_neighbors, scalar_q_bounds, info
   logical :: slmm, cisl, qos
 
   call t_barrierf('Prim_Advec_Tracers_remap_ALE', hybrid%par%comm)
@@ -190,7 +190,11 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hvcoord, hybrid , dt , 
              elem(ie)%derived%dp, elem(ie)%state%Q, &
              elem(ie)%desc%actual_neigh_edges + 1)
      end do
-     call slmm_csl(nets, nete, dep_points_all, minq, maxq)
+     call slmm_csl(nets, nete, dep_points_all, minq, maxq, info)
+     if (info /= 0) then
+        call write_velocity_data(elem, nets, nete, hybrid, deriv, dt, tl)
+        call abortmp('slmm_csl returned -1; see output above for more information.')
+     end if
      if (barrier) call perf_barrier(hybrid)
      call t_stopf('SLMM_csl')
 
@@ -879,6 +883,43 @@ subroutine ALE_RKdss(elem, nets, nete, hy, deriv, dt, tl)
     end do
   end do
 end subroutine ALE_RKdss
+
+subroutine write_velocity_data(elem, nets, nete, hy, deriv, dt, tl)
+  use derivative_mod,  only : derivative_t, ugradv_sphere
+  use edgetype_mod,    only : EdgeBuffer_t
+  use bndry_mod,       only : bndry_exchangev
+  use kinds,           only : real_kind
+  use hybrid_mod,      only : hybrid_t
+  use element_mod,     only : element_t
+  use dimensions_mod,  only : np, nlev
+  implicit none
+
+  type (element_t)     , intent(inout) :: elem(:)
+  integer              , intent(in)    :: nets
+  integer              , intent(in)    :: nete
+  type (hybrid_t)      , intent(in)    :: hy
+  type (derivative_t)  , intent(in)    :: deriv
+  real (kind=real_kind), intent(in)    :: dt
+  type (TimeLevel_t)   , intent(in)    :: tl
+
+  integer :: ie, i, j, k, np1
+  real (kind=real_kind) :: max_v, max_vstar
+
+  np1 = tl%np1
+  max_v = 0.d0
+  max_vstar = 0.d0
+  do ie = nets,nete
+     do k = 1,nlev
+        do j = 1,np
+           do i = 1,np
+              max_v = max(max_v, sqrt(sum(elem(ie)%state%v(i,j,:,k,np1)**2)))
+              max_vstar = max(max_vstar, sqrt(sum(elem(ie)%derived%vstar(i,j,:,k)**2)))
+           end do
+        end do
+     end do
+  end do
+  print *, 'max_v, max_vstar on rank', max_v, max_vstar, hy%par%rank
+end subroutine write_velocity_data
 
 ! ----------------------------------------------------------------------------------!
 !SUBROUTINE FVM_DEP_FROM_GLL----------------------------------------------CE-for FVM!
