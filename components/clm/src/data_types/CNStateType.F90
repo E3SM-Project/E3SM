@@ -1519,6 +1519,7 @@ contains
 
     call extract_accum_field ('plim_m', rbufslp, nstep)
     this%cp_scalar_runmean(begp:endp) = rbufslp(begp:endp)
+    deallocate(rbufslp)
   
   end subroutine InitAccVars
 
@@ -1572,6 +1573,7 @@ contains
     end do
     call update_accum_field  ('plim_m' , rbufslp             , nstep)
     call extract_accum_field ('plim_m' , this%cp_scalar_runmean  , nstep)
+    deallocate(rbufslp)
 
   end subroutine UpdateAccVars
 
