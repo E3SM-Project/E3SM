@@ -862,6 +862,10 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     ! initiate CLUBB within CAM
     if (do_clubb_sgs) call clubb_ini_cam(pbuf2d,dp1)
+    
+!#ifdef FIVE
+!    call five_init_cam()
+!#endif
 
     call qbo_init
 
