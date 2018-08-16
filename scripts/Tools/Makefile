@@ -83,7 +83,7 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
 endif
 
 HOMMEXX ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_TARGET --value)
-ifeq ($(strip $(HOMMEXX)), preqx_cxx)
+ifeq ($(strip $(HOMMEXX)), preqx_kokkos)
    USE_CXX = true
    USE_HOMMEXX = TRUE
 endif
