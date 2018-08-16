@@ -336,6 +336,9 @@ module PhosphorusFluxType
      real(r8), pointer :: pflx_input_litr_lig_vr_col                (:,:) => null()
      real(r8), pointer :: pflx_input_litr_cwd_vr_col                (:,:) => null()
      real(r8), pointer :: pflx_minp_input_po4_vr_col                (:,:) => null()
+     real(r8), pointer :: sminp_to_plant_trans_patch                (:)  => null()
+     real(r8), pointer :: sminp_to_plant_trans_col                  (:)  => null()
+     real(r8), pointer :: sminp_to_ppool_col                        (:)
    contains
 
      procedure , public  :: Init   
@@ -487,6 +490,7 @@ contains
     allocate(this%retransp_to_ppool_patch                   (begp:endp)) ; this%retransp_to_ppool_patch                   (:) = nan
     allocate(this%sminp_to_ppool_patch                      (begp:endp)) ; this%sminp_to_ppool_patch                      (:) = nan
     allocate(this%biochem_pmin_to_plant_patch               (begp:endp)) ; this%biochem_pmin_to_plant_patch               (:) = nan
+    allocate(this%sminp_to_plant_trans_patch                (begp:endp)) ; this%sminp_to_plant_trans_patch                (:) = nan
 
     allocate(this%ppool_to_leafp_patch              (begp:endp)) ; this%ppool_to_leafp_patch              (:) = nan
     allocate(this%ppool_to_leafp_storage_patch      (begp:endp)) ; this%ppool_to_leafp_storage_patch      (:) = nan
@@ -532,6 +536,7 @@ contains
     allocate(this%hrv_deadstemp_to_prod100p_col (begc:endc))    ; this%hrv_deadstemp_to_prod100p_col (:) = nan
     allocate(this%hrv_cropp_to_prod1p_col       (begc:endc))    ; this%hrv_cropp_to_prod1p_col       (:) = nan
     allocate(this%sminp_to_plant_col            (begc:endc))    ; this%sminp_to_plant_col     (:) = nan
+    allocate(this%sminp_to_plant_trans_col      (begc:endc))    ; this%sminp_to_plant_trans_col(:) = nan
     allocate(this%potential_immob_p_col           (begc:endc))    ; this%potential_immob_p_col           (:) = nan
     allocate(this%actual_immob_p_col              (begc:endc))    ; this%actual_immob_p_col              (:) = nan
     allocate(this%gross_pmin_col                (begc:endc))    ; this%gross_pmin_col                (:) = nan
@@ -575,6 +580,7 @@ contains
     allocate(this%dwt_prod100p_gain_col      (begc:endc))                   ; this%dwt_prod100p_gain_col      (:)   = nan
     allocate(this%dwt_ploss_col              (begc:endc))                   ; this%dwt_ploss_col              (:)   = nan
     allocate(this%wood_harvestp_col          (begc:endc))                   ; this%wood_harvestp_col          (:)   = nan
+    allocate(this%sminp_to_ppool_col                (begc:endc)) ; this%sminp_to_ppool_col             (:) = nan
 
     allocate(this%dwt_frootp_to_litr_met_p_col(begc:endc,1:nlevdecomp_full)) ; this%dwt_frootp_to_litr_met_p_col     (:,:) = nan
     allocate(this%dwt_frootp_to_litr_cel_p_col(begc:endc,1:nlevdecomp_full)) ; this%dwt_frootp_to_litr_cel_p_col     (:,:) = nan
@@ -589,7 +595,6 @@ contains
     allocate(this%decomp_cascade_ptransfer_col      (begc:endc,1:ndecomp_cascade_transitions                   ))
     allocate(this%decomp_cascade_sminp_flux_col     (begc:endc,1:ndecomp_cascade_transitions                   ))
     allocate(this%m_decomp_ppools_to_fire_col       (begc:endc,1:ndecomp_pools                                 ))
-
     this%decomp_cascade_ptransfer_vr_col  (:,:,:) = nan
     this%decomp_cascade_sminp_flux_vr_col (:,:,:) = nan
     this%m_decomp_ppools_to_fire_vr_col   (:,:,:) = nan
@@ -2275,8 +2280,16 @@ contains
      integer :: fc, c, j
 
       call p2c(bounds, num_soilc, filter_soilc, &
+           this%sminp_to_ppool_patch(bounds%begp:bounds%endp), &
+           this%sminp_to_ppool_col(bounds%begc:bounds%endc))
+
+      call p2c(bounds, num_soilc, filter_soilc, &
            this%sminp_to_plant_patch(bounds%begp:bounds%endp), &
            this%sminp_to_plant_col(bounds%begc:bounds%endc))
+
+      call p2c(bounds, num_soilc, filter_soilc, &
+           this%sminp_to_plant_trans_patch(bounds%begp:bounds%endp), &
+           this%sminp_to_plant_trans_col(bounds%begc:bounds%endc))
 
       call p2c(bounds, num_soilc, filter_soilc, &
              this%supplement_to_sminp_surf_patch(bounds%begp:bounds%endp),&

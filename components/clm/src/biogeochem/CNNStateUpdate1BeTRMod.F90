@@ -41,6 +41,7 @@ contains
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
+
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
@@ -88,6 +89,9 @@ contains
 
       do fp = 1,num_soilp
          p = filter_soilp(fp)
+         ns%plant_n_buffer_patch(p) = ns%plant_n_buffer_patch(p) - nf%sminn_to_npool_patch(p) * dt
+         ! uptake from soil mineral N pool
+         ns%npool_patch(p) = ns%npool_patch(p) + (nf%sminn_to_npool_patch(p)+nf%nfix_to_plantn_patch(p))*dt
 
          ! phenology: transfer growth fluxes
          ns%leafn_patch(p)       = ns%leafn_patch(p)       + nf%leafn_xfer_to_leafn_patch(p)*dt
@@ -140,10 +144,6 @@ contains
             ns%grainn_patch(p)     = ns%grainn_patch(p)     - nf%grainn_to_food_patch(p)*dt
          end if
 
-         ! uptake from soil mineral N pool
-         ns%npool_patch(p) = &
-              ns%npool_patch(p) + (nf%sminn_to_npool_patch(p)+nf%nfix_to_plantn_patch(p))*dt
-
          ! update from surface layer supp nitrogen
          ns%npool_patch(p) = &
               ns%npool_patch(p) + nf%supplement_to_sminn_surf_patch(p) * dt
@@ -176,7 +176,7 @@ contains
            ns%npool_patch(p) = ns%npool_patch(p)-nflx_tmp
          else
            if(nflx_tmp>0._r8)then
-             nflx_scalar = ns%npool_patch(p)/nflx_tmp
+             nflx_scalar = max(ns%npool_patch(p)/nflx_tmp,1._r8)
            endif
            ns%npool_patch(p) = 0._r8
          endif
@@ -227,6 +227,13 @@ contains
             ns%grainn_storage_patch(p)     = ns%grainn_storage_patch(p)    - nf%grainn_storage_to_xfer_patch(p)*dt
             ns%grainn_xfer_patch(p)        = ns%grainn_xfer_patch(p)       + nf%grainn_storage_to_xfer_patch(p)*dt
          end if
+
+         if(nf%supplement_to_sminn_surf_patch(p)>0._r8)then
+           if(ns%npool_patch(p)<0._r8)then
+             nf%supplement_to_sminn_surf_patch(p) = nf%supplement_to_sminn_surf_patch(p)-ns%npool_patch(p)/dt
+             ns%npool_patch(p) = 0._r8
+           endif
+         endif
 
       end do
 

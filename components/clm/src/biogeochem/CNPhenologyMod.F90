@@ -203,7 +203,7 @@ contains
        num_pcropp, filter_pcropp, doalb, atm2lnd_vars, &
        waterstate_vars, temperature_vars, crop_vars, canopystate_vars, soilstate_vars, &
        dgvs_vars, cnstate_vars, carbonstate_vars, carbonflux_vars, &
-       nitrogenstate_vars,nitrogenflux_vars,phosphorusstate_vars,phosphorusflux_vars)
+       nitrogenstate_vars,nitrogenflux_vars,phosphorusstate_vars,phosphorusflux_vars, litfall_on)
     !
     ! !DESCRIPTION:
     ! Dynamic phenology routine for coupled carbon-nitrogen code (CN)
@@ -232,8 +232,12 @@ contains
 
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+    logical,               optional, intent(in):: litfall_on
     !-----------------------------------------------------------------------
+    logical :: litfall_on_loc
 
+    litfall_on_loc=.true.
+    if(present(litfall_on))litfall_on_loc=litfall_on
     ! each of the following phenology type routines includes a filter
     ! to operate only on the relevant patches
 
@@ -274,7 +278,7 @@ contains
            cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenstate_vars, &
            nitrogenflux_vars, phosphorusstate_vars, phosphorusflux_vars)
    end if
-
+    if(litfall_on_loc)then
     call CNOffsetLitterfall(num_soilp, filter_soilp, &
          cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars,&
          phosphorusflux_vars, nitrogenstate_vars,phosphorusstate_vars)
@@ -286,7 +290,7 @@ contains
     call CNLivewoodTurnover(num_soilp, filter_soilp, &
          carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
          phosphorusstate_vars,phosphorusflux_vars)
-
+    endif
     ! gather all patch-level litterfall fluxes to the column for litter C and N inputs
 
     call CNLitterToColumn(num_soilc, filter_soilc, &

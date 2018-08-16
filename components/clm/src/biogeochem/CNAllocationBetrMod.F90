@@ -987,7 +987,7 @@ contains
     use clm_varpar       , only:  nlevdecomp !!nlevsoi,
     use clm_varcon       , only: nitrif_n2o_loss_frac, secspday
 !    use landunit_varcon  , only: istsoil, istcrop
-!    use clm_time_manager , only: get_step_size
+    use clm_time_manager , only: get_nstep
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -1279,11 +1279,8 @@ contains
              g1 = 0.25_r8
            end if
          end if
-
-         sminn_to_npool(p) = plant_n_buffer_patch(p)/max(taun,dt)
-         sminp_to_ppool(p) = plant_p_buffer_patch(p)/max(taup,dt)
-         plant_n_buffer_patch(p) = max(plant_n_buffer_patch(p) - sminn_to_npool(p) * dt,0._r8) 
-         plant_p_buffer_patch(p) = max(plant_p_buffer_patch(p) - sminp_to_ppool(p) * dt,0._r8)
+         sminn_to_npool(p) = max(plant_n_buffer_patch(p),0._r8)/max(taun,dt)
+         sminp_to_ppool(p) = max(plant_p_buffer_patch(p),0._r8)/max(taup,dt)
          if (ivt(p) >= npcropmin .and. grain_flag(p) == 1._r8) then
            avail_retransn(p) = retransn(p)/dt
            avail_retransp(p) = retransp(p)/dt

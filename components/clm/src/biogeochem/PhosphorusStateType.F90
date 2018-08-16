@@ -1640,7 +1640,7 @@ contains
 
   end subroutine ZeroDwt
     !-----------------------------------------------------------------------
-    subroutine Summary_betr(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+    subroutine Summary_betr(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,loc)
       !
       ! DESCRIPTION
       ! summarize things belowground and add them together to the aboveground components
@@ -1649,6 +1649,7 @@ contains
       ! !USES:
       use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
       use subgridAveMod , only: p2c
+      use clm_time_manager, only : get_nstep
       !
       ! !ARGUMENTS:
       class (phosphorusstate_type) :: this
@@ -1657,7 +1658,7 @@ contains
       integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
       integer           , intent(in) :: num_soilp       ! number of soil patches in filter
       integer           , intent(in) :: filter_soilp(:) ! filter for soil patches
-
+      character(len=*)  , intent(in) :: loc
       integer :: fc, c, j
 
       call p2c(bounds, num_soilc, filter_soilc, &
@@ -1720,11 +1721,14 @@ contains
             this%totlitp_col(c) + &
             this%totsomp_col(c) + &
             this%sminp_col(c)
+!         if(c==18619 .and.   get_nstep()==  254860)then
+!           write(iulog,*)trim(loc),' totabg',this%begabgp_col(c),this%totabgp_col(c)
+!         endif
       end do
    end subroutine Summary_betr
 
   !-----------------------------------------------------------------------
-  subroutine Summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+  subroutine Summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, loc_betr)
     !
     ! !USES:
     use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
@@ -1739,11 +1743,13 @@ contains
     integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
     integer           , intent(in) :: num_soilp       ! number of soil patches in filter
     integer           , intent(in) :: filter_soilp(:) ! filter for soil patches
+    character(len=*), optional, intent(in):: loc_betr
     !
     ! !LOCAL VARIABLES:
     integer  :: c,p,j,k,l   ! indices
     integer  :: fp,fc       ! lake filter indices
     real(r8) :: maxdepth    ! depth to integrate soil variables
+    character(len=40) :: loc
     !-----------------------------------------------------------------------
 
     do fp = 1,num_soilp
@@ -1807,7 +1813,9 @@ contains
 
 
    if(is_active_betr_bgc)then
-     call this%Summary_betr(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+     loc=''
+     if(present(loc_betr))write(loc,*)trim(loc_betr)
+     call this%Summary_betr(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,loc)
      return
    endif
    ! vertically integrate soil mineral P pools

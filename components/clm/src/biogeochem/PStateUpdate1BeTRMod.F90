@@ -45,6 +45,7 @@ contains
     ! On the radiation time step, update all the prognostic phosphorus state
     ! variables (except for gap-phase mortality and fire fluxes)
     !
+    use clm_time_manager, only : get_nstep
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -95,71 +96,6 @@ contains
       end do
 
       !------------------------------------------------------------------
-      ! if coupled with pflotran, the following updates are NOT needed
-!      if (.not.(use_pflotran .and. pf_cmode)) then
-      !------------------------------------------------------------------
-      if(.not. is_active_betr_bgc)then
-      do j = 1, nlevdecomp
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-
-            ! plant to litter fluxes
-            ! phenology and dynamic landcover fluxes
-            pf%decomp_ppools_sourcesink_col(c,j,i_met_lit) = &
-                 ( pf%phenology_p_to_litr_met_p_col(c,j) + pf%dwt_frootp_to_litr_met_p_col(c,j) ) * dt
-
-            pf%decomp_ppools_sourcesink_col(c,j,i_cel_lit) = &
-                 ( pf%phenology_p_to_litr_cel_p_col(c,j) + pf%dwt_frootp_to_litr_cel_p_col(c,j) ) * dt
-
-            pf%decomp_ppools_sourcesink_col(c,j,i_lig_lit) = &
-                 ( pf%phenology_p_to_litr_lig_p_col(c,j) + pf%dwt_frootp_to_litr_lig_p_col(c,j) ) * dt
-
-            pf%decomp_ppools_sourcesink_col(c,j,i_cwd)     = &
-                 ( pf%dwt_livecrootp_to_cwdp_col(c,j)    + pf%dwt_deadcrootp_to_cwdp_col(c,j) )   * dt
-
-         end do
-      end do
-
-
-      ! decomposition fluxes
-      do k = 1, ndecomp_cascade_transitions
-         do j = 1, nlevdecomp
-            ! column loop
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-
-               pf%decomp_ppools_sourcesink_col(c,j,cascade_donor_pool(k)) = &
-                    pf%decomp_ppools_sourcesink_col(c,j,cascade_donor_pool(k)) - &
-                    pf%decomp_cascade_ptransfer_vr_col(c,j,k) * dt
-            end do
-         end do
-      end do
-      do k = 1, ndecomp_cascade_transitions
-         if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
-            do j = 1, nlevdecomp
-               ! column loop
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-
-                  pf%decomp_ppools_sourcesink_col(c,j,cascade_receiver_pool(k)) = &
-                       pf%decomp_ppools_sourcesink_col(c,j,cascade_receiver_pool(k)) + &
-                       (pf%decomp_cascade_ptransfer_vr_col(c,j,k) + pf%decomp_cascade_sminp_flux_vr_col(c,j,k)) * dt
-               end do
-            end do
-         else  ! terminal transitions
-            do j = 1, nlevdecomp
-               ! column loop
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  pf%decomp_ppools_sourcesink_col(c,j,cascade_donor_pool(k)) = &
-                       pf%decomp_ppools_sourcesink_col(c,j,cascade_donor_pool(k)) - &
-                       pf%decomp_cascade_sminp_flux_vr_col(c,j,k) * dt
-               end do
-            end do
-         end if
-      end do
-      endif ! if (.not. is_active_betr_bgc))
-      !------------------------------------------------------------------
 
       ! forest fertilization
       call get_curr_date(kyr, kmo, kda, mcsec)
@@ -181,7 +117,17 @@ contains
 
       do fp = 1,num_soilp
          p = filter_soilp(fp)
+!         c = veg_pp%column(p)
+!         if(c==18619  .and.   get_nstep()== 254044)then
+!           write(iulog,*)p,ps%plant_p_buffer_patch(p),ps%plant_p_buffer_patch(p) - pf%sminp_to_ppool_patch(p) * dt
+!           cycle
+!         endif
+         ps%plant_p_buffer_patch(p) = ps%plant_p_buffer_patch(p) - pf%sminp_to_ppool_patch(p) * dt
 
+         ! uptake from buffer P pool
+         ps%ppool_patch(p) = ps%ppool_patch(p) + pf%sminp_to_ppool_patch(p)*dt
+!         c = veg_pp%column(p)
+!         if(c==18619  .and.   get_nstep()== 254044)cycle
          ! phenology: transfer growth fluxes
          ps%leafp_patch(p)       = ps%leafp_patch(p)       + pf%leafp_xfer_to_leafp_patch(p)*dt
          ps%leafp_xfer_patch(p)  = ps%leafp_xfer_patch(p)  - pf%leafp_xfer_to_leafp_patch(p)*dt
@@ -233,13 +179,11 @@ contains
             ps%grainp_patch(p)     = ps%grainp_patch(p)     - pf%grainp_to_food_patch(p)*dt
          end if
 
-         ! uptake from soil mineral N pool
-         ps%ppool_patch(p) = &
-              ps%ppool_patch(p) + pf%sminp_to_ppool_patch(p)*dt
-
          ! deployment from retranslocation pool
          ps%ppool_patch(p)    = ps%ppool_patch(p)    + pf%retransp_to_ppool_patch(p)*dt
          ps%retransp_patch(p) = ps%retransp_patch(p) - pf%retransp_to_ppool_patch(p)*dt
+         c = veg_pp%column(p)
+!         if(c==18619  .and.   get_nstep()== 254044)cycle
          pflx_tmp=0._r8; pflx_scalar=1._r8
          ! allocation fluxes
          pflx_tmp = pflx_tmp + pf%ppool_to_leafp_patch(p)*dt
@@ -263,11 +207,12 @@ contains
             pflx_tmp = pflx_tmp + pf%ppool_to_grainp_patch(p)*dt
             pflx_tmp = pflx_tmp + pf%ppool_to_grainp_storage_patch(p)*dt
          endif
+
          if(ps%ppool_patch(p) >= pflx_tmp)then
            ps%ppool_patch(p) = ps%ppool_patch(p)-pflx_tmp
          else
            if(pflx_tmp>0._r8)then
-             pflx_scalar = ps%ppool_patch(p)/pflx_tmp
+             pflx_scalar = max(ps%ppool_patch(p)/pflx_tmp,1._r8)
            endif
            ps%ppool_patch(p) = 0._r8
          endif
@@ -323,10 +268,10 @@ contains
          ! update from surface layer supp phosphorus
          if(pf%supplement_to_sminp_surf_patch(p)>0._r8)then
            if(ps%ppool_patch(p)<0._r8)then
-             pf%supplement_to_sminp_surf_patch(p) = -ps%ppool_patch(p)/dt
+             pf%supplement_to_sminp_surf_patch(p) = pf%supplement_to_sminp_surf_patch(p)-ps%ppool_patch(p)/dt
              ps%ppool_patch(p) = 0._r8
-           else
-             pf%supplement_to_sminp_surf_patch(p) = 0._r8
+!           else
+!             pf%supplement_to_sminp_surf_patch(p) = 0._r8
            endif
          endif
       end do

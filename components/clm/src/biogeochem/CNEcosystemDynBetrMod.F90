@@ -38,7 +38,7 @@ module CNEcosystemDynBetrMod
   use PhosphorusFluxType        , only : phosphorusflux_type
   use PhosphorusStateType       , only : phosphorusstate_type
   use dynSubgridControlMod      , only : get_do_harvest
-
+  use clm_time_manager          , only : get_nstep
   implicit none
 
   private
@@ -165,7 +165,7 @@ module CNEcosystemDynBetrMod
             num_soilc, filter_soilc, 0._r8)
 
        call t_stopf('CNZero')
-
+!       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'loc-1')
        ! --------------------------------------------------
        ! Nitrogen Deposition, Fixation and Respiration, phosphorus dynamics
        ! --------------------------------------------------
@@ -185,7 +185,7 @@ module CNEcosystemDynBetrMod
             canopystate_vars, soilstate_vars, temperature_vars, photosyns_vars, &
             carbonflux_vars, carbonstate_vars, nitrogenstate_vars)
        call t_stopf('CNMResp')
-
+!       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'afresp')
        ! for P competition purpose, calculate P fluxes that will potentially increase solution P pool
        ! then competitors take up solution P
        call t_startf('PWeathering')
@@ -219,7 +219,7 @@ module CNEcosystemDynBetrMod
                 phosphorusstate_vars, phosphorusflux_vars, PlantMicKinetics_vars)
 
        call t_stopf('CNAllocation - phase-1')
-
+!       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'afdemand')
        call t_startf('CNFixation')
        !nfixation comes after SetPlantMicNPDemand because it needs cnp ratio
        !computed first
@@ -233,7 +233,7 @@ module CNEcosystemDynBetrMod
        call PBiochemMin_Ptaseact(bounds,num_soilc, filter_soilc, &
                   cnstate_vars,nitrogenstate_vars,phosphorusstate_vars,phosphorusflux_vars)
        call t_stopf('PBiochemMin')
-
+!       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'afptase')
        if (crop_prog) then
           !be careful about CNSoyfix, it is coded by using CTC-RD formulation
           !of CN interactions
@@ -254,7 +254,7 @@ module CNEcosystemDynBetrMod
        !--------------------------------------------
        ! Phenology
        !--------------------------------------------
-
+!       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'loc0')
        ! CNphenology needs to be called after CNdecompAlloc, because it
        ! depends on current time-step fluxes to new growth on the last
        ! litterfall timestep in deciduous systems
@@ -265,7 +265,7 @@ module CNEcosystemDynBetrMod
             waterstate_vars, temperature_vars, crop_vars, canopystate_vars, soilstate_vars, &
             dgvs_vars, cnstate_vars, carbonstate_vars, carbonflux_vars, &
             nitrogenstate_vars, nitrogenflux_vars,&
-            phosphorusstate_vars,phosphorusflux_vars)
+            phosphorusstate_vars,phosphorusflux_vars)!, litfall_on=(get_nstep()/=254044))
        call t_stopf('CNPhenology')
 
 
@@ -299,6 +299,7 @@ module CNEcosystemDynBetrMod
           call t_stopf('CNRootDyn')
        end if
 
+!       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'loc01')
        !--------------------------------------------
        ! CNUpdate0
        !--------------------------------------------
@@ -356,18 +357,20 @@ module CNEcosystemDynBetrMod
        call NStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars, nitrogenflux_vars, nitrogenstate_vars)
 
+!       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'loc11')
        call PStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars, phosphorusflux_vars, phosphorusstate_vars)
 
+!       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'loc1')
        call t_stopf('CNUpdate1')
-
+!       if(get_nstep()/=254044)then
        call t_startf('CNGapMortality')
        call CNGapMortality( num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dgvs_vars, cnstate_vars, &
             carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
             phosphorusstate_vars,phosphorusflux_vars )
        call t_stopf('CNGapMortality')
-
+!       endif
        !--------------------------------------------
        ! Update2
        !--------------------------------------------
@@ -405,7 +408,7 @@ module CNEcosystemDynBetrMod
        call PStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             phosphorusflux_vars, phosphorusstate_vars)
 
-       if (get_do_harvest()) then
+       if (get_do_harvest())then ! .and. get_nstep()/=254044) then
           call CNHarvest(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
                phosphorusstate_vars, phosphorusflux_vars)
@@ -441,6 +444,8 @@ module CNEcosystemDynBetrMod
        call PStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             phosphorusflux_vars, phosphorusstate_vars)
 
+!       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'loc2')
+!       if(get_nstep()/=254044)then
        call CNWoodProducts(num_soilc, filter_soilc, &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars, &
             carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars,&
@@ -450,7 +455,7 @@ module CNEcosystemDynBetrMod
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars, &
             phosphorusstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
             nitrogenflux_vars, phosphorusflux_vars)
-
+!       endif
        call CNFireArea(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             atm2lnd_vars, temperature_vars, energyflux_vars, soilhydrology_vars, waterstate_vars, &
             cnstate_vars, carbonstate_vars)
@@ -511,7 +516,7 @@ module CNEcosystemDynBetrMod
        call t_stopf('PUpdate3')
 
     endif
-
+!    call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'loc3')
   end subroutine CNEcosystemDynBetr
 
 
@@ -623,6 +628,7 @@ module CNEcosystemDynBetrMod
            plant_n_buffer_patch(p) = plant_n_buffer_patch(p) + dtime * &
                (smin_nh4_to_plant_patch(p) + smin_no3_to_plant_patch(p))
 
+!           if(c==18619 .and. get_nstep()==254044)cycle
            plant_p_buffer_patch(p) = plant_p_buffer_patch(p) + dtime * &
                sminp_to_plant_patch(p)
          endif
