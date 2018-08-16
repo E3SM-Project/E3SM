@@ -216,7 +216,7 @@ IF (${HOMME_USE_KOKKOS})
 
 
   IF (${CUDA_FOUND})
-    string(TOLOWER "${HOMMEXX_FPMODEL}" fpmodel_string_lower)
+    string(TOLOWER "${HOMME_FPMODEL}" fpmodel_string_lower)
     if ("${fpmodel_string_lower}" STREQUAL "strict")
       ADD_DEFINITIONS(-DHOMMEXX_GPU_BFB_WITH_CPU)
     ENDIF ()
