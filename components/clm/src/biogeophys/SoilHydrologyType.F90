@@ -550,11 +550,11 @@ contains
                  micro_sigma(c)/sqrt(2.0*shr_const_pi)*exp(-d**2/(2.0*micro_sigma(c)**2))         
             this%h2osfc_thresh_col(c) = 1.e3_r8 * this%h2osfc_thresh_col(c) !convert to mm from meters
          else
-            this%h2osfc_thresh_col(c) = 0._r8
+            this%h2osfc_thresh_col(c) = 0._r8     !changed from 0 to 1 TAO 9/7/2018
          endif
 
          if (this%h2osfcflag == 0) then 
-            this%h2osfc_thresh_col(c) = 0._r8    ! set to zero for no h2osfc (w/frac_infclust =large)
+            this%h2osfc_thresh_col(c) = 0._r8    ! set to zero for no h2osfc (w/frac_infclust =large) changed from 0 to 1 TAO 9/7/2018
          endif
 
          ! set decay factor

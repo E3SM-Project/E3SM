@@ -53,6 +53,7 @@ contains
     use FrictionVelocityMod  , only : FrictionVelocity, MoninObukIni
     use QSatMod              , only : QSat
     use SurfaceResistanceMod , only : do_soilevap_beta
+    use clm_time_manager , only : get_curr_date, get_step_size
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -109,6 +110,7 @@ contains
     real(r8) :: qsat_ref2m             ! 2 m height surface saturated specific humidity [kg/kg]
     real(r8) :: dqsat2mdT              ! derivative of 2 m height surface saturated specific humidity on t_ref2m
     real(r8) :: www                    ! surface soil wetness [-]
+    integer  :: year,month,day,secs    ! calendar info for current time step
     !------------------------------------------------------------------------------
 
     associate(                                                          &
@@ -329,7 +331,8 @@ contains
          qflx_ev_h2osfc(p) = -raiw*(forc_q(t) - qg_h2osfc(c))
 
          ! 2 m height air temperature
-         t_ref2m(p) = thm(p) + temp1(p)*dth(p)*(1._r8/temp12m(p) - 1._r8/temp1(p))
+         call get_curr_date (year, month, day, secs) !This line added to try to increase abs solar rad/per to increase temp TAO 5/7/2018
+         t_ref2m(p) = thm(p) + temp1(p)*dth(p)*(1._r8/temp12m(p) - 1._r8/temp1(p)) ! added + (0.1_r8 * year) 5/7/2018 TAO RadTest11, 0.2 RadTest12 -caused simulation to crash, removed 
 
          ! 2 m height specific humidity
          q_ref2m(p) = forc_q(t) + temp2(p)*dqh(p)*(1._r8/temp22m(p) - 1._r8/temp2(p))
