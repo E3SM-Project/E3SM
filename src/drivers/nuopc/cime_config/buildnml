@@ -343,7 +343,7 @@ def _create_component_modelio_namelists(confdir, case, files):
                     if model == 'cpl':
                         model = 'MED'
                     if inst_string:
-                        outfile.write("{}::\n".format(model.upper() + "_modelio_" + inst_string))
+                        outfile.write("{}::\n".format(model.upper() + "_modelio" + inst_string))
                     else:
                         outfile.write("{}::\n".format(model.upper() + "_modelio"))
                     outfile.write("     {}{}{}".format("diro = ", moddiro,"\n"))
@@ -351,6 +351,7 @@ def _create_component_modelio_namelists(confdir, case, files):
                     outfile.write("::\n\n")
 
                 inst_index = inst_index + 1
+
 
 ###############################################################################
 def buildnml(case, caseroot, component):

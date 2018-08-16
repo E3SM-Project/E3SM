@@ -1277,7 +1277,7 @@
     <valid_values>none,cart3d,cart3d_diag,cart3d_uvw,cart3d_uvw_diag</valid_values>
     <desc>
       Turns on the vector mapping option for u and v vector mapping between
-      atm and ocean grids in the coupler.  The options are none, 
+      atm and ocean grids in the coupler.  The options are none,
       cart3d, cart3d_diag, cart3d_uvw, and cart3d_uvw_diag.  The none option
       results in scalar mapping independently for the u and v field which
       tends to generate large errors near the poles. The cart3d
@@ -2955,6 +2955,18 @@ n    </desc>
   <!-- group seq_cime_pes          -->
   <!-- =========================== -->
 
+  <entry id="ninst" modify_via_xml="NINST">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>PELAYOUT_attributes</group>
+    <desc>
+      The number of model instances in the executable
+    </desc>
+    <values>
+      <value>$NINST</value>
+    </values>
+  </entry>
+
   <entry id="atm_ntasks" modify_via_xml="NTASKS_ATM">
     <type>integer</type>
     <category>cime_pes</category>
@@ -3004,19 +3016,6 @@ n    </desc>
     </desc>
     <values>
       <value>$PSTRID_ATM</value>
-    </values>
-  </entry>
-
-  <entry id="atm_layout" modify_via_xml="NINST_ATM_LAYOUT">
-    <type>char</type>
-    <category>cime_pes</category>
-    <group>cime_pes</group>
-    <valid_values>concurrent,sequential</valid_values>
-    <desc>
-      Layout of multi-instance atms (if there are more than 1)
-    </desc>
-    <values>
-      <value>$NINST_ATM_LAYOUT</value>
     </values>
   </entry>
 
@@ -3072,19 +3071,6 @@ n    </desc>
     </values>
   </entry>
 
-  <entry id="lnd_layout" modify_via_xml="NINST_LND_LAYOUT">
-    <type>char</type>
-    <category>cime_pes</category>
-    <group>cime_pes</group>
-    <valid_values>concurrent,sequential</valid_values>
-    <desc>
-      Layout of multi-instance lnds (if there are more than 1)
-    </desc>
-    <values>
-      <value>$NINST_LND_LAYOUT</value>
-    </values>
-  </entry>
-
   <entry id="ice_ntasks" modify_via_xml="NTASKS_ICE">
     <type>integer</type>
     <category>cime_pes</category>
@@ -3134,19 +3120,6 @@ n    </desc>
     </desc>
     <values>
       <value>$PSTRID_ICE</value>
-    </values>
-  </entry>
-
-  <entry id="ice_layout" modify_via_xml="NINST_ICE_LAYOUT">
-    <type>char</type>
-    <category>cime_pes</category>
-    <group>cime_pes</group>
-    <valid_values>concurrent,sequential</valid_values>
-    <desc>
-      Layout of multi-instance ices (if there are more than 1)
-    </desc>
-    <values>
-      <value>$NINST_ICE_LAYOUT</value>
     </values>
   </entry>
 
@@ -3202,19 +3175,6 @@ n    </desc>
     </values>
   </entry>
 
-  <entry id="ocn_layout" modify_via_xml="NINST_OCN_LAYOUT">
-    <type>char</type>
-    <category>cime_pes</category>
-    <group>cime_pes</group>
-    <valid_values>concurrent,sequential</valid_values>
-    <desc>
-      Layout of multi-instance ocns (if there are more than 1)
-    </desc>
-    <values>
-      <value>$NINST_OCN_LAYOUT</value>
-    </values>
-  </entry>
-
   <entry id="glc_ntasks" modify_via_xml="NTASKS_GLC">
     <type>integer</type>
     <category>cime_pes</category>
@@ -3264,19 +3224,6 @@ n    </desc>
     </desc>
     <values>
       <value>$PSTRID_GLC</value>
-    </values>
-  </entry>
-
-  <entry id="glc_layout" modify_via_xml="NINST_GLC_LAYOUT">
-    <type>char</type>
-    <category>cime_pes</category>
-    <group>cime_pes</group>
-    <valid_values>concurrent,sequential</valid_values>
-    <desc>
-      Layout of multi-instance glcs (if there are more than 1)
-    </desc>
-    <values>
-      <value>$NINST_GLC_LAYOUT</value>
     </values>
   </entry>
 
@@ -3332,19 +3279,6 @@ n    </desc>
     </values>
   </entry>
 
-  <entry id="wav_layout" modify_via_xml="NINST_WAV_LAYOUT">
-    <type>char</type>
-    <category>cime_pes</category>
-    <group>cime_pes</group>
-    <valid_values>concurrent,sequential</valid_values>
-    <desc>
-      Layout of multi-instance wavs (if there are more than 1)
-    </desc>
-    <values>
-      <value>$NINST_WAV_LAYOUT</value>
-    </values>
-  </entry>
-
   <entry id="rof_ntasks" modify_via_xml="NTASKS_ROF">
     <type>integer</type>
     <category>cime_pes</category>
@@ -3397,19 +3331,6 @@ n    </desc>
     </values>
   </entry>
 
-  <entry id="rof_layout" modify_via_xml="NINST_ROF_LAYOUT">
-    <type>char</type>
-    <category>cime_pes</category>
-    <group>cime_pes</group>
-    <valid_values>concurrent,sequential</valid_values>
-    <desc>
-      Layout of multi-instance lnds (if there are more than 1)
-    </desc>
-    <values>
-      <value>$NINST_ROF_LAYOUT</value>
-    </values>
-  </entry>
-
   <entry id="esp_ntasks" modify_via_xml="NTASKS_ESP">
     <type>integer</type>
     <category>cime_pes</category>
@@ -3459,19 +3380,6 @@ n    </desc>
     </desc>
     <values>
       <value>$PSTRID_ESP</value>
-    </values>
-  </entry>
-
-  <entry  id="esp_layout" modify_via_xml="NINST_ESP_LAYOUT">
-    <type>char</type>
-    <category>cime_pes</category>
-    <group>cime_pes</group>
-    <valid_values>concurrent,sequential</valid_values>
-    <desc>
-      Layout of multi-instance external system processor (if there are more than 1)
-    </desc>
-    <values>
-      <value>$NINST_ESP_LAYOUT</value>
     </values>
   </entry>
 

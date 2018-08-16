@@ -29,6 +29,10 @@ class EnvMachPes(EnvBase):
         # Special variable NINST_MAX is used to determine the number of
         # drivers in multi-driver mode.
         if vid == "NINST_MAX":
+            # in the nuopc driver there is only a single NINST value
+            value = self.get_value("NINST")
+            if value:
+                return value
             value = 1
             for comp in self._components:
                 if comp != "CPL":
@@ -75,12 +79,16 @@ class EnvMachPes(EnvBase):
 
     def get_total_tasks(self, comp_classes):
         total_tasks = 0
-        maxinst = 1
+        maxinst = self.get_value("NINST")
+        if maxinst is None:
+            comp_interface = "mct"
+        else:
+            comp_interface = "nuopc"
         for comp in comp_classes:
             ntasks = self.get_value("NTASKS", attribute={"compclass":comp})
             rootpe = self.get_value("ROOTPE", attribute={"compclass":comp})
             pstrid = self.get_value("PSTRID", attribute={"compclass":comp})
-            if comp != "CPL":
+            if comp != "CPL" and comp_interface=="mct":
                 ninst = self.get_value("NINST", attribute={"compclass":comp})
                 maxinst = max(maxinst, ninst)
             tt = rootpe + (ntasks - 1) * pstrid + 1
