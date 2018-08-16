@@ -34,7 +34,10 @@ module prim_driver_base
 
   private
   public :: prim_init1, prim_init2 , prim_run_subcycle, prim_finalize
-  public :: prim_init1_no_cam, prim_init1_geometry, prim_init1_elem_arrays, prim_init1_buffers, prim_init1_cleanup
+  public :: prim_init1_geometry, prim_init1_elem_arrays, prim_init1_buffers, prim_init1_cleanup
+#ifndef CAM
+  public :: prim_init1_no_cam
+#endif
 
   public :: smooth_topo_datasets, deriv1
 
@@ -130,6 +133,7 @@ contains
   end subroutine prim_init1
 
 
+#ifndef CAM
   subroutine prim_init1_no_cam(par)
     use mesh_mod,       only : MeshUseMeshFile, MeshCubeElemCount
     use cube_mod,       only : cubeelemcount
@@ -196,6 +200,7 @@ contains
        call test_gausslobatto(np)
     end if
   end subroutine prim_init1_no_cam
+#endif
 
   subroutine prim_init1_geometry(elem, par, dom_mt)
 

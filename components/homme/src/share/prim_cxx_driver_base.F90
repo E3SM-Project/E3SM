@@ -3,7 +3,7 @@
 #endif
 
 ! Do not compile this unless its a kokkos target
-#ifdef USE_KOKKOS_KERNELS
+! #ifdef USE_KOKKOS_KERNELS
 
 module prim_cxx_driver_base
 
@@ -32,8 +32,12 @@ module prim_cxx_driver_base
     use kinds,            only : iulog, real_kind
     use parallel_mod,     only : parallel_t
     use time_mod,         only : TimeLevel_t, TimeLevel_init
-    use prim_driver_base, only : prim_init1_no_cam, prim_init1_geometry, prim_init1_elem_arrays, prim_init1_cleanup, &
+    use prim_driver_base, only : prim_init1_geometry, prim_init1_elem_arrays, prim_init1_cleanup, &
                                  MetaVertex, GridEdge, deriv1
+#ifndef CAM
+    use prim_driver_base, only : prim_init1_no_cam
+#endif
+
     interface
       subroutine reset_cxx_comm (f_comm) bind(c)
         use iso_c_binding, only: c_int
@@ -581,4 +585,4 @@ module prim_cxx_driver_base
 end module
 
 ! USE_KOKKOS_KERNELS
-#endif
+! #endif

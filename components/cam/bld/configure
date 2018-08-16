@@ -2778,22 +2778,20 @@ sub write_filepath
     }
 
     print $fh "$camsrcdir/cam/src/dynamics/$dyn\n";
+    print $fh "$camsrcdir/homme/src/share\n";
     if($dyn eq 'se') {
       if ($opts{'dyn_target'} eq 'preqx') {
-	print $fh "$camsrcdir/homme/src/share\n";
         print $fh "$camsrcdir/homme/src/preqx\n";
         print $fh "$camsrcdir/homme/src/preqx/share\n";
       } 
       elsif($opts{'dyn_target'} eq 'preqx_acc') {
-	print $fh "$camsrcdir/homme/src/share\n";
         print $fh "$camsrcdir/homme/src/preqx_acc\n";
         print $fh "$camsrcdir/homme/src/preqx/share\n";
       }
-      elsif ($opts{'dyn_target'} eq 'preqx_cxx') {
-        print $fh "$camsrcdir/hommexx/src/share\n";
-        print $fh "$camsrcdir/hommexx/src/preqx\n";
-        print $fh "$camsrcdir/hommexx/src/share/cxx\n";
-        print $fh "$camsrcdir/hommexx/src/share/cxx/mpi\n";
+      elsif ($opts{'dyn_target'} eq 'preqx_kokkos') {
+        print $fh "$camsrcdir/homme/src/share/cxx\n";
+        print $fh "$camsrcdir/homme/src/share/cxx/mpi\n";
+        print $fh "$camsrcdir/homme/src/preqx_kokkos\n";
       }
     }
 
@@ -2904,7 +2902,7 @@ sub write_cppdefs
     print $fh "$make_cppdefs";
 
     if ($dyn eq "se" and $opts{"dyn_target"} eq "preqx_cxx") {
-	print $fh " -DUSE_KOKKOS_KERNELS -DHOMME_USE_FLAT_ARRAYS "
+	print $fh " -DUSE_KOKKOS_KERNELS "
     }
 
     print $fh "\n";
