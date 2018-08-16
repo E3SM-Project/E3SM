@@ -2,7 +2,7 @@
 
 MACRO(PREQX_KOKKOS_SETUP)
 
-INCLUDE_DIRECTORIES ( ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
+INCLUDE_DIRECTORIES ( SYSTEM ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
 LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
 
 SET(TARGET_DIR            ${HOMME_SOURCE_DIR}/src/preqx_kokkos)
@@ -185,30 +185,6 @@ SET(PREQX_DEPS
 )
 
 SET(EXEC_SOURCES ${PREQX_DEPS} ${SRC_DIR}/prim_main.F90)
-
-# SET(PREQX_UT_F90_SRCS
-#   ${TARGET_F90}
-#   ${PREQX_DEPS_F90}
-#   ${SRC_SHARE_DIR}/caar_pre_exchange_driver_mod.F90
-#   ${SRC_SHARE_DIR}/prim_advance_caar_mod.F90
-#   ${SRC_SHARE_DIR}/prim_advance_exp_mod.F90
-#   ${SRC_SHARE_DIR}/prim_advance_hypervis_mod.F90
-#   ${SRC_SHARE_DIR}/prim_advance_mod.F90
-# )
-
-# SET(PREQX_UT_CXX_SRCS
-#   ${UNIT_TEST_DIR}/preqx_ut.cpp
-#   ${UNIT_TEST_DIR}/preqx_ut_sphere_op_sl.cpp
-#   ${UNIT_TEST_DIR}/preqx_ut_sphere_op_ml.cpp
-#   ${PREQX_DEPS_C}
-#   ${PREQX_DEPS_CXX}
-# )
-
-# SET(PREQX_REMAP_UT_CXX_SRCS
-#   ${UNIT_TEST_DIR}/preqx_ut_remap.cpp
-#   ${PREQX_DEPS_C}
-#   ${PREQX_DEPS_CXX}
-# )
 
 # Set up defaults if they are not given
 IF (NOT PREQX_NP)
