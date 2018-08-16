@@ -25,6 +25,7 @@ dependencies:
 - future=0.16.0=py27_2
 - g2clib=1.6.0=3
 - genutil=8.1.np1.14=py27he59b558_0
+- gsl=2.2.1=blas_openblas_4
 - hdf4=4.2.13=0
 - hdf5=1.10.2=hc401514_1
 - idna=2.7=py27_2
@@ -47,6 +48,7 @@ dependencies:
 - libtiff=4.0.9=he6b73bb_1
 - mpi=1.0=mpich
 - mpich=3.2.1=h26a2512_4
+- nco=4.7.6=h21953fd_0
 - ncurses=6.1=hfc679d8_1
 - netcdf-fortran=4.4.4=h4363f12_8
 - numpy=1.15.0=py27_blas_openblashd3ea46f_200

@@ -1,0 +1,8 @@
+Steps to preprocess the analysis data
+1. Generate env to 
+conda create -n obs_env cdtime cdms2 cdutil numpy pytz nco -c conda-forge -c cdat
+The obs_en.yml file saved here as part of the provenance included the exact packages that generated the resulting datasets
+
+2.Run process_GPCP_dataset.py to generate time series data with specified time period and metadata
+
+3.Run create_obs_climo.py to generate climatology from time series data
