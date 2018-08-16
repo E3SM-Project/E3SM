@@ -31,9 +31,9 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CNWoodProducts(num_soilc, filter_soilc, &
-       cs, c13_cs, c14_cs, ns, &
-       cf, c13_cf, c14_cf, nf,&
-       ps, pf)
+       carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars, &
+       carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars,&
+       phosphorusstate_vars,phosphorusflux_vars)
     !
     ! !DESCRIPTION:
     ! Update all loss fluxes from wood product pools, and update product pool state variables
@@ -41,28 +41,29 @@ contains
     ! with changes in landcover, and in CNHarvest(), for gains associated with wood harvest.
     !
     ! !ARGUMENTS:
-    integer                    , intent(in)    :: num_soilc       ! number of soil columns in filter
-    integer                    , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(carbonstate_type)     , intent(inout) :: cs
-    type(carbonstate_type)     , intent(inout) :: c13_cs
-    type(carbonstate_type)     , intent(inout) :: c14_cs
-    type(nitrogenstate_type)   , intent(inout) :: ns
-    type(carbonflux_type)      , intent(inout) :: cf
-    type(carbonflux_type)      , intent(inout) :: c13_cf
-    type(carbonflux_type)      , intent(inout) :: c14_cf
-    type(nitrogenflux_type)    , intent(inout) :: nf
+    integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
+    type(carbonstate_type)   , intent(inout) :: c13_carbonstate_vars
+    type(carbonstate_type)   , intent(inout) :: c14_carbonstate_vars
+    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
+    type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
+    type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
+    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
 
-    type(phosphorusstate_type) , intent(in)    :: ps
-    type(phosphorusflux_type)  , intent(inout) :: pf
+    type(phosphorusstate_type) , intent(in) :: phosphorusstate_vars
+    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
 
     !
     ! !LOCAL VARIABLES:
-    integer  :: fc       ! lake filter indices
-    integer  :: c        ! indices
-    real(r8) :: dt       ! time step (seconds)
-    real(r8) :: kprod10  ! decay constant for 10-year product pool
-    real(r8) :: kprod100 ! decay constant for 100-year product pool
+    integer :: fc        ! lake filter indices
+    integer :: c         ! indices
+    real(r8):: dt        ! time step (seconds)
+    real(r8) :: kprod10       ! decay constant for 10-year product pool
+    real(r8) :: kprod100      ! decay constant for 100-year product pool
     !-----------------------------------------------------------------------
+
 
     ! calculate column-level losses from product pools
     ! the following (1/s) rate constants result in ~90% loss of initial state over 10 and 100 years,
@@ -74,24 +75,24 @@ contains
        c = filter_soilc(fc)
 
        ! calculate fluxes (1/sec)
-       cf%prod10c_loss_col(c)    = cs%prod10c_col(c)    * kprod10
-       cf%prod100c_loss_col(c)   = cs%prod100c_col(c)   * kprod100
+       carbonflux_vars%prod10c_loss_col(c)    = carbonstate_vars%prod10c_col(c)    * kprod10
+       carbonflux_vars%prod100c_loss_col(c)   = carbonstate_vars%prod100c_col(c)   * kprod100
 
        if ( use_c13 ) then
-          c13_cf%prod10c_loss_col(c)  = c13_cs%prod10c_col(c)  * kprod10
-          c13_cf%prod100c_loss_col(c) = c13_cs%prod100c_col(c) * kprod100
+          c13_carbonflux_vars%prod10c_loss_col(c)  = c13_carbonstate_vars%prod10c_col(c)  * kprod10
+          c13_carbonflux_vars%prod100c_loss_col(c) = c13_carbonstate_vars%prod100c_col(c) * kprod100
        endif
 
        if ( use_c14 ) then
-          c14_cf%prod10c_loss_col(c)  = c14_cs%prod10c_col(c)  * kprod10
-          c14_cf%prod100c_loss_col(c) = c14_cs%prod100c_col(c) * kprod100
+          c14_carbonflux_vars%prod10c_loss_col(c)  = c14_carbonstate_vars%prod10c_col(c)  * kprod10
+          c14_carbonflux_vars%prod100c_loss_col(c) = c14_carbonstate_vars%prod100c_col(c) * kprod100
        endif
 
-       nf%prod10n_loss_col(c)    = ns%prod10n_col(c)    * kprod10
-       nf%prod100n_loss_col(c)   = ns%prod100n_col(c)   * kprod100
+       nitrogenflux_vars%prod10n_loss_col(c)    = nitrogenstate_vars%prod10n_col(c)    * kprod10
+       nitrogenflux_vars%prod100n_loss_col(c)   = nitrogenstate_vars%prod100n_col(c)   * kprod100
 
-       pf%prod10p_loss_col(c)    = ps%prod10p_col(c)    * kprod10
-       pf%prod100p_loss_col(c)   = ps%prod100p_col(c)   * kprod100
+       phosphorusflux_vars%prod10p_loss_col(c)    = phosphorusstate_vars%prod10p_col(c)    * kprod10
+       phosphorusflux_vars%prod100p_loss_col(c)   = phosphorusstate_vars%prod100p_col(c)   * kprod100
     end do
 
     ! set time steps
@@ -101,60 +102,102 @@ contains
     do fc = 1,num_soilc
        c = filter_soilc(fc)
 
-       cs%prod10c_col(c)    = cs%prod10c_col(c)             &
-            + cf%dwt_prod10c_gain_col(c)*dt                 & ! from landcover change
-            + cf%hrv_deadstemc_to_prod10c_col(c)*dt         & ! from harvest
-            - cf%prod10c_loss_col(c)*dt                       ! from decomposition
-
-       cs%prod100c_col(c)   = cs%prod100c_col(c)            &
-            + cf%dwt_prod100c_gain_col(c)*dt                & ! from landcover change
-            + cf%hrv_deadstemc_to_prod100c_col(c)*dt        & ! from harvest
-            - cf%prod100c_loss_col(c)*dt                      ! from decomposition
-
+       ! fluxes into wood product pools, from landcover change
+       carbonstate_vars%prod10c_col(c)    = carbonstate_vars%prod10c_col(c)    + &
+            carbonflux_vars%dwt_prod10c_gain_col(c)*dt
+       carbonstate_vars%prod100c_col(c)   = carbonstate_vars%prod100c_col(c)   + &
+            carbonflux_vars%dwt_prod100c_gain_col(c)*dt
 
        if ( use_c13 ) then
-          c13_cs%prod10c_col(c)  = c13_cs%prod10c_col(c)    &
-               + c13_cf%dwt_prod10c_gain_col(c) *dt         & ! from landcover change
-               + c13_cf%hrv_deadstemc_to_prod10c_col(c)*dt  & ! from harvest
-               - c13_cf%prod10c_loss_col(c)*dt                ! from decomposition
-
-          c13_cs%prod100c_col(c) = c13_cs%prod100c_col(c)   &
-               + c13_cf%dwt_prod100c_gain_col(c)*dt         & ! from landcover change
-               + c13_cf%hrv_deadstemc_to_prod100c_col(c)*dt & ! from harvest
-               - c13_cf%prod100c_loss_col(c)*dt               ! from decomposition
+          c13_carbonstate_vars%prod10c_col(c)  = c13_carbonstate_vars%prod10c_col(c)  + &
+               c13_carbonflux_vars%dwt_prod10c_gain_col(c) *dt
+          c13_carbonstate_vars%prod100c_col(c) = c13_carbonstate_vars%prod100c_col(c) + &
+               c13_carbonflux_vars%dwt_prod100c_gain_col(c)*dt
        endif
 
        if ( use_c14 ) then
-          c14_cs%prod10c_col(c)  = c14_cs%prod10c_col(c)    &
-               + c14_cf%dwt_prod10c_gain_col(c) *dt         & ! from landcover change
-               + c14_cf%hrv_deadstemc_to_prod10c_col(c)*dt  & ! from harvest
-               - c14_cf%prod10c_loss_col(c)*dt                ! from decomposition
-
-          c14_cs%prod100c_col(c) = c14_cs%prod100c_col(c)   &
-               + c14_cf%dwt_prod100c_gain_col(c)*dt         & ! from landcover change
-               + c14_cf%hrv_deadstemc_to_prod100c_col(c)*dt & ! from harvest
-               - c14_cf%prod100c_loss_col(c)*dt               ! from decomposition
+          c14_carbonstate_vars%prod10c_col(c)  = c14_carbonstate_vars%prod10c_col(c)  + &
+               c14_carbonflux_vars%dwt_prod10c_gain_col(c) *dt
+          c14_carbonstate_vars%prod100c_col(c) = c14_carbonstate_vars%prod100c_col(c) + &
+               c14_carbonflux_vars%dwt_prod100c_gain_col(c)*dt
        endif
 
-       ns%prod10n_col(c)    = ns%prod10n_col(c)             &
-            + nf%dwt_prod10n_gain_col(c)*dt                 & ! from landcover change
-            + nf%hrv_deadstemn_to_prod10n_col(c)*dt         & ! from harvest
-            - nf%prod10n_loss_col(c)*dt                       ! from decomposition
+       nitrogenstate_vars%prod10n_col(c)    = nitrogenstate_vars%prod10n_col(c)    + &
+            nitrogenflux_vars%dwt_prod10n_gain_col(c)*dt
+       nitrogenstate_vars%prod100n_col(c)   = nitrogenstate_vars%prod100n_col(c)   + &
+            nitrogenflux_vars%dwt_prod100n_gain_col(c)*dt
 
-       ns%prod100n_col(c)   = ns%prod100n_col(c)            &
-            + nf%dwt_prod100n_gain_col(c)*dt                & ! from landcover change
-            + nf%hrv_deadstemn_to_prod100n_col(c)*dt        & ! from harvest
-            - nf%prod100n_loss_col(c)*dt                      ! from decomposition
 
-       ps%prod10p_col(c)    = ps%prod10p_col(c)             &
-            + pf%dwt_prod10p_gain_col(c)*dt                 & ! from landcover change
-            + pf%hrv_deadstemp_to_prod10p_col(c)*dt         & ! from harvest
-            - pf%prod10p_loss_col(c)*dt                       ! from decomposition
+       phosphorusstate_vars%prod10p_col(c)    = phosphorusstate_vars%prod10p_col(c)    + &
+            phosphorusflux_vars%dwt_prod10p_gain_col(c)*dt
+       phosphorusstate_vars%prod100p_col(c)   = phosphorusstate_vars%prod100p_col(c)   + &
+            phosphorusflux_vars%dwt_prod100p_gain_col(c)*dt
 
-       ps%prod100p_col(c)   = ps%prod100p_col(c)            &
-            + pf%dwt_prod100p_gain_col(c)*dt                & ! from landcover change
-            + pf%hrv_deadstemp_to_prod100p_col(c)*dt        & ! from harvest
-            - pf%prod100p_loss_col(c)*dt                      ! from decomposition
+
+       ! fluxes into wood product pools, from harvest
+       carbonstate_vars%prod10c_col(c)    = carbonstate_vars%prod10c_col(c)    + &
+            carbonflux_vars%hrv_deadstemc_to_prod10c_col(c)*dt
+       carbonstate_vars%prod100c_col(c)   = carbonstate_vars%prod100c_col(c)   + &
+            carbonflux_vars%hrv_deadstemc_to_prod100c_col(c)*dt
+
+       if ( use_c13 ) then
+          c13_carbonstate_vars%prod10c_col(c)  = c13_carbonstate_vars%prod10c_col(c)  + &
+               c13_carbonflux_vars%hrv_deadstemc_to_prod10c_col(c)*dt
+          c13_carbonstate_vars%prod100c_col(c) = c13_carbonstate_vars%prod100c_col(c) + &
+               c13_carbonflux_vars%hrv_deadstemc_to_prod100c_col(c)*dt
+       endif
+
+       if ( use_c14 ) then
+          c14_carbonstate_vars%prod10c_col(c)  = c14_carbonstate_vars%prod10c_col(c)  + &
+               c14_carbonflux_vars%hrv_deadstemc_to_prod10c_col(c)*dt
+          c14_carbonstate_vars%prod100c_col(c) = c14_carbonstate_vars%prod100c_col(c) + &
+               c14_carbonflux_vars%hrv_deadstemc_to_prod100c_col(c)*dt
+       endif
+
+       nitrogenstate_vars%prod10n_col(c)    = nitrogenstate_vars%prod10n_col(c)    + &
+            nitrogenflux_vars%hrv_deadstemn_to_prod10n_col(c)*dt
+       nitrogenstate_vars%prod100n_col(c)   = nitrogenstate_vars%prod100n_col(c)   + &
+            nitrogenflux_vars%hrv_deadstemn_to_prod100n_col(c)*dt
+
+
+
+       phosphorusstate_vars%prod10p_col(c)    = phosphorusstate_vars%prod10p_col(c)    + &
+            phosphorusflux_vars%hrv_deadstemp_to_prod10p_col(c)*dt
+       phosphorusstate_vars%prod100p_col(c)   = phosphorusstate_vars%prod100p_col(c)   + &
+            phosphorusflux_vars%hrv_deadstemp_to_prod100p_col(c)*dt
+
+
+       ! fluxes out of wood product pools, from decomposition
+       carbonstate_vars%prod10c_col(c)    = carbonstate_vars%prod10c_col(c)    - &
+            carbonflux_vars%prod10c_loss_col(c)*dt
+       carbonstate_vars%prod100c_col(c)   = carbonstate_vars%prod100c_col(c)   - &
+            carbonflux_vars%prod100c_loss_col(c)*dt
+
+       if ( use_c13 ) then
+          c13_carbonstate_vars%prod10c_col(c)  = c13_carbonstate_vars%prod10c_col(c)  - &
+               c13_carbonflux_vars%prod10c_loss_col(c)*dt
+          c13_carbonstate_vars%prod100c_col(c) = c13_carbonstate_vars%prod100c_col(c) - &
+               c13_carbonflux_vars%prod100c_loss_col(c)*dt
+       endif
+
+       if ( use_c14 ) then
+          c14_carbonstate_vars%prod10c_col(c)  = c14_carbonstate_vars%prod10c_col(c)  - &
+               c14_carbonflux_vars%prod10c_loss_col(c)*dt
+          c14_carbonstate_vars%prod100c_col(c) = c14_carbonstate_vars%prod100c_col(c) - &
+               c14_carbonflux_vars%prod100c_loss_col(c)*dt
+       endif
+
+       nitrogenstate_vars%prod10n_col(c)    = nitrogenstate_vars%prod10n_col(c)    - &
+            nitrogenflux_vars%prod10n_loss_col(c)*dt
+       nitrogenstate_vars%prod100n_col(c)   = nitrogenstate_vars%prod100n_col(c)   - &
+            nitrogenflux_vars%prod100n_loss_col(c)*dt
+
+
+       phosphorusstate_vars%prod10p_col(c)    = phosphorusstate_vars%prod10p_col(c)    - &
+            phosphorusflux_vars%prod10p_loss_col(c)*dt
+       phosphorusstate_vars%prod100p_col(c)   = phosphorusstate_vars%prod100p_col(c)   - &
+            phosphorusflux_vars%prod100p_loss_col(c)*dt
+
 
     end do ! end of column loop
 

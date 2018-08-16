@@ -75,8 +75,13 @@ contains
 
       ! column-level fluxes
 
-      ! seeding fluxes from dynamic landcover are now not accounted for in
-      ! NStateUpdate1 (see CNNStateUpdate1Mod)
+      ! seeding fluxes, from dynamic landcover
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         ns%seedn_col(c) = ns%seedn_col(c) - nf%dwt_seedn_to_leaf_col(c) * dt
+         ns%seedn_col(c) = ns%seedn_col(c) - nf%dwt_seedn_to_deadstem_col(c) * dt
+      end do
+
 
       ! patch loop
 
