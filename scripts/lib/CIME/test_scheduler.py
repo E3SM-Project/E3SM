@@ -27,6 +27,7 @@ from CIME.case import Case
 from CIME.wait_for_tests import wait_for_tests
 from CIME.provenance import get_recommended_test_time_based_on_past
 from CIME.locked_files import lock_file
+from CIME.cs_status_creator import create_cs_status
 import CIME.test_utils
 
 logger = logging.getLogger(__name__)
@@ -857,18 +858,9 @@ class TestScheduler(object):
     ###########################################################################
         try:
             python_libs_root = CIME.utils.get_python_libs_root()
-            template_file = os.path.join(python_libs_root, "cs.status.template")
-            template = open(template_file, "r").read()
-            template = template.replace("<PATH>",
-                                        os.path.join(self._cime_root,"scripts","Tools")).replace\
-                                        ("<TESTID>", self._test_id).replace\
-                                        ("<TESTROOT>", self._test_root)
-            if not os.path.exists(self._test_root):
-                os.makedirs(self._test_root)
-            cs_status_file = os.path.join(self._test_root, "cs.status.{}".format(self._test_id))
-            with open(cs_status_file, "w") as fd:
-                fd.write(template)
-            os.chmod(cs_status_file, os.stat(cs_status_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
+
+            create_cs_status(test_root=self._test_root,
+                             test_id=self._test_id)
 
             template_file = os.path.join(python_libs_root, "cs.submit.template")
             template = open(template_file, "r").read()
