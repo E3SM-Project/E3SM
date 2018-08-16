@@ -1,0 +1,154 @@
+ Invalid PIO rearranger comm max pend req (comp2io),            0
+ Resetting PIO rearranger comm max pend req (comp2io) to           64
+ PIO rearranger options:
+   comm type     =p2p                                                                             
+   comm fcd      =2denable                                                                        
+   max pend req (comp2io)  =           0
+   enable_hs (comp2io)     = T
+   enable_isend (comp2io)  = F
+   max pend req (io2comp)  =          64
+   enable_hs (io2comp)    = F
+   enable_isend (io2comp)  = T
+(seq_comm_setcomm)  init ID (  1 GLOBAL          ) pelist   =      0      0  1( npes =      1) ( nthreads =  1)( suffix =)
+(seq_comm_setcomm)  init ID (  2 CPL             ) pelist   =      0      0  1( npes =      1) ( nthreads =  1)( suffix =)
+(seq_comm_setcomm)  init ID (  5 ATM             ) pelist   =      0      0  1( npes =      1) ( nthreads =  1)( suffix =)
+(seq_comm_joincomm) init ID (  6 CPLATM          ) join IDs =      2      5   ( npes =      1) ( nthreads =  1)
+(seq_comm_jcommarr) init ID (  3 ALLATMID        ) join multiple comp IDs     ( npes =      1) ( nthreads =  1)
+(seq_comm_joincomm) init ID (  4 CPLALLATMID     ) join IDs =      2      3   ( npes =      1) ( nthreads =  1)
+(seq_comm_setcomm)  init ID (  9 LND             ) pelist   =      0      0  1( npes =      1) ( nthreads =  1)( suffix =)
+(seq_comm_joincomm) init ID ( 10 CPLLND          ) join IDs =      2      9   ( npes =      1) ( nthreads =  1)
+(seq_comm_jcommarr) init ID (  7 ALLLNDID        ) join multiple comp IDs     ( npes =      1) ( nthreads =  1)
+(seq_comm_joincomm) init ID (  8 CPLALLLNDID     ) join IDs =      2      7   ( npes =      1) ( nthreads =  1)
+(seq_comm_setcomm)  init ID ( 13 ICE             ) pelist   =      0      0  1( npes =      1) ( nthreads =  1)( suffix =)
+(seq_comm_joincomm) init ID ( 14 CPLICE          ) join IDs =      2     13   ( npes =      1) ( nthreads =  1)
+(seq_comm_jcommarr) init ID ( 11 ALLICEID        ) join multiple comp IDs     ( npes =      1) ( nthreads =  1)
+(seq_comm_joincomm) init ID ( 12 CPLALLICEID     ) join IDs =      2     11   ( npes =      1) ( nthreads =  1)
+(seq_comm_setcomm)  init ID ( 17 OCN             ) pelist   =      0      0  1( npes =      1) ( nthreads =  1)( suffix =)
+(seq_comm_joincomm) init ID ( 18 CPLOCN          ) join IDs =      2     17   ( npes =      1) ( nthreads =  1)
+(seq_comm_jcommarr) init ID ( 15 ALLOCNID        ) join multiple comp IDs     ( npes =      1) ( nthreads =  1)
+(seq_comm_joincomm) init ID ( 16 CPLALLOCNID     ) join IDs =      2     15   ( npes =      1) ( nthreads =  1)
+(seq_comm_setcomm)  init ID ( 21 ROF             ) pelist   =      0      0  1( npes =      1) ( nthreads =  1)( suffix =)
+(seq_comm_joincomm) init ID ( 22 CPLROF          ) join IDs =      2     21   ( npes =      1) ( nthreads =  1)
+(seq_comm_jcommarr) init ID ( 19 ALLROFID        ) join multiple comp IDs     ( npes =      1) ( nthreads =  1)
+(seq_comm_joincomm) init ID ( 20 CPLALLROFID     ) join IDs =      2     19   ( npes =      1) ( nthreads =  1)
+(seq_comm_setcomm)  init ID ( 25 GLC             ) pelist   =      0      0  1( npes =      1) ( nthreads =  1)( suffix =)
+(seq_comm_joincomm) init ID ( 26 CPLGLC          ) join IDs =      2     25   ( npes =      1) ( nthreads =  1)
+(seq_comm_jcommarr) init ID ( 23 ALLGLCID        ) join multiple comp IDs     ( npes =      1) ( nthreads =  1)
+(seq_comm_joincomm) init ID ( 24 CPLALLGLCID     ) join IDs =      2     23   ( npes =      1) ( nthreads =  1)
+(seq_comm_setcomm)  init ID ( 29 WAV             ) pelist   =      0      0  1( npes =      1) ( nthreads =  1)( suffix =)
+(seq_comm_joincomm) init ID ( 30 CPLWAV          ) join IDs =      2     29   ( npes =      1) ( nthreads =  1)
+(seq_comm_jcommarr) init ID ( 27 ALLWAVID        ) join multiple comp IDs     ( npes =      1) ( nthreads =  1)
+(seq_comm_joincomm) init ID ( 28 CPLALLWAVID     ) join IDs =      2     27   ( npes =      1) ( nthreads =  1)
+(seq_comm_setcomm)  init ID ( 33 ESP             ) pelist   =      0      0  1( npes =      1) ( nthreads =  1)( suffix =)
+(seq_comm_joincomm) init ID ( 34 CPLESP          ) join IDs =      2     33   ( npes =      1) ( nthreads =  1)
+(seq_comm_jcommarr) init ID ( 31 ALLESPID        ) join multiple comp IDs     ( npes =      1) ( nthreads =  1)
+(seq_comm_joincomm) init ID ( 32 CPLALLESPID     ) join IDs =      2     31   ( npes =      1) ( nthreads =  1)
+(seq_comm_printcomms)     1     0     1     1  GLOBAL:
+(seq_comm_printcomms)     2     0     1     1  CPL:
+(seq_comm_printcomms)     3     0     1     1  ALLATMID:
+(seq_comm_printcomms)     4     0     1     1  CPLALLATMID:
+(seq_comm_printcomms)     5     0     1     1  ATM:
+(seq_comm_printcomms)     6     0     1     1  CPLATM:
+(seq_comm_printcomms)     7     0     1     1  ALLLNDID:
+(seq_comm_printcomms)     8     0     1     1  CPLALLLNDID:
+(seq_comm_printcomms)     9     0     1     1  LND:
+(seq_comm_printcomms)    10     0     1     1  CPLLND:
+(seq_comm_printcomms)    11     0     1     1  ALLICEID:
+(seq_comm_printcomms)    12     0     1     1  CPLALLICEID:
+(seq_comm_printcomms)    13     0     1     1  ICE:
+(seq_comm_printcomms)    14     0     1     1  CPLICE:
+(seq_comm_printcomms)    15     0     1     1  ALLOCNID:
+(seq_comm_printcomms)    16     0     1     1  CPLALLOCNID:
+(seq_comm_printcomms)    17     0     1     1  OCN:
+(seq_comm_printcomms)    18     0     1     1  CPLOCN:
+(seq_comm_printcomms)    19     0     1     1  ALLROFID:
+(seq_comm_printcomms)    20     0     1     1  CPLALLROFID:
+(seq_comm_printcomms)    21     0     1     1  ROF:
+(seq_comm_printcomms)    22     0     1     1  CPLROF:
+(seq_comm_printcomms)    23     0     1     1  ALLGLCID:
+(seq_comm_printcomms)    24     0     1     1  CPLALLGLCID:
+(seq_comm_printcomms)    25     0     1     1  GLC:
+(seq_comm_printcomms)    26     0     1     1  CPLGLC:
+(seq_comm_printcomms)    27     0     1     1  ALLWAVID:
+(seq_comm_printcomms)    28     0     1     1  CPLALLWAVID:
+(seq_comm_printcomms)    29     0     1     1  WAV:
+(seq_comm_printcomms)    30     0     1     1  CPLWAV:
+(seq_comm_printcomms)    31     0     1     1  ALLESPID:
+(seq_comm_printcomms)    32     0     1     1  CPLALLESPID:
+(seq_comm_printcomms)    33     0     1     1  ESP:
+(seq_comm_printcomms)    34     0     1     1  CPLESP:
+ (t_initf) Read in prof_inparm namelist from: drv_in
+ (t_initf) Using profile_disable=          F
+ (t_initf)       profile_timer=                      4
+ (t_initf)       profile_depth_limit=               20
+ (t_initf)       profile_detail_limit=              12
+ (t_initf)       profile_barrier=          F
+ (t_initf)       profile_outpe_num=                  1
+ (t_initf)       profile_outpe_stride=               0
+ (t_initf)       profile_single_file=      F
+ (t_initf)       profile_global_stats=     T
+ (t_initf)       profile_ovhd_measurement= F
+ (t_initf)       profile_add_detail=       F
+ (t_initf)       profile_papi_enable=      F
+
+
+  1 pes participating in computation for CLM
+
+-----------------------------------
+
+NODE#  NAME
+(    0)  or-condo-c92.ornl.gov
+ lnd_inX.YANG debug
+ X.YANG debug SUPL NITROGEN and PHOSPHORUS NONE           ALL            
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Variable not found
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Variable not found
+ NetCDF: Variable not found
+ NetCDF: Variable not found
+ NetCDF: Variable not found
+ NetCDF: Variable not found
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Variable not found
+ NetCDF: Variable not found
+ NetCDF: Variable not found
+ NetCDF: Variable not found
+ NetCDF: Variable not found
+ NetCDF: Variable not found
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Variable not found
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Invalid dimension ID or name
+ NetCDF: Variable not found
+ NetCDF: Variable not found
+ NetCDF: Variable not found
+ NetCDF: Variable not found
+  max rss=172.6 MB
+  max rss=174.5 MB
+  max rss=174.5 MB
+  max rss=174.5 MB
+  max rss=191.4 MB

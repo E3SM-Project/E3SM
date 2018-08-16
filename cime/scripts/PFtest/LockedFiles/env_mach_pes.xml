@@ -1,0 +1,173 @@
+<?xml version="1.0"?>
+<file id="env_mach_pes.xml" version="2.0">
+  <header>
+    These variables CANNOT be modified once case_setup has been
+    invoked without first invoking case_setup -reset
+
+    NTASKS: the total number of MPI tasks, a negative value indicates nodes rather than tasks.
+    NTHRDS: the number of OpenMP threads per MPI task.
+    ROOTPE: the global mpi task of the component root task, if negative, indicates nodes rather than tasks.
+    PSTRID: the stride of MPI tasks across the global set of pes (for now set to 1)
+    NINST : the number of component instances (will be spread evenly across NTASKS)
+
+    for example, for NTASKS = 8, NTHRDS = 2, ROOTPE = 32, NINST  = 2
+    the MPI tasks would be placed starting on global pe 32 and each pe would be threaded 2-ways
+    These tasks will be divided amongst both instances (4 tasks each).
+
+    Note: PEs that support threading never have an MPI task associated
+    with them for performance reasons.  As a result, NTASKS and ROOTPE
+    are relatively independent of NTHRDS and they determine
+    the layout of mpi processors between components.  NTHRDS is used
+    to determine how those mpi tasks should be placed across the machine.
+
+    The following values should not be set by the user since they'll be
+    overwritten by scripts: TOTALPES, NTASKS_PER_INST
+    </header>
+  <comment>none</comment>
+  <group id="mach_pes_last">
+    <entry id="COST_PES" value="16">
+      <type>integer</type>
+      <desc>pes or cores used relative to MAX_MPITASKS_PER_NODE for accounting (0 means TOTALPES is valid)</desc>
+    </entry>
+    <entry id="TOTALPES" value="1">
+      <type>integer</type>
+      <desc>total number of MPI tasks (setup automatically - DO NOT EDIT)</desc>
+    </entry>
+    <entry id="MAX_TASKS_PER_NODE" value="32">
+      <type>integer</type>
+      <desc>maximum number of tasks/ threads allowed per node </desc>
+    </entry>
+    <entry id="MAX_MPITASKS_PER_NODE" value="16">
+      <type>integer</type>
+      <desc>pes or cores per node for mpitasks </desc>
+    </entry>
+    <entry id="COSTPES_PER_NODE" value="$MAX_MPITASKS_PER_NODE">
+      <type>integer</type>
+      <desc>pes or cores per node for accounting purposes </desc>
+    </entry>
+  </group>
+  <group id="mach_pes">
+    <entry id="ALLOCATE_SPARE_NODES" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>Allocate some spare nodes to handle node failures. The system will pick a reasonable number</desc>
+    </entry>
+    <entry id="FORCE_SPARE_NODES" value="-999">
+      <type>integer</type>
+      <desc>Force this exact number of spare nodes to be allocated</desc>
+    </entry>
+    <entry id="NTASKS">
+      <type>integer</type>
+      <values>
+        <value compclass="ATM">1</value>
+        <value compclass="CPL">1</value>
+        <value compclass="OCN">1</value>
+        <value compclass="WAV">1</value>
+        <value compclass="GLC">1</value>
+        <value compclass="ICE">1</value>
+        <value compclass="ROF">1</value>
+        <value compclass="LND">1</value>
+        <value compclass="ESP">1</value>
+      </values>
+      <desc>number of tasks for each component</desc>
+    </entry>
+    <entry id="NTASKS_PER_INST">
+      <type>integer</type>
+      <values>
+        <value compclass="ATM">1</value>
+        <value compclass="OCN">1</value>
+        <value compclass="WAV">1</value>
+        <value compclass="GLC">1</value>
+        <value compclass="ICE">1</value>
+        <value compclass="ROF">1</value>
+        <value compclass="LND">1</value>
+        <value compclass="ESP">1</value>
+      </values>
+      <desc>Number of tasks per instance for each component. DO NOT EDIT: Set automatically by case.setup based on NTASKS, NINST and MULTI_DRIVER</desc>
+    </entry>
+    <entry id="NTHRDS">
+      <type>integer</type>
+      <values>
+        <value compclass="ATM">1</value>
+        <value compclass="CPL">1</value>
+        <value compclass="OCN">1</value>
+        <value compclass="WAV">1</value>
+        <value compclass="GLC">1</value>
+        <value compclass="ICE">1</value>
+        <value compclass="ROF">1</value>
+        <value compclass="LND">1</value>
+        <value compclass="ESP">1</value>
+      </values>
+      <desc>number of threads for each task in each component</desc>
+    </entry>
+    <entry id="ROOTPE">
+      <type>integer</type>
+      <values>
+        <value compclass="ATM">0</value>
+        <value compclass="CPL">0</value>
+        <value compclass="OCN">0</value>
+        <value compclass="WAV">0</value>
+        <value compclass="GLC">0</value>
+        <value compclass="ICE">0</value>
+        <value compclass="ROF">0</value>
+        <value compclass="LND">0</value>
+        <value compclass="ESP">0</value>
+      </values>
+      <desc>ROOTPE (mpi task in MPI_COMM_WORLD) for each component</desc>
+    </entry>
+    <entry id="MULTI_DRIVER" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>MULTI_DRIVER mode provides a separate driver/coupler component for each
+    ensemble member.  All components must have an equal number of members.  If
+    MULTI_DRIVER mode is False prognostic components must have the same number
+    of members but data or stub components may also have 1 member. </desc>
+    </entry>
+    <entry id="NINST">
+      <type>integer</type>
+      <values>
+        <value compclass="ATM">1</value>
+        <value compclass="OCN">1</value>
+        <value compclass="WAV">1</value>
+        <value compclass="GLC">1</value>
+        <value compclass="ICE">1</value>
+        <value compclass="ROF">1</value>
+        <value compclass="LND">1</value>
+        <value compclass="ESP">1</value>
+      </values>
+      <desc>Number of instances for each component.  If MULTI_DRIVER is True
+    the NINST_MAX value will be used.
+    </desc>
+    </entry>
+    <entry id="NINST_LAYOUT">
+      <type>char</type>
+      <valid_values>sequential,concurrent</valid_values>
+      <values>
+        <value compclass="ATM">concurrent</value>
+        <value compclass="OCN">concurrent</value>
+        <value compclass="WAV">concurrent</value>
+        <value compclass="GLC">concurrent</value>
+        <value compclass="ICE">concurrent</value>
+        <value compclass="ROF">concurrent</value>
+        <value compclass="LND">concurrent</value>
+        <value compclass="ESP">concurrent</value>
+      </values>
+      <desc>Layout of component instances for each component</desc>
+    </entry>
+    <entry id="PSTRID">
+      <type>integer</type>
+      <values>
+        <value compclass="ATM">1</value>
+        <value compclass="CPL">1</value>
+        <value compclass="OCN">1</value>
+        <value compclass="WAV">1</value>
+        <value compclass="GLC">1</value>
+        <value compclass="ICE">1</value>
+        <value compclass="ROF">1</value>
+        <value compclass="LND">1</value>
+        <value compclass="ESP">1</value>
+      </values>
+      <desc>The mpi processor stride associated with the mpi tasks</desc>
+    </entry>
+  </group>
+</file>

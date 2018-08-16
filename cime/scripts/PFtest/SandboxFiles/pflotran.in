@@ -1,0 +1,238 @@
+#Description: 1D Calcite dissolution problem
+
+#==============================================================================
+# DO NOT MODIFY
+SIMULATION
+  SIMULATION_TYPE SUBSURFACE
+  PROCESS_MODELS
+    SUBSURFACE_TRANSPORT transport
+      GLOBAL_IMPLICIT
+    /
+  /
+END
+# END DO NOT MODIFY
+#==============================================================================
+
+SUBSURFACE
+
+#=========================== constraints ======================================
+# modify these initial concentration
+CONSTRAINT initial
+  CONCENTRATIONS # [mol/L]
+    Aaq  1.d-10  T
+    Baq  1.d-10  T
+    Caq  1.d-10  T
+    Daq  1.d-10  T
+    Eaq  1.d-10  T
+    Faq  1.d-10  T
+  /
+  IMMOBILE     # [mol/m^3 bulk]
+    Xim  1.d-4
+    Yim  1.d-10
+  /
+END
+
+# modify these inlet concentrations
+CONSTRAINT inlet
+  CONCENTRATIONS # [mol/L]
+    Aaq  1.d-3   T
+    Baq  1.d-3   T
+    Caq  1.d-10  T
+    Daq  1.d-10  T
+    Eaq  1.d-10  T
+    Faq  1.d-10  T
+  /
+END
+
+#==============================================================================
+#==============================================================================
+# DO NOT MODIFY ANYTHING BELOW (unless you know what you are doing)
+#==============================================================================
+#==============================================================================
+
+NUMERICAL_JACOBIAN_RXN
+
+#=========================== uniform flow =====================================
+UNIFORM_VELOCITY 1.d0 0.d0 0.d0 m/yr
+REFERENCE_DENSITY 1000.d0
+
+#=========================== chemistry ========================================
+CHEMISTRY
+  PRIMARY_SPECIES
+    Aaq
+    Baq
+    Caq
+    Daq
+    Eaq
+    Faq
+  /
+  IMMOBILE_SPECIES
+    Xim
+    Yim
+  /
+skip
+  ! cannot test zero-order reaction as the forward species option is automated.
+  GENERAL_REACTION
+    REACTION Daq <-> Faq
+    FORWARD_RATE 1.d-10
+  /
+  GENERAL_REACTION
+    REACTION Daq + Eaq <-> Faq
+    FORWARD_RATE 1.d-10
+  /
+  MICROBIAL_REACTION
+    REACTION Daq <-> Faq
+    RATE_CONSTANT 1.d-12
+    MONOD
+      SPECIES_NAME Daq
+      HALF_SATURATION_CONSTANT 5.d-4
+    /
+  /
+  MICROBIAL_REACTION
+    REACTION Daq + 2.d0 Eaq <-> Faq
+    RATE_CONSTANT 1.d-7
+    MONOD
+      SPECIES_NAME Daq
+      HALF_SATURATION_CONSTANT 5.d-4
+    /
+    MONOD
+      SPECIES_NAME Eaq
+      HALF_SATURATION_CONSTANT 5.d-4
+    /
+    BIOMASS
+      SPECIES_NAME Yim
+      YIELD 0.d0
+    /
+  /
+  GENERAL_REACTION
+    REACTION Daq <-> Faq
+    FORWARD_RATE 1.d-6
+    BACKWARD_RATE 1.d-7
+  /
+noskip
+  REACTION_SANDBOX
+    SIMPLE
+  /
+  DATABASE ./simple_rxn_database.dat
+  LOG_FORMULATION
+  ACTIVITY_COEFFICIENTS OFF
+  OUTPUT
+    TOTAL
+    ALL
+  /
+END
+
+#=========================== solver options ===================================
+LINEAR_SOLVER TRANSPORT
+  SOLVER DIRECT
+END
+
+#=========================== discretization ===================================
+GRID
+  TYPE STRUCTURED
+  NXYZ 100 1 1
+  BOUNDS
+    0.d0 0.d0 0.d0
+    100.d0 1.d0 1.d0
+  /
+END
+
+#=========================== fluid properties =================================
+FLUID_PROPERTY
+  DIFFUSION_COEFFICIENT 1.d-9
+END
+
+#=========================== material properties ==============================
+MATERIAL_PROPERTY soil1
+  ID 1
+  POROSITY 0.25d0
+  TORTUOSITY 1.d0
+END
+
+#=========================== output options ===================================
+OUTPUT
+  TIMES y 6.25d0 12.5d0 18.75d0
+  PERIODIC_OBSERVATION TIMESTEP 1
+  FORMAT TECPLOT POINT
+END
+
+#=========================== times ============================================
+TIME
+  FINAL_TIME 25.d0 y
+  INITIAL_TIMESTEP_SIZE 1.d0 h
+  MAXIMUM_TIMESTEP_SIZE 2.5d-1 y
+END
+
+#=========================== regions ==========================================
+REGION all
+  COORDINATES
+    0.d0 0.d0 0.d0
+    100.d0 1.d0 1.d0
+  /
+END
+
+REGION west
+  FACE WEST
+  COORDINATES
+    0.d0 0.d0 0.d0
+    0.d0 1.d0 1.d0
+  /
+END
+
+REGION east
+  FACE EAST
+  COORDINATES
+    100.d0 0.d0 0.d0
+    100.d0 1.d0 1.d0
+  /
+END
+
+REGION middle
+  COORDINATE 50.d0 0.5d0 0.5d0
+END
+
+#=========================== observation points ===============================
+OBSERVATION
+  REGION middle
+END
+
+#=========================== transport conditions =============================
+TRANSPORT_CONDITION initial
+  TYPE ZERO_GRADIENT
+  CONSTRAINT_LIST
+    0.d0 initial
+  /
+END
+
+TRANSPORT_CONDITION inlet
+  TYPE DIRICHLET_ZERO_GRADIENT
+  CONSTRAINT_LIST
+    0.d0 inlet
+  /
+END
+
+#=========================== condition couplers ===============================
+# initial condition
+INITIAL_CONDITION
+  TRANSPORT_CONDITION initial
+  REGION all
+END
+
+BOUNDARY_CONDITION outlet
+  TRANSPORT_CONDITION initial
+  REGION east
+END
+
+BOUNDARY_CONDITION inlet
+  TRANSPORT_CONDITION inlet
+  REGION west
+END
+
+#=========================== stratigraphy couplers ============================
+STRATA
+  REGION all
+  MATERIAL soil1
+END
+
+
+END_SUBSURFACE

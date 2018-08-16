@@ -1,0 +1,33 @@
+
+<dataSource>
+   GENERIC
+</dataSource>
+<domainInfo>
+  <variableNames>
+     time   time
+        LONGXY lon
+        LATIXY lat
+        area   area
+        mask   mask
+  </variableNames>
+  <filePath>
+     /lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/atm/datm7/topo_forcing
+  </filePath>
+  <fileNames>
+     topodata_0.9x1.25_USGS_070110_stream_c151201.nc
+  </fileNames>
+</domainInfo>
+<fieldInfo>
+   <variableNames>
+     TOPO topo
+   </variableNames>
+   <filePath>
+     /lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/atm/datm7/topo_forcing
+   </filePath>
+   <fileNames>
+    topodata_0.9x1.25_USGS_070110_stream_c151201.nc
+   </fileNames>
+   <offset>
+      0
+   </offset>
+</fieldInfo>

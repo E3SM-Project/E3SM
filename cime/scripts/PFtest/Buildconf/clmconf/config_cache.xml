@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+
+<config_definition>
+
+<commandline>
+/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/components/clm/bld/configure -comp_intf mct -phys clm4_5 -usr_src /lustre/or-hydra/cades-ccsi/omearata/E3SM/cime/scripts/PFtest/SourceMods/src.clm
+</commandline>
+<entry id="clm_root" value="/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/components/clm" list="" valid_values="">
+Root directory of CLM source distribution (directory above CLM configure).
+</entry>
+<entry id="comp_intf" value="mct" list="" valid_values="ESMF,MCT,cpl_\$COMP">
+Component framework interface to use 
+(Model Coupling Toolkit, or Earth System Modeling Framework)
+</entry>
+<entry id="cppdefs" value="" list="" valid_values="">
+User specified CPP defines to append to Makefile defaults.
+Note: It's recommended to use configure options to set standard CPP values rather
+than defining them here.
+</entry>
+<entry id="phys" value="clm4_5" list="" valid_values="clm4_0,clm4_5,clm5_0">
+Specifies either clm4_0, clm4_5, or clm5_0 physics
+</entry>
+<entry id="usr_src" value="/lustre/or-hydra/cades-ccsi/omearata/E3SM/cime/scripts/PFtest/SourceMods/src.clm" list="1" valid_values="">
+User source directories to prepend to the filepath.  Multiple directories
+are specified as a comma separated list with no embedded white space.
+Normally this is SourceMods/src.clm in your case.
+</entry>
+
+</config_definition>

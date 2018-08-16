@@ -1,0 +1,11 @@
+stream_fldfilename_popdens = /lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/lnd/clm2/firedata/clmforc.Li_2012_hdm_0.5x0.5_AVHRR_simyr1850-2010_c130401.nc
+stream_fldfilename_lightng = /lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/atm/datm7/NASA_LIS/clmforc.Li_2012_climo1995-2011.T62.lnfm_Total_c140423.nc
+stream_fldfilename_pdep = /lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/lnd/clm2/pdepdata/fpdep_clm_hist_simyr2000_1.9x2.5_c150929.nc
+fsnowaging = /lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/lnd/clm2/snicardata/snicar_drdt_bst_fit_60_c070416.nc
+fsoilordercon = /lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/lnd/clm2/paramdata/CNP_parameters_c131108.nc
+fsnowoptics = /lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc
+fsurdat = /lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_US-Brw_simyr1850.nc
+fatmlndfrc = /lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/share/domains/domain.clm/domain.lnd.1x1pt_US-Brw_navy.nc
+paramfile = /lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/lnd/clm2/paramdata/clm_params_c160822.nc
+finidat =  
+stream_fldfilename_ndep = /lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/lnd/clm2/ndepdata/fndep_clm_hist_simyr1849-2006_1.9x2.5_c100428.nc

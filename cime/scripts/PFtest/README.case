@@ -1,0 +1,88 @@
+2018-07-10 16:07:47: ./create_newcase -case /lustre/or-hydra/cades-ccsi/omearata/E3SM/cime/scripts/PFtest --mach cades --compiler gnu --mpilib openmpi --res CLM_USRDAT --compset I1850CLM45CN --walltime 1:00:00 --project ccsi
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: Compset longname is 1850_DATM%QIA_CLM45%CN_SICE_SOCN_RTM_SGLC_SWAV
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: Compset specification file is /lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/components/clm/cime_config/config_compsets.xml
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: Pes     specification file is /lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/config/e3sm/allactive/config_pesall.xml
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: Forcing is 
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: Component CPL is pre-industrial:
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: Using None coupler instances
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: Component ATM is  Data driven ATM  QIAN data set 
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: ATM_GRID is CLM_USRDAT
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: Component LND is clm4.5 physics:clm4.5 cn:
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: LND_GRID is CLM_USRDAT
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: Component ICE is Stub ice component
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: ICE_GRID is CLM_USRDAT
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: Component OCN is Stub ocn component
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: OCN_GRID is CLM_USRDAT
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: Component ROF is RTM:
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: ROF_GRID is null
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: Component GLC is Stub glacier (land ice) component
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: GLC_GRID is null
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: Component WAV is Stub wave component
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: WAV_GRID is null
+
+ ---------------------------------------------------
+
+2018-07-10 16:07:47: ESP_GRID is None
+
+ ---------------------------------------------------
+

@@ -1,0 +1,35 @@
+Creating component namelists
+   Calling /lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/src/components/data_comps/datm/cime_config/buildnml
+   Running /lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/components/clm/cime_config/buildnml 
+CLM configure done.
+adding clm user file defaults for var fsurdat with val /lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_US-Brw_simyr1850.nc
+CLM adding use_case 1850_control defaults for var 'sim_year' with val '1850'
+CLM adding use_case 1850_control defaults for var 'sim_year_range' with val 'constant'
+CLM adding use_case 1850_control defaults for var 'stream_year_first_ndep' with val '1850'
+CLM adding use_case 1850_control defaults for var 'stream_year_first_pdep' with val '2000'
+CLM adding use_case 1850_control defaults for var 'stream_year_first_popdens' with val '1850'
+CLM adding use_case 1850_control defaults for var 'stream_year_last_ndep' with val '1850'
+CLM adding use_case 1850_control defaults for var 'stream_year_last_pdep' with val '2000'
+CLM adding use_case 1850_control defaults for var 'stream_year_last_popdens' with val '1850'
+CLM adding use_case 1850_control defaults for var 'use_case_desc' with val 'Conditions to simulate 1850 land-use'
+   Calling /lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/src/components/stub_comps/sice/cime_config/buildnml
+   Calling /lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/src/components/stub_comps/socn/cime_config/buildnml
+   Running /lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/components/rtm/cime_config/buildnml 
+
+   Calling /lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/src/components/stub_comps/sglc/cime_config/buildnml
+   Calling /lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/src/components/stub_comps/swav/cime_config/buildnml
+   Calling /lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/src/components/stub_comps/sesp/cime_config/buildnml
+   Calling /lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/src/drivers/mct/cime_config/buildnml
+Finished creating component namelists
+-------------------------------------------------------------------------
+ - Prestage required restarts into /lustre/or-hydra/cades-ccsi/scratch/omearata/PFtest/run
+ - Case input data directory (DIN_LOC_ROOT) is /lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata 
+ - Checking for required input datasets in DIN_LOC_ROOT
+-------------------------------------------------------------------------
+2018-07-11 10:36:25 MODEL EXECUTION BEGINS HERE
+run command is mpirun  -np 1 --hostfile /var/spool/torque/aux//388914.or-condo-pbs01 /lustre/or-hydra/cades-ccsi/scratch/omearata/PFtest/bld/e3sm.exe  >> e3sm.log.$LID 2>&1  
+2018-07-11 10:36:30 MODEL EXECUTION HAS FINISHED
+check for resubmit
+dout_s False 
+mach cades 
+resubmit_num 0

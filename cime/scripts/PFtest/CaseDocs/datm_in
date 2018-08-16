@@ -1,0 +1,30 @@
+&datm_nml
+  decomp = "1d"
+  factorfn = "null"
+  force_prognostic_true = .false.
+  iradsw = 1
+  presaero = .true.
+  restfilm = "undefined"
+  restfils = "undefined"
+  wiso_datm = .false.
+/
+&shr_strdata_nml
+  datamode = "CLMNCEP"
+  domainfile = "/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/share/domains/domain.clm/domain.lnd.1x1pt_US-Brw_navy.nc"
+  dtlimit = 1.5, 1.5, 1.5
+  fillalgo = "nn", "nn", "nn"
+  fillmask = "nomask", "nomask", "nomask"
+  fillread = "NOT_SET", "NOT_SET", "NOT_SET"
+  fillwrite = "NOT_SET", "NOT_SET", "NOT_SET"
+  mapalgo = "nn", "nn", "nn"
+  mapmask = "nomask", "nomask", "nomask"
+  mapread = "NOT_SET", "NOT_SET", "NOT_SET"
+  mapwrite = "NOT_SET", "NOT_SET", "NOT_SET"
+  readmode = "single", "single", "single"
+  streams = "datm.streams.txt.CLM1PT.CLM_USRDAT 1 1985 2013",
+      "datm.streams.txt.presaero.clim_1850 1 1 1",
+      "datm.streams.txt.topo.observed 1 1 1"
+  taxmode = "extend", "extend", "extend"
+  tintalgo = "nearest", "linear", "lower"
+  vectors = "null"
+/

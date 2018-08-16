@@ -1,0 +1,93 @@
+Currently Loaded Modulefiles:
+  1) gcc/5.3.0                     6) cmake/3.6.1
+  2) openmpi/1.10.3                7) python/2.7.12
+  3) xalt/0.7.6                    8) nco/4.6.4
+  4) PE-gnu/1.0                    9) hdf5-parallel/1.8.17
+  5) mkl/2017                     10) netcdf-hdf5parallel/4.3.3.1
+
+MKLROOT=/software/tools/compilers/intel_2017/mkl
+PE_NAME=GNU
+MANPATH=/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/nco/4.6.4/centos7.2_gnu5.3.0/share/man:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/share/man:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/cmake/3.6.1/centos7.2_gnu4.8.5/man:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/gcc/5.3.0/centos7.2_gcc4.8.5/share/man:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/ferret/7.2/centos7.2_gnu5.3.0/share/man:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/netcdf/4.3.3.1/centos7.2_gnu5.3.0/share/man:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/wxpython/3.0.2.0/centos7.2_gnu5.3.0/share/man:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/gtk/2.24.31/centos7.2_gnu5.3.0/share/man:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/nco/4.6.6/centos7.2_gnu5.3.0/share/man:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/netcdf-hdf5parallel/4.3.3.1/centos7.2_gnu5.3.0/share/man:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/hdf5-parallel/1.8.17/centos7.2_gnu5.3.0/share/man:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/boost/1.61.0/centos7.2_gnu5.3.0/share/man:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/bzip2/1.0.6/centos7.2_gnu5.3.0/share/man:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/hdf5/1.8.17/centos7.2_gnu5.3.0/share/man:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/szip/2.1/centos7.2_gnu5.3.0/share/man:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/zlib/1.2.8/centos7.2_gnu5.3.0/share/man:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/openmpi/1.10.3/centos7.2_gnu5.3.0/share/man:/usr/share/man:/usr/local/share/man
+XALT_ETC_DIR=/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/xalt/0.7.6/centos7.3/etc
+HOSTNAME=or-condo-login01.ornl.gov
+INTEL_LICENSE_FILE=7136@flex1.ccs.ornl.gov:7136@flex2.ccs.ornl.gov:7136@flex3.ccs.ornl.gov
+SHELL=/bin/bash
+TERM=xterm
+PYTHON_INC=-I/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/include
+HISTSIZE=1000
+NCO_DIR=/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/nco/4.6.4/centos7.2_gnu5.3.0
+SSH_CLIENT=10.159.203.41 57446 22
+PETSC_ARCH=arch-orcondo-openmpi-gcc53-debug
+CLM_PFLOTRAN_COLMODE=FALSE
+XALT_DIR=/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/xalt/0.7.6/centos7.3
+NCO_INC=-I/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/nco/4.6.4/centos7.2_gnu5.3.0/include
+GCC_DIR=/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/gcc/5.3.0/centos7.2_gcc4.8.5
+ALT_LINKER=/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/xalt/0.7.6/centos7.3/bin/ld
+LIBRARY_PATH=/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/wxpython/3.0.2.0/centos7.2_gnu5.3.0/usr/local/lib:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/wxpython/3.0.2.0/centos7.2_gnu5.3.0/lib:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/gtk/2.24.31/centos7.2_gnu5.3.0/lib
+CLM_PFLOTRAN_COUPLED=FALSE
+PYTHON_DIR=/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0
+NICS_MKL_INCLUDE_OPTS=-I/software/tools/compilers/intel_2017/mkl/include
+PYTHONUNBUFFERED=1
+PE_PKGCONFIG_PRODUCTS=NICS_NETCDF:NICS_HDF5:NICS_NCO:NICS_MKL
+NICS_OPENMPI_REQUIRED_PRODUCTS=
+HDF5_PATH=/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/hdf5-parallel/1.8.17/centos7.2_gnu5.3.0
+PETSC_PATH=/software/user_tools/current/cades-ccsi/petsc4pf/openmpi-1.10-gcc-5.3
+NICS_NCO_POST_LINK_OPTS=-L/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/nco/4.6.4/centos7.2_gnu5.3.0/lib
+SSH_TTY=/dev/pts/93
+OPENMPI_LIB=-L/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/openmpi/1.10.3/centos7.2_gnu5.3.0/lib
+QT_GRAPHICSSYSTEM_CHECKED=1
+NICS_MKL_POST_LINK_OPTS=-L/software/tools/compilers/intel_2017/mkl/lib/intel64
+USER=omearata
+LS_COLORS=rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=01;05;37;41:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.axv=01;35:*.anx=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=01;36:*.au=01;36:*.flac=01;36:*.mid=01;36:*.midi=01;36:*.mka=01;36:*.mp3=01;36:*.mpc=01;36:*.ogg=01;36:*.ra=01;36:*.wav=01;36:*.axa=01;36:*.oga=01;36:*.spx=01;36:*.xspf=01;36:
+LD_LIBRARY_PATH=/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/nco/4.6.4/centos7.2_gnu5.3.0/lib:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/openbabel/2.4.90:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib64:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/openbabel-2.4.1/build/lib:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/sqlite-autoconf-3070603/:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/lib-dynload/:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/../../../R/3.3.2/centos7.2_gnu5.3.0/R-3.3.2/lib/:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib:/software/tools/compilers/intel_2017/mkl/lib/intel64:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/gcc/5.3.0/centos7.2_gcc4.8.5/lib:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/gcc/5.3.0/centos7.2_gcc4.8.5/lib64:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/ferret/7.2/centos7.2_gnu5.3.0/lib:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/netcdf/4.3.3.1/centos7.2_gnu5.3.0/lib:/netcdf4/4.4.0/openmpi-1.10-gcc-5.3/lib:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/hdf5-parallel/1.8.17/centos7.2_gnu5.3.0/lib:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/wxpython/3.0.2.0/centos7.2_gnu5.3.0/wxPython-src-3.0.2.0/wxPython/wx:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/wxpython/3.0.2.0/centos7.2_gnu5.3.0/usr/local/lib:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/wxpython/3.0.2.0/centos7.2_gnu5.3.0/lib:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/gtk/2.24.31/centos7.2_gnu5.3.0/lib:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/nco/4.6.6/centos7.2_gnu5.3.0/lib:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/netcdf-hdf5parallel/4.3.3.1/centos7.2_gnu5.3.0/lib:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/hdf5-parallel/1.8.17/centos7.2_gnu5.3.0/lib:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/boost/1.61.0/centos7.2_gnu5.3.0/lib:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/bzip2/1.0.6/centos7.2_gnu5.3.0/lib:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/hdf5/1.8.17/centos7.2_gnu5.3.0/lib:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/szip/2.1/centos7.2_gnu5.3.0/lib:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/zlib/1.2.8/centos7.2_gnu5.3.0/lib:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/openmpi/1.10.3/centos7.2_gnu5.3.0/lib
+PE_PKGCONFIG_LIBS=netcdf:hdf5:nco:mkl
+MKL_LIB=-L/software/tools/compilers/intel_2017/mkl/lib/intel64
+NICS_NCO_INCLUDE_OPTS=-I/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/nco/4.6.4/centos7.2_gnu5.3.0/include
+PE_PRODUCT_LIST=NICS_NETCDF:NICS_HDF5:NICS_NCO:NICS_MKL:NICS_OPENMPI
+OPENMPI_DIR=/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/openmpi/1.10.3/centos7.2_gnu5.3.0
+GCC_VERSION=5.3.0
+CMAKE_DIR=/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/cmake/3.6.1/centos7.2_gnu4.8.5
+CLM_PFLOTRAN_SOURCE_DIR=/lustre/or-hydra/cades-ccsi/omearata/models/pflotran-interface/src/clm-pflotran
+PATH=/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/nco/4.6.4/centos7.2_gnu5.3.0/bin:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/openbabel-2.4.1/build/bin:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/bin:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/cmake/3.6.1/centos7.2_gnu4.8.5/bin:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/xalt/0.7.6/centos7.3/libexec:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/xalt/0.7.6/centos7.3/bin:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/PE/1.0/noarch/bin:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/gcc/5.3.0/centos7.2_gcc4.8.5/bin:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/ferret/7.2/centos7.2_gnu5.3.0/bin:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/netcdf/4.3.3.1/centos7.2_gnu5.3.0/bin:/netcdf4/4.4.0/openmpi-1.10-gcc-5.3/bin:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/hdf5-parallel/1.8.17/centos7.2_gnu5.3.0/bin:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/wxpython/3.0.2.0/centos7.2_gnu5.3.0/bin:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/gtk/2.24.31/centos7.2_gnu5.3.0/bin:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/nco/4.6.6/centos7.2_gnu5.3.0/bin:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/netcdf-hdf5parallel/4.3.3.1/centos7.2_gnu5.3.0/bin:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/hdf5-parallel/1.8.17/centos7.2_gnu5.3.0/bin:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/boost/1.61.0/centos7.2_gnu5.3.0/bin:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/bzip2/1.0.6/centos7.2_gnu5.3.0/bin:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/hdf5/1.8.17/centos7.2_gnu5.3.0/bin:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/szip/2.1/centos7.2_gnu5.3.0/bin:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/zlib/1.2.8/centos7.2_gnu5.3.0/bin:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/openmpi/1.10.3/centos7.2_gnu5.3.0/bin:/opt/torque/bin:/opt/torque/sbin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/omearata/.local/bin:/home/omearata/bin
+MAIL=/var/spool/mail/omearata
+NCO_LIB=-L/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/nco/4.6.4/centos7.2_gnu5.3.0/lib
+PWD=/lustre/or-hydra/cades-ccsi/omearata/E3SM/cime/scripts/PFtest
+_LMFILES_=/software/dev_tools/swtree/cs400/modulefiles/gcc/5.3.0:/software/dev_tools/swtree/cs400/modulefiles/openmpi/1.10.3:/software/dev_tools/swtree/cs400/modulefiles/xalt/0.7.6:/software/dev_tools/swtree/cs400/modulefiles/PE-gnu/1.0:/software/dev_tools/swtree/cs400/modulefiles/mkl/2017:/software/dev_tools/swtree/cs400/modulefiles/cmake/3.6.1:/software/dev_tools/swtree/cs400/modulefiles/python/2.7.12:/software/dev_tools/swtree/cs400/modulefiles/nco/4.6.4:/software/dev_tools/swtree/cs400/modulefiles/hdf5-parallel/1.8.17:/software/dev_tools/swtree/cs400/modulefiles/netcdf-hdf5parallel/4.3.3.1
+XALT_TRANSMISSION_STYLE=file
+PYTHON_LIB=-L/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib
+MODULEPATH=/software/tools/modules:/software/dev_tools/swtree/cs400/modulefiles
+BLASLAPACK_LIBDIR=/petsc4pf/openmpi-1.10-gcc-5.3/lib
+PE_FORTRAN=mpif90
+LOADEDMODULES=gcc/5.3.0:openmpi/1.10.3:xalt/0.7.6:PE-gnu/1.0:mkl/2017:cmake/3.6.1:python/2.7.12:nco/4.6.4:hdf5-parallel/1.8.17:netcdf-hdf5parallel/4.3.3.1
+CIMEROOT=/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../..
+PE_CC=mpicc
+HISTCONTROL=ignoredups
+MKL_DIR=/software/tools/compilers/intel_2017/mkl
+MKL_INC=-I/software/tools/compilers/intel_2017/mkl/include
+HOME=/home/omearata
+SHLVL=2
+NICS_MKL_REQUIRED_PRODUCTS=
+OPENMPI_VERSION=1.10.3
+OMPI_MCA_btl_openib_if_exclude=mlx4_0:2
+GCC_LIB=/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/gcc/5.3.0/centos7.2_gcc4.8.5/lib64
+OMPI_MCA_btl_openib_warn_nonexistent_if=0
+LOGNAME=omearata
+PYTHONPATH=/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/xalt/0.7.6/centos7.3/libexec:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/wxpython/3.0.2.0/centos7.2_gnu5.3.0/wxPython-src-3.0.2.0/wxPython
+NETCDF_PATH=/netcdf4/4.4.0/openmpi-1.10-gcc-5.3
+SSH_CONNECTION=10.159.203.41 57446 172.23.82.81 22
+CLASSPATH=/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/ferret/7.2/centos7.2_gnu5.3.0/lib
+MODULESHOME=/usr/share/Modules
+OMP_NUM_THREADS=1
+LESSOPEN=||/usr/bin/lesspipe.sh %s
+PKG_CONFIG_PATH=/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/nco/4.6.4/centos7.2_gnu5.3.0/lib/pkgconfig:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/mkl/2017/centos7.2_gnu5.3.0/lib/pkgconfig:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/netcdf/4.3.3.1/centos7.2_gnu5.3.0/lib/pkgconfig:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/wxpython/3.0.2.0/centos7.2_gnu5.3.0/lib/pkgconfig:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/gtk/2.24.31/centos7.2_gnu5.3.0/lib/pkgconfig:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/nco/4.6.6/centos7.2_gnu5.3.0/lib/pkgconfig:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/netcdf-hdf5parallel/4.3.3.1/centos7.2_gnu5.3.0/lib/pkgconfig:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/hdf5-parallel/1.8.17/centos7.2_gnu5.3.0/lib/pkgconfig:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/boost/1.61.0/centos7.2_gnu5.3.0/lib/pkgconfig:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/bzip2/1.0.6/centos7.2_gnu5.3.0/lib/pkgconfig:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/hdf5/1.8.17/centos7.2_gnu5.3.0/lib/pkgconfig:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/szip/2.1/centos7.2_gnu5.3.0/lib/pkgconfig:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/zlib/1.2.8/centos7.2_gnu5.3.0/lib/pkgconfig
+R_HOME=/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/../../../R/3.3.2/centos7.2_gnu5.3.0/lib64/R
+OPENMPI_INC=-I/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/openmpi/1.10.3/centos7.2_gnu5.3.0/include
+INFOPATH=/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/gcc/5.3.0/centos7.2_gcc4.8.5/share/info
+DISPLAY=localhost:25.0
+PE_CXX=mpic++
+NICS_NCO_REQUIRED_PRODUCTS=PE_ZLIB
+LMOD_DIR=/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/xalt/0.7.6/centos7.3
+PETSC_DIR=/petsc4pf/openmpi-1.10-gcc-5.3
+BASH_FUNC_module()=() {  eval `/usr/bin/modulecmd bash $*`
+}
+_=/usr/bin/env

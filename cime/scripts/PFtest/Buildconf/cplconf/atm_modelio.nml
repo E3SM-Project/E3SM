@@ -1,0 +1,13 @@
+&modelio
+  diri = "/lustre/or-hydra/cades-ccsi/scratch/omearata/PFtest/bld/atm"
+  diro = "/lustre/or-hydra/cades-ccsi/scratch/omearata/PFtest/run"
+  logfile = "atm.log.401191.or-condo-pbs01.180816-164845"
+/
+&pio_inparm
+  pio_netcdf_format = "64bit_offset"
+  pio_numiotasks = -99
+  pio_rearranger = 1
+  pio_root = 0
+  pio_stride = 16
+  pio_typename = "netcdf"
+/

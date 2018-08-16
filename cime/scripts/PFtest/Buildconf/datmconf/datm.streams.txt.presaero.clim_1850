@@ -1,0 +1,46 @@
+
+<dataSource>
+   GENERIC
+</dataSource>
+<domainInfo>
+  <variableNames>
+     time    time
+        lon     lon
+        lat     lat
+        area    area
+        mask    mask
+  </variableNames>
+  <filePath>
+     /lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/atm/cam/chem/trop_mozart_aero/aero
+  </filePath>
+  <fileNames>
+     aerosoldep_monthly_1850_mean_1.9x2.5_c090421.nc
+  </fileNames>
+</domainInfo>
+<fieldInfo>
+   <variableNames>
+     BCDEPWET   bcphiwet
+        BCPHODRY   bcphodry
+        BCPHIDRY   bcphidry
+        OCDEPWET   ocphiwet
+        OCPHIDRY   ocphidry
+        OCPHODRY   ocphodry
+        DSTX01WD   dstwet1
+        DSTX01DD   dstdry1
+        DSTX02WD   dstwet2
+        DSTX02DD   dstdry2
+        DSTX03WD   dstwet3
+        DSTX03DD   dstdry3
+        DSTX04WD   dstwet4
+        DSTX04DD   dstdry4
+   </variableNames>
+   <filePath>
+     /lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/atm/cam/chem/trop_mozart_aero/aero
+   </filePath>
+   <fileNames>
+    aerosoldep_monthly_1850_mean_1.9x2.5_c090421.nc
+   </fileNames>
+   <offset>
+      0
+   </offset>
+</fieldInfo>

@@ -1,0 +1,1071 @@
+2018-07-10 16:15:20: case.setup starting 
+ ---------------------------------------------------
+2018-07-10 16:15:42: case.setup error 
+ERROR: Command: '/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/components/clm/cime_config/buildnml /lustre/or-hydra/cades-ccsi/omearata/E3SM/cime/scripts/PFtest' failed with error 'CLM configure done.
+ERROR : CLM build-namelist::CLMBuildNamelist::add_default() : No default value found for fsurdat.
+            Are defaults provided for this resolution and land mask?
+
+Warning : CLM build-namelist::CLMBuildNamelist::process_namelist_commandline_clm_usr_name() : setting clm_usr_name -- but did NOT find any user datasets: 1x1pt_US-GC3
+
+CLM adding use_case 1850_control defaults for var 'sim_year' with val '1850'
+CLM adding use_case 1850_control defaults for var 'sim_year_range' with val 'constant'
+CLM adding use_case 1850_control defaults for var 'stream_year_first_ndep' with val '1850'
+CLM adding use_case 1850_control defaults for var 'stream_year_first_pdep' with val '2000'
+CLM adding use_case 1850_control defaults for var 'stream_year_first_popdens' with val '1850'
+CLM adding use_case 1850_control defaults for var 'stream_year_last_ndep' with val '1850'
+CLM adding use_case 1850_control defaults for var 'stream_year_last_pdep' with val '2000'
+CLM adding use_case 1850_control defaults for var 'stream_year_last_popdens' with val '1850'
+CLM adding use_case 1850_control defaults for var 'use_case_desc' with val 'Conditions to simulate 1850 land-use'
+ERROR clm.buildnml: /lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/components/clm/bld/build-namelist -infile /lustre/or-hydra/cades-ccsi/omearata/E3SM/cime/scripts/PFtest/Buildconf/clmconf/namelist  -csmdata /lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata -inputdata /lustre/or-hydra/cades-ccsi/omearata/E3SM/cime/scripts/PFtest/Buildconf/clm.input_data_list -ignore_ic_year -namelist " &clm_inparm  start_ymd=00010101
+  /" -use_case 1850_control  -res 1x1pt_US-GC3  -clm_usr_name 1x1pt_US-GC3 -clm_start_type default -envxml_dir /lustre/or-hydra/cades-ccsi/omearata/E3SM/cime/scripts/PFtest -l_ncpl 48 -lnd_frac /lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/share/domains/domain.clm/domain.lnd.1x1pt_US-GC3_navy.nc -glc_nec 0 -co2_ppmv 284.7 -co2_type constant  -config /lustre/or-hydra/cades-ccsi/omearata/E3SM/cime/scripts/PFtest/Buildconf/clmconf/config_cache.xml -bgc cn failed: 65280' from dir '/lustre/or-hydra/cades-ccsi/omearata/E3SM/cime/scripts/PFtest'
+ ---------------------------------------------------
+2018-07-10 16:17:51: case.build starting 
+ ---------------------------------------------------
+2018-07-10 16:18:07: case.build error 
+ERROR: Command: '/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/components/clm/cime_config/buildnml /lustre/or-hydra/cades-ccsi/omearata/E3SM/cime/scripts/PFtest' failed with error 'CLM configure done.
+ERROR : CLM build-namelist::CLMBuildNamelist::add_default() : No default value found for fsurdat.
+            Are defaults provided for this resolution and land mask?
+
+Warning : CLM build-namelist::CLMBuildNamelist::process_namelist_commandline_clm_usr_name() : setting clm_usr_name -- but did NOT find any user datasets: 1x1pt_US-GC3
+
+CLM adding use_case 1850_control defaults for var 'sim_year' with val '1850'
+CLM adding use_case 1850_control defaults for var 'sim_year_range' with val 'constant'
+CLM adding use_case 1850_control defaults for var 'stream_year_first_ndep' with val '1850'
+CLM adding use_case 1850_control defaults for var 'stream_year_first_pdep' with val '2000'
+CLM adding use_case 1850_control defaults for var 'stream_year_first_popdens' with val '1850'
+CLM adding use_case 1850_control defaults for var 'stream_year_last_ndep' with val '1850'
+CLM adding use_case 1850_control defaults for var 'stream_year_last_pdep' with val '2000'
+CLM adding use_case 1850_control defaults for var 'stream_year_last_popdens' with val '1850'
+CLM adding use_case 1850_control defaults for var 'use_case_desc' with val 'Conditions to simulate 1850 land-use'
+ERROR clm.buildnml: /lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/components/clm/bld/build-namelist -infile /lustre/or-hydra/cades-ccsi/omearata/E3SM/cime/scripts/PFtest/Buildconf/clmconf/namelist  -csmdata /lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata -inputdata /lustre/or-hydra/cades-ccsi/omearata/E3SM/cime/scripts/PFtest/Buildconf/clm.input_data_list -ignore_ic_year -namelist " &clm_inparm  start_ymd=00010101
+  /" -use_case 1850_control  -res 1x1pt_US-GC3  -clm_usr_name 1x1pt_US-GC3 -clm_start_type default -envxml_dir /lustre/or-hydra/cades-ccsi/omearata/E3SM/cime/scripts/PFtest -l_ncpl 48 -lnd_frac /lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/share/domains/domain.clm/domain.lnd.1x1pt_US-GC3_navy.nc -glc_nec 0 -co2_ppmv 284.7 -co2_type constant  -config /lustre/or-hydra/cades-ccsi/omearata/E3SM/cime/scripts/PFtest/Buildconf/clmconf/config_cache.xml -bgc cn failed: 65280' from dir '/lustre/or-hydra/cades-ccsi/omearata/E3SM/cime/scripts/PFtest'
+ ---------------------------------------------------
+2018-07-10 16:19:15: case.setup starting 
+ ---------------------------------------------------
+2018-07-10 16:19:41: case.setup success 
+ ---------------------------------------------------
+2018-07-10 16:23:02: case.build starting 
+ ---------------------------------------------------
+2018-07-10 16:26:33: case.build success 
+ ---------------------------------------------------
+2018-07-11 10:28:47: case.build starting 
+ ---------------------------------------------------
+2018-07-11 10:30:46: case.build success 
+ ---------------------------------------------------
+2018-07-11 10:34:31: case.submit starting 
+ ---------------------------------------------------
+2018-07-11 10:35:08: case.submit success case.run:388914.or-condo-pbs01
+ ---------------------------------------------------
+2018-07-11 10:36:00: case.run starting 
+ ---------------------------------------------------
+2018-07-11 10:36:25: model execution starting 
+ ---------------------------------------------------
+2018-07-11 10:36:30: model execution success 
+ ---------------------------------------------------
+2018-07-11 10:36:30: case.run success 
+ ---------------------------------------------------
+2018-08-16 11:10:48: case.build starting 
+ ---------------------------------------------------
+2018-08-16 11:12:30: case.build success 
+ ---------------------------------------------------
+2018-08-16 11:16:02: case.submit starting 
+ ---------------------------------------------------
+2018-08-16 11:16:36: case.submit success case.run:400340.or-condo-pbs01
+ ---------------------------------------------------
+2018-08-16 11:17:23: case.run starting 
+ ---------------------------------------------------
+2018-08-16 11:17:46: model execution starting 
+ ---------------------------------------------------
+2018-08-16 11:17:54: model execution success 
+ ---------------------------------------------------
+2018-08-16 11:17:54: case.run success 
+ ---------------------------------------------------
+2018-08-16 13:25:44: case.build starting 
+ ---------------------------------------------------
+2018-08-16 13:25:52: case.build error 
+ERROR: Command: '/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/components/clm/cime_config/buildnml /lustre/or-hydra/cades-ccsi/omearata/E3SM/cime/scripts/PFtest' failed with error 'Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Traceback (most recent call last):
+  File "./xmlquery", line 361, in <module>
+    _main_func()
+  File "./xmlquery", line 284, in _main_func
+    with Case(caseroot) as case:
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 83, in __init__
+    self.read_xml()
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/case.py", line 191, in read_xml
+    self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_run.py", line 19, in __init__
+    EnvBase.__init__(self, case_root, infile, schema=schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/env_base.py", line 21, in __init__
+    EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/entry_id.py", line 17, in __init__
+    GenericXML.__init__(self, infile, schema, read_only=read_only)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 54, in __init__
+    self.read(infile, schema)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 82, in read
+    self.read_fd(fd)
+  File "/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/scripts/Tools/../../scripts/lib/CIME/XML/generic_xml.py", line 106, in read_fd
+    self.tree = ET.parse(fd)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1182, in parse
+    tree.parse(source, parser)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 656, in parse
+    parser.feed(data)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1653, in feed
+    self._raiseerror(v)
+  File "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/python/2.7.12/centos7.2_gnu5.3.0/lib/python2.7/xml/etree/ElementTree.py", line 1517, in _raiseerror
+    raise err
+xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 156, column 29
+Can't locate Config/SetupTools.pm in @INC (@INC contains: /utils/perl5lib /usr/local/lib64/perl5 /usr/local/share/perl5 /usr/lib64/perl5/vendor_perl /usr/share/perl5/vendor_perl /usr/lib64/perl5 /usr/share/perl5 .) at /lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/components/clm/cime_config/buildnml line 46.' from dir '/lustre/or-hydra/cades-ccsi/omearata/E3SM/cime/scripts/PFtest'
+ ---------------------------------------------------
+2018-08-16 13:29:04: case.build starting 
+ ---------------------------------------------------
+2018-08-16 13:29:47: case.build success 
+ ---------------------------------------------------
+2018-08-16 13:43:35: case.build starting 
+ ---------------------------------------------------
+2018-08-16 13:44:13: case.build success 
+ ---------------------------------------------------
+2018-08-16 16:46:45: case.build starting 
+ ---------------------------------------------------
+2018-08-16 16:47:29: case.build success 
+ ---------------------------------------------------
+2018-08-16 16:47:48: case.submit starting 
+ ---------------------------------------------------
+2018-08-16 16:48:11: case.submit success case.run:401191.or-condo-pbs01
+ ---------------------------------------------------
+2018-08-16 16:48:45: case.run starting 
+ ---------------------------------------------------
+2018-08-16 16:49:08: model execution starting 
+ ---------------------------------------------------
+2018-08-16 16:51:37: model execution success 
+ ---------------------------------------------------
+2018-08-16 16:51:37: case.run success 
+ ---------------------------------------------------

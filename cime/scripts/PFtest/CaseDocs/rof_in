@@ -1,0 +1,4 @@
+&rtm_inparm
+ rtm_effvel = 'ACTIVE'
+ rtm_mode = 'NULL'
+/

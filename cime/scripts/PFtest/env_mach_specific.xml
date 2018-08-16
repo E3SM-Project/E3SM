@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<file id="env_mach_specific.xml" version="2.0">
+  <header>
+    These variables control the machine dependent environment including
+    the paths to compilers and libraries external to cime such as netcdf,
+    environment variables for use in the running job should also be set	here.
+    </header>
+  <group id="compliant_values">
+    <entry id="run_exe" value="${EXEROOT}/e3sm.exe ">
+      <type>char</type>
+      <desc>executable name</desc>
+    </entry>
+    <entry id="run_misc_suffix" value=" &gt;&gt; e3sm.log.$LID 2&gt;&amp;1 ">
+      <type>char</type>
+      <desc>redirect for job output</desc>
+    </entry>
+  </group>
+  <module_system type="module">
+    <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+    <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+    <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+    <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
+    <cmd_path lang="sh">module</cmd_path>
+    <cmd_path lang="csh">module</cmd_path>
+    <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+    <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
+    <modules>
+      <command name="purge"/>
+    </modules>
+    <modules compiler="gnu">
+      <command name="load">PE-gnu</command>
+    </modules>
+    <modules>
+      <command name="load">mkl/2017</command>
+      <command name="load">cmake/3.6.1</command>
+      <command name="load">python/2.7.12</command>
+      <command name="load">nco/4.6.4</command>
+      <command name="load">hdf5-parallel/1.8.17</command>
+      <command name="load">netcdf-hdf5parallel/4.3.3.1</command>
+    </modules>
+  </module_system>
+  <environment_variables compiler="gnu" mpilib="openmpi">
+    <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc4pf/openmpi-1.10-gcc-5.3</env>
+  </environment_variables>
+  <environment_variables>
+    <env name="CLM_PFLOTRAN_COUPLED">FALSE</env>
+    <env name="CLM_PFLOTRAN_COLMODE">FALSE</env>
+    <env name="CLM_PFLOTRAN_SOURCE_DIR">/lustre/or-hydra/cades-ccsi/$USER/models/pflotran-interface/src/clm-pflotran</env>
+  </environment_variables>
+  <mpirun compiler="gnu" mpilib="openmpi">
+    <executable>mpirun</executable>
+    <arguments>
+      <arg name="num_tasks"> -np $TOTALPES</arg>
+      <arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
+    </arguments>
+  </mpirun>
+  <mpirun mpilib="mpi-serial">
+    <executable> </executable>
+  </mpirun>
+</file>

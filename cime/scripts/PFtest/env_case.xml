@@ -1,0 +1,284 @@
+<?xml version="1.0"?>
+<file id="env_case.xml" version="2.0">
+  <header>
+    These variables CANNOT BE CHANGED once a case has been created.
+    Invoke create_newcase again if a different grid or component
+    combination is required.
+    </header>
+  <group id="case_der">
+    <entry id="MODEL" value="e3sm">
+      <type>char</type>
+      <desc>model system name</desc>
+    </entry>
+    <entry id="CASEFILE_HEADERS" value="$CIMEROOT/config/config_headers.xml">
+      <type>char</type>
+      <desc>contains both header and group information for all the case env_*.xml files </desc>
+    </entry>
+    <entry id="CASETOOLS" value="$CASEROOT/Tools">
+      <type>char</type>
+      <desc>Case Tools directory location (derived variable, not in namelists</desc>
+    </entry>
+    <entry id="CASEBUILD" value="$CASEROOT/Buildconf">
+      <type>char</type>
+      <desc>Buildconf directory location (derived variable not in namelist)</desc>
+    </entry>
+    <entry id="SCRIPTSROOT" value="$CIMEROOT/scripts">
+      <type>char</type>
+      <desc>Scripts root directory location (setup automatically to $CIMEROOT/scripts- DO NOT EDIT)</desc>
+    </entry>
+    <entry id="UTILROOT" value="$CIMEROOT/scripts/Tools">
+      <type>char</type>
+      <desc>Scripts root utils directory location (setup automatically to $CIMEROOT/scripts/Tools - DO NOT EDIT)</desc>
+    </entry>
+    <entry id="MODEL_VERSION" value="c96b1ff">
+      <type>char</type>
+      <desc>Apparent version of the model used for this case</desc>
+    </entry>
+  </group>
+  <group id="case_last">
+    <entry id="BATCH_SPEC_FILE" value="$CIMEROOT/config/$MODEL/machines/config_batch.xml">
+      <type>char</type>
+      <desc>file containing batch system details for target system  (for documentation only - DO NOT EDIT)</desc>
+      <schema>$CIMEROOT/config/xml_schemas/config_batch.xsd</schema>
+    </entry>
+    <entry id="INPUTDATA_SPEC_FILE" value="$CIMEROOT/config/$MODEL/config_inputdata.xml">
+      <type>char</type>
+      <desc>file containing inputdata server descriptions  (for documentation only - DO NOT EDIT)</desc>
+      <schema>$CIMEROOT/config/xml_schemas/config_inputdata.xsd</schema>
+    </entry>
+    <entry id="GRIDS_SPEC_FILE" value="$CIMEROOT/config/$MODEL/config_grids.xml">
+      <type>char</type>
+      <desc>file containing specification of all supported model grids, domains and mapping files (for documentation only - DO NOT EDIT)</desc>
+    </entry>
+    <entry id="COMPILERS_SPEC_FILE" value="$CIMEROOT/config/$MODEL/machines/config_compilers.xml">
+      <type>char</type>
+      <desc>file containing compiler specifications for target model primary component (for documentation only - DO NOT EDIT)</desc>
+      <schema>$CIMEROOT/config/xml_schemas/config_compilers_v2.xsd</schema>
+    </entry>
+    <entry id="MACHINES_SPEC_FILE" value="$CIMEROOT/config/$MODEL/machines/config_machines.xml">
+      <type>char</type>
+      <desc>file containing machine specifications for target model primary component (for documentation only - DO NOT EDIT)</desc>
+    </entry>
+    <entry id="PIO_SPEC_FILE" value="$CIMEROOT/config/$MODEL/machines/config_pio.xml">
+      <type>char</type>
+      <desc>file containing specification of pio settings for target model possible machine, compiler, mpilib, compset and/or grid attributes (for documentation only - DO NOT EDIT)</desc>
+    </entry>
+    <entry id="COMPSETS_SPEC_FILE" value="$SRCROOT/components/clm/cime_config/config_compsets.xml">
+      <type>char</type>
+      <desc>file containing specification of all compsets for primary component (for documentation only - DO NOT EDIT)</desc>
+      <schema>$CIMEROOT/config/xml_schemas/config_compsets.xsd</schema>
+    </entry>
+    <entry id="PES_SPEC_FILE" value="$CIMEROOT/config/$MODEL/allactive/config_pesall.xml">
+      <type>char</type>
+      <desc>file containing specification of all pe-layouts for primary component (for documentation only - DO NOT EDIT)</desc>
+      <schema>$CIMEROOT/config/xml_schemas/config_pes.xsd</schema>
+    </entry>
+    <entry id="ARCHIVE_SPEC_FILE" value="$CIMEROOT/config/e3sm/config_archive.xml">
+      <type>char</type>
+      <desc>file containing specification of archive files for each component (for documentation only - DO NOT EDIT)</desc>
+      <schema>$CIMEROOT/config/xml_schemas/config_archive.xsd</schema>
+    </entry>
+    <entry id="TESTS_SPEC_FILE" value="$SRCROOT/components/clm/cime_config/testdefs/testlist_clm.xml">
+      <type>char</type>
+      <desc>file containing specification of all system tests for primary component (for documentation only - DO NOT EDIT)</desc>
+    </entry>
+    <entry id="TESTS_MODS_DIR" value="$CIMEROOT/config/$MODEL/testmods_dirs">
+      <type>char</type>
+      <desc>directory containing test modifications for primary component tests (for documentation only - DO NOT EDIT)</desc>
+    </entry>
+    <entry id="USER_MODS_DIR" value="$SRCROOT/components/clm/cime_config/usermods_dirs">
+      <type>char</type>
+      <desc>directory containing user modifications for primary components (for documentation only - DO NOT EDIT)</desc>
+    </entry>
+    <entry id="NAMELIST_DEFINITION_FILE" value="unset">
+      <type>char</type>
+      <desc>file containing namelist_definitions for all components </desc>
+      <schema>$CIMEROOT/config/xml_schemas/entry_id_namelist.xsd</schema>
+    </entry>
+    <entry id="CONFIG_CPL_FILE" value="$CIMEROOT/src/drivers/mct/cime_config/config_component.xml">
+      <type>char</type>
+      <desc>file containing all non-component specific case configuration variables (for documentation only - DO NOT EDIT)</desc>
+      <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+      <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+    </entry>
+    <entry id="CONFIG_CPL_FILE_MODEL_SPECIFIC" value="$CIMEROOT/src/drivers/mct/cime_config/config_component_$MODEL.xml">
+      <type>char</type>
+      <desc>file containing all component specific driver configuration variables (for documentation only - DO NOT EDIT)</desc>
+      <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+      <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+    </entry>
+    <entry id="CONFIG_ATM_FILE" value="$CIMEROOT/src/components/data_comps/datm/cime_config/config_component.xml">
+      <type>char</type>
+      <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+      <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+      <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+    </entry>
+    <entry id="CONFIG_LND_FILE" value="$SRCROOT/components/clm/cime_config/config_component.xml">
+      <type>char</type>
+      <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+      <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+      <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+    </entry>
+    <entry id="CONFIG_ROF_FILE" value="$SRCROOT/components/rtm/cime_config/config_component.xml">
+      <type>char</type>
+      <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+      <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+      <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+    </entry>
+    <entry id="CONFIG_ICE_FILE" value="$CIMEROOT/src/components/stub_comps/sice/cime_config/config_component.xml">
+      <type>char</type>
+      <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+      <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+      <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+    </entry>
+    <entry id="CONFIG_OCN_FILE" value="$CIMEROOT/src/components/stub_comps/socn/cime_config/config_component.xml">
+      <type>char</type>
+      <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+      <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+      <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+    </entry>
+    <entry id="CONFIG_GLC_FILE" value="$CIMEROOT/src/components/stub_comps/sglc/cime_config/config_component.xml">
+      <type>char</type>
+      <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+      <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+      <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+    </entry>
+    <entry id="CONFIG_WAV_FILE" value="$CIMEROOT/src/components/stub_comps/swav/cime_config/config_component.xml">
+      <type>char</type>
+      <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+      <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+      <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+    </entry>
+    <entry id="CONFIG_ESP_FILE" value="$CIMEROOT/src/components/stub_comps/sesp/cime_config/config_component.xml">
+      <type>char</type>
+      <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+      <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+      <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+    </entry>
+    <entry id="COMPSET" value="1850_DATM%QIA_CLM45%CN_SICE_SOCN_RTM_SGLC_SWAV">
+      <type>char</type>
+      <desc>Component set long name (for documentation only - DO NOT EDIT)</desc>
+    </entry>
+  </group>
+  <group id="case_comp">
+    <entry id="COMP_CLASSES" value="CPL,ATM,LND,ICE,OCN,ROF,GLC,WAV,ESP">
+      <type>char</type>
+      <desc>List of component classes supported by this driver</desc>
+    </entry>
+    <entry id="COMP_CPL" value="cpl">
+      <type>char</type>
+      <valid_values>cpl</valid_values>
+      <desc>Name of coupling component</desc>
+    </entry>
+    <entry id="COMP_ATM" value="datm">
+      <type>char</type>
+      <valid_values>datm</valid_values>
+      <desc>Name of atmospheric component</desc>
+    </entry>
+    <entry id="COMP_LND" value="clm">
+      <type>char</type>
+      <valid_values>clm</valid_values>
+      <desc>Name of land component</desc>
+    </entry>
+    <entry id="COMP_ICE" value="sice">
+      <type>char</type>
+      <valid_values>sice</valid_values>
+      <desc>Name of sea-ice component</desc>
+    </entry>
+    <entry id="COMP_OCN" value="socn">
+      <type>char</type>
+      <valid_values>socn</valid_values>
+      <desc>Name of ocean component</desc>
+    </entry>
+    <entry id="COMP_ROF" value="rtm">
+      <type>char</type>
+      <valid_values>rtm</valid_values>
+      <desc>Name of river component</desc>
+    </entry>
+    <entry id="COMP_GLC" value="sglc">
+      <type>char</type>
+      <valid_values>sglc</valid_values>
+      <desc>Name of land-ice component</desc>
+    </entry>
+    <entry id="COMP_WAV" value="swav">
+      <type>char</type>
+      <valid_values>swav</valid_values>
+      <desc>Name of wave component</desc>
+    </entry>
+    <entry id="COMP_ESP" value="sesp">
+      <type>char</type>
+      <valid_values>sesp</valid_values>
+      <desc>Name of ESP component</desc>
+    </entry>
+  </group>
+  <group id="case_def">
+    <entry id="FILES_CONFIG_SPEC" value="$CIMEROOT/config_files.xml">
+      <type>char</type>
+      <desc> master configuration file that specifies all relevant filenames
+    and directories to configure a case</desc>
+    </entry>
+    <entry id="CASEROOT" value="/lustre/or-hydra/cades-ccsi/omearata/E3SM/cime/scripts/PFtest">
+      <type>char</type>
+      <desc>full pathname of case</desc>
+    </entry>
+    <entry id="CIMEROOT" value="/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime">
+      <type>char</type>
+      <desc>full pathname of CIME source root directory</desc>
+    </entry>
+    <entry id="SRCROOT" value="/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan">
+      <type>char</type>
+      <desc>full pathname of source root directory</desc>
+    </entry>
+    <entry id="CASE" value="PFtest">
+      <type>char</type>
+      <desc>case name</desc>
+    </entry>
+    <entry id="SUPPORTED_BY" value="yinj -at- ornl.gov">
+      <type>char</type>
+      <desc>current machine name support contact</desc>
+    </entry>
+    <entry id="MACH" value="cades">
+      <type>char</type>
+      <desc>Machine name</desc>
+    </entry>
+    <entry id="MACHDIR" value="/lustre/or-hydra/cades-ccsi/proj-shared/models/ACME-fmyuan/cime/config/e3sm/machines">
+      <type>char</type>
+      <desc>Machines directory location</desc>
+    </entry>
+    <entry id="SCIENCE_SUPPORT" value="off">
+      <type>char</type>
+      <valid_values>on, off</valid_values>
+      <desc>If set to off, this component set/ grid specification is not scientifically supported.
+    If set to on, this component set/ grid specification is scientifically supported</desc>
+    </entry>
+  </group>
+  <group id="case_desc">
+    <entry id="USER" value="$ENV{USER}">
+      <type>char</type>
+      <desc>case user name</desc>
+    </entry>
+    <entry id="REALUSER" value="omearata">
+      <type>char</type>
+      <desc>username of user who created case</desc>
+    </entry>
+  </group>
+  <group id="run_component_cpl">
+    <entry id="CPL_USER_MODS">
+      <type>char</type>
+      <valid_values/>
+      <desc>User mods to apply to specific compset matches. </desc>
+    </entry>
+  </group>
+  <group id="case_cost">
+    <entry id="CCSM_GCOST" value="0">
+      <type>integer</type>
+      <valid_values/>
+      <desc>2**n relative cost of grid where f19_g15 is 1 (DO NOT EDIT)</desc>
+    </entry>
+    <entry id="CCSM_MCOST" value="0">
+      <type>integer</type>
+      <valid_values/>
+      <desc>2**n relative cost of machine (DO NOT EDIT)</desc>
+    </entry>
+  </group>
+</file>

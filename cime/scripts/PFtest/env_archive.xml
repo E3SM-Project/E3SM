@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<file id="env_archive.xml" version="2.0">
+  <header>
+      These are the variables specific to the short term archiver.
+      See  ./case.st_archive --help for details on running the short term archiver script.
+      To validate the env_archive.xml file using xmllint, run
+      xmllint -schema $SRCROOT/cime/config/xml_schemas/env_archive.xsd env_archive.xml
+      from the case root.
+    </header>
+  <components version="2.0">
+    <comp_archive_spec compclass="atm" compname="datm">
+      <rest_file_extension>\.r.*</rest_file_extension>
+      <rest_history_varname>unset</rest_history_varname>
+      <rpointer>
+        <rpointer_file>rpointer.atm$NINST_STRING</rpointer_file>
+        <rpointer_content>$CASE.datm$NINST_STRING.r.$DATENAME.nc,$CASE.datm$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
+      </rpointer>
+    </comp_archive_spec>
+    <comp_archive_spec compclass="lnd" compname="clm">
+      <rest_file_extension>\.[ri]\..*</rest_file_extension>
+      <rest_file_extension>\.rh.*</rest_file_extension>
+      <hist_file_extension>\.h.*.nc$</hist_file_extension>
+      <rest_history_varname>locfnh</rest_history_varname>
+      <rpointer>
+        <rpointer_file>rpointer.lnd$NINST_STRING</rpointer_file>
+        <rpointer_content>./$CASE.clm2$NINST_STRING.r.$DATENAME.nc</rpointer_content>
+      </rpointer>
+    </comp_archive_spec>
+    <comp_archive_spec compclass="rof" compname="rtm">
+      <rest_file_extension>\.r.*</rest_file_extension>
+      <hist_file_extension>\.h.*.nc$</hist_file_extension>
+      <rest_history_varname>unset</rest_history_varname>
+      <rpointer>
+        <rpointer_file>rpointer.rof$NINST_STRING</rpointer_file>
+        <rpointer_content>$CASE.rtm$NINST_STRING.r.$DATENAME.nc</rpointer_content>
+      </rpointer>
+    </comp_archive_spec>
+    <comp_archive_spec compclass="cpl" compname="drv">
+      <rest_file_extension>\.r\..*</rest_file_extension>
+      <hist_file_extension>\.h.*.nc$</hist_file_extension>
+      <rest_history_varname>unset</rest_history_varname>
+      <rpointer>
+        <rpointer_file>rpointer$NINST_STRING.drv</rpointer_file>
+        <rpointer_content>$CASE.cpl$NINST_STRING.r.$DATENAME.nc</rpointer_content>
+      </rpointer>
+    </comp_archive_spec>
+  </components>
+</file>
