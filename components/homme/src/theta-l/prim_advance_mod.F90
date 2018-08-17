@@ -19,10 +19,10 @@ module prim_advance_mod
   use edge_mod,           only: edgeDGVunpack, edgevpack, edgevunpack, initEdgeBuffer
   use edgetype_mod,       only: EdgeBuffer_t,  EdgeDescriptor_t, edgedescriptor_t
   use element_mod,        only: element_t
+  use element_state,      only: max_itercnt_perstep,avg_itercnt,max_itererr_perstep
   use element_ops,        only: get_cp_star, get_kappa_star, &
     get_temperature, set_theta_ref, state0
   use eos,                only: get_pnh_and_exner,get_dry_phinh,get_dirk_jacobian
-  use hevi_mod,           only: backsubstitution, elemstate_add, mgs, state_save,state_read
   use hybrid_mod,         only: hybrid_t
   use hybvcoord_mod,      only: hvcoord_t
   use kinds,              only: iulog, real_kind
@@ -163,9 +163,8 @@ contains
 !                 optimal: for windspeeds ~120m/s,gravity: 340m/2
 !                 run with qsplit=1
 !                 (K&G 2nd order method has CFL=4. tiny CFL improvement not worth 2nd order)
-!   tstep_type=6  KG with BW Euler implicit step, usful as a debug
-!   tstep_type=7  ARS232 ARK-IMEX method with 3 explicit stages and 2 implicit stages, 2nd order
-!                 accurate with stage order 1
+!   tstep_type=6  IMEX-KG243
+!   tstep_type=7  IMEX-KG254
 !
 
 ! default weights for computing mean dynamics fluxes
@@ -234,300 +233,9 @@ contains
        ! final method is the same as:
        ! u5 = u0 +  dt/4 RHS(u0)) + 3dt/4 RHS(u4)
        call t_stopf("U3-5stage_timestep")
- ! ==============================================================================
-    else if (tstep_type==6) then ! Imex hevi, implicit euler after the full explicit time-step
-    ! it seems to run with ne=16, nlev=26, dt=200 for JW Baro up to 18.8 days at least
-    ! Ullrich 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
-       ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
-       call t_startf("U3-5stage_timestep")
-       call compute_andor_apply_rhs(nm1,n0,n0,qn0,dt/5,elem,hvcoord,hybrid,&
-            deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,0.d0,1.d0)
-       ! u2 = u0 + dt/5 RHS(u1)
-
-      maxiter=10
-      itertol=1e-12
-      call compute_stage_value_dirk(nm1,qn0,dt,elem,hvcoord,hybrid,&
-       deriv,nets,nete,maxiter,itertol)
-       call compute_andor_apply_rhs(np1,n0,nm1,qn0,dt/5,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
-       ! u3 = u0 + dt/3 RHS(u2)
-
-      maxiter=10
-      itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dt,elem,hvcoord,hybrid,&
-       deriv,nets,nete,maxiter,itertol)
-
-       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/3,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
-       ! u4 = u0 + 2dt/3 RHS(u3)
-
-      maxiter=10
-      itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dt,elem,hvcoord,hybrid,&
-       deriv,nets,nete,maxiter,itertol)
-
-       call compute_andor_apply_rhs(np1,n0,np1,qn0,2*dt/3,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
-
-      maxiter=10
-      itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dt,elem,hvcoord,hybrid,&
-       deriv,nets,nete,maxiter,itertol)
-
-       ! compute (5*u1/4 - u0/4) in timelevel nm1:
-       do ie=nets,nete
-          elem(ie)%state%v(:,:,:,:,nm1)= (5*elem(ie)%state%v(:,:,:,:,nm1) &
-               - elem(ie)%state%v(:,:,:,:,n0) ) /4
-          elem(ie)%state%theta_dp_cp(:,:,:,nm1)= (5*elem(ie)%state%theta_dp_cp(:,:,:,nm1) &
-               - elem(ie)%state%theta_dp_cp(:,:,:,n0) )/4
-          elem(ie)%state%dp3d(:,:,:,nm1)= (5*elem(ie)%state%dp3d(:,:,:,nm1) &
-                  - elem(ie)%state%dp3d(:,:,:,n0) )/4
-          elem(ie)%state%w_i(:,:,:,nm1)= (5*elem(ie)%state%w_i(:,:,:,nm1) &
-                  - elem(ie)%state%w_i(:,:,:,n0) )/4
-          elem(ie)%state%phinh_i(:,:,:,nm1)= (5*elem(ie)%state%phinh_i(:,:,:,nm1) &
-                  - elem(ie)%state%phinh_i(:,:,:,n0) )/4
-       enddo
-
-       ! u5 = (5*u1/4 - u0/4) + 3dt/4 RHS(u4)
-       call compute_andor_apply_rhs(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,3*eta_ave_w/4,1.d0,0.d0,1.d0)
-
-      maxiter=10
-      itertol=1e-12
-      call compute_stage_value_dirk(nm1,qn0,dt,elem,hvcoord,hybrid,&
-       deriv,nets,nete,maxiter,itertol)
-       call t_stopf("U3-5stage_timestep")
-!============================================================================================
-    else if (tstep_type==7) then ! ARS232 from (Ascher et al., 1997), nh-imex
-      ! ARS232 is 2nd order, stage order 1, DIRK scheme is A-stable and L-stable
-      ! 2 implicit solves and 3 stages total
-      call t_startf("ARS232_timestep")
-      delta = -2.d0*sqrt(2.d0)/3.d0
-      gamma = 1.d0 - 1.d0/sqrt(2.d0)
-
-      ! save un0 as statesave
-      call state_save(elem,statesave,n0,nets,nete)
-
-      ! compute dt*n(un0)=dt*n(g1) and save at np1
-      call compute_andor_apply_rhs(np1,n0,n0,qn0,dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0.d0,1.d0,0.d0,0.d0)
-
-      ! form un0+dt*gamma*n(g1) and store at n0
-      call elemstate_add(elem,statesave,nets,nete,1,n0,np1,n0,gamma,1.d0,0.d0)
-
-      maxiter=10
-      itertol=1e-12
-      ! solve g2 = un0 + dt*gamma*n(g1)+dt*gamma*s(g2) for g2 and save at nm1
-      call elemstate_add(elem,statesave,nets,nete,1,nm1,n0,n0,1d0,0.d0,0.d0)
-      call compute_stage_value_dirk(nm1,qn0,gamma*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-      if (calc_nonlinear_stats) then
-        ie = maxiter ! using existing integer variable to store this value
-      end if
-
-!=== End of Phase 1 ====
-! at this point, g2 is at nm1, un0+dt*gamma*n(g1) is at n0, and dt*n(g1) is at np1
-
-      ! Form dt*n(g2) and store at np1
-      call compute_andor_apply_rhs(np1,nm1,nm1,qn0,dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,(1-gamma)*eta_ave_w,1.d0,0.d0,0.d0)
-
-      ! solve g2 = un0 + dt*gamma*n(g1) + dt*gamma*s(g2) for dt*s(g2) and
-      ! store at nm1
-      call elemstate_add(elem,statesave,nets,nete,1,nm1,nm1,n0,1.d0/gamma,-1.d0/gamma,0.d0)
-
-      ! Form dt*gamma*n(g1) and store at n0
-      call elemstate_add(elem,statesave,nets,nete,2,n0,n0,n0,1.d0,1.d0,-1.d0)
-
-      ! Form un0+dt*delta*n(g1) and store at n0
-      call elemstate_add(elem,statesave,nets,nete,2,n0,n0,n0,delta/gamma,1.d0,1.d0)
-
-      ! Form un0+dt*delta*n(g1)+dt*(1-delta)*n(g2)+dt*(1-gamma)*n(g3)
-      call elemstate_add(elem,statesave,nets,nete,4,n0,np1,nm1,1.d0-delta,1.d0-gamma,0.d0)
-
-      ! form un0+dt*(1-gamma)*(n(g2)+s(g2)) at nm1
-      call elemstate_add(elem,statesave,nets,nete,3,nm1,np1,nm1,1.d0-gamma,1.d0-gamma,1.d0)
-
-      maxiter=10
-      itertol=1e-12
-      !	solve g3 = (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2)+dt*gamma*s(g3)
-      ! for g3 using (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2) as initial guess
-      ! and save at np1
-      call elemstate_add(elem,statesave,nets,nete,1,np1,n0,n0,1d0,0d0,0d0)
-      call compute_stage_value_dirk(np1,qn0,gamma*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-!=== End of Phase 2 ===
-! at this point, un0+dt*(1-gamma)*(n(g2)+s(g2)) is at nm1, g3 is at np1, and n0 is free
-
-     ! form unp1 = un0+dt*(1-gamma)*(n(g2)+s(g2))+dt*gamma*(n(g3)+s(g3))
-      call compute_andor_apply_rhs(np1,nm1,np1,qn0,gamma*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,gamma*eta_ave_w,1.d0,1.d0,1.d0)
-
-      call state_read(elem,statesave,n0,nets,nete)
-      call t_stopf("ARS232_timestep")
-
-      if (calc_nonlinear_stats) then
-        call update_nonlinear_stats(1, ie+maxiter)
-      end if
-!======================================================================================================
-    elseif (tstep_type==8) then ! kgs242
-      call t_startf("KGS242_timestep")
-      ! denote the stages as k1,...,k4 and note that k1 = un0
-      a1 = 0.5
-      a2 = 0.5
-      a3 = 1.0
-      dhat2 = 2.25
-      dhat1 = (0.5-dhat2)/(1.0-dhat2)
-      ahat2 = 0.5-dhat2
-      ahat3 = 1.0
-
-      ! compute un0 + dt*a1*n(k1=u(n0))+dt*ahat1*s(k1) and store at np1
-      call compute_andor_apply_rhs(np1,n0,n0,qn0,a1*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w*a1,1d0,0d0,1d0)
-
-      maxiter=10
-      itertol=1e-12
-      ! solve k2 = u(n) + dt*a1*n(k1) + dt*dhat1*s(k2) and store solution at np1
-      call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-!================= end of phase 1 =========================================
-
-     ! compute u(n)+dt*a2*n(k2) and store at np1
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w/2,1d0,ahat2/a2,1d0)
-
-      maxiter=10
-      itertol=1e-12
-      ! solve k3 = u(n) + dt*a2*n(k2) + dt*ahat2*s(k2) + dt*dhat2*s(k3) and store solution at np1
-      call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-
-! ================ end of phase 2 ========================================
-
-     ! compute u(n+1) = k4 =  u(n)+dt*(a3*n(k3)+ahat3*s(k3)) and store at np1
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w,1d0,ahat3/a3,1d0)
-
-      call t_stopf("KGS242_timestep")
-!===========================================================================================
-    elseif (tstep_type==9) then ! kgs252
-      call t_startf("KGS252_timestep")
-      ! denote the stages as k1,...,k4 and note that k1 = un0
-      a1 = 0.25
-      a2 = 1d0/3d0
-      a3 = 0.5
-      a4 = 1.0
-      dhat2 = 2.25
-      dhat1 = (0.5-dhat2)/(1.0-dhat2)
-      ahat3= 0.5-dhat2
-      ahat4 = 1.0
-
-     ! ============ first stage is pure explicit =======================
-
-     ! compute k2 = u(n)+dt*a1*n(k1=u(n)) and store at np1
-     call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w*a1,1d0,0d0,1d0)
-
-     ! compute u(n)+dt*a2*n(k2) and store at np1
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a2,1d0,0d0,1d0)
-
-      ! solve k3 = u(n)+dt*a2*n(k2)+dt*dhat1*s(k3) and store at np1
-      maxiter=10
-      itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
- !     print *, maxiter
- !     print *, itertol
-
-     !  ============== end of stage 3 =============================
-
-     ! compute u(n)+dt*a3*n(k3)+dt*ahat3*s(k3) and store at np1
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
-     deriv,nets,nete,.false.,eta_ave_w*a3,1d0,ahat3/a3,1d0)
-
-      ! solve k4 = u(n)+dt*a3*n(k3)+dt*ahat3*s(k3)+dt*dhat2*s(k4) and store at np1
-      maxiter=10
-      itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
- !     print *, maxiter
- !     print *, itertol
-
-      ! ============= end of stage 4 =================================
-
-     ! compute u(n+1) = k5 = u(n)+dt*a4*n(k4)+dt*ahat4*s(k4) and store at np1
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
-     deriv,nets,nete,.false.,eta_ave_w*a4,1d0,ahat4/a4,1d0)
-
-      call t_stopf("KGS252_timestep")
-!===========================================================================================
-    elseif (tstep_type==10)  then ! kgs 262
-      call t_startf("KGS262_timestep")
-
-     a1 = .25
-     a2 = 1.0/6.0
-     a3 = 3.0/8.0
-     a4 = .5
-     a5 = 1.0
-     dhat2 = 2.25
-     ahat4 = 0.5-dhat2
-     dhat1 = (0.5-dhat2)/(1-dhat2)
-
-    ! ======== first two stages are pure explicit  =============
-     call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w*a1,1d0,0d0,1d0)
-
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a2,1d0,0d0,1d0)
-
-    ! at this stage k2 is at np1, u(n) is at n0
-
-    ! compute u(n)+dt*a3*n(k2) and store at np1
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a3,1d0,0d0,1d0)
-
-      ! solve k3 = u(n)+dt*a3*n(k2)+dt*dhat1*s(k3) and store at np1
-      maxiter=10
-      itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
- !     print *, maxiter
- !     print *, itertol
-    ! ========== end of stage 3 =================================
-
-    ! compute u(n)+dt*a4*n(k3) and store at np1
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a4,1d0,ahat4/a4,1d0)
-
-     ! solve k4 = u(n)+dt*a4*n(k2)+dt*ahat4*s(k3)+dt*dhat2*s(k4) and store at np1
-      maxiter=10
-      itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-!      print *, maxiter
-!      print *, itertol
-
-    ! ============ end of stage 4 ==================================
-
-    ! compute u(n+1) = k5 = u(n)+dt*a5*n(k4), final stage is the solution update
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a5,elem,hvcoord,hybrid,&
-       deriv,nets,nete,.false.,eta_ave_w*a5,1d0,1d0,1d0)
-
-      call t_stopf("KGS262_timestep")
 !=========================================================================================
-    elseif (tstep_type == 11 ) then
-      call t_startf("KGS272_timestep")
-     a1 = 1./6.
-     a2 = 2./15.
-     a3 = 1./4.
-     a4 = 1./3.
-     a5 = .5
-     a6 = 1.0
-     dhat2 = 2.25
-     ahat5 = 0.5-dhat2
-     ahat6 = 1.
-     dhat1 = (0.5-dhat2)/(1-dhat2)
+    elseif (tstep_type == 6) then  ! IMEX-KG243
+      call t_startf("IMEX-KG243_timestep")
 
     ! ======== first two stages are pure explicit  =============
      call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
@@ -539,261 +247,137 @@ contains
      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,eta_ave_w*a4,1d0,0d0,1d0)
 
-      ! solve k3 = u(n)+dt*a3*n(k2)+dt*dhat1*s(k3) and store at np1
-      maxiter=10
-      itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
- !     print *, maxiter
- !     print *, itertol
-
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a5,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a5,1d0,ahat5/a5,1d0)
-      maxiter=10
-      itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-!      print *, maxiter
-!      print *, itertol
-
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a6,elem,hvcoord,hybrid,&
-       deriv,nets,nete,.false.,eta_ave_w*a6,1d0,1d0,1d0)
-
-      call t_stopf("KGS272_timestep")
-!==============================================================================================
-    elseif (tstep_type == 12) then
-      call t_startf("KGS242-3_timestep")
-      dhat1 = 1.
-      dhat2 = 1.
-      ahat2 = 2.
-      dhat3 = (ahat2/2. + dhat2 - 1.0)/(ahat2-dhat1**2)
-      ahat3 = 0.5-dhat3
       ahat4 = 1.
-      a4 = 1.
-      a3 = 1./2.
-      a2 = 1./3.
-      a1 = 1./4.
+      ahat1 = 0.
+      max_itercnt_perstep = 0
+      max_itererr_perstep = 0.0
+      ! IMEX-KGNO243
+      dhat2 = (1.+sqrt(3.)/3.)/2.
+      dhat3 = dhat2
+      ahat3 = 1./2.-dhat3
+      dhat1 = (ahat3-dhat2+dhat2*dhat3)/(1.-dhat2-dhat3)
+      ahat2 = (dhat1-dhat1*dhat3-dhat1*dhat2+dhat1*dhat2*dhat3)/(1.-dhat3)
 
       call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w*a1,1d0,0d0,1d0)
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
+
 
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
- !     print *, maxiter
- !     print *, itertol
+      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w*a2,1d0,ahat2/a2,1d0)
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat2/a2,1d0)
 
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
- !     print *, maxiter
- !     print *, itertol
+      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
+
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w*a3,1d0,ahat3/a3,1d0)
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat3/a3,1d0)
 
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
- !     print *, maxiter
- !     print *, itertol
+      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w*a4,1d0,ahat4/a4,1d0)
+        deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat4/a4,1d0)
+
+      avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 
       call t_stopf("KGS242-3_timestep")
 !==============================================================================================
-    elseif (tstep_type == 13) then
-      call t_startf("KGS252-3_timestep")
-     a1 = .25
-     a2 = 1.0/6.0
-     a3 = 3.0/8.0
-     a4 = .5
-     a5 = 1.0
-     dhat1 = 1.
-     dhat2 = 1.
-     ahat3 = 2.
-     dhat3 = (ahat3/2. + dhat2 - 1.0)/(ahat3-dhat1**2)
-     ahat4 = 0.5-dhat3
-     ahat5 = 1.
+    elseif (tstep_type == 7) then
+      call t_startf("IMEX-KG254_timestep")
 
-    ! ======== first two stages are pure explicit  =============
-     call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w*a1,1d0,0d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a2,1d0,0d0,1d0)
+      max_itercnt_perstep = 0
+      max_itererr_perstep = 0.0
 
-      maxiter=10
-      itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
- !     print *, maxiter
- !     print *, itertol
+      a1 = 1./4.
+      a2 = 1./6.
+      a3 = 3./8.
+      a4 = 1./2.
+      a5 = 1
+      ahat1 = 0.
+      ahat5 = 1.
 
-    ! compute u(n)+dt*a4*n(k3) and store at np1
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a3,1d0,ahat3/a3,1d0)
+      ! IMEX-KGO254c coefficients
+      dhat2 = 5./6.
+      dhat3 = 5./6.
+      dhat4 = 2./3.
+      ahat4 = 1./2.-dhat4
+       dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
+        (ahat5-dhat3-dhat2-dhat4)
 
-      maxiter=10
-      itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-!      print *, maxiter
-!      print *, itertol
+      ! IMEX-KGO254b coefficients NOT GOOD
+!      dhat2 = 1./6.
+!      dhat3 = 1./6.
+!      dhat4 = 1./6.
+!      ahat4 = 1./2.-dhat4
+!!      dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
+!       (ahat5-dhat3-dhat2-dhat4)
 
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
-       deriv,nets,nete,.false.,eta_ave_w*a4,1d0,ahat4/a4,1d0)
 
-      maxiter=10
-      itertol=1e-12
-      call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-!      print *, maxiter
-!      print *, itertol
+      ! IMEX-KG254
+      ahat3 = (- ahat4*ahat5*dhat1 - ahat4*ahat5*dhat2+ ahat5*dhat1*dhat2 + ahat5*dhat1*dhat3 +&
+        ahat5*dhat2*dhat3- dhat1*dhat2*dhat3 - dhat1*dhat2*dhat4 - dhat1*dhat3*dhat4- &
+        dhat2*dhat3*dhat4)/(-ahat4*ahat5)
+      ahat2 = ( - ahat3*ahat4*ahat5*dhat1 + ahat4*ahat5*dhat1*dhat2 -&
+        ahat5*dhat1*dhat2*dhat3 + dhat1*dhat2*dhat3*dhat4)/(-ahat3*ahat4*ahat5)
 
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a5,elem,hvcoord,hybrid,&
-       deriv,nets,nete,.false.,eta_ave_w*a5,1d0,ahat5/a5,1d0)
-
-      call t_stopf("KGS252-3_timestep")
-!==============================================================================================
-    elseif (tstep_type == 14) then
-      call t_startf("KGS252-4_timestep")
-      a1 = .25
-      a2 = 1.0/6.0
-      a3 = 3.0/8.0
-      a4 = .5
-      a5 = 1.0
-      dhat1 = 2./3.
-      dhat2 = 2./3.
-      dhat3 = 2./3.
-      dhat4 = (dhat1+dhat2+dhat3+dhat1*dhat2+dhat1*dhat3+dhat2*dhat3-.5)/&
-        (dhat1+dhat2+dhat3-1.)
-      ahat4 = 0.5-dhat4
-      ahat3 = (ahat4*dhat1+ahat4*dhat2-dhat2*dhat2-dhat1*dhat3-dhat2*dhat3+&
-        dhat1*dhat2*dhat3+dhat1*dhat2*dhat4+dhat1*dhat3*dhat4+dhat2*dhat3*dhat4)/ahat4
-      ahat2 = (ahat3*ahat4-ahat4*dhat1*dhat2+dhat1*dhat2*dhat3-dhat1*dhat2*dhat3*dhat4)&
-        /(ahat3*ahat4)
-      ahat5 = 1.0
 
       call compute_andor_apply_rhs(np1,n0,n0,qn0,a1*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w*a1,1d0,0d0,1d0)
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-!      print *, maxiter
-!      print *, itertol
+      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w*a2,1d0,ahat2/a2,1d0)
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat2/a2,1d0)
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-!      print *, maxiter
-!      print *, itertol
+      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w*a3,1d0,ahat3/a3,1d0)
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat3/a3,1d0)
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-!      print *, maxiter
-!      print *, itertol
+      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w*a4,1d0,ahat4/a4,1d0)
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat4/a4,1d0)
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-!      print *, maxiter
-!      print *, itertol
+      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w*a5,1d0,ahat5/a5,1d0)
+        deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat5/a5,1d0)
 
+      avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
       call t_stopf("KGS252-4_timestep")
-!==============================================================================================
-    elseif (tstep_type == 15) then
-      call t_startf("KGS242_explicit_timestep")
-      a1 = 0.5
-      a2 = 0.5
-      a3 = 1.0
-      call compute_andor_apply_rhs(np1,n0,n0,qn0,a1*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w*a1,1d0,1d0,1d0)
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a2,1d0,1d0,1d0)
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a3,1d0,1d0,1d0)
-      call t_stopf("KGS242_explicit_timestep")
-!===============================================================================================
-    elseif (tstep_type == 16) then
-      call t_startf("KGS252_explicit_timestep")
-     ! denote the stages as k1,...,k4 and note that k1 = un0
-      a1 = 0.25
-      a2 = 1d0/3d0
-      a3 = 0.5
-      a4 = 1.0
-     call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w*a1,1d0,1d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a2,1d0,1d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
-     deriv,nets,nete,.false.,eta_ave_w*a3,1d0,1d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
-     deriv,nets,nete,.false.,eta_ave_w*a4,1d0,1d0,1d0)
-      call t_stopf("KGS252_explicit_timestep")
-!=================================================================================================
-    elseif (tstep_type == 17) then
-      call t_startf("KGS262_explicit_timestep")
-     a1 = 1./4.
-     a2 = 1.0/6.0
-     a3 = 3.0/8.0
-     a4 = .5
-     a5 = 1.0
-     call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w*a1,1d0,1d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a2,1d0,1d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a3,1d0,1d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a4,1d0,1d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a5,elem,hvcoord,hybrid,&
-       deriv,nets,nete,.false.,eta_ave_w*a5,1d0,1d0,1d0)
-      call t_stopf("KGS262_explicit_timestep")
-!=================================================================================================
-    elseif (tstep_type == 18) then
-     call t_startf("KGS272_explicit_timestep")
-     a1 = 1./6.
-     a2 = 2./15.
-     a3 = 1./4.
-     a4 = 1./3.
-     a5 = .5
-     a6 = 1.0
-    ! ======== first two stages are pure explicit  =============
-     call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w*a1,1d0,1d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a2,1d0,1d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a3,1d0,1d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a4,1d0,1d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a5,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a4,1d0,1d0,1d0)
-     call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a6,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w*a6,1d0,1d0,1d0)
-      call t_stopf("KGS272_explicit_timestep")
-!=========================================================================================
+
     else if (tstep_type==20) then ! ARKode RK2
       call set_Butcher_tables(arkode_parameters, arkode_tables%RK2)
 
@@ -938,7 +522,7 @@ contains
      elem(ie)%derived%FQps(:,:)=0
 
      ! apply forcing to temperature
-     call get_temperature(elem(ie),temperature,hvcoord,np1,np1_qdp)
+     call get_temperature(elem(ie),temperature,hvcoord,np1)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
@@ -1000,8 +584,8 @@ contains
      enddo
 
      ! now that we have updated Qdp and dp, compute theta_dp_cp from temperature
-     call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,np1_qdp),dp)
-     call get_cp_star(cp_star,elem(ie)%state%Qdp(:,:,:,1,np1_qdp),dp)
+     call get_kappa_star(kappa_star,elem(ie)%state%Q(:,:,:,1))
+     call get_cp_star(cp_star,elem(ie)%state%Q(:,:,:,1))
      call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp,&
          elem(ie)%state%phinh_i(:,:,:,np1),kappa_star,pnh,exner,dpnh_dp_i)
 
@@ -1592,7 +1176,7 @@ contains
      theta_cp(:,:,:) = theta_dp_cp(:,:,:)/dp3d(:,:,:)
      phi_i => elem(ie)%state%phinh_i(:,:,:,n0)
 
-     call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
+     call get_kappa_star(kappa_star,elem(ie)%state%Q(:,:,:,1))
      call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi_i,&
              kappa_star,pnh,exner,dpnh_dp_i)
 
@@ -2135,9 +1719,9 @@ contains
   type (element_t)     , intent(inout), target :: elem(:)
   type (derivative_t)  , intent(in) :: deriv
 
+
   ! local
   real (kind=real_kind), pointer, dimension(:,:,:)   :: phi_np1
-
   real (kind=real_kind), pointer, dimension(:,:,:)   :: dp3d
   real (kind=real_kind), pointer, dimension(:,:,:)   :: theta_dp_cp
   real (kind=real_kind), pointer, dimension(:,:)   :: phis
@@ -2154,7 +1738,7 @@ contains
   real (kind=real_kind) :: Fn(np,np,nlev),x(nlev,np,np)
   real (kind=real_kind) :: pnh_i(np,np,nlevp)
   real (kind=real_kind) :: itererr,itererrtemp(np,np)
-  real (kind=real_kind) :: itererrmat,itercountmax,itererrmax
+  real (kind=real_kind) :: itercountmax,itererrmax
   real (kind=real_kind) :: norminfr0(np,np),norminfJ0(np,np)
   real (kind=real_kind) :: maxnorminfJ0r0
   real (kind=real_kind) :: alpha1(np,np),alpha2(np,np)
@@ -2180,7 +1764,7 @@ contains
     phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
     phis => elem(ie)%state%phis(:,:)
 
-    call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
+    call get_kappa_star(kappa_star,elem(ie)%state%Q(:,:,:,1))
     call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi_np1,&
          kappa_star,pnh,exner,dpnh_dp_i,pnh_i_out=pnh_i)
 
@@ -2302,9 +1886,10 @@ contains
 !        itererrmax = itererr
 !      end if
   end do ! end do for the ie=nets,nete loop
-  maxiter=itercountmax
-!  itertol=itererrmax
+  maxiter=itercount
+  itertol=itererr
 !  print *, 'max itercount', itercountmax, 'maxitererr ', itererrmax
+
   call t_stopf('compute_stage_value_dirk')
 
   end subroutine compute_stage_value_dirk

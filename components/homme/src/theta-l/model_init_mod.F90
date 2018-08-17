@@ -106,7 +106,7 @@ contains
      phi_i(:,:,:)         = elem(ie)%state%phinh_i(:,:,:,tl%n0)
      phis(:,:)          = elem(ie)%state%phis(:,:)
      call TimeLevel_Qdp(tl, qsplit, qn0)
-     call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
+     call get_kappa_star(kappa_star,elem(ie)%state%Q(:,:,:,1))
      call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi_i,&
              kappa_star,pnh,exner,dpnh_dp_i,pnh_i_out=pnh_i)
          
