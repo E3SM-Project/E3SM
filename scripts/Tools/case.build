@@ -47,8 +47,6 @@ from standard_script_setup import *
 import CIME.build as build
 from CIME.case            import Case
 from CIME.utils           import find_system_test
-from CIME.XML.files       import Files
-from CIME.XML.component   import Component
 from CIME.test_status     import *
 
 ###############################################################################

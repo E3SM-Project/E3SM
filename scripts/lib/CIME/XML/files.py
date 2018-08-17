@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class Files(EntryID):
 
-    def __init__(self):
+    def __init__(self, comp_interface="nuopc"):
         """
         initialize an object
 
@@ -27,14 +27,14 @@ class Files(EntryID):
         config_files_override = os.path.join(os.path.dirname(cimeroot),".config_files.xml")
         # variables COMP_ROOT_DIR_{} are mutable, all other variables are read only
         self.COMP_ROOT_DIR = {}
-
+        self._comp_interface = comp_interface
         # .config_file.xml at the top level may overwrite COMP_ROOT_DIR_ nodes in config_files
 
         if os.path.isfile(config_files_override):
             self.read(config_files_override)
             self.overwrite_existing_entries()
 
-    def get_value(self, vid, attribute=None, resolved=True, subgroup=None, comp_interface=None):
+    def get_value(self, vid, attribute=None, resolved=True, subgroup=None):
         if "COMP_ROOT_DIR" in vid:
             if vid in self.COMP_ROOT_DIR:
                 if attribute is not None:
@@ -56,9 +56,7 @@ class Files(EntryID):
                 value = value.replace("$"+comp_root_dir_var_name, comp_root_dir)
 
         if resolved and value is not None:
-            if "COMP_INTERFACE" in value:
-                expect(comp_interface != None, "comp_interface must have valid value for vid = {}".format(vid))
-                value = value.replace("$COMP_INTERFACE", comp_interface)
+            value = value.replace("$COMP_INTERFACE", self._comp_interface)
             value = self.get_resolved_value(value)
         return value
 
