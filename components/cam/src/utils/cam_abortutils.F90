@@ -32,7 +32,7 @@ contains
 
 !========================================================================
 
-   subroutine endrun(string,rc)
+   subroutine endrun(string)
     !--------------------------------------------------------------------
     ! 
     ! Purpose: CAM interface to consistent stopping mechanism
@@ -46,28 +46,19 @@ contains
     !
     ! Arguments
     !
-    character(len=*)    , intent(in), optional :: string ! error message 
-                                                         ! string
-    integer(shr_kind_in), intent(in), optional :: rc     ! error code
+    character(len=*), intent(in), optional :: string   ! error message
+
     !
     ! Local workspace
     !
     character(len=*), parameter :: &
-      cam_string = "See atm.log for error description" ! generic string
+      cam_string = "See atm.log for error description" ! generic message
     !--------------------------------------------------------------------
 
     if (present(string)) then
-      if (present(rc)) then
-        call shr_sys_abort(string,rc)
-      else
-        call shr_sys_abort(string)
-      endif
+      call shr_sys_abort(string)
     else
-      if (present(rc)) then
-        call shr_sys_abort(cam_string,rc)
-      else
-        call shr_sys_abort(cam_string)
-      endif
+      call shr_sys_abort(cam_string)
     endif
 
    end subroutine
