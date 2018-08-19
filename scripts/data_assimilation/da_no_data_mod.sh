@@ -30,13 +30,13 @@ else
       echo "ERROR: Unable to change DATA_ASSIMILATION_WAV to TRUE"
       errcode=$(( errcode + 1 ))
     fi
-    if [ $cycle -gt 0 -a -n "${dval}" ]; then
+    if [ -n "${dval}" ]; then
       rundir="`./xmlquery --value RUNDIR`"
       if [ -n "${rundir}" -a -d "${rundir}" ]; then
         cd ${rundir}
         res=$?
         if [ $res -ne 0 ]; then
-          echo "ERROR: Unable to cd to caseroot, ${caseroot}"
+          echo "ERROR: Unable to cd to rundir, ${rundir}"
           errcode=$(( errcode + 1 ))
         else
           # Check the latest log file for a resume signal
@@ -60,16 +60,30 @@ else
             errcode=$(( errcode + 1 ))
           else
             for wavfile in ${lfiles}; do
-              if [ -n "`echo ${lfiles} | grep 'gz$'`" ]; then
-                sig="`zcat ${lfiles} | grep 'Resume signal, TRUE' 2> /dev/null`"
+              if [ $cycle -gt 0 ]; then
+                if [ -n "`echo ${lfiles} | grep 'gz$'`" ]; then
+                  sig="`zcat ${lfiles} | grep 'Resume signal, TRUE' 2> /dev/null`"
+                else
+                  sig="`cat ${lfiles} | grep 'Resume signal, TRUE' 2> /dev/null`"
+                fi
+                if [ -n "${sig}" ]; then
+                  echo "Post-DA resume signal found for cycle ${cycle}"
+                else
+                  echo "ERROR: No post-DA resume signal found for cycle ${cycle}"
+                  errcode=$(( errcode + 1 ))
+                fi
               else
-                sig="`cat ${lfiles} | grep 'Resume signal, TRUE' 2> /dev/null`"
-              fi
-              if [ -n "${sig}" ]; then
-                echo "Post-DA resume signal found for cycle ${cycle}"
-              else
-                echo "ERROR: No post-DA resume signal found for cycle ${cycle}"
-                errcode=$(( errcode + 1 ))
+                if [ -n "`echo ${lfiles} | grep 'gz$'`" ]; then
+                  sig="`zcat ${lfiles} | grep 'Initial run' 2> /dev/null`"
+                else
+                  sig="`cat ${lfiles} | grep 'Initial run' 2> /dev/null`"
+                fi
+                if [ -n "${sig}" ]; then
+                  echo "Initial run signal found for cycle ${cycle}"
+                else
+                  echo "ERROR: No Initial run signal found for cycle ${cycle}"
+                  errcode=$(( errcode + 1 ))
+                fi
               fi
             done
           fi
