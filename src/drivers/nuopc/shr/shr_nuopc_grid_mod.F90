@@ -604,13 +604,12 @@ contains
   subroutine shr_nuopc_grid_ArrayToState(array, rList, state, grid_option, rc)
 
     ! copy array data to state fields
-    use shr_kind_mod, only : R8=>shr_kind_r8, CS=>shr_kind_cs, IN=>shr_kind_in
-    use ESMF, only : ESMF_State, ESMF_Field, ESMF_SUCCESS
-    use ESMF, only : ESMF_LogWrite, ESMF_FieldGet, ESMF_StateGet
-    use ESMF, only : ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU, ESMF_LOGMSG_INFO
-    use shr_string_mod, only : shr_string_listGetName
-    use shr_nuopc_methods_mod, only : shr_nuopc_methods_State_reset
-    implicit none
+    use ESMF                  , only : ESMF_State, ESMF_Field, ESMF_SUCCESS
+    use ESMF                  , only : ESMF_LogWrite, ESMF_FieldGet, ESMF_StateGet
+    use ESMF                  , only : ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU, ESMF_LOGMSG_INFO
+    use shr_kind_mod          , only : R8=>shr_kind_r8, CS=>shr_kind_cs, IN=>shr_kind_in
+    use shr_string_mod        , only : shr_string_listGetName, shr_string_listGetNum
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_reset
 
     !----- arguments -----
     real(r8)         , intent(inout) :: array(:,:)
@@ -620,32 +619,34 @@ contains
     integer          , intent(out)   :: rc
 
     !----- local -----
-    integer(IN) :: nflds, lsize, n, nf, DE
-    character(len=CS)  :: fldname
-    type(ESMF_Field)   :: lfield
+    integer(IN)       :: nflds, lsize, n, nf, DE
+    character(len=CS) :: fldname
+    type(ESMF_Field)  :: lfield
     real(R8), pointer :: farray2(:,:)
     real(R8), pointer :: farray1(:)
-    integer :: dbrc
+    integer           :: dbrc
     character(*),parameter :: subName = "(shr_nuopc_grid_ArrayToState)"
     !----------------------------------------------------------
 
     rc = ESMF_SUCCESS
 
-    nflds = size(array, dim=1)
-    lsize = size(array, dim=2)
-
     call shr_nuopc_methods_State_reset(state, value = -9999._R8, rc=rc)
+
+    nflds = shr_string_listGetNum(rList)
+    lsize = size(array, dim=2)
 
     do nf = 1,nflds
 
       rc = ESMF_SUCCESS
+      write(6,*)'DEBUG: rlist = ',trim(rList)
+      write(6,*)'DBUG: fldname = ',trim(fldname)
       call shr_string_listGetName(rList, nf, fldname, dbrc)
       call ESMF_StateGet(state, itemName=trim(fldname), field=lfield, rc=rc)
-
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU)) then
 
         if (dbug_flag > 2) then
-           call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" not found on state", ESMF_LOGMSG_INFO, rc=dbrc)
+           call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" not found on state", &
+                ESMF_LOGMSG_INFO, rc=dbrc)
         end if
 
       elseif (grid_option == "grid_de") then
@@ -671,14 +672,16 @@ contains
            farray1(n) = array(nf,n)
         enddo
         if (dbug_flag > 2) then
-           write(tmpstr,'(a,3g13.6)') trim(subname)//":"//trim(fldname)//"=",minval(farray1),maxval(farray1),sum(farray1)
+           write(tmpstr,'(a,3g13.6)') trim(subname)//":"//trim(fldname)//"=",&
+                minval(farray1),maxval(farray1),sum(farray1)
            call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
         end if
 
       else
 
          if (dbug_flag > 2) then
-            call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" copy skipped due to grid_option", ESMF_LOGMSG_INFO, rc=dbrc)
+            call ESMF_LogWrite(trim(subname)//": fldname = "//&
+                 trim(fldname)//" copy skipped due to grid_option", ESMF_LOGMSG_INFO, rc=dbrc)
          end if
      endif
 
@@ -691,12 +694,11 @@ contains
   subroutine shr_nuopc_grid_StateToArray(state, array, rList, grid_option, rc)
 
     ! copy state fields to array data
-    use ESMF, only : ESMF_State, ESMF_Field
-    use ESMF, only : ESMF_StateGet, ESMF_FieldGet, ESMF_LogFoundError, ESMF_LogWrite
-    use ESMF, only : ESMF_LOGERR_PASSTHRU, ESMF_SUCCESS, ESMF_LOGMSG_INFO
-    use shr_kind_mod, only : R8=>shr_kind_r8, CS=>shr_kind_CS, IN=>shr_kind_in
-    use shr_string_mod, only : shr_string_listGetName
-    implicit none
+    use ESMF           , only : ESMF_State, ESMF_Field
+    use ESMF           , only : ESMF_StateGet, ESMF_FieldGet, ESMF_LogFoundError, ESMF_LogWrite
+    use ESMF           , only : ESMF_LOGERR_PASSTHRU, ESMF_SUCCESS, ESMF_LOGMSG_INFO
+    use shr_kind_mod   , only : R8=>shr_kind_r8, CS=>shr_kind_CS, IN=>shr_kind_in
+    use shr_string_mod , only : shr_string_listGetName, shr_string_listGetNum
 
     !----- arguments -----
     type(ESMF_State) , intent(in)    :: state
@@ -706,18 +708,18 @@ contains
     integer          , intent(out)   :: rc
 
     !----- local -----
-    integer(IN) :: nflds, lsize, n, nf, DE
-    character(len=CS)  :: fldname
-    type(ESMF_Field)   :: lfield
+    integer(IN)       :: nflds, lsize, n, nf, DE
+    character(len=CS) :: fldname
+    type(ESMF_Field)  :: lfield
     real(R8), pointer :: farray2(:,:)
     real(R8), pointer :: farray1(:)
-    integer :: dbrc
+    integer           :: dbrc
     character(*),parameter :: subName = "(shr_nuopc_grid_StateToArray)"
     !----------------------------------------------------------
 
     rc = ESMF_SUCCESS
 
-    nflds = size(array, dim=1)
+    nflds = shr_string_listGetNum(rList)
     lsize = size(array, dim=2)
 
     do nf = 1,nflds
@@ -776,14 +778,13 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_grid_CreateCoords(gridNew, gridOld, rc)
-    use shr_kind_mod, only : R8=>shr_kind_r8
-    use ESMF, only : ESMF_Grid, ESMF_DistGrid, ESMF_CoordSys_Flag, ESMF_Index_Flag
-    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_GridGet, ESMF_GridAddCoord
-    use ESMF, only : ESMF_GridGetCoord, ESMF_GridAddCoord, ESMF_STAGGERLOC_CENTER
-    use ESMF, only : ESMF_GridCreate, ESMF_SUCCESS, ESMF_STAGGERLOC_CORNER
+    use ESMF                  , only : ESMF_Grid, ESMF_DistGrid, ESMF_CoordSys_Flag, ESMF_Index_Flag
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_GridGet, ESMF_GridAddCoord
+    use ESMF                  , only : ESMF_GridGetCoord, ESMF_GridAddCoord, ESMF_STAGGERLOC_CENTER
+    use ESMF                  , only : ESMF_GridCreate, ESMF_SUCCESS, ESMF_STAGGERLOC_CORNER
+    use shr_kind_mod          , only : R8=>shr_kind_r8
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
 
-    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
-    ! ----------------------------------------------
     type(ESMF_Grid), intent(inout) :: gridNew
     type(ESMF_Grid), intent(inout) :: gridOld
     integer        , intent(out)   :: rc
@@ -793,7 +794,7 @@ contains
     type(ESMF_DistGrid)        :: distgrid
     type(ESMF_CoordSys_Flag)   :: coordSys
     type(ESMF_Index_Flag)      :: indexflag
-    real(R8),pointer :: dataPtr1(:,:), dataPtr2(:,:)
+    real(R8),pointer           :: dataPtr1(:,:), dataPtr2(:,:)
     integer                    :: dimCount
     integer, pointer           :: gridEdgeLWidth(:), gridEdgeUWidth(:)
     character(len=*),parameter :: subname='(shr_nuopc_methods_grid_createcoords)'
@@ -1119,6 +1120,7 @@ contains
 
   subroutine shr_nuopc_grid_CopyItem(gridcomp, gridSrc, gridDst, item, &
        tolerance, compare, invert, rc)
+
     use ESMF, only : ESMF_GridComp, ESMF_Grid, ESMF_GridItem_Flag, ESMF_StaggerLoc
     use ESMF, only : ESMF_GridGetItem, ESMF_GridAddItem
     use ESMF, only : ESMF_DistGrid, ESMF_Array, ESMF_RouteHandle, ESMF_TypeKind_Flag

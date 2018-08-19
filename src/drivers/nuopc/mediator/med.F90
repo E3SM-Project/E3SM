@@ -4,7 +4,7 @@ module MED
   ! Mediator Component.
   !-----------------------------------------------------------------------------
 
-  use med_constants_mod     , only: CX, R8
+  use med_constants_mod     , only: CX, R8, CL
   use med_constants_mod     , only: dbug_flag => med_constants_dbug_flag
   use med_constants_mod     , only: spval_init => med_constants_spval_init
   use med_constants_mod     , only: spval => med_constants_spval
@@ -720,8 +720,9 @@ contains
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only : ESMF_GRIDCOMP, ESMF_CLOCK, ESMF_STATE
     use ESMF                  , only : ESMF_StateIsCreated
-    use med_internalstate_mod , only: InternalState
-    use esmFlds               , only: ncomps, compname
+    use med_internalstate_mod , only : InternalState
+    use med_constants_mod     , only : CL
+    use esmFlds               , only : ncomps, compname
 
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
@@ -1410,10 +1411,10 @@ contains
     integer                            :: cntn1, cntn2
     integer                            :: fieldCount
     character(ESMF_MAXSTR),allocatable :: fieldNameList(:)
-    character(len=128)                 :: value
-    character(len=128), pointer        :: fldnames(:)
-    character(len=128)                 :: cvalue
-    character(len=128)                 :: start_type
+    character(CL)                      :: value
+    character(CL), pointer             :: fldnames(:)
+    character(CL)                      :: cvalue
+    character(CL)                      :: start_type
     logical                            :: read_restart
     logical                            :: LocalDone
     logical,save                       :: atmDone = .false.

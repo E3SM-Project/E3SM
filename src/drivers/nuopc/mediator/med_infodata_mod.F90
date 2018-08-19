@@ -100,17 +100,13 @@ CONTAINS
 
     ! !DESCRIPTION: re-initialize pause-resume depending on the time manager setup
 
-    ! !USES:
-    use seq_timemgr_mod, only : seq_timemgr_pause_active
-
     ! !INPUT/OUTPUT PARAMETERS:
     type(med_infodata_type), intent(INOUT) :: infodata  ! infodata object
     !----------------------------------------------------------
 
+    ! TODO: this must be re-implemented for nuopc
     !| If pause/resume is active, initialize the resume data
-    if (seq_timemgr_pause_active() .and. (.not. associated(infodata%pause_resume))) then
-       allocate(infodata%pause_resume)
-    end if
+    allocate(infodata%pause_resume)
 
   end subroutine med_infodata_init2
 

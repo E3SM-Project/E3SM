@@ -9,15 +9,15 @@ module dshr_nuopc_mod
   implicit none
   public
 
-  type fld_list_type
-    character(len=128) :: stdname
-  end type fld_list_type
-
   public :: fld_list_add
   public :: fld_list_realize
   public :: ModelInitPhase
   public :: ModelSetRunClock
   public :: ModelSetMetaData
+
+  type fld_list_type
+    character(len=128) :: stdname
+  end type fld_list_type
 
   integer     , parameter :: fldsMax = 100
   integer     , parameter :: dbug = 10
