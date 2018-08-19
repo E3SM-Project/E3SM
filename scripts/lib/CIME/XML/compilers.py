@@ -129,10 +129,6 @@ class Compilers(GenericXML):
         if node is not None:
             value = self.text(node)
 
-        if value is None:
-            # if all else fails
-            value = GenericXML.get_value(self, name)
-
         if resolved:
             if value is not None:
                 value = self.get_resolved_value(value)

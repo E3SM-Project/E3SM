@@ -1727,3 +1727,17 @@ def run_bld_cmd_ensure_logging(cmd, arg_logger, from_dir=None):
 
 def get_batch_script_for_job(job):
     return job if "st_archive" in job else "." + job
+
+def string_in_list(_string, _list):
+    """Case insensitive search for string in list
+    returns the matching list value
+    >>> string_in_list("Brack",["bar", "bracK", "foo"])
+    'bracK'
+    >>> string_in_list("foo", ["FFO", "FOO", "foo2", "foo3"])
+    'FOO'
+    >>> string_in_list("foo", ["FFO", "foo2", "foo3"])
+    """
+    for x in _list:
+        if _string.lower() == x.lower():
+            return x
+    return None
