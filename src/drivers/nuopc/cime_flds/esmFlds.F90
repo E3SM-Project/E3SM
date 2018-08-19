@@ -1480,6 +1480,15 @@ contains
     call shr_nuopc_fldList_AddMap(fldListFr(compocn)%flds(n1), compocn, compice,  mapfcopy, 'unset', 'unset')
     call shr_nuopc_fldList_AddMap(fldListFr(compocn)%flds(n1), compocn, compwav,  mapbilnr, 'one'  , 'ocn2wav_smapname')
 
+    longname = 'Fraction of sw penetrating surface layer for diurnal cycle'
+    stdname  = 'Fraction_of_sw_penetrating_surface_layer'
+    units    = '1'
+    call shr_nuopc_fldList_AddMetadata(fldname="So_fswpen", longname=longname, stdname=stdname, units=units)
+    call shr_nuopc_fldList_AddFld(fldListFr(compocn)%flds , 'So_fswpen', fldindex=n1)
+    call shr_nuopc_fldList_AddFld(fldListMed_aoflux_a%flds, 'So_fswpen')
+    call shr_nuopc_fldList_AddFld(fldListMed_aoflux_o%flds, 'So_fswpen')
+    call shr_nuopc_fldList_AddMap(fldListFr(compocn)%flds(n1), compocn, compice,  mapfcopy, 'unset', 'unset')
+
     longname = 'Meridional sea water velocity'
     stdname  = 'northward_sea_water_velocity'
     units    = 'm s-1'
