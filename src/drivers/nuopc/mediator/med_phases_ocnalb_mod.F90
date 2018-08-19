@@ -247,23 +247,6 @@ contains
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Do not call med_phases again for target tod
-    call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_ClockGet( clock, currTime=currTime, rc=rc )
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_TimeGet( currTime, s=tod, rc=rc )
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (first_call) then
-       tod_last = tod
-    else
-       if (tod == tod_last) then
-          write(logunit,*)'Already created ocean albedos for tod= ',tod,' returning' 
-          RETURN
-       end if
-    end if
-
     ! Note that in the mct version the atm was initialized first so
     ! that nextsw_cday could be passed to the other components - this
     ! assumed that atmosphere component was ALWAYS initialized first.
