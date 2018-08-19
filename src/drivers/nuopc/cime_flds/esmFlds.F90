@@ -31,7 +31,6 @@ module esmFlds
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_AddMetaData
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_AddFld
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_AddMap
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Concat
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_chkerr
   use seq_drydep_mod        , only : seq_drydep_init, seq_drydep_readnl, lnd_drydep
   use shr_megan_mod         , only : shr_megan_readnl, shr_megan_mechcomps_n
@@ -50,7 +49,6 @@ module esmFlds
   !----------------------------------------------------------------------------
 
   public :: esmFlds_Init
-  public :: esmFlds_Concat
 
   !-----------------------------------------------
   ! Component and mapping array indices
@@ -2532,7 +2530,7 @@ contains
           call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1), complnd, compatm, mapconsf, 'one', lnd2atm_smapname)
        enddo
     endif
-    call seq_drydep_init( )
+    call seq_drydep_init() ! TODO: remove this when all components call it separately
 
     !-----------------------------------------------------------------------------
     ! Nitrogen Deposition fields
@@ -2560,69 +2558,5 @@ contains
     end if
 
   end subroutine esmFlds_Init
-
-  !================================================================================
-
-  subroutine esmFlds_Concat(logunit, rc)
-
-    !----------------------------------------------------------------------------
-    ! creation of colon delimited field list
-    !----------------------------------------------------------------------------
-
-    ! input/output variables
-    integer, intent(in)    :: logunit
-    integer, intent(inout) :: rc
-
-    ! local variables
-    character(CXX) :: concatFr, concatTo
-    character(len=*), parameter :: subname='(esmFlds_Concat)'
-    !--------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    concatFr = ''; concatTo = ''
-    call shr_nuopc_fldList_Concat(fldListFr(compatm), fldListTo(compatm), concatFr, concatTo, flds_scalar_name)
-    write(logunit, "(A)") subname//': flds_a2x        = ',trim(concatFr)
-    write(logunit, "(A)") '-------------------------------------------------'
-    write(logunit, "(A)") subname//': flds_x2a        = ',trim(concatTo)
-    write(logunit, "(A)") '-------------------------------------------------'
-    concatFr = ''; concatTo = ''
-    call shr_nuopc_fldList_Concat(fldListFr(complnd), fldListTo(complnd), concatFr, concatTo, flds_scalar_name)
-    write(logunit, "(A)") subname//': flds_l2x        = ',trim(concatFr)
-    write(logunit, "(A)") '-------------------------------------------------'
-    write(logunit, "(A)") subname//': flds_x2l        = ',trim(concatTo)
-    write(logunit, "(A)") '-------------------------------------------------'
-    concatFr = ''; concatTo = ''
-    call shr_nuopc_fldList_Concat(fldListFr(compice), fldListTo(compice), concatFr, concatTo, flds_scalar_name)
-    write(logunit, "(A)") subname//': flds_i2x        = ',trim(concatFr)
-    write(logunit, "(A)") '-------------------------------------------------'
-    write(logunit, "(A)") subname//': flds_x2i        = ',trim(concatTo)
-    write(logunit, "(A)") '-------------------------------------------------'
-    concatFr = ''; concatTo = ''
-    call shr_nuopc_fldList_Concat(fldListFr(compocn), fldListTo(compocn), concatFr, concatTo, flds_scalar_name)
-    write(logunit, "(A)") subname//': flds_o2x        = ',trim(concatFr)
-    write(logunit, "(A)") '-------------------------------------------------'
-    write(logunit, "(A)") subname//': flds_x2o        = ',trim(concatTo)
-    write(logunit, "(A)") '-------------------------------------------------'
-    concatFr = ''; concatTo = ''
-    call shr_nuopc_fldList_Concat(fldListFr(compglc), fldListTo(compglc), concatFr, concatTo, flds_scalar_name)
-    write(logunit, "(A)") subname//': flds_g2x        = ',trim(concatFr)
-    write(logunit, "(A)") '-------------------------------------------------'
-    write(logunit, "(A)") subname//': flds_x2g        = ',trim(concatTo)
-    write(logunit, "(A)") '-------------------------------------------------'
-    concatFr = ''; concatTo = ''
-    call shr_nuopc_fldList_Concat(fldListFr(comprof), fldListTo(comprof), concatFr, concatTo, flds_scalar_name)
-    write(logunit, "(A)") subname//': flds_r2x        = ',trim(concatFr)
-    write(logunit, "(A)") '-------------------------------------------------'
-    write(logunit, "(A)") subname//': flds_x2r        = ',trim(concatTo)
-    write(logunit, "(A)") '-------------------------------------------------'
-    concatFr = ''; concatTo = ''
-    call shr_nuopc_fldList_Concat(fldListFr(compwav), fldListTo(compwav), concatFr, concatTo, flds_scalar_name)
-    write(logunit, "(A)") subname//': flds_w2x        = ',trim(concatFr)
-    write(logunit, "(A)") '-------------------------------------------------'
-    write(logunit, "(A)") subname//': flds_x2w        = ',trim(concatTo)
-    write(logunit, "(A)") '-------------------------------------------------'
-
-  end subroutine esmFlds_Concat
 
 end module esmFlds
