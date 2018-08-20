@@ -36,6 +36,7 @@ module dynConsBiogeochemMod
   save
   
   public :: dyn_cnbal_patch
+  public :: dyn_cnbal_column
   !-----------------------------------------------------------------------
 
 contains
@@ -109,9 +110,11 @@ contains
     real(r8), allocatable         :: conv_cflux(:)                 ! pft-level mass loss due to weight shift
     real(r8), allocatable         :: prod10_cflux(:)               ! pft-level mass loss due to weight shift
     real(r8), allocatable         :: prod100_cflux(:)              ! pft-level mass loss due to weight shift
+    real(r8), allocatable         :: crop_product_cflux(:)         ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: conv_nflux(:)                 ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod10_nflux(:)               ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod100_nflux(:)              ! pft-level mass loss due to weight shift
+    real(r8), allocatable         :: crop_product_nflux(:)         ! pft-level mass loss due to weight shift
     real(r8)                      :: t1,t2,wt_new,wt_old
     real(r8)                      :: init_state, change_state, new_state
     real(r8)                      :: tot_leaf, pleaf, pstor, pxfer
@@ -130,6 +133,7 @@ contains
     real(r8), allocatable, target :: conv_pflux(:)                 ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod10_pflux(:)               ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod100_pflux(:)              ! pft-level mass loss due to weight shift
+    real(r8), allocatable         :: crop_product_pflux(:)         ! pft-level mass loss due to weight shift
     real(r8)                      :: leafp_seed
     real(r8)                      :: deadstemp_seed, ppool_seed
 
@@ -142,6 +146,7 @@ contains
     real(r8), allocatable, target :: conv_c13flux(:)               ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod10_c13flux(:)             ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod100_c13flux(:)            ! pft-level mass loss due to weight shift
+    real(r8), allocatable         :: crop_product_c13flux(:)       ! pft-level mass loss due to weight shift
     real(r8)                      :: leafc13_seed, deadstemc13_seed
     !! C14
     real(r8), allocatable         :: dwt_leafc14_seed(:)           ! pft-level mass gain due to seeding of new area
@@ -152,6 +157,7 @@ contains
     real(r8), allocatable, target :: conv_c14flux(:)               ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod10_c14flux(:)             ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod100_c14flux(:)            ! pft-level mass loss due to weight shift
+    real(r8), allocatable         :: crop_product_c14flux(:)       ! pft-level mass loss due to weight shift
     real(r8)                      :: leafc14_seed, deadstemc14_seed
     real(r8) :: froot, croot
     real(r8) :: fr_flab, fr_fcel, fr_flig
@@ -186,9 +192,11 @@ contains
     allocate(conv_cflux               (bounds%begp:bounds%endp), stat=ier)
     allocate(prod10_cflux             (bounds%begp:bounds%endp), stat=ier)
     allocate(prod100_cflux            (bounds%begp:bounds%endp), stat=ier)
+    allocate(crop_product_cflux       (bounds%begp:bounds%endp), stat=ier)
     allocate(conv_nflux               (bounds%begp:bounds%endp), stat=ier)
     allocate(prod10_nflux             (bounds%begp:bounds%endp), stat=ier)
     allocate(prod100_nflux            (bounds%begp:bounds%endp), stat=ier)
+    allocate(crop_product_nflux       (bounds%begp:bounds%endp), stat=ier)
 
     ! Allocate P arrays
     allocate(dwt_leafp_seed           (bounds%begp:bounds%endp), stat=ier)
@@ -200,6 +208,7 @@ contains
     allocate(conv_pflux               (bounds%begp:bounds%endp), stat=ier)
     allocate(prod10_pflux             (bounds%begp:bounds%endp), stat=ier)
     allocate(prod100_pflux            (bounds%begp:bounds%endp), stat=ier)
+    allocate(crop_product_pflux       (bounds%begp:bounds%endp), stat=ier)
 
     if ( use_c13 ) then
        allocate(dwt_leafc13_seed           (bounds%begp:bounds%endp), stat=ier)
@@ -210,6 +219,7 @@ contains
        allocate(conv_c13flux               (bounds%begp:bounds%endp), stat=ier)
        allocate(prod10_c13flux             (bounds%begp:bounds%endp), stat=ier)
        allocate(prod100_c13flux            (bounds%begp:bounds%endp), stat=ier)
+       allocate(crop_product_c13flux       (bounds%begp:bounds%endp), stat=ier)
     endif
     if ( use_c14 ) then
        allocate(dwt_leafc14_seed           (bounds%begp:bounds%endp), stat=ier)
@@ -220,6 +230,7 @@ contains
        allocate(conv_c14flux               (bounds%begp:bounds%endp), stat=ier)
        allocate(prod10_c14flux             (bounds%begp:bounds%endp), stat=ier)
        allocate(prod100_c14flux            (bounds%begp:bounds%endp), stat=ier)
+       allocate(crop_product_c14flux       (bounds%begp:bounds%endp), stat=ier)
     endif
     
     ! Get time step
@@ -236,6 +247,7 @@ contains
        conv_cflux(p)               = 0._r8
        prod10_cflux(p)             = 0._r8
        prod100_cflux(p)            = 0._r8
+       crop_product_cflux(p)       = 0._r8
        
        dwt_leafn_seed(p)           = 0._r8
        dwt_deadstemn_seed(p)       = 0._r8
@@ -246,6 +258,7 @@ contains
        conv_nflux(p)               = 0._r8
        prod10_nflux(p)             = 0._r8
        prod100_nflux(p)            = 0._r8
+       crop_product_nflux(p)       = 0._r8
        
        dwt_leafp_seed(p)           = 0._r8
        dwt_deadstemp_seed(p)       = 0._r8
@@ -256,6 +269,7 @@ contains
        conv_pflux(p)               = 0._r8
        prod10_pflux(p)             = 0._r8
        prod100_pflux(p)            = 0._r8
+       crop_product_pflux(p)       = 0._r8
 
        if ( use_c13 ) then
           dwt_leafc13_seed(p)           = 0._r8
@@ -266,6 +280,7 @@ contains
           conv_c13flux(p)               = 0._r8
           prod10_c13flux(p)             = 0._r8
           prod100_c13flux(p)            = 0._r8
+          crop_product_c13flux(p)       = 0._r8
        endif
        
        if ( use_c14 ) then
@@ -277,6 +292,7 @@ contains
           conv_c14flux(p)               = 0._r8
           prod10_c14flux(p)             = 0._r8
           prod100_c14flux(p)            = 0._r8
+          crop_product_c14flux(p)       = 0._r8
        endif
        
        l = veg_pp%landunit(p)
@@ -337,7 +353,8 @@ contains
          dwt_livecrootc_to_litter,      &
          dwt_deadcrootc_to_litter,      &
          prod10_cflux,                  &
-         prod100_cflux                  &
+         prod100_cflux,                 &
+         crop_product_cflux             &
          )
 
     if (use_c13) then
@@ -354,7 +371,8 @@ contains
             dwt_livecrootc13_to_litter,    &
             dwt_deadcrootc13_to_litter,    &
             prod10_c13flux,                &
-            prod100_c13flux                &
+            prod100_c13flux,               &
+            crop_product_c13flux           &
             )
     endif
 
@@ -372,7 +390,8 @@ contains
             dwt_livecrootc14_to_litter,    &
             dwt_deadcrootc14_to_litter,    &
             prod10_c14flux,                &
-            prod100_c14flux                &
+            prod100_c14flux,               &
+            crop_product_c14flux           &
             )
     endif
 
@@ -390,7 +409,8 @@ contains
          dwt_livecrootn_to_litter,      &
          dwt_deadcrootn_to_litter,      &
          prod10_nflux,                  &
-         prod100_nflux                  &
+         prod100_nflux,                 &
+         crop_product_nflux             &
          )
 
     call ps%DynamicPatchAdjustments(    &
@@ -407,49 +427,126 @@ contains
          dwt_livecrootp_to_litter,      &
          dwt_deadcrootp_to_litter,      &
          prod10_pflux,                  &
-         prod100_pflux                  &
+         prod100_pflux,                 &
+         crop_product_pflux             &
          )
 
     ! calculate column-level seeding fluxes
-    do pi = 1,max_patch_per_col
-       do c = bounds%begc, bounds%endc
-          if ( pi <=  col_pp%npfts(c) ) then
-             p = col_pp%pfti(c) + pi - 1
-             
-             ! C fluxe
-             cf%dwt_seedc_to_leaf_col(c) = cf%dwt_seedc_to_leaf_col(c) + dwt_leafc_seed(p)/dt
-             cf%dwt_seedc_to_deadstem_col(c) = cf%dwt_seedc_to_deadstem_col(c) &
-                  + dwt_deadstemc_seed(p)/dt
+    do p = bounds%begp, bounds%endp
+       g = veg_pp%gridcell(p)
 
-             if ( use_c13 ) then
-                c13_cf%dwt_seedc_to_leaf_col(c) = c13_cf%dwt_seedc_to_leaf_col(c) + dwt_leafc13_seed(p)/dt
-                c13_cf%dwt_seedc_to_deadstem_col(c) = c13_cf%dwt_seedc_to_deadstem_col(c) &
-                     + dwt_deadstemc13_seed(p)/dt
-             endif
-             
-             if ( use_c14 ) then	
-                c14_cf%dwt_seedc_to_leaf_col(c) = c14_cf%dwt_seedc_to_leaf_col(c) + dwt_leafc14_seed(p)/dt
-                c14_cf%dwt_seedc_to_deadstem_col(c) = c14_cf%dwt_seedc_to_deadstem_col(c) &
-                     + dwt_deadstemc14_seed(p)/dt
-             endif
-             
-             ! N fluxes
-             nf%dwt_seedn_to_leaf_col(c) = nf%dwt_seedn_to_leaf_col(c) + dwt_leafn_seed(p)/dt
-             nf%dwt_seedn_to_deadstem_col(c) = nf%dwt_seedn_to_deadstem_col(c) &
-                  + dwt_deadstemn_seed(p)/dt
-             nf%dwt_seedn_to_npool_col(c) = nf%dwt_seedn_to_npool_col(c) &
-                  + dwt_npool_seed(p)/dt
-             ! P fluxes
-             pf%dwt_seedp_to_leaf_col(c) = pf%dwt_seedp_to_leaf_col(c) + dwt_leafp_seed(p)/dt
-             pf%dwt_seedp_to_deadstem_col(c) = pf%dwt_seedp_to_deadstem_col(c) &
-                  + dwt_deadstemp_seed(p)/dt
-             pf%dwt_seedp_to_ppool_col(c) = pf%dwt_seedp_to_ppool_col(c) &
-                  + dwt_ppool_seed(p)/dt
-          end if
-       end do
+       ! C fluxes
+       cf%dwt_seedc_to_leaf_patch(p) = dwt_leafc_seed(p)/dt
+       cf%dwt_seedc_to_leaf_grc(g)   = &
+            cf%dwt_seedc_to_leaf_grc(g) + &
+            cf%dwt_seedc_to_leaf_patch(p)
+
+       cf%dwt_seedc_to_deadstem_patch(p) = dwt_deadstemc_seed(p)/dt
+       cf%dwt_seedc_to_deadstem_grc(g)   = &
+            cf%dwt_seedc_to_deadstem_grc(g) + &
+            cf%dwt_seedc_to_deadstem_patch(p)
+
+       if ( use_c13 ) then
+          c13_cf%dwt_seedc_to_leaf_patch(p) = dwt_leafc_seed(p)/dt
+          c13_cf%dwt_seedc_to_leaf_grc(g)   = &
+               c13_cf%dwt_seedc_to_leaf_grc(g) + &
+               c13_cf%dwt_seedc_to_leaf_patch(p)
+
+          c13_cf%dwt_seedc_to_deadstem_patch(p) = dwt_deadstemc_seed(p)/dt
+          c13_cf%dwt_seedc_to_deadstem_grc(g)   = &
+               c13_cf%dwt_seedc_to_deadstem_grc(g) + &
+               c13_cf%dwt_seedc_to_deadstem_patch(p)
+       endif
+
+       if ( use_c14 ) then
+          c14_cf%dwt_seedc_to_leaf_patch(p) = dwt_leafc_seed(p)/dt
+          c14_cf%dwt_seedc_to_leaf_grc(g)   = &
+               c14_cf%dwt_seedc_to_leaf_grc(g) + &
+               c14_cf%dwt_seedc_to_leaf_patch(p)
+
+          c14_cf%dwt_seedc_to_deadstem_patch(p) = dwt_deadstemc_seed(p)/dt
+          c14_cf%dwt_seedc_to_deadstem_grc(g)   = &
+               c14_cf%dwt_seedc_to_deadstem_grc(g) + &
+               c14_cf%dwt_seedc_to_deadstem_patch(p)
+       endif
+
+       ! N fluxes
+       nf%dwt_seedn_to_leaf_patch(p)   = dwt_leafn_seed(p)/dt
+       nf%dwt_seedn_to_leaf_grc(g)     = &
+            nf%dwt_seedn_to_leaf_grc(g) + &
+            nf%dwt_seedn_to_leaf_patch(p)
+
+       nf%dwt_seedn_to_deadstem_patch(p) = dwt_deadstemn_seed(p)/dt
+       nf%dwt_seedn_to_deadstem_grc(g)   = &
+            nf%dwt_seedn_to_deadstem_grc(g) + &
+            nf%dwt_seedn_to_deadstem_patch(p)
+
+
+       nf%dwt_seedn_to_npool_patch(p) = dwt_npool_seed(p)/dt
+       nf%dwt_seedn_to_npool_grc(g)   = &
+            nf%dwt_seedn_to_npool_grc(g) + &
+            nf%dwt_seedn_to_npool_patch(p)
+
+       ! P fluxes
+       pf%dwt_seedp_to_leaf_patch(p)   = dwt_leafp_seed(p)/dt
+       pf%dwt_seedp_to_leaf_grc(g)     = &
+            pf%dwt_seedp_to_leaf_grc(g) + &
+            pf%dwt_seedp_to_leaf_patch(p)
+
+       pf%dwt_seedp_to_deadstem_patch(p) = dwt_deadstemp_seed(p)/dt
+       pf%dwt_seedp_to_deadstem_grc(g)   = &
+            pf%dwt_seedp_to_deadstem_grc(g) + &
+            pf%dwt_seedp_to_deadstem_patch(p)
+
+
+       pf%dwt_seedp_to_ppool_patch(p) = dwt_npool_seed(p)/dt
+       pf%dwt_seedp_to_ppool_grc(g)   = &
+            pf%dwt_seedp_to_ppool_grc(g) + &
+            pf%dwt_seedp_to_ppool_patch(p)
+
     end do
     
-    
+    ! calculate patch-to-column slash fluxes into litter and CWD pools
+    do p = bounds%begp, bounds%endp
+       c = veg_pp%column(p)
+
+       ! fine and coarse root to litter and CWD slash carbon fluxes
+       cf%dwt_slash_cflux_col(c) =            &
+            cf%dwt_slash_cflux_col(c)       + &
+            dwt_frootc_to_litter(p)     /dt + &
+            dwt_livecrootc_to_litter(p) /dt + &
+            dwt_deadcrootc_to_litter(p) /dt
+
+       if ( use_c13 ) then
+          c13_cf%dwt_slash_cflux_col(c) =          &
+               c13_cf%dwt_slash_cflux_col(c)     + &
+               dwt_frootc13_to_litter(p)     /dt + &
+               dwt_livecrootc13_to_litter(p) /dt + &
+               dwt_deadcrootc13_to_litter(p) /dt
+       endif
+
+       if ( use_c14 ) then
+          c14_cf%dwt_slash_cflux_col(c) =          &
+               c14_cf%dwt_slash_cflux_col(c)     + &
+               dwt_frootc14_to_litter(p)     /dt + &
+               dwt_livecrootc14_to_litter(p) /dt + &
+               dwt_deadcrootc14_to_litter(p) /dt
+       endif
+
+       nf%dwt_slash_nflux_col(c) =            &
+            nf%dwt_slash_nflux_col(c)       + &
+            dwt_frootn_to_litter(p)     /dt + &
+            dwt_livecrootn_to_litter(p) /dt + &
+            dwt_deadcrootn_to_litter(p) /dt
+
+       pf%dwt_slash_pflux_col(c) =            &
+            pf%dwt_slash_pflux_col(c)       + &
+            dwt_frootp_to_litter(p)     /dt + &
+            dwt_livecrootp_to_litter(p) /dt + &
+            dwt_deadcrootp_to_litter(p) /dt
+
+    end do
+
     ! calculate pft-to-column for fluxes into litter and CWD pools
     do j = 1, nlevdecomp
        do pi = 1,max_patch_per_col
@@ -591,6 +688,7 @@ contains
        do c = bounds%begc,bounds%endc
           if (pi <= col_pp%npfts(c)) then
              p = col_pp%pfti(c) + pi - 1
+             g = veg_pp%gridcell(p)
              
              ! column-level fluxes are accumulated as positive fluxes.
              ! column-level C flux updates
@@ -598,16 +696,24 @@ contains
              cf%dwt_prod10c_gain_col(c) = cf%dwt_prod10c_gain_col(c) - prod10_cflux(p)/dt
              cf%dwt_prod100c_gain_col(c) = cf%dwt_prod100c_gain_col(c) - prod100_cflux(p)/dt
 
-             ! These magic constants should be replaced with: nbrdlf_evr_trp_tree and nbrdlf_dcd_trp_tree
-             if(veg_pp%itype(p)==4.or.veg_pp%itype(p)==6)then
-                cf%lf_conv_cflux_col(c) = cf%lf_conv_cflux_col(c) - conv_cflux(p)/dt
-             end if
-             
+             cf%dwt_prod10c_gain_patch(p) = - prod10_cflux(p)/dt
+             cf%dwt_prod10c_gain_grc(g)   = cf%dwt_prod10c_gain_grc(g) + cf%dwt_prod10c_gain_patch(p)
+
+             cf%dwt_prod100c_gain_patch(p) = - prod100_cflux(p)/dt
+             cf%dwt_prod100c_gain_grc(g)   = cf%dwt_prod100c_gain_grc(g) + cf%dwt_prod100c_gain_patch(p)
+
              if ( use_c13 ) then
                 ! C13 column-level flux updates
                 c13_cf%dwt_conv_cflux_col(c) = c13_cf%dwt_conv_cflux_col(c) - conv_c13flux(p)/dt
                 c13_cf%dwt_prod10c_gain_col(c) = c13_cf%dwt_prod10c_gain_col(c) - prod10_c13flux(p)/dt
                 c13_cf%dwt_prod100c_gain_col(c) = c13_cf%dwt_prod100c_gain_col(c) - prod100_c13flux(p)/dt
+
+                c13_cf%dwt_prod10c_gain_patch(p) = - prod10_c13flux(p)/dt
+                c13_cf%dwt_prod10c_gain_grc(g)   = c13_cf%dwt_prod10c_gain_grc(g) + c13_cf%dwt_prod10c_gain_patch(p)
+
+                c13_cf%dwt_prod100c_gain_patch(p) = - prod100_c13flux(p)/dt
+                c13_cf%dwt_prod100c_gain_grc(g)   = c13_cf%dwt_prod100c_gain_grc(g) + c13_cf%dwt_prod100c_gain_patch(p)
+
              endif
              
              if ( use_c14 ) then
@@ -615,6 +721,13 @@ contains
                 c14_cf%dwt_conv_cflux_col(c) = c14_cf%dwt_conv_cflux_col(c) - conv_c14flux(p)/dt
                 c14_cf%dwt_prod10c_gain_col(c) = c14_cf%dwt_prod10c_gain_col(c) - prod10_c14flux(p)/dt
                 c14_cf%dwt_prod100c_gain_col(c) = c14_cf%dwt_prod100c_gain_col(c) - prod100_c14flux(p)/dt
+
+                c14_cf%dwt_prod10c_gain_patch(p) = - prod10_c14flux(p)/dt
+                c14_cf%dwt_prod10c_gain_grc(g)   = c14_cf%dwt_prod10c_gain_grc(g) + c14_cf%dwt_prod10c_gain_patch(p)
+
+                c14_cf%dwt_prod100c_gain_patch(p) = - prod100_c14flux(p)/dt
+                c14_cf%dwt_prod100c_gain_grc(g)   = c14_cf%dwt_prod100c_gain_grc(g) + c14_cf%dwt_prod100c_gain_patch(p)
+
              endif
              
              ! column-level N flux updates
@@ -622,16 +735,68 @@ contains
              nf%dwt_prod10n_gain_col(c) = nf%dwt_prod10n_gain_col(c) - prod10_nflux(p)/dt
              nf%dwt_prod100n_gain_col(c) = nf%dwt_prod100n_gain_col(c) - prod100_nflux(p)/dt
              
+             nf%dwt_prod10n_gain_patch(p) = -prod10_nflux(p)/dt
+             nf%dwt_prod10n_gain_grc(g)   = nf%dwt_prod10n_gain_grc(g) + nf%dwt_prod10n_gain_patch(p)
+
+             nf%dwt_prod100n_gain_patch(p)= -prod100_nflux(p)/dt
+             nf%dwt_prod100n_gain_grc(g)  = nf%dwt_prod100n_gain_grc(g) + nf%dwt_prod100n_gain_patch(p)
+
              ! column-level P flux updates
 
              pf%dwt_conv_pflux_col(c) = pf%dwt_conv_pflux_col(c) - conv_pflux(p)/dt
              pf%dwt_prod10p_gain_col(c) = pf%dwt_prod10p_gain_col(c) - prod10_pflux(p)/dt
              pf%dwt_prod100p_gain_col(c) = pf%dwt_prod100p_gain_col(c) - prod100_pflux(p)/dt
 
+             pf%dwt_prod10p_gain_patch(p) = -prod10_pflux(p)/dt
+             pf%dwt_prod10p_gain_grc(g)   = pf%dwt_prod10p_gain_grc(g) + pf%dwt_prod10p_gain_patch(p)
+
+             pf%dwt_prod100p_gain_patch(p)= -prod100_pflux(p)/dt
+             pf%dwt_prod100p_gain_grc(g)  = pf%dwt_prod100p_gain_grc(g) + pf%dwt_prod100p_gain_patch(p)
+
           end if
        end do
     end do
     
+    do p = bounds%begp, bounds%endp
+       g = veg_pp%gridcell(p)
+
+       ! Note that patch-level fluxes are stored per unit GRIDCELL area - thus, we don't
+       ! need to multiply by the patch's gridcell weight when translating patch-level
+       ! fluxes into gridcell-level fluxes.
+
+       cf%dwt_conv_cflux_patch(p) = -conv_cflux(p)/dt
+       cf%dwt_conv_cflux_grc(g) = &
+            cf%dwt_conv_cflux_grc(g) + &
+            cf%dwt_conv_cflux_patch(p)
+
+       if ( use_c13 ) then
+          ! C13 column-level flux updates
+          c13_cf%dwt_conv_cflux_patch(p) = -conv_c13flux(p)/dt
+          c13_cf%dwt_conv_cflux_grc(g) = &
+               c13_cf%dwt_conv_cflux_grc(g) + &
+               c13_cf%dwt_conv_cflux_patch(p)
+       endif
+
+       if ( use_c14 ) then
+          ! C14 column-level flux updates
+          c14_cf%dwt_conv_cflux_patch(p) = -conv_c14flux(p)/dt
+          c14_cf%dwt_conv_cflux_grc(g) = &
+               c14_cf%dwt_conv_cflux_grc(g) + &
+               c14_cf%dwt_conv_cflux_patch(p)
+       endif
+
+       nf%dwt_conv_nflux_patch(p) = -conv_nflux(p)/dt
+       nf%dwt_conv_nflux_grc(g) = &
+            nf%dwt_conv_nflux_grc(g) + &
+            nf%dwt_conv_nflux_patch(p)
+
+       pf%dwt_conv_pflux_patch(p) = -conv_pflux(p)/dt
+       pf%dwt_conv_pflux_grc(g) = &
+            pf%dwt_conv_pflux_grc(g) + &
+            pf%dwt_conv_pflux_patch(p)
+
+    end do
+
     ! Deallocate pft-level flux arrays
     deallocate(dwt_leafc_seed)
     deallocate(dwt_leafn_seed)
@@ -647,9 +812,11 @@ contains
     deallocate(conv_cflux)
     deallocate(prod10_cflux)
     deallocate(prod100_cflux)
+    deallocate(crop_product_cflux)
     deallocate(conv_nflux)
     deallocate(prod10_nflux)
     deallocate(prod100_nflux)
+    deallocate(crop_product_nflux)
 
     deallocate(dwt_leafp_seed)
     deallocate(dwt_deadstemp_seed)
@@ -660,7 +827,8 @@ contains
     deallocate(conv_pflux)
     deallocate(prod10_pflux)
     deallocate(prod100_pflux)
-             
+    deallocate(crop_product_pflux)
+
     if ( use_c13 ) then
        deallocate(dwt_leafc13_seed)
        deallocate(dwt_deadstemc13_seed)
@@ -670,6 +838,7 @@ contains
        deallocate(conv_c13flux)
        deallocate(prod10_c13flux)
        deallocate(prod100_c13flux)
+       deallocate(crop_product_c13flux)
     endif
              
     if ( use_c14 ) then
@@ -681,6 +850,7 @@ contains
        deallocate(conv_c14flux)
        deallocate(prod10_c14flux)
        deallocate(prod100_c14flux)
+       deallocate(crop_product_c14flux)
     endif
     
    end associate
@@ -944,4 +1114,61 @@ contains
 
  end subroutine PhosphorusFluxVarsInit
 
-end module dynConsBiogeochemMod
+ !-----------------------------------------------------------------------
+ subroutine dyn_cnbal_column( bounds, clump_index, column_state_updater, &
+       carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
+       nitrogenstate_vars, phosphorusstate_vars)
+   !
+   ! !DESCRIPTION:
+   ! Modify column-level state variables to maintain carbon, nitrogen
+   ! and phosphorus balance with dynamic column weights.
+   !
+   ! !USES:
+   use dynColumnStateUpdaterMod, only : column_state_updater_type
+   use dynPriorWeightsMod      , only : prior_weights_type
+   use clm_varctl              , only : use_lch4
+   !
+   ! !ARGUMENTS:
+   type(bounds_type)               , intent(in)    :: bounds
+   integer                         , intent(in)    :: clump_index
+   type(column_state_updater_type) , intent(in)    :: column_state_updater
+   type(carbonstate_type)          , intent(inout) :: carbonstate_vars
+   type(carbonstate_type)          , intent(inout) :: c13_carbonstate_vars
+   type(carbonstate_type)          , intent(inout) :: c14_carbonstate_vars
+   type(nitrogenstate_type)        , intent(inout) :: nitrogenstate_vars
+   type(phosphorusstate_type)      , intent(inout) :: phosphorusstate_vars
+   !
+   ! !LOCAL VARIABLES:
+
+   character(len=*), parameter :: subname = 'dyn_cnbal_col'
+   !-----------------------------------------------------------------------
+
+   associate(&
+         cs     => carbonstate_vars,     &
+         c13_cs => c13_carbonstate_vars, &
+         c14_cs => c14_carbonstate_vars, &
+         ns     => nitrogenstate_vars  , &
+         ps     => phosphorusstate_vars  &
+         )
+
+    call cs%DynamicColumnAdjustments(bounds, clump_index, column_state_updater)
+
+   if (use_c13) then
+      call c13_cs%DynamicColumnAdjustments(bounds, clump_index, column_state_updater)
+   end if
+
+   if (use_c14) then
+      call c14_cs%DynamicColumnAdjustments(bounds, clump_index, column_state_updater)
+   end if
+
+   call ns%DynamicColumnAdjustments(bounds, clump_index, column_state_updater)
+
+   call ps%DynamicColumnAdjustments(bounds, clump_index, column_state_updater)
+
+   ! DynamicColumnAdjustments for CH4 needs to be implemented
+
+ end associate
+
+end subroutine dyn_cnbal_column
+
+ end module dynConsBiogeochemMod
