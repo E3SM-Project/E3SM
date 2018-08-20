@@ -50,7 +50,7 @@ module docn_comp_mod
   logical       :: firstcall = .true.    ! first call logical
 
   character(len=*),parameter :: rpfile = 'rpointer.ocn'
-  integer(IN)   :: dbug = 1              ! debug level (higher is more)
+  integer(IN)   :: dbug = 0              ! debug level (higher is more)
 
   real(R8),parameter :: cpsw    = shr_const_cpsw        ! specific heat of sea h2o ~ J/kg/K
   real(R8),parameter :: rhosw   = shr_const_rhosw       ! density of sea water ~ kg/m^3
@@ -342,7 +342,6 @@ CONTAINS
 
     call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
 
-    write_restart = .false.
     call docn_comp_run(EClock, x2o, o2x, &
          SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, logunit, read_restart, write_restart, &
@@ -353,7 +352,7 @@ CONTAINS
 
     call t_adj_detailf(-2)
 
-    if (dbug > 1 .and. my_task == master_task) then
+    if (dbug > 0 .and. my_task == master_task) then
        do n = 1,lsize
           write(logunit,F06)'n,ofrac = ',mct_aVect_indexRA(ggrid%data,'frac')
        end do
@@ -613,7 +612,7 @@ CONTAINS
     ! Debug output
     !----------------------------------------------------------
 
-    if (dbug > 1 .and. my_task == master_task) then
+    if (dbug > 0 .and. my_task == master_task) then
        do n = 1,lsize
           write(logunit,F01)'import: ymd,tod,n,Foxx_swnet = ', target_ymd, target_tod, n, x2o%rattr(kswnet,n)    
           write(logunit,F01)'import: ymd,tod,n,Foxx_lwup  = ', target_ymd, target_tod, n, x2o%rattr(klwup,n)    

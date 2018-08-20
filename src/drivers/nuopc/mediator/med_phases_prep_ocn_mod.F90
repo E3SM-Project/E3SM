@@ -1,5 +1,6 @@
 module med_phases_prep_ocn_mod
-  use med_constants_mod       , only : dbug_flag=>med_constants_dbug_flag
+
+  use med_constants_mod, only : dbug_flag=>med_constants_dbug_flag
 
   !-----------------------------------------------------------------------------
   ! Carry out fast accumulation for the ocean
@@ -8,28 +9,28 @@ module med_phases_prep_ocn_mod
   implicit none
   private
 
-  character(*)      , parameter :: u_FILE_u  = __FILE__
-
-
   public :: med_phases_prep_ocn_map
   public :: med_phases_prep_ocn_merge
   public :: med_phases_prep_ocn_accum_fast
   public :: med_phases_prep_ocn_accum_avg
+
+  character(*), parameter :: u_FILE_u  = &
+       __FILE__
 
 !-----------------------------------------------------------------------------
 contains
 !-----------------------------------------------------------------------------
 
   subroutine med_phases_prep_ocn_map(gcomp, rc)
-    use ESMF, only : ESMF_GridComp, ESMF_Clock, ESMF_Time
-    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
-    use ESMF, only: ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
-    use ESMF, only: ESMF_FieldBundleGet
-    use med_internalstate_mod   , only : InternalState
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
-    use med_map_mod             , only : med_map_FB_Regrid_Norm
-    use esmFlds                 , only : fldListFr
-    use esmFlds                 , only : compocn, ncomps, compname
+    use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
+    use ESMF                  , only : ESMF_FieldBundleGet
+    use med_internalstate_mod , only : InternalState
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use med_map_mod           , only : med_map_FB_Regrid_Norm
+    use esmFlds               , only : fldListFr
+    use esmFlds               , only : compocn, ncomps, compname
 
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -95,20 +96,20 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_phases_prep_ocn_merge(gcomp, rc)
-    use ESMF, only : ESMF_GridComp, ESMF_FieldBundleGet
-    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_FldChk
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_GetFldPtr
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
 
-    use med_constants_mod, only : R8
-    use med_internalstate_mod   , only : InternalState, mastertask, logunit
-    use med_merge_mod           , only : med_merge_auto
-    use esmFlds                 , only : fldListTo
-    use esmFlds                 , only : compocn, compname, compatm, compice
+    use ESMF                  , only : ESMF_GridComp, ESMF_FieldBundleGet
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
+    use med_constants_mod     , only : R8
+    use med_internalstate_mod , only : InternalState, mastertask, logunit
+    use med_merge_mod         , only : med_merge_auto
+    use esmFlds               , only : fldListTo
+    use esmFlds               , only : compocn, compname, compatm, compice
 
-
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -117,24 +118,23 @@ contains
     type(InternalState)         :: is_local
     integer                     :: n, n1, ncnt
     integer                     :: lsize
-    real(R8), pointer :: dataptr1(:)
-    real(R8), pointer :: ifrac(:), ofrac(:)
-    real(R8), pointer :: ifracr(:), ofracr(:)
-    real(R8), pointer :: avsdr(:), avsdf(:)
-    real(R8), pointer :: anidr(:), anidf(:)
-    real(R8), pointer :: swvdf(:), swndf(:)
-    real(R8), pointer :: swvdr(:), swndr(:)
-    real(R8), pointer :: swpen(:), swnet(:)
-    real(R8)          :: ifrac_scaled, ofrac_scaled
-    real(R8)          :: ifracr_scaled, ofracr_scaled
-    real(R8)          :: frac_sum
-    real(R8)          :: fswabsv, fswabsi
+    real(R8), pointer           :: dataptr1(:)
+    real(R8), pointer           :: ifrac(:), ofrac(:)
+    real(R8), pointer           :: ifracr(:), ofracr(:)
+    real(R8), pointer           :: avsdr(:), avsdf(:)
+    real(R8), pointer           :: anidr(:), anidf(:)
+    real(R8), pointer           :: swvdf(:), swndf(:)
+    real(R8), pointer           :: swvdr(:), swndr(:)
+    real(R8), pointer           :: swpen(:), swnet(:)
+    real(R8)                    :: ifrac_scaled, ofrac_scaled
+    real(R8)                    :: ifracr_scaled, ofracr_scaled
+    real(R8)                    :: frac_sum
+    real(R8)                    :: fswabsv, fswabsi
     character(len=*), parameter :: ice_fraction_name = 'Si_ifrac'
-    character(len=*), parameter :: subname='(med_phases_prep_ocn_merge)'
-    integer :: dbrc
-
+    integer                     :: dbrc
     ! TODO: the calculation needs to be set at run time based on receiving it from the ocean
-    real(R8)            :: flux_epbalfact = 1._R8
+    real(R8)                    :: flux_epbalfact = 1._R8
+    character(len=*), parameter :: subname='(med_phases_prep_ocn_merge)'
     !---------------------------------------
 
     if (dbug_flag > 5) then
@@ -228,14 +228,6 @@ contains
     if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'Foxx_swnet', rc=rc)) then
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet',  swnet, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ifrac' , ifrac, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ofrac' , ofrac, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ifrad' , ifracr, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ofrad' , ofracr, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, 'So_avsdr' , avsdr, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, 'So_anidr' , anidr, rc=rc)
@@ -254,33 +246,43 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        if (is_local%wrap%comp_present(compice)) then
+          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ifrac' , ifrac, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ofrac' , ofrac, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ifrad' , ifracr, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ofrad' , ofracr, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen', swpen, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
 
-       do n = 1,size(ofrac)
-          ifrac_scaled = ifrac(n)
-          ofrac_scaled = ofrac(n)
-          frac_sum = ifrac(n) + ofrac(n)
-          if (frac_sum /= 0._R8) then
-             ifrac_scaled = ifrac(n) / (frac_sum)
-             ofrac_scaled = ofrac(n) / (frac_sum)
-          endif
-          ifracr_scaled = ifracr(n)
-          ofracr_scaled = ofracr(n)
-          frac_sum = ifracr(n) + ofracr(n)
-          if (frac_sum /= 0._R8) then
-             ifracr_scaled = ifracr(n) / (frac_sum)
-             ofracr_scaled = ofracr(n) / (frac_sum)
-          endif
-          fswabsv =  swvdr(n) * (1.0_R8 - avsdr(n)) + swvdf(n) * (1.0_R8 - avsdf(n))
-          fswabsi =  swndr(n) * (1.0_R8 - anidr(n)) + swndf(n) * (1.0_R8  - anidf(n))
+       do n = 1,size(swnet)
+          fswabsv  = swvdr(n) * (1.0_R8 - avsdr(n)) + swvdf(n) * (1.0_R8 - avsdf(n))
+          fswabsi  = swndr(n) * (1.0_R8 - anidr(n)) + swndf(n) * (1.0_R8 - anidf(n))
+          swnet(n) = fswabsv + fswabsi
+
           if (is_local%wrap%comp_present(compice)) then
-             swnet(n) = ofracr_scaled*(fswabsv + fswabsi) + ifrac_scaled*swpen(n)
-          else
-             swnet(n) = ofracr_scaled*(fswabsv + fswabsi)
-             swnet(n) = ofracr_scaled*(fswabsv + fswabsi)
+             ifrac_scaled = ifrac(n)
+             ofrac_scaled = ofrac(n)
+             frac_sum = ifrac(n) + ofrac(n)
+             if (frac_sum /= 0._R8) then
+                ifrac_scaled = ifrac(n) / (frac_sum)
+                ofrac_scaled = ofrac(n) / (frac_sum)
+             endif
+
+             ifracr_scaled = ifracr(n)
+             ofracr_scaled = ofracr(n)
+             frac_sum = ifracr(n) + ofracr(n)
+             if (frac_sum /= 0._R8) then
+                ifracr_scaled = ifracr(n) / (frac_sum)
+                ofracr_scaled = ofracr(n) / (frac_sum)
+             endif
+
+             swnet(n) = ofracr_scaled*swnet(n) + ifrac_scaled*swpen(n)
           end if
+
           ! if (i2o_per_cat) then
           !   Sf_ofrac(n)  = ofrac(n)
           !   Sf_ofracr(n) = ofracr(n)
