@@ -397,7 +397,7 @@ def generate_teststatus(testdir, baseline_dir):
             if not os.path.isdir(baseline_dir):
                 os.makedirs(baseline_dir)
 
-            safe_copy(os.path.join(test_dir, TEST_STATUS_FILENAME), baseline_dir)
+            safe_copy(os.path.join(testdir, TEST_STATUS_FILENAME), baseline_dir)
         except Exception, e:
             logger.warning("Could not copy {} to baselines, {}".format(os.path.join(testdir, TEST_STATUS_FILENAME), str(e)))
 
