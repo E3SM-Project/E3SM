@@ -3,7 +3,7 @@ Functions for actions pertaining to history files.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.test_status import TEST_NO_BASELINES_COMMENT
+from CIME.test_status import TEST_NO_BASELINES_COMMENT, TEST_STATUS_FILENAME
 from CIME.utils import get_current_commit, get_timestamp, get_model, safe_copy
 
 import logging, os, re, stat, filecmp
@@ -386,6 +386,20 @@ def get_extension(model, filepath):
         result = m.group(2)
 
     return result
+
+def generate_teststatus(testdir, baseline_dir):
+    """
+    CESM stores it's TestStatus file in baselines. Do not let exceptions
+    escape from this function.
+    """
+    if get_model() == "cesm":
+        try:
+            if not os.path.isdir(baseline_dir):
+                os.makedirs(baseline_dir)
+
+            safe_copy(os.path.join(test_dir, TEST_STATUS_FILENAME), baseline_dir)
+        except Exception, e:
+            logger.warning("Could not copy {} to baselines, {}".format(os.path.join(testdir, TEST_STATUS_FILENAME), str(e)))
 
 def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
     """
