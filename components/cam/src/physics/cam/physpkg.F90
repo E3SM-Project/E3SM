@@ -21,7 +21,7 @@ module physpkg
        physics_type_alloc, physics_ptend_dealloc,&
        physics_state_alloc, physics_state_dealloc, physics_tend_alloc, physics_tend_dealloc, &
        nvars_prtrb_hist, hist_vars, hist_vars_desc, hist_vars_unit
-  use phys_grid,        only: get_ncols_p, chunks, npchunks,knuhcs, ngcols_p, dyn_to_latlon_gcol_map !BSINGH-added  chunks
+  use phys_grid,        only: get_ncols_p, chunks, npchunks,knuhcs, ngcols, dyn_to_latlon_gcol_map !BSINGH-added  chunks
   use phys_gmean,       only: gmean_mass
   use ppgrid,           only: begchunk, endchunk, pcols, pver, pverp, psubcols
   use constituents,     only: pcnst, cnst_name, cnst_get_ind
@@ -1128,7 +1128,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           rngsw_mstr(1:nsubcolsw,1:pcols,1:pver,1:max_chnks_in_blk,1:npes) = huge(1.0_r8)
           
           if(pergro_mods) then
-             do igcol = 1, ngcols_p                
+             do igcol = 1, ngcols                
                 if (dyn_to_latlon_gcol_map(igcol) .ne. -1) then
 
                    chunkid  = knuhcs(igcol)%chunkid

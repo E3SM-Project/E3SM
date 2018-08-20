@@ -119,8 +119,8 @@ module phys_grid
                                        ! hdim2_d == 1.
 
 ! physics field data structures
-   integer         :: ngcols           ! global column count in physics grid (all)
-   integer, public :: ngcols_p         ! global column count in physics grid 
+   integer, public         :: ngcols           ! global column count in physics grid (all)
+   integer                 :: ngcols_p         ! global column count in physics grid 
                                        ! (without holes)
 
    integer, dimension(:), allocatable, public :: dyn_to_latlon_gcol_map
