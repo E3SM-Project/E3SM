@@ -122,20 +122,20 @@ const_slice (const VT& v, Int i) { return ko::subview(v, i, ko::ALL()); }
 #else
 template <typename VT> KOKKOS_FORCEINLINE_FUNCTION
 typename VT::value_type*
-slice (const VT& v, Int i) { return v.ptr_on_device() + v.dimension_1()*i; }
+slice (const VT& v, Int i) { return v.data() + v.extent_int(1)*i; }
 
 template <typename VT> KOKKOS_FORCEINLINE_FUNCTION
 typename VT::const_value_type*
-const_slice (const VT& v, Int i) { return v.ptr_on_device() + v.dimension_1()*i; }
+const_slice (const VT& v, Int i) { return v.data() + v.extent_int(1)*i; }
 #endif
 
 // Number of slices in a 2D array, where each row is a slice.
 template <typename A2D> KOKKOS_FORCEINLINE_FUNCTION
-Int nslices (const A2D& a) { return static_cast<Int>(a.dimension_0()); }
+Int nslices (const A2D& a) { return static_cast<Int>(a.extent_int(0)); }
 
 // Number of entries in a 2D array's row.
 template <typename A2D> KOKKOS_FORCEINLINE_FUNCTION
-Int szslice (const A2D& a) { return static_cast<Int>(a.dimension_1()); }
+Int szslice (const A2D& a) { return static_cast<Int>(a.extent_int(1)); }
 
 template <typename V, typename CV>
 KOKKOS_INLINE_FUNCTION
@@ -395,23 +395,23 @@ public:
                  RawConstArray& weight) const {
     switch (order) {
     case 4:
-      coord = RawConstVec3s(trisym_order4_coord_, 6, 3);
+      coord = RawConstVec3s(trisym_order4_coord_, 6);
       weight = RawConstArray(trisym_order4_weight_, 6);
       break;
     case 6:
-      coord = RawConstVec3s(tritay_order6_coord_, 11, 3);
+      coord = RawConstVec3s(tritay_order6_coord_, 11);
       weight = RawConstArray(tritay_order6_weight_, 11);
       break;
     case 8:
-      coord = RawConstVec3s(trisym_order8_coord_, 16, 3);
+      coord = RawConstVec3s(trisym_order8_coord_, 16);
       weight = RawConstArray(trisym_order8_weight_, 16);
       break;
     case 12:
-      coord = RawConstVec3s(tritay_order12_coord_, 32, 3);
+      coord = RawConstVec3s(tritay_order12_coord_, 32);
       weight = RawConstArray(tritay_order12_weight_, 32);
       break;
     case 14:
-      coord = RawConstVec3s(trisym_order14_coord_, 46, 3);
+      coord = RawConstVec3s(trisym_order14_coord_, 46);
       weight = RawConstArray(trisym_order14_weight_, 46);
       break;
     default:
@@ -545,8 +545,8 @@ struct SphereGeometry {
     c[1] = a[2]*b[0] - a[0]*b[2];
     c[2] = a[0]*b[1] - a[1]*b[0];
   }
-  template <typename CV> KOKKOS_INLINE_FUNCTION
-  static Real dot (const CV a, const CV b) {
+  template <typename CVA, typename CVB> KOKKOS_INLINE_FUNCTION
+  static Real dot (const CVA a, const CVB b) {
     return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
   }
   template <typename CV> KOKKOS_INLINE_FUNCTION
@@ -571,9 +571,9 @@ struct SphereGeometry {
     y[1] += a*x[1];
     y[2] += a*x[2];
   }
-  template <typename CV, typename V> KOKKOS_INLINE_FUNCTION
-  static void axpbyz (const Real& a, const CV x, const Real& b, const CV y,
-                      V z) {
+  template <typename CVX, typename CVY, typename VZ> KOKKOS_INLINE_FUNCTION
+  static void axpbyz (const Real& a, const CVX x, const Real& b, const CVY y,
+                      VZ z) {
     z[0] = a*x[0] + b*y[0];
     z[1] = a*x[1] + b*y[1];
     z[2] = a*x[2] + b*y[2];
@@ -1307,8 +1307,9 @@ namespace test {
 static constexpr Int max_nvert = 20;
 static constexpr Int max_hits = 25; // Covers at least a 2-halo.
 
-// In practice, we want to form high-quality normals using information about the
-// mesh.
+// Inward-oriented normal. In practice, we want to form high-quality normals
+// using information about the cubed-sphere mesh. This is a low-quality
+// brute-force calculation.
 template <typename geo>
 void fill_normals (sh::Mesh<ko::HostSpace>& m) {
   // Count number of edges.
@@ -1319,7 +1320,7 @@ void fill_normals (sh::Mesh<ko::HostSpace>& m) {
   // Fill.
   Idxs::HostMirror en("en", nslices(m.e), szslice(m.e));
   ko::deep_copy(en, -1);
-  Vec3s::HostMirror nml("nml", ne, 3);
+  Vec3s::HostMirror nml("nml", ne);
   Int ie = 0;
   for (Int ip = 0; ip < nslices(m.e); ++ip)
     for (Int iv = 0; iv < szslice(m.e); ++iv)
@@ -1726,7 +1727,7 @@ inline Int test_sphere_to_ref (const ConstVec3s::HostMirror& p,
 //#include "siqk.hpp"
 namespace siqk {
 
-#ifdef IR_MAIN
+#ifdef SLMM_MAIN
 # define INSTANTIATE_PLANE
 #endif
 #ifdef BUILD_CISL
@@ -2066,17 +2067,17 @@ static Real calc_true_area (
   const ConstVec3s::HostMirror& cp, const ConstIdxs::HostMirror& ce,
   const ConstVec3s::HostMirror& p, const ConstIdxs::HostMirror& e)
 {
-  Vec3s::HostMirror clip_poly("clip_poly", 4, 3), poly("poly", 4, 3),
-    nml("nml", 4, 3);
+  Vec3s::HostMirror clip_poly("clip_poly", 4), poly("poly", 4),
+    nml("nml", 4);
   fill_quad(cp, clip_poly);
   fill_quad(p, poly);
   for (Int i = 0; i < 4; ++i)
     Geo::edge_normal(slice(clip_poly, i), slice(clip_poly, (i+1) % 4),
                      slice(nml, i));
-  Vec3s::HostMirror vo("vo", test::max_nvert, 3);
+  Vec3s::HostMirror vo("vo", test::max_nvert);
   Int no;
   {
-    Vec3s::HostMirror wrk("wrk", test::max_nvert, 3);
+    Vec3s::HostMirror wrk("wrk", test::max_nvert);
     sh::clip_against_poly<Geo>(clip_poly, nml, poly, 4, vo, no, wrk);
   }
   return Geo::calc_area_formula(vo, no);
@@ -2265,21 +2266,14 @@ extern "C" void
 dpotrs_(const char* uplo, const int* n, const int* nrhs, const double* a,
         const int* lda, double* b, const int* ldb, int* info);
 
-namespace csl {
-using siqk::Int;
-using siqk::Real;
-typedef Int Size;
-
-Int get_src_cell(const siqk::sh::Mesh<siqk::ko::HostSpace>& m, const Real* v,
-                 const Int tgt_elem = -1);
-}
-
-namespace ir {
+namespace slmm {
 using siqk::Int;
 using siqk::Real;
 typedef Int Size;
 
 namespace ko = Kokkos;
+
+typedef siqk::sh::Mesh<ko::HostSpace> Mesh;
 
 // A 2D array A can be thought of as having nslices(A) rows and szslice(A)
 // columns. A slice can be obtained by
@@ -2292,7 +2286,7 @@ using siqk::szslice;
 using siqk::slice;
 
 template<typename V> inline Int len (const V& v)
-{ return static_cast<Int>(v.dimension_0()); }
+{ return static_cast<Int>(v.extent_int(0)); }
 
 template<typename T> inline Int len (const std::vector<T>& v)
 { return static_cast<Int>(v.size()); }
@@ -2469,235 +2463,6 @@ void copy_vertices (
   }
 }
 
-struct Advecter {
-  typedef std::shared_ptr<Advecter> Ptr;
-  typedef siqk::sh::Mesh<ko::HostSpace> Mesh;
-
-  struct Alg {
-    enum Enum {
-      jct,             // Cell-integrated Jacobian-combined transport.
-      qos,             // Cell-integrated quadrature-on-sphere transport.
-      csl_gll,         // Intended to mimic original Fortran CSL.
-      csl_gll_subgrid, // Stable np=4 subgrid bilinear interp.
-      csl_gll_exp,     // Stabilized np=4 subgrid reconstruction.
-    };
-    static Enum convert (Int alg) {
-      switch (alg) {
-      case 2: case 29:  return jct;
-      case 3: case 39:  return qos;
-      case 10: case 18: return csl_gll;
-      case 11: case 17: return csl_gll_subgrid;
-      case 12: case 19: return csl_gll_exp;
-      default: slmm_throw_if(true, "transport_alg " << alg << " is invalid.");
-      }
-    }
-    static bool is_cisl (const Enum& alg) { return alg == jct || alg == qos; }
-  };
-
-  Advecter (const Int np, const Int nelem, const Int transport_alg)
-    : alg_(Alg::convert(transport_alg)),
-      np_(np), np2_(np*np), np4_(np2_*np2_),
-      tq_order_(alg_ == Alg::qos ? 14 : 12)
-  {
-    local_mesh_.resize(nelem);
-    local_mesh_tgt_elem_.resize(nelem);
-    if (Alg::is_cisl(alg_))
-      mass_mix_.resize(np4_);
-  }
-
-  Int np  () const { return np_ ; }
-  Int np2 () const { return np2_; }
-  Int np4 () const { return np4_; }
-  Int nelem () const { return local_mesh_.size(); }
-  Int tq_order () const { return tq_order_; }
-  Alg::Enum alg () const { return alg_; }
-  bool is_cisl () const { return Alg::is_cisl(alg_); }
-
-  template <typename Array3D>
-  void init_local_mesh_if_needed (const Int ie, const Array3D& corners,
-                                  const Real* p_inside) {
-    slmm_assert(ie < static_cast<Int>(local_mesh_.size()));
-    if (local_mesh_[ie].p.dimension_0() != 0) return;
-    auto& m = local_mesh_[ie];
-    const Int
-      nd = 3,
-      nvert = corners.dimension_1(),
-      ncell = corners.dimension_2(),
-      N = nvert*ncell;
-    m.p = typename Mesh::RealArray("p", N, nd);
-    m.e = typename Mesh::IntArray("e", ncell, nvert);
-    for (Int ci = 0, k = 0; ci < ncell; ++ci)
-      for (Int vi = 0; vi < nvert; ++vi, ++k) {
-        for (int j = 0; j < nd; ++j)
-          m.p(k,j) = corners(j,vi,ci);
-        m.e(ci,vi) = k;
-      }
-    siqk::test::fill_normals<siqk::SphereGeometry>(m);
-    local_mesh_tgt_elem_[ie] = csl::get_src_cell(m, p_inside);
-    slmm_assert(local_mesh_tgt_elem_[ie] >= 0 &&
-                local_mesh_tgt_elem_[ie] < ncell);
-  }
-
-  // Check that our ref <-> sphere map agrees with Homme's. p_homme is a GLL
-  // point on the sphere. Check that we map it to a GLL ref point.
-  void check_ref2sphere (const Int ie, const Real* p_homme) {
-    const auto& m = local_mesh(ie);
-    const auto& me = local_mesh_tgt_elem(ie);
-    Real ref_coord[2];
-    siqk::sqr::Info info;
-    siqk::sqr::calc_sphere_to_ref(m.p, slice(m.e, me), p_homme,
-                                  ref_coord[0], ref_coord[1], &info);
-    const ir::Basis basis(4, 0);
-    const ir::GLL gll;
-    const Real* x, * wt;
-    gll.get_coef(basis, x, wt);
-    int fnd[2] = {0};
-    for (int i = 0; i < 4; ++i)
-      for (int j = 0; j < 2; ++j)
-        if (std::abs(ref_coord[j] - x[i]) < 1e-12)
-          fnd[j] = 1;
-    if ( ! fnd[0] || ! fnd[1])
-      printf("COMPOSE check_ref2sphere: %1.15e %1.15e %d %d\n",
-             ref_coord[0], ref_coord[1], info.success, info.n_iterations);
-  }
-
-  void init_M_tgt_if_needed () {
-    if ( ! Alg::is_cisl(alg_)) return;
-    if ( ! mass_tgt_.empty()) return;
-
-    siqk::TriangleQuadrature tq;
-    siqk::RawConstVec3s tq_bary;
-    siqk::RawConstArray tq_w;
-    tq.get_coef(tq_order(), tq_bary, tq_w);
-    const Int nq = ir::len(tq_w);
-
-    const ir::Basis basis(np_, 0);
-    ir::GLL gll;
-    Real tgj[ir::GLL::np_max], tgi[ir::GLL::np_max];
-
-    slmm_assert(Alg::is_cisl(alg_));
-    if (alg_ == Alg::jct) {
-      mass_tgt_.resize(np4_);
-      Real* M_tgt = mass_tgt_.data();
-      for (Int i = 0; i < np4_; ++i)
-        M_tgt[i] = 0;
-
-      const Real* const ps = siqk::sqr::get_ref_vertices();
-      for (Int k = 1; k <= 2; ++k) {
-        const Real t_area = siqk::PlaneGeometry::calc_tri_jacobian(
-          ps, ps+2*k, ps+2*(k+1));
-
-        for (Int qp = 0; qp < nq; ++qp) {
-          Real tvo_coord[2];
-          siqk::PlaneGeometry::bary2coord(
-            ps, ps+2*k, ps+2*(k+1), slice(tq_bary, qp), tvo_coord);
-          gll.eval(basis, tvo_coord[0], tgi);
-          gll.eval(basis, tvo_coord[1], tgj);
-
-          const Real d0 = 0.5 * t_area * tq_w[qp];
-          for (Int aj = 0, a_basis_idx = 0; aj < np_; ++aj) {
-            const Real d1 = d0 * tgj[aj];
-            for (Int ai = 0; ai < np_; ++ai, ++a_basis_idx) {
-              Real d2 = d1 * tgi[ai];
-              for (Int b_basis_idx = a_basis_idx; b_basis_idx < np2_; ++b_basis_idx) {
-                const Int bj = b_basis_idx / np_;
-                const Int bi = b_basis_idx % np_;
-                M_tgt[np2_*a_basis_idx + b_basis_idx] += d2 * tgi[bi] *tgj[bj];
-              }
-            }
-          }
-        }
-      }
-
-      int info = ir::dpotrf('L', np2_, M_tgt, np2_);
-      slmm_assert(info == 0);
-    } else {
-      const Int ne = nelem();
-      slmm_assert(ne > 0);
-      const Int sz = np4_ * ne;
-      mass_tgt_.resize(sz);
-      Real* M_tgt = mass_tgt_.data();
-
-      for (Int ie = 0; ie < ne; ++ie) {
-        // Local mesh.
-        const auto& mesh = local_mesh_[ie];
-        // Target cell in this local mesh.
-        const auto ci = local_mesh_tgt_elem_[ie];
-        slmm_assert(ci >= 0 && ci < nslices(mesh.e));
-        const auto cell = slice(mesh.e, ci);
-        // Sphere coordinates of cell corners.
-        Real ps[12];
-        copy_vertices(mesh.p, mesh.e, ci, ps);
-
-        for (Int i = 0; i < np4_; ++i)
-          M_tgt[i] = 0;
-        for (Int k = 1; k <= 2; ++k) {
-          for (Int qp = 0; qp < nq; ++qp) {
-            // Ref -> sphere.
-            Real sphere_coord[3];
-            const Real jac_reftri2sphere = siqk::SphereGeometry::calc_tri_jacobian(
-              ps, ps+3*k, ps+3*(k+1), slice(tq_bary, qp), sphere_coord);
-            // Eval basis functions.
-            Real a, b;
-            siqk::sqr::calc_sphere_to_ref(mesh.p, cell, sphere_coord, a, b);
-            gll.eval(basis, a, tgi);
-            gll.eval(basis, b, tgj);
-            // Integrate.
-            const Real d0 = 0.5 * tq_w[qp] * jac_reftri2sphere;
-            for (Int aj = 0, a_basis_idx = 0; aj < np_; ++aj) {
-              const Real d1 = d0 * tgj[aj];
-              for (Int ai = 0; ai < np_; ++ai, ++a_basis_idx) {
-                Real d2 = d1 * tgi[ai];
-                for (Int b_basis_idx = a_basis_idx; b_basis_idx < np2_; ++b_basis_idx) {
-                  const Int bj = b_basis_idx / np_;
-                  const Int bi = b_basis_idx % np_;
-                  M_tgt[np2_*a_basis_idx + b_basis_idx] += d2 * tgi[bi] *tgj[bj];
-                }
-              }
-            }
-          }
-        }
-
-        int info = ir::dpotrf('L', np2_, M_tgt, np2_);
-        slmm_assert(info == 0);
-
-        M_tgt += np4_;
-      }
-    }
-  }
-
-  const Mesh& local_mesh (const Int ie) const {
-    slmm_assert(ie < static_cast<Int>(local_mesh_.size()));
-    return local_mesh_[ie];
-  };
-
-  Int local_mesh_tgt_elem (const Int ie) const {
-    return local_mesh_tgt_elem_[ie];
-  }
-
-  std::vector<Real>& rhs_buffer (const Int qsize) {
-    rhs_.resize(np2_*qsize);
-    return rhs_;
-  }
-
-  std::vector<Real>& mass_mix_buffer () { return mass_mix_; }
-  const Real* M_tgt (const Int& ie) {
-    slmm_assert(ie >= 0 && ie < nelem());
-    return alg_ == Alg::jct ?
-      mass_tgt_.data() :
-      mass_tgt_.data() + ie*np4_;
-  }
-
-private:
-  const Alg::Enum alg_;
-  const Int np_, np2_, np4_;
-  std::vector<Mesh> local_mesh_;
-  std::vector<Int> local_mesh_tgt_elem_;
-  // For CISL:
-  const Int tq_order_;
-  std::vector<Real> mass_tgt_, mass_mix_, rhs_;
-};
-
 static Int test_gll () {
   Int nerr = 0;
   const Real tol = 1e2*std::numeric_limits<Real>::epsilon();
@@ -2754,7 +2519,7 @@ int unittest () {
   return nerr;
 }
 
-std::string to_string (const Advecter::Mesh& m) {
+std::string to_string (const Mesh& m) {
   std::stringstream ss;
   ss.precision(17);
   ss << "(mesh nnode " << nslices(m.p) << " nelem " << nslices(m.e);
@@ -2766,11 +2531,11 @@ std::string to_string (const Advecter::Mesh& m) {
     for (Int iv = 0; iv < szslice(m.e); ++iv) {
       ss << "\n     (p";
       for (Int d = 0; d < 3; ++d)
-        ss << " " << m.p(iv,m.e(ie,iv));
+        ss << " " << m.p(m.e(ie,iv),d);
       ss << ")";
       ss << "\n     (nml";
       for (Int d = 0; d < 3; ++d)
-        ss << " " << m.nml(iv,m.en(ie,iv));
+        ss << " " << m.nml(m.en(ie,iv),d);
       ss << ")";
     }
     ss << "))";
@@ -2778,9 +2543,7 @@ std::string to_string (const Advecter::Mesh& m) {
   ss << ")";
   return ss.str();
 }
-} // namespace ir
 
-namespace csl {
 static const Real sqrt5 = std::sqrt(5.0);
 static const Real oosqrt5 = 1.0 / sqrt5;
 
@@ -2862,9 +2625,10 @@ void gll_np4_subgrid_exp_eval (const Real& x, Real y[4]) {
     gll_np4_eval(x, y);
 }
 
+// Is v inside, including on, the quad ic?
 inline bool is_inside (const siqk::sh::Mesh<siqk::ko::HostSpace>& m,
                        const Real* v, const Real& atol, const Int& ic) {
-  using ir::slice;
+  using slmm::slice;
   const auto cell = slice(m.e, ic);
   const auto celln = slice(m.en, ic);
   const Int ne = 4;
@@ -2872,7 +2636,7 @@ inline bool is_inside (const siqk::sh::Mesh<siqk::ko::HostSpace>& m,
   for (Int ie = 0; ie < ne; ++ie)
     if (siqk::SphereGeometry::dot_c_amb(slice(m.nml, celln[ie]),
                                         v, slice(m.p, cell[ie]))
-        <= -atol) {
+        < -atol) {
       inside = false;
       break;
     }
@@ -2881,14 +2645,14 @@ inline bool is_inside (const siqk::sh::Mesh<siqk::ko::HostSpace>& m,
 
 int get_src_cell (const siqk::sh::Mesh<siqk::ko::HostSpace>& m, // Local mesh.
                   const Real* v, // 3D Cartesian point.
-                  const Int my_ic) { // Target cell in the local mesh.
-  using ir::len;
+                  const Int my_ic = -1) { // Target cell in the local mesh.
+  using slmm::len;
   const Int nc = len(m.e);
   Real atol = 0;
   for (Int trial = 0; trial < 3; ++trial) {
     if (trial > 0) {
       if (trial == 1) {
-        using ir::slice;
+        using slmm::slice;
         // If !inside in the first sweep, pad each cell. Recall we're operating
         // on the unit sphere, so we don't have to worry about a radius in the
         // following.
@@ -2920,12 +2684,267 @@ int get_src_cell (const siqk::sh::Mesh<siqk::ko::HostSpace>& m, // Local mesh.
   return -1;
 }
 
-Int unittest (const ir::Advecter::Mesh& m, const Int& tgt_elem) {
+namespace nearest_point {
+/* Get external segments in preproc step.
+   Get approximate nearest point in each segment.
+     Project onto plane of segment and normalize.
+     If outside of arc, choose nearest endpoint.
+     Approx distance as cartesian distance.
+   Of the approx dists, take the point associated with smallest.
+ */
+
+template <typename ES = ko::DefaultExecutionSpace>
+struct MeshNearestPointData {
+  typedef ko::View<Int*,ES> Ints;
+  // mesh.p(perimp(k),:) is the k'th vertex in the mesh's perimeter. Similarly,
+  // mesh.nml(perimnml(k),:) is the k'th edge's normal.
+  Ints perimp, perimnml;
+};
+
+template <typename V3a, typename V3b>
+inline Real calc_dist (const V3a& p0, const V3b& p1) {
+  Real len = 0;
+  for (Int d = 0; d < 3; ++d) len += siqk::square(p0[d] - p1[d]);
+  return std::sqrt(len);    
+}
+
+inline Real calc_dist (const Mesh& m, const Int& i0, const Int& i1) {
+  return calc_dist(slice(m.p, i0), slice(m.p, i1));
+}
+
+void find_external_edges (const Mesh& m, std::vector<Int>& external_edges) {
+  const Int ncell = nslices(m.e);
+  const Int nedge = 4*ncell;
+  // Get the minimum edge length to normalize distance.
+  Real min_edge_len = 10;
+  for (Int ic = 0; ic < ncell; ++ic) {
+    const auto cell = slice(m.e, ic);
+    for (Int ie = 0; ie < 4; ++ie)
+      min_edge_len = std::min(min_edge_len,
+                              calc_dist(m, cell[ie], cell[(ie+1)%4]));
+  }
+  // If two edges are sufficiently close, they are interpreted as the same and
+  // so internal. That leaves just the external edges.
+  for (Int ic0 = 0; ic0 < ncell; ++ic0) {
+    const auto cell0 = slice(m.e, ic0);
+    for (Int ie0 = 0; ie0 < 4; ++ie0) {
+      bool fnd_match = false;
+      for (Int ic1 = 0; ic1 < ncell; ++ic1) {
+        if (ic1 == ic0) continue;
+        const auto cell1 = slice(m.e, ic1);
+        for (Int ie1 = 0; ie1 < 4; ++ie1) {
+          const auto edist = 
+            std::min(calc_dist(m, cell0[ie0], cell1[ie1]) +
+                     calc_dist(m, cell0[(ie0+1)%4], cell1[(ie1+1)%4]),
+                     calc_dist(m, cell0[ie0], cell1[(ie1+1)%4]) +
+                     calc_dist(m, cell0[(ie0+1)%4], cell1[ie1]));
+          if (edist < 0.01*min_edge_len) {
+            fnd_match = true;
+            break;
+          }
+        }
+        if (fnd_match) break;
+      }
+      if ( ! fnd_match) external_edges.push_back(4*ic0 + ie0);
+    }
+  }
+  const Int nee = external_edges.size();
+  slmm_throw_if((nslices(m.e) == 9 && nee != 12) ||
+                (nslices(m.e) == 8 && nee != 10),
+                "The local mesh has " << nslices(m.e)
+                << " edges but fill_perim found " << nee
+                << " external edges. Mesh:\n"
+                << to_string(m));
+  // Order edges so the leading point of edge i is the same as the trailing
+  // point of edge (i+1) % nee.
+  for (Int i = 0; i < nee-2; ++i) {
+    const Int ic = external_edges[i] / 4, ie = external_edges[i] % 4;
+    const auto icell = slice(m.e, ic);
+    Real min_dist = 10;
+    Int min_j = -1;
+    for (Int j = i+1; j < nee; ++j) {
+      const Int jc = external_edges[j] / 4, je = external_edges[j] % 4;
+      const auto jcell = slice(m.e, jc);
+      // External edges are all oriented CCW, so the leading point of one
+      // matches the trailing point of the next.
+      const auto d = calc_dist(m, icell[(ie+1)%4], jcell[je]);
+      if (d < min_dist) {
+        min_dist = d;
+        min_j = j;
+      }
+    }
+    if (min_j != i+1)
+      std::swap(external_edges[i+1], external_edges[min_j]);
+  }
+}
+
+void fill_perim (const Mesh& m, MeshNearestPointData<ko::HostSpace>& d) {
+  std::vector<Int> external_edges;
+  find_external_edges(m, external_edges);
+  const Int nee = external_edges.size();
+  d.perimp = MeshNearestPointData<ko::HostSpace>::Ints("perimp", nee);
+  d.perimnml = MeshNearestPointData<ko::HostSpace>::Ints("perimnml", nee);
+  for (Int k = 0; k < nee; ++k) {
+    const auto i = external_edges[k];
+    const auto ic = i / 4, ie = i % 4;
+    d.perimp(k) = m.e(ic, ie);
+    d.perimnml(k) = m.en(ic, ie);
+  }
+}
+
+template <typename V3>
+void calc_approx_nearest_point_on_arc (
+  const V3& p0, const V3& p1, const V3& nml, const Real* point, Real* nearest)
+{
+  // Approximation is to project point onto the plane of the arc, then to
+  // normalize to the arc. If point is on the arc, then nearest = point, as
+  // desired.
+  using geo = siqk::SphereGeometry;
+  const auto dot = geo::dot(point, nml);
+  for (Int d = 0; d < 3; ++d) nearest[d] = point[d] - dot*nml[d];
+  geo::normalize(nearest);
+  // If this initial value for nearest is outside of the arc, then 'nearest' is
+  // set to the nearer of p0 and p1.
+  //   Find the nearest point on line in parameterized coord alpha. alpha is in
+  // [0,1] if 'nearest' is on the arc segment.
+  Real pdiff[3];
+  for (Int d = 0; d < 3; ++d) pdiff[d] = p0[d] - p1[d];
+  Real p1mn[3];
+  for (Int d = 0; d < 3; ++d) p1mn[d] = nearest[d] - p1[d];
+  const Real alpha = geo::dot(p1mn, pdiff) / geo::norm2(pdiff);
+  if      (alpha <= 0) for (Int d = 0; d < 3; ++d) nearest[d] = p1[d];
+  else if (alpha >= 1) for (Int d = 0; d < 3; ++d) nearest[d] = p0[d];
+}
+
+void calc (const Mesh& m, const MeshNearestPointData<ko::HostSpace>& d,
+           Real* v) {
+  using geo = siqk::SphereGeometry;
+  const Int nedge = d.perimp.size();
+  const auto canpoa = [&] (const Int& ie, Real* vn) {
+    calc_approx_nearest_point_on_arc(slice(m.p, d.perimp(ie)),
+                                     slice(m.p, d.perimp((ie+1) % nedge)),
+                                     slice(m.nml, d.perimnml(ie)),
+                                     v, vn);
+  };
+  Real min_dist2 = 100;
+  Int min_ie = -1;
+  for (Int ie = 0; ie < nedge; ++ie) {
+    Real vn[3];
+    canpoa(ie, vn);
+    Real d[3];
+    for (Int i = 0; i < 3; ++i) d[i] = vn[i] - v[i];
+    const Real dist2 = geo::norm2(d);
+    if (dist2 < min_dist2) {
+      min_ie = ie;
+      min_dist2 = dist2;
+    }
+  }
+  {
+    Real vn[3];
+    canpoa(min_ie, vn);
+    for (Int d = 0; d < 3; ++d) v[d] = vn[d];
+  }
+}
+
+Int test_canpoa () {
   Int nerr = 0;
+  using geo = siqk::SphereGeometry;
+  Real p0[] = {-0.5,0.5,0}, p1[] = {0.1,0.8,0}, nml[] = {0,0,-1};
+  geo::normalize(p0);
+  geo::normalize(p1);
+  const Real points[][3] = {{-100,1,7}, {0,1,-7}, {11,-1,7}};
+  Real correct[3][3];
+  geo::copy(correct[0], p0);
+  correct[1][0] = 0; correct[1][1] = 1; correct[1][2] = 0;
+  geo::copy(correct[2], p1);
+  for (Int i = 0; i < 3; ++i) {
+    Real nr[3];
+    nearest_point::calc_approx_nearest_point_on_arc(p0, p1, nml, points[i], nr);
+    Real d[3];
+    geo::axpbyz(1, nr, -1, correct[i], d);
+    if (std::sqrt(geo::norm2(d)) > 10*std::numeric_limits<Real>::epsilon())
+      ++nerr;
+  }
+  return nerr;
+}
 
-  using ir::slice;
-  using ir::len;
+Int test_calc (const Mesh& m, const Int& tgt_ic,
+               const MeshNearestPointData<ko::HostSpace>& md)
+{
+  Int nerr = 0;
+  // If a point is on the perim, then calc should return it as the nearest
+  // point.
+  const Int np_perim = len(md.perimp);
+  for (Int k = 0; k < np_perim; ++k) {
+    const auto p0 = slice(m.p, md.perimp(k));
+    const auto p1 = slice(m.p, md.perimp((k+1) % np_perim));
+    const auto L = calc_dist(p0, p1);
+    Real v[3];
+    for (Int d = 0; d < 3; ++d) v[d] = p0[d];
+    calc(m, md, v);
+    if (calc_dist(p0, v) > std::numeric_limits<Real>::epsilon() / L) ++nerr;
+    Real on[3];
+    siqk::SphereGeometry::combine(p0, p1, 0.4, on);
+    siqk::SphereGeometry::normalize(on);
+    for (Int d = 0; d < 3; ++d) v[d] = on[d];
+    calc(m, md, v);
+    if (calc_dist(on, v) > 1e2*std::numeric_limits<Real>::epsilon() / L) ++nerr;
+  }
+  return nerr;
+}
 
+Int test_fill_perim (const Mesh& m, const Int& tgt_ic,
+                     const MeshNearestPointData<ko::HostSpace>& md) {
+  using geo = siqk::SphereGeometry;
+  Int nerr = 0;
+  const auto tgt_cell = slice(m.e, tgt_ic);
+  const Int np_perim = len(md.perimp);
+  { // Check that no target-cell point is on the perim.
+    Int on = 0;
+    for (Int ip = 0; ip < 4; ++ip) {
+      const auto p = slice(m.p, tgt_cell[ip]);
+      for (Int k = 0; k < np_perim; ++k) {
+        const auto perim = slice(m.p, md.perimp(k));
+        Real diff = 0;
+        for (Int i = 0; i < 3; ++i) diff += std::abs(p[i] - perim[i]);
+        if (diff == 0) ++on;
+      }
+    }
+    if (on > 0) ++nerr;
+  }
+  { // Check that adjacent perimeter points agree with the edge's normal.
+    for (Int k = 0; k < np_perim; ++k) {
+      const auto p0 = slice(m.p, md.perimp(k));
+      const auto p1 = slice(m.p, md.perimp((k+1) % np_perim));
+      const auto nml = slice(m.nml, md.perimnml(k));
+      const auto dot = geo::dot_c_amb(nml, p1, p0);
+      const auto L = calc_dist(p0, p1);
+      // Normal orthogonal to edge?
+      if (std::abs(dot) > 1e2*std::numeric_limits<Real>::epsilon()/L) ++nerr;
+      // Oriented inwards?
+      Real outward[3];
+      geo::cross(p1, p0, outward);
+      if (geo::dot(nml, outward) >= 0) ++nerr;
+    }
+  }
+  return nerr;
+}
+} // namespace nearest_point
+
+typedef nearest_point::MeshNearestPointData<ko::HostSpace> MeshNearestPointData;
+
+void init_nearest_point_data (const Mesh& m, MeshNearestPointData& d) {
+  nearest_point::fill_perim(m, d);
+}
+
+int get_nearest_point (const Mesh& m, const MeshNearestPointData& d,
+                       Real* v, const Int my_ic) {
+  nearest_point::calc(m, d, v);
+  return get_src_cell(m, v, my_ic);
+}
+
+Int unittest (const slmm::Mesh& m, const Int& tgt_elem) {
+  Int nerr = 0;
   const Int nc = len(m.e);
   for (Int ic = 0; ic < nc; ++ic) {
     const auto cell = slice(m.e, ic);
@@ -2945,14 +2964,269 @@ Int unittest (const ir::Advecter::Mesh& m, const Int& tgt_elem) {
         }
       }
   }
-
+  nerr += nearest_point::test_canpoa();
+  {
+    MeshNearestPointData d;
+    init_nearest_point_data(m, d);
+    nerr += nearest_point::test_fill_perim(m, tgt_elem, d);
+    nerr += nearest_point::test_calc(m, tgt_elem, d);
+  }
   return nerr;
 }
-} // namespace csl
 
-#ifdef IR_MAIN
+struct Advecter {
+  typedef std::shared_ptr<Advecter> Ptr;
+
+  struct Alg {
+    enum Enum {
+      jct,             // Cell-integrated Jacobian-combined transport.
+      qos,             // Cell-integrated quadrature-on-sphere transport.
+      csl_gll,         // Intended to mimic original Fortran CSL.
+      csl_gll_subgrid, // Stable np=4 subgrid bilinear interp.
+      csl_gll_exp,     // Stabilized np=4 subgrid reconstruction.
+    };
+    static Enum convert (Int alg) {
+      switch (alg) {
+      case 2: case 29:  return jct;
+      case 3: case 39:  return qos;
+      case 10: case 18: return csl_gll;
+      case 11: case 17: return csl_gll_subgrid;
+      case 12: case 19: return csl_gll_exp;
+      default: slmm_throw_if(true, "transport_alg " << alg << " is invalid.");
+      }
+    }
+    static bool is_cisl (const Enum& alg) { return alg == jct || alg == qos; }
+  };
+
+  Advecter (const Int np, const Int nelem, const Int transport_alg,
+            const Int nearest_point_permitted_lev_bdy)
+    : alg_(Alg::convert(transport_alg)),
+      np_(np), np2_(np*np), np4_(np2_*np2_),
+      tq_order_(alg_ == Alg::qos ? 14 : 12),
+      nearest_point_permitted_lev_bdy_(nearest_point_permitted_lev_bdy)
+  {
+    local_mesh_.resize(nelem);
+    local_mesh_tgt_elem_.resize(nelem);
+    if (Alg::is_cisl(alg_))
+      mass_mix_.resize(np4_);
+    if (nearest_point_permitted_lev_bdy_ >= 0)
+      local_mesh_nearest_point_data_.resize(nelem);
+  }
+
+  Int np  () const { return np_ ; }
+  Int np2 () const { return np2_; }
+  Int np4 () const { return np4_; }
+  Int nelem () const { return local_mesh_.size(); }
+  Int tq_order () const { return tq_order_; }
+  Alg::Enum alg () const { return alg_; }
+  bool is_cisl () const { return Alg::is_cisl(alg_); }
+
+  template <typename Array3D>
+  void init_local_mesh_if_needed (const Int ie, const Array3D& corners,
+                                  const Real* p_inside) {
+    slmm_assert(ie < static_cast<Int>(local_mesh_.size()));
+    if (local_mesh_[ie].p.extent_int(0) != 0) return;
+    auto& m = local_mesh_[ie];
+    const Int
+      nd = 3,
+      nvert = corners.extent_int(1),
+      ncell = corners.extent_int(2),
+      N = nvert*ncell;
+    m.p = typename Mesh::RealArray("p", N);
+    m.e = typename Mesh::IntArray("e", ncell, nvert);
+    for (Int ci = 0, k = 0; ci < ncell; ++ci)
+      for (Int vi = 0; vi < nvert; ++vi, ++k) {
+        for (int j = 0; j < nd; ++j)
+          m.p(k,j) = corners(j,vi,ci);
+        m.e(ci,vi) = k;
+      }
+    siqk::test::fill_normals<siqk::SphereGeometry>(m);
+    local_mesh_tgt_elem_[ie] = slmm::get_src_cell(m, p_inside);
+    slmm_assert(local_mesh_tgt_elem_[ie] >= 0 &&
+                local_mesh_tgt_elem_[ie] < ncell);
+    if (nearest_point_permitted_lev_bdy_ >= 0)
+      init_nearest_point_data(local_mesh_[ie],
+                              local_mesh_nearest_point_data_[ie]);
+  }
+
+  // Check that our ref <-> sphere map agrees with Homme's. p_homme is a GLL
+  // point on the sphere. Check that we map it to a GLL ref point.
+  void check_ref2sphere (const Int ie, const Real* p_homme) {
+    const auto& m = local_mesh(ie);
+    const auto& me = local_mesh_tgt_elem(ie);
+    Real ref_coord[2];
+    siqk::sqr::Info info;
+    siqk::sqr::calc_sphere_to_ref(m.p, slice(m.e, me), p_homme,
+                                  ref_coord[0], ref_coord[1], &info);
+    const slmm::Basis basis(4, 0);
+    const slmm::GLL gll;
+    const Real* x, * wt;
+    gll.get_coef(basis, x, wt);
+    int fnd[2] = {0};
+    for (int i = 0; i < 4; ++i)
+      for (int j = 0; j < 2; ++j)
+        if (std::abs(ref_coord[j] - x[i]) < 1e-12)
+          fnd[j] = 1;
+    if ( ! fnd[0] || ! fnd[1])
+      printf("COMPOSE check_ref2sphere: %1.15e %1.15e %d %d\n",
+             ref_coord[0], ref_coord[1], info.success, info.n_iterations);
+  }
+
+  void init_M_tgt_if_needed();
+
+  const Mesh& local_mesh (const Int ie) const {
+    slmm_assert(ie < static_cast<Int>(local_mesh_.size()));
+    return local_mesh_[ie];
+  };
+
+  Int local_mesh_tgt_elem (const Int ie) const {
+    return local_mesh_tgt_elem_[ie];
+  }
+
+  const MeshNearestPointData& nearest_point_data (const Int ie) const {
+    slmm_assert(ie < static_cast<Int>(local_mesh_nearest_point_data_.size()));
+    return local_mesh_nearest_point_data_[ie];
+  }
+
+  std::vector<Real>& rhs_buffer (const Int qsize) {
+    rhs_.resize(np2_*qsize);
+    return rhs_;
+  }
+
+  std::vector<Real>& mass_mix_buffer () { return mass_mix_; }
+  const Real* M_tgt (const Int& ie) {
+    slmm_assert(ie >= 0 && ie < nelem());
+    return alg_ == Alg::jct ?
+      mass_tgt_.data() :
+      mass_tgt_.data() + ie*np4_;
+  }
+
+  bool nearest_point_permitted (const Int& lev) {
+    return lev <= nearest_point_permitted_lev_bdy_;
+  }
+
+private:
+  const Alg::Enum alg_;
+  const Int np_, np2_, np4_;
+  std::vector<Mesh> local_mesh_;
+  std::vector<Int> local_mesh_tgt_elem_;
+  // For CISL:
+  const Int tq_order_;
+  std::vector<Real> mass_tgt_, mass_mix_, rhs_;
+  // For recovery from get_src_cell failure:
+  Int nearest_point_permitted_lev_bdy_;
+  std::vector<MeshNearestPointData> local_mesh_nearest_point_data_;
+};
+
+void Advecter::init_M_tgt_if_needed ()  {
+  if ( ! Alg::is_cisl(alg_)) return;
+  if ( ! mass_tgt_.empty()) return;
+
+  siqk::TriangleQuadrature tq;
+  siqk::RawConstVec3s tq_bary;
+  siqk::RawConstArray tq_w;
+  tq.get_coef(tq_order(), tq_bary, tq_w);
+  const Int nq = slmm::len(tq_w);
+
+  const slmm::Basis basis(np_, 0);
+  slmm::GLL gll;
+  Real tgj[slmm::GLL::np_max], tgi[slmm::GLL::np_max];
+
+  slmm_assert(Alg::is_cisl(alg_));
+  if (alg_ == Alg::jct) {
+    mass_tgt_.resize(np4_);
+    Real* M_tgt = mass_tgt_.data();
+    for (Int i = 0; i < np4_; ++i)
+      M_tgt[i] = 0;
+
+    const Real* const ps = siqk::sqr::get_ref_vertices();
+    for (Int k = 1; k <= 2; ++k) {
+      const Real t_area = siqk::PlaneGeometry::calc_tri_jacobian(
+        ps, ps+2*k, ps+2*(k+1));
+
+      for (Int qp = 0; qp < nq; ++qp) {
+        Real tvo_coord[2];
+        siqk::PlaneGeometry::bary2coord(
+          ps, ps+2*k, ps+2*(k+1), slice(tq_bary, qp), tvo_coord);
+        gll.eval(basis, tvo_coord[0], tgi);
+        gll.eval(basis, tvo_coord[1], tgj);
+
+        const Real d0 = 0.5 * t_area * tq_w[qp];
+        for (Int aj = 0, a_basis_idx = 0; aj < np_; ++aj) {
+          const Real d1 = d0 * tgj[aj];
+          for (Int ai = 0; ai < np_; ++ai, ++a_basis_idx) {
+            Real d2 = d1 * tgi[ai];
+            for (Int b_basis_idx = a_basis_idx; b_basis_idx < np2_; ++b_basis_idx) {
+              const Int bj = b_basis_idx / np_;
+              const Int bi = b_basis_idx % np_;
+              M_tgt[np2_*a_basis_idx + b_basis_idx] += d2 * tgi[bi] *tgj[bj];
+            }
+          }
+        }
+      }
+    }
+
+    int info = slmm::dpotrf('L', np2_, M_tgt, np2_);
+    slmm_assert(info == 0);
+  } else {
+    const Int ne = nelem();
+    slmm_assert(ne > 0);
+    const Int sz = np4_ * ne;
+    mass_tgt_.resize(sz);
+    Real* M_tgt = mass_tgt_.data();
+
+    for (Int ie = 0; ie < ne; ++ie) {
+      // Local mesh.
+      const auto& mesh = local_mesh_[ie];
+      // Target cell in this local mesh.
+      const auto ci = local_mesh_tgt_elem_[ie];
+      slmm_assert(ci >= 0 && ci < nslices(mesh.e));
+      const auto cell = slice(mesh.e, ci);
+      // Sphere coordinates of cell corners.
+      Real ps[12];
+      copy_vertices(mesh.p, mesh.e, ci, ps);
+
+      for (Int i = 0; i < np4_; ++i)
+        M_tgt[i] = 0;
+      for (Int k = 1; k <= 2; ++k) {
+        for (Int qp = 0; qp < nq; ++qp) {
+          // Ref -> sphere.
+          Real sphere_coord[3];
+          const Real jac_reftri2sphere = siqk::SphereGeometry::calc_tri_jacobian(
+            ps, ps+3*k, ps+3*(k+1), slice(tq_bary, qp), sphere_coord);
+          // Eval basis functions.
+          Real a, b;
+          siqk::sqr::calc_sphere_to_ref(mesh.p, cell, sphere_coord, a, b);
+          gll.eval(basis, a, tgi);
+          gll.eval(basis, b, tgj);
+          // Integrate.
+          const Real d0 = 0.5 * tq_w[qp] * jac_reftri2sphere;
+          for (Int aj = 0, a_basis_idx = 0; aj < np_; ++aj) {
+            const Real d1 = d0 * tgj[aj];
+            for (Int ai = 0; ai < np_; ++ai, ++a_basis_idx) {
+              Real d2 = d1 * tgi[ai];
+              for (Int b_basis_idx = a_basis_idx; b_basis_idx < np2_; ++b_basis_idx) {
+                const Int bj = b_basis_idx / np_;
+                const Int bi = b_basis_idx % np_;
+                M_tgt[np2_*a_basis_idx + b_basis_idx] += d2 * tgi[bi] *tgj[bj];
+              }
+            }
+          }
+        }
+      }
+
+      int info = slmm::dpotrf('L', np2_, M_tgt, np2_);
+      slmm_assert(info == 0);
+
+      M_tgt += np4_;
+    }
+  }
+}
+} // namespace slmm
+
+#ifdef SLMM_MAIN
 /*
-  mpicxx -O3 -g -DIR_MAIN -Wall -pedantic -fopenmp -std=c++11 -I/home/ambradl/lib/kokkos/cpu/include slmm.cpp -L/home/ambradl/lib/kokkos/cpu/lib -lkokkos -ldl -llapack -lblas; if [ $? == 0 ]; then OMP_PROC_BIND=false OMP_NUM_THREADS=2 mpirun -np 14 ./a.out; fi
+  mpicxx -O3 -g -DSLMM_MAIN -Wall -pedantic -fopenmp -std=c++11 -I/home/ambradl/lib/kokkos/cpu/include slmm.cpp -L/home/ambradl/lib/kokkos/cpu/lib -lkokkos -ldl -llapack -lblas; if [ $? == 0 ]; then OMP_PROC_BIND=false OMP_NUM_THREADS=2 mpirun -np 14 ./a.out; fi
  */
 int main (int argc, char** argv) {
   int ret = 0;
@@ -2962,17 +3236,17 @@ int main (int argc, char** argv) {
 #ifdef BUILD_CISL
     nerr += siqk::unittest();
 #endif
-    nerr += ir::unittest();
+    nerr += slmm::unittest();
     std::cerr << (nerr ? "FAIL" : "PASS") << "ED\n";
   } catch (const std::exception& e) {
     std::cerr << e.what();
   }
-  Kokkos::finalize_all();
+  Kokkos::finalize();
   return ret;
 }
 #endif
 
-#ifndef IR_MAIN
+#ifndef SLMM_MAIN
 # ifdef HAVE_CONFIG_H
 #  include "config.h.c"
 # endif
@@ -2984,8 +3258,8 @@ int main (int argc, char** argv) {
 #endif
 
 namespace homme {
-typedef ir::Int Int;
-typedef ir::Real Real;
+typedef slmm::Int Int;
+typedef slmm::Real Real;
 
 namespace ko = Kokkos;
 
@@ -3028,10 +3302,12 @@ void study (const Int elem_global_id, const Cartesian3D* corners,
   std::cout << ss.str();
 }
 
-static ir::Advecter::Ptr g_advecter;
+static slmm::Advecter::Ptr g_advecter;
 
-void slmm_init (const Int np, const Int nelemd, const Int transport_alg) {
-  g_advecter = std::make_shared<ir::Advecter>(np, nelemd, transport_alg);
+void slmm_init (const Int np, const Int nelemd, const Int transport_alg,
+                const Int sl_nearest_point_lev) {
+  g_advecter = std::make_shared<slmm::Advecter>(np, nelemd, transport_alg,
+                                                sl_nearest_point_lev);
 }
 
 #ifdef BUILD_CISL
@@ -3047,7 +3323,7 @@ void slmm_project_np4 (
   const Real* rho_tgt_r, const Int tl_np1, Real* q_r, Real* q_min_r, Real* q_max_r)
 {
   slmm_assert(g_advecter);
-  using ir::slice;
+  using slmm::slice;
 
   static constexpr Int max_num_vertices = 4;
   // Convex quad-quad intersection yields <= 8 intersection points.
@@ -3076,21 +3352,21 @@ void slmm_project_np4 (
   IR_ALIGN(vi_buf[3*max_num_vertices]);
   IR_ALIGN(vo_buf[3*max_num_intersections]);
   IR_ALIGN(wrk_buf[4*max_num_intersections]);
-  IR_ALIGN(sgj[ir::GLL::np_max]);
-  IR_ALIGN(sgi[ir::GLL::np_max]);
-  IR_ALIGN(tgj[ir::GLL::np_max]);
-  IR_ALIGN(tgi[ir::GLL::np_max]);
+  IR_ALIGN(sgj[slmm::GLL::np_max]);
+  IR_ALIGN(sgi[slmm::GLL::np_max]);
+  IR_ALIGN(tgj[slmm::GLL::np_max]);
+  IR_ALIGN(tgi[slmm::GLL::np_max]);
   IR_ALIGN(svo_coord[2]);
   IR_ALIGN(tvo_coord[2]);
 
   const Int np2 = np*np;
-  const ir::Basis basis(np, 0);
-  const ir::GLL gll;
+  const slmm::Basis basis(np, 0);
+  const slmm::GLL gll;
   siqk::TriangleQuadrature tq;
   siqk::RawConstVec3s tq_bary;
   siqk::RawConstArray tq_w;
   tq.get_coef(g_advecter->tq_order(), tq_bary, tq_w);
-  const Int nq = ir::len(tq_w);
+  const Int nq = slmm::len(tq_w);
 
   for (Int i = 0, n = qsize*np2; i < n; ++i) rhs_r[i] = 0;
   FA3<Real> rhs(rhs_r, np, np, qsize);
@@ -3100,11 +3376,11 @@ void slmm_project_np4 (
   const auto alg = g_advecter->alg();
   for (Int sci = 0; sci < nnc; ++sci) { // For each source cell:
     // Intersect.
-    const siqk::RawVec3s vi(vi_buf, max_num_vertices, 3);
-    siqk::RawVec3s vo(vo_buf, max_num_intersections, 3);
+    const siqk::RawVec3s vi(vi_buf, max_num_vertices);
+    siqk::RawVec3s vo(vo_buf, max_num_intersections);
     Int no;
     {
-      siqk::RawVec3s wrk(wrk_buf, max_num_intersections, 3);
+      siqk::RawVec3s wrk(wrk_buf, max_num_intersections);
       static const Int crnr[][2] = {{0, 0}, {np-1, 0}, {np-1, np-1}, {0, np-1}};
       for (int i = 0; i < max_num_vertices; ++i)
         siqk::SphereGeometry::copy(
@@ -3141,7 +3417,7 @@ void slmm_project_np4 (
 
     for (Int i = 0; i < my_np4; ++i)
       M_mix[i] = 0;
-    if (alg == ir::Advecter::Alg::jct) {
+    if (alg == slmm::Advecter::Alg::jct) {
       // Get overlap element vertices in ref elements.
       Real* const tvo = wrk_buf;
       Real* const svo = tvo + 2*no;
@@ -3164,12 +3440,12 @@ void slmm_project_np4 (
         for (Int qp = 0; qp < nq; ++qp) { // quad point
           siqk::PlaneGeometry::bary2coord(tvo, tvo+2*ktri, tvo+2*(ktri+1),
                                           slice(tq_bary, qp), tvo_coord);
-          csl::gll_np4_eval(tvo_coord[0], tgi);
-          csl::gll_np4_eval(tvo_coord[1], tgj);
+          slmm::gll_np4_eval(tvo_coord[0], tgi);
+          slmm::gll_np4_eval(tvo_coord[1], tgj);
           siqk::PlaneGeometry::bary2coord(svo, svo+2*ktri, svo+2*(ktri+1),
                                           slice(tq_bary, qp), svo_coord);
-          csl::gll_np4_eval(svo_coord[0], sgi);
-          csl::gll_np4_eval(svo_coord[1], sgj);
+          slmm::gll_np4_eval(svo_coord[0], sgi);
+          slmm::gll_np4_eval(svo_coord[1], sgj);
           {
             Int os = 0;
             const Real d0 = 0.5 * s_area * tq_w[qp];
@@ -3253,11 +3529,11 @@ void slmm_project_np4 (
   }
 
   // Solve M_tgt Qj_tgt = b.
-  int info = ir::dpotrs('L', np2, qsize, M_tgt, np2, rhs_r, np2);
+  int info = slmm::dpotrs('L', np2, qsize, M_tgt, np2, rhs_r, np2);
   slmm_assert(info == 0);
 
   // Load q.
-  if (alg == ir::Advecter::Alg::jct) {
+  if (alg == slmm::Advecter::Alg::jct) {
     for (Int tq = 0; tq < qsize; ++tq)
       for (Int j = 0; j < np; ++j)
         for (Int i = 0; i < np; ++i)
@@ -3314,7 +3590,7 @@ void slmm_project (
     return;
   }
 
-  using ir::slice;
+  using slmm::slice;
 
   static constexpr Int max_num_vertices = 4;
   // Convex quad-quad intersection yields <= 8 intersection points.
@@ -3337,13 +3613,13 @@ void slmm_project (
     q_max(q_max_r, np, np, nlev, qsize, ie0+1);
 
   const Int np2 = np*np, np4 = np2*np2;
-  const ir::Basis basis(np, 0);
-  const ir::GLL gll;
+  const slmm::Basis basis(np, 0);
+  const slmm::GLL gll;
   siqk::TriangleQuadrature tq;
   siqk::RawConstVec3s tq_bary;
   siqk::RawConstArray tq_w;
   tq.get_coef(g_advecter->tq_order(), tq_bary, tq_w);
-  const Int nq = ir::len(tq_w);
+  const Int nq = slmm::len(tq_w);
 
   auto& rhs_r = g_advecter->rhs_buffer(qsize);
   for (Int i = 0, n = qsize*np2; i < n; ++i) rhs_r[i] = 0;
@@ -3356,12 +3632,12 @@ void slmm_project (
   for (Int sci = 0; sci < nnc; ++sci) { // For each source cell:
     // Intersect.
     Real buf[3*max_num_vertices + 3*max_num_intersections + 4*max_num_intersections];
-    const siqk::RawVec3s vi(buf, max_num_vertices, 3);
-    siqk::RawVec3s vo(buf + 3*max_num_vertices, max_num_intersections, 3);
+    const siqk::RawVec3s vi(buf, max_num_vertices);
+    siqk::RawVec3s vo(buf + 3*max_num_vertices, max_num_intersections);
     Real* const wrkbuf = vo.data() + 3*max_num_intersections;
     Int no;
     {
-      siqk::RawVec3s wrk(wrkbuf, max_num_intersections, 3);
+      siqk::RawVec3s wrk(wrkbuf, max_num_intersections);
       static const Int crnr[][2] = {{0, 0}, {np-1, 0}, {np-1, np-1}, {0, np-1}};
       for (int i = 0; i < max_num_vertices; ++i)
         siqk::SphereGeometry::copy(
@@ -3416,8 +3692,8 @@ void slmm_project (
       const Real s_area = siqk::PlaneGeometry::calc_tri_jacobian(
         svo, svo+2*ktri, svo+2*(ktri+1));
       Real
-        sgj[ir::GLL::np_max], sgi[ir::GLL::np_max],
-        tgj[ir::GLL::np_max], tgi[ir::GLL::np_max],
+        sgj[slmm::GLL::np_max], sgi[slmm::GLL::np_max],
+        tgj[slmm::GLL::np_max], tgi[slmm::GLL::np_max],
         svo_coord[2], tvo_coord[2];
 
       for (Int qp = 0; qp < nq; ++qp) { // quad point
@@ -3464,7 +3740,7 @@ void slmm_project (
   }
 
   // Solve M_tgt Qj_tgt = b.
-  int info = ir::dpotrs('L', np2, qsize, M_tgt, np2, rhs.data(), np2);
+  int info = slmm::dpotrs('L', np2, qsize, M_tgt, np2, rhs.data(), np2);
   slmm_assert(info == 0);
 
   // Load q with Qj_tgt / (jac_tgt rho_tgt).
@@ -3502,7 +3778,7 @@ void slmm_csl (
   Real* q_min_r, Real* q_max_r)   // q_{min,max}(1:np, 1:np, lev, 1:qsize, ie-nets+1)
 {
   static_assert(np == 4, "SLMM CSL is supported for np 4 only.");
-  using ir::slice;
+  using slmm::slice;
 
   const Int np2 = np*np;
   const Int ie0 = ie - nets;
@@ -3517,8 +3793,8 @@ void slmm_csl (
     q_min(q_min_r, np, np, nlev, qsize, ie0+1),
     q_max(q_max_r, np, np, nlev, qsize, ie0+1);
 
-  const ir::Basis basis(np, 0);
-  const ir::GLL gll;
+  const slmm::Basis basis(np, 0);
+  const slmm::GLL gll;
 
   const auto& m = g_advecter->local_mesh(ie);
   for (Int tvi = 0; tvi < np2; ++tvi) {
@@ -3527,7 +3803,7 @@ void slmm_csl (
 
     // Determine which cell the departure point is in.
     const Real* dep_point = dep_points.data() + 3*tvi;
-    const Int sci = csl::get_src_cell(m, dep_point,
+    const Int sci = slmm::get_src_cell(m, dep_point,
                                       g_advecter->local_mesh_tgt_elem(ie));
     slmm_throw_if(sci == -1, "Departure point is outside of halo.");
 
@@ -3539,17 +3815,17 @@ void slmm_csl (
     // Interpolate.
     Real rx[4], ry[4];
     switch (alg) {
-    case ir::Advecter::Alg::csl_gll:
-      csl::gll_np4_eval(ref_coord[0], rx);
-      csl::gll_np4_eval(ref_coord[1], ry);
+    case slmm::Advecter::Alg::csl_gll:
+      slmm::gll_np4_eval(ref_coord[0], rx);
+      slmm::gll_np4_eval(ref_coord[1], ry);
       break;
-    case ir::Advecter::Alg::csl_gll_subgrid:
-      csl::gll_np4_subgrid_eval(ref_coord[0], rx);
-      csl::gll_np4_subgrid_eval(ref_coord[1], ry);
+    case slmm::Advecter::Alg::csl_gll_subgrid:
+      slmm::gll_np4_subgrid_eval(ref_coord[0], rx);
+      slmm::gll_np4_subgrid_eval(ref_coord[1], ry);
       break;
-    case ir::Advecter::Alg::csl_gll_exp:
-      csl::gll_np4_subgrid_exp_eval(ref_coord[0], rx);
-      csl::gll_np4_subgrid_exp_eval(ref_coord[1], ry);
+    case slmm::Advecter::Alg::csl_gll_exp:
+      slmm::gll_np4_subgrid_exp_eval(ref_coord[0], rx);
+      slmm::gll_np4_subgrid_exp_eval(ref_coord[1], ry);
       break;
     default:
       assert(0);
@@ -4097,7 +4373,7 @@ void set_idx2_maps (CslMpi& cm, const Rank2Gids& rank2rmtgids,
         lor2idx[n.rank_idx].at(n.lid_on_rank);
     }
     ed.src = CslMpi::IntArray2D("src", cm.nlev, cm.np2);
-    ed.q_extrema = CslMpi::Array<Real**[2]>("q_extrema", cm.qsize, cm.nlev, 2);
+    ed.q_extrema = CslMpi::Array<Real**[2]>("q_extrema", cm.qsize, cm.nlev);
   }
 }
 
@@ -4291,7 +4567,7 @@ void recv (CslMpi& cm) {
 
 // Find where each departure point is.
 void analyze_dep_points (CslMpi& cm, const Int& nets, const Int& nete,
-                         const FA4<const Real>& dep_points) {
+                         const FA4<Real>& dep_points) {
   const auto myrank = cm.p->rank();
   const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
   cm.bla.zero();
@@ -4307,18 +4583,24 @@ void analyze_dep_points (CslMpi& cm, const Int& nets, const Int& nete,
     ed.own.clear();
     for (Int lev = 0; lev < cm.nlev; ++lev)
       for (Int k = 0; k < cm.np2; ++k) {
-        Int sci = csl::get_src_cell(mesh, &dep_points(0,k,lev,tci), tgt_idx);
+        Int sci = slmm::get_src_cell(mesh, &dep_points(0,k,lev,tci), tgt_idx);
+        if (sci == -1 && g_advecter->nearest_point_permitted(lev))
+          sci = slmm::get_nearest_point(
+            mesh, g_advecter->nearest_point_data(tci),
+            &dep_points(0,k,lev,tci), tgt_idx);
         if (sci == -1) {
           std::stringstream ss;
           ss.precision(17);
           const auto* v = &dep_points(0,k,lev,tci);
           ss << "Departure point is outside of halo:\n"
-             << " elem LID " << tci
+             << "  nearest point permitted: "
+             << g_advecter->nearest_point_permitted(lev)
+             << "\n  elem LID " << tci
              << " elem GID " << ed.me->gid
              << " (lev, k) (" << lev << ", " << k << ")"
-             << " v " << v[0] << " " << v[1] << " " << v[2] << "\n"
-             << " tgt_idx " << tgt_idx
-             << " local mesh: " << ir::to_string(mesh) << "\n";
+             << " v " << v[0] << " " << v[1] << " " << v[2]
+             << "\n  tgt_idx " << tgt_idx
+             << " local mesh:\n  " << slmm::to_string(mesh) << "\n";
           slmm_throw_if(sci == -1, ss.str());
         }
         ed.src(lev,k) = sci;
@@ -4509,23 +4791,23 @@ void calc_q (const CslMpi& cm, const Int& src_lid, const Int& lev,
   const auto my_idx = g_advecter->local_mesh_tgt_elem(src_lid);
 
   Real ref_coord[2];
-  siqk::sqr::calc_sphere_to_ref(m.p, ir::slice(m.e, my_idx), dep_point,
+  siqk::sqr::calc_sphere_to_ref(m.p, slmm::slice(m.e, my_idx), dep_point,
                                 ref_coord[0], ref_coord[1]);
 
   // Interpolate.
   Real rx[4], ry[4];
   switch (g_advecter->alg()) {
-  case ir::Advecter::Alg::csl_gll:
-    csl::gll_np4_eval(ref_coord[0], rx);
-    csl::gll_np4_eval(ref_coord[1], ry);
+  case slmm::Advecter::Alg::csl_gll:
+    slmm::gll_np4_eval(ref_coord[0], rx);
+    slmm::gll_np4_eval(ref_coord[1], ry);
     break;
-  case ir::Advecter::Alg::csl_gll_subgrid:
-    csl::gll_np4_subgrid_eval(ref_coord[0], rx);
-    csl::gll_np4_subgrid_eval(ref_coord[1], ry);
+  case slmm::Advecter::Alg::csl_gll_subgrid:
+    slmm::gll_np4_subgrid_eval(ref_coord[0], rx);
+    slmm::gll_np4_subgrid_eval(ref_coord[1], ry);
     break;
-  case ir::Advecter::Alg::csl_gll_exp:
-    csl::gll_np4_subgrid_exp_eval(ref_coord[0], rx);
-    csl::gll_np4_subgrid_exp_eval(ref_coord[1], ry);
+  case slmm::Advecter::Alg::csl_gll_exp:
+    slmm::gll_np4_subgrid_exp_eval(ref_coord[0], rx);
+    slmm::gll_np4_subgrid_exp_eval(ref_coord[1], ry);
     break;
   default:
     slmm_assert(0);
@@ -4657,17 +4939,21 @@ void copy_q (CslMpi& cm, const Int& nets,
   }
 }
 
+/* dep_points is const in principle, but if lev <=
+   semi_lagrange_nearest_point_lev, a departure point may be altered if the
+   winds take it outside of the comm halo.
+ */
 template <int np>
 void step (
   CslMpi& cm, const Int nets, const Int nete,
-  const Cartesian3D* dep_points_r, // dep_points(1:3, 1:np, 1:np)
-  Real* q_min_r, Real* q_max_r)    // q_{min,max}(1:np, 1:np, lev, 1:qsize, ie-nets+1)
+  Cartesian3D* dep_points_r,    // dep_points(1:3, 1:np, 1:np)
+  Real* q_min_r, Real* q_max_r) // q_{min,max}(1:np, 1:np, lev, 1:qsize, ie-nets+1)
 {
   static_assert(np == 4, "SLMM CSL with special MPI is supported for np 4 only.");
   slmm_assert(cm.np == 4);
 
-  const FA4<const Real>
-    dep_points(reinterpret_cast<const Real*>(dep_points_r),
+  const FA4<Real>
+    dep_points(reinterpret_cast<Real*>(dep_points_r),
                3, cm.np2, cm.nlev, cm.nelemd);
   const Int nelem = nete - nets + 1;
   const FA4<Real>
@@ -4719,10 +5005,10 @@ int slmm_unittest () {
   {
     ne = 0;
     for (int i = 0; i < homme::g_advecter->nelem(); ++i)
-      ne += csl::unittest(homme::g_advecter->local_mesh(i),
-                          homme::g_advecter->local_mesh_tgt_elem(i));
+      ne += slmm::unittest(homme::g_advecter->local_mesh(i),
+                           homme::g_advecter->local_mesh_tgt_elem(i));
     if (ne)
-      fprintf(stderr, "slmm_unittest: csl::unittest returned %d\n", ne);
+      fprintf(stderr, "slmm_unittest: slmm::unittest returned %d\n", ne);
     nerr += ne;
   }
   return nerr;
@@ -4754,10 +5040,11 @@ extern "C" {
 void slmm_init_impl_ (
   const homme::Int* fcomm, homme::Int* transport_alg, homme::Int* np,
   homme::Int* nlev, homme::Int* qsize, homme::Int* qsized, homme::Int* nelemd,
-  homme::Int** nbr_id_rank, homme::Int** nirptr)
+  homme::Int** nbr_id_rank, homme::Int** nirptr,
+  homme::Int* sl_nearest_point_lev)
 {
   auto e = get_options();
-  homme::slmm_init(*np, *nelemd, *transport_alg);
+  homme::slmm_init(*np, *nelemd, *transport_alg, *sl_nearest_point_lev - 1);
   if (e.sl_mpi && homme::g_advecter->is_cisl())
     e.sl_mpi = 0;
   if (e.sl_mpi) {

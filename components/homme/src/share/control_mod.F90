@@ -34,6 +34,10 @@ module control_mod
   ! latter are 'active' tracers, in contrast to 'passive' tracers that directly
   ! couple only to the physics.
   logical, public  :: semi_lagrange_hv_q_all = .false.
+  ! If >= 1, then the SL algorithm may choose a nearby point inside the element
+  ! halo available to it if the actual point is outside the halo. This is done
+  ! in levels <= this parameter.
+  integer, public :: semi_lagrange_nearest_point_lev = 0
   ! Leftover for transport_alg = 1
   logical, public  :: use_semi_lagrange_transport_local_conservation  = .false.
 

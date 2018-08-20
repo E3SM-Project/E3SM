@@ -206,7 +206,8 @@ program prim_main
 #endif
   endif
 
-  if (transport_alg == 18 .or. transport_alg == 19 .or. transport_alg == 29) then
+  if ((transport_alg >= 17 .and. transport_alg <= 19) .or. &
+       transport_alg == 29 .or. transport_alg == 39) then
      nEndStep = -1
      call compose_test(par, hvcoord, dom_mt, elem)
   end if

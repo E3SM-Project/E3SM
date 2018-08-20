@@ -19,9 +19,9 @@ module compose_mod
      end subroutine cedr_init_impl
 
      subroutine slmm_init_impl(comm, transport_alg, np, nlev, qsize, qsize_d, &
-          nelemd, nbr_id_rank, nirptr)
+          nelemd, nbr_id_rank, nirptr, sl_nearest_point_lev)
        integer, intent(in) :: comm, transport_alg, np, nlev, qsize, qsize_d, &
-            nelemd, nbr_id_rank(:), nirptr(:)
+            nelemd, nbr_id_rank(:), nirptr(:), sl_nearest_point_lev
      end subroutine slmm_init_impl
 
      subroutine cedr_set_ie2gci(ie, gci)
@@ -139,7 +139,10 @@ module compose_mod
        use dimensions_mod, only : np, nlev, nelemd, qsize
        use coordinate_systems_mod, only : cartesian3D_t
        integer, intent(in) :: nets, nete
-       type(cartesian3D_t), intent(in) :: dep_points(np,np,nlev,nelemd)
+       ! dep_points is const in principle, but if lev <=
+       ! semi_lagrange_nearest_point_lev, a departure point may be altered if
+       ! the winds take it outside of the comm halo.
+       type(cartesian3D_t), intent(inout) :: dep_points(np,np,nlev,nelemd)
        real(kind=real_kind), intent(in) :: &
             minq(np,np,nlev,qsize,nets:nete), maxq(np,np,nlev,qsize,nets:nete)
        integer, intent(out) :: info
@@ -157,7 +160,7 @@ contains
     use dimensions_mod, only : np, nlev, qsize, qsize_d
     use element_mod, only : element_t
     use gridgraph_mod, only : GridVertex_t
-    use control_mod, only : semi_lagrange_cdr_alg, transport_alg
+    use control_mod, only : semi_lagrange_cdr_alg, transport_alg, semi_lagrange_nearest_point_lev
     integer, intent(in) :: comm
     type (element_t), intent(in) :: elem(:)
     type (GridVertex_t), intent(in), target :: GridVertex(:)
@@ -199,7 +202,7 @@ contains
        end do
        nirptr(nelemd+1) = k - 1
        call slmm_init_impl(comm, transport_alg, np, nlev, qsize, qsize_d, &
-            nelemd, nbr_id_rank, nirptr)
+            nelemd, nbr_id_rank, nirptr, semi_lagrange_nearest_point_lev)
        deallocate(nbr_id_rank, nirptr)
     end if
   end subroutine compose_init
