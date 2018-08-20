@@ -64,12 +64,6 @@
 ! warm rain autoconversion/accretion option only (iparam = 1)
  real, private, dimension(16) :: dnu
 
-! lookup table values for rain shape parameter mu_r
- real, private, dimension(150) :: mu_r_table
-
-! lookup table values for rain number- and mass-weighted fallspeeds and ventilation parameters
- real, private, dimension(300,10) :: vn_table,vm_table,revap_table
-
  ! physical and mathematical constants
  real, private  :: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,bimm,aimm,rin,mi0,nccnst,  &
                    eci,eri,bcn,cpw,e0,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
@@ -79,12 +73,17 @@
                    rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
                    clbfact_dep
 
+! lookup table values for rain shape parameter mu_r
+ real, private, dimension(150) :: mu_r_table
+
+! lookup table values for rain number- and mass-weighted fallspeeds and ventilation parameters
+ real, private, dimension(300,10) :: vn_table,vm_table,revap_table
+
  contains
 
 !==================================================================================================!
 
  SUBROUTINE p3_init(lookup_file_dir,nCat)
-
 !------------------------------------------------------------------------------------------!
 ! This subroutine initializes all physical constants and parameters needed by the P3       !
 ! scheme, including reading in two lookup table files and creating a third.                !
@@ -93,6 +92,19 @@
 
   implicit none
 
+! Passed arguments:
+ character*(*), intent(in)    :: lookup_file_dir                !directory of the lookup tables
+ integer,       intent(in)    :: nCat                           !number of free ice categories
+
+ call p3_init_a(lookup_file_dir, nCat)
+ call p3_init_b()
+
+ print*, '   P3_INIT DONE.'
+ print*
+
+ END SUBROUTINE p3_init
+
+ SUBROUTINE p3_init_a(lookup_file_dir,nCat)
 ! Passed arguments:
  character*(*), intent(in)    :: lookup_file_dir                !directory of the lookup tables
  integer,       intent(in)    :: nCat                           !number of free ice categories
@@ -344,6 +356,34 @@
 
  endif
 
+END SUBROUTINE p3_init_a
+
+subroutine p3_get_tables(mu_r_user, revap_user, vn_user, vm_user)
+  ! This can be called instead of p3_init_b.
+  real, dimension(150), intent(out) :: mu_r_user
+  real, dimension(300,10), intent(out) :: vn_user, vm_user, revap_user
+  mu_r_user(:) = mu_r_table(:)
+  revap_user(:,:) = revap_table(:,:)
+  vn_user(:,:) = vn_table(:,:)
+  vm_user(:,:) = vm_table(:,:)
+end subroutine p3_get_tables
+
+subroutine p3_set_tables(mu_r_user, revap_user, vn_user, vm_user)
+  ! This can be called instead of p3_init_b.
+  real, dimension(150), intent(in) :: mu_r_user
+  real, dimension(300,10), intent(in) :: vn_user, vm_user, revap_user
+  mu_r_table(:) = mu_r_user(:)
+  revap_table(:,:) = revap_user(:,:)
+  vn_table(:,:) = vn_user(:,:)
+  vm_table(:,:) = vm_user(:,:)
+end subroutine p3_set_tables
+
+SUBROUTINE p3_init_b()
+ implicit none
+ integer                      :: i,j,k,ii,jj,kk,jjj,jjj2,jjjj,jjjj2
+ real                         :: lamr,mu_r,lamold,dum,initlamr,dm,dum1,dum2,dum3,dum4,dum5,  &
+                                 dum6,dd,amg,vt,dia,vn,vm
+
 !------------------------------------------------------------------------------------------!
 
 ! Generate lookup table for rain shape parameter mu_r
@@ -458,12 +498,7 @@
 
  enddo mu_r_loop
 
-!.......................................................................
-
- print*, '   P3_INIT DONE.'
- print*
-
-END SUBROUTINE P3_INIT
+END SUBROUTINE p3_init_b
 
 
 !==================================================================================================!

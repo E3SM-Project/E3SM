@@ -6,7 +6,7 @@
 namespace {
 
 TEST_CASE("Shoc", "stub") {
-  int val = Scream::Shoc::shoc_stub();
+  int val = scream::shoc::shoc_stub();
   REQUIRE(val == 42);
 }
 

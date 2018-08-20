@@ -1,12 +1,20 @@
+add_executable(p3_tests
+  ../../util/scream_catch_main.cpp
+  p3_tests.cpp)
+add_executable(p3_run_and_cmp
+  p3_run_and_cmp.cpp)
 
-set(P3_TEST_SRCS
-  p3_tests.cpp
-)
+add_custom_target(p3_baseline
+  COMMAND $<TARGET_FILE:p3_run_and_cmp> -g p3_run_and_cmp.baseline)
 
-add_executable(p3_tests ${P3_TEST_SRCS})
-
-target_include_directories(p3_tests PUBLIC ${CATCH_INCL_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..)
-
-target_link_libraries(p3_tests p3)
+foreach (exe p3_tests p3_run_and_cmp)
+  target_include_directories(${exe} PUBLIC ${CATCH_INCL_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..)
+  target_link_libraries(${exe} p3)
+  set_target_properties(${exe} PROPERTIES LINK_FLAGS ${SCREAM_LINK_FLAGS})
+  target_link_libraries(${exe} scream_util ${SCREAM_LIBRARIES})
+endforeach ()
 
 add_test(run_p3_tests p3_tests)
+configure_file(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v2.8.2 p3_lookup_table_1.dat-v2.8.2 COPYONLY)
+
+add_test(p3_regression p3_run_and_cmp p3_run_and_cmp.baseline)

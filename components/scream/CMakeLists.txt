@@ -1,16 +1,60 @@
-cmake_minimum_required(VERSION 2.8.11)
-project(SCREAM CXX)
+cmake_minimum_required(VERSION 3.3)
+cmake_policy(SET CMP0057 NEW)
 
-include(CTest)
-
-set(CMAKE_BUILD_TYPE RELEASE CACHE STRING "Select build type.")
-
-set(CATCH_INCL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/extern/catch2/include)
+project(SCREAM CXX Fortran)
+set (CMAKE_CXX_STANDARD 11)
 
 enable_testing()
 
+function (prc var)
+  message ("${var}: ${${var}}")
+endfunction ()
+
+include(CTest)
+
+set(SCREAM_DOUBLE_PRECISION FALSE CACHE LOGICAL "Set to double precision (default True)")
+set(SCREAM_ENABLE_FPE FALSE CACHE LOGICAL "Enable floating point error exception")
+
+set(CATCH_INCL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/extern/catch2/include)
+
+if (Kokkos_DIR)
+  include (${Kokkos_DIR}/lib/cmake/Kokkos/kokkos_generated_settings.cmake)
+  set (Kokkos_INCLUDE_DIR ${Kokkos_DIR}/include)
+  set (Kokkos_LIBRARY_DIR ${Kokkos_DIR}/lib)
+  set (Kokkos_LINK_FLAGS ${KOKKOS_LINK_FLAGS})
+else ()
+  message (FATAL_ERROR "SCREAM requires Kokkos_DIR, the base directory of the Kokkos installation.")
+endif ()
+
+set (SCREAM_COMPILE_FLAGS ${Kokkos_LINK_FLAGS})
+set (SCREAM_LINK_FLAGS "-L${Kokkos_LIBRARY_DIR} ${KOKKOS_LINK_FLAGS}")
+set (SCREAM_INCLUDES ${Kokkos_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/util)
+set (SCREAM_LIBRARIES ${KOKKOS_LIBS})
+
+set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${SCREAM_COMPILE_FLAGS} -Wall -cpp")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SCREAM_COMPILE_FLAGS} -Wall")
+
+prc(SCREAM_COMPILE_FLAGS)
+prc(SCREAM_INCLUDES)
+prc(SCREAM_LINK_FLAGS)
+prc(SCREAM_LIBRARIES)
+
+if (${SCREAM_DOUBLE_PRECISION})
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fdefault-real-8")
+  add_definitions(-DSCREAM_DOUBLE_PRECISION)
+endif()
+if (${SCREAM_ENABLE_FPE})
+  add_definitions(-DSCREAM_FPE)
+endif()
+
+set (SCREAM_F90_MODULES ${CMAKE_BINARY_DIR}/modules)
+set (SCREAM_DATA_DIR ${CMAKE_SOURCE_DIR}/data)
+
+add_subdirectory(util)
 add_subdirectory(coupler)
 add_subdirectory(p3)
 add_subdirectory(rrtmgp)
 add_subdirectory(shoc)
 add_subdirectory(tests)
+
+add_custom_target(baseline DEPENDS p3_baseline)

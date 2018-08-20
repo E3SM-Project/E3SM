@@ -1,9 +1,9 @@
 #include "shoc.hpp"
 
-namespace Scream {
-namespace Shoc {
+namespace scream {
+namespace shoc {
 
 int shoc_stub() { return 42; }
 
-}  // namespace Shoc
-}  // namespace Scream
+}  // namespace shoc
+}  // namespace scream

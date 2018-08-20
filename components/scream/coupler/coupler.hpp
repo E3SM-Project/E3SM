@@ -1,12 +1,12 @@
 #ifndef SCREAM_COUPLER_HPP
 #define SCREAM_COUPLER_HPP
 
-namespace Scream {
-namespace Coupler {
+namespace scream {
+namespace coupler {
 
 int coupler_stub();
 
-}  // namespace Coupler
-}  // namespace Scream
+}  // namespace coupler
+}  // namespace scream
 
 #endif

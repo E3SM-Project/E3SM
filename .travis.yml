@@ -11,6 +11,7 @@ addons:
     - ubuntu-toolchain-r-test
     packages:
     - g++-6
+    - gfortran-6
     - lcov
 
 git:
@@ -30,15 +31,17 @@ before_script:
 - git reset --hard HEAD
 - git pull
 - mkdir -p install
-- cmake -D CMAKE_INSTALL_PREFIX=${PWD}/install -D CMAKE_BUILD_TYPE=Debug -D KOKKOS_ENABLE_DEBUG=ON -D KOKKOS_ENABLE_AGGRESSIVE_VECTORIZATION=OFF -D KOKKOS_ENABLE_OPENMP=OFF -D KOKKOS_ENABLE_PROFILING=OFF -D KOKKOS_ENABLE_SERIAL=ON -D KOKKOS_ENABLE_DEPRECATED_CODE=OFF ./
+- cmake -D CMAKE_INSTALL_PREFIX=${PWD}/install -D CMAKE_BUILD_TYPE=Debug -D KOKKOS_ENABLE_DEBUG=ON -D KOKKOS_ENABLE_AGGRESSIVE_VECTORIZATION=OFF -D KOKKOS_ENABLE_OPENMP=OFF -D KOKKOS_ENABLE_PROFILING=OFF -D KOKKOS_ENABLE_SERIAL=ON -D KOKKOS_ENABLE_DEPRECATED_CODE=OFF -D KOKKOS_ENABLE_EXPLICIT_INSTANTIATION:BOOL=OFF ./
 - make -j 2 install
 - cd ..
-- if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then ln -s $(which g++-6) g++; export PATH="${PWD}:${PATH}"; fi
+- if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then ln -s $(which g++-6) g++; ln -s $(which gfortran-6) gfortran; export PATH="${PWD}:${PATH}"; fi
 
 script:
-- cmake -D CMAKE_BUILD_TYPE=Debug -D CMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage" -D KOKKOS_DIR=${PWD}/kokkos/install components/scream
+- cmake -D CMAKE_BUILD_TYPE=Debug CMAKE_Fortran_COMPILER=gfortran -D CMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage" -D Kokkos_DIR=${PWD}/kokkos/install components/scream
 - make -j 2
-- make test
+- echo WARNING In Travis CI, baseline-based tests are NOT RUN.
+- echo WARNING Please run these manually against established baseline files before merging your PR.
+- ctest -VV -E p3_regression
 
 after_success:
 # Source: https://github.com/codecov/example-cpp11-cmake

@@ -1,8 +1,8 @@
 #ifndef SCREAM_SHOC_HPP
 #define SCREAM_SHOC_HPP
 
-namespace Scream {
-namespace Shoc {
+namespace scream {
+namespace shoc {
 
 int shoc_stub();
 
