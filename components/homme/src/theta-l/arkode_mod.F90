@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
 #define ARK324_ARK 1
 #define ARK436_ARK 2
 #define ARK453_ARK 3
@@ -179,7 +180,7 @@ contains
     call MPI_Reduce(total_nonlinear_iterations, sum_result, 1, MPI_INTEGER, &
                     MPI_SUM, master_rank, comm, ierr)
     if (my_rank == master_rank) then
-      print *, 'Nonlinear Solver Statistics:'
+      print *, 'ARKode Nonlinear Solver Statistics:'
       print '(2x,A,i9)','Max num nonlin iters   =', max_result
       print '(2x,A,i9)','Total num nonlin iters =', sum_result
       print '(2x,A,i9)','Total num timesteps    =', num_timesteps

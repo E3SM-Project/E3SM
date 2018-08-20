@@ -39,6 +39,8 @@
 !    farkdiags -- writes ARKode solver diagnostics to the screen
 !
 ! Copyright 2017; all rights reserved
+!
+! Modified by Christopher J. Vogl (LLNL) 2018
 !=================================================================
 
 subroutine farkifun(t, y_C, fy_C, ipar, rpar, ierr)
@@ -463,7 +465,7 @@ subroutine FColumnSolSolve(b_C, t, y_C, gamma, ierr)
      phis => y%elem(ie)%state%phis(:,:)
 
      ! compute intermediate variables for Jacobian calculation
-     call get_kappa_star(kappa_star, y%elem(ie)%state%Qdp(:,:,:,1,qn0), dp3d)
+     call get_kappa_star(kappa_star, y%elem(ie)%state%Q(:,:,:,1))
      call get_pnh_and_exner(hvcoord, theta_dp_cp, dp3d, phi_np1_i, &
              kappa_star, pnh, exner, dpnh_dp_i, pnh_i_out=pnh_i)
 

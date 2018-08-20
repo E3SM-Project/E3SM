@@ -90,6 +90,13 @@ IF (${HOMME_USE_CXX})
   ENABLE_LANGUAGE(CXX)
 ENDIF ()
 
+# Option to use ARKode package from SUNDIALS
+OPTION(HOMME_USE_ARKODE "Use ARKode package from SUNDIALS" FALSE)
+IF (${HOMME_USE_ARKODE})
+  MESSAGE(STATUS "Using ARKode, adding -DARKODE")
+  ADD_DEFINITIONS(-DARKODE)
+ENDIF ()
+
 ##############################################################################
 # Compiler options set in cmake/SetCompiler.cmake
 ##############################################################################

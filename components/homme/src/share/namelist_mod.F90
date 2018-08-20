@@ -8,7 +8,9 @@ module namelist_mod
   use params_mod, only: recursive, sfcurve, SPHERE_COORDS, Z2_NO_TASK_MAPPING
   use cube_mod,   only: rotate_grid
   use physical_constants, only: rearth, rrearth, omega
+#ifdef ARKODE
   use arkode_mod, only: rel_tol, abs_tol, calc_nonlinear_stats
+#endif
 
   use control_mod, only : &
     MAX_STRING_LEN,&
@@ -311,10 +313,12 @@ module namelist_mod
       tol,           &
       debug_level
 
+#ifdef ARKODE
     namelist /arkode_nl/ &
       rel_tol, &
       abs_tol, &
       calc_nonlinear_stats
+#endif
 
 
     ! ==========================
@@ -565,11 +569,13 @@ module namelist_mod
           if ( output_start_time(i) > output_end_time(i) ) output_frequency(i)=0
        end do
 
+#ifdef ARKODE
        write(iulog,*)"reading arkode namelist..."
 #if defined(OSF1) || defined(_NAMELIST_FROM_FILE)
        read(unit=7,nml=arkode_nl)
 #else
        read(*,nml=arkode_nl)
+#endif
 #endif
 
 !=======================================================================================================!
@@ -722,9 +728,11 @@ module namelist_mod
     call MPI_bcast(output_type , 9,MPIChar_t,par%root,par%comm,ierr)
     call MPI_bcast(infilenames ,160*MAX_INFILES ,MPIChar_t,par%root,par%comm,ierr)
 
+#ifdef ARKODE
     call MPI_bcast(rel_tol, 1, MPIreal_t, par%root, par%comm, ierr)
     call MPI_bcast(abs_tol, 1, MPIreal_t, par%root, par%comm, ierr)
     call MPI_bcast(calc_nonlinear_stats, 1, MPIlogical_t, par%root, par%comm, ierr)
+#endif
 
     ! use maximum available:
     if (NThreads == -1) NThreads = omp_get_max_threads()
@@ -990,11 +998,12 @@ module namelist_mod
           end if
        end do
 
-       ! ARKode parameters
+#ifdef ARKODE
        write(iulog,*)""
        write(iulog,*)"arkode: rel_tol = ",rel_tol
        write(iulog,*)"arkode: abs_tol = ",abs_tol
        write(iulog,*)"arkode: calc_nonlinear_stats = ",calc_nonlinear_stats
+#endif
 
        ! display physical constants for HOMME stand alone simulations
        write(iulog,*)""

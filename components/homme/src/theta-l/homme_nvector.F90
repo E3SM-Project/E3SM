@@ -3,6 +3,8 @@
 ! SMU Mathematics
 !
 ! Copyright 2017; all rights reserved
+!
+! Modified by Christopher J. Vogl (LLNL) 2018
 !=======================================================================
 
 module HommeNVector

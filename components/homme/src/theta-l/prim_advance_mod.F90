@@ -17,9 +17,9 @@ module prim_advance_mod
   use derivative_mod,     only: subcell_div_fluxes, subcell_dss_fluxes
   use dimensions_mod,     only: max_corner_elem, nelemd, nlev, nlevp, np, qsize
   use edge_mod,           only: edgeDGVunpack, edgevpack, edgevunpack, initEdgeBuffer
+  use element_state,      only: max_itercnt_perstep,avg_itercnt,max_itererr_perstep
   use edgetype_mod,       only: EdgeBuffer_t,  EdgeDescriptor_t, edgedescriptor_t
   use element_mod,        only: element_t
-  use element_state,      only: max_itercnt_perstep,avg_itercnt,max_itererr_perstep
   use element_ops,        only: get_cp_star, get_kappa_star, &
     get_temperature, set_theta_ref, state0
   use eos,                only: get_pnh_and_exner,get_dry_phinh,get_dirk_jacobian
@@ -107,10 +107,12 @@ contains
   !_____________________________________________________________________
   subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
 
+#ifdef ARKODE
     use arkode_mod,     only: parameter_list, update_arkode, get_solution_ptr, &
                               table_list, set_Butcher_tables, &
                               calc_nonlinear_stats, update_nonlinear_stats, &
                               rel_tol, abs_tol
+#endif
     use iso_c_binding
 
     type (element_t),      intent(inout), target :: elem(:)
@@ -136,12 +138,13 @@ contains
     integer :: ie,nm1,n0,np1,nstep,qsplit_stage,k, qn0
     integer :: n,i,j,maxiter
 
-    ! ARKode variables
+#ifdef ARKODE
     type(parameter_list) :: arkode_parameters
     type(table_list) :: arkode_tables
     type(c_ptr) :: ynp1
     real(real_kind) :: tout, t
     integer(C_INT) :: ierr, itask
+#endif
 
     call t_startf('prim_advance_exp')
     nm1   = tl%nm1
@@ -233,9 +236,11 @@ contains
        ! final method is the same as:
        ! u5 = u0 +  dt/4 RHS(u0)) + 3dt/4 RHS(u4)
        call t_stopf("U3-5stage_timestep")
-!=========================================================================================
-    elseif (tstep_type == 6) then  ! IMEX-KG243
-      call t_startf("IMEX-KG243_timestep")
+ ! ==============================================================================
+    elseif (tstep_type == 6 ) then
+       call t_startf("KG243_timestep")
+
+    ! TODO: a1-a4 are not set but being used in the next few lines
 
     ! ======== first two stages are pure explicit  =============
      call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
@@ -261,13 +266,18 @@ contains
       call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
 
-
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
+#ifdef ARKODE
+      if (calc_nonlinear_stats) then
+        ie = maxiter ! using existing integer variable to store this value
+      end if
+#else
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
+#endif
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat2/a2,1d0)
@@ -276,10 +286,14 @@ contains
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
+#ifdef ARKODE
+      if (calc_nonlinear_stats) then
+        ie = ie + maxiter
+      end if
+#else
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
-
-
+#endif
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat3/a3,1d0)
 
@@ -287,14 +301,26 @@ contains
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
+#ifdef ARKODE
+      if (calc_nonlinear_stats) then
+        ie = ie + maxiter
+      end if
+#else
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
+#endif
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat4/a4,1d0)
-
+#ifdef ARKODE
+      if (calc_nonlinear_stats) then
+        call update_nonlinear_stats(1, ie+maxiter)
+      end if
+#else
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
+#endif
 
+      ! TODO: this t_stopf label doesn't match the correspond t_startf label
       call t_stopf("KGS242-3_timestep")
 !==============================================================================================
     elseif (tstep_type == 7) then
@@ -316,7 +342,7 @@ contains
       dhat3 = 5./6.
       dhat4 = 2./3.
       ahat4 = 1./2.-dhat4
-       dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
+      dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
         (ahat5-dhat3-dhat2-dhat4)
 
       ! IMEX-KGO254b coefficients NOT GOOD
@@ -335,15 +361,20 @@ contains
       ahat2 = ( - ahat3*ahat4*ahat5*dhat1 + ahat4*ahat5*dhat1*dhat2 -&
         ahat5*dhat1*dhat2*dhat3 + dhat1*dhat2*dhat3*dhat4)/(-ahat3*ahat4*ahat5)
 
-
       call compute_andor_apply_rhs(np1,n0,n0,qn0,a1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
+#ifdef ARKODE
+      if (calc_nonlinear_stats) then
+        ie = maxiter
+      end if
+#else
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
+#endif
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat2/a2,1d0)
@@ -351,8 +382,14 @@ contains
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
+#ifdef ARKODE
+      if (calc_nonlinear_stats) then
+        ie = ie + maxiter
+      end if
+#else
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
+#endif
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat3/a3,1d0)
@@ -360,8 +397,14 @@ contains
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
+#ifdef ARKODE
+      if (calc_nonlinear_stats) then
+        ie = ie + maxiter
+      end if
+#else
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
+#endif
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat4/a4,1d0)
@@ -369,15 +412,29 @@ contains
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
+#ifdef ARKODE
+      if (calc_nonlinear_stats) then
+        ie = ie + maxiter
+      end if
+#else
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
+#endif
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat5/a5,1d0)
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat5/a5,1d0)
 
+#ifdef ARKODE
+      if (calc_nonlinear_stats) then
+        call update_nonlinear_stats(1, ie+maxiter)
+      end if
+#else
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
+#endif
+      ! TODO: This t_stopf label does not match the corresponding t_startf label
       call t_stopf("KGS252-4_timestep")
-
+!=========================================================================================
+#ifdef ARKODE
     else if (tstep_type==20) then ! ARKode RK2
       call set_Butcher_tables(arkode_parameters, arkode_tables%RK2)
 
@@ -428,11 +485,12 @@ contains
 
     else if (tstep_type==36) then ! ARKode KGS 2nd-order, 6 stage
       call set_Butcher_tables(arkode_parameters, arkode_tables%KGS254)
-
+#endif
     else
        call abortmp('ERROR: bad choice of tstep_type')
     endif
 
+#ifdef ARKODE
     ! Use ARKode to advance solution
     if (tstep_type >= 20) then
 
@@ -475,7 +533,7 @@ contains
         call update_nonlinear_stats()
       end if
     end if
-
+#endif
 
     ! ==============================================
     ! Time-split Horizontal diffusion: nu.del^2 or nu.del^4
@@ -1719,9 +1777,9 @@ contains
   type (element_t)     , intent(inout), target :: elem(:)
   type (derivative_t)  , intent(in) :: deriv
 
-
   ! local
   real (kind=real_kind), pointer, dimension(:,:,:)   :: phi_np1
+
   real (kind=real_kind), pointer, dimension(:,:,:)   :: dp3d
   real (kind=real_kind), pointer, dimension(:,:,:)   :: theta_dp_cp
   real (kind=real_kind), pointer, dimension(:,:)   :: phis
@@ -1886,10 +1944,17 @@ contains
 !        itererrmax = itererr
 !      end if
   end do ! end do for the ie=nets,nete loop
+#ifdef ARKODE
+  maxiter=itercountmax
+#else
+  ! TODO: note this is not grabbing the maximum iteration count but instead the
+  ! iteration count from the last column attached to this MPI rank
   maxiter=itercount
+#endif
+  ! TODO: note this is not grabbing the maximum final-residual but instead the
+  ! final-residual from the last column attached to this MPI rank
   itertol=itererr
 !  print *, 'max itercount', itercountmax, 'maxitererr ', itererrmax
-
   call t_stopf('compute_stage_value_dirk')
 
   end subroutine compute_stage_value_dirk

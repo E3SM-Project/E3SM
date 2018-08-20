@@ -23,7 +23,9 @@ program prim_main
   use perf_mod,         only: t_initf, t_prf, t_finalizef, t_startf, t_stopf ! _EXTERNAL
   use restart_io_mod ,  only: restartheader_t, writerestart
   use hybrid_mod,       only: hybrid_create
+#ifdef ARKODE
   use arkode_mod,       only: calc_nonlinear_stats, finalize_nonlinear_stats
+#endif
 
 #ifdef VERTICAL_INTERPOLATION
   use netcdf_interp_mod, only: netcdf_interp_init, netcdf_interp_write, netcdf_interp_finish
@@ -51,12 +53,12 @@ program prim_main
   integer ithr
   integer ierr
   integer nstep
-  
+
   character (len=20) :: numproc_char
   character (len=20) :: numtrac_char
-  
+
   logical :: dir_e ! boolean existence of directory where output netcdf goes
-  
+
   ! =====================================================
   ! Begin executable code set distributed memory world...
   ! =====================================================
@@ -96,14 +98,14 @@ program prim_main
   nete=dom_mt(ithr)%end
   ! ================================================
   ! Initialize thread decomposition
-  ! Note: The OMP Critical is required for threading since the Fortran 
+  ! Note: The OMP Critical is required for threading since the Fortran
   !   standard prohibits multiple I/O operations on the same unit.
   ! ================================================
 #if (defined HORIZ_OPENMP)
   !$OMP CRITICAL
 #endif
-  if (par%rank<100) then 
-     write(6,9) par%rank,ithr,omp_get_max_threads(),nets,nete 
+  if (par%rank<100) then
+     write(6,9) par%rank,ithr,omp_get_max_threads(),nets,nete
   endif
 9 format("process: ",i2,1x,"horiz thread id: ",i2,1x,"# vert threads: ",i2,1x,&
        "element limits: ",i5,"-",i5)
@@ -111,7 +113,7 @@ program prim_main
   !$OMP END CRITICAL
   !$OMP END PARALLEL
 #endif
-  
+
   ! setup fake threading so we can call routines that require 'hybrid'
   ithr=omp_get_thread_num()
   hybrid = hybrid_create(par,ithr,1)
@@ -155,14 +157,14 @@ program prim_main
   !$OMP END PARALLEL
 #endif
 
-  
+
   ! Here we get sure the directory specified
-  ! in the input namelist file in the 
+  ! in the input namelist file in the
   ! variable 'output_dir' does exist.
-  ! this avoids a abort deep within the PIO 
+  ! this avoids a abort deep within the PIO
   ! library (SIGABRT:signal 6) which in most
   ! architectures produces a core dump.
-  if (par%masterproc) then 
+  if (par%masterproc) then
      open(unit=447,file=trim(output_dir) // "/output_dir_test",iostat=ierr)
      if ( ierr==0 ) then
         print *,'Directory ',trim(output_dir), ' does exist: initialing IO'
@@ -182,7 +184,7 @@ program prim_main
      call abortmp("Please get sure the directory exist or specify one via output_dir in the namelist file.")
   end if
 #endif
-  
+
   if(par%masterproc) print *,"I/O init..."
 ! initialize history files.  filename constructed with restart time
 ! so we have to do this after ReadRestart in prim_init2 above
@@ -218,7 +220,7 @@ program prim_main
      hybrid = hybrid_create(par,ithr,hthreads)
      nets=dom_mt(ithr)%start
      nete=dom_mt(ithr)%end
-     
+
      nstep = nextoutputstep(tl)
      do while(tl%nstep<nstep)
         call t_startf('prim_run')
@@ -238,9 +240,9 @@ program prim_main
 #endif
 
      ! ============================================================
-     ! Write restart files if required 
+     ! Write restart files if required
      ! ============================================================
-     if((restartfreq > 0) .and. (MODULO(tl%nstep,restartfreq) ==0)) then 
+     if((restartfreq > 0) .and. (MODULO(tl%nstep,restartfreq) ==0)) then
         call WriteRestart(elem, ithr,1,nelemd,tl)
      endif
   end do
@@ -258,9 +260,11 @@ program prim_main
   call prim_movie_finish
 #endif
 
+#ifdef ARKODE
   if (calc_nonlinear_stats) then
     call finalize_nonlinear_stats(par%comm, par%rank, par%root, par%nprocs)
   endif
+#endif
 
   call t_stopf('Total')
   if(par%masterproc) print *,"writing timing data"
@@ -269,11 +273,3 @@ program prim_main
   call t_finalizef()
   call haltmp("exiting program...")
 end program prim_main
-
-
-
-
-
-
-
-
