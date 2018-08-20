@@ -57,7 +57,7 @@ ELSE ()
   ELSEIF (CMAKE_Fortran_COMPILER_ID STREQUAL Intel)
     SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -assume byterecl")
     SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${FP_MODEL_FLAG}")
-    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fp-model fast -ftz")
+    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ftz")
     #SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fp-model fast -qopt-report=5 -ftz")
     #SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -mP2OPT_hpo_matrix_opt_framework=0 -fp-model fast -qopt-report=5 -ftz")
 
@@ -159,7 +159,7 @@ ELSE ()
       SET(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} -O2")
     ENDIF ()
   ENDIF ()
- 
+
   IF (OPT_CFLAGS)
     SET (CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${OPT_CFLAGS}")
   ELSE ()
@@ -262,14 +262,14 @@ OPTION(ENABLE_HORIZ_OPENMP "OpenMP across elements" TRUE)
 OPTION(ENABLE_COLUMN_OPENMP "OpenMP within an element" FALSE)
 
 # If OpenMP is turned off also turn off ENABLE_HORIZ_OPENMP
-IF (NOT ${ENABLE_OPENMP}) 
-  SET(ENABLE_HORIZ_OPENMP FALSE) 
-  SET(ENABLE_COLUMN_OPENMP FALSE) 
+IF (NOT ${ENABLE_OPENMP})
+  SET(ENABLE_HORIZ_OPENMP FALSE)
+  SET(ENABLE_COLUMN_OPENMP FALSE)
 ENDIF ()
 
 ##############################################################################
 IF (ENABLE_HORIZ_OPENMP OR ENABLE_COLUMN_OPENMP)
-  IF(NOT ${CMAKE_Fortran_COMPILER_ID} STREQUAL Cray) 
+  IF(NOT ${CMAKE_Fortran_COMPILER_ID} STREQUAL Cray)
     FIND_PACKAGE(OpenMP)
     IF(OPENMP_FOUND)
       MESSAGE(STATUS "Found OpenMP Flags")
@@ -301,7 +301,7 @@ IF (ENABLE_HORIZ_OPENMP OR ENABLE_COLUMN_OPENMP)
    SET(HORIZ_OPENMP TRUE BOOL "Threading in the horizontal direction")
    MESSAGE(STATUS "  Using HORIZ_OPENMP")
  ENDIF ()
- 
+
  IF (${ENABLE_COLUMN_OPENMP})
    # Set this as global so it can be picked up by all executables
 #   SET(COLUMN_OPENMP TRUE CACHE BOOL "Threading in the horizontal direction")
@@ -328,9 +328,9 @@ IF (ENABLE_INTEL_PHI)
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  ${INTEL_PHI_FLAGS}")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${INTEL_PHI_FLAGS}")
     # CMake magic for cross-compilation
-    SET(CMAKE_SYSTEM_NAME Linux) 
-    SET(CMAKE_SYSTEM_PROCESSOR k1om) 
-    SET(CMAKE_SYSTEM_VERSION 1) 
+    SET(CMAKE_SYSTEM_NAME Linux)
+    SET(CMAKE_SYSTEM_PROCESSOR k1om)
+    SET(CMAKE_SYSTEM_VERSION 1)
     SET(_CMAKE_TOOLCHAIN_PREFIX  x86_64-k1om-linux-)
     # Specify the location of the target environment
     IF (TARGET_ROOT_PATH)
