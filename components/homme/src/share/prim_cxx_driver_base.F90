@@ -3,7 +3,7 @@
 #endif
 
 ! Do not compile this unless its a kokkos target
-! #ifdef USE_KOKKOS_KERNELS
+#ifdef USE_KOKKOS_KERNELS
 
 module prim_cxx_driver_base
 
@@ -69,7 +69,7 @@ module prim_cxx_driver_base
 #endif
 
     ! ==================================
-    ! Initialize derivative structure 
+    ! Initialize derivative structure
     ! ==================================
     call derivinit(deriv1)
 
@@ -402,9 +402,9 @@ module prim_cxx_driver_base
 
     ! Set final timelevels from C into Fortran structure
     tl%nstep = nstep_c
-    tl%nm1   = nm1_c + 1 
-    tl%n0    = n0_c  + 1 
-    tl%np1   = np1_c + 1 
+    tl%nm1   = nm1_c + 1
+    tl%n0    = n0_c  + 1
+    tl%np1   = np1_c + 1
 
     if (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep .or. nsubstep==nsplit) then
       ! Set pointers to states
@@ -423,7 +423,7 @@ module prim_cxx_driver_base
     endif
 
     ! Print some diagnostic information
-   
+
     if (compute_diagnostics) then
        call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete)
     end if
@@ -585,4 +585,4 @@ module prim_cxx_driver_base
 end module
 
 ! USE_KOKKOS_KERNELS
-! #endif
+#endif
