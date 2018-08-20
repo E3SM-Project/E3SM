@@ -321,6 +321,7 @@ contains
          totcoln                   =>    nitrogenstate_vars%totcoln_col                  , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg
          ndep_to_sminn             =>    nitrogenflux_vars%ndep_to_sminn_col             , & ! Input:  [real(r8) (:)]  atmospheric N deposition to soil mineral N (gN/m2/s)
          nfix_to_sminn             =>    nitrogenflux_vars%nfix_to_sminn_col             , & ! Input:  [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
+         nfix_to_ecosysn           =>    nitrogenflux_vars%nfix_to_ecosysn_col           , &
          fert_to_sminn             =>    nitrogenflux_vars%fert_to_sminn_col             , & ! Input:  [real(r8) (:)]
          soyfixn_to_sminn          =>    nitrogenflux_vars%soyfixn_to_sminn_col          , & ! Input:  [real(r8) (:)]
          supplement_to_sminn       =>    nitrogenflux_vars%supplement_to_sminn_col       , & ! Input:  [real(r8) (:)]  supplemental N supply (gN/m2/s)
