@@ -63,7 +63,7 @@ else
             errcode=$(( errcode + 1 ))
           else
             for wavfile in ${lfiles}; do
-              dasig="`zgrep 'Resume signal, TRUE' ${wavfile} 2> /dev/null`"
+              dasig="`zgrep 'Post data assimilation signal' ${wavfile} 2> /dev/null`"
               initsig="`zgrep 'Initial run' ${wavfile} 2> /dev/null`"
               if [ $cycle -gt 0 ]; then
                 if [ -n "${dasig}" ]; then
