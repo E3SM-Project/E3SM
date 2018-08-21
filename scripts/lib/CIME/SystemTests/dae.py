@@ -110,20 +110,20 @@ class DAE(SystemTestsCompareTwo):
             found_signal = 0
             found_init = 0
             if is_dwav:
-                expected_signal = self._case.get_value("NINST_WAV")
+                expected_init = self._case.get_value("NINST_WAV")
             else:
                 # Expect a signal from every instance of every DA component
-                expected_signal = 0
+                expected_init = 0
                 for comp in self._case.get_values("COMP_CLASSES"):
                     if self._case.get_value("DATA_ASSIMILATION_{}".format(comp)):
-                        expected_signal = expected_signal + self._case.get_value("NINST_{}".format(comp))
+                        expected_init = expected_init + self._case.get_value("NINST_{}".format(comp))
 
             # Adjust expected initial run and post-DA numbers
-            if cycle_num > 0:
-                expected_init = 0
-            else:
-                expected_init = expected_signal
+            if cycle_num == 0:
                 expected_signal = 0
+            else:
+                expected_signal = expected_init
+                expected_init = 0
 
             with gzip.open(fname, "r") as dfile:
                 for bline in dfile:
