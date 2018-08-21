@@ -148,11 +148,15 @@ CONTAINS
 
     ! Diagnostic print statement to test DATA_ASSIMILATION_WAV XML variable
     !   usage (and therefore a proxy for other component types).
-    if (len_trim(wav_resume(inst_index)) > 0) then
-       if (my_task == master_task) then
-          write(logunit, *) subName//': Resume signal, '//trim(wav_resume(inst_index))
-          call shr_sys_flush(logunit)
+    if (my_task == master_task) then
+       if (len_trim(wav_resume(min(num_inst_WAV,inst_index))) > 0) then
+          write(logunit, *) subName//': Resume signal, '//trim(wav_resume(min(num_inst_WAV,inst_index)))
+       else if (read_restart) then
+          write(logunit, *) subName//': Restart run'
+       else
+          write(logunit, *) subName//': Initial run'
        end if
+       call shr_sys_flush(logunit)
     end if
 
     !----------------------------------------------------------------------------
