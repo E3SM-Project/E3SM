@@ -199,11 +199,14 @@ contains
     type(aoflux_type), save :: aoflux
     logical, save           :: first_call = .true.
     integer                 :: dbrc
+    integer, external :: GPTLprint_memusage
+    integer :: ierr
     character(len=*),parameter :: subname='(med_phases_aofluxes)'
     !---------------------------------------
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+       ierr = GPTLprint_memusage(subname)
     endif
     rc = ESMF_SUCCESS
 
@@ -336,10 +339,13 @@ contains
     logical                  :: flds_wiso  ! use case
     integer                  :: dbrc
     character(len=CX)        :: tmpstr
+    integer, external :: GPTLprint_memusage
+    integer :: ierr
     !-----------------------------------------------------------------------
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      ierr = GPTLprint_memusage(subname)
     endif
     rc = ESMF_SUCCESS
 
@@ -356,6 +362,7 @@ contains
     call NUOPC_CompAttributeGet(gcomp, name='flds_wiso', value=cvalue, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     read(cvalue,*) flds_wiso
+    print *,__FILE__,__LINE__, flds_wiso
 
     call NUOPC_CompAttributeGet(gcomp, name='aoflux_grid', value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

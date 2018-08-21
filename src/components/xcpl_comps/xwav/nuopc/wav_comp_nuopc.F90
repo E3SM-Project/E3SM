@@ -140,11 +140,14 @@ contains
     character(len=512) :: diro
     character(len=512) :: logfile
     character(len=*),parameter :: subname=trim(modName)//':(InitializeAdvertise) '
+    integer, external :: GPTLprint_memusage
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-
+    if (dbug > 5) then
+       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+       ierr = GPTLprint_memusage(subname)
+    endif
     !----------------------------------------------------------------------------
     ! generate local mpi comm
     !----------------------------------------------------------------------------
@@ -252,11 +255,15 @@ contains
     integer                :: shrloglev                 ! original log level
     integer                :: n
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
+    integer, external :: GPTLprint_memusage
+    integer :: ierr
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-
+    if (dbug > 5) then
+       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+       ierr = GPTLprint_memusage(subname)
+    endif
     !----------------------------------------------------------------------------
     ! Reset shr logging to my log file
     !----------------------------------------------------------------------------
@@ -367,11 +374,15 @@ contains
     integer                  :: shrlogunit     ! original log unit
     integer                  :: shrloglev      ! original log level
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
+    integer :: ierr
+    integer, external :: GPTLprint_memusage
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-
+    if (dbug > 5) then
+       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+       ierr = GPTLprint_memusage(subname)
+    endif
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogLevel(max(shrloglev,1))

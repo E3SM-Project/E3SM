@@ -185,7 +185,6 @@ contains
 
     call shr_nuopc_set_component_logging(gcomp, my_task==master_task, logunit, shrlogunit, shrloglev)
 
-
     !----------------------------------------------------------------------------
     ! Read input namelists and set present and prognostic flags
     !----------------------------------------------------------------------------

@@ -275,7 +275,6 @@ module ESM
     end if
 
     !-------------------------------------------
-<<<<<<< HEAD
     ! Initialize driver clock
     !-------------------------------------------
 
@@ -284,9 +283,6 @@ module ESM
 
     !-------------------------------------------
     ! Initialize other attributes (after initializing driver clock)
-=======
-    ! Initialize other attributes
->>>>>>> add multiinstance ensemble driver
     !-------------------------------------------
 
     call InitAttributes(driver, rc)
@@ -995,16 +991,15 @@ module ESM
     character(len=*) , parameter    :: orb_fixed_year       = 'fixed_year'
     character(len=*) , parameter    :: orb_variable_year    = 'variable_year'
     character(len=*) , parameter    :: orb_fixed_parameters = 'fixed_parameters'
-<<<<<<< HEAD
-    character(len=*) , parameter    :: subname = '(SetAttributes)'
-=======
     character(len=*) , parameter    :: subname = '(InitAttributes)'
->>>>>>> add multiinstance ensemble driver
+    integer :: ierr
+    integer, external :: GPTLprint_memusage
     !----------------------------------------------------------
 
     rc = ESMF_SUCCESS
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+       ierr = GPTLprint_memusage(subname)
     endif
 
     !----------------------------------------------------------
@@ -1383,9 +1378,13 @@ module ESM
     call ReadAttributes(gcomp, config, "ALLCOMP_attributes::", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ReadAttributes(gcomp, config, trim(compname)//"_modelio::", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
+    if(len_trim(inst_string) > 1) then
+       call ReadAttributes(gcomp, config, trim(compname)//"_modelio_"//inst_string//"::", rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       call ReadAttributes(gcomp, config, trim(compname)//"_modelio::", rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    endif
     call ReadAttributes(gcomp, config, "CLOCK_attributes::", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -1440,15 +1439,11 @@ module ESM
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     else
-
        call NUOPC_CompAttributeAdd(gcomp, attrList=(/'inst_name','inst_index'/), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
        call NUOPC_CompAttributeSet(gcomp, name='inst_name', value=trim(seq_comm_name(compid)), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       write(cvalue,*) seq_comm_inst(compid)
-       call NUOPC_CompAttributeSet(gcomp, name='inst_index', value=trim(cvalue), rc=rc)
+       call NUOPC_CompAttributeSet(gcomp, name='inst_string', value=inst_string, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        if (len_trim(seq_comm_suffix(compid)) > 0) then
@@ -1491,7 +1486,6 @@ module ESM
        attrFF = NUOPC_FreeFormatCreate(config, label=trim(label), relaxedflag=.true., rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     else
-       print *,__FILE__,__LINE__,trim(label)
        attrFF = NUOPC_FreeFormatCreate(config, label=trim(label), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if

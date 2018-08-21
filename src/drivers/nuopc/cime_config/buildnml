@@ -304,16 +304,16 @@ def _create_component_modelio_namelists(confdir, case, files):
     maxinst = 1
     if case.get_value("MULTI_DRIVER"):
         maxinst = case.get_value("NINST_MAX")
+        multi_driver = True
 
     nuopc_config_file = os.path.join(confdir, "cesm.runconfig")
-
     for model in case.get_values("COMP_CLASSES"):
         model = model.lower()
         with NamelistGenerator(case, definition_file) as nmlgen:
             config = {}
             config['component'] = model
             entries = nmlgen.init_defaults(infiles, config, skip_entry_loop=True)
-            if maxinst == 1 and model != 'cpl':
+            if maxinst == 1 and model != 'cpl' and not multi_driver:
                 inst_count = case.get_value("NINST_" + model.upper())
             else:
                 inst_count = maxinst
@@ -341,11 +341,11 @@ def _create_component_modelio_namelists(confdir, case, files):
 
                 with open(nuopc_config_file, 'a') as outfile:
                     if model == 'cpl':
-                        model = 'MED'
+                        model = 'med'
                     if inst_string:
-                        outfile.write("{}::\n".format(model.upper() + "_modelio" + inst_string))
+                        outfile.write("{}_modelio{}::\n".format(model.upper(),inst_string))
                     else:
-                        outfile.write("{}::\n".format(model.upper() + "_modelio"))
+                        outfile.write("{}_modelio::\n".format(model.upper()))
                     outfile.write("     {}{}{}".format("diro = ", moddiro,"\n"))
                     outfile.write("     {}{}{}".format("logfile = ", logfile,"\n"))
                     outfile.write("::\n\n")

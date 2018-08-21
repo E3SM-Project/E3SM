@@ -405,14 +405,14 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
         evap(n) = lat(n)/loc_latvap
 
         !---water isotope flux ---
-
+#ifndef NUOPC_INTERFACE
         call wiso_flxoce(2,rbot(n),zbot(n),s16O(n),ts(n),r16O(n),ustar,re,ssq,evap_16O(n), &
                          qbot(n),evap(n))
         call wiso_flxoce(3,rbot(n),zbot(n),sHDO(n),ts(n),rHDO(n),ustar,re,ssq, evap_HDO(n),&
                          qbot(n),evap(n))
         call wiso_flxoce(4,rbot(n),zbot(n),s18O(n),ts(n),r18O(n),ustar,re,ssq, evap_18O(n), &
                          qbot(n),evap(n))
-
+#endif
         !------------------------------------------------------------
         ! compute diagnositcs: 2m ref T & Q, 10m wind speed squared
         !------------------------------------------------------------
@@ -1012,14 +1012,14 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
          evap(n) = lat(n)/shr_const_latvap
 
          !---water isotope flux ---
-
+#ifndef NUOPC_INTERFACE
          call wiso_flxoce(2,rbot(n),zbot(n),s16O(n),ts(n),r16O(n),ustar,re,ssq, evap_16O(n),&
                           qbot(n),evap(n))
          call wiso_flxoce(3,rbot(n),zbot(n),sHDO(n),ts(n),rHDO(n),ustar,re,ssq, evap_HDO(n),&
                           qbot(n),evap(n))
          call wiso_flxoce(4,rbot(n),zbot(n),s18O(n),ts(n),r18O(n),ustar,re,ssq, evap_18O(n),&
                           qbot(n),evap(n))
-
+#endif
          !------------------------------------------------------------
          ! compute diagnostics: 2m ref T & Q, 10m wind speed squared
          !------------------------------------------------------------

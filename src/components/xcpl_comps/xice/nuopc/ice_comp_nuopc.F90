@@ -417,9 +417,15 @@ module ice_comp_nuopc
     integer                  :: shrloglev      ! original log level
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
+    integer :: ierr
+    integer, external :: GPTLprint_memusage
+    !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug > 5) then
+       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+       ierr = GPTLprint_memusage(subname)
+    endif
 
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)

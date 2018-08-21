@@ -636,6 +636,96 @@ contains
 
   !===============================================================================
 
+<<<<<<< HEAD
+=======
+  subroutine ModelSetRunClock(gcomp, rc)
+    type(ESMF_GridComp)  :: gcomp
+    integer, intent(out) :: rc
+
+    ! local variables
+    type(ESMF_Clock)         :: mclock, dclock
+    type(ESMF_Time)          :: mcurrtime, dcurrtime
+    type(ESMF_Time)          :: mstoptime
+    type(ESMF_TimeInterval)  :: mtimestep, dtimestep
+    character(len=128)       :: mtimestring, dtimestring
+    character(len=256)       :: cvalue
+    character(len=256)       :: restart_option       ! Restart option units
+    integer                  :: restart_n            ! Number until restart interval
+    integer                  :: restart_ymd          ! Restart date (YYYYMMDD)
+    type(ESMF_ALARM)         :: restart_alarm
+    integer                  :: first_time = .true.
+    character(len=*),parameter :: subname=trim(modName)//':(ModelSetRunClock) '
+    !-------------------------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+
+    ! query the Component for its clock, importState and exportState
+    call NUOPC_ModelGet(gcomp, driverClock=dclock, modelClock=mclock, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_ClockGet(dclock, currTime=dcurrtime, timeStep=dtimestep, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_ClockGet(mclock, currTime=mcurrtime, timeStep=mtimestep, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !--------------------------------
+    ! force model clock currtime and timestep to match driver and set stoptime
+    !--------------------------------
+
+    mstoptime = mcurrtime + dtimestep
+    call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !--------------------------------
+    ! set restart alarm
+    !--------------------------------
+
+    if (first_time) then
+       call NUOPC_CompAttributeGet(gcomp, name="restart_option", value=restart_option, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call NUOPC_CompAttributeGet(gcomp,  name="restart_n", value=cvalue, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       read(cvalue,*) restart_n
+
+       call NUOPC_CompAttributeGet(gcomp, name="restart_ymd", value=cvalue, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       read(cvalue,*) restart_ymd
+
+       call shr_nuopc_time_alarmInit(mclock,  &
+            alarm   = restart_alarm,       &
+            option  = restart_option,      &
+            opt_n   = restart_n,           &
+            opt_ymd = restart_ymd,         &
+            RefTime = mcurrTime,            &
+            alarmname = 'alarm_restart', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call ESMF_AlarmSet(restart_alarm, clock=mclock, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       first_time = .false.
+    end if
+
+    !--------------------------------
+    ! Advance model clock to trigger alarms then reset model clock back to currtime
+    !--------------------------------
+
+    call ESMF_ClockAdvance(mclock,rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+
+  end subroutine ModelSetRunClock
+
+  !===============================================================================
+
+>>>>>>> one var instead of three
   subroutine ModelFinalize(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc

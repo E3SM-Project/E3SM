@@ -59,8 +59,8 @@ module atm_comp_nuopc
   integer                    :: mpicom               ! mpi communicator
   integer                    :: my_task              ! my task in mpi communicator mpicom
   integer                    :: inst_index           ! number of current instance (ie. 1)
-  character(len=16)          :: inst_name            ! fullname of current instance (ie. "lnd_0001")
-  character(len=16)          :: inst_suffix = ""     ! char string associated with instance (ie. "_0001" or "")
+  character(len=12)          :: inst_name            ! fullname of current instance (ie. "lnd_0001")
+  character(len=5)          :: inst_suffix = "_"     ! char string associated with instance (ie. "_0001" or "")
   integer                    :: logunit              ! logging unit number
   integer    ,parameter      :: master_task=0        ! task number of master task
   integer, parameter         :: dbug = 10
@@ -427,9 +427,15 @@ module atm_comp_nuopc
     integer          :: shrloglev  ! original log level
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
+    integer :: ierr
+    integer, external :: GPTLprint_memusage
+    !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug > 5) then
+       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+       ierr = GPTLprint_memusage(subname)
+    endif
 
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)

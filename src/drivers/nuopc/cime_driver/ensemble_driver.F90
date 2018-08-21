@@ -167,7 +167,6 @@ module Ensemble_driver
     if (trim(start_type) == trim(start_type_cont) .or. trim(start_type) == trim(start_type_brnch)) then
        read_restart = .true.
     endif
-
     ! Add read_restart to driver attributes
     call NUOPC_CompAttributeAdd(ensemble_driver, attrList=(/'read_restart'/), rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -197,7 +196,7 @@ module Ensemble_driver
     allocate(petList(ntasks_per_member))
     allocate(driver(number_of_members))
 
-
+    write(cvalue,*) read_restart
 
     do inst=1,number_of_members
 
@@ -209,7 +208,7 @@ module Ensemble_driver
        call NUOPC_DriverAddComp(ensemble_driver, drvrinst, ESMSetServices, petList=petList, comp=driver(inst), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        if(number_of_members == 1) then
-          inst_string = ""
+          inst_string = "_"
        else
           write(inst_string,'(i4.4)') inst
        endif
@@ -218,18 +217,13 @@ module Ensemble_driver
        call NUOPC_CompAttributeSet(driver(inst), name='INST', value=inst_string, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-
-    enddo
-    deallocate(petList)
-
-    !-------------------------------------------
-
-    do inst=1,number_of_members
        call NUOPC_CompAttributeAdd(driver(inst), attrList=(/'read_restart'/), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        call NUOPC_CompAttributeSet(driver(inst), name='read_restart', value=trim(cvalue), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     enddo
+    deallocate(petList)
+
 
 
     call InitClocks(ensemble_driver, EClock_ensemble, Eclock_d, Eclock_a, Eclock_l, Eclock_o, &

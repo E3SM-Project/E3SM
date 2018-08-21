@@ -487,6 +487,8 @@ contains
     character(ESMF_MAXSTR), pointer :: ConnectedList(:)
     character(ESMF_MAXSTR), pointer :: NameSpaceList(:)
     character(ESMF_MAXSTR), pointer :: itemNameList(:)
+    integer, external :: GPTLprint_memusage
+    integer :: ierr
     character(len=*),parameter  :: subname='(shr_nuopc_fldList_Realize)'
     ! ----------------------------------------------
 
@@ -498,6 +500,7 @@ contains
        rc = ESMF_FAILURE
        return
     endif
+    ierr = GPTLprint_memusage(subname)
 
     nullify(StandardNameList)
     nullify(ConnectedList)
