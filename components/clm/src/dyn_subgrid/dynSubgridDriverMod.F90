@@ -171,13 +171,16 @@ contains
     use decompMod            , only : BOUNDS_LEVEL_PROC
     use dynInitColumnsMod    , only : initialize_new_columns
     use dynConsBiogeophysMod , only : dyn_hwcontent_init, dyn_hwcontent_final
-    use dynConsBiogeochemMod , only : dyn_cnbal_patch
+    use dynConsBiogeochemMod , only : dyn_cnbal_patch, dyn_cnbal_column
     use dynpftFileMod        , only : dynpft_interp
     use dynHarvestMod        , only : dynHarvest_interp
     use dynCNDVMod           , only : dynCNDV_interp
     use dynEDMod             , only : dyn_ED
     use reweightMod          , only : reweight_wrapup
     use subgridWeightsMod    , only : compute_higher_order_weights, set_subgrid_diagnostic_fields
+    use CNCStateUpdate1Mod   , only : CStateUpdateDynPatch
+    use CNNStateUpdate1Mod   , only : NStateUpdateDynPatch
+    use PStateUpdate1Mod     , only : PStateUpdateDynPatch
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds_proc  ! processor-level bounds
@@ -308,6 +311,22 @@ contains
                carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
                nitrogenstate_vars, nitrogenflux_vars,&
                phosphorusstate_vars,phosphorusflux_vars)
+
+          call CStateUpdateDynPatch(bounds_clump, &
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
+               carbonflux_vars, carbonstate_vars)
+
+          call NStateUpdateDynPatch(bounds_clump, &
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
+               nitrogenflux_vars, nitrogenstate_vars)
+
+          call PStateUpdateDynPatch(bounds_clump, &
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
+               phosphorusflux_vars, phosphorusstate_vars)
+
+          call dyn_cnbal_column(bounds_clump, nc, column_state_updater, &
+               carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
+               nitrogenstate_vars, phosphorusstate_vars )
        end if
 
     end do

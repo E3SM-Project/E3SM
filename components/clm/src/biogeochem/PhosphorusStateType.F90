@@ -20,7 +20,7 @@ module PhosphorusStateType
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
   use VegetationType              , only : veg_pp
-  use clm_varctl             , only : nu_com
+  use clm_varctl             , only : nu_com, use_crop
   ! soil phosphorus initialization Qing Z. 2017
   use pftvarcon              , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr
   use soilorder_varcon       , only : smax, ks_sorption
@@ -71,11 +71,14 @@ module PhosphorusStateType
      real(r8), pointer :: ptrunc_vr_col                (:,:)       ! col (gP/m3) vertically-resolved column-level sink for P truncation
 
      ! wood product pools, for dynamic landcover
+     real(r8), pointer :: cropseedp_deficit_patch      (:)     ! (gP/m2) pool for seeding new crop growth; this is a NEGATIVE term, indicating the amount of seed usage that needs to be repaid
+     real(r8), pointer :: seedp_grc                    (:)     ! (gP/m2) gridcell-level pool for seeding new PFTs via dynamic landcover
      real(r8), pointer :: seedp_col                    (:)     ! col (gP/m2) column-level pool for seeding new Patches
      real(r8), pointer :: prod1p_col                   (:)     ! col (gN/m2) crop product N pool, 1-year lifespan
      real(r8), pointer :: prod10p_col                  (:)     ! col (gP/m2) wood product P pool, 10-year lifespan
      real(r8), pointer :: prod100p_col                 (:)     ! col (gP/m2) wood product P pool, 100-year lifespan
      real(r8), pointer :: totprodp_col                 (:)     ! col (gP/m2) total wood product P
+     real(r8), pointer :: dyn_pbal_adjustments_col     (:)     ! (gP/m2) adjustments to each column made in this timestep via dynamic column area adjustments
 
      ! summary (diagnostic) state variables, not involved in mass balance
      real(r8), pointer :: dispvegp_patch               (:)     ! patch (gP/m2) displayed veg phosphorus, excluding storage
@@ -110,6 +113,9 @@ module PhosphorusStateType
      real(r8), pointer :: begpb_col                    (:)     ! col phosphorus mass, beginning of time step (gP/m**2)
      real(r8), pointer :: endpb_col                    (:)     ! col phosphorus mass, end of time step (gP/m**2)
      real(r8), pointer :: errpb_col                    (:)     ! colphosphorus balance error for the timestep (gP/m**2)
+     real(r8), pointer :: begpb_grc                    (:)     ! grid cell phosphorus mass, beginning of time step (gP/m**2)
+     real(r8), pointer :: endpb_grc                    (:)     ! grid cell phosphorus mass, end of time step (gP/m**2)
+     real(r8), pointer :: errpb_grc                    (:)     ! grid cell phosphorus balance error for the timestep (gP/m**2)
 
      real(r8), pointer :: solutionp_vr_col_cur         (:,:)
      real(r8), pointer :: solutionp_vr_col_prev        (:,:)
@@ -147,6 +153,7 @@ module PhosphorusStateType
      procedure , public  :: ZeroDWT
      procedure , public  :: Summary
      procedure , public  :: DynamicPatchAdjustments
+     procedure , public  :: DynamicColumnAdjustments
      procedure , private :: InitAllocate
      procedure , private :: InitHistory  
      procedure , private :: InitCold
@@ -192,10 +199,12 @@ contains
     ! !LOCAL VARIABLES:
     integer           :: begp,endp
     integer           :: begc,endc
+    integer           :: begg,endg
     !------------------------------------------------------------------------
 
     begp = bounds%begp; endp = bounds%endp
     begc = bounds%begc; endc = bounds%endc
+    begg = bounds%begg; endg = bounds%endg
 
     allocate(this%grainp_patch             (begp:endp))                   ; this%grainp_patch             (:)   = nan     
     allocate(this%grainp_storage_patch     (begp:endp))                   ; this%grainp_storage_patch     (:)   = nan
@@ -244,11 +253,15 @@ contains
     allocate(this%cwdp_col                 (begc:endc))                   ; this%cwdp_col                 (:)   = nan
     allocate(this%sminp_col                (begc:endc))                   ; this%sminp_col                (:)   = nan
     allocate(this%ptrunc_col               (begc:endc))                   ; this%ptrunc_col               (:)   = nan
+
+    allocate(this%cropseedp_deficit_patch  (begp:endp))                   ; this%cropseedp_deficit_patch  (:)   = nan
+    allocate(this%seedp_grc                (begg:endg))                   ; this%seedp_grc                (:)   = nan
     allocate(this%seedp_col                (begc:endc))                   ; this%seedp_col                (:)   = nan
     allocate(this%prod1p_col               (begc:endc))                   ; this%prod1p_col               (:)   = nan
     allocate(this%prod10p_col              (begc:endc))                   ; this%prod10p_col              (:)   = nan
     allocate(this%prod100p_col             (begc:endc))                   ; this%prod100p_col             (:)   = nan
     allocate(this%totprodp_col             (begc:endc))                   ; this%totprodp_col             (:)   = nan
+    allocate(this%dyn_pbal_adjustments_col (begc:endc))                   ; this%dyn_pbal_adjustments_col (:)   = nan
     allocate(this%totlitp_col              (begc:endc))                   ; this%totlitp_col              (:)   = nan
     allocate(this%totsomp_col              (begc:endc))                   ; this%totsomp_col              (:)   = nan
     allocate(this%totlitp_1m_col           (begc:endc))                   ; this%totlitp_1m_col           (:)   = nan
@@ -280,6 +293,10 @@ contains
     allocate(this%occlp_vr_col_prev      (begc:endc,1:nlevdecomp_full)) ; this%occlp_vr_col_prev           (:,:) = nan
     allocate(this%primp_vr_col_cur       (begc:endc,1:nlevdecomp_full)) ; this%primp_vr_col_cur            (:,:) = nan
     allocate(this%primp_vr_col_prev      (begc:endc,1:nlevdecomp_full)) ; this%primp_vr_col_prev           (:,:) = nan
+
+    allocate(this%begpb_grc   (begg:endg));     this%begpb_grc   (:) =nan
+    allocate(this%endpb_grc   (begg:endg));     this%endpb_grc   (:) =nan
+    allocate(this%errpb_grc   (begg:endg));     this%errpb_grc   (:) =nan
 
     ! debug
     allocate(this%totpftp_beg_col    (begc:endc)); this%totpftp_beg_col      (:) = nan
@@ -342,6 +359,11 @@ contains
        call hist_addfld1d (fname='GRAINP', units='gP/m^2', &
             avgflag='A', long_name='grain P', &
             ptr_patch=this%grainp_patch, default='inactive')
+
+       this%cropseedp_deficit_patch(begp:endp) = spval
+       call hist_addfld1d (fname='CROPSEEDP_DEFICIT', units='gP/m^2', &
+            avgflag='A', long_name='P used for crop seed that needs to be repaid', &
+            ptr_patch=this%cropseedp_deficit_patch)
     end if
 
     this%leafp_patch(begp:endp) = spval
@@ -610,13 +632,18 @@ contains
 
     this%totecosysp_col(begc:endc) = spval
     call hist_addfld1d (fname='TOTECOSYSP', units='gP/m^2', &
-         avgflag='A', long_name='total ecosystem P', &
+         avgflag='A', long_name='total ecosystem P but excl product pools', &
          ptr_col=this%totecosysp_col)
 
     this%totcolp_col(begc:endc) = spval
     call hist_addfld1d (fname='TOTCOLP', units='gP/m^2', &
-         avgflag='A', long_name='total column-level P', &
+         avgflag='A', long_name='total column-level P but excl product pools', &
          ptr_col=this%totcolp_col)
+
+    this%seedp_grc(begg:endg) = spval
+    call hist_addfld1d (fname='SEEDP_GRC', units='gP/m^2', &
+         avgflag='A', long_name='P pool for seeding new PFTs ', &
+         ptr_gcell=this%seedp_grc, default='inactive')
 
     this%seedp_col(begc:endc) = spval
     call hist_addfld1d (fname='SEEDP', units='gP/m^2', &
@@ -728,9 +755,10 @@ contains
 
           this%leafp_xfer_patch(p)        = 0._r8
           if ( crop_prog )then
-             this%grainp_patch(p)         = 0._r8
-             this%grainp_storage_patch(p) = 0._r8
-             this%grainp_xfer_patch(p)    = 0._r8
+             this%grainp_patch(p)            = 0._r8
+             this%grainp_storage_patch(p)    = 0._r8
+             this%grainp_xfer_patch(p)       = 0._r8
+             this%cropseedp_deficit_patch(p) = 0._r8
           end if
           this%frootp_patch(p)            = 0._r8
           this%frootp_storage_patch(p)    = 0._r8
@@ -853,6 +881,10 @@ contains
        this%prod10p_col(c)  = 0._r8	  
        this%prod100p_col(c) = 0._r8	  
        this%totprodp_col(c) = 0._r8	  
+    end do
+
+    do g = bounds%begg, bounds%endg
+       this%seedp_grc(g) = 0._r8
     end do
 
     ! initialize fields for special filters
@@ -1438,9 +1470,10 @@ contains
     if ( crop_prog )then
        do fi = 1,num_patch
           i = filter_patch(fi)
-          this%grainp_patch(i)          = value_patch
-          this%grainp_storage_patch(i)  = value_patch
-          this%grainp_xfer_patch(i)     = value_patch   
+          this%grainp_patch(i)            = value_patch
+          this%grainp_storage_patch(i)    = value_patch
+          this%grainp_xfer_patch(i)       = value_patch
+          this%cropseedp_deficit_patch(i) = value_patch
        end do
     end if
 
@@ -1540,6 +1573,7 @@ contains
     integer  :: c,p,j,k,l   ! indices
     integer  :: fp,fc       ! lake filter indices
     real(r8) :: maxdepth    ! depth to integrate soil variables
+    real(r8) :: cropseedp_deficit_col(bounds%begc:bounds%endc)
     !-----------------------------------------------------------------------
 
     do fp = 1,num_soilp
@@ -1601,6 +1635,10 @@ contains
    call p2c(bounds, num_soilc, filter_soilc, &
         this%totpftp_patch(bounds%begp:bounds%endp), &
         this%totpftp_col(bounds%begc:bounds%endc))
+
+   call p2c(bounds, num_soilc, filter_soilc, &
+        this%cropseedp_deficit_patch(bounds%begp:bounds%endp), &
+        cropseedp_deficit_col(bounds%begc:bounds%endc))
 
    ! vertically integrate soil mineral P pools
 
@@ -1832,12 +1870,12 @@ contains
            this%cwdp_col(c) + &
            this%totlitp_col(c) + &
            this%totsomp_col(c) + &
+           this%prod1p_col(c) + &
            this%solutionp_col(c) + &
            this%labilep_col(c) + &
            this%secondp_col(c) + &
-           this%totprodp_col(c) + &
-           this%seedp_col(c)    + &
-           this%ptrunc_col(c)
+           this%ptrunc_col(c) + &
+           cropseedp_deficit_col(c)
    end do
 
  end subroutine Summary
@@ -1857,7 +1895,8 @@ contains
        dwt_livecrootp_to_litter,            &
        dwt_deadcrootp_to_litter,            &
        prod10_pflux,                        &
-       prod100_pflux                        &
+       prod100_pflux,                       &
+       crop_product_pflux                   &
        )
     !
     ! !DESCRIPTION:
@@ -1886,6 +1925,7 @@ contains
     real(r8)                       , intent(inout) :: dwt_deadcrootp_to_litter (bounds%begp:)
     real(r8)                       , intent(inout) :: prod10_pflux             (bounds%begp:)
     real(r8)                       , intent(inout) :: prod100_pflux            (bounds%begp:)
+    real(r8)                       , intent(inout) :: crop_product_pflux       (bounds%begp:)
     !
     ! !LOCAL VARIABLES:
     integer                     :: begp, endp
@@ -1918,6 +1958,7 @@ contains
     SHR_ASSERT_ALL((ubound(dwt_deadcrootp_to_litter ) == (/endp/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(prod10_pflux             ) == (/endp/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(prod100_pflux            ) == (/endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(crop_product_pflux       ) == (/endp/)), errMsg(__FILE__, __LINE__))
    
     old_weight_was_zero = patch_state_updater%old_weight_was_zero(bounds)
     patch_grew          = patch_state_updater%patch_grew(bounds)
@@ -1978,7 +2019,7 @@ contains
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
          var               = this%frootp_patch(begp:endp)             , &
-         flux_out_grc_area = dwt_frootp_to_litter(begp:endp))
+         flux_out_col_area = dwt_frootp_to_litter(begp:endp))
 
     ! 5) FROOTP_STORAGE_PATCH
     call patch_state_updater%update_patch_state(                      &
@@ -2081,7 +2122,7 @@ contains
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
          var               = this%livecrootp_patch(begp:endp)         , &
-         flux_out_grc_area = dwt_livecrootp_to_litter(begp:endp))
+         flux_out_col_area = dwt_livecrootp_to_litter(begp:endp))
 
     ! 16) LIVECROOTP_STORAGE_PATCH
     call patch_state_updater%update_patch_state(                      &
@@ -2105,7 +2146,7 @@ contains
          num_filterp_with_inactive                                  , &
          filterp_with_inactive                                      , &
          var               = this%deadcrootp_patch(begp:endp)         , &
-         flux_out_grc_area = dwt_deadcrootp_to_litter(begp:endp))
+         flux_out_col_area = dwt_deadcrootp_to_litter(begp:endp))
 
     ! 19) DEADCROOTP_STORAGE_PATCH
     call patch_state_updater%update_patch_state(                      &
@@ -2175,6 +2216,17 @@ contains
          filterp_with_inactive                                      , &
          var               = this%totpftp_patch(begp:endp))
 
+    if (use_crop) then
+       ! This is a negative pool. So any deficit that we haven't repaid gets sucked out
+       ! of the atmosphere.
+       call patch_state_updater%update_patch_state(         &
+            bounds                                        , &
+            num_filterp_with_inactive                     , &
+            filterp_with_inactive                         , &
+            var = this%cropseedp_deficit_patch(begp:endp) , &
+            flux_out_grc_area = conv_pflux(begp:endp))
+    end if
+
     ! These fluxes are computed as negative quantities, but are expected to be positive,
     ! so flip the signs
     do p = begp,endp
@@ -2184,5 +2236,96 @@ contains
     end do
 
   end subroutine DynamicPatchAdjustments
+
+  !-----------------------------------------------------------------------
+  subroutine DynamicColumnAdjustments( this, &
+       bounds, clump_index, column_state_updater)
+    !
+    ! !DESCRIPTION:
+    ! Adjust state variables and compute associated fluxes when patch areas change due to
+    ! dynamic landuse
+    !
+    ! !USES:
+    use dynPriorWeightsMod       , only : prior_weights_type
+    use landunit_varcon          , only : istsoil, istcrop
+    use dynColumnStateUpdaterMod , only : column_state_updater_type
+    !
+    ! !ARGUMENTS:
+    class(phosphorusstate_type)     , intent(inout) :: this
+    type(bounds_type)               , intent(in)    :: bounds
+    integer                         , intent(in)    :: clump_index
+    type(column_state_updater_type) , intent(in)    :: column_state_updater
+    !
+    ! !LOCAL VARIABLES:
+    integer                     :: l, j
+    integer                     :: begc, endc
+    real(r8)                    :: adjustment_one_level(bounds%begc:bounds%endc)
+
+    character(len=*), parameter :: subname = 'NStateDynamicColumnAdjustments'
+    !-----------------------------------------------------------------------
+
+    begc = bounds%begc
+    endc = bounds%endc
+
+    !this%dyn_pbal_adjustments_col(begc:endc) = 0._r8
+
+    do l = 1, ndecomp_pools
+       do j = 1, nlevdecomp
+          call column_state_updater%update_column_state_no_special_handling( &
+               bounds      = bounds,                                         &
+               clump_index = clump_index,                                    &
+               var         = this%decomp_ppools_vr_col(begc:endc, j, l),     &
+               adjustment  = adjustment_one_level(begc:endc))
+
+          this%dyn_pbal_adjustments_col(begc:endc) =      &
+               this%dyn_pbal_adjustments_col(begc:endc) + &
+               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
+       end do
+    end do
+
+    do j = 1, nlevdecomp
+       call column_state_updater%update_column_state_no_special_handling( &
+            bounds      = bounds,                                         &
+            clump_index = clump_index,                                    &
+            var         = this%ptrunc_vr_col(begc:endc,j),                &
+            adjustment  = adjustment_one_level(begc:endc))
+
+       this%dyn_pbal_adjustments_col(begc:endc) =      &
+            this%dyn_pbal_adjustments_col(begc:endc) + &
+            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
+       call column_state_updater%update_column_state_no_special_handling( &
+            bounds      = bounds,                                         &
+            clump_index = clump_index,                                    &
+            var         = this%solutionp_vr_col(begc:endc,j),             &
+            adjustment  = adjustment_one_level(begc:endc))
+
+       this%dyn_pbal_adjustments_col(begc:endc) =      &
+            this%dyn_pbal_adjustments_col(begc:endc) + &
+            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
+       call column_state_updater%update_column_state_no_special_handling( &
+            bounds      = bounds,                                         &
+            clump_index = clump_index,                                    &
+            var         = this%labilep_vr_col(begc:endc,j),               &
+            adjustment  = adjustment_one_level(begc:endc))
+
+       this%dyn_pbal_adjustments_col(begc:endc) =      &
+            this%dyn_pbal_adjustments_col(begc:endc) + &
+            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
+       call column_state_updater%update_column_state_no_special_handling( &
+            bounds      = bounds,                                         &
+            clump_index = clump_index,                                    &
+            var         = this%secondp_vr_col(begc:endc,j),               &
+            adjustment  = adjustment_one_level(begc:endc))
+
+       this%dyn_pbal_adjustments_col(begc:endc) =      &
+            this%dyn_pbal_adjustments_col(begc:endc) + &
+            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+    end do
+
+  end subroutine DynamicColumnAdjustments
 
 end module PhosphorusStateType

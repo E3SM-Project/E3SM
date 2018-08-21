@@ -27,16 +27,79 @@ module PStateUpdate1Mod
   use CNStateType            , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
   use clm_varctl             , only : forest_fert_exp
   use clm_varctl             , only : NFIX_PTASE_plant
+  use decompMod              , only : bounds_type
+  use clm_varcon             , only : dzsoi_decomp
+  use clm_varctl             , only : use_fates
   !
   implicit none
   save
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public:: PStateUpdate1
+  public :: PStateUpdateDynPatch
+  public :: PStateUpdate1
   !-----------------------------------------------------------------------
 
 contains
+  subroutine PStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
+       phosphorusflux_vars, phosphorusstate_vars)
+    !
+    ! !DESCRIPTION:
+    ! Update phosphorus states based on fluxes from dyn_cnbal_patch
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)          , intent(in)    :: bounds
+    integer                    , intent(in)    :: num_soilc_with_inactive       ! number of columns in soil filter
+    integer                    , intent(in)    :: filter_soilc_with_inactive(:) ! soil column filter that includes inactive points
+    type(phosphorusflux_type)  , intent(in)    :: phosphorusflux_vars
+    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer                                    :: c                             ! column index
+    integer                                    :: fc                            ! column filter index
+    integer                                    :: g                             ! gridcell index
+    integer                                    :: j                             ! level index
+    real(r8)                                   :: dt                            ! time step (seconds)
+
+    character(len=*)           , parameter     :: subname = 'PStateUpdateDynPatch'
+    !-----------------------------------------------------------------------
+
+    associate( &
+         pf => phosphorusflux_vars  , &
+         ps => phosphorusstate_vars   &
+         )
+
+      dt = real( get_step_size(), r8 )
+
+      if (.not.use_fates) then
+
+         do g = bounds%begg, bounds%endg
+            ps%seedp_grc(g) = ps%seedp_grc(g) &
+                 - pf%dwt_seedp_to_leaf_grc(g)     * dt &
+                 - pf%dwt_seedp_to_deadstem_grc(g) * dt &
+                 - pf%dwt_seedp_to_ppool_grc(g)    * dt
+         end do
+
+         do j = 1,nlevdecomp
+            do fc = 1, num_soilc_with_inactive
+               c = filter_soilc_with_inactive(fc)
+
+               ps%decomp_ppools_vr_col(c,j,i_met_lit) = ps%decomp_ppools_vr_col(c,j,i_met_lit) + &
+                    pf%dwt_frootp_to_litr_met_p_col(c,j) * dt
+               ps%decomp_ppools_vr_col(c,j,i_cel_lit) = ps%decomp_ppools_vr_col(c,j,i_cel_lit) + &
+                    pf%dwt_frootp_to_litr_cel_p_col(c,j) * dt
+               ps%decomp_ppools_vr_col(c,j,i_lig_lit) = ps%decomp_ppools_vr_col(c,j,i_lig_lit) + &
+                    pf%dwt_frootp_to_litr_lig_p_col(c,j) * dt
+               ps%decomp_ppools_vr_col(c,j,i_cwd) = ps%decomp_ppools_vr_col(c,j,i_cwd) + &
+                    ( pf%dwt_livecrootp_to_cwdp_col(c,j) + pf%dwt_deadcrootp_to_cwdp_col(c,j) ) * dt
+
+            end do
+         end do
+      end if
+
+    end associate
+
+  end subroutine PStateUpdateDynPatch
 
   !-----------------------------------------------------------------------
   subroutine PStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -87,17 +150,10 @@ contains
 
       ! column-level fluxes
 
-      ! seeding fluxes, from dynamic landcover
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         ps%seedp_col(c) = ps%seedp_col(c) - pf%dwt_seedp_to_leaf_col(c) * dt
-         ps%seedp_col(c) = ps%seedp_col(c) - pf%dwt_seedp_to_deadstem_col(c) * dt
-         ps%seedp_col(c) = ps%seedp_col(c) - pf%dwt_seedp_to_ppool_col(c) * dt
-      end do
 
       !------------------------------------------------------------------
       ! if coupled with pflotran, the following updates are NOT needed
-!      if (.not.(use_pflotran .and. pf_cmode)) then
+      ! if (.not.(use_pflotran .and. pf_cmode)) then
       !------------------------------------------------------------------
       if(.not. is_active_betr_bgc)then
       do j = 1, nlevdecomp
@@ -107,16 +163,13 @@ contains
             ! plant to litter fluxes
             ! phenology and dynamic landcover fluxes
             pf%decomp_ppools_sourcesink_col(c,j,i_met_lit) = &
-                 ( pf%phenology_p_to_litr_met_p_col(c,j) + pf%dwt_frootp_to_litr_met_p_col(c,j) ) * dt
+                 pf%phenology_p_to_litr_met_p_col(c,j) * dt
 
             pf%decomp_ppools_sourcesink_col(c,j,i_cel_lit) = &
-                 ( pf%phenology_p_to_litr_cel_p_col(c,j) + pf%dwt_frootp_to_litr_cel_p_col(c,j) ) * dt
+                 pf%phenology_p_to_litr_cel_p_col(c,j) * dt
 
             pf%decomp_ppools_sourcesink_col(c,j,i_lig_lit) = &
-                 ( pf%phenology_p_to_litr_lig_p_col(c,j) + pf%dwt_frootp_to_litr_lig_p_col(c,j) ) * dt
-
-            pf%decomp_ppools_sourcesink_col(c,j,i_cwd)     = &
-                 ( pf%dwt_livecrootp_to_cwdp_col(c,j)    + pf%dwt_deadcrootp_to_cwdp_col(c,j) )   * dt
+                 pf%phenology_p_to_litr_lig_p_col(c,j) * dt
 
          end do
       end do
@@ -232,6 +285,9 @@ contains
             ps%livestemp_patch(p)  = ps%livestemp_patch(p)  - pf%livestemp_to_retransp_patch(p)*dt
             ps%retransp_patch(p)   = ps%retransp_patch(p)   + pf%livestemp_to_retransp_patch(p)*dt
             ps%grainp_patch(p)     = ps%grainp_patch(p)     - pf%grainp_to_food_patch(p)*dt
+
+            ps%cropseedp_deficit_patch(p) = ps%cropseedp_deficit_patch(p) &
+                 - pf%crop_seedp_to_leaf_patch(p) * dt
          end if
 
          ! uptake from soil mineral N pool

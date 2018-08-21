@@ -26,17 +26,81 @@ module CNNStateUpdate1Mod
   use clm_varctl             , only : forest_fert_exp
   use clm_varctl             , only : nu_com
   use clm_varctl             , only : NFIX_PTASE_plant
-
+  use decompMod              , only : bounds_type
+  use clm_varcon             , only : dzsoi_decomp
+  use clm_varctl             , only : use_fates
   !
   implicit none
   save
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public:: NStateUpdate1
+  public :: NStateUpdateDynPatch
+  public :: NStateUpdate1
   !-----------------------------------------------------------------------
 
 contains
+
+  !-----------------------------------------------------------------------
+  subroutine NStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
+       nitrogenflux_vars, nitrogenstate_vars)
+    !
+    ! !DESCRIPTION:
+    ! Update nitrogen states based on fluxes from dyn_cnbal_patch
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)        , intent(in)    :: bounds
+    integer                  , intent(in)    :: num_soilc_with_inactive       ! number of columns in soil filter
+    integer                  , intent(in)    :: filter_soilc_with_inactive(:) ! soil column filter that includes inactive points
+    type(nitrogenflux_type)  , intent(in)    :: nitrogenflux_vars
+    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer                                  :: c                             ! column index
+    integer                                  :: fc                            ! column filter index
+    integer                                  :: g                             ! gridcell index
+    integer                                  :: j                             ! level index
+    real(r8)                                 :: dt                            ! time step (seconds)
+
+    character(len=*)         , parameter     :: subname = 'NStateUpdateDynPatch'
+    !-----------------------------------------------------------------------
+
+    associate( &
+         nf => nitrogenflux_vars  , &
+         ns => nitrogenstate_vars   &
+         )
+
+      dt = real( get_step_size(), r8 )
+
+      if (.not.use_fates) then
+
+         do g = bounds%begg, bounds%endg
+            ns%seedn_grc(g) = ns%seedn_grc(g) &
+                 - nf%dwt_seedn_to_leaf_grc(g)     * dt &
+                 - nf%dwt_seedn_to_deadstem_grc(g) * dt &
+                 - nf%dwt_seedn_to_npool_grc(g)    * dt
+         end do
+
+         do j = 1,nlevdecomp
+            do fc = 1, num_soilc_with_inactive
+               c = filter_soilc_with_inactive(fc)
+
+               ns%decomp_npools_vr_col(c,j,i_met_lit) = ns%decomp_npools_vr_col(c,j,i_met_lit) + &
+                    nf%dwt_frootn_to_litr_met_n_col(c,j) * dt
+               ns%decomp_npools_vr_col(c,j,i_cel_lit) = ns%decomp_npools_vr_col(c,j,i_cel_lit) + &
+                    nf%dwt_frootn_to_litr_cel_n_col(c,j) * dt
+               ns%decomp_npools_vr_col(c,j,i_lig_lit) = ns%decomp_npools_vr_col(c,j,i_lig_lit) + &
+                    nf%dwt_frootn_to_litr_lig_n_col(c,j) * dt
+               ns%decomp_npools_vr_col(c,j,i_cwd) = ns%decomp_npools_vr_col(c,j,i_cwd) + &
+                    ( nf%dwt_livecrootn_to_cwdn_col(c,j) + nf%dwt_deadcrootn_to_cwdn_col(c,j) ) * dt
+
+            end do
+         end do
+      end if
+
+    end associate
+
+  end subroutine NStateUpdateDynPatch
 
   !-----------------------------------------------------------------------
   subroutine NStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -88,14 +152,6 @@ contains
 
       ! column-level fluxes
 
-      ! seeding fluxes, from dynamic landcover
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         ns%seedn_col(c) = ns%seedn_col(c) - nf%dwt_seedn_to_leaf_col(c) * dt
-         ns%seedn_col(c) = ns%seedn_col(c) - nf%dwt_seedn_to_deadstem_col(c) * dt
-         ns%seedn_col(c) = ns%seedn_col(c) - nf%dwt_seedn_to_npool_col(c) * dt
-      end do
-
       if (.not. is_active_betr_bgc .and. .not.(use_pflotran .and. pf_cmode)) then
 
          do j = 1, nlevdecomp
@@ -119,17 +175,13 @@ contains
                ! plant to litter fluxes
                ! phenology and dynamic landcover fluxes
                nf%decomp_npools_sourcesink_col(c,j,i_met_lit) = &
-                    ( nf%phenology_n_to_litr_met_n_col(c,j) + nf%dwt_frootn_to_litr_met_n_col(c,j) ) * dt
+                    nf%phenology_n_to_litr_met_n_col(c,j) * dt
                
                nf%decomp_npools_sourcesink_col(c,j,i_cel_lit) = &
-                    ( nf%phenology_n_to_litr_cel_n_col(c,j) + nf%dwt_frootn_to_litr_cel_n_col(c,j) ) * dt
+                    nf%phenology_n_to_litr_cel_n_col(c,j) * dt
                
                nf%decomp_npools_sourcesink_col(c,j,i_lig_lit) = &
-                    ( nf%phenology_n_to_litr_lig_n_col(c,j) + nf%dwt_frootn_to_litr_lig_n_col(c,j) ) * dt
-               
-               nf%decomp_npools_sourcesink_col(c,j,i_cwd)     = &
-                    ( nf%dwt_livecrootn_to_cwdn_col(c,j)    + nf%dwt_deadcrootn_to_cwdn_col(c,j) )   * dt
-               
+                    nf%phenology_n_to_litr_lig_n_col(c,j) * dt
             end do
          end do
          
@@ -362,6 +414,9 @@ contains
             ns%livestemn_patch(p)  = ns%livestemn_patch(p)  - nf%livestemn_to_retransn_patch(p)*dt
             ns%retransn_patch(p)   = ns%retransn_patch(p)   + nf%livestemn_to_retransn_patch(p)*dt
             ns%grainn_patch(p)     = ns%grainn_patch(p)     - nf%grainn_to_food_patch(p)*dt
+
+            ns%cropseedn_deficit_patch(p) = ns%cropseedn_deficit_patch(p) &
+                 - nf%crop_seedn_to_leaf_patch(p) * dt
          end if
 
          ! uptake from soil mineral N pool
