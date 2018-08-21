@@ -581,12 +581,12 @@ CONTAINS
        end do
 
        ! compute atm/ice surface fluxes
-       call shr_flux_atmIce(&
+       call dice_flux_atmice( &
             iMask              ,x2i%rAttr(kz,:)     ,x2i%rAttr(kua,:)    ,x2i%rAttr(kva,:)  , &
             x2i%rAttr(kptem,:) ,x2i%rAttr(kshum,:)  ,x2i%rAttr(kdens,:)  ,x2i%rAttr(ktbot,:), &
             i2x%rAttr(kt,:)    ,i2x%rAttr(ksen,:)   ,i2x%rAttr(klat,:)   ,i2x%rAttr(klwup,:), &
             i2x%rAttr(kevap,:) ,i2x%rAttr(ktauxa,:) ,i2x%rAttr(ktauya,:) ,i2x%rAttr(ktref,:), &
-            i2x%rAttr(kqref,:) )
+            i2x%rAttr(kqref,:) ,logunit )
 
        ! compute ice/oce surface fluxes (except melth & meltw, see above)
        do n=1,lsize

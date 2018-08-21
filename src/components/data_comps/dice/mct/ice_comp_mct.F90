@@ -16,7 +16,6 @@ module ice_comp_mct
   use dice_comp_mod   , only: dice_comp_init, dice_comp_run, dice_comp_final
   use dice_shr_mod    , only: dice_shr_read_namelists
   use seq_flds_mod    , only: seq_flds_i2x_fields, seq_flds_x2i_fields, seq_flds_i2o_per_cat
-  use seq_timemgr_mod , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
 
   ! !PUBLIC TYPES:
   implicit none
@@ -34,19 +33,21 @@ module ice_comp_mct
   ! Private module data
   !--------------------------------------------------------------------------
   type(shr_strdata_type) :: SDICE
-  integer                :: mpicom              ! mpi communicator
-  integer                :: my_task             ! my task in mpi communicator mpicom
+  integer(IN)            :: mpicom              ! mpi communicator
+  integer(IN)            :: my_task             ! my task in mpi communicator mpicom
   integer                :: inst_index          ! number of current instance (ie. 1)
   character(len=16)      :: inst_name           ! fullname of current instance (ie. "lnd_0001")
   character(len=16)      :: inst_suffix         ! char string associated with instance (ie. "_0001" or "")
-  integer                :: logunit             ! logging unit number
-  integer                :: compid              ! mct comp id
-  integer    ,parameter  :: master_task=0       ! task number of master task
-  integer    ,parameter  :: dbug = 10
+  integer(IN)            :: logunit             ! logging unit number
+  integer(IN)            :: compid              ! mct comp id
+  logical                :: read_restart        ! start from restart
 
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  character(*), parameter :: F00   = "('(dice_comp_init) ',8a)"
+  integer(IN) , parameter :: master_task=0 ! task number of master task
+  character(*), parameter :: subName = "(ice_init_mct) "
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   !===============================================================================
   subroutine ice_init_mct( EClock, cdata, x2i, i2x, NLFilename )
@@ -64,22 +65,14 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer                          :: phase                     ! phase of method
-    logical                          :: ice_present               ! flag
-    logical                          :: ice_prognostic            ! flag
-    integer                          :: shrlogunit                ! original log unit
-    integer                          :: shrloglev                 ! original log level
-    logical                          :: read_restart              ! start from restart
-    integer                          :: ierr                      ! error code
-    logical                          :: scmMode = .false.         ! single column mode
-    real(R8)                         :: scmLat  = shr_const_SPVAL ! single column lat
-    real(R8)                         :: scmLon  = shr_const_SPVAL ! single column lon
-    integer                          :: yy,mm,dd,tod              ! year month day time-of-day
-    integer                          :: currentYMD                ! model date
-    integer                          :: currentTOD                ! model sec into model date
-    integer                          :: modeldt                   ! integer timestep
-    character(len=80)                :: calendar                  ! calendar name
-    character(*), parameter :: F00   = "('(dice_comp_init) ',8a)"
+    logical           :: ice_present               ! flag
+    logical           :: ice_prognostic            ! flag
+    integer(IN)       :: shrlogunit                ! original log unit
+    integer(IN)       :: shrloglev                 ! original log level
+    integer(IN)       :: ierr                      ! error code
+    logical           :: scmMode = .false.         ! single column mode
+    real(R8)          :: scmLat  = shr_const_SPVAL ! single column lat
+    real(R8)          :: scmLon  = shr_const_SPVAL ! single column lon
     character(*), parameter :: subName = "(ice_init_mct) "
     !-------------------------------------------------------------------------------
 
@@ -124,7 +117,7 @@ CONTAINS
 
     call dice_shr_read_namelists(mpicom, my_task, master_task, &
          inst_index, inst_suffix, inst_name,  &
-         logunit, SDICE, ice_present, ice_prognostic)
+         logunit, shrlogunit, SDICE, ice_present, ice_prognostic)
 
     call seq_infodata_PutData(infodata, &
          ice_present=ice_present, &
@@ -141,41 +134,17 @@ CONTAINS
        RETURN
     end if
 
+    ! NOTE: the following will never be called if ice_present is .false.
+
     !----------------------------------------------------------------------------
     ! Initialize dice
     !----------------------------------------------------------------------------
 
-    ! For mct - the component clock is advance at the beginning of the time interval
-    call seq_timemgr_EClockGetData( EClock, &
-         curr_yr=yy, curr_mon=mm, curr_day=dd, curr_ymd=CurrentYMD, curr_tod=CurrentTOD, &
-         calendar=calendar, dtime=modeldt)
-
-    call dice_comp_init(&
-         x2i=x2i, &
-         i2x=i2x, &
-         flds_x2i_fields=seq_flds_x2i_fields, &
-         flds_i2x_fields=seq_flds_i2x_fields, &
-         flds_i2o_per_cat=seq_flds_i2o_per_cat, &
-         SDICE=SDICE, &
-         gsmap=gsmap, &
-         ggrid=ggrid, &
-         mpicom=mpicom, &
-         compid=compid, &
-         my_task=my_task, &
-         master_task=master_task, &
-         inst_suffix=inst_suffix, &
-         inst_name=inst_name, &
-         logunit=logunit, &
-         read_restart=read_restart, &
-         scmMode=scmMode, &
-         scmlat=scmlat, &
-         scmlon=scmlon, &
-         calendar=calendar, &
-         modeldt=modeldt, &
-         current_ymd=CurrentYMD, &
-         current_tod=CurrentTOD, &
-         current_day=dd, &
-         current_mon=mm)
+    call dice_comp_init(Eclock, x2i, i2x, &
+         seq_flds_x2i_fields, seq_flds_i2x_fields, seq_flds_i2o_per_cat, &
+         SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+         inst_suffix, inst_name, logunit, read_restart, &
+         scmMode, scmlat, scmlon)
 
     !----------------------------------------------------------------------------
     ! Fill infodata that needs to be returned from dice
@@ -184,16 +153,6 @@ CONTAINS
     call seq_infodata_PutData(infodata, &
          ice_nx=SDICE%nxg, &
          ice_ny=SDICE%nyg )
-
-    !----------------------------------------------------------------------------
-    ! diagnostics
-    !----------------------------------------------------------------------------
-
-    if (dbug > 1) then
-       if (my_task == master_task) then
-          call mct_aVect_info(2, i2x, istr='initial diag'//':AV')
-       end if
-    end if
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
@@ -224,23 +183,15 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer                          :: shrlogunit    ! original log unit
-    integer                          :: shrloglev     ! original log level
-    logical                          :: read_restart  ! start from restart
-    character(CL)                    :: case_name     ! case name
-    logical                          :: write_restart ! restart now
-    integer                          :: currentYMD    ! model date
-    integer                          :: currentTOD    ! model sec into model date
-    integer                          :: yy,mm,dd,tod  ! year month day time-of-day
-    integer                          :: modeldt       ! integer timestep
-    character(len=80)                :: calendar      ! calendar name
+    integer(IN)                      :: shrlogunit   ! original log unit
+    integer(IN)                      :: shrloglev    ! original log level
+    character(CL)                    :: case_name    ! case name
     character(*), parameter :: subName = "(ice_run_mct) "
     !-------------------------------------------------------------------------------
 
     ! Reset shr logging to my log file
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogLevel(max(shrloglev,1))
     call shr_file_setLogUnit (logUnit)
 
     call seq_cdata_setptrs(cdata, &
@@ -250,44 +201,14 @@ CONTAINS
 
     call seq_infodata_GetData(infodata, case_name=case_name)
 
-    write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
-
-    ! For mct - the component clock is advance at the beginning of the time interval
-    call seq_timemgr_EClockGetData( EClock, &
-         curr_yr=yy, curr_mon=mm, curr_day=dd, curr_ymd=CurrentYMD, curr_tod=CurrentTOD, &
-         calendar=calendar, dtime=modeldt)
-
-    call dice_comp_run(&
-         x2i=x2i, &
-         i2x=i2x, &
-         flds_i2o_per_cat=seq_flds_i2o_per_cat, &
-         SDICE=SDICE, &
-         gsmap=gsmap, &
-         ggrid=ggrid, &
-         mpicom=mpicom, &
-         compid=compid, &
-         my_task=my_task, &
-         master_task=master_task, &
-         inst_suffix=inst_suffix, &
-         logunit=logunit, &
-         read_restart=.false., &
-         write_restart=write_restart, &
-         target_ymd=CurrentYMD, &
-         target_tod=CurrentTOD, &
-         target_mon=mm, &
-         target_day=dd, &
-         calendar=calendar, &
-         modeldt=modeldt, &
-         case_name=case_name)
-
-    if (dbug > 1) then
-       if (my_task == master_task) then
-          call mct_aVect_info(2, i2x, istr='run diag'//':AV')
-       end if
-    end if
+    call dice_comp_run(EClock, x2i, i2x, &
+         seq_flds_i2o_per_cat, &
+         SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+         inst_suffix, logunit, read_restart, case_name)
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
+    call shr_sys_flush(logunit)
 
   end subroutine ice_run_mct
 

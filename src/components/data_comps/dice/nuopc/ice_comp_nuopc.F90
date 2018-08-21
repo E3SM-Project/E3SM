@@ -12,7 +12,7 @@ module ice_comp_nuopc
   use NUOPC_Model           , only : model_label_SetRunClock => label_SetRunClock
   use NUOPC_Model           , only : model_label_Finalize    => label_Finalize
   use NUOPC_Model           , only : NUOPC_ModelGet
-  use med_constants_mod     , only : R8, CXX
+  use med_constants_mod     , only : R8, CXX, CS
   use med_constants_mod     , only : shr_log_Unit
   use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
   use med_constants_mod     , only : shr_file_getloglevel, shr_file_setloglevel
@@ -31,15 +31,18 @@ module ice_comp_nuopc
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
   use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
   use shr_strdata_mod       , only : shr_strdata_type
+  use shr_cal_mod           , only : shr_cal_ymd2julian
+  use shr_const_mod         , only : shr_const_pi
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax
   use dshr_nuopc_mod        , only : fld_list_add
   use dshr_nuopc_mod        , only : fld_list_realize
+  use dshr_nuopc_mod        , only : avio_list_add
   use dshr_nuopc_mod        , only : ModelInitPhase
   use dshr_nuopc_mod        , only : ModelSetRunClock
   use dshr_nuopc_mod        , only : ModelSetMetaData
 
   use dice_shr_mod          , only : dice_shr_read_namelists
-  use dice_comp_mod         , only : dice_comp_init, dice_comp_run, dice_comp_final
+  use dice_comp_mod         , only : dice_comp_init, dice_comp_run, dice_comp_final, dice_comp_debug
   use mct_mod
 
   implicit none
@@ -61,7 +64,8 @@ module ice_comp_nuopc
   integer                    :: fldsFrIce_num = 0
   type (fld_list_type)       :: fldsToIce(fldsMax)
   type (fld_list_type)       :: fldsFrIce(fldsMax)
-
+  character(len=CS), pointer :: avifld(:)
+  character(len=CS), pointer :: avofld(:)
   character(len=80)          :: myModelName = 'ice'       ! user defined model name
   type(shr_strdata_type)     :: SDICE
   type(mct_gsMap), target    :: gsMap_target
@@ -86,15 +90,15 @@ module ice_comp_nuopc
   integer                    :: dbrc
   integer, parameter         :: dbug = 10
   logical                    :: flds_i2o_per_cat          ! .true. if select per ice thickness
-                                                          ! category fields are passed from ice to ocean
+                                                        ! category fields are passed from ice to ocean
   character(len=80)          :: calendar                  ! calendar name
   integer                    :: modeldt                   ! integer timestep
   character(len=CXX)         :: flds_i2x = ''
   character(len=CXX)         :: flds_x2i = ''
-
-  logical                :: use_esmf_metadata = .false.
-  character(*),parameter :: modName =  "(ice_comp_nuopc)"
-  character(*),parameter :: u_FILE_u = __FILE__
+  logical                    :: use_esmf_metadata = .false.
+  real(R8)    ,parameter     :: pi  = shr_const_pi      ! pi
+  character(*),parameter     :: modName =  "(ice_comp_nuopc)"
+  character(*),parameter     :: u_FILE_u = __FILE__
 
 !===============================================================================
 contains
@@ -249,6 +253,9 @@ contains
     !--------------------------------
 
     if (ice_present) then
+       ! mappings of stream field names to output field names
+       call avio_list_add(avifld, avofld, namei='ifrac', nameo='Si_ifrac')
+
        ! export fields
        call fld_list_add(fldsFrice_num, fldsFrice, trim(flds_scalar_name)) 
        call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_imask'      , flds_concat=flds_i2x)
@@ -370,6 +377,8 @@ contains
     integer                 :: current_mon               ! model month
     integer                 :: current_day               ! model day
     integer                 :: current_tod               ! model sec into model date
+    real(R8)                :: cosarg                    ! for setting ice temp pattern
+    real(R8)                :: jday, jday0               ! elapsed day counters
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
@@ -423,26 +432,19 @@ contains
     ! Determine calendar info
     !----------------------------------------------------------------------------
 
-    call ESMF_ClockGet( clock, currTime=currTime, timeStep=timeStep, rc=rc)
+    call ESMF_ClockGet( clock, calkindflag=esmf_caltype, rc=rc )
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_TimeGet( currTime, yy=current_year, mm=current_mon, dd=current_day, s=current_tod, &
-         calkindflag=esmf_caltype, rc=rc )
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_cal_ymd2date(current_year, current_mon, current_day, current_ymd)
 
     if (esmf_caltype == ESMF_CALKIND_NOLEAP) then
        calendar = shr_cal_noleap
     else if (esmf_caltype == ESMF_CALKIND_GREGORIAN) then
        calendar = shr_cal_gregorian
     else
-       call ESMF_LogWrite(subname//" ERROR bad ESMF calendar name "//trim(calendar), ESMF_LOGMSG_ERROR, rc=dbrc)
+       call ESMF_LogWrite(subname//" ERROR bad ESMF calendar name "//trim(calendar), &
+            ESMF_LOGMSG_ERROR, rc=dbrc)
        rc = ESMF_Failure
        return
     end if
-
-    call ESMF_TimeIntervalGet( timeStep, s=modeldt, rc=rc )
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
     ! Initialize model
@@ -468,13 +470,8 @@ contains
          scmMode=scmMode, &
          scmlat=scmlat, &
          scmlon=scmlon, &
-         calendar=calendar, &
-         modeldt=modeldt, &
-         current_ymd=current_ymd, &
-         current_tod=current_tod, &
-         current_day=current_day, &
-         current_mon=current_mon)
-
+         calendar=calendar)
+    
     !--------------------------------
     ! Generate the mesh
     !--------------------------------
@@ -525,11 +522,49 @@ contains
          mesh=Emesh, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    !--------------------------------
-    ! Pack export state
-    ! Copy from d2x to exportState
-    ! Set the coupling scalars
-    !--------------------------------
+    !----------------------------------------------------------------------------
+    ! Set initial ice state and pack export state
+    !----------------------------------------------------------------------------
+
+    call ESMF_ClockGet( clock, currTime=currTime, timeStep=timeStep, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_TimeGet( currTime, yy=current_year, mm=current_mon, dd=current_day, s=current_tod, &
+         calkindflag=esmf_caltype, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call shr_cal_ymd2date(current_year, current_mon, current_day, current_ymd)
+
+    call ESMF_TimeIntervalGet( timeStep, s=modeldt, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call shr_cal_ymd2julian(0, current_mon, current_day, current_tod, jDay , calendar)    ! julian day for model
+    call shr_cal_ymd2julian(0, 9,           1,           0,           jDay0, calendar)    ! julian day for Sept 1
+    cosArg = 2.0_R8*pi*(jday - jday0)/365.0_R8
+
+    call dice_comp_run(&
+         x2i=x2d, &
+         i2x=d2x, &
+         flds_i2o_per_cat=flds_i2o_per_cat, &
+         SDICE=SDICE, &
+         gsmap=gsmap, &
+         ggrid=ggrid, &
+         mpicom=mpicom, &
+         my_task=my_task, &
+         master_task=master_task, &
+         inst_suffix=inst_suffix, &
+         logunit=logunit, &
+         read_restart=read_restart, &
+         write_restart=.false., &
+         calendar=calendar, &
+         modeldt=modeldt, &
+         target_ymd=current_ymd, &
+         target_tod=current_tod, &
+         cosArg=cosArg, &
+         avifld=avifld, &
+         avofld=avofld)
+
+    ! Write debug output if appropriate
+    call dice_comp_debug(my_task, master_task, logunit, current_ymd, current_tod, x2d, d2x)
 
     call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_i2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -584,11 +619,13 @@ contains
     integer                 :: shrlogunit    ! original log unit
     integer                 :: shrloglev     ! original log level
     logical                 :: write_restart ! restart alarm is ringing
-    integer                 :: nextYMD       ! model date
-    integer                 :: nextTOD       ! model sec into model date
+    integer                 :: next_ymd      ! model date
+    integer                 :: next_tod      ! model sec into model date
     integer                 :: yr            ! year
     integer                 :: mon           ! month
     integer                 :: day           ! day in month
+    real(R8)                :: cosarg        ! for setting ice temp pattern
+    real(R8)                :: jday, jday0   ! elapsed day counters
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
@@ -626,6 +663,8 @@ contains
     ! Run model
     !--------------------------------
 
+    ! Determine if will write restart
+
     call ESMF_ClockGetAlarm(clock, alarmname='alarm_restart', alarm=alarm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -646,9 +685,15 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     nextTime = currTime + timeStep
-    call ESMF_TimeGet( nextTime, yy=yr, mm=mon, dd=day, s=nexttod, rc=rc )
+    call ESMF_TimeGet( nextTime, yy=yr, mm=mon, dd=day, s=next_tod, rc=rc )
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_cal_ymd2date(yr, mon, day, nextymd)
+    call shr_cal_ymd2date(yr, mon, day, next_ymd)
+
+    call shr_cal_ymd2julian(0, mon, day, next_tod, jDay , calendar)    ! julian day for model
+    call shr_cal_ymd2julian(0, 9,   1,   0,        jDay0, calendar)    ! julian day for Sept 1
+    cosArg = 2.0_R8*pi*(jday - jday0)/365.0_R8
+
+    ! Run dice
 
     call dice_comp_run(&
          x2i=x2d, &
@@ -658,20 +703,23 @@ contains
          gsmap=gsmap, &
          ggrid=ggrid, &
          mpicom=mpicom, &
-         compid=compid, &
          my_task=my_task, &
          master_task=master_task, &
          inst_suffix=inst_suffix, &
          logunit=logunit, &
          read_restart=.false., &
          write_restart=write_restart, &
-         target_ymd=nextymd, &
-         target_tod=nexttod, &
-         target_mon=mon, &
-         target_day=day, &
          calendar=calendar, &
          modeldt=modeldt, &
+         target_ymd=next_ymd, &
+         target_tod=next_tod, &
+         cosArg=cosArg, &
+         avifld=avifld, &
+         avofld=avofld, &
          case_name=case_name)
+
+    ! Write debug output if appropriate
+    call dice_comp_debug(my_task, master_task, logunit, next_ymd, next_tod, x2d, d2x)
 
     !--------------------------------
     ! Pack export state

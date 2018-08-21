@@ -137,6 +137,9 @@ contains
     character(len=CX)      :: rof2ocn_ice_rmapname
     character(len=CX)      :: rof2ocn_liq_rmapname
     character(len=CX)      :: wav2ocn_smapname
+    logical                :: flds_co2a  ! use case
+    logical                :: flds_co2b  ! use case
+    logical                :: flds_co2c  ! use case
     integer                :: glc_nec
     integer                :: mpicom
     character(len=*), parameter :: subname='(shr_nuopc_fldList_Init)'
@@ -152,6 +155,21 @@ contains
 
     mastertask = .false.
     if (localPet == 0) mastertask=.true.
+
+    call NUOPC_CompAttributeGet(gcomp, name='flds_co2a', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) flds_co2a
+    call ESMF_LogWrite('flds_co2a = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
+
+    call NUOPC_CompAttributeGet(gcomp, name='flds_co2b', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) flds_co2b
+    call ESMF_LogWrite('flds_co2b = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
+
+    call NUOPC_CompAttributeGet(gcomp, name='flds_co2c', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) flds_co2c
+    call ESMF_LogWrite('flds_co2c = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
 
     !----------------------------------------------------------
     ! Initialize mapping file names
@@ -1867,50 +1885,104 @@ contains
     call shr_nuopc_fldList_AddFld(fldListTo(compglc)%flds, 'Sl_topo')
     call shr_nuopc_fldList_AddMap(FldListFr(complnd)%flds(n1), complnd, compglc, mapconsf, 'none', lnd2glc_fmapname)
 
-    !-----------------------------
-    ! co2 fields
-    !-----------------------------
+    if (flds_co2a) then
 
-    longname = 'Prognostic CO2 at the lowest model level'
-    stdname  = 'prognostic_CO2_lowest_level'
-    units    = '1e-6 mol/mol'
-    call shr_nuopc_fldList_AddMetadata(fldname='Sa_co2prog', longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Sa_co2prog', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Sa_co2prog', &
-         merge_from1=compatm, merge_field1='Sa_co2prog', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sa_co2prog', &
-         merge_from1=compatm, merge_field1='Sa_co2prog', merge_type1='copy')
-    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapbilnr, 'one', atm2lnd_smapname)
-    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapbilnr, 'one', atm2ocn_smapname)
+       longname = 'Prognostic CO2 at the lowest model level'
+       stdname  = 'prognostic_CO2_lowest_level'
+       units    = '1e-6 mol/mol'
+       call shr_nuopc_fldList_AddMetadata(fldname='Sa_co2prog', longname=longname, stdname=stdname, units=units)
+       call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Sa_co2prog', fldindex=n1)
+       call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Sa_co2prog', &
+            merge_from1=compatm, merge_field1='Sa_co2prog', merge_type1='copy')
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sa_co2prog', &
+            merge_from1=compatm, merge_field1='Sa_co2prog', merge_type1='copy')
+       call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapbilnr, 'one', atm2lnd_smapname)
+       call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapbilnr, 'one', atm2ocn_smapname)
 
-    longname = 'Diagnostic CO2 at the lowest model level'
-    stdname  = 'diagnostic_CO2_lowest_level'
-    units    = '1e-6 mol/mol'
-    call shr_nuopc_fldList_AddMetadata(fldname='Sa_co2diag', longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Sa_co2diag', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Sa_co2diag', &
-         merge_from1=compatm, merge_field1='Sa_co2diag', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sa_co2diag', &
-         merge_from1=compatm, merge_field1='Sa_co2diag', merge_type1='copy')
-    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapbilnr, 'one', atm2lnd_smapname)
-    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapbilnr, 'one', atm2ocn_smapname)
+       longname = 'Diagnostic CO2 at the lowest model level'
+       stdname  = 'diagnostic_CO2_lowest_level'
+       units    = '1e-6 mol/mol'
+       call shr_nuopc_fldList_AddMetadata(fldname='Sa_co2diag', longname=longname, stdname=stdname, units=units)
+       call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Sa_co2diag', fldindex=n1)
+       call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Sa_co2diag', &
+            merge_from1=compatm, merge_field1='Sa_co2diag', merge_type1='copy')
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sa_co2diag', &
+            merge_from1=compatm, merge_field1='Sa_co2diag', merge_type1='copy')
+       call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapbilnr, 'one', atm2lnd_smapname)
+       call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapbilnr, 'one', atm2ocn_smapname)
 
-    longname = 'Surface flux of CO2 from land'
-    stdname  = 'surface_upward_flux_of_carbon_dioxide_where_land'
-    units    = 'moles m-2 s-1'
-    call shr_nuopc_fldList_AddMetadata(fldname='Fall_fco2_lnd', longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Fall_fco2_lnd', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Fall_fco2_lnd', &
-         merge_from1=complnd, merge_field1='Fall_fco2_lnd', merge_type1='copy_with_weights', merge_fracname1='lfrac')
-    call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1), complnd, compatm, mapconsf, 'one', atm2lnd_smapname)
+    else if (flds_co2b) then
 
-    longname = 'Surface flux of CO2 from ocean'
-    stdname  = 'surface_upward_flux_of_carbon_dioxide_where_open_sea'
-    units    = 'moles m-2 s-1'
-    call shr_nuopc_fldList_AddMetadata(fldname='Faoo_fco2_ocn', longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Faoo_fco2_ocn', fldindex=n1)
-    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Faoo_fco2_ocn') !CUSTOM
-    call shr_nuopc_fldList_AddMap(fldListFr(compocn)%flds(n1), compocn, compatm, mapconsf, 'one', ocn2atm_smapname)
+       longname = 'Prognostic CO2 at the lowest model level'
+       stdname  = 'prognostic_CO2_lowest_level'
+       units    = '1e-6 mol/mol'
+       call shr_nuopc_fldList_AddMetadata(fldname='Sa_co2prog', longname=longname, stdname=stdname, units=units)
+       call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Sa_co2prog', fldindex=n1)
+       call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Sa_co2prog', &
+            merge_from1=compatm, merge_field1='Sa_co2prog', merge_type1='copy')
+       call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapbilnr, 'one', atm2lnd_smapname)
+
+       longname = 'Diagnostic CO2 at the lowest model level'
+       stdname  = 'diagnostic_CO2_lowest_level'
+       units    = '1e-6 mol/mol'
+       call shr_nuopc_fldList_AddMetadata(fldname='Sa_co2diag', longname=longname, stdname=stdname, units=units)
+       call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Sa_co2diag', fldindex=n1)
+       call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Sa_co2diag', &
+            merge_from1=compatm, merge_field1='Sa_co2diag', merge_type1='copy')
+       call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapbilnr, 'one', atm2lnd_smapname)
+
+       longname = 'Surface flux of CO2 from land'
+       stdname  = 'surface_upward_flux_of_carbon_dioxide_where_land'
+       units    = 'moles m-2 s-1'
+       call shr_nuopc_fldList_AddMetadata(fldname='Fall_fco2_lnd', longname=longname, stdname=stdname, units=units)
+       call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Fall_fco2_lnd', fldindex=n1)
+       call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Fall_fco2_lnd', &
+            merge_from1=complnd, merge_field1='Fall_fco2_lnd', merge_type1='copy_with_weights', merge_fracname1='lfrac')
+       call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1), complnd, compatm, mapconsf, 'one', atm2lnd_smapname)
+
+    else if (flds_co2c) then
+
+       longname = 'Prognostic CO2 at the lowest model level'
+       stdname  = 'prognostic_CO2_lowest_level'
+       units    = '1e-6 mol/mol'
+       call shr_nuopc_fldList_AddMetadata(fldname='Sa_co2prog', longname=longname, stdname=stdname, units=units)
+       call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Sa_co2prog', fldindex=n1)
+       call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Sa_co2prog', &
+            merge_from1=compatm, merge_field1='Sa_co2prog', merge_type1='copy')
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sa_co2prog', &
+            merge_from1=compatm, merge_field1='Sa_co2prog', merge_type1='copy')
+       call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapbilnr, 'one', atm2lnd_smapname)
+       call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapbilnr, 'one', atm2ocn_smapname)
+
+       longname = 'Diagnostic CO2 at the lowest model level'
+       stdname  = 'diagnostic_CO2_lowest_level'
+       units    = '1e-6 mol/mol'
+       call shr_nuopc_fldList_AddMetadata(fldname='Sa_co2diag', longname=longname, stdname=stdname, units=units)
+       call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Sa_co2diag', fldindex=n1)
+       call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Sa_co2diag', &
+            merge_from1=compatm, merge_field1='Sa_co2diag', merge_type1='copy')
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sa_co2diag', &
+            merge_from1=compatm, merge_field1='Sa_co2diag', merge_type1='copy')
+       call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapbilnr, 'one', atm2lnd_smapname)
+       call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapbilnr, 'one', atm2ocn_smapname)
+
+       longname = 'Surface flux of CO2 from land'
+       stdname  = 'surface_upward_flux_of_carbon_dioxide_where_land'
+       units    = 'moles m-2 s-1'
+       call shr_nuopc_fldList_AddMetadata(fldname='Fall_fco2_lnd', longname=longname, stdname=stdname, units=units)
+       call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Fall_fco2_lnd', fldindex=n1)
+       call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Fall_fco2_lnd', &
+            merge_from1=complnd, merge_field1='Fall_fco2_lnd', merge_type1='copy_with_weights', merge_fracname1='lfrac')
+       call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1), complnd, compatm, mapconsf, 'one', atm2lnd_smapname)
+
+       longname = 'Surface flux of CO2 from ocean'
+       stdname  = 'surface_upward_flux_of_carbon_dioxide_where_open_sea'
+       units    = 'moles m-2 s-1'
+       call shr_nuopc_fldList_AddMetadata(fldname='Faoo_fco2_ocn', longname=longname, stdname=stdname, units=units)
+       call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Faoo_fco2_ocn', fldindex=n1)
+       call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Faoo_fco2_ocn') !CUSTOM
+       call shr_nuopc_fldList_AddMap(fldListFr(compocn)%flds(n1), compocn, compatm, mapconsf, 'one', ocn2atm_smapname)
+    endif
 
     !-----------------------------
     ! water isotope fields

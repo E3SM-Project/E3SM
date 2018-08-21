@@ -9,13 +9,11 @@ module dice_comp_mod
   use perf_mod
   use shr_pcdf_mod
   use shr_const_mod
-  use shr_sys_mod
+  use shr_sys_mod     , only: shr_sys_flush
   use shr_kind_mod    , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_file_mod    , only: shr_file_getunit, shr_file_freeunit
   use shr_mpi_mod     , only: shr_mpi_bcast
   use shr_frz_mod     , only: shr_frz_freezetemp
-  use shr_cal_mod     , only: shr_cal_ymd2julian
-  use shr_cal_mod     , only: shr_cal_date2julian
   use shr_cal_mod     , only: shr_cal_datetod2string
   use shr_strdata_mod , only: shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
   use shr_strdata_mod , only: shr_strdata_print, shr_strdata_restRead
@@ -45,22 +43,21 @@ module dice_comp_mod
   public :: dice_comp_init
   public :: dice_comp_run
   public :: dice_comp_final
+  public :: dice_comp_debug
 
   !--------------------------------------------------------------------------
   ! Private data
   !--------------------------------------------------------------------------
 
-  character(CS) :: myModelName = 'ice'   ! user defined model name
-  logical       :: firstcall = .true.    ! first call logical
+  logical                    :: firstcall = .true. ! first call logical
+  integer(IN)                :: dbug = 2           ! debug level (higher is more)
   character(len=*),parameter :: rpfile = 'rpointer.ice'
-  integer(IN)   :: dbug = 0              ! debug level (higher is more)
 
   real(R8),parameter  :: pi     = shr_const_pi      ! pi
   real(R8),parameter  :: spval  = shr_const_spval   ! flags invalid data
   real(R8),parameter  :: tFrz   = shr_const_tkfrz   ! temp of freezing
   real(R8),parameter  :: latice = shr_const_latice  ! latent heat of fusion
-  real(R8),parameter  :: cDay   = shr_const_cDay    ! sec in calendar day
-  real(R8),parameter  :: waterMax = 1000.0_R8        ! wrt iFrac comp & frazil ice (kg/m^2)
+  real(R8),parameter  :: waterMax = 1000.0_R8       ! wrt iFrac comp & frazil ice (kg/m^2)
 
   !----- surface albedo constants ------
   real(R8),parameter  :: snwfrac = 0.286_R8 ! snow cover fraction ~ [0,1]
@@ -85,36 +82,24 @@ module dice_comp_mod
   integer(IN) :: kbcpho, kbcphi, kflxdst
   integer(IN) :: kbcphidry, kbcphodry, kbcphiwet, kocphidry, kocphodry, kocphiwet
   integer(IN) :: kdstdry1, kdstdry2, kdstdry3, kdstdry4, kdstwet1, kdstwet2, kdstwet3, kdstwet4
+  integer(IN) :: kiFrac_01,kswpen_iFrac_01 ! optional per thickness category fields
 
-  ! optional per thickness category fields
-  integer(IN) :: kiFrac_01,kswpen_iFrac_01
-
-  type(mct_rearr) :: rearr
-  !  type(mct_avect) :: avstrm   ! av of data from stream
+  type(mct_rearr)       :: rearr
   integer(IN) , pointer :: imask(:)
   real(R8)    , pointer :: yc(:)
   real(R8)    , pointer :: water(:)
   real(R8)    , pointer :: tfreeze(:)
-  !  real(R8)    , pointer :: ifrac0(:)
+  !real(R8)   , pointer :: ifrac0(:)
 
-  !--------------------------------------------------------------------------
-  integer(IN)  , parameter :: ktrans = 1
-  character(16),parameter  :: avofld(1:ktrans) = (/"Si_ifrac        "/)
-  character(16),parameter  :: avifld(1:ktrans) = (/"ifrac           "/)
-  !--------------------------------------------------------------------------
-
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-CONTAINS
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  !===============================================================================
+!===============================================================================
+contains
+!===============================================================================
 
   subroutine dice_comp_init(x2i, i2x, &
        flds_x2i_fields, flds_i2x_fields, flds_i2o_per_cat, &
        SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
-       scmMode, scmlat, scmlon, &
-       calendar, modeldt, current_ymd, current_tod, current_day, current_mon)
+       scmMode, scmlat, scmlon, calendar)
 
     ! !DESCRIPTION: initialize dice model
 
@@ -138,11 +123,6 @@ CONTAINS
     real(R8)               , intent(in)    :: scmLat           ! single column lat
     real(R8)               , intent(in)    :: scmLon           ! single column lon
     character(len=*)       , intent(in)    :: calendar         ! calendar type
-    integer                , intent(in)    :: modeldt          ! model time step
-    integer                , intent(in)    :: current_ymd      ! model date
-    integer                , intent(in)    :: current_mon      ! model sec into model date
-    integer                , intent(in)    :: current_day      ! model sec into model date
-    integer                , intent(in)    :: current_tod      ! model sec into model date
 
     !--- local variables ---
     integer(IN)   :: n,k            ! generic counters
@@ -154,13 +134,13 @@ CONTAINS
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dice_comp_init) ',8a)"
-    character(*), parameter :: F05   = "('(dice_comp_init) ',a,2f10.4)"
+    character(*), parameter :: F01   = "('(dice_comp_init) ',a,2f10.4)"
     character(*), parameter :: subName = "(dice_comp_init) "
     !-------------------------------------------------------------------------------
 
     call t_startf('DICE_INIT')
 
-    call shr_strdata_pioinit(SDICE, COMPID)
+    call shr_strdata_pioinit(SDICE, compid)
 
     !----------------------------------------------------------------------------
     ! Initialize SDICE
@@ -174,7 +154,7 @@ CONTAINS
 
     if (scmmode) then
        if (my_task == master_task) then
-          write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
+          write(logunit,F01) ' scm lon lat = ',scmlon,scmlat
        end if
        call shr_strdata_init(SDICE,mpicom,compid,name='ice', &
             scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, &
@@ -230,7 +210,7 @@ CONTAINS
     call mct_aVect_init(i2x, rList=flds_i2x_fields, lsize=lsize)
     call mct_aVect_zero(i2x)
 
-    km     = mct_aVect_indexRA(i2x,'Si_imask', perrwith='quiet')
+    km     = mct_aVect_indexRA(i2x,'Si_imask')
     kiFrac = mct_aVect_indexRA(i2x,'Si_ifrac')
     kt     = mct_aVect_indexRA(i2x,'Si_t')
     ktref  = mct_aVect_indexRA(i2x,'Si_tref')
@@ -293,9 +273,6 @@ CONTAINS
     kdstwet2  = mct_aVect_indexRA(x2i,'Faxa_dstwet2')
     kdstwet3  = mct_aVect_indexRA(x2i,'Faxa_dstwet3')
     kdstwet4  = mct_aVect_indexRA(x2i,'Faxa_dstwet4')
-
-    ! call mct_aVect_init(avstrm, rList=flds_strm, lsize=lsize)
-    ! call mct_aVect_zero(avstrm)
 
     allocate(imask(lsize))
     allocate(yc(lsize))
@@ -383,36 +360,6 @@ CONTAINS
     x2i%rAttr(kshum,:) = 0.0014_R8
     x2i%rAttr(kdens,:) = 1.3_R8
 
-    !----------------------------------------------------------------------------
-    ! Set initial ice state
-    !----------------------------------------------------------------------------
-
-    call t_adj_detailf(+2)
-
-    call dice_comp_run(&
-         x2i=x2i, &
-         i2x=i2x, &
-         flds_i2o_per_cat=flds_i2o_per_cat, &
-         SDICE=SDICE, &
-         gsmap=gsmap, &
-         ggrid=ggrid, &
-         mpicom=mpicom, &
-         compid=compid, &
-         my_task=my_task, &
-         master_task=master_task, &
-         inst_suffix=inst_suffix, &
-         logunit=logunit, &
-         read_restart=read_restart, &
-         write_restart=.false., &
-         target_ymd=current_ymd, &
-         target_mon=current_mon, &
-         target_day=current_day, &
-         target_tod=current_tod, &
-         calendar=calendar, &
-         modeldt=modeldt)
-
-    call t_adj_detailf(-2)
-
     call t_stopf('DICE_INIT')
 
   end subroutine dice_comp_init
@@ -420,10 +367,9 @@ CONTAINS
   !===============================================================================
 
   subroutine dice_comp_run(x2i, i2x, flds_i2o_per_cat, &
-       SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+       SDICE, gsmap, ggrid, mpicom, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
-       target_ymd, target_mon, target_day, target_tod, &
-       calendar, modeldt, case_name )
+       calendar, modeldt, target_ymd, target_tod, cosArg, avifld, avofld, case_name )
 
     ! !DESCRIPTION: run method for dice model
 
@@ -435,19 +381,19 @@ CONTAINS
     type(mct_gsMap)        , pointer       :: gsMap
     type(mct_gGrid)        , pointer       :: ggrid
     integer(IN)            , intent(in)    :: mpicom               ! mpi communicator
-    integer(IN)            , intent(in)    :: compid               ! mct comp id
     integer(IN)            , intent(in)    :: my_task              ! my task in mpi communicator mpicom
     integer(IN)            , intent(in)    :: master_task          ! task number of master task
     character(len=*)       , intent(in)    :: inst_suffix          ! char string associated with instance
     integer(IN)            , intent(in)    :: logunit              ! logging unit number
     logical                , intent(in)    :: read_restart         ! start from restart
     logical                , intent(in)    :: write_restart        ! restart now
+    character(len=*)       , intent(in)    :: calendar
+    integer(IN)            , intent(in)    :: modeldt
     integer(IN)            , intent(in)    :: target_ymd
     integer(IN)            , intent(in)    :: target_tod
-    integer(IN)            , intent(in)    :: target_mon
-    integer(IN)            , intent(in)    :: target_day
-    character(len=*)       , intent(in)    :: calendar 
-    integer(IN)            , intent(in)    :: modeldt
+    real(R8)               , intent(in)    :: cosarg               ! for setting ice temp pattern
+    character(len=*)       , intent(in)    :: avifld(:)
+    character(len=*)       , intent(in)    :: avofld(:)
     character(CL)          , intent(in), optional :: case_name     ! case name
 
     !--- local ---
@@ -456,13 +402,10 @@ CONTAINS
     real(R8)      :: dt                ! timestep
     integer(IN)   :: nu                ! unit number
     real(R8)      :: qmeltall          ! q that would melt all accumulated water
-    real(R8)      :: cosarg            ! for setting ice temp pattern
-    real(R8)      :: jday, jday0       ! elapsed day counters
     character(len=18) :: date_str
 
     character(*), parameter :: F00   = "('(dice_comp_run) ',8a)"
-    character(*), parameter :: F01   = "('(dice_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
-    character(*), parameter :: F04   = "('(dice_comp_run) ',2a,2i8,'s')"
+    character(*), parameter :: F04   = "('(dice_comp_run) ',a,2i8,'s')"
     character(*), parameter :: subName = "(dice_comp_run) "
     !-------------------------------------------------------------------------------
 
@@ -476,7 +419,7 @@ CONTAINS
 
     dt = modeldt * 1.0_r8
 
-    !--- copy all fields from streams to i2x as default ---
+    !--- copy all stream fields to i2x as default (avifld in streams -> avofld in i2x)
 
     if (trim(datamode) /= 'NULL') then
        call t_startf('dice_strdata_advance')
@@ -508,17 +451,6 @@ CONTAINS
           water  = 0.0_R8 ! previous step's water accumulation
           where (i2x%rAttr(kiFrac,:) > 0.0_R8) water(:) = flux_Qacc0
        endif
-
-       ! tcraig, feb 10, 2012, ymd2eday no longer exists, use ymd2julian instead
-       !   this could be improved for use in gregorian calendar
-       !      call shr_cal_ymd2eday(0,mm,dd,eDay ,calendar)    ! model date
-       !      call shr_cal_ymd2eday(0,09,01,eDay0,calendar)    ! sept 1st
-       !      cosArg = 2.0_R8*pi*(real(eDay,R8) + real(target_tod,R8)/cDay - real(eDay0,R8))/365.0_R8
-
-       call shr_cal_ymd2julian(0, target_mon, target_day, target_tod, jDay , calendar)    ! julian day for model
-       call shr_cal_ymd2julian(0,  9,         1,          0,          jDay0, calendar)    ! julian day for Sept 1
-
-       cosArg = 2.0_R8*pi*(jday - jday0)/365.0_R8
 
        lsize = mct_avect_lsize(i2x)
 
@@ -672,28 +604,117 @@ CONTAINS
 
     call t_stopf('dice_datamode')
 
+    !--------------------
+    ! Write restart
+    !--------------------
+
+    if (write_restart) then
+       call t_startf('dice_restart')
+       call shr_cal_datetod2string(date_str, target_ymd, target_tod)
+       write(rest_file,"(6a)") &
+            trim(case_name), '.dice',trim(inst_suffix),'.r.', &
+            trim(date_str),'.nc'
+       write(rest_file_strm,"(6a)") &
+            trim(case_name), '.dice',trim(inst_suffix),'.rs1.', &
+            trim(date_str),'.bin'
+       if (my_task == master_task) then
+          nu = shr_file_getUnit()
+          open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
+          write(nu,'(a)') rest_file
+          write(nu,'(a)') rest_file_strm
+          close(nu)
+          call shr_file_freeUnit(nu)
+       endif
+       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),target_ymd,target_tod
+       call shr_pcdf_readwrite('write',SDICE%pio_subsystem, SDICE%io_type, &
+            trim(rest_file),mpicom,gsmap,clobber=.true.,rf1=water,rf1n='water')
+       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),target_ymd,target_tod
+       call shr_strdata_restWrite(trim(rest_file_strm),SDICE,mpicom,trim(case_name),'SDICE strdata')
+       call shr_sys_flush(logunit)
+       call t_stopf('dice_restart')
+    endif
+
+    call t_stopf('dice')
+
+    !----------------------------------------------------------------------------
+    ! Log output for model date
+    !----------------------------------------------------------------------------
+
+    if (my_task == master_task) then
+       write(logunit,F04) 'dice : model date ', target_ymd,target_tod
+       call shr_sys_flush(logunit)
+    end if
+
+    firstcall = .false.
+
+    call t_stopf('DICE_RUN')
+
+  end subroutine dice_comp_run
+
+  !===============================================================================
+
+  subroutine dice_comp_final(my_task, master_task, logunit)
+
+    ! !DESCRIPTION:  finalize method for dice model
+
+    ! !INPUT/OUTPUT PARAMETERS:
+    integer(IN) , intent(in) :: my_task     ! my task in mpi communicator mpicom
+    integer(IN) , intent(in) :: master_task ! task number of master task
+    integer(IN) , intent(in) :: logunit     ! logging unit number
+
+    !--- formats ---
+    character(*), parameter :: F00   = "('(dice_comp_final) ',8a)"
+    character(*), parameter :: F91   = "('(dice_comp_final) ',73('-'))"
+    character(*), parameter :: subName = "(dice_comp_final) "
+    !-------------------------------------------------------------------------------
+
+    call t_startf('DICE_FINAL')
+
+    if (my_task == master_task) then
+       write(logunit,F91)
+       write(logunit,F00) 'dice: end of main integration loop'
+       write(logunit,F91)
+    end if
+
+    call t_stopf('DICE_FINAL')
+
+  end subroutine dice_comp_final
+
+  !===============================================================================
+
+  subroutine dice_comp_debug(my_task, master_task, logunit, target_ymd, target_tod, x2i, i2x)
+    integer         , intent(in) :: my_task
+    integer         , intent(in) :: master_task
+    integer         , intent(in) :: logunit 
+    integer         , intent(in) :: target_ymd
+    integer         , intent(in) :: target_tod
+    type(mct_aVect) , intent(in) :: x2i
+    type(mct_aVect) , intent(in) :: i2x
+
+    integer :: n
+    character(*), parameter :: F01   = "('(dice_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
+
     !----------------------------------------------------------
     ! Debug output
     !----------------------------------------------------------
 
-#if (1 == 0)
     if (dbug > 1 .and. my_task == master_task) then
-       do n = 1,lsize
-          write(logunit,F01)'import: ymd,tod,n,Faxa_swvdr    = ', target_ymd, target_tod, n, x2i%rattr(kswvdr,n)    
-          write(logunit,F01)'import: ymd,tod,n,Faxa_swndr    = ', target_ymd, target_tod, n, x2i%rattr(kswndr,n)        
-          write(logunit,F01)'import: ymd,tod,n,Faxa_swvdf    = ', target_ymd, target_tod, n, x2i%rattr(kswvdf,n)        
-          write(logunit,F01)'import: ymd,tod,n,Faxa_swndf    = ', target_ymd, target_tod, n, x2i%rattr(kswndf,n)        
-          write(logunit,F01)'import: ymd,tod,n,Fioo_q        = ', target_ymd, target_tod, n, x2i%rattr(kq,n)            
-          write(logunit,F01)'import: ymd,tod,n,Sa_z          = ', target_ymd, target_tod, n, x2i%rattr(kz,n)            
-          write(logunit,F01)'import: ymd,tod,n,Sa_u          = ', target_ymd, target_tod, n, x2i%rattr(kua,n)           
-          write(logunit,F01)'import: ymd,tod,n,Sa_v          = ', target_ymd, target_tod, n, x2i%rattr(kva,n)           
-          write(logunit,F01)'import: ymd,tod,n,Sa_ptem       = ', target_ymd, target_tod, n, x2i%rattr(kptem,n)         
-          write(logunit,F01)'import: ymd,tod,n,Sa_shum       = ', target_ymd, target_tod, n, x2i%rattr(kshum,n)         
-          write(logunit,F01)'import: ymd,tod,n,Sa_dens       = ', target_ymd, target_tod, n, x2i%rattr(kdens,n)         
-          write(logunit,F01)'import: ymd,tod,n,Sa_tbot       = ', target_ymd, target_tod, n, x2i%rattr(ktbot,n)         
-          write(logunit,F01)'import: ymd,tod,n,So_s          = ', target_ymd, target_tod, n, x2i%rattr(ksalinity,n)     
-          write(logunit,F01)'import: ymd,tod,n,Faxa_bcphidry = ', target_ymd, target_tod, n, x2i%rattr(kbcphidry,n)     
-          write(logunit,F01)'import: ymd,tod,n,Faxa_bcphodry = ', target_ymd, target_tod, n, x2i%rattr(kbcphodry,n)     
+       do n = 1, mct_aVect_lsize(x2i)
+          write(logunit,F01)'import: ymd,tod,n,Faxa_swvdr    = ', target_ymd, target_tod, n, x2i%rattr(kswvdr,n)
+          write(logunit,F01)'import: ymd,tod,n,Faxa_swndr    = ', target_ymd, target_tod, n, x2i%rattr(kswndr,n)
+          write(logunit,F01)'import: ymd,tod,n,Faxa_swvdf    = ', target_ymd, target_tod, n, x2i%rattr(kswvdf,n)
+          write(logunit,F01)'import: ymd,tod,n,Faxa_swndf    = ', target_ymd, target_tod, n, x2i%rattr(kswndf,n)
+          write(logunit,F01)'import: ymd,tod,n,Fioo_q        = ', target_ymd, target_tod, n, x2i%rattr(kq,n)
+          write(logunit,F01)'import: ymd,tod,n,Sa_z          = ', target_ymd, target_tod, n, x2i%rattr(kz,n)
+          write(logunit,F01)'import: ymd,tod,n,Sa_u          = ', target_ymd, target_tod, n, x2i%rattr(kua,n)
+          write(logunit,F01)'import: ymd,tod,n,Sa_v          = ', target_ymd, target_tod, n, x2i%rattr(kva,n)
+          write(logunit,F01)'import: ymd,tod,n,Sa_ptem       = ', target_ymd, target_tod, n, x2i%rattr(kptem,n)
+          write(logunit,F01)'import: ymd,tod,n,Sa_shum       = ', target_ymd, target_tod, n, x2i%rattr(kshum,n)
+          write(logunit,F01)'import: ymd,tod,n,Sa_dens       = ', target_ymd, target_tod, n, x2i%rattr(kdens,n)
+          write(logunit,F01)'import: ymd,tod,n,Sa_tbot       = ', target_ymd, target_tod, n, x2i%rattr(ktbot,n)
+          write(logunit,F01)'import: ymd,tod,n,So_s          = ', target_ymd, target_tod, n, x2i%rattr(ksalinity,n)
+          write(logunit,F01)'import: ymd,tod,n,Faxa_bcphidry = ', target_ymd, target_tod, n, x2i%rattr(kbcphidry,n)
+          write(logunit,F01)'import: ymd,tod,n,Faxa_bcphodry = ', target_ymd, target_tod, n, x2i%rattr(kbcphodry,n)
           write(logunit,F01)'import: ymd,tod,n,Faxa_bcphiwet = ', target_ymd, target_tod, n, x2i%rattr(kbcphiwet,n)
           write(logunit,F01)'import: ymd,tod,n,Faxa_ocphidry = ', target_ymd, target_tod, n, x2i%rattr(kocphidry,n)
           write(logunit,F01)'import: ymd,tod,n,Faxa_ocphodry = ', target_ymd, target_tod, n, x2i%rattr(kocphodry,n)
@@ -733,84 +754,6 @@ CONTAINS
           write(logunit,F01)'export: ymd,tod,n,Fioi_flxdst   = ', target_ymd, target_tod, n, i2x%rattr(kflxdst,n)
        end do
     end if
-#endif
-
-    !--------------------
-    ! Write restart
-    !--------------------
-
-    if (write_restart) then
-       call t_startf('dice_restart')
-       call shr_cal_datetod2string(date_str, target_ymd, target_tod)
-       write(rest_file,"(6a)") &
-            trim(case_name), '.dice',trim(inst_suffix),'.r.', &
-            trim(date_str),'.nc'
-       write(rest_file_strm,"(6a)") &
-            trim(case_name), '.dice',trim(inst_suffix),'.rs1.', &
-            trim(date_str),'.bin'
-       if (my_task == master_task) then
-          nu = shr_file_getUnit()
-          open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
-          write(nu,'(a)') rest_file
-          write(nu,'(a)') rest_file_strm
-          close(nu)
-          call shr_file_freeUnit(nu)
-       endif
-       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),target_ymd,target_tod
-       call shr_pcdf_readwrite('write',SDICE%pio_subsystem, SDICE%io_type, &
-            trim(rest_file),mpicom,gsmap,clobber=.true.,rf1=water,rf1n='water')
-       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),target_ymd,target_tod
-       call shr_strdata_restWrite(trim(rest_file_strm),SDICE,mpicom,trim(case_name),'SDICE strdata')
-       call shr_sys_flush(logunit)
-       call t_stopf('dice_restart')
-    endif
-
-    call t_stopf('dice')
-
-    !----------------------------------------------------------------------------
-    ! Log output for model date
-    !----------------------------------------------------------------------------
-
-    call t_startf('dice_run2')
-    if (my_task == master_task) then
-       write(logunit,F04) trim(myModelName),': model date ', target_ymd,target_tod
-       call shr_sys_flush(logunit)
-    end if
-
-    firstcall = .false.
-    call t_stopf('dice_run2')
-
-    call t_stopf('DICE_RUN')
-
-  end subroutine dice_comp_run
-
-  !===============================================================================
-  subroutine dice_comp_final(my_task, master_task, logunit)
-
-    ! !DESCRIPTION:  finalize method for dice model
-
-    ! !INPUT/OUTPUT PARAMETERS:
-    integer(IN) , intent(in) :: my_task     ! my task in mpi communicator mpicom
-    integer(IN) , intent(in) :: master_task ! task number of master task
-    integer(IN) , intent(in) :: logunit     ! logging unit number
-
-    !--- formats ---
-    character(*), parameter :: F00   = "('(dice_comp_final) ',8a)"
-    character(*), parameter :: F91   = "('(dice_comp_final) ',73('-'))"
-    character(*), parameter :: subName = "(dice_comp_final) "
-    !-------------------------------------------------------------------------------
-
-    call t_startf('DICE_FINAL')
-
-    if (my_task == master_task) then
-       write(logunit,F91)
-       write(logunit,F00) trim(myModelName),': end of main integration loop'
-       write(logunit,F91)
-    end if
-
-    call t_stopf('DICE_FINAL')
-
-  end subroutine dice_comp_final
-  !===============================================================================
+  end subroutine dice_comp_debug
 
 end module dice_comp_mod

@@ -9,6 +9,7 @@ module dshr_nuopc_mod
   implicit none
   public
 
+  public :: avio_list_add
   public :: fld_list_add
   public :: fld_list_realize
   public :: ModelInitPhase
@@ -28,9 +29,63 @@ module dshr_nuopc_mod
 contains
 !===============================================================================
 
-  subroutine fld_list_add(num, fldlist, stdname, flds_concat)
+  subroutine avio_list_add(avifld, avofld, namei, nameo)
+    use ESMF              , only : ESMF_LogWrite, ESMF_LOGMSG_ERROR
+    use med_constants_mod , only : CS
 
+    character(len=*) , intent(in)    :: namei
+    character(len=*) , intent(in)    :: nameo
+    character(len=*) , pointer       :: avifld(:)
+    character(len=*) , pointer       :: avofld(:)
+
+    ! local variables
+    integer :: n, oldsize, id
+    character(len=CS), pointer :: new_avifld(:)
+    character(len=CS), pointer :: new_avofld(:)
+    character(len=CS), parameter :: subname='(avio_list_add)'
+    ! ----------------------------------------------
+
+    if (associated(avifld)) then
+       oldsize = size(avifld)
+    else
+       oldsize = 0
+    end if
+    id = oldsize + 1
+
+    ! 1) allocate new_avifld and oldavi to one element larger than input
+    allocate(new_avifld(id))
+    allocate(new_avofld(id))
+
+    ! 2) copy avifld and avofld into first N-1 elements of aviflds and avofld
+    do n = 1,oldsize
+       new_avifld(n) = avifld(n)
+       new_avofld(n) = avofld(n)
+    end do
+
+    ! 3) deallocate / nullify avifld and avofld
+    if (oldsize >  0) then
+       deallocate(avifld)
+       deallocate(avofld)
+       nullify(avifld)
+       nullify(avofld)
+    end if
+
+    ! 4) point avifld => new_avifld and avofld => new_avofld
+    avifld => new_avifld
+    avofld => new_avofld
+
+    ! 5) now update information for new entry
+
+    avifld(id) = trim(namei)
+    avofld(id) = trim(nameo)
+
+  end subroutine avio_list_add
+
+  !===============================================================================
+
+  subroutine fld_list_add(num, fldlist, stdname, flds_concat)
     use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_ERROR
+
 
     integer,                    intent(inout) :: num
     type(fld_list_type),        intent(inout) :: fldlist(:)
