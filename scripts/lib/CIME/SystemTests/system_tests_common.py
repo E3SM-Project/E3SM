@@ -177,6 +177,10 @@ class SystemTestsCommon(object):
         if success and get_model() == "e3sm":
             save_test_time(self._case.get_value("BASELINE_ROOT"), self._casebaseid, time_taken)
 
+        if get_model() == "cesm" and self._case.get_value("GENERATE_BASELINE"):
+            baseline_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
+            generate_teststatus(self._caseroot, baseline_dir)
+
         # We return success if the run phase worked; memleaks, diffs will not be taken into account
         # with this return value.
         return success
