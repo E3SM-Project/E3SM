@@ -1401,62 +1401,6 @@
     </environment_variables>
 </machine>
 
-<machine MACH="cab">
-         <DESC>LLNL Linux Cluster, Linux (pgi), 16 pes/node, batch system is Slurm</DESC>
-         <COMPILERS>intel, pgi</COMPILERS>
-         <MPILIBS>mpich</MPILIBS>
-         <RUNDIR>/p/lscratche/$CCSMUSER/ACME/$CASE/run</RUNDIR>
-         <EXEROOT>/p/lscratche/$CCSMUSER/$CASE/bld</EXEROOT>
-         <CIME_OUTPUT_ROOT>/p/lscratche/$USER</CIME_OUTPUT_ROOT>
-         <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/p/lscratche/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_HTAR>FALSE</DOUT_L_HTAR>
-         <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-         <BASELINE_ROOT>/p/lscratchd/$CCSMUSER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-         <CCSM_CPRNC>/p/lscratchd/ma21/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
-         <OS>LINUX</OS>
-         <SUPPORTED_BY>bogenschutz1 -at- llnl.gov</SUPPORTED_BY>
-         <GMAKE_J>8</GMAKE_J>
-         <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-	 <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
-	 <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
-	 <mpirun mpilib="mpi-serial">
-	   <executable></executable>
-	 </mpirun>
-         <mpirun mpilib="default">
-           <executable>srun</executable>
-         </mpirun>
-	 <module_system type="generic">
-           <init_path lang="csh">/usr/global/tools/dotkit/init.csh</init_path>
-           <init_path lang="sh">/usr/global/tools/dotkit/init.sh</init_path>
-	   <cmd_path lang="sh">use</cmd_path>
-	   <cmd_path lang="csh">use</cmd_path>
-	   <modules compiler="pgi">
-	     <command name="-q">pgi-14.3</command>
-	     <command name="-q">mvapich2-pgi-1.7</command>
-	     <command name="-q">netcdf-pgi-4.1.3</command>
-	   </modules>
-	   <modules compiler="intel">
-	     <command name="-q">ic-17.0.174</command>
-	     <command name="-q">mvapich2-intel-2.1</command>
-	     <command name="-q">netcdf-intel-4.1.3</command>
-	   </modules>
-	 </module_system>
-	 <environment_variables compiler="pgi">
-	   <env name="NETCDF">/usr/local/tools/netcdf-pgi-4.1.3/</env>
-	 </environment_variables>
-	 <environment_variables compiler="pgi" mpilib="!mpi-serial">
-	   <env name="PNETCDF_PATH">/usr/local/tools/parallel-netcdf-pgi-1.6.1/</env>
-	 </environment_variables>
-	 <environment_variables compiler="intel">
-	   <env name="NETCDF">/usr/local/tools/netcdf-intel-4.1.3/</env>
-	 </environment_variables>
-	 <environment_variables compiler="intel" mpilib="!mpi-serial">
-	   <env name="PNETCDF_PATH">/usr/local/tools/parallel-netcdf-intel-1.6.1/</env>
-	 </environment_variables>
-</machine>
-
 <machine MACH="syrah">
          <DESC>LLNL Linux Cluster, Linux (pgi), 16 pes/node, batch system is Slurm</DESC>
          <COMPILERS>intel</COMPILERS>
