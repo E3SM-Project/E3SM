@@ -628,10 +628,32 @@ contains
        time0=time1
     endif
 
+    call print_software_statistics(hybrid, nets, nete)
   call t_stopf('prim_printstate')
   end subroutine prim_printstate
    
-   
+  subroutine print_software_statistics(hybrid, nets, nete)
+    integer :: GPTLget_memusage
+
+    type(hybrid_t), intent(in) :: hybrid
+    integer, intent(in) :: nets, nete
+    integer :: ok, size, rss_int, share, text, datastack, ie
+    real(kind=real_kind) :: rss, rss_min, rss_max, rss_mean
+
+    ok = GPTLget_memusage(size, rss_int, share, text, datastack)
+    rss = rss_int
+    rss_min = ParallelMin(rss, hybrid)
+    rss_max = ParallelMax(rss, hybrid)
+    do ie = nets, nete
+       global_shared_buf(ie,1) = 0
+    end do
+    global_shared_buf(1,1) = rss ! write race allowed b/c all writes the same
+    call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
+    rss_mean = global_shared_sum(1) / hybrid%par%nprocs
+    if (hybrid%par%masterproc) then
+       write(iulog,'(a10,3(f14.2))') "rss   = ", rss_min, rss_max, rss_mean
+    end if
+  end subroutine print_software_statistics
 
 subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 ! 

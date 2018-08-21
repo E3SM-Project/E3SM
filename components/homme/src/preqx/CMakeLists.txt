@@ -49,7 +49,7 @@ SET(PREQX_SRCS_F90
 )
 
 SET(PREQX_SRCS_C
-  ${UTILS_SHARE_DIR}/shr_vmath_fwrap.c
+  ${HOMME_SOURCE_DIR}/utils/cime/src/share/timing/GPTLget_memusage.c
 )
 
 SET(PREQX_SRCS_CXX
@@ -70,7 +70,7 @@ IF (DEFINED PREQX_CUSTOM_FLAGS_FILE)
 ENDIF ()
 
 # Make SRCS global so the tests can access it
-SET(EXEC_SOURCES ${PREQX_SRCS} ${PREQX_SRCS_F90} ${PREQX_SRCS_ZOLTAN} ${PREQX_SRCS_CXX})
+SET(EXEC_SOURCES ${PREQX_SRCS} ${PREQX_SRCS_F90} ${PREQX_SRCS_ZOLTAN} ${PREQX_SRCS_C} ${PREQX_SRCS_CXX})
 
 # Set up defaults
 IF (NOT PREQX_NP)
