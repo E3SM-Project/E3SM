@@ -42,7 +42,7 @@ class EnvMachPes(EnvBase):
                 max_mpitasks_per_node = self.get_value("MAX_MPITASKS_PER_NODE")
             if value is not None and value < 0:
                 value = -1*value*max_mpitasks_per_node
-
+                
         return value
 
     def set_value(self, vid, value, subgroup=None, ignore_type=False):
@@ -59,6 +59,9 @@ class EnvMachPes(EnvBase):
                 ninst = self.get_value("NINST_{}".format(comp))
                 expect(ninst == ninst_max,
                        "All components must have the same NINST value in multi_driver mode.  NINST_{}={} shoud be {}".format(comp,ninst,ninst_max))
+        if "NTASKS" in vid or "NTHRDS" in vid:
+            expect(value != 0, "Cannot set NTASKS or NTHRDS to 0")
+
 
         return EnvBase.set_value(self, vid, value, subgroup=subgroup, ignore_type=ignore_type)
 
