@@ -46,8 +46,6 @@ module ice_comp_nuopc
   use mct_mod
 
   implicit none
-  private :: ModelFinalize
-
   private ! except
 
   public  :: SetServices
@@ -55,6 +53,7 @@ module ice_comp_nuopc
   private :: InitializeAdvertise
   private :: InitializeRealize
   private :: ModelAdvance
+  private :: ModelFinalize
 
   !--------------------------------------------------------------------------
   ! Private module data
@@ -83,14 +82,13 @@ module ice_comp_nuopc
   integer                    :: logunit                   ! logging unit number
   integer, parameter         :: master_task=0             ! task number of master task
   integer                    :: localPet
-  logical                    :: unpack_import
   logical                    :: read_restart              ! start from restart
   character(len=256)         :: case_name                 ! case name
   character(len=256)         :: tmpstr                    ! tmp string
   integer                    :: dbrc
   integer, parameter         :: dbug = 10
   logical                    :: flds_i2o_per_cat          ! .true. if select per ice thickness
-                                                        ! category fields are passed from ice to ocean
+                                                          ! category fields are passed from ice to ocean
   character(len=80)          :: calendar                  ! calendar name
   integer                    :: modeldt                   ! integer timestep
   character(len=CXX)         :: flds_i2x = ''
@@ -98,7 +96,8 @@ module ice_comp_nuopc
   logical                    :: use_esmf_metadata = .false.
   real(R8)    ,parameter     :: pi  = shr_const_pi      ! pi
   character(*),parameter     :: modName =  "(ice_comp_nuopc)"
-  character(*),parameter     :: u_FILE_u = __FILE__
+  character(*),parameter     :: u_FILE_u =&
+       __FILE__
 
 !===============================================================================
 contains
@@ -242,12 +241,6 @@ contains
     ! for the ice_present flag being set to false (i.e. null mode)
     ! NOTE: only the ice_prognostic flag is needed below
 
-    if (ice_prognostic) then
-       unpack_import = .true.
-    else
-       unpack_import = .false.
-    end if
-
     !--------------------------------
     ! advertise import and export fields
     !--------------------------------
@@ -349,7 +342,6 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Grid)         :: Egrid
     type(ESMF_Mesh)         :: Emesh
     type(ESMF_TIME)         :: currTime
     type(ESMF_TimeInterval) :: timeStep
@@ -395,11 +387,8 @@ contains
     call shr_file_setLogUnit (logUnit)
 
     !--------------------------------
-    ! call dice init routine
+    ! get config variables
     !--------------------------------
-
-    gsmap => gsmap_target
-    ggrid => ggrid_target
 
     call NUOPC_CompAttributeGet(gcomp, name='case_name', value=case_name, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -449,6 +438,9 @@ contains
     !--------------------------------
     ! Initialize model
     !--------------------------------
+
+    gsmap => gsmap_target
+    ggrid => ggrid_target
 
     call dice_comp_init(&
          x2i=x2d, &
@@ -566,12 +558,14 @@ contains
     ! Write debug output if appropriate
     call dice_comp_debug(my_task, master_task, logunit, current_ymd, current_tod, x2d, d2x)
 
+    ! Pack export state
     call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_i2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call shr_nuopc_methods_State_SetScalar(dble(nx_global),flds_scalar_index_nx, exportState, mpicom, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     call shr_nuopc_methods_State_SetScalar(dble(ny_global),flds_scalar_index_ny, exportState, mpicom, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -653,7 +647,7 @@ contains
     endif
 
     !--------------------------------
-    ! Unpack export state
+    ! Unpack import state
     !--------------------------------
 
     call shr_nuopc_grid_StateToArray(importState, x2d%rattr, flds_x2i, grid_option='mesh', rc=rc)

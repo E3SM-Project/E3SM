@@ -26,7 +26,6 @@ module dwav_comp_mod
 
   ! !PUBLIC TYPES:
   implicit none
-  save
   private ! except
 
   !--------------------------------------------------------------------------
@@ -41,13 +40,9 @@ module dwav_comp_mod
   ! Private data
   !--------------------------------------------------------------------------
 
-  character(CS)              :: myModelName = 'wav'   ! user defined model name
+  integer(IN)                :: dbug = 2           ! debug level (higher is more)
   character(len=*),parameter :: rpfile = 'rpointer.wav'
   type(mct_rearr)            :: rearr
-
-  integer    ,parameter :: ktrans = 3
-  character(12),parameter  :: avofld(1:ktrans) =  (/"Sw_lamult   ","Sw_ustokes  ","Sw_vstokes  "/)
-  character(12),parameter  :: avifld(1:ktrans) =  (/"lamult      ","ustokes     ","vstokes     "/)
 
 !===============================================================================
 contains
@@ -56,8 +51,7 @@ contains
   subroutine dwav_comp_init(x2w, w2x, &
        w2x_fields, x2w_fields, &
        SDWAV, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, inst_name, logunit, read_restart, &
-       calendar, current_ymd, current_tod)
+       inst_suffix, inst_name, logunit, read_restart, calendar)
 
     ! !DESCRIPTION: initialize dwav model
 
@@ -76,16 +70,13 @@ contains
     character(len=*)       , intent(in)    :: inst_name           ! fullname of current instance (ie. "wav_0001")
     integer                , intent(in)    :: logunit             ! logging unit number
     logical                , intent(in)    :: read_restart        ! start from restart
-    character(len=*)       , intent(in)    :: calendar            ! model calendar
-    integer                , intent(in)    :: current_ymd         ! model date
-    integer                , intent(in)    :: current_tod         ! model sec into model date
+    character(len=*)       , intent(in)    :: calendar         ! calendar type
 
     !--- local variables ---
     integer       :: n,k       ! generic counters
     integer       :: lsize     ! local size
     logical       :: exists    ! file existance
     integer       :: nu        ! unit number
-    logical       :: write_restart
     character(*), parameter :: F00   = "('(dwav_comp_init) ',8a)"
     character(*), parameter :: subName = "(dwav_comp_init) "
     !-------------------------------------------------------------------------------
@@ -132,9 +123,6 @@ contains
 
     ! create a rearranger from the data model SDWAV%gsmap to gsmap
     call mct_rearr_init(SDWAV%gsmap,gsmap,mpicom,rearr)
-
-    write(logunit,*)'lsize= ',lsize
-
     call t_stopf('dwav_initgsmaps')
 
     !----------------------------------------------------------------------------
@@ -142,12 +130,8 @@ contains
     !----------------------------------------------------------------------------
 
     call t_startf('dwav_initmctdom')
-    !write(logunit,F00)' dwav_initmctdom...'
-
     if (my_task == master_task) write(logunit,F00) 'copy domains'
-
     call shr_dmodel_rearrGGrid(SDWAV%grid, ggrid, gsmap, rearr, mpicom)
-
     call t_stopf('dwav_initmctdom')
 
     !----------------------------------------------------------------------------
@@ -200,60 +184,41 @@ contains
        endif
     endif
 
-    !----------------------------------------------------------------------------
-    ! Set initial wav state, needed for CCSM atm initialization
-    !----------------------------------------------------------------------------
-
-    call t_adj_detailf(+2)
-
-    write_restart = .false.
-    call dwav_comp_run(EClock, x2w, w2x, &
-         SDWAV, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, logunit, read_restart, write_restart, &
-         current_ymd, current_tod)
-
-    call t_adj_detailf(-2)
-
-    if (my_task == master_task) write(logunit, F00) 'dwav_comp_init done'
-
     call t_stopf('DWAV_INIT')
 
   end subroutine dwav_comp_init
 
   !===============================================================================
 
-  subroutine dwav_comp_run(EClock, x2w, w2x, &
-       SDWAV, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+  subroutine dwav_comp_run(x2w, w2x, &
+       SDWAV, gsmap, ggrid, mpicom, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
-       target_ymd, target_tod, case_name)
+       target_ymd, target_tod, avifld, avofld, case_name)
 
-    ! !DESCRIPTION:  run method for dwav model
-    implicit none
+    ! DESCRIPTION:  run method for dwav model
 
-    ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock)       , intent(in)    :: EClock
+    ! input/output parameters:
     type(mct_aVect)        , intent(inout) :: x2w
     type(mct_aVect)        , intent(inout) :: w2x
     type(shr_strdata_type) , intent(inout) :: SDWAV
     type(mct_gsMap)        , pointer       :: gsMap
     type(mct_gGrid)        , pointer       :: ggrid
     integer                , intent(in)    :: mpicom           ! mpi communicator
-    integer                , intent(in)    :: compid           ! mct comp id
     integer                , intent(in)    :: my_task          ! my task in mpi communicator mpicom
     integer                , intent(in)    :: master_task      ! task number of master task
     character(len=*)       , intent(in)    :: inst_suffix      ! char string associated with instance
     integer                , intent(in)    :: logunit          ! logging unit number
     logical                , intent(in)    :: read_restart     ! start from restart
     logical                , intent(in)    :: write_restart    ! write restart
-    integer                , intent(in)    :: target_ymd       ! model date
-    integer                , intent(in)    :: target_tod       ! model sec into model date
+    integer(IN)            , intent(in)    :: target_ymd
+    integer(IN)            , intent(in)    :: target_tod
+    character(len=*)       , intent(in)    :: avifld(:)
+    character(len=*)       , intent(in)    :: avofld(:)
     character(CL)          , intent(in), optional :: case_name ! case name
 
     !--- local ---
-    integer       :: yy,mm,dd,tod          ! year month day time-of-day
     integer       :: n                     ! indices
     integer       :: idt                   ! integer timestep
-    real(R8)      :: dt                    ! timestep
     integer       :: nu                    ! unit number
     character(len=18) :: date_str
 
@@ -263,11 +228,6 @@ contains
     !-------------------------------------------------------------------------------
 
     call t_startf('DWAV_RUN')
-
-    call t_startf('dwav_run1')
-    call seq_timemgr_EClockGetData( EClock, dtime=idt)
-    dt = idt * 1.0_r8
-    call t_stopf('dwav_run1')
 
     !--------------------
     ! UNPACK
@@ -316,7 +276,7 @@ contains
 
     if (write_restart) then
        call t_startf('dwav_restart')
-       call shr_cal_ymdtod2string(date_str, yy,mm,dd,currentTOD)
+       call shr_cal_datetod2string(date_str, target_ymd, target_tod)
        write(rest_file,"(6a)") &
             trim(case_name), '.dwav',trim(inst_suffix),'.r.', &
             trim(date_str),'.nc'
@@ -331,7 +291,7 @@ contains
           close(nu)
           call shr_file_freeUnit(nu)
        endif
-       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),currentYMD,currentTOD
+       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),target_ymd,target_tod
        call shr_strdata_restWrite(trim(rest_file_strm),SDWAV,mpicom,trim(case_name),'SDWAV strdata')
        call t_stopf('dwav_restart')
     endif
@@ -344,7 +304,7 @@ contains
     !----------------------------------------------------------------------------
 
     if (my_task == master_task) then
-       write(logunit,F04) trim(myModelName),': model date ', target_ymd,target_tod
+       write(logunit,*) 'dwav: model date ', target_ymd,target_tod
     end if
 
     call t_stopf('DWAV_RUN')
@@ -352,6 +312,7 @@ contains
   end subroutine dwav_comp_run
 
   !===============================================================================
+
   subroutine dwav_comp_final(my_task, master_task, logunit)
 
     ! !DESCRIPTION:  finalize method for dwav model
@@ -367,17 +328,12 @@ contains
     character(*), parameter :: subName = "(dwav_comp_final) "
     !-------------------------------------------------------------------------------
 
-    call t_startf('DWAV_FINAL')
-
     if (my_task == master_task) then
        write(logunit,F91)
-       write(logunit,F00) trim(myModelName),': end of main integration loop'
+       write(logunit,F00) 'dwav: end of main integration loop'
        write(logunit,F91)
     end if
 
-    call t_stopf('DWAV_FINAL')
-
   end subroutine dwav_comp_final
-  !===============================================================================
 
 end module dwav_comp_mod

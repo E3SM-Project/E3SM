@@ -9,7 +9,6 @@ module dice_comp_mod
   use perf_mod
   use shr_pcdf_mod
   use shr_const_mod
-  use shr_sys_mod     , only: shr_sys_flush
   use shr_kind_mod    , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_file_mod    , only: shr_file_getunit, shr_file_freeunit
   use shr_mpi_mod     , only: shr_mpi_bcast
@@ -103,7 +102,7 @@ contains
 
     ! !DESCRIPTION: initialize dice model
 
-    ! !INPUT/OUTPUT PARAMETERS:
+    ! input/output parameters:
     type(mct_aVect)        , intent(inout) :: x2i, i2x         ! input/output attribute vectors
     character(len=*)       , intent(in)    :: flds_x2i_fields  ! fields from mediator
     character(len=*)       , intent(in)    :: flds_i2x_fields  ! fields to mediator
@@ -176,7 +175,6 @@ contains
 
     call t_startf('dice_initgsmaps')
     if (my_task == master_task) write(logunit,F00) ' initialize gsmaps'
-    call shr_sys_flush(logunit)
 
     ! create a data model global seqmap (gsmap) given the data model global grid sizes
     ! NOTE: gsmap is initialized using the decomp read in from the dice_in namelist
@@ -194,8 +192,6 @@ contains
 
     call t_startf('dice_initmctdom')
     if (my_task == master_task) write(logunit,F00) 'copy domains'
-    call shr_sys_flush(logunit)
-
     call shr_dmodel_rearrGGrid(SDICE%grid, ggrid, gsmap, rearr, mpicom)
     call t_stopf('dice_initmctdom')
 
@@ -205,7 +201,6 @@ contains
 
     call t_startf('dice_initmctavs')
     if (my_task == master_task) write(logunit,F00) 'allocate AVs'
-    call shr_sys_flush(logunit)
 
     call mct_aVect_init(i2x, rList=flds_i2x_fields, lsize=lsize)
     call mct_aVect_zero(i2x)
@@ -303,7 +298,6 @@ contains
            trim(rest_file_strm) == trim(nullstr)) then
           if (my_task == master_task) then
              write(logunit,F00) ' restart filenames from rpointer = ',trim(rpfile)
-             call shr_sys_flush(logunit)
              inquire(file=trim(rpfile)//trim(inst_suffix),exist=exists)
              if (exists) then
                 nu = shr_file_getUnit()
@@ -322,7 +316,6 @@ contains
           ! use namelist already read
           if (my_task == master_task) then
              write(logunit,F00) ' restart filenames from namelist '
-             call shr_sys_flush(logunit)
              inquire(file=trim(rest_file_strm),exist=exists)
           endif
        endif
@@ -344,7 +337,6 @@ contains
        else
           if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file_strm)
        endif
-       call shr_sys_flush(logunit)
     endif
 
     !----------------------------------------------------------------------------
@@ -373,7 +365,7 @@ contains
 
     ! !DESCRIPTION: run method for dice model
 
-    ! !INPUT/OUTPUT PARAMETERS:
+    ! input/output parameters:
     type(mct_aVect)        , intent(inout) :: x2i
     type(mct_aVect)        , intent(inout) :: i2x
     logical                , intent(in)    :: flds_i2o_per_cat     ! .true. if select per ice thickness fields from ice
@@ -405,7 +397,7 @@ contains
     character(len=18) :: date_str
 
     character(*), parameter :: F00   = "('(dice_comp_run) ',8a)"
-    character(*), parameter :: F04   = "('(dice_comp_run) ',a,2i8,'s')"
+    character(*), parameter :: F04   = "('(dice_comp_run) ',2a,2i8,'s')"
     character(*), parameter :: subName = "(dice_comp_run) "
     !-------------------------------------------------------------------------------
 
@@ -630,7 +622,6 @@ contains
             trim(rest_file),mpicom,gsmap,clobber=.true.,rf1=water,rf1n='water')
        if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),target_ymd,target_tod
        call shr_strdata_restWrite(trim(rest_file_strm),SDICE,mpicom,trim(case_name),'SDICE strdata')
-       call shr_sys_flush(logunit)
        call t_stopf('dice_restart')
     endif
 
@@ -641,8 +632,7 @@ contains
     !----------------------------------------------------------------------------
 
     if (my_task == master_task) then
-       write(logunit,F04) 'dice : model date ', target_ymd,target_tod
-       call shr_sys_flush(logunit)
+       write(logunit,F04) 'dice: ',' model date ', target_ymd,target_tod
     end if
 
     firstcall = .false.
@@ -657,7 +647,7 @@ contains
 
     ! !DESCRIPTION:  finalize method for dice model
 
-    ! !INPUT/OUTPUT PARAMETERS:
+    ! input/output parameters:
     integer(IN) , intent(in) :: my_task     ! my task in mpi communicator mpicom
     integer(IN) , intent(in) :: master_task ! task number of master task
     integer(IN) , intent(in) :: logunit     ! logging unit number

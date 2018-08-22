@@ -12,7 +12,7 @@ module wav_comp_nuopc
   use NUOPC_Model           , only : model_label_SetRunClock => label_SetRunClock
   use NUOPC_Model           , only : model_label_Finalize    => label_Finalize
   use NUOPC_Model           , only : NUOPC_ModelGet
-  use med_constants_mod     , only : R8, CXX, CL, CS
+  use med_constants_mod     , only : R8, CXX, CS
   use med_constants_mod     , only : shr_log_Unit
   use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
   use med_constants_mod     , only : shr_file_getloglevel, shr_file_setloglevel
@@ -31,9 +31,11 @@ module wav_comp_nuopc
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
   use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
   use shr_strdata_mod       , only : shr_strdata_type
+  use shr_const_mod         , only : shr_const_pi
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax
   use dshr_nuopc_mod        , only : fld_list_add
   use dshr_nuopc_mod        , only : fld_list_realize
+  use dshr_nuopc_mod        , only : avio_list_add
   use dshr_nuopc_mod        , only : ModelInitPhase
   use dshr_nuopc_mod        , only : ModelSetRunClock
   use dshr_nuopc_mod        , only : ModelSetMetaData
@@ -43,6 +45,7 @@ module wav_comp_nuopc
   use mct_mod
 
   implicit none
+  private ! except
 
   public  :: SetServices
 
@@ -50,8 +53,6 @@ module wav_comp_nuopc
   private :: InitializeRealize
   private :: ModelAdvance
   private :: ModelFinalize
-
-  private ! except
 
   !--------------------------------------------------------------------------
   ! Private module data
@@ -61,7 +62,8 @@ module wav_comp_nuopc
   integer                    :: fldsFrWav_num = 0
   type (fld_list_type)       :: fldsToWav(fldsMax)
   type (fld_list_type)       :: fldsFrWav(fldsMax)
-
+  character(len=CS), pointer :: avifld(:)
+  character(len=CS), pointer :: avofld(:)
   character(len=3)           :: myModelName = 'wav'       ! user defined model name
   type(shr_strdata_type)     :: SDWAV
   type(mct_gsMap), target    :: gsMap_target
@@ -80,18 +82,17 @@ module wav_comp_nuopc
   integer    ,parameter      :: master_task=0             ! task number of master task
   integer                    :: localPet
   logical                    :: read_restart              ! start from restart
-  logical                    :: wav_prognostic            ! flag
-  logical                    :: unpack_import
+  character(len=256)         :: case_name                 ! case name
   character(CL)              :: tmpstr                    ! tmp string
   integer                    :: dbrc
   integer, parameter         :: dbug = 10
-  character(len=*),parameter :: grid_option = "mesh"      ! grid_de, grid_arb, grid_reg, mesh
+  character(len=80)          :: calendar                  ! calendar name
   character(CXX)             :: flds_w2x = ''
   character(CXX)             :: flds_x2w = ''
-
-  !----- formats -----
-  character(*),parameter :: modName =  "(wav_comp_nuopc)"
-  character(*),parameter :: u_FILE_u = __FILE__
+  logical                    :: use_esmf_metadata = .false.
+  character(*), parameter    :: modName =  "(wav_comp_nuopc)"
+  character(*), parameter    :: u_FILE_u = &
+       __FILE__
 
   !===============================================================================
   contains
@@ -151,6 +152,7 @@ module wav_comp_nuopc
 
     ! local variables
     logical            :: wav_present ! flag
+    logical            :: wav_prognostic ! flag
     type(ESMF_VM)      :: vm
     integer            :: lmpicom
     character(CL)      :: cvalue
@@ -235,15 +237,18 @@ module wav_comp_nuopc
     !--------------------------------
 
     if (wav_present) then
-       !-----------------
        ! export fields
-       !-----------------
 
+       ! mappings of stream field names to output field names
+       call avio_list_add(avifld, avofld, namei='lamult' , nameo='Sw_lamult')
+       call avio_list_add(avifld, avofld, namei='ustokes', nameo='Sw_ustokes')
+       call avio_list_add(avifld, avofld, namei='vstokes', nameo='Sw_vstokes')
+
+       ! export fields
        call fld_list_add(fldsFrWav_num, fldsFrWav, trim(flds_scalar_name))
        call fld_list_add(fldsFrWav_num, fldsFrWav, 'Sw_lamult')
        call fld_list_add(fldsFrWav_num, fldsFrWav, 'Sw_ustokes')
        call fld_list_add(fldsFrWav_num, fldsFrWav, 'Sw_vstokes')
-
     end if
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
@@ -266,26 +271,28 @@ module wav_comp_nuopc
     integer, intent(out) :: rc
 
     ! local variables
-    character(ESMF_MAXSTR)   :: convCIM, purpComp
-    type(ESMF_Grid)          :: Egrid
-    type(ESMF_Mesh)          :: Emesh
-    integer                  :: nx_global, ny_global
-    type(ESMF_VM)            :: vm
-    integer                  :: n
-    character(CL)            :: cvalue
-    integer                  :: shrlogunit                ! original log unit
-    integer                  :: shrloglev                 ! original log level
-    logical                  :: read_restart              ! start from restart
-    integer                  :: ierr                      ! error code
-    logical                  :: scmMode = .false.         ! single column mode
-    real(R8)                 :: scmLat  = shr_const_SPVAL ! single column lat
-    real(R8)                 :: scmLon  = shr_const_SPVAL ! single column lon
-    logical                  :: connected                 ! is field connected?
-    integer                  :: klon, klat
-    integer                  :: lsize
-    integer                  :: iam
-    real(r8), pointer        :: lon(:),lat(:)
-    integer , pointer        :: gindex(:)
+    type(ESMF_Mesh)         :: Emesh
+    type(ESMF_TIME)         :: currTime
+    type(ESMF_TimeInterval) :: timeStep
+    type(ESMF_Calendar)     :: esmf_calendar             ! esmf calendar
+    type(ESMF_CalKind_Flag) :: esmf_caltype              ! esmf calendar type
+    integer                 :: nx_global, ny_global
+    type(ESMF_VM)           :: vm
+    integer                 :: n
+    character(CL)           :: cvalue
+    integer                 :: shrlogunit   ! original log unit
+    integer                 :: shrloglev    ! original log level
+    integer                 :: ierr         ! error code
+    integer                 :: klon, klat
+    integer                 :: lsize
+    integer                 :: iam
+    real(r8), pointer       :: lon(:),lat(:)
+    integer , pointer       :: gindex(:)
+    integer                 :: current_ymd  ! model date
+    integer                 :: current_year ! model year
+    integer                 :: current_mon  ! model month
+    integer                 :: current_day  ! model day
+    integer                 :: current_tod  ! model sec into model date
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
@@ -302,11 +309,11 @@ module wav_comp_nuopc
     call shr_file_setLogUnit (logUnit)
 
     !--------------------------------
-    ! call dwav init routine
+    ! get config variables
     !--------------------------------
 
-    gsmap => gsmap_target
-    ggrid => ggrid_target
+    call NUOPC_CompAttributeGet(gcomp, name='case_name', value=case_name, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -316,10 +323,48 @@ module wav_comp_nuopc
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) compid
 
-    call dwav_comp_init(clock, x2d, d2x, &
-         SDWAV, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, inst_name, logunit, read_restart, &
-         flds_w2x, flds_x2w)
+    !----------------------------------------------------------------------------
+    ! Determine calendar info
+    !----------------------------------------------------------------------------
+
+    call ESMF_ClockGet( clock, calkindflag=esmf_caltype, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (esmf_caltype == ESMF_CALKIND_NOLEAP) then
+       calendar = shr_cal_noleap
+    else if (esmf_caltype == ESMF_CALKIND_GREGORIAN) then
+       calendar = shr_cal_gregorian
+    else
+       call ESMF_LogWrite(subname//" ERROR bad ESMF calendar name "//trim(calendar), &
+            ESMF_LOGMSG_ERROR, rc=dbrc)
+       rc = ESMF_Failure
+       return
+    end if
+
+    !--------------------------------
+    ! Initialize model
+    !--------------------------------
+
+    gsmap => gsmap_target
+    ggrid => ggrid_target
+
+    call wav_comp_init(&
+         x2w=x2d, &
+         w2x=d2x, &
+         w2x_fields=flds_w2x, &
+         x2w_fields=flds_x2w, &
+         SDWAV=SDWAV, &
+         gsmap=gsmap, &
+         ggrid=ggrid, &
+         mpicom=mpicom, &
+         compid=compid, &
+         my_task=my_task, &
+         master_task=master_task, &
+         inst_suffix=inst_suffix, &
+         inst_name=inst_name, &
+         logunit=logunit, &
+         read_restart=read_restart, &
+         calendar=calendar)
 
     !--------------------------------
     ! generate the grid or mesh from the gsmap and ggrid
@@ -347,34 +392,65 @@ module wav_comp_nuopc
     deallocate(gindex)
 
     !--------------------------------
-    ! realize the actively coupled fields, now that a grid or mesh is established
-    ! Note: shr_nuopc_fldList_Realize does the following:
-    ! 1) loops over all of the entries in fldsToWav and creates a field
-    !    for each one via one of the following commands:
-    !     field = ESMF_FieldCreate(grid, ESMF_TYPEKIND_R8, name=fldlist%shortname(n), rc=rc)
-    !     field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=fldlist%shortname(n), meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
-    ! 2) realizes the field via the following call
-    !     call NUOPC_Realize(state, field=field, rc=rc)
-    !    where state is either importState or exportState
-    !  NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
-    !  by replacing the advertised fields with the fields in fldsToWav of the same name.
+    ! realize the actively coupled fields, now that a mesh is established
+    ! NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
+    ! by replacing the advertised fields with the newly created fields of the same name.
     !--------------------------------
 
-    call shr_nuopc_fldList_Realize(importState, fldListTo(compwav), flds_scalar_name, flds_scalar_num, &
-         mesh=Emesh, tag=subname//':dwavImport', rc=rc)
+    call fld_list_realize( &
+         state=ExportState, &
+         fldList=fldsFrWav, &
+         numflds=fldsFrWav_num, &
+         flds_scalar_name=flds_scalar_name, &
+         flds_scalar_num=flds_scalar_num, &
+         tag=subname//':dwavExport',&
+         mesh=Emesh, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_fldList_Realize(exportState, fldListFr(compwav), flds_scalar_name, flds_scalar_num, &
-         mesh=Emesh, tag=subname//':dwavExport', rc=rc)
+    call fld_list_realize( &
+         state=importState, &
+         fldList=fldsToWav, &
+         numflds=fldsToWav_num, &
+         flds_scalar_name=flds_scalar_name, &
+         flds_scalar_num=flds_scalar_num, &
+         tag=subname//':dwavImport',&
+         mesh=Emesh, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+
+    !----------------------------------------------------------------------------
+    ! Set initial wav state
+    !----------------------------------------------------------------------------
+
+    call ESMF_ClockGet( clock, currTime=currTime, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_TimeGet( currTime, yy=current_year, mm=current_mon, dd=current_day, s=current_tod, &
+         calkindflag=esmf_caltype, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call shr_cal_ymd2date(current_year, current_mon, current_day, current_ymd)
+
+    call dwav_comp_run(&
+         x2w=x2w, &
+         w2x=w2x, &
+         SDWAV=SDWAV, &
+         gsmap=gsmap, &
+         ggrid=ggrid, &
+         mpicom=mpicom, &
+         my_task=my_task, &
+         master_task=master_task, &
+         inst_suffix=inst_suffix, &
+         logunit=logunit, &
+         read_restart=read_restart, &
+         write_restart=.false., &
+         target_ymd=current_ymd, &
+         target_tod=current_tod)
 
     !--------------------------------
     ! Pack export state
-    ! Copy from d2x to exportState
-    ! Set the coupling scalars
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_w2x, exportState, grid_option, rc=rc)
+    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_w2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call shr_nuopc_methods_State_SetScalar(dble(nx_global),flds_scalar_index_nx, exportState, mpicom, &
@@ -397,34 +473,17 @@ module wav_comp_nuopc
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
 
-#ifdef USE_ESMF_METADATA
-    convCIM  = "CIM"
-    purpComp = "Model Component Simulation Description"
-    call ESMF_AttributeAdd(comp, convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ShortName", "DWAV", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "LongName", "Climatological Wave Data Model", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "Description", &
-         "The CIME data models perform the basic function of " // &
-         "reading external data, modifying that data, and then " // &
-         "sending it to the driver via coupling " // &
-         "interfaces. The driver and other models have no " // &
-         "fundamental knowledge of whether another component " // &
-         "is fully active or just a data model.  In some cases, " // &
-         "data models are prognostic and also receive and use " // &
-         "some data sent by the driver to the data model.  But " // &
-         "in most cases, the data models are not running " // &
-         "prognostically and have no need to receive any data " // &
-         "from the driver.", &
-         convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ReleaseDate", "2010", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ModelType", "Wave", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "Name", "TBD", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "EmailAddress", "TBD", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ResponsiblePartyRole", "contact", convention=convCIM, purpose=purpComp, rc=rc)
-#endif
-
     call shr_file_setLogLevel(shrloglev)
     call shr_file_setLogUnit (shrlogunit)
+
+    !----------------------------------------------------------------------------
+    ! Reset shr logging to original values
+    !----------------------------------------------------------------------------
+
+    if (use_esmf_metadata) then
+       call ModelSetMetaData(gcomp, name='DWAV', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
@@ -439,17 +498,14 @@ module wav_comp_nuopc
     ! local variables
     type(ESMF_Clock)        :: clock
     type(ESMF_Alarm)        :: alarm
+    type(ESMF_Time)         :: currTime, nextTime
+    type(ESMF_TimeInterval) :: timeStep
     type(ESMF_State)        :: importState, exportState
     integer                 :: shrlogunit    ! original log unit
     integer                 :: shrloglev     ! original log level
-    character(CL)           :: case_name     ! case name
     logical                 :: write_restart ! write a restart
-    integer                 :: currentYMD    ! model date
-    integer                 :: currentTOD    ! model sec into model date
-    integer                 :: nextYMD       ! model date
-    integer                 :: nextTOD       ! model sec into model date
-    type(ESMF_Time)         :: currTime, nextTime
-    type(ESMF_TimeInterval) :: timeStep
+    integer                 :: next_ymd      ! model date
+    integer                 :: next_tod      ! model sec into model date
     character(len=*),parameter :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
@@ -479,7 +535,7 @@ module wav_comp_nuopc
     !--------------------------------
 
     if (unpack_import) then
-       call shr_nuopc_grid_StateToArray(importState, x2d%rattr, flds_x2w, grid_option, rc=rc)
+       call shr_nuopc_grid_StateToArray(importState, x2d%rattr, flds_x2w, grid_option='mesh', rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
@@ -487,30 +543,54 @@ module wav_comp_nuopc
     ! Run model
     !--------------------------------
 
-    write_restart = seq_timemgr_alarmIsOn(clock, seq_timemgr_alarm_restart, rc)
+    ! Determine if will write restart
+
+    call ESMF_ClockGetAlarm(clock, alarmname='alarm_restart', alarm=alarm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call seq_timemgr_AlarmSetOff(clock, seq_timemgr_alarm_restart, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (ESMF_AlarmIsRinging(alarm, rc=rc)) then
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       write_restart = .true.
+       call ESMF_AlarmRingerOff( alarm, rc=rc )
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       write_restart = .false.
+    endif
 
     ! For nuopc - the component clock is advanced at the end of the time interval
     ! For these to match for now - need to advance nuopc one timestep ahead for
     ! shr_strdata time interpolation
-    call ESMF_ClockGet( clock, currTime=currTime, timeStep=timeStep, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    nextTime = currTime + timeStep
-    call seq_timemgr_ETimeGet( currTime, ymd=CurrentYMD, tod=CurrentTOD )
-    call seq_timemgr_ETimeGet( nextTime, ymd=NextYMD, tod=NextTOD )
 
-    call dwav_comp_run(clock, x2d, d2x, &
-       SDWAV, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, read_restart, write_restart, &
-       nextYMD, nextTOD, case_name=case_name)
+    call ESMF_ClockGet( clock, currTime=currTime, timeStep=timeStep, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    nextTime = currTime + timeStep
+    call ESMF_TimeGet( nextTime, yy=yr, mm=mon, dd=day, s=next_tod, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call shr_cal_ymd2date(yr, mon, day, next_ymd)
+
+    call dwav_comp_run(&
+         x2w=x2d, &
+         w2x=d2x, &
+         SDWAV=SDWAV, &
+         gsmap=gsmap, &
+         ggrid=ggrid, &
+         mpicom=mpicom, &
+         my_task=my_task, &
+         master_task=master_task, &
+         inst_suffix=inst_suffix, &
+         logunit=logunit, &
+         read_restart=read_restart, &
+         write_restart=write_restart, &
+         target_ymd=next_ymd, &
+         target_tod=next_tod, &
+         case_name=case_name)
 
     !--------------------------------
     ! Pack export state
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_w2x, exportState, grid_option, rc=rc)
+    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_w2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
@@ -639,7 +719,5 @@ module wav_comp_nuopc
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelFinalize
-
-  !===============================================================================
 
 end module wav_comp_nuopc
