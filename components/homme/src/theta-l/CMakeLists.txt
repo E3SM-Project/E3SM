@@ -114,6 +114,13 @@ IF (${ENABLE_HORIZ_OPENMP} AND ${ENABLE_COLUMN_OPENMP})
   SET(NESTED_OPENMP TRUE CACHE BOOL "Both horizontal and column threading")
 ENDIF ()
 
+IF (HOMME_USE_ARKODE)
+  TARGET_LINK_LIBRARIES(theta-l sundials_farkode)
+  TARGET_LINK_LIBRARIES(theta-l sundials_arkode)
+  TARGET_LINK_LIBRARIES(theta-l sundials_nvecserial)
+  TARGET_LINK_LIBRARIES(theta-l sundials_fnvecserial)
+ENDIF ()
+
 endmacro(thetal_setup)
 
 thetal_setup()
@@ -121,12 +128,5 @@ thetal_setup()
 # createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
 ############################################################################
 createTestExec(theta-l theta-l ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
-
-IF (HOMME_USE_ARKODE)
-  TARGET_LINK_LIBRARIES(theta-l sundials_farkode)
-  TARGET_LINK_LIBRARIES(theta-l sundials_arkode)
-  TARGET_LINK_LIBRARIES(theta-l sundials_nvecserial)
-  TARGET_LINK_LIBRARIES(theta-l sundials_fnvecserial)
-ENDIF ()
 
 TARGET_LINK_LIBRARIES(theta-l dl)
