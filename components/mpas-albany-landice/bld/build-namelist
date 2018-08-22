@@ -478,7 +478,6 @@ add_default($nl, 'config_ice_density');
 add_default($nl, 'config_ocean_density');
 add_default($nl, 'config_sea_level');
 add_default($nl, 'config_default_flowParamA');
-add_default($nl, 'config_enhancementFactor');
 add_default($nl, 'config_flowLawExponent');
 add_default($nl, 'config_dynamic_thickness');
 

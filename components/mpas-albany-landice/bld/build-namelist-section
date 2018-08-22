@@ -1,11 +1,8 @@
-if ($MALI_USE_ALBANY eq 'TRUE') {
-    print "Setting up MALI namelist to use Albany.\n"; }
-
 ###################################
 # Namelist group: velocity_solver #
 ###################################
 
-add_default($nl, 'config_velocity_solver', 'mali_use_albany'=>"$MALI_USE_ALBANY");
+add_default($nl, 'config_velocity_solver');
 add_default($nl, 'config_sia_tangent_slope_calculation');
 add_default($nl, 'config_flowParamA_calculation');
 add_default($nl, 'config_do_velocity_reconstruction_for_external_dycore');
@@ -27,6 +24,8 @@ add_default($nl, 'config_tracer_advection');
 add_default($nl, 'config_calving');
 add_default($nl, 'config_calving_topography');
 add_default($nl, 'config_calving_thickness');
+add_default($nl, 'config_calving_eigencalving_parameter_source');
+add_default($nl, 'config_calving_eigencalving_parameter_scalar_value');
 add_default($nl, 'config_data_calving');
 add_default($nl, 'config_calving_timescale');
 add_default($nl, 'config_restore_calving_front');
@@ -36,13 +35,18 @@ add_default($nl, 'config_restore_calving_front');
 ##################################
 
 add_default($nl, 'config_thermal_solver');
+add_default($nl, 'config_thermal_calculate_bmb');
 add_default($nl, 'config_temperature_init');
 add_default($nl, 'config_thermal_thickness');
 add_default($nl, 'config_surface_air_temperature_source');
 add_default($nl, 'config_surface_air_temperature_value');
+add_default($nl, 'config_surface_air_temperature_lapse_rate');
 add_default($nl, 'config_basal_heat_flux_source');
 add_default($nl, 'config_basal_heat_flux_value');
 add_default($nl, 'config_basal_mass_bal_float');
+add_default($nl, 'config_basal_mass_bal_seroussi_amplitude');
+add_default($nl, 'config_basal_mass_bal_seroussi_period');
+add_default($nl, 'config_basal_mass_bal_seroussi_phase');
 add_default($nl, 'config_bmlt_float_flux');
 add_default($nl, 'config_bmlt_float_xlimit');
 
@@ -54,7 +58,6 @@ add_default($nl, 'config_ice_density');
 add_default($nl, 'config_ocean_density');
 add_default($nl, 'config_sea_level');
 add_default($nl, 'config_default_flowParamA');
-add_default($nl, 'config_enhancementFactor');
 add_default($nl, 'config_flowLawExponent');
 add_default($nl, 'config_dynamic_thickness');
 
@@ -75,18 +78,12 @@ add_default($nl, 'config_adaptive_timestep_force_interval');
 # Namelist group: time_management #
 ###################################
 
-if ($CONTINUE_RUN eq 'TRUE') {
-	add_default($nl, 'config_do_restart', 'val'=>".true.");
-} else {
-	add_default($nl, 'config_do_restart', 'val'=>".false.");
-}
+add_default($nl, 'config_do_restart');
 add_default($nl, 'config_restart_timestamp_name');
-add_default($nl, 'config_calendar_type', 'calendar'=>"$CALENDAR");
-if ($CONTINUE_RUN eq 'TRUE') {
-	add_default($nl, 'config_start_time', 'val'=>"'file'");
-} else {
-	add_default($nl, 'config_start_time', 'val'=>"'${RUN_STARTDATE}_${START_TOD}'");
-}
+add_default($nl, 'config_start_time');
+add_default($nl, 'config_stop_time');
+add_default($nl, 'config_run_duration');
+add_default($nl, 'config_calendar_type');
 
 ######################
 # Namelist group: io #
@@ -107,7 +104,7 @@ add_default($nl, 'config_write_albany_ascii_mesh');
 #################################
 
 add_default($nl, 'config_num_halos');
-add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/glc/mpasli/${GLC_GRID}/mpasli.graph.info.${date_stamp}.part.'");
+add_default($nl, 'config_block_decomp_file_prefix');
 add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');
