@@ -68,6 +68,7 @@ module TopounitType
     real(r8), pointer :: qbot       (:) => null() ! specific humidity at atmospheric forcing height (kg H2O/kg moist air)
     real(r8), pointer :: ubot       (:) => null() ! wind speed in U (east) direction at atmospheric forcing height (m/s)
     real(r8), pointer :: vbot       (:) => null() ! wind speed in V (north) direction at atmospheric forcing height (m/s)
+    real(r8), pointer :: zbot       (:) => null() ! atmospheric forcing height (m)
   contains
     procedure, public :: Init  => init_top_as
     procedure, public :: Clean => clean_top_as
@@ -168,6 +169,7 @@ module TopounitType
     allocate(this%qbot    (begt:endt)) ; this%qbot   (:) = spval
     allocate(this%ubot    (begt:endt)) ; this%ubot   (:) = spval
     allocate(this%vbot    (begt:endt)) ; this%vbot   (:) = spval
+    allocate(this%zbot    (begt:endt)) ; this%zbot   (:) = spval
     
     ! Set history fields for atmospheric state forcing variables
     !call hist_addfld1d (fname='TBOT', units='K',  &
@@ -190,6 +192,7 @@ module TopounitType
     deallocate(this%qbot)
     deallocate(this%ubot)
     deallocate(this%vbot)
+    deallocate(this%zbot)
   end subroutine clean_top_as
 
   subroutine init_top_es(this, begt, endt)

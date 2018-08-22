@@ -132,9 +132,9 @@ contains
          z0mr             =>    veg_vp%z0mr                           , & ! Input:  [real(r8) (:)   ] ratio of momentum roughness length to canopy top height (-)
          displar          =>    veg_vp%displar                        , & ! Input:  [real(r8) (:)   ] ratio of displacement height to canopy top height (-)
    
-         forc_hgt_t       =>    atm2lnd_vars%forc_hgt_t_grc           , & ! Input:  [real(r8) (:)   ] observational height of temperature [m]  
-         forc_hgt_u       =>    atm2lnd_vars%forc_hgt_u_grc           , & ! Input:  [real(r8) (:)   ] observational height of wind [m]         
-         forc_hgt_q       =>    atm2lnd_vars%forc_hgt_q_grc           , & ! Input:  [real(r8) (:)   ] observational height of specific humidity [m]
+         forc_hgt_t       =>    top_as%zbot                           , & ! Input:  [real(r8) (:)   ] observational height of temperature [m]  
+         forc_hgt_u       =>    top_as%zbot                           , & ! Input:  [real(r8) (:)   ] observational height of wind [m]         
+         forc_hgt_q       =>    top_as%zbot                           , & ! Input:  [real(r8) (:)   ] observational height of specific humidity [m]
          forc_pbot        =>    top_as%pbot                           , & ! Input:  [real(r8) (:)   ] atmospheric pressure (Pa)                
          forc_q           =>    top_as%qbot                           , & ! Input:  [real(r8) (:)   ] atmospheric specific humidity (kg/kg)    
          forc_t           =>    top_as%tbot                           , & ! Input:  [real(r8) (:)   ] atmospheric temperature (Kelvin)         
@@ -460,32 +460,33 @@ contains
       do p = bounds%begp,bounds%endp
          if (veg_pp%active(p)) then
             g = veg_pp%gridcell(p)
+            t = veg_pp%topounit(p)
             l = veg_pp%landunit(p)
             c = veg_pp%column(p)
             if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
                if (frac_veg_nosno(p) == 0) then
-                  forc_hgt_u_patch(p) = forc_hgt_u(g) + z0mg(c) + displa(p)
-                  forc_hgt_t_patch(p) = forc_hgt_t(g) + z0mg(c) + displa(p)
-                  forc_hgt_q_patch(p) = forc_hgt_q(g) + z0mg(c) + displa(p)
+                  forc_hgt_u_patch(p) = forc_hgt_u(t) + z0mg(c) + displa(p)
+                  forc_hgt_t_patch(p) = forc_hgt_t(t) + z0mg(c) + displa(p)
+                  forc_hgt_q_patch(p) = forc_hgt_q(t) + z0mg(c) + displa(p)
                else
-                  forc_hgt_u_patch(p) = forc_hgt_u(g) + z0m(p) + displa(p)
-                  forc_hgt_t_patch(p) = forc_hgt_t(g) + z0m(p) + displa(p)
-                  forc_hgt_q_patch(p) = forc_hgt_q(g) + z0m(p) + displa(p)
+                  forc_hgt_u_patch(p) = forc_hgt_u(t) + z0m(p) + displa(p)
+                  forc_hgt_t_patch(p) = forc_hgt_t(t) + z0m(p) + displa(p)
+                  forc_hgt_q_patch(p) = forc_hgt_q(t) + z0m(p) + displa(p)
                end if
             else if (lun_pp%itype(l) == istwet .or. lun_pp%itype(l) == istice      &
                  .or. lun_pp%itype(l) == istice_mec) then
-               forc_hgt_u_patch(p) = forc_hgt_u(g) + z0mg(c)
-               forc_hgt_t_patch(p) = forc_hgt_t(g) + z0mg(c)
-               forc_hgt_q_patch(p) = forc_hgt_q(g) + z0mg(c)
+               forc_hgt_u_patch(p) = forc_hgt_u(t) + z0mg(c)
+               forc_hgt_t_patch(p) = forc_hgt_t(t) + z0mg(c)
+               forc_hgt_q_patch(p) = forc_hgt_q(t) + z0mg(c)
                ! Appropriate momentum roughness length will be added in LakeFLuxesMod.
             else if (lun_pp%itype(l) == istdlak) then
-               forc_hgt_u_patch(p) = forc_hgt_u(g)
-               forc_hgt_t_patch(p) = forc_hgt_t(g)
-               forc_hgt_q_patch(p) = forc_hgt_q(g)
+               forc_hgt_u_patch(p) = forc_hgt_u(t)
+               forc_hgt_t_patch(p) = forc_hgt_t(t)
+               forc_hgt_q_patch(p) = forc_hgt_q(t)
             else if (urbpoi(l)) then
-               forc_hgt_u_patch(p) = forc_hgt_u(g) + z_0_town(l) + z_d_town(l)
-               forc_hgt_t_patch(p) = forc_hgt_t(g) + z_0_town(l) + z_d_town(l)
-               forc_hgt_q_patch(p) = forc_hgt_q(g) + z_0_town(l) + z_d_town(l)
+               forc_hgt_u_patch(p) = forc_hgt_u(t) + z_0_town(l) + z_d_town(l)
+               forc_hgt_t_patch(p) = forc_hgt_t(t) + z_0_town(l) + z_d_town(l)
+               forc_hgt_q_patch(p) = forc_hgt_q(t) + z_0_town(l) + z_d_town(l)
             end if
          end if
       end do
