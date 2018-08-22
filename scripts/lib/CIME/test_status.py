@@ -226,15 +226,18 @@ class TestStatus(object):
     def get_comment(self, phase):
         return self._phase_statuses[phase][1] if phase in self._phase_statuses else None
 
-    def phase_statuses_dump(self, prefix=''):
+    def phase_statuses_dump(self, prefix='', skip_passes=False):
         """
         Args:
             prefix: string printed at the start of each line
+            skip_passes: if True, do not output lines that have a PASS status
         """
         result = ""
         if self._phase_statuses:
             for phase, data in self._phase_statuses.items():
                 status, comments = data
+                if skip_passes and status == TEST_PASS_STATUS:
+                    continue
                 if not comments:
                     result += "{}{} {} {}\n".format(prefix, status, self._test_name, phase)
                 else:

@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 """
-List test results based on TestStatus files. Returns True if
-no errors occured (not based on test statuses).
+List test results based on TestStatus files.
+
+Typical usage:
+    ./cs.status /path/to/testroot/*.testid/TestStatus
+
+Returns True if no errors occured (not based on test statuses).
 """
 
 from standard_script_setup import *
@@ -12,43 +16,37 @@ from CIME.cs_status import cs_status
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-usage="""\n{0} <Glob of TestStatus> [<Path/Glob to TestStatus> ...]  [--verbose]
-OR
-{0} --help
-
-\033[1mEXAMPLES:\033[0m
-    \033[1;32m# Wait for all tests in a test area\033[0m
-    > {0} path/to/testarea/*/TestStatus
-""".format(os.path.basename(args[0])),
-
-description=description,
-
-formatter_class=argparse.ArgumentDefaultsHelpFormatter
-)
+        description=description,
+        formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument("paths", nargs="*", help="Paths to TestStatus files.")
 
-    parser.add_argument("-s", "--summary", action="store_true",
-                        help="Only show summary")
+    options_group = parser.add_mutually_exclusive_group()
+
+    options_group.add_argument("-s", "--summary", action="store_true",
+                               help="Only show summary")
+
+    options_group.add_argument("-f", "--fails-only", action="store_true",
+                               help="Only show failures")
 
     parser.add_argument("-t", "--test-id", action="append", default=[],
-                        help="Only show summary")
+                        help="Include all tests with this test id")
 
     parser.add_argument("-r", "--test-root", default=os.getcwd(),
-                        help="Only show summary")
+                        help="Test root used when --test-id is given")
 
     args = parser.parse_args(args[1:])
 
-    return args.paths, args.summary, args.test_id, args.test_root
+    return args.paths, args.summary, args.fails_only, args.test_id, args.test_root
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    test_paths, summary, test_ids, test_root = parse_command_line(sys.argv, description)
+    test_paths, summary, fails_only, test_ids, test_root = parse_command_line(sys.argv, description)
     for test_id in test_ids:
         test_paths.extend(glob.glob(os.path.join(test_root, "*%s/TestStatus" % test_id)))
 
-    cs_status(test_paths, summary)
+    cs_status(test_paths, summary, fails_only)
 
 ###############################################################################
 
