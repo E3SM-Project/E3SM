@@ -42,7 +42,7 @@ class EnvMachPes(EnvBase):
                 max_mpitasks_per_node = self.get_value("MAX_MPITASKS_PER_NODE")
             if value is not None and value < 0:
                 value = -1*value*max_mpitasks_per_node
-                
+
         return value
 
     def set_value(self, vid, value, subgroup=None, ignore_type=False):
