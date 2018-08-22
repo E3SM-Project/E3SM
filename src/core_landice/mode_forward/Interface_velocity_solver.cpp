@@ -69,7 +69,7 @@ std::vector<int> edgesToReceive, fCellsToReceive, indexToTriangleID,
 std::vector<int> indexToVertexID, vertexToFCell, triangleToFVertex, indexToEdgeID, edgeToFEdge,
     mask, fVertexToTriangleID, fCellToVertex, floatingEdgesIds, dirichletNodesIDs;
 std::vector<double> temperatureOnTetra, dissipationHeatOnTetra, velocityOnVertices, velocityOnCells,
-    elevationData, thicknessData, betaData, bedTopographyData, temperatureData, smbData, thicknessOnCells;
+    elevationData, thicknessData, betaData, bedTopographyData, stiffnessFactorData, temperatureData, smbData, thicknessOnCells;
 std::vector<bool> isVertexBoundary, isBoundaryEdge;
 
 // only needed for creating ASCII mesh
@@ -113,7 +113,7 @@ int velocity_solver_init_mpi(int* fComm) {
 
 void velocity_solver_set_parameters(double const* gravity_F, double const* ice_density_F, double const* ocean_density_F,
                          double const* sea_level_F, double const* flowParamA_F,
-                         double const* enhancementFactor_F, double const* flowLawExponent_F, double const* dynamic_thickness_F,
+                         double const* flowLawExponent_F, double const* dynamic_thickness_F,
                          double const* clausius_clapeyron_coeff,
                          int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce,
                          bool const* use_GLP_F) {
@@ -123,7 +123,7 @@ void velocity_solver_set_parameters(double const* gravity_F, double const* ice_d
   dynamic_ice_bit_value = *li_mask_ValueDynamicIce;
   ice_present_bit_value = *li_mask_ValueIce;
   velocity_solver_set_physical_parameters__(*gravity_F, rho_ice, *ocean_density_F, *sea_level_F/unit_length, *flowParamA_F*std::pow(unit_length,4)*secondsInAYear, 
-                                            *enhancementFactor_F, *flowLawExponent_F, *dynamic_thickness_F/unit_length, *use_GLP_F, *clausius_clapeyron_coeff);
+                                            *flowLawExponent_F, *dynamic_thickness_F/unit_length, *use_GLP_F, *clausius_clapeyron_coeff);
 }
 
 
@@ -340,7 +340,7 @@ void velocity_solver_init_fo(double const *levelsRatio_F) {
 
 void velocity_solver_solve_fo(double const* bedTopography_F, double const* lowerSurface_F,
     double const* thickness_F, double const* beta_F,
-    double const* smb_F, double const* temperature_F,
+    double const* smb_F, double const* temperature_F, double const* stiffnessFactor_F,
     double* const dirichletVelocityXValue, double* const dirichletVelocitYValue,
     double* u_normal_F, double* dissipation_heat_F,
     double* xVelocityOnCell, double* yVelocityOnCell, double const* deltat,
@@ -385,7 +385,7 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
 
 
     std::map<int, int> bdExtensionMap;
-    import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, temperature_F, smb_F,  minThickness);
+    import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, stiffnessFactor_F, temperature_F, smb_F,  minThickness);
 
     std::vector<double> regulThk(thicknessData);
     for (int index = 0; index < nVertices; index++)
@@ -403,6 +403,7 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
         Ordering, first_time_step, indexToVertexID, indexToTriangleID, minBeta,
         regulThk, levelsNormalizedThickness, elevationData, thicknessData,
         betaData, bedTopographyData, smbData,
+        stiffnessFactorData,
         temperatureOnTetra, dissipationHeatOnTetra, velocityOnVertices,
         albany_error, dt);
     *error=albany_error;
@@ -1437,13 +1438,16 @@ void extendMaskByOneLayer(int const* verticesMask_F,
 }
 
 void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
-    double const * beta_F, double const * temperature_F, double const * smb_F, double eps) {
+    double const * beta_F, double const* stiffnessFactor_F, 
+    double const * temperature_F, double const * smb_F, double eps) {
         
   elevationData.assign(nVertices, 1e10);
   thicknessData.assign(nVertices, 1e10);
   bedTopographyData.assign(nVertices, 1e10);
   if (beta_F != 0)
     betaData.assign(nVertices, 1e10);
+  if (stiffnessFactor_F != 0)
+    stiffnessFactorData.assign(nVertices, 1.0);
   if(temperature_F != 0)
     temperatureData.assign(nLayers * nTriangles, 1e10);
   if (smb_F != 0)
@@ -1460,6 +1464,8 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
       betaData[index] = beta_F[iCell] / unit_length;
     if (smb_F != 0)
       smbData[index] = smb_F[iCell] / unit_length * secondsInAYear/rho_ice;
+    if (stiffnessFactor_F != 0)
+      stiffnessFactorData[index] = stiffnessFactor_F[iCell];
   }
 
   if(temperature_F != 0) {
@@ -1566,6 +1572,8 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
       betaData[iv] = beta_F[ic] / unit_length;
     if (smb_F != 0)
       smbData[iv] = smb_F[ic] / unit_length * secondsInAYear/rho_ice;
+    if (stiffnessFactor_F != 0)
+      stiffnessFactorData[iv] = stiffnessFactor_F[ic];
   }
 
 }
@@ -2107,6 +2115,7 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
   void write_ascii_mesh(int const* indexToCellID_F,
     double const* bedTopography_F, double const* lowerSurface_F,
     double const* beta_F, double const* temperature_F,
+    double const* stiffnessFactor_F,
     double const* thickness_F, double const* thicknessUncertainty_F,
     double const* smb_F, double const* smbUncertainty_F,
     double const* bmb_F, double const* bmbUncertainty_F,
@@ -2180,7 +2189,8 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
     // Call needed functions to process MPAS fields to Albany units/format
     
     std::map<int, int> bdExtensionMap;  // local map to be created by import2DFields
-    import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, temperature_F, smb_F, minThickness);
+    import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, 
+                   stiffnessFactor_F, temperature_F, smb_F, minThickness);
 
     import2DFieldsObservations(bdExtensionMap,
                     thicknessUncertainty_F,

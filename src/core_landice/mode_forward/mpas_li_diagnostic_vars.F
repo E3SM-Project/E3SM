@@ -376,7 +376,7 @@ contains
 !>   transition temperature (-10 deg C at 0 pressure).
 !>   Values for $A0, Q, \Phi$ differ from PB1982.
 !>
-!>  All options are adjusted by the enhancement factor (which defaults to 1.0).
+!>  The result is NOT adjusted by an enhancement factor.
 !-----------------------------------------------------------------------
    subroutine li_calculate_flowParamA(meshPool, temperature, thickness, flowParamA, err)
 
@@ -417,7 +417,6 @@ contains
       integer, pointer :: nCells, nVertLevels
       character (len=StrKIND), pointer :: config_flowParamA_calculation
       real (kind=RKIND), pointer :: config_default_flowParamA, &
-                                    config_enhancementFactor,  &
                                     config_dynamic_thickness,  &
                                     config_ice_density
       integer :: iCell, iLevel, err_tmp
@@ -434,7 +433,6 @@ contains
       call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
 
       call mpas_pool_get_config(liConfigs, 'config_flowParamA_calculation', config_flowParamA_calculation)
-      call mpas_pool_get_config(liConfigs, 'config_enhancementFactor', config_enhancementFactor)
       call mpas_pool_get_config(liConfigs, 'config_default_flowParamA', config_default_flowParamA)
       call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
@@ -499,10 +497,6 @@ contains
       end select
 
       !print *,'max flwa', maxval(flowParamA)
-      !print *,'config_enhancementFactor', config_enhancementFactor
-
-      ! Include enhancement factor
-      flowParamA = flowParamA * config_enhancementFactor
 
       err = ior(err, err_tmp)
 
