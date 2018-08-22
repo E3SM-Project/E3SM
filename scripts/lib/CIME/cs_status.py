@@ -3,11 +3,17 @@ Implementation of the cs.status script, which prints the status of all
 of the tests in one or more test suites
 """
 
+from __future__ import print_function
 from CIME.XML.standard_module_setup import *
 from CIME.test_status import TestStatus
 import os
+import sys
 
-def cs_status(test_paths, summary=False):
+def cs_status(test_paths, summary=False, out=sys.stdout):
+    """Print the test statuses of all tests in test_paths. The default
+    is to print to stdout, but this can be overridden with the 'out'
+    argument.
+    """
     test_id_output = {}
     for test_path in test_paths:
         test_dir=os.path.dirname(test_path)
@@ -27,6 +33,6 @@ def cs_status(test_paths, summary=False):
             test_id_output[test_id] = output
 
     for test_id in sorted(test_id_output):
-        print(test_id)
-        print(test_id_output[test_id])
-        print(' ')
+        print(test_id, file=out)
+        print(test_id_output[test_id], file=out)
+        print(' ', file=out)
