@@ -23,7 +23,7 @@ program prim_main
   use perf_mod,         only: t_initf, t_prf, t_finalizef, t_startf, t_stopf ! _EXTERNAL
   use restart_io_mod ,  only: restartheader_t, writerestart
   use hybrid_mod,       only: hybrid_create
-#ifdef ARKODE
+#if (defined MODEL_THETA_L && defined ARKODE)
   use arkode_mod,       only: calc_nonlinear_stats, finalize_nonlinear_stats
 #endif
 
@@ -260,7 +260,7 @@ program prim_main
   call prim_movie_finish
 #endif
 
-#ifdef ARKODE
+#if (defined MODEL_THETA_L && defined ARKODE)
   if (calc_nonlinear_stats) then
     call finalize_nonlinear_stats(par%comm, par%rank, par%root, par%nprocs)
   endif
