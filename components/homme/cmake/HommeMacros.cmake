@@ -97,6 +97,14 @@ macro(createTestExec execName execType macroNP macroNC
     TARGET_LINK_LIBRARIES(${execName} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
   ENDIF()
 
+
+  IF (HOMME_USE_ARKODE && ${execName}==theta-l)
+    TARGET_LINK_LIBRARIES(theta-l sundials_farkode)
+    TARGET_LINK_LIBRARIES(theta-l sundials_arkode)
+    TARGET_LINK_LIBRARIES(theta-l sundials_nvecserial)
+    TARGET_LINK_LIBRARIES(theta-l sundials_fnvecserial)
+  ENDIF ()
+
   INSTALL(TARGETS ${execName} RUNTIME DESTINATION tests)
 
 endmacro(createTestExec)

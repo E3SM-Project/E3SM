@@ -114,13 +114,6 @@ IF (${ENABLE_HORIZ_OPENMP} AND ${ENABLE_COLUMN_OPENMP})
   SET(NESTED_OPENMP TRUE CACHE BOOL "Both horizontal and column threading")
 ENDIF ()
 
-IF (HOMME_USE_ARKODE)
-  TARGET_LINK_LIBRARIES(theta-l sundials_farkode)
-  TARGET_LINK_LIBRARIES(theta-l sundials_arkode)
-  TARGET_LINK_LIBRARIES(theta-l sundials_nvecserial)
-  TARGET_LINK_LIBRARIES(theta-l sundials_fnvecserial)
-ENDIF ()
-
 endmacro(thetal_setup)
 
 thetal_setup()
