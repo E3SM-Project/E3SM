@@ -4,6 +4,8 @@
 #ifndef NDEBUG
 # define NDEBUG
 #endif
+#pragma message "WE WANT ASSERTIONS"
+#undef NDEBUG
 
 #define BUILD_CISL
 
@@ -4527,7 +4529,7 @@ void setup_irecv (CslMpi& cm) {
   }  
 }
 
-void isend (CslMpi& cm) {
+void isend (CslMpi& cm, const bool want_req = true) {
 #ifdef HORIZ_OPENMP
 # pragma omp barrier
 # pragma omp master
@@ -4536,7 +4538,7 @@ void isend (CslMpi& cm) {
     const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
     for (Int ri = 0; ri < nrmtrank; ++ri)
       mpi::isend(*cm.p, cm.sendbuf(ri).data(), cm.sendcount(ri),
-                 cm.ranks(ri), 42, &cm.sendreq(ri));
+                 cm.ranks(ri), 42, want_req ? &cm.sendreq(ri) : nullptr);
   }
 }
 
@@ -4981,7 +4983,7 @@ void step (
   // Compute the requested q for departure points from remotes.
   calc_rmt_q<np>(cm);
   // Send q data.
-  isend(cm);
+  isend(cm, false);
   // Set up to receive q for each of my departure point requests sent to
   // remotes. We can't do this until the OpenMP barrier in isend assures that
   // all threads are done with the receive buffer's departure points.
@@ -4994,7 +4996,7 @@ void step (
   copy_q(cm, nets, q_min, q_max);
   // Don't need to wait on send buffer again because MPI-level synchronization
   // outside of SL transport assures the send buffer is ready at the next call
-  // to step.
+  // to step. But do need to dealloc the send requests.
 }
 } // namespace cslmpi
 } // namespace homme

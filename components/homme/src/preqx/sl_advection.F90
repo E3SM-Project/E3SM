@@ -116,12 +116,8 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hvcoord, hybrid , dt , 
   use bndry_mod,              only : ghost_exchangevfull
   use interpolate_mod,        only : interpolate_tracers, minmax_tracers
   use control_mod   ,         only : qsplit, nu_q, semi_lagrange_hv_q_all
-  use global_norms_mod,       only : wrap_repro_sum
-  use parallel_mod,           only : global_shared_buf, global_shared_sum, syncmp
-  use control_mod,            only : use_semi_lagrange_transport_local_conservation
   use control_mod,            only : transport_alg, semi_lagrange_cdr_alg, &
        semi_lagrange_cdr_check
-
 
   implicit none
   type (element_t)     , intent(inout) :: elem(:)
@@ -133,19 +129,13 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hvcoord, hybrid , dt , 
   integer              , intent(in   ) :: nets
   integer              , intent(in   ) :: nete
 
-
   type(cartesian3D_t)                           :: dep_points  (np,np)
   integer                                       :: elem_indexes(np,np)
   type(cartesian2D_t)                           :: para_coords (np,np)
-  real(kind=real_kind)                          :: Que         (np,np,nlev,qsize,nets:nete)
-  real(kind=real_kind)                          :: Que_t       (np,np,nlev,qsize,nets:nete)
   real(kind=real_kind)                          :: minq        (np,np,nlev,qsize,nets:nete)
   real(kind=real_kind)                          :: maxq        (np,np,nlev,qsize,nets:nete)
   real(kind=real_kind)                          :: f                      (qsize)
   real(kind=real_kind)                          :: g                      (qsize)
-  real(kind=real_kind)                          :: mass              (nlev,qsize)
-  real(kind=real_kind)                          :: elem_mass         (nlev,qsize,nets:nete)
-  real(kind=real_kind)                          :: rho         (np,np,nlev,      nets:nete)
 
   !TODO we don't want this. i think it causes a temp array in the
   !     ghostVpack_unoriented call.
@@ -445,7 +435,30 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hvcoord, hybrid , dt , 
   if (semi_lagrange_cdr_alg /= 1) then
      call t_stopf('Prim_Advec_Tracers_remap_ALE')
      return
+  else
+     call apply_cobra(elem, hybrid, tl, nets, nete, n0_qdp, np1_qdp, minq, maxq)
+     call t_stopf('Prim_Advec_Tracers_remap_ALE')
   end if
+end subroutine Prim_Advec_Tracers_remap_ALE
+
+subroutine apply_cobra(elem, hybrid, tl, nets, nete, n0_qdp, np1_qdp, minq, maxq)
+  use parallel_mod,           only : global_shared_buf, global_shared_sum, syncmp
+  use control_mod,            only : use_semi_lagrange_transport_local_conservation
+  use global_norms_mod,       only : wrap_repro_sum
+
+  type (element_t)     , intent(inout) :: elem(:)
+  type (hybrid_t)      , intent(in   ) :: hybrid
+  type (TimeLevel_t)   , intent(in   ) :: tl
+  integer              , intent(in   ) :: nets, nete, n0_qdp, np1_qdp
+  real(kind=real_kind) , intent(in   )          :: minq        (np,np,nlev,qsize,nets:nete)
+  real(kind=real_kind) , intent(in   )          :: maxq        (np,np,nlev,qsize,nets:nete)
+
+  real(kind=real_kind)                          :: Que         (np,np,nlev,qsize,nets:nete)
+  real(kind=real_kind)                          :: Que_t       (np,np,nlev,qsize,nets:nete)
+  real(kind=real_kind)                          :: mass              (nlev,qsize)
+  real(kind=real_kind)                          :: elem_mass         (nlev,qsize,nets:nete)
+  real(kind=real_kind)                          :: rho         (np,np,nlev,      nets:nete)
+  integer :: ie, n, k, q, j
 
   ! compute original mass, at tl_1%n0
   elem_mass = 0
@@ -521,10 +534,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hvcoord, hybrid , dt , 
 !       enddo
 !    enddo
 ! enddo
-  call t_stopf('Prim_Advec_Tracers_remap_ALE')
-
-
-end subroutine Prim_Advec_Tracers_remap_ALE
+end subroutine Apply_cobra
 
 subroutine VDOT(rp,Que,rho,mass,hybrid,nets,nete)
   use parallel_mod,        only: global_shared_buf, global_shared_sum
