@@ -23,11 +23,11 @@ module dynLandunitAreaMod
   save
   private
 
-  public :: update_landunit_weights      ! update landunit weights for all grid cells
+  public :: update_landunit_weights      ! update landunit weights for all topounits
   
   ! The following is only public for the sake of unit testing; it should not be called
   ! directly by CLM code outside this module
-  public :: update_landunit_weights_one_gcell
+  public :: update_landunit_weights_one_topounit
 
 contains
 
@@ -36,11 +36,11 @@ contains
   subroutine update_landunit_weights(bounds)
     !
     ! !DESCRIPTION:
-    ! Update landunit weights for all grid cells. 
+    ! Update landunit weights for all topounits. 
     !
-    ! Assumes lun_pp%wtgcell has been updated for all landunits whose areas are specified by
-    ! the dynamic subgrid code. Update lun_pp%wtgcell for all other landunits (including
-    ! possibly changing some values of lun_pp%wtgcell for landunits whose areas are
+    ! Assumes lun_pp%wttopounit has been updated for all landunits whose areas are specified by
+    ! the dynamic subgrid code. Update lun_pp%wttopounit for all other landunits (including
+    ! possibly changing some values of lun_pp%wttopounit for landunits whose areas are
     ! specified, e.g., if there are conflicts between glacier area and crop area).
     !
     ! !USES:
@@ -50,27 +50,27 @@ contains
     type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer  :: g                           ! grid cell index
+    integer  :: t                           ! topounit index
     integer  :: ltype                       ! landunit type
-    real(r8) :: landunit_weights(max_lunit) ! weight of each landunit on a single grid cell
+    real(r8) :: landunit_weights(max_lunit) ! weight of each landunit on a single topounit
     
     character(len=*), parameter :: subname = 'update_landunit_weights'
     !-----------------------------------------------------------------------
     
-    do g = bounds%begg, bounds%endg
+    do t = bounds%begt, bounds%endt
        
-       ! Determine current landunit weights. Landunits that don't exist on this grid cell
+       ! Determine current landunit weights. Landunits that don't exist on this topounit
        ! get a weight of 0
        do ltype = 1, max_lunit
-          landunit_weights(ltype) = get_landunit_weight(g, ltype)
+          landunit_weights(ltype) = get_landunit_weight(t, ltype)
        end do
 
        ! Adjust weights so they sum to 100%
-       call update_landunit_weights_one_gcell(landunit_weights)
+       call update_landunit_weights_one_topounit(landunit_weights)
        
-       ! Put the new landunit weights back into lun_pp%wtgcell
+       ! Put the new landunit weights back into lun_pp%wttopounit
        do ltype = 1, max_lunit
-          call set_landunit_weight(g, ltype, landunit_weights(ltype))
+          call set_landunit_weight(t, ltype, landunit_weights(ltype))
        end do
 
     end do
@@ -79,15 +79,15 @@ contains
 
 
   !-----------------------------------------------------------------------
-  subroutine update_landunit_weights_one_gcell(landunit_weights)
+  subroutine update_landunit_weights_one_topounit(landunit_weights)
     !
     ! !DESCRIPTION:
-    ! Update landunit weights for a single grid cell.
+    ! Update landunit weights for a single topounit.
     !
-    ! This should be called with a vector of landunit weights for this grid cell, which is
+    ! This should be called with a vector of landunit weights for this topounit, which is
     ! updated in-place. Element #1 in this vector is the weight of landunit #1 (e.g.,
     ! istsoil, assuming istsoil==1), element #2 is the weight of landunit #2 (e.g.,
-    ! istcrop, assuming istcrop==2), etc. Landunits that do not exist in this grid cell
+    ! istcrop, assuming istcrop==2), etc. Landunits that do not exist in this topounit
     ! should be given a weight of 0 in the vector.
     !
     ! After the execution of this routine, sum(landunit_weights) will be 1 within a small
@@ -98,7 +98,7 @@ contains
     real(r8), intent(inout) :: landunit_weights(:)  ! weight of each landunit; this is updated in-place
     !
     ! !LOCAL VARIABLES:
-    real(r8) :: landunit_sum   ! sum of all landunit weights on this grid cell
+    real(r8) :: landunit_sum   ! sum of all landunit weights on this topounit
     real(r8) :: excess         ! excess landunit weight that needs to be removed
     integer  :: decrease_index ! the current index into decrease_order
     integer  :: cur_landunit   ! the current element of decrease_order that we're dealing with
@@ -115,7 +115,7 @@ contains
 
     real(r8), parameter :: tol = 1.e-14  ! tolerance for making sure sum of landunit weights equals 1
     
-    character(len=*), parameter :: subname = 'update_landunit_weights_one_gcell'
+    character(len=*), parameter :: subname = 'update_landunit_weights_one_topounit'
     !-----------------------------------------------------------------------
 
     SHR_ASSERT((size(landunit_weights) == max_lunit), errMsg(__FILE__, __LINE__))
@@ -158,6 +158,6 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
     
-  end subroutine update_landunit_weights_one_gcell
+  end subroutine update_landunit_weights_one_topounit
 
 end module dynLandunitAreaMod

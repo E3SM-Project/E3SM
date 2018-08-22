@@ -149,6 +149,7 @@ module clm_varcon
   character(len=16), parameter :: grlnd  = 'lndgrid'      ! name of lndgrid
   character(len=16), parameter :: namea  = 'gridcellatm'  ! name of atmgrid
   character(len=16), parameter :: nameg  = 'gridcell'     ! name of gridcells
+  character(len=16), parameter :: namet  = 'topounit'     ! name of topographic units
   character(len=16), parameter :: namel  = 'landunit'     ! name of landunits
   character(len=16), parameter :: namec  = 'column'       ! name of columns
   character(len=16), parameter :: namep  = 'pft'          ! name of patches
