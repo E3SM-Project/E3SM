@@ -22,8 +22,12 @@ module shoc_intr
   use constituents,  only: pcnst, cnst_add
   use pbl_utils,     only: calc_ustar, calc_obklen
   use perf_mod,      only: t_startf, t_stopf
-  
-  implicit none			   
+  use spmd_utils,    only: masterproc
+  use cam_logfile,   only: iulog 
+ 
+  implicit none	
+
+  public :: shoc_init_cnst, shoc_implements_cnst		   
 
   ! define physics buffer indicies here
   integer :: tke_idx, &     ! turbulent kinetic energy
@@ -57,6 +61,10 @@ module shoc_intr
   integer :: cmfmc_sh_idx = 0
     
   real, parameter :: tke_tol = (2.e-2_r8)**2
+
+  real(r8), parameter :: &
+      host_dx = 100000._r8, &           ! Host model deltax [m]
+      host_dy = 100000._r8              ! Host model deltay [m]
   
   real(r8), parameter :: &
       theta0   = 300._r8, &             ! Reference temperature                     [K]
@@ -86,7 +94,11 @@ module shoc_intr
   
   logical      :: prog_modal_aero
   real(r8) :: micro_mg_accre_enhan_fac = huge(1.0_r8) !Accretion enhancement factor from namelist
-  
+ 
+  integer, parameter :: ncnst=1
+  character(len=8) :: cnst_names(ncnst)
+  logical :: do_cnst=.true.
+ 
   logical :: liqcf_fix = .FALSE.  ! HW for liquid cloud fraction fix
   logical :: relvar_fix = .FALSE. !PMA for relvar fix  
   
@@ -110,7 +122,9 @@ module shoc_intr
                        history_budget_histfile_num_out = history_budget_histfile_num, &
                        micro_do_icesupersat_out        = micro_do_icesupersat, &
                        micro_mg_accre_enhan_fac_out    = micro_mg_accre_enhan_fac)    
-  
+ 
+    cnst_names=(/'TKE   '/)    
+ 
     ! TKE is prognostic in SHOC and should be advected by dynamics
     call cnst_add('SHOC_TKE',0._r8,0._r8,0._r8,ixtke,longname='turbulent kinetic energy',cam_outfld=.true.)
   
@@ -139,7 +153,20 @@ module shoc_intr
   ! =============================================================================== !
   !                                                                                 !
   ! =============================================================================== !
-  
+ 
+function shoc_implements_cnst(name)
+
+  !--------------------------------------------------------------------
+  ! Return true if specified constituent is implemented by this package
+  !--------------------------------------------------------------------
+
+  character(len=*), intent(in) :: name 
+  logical :: shoc_implements_cnst
+
+  shoc_implements_cnst = (do_cnst .and. any(name == cnst_names))
+
+end function shoc_implements_cnst
+ 
   subroutine shoc_init_cnst(name, q, gcid)
   
   !------------------------------------------------------------------- !
@@ -183,14 +210,19 @@ module shoc_intr
 
     use physics_types,          only: physics_state, physics_ptend
     use ppgrid,                 only: pver, pverp, pcols
+    use ref_pres,               only: pref_mid
     use time_manager,           only: is_first_step
+    use hb_diff,                only: init_hb_diff
     use physics_buffer,         only: pbuf_get_index, pbuf_set_field, &
                                       physics_buffer_desc
     use rad_constituents,       only: rad_cnst_get_info, rad_cnst_get_mode_num_idx, &
                                       rad_cnst_get_mam_mmr_idx	
     use constituents,           only: cnst_get_ind	
     use shoc,                   only: shoc_init			      			      
-    
+    use cam_history,            only: horiz_only, addfld, add_default
+    use error_messages,         only: handle_errmsg
+    use trb_mtn_stress,         only: init_tms   
+ 
     implicit none
     !  Input Variables
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
@@ -200,7 +232,12 @@ module shoc_intr
     integer :: lptr
     integer :: nmodes, nspec, m, l
     integer :: ixnumliq
-    
+    integer :: ntop_eddy
+    integer :: nbot_eddy
+    character(len=128) :: errstring   
+
+    logical :: history_amwg
+ 
     lq(1:pcnst) = .true.
     edsclr_dim = pcnst
     
@@ -214,6 +251,7 @@ module shoc_intr
     ! ----------------------------------------------------------------- !
 
     call phys_getopts(prog_modal_aero_out=prog_modal_aero, &
+                      history_amwg_out = history_amwg, &
                       liqcf_fix_out   = liqcf_fix)    
     
     ! Define physics buffers indexes
@@ -261,7 +299,43 @@ module shoc_intr
        lq(ixnumliq) = .false.
        edsclr_dim = edsclr_dim-1
     endif 
-    
+   
+    ! ----------------------------------------------------------------- !
+    ! Set-up HB diffusion.  Only initialized to diagnose PBL depth      !
+    ! ----------------------------------------------------------------- !
+
+    ! Initialize eddy diffusivity module
+
+    ntop_eddy = 1    ! if >1, must be <= nbot_molec
+    nbot_eddy = pver ! currently always pver
+
+    call init_hb_diff( gravit, cpair, ntop_eddy, nbot_eddy, pref_mid, karman, eddy_scheme )
+
+    ! ----------------------------------------------------------------- !
+    ! Initialize turbulent mountain stress module                       !
+    ! ------------------------------------------------------------------!
+
+    if ( do_tms) then
+       call init_tms( r8, tms_orocnst, tms_z0fac, karman, gravit, rair, errstring)
+       call handle_errmsg(errstring, subname="init_tms")
+
+       call addfld( 'TAUTMSX' ,  horiz_only,  'A','N/m2',  'Zonal      turbulent mountain surface stress' )
+       call addfld( 'TAUTMSY' ,  horiz_only,  'A','N/m2',  'Meridional turbulent mountain surface stress' )
+       if (history_amwg) then
+          call add_default( 'TAUTMSX ', 1, ' ' )
+          call add_default( 'TAUTMSY ', 1, ' ' )
+       end if
+       if (masterproc) then
+          write(iulog,*)'Using turbulent mountain stress module'
+          write(iulog,*)'  tms_orocnst = ',tms_orocnst
+          write(iulog,*)'  tms_z0fac = ',tms_z0fac
+       end if
+    endif
+
+    ! ---------------------------------------------------------------!
+    ! Initialize SHOC                                                !
+    ! ---------------------------------------------------------------!
+ 
     call shoc_init( &
           gravit, rair, rh2o, cpair, &
 	  latvap)   
@@ -361,10 +435,10 @@ module shoc_intr
    integer :: ncol, lchnk                       ! # of columns, and chunk identifier
    integer :: err_code                          ! Diagnostic, for if some calculation goes amiss.
    integer :: begin_height, end_height
-   integer :: icnt, clubbtop
+   integer :: icnt
    
    real(r8) :: dtime                            ! SHOC time step                              [s]   
-   real(r8) :: edsclr_in(pverp,edsclr_dim)      ! Scalars to be diffused through SHOC         [units vary]   
+   real(r8) :: edsclr_in(pcols,pverp,edsclr_dim)      ! Scalars to be diffused through SHOC         [units vary]   
    real(r8) :: edsclr_out(pcols,pverp,edsclr_dim)
    real(r8) :: tke_in(pcols,pverp)
    real(r8) :: thlm_in(pcols,pverp)
@@ -380,6 +454,8 @@ module shoc_intr
    real(r8) :: newfice(pcols,pver)              ! fraction of ice in cloud at CLUBB start       [-]
    real(r8) :: exner(pcols,pverp)
    real(r8) :: thlm(pcols,pverp)
+   real(r8) :: um(pcols,pverp)
+   real(r8) :: vm(pcols,pverp)
    real(r8) :: rvm(pcols,pverp)
    real(r8) :: rcm(pcols,pverp)
    real(r8) :: tke(pcols,pverp)
@@ -392,7 +468,8 @@ module shoc_intr
    real(r8) :: zi_g(pcols,pverp)
    real(r8) :: cloud_frac(pcols,pverp)          ! CLUBB cloud fraction                          [fraction]
    real(r8) :: dlf2(pcols,pverp)
-   
+   real(r8) :: host_dx_in(pcols), host_dy_in(pcols)  
+ 
    real(r8) :: obklen(pcols), ustar2(pcols), kinheat(pcols), kinwat(pcols)
    real(r8) :: dummy2(pcols), dummy3(pcols), kbfs(pcols), th(pcols,pverp), thv(pcols,pverp)
    
@@ -412,8 +489,6 @@ module shoc_intr
    ! --------------- !
    
    real(r8), pointer, dimension(:,:) :: wthv ! buoyancy flux
-   real(r8), pointer, dimension(:,:) :: um       ! mean east-west wind                          [m/s]
-   real(r8), pointer, dimension(:,:) :: vm       ! mean north-south wind                        [m/s]
    real(r8), pointer, dimension(:,:) :: cld      ! cloud fraction                               [fraction]
    real(r8), pointer, dimension(:,:) :: concld   ! convective cloud fraction                    [fraction]
    real(r8), pointer, dimension(:,:) :: ast      ! stratiform cloud fraction                    [fraction]
@@ -529,7 +604,16 @@ module shoc_intr
    if (mod(hdtime,dtime) .ne. 0) then
      call endrun('shoc_tend_e3sm:  SHOC time step and HOST time step NOT compatible')
    endif      
-   
+  
+   !  determine number of timesteps CLUBB core should be advanced, 
+   !  host time step divided by CLUBB time step  
+   nadv = max(hdtime/dtime,1._r8)
+
+   ! Set grid space, in meters.  Note this should be changed to a more
+   !  dynamic calcuation to allow for regional grids etc
+   host_dx_in(:) = host_dx
+   host_dy_in(:) = host_dy
+ 
    minqn = 0._r8
    newfice(:,:) = 0._r8
    where(state1%q(:ncol,:pver,3) .gt. minqn) &
@@ -551,10 +635,11 @@ module shoc_intr
        rcm(i,k) = state1%q(i,k,ixcldliq)
        um(i,k) = state1%u(i,k)
        vm(i,k) = state1%v(i,k)
+       
        thlm(i,k) = state1%t(i,k)*exner(i,k)-(latvap/cpair)*state1%q(i,k,ixcldliq)
        
        if (macmic_it .eq. 1) then
-         tke(i,k) = state1%q(i,k,ixtke)
+         tke(i,k) = max(tke_tol,state1%q(i,k,ixtke))
        endif
      
      enddo
@@ -657,19 +742,29 @@ module shoc_intr
         thlm_in(i,k)    = thlm(i,pverp-k+1)
         tke_in(i,k)     = tke(i,pverp-k+1)
 	wthv_in(i,k)    = wthv(i,pverp-k+1)
-        pres_in(i,k)    = state1%pmid(i,pver-k+1)
+!        pres_in(i,k)    = state1%pmid(i,pver-k+1)
       enddo  
     enddo   
-    
+   
+    do k=1,pver
+      do i=1,ncol
+        pres_in(i,k+1) = state1%pmid(i,pver-k+1)
+      enddo
+    enddo
+ 
+    pres_in(:,1) = pres_in(:,2)
+
    !  Do the same for tracers 
    icnt=0
    do ixind=1,pcnst
      if (lq(ixind))  then 
        icnt=icnt+1
        do k=1,pver
-         edsclr_in(k+1,icnt) = state1%q(i,pver-k+1,ixind)
+         do i=1,ncol
+           edsclr_in(i,k+1,icnt) = state1%q(i,pver-k+1,ixind)
+         enddo
        enddo
-       edsclr_in(1,icnt) = edsclr_in(2,icnt)
+       edsclr_in(:,1,icnt) = edsclr_in(:,2,icnt)
      end if
    enddo    
     
@@ -681,13 +776,14 @@ module shoc_intr
    
      call shoc_main &
           (pcols, pverp, dtime, &
-	  zt_g, zi_g, pres_in, &
+	  host_dx_in, host_dy_in, &
+          zt_g, zi_g, pres_in, &
 	  tke_in, thlm_in, rvm_in, wm_zt, &
 	  wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, &
 	  um_in, vm_in, rcm_in, edsclr_in, &
 	  edsclr_dim, wthv_in, &
 	  cloudfrac_shoc, rcm_shoc) 
-   
+ 
    enddo  ! end time loop
    
    ! Arrays need to be "flipped" to CAM grid
@@ -704,7 +800,7 @@ module shoc_intr
        tke(i,k) = tke_in(i,pverp-k+1)
        
        do ixind=1,edsclr_dim
-         edsclr_out(i,k,ixind) = edsclr_in(pverp-k+1,ixind)
+         edsclr_out(i,k,ixind) = edsclr_in(i,pverp-k+1,ixind)
        enddo       
        
      enddo
@@ -738,7 +834,7 @@ module shoc_intr
    ! Find first level where wp2 is higher than lowest threshold
    do i=1,ncol
       shoctop(i) = 1
-     do while (tke(i,clubbtop) .eq. tke_tol .and. shoctop(i) .lt. pver-1)
+     do while (tke(i,shoctop(i)) .eq. tke_tol .and. shoctop(i) .lt. pver-1)
        shoctop(i) = shoctop(i) + 1
      enddo   
    
@@ -767,21 +863,21 @@ module shoc_intr
          ptend_loc%q(i,k,ixtke)=(tke(i,k)-state1%q(i,k,ixtke))/hdtime ! TKE
        endif
        
-     enddo
-   enddo   
-   
    !  Apply tendencies to ice mixing ratio, liquid and ice number, and aerosol constituents.
    !  Loading up this array doesn't mean the tendencies are applied.  
    ! edsclr_out is compressed with just the constituents being used, ptend and state are not compressed
 
-   icnt=0
-   do ixind=1,pcnst
-     if (lq(ixind)) then
-       icnt=icnt+1
-       if ((ixind /= ixq) .and. (ixind /= ixcldliq) .and. (ixind /= ixtke)) then
-          ptend_loc%q(i,k,ixind) = (edsclr_out(i,k,icnt)-state1%q(i,k,ixind))/hdtime ! transported constituents 
-       end if
-     end if
+       icnt=0
+       do ixind=1,pcnst
+         if (lq(ixind)) then
+           icnt=icnt+1
+           if ((ixind /= ixq) .and. (ixind /= ixcldliq) .and. (ixind /= ixtke)) then
+             ptend_loc%q(i,k,ixind) = (edsclr_out(i,k,icnt)-state1%q(i,k,ixind))/hdtime ! transported constituents 
+           end if
+         end if
+       enddo
+
+     enddo
    enddo   
    
    cmeliq(:,:) = ptend_loc%q(:,:,ixcldliq)

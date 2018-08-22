@@ -189,10 +189,10 @@ subroutine microp_aero_init
    call cnst_get_ind('NUMICE', numice_idx)
 
    select case(trim(eddy_scheme))
-   case ('diag_TKE')
+   case ('diag_TKE', 'SHOC_SGS')
       tke_idx      = pbuf_get_index('tke')   
-   case ('SHOC_SGS')
-      call cnst_get_ind('SHOC_TKE', tke_idx)
+!   case ('SHOC_SGS')
+!      call cnst_get_ind('SHOC_TKE', tke_idx)
    case ('CLUBB_SGS')
       wp2_idx = pbuf_get_index('WP2_nadv')
    case default
@@ -425,7 +425,9 @@ subroutine microp_aero_run ( &
    real(r8), pointer :: num_pcarbon(:,:)! number m.r. of primary carbon
 
    real(r8), pointer :: kvh(:,:)        ! vertical eddy diff coef (m2 s-1)
+#ifndef FIVE
    real(r8), pointer :: tke(:,:)        ! TKE from the UW PBL scheme (m2 s-2)
+#endif
    real(r8), pointer :: wp2(:,:)        ! CLUBB vertical velocity variance
 
    real(r8), pointer :: cldn(:,:)       ! cloud fraction
@@ -438,6 +440,9 @@ subroutine microp_aero_run ( &
    real(r8)          :: icecldf(pcols,pver)    ! ice cloud fraction   
    real(r8)          :: liqcldf(pcols,pver)    ! liquid cloud fraction
 
+#ifdef FIVE
+   real(r8) :: tke(pcols,pverp)
+#endif
    real(r8) :: rho(pcols,pver)     ! air density (kg m-3)
 
    real(r8) :: lcldm(pcols,pver)   ! liq cloud fraction
@@ -588,10 +593,8 @@ subroutine microp_aero_run ( &
    ! Set to be zero at the surface by initialization.
 
    select case (trim(eddy_scheme))
-   case ('diag_TKE')
+   case ('diag_TKE', 'SHOC_SGS')
       call pbuf_get_field(pbuf, tke_idx, tke)
-   case ('SHOC_SGS')
-      tke(:,:) = state%q(:,:,tke_idx)
    case ('CLUBB_SGS')
       itim_old = pbuf_old_tim_idx()
       call pbuf_get_field(pbuf, wp2_idx, wp2, start=(/1,1,itim_old/),kount=(/pcols,pverp,1/))
@@ -611,7 +614,7 @@ subroutine microp_aero_run ( &
       do i = 1, ncol
 
          select case (trim(eddy_scheme))
-         case ('diag_TKE', 'CLUBB_SGS')
+         case ('diag_TKE', 'CLUBB_SGS', 'SHOC_SGS')
             wsub(i,k) = sqrt(0.5_r8*(tke(i,k) + tke(i,k+1))*(2._r8/3._r8))
             wsub(i,k) = min(wsub(i,k),10._r8)
             wsig(i,k) = max(0.001_r8, wsub(i,k))

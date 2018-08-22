@@ -70,6 +70,7 @@ end subroutine shoc_init
 
 subroutine shoc_main ( &
      shcol, nlev, dtime, &
+     host_dx, host_dy, &
      zt_grid,zm_grid,pres,&
      tke, thetal, qv, w_field,&
      wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &
@@ -85,6 +86,8 @@ subroutine shoc_main ( &
   integer, intent(in) :: num_qtracers  ! number of tracers [-]
   
   real(r8), intent(in) :: dtime	! SHOC timestep [s]
+  real(r8), intent(in) :: host_dx(shcol) ! grid spacing of host model in x direction [m]
+  real(r8), intent(in) :: host_dy(shcol) ! grid spacing of host model in y direction [m]
   real(r8), intent(in) :: zt_grid(shcol,nlev)	! heights, for thermo grid [m]
   real(r8), intent(in) :: zm_grid(shcol,nlev)   ! heights, for momentum grid [m]
   real(r8), intent(in) :: pres(shcol,nlev) ! pressure levels on thermo grid [hPa]
@@ -144,6 +147,7 @@ subroutine shoc_main ( &
 
   ! Update the turbulent length scale	 
   call shoc_length(shcol,nlev,tke,&	      ! Input
+         host_dx, host_dy, &                  ! Input
          cldliq,zt_grid,dz,adz_zt,adz_zm,&    ! Input
 	 thetal,wthv_sec,&                    ! Input
 	 brunt,shoc_mix)  		      ! Output
@@ -151,7 +155,7 @@ subroutine shoc_main ( &
   ! Advance the SGS TKE equation	 
   call shoc_tke(shcol,nlev,dtime,&            ! Input
          wthv_sec,shoc_mix,dz,adz_zm,&        ! Input
-	 u_wind,v_wind,&                      ! Input
+	 u_wind,v_wind,brunt,&                ! Input
          tke,&				      ! Input/Output
 	 tk,tkh,isotropy)                     ! Output
   
@@ -220,7 +224,7 @@ subroutine shoc_grid(shcol,nlev,zt_grid,zm_grid,& ! Input
   
   ! difference in lowest two layers
   do i=1,shcol
-    dz(i) = 0.5_r8 * (zt_grid(i,2) + zt_grid(i,1))
+    dz(i) = 0.5_r8 * (zt_grid(i,3) + zt_grid(i,2))
   enddo
   
   do k=1,nlev-1
@@ -497,25 +501,24 @@ subroutine diag_third_shoc_moments(shcol,nlev, &  ! Input
   do k=1,nlev  
     do i=1,shcol
     
-      kb=k-1
-      kc=k+1
-    
-      grd=dz(i)*adz(i,k)
-
-      thedz=dz(i)*adz(i,k)
-      thedz2=dz(i)*(adz(i,kc)+adz(i,k))
       if(k.eq.1) then
         kb=1
         kc=2
         thedz=dz(i)*adz(i,kc)
         thedz2=dz(i)*adz(i,kc)
-      end if
-      if(k.eq.nlev) then
+      elseif(k.eq.nlev) then
         kb=nlev-1
         kc=nlev
         thedz=dz(i)*adz(i,k)
         thedz2=dz(i)*adz(i,k)
-      end if 
+      else 
+        kb=k-1
+        kc=k+1
+        thedz=dz(i)*adz(i,k)
+        thedz2=dz(i)*(adz(i,kc)+adz(i,k))
+     endif 
+
+     grd=dz(i)*adz(i,k) 
     
       thedz=1._r8/thedz
       thedz2=1._r8/thedz2    
@@ -683,10 +686,11 @@ subroutine shoc_assumed_pdf(shcol,nlev, &       ! Input
 ! Initialize the buoyancy flux (probably doesn't need to be here)
   wthv_sec(:,1)=wthl_sec_zt(:,1)+((1.-epsterm)/epsterm)&
      *basetemp*wqw_sec(:,1)
-     
+    
   do k=1,nlev
-    pval = pres(i,k) * 100._r8 ! check to see if these units are right
     do i=1,shcol
+
+      pval = pres(i,k) * 100._r8 ! check to see if these units are right
 
       ! Get all needed input moments for the PDf
       !  at this particular point
@@ -704,12 +708,14 @@ subroutine shoc_assumed_pdf(shcol,nlev, &       ! Input
       ! Compute square roots of some variables so we don't
       !  have to compute these again
       sqrtw2 = sqrt(w_sec(i,k))
-      sqrtthl = sqrt(thlsec)
-      sqrtqt = sqrt(qwsec)
-      
+      sqrtthl = max(thl_tol,sqrt(thlsec))
+      sqrtqt = max(rt_tol,sqrt(qwsec))
+ 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !  FIND PARAMETERS FOR VERTICAL VELOCITY 
       
+      Skew_w=w3var/w_sec(i,k)**(3./2.)
+
       if (w_sec(i,k) .le. w_tol_sqd) then
         Skew_w=0.
         w1_1=w_first
@@ -862,7 +868,7 @@ subroutine shoc_assumed_pdf(shcol,nlev, &       ! Input
       esval2_2=0.
       om1=1.
       om2=1. 
-      
+     
       ! +DPAB, change call to consistent esatw_crm
       esval1_1=esatw_shoc(Tl1_1)*100.
       lstarn1=lcond 
@@ -874,13 +880,12 @@ subroutine shoc_assumed_pdf(shcol,nlev, &       ! Input
       
       ! Are the two plumes equal?  If so then set qs and beta
       ! in each column to each other to save computation
+      lstarn2=lcond
       if (Tl1_1 .eq. Tl1_2) then
         qs2=qs1     
         beta2=beta1
       else
-        esval1_2=esatw_shoc(Tl1_2)*100._r8
-        lstarn2=lcond	
-	  
+        esval1_2=esatw_shoc(Tl1_2)*100._r8 
 	esval2_2 = 0._r8
       endif
       
@@ -973,8 +978,8 @@ end subroutine shoc_assumed_pdf
 ! Compute the turbulent kinetic energy
 
 subroutine shoc_tke(shcol,nlev,dtime,& ! Input
-             wthv_sec,shoc_mix,&                ! Input  
-	     u_wind,v_wind,dz,adzw,&            ! Input
+             wthv_sec,shoc_mix,dz,adzw,&        ! Input  
+	     u_wind,v_wind,brunt,&              ! Input
              tke, &                             ! Input/Output
              tk,tkh,isotropy)                   ! Output
 
@@ -988,6 +993,7 @@ subroutine shoc_tke(shcol,nlev,dtime,& ! Input
   real(r8), intent(in) :: v_wind(shcol,nlev)
   real(r8), intent(in) :: adzw(shcol,nlev)
   real(r8), intent(in) :: dz(shcol)
+  real(r8), intent(in) :: brunt(shcol,nlev)
   
   ! output variables
   real(r8), intent(out) :: tkh(shcol,nlev)
@@ -1006,12 +1012,15 @@ subroutine shoc_tke(shcol,nlev,dtime,& ! Input
   real(r8) :: tscale1,lambda,buoy_sgs_save,grid_dzw
   integer i,j,k,kc,kb	 
   
-  Cs = 0.15
-  Ck=0.1
+  Cs = 0.15_r8
+  Ck=0.1_r8
   Ce=Ck**3/Cs**4
-  Ces=Ce/0.7*3.0
-  Pr=1.   
+  Ces=Ce/0.7_r8*3.0_r8
+  Pr=1.0_r8   
   
+  Ce1=Ce/0.7_r8*0.19_r8
+  Ce2=Ce/0.7_r8*0.51_r8
+
   ! Compute shear production term
   do k=1,nlev
     do i=1,shcol
@@ -1040,33 +1049,36 @@ subroutine shoc_tke(shcol,nlev,dtime,& ! Input
       tk_in=Ck*shoc_mix(i,k)*sqrt(tke(i,k))
       smix=shoc_mix(i,k)
       a_prod_bu=(ggr/basetemp)*wthv_sec(i,k)
-      buoy_sgs=-1._r8*a_prod_bu/(Pr*(tk_in+0.001))
-      
+      buoy_sgs=-1._r8*a_prod_bu/(Pr*(tk_in+0.001_r8))
+      buoy_sgs_save=brunt(i,k)  
+    
       if (buoy_sgs .le. 0._r8) then 
-        smix=grd
+        smix=grid_dzw
       else
-        smix=min(grd,max(0.1*grd, sqrt(0.76*tk_in/Ck/sqrt(buoy_sgs+1.e-10))))
+        smix=min(grid_dzw,max(0.1_r8*grid_dzw, sqrt(0.76_r8*tk_in/Ck/sqrt(buoy_sgs+1.0e-10_r8))))
       endif
       
-      ratio=smix/grd
+      ratio=smix/grid_dzw
       Pr=1. 
       Cee=Ce1+Ce2*ratio  
       
-      tke(i,k)=max(0.,tke(i,k))
-      a_prod_sh=(tk_in+0.001)*shear_prod(i,k)
+      tke(i,k)=max(0._r8,tke(i,k))
+      a_prod_sh=(tk_in+0.001_r8)*shear_prod(i,k)
       a_diss=Cee/shoc_mix(i,k)*tke(i,k)**1.5
-      tke(i,k)=max(0.,tke(i,k)+dtime*(max(0.,a_prod_sh+a_prod_bu)-a_diss))  
+      tke(i,k)=max(0._r8,tke(i,k)+dtime*(max(0._r8,a_prod_sh+a_prod_bu)-a_diss))  
       
       tke(i,k)=min(tke(i,k),5.0)
    
-      tscale1=(2.*tke(i,k))/a_diss
-      lambda=0.04
-      if (buoy_sgs_save .le. 0) lambda=0.
-      isotropy(i,k)=min(2000.,tscale1/(1.+lambda*buoy_sgs_save*tscale1**2))
+      tscale1=(2._r8*tke(i,k))/a_diss
+      lambda=0.04_r8
+      if (buoy_sgs_save .le. 0) lambda=0._r8
+      isotropy(i,k)=min(2000._r8,tscale1/(1._r8+lambda*buoy_sgs_save*tscale1**2))
    
       tk(i,k)=Ck*smix*sqrt(tke(i,k))
       tkh(i,k)=Ck*isotropy(i,k)*tke(i,k)              
-    
+   
+      tke(i,k) = max(0.0004,tke(i,k))
+ 
     enddo ! end i loop
   enddo ! end k loop
   
@@ -1076,6 +1088,7 @@ end subroutine shoc_tke
 ! Compute the turbulent length scale
 
 subroutine shoc_length(shcol,nlev,tke, &   ! Input
+             host_dx,host_dy, &        ! Input
              cldin,z_in,dz,adz,adzw,&  ! Input
 	     thetal,wthv_sec,&		! Input
 	     brunt,shoc_mix)  ! Output
@@ -1086,6 +1099,8 @@ subroutine shoc_length(shcol,nlev,tke, &   ! Input
   integer, intent(in) :: shcol
   integer, intent(in) :: nlev
   
+  real(r8), intent(in) :: host_dx(shcol)
+  real(r8), intent(in) :: host_dy(shcol)
   real(r8), intent(in) :: tke(shcol,nlev)
   real(r8), intent(in) :: cldin(shcol,nlev)
   real(r8), intent(in) :: z_in(shcol,nlev)
@@ -1146,20 +1161,18 @@ subroutine shoc_length(shcol,nlev,tke, &   ! Input
   do k=1,nlev
     do i=1,shcol
     
-      kb=k-1
-      kc=k+1
-      thedz=(adzw(i,kc)+adzw(i,k))*dz(i)  
-    
       if (k .eq. 1) then
         kb=1
         kc=2
         thedz=adzw(i,kc)*dz(i)
-      endif
-
-      if (k .eq. nlev) then
+      elseif (k .eq. nlev) then
         kb=nlev-1
         kc=nlev
         thedz=adzw(i,k)*dz(i)
+      else
+        kb=k-1
+        kc=k+1
+        thedz=(adzw(i,kc)+adzw(i,k))*dz(i)
       endif
     
       tkes=sqrt(tke(i,k))
@@ -1239,7 +1252,18 @@ subroutine shoc_length(shcol,nlev,tke, &   ! Input
     endif ! end cldarr conditional  
 	
   enddo ! end i loop 
-	     
+	   
+  do k=1,nlev
+    do i=1,shcol
+      
+      shoc_mix(i,k)=min(maxlen,shoc_mix(i,k))
+      shoc_mix(i,k)=max(0.1*dz(i)*adz(i,k),shoc_mix(i,k))
+
+      shoc_mix(i,k)=min(sqrt(host_dx(i)*host_dy(i)),shoc_mix(i,k))
+
+    enddo
+  enddo 
+  
 end subroutine shoc_length
 
 !==============================================================
