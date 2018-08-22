@@ -2,6 +2,7 @@
 #include "config.h"
 #endif
 
+#ifdef ARKODE
 #define ARK324_ARK 1
 #define ARK436_ARK 2
 #define ARK453_ARK 3
@@ -1166,3 +1167,4 @@ contains
 
 
 end module arkode_mod
+#endif
