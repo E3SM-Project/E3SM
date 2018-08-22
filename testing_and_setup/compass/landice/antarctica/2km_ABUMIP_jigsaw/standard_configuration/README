@@ -1,0 +1,18 @@
+This directory creates a 2-20 km variable resolution mesh for Antarctica
+for ABUMIP - specifically uses highest resolution in all vulnerable marine sectors.
+
+The variable resolution mesh is generated using JIGSAW-GEO:
+https://github.com/dengwirda/jigsaw-geo-matlab
+JIGSAW-GEO needs to be run manually from Matlab before running the rest of this case.
+(It may be possible to include that step in the set up process, but it seems like
+more trouble than it is worth for now.)
+
+To create the mesh, run the .m script in the subdirectory 'jigsaw',
+and then copy or link the resulting file into this directory.
+
+Also, a source file for interpolating the initial condition must be specified.
+By default, the system looks for: antarctica_2km_2014_01_14.nc
+This file must be copied/linked into the test case setup directory, or a
+different file can be used instead if the test case is adjusted.
+
+After this is complete, set up and run the test case as normal.
