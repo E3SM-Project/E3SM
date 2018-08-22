@@ -4,8 +4,6 @@
 #ifndef NDEBUG
 # define NDEBUG
 #endif
-#pragma message "WE WANT ASSERTIONS"
-#undef NDEBUG
 
 #define BUILD_CISL
 
