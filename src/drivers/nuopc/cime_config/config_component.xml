@@ -2309,7 +2309,7 @@
 
   <entry id="INFO_DBUG">
     <type>integer</type>
-    <valid_values>0,1,2,3</valid_values>
+    <valid_values>0,1,2,3,4,5,6,7,8,9</valid_values>
     <default_value>1</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>

@@ -63,7 +63,6 @@ module wav_comp_nuopc
   integer                    :: logunit              ! logging unit number
   integer    ,parameter      :: master_task=0        ! task number of master task
   character(len=*),parameter :: grid_option = "mesh" ! grid_de, grid_arb, grid_reg, mesh
-  integer, parameter         :: dbug = 10
   integer                    :: dbrc
   character(*),parameter     :: modName =  "(xwav_comp_nuopc)"
   character(*),parameter     :: u_FILE_u = __FILE__

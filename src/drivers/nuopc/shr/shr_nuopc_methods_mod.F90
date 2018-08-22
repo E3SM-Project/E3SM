@@ -1827,11 +1827,15 @@ module shr_nuopc_methods_mod
     integer :: dbrc
     character(len=*),parameter      :: subname='(shr_nuopc_methods_State_diagnose)'
     ! ----------------------------------------------
+    integer :: ierr
+    integer, external :: GPTLprint_memusage
+    !-------------------------------------------------------------------------------
 
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+       ierr = GPTLprint_memusage(subname)
     endif
-    rc = ESMF_SUCCESS
+
 
     lstring = ''
     if (present(string)) then
@@ -1884,9 +1888,10 @@ module shr_nuopc_methods_mod
 
     deallocate(lfieldnamelist)
 
-    if (dbug_flag > 10) then
+    if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+      ierr = GPTLprint_memusage(subname)
+   endif
 
   end subroutine shr_nuopc_methods_State_diagnose
 

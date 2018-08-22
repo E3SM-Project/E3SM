@@ -469,10 +469,10 @@ contains
 
     call ESMF_LogWrite(trim(subname)//": Mediator verbosity is "//trim(value), ESMF_LOGMSG_INFO, rc=dbrc)
 
-    dbug_flag = ESMF_UtilString2Int(value, &
-         specialStringList=(/"min","max","high"/), specialValueList=(/0,255,255/), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
+!    dbug_flag = ESMF_UtilString2Int(value, &
+!         specialStringList=(/"min","max","high"/), specialValueList=(/0,255,255/), rc=rc)
+!    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    
     write(msgString,'(A,i6)') trim(subname)//' dbug_flag = ',dbug_flag
     call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
 

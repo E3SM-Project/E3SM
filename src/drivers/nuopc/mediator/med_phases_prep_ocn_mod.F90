@@ -40,12 +40,16 @@ contains
     integer                     :: n1, ncnt
     character(len=*), parameter :: subname='(med_phases_prep_ocn_map)'
     integer :: dbrc
-    !---------------------------------------
+    integer :: ierr
+    integer, external :: GPTLprint_memusage
+    !-------------------------------------------------------------------------------
 
     if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+       ierr = GPTLprint_memusage(subname)
     endif
     rc = ESMF_SUCCESS
+
 
     !---------------------------------------
     ! --- Get the internal state
@@ -136,9 +140,13 @@ contains
     logical                     :: first_call = .true. 
     character(len=*), parameter :: subname='(med_phases_prep_ocn_merge)'
     !---------------------------------------
+    integer :: ierr
+    integer, external :: GPTLprint_memusage
+    !-------------------------------------------------------------------------------
 
     if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+       ierr = GPTLprint_memusage(subname)
     endif
     rc = ESMF_SUCCESS
 
@@ -346,6 +354,7 @@ contains
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+       ierr = GPTLprint_memusage(subname)
     endif
 
   end subroutine med_phases_prep_ocn_merge

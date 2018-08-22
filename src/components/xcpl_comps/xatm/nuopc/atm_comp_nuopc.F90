@@ -32,6 +32,7 @@ module atm_comp_nuopc
   use dead_nuopc_mod        , only : fld_list_add, fld_list_realize, fldsMax, fld_list_type
   use dead_nuopc_mod        , only : state_getimport, state_setexport
   use dead_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, Print_FieldExchInfo
+  use med_constants_mod, only : dbug => med_constants_dbug_flag
 
   implicit none
   private ! except
@@ -63,11 +64,13 @@ module atm_comp_nuopc
   character(len=5)          :: inst_suffix = "_"     ! char string associated with instance (ie. "_0001" or "")
   integer                    :: logunit              ! logging unit number
   integer    ,parameter      :: master_task=0        ! task number of master task
-  integer, parameter         :: dbug = 10
   integer                    :: dbrc
-  character(*),parameter     :: modName =  "(atm_comp_nuopc)"
-  character(*),parameter     :: u_FILE_u = &
-       __FILE__
+  logical                    :: atm_prognostic
+
+  !----- formats -----
+  character(*),parameter :: modName =  "(xatm_comp_nuopc)"
+  character(*),parameter :: u_FILE_u = __FILE__
+
 
   !===============================================================================
   contains

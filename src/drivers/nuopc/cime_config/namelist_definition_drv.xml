@@ -195,7 +195,7 @@
     <category>nuopc</category>
     <group>DRIVER_attributes</group>
     <values>
-      <value>1</value>
+      <value>$INFO_DBUG</value>
     </values>
   </entry>
 
@@ -224,7 +224,7 @@
     <category>nuopc</category>
     <group>MED_attributes</group>
     <values>
-      <value>1</value>
+      <value>$INFO_DBUG</value>
     </values>
   </entry>
 
@@ -242,7 +242,7 @@
     <category>nuopc</category>
     <group>ATM_attributes</group>
     <values>
-      <value>1</value>
+      <value>$INFO_DBUG</value>
     </values>
   </entry>
 
@@ -260,7 +260,7 @@
     <category>nuopc</category>
     <group>OCN_attributes</group>
     <values>
-      <value>1</value>
+      <value>$INFO_DBUG</value>
     </values>
   </entry>
 
@@ -278,7 +278,7 @@
     <category>nuopc</category>
     <group>ICE_attributes</group>
     <values>
-      <value>1</value>
+      <value>$INFO_DBUG</value>
     </values>
   </entry>
 
@@ -296,7 +296,7 @@
     <category>nuopc</category>
     <group>ROF_attributes</group>
     <values>
-      <value>1</value>
+      <value>$INFO_DBUG</value>
     </values>
   </entry>
 
@@ -314,7 +314,7 @@
     <category>nuopc</category>
     <group>LND_attributes</group>
     <values>
-      <value>1</value>
+      <value>$INFO_DBUG</value>
     </values>
   </entry>
 
@@ -332,7 +332,7 @@
     <category>nuopc</category>
     <group>GLC_attributes</group>
     <values>
-      <value>1</value>
+      <value>$INFO_DBUG</value>
     </values>
   </entry>
 
@@ -350,7 +350,7 @@
     <category>nuopc</category>
     <group>WAV_attributes</group>
     <values>
-      <value>1</value>
+      <value>$INFO_DBUG</value>
     </values>
   </entry>
 

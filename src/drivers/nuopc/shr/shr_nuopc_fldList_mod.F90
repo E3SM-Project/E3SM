@@ -467,6 +467,8 @@ contains
     use ESMF, only : ESMF_StateGet, ESMF_LogFoundError
     use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_ERROR, ESMF_FAILURE, ESMF_LOGERR_PASSTHRU
     use ESMF, only : ESMF_LOGMSG_INFO, ESMF_StateRemove, ESMF_SUCCESS
+    use med_constants_mod       , only : dbug_flag=>med_constants_dbug_flag
+    
     type(ESMF_State)            , intent(inout)            :: state
     type(shr_nuopc_fldlist_type), intent(in)               :: fldList
     character(len=*)            , intent(in)               :: flds_scalar_name
@@ -500,8 +502,9 @@ contains
        rc = ESMF_FAILURE
        return
     endif
-    ierr = GPTLprint_memusage(subname)
-
+    if (dbug_flag > 5) then
+       ierr = GPTLprint_memusage(subname)
+    endif
     nullify(StandardNameList)
     nullify(ConnectedList)
     nullify(NameSpaceList)
