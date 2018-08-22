@@ -98,7 +98,7 @@ macro(createTestExec execName execType macroNP macroNC
   ENDIF()
 
 
-  IF (HOMME_USE_ARKODE && "${execName}" STREQUAL "theta-l")
+  IF (HOMME_USE_ARKODE AND "${execName}" STREQUAL "theta-l")
     TARGET_LINK_LIBRARIES(theta-l sundials_farkode)
     TARGET_LINK_LIBRARIES(theta-l sundials_arkode)
     TARGET_LINK_LIBRARIES(theta-l sundials_nvecserial)
