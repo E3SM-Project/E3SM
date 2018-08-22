@@ -1343,7 +1343,7 @@ contains
          forc_t               =>   top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                  
          forc_pbot            =>   top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
          forc_po2             =>   atm2lnd_vars%forc_po2_grc                 , & ! Input:  [real(r8) (:)   ]  O2 partial pressure (Pa)                          
-         forc_pco2            =>   atm2lnd_vars%forc_pco2_grc                , & ! Input:  [real(r8) (:)   ]  CO2 partial pressure (Pa)                         
+         forc_pco2            =>   top_as%pco2bot                            , & ! Input:  [real(r8) (:)   ]  CO2 partial pressure (Pa)                         
          forc_pch4            =>   atm2lnd_vars%forc_pch4_grc                , & ! Input:  [real(r8) (:)   ]  CH4 partial pressure (Pa)                         
 
          zwt                  =>   soilhydrology_vars%zwt_col                , & ! Input:  [real(r8) (:)   ]  water table depth (m) 
@@ -1447,7 +1447,7 @@ contains
          end if
          c_atm(g,1) =  forc_pch4(g) / rgasm / forc_t(t) ! [mol/m3 air]
          c_atm(g,2) =  forc_po2(g)  / rgasm / forc_t(t) ! [mol/m3 air]
-         c_atm(g,3) =  forc_pco2(g) / rgasm / forc_t(t) ! [mol/m3 air]
+         c_atm(g,3) =  forc_pco2(t) / rgasm / forc_t(t) ! [mol/m3 air]
       end do
 
       ! Initialize CH4 balance and calculate finundated
@@ -1586,7 +1586,7 @@ contains
          t = grc_pp%topi(g)
          c_atm(g,1) =  forc_pch4(g) / rgasm / forc_t(t) ! [mol/m3 air]
          c_atm(g,2) =  forc_po2(g)  / rgasm / forc_t(t) ! [mol/m3 air]
-        !c_atm(g,3) =  forc_pco2(g) / rgasm / forc_t(t) ! [mol/m3 air] - Not currently used
+        !c_atm(g,3) =  forc_pco2(t) / rgasm / forc_t(t) ! [mol/m3 air] - Not currently used
       enddo
 
       !-------------------------------------------------

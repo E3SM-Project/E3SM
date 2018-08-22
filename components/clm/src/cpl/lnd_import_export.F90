@@ -983,6 +983,26 @@ contains
 #endif
 
        ! Determine optional receive fields
+       ! CO2 (and C13O2) concentration: constant, prognostic, or diagnostic
+       if (co2_type_idx == 0) then                    ! CO2 constant, value from namelist
+         co2_ppmv_val = co2_ppmv
+       else if (co2_type_idx == 1) then               ! CO2 prognostic, value from coupler field
+         co2_ppmv_val = x2l(index_x2l_Sa_co2prog,i)
+       else if (co2_type_idx == 2) then               ! CO2 diagnostic, value from coupler field
+         co2_ppmv_val = x2l(index_x2l_Sa_co2diag,i)
+       else
+         call endrun( sub//' ERROR: Invalid co2_type_idx, must be 0, 1, or 2 (constant, prognostic, or diagnostic)' )
+       end if
+       ! Assign to topounits, with conversion from ppmv to partial pressure (Pa)
+       ! If using C13, then get the c13ratio from clm_varcon (constant value for pre-industrial atmosphere)
+       do topo = grc_pp%topi(g), grc_pp%topf(g)
+         top_as%pco2bot(topo) = co2_ppmv_val * 1.e-6_r8 * top_as%pbot(topo)
+         if (use_c13) then
+            top_as%pc13o2bot(topo) = top_as%pco2bot(topo) * c13ratio;
+         end if
+       end do
+        
+         
 
        if (index_x2l_Sa_co2prog /= 0) then
           co2_ppmv_prog = x2l(index_x2l_Sa_co2prog,i)   ! co2 atm state prognostic

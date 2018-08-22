@@ -853,12 +853,12 @@ contains
     type(photosyns_type)   , intent(inout) :: photosyns_vars
     !
     ! !LOCAL VARIABLES:
-    integer :: f,fp,p,l,g               ! indices
+    integer :: f,fp,p,l,t,g               ! indices
     !-----------------------------------------------------------------------
 
     associate(                                             &
-         forc_pco2   => atm2lnd_vars%forc_pco2_grc       , & ! Input:  [real(r8) (:) ]  partial pressure co2 (Pa)                                             
-         forc_pc13o2 => atm2lnd_vars%forc_pc13o2_grc     , & ! Input:  [real(r8) (:) ]  partial pressure c13o2 (Pa)                                           
+         forc_pco2   => top_as%pco2bot                   , & ! Input:  [real(r8) (:) ]  partial pressure co2 (Pa)                                             
+         forc_pc13o2 => top_as%pc13o2bot                 , & ! Input:  [real(r8) (:) ]  partial pressure c13o2 (Pa)                                           
          forc_po2    => atm2lnd_vars%forc_po2_grc        , & ! Input:  [real(r8) (:) ]  partial pressure o2 (Pa)                                              
 
          rc14_atm    => cnstate_vars%rc14_atm_patch      , & ! Input : [real(r8) (:) ]  C14O2/C12O2 in atmosphere 
@@ -892,6 +892,7 @@ contains
       do f = 1, fn
          p = filterp(f)
          g = veg_pp%gridcell(p)
+         t = veg_pp%topounit(p)
 
          if (.not.use_fates) then
             fpsn(p)    = psnsun(p)   *laisun(p) + psnsha(p)   *laisha(p)
@@ -902,7 +903,7 @@ contains
 
          if (use_cn) then
             if ( use_c13 ) then
-               rc13_canair(p) = forc_pc13o2(g)/(forc_pco2(g) - forc_pc13o2(g))
+               rc13_canair(p) = forc_pc13o2(t)/(forc_pco2(t) - forc_pc13o2(t))
                rc13_psnsun(p) = rc13_canair(p)/alphapsnsun(p)
                rc13_psnsha(p) = rc13_canair(p)/alphapsnsha(p)
                c13_psnsun(p)  = psnsun(p) * (rc13_psnsun(p)/(1._r8+rc13_psnsun(p)))
@@ -956,7 +957,7 @@ contains
 
     associate(                                                  & 
          forc_pbot   => top_as%pbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
-         forc_pco2   => atm2lnd_vars%forc_pco2_grc            , & ! Input:  [real(r8) (:)   ]  partial pressure co2 (Pa)                                             
+         forc_pco2   => top_as%pco2bot                        , & ! Input:  [real(r8) (:)   ]  partial pressure co2 (Pa)                                             
 
          c3psn       => veg_vp%c3psn                          , & ! Input:  [real(r8) (:)   ]  photosynthetic pathway: 0. = c4, 1. = c3
 
@@ -983,7 +984,7 @@ contains
          t = veg_pp%topounit(p)
          g = veg_pp%gridcell(p)
 
-         co2(p) = forc_pco2(g)
+         co2(p) = forc_pco2(t)
          do iv = 1,nrad(p)
             if (par_z(p,iv) <= 0._r8) then           ! night time
                alphapsn(p) = 1._r8

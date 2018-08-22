@@ -69,6 +69,8 @@ module TopounitType
     real(r8), pointer :: ubot       (:) => null() ! wind speed in U (east) direction at atmospheric forcing height (m/s)
     real(r8), pointer :: vbot       (:) => null() ! wind speed in V (north) direction at atmospheric forcing height (m/s)
     real(r8), pointer :: zbot       (:) => null() ! atmospheric forcing height (m)
+    real(r8), pointer :: pco2bot    (:) => null() ! partial pressure of CO2 at atmospheric forcing height (Pa) 
+    real(r8), pointer :: pc13o2bot  (:) => null() ! partial pressure of C13O2 at atmospheric forcing height (Pa) 
   contains
     procedure, public :: Init  => init_top_as
     procedure, public :: Clean => clean_top_as
@@ -163,13 +165,15 @@ module TopounitType
     integer, intent(in) :: endt   ! ending topographic unit index
    
     ! Allocate for atmospheric state forcing variables, initialize to special value
-    allocate(this%tbot    (begt:endt)) ; this%tbot   (:) = spval
-    allocate(this%thbot   (begt:endt)) ; this%thbot  (:) = spval
-    allocate(this%pbot    (begt:endt)) ; this%pbot   (:) = spval
-    allocate(this%qbot    (begt:endt)) ; this%qbot   (:) = spval
-    allocate(this%ubot    (begt:endt)) ; this%ubot   (:) = spval
-    allocate(this%vbot    (begt:endt)) ; this%vbot   (:) = spval
-    allocate(this%zbot    (begt:endt)) ; this%zbot   (:) = spval
+    allocate(this%tbot     (begt:endt)) ; this%tbot      (:) = spval
+    allocate(this%thbot    (begt:endt)) ; this%thbot     (:) = spval
+    allocate(this%pbot     (begt:endt)) ; this%pbot      (:) = spval
+    allocate(this%qbot     (begt:endt)) ; this%qbot      (:) = spval
+    allocate(this%ubot     (begt:endt)) ; this%ubot      (:) = spval
+    allocate(this%vbot     (begt:endt)) ; this%vbot      (:) = spval
+    allocate(this%zbot     (begt:endt)) ; this%zbot      (:) = spval
+    allocate(this%pco2bot  (begt:endt)) ; this%pco2bot   (:) = spval
+    allocate(this%pc13o2bot(begt:endt)) ; this%pc13o2bot (:) = spval
     
     ! Set history fields for atmospheric state forcing variables
     !call hist_addfld1d (fname='TBOT', units='K',  &
@@ -193,6 +197,8 @@ module TopounitType
     deallocate(this%ubot)
     deallocate(this%vbot)
     deallocate(this%zbot)
+    deallocate(this%pco2bot)
+    deallocate(this%pc13o2bot)
   end subroutine clean_top_as
 
   subroutine init_top_es(this, begt, endt)
