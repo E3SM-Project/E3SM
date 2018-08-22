@@ -2,7 +2,9 @@ module med_phases_aofluxes_mod
 
   use med_constants_mod , only : R8
   use med_constants_mod , only : dbug_flag => med_constants_dbug_flag
-
+  use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
+  use med_internalstate_mod, only : mastertask
+  
   implicit none
   private
 
@@ -199,17 +201,14 @@ contains
     type(aoflux_type), save :: aoflux
     logical, save           :: first_call = .true.
     integer                 :: dbrc
-    integer, external :: GPTLprint_memusage
-    integer :: ierr
     character(len=*),parameter :: subname='(med_phases_aofluxes)'
     !---------------------------------------
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-       ierr = GPTLprint_memusage(subname)
     endif
     rc = ESMF_SUCCESS
-
+    call shr_nuopc_memcheck(subname, 5, mastertask)
     ! Get the clock from the mediator Component
     call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -339,16 +338,14 @@ contains
     logical                  :: flds_wiso  ! use case
     integer                  :: dbrc
     character(len=CX)        :: tmpstr
-    integer, external :: GPTLprint_memusage
-    integer :: ierr
+
     !-----------------------------------------------------------------------
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-      ierr = GPTLprint_memusage(subname)
     endif
     rc = ESMF_SUCCESS
-
+    call shr_nuopc_memcheck(subname, 5, mastertask)
     ! The following is for debugging
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

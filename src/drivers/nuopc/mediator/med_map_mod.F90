@@ -511,6 +511,10 @@ contains
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_FldChk
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_Field_diagnose
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_ChkErr
+    use shr_nuopc_utils_mod   , only: shr_nuopc_memcheck
+    ! ----------------------------------------------
+    ! Map field bundles with appropriate fraction weighting
+    ! ----------------------------------------------
 
     ! input/output variables
     type(shr_nuopc_fldList_entry_type) , pointer       :: fldsSrc(:)
@@ -543,10 +547,12 @@ contains
     real(R8), pointer :: data_norm(:)    ! temporary
     character(len=*), parameter :: subname='(module_MED_Map:med_map_Regrid_Norm)'
     integer :: dbrc
+
     !-------------------------------------------------------------------------------
     if (dbug_flag > 5) then
        call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call shr_nuopc_memcheck(subname, 1, mastertask)
 
     !---------------------------------------
 
@@ -564,9 +570,6 @@ contains
 
     call shr_nuopc_methods_FB_reset(FBDst, value=czero, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if(mastertask) ierr = GPTLprint_memusage(subname//char(id))
-       id = id + 1
 
     !---------------------------------------
     ! Loop over all fields in the source field bundle and map them to
@@ -586,7 +589,6 @@ contains
        ! Determine if there is a map index and if its zero go to next iteration
        mapindex = fldsSrc(n)%mapindex(destcomp)
        if (mapindex == 0) CYCLE
-
        mapnorm  = fldsSrc(n)%mapnorm(destcomp)
 
        ! Error checks
@@ -642,8 +644,6 @@ contains
           ! Get pointer to source field data in FBSrc
           call shr_nuopc_methods_FB_GetFldPtr(FBSrc, fldname, data_src, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       if(mastertask) ierr = GPTLprint_memusage(subname//trim(fldname)//char(id))
-       id = id + 1
 
           if ( trim(mapnorm) /= 'unset' .and. trim(mapnorm) /= 'one' .and. trim(mapnorm) /= 'none') then
 

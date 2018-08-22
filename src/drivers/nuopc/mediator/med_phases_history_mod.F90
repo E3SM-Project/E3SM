@@ -121,7 +121,10 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompAttributeGet(gcomp, name='case_name', value=case_name, rc=rc)
-    cpl_inst_tag = ''
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call NUOPC_CompAttributeGet(gcomp, name='inst_string', value=cpl_inst_tag, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
     ! --- Get the clock info
@@ -236,11 +239,13 @@ contains
     !---------------------------------------
 
     if (alarmIsOn) then
-
-       write(hist_file,"(6a)") &
-            !trim(case_name), '.cpl',trim(cpl_inst_tag),'.hi.', trim(currtimestr),'.nc'
-            trim(case_name), '.cpl',trim(cpl_inst_tag),'.hi.', trim(nexttimestr),'.nc'
-
+       if(len_trim(cpl_inst_tag) > 1) then
+          write(hist_file,"(6a)") &
+               trim(case_name), '.cpl_',trim(cpl_inst_tag),'.hi.', trim(nexttimestr),'.nc'
+       else
+          write(hist_file,"(6a)") &
+               trim(case_name), '.cpl.hi.', trim(nexttimestr),'.nc'
+       endif
        call ESMF_LogWrite(trim(subname)//": write "//trim(hist_file), ESMF_LOGMSG_INFO, rc=dbrc)
        call med_io_wopen(hist_file, mpicom, iam, clobber=.true.)
 

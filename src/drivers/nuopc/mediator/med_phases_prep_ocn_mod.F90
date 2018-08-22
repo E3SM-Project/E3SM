@@ -1,7 +1,8 @@
 module med_phases_prep_ocn_mod
 
   use med_constants_mod, only : dbug_flag=>med_constants_dbug_flag
-
+  use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
+  use med_internalstate_mod, only : mastertask
   !-----------------------------------------------------------------------------
   ! Carry out fast accumulation for the ocean
   !-----------------------------------------------------------------------------
@@ -40,16 +41,14 @@ contains
     integer                     :: n1, ncnt
     character(len=*), parameter :: subname='(med_phases_prep_ocn_map)'
     integer :: dbrc
-    integer :: ierr
-    integer, external :: GPTLprint_memusage
+
     !-------------------------------------------------------------------------------
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-       ierr = GPTLprint_memusage(subname)
     endif
     rc = ESMF_SUCCESS
-
+    call shr_nuopc_memcheck(subname, 5, mastertask)
 
     !---------------------------------------
     ! --- Get the internal state
@@ -140,15 +139,12 @@ contains
     logical                     :: first_call = .true. 
     character(len=*), parameter :: subname='(med_phases_prep_ocn_merge)'
     !---------------------------------------
-    integer :: ierr
-    integer, external :: GPTLprint_memusage
-    !-------------------------------------------------------------------------------
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-       ierr = GPTLprint_memusage(subname)
     endif
     rc = ESMF_SUCCESS
+    call shr_nuopc_memcheck(subname, 5, mastertask)
 
     !---------------------------------------
     ! --- Get the internal state
@@ -354,7 +350,6 @@ contains
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-       ierr = GPTLprint_memusage(subname)
     endif
 
   end subroutine med_phases_prep_ocn_merge

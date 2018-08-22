@@ -11,6 +11,8 @@ module ESM
   use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
   use med_internalstate_mod , only : logunit, loglevel
   use seq_comm_mct, only : num_inst_total
+  use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
+
   implicit none
   private
 
@@ -171,10 +173,14 @@ module ESM
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
 
-    call ESMF_GridCompGet(driver, vm=vm, rc=rc)
+    !-------------------------------------------
+    ! Get the config and vm objects from the driver
+    !-------------------------------------------
+
+    call ESMF_GridCompGet(driver, vm=vm, config=config, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_VMGet(vm, localPet=localPet, rc=rc)
+    call ESMF_VMGet(vm, localPet=localPet, mpiCommunicator=global_comm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (localPet == 0) then
@@ -182,13 +188,6 @@ module ESM
     else
        mastertask = .false.
     end if
-
-    !-------------------------------------------
-    ! Extract the config object from the driver
-    !-------------------------------------------
-
-    call ESMF_GridCompGet(driver, config=config, vm=vm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !-------------------------------------------
     ! determine the generic component labels
@@ -247,7 +246,6 @@ module ESM
     ! TODO: global_comm should be the same as mpicom for the driver vm - however
     ! cannot set this to mpicom since the call to shr_pio_init1 can possibly change this
 
-    global_comm = MPI_COMM_WORLD
     call shr_pio_init1(num_inst_total, nlfilename, global_comm)
 
     ! NOTE: if pio_async_interface is true global_comm is MPI_COMM_NULL on the servernodes
@@ -992,15 +990,14 @@ module ESM
     character(len=*) , parameter    :: orb_variable_year    = 'variable_year'
     character(len=*) , parameter    :: orb_fixed_parameters = 'fixed_parameters'
     character(len=*) , parameter    :: subname = '(InitAttributes)'
-    integer :: ierr
-    integer, external :: GPTLprint_memusage
+
     !----------------------------------------------------------
 
     rc = ESMF_SUCCESS
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-       ierr = GPTLprint_memusage(subname)
     endif
+    call shr_nuopc_memcheck(subname, 0, mastertask)
 
     !----------------------------------------------------------
     ! Initialize options for reproducible sums
@@ -1437,7 +1434,6 @@ module ESM
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        call NUOPC_CompAttributeSet(gcomp, name="med_present", value=med_present, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     else
        call NUOPC_CompAttributeAdd(gcomp, attrList=(/'inst_name','inst_index'/), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1452,7 +1448,6 @@ module ESM
           call NUOPC_CompAttributeSet(gcomp, name='inst_suffix', value=trim(seq_comm_suffix(compid)), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
-
     end if
 
   end subroutine AddAttributes

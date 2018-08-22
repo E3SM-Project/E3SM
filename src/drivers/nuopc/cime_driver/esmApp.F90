@@ -5,7 +5,7 @@ program esmApp
   !-----------------------------------------------------------------------------
 
   use ESMF, only : ESMF_Initialize, ESMF_CALKIND_GREGORIAN, ESMF_LOGKIND_MULTI
-!  use ESMF, only : ESMF_LOGKIND_MULTI_ON_ERROR
+  use ESMF, only : ESMF_LOGKIND_MULTI_ON_ERROR
   use ESMF, only : ESMF_END_ABORT, ESMF_LogFoundError, ESMF_Finalize, ESMF_LOGERR_PASSTHRU
   use ESMF, only : ESMF_GridCompSetServices, ESMF_GridCompFinalize, ESMF_LogSet, ESMF_LogWrite
   use ESMF, only : ESMF_GridCompDestroy, ESMF_LOGMSG_INFO, ESMF_GridComp, ESMF_GridCompRun
@@ -17,7 +17,7 @@ program esmApp
 
   integer                 :: rc, urc
   type(ESMF_GridComp)     :: ensemble_driver_comp
-
+  type(ESMF_VM) :: vm
   !-----------------------------------------------------------------------------
   ! Initialize ESMF
   !-----------------------------------------------------------------------------
@@ -96,11 +96,17 @@ program esmApp
     call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
   !-----------------------------------------------------------------------------
-  ! Destroy the earth system Component
+  ! Call Finalize for the ensemble driver
+  ! Destroy the ensemble driver
   !-----------------------------------------------------------------------------
+  call ESMF_GridCompFinalize(ensemble_driver_comp, userRc=urc, rc=rc)
+  if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+    line=__LINE__, &
+    file=__FILE__)) &
+    call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
   call ESMF_LogWrite("ESMF_GridCompDestroy called", ESMF_LOGMSG_INFO, rc=rc)
-  call ESMF_LogSet(flush=.true., trace=.true., rc=rc)
+!  call ESMF_LogSet(flush=.true., trace=.true., rc=rc)
   call ESMF_GridCompDestroy(ensemble_driver_comp, rc=rc)
   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
     line=__LINE__, &
@@ -117,7 +123,7 @@ program esmApp
     line=__LINE__, &
     file=__FILE__)) &
     call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
+  ! Finalize ESMF
   call ESMF_Finalize()
 
 end program

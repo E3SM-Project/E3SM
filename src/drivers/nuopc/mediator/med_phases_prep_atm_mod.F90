@@ -1,5 +1,5 @@
 module med_phases_prep_atm_mod
-
+  use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
   implicit none
   private
   character(*)      , parameter :: u_FILE_u  = __FILE__
@@ -50,15 +50,13 @@ module med_phases_prep_atm_mod
     logical,save                :: first_call = .true.
     character(len=*),parameter  :: subname='(med_phases_prep_atm)'
     integer                       :: dbrc
-    integer :: ierr
-    integer, external :: GPTLprint_memusage
+
     !-------------------------------------------------------------------------------
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-       ierr = GPTLprint_memusage(subname//'A')
     endif
-
+    call shr_nuopc_memcheck(subname, 3, mastertask)
     rc = ESMF_SUCCESS
 
     !---------------------------------------
@@ -110,7 +108,6 @@ module med_phases_prep_atm_mod
     !---------------------------------------
     !--- map import field bundles from n1 grid to atm grid - FBimp(:,compatm)
     !---------------------------------------
-    if (mastertask) ierr = GPTLprint_memusage(subname//'D')
     do n1 = 1,ncomps
        if (is_local%wrap%med_coupling_active(n1,compatm)) then
           call med_map_FB_Regrid_Norm( &
@@ -128,7 +125,6 @@ module med_phases_prep_atm_mod
     !---------------------------------------
     !--- map ocean albedos from ocn to atm grid
     !---------------------------------------
-    if(mastertask) ierr = GPTLprint_memusage(subname//'E')
     if (is_local%wrap%med_coupling_active(compocn,compatm)) then
        call med_phases_ocnalb_mapo2a(gcomp, rc)
     end if
@@ -153,7 +149,6 @@ module med_phases_prep_atm_mod
     !---------------------------------------
     !--- merge all fields to atm
     !---------------------------------------
-    if (mastertask) ierr = GPTLprint_memusage(subname//'F')
     call med_merge_auto(trim(compname(compatm)), &
          is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
          is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
@@ -165,7 +160,6 @@ module med_phases_prep_atm_mod
        call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compatm), string=trim(subname)//' FBexp(compatm) ', rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
-    if (mastertask) ierr = GPTLprint_memusage(subname//'G')
     !---------------------------------------
     !--- custom calculations
     !---------------------------------------
@@ -199,7 +193,6 @@ module med_phases_prep_atm_mod
           dataptr1(n) = dataptr2(n)
        end do
     end if
-    if (mastertask) ierr = GPTLprint_memusage(subname//'H')
 #if (1 == 0)
     !---  ocn and ice fraction for merges
     call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compatm), 'Si_ifrac', icewgt, rc=rc)
@@ -234,7 +227,6 @@ module med_phases_prep_atm_mod
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-       ierr = GPTLprint_memusage(subname)
     endif
 
   end subroutine med_phases_prep_atm

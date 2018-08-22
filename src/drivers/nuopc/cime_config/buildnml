@@ -329,8 +329,9 @@ def _create_component_modelio_namelists(confdir, case, files):
                 for entry in entries:
                     nmlgen.add_default(entry)
 
-                modelio_file = model + "_modelio.nml" + inst_string
-                nmlgen.write_nuopc_modelio_file(os.path.join(confdir, modelio_file))
+                if model != "cpl":
+                    modelio_file = model + "_modelio.nml" + inst_string
+                    nmlgen.write_nuopc_modelio_file(os.path.join(confdir, modelio_file))
 
                 # Output the following to cesm.runconfig
                 moddiro = case.get_value('RUNDIR')
@@ -341,11 +342,13 @@ def _create_component_modelio_namelists(confdir, case, files):
 
                 with open(nuopc_config_file, 'a') as outfile:
                     if model == 'cpl':
-                        model = 'med'
-                    if inst_string:
-                        outfile.write("{}_modelio{}::\n".format(model.upper(),inst_string))
+                        name = "MED"
                     else:
-                        outfile.write("{}_modelio::\n".format(model.upper()))
+                        name = model.upper()
+                    if inst_string:
+                        outfile.write("{}_modelio{}::\n".format(name,inst_string))
+                    else:
+                        outfile.write("{}_modelio::\n".format(name))
                     outfile.write("     {}{}{}".format("diro = ", moddiro,"\n"))
                     outfile.write("     {}{}{}".format("logfile = ", logfile,"\n"))
                     outfile.write("::\n\n")
