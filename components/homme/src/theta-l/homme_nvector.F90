@@ -6,7 +6,7 @@
 !
 ! Modified by Christopher J. Vogl (LLNL) 2018
 !=======================================================================
-#ifdef ARKODE
+
 module HommeNVector
   !-----------------------------------------------------------------------
   ! Description: simple Fortran user-defined type for example interface
@@ -1210,4 +1210,3 @@ subroutine FNVExtMinQuotient(x_C, y_C, cval)
   return
 end subroutine FNVExtMinQuotient
 !=======================================================================
-#endif

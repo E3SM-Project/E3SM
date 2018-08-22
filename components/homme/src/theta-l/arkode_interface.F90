@@ -42,7 +42,7 @@
 !
 ! Modified by Christopher J. Vogl (LLNL) 2018
 !=================================================================
-#ifdef ARKODE
+
 subroutine farkifun(t, y_C, fy_C, ipar, rpar, ierr)
   !-----------------------------------------------------------------
   ! Description: farkifun provides the implicit portion of the right
@@ -814,4 +814,3 @@ subroutine farkpsol(t, y_C, fy_C, r_C, z_C, gamma, delta, lr, ipar, &
   return
 end subroutine farkpsol
 !=================================================================
-#endif
