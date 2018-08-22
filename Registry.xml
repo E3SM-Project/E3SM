@@ -224,10 +224,6 @@
 		            description="Defines the default value of the flow law parameter A to be used if it is not being calculated from ice temperature.  This value will be used by either the sia or FO velocity solver if they are respectively configured to use a scalar A value.  Defaults to the SI representation of 1.0e-16 yr$^{-1}$ Pa$^{-3}$."
 		            possible_values="Any positive real value"
 		/>
-		<nml_option name="config_enhancementFactor" type="real" default_value="1.0" units="none"
-			description="multiplier on the flow parameter A"
-			possible_values="Any positive real value"
-		/>
 		<nml_option name="config_flowLawExponent" type="real" default_value="3.0" units="none"
 		            description="Defines the value of the Glen flow law exponent, n. This value will be used by either the sia or FO velocity solver.  A value other than 3.0 is untested."
 		            possible_values="Any real value"
@@ -470,6 +466,7 @@
                         <var name="surfaceAirTemperature"/>
                         <var name="basalHeatFlux"/>
                         <var name="eigencalvingParameter"/>
+                        <var name="stiffnessFactor"/>
 <!-- The following variables are used by HO only, and only enabled by the higherOrderVelocity package. -->
 <!-- They do not need to be in the input file for the SIA dycore, and will be ignored if they are. -->
 			<var name="beta" packages="higherOrderVelocity"/>
@@ -534,6 +531,7 @@
 			<var name="sfcMassBal"/>
                         <var name="floatingBasalMassBal"/>
                         <var name="eigencalvingParameter"/>
+                        <var name="stiffnessFactor"/>
 			<!-- normalVelocity is needed for advection on the next timestep -->
 			<var name="normalVelocity"/>
 			<!-- uReconstructX/Y are only needed for exact restarts of HO iterative solvers -->
@@ -938,6 +936,9 @@ is the value of that variable from the *previous* time level!
                 <var name="betaSolve" type="real" dimensions="nCells Time" units="Pa yr m^{-1}"
                      description="value of basal traction parameter for sliding law used with first-order momentum balance solver (NOTE non-SI units); differs from beta due to any necessary adjustments made for internal consistency (e.g., zeroed out where the ice is found to be floating)"
                 />
+		<var name="stiffnessFactor" type="real" dimensions="nCells Time" units="none" default_value="1.0"
+		     description="stiffness factor applied to effective viscosity in higher-order velocity solve"
+		/>
                 <var name="exx" type="real" dimensions="nCells Time" units="s^{-1}"
                      description="x-component of surface strain rate"
                 />
@@ -959,7 +960,6 @@ is the value of that variable from the *previous* time level!
                 <var name="eMin" type="real" dimensions="nCells Time" units="s^{-1}"
                      description="magnitude of second principal surface strain rate"
                 />
-
 
 		<!-- Variables only needed by HO solver -->
                 <var name="anyDynamicVertexMaskChanged"              type="integer"  dimensions="Time"

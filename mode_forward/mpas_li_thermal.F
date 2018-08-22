@@ -1686,7 +1686,7 @@ module li_thermal
           weightEdge               ! edge weight for averaging to cell center
 
      real (kind=RKIND), dimension(:), allocatable ::  &
-          flowParamAEdge           ! flow parameter averaged to edge
+          flowParamAEdge           ! flow parameter averaged to edge.
 
      integer :: iCell, iCell1, iCell2, iEdge, iEdgeOnCell, iLayer
 

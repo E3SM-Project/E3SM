@@ -180,6 +180,7 @@ contains
       !-----------------------------------------------------------------
 
       character (len=StrKIND), pointer :: config_velocity_solver
+      type (mpas_pool_type), pointer :: velocityPool
 
       err = 0
 
