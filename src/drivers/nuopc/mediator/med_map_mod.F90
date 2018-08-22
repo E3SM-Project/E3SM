@@ -617,10 +617,11 @@ contains
              !-------------------------------------------------
 
              ! create a temporary field bundle that will contain normalization on the source grid
-             call shr_nuopc_methods_FB_init(FBout=FBNormSrc, flds_scalar_name=flds_scalar_name, &
-                  FBgeom=FBSrc, fieldNameList=(/trim(mapnorm)/), name='normsrc', rc=rc)
-             if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
-
+             if (.not. ESMF_FieldBundleIsCreated(FBNormSrc)) then
+                call shr_nuopc_methods_FB_init(FBout=FBNormSrc, flds_scalar_name=flds_scalar_name, &
+                     FBgeom=FBSrc, fieldNameList=(/trim(mapnorm)/), name='normsrc', rc=rc)
+                if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
+             endif
              call shr_nuopc_methods_FB_reset(FBNormSrc, value=czero, rc=rc)
              if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
 
@@ -628,10 +629,11 @@ contains
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
              ! create a temporary field bundle that will contain normalization on the destination grid
-             call shr_nuopc_methods_FB_init(FBout=FBNormDst, flds_scalar_name=flds_scalar_name, &
-                  FBgeom=FBDst, fieldNameList=(/trim(mapnorm)/), name='normdst', rc=rc)
-             if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
-
+             if (.not. ESMF_FieldBundleIsCreated(FBNormDst)) then
+                call shr_nuopc_methods_FB_init(FBout=FBNormDst, flds_scalar_name=flds_scalar_name, &
+                     FBgeom=FBDst, fieldNameList=(/trim(mapnorm)/), name='normdst', rc=rc)
+                if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
+             endif
              call shr_nuopc_methods_FB_reset(FBNormDst, value=czero, rc=rc)
              if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
 
@@ -738,6 +740,14 @@ contains
     ! Clean up temporary field bundle
     if (ESMF_FieldBundleIsCreated(FBSrcTmp)) then
        call shr_nuopc_methods_FB_clean(FBSrcTmp, rc=rc)
+       if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
+    end if
+    if (ESMF_FieldBundleIsCreated(FBNormSrc)) then
+       call shr_nuopc_methods_FB_clean(FBNormSrc, rc=rc)
+       if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
+    end if
+    if (ESMF_FieldBundleIsCreated(FBNormDst)) then
+       call shr_nuopc_methods_FB_clean(FBNormDst, rc=rc)
        if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
     end if
 
