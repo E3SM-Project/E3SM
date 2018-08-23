@@ -96,8 +96,10 @@ module WaterstateType
 
      real(r8), pointer :: begwb_patch            (:)   ! water mass begining of the time step
      real(r8), pointer :: begwb_col              (:)   ! water mass begining of the time step
+     real(r8), pointer :: begwb_grc              (:)   ! water mass begining of the time step
      real(r8), pointer :: endwb_patch            (:)   ! water mass end of the time step
      real(r8), pointer :: endwb_col              (:)   ! water mass end of the time step
+     real(r8), pointer :: endwb_grc              (:)   ! water mass end of the time step
      real(r8), pointer :: errh2o_patch           (:)   ! water conservation error (mm H2O)
      real(r8), pointer :: errh2o_col             (:)   ! water conservation error (mm H2O)
      real(r8), pointer :: errh2osno_col          (:)   ! snow water conservation error(mm H2O)
@@ -241,8 +243,10 @@ contains
 
     allocate(this%begwb_patch            (begp:endp))                     ; this%begwb_patch            (:)   = nan
     allocate(this%begwb_col              (begc:endc))                     ; this%begwb_col              (:)   = nan
+    allocate(this%begwb_grc              (begg:endg))                     ; this%begwb_grc              (:)   = nan
     allocate(this%endwb_patch            (begp:endp))                     ; this%endwb_patch            (:)   = nan
     allocate(this%endwb_col              (begc:endc))                     ; this%endwb_col              (:)   = nan
+    allocate(this%endwb_grc              (begg:endg))                     ; this%endwb_grc              (:)   = nan
     allocate(this%errh2o_patch           (begp:endp))                     ; this%errh2o_patch           (:)   = nan
     allocate(this%errh2o_col             (begc:endc))                     ; this%errh2o_col             (:)   = nan
     allocate(this%errh2osno_col          (begc:endc))                     ; this%errh2osno_col          (:)   = nan

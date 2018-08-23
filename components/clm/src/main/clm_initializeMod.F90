@@ -30,6 +30,8 @@ module clm_initializeMod
   use ColumnType             , only : col_pp                
   use VegetationType         , only : veg_pp                
   use clm_instMod
+  use WaterBudgetMod         , only : WaterBudget_Reset
+  use clm_varctl             , only : do_budgets
   !
   implicit none
   save
@@ -466,6 +468,8 @@ contains
     !----------------------------------------------------------------------
 
     call t_startf('clm_init2')
+
+    if (do_budgets) call WaterBudget_Reset('all')
 
     ! ------------------------------------------------------------------------
     ! Determine processor bounds and clumps for this processor
