@@ -1470,6 +1470,19 @@
     </values>
   </entry>
 
+  <entry id="reprosum_allow_infnan">
+    <type>logical</type>
+    <category>reprosum</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Allow INF and NaN in summands
+      default: .false.
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
   <entry id="reprosum_diffmax">
     <type>real</type>
     <category>reprosum</category>
