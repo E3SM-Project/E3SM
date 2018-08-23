@@ -423,66 +423,66 @@ def cosp_histogram_standardize(cld):
 
 derived_variables = {
     'PRECT': OrderedDict([
-        (('pr'), lambda pr: qflxconvert_units(rename(pr))),
+        (('pr',), lambda pr: qflxconvert_units(rename(pr))),
         (('PRECC', 'PRECL'), lambda precc, precl: prect(precc, precl))
     ]),
     'SST': OrderedDict([
         # lambda sst: convert_units(rename(sst),target_units="degC")),
-        (('sst'), rename),
+        (('sst',), rename),
         (('TS', 'OCNFRAC'), lambda ts, ocnfrac: mask_by(
             convert_units(ts, target_units="degC"), ocnfrac, low_limit=0.9)),
-        (('SST'), lambda sst: convert_units(sst, target_units="degC"))
+        (('SST',), lambda sst: convert_units(sst, target_units="degC"))
     ]),
     'PREH2O': OrderedDict([
-        (('TMQ'), rename),
-        (('prw'), rename)
+        (('TMQ',), rename),
+        (('prw',), rename)
     ]),
     'SOLIN': OrderedDict([
-        (('rsdt'), rename)
+        (('rsdt',), rename)
     ]),
     'ALBEDO': OrderedDict([
-        (('ALBEDO'), rename),
+        (('ALBEDO',), rename),
         (('SOLIN', 'FSNTOA'), lambda solin, fsntoa: albedo(solin, solin - fsntoa)),
         (('rsdt', 'rsut'), lambda rsdt, rsut: albedo(rsdt, rsut))
     ]),
     'ALBEDOC': OrderedDict([
-        (('ALBEDOC'), rename),
+        (('ALBEDOC',), rename),
         (('SOLIN', 'FSNTOAC'), lambda solin,
          fsntoac: albedoc(solin, solin - fsntoac)),
         (('rsdt', 'rsutcs'), lambda rsdt, rsutcs: albedoc(rsdt, rsutcs))
     ]),
     'ALBEDO_SRF': OrderedDict([
-        (('ALBEDO_SRF'), rename),
+        (('ALBEDO_SRF',), rename),
         (('rsds', 'rsus'), lambda rsds, rsus: albedo_srf(rsds, rsus)),
         (('FSDS', 'FSNS'), lambda fsds, fsns: albedo_srf(fsds, fsds - fsns))
     ]),
     # Pay attention to the positive direction of SW and LW fluxes
     'SWCF': OrderedDict([
-        (('SWCF'), rename),
+        (('SWCF',), rename),
         (('toa_net_sw_all_mon', 'toa_net_sw_clr_mon'),
          lambda net_all, net_clr: swcf(net_all, net_clr)),
-        (('toa_cre_sw_mon'), rename),
+        (('toa_cre_sw_mon',), rename),
         (('FSNTOA', 'FSNTOAC'), lambda fsntoa, fsntoac: swcf(fsntoa, fsntoac))
     ]),
     'SWCFSRF': OrderedDict([
-        (('SWCFSRF'), rename),
+        (('SWCFSRF',), rename),
         (('sfc_net_sw_all_mon', 'sfc_net_sw_clr_mon'),
          lambda net_all, net_clr: swcfsrf(net_all, net_clr)),
-        (('sfc_cre_net_sw_mon'), rename),
+        (('sfc_cre_net_sw_mon',), rename),
         (('FSNS', 'FSNSC'), lambda fsns, fsnsc: swcfsrf(fsns, fsnsc))
     ]),
     'LWCF': OrderedDict([
-        (('LWCF'), rename),
+        (('LWCF',), rename),
         (('toa_net_lw_all_mon', 'toa_net_lw_clr_mon'),
          lambda net_all, net_clr: lwcf(net_clr, net_all)),
-        (('toa_cre_lw_mon'), rename),
+        (('toa_cre_lw_mon',), rename),
         (('FLNTOA', 'FLNTOAC'), lambda flntoa, flntoac: lwcf(flntoa, flntoac))
     ]),
     'LWCFSRF': OrderedDict([
-        (('LWCFSRF'), rename),
+        (('LWCFSRF',), rename),
         (('sfc_net_lw_all_mon', 'sfc_net_lw_clr_mon'),
          lambda net_all, net_clr: lwcfsrf(net_clr, net_all)),
-        (('sfc_cre_net_lw_mon'), rename),
+        (('sfc_cre_net_lw_mon',), rename),
         (('FLNS', 'FLNSC'), lambda flns, flnsc: lwcfsrf(flns, flnsc))
     ]),
     'NETCF': OrderedDict([
@@ -504,272 +504,272 @@ derived_variables = {
     ]),
 
     'FLNS': OrderedDict([
-        (('sfc_net_lw_all_mon'), lambda sfc_net_lw_all_mon: -sfc_net_lw_all_mon),
-        (('rlds','rlus'), lambda rlds, rlus: netlw(rlds, rlus))
+        (('sfc_net_lw_all_mon',), lambda sfc_net_lw_all_mon: -sfc_net_lw_all_mon),
+        (('rlds', 'rlus'), lambda rlds, rlus: netlw(rlds, rlus))
     ]),
     'FLNSC': OrderedDict([
-        (('sfc_net_lw_clr_mon'), lambda sfc_net_lw_clr_mon: -sfc_net_lw_clr_mon)
+        (('sfc_net_lw_clr_mon',), lambda sfc_net_lw_clr_mon: -sfc_net_lw_clr_mon)
     ]),
     'FLDS': OrderedDict([
-        (('rlds'), rename)
+        (('rlds',), rename)
     ]),
     'FLDSC': OrderedDict([
-        (('rldscs'), rename),
+        (('rldscs',), rename),
         (('TS', 'FLNSC'), lambda ts, flnsc: fldsc(ts, flnsc))
     ]),
     'FSNS': OrderedDict([
-        (('sfc_net_sw_all_mon'), rename),
-	(('rsds','rsus'), lambda rsds, rsus: netsw(rsds, rsus))
+        (('sfc_net_sw_all_mon',), rename),
+	    (('rsds','rsus'), lambda rsds, rsus: netsw(rsds, rsus))
     ]),
     'FSNSC': OrderedDict([
-        (('sfc_net_sw_clr_mon'), rename)
+        (('sfc_net_sw_clr_mon',), rename)
     ]),
     'FSDS': OrderedDict([
-        (('rsds'), rename)
+        (('rsds',), rename)
     ]),
     'FSDSC': OrderedDict([
-        (('rsdscs'), rename),
-        (('rsdsc'), rename)
+        (('rsdscs',), rename),
+        (('rsdsc',), rename)
     ]),
     'NET_FLUX_SRF': OrderedDict([
         (('FSNS','FLNS','LHFLX','SHFLX'), lambda fsns, flns, lhflx, shflx: netflux4(fsns, flns, lhflx, shflx)),
         (('rsds','rsus','rlds','rlus','hfls','hfss'), lambda rsds, rsus, rlds, rlus, hfls, hfss: netflux6(rsds, rsus, rlds, rlus, hfls, hfss))
     ]),
     'FLUT': OrderedDict([
-        (('rlut'), rename)
+        (('rlut',), rename)
     ]),
     'FLNT': OrderedDict([
-        (('FLNT'), rename)
+        (('FLNT',), rename)
     ]),
     'FLUTC': OrderedDict([
-        (('rlutcs'), rename)
+        (('rlutcs',), rename)
     ]),
     'FSNTOA': OrderedDict([
-        (('FSNTOA'), rename),
+        (('FSNTOA',), rename),
         (('rsdt', 'rsut'), lambda rsdt, rsut: rst(rsdt, rsut))
     ]),
     'FSNTOAC': OrderedDict([
         # Note: CERES_EBAF data in amwg obs sets misspells "units" as "lunits"
-        (('FSNTOAC'), rename),
+        (('FSNTOAC',), rename),
         (('rsdt', 'rsutcs'), lambda rsdt, rsutcs: rstcs(rsdt, rsutcs))
     ]),
     'RESTOM': OrderedDict([
-        (('RESTOA'), rename),
-        (('toa_net_all_mon'), rename),
+        (('RESTOA',), rename),
+        (('toa_net_all_mon',), rename),
         (('FSNT', 'FLNT'), lambda fsnt, flnt: restom(fsnt, flnt))
     ]),
     'RESTOA': OrderedDict([
-        (('RESTOM'), rename),
-        (('toa_net_all_mon'), rename),
+        (('RESTOM',), rename),
+        (('toa_net_all_mon',), rename),
         (('FSNT', 'FLNT'), lambda fsnt, flnt: restoa(fsnt, flnt))
     ]),
 #    'TREFHT_LAND': OrderedDict([
-#        (('TREFHT_LAND'), rename),
+#        (('TREFHT_LAND',), rename),
 #        (('TREFHT', 'LANDFRAC'), lambda trefht, landfrac: mask_by(
 #            convert_units(trefht, target_units="K"), landfrac, low_limit=0.65))
 #    ]),
 #    'TREFHT_LAND': OrderedDict([
-#        (('TREFHT_LAND'), lambda t: convert_units(rename(t), target_units="DegC")),
-#        (('tas'), lambda t: convert_units(t, target_units="DegC")), #special case for GHCN data provided by Jerry
+#        (('TREFHT_LAND',), lambda t: convert_units(rename(t), target_units="DegC")),
+#        (('tas',), lambda t: convert_units(t, target_units="DegC")), #special case for GHCN data provided by Jerry
 #        (('TREFHT', 'LANDFRAC'), lambda trefht, landfrac: mask_by(
 #            convert_units(trefht, target_units="DegC"), landfrac, low_limit=0.65))
 #    ]),
     'PRECT_LAND': OrderedDict([
-        (('PRECIP_LAND'), rename),
+        (('PRECIP_LAND',), rename),
         # 0.5 just to match amwg
         (('PRECC', 'PRECL', 'LANDFRAC'), lambda precc, precl, landfrac: mask_by(
             prect(precc, precl), landfrac, low_limit=0.5))
     ]),
     'Z3': OrderedDict([
-        (('zg'), lambda zg: convert_units(rename(zg), target_units="hectometer")),
-        (('Z3'), lambda z3: convert_units(z3, target_units="hectometer"))
+        (('zg',), lambda zg: convert_units(rename(zg), target_units="hectometer")),
+        (('Z3',), lambda z3: convert_units(z3, target_units="hectometer"))
     ]),
     'PSL': OrderedDict([
-        (('PSL'), lambda psl: convert_units(psl, target_units="mbar")),
-        (('psl'), lambda psl: convert_units(psl, target_units="mbar"))
+        (('PSL',), lambda psl: convert_units(psl, target_units="mbar")),
+        (('psl',), lambda psl: convert_units(psl, target_units="mbar"))
     ]),
     'T': OrderedDict([
-        (('ta'), rename),
-        (('T'), lambda t: convert_units(t, target_units="K"))
+        (('ta',), rename),
+        (('T',), lambda t: convert_units(t, target_units="K"))
     ]),
     'U': OrderedDict([
-        (('ua'), rename),
-        (('U'), lambda u: convert_units(u, target_units="m/s"))
+        (('ua',), rename),
+        (('U',), lambda u: convert_units(u, target_units="m/s"))
     ]),
     'V': OrderedDict([
-        (('va'), rename),
-        (('V'), lambda u: convert_units(u, target_units="m/s"))
+        (('va',), rename),
+        (('V',), lambda u: convert_units(u, target_units="m/s"))
     ]),
     'TREFHT': OrderedDict([
-        (('TREFHT'), lambda t: convert_units(t, target_units="DegC")),
-        (('TREFHT_LAND'), lambda t: convert_units(t, target_units="DegC")),
-        (('tas'), lambda t: convert_units(t, target_units="DegC"))
+        (('TREFHT',), lambda t: convert_units(t, target_units="DegC")),
+        (('TREFHT_LAND',), lambda t: convert_units(t, target_units="DegC")),
+        (('tas',), lambda t: convert_units(t, target_units="DegC"))
     ]),
     'QFLX': OrderedDict([
-        (('QFLX'), lambda qflx: qflxconvert_units(qflx))
+        (('QFLX',), lambda qflx: qflxconvert_units(qflx))
     ]),
     'LHFLX': OrderedDict([
-        (('hfls'), rename)
+        (('hfls',), rename)
     ]),
     'SHFLX': OrderedDict([
-        (('hfss'), rename)
+        (('hfss',), rename)
     ]),
     'TGCLDLWP_OCN': OrderedDict([
-        (('TGCLDLWP_OCEAN'), lambda x: convert_units(x, target_units='g/m^2')),
+        (('TGCLDLWP_OCEAN',), lambda x: convert_units(x, target_units='g/m^2')),
         (('TGCLDLWP', 'OCNFRAC'), lambda tgcldlwp, ocnfrac: mask_by(
             convert_units(tgcldlwp, target_units="g/m^2"), ocnfrac, low_limit=0.65))
     ]),
     'PRECT_OCN': OrderedDict([
-        (('PRECT_OCEAN'), lambda x: convert_units(x, target_units='mm/day')),
+        (('PRECT_OCEAN',), lambda x: convert_units(x, target_units='mm/day')),
         (('PRECC', 'PRECL', 'OCNFRAC'), lambda a, b, ocnfrac: mask_by(
             aplusb(a, b, target_units="mm/day"), ocnfrac, low_limit=0.65))
     ]),
     'PREH2O_OCN': OrderedDict([
-        (('PREH2O_OCEAN'), lambda x: convert_units(x, target_units='mm')),
+        (('PREH2O_OCEAN',), lambda x: convert_units(x, target_units='mm')),
         (('TMQ', 'OCNFRAC'), lambda preh2o,
          ocnfrac: mask_by(preh2o, ocnfrac, low_limit=0.65))
     ]),
     'CLDHGH': OrderedDict([
-        (('CLDHGH'), lambda cldhgh: convert_units(cldhgh, target_units="%"))
+        (('CLDHGH',), lambda cldhgh: convert_units(cldhgh, target_units="%"))
     ]),
     'CLDLOW': OrderedDict([
-        (('CLDLOW'), lambda cldlow: convert_units(cldlow, target_units="%"))
+        (('CLDLOW',), lambda cldlow: convert_units(cldlow, target_units="%"))
     ]),
     'CLDMED': OrderedDict([
-        (('CLDMED'), lambda cldmed: convert_units(cldmed, target_units="%"))
+        (('CLDMED',), lambda cldmed: convert_units(cldmed, target_units="%"))
     ]),
     'CLDTOT': OrderedDict([
-        (('CLDTOT'), lambda cldtot: convert_units(cldtot, target_units="%"))
+        (('CLDTOT',), lambda cldtot: convert_units(cldtot, target_units="%"))
     ]),
     # below for COSP output
     # CLIPSO
     'CLDHGH_CAL': OrderedDict([
-        (('CLDHGH_CAL'), lambda cldhgh: convert_units(cldhgh, target_units="%"))
+        (('CLDHGH_CAL',), lambda cldhgh: convert_units(cldhgh, target_units="%"))
     ]),
     'CLDLOW_CAL': OrderedDict([
-        (('CLDLOW_CAL'), lambda cldlow: convert_units(cldlow, target_units="%"))
+        (('CLDLOW_CAL',), lambda cldlow: convert_units(cldlow, target_units="%"))
     ]),
     'CLDMED_CAL': OrderedDict([
-        (('CLDMED_CAL'), lambda cldmed: convert_units(cldmed, target_units="%"))
+        (('CLDMED_CAL',), lambda cldmed: convert_units(cldmed, target_units="%"))
     ]),
     'CLDTOT_CAL': OrderedDict([
-        (('CLDTOT_CAL'), lambda cldtot: convert_units(cldtot, target_units="%"))
+        (('CLDTOT_CAL',), lambda cldtot: convert_units(cldtot, target_units="%"))
     ]),
     # ISCCP
     'CLDTOT_TAU1.3_ISCCP': OrderedDict([
-        (('FISCCP1_COSP'), lambda cld: convert_units(
+        (('FISCCP1_COSP',), lambda cld: convert_units(
             cosp_bin_sum(cld, None, None, 1.3, None), target_units="%")),
-        (('CLISCCP'), lambda cld: convert_units(cosp_bin_sum(
+        (('CLISCCP',), lambda cld: convert_units(cosp_bin_sum(
             cld, None, None, 1.3, None), target_units="%"))
     ]),
     'CLDTOT_TAU1.3_9.4_ISCCP': OrderedDict([
-        (('FISCCP1_COSP'), lambda cld: convert_units(
+        (('FISCCP1_COSP',), lambda cld: convert_units(
             cosp_bin_sum(cld, None, None, 1.3, 9.4), target_units="%")),
-        (('CLISCCP'), lambda cld: convert_units(
+        (('CLISCCP',), lambda cld: convert_units(
             cosp_bin_sum(cld, None, None, 1.3, 9.4), target_units="%"))
     ]),
     'CLDTOT_TAU9.4_ISCCP': OrderedDict([
-        (('FISCCP1_COSP'), lambda cld: convert_units(
+        (('FISCCP1_COSP',), lambda cld: convert_units(
             cosp_bin_sum(cld, None, None, 9.4, None), target_units="%")),
-        (('CLISCCP'), lambda cld: convert_units(cosp_bin_sum(
+        (('CLISCCP',), lambda cld: convert_units(cosp_bin_sum(
             cld, None, None, 9.4, None), target_units="%"))
     ]),
     # MODIS
     'CLDTOT_TAU1.3_MODIS': OrderedDict([
-        (('CLMODIS'), lambda cld: convert_units(cosp_bin_sum(
+        (('CLMODIS',), lambda cld: convert_units(cosp_bin_sum(
             cld, None, None, 1.3, None), target_units="%")),
     ]),
     'CLDTOT_TAU1.3_9.4_MODIS': OrderedDict([
-        (('CLMODIS'), lambda cld: convert_units(cosp_bin_sum(
+        (('CLMODIS',), lambda cld: convert_units(cosp_bin_sum(
             cld, None, None, 1.3, 9.4), target_units="%")),
     ]),
     'CLDTOT_TAU9.4_MODIS': OrderedDict([
-        (('CLMODIS'), lambda cld: convert_units(cosp_bin_sum(
+        (('CLMODIS',), lambda cld: convert_units(cosp_bin_sum(
             cld, None, None, 9.4, None), target_units="%")),
     ]),
     'CLDHGH_TAU1.3_MODIS': OrderedDict([
-        (('CLMODIS'), lambda cld: convert_units(
+        (('CLMODIS',), lambda cld: convert_units(
             cosp_bin_sum(cld, 0, 440, 1.3, None), target_units="%")),
     ]),
     'CLDHGH_TAU1.3_9.4_MODIS': OrderedDict([
-        (('CLMODIS'), lambda cld: convert_units(
+        (('CLMODIS',), lambda cld: convert_units(
             cosp_bin_sum(cld, 0, 440, 1.3, 9.4), target_units="%")),
     ]),
     'CLDHGH_TAU9.4_MODIS': OrderedDict([
-        (('CLMODIS'), lambda cld: convert_units(
+        (('CLMODIS',), lambda cld: convert_units(
             cosp_bin_sum(cld, 0, 440, 9.4, None), target_units="%")),
     ]),
     # MISR
     'CLDTOT_TAU1.3_MISR': OrderedDict([
-        (('CLD_MISR'), lambda cld: convert_units(cosp_bin_sum(
+        (('CLD_MISR',), lambda cld: convert_units(cosp_bin_sum(
             cld, None, None, 1.3, None), target_units="%")),
-        (('CLMISR'), lambda cld: convert_units(cosp_bin_sum(
+        (('CLMISR',), lambda cld: convert_units(cosp_bin_sum(
             cld, None, None, 1.3, None), target_units="%"))
     ]),
     'CLDTOT_TAU1.3_9.4_MISR': OrderedDict([
-        (('CLD_MISR'), lambda cld: convert_units(
+        (('CLD_MISR',), lambda cld: convert_units(
             cosp_bin_sum(cld, None, None, 1.3, 9.4), target_units="%")),
-        (('CLMISR'), lambda cld: convert_units(cosp_bin_sum(
+        (('CLMISR',), lambda cld: convert_units(cosp_bin_sum(
             cld, None, None, 1.3, 9.4), target_units="%"))
     ]),
     'CLDTOT_TAU9.4_MISR': OrderedDict([
-        (('CLD_MISR'), lambda cld: convert_units(cosp_bin_sum(
+        (('CLD_MISR',), lambda cld: convert_units(cosp_bin_sum(
             cld, None, None, 9.4, None), target_units="%")),
-        (('CLMISR'), lambda cld: convert_units(cosp_bin_sum(
+        (('CLMISR',), lambda cld: convert_units(cosp_bin_sum(
             cld, None, None, 9.4, None), target_units="%"))
     ]),
     'CLDLOW_TAU1.3_MISR': OrderedDict([
-        (('CLD_MISR'), lambda cld: convert_units(
+        (('CLD_MISR',), lambda cld: convert_units(
             cosp_bin_sum(cld, 0, 3, 1.3, None), target_units="%")),
-        (('CLMISR'), lambda cld: convert_units(
+        (('CLMISR',), lambda cld: convert_units(
             cosp_bin_sum(cld, 0, 3, 1.3, None), target_units="%"))
     ]),
     'CLDLOW_TAU1.3_9.4_MISR': OrderedDict([
-        (('CLD_MISR'), lambda cld: convert_units(
+        (('CLD_MISR',), lambda cld: convert_units(
             cosp_bin_sum(cld, 0, 3, 1.3, 9.4), target_units="%")),
-        (('CLMISR'), lambda cld: convert_units(
+        (('CLMISR',), lambda cld: convert_units(
             cosp_bin_sum(cld, 0, 3, 1.3, 9.4), target_units="%"))
     ]),
     'CLDLOW_TAU9.4_MISR': OrderedDict([
-        (('CLD_MISR'), lambda cld: convert_units(
+        (('CLD_MISR',), lambda cld: convert_units(
             cosp_bin_sum(cld, 0, 3, 9.4, None), target_units="%")),
-        (('CLMISR'), lambda cld: convert_units(
+        (('CLMISR',), lambda cld: convert_units(
             cosp_bin_sum(cld, 0, 3, 9.4, None), target_units="%"))
     ]),
     # COSP cloud fraction joint histogram
     'COSP_HISTOGRAM_MISR': OrderedDict([
-        (('CLD_MISR'), lambda cld: cosp_histogram_standardize(rename(cld))),
-        (('CLMISR'), lambda cld: cosp_histogram_standardize(rename(cld)))
+        (('CLD_MISR',), lambda cld: cosp_histogram_standardize(rename(cld))),
+        (('CLMISR',), lambda cld: cosp_histogram_standardize(rename(cld)))
     ]),
     'COSP_HISTOGRAM_MODIS': OrderedDict([
-        (('CLMODIS'), lambda cld: cosp_histogram_standardize(rename(cld))),
+        (('CLMODIS',), lambda cld: cosp_histogram_standardize(rename(cld))),
     ]),
     'COSP_HISTOGRAM_ISCCP': OrderedDict([
-        (('FISCCP1_COSP'), lambda cld: cosp_histogram_standardize(rename(cld))),
-        (('CLISCCP'), lambda cld: cosp_histogram_standardize(rename(cld)))
+        (('FISCCP1_COSP',), lambda cld: cosp_histogram_standardize(rename(cld))),
+        (('CLISCCP',), lambda cld: cosp_histogram_standardize(rename(cld)))
     ]),
     'ICEFRAC': OrderedDict([
-        (('ICEFRAC'), lambda icefrac: convert_units(icefrac, target_units="%"))
+        (('ICEFRAC',), lambda icefrac: convert_units(icefrac, target_units="%"))
     ]),
     'RELHUM': OrderedDict([
-        (('hur'), lambda hur: convert_units(hur, target_units="%")),
-        (('RELHUM'), lambda relhum: convert_units(relhum, target_units="%"))
-        #        (('RELHUM'), rename)
+        (('hur',), lambda hur: convert_units(hur, target_units="%")),
+        (('RELHUM',), lambda relhum: convert_units(relhum, target_units="%"))
+        # (('RELHUM',), rename)
     ]),
     'OMEGA': OrderedDict([
-        (('wap'), lambda wap: convert_units(wap, target_units="mbar/day")),
-        (('OMEGA'), lambda omega: convert_units(omega, target_units="mbar/day"))
+        (('wap',), lambda wap: convert_units(wap, target_units="mbar/day")),
+        (('OMEGA',), lambda omega: convert_units(omega, target_units="mbar/day"))
     ]),
     'SHUM': OrderedDict([
-        (('Q'), lambda q: convert_units(rename(q), target_units="g/kg")),
-        (('SHUM'), lambda shum: convert_units(shum, target_units="g/kg"))
+        (('Q',), lambda q: convert_units(rename(q), target_units="g/kg")),
+        (('SHUM',), lambda shum: convert_units(shum, target_units="g/kg"))
     ]),
     'TAUXY': OrderedDict([
         (('TAUX','TAUY'), lambda taux, tauy: tauxy(taux, tauy)),
         (('tauu','tauv'), lambda taux, tauy: tauxy(taux, tauy))
     ]),
     'AODVIS': OrderedDict([
-        (('AODVIS'), lambda aod: convert_units(rename(aod), target_units = "dimensionless")),
-        (('AOD_550_ann'), lambda aod: convert_units(rename(aod), target_units = "dimensionless"))
+        (('AODVIS',), lambda aod: convert_units(rename(aod), target_units = "dimensionless")),
+        (('AOD_550_ann',), lambda aod: convert_units(rename(aod), target_units = "dimensionless"))
     ])
 }

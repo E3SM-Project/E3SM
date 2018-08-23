@@ -75,7 +75,7 @@ setup(
     entry_points={
         'console_scripts': [
             'e3sm_diags=acme_diags.acme_diags_driver:main',
-            'acme_diags=acme_diags.acme_diags_driver:main'
+            'acme_diags=acme_diags.acme_diags_driver:main',
+            'e3sm_diags_vars=acme_diags.acme_diags_vars:main'
     ]}
-
 )
