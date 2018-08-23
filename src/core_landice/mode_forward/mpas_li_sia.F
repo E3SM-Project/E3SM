@@ -276,7 +276,6 @@ contains
       real (kind=RKIND), dimension(:), pointer :: thickness, layerInterfaceSigma
       real (kind=RKIND), dimension(:), pointer :: slopeEdge, normalSlopeEdge
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, flowParamA
-      real (kind=RKIND), dimension(:,:), pointer :: flowEnhancementFactor
       real (kind=RKIND), dimension(:,:), pointer :: temperature
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, dimension(:), pointer :: edgeMask, cellMask
@@ -315,7 +314,6 @@ contains
 
       call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
       call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
-      call mpas_pool_get_array(velocityPool, 'flowEnhancementFactor', flowEnhancementFactor)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
@@ -418,8 +416,7 @@ contains
              do iLevel = nVertInterfaces-1, 1, -1  ! Loop upwards from second lowest level to surface
                 ! Calculate flwa on edge for this level - 2nd order, except can't do centered difference
                 ! into areas where flwa may not be valid, so excluding the downwind flwa value in non-dynamic cells
-                flwaLevelEdge = (flowEnhancementFactor(iLevel, cell1) * flowParamA(iLevel, cell1) * cell1_is_dynamic +  &
-                   flowEnhancementFactor(iLevel, cell2) * flowParamA(iLevel, cell2) * cell2_is_dynamic) / &
+                flwaLevelEdge = (flowParamA(iLevel, cell1) * cell1_is_dynamic + flowParamA(iLevel, cell2) * cell2_is_dynamic) / &
                    (cell1_is_dynamic + cell2_is_dynamic)
 
                 ! Calculate SIA velocity for this layer interface by adding on incremental velocity for the layer below
