@@ -12,7 +12,10 @@ from standard_script_setup import *
 import argparse, sys, os, logging, glob
 from CIME.utils import expect
 from CIME.cs_status import cs_status
-from CIME.test_status import ALL_PHASES
+from CIME import test_status
+
+_PERFORMANCE_PHASES = [test_status.THROUGHPUT_PHASE,
+                       test_status.MEMCOMP_PHASE]
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -41,6 +44,17 @@ def parse_command_line(args, description):
                         "(However, it cannot be used with the --summary option.)\n"
                         "(Can be specified multiple times.)")
 
+    performance_fails_equivalent = ' '.join(["--count-fails {}".format(phase)
+                                             for phase in _PERFORMANCE_PHASES])
+    parser.add_argument("--count-performance-fails", action="store_true",
+                        help="For phases that involve performance comparisons with baseline:\n"
+                        "Do not give line-by-line output; instead, just report the total number\n"
+                        "of tests that have not PASSed this phase.\n"
+                        "(This can be useful because these performance comparisons can be\n"
+                        "subject to machine variability.)\n"
+                        "This is equivalent to specifying:\n"
+                        "{}".format(performance_fails_equivalent))
+
     parser.add_argument("-t", "--test-id", action="append", default=[],
                         help="Include all tests with this test id.\n"
                         "(Can be specified multiple times.)")
@@ -50,15 +64,23 @@ def parse_command_line(args, description):
 
     args = parser.parse_args(args[1:])
 
-    expect(not (args.summary and args.count_fails),
-           "--count-fails cannot be specified with --summary")
-    _validate_phases(args.count_fails, '--count-fails')
+    _validate_args(args)
+
+    if args.count_performance_fails:
+        args.count_fails.extend(_PERFORMANCE_PHASES)
 
     return args.paths, args.summary, args.fails_only, args.count_fails, args.test_id, args.test_root
 
+def _validate_args(args):
+    expect(not (args.summary and args.count_fails),
+           "--count-fails cannot be specified with --summary")
+    expect(not (args.summary and args.count_performance_fails),
+           "--count-performance-fails cannot be specified with --summary")
+    _validate_phases(args.count_fails, '--count-fails')
+
 def _validate_phases(list_of_phases, arg_name):
     for phase in list_of_phases:
-        expect(phase in ALL_PHASES,
+        expect(phase in test_status.ALL_PHASES,
                "Phase {} specified with {} argument is not a valid TestStatus phase".format(
                    phase, arg_name))
 
