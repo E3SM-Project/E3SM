@@ -5,11 +5,13 @@ module dshr_nuopc_mod
   use NUOPC_Model           , only : NUOPC_ModelGet
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
+  use shr_kind_mod          , only : R8=>SHR_KIND_R8, CS=>SHR_KIND_CS
+  use shr_sys_mod           , only : shr_sys_abort
 
   implicit none
   public
 
-  public :: avio_list_add
+  public :: fld_strmap_add
   public :: fld_list_add
   public :: fld_list_realize
   public :: ModelInitPhase
@@ -22,24 +24,31 @@ module dshr_nuopc_mod
 
   integer     , parameter :: fldsMax = 100
   integer     , parameter :: dbug = 10
+  character(*), parameter :: modName =  "(dhsr_nuopc_mod)"
   character(*), parameter :: u_FILE_u = &
        __FILE__
+
 
 !===============================================================================
 contains
 !===============================================================================
 
-  subroutine avio_list_add(avifld, avofld, namei, nameo)
-    use ESMF              , only : ESMF_LogWrite, ESMF_LOGMSG_ERROR
-    use med_constants_mod , only : CS
+  subroutine fld_strmap_add(avifld, avofld, namei, nameo, flds_concat)
 
+    ! Character arrays mapping names from streams (avifld) to names to output (avofld)
+
+    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_ERROR
+
+    ! input/output variables
     character(len=*) , intent(in)    :: namei
     character(len=*) , intent(in)    :: nameo
     character(len=*) , pointer       :: avifld(:)
     character(len=*) , pointer       :: avofld(:)
+    character(len=*) , optional, intent(inout) :: flds_concat
 
     ! local variables
-    integer :: n, oldsize, id
+    integer                    :: dbrc
+    integer                    :: n, oldsize, id
     character(len=CS), pointer :: new_avifld(:)
     character(len=CS), pointer :: new_avofld(:)
     character(len=CS), parameter :: subname='(avio_list_add)'
@@ -79,14 +88,27 @@ contains
     avifld(id) = trim(namei)
     avofld(id) = trim(nameo)
 
-  end subroutine avio_list_add
+    if (present(flds_concat)) then
+       if (len_trim(flds_concat) + len_trim(nameo) + 1 >= len(flds_concat)) then
+          call ESMF_LogWrite(subname//': ERROR: max len of flds_concat has been exceeded', &
+               ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
+          call shr_sys_abort()
+       end if
+       if (trim(flds_concat) == '') then
+          flds_concat = trim(nameo)
+       else
+          flds_concat = trim(flds_concat)//':'//trim(nameo)
+       end if
+    end if
+
+  end subroutine fld_strmap_add
 
   !===============================================================================
 
   subroutine fld_list_add(num, fldlist, stdname, flds_concat)
     use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_ERROR
 
-
+    ! input/output variables
     integer,                    intent(inout) :: num
     type(fld_list_type),        intent(inout) :: fldlist(:)
     character(len=*),           intent(in)    :: stdname

@@ -4,45 +4,43 @@
 module docn_comp_mod
 
   ! !USES:
-  use perf_mod        , only : t_startf, t_stopf
-  use perf_mod        , only : t_adj_detailf, t_barrierf
-  use mct_mod         , only : mct_rearr
-  use mct_mod         , only : mct_avect
-  use mct_mod         , only : mct_gsmap
-  use mct_mod         , only : mct_ggrid
-  use mct_mod         , only : mct_avect_indexRA
-  use mct_mod         , only : mct_gsmap_lsize
-  use mct_mod         , only : mct_rearr_init
-  use mct_mod         , only : mct_avect_init
-  use mct_mod         , only : mct_avect_zero
-  use mct_mod         , only : mct_avect_lsize
-  use shr_kind_mod    , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
-  use shr_pcdf_mod    , only : shr_pcdf_readwrite
-  use shr_const_mod   , only : shr_const_cpsw
-  use shr_const_mod   , only : shr_const_rhosw
-  use shr_const_mod   , only : shr_const_TkFrz
-  use shr_const_mod   , only : shr_const_TkFrzSw
-  use shr_const_mod   , only : shr_const_latice
-  use shr_const_mod   , only : shr_const_ocn_ref_sal
-  use shr_const_mod   , only : shr_const_zsrflyr
-  use shr_const_mod   , only : shr_const_pi
-  use shr_sys_mod     , only : shr_sys_flush, shr_sys_abort
-  use shr_file_mod    , only : shr_file_getunit, shr_file_freeunit
-  use shr_mpi_mod     , only : shr_mpi_bcast
-  use shr_frz_mod     , only : shr_frz_freezetemp
-  use shr_strdata_mod , only : shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
-  use shr_strdata_mod , only : shr_strdata_print, shr_strdata_restRead
-  use shr_strdata_mod , only : shr_strdata_advance, shr_strdata_restWrite
-  use shr_dmodel_mod  , only : shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
-  use shr_dmodel_mod  , only : shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
-  use shr_cal_mod     , only : shr_cal_datetod2string
+  use ESMF              , only : ESMF_GridComp, ESMF_GridCompGet, ESMF_State, ESMF_Mesh 
+  use ESMF              , only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LogWrite, ESMF_LOGMSG_ERROR  
+  use ESMF              , only : ESMF_VM, ESMF_VMGet 
+  use ESMF              , only : ESMF_Alarm, ESMF_AlarmIsRinging, ESMF_AlarmRingerOff  
+  use ESMF              , only : ESMF_Clock, ESMF_ClockGet, ESMF_ClockGetAlarm, ESMF_CALENDAR, ESMF_CALKIND_FLAG
+  use ESMF              , only : operator(==)
+  use perf_mod          , only : t_startf, t_stopf
+  use perf_mod          , only : t_adj_detailf, t_barrierf
+  use mct_mod           , only : mct_rearr, mct_gsmap_lsize, mct_rearr_init, mct_gsmap, mct_ggrid
+  use mct_mod           , only : mct_avect, mct_avect_indexRA, mct_avect_zero
+  use mct_mod           , only : mct_avect_init, mct_avect_lsize, mct_avect_clean
+  use med_constants_mod , only : IN, R8, I8, CS, CL, CXX
+  use shr_pcdf_mod      , only : shr_pcdf_readwrite
+  use shr_const_mod     , only : shr_const_cpsw
+  use shr_const_mod     , only : shr_const_rhosw
+  use shr_const_mod     , only : shr_const_TkFrz
+  use shr_const_mod     , only : shr_const_TkFrzSw
+  use shr_const_mod     , only : shr_const_latice
+  use shr_const_mod     , only : shr_const_ocn_ref_sal
+  use shr_const_mod     , only : shr_const_zsrflyr
+  use shr_const_mod     , only : shr_const_pi
+  use shr_sys_mod       , only : shr_sys_flush, shr_sys_abort
+  use shr_file_mod      , only : shr_file_getunit, shr_file_freeunit
+  use shr_mpi_mod       , only : shr_mpi_bcast
+  use shr_frz_mod       , only : shr_frz_freezetemp
+  use shr_strdata_mod   , only : shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
+  use shr_strdata_mod   , only : shr_strdata_print, shr_strdata_restRead
+  use shr_strdata_mod   , only : shr_strdata_advance, shr_strdata_restWrite
+  use shr_dmodel_mod    , only : shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid, shr_dmodel_translateAV
+  use shr_cal_mod       , only : shr_cal_datetod2string
 
-  use docn_shr_mod    , only : datamode       ! namelist input
-  use docn_shr_mod    , only : aquap_option   ! derived from datamode namelist input
-  use docn_shr_mod    , only : decomp         ! namelist input
-  use docn_shr_mod    , only : rest_file      ! namelist input
-  use docn_shr_mod    , only : rest_file_strm ! namelist input
-  use docn_shr_mod    , only : nullstr
+  use docn_shr_mod      , only : datamode       ! namelist input
+  use docn_shr_mod      , only : aquap_option   ! derived from datamode namelist input
+  use docn_shr_mod      , only : decomp         ! namelist input
+  use docn_shr_mod      , only : rest_file      ! namelist input
+  use docn_shr_mod      , only : rest_file_strm ! namelist input
+  use docn_shr_mod      , only : nullstr
 
   ! !PUBLIC TYPES:
   implicit none
@@ -52,6 +50,7 @@ module docn_comp_mod
   ! Public interfaces
   !--------------------------------------------------------------------------
 
+  public :: docn_comp_advertise
   public :: docn_comp_init
   public :: docn_comp_run
   public :: docn_comp_final
@@ -60,45 +59,181 @@ module docn_comp_mod
   ! Private data
   !--------------------------------------------------------------------------
 
-  character(CS) :: myModelName = 'ocn'   ! user defined model name
-  logical       :: firstcall = .true.    ! first call logical
+  real(R8),parameter         :: cpsw    = shr_const_cpsw        ! specific heat of sea h2o ~ J/kg/K
+  real(R8),parameter         :: rhosw   = shr_const_rhosw       ! density of sea water ~ kg/m^3
+  real(R8),parameter         :: TkFrz   = shr_const_TkFrz       ! freezing point, fresh water (Kelvin)
+  real(R8),parameter         :: TkFrzSw = shr_const_TkFrzSw     ! freezing point, sea   water (Kelvin)
+  real(R8),parameter         :: latice  = shr_const_latice      ! latent heat of fusion
+  real(R8),parameter         :: ocnsalt = shr_const_ocn_ref_sal ! ocean reference salinity
 
+  integer(IN)                :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp ! field indices
+  integer(IN)                :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,krofi
+  integer(IN)                :: kh,kqbot
+  integer(IN)                :: index_lat, index_lon
+  integer(IN)                :: kmask, kfrac ! frac and mask field indices of docn domain
+  integer(IN)                :: ksomask      ! So_omask field index
+
+  type(mct_rearr)            :: rearr
+  type(mct_avect)            :: avstrm       ! av of data from stream
+  real(R8), pointer          :: somtp(:)
+  real(R8), pointer          :: tfreeze(:)
+  integer(IN), pointer       :: imask(:)
+  real(R8), pointer          :: xc(:), yc(:) ! arrays of model latitudes and longitudes
+
+  character(len=CS), pointer :: avifld(:)       
+  character(len=CS), pointer :: avofld(:)
+  character(len=CS), pointer :: strmifld(:)
+  character(len=CS), pointer :: strmofld(:)
+  character(CXX)             :: flds_strm = ''   ! colon deliminated string of field names
+
+  character(CS)              :: myModelName = 'ocn'             ! user defined model name
+  logical                    :: firstcall = .true.              ! first call logical
   character(len=*),parameter :: rpfile = 'rpointer.ocn'
-  integer(IN)   :: dbug = 1              ! debug level (higher is more)
-
-  real(R8),parameter :: cpsw    = shr_const_cpsw        ! specific heat of sea h2o ~ J/kg/K
-  real(R8),parameter :: rhosw   = shr_const_rhosw       ! density of sea water ~ kg/m^3
-  real(R8),parameter :: TkFrz   = shr_const_TkFrz       ! freezing point, fresh water (Kelvin)
-  real(R8),parameter :: TkFrzSw = shr_const_TkFrzSw     ! freezing point, sea   water (Kelvin)
-  real(R8),parameter :: latice  = shr_const_latice      ! latent heat of fusion
-  real(R8),parameter :: ocnsalt = shr_const_ocn_ref_sal ! ocean reference salinity
-
-  integer(IN)          :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp  ! field indices
-  integer(IN)          :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,krofi
-  integer(IN)          :: kh,kqbot
-  integer(IN)          :: index_lat, index_lon
-  integer(IN)          :: kmask, kfrac ! frac and mask field indices of docn domain
-  integer(IN)          :: ksomask      ! So_omask field index
-
-  type(mct_rearr)      :: rearr
-  type(mct_avect)      :: avstrm       ! av of data from stream
-  real(R8), pointer    :: somtp(:)
-  real(R8), pointer    :: tfreeze(:)
-  integer(IN), pointer :: imask(:)
-  real(R8), pointer    :: xc(:), yc(:) ! arryas of model latitudes and longitudes
-
-  integer(IN)     , parameter :: ktrans = 8
-  character(12)   , parameter :: avifld(1:ktrans) = &
-       (/ "t           ","u           ","v           ","dhdx        ",&
-          "dhdy        ","s           ","h           ","qbot        "/)
-  character(12)   , parameter :: avofld(1:ktrans) = &
-       (/ "So_t        ","So_u        ","So_v        ","So_dhdx     ",&
-          "So_dhdy     ","So_s        ","strm_h      ","strm_qbot   "/)
-  character(len=*), parameter :: flds_strm = 'strm_h:strm_qbot'
+  integer(IN)                :: dbug = 1                        ! debug level (higher is more)
+  character(*),parameter     :: u_FILE_u = &
+       __FILE__
 
 !===============================================================================
 contains
 !===============================================================================
+
+  subroutine docn_comp_advertise(importState, exportState, &
+       ocn_present, ocn_prognostic, ocnrof_prognostic, &
+       fldsFrOcn_num, fldsFrOcn, fldsToOcn_num, fldsToOcn, &
+       flds_o2x, flds_x2o, rc)
+
+    use NUOPC                 , only : NUOPC_Advertise
+    use dshr_nuopc_mod        , only : fld_list_type
+    use dshr_nuopc_mod        , only : fld_list_add
+    use dshr_nuopc_mod        , only : fld_strmap_add
+    use shr_nuopc_scalars_mod , only : flds_scalar_name
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+
+    ! input/output arguments
+    type(ESMF_State)     , intent(inout) :: importState
+    type(ESMF_State)     , intent(inout) :: exportState
+    logical              , intent(in)    :: ocn_present
+    logical              , intent(in)    :: ocn_prognostic
+    logical              , intent(in)    :: ocnrof_prognostic
+    integer              , intent(out)   :: fldsToOcn_num 
+    integer              , intent(out)   :: fldsFrOcn_num 
+    type (fld_list_type) , intent(out)   :: fldsToOcn(:)
+    type (fld_list_type) , intent(out)   :: fldsFrOcn(:)
+    character(len=*)     , intent(out)   :: flds_o2x
+    character(len=*)     , intent(out)   :: flds_x2o
+    integer              , intent(out)   :: rc
+
+    ! local variables
+    integer         :: n
+    type(mct_aVect) :: x2o                 
+    type(mct_aVect) :: o2x                 
+    !----------------------------------------------------------------------------
+
+    !----------------------------------------------------------------------------
+    ! Determine list of fields that will be exported and imported 
+    !----------------------------------------------------------------------------
+
+    if (ocn_present) then
+
+       ! mapping of field names from input streams to mediator fields
+       call fld_strmap_add(avifld, avofld, namei='ifrac' , nameo='Si_ifrac  ')
+       call fld_strmap_add(avifld, avofld, namei='t'     , nameo='So_t      ')
+       call fld_strmap_add(avifld, avofld, namei='u'     , nameo='So_u      ')
+       call fld_strmap_add(avifld, avofld, namei='v'     , nameo='So_v      ')
+       call fld_strmap_add(avifld, avofld, namei='s'     , nameo='So_s      ')
+       call fld_strmap_add(avifld, avofld, namei='dhdx'  , nameo='So_dhdx   ')
+       call fld_strmap_add(avifld, avofld, namei='dhdy'  , nameo='So_dhdy   ')
+
+       ! mapping of field names from input streams to internal docn streams
+       ! create a colon delimited string - flds_strm of nameo fields
+       call fld_strmap_add(strmifld, strmofld, namei='h'   , nameo='strm_h'   , flds_concat=flds_strm) 
+       call fld_strmap_add(strmifld, strmofld, namei='qbot', nameo='strm_qbot', flds_concat=flds_strm) 
+
+       ! export fields to mediator
+       call fld_list_add(fldsFrOcn_num, fldsFrOcn, trim(flds_scalar_name))
+       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_omask'  , flds_concat=flds_o2x)
+       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_t'      , flds_concat=flds_o2x)
+       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_u'      , flds_concat=flds_o2x)
+       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_v'      , flds_concat=flds_o2x)
+       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_s'      , flds_concat=flds_o2x)
+       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_dhdx'   , flds_concat=flds_o2x)
+       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_dhdy'   , flds_concat=flds_o2x)
+       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'Fioo_q'    , flds_concat=flds_o2x)
+
+       ! import fields from mediator
+       if (ocn_prognostic) then
+          call fld_list_add(fldsToOcn_num, fldsToOcn, trim(flds_scalar_name))
+          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_swnet' , flds_concat=flds_x2o)
+          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_lwup'  , flds_concat=flds_x2o)
+          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_sen'   , flds_concat=flds_x2o)
+          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_lat'   , flds_concat=flds_x2o)
+          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_rofi'  , flds_concat=flds_x2o)
+          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Faxa_lwdn'  , flds_concat=flds_x2o)
+          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Faxa_snow'  , flds_concat=flds_x2o)
+          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Fioi_melth' , flds_concat=flds_x2o)
+          if (ocnrof_prognostic) then
+             call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_rofl'  , flds_concat=flds_x2o)
+             call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_rofi'  , flds_concat=flds_x2o)
+          end if
+       end if
+
+       ! advertise fields for import and export states
+       do n = 1,fldsFrOcn_num
+          call NUOPC_Advertise(exportState, standardName=fldsFrOcn(n)%stdname, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       enddo
+
+       if (ocn_prognostic) then
+          do n = 1,fldsToOcn_num
+             call NUOPC_Advertise(importState, standardName=fldsToOcn(n)%stdname, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          end do
+       end if
+    end if
+
+    !----------------------------------------------------------------------------
+    ! Determine attribute vector indices for above fields (these are module variables)
+    !----------------------------------------------------------------------------
+
+    if (ocn_present) then
+       ! TODO: the following can be set as array pointers in ESMF fields
+       
+       call mct_aVect_init(o2x   , rList=flds_o2x , lsize=1)
+       call mct_aVect_init(x2o   , rList=flds_x2o , lsize=1)
+       call mct_aVect_init(avstrm, rList=flds_strm, lsize=1)
+
+       kt      = mct_aVect_indexRA(o2x,'So_t')
+       ks      = mct_aVect_indexRA(o2x,'So_s')
+       ku      = mct_aVect_indexRA(o2x,'So_u')
+       kv      = mct_aVect_indexRA(o2x,'So_v')
+       kdhdx   = mct_aVect_indexRA(o2x,'So_dhdx')
+       kdhdy   = mct_aVect_indexRA(o2x,'So_dhdy')
+       kswp    = mct_aVect_indexRA(o2x,'So_fswpen', perrwith='quiet')
+       ksomask = mct_aVect_indexRA(o2x,'So_omask' , perrwith='quiet')
+       kq      = mct_aVect_indexRA(o2x,'Fioo_q')
+
+       if (ocn_prognostic) then
+          kswnet = mct_aVect_indexRA(x2o,'Foxx_swnet')
+          klwup  = mct_aVect_indexRA(x2o,'Foxx_lwup')
+          ksen   = mct_aVect_indexRA(x2o,'Foxx_sen')
+          klat   = mct_aVect_indexRA(x2o,'Foxx_lat')
+          krofi  = mct_aVect_indexRA(x2o,'Foxx_rofi')
+          klwdn  = mct_aVect_indexRA(x2o,'Faxa_lwdn')
+          ksnow  = mct_aVect_indexRA(x2o,'Faxa_snow')
+          kmelth = mct_aVect_indexRA(x2o,'Fioi_melth')
+
+          kh    = mct_aVect_indexRA(avstrm,'strm_h')
+          kqbot = mct_aVect_indexRA(avstrm,'strm_qbot')
+       end if
+
+       call mct_aVect_clean(o2x)
+       call mct_aVect_clean(x2o)
+       call mct_aVect_clean(avstrm)
+    end if
+
+  end subroutine docn_comp_advertise
+
+  !===============================================================================
 
   subroutine docn_comp_init(x2o, o2x, &
        flds_x2o, flds_o2x, &
@@ -227,45 +362,21 @@ contains
 
     call mct_aVect_init(o2x, rList=flds_o2x, lsize=lsize)
     call mct_aVect_zero(o2x)
-
-    kt    = mct_aVect_indexRA(o2x,'So_t')
-    ks    = mct_aVect_indexRA(o2x,'So_s')
-    ku    = mct_aVect_indexRA(o2x,'So_u')
-    kv    = mct_aVect_indexRA(o2x,'So_v')
-    kdhdx = mct_aVect_indexRA(o2x,'So_dhdx')
-    kdhdy = mct_aVect_indexRA(o2x,'So_dhdy')
-    kswp  = mct_aVect_indexRA(o2x,'So_fswpen', perrwith='quiet')
-    kq    = mct_aVect_indexRA(o2x,'Fioo_q')
-
     if (init_import) then
        call mct_aVect_init(x2o, rList=flds_x2o, lsize=lsize)
        call mct_aVect_zero(x2o)
-
-       kswnet = mct_aVect_indexRA(x2o,'Foxx_swnet')
-       klwup  = mct_aVect_indexRA(x2o,'Foxx_lwup')
-       ksen   = mct_aVect_indexRA(x2o,'Foxx_sen')
-       klat   = mct_aVect_indexRA(x2o,'Foxx_lat')
-       krofi  = mct_aVect_indexRA(x2o,'Foxx_rofi')
-       klwdn  = mct_aVect_indexRA(x2o,'Faxa_lwdn')
-       ksnow  = mct_aVect_indexRA(x2o,'Faxa_snow')
-       kmelth = mct_aVect_indexRA(x2o,'Fioi_melth')
-
        call mct_aVect_init(avstrm, rList=flds_strm, lsize=lsize)
        call mct_aVect_zero(avstrm)
-
-       kh    = mct_aVect_indexRA(avstrm,'strm_h')
-       kqbot = mct_aVect_indexRA(avstrm,'strm_qbot')
-
-       allocate(somtp(lsize))
-       allocate(tfreeze(lsize))
-
-       kmask = mct_aVect_indexRA(ggrid%data,'mask')
-       imask(:) = nint(ggrid%data%rAttr(kmask,:))
     end if
 
+    allocate(somtp(lsize))
+    allocate(tfreeze(lsize))
     allocate(imask(lsize))
     allocate(xc(lsize))
     allocate(yc(lsize))
+
+    kmask = mct_aVect_indexRA(ggrid%data,'mask')
+    imask(:) = nint(ggrid%data%rAttr(kmask,:))
 
     kfrac = mct_aVect_indexRA(ggrid%data,'frac')
     ksomask = mct_aVect_indexRA(o2x,'So_omask', perrwith='quiet')

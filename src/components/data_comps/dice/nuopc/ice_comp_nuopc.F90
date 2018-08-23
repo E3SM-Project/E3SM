@@ -36,7 +36,7 @@ module ice_comp_nuopc
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax
   use dshr_nuopc_mod        , only : fld_list_add
   use dshr_nuopc_mod        , only : fld_list_realize
-  use dshr_nuopc_mod        , only : avio_list_add
+  use dshr_nuopc_mod        , only : fld_strmap_add
   use dshr_nuopc_mod        , only : ModelInitPhase
   use dshr_nuopc_mod        , only : ModelSetRunClock
   use dshr_nuopc_mod        , only : ModelSetMetaData
@@ -247,7 +247,7 @@ contains
 
     if (ice_present) then
        ! mappings of stream field names to output field names
-       call avio_list_add(avifld, avofld, namei='ifrac', nameo='Si_ifrac')
+       call fld_strmap_add(avifld, avofld, namei='ifrac', nameo='Si_ifrac')
 
        ! export fields
        call fld_list_add(fldsFrice_num, fldsFrice, trim(flds_scalar_name)) 

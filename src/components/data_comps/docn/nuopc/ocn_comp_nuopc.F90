@@ -46,6 +46,7 @@ module ocn_comp_nuopc
 
   use docn_shr_mod          , only : docn_shr_read_namelists
   use docn_comp_mod         , only : docn_comp_init, docn_comp_run, docn_comp_final
+  use docn_comp_mod         , only : docn_comp_advertise
   use mct_mod
 
   implicit none
@@ -246,48 +247,13 @@ module ocn_comp_nuopc
     ocn_prognostic = .true.
 
     !--------------------------------
-    ! advertise import and export fields
+    ! Advertise import and export fields
     !--------------------------------
 
-    if (ocn_present) then
-       ! export fields
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, trim(flds_scalar_name))
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_omask'  , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_t'      , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_u'      , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_v'      , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_s'      , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_dhdx'   , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_dhdy'   , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'Fioo_q'    , flds_concat=flds_o2x)
-
-       do n = 1,fldsFrOcn_num
-          call NUOPC_Advertise(exportState, standardName=fldsFrOcn(n)%stdname, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       enddo
-
-       ! import fields
-       if (ocn_prognostic) then
-          call fld_list_add(fldsToOcn_num, fldsToOcn, trim(flds_scalar_name))
-          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_swnet' , flds_concat=flds_x2o)
-          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_lwup'  , flds_concat=flds_x2o)
-          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_sen'   , flds_concat=flds_x2o)
-          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_lat'   , flds_concat=flds_x2o)
-          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_rofi'  , flds_concat=flds_x2o)
-          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Faxa_lwdn'  , flds_concat=flds_x2o)
-          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Faxa_snow'  , flds_concat=flds_x2o)
-          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Fioi_melth' , flds_concat=flds_x2o)
-          if (ocnrof_prognostic) then
-             call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_rofl'  , flds_concat=flds_x2o)
-             call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_rofi'  , flds_concat=flds_x2o)
-          end if
-
-          do n = 1,fldsToOcn_num
-             call NUOPC_Advertise(importState, standardName=fldsToOcn(n)%stdname, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          end do
-       end if
-    end if
+    call docn_comp_advertise(importstate, exportState, &
+       ocn_present, ocn_prognostic, ocnrof_prognostic, &
+       fldsFrOcn_num, fldsFrOcn, fldsToOcn_num, fldsToOcn, &
+       flds_o2x, flds_x2o, rc)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
