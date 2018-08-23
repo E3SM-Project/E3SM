@@ -4,9 +4,9 @@ import unittest
 import shutil
 import os
 import tempfile
-import StringIO
 import re
 import six
+import six_additions
 from CIME.cs_status import cs_status
 from CIME import test_status
 
@@ -32,7 +32,7 @@ class CustomAssertions(unittest.TestCase):
                               self._test_name_and_phase_regex(test_name, phase),
                               flags=re.MULTILINE)
 
-        self.assertNotRegexpMatches(output, expected)
+        six_additions.assertNotRegex(self, output, expected)
 
     def assert_core_phases(self, output, test_name, fails):
         """Asserts that 'output' contains a line for each of the core test
@@ -151,7 +151,7 @@ class TestCsStatus(CustomAssertions):
 
     def setUp(self):
         self._testroot = tempfile.mkdtemp()
-        self._output = StringIO.StringIO()
+        self._output = six.StringIO()
 
     def tearDown(self):
         self._output.close()
@@ -249,7 +249,7 @@ class TestCsStatus(CustomAssertions):
                 self.assert_phase_absent(output=self._output.getvalue(),
                                          phase=phase,
                                          test_name=test_name)
-        self.assertNotRegexpMatches(self._output.getvalue(), r'Overall:')
+        six_additions.assertNotRegex(self, self._output.getvalue(), r'Overall:')
 
     def test_count_fails(self):
         """Test the count of fails with three tests
