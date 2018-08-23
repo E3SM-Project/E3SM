@@ -24,6 +24,8 @@ module clm_driver
   !
   use dynSubgridDriverMod    , only : dynSubgrid_driver
   use BalanceCheckMod        , only : BeginWaterBalance, BalanceCheck
+  use BalanceCheckMod        , only : BeginColWaterBalance, ColWaterBalanceCheck
+  use BalanceCheckMod        , only : BeginGridWaterBalance, GridBalanceCheck
   !
   use CanopyTemperatureMod   , only : CanopyTemperature ! (formerly Biogeophysics1Mod)
   use SoilTemperatureMod     , only : SoilTemperature
@@ -140,6 +142,9 @@ module clm_driver
   use clm_interface_pflotranMod   , only : clm_pf_run, clm_pf_write_restart
   use clm_interface_pflotranMod   , only : clm_pf_finalize
   !----------------------------------------------------------------------------
+  use WaterBudgetMod              , only : WaterBudget_Reset, WaterBudget_Run, WaterBudget_Accum, WaterBudget_Print
+  use clm_varctl                  , only : do_budgets, budget_inst, budget_daily, budget_month
+  use clm_varctl                  , only : budget_ann, budget_ltann, budget_ltend
 
   !
   ! !PUBLIC TYPES:
@@ -208,6 +213,8 @@ contains
 
     call get_proc_bounds(bounds_proc)
     nclumps = get_proc_clumps()
+    
+    if (do_budgets) call WaterBudget_Reset()
 
     ! Update time-related info
 
@@ -286,6 +293,14 @@ contains
     !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
     do nc = 1,nclumps
        call get_clump_bounds(nc, bounds_clump)
+
+       call t_startf('beggridwbal')
+       call BeginGridWaterBalance(bounds_clump,               &
+            filter(nc)%num_nolakec, filter(nc)%nolakec,       &
+            filter(nc)%num_lakec, filter(nc)%lakec,           &
+            filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
+            soilhydrology_vars, waterstate_vars)
+       call t_stopf('beggridwbal')
 
        if (use_betr) then
          dtime=get_step_size(); nstep=get_nstep()
@@ -1085,6 +1100,13 @@ contains
             waterstate_vars, energyflux_vars, canopystate_vars)
        call t_stopf('balchk')
 
+       call t_startf('gridbalchk')
+       call GridBalanceCheck(bounds_clump                             , &
+            filter(nc)%num_do_smb_c, filter(nc)%do_smb_c              , &
+            atm2lnd_vars, glc2lnd_vars, solarabs_vars, waterflux_vars , &
+            waterstate_vars, energyflux_vars, canopystate_vars)
+       call t_stopf('gridbalchk')
+
        if (.not. use_fates)then
           if (use_cn) then
              nstep = get_nstep()
@@ -1330,6 +1352,13 @@ contains
        call t_stopf('clm_drv_io')
 
     end if
+
+    if (get_nstep()>0 .and. do_budgets) then
+       call WaterBudget_Run(bounds_proc, atm2lnd_vars, lnd2atm_vars, waterstate_vars)
+       call WaterBudget_Accum()
+       call WaterBudget_Print(budget_inst,  budget_daily,  budget_month,  &
+            budget_ann,  budget_ltann,  budget_ltend)
+    endif
 
     if (use_pflotran .and. nstep>=nestep) then
        call clm_pf_finalize()

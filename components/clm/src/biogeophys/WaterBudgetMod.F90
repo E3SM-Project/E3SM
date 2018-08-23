@@ -1,0 +1,406 @@
+module WaterBudgetMod
+  ! !USES:
+  use shr_kind_mod   , only : r8 => shr_kind_r8
+  use shr_log_mod    , only : errMsg => shr_log_errMsg
+  use shr_sys_mod    , only : shr_sys_abort
+  use decompMod      , only : bounds_type
+  use abortutils     , only : endrun
+  use clm_varctl     , only : iulog
+  use atm2lndType    , only : atm2lnd_type
+  use lnd2atmType    , only : lnd2atm_type
+  use WaterstateType , only : waterstate_type
+  use WaterfluxType  , only : waterflux_type
+  use spmdMod        , only : masterproc
+
+  implicit none
+  save
+  private
+
+  public :: WaterBudget_Reset
+  public :: WaterBudget_Run
+  public :: WaterBudget_Accum
+  !public :: WaterBudget_Sum_Local
+  public :: WaterBudget_Print
+
+  !--- F for flux ---
+
+  integer, parameter :: f_rain = 1
+  integer, parameter :: f_snow = 2
+  integer, parameter :: f_evap = 3
+  integer, parameter :: f_roff = 4
+  integer, parameter :: f_ioff = 5
+
+  integer, parameter :: f_size = f_ioff
+
+  character(len=12),parameter :: fname(f_size) = &
+       (/&
+       '        rain', &
+       '        snow', &
+       '        evap', &
+       '      runoff', &
+       '      frzrof'  &
+       /)
+
+  !--- S for state ---
+  integer, parameter :: s_wbeg = 1
+  integer, parameter :: s_wend = 2
+
+  integer, parameter :: s_size = s_wend
+
+  character(len=12),parameter :: sname(s_size) = &
+       (/&
+       ' total_w_beg', &
+       ' total_w_end'  &
+       /)
+
+  !--- P for period ---
+
+  integer, parameter :: p_inst = 1
+  integer, parameter :: p_day  = 2
+  integer, parameter :: p_mon  = 3
+  integer, parameter :: p_ann  = 4
+  integer, parameter :: p_inf  = 5
+
+  integer, parameter :: p_size = p_inf
+
+  character(len=8),parameter :: pname(p_size) = &
+       (/'    inst','   daily',' monthly','  annual','all_time' /)
+
+  real(r8) :: budg_fluxL(f_size, p_size)
+  real(r8) :: budg_fluxG(f_size, p_size)
+  real(r8) :: budg_fluxN(f_size, p_size)
+
+  real(r8) :: budg_stateL(s_size, p_size)
+  real(r8) :: budg_stateG(s_size, p_size)
+  real(r8) :: budg_stateN(s_size, p_size)
+
+  logical,save :: first_time = .true.
+
+  !----- formats -----
+  character(*),parameter :: FA0= "('    ',12x,2(3x,a10,2x))"
+  character(*),parameter :: FF = "('    ',a12,2f15.8)"
+  character(*),parameter :: FF2= "('    ',a12,a15,f15.8)"
+  character(*),parameter :: FS = "('    ',a12,f15.8)"
+
+contains
+
+  !-----------------------------------------------------------------------
+  subroutine WaterBudget_Reset(mode)
+    !
+    use clm_time_manager, only : get_curr_date, get_prev_date
+    !
+    implicit none
+    !
+    character(len=*), intent(in),optional :: mode
+    !
+    integer :: year, mon, day, sec
+    integer :: ip
+    character(*),parameter :: subName = '(WaterBudget_Reset) '
+
+    if (.not.present(mode)) then
+       call get_curr_date(year, mon, day, sec)
+       call get_prev_date(year, mon, day, sec)
+
+       do ip = 1,p_size
+          if (ip == p_inst) then
+             budg_fluxL(:,ip)  = 0.0_r8
+             budg_fluxG(:,ip)  = 0.0_r8
+             budg_fluxN(:,ip)  = 0.0_r8
+          endif
+          if (ip==p_day .and. sec==0) then
+             budg_fluxL(:,ip)  = 0.0_r8
+             budg_fluxG(:,ip)  = 0.0_r8
+             budg_fluxN(:,ip)  = 0.0_r8
+          endif
+          if (ip==p_mon .and. day==1 .and. sec==0) then
+             budg_fluxL(:,ip)  = 0.0_r8
+             budg_fluxG(:,ip)  = 0.0_r8
+             budg_fluxN(:,ip)  = 0.0_r8
+          endif
+          if (ip==p_ann .and. mon==1 .and. day==1 .and. sec==0) then
+             budg_fluxL(:,ip)  = 0.0_r8
+             budg_fluxG(:,ip)  = 0.0_r8
+             budg_fluxN(:,ip)  = 0.0_r8
+          endif
+       enddo
+
+    else
+
+       if (trim(mode) == 'inst') then
+          budg_fluxL  (:,p_inst)   = 0.0_r8
+          budg_fluxG  (:,p_inst)   = 0.0_r8
+          budg_fluxN  (:,p_inst)   = 0.0_r8
+          budg_stateL (:,p_inst)   = 0.0_r8
+          budg_stateG (:,p_inst)   = 0.0_r8
+          budg_stateN (:,p_inst  ) = 0.0_r8
+       elseif (trim(mode) == 'day') then
+          budg_fluxL  (:,p_day)    = 0.0_r8
+          budg_fluxG  (:,p_day)    = 0.0_r8
+          budg_fluxN  (:,p_day)    = 0.0_r8
+          budg_stateL (:,p_day)    = 0.0_r8
+          budg_stateG (:,p_day)    = 0.0_r8
+          budg_stateN (:,p_day)    = 0.0_r8
+       elseif (trim(mode) == 'mon') then
+          budg_fluxL  (:,p_mon)    = 0.0_r8
+          budg_fluxG  (:,p_mon)    = 0.0_r8
+          budg_fluxN  (:,p_mon)    = 0.0_r8
+          budg_stateL (:,p_mon)    = 0.0_r8
+          budg_stateG (:,p_mon)    = 0.0_r8
+          budg_stateN (:,p_mon)    = 0.0_r8
+       elseif (trim(mode) == 'ann') then
+          budg_fluxL  (:,p_ann)    = 0.0_r8
+          budg_fluxG  (:,p_ann)    = 0.0_r8
+          budg_fluxN  (:,p_ann)    = 0.0_r8
+          budg_stateL (:,p_ann)    = 0.0_r8
+          budg_stateG (:,p_ann)    = 0.0_r8
+          budg_stateN (:,p_ann)    = 0.0_r8
+       elseif (trim(mode) == 'inf') then
+          budg_fluxL  (:,p_inf)    = 0.0_r8
+          budg_fluxG  (:,p_inf)    = 0.0_r8
+          budg_fluxN  (:,p_inf)    = 0.0_r8
+          budg_stateL (:,p_inf)    = 0.0_r8
+          budg_stateG (:,p_inf)    = 0.0_r8
+          budg_stateN (:,p_inf)    = 0.0_r8
+       elseif (trim(mode) == 'all') then
+          budg_fluxL  (:,:)        = 0.0_r8
+          budg_fluxG  (:,:)        = 0.0_r8
+          budg_fluxN  (:,:)        = 0.0_r8
+          budg_stateL (:,:)        = 0.0_r8
+          budg_stateG (:,:)        = 0.0_r8
+          budg_stateN (:,:)        = 0.0_r8
+       else
+          call shr_sys_abort(subname//' ERROR in mode '//trim(mode))
+       endif
+    endif
+
+  end subroutine WaterBudget_Reset
+
+!-----------------------------------------------------------------------
+  subroutine WaterBudget_Accum()
+    !
+    use clm_time_manager, only : get_curr_date, get_prev_date
+    !
+    implicit none
+    !
+    integer                :: ip
+    integer                :: year_prev, month_prev, day_prev, sec_prev
+    integer                :: year_curr, month_curr, day_curr, sec_curr
+    character(*),parameter :: subName = '(WaterBudget_Accum)'
+
+    call get_prev_date(year_prev, month_prev, day_prev, sec_prev)
+    call get_curr_date(year_curr, month_curr, day_curr, sec_curr)
+
+    do ip = p_inst+1, p_size
+       budg_fluxL(:,ip) = budg_fluxL(:,ip) + budg_fluxL(:,p_inst)
+
+       select case (ip)
+       case (p_day)
+          if (sec_prev == 0) then
+             budg_stateL(s_wbeg,ip) = budg_stateL(s_wbeg,p_inst)
+          end if
+          if (sec_curr == 0) then
+             budg_stateL(s_wend,ip) = budg_stateL(s_wend,p_inst)
+          end if
+       case (p_mon)
+          if (sec_prev == 0 .and. day_prev == 1) then
+             budg_stateL(s_wbeg,ip) = budg_stateL(s_wbeg,p_inst)
+          end if
+          if (sec_curr == 0 .and. day_curr == 1) then
+             budg_stateL(s_wend,ip) = budg_stateL(s_wend,p_inst)
+          end if
+       case (p_ann)
+          if (sec_prev == 0 .and. day_prev == 1 .and. month_prev == 1) then
+             budg_stateL(s_wbeg,ip) = budg_stateL(s_wbeg,p_inst)
+          end if
+          if (sec_curr == 0 .and. day_curr == 1 .and. month_curr == 1) then
+             budg_stateL(s_wend,ip) = budg_stateL(s_wend,p_inst)
+          end if
+       case (p_inf)
+          budg_stateL(s_wend,ip) = budg_stateL(s_wend,p_inst)
+       end select
+
+    end do
+    budg_fluxN(:,:) = budg_fluxN(:,:) + 1
+    
+  end subroutine WaterBudget_Accum
+
+  !-----------------------------------------------------------------------
+  subroutine WaterBudget_Run(bounds, atm2lnd_vars, lnd2atm_vars, waterstate_vars)
+    !
+    ! !DESCRIPTION:
+    !
+    use domainMod, only : ldomain
+    use clm_varcon, only : re
+    !
+    implicit none
+
+    type(bounds_type)     , intent(in) :: bounds     
+    type(atm2lnd_type)    , intent(in) :: atm2lnd_vars
+    type(lnd2atm_type)    , intent(in) :: lnd2atm_vars
+    type(waterstate_type) , intent(in) :: waterstate_vars
+
+    integer  :: g, nf, ip
+    real(r8) :: af, one_over_re2
+
+    associate(                                                            & 
+         forc_rain         => atm2lnd_vars%forc_rain_not_downscaled_grc , &
+         forc_snow         => atm2lnd_vars%forc_snow_not_downscaled_grc , &
+         qflx_evap_tot     => lnd2atm_vars%qflx_evap_tot_grc            , &
+         qflx_rofice       => lnd2atm_vars%qflx_rofice_grc              , &
+         qflx_rofliq_qsur  => lnd2atm_vars%qflx_rofliq_qsur_grc         , &
+         qflx_rofliq_qsurp => lnd2atm_vars%qflx_rofliq_qsurp_grc        , &
+         qflx_rofliq_qsub  => lnd2atm_vars%qflx_rofliq_qsub_grc         , &
+         qflx_rofliq_qsubp => lnd2atm_vars%qflx_rofliq_qsubp_grc        , &
+         qflx_rofliq_qgwl  => lnd2atm_vars%qflx_rofliq_qgwl_grc         , &
+         begwb_grc         => waterstate_vars%begwb_grc                 , &
+         endwb_grc         => waterstate_vars%endwb_grc                   &
+         )
+
+      ip = p_inst
+
+      budg_stateL(:,ip) = 0._r8
+      one_over_re2 = 1._r8/(re**2._r8)
+
+      do g = bounds%begg, bounds%endg
+
+         af   = (ldomain%area(g) * one_over_re2) * & ! area (converting km**2 to radians**2)
+                ldomain%frac(g)                      ! land fraction
+         
+         nf = f_rain; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) + forc_rain(g)*af
+         nf = f_snow; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) + forc_snow(g)*af
+         nf = f_evap; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - qflx_evap_tot(g)*af
+         nf = f_roff; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) &
+              - qflx_rofliq_qsur(g)*af - qflx_rofliq_qsurp(g)*af &
+              - qflx_rofliq_qsub(g)*af - qflx_rofliq_qsubp(g)*af &
+              - qflx_rofliq_qgwl(g)
+         nf = f_ioff; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - qflx_rofice(g)*af
+
+         nf = s_wbeg; budg_stateL(nf,ip) = budg_stateL(nf,ip) + begwb_grc(g)*af
+         nf = s_wend; budg_stateL(nf,ip) = budg_stateL(nf,ip) + endwb_grc(g)*af
+      end do
+
+    end associate
+
+  end subroutine WaterBudget_Run
+
+!-----------------------------------------------------------------------
+  subroutine WaterBudget_Sum0()
+    !
+    use spmdMod    , only : mpicom
+    use shr_mpi_mod, only : shr_mpi_sum
+    !
+    implicit none
+    !
+    real(r8)               :: budg_fluxGtmp(f_size,p_size) ! temporary sum
+    real(r8)               :: budg_stateGtmp(s_size,p_size) ! temporary sum
+    character(*),parameter :: subName = '(WaterBudget_Sum0)'
+
+    budg_fluxGtmp = 0._r8
+    budg_stateGtmp = 0._r8
+
+    call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName)
+    call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName)
+
+    budg_fluxG  = budg_fluxG + budg_fluxGtmp
+    budg_stateG = budg_stateGtmp
+
+    budg_fluxL            = 0._r8 ! reset all fluxes
+    budg_stateL(:,p_inst) = 0._r8 ! only reset instantaneous states
+    
+  end subroutine WaterBudget_Sum0
+
+  !-----------------------------------------------------------------------
+
+  subroutine WaterBudget_Print(budg_print_inst,  budg_print_daily,  budg_print_month,  &
+       budg_print_ann,  budg_print_ltann,  budg_print_ltend)
+    !
+    use clm_time_manager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
+    use shr_const_mod   , only : shr_const_pi
+    !
+    implicit none
+    !
+    integer , intent(in) :: budg_print_inst
+    integer , intent(in) :: budg_print_daily
+    integer , intent(in) :: budg_print_month
+    integer , intent(in) :: budg_print_ann
+    integer , intent(in) :: budg_print_ltann
+    integer , intent(in) :: budg_print_ltend
+    !
+    ! !LOCAL VARIABLES:
+    integer :: s,f,ic,nf,ip,is ! data array indicies
+    integer :: plev        ! print level
+    integer :: year, mon, day, sec
+    integer :: cdate
+    logical :: sumdone
+    real(r8) :: budg_fluxGpr (f_size,p_size) ! values to print, scaled and such
+
+    sumdone = .false.
+
+    if (get_nstep() <= 1) then
+       call get_prev_date(year, mon, day, sec);
+    else
+       call get_curr_date(year, mon, day, sec);
+    end if
+
+    cdate = year*10000 + mon*100 + day
+
+    do ip = 1,p_size
+       plev = 0
+       if (ip == p_inst) then
+          plev = max(plev,budg_print_inst)
+       endif
+       if (ip==p_day .and. sec==0) then
+          plev = max(plev,budg_print_daily)
+       endif
+       if (ip==p_mon .and. day==1 .and. sec==0) then
+          plev = max(plev,budg_print_month)
+       endif
+       if (ip==p_ann .and. mon==1 .and. day==1 .and. sec==0) then
+          plev = max(plev,budg_print_ann)
+       endif
+       if (ip==p_inf .and. mon==1 .and. day==1 .and. sec==0) then
+          plev = max(plev,budg_print_ltann)
+       endif
+       if (ip==p_inf) then
+          plev = max(plev,budg_print_ltend)
+       endif
+
+       if (plev > 0) then
+          if (.not.sumdone) then
+             sumdone = .true.
+             call WaterBudget_Sum0()
+             budg_fluxGpr = budg_fluxG
+             budg_fluxGpr = budg_fluxGpr/(4.0_r8*shr_const_pi)*1.0e6_r8
+             budg_fluxGpr = budg_fluxGpr/budg_fluxN
+          end if
+
+          if (ip == p_day .and. get_nstep() == 1) cycle
+          if (ip == p_mon .and. get_nstep() == 1) cycle
+          if (ip == p_ann .and. get_nstep() == 1) cycle
+
+          if (masterproc) then
+             write(iulog,*)''
+             write(iulog,*)'NET WATER FLUXES (mm H2O/s): period ',trim(pname(ip)),': date = ',cdate,sec
+             write(iulog,FA0)'  Time  ','  Time    '
+             write(iulog,FA0)'averaged','integrated'
+             do f = 1, f_size
+                write(iulog,FF)fname(f),budg_fluxGpr(f,ip),budg_fluxG(f,ip)/(4.0_r8*shr_const_pi)*1.0e6_r8
+             end do
+             write(iulog,FF)'   *SUM*', &
+                  sum(budg_fluxGpr(:,ip)), sum(budg_fluxG(:,ip))
+             write(iulog,FF2)'*EXP CHANGE*', &
+                  '            ',sum(budg_fluxG(:,ip))*get_step_size()
+
+             write(iulog,*)''
+             write(iulog,*)'WATER STATES (mm H2O): period ',trim(pname(ip)),': date = ',cdate,sec
+             do s = 1, s_size
+                write(iulog,FS)sname(s),budg_stateG(s,ip)
+             end do
+             write(iulog,FS)'*NET CHANGE*',budg_stateG(s_wend,ip)-budg_stateG(s_wbeg,ip)
+          end if
+       end if
+    end do
+
+  end subroutine WaterBudget_Print
+
+end module WaterBudgetMod
