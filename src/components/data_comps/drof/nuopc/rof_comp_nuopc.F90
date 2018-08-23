@@ -436,7 +436,7 @@ contains
 
     rc = ESMF_SUCCESS
     if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-
+    call shr_nuopc_memcheck(subname, 5, my_task == master_task)
     !--------------------------------
     ! Reset shr logging to my log file
     !--------------------------------
