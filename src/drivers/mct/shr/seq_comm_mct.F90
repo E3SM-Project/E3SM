@@ -15,7 +15,6 @@ module seq_comm_mct
 !!! (or else, only accept one entry for these quantities when reading
 !!! the namelist).  ARE OTHER PROTECTIONS/CHECKS NEEDED???
 
-
   use mct_mod        , only : mct_world_init, mct_world_clean, mct_die
   use shr_sys_mod    , only : shr_sys_abort, shr_sys_flush
   use shr_mpi_mod    , only : shr_mpi_chkerr, shr_mpi_bcast, shr_mpi_max
@@ -149,8 +148,6 @@ module seq_comm_mct
   integer, public :: CPLROFID(num_inst_rof)
   integer, public :: CPLWAVID(num_inst_wav)
   integer, public :: CPLESPID(num_inst_esp)
-
-  type(ESMF_LogKind_Flag), public :: esmf_logfile_kind
 
   integer, parameter, public :: seq_comm_namelen=16
 
