@@ -105,6 +105,37 @@ contains
 #endif
   end subroutine compose_test
 
+  subroutine print_software_statistics(hybrid, nets, nete)
+    use hybrid_mod, only: hybrid_t
+    use kinds, only: real_kind
+    use parallel_mod, only: global_shared_buf, global_shared_sum
+    use global_norms_mod, only: wrap_repro_sum
+    use reduction_mod, only: parallelmax, parallelmin
+
+    integer :: GPTLget_memusage
+
+    type(hybrid_t), intent(in) :: hybrid
+    integer, intent(in) :: nets, nete
+    integer :: ok, size, rss_int, share, text, datastack, ie
+    real(kind=real_kind) :: rss, rss_min, rss_max, rss_mean
+
+    ok = GPTLget_memusage(size, rss_int, share, text, datastack)
+    rss = rss_int
+    rss_min = parallelmin(rss, hybrid)
+    rss_max = parallelmax(rss, hybrid)
+    do ie = nets, nete
+       global_shared_buf(ie,1) = 0
+    end do
+    if (nets == 1) then
+       global_shared_buf(1,1) = rss
+    end if
+    call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
+    rss_mean = global_shared_sum(1) / hybrid%par%nprocs
+    if (hybrid%par%masterproc) then
+       write(iulog,'(a10,3(f14.2))') "rss   = ", rss_min, rss_max, rss_mean
+    end if
+  end subroutine print_software_statistics
+
   subroutine compose_stt(hybrid, nets, nete, hvcoord, deriv, elem)
     use parallel_mod, only: parallel_t
     use hybrid_mod, only: hybrid_t
@@ -115,7 +146,7 @@ contains
     use derivative_mod, only: derivative_t, derivinit
     use dimensions_mod, only: ne, np, nlev, qsize, qsize_d, nelemd
     use coordinate_systems_mod, only: spherical_polar_t
-    use control_mod, only: qsplit
+    use control_mod, only: qsplit, statefreq
     use time_mod, only: nmax
     use hybvcoord_mod, only: hvcoord_t
     use sl_advection
@@ -165,6 +196,9 @@ contains
        end do
        tl%nstep = tl%nstep + qsplit
        call prim_advec_tracers_remap_ale(elem, deriv, hvcoord, hybrid, dt, tl, nets, nete)
+       if (mod(i,statefreq) == 0) then
+          call print_software_statistics(hybrid, nets, nete)
+       end if
     end do
     ! Record final q values.
     call compose_stt_begin_record()
