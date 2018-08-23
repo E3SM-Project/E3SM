@@ -1,7 +1,10 @@
 module Ensemble_driver
 
   !-----------------------------------------------------------------------------
-  ! Code that creates the ensemble driver layer
+  ! Code that creates the ensemble driver layer above the esm driver.
+  ! The ensmeble driver is configured to run a single clock cycle in nuopc with time step
+  ! length of stop_time - start_time.  It's purpose is to instantiate NINST copies of the
+  ! esm driver and its components layed out concurently across mpi tasks.  
   !-----------------------------------------------------------------------------
   use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
@@ -87,7 +90,7 @@ module Ensemble_driver
 
     ! local variables
     type(ESMF_VM)          :: vm
-    type(ESMF_GridComp), allocatable :: driver(:)
+    type(ESMF_GridComp)    :: driver, gridcomptmp
     type(ESMF_Config)      :: config
     integer                :: n, n1, stat
     integer, pointer       :: petList(:)
@@ -181,8 +184,6 @@ module Ensemble_driver
     call NUOPC_CompAttributeGet(ensemble_driver, name="ninst", value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue, *) number_of_members
-    print *,__FILE__,__LINE__, number_of_members
-
     !-------------------------------------------
     ! Extract the config object from the ensemble_driver
     !-------------------------------------------
@@ -194,7 +195,6 @@ module Ensemble_driver
     endif
 
     allocate(petList(ntasks_per_member))
-    allocate(driver(number_of_members))
 
     write(cvalue,*) read_restart
 
@@ -205,22 +205,25 @@ module Ensemble_driver
           petList(n) = petList(n-1) + 1
        enddo
        write(drvrinst,'(a,i4.4)') "ESM",inst
-       call NUOPC_DriverAddComp(ensemble_driver, drvrinst, ESMSetServices, petList=petList, comp=driver(inst), rc=rc)
+       call NUOPC_DriverAddComp(ensemble_driver, drvrinst, ESMSetServices, petList=petList, comp=gridcomptmp, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        if(number_of_members == 1) then
           inst_string = "_"
        else
           write(inst_string,'(i4.4)') inst
        endif
-       call NUOPC_CompAttributeAdd(driver(inst), attrList=(/'INST'/), rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call NUOPC_CompAttributeSet(driver(inst), name='INST', value=inst_string, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call NUOPC_CompAttributeAdd(driver(inst), attrList=(/'read_restart'/), rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call NUOPC_CompAttributeSet(driver(inst), name='read_restart', value=trim(cvalue), rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (localpet >= petlist(1) .and. localpet <= petlist(ntasks_per_member)) then
+          driver = gridcomptmp
+          call NUOPC_CompAttributeAdd(driver, attrList=(/'INST'/), rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          call NUOPC_CompAttributeSet(driver, name='INST', value=inst_string, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          
+          call NUOPC_CompAttributeAdd(driver, attrList=(/'read_restart'/), rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          call NUOPC_CompAttributeSet(driver, name='read_restart', value=trim(cvalue), rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       endif
     enddo
     deallocate(petList)
 

@@ -359,7 +359,6 @@ contains
     call NUOPC_CompAttributeGet(gcomp, name='flds_wiso', value=cvalue, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     read(cvalue,*) flds_wiso
-    print *,__FILE__,__LINE__, flds_wiso
 
     call NUOPC_CompAttributeGet(gcomp, name='aoflux_grid', value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
