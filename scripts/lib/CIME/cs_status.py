@@ -58,7 +58,8 @@ def cs_status(test_paths, summary=False, fails_only=False,
         test_id_counts[test_id] += 1
 
     for test_id in sorted(test_id_output):
-        print("{}: {} tests".format(test_id, test_id_counts[test_id]), file=out)
+        count = test_id_counts[test_id]
+        print("{}: {} test{}".format(test_id, count, 's' if count > 1 else ''), file=out)
         print(test_id_output[test_id], file=out)
         print(' ', file=out)
 
