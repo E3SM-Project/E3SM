@@ -14,7 +14,7 @@ program esmApp
   use ensemble_driver,  only: SetServices
 
   implicit none
-
+  type(ESMF_GridComp) :: ensemble_driver_comp
   integer                 :: rc, urc
   type(ESMF_GridComp)     :: ensemble_driver_comp
 

@@ -338,6 +338,7 @@
       <modules compiler="pgi">
 	<command name="load">pgi/17.9</command>
       </modules>
+<!--
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE">
 	<command name="load">esmf-7.0.0-defio-mpi-g</command>
       </modules>
@@ -350,6 +351,7 @@
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE">
 	<command name="load">esmf-7.0.0-ncdfio-uni-O</command>
       </modules>
+-->
       <modules compiler="gnu">
         <command name="load">gnu/7.3.0</command>
         <command name="load">openblas/0.2.20</command>

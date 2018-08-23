@@ -4,7 +4,7 @@ module Ensemble_driver
   ! Code that creates the ensemble driver layer above the esm driver.
   ! The ensmeble driver is configured to run a single clock cycle in nuopc with time step
   ! length of stop_time - start_time.  It's purpose is to instantiate NINST copies of the
-  ! esm driver and its components layed out concurently across mpi tasks.  
+  ! esm driver and its components layed out concurently across mpi tasks.
   !-----------------------------------------------------------------------------
   use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
@@ -147,6 +147,9 @@ module Ensemble_driver
     call ReadAttributes(ensemble_driver, config, "ALLCOMP_attributes::", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    call ReadAttributes(ensemble_driver, config, "DRIVER_attributes::", rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     call ReadAttributes(ensemble_driver, config, "CLOCK_attributes::", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -218,7 +221,7 @@ module Ensemble_driver
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           call NUOPC_CompAttributeSet(driver, name='INST', value=inst_string, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          
+
           call NUOPC_CompAttributeAdd(driver, attrList=(/'read_restart'/), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           call NUOPC_CompAttributeSet(driver, name='read_restart', value=trim(cvalue), rc=rc)
@@ -226,8 +229,6 @@ module Ensemble_driver
        endif
     enddo
     deallocate(petList)
-
-
 
     call InitClocks(ensemble_driver, EClock_ensemble, Eclock_d, Eclock_a, Eclock_l, Eclock_o, &
          Eclock_i, Eclock_g, Eclock_r, Eclock_w, Eclock_e, rc)

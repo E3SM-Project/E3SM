@@ -1500,6 +1500,13 @@ module ESM
 
   end subroutine ReadAttributes
 
+! This empty InitAdvertise is needed because it overrides the behavior
+! of the default InitAdvertise inside the generic NUOPC_Driver.F90. The
+! default behavior tries to mirror the fields up the hierarchy (i.e., up
+! to the ensemble driver). This would be used if we needed to
+! communicate between the ensemble members. Since we do not need that
+! right now, we turn it off with this empty subroutine.
+
   subroutine InitAdvertize(driver, importState, exportState, clock, rc)
     use ESMF, only : ESMF_GridComp, ESMF_State, ESMF_Clock
     use ESMF, only: ESMF_LogWrite, ESMF_SUCCESS, ESMF_LOGMSG_INFO
