@@ -192,8 +192,9 @@ contains
 
        if (create_glacier_mec_landunit) then
           do topounit = bounds_clump%begt,bounds_clump%endt
+             gdc = top_pp%gridcell(topounit)
              call set_landunit_wet_ice_lake(              &
-                  ltype=istice_mec, gi=top_pp%gridcell(topounit), ti=topounit, li=li, ci=ci, pi=pi, &
+                  ltype=istice_mec, gi=gdc, ti=topounit, li=li, ci=ci, pi=pi, &
                   setdata=.true., &
                   glcmask = ldomain%glcmask(gdc))
           end do
