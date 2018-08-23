@@ -19,8 +19,8 @@ class CustomAssertions(unittest.TestCase):
     def assert_status_of_phase(self, output, status, phase, test_name):
         """Asserts that 'output' contains a line showing the given
         status for the given phase for the given test_name"""
-        expected = re.compile(r'^ *{} +{} +{} *$'.format(
-            re.escape(status), re.escape(test_name), re.escape(phase)),
+        expected = re.compile(r'^ *{} +'.format(re.escape(status)) +
+                              self._test_name_and_phase_regex(test_name, phase),
                               flags=re.MULTILINE)
 
         six.assertRegex(self, output, expected)
@@ -28,8 +28,8 @@ class CustomAssertions(unittest.TestCase):
     def assert_phase_absent(self, output, phase, test_name):
         """Asserts that 'output' does not contain a status line for the
         given phase and test_name"""
-        expected = re.compile(r'^.* +{} +{} *$'.format(
-            re.escape(test_name), re.escape(phase)),
+        expected = re.compile(r'^.* +' +
+                              self._test_name_and_phase_regex(test_name, phase),
                               flags=re.MULTILINE)
 
         self.assertNotRegexpMatches(output, expected)
@@ -48,6 +48,11 @@ class CustomAssertions(unittest.TestCase):
                                         status=status,
                                         phase=phase,
                                         test_name=test_name)
+
+    def _test_name_and_phase_regex(self, test_name, phase):
+        """Returns a regex matching the portion of a TestStatus line
+        containing the test name and phase"""
+        return r'{} +{} *$'.format(re.escape(test_name), re.escape(phase))
 
 class TestCustomAssertions(CustomAssertions):
 
