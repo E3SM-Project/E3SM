@@ -447,7 +447,7 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
 
         # Also verify that comparison is NOT called:
         compare_phase_name = self.get_compare_phase_name(mytest)
-        self.assertIsNone(mytest._test_status.get_status(compare_phase_name))
+        self.assertEqual(test_status.TEST_PEND_STATUS, mytest._test_status.get_status(compare_phase_name))
 
     def test_run_phase_internal_calls_multisubmit_phase2(self):
         # Make sure that the correct calls are made to methods stubbed out by

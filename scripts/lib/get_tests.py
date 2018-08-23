@@ -44,12 +44,16 @@ _CIME_TESTS = {
                    ("TESTBUILDFAIL_P1.f19_g16_rx1.A",
                     "TESTBUILDFAILEXC_P1.f19_g16_rx1.A",
                     "TESTRUNFAIL_P1.f19_g16_rx1.A",
+                    "TESTRUNSTARCFAIL_P1.f19_g16_rx1.A",
                     "TESTRUNFAILEXC_P1.f19_g16_rx1.A",
                     "TESTRUNPASS_P1.f19_g16_rx1.A",
                     "TESTTESTDIFF_P1.f19_g16_rx1.A",
                     "TESTMEMLEAKFAIL_P1.f09_g16.X",
                     "TESTMEMLEAKPASS_P1.f09_g16.X")
                    ),
+
+    "cime_test_all" : ("cime_test_only", "0:10:00",
+                       ("TESTRUNDIFF_P1.f19_g16_rx1.A", )),
 
     "cime_developer" : (None, "0:15:00",
                             ("NCK_Ld3.f45_g37_rx1.A",

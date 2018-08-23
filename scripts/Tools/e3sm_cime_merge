@@ -37,17 +37,20 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--squash", action="store_true",
                         help="Do the merge as squashy as possible")
 
+    parser.add_argument("--auto-conf", action="store_true",
+                        help="Try to automatically resolve conflicts")
+
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     expect(not (args.resume and args.abort), "Makes no sense to abort and resume")
     expect(not (args.abort and args.squash), "Makes no sense to abort and squash")
 
-    return args.repo, args.resume, args.abort, args.squash
+    return args.repo, args.resume, args.abort, args.squash, args.auto_conf
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    repo, resume, abort, squash = parse_command_line(sys.argv, description)
+    repo, resume, abort, squash, auto_conf = parse_command_line(sys.argv, description)
 
     if repo is not None:
         os.chdir(repo)
@@ -55,7 +58,7 @@ def _main_func(description):
     if abort:
         abort_merge()
     else:
-        e3sm_cime_merge(resume, squash=squash)
+        e3sm_cime_merge(resume, squash=squash, auto_conf=auto_conf)
 
 ###############################################################################
 

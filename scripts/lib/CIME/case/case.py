@@ -758,7 +758,7 @@ class Case(object):
                   multi_driver=False, ninst=1, test=False,
                   walltime=None, queue=None, output_root=None,
                   run_unsupported=False, answer=None,
-                  input_dir=None, driver=None):
+                  input_dir=None, driver=None, non_local=False):
 
         expect(check_name(compset_name, additional_chars='.'), "Invalid compset name {}".format(compset_name))
 
@@ -883,22 +883,29 @@ class Case(object):
         self.set_value("REALUSER", os.environ["USER"])
 
         # Set project id
-        if project is None:
-            project = get_project(machobj)
         if project is not None:
             self.set_value("PROJECT", project)
-        elif machobj.get_value("PROJECT_REQUIRED"):
-            expect(project is not None, "PROJECT_REQUIRED is true but no project found")
-        # Get charge_account id if it exists
-        charge_account = get_charge_account(machobj)
-        if charge_account is not None:
-            self.set_value("CHARGE_ACCOUNT", charge_account)
+            self.set_value("CHARGE_ACCOUNT", project)
+        else:
+            project = get_project(machobj)
+            if project is not None:
+                self.set_value("PROJECT", project)
+            elif machobj.get_value("PROJECT_REQUIRED"):
+                expect(project is not None, "PROJECT_REQUIRED is true but no project found")
+            # Get charge_account id if it exists
+            charge_account = get_charge_account(machobj)
+            if charge_account is not None:
+                self.set_value("CHARGE_ACCOUNT", charge_account)
 
         # Resolve the CIME_OUTPUT_ROOT variable, other than this
         # we don't want to resolve variables until we need them
         if output_root is None:
             output_root = self.get_value("CIME_OUTPUT_ROOT")
         self.set_value("CIME_OUTPUT_ROOT", output_root)
+        if non_local:
+            self.set_value("EXEROOT", os.path.join(output_root, self.get_value("CASE"), "bld"))
+            self.set_value("RUNDIR", os.path.join(output_root, self.get_value("CASE"), "run"))
+            self.set_value("NONLOCAL", True)
 
         # Overwriting an existing exeroot or rundir can cause problems
         exeroot = self.get_value("EXEROOT")
@@ -1425,7 +1432,7 @@ directory, NOT in this subdirectory."""
                multi_driver=False, ninst=1, test=False,
                walltime=None, queue=None, output_root=None,
                run_unsupported=False, answer=None,
-               input_dir=None, driver=None):
+               input_dir=None, driver=None, non_local=False):
         try:
             # Set values for env_case.xml
             self.set_lookup_value("CASE", os.path.basename(casename))
@@ -1441,7 +1448,7 @@ directory, NOT in this subdirectory."""
                            walltime=walltime, queue=queue,
                            output_root=output_root,
                            run_unsupported=run_unsupported, answer=answer,
-                           input_dir=input_dir, driver=driver)
+                           input_dir=input_dir, driver=driver, non_local=non_local)
 
             self.create_caseroot()
 

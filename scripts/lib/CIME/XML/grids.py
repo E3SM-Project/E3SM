@@ -243,18 +243,18 @@ class Grids(GenericXML):
                     domain_name = ""
                     if grid_attrib is not None and mask_attrib is not None:
                         grid_match = re.search(comp_name.lower(), grid_attrib)
-                        mask_match = None
+                        mask_match = False
                         if mask_name is not None:
-                            mask_match = re.search(mask_name, mask_attrib)
-                        if grid_match is not None and mask_match is not None:
+                            mask_match = mask_name == mask_attrib
+                        if grid_match is not None and mask_match:
                             domain_name = self.text(file_node)
                     elif grid_attrib is not None:
                         grid_match = re.search(comp_name.lower(), grid_attrib)
                         if grid_match is not None:
                             domain_name = self.text(file_node)
                     elif mask_attrib is not None:
-                        mask_match = re.search(mask_name.lower(), mask_attrib)
-                        if mask_match is not None:
+                        mask_match = mask_name == mask_attrib
+                        if mask_match:
                             domain_name = self.text(file_node)
                     if domain_name:
                         domains[file_name] = os.path.basename(domain_name)

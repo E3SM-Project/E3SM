@@ -409,7 +409,7 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
         arg_stderr = _convert_to_fd(arg_stdout, from_dir)
 
     if (verbose != False and (verbose or logger.isEnabledFor(logging.DEBUG))):
-        logger.info("RUN: {}".format(cmd))
+        logger.info("RUN: {}\nFROM: {}".format(cmd, os.getcwd() if from_dir is None else from_dir))
 
     if (input_str is not None):
         stdin = subprocess.PIPE
@@ -427,12 +427,12 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     output, errput = proc.communicate(input_str)
     if output is not None:
         try:
-            output = output.decode('utf-8').strip()
+            output = output.decode('utf-8', errors='ignore').strip()
         except AttributeError:
             pass
     if errput is not None:
         try:
-            errput = errput.decode('utf-8').strip()
+            errput = errput.decode('utf-8', errors='ignore').strip()
         except AttributeError:
             pass
 

@@ -192,7 +192,7 @@
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="modules"/>
       </xs:sequence>
       <xs:attribute ref="type" use="required"/>
-      <xs:attribute ref="allow_error"/>
+      <xs:attribute ref="allow_error" />
     </xs:complexType>
   </xs:element>
   <xs:element name="init_path">
