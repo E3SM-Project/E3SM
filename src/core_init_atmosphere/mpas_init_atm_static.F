@@ -799,7 +799,6 @@ if (rarray(i,j,1) == 0) cycle
  real(kind=RKIND), dimension(:), pointer :: latCell, lonCell
  real(kind=RKIND), dimension(:), pointer :: meshDensity
  real(kind=RKIND), dimension(:), pointer :: dcEdge
- real(kind=RKIND), dimension(:), pointer :: varsso
  real(kind=RKIND), dimension(:), pointer :: con, oa1, oa2, oa3, oa4, ol1, ol2, ol3, ol4, var2d
 
 
@@ -812,7 +811,6 @@ if (rarray(i,j,1) == 0) cycle
  call mpas_pool_get_array(mesh, 'landmask', landmask)
  call mpas_pool_get_array(mesh, 'latCell', latCell)
  call mpas_pool_get_array(mesh, 'lonCell', lonCell)
- call mpas_pool_get_array(mesh, 'varsso', varsso)
  call mpas_pool_get_array(mesh, 'meshDensity', meshDensity)
  call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
  call mpas_pool_get_array(mesh, 'con', con)
@@ -838,67 +836,6 @@ if (rarray(i,j,1) == 0) cycle
     geog_data_path(i+1:i+1) = '/'
  end if
 
-!
-! Interpolate VARSSO:
- varsso(:) = 0.0_RKIND
- nx = 600
- ny = 600
- nz = 1
- isigned     = 0
- endian      = 0
- wordsize    = 4
- scalefactor = 1.0
-
- dx = 0.00833333
- dy = 0.00833333
- known_x = 1.0
- known_y = 1.0
- known_lat = -59.99583
- known_lon = -179.99583
-  
- allocate(rarray(nx,ny,nz))
- allocate(nhs(nCells))
- nhs(:) = 0
- rarray(:,:,:) = 0._RKIND
- do jTileStart = 1,13801,ny
-    jTileEnd = jTileStart + ny - 1
-
-    do iTileStart = 1,42601,nx
-       iTileEnd = iTileStart + nx -1
-       write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)//'varsso/', &
-             iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
-       call mpas_log_write(trim(fname))
-
-       call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
-                         scalefactor,wordsize,istatus)
-       call init_atm_check_read_error(istatus,fname)
-
-       iPoint = 1
-       do j = 1,ny
-       do i = 1,nx
-          lat_pt = known_lat + (jTileStart + j - 2) * dy
-          lon_pt = known_lon + (iTileStart + i - 2) * dx
-          lat_pt = lat_pt * PI / 180.0
-          lon_pt = lon_pt * PI / 180.0
-
-          iPoint = nearest_cell(lat_pt,lon_pt,iPoint,nCells,maxEdges, &
-                                nEdgesOnCell,cellsOnCell, &
-                                latCell,lonCell)
-          varsso(iPoint) = varsso(iPoint) + rarray(i,j,1)
-          nhs(iPoint) = nhs(iPoint) + 1
-       enddo
-       enddo
-
-    enddo
- enddo
-
- do iCell = 1,nCells
-    if(nhs(iCell) .gt. 0) &
-       varsso(iCell) = varsso(iCell) / real(nhs(iCell))
- enddo
- deallocate(rarray)
- deallocate(nhs)
- call mpas_log_write('--- end interpolate VARSSO')
 
 !... statistic fields needed for the parameterization of gravity wavwe drag over orography. The
 !input directory depends on the mesh resolution, and the mesh must be a uniform mesh.

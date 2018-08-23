@@ -6,18 +6,18 @@ dummy:
 
 xlf:
 	( $(MAKE) all \
-	"FC_PARALLEL = mpxlf90" \
-	"CC_PARALLEL = mpcc" \
-	"CXX_PARALLEL = mpixlcxx" \
-	"FC_SERIAL = xlf90" \
-	"CC_SERIAL = xlc" \
-	"CXX_SERIAL = xlcxx" \
+	"FC_PARALLEL = mpifort" \
+	"CC_PARALLEL = mpicc" \
+	"CXX_PARALLEL = mpic++" \
+	"FC_SERIAL = xlf2003_r" \
+	"CC_SERIAL = xlc_r" \
+	"CXX_SERIAL = xlc++_r" \
 	"FFLAGS_PROMOTION = -qrealsize=8" \
-	"FFLAGS_OPT = -O3" \
+	"FFLAGS_OPT = -O3 -qufmt=be" \
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_DEBUG = -O0 -g -C" \
+	"FFLAGS_DEBUG = -O0 -g -C -qufmt=be" \
 	"CFLAGS_DEBUG = -O0 -g" \
 	"CXXFLAGS_DEBUG = -O0 -g" \
 	"LDFLAGS_DEBUG = -O0 -g" \
@@ -144,11 +144,11 @@ ifort:
 	"CC_SERIAL = icc" \
 	"CXX_SERIAL = icpc" \
 	"FFLAGS_PROMOTION = -real-size 64" \
-	"FFLAGS_OPT = -O3 -convert big_endian -FR" \
+	"FFLAGS_OPT = -O3 -convert big_endian -free -align array64byte" \
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_DEBUG = -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
+	"FFLAGS_DEBUG = -g -convert big_endian -free -CU -CB -check all -fpe0 -traceback" \
 	"CFLAGS_DEBUG = -g -traceback" \
 	"CXXFLAGS_DEBUG = -g -traceback" \
 	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
@@ -169,11 +169,11 @@ ifort-scorep:
 	"CC_SERIAL = icc" \
 	"CXX_SERIAL = icpc" \
 	"FFLAGS_PROMOTION = -real-size 64" \
-	"FFLAGS_OPT = -O3 -g -convert big_endian -FR" \
+	"FFLAGS_OPT = -O3 -g -convert big_endian -free -align array64byte" \
 	"CFLAGS_OPT = -O3 -g" \
 	"CXXFLAGS_OPT = -O3 -g" \
 	"LDFLAGS_OPT = -O3 -g" \
-	"FFLAGS_DEBUG = -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
+	"FFLAGS_DEBUG = -g -convert big_endian -free -CU -CB -check all -fpe0 -traceback" \
 	"CFLAGS_DEBUG = -g -traceback" \
 	"CXXFLAGS_DEBUG = -g -traceback" \
 	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
@@ -194,11 +194,11 @@ ifort-gcc:
 	"CC_SERIAL = gcc" \
 	"CXX_SERIAL = g++" \
 	"FFLAGS_PROMOTION = -real-size 64" \
-	"FFLAGS_OPT = -O3 -convert big_endian -FR" \
+	"FFLAGS_OPT = -O3 -convert big_endian -free -align array64byte" \
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_DEBUG = -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
+	"FFLAGS_DEBUG = -g -convert big_endian -free -CU -CB -check all -fpe0 -traceback" \
 	"CFLAGS_DEBUG = -g" \
 	"CXXFLAGS_DEBUG = -g" \
 	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
@@ -355,13 +355,13 @@ intel-nersc:
 	"CC_SERIAL = cc" \
 	"CXX_SERIAL = CC" \
 	"FFLAGS_PROMOTION = -real-size 64" \
-	"FFLAGS_OPT = -O3 -convert big_endian -FR" \
+	"FFLAGS_OPT = -O3 -convert big_endian -free -align array64byte" \
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
 	"FFLAGS_OMP = -qopenmp" \
 	"CFLAGS_OMP = -qopenmp" \
-	"FFLAGS_DEBUG = -real-size 64 -g -convert big_endian -FR -CU -CB -check all -gen-interfaces -warn interfaces -traceback" \
+	"FFLAGS_DEBUG = -real-size 64 -g -convert big_endian -free -CU -CB -check all -gen-interfaces -warn interfaces -traceback" \
 	"CFLAGS_DEBUG = -g -traceback" \
 	"CXXFLAGS_DEBUG = -g -traceback" \
 	"LDFLAGS_DEBUG = -g -traceback" \
@@ -401,8 +401,8 @@ FCINCLUDES =
 LIBS = 
 ifneq ($(wildcard $(PIO)/lib), ) # Check for newer PIO version
 ifeq "$(USE_PIO2)" "true"
-	CPPINCLUDES = -DUSE_PIO2 -I$(PIO)/include
-	FCINCLUDES = -DUSE_PIO2 -I$(PIO)/include
+	FCINCLUDES = -I$(PIO)/include
+	override CPPFLAGS += -DUSE_PIO2
 	LIBS = -L$(PIO)/lib -lpiof -lpioc
 ifneq ($(wildcard $(PIO)/lib/libgptl.a), ) # Check for GPTL library for PIO2
 	LIBS += -lgptl
@@ -414,8 +414,8 @@ else
 endif
 else
 ifeq "$(USE_PIO2)" "true"
-	CPPINCLUDES = -DUSE_PIO2 -I$(PIO)/include
-	FCINCLUDES = -DUSE_PIO2 -I$(PIO)/include
+	FCINCLUDES = -I$(PIO)/include
+	override CPPFLAGS += -DUSE_PIO2
 	LIBS = -L$(PIO) -lpiof -lpioc
 ifneq ($(wildcard $(PIO)/libgptl.a), ) # Check for GPTL library for PIO2
 	LIBS += -lgptl
@@ -574,6 +574,7 @@ else
 endif
 
 ifeq "$(GEN_F90)" "true"
+	override CPPFLAGS += -Uvector
 	GEN_F90_MESSAGE="MPAS generated and was built with intermediate .f90 files."
 else
 	override GEN_F90=false
