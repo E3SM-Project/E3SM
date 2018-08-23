@@ -52,6 +52,12 @@ class CustomAssertions(unittest.TestCase):
     def _test_name_and_phase_regex(self, test_name, phase):
         """Returns a regex matching the portion of a TestStatus line
         containing the test name and phase"""
+        # The main purpose of extracting this into a shared method is:
+        # assert_phase_absent could wrongly pass if the format of the
+        # TestStatus output changed without that method's regex
+        # changing. By making its regex shared as much as possible with
+        # the regex in assert_status_of_phase, we decrease the chances
+        # of these false passes.
         return r'{} +{} *$'.format(re.escape(test_name), re.escape(phase))
 
 class TestCustomAssertions(CustomAssertions):
@@ -137,6 +143,12 @@ class TestCsStatus(CustomAssertions):
     # Test helper functions
     # ------------------------------------------------------------------------
 
+    # An arbitrary phase we can use when we want to work with a non-core phase
+    _NON_CORE_PHASE = test_status.MEMLEAK_PHASE
+
+    # Another arbitrary phase if we need two different non-core phases
+    _NON_CORE_PHASE2 = test_status.BASELINE_PHASE
+
     def setUp(self):
         self._testroot = tempfile.mkdtemp()
         self._output = StringIO.StringIO()
@@ -217,7 +229,7 @@ class TestCsStatus(CustomAssertions):
         test_dir_path = self.create_test_dir(test_dir)
         self.create_test_status_core_passes(test_dir_path, test_name)
         fail_phase = self.set_last_core_phase_to_fail(test_dir_path, test_name)
-        pend_phase = test_status.MEMLEAK_PHASE
+        pend_phase = self._NON_CORE_PHASE
         self.set_phase_to_status(test_dir_path, test_name,
                                  phase=pend_phase,
                                  status=test_status.TEST_PEND_STATUS)
@@ -238,6 +250,62 @@ class TestCsStatus(CustomAssertions):
                                          phase=phase,
                                          test_name=test_name)
         self.assertNotRegexpMatches(self._output.getvalue(), r'Overall:')
+
+    def test_count_fails(self):
+        """Test the count of fails with three tests
+
+        For first phase of interest: First test FAILs, second PASSes,
+        third FAILs; count should be 2, and this phase should not appear
+        individually for each test.
+
+        For second phase of interest: First test PASSes, second PASSes,
+        third FAILs; count should be 1, and this phase should not appear
+        individually for each test.
+        """
+        # Note that this test does NOT cover:
+        # - combining count_fails_phase_list with fails_only: currently,
+        #   this wouldn't cover any additional code/logic
+        # - ensuring that PENDs are also counted: currently, this
+        #   wouldn't cover any additional code/logic
+        phase_of_interest1 = self._NON_CORE_PHASE
+        phase_of_interest2 = self._NON_CORE_PHASE2
+        statuses1 = [test_status.TEST_FAIL_STATUS,
+                     test_status.TEST_PASS_STATUS,
+                     test_status.TEST_FAIL_STATUS]
+        statuses2 = [test_status.TEST_PASS_STATUS,
+                     test_status.TEST_PASS_STATUS,
+                     test_status.TEST_FAIL_STATUS]
+        test_paths = []
+        test_names = []
+        for testnum in range(3):
+            test_name = 'my.test.name' + str(testnum)
+            test_names.append(test_name)
+            test_dir = test_name + '.testid'
+            test_dir_path = self.create_test_dir(test_dir)
+            self.create_test_status_core_passes(test_dir_path, test_name)
+            self.set_phase_to_status(test_dir_path, test_name,
+                                     phase=phase_of_interest1,
+                                     status=statuses1[testnum])
+            self.set_phase_to_status(test_dir_path, test_name,
+                                     phase=phase_of_interest2,
+                                     status=statuses2[testnum])
+            test_paths.append(os.path.join(test_dir_path, 'TestStatus'))
+
+        cs_status(test_paths,
+                  count_fails_phase_list=[phase_of_interest1, phase_of_interest2],
+                  out=self._output)
+
+        for testnum in range(3):
+            self.assert_phase_absent(output=self._output.getvalue(),
+                                     phase=phase_of_interest1,
+                                     test_name=test_names[testnum])
+            self.assert_phase_absent(output=self._output.getvalue(),
+                                     phase=phase_of_interest2,
+                                     test_name=test_names[testnum])
+        count_regex1 = r'{} +non-passes: +2'.format(re.escape(phase_of_interest1))
+        six.assertRegex(self, self._output.getvalue(), count_regex1)
+        count_regex2 = r'{} +non-passes: +1'.format(re.escape(phase_of_interest2))
+        six.assertRegex(self, self._output.getvalue(), count_regex2)
 
 if __name__ == '__main__':
     unittest.main()

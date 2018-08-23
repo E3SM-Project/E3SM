@@ -9,7 +9,8 @@ from CIME.test_status import TestStatus
 import os
 import sys
 
-def cs_status(test_paths, summary=False, fails_only=False, out=sys.stdout):
+def cs_status(test_paths, summary=False, fails_only=False,
+              count_fails_phase_list=None, out=sys.stdout):
     """Print the test statuses of all tests in test_paths. The default
     is to print to stdout, but this can be overridden with the 'out'
     argument.
@@ -18,8 +19,21 @@ def cs_status(test_paths, summary=False, fails_only=False, out=sys.stdout):
 
     If fails_only is True, then only test failures are printed (this
     includes PENDs as well as FAILs).
+
+    If count_fails_phase_list is provided, it should be a list of phases
+    (from the phases given by test_status.ALL_PHASES). For each phase in
+    this list: do not give line-by-line output; instead, just report the
+    total number of tests that have not PASSed this phase (this includes
+    PENDs and FAILs). (This is typically used with the fails_only
+    option, but it can also be used without that option.)
     """
-    expect(not (summary and fails_only), "Cannot have both summary and fails_only")
+    expect(not (summary and fails_only),
+           "Cannot have both summary and fails_only")
+    expect(not (summary and count_fails_phase_list),
+           "Cannot have both summary and count_fails_phase_list")
+    if count_fails_phase_list is None:
+        count_fails_phase_list = []
+    non_pass_counts = dict.fromkeys(count_fails_phase_list, 0)
     test_id_output = {}
     for test_path in test_paths:
         test_dir=os.path.dirname(test_path)
@@ -32,7 +46,11 @@ def cs_status(test_paths, summary=False, fails_only=False, out=sys.stdout):
                 output = ''
             else:
                 output = _overall_output(ts, "  {test_name} (Overall: {status}) details:\n")
-            output += ts.phase_statuses_dump(prefix="    ", skip_passes=fails_only)
+            output += ts.phase_statuses_dump(prefix="    ",
+                                             skip_passes=fails_only,
+                                             skip_phase_list=count_fails_phase_list)
+            if count_fails_phase_list:
+                ts.increment_non_pass_counts(non_pass_counts)
 
         if test_id in test_id_output:
             test_id_output[test_id] += output
@@ -43,6 +61,12 @@ def cs_status(test_paths, summary=False, fails_only=False, out=sys.stdout):
         print(test_id, file=out)
         print(test_id_output[test_id], file=out)
         print(' ', file=out)
+
+    if count_fails_phase_list:
+        print(72*'=', file=out)
+        print('Non-PASS results for select phases:', file=out)
+        for phase in count_fails_phase_list:
+            print('{} non-passes: {}'.format(phase, non_pass_counts[phase]), file=out)
 
 def _overall_output(ts, format_str):
     """Returns a string giving the overall test status
