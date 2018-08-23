@@ -7,7 +7,7 @@ import CIME.utils
 import os
 import stat
 
-def create_cs_status(test_root, test_id, filename=None):
+def create_cs_status(test_root, test_id, extra_args='', filename=None):
     """Create a test suite-specific cs.status file from the template
 
     Arguments:
@@ -19,6 +19,8 @@ def create_cs_status(test_root, test_id, filename=None):
         this too general: for example, ending this with '*' will pick up
         the *.ref1 directories for ERI and other tests, which is NOT
         what you want.
+    extra_args (string): extra arguments to the cs.status command
+        (If there are multiple arguments, these should be in a space-delimited string.)
     filename (string): name of the generated cs.status file. If not
         given, this will be built from the test_id.
     """
@@ -28,6 +30,7 @@ def create_cs_status(test_root, test_id, filename=None):
     template = open(template_file, "r").read()
     template = template.replace("<PATH>",
                                 os.path.join(cime_root,"scripts","Tools")).replace\
+                                ("<EXTRA_ARGS>", extra_args).replace\
                                 ("<TESTID>", test_id).replace\
                                 ("<TESTROOT>", test_root)
     if not os.path.exists(test_root):
