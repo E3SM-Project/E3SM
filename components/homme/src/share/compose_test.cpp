@@ -1,6 +1,7 @@
 #include <mpi.h>
 #include <cassert>
 #include <memory>
+#include <vector>
 
 #include "config.h.c"
 
