@@ -8,6 +8,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.test_status import TestStatus
 import os
 import sys
+from collections import defaultdict
 
 def cs_status(test_paths, summary=False, fails_only=False,
               count_fails_phase_list=None, out=sys.stdout):
@@ -34,7 +35,8 @@ def cs_status(test_paths, summary=False, fails_only=False,
     if count_fails_phase_list is None:
         count_fails_phase_list = []
     non_pass_counts = dict.fromkeys(count_fails_phase_list, 0)
-    test_id_output = {}
+    test_id_output = defaultdict(str)
+    test_id_counts = defaultdict(int)
     for test_path in test_paths:
         test_dir=os.path.dirname(test_path)
         ts = TestStatus(test_dir=test_dir)
@@ -52,13 +54,11 @@ def cs_status(test_paths, summary=False, fails_only=False,
             if count_fails_phase_list:
                 ts.increment_non_pass_counts(non_pass_counts)
 
-        if test_id in test_id_output:
-            test_id_output[test_id] += output
-        else:
-            test_id_output[test_id] = output
+        test_id_output[test_id] += output
+        test_id_counts[test_id] += 1
 
     for test_id in sorted(test_id_output):
-        print(test_id, file=out)
+        print("{}: {} tests".format(test_id, test_id_counts[test_id]), file=out)
         print(test_id_output[test_id], file=out)
         print(' ', file=out)
 
