@@ -472,7 +472,7 @@ contains
 !    dbug_flag = ESMF_UtilString2Int(value, &
 !         specialStringList=(/"min","max","high"/), specialValueList=(/0,255,255/), rc=rc)
 !    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    
+
     write(msgString,'(A,i6)') trim(subname)//' dbug_flag = ',dbug_flag
     call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
 
@@ -1647,7 +1647,7 @@ contains
 
       if (is_local%wrap%med_coupling_active(compocn,compatm) .or. &
           is_local%wrap%med_coupling_active(compatm,compocn)) then
-         
+
          ! NOTE: the NStateImp(compocn) or NStateImp(compatm) used below
          ! rather than NStateExp(n2), since the export state might only
          ! contain control data and no grid information if if the target
@@ -2018,15 +2018,14 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_finalize(gcomp, rc)
-
-    use ESMF                  , only : ESMF_GridComp, ESMF_SUCCESS
-    use med_internalstate_mod , only: llogunit=>logunit, mastertask
-
+    use ESMF, only : ESMF_GridComp, ESMF_SUCCESS
+    use med_internalstate_mod     , only: llogunit=>logunit, mastertask
+    use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     rc = ESMF_SUCCESS
-
+    call shr_nuopc_memcheck("med_finalize", 0, mastertask)
     if (mastertask) then
        write(llogunit,*)' SUCCESSFUL TERMINATION '
     end if
