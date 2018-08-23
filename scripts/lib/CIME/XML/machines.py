@@ -328,7 +328,9 @@ class Machines(GenericXML):
                 print("      max_tasks/node ",self.text(max_tasks_per_node))
 
     def return_values(self):
-        # return a dictionary of machine info
+        """ return a dictionary of machine info
+        This routine is used by external tools in https://github.com/NCAR/CESM_xml2html
+        """
         machines = self.get_children("machine")
         mach_dict = dict()
         logger.debug("Machines return values")

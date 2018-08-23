@@ -286,6 +286,7 @@ class Component(EntryID):
     def return_values(self):
         """
         return a list of hashes from target config_component.xml file
+        This routine is used by external tools in https://github.com/NCAR/CESM_xml2html
         """
         entry_dict = dict()
         items = list()
