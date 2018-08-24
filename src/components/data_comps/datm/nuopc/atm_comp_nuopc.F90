@@ -159,12 +159,12 @@ contains
     integer            :: shrlogunit     ! original log unit
     integer            :: shrloglev      ! original log level
     logical            :: isPresent
-    character(len=512) :: diro
-    character(len=512) :: logfile
-    logical            :: flds_co2a      ! use case
-    logical            :: flds_co2b      ! use case
-    logical            :: flds_co2c      ! use case
-    logical            :: flds_wiso      ! use case
+
+    logical            :: flds_co2a  ! use case
+    logical            :: flds_co2b  ! use case
+    logical            :: flds_co2c  ! use case
+    logical            :: flds_wiso  ! use case
+
     character(len=*),parameter :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 

@@ -4,7 +4,7 @@ module med_phases_aofluxes_mod
   use med_constants_mod , only : dbug_flag => med_constants_dbug_flag
   use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
   use med_internalstate_mod, only : mastertask
-  
+
   implicit none
   private
 
@@ -624,6 +624,8 @@ contains
     write(tmpstr,'(i12,g22.12,i12)') lsize,sum(aoflux%rmask),sum(aoflux%mask)
     call ESMF_LogWrite(trim(subname)//" : maskB= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
+    write(tmpstr,'(g22.12,g22.12)') sum(aoflux%dens),sum(aoflux%tocn)
+    call ESMF_LogWrite(trim(subname)//" : dens,tocn= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
     !----------------------------------
     ! Update atmosphere/ocean surface fluxes
     !----------------------------------

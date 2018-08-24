@@ -147,6 +147,7 @@ module ocn_comp_nuopc
   subroutine InitializeAdvertise(gcomp, importState, exportState, clock, rc)
     use shr_nuopc_utils_mod, only : shr_nuopc_set_component_logging
     use shr_nuopc_utils_mod, only : shr_nuopc_get_component_instance
+
     type(ESMF_GridComp)  :: gcomp
     type(ESMF_State)     :: importState, exportState
     type(ESMF_Clock)     :: clock

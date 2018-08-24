@@ -157,7 +157,7 @@ module ESM
     integer                :: localPet
     logical                :: is_set
     character(SHR_KIND_CS) :: cvalue
-    character(len=4) inst_string
+    character(len=5) inst_suffix
     character(len=512)     :: diro
     character(len=512)     :: logfile
     integer                :: shrlogunit  ! original log unit
@@ -216,10 +216,10 @@ module ESM
     call ReadAttributes(driver, config, "DRIVER_attributes::", formatprint=.true., rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ReadAttributes(driver, config, "CLOCK_attributes::", formatprint=.true., rc=rc)
+    call ReadAttributes(driver, config, "FLDS_attributes::", formatprint=.true., rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ReadAttributes(driver, config, "FLDS_attributes::", formatprint=.true., rc=rc)
+    call ReadAttributes(driver, config, "CLOCK_attributes::", formatprint=.true., rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ReadAttributes(driver, config, "ALLCOMP_attributes::", formatprint=.true., rc=rc)
@@ -254,8 +254,10 @@ module ESM
     ! MCT which is still needed for some models
     call seq_comm_init(global_comm, nlfilename)
 
-    call NUOPC_CompAttributeGet(driver, name="INST", value=inst_string, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call NUOPC_CompAttributeGet(driver, name="inst_suffix", value=inst_suffix, rc=rc)
+    if (rc /= ESMF_SUCCESS) then
+       inst_suffix = ""
+    endif
 
     !-------------------------------------------
     ! Perform restarts if appropriate
@@ -341,7 +343,7 @@ module ESM
            return
         end if
 
-        call AddAttributes(child, driver, config, compid, 'ATM', inst_string, rc=rc)
+        call AddAttributes(child, driver, config, compid, 'ATM', inst_suffix, rc=rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
       !--------
@@ -363,7 +365,7 @@ module ESM
             return
          end if
 
-        call AddAttributes(child, driver, config, compid, 'OCN', inst_string, rc=rc)
+        call AddAttributes(child, driver, config, compid, 'OCN', inst_suffix, rc=rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
       !--------
@@ -385,7 +387,7 @@ module ESM
            return
         end if
 
-        call AddAttributes(child, driver, config, compid, 'ICE', inst_string, rc=rc)
+        call AddAttributes(child, driver, config, compid, 'ICE', inst_suffix, rc=rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
       !--------
@@ -407,7 +409,7 @@ module ESM
            return
         end if
 
-        call AddAttributes(child, driver, config, compid, 'LND', inst_string, rc=rc)
+        call AddAttributes(child, driver, config, compid, 'LND', inst_suffix, rc=rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
       !--------
@@ -429,7 +431,7 @@ module ESM
            return
         end if
 
-        call AddAttributes(child, driver, config, compid, 'WAV', inst_string, rc=rc)
+        call AddAttributes(child, driver, config, compid, 'WAV', inst_suffix, rc=rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
       !--------
@@ -444,7 +446,7 @@ module ESM
         call NUOPC_DriverAddComp(driver, "GLC", GLCSetServices, petList=petList, comp=child, rc=rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-        call AddAttributes(child, driver, config, compid, 'GLC', inst_string, rc=rc)
+        call AddAttributes(child, driver, config, compid, 'GLC', inst_suffix, rc=rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
       !--------
@@ -459,7 +461,7 @@ module ESM
         call NUOPC_DriverAddComp(driver, "ROF", ROFSetServices, petList=petList, comp=child, rc=rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-        call AddAttributes(child, driver, config, compid, 'ROF', inst_string, rc=rc)
+        call AddAttributes(child, driver, config, compid, 'ROF', inst_suffix, rc=rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
       !--------
@@ -480,7 +482,7 @@ module ESM
           return  ! bail out
         endif
 
-        call AddAttributes(child, driver, config, compid, 'MED', inst_string, rc=rc)
+        call AddAttributes(child, driver, config, compid, 'MED', inst_suffix, rc=rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
 
@@ -1318,7 +1320,7 @@ module ESM
 
   !===============================================================================
 
-  subroutine AddAttributes(gcomp, driver, config, compid, compname, inst_string, rc)
+  subroutine AddAttributes(gcomp, driver, config, compid, compname, inst_suffix, rc)
 
     ! Add specific set of attributes to gcomp from driver attributes
     use ESMF, only : ESMF_GridComp, ESMF_Config, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
@@ -1331,7 +1333,7 @@ module ESM
     type(ESMF_Config)   , intent(in)    :: config
     integer             , intent(in)    :: compid
     character(len=*)    , intent(in)    :: compname
-    character(len=*)    , intent(in)    :: inst_string
+    character(len=*)    , intent(in)    :: inst_suffix
     integer             , intent(inout) :: rc
 
     ! locals
@@ -1375,13 +1377,9 @@ module ESM
     call ReadAttributes(gcomp, config, "ALLCOMP_attributes::", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if(len_trim(inst_string) > 1) then
-       call ReadAttributes(gcomp, config, trim(compname)//"_modelio_"//inst_string//"::", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    else
-       call ReadAttributes(gcomp, config, trim(compname)//"_modelio::", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
+    call ReadAttributes(gcomp, config, trim(compname)//"_modelio"//inst_suffix//"::", rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     call ReadAttributes(gcomp, config, "CLOCK_attributes::", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 

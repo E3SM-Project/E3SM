@@ -60,14 +60,9 @@ module atm_comp_nuopc
   integer                    :: my_task              ! my task in mpi communicator mpicom
   integer                    :: inst_index           ! number of current instance (ie. 1)
   character(len=12)          :: inst_name            ! fullname of current instance (ie. "lnd_0001")
-  character(len=5)          :: inst_suffix = "_"     ! char string associated with instance (ie. "_0001" or "")
+  character(len=5)          :: inst_suffix      ! char string associated with instance (ie. "_0001" or "")
   integer                    :: logunit              ! logging unit number
   integer    ,parameter      :: master_task=0        ! task number of master task
-<<<<<<< HEAD
-=======
-  logical :: mastertask
-  character(len=*),parameter :: grid_option = "mesh" ! grid_de, grid_arb, grid_reg, mesh
->>>>>>> clean up memcheck, fix pio_init
   integer                    :: dbrc
   logical                    :: atm_prognostic
 
@@ -127,6 +122,7 @@ module atm_comp_nuopc
   subroutine InitializeAdvertise(gcomp, importState, exportState, clock, rc)
     use shr_nuopc_utils_mod, only : shr_nuopc_set_component_logging
     use shr_nuopc_utils_mod, only : shr_nuopc_get_component_instance
+
     type(ESMF_GridComp)  :: gcomp
     type(ESMF_State)     :: importState, exportState
     type(ESMF_Clock)     :: clock

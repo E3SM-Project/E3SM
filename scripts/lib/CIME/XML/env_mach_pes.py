@@ -30,9 +30,6 @@ class EnvMachPes(EnvBase):
         # drivers in multi-driver mode.
         if vid == "NINST_MAX":
             # in the nuopc driver there is only a single NINST value
-            value = self.get_value("NINST")
-            if value:
-                return value
             value = 1
             for comp in self._components:
                 if comp != "CPL":
@@ -46,7 +43,10 @@ class EnvMachPes(EnvBase):
                 max_mpitasks_per_node = self.get_value("MAX_MPITASKS_PER_NODE")
             if value is not None and value < 0:
                 value = -1*value*max_mpitasks_per_node
-
+        # in the nuopc driver there is only one NINST value
+        # so that NINST_{comp} = NINST
+        if "NINST_" in vid and value is None:
+            value = self.get_value("NINST")
         return value
 
     def set_value(self, vid, value, subgroup=None, ignore_type=False):

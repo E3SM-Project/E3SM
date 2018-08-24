@@ -161,7 +161,7 @@ contains
 
     !----------------------------------------------------------------------------
     ! determine instance information
-    !----------------------------------------------------------------------------
+    !---------------------------------------------------------------------------
 
     call shr_nuopc_get_component_instance(gcomp, inst_suffix, inst_index)
     inst_name = "WAV"//trim(inst_suffix)

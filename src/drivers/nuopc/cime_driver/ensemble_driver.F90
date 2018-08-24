@@ -72,14 +72,14 @@ module Ensemble_driver
   !================================================================================
 
   subroutine SetModelServices(ensemble_driver, rc)
-    use ESMF                  , only : ESMF_GridComp, ESMF_VM, ESMF_Config, ESMF_Clock
+    use ESMF                  , only : ESMF_GridComp, ESMF_VM, ESMF_Config, ESMF_Clock, ESMF_VMGet
     use ESMF                  , only : ESMF_GridCompGet, ESMF_VMGet, ESMF_ConfigGetAttribute
     use ESMF                  , only : ESMF_ConfigGetLen, ESMF_RC_NOT_VALID, ESMF_LogFoundAllocError
     use ESMF                  , only : ESMF_LogSetError, ESMF_LogWrite, ESMF_LOGMSG_INFO
     use ESMF                  , only : ESMF_GridCompSet, ESMF_SUCCESS, ESMF_METHOD_INITIALIZE, ESMF_RC_ARG_BAD
     use NUOPC                 , only : NUOPC_CompAttributeGet, NUOPC_CompAttributeSet, NUOPC_CompAttributeAdd
     use NUOPC_Driver          , only : NUOPC_DriverAddComp
-
+    use seq_timemgr_mod, only : seq_timemgr_clockInit
     use med_constants_mod, only : CL
     use esm, only : ESMSetServices => SetServices, ReadAttributes
     use esm, only : EClock_d, EClock_a, EClock_l, EClock_o, EClock_i, EClock_g, EClock_r, Eclock_w, EClock_e
@@ -106,6 +106,7 @@ module Ensemble_driver
     logical                :: iamroot_med ! mediator masterproc
     integer                :: dbrc
     integer :: inst
+    integer :: lmpicom
     integer :: number_of_members
     integer :: ntasks_per_member
     logical :: read_restart
@@ -117,7 +118,7 @@ module Ensemble_driver
 
     character(CL) :: msgstr, cvalue
     character(len=7) :: drvrinst
-    character(len=4) :: inst_string
+    character(len=5) :: inst_suffix
 
     character(len=*), parameter    :: subname = "(ensemble_driver.F90:SetModelServices)"
 
@@ -147,10 +148,10 @@ module Ensemble_driver
     call ReadAttributes(ensemble_driver, config, "ALLCOMP_attributes::", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ReadAttributes(ensemble_driver, config, "DRIVER_attributes::", rc=rc)
+    call ReadAttributes(ensemble_driver, config, "CLOCK_attributes::", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ReadAttributes(ensemble_driver, config, "CLOCK_attributes::", rc=rc)
+    call ReadAttributes(ensemble_driver, config, "MED_attributes::", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ReadAttributes(ensemble_driver, config, "PELAYOUT_attributes::", rc=rc)
@@ -210,29 +211,38 @@ module Ensemble_driver
        write(drvrinst,'(a,i4.4)') "ESM",inst
        call NUOPC_DriverAddComp(ensemble_driver, drvrinst, ESMSetServices, petList=petList, comp=gridcomptmp, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       if(number_of_members == 1) then
-          inst_string = "_"
-       else
-          write(inst_string,'(i4.4)') inst
-       endif
        if (localpet >= petlist(1) .and. localpet <= petlist(ntasks_per_member)) then
           driver = gridcomptmp
-          call NUOPC_CompAttributeAdd(driver, attrList=(/'INST'/), rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call NUOPC_CompAttributeSet(driver, name='INST', value=inst_string, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
+          if(number_of_members > 1) then
+             write(inst_suffix,'(a,i4.4)') '_',inst
+             call NUOPC_CompAttributeAdd(driver, attrList=(/'inst_suffix'/), rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call NUOPC_CompAttributeSet(driver, name='inst_suffix', value=inst_suffix, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          endif
           call NUOPC_CompAttributeAdd(driver, attrList=(/'read_restart'/), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           call NUOPC_CompAttributeSet(driver, name='read_restart', value=trim(cvalue), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !----------------------------------------------------------
+    ! Initialize time manager
+    !----------------------------------------------------------
+          call ReadAttributes(driver, config, "CLOCK_attributes::", rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          call ESMF_GridCompGet(driver, vm=vm, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          call ESMF_VMGet(vm, mpiCommunicator=lmpicom, localpet=localpet, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          call seq_timemgr_clockInit(driver, localpet==0, lmpicom, &
+               Eclock_Ensemble, EClock_d, EClock_a, EClock_l, EClock_o, &
+               EClock_i, Eclock_g, Eclock_r, Eclock_w, Eclock_e, inst_suffix)
        endif
     enddo
     deallocate(petList)
-
-    call InitClocks(ensemble_driver, EClock_ensemble, Eclock_d, Eclock_a, Eclock_l, Eclock_o, &
-         Eclock_i, Eclock_g, Eclock_r, Eclock_w, Eclock_e, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------
     ! Set baseline clock
@@ -243,62 +253,5 @@ module Ensemble_driver
   end subroutine SetModelServices
 
 
-  subroutine InitClocks(driver, EClock_ensemble, Eclock_d, Eclock_a, Eclock_l, Eclock_o, &
-       Eclock_i, Eclock_g, Eclock_r, Eclock_w, Eclock_e, rc)
-
-    !----------------------------------------------------------
-    ! Initialize time manager
-    !----------------------------------------------------------
-    use ESMF            , only : ESMF_GridComp, ESMF_Clock, ESMF_VM, ESMF_GridCompGet, ESMF_VMGet
-    use ESMF            , only : ESMF_LogWrite, ESMF_SUCCESS, ESMF_LOGMSG_INFO
-    use pio             , only : pio_file_is_open, pio_closefile, file_desc_t
-    use seq_timemgr_mod , only : seq_timemgr_clockInit
-
-    ! INPUT/OUTPUT PARAMETERS:
-    type(ESMF_GridComp)    , intent(inout) :: driver
-    type(ESMF_Clock)       , intent(inout) :: EClock_ensemble
-    type(ESMF_Clock)       , intent(inout) :: EClock_d
-    type(ESMF_Clock)       , intent(inout) :: EClock_a
-    type(ESMF_Clock)       , intent(inout) :: EClock_l
-    type(ESMF_Clock)       , intent(inout) :: EClock_o
-    type(ESMF_Clock)       , intent(inout) :: EClock_i
-    type(ESMF_Clock)       , intent(inout) :: EClock_g
-    type(ESMF_Clock)       , intent(inout) :: EClock_r
-    type(ESMF_Clock)       , intent(inout) :: EClock_w
-    type(ESMF_Clock)       , intent(inout) :: EClock_e
-    integer                , intent(out)   :: rc
-
-    ! local variables
-    type(ESMF_VM)     :: vm
-    type(file_desc_t) :: pioid
-    integer           :: lmpicom
-    integer :: dbrc
-    character(len=*) , parameter    :: subname = '(InitClocks)'
-    !----------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-
-    !----------------------------------------------------------
-    ! Initialize time manager
-    !----------------------------------------------------------
-
-    call ESMF_GridCompGet(driver, vm=vm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_VMGet(vm, mpiCommunicator=lmpicom, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call seq_timemgr_clockInit(driver, mastertask, pioid, lmpicom, &
-         Eclock_ensemble, EClock_d, EClock_a, EClock_l, EClock_o, &
-         EClock_i, Eclock_g, Eclock_r, Eclock_w, Eclock_e)
-
-    if (pio_file_is_open(pioid)) then
-       call pio_closefile(pioid)
-    endif
-
-  end subroutine InitClocks
 
 end module ENSEMBLE_DRIVER
