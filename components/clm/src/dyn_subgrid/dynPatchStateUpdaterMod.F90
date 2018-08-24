@@ -184,10 +184,10 @@ contains
 
     do p = bounds%begp, bounds%endp
        this%pwtgcell_new(p) = veg_pp%wtgcell(p)
-       this%dwt(p) = this%pwtgcell_new(p) - this%pwtgcell_old(p)
+       this%dwt(p)          = this%pwtgcell_new(p) - this%pwtgcell_old(p)
        if (this%dwt(p) > 0._r8) then
-          this%growing_old_fraction(p) = this%pwtgcell_old(p) / this%pwtgcell_new(p)
-          this%growing_new_fraction(p) = this%dwt(p) / this%pwtgcell_new(p)
+          this%growing_old_fraction(p) = this%pwtgcell_old(p)/ this%pwtgcell_new(p)
+          this%growing_new_fraction(p) = this%dwt(p)         / this%pwtgcell_new(p)
        else
           ! These values are unused in this case, but set them to something reasonable for
           ! safety. (We could set them to NaN, but that requires a more expensive
