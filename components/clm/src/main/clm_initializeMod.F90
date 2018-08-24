@@ -237,7 +237,7 @@ contains
     ! Read list of Patches and their corresponding parameter values
     ! Independent of model resolution, Needs to stay before surfrd_get_data
 
-    call pftconrd()
+    call pftconrd(begg,endg)
     call soilorder_conrd()
 
     ! Read in FATES parameter values early in the call sequence as well

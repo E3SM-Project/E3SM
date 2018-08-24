@@ -606,6 +606,7 @@ contains
     ! USES
     use pftvarcon       , only: nbrdlf_evr_trp_tree, nbrdlf_dcd_trp_tree
     use soilorder_varcon, only: r_mort_soilorder
+    use pftvarcon       , only: r_mort_grid, r_mort_grid_present
 
     !
     ! !ARGUMENTS:
@@ -614,7 +615,7 @@ contains
     type(cnstate_type)       , intent(inout)    :: cnstate_vars
 
     ! local variables
-    integer :: p,c,fp
+    integer :: p,c,fp,g
 
 
     associate(                                                      &
@@ -623,15 +624,25 @@ contains
        r_mort_cal     =>    cnstate_vars%r_mort_cal_patch )
 
        ! loop over the patches
-       do fp = 1,num_soilp
-          p = filter_soilp(fp)
-          c = veg_pp%column(p)
-               if( veg_pp%itype(p) == nbrdlf_evr_trp_tree .or. veg_pp%itype(p) == nbrdlf_dcd_trp_tree )then
-                   r_mort_cal(p) = r_mort_soilorder( isoilorder(c) )
-               else
-                   r_mort_cal(p) = 0.02_r8                 ! Default mortality rate 
-               endif
-       end do
+      if (.not.r_mort_grid_present) then
+         ! Gridded mortality rate is unavailable, so use default approach
+         do fp = 1,num_soilp
+            p = filter_soilp(fp)
+            c = veg_pp%column(p)
+            if( veg_pp%itype(p) == nbrdlf_evr_trp_tree .or. veg_pp%itype(p) == nbrdlf_dcd_trp_tree )then
+               r_mort_cal(p) = r_mort_soilorder( isoilorder(c) )
+            else
+               r_mort_cal(p) = 0.02_r8                 ! Default mortality rate 
+            endif
+         end do
+      else
+         ! Use gridded mortality rate
+         do fp = 1,num_soilp
+            p = filter_soilp(fp)
+            g = veg_pp%gridcell(p)
+            r_mort_cal(p) = r_mort_grid(g,p)
+         end do
+      end if
 
      end associate
 

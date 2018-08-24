@@ -13,6 +13,7 @@ module pftvarcon
   use clm_varctl  , only : iulog, use_cndv, use_vertsoilc
   use clm_varpar  , only : nlevdecomp_full, nsoilorder
   use clm_varctl  , only : nu_com
+  use clm_varpar  , only : numveg, nlevgrnd
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -271,6 +272,9 @@ module pftvarcon
   real(r8)              :: laimax
   ! Hydrology
   real(r8)              :: rsub_top_globalmax
+  ! spatially heterogeneous parameter
+  real(r8), pointer     :: r_mort_grid(:,:)    ! annual mortality rate
+  logical               :: r_mort_grid_present  ! flag for annual mortality rate
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -286,7 +290,7 @@ module pftvarcon
 contains
 
   !-----------------------------------------------------------------------
-  subroutine pftconrd
+  subroutine pftconrd(begg, endg)
     !
     ! !DESCRIPTION:
     ! Read and initialize vegetation (PFT) constants
@@ -299,10 +303,15 @@ contains
     use clm_varctl,  only : use_crop, use_dynroot
     use clm_varcon,  only : tfrz
     use spmdMod   ,  only : masterproc
+    use ncdio_pio  , only : var_desc_t, ncd_inqvid
+    use clm_varctl,  only : fsurdat
+    use clm_varcon,  only : grlnd
 
     !
     ! !ARGUMENTS:
     implicit none
+    !
+    integer :: begg, endg
     !
     ! !REVISION HISTORY:
     ! Created by Gordon Bonan
@@ -316,6 +325,8 @@ contains
     integer :: dimid            ! netCDF dimension id
     integer :: npft             ! number of pfts on pft-physiology file
     logical :: readv            ! read variable in or not
+    type(var_desc_t) :: var_desc! variable descriptor for name
+    integer :: varid
     character(len=32) :: subname = 'pftconrd'              ! subroutine name
     !
     ! Expected PFT names: The names expected on the paramfile file and the order they are expected to be in.
@@ -934,6 +945,28 @@ contains
           mergetoclmpft(i) = i
        end do
     end if
+
+    call ncd_pio_closefile(ncid)
+
+    !
+    ! Read spatially heterogeneous parameters
+    !
+    call getfil (fsurdat, locfn, 0)
+    call ncd_pio_openfile (ncid, locfn, 0)
+
+    ! 1) mortality_rate
+    call ncd_inqvid(ncid,'mortality_rate', varid, var_desc, readv)
+    if (readv) then
+       allocate(r_mort_grid(begg:endg, 0:numveg))
+       call ncd_io(ncid=ncid, varname='mortality_rate', flag='read', data=r_mort_grid, dim1name=grlnd, readvar=readv)
+       if (.not. readv) then
+          call endrun(msg=' ERROR while reading vcmax_np1 from surfdata file'//errMsg(__FILE__, __LINE__))
+       end if
+       r_mort_grid_present = .true.
+    else
+       nullify(r_mort_grid)
+       r_mort_grid_present = .false.
+    endif
 
     call ncd_pio_closefile(ncid)
 
