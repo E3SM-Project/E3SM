@@ -856,46 +856,6 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
-<compiler MACH="cab" COMPILER="intel">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <append> -DNO_SHR_VMATH -DCNL </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-    <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <append> -llapack -lblas</append>
-  </LDFLAGS>
-  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <MPI_PATH>/usr/local/tools/mvapich2-intel-2.1/</MPI_PATH>
-  <NETCDF_PATH>/usr/local/tools/netcdf-intel-4.1.3</NETCDF_PATH>
-  <SLIBS>
-    <append>$SHELL{/usr/local/tools/netcdf-intel-4.1.3/bin/nc-config --flibs}</append>
-  </SLIBS>
-</compiler>
-
-<compiler MACH="cab" COMPILER="pgi">
-  <CPPDEFS>
-    <append> -DNO_SHR_VMATH -DCNL </append>
-  </CPPDEFS>
-  <LDFLAGS>
-    <append> -Wl,-rpath /usr/local/tools/netcdf-pgi-4.1.3/lib -llapack -lblas</append>
-  </LDFLAGS>
-  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <MPI_PATH>/usr/local/tools/mvapich2-pgi-1.7/</MPI_PATH>
-  <NETCDF_PATH>/usr/local/tools/netcdf-pgi-4.1.3</NETCDF_PATH>
-  <SLIBS>
-    <append>$SHELL{/usr/local/tools/netcdf-pgi-4.1.3/bin/nc-config --flibs}</append>
-  </SLIBS>
-</compiler>
-
 <compiler MACH="cades" COMPILER="gnu">
   <CFLAGS>
     <append compile_threaded="true"> -fopenmp </append>
@@ -1637,31 +1597,6 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </SLIBS>
 </compiler>
 
-<compiler MACH="quartz" COMPILER="intel">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <append> -DNO_SHR_VMATH -DCNL </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-    <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <append> -llapack -lblas</append>
-  </LDFLAGS>
-  <MPI_LIB_NAME MPILIB="mvapich">mpi</MPI_LIB_NAME>
-  <MPI_PATH>/usr/tce/modulefiles/MPI/intel/17.0.0/mvapich2/2.2/</MPI_PATH>
-  <NETCDF_PATH>/usr/workspace/wsa/climdat/spack/opt/spack/linux-rhel7-x86_64/intel-17.0.0/netcdf-fortran-4.4.4-4naprkre2m7kriadyxwboauil7nc3jtc/</NETCDF_PATH>
-  <SLIBS>
-    <append>$SHELL{/usr/workspace/wsa/climdat/spack/opt/spack/linux-rhel7-x86_64/intel-17.0.0/netcdf-fortran-4.4.4-4naprkre2m7kriadyxwboauil7nc3jtc/bin/nf-config --flibs}</append>
-  </SLIBS>
-</compiler>
-
 <compiler MACH="sandiatoss3" COMPILER="intel">
   <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
   <CFLAGS>
@@ -1939,25 +1874,35 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append> -llapack -lblas</append>
   </LDFLAGS>
   <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <MPI_PATH>/usr/local/tools/mvapich2-intel-2.1/</MPI_PATH>
-  <NETCDF_PATH>/usr/local/tools/netcdf-intel-4.1.3</NETCDF_PATH>
+  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.2-intel-18.0.1/</MPI_PATH>
+  <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</NETCDF_PATH>
   <SLIBS>
-    <append>$SHELL{/usr/local/tools/netcdf-intel-4.1.3/bin/nc-config --flibs}</append>
+    <append>$SHELL{/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/bin/nf-config --flibs}</append>
   </SLIBS>
 </compiler>
 
-<compiler MACH="syrah" COMPILER="pgi">
+<compiler MACH="quartz" COMPILER="intel">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DNO_SHR_VMATH -DCNL </append>
   </CPPDEFS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </append>
+  </FFLAGS>
   <LDFLAGS>
-    <append> -Wl,-rpath /usr/local/tools/netcdf-pgi-4.1.3/lib -llapack -lblas</append>
+    <append> -llapack -lblas</append>
   </LDFLAGS>
   <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <MPI_PATH>/usr/local/tools/mvapich2-pgi-1.7/</MPI_PATH>
-  <NETCDF_PATH>/usr/local/tools/netcdf-pgi-4.1.3</NETCDF_PATH>
+  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.2-intel-18.0.1/</MPI_PATH>
+  <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</NETCDF_PATH>
   <SLIBS>
-    <append>$SHELL{/usr/local/tools/netcdf-pgi-4.1.3/bin/nc-config --flibs}</append>
+    <append>$SHELL{/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/bin/nf-config --flibs}</append>
   </SLIBS>
 </compiler>
 
