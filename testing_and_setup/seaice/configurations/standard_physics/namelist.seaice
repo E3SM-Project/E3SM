@@ -314,6 +314,7 @@
     config_sea_freezing_temperature_type = 'mushy'
     config_ocean_surface_type = 'free'
     config_couple_biogeochemistry_fields = false
+    config_use_data_icebergs = false
 /
 &diagnostics
     config_check_state = false

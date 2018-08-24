@@ -56,6 +56,12 @@
                   filename_interval="none"
                   input_interval="none" />
 
+<immutable_stream name="dataIcebergForcing"
+                  type="input"
+                  filename_template="data_icebergs.nc"
+                  filename_interval="none"
+                  input_interval="none" />
+
 <stream name="abort_block"
         type="output"
         filename_template="abort_seaice_$Y-$M-$D_$h.$m.$s_block_$B.nc"

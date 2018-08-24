@@ -1490,6 +1490,71 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
+!  get_data_iceberg_fluxes
+!
+!> \brief   Initialize with icebergs calving mass
+!> \author  Darin Comeau, LANL
+!> \date    20 Aug 2018
+!> \details This routine is intended to initialize the set data iceberg
+!> meltwater and latent heat fluxes from a forcing file of monthly
+!> climatologies.
+!
+!-----------------------------------------------------------------------
+
+! dcnote - not yet called anywhere
+! dcnote - need to make monthly
+
+  subroutine get_data_iceberg_fluxes(block)
+
+    use seaice_constants, only: &
+         seaiceLatentHeatMelting ! latent heat of melting of fresh ice (J/kg)
+
+    type(block_type), intent(inout) :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         mesh, &
+         ocean_fluxes
+
+    integer, pointer :: &
+         nCellsSolve
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         bergFreshWaterFluxData, & ! iceberg freshwater flux read in from file (kg/m^2/s)
+         bergFreshWaterFlux, & ! iceberg freshwater flux for ocean (kg/m^2/s)
+         bergLatentHeatFlux ! iceberg latent heat flux for ocean (J/m^2/s)
+
+    integer :: &
+         iCell
+
+    ! dc including as parameters here so as not to create new namelist options
+    real(kind=RKIND), parameter :: &
+         specificHeatFreshIce = 2106.0_RKIND, & ! specific heat of fresh ice J * kg^-1 * K^-1
+         bergTemperature = -4.0_RKIND           ! iceberg temperature, assumed constant
+
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "ocean_fluxes", ocean_fluxes)
+
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+
+    call MPAS_pool_get_array(ocean_fluxes, "bergFreshWaterFluxData", bergFreshWaterFluxData)
+    call MPAS_pool_get_array(ocean_fluxes, "bergFreshWaterFlux", bergFreshWaterFlux)
+    call MPAS_pool_get_array(ocean_fluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
+
+    do iCell = 1, nCellsSolve
+
+       bergFreshWaterFlux(iCell) = bergFreshWaterFluxData(iCell)
+       bergLatentHeatFlux(iCell) = bergFreshWaterFluxData(iCell) * &
+                               (seaiceLatentHeatMelting - specificHeatFreshIce*bergTemperature)
+
+    enddo
+
+  end subroutine get_data_iceberg_fluxes
+
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
 !  post_oceanic_coupling
 !
 !> \brief
@@ -1788,7 +1853,7 @@ contains
        call MPAS_pool_get_array(oceanFluxes, "oceanSaltFlux", oceanSaltFlux)
        call MPAS_pool_get_array(oceanFluxes, "oceanHeatFlux", oceanHeatFlux)
        call MPAS_pool_get_array(oceanFluxes, "oceanShortwaveFlux", oceanShortwaveFlux)
-
+!dc add berg terms here
        oceanFreshWaterFlux      = 0.0_RKIND
        oceanSaltFlux            = 0.0_RKIND
        oceanHeatFlux            = 0.0_RKIND

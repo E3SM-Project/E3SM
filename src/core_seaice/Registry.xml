@@ -1638,6 +1638,10 @@
 			description=""
 			possible_values="true or false"
 		/>
+		<nml_option name="config_use_data_icebergs" type="logical" default_value="false" units="unitless"
+			description="Use data iceberg meltwater forcing"
+			possible_values="true or false"
+		/>
 	</nml_record>
 
 	<nml_record name="diagnostics" in_defaults="true">
@@ -1871,6 +1875,15 @@
 			<var name="seaSurfaceTiltV"/>
 			<var name="oceanMixedLayerDepth"/>
 			<var name="oceanHeatFluxConvergence"/>
+		</stream>
+		<!-- dc data icebergs -->
+		<stream name="dataIcebergForcing"
+				type="input"
+				filename_template="forcing/data_icebergs.nc"
+				filename_interval="none"
+				input_interval="none"
+				immutable="true">
+			<var name="bergFreshWaterFluxData"/>
 		</stream>
 
 		<!-- Aerosols input -->
@@ -3488,6 +3501,11 @@
 		<var name="oceanHeatFluxArea"			type="real"	dimensions="nCells Time"		name_in_code="oceanHeatFluxArea"/>
 		<var name="oceanShortwaveFluxArea"		type="real"	dimensions="nCells Time"		name_in_code="oceanShortwaveFluxArea"/>
 		<var name="oceanHeatFluxIceBottom"		type="real"	dimensions="nCells Time"		name_in_code="oceanHeatFluxIceBottom"/>
+		<!-- dc data icebergs -->
+		<var name="bergFreshWaterFlux"		type="real"	dimensions="nCells Time"		name_in_code="bergFreshWaterFlux"/>
+		<var name="bergLatentHeatFlux"			type="real"	dimensions="nCells Time"		name_in_code="bergHeatLatentFlux"/>
+		<!-- dc this is input only, not being sent to coupler - place elsewhere? -->
+		<var name="bergFreshWaterFluxData"		type="real"	dimensions="nCells Time"		name_in_code="bergFreshWaterFluxData"/>
 	</var_struct>
 
 	<!-- ocean atmosphere interaction -->
