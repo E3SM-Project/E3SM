@@ -7,9 +7,12 @@ git clone http://github.com/kokkos/kokkos
 ```
 Configure it as a debug build and build it:
 ```
-cd kokkos
+mkdir -p install
+mkdir -p build
+cd build
+rm -rf CMakeCache.txt CMakeFiles
 cmake \
-    -D CMAKE_INSTALL_PREFIX=/path/to/kokkos/install \
+    -D CMAKE_INSTALL_PREFIX=${PWD}/../install \
     -D CMAKE_BUILD_TYPE=Debug \
     -D KOKKOS_ENABLE_DEBUG=ON \
     -D KOKKOS_ENABLE_AGGRESSIVE_VECTORIZATION=OFF \
@@ -18,7 +21,7 @@ cmake \
     -D KOKKOS_ENABLE_PROFILING=OFF \
     -D KOKKOS_ENABLE_DEPRECATED_CODE=OFF \
     -D KOKKOS_ENABLE_EXPLICIT_INSTANTIATION:BOOL=OFF \
-    ./
+    ../kokkos
 make -j8 install
 ```
 For performance testing, other options should be used depending on architecture.
