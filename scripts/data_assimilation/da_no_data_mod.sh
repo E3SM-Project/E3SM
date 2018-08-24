@@ -24,13 +24,13 @@ else
     errcode=$(( errcode + 1 ))
   else
     dval="`./xmlquery --value COMPSET 2> /dev/null | grep DWAV`"
-    ./xmlchange DATA_ASSIMILATION_WAV=TRUE
-    res=$?
-    if [ $res -ne 0 ]; then
-      echo "ERROR: Unable to change DATA_ASSIMILATION_WAV to TRUE"
-      errcode=$(( errcode + 1 ))
-    fi
     if [ -n "${dval}" ]; then
+      ./xmlchange DATA_ASSIMILATION_WAV=TRUE
+      res=$?
+      if [ $res -ne 0 ]; then
+        echo "ERROR: Unable to change DATA_ASSIMILATION_WAV to TRUE"
+        errcode=$(( errcode + 1 ))
+      fi
       rundir="`./xmlquery --value RUNDIR`"
       ninst=`./xmlquery --value NINST_WAV`
       if [ -n "${rundir}" -a -d "${rundir}" ]; then
