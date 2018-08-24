@@ -366,14 +366,6 @@ subroutine radiation_register()
    call pbuf_add_field('QRS', 'global', dtype_r8, (/pcols,pver/), idx)
    call pbuf_add_field('QRL', 'global', dtype_r8, (/pcols,pver/), idx)
 
-   ! Chemistry interface needs shortwave down at surface
-   ! TODO: why add the others? Are these needed?
-   call pbuf_add_field('FSDS', 'global', dtype_r8, (/pcols/), idx)
-   call pbuf_add_field('FSNS', 'global', dtype_r8, (/pcols/), idx)
-   call pbuf_add_field('FSNT', 'global', dtype_r8, (/pcols/), idx)
-   call pbuf_add_field('FLNS', 'global', dtype_r8, (/pcols/), idx)
-   call pbuf_add_field('FLNT', 'global', dtype_r8, (/pcols/), idx)
-
    ! If the namelist has been configured for preserving the spectral fluxes, then create
    ! physics buffer variables to store the results. These are fluxes per
    ! spectral band, as follows:
@@ -1126,7 +1118,10 @@ end function get_band_midpoints
 
 !===============================================================================
   
-subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
+subroutine radiation_tend(state,   ptend,    pbuf,          cam_out, cam_in,  &
+                          landfrac,landm,    icefrac,       snowh,            &
+                          fsns,    fsnt,     flns,          flnt,             &
+                          fsds,    net_flux, is_cmip6_volc                    )
 !-------------------------------------------------------------------------------
 ! 
 ! Purpose: 
@@ -1227,6 +1222,24 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
    ! the physics package driver?
    real(r8), intent(inout) :: net_flux(pcols)
 
+   ! This should be module data or something specific to aerosol where it is
+   ! used?
+   logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
+
+   ! These are not used anymore and exist only because the radiation call is
+   ! inflexible
+   real(r8), intent(in)    :: landfrac(pcols)  ! land fraction
+   real(r8), intent(in)    :: landm(pcols)     ! land fraction ramp
+   real(r8), intent(in)    :: icefrac(pcols)   ! land fraction
+   real(r8), intent(in)    :: snowh(pcols)     ! Snow depth (liquid water equivalent)
+
+   ! Surface and top fluxes
+   real(r8), intent(inout) :: fsns(pcols)      ! Surface solar absorbed flux
+   real(r8), intent(inout) :: fsnt(pcols)      ! Net column abs solar flux at model top
+   real(r8), intent(inout) :: flns(pcols)      ! Srf longwave cooling (up-down) flux
+   real(r8), intent(inout) :: flnt(pcols)      ! Net outgoing lw flux at model top
+   real(r8), intent(inout) :: fsds(pcols)      ! Surface solar down flux
+
    ! ---------------------------------------------------------------------------
    ! Local variables
    ! ---------------------------------------------------------------------------
@@ -1235,10 +1248,6 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
    ! Pointers to heating rates on physics buffer
    real(r8), pointer :: qrs(:,:) => null()  ! shortwave radiative heating rate 
    real(r8), pointer :: qrl(:,:) => null()  ! longwave  radiative heating rate 
-   real(r8), pointer :: fsns(:,:) => null()
-   real(r8), pointer :: fsnt(:,:) => null()
-   real(r8), pointer :: flns(:,:) => null()
-   real(r8), pointer :: flnt(:,:) => null()
 
    ! Clear-sky heating rates are not on the physics buffer, and we have no
    ! reason to put them there, so declare these are regular arrays here
@@ -1436,6 +1445,7 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
             call set_aerosol_optics_sw(icall, state, pbuf, &
                                        day_indices(1:nday), &
                                        night_indices(1:nnight), &
+                                       is_cmip6_volc, &
                                        aerosol_optics_sw)
             call t_stopf('rad_aerosol_optics_sw')
 
@@ -1496,9 +1506,8 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
             ! Send fluxes to history buffer
             call output_fluxes_sw(icall, state, flux_sw_allsky, flux_sw_clearsky)
 
-            ! Copy outputs to pbuf fields that are used by other model
-            ! components (i.e., land)
-            call copy_fluxes_to_pbuf(pbuf, flux_sw_allsky, 'shortwave')
+            ! Set net fluxes used by other components (land?) 
+            call set_net_fluxes_sw(flux_sw_allsky, fsds, fsns, fsnt)
 
             ! Set surface fluxes that are used by the land model
             call export_surface_fluxes(flux_sw_allsky, cam_out, 'shortwave')
@@ -1575,7 +1584,7 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
 
             ! Get longwave aerosol optics
             call t_startf('rad_aerosol_optics_lw')
-            call set_aerosol_optics_lw(icall, state, pbuf, aerosol_optics_lw)
+            call set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, aerosol_optics_lw)
             call t_stopf('rad_aerosol_optics_lw')
 
             ! Do longwave radiative transfer calculations
@@ -1610,8 +1619,8 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
             call outfld('QRL'//diag(icall), qrl(1:ncol,1:pver)/cpair, ncol, state%lchnk)
             call outfld('QRLC'//diag(icall), qrlc(1:ncol,1:pver)/cpair, ncol, state%lchnk)
 
-            ! Copy fluxes to pbuf
-            call copy_fluxes_to_pbuf(pbuf, flux_lw_allsky, 'longwave')
+            ! Set net fluxes used in other components
+            call set_net_fluxes_lw(flux_lw_allsky, flns, flnt)
 
             ! Send fluxes to history buffer
             call output_fluxes_lw(icall, state, flux_lw_allsky, flux_lw_clearsky)
@@ -1636,10 +1645,6 @@ subroutine radiation_tend(state, ptend, pbuf, cam_out, cam_in, net_flux)
 
    ! Compute net radiative heating tendency
    call t_startf('radheat_tend')
-   call pbuf_get_field(pbuf, pbuf_get_index('FSNS'), fsns)
-   call pbuf_get_field(pbuf, pbuf_get_index('FSNT'), fsnt)
-   call pbuf_get_field(pbuf, pbuf_get_index('FLNS'), flns)
-   call pbuf_get_field(pbuf, pbuf_get_index('FLNT'), flnt)
    call radheat_tend(state, pbuf, ptend, &
                      qrl, qrs, &
                      fsns, fsnt, flns, flnt, &
@@ -1865,62 +1870,38 @@ subroutine export_surface_fluxes(fluxes, cam_out, band)
 end subroutine export_surface_fluxes
 
 
-subroutine copy_fluxes_to_pbuf(pbuf, fluxes, band)
-   use physics_buffer, only: physics_buffer_desc, pbuf_get_field, &
-                             pbuf_get_index
+subroutine set_net_fluxes_sw(fluxes, fsds, fsns, fsnt)
+
    use mo_fluxes_byband, only: ty_fluxes_byband
-
-   type(physics_buffer_desc), pointer :: pbuf(:)
    type(ty_fluxes_byband), intent(in) :: fluxes
-   character(len=*), intent(in) :: band
-
-   ! Pointers to pbuf fields
-   real(r8), pointer :: fsds(:)
-   real(r8), pointer :: fsns(:)
-   real(r8), pointer :: fsnt(:)
-   real(r8), pointer :: flns(:)
-   real(r8), pointer :: flnt(:)
+   real(r8), intent(inout) :: fsds(:)
+   real(r8), intent(inout) :: fsns(:)
+   real(r8), intent(inout) :: fsnt(:)
 
    integer :: ncol
-   character(len=32) :: subname = 'copy_fluxes_to_pbuf'
 
+   ! Copy data
    ncol = size(fluxes%flux_up, 1)
-   if (trim(band) == 'shortwave') then
-      ! Associate pointers
-      call pbuf_get_field(pbuf, pbuf_get_index('FSDS'), fsds)
-      call pbuf_get_field(pbuf, pbuf_get_index('FSNS'), fsns)
-      call pbuf_get_field(pbuf, pbuf_get_index('FSNT'), fsnt)
+   fsds(1:ncol) = fluxes%flux_dn(1:ncol,kbot+1)
+   fsns(1:ncol) = fluxes%flux_dn(1:ncol,kbot+1) - fluxes%flux_up(1:ncol,kbot+1)
+   fsnt(1:ncol) = fluxes%flux_dn(1:ncol,ktop) - fluxes%flux_up(1:ncol,ktop)
 
-      ! Copy data
-      fsds(1:ncol) = fluxes%flux_dn(1:ncol,kbot+1)
-      fsns(1:ncol) = fluxes%flux_dn(1:ncol,kbot+1) - fluxes%flux_up(1:ncol,kbot+1)
-      fsnt(1:ncol) = fluxes%flux_dn(1:ncol,ktop) - fluxes%flux_up(1:ncol,ktop)
+end subroutine set_net_fluxes_sw
 
-#ifdef DEBUG
-      ! Check values
-      call assert_valid(fsds(1:ncol), 'fsds')
-      call assert_valid(fsns(1:ncol), 'fsns')
-      call assert_valid(fsnt(1:ncol), 'fsnt')
-#endif
-   else if (trim(band) == 'longwave') then
-      ! Associate pointers
-      call pbuf_get_field(pbuf, pbuf_get_index('FLNS'), flns)
-      call pbuf_get_field(pbuf, pbuf_get_index('FLNT'), flnt)
+subroutine set_net_fluxes_lw(fluxes, flns, flnt)
 
-      ! Copy data
-      flns(1:ncol) = fluxes%flux_up(1:ncol,kbot+1) - fluxes%flux_dn(1:ncol,kbot+1)
-      flnt(1:ncol) = fluxes%flux_up(1:ncol,ktop) - fluxes%flux_dn(1:ncol,ktop)
+   use mo_fluxes_byband, only: ty_fluxes_byband
+   type(ty_fluxes_byband), intent(in) :: fluxes
+   real(r8), intent(inout) :: flns(:)
+   real(r8), intent(inout) :: flnt(:)
+   integer :: ncol
 
-#ifdef DEBUG
-      ! Check values
-      call assert_valid(flns(1:ncol), 'flns')
-      call assert_valid(flnt(1:ncol), 'flnt')
-#endif
-   else
-      call endrun(trim(subname) // ': flux_type ' // trim(band) // ' not known.')
-   end if
+   ! Copy data
+   ncol = size(fluxes%flux_up, 1)
+   flns(1:ncol) = fluxes%flux_up(1:ncol,kbot+1) - fluxes%flux_dn(1:ncol,kbot+1)
+   flnt(1:ncol) = fluxes%flux_up(1:ncol,ktop) - fluxes%flux_dn(1:ncol,ktop)
 
-end subroutine copy_fluxes_to_pbuf
+end subroutine set_net_fluxes_lw
 
 !-------------------------------------------------------------------------------
 
@@ -1977,7 +1958,7 @@ subroutine calculate_heating_rate(fluxes, pint, heating_rate)
 end subroutine calculate_heating_rate
     
 
-subroutine set_aerosol_optics_lw(icall, state, pbuf, optics_out)
+subroutine set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, optics_out)
    use physics_types, only: physics_state
    use physics_buffer, only: physics_buffer_desc, pbuf_get_index, &
                              pbuf_get_field
@@ -1988,6 +1969,7 @@ subroutine set_aerosol_optics_lw(icall, state, pbuf, optics_out)
    integer, intent(in) :: icall
    type(physics_state), intent(in) :: state
    type(physics_buffer_desc), pointer :: pbuf(:)
+   logical, intent(in) :: is_cmip6_volc
    type(ty_optical_props_1scl), intent(inout) :: optics_out
 
    ! Subroutine name for error messages
@@ -2002,7 +1984,7 @@ subroutine set_aerosol_optics_lw(icall, state, pbuf, optics_out)
 
    ! Get aerosol absorption optical depth from CAM routine
    absorption_tau = 0.0
-   call aer_rad_props_lw(icall, state, pbuf, absorption_tau)
+   call aer_rad_props_lw(is_cmip6_volc, icall, state, pbuf, absorption_tau)
 
    ! Populate the RRTMGP optical properties object with CAM optical depth
    optics_out%tau(:,:,:) = 0.0
@@ -2014,6 +1996,7 @@ end subroutine set_aerosol_optics_lw
 
 subroutine set_aerosol_optics_sw(icall, state, pbuf, &
                                  day_indices, night_indices, &
+                                 is_cmip6_volc, &
                                  optics_out)
    use ppgrid, only: pcols, pver
    use physics_types, only: physics_state
@@ -2025,6 +2008,7 @@ subroutine set_aerosol_optics_sw(icall, state, pbuf, &
    type(physics_state), intent(in) :: state
    type(physics_buffer_desc), pointer :: pbuf(:)
    integer, intent(in) :: day_indices(:), night_indices(:)
+   logical, intent(in) :: is_cmip6_volc
    type(ty_optical_props_2str), intent(inout) :: optics_out
 
    ! NOTE: aer_rad_props expects 0:pver indexing on these! It appears this is to
@@ -2050,7 +2034,7 @@ subroutine set_aerosol_optics_sw(icall, state, pbuf, &
    tau_w_g = 0.0
    tau_w_f = 0.0
    call aer_rad_props_sw(icall, state, pbuf, &
-                         count(night_indices > 0), night_indices, &
+                         count(night_indices > 0), night_indices, is_cmip6_volc, &
                          tau, tau_w, tau_w_g, tau_w_f)
 
    ! Reset outputs (also handles case where radiation grid contains an extra
