@@ -84,6 +84,12 @@ class DAE(SystemTestsCompareTwo):
 
         # CONTINUE_RUN ends up TRUE, set it back in case this is a re-run.
         self._case.set_value("CONTINUE_RUN", False)
+        # Turn off post DA in case this is a re-run
+        for comp in self._case.get_values("COMP_CLASSES"):
+            if comp == "ESP":
+                continue
+            else:
+                self._case.set_value("DATA_ASSIMILATION_{}".format(comp), False)
         # Start normal run here
         self._activate_case1()
         SystemTestsCompareTwo.run_phase(self)
@@ -115,7 +121,9 @@ class DAE(SystemTestsCompareTwo):
                 # Expect a signal from every instance of every DA component
                 expected_init = 0
                 for comp in self._case.get_values("COMP_CLASSES"):
-                    if self._case.get_value("DATA_ASSIMILATION_{}".format(comp)):
+                    if comp == "ESP":
+                        continue
+                    elif self._case.get_value("DATA_ASSIMILATION_{}".format(comp)):
                         expected_init = expected_init + self._case.get_value("NINST_{}".format(comp))
 
             # Adjust expected initial run and post-DA numbers
@@ -146,12 +154,13 @@ class DAE(SystemTestsCompareTwo):
                     else:
                         expect(False, "ERROR: Unrecognized line ('{}') found in {}".format(line, fname))
 
-                # End of for loop
+                # End for
                 expect(found_caseroot, "ERROR: No caseroot found in {}".format(fname))
                 expect(found_cycle, "ERROR: No cycle found in {}".format(fname))
                 expect(found_signal == expected_signal,
                        "ERROR: Expected {} post-DA resume signal message(s), {} found in {}".format(expected_signal, found_signal, fname))
                 expect(found_init == expected_init,
                        "ERROR: Expected {} Initial run message(s), {} found in {}".format(expected_init, found_init, fname))
-            # End of with
+            # End with
             cycle_num = cycle_num + 1
+        # End for
