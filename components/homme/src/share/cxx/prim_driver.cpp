@@ -59,7 +59,7 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
 
   if (compute_diagnostics) {
     Diagnostics& diags = Context::singleton().get_diagnostics();
-    diags.prim_diag_scalars(true,3);
+    diags.prim_diag_scalars(true,2);
     diags.prim_energy_halftimes(true,2);
   }
 
