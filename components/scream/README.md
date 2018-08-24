@@ -1,7 +1,7 @@
 # SCREAM standalone: How to set up basic testing.
 
 ## Create directory structure
-
+```
 #${RUN_ROOT_DIR} is the root directory where code is built and run
 #${KOKKOS_SRC_LOC} is the directory where kokkos is cloned into
 #${SCREAM_SRC_LOC} is the directory where scream is cloned into
@@ -9,6 +9,8 @@ mkdir -p ${RUN_ROOT_DIR}/kokkos/build   #where kokkos is built
 mkdir -p ${RUN_ROOT_DIR}/kokkos/install #where kokkos is installed
 mkdir -p ${RUN_ROOT_DIR}/test/          #where scream is installed
                                         #and tests are run
+```
+
 ## Dependencies
 Get Kokkos:
 ```
@@ -53,8 +55,27 @@ From a trusted SHA1, generate a baseline file:
 cd ${RUN_ROOT_DIR}/test
 make baseline
 ```
+The generated baseline file is in `${RUN_ROOT_DIR}/test/p3/tests`.
+
 From any SHA1, run tests:
 ```
 cd ${RUN_ROOT_DIR}/test
 ctest -VV
 ```
+The test `ctest -R p3_regression` uses the baseline file to compare any new or
+altered implementations with the Fortran reference implementation's output in
+the baseline file.
+
+The intended use of the baseline capability is as follows:
+
+1. Run `make baseline` from a trusted commit, such as master HEAD.
+
+2. Develop code. If you're creating a new P3 implementation, add it to the
+function `Baseline::run_and_cmp` in `p3_run_and_cmp.cpp`.
+
+3. The test `ctest -R p3_regression` will compare output against the baseline
+file.
+
+4. If the reference Fortran impl is changed such that output changes, carefully
+decide whether that is desired. If it is, then in your commit, tell everyone
+that a new baseline is needed.
