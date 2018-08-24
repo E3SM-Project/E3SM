@@ -1092,6 +1092,7 @@ end subroutine clubb_init_cnst
 #ifdef FIVE
    real(r8) :: thlm_five(pcols,pverp_clubb)
    real(r8) :: rtm_five(pcols,pverp_clubb)
+   real(r8) :: rvm_five(pcols,pverp_clubb)
    real(r8) :: um_five(pcols,pverp_clubb)
    real(r8) :: vm_five(pcols,pverp_clubb)
 #endif
@@ -1099,20 +1100,21 @@ end subroutine clubb_init_cnst
    real(r8) :: p_in_pa_in(pverp_clubb)
    real(r8) :: rad_pre(pverp_clubb)
    real(r8) :: rad(pverp_clubb)
-   real(r8) :: thlm_pre(pcols,pverp)
-   real(r8) :: rtm_pre(pcols,pverp)
-   real(r8) :: um_pre(pcols,pverp)
-   real(r8) :: vm_pre(pcols,pverp)
-   real(r8) :: rcm_pre(pverp)
-   real(r8) :: wprcp_pre(pverp)
-   real(r8) :: cloud_frac_pre(pverp)
-   real(r8) :: rcm_in_layer_pre(pverp)
-   real(r8) :: cloud_cover_pre(pverp)
-   real(r8) :: zt_out_pre(pverp)
-   real(r8) :: zi_out_pre(pverp)
-   real(r8) :: khzm_pre(pverp)
-   real(r8) :: khzt_pre(pverp)
-   real(r8) :: qclvar_pre(pverp)
+   real(r8) :: thlm_pre(pcols,pverp_clubb)
+   real(r8) :: rtm_pre(pcols,pverp_clubb)
+   real(r8) :: rvm_pre(pcols,pverp_clubb)
+   real(r8) :: um_pre(pcols,pverp_clubb)
+   real(r8) :: vm_pre(pcols,pverp_clubb)
+   real(r8) :: rcm_pre(pverp_clubb)
+   real(r8) :: wprcp_pre(pverp_clubb)
+   real(r8) :: cloud_frac_pre(pverp_clubb)
+   real(r8) :: rcm_in_layer_pre(pverp_clubb)
+   real(r8) :: cloud_cover_pre(pverp_clubb)
+   real(r8) :: zt_out_pre(pverp_clubb)
+   real(r8) :: zi_out_pre(pverp_clubb)
+   real(r8) :: khzm_pre(pverp_clubb)
+   real(r8) :: khzt_pre(pverp_clubb)
+   real(r8) :: qclvar_pre(pverp_clubb)
    
    real(r8) :: rfrzm(pverp_clubb)
    real(r8) :: rfrzm_pre(pverp)
@@ -1568,6 +1570,7 @@ end subroutine clubb_init_cnst
      call linear_interp(state1%pmid(i,:),pmid_five,rtm(i,1:pver),rtm_five(i,1:pver_five),pver,pver_five)
      call linear_interp(state1%pmid(i,:),pmid_five,um(i,1:pver),um_five(i,1:pver_five),pver,pver_five)
      call linear_interp(state1%pmid(i,:),pmid_five,vm(i,1:pver),vm_five(i,1:pver_five),pver,pver_five)
+     call linear_interp(state1%pmid(i,:),pmid_five,rvm(i,1:pver),rvm_five(i,1:pver_five),pver,pver_five)
    enddo
    
    write(*,*) 'pver and pverfive', pver, pver_five
@@ -1575,16 +1578,20 @@ end subroutine clubb_init_cnst
    write(*,*) 'PMIDfive ', pmid_five
    write(*,*) 'THLMlow ', thlm(1,:)
    write(*,*) 'THLMhigh ', thlm_five(1,:)
+   write(*,*) 'RTMlow ', rtm(1,:)
+   write(*,*) 'RTMhigh ', rtm_five(1,:)
    
    thlm_pre(:,1:pver_five) = thlm_five(:,1:pver_five)
    rtm_pre(:,1:pver_five) = rtm_five(:,1:pver_five)
    um_pre(:,1:pver_five) = um_five(:,1:pver_five)
    vm_pre(:,1:pver_five) = vm_five(:,1:pver_five)
+   rvm_pre(:,1:pver_five) = rvm_five(:,1:pver_five)
 #else
    thlm_pre(:,1:pver) = thlm(:,1:pver)
    rtm_pre(:,1:pver) = rtm(:,1:pver)
    um_pre(:,1:pver) = um(:,1:pver)
    vm_pre(:,1:pver) = vm(:,1:pver)
+   rvm_pre(:,1:pver) = rvm(:,1:pver)
 #endif  
    
    if (clubb_do_adv) then
@@ -1599,8 +1606,8 @@ end subroutine clubb_init_cnst
 
    ! surface toundary conditions
    rtm_pre(1:ncol,pverp_five)  = rtm_pre(1:ncol,pver_five)
-   um_pre(1:ncol,pverp_five)   = state1%u(1:ncol,pver)
-   vm_pre(1:ncol,pverp_five)   = state1%v(1:ncol,pver)
+   um_pre(1:ncol,pverp_five)   = um_pre(1:ncol,pver_five) 
+   vm_pre(1:ncol,pverp_five)   = vm_pre(1:ncol,pver_five)
    thlm_pre(1:ncol,pverp_five) = thlm_pre(1:ncol,pver_five)   
   
    if (clubb_do_adv) then 
@@ -1757,8 +1764,8 @@ end subroutine clubb_init_cnst
       call linear_interp(state1%pmid(i,:),pmid_five,rfrzm_pre(1:pver),rfrzm(1:pver_five),pver,pver_five)
       call linear_interp(state1%pmid(i,:),pmid_five,radf_pre(1:pver),rad(1:pver_five),pver,pver_five)
       
-!      write(*,*) 'PMIDbefore ', state1%pmid(i,:)
-!      write(*,*) 'PMIDafter ', pmid_five
+      write(*,*) 'PMIDbefore ', state1%pmid(i,:)
+      write(*,*) 'PMIDafter ', i 
       write(*,*) 'RHObefore ', rho_zt_pre
       write(*,*) 'RHOafter ', rho_zt
 
@@ -1778,10 +1785,15 @@ end subroutine clubb_init_cnst
        if (lq(ixind)) then
          icnt=icnt+1
 	 do k=1,pver
-	   call linear_interp(state1%pmid(i,:),pmid_five,edsclr_pre(icnt,:),edsclr(icnt,:),pverp,pverp_five)
+	   call linear_interp(state1%pmid(i,:),pmid_five,edsclr_pre(1:pver,icnt),edsclr(1:pver_five,icnt),pver,pver_five)
 	 enddo
+       
+         edsclr(pverp_five,icnt) = edsclr(pver_five,icnt)
+
        endif
      enddo
+
+     write(*,*) 'PMIDfuckhere ', state1%pmid(i,:)
 #else
       p_in_Pa(pverp) = p_in_Pa(pver)
       zi_g(:) = zi_g_pre
@@ -1893,17 +1905,17 @@ end subroutine clubb_init_cnst
  
       
       !  Surface fluxes provided by host model
-      wpthlp_sfc = cam_in%shf(i)/(cpair*rho_ds_zm(1))       ! Sensible heat flux
-      wprtp_sfc  = cam_in%cflx(i,1)/(rho_ds_zm(1))      ! Latent heat flux
-      upwp_sfc   = cam_in%wsx(i)/rho_ds_zm(1)               ! Surface meridional momentum flux
-      vpwp_sfc   = cam_in%wsy(i)/rho_ds_zm(1)               ! Surface zonal momentum flux  
+      wpthlp_sfc = cam_in%shf(i)/(cpair*rho_ds_zt(1))       ! Sensible heat flux
+      wprtp_sfc  = cam_in%cflx(i,1)/(rho_ds_zt(1))      ! Latent heat flux
+      upwp_sfc   = cam_in%wsx(i)/rho_ds_zt(1)               ! Surface meridional momentum flux
+      vpwp_sfc   = cam_in%wsy(i)/rho_ds_zt(1)               ! Surface zonal momentum flux  
       
       ! ------------------------------------------------- !
       ! Apply TMS                                         !
       ! ------------------------------------------------- !    
        if ( do_tms) then
-          upwp_sfc = upwp_sfc-((ksrftms(i)*state1%u(i,pver))/rho_ds_zm(1))
-          vpwp_sfc = vpwp_sfc-((ksrftms(i)*state1%v(i,pver))/rho_ds_zm(1))           
+          upwp_sfc = upwp_sfc-((ksrftms(i)*state1%u(i,pver))/rho_ds_zt(1))
+          vpwp_sfc = vpwp_sfc-((ksrftms(i)*state1%v(i,pver))/rho_ds_zt(1))           
        endif
   
       !  Need to flip arrays around for CLUBB core
@@ -1925,7 +1937,7 @@ end subroutine clubb_init_cnst
 
          thlm_in(k)    = thlm_pre(i,pverp_clubb-k+1)
          rtm_in(k)     = rtm_pre(i,pverp_clubb-k+1)
-         rvm_in(k)     = rvm(i,pverp_clubb-k+1)
+         rvm_in(k)     = rvm_pre(i,pverp_clubb-k+1)
 	 
 	 zi_g_in(k) = zi_g(pverp_clubb-k+1)
          zt_g_in(k) = zt_g(pverp_clubb-k+1)
@@ -1940,7 +1952,8 @@ end subroutine clubb_init_cnst
 	 p_in_pa_in(k) = p_in_pa(pverp_clubb-k+1)
  
          if (k .ne. 1) then
-            pre_in(k)    = prer_evap(i,pverp_clubb-k+1)
+!            pre_in(k)    = prer_evap(i,pverp_clubb-k+1)
+             pre_in(k)    = 0._r8 !+PB, fix this the right way
          endif
 
          !  Initialize these to prevent crashing behavior
@@ -1950,7 +1963,7 @@ end subroutine clubb_init_cnst
          rcm_in_layer_out(k) = 0._r8
          cloud_cover_out(k)  = 0._r8
          edsclr_in(k,:)      = 0._r8
-         edsclr_out(k,:)     = 0._r8
+!         edsclr_out(k,:)     = 0._r8
          khzm_out(k)         = 0._r8
          khzt_out(k)         = 0._r8
 
@@ -2005,8 +2018,8 @@ end subroutine clubb_init_cnst
       do ixind=1,pcnst
          if (lq(ixind))  then 
             icnt=icnt+1
-            do k=1,pverp_clubb
-               edsclr_in(k+1,icnt) = edsclr(icnt,pverp_clubb-k+1)
+            do k=1,pver_clubb
+               edsclr_in(k+1,icnt) = edsclr(pver_clubb-k+1,icnt)
             enddo
             edsclr_in(1,icnt) = edsclr_in(2,icnt)
          end if
@@ -2055,6 +2068,7 @@ end subroutine clubb_init_cnst
       ! End cloud-top radiative cooling contribution to CLUBB     !
       ! --------------------------------------------------------- !  
 
+      write(*,*) 'BEFORE'
       write(*,*) 'p_in_Pa_in', p_in_Pa_in
       write(*,*) 'rho_zm', rho_zm
       write(*,*) 'rho_zt_in', rho_zt_in
@@ -2079,6 +2093,14 @@ end subroutine clubb_init_cnst
       write(*,*) 'thlp2_in', thlp2_in
       write(*,*) 'rtpthlp_in', rtpthlp_in
 
+      ! Print stuff
+      icnt=0
+      do ixind=1,pcnst
+        write(*,*) 'edsclr_in ',ixind,  edsclr_in(:,ixind)
+      enddo
+      write(*,*) 'edsclr_in ', pcnst+1, edsclr_in(:,pcnst+1)
+      write(*,*) 'edsclr_in ', pcnst+2, edsclr_in(:,pcnst+2)
+
       call t_startf('adv_clubb_core_ts_loop')
       do t=1,nadv    ! do needed number of "sub" timesteps for each CAM step
     
@@ -2095,7 +2117,7 @@ end subroutine clubb_init_cnst
             thlm_forcing, rtm_forcing, um_forcing, vm_forcing, &
             sclrm_forcing, edsclrm_forcing, wprtp_forcing, &  
             wpthlp_forcing, rtp2_forcing, thlp2_forcing, &
-            rtpthlp_forcing, wm_zm, wm_zt, &      
+            rtpthlp_forcing, wm_zm, wm_zt_in, &      
             wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, &
             wpsclrp_sfc, wpedsclrp_sfc, &       
             p_in_Pa_in, rho_zm, rho_zt_in, exner_in, &
@@ -2161,7 +2183,40 @@ end subroutine clubb_init_cnst
 
       enddo  ! end time loop
       call t_stopf('adv_clubb_core_ts_loop')
-     
+   
+      write(*,*) 'AFTER'
+      write(*,*) 'p_in_Pa_in', p_in_Pa_in
+      write(*,*) 'rho_zm', rho_zm
+      write(*,*) 'rho_zt_in', rho_zt_in
+      write(*,*) 'exner_in', exner_in
+      write(*,*) 'rho_ds_zm', rho_ds_zm
+      write(*,*) 'rho_ds_zt', rho_ds_zt_in
+      write(*,*) 'invrs_rho_ds_zm', invrs_rho_ds_zm
+      write(*,*) 'invrs_rho_ds_zt_in', invrs_rho_ds_zt_in
+      write(*,*) 'thv_ds_zm', thv_ds_zm
+      write(*,*) 'thv_ds_zt_in', thv_ds_zt_in
+      write(*,*) 'um_in', um_in
+      write(*,*) 'vm_in', vm_in
+      write(*,*) 'upwp_in', upwp_in
+      write(*,*) 'vpwp_in', vpwp_in
+      write(*,*) 'thlm_in', thlm_in
+      write(*,*) 'rtm_in', rtm_in
+      write(*,*) 'wprtp_in', wprtp_in
+      write(*,*) 'wpthlp_in', wpthlp_in
+      write(*,*) 'wp2_in', wp2_in
+      write(*,*) 'wp3_in', wp3_in
+      write(*,*) 'rtp2_in', rtp2_in
+      write(*,*) 'thlp2_in', thlp2_in
+      write(*,*) 'rtpthlp_in', rtpthlp_in
+
+      ! Print stuff
+      icnt=0
+      do ixind=1,pcnst
+        write(*,*) 'edsclr_in ',ixind,  edsclr_in(:,ixind)
+      enddo
+      write(*,*) 'edsclr_in ', pcnst+1, edsclr_in(:,pcnst+1)
+      write(*,*) 'edsclr_in ', pcnst+2, edsclr_in(:,pcnst+2)
+ 
       if (clubb_do_adv) then
          if (macmic_it .eq. cld_macmic_num_steps) then 
             wp2_in=zm2zt(wp2_in)   
@@ -2222,25 +2277,36 @@ end subroutine clubb_init_cnst
       enddo 
 
 #ifdef FIVE      
-      call linear_interp(pmid_five,state1%pmid(i,:),thlm_pre(i,1:pverp_five),thlm(i,1:pverp),pverp_five,pverp)
-      call linear_interp(pmid_five,state1%pmid(i,:),rtm_pre(i,1:pverp_five),rtm(i,1:pverp),pverp_five,pverp)
-      call linear_interp(pmid_five,state1%pmid(i,:),um_pre(i,1:pverp_five),um(i,1:pverp),pverp_five,pverp)
-      call linear_interp(pmid_five,state1%pmid(i,:),vm_pre(i,1:pverp_five),vm(i,1:pverp),pverp_five,pverp)
-      call linear_interp(pmid_five,state1%pmid(i,:),rcm_pre(1:pverp_five),rcm(i,1:pverp),pverp_five,pverp)
+      write(*,*) 'pmidBEFORE ', state1%pmid(i,:)
+      write(*,*) 'coli ', i
+      call linear_interp(pmid_five,state1%pmid(i,:),thlm_pre(i,1:pver_five),thlm(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five,state1%pmid(i,:),rtm_pre(i,1:pver_five),rtm(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five,state1%pmid(i,:),um_pre(i,1:pver_five),um(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five,state1%pmid(i,:),vm_pre(i,1:pver_five),vm(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five,state1%pmid(i,:),rcm_pre(1:pver_five),rcm(i,1:pver),pver_five,pver)
       
-      call linear_interp(pmid_five,state1%pmid(i,:),wprcp_pre(1:pverp_five),wprcp(i,1:pverp),pverp_five,pverp)
-      call linear_interp(pmid_five,state1%pmid(i,:),cloud_frac_pre(1:pverp_five),cloud_frac(i,1:pverp),pverp_five,pverp)
-      call linear_interp(pmid_five,state1%pmid(i,:),rcm_in_layer_pre(1:pverp_five),rcm_in_layer(i,1:pverp),pverp_five,pverp)
-      call linear_interp(pmid_five,state1%pmid(i,:),cloud_cover_pre(1:pverp_five),cloud_cover(i,1:pverp),pverp_five,pverp)
-      call linear_interp(pmid_five,state1%pmid(i,:),zt_out_pre(1:pverp_five),zt_out(i,1:pverp),pverp_five,pverp)
-      call linear_interp(pmid_five,state1%pmid(i,:),zi_out_pre(1:pverp_five),zi_out(i,1:pverp),pverp_five,pverp)
-      call linear_interp(pmid_five,state1%pmid(i,:),khzm_pre(1:pverp_five),khzm(i,1:pverp),pverp_five,pverp)
-      call linear_interp(pmid_five,state1%pmid(i,:),qclvar_pre(1:pverp_five),qclvar(i,1:pverp),pverp_five,pverp)
+      call linear_interp(pmid_five,state1%pmid(i,:),wprcp_pre(1:pver_five),wprcp(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five,state1%pmid(i,:),cloud_frac_pre(1:pver_five),cloud_frac(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five,state1%pmid(i,:),rcm_in_layer_pre(1:pver_five),rcm_in_layer(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five,state1%pmid(i,:),cloud_cover_pre(1:pver_five),cloud_cover(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five,state1%pmid(i,:),zt_out_pre(1:pver_five),zt_out(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five,state1%pmid(i,:),zi_out_pre(1:pver_five),zi_out(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five,state1%pmid(i,:),khzm_pre(1:pver_five),khzm(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five,state1%pmid(i,:),qclvar_pre(1:pver_five),qclvar(i,1:pver),pver_five,pver)
       
       do ixind=1,edsclr_dim
-        call linear_interp(pmid_five,state1%pmid(i,:),edsclr(1:pverp_five,ixind),edsclr_out(1:pverp,ixind),pverp_five,pverp)
+        call linear_interp(pmid_five,state1%pmid(i,:),edsclr(1:pver_five,ixind),edsclr_out(1:pver,ixind),pver_five,pver)
       enddo
       
+      write(*,*) 'pmid_five ', pmid_five
+      write(*,*) 'pmid ', state1%pmid(i,:) 
+      write(*,*) 'THLM_pre ', thlm_pre(i,:)
+      write(*,*) 'THLM ', thlm(i,:)
+      write(*,*) 'RTM ', rtm(i,:)
+      write(*,*) 'UM ', um(i,:)
+      write(*,*) 'VM ', vm(i,:)
+      write(*,*) 'RCM ', rcm(i,:)
+ 
 #else
       thlm(i,:) = thlm_pre(i,:)
       rtm(i,:) = rtm_pre(i,:)
