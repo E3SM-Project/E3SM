@@ -19,6 +19,7 @@ TEST_CASE("FortranDataIterator", "p3") {
   REQUIRE(f.extent[0] == 1);
   REQUIRE(f.extent[1] == 72);
   REQUIRE(f.extent[2] == 1);
+  REQUIRE(f.data == d->qv.data());
   REQUIRE(f.size == 72);
 }
 

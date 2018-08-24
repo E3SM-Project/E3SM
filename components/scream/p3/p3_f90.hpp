@@ -50,7 +50,7 @@ struct FortranDataIterator {
     FortranData::Array1::size_type size;
   };
 
-  FortranDataIterator(const FortranData::Ptr& d);
+  explicit FortranDataIterator(const FortranData::Ptr& d);
 
   Int nfield () const { return fields_.size(); }
   const RawArray& getfield(Int i) const;
