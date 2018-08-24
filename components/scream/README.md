@@ -80,3 +80,7 @@ file.
 4. If the reference Fortran impl is changed such that output changes, carefully
 decide whether that is desired. If it is, then in your commit, tell everyone
 that a new baseline is needed.
+
+It is not important to know where the baseline file is, but if it is of
+interest, it is in the CMake-configurable `${SCREAM_TEST_DATA_DIR}`, which
+defaults to `data/` in the build directory.

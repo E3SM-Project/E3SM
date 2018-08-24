@@ -5,7 +5,7 @@ add_executable(p3_run_and_cmp
   p3_run_and_cmp.cpp)
 
 add_custom_target(p3_baseline
-  COMMAND $<TARGET_FILE:p3_run_and_cmp> -g p3_run_and_cmp.baseline)
+  COMMAND $<TARGET_FILE:p3_run_and_cmp> -g ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline)
 
 foreach (exe p3_tests p3_run_and_cmp)
   target_include_directories(${exe} PUBLIC ${CATCH_INCL_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..)
@@ -17,4 +17,4 @@ endforeach ()
 add_test(run_p3_tests p3_tests)
 configure_file(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v2.8.2 p3_lookup_table_1.dat-v2.8.2 COPYONLY)
 
-add_test(p3_regression p3_run_and_cmp p3_run_and_cmp.baseline)
+add_test(p3_regression p3_run_and_cmp ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline)
