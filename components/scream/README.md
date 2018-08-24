@@ -71,7 +71,8 @@ The intended use of the baseline capability is as follows:
 1. Run `make baseline` from a trusted commit, such as master HEAD.
 
 2. Develop code. If you're creating a new P3 implementation, add it to the
-function `Baseline::run_and_cmp` in `p3_run_and_cmp.cpp`.
+function `Baseline::run_and_cmp` in
+`${SCREAM_SRC_LOC}/scream/components/scream/p3/tests/p3_run_and_cmp.cpp`.
 
 3. The test `ctest -R p3_regression` will compare output against the baseline
 file.
