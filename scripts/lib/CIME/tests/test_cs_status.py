@@ -49,7 +49,8 @@ class CustomAssertions(unittest.TestCase):
                                         phase=phase,
                                         test_name=test_name)
 
-    def _test_name_and_phase_regex(self, test_name, phase):
+    @staticmethod
+    def _test_name_and_phase_regex(test_name, phase):
         """Returns a regex matching the portion of a TestStatus line
         containing the test name and phase"""
         # The main purpose of extracting this into a shared method is:
@@ -62,7 +63,8 @@ class CustomAssertions(unittest.TestCase):
 
 class TestCustomAssertions(CustomAssertions):
 
-    def output_line(self, status, test_name, phase):
+    @staticmethod
+    def output_line(status, test_name, phase):
         return status + ' ' + test_name + ' ' + phase + '\n'
 
     # Note: No explicit tests of assert_status_of_phase: this is covered
@@ -166,7 +168,8 @@ class TestCsStatus(CustomAssertions):
         os.makedirs(fullpath)
         return fullpath
 
-    def create_test_status_core_passes(self, test_dir_path, test_name):
+    @staticmethod
+    def create_test_status_core_passes(test_dir_path, test_name):
         """Creates a TestStatus file in the given path, with PASS status
         for all core phases"""
         with test_status.TestStatus(test_dir=test_dir_path,
@@ -185,7 +188,8 @@ class TestCsStatus(CustomAssertions):
                                  status=test_status.TEST_FAIL_STATUS)
         return fail_phase
 
-    def set_phase_to_status(self, test_dir_path, test_name, phase, status):
+    @staticmethod
+    def set_phase_to_status(test_dir_path, test_name, phase, status):
         """Sets the given phase to the given status for this test"""
         with test_status.TestStatus(test_dir=test_dir_path,
                                     test_name=test_name) as ts:
