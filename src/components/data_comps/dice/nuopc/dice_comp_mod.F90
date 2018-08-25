@@ -5,31 +5,40 @@
 module dice_comp_mod
 
   ! !USES:
-  use mct_mod
-  use perf_mod
   use shr_pcdf_mod
-  use shr_const_mod
-  use shr_kind_mod    , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
-  use shr_file_mod    , only: shr_file_getunit, shr_file_freeunit
-  use shr_mpi_mod     , only: shr_mpi_bcast
-  use shr_frz_mod     , only: shr_frz_freezetemp
-  use shr_cal_mod     , only: shr_cal_datetod2string
-  use shr_strdata_mod , only: shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
-  use shr_strdata_mod , only: shr_strdata_print, shr_strdata_restRead
-  use shr_strdata_mod , only: shr_strdata_advance, shr_strdata_restWrite
-  use shr_dmodel_mod  , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
-  use shr_dmodel_mod  , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
+  use NUOPC                  , only : NUOPC_Advertise
+  use ESMF                   , only : ESMF_State
+  use perf_mod               , only : t_startf, t_stopf
+  use perf_mod               , only : t_adj_detailf, t_barrierf
+  use mct_mod                , only : mct_rearr, mct_gsmap_lsize, mct_rearr_init, mct_gsmap, mct_ggrid
+  use mct_mod                , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
+  use mct_mod                , only : mct_avect_init, mct_avect_lsize, mct_avect_clean, mct_aVect
+  use med_constants_mod      , only : IN, R8, I8, CS, CL, CXX
+  use shr_const_mod          , only : shr_const_pi, shr_const_spval, shr_const_tkfrz, shr_const_latice
+  use shr_file_mod           , only : shr_file_getunit, shr_file_freeunit
+  use shr_mpi_mod            , only : shr_mpi_bcast
+  use shr_frz_mod            , only : shr_frz_freezetemp
+  use shr_cal_mod            , only : shr_cal_datetod2string
+  use shr_string_mod         , only : shr_string_listGetName
+  use shr_nuopc_scalars_mod  , only : flds_scalar_name
+  use shr_nuopc_methods_mod  , only : shr_nuopc_methods_ChkErr
 
-  use dice_shr_mod    , only: datamode       ! namelist input
-  use dice_shr_mod    , only: decomp         ! namelist input
-  use dice_shr_mod    , only: rest_file      ! namelist input
-  use dice_shr_mod    , only: rest_file_strm ! namelist input
-  use dice_shr_mod    , only: flux_swpf      ! namelist input -short-wave penatration factor
-  use dice_shr_mod    , only: flux_Qmin      ! namelist input -bound on melt rate
-  use dice_shr_mod    , only: flux_Qacc      ! namelist input -activates water accumulation/melt wrt Q
-  use dice_shr_mod    , only: flux_Qacc0     ! namelist input -initial water accumulation value
-  use dice_shr_mod    , only: nullstr
-  use dice_flux_atmice_mod, only: dice_flux_atmice
+  use shr_strdata_mod        , only : shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
+  use shr_strdata_mod        , only : shr_strdata_print, shr_strdata_restRead
+  use shr_strdata_mod        , only : shr_strdata_advance, shr_strdata_restWrite
+  use shr_dmodel_mod         , only : shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid, shr_dmodel_translateAV
+
+  use dshr_nuopc_mod         , only : fld_list_type, dshr_fld_add
+  use dice_shr_mod           , only : datamode       ! namelist input
+  use dice_shr_mod           , only : decomp         ! namelist input
+  use dice_shr_mod           , only : rest_file      ! namelist input
+  use dice_shr_mod           , only : rest_file_strm ! namelist input
+  use dice_shr_mod           , only : flux_swpf      ! namelist input -short-wave penatration factor
+  use dice_shr_mod           , only : flux_Qmin      ! namelist input -bound on melt rate
+  use dice_shr_mod           , only : flux_Qacc      ! namelist input -activates water accumulation/melt wrt Q
+  use dice_shr_mod           , only : flux_Qacc0     ! namelist input -initial water accumulation value
+  use dice_shr_mod           , only : nullstr
+  use dice_flux_atmice_mod   , only : dice_flux_atmice
 
   ! !PUBLIC TYPES:
   implicit none
@@ -39,60 +48,297 @@ module dice_comp_mod
   ! Public interfaces
   !--------------------------------------------------------------------------
 
+  public :: dice_comp_advertise
   public :: dice_comp_init
   public :: dice_comp_run
   public :: dice_comp_final
-  public :: dice_comp_debug
 
   !--------------------------------------------------------------------------
   ! Private data
   !--------------------------------------------------------------------------
 
-  logical                    :: firstcall = .true. ! first call logical
-  integer(IN)                :: dbug = 2           ! debug level (higher is more)
-  character(len=*),parameter :: rpfile = 'rpointer.ice'
-
-  real(R8),parameter  :: pi     = shr_const_pi      ! pi
-  real(R8),parameter  :: spval  = shr_const_spval   ! flags invalid data
-  real(R8),parameter  :: tFrz   = shr_const_tkfrz   ! temp of freezing
-  real(R8),parameter  :: latice = shr_const_latice  ! latent heat of fusion
-  real(R8),parameter  :: waterMax = 1000.0_R8       ! wrt iFrac comp & frazil ice (kg/m^2)
+  real(R8),parameter         :: pi     = shr_const_pi      ! pi
+  real(R8),parameter         :: spval  = shr_const_spval   ! flags invalid data
+  real(R8),parameter         :: tFrz   = shr_const_tkfrz   ! temp of freezing
+  real(R8),parameter         :: latice = shr_const_latice  ! latent heat of fusion
+  real(R8),parameter         :: waterMax = 1000.0_R8       ! wrt iFrac comp & frazil ice (kg/m^2)
 
   !----- surface albedo constants ------
-  real(R8),parameter  :: snwfrac = 0.286_R8 ! snow cover fraction ~ [0,1]
-  real(R8),parameter  :: as_nidf = 0.950_R8 ! albedo: snow,near-infr,diffuse
-  real(R8),parameter  :: as_vsdf = 0.700_R8 ! albedo: snow,visible  ,diffuse
-  real(R8),parameter  :: as_nidr = 0.960_R8 ! albedo: snow,near-infr,direct
-  real(R8),parameter  :: as_vsdr = 0.800_R8 ! albedo: snow,visible  ,direct
-  real(R8),parameter  :: ai_nidf = 0.700_R8 ! albedo: ice, near-infr,diffuse
-  real(R8),parameter  :: ai_vsdf = 0.500_R8 ! albedo: ice, visible  ,diffuse
-  real(R8),parameter  :: ai_nidr = 0.700_R8 ! albedo: ice, near-infr,direct
-  real(R8),parameter  :: ai_vsdr = 0.500_R8 ! albedo: ice, visible  ,direct
-  real(R8),parameter  :: ax_nidf = ai_nidf*(1.0_R8-snwfrac) + as_nidf*snwfrac
-  real(R8),parameter  :: ax_vsdf = ai_vsdf*(1.0_R8-snwfrac) + as_vsdf*snwfrac
-  real(R8),parameter  :: ax_nidr = ai_nidr*(1.0_R8-snwfrac) + as_nidr*snwfrac
-  real(R8),parameter  :: ax_vsdr = ai_vsdr*(1.0_R8-snwfrac) + as_vsdr*snwfrac
+  real(R8),parameter         :: snwfrac = 0.286_R8 ! snow cover fraction ~ [0,1]
+  real(R8),parameter         :: as_nidf = 0.950_R8 ! albedo: snow,near-infr,diffuse
+  real(R8),parameter         :: as_vsdf = 0.700_R8 ! albedo: snow,visible  ,diffuse
+  real(R8),parameter         :: as_nidr = 0.960_R8 ! albedo: snow,near-infr,direct
+  real(R8),parameter         :: as_vsdr = 0.800_R8 ! albedo: snow,visible  ,direct
+  real(R8),parameter         :: ai_nidf = 0.700_R8 ! albedo: ice, near-infr,diffuse
+  real(R8),parameter         :: ai_vsdf = 0.500_R8 ! albedo: ice, visible  ,diffuse
+  real(R8),parameter         :: ai_nidr = 0.700_R8 ! albedo: ice, near-infr,direct
+  real(R8),parameter         :: ai_vsdr = 0.500_R8 ! albedo: ice, visible  ,direct
+  real(R8),parameter         :: ax_nidf = ai_nidf*(1.0_R8-snwfrac) + as_nidf*snwfrac
+  real(R8),parameter         :: ax_vsdf = ai_vsdf*(1.0_R8-snwfrac) + as_vsdf*snwfrac
+  real(R8),parameter         :: ax_nidr = ai_nidr*(1.0_R8-snwfrac) + as_nidr*snwfrac
+  real(R8),parameter         :: ax_vsdr = ai_vsdr*(1.0_R8-snwfrac) + as_vsdr*snwfrac
 
-  integer(IN) :: km
-  integer(IN) :: kswvdr,kswndr,kswvdf,kswndf,kq,kz,kua,kva,kptem,kshum,kdens,ktbot
-  integer(IN) :: kiFrac,kt,kavsdr,kanidr,kavsdf,kanidf,kswnet,kmelth,kmeltw
-  integer(IN) :: ksen,klat,klwup,kevap,ktauxa,ktauya,ktref,kqref,kswpen,ktauxo,ktauyo,ksalt
-  integer(IN) :: ksalinity
-  integer(IN) :: kbcpho, kbcphi, kflxdst
-  integer(IN) :: kbcphidry, kbcphodry, kbcphiwet, kocphidry, kocphodry, kocphiwet
-  integer(IN) :: kdstdry1, kdstdry2, kdstdry3, kdstdry4, kdstwet1, kdstwet2, kdstwet3, kdstwet4
-  integer(IN) :: kiFrac_01,kswpen_iFrac_01 ! optional per thickness category fields
+  integer(IN)                :: km
+  integer(IN)                :: kswvdr,kswndr,kswvdf,kswndf,kq,kz,kua,kva,kptem,kshum,kdens,ktbot
+  integer(IN)                :: kiFrac,kt,kavsdr,kanidr,kavsdf,kanidf,kswnet,kmelth,kmeltw
+  integer(IN)                :: ksen,klat,klwup,kevap,ktauxa,ktauya,ktref,kqref,kswpen,ktauxo,ktauyo,ksalt
+  integer(IN)                :: ksalinity
+  integer(IN)                :: kbcpho, kbcphi, kflxdst
+  integer(IN)                :: kbcphidry, kbcphodry, kbcphiwet
+  integer(IN)                :: kocphidry, kocphodry, kocphiwet
+  integer(IN)                :: kdstdry1, kdstdry2, kdstdry3, kdstdry4
+  integer(IN)                :: kdstwet1, kdstwet2, kdstwet3, kdstwet4
+  integer(IN)                :: kiFrac_01,kswpen_iFrac_01 ! optional per thickness category fields
 
-  type(mct_rearr)       :: rearr
-  integer(IN) , pointer :: imask(:)
-  real(R8)    , pointer :: yc(:)
-  real(R8)    , pointer :: water(:)
-  real(R8)    , pointer :: tfreeze(:)
-  !real(R8)   , pointer :: ifrac0(:)
+  type(mct_rearr)            :: rearr
+  integer(IN) , pointer      :: imask(:)
+  real(R8)    , pointer      :: yc(:)
+  real(R8)    , pointer      :: water(:)
+  real(R8)    , pointer      :: tfreeze(:)
+  !real(R8)   , pointer      :: ifrac0(:)
+
+  character(len=CS), pointer :: avifld(:)
+  character(len=CS), pointer :: avofld(:)
+  character(len=CS), pointer :: strmifld(:)
+  character(len=CS), pointer :: strmofld(:)
+  character(len=CXX)         :: flds_strm = ''   ! colon deliminated string of field names
+  character(len=CXX)         :: flds_i2x_mod
+  character(len=CXX)         :: flds_x2i_mod
+
+  logical                    :: firstcall = .true. ! first call logical
+  character(len=*),parameter :: rpfile = 'rpointer.ice'
+  integer(IN)                :: dbug = 2           ! debug level (higher is more)
+  character(*),parameter     :: u_FILE_u = &
+       __FILE__
 
 !===============================================================================
 contains
 !===============================================================================
+
+  subroutine dice_comp_advertise(importState, exportState, &
+       ice_present, ice_prognostic,  &
+       fldsFrIce_num, fldsFrIce, fldsToIce_num, fldsToIce, &
+       flds_i2x, flds_x2i, rc)
+
+    ! input/output arguments
+    type(ESMF_State)     , intent(inout) :: importState
+    type(ESMF_State)     , intent(inout) :: exportState
+    logical              , intent(in)    :: ice_present
+    logical              , intent(in)    :: ice_prognostic
+    integer              , intent(out)   :: fldsToIce_num
+    integer              , intent(out)   :: fldsFrIce_num
+    type (fld_list_type) , intent(out)   :: fldsToIce(:)
+    type (fld_list_type) , intent(out)   :: fldsFrIce(:)
+    character(len=*)     , intent(out)   :: flds_i2x
+    character(len=*)     , intent(out)   :: flds_x2i
+    integer              , intent(out)   :: rc
+
+    ! local variables
+    integer         :: n
+    !-------------------------------------------------------------------------------
+
+    if (.not. ice_present) return
+
+    !--------------------------------
+    ! export fields
+    !--------------------------------
+
+    fldsFrIce_num=1
+    fldsFrIce(1)%stdname = trim(flds_scalar_name)
+
+    ! export fields that have a corresponding stream field
+
+    call dshr_fld_add(data_fld='ifrac', data_fld_array=avifld, model_fld='Si_ifrac', model_fld_array=avofld, &
+         model_fld_concat=flds_i2x, model_fld_index=kiFrac, fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    ! export fields that have no corresponding stream field (computed internally)
+
+    call dshr_fld_add(model_fld='Si_imask', model_fld_concat=flds_i2x, model_fld_index=km, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Si_t', model_fld_concat=flds_i2x, model_fld_index=kt, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Si_tref', model_fld_concat=flds_i2x, model_fld_index=ktref, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Si_qref', model_fld_concat=flds_i2x, model_fld_index=kqref, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Si_avsdr', model_fld_concat=flds_i2x, model_fld_index=kavsdr, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Si_anidr', model_fld_concat=flds_i2x, model_fld_index=kanidr, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Si_avsdf', model_fld_concat=flds_i2x, model_fld_index=kavsdf, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Si_anidf', model_fld_concat=flds_i2x, model_fld_index=kanidf, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Faii_swnet', model_fld_concat=flds_i2x, model_fld_index=kswnet, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Faii_sen', model_fld_concat=flds_i2x, model_fld_index=ksen, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Faii_lat', model_fld_concat=flds_i2x, model_fld_index=klat, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Faii_lwup', model_fld_concat=flds_i2x, model_fld_index=klwup, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Faii_evap', model_fld_concat=flds_i2x, model_fld_index=kevap, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Faii_taux', model_fld_concat=flds_i2x, model_fld_index=ktauxa, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Faii_tauy', model_fld_concat=flds_i2x, model_fld_index=ktauya, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Fioi_melth', model_fld_concat=flds_i2x, model_fld_index=kmelth, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Fioi_meltw', model_fld_concat=flds_i2x, model_fld_index=kmeltw, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Fioi_swpen', model_fld_concat=flds_i2x, model_fld_index=kswpen, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Fioi_taux', model_fld_concat=flds_i2x, model_fld_index=ktauxo, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Fioi_tauy', model_fld_concat=flds_i2x, model_fld_index=ktauyo, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Fioi_salt', model_fld_concat=flds_i2x, model_fld_index=ksalt, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Fioi_bcpho', model_fld_concat=flds_i2x, model_fld_index=kbcpho, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Fioi_bcphi', model_fld_concat=flds_i2x, model_fld_index=kbcphi, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    call dshr_fld_add(model_fld='Fioi_flxdst', model_fld_concat=flds_i2x, model_fld_index=kflxdst, &
+         fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    !-------------------
+    ! import fields (have no corresponding stream fields)
+    !-------------------
+
+    if (ice_prognostic) then
+
+       fldsToIce_num=1
+       fldsToIce(1)%stdname = trim(flds_scalar_name)
+
+       call dshr_fld_add(model_fld='Faxa_swvdr', model_fld_concat=flds_x2i, model_fld_index=kswvdr, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Faxa_swvdf', model_fld_concat=flds_x2i, model_fld_index=kswvdf, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Faxa_swndr', model_fld_concat=flds_x2i, model_fld_index=kswndr, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Faxa_swndf', model_fld_concat=flds_x2i, model_fld_index=kswndf, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Fioo_q', model_fld_concat=flds_x2i, model_fld_index=kq, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Sa_z', model_fld_concat=flds_x2i, model_fld_index=kz, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Sa_u', model_fld_concat=flds_x2i, model_fld_index=kua, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Sa_v', model_fld_concat=flds_x2i, model_fld_index=kva, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Sa_ptem', model_fld_concat=flds_x2i, model_fld_index=kptem, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Sa_shum', model_fld_concat=flds_x2i, model_fld_index=kshum, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Sa_dens', model_fld_concat=flds_x2i, model_fld_index=kdens, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Sa_tbot', model_fld_concat=flds_x2i, model_fld_index=ktbot, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='So_s', model_fld_concat=flds_x2i, model_fld_index=ksalinity, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Faxa_bcphidry', model_fld_concat=flds_x2i, model_fld_index=kbcphidry, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Faxa_bcphodry', model_fld_concat=flds_x2i, model_fld_index=kbcphodry, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Faxa_bcphiwet', model_fld_concat=flds_x2i, model_fld_index=kbcphiwet, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Faxa_ocphidry', model_fld_concat=flds_x2i, model_fld_index=kocphidry, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Faxa_ocphodry', model_fld_concat=flds_x2i, model_fld_index=kocphodry, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Faxa_ocphiwet', model_fld_concat=flds_x2i, model_fld_index=kocphiwet, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Faxa_dstdry1', model_fld_concat=flds_x2i, model_fld_index=kdstdry1, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Faxa_dstdry2', model_fld_concat=flds_x2i, model_fld_index=kdstdry2, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Faxa_dstdry3', model_fld_concat=flds_x2i, model_fld_index=kdstdry3, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Faxa_dstdry4', model_fld_concat=flds_x2i, model_fld_index=kdstdry4, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Faxa_dstwet1', model_fld_concat=flds_x2i, model_fld_index=kdstwet1, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Faxa_dstwet2', model_fld_concat=flds_x2i, model_fld_index=kdstwet2, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Faxa_dstwet3', model_fld_concat=flds_x2i, model_fld_index=kdstwet3, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+       call dshr_fld_add(model_fld='Faxa_dstwet4', model_fld_concat=flds_x2i, model_fld_index=kdstwet4, &
+            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+
+    end if
+
+    do n = 1,fldsFrIce_num
+       call NUOPC_Advertise(exportState, standardName=fldsFrIce(n)%stdname, &
+            TransferOfferGeomObject='will provide', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    enddo
+
+    if (ice_prognostic) then
+       do n = 1,fldsToIce_num
+          call NUOPC_Advertise(importState, standardName=fldsToIce(n)%stdname, &
+               TransferOfferGeomObject='will provide', rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       enddo
+    end if
+
+    ! Save flds_x2i and flds_i2x as module variables for use in debugging
+
+    flds_x2i_mod = trim(flds_x2i)
+    flds_i2x_mod = trim(flds_i2x)
+
+  end subroutine dice_comp_advertise
+
+  !===============================================================================
 
   subroutine dice_comp_init(x2i, i2x, &
        flds_x2i_fields, flds_i2x_fields, flds_i2o_per_cat, &
@@ -205,31 +451,6 @@ contains
     call mct_aVect_init(i2x, rList=flds_i2x_fields, lsize=lsize)
     call mct_aVect_zero(i2x)
 
-    km     = mct_aVect_indexRA(i2x,'Si_imask')
-    kiFrac = mct_aVect_indexRA(i2x,'Si_ifrac')
-    kt     = mct_aVect_indexRA(i2x,'Si_t')
-    ktref  = mct_aVect_indexRA(i2x,'Si_tref')
-    kqref  = mct_aVect_indexRA(i2x,'Si_qref')
-    kavsdr = mct_aVect_indexRA(i2x,'Si_avsdr')
-    kanidr = mct_aVect_indexRA(i2x,'Si_anidr')
-    kavsdf = mct_aVect_indexRA(i2x,'Si_avsdf')
-    kanidf = mct_aVect_indexRA(i2x,'Si_anidf')
-    kswnet = mct_aVect_indexRA(i2x,'Faii_swnet')
-    ksen   = mct_aVect_indexRA(i2x,'Faii_sen')
-    klat   = mct_aVect_indexRA(i2x,'Faii_lat')
-    klwup  = mct_aVect_indexRA(i2x,'Faii_lwup')
-    kevap  = mct_aVect_indexRA(i2x,'Faii_evap')
-    ktauxa = mct_aVect_indexRA(i2x,'Faii_taux')
-    ktauya = mct_aVect_indexRA(i2x,'Faii_tauy')
-    kmelth = mct_aVect_indexRA(i2x,'Fioi_melth')
-    kmeltw = mct_aVect_indexRA(i2x,'Fioi_meltw')
-    kswpen = mct_aVect_indexRA(i2x,'Fioi_swpen')
-    ktauxo = mct_aVect_indexRA(i2x,'Fioi_taux')
-    ktauyo = mct_aVect_indexRA(i2x,'Fioi_tauy')
-    ksalt  = mct_aVect_indexRA(i2x,'Fioi_salt')
-    kbcpho = mct_aVect_indexRA(i2x,'Fioi_bcpho')
-    kbcphi = mct_aVect_indexRA(i2x,'Fioi_bcphi')
-    kflxdst= mct_aVect_indexRA(i2x,'Fioi_flxdst')
 
     ! optional per thickness category fields
 
@@ -240,34 +461,6 @@ contains
 
     call mct_aVect_init(x2i, rList=flds_x2i_fields, lsize=lsize)
     call mct_aVect_zero(x2i)
-
-    kswvdr    = mct_aVect_indexRA(x2i,'Faxa_swvdr')
-    kswndr    = mct_aVect_indexRA(x2i,'Faxa_swndr')
-    kswvdf    = mct_aVect_indexRA(x2i,'Faxa_swvdf')
-    kswndf    = mct_aVect_indexRA(x2i,'Faxa_swndf')
-    kq        = mct_aVect_indexRA(x2i,'Fioo_q')
-    kz        = mct_aVect_indexRA(x2i,'Sa_z')
-    kua       = mct_aVect_indexRA(x2i,'Sa_u')
-    kva       = mct_aVect_indexRA(x2i,'Sa_v')
-    kptem     = mct_aVect_indexRA(x2i,'Sa_ptem')
-    kshum     = mct_aVect_indexRA(x2i,'Sa_shum')
-    kdens     = mct_aVect_indexRA(x2i,'Sa_dens')
-    ktbot     = mct_aVect_indexRA(x2i,'Sa_tbot')
-    ksalinity = mct_aVect_indexRA(x2i,'So_s')
-    kbcphidry = mct_aVect_indexRA(x2i,'Faxa_bcphidry')
-    kbcphodry = mct_aVect_indexRA(x2i,'Faxa_bcphodry')
-    kbcphiwet = mct_aVect_indexRA(x2i,'Faxa_bcphiwet')
-    kocphidry = mct_aVect_indexRA(x2i,'Faxa_ocphidry')
-    kocphodry = mct_aVect_indexRA(x2i,'Faxa_ocphodry')
-    kocphiwet = mct_aVect_indexRA(x2i,'Faxa_ocphiwet')
-    kdstdry1  = mct_aVect_indexRA(x2i,'Faxa_dstdry1')
-    kdstdry2  = mct_aVect_indexRA(x2i,'Faxa_dstdry2')
-    kdstdry3  = mct_aVect_indexRA(x2i,'Faxa_dstdry3')
-    kdstdry4  = mct_aVect_indexRA(x2i,'Faxa_dstdry4')
-    kdstwet1  = mct_aVect_indexRA(x2i,'Faxa_dstwet1')
-    kdstwet2  = mct_aVect_indexRA(x2i,'Faxa_dstwet2')
-    kdstwet3  = mct_aVect_indexRA(x2i,'Faxa_dstwet3')
-    kdstwet4  = mct_aVect_indexRA(x2i,'Faxa_dstwet4')
 
     allocate(imask(lsize))
     allocate(yc(lsize))
@@ -361,7 +554,7 @@ contains
   subroutine dice_comp_run(x2i, i2x, flds_i2o_per_cat, &
        SDICE, gsmap, ggrid, mpicom, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
-       calendar, modeldt, target_ymd, target_tod, cosArg, avifld, avofld, case_name )
+       calendar, modeldt, target_ymd, target_tod, cosArg, case_name )
 
     ! !DESCRIPTION: run method for dice model
 
@@ -384,20 +577,20 @@ contains
     integer(IN)            , intent(in)    :: target_ymd
     integer(IN)            , intent(in)    :: target_tod
     real(R8)               , intent(in)    :: cosarg               ! for setting ice temp pattern
-    character(len=*)       , intent(in)    :: avifld(:)
-    character(len=*)       , intent(in)    :: avofld(:)
     character(CL)          , intent(in), optional :: case_name     ! case name
 
     !--- local ---
-    integer(IN)   :: n                 ! indices
-    integer(IN)   :: lsize             ! size of attr vect
-    real(R8)      :: dt                ! timestep
-    integer(IN)   :: nu                ! unit number
-    real(R8)      :: qmeltall          ! q that would melt all accumulated water
+    integer(IN)       :: n,nfld            ! indices
+    integer(IN)       :: lsize             ! size of attr vect
+    real(R8)          :: dt                ! timestep
+    integer(IN)       :: nu                ! unit number
+    real(R8)          :: qmeltall          ! q that would melt all accumulated water
+    character(len=CS) :: fldname
     character(len=18) :: date_str
 
     character(*), parameter :: F00   = "('(dice_comp_run) ',8a)"
     character(*), parameter :: F04   = "('(dice_comp_run) ',2a,2i8,'s')"
+    character(*), parameter :: F0D   = "('(dice_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
     character(*), parameter :: subName = "(dice_comp_run) "
     !-------------------------------------------------------------------------------
 
@@ -597,6 +790,27 @@ contains
     call t_stopf('dice_datamode')
 
     !--------------------
+    ! Debug output
+    !--------------------
+
+    if (dbug > 1 .and. my_task == master_task) then
+       do nfld = 1, mct_aVect_nRAttr(x2i)
+          call shr_string_listGetName(trim(flds_x2i_mod), nfld, fldname)
+          do n = 1, mct_aVect_lsize(x2i)
+             write(logunit,F0D)'import: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
+                  n, x2i%rattr(nfld,n)
+          end do
+       end do
+       do nfld = 1, mct_aVect_nRAttr(i2x)
+          call shr_string_listGetName(trim(flds_i2x_mod), nfld, fldname)
+          do n = 1, mct_aVect_lsize(i2x)
+             write(logunit,F0D)'export: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
+                  n, i2x%rattr(nfld,n)
+          end do
+       end do
+    end if
+
+    !--------------------
     ! Write restart
     !--------------------
 
@@ -669,81 +883,5 @@ contains
     call t_stopf('DICE_FINAL')
 
   end subroutine dice_comp_final
-
-  !===============================================================================
-
-  subroutine dice_comp_debug(my_task, master_task, logunit, target_ymd, target_tod, x2i, i2x)
-    integer         , intent(in) :: my_task
-    integer         , intent(in) :: master_task
-    integer         , intent(in) :: logunit 
-    integer         , intent(in) :: target_ymd
-    integer         , intent(in) :: target_tod
-    type(mct_aVect) , intent(in) :: x2i
-    type(mct_aVect) , intent(in) :: i2x
-
-    integer :: n
-    character(*), parameter :: F01   = "('(dice_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
-
-    !----------------------------------------------------------
-    ! Debug output
-    !----------------------------------------------------------
-
-    if (dbug > 1 .and. my_task == master_task) then
-       do n = 1, mct_aVect_lsize(x2i)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_swvdr    = ', target_ymd, target_tod, n, x2i%rattr(kswvdr,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_swndr    = ', target_ymd, target_tod, n, x2i%rattr(kswndr,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_swvdf    = ', target_ymd, target_tod, n, x2i%rattr(kswvdf,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_swndf    = ', target_ymd, target_tod, n, x2i%rattr(kswndf,n)
-          write(logunit,F01)'import: ymd,tod,n,Fioo_q        = ', target_ymd, target_tod, n, x2i%rattr(kq,n)
-          write(logunit,F01)'import: ymd,tod,n,Sa_z          = ', target_ymd, target_tod, n, x2i%rattr(kz,n)
-          write(logunit,F01)'import: ymd,tod,n,Sa_u          = ', target_ymd, target_tod, n, x2i%rattr(kua,n)
-          write(logunit,F01)'import: ymd,tod,n,Sa_v          = ', target_ymd, target_tod, n, x2i%rattr(kva,n)
-          write(logunit,F01)'import: ymd,tod,n,Sa_ptem       = ', target_ymd, target_tod, n, x2i%rattr(kptem,n)
-          write(logunit,F01)'import: ymd,tod,n,Sa_shum       = ', target_ymd, target_tod, n, x2i%rattr(kshum,n)
-          write(logunit,F01)'import: ymd,tod,n,Sa_dens       = ', target_ymd, target_tod, n, x2i%rattr(kdens,n)
-          write(logunit,F01)'import: ymd,tod,n,Sa_tbot       = ', target_ymd, target_tod, n, x2i%rattr(ktbot,n)
-          write(logunit,F01)'import: ymd,tod,n,So_s          = ', target_ymd, target_tod, n, x2i%rattr(ksalinity,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_bcphidry = ', target_ymd, target_tod, n, x2i%rattr(kbcphidry,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_bcphodry = ', target_ymd, target_tod, n, x2i%rattr(kbcphodry,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_bcphiwet = ', target_ymd, target_tod, n, x2i%rattr(kbcphiwet,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_ocphidry = ', target_ymd, target_tod, n, x2i%rattr(kocphidry,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_ocphodry = ', target_ymd, target_tod, n, x2i%rattr(kocphodry,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_ocphiwet = ', target_ymd, target_tod, n, x2i%rattr(kocphiwet,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_dstdry1  = ', target_ymd, target_tod, n, x2i%rattr(kdstdry1,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_dstdry2  = ', target_ymd, target_tod, n, x2i%rattr(kdstdry2,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_dstdry3  = ', target_ymd, target_tod, n, x2i%rattr(kdstdry3,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_dstdry4  = ', target_ymd, target_tod, n, x2i%rattr(kdstdry4,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_dstwet1  = ', target_ymd, target_tod, n, x2i%rattr(kdstwet1,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_dstwet2  = ', target_ymd, target_tod, n, x2i%rattr(kdstwet2,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_dstwet3  = ', target_ymd, target_tod, n, x2i%rattr(kdstwet3,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_dstwet4  = ', target_ymd, target_tod, n, x2i%rattr(kdstwet4,n)
-
-          write(logunit,F01)'export: ymd,tod,n,Si_ifrac      = ', target_ymd, target_tod, n, i2x%rattr(kiFrac ,n)
-          write(logunit,F01)'export: ymd,tod,n,Si_t          = ', target_ymd, target_tod, n, i2x%rattr(kt     ,n)
-          write(logunit,F01)'export: ymd,tod,n,Si_tref       = ', target_ymd, target_tod, n, i2x%rattr(ktref  ,n)
-          write(logunit,F01)'export: ymd,tod,n,Si_qref       = ', target_ymd, target_tod, n, i2x%rattr(kqref  ,n)
-          write(logunit,F01)'export: ymd,tod,n,Si_avsdr      = ', target_ymd, target_tod, n, i2x%rattr(kavsdr ,n)
-          write(logunit,F01)'export: ymd,tod,n,Si_anidr      = ', target_ymd, target_tod, n, i2x%rattr(kanidr ,n)
-          write(logunit,F01)'export: ymd,tod,n,Si_avsdf      = ', target_ymd, target_tod, n, i2x%rattr(kavsdf ,n)
-          write(logunit,F01)'export: ymd,tod,n,Si_anidf      = ', target_ymd, target_tod, n, i2x%rattr(kanidf ,n)
-          write(logunit,F01)'export: ymd,tod,n,Faii_swnet    = ', target_ymd, target_tod, n, i2x%rattr(kswnet ,n)
-          write(logunit,F01)'export: ymd,tod,n,Faii_sen      = ', target_ymd, target_tod, n, i2x%rattr(ksen   ,n)
-          write(logunit,F01)'export: ymd,tod,n,Faii_lat      = ', target_ymd, target_tod, n, i2x%rattr(klat   ,n)
-          write(logunit,F01)'export: ymd,tod,n,Faii_lwup     = ', target_ymd, target_tod, n, i2x%rattr(klwup  ,n)
-          write(logunit,F01)'export: ymd,tod,n,Faii_evap     = ', target_ymd, target_tod, n, i2x%rattr(kevap  ,n)
-          write(logunit,F01)'export: ymd,tod,n,Faii_taux     = ', target_ymd, target_tod, n, i2x%rattr(ktauxa ,n)
-          write(logunit,F01)'export: ymd,tod,n,Faii_tauy     = ', target_ymd, target_tod, n, i2x%rattr(ktauya ,n)
-          write(logunit,F01)'export: ymd,tod,n,Fioi_melth    = ', target_ymd, target_tod, n, i2x%rattr(kmelth ,n)
-          write(logunit,F01)'export: ymd,tod,n,Fioi_meltw    = ', target_ymd, target_tod, n, i2x%rattr(kmeltw ,n)
-          write(logunit,F01)'export: ymd,tod,n,Fioi_swpen    = ', target_ymd, target_tod, n, i2x%rattr(kswpen ,n)
-          write(logunit,F01)'export: ymd,tod,n,Fioi_taux     = ', target_ymd, target_tod, n, i2x%rattr(ktauxo ,n)
-          write(logunit,F01)'export: ymd,tod,n,Fioi_tauy     = ', target_ymd, target_tod, n, i2x%rattr(ktauyo ,n)
-          write(logunit,F01)'export: ymd,tod,n,Fioi_salt     = ', target_ymd, target_tod, n, i2x%rattr(ksalt  ,n)
-          write(logunit,F01)'export: ymd,tod,n,Fioi_bcpho    = ', target_ymd, target_tod, n, i2x%rattr(kbcpho ,n)
-          write(logunit,F01)'export: ymd,tod,n,Fioi_bcphi    = ', target_ymd, target_tod, n, i2x%rattr(kbcphi ,n)
-          write(logunit,F01)'export: ymd,tod,n,Fioi_flxdst   = ', target_ymd, target_tod, n, i2x%rattr(kflxdst,n)
-       end do
-    end if
-  end subroutine dice_comp_debug
 
 end module dice_comp_mod

@@ -18,15 +18,10 @@ module ocn_comp_nuopc
   use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
   use med_constants_mod     , only : shr_file_getloglevel, shr_file_setloglevel
   use med_constants_mod     , only : shr_file_setIO, shr_file_getUnit
-  use shr_log_mod           , only : shr_log_Unit
-  use shr_file_mod          , only : shr_file_getlogunit, shr_file_setlogunit
-  use shr_file_mod          , only : shr_file_getloglevel, shr_file_setloglevel
-  use shr_file_mod          , only : shr_file_getUnit
   use shr_nuopc_scalars_mod , only : flds_scalar_name
   use shr_nuopc_scalars_mod , only : flds_scalar_num
   use shr_nuopc_scalars_mod , only : flds_scalar_index_nx
   use shr_nuopc_scalars_mod , only : flds_scalar_index_ny
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Getfldinfo
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
@@ -34,8 +29,6 @@ module ocn_comp_nuopc
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_Meshinit
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
-  use shr_strdata_mod       , only : shr_strdata_type
-  use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
   use shr_strdata_mod       , only : shr_strdata_type
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax
   use dshr_nuopc_mod        , only : fld_list_add
@@ -88,8 +81,8 @@ module ocn_comp_nuopc
   logical                  :: read_restart              ! start from restart
   character(CL)            :: case_name                 ! case name
   character(len=80)        :: calendar                  ! calendar name
-  logical                  :: ocn_prognostic            ! flag
   logical                  :: ocn_present               ! flag
+  logical                  :: ocn_prognostic    ! flag
   integer, parameter       :: dbug = 10
   character(CXX)           :: flds_o2x = ''
   character(CXX)           :: flds_x2o = ''
@@ -174,7 +167,6 @@ module ocn_comp_nuopc
     character(len=512) :: diro
     character(len=512) :: logfile
     logical            :: ocnrof_prognostic ! flag
-    logical            :: init_import ! flag
     character(len=*),parameter :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
@@ -303,7 +295,6 @@ module ocn_comp_nuopc
     real(r8), pointer       :: lon(:),lat(:)
     integer , pointer       :: gindex(:)
     integer                 :: dbrc
-    logical                 :: init_import
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
@@ -378,18 +369,10 @@ module ocn_comp_nuopc
     gsmap => gsmap_target
     ggrid => ggrid_target
 
-    if (ocn_prognostic) then
-       init_import=.true.
-    else
-       init_import=.false.
-    end if
-
     call docn_comp_init(x2d, d2x, &
-         flds_x2o, flds_o2x, &
          SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
-         scmMode, scmlat, scmlon, &
-         calendar, current_ymd, current_tod, modeldt, init_import)
+         scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, modeldt)
 
     !--------------------------------
     ! generate the mesh

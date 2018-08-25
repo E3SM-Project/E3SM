@@ -4,56 +4,54 @@
 module docn_comp_mod
 
   ! !USES:
-  use ESMF              , only : ESMF_GridComp, ESMF_GridCompGet, ESMF_State, ESMF_Mesh 
-  use ESMF              , only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LogWrite, ESMF_LOGMSG_ERROR  
-  use ESMF              , only : ESMF_VM, ESMF_VMGet 
-  use ESMF              , only : ESMF_Alarm, ESMF_AlarmIsRinging, ESMF_AlarmRingerOff  
-  use ESMF              , only : ESMF_Clock, ESMF_ClockGet, ESMF_ClockGetAlarm, ESMF_CALENDAR, ESMF_CALKIND_FLAG
-  use ESMF              , only : operator(==)
-  use perf_mod          , only : t_startf, t_stopf
-  use perf_mod          , only : t_adj_detailf, t_barrierf
-  use mct_mod           , only : mct_rearr, mct_gsmap_lsize, mct_rearr_init, mct_gsmap, mct_ggrid
-  use mct_mod           , only : mct_avect, mct_avect_indexRA, mct_avect_zero
-  use mct_mod           , only : mct_avect_init, mct_avect_lsize, mct_avect_clean
-  use med_constants_mod , only : IN, R8, I8, CS, CL, CXX
-  use shr_pcdf_mod      , only : shr_pcdf_readwrite
-  use shr_const_mod     , only : shr_const_cpsw
-  use shr_const_mod     , only : shr_const_rhosw
-  use shr_const_mod     , only : shr_const_TkFrz
-  use shr_const_mod     , only : shr_const_TkFrzSw
-  use shr_const_mod     , only : shr_const_latice
-  use shr_const_mod     , only : shr_const_ocn_ref_sal
-  use shr_const_mod     , only : shr_const_zsrflyr
-  use shr_const_mod     , only : shr_const_pi
-  use shr_sys_mod       , only : shr_sys_flush, shr_sys_abort
-  use shr_file_mod      , only : shr_file_getunit, shr_file_freeunit
-  use shr_mpi_mod       , only : shr_mpi_bcast
-  use shr_frz_mod       , only : shr_frz_freezetemp
-  use shr_strdata_mod   , only : shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
-  use shr_strdata_mod   , only : shr_strdata_print, shr_strdata_restRead
-  use shr_strdata_mod   , only : shr_strdata_advance, shr_strdata_restWrite
-  use shr_dmodel_mod    , only : shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid, shr_dmodel_translateAV
-  use shr_cal_mod       , only : shr_cal_datetod2string
+  use shr_pcdf_mod          , only : shr_pcdf_readwrite
+  use NUOPC                 , only : NUOPC_Advertise
+  use ESMF                  , only : ESMF_State
+  use perf_mod              , only : t_startf, t_stopf
+  use perf_mod              , only : t_adj_detailf, t_barrierf
+  use mct_mod               , only : mct_rearr, mct_gsmap_lsize, mct_rearr_init, mct_gsmap, mct_ggrid
+  use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
+  use mct_mod               , only : mct_avect_init, mct_avect_lsize, mct_avect_clean, mct_aVect
+  use med_constants_mod     , only : IN, R8, I8, CS, CL, CXX
+  use shr_const_mod         , only : shr_const_cpsw, shr_const_rhosw, shr_const_TkFrz
+  use shr_const_mod         , only : shr_const_TkFrzSw, shr_const_latice, shr_const_ocn_ref_sal
+  use shr_const_mod         , only : shr_const_zsrflyr, shr_const_pi
+  use shr_string_mod        , only : shr_string_listGetName
+  use shr_sys_mod           , only : shr_sys_abort
+  use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
+  use shr_mpi_mod           , only : shr_mpi_bcast
+  use shr_frz_mod           , only : shr_frz_freezetemp
+  use shr_cal_mod           , only : shr_cal_datetod2string
+  use shr_nuopc_scalars_mod , only : flds_scalar_name
+  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
 
-  use docn_shr_mod      , only : datamode       ! namelist input
-  use docn_shr_mod      , only : aquap_option   ! derived from datamode namelist input
-  use docn_shr_mod      , only : decomp         ! namelist input
-  use docn_shr_mod      , only : rest_file      ! namelist input
-  use docn_shr_mod      , only : rest_file_strm ! namelist input
-  use docn_shr_mod      , only : nullstr
+  use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
+  use shr_strdata_mod       , only : shr_strdata_print, shr_strdata_restRead
+  use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
+  use shr_dmodel_mod        , only : shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid, shr_dmodel_translateAV
+  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add
+
+  use docn_shr_mod          , only : datamode       ! namelist input
+  use docn_shr_mod          , only : aquap_option   ! derived from datamode namelist input
+  use docn_shr_mod          , only : decomp         ! namelist input
+  use docn_shr_mod          , only : rest_file      ! namelist input
+  use docn_shr_mod          , only : rest_file_strm ! namelist input
+  use docn_shr_mod          , only : nullstr
 
   ! !PUBLIC TYPES:
   implicit none
   private ! except
 
   !--------------------------------------------------------------------------
-  ! Public interfaces
+  ! Public/Private interfaces
   !--------------------------------------------------------------------------
 
   public :: docn_comp_advertise
   public :: docn_comp_init
   public :: docn_comp_run
   public :: docn_comp_final
+
+  private :: prescribed_sst
 
   !--------------------------------------------------------------------------
   ! Private data
@@ -74,17 +72,20 @@ module docn_comp_mod
   integer(IN)                :: ksomask      ! So_omask field index
 
   type(mct_rearr)            :: rearr
-  type(mct_avect)            :: avstrm       ! av of data from stream
+  type(mct_avect)            :: avstrm             ! av of data created from all stream input
+  character(len=CS), pointer :: avifld(:)
+  character(len=CS), pointer :: avofld(:)
+  character(len=CS), pointer :: strmifld(:)
+  character(len=CS), pointer :: strmofld(:)
+  character(CXX)             :: flds_strm = ''     ! set in docn_comp_init
+  character(len=CXX)         :: flds_o2x_mod       ! set in docn_comp_advertise
+  character(len=CXX)         :: flds_x2o_mod       ! set in docn_comp_advertise
+  logical                    :: ocn_prognostic_mod ! set in docn_comp_advertise
+
   real(R8), pointer          :: somtp(:)
   real(R8), pointer          :: tfreeze(:)
   integer(IN), pointer       :: imask(:)
   real(R8), pointer          :: xc(:), yc(:) ! arrays of model latitudes and longitudes
-
-  character(len=CS), pointer :: avifld(:)       
-  character(len=CS), pointer :: avofld(:)
-  character(len=CS), pointer :: strmifld(:)
-  character(len=CS), pointer :: strmofld(:)
-  character(CXX)             :: flds_strm = ''   ! colon deliminated string of field names
 
   character(CS)              :: myModelName = 'ocn'             ! user defined model name
   logical                    :: firstcall = .true.              ! first call logical
@@ -102,21 +103,14 @@ contains
        fldsFrOcn_num, fldsFrOcn, fldsToOcn_num, fldsToOcn, &
        flds_o2x, flds_x2o, rc)
 
-    use NUOPC                 , only : NUOPC_Advertise
-    use dshr_nuopc_mod        , only : fld_list_type
-    use dshr_nuopc_mod        , only : fld_list_add
-    use dshr_nuopc_mod        , only : fld_strmap_add
-    use shr_nuopc_scalars_mod , only : flds_scalar_name
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-
     ! input/output arguments
     type(ESMF_State)     , intent(inout) :: importState
     type(ESMF_State)     , intent(inout) :: exportState
     logical              , intent(in)    :: ocn_present
     logical              , intent(in)    :: ocn_prognostic
     logical              , intent(in)    :: ocnrof_prognostic
-    integer              , intent(out)   :: fldsToOcn_num 
-    integer              , intent(out)   :: fldsFrOcn_num 
+    integer              , intent(out)   :: fldsToOcn_num
+    integer              , intent(out)   :: fldsFrOcn_num
     type (fld_list_type) , intent(out)   :: fldsToOcn(:)
     type (fld_list_type) , intent(out)   :: fldsFrOcn(:)
     character(len=*)     , intent(out)   :: flds_o2x
@@ -125,122 +119,107 @@ contains
 
     ! local variables
     integer         :: n
-    type(mct_aVect) :: x2o                 
-    type(mct_aVect) :: o2x                 
-    !----------------------------------------------------------------------------
+    !-------------------------------------------------------------------------------
 
-    !----------------------------------------------------------------------------
-    ! Determine list of fields that will be exported and imported 
-    !----------------------------------------------------------------------------
+    if (.not. ocn_present) return
 
-    if (ocn_present) then
+    !--------------------------------
+    ! export fields
+    !--------------------------------
 
-       ! mapping of field names from input streams to mediator fields
-       call fld_strmap_add(avifld, avofld, namei='ifrac' , nameo='Si_ifrac  ')
-       call fld_strmap_add(avifld, avofld, namei='t'     , nameo='So_t      ')
-       call fld_strmap_add(avifld, avofld, namei='u'     , nameo='So_u      ')
-       call fld_strmap_add(avifld, avofld, namei='v'     , nameo='So_v      ')
-       call fld_strmap_add(avifld, avofld, namei='s'     , nameo='So_s      ')
-       call fld_strmap_add(avifld, avofld, namei='dhdx'  , nameo='So_dhdx   ')
-       call fld_strmap_add(avifld, avofld, namei='dhdy'  , nameo='So_dhdy   ')
+    fldsFrOcn_num=1
+    fldsFrOcn(1)%stdname = trim(flds_scalar_name)
 
-       ! mapping of field names from input streams to internal docn streams
-       ! create a colon delimited string - flds_strm of nameo fields
-       call fld_strmap_add(strmifld, strmofld, namei='h'   , nameo='strm_h'   , flds_concat=flds_strm) 
-       call fld_strmap_add(strmifld, strmofld, namei='qbot', nameo='strm_qbot', flds_concat=flds_strm) 
+    ! export fields that have no corresponding stream field (computed internally)
 
-       ! export fields to mediator
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, trim(flds_scalar_name))
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_omask'  , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_t'      , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_u'      , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_v'      , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_s'      , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_dhdx'   , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'So_dhdy'   , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, 'Fioo_q'    , flds_concat=flds_o2x)
+    call dshr_fld_add(model_fld='So_omask', model_fld_concat=flds_o2x, model_fld_index=ksomask, &
+         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
 
-       ! import fields from mediator
-       if (ocn_prognostic) then
-          call fld_list_add(fldsToOcn_num, fldsToOcn, trim(flds_scalar_name))
-          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_swnet' , flds_concat=flds_x2o)
-          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_lwup'  , flds_concat=flds_x2o)
-          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_sen'   , flds_concat=flds_x2o)
-          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_lat'   , flds_concat=flds_x2o)
-          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_rofi'  , flds_concat=flds_x2o)
-          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Faxa_lwdn'  , flds_concat=flds_x2o)
-          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Faxa_snow'  , flds_concat=flds_x2o)
-          call fld_list_add(fldsToOcn_num, fldsToOcn, 'Fioi_melth' , flds_concat=flds_x2o)
-          if (ocnrof_prognostic) then
-             call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_rofl'  , flds_concat=flds_x2o)
-             call fld_list_add(fldsToOcn_num, fldsToOcn, 'Foxx_rofi'  , flds_concat=flds_x2o)
-          end if
+    call dshr_fld_add(model_fld='Fioo_q', model_fld_concat=flds_o2x, model_fld_index=kq, &
+         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+
+    ! export fields that have a corresponding stream field
+
+    call dshr_fld_add(data_fld='t', data_fld_array=avifld, model_fld='So_t', model_fld_array=avofld, &
+         model_fld_concat=flds_o2x, model_fld_index=kt, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+
+    call dshr_fld_add(data_fld='s', data_fld_array=avifld, model_fld='So_s', model_fld_array=avofld, &
+         model_fld_concat=flds_o2x, model_fld_index=ks, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+
+    call dshr_fld_add(data_fld='u', data_fld_array=avifld, model_fld='So_u', model_fld_array=avofld, &
+         model_fld_concat=flds_o2x, model_fld_index=ku, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+
+    call dshr_fld_add(data_fld='v', data_fld_array=avifld, model_fld='So_v', model_fld_array=avofld, &
+         model_fld_concat=flds_o2x, model_fld_index=ku, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+
+    call dshr_fld_add(data_fld='dhdx', data_fld_array=avifld, model_fld='So_dhdx', model_fld_array=avofld, &
+         model_fld_concat=flds_o2x, model_fld_index=kdhdx, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+
+    call dshr_fld_add(data_fld='dhdy', data_fld_array=avifld, model_fld='So_dhdy', model_fld_array=avofld, &
+         model_fld_concat=flds_o2x, model_fld_index=kdhdy, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+
+    !-------------------
+    ! import fields (have no corresponding stream fields)
+    !-------------------
+
+    if (ocn_prognostic) then
+
+       fldsToOcn_num=1
+       fldsToOcn(1)%stdname = trim(flds_scalar_name)
+
+       call dshr_fld_add(model_fld='Foxx_swnet', model_fld_concat=flds_x2o, model_fld_index=kswnet, &
+            fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
+       call dshr_fld_add(model_fld='Foxx_lwup',  model_fld_concat=flds_x2o, model_fld_index=klwup, &
+            fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
+       call dshr_fld_add(model_fld='Foxx_sen',   model_fld_concat=flds_x2o, model_fld_index=ksen, &
+            fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
+       call dshr_fld_add(model_fld='Foxx_lat',   model_fld_concat=flds_x2o, model_fld_index=klat, &
+            fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
+       call dshr_fld_add(model_fld='Faxa_lwdn',  model_fld_concat=flds_x2o, model_fld_index=klwdn, &
+            fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
+       call dshr_fld_add(model_fld='Faxa_snow',  model_fld_concat=flds_x2o, model_fld_index=ksnow, &
+            fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
+       call dshr_fld_add(model_fld='Fioi_melth', model_fld_concat=flds_x2o, model_fld_index=kmelth, &
+            fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
+
+       if (ocnrof_prognostic) then
+          call dshr_fld_add(model_fld='Foxx_rofi', model_fld_concat=flds_x2o, model_fld_index=krofi, &
+               fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
        end if
+    end if
 
-       ! advertise fields for import and export states
-       do n = 1,fldsFrOcn_num
-          call NUOPC_Advertise(exportState, standardName=fldsFrOcn(n)%stdname, rc=rc)
+    !-------------------
+    ! Advertise fields for import and export states
+    !-------------------
+
+    do n = 1,fldsFrOcn_num
+       call NUOPC_Advertise(exportState, standardName=fldsFrOcn(n)%stdname, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    enddo
+
+    if (ocn_prognostic) then
+       do n = 1,fldsToOcn_num
+          call NUOPC_Advertise(importState, standardName=fldsToOcn(n)%stdname, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       enddo
-
-       if (ocn_prognostic) then
-          do n = 1,fldsToOcn_num
-             call NUOPC_Advertise(importState, standardName=fldsToOcn(n)%stdname, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          end do
-       end if
+       end do
     end if
 
-    !----------------------------------------------------------------------------
-    ! Determine attribute vector indices for above fields (these are module variables)
-    !----------------------------------------------------------------------------
+    !-------------------
+    ! Save flds_x2o and flds_o2x as module variables for use in debugging
+    !-------------------
 
-    if (ocn_present) then
-       ! TODO: the following can be set as array pointers in ESMF fields
-       
-       call mct_aVect_init(o2x   , rList=flds_o2x , lsize=1)
-       call mct_aVect_init(x2o   , rList=flds_x2o , lsize=1)
-       call mct_aVect_init(avstrm, rList=flds_strm, lsize=1)
-
-       kt      = mct_aVect_indexRA(o2x,'So_t')
-       ks      = mct_aVect_indexRA(o2x,'So_s')
-       ku      = mct_aVect_indexRA(o2x,'So_u')
-       kv      = mct_aVect_indexRA(o2x,'So_v')
-       kdhdx   = mct_aVect_indexRA(o2x,'So_dhdx')
-       kdhdy   = mct_aVect_indexRA(o2x,'So_dhdy')
-       kswp    = mct_aVect_indexRA(o2x,'So_fswpen', perrwith='quiet')
-       ksomask = mct_aVect_indexRA(o2x,'So_omask' , perrwith='quiet')
-       kq      = mct_aVect_indexRA(o2x,'Fioo_q')
-
-       if (ocn_prognostic) then
-          kswnet = mct_aVect_indexRA(x2o,'Foxx_swnet')
-          klwup  = mct_aVect_indexRA(x2o,'Foxx_lwup')
-          ksen   = mct_aVect_indexRA(x2o,'Foxx_sen')
-          klat   = mct_aVect_indexRA(x2o,'Foxx_lat')
-          krofi  = mct_aVect_indexRA(x2o,'Foxx_rofi')
-          klwdn  = mct_aVect_indexRA(x2o,'Faxa_lwdn')
-          ksnow  = mct_aVect_indexRA(x2o,'Faxa_snow')
-          kmelth = mct_aVect_indexRA(x2o,'Fioi_melth')
-
-          kh    = mct_aVect_indexRA(avstrm,'strm_h')
-          kqbot = mct_aVect_indexRA(avstrm,'strm_qbot')
-       end if
-
-       call mct_aVect_clean(o2x)
-       call mct_aVect_clean(x2o)
-       call mct_aVect_clean(avstrm)
-    end if
+    flds_x2o_mod = trim(flds_x2o)
+    flds_o2x_mod = trim(flds_o2x)
+    ocn_prognostic_mod = ocn_prognostic
 
   end subroutine docn_comp_advertise
 
   !===============================================================================
 
   subroutine docn_comp_init(x2o, o2x, &
-       flds_x2o, flds_o2x, &
        SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
-       scmMode, scmlat, scmlon, &
-       calendar, current_ymd, current_tod, modeldt, init_import)
+       scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, modeldt)
 
     ! !DESCRIPTION: initialize docn model
     use pio        , only : iosystem_desc_t
@@ -248,8 +227,6 @@ contains
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(mct_aVect)        , intent(inout) :: x2o, o2x       ! input/output attribute vectors
-    character(len=*)       , intent(in)    :: flds_x2o       ! fields from mediator
-    character(len=*)       , intent(in)    :: flds_o2x       ! fields to mediator
     type(shr_strdata_type) , intent(inout) :: SDOCN          ! model shr_strdata instance (output)
     type(mct_gsMap)        , pointer       :: gsMap          ! model global seg map (output)
     type(mct_gGrid)        , pointer       :: ggrid          ! model ggrid (output)
@@ -268,7 +245,6 @@ contains
     integer                , intent(in)    :: current_ymd    ! model date
     integer                , intent(in)    :: current_tod    ! model sec into model date
     integer                , intent(in)    :: modeldt        ! model time step
-    logical                , intent(in)    :: init_import    ! True=> initialize import avs
 
     !--- local variables ---
     integer(IN)   :: n,k      ! generic counters
@@ -329,7 +305,6 @@ contains
 
     call t_startf('docn_initgsmaps')
     if (my_task == master_task) write(logunit,F00) ' initialize gsmaps'
-    call shr_sys_flush(logunit)
 
     ! create a data model global seqmap (gsmap) given the data model global grid sizes
     ! NOTE: gsmap is initialized using the decomp read in from the docn_in namelist
@@ -347,7 +322,6 @@ contains
 
     call t_startf('docn_initmctdom')
     if (my_task == master_task) write(logunit,F00) 'copy domains'
-    call shr_sys_flush(logunit)
 
     call shr_dmodel_rearrGGrid(SDOCN%grid, ggrid, gsmap, rearr, mpicom)
     call t_stopf('docn_initmctdom')
@@ -358,39 +332,50 @@ contains
 
     call t_startf('docn_initmctavs')
     if (my_task == master_task) write(logunit,F00) 'allocate AVs'
-    call shr_sys_flush(logunit)
 
-    call mct_aVect_init(o2x, rList=flds_o2x, lsize=lsize)
+    call mct_aVect_init(o2x, rList=flds_o2x_mod, lsize=lsize)
     call mct_aVect_zero(o2x)
-    if (init_import) then
-       call mct_aVect_init(x2o, rList=flds_x2o, lsize=lsize)
+
+    if (ocn_prognostic_mod) then
+       call mct_aVect_init(x2o, rList=flds_x2o_mod, lsize=lsize)
        call mct_aVect_zero(x2o)
+    end if
+
+    ! data model fields that have a corresponding stream field but no export field
+    if (ocn_prognostic_mod) then
+       call dshr_fld_add(data_fld='h', data_fld_array=strmifld, &
+            model_fld='strm_h', model_fld_array=strmofld, model_fld_concat=flds_strm, model_fld_index=kh)
+
+       call dshr_fld_add(data_fld='qbot', data_fld_array=strmifld, &
+            model_fld='strm_qbot', model_fld_array=strmofld, model_fld_concat=flds_strm, model_fld_index=kqbot)
+
        call mct_aVect_init(avstrm, rList=flds_strm, lsize=lsize)
        call mct_aVect_zero(avstrm)
     end if
 
+    call t_stopf('docn_initmctavs')
+
+    !----------------------------------------------------------------------------
+    ! Allocate memory for module variables
+    !----------------------------------------------------------------------------
+
     allocate(somtp(lsize))
     allocate(tfreeze(lsize))
-    allocate(imask(lsize))
-    allocate(xc(lsize))
-    allocate(yc(lsize))
 
+    allocate(imask(lsize))
     kmask = mct_aVect_indexRA(ggrid%data,'mask')
     imask(:) = nint(ggrid%data%rAttr(kmask,:))
 
     kfrac = mct_aVect_indexRA(ggrid%data,'frac')
-    ksomask = mct_aVect_indexRA(o2x,'So_omask', perrwith='quiet')
-    if (ksomask /= 0) then
-       o2x%rAttr(ksomask, :) = ggrid%data%rAttr(kfrac,:)
-    end if
+    o2x%rAttr(ksomask,:) = ggrid%data%rAttr(kfrac,:)
 
+    allocate(xc(lsize))
     index_lon = mct_aVect_indexRA(ggrid%data,'lon')
     xc(:) = ggrid%data%rAttr(index_lon,:)
 
+    allocate(yc(lsize))
     index_lat = mct_aVect_indexRA(ggrid%data,'lat')
     yc(:) = ggrid%data%rAttr(index_lat,:)
-
-    call t_stopf('docn_initmctavs')
 
     !----------------------------------------------------------------------------
     ! Read restart
@@ -403,7 +388,6 @@ contains
            trim(rest_file_strm) == trim(nullstr)) then
           if (my_task == master_task) then
              write(logunit,F00) ' restart filenames from rpointer = ',trim(rpfile)
-             call shr_sys_flush(logunit)
              inquire(file=trim(rpfile)//trim(inst_suffix),exist=exists)
              if (exists) then
                 nu = shr_file_getUnit()
@@ -422,7 +406,6 @@ contains
           ! use namelist already read
           if (my_task == master_task) then
              write(logunit,F00) ' restart filenames from namelist '
-             call shr_sys_flush(logunit)
              inquire(file=trim(rest_file_strm),exist=exists)
           endif
        endif
@@ -449,7 +432,6 @@ contains
        else
           if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file_strm)
        endif
-       call shr_sys_flush(logunit)
     endif
 
     !----------------------------------------------------------------------------
@@ -479,7 +461,6 @@ contains
     if (my_task == master_task) then
        write(logunit,F00) 'docn_comp_init done'
     end if
-    call shr_sys_flush(logunit)
 
     call t_adj_detailf(-2)
 
@@ -523,11 +504,12 @@ contains
     character(len=*)       , intent(in), optional :: case_name ! case name
 
     !--- local ---
-    integer(IN)       :: n     ! indices
-    integer(IN)       :: lsize ! size of attr vect
-    real(R8)          :: dt    ! timestep
-    integer(IN)       :: nu    ! unit number
+    integer(IN)       :: n,nfld ! indices
+    integer(IN)       :: lsize  ! size of attr vect
+    real(R8)          :: dt     ! timestep
+    integer(IN)       :: nu     ! unit number
     character(len=18) :: date_str
+    character(len=CS) :: fldname
 
     real(R8), parameter :: &
          swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
@@ -535,6 +517,7 @@ contains
     character(*), parameter :: F00   = "('(docn_comp_run) ',8a)"
     character(*), parameter :: F01   = "('(docn_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
     character(*), parameter :: F04   = "('(docn_comp_run) ',2a,2i8,'s')"
+    character(*), parameter :: F0D   = "('(docn_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
     character(*), parameter :: subName = "(docn_comp_run) "
     !-------------------------------------------------------------------------------
 
@@ -726,27 +709,24 @@ contains
 
     call t_stopf('docn_datamode')
 
-    !----------------------------------------------------------
+    !--------------------
     ! Debug output
-    !----------------------------------------------------------
+    !--------------------
 
     if (dbug > 1 .and. my_task == master_task) then
-       do n = 1,lsize
-          write(logunit,F01)'import: ymd,tod,n,Foxx_swnet = ', target_ymd, target_tod, n, x2o%rattr(kswnet,n)
-          write(logunit,F01)'import: ymd,tod,n,Foxx_lwup  = ', target_ymd, target_tod, n, x2o%rattr(klwup,n)
-          write(logunit,F01)'import: ymd,tod,n,Foxx_lwdn  = ', target_ymd, target_tod, n, x2o%rattr(klwdn,n)
-          write(logunit,F01)'import: ymd,tod,n,Fioi_melth = ', target_ymd, target_tod, n, x2o%rattr(kmelth,n)
-          write(logunit,F01)'import: ymd,tod,n,Foxx_sen   = ', target_ymd, target_tod, n, x2o%rattr(ksen,n)
-          write(logunit,F01)'import: ymd,tod,n,Foxx_lat   = ', target_ymd, target_tod, n, x2o%rattr(klat,n)
-          write(logunit,F01)'import: ymd,tod,n,Foxx_rofi  = ', target_ymd, target_tod, n, x2o%rattr(krofi,n)
-
-          write(logunit,F01)'export: ymd,tod,n,So_t       = ', target_ymd, target_tod, n, o2x%rattr(kt,n)
-          write(logunit,F01)'export: ymd,tod,n,So_s       = ', target_ymd, target_tod, n, o2x%rattr(ks,n)
-          write(logunit,F01)'export: ymd,tod,n,So_u       = ', target_ymd, target_tod, n, o2x%rattr(ku,n)
-          write(logunit,F01)'export: ymd,tod,n,So_v       = ', target_ymd, target_tod, n, o2x%rattr(kv,n)
-          write(logunit,F01)'export: ymd,tod,n,So_dhdx    = ', target_ymd, target_tod, n, o2x%rattr(kdhdx,n)
-          write(logunit,F01)'export: ymd,tod,n,So_dhdy    = ', target_ymd, target_tod, n, o2x%rattr(kdhdy,n)
-          write(logunit,F01)'export: ymd,tod,n,Fioo_q     = ', target_ymd, target_tod, n, o2x%rattr(kq,n)
+       do nfld = 1, mct_aVect_nRAttr(x2o)
+          call shr_string_listGetName(trim(flds_x2o_mod), nfld, fldname)
+          do n = 1, mct_aVect_lsize(x2o)
+             write(logunit,F0D)'import: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
+                  n, x2o%rattr(nfld,n)
+          end do
+       end do
+       do nfld = 1, mct_aVect_nRAttr(o2x)
+          call shr_string_listGetName(trim(flds_o2x_mod), nfld, fldname)
+          do n = 1, mct_aVect_lsize(o2x)
+             write(logunit,F0D)'export: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
+                  n, o2x%rattr(nfld,n)
+          end do
        end do
     end if
 
@@ -782,7 +762,6 @@ contains
           write(logunit,F04) ' writing ',trim(rest_file_strm),target_ymd,target_tod
        end if
        call shr_strdata_restWrite(trim(rest_file_strm), SDOCN, mpicom, trim(case_name), 'SDOCN strdata')
-       call shr_sys_flush(logunit)
        call t_stopf('docn_restart')
     endif
 
@@ -792,8 +771,8 @@ contains
 
     if (my_task == master_task) then
        write(logunit,F04) trim(myModelName),': model date ', target_ymd,target_tod
-       call shr_sys_flush(logunit)
     end if
+
     firstcall = .false.
 
     call t_stopf('docn')

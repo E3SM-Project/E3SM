@@ -11,16 +11,21 @@ module dshr_nuopc_mod
   implicit none
   public
 
-  public :: fld_strmap_add
-  public :: fld_list_add
-  public :: fld_list_realize
-  public :: ModelInitPhase
-  public :: ModelSetRunClock
-  public :: ModelSetMetaData
+  public :: dshr_fld_add
+  public :: fld_list_add     ! TODO: remove
+  public :: fld_list_realize ! TODO: rename to dshr_realize 
+  public :: ModelInitPhase   ! TODO: rename to dshr_modelinit
+  public :: ModelSetRunClock ! TODO: rename to dshr_setrunclock
+  public :: ModelSetMetaData ! TODO rename to dshr_setmetadata
 
   type fld_list_type
     character(len=128) :: stdname
   end type fld_list_type
+
+  interface dshr_fld_add ; module procedure &
+       dshr_fld_add_model, &
+       dshr_fld_add_model_and_data
+  end interface dshr_fld_add
 
   integer     , parameter :: fldsMax = 100
   integer     , parameter :: dbug = 10
@@ -28,80 +33,153 @@ module dshr_nuopc_mod
   character(*), parameter :: u_FILE_u = &
        __FILE__
 
-
 !===============================================================================
 contains
 !===============================================================================
 
-  subroutine fld_strmap_add(avifld, avofld, namei, nameo, flds_concat)
+  subroutine dshr_fld_add_model(model_fld, model_fld_concat, model_fld_index, &
+       fldlist_num, fldlist)
 
-    ! Character arrays mapping names from streams (avifld) to names to output (avofld)
-
-    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_ERROR
+    use shr_string_mod, only : shr_string_listGetIndex
 
     ! input/output variables
-    character(len=*) , intent(in)    :: namei
-    character(len=*) , intent(in)    :: nameo
-    character(len=*) , pointer       :: avifld(:)
-    character(len=*) , pointer       :: avofld(:)
-    character(len=*) , optional, intent(inout) :: flds_concat
+    character(len=*)    , intent(in)    :: model_fld
+    character(len=*)    , intent(inout) :: model_fld_concat
+    integer, optional   , intent(out)   :: model_fld_index
+    integer             , intent(inout) :: fldlist_num
+    type(fld_list_type) , intent(inout) :: fldlist(:)
 
     ! local variables
-    integer                    :: dbrc
-    integer                    :: n, oldsize, id
-    character(len=CS), pointer :: new_avifld(:)
-    character(len=CS), pointer :: new_avofld(:)
-    character(len=CS), parameter :: subname='(avio_list_add)'
+    integer :: rc
+    integer :: dbrc
+    character(len=*), parameter :: subname='(dshr_nuopc_mod:dshr_fld_add_model)'
     ! ----------------------------------------------
 
-    if (associated(avifld)) then
-       oldsize = size(avifld)
+    fldlist_num = fldlist_num + 1
+    if (fldlist_num > fldsMax) then
+      call ESMF_LogWrite(trim(subname)//": ERROR fldlist_num > fldsMax "//trim(model_fld), &
+        ESMF_LOGMSG_ERROR, line=__LINE__, file=__FILE__, rc=dbrc)
+      return
+    endif
+    fldlist(fldlist_num)%stdname = trim(model_fld)
+
+    if (len_trim(model_fld_concat) + len_trim(model_fld) + 1 >= len(model_fld_concat)) then
+       call ESMF_LogWrite(subname//': ERROR: max len of model_fld_concat has been exceeded', &
+            ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
+    end if
+    if (trim(model_fld_concat) == '') then
+       model_fld_concat = trim(model_fld)
+    else
+       model_fld_concat = trim(model_fld_concat)//':'//trim(model_fld)
+    end if
+       
+    if (present(model_fld_index)) then
+       call shr_string_listGetIndex(trim(model_fld_concat), trim(model_fld),  model_fld_index)
+    end if
+
+  end subroutine dshr_fld_add_model
+
+  !===============================================================================
+
+  subroutine dshr_fld_add_model_and_data( data_fld, data_fld_array, &
+       model_fld, model_fld_array, model_fld_concat, model_fld_index, &
+       fldlist_num, fldlist)
+
+    use shr_string_mod, only : shr_string_listGetIndex
+    use ESMF          , only : ESMF_LogWrite, ESMF_LOGMSG_ERROR
+
+    ! input/output variables
+    character(len=*)   , intent(in)               :: data_fld 
+    character(len=*)   , pointer                  :: data_fld_array(:)
+    character(len=*)   , intent(in)               :: model_fld
+    character(len=*)   , pointer                  :: model_fld_array(:)
+    character(len=*)   , intent(inout) , optional :: model_fld_concat
+    integer            , intent(out)   , optional :: model_fld_index
+    integer            , intent(inout) , optional :: fldlist_num
+    type(fld_list_type), intent(inout) , optional :: fldlist(:)
+
+    ! local variables
+    integer                     :: dbrc
+    integer                     :: n, oldsize, id
+    character(len=CS), pointer  :: new_data_fld_array(:)
+    character(len=CS), pointer  :: new_model_fld_array(:)
+    character(len=*), parameter :: subname='(dshr_nuopc_mod:dshr_fld_add_model_and_data) '
+    ! ----------------------------------------------
+    
+    !----------------------------------
+    ! Create new data_fld_array and model_fld_array 
+    !----------------------------------
+    
+    ! 1) determine new index 
+    if (associated(data_fld_array)) then
+       oldsize = size(data_fld_array)
     else
        oldsize = 0
     end if
     id = oldsize + 1
 
-    ! 1) allocate new_avifld and oldavi to one element larger than input
-    allocate(new_avifld(id))
-    allocate(new_avofld(id))
+    ! 2) allocate new_data_fld_array and oldavi to one element larger than input
+    allocate(new_data_fld_array(id))
+    allocate(new_model_fld_array(id))
 
-    ! 2) copy avifld and avofld into first N-1 elements of aviflds and avofld
+    ! 3) copy data_fld_array and model_fld_array into first N-1 elements of data_fld_arrays and model_fld_array
     do n = 1,oldsize
-       new_avifld(n) = avifld(n)
-       new_avofld(n) = avofld(n)
+       new_data_fld_array(n)  = data_fld_array(n)
+       new_model_fld_array(n) = model_fld_array(n)
     end do
 
-    ! 3) deallocate / nullify avifld and avofld
+    ! 4) deallocate / nullify data_fld_array and model_fld_array
     if (oldsize >  0) then
-       deallocate(avifld)
-       deallocate(avofld)
-       nullify(avifld)
-       nullify(avofld)
+       deallocate(data_fld_array)
+       deallocate(model_fld_array)
+       nullify(data_fld_array)
+       nullify(model_fld_array)
     end if
 
-    ! 4) point avifld => new_avifld and avofld => new_avofld
-    avifld => new_avifld
-    avofld => new_avofld
+    ! 5) point data_fld_array => new_data_fld_array and
+    ! model_fld_array => new_model_fld_array and update info for new entry
+    data_fld_array  => new_data_fld_array
+    model_fld_array => new_model_fld_array
+    data_fld_array(id)  = trim(data_fld)
+    model_fld_array(id) = trim(model_fld)
 
-    ! 5) now update information for new entry
+    !----------------------------------
+    ! Update flds_concat colon delimited string if appropriate
+    !----------------------------------
 
-    avifld(id) = trim(namei)
-    avofld(id) = trim(nameo)
-
-    if (present(flds_concat)) then
-       if (len_trim(flds_concat) + len_trim(nameo) + 1 >= len(flds_concat)) then
-          call ESMF_LogWrite(subname//': ERROR: max len of flds_concat has been exceeded', &
+    if (present(model_fld_concat)) then
+       if (len_trim(model_fld_concat) + len_trim(model_fld) + 1 >= len(model_fld_concat)) then
+          call ESMF_LogWrite(subname//': ERROR: max len of model_fld_concat has been exceeded', &
                ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
           call shr_sys_abort()
        end if
-       if (trim(flds_concat) == '') then
-          flds_concat = trim(nameo)
+       if (trim(model_fld_concat) == '') then
+          model_fld_concat = trim(model_fld)
        else
-          flds_concat = trim(flds_concat)//':'//trim(nameo)
+          model_fld_concat = trim(model_fld_concat)//':'//trim(model_fld)
+       end if
+       
+       ! Get model field index if appropriated
+       if (present(model_fld_index)) then
+          call shr_string_listGetIndex(trim(model_fld_concat), trim(model_fld),  model_fld_index)
        end if
     end if
 
-  end subroutine fld_strmap_add
+    !----------------------------------
+    ! Update fldlist array if appropriate
+    !----------------------------------
+
+    if (present(fldlist_num) .and. present(fldlist)) then
+       fldlist_num = fldlist_num + 1
+       if (fldlist_num > fldsMax) then
+          call ESMF_LogWrite(trim(subname)//": ERROR fldlist_num > fldsMax "//trim(model_fld), &
+               ESMF_LOGMSG_ERROR, line=__LINE__, file=__FILE__, rc=dbrc)
+          return
+       endif
+       fldlist(fldlist_num)%stdname = trim(model_fld)
+    end if
+
+  end subroutine dshr_fld_add_model_and_data
 
   !===============================================================================
 
@@ -118,7 +196,7 @@ contains
     integer :: rc
     integer :: dbrc
     character(len=*), parameter :: subname='(dshr_nuopc_mod:fld_list_add)'
-    !-------------------------------------------------------------------------------
+    !----------------------------------------------------------------------
 
     ! Set up a list of field information
 

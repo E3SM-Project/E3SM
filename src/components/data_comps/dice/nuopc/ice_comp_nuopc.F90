@@ -29,21 +29,19 @@ module ice_comp_nuopc
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_Meshinit
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
-  use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
   use shr_strdata_mod       , only : shr_strdata_type
-  use shr_cal_mod           , only : shr_cal_ymd2julian
-  use shr_const_mod         , only : shr_const_pi
+
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax
-  use dshr_nuopc_mod        , only : fld_list_add
   use dshr_nuopc_mod        , only : fld_list_realize
-  use dshr_nuopc_mod        , only : fld_strmap_add
   use dshr_nuopc_mod        , only : ModelInitPhase
   use dshr_nuopc_mod        , only : ModelSetRunClock
   use dshr_nuopc_mod        , only : ModelSetMetaData
-
   use dice_shr_mod          , only : dice_shr_read_namelists
-  use dice_comp_mod         , only : dice_comp_init, dice_comp_run, dice_comp_final, dice_comp_debug
+  use dice_comp_mod         , only : dice_comp_init, dice_comp_run, dice_comp_final, dice_comp_advertise
   use mct_mod
+
+  use shr_cal_mod           , only : shr_cal_ymd2julian
+  use shr_const_mod         , only : shr_const_pi
 
   implicit none
   private ! except
@@ -63,8 +61,6 @@ module ice_comp_nuopc
   integer                    :: fldsFrIce_num = 0
   type (fld_list_type)       :: fldsToIce(fldsMax)
   type (fld_list_type)       :: fldsFrIce(fldsMax)
-  character(len=CS), pointer :: avifld(:)
-  character(len=CS), pointer :: avofld(:)
   character(len=80)          :: myModelName = 'ice'       ! user defined model name
   type(shr_strdata_type)     :: SDICE
   type(mct_gsMap), target    :: gsMap_target
@@ -237,90 +233,14 @@ contains
          inst_index, inst_suffix, inst_name, &
          logunit, SDICE, ice_present, ice_prognostic)
 
-    ! NOTE: ice_present flag is not needed - since the run sequence will have no call to this routine
-    ! for the ice_present flag being set to false (i.e. null mode)
-    ! NOTE: only the ice_prognostic flag is needed below
-
     !--------------------------------
-    ! advertise import and export fields
+    ! Advertise import and export fields
     !--------------------------------
 
-    if (ice_present) then
-       ! mappings of stream field names to output field names
-       call fld_strmap_add(avifld, avofld, namei='ifrac', nameo='Si_ifrac')
-
-       ! export fields
-       call fld_list_add(fldsFrice_num, fldsFrice, trim(flds_scalar_name)) 
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_imask'      , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_ifrac'      , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_t'          , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_tref'       , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_qref'       , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_avsdr'      , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_anidr'      , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_avsdf'      , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_anidf'      , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_swnet'    , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_sen'      , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_lat'      , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_lwup'     , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_evap'     , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_taux'     , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_tauy'     , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_melth'    , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_meltw'    , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_swpen'    , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_taux'     , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_tauy'     , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_salt'     , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_bcpho'    , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_bcphi'    , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_flxdst'   , flds_concat=flds_i2x)
-
-       do n = 1,fldsFrIce_num
-          call NUOPC_Advertise(exportState, standardName=fldsFrIce(n)%stdname, &
-               TransferOfferGeomObject='will provide', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       enddo
-
-       ! Import fields
-       if (ice_prognostic) then
-          call fld_list_add(fldsToice_num, fldsToice, trim(flds_scalar_name)) 
-          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_swvdr'    , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_swndr'    , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_swvdf'    , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_swndf'    , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Fioo_q'        , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Sa_z'          , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Sa_u'          , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Sa_v'          , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Sa_ptem'       , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Sa_shum'       , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Sa_dens'       , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Sa_tbot'       , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'So_s'          , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_bcphidry' , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_bcphodry' , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_bcphiwet' , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_ocphidry' , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_ocphodry' , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_ocphiwet' , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstdry1'  , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstdry2'  , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstdry3'  , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstdry4'  , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstwet1'  , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstwet2'  , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstwet3'  , flds_concat=flds_x2i)
-          call fld_list_add(fldsToice_num, fldsToice, 'Faxa_dstwet4'  , flds_concat=flds_x2i)
-
-          do n = 1,fldsToIce_num
-             call NUOPC_Advertise(importState, standardName=fldsToIce(n)%stdname, &
-                  TransferOfferGeomObject='will provide', rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          enddo
-       end if
-    end if
+    call dice_comp_advertise(importstate, exportState, &
+       ice_present, ice_prognostic, &
+       fldsFrIce_num, fldsFrIce, fldsToIce_num, fldsToIce, &
+       flds_i2x, flds_x2i, rc)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
@@ -551,12 +471,7 @@ contains
          modeldt=modeldt, &
          target_ymd=current_ymd, &
          target_tod=current_tod, &
-         cosArg=cosArg, &
-         avifld=avifld, &
-         avofld=avofld)
-
-    ! Write debug output if appropriate
-    call dice_comp_debug(my_task, master_task, logunit, current_ymd, current_tod, x2d, d2x)
+         cosArg=cosArg)
 
     ! Pack export state
     call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_i2x, exportState, grid_option='mesh', rc=rc)
@@ -708,12 +623,7 @@ contains
          target_ymd=next_ymd, &
          target_tod=next_tod, &
          cosArg=cosArg, &
-         avifld=avifld, &
-         avofld=avofld, &
          case_name=case_name)
-
-    ! Write debug output if appropriate
-    call dice_comp_debug(my_task, master_task, logunit, next_ymd, next_tod, x2d, d2x)
 
     !--------------------------------
     ! Pack export state
@@ -730,16 +640,17 @@ contains
        if (my_task == master_task) then
           call mct_aVect_info(2, d2x, istr=subname//':AV', pe=localPet)
        end if
+
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
 
-    if (my_task == master_task) then
-       call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing ICE from: ", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (my_task == master_task) then
+          call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing ICE from: ", rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
     end if
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)

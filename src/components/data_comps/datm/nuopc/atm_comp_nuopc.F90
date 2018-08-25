@@ -43,7 +43,7 @@ module atm_comp_nuopc
   use datm_shr_mod          , only: iradsw         ! namelist input
   use datm_shr_mod          , only: presaero       ! namelist input
   use datm_shr_mod          , only: datm_shr_getNextRadCDay
-  use datm_comp_mod         , only: datm_comp_init, datm_comp_run, datm_comp_final
+  use datm_comp_mod         , only: datm_comp_init, datm_comp_run, datm_comp_final, datm_comp_advertise
   use mct_mod
 
   implicit none
@@ -82,7 +82,6 @@ module atm_comp_nuopc
   integer                    :: logunit                   ! logging unit number
   integer    ,parameter      :: master_task=0             ! task number of master task
   integer                    :: localPet
-  logical                    :: unpack_import
   character(len=256)         :: case_name                 ! case name
   character(len=256)         :: tmpstr                    ! tmp string
   integer                    :: dbrc
@@ -244,12 +243,6 @@ module atm_comp_nuopc
     ! set to false (i.e. null mode) - only the atm_prognostic flag is
     ! needed below
 
-    if (atm_prognostic) then
-       unpack_import = .true.
-    else
-       unpack_import = .false.
-    end if
-
     !--------------------------------
     ! determine necessary toggles for below
     !--------------------------------
@@ -278,96 +271,11 @@ module atm_comp_nuopc
     ! advertise import and export fields
     !--------------------------------
 
-    if (atm_present) then
-       !-----------------
-       ! export fields
-       !-----------------
-
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, trim(flds_scalar_name))
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_topo'    , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_z'       , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_u'       , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_v'       , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_tbot'    , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_ptem'    , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_shum'    , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_pbot'    , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_dens'    , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_pslv'    , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_rainc' , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_rainl' , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_snowc' , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_snowl' , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_lwdn'  , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_swndr' , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_swvdr' , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_swndf' , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_swvdf' , flds_concat=flds_a2x)
-       call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_swnet' , flds_concat=flds_a2x)  ! only diagnostic
-       if (presaero) then
-          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_bcphidry' , flds_concat=flds_a2x)
-          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_bcphodry' , flds_concat=flds_a2x)
-          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_bcphiwet' , flds_concat=flds_a2x)
-          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_ocphidry' , flds_concat=flds_a2x)
-          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_ocphodry' , flds_concat=flds_a2x)
-          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_ocphiwet' , flds_concat=flds_a2x)
-          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstwet1'  , flds_concat=flds_a2x)
-          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstwet2'  , flds_concat=flds_a2x)
-          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstwet3'  , flds_concat=flds_a2x)
-          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstwet4'  , flds_concat=flds_a2x)
-          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstdry1'  , flds_concat=flds_a2x)
-          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstdry2'  , flds_concat=flds_a2x)
-          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstdry3'  , flds_concat=flds_a2x)
-          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstdry4'  , flds_concat=flds_a2x)
-       end if
-       if (flds_co2a .or. flds_co2b .or. flds_co2c) then
-          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_co2prog'  , flds_concat=flds_a2x)
-          call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Sa_co2diag'  , flds_concat=flds_a2x)
-       end if
-
-       do n = 1,fldsFrAtm_num
-          call NUOPC_Advertise(exportState, standardName=fldsFrAtm(n)%stdname, &
-               TransferOfferGeomObject='will provide', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       enddo
-
-       !-----------------
-       ! Import fields
-       !-----------------
-
-       if (atm_prognostic) then
-          call fld_list_add(fldsToAtm_num, fldsToAtm, trim(flds_scalar_name))
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_anidr'  , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_avsdf'  , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_anidf'  , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_avsdr'  , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sl_lfrac'  , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Si_ifrac'  , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'So_ofrac'  , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_tref'   , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_qref'   , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_t'      , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'So_t'      , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sl_fv'     , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sl_ram1'   , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sl_snowh'  , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Si_snowh'  , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'So_ssq'    , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'So_re'     , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Sx_u10'    , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_taux' , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_tauy' , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_lat'  , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_sen'  , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_lwup' , flds_concat=flds_x2a)
-          call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_evap' , flds_concat=flds_x2a)
-
-          do n = 1,fldsToAtm_num
-             call NUOPC_Advertise(importState, standardName=fldsToAtm(n)%stdname, TransferOfferGeomObject='will provide', rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          enddo
-       end if
-    end if
+    call datm_comp_advertise(importState, exportState, &
+         atm_present, atm_prognostic, &
+         flds_wiso, flds_co2a, flds_co2b, flds_co2c, &
+         fldsFrAtm_num, fldsFrAtm, fldsToAtm_num, fldsToAtm, &
+         flds_a2x, flds_x2a, rc)
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
@@ -711,7 +619,7 @@ module atm_comp_nuopc
     ! Unpack import state
     !--------------------------------
 
-    if (unpack_import) then
+    if (atm_prognostic) then
        call shr_nuopc_grid_StateToArray(importState, x2d%rattr, flds_x2a, grid_option='mesh', rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
