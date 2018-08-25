@@ -411,15 +411,15 @@ contains
     real(r8)              :: curr_time    ! Time interval since reference time
     real(r8)              :: prev_time    ! Time interval since reference time
     real(r8)              :: avg_time     ! Average time of tavg
-    integer(IN)           :: yy, mm, dd     ! year,  month,  day
+    integer(IN)           :: yy, mm, dd   ! year,  month,  day
     integer(IN)           :: fk           ! index
     character(CL)         :: time_units   ! units of time variable
     character(CL)         :: calendar     ! calendar type
     integer(IN)           :: lsize        ! local size of an aVect
     character(CL)         :: case_name    ! case name
     character(CL)         :: hist_file    ! Local path to history filename
-    logical               :: whead, wdata  ! flags write header vs. data
-    integer(IN)           :: iidx ! component instance counter
+    logical               :: whead, wdata ! flags write header vs. data
+    integer(IN)           :: iidx         ! component instance counter
 
     type(mct_aVect), save  :: a2x_ax_avg(num_inst_atm)   ! tavg aVect/bundle
     type(mct_aVect), save  :: x2a_ax_avg(num_inst_atm)
@@ -974,7 +974,7 @@ contains
 
   !===============================================================================
 
-  subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
+  subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, suffix, &
        nx, ny, nt, write_now, flds, tbnds1_offset, yr_offset, av_to_write)
 
     implicit none
@@ -986,6 +986,7 @@ contains
     character(len=3)         , intent(in)           :: flow      ! 'x2c' or 'c2x'
     character(*)             , intent(in)           :: aname     ! avect name for hist file
     character(*)             , intent(in)           :: dname     ! domain name for hist file
+    character(*)             , intent(in)           :: suffix    ! instance number part of file name
     integer(IN)              , intent(in)           :: nx        ! 2d global size nx
     integer(IN)              , intent(in)           :: ny        ! 2d global size ny
     integer(IN)              , intent(in)           :: nt        ! number of time samples per file
@@ -1164,8 +1165,8 @@ contains
                 yy = yy + yr_offset
              end if
              call shr_cal_ymdtod2string(date_str, yy, mm, dd)
-             write(hist_file(found), "(6a)") &
-                  trim(case_name),'.cpl.h',trim(aname),'.',trim(date_str), '.nc'
+             write(hist_file(found), "(8a)") &
+                  trim(case_name),'.cpl',trim(suffix),'.h',trim(aname),'.',trim(date_str), '.nc'
           else
              fk1 = 2
           endif
@@ -1282,12 +1283,13 @@ contains
 
   !===============================================================================
 
-  subroutine seq_hist_spewav(infodata, aname, gsmap, av, nx, ny, nt, write_now, flds)
+  subroutine seq_hist_spewav(infodata, aname, suffix, gsmap, av, nx, ny, nt, write_now, flds)
 
     implicit none
 
     type(seq_infodata_type) , intent(in)    :: infodata
     character(*)    , intent(in)           :: aname     ! avect name for hist file
+    character(*)    , intent(in)           :: suffix    ! instance number part of file name
     type(mct_gsmap) , intent(in)           :: gsmap     ! gsmap
     type(mct_aVect) , intent(in)           :: av        ! avect
     integer(IN)     , intent(in)           :: nx        ! 2d global size nx
@@ -1398,7 +1400,7 @@ contains
              fk1 = 1
              call seq_infodata_GetData( infodata,  case_name=case_name)
              write(hist_file(found), "(a, i4.4, a)") &
-                  trim(case_name)//'.cpl.h'//trim(aname)//'.', nfiles(found), '.nc'
+                  trim(case_name)//'.cpl'//trim(suffix)//'.h'//trim(aname)//'.', nfiles(found), '.nc'
           else
              fk1 = 2
           endif

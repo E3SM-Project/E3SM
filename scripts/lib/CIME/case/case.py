@@ -773,11 +773,10 @@ class Case(object):
             compset_name, files)
 
         self._components = self.get_compset_components()
+
         #--------------------------------------------
         # grid
         #--------------------------------------------
-        if user_grid is True and gridfile is not None:
-            self.set_value("GRIDS_SPEC_FILE", gridfile)
         grids = Grids(gridfile)
 
         gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname)
