@@ -1161,7 +1161,7 @@
     <category>history</category>
     <group>seq_infodata_inparm</group>
     <desc>
-      turns on coupler history stream for instantaneous runoff to coupler fields.
+      turns on coupler history stream for daily average runoff to coupler fields.
       default: false
     </desc>
     <values>
