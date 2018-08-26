@@ -51,7 +51,6 @@ module dice_comp_mod
   public :: dice_comp_advertise
   public :: dice_comp_init
   public :: dice_comp_run
-  public :: dice_comp_final
 
   !--------------------------------------------------------------------------
   ! Private data
@@ -846,7 +845,7 @@ contains
     !----------------------------------------------------------------------------
 
     if (my_task == master_task) then
-       write(logunit,F04) 'dice: ',' model date ', target_ymd,target_tod
+       write(logunit,*) ' dice: model date ', target_ymd,target_tod
     end if
 
     firstcall = .false.
@@ -854,34 +853,5 @@ contains
     call t_stopf('DICE_RUN')
 
   end subroutine dice_comp_run
-
-  !===============================================================================
-
-  subroutine dice_comp_final(my_task, master_task, logunit)
-
-    ! !DESCRIPTION:  finalize method for dice model
-
-    ! input/output parameters:
-    integer(IN) , intent(in) :: my_task     ! my task in mpi communicator mpicom
-    integer(IN) , intent(in) :: master_task ! task number of master task
-    integer(IN) , intent(in) :: logunit     ! logging unit number
-
-    !--- formats ---
-    character(*), parameter :: F00   = "('(dice_comp_final) ',8a)"
-    character(*), parameter :: F91   = "('(dice_comp_final) ',73('-'))"
-    character(*), parameter :: subName = "(dice_comp_final) "
-    !-------------------------------------------------------------------------------
-
-    call t_startf('DICE_FINAL')
-
-    if (my_task == master_task) then
-       write(logunit,F91)
-       write(logunit,F00) 'dice: end of main integration loop'
-       write(logunit,F91)
-    end if
-
-    call t_stopf('DICE_FINAL')
-
-  end subroutine dice_comp_final
 
 end module dice_comp_mod

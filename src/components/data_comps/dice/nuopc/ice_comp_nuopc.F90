@@ -35,7 +35,7 @@ module ice_comp_nuopc
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax, fld_list_realize
   use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use dice_shr_mod          , only : dice_shr_read_namelists
-  use dice_comp_mod         , only : dice_comp_init, dice_comp_run, dice_comp_final, dice_comp_advertise
+  use dice_comp_mod         , only : dice_comp_init, dice_comp_run, dice_comp_advertise
   use mct_mod
 
   implicit none
@@ -666,12 +666,17 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
+    character(*), parameter :: F00   = "('(dice_comp_final) ',8a)"
+    character(*), parameter :: F91   = "('(dice_comp_final) ',73('-'))"
     character(len=*),parameter  :: subname=trim(modName)//':(ModelFinalize) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-    call dice_comp_final(my_task, master_task, logunit)
+    if (my_task == master_task) then
+       write(logunit,F91)
+       write(logunit,F00) trim(myModelName),': end of main integration loop'
+       write(logunit,F91)
+    end if
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelFinalize

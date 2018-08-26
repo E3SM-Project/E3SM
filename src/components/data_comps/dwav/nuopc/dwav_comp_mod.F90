@@ -5,24 +5,34 @@ module dwav_comp_mod
 
   ! !USES:
 
-  use mct_mod
-  use perf_mod
-  use shr_sys_mod
-  use shr_kind_mod      , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
-  use shr_file_mod      , only: shr_file_getunit, shr_file_freeunit
-  use shr_mpi_mod       , only: shr_mpi_bcast
-  use shr_strdata_mod   , only: shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
-  use shr_strdata_mod   , only: shr_strdata_print, shr_strdata_restRead
-  use shr_strdata_mod   , only: shr_strdata_advance, shr_strdata_restWrite
-  use shr_dmodel_mod    , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
-  use shr_dmodel_mod    , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
-  use shr_cal_mod       , only: shr_cal_datetod2string
-
-  use dwav_shr_mod   , only: datamode       ! namelist input
-  use dwav_shr_mod   , only: decomp         ! namelist input
-  use dwav_shr_mod   , only: rest_file      ! namelist input
-  use dwav_shr_mod   , only: rest_file_strm ! namelist input
-  use dwav_shr_mod   , only: nullstr
+  use NUOPC                 , only : NUOPC_Advertise
+  use ESMF                  , only : ESMF_State, ESMF_SUCCESS
+  use perf_mod              , only : t_startf, t_stopf
+  use perf_mod              , only : t_adj_detailf, t_barrierf
+  use mct_mod               , only : mct_rearr, mct_gsmap_lsize, mct_rearr_init, mct_gsmap, mct_ggrid
+  use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
+  use mct_mod               , only : mct_avect_init, mct_avect_lsize, mct_avect_clean, mct_aVect
+  use shr_sys_mod           , only : shr_sys_abort
+  use shr_kind_mod          , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
+  use shr_kind_mod          , only : CXX=>SHR_KIND_CXX 
+  use shr_string_mod        , only : shr_string_listGetName
+  use shr_sys_mod           , only : shr_sys_abort
+  use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
+  use shr_mpi_mod           , only : shr_mpi_bcast
+  use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
+  use shr_strdata_mod       , only : shr_strdata_print, shr_strdata_restRead
+  use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
+  use shr_dmodel_mod        , only : shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid, shr_dmodel_translateAV
+  use shr_cal_mod           , only : shr_cal_datetod2string
+  use shr_nuopc_scalars_mod , only : flds_scalar_name
+  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+  use dshr_nuopc_mod        , only : fld_list_type
+  use dshr_nuopc_mod        , only : dshr_fld_add
+  use dwav_shr_mod          , only : datamode       ! namelist input
+  use dwav_shr_mod          , only : decomp         ! namelist input
+  use dwav_shr_mod          , only : rest_file      ! namelist input
+  use dwav_shr_mod          , only : rest_file_strm ! namelist input
+  use dwav_shr_mod          , only : nullstr
 
   ! !PUBLIC TYPES:
   implicit none
@@ -32,6 +42,7 @@ module dwav_comp_mod
   ! Public interfaces
   !--------------------------------------------------------------------------
 
+  public :: dwav_comp_advertise
   public :: dwav_comp_init
   public :: dwav_comp_run
   public :: dwav_comp_final
@@ -40,13 +51,88 @@ module dwav_comp_mod
   ! Private data
   !--------------------------------------------------------------------------
 
-  integer(IN)                :: dbug = 2           ! debug level (higher is more)
-  character(len=*),parameter :: rpfile = 'rpointer.wav'
-  type(mct_rearr)            :: rearr
+  type(mct_rearr)             :: rearr
+  character(len=CS), pointer  :: avifld(:) ! character array for field names coming from streams
+  character(len=CS), pointer  :: avofld(:) ! character array for field names to be sent/received from mediator
+  character(len=CXX)          :: flds_w2x_mod
+  character(len=CXX)          :: flds_x2w_mod
+  integer                     :: dbug = 2  ! debug level (higher is more)
+  character(len=*), parameter :: rpfile = 'rpointer.wav'
+  character(*)    , parameter :: u_FILE_u = &
+       __FILE__
 
 !===============================================================================
 contains
 !===============================================================================
+
+  subroutine dwav_comp_advertise(importState, exportState, &
+       wav_present, wav_prognostic, &
+       fldsFrWav_num, fldsFrWav, fldsToWav_num, fldsToWav, &
+       flds_w2x, flds_x2w, rc)
+
+    ! 1. determine export and import fields to advertise to mediator
+    ! 2. determine translation of fields from streams to export/import fields
+
+    ! input/output arguments
+    type(ESMF_State)                   :: importState
+    type(ESMF_State)                   :: exportState
+    logical              , intent(in)  :: wav_present
+    logical              , intent(in)  :: wav_prognostic
+    integer              , intent(out) :: fldsFrWav_num
+    type (fld_list_type) , intent(out) :: fldsFrWav(:)
+    integer              , intent(out) :: fldsToWav_num
+    type (fld_list_type) , intent(out) :: fldsToWav(:)
+    character(len=*)     , intent(out) :: flds_w2x
+    character(len=*)     , intent(out) :: flds_x2w
+    integer              , intent(out) :: rc
+
+    ! local variables 
+    integer :: n
+    !-------------------------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    if (.not. wav_present) return
+
+    !-------------------
+    ! export fields
+    !-------------------
+    
+    ! scalar fields that need to be advertised
+
+    fldsFrWav_num=1
+    fldsFrWav(1)%stdname = trim(flds_scalar_name)
+
+    ! export fields that have a corresponding stream field
+
+    call dshr_fld_add(data_fld="lamult", data_fld_array=avifld, model_fld="Sw_lamult", model_fld_array=avofld, &
+         model_fld_concat=flds_w2x, fldlist_num=fldsFrWav_num, fldlist=fldsFrWav)
+
+    call dshr_fld_add(data_fld="ustokes", data_fld_array=avifld, model_fld="Sw_ustokes", model_fld_array=avofld, &
+         model_fld_concat=flds_w2x, fldlist_num=fldsFrWav_num, fldlist=fldsFrWav)
+
+    call dshr_fld_add(data_fld="vstokes", data_fld_array=avifld, model_fld="Sw_vstokes", model_fld_array=avofld, &
+         model_fld_concat=flds_w2x, fldlist_num=fldsFrWav_num, fldlist=fldsFrWav)
+
+    !-------------------
+    ! advertise export state
+    !-------------------
+
+    do n = 1,fldsFrWav_num
+       call NUOPC_Advertise(exportState, standardName=fldsFrWav(n)%stdname, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    enddo
+
+    !-------------------
+    ! Save flds_w2x and flds_x2w as module variables for use in debugging
+    !-------------------
+
+    flds_x2w_mod = trim(flds_x2w)
+    flds_w2x_mod = trim(flds_w2x)
+
+  end subroutine dwav_comp_advertise
+
+  !===============================================================================
 
   subroutine dwav_comp_init(x2w, w2x, &
        w2x_fields, x2w_fields, &
@@ -193,7 +279,7 @@ contains
   subroutine dwav_comp_run(x2w, w2x, &
        SDWAV, gsmap, ggrid, mpicom, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
-       target_ymd, target_tod, avifld, avofld, case_name)
+       target_ymd, target_tod, case_name)
 
     ! DESCRIPTION:  run method for dwav model
 
@@ -212,8 +298,6 @@ contains
     logical                , intent(in)    :: write_restart    ! write restart
     integer(IN)            , intent(in)    :: target_ymd
     integer(IN)            , intent(in)    :: target_tod
-    character(len=*)       , intent(in)    :: avifld(:)
-    character(len=*)       , intent(in)    :: avofld(:)
     character(CL)          , intent(in), optional :: case_name ! case name
 
     !--- local ---

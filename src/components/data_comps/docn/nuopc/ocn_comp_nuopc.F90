@@ -33,7 +33,7 @@ module ocn_comp_nuopc
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax, fld_list_realize
   use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use docn_shr_mod          , only : docn_shr_read_namelists
-  use docn_comp_mod         , only : docn_comp_init, docn_comp_run, docn_comp_final, docn_comp_advertise
+  use docn_comp_mod         , only : docn_comp_init, docn_comp_run, docn_comp_advertise
   use mct_mod
 
   implicit none
@@ -615,16 +615,19 @@ module ocn_comp_nuopc
 
     ! local variables
     integer :: dbrc
+    character(*), parameter :: F00   = "('(docn_comp_final) ',8a)"
+    character(*), parameter :: F91   = "('(docn_comp_final) ',73('-'))"
     character(len=*),parameter  :: subname=trim(modName)//':(ModelFinalize) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-    call docn_comp_final(my_task, master_task, logunit)
+    if (my_task == master_task) then
+       write(logunit,F91)
+       write(logunit,F00) trim(myModelName),': end of main integration loop'
+       write(logunit,F91)
+    end if
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelFinalize
-
-  !===============================================================================
 
 end module ocn_comp_nuopc

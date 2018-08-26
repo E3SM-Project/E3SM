@@ -12,8 +12,7 @@ module lnd_comp_nuopc
   use NUOPC_Model           , only : model_label_SetRunClock => label_SetRunClock
   use NUOPC_Model           , only : model_label_Finalize    => label_Finalize
   use NUOPC_Model           , only : NUOPC_ModelGet
-  use med_constants_mod     , only : R8, CXX, CL, CS
-  use med_constants_mod     , only : shr_log_Unit
+  use med_constants_mod     , only : IN, R8, I8, CXX, CL
   use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
   use med_constants_mod     , only : shr_file_getloglevel, shr_file_setloglevel
   use med_constants_mod     , only : shr_file_setIO, shr_file_getUnit
@@ -29,18 +28,11 @@ module lnd_comp_nuopc
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_Meshinit
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
-  use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
   use shr_strdata_mod       , only : shr_strdata_type
-  use dshr_nuopc_mod        , only : fld_list_type, fldsMax
-  use dshr_nuopc_mod        , only : fld_list_add
-  use dshr_nuopc_mod        , only : fld_list_realize
-  use dshr_nuopc_mod        , only : ModelInitPhase
-  use dshr_nuopc_mod        , only : ModelSetRunClock
-  use dshr_nuopc_mod        , only : ModelSetMetaData
-
-  use dlnd_shr_mod          , only: dlnd_shr_read_namelists
-  use dlnd_comp_mod         , only: dlnd_comp_init, dlnd_comp_run, dlnd_comp_final
-  use glc_elevclass_mod     , only: glc_get_num_elevation_classes, glc_elevclass_as_string, glc_elevclass_init 
+  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, fld_list_realize
+  use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
+  use dlnd_shr_mod          , only : dlnd_shr_read_namelists
+  use dlnd_comp_mod         , only : dlnd_comp_init, dlnd_comp_run, dlnd_comp_advertise
   use mct_mod
 
   implicit none
@@ -162,9 +154,6 @@ contains
     character(len=512) :: diro
     character(len=512) :: logfile
     integer            :: glc_nec        ! number of elevation classes
-    integer            :: nflds_glc_nec  ! number of snow fields separated by elev class
-    character(len=256) :: fld_name
-    character(len=2)   :: nec_str        ! elevation class, as character string
     character(len=*),parameter  :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
@@ -229,70 +218,21 @@ contains
     !----------------------------------------------------------------------------
 
     call dlnd_shr_read_namelists(mpicom, my_task, master_task, &
-         inst_index, inst_suffix, inst_name,  &
-         logunit, SDLND, lnd_present, lnd_prognostic)
+         inst_index, inst_suffix, inst_name,  logunit, SDLND, lnd_present, lnd_prognostic)
 
     !--------------------------------
     ! advertise import and export fields
     !--------------------------------
 
-    if (lnd_present) then
-       !-----------------
-       ! export fields
-       !-----------------
+    call NUOPC_CompAttributeGet(gcomp, name='glc_nec', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) glc_nec
+    call ESMF_LogWrite('glc_nec = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
 
-       call fld_list_add(fldsFrLnd_num, fldsFrLnd, trim(flds_scalar_name))
-       call fld_list_add(fldsFrLnd_num, fldsFrLnd, 'Sl_lfrin')
-
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, trim(flds_scalar_name))
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_t        "
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_tref     "
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_qref     "
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_avsdr    "
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_anidr    "
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_avsdf    "
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_anidf    "
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_snowh    "
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_taux   "
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_tauy   "
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_lat    "
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_sen    "
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_lwup   "
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_evap   "
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_swnet  "
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_landfrac "
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_fv       "
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Sl_ram1     "
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_flxdst1"
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_flxdst2"
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_flxdst3"
-       ! call fld_list_add(fldsFrLnd_num, fldsFrLnd, "Fall_flxdst4"
-       
-       call NUOPC_CompAttributeGet(gcomp, name='glc_nec', value=cvalue, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       read(cvalue,*) glc_nec
-       call ESMF_LogWrite('glc_nec = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
-
-       call glc_elevclass_init(glc_nec)
-
-       if (glc_nec > 0) then
-          do n = 0, glc_nec
-             nec_str = glc_elevclass_as_string(n)
-             fld_name = "Sl_tsrf" // nec_str
-             call fld_list_add(fldsFrLnd_num, fldsFrLnd, trim(fld_name))
-             fld_name = "Sl_topo" // nec_str
-             call fld_list_add(fldsFrLnd_num, fldsFrLnd, trim(fld_name))
-             fld_name = "Flgl_qice" // nec_str
-             call fld_list_add(fldsFrLnd_num, fldsFrLnd, trim(fld_name))
-          end do
-       end if
-       call glc_elevclass_init(glc_nec) 
-
-       do n = 1,fldsFrLnd_num
-          call NUOPC_Advertise(exportState, standardName=fldsFrLnd(n)%stdname, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       enddo
-    end if
+    call dlnd_comp_advertise(importState, exportState, &
+       lnd_present, lnd_prognostic, glc_nec, &
+       fldsFrLnd_num, fldsFrLnd, fldsToLnd_num, fldsToLnd, &
+       flds_l2x, flds_x2l, rc)
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
@@ -399,7 +339,6 @@ contains
     ggrid => ggrid_target
 
     call dlnd_comp_init(x2d, d2x, &
-         flds_x2l, flds_l2x, &
          SDLND, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
          scmMode, scmlat, scmlon, &
@@ -575,7 +514,7 @@ contains
     call shr_cal_ymd2date(yr, mon, day, nextymd)
 
     call dlnd_comp_run(x2d, d2x, &
-       SDLND, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+       SDLND, gsmap, ggrid, mpicom, my_task, master_task, &
        inst_suffix, logunit, read_restart=.false., write_restart=write_restart, &
        target_ymd=nextYMD, target_tod=nextTOD, case_name=case_name)
 
@@ -616,21 +555,20 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
+    character(*), parameter :: F00   = "('(dlnd_comp_final) ',8a)"
+    character(*), parameter :: F91   = "('(dlnd_comp_final) ',73('-'))"
     character(len=*),parameter  :: subname=trim(modName)//':(ModelFinalize) '
-
-    !--------------------------------
-    ! Finalize routine
-    !--------------------------------
+    !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
     if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-
-    call dlnd_comp_final(my_task, master_task, logunit)
-
+    if (my_task == master_task) then
+       write(logunit,F91)
+       write(logunit,F00) trim(myModelName),': end of main integration loop'
+       write(logunit,F91)
+    end if
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelFinalize
-
-  !===============================================================================
 
 end module lnd_comp_nuopc

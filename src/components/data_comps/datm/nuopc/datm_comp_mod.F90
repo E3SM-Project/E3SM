@@ -57,7 +57,6 @@ module datm_comp_mod
   public :: datm_comp_advertise
   public :: datm_comp_init
   public :: datm_comp_run
-  public :: datm_comp_final
 
   !--------------------------------------------------------------------------
   ! Private data
@@ -1383,34 +1382,5 @@ contains
     call t_stopf('DATM_RUN')
 
   end subroutine datm_comp_run
-
-  !===============================================================================
-  subroutine datm_comp_final(my_task, master_task, logunit)
-
-    ! !DESCRIPTION: finalize method for datm model
-
-    ! !INPUT/OUTPUT PARAMETERS:
-    integer(IN) , intent(in) :: my_task     ! my task in mpi communicator mpicom
-    integer(IN) , intent(in) :: master_task ! task number of master task
-    integer(IN) , intent(in) :: logunit     ! logging unit number
-
-    !--- formats ---
-    character(*), parameter :: F00   = "('(datm_comp_final) ',8a)"
-    character(*), parameter :: F91   = "('(datm_comp_final) ',73('-'))"
-    character(*), parameter :: subName = "(datm_comp_final) "
-    !-------------------------------------------------------------------------------
-
-    call t_startf('DATM_FINAL')
-
-    if (my_task == master_task) then
-       write(logunit,F91)
-       write(logunit,F00) trim(myModelName),': end of main integration loop'
-       write(logunit,F91)
-    end if
-
-    call t_stopf('DATM_FINAL')
-
-  end subroutine datm_comp_final
-  !===============================================================================
 
 end module datm_comp_mod

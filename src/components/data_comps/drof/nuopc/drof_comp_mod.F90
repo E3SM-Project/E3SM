@@ -45,7 +45,6 @@ module drof_comp_mod
   public :: drof_comp_advertise
   public :: drof_comp_init
   public :: drof_comp_run
-  public :: drof_comp_final
 
   !--------------------------------------------------------------------------
   ! Private data
@@ -56,7 +55,6 @@ module drof_comp_mod
   character(len=CS), pointer  :: avofld(:) ! character array for field names to be sent/received from mediator
   character(len=CXX)          :: flds_r2x_mod
   character(len=CXX)          :: flds_x2r_mod
-  character(len=3)            :: myModelName = 'rof'   ! user defined model name
   character(len=*), parameter :: rpfile = 'rpointer.rof'
   character(*)    , parameter :: u_FILE_u = &
        __FILE__
@@ -450,40 +448,11 @@ contains
     !----------------------------------------------------------------------------
 
     if (my_task == master_task) then
-       write(logunit,F04) trim(myModelName),': model date ', target_ymd,target_tod
+       write(logunit,*) ' drof: model date ', target_ymd,target_tod
     end if
 
     call t_stopf('DROF_RUN')
 
   end subroutine drof_comp_run
-
-  !===============================================================================
-  subroutine drof_comp_final(my_task, master_task, logunit)
-
-    ! !DESCRIPTION:  finalize method for drof model
-
-    ! !INPUT/OUTPUT PARAMETERS:
-    integer(IN) , intent(in) :: my_task     ! my task in mpi communicator mpicom
-    integer(IN) , intent(in) :: master_task ! task number of master task
-    integer(IN) , intent(in) :: logunit     ! logging unit number
-
-    !--- formats ---
-    character(*), parameter :: F00   = "('(drof_comp_final) ',8a)"
-    character(*), parameter :: F91   = "('(drof_comp_final) ',73('-'))"
-    character(*), parameter :: subName = "(drof_comp_final) "
-    !-------------------------------------------------------------------------------
-
-    call t_startf('DROF_FINAL')
-
-    if (my_task == master_task) then
-       write(logunit,F91)
-       write(logunit,F00) trim(myModelName),': end of main integration loop'
-       write(logunit,F91)
-    end if
-
-    call t_stopf('DROF_FINAL')
-
-  end subroutine drof_comp_final
-  !===============================================================================
 
 end module drof_comp_mod

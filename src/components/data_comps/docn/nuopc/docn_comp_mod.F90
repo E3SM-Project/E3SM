@@ -47,7 +47,6 @@ module docn_comp_mod
   public :: docn_comp_advertise
   public :: docn_comp_init
   public :: docn_comp_run
-  public :: docn_comp_final
 
   private :: prescribed_sst
 
@@ -85,7 +84,6 @@ module docn_comp_mod
   integer(IN), pointer       :: imask(:)
   real(R8), pointer          :: xc(:), yc(:) ! arrays of model latitudes and longitudes
 
-  character(CS)              :: myModelName = 'ocn'             ! user defined model name
   logical                    :: firstcall = .true.              ! first call logical
   character(len=*),parameter :: rpfile = 'rpointer.ocn'
   integer(IN)                :: dbug = 1                        ! debug level (higher is more)
@@ -768,7 +766,7 @@ contains
     !----------------------------------------------------------------------------
 
     if (my_task == master_task) then
-       write(logunit,F04) trim(myModelName),': model date ', target_ymd,target_tod
+       write(logunit,*) ' docn: model date ', target_ymd,target_tod
     end if
 
     firstcall = .false.
@@ -779,35 +777,7 @@ contains
   end subroutine docn_comp_run
 
   !===============================================================================
-  subroutine docn_comp_final(my_task, master_task, logunit)
 
-    ! !DESCRIPTION:  finalize method for docn model
-    implicit none
-
-    ! !INPUT/OUTPUT PARAMETERS:
-    integer(IN) , intent(in) :: my_task     ! my task in mpi communicator mpicom
-    integer(IN) , intent(in) :: master_task ! task number of master task
-    integer(IN) , intent(in) :: logunit     ! logging unit number
-
-    !--- formats ---
-    character(*), parameter :: F00   = "('(docn_comp_final) ',8a)"
-    character(*), parameter :: F91   = "('(docn_comp_final) ',73('-'))"
-    character(*), parameter :: subName = "(docn_comp_final) "
-    !-------------------------------------------------------------------------------
-
-    call t_startf('DOCN_FINAL')
-
-    if (my_task == master_task) then
-       write(logunit,F91)
-       write(logunit,F00) trim(myModelName),': end of main integration loop'
-       write(logunit,F91)
-    end if
-
-    call t_stopf('DOCN_FINAL')
-
-  end subroutine docn_comp_final
-
-  !===============================================================================
   subroutine prescribed_sst(xc, yc, lsize, sst_option, sst)
 
     real(R8)     , intent(in)    :: xc(:)  !degrees

@@ -35,7 +35,7 @@ module atm_comp_nuopc
   use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use datm_shr_mod          , only : datm_shr_read_namelists 
   use datm_shr_mod          , only : iradsw, datm_shr_getNextRadCDay
-  use datm_comp_mod         , only : datm_comp_init, datm_comp_run, datm_comp_final, datm_comp_advertise
+  use datm_comp_mod         , only : datm_comp_init, datm_comp_run, datm_comp_advertise
   use mct_mod
 
   implicit none
@@ -57,39 +57,39 @@ module atm_comp_nuopc
   type (fld_list_type)       :: fldsToAtm(fldsMax)
   type (fld_list_type)       :: fldsFrAtm(fldsMax)
 
-  character(len=3)           :: myModelName = 'atm'       ! user defined model name
-  type(shr_strdata_type)     :: SDATM
-  type(mct_gsMap), target    :: gsMap_target
-  type(mct_gGrid), target    :: ggrid_target
-  type(mct_gsMap), pointer   :: gsMap
-  type(mct_gGrid), pointer   :: ggrid
-  type(mct_aVect)            :: x2d
-  type(mct_aVect)            :: d2x
-  integer                    :: compid                    ! mct comp id
-  integer                    :: mpicom                    ! mpi communicator
-  integer                    :: my_task                   ! my task in mpi communicator mpicom
-  integer                    :: inst_index                ! number of current instance (ie. 1)
-  character(len=16)          :: inst_name                 ! fullname of current instance (ie. "lnd_0001")
-  character(len=16)          :: inst_suffix = ""          ! char string associated with instance (ie. "_0001" or "")
-  integer                    :: logunit                   ! logging unit number
-  integer    ,parameter      :: master_task=0             ! task number of master task
-  integer                    :: localPet
-  character(len=256)         :: case_name                 ! case name
-  character(len=256)         :: tmpstr                    ! tmp string
-  integer                    :: dbrc
-  integer, parameter         :: dbug = 10
-  character(len=80)          :: calendar                  ! calendar name
-  logical                    :: atm_prognostic            ! data is sent back to datm
-  character(len=CXX)         :: flds_a2x = ''
-  character(len=CXX)         :: flds_x2a = ''
+  character(len=3)         :: myModelName = 'atm'       ! user defined model name
+  type(shr_strdata_type)   :: SDATM
+  type(mct_gsMap), target  :: gsMap_target
+  type(mct_gGrid), target  :: ggrid_target
+  type(mct_gsMap), pointer :: gsMap
+  type(mct_gGrid), pointer :: ggrid
+  type(mct_aVect)          :: x2d
+  type(mct_aVect)          :: d2x
+  integer                  :: compid                    ! mct comp id
+  integer                  :: mpicom                    ! mpi communicator
+  integer                  :: my_task                   ! my task in mpi communicator mpicom
+  integer                  :: inst_index                ! number of current instance (ie. 1)
+  character(len=16)        :: inst_name                 ! fullname of current instance (ie. "lnd_0001")
+  character(len=16)        :: inst_suffix = ""          ! char string associated with instance (ie. "_0001" or "")
+  integer                  :: logunit                   ! logging unit number
+  integer    ,parameter    :: master_task=0             ! task number of master task
+  integer                  :: localPet
+  character(len=256)       :: case_name                 ! case name
+  character(len=256)       :: tmpstr                    ! tmp string
+  integer                  :: dbrc
+  integer, parameter       :: dbug = 10
+  character(len=80)        :: calendar                  ! calendar name
+  logical                  :: atm_prognostic            ! data is sent back to datm
+  character(len=CXX)       :: flds_a2x = ''
+  character(len=CXX)       :: flds_x2a = ''
 
-  logical                :: use_esmf_metadata = .false.
-  character(*),parameter :: modName =  "(atm_comp_nuopc)"
-  character(*),parameter :: u_FILE_u = __FILE__
+  logical                  :: use_esmf_metadata = .false.
+  character(*),parameter   :: modName =  "(atm_comp_nuopc)"
+  character(*),parameter   :: u_FILE_u = __FILE__
 
-  !===============================================================================
-  contains
-  !===============================================================================
+!===============================================================================
+contains
+!===============================================================================
 
   subroutine SetServices(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
@@ -740,17 +740,22 @@ module atm_comp_nuopc
   !===============================================================================
 
   subroutine ModelFinalize(gcomp, rc)
-    implicit none
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! local variables
+    character(*), parameter :: F00   = "('(datm_comp_final) ',8a)"
+    character(*), parameter :: F91   = "('(datm_comp_final) ',73('-'))"
     character(len=*),parameter  :: subname=trim(modName)//':(ModelFinalize) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
     if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-    call datm_comp_final(my_task, master_task, logunit)
+    if (my_task == master_task) then
+       write(logunit,F91)
+       write(logunit,F00) trim(myModelName),': end of main integration loop'
+       write(logunit,F91)
+    end if
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelFinalize

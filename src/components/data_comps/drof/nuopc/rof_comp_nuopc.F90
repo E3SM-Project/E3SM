@@ -13,7 +13,6 @@ module rof_comp_nuopc
   use NUOPC_Model           , only : model_label_Finalize    => label_Finalize
   use NUOPC_Model           , only : NUOPC_ModelGet
   use med_constants_mod     , only : IN, R8, I8, CXX, CL
-  use med_constants_mod     , only : shr_log_Unit
   use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
   use med_constants_mod     , only : shr_file_getloglevel, shr_file_setloglevel
   use med_constants_mod     , only : shr_file_setIO, shr_file_getUnit
@@ -33,7 +32,7 @@ module rof_comp_nuopc
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax, fld_list_realize
   use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use drof_shr_mod          , only : drof_shr_read_namelists
-  use drof_comp_mod         , only : drof_comp_init, drof_comp_run, drof_comp_final, drof_comp_advertise
+  use drof_comp_mod         , only : drof_comp_init, drof_comp_run, drof_comp_advertise
   use mct_mod
 
   implicit none
@@ -51,44 +50,42 @@ module rof_comp_nuopc
   ! Private module data
   !--------------------------------------------------------------------------
 
-  integer                    :: fldsToRof_num = 0
-  integer                    :: fldsFrRof_num = 0
-  type (fld_list_type)       :: fldsToRof(fldsMax)
-  type (fld_list_type)       :: fldsFrRof(fldsMax)
+  integer                  :: fldsToRof_num = 0
+  integer                  :: fldsFrRof_num = 0
+  type (fld_list_type)     :: fldsToRof(fldsMax)
+  type (fld_list_type)     :: fldsFrRof(fldsMax)
+  type(shr_strdata_type)   :: SDROF
+  type(mct_gsMap), target  :: gsMap_target
+  type(mct_gGrid), target  :: ggrid_target
+  type(mct_gsMap), pointer :: gsMap
+  type(mct_gGrid), pointer :: ggrid
+  type(mct_aVect)          :: x2d
+  type(mct_aVect)          :: d2x
+  integer                  :: compid                    ! mct comp id
+  integer                  :: mpicom                    ! mpi communicator
+  integer                  :: my_task                   ! my task in mpi communicator mpicom
+  integer                  :: inst_index                ! number of current instance (ie. 1)
+  character(len=16)        :: inst_name                 ! fullname of current instance (ie. "lnd_0001")
+  character(len=16)        :: inst_suffix = ""          ! char string associated with instance (ie. "_0001" or "")
+  integer                  :: logunit                   ! logging unit number
+  integer    ,parameter    :: master_task=0             ! task number of master task
+  integer                  :: localPet
+  logical                  :: rof_prognostic            ! flag
+  character(CL)            :: case_name                 ! case name
+  character(CL)            :: tmpstr                    ! tmp string
+  integer                  :: dbrc
+  integer, parameter       :: dbug = 10
+  character(len=80)        :: calendar                  ! calendar name
+  character(CXX)           :: flds_r2x = ''
+  character(CXX)           :: flds_x2r = ''
+  logical                  :: use_esmf_metadata = .false.
+  character(len=3)         :: myModelName = 'rof'       ! user defined model name
+  character(*),parameter   :: modName =  "(rof_comp_nuopc)"
+  character(*),parameter   :: u_FILE_u = __FILE__
 
-  character(len=3)           :: myModelName = 'rof'       ! user defined model name
-  type(shr_strdata_type)     :: SDROF
-  type(mct_gsMap), target    :: gsMap_target
-  type(mct_gGrid), target    :: ggrid_target
-  type(mct_gsMap), pointer   :: gsMap
-  type(mct_gGrid), pointer   :: ggrid
-  type(mct_aVect)            :: x2d
-  type(mct_aVect)            :: d2x
-  integer                    :: compid                    ! mct comp id
-  integer                    :: mpicom                    ! mpi communicator
-  integer                    :: my_task                   ! my task in mpi communicator mpicom
-  integer                    :: inst_index                ! number of current instance (ie. 1)
-  character(len=16)          :: inst_name                 ! fullname of current instance (ie. "lnd_0001")
-  character(len=16)          :: inst_suffix = ""          ! char string associated with instance (ie. "_0001" or "")
-  integer                    :: logunit                   ! logging unit number
-  integer    ,parameter      :: master_task=0             ! task number of master task
-  integer                    :: localPet
-  logical                    :: rof_prognostic            ! flag
-  character(CL)              :: case_name                 ! case name
-  character(CL)              :: tmpstr                    ! tmp string
-  integer                    :: dbrc
-  integer, parameter         :: dbug = 10
-  character(len=80)          :: calendar                  ! calendar name
-  character(CXX)             :: flds_r2x = ''
-  character(CXX)             :: flds_x2r = ''
-
-  logical                :: use_esmf_metadata = .false.
-  character(*),parameter :: modName =  "(rof_comp_nuopc)"
-  character(*),parameter :: u_FILE_u = __FILE__
-
-  !===============================================================================
-  contains
-  !===============================================================================
+!===============================================================================
+contains
+!===============================================================================
 
   subroutine SetServices(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
@@ -222,7 +219,7 @@ module rof_comp_nuopc
          logunit, SDROF, rof_present, rof_prognostic)
 
     !--------------------------------
-    ! advertise import and export fields
+    ! advertise export fields
     !--------------------------------
 
     call drof_comp_advertise(importState, exportState, &
@@ -230,9 +227,6 @@ module rof_comp_nuopc
          fldsFrRof_num, fldsFrRof, fldsToRof_num, fldsToRof, &
          flds_r2x, flds_x2r, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! TODO: even if rof_prognostic is .TRUE. - not clear what would
-    ! get sent to runoff model or what to add here?
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
@@ -450,8 +444,10 @@ module rof_comp_nuopc
 
     ! local variables
     type(ESMF_Clock)        :: clock
-    type(ESMF_State)        :: importState, exportState
     type(ESMF_Alarm)        :: alarm
+    type(ESMF_Time)         :: currTime, nextTime
+    type(ESMF_TimeInterval) :: timeStep
+    type(ESMF_State)        :: importState, exportState
     integer                 :: shrlogunit    ! original log unit
     integer                 :: shrloglev     ! original log level
     logical                 :: write_restart ! write restart
@@ -460,8 +456,6 @@ module rof_comp_nuopc
     integer                 :: day           ! day in month
     integer                 :: next_ymd      ! model date
     integer                 :: next_tod      ! model sec into model date
-    type(ESMF_Time)         :: currTime, nextTime
-    type(ESMF_TimeInterval) :: timeStep
     character(len=*),parameter :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
@@ -530,22 +524,22 @@ module rof_comp_nuopc
     ! Run the model
 
     call drof_comp_run(&
-         x2r=x2d, &
-         r2x=d2x, &
-         SDROF=SDROF, &
-         gsmap=gsmap, &
-         ggrid=ggrid, &
-         mpicom=mpicom, &
-         compid=compid, &
-         my_task=my_task, &
-         master_task=master_task, &
-         inst_suffix=inst_suffix, &
-         logunit=logunit, &
-         read_restart=.false., &
-         write_restart=write_restart, &
-         target_ymd=next_ymd, &
-         target_tod=next_tod, &
-         case_name=case_name)
+         x2r           =x2d, &
+         r2x           =d2x, &
+         SDROF         =SDROF, &
+         gsmap         =gsmap, &
+         ggrid         =ggrid, &
+         mpicom        =mpicom, &
+         compid        =compid, &
+         my_task       =my_task, &
+         master_task   =master_task, &
+         inst_suffix   =inst_suffix, &
+         logunit       =logunit, &
+         read_restart  =.false., &
+         write_restart =write_restart, &
+         target_ymd    =next_ymd, &
+         target_tod    =next_tod, &
+         case_name     =case_name)
 
     !--------------------------------
     ! Pack export state
@@ -594,12 +588,18 @@ module rof_comp_nuopc
     integer, intent(out) :: rc
 
     ! local variables
+    character(*), parameter :: F00   = "('(drof_comp_final) ',8a)"
+    character(*), parameter :: F91   = "('(drof_comp_final) ',73('-'))"
     character(len=*),parameter  :: subname=trim(modName)//':(ModelFinalize) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
     if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-    call drof_comp_final(my_task, master_task, logunit)
+    if (my_task == master_task) then
+       write(logunit,F91)
+       write(logunit,F00) trim(myModelName),': end of main integration loop'
+       write(logunit,F91)
+    end if
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelFinalize
