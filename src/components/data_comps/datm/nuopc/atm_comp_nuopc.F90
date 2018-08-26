@@ -30,20 +30,12 @@ module atm_comp_nuopc
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_Meshinit
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
-  use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
   use shr_strdata_mod       , only : shr_strdata_type
-  use dshr_nuopc_mod        , only : fld_list_type, fldsMax
-  use dshr_nuopc_mod        , only : fld_list_add
-  use dshr_nuopc_mod        , only : fld_list_realize
-  use dshr_nuopc_mod        , only : ModelInitPhase
-  use dshr_nuopc_mod        , only : ModelSetRunClock
-  use dshr_nuopc_mod        , only : ModelSetMetaData
-
-  use datm_shr_mod          , only: datm_shr_read_namelists
-  use datm_shr_mod          , only: iradsw         ! namelist input
-  use datm_shr_mod          , only: presaero       ! namelist input
-  use datm_shr_mod          , only: datm_shr_getNextRadCDay
-  use datm_comp_mod         , only: datm_comp_init, datm_comp_run, datm_comp_final, datm_comp_advertise
+  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, fld_list_realize
+  use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
+  use datm_shr_mod          , only : datm_shr_read_namelists 
+  use datm_shr_mod          , only : iradsw, datm_shr_getNextRadCDay
+  use datm_comp_mod         , only : datm_comp_init, datm_comp_run, datm_comp_final, datm_comp_advertise
   use mct_mod
 
   implicit none
@@ -276,6 +268,7 @@ module atm_comp_nuopc
          flds_wiso, flds_co2a, flds_co2b, flds_co2c, &
          fldsFrAtm_num, fldsFrAtm, fldsToAtm_num, fldsToAtm, &
          flds_a2x, flds_x2a, rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
@@ -431,8 +424,6 @@ module atm_comp_nuopc
     call datm_comp_init(&
          x2a=x2d, &
          a2x=d2x, &
-         x2a_fields=flds_x2a, &
-         a2x_fields=flds_a2x, &
          SDATM=SDATM, &
          gsmap=gsmap, &
          ggrid=ggrid, &
@@ -757,15 +748,9 @@ module atm_comp_nuopc
     character(len=*),parameter  :: subname=trim(modName)//':(ModelFinalize) '
     !-------------------------------------------------------------------------------
 
-    !--------------------------------
-    ! Finalize routine
-    !--------------------------------
-
     rc = ESMF_SUCCESS
     if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-
     call datm_comp_final(my_task, master_task, logunit)
-
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelFinalize

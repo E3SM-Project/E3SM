@@ -24,13 +24,11 @@ module docn_comp_mod
   use shr_cal_mod           , only : shr_cal_datetod2string
   use shr_nuopc_scalars_mod , only : flds_scalar_name
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-
   use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
   use shr_strdata_mod       , only : shr_strdata_print, shr_strdata_restRead
   use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod        , only : shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid, shr_dmodel_translateAV
   use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add
-
   use docn_shr_mod          , only : datamode       ! namelist input
   use docn_shr_mod          , only : aquap_option   ! derived from datamode namelist input
   use docn_shr_mod          , only : decomp         ! namelist input

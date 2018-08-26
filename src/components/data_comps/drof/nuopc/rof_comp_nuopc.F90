@@ -29,17 +29,11 @@ module rof_comp_nuopc
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_Meshinit
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
-  use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
   use shr_strdata_mod       , only : shr_strdata_type
-  use dshr_nuopc_mod        , only : fld_list_type, fldsMax
-  use dshr_nuopc_mod        , only : fld_list_add
-  use dshr_nuopc_mod        , only : fld_list_realize
-  use dshr_nuopc_mod        , only : ModelInitPhase
-  use dshr_nuopc_mod        , only : ModelSetRunClock
-  use dshr_nuopc_mod        , only : ModelSetMetaData
-
+  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, fld_list_realize
+  use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use drof_shr_mod          , only : drof_shr_read_namelists
-  use drof_comp_mod         , only : drof_comp_init, drof_comp_run, drof_comp_final
+  use drof_comp_mod         , only : drof_comp_init, drof_comp_run, drof_comp_final, drof_comp_advertise
   use mct_mod
 
   implicit none
@@ -79,7 +73,7 @@ module rof_comp_nuopc
   integer                    :: logunit                   ! logging unit number
   integer    ,parameter      :: master_task=0             ! task number of master task
   integer                    :: localPet
-  logical                    :: unpack_import
+  logical                    :: rof_prognostic            ! flag
   character(CL)              :: case_name                 ! case name
   character(CL)              :: tmpstr                    ! tmp string
   integer                    :: dbrc
@@ -150,7 +144,6 @@ module rof_comp_nuopc
 
     ! local variables
     logical            :: rof_present    ! flag
-    logical            :: rof_prognostic ! flag
     type(ESMF_VM)      :: vm
     integer            :: lmpicom
     character(CL)      :: cvalue
@@ -232,21 +225,12 @@ module rof_comp_nuopc
     ! advertise import and export fields
     !--------------------------------
 
-    if (rof_present) then
-       !-----------------
-       ! export fields
-       !-----------------
+    call drof_comp_advertise(importState, exportState, &
+         rof_present, rof_prognostic, &
+         fldsFrRof_num, fldsFrRof, fldsToRof_num, fldsToRof, &
+         flds_r2x, flds_x2r, rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       call fld_list_add(fldsFrRof_num, fldsFrRof, trim(flds_scalar_name))
-       call fld_list_add(fldsFrRof_num, fldsFrRof, 'Forr_rofl' , flds_concat=flds_r2x)
-       call fld_list_add(fldsFrRof_num, fldsFrRof, 'Forr_rofi' , flds_concat=flds_r2x)
-
-       do n = 1,fldsFrRof_num
-          call NUOPC_Advertise(exportState, standardName=fldsFrRof(n)%stdname, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       enddo
-    end if
-    
     ! TODO: even if rof_prognostic is .TRUE. - not clear what would
     ! get sent to runoff model or what to add here?
 
@@ -355,8 +339,6 @@ module rof_comp_nuopc
     call drof_comp_init(&
          x2r=x2d, &
          r2x=d2x, &
-         x2r_fields=flds_x2r, &
-         r2x_fields=flds_r2x, &
          SDROF=SDROF, &
          gsmap=gsmap, &
          ggrid=ggrid, &
@@ -510,7 +492,7 @@ module rof_comp_nuopc
     ! Unpack import state
     !--------------------------------
 
-    if (unpack_import) then
+    if (rof_prognostic) then
        call shr_nuopc_grid_StateToArray(importState, x2d%rattr, flds_x2r, 'mesh', rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
@@ -613,16 +595,11 @@ module rof_comp_nuopc
 
     ! local variables
     character(len=*),parameter  :: subname=trim(modName)//':(ModelFinalize) '
-
-    !--------------------------------
-    ! Finalize routine
-    !--------------------------------
+    !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
     if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-
     call drof_comp_final(my_task, master_task, logunit)
-
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelFinalize

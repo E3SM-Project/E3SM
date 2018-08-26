@@ -4,24 +4,34 @@
 module drof_comp_mod
 
   ! !USES:
-  use mct_mod
-  use perf_mod
-  use shr_sys_mod     , only: shr_sys_flush, shr_sys_abort
-  use shr_kind_mod    , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
-  use shr_file_mod    , only: shr_file_getunit, shr_file_freeunit
-  use shr_mpi_mod     , only: shr_mpi_bcast
-  use shr_strdata_mod , only: shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
-  use shr_strdata_mod , only: shr_strdata_print, shr_strdata_restRead
-  use shr_strdata_mod , only: shr_strdata_advance, shr_strdata_restWrite
-  use shr_dmodel_mod  , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
-  use shr_dmodel_mod  , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
-  use shr_cal_mod     , only: shr_cal_datetod2string
-
-  use drof_shr_mod   , only: datamode       ! namelist input
-  use drof_shr_mod   , only: decomp         ! namelist input
-  use drof_shr_mod   , only: rest_file      ! namelist input
-  use drof_shr_mod   , only: rest_file_strm ! namelist input
-  use drof_shr_mod   , only: nullstr
+  use NUOPC                 , only : NUOPC_Advertise
+  use ESMF                  , only : ESMF_State, ESMF_SUCCESS
+  use perf_mod              , only : t_startf, t_stopf
+  use perf_mod              , only : t_adj_detailf, t_barrierf
+  use mct_mod               , only : mct_rearr, mct_gsmap_lsize, mct_rearr_init, mct_gsmap, mct_ggrid
+  use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
+  use mct_mod               , only : mct_avect_init, mct_avect_lsize, mct_avect_clean, mct_aVect
+  use shr_sys_mod           , only : shr_sys_abort
+  use shr_kind_mod          , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
+  use shr_kind_mod          , only : CXX=>SHR_KIND_CXX 
+  use shr_string_mod        , only : shr_string_listGetName
+  use shr_sys_mod           , only : shr_sys_abort
+  use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
+  use shr_mpi_mod           , only : shr_mpi_bcast
+  use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
+  use shr_strdata_mod       , only : shr_strdata_print, shr_strdata_restRead
+  use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
+  use shr_dmodel_mod        , only : shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid, shr_dmodel_translateAV
+  use shr_cal_mod           , only : shr_cal_datetod2string
+  use shr_nuopc_scalars_mod , only : flds_scalar_name
+  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+  use dshr_nuopc_mod        , only : fld_list_type
+  use dshr_nuopc_mod        , only : dshr_fld_add
+  use drof_shr_mod          , only : datamode       ! namelist input
+  use drof_shr_mod          , only : decomp         ! namelist input
+  use drof_shr_mod          , only : rest_file      ! namelist input
+  use drof_shr_mod          , only : rest_file_strm ! namelist input
+  use drof_shr_mod          , only : nullstr
 
   !
   ! !PUBLIC TYPES:
@@ -32,6 +42,7 @@ module drof_comp_mod
   ! Public interfaces
   !--------------------------------------------------------------------------
 
+  public :: drof_comp_advertise
   public :: drof_comp_init
   public :: drof_comp_run
   public :: drof_comp_final
@@ -40,20 +51,87 @@ module drof_comp_mod
   ! Private data
   !--------------------------------------------------------------------------
 
-  character(len=3) :: myModelName = 'rof'   ! user defined model name
-  type(mct_rearr)  :: rearr
+  type(mct_rearr)             :: rearr
+  character(len=CS), pointer  :: avifld(:) ! character array for field names coming from streams
+  character(len=CS), pointer  :: avofld(:) ! character array for field names to be sent/received from mediator
+  character(len=CXX)          :: flds_r2x_mod
+  character(len=CXX)          :: flds_x2r_mod
+  character(len=3)            :: myModelName = 'rof'   ! user defined model name
   character(len=*), parameter :: rpfile = 'rpointer.rof'
-
-  integer      , parameter :: ktrans = 2
-  character(12), parameter :: avofld(1:ktrans) = (/ "Forr_rofl   ","Forr_rofi   "/)
-  character(12), parameter :: avifld(1:ktrans) = (/ "rofl        ","rofi        "/)
+  character(*)    , parameter :: u_FILE_u = &
+       __FILE__
 
 !===============================================================================
 contains
 !===============================================================================
 
+  subroutine drof_comp_advertise(importState, exportState, &
+       rof_present, rof_prognostic, &
+       fldsFrRof_num, fldsFrRof, fldsToRof_num, fldsToRof, &
+       flds_r2x, flds_x2r, rc)
+
+    ! 1. determine export and import fields to advertise to mediator
+    ! 2. determine translation of fields from streams to export/import fields
+
+    ! input/output arguments
+    type(ESMF_State)                   :: importState
+    type(ESMF_State)                   :: exportState
+    logical              , intent(in)  :: rof_present
+    logical              , intent(in)  :: rof_prognostic
+    integer              , intent(out) :: fldsFrRof_num
+    type (fld_list_type) , intent(out) :: fldsFrRof(:)
+    integer              , intent(out) :: fldsToRof_num
+    type (fld_list_type) , intent(out) :: fldsToRof(:)
+    character(len=*)     , intent(out) :: flds_r2x
+    character(len=*)     , intent(out) :: flds_x2r
+    integer              , intent(out) :: rc
+
+    ! local variables 
+    integer :: n
+    !-------------------------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    if (.not. rof_present) return
+
+    !-------------------
+    ! export fields
+    !-------------------
+    
+    ! scalar fields that need to be advertised
+
+    fldsFrRof_num=1
+    fldsFrRof(1)%stdname = trim(flds_scalar_name)
+
+    ! export fields that have a corresponding stream field
+
+    call dshr_fld_add(data_fld="rofl", data_fld_array=avifld, model_fld="Forr_rofl", model_fld_array=avofld, &
+         model_fld_concat=flds_r2x, fldlist_num=fldsFrRof_num, fldlist=fldsFrRof)
+
+    call dshr_fld_add(data_fld="rofi", data_fld_array=avifld, model_fld="Forr_rofi", model_fld_array=avofld, &
+         model_fld_concat=flds_r2x, fldlist_num=fldsFrRof_num, fldlist=fldsFrRof)
+
+    !-------------------
+    ! advertise export state
+    !-------------------
+
+    do n = 1,fldsFrRof_num
+       call NUOPC_Advertise(exportState, standardName=fldsFrRof(n)%stdname, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    enddo
+
+    !-------------------
+    ! Save flds_r2x and flds_x2r as module variables for use in debugging
+    !-------------------
+
+    flds_x2r_mod = trim(flds_x2r)
+    flds_r2x_mod = trim(flds_r2x)
+
+  end subroutine drof_comp_advertise
+
+  !===============================================================================
+
   subroutine drof_comp_init(x2r, r2x, &
-       x2r_fields, r2x_fields, &
        SDROF, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
        target_ymd, target_tod, calendar)
@@ -62,8 +140,6 @@ contains
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(mct_aVect)        , intent(inout) :: x2r, r2x     ! input/output attribute vectors
-    character(len=*)       , intent(in)    :: x2r_fields   ! fields from mediator
-    character(len=*)       , intent(in)    :: r2x_fields   ! fields to mediator
     type(shr_strdata_type) , intent(inout) :: SDROF        ! model shr_strdata instance (output)
     type(mct_gsMap)        , pointer       :: gsMap        ! model global seg map (output)
     type(mct_gGrid)        , pointer       :: ggrid        ! model ggrid (output)
@@ -124,7 +200,6 @@ contains
 
     call t_startf('drof_initgsmaps')
     if (my_task == master_task) write(logunit,F00) ' initialize gsmaps'
-    call shr_sys_flush(logunit)
 
     ! create a data model global seqmap (gsmap) given the data model global grid sizes
     ! NOTE: gsmap is initialized using the decomp read in from the drof_in namelist
@@ -134,7 +209,6 @@ contains
 
     ! create a rearranger from the data model SDROF%gsmap to gsmap
     call mct_rearr_init(SDROF%gsmap, gsmap, mpicom, rearr)
-
     call t_stopf('drof_initgsmaps')
 
     !----------------------------------------------------------------------------
@@ -143,10 +217,7 @@ contains
 
     call t_startf('drof_initmctdom')
     if (my_task == master_task) write(logunit,F00) 'copy domains'
-    call shr_sys_flush(logunit)
-
     call shr_dmodel_rearrGGrid(SDROF%grid, ggrid, gsmap, rearr, mpicom)
-
     call t_stopf('drof_initmctdom')
 
     !----------------------------------------------------------------------------
@@ -155,12 +226,11 @@ contains
 
     call t_startf('drof_initmctavs')
     if (my_task == master_task) write(logunit,F00) 'allocate AVs'
-    call shr_sys_flush(logunit)
 
-    call mct_aVect_init(x2r, rList=x2r_fields, lsize=lsize)
+    call mct_aVect_init(x2r, rList=flds_x2r_mod, lsize=lsize)
     call mct_aVect_zero(x2r)
 
-    call mct_aVect_init(r2x, rList=r2x_fields, lsize=lsize)
+    call mct_aVect_init(r2x, rList=flds_r2x_mod, lsize=lsize)
     call mct_aVect_zero(r2x)
     call t_stopf('drof_initmctavs')
 
@@ -188,7 +258,6 @@ contains
            trim(rest_file_strm) == trim(nullstr)) then
           if (my_task == master_task) then
              write(logunit,F00) ' restart filenames from rpointer = ',trim(rpfile)
-             call shr_sys_flush(logunit)
              inquire(file=trim(rpfile)//trim(inst_suffix),exist=exists)
              if (exists) then
                 nu = shr_file_getUnit()
@@ -207,7 +276,6 @@ contains
           ! use namelist already read
           if (my_task == master_task) then
              write(logunit,F00) ' restart filenames from namelist '
-             call shr_sys_flush(logunit)
              inquire(file=trim(rest_file_strm),exist=exists)
           endif
        end if
@@ -229,7 +297,6 @@ contains
        else
           if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file_strm)
        endif
-       call shr_sys_flush(logunit)
     end if
 
     !----------------------------------------------------------------------------
@@ -256,7 +323,6 @@ contains
          target_tod=target_tod)
 
     if (my_task == master_task) write(logunit,F00) 'drof_comp_init done'
-    call shr_sys_flush(logunit)
 
     call t_adj_detailf(-2)
 
@@ -376,7 +442,6 @@ contains
        endif
        if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),target_ymd,target_tod
        call shr_strdata_restWrite(trim(rest_file_strm), SDROF, mpicom, trim(case_name), 'SDROF strdata')
-       call shr_sys_flush(logunit)
        call t_stopf('drof_restart')
     end if
 
@@ -386,7 +451,6 @@ contains
 
     if (my_task == master_task) then
        write(logunit,F04) trim(myModelName),': model date ', target_ymd,target_tod
-       call shr_sys_flush(logunit)
     end if
 
     call t_stopf('DROF_RUN')

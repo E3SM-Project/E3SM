@@ -5,7 +5,7 @@ module datm_comp_mod
 
   ! !USES:
   use NUOPC                 , only : NUOPC_Advertise
-  use ESMF                  , only : ESMF_State
+  use ESMF                  , only : ESMF_State, ESMF_SUCCESS
   use perf_mod              , only : t_startf, t_stopf
   use perf_mod              , only : t_adj_detailf, t_barrierf
   use mct_mod               , only : mct_rearr, mct_gsmap_lsize, mct_rearr_init, mct_gsmap, mct_ggrid
@@ -160,6 +160,8 @@ contains
     ! local variables
     integer :: n
     !-------------------------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
 
     if (.not. atm_present) return
 
@@ -446,7 +448,6 @@ contains
   !===============================================================================
 
   subroutine datm_comp_init(x2a, a2x, &
-       x2a_fields, a2x_fields, &
        SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
        scmMode, scmlat, scmlon, &
@@ -460,8 +461,6 @@ contains
     ! !INPUT/OUTPUT PARAMETERS:
     type(mct_aVect)        , intent(inout) :: x2a
     type(mct_aVect)        , intent(inout) :: a2x
-    character(len=*)       , intent(in)    :: x2a_fields     ! fields from mediator
-    character(len=*)       , intent(in)    :: a2x_fields     ! fields to mediator
     type(shr_strdata_type) , intent(inout) :: SDATM          ! model shr_strdata instance (output)
     type(mct_gsMap)        , pointer       :: gsMap          ! model global sep map (output)
     type(mct_gGrid)        , pointer       :: ggrid          ! model ggrid (output)
@@ -582,10 +581,10 @@ contains
     call t_startf('datm_initmctavs')
     if (my_task == master_task) write(logunit,F00) 'allocate AVs'
 
-    call mct_aVect_init(a2x, rList=a2x_fields, lsize=lsize)
+    call mct_aVect_init(a2x, rList=flds_a2x_mod, lsize=lsize)
     call mct_aVect_zero(a2x)
 
-    call mct_aVect_init(x2a, rList=x2a_fields, lsize=lsize)
+    call mct_aVect_init(x2a, rList=flds_x2a_mod, lsize=lsize)
     call mct_aVect_zero(x2a)
 
     !----------------------------------------------------------------------------

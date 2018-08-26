@@ -30,21 +30,16 @@ module ocn_comp_nuopc
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
   use shr_strdata_mod       , only : shr_strdata_type
-  use dshr_nuopc_mod        , only : fld_list_type, fldsMax
-  use dshr_nuopc_mod        , only : fld_list_add
-  use dshr_nuopc_mod        , only : fld_list_realize
-  use dshr_nuopc_mod        , only : ModelInitPhase
-  use dshr_nuopc_mod        , only : ModelSetRunClock
-  use dshr_nuopc_mod        , only : ModelSetMetaData
-
+  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, fld_list_realize
+  use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use docn_shr_mod          , only : docn_shr_read_namelists
-  use docn_comp_mod         , only : docn_comp_init, docn_comp_run, docn_comp_final
-  use docn_comp_mod         , only : docn_comp_advertise
+  use docn_comp_mod         , only : docn_comp_init, docn_comp_run, docn_comp_final, docn_comp_advertise
   use mct_mod
 
   implicit none
 
   public  :: SetServices
+
   private :: InitializeAdvertise
   private :: InitializeRealize
   private :: ModelAdvance
@@ -623,15 +618,9 @@ module ocn_comp_nuopc
     character(len=*),parameter  :: subname=trim(modName)//':(ModelFinalize) '
     !-------------------------------------------------------------------------------
 
-    !--------------------------------
-    ! Finalize routine
-    !--------------------------------
-
     rc = ESMF_SUCCESS
     if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-
     call docn_comp_final(my_task, master_task, logunit)
-
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelFinalize

@@ -30,18 +30,13 @@ module ice_comp_nuopc
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
   use shr_strdata_mod       , only : shr_strdata_type
-
-  use dshr_nuopc_mod        , only : fld_list_type, fldsMax
-  use dshr_nuopc_mod        , only : fld_list_realize
-  use dshr_nuopc_mod        , only : ModelInitPhase
-  use dshr_nuopc_mod        , only : ModelSetRunClock
-  use dshr_nuopc_mod        , only : ModelSetMetaData
+  use shr_cal_mod           , only : shr_cal_ymd2julian
+  use shr_const_mod         , only : shr_const_pi
+  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, fld_list_realize
+  use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use dice_shr_mod          , only : dice_shr_read_namelists
   use dice_comp_mod         , only : dice_comp_init, dice_comp_run, dice_comp_final, dice_comp_advertise
   use mct_mod
-
-  use shr_cal_mod           , only : shr_cal_ymd2julian
-  use shr_const_mod         , only : shr_const_pi
 
   implicit none
   private ! except
@@ -674,15 +669,9 @@ contains
     character(len=*),parameter  :: subname=trim(modName)//':(ModelFinalize) '
     !-------------------------------------------------------------------------------
 
-    !--------------------------------
-    ! Finalize routine
-    !--------------------------------
-
     rc = ESMF_SUCCESS
     if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-
     call dice_comp_final(my_task, master_task, logunit)
-
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelFinalize
