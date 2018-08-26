@@ -81,7 +81,7 @@
 
 <immutable_stream name="SnicarInput"
                   type="input"
-                  filename_template="snicar_optics_5bnd_c090915_ice_only.nc"
+                  filename_template="snicar_optics_5bnd_mam.nc"
                   filename_interval="none"
                   input_interval="initial_only" />
 
