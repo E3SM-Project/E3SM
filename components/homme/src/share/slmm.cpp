@@ -122,11 +122,16 @@ const_slice (const VT& v, Int i) { return ko::subview(v, i, ko::ALL()); }
 #else
 template <typename VT> KOKKOS_FORCEINLINE_FUNCTION
 typename VT::value_type*
-slice (const VT& v, Int i) { return v.data() + v.extent_int(1)*i; }
-
+slice (const VT& v, Int i) {
+  assert(i >= 0 && i < v.extent_int(0));
+  return v.data() + v.extent_int(1)*i;
+}
 template <typename VT> KOKKOS_FORCEINLINE_FUNCTION
 typename VT::const_value_type*
-const_slice (const VT& v, Int i) { return v.data() + v.extent_int(1)*i; }
+const_slice (const VT& v, Int i) {
+  assert(i >= 0 && i < v.extent_int(0));
+  return v.data() + v.extent_int(1)*i;
+}
 #endif
 
 // Number of slices in a 2D array, where each row is a slice.
@@ -2632,6 +2637,8 @@ inline bool is_inside (const siqk::sh::Mesh<siqk::ko::HostSpace>& m,
   const auto cell = slice(m.e, ic);
   const auto celln = slice(m.en, ic);
   const Int ne = 4;
+  assert(szslice(m.e) == ne);
+  assert(szslice(m.en) == ne);
   bool inside = true;
   for (Int ie = 0; ie < ne; ++ie)
     if (siqk::SphereGeometry::dot_c_amb(slice(m.nml, celln[ie]),
@@ -3477,7 +3484,6 @@ void slmm_project_np4 (
         }
       }
     } else {
-      //here
       static const Int tcell[] = {0, 1, 2, 3};
       const auto scell = slice(m.e, sci);
       for (Int ktri = 1; ktri < no-1; ++ktri) {
@@ -4173,7 +4179,7 @@ struct CslMpi {
     for (Int ri = 0; ri < nrmtrank; ++ri) {
       auto&& locks = ri_lidi_locks(ri);
       for (auto& lock: locks)
-        omp_init_lock(&lock);  
+        omp_destroy_lock(&lock);  
     }
 #endif
   }

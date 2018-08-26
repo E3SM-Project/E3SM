@@ -3744,7 +3744,9 @@ struct InputParser {
 
 #define THREAD_QLT_RUN
 #ifndef QLT_MAIN
-# include "config.h.c"
+# ifdef HAVE_CONFIG_H
+#  include "config.h.c"
+# endif
 #endif
 
 // These Homme-specific CEDR::CDR::run() impls interact nicely with Homme's
@@ -4458,6 +4460,7 @@ void check (CDR& cdr, Data& d, const Real* q_min_r, const Real* q_max_r,
   Kokkos::deep_copy(qd_lo, 0);
   Kokkos::deep_copy(qd_hi, 0);
 
+  bool fp_issue = false; // Limit output once the first issue is seen.
   for (Int ie = nets; ie <= nete; ++ie) {
     const Int ie0 = ie - nets;
     FA2<const Real> spheremp(d.spheremp[ie], np, np);
@@ -4467,29 +4470,33 @@ void check (CDR& cdr, Data& d, const Real* q_min_r, const Real* q_max_r,
     for (Int spli = 0; spli < nsuplev; ++spli) {
       for (Int k = spli*cdr.nsublev; k < (spli+1)*cdr.nsublev; ++k) {
         if (k >= nlev) continue;
-        for (Int j = 0; j < np; ++j)
+        if ( ! fp_issue) {
+          for (Int j = 0; j < np; ++j)
             for (Int i = 0; i < np; ++i) {
               // FP issues.
               if (std::isnan(dp3d_c(i,j,k,d.tl_np1)))
-                pr("dp3d NaN:" pu(k) pu(i) pu(j));
+              { pr("dp3d NaN:" pu(k) pu(i) pu(j)); fp_issue = true; }
               if (std::isinf(dp3d_c(i,j,k,d.tl_np1)))
-                pr("dp3d Inf:" pu(k) pu(i) pu(j));
+              { pr("dp3d Inf:" pu(k) pu(i) pu(j)); fp_issue = true; }
             }
+        }
         for (Int q = 0; q < qsize; ++q)
           for (Int j = 0; j < np; ++j)
             for (Int i = 0; i < np; ++i) {
               // FP issues.
-              for (Int i_qdp : {0, 1}) {
-                const Int n_qdp = i_qdp == 0 ? d.n0_qdp : d.n1_qdp;
-                if (std::isnan(qdp_pc(i,j,k,q,n_qdp)))
-                  pr("qdp NaN:" puf(i_qdp) pu(q) pu(k) pu(i) pu(j));
-                if (std::isinf(qdp_pc(i,j,k,q,n_qdp)))
-                  pr("qdp Inf:" puf(i_qdp) pu(q) pu(k) pu(i) pu(j));
+              if ( ! fp_issue) {
+                for (Int i_qdp : {0, 1}) {
+                  const Int n_qdp = i_qdp == 0 ? d.n0_qdp : d.n1_qdp;
+                  if (std::isnan(qdp_pc(i,j,k,q,n_qdp)))
+                  { pr("qdp NaN:" puf(i_qdp) pu(q) pu(k) pu(i) pu(j)); fp_issue = true; }
+                  if (std::isinf(qdp_pc(i,j,k,q,n_qdp)))
+                  { pr("qdp Inf:" puf(i_qdp) pu(q) pu(k) pu(i) pu(j)); fp_issue = true; }
+                }
+                if (std::isnan(q_c(i,j,k,q)))
+                { pr("q NaN:" pu(q) pu(k) pu(i) pu(j)); fp_issue = true; }
+                if (std::isinf(q_c(i,j,k,q)))
+                { pr("q Inf:" pu(q) pu(k) pu(i) pu(j)); fp_issue = true; }
               }
-              if (std::isnan(q_c(i,j,k,q)))
-                pr("q NaN:" pu(q) pu(k) pu(i) pu(j));
-              if (std::isinf(q_c(i,j,k,q)))
-                pr("q Inf:" pu(q) pu(k) pu(i) pu(j));
               // Mass conservation.
               mass_p(spli,q) += qdp_pc(i,j,k,q,d.n0_qdp) * spheremp(i,j);
               mass_c(spli,q) += qdp_pc(i,j,k,q,d.n1_qdp) * spheremp(i,j);
