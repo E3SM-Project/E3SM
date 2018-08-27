@@ -2695,8 +2695,14 @@
                                         ss_alb_ice_drc,      &
                                         ss_alb_ice_dfs,      &
                                         ext_cff_mss_ice_drc, &
-                                        ext_cff_mss_ice_dfs)!, &
-                                        !radius_um)
+                                        ext_cff_mss_ice_dfs, &
+                                        kaer_tab_5bd,          &
+                                        waer_tab_5bd,          &
+                                        gaer_tab_5bd,          &
+                                        kaer_bc_tab_5bd,       &
+                                        waer_bc_tab_5bd,       &
+                                        gaer_bc_tab_5bd,       &
+                                        bcenh_5bd)
 
       use ice_constants_colpkg, only: c0, puny
       use ice_shortwave, only: run_dEdd, shortwave_ccsm3, compute_shortwave_trcr
@@ -2822,6 +2828,18 @@
         ext_cff_mss_ice_drc, & ! snow mass extinction cross section (m2/kg)
         ext_cff_mss_ice_dfs    ! snow mass extinction cross section (m2/kg)
 
+      real (kind=dbl_kind), dimension(:,:), intent(in) :: &
+        kaer_tab_5bd, & ! aerosol mass extinction cross section (m2/kg)
+        waer_tab_5bd, & ! aerosol single scatter albedo (fraction)
+        gaer_tab_5bd    ! aerosol asymmetry parameter (cos(theta))
+
+      real (kind=dbl_kind), dimension(:,:), intent(in) :: & ! Modal aerosol treatment
+        kaer_bc_tab_5bd, & ! aerosol mass extinction cross section (m2/kg)
+        waer_bc_tab_5bd, & ! aerosol single scatter albedo (fraction)
+        gaer_bc_tab_5bd    ! aerosol asymmetry parameter (cos(theta))
+
+      real (kind=dbl_kind), dimension(:,:,:), intent(in) :: & ! Modal aerosol treatment
+        bcenh_5bd         ! BC absorption enhancement factor
 
       ! local variables
 
@@ -2928,13 +2946,20 @@
                           dhsn,         ffracn,         &
                           l_print_point,                &
                           linitonly,                    &
-                          asm_prm_ice_drc,              &
-                          asm_prm_ice_dfs,              &
-                          ss_alb_ice_drc,               &
-                          ss_alb_ice_dfs,               &
-                          ext_cff_mss_ice_drc,          &
-                          ext_cff_mss_ice_dfs,          &
-                          snicar_system)
+                          snicar_system,         &
+                          asm_prm_ice_drc,       &
+                          asm_prm_ice_dfs,       &
+                          ss_alb_ice_drc,        &
+                          ss_alb_ice_dfs,        &
+                          ext_cff_mss_ice_drc,   &
+                          ext_cff_mss_ice_dfs,   &
+                          kaer_tab_5bd,          &
+                          waer_tab_5bd,          &
+                          gaer_tab_5bd,          &
+                          kaer_bc_tab_5bd,       &
+                          waer_bc_tab_5bd,       &
+                          gaer_bc_tab_5bd,       &
+                          bcenh_5bd)
  
          else  ! .not. dEdd
 
