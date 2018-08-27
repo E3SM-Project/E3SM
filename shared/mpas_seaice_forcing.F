@@ -334,7 +334,7 @@ contains
             simulationClock, &
             firstTimeStep)
 
-       !dc add data iceberg forcing
+       ! data iceberg forcing
        if (config_use_data_icebergs) then
 
           call data_iceberg_forcing(&
@@ -1634,13 +1634,13 @@ contains
          forcingIntervalMonthly, &
          forcingReferenceTimeMonthly
 
-    ! get oceanic forcing configuration options
+    ! get configuration options
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
 
     forcingIntervalMonthly = "00-01-00_00:00:00"
     forcingReferenceTimeMonthly = "0001-01-15_00:00:00"
 
-    ! create the sea surface temperature forcing group
+    ! create own data iceberg forcing group
     call MPAS_forcing_init_group(&
          seaiceForcingGroups, &
          "seaice_data_iceberg_forcing_monthly", &
@@ -1650,7 +1650,7 @@ contains
          '0001-00-00_00:00:00', &
          config_do_restart)
 
-    ! sea surface temperature
+    ! iceberg freshwater fluxes
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
@@ -1951,6 +1951,10 @@ contains
          oceanShortwaveFlux
 
     real(kind=RKIND), dimension(:), pointer :: &
+         bergFreshWaterFlux, &
+         bergLatentHeatFlux
+
+    real(kind=RKIND), dimension(:), pointer :: &
          oceanNitrateFlux, &
          oceanSilicateFlux, &
          oceanAmmoniumFlux, &
@@ -1970,7 +1974,8 @@ contains
          oceanDissolvedIronFlux
 
     logical, pointer :: &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_data_icebergs
 
     block => domain % blocklist
     do while (associated(block))
@@ -1982,7 +1987,7 @@ contains
        call MPAS_pool_get_array(oceanFluxes, "oceanSaltFlux", oceanSaltFlux)
        call MPAS_pool_get_array(oceanFluxes, "oceanHeatFlux", oceanHeatFlux)
        call MPAS_pool_get_array(oceanFluxes, "oceanShortwaveFlux", oceanShortwaveFlux)
-!dc add berg terms here
+
        oceanFreshWaterFlux      = 0.0_RKIND
        oceanSaltFlux            = 0.0_RKIND
        oceanHeatFlux            = 0.0_RKIND
@@ -2025,6 +2030,19 @@ contains
           oceanParticulateIronFlux = 0.0_RKIND
           oceanDissolvedIronFlux   = 0.0_RKIND
           oceanDustIronFlux        = 0.0_RKIND
+
+       endif
+
+       ! data icebergs
+       call MPAS_pool_get_config(block % configs, "config_use_data_icebergs", config_use_data_icebergs)
+
+       if (config_use_data_icebergs) then
+
+          call MPAS_pool_get_array(oceanFluxes, "bergFreshWaterFlux", bergFreshWaterFlux)
+          call MPAS_pool_get_array(oceanFluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
+
+          bergFreshWaterFlux = 0.0_RKIND
+          bergLatentHeatFlux = 0.0_RKIND
 
        endif
 
