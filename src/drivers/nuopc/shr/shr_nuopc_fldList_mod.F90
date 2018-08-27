@@ -171,6 +171,7 @@ contains
   !===============================================================================
 
   subroutine shr_nuopc_fldList_AddMetadata(fldname , longname, stdname, units)
+
     use NUOPC, only : NUOPC_FieldDictionaryAddEntry, NUOPC_FieldDictionaryHasEntry
     use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU
     use ESMF, only : ESMF_LOGMSG_ERROR, ESMF_FAILURE

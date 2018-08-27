@@ -35,7 +35,7 @@ contains
     use med_constants_mod     , only : med_constants_gregorian
     use med_constants_mod     , only : R8
     use NUOPC                 , only : NUOPC_CompAttributeGet
-    use esmFlds               , only : ncomps, compname
+    use esmFlds               , only : ncomps, compname, compocn
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use med_internalstate_mod , only : InternalState
     use med_infodata_mod      , only : med_infodata, med_infodata_GetData
