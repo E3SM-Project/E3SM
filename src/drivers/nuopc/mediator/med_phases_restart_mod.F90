@@ -18,30 +18,30 @@ contains
 !=================================================================================
 
   subroutine med_phases_restart_write(gcomp, rc)
-    use ESMF, only: ESMF_GridComp, ESMF_VM, ESMF_Clock, ESMF_Time
-    use ESMF, only: ESMF_TimeInterval, ESMF_CalKind_Flag, ESMF_MAXSTR
-    use ESMF, only: ESMF_CALKIND_NOLEAP, ESMF_CALKIND_GREGORIAN
-    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_FAILURE
-    use ESMF, only: ESMF_LOGMSG_ERROR, operator(==), operator(-)
-    use ESMF, only: ESMF_GridCompGet, ESMF_VMGet, ESMF_ClockGet, ESMF_ClockGetNextTime
-    use ESMF, only: ESMF_TimeGet, ESMF_ClockPrint, ESMF_TimeIntervalGet
-    use ESMF, only: ESMF_FieldBundleIsCreated
-    use med_constants_mod, only : dbug_flag => med_constants_dbug_flag
-    use med_constants_mod, only : SecPerDay => med_constants_SecPerDay
-    use med_constants_mod, only : med_constants_noleap
-    use med_constants_mod, only : med_constants_gregorian
-    use med_constants_mod, only : R8
-    use NUOPC, only : NUOPC_CompAttributeGet
-    use esmFlds                 , only : ncomps, compname
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
-    use seq_timemgr_mod         , only : seq_timemgr_AlarmIsOn
-    use seq_timemgr_mod         , only : seq_timemgr_AlarmSetOff, seq_timemgr_alarm_restart
-    use med_internalstate_mod   , only : InternalState
-    use med_infodata_mod        , only : med_infodata, med_infodata_GetData
-    use shr_file_mod            , only : shr_file_getUnit, shr_file_freeUnit
-    use med_io_mod              , only : med_io_write, med_io_wopen, med_io_enddef
-    use med_io_mod              , only : med_io_close, med_io_date2yyyymmdd
-    use med_io_mod              , only : med_io_sec2hms
+    use ESMF                  , only : ESMF_GridComp, ESMF_VM, ESMF_Clock, ESMF_Time
+    use ESMF                  , only : ESMF_TimeInterval, ESMF_CalKind_Flag, ESMF_MAXSTR
+    use ESMF                  , only : ESMF_CALKIND_NOLEAP, ESMF_CALKIND_GREGORIAN
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_FAILURE
+    use ESMF                  , only : ESMF_LOGMSG_ERROR, operator(==), operator(-)
+    use ESMF                  , only : ESMF_GridCompGet, ESMF_VMGet, ESMF_ClockGet, ESMF_ClockGetNextTime
+    use ESMF                  , only : ESMF_TimeGet, ESMF_ClockPrint, ESMF_TimeIntervalGet
+    use ESMF                  , only : ESMF_FieldBundleIsCreated
+    use NUOPC                 , only : NUOPC_CompAttributeGet
+    use shr_file_mod          , only : shr_file_getUnit, shr_file_freeUnit
+    use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
+    use med_constants_mod     , only : SecPerDay => med_constants_SecPerDay
+    use med_constants_mod     , only : med_constants_noleap
+    use med_constants_mod     , only : med_constants_gregorian
+    use med_constants_mod     , only : R8
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use med_internalstate_mod , only : InternalState
+    use med_infodata_mod      , only : med_infodata, med_infodata_GetData
+    use med_io_mod            , only : med_io_write, med_io_wopen, med_io_enddef
+    use med_io_mod            , only : med_io_close, med_io_date2yyyymmdd
+    use med_io_mod            , only : med_io_sec2hms
+    use esmFlds               , only : ncomps, compname, compocn
+    use seq_timemgr_mod       , only : seq_timemgr_AlarmIsOn 
+    use seq_timemgr_mod       , only : seq_timemgr_AlarmSetOff, seq_timemgr_alarm_restart
 
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -284,15 +284,13 @@ contains
              endif
           enddo
 
-          ! Write ocn albedo field bundle (CESM only)
-          ! if (ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_ocnalb_o,rc=rc)) then
-          !    call med_infodata_GetData(med_infodata, ncomp=compocn, nx=nx, ny=ny)
-          !    !write(tmpstr,*) subname,' nx,ny = ',trim(compname(n)),nx,ny
-          !    !call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
-          !    call med_io_write(restart_file, iam, is_local%wrap%FBMed_ocnalb_o, &
-          !         nx=nx, ny=ny, nt=1, whead=whead, wdata=wdata, pre='MedOcnAlb_o', rc=rc)
-          !    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          ! end if
+          !Write ocn albedo field bundle (CESM only)
+          if (ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_ocnalb_o,rc=rc)) then
+             call med_infodata_GetData(med_infodata, ncomp=compocn, nx=nx, ny=ny)
+             call med_io_write(restart_file, iam, is_local%wrap%FBMed_ocnalb_o, &
+                  nx=nx, ny=ny, nt=1, whead=whead, wdata=wdata, pre='MedOcnAlb_o', rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          end if
 
        enddo
 
@@ -466,12 +464,12 @@ contains
        endif
     enddo
 
-    ! read ocn albedo field bundle (CESM only)
-    ! if (ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_ocnalb_o,rc=rc)) then
-    !    call med_io_read(restart_file, mpicom, iam, is_local%wrap%FBMed_ocnalb_o, &
-    !         pre='MedOcnAlb_o', rc=rc)
-    !    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    ! end if
+    ! Read ocn albedo field bundle (CESM only)
+    if (ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_ocnalb_o,rc=rc)) then
+       call med_io_read(restart_file, mpicom, iam, is_local%wrap%FBMed_ocnalb_o, &
+            pre='MedOcnAlb_o', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
 
     !---------------------------------------
     !--- clean up

@@ -93,10 +93,6 @@ class Batch(GenericXML):
         if node is not None:
             value = self.text(node)
 
-        if value is None:
-            # if all else fails
-            value = GenericXML.get_value(self, name, attribute, resolved, subgroup)
-
         if resolved:
             if value is not None:
                 value = self.get_resolved_value(value)
