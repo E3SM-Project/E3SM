@@ -2504,7 +2504,7 @@ contains
           call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1), complnd, compatm, mapconsf, 'one', lnd2atm_smapname)
        enddo
     endif
-    call seq_drydep_init( )
+    call seq_drydep_init() ! TODO: remove this when all components call it separately
 
     !-----------------------------------------------------------------------------
     ! Nitrogen Deposition fields

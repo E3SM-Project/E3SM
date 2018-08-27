@@ -292,15 +292,13 @@ contains
              endif
           enddo
 
-          ! Write ocn albedo field bundle (CESM only)
-          ! if (ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_ocnalb_o,rc=rc)) then
-          !    call med_infodata_GetData(med_infodata, ncomp=compocn, nx=nx, ny=ny)
-          !    !write(tmpstr,*) subname,' nx,ny = ',trim(compname(n)),nx,ny
-          !    !call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
-          !    call med_io_write(restart_file, iam, is_local%wrap%FBMed_ocnalb_o, &
-          !         nx=nx, ny=ny, nt=1, whead=whead, wdata=wdata, pre='MedOcnAlb_o', rc=rc)
-          !    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          ! end if
+          !Write ocn albedo field bundle (CESM only)
+          if (ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_ocnalb_o,rc=rc)) then
+             call med_infodata_GetData(med_infodata, ncomp=compocn, nx=nx, ny=ny)
+             call med_io_write(restart_file, iam, is_local%wrap%FBMed_ocnalb_o, &
+                  nx=nx, ny=ny, nt=1, whead=whead, wdata=wdata, pre='MedOcnAlb_o', rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          end if
 
        enddo
 
@@ -477,12 +475,12 @@ contains
        endif
     enddo
 
-    ! read ocn albedo field bundle (CESM only)
-    ! if (ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_ocnalb_o,rc=rc)) then
-    !    call med_io_read(restart_file, mpicom, iam, is_local%wrap%FBMed_ocnalb_o, &
-    !         pre='MedOcnAlb_o', rc=rc)
-    !    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    ! end if
+    ! Read ocn albedo field bundle (CESM only)
+    if (ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_ocnalb_o,rc=rc)) then
+       call med_io_read(restart_file, mpicom, iam, is_local%wrap%FBMed_ocnalb_o, &
+            pre='MedOcnAlb_o', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
 
     !---------------------------------------
     !--- clean up
