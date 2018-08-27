@@ -119,6 +119,7 @@ module ESM
     use NUOPC_Driver          , only : NUOPC_DriverAddComp
     use MED                   , only : med_SS => SetServices
     use esmFlds               , only : esmFlds_Init
+    use esmDict               , only : esmDict_Init
     use seq_comm_mct          , only : CPLID, GLOID, ATMID, LNDID, OCNID, ICEID, GLCID, ROFID, WAVID, ESPID
     use seq_comm_mct          , only : num_inst_total
     use seq_comm_mct          , only : seq_comm_init, seq_comm_printcomms, seq_comm_petlist
@@ -225,10 +226,10 @@ module ESM
     call CheckAttributes(driver, rc)
 
     !----------------------------------------------------------
-    ! Initialize coupled fields
+    ! Initialize dictionary of all possible fields
     !----------------------------------------------------------
 
-    call esmFlds_Init(driver, rc)
+    call esmDict_Init(driver, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !-------------------------------------------
@@ -503,6 +504,11 @@ module ESM
         endif
 
         call AddAttributes(child, driver, config, compid, 'MED', rc=rc)
+        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+        ! Initialize mediator flds (should be identical to the list in esmDict_Init) 
+        ! Note that this is ONLY done on the mediator PETS
+        call esmFlds_Init(child, rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
         ! Print out present flags to mediator log file
