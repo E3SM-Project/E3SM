@@ -1,9 +1,9 @@
 #include "coupler.hpp"
 
-namespace Scream {
-namespace Coupler {
+namespace scream {
+namespace coupler {
 
 int coupler_stub() { return 42; }
 
-}  // namespace Coupler
-}  // namespace Scream
+}  // namespace coupler
+}  // namespace scream
