@@ -16,14 +16,14 @@ module esmDict
 
   public :: esmDict_Init
 
-  character(len=CXX) :: drydep_fields       ! List of dry-deposition fields
-  character(len=CXX) :: megan_voc_fields    ! List of MEGAN VOC emission fields
-  character(len=CXX) :: fire_emis_fields    ! List of fire emission fields
-  character(len=CXX) :: carma_fields        ! List of CARMA fields from lnd->atm
-  character(len=CXX) :: ndep_fields         ! List of nitrogen deposition fields from atm->lnd/ocn
-  logical            :: add_ndep_fields     ! .true. => add ndep fields
-  integer            :: ice_ncat            ! number of sea ice thickness categories
-  integer            :: glc_nec             ! number of land-ice elevation classes
+  character(len=CXX) :: drydep_fields    = ''      ! List of dry-deposition fields
+  character(len=CXX) :: megan_voc_fields = ''      ! List of MEGAN VOC emission fields
+  character(len=CXX) :: fire_emis_fields = ''      ! List of fire emission fields
+  character(len=CXX) :: carma_fields     = ''      ! List of CARMA fields from lnd->atm
+  character(len=CXX) :: ndep_fields      = ''      ! List of nitrogen deposition fields from atm->lnd/ocn
+  logical            :: add_ndep_fields  = .false. ! .true. => add ndep fields
+  integer            :: ice_ncat                   ! number of sea ice thickness categories
+  integer            :: glc_nec                    ! number of land-ice elevation classes
 
   character(*), parameter :: u_FILE_u = &
        __FILE__
@@ -61,12 +61,6 @@ contains
     character(len=CS)  :: longname
     character(len=CS)  :: stdname
     character(len=CS)  :: name, fldname
-    character(len=CXX) :: drydep_fields       ! List of dry-deposition fields
-    character(len=CXX) :: megan_voc_fields    ! List of MEGAN VOC emission fields
-    character(len=CXX) :: fire_emis_fields    ! List of fire emission fields
-    character(len=CXX) :: carma_fields        ! List of CARMA fields from lnd->atm
-    character(len=CXX) :: ndep_fields         ! List of nitrogen deposition fields from atm->lnd/ocn
-    logical            :: add_ndep_fields     ! .true. => add ndep fields
     character(len=*), parameter :: subname='(esmDict_Init)'
     !--------------------------------------
     rc = ESMF_SUCCESS
@@ -925,24 +919,25 @@ contains
     stdname  = 'ratio_ocean_surface_HDO_abund'
     call shr_nuopc_fldList_AddMetadata('So_roce_HDO', longname, stdname, units)
 
-    !--------------------------------------------
+    !------------------------
     ! Atmospheric specific humidty at lowest level:
-    !--------------------------------------------
+    !------------------------
 
     longname = 'Specific humidty of H216O at the lowest model level'
     stdname  = 'H216OV'
     units    = 'kg kg-1'
     call shr_nuopc_fldList_AddMetadata('Sa_shum_16O', longname, stdname, units)
-
+    longname = 'Specific humidty of H218O at the lowest model level'
+    stdname  = 'H218OV'
+    call shr_nuopc_fldList_AddMetadata('Sa_shum_18O', longname, stdname, units)
     longname = 'Specific humidty of HD16O at the lowest model level'
     stdname  = 'HD16OV'
     call shr_nuopc_fldList_AddMetadata('Sa_shum_HDO', longname, stdname, units)
 
-    longname = 'Specific humidty of H218O at the lowest model level'
-    stdname  = 'H218OV'
-    call shr_nuopc_fldList_AddMetadata('Sa_shum_18O', longname, stdname, units)
+    !------------------------
+    ! Isotopic surface snow water equivalent (land/atm only)
+    !------------------------
 
-    ! Surface snow water equivalent (land/atm only)
     longname = 'Isotopic surface snow water equivalent'
     stdname  = 'surface_snow_water_equivalent'
     units    = 'm'
@@ -950,34 +945,31 @@ contains
     call shr_nuopc_fldList_AddMetadata('Sl_snowh_HDO', longname, stdname, units)
     call shr_nuopc_fldList_AddMetadata('Sl_snowh_18O', longname, stdname, units)
 
-    !Isotopic Precipitation Fluxes:
+    !------------------------
+    ! Isotopic Precipitation Fluxes:
+    !------------------------
 
     longname = 'H216O Convective precipitation rate'
     stdname  = 'H2_16O_convective_precipitation_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata('Faxa_rainc_16O', longname, stdname, units)
-
     longname = 'H216O Large-scale (stable) precipitation rate'
     stdname  = 'H2_16O_large_scale_precipitation_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata('Faxa_rainl_16O', longname, stdname, units)
-
     longname = 'Water flux due to H216O rain' !equiv. to bulk
     stdname  = 'H2_16O_rainfall_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata('Faxa_rain_16O', longname, stdname, units)
 
-
     longname = 'H218O Convective precipitation rate'
     stdname  = 'H2_18O_convective_precipitation_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata('Faxa_rainc_18O', longname, stdname, units)
-
     longname = 'H218O Large-scale (stable) precipitation rate'
     stdname  = 'H2_18O_large_scale_precipitation_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata('Faxa_rainl_18O', longname, stdname, units)
-
     longname = 'Water flux due to H218O rain'
     stdname  = 'h2_18o_rainfall_flux'
     units    = 'kg m-2 s-1'
@@ -987,31 +979,27 @@ contains
     stdname  = 'HDO_convective_precipitation_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata('Faxa_rainc_HDO', longname, stdname, units)
-
     longname = 'HDO Large-scale (stable) precipitation rate'
     stdname  = 'HDO_large_scale_precipitation_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata('Faxa_rainl_HDO', longname, stdname, units)
-
     longname = 'Water flux due to HDO rain'
     stdname  = 'hdo_rainfall_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata('Faxa_rain_HDO', longname, stdname, units)
 
     !------------------------
-    !Isotopic Snow Fluxes:
+    ! Isotopic Snow Fluxes:
     !------------------------
 
     longname = 'H216O Convective snow rate (water equivalent)'
     stdname  = 'H2_16O_convective_snowfall_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata('Faxa_snowc_16O', longname, stdname, units)
-
     longname = 'H216O Large-scale (stable) snow rate'
     stdname  = 'H2_16O_large_scale_snowfall_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata('Faxa_snowl_16O', longname, stdname, units)
-
     longname = 'Water flux due to H216O snow' !equiv. to bulk
     stdname  = 'H2_16O_snowfall_flux'
     units    = 'kg m-2 s-1'
@@ -1021,12 +1009,10 @@ contains
     stdname  = 'H2_18O_convective_snowfall_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata('Faxa_snowc_18O', longname, stdname, units)
-
     longname = 'H218O Large-scale (stable) snow rate'
     stdname  = 'H2_18O_large_scale_snowfall_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata('Faxa_snowl_18O', longname, stdname, units)
-
     longname = 'Water flux due to H218O snow'
     stdname  = 'h2_18o_snowfall_flux'
     units    = 'kg m-2 s-1'
@@ -1036,18 +1022,122 @@ contains
     stdname  = 'HDO_convective_snowfall_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata('Faxa_snowc_HDO', longname, stdname, units)
-
     longname = 'HDO Large-scale (stable) snow rate'
     stdname  = 'HDO_large_scale_snowfall_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata('Faxa_snowl_HDO', longname, stdname, units)
-
     longname = 'Water flux due to HDO snow'
     stdname  = 'hdo_snowfall_flux'
     units    = 'kg m-2 s-1'
     call shr_nuopc_fldList_AddMetadata('Faxa_snow_HDO', longname, stdname, units)
 
-    ! TODO: add rest here
+    !------------------------
+    ! Isotopic precipitation (rain + snow)
+    !------------------------
+
+    longname = 'Isotopic Water flux (rain+snow) for H2_16O'
+    stdname  = 'h2_16o_precipitation_flux'
+    units    = 'kg m-2 s-1'
+    call shr_nuopc_fldList_AddMetadata('Faxa_prec_16O', longname, stdname, units)
+    longname = 'Isotopic Water flux (rain+snow) for H2_18O'
+    stdname  = 'h2_18o_precipitation_flux'
+    units    = 'kg m-2 s-1'
+    call shr_nuopc_fldList_AddMetadata('Faxa_prec_18O', longname, stdname, units)
+    longname = 'Isotopic Water flux (rain+snow) for H2_HDO'
+    stdname  = 'h2_HDo_precipitation_flux'
+    units    = 'kg m-2 s-1'
+    call shr_nuopc_fldList_AddMetadata('Faxa_prec_HDO', longname, stdname, units)
+
+    !-------------------------------------
+    ! Isotopic two meter reference humidity:
+    !-------------------------------------
+
+    longname = 'Reference H216O specific humidity at 2 meters'
+    stdname  = 'H216O_specific_humidity'
+    units    = 'kg kg-1'
+    call shr_nuopc_fldList_AddMetadata('Sl_qref_16O', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('Si_qref_16O', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('So_qref_16O', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('Sx_qref_16O', longname, stdname, units)
+
+    longname = 'Reference H218O specific humidity at 2 meters'
+    stdname  = 'H218O_specific_humidity'
+    units    = 'kg kg-1'
+    call shr_nuopc_fldList_AddMetadata('Sl_qref_18O', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('Si_qref_18O', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('So_qref_18O', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('Sx_qref_18O', longname, stdname, units)
+
+    longname = 'Reference H2HDO specific humidity at 2 meters'
+    stdname  = 'H2HDO_specific_humidity'
+    units    = 'kg kg-1'
+    call shr_nuopc_fldList_AddMetadata('Sl_qref_HDO', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('Si_qref_HDO', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('So_qref_HDO', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('Sx_qref_HDO', longname, stdname, units)
+
+    !-------------------------
+    ! Isotopic Evaporation flux:
+    !-------------------------
+
+    longname = 'Evaporation H216O flux'
+    stdname  = 'H216O_evaporation_flux'
+    units    = 'kg m-2 s-1'
+    call shr_nuopc_fldList_AddMetadata('Fall_evap_16O', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('Faii_evap_16O', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('Faox_evap_16O', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('Faxx_evap_16O', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('Foxx_evap_16O', longname, stdname, units)
+
+    longname = 'Evaporation H216O flux'
+    stdname  = 'H216O_evaporation_flux'
+    units    = 'kg m-2 s-1'
+    call shr_nuopc_fldList_AddMetadata('Fall_evap_18O', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('Faii_evap_18O', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('Faox_evap_18O', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('Faxx_evap_18O', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('Foxx_evap_18O', longname, stdname, units)
+
+    longname = 'Evaporation H2HDO flux'
+    stdname  = 'H2HDO_evaporation_flux'
+    units    = 'kg m-2 s-1'
+    call shr_nuopc_fldList_AddMetadata('Fall_evap_HDO', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('Faii_evap_HDO', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('Faox_evap_HDO', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('Faxx_evap_HDO', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('Foxx_evap_HDO', longname, stdname, units)
+
+    !-------------------------
+    ! Isotopic sea ice melting flux
+    !-------------------------
+
+    ! 'Heat flux from melting'
+    units    = 'kg m-2 s-1'
+    longname = 'H2_16O heat flux due to melting'
+    stdname  = 'h2_16o_surface_snow_melt_hflux'
+    call shr_nuopc_fldList_AddMetadata('Fioi_melth_16O', longname, stdname, units)
+    units    = 'kg m-2 s-1'
+    longname = 'H2_18O heat flux due to melting'
+    stdname  = 'h2_18o_surface_snow_melt_hflux'
+    call shr_nuopc_fldList_AddMetadata('Fioi_melth_18O', longname, stdname, units)
+    units    = 'kg m-2 s-1'
+    longname = 'H2_18O heat flux due to melting'
+    stdname  = 'h2_HDo_surface_snow_melt_hflux'
+    call shr_nuopc_fldList_AddMetadata('Fioi_melth_HDO', longname, stdname, units)
+
+    ! 'Water flux from melting'
+    units    = 'kg m-2 s-1'
+    longname = 'H2_16O water flux due to melting'
+    stdname  = 'h2_16o_surface_snow_melt_wflux'
+    call shr_nuopc_fldList_AddMetadata('Fioi_meltw_16O', longname, stdname, units)
+    units    = 'kg m-2 s-1'
+    longname = 'H2_18O water flux due to melting'
+    stdname  = 'h2_18o_surface_snow_melt_wflux'
+    call shr_nuopc_fldList_AddMetadata('Fioi_meltw_18O', longname, stdname, units)
+    units    = 'kg m-2 s-1'
+    longname = 'H2_18O water flux due to melting'
+    stdname  = 'h2_HDo_surface_snow_melt_wflux'
+    call shr_nuopc_fldList_AddMetadata('Fioi_meltw_HDO', longname, stdname, units)
 
     !-----------------------------------------------------------------------------
     ! optional per thickness category fields
@@ -1101,6 +1191,7 @@ contains
        longname = 'Volumetric soil water'
        stdname  = 'soil_water'
        units    = 'm3/m3'
+       write(6,*)'DEBUG :carma_fields = ',trim(carma_fields)
        do n = 1,shr_string_listGetNum(carma_fields)
           call shr_string_listGetName(carma_fields, n, fldname)
           call shr_nuopc_fldList_AddMetadata(trim(fldname), longname, stdname, units)
