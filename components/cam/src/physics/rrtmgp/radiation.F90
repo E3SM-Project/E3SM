@@ -92,10 +92,6 @@ public :: &
 integer, public, allocatable :: cosp_cnt(:)       ! counter for cosp
 integer, public              :: cosp_cnt_init = 0 ! initial value for cosp counter
 
-! Private module data
-! TODO: remove these?
-integer :: cldfsnow_idx = 0 
-
 ! Declare namelist variables as module data. This also sets default values for
 ! namelist variables.
 integer :: iradsw = -1  ! freq. of shortwave radiation calc in time steps (positive)
@@ -304,7 +300,6 @@ subroutine radiation_readnl(nlfile, dtime_in)
 
 #ifdef SPMD
    ! Broadcast namelist variables
-   ! TODO: do we need to broadcast? Only if masterproc?
    call mpibcast(rrtmgp_coefficients_file_lw, cl, mpi_character, mstrid, mpicom, ierr)
    call mpibcast(rrtmgp_coefficients_file_sw, cl, mpi_character, mstrid, mpicom, ierr)
    call mpibcast(iradsw, 1, mpi_integer, mstrid, mpicom, ierr)
@@ -519,6 +514,7 @@ subroutine radiation_init(state)
    integer :: history_budget_histfile_num ! output history file number for budget fields
    integer :: err
    integer :: dtime  ! time step
+   integer :: cldfsnow_idx = 0 
 
    logical :: use_SPCAM  ! SPCAM flag
 
@@ -924,6 +920,7 @@ subroutine radiation_init(state)
       call add_default('FLUT', 3, ' ')
    end if
 
+   cldfsnow_idx = 0
    cldfsnow_idx = pbuf_get_index('CLDFSNOW',errcode=err)
    if (cldfsnow_idx > 0) then
       call addfld('CLDFSNOW',(/ 'lev' /),'I','1','CLDFSNOW',flag_xyfill=.true.)
@@ -1541,10 +1538,10 @@ subroutine radiation_tend(state,   ptend,    pbuf,          cam_out, cam_in,  &
 
       ! Set rad state variables
       call set_rad_state(state, cam_in, &
-                              tmid(1:ncol,1:nlev_rad), &
-                              tint(1:ncol,1:nlev_rad+1), &
-                              pmid(1:ncol,1:nlev_rad), &
-                              pint(1:ncol,1:nlev_rad+1))
+                         tmid(1:ncol,1:nlev_rad), &
+                         tint(1:ncol,1:nlev_rad+1), &
+                         pmid(1:ncol,1:nlev_rad), &
+                         pint(1:ncol,1:nlev_rad+1))
        
       ! Set surface emissivity to 1 here. There is a note in the RRTMG
       ! implementation that this is treated in the land model, but the old
@@ -1556,8 +1553,7 @@ subroutine radiation_tend(state,   ptend,    pbuf,          cam_out, cam_in,  &
 
       ! Do longwave cloud optics calculations
       call t_startf('longwave cloud optics')
-      call set_cloud_optics_lw(state, pbuf, k_dist_lw, &
-                               cloud_optics_lw)
+      call set_cloud_optics_lw(state, pbuf, k_dist_lw, cloud_optics_lw)
       call t_stopf('longwave cloud optics')
 
       ! Initialize aerosol optics; passing only the wavenumber bounds for each
@@ -1598,9 +1594,13 @@ subroutine radiation_tend(state,   ptend,    pbuf,          cam_out, cam_in,  &
                flux_lw_allsky, flux_lw_clearsky, &
                aer_props=aerosol_optics_lw, &
                t_lev=tint(1:ncol,1:nlev_rad+1), &
-               n_gauss_angles=1 & ! For consistency with RRTMG
+               n_gauss_angles=1 & ! Set to 3 for consistency with RRTMG
             ))
             call t_stopf('rad_calculations_lw')
+
+            ! Check stuff
+            call assert_valid(flux_lw_allsky%flux_up, 'flux_up invalid')
+            call assert_valid(flux_lw_allsky%flux_dn, 'flux_dn invalid')
 
             ! Calculate heating rates
             call t_startf('rad_heating_rate_lw')
@@ -1642,6 +1642,12 @@ subroutine radiation_tend(state,   ptend,    pbuf,          cam_out, cam_in,  &
          qrl(1:ncol,1:pver) = qrl(1:ncol,1:pver) / state%pdel(1:ncol,1:pver)
       end if
    end if  ! dolw
+
+   ! Check net fluxes
+   call assert_valid(fsns, 'fsns')
+   call assert_valid(fsnt, 'fsnt')
+   call assert_valid(flns, 'flns')
+   call assert_valid(flnt, 'flnt')
 
    ! Compute net radiative heating tendency
    call t_startf('radheat_tend')
@@ -1747,6 +1753,8 @@ subroutine set_rad_state(state, cam_in, tmid, tint, pmid, pint, col_indices)
    call assert(all(pint(:,1) <= pint(:,2)), 'pint inconsistent.')
    call assert(all(pint(:,1) <= pmid(:,1)), 'pint and pmid inconsistent.')
 #endif
+   call assert(all(tmid > 0), 'tmid goes negative')
+   call assert(all(tint > 0), 'tint goes negative')
 
 end subroutine set_rad_state
 
@@ -1765,11 +1773,15 @@ subroutine set_interface_temperature(state, cam_in, tint)
 
    ! Calculate interface temperatures (following method used in radtpl for the
    ! longwave), using surface upward flux and stebol constant in mks units.
+   !
    ! NOTE: this code copied from RRTMG implementation, and DIFFERS from what is
    ! done in RRTMGP if interface temperatures are omitted! Letting RRTMGP handle
    ! this leads to large differences in near-surface fluxes with RRTMG. TODO:
    ! why is this? Are we doing something wrong here? Maybe it's just the surface
    ! temperature (tint(:,pverp)) that is to blame?
+   !
+   ! TODO: physics_state provides interface temperatures, we should use those
+   ! instead, but this is consistent with RRTMG implementation
    do i = 1,state%ncol
 
       ! Set top level interface temperature
@@ -2643,6 +2655,9 @@ subroutine output_fluxes_sw(icall, state, flux_all, flux_clr)
    type(ty_fluxes_byband), intent(in) :: flux_all
    type(ty_fluxes_byband), intent(in) :: flux_clr
 
+   ! SW cloud radiative effect
+   real(r8) :: cloud_radiative_effect(state%ncol, pver)
+
    ! Working variables
    integer :: ncol
    integer :: ktop_rad = 1
@@ -2677,6 +2692,10 @@ subroutine output_fluxes_sw(icall, state, flux_all, flux_clr)
    call outfld('FSUTOAC'//diag(icall), flux_clr%flux_up(1:ncol,ktop_rad), ncol, state%lchnk)
    call outfld('FSNTOAC'//diag(icall), flux_clr%flux_net(1:ncol,ktop_rad), ncol, state%lchnk)
 
+   ! Calculate and output the shortwave cloud radiative effect (SWCF in history)
+   cloud_radiative_effect(1:ncol) = flux_all%flux_net(1:ncol,ktop_rad) - flux_clr%flux_new(1:ncol,ktop_rad)
+   call outfld('SWCF'//diag(icall), cloud_radiative_effect, ncol, state%lchnk)
+   
 end subroutine output_fluxes_sw
 
 
@@ -2691,6 +2710,9 @@ subroutine output_fluxes_lw(icall, state, flux_all, flux_clr)
    type(physics_state), intent(in) :: state
    type(ty_fluxes_byband), intent(in) :: flux_all
    type(ty_fluxes_byband), intent(in) :: flux_clr
+
+   ! Cloud radiative effect for output files
+   real(r8) :: cloud_radiative_effect(state%ncol, pver)
 
    ! Working arrays
    real(r8), dimension(pcols,pver+1) :: flux_up, flux_dn, flux_net
@@ -2732,6 +2754,10 @@ subroutine output_fluxes_lw(icall, state, flux_all, flux_clr)
    call outfld('FLUTC'//diag(icall), flux_clr%flux_up(1:ncol,ktop), ncol, state%lchnk)
    call outfld('FLDSC'//diag(icall), flux_clr%flux_dn(1:ncol,kbot+1), ncol, state%lchnk)
 
+   ! Calculate and output the cloud radiative effect (LWCF in history)
+   cloud_radiative_effect(1:ncol) = flux_clr%flux_net(1:ncol,ktop) - flux_all%flux_new(1:ncol,ktop)
+   call outfld('LWCF'//diag(icall), cloud_radiative_effect, ncol, state%lchnk)
+   
 end subroutine output_fluxes_lw
 
 
@@ -2959,18 +2985,10 @@ subroutine set_gas_concentrations(icall, state, pbuf, &
 
       end select
 
-      ! If this gas is not in list of active gases, then zero out (useful for
-      ! debugging)
-      if (.not.string_in_list(gas_species(igas), active_gases)) then
-         vol_mix_ratio(1:ncol,1:pver) = 0._r8
-      end if
-
-#ifdef DEBUG
       ! Make sure we do not have any negative volume mixing ratios
       call assert(all(vol_mix_ratio(1:ncol,1:pver) >= 0), &
                   trim(subname) // ': invalid gas concentration for ' // &
                   trim(gas_species(igas)))
-#endif
 
       ! Map to radiation grid
       vol_mix_ratio_out(1:ncol,ktop:kbot) = vol_mix_ratio(1:ncol,1:pver)
