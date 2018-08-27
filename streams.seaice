@@ -9,44 +9,120 @@
                   filename_interval="none"
                   input_interval="initial_only" />
 
-<immutable_stream name="regions"
+<immutable_stream name="StandardAerosolsInput"
                   type="input"
-                  filename_template="regions.nc"
+                  filename_template="standard_optics_mpas_cice.nc"
                   filename_interval="none"
                   input_interval="initial_only" />
 
-<immutable_stream name="restart_contents"
-                  type="none"
-                  filename_template="restart_variables.nc" />
+<immutable_stream name="SnicarSnowInput"
+                  type="input"
+                  filename_template="snicar_optics_5bnd_snowgrain.nc"
+                  filename_interval="none"
+                  input_interval="initial_only" />
+
+<immutable_stream name="SnicarAerosolInput"
+                  type="input"
+                  filename_template="snicar_optics_5bnd_aerosol.nc"
+                  filename_interval="none"
+                  input_interval="initial_only" />
 
 <immutable_stream name="restart"
                   type="input;output"
                   filename_template="restarts/restart.$Y-$M-$D_$h.$m.$s.nc"
                   filename_interval="00_00:00:01"
                   input_interval="initial_only"
-                  output_interval="00-03-00_00:00:00" />
+                  output_interval="00-03-00_00:00:00" 
+                  clobber_mode="replace_files"/>
 
-<immutable_stream name="restart_ic"
-                  type="input"
-                  filename_template="seaice_ic.nc"
-                  filename_interval="none"
-                  input_interval="initial_only"
-                  output_interval="none" />
 
 <stream name="output"
         type="output"
-        filename_template="output/output.$Y.nc"
-        filename_interval="01-00-00_00:00:00"
+        filename_template="output/output.$Y-$M-$D.nc"
+        filename_interval="00-00-01_00:00:00"
         clobber_mode="replace_files"
-        output_interval="00-01-00_00:00:00" >
-
+        output_interval="00-00-00_03:00:00" >
+        <var name="totalIceArea"/>
+        <var name="totalIceExtent"/>
+        <var name="verticalDOCSnowProduct"/>
+        <var name="verticalDICSnowProduct"/>
+        <var name="verticalDONSnowProduct"/>
+        <var name="snowVolumeCategoryCenter"/>
+        <var name="iceAreaCategoryProduct"/>
+        <var name="snowVolumeCategoryProduct"/>
+        <var name="snowVolumeCategory"/>
+        <var name="iceVolumeCategory"/>
+        <var name="iceAreaCategory"/>
+	<var name="xtime"/>
+	<var name="daysSinceStartOfSim"/>
+        <var name='albedoVisibleDirectCell'/>
+        <var name='albedoVisibleDiffuseCell'/>
+        <var name='albedoIRDirectCell'/>
+        <var name='albedoIRDiffuseCell'/>
+        <var name='albedoVisibleDirectArea'/>
+        <var name='albedoVisibleDiffuseArea'/>
+        <var name='albedoIRDirectArea'/>
+        <var name='albedoIRDiffuseArea'/>
+        <var name='bareIceAlbedoCell'/>
+        <var name='snowAlbedoCell'/>
+        <var name='pondAlbedoCell'/>
+        <var name='solarZenithAngleCosine'/>
+        <var name='absorbedShortwaveFlux'/>
+        <var name='absorbedShortwaveSnowLayer'/>
+        <var name='absorbedShortwaveIceLayer'/>
+        <var name="daysSinceStartOfSim"/>
+        <var name="icePresent"/>
+        <var name="iceAreaCell"/>
+        <var name="iceVolumeCell"/>
+        <var name="snowVolumeCell"/>
+        <var name="surfaceTemperatureCell"/>
+        <var name="uVelocityGeo"/>
+        <var name="vVelocityGeo"/>
+        <var name="shortwaveDown"/>
+        <var name="longwaveDown"/>
+        <var name="seaSurfaceTemperature"/>
+        <var name="seaSurfaceSalinity"/>
+        <var name="uOceanVelocityVertexGeo"/>
+        <var name="vOceanVelocityVertexGeo"/>
+        <var name="freezingMeltingPotential"/>
+        <var name="shortwaveScalingFactor"/>
+        <var name="airTemperature"/>
+        <var name="congelation"/>
+        <var name="frazilFormation"/>
+        <var name="snowiceFormation"/>
+        <var name="snowMelt"/>
+        <var name="surfaceIceMelt"/>
+        <var name="basalIceMelt"/>
+        <var name="lateralIceMelt"/>
+        <var name="iceVolumeTendencyThermodynamics"/>
+        <var name="iceVolumeTendencyTransport"/>
+        <var name="iceAreaTendencyThermodynamics"/>
+        <var name="iceAreaTendencyTransport"/>
+        <var name="iceAgeTendencyThermodynamics"/>
+        <var name="iceAgeTendencyTransport"/>
+        <var name="iceAgeCell"/>
+        <var name="firstYearIceAreaCell"/>
+        <var name="levelIceAreaCell"/>
+        <var name="levelIceVolumeCell"/>
+        <var name="ridgedIceAreaAverage"/>
+        <var name="ridgedIceVolumeAverage"/>
+        <var name="bulkSalinity"/>
+        <var name="broadbandAlbedo"/>
+        <var name="absorbedShortwaveFluxInitialArea"/>
+        <var name="latentHeatFluxInitialArea"/>
+        <var name="sensibleHeatFluxInitialArea"/>
+        <var name="longwaveUpInitialArea"/>
+        <var name="evaporativeWaterFluxInitialArea"/>
+        <var name="meltPondAreaFinalArea"/>
+        <var name="meltPondDepthFinalArea"/>
+        <var name="meltPondLidThicknessFinalArea"/>
 </stream>
 
 <immutable_stream name="LYqSixHourlyForcing"
                   type="input"
                   filename_template="forcing/atmosphere_forcing_six_hourly.$Y.nc"
                   filename_interval="0001-00-00_00:00:00"
-                  reference_time="2000-01-01_03:00:00"
+		  reference_time="2000-01-01_03:00:00"
                   input_interval="none" />
 
 <immutable_stream name="LYqMonthlyForcing"
@@ -66,33 +142,6 @@
                   filename_template="forcing/ocean_forcing_monthly.nc"
                   filename_interval="none"
                   input_interval="none" />
-
-<immutable_stream name="StandardAerosolsInput"
-                  type="input"
-                  filename_template="standard_optics_mpas_cice.nc"
-                  filename_interval="none"
-                  input_interval="initial_only" />
-
-<immutable_stream name="ModalAerosolsInput"
-                  type="input"
-                  filename_template="snicar_optics_5bnd_mam_c140303_mpas_cice.nc"
-                  filename_interval="none"
-                  input_interval="initial_only" />
-
-<immutable_stream name="SnicarInput"
-                  type="input"
-                  filename_template="snicar_optics_5bnd_mam.nc"
-                  filename_interval="none"
-                  input_interval="initial_only" />
-
-<immutable_stream name="pointLocationsInput"
-                  type="input"
-                  filename_template="points.nc"
-                  input_interval="initial_only" />
-
-<immutable_stream name="abort_contents"
-                  type="none"
-                  filename_template="abort_variables.nc" />
 
 <stream name="abort_block"
         type="output"
@@ -120,20 +169,6 @@
 	<var name="xtime"/>
 </stream>
 
-<stream name="highFrequencyOutput"
-        type="output"
-        filename_template="analysis_members/seaice_highFrequencyOutput.$Y-$M-$D.nc"
-        filename_interval="01-00-00_00:00:00"
-        reference_time="0000-01-01_00:00:00"
-        clobber_mode="truncate"
-        packages="highFrequencyOutputAMPKG"
-        output_interval="00-00-01_00:00:00" >
-
-	<stream name="mesh"/>
-	<var name="xtime"/>
-	<var name="iceAreaCellCategory1"/>
-</stream>
-
 <stream name="regionalStatisticsOutput"
         type="output"
         filename_template="analysis_members/regionalStatistics.nc"
@@ -144,7 +179,6 @@
 
 	<var name="xtime"/>
 	<var name="daysSinceStartOfSim"/>
-	<var name="regionNames"/>
 	<var name="totalIceArea"/>
 	<var name="totalIceExtent"/>
 	<var name="totalIceVolume"/>
@@ -159,60 +193,6 @@
 	<var name="maximumIceSpeed"/>
 </stream>
 
-<stream name="regionalStatistics_ice_aggregate"
-        type="none"
-        filename_template="none"
-        filename_interval="none"
-        packages="regionalStatisticsAMPKG"
-        output_interval="none" >
-
-</stream>
-
-<stream name="regionalStatistics_cell_aggregate"
-        type="none"
-        filename_template="none"
-        filename_interval="none"
-        packages="regionalStatisticsAMPKG"
-        output_interval="none" >
-
-</stream>
-
-<stream name="regionalStatistics_ice_areal_average"
-        type="none"
-        filename_template="none"
-        filename_interval="none"
-        packages="regionalStatisticsAMPKG"
-        output_interval="none" >
-
-</stream>
-
-<stream name="regionalStatistics_cell_areal_average"
-        type="none"
-        filename_template="none"
-        filename_interval="none"
-        packages="regionalStatisticsAMPKG"
-        output_interval="none" >
-
-</stream>
-
-<stream name="regionalStatistics_min"
-        type="none"
-        filename_template="none"
-        filename_interval="none"
-        packages="regionalStatisticsAMPKG"
-        output_interval="none" >
-
-</stream>
-
-<stream name="regionalStatistics_max"
-        type="none"
-        filename_template="none"
-        filename_interval="none"
-        packages="regionalStatisticsAMPKG"
-        output_interval="none" >
-
-</stream>
-
 <stream name="conservationCheckOutput"
         type="output"
         filename_template="analysis_members/conservationCheck.nc"
@@ -222,46 +202,27 @@
         output_interval="00-00-00_01:00:00" >
 
 	<var name="xtime"/>
+	<var name="daysSinceStartOfSim"/>
 	<var name="initialEnergy"/>
 	<var name="finalEnergy"/>
 	<var name="energyChange"/>
-	<var name="accumulatedSurfaceHeatFlux"/>
-	<var name="accumulatedOceanHeatFlux"/>
-	<var name="accumulatedFreezingPotential"/>
-	<var name="accumulatedSnowfallHeat"/>
-	<var name="accumulatedLatentHeat"/>
 	<var name="netEnergyFlux"/>
 	<var name="absoluteEnergyError"/>
 	<var name="relativeEnergyError"/>
 	<var name="initialMass"/>
 	<var name="finalMass"/>
 	<var name="massChange"/>
-	<var name="accumulatedRainfallRate"/>
-	<var name="accumulatedSnowfallRate"/>
-	<var name="accumulatedEvaporation"/>
-	<var name="accumulatedFreshWater"/>
-	<var name="accumulatedFrazilWater"/>
 	<var name="netMassFlux"/>
 	<var name="absoluteMassError"/>
 	<var name="relativeMassError"/>
 	<var name="initialSalt"/>
 	<var name="finalSalt"/>
 	<var name="saltChange"/>
-	<var name="accumulatedOceanSaltFlux"/>
-	<var name="accumulatedFrazilSaltFlux"/>
 	<var name="netSaltFlux"/>
 	<var name="absoluteSaltError"/>
 	<var name="relativeSaltError"/>
 </stream>
 
-<immutable_stream name="conservationCheckRestart"
-                  type="input;output"
-                  filename_template="restarts/restart.AM.conservationCheck.$Y-$M-$D_$h.$m.$s.nc"
-                  filename_interval="output_interval"
-                  clobber_mode="replace_files"
-                  packages="conservationCheckAMPKG"
-                  input_interval="initial_only"
-                  output_interval="stream:restart:output_interval" />
 
 <stream name="loadBalanceOutput"
         type="output"
@@ -289,40 +250,6 @@
 	<stream name="mesh"/>
 	<var name="xtime"/>
 	<var name="maximumIcePresence"/>
-</stream>
-
-<stream name="pointwiseStatsOutput"
-        type="output"
-        filename_template="analysis_members/pointwiseStats.$Y-$M-$D.nc"
-        filename_interval="01-00-00_00:00:00"
-        reference_time="0000-01-01_00:00:00"
-        clobber_mode="truncate"
-        packages="pointwiseStatsAMPKG"
-        output_interval="00-00-01_00:00:00" >
-
-	<var name="pointNames"/>
-	<var name="pointCellGlobalID"/>
-	<var name="xtime"/>
-	<var name="latCell"/>
-	<var name="lonCell"/>
-	<var name="latPoint"/>
-	<var name="lonPoint"/>
-	<var name="xPoint"/>
-	<var name="yPoint"/>
-	<var name="zPoint"/>
-</stream>
-
-<stream name="iceShelvesOutput"
-        type="output"
-        filename_template="analysis_members/seaice_iceShelves.$Y-$M-$D.nc"
-        filename_interval="01-00-00_00:00:00"
-        reference_time="0000-01-01_00:00:00"
-        clobber_mode="truncate"
-        packages="iceShelvesAMPKG"
-        output_interval="00-00-01_00:00:00" >
-
-	<var name="xtime"/>
-	<var name="iceAreaOverIceShelves"/>
 </stream>
 
 <stream name="timeSeriesStatsDailyRestart"
@@ -355,20 +282,138 @@
         reference_time="0000-01-01_00:00:00"
         clobber_mode="truncate"
         packages="timeSeriesStatsMonthlyAMPKG"
-        input_interval="initial_only"
-        output_interval="stream:restart:output_interval" >
+        input_interval="none"
+        output_interval="none" >
 
 </stream>
 
 <stream name="timeSeriesStatsMonthlyOutput"
         type="output"
-        filename_template="analysis_members/timeSeriesStatsMonthly.$Y.nc"
-        filename_interval="01-00-00_00:00:00"
+        filename_template="analysis_members/timeSeriesStatsMonthly.$Y-$M.nc"
+        filename_interval="00-01-00_00:00:00"
         reference_time="0000-01-01_00:00:00"
         clobber_mode="truncate"
         packages="timeSeriesStatsMonthlyAMPKG"
         output_interval="00-01-00_00:00:00" >
 
+	<var name="daysSinceStartOfSim"/>
+	<var name="icePresent"/>
+	<var name="iceAreaCell"/>
+	<var name="iceVolumeCell"/>
+	<var name="snowVolumeCell"/>
+	<var name="iceAreaCategory"/>
+	<var name="iceVolumeCategory"/>
+	<var name="snowVolumeCategory"/>
+	<var name="surfaceTemperatureCell"/>
+	<var name="uVelocityGeo"/>
+	<var name="vVelocityGeo"/>
+	<var name="shortwaveDown"/>
+	<var name="longwaveDown"/>
+	<var name="seaSurfaceTemperature"/>
+	<var name="seaSurfaceSalinity"/>
+	<var name="uOceanVelocityVertexGeo"/>
+	<var name="vOceanVelocityVertexGeo"/>
+	<var name="freezingMeltingPotential"/>
+	<var name="shortwaveScalingFactor"/>
+	<var name="airTemperature"/>
+	<var name="congelation"/>
+	<var name="frazilFormation"/>
+	<var name="snowiceFormation"/>
+	<var name="snowMelt"/>
+	<var name="surfaceIceMelt"/>
+	<var name="basalIceMelt"/>
+	<var name="lateralIceMelt"/>
+	<var name="airStressVertexUGeo"/>
+	<var name="airStressVertexVGeo"/>
+	<var name="icePressure"/>
+	<var name="divergence"/>
+	<var name="shear"/>
+	<var name="principalStress1Var"/>
+	<var name="principalStress2Var"/>
+	<var name="iceVolumeTendencyThermodynamics"/>
+	<var name="iceVolumeTendencyTransport"/>
+	<var name="iceAreaTendencyThermodynamics"/>
+	<var name="iceAreaTendencyTransport"/>
+	<var name="iceAgeTendencyThermodynamics"/>
+	<var name="iceAgeTendencyTransport"/>
+	<var name="iceAgeCell"/>
+	<var name="firstYearIceAreaCell"/>
+	<var name="levelIceAreaCell"/>
+	<var name="levelIceVolumeCell"/>
+	<var name="ridgedIceAreaAverage"/>
+	<var name="ridgedIceVolumeAverage"/>
+	<var name="bulkSalinity"/>
+	<var name="broadbandAlbedo"/>
+	<var name="absorbedShortwaveFluxInitialArea"/>
+	<var name="latentHeatFluxInitialArea"/>
+	<var name="sensibleHeatFluxInitialArea"/>
+	<var name="longwaveUpInitialArea"/>
+	<var name="evaporativeWaterFluxInitialArea"/>
+	<var name="meltPondAreaFinalArea"/>
+	<var name="meltPondDepthFinalArea"/>
+	<var name="meltPondLidThicknessFinalArea"/>
+        <var name='xtime'/>
+        <var name='albedoVisibleDirectCell'/>
+        <var name='albedoVisibleDiffuseCell'/>
+        <var name='albedoIRDirectCell'/>
+        <var name='albedoIRDiffuseCell'/>
+        <var name='albedoVisibleDirectArea'/>
+        <var name='albedoVisibleDiffuseArea'/>
+        <var name='albedoIRDirectArea'/>
+        <var name='albedoIRDiffuseArea'/>
+        <var name='bareIceAlbedoCell'/>
+        <var name='snowAlbedoCell'/>
+        <var name='pondAlbedoCell'/>
+        <var name='solarZenithAngleCosine'/>
+        <var name='absorbedShortwaveFlux'/>
+        <var name='absorbedShortwaveSnowLayer'/>
+        <var name='absorbedShortwaveIceLayer'/>
+        <var name="daysSinceStartOfSim"/>
+        <var name="icePresent"/>
+        <var name="iceAreaCell"/>
+        <var name="iceVolumeCell"/>
+        <var name="snowVolumeCell"/>
+        <var name="surfaceTemperatureCell"/>
+        <var name="uVelocityGeo"/>
+        <var name="vVelocityGeo"/>
+        <var name="shortwaveDown"/>
+        <var name="longwaveDown"/>
+        <var name="seaSurfaceTemperature"/>
+        <var name="seaSurfaceSalinity"/>
+        <var name="uOceanVelocityVertexGeo"/>
+        <var name="vOceanVelocityVertexGeo"/>
+        <var name="freezingMeltingPotential"/>
+        <var name="shortwaveScalingFactor"/>
+        <var name="airTemperature"/>
+        <var name="congelation"/>
+        <var name="frazilFormation"/>
+        <var name="snowiceFormation"/>
+        <var name="snowMelt"/>
+        <var name="surfaceIceMelt"/>
+        <var name="basalIceMelt"/>
+        <var name="lateralIceMelt"/>
+        <var name="iceVolumeTendencyThermodynamics"/>
+        <var name="iceVolumeTendencyTransport"/>
+        <var name="iceAreaTendencyThermodynamics"/>
+        <var name="iceAreaTendencyTransport"/>
+        <var name="iceAgeTendencyThermodynamics"/>
+        <var name="iceAgeTendencyTransport"/>
+        <var name="iceAgeCell"/>
+        <var name="firstYearIceAreaCell"/>
+        <var name="levelIceAreaCell"/>
+        <var name="levelIceVolumeCell"/>
+        <var name="ridgedIceAreaAverage"/>
+        <var name="ridgedIceVolumeAverage"/>
+        <var name="bulkSalinity"/>
+        <var name="broadbandAlbedo"/>
+        <var name="absorbedShortwaveFluxInitialArea"/>
+        <var name="latentHeatFluxInitialArea"/>
+        <var name="sensibleHeatFluxInitialArea"/>
+        <var name="longwaveUpInitialArea"/>
+        <var name="evaporativeWaterFluxInitialArea"/>
+        <var name="meltPondAreaFinalArea"/>
+        <var name="meltPondDepthFinalArea"/>
+        <var name="meltPondLidThicknessFinalArea"/>
 </stream>
 
 <stream name="timeSeriesStatsClimatologyOutput"

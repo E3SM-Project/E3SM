@@ -718,13 +718,20 @@
                           dhsn,     ffracn,    &
                           l_print_point,       &
                           initonly,            &
-                          asm_prm_ice_drc,     &
-                          asm_prm_ice_dfs,     &
-                          ss_alb_ice_drc,      &
-                          ss_alb_ice_dfs,      &
-                          ext_cff_mss_ice_drc, &
-                          ext_cff_mss_ice_dfs, &
-                          snicar_system)
+                          snicar_system,         &
+                          asm_prm_ice_drc,       &
+                          asm_prm_ice_dfs,       &
+                          ss_alb_ice_drc,        &
+                          ss_alb_ice_dfs,        &
+                          ext_cff_mss_ice_drc,   &
+                          ext_cff_mss_ice_dfs,   &
+                          kaer_tab_5bd,          &
+                          waer_tab_5bd,          &
+                          gaer_tab_5bd,          &
+                          kaer_bc_tab_5bd,       &
+                          waer_bc_tab_5bd,       &
+                          gaer_bc_tab_5bd,       &
+                          bcenh_5bd)
 
       use ice_orbital, only: compute_coszen
 
@@ -774,15 +781,28 @@
          gaer_bc_tab    ! aerosol asymmetry parameter (cos(theta))
 
       real (kind=dbl_kind), dimension(:,:), intent(in) :: & ! Model SNICAR snow SSP
-             asm_prm_ice_drc,     & ! snow asymmetry factor (cos(theta))
-             asm_prm_ice_dfs,     & ! snow asymmetry factor (cos(theta))
-             ss_alb_ice_drc,      & ! snow single scatter albedo (fraction)
-             ss_alb_ice_dfs,      & ! snow single scatter albedo (fraction)
-             ext_cff_mss_ice_drc, & ! snow mass extinction cross section (m2/kg)
-             ext_cff_mss_ice_dfs    ! snow mass extinction cross section (m2/kg)
+         asm_prm_ice_drc,     & ! snow asymmetry factor (cos(theta))
+         asm_prm_ice_dfs,     & ! snow asymmetry factor (cos(theta))
+         ss_alb_ice_drc,      & ! snow single scatter albedo (fraction)
+         ss_alb_ice_dfs,      & ! snow single scatter albedo (fraction)
+         ext_cff_mss_ice_drc, & ! snow mass extinction cross section (m2/kg)
+         ext_cff_mss_ice_dfs    ! snow mass extinction cross section (m2/kg)
+
+      real (kind=dbl_kind), dimension(:,:), intent(in) :: &
+        kaer_tab_5bd, & ! aerosol mass extinction cross section (m2/kg)
+        waer_tab_5bd, & ! aerosol single scatter albedo (fraction)
+        gaer_tab_5bd    ! aerosol asymmetry parameter (cos(theta))
+
+      real (kind=dbl_kind), dimension(:,:), intent(in) :: & ! Modal aerosol treatment
+        kaer_bc_tab_5bd, & ! aerosol mass extinction cross section (m2/kg)
+        waer_bc_tab_5bd, & ! aerosol single scatter albedo (fraction)
+        gaer_bc_tab_5bd    ! aerosol asymmetry parameter (cos(theta))
 
       real (kind=dbl_kind), dimension(:,:,:), intent(in) :: & ! Modal aerosol treatment
-         bcenh          ! BC absorption enhancement factor
+        bcenh_5bd         ! BC absorption enhancement factor
+
+      real (kind=dbl_kind), dimension(:,:,:), intent(in) :: & ! Modal aerosol treatment
+       bcenh          ! BC absorption enhancement factor
 
       character (len=char_len), intent(in) :: &
          calendar_type       ! differentiates Gregorian from other calendars
@@ -1070,10 +1090,20 @@
                              albsnon(n),    albpndn(n),     &
                              fswpenln(:,n), zbion(:,n),     &
                              l_print_point, &
-                             asm_prm_ice_drc, asm_prm_ice_dfs, &
-                             ss_alb_ice_drc, ss_alb_ice_dfs, &
-                             ext_cff_mss_ice_drc, ext_cff_mss_ice_dfs, &
-                             snicar_system)
+                             snicar_system,         &
+                             asm_prm_ice_drc,       &
+                             asm_prm_ice_dfs,       &
+                             ss_alb_ice_drc,        &
+                             ss_alb_ice_dfs,        &
+                             ext_cff_mss_ice_drc,   &
+                             ext_cff_mss_ice_dfs,   &
+                             kaer_tab_5bd,          &
+                             waer_tab_5bd,          &
+                             gaer_tab_5bd,          &
+                             kaer_bc_tab_5bd,       &
+                             waer_bc_tab_5bd,       &
+                             gaer_bc_tab_5bd,       &
+                             bcenh_5bd)
 
          endif ! aicen > puny
 
@@ -1138,11 +1168,21 @@
                                   Iswabs,   albice,      &
                                   albsno,   albpnd,      &
                                   fswpenl,  zbio,        &
-                                  l_print_point, &
-                                  asm_prm_ice_drc, asm_prm_ice_dfs, &
-                                  ss_alb_ice_drc, ss_alb_ice_dfs, &
-                                  ext_cff_mss_ice_drc, ext_cff_mss_ice_dfs, &
-                                  snicar_system)
+                                  l_print_point,         &
+                                  snicar_system,         &
+                                  asm_prm_ice_drc,       &
+                                  asm_prm_ice_dfs,       &
+                                  ss_alb_ice_drc,        &
+                                  ss_alb_ice_dfs,        &
+                                  ext_cff_mss_ice_drc,   &
+                                  ext_cff_mss_ice_dfs,   &
+                                  kaer_tab_5bd,          &
+                                  waer_tab_5bd,          &
+                                  gaer_tab_5bd,          &
+                                  kaer_bc_tab_5bd,       &
+                                  waer_bc_tab_5bd,       &
+                                  gaer_bc_tab_5bd,       &
+                                  bcenh_5bd)
 
       integer (kind=int_kind), intent(in) :: &
          nilyr   , & ! number of ice layers
@@ -1280,6 +1320,19 @@
           ext_cff_mss_ice_drc, & ! snow mass extinction cross section (m2/kg)
           ext_cff_mss_ice_dfs    ! snow mass extinction cross section (m2/kg)
 
+      real (kind=dbl_kind), dimension(:,:), intent(in) :: &
+         kaer_tab_5bd, & ! aerosol mass extinction cross section (m2/kg)
+         waer_tab_5bd, & ! aerosol single scatter albedo (fraction)
+         gaer_tab_5bd    ! aerosol asymmetry parameter (cos(theta))
+
+      real (kind=dbl_kind), dimension(:,:), intent(in) :: & ! Modal aerosol treatment
+         kaer_bc_tab_5bd, & ! aerosol mass extinction cross section (m2/kg)
+         waer_bc_tab_5bd, & ! aerosol single scatter albedo (fraction)
+         gaer_bc_tab_5bd    ! aerosol asymmetry parameter (cos(theta))
+
+      real (kind=dbl_kind), dimension(:,:,:), intent(in) :: & ! Modal aerosol treatment
+         bcenh_5bd         ! BC absorption enhancement factor
+
 !-----------------------------------------------------------------------
 
          klev    = nslyr + nilyr + 1   ! number of radiation layers - 1
@@ -1393,9 +1446,9 @@
                         tr_zaero,                                         &
                         heat_capacity,          fnidr,   coszen,          &
                         n_aero,    tr_aero,     R_ice,   R_pnd,           &
-                        kaer_tab,  waer_tab,    gaer_tab,                 &
-                        kaer_bc_tab, waer_bc_tab, gaer_bc_tab,            &
-                        bcenh,     modal_aero,  kalg,                     &
+                        kaer_tab_5bd,  waer_tab_5bd,    gaer_tab_5bd,     &
+                        kaer_bc_tab_5bd, waer_bc_tab_5bd, gaer_bc_tab_5bd,&
+                        bcenh_5bd,     modal_aero,  kalg,                 &
                         swvdr,     swvdf,       swidr,   swidf,  srftyp,  &
                         hs,        rhosnw,      rsnw,    hi,     hp,      &
                         fs,        aero_mp,     avdrl,   avdfl,           &
@@ -1416,6 +1469,7 @@
                         albsno = albsno &
                                + awtvdr*avdrl + awtidr*aidrl &
                                + awtvdf*avdfl + awtidf*aidfl
+
 
             else ! use 3 band IOPs for snow
 
@@ -3856,9 +3910,9 @@
                     tr_zaero,                                     &
                     heat_capacity,       fnidr,    coszen,        &
                     n_aero,    tr_aero,  R_ice,    R_pnd,         &
-                    kaer_tab,  waer_tab,           gaer_tab,      &
-                    kaer_bc_tab, waer_bc_tab,      gaer_bc_tab,   &
-                    bcenh,     modal_aero,         kalg,          &
+                    kaer_tab_5bd,  waer_tab_5bd,   gaer_tab_5bd,      &
+                    kaer_bc_tab_5bd, waer_bc_tab_5bd,  gaer_bc_tab_5bd,   &
+                    bcenh_5bd, modal_aero,         kalg,          &
                     swvdr,     swvdf,    swidr,    swidf, srftyp, &
                     hs,        rhosnw,   rsnw,     hi,    hp,     &
                     fi,        aero_mp,  alvdr,    alvdf,         &
@@ -3891,23 +3945,10 @@
          tr_zaero,     & ! .true. use zaerosols
          modal_aero      ! .true. use modal aerosol treatment
 
-      real (kind=dbl_kind), dimension(:,:), intent(in) :: & ! Modal aerosol treatment
-         kaer_bc_tab, & ! aerosol mass extinction cross section (m2/kg)
-         waer_bc_tab, & ! aerosol single scatter albedo (fraction)
-         gaer_bc_tab    ! aerosol asymmetry parameter (cos(theta))
-
-      real (kind=dbl_kind), dimension(:,:,:), intent(in) :: & ! Modal aerosol treatment
-         bcenh          ! BC absorption enhancement factor
-
       ! dEdd tuning parameters, set in namelist
       real (kind=dbl_kind), intent(in) :: &
          R_ice , & ! sea ice tuning parameter; +1 > 1sig increase in albedo
          R_pnd     ! ponded ice tuning parameter; +1 > 1sig increase in albedo
-
-      real (kind=dbl_kind), dimension(:,:), intent(in) :: &
-         kaer_tab, & ! aerosol mass extinction cross section (m2/kg)
-         waer_tab, & ! aerosol single scatter albedo (fraction)
-         gaer_tab    ! aerosol asymmetry parameter (cos(theta))
 
       real (kind=dbl_kind), intent(in) :: &
          kalg    , & ! algae absorption coefficient
@@ -3960,9 +4001,20 @@
          ext_cff_mss_ice_drc, & ! snow mass extinction cross section (m2/kg)
          ext_cff_mss_ice_dfs    ! snow mass extinction cross section (m2/kg)
 
+      real (kind=dbl_kind), dimension(:,:), intent(in) :: &
+         kaer_tab_5bd, & ! aerosol mass extinction cross section (m2/kg)
+         waer_tab_5bd, & ! aerosol single scatter albedo (fraction)
+         gaer_tab_5bd    ! aerosol asymmetry parameter (cos(theta))
+
+      real (kind=dbl_kind), dimension(:,:), intent(in) :: & ! Modal aerosol treatment
+         kaer_bc_tab_5bd, & ! aerosol mass extinction cross section (m2/kg)
+         waer_bc_tab_5bd, & ! aerosol single scatter albedo (fraction)
+         gaer_bc_tab_5bd    ! aerosol asymmetry parameter (cos(theta))
+
+      real (kind=dbl_kind), dimension(:,:,:), intent(in) :: & ! Modal aerosol treatment
+         bcenh_5bd         ! BC absorption enhancement factor
 
 !-----------------------------------------------------------------------
-!
 ! Set up optical property profiles, based on snow, sea ice and ponded
 ! ice IOPs from:
 !
@@ -4175,11 +4227,11 @@
          kabs         , & ! absorption coefficient for tuning
          sigp             ! modified scattering coefficient for tuning
 
-      real (kind=dbl_kind), dimension(nspint, 0:klev) :: &
-         kabs_chl    , & ! absorption coefficient for chlorophyll (/m)
-         tzaer       , & ! total aerosol extinction optical depth
-         wzaer       , & ! total aerosol single scatter albedo
-         gzaer           ! total aerosol asymmetry parameter
+      ! real (kind=dbl_kind), dimension(nspint, 0:klev) :: &
+      !    kabs_chl    , & ! absorption coefficient for chlorophyll (/m)
+      !    tzaer       , & ! total aerosol extinction optical depth
+      !    wzaer       , & ! total aerosol single scatter albedo
+      !    gzaer           ! total aerosol asymmetry parameter
 
       real (kind=dbl_kind) :: &
          albodr       , & ! spectral ocean albedo to direct rad
@@ -4214,9 +4266,10 @@
          tmp_0, tmp_ks, tmp_kl        ! temp variables
 
       integer(kind=int_kind), dimension(0:klev) :: &
-         k_bcini        , & !
+         k_bcini        , &
          k_bcins        , &
          k_bcexs
+
       real(kind=dbl_kind)::  &
           tmp_gs, tmp1               ! temp variables
 
@@ -4299,7 +4352,7 @@
          wghtns_5bd_dfs, &   ! spectral weights for diffuse incident
          wghtns_5bd_drc      ! spectral weights for direct incident
 
-      ! FUTURE-WORK: adding 5-bd sea ice iops when become avalible
+      ! FUTURE-WORK: update 5-band sea ice iops when avalible
       real (kind=dbl_kind), dimension (nspint_5bd) :: &  ! for ice only
           ki_ssl_5bd       , & ! Surface-scattering-layer ice extinction coefficient (/m)
           wi_ssl_5bd       , & ! Surface-scattering-layer ice single scattering albedo
@@ -4311,27 +4364,24 @@
           wi_int_5bd       , & ! Interior-layer ice single scattering albedo
           gi_int_5bd           ! Interior-layer ice asymmetry parameter
 
-      ! FUTURE-WORK: adding 5-bd aerosol IOPs
-      ! note the aerosol IOPs are avaliable from SNICAR
-      ! while we need to discuss how to match aerosol types and etc
+      ! 5-band aersol data
       real (kind=dbl_kind), dimension(nspint_5bd, 0:klev) :: &
+          kabs_chl_5bd    , & ! absorption coefficient for chlorophyll (/m)
           tzaer_5bd       , & ! total aerosol extinction optical depth
           wzaer_5bd       , & ! total aerosol single scatter albedo
           gzaer_5bd           ! total aerosol asymmetry parameter
 
-     ! index
-     integer (kind=int_kind) :: &
-         nsky      ,   &  !sky = 1 (2) for direct (diffuse) downward SW incident
-         ns_aer_tmp       ! temporary index for aersol IOPs, will be removed soon
+       ! index
+       integer (kind=int_kind) :: &
+           nsky         !sky = 1 (2) for direct (diffuse) downward SW incident
 
-     ! temporary variables used to assign variables for direct/diffuse incident
-     ! based on snicar 5 band IOPs
-     real (kind=dbl_kind), dimension (0:klevp) :: &
-         dfdir_snicar   , & ! down-up flux at interface due to direct beam at top surface
-         dfdif_snicar   , & ! down-up flux at interface due to diffuse beam at top surface
-         rupdir_snicar  , & ! reflectivity to direct radiation for layers below
-         rupdif_snicar      ! reflectivity to diffuse radiation for layers above
-
+       ! temporary variables used to assign variables for direct/diffuse incident
+       ! based on snicar 5 band IOPs
+       real (kind=dbl_kind), dimension (0:klevp) :: &
+           dfdir_snicar   , & ! down-up flux at interface due to direct beam at top surface
+           dfdif_snicar   , & ! down-up flux at interface due to diffuse beam at top surface
+           rupdir_snicar  , & ! reflectivity to direct radiation for layers below
+           rupdif_snicar      ! reflectivity to diffuse radiation for layers above
 
       ! solar zenith angle parameterizations
        real (kind=dbl_kind), parameter :: &
@@ -4388,11 +4438,6 @@
           gi_int_mn_5bd = (/ .94_dbl_kind,    .94_dbl_kind,  .94_dbl_kind, &
                              .94_dbl_kind,  .94_dbl_kind /)
 
-       ! absorption coefficient for chlorophyll (/m)
-       real (kind=dbl_kind), dimension(nspint_5bd, 0:klev) :: &
-           kabs_chl_5bd
-
-
 !-----------------------------------------------------------------------
 ! Initialize and tune bare ice/ponded ice iops
 
@@ -4407,11 +4452,10 @@
       ! initialize albedos and fluxes to 0
       fthrul = c0
       Iabs = c0
-      kabs_chl(:,:) = c0
       kabs_chl_5bd(:,:) = c0
-      tzaer(:,:) = c0
-      wzaer(:,:) = c0
-      gzaer(:,:) = c0
+      tzaer_5bd(:,:) = c0
+      wzaer_5bd(:,:) = c0
+      gzaer_5bd(:,:) = c0
 
       avdr   = c0
       avdf   = c0
@@ -4538,59 +4582,24 @@
         enddo
       endif          ! adjust ice iops
 
-      ! pond IOPs is not needed for this subroutine (snow-covered sea ice only)
-      ! this section of code is kept for future mearge between 5band and 3 band
-      ! subroutines
-      ! adjust ponded ice iops with tuning parameters -
-!      if( R_pnd >= c0 ) then
-!        do ns = 1, nspint
-!          sigp         = ki_p_ssl_mn_5bd(ns)*wi_p_ssl_mn_5bd(ns)*(c1+fp_pnd*R_pnd)
-!          ki_p_ssl_5bd(ns) = sigp+ki_p_ssl_mn_5bd(ns)*(c1-wi_p_ssl_mn_5bd(ns))
-!          wi_p_ssl_5bd(ns) = sigp/ki_p_ssl_5bd(ns)
-!          gi_p_ssl_5bd(ns) = gi_p_ssl_mn_5bd(ns)
-!
-!          sigp         = ki_p_int_mn_5bd(ns)*wi_p_int_mn_5bd(ns)*(c1+fp_pnd*R_pnd)
-!          ki_p_int_5bd(ns) = sigp+ki_p_int_mn_5bd(ns)*(c1-wi_p_int_mn_5bd(ns))
-!          wi_p_int_5bd(ns) = sigp/ki_p_int_5bd(ns)
-!          gi_p_int_5bd(ns) = gi_p_int_mn_5bd(ns)
-!        enddo
-!      else !if( R_pnd < c0 ) then
-!        do ns = 1, nspint
-!          sigp         = ki_p_ssl_mn_5bd(ns)*wi_p_ssl_mn_5bd(ns)*(c1+fm_pnd*R_pnd)
-!          sigp         = max(sigp, c0)
-!          ki_p_ssl_5bd(ns) = sigp+ki_p_ssl_mn_5bd(ns)*(c1-wi_p_ssl_mn_5bd(ns))
-!          wi_p_ssl_5bd(ns) = sigp/ki_p_ssl_5bd(ns)
-!          gi_p_ssl_5bd(ns) = gi_p_ssl_mn_5bd(ns)
-!
-!          sigp         = ki_p_int_mn_5bd(ns)*wi_p_int_mn_5bd(ns)*(c1+fm_pnd*R_pnd)
-!          sigp         = max(sigp, c0)
-!          ki_p_int_5bd(ns) = sigp+ki_p_int_mn_5bd(ns)*(c1-wi_p_int_mn_5bd(ns))
-!          wi_p_int_5bd(ns) = sigp/ki_p_int_5bd(ns)
-!          gi_p_int_5bd(ns) = gi_p_int_mn_5bd(ns)
-!        enddo
-!      endif            ! adjust ponded ice iops
-
       ! use srftyp to determine interface index of surface absorption
-      if (srftyp == 1) then
+      ! if (srftyp == 1) then
          ! snow covered sea ice
          ksrf = 1
-      else
-         ! bare sea ice or ponded ice
-         ksrf = nslyr + 2
-      endif
+      ! else
+      !    ! bare sea ice or ponded ice
+      ! !    ksrf = nslyr + 2
+      ! endif
 
       if (tr_bgc_N .and. dEdd_algae) then ! compute kabs_chl for chlorophyll
           do k = 0, klev
-             kabs_chl(1,k) = kchl_tab*zbio(nlt_chl_sw+k)
              kabs_chl_5bd(1,k) = kchl_tab*zbio(nlt_chl_sw+k)
           enddo
       else
             k = klev
-            kabs_chl(1,k) = kalg*(0.50_dbl_kind/dzk(k))
             kabs_chl_5bd(1,k) = kalg*(0.50_dbl_kind/dzk(k))
       endif
 
-      !Todo-CD: aerosol IOPs will need to be replaced by the 5 band aerosol IOPs from CLM-SNICAR
 !mgf++
       if (modal_aero) then
            do k=0,klev
@@ -4641,40 +4650,40 @@
         do n = 1,n_zaero
            if (n == 1) then ! interstitial BC
             do k = 0, klev
-               do ns = 1,nspint   ! not weighted by aice
-                  tzaer(ns,k) = tzaer(ns,k)+kaer_bc_tab(ns,k_bcexs(k))* &
+               do ns = 1,nspint_5bd   ! not weighted by aice
+                  tzaer_5bd(ns,k) = tzaer_5bd(ns,k)+kaer_bc_tab_5bd(ns,k_bcexs(k))* &
                                 zbio(nlt_zaero_sw(n)+k)*dzk(k)
-                  wzaer(ns,k) = wzaer(ns,k)+kaer_bc_tab(ns,k_bcexs(k))* &
-                                waer_bc_tab(ns,k_bcexs(k))* &
+                  wzaer_5bd(ns,k) = wzaer_5bd(ns,k)+kaer_bc_tab_5bd(ns,k_bcexs(k))* &
+                                waer_bc_tab_5bd(ns,k_bcexs(k))* &
                                 zbio(nlt_zaero_sw(n)+k)*dzk(k)
-                  gzaer(ns,k) = gzaer(ns,k)+kaer_bc_tab(ns,k_bcexs(k))* &
-                                waer_bc_tab(ns,k_bcexs(k))* &
-                                gaer_bc_tab(ns,k_bcexs(k))*zbio(nlt_zaero_sw(n)+k)*dzk(k)
+                  gzaer_5bd(ns,k) = gzaer_5bd(ns,k)+kaer_bc_tab_5bd(ns,k_bcexs(k))* &
+                                waer_bc_tab_5bd(ns,k_bcexs(k))* &
+                                gaer_bc_tab_5bd(ns,k_bcexs(k))*zbio(nlt_zaero_sw(n)+k)*dzk(k)
                enddo  ! nspint
             enddo
            elseif (n==2) then ! within-ice BC
             do k = 0, klev
-               do ns = 1,nspint
-                  tzaer(ns,k) = tzaer(ns,k)+kaer_bc_tab(ns,k_bcins(k))  * &
-                                bcenh(ns,k_bcins(k),k_bcini(k))* &
+               do ns = 1,nspint_5bd
+                  tzaer_5bd(ns,k) = tzaer_5bd(ns,k)+kaer_bc_tab_5bd(ns,k_bcins(k))  * &
+                                bcenh_5bd(ns,k_bcins(k),k_bcini(k))* &
                                 zbio(nlt_zaero_sw(n)+k)*dzk(k)
-                  wzaer(ns,k) = wzaer(ns,k)+kaer_bc_tab(ns,k_bcins(k))* &
-                                waer_bc_tab(ns,k_bcins(k))* &
+                  wzaer_5bd(ns,k) = wzaer_5bd(ns,k)+kaer_bc_tab_5bd(ns,k_bcins(k))* &
+                                waer_bc_tab_5bd(ns,k_bcins(k))* &
                                 zbio(nlt_zaero_sw(n)+k)*dzk(k)
-                  gzaer(ns,k) = gzaer(ns,k)+kaer_bc_tab(ns,k_bcins(k))* &
-                                waer_bc_tab(ns,k_bcins(k))* &
-                                gaer_bc_tab(ns,k_bcins(k))*zbio(nlt_zaero_sw(n)+k)*dzk(k)
+                  gzaer_5bd(ns,k) = gzaer_5bd(ns,k)+kaer_bc_tab_5bd(ns,k_bcins(k))* &
+                                waer_bc_tab_5bd(ns,k_bcins(k))* &
+                                gaer_bc_tab_5bd(ns,k_bcins(k))*zbio(nlt_zaero_sw(n)+k)*dzk(k)
                enddo  ! nspint
             enddo
            else                ! dust
             do k = 0, klev
-               do ns = 1,nspint   ! not weighted by aice
-                  tzaer(ns,k) = tzaer(ns,k)+kaer_tab(ns,n)* &
+               do ns = 1,nspint_5bd   ! not weighted by aice
+                  tzaer_5bd(ns,k) = tzaer_5bd(ns,k)+kaer_tab_5bd(ns,n)* &
                                    zbio(nlt_zaero_sw(n)+k)*dzk(k)
-                  wzaer(ns,k) = wzaer(ns,k)+kaer_tab(ns,n)*waer_tab(ns,n)* &
+                  wzaer_5bd(ns,k) = wzaer_5bd(ns,k)+kaer_tab_5bd(ns,n)*waer_tab_5bd(ns,n)* &
                                    zbio(nlt_zaero_sw(n)+k)*dzk(k)
-                  gzaer(ns,k) = gzaer(ns,k)+kaer_tab(ns,n)*waer_tab(ns,n)* &
-                                   gaer_tab(ns,n)*zbio(nlt_zaero_sw(n)+k)*dzk(k)
+                  gzaer_5bd(ns,k) = gzaer_5bd(ns,k)+kaer_tab_5bd(ns,n)*waer_tab_5bd(ns,n)* &
+                                   gaer_tab_5bd(ns,n)*zbio(nlt_zaero_sw(n)+k)*dzk(k)
                enddo  ! nspint
             enddo
            endif      !(n=1)
@@ -4685,13 +4694,13 @@
         if (tr_zaero .and. dEdd_algae) then ! compute kzaero for chlorophyll
         do n = 1,n_zaero          ! multiply by aice?
             do k = 0, klev
-               do ns = 1,nspint   ! not weighted by aice
-                  tzaer(ns,k) = tzaer(ns,k)+kaer_tab(ns,n)* &
+               do ns = 1,nspint_5bd   ! not weighted by aice
+                  tzaer_5bd(ns,k) = tzaer_5bd(ns,k)+kaer_tab_5bd(ns,n)* &
                                    zbio(nlt_zaero_sw(n)+k)*dzk(k)
-                  wzaer(ns,k) = wzaer(ns,k)+kaer_tab(ns,n)*waer_tab(ns,n)* &
+                  wzaer_5bd(ns,k) = wzaer_5bd(ns,k)+kaer_tab_5bd(ns,n)*waer_tab_5bd(ns,n)* &
                                    zbio(nlt_zaero_sw(n)+k)*dzk(k)
-                  gzaer(ns,k) = gzaer(ns,k)+kaer_tab(ns,n)*waer_tab(ns,n)* &
-                                   gaer_tab(ns,n)*zbio(nlt_zaero_sw(n)+k)*dzk(k)
+                  gzaer_5bd(ns,k) = gzaer_5bd(ns,k)+kaer_tab_5bd(ns,n)*waer_tab_5bd(ns,n)* &
+                                   gaer_tab_5bd(ns,n)*zbio(nlt_zaero_sw(n)+k)*dzk(k)
                enddo  ! nspint
             enddo
         enddo
@@ -4699,13 +4708,6 @@
 
      endif  ! modal_aero
 
-
-      !  5-band aerosols IOPs assignment
-      do k=0,klev
-          tzaer_5bd(1:5,k) = (/tzaer(1,k),tzaer(2,k),tzaer(2,k),tzaer(3,k),tzaer(3,k)/)
-          wzaer_5bd(1:5,k) = (/wzaer(1,k),wzaer(2,k),wzaer(2,k),wzaer(3,k),wzaer(3,k)/)
-          gzaer_5bd(1:5,k) = (/gzaer(1,k),gzaer(2,k),gzaer(2,k),gzaer(3,k),gzaer(3,k)/)
-      enddo
 
 !-----------------------------------------------------------------------
       ! begin spectral loop
@@ -4810,18 +4812,6 @@
 
 
 ! ------------------------------------------------------------------------------
-! Todo-CD: incoporating SNICAR 5-band aerosol optical properties --
-          ! assign temporary index for aerosol optical property
-          ! the current MPAS-Seaice simulation does not contain aerosols,
-          ! so code regarding aerosols are
-         if (ns == 1) then
-            ns_aer_tmp = 1
-         elseif (ns <= 3) then
-            ns_aer_tmp = 2
-         else
-            ns_aer_tmp = 3
-         endif
-
          !aerosol in snow
           if (tr_zaero .and. dEdd_algae) then
             do k = 0,nslyr
@@ -4847,45 +4837,45 @@
                if (na == 1) then
                !interstitial BC
                   taer = taer + &
-                       aero_mp(na)*kaer_bc_tab(ns_aer_tmp,k_bcexs(k))
+                       aero_mp(na)*kaer_bc_tab_5bd(ns,k_bcexs(k))
                   waer = waer + &
-                       aero_mp(na)*kaer_bc_tab(ns_aer_tmp,k_bcexs(k))* &
-                       waer_bc_tab(ns,k_bcexs(k))
+                       aero_mp(na)*kaer_bc_tab_5bd(ns,k_bcexs(k))* &
+                       waer_bc_tab_5bd(ns,k_bcexs(k))
                   gaer = gaer + &
-                       aero_mp(na)*kaer_bc_tab(ns_aer_tmp,k_bcexs(k))* &
-                        waer_bc_tab(ns_aer_tmp,k_bcexs(k))*gaer_bc_tab(ns_aer_tmp,k_bcexs(k))
+                       aero_mp(na)*kaer_bc_tab_5bd(ns,k_bcexs(k))* &
+                        waer_bc_tab_5bd(ns,k_bcexs(k))*gaer_bc_tab_5bd(ns,k_bcexs(k))
                elseif (na == 5)then
                !within-ice BC
                    taer = taer + &
-                        aero_mp(na)*kaer_bc_tab(ns_aer_tmp,k_bcins(k))* &
-                        bcenh(ns_aer_tmp,k_bcins(k),k_bcini(k))
+                        aero_mp(na)*kaer_bc_tab_5bd(ns,k_bcins(k))* &
+                        bcenh_5bd(ns,k_bcins(k),k_bcini(k))
                    waer = waer + &
-                        aero_mp(na)*kaer_bc_tab(ns_aer_tmp,k_bcins(k))* &
-                        waer_bc_tab(ns_aer_tmp,k_bcins(k))
+                        aero_mp(na)*kaer_bc_tab_5bd(ns,k_bcins(k))* &
+                        waer_bc_tab_5bd(ns,k_bcins(k))
                    gaer = gaer + &
-                        aero_mp(na)*kaer_bc_tab(ns_aer_tmp,k_bcins(k))* &
-                        waer_bc_tab(ns_aer_tmp,k_bcins(k))*gaer_bc_tab(ns_aer_tmp,k_bcins(k))
+                        aero_mp(na)*kaer_bc_tab_5bd(ns,k_bcins(k))* &
+                        waer_bc_tab_5bd(ns,k_bcins(k))*gaer_bc_tab_5bd(ns,k_bcins(k))
                 else
                    ! other species (dust)
                    taer = taer + &
-                        aero_mp(na)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))
+                        aero_mp(na)*kaer_tab_5bd(ns,(1+(na-1)/4))
                    waer = waer + &
-                        aero_mp(na)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))* &
-                        waer_tab(ns_aer_tmp,(1+(na-1)/4))
+                        aero_mp(na)*kaer_tab_5bd(ns,(1+(na-1)/4))* &
+                        waer_tab_5bd(ns,(1+(na-1)/4))
                    gaer = gaer + &
-                        aero_mp(na)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))* &
-                        waer_tab(ns_aer_tmp,(1+(na-1)/4))*gaer_tab(ns_aer_tmp,(1+(na-1)/4))
+                        aero_mp(na)*kaer_tab_5bd(ns,(1+(na-1)/4))* &
+                        waer_tab_5bd(ns,(1+(na-1)/4))*gaer_tab_5bd(ns,(1+(na-1)/4))
                 endif ! if na = 1
     ! end if na
               else
                    taer = taer + &
-                        aero_mp(na)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))
+                        aero_mp(na)*kaer_tab_5bd(ns,(1+(na-1)/4))
                    waer = waer + &
-                        aero_mp(na)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))* &
-                        waer_tab(ns_aer_tmp,(1+(na-1)/4))
+                        aero_mp(na)*kaer_tab_5bd(ns,(1+(na-1)/4))* &
+                        waer_tab_5bd(ns,(1+(na-1)/4))
                    gaer = gaer + &
-                        aero_mp(na)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))* &
-                        waer_tab(ns_aer_tmp,(1+(na-1)/4))*gaer_tab(ns_aer_tmp,(1+(na-1)/4))
+                        aero_mp(na)*kaer_tab_5bd(ns,(1+(na-1)/4))* &
+                        waer_tab_5bd(ns,(1+(na-1)/4))*gaer_tab_5bd(ns,(1+(na-1)/4))
               endif  !modal_aero
 !mgf--
             enddo       ! na
@@ -4903,46 +4893,46 @@
                  if (na==1) then
                    ! interstitial BC
                    taer = taer + &
-                        (aero_mp(na+1)/rnslyr)*kaer_bc_tab(ns_aer_tmp,k_bcexs(k))
+                        (aero_mp(na+1)/rnslyr)*kaer_bc_tab_5bd(ns,k_bcexs(k))
                    waer = waer + &
-                        (aero_mp(na+1)/rnslyr)*kaer_bc_tab(ns_aer_tmp,k_bcexs(k))* &
-                        waer_bc_tab(ns,k_bcexs(k))
+                        (aero_mp(na+1)/rnslyr)*kaer_bc_tab_5bd(ns,k_bcexs(k))* &
+                        waer_bc_tab_5bd(ns,k_bcexs(k))
                    gaer = gaer + &
-                        (aero_mp(na+1)/rnslyr)*kaer_bc_tab(ns_aer_tmp,k_bcexs(k))* &
-                        waer_bc_tab(ns_aer_tmp,k_bcexs(k))*gaer_bc_tab(ns_aer_tmp,k_bcexs(k))
+                        (aero_mp(na+1)/rnslyr)*kaer_bc_tab_5bd(ns,k_bcexs(k))* &
+                        waer_bc_tab_5bd(ns,k_bcexs(k))*gaer_bc_tab_5bd(ns,k_bcexs(k))
                  elseif (na==5) then
                    ! within-ice BC
                    taer = taer + &
-                        (aero_mp(na+1)/rnslyr)*kaer_bc_tab(ns_aer_tmp,k_bcins(k))*&
-                        bcenh(ns_aer_tmp,k_bcins(k),k_bcini(k))
+                        (aero_mp(na+1)/rnslyr)*kaer_bc_tab_5bd(ns,k_bcins(k))*&
+                        bcenh_5bd(ns,k_bcins(k),k_bcini(k))
                    waer = waer + &
-                        (aero_mp(na+1)/rnslyr)*kaer_bc_tab(ns_aer_tmp,k_bcins(k))* &
-                        waer_bc_tab(ns_aer_tmp,k_bcins(k))
+                        (aero_mp(na+1)/rnslyr)*kaer_bc_tab_5bd(ns,k_bcins(k))* &
+                        waer_bc_tab_5bd(ns,k_bcins(k))
                    gaer = gaer + &
-                        (aero_mp(na+1)/rnslyr)*kaer_bc_tab(ns_aer_tmp,k_bcins(k))* &
-                        waer_bc_tab(ns_aer_tmp,k_bcins(k))*gaer_bc_tab(ns_aer_tmp,k_bcins(k))
+                        (aero_mp(na+1)/rnslyr)*kaer_bc_tab_5bd(ns,k_bcins(k))* &
+                        waer_bc_tab_5bd(ns,k_bcins(k))*gaer_bc_tab_5bd(ns,k_bcins(k))
 
                  else
                    ! other species (dust)
                    taer = taer + &
-                        (aero_mp(na+1)/rnslyr)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))
+                        (aero_mp(na+1)/rnslyr)*kaer_tab_5bd(ns,(1+(na-1)/4))
                    waer = waer + &
-                        (aero_mp(na+1)/rnslyr)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))* &
-                        waer_tab(ns,(1+(na-1)/4))
+                        (aero_mp(na+1)/rnslyr)*kaer_tab_5bd(ns,(1+(na-1)/4))* &
+                        waer_tab_5bd(ns,(1+(na-1)/4))
                    gaer = gaer + &
-                        (aero_mp(na+1)/rnslyr)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))* &
-                        waer_tab(ns_aer_tmp,(1+(na-1)/4))*gaer_tab(ns_aer_tmp,(1+(na-1)/4))
+                        (aero_mp(na+1)/rnslyr)*kaer_tab_5bd(ns,(1+(na-1)/4))* &
+                        waer_tab_5bd(ns,(1+(na-1)/4))*gaer_tab_5bd(ns,(1+(na-1)/4))
                  endif   !(na==1)
 
                else
                   taer = taer + &
-                         (aero_mp(na+1)*rnslyr)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))
+                         (aero_mp(na+1)*rnslyr)*kaer_tab_5bd(ns,(1+(na-1)/4))
                   waer = waer + &
-                         (aero_mp(na+1)*rnslyr)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))* &
-                         waer_tab(ns,(1+(na-1)/4))
+                         (aero_mp(na+1)*rnslyr)*kaer_tab_5bd(ns,(1+(na-1)/4))* &
+                         waer_tab_5bd(ns,(1+(na-1)/4))
                   gaer = gaer + &
-                         (aero_mp(na+1)*rnslyr)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))* &
-                         waer_tab(ns_aer_tmp,(1+(na-1)/4))*gaer_tab(ns_aer_tmp,(1+(na-1)/4))
+                         (aero_mp(na+1)*rnslyr)*kaer_tab_5bd(ns,(1+(na-1)/4))* &
+                         waer_tab_5bd(ns,(1+(na-1)/4))*gaer_tab_5bd(ns,(1+(na-1)/4))
                endif       ! modal_aero
 !mgf--
                enddo       ! na
@@ -5015,44 +5005,44 @@
                   if (na==1) then
                   ! interstitial BC
                      taer = taer + &
-                          aero_mp(na+2)*kaer_bc_tab(ns_aer_tmp,k_bcexs(k))
+                          aero_mp(na+2)*kaer_bc_tab_5bd(ns,k_bcexs(k))
                      waer = waer + &
-                          aero_mp(na+2)*kaer_bc_tab(ns_aer_tmp,k_bcexs(k))* &
-                          waer_bc_tab(ns_aer_tmp,k_bcexs(k))
+                          aero_mp(na+2)*kaer_bc_tab_5bd(ns,k_bcexs(k))* &
+                          waer_bc_tab_5bd(ns,k_bcexs(k))
                      gaer = gaer + &
-                          aero_mp(na+2)*kaer_bc_tab(ns_aer_tmp,k_bcexs(k))* &
-                          waer_bc_tab(ns_aer_tmp,k_bcexs(k))*gaer_bc_tab(ns_aer_tmp,k_bcexs(k))
+                          aero_mp(na+2)*kaer_bc_tab_5bd(ns,k_bcexs(k))* &
+                          waer_bc_tab_5bd(ns,k_bcexs(k))*gaer_bc_tab_5bd(ns,k_bcexs(k))
                   elseif (na==5) then
                   ! within-ice BC
                      taer = taer + &
-                          aero_mp(na+2)*kaer_bc_tab(ns_aer_tmp,k_bcins(k))* &
-                          bcenh(ns_aer_tmp,k_bcins(k),k_bcini(k))
+                          aero_mp(na+2)*kaer_bc_tab_5bd(ns,k_bcins(k))* &
+                          bcenh_5bd(ns,k_bcins(k),k_bcini(k))
                      waer = waer + &
-                          aero_mp(na+2)*kaer_bc_tab(ns_aer_tmp,k_bcins(k))* &
-                          waer_bc_tab(ns_aer_tmp,k_bcins(k))
+                          aero_mp(na+2)*kaer_bc_tab_5bd(ns,k_bcins(k))* &
+                          waer_bc_tab_5bd(ns,k_bcins(k))
                      gaer = gaer + &
-                          aero_mp(na+2)*kaer_bc_tab(ns_aer_tmp,k_bcins(k))* &
-                          waer_bc_tab(ns_aer_tmp,k_bcins(k))*gaer_bc_tab(ns_aer_tmp,k_bcins(k))
+                          aero_mp(na+2)*kaer_bc_tab_5bd(ns,k_bcins(k))* &
+                          waer_bc_tab_5bd(ns,k_bcins(k))*gaer_bc_tab_5bd(ns,k_bcins(k))
                   else
                   ! other species (dust)
                      taer = taer + &
-                          aero_mp(na+2)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))
+                          aero_mp(na+2)*kaer_tab_5bd(ns,(1+(na-1)/4))
                      waer = waer + &
-                          aero_mp(na+2)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))* &
-                          waer_tab(ns_aer_tmp,(1+(na-1)/4))
+                          aero_mp(na+2)*kaer_tab_5bd(ns,(1+(na-1)/4))* &
+                          waer_tab_5bd(ns,(1+(na-1)/4))
                      gaer = gaer + &
-                          aero_mp(na+2)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))* &
-                          waer_tab(ns_aer_tmp,(1+(na-1)/4))*gaer_tab(ns_aer_tmp,(1+(na-1)/4))
+                          aero_mp(na+2)*kaer_tab_5bd(ns,(1+(na-1)/4))* &
+                          waer_tab_5bd(ns,(1+(na-1)/4))*gaer_tab_5bd(ns,(1+(na-1)/4))
                   endif
                else      !bulk
                   taer = taer + &
-                         aero_mp(na+2)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))
+                         aero_mp(na+2)*kaer_tab_5bd(ns,(1+(na-1)/4))
                   waer = waer + &
-                         aero_mp(na+2)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))* &
-                         waer_tab(ns_aer_tmp,(1+(na-1)/4))
+                         aero_mp(na+2)*kaer_tab_5bd(ns,(1+(na-1)/4))* &
+                         waer_tab_5bd(ns,(1+(na-1)/4))
                   gaer = gaer + &
-                         aero_mp(na+2)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))* &
-                         waer_tab(ns_aer_tmp,(1+(na-1)/4))*gaer_tab(ns_aer_tmp,(1+(na-1)/4))
+                         aero_mp(na+2)*kaer_tab_5bd(ns,(1+(na-1)/4))* &
+                         waer_tab_5bd(ns,(1+(na-1)/4))*gaer_tab_5bd(ns,(1+(na-1)/4))
                 endif     ! modal_aero
 !mgf--
                enddo      ! na
@@ -5074,46 +5064,46 @@
                      if (na==1) then
                         ! interstitial BC
                         taer = taer + &
-                             (aero_mp(na+3)/rnilyr)*kaer_bc_tab(ns_aer_tmp,k_bcexs(k))
+                             (aero_mp(na+3)/rnilyr)*kaer_bc_tab_5bd(ns,k_bcexs(k))
                         waer = waer + &
-                             (aero_mp(na+3)/rnilyr)*kaer_bc_tab(ns_aer_tmp,k_bcexs(k))* &
-                             waer_bc_tab(ns_aer_tmp,k_bcexs(k))
+                             (aero_mp(na+3)/rnilyr)*kaer_bc_tab_5bd(ns,k_bcexs(k))* &
+                             waer_bc_tab_5bd(ns,k_bcexs(k))
                         gaer = gaer + &
-                             (aero_mp(na+3)/rnilyr)*kaer_bc_tab(ns_aer_tmp,k_bcexs(k))* &
-                             waer_bc_tab(ns_aer_tmp,k_bcexs(k))*gaer_bc_tab(ns_aer_tmp,k_bcexs(k))
+                             (aero_mp(na+3)/rnilyr)*kaer_bc_tab_5bd(ns,k_bcexs(k))* &
+                             waer_bc_tab_5bd(ns,k_bcexs(k))*gaer_bc_tab_5bd(ns,k_bcexs(k))
                      elseif (na==5) then
                         ! within-ice BC
                         taer = taer + &
-                             (aero_mp(na+3)/rnilyr)*kaer_bc_tab(ns_aer_tmp,k_bcins(k))* &
-                             bcenh(ns,k_bcins(k),k_bcini(k))
+                             (aero_mp(na+3)/rnilyr)*kaer_bc_tab_5bd(ns,k_bcins(k))* &
+                             bcenh_5bd(ns,k_bcins(k),k_bcini(k))
                         waer = waer + &
-                             (aero_mp(na+3)/rnilyr)*kaer_bc_tab(ns_aer_tmp,k_bcins(k))* &
-                             waer_bc_tab(ns_aer_tmp,k_bcins(k))
+                             (aero_mp(na+3)/rnilyr)*kaer_bc_tab_5bd(ns,k_bcins(k))* &
+                             waer_bc_tab_5bd(ns,k_bcins(k))
                         gaer = gaer + &
-                             (aero_mp(na+3)/rnilyr)*kaer_bc_tab(ns_aer_tmp,k_bcins(k))* &
-                             waer_bc_tab(ns_aer_tmp,k_bcins(k))*gaer_bc_tab(ns_aer_tmp,k_bcins(k))
+                             (aero_mp(na+3)/rnilyr)*kaer_bc_tab_5bd(ns,k_bcins(k))* &
+                             waer_bc_tab_5bd(ns,k_bcins(k))*gaer_bc_tab_5bd(ns,k_bcins(k))
 
                      else
                         ! other species (dust)
                         taer = taer + &
-                             (aero_mp(na+3)/rnilyr)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))
+                             (aero_mp(na+3)/rnilyr)*kaer_tab_5bd(ns,(1+(na-1)/4))
                         waer = waer + &
-                             (aero_mp(na+3)/rnilyr)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))* &
-                             waer_tab(ns_aer_tmp,(1+(na-1)/4))
+                             (aero_mp(na+3)/rnilyr)*kaer_tab_5bd(ns,(1+(na-1)/4))* &
+                             waer_tab_5bd(ns,(1+(na-1)/4))
                         gaer = gaer + &
-                             (aero_mp(na+3)/rnilyr)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))* &
-                             waer_tab(ns_aer_tmp,(1+(na-1)/4))*gaer_tab(ns_aer_tmp,(1+(na-1)/4))
+                             (aero_mp(na+3)/rnilyr)*kaer_tab_5bd(ns,(1+(na-1)/4))* &
+                             waer_tab_5bd(ns,(1+(na-1)/4))*gaer_tab_5bd(ns,(1+(na-1)/4))
                      endif
                   else       !bulk
 
                      taer = taer + &
-                          (aero_mp(na+3)*rnilyr)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))
+                          (aero_mp(na+3)*rnilyr)*kaer_tab_5bd(ns,(1+(na-1)/4))
                      waer = waer + &
-                          (aero_mp(na+3)*rnilyr)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))* &
-                          waer_tab(ns_aer_tmp,(1+(na-1)/4))
+                          (aero_mp(na+3)*rnilyr)*kaer_tab_5bd(ns,(1+(na-1)/4))* &
+                          waer_tab_5bd(ns,(1+(na-1)/4))
                      gaer = gaer + &
-                          (aero_mp(na+3)*rnilyr)*kaer_tab(ns_aer_tmp,(1+(na-1)/4))* &
-                          waer_tab(ns_aer_tmp,(1+(na-1)/4))*gaer_tab(ns_aer_tmp,(1+(na-1)/4))
+                          (aero_mp(na+3)*rnilyr)*kaer_tab_5bd(ns,(1+(na-1)/4))* &
+                          waer_tab_5bd(ns,(1+(na-1)/4))*gaer_tab_5bd(ns,(1+(na-1)/4))
                   endif       ! modal_aero
 !mgf--
                   enddo       ! na
@@ -5126,9 +5116,6 @@
                   tau(k) = tau(k) + taer
                enddo ! k
             endif ! tr_aero
-
-! Todo-CD: the above section needs to be modified to incoporate SNICAR 5-band aerosol
-! optical properties
 
 ! ---------------------------------------------------------------------------
 

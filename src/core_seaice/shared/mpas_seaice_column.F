@@ -515,8 +515,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
     call MPAS_pool_get_config(domain % configs, "config_turn_snicar_system_on", config_turn_snicar_system_on)
-    print *, '518MPAS_seaice_column: config_turn_snicar_system_on =', config_turn_snicar_system_on
-
 
     if (trim(config_shortwave_type) == "dEdd") then
 
@@ -2210,9 +2208,13 @@ contains
          iceSingleScatterAlbedoDirect,      &
          iceSingleScatterAlbedoDiffuse,      &
          iceMassExtinctionCrossSectionDirect, &
-         iceMassExtinctionCrossSectionDiffuse
-         !radius_um
-
+         iceMassExtinctionCrossSectionDiffuse, &
+         aerosolAsymmetryParameter_5bd, &
+         aerosolMassExtinctionCrossSection_5bd, &
+         aerosolSingleScatterAlbedo_5bd, &
+         modalAsymmetryParameter_5bd, &
+         modalMassExtinctionCrossSection_5bd, &
+         modalSingleScatterAlbedo_5bd
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -2232,7 +2234,9 @@ contains
          iceBodyAerosol, &
          brineFraction, &
          modalBCabsorptionParameter, &
-         bioTracerShortwave
+         bioTracerShortwave,  &
+         modalBCabsorptionParameter_5bd
+
 
     real(kind=RKIND), pointer :: &
          dayOfNextShortwaveCalculation ! needed for CESM like coupled simulations
@@ -2369,11 +2373,26 @@ contains
 
        ! snicar 5-band snow IOPs
        call MPAS_pool_get_array(snicar_variables, "iceAsymmtryParameterDirect",iceAsymmtryParameterDirect)
+       print *,iceAsymmtryParameterDirect(1,1)
        call MPAS_pool_get_array(snicar_variables, "iceAsymmtryParameterDiffuse",iceAsymmtryParameterDiffuse)
        call MPAS_pool_get_array(snicar_variables, "iceSingleScatterAlbedoDirect", iceSingleScatterAlbedoDirect)
        call MPAS_pool_get_array(snicar_variables, "iceSingleScatterAlbedoDiffuse", iceSingleScatterAlbedoDiffuse)
        call MPAS_pool_get_array(snicar_variables, "iceMassExtinctionCrossSectionDirect", iceMassExtinctionCrossSectionDirect)
        call MPAS_pool_get_array(snicar_variables, "iceMassExtinctionCrossSectionDiffuse", iceMassExtinctionCrossSectionDiffuse)
+
+       call MPAS_pool_get_array(snicar_variables, "aerosolMassExtinctionCrossSection_5bd",  aerosolMassExtinctionCrossSection_5bd)
+
+       call MPAS_pool_get_array(snicar_variables, "aerosolSingleScatterAlbedo_5bd", aerosolSingleScatterAlbedo_5bd)
+
+       call MPAS_pool_get_array(snicar_variables,"aerosolAsymmetryParameter_5bd", aerosolAsymmetryParameter_5bd)
+
+       call MPAS_pool_get_array(snicar_variables, "modalMassExtinctionCrossSection_5bd", modalMassExtinctionCrossSection_5bd)
+
+       call MPAS_pool_get_array(snicar_variables,"modalSingleScatterAlbedo_5bd", modalSingleScatterAlbedo_5bd)
+
+       call MPAS_pool_get_array(snicar_variables, "modalAsymmetryParameter_5bd", modalAsymmetryParameter_5bd)
+
+       call MPAS_pool_get_array(snicar_variables, "modalBCabsorptionParameter_5bd", modalBCabsorptionParameter_5bd)
 
        ! calendar type
        call MPAS_pool_get_config(block % configs, "config_calendar_type", config_calendar_type)
@@ -2493,8 +2512,15 @@ contains
                iceSingleScatterAlbedoDirect(:,:),      &
                iceSingleScatterAlbedoDiffuse(:,:),      &
                iceMassExtinctionCrossSectionDirect(:,:), &
-               iceMassExtinctionCrossSectionDiffuse(:,:))!, &
-               !radius_um(1,:))
+               iceMassExtinctionCrossSectionDiffuse(:,:), &
+               aerosolMassExtinctionCrossSection_5bd(:,:), &
+               aerosolSingleScatterAlbedo_5bd(:,:), &
+               aerosolAsymmetryParameter_5bd(:,:), &
+               modalMassExtinctionCrossSection_5bd(:,:), &
+               modalSingleScatterAlbedo_5bd(:,:), &
+               modalAsymmetryParameter_5bd(:,:), &
+               modalBCabsorptionParameter_5bd(:,:,:))
+
           call colpkg_get_warnings(warnings)
           call column_write_warnings(warnings)
 

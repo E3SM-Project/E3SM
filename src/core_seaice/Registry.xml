@@ -1655,7 +1655,7 @@
 	<!-- snicar variable namelist record -->
 	<nml_record name="snicar_variables" in_defaults="true">
 		 <nml_option name="config_turn_snicar_system_on" type="logical" default_value="false" units="unitless"
-	        	description="If true turn on snicar system"
+	        	description="If true turn on snicar 5-band snow system"
 	        	possible_values="true or false"
 		/>
 	</nml_record>
@@ -1918,19 +1918,40 @@
 			<var name="modalSingleScatterAlbedo"/>
 		</stream>
 
-                <!-- snicar input stream name -->
-	 	<stream name="SnicarInput"
+                <!-- snicar 5 band input stream name -->
+	 	<stream name="SnicarSnowInput"
 			        type="input"
-		        	filename_template="snicar_optics_5bnd_mam.nc"
+		        	filename_template="snicar_optics_5bnd_snowgrain.nc"
 		        	filename_interval="none"
 		        	input_interval="initial_only"
 		        	immutable="true">
+                
+                    <!-- snow grain optical properties-->
             		<var name="iceAsymmtryParameterDirect"/>
             		<var name="iceAsymmtryParameterDiffuse"/>
             		<var name="iceSingleScatterAlbedoDirect"/>
             		<var name="iceSingleScatterAlbedoDiffuse"/>
             		<var name="iceMassExtinctionCrossSectionDirect"/>
             		<var name="iceMassExtinctionCrossSectionDiffuse"/>
+        </stream>
+        
+       <stream name="SnicarAerosolInput"
+                        type="input"
+                        filename_template="snicar_optics_5bnd_aerosol.nc"
+                        filename_interval="none"
+                        input_interval="initial_only"
+                        immutable="true">
+                        
+                    <!-- same to stream name ModalAerosolsInput but for 5 bands-->
+                    <var name="modalAsymmetryParameter_5bd"/>
+                    <var name="modalBCabsorptionParameter_5bd"/>
+                    <var name="modalMassExtinctionCrossSection_5bd"/>
+                    <var name="modalSingleScatterAlbedo_5bd"/>
+                    
+                    <!-- same to stream name StandardAerosolsInput but for 5 bands-->
+                    <var name="aerosolAsymmetryParameter_5bd"/>
+                    <var name="aerosolMassExtinctionCrossSection_5bd"/>
+                    <var name="aerosolSingleScatterAlbedo_5bd"/>
 		</stream>
 
 
@@ -3789,7 +3810,7 @@
 		<var name="testArrayRestartability"		type="real"	dimensions="nCells Time"/>
 	</var_struct>
 
-	<!-- Snicar ice optical property varables -->
+	<!-- Snicar 5-band optical property varables -->
 	<var_struct name="snicar_variables" time_levs="1" packages="pkgSnicarSystem">
         	<var name="iceAsymmtryParameterDirect"		type="real"	 dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR" 	 name_in_code="iceAsymmtryParameterDirect"/>
         
@@ -3802,6 +3823,20 @@
         	<var name="iceMassExtinctionCrossSectionDirect"		type="real"	 dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	 name_in_code="iceMassExtinctionCrossSectionDirect"/>
         
         	<var name="iceMassExtinctionCrossSectionDiffuse"	type="real" 	dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	name_in_code="iceMassExtinctionCrossSectionDiffuse"/>
+            
+            <var name="aerosolMassExtinctionCrossSection_5bd"    type="real"    dimensions="nSpectralIntervalsSNICAR maxAerosolType"    name_in_code="aerosolMassExtinctionCrossSection_5bd"/>
+            
+            <var name="aerosolSingleScatterAlbedo_5bd"        type="real"    dimensions="nSpectralIntervalsSNICAR maxAerosolType"    name_in_code="aerosolSingleScatterAlbedo_5bd"/>
+            
+            <var name="aerosolAsymmetryParameter_5bd"        type="real"    dimensions="nSpectralIntervalsSNICAR maxAerosolType"    name_in_code="aerosolAsymmetryParameter_5bd"/>
+            
+            <var name="modalMassExtinctionCrossSection_5bd"    type="real"    dimensions="nSpectralIntervalsSNICAR nModal1"    name_in_code="modalMassExtinctionCrossSection_5bd"/>
+            
+            <var name="modalSingleScatterAlbedo_5bd"        type="real"    dimensions="nSpectralIntervalsSNICAR nModal1"    name_in_code="modalSingleScatterAlbedo_5bd"/>
+            
+            <var name="modalAsymmetryParameter_5bd"        type="real"    dimensions="nSpectralIntervalsSNICAR nModal1"    name_in_code="modalAsymmetryParameter_5bd"/>
+            
+            <var name="modalBCabsorptionParameter_5bd"        type="real"    dimensions="nSpectralIntervalsSNICAR nModal1 nModal2" name_in_code="modalBCabsorptionParameter_5bd"/>
 	</var_struct>
 
 
