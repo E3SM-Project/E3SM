@@ -151,21 +151,19 @@ if(continueOutput):
     nz = len(z)
     
 else:
-    #xMin = numpy.amin(xVertex)
-    #xMax = numpy.amax(xVertex)
+    dx = 2e3 # 2 km
     yMin = numpy.amin(yVertex)
     yMax = numpy.amax(yVertex)
-    xMin = 320e3
-    xMax = 800e3
-    dx = 2e3 # 2 km
-    nx = int((xMax-xMin)/dx)+1
-    x = numpy.linspace(xMin,xMax,nx)
+    xMin = 320e3 + 0.5*dx
+    xMax = 800e3 - 0.5*dx
+    nx = 240
+    x = numpy.linspace(xMin, xMax, nx)
   
-    zMin = -720.0
-    zMax = 0.0
     dz = 5.0
-    nz = int((zMax-zMin)/dz)+1
-    z = numpy.linspace(zMax,zMin,nz)
+    zMin = -720.0 + 0.5*dz
+    zMax = 0.0 - 0.5*dz
+    nz = 144
+    z = numpy.linspace(zMax, zMin, nz)
 
     #print "Building shapely edges"
     shapelyEdges = []
@@ -183,10 +181,11 @@ else:
     for xIndex in range(len(x)):
         #print xIndex, '/', len(x)-1
         xSection = x[xIndex]
-        (edgeIndices, edgeSigns) = computeSectionEdgeIndices((xSection,yMin),(xSection,yMax))
-        if(len(edgeIndices) != 0):
-            xMean = numpy.mean(xEdge[edgeIndices])
-            x[xIndex] = xMean
+        (edgeIndices, edgeSigns) = computeSectionEdgeIndices(
+            (xSection, yMin), (xSection, yMax))
+        #if(len(edgeIndices) != 0):
+        #    xMean = numpy.mean(xEdge[edgeIndices])
+        #    x[xIndex] = xMean
 
         sectionEdgeIndices.append(edgeIndices)
         sectionEdgeSigns.append(edgeSigns)
@@ -201,20 +200,22 @@ else:
         sectionIndicesArray[xIndex,0:count] = sectionEdgeIndices[xIndex]
         sectionSignsArray[xIndex,0:count] = sectionEdgeSigns[xIndex]
 
-    outFile.createDimension('nx',nx)
-    outFile.createDimension('nz',nz)
-    outFile.createDimension('maxSectionLength',maxSectionLength)
-    outFile.createDimension('Time',None)
-    outOSF = outFile.createVariable('overturningStreamfunction',float,['Time','nz','nx'])
-    outX = outFile.createVariable('x',float,['nz','nx'])
-    outZ = outFile.createVariable('z',float,['nz','nx'])
-    (X,Z) = numpy.meshgrid(x,z)
-    outX[:,:] = X
-    outZ[:,:] = Z
-    outSectionIndices = outFile.createVariable('sectionEdgeIndices',int,['nx','maxSectionLength'])
-    outSectionIndices[:,:] = sectionIndicesArray
-    outSectionSigns = outFile.createVariable('sectionEdgeSigns',int,['nx','maxSectionLength'])
-    outSectionSigns[:,:] = sectionSignsArray
+    outFile.createDimension('nx', nx)
+    outFile.createDimension('nz', nz)
+    outFile.createDimension('maxSectionLength', maxSectionLength)
+    outFile.createDimension('nTime', None)
+    outOSF = outFile.createVariable('overturningStreamfunction', float,
+                                    ['nTime', 'nz', 'nx'])
+    outX = outFile.createVariable('x', float, ['nx'])
+    outZ = outFile.createVariable('z', float, ['nz'])
+    outX[:] = x
+    outZ[:] = z
+    outSectionIndices = outFile.createVariable('sectionEdgeIndices', int, 
+                                               ['nx','maxSectionLength'])
+    outSectionIndices[:, :] = sectionIndicesArray
+    outSectionSigns = outFile.createVariable('sectionEdgeSigns', int,
+                                             ['nx', 'maxSectionLength'])
+    outSectionSigns[:, :] = sectionSignsArray
 
 bottomDepth = initFile.variables['bottomDepth'][:]
 
@@ -265,6 +266,8 @@ for tIndex in range(nTimeOut,nTimeIn):
                 while (levelIndex >= 0) and (zBot < z[zIndex]):
                     #print zIndex, levelIndex, z[zIndex], zBot
                     v = normalVelocity[iEdge,levelIndex]
+                    if v == 0.0:
+                        continue
                     if(zTop <= z[zIndex]):
                         dz = zTop - zBot
                         zBot = zTop

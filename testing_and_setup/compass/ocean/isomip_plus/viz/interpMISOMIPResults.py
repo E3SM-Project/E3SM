@@ -11,18 +11,30 @@ import os.path
 import glob
 
 
-def interpHoriz(field, normalize=True):
+def interpHoriz(field, inMask=None, outFraction=None):
+    if inMask is not None:
+        field = field*inMask
     outField = numpy.zeros((outNy,outNx))
     for sliceIndex in range(xyNSlices):
         mask = xySliceIndices == sliceIndex
         cellsSlice = xyCellIndices[mask]
-        fieldSlice = field[cellsSlice]*(maxLevelCell[cellsSlice] >= 0)
+        fieldSlice = field[cellsSlice]
         outField[xyYIndices[mask],xyXIndices[mask]] += (xyMpasToMisomipWeights[mask]
                 * fieldSlice)
-    if normalize:
-        outField[xyOceanMask] /= xyOceanFraction[xyOceanMask]
-        outField[xyOceanMask == False] = 0.
+    if outFraction is not None:
+        mask = outFraction > normalizationThreshold
+        outField[mask] /= outFraction[mask]
+        outField[numpy.logical_not(mask)] = 0.
     return outField
+
+
+def interpHorizOcean(field):
+    return interpHoriz(field, cellOceanMask, xyOceanFraction)
+
+def interpHorizCavity(field):
+    return interpHoriz(field, inCavityFraction, outCavityFraction)
+
+
 
 def interpXZTransect(field, normalize=True):
     outField = numpy.zeros((outNz,outNx))
@@ -90,7 +102,7 @@ def writeMetric(varName, metric):
 
 def writeVar(varName, varField, varMask=None):
     if varMask is None:
-        maskeVar = varField
+        maskedVar = varField
     else:
         maskedVar = numpy.ma.masked_array(varField, mask=(varMask == False))
     vars[varName][tIndex, :, :] = maskedVar
@@ -110,6 +122,8 @@ outFileName = '%s/%s_COM_MPAS-Ocean.nc'%(folder, experiment)
 rho_fw = 1000.
 secPerDay = 24*60*60
 secPerYear = 365*secPerDay
+
+normalizationThreshold = 0.001
 
 outDx = 2e3
 outX0 = 320e3
@@ -280,7 +294,7 @@ nEdges = len(initFile.dimensions['nEdges'])
 nVertLevels = len(initFile.dimensions['nVertLevels'])
 nTimeIn = len(inFileNames)
 nTimeIn = min(nTimeIn, len(bsfFile.dimensions['Time']))
-nTimeIn = min(nTimeIn, len(osfFile.dimensions['Time']))
+nTimeIn = min(nTimeIn, len(osfFile.dimensions['nTime']))
 
 if(continueOutput):
   nTimeOut = max(0, len(outFile.dimensions['nTime'])-2)
@@ -298,12 +312,13 @@ for iCell in range(nCells):
   if (k >= 0):
     cellMask[iCell,0:k+1] = 1.0
 
-xyOceanFraction = interpHoriz(cellMask[:,0], normalize=False)
-xyOceanMask = xyOceanFraction > 0.001
+cellOceanMask = cellMask[:, 0]
+xyOceanFraction = interpHoriz(cellOceanMask)
+xyOceanMask = xyOceanFraction > normalizationThreshold
 
 if not dynamicTopo and (nTimeOut == 0):
-  vars['iceDraft'][:,:] = interpHoriz(initFile.variables['ssh'][0,:])
-  vars['bathymetry'][:,:] = interpHoriz(bathymetry)
+  vars['iceDraft'][:,:] = interpHorizOcean(initFile.variables['ssh'][0,:])
+  vars['bathymetry'][:,:] = interpHorizOcean(bathymetry)
 
 initFile.close()
 
@@ -318,13 +333,15 @@ for tIndex in range(nTimeOut, nTimeIn):
     vars['time'][tIndex] = secPerDay*days
 
     freshwaterFlux = inVars['timeMonthly_avg_landIceFreshwaterFlux'][0, :]
-    fraction = inVars['timeMonthly_avg_landIceFraction'][0, :]
-    cavityMask = interpHoriz(fraction) > 0.001
+    inCavityFraction = inVars['timeMonthly_avg_landIceFraction'][0, :]
+    inCavityMask = inCavityFraction > normalizationThreshold
+    outCavityFraction = interpHoriz(inCavityFraction)
+    outCavityMask = outCavityFraction > normalizationThreshold
     meltRate = freshwaterFlux/rho_fw
 
-    if not numpy.all(fraction == 0.):
+    if not numpy.all(inCavityFraction == 0.):
         writeMetric('meanMeltRate', numpy.sum(meltRate*areaCell)
-                                   /numpy.sum(fraction*areaCell))
+                                   /numpy.sum(inCavityFraction*areaCell))
 
     writeMetric('totalMeltFlux', numpy.sum(freshwaterFlux*areaCell))
 
@@ -339,13 +356,18 @@ for tIndex in range(nTimeOut, nTimeIn):
                    - inVars['timeMonthly_avg_landIceInterfaceTracers_landIceInterfaceSalinity'][0, :])
     frictionVelocity = inVars['timeMonthly_avg_landIceFrictionVelocity'][0, :]
 
-    bsfCell = 1e6*bsfFile.variables['barotropicStreamfunctionCell'][0, :]
+    bsfCell = 1e6*bsfFile.variables['barotropicStreamfunctionCell'][tIndex, :]
 
-    writeVar('meltRate', interpHoriz(meltRate), cavityMask)
-    writeVar('thermalDriving', interpHoriz(thermalDriving), cavityMask)
-    writeVar('halineDriving', interpHoriz(halineDriving), cavityMask)
-    writeVar('frictionVelocity', interpHoriz(frictionVelocity), cavityMask)
-    writeVar('barotropicStreamfunction', interpHoriz(bsfCell), xyOceanMask)
+    # meltRate is already multiplied by inCavityFraction, so no in masking
+    writeVar('meltRate',
+             interpHoriz(meltRate, inMask=None, outFraction=outCavityFraction),
+             outCavityMask)
+    writeVar('thermalDriving', interpHorizCavity(thermalDriving), outCavityMask)
+    writeVar('halineDriving', interpHorizCavity(halineDriving), outCavityMask)
+    writeVar('frictionVelocity', interpHorizCavity(frictionVelocity),
+             outCavityMask)
+    writeVar('barotropicStreamfunction', interpHorizOcean(bsfCell),
+             xyOceanMask)
 
     temperature = inVars['timeMonthly_avg_activeTracers_temperature'][0, :,:]
     salinity = inVars['timeMonthly_avg_activeTracers_salinity'][0, :,:]
@@ -355,8 +377,10 @@ for tIndex in range(nTimeOut, nTimeIn):
     bottomTemperature = temperature[indices, maxLevelCell]
     bottomSalinity = salinity[indices, maxLevelCell]
 
-    writeVar('bottomTemperature', interpHoriz(bottomTemperature), xyOceanMask)
-    writeVar('bottomSalinity', interpHoriz(bottomSalinity), xyOceanMask)
+    writeVar('bottomTemperature', interpHorizOcean(bottomTemperature),
+             xyOceanMask)
+    writeVar('bottomSalinity', interpHorizOcean(bottomSalinity),
+             xyOceanMask)
 
     writeMetric('meanTemperature', numpy.sum(cellMask*layerThickness*temperature)
                                   /numpy.sum(cellMask*layerThickness))
@@ -365,11 +389,16 @@ for tIndex in range(nTimeOut, nTimeIn):
 
     uTop = inVars['timeMonthly_avg_velocityX'][0, :, 0]
     vTop = inVars['timeMonthly_avg_velocityY'][0, :, 0]
-    writeVar('uBoundaryLayer', interpHoriz(uTop), cavityMask)
-    writeVar('vBoundaryLayer', interpHoriz(vTop), cavityMask)
+    writeVar('uBoundaryLayer', interpHorizCavity(uTop), outCavityMask)
+    writeVar('vBoundaryLayer', interpHorizCavity(vTop), outCavityMask)
 
-    #writeVar('overturningStreamfunction', resampleXZ(sfOverturn),
-    #                    resampleXZ(osfMask) > .999)
+    osf = 1e6*osfFile.variables['overturningStreamfunction'][tIndex, :, :]
+    osfX = osfFile.variables['x'][:]
+    osfZ = osfFile.variables['z'][:]
+    assert(numpy.all(osfX == x))
+    assert(numpy.all(osfZ == z))
+    
+    writeVar('overturningStreamfunction', osf)
   
     xzOceanFraction = interpXZTransect(cellMask, normalize=False)
     xzOceanMask = xzOceanFraction > 0.001
