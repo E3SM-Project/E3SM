@@ -165,6 +165,7 @@ contains
     deriv%dvv = dvv
     elem%Dinv = dinv
     elem%metdet = metdet
+    elem%rmetdet = 1.0D0/metdet
 
     div = divergence_sphere(v, deriv, elem)
 

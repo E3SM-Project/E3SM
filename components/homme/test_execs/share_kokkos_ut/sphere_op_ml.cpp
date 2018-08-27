@@ -34,6 +34,12 @@ void gradient_sphere_c_callable(const Real *input,
                                 const Real *dinv,
                                 Real *output);
 
+void divergence_sphere_c_callable(const Real *input,
+                                  const Real *dvv,
+                                  const Real *metdet,
+                                  const Real *dinv,
+                                  Real *output);
+
 void divergence_sphere_wk_c_callable(const Real *input,
                                      const Real *dvv,
                                      const Real *spheremp,
@@ -127,6 +133,14 @@ class compute_sphere_operator_test_ml {
   {
     std::random_device rd;
     rngAlg engine(rd());
+
+    // Although scalar_output_d is an output, it can be used as input by divergence_sphere_update
+    genRandArray(
+        scalar_output_host, engine,
+        std::uniform_real_distribution<Real>(-1000.0,
+                                             1000.0));
+    Kokkos::deep_copy(scalar_output_host, scalar_output_d);
+
     genRandArray(
         scalar_input_host, engine,
         std::uniform_real_distribution<Real>(-1000.0,
@@ -213,6 +227,13 @@ class compute_sphere_operator_test_ml {
                  std::uniform_real_distribution<Real>(
                      0.0001, 1000.0));
 
+    genRandArray(&alpha, 1, engine,
+                 std::uniform_real_distribution<Real>(
+                     -30.0, 30.0));
+
+    genRandArray(&add_hyperviscosity, 1, engine,
+                 std::uniform_int_distribution<int>(0,1));
+
     sphere_ops.set_views(dvv_d,d_d,dinv_d,metinv_d,metdet_d,spheremp_d,mp_d);
   }  // end of constructor
 
@@ -285,6 +306,8 @@ class compute_sphere_operator_test_ml {
   SphereOperators sphere_ops;
 
   Real nu_ratio;
+  Real alpha;
+  int add_hyperviscosity;
 
   // tag for laplace_simple()
   struct TagSimpleLaplaceML {};
@@ -292,6 +315,8 @@ class compute_sphere_operator_test_ml {
   struct TagGradientSphereML {};
   // tag for divergence_sphere_wk
   struct TagDivergenceSphereWkML {};
+  // tag for divergence_sphere_update
+  struct TagDivergenceSphereUpdateML {};
   // tag for laplace_tensor
   struct TagTensorLaplaceML {};
   // tag for laplace_tensor
@@ -335,6 +360,17 @@ class compute_sphere_operator_test_ml {
                          Homme::subview(vector_input_d, kv.ie),
                          Homme::subview(scalar_output_d,kv.ie));
   }  // end of op() for divergence_sphere_wk_ml
+
+  KOKKOS_INLINE_FUNCTION
+  void operator()(const TagDivergenceSphereUpdateML &,
+                  const TeamMember& team) const {
+    KernelVariables kv(team);
+
+    sphere_ops.divergence_sphere_update(team,alpha,add_hyperviscosity!=0,
+                         Homme::subview(vector_input_d, kv.ie),
+                         Homme::subview(scalar_input_d, kv.ie),
+                         Homme::subview(scalar_output_d,kv.ie));
+  }  // end of op() for divergence_sphere_update
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagSimpleLaplaceML &,
@@ -424,6 +460,14 @@ class compute_sphere_operator_test_ml {
 
   void run_functor_divergence_sphere_wk() {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagDivergenceSphereWkML>(_num_elems);
+    sphere_ops.allocate_buffers(policy);
+    Kokkos::parallel_for(policy, *this);
+    ExecSpace::fence();
+    Kokkos::deep_copy(scalar_output_host, scalar_output_d);
+  };
+
+  void run_functor_divergence_sphere_update() {
+    auto policy = Homme::get_default_team_policy<ExecSpace, TagDivergenceSphereUpdateML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
     ExecSpace::fence();
@@ -605,6 +649,86 @@ TEST_CASE("Testing divergence_sphere_wk()",
   }          //ie
 
   std::cout << "test div_wk multilevel finished. \n";
+
+}  // end of test div_sphere_wk_ml
+
+TEST_CASE("Testing divergence_sphere_update()",
+          "divergence_sphere_update") {
+  constexpr const int elements = 10;
+
+  compute_sphere_operator_test_ml testing_div_update_ml(elements);
+
+  auto scalar_input_host = testing_div_update_ml.scalar_input_COPY2_host;
+
+  // divergence_sphere_update uses the output as part of input (if add_hyperviscosity!=0),
+  // so create a copy here for fortran
+  decltype(testing_div_update_ml.scalar_output_d)::HostMirror scalar_output_host_copy("",elements);
+  Kokkos::deep_copy(scalar_output_host_copy, testing_div_update_ml.scalar_output_d);
+
+  testing_div_update_ml.run_functor_divergence_sphere_update();
+
+  Real alpha = testing_div_update_ml.alpha;
+  int add_hyperviscosity = testing_div_update_ml.add_hyperviscosity;
+  for(int ie = 0; ie < elements; ie++) {
+    for(int level = 0; level < NUM_LEV; ++level) {
+      for(int v = 0; v < VECTOR_SIZE; ++v) {
+        // fortran output
+        Real local_fortran_output[NP][NP] = {};
+        // F input
+        Real vf[2][NP][NP];
+        Real dvvf[NP][NP];
+        Real dinvf[2][2][NP][NP];
+        Real metdetf[NP][NP];
+
+        for(int _i = 0; _i < NP; _i++) {
+          for(int _j = 0; _j < NP; _j++) {
+            metdetf[_i][_j] = testing_div_update_ml.metdet_host(
+                ie, _i, _j);
+            dvvf[_i][_j] = testing_div_update_ml.dvv_host(_i, _j);
+            for(int _d1 = 0; _d1 < 2; _d1++) {
+              vf[_d1][_i][_j] =
+                  testing_div_update_ml.vector_input_host(
+                      ie, _d1, _i, _j, level)[v] *
+                  scalar_input_host(ie,_i,_j,level)[v];
+              for(int _d2 = 0; _d2 < 2; _d2++)
+                dinvf[_d1][_d2][_i][_j] =
+                    testing_div_update_ml.dinv_host(ie, _d1,
+                                             _d2, _i, _j);
+            }
+          }
+        }
+        divergence_sphere_c_callable(
+            &(vf[0][0][0]), &(dvvf[0][0]), &(metdetf[0][0]),
+            &(dinvf[0][0][0][0]),
+            &(local_fortran_output[0][0]));
+
+        for(int _i = 0; _i < NP; _i++) {
+          for(int _j = 0; _j < NP; _j++) {
+            local_fortran_output[_i][_j] *= alpha;
+            local_fortran_output[_i][_j] += scalar_input_host(ie,_i,_j,level)[v];
+            if (add_hyperviscosity!=0) {
+              local_fortran_output[_i][_j] += scalar_output_host_copy(ie,_i,_j,level)[v];
+            }
+          }
+        }
+        // compare with the part from C run
+        for(int igp = 0; igp < NP; ++igp) {
+          for(int jgp = 0; jgp < NP; ++jgp) {
+            Real coutput0 =
+                testing_div_update_ml.scalar_output_host(
+                    ie, igp, jgp, level)[v];
+            REQUIRE(!std::isnan(
+                local_fortran_output[igp][jgp]));
+            REQUIRE(!std::isnan(coutput0));
+            REQUIRE(local_fortran_output[igp][jgp] ==
+                        coutput0);
+          }  // jgp
+        }    // igp
+      }      // v
+    }        // level
+  }          //ie
+
+  std::cout << "test div_updated multilevel finished. \n";
 
 }  // end of test div_sphere_wk_ml
 
