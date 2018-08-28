@@ -162,3 +162,45 @@ ELSE()
   SET (NUM_CPUS 1)
 ENDIF()
 cxx_unit_test (sphere_op_ut "${SPHERE_OP_UT_F90_SRCS}" "${SPHERE_OP_UT_CXX_SRCS}" "${SPHERE_OP_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
+
+### Remap unit test ###
+
+SET (REMAP_UT_F90_SRCS
+  ${SRC_SHARE_DIR}/control_mod.F90
+  ${SRC_SHARE_DIR}/dimensions_mod.F90
+  ${SRC_SHARE_DIR}/hybvcoord_mod.F90
+  ${SRC_SHARE_DIR}/kinds.F90
+  ${SRC_SHARE_DIR}/parallel_mod.F90
+  ${SRC_SHARE_DIR}/vertremap_base.F90
+  ${SRC_SHARE_DIR}/physical_constants.F90
+  ${SHARE_UT_DIR}/remap_interface.F90
+  ${UTILS_TIMING_DIR}/perf_mod.F90
+  ${UTILS_TIMING_DIR}/perf_utils.F90
+)
+
+SET (REMAP_UT_CXX_SRCS
+  ${SRC_SHARE_DIR}/cxx/Elements.cpp
+  ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
+  ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
+  ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
+  ${SRC_SHARE_DIR}/cxx/HybridVCoord.cpp
+  ${SRC_SHARE_DIR}/cxx/Tracers.cpp
+  ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
+  ${SHARE_UT_DIR}/remap_ut.cpp
+)
+
+SET (CONFIG_DEFINES NP=4 NC=4 PLEV=16 QSIZE_D=4 _MPI=1 _PRIM HOMMEXX_NO_CONTEXT HOMMEXX_NO_MPI_CONTEXT)
+SET (REMAP_UT_INCLUDE_DIRS
+  ${SRC_SHARE_DIR}
+  ${SRC_SHARE_DIR}/cxx
+  ${SHARE_UT_DIR}
+  ${UTILS_TIMING_DIR}
+  ${CMAKE_BINARY_DIR}/src/share/cxx
+)
+
+IF (USE_NUM_PROCS)
+  SET (NUM_CPUS ${USE_NUM_PROCS})
+ELSE()
+  SET (NUM_CPUS 1)
+ENDIF()
+cxx_unit_test (remap_ut "${REMAP_UT_F90_SRCS}" "${REMAP_UT_CXX_SRCS}" "${REMAP_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
