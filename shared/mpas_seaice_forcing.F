@@ -82,7 +82,7 @@ contains
        ! init the ocean forcing
        call init_oceanic_forcing(domain)
 
-       ! init the data iceberg forcing (dc here, or as part of oceanic forcing?)
+       ! init the data iceberg forcing
        if (config_use_data_icebergs) call init_data_iceberg_forcing(domain)
 
     endif
@@ -1657,7 +1657,7 @@ contains
          "seaice_data_iceberg_forcing_monthly", &
          "bergFreshWaterFluxData", &
          "dataIcebergForcing", &
-         "ocean_coupling", &
+         "iceberg_forcing", &
          "bergFreshWaterFluxData", &
          "linear", &
          forcingReferenceTimeMonthly, &
@@ -1695,12 +1695,8 @@ contains
 
     type (MPAS_clock_type) :: simulationClock ! dc is this being used?
 
-    type(block_type), pointer :: &
-         block
-
     real(kind=RKIND), pointer :: &
          config_dt
-
 
     call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
 
@@ -1711,13 +1707,7 @@ contains
        streamManager, &
        config_dt)
 
-    block => domain % blocklist
-    do while (associated(block))
-
-       call get_data_iceberg_fluxes(block)
-
-       block => block % next
-    end do
+    call get_data_iceberg_fluxes(domain)
 
   end subroutine data_iceberg_forcing
 
@@ -1734,19 +1724,21 @@ contains
 !
 !-----------------------------------------------------------------------
 
-! dcnote - need to make monthly
-
-  subroutine get_data_iceberg_fluxes(block)
+  subroutine get_data_iceberg_fluxes(domain)
 
     use seaice_constants, only: &
          seaiceLatentHeatMelting ! latent heat of melting of fresh ice (J/kg)
 
-    type(block_type), intent(inout) :: &
+    type(domain_type), intent(inout) :: &
+         domain
+
+    type(block_type), pointer :: &
          block
 
     type(MPAS_pool_type), pointer :: &
          mesh, &
-         ocean_fluxes
+         iceberg_forcing, &
+         iceberg_fluxes
 
     integer, pointer :: &
          nCellsSolve
@@ -1764,22 +1756,28 @@ contains
          specificHeatFreshIce = 2106.0_RKIND, & ! specific heat of fresh ice J * kg^-1 * K^-1
          bergTemperature = -4.0_RKIND           ! iceberg temperature, assumed constant
 
+    block => domain % blocklist
+    do while (associated(block))
 
-    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-    call MPAS_pool_get_subpool(block % structs, "ocean_fluxes", ocean_fluxes)
+       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+       call MPAS_pool_get_subpool(block % structs, "iceberg_forcing", iceberg_forcing)
+       call MPAS_pool_get_subpool(block % structs, "iceberg_fluxes", iceberg_fluxes)
 
-    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+       call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
 
-    call MPAS_pool_get_array(ocean_fluxes, "bergFreshWaterFluxData", bergFreshWaterFluxData)
-    call MPAS_pool_get_array(ocean_fluxes, "bergFreshWaterFlux", bergFreshWaterFlux)
-    call MPAS_pool_get_array(ocean_fluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
+       call MPAS_pool_get_array(iceberg_forcing, "bergFreshWaterFluxData", bergFreshWaterFluxData)
+       call MPAS_pool_get_array(iceberg_fluxes, "bergFreshWaterFlux", bergFreshWaterFlux)
+       call MPAS_pool_get_array(iceberg_fluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
 
-    do iCell = 1, nCellsSolve
+       do iCell = 1, nCellsSolve
 
-       bergFreshWaterFlux(iCell) = bergFreshWaterFluxData(iCell)
-       bergLatentHeatFlux(iCell) = bergFreshWaterFluxData(iCell) * &
-                               (seaiceLatentHeatMelting - specificHeatFreshIce*bergTemperature)
+          bergFreshWaterFlux(iCell) = bergFreshWaterFluxData(iCell)
+          bergLatentHeatFlux(iCell) = bergFreshWaterFluxData(iCell) * &
+                                     (seaiceLatentHeatMelting - specificHeatFreshIce*bergTemperature)
 
+       enddo
+
+       block => block % next
     enddo
 
   end subroutine get_data_iceberg_fluxes
@@ -1942,6 +1940,7 @@ contains
 
     type(MPAS_pool_type), pointer :: &
          oceanFluxes, &
+         icebergFluxes, &
          biogeochemistry
 
     real(kind=RKIND), dimension(:), pointer :: &
@@ -2038,8 +2037,10 @@ contains
 
        if (config_use_data_icebergs) then
 
-          call MPAS_pool_get_array(oceanFluxes, "bergFreshWaterFlux", bergFreshWaterFlux)
-          call MPAS_pool_get_array(oceanFluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
+          call MPAS_pool_get_subpool(block % structs, "iceberg_fluxes", icebergFluxes)
+
+          call MPAS_pool_get_array(icebergFluxes, "bergFreshWaterFlux", bergFreshWaterFlux)
+          call MPAS_pool_get_array(icebergFluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
 
           bergFreshWaterFlux = 0.0_RKIND
           bergLatentHeatFlux = 0.0_RKIND
