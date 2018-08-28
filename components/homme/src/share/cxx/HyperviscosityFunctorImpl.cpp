@@ -8,6 +8,7 @@
 #include "HyperviscosityFunctorImpl.hpp"
 #include "profiling.hpp"
 
+#include "mpi/MpiContext.hpp"
 #include "mpi/BoundaryExchange.hpp"
 
 namespace Homme
@@ -45,7 +46,7 @@ HyperviscosityFunctorImpl::HyperviscosityFunctorImpl (const SimulationParams& pa
 void HyperviscosityFunctorImpl::init_boundary_exchanges () {
   m_be = std::make_shared<BoundaryExchange>();
   auto& be = *m_be;
-  auto bm_exchange = Context::singleton().get_buffers_manager(MPI_EXCHANGE);
+  auto bm_exchange = MpiContext::singleton().get_buffers_manager(MPI_EXCHANGE);
   be.set_buffers_manager(bm_exchange);
   be.set_num_fields(0, 0, 4);
   be.register_field(m_elements.buffers.vtens, 2, 0);

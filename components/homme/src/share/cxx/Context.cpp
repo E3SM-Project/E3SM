@@ -6,11 +6,6 @@
 
 #include "Context.hpp"
 
-#include "mpi/BuffersManager.hpp"
-#include "mpi/Comm.hpp"
-#include "mpi/Connectivity.hpp"
-#include "mpi/MpiContext.hpp"
-
 #include "CaarFunctor.hpp"
 #include "Derivative.hpp"
 #include "Diagnostics.hpp"
@@ -30,31 +25,11 @@ Context::Context() {}
 
 Context::~Context() {}
 
-MpiContext& Context::get_mpi_context() {
-  return MpiContext::singleton();
-}
-
-void Context::create_comm(const int f_comm) {
-  get_mpi_context().create_comm(f_comm);
-}
-
-std::shared_ptr<BuffersManager> Context::get_buffers_manager(short int exchange_type) {
-  return get_mpi_context().get_buffers_manager(exchange_type);
-}
-
-std::shared_ptr<Connectivity> Context::get_connectivity() {
-  return get_mpi_context().get_connectivity();
-}
-
 CaarFunctor& Context::get_caar_functor() {
   if ( ! caar_functor_) {
     caar_functor_.reset(new CaarFunctor());
   }
   return *caar_functor_;
-}
-
-Comm& Context::get_comm() {
-  return get_mpi_context().get_comm();
 }
 
 Diagnostics& Context::get_diagnostics() {
@@ -149,8 +124,6 @@ Context& Context::singleton() {
 
 void Context::finalize_singleton() {
   singleton().clear();
-
-  MpiContext::finalize_singleton();
 }
 
 } // namespace Homme

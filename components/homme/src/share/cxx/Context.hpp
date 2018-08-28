@@ -13,11 +13,7 @@
 
 namespace Homme {
 
-class MpiContext;
-class BuffersManager;
 class CaarFunctor;
-class Comm;
-class Connectivity;
 class Derivative;
 class Diagnostics;
 class Elements;
@@ -41,13 +37,9 @@ class EulerStepFunctor;
  * main before Kokkos::finalize().
  */
 class Context {
-public:
-  using BMMap = std::map<int,std::shared_ptr<BuffersManager>>;
-
 private:
   // Note: using uniqe_ptr disables copy construction
   std::unique_ptr<CaarFunctor>            caar_functor_;
-  std::unique_ptr<MpiContext>             comm_;
   std::unique_ptr<Elements>               elements_;
   std::unique_ptr<Tracers>                tracers_;
   std::unique_ptr<Derivative>             derivative_;
@@ -68,10 +60,7 @@ public:
   virtual ~Context();
 
   // Getters for each managed object.
-  MpiContext& get_mpi_context();
   CaarFunctor& get_caar_functor();
-  void create_comm(const int f_comm);
-  Comm& get_comm();
   Diagnostics& get_diagnostics();
   Elements& get_elements();
   Tracers& get_tracers();
@@ -83,9 +72,6 @@ public:
   TimeLevel& get_time_level();
   EulerStepFunctor& get_euler_step_functor();
   VerticalRemapManager& get_vertical_remap_manager();
-  std::shared_ptr<Connectivity> get_connectivity();
-  BMMap& get_buffers_managers();
-  std::shared_ptr<BuffersManager> get_buffers_manager(short int exchange_type);
 
   // Exactly one singleton.
   static Context& singleton();

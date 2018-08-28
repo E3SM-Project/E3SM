@@ -4,21 +4,22 @@
  * See the file 'COPYRIGHT' in the HOMMEXX/src/share/cxx directory
  *******************************************************************************/
 
+#include "CaarFunctor.hpp"
+#include "Context.hpp"
 #include "Derivative.hpp"
 #include "Diagnostics.hpp"
 #include "Elements.hpp"
-#include "Tracers.hpp"
-#include "Context.hpp"
+#include "ErrorDefs.hpp"
+#include "EulerStepFunctor.hpp"
+#include "HommexxEnums.hpp"
 #include "HybridVCoord.hpp"
+#include "HyperviscosityFunctor.hpp"
 #include "SimulationParams.hpp"
 #include "TimeLevel.hpp"
-#include "HommexxEnums.hpp"
-#include "EulerStepFunctor.hpp"
-#include "HyperviscosityFunctor.hpp"
-#include "CaarFunctor.hpp"
+#include "Tracers.hpp"
+#include "mpi/MpiContext.hpp"
 #include "mpi/BoundaryExchange.hpp"
 #include "mpi/BuffersManager.hpp"
-#include "ErrorDefs.hpp"
 
 #include "utilities/SyncUtils.hpp"
 
@@ -283,7 +284,7 @@ void init_boundary_exchanges_c ()
 
   // RK stages BE's
   auto& cf = Context::singleton().get_caar_functor();
-  cf.init_boundary_exchanges(Context::singleton().get_buffers_manager(MPI_EXCHANGE));
+  cf.init_boundary_exchanges(MpiContext::singleton().get_buffers_manager(MPI_EXCHANGE));
 
   // HyperviscosityFunctor's BE's
   auto& hvf = Context::singleton().get_hyperviscosity_functor();
