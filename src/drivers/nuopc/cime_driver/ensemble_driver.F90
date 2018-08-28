@@ -213,10 +213,10 @@ module Ensemble_driver
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        if (localpet >= petlist(1) .and. localpet <= petlist(ntasks_per_member)) then
           driver = gridcomptmp
+          call NUOPC_CompAttributeAdd(driver, attrList=(/'inst_suffix'/), rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           if(number_of_members > 1) then
              write(inst_suffix,'(a,i4.4)') '_',inst
-             call NUOPC_CompAttributeAdd(driver, attrList=(/'inst_suffix'/), rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              call NUOPC_CompAttributeSet(driver, name='inst_suffix', value=inst_suffix, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           endif

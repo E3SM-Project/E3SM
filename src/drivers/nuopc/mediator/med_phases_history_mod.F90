@@ -131,7 +131,7 @@ contains
     ! --- Get the clock info
     !---------------------------------------
 
-    call ESMF_GridCompGet(gcomp, clock=clock)
+    call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_ClockGet(clock, currtime=currtime, reftime=reftime, starttime=starttime, rc=rc)

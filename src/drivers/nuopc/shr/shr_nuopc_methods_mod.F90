@@ -11,6 +11,7 @@ module shr_nuopc_methods_mod
   use ESMF               , only : ESMF_LOGERR_PASSTHRU, ESMF_LogFoundError, ESMF_LOGMSG_ERROR
   use ESMF               , only : ESMF_MAXSTR, ESMF_LOGMSG_WARNING, ESMF_POLEMETHOD_ALLAVG
   use med_constants_mod  , only : dbug_flag => med_constants_dbug_flag
+
   use shr_nuopc_utils_mod, only : shr_nuopc_methods_ChkErr => shr_nuopc_utils_ChkErr
   implicit none
   private
@@ -1110,25 +1111,30 @@ module shr_nuopc_methods_mod
 
   !-----------------------------------------------------------------------------
 
-  subroutine shr_nuopc_methods_FB_FieldRegrid(FBin,fldin,FBout,fldout,RH,rc)
+  subroutine shr_nuopc_methods_FB_FieldRegrid(FBin,fldin,FBout,fldout,RH,rc,debug)
 
     ! ----------------------------------------------
     ! Regrid a field in a field bundle to another field in a field bundle
     ! ----------------------------------------------
     use ESMF, only : ESMF_FieldBundle, ESMF_RouteHandle, ESMF_FieldRegrid, ESMF_Field
-    use ESMF, only : ESMF_TERMORDER_SRCSEQ
-
+    use ESMF, only : ESMF_TERMORDER_SRCSEQ, ESMF_FieldRegridStore, ESMF_SparseMatrixWrite
+    use med_constants_mod, only : R8
+    use mpi, only : mpi_comm_rank, MPI_COMM_WORLD
     type(ESMF_FieldBundle), intent(inout) :: FBin
     character(len=*)      , intent(in)    :: fldin
     type(ESMF_FieldBundle), intent(inout) :: FBout
     character(len=*)      , intent(in)    :: fldout
     type(ESMF_RouteHandle), intent(inout) :: RH
     integer               , intent(out)   :: rc
-
+    logical, intent(in), optional :: debug
     ! local
+    real(R8),             pointer :: factorList(:)
+    integer,          pointer :: factorIndexList(:,:)
     type(ESMF_Field) :: field1, field2
     integer :: dbrc
     character(len=*),parameter :: subname='(shr_nuopc_methods_FB_FieldRegrid)'
+    integer :: rank
+    character(len=8) :: filename
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -1145,9 +1151,20 @@ module shr_nuopc_methods_mod
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
       call ESMF_FieldRegrid(field1, field2, routehandle=RH, &
-        termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+        termorderflag=ESMF_TERMORDER_SRCSEQ, checkflag=.true., rc=rc)
+
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    else
+!      if (present(debug) .and. debug) then
+!         print *,__FILE__,__LINE__
+!         call ESMF_FieldRegridStore(field1, field2, routehandle=RH, &
+!              factorList=factorList, factorIndexList=factorIndexList, rc=rc)
+!         print *,__FILE__,__LINE__,rc
+!         call mpi_comm_rank(MPI_COMM_WORLD, rank, rc)
+!         write(filename,'(a,i1)') 'factor',rank
+!         print *,__FILE__,__LINE__,filename
+!         call ESMF_SparseMatrixWrite(factorList, factorIndexList, filename ,rc=rc)
+!      endif
+   else
 
       if (dbug_flag > 1) then
         call ESMF_LogWrite(trim(subname)//" field not found: "//trim(fldin)//","//trim(fldout), ESMF_LOGMSG_INFO, rc=dbrc)

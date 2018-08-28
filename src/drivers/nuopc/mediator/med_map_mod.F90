@@ -111,7 +111,6 @@ contains
     call ESMF_VMGet(vm, localPet=localPet, rc=rc)
     mastertask = .false.
     if (localPet == 0) mastertask=.true.
-
     ! Get the internal state from Component.
     nullify(is_local%wrap)
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
@@ -156,7 +155,7 @@ contains
 
                    ! Create route handle for target mapindex if route handle is required
                    ! (i.e. mapindex /= mapunset) and route handle has not already been created
-                   if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(n1,n2,mapindex), rc=rc)) then
+!                   if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(n1,n2,mapindex), rc=rc)) then
 
                       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -252,17 +251,22 @@ contains
                          if (rhprint_flag) then
                             call NUOPC_Write(factorList, "array_med_"//trim(string)//"_consf.nc", rc)
                             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                            call ESMF_RouteHandlePrint(is_local%wrap%RH(n1,n2,mapindex), rc=rc)
-                            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                          endif
-                         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                       end if
+                      if (rhprint_flag) then
+                         call ESMF_LogWrite(trim(subname)//trim(string)//": printing  RH for "//trim(mapname), &
+                              ESMF_LOGMSG_INFO, rc=dbrc)
+
+                         call ESMF_RouteHandlePrint(is_local%wrap%RH(n1,n2,mapindex), rc=rc)
+                         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                      endif
+                      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                       ! Check that a valid route handle has been created
                       if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(n1,n2,mapindex), rc=rc)) then
                          call ESMF_LogWrite(trim(subname)//trim(string)//": failed   RH "//trim(mapname), &
                               ESMF_LOGMSG_INFO, rc=dbrc)
                       endif
-                   end if
+!                   end if
                 end do ! loop over fields
              end if ! if coupling is active between n1 and n2
           end if ! if n1 not equal to n2

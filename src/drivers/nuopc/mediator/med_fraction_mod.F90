@@ -157,7 +157,6 @@ module med_fraction_mod
 !-----------------------------------------------------------------------------
 
   subroutine med_fraction_init(gcomp, rc)
-
     ! Initialize the fractions
 
     use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time, ESMF_State, ESMF_Field
@@ -279,8 +278,16 @@ module med_fraction_mod
           call shr_nuopc_methods_FB_FieldRegrid(&
                is_local%wrap%FBfrac(compatm), 'afrac', &
                is_local%wrap%FBfrac(compocn), 'afrac', &
-               is_local%wrap%RH(compatm,compocn,maptype), rc=rc)
+               is_local%wrap%RH(compatm,compocn,maptype), rc=rc, debug=.true.)
           if(shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          ! DEBUG
+!          call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compocn), 'afrac', dataPtr, rc=rc)
+!          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+!          do n = 1,size(dataPtr)
+!             write(6,*)'DEBUG: n,afrac(compocn)= ',n,dataptr(n)
+!          end do
+          !DEBUG
+
        endif
 
        ! map atm 'afrac' to ice 'afrac' conservatively or redist
@@ -457,27 +464,6 @@ module med_fraction_mod
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           end if
 
-          ! Reset FBFrac(compice) 'afrac' by mapping atm 'afrac' to ice 'afrac' conservatively or redist
-          if (is_local%wrap%med_coupling_active(compatm,compice)) then
-             if (ESMF_RouteHandleIsCreated(is_local%wrap%RH(compice,compatm,mapfcopy), rc=rc)) then
-                maptype = mapfcopy
-             else
-                maptype = mapconsf
-                if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,compice,mapconsf), rc=rc)) then
-                   call med_map_Fractions_init( gcomp, compatm, compice, &
-                        FBSrc=is_local%wrap%FBImp(compatm,compatm), &
-                        FBDst=is_local%wrap%FBImp(compatm,compice), &
-                        RouteHandle=is_local%wrap%RH(compatm,compice,mapconsf), rc=rc)
-                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                end if
-             end if
-             call shr_nuopc_methods_FB_FieldRegrid(&
-                  is_local%wrap%FBfrac(compatm), 'afrac', &
-                  is_local%wrap%FBfrac(compice), 'afrac', &
-                  is_local%wrap%RH(compatm,compice,maptype), rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          end if
-
        endif
     endif
 
@@ -525,22 +511,6 @@ module med_fraction_mod
             is_local%wrap%RH(compocn,compatm,mapconsf), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
-
-    ! map atm 'afrac' to ocn 'afrac' conservatively
-    if (is_local%wrap%med_coupling_active(compatm,compocn)) then
-       if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,compocn,mapconsf), rc=rc)) then
-          call med_map_Fractions_init( gcomp, compatm, compocn, &
-               FBSrc=is_local%wrap%FBImp(compatm,compatm), &
-               FBDst=is_local%wrap%FBImp(compatm,compocn), &
-               RouteHandle=is_local%wrap%RH(compatm,compocn,mapconsf), rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
-       call shr_nuopc_methods_FB_FieldRegrid(&
-            is_local%wrap%FBfrac(compatm), 'afrac', &
-            is_local%wrap%FBfrac(compocn), 'afrac', &
-            is_local%wrap%RH(compatm,compocn,mapconsf), rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
 
     !---------------------------------------
     !--- Set ofrac and lfrac on atm grid.  These should actually be mapo2a of
@@ -650,6 +620,12 @@ module med_fraction_mod
     !---------------------------------------
 
     if (dbug_flag > 5) then
+       do n1 = 1,ncomps
+          if (ESMF_FieldBundleIsCreated(is_local%wrap%FBfrac(n1),rc=rc)) then
+             call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBfrac(n1), subname // trim(compname(n1))//' frac', rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          endif
+       enddo
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
 
