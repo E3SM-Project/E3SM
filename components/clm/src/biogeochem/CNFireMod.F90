@@ -192,7 +192,7 @@ contains
          is_cwd             =>    decomp_cascade_con%is_cwd                 , & ! Input:  [logical  (:)     ]  TRUE => pool is a cwd pool                         
          
          forc_rh            =>    atm2lnd_vars%forc_rh_grc                  , & ! Input:  [real(r8) (:)     ]  relative humidity                                 
-         forc_wind          =>    atm2lnd_vars%forc_wind_grc                , & ! Input:  [real(r8) (:)     ]  atmospheric wind speed (m/s)                       
+         forc_wind          =>    top_as%windbot                            , & ! Input:  [real(r8) (:)     ]  atmospheric wind speed (m/s)                       
          forc_t             =>    top_as%tbot                               , & ! Input:  [real(r8) (:)     ]  atmospheric temperature (Kelvin)                  
          forc_rain          =>    atm2lnd_vars%forc_rain_downscaled_col     , & ! Input:  [real(r8) (:)     ]  downscaled rain                                              
          forc_snow          =>    atm2lnd_vars%forc_snow_downscaled_col     , & ! Input:  [real(r8) (:)     ]  downscaled snow                                              
@@ -595,7 +595,7 @@ contains
               fs       = 1._r8-(0.01_r8+0.98_r8*exp(-0.025_r8*hdmlf))
               ig       = (lh+forc_lnfm(g)/(5.16_r8+2.16_r8*cos(3._r8*grc_pp%lat(g)))*0.25_r8)*(1._r8-fs)*(1._r8-cropf_col(c)) 
               nfire(c) = ig/secsphr*fb*fire_m*lgdp_col(c) !fire counts/km2/sec
-              Lb_lf    = 1._r8+10.0_r8*(1._r8-EXP(-0.06_r8*forc_wind(g)))
+              Lb_lf    = 1._r8+10.0_r8*(1._r8-EXP(-0.06_r8*forc_wind(t)))
               if ( wtlf(c) > 0.0_r8 )then
                  spread_m = (1.0_r8 - max(0._r8,min(1._r8,(btran_col(c)/wtlf(c)-0.3_r8)/ &
                       (0.7_r8-0.3_r8))))*(1.0_r8-max(0._r8, &
