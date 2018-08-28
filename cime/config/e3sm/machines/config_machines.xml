@@ -2031,6 +2031,7 @@
           <command name="load">nco/4.6.4</command>
           <command name="load">hdf5-parallel/1.8.17</command>
           <command name="load">netcdf-hdf5parallel/4.3.3.1</command>
+          <command name="load">pnetcdf/1.9.0</command>
         </modules>
       </module_system>
 
