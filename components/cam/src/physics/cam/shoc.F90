@@ -72,7 +72,7 @@ subroutine shoc_main ( &
      shcol, nlev, dtime, &
      host_dx, host_dy, &
      zt_grid,zm_grid,pres,&
-     tke, thetal, qv, w_field,&
+     tke, thetal, qw, w_field,&
      wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &
      u_wind, v_wind,cldliq,qtracers,&
      num_qtracers,wthv_sec,&
@@ -93,7 +93,6 @@ subroutine shoc_main ( &
   real(r8), intent(in) :: pres(shcol,nlev) ! pressure levels on thermo grid [hPa]
 
   real(r8), intent(in) :: cldliq(shcol,nlev) ! cloud liquid mixing ratio [kg/kg]
-  real(r8), intent(in) :: qv(shcol,nlev) ! water vapor mixing ratio [kg/kg]
   real(r8), intent(in) :: w_field(shcol,nlev)
   
   real(r8), intent(in) :: wthl_sfc(shcol)
@@ -105,6 +104,7 @@ subroutine shoc_main ( &
   real(r8), intent(inout) :: tke(shcol,nlev)  ! turbulent kinetic energy [m2/s2]
   real(r8), intent(inout) :: thetal(shcol,nlev) ! liquid water potential 
                                             !   temperature [K]
+  real(r8), intent(inout) :: qw(shcol,nlev) ! total water mixing ratio [kg/kg]					    
   real(r8), intent(inout) :: u_wind(shcol,nlev) ! u wind component [m/s]
   real(r8), intent(inout) :: v_wind(shcol,nlev) ! v wind component [m/s]
   real(r8), intent(inout) :: wthv_sec(shcol,nlev) ! buoyancy flux [K m/s]
@@ -132,13 +132,9 @@ subroutine shoc_main ( &
   real(r8) :: vw_sec(shcol,0:nlev)
   real(r8) :: w3(shcol,nlev)
   real(r8) :: brunt(shcol,nlev)
-  real(r8) :: qw(shcol,nlev)
   
   real(r8) :: adz_zt(shcol,nlev), adz_zm(shcol,nlev)
   real(r8) :: dz(shcol)
-  
-  ! Define the total water mixing ratio
-  qw=qv+cldliq
 
   ! Define vertical grid arrays needed for 
   !   vertical derivatives     
@@ -197,6 +193,8 @@ subroutine shoc_main ( &
 	 wqw_sec,qwthl_sec,w3,pres,&          ! Input
 	 zt_grid,zm_grid,&                    ! Input
 	 shoc_cldfrac,shoc_ql,wthv_sec)       ! Output
+	
+  return
      
 end subroutine shoc_main
 
@@ -306,6 +304,8 @@ subroutine update_prognostics(shcol,nlev,num_tracer,& ! Input
       
     enddo
   enddo
+  
+  return
   
 end subroutine update_prognostics
 
@@ -431,6 +431,8 @@ subroutine diag_second_shoc_moments(shcol,nlev, &   ! Input
     wtracer_sec(i,0,:) = 0._r8
     wtke_sec(i,:) = 0._r8
   enddo
+  
+  return
 
 end subroutine diag_second_shoc_moments
 
@@ -593,6 +595,8 @@ subroutine diag_third_shoc_moments(shcol,nlev, &  ! Input
     enddo ! end i loop
   enddo ! end k loop
   
+  return
+  
 end subroutine diag_third_shoc_moments
 
 !==============================================================
@@ -690,7 +694,7 @@ subroutine shoc_assumed_pdf(shcol,nlev, &       ! Input
   do k=1,nlev
     do i=1,shcol
 
-      pval = pres(i,k) * 100._r8 ! check to see if these units are right
+      pval = pres(i,k) 
 
       ! Get all needed input moments for the PDf
       !  at this particular point
@@ -970,7 +974,8 @@ subroutine shoc_assumed_pdf(shcol,nlev, &       ! Input
 	
     enddo  ! end i loop here
   enddo	  ! end k loop here
-	                                                    
+	                      
+  return                              
      
 end subroutine shoc_assumed_pdf
 
@@ -1081,6 +1086,8 @@ subroutine shoc_tke(shcol,nlev,dtime,& ! Input
  
     enddo ! end i loop
   enddo ! end k loop
+  
+  return
   
 end subroutine shoc_tke
 
@@ -1264,6 +1271,8 @@ subroutine shoc_length(shcol,nlev,tke, &   ! Input
     enddo
   enddo 
   
+  return
+  
 end subroutine shoc_length
 
 !==============================================================
@@ -1292,6 +1301,8 @@ subroutine linear_interp(x1,x2,y1,y2,km1,km2,ncol)
       endif 
     enddo ! end k2 loop
   enddo ! i loop
+  
+  return
 
 end subroutine linear_interp
 

@@ -445,6 +445,7 @@ end function shoc_implements_cnst
    real(r8) :: qv_in(pcols,pverp)
    real(r8) :: rcm_in(pcols,pverp)
    real(r8) :: rvm_in(pcols,pverp)
+   real(r8) :: rtm_in(pcols,pverp)
    real(r8) :: wthv_in(pcols,pverp)
    real(r8) :: pres_in(pcols,pverp)
    real(r8) :: um_in(pcols,pverp)
@@ -457,6 +458,7 @@ end function shoc_implements_cnst
    real(r8) :: um(pcols,pverp)
    real(r8) :: vm(pcols,pverp)
    real(r8) :: rvm(pcols,pverp)
+   real(r8) :: rtm(pcols,pverp)
    real(r8) :: rcm(pcols,pverp)
    real(r8) :: tke(pcols,pverp)
    real(r8) :: ksrftms(pcols)                   ! Turbulent mountain stress surface drag        [kg/s/m2]
@@ -633,20 +635,22 @@ end function shoc_implements_cnst
      
        rvm(i,k) = state1%q(i,k,ixq)
        rcm(i,k) = state1%q(i,k,ixcldliq)
+       rtm(i,k) = rvm(i,k) + rcm(i,k)
        um(i,k) = state1%u(i,k)
        vm(i,k) = state1%v(i,k)
        
        thlm(i,k) = state1%t(i,k)*exner(i,k)-(latvap/cpair)*state1%q(i,k,ixcldliq)
        
-       if (macmic_it .eq. 1) then
+!       if (macmic_it .eq. 1) then
          tke(i,k) = max(tke_tol,state1%q(i,k,ixtke))
-       endif
+!       endif
      
      enddo
    enddo    
    
    rvm(1:ncol,pverp) = rvm(1:ncol,pver)
    rcm(1:ncol,pverp) = rcm(1:ncol,pver)
+   rtm(1:ncol,pverp) = rtm(1:ncol,pver)
    um(1:ncol,pverp) = um(1:ncol,pver)
    vm(1:ncol,pverp) = vm(1:ncol,pver)
    thlm(1:ncol,pverp) = thlm(1:ncol,pver) 
@@ -739,6 +743,7 @@ end function shoc_implements_cnst
         vm_in(i,k)      = vm(i,pverp-k+1)   
         rvm_in(i,k)     = rvm(i,pverp-k+1)
         rcm_in(i,k)     = rcm(i,pverp-k+1)
+	rtm_in(i,k)     = rtm(i,pverp-k+1)
         thlm_in(i,k)    = thlm(i,pverp-k+1)
         tke_in(i,k)     = tke(i,pverp-k+1)
 	wthv_in(i,k)    = wthv(i,pverp-k+1)
@@ -778,7 +783,7 @@ end function shoc_implements_cnst
           (pcols, pverp, dtime, &
 	  host_dx_in, host_dy_in, &
           zt_g, zi_g, pres_in, &
-	  tke_in, thlm_in, rvm_in, wm_zt, &
+	  tke_in, thlm_in, rtm_in, wm_zt, &
 	  wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, &
 	  um_in, vm_in, rcm_in, edsclr_in, &
 	  edsclr_dim, wthv_in, &
@@ -793,7 +798,7 @@ end function shoc_implements_cnst
        um(i,k) = um_in(i,pverp-k+1)
        vm(i,k) = vm_in(i,pverp-k+1)
        thlm(i,k) = thlm_in(i,pverp-k+1)
-       rvm(i,k) = rvm_in(i,pverp-k+1)
+       rtm(i,k) = rtm_in(i,pverp-k+1)
        rcm(i,k) = rcm_shoc(i,pverp-k+1)
        cloud_frac(i,k) = min(cloudfrac_shoc(i,pverp-k+1),1._r8)
        wthv(i,k) = wthv_in(i,pverp-k+1)
@@ -818,7 +823,7 @@ end function shoc_implements_cnst
                       gravit*state1%zm(i,k)+state1%phis(i)
        se_a(i) = se_a(i) + shoc_s(i,k)*state1%pdel(i,k)/gravit
        ke_a(i) = ke_a(i) + 0.5_r8*(um(i,k)**2+vm(i,k)**2)*state1%pdel(i,k)/gravit
-       wv_a(i) = wv_a(i) + (rvm(i,k))*state1%pdel(i,k)/gravit
+       wv_a(i) = wv_a(i) + (rtm(i,k)-rcm(i,k))*state1%pdel(i,k)/gravit
        wl_a(i) = wl_a(i) + (rcm(i,k))*state1%pdel(i,k)/gravit
      enddo    
    enddo     
@@ -855,13 +860,13 @@ end function shoc_implements_cnst
        
        ptend_loc%u(i,k) = (um(i,k)-state1%u(i,k))/hdtime
        ptend_loc%v(i,k)   = (vm(i,k)-state1%v(i,k))/hdtime           
-       ptend_loc%q(i,k,ixq) = (rvm(i,k)-state1%q(i,k,ixq))/hdtime ! water vapor
+       ptend_loc%q(i,k,ixq) = (rtm(i,k)-rcm(i,k)-state1%q(i,k,ixq))/hdtime ! water vapor
        ptend_loc%q(i,k,ixcldliq) = (rcm(i,k)-state1%q(i,k,ixcldliq))/hdtime   ! Tendency of liquid water
        ptend_loc%s(i,k) = (shoc_s(i,k)-state1%s(i,k))/hdtime
        
-       if (macmic_it .eq. cld_macmic_num_steps) then
+!       if (macmic_it .eq. cld_macmic_num_steps) then
          ptend_loc%q(i,k,ixtke)=(tke(i,k)-state1%q(i,k,ixtke))/hdtime ! TKE
-       endif
+!       endif
        
    !  Apply tendencies to ice mixing ratio, liquid and ice number, and aerosol constituents.
    !  Loading up this array doesn't mean the tendencies are applied.  
