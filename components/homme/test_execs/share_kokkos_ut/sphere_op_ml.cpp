@@ -315,6 +315,8 @@ class compute_sphere_operator_test_ml {
   struct TagGradientSphereML {};
   // tag for divergence_sphere_wk
   struct TagDivergenceSphereWkML {};
+  // tag for divergence_sphere
+  struct TagDivergenceSphereML {};
   // tag for divergence_sphere_update
   struct TagDivergenceSphereUpdateML {};
   // tag for laplace_tensor
@@ -360,6 +362,16 @@ class compute_sphere_operator_test_ml {
                          Homme::subview(vector_input_d, kv.ie),
                          Homme::subview(scalar_output_d,kv.ie));
   }  // end of op() for divergence_sphere_wk_ml
+
+  KOKKOS_INLINE_FUNCTION
+  void operator()(const TagDivergenceSphereML &,
+                  const TeamMember& team) const {
+    KernelVariables kv(team);
+
+    sphere_ops.divergence_sphere(team,
+                         Homme::subview(vector_input_d, kv.ie),
+                         Homme::subview(scalar_output_d,kv.ie));
+  }  // end of op() for divergence_sphere_update
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagDivergenceSphereUpdateML &,
@@ -460,6 +472,14 @@ class compute_sphere_operator_test_ml {
 
   void run_functor_divergence_sphere_wk() {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagDivergenceSphereWkML>(_num_elems);
+    sphere_ops.allocate_buffers(policy);
+    Kokkos::parallel_for(policy, *this);
+    ExecSpace::fence();
+    Kokkos::deep_copy(scalar_output_host, scalar_output_d);
+  };
+
+  void run_functor_divergence_sphere() {
+    auto policy = Homme::get_default_team_policy<ExecSpace, TagDivergenceSphereML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
     ExecSpace::fence();
@@ -649,6 +669,67 @@ TEST_CASE("Testing divergence_sphere_wk()",
   }          //ie
 
   std::cout << "test div_wk multilevel finished. \n";
+
+}  // end of test div_sphere_wk_ml
+
+TEST_CASE("Testing divergence_sphere()",
+          "divergence_sphere") {
+  constexpr const int elements = 10;
+
+  compute_sphere_operator_test_ml testing_div_ml(elements);
+
+  testing_div_ml.run_functor_divergence_sphere();
+
+  for(int ie = 0; ie < elements; ie++) {
+    for(int level = 0; level < NUM_LEV; ++level) {
+      for(int v = 0; v < VECTOR_SIZE; ++v) {
+        // fortran output
+        Real local_fortran_output[NP][NP] = {};
+        // F input
+        Real vf[2][NP][NP];
+        Real dvvf[NP][NP];
+        Real dinvf[2][2][NP][NP];
+        Real metdetf[NP][NP];
+
+        for(int _i = 0; _i < NP; _i++) {
+          for(int _j = 0; _j < NP; _j++) {
+            metdetf[_i][_j] = testing_div_ml.metdet_host(
+                ie, _i, _j);
+            dvvf[_i][_j] = testing_div_ml.dvv_host(_i, _j);
+            for(int _d1 = 0; _d1 < 2; _d1++) {
+              vf[_d1][_i][_j] =
+                  testing_div_ml.vector_input_host(
+                      ie, _d1, _i, _j, level)[v];
+              for(int _d2 = 0; _d2 < 2; _d2++)
+                dinvf[_d1][_d2][_i][_j] =
+                    testing_div_ml.dinv_host(ie, _d1,
+                                             _d2, _i, _j);
+            }
+          }
+        }
+        divergence_sphere_c_callable(
+            &(vf[0][0][0]), &(dvvf[0][0]), &(metdetf[0][0]),
+            &(dinvf[0][0][0][0]),
+            &(local_fortran_output[0][0]));
+
+        // compare with the part from C run
+        for(int igp = 0; igp < NP; ++igp) {
+          for(int jgp = 0; jgp < NP; ++jgp) {
+            Real coutput0 =
+                testing_div_ml.scalar_output_host(
+                    ie, igp, jgp, level)[v];
+            REQUIRE(!std::isnan(
+                local_fortran_output[igp][jgp]));
+            REQUIRE(!std::isnan(coutput0));
+            REQUIRE(local_fortran_output[igp][jgp] ==
+                        coutput0);
+          }  // jgp
+        }    // igp
+      }      // v
+    }        // level
+  }          //ie
+
+  std::cout << "test div multilevel finished. \n";
 
 }  // end of test div_sphere_wk_ml
 
