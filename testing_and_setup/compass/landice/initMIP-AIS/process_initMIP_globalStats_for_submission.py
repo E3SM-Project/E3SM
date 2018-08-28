@@ -17,6 +17,7 @@ parser = OptionParser()
 parser.description = __doc__
 parser.add_option("-f", "--file", dest="inputFile", help="name of source (input) file.", default="globalStats.nc", metavar="FILENAME")
 parser.add_option("-s", "--spinup", dest="spinupFile", help="name of file with spinup data.  Should only include the final year of spinup!  Values are evenly averaged.", default="spinupFinalYear.nc", metavar="FILENAME")
+parser.add_option("-o", "--output", dest="outputFile", help="name of output file.", default="initMIP_scalar_stats.nc", metavar="FILENAME")
 for option in parser.option_list:
    if option.default != ("NO", "DEFAULT"):
       option.help += (" " if option.help else "") + "[default: %default]"
@@ -83,7 +84,7 @@ def annualAverage(varName):
 
 
 # Create file and build time dimension
-fout = Dataset('initMIP_scalar_stats.nc','w')
+fout = Dataset(options.outputFile, 'w')
 
 fout.createDimension('time', len(yrList))
 timeVar = fout.createVariable('time', 'f', ('time',))
@@ -140,16 +141,19 @@ var[:] = annualAverage('totalBasalMassBal') / secInYr
 var = fout.createVariable('tendlicalvf','f', ('time',))
 var.units = "kg s^{-1}"
 var.standard_name = "tendency_of_land_ice_mass_due_to_calving"
-var[:] = annualAverage('totalCalvingFlux') / secInYr
+var[:] = -1.0 * annualAverage('totalCalvingFlux') / secInYr
 
 # GL flux
 var = fout.createVariable('tendligroundf','f', ('time',))
 var.units = "kg s^{-1}"
 var.standard_name = "tendency_of_grounded_ice_mass"
-var[:] = annualAverage('groundingLineFlux') / secInYr
+var[:] = -1.0 * annualAverage('groundingLineFlux') / secInYr
 
-
-
+fout.Author="Matthew Hoffman (mhoffman@lanl.gov)"
+fout.Model="MALI (MPAS-Albany Land Ice)"
+fout.Variables="Scalar variables"
+fout.Notes="Experiments performed at Los Alamos National Laboratory using the Edison supercomputer at National Energy Research Scientific Computing Center at Lawrence Berkeley National Laboratory.  Experiments performed by Matthew Hoffman, Tong Zhang, Stephen Price, and Mauro Perego."
+fout.Date="28-Aug-2018"
 
 
 fout.close()
