@@ -68,9 +68,9 @@ VerticalRemapManager::VerticalRemapManager() {
   p_.reset(new Impl(p, e, t, h));
 }
 
-void VerticalRemapManager::run_remap(int np1, int n0_qdp, double dt) const {
+void VerticalRemapManager::run_remap(int np1, int np1_qdp, double dt) const {
   assert(p_);
   assert(p_->remapper);
-  p_->remapper->run_remap(np1, n0_qdp, dt);
+  p_->remapper->run_remap(np1, np1_qdp, dt);
 }
 }

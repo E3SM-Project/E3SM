@@ -140,7 +140,7 @@ template <> struct _RemapFunctorRSplit<true> {
 
 struct Remapper {
   virtual ~Remapper() {}
-  virtual void run_remap(int np1, int n0_qdp, double dt) = 0;
+  virtual void run_remap(int np1, int np1_qdp, double dt) = 0;
 };
 
 template <bool nonzero_rsplit, template <typename...> class _RemapType,
@@ -157,7 +157,7 @@ struct RemapFunctor : public Remapper,
     RemapData(const int qsize_in) : qsize(qsize_in) {}
     const int qsize;
     int np1;
-    int n0_qdp;
+    int np1_qdp;
     Real dt;
   };
 
@@ -206,7 +206,7 @@ struct RemapFunctor : public Remapper,
     if (!nonzero_rsplit || var >= this->num_states_remap) {
       if (var >= this->num_states_remap)
         var -= this->num_states_remap;
-      return Homme::subview(m_tracers.qdp, kv.ie, m_data.n0_qdp, var);
+      return Homme::subview(m_tracers.qdp, kv.ie, m_data.np1_qdp, var);
     } else {
       return this->get_state(kv, m_elements, m_data.np1, var);
     }
@@ -296,9 +296,9 @@ struct RemapFunctor : public Remapper,
                             this->get_state(kv, m_elements, m_data.np1, var));
   }
 
-  void run_remap(int np1, int n0_qdp, double dt) override {
+  void run_remap(int np1, int np1_qdp, double dt) override {
     m_data.np1 = np1;
-    m_data.n0_qdp = n0_qdp;
+    m_data.np1_qdp = np1_qdp;
     m_data.dt = dt;
     run_remap();
   }
