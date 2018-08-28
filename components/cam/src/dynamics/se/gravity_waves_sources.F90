@@ -105,13 +105,14 @@ CONTAINS
   !   with dynamics when dyn_npes<npes
   ! 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!    use physical_constants, only : kappa
+    use physical_constants, only : kappa
     use derivative_mod, only : gradient_sphere, ugradv_sphere
     use edge_mod, only : edgevpack, edgevunpack
     use bndry_mod, only : bndry_exchangev
     use dyn_comp, only : hvcoord
     use spmd_utils,      only : iam 
     use parallel_mod,    only : par 
+    use element_ops,     only : get_temperature 
     implicit none
     type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(inout), target :: elem(:)
@@ -126,6 +127,7 @@ CONTAINS
     real(kind=real_kind)  ::  gradth(np,np,2,nlev,nets:nete)  ! grad(theta)
     real(kind=real_kind)  ::  p(np,np)        ! pressure at mid points
     real(kind=real_kind)  ::  theta(np,np), pottemp(np,np,nlev)    ! potential temperature at mid points
+    real(kind=real_kind)  ::  temperature(np,np,nlev)    ! potential temperature at mid points
     real(kind=real_kind)  ::  C(np,np,2)     
     
     do ie=nets,nete
@@ -137,8 +139,13 @@ CONTAINS
           
           ! pressure at mid points
           p(:,:)   = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
+
+          ! old preqx call
           ! theta(:,:) = elem(ie)%state%T(:,:,k,tl)*(psurf_ref / p(:,:))**kappa
-          theta(:,:) = elem(ie)%derived%T(:,:,k)*(psurf_ref / p(:,:))**kappa
+          
+          call get_temperature(elem(ie),temperature,hvcoord,tl)
+            
+          theta(:,:) = temperature(:,:,k)*(psurf_ref / p(:,:))**kappa
           gradth(:,:,:,k,ie) = gradient_sphere(theta,ederiv,elem(ie)%Dinv)
           
           ! compute C = (grad(theta) dot grad ) u

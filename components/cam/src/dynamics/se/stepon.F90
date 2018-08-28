@@ -325,6 +325,11 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       ! ftype=1:  apply all forcings as an adjustment
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       if (ftype==1) then
+
+#if 0
+!disabling all of ftype1 code now
+
+
          ! apply forcing to state tl_f
          ! requires forward-in-time timestepping, checked in namelist_mod.F90
 !$omp parallel do private(k)
@@ -380,6 +385,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
                end do
             end do
          end do
+
+#endif !disabling ftype1
+
       endif
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

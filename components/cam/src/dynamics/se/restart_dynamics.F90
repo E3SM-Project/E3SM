@@ -219,7 +219,7 @@ CONTAINS
 !$omp parallel do private(ie, k, j, i)
     do ie=1,nelemd
 
-       call get_temperature(elem(ie),temperature,hvcoord,tl,tlQdp)
+       call get_temperature(elem(ie),temperature,hvcoord,tl)
 
        do k=1,nlev
           do j=1,np
