@@ -3509,7 +3509,7 @@
 
 	<!-- fluxes from icebergs to ocean -->
 	<var_struct name="iceberg_fluxes" time_levs="1" packages="pkgColumnPackage">
-		<var name="bergFreshWaterFlux"		type="real"	dimensions="nCells Time"		name_in_code="bergFreshWaterFlux"/>
+		<var name="bergFreshWaterFlux"			type="real"	dimensions="nCells Time"		name_in_code="bergFreshWaterFlux"/>
 		<var name="bergLatentHeatFlux"			type="real"	dimensions="nCells Time"		name_in_code="bergLatentHeatFlux"/>
 	</var_struct>
 

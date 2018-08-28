@@ -1620,7 +1620,6 @@ contains
 !> \date 27th August 2018
 !> \details This initializes the data iceberg forcing group.
 !>
-!
 !-----------------------------------------------------------------------
 
   subroutine init_data_iceberg_forcing(domain)
