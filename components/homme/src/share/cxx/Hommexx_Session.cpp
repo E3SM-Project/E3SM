@@ -10,13 +10,16 @@
 #include "profiling.hpp"
 #include "mpi/Comm.hpp"
 
-// If possible, avoid including MpiContext
+// If possible, avoid including MpiContext,
+// which forces to compile all the mpi folder
 #ifndef HOMMEXX_NO_MPI_CONTEXT
   #include "mpi/MpiContext.hpp"
-  // If possible, avoid including Context
-  #ifndef HOMMEXX_NO_CONTEXT
-    #include "Context.hpp"
-  #endif
+#endif
+
+// If possible, avoid including Context,
+// which forces to compile all the functors
+#ifndef HOMMEXX_NO_CONTEXT
+  #include "Context.hpp"
 #endif
 
 #include "vector/vector_pragmas.hpp"
@@ -94,9 +97,9 @@ void finalize_hommexx_session ()
 {
 #ifndef HOMMEXX_NO_MPI_CONTEXT
   MpiContext::finalize_singleton();
-  #ifndef HOMMEXX_NO_CONTEXT
-    Context::finalize_singleton();
-  #endif
+#endif
+#ifndef HOMMEXX_NO_CONTEXT
+  Context::finalize_singleton();
 #endif
 
   Kokkos::finalize();

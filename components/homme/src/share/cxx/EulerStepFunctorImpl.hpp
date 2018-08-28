@@ -7,22 +7,23 @@
 #ifndef HOMMEXX_EULER_STEP_FUNCTOR_IMPL_HPP
 #define HOMMEXX_EULER_STEP_FUNCTOR_IMPL_HPP
 
-#include "EulerStepFunctor.hpp"
 #include "Context.hpp"
-#include "Elements.hpp"
-#include "Tracers.hpp"
 #include "Derivative.hpp"
-#include "HybridVCoord.hpp"
+#include "Elements.hpp"
+#include "ErrorDefs.hpp"
+#include "EulerStepFunctor.hpp"
 #include "HommexxEnums.hpp"
+#include "HybridVCoord.hpp"
 #include "SimulationParams.hpp"
 #include "SphereOperators.hpp"
+#include "Tracers.hpp"
+#include "profiling.hpp"
+#include "mpi/BoundaryExchange.hpp"
+#include "mpi/MpiContext.hpp"
 #include "utilities/SubviewUtils.hpp"
 #include "utilities/VectorUtils.hpp"
-#include "ErrorDefs.hpp"
-#include "profiling.hpp"
-
-#include "mpi/BoundaryExchange.hpp"
 #include "vector/vector_pragmas.hpp"
+
 
 namespace Kokkos {
 struct Real2 {
@@ -138,7 +139,7 @@ public:
   void init_boundary_exchanges () {
     assert(m_data.qsize >= 0); // after reset() called
 
-    auto bm_exchange = Context::singleton().get_buffers_manager(MPI_EXCHANGE);
+    auto bm_exchange = MpiContext::singleton().get_buffers_manager(MPI_EXCHANGE);
     for (int np1_qdp = 0, k = 0; np1_qdp < Q_NUM_TIME_LEVELS; ++np1_qdp) {
       for (int dssi = 0; dssi < 3; ++dssi, ++k) {
         m_bes[k] = std::make_shared<BoundaryExchange>();
@@ -162,7 +163,7 @@ public:
     }
 
     {
-      auto bm_exchange_minmax = Context::singleton().get_buffers_manager(MPI_EXCHANGE_MIN_MAX);
+      auto bm_exchange_minmax = MpiContext::singleton().get_buffers_manager(MPI_EXCHANGE_MIN_MAX);
       m_mm_be = std::make_shared<BoundaryExchange>();
       BoundaryExchange& be = *m_mm_be;
       be.set_buffers_manager(bm_exchange_minmax);
