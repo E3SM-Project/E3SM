@@ -2373,7 +2373,6 @@ contains
 
        ! snicar 5-band snow IOPs
        call MPAS_pool_get_array(snicar_variables, "iceAsymmtryParameterDirect",iceAsymmtryParameterDirect)
-       print *,iceAsymmtryParameterDirect(1,1)
        call MPAS_pool_get_array(snicar_variables, "iceAsymmtryParameterDiffuse",iceAsymmtryParameterDiffuse)
        call MPAS_pool_get_array(snicar_variables, "iceSingleScatterAlbedoDirect", iceSingleScatterAlbedoDirect)
        call MPAS_pool_get_array(snicar_variables, "iceSingleScatterAlbedoDiffuse", iceSingleScatterAlbedoDiffuse)
