@@ -35,6 +35,7 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
   separate_arguments(safestr UNIX_COMMAND ${UT_FP_MODEL_FLAG})
   SET_TARGET_PROPERTIES(${target_name} PROPERTIES COMPILE_OPTIONS "${safestr}")
 
+  TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${HOMME_SOURCE_DIR}/test/unit_tests/catch2/include")
   TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${include_dirs}")
   TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${SRC_SHARE};${SRC_BASE};${UNITTESTER_DIR}")
   TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${PIO_INCLUDE_DIRS};${UTILS_TIMING_DIR}")
