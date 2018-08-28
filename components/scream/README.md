@@ -68,7 +68,7 @@ ctest -VV
 ```
 To just run the p3_regression test, for example, execute:
 ```
-cd ${RUN_ROOT_DIR}/test
+cd ${RUN_ROOT_DIR}/test/p3/tests/
 ctest -R p3_regression
 ```
 
