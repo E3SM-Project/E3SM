@@ -155,7 +155,7 @@ contains
 
                    ! Create route handle for target mapindex if route handle is required
                    ! (i.e. mapindex /= mapunset) and route handle has not already been created
-!                   if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(n1,n2,mapindex), rc=rc)) then
+                   if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(n1,n2,mapindex), rc=rc)) then
 
                       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -266,7 +266,7 @@ contains
                          call ESMF_LogWrite(trim(subname)//trim(string)//": failed   RH "//trim(mapname), &
                               ESMF_LOGMSG_INFO, rc=dbrc)
                       endif
-!                   end if
+                   end if
                 end do ! loop over fields
              end if ! if coupling is active between n1 and n2
           end if ! if n1 not equal to n2

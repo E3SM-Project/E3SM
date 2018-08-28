@@ -463,7 +463,6 @@ module med_fraction_mod
                   is_local%wrap%RH(compice,compatm,maptype), rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           end if
-
        endif
     endif
 
@@ -504,13 +503,8 @@ module med_fraction_mod
                FBDst=is_local%wrap%FBImp(compocn,compatm), &
                RouteHandle=is_local%wrap%RH(compocn,compatm,mapconsf), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
-       call shr_nuopc_methods_FB_FieldRegrid(&
-            is_local%wrap%FBfrac(compocn), 'ofrac', &
-            is_local%wrap%FBfrac(compatm), 'ofrac', &
-            is_local%wrap%RH(compocn,compatm,mapconsf), rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
+       endif
+    endif
 
     !---------------------------------------
     !--- Set ofrac and lfrac on atm grid.  These should actually be mapo2a of

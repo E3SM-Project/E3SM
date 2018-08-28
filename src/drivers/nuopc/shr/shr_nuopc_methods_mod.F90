@@ -1154,16 +1154,6 @@ module shr_nuopc_methods_mod
         termorderflag=ESMF_TERMORDER_SRCSEQ, checkflag=.true., rc=rc)
 
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-!      if (present(debug) .and. debug) then
-!         print *,__FILE__,__LINE__
-!         call ESMF_FieldRegridStore(field1, field2, routehandle=RH, &
-!              factorList=factorList, factorIndexList=factorIndexList, rc=rc)
-!         print *,__FILE__,__LINE__,rc
-!         call mpi_comm_rank(MPI_COMM_WORLD, rank, rc)
-!         write(filename,'(a,i1)') 'factor',rank
-!         print *,__FILE__,__LINE__,filename
-!         call ESMF_SparseMatrixWrite(factorList, factorIndexList, filename ,rc=rc)
-!      endif
    else
 
       if (dbug_flag > 1) then

@@ -85,7 +85,8 @@ contains
     logical                    :: whead,wdata    ! for writing restart/restart cdf files
     integer                    :: iam,mpicom     ! vm stuff
     character(len=ESMF_MAXSTR) :: tmpstr
-    integer                    :: dbrc
+    integer                        :: dbrc
+    logical             :: isPresent
     character(len=*), parameter :: subname='(med_phases_restart_write)'
     !---------------------------------------
 
@@ -111,8 +112,12 @@ contains
     call NUOPC_CompAttributeGet(gcomp, name='case_name', value=case_name, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call NUOPC_CompAttributeGet(gcomp, name='inst_suffix', value=cpl_inst_tag, rc=rc)
-    if(rc /= ESMF_SUCCESS) then
+    call NUOPC_CompAttributeGet(gcomp, name='inst_suffix', isPresent=isPresent, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if(isPresent) then
+       call NUOPC_CompAttributeGet(gcomp, name='inst_suffix', value=cpl_inst_tag, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
        cpl_inst_tag = ""
     endif
 

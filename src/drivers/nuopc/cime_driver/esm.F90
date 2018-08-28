@@ -164,6 +164,7 @@ module ESM
     integer                :: shrloglev   ! original log level
     integer                :: global_comm
     logical                :: iamroot_med ! mediator masterproc
+    logical                :: isPresent
     integer                :: dbrc
     character(len=*), parameter    :: subname = "(esm.F90:SetModelServices)"
     !-------------------------------------------
@@ -254,8 +255,12 @@ module ESM
     ! MCT which is still needed for some models
     call seq_comm_init(global_comm, nlfilename)
 
-    call NUOPC_CompAttributeGet(driver, name="inst_suffix", value=inst_suffix, rc=rc)
-    if (rc /= ESMF_SUCCESS) then
+    call NUOPC_CompAttributeGet(driver, name="inst_suffix", isPresent=isPresent, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (isPresent) then
+       call NUOPC_CompAttributeGet(driver, name="inst_suffix", value=inst_suffix, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
        inst_suffix = ""
     endif
 
@@ -1475,7 +1480,6 @@ module ESM
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
-    print *,__FILE__,__LINE__,trim(label)
     if (present(relaxedflag)) then
        attrFF = NUOPC_FreeFormatCreate(config, label=trim(label), relaxedflag=.true., rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
