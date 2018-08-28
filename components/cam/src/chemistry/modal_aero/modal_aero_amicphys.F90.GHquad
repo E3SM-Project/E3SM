@@ -28,6 +28,16 @@
 ! !PUBLIC MEMBER FUNCTIONS:
   public modal_aero_amicphys_intr, modal_aero_amicphys_init
 
+!+ras make cambox subroutines and parameters public
+  public mam_amicphys_1gridcell, mam_amicphys_1subarea_cloudy, &
+    mam_amicphys_1subarea_clear, mam_gasaerexch_1subarea, &
+    mam_soaexch_1subarea, mam_rename_1subarea, mam_newnuc_1subarea, &
+    mam_coag_1subarea, mam_pcarbon_aging_1subarea, mean_molecular_speed, &
+    gas_diffusivity, gas_aer_uptkrates_1box1gas
+  public dens_aer, iaer_bc, iaer_pom, iaer_so4, iaer_soa, igas_h2so4, &
+    igas_soa, max_aer, max_gas, mw_aer, mw_gas, naer, ngas
+
+
 ! !PUBLIC DATA MEMBERS:
   type :: misc_vars_aa_type
 ! using this derived type reduces the number of changes needed to add more mosaic diagnostics to history

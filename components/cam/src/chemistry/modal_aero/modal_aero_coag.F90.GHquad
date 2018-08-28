@@ -1149,8 +1149,8 @@ aa_iqfrm: do iqfrm = 1, nspec_amode(mfrm)
       real(r8), intent(in)    :: dwettoo !wet density mode2
       logical, intent(in)     :: calc_b0ii
       logical, intent(in)     :: calc_b0jj
-      real(r8), intent(out)   :: B0ii
-      real(r8), intent(out)   :: B0jj
+      real(r8), optional, intent(out)   :: B0ii
+      real(r8), optional, intent(out)   :: B0jj
       real(r8), intent(out)   :: B0ij
       real(r8), intent(out)   :: B3ij
 
@@ -1212,7 +1212,7 @@ aa_iqfrm: do iqfrm = 1, nspec_amode(mfrm)
               do jgh = 1,nodes
                     
                     ln_dp2 = root2 * ln_sigma2 * xgh(jgh) + ln_dg2
-                    dp2 = exp(ln_dg2)
+                    dp2 = exp(ln_dp2)
                     dpwet_pair(2) = dp2
 
                     call calc_coagker(temp, pres, dpwet_pair(1:2), &
@@ -1249,7 +1249,7 @@ aa_iqfrm: do iqfrm = 1, nspec_amode(mfrm)
               do jgh = 1,nodes
                     
                     ln_dp2 = root2 * ln_sigma2 * xgh(jgh) + ln_dg2
-                    dp2 = exp(ln_dg2)
+                    dp2 = exp(ln_dp2)
                     dpwet_pair(2) = dp2
 
                     call calc_coagker(temp, pres, dpwet_pair(1:2), &
@@ -1286,21 +1286,21 @@ aa_iqfrm: do iqfrm = 1, nspec_amode(mfrm)
               do jgh = 1,nodes
                     
                     ln_dp2 = root2 * ln_sigma2 * xgh(jgh) + ln_dg2
-                    dp2 = exp(ln_dg2)
+                    dp2 = exp(ln_dp2)
                     dpwet_pair(2) = dp2
 
                     call calc_coagker(temp, pres, dpwet_pair(1:2), &
                                       wetdens_pair(1:2), kernel)
                  
                     gh_sum = gh_sum + (1.0_r8/pi) * wgh(igh) * wgh(jgh) * kernel
-                    gh_sum3 = gh_sum3 + (1.0_r8/pi) * wgh(igh) * wgh(jgh) * kernel * dp1**moment
-          
-              enddo
+                    gh_sum3 = gh_sum3 + (1.0_r8/pi) * wgh(igh) * wgh(jgh) * kernel * (dp1**moment)
+              
+               enddo
        enddo
 
        B_tmp(3) = gh_sum
        B_tmp(4) = gh_sum3 * (1 / ( (dgnfrm**3) ) ) * &
-                  (1 / (exp (4.5_r8 * ln_sigma1**2 ) ) ) 
+                  (1 / (exp (4.5_r8 * ln_sigma1 * ln_sigma1 ) ) ) 
 
        B0ij = B_tmp(3)
        B3ij = B_tmp(4)
