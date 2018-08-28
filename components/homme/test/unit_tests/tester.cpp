@@ -1,13 +1,14 @@
 
 #define CATCH_CONFIG_RUNNER
 
-#include "catch/catch.hpp"
+#include "catch2/catch.hpp"
 
 #include <Kokkos_Core.hpp>
 
 #include <Hommexx_Session.hpp>
-#include <mpi/Comm.hpp>
+
 #ifndef HOMMEXX_NO_MPI_CONTEXT
+  #include <mpi/Comm.hpp>
   #include <mpi/MpiContext.hpp>
 #endif
 
