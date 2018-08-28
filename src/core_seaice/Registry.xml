@@ -285,7 +285,7 @@
 			units="unitless" description="The maximum number of points in any group."
 		/>
 		<dim name="nForcingGroupsMax"
-			definition="4"
+			definition="5"
 			description="The maximum number of forcing groups defined in the core."
 		/>
 	</dims>
@@ -1876,7 +1876,6 @@
 			<var name="oceanMixedLayerDepth"/>
 			<var name="oceanHeatFluxConvergence"/>
 		</stream>
-		<!-- dc data icebergs -->
 		<stream name="dataIcebergForcing"
 				type="input"
 				filename_template="forcing/data_icebergs.nc"
@@ -3501,11 +3500,17 @@
 		<var name="oceanHeatFluxArea"			type="real"	dimensions="nCells Time"		name_in_code="oceanHeatFluxArea"/>
 		<var name="oceanShortwaveFluxArea"		type="real"	dimensions="nCells Time"		name_in_code="oceanShortwaveFluxArea"/>
 		<var name="oceanHeatFluxIceBottom"		type="real"	dimensions="nCells Time"		name_in_code="oceanHeatFluxIceBottom"/>
-		<!-- dc data icebergs -->
-		<var name="bergFreshWaterFlux"		type="real"	dimensions="nCells Time"		name_in_code="bergFreshWaterFlux"/>
-		<var name="bergLatentHeatFlux"			type="real"	dimensions="nCells Time"		name_in_code="bergHeatLatentFlux"/>
-		<!-- dc this is input only, not being sent to coupler - place elsewhere? -->
+	</var_struct>
+
+	<!-- fluxes from data icebergs -->
+	<var_struct name="iceberg_forcing" time_levs="1">
 		<var name="bergFreshWaterFluxData"		type="real"	dimensions="nCells Time"		name_in_code="bergFreshWaterFluxData"/>
+	</var_struct>
+
+	<!-- fluxes from icebergs to ocean -->
+	<var_struct name="iceberg_fluxes" time_levs="1" packages="pkgColumnPackage">
+		<var name="bergFreshWaterFlux"		type="real"	dimensions="nCells Time"		name_in_code="bergFreshWaterFlux"/>
+		<var name="bergLatentHeatFlux"			type="real"	dimensions="nCells Time"		name_in_code="bergLatentHeatFlux"/>
 	</var_struct>
 
 	<!-- ocean atmosphere interaction -->
