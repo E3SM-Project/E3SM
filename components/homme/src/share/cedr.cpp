@@ -341,6 +341,7 @@ struct CDR {
 #include <iostream>
 #include <vector>
 #include <map>
+#include <list>
 
 //#include "cedr_cdr.hpp"
 
@@ -350,7 +351,80 @@ namespace cedr {
 namespace qlt {
 using cedr::mpi::Parallel;
 
-namespace impl { class NodeSets; }
+namespace impl {
+struct NodeSets {
+  typedef std::shared_ptr<const NodeSets> ConstPtr;
+  
+  enum : int { mpitag = 42 };
+
+  // A node in the tree that is relevant to this rank.
+  struct Node {
+    // Rank of the node. If the node is in a level, then its rank is my rank. If
+    // it's not in a level, then it is a comm partner of a node on this rank.
+    Int rank;
+    // Globally unique identifier; cellidx if leaf node, ie, if nkids == 0.
+    Int id;
+    // This node's parent, a comm partner, if such a partner is required.
+    const Node* parent;
+    // This node's kids, comm partners, if such partners are required. Parent
+    // and kid nodes are pruned relative to the full tree over the mesh to
+    // contain just the nodes that matter to this rank.
+    Int nkids;
+    const Node* kids[2];
+    // Offset factor into bulk data. An offset is a unit; actual buffer sizes
+    // are multiples of this unit.
+    Int offset;
+
+    Node () : rank(-1), id(-1), parent(nullptr), nkids(0), offset(-1) {}
+  };
+
+  // A level in the level schedule that is constructed to orchestrate
+  // communication. A node in a level depends only on nodes in lower-numbered
+  // levels (l2r) or higher-numbered (r2l).
+  //
+  // The communication patterns are as follows:
+  //   > l2r
+  //   MPI rcv into kids
+  //   sum into node
+  //   MPI send from node
+  //   > r2l
+  //   MPI rcv into node
+  //   solve QP for kids
+  //   MPI send from kids
+  struct Level {
+    struct MPIMetaData {
+      Int rank;   // Rank of comm partner.
+      Int offset; // Offset to start of buffer for this comm.
+      Int size;   // Size of this buffer in units of offsets.
+    };
+    
+    // The nodes in the level.
+    std::vector<Node*> nodes;
+    // MPI information for this level.
+    std::vector<MPIMetaData> me, kids;
+    // Have to keep requests separate so we can call waitall if we want to.
+    mutable std::vector<MPI_Request> me_send_req, me_recv_req, kids_req;
+  };
+  
+  // Levels. nodes[0] is level 0, the leaf level.
+  std::vector<Level> levels;
+  // Number of data slots this rank needs. Each node owned by this rank, plus
+  // kids on other ranks, have an associated slot.
+  Int nslots;
+  
+  // Allocate a node. The list node_mem_ is the mechanism for memory ownership;
+  // node_mem_ isn't used for anything other than owning nodes.
+  Node* alloc () {
+    node_mem_.push_front(Node());
+    return &node_mem_.front();
+  }
+
+  void print(std::ostream& os) const;
+  
+private:
+  std::list<Node> node_mem_;
+};
+} // namespace impl
 
 namespace tree {
 // The caller builds a tree of these nodes to pass to QLT.
@@ -420,7 +494,7 @@ public:
   KOKKOS_INLINE_FUNCTION
   Real get_Qm(const Int& lclcellidx, const Int& tracer_idx) override;
 
-private:
+protected:
   typedef Kokkos::View<Int*, Kokkos::LayoutLeft, Device> IntList;
   typedef cedr::impl::Const<IntList> ConstIntList;
   typedef cedr::impl::ConstUnmanaged<IntList> ConstUnmanagedIntList;
@@ -514,7 +588,7 @@ private:
     RealList l2r_data_, r2l_data_;
   };
 
-private:
+protected:
   void init(const Parallel::Ptr& p, const Int& ncells, const tree::Node::Ptr& tree);
 
   void init_ordinals();
@@ -525,7 +599,6 @@ private:
                                  const Real& rhom0, const Real* k0d, Real& Qm0,
                                  const Real& rhom1, const Real* k1d, Real& Qm1);
 
-private:
   Parallel::Ptr p_;
   // Tree and communication topology.
   std::shared_ptr<const impl::NodeSets> ns_;
@@ -547,6 +620,14 @@ struct Input {
 };
 
 Int run_unit_and_randomized_tests(const Parallel::Ptr& p, const Input& in);
+
+Int test_qlt(const Parallel::Ptr& p, const tree::Node::Ptr& tree, const Int& ncells,
+             const Int nrepeat = 1,
+             // Diagnostic output for dev and illustration purposes. To be
+             // clear, no QLT unit test requires output to be checked; each
+             // checks in-memory data and returns a failure count.
+             const bool write = false,
+             const bool verbose = false);
 } // namespace test
 } // namespace qlt
 } // namespace cedr
@@ -599,7 +680,7 @@ public:
   KOKKOS_INLINE_FUNCTION
   Real get_Qm(const Int& lclcellidx, const Int& tracer_idx) override;
 
-private:
+protected:
   typedef Kokkos::View<Real*, Kokkos::LayoutLeft, Device> RealList;
   typedef cedr::impl::Unmanaged<RealList> UnmanagedRealList;
   typedef Kokkos::View<Int*, Kokkos::LayoutLeft, Device> IntList;
@@ -1707,7 +1788,6 @@ bool all_ok (const Parallel& p, bool im_ok) {
 #include <cmath>
 
 #include <set>
-#include <list>
 #include <limits>
 #include <algorithm>
 
@@ -1774,79 +1854,6 @@ int Timer::cnt_[Timer::NTIMERS];
 #endif
 
 namespace impl {
-struct NodeSets {
-  typedef std::shared_ptr<const NodeSets> ConstPtr;
-  
-  enum : int { mpitag = 42 };
-
-  // A node in the tree that is relevant to this rank.
-  struct Node {
-    // Rank of the node. If the node is in a level, then its rank is my rank. If
-    // it's not in a level, then it is a comm partner of a node on this rank.
-    Int rank;
-    // Globally unique identifier; cellidx if leaf node, ie, if nkids == 0.
-    Int id;
-    // This node's parent, a comm partner, if such a partner is required.
-    const Node* parent;
-    // This node's kids, comm partners, if such partners are required. Parent
-    // and kid nodes are pruned relative to the full tree over the mesh to
-    // contain just the nodes that matter to this rank.
-    Int nkids;
-    const Node* kids[2];
-    // Offset factor into bulk data. An offset is a unit; actual buffer sizes
-    // are multiples of this unit.
-    Int offset;
-
-    Node () : rank(-1), id(-1), parent(nullptr), nkids(0), offset(-1) {}
-  };
-
-  // A level in the level schedule that is constructed to orchestrate
-  // communication. A node in a level depends only on nodes in lower-numbered
-  // levels (l2r) or higher-numbered (r2l).
-  //
-  // The communication patterns are as follows:
-  //   > l2r
-  //   MPI rcv into kids
-  //   sum into node
-  //   MPI send from node
-  //   > r2l
-  //   MPI rcv into node
-  //   solve QP for kids
-  //   MPI send from kids
-  struct Level {
-    struct MPIMetaData {
-      Int rank;   // Rank of comm partner.
-      Int offset; // Offset to start of buffer for this comm.
-      Int size;   // Size of this buffer in units of offsets.
-    };
-    
-    // The nodes in the level.
-    std::vector<Node*> nodes;
-    // MPI information for this level.
-    std::vector<MPIMetaData> me, kids;
-    // Have to keep requests separate so we can call waitall if we want to.
-    mutable std::vector<MPI_Request> me_req, kids_req;
-  };
-  
-  // Levels. nodes[0] is level 0, the leaf level.
-  std::vector<Level> levels;
-  // Number of data slots this rank needs. Each node owned by this rank, plus
-  // kids on other ranks, have an associated slot.
-  Int nslots;
-  
-  // Allocate a node. The list node_mem_ is the mechanism for memory ownership;
-  // node_mem_ isn't used for anything other than owning nodes.
-  Node* alloc () {
-    node_mem_.push_front(Node());
-    return &node_mem_.front();
-  }
-
-  void print(std::ostream& os) const;
-  
-private:
-  std::list<Node> node_mem_;
-};
-
 void NodeSets::print (std::ostream& os) const {
   std::stringstream ss;
   if (levels.empty()) return;
@@ -2036,7 +2043,8 @@ void init_comm (const Int my_rank, NodeSets& ns) {
     }
 
     init_offsets(my_rank, me, lvl.me, ns.nslots);
-    lvl.me_req.resize(lvl.me.size());
+    lvl.me_send_req.resize(lvl.me.size());
+    lvl.me_recv_req.resize(lvl.me.size());
     init_offsets(my_rank, kids, lvl.kids, ns.nslots);
     lvl.kids_req.resize(lvl.kids.size());
   }
@@ -2134,10 +2142,10 @@ Int test_comm_pattern (const Parallel::Ptr& p, const NodeSets::ConstPtr& ns,
     for (size_t i = 0; i < lvl.me.size(); ++i) {
       const auto& mmd = lvl.me[i];
       mpi::isend(*p, &data[mmd.offset], mmd.size, mmd.rank, NodeSets::mpitag,
-                 &lvl.me_req[i]);
+                 &lvl.me_send_req[i]);
     }
     if (il+1 == ns->levels.size())
-      mpi::waitall(lvl.me_req.size(), lvl.me_req.data());
+      mpi::waitall(lvl.me_send_req.size(), lvl.me_send_req.data());
   }
   // Root to leaves.
   for (size_t il = ns->levels.size(); il > 0; --il) {
@@ -2146,10 +2154,10 @@ Int test_comm_pattern (const Parallel::Ptr& p, const NodeSets::ConstPtr& ns,
     for (size_t i = 0; i < lvl.me.size(); ++i) {
       const auto& mmd = lvl.me[i];
       mpi::irecv(*p, &data[mmd.offset], mmd.size, mmd.rank, NodeSets::mpitag,
-                 &lvl.me_req[i]);
+                 &lvl.me_recv_req[i]);
     }    
     //todo Replace with simultaneous waitany and isend.
-    mpi::waitall(lvl.me_req.size(), lvl.me_req.data());
+    mpi::waitall(lvl.me_recv_req.size(), lvl.me_recv_req.data());
     // Pass to kids.
     for (auto& n : lvl.nodes) {
       if ( ! n->nkids) continue;
@@ -2167,7 +2175,7 @@ Int test_comm_pattern (const Parallel::Ptr& p, const NodeSets::ConstPtr& ns,
   for (size_t il = 0; il < ns->levels.size(); ++il) {
     auto& lvl = ns->levels[il];
     if (il+1 < ns->levels.size())
-      mpi::waitall(lvl.me_req.size(), lvl.me_req.data());
+      mpi::waitall(lvl.me_send_req.size(), lvl.me_send_req.data());
     mpi::waitall(lvl.kids_req.size(), lvl.kids_req.data());
   }
   { // Check that all leaf nodes have the right number.
@@ -2385,6 +2393,12 @@ Int QLT<ES>::get_num_tracers () const {
 }
 
 template <typename ES>
+void QLT<ES>::run () {
+  cedr_throw_if(true,
+                "In current E3SM-COMPOSE integration, should not get here.");
+}
+
+template <typename ES>
 constexpr Int QLT<ES>::MetaData::problem_type_[];
 
 namespace test {
@@ -2463,13 +2477,9 @@ private:
 };
 
 // Test all QLT variations and situations.
-Int test_qlt (const Parallel::Ptr& p, const tree::Node::Ptr& tree, const Int& ncells,
-              const Int nrepeat = 1,
-              // Diagnostic output for dev and illustration purposes. To be
-              // clear, no QLT unit test requires output to be checked; each
-              // checks in-memory data and returns a failure count.
-              const bool write = false,
-              const bool verbose = false) {
+Int test_qlt (const Parallel::Ptr& p, const tree::Node::Ptr& tree,
+              const Int& ncells, const Int nrepeat,
+              const bool write, const bool verbose) {
   return TestQLT(p, tree, ncells, verbose).run(nrepeat, write);
 }
 } // namespace test
@@ -2824,6 +2834,12 @@ void CAAS<ES>::finish_locally () {
     }
     os += nlclcells_;
   }
+}
+
+template <typename ES>
+void CAAS<ES>::run () {
+  cedr_throw_if(true,
+                "In current E3SM-COMPOSE integration, should not get here.");
 }
 
 namespace test {
@@ -3749,268 +3765,274 @@ struct InputParser {
 # endif
 #endif
 
-// These Homme-specific CEDR::CDR::run() impls interact nicely with Homme's
-// nested OpenMP and top-level horizontal threading scheme.
+// Rewrite each CDR's run() function to interact nicely with Homme's nested
+// OpenMP and top-level horizontal threading scheme.
 
-namespace cedr {
-namespace qlt {
+namespace homme {
+namespace compose {
 
 template <typename ES>
-void QLT<ES>::run () {
+struct QLT : public cedr::qlt::QLT<ES> {
+  QLT (const cedr::mpi::Parallel::Ptr& p, const cedr::Int& ncells,
+       const cedr::qlt::tree::Node::Ptr& tree)
+    : cedr::qlt::QLT<ES>(p, ncells, tree)
+  {}
+
+  void run () override {
+    static const int mpitag = 42;
+    using cedr::Int;
+    using cedr::Real;
+    using cedr::ProblemType;
+    using cedr::qlt::impl::NodeSets;
+    namespace mpi = cedr::mpi;
+    auto& md_ = this->md_;
+    auto& bd_ = this->bd_;
+    auto& ns_ = this->ns_;
+    auto& p_ = this->p_;
 #if ! defined THREAD_QLT_RUN && defined HORIZ_OPENMP
-#pragma omp master
-{
-#endif
-  Timer::start(Timer::qltrunl2r);
-  using namespace impl;
-  // Number of data per slot.
-  const Int l2rndps = md_.a_d.prob2bl2r[md_.nprobtypes];
-  const Int r2lndps = md_.a_d.prob2br2l[md_.nprobtypes];
-
-  // Leaves to root.
-  for (size_t il = 0; il < ns_->levels.size(); ++il) {
-    auto& lvl = ns_->levels[il];
-
-    // Set up receives.
-    if (lvl.kids.size()) {
-#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
-#     pragma omp master
-#endif
-      {
-        for (size_t i = 0; i < lvl.kids.size(); ++i) {
-          const auto& mmd = lvl.kids[i];
-          mpi::irecv(*p_, &bd_.l2r_data(mmd.offset*l2rndps), mmd.size*l2rndps, mmd.rank,
-                     NodeSets::mpitag, &lvl.kids_req[i]);
-        }
-        //todo Replace with simultaneous waitany and isend.
-        Timer::start(Timer::waitall);
-        mpi::waitall(lvl.kids_req.size(), lvl.kids_req.data());
-        Timer::stop(Timer::waitall);
-      }
-#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
-#     pragma omp barrier
-#endif
-    }
-
-    // Combine kids' data.
-    //todo Kernelize, interacting with waitany todo above.
-    if (lvl.nodes.size()) {
-#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
-#     pragma omp for
-#endif
-      for (size_t ni = 0; ni < lvl.nodes.size(); ++ni) {
-        auto& n = lvl.nodes[ni];
-        if ( ! n->nkids) continue;
-        cedr_kernel_assert(n->nkids == 2);
-        // Total density.
-        bd_.l2r_data(n->offset*l2rndps) = (bd_.l2r_data(n->kids[0]->offset*l2rndps) +
-                                           bd_.l2r_data(n->kids[1]->offset*l2rndps));
-        // Tracers.
-        for (Int pti = 0; pti < md_.nprobtypes; ++pti) {
-          const Int problem_type = md_.get_problem_type(pti);
-          const bool sum_only = problem_type & ProblemType::shapepreserve;
-          const Int bsz = md_.get_problem_type_l2r_bulk_size(problem_type);
-          const Int bis = md_.a_d.prob2trcrptr[pti], bie = md_.a_d.prob2trcrptr[pti+1];
-#if defined THREAD_QLT_RUN && defined COLUMN_OPENMP
-#         pragma omp parallel for
-#endif
-          for (Int bi = bis; bi < bie; ++bi) {
-            const Int bdi = md_.a_d.trcr2bl2r(md_.a_d.bidx2trcr(bi));
-            Real* const me = &bd_.l2r_data(n->offset*l2rndps + bdi);
-            const Real* const k0 = &bd_.l2r_data(n->kids[0]->offset*l2rndps + bdi);
-            const Real* const k1 = &bd_.l2r_data(n->kids[1]->offset*l2rndps + bdi);
-            me[0] = sum_only ? k0[0] + k1[0] : cedr::impl::min(k0[0], k1[0]);
-            me[1] =            k0[1] + k1[1] ;
-            me[2] = sum_only ? k0[2] + k1[2] : cedr::impl::max(k0[2], k1[2]);
-            if (bsz == 4)
-              me[3] =          k0[3] + k1[3] ;
-          }
-        }
-      }
-    }
-
-    // Send to parents.
-    if (lvl.me.size())
-#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
 #   pragma omp master
-#endif
     {
-      for (size_t i = 0; i < lvl.me.size(); ++i) {
-        const auto& mmd = lvl.me[i];
-        mpi::isend(*p_, &bd_.l2r_data(mmd.offset*l2rndps), mmd.size*l2rndps, mmd.rank,
-                   NodeSets::mpitag, &lvl.me_req[i]);
-      }
-      if (il+1 == ns_->levels.size()) {
-        Timer::start(Timer::waitall);
-        mpi::waitall(lvl.me_req.size(), lvl.me_req.data());
-        Timer::stop(Timer::waitall);
-      }
-    }
+#endif
+      // Number of data per slot.
+      const Int l2rndps = md_.a_d.prob2bl2r[md_.nprobtypes];
+      const Int r2lndps = md_.a_d.prob2br2l[md_.nprobtypes];
 
+      // Leaves to root.
+      for (size_t il = 0; il < ns_->levels.size(); ++il) {
+        auto& lvl = ns_->levels[il];
+
+        // Set up receives.
+        if (lvl.kids.size()) {
 #if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
-#   pragma omp barrier
+#         pragma omp master
 #endif
-  }
-  Timer::stop(Timer::qltrunl2r); Timer::start(Timer::qltrunr2l);
-
-  // Root.
-  if ( ! ns_->levels.empty() && ns_->levels.back().nodes.size() == 1 &&
-       ! ns_->levels.back().nodes[0]->parent) {
-    const auto& n = ns_->levels.back().nodes[0];
-    for (Int pti = 0; pti < md_.nprobtypes; ++pti) {
-      const Int problem_type = md_.get_problem_type(pti);
-      const Int bis = md_.a_d.prob2trcrptr[pti], bie = md_.a_d.prob2trcrptr[pti+1];
-#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP && defined COLUMN_OPENMP
-#     pragma omp parallel
+          {
+            for (size_t i = 0; i < lvl.kids.size(); ++i) {
+              const auto& mmd = lvl.kids[i];
+              mpi::irecv(*p_, &bd_.l2r_data(mmd.offset*l2rndps), mmd.size*l2rndps, mmd.rank,
+                         mpitag, &lvl.kids_req[i]);
+            }
+            //todo Replace with simultaneous waitany and isend.
+            mpi::waitall(lvl.kids_req.size(), lvl.kids_req.data());
+          }
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+#         pragma omp barrier
 #endif
-#if defined THREAD_QLT_RUN && (defined HORIZ_OPENMP || defined COLUMN_OPENMP)
-#     pragma omp for
-#endif
-      for (Int bi = bis; bi < bie; ++bi) {
-        const Int l2rbdi = md_.a_d.trcr2bl2r(md_.a_d.bidx2trcr(bi));
-        const Int r2lbdi = md_.a_d.trcr2br2l(md_.a_d.bidx2trcr(bi));
-        // If QLT is enforcing global mass conservation, set the root's r2l Qm
-        // value to the l2r Qm_prev's sum; otherwise, copy the l2r Qm value to
-        // the r2l one.
-        const Int os = problem_type & ProblemType::conserve ? 3 : 1;
-        bd_.r2l_data(n->offset*r2lndps + r2lbdi) =
-          bd_.l2r_data(n->offset*l2rndps + l2rbdi + os);
-        if ( ! (problem_type & ProblemType::shapepreserve)) {
-          // We now know the global q_{min,max}. Start propagating it
-          // leafward.
-          bd_.r2l_data(n->offset*r2lndps + r2lbdi + 1) =
-            bd_.l2r_data(n->offset*l2rndps + l2rbdi + 0);
-          bd_.r2l_data(n->offset*r2lndps + r2lbdi + 2) =
-            bd_.l2r_data(n->offset*l2rndps + l2rbdi + 2);
         }
-      }
-    }
-  }
 
-  // Root to leaves.
-  for (size_t il = ns_->levels.size(); il > 0; --il) {
-    auto& lvl = ns_->levels[il-1];
-
-    if (lvl.me.size()) {
+        // Combine kids' data.
+        //todo Kernelize, interacting with waitany todo above.
+        if (lvl.nodes.size()) {
 #if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
-#     pragma omp master
+#         pragma omp for
 #endif
-      {
-        for (size_t i = 0; i < lvl.me.size(); ++i) {
-          const auto& mmd = lvl.me[i];
-          mpi::irecv(*p_, &bd_.r2l_data(mmd.offset*r2lndps), mmd.size*r2lndps, mmd.rank,
-                     NodeSets::mpitag, &lvl.me_req[i]);
-        }
-        //todo Replace with simultaneous waitany and isend.
-        Timer::start(Timer::waitall);
-        mpi::waitall(lvl.me_req.size(), lvl.me_req.data());
-        Timer::stop(Timer::waitall);
-      }
-#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
-#     pragma omp barrier
-#endif
-    }
-
-    // Solve QP for kids' values.
-    //todo Kernelize, interacting with waitany todo above.
-    Timer::start(Timer::snp);
-#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
-#   pragma omp for
-#endif
-    for (size_t ni = 0; ni < lvl.nodes.size(); ++ni) {
-      auto& n = lvl.nodes[ni];
-      if ( ! n->nkids) continue;
-      for (Int pti = 0; pti < md_.nprobtypes; ++pti) {
-        const Int problem_type = md_.get_problem_type(pti);
-        const Int bis = md_.a_d.prob2trcrptr[pti], bie = md_.a_d.prob2trcrptr[pti+1];
+          for (size_t ni = 0; ni < lvl.nodes.size(); ++ni) {
+            auto& n = lvl.nodes[ni];
+            if ( ! n->nkids) continue;
+            cedr_kernel_assert(n->nkids == 2);
+            // Total density.
+            bd_.l2r_data(n->offset*l2rndps) = (bd_.l2r_data(n->kids[0]->offset*l2rndps) +
+                                               bd_.l2r_data(n->kids[1]->offset*l2rndps));
+            // Tracers.
+            for (Int pti = 0; pti < md_.nprobtypes; ++pti) {
+              const Int problem_type = md_.get_problem_type(pti);
+              const bool sum_only = problem_type & ProblemType::shapepreserve;
+              const Int bsz = md_.get_problem_type_l2r_bulk_size(problem_type);
+              const Int bis = md_.a_d.prob2trcrptr[pti], bie = md_.a_d.prob2trcrptr[pti+1];
 #if defined THREAD_QLT_RUN && defined COLUMN_OPENMP
-#       pragma omp parallel for
+#             pragma omp parallel for
 #endif
-        for (Int bi = bis; bi < bie; ++bi) {
-          const Int l2rbdi = md_.a_d.trcr2bl2r(md_.a_d.bidx2trcr(bi));
-          const Int r2lbdi = md_.a_d.trcr2br2l(md_.a_d.bidx2trcr(bi));
-          cedr_assert(n->nkids == 2);
-          if ( ! (problem_type & ProblemType::shapepreserve)) {
-            // Pass q_{min,max} info along. l2r data are updated for use in
-            // solve_node_problem. r2l data are updated for use in isend.
-            const Real q_min = bd_.r2l_data(n->offset*r2lndps + r2lbdi + 1);
-            const Real q_max = bd_.r2l_data(n->offset*r2lndps + r2lbdi + 2);
-            bd_.l2r_data(n->offset*l2rndps + l2rbdi + 0) = q_min;
-            bd_.l2r_data(n->offset*l2rndps + l2rbdi + 2) = q_max;
-            for (Int k = 0; k < 2; ++k) {
-              bd_.l2r_data(n->kids[k]->offset*l2rndps + l2rbdi + 0) = q_min;
-              bd_.l2r_data(n->kids[k]->offset*l2rndps + l2rbdi + 2) = q_max;
-              bd_.r2l_data(n->kids[k]->offset*r2lndps + r2lbdi + 1) = q_min;
-              bd_.r2l_data(n->kids[k]->offset*r2lndps + r2lbdi + 2) = q_max;
+              for (Int bi = bis; bi < bie; ++bi) {
+                const Int bdi = md_.a_d.trcr2bl2r(md_.a_d.bidx2trcr(bi));
+                Real* const me = &bd_.l2r_data(n->offset*l2rndps + bdi);
+                const Real* const k0 = &bd_.l2r_data(n->kids[0]->offset*l2rndps + bdi);
+                const Real* const k1 = &bd_.l2r_data(n->kids[1]->offset*l2rndps + bdi);
+                me[0] = sum_only ? k0[0] + k1[0] : cedr::impl::min(k0[0], k1[0]);
+                me[1] =            k0[1] + k1[1] ;
+                me[2] = sum_only ? k0[2] + k1[2] : cedr::impl::max(k0[2], k1[2]);
+                if (bsz == 4)
+                  me[3] =          k0[3] + k1[3] ;
+              }
             }
           }
-          const auto& k0 = n->kids[0];
-          const auto& k1 = n->kids[1];
-          solve_node_problem(
-            problem_type,
-             bd_.l2r_data( n->offset*l2rndps),
-            &bd_.l2r_data( n->offset*l2rndps + l2rbdi),
-             bd_.r2l_data( n->offset*r2lndps + r2lbdi),
-             bd_.l2r_data(k0->offset*l2rndps),
-            &bd_.l2r_data(k0->offset*l2rndps + l2rbdi),
-             bd_.r2l_data(k0->offset*r2lndps + r2lbdi),
-             bd_.l2r_data(k1->offset*l2rndps),
-            &bd_.l2r_data(k1->offset*l2rndps + l2rbdi),
-             bd_.r2l_data(k1->offset*r2lndps + r2lbdi));
+        }
+
+        // Send to parents.
+        if (lvl.me.size())
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+#       pragma omp master
+#endif
+        {
+          for (size_t i = 0; i < lvl.me.size(); ++i) {
+            const auto& mmd = lvl.me[i];
+            mpi::isend(*p_, &bd_.l2r_data(mmd.offset*l2rndps), mmd.size*l2rndps, mmd.rank,
+                       mpitag, &lvl.me_send_req[i]);
+          }
+          if (il+1 == ns_->levels.size())
+            mpi::waitall(lvl.me_send_req.size(), lvl.me_send_req.data());
+        }
+
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+#       pragma omp barrier
+#endif
+      }
+
+      // Root.
+      if ( ! ns_->levels.empty() && ns_->levels.back().nodes.size() == 1 &&
+           ! ns_->levels.back().nodes[0]->parent) {
+        const auto& n = ns_->levels.back().nodes[0];
+        for (Int pti = 0; pti < md_.nprobtypes; ++pti) {
+          const Int problem_type = md_.get_problem_type(pti);
+          const Int bis = md_.a_d.prob2trcrptr[pti], bie = md_.a_d.prob2trcrptr[pti+1];
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP && defined COLUMN_OPENMP
+#         pragma omp parallel
+#endif
+#if defined THREAD_QLT_RUN && (defined HORIZ_OPENMP || defined COLUMN_OPENMP)
+#         pragma omp for
+#endif
+          for (Int bi = bis; bi < bie; ++bi) {
+            const Int l2rbdi = md_.a_d.trcr2bl2r(md_.a_d.bidx2trcr(bi));
+            const Int r2lbdi = md_.a_d.trcr2br2l(md_.a_d.bidx2trcr(bi));
+            // If QLT is enforcing global mass conservation, set the root's r2l Qm
+            // value to the l2r Qm_prev's sum; otherwise, copy the l2r Qm value to
+            // the r2l one.
+            const Int os = problem_type & ProblemType::conserve ? 3 : 1;
+            bd_.r2l_data(n->offset*r2lndps + r2lbdi) =
+              bd_.l2r_data(n->offset*l2rndps + l2rbdi + os);
+            if ( ! (problem_type & ProblemType::shapepreserve)) {
+              // We now know the global q_{min,max}. Start propagating it
+              // leafward.
+              bd_.r2l_data(n->offset*r2lndps + r2lbdi + 1) =
+                bd_.l2r_data(n->offset*l2rndps + l2rbdi + 0);
+              bd_.r2l_data(n->offset*r2lndps + r2lbdi + 2) =
+                bd_.l2r_data(n->offset*l2rndps + l2rbdi + 2);
+            }
+          }
         }
       }
-    }
-    Timer::stop(Timer::snp);
 
-    // Send.
-    if (lvl.kids.size())
+      // Root to leaves.
+      for (size_t il = ns_->levels.size(); il > 0; --il) {
+        auto& lvl = ns_->levels[il-1];
+
+        if (lvl.me.size()) {
 #if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+#         pragma omp master
+#endif
+          {
+            for (size_t i = 0; i < lvl.me.size(); ++i) {
+              const auto& mmd = lvl.me[i];
+              mpi::irecv(*p_, &bd_.r2l_data(mmd.offset*r2lndps), mmd.size*r2lndps, mmd.rank,
+                         mpitag, &lvl.me_recv_req[i]);
+            }
+            //todo Replace with simultaneous waitany and isend.
+            mpi::waitall(lvl.me_recv_req.size(), lvl.me_recv_req.data());
+          }
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+#         pragma omp barrier
+#endif
+        }
+
+        // Solve QP for kids' values.
+        //todo Kernelize, interacting with waitany todo above.
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+#       pragma omp for
+#endif
+        for (size_t ni = 0; ni < lvl.nodes.size(); ++ni) {
+          auto& n = lvl.nodes[ni];
+          if ( ! n->nkids) continue;
+          for (Int pti = 0; pti < md_.nprobtypes; ++pti) {
+            const Int problem_type = md_.get_problem_type(pti);
+            const Int bis = md_.a_d.prob2trcrptr[pti], bie = md_.a_d.prob2trcrptr[pti+1];
+#if defined THREAD_QLT_RUN && defined COLUMN_OPENMP
+#           pragma omp parallel for
+#endif
+            for (Int bi = bis; bi < bie; ++bi) {
+              const Int l2rbdi = md_.a_d.trcr2bl2r(md_.a_d.bidx2trcr(bi));
+              const Int r2lbdi = md_.a_d.trcr2br2l(md_.a_d.bidx2trcr(bi));
+              cedr_assert(n->nkids == 2);
+              if ( ! (problem_type & ProblemType::shapepreserve)) {
+                // Pass q_{min,max} info along. l2r data are updated for use in
+                // solve_node_problem. r2l data are updated for use in isend.
+                const Real q_min = bd_.r2l_data(n->offset*r2lndps + r2lbdi + 1);
+                const Real q_max = bd_.r2l_data(n->offset*r2lndps + r2lbdi + 2);
+                bd_.l2r_data(n->offset*l2rndps + l2rbdi + 0) = q_min;
+                bd_.l2r_data(n->offset*l2rndps + l2rbdi + 2) = q_max;
+                for (Int k = 0; k < 2; ++k) {
+                  bd_.l2r_data(n->kids[k]->offset*l2rndps + l2rbdi + 0) = q_min;
+                  bd_.l2r_data(n->kids[k]->offset*l2rndps + l2rbdi + 2) = q_max;
+                  bd_.r2l_data(n->kids[k]->offset*r2lndps + r2lbdi + 1) = q_min;
+                  bd_.r2l_data(n->kids[k]->offset*r2lndps + r2lbdi + 2) = q_max;
+                }
+              }
+              const auto& k0 = n->kids[0];
+              const auto& k1 = n->kids[1];
+              this->solve_node_problem(
+                problem_type,
+                 bd_.l2r_data( n->offset*l2rndps),
+                &bd_.l2r_data( n->offset*l2rndps + l2rbdi),
+                 bd_.r2l_data( n->offset*r2lndps + r2lbdi),
+                 bd_.l2r_data(k0->offset*l2rndps),
+                &bd_.l2r_data(k0->offset*l2rndps + l2rbdi),
+                 bd_.r2l_data(k0->offset*r2lndps + r2lbdi),
+                 bd_.l2r_data(k1->offset*l2rndps),
+                &bd_.l2r_data(k1->offset*l2rndps + l2rbdi),
+                 bd_.r2l_data(k1->offset*r2lndps + r2lbdi));
+            }
+          }
+        }
+
+        // Send.
+        if (lvl.kids.size())
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+#       pragma omp master
+#endif
+        {
+          for (size_t i = 0; i < lvl.kids.size(); ++i) {
+            const auto& mmd = lvl.kids[i];
+            mpi::isend(*p_, &bd_.r2l_data(mmd.offset*r2lndps), mmd.size*r2lndps, mmd.rank,
+                       mpitag, &lvl.kids_req[i]);
+          }
+        }
+      }
+
+      // Wait on sends to clean up.
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+#     pragma omp master
+#endif
+      for (size_t il = 0; il < ns_->levels.size(); ++il) {
+        auto& lvl = ns_->levels[il];
+        if (il+1 < ns_->levels.size())
+          mpi::waitall(lvl.me_send_req.size(), lvl.me_send_req.data());
+        mpi::waitall(lvl.kids_req.size(), lvl.kids_req.data());
+      }
+
+#if ! defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+    }
+#endif
+  }
+};
+
+template <typename ES>
+struct CAAS : public cedr::caas::CAAS<ES> {
+  CAAS (const cedr::mpi::Parallel::Ptr& p, const cedr::Int nlclcells)
+    : cedr::caas::CAAS<ES>(p, nlclcells)
+  {}
+
+  void run () override {
+#if defined HORIZ_OPENMP
 #   pragma omp master
 #endif
     {
-      for (size_t i = 0; i < lvl.kids.size(); ++i) {
-        const auto& mmd = lvl.kids[i];
-        mpi::isend(*p_, &bd_.r2l_data(mmd.offset*r2lndps), mmd.size*r2lndps, mmd.rank,
-                   NodeSets::mpitag, &lvl.kids_req[i]);
-      }
+      this->reduce_locally();
+      this->reduce_globally();
+      this->finish_locally();
     }
   }
+};
 
-  // Wait on sends to clean up.
-#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
-# pragma omp master
-#endif
-  for (size_t il = 0; il < ns_->levels.size(); ++il) {
-    auto& lvl = ns_->levels[il];
-    if (il+1 < ns_->levels.size())
-      mpi::waitall(lvl.me_req.size(), lvl.me_req.data());
-    mpi::waitall(lvl.kids_req.size(), lvl.kids_req.data());
-  }
-
-  Timer::stop(Timer::qltrunr2l);
-#if ! defined THREAD_QLT_RUN && defined HORIZ_OPENMP
-}
-#endif
-}
-
-} // namespace qlt
-
-namespace caas {
-
-template <typename ES>
-void CAAS<ES>::run () {
-#if defined HORIZ_OPENMP
-# pragma omp master
-#endif
-  {
-    reduce_locally();
-    reduce_globally();
-    finish_locally();
-  }
-}
-
-} // namespace caas
-} // namespace cedr
+} // namespace compose
+} // namespace homme
 
 #ifdef QLT_MAIN
 /*
@@ -4118,8 +4140,8 @@ make_tree (const qlt::Parallel::Ptr& p, const Int nelem,
 
 struct CDR {
   typedef std::shared_ptr<CDR> Ptr;
-  typedef qlt::QLT<Kokkos::DefaultExecutionSpace> QLTT;
-  typedef cedr::caas::CAAS<Kokkos::DefaultExecutionSpace> CAAST;
+  typedef compose::QLT<Kokkos::DefaultExecutionSpace> QLTT;
+  typedef compose::CAAS<Kokkos::DefaultExecutionSpace> CAAST;
 
   struct Alg {
     enum Enum { qlt, qlt_super_level, caas, caas_super_level };
