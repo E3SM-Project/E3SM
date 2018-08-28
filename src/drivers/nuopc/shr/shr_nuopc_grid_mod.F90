@@ -638,8 +638,6 @@ contains
     do nf = 1,nflds
 
       rc = ESMF_SUCCESS
-      write(6,*)'DEBUG: rlist = ',trim(rList)
-      write(6,*)'DBUG: fldname = ',trim(fldname)
       call shr_string_listGetName(rList, nf, fldname, dbrc)
       call ESMF_StateGet(state, itemName=trim(fldname), field=lfield, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU)) then

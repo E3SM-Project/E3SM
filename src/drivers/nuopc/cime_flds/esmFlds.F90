@@ -79,6 +79,7 @@ module esmFlds
   character(len=CX)  :: ndep_fields         ! List of nitrogen deposition fields from atm->lnd/ocn
   integer            :: ice_ncat            ! number of sea ice thickness categories
   logical            :: add_ndep_fields     ! .true. => add ndep fields
+  logical            :: flds_i2o_per_cat    ! .true. => select per ice thickness category fields passed from ice to ocn
 
   integer     , parameter :: CSS = 256           ! use longer short character
   character(*), parameter :: u_FILE_u = __FILE__
@@ -2354,58 +2355,65 @@ contains
     ! optional per thickness category fields
     !-----------------------------------------------------------------------------
 
+    call NUOPC_CompAttributeGet(gcomp, name='flds_i2o_per_cat', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) flds_i2o_per_cat
+    call ESMF_LogWrite('flds_i2o_per_cat = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
+
     call NUOPC_CompAttributeGet(gcomp, name='ice_ncat', value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) ice_ncat
     call ESMF_LogWrite('ice_ncat = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
 
-    do num = 1, ice_ncat
-       write(cnum,'(i2.2)') num
+    if (flds_i2o_per_cat) then
+       do num = 1, ice_ncat
+          write(cnum,'(i2.2)') num
 
-       ! Fractional ice coverage wrt ocean
-       name = 'Si_ifrac_' // cnum
-       longname = 'fractional ice coverage wrt ocean for thickness category ' // cnum
-       stdname  = 'sea_ice_area_fraction'
+          ! Fractional ice coverage wrt ocean
+          name = 'Si_ifrac_' // cnum
+          longname = 'fractional ice coverage wrt ocean for thickness category ' // cnum
+          stdname  = 'sea_ice_area_fraction'
+          units    = '1'
+          call shr_nuopc_fldList_AddMetadata(fldname=trim(name), longname=longname, stdname=stdname, units=units)
+          call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, trim(name), fldindex=n1)
+          call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, trim(name), &
+               merge_from1=compice, merge_field1=trim(name), merge_type1='copy')
+          call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
+
+          ! Net shortwave radiation
+          name = 'PFioi_swpen_ifrac_' // cnum
+          longname = 'net shortwave radiation penetrating into ice and ocean times ice fraction for thickness category ' // cnum
+          stdname  = 'product_of_net_downward_shortwave_flux_at_sea_water_surface_and_sea_ice_area_fraction'
+          units    = 'W m-2'
+          call shr_nuopc_fldList_AddMetadata(fldname=trim(name), longname=longname, stdname=stdname, units=units)
+          call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, trim(name), fldindex=n1)
+          call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, trim(name), &
+               merge_from1=compice, merge_field1=trim(name), merge_type1='copy')
+          call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
+       end do
+
+       longname = 'fractional atmosphere coverage wrt ocean'
+       stdname  = 'atmosphere_area_fraction'
        units    = '1'
-       call shr_nuopc_fldList_AddMetadata(fldname=trim(name), longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, trim(name), fldindex=n1)
-       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, trim(name), &
-            merge_from1=compice, merge_field1=trim(name), merge_type1='copy')
-       call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
+       call shr_nuopc_fldList_AddMetadata(fldname='Sf_afrac', longname=longname, stdname=stdname, units=units)
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sf_afrac')
+       ! TODO: add mapping and merging
 
-       ! Net shortwave radiation
-       name = 'PFioi_swpen_ifrac_' // cnum
-       longname = 'net shortwave radiation penetrating into ice and ocean times ice fraction for thickness category ' // cnum
-       stdname  = 'product_of_net_downward_shortwave_flux_at_sea_water_surface_and_sea_ice_area_fraction'
-       units    = 'W m-2'
-       call shr_nuopc_fldList_AddMetadata(fldname=trim(name), longname=longname, stdname=stdname, units=units)
-       call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, trim(name), fldindex=n1)
-       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, trim(name), &
-            merge_from1=compice, merge_field1=trim(name), merge_type1='copy')
-       call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
-    end do
+       longname = 'fractional atmosphere coverage used in radiation computations wrt ocean'
+       stdname  = 'atmosphere_area_fraction'
+       units    = '1'
+       call shr_nuopc_fldList_AddMetadata(fldname='Sf_afracr', longname=longname, stdname=stdname, units=units)
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sf_afracr')
+       ! TODO: add mapping and merging
 
-    longname = 'fractional atmosphere coverage wrt ocean'
-    stdname  = 'atmosphere_area_fraction'
-    units    = '1'
-    call shr_nuopc_fldList_AddMetadata(fldname='Sf_afrac', longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sf_afrac')
-    ! TODO: add mapping and merging
-
-    longname = 'fractional atmosphere coverage used in radiation computations wrt ocean'
-    stdname  = 'atmosphere_area_fraction'
-    units    = '1'
-    call shr_nuopc_fldList_AddMetadata(fldname='Sf_afracr', longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sf_afracr')
-    ! TODO: add mapping and merging
-
-    name = 'Foxx_swnet_afracr'
-    longname = 'net shortwave radiation times atmosphere fraction'
-    stdname = 'product_of_net_downward_shortwave_flux_at_sea_water_surface_and_atmosphere_area_fraction'
-    units = 'W m-2'
-    call shr_nuopc_fldList_AddMetadata(fldname='Foxx_swnet_afracr', longname=longname, stdname=stdname, units=units)
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swnet_afracr')
-    ! TODO: add mapping and merging
+       name = 'Foxx_swnet_afracr'
+       longname = 'net shortwave radiation times atmosphere fraction'
+       stdname = 'product_of_net_downward_shortwave_flux_at_sea_water_surface_and_atmosphere_area_fraction'
+       units = 'W m-2'
+       call shr_nuopc_fldList_AddMetadata(fldname='Foxx_swnet_afracr', longname=longname, stdname=stdname, units=units)
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swnet_afracr')
+       ! TODO: add mapping and merging
+    end if
 
     !-----------------------------------------------------------------------------
     ! CARMA fields

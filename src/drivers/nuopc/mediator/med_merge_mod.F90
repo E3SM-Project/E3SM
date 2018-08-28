@@ -24,9 +24,11 @@ contains
 
   subroutine med_merge_auto(compout_name, FBOut, FBfrac, FBImp, fldListTo, FBMed1, FBMed2, &
        document, string, mastertask, rc)
-    use ESMF, only : ESMF_FieldBundle, ESMF_SUCCESS, ESMF_FAILURE, ESMF_LogWrite, ESMF_LogMsg_Info
-    use ESMF, only : ESMF_FieldBundleIsCreated, ESMF_FieldBundleGet
-    use med_constants_mod, only : CL, CX, CS
+
+    use ESMF                  , only : ESMF_FieldBundle
+    use ESMF                  , only : ESMF_FieldBundleIsCreated, ESMF_FieldBundleGet
+    use ESMF                  , only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LogWrite, ESMF_LogMsg_Info
+    use med_constants_mod     , only : CL, CX, CS
     use shr_string_mod        , only : shr_string_listGetNum
     use shr_string_mod        , only : shr_string_listGetName
     use esmFlds               , only : compmed, compname
@@ -173,7 +175,7 @@ contains
                 end do ! end of nmerges loop
              end do  ! end of compsrc loop
              if (document) then
-                write(logunit,'(a)')trim(mrgstr)
+                if (mastertask) write(logunit,'(a)')trim(mrgstr)
              end if
           end if ! end of check if stdname and fldname are the same
        end do ! end of loop over fldsListTo

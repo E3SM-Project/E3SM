@@ -6,7 +6,7 @@ module docn_comp_mod
   ! !USES:
   use shr_pcdf_mod          , only : shr_pcdf_readwrite
   use NUOPC                 , only : NUOPC_Advertise
-  use ESMF                  , only : ESMF_State
+  use ESMF                  , only : ESMF_State, ESMF_LOGMSG_INFO, ESMF_LogWrite
   use perf_mod              , only : t_startf, t_stopf
   use perf_mod              , only : t_adj_detailf, t_barrierf
   use mct_mod               , only : mct_rearr, mct_gsmap_lsize, mct_rearr_init, mct_gsmap, mct_ggrid
@@ -70,22 +70,22 @@ module docn_comp_mod
 
   type(mct_rearr)            :: rearr
   type(mct_avect)            :: avstrm             ! av of data created from all stream input
-  character(len=CS), pointer :: avifld(:)
-  character(len=CS), pointer :: avofld(:)
-  character(len=CS), pointer :: strmifld(:)
-  character(len=CS), pointer :: strmofld(:)
+  character(len=CS), pointer :: avifld(:)          ! names of fields in input streams 
+  character(len=CS), pointer :: avofld(:)          ! local names of fields in input streams for import/export
+  character(len=CS), pointer :: stifld(:)          ! names of fields in input streams
+  character(len=CS), pointer :: stofld(:)          ! local names of fields in input streams for calculations
   character(CXX)             :: flds_strm = ''     ! set in docn_comp_init
   character(len=CXX)         :: flds_o2x_mod       ! set in docn_comp_advertise
   character(len=CXX)         :: flds_x2o_mod       ! set in docn_comp_advertise
   logical                    :: ocn_prognostic_mod ! set in docn_comp_advertise
 
-  real(R8), pointer          :: somtp(:)
-  real(R8), pointer          :: tfreeze(:)
-  integer(IN), pointer       :: imask(:)
+  real(R8), pointer          :: somtp(:)           ! SOM ocean temperature 
+  real(R8), pointer          :: tfreeze(:)         ! SOM ocean freezing temperature
+  integer(IN), pointer       :: imask(:)           ! integer ocean mask
   real(R8), pointer          :: xc(:), yc(:) ! arrays of model latitudes and longitudes
 
   logical                    :: firstcall = .true.              ! first call logical
-  character(len=*),parameter :: rpfile = 'rpointer.ocn'
+  character(len=*),parameter :: rpfile = 'rpointer.ocn'         ! name of ocean ropinter file
   integer(IN)                :: dbug = 1                        ! debug level (higher is more)
   character(*),parameter     :: u_FILE_u = &
        __FILE__
@@ -177,11 +177,8 @@ contains
             fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
        call dshr_fld_add(model_fld='Fioi_melth', model_fld_concat=flds_x2o, model_fld_index=kmelth, &
             fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
-
-       if (ocnrof_prognostic) then
-          call dshr_fld_add(model_fld='Foxx_rofi', model_fld_concat=flds_x2o, model_fld_index=krofi, &
-               fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
-       end if
+       call dshr_fld_add(model_fld='Foxx_rofi', model_fld_concat=flds_x2o, model_fld_index=krofi, &
+            fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
     end if
 
     !-------------------
@@ -191,12 +188,16 @@ contains
     do n = 1,fldsFrOcn_num
        call NUOPC_Advertise(exportState, standardName=fldsFrOcn(n)%stdname, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_LogWrite('(ocn_comp_nuopc):(InitializeAdvertise):Fr_ocn'//trim(fldsFrOcn(n)%stdname), &
+            ESMF_LOGMSG_INFO)
     enddo
 
     if (ocn_prognostic) then
        do n = 1,fldsToOcn_num
           call NUOPC_Advertise(importState, standardName=fldsToOcn(n)%stdname, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          call ESMF_LogWrite('(ocn_comp_nuopc):(InitializeAdvertise):To_ocn'//trim(fldsToOcn(n)%stdname), &
+               ESMF_LOGMSG_INFO)
        end do
     end if
 
@@ -207,6 +208,21 @@ contains
     flds_x2o_mod = trim(flds_x2o)
     flds_o2x_mod = trim(flds_o2x)
     ocn_prognostic_mod = ocn_prognostic
+
+    !-------------------
+    ! module character arrays stifld and stofld
+    !-------------------
+
+    ! - stifld is a character array of stream field names
+    ! - stofld is a character array of data model field names that have a one-to-one correspondence with names in stifld
+    ! - flds_strm is a colon delimited string of field names that is created from the field names in stofld for ONLY 
+    !   those field names that are available in the data streams present in SDOCN%sdatm
+    ! - avstrm is an attribute vector created from flds_strm 
+
+    if (ocn_prognostic_mod) then
+       call dshr_fld_add(data_fld="h"   , data_fld_array=stifld, model_fld="strm_h"   , model_fld_array=stofld)
+       call dshr_fld_add(data_fld="qbot", data_fld_array=stifld, model_fld="strm_qbot", model_fld_array=stofld)
+    end if
 
   end subroutine docn_comp_advertise
 
@@ -245,6 +261,8 @@ contains
     !--- local variables ---
     integer(IN)   :: n,k      ! generic counters
     integer(IN)   :: lsize    ! local size
+    integer(IN)   :: kfld     ! fld index
+    integer(IN)   :: cnt      ! counter
     logical       :: exists   ! file existance
     logical       :: exists1  ! file existance
     integer(IN)   :: nu       ! unit number
@@ -323,35 +341,6 @@ contains
     call t_stopf('docn_initmctdom')
 
     !----------------------------------------------------------------------------
-    ! Initialize MCT attribute vectors
-    !----------------------------------------------------------------------------
-
-    call t_startf('docn_initmctavs')
-    if (my_task == master_task) write(logunit,F00) 'allocate AVs'
-
-    call mct_aVect_init(o2x, rList=flds_o2x_mod, lsize=lsize)
-    call mct_aVect_zero(o2x)
-
-    if (ocn_prognostic_mod) then
-       call mct_aVect_init(x2o, rList=flds_x2o_mod, lsize=lsize)
-       call mct_aVect_zero(x2o)
-    end if
-
-    ! data model fields that have a corresponding stream field but no export field
-    if (ocn_prognostic_mod) then
-       call dshr_fld_add(data_fld='h', data_fld_array=strmifld, &
-            model_fld='strm_h', model_fld_array=strmofld, model_fld_concat=flds_strm, model_fld_index=kh)
-
-       call dshr_fld_add(data_fld='qbot', data_fld_array=strmifld, &
-            model_fld='strm_qbot', model_fld_array=strmofld, model_fld_concat=flds_strm, model_fld_index=kqbot)
-
-       call mct_aVect_init(avstrm, rList=flds_strm, lsize=lsize)
-       call mct_aVect_zero(avstrm)
-    end if
-
-    call t_stopf('docn_initmctavs')
-
-    !----------------------------------------------------------------------------
     ! Allocate memory for module variables
     !----------------------------------------------------------------------------
 
@@ -372,6 +361,58 @@ contains
     allocate(yc(lsize))
     index_lat = mct_aVect_indexRA(ggrid%data,'lat')
     yc(:) = ggrid%data%rAttr(index_lat,:)
+
+    !----------------------------------------------------------------------------
+    ! Initialize attribute vectors
+    !----------------------------------------------------------------------------
+
+    call t_startf('docn_initavs')
+    if (my_task == master_task) write(logunit,F00) 'allocate AVs'
+
+    call mct_aVect_init(o2x, rList=flds_o2x_mod, lsize=lsize)
+    call mct_aVect_zero(o2x)
+
+    if (ocn_prognostic_mod) then
+       call mct_aVect_init(x2o, rList=flds_x2o_mod, lsize=lsize)
+       call mct_aVect_zero(x2o)
+
+       ! Initialize internal attribute vectors for optional streams
+       ! Create the colon deliminted list flds_strm based on mapping the
+       ! input stream fields from SDOCN%avs(n) with names in stifld to flds_strm with the names in stofld
+
+       cnt = 0
+       flds_strm = ''
+       do n = 1,SDOCN%nstreams
+          ! Loop over the field names in stifld
+          do k = 1,size(stifld)
+             ! Search input stream n for the field name stifld(k)
+             kfld = mct_aVect_indexRA(SDOCN%avs(n), trim(stifld(k)), perrWith='quiet')
+             if (kfld > 0) then
+                cnt = cnt + 1
+                ! Append the colon deliminted flds_strm with the mapped field name stofld(k)
+                if (cnt == 1) then
+                   flds_strm = trim(stofld(k))
+                else
+                   flds_strm = trim(flds_strm)//':'//trim(stofld(k))
+                endif
+             endif
+          enddo
+       enddo
+    
+       ! Initialize avstrm based on the active streams determined above
+       if (my_task == master_task) write(logunit,F00) ' flds_strm = ',trim(flds_strm)
+       call mct_aVect_init(avstrm, rList=flds_strm, lsize=lsize)
+       call mct_aVect_zero(avstrm)
+
+       ! Note: because the following needs to occur AFTER we determine the fields in
+       ! flds_strm - the indices below CANNOT be set in the docn_comp_advertise phase
+
+       ! Now set indices into these active streams
+       kh    = mct_aVect_indexRA(avstrm,'strm_h'   , perrWith='quiet')
+       kqbot = mct_aVect_indexRA(avstrm,'strm_qbot', perrWith='quiet')
+    end if
+
+    call t_stopf('docn_initavs')
 
     !----------------------------------------------------------------------------
     ! Read restart
@@ -634,7 +675,7 @@ contains
     case('SOM')
        lsize = mct_avect_lsize(o2x)
        do n = 1,SDOCN%nstreams
-          call shr_dmodel_translateAV(SDOCN%avs(n),avstrm,avifld,avofld,rearr)
+          call shr_dmodel_translateAV(SDOCN%avs(n),avstrm,stifld,stofld,rearr)
        enddo
        if (firstcall) then
           do n = 1,lsize
@@ -665,13 +706,13 @@ contains
                 o2x%rAttr(kt,n) = max(tfreeze(n),o2x%rAttr(kt,n))                    ! reset temp
                 somtp(n) = o2x%rAttr(kt,n)                                           ! save temp
              endif
-          enddo
+          end do
        endif   ! firstcall
 
     case('SOM_AQUAP')
        lsize = mct_avect_lsize(o2x)
        do n = 1,SDOCN%nstreams
-          call shr_dmodel_translateAV(SDOCN%avs(n),avstrm,avifld,avofld,rearr)
+          call shr_dmodel_translateAV(SDOCN%avs(n),avstrm,stifld,stofld,rearr)
        enddo
        if (firstcall) then
           do n = 1,lsize

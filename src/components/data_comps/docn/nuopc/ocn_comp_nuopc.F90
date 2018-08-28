@@ -62,8 +62,8 @@ module ocn_comp_nuopc
   type(mct_gGrid), target  :: ggrid_target
   type(mct_gsMap), pointer :: gsMap
   type(mct_gGrid), pointer :: ggrid
-  type(mct_aVect)          :: x2d
-  type(mct_aVect)          :: d2x
+  type(mct_aVect)          :: x2o
+  type(mct_aVect)          :: o2x
   integer                  :: compid                    ! mct comp id
   integer                  :: mpicom                    ! mpi communicator
   integer                  :: my_task                   ! my task in mpi communicator mpicom
@@ -364,7 +364,7 @@ module ocn_comp_nuopc
     gsmap => gsmap_target
     ggrid => ggrid_target
 
-    call docn_comp_init(x2d, d2x, &
+    call docn_comp_init(x2o, o2x, &
          SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
          scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, modeldt)
@@ -428,11 +428,11 @@ module ocn_comp_nuopc
 
     !--------------------------------
     ! Pack export state
-    ! Copy from d2x to exportState
+    ! Copy from o2x to exportState
     ! Set the coupling scalars
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_o2x, exportState, grid_option='mesh', rc=rc)
+    call shr_nuopc_grid_ArrayToState(o2x%rattr, flds_o2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call shr_nuopc_methods_State_SetScalar(dble(nx_global),flds_scalar_index_nx, exportState, mpicom, &
@@ -449,10 +449,18 @@ module ocn_comp_nuopc
 
     if (dbug > 1) then
        if (my_task == master_task) then
-          call mct_aVect_info(2, d2x, istr=subname//':AV')
+          call mct_aVect_info(2, o2x, istr=subname//':AV')
        end if
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       if (ocn_prognostic) then
+          if (my_task == master_task) then
+             call mct_aVect_info(2, x2o, istr=subname//':AV')
+          end if
+          call shr_nuopc_methods_State_diagnose(importState,subname//':IS',rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
     endif
 
     !----------------------------------------------------------------------------
@@ -529,7 +537,7 @@ module ocn_comp_nuopc
     !--------------------------------
 
     if (ocn_prognostic) then
-       call shr_nuopc_grid_StateToArray(importState, x2d%rattr, flds_x2o, grid_option='mesh', rc=rc)
+       call shr_nuopc_grid_StateToArray(importState, x2o%rattr, flds_x2o, grid_option='mesh', rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
@@ -568,7 +576,7 @@ module ocn_comp_nuopc
 
     ! Advance the model
 
-    call docn_comp_run(x2d, d2x, &
+    call docn_comp_run(x2o, o2x, &
          SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, logunit, read_restart, write_restart, &
          nextYMD, nextTOD, modeldt, case_name=case_name)
@@ -577,7 +585,7 @@ module ocn_comp_nuopc
     ! Pack export state
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_o2x, exportState, grid_option='mesh', rc=rc)
+    call shr_nuopc_grid_ArrayToState(o2x%rattr, flds_o2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
@@ -586,7 +594,7 @@ module ocn_comp_nuopc
 
     if (dbug > 1) then
        if (my_task == master_task) then
-          call mct_aVect_info(2, d2x, istr=subname//':AV')
+          call mct_aVect_info(2, o2x, istr=subname//':AV')
        end if
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

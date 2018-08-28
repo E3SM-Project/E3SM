@@ -574,19 +574,6 @@ contains
     call t_stopf('datm_initmctdom')
 
     !----------------------------------------------------------------------------
-    ! Initialize MCT import/export attribute vectors
-    !----------------------------------------------------------------------------
-
-    call t_startf('datm_initmctavs')
-    if (my_task == master_task) write(logunit,F00) 'allocate AVs'
-
-    call mct_aVect_init(a2x, rList=flds_a2x_mod, lsize=lsize)
-    call mct_aVect_zero(a2x)
-
-    call mct_aVect_init(x2a, rList=flds_x2a_mod, lsize=lsize)
-    call mct_aVect_zero(x2a)
-
-    !----------------------------------------------------------------------------
     ! Allocate module arrays
     !----------------------------------------------------------------------------
 
@@ -603,20 +590,32 @@ contains
     yc(:) = ggrid%data%rAttr(klat,:)
 
     !----------------------------------------------------------------------------
-    ! Initialize internal attribute vectors for optional streams
+    ! Initialize attribute vectors
     !----------------------------------------------------------------------------
 
+    call t_startf('datm_initmctavs')
+    if (my_task == master_task) write(logunit,F00) 'allocate AVs'
+
+    call mct_aVect_init(a2x, rList=flds_a2x_mod, lsize=lsize)
+    call mct_aVect_zero(a2x)
+
+    call mct_aVect_init(x2a, rList=flds_x2a_mod, lsize=lsize)
+    call mct_aVect_zero(x2a)
+
+    ! Initialize internal attribute vectors for optional streams
     ! Create the colon deliminted list flds_strm based on mapping the
     ! input stream fields from SDATM%avs(n) to with the names in stifld to stofld
+
     cnt = 0
     flds_strm = ''
     do n = 1,SDATM%nstreams
+       ! Loop over the field names in stifld
        do k = 1,size(stifld)
-          ! search the streams for the field name stifld(k)
-          kfld = mct_aVect_indexRA(SDATM%avs(n),trim(stifld(k)),perrWith='quiet')
+          ! Search the streams for the field name stifld(k)
+          kfld = mct_aVect_indexRA(SDATM%avs(n), trim(stifld(k)), perrWith='quiet')
           if (kfld > 0) then
              cnt = cnt + 1
-             ! append the colon deliminted flds_strm with the mapped field name stofld(k)
+             ! Append the colon deliminted flds_strm with the mapped field name stofld(k)
              if (cnt == 1) then
                 flds_strm = trim(stofld(k))
              else
