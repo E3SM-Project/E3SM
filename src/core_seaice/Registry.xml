@@ -1919,9 +1919,9 @@
 		</stream>
 
                 <!-- snicar 5 band input stream name -->
-	 	<stream name="SnicarSnowInput"
+	 	<stream name="SnicarInput"
 			        type="input"
-		        	filename_template="snicar_optics_5bnd_snowgrain.nc"
+		        	filename_template="snicar_optics_5bnd_snow_and_aerosols.nc"
 		        	filename_interval="none"
 		        	input_interval="initial_only"
 		        	immutable="true">
@@ -1933,25 +1933,17 @@
             		<var name="iceSingleScatterAlbedoDiffuse"/>
             		<var name="iceMassExtinctionCrossSectionDirect"/>
             		<var name="iceMassExtinctionCrossSectionDiffuse"/>
-        </stream>
         
-       <stream name="SnicarAerosolInput"
-                        type="input"
-                        filename_template="snicar_optics_5bnd_aerosol.nc"
-                        filename_interval="none"
-                        input_interval="initial_only"
-                        immutable="true">
-                        
                     <!-- same to stream name ModalAerosolsInput but for 5 bands-->
-                    <var name="modalAsymmetryParameter_5bd"/>
-                    <var name="modalBCabsorptionParameter_5bd"/>
-                    <var name="modalMassExtinctionCrossSection_5bd"/>
-                    <var name="modalSingleScatterAlbedo_5bd"/>
+                       <var name="modalAsymmetryParameter_5bd"/>
+                       <var name="modalBCabsorptionParameter_5bd"/>
+                       <var name="modalMassExtinctionCrossSection_5bd"/>
+                       <var name="modalSingleScatterAlbedo_5bd"/>
                     
                     <!-- same to stream name StandardAerosolsInput but for 5 bands-->
-                    <var name="aerosolAsymmetryParameter_5bd"/>
-                    <var name="aerosolMassExtinctionCrossSection_5bd"/>
-                    <var name="aerosolSingleScatterAlbedo_5bd"/>
+                       <var name="aerosolAsymmetryParameter_5bd"/>
+                       <var name="aerosolMassExtinctionCrossSection_5bd"/>
+                       <var name="aerosolSingleScatterAlbedo_5bd"/>
 		</stream>
 
 

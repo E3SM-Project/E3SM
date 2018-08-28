@@ -79,15 +79,9 @@
                   filename_interval="none"
                   input_interval="initial_only" />
 
-<immutable_stream name="SnicarSnowInput"
+<immutable_stream name="SnicarInput"
                   type="input"
-                  filename_template="snicar_optics_5bnd_snowgrain.nc"
-                  filename_interval="none"
-                  input_interval="initial_only" />
-
-<immutable_stream name="SnicarAerosolInput"
-                  type="input"
-                  filename_template="snicar_optics_5bnd_aerosol.nc"
+                  filename_template="snicar_optics_5bnd_snow_and_aerosols.nc"
                   filename_interval="none"
                   input_interval="initial_only" />
 
