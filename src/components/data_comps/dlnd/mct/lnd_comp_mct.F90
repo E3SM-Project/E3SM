@@ -8,7 +8,6 @@ module lnd_comp_mct
   use seq_cdata_mod   , only: seq_cdata, seq_cdata_setptrs
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_putdata, seq_infodata_getdata
   use seq_comm_mct    , only: seq_comm_inst, seq_comm_name, seq_comm_suffix
-  use seq_timemgr_mod , only: seq_timemgr_RestartAlarmIsOn, seq_timemgr_EClockGetData
   use shr_kind_mod    , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_strdata_mod , only: shr_strdata_type
   use shr_file_mod    , only: shr_file_getunit, shr_file_getlogunit, shr_file_getloglevel
@@ -42,8 +41,10 @@ module lnd_comp_mct
   character(len=16)      :: inst_suffix         ! char string associated with instance (ie. "_0001" or "")
   integer(IN)            :: logunit             ! logging unit number
   integer(IN)            :: compid              ! mct comp id
-  integer(IN),parameter  :: master_task=0       ! task number of master task
-  integer    ,parameter  :: dbug = 10
+
+  character(*), parameter :: F00   = "('(dlnd_comp_init) ',8a)"
+  integer(IN) , parameter :: master_task=0 ! task number of master task
+  character(*), parameter :: subName = "(lnd_init_mct) "
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
@@ -75,7 +76,6 @@ CONTAINS
     logical           :: scmMode = .false.         ! single column mode
     real(R8)          :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)          :: scmLon  = shr_const_SPVAL ! single column lon
-    character(*), parameter :: F00   = "('(dlnd_comp_init) ',8a)"
     character(*), parameter :: subName = "(lnd_init_mct) "
     !-------------------------------------------------------------------------------
 
@@ -115,7 +115,6 @@ CONTAINS
 
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogLevel(max(shrloglev,1))
     call shr_file_setLogUnit (logUnit)
 
     !----------------------------------------------------------------------------
@@ -163,16 +162,6 @@ CONTAINS
          lnd_ny=SDLND%nyg )
 
     !----------------------------------------------------------------------------
-    ! diagnostics
-    !----------------------------------------------------------------------------
-
-    if (dbug > 1) then
-       if (my_task == master_task) then
-          call mct_aVect_info(2, l2x, istr="initial diag"//':AV')
-       end if
-    endif
-
-    !----------------------------------------------------------------------------
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
 
@@ -181,6 +170,7 @@ CONTAINS
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
+    call shr_sys_flush(logunit)
 
   end subroutine lnd_init_mct
 
@@ -200,20 +190,15 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer(IN)                      :: shrlogunit    ! original log unit
-    integer(IN)                      :: shrloglev     ! original log level
-    logical                          :: read_restart  ! start from restart
-    character(CL)                    :: case_name     ! case name
-    logical                          :: write_restart ! restart now
-    integer(IN)                      :: currentYMD    ! model date
-    integer(IN)                      :: currentTOD    ! model sec into model date
+    integer(IN)                      :: shrlogunit   ! original log unit
+    integer(IN)                      :: shrloglev    ! original log level
+    character(CL)                    :: case_name    ! case name
     character(*), parameter :: subName = "(lnd_run_mct) "
     !-------------------------------------------------------------------------------
 
     ! Reset shr logging to my log file
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogLevel(max(shrloglev,1))
     call shr_file_setLogUnit (logUnit)
 
     call seq_cdata_setptrs(cdata, &
@@ -223,26 +208,13 @@ CONTAINS
 
     call seq_infodata_GetData(infodata, case_name=case_name)
 
-    write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
-
-    ! For mct - the component clock is advance at the beginning of the time interval
-    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
-
     call dlnd_comp_run(EClock, x2l, l2x, &
-       SDLND, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, read_restart, write_restart, &
-       currentYMD, currentTOD, case_name=case_name)
-
-    if (dbug > 1) then
-       if (my_task == master_task) then
-          call mct_aVect_info(2, l2x, istr='run diag'//':AV')
-       end if
-    end if
-
-    call shr_sys_flush(logunit)
+         SDLND, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+         inst_suffix, logunit, case_name)
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
+    call shr_sys_flush(logunit)
 
   end subroutine lnd_run_mct
 

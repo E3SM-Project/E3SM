@@ -8,7 +8,7 @@ module wav_comp_mct
   use seq_cdata_mod   , only: seq_cdata, seq_cdata_setptrs
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_putdata, seq_infodata_getdata
   use seq_comm_mct    , only: seq_comm_inst, seq_comm_name, seq_comm_suffix
-  use seq_timemgr_mod , only: seq_timemgr_RestartAlarmIsOn, seq_timemgr_EClockGetData
+   use seq_comm_mct   , only: num_inst_wav
   use shr_kind_mod    , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_strdata_mod , only: shr_strdata_type
   use shr_file_mod    , only: shr_file_getunit, shr_file_getlogunit, shr_file_getloglevel
@@ -34,16 +34,18 @@ module wav_comp_mct
   ! Private module data
   !--------------------------------------------------------------------------
 
-  type(shr_strdata_type)  :: SDWAV
-  integer(IN)             :: mpicom        ! mpi communicator
-  integer(IN)             :: my_task       ! my task in mpi communicator mpicom
-  integer                 :: inst_index    ! number of current instance (ie. 1)
-  character(len=16)       :: inst_name     ! fullname of current instance (ie. "wav_0001")
-  character(len=16)       :: inst_suffix   ! char string associated with instance (ie. "_0001" or "")
-  integer(IN)             :: logunit       ! logging unit number
-  integer(IN)             :: compid        ! mct comp id
+  type(shr_strdata_type) :: SDWAV
+  integer(IN)            :: mpicom              ! mpi communicator
+  integer(IN)            :: my_task             ! my task in mpi communicator mpicom
+  integer                :: inst_index          ! number of current instance (ie. 1)
+  character(len=16)      :: inst_name           ! fullname of current instance (ie. "wav_0001")
+  character(len=16)      :: inst_suffix         ! char string associated with instance (ie. "_0001" or "")
+  integer(IN)            :: logunit             ! logging unit number
+  integer(IN)            :: compid              ! mct comp id
+
+  character(*), parameter :: F00   = "('(dwav_comp_init) ',8a)"
   integer(IN) , parameter :: master_task=0 ! task number of master task
-  integer     , parameter :: dbug = 10
+  character(*), parameter :: subName = "(wav_init_mct) "
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
@@ -75,7 +77,7 @@ CONTAINS
     logical           :: scmMode = .false.         ! single column mode
     real(R8)          :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)          :: scmLon  = shr_const_SPVAL ! single column lon
-    character(*), parameter :: F00   = "('(dwav_comp_init) ',8a)"
+    character (CL)    :: wav_resume(num_inst_wav) ! reset state from restart?
     character(*), parameter :: subName = "(wav_init_mct) "
     !-------------------------------------------------------------------------------
 
@@ -91,7 +93,8 @@ CONTAINS
     call seq_infodata_getData(infodata, &
          single_column=scmMode, &
          scmlat=scmlat, scmlon=scmLon, &
-         read_restart=read_restart)
+         read_restart=read_restart, &
+         wav_resume=wav_resume)
 
     ! Determine instance information
     inst_name   = seq_comm_name(compid)
@@ -143,6 +146,15 @@ CONTAINS
 
     ! NOTE: the following will never be called if wav_present is .false.
 
+    ! Diagnostic print statement to test DATA_ASSIMILATION_WAV XML variable
+    !   usage (and therefore a proxy for other component types).
+    if (len_trim(wav_resume(inst_index)) > 0) then
+       if (my_task == master_task) then
+          write(logunit, *) subName//': Resume signal, '//trim(wav_resume(inst_index))
+          call shr_sys_flush(logunit)
+       end if
+    end if
+
     !----------------------------------------------------------------------------
     ! Initialize dwav
     !----------------------------------------------------------------------------
@@ -161,16 +173,6 @@ CONTAINS
          wav_ny=SDWAV%nyg )
 
     !----------------------------------------------------------------------------
-    ! diagnostics
-    !----------------------------------------------------------------------------
-
-    if (dbug > 1) then
-       if (my_task == master_task) then
-          call mct_aVect_info(2, w2x, istr="initial diag"//':AV')
-       end if
-    endif
-
-    !----------------------------------------------------------------------------
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
 
@@ -184,7 +186,6 @@ CONTAINS
   end subroutine wav_init_mct
 
   !===============================================================================
-
   subroutine wav_run_mct( EClock, cdata, x2w, w2x)
 
     ! !DESCRIPTION: run method for dwav model
@@ -200,13 +201,10 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer(IN)                      :: shrlogunit    ! original log unit
-    integer(IN)                      :: shrloglev     ! original log level
-    logical                          :: read_restart  ! start from restart
-    character(CL)                    :: case_name     ! case name
-    logical                          :: write_restart ! restart alarm is ringing
-    integer(IN)                      :: currentYMD    ! model date
-    integer(IN)                      :: currentTOD    ! model sec into model date
+    integer(IN)                      :: shrlogunit   ! original log unit
+    integer(IN)                      :: shrloglev    ! original log level
+    logical                          :: read_restart ! start from restart
+    character(CL)                    :: case_name    ! case name
     character(*), parameter :: subName = "(wav_run_mct) "
     !-------------------------------------------------------------------------------
 
@@ -222,26 +220,13 @@ CONTAINS
 
     call seq_infodata_GetData(infodata, case_name=case_name)
 
-    write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
-
-    ! For mct - the component clock is advance at the beginning of the time interval
-    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
-
     call dwav_comp_run(EClock, x2w, w2x, &
-       SDWAV, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, read_restart, write_restart, &
-       currentYMD, currentTOD, case_name=case_name)
-
-    call shr_sys_flush(logunit)
-
-    if (dbug > 1) then
-       if (my_task == master_task) then
-          call mct_aVect_info(2, w2x, istr="run diag"//':AV')
-       end if
-    endif
+         SDWAV, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+         inst_suffix, logunit, case_name)
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
+    call shr_sys_flush(logunit)
 
   end subroutine wav_run_mct
 

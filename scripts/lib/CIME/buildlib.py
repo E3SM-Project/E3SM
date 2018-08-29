@@ -49,6 +49,8 @@ def build_cime_component_lib(case, compname, libroot, bldroot):
         out.write(os.path.join(case.get_value('CASEROOT'), "SourceMods",
                                "src.{}\n".format(compname)) + "\n")
         if compname.startswith('d'):
+            if (comp_interface == 'nuopc'):
+                out.write(os.path.join(cimeroot, "src", "components", "data_comps", "dshr_nuopc") + "\n")
             out.write(os.path.join(cimeroot, "src", "components", "data_comps", compname, comp_interface) + "\n")
             out.write(os.path.join(cimeroot, "src", "components", "data_comps", compname) + "\n")
         elif compname.startswith('x'):

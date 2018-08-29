@@ -1,9 +1,9 @@
 module med_map_mod
 
-  use med_constants_mod          , only: CX, CS, CL, R8
-  use med_constants_mod, only : ispval_mask => med_constants_ispval_mask
-  use med_constants_mod, only : czero => med_constants_czero
-  use med_constants_mod, only : dbug_flag => med_constants_dbug_flag
+  use med_constants_mod , only : CX, CS, CL, R8
+  use med_constants_mod , only : ispval_mask => med_constants_ispval_mask
+  use med_constants_mod , only : czero => med_constants_czero
+  use med_constants_mod , only : dbug_flag => med_constants_dbug_flag
 
   implicit none
   private
@@ -15,31 +15,16 @@ module med_map_mod
   public :: med_map_FB_Regrid_Norm
 
   ! private module variables
-
-  character(*)      , parameter :: u_FILE_u    = __FILE__
-  ! should this be a module variable?
-  integer                       :: srcTermProcessing_Value = 0
+  integer :: srcTermProcessing_Value = 0
+  character(*), parameter :: u_FILE_u = &
+       __FILE__
 
 !================================================================================
 contains
 !================================================================================
 
   subroutine med_map_RouteHandles_init(gcomp, llogunit, rc)
-    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_LogFlush
-    use ESMF, only: ESMF_GridComp, ESMF_VM, ESMF_Field, ESMF_PoleMethod_Flag, ESMF_POLEMETHOD_ALLAVG
-    use ESMF, only: ESMF_GridCompGet, ESMF_VMGet, ESMF_FieldSMMStore, ESMF_RouteHandleIsCreated
-    use ESMF, only: ESMF_FieldRedistStore, ESMF_FieldRegridStore, ESMF_REGRIDMETHOD_BILINEAR
-    use ESMF, only: ESMF_UNMAPPEDACTION_IGNORE, ESMF_REGRIDMETHOD_CONSERVE, ESMF_NORMTYPE_FRACAREA
-    use ESMF, only: ESMF_NORMTYPE_DSTAREA, ESMF_REGRIDMETHOD_PATCH, ESMF_RouteHandlePrint
-    use NUOPC, only : NUOPC_Write
-    use shr_sys_mod           , only: shr_sys_flush
-    use esmFlds               , only: ncomps, compice, compocn, compname
-    use esmFlds               , only: fldListFr, fldListTo
-    use shr_nuopc_fldList_mod , only: mapnames
-    use med_internalstate_mod , only: InternalState
-    use shr_nuopc_fldList_mod , only: mapbilnr, mapconsf, mapconsd, mappatch, mapfcopy, mapunset, mapfiler
-    use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_getFieldN
-    use shr_nuopc_methods_mod , only: shr_nuopc_methods_ChkErr
+
     !---------------------------------------------
     ! Initialize route handles in the mediator
     ! Assumptions:
@@ -68,6 +53,22 @@ contains
     !        for the field
     !---------------------------------------------
 
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_LogFlush
+    use ESMF                  , only : ESMF_GridComp, ESMF_VM, ESMF_Field, ESMF_PoleMethod_Flag, ESMF_POLEMETHOD_ALLAVG
+    use ESMF                  , only : ESMF_GridCompGet, ESMF_VMGet, ESMF_FieldSMMStore, ESMF_RouteHandleIsCreated
+    use ESMF                  , only : ESMF_FieldRedistStore, ESMF_FieldRegridStore, ESMF_REGRIDMETHOD_BILINEAR
+    use ESMF                  , only : ESMF_UNMAPPEDACTION_IGNORE, ESMF_REGRIDMETHOD_CONSERVE, ESMF_NORMTYPE_FRACAREA
+    use ESMF                  , only : ESMF_NORMTYPE_DSTAREA, ESMF_REGRIDMETHOD_PATCH, ESMF_RouteHandlePrint
+    use NUOPC                 , only : NUOPC_Write
+    use esmFlds               , only : ncomps, compice, compocn, compname
+    use esmFlds               , only : fldListFr, fldListTo
+    use shr_nuopc_fldList_mod , only : mapnames
+    use shr_nuopc_fldList_mod , only : mapbilnr, mapconsf, mapconsd, mappatch, mapfcopy, mapunset, mapfiler
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFieldN
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use med_internalstate_mod , only : InternalState
+
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(in)  :: llogunit
     integer, intent(out) :: rc
@@ -267,8 +268,6 @@ contains
        end do ! loop over n2
     end do ! loop over n1
 
-    if (mastertask) call shr_sys_flush(llogunit)
-
     if (dbug_flag > 1) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
@@ -278,15 +277,16 @@ contains
   !================================================================================
 
   subroutine med_map_Fractions_init(gcomp, n1, n2, FBSrc, FBDst, RouteHandle, rc)
-    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_LogFlush
-    use ESMF, only: ESMF_GridComp, ESMF_FieldBundle, ESMF_RouteHandle, ESMF_Field
-    use ESMF, only: ESMF_FieldRedistStore, ESMF_FieldSMMStore, ESMF_FieldRegridStore
-    use ESMF, only: ESMF_UNMAPPEDACTION_IGNORE, ESMF_REGRIDMETHOD_CONSERVE, ESMF_NORMTYPE_FRACAREA
-    use NUOPC, only : NUOPC_CompAttributeGet
-    use esmFlds               , only: ncomps, compice, compocn, compname
-    use shr_nuopc_fldList_mod , only: mapnames, mapconsf
-    use shr_nuopc_methods_mod , only: shr_nuopc_methods_ChkErr
-    use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_getFieldN
+
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_LogFlush
+    use ESMF                  , only : ESMF_GridComp, ESMF_FieldBundle, ESMF_RouteHandle, ESMF_Field
+    use ESMF                  , only : ESMF_FieldRedistStore, ESMF_FieldSMMStore, ESMF_FieldRegridStore
+    use ESMF                  , only : ESMF_UNMAPPEDACTION_IGNORE, ESMF_REGRIDMETHOD_CONSERVE, ESMF_NORMTYPE_FRACAREA
+    use NUOPC                 , only : NUOPC_CompAttributeGet
+    use esmFlds               , only : ncomps, compice, compocn, compname
+    use shr_nuopc_fldList_mod , only : mapnames, mapconsf
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFieldN
 
     !---------------------------------------------
     ! Initialize initialize additional route handles
@@ -302,17 +302,17 @@ contains
     integer                , intent(out)   :: rc
 
     ! local variables
-    type(ESMF_Field)            :: fldsrc
-    type(ESMF_Field)            :: flddst
-    character(len=128)          :: rhname
+    type(ESMF_Field)   :: fldsrc
+    type(ESMF_Field)   :: flddst
+    character(len=128) :: rhname
     character(len=CS)  :: mapname
     character(len=CX)  :: mapfile
     character(len=CS)  :: string
-    integer                     :: SrcMaskValue
-    integer                     :: DstMaskValue
-    real(R8), pointer :: factorList(:)
+    integer            :: SrcMaskValue
+    integer            :: DstMaskValue
+    real(R8), pointer  :: factorList(:)
+    integer            :: dbrc
     character(len=*), parameter :: subname=' (module_med_map: Fractions_init) '
-    integer :: dbrc
     !---------------------------------------------
 
     if (dbug_flag > 1) then
@@ -383,12 +383,17 @@ contains
 !================================================================================
 
   subroutine med_map_MapNorm_init(gcomp, llogunit, rc)
-    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_LogFlush
-    use ESMF, only: ESMF_GridComp, ESMF_FieldBundle, ESMF_RouteHandleIsCreated
-    use med_internalstate_mod , only: InternalState
-    use esmFlds               , only: flds_scalar_name
-    use esmFlds               , only: flds_scalar_num
+
+    !---------------------------------------
+    ! Initialize unity normalization field bundle
+    ! and do the mapping for unity normalization up front
+    !---------------------------------------
+
+    use ESMF                  , only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_LogFlush
+    use ESMF                  , only: ESMF_GridComp, ESMF_FieldBundle, ESMF_RouteHandleIsCreated
     use esmFlds               , only: ncomps, compice, compocn, compname
+    use med_internalstate_mod , only: InternalState
+    use shr_nuopc_scalars_mod , only: flds_scalar_name, flds_scalar_num
     use shr_nuopc_fldList_mod , only: mapnames, nmappers
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_Init
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_Reset
@@ -396,24 +401,21 @@ contains
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_FieldRegrid
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_ChkErr
-    !---------------------------------------------    !---------------------------------------
-    ! Initialize unity normalization field bundle
-    ! and do the mapping for unity normalization up front
-    !---------------------------------------
 
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(in)  :: llogunit
     integer, intent(out) :: rc
 
     ! local variables
-    type(InternalState)         :: is_local
-    type(ESMF_FieldBundle)      :: FBTmp
-    integer                     :: n1, n2, m
-    character(len=CS)  :: normname
-    character(len=1)            :: cn1,cn2,cm
-    real(R8), pointer :: dataptr(:)
+    type(InternalState)        :: is_local
+    type(ESMF_FieldBundle)     :: FBTmp
+    integer                    :: n1, n2, m
+    character(len=CS)          :: normname
+    character(len=1)           :: cn1,cn2,cm
+    real(R8), pointer          :: dataptr(:)
+    integer                    :: dbrc
     character(len=*),parameter :: subname='(module_MED_MAP:MapNorm_init)'
-    integer :: dbrc
     !-----------------------------------------------------------
 
     if (dbug_flag > 1) then
@@ -486,12 +488,18 @@ contains
 
   subroutine med_map_FB_Regrid_Norm(fldsSrc, srccomp, destcomp, &
        FBSrc, FBDst, FBFrac, FBNormOne, RouteHandles, string, rc)
-    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
-    use ESMF, only: ESMF_LOGMSG_ERROR, ESMF_FAILURE
-    use ESMF, only: ESMF_FieldBundle, ESMF_RouteHandle, ESMF_FieldBundleIsCreated
-    use ESMF, only: ESMF_RouteHandleIsCreated
-    use esmFlds               , only: flds_scalar_name
+
+    ! ----------------------------------------------
+    ! Map field bundles with appropriate fraction weighting
+    ! ----------------------------------------------
+
+    use NUOPC                 , only: NUOPC_IsConnected
+    use ESMF                  , only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF                  , only: ESMF_LOGMSG_ERROR, ESMF_FAILURE
+    use ESMF                  , only: ESMF_FieldBundle, ESMF_FieldBundleIsCreated, ESMF_FieldBundleGet
+    use ESMF                  , only: ESMF_RouteHandle, ESMF_RouteHandleIsCreated, ESMF_Field
     use esmFlds               , only: compname
+    use shr_nuopc_scalars_mod , only: flds_scalar_name
     use shr_nuopc_fldList_mod , only: mapnames, mapfcopy
     use shr_nuopc_fldList_mod , only: shr_nuopc_fldList_entry_type
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_Init
@@ -502,10 +510,8 @@ contains
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_FldChk
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_Field_diagnose
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_ChkErr
-    ! ----------------------------------------------
-    ! Map field bundles with appropriate fraction weighting
-    ! ----------------------------------------------
 
+    ! input/output variables
     type(shr_nuopc_fldList_entry_type) , pointer       :: fldsSrc(:)
     integer                            , intent(in)    :: srccomp
     integer                            , intent(in)    :: destcomp
@@ -518,24 +524,25 @@ contains
     integer                            , intent(out)   :: rc
 
     ! local variables
-    integer                     :: i, n
-    type(ESMF_FieldBundle)      :: FBSrcTmp        ! temporary
-    type(ESMF_FieldBundle)      :: FBNormSrc       ! temporary
-    type(ESMF_FieldBundle)      :: FBNormDst       ! temporary
-    integer                     :: mapindex
-    character(len=CS)  :: lstring
-    character(len=CS)  :: mapnorm
-    character(len=CS)  :: fldname
-    character(len=CS)  :: csize1, csize2
-    real(R8), pointer :: data_srctmp(:)  ! temporary
-    real(R8), pointer :: data_src(:)     ! temporary
-    real(R8), pointer :: data_dst(:)     ! temporary
-    real(R8), pointer :: data_srcnorm(:) ! temporary
-    real(R8), pointer :: data_dstnorm(:) ! temporary
-    real(R8), pointer :: data_frac(:)    ! temporary
-    real(R8), pointer :: data_norm(:)    ! temporary
-    character(len=*), parameter :: subname='(module_MED_Map:med_map_Regrid_Norm)'
-    integer :: dbrc
+    integer                :: i, n
+    type(ESMF_Field)       :: lfield
+    type(ESMF_FieldBundle) :: FBSrcTmp
+    type(ESMF_FieldBundle) :: FBNormSrc
+    type(ESMF_FieldBundle) :: FBNormDst
+    integer                :: mapindex
+    character(len=CS)      :: lstring
+    character(len=CS)      :: mapnorm
+    character(len=CS)      :: fldname
+    character(len=CS)      :: csize1, csize2
+    real(R8), pointer      :: data_srctmp(:)
+    real(R8), pointer      :: data_src(:)
+    real(R8), pointer      :: data_dst(:)
+    real(R8), pointer      :: data_srcnorm(:)
+    real(R8), pointer      :: data_dstnorm(:)
+    real(R8), pointer      :: data_frac(:)
+    real(R8), pointer      :: data_norm(:)
+    integer                :: dbrc
+    character(len=*), parameter :: subname='(module_med_map:med_map_Regrid_Norm)'
     !---------------------------------------
 
     if (present(string)) then
@@ -560,25 +567,22 @@ contains
     ! Loop over all fields in the source field bundle and map them to
     ! the destination field bundle accordingly
     !---------------------------------------
+
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(trim(subname)//" *** mapping from "//trim(compname(srccomp))//" to "//&
+            trim(compname(destcomp))//" ***", ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
+
     do n = 1,size(fldsSrc)
 
+       ! Determine if field is a scalar - and if so go to next iternation
        fldname  = fldsSrc(n)%shortname
        if (fldname == flds_scalar_name) CYCLE
 
+       ! Determine if there is a map index and if its zero go to next iteration
        mapindex = fldsSrc(n)%mapindex(destcomp)
-       if (mapindex == 0) CYCLE
-
-       mapnorm  = fldsSrc(n)%mapnorm(destcomp)
-
-       ! Error checks
-       if (.not. shr_nuopc_methods_FB_FldChk(FBSrc, fldname, rc=rc)) then
-          if (dbug_flag > 1) then
-             call ESMF_LogWrite(trim(subname)//" field not found in FBSrc: "//trim(fldname), ESMF_LOGMSG_INFO, rc=dbrc)
-          endif
-       else if (.not. shr_nuopc_methods_FB_FldChk(FBDst, fldname, rc=rc)) then
-          if (dbug_flag > 1) then
-             call ESMF_LogWrite(trim(subname)//" field not found in FBDst: "//trim(fldname), ESMF_LOGMSG_INFO, rc=dbrc)
-          endif
+       if (mapindex == 0) then
+          CYCLE
        else if (.not. ESMF_RouteHandleIsCreated(RouteHandles(mapindex), rc=rc)) then
           call ESMF_LogWrite(trim(subname)//trim(lstring)//&
                ": ERROR RH not available for "//mapnames(mapindex)//": fld="//trim(fldname), &
@@ -586,6 +590,22 @@ contains
           rc = ESMF_FAILURE
           return
        end if
+
+       ! Determine if field is FBSrc or FBDst or connected - and if not go to next iteration
+       if (.not. shr_nuopc_methods_FB_FldChk(FBSrc, trim(fldname), rc=rc)) then
+          if (dbug_flag > 5) then
+             call ESMF_LogWrite(trim(subname)//" field not found in FBSrc: "//trim(fldname), ESMF_LOGMSG_INFO, rc=dbrc)
+          end if
+          CYCLE
+       else if (.not. shr_nuopc_methods_FB_FldChk(FBDst, trim(fldname), rc=rc)) then
+          if (dbug_flag > 5) then
+             call ESMF_LogWrite(trim(subname)//" field not found in FBDst: "//trim(fldname), ESMF_LOGMSG_INFO, rc=dbrc)
+          end if
+          CYCLE
+       end if
+
+       ! Determine the normalization for the map
+       mapnorm  = fldsSrc(n)%mapnorm(destcomp)
 
        ! Do the mapping
        if (mapindex == mapfcopy) then

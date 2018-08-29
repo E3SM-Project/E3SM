@@ -4,9 +4,9 @@ module med_internalstate_mod
   ! Mediator Internal State Datatype.
   !-----------------------------------------------------------------------------
 
-  use ESMF, only : ESMF_RouteHandle, ESMF_FieldBundle, ESMF_State
-  use esmFlds               , only: ncomps
-  use shr_nuopc_fldList_mod , only: nmappers
+  use ESMF                  , only : ESMF_RouteHandle, ESMF_FieldBundle, ESMF_State
+  use esmFlds               , only : ncomps
+  use shr_nuopc_fldList_mod , only : nmappers
 
   implicit none
   private

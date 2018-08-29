@@ -9,25 +9,9 @@ module esmFlds
   use ESMF
   use NUOPC
   use med_constants_mod     , only : IN, R8, I8, CXX, CX, CS, CL
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_nx
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_ny
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_precip_fact
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_nextsw_cday
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_dead_comps
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_rofice_present
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_flood_present
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_ocnrof_prognostic
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_iceberg_prognostic
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_glclnd_present
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_glcocn_present
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_glcice_present
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_glc_valid_input
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_glc_coupled
-  use shr_nuopc_scalars_mod , only : flds_scalar_num
   use shr_nuopc_scalars_mod , only : flds_scalar_name
   use shr_nuopc_fldList_mod , only : mapbilnr, mapconsf, mapconsd, mappatch, mapfcopy, mapunset, mapfiler
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_type
-  use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_AddDomain
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_AddMetaData
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_AddFld
   use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_AddMap
@@ -39,10 +23,14 @@ module esmFlds
   use shr_ndep_mod          , only : shr_ndep_readnl
   use shr_flds_mod          , only : shr_flds_dom_coord, shr_flds_dom_other
   use shr_string_mod        , only : shr_string_listGetNum, shr_string_listGetName
-  use glc_elevclass_mod     , only : glc_elevclass_init, glc_get_num_elevation_classes, glc_elevclass_as_string
+  use glc_elevclass_mod     , only : glc_elevclass_as_string
 
   implicit none
   public
+
+  ! IMPORTANT:
+  ! TODO: the call to add metadata needs to be done on all pes
+  ! all other calls are just on the mediator pes
 
   !----------------------------------------------------------------------------
   ! routines
@@ -90,8 +78,8 @@ module esmFlds
   character(len=CX)  :: carma_fields        ! List of CARMA fields from lnd->atm
   character(len=CX)  :: ndep_fields         ! List of nitrogen deposition fields from atm->lnd/ocn
   integer            :: ice_ncat            ! number of sea ice thickness categories
-  logical            :: flds_i2o_per_cat    ! .true. => select per ice thickness category fields passed from ice to ocn
   logical            :: add_ndep_fields     ! .true. => add ndep fields
+  logical            :: flds_i2o_per_cat    ! .true. => select per ice thickness category fields passed from ice to ocn
 
   integer     , parameter :: CSS = 256           ! use longer short character
   character(*), parameter :: u_FILE_u = __FILE__
@@ -153,7 +141,6 @@ contains
     logical                :: flds_co2a  ! use case
     logical                :: flds_co2b  ! use case
     logical                :: flds_co2c  ! use case
-    logical                :: flds_wiso  ! use case
     integer                :: glc_nec
     integer                :: mpicom
     character(len=*), parameter :: subname='(shr_nuopc_fldList_Init)'
@@ -184,27 +171,6 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) flds_co2c
     call ESMF_LogWrite('flds_co2c = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
-
-    call NUOPC_CompAttributeGet(gcomp, name='flds_wiso', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) flds_wiso
-    call ESMF_LogWrite('flds_wiso = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
-
-    call NUOPC_CompAttributeGet(gcomp, name='ice_ncat', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) ice_ncat
-    call ESMF_LogWrite('ice_ncat = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
-
-    call NUOPC_CompAttributeGet(gcomp, name='flds_i2o_per_cat', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) flds_i2o_per_cat
-    call ESMF_LogWrite('flds_i2o_per_cat = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
-
-    call NUOPC_CompAttributeGet(gcomp, name='glc_nec', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) glc_nec
-    call glc_elevclass_init(glc_nec)
-    call ESMF_LogWrite('glc_nec = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
 
     !----------------------------------------------------------
     ! Initialize mapping file names
@@ -361,43 +327,43 @@ contains
     ! domain coordinates (appear in the share module shr_flds_mod)
     !----------------------------------------------------------
 
-    shr_flds_dom_coord  = ''
-    shr_flds_dom_other  = ''
+    shr_flds_dom_coord  = 'lat:lon:hgt'
+    shr_flds_dom_other  = 'area:aream:mask:frac'
 
     longname = 'latitude'
     stdname  = 'latitude'
     units    = 'degrees north'
-    call shr_nuopc_fldList_AddDomain(shr_flds_dom_coord,'lat', longname, stdname, units=units)
+    call shr_nuopc_fldList_AddMetadata('lat', longname, stdname, units)
 
     longname = 'longitude'
     stdname  = 'longitude'
     units    = 'degrees east'
-    call shr_nuopc_fldList_AddDomain(shr_flds_dom_coord,'lon', longname, stdname, units=units)
+    call shr_nuopc_fldList_AddMetadata('lon', longname, stdname, units)
 
     longname = 'height'
     stdname  = 'height, depth, or levels'
     units    = 'unitless'
-    call shr_nuopc_fldList_AddDomain(shr_flds_dom_coord,'hgt', longname, stdname, units=units)
+    call shr_nuopc_fldList_AddMetadata('hgt', longname, stdname, units)
 
     longname = 'cell_area_model'
     stdname  = 'cell area from model'
     units    = 'radian^2'
-    call shr_nuopc_fldList_AddDomain(shr_flds_dom_other,'area', longname, stdname, units=units)
+    call shr_nuopc_fldList_AddMetadata('area', longname, stdname, units)
 
     longname = 'cell_area_mapping'
     stdname  = 'cell area from mapping file'
     units    = 'radian^2'
-    call shr_nuopc_fldList_AddDomain(shr_flds_dom_other,'aream', longname, stdname, units=units)
+    call shr_nuopc_fldList_AddMetadata('aream', longname, stdname, units)
 
     longname = 'mask'
     stdname  = 'mask'
     units    = '1'
-    call shr_nuopc_fldList_AddDomain(shr_flds_dom_other,'mask', longname, stdname, units=units)
+    call shr_nuopc_fldList_AddMetadata('mask', longname, stdname, units)
 
     longname = 'area_fraction'
     stdname  = 'area fraction'
     units    = '1'
-    call shr_nuopc_fldList_AddDomain(shr_flds_dom_other,'frac', longname, stdname, units=units)
+    call shr_nuopc_fldList_AddMetadata('frac', longname, stdname, units)
 
     !----------------------------------------------------------
     ! Masks from components
@@ -1766,6 +1732,12 @@ contains
     ! glc -> lnd
     !-----------------------------
 
+    ! initialize number of elevation classes
+    call NUOPC_CompAttributeGet(gcomp, name='glc_nec', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) glc_nec
+    call ESMF_LogWrite('glc_nec = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
+
     ! for glc fields with multiple elevation classes in glc->lnd
     ! fields from glc->med do NOT have elevation classes
     ! fields from med->lnd are BROKEN into multiple elevation classes
@@ -1797,8 +1769,8 @@ contains
     call shr_nuopc_fldList_AddMetadata(fldname='Sg_ice_covered', longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compglc)%flds, 'Sg_ice_covered', fldindex=n1)
     call shr_nuopc_fldList_AddMap(FldListFr(compglc)%flds(n1), compglc, complnd, mapconsf, 'unset', glc2lnd_fmapname) ! TODO: normalization?
-    if (glc_get_num_elevation_classes() > 0) then
-       do num = 0, glc_get_num_elevation_classes()
+    if (glc_nec > 0) then
+       do num = 0, glc_nec
           cnum = glc_elevclass_as_string(num)
           call shr_nuopc_fldList_AddMetadata(fldname= 'Sg_ice_covered'//trim(cnum), &
                longname = trim(longname)//' of elevation class '//trim(cnum), stdname =stdname, units=units)
@@ -1815,8 +1787,8 @@ contains
     call shr_nuopc_fldList_AddMetadata(fldname='Sg_topo', longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compglc)%flds, 'Sg_topo', fldindex=n1)
     call shr_nuopc_fldList_AddMap(FldListFr(compglc)%flds(n1), compglc, compglc, mapconsf, 'custom', glc2lnd_fmapname)
-    if (glc_get_num_elevation_classes() > 0) then
-       do num = 0, glc_get_num_elevation_classes()
+    if (glc_nec > 0) then
+       do num = 0, glc_nec
           cnum = glc_elevclass_as_string(num)
           call shr_nuopc_fldList_AddMetadata(fldname= 'Sg_topo'//trim(cnum), &
                longname = trim(longname)//' of elevation class '//trim(cnum), stdname =stdname, units=units)
@@ -1834,8 +1806,8 @@ contains
     call shr_nuopc_fldList_AddMetadata(fldname='Flgg_hflx', longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListFr(compglc)%flds, 'Flgg_hflx', fldindex=n1)
     call shr_nuopc_fldList_AddMap(FldListFr(compglc)%flds(n1), compglc, compglc, mapconsf, 'custom', glc2lnd_fmapname)
-    if (glc_get_num_elevation_classes() > 0) then
-       do num = 0, glc_get_num_elevation_classes()
+    if (glc_nec > 0) then
+       do num = 0, glc_nec
           cnum = glc_elevclass_as_string(num)
           call shr_nuopc_fldList_AddMetadata(fldname= 'Flgg_hflx'//trim(cnum), &
                longname = trim(longname)//' of elevation class '//trim(cnum), stdname =stdname, units=units)
@@ -1863,8 +1835,8 @@ contains
     longname = 'New glacier ice flux'
     stdname  = 'ice_flux_out_of_glacier'
     units    = 'kg m-2 s-1'
-    if (glc_get_num_elevation_classes() > 0) then
-       do num = 0, glc_get_num_elevation_classes()
+    if (glc_nec > 0) then
+       do num = 0, glc_nec
           cnum = glc_elevclass_as_string(num)
           call shr_nuopc_fldList_AddMetadata(fldname = 'Flgl_qice'//trim(cnum), &
                longname = trim(longname)//' of elevation class '//trim(cnum), stdname =stdname, units=units)
@@ -1881,8 +1853,8 @@ contains
     longname = 'Surface temperature of glacier'
     stdname  = 'surface_temperature'
     units    = 'deg C'
-    if (glc_get_num_elevation_classes() > 0) then
-       do num = 0, glc_get_num_elevation_classes()
+    if (glc_nec > 0) then
+       do num = 0, glc_nec
           cnum = glc_elevclass_as_string(num)
           call shr_nuopc_fldList_AddMetadata(fldname  = 'Sl_tsrf'//trim(cnum), &
                longname = trim(longname)//' of elevation class '//trim(cnum), stdname =stdname, units=units)
@@ -1901,8 +1873,8 @@ contains
     longname = 'Surface height'
     stdname  = 'height'
     units    = 'm'
-    if (glc_get_num_elevation_classes() > 0) then
-       do num = 0, glc_get_num_elevation_classes()
+    if (glc_nec > 0) then
+       do num = 0, glc_nec
           cnum = glc_elevclass_as_string(num)
           call shr_nuopc_fldList_AddMetadata(fldname  = 'Sl_topo'//trim(cnum), &
                longname = trim(longname)//' of elevation class '//trim(cnum), stdname =stdname, units=units)
@@ -1913,10 +1885,6 @@ contains
     call shr_nuopc_fldList_AddMetadata(fldname= 'Sl_topo', longname=longname, stdname=stdname, units=units)
     call shr_nuopc_fldList_AddFld(fldListTo(compglc)%flds, 'Sl_topo')
     call shr_nuopc_fldList_AddMap(FldListFr(complnd)%flds(n1), complnd, compglc, mapconsf, 'none', lnd2glc_fmapname)
-
-    !-----------------------------
-    ! co2 fields
-    !-----------------------------
 
     if (flds_co2a) then
 
@@ -2021,7 +1989,6 @@ contains
     ! water isotope fields
     !-----------------------------
 
-    ! if (flds_wiso) then
     !    longname = 'Ratio of ocean surface level abund. H2_16O/H2O/Rstd'
     !    stdname  = 'ratio_ocean_surface_16O_abund'
     !    units    = '1'
@@ -2384,14 +2351,21 @@ contains
     !    ! call fld_add(flds_r2x, flds_r2x_map,'Flrr_flood_HDO', longname=longname, stdname=stdname, units=units)
     !    ! call fld_add(flds_x2l, flds_x2l_map,'Flrr_flood_HDO')
 
-    ! endif !Water isotopes
-
     !-----------------------------------------------------------------------------
     ! optional per thickness category fields
     !-----------------------------------------------------------------------------
 
-    if (flds_i2o_per_cat) then
+    call NUOPC_CompAttributeGet(gcomp, name='flds_i2o_per_cat', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) flds_i2o_per_cat
+    call ESMF_LogWrite('flds_i2o_per_cat = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
 
+    call NUOPC_CompAttributeGet(gcomp, name='ice_ncat', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) ice_ncat
+    call ESMF_LogWrite('ice_ncat = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
+
+    if (flds_i2o_per_cat) then
        do num = 1, ice_ncat
           write(cnum,'(i2.2)') num
 
@@ -2439,8 +2413,7 @@ contains
        call shr_nuopc_fldList_AddMetadata(fldname='Foxx_swnet_afracr', longname=longname, stdname=stdname, units=units)
        call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swnet_afracr')
        ! TODO: add mapping and merging
-
-    endif
+    end if
 
     !-----------------------------------------------------------------------------
     ! CARMA fields

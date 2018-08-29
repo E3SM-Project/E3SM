@@ -16,7 +16,6 @@ module rof_comp_mct
   use drof_comp_mod   , only: drof_comp_init, drof_comp_run, drof_comp_final
   use drof_shr_mod    , only: drof_shr_read_namelists
   use seq_flds_mod    , only: seq_flds_x2r_fields, seq_flds_r2x_fields
-  use seq_timemgr_mod , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
 
   ! !PUBLIC TYPES:
   implicit none
@@ -42,8 +41,10 @@ module rof_comp_mct
   character(len=16)      :: inst_suffix         ! char string associated with instance (ie. "_0001" or "")
   integer(IN)            :: logunit             ! logging unit number
   integer(IN)            :: compid              ! mct comp id
-  integer(IN),parameter  :: master_task=0       ! task number of master task
-  integer    ,parameter  :: dbug = 10
+
+  character(*), parameter :: F00   = "('(drof_comp_init) ',8a)"
+  integer(IN) , parameter :: master_task=0 ! task number of master task
+  character(*), parameter :: subName = "(rof_init_mct) "
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
@@ -65,7 +66,6 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer           :: phase                     ! phase of method
     logical           :: rof_present               ! flag
     logical           :: rof_prognostic            ! flag
     logical           :: rofice_present            ! flag
@@ -74,7 +74,6 @@ CONTAINS
     integer(IN)       :: shrloglev                 ! original log level
     logical           :: read_restart              ! start from restart
     integer(IN)       :: ierr                      ! error code
-    character(*), parameter :: F00   = "('(drof_comp_init) ',8a)"
     character(*), parameter :: subName = "(rof_init_mct) "
     !-------------------------------------------------------------------------------
 
@@ -150,12 +149,6 @@ CONTAINS
     ! Fill infodata that needs to be returned from drof
     !----------------------------------------------------------------------------
 
-    if (dbug > 1) then
-       if (my_task == master_task) then
-          call mct_aVect_info(2, r2x, istr='initial diag'//':AV')
-       end if
-    end if
-
     call seq_infodata_PutData(infodata, &
          rof_nx=SDROF%nxg, &
          rof_ny=SDROF%nyg )
@@ -189,20 +182,15 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer(IN)                      :: shrlogunit    ! original log unit
-    integer(IN)                      :: shrloglev     ! original log level
-    logical                          :: read_restart  ! start from restart
-    character(CL)                    :: case_name     ! case name
-    logical                          :: write_restart ! restart now
-    integer(IN)                      :: currentYMD    ! model date
-    integer(IN)                      :: currentTOD    ! model sec into model date
+    integer(IN)                      :: shrlogunit   ! original log unit
+    integer(IN)                      :: shrloglev    ! original log level
+    character(CL)                    :: case_name    ! case name
     character(*), parameter :: subName = "(rof_run_mct) "
     !-------------------------------------------------------------------------------
 
     ! Reset shr logging to my log file
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogLevel(max(shrloglev,1))
     call shr_file_setLogUnit (logUnit)
 
     call seq_cdata_setptrs(cdata, &
@@ -212,24 +200,13 @@ CONTAINS
 
     call seq_infodata_GetData(infodata, case_name=case_name)
 
-    write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
-
-    ! For mct - the component clock is advance at the beginning of the time interval
-    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
-
     call drof_comp_run(EClock, x2r, r2x, &
        SDROF, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, read_restart, write_restart, &
-       currentYMD, currentTOD, case_name=case_name)
-
-    if (dbug > 1) then
-       if (my_task == master_task) then
-          call mct_aVect_info(2, r2x, istr='run diag'//':AV')
-       end if
-    end if
+       inst_suffix, logunit, case_name=case_name)
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
+    call shr_sys_flush(logunit)
 
   end subroutine rof_run_mct
 

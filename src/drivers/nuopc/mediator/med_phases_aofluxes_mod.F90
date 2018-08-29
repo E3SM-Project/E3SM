@@ -78,28 +78,29 @@ module med_phases_aofluxes_mod
   ! The following three variables are obtained as attributes from gcomp
   logical       :: flds_wiso  ! use case
   character(3)  :: aoflux_grid
-
-  character(*)       , parameter :: u_FILE_u       = __FILE__
+  character(*), parameter :: u_FILE_u = &
+       __FILE__
 
 !================================================================================
 contains
 !================================================================================
 
   subroutine med_phases_aofluxes_init(gcomp, aoflux, rc)
+
+    ! Initialize ocn/atm flux calculations
+
     use ESMF                  , only : ESMF_GridComp, ESMF_VM, ESMF_VMGet, ESMF_GridCompGet
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LOGERR_PASSTHRU
     use ESMF                  , only : ESMF_SUCCESS, ESMF_LogFoundError
     use NUOPC                 , only : NUOPC_CompAttributeGet
-    use esmFlds               , only : flds_scalar_name
-    use esmFlds               , only : flds_scalar_num
     use esmFlds               , only : fldListMed_aoflux_o
     use esmFlds               , only : compatm, compocn
     use med_internalstate_mod , only : InternalState, mastertask
+    use shr_nuopc_scalars_mod , only : flds_scalar_name
+    use shr_nuopc_scalars_mod , only : flds_scalar_num
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
     use shr_nuopc_fldList_mod , only : shr_nuopc_fldlist_getfldnames
-    use med_constants_mod     , only : CL
-    ! Initialize ocn/atm flux calculations
 
     ! input/output variables
     type(ESMF_GridComp)               :: gcomp
@@ -107,8 +108,8 @@ contains
     integer           , intent(out)   :: rc
 
     ! local variables
-    character(CL)       :: cvalue
     character(3)        :: aoflux_grid
+    character(len=256)  :: cvalue
     type(InternalState) :: is_local
     integer             :: nflds
     integer             :: localPet
@@ -359,15 +360,6 @@ contains
     call NUOPC_CompAttributeGet(gcomp, name='aoflux_grid', value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) aoflux_grid
-
-    !----------------------------------
-    ! fields calculated in flux_ocnalb
-    !----------------------------------
-
-    call shr_nuopc_methods_FB_GetFldPtr(FBMed_ocnalb, fldname='Faox_swdn', fldptr1=aoflux%swdn, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBMed_ocnalb, fldname='Faox_swup', fldptr1=aoflux%swup, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !----------------------------------
     ! atm/ocn fields

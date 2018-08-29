@@ -5,15 +5,13 @@ module glc_elevclass_mod
   ! Purpose:
   !
   ! This module contains data and routines for operating on GLC elevation classes.
+  !---------------------------------------------------------------------
 
 #include "shr_assert.h"
-  use shr_kind_mod, only : r8 => shr_kind_r8
-  use shr_sys_mod
-  use seq_comm_mct, only : logunit
-  use shr_log_mod, only : errMsg => shr_log_errMsg
+  use med_constants_mod     , only : R8
+  use shr_sys_mod           , only : shr_sys_abort
 
   implicit none
-  save
   private
 
   !--------------------------------------------------------------------------
@@ -64,7 +62,7 @@ module glc_elevclass_mod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine glc_elevclass_init_default(my_glc_nec)
+  subroutine glc_elevclass_init_default(my_glc_nec, logunit)
     !
     ! !DESCRIPTION:
     ! Initialize GLC elevation class data to default boundaries, based on given glc_nec
@@ -73,9 +71,9 @@ contains
     !
     ! !ARGUMENTS:
     integer, intent(in) :: my_glc_nec  ! number of GLC elevation classes
+    integer, intent(in), optional :: logunit
     !
     ! !LOCAL VARIABLES:
-
     character(len=*), parameter :: subname = 'glc_elevclass_init'
     !-----------------------------------------------------------------------
 
@@ -104,7 +102,9 @@ contains
                  6000._r8,  6200._r8,  6400._r8,  6600._r8,  6800._r8,  &
                  7000._r8, 10000._r8]
     case default
-       write(logunit,*) subname,' ERROR: unknown glc_nec: ', glc_nec
+       if (present(logunit)) then
+          write(logunit,*) subname,' ERROR: unknown glc_nec: ', glc_nec
+       end if
        call shr_sys_abort(subname//' ERROR: unknown glc_nec')
     end select
 
@@ -161,6 +161,7 @@ contains
     !
     ! !ARGUMENTS:
     integer :: num_elevation_classes  ! function result
+    integer :: rc
     !
     ! !LOCAL VARIABLES:
 
@@ -252,7 +253,7 @@ contains
 
 
   !-----------------------------------------------------------------------
-  function glc_mean_elevation_virtual(elevation_class) result(mean_elevation)
+  function glc_mean_elevation_virtual(elevation_class, logunit) result(mean_elevation)
     !
     ! !DESCRIPTION:
     ! Returns the mean elevation of a virtual elevation class
@@ -260,6 +261,7 @@ contains
     ! !ARGUMENTS:
     real(r8) :: mean_elevation  ! function result
     integer, intent(in) :: elevation_class
+    integer, optional, intent(in) :: logunit
     !
     ! !LOCAL VARIABLES:
     integer :: resulting_elevation_class
@@ -287,7 +289,9 @@ contains
              mean_elevation = 1000._r8
           end if
        else
-          write(logunit,*) subname,' ERROR: elevation class out of bounds: ', elevation_class
+          if (present(logunit)) then
+             write(logunit,*) subname,' ERROR: elevation class out of bounds: ', elevation_class
+          end if
           call shr_sys_abort(subname // ' ERROR: elevation class out of bounds')
        end if
     end if
@@ -296,15 +300,19 @@ contains
     if (elevation_class > 0) then
        call glc_get_elevation_class(mean_elevation, resulting_elevation_class, err_code)
        if (err_code /= GLC_ELEVCLASS_ERR_NONE) then
-          write(logunit,*) subname, ' ERROR: generated elevation that results in an error'
-          write(logunit,*) 'when trying to determine the resulting elevation class'
-          write(logunit,*) glc_errcode_to_string(err_code)
-          write(logunit,*) 'elevation_class, mean_elevation = ', elevation_class, mean_elevation
+          if (present(logunit)) then
+             write(logunit,*) subname, ' ERROR: generated elevation that results in an error'
+             write(logunit,*) 'when trying to determine the resulting elevation class'
+             write(logunit,*) glc_errcode_to_string(err_code)
+             write(logunit,*) 'elevation_class, mean_elevation = ', elevation_class, mean_elevation
+          end if
           call shr_sys_abort(subname // ' ERROR: generated elevation that results in an error')
        else if (resulting_elevation_class /= elevation_class) then
-          write(logunit,*) subname, ' ERROR: generated elevation outside the given elevation class'
-          write(logunit,*) 'elevation_class, mean_elevation, resulting_elevation_class = ', &
-               elevation_class, mean_elevation, resulting_elevation_class
+          if (present(logunit)) then
+             write(logunit,*) subname, ' ERROR: generated elevation outside the given elevation class'
+             write(logunit,*) 'elevation_class, mean_elevation, resulting_elevation_class = ', &
+                  elevation_class, mean_elevation, resulting_elevation_class
+          end if
           call shr_sys_abort(subname // ' ERROR: generated elevation outside the given elevation class')
        end if
     end if

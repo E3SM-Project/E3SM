@@ -114,7 +114,6 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    logical,save                :: first_call = .true.
     type(InternalState)         :: is_local
     integer                     :: n, n1, ncnt
     integer                     :: lsize
@@ -134,6 +133,7 @@ contains
     integer                     :: dbrc
     ! TODO: the calculation needs to be set at run time based on receiving it from the ocean
     real(R8)                    :: flux_epbalfact = 1._R8
+    logical                     :: first_call = .true. 
     character(len=*), parameter :: subname='(med_phases_prep_ocn_merge)'
     !---------------------------------------
 

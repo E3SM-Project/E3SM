@@ -1,7 +1,6 @@
 #ifdef AIX
 @PROCESS ALIAS_SIZE(805306368)
 #endif
-
 module dice_comp_mod
 
   ! !USES:
@@ -22,18 +21,17 @@ module dice_comp_mod
   use shr_strdata_mod , only: shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod  , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
   use shr_dmodel_mod  , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
-  use shr_cal_mod     , only: shr_cal_datetod2string
-  use seq_timemgr_mod , only: seq_timemgr_EClockGetData
+  use seq_timemgr_mod , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
 
-  use dice_shr_mod    , only: datamode       ! namelist input
-  use dice_shr_mod    , only: decomp         ! namelist input
-  use dice_shr_mod    , only: rest_file      ! namelist input
-  use dice_shr_mod    , only: rest_file_strm ! namelist input
-  use dice_shr_mod    , only: flux_swpf      ! namelist input -short-wave penatration factor
-  use dice_shr_mod    , only: flux_Qmin      ! namelist input -bound on melt rate
-  use dice_shr_mod    , only: flux_Qacc      ! namelist input -activates water accumulation/melt wrt Q
-  use dice_shr_mod    , only: flux_Qacc0     ! namelist input -initial water accumulation value
-  use dice_shr_mod    , only: nullstr
+  use dice_shr_mod   , only: datamode       ! namelist input
+  use dice_shr_mod   , only: decomp         ! namelist input
+  use dice_shr_mod   , only: rest_file      ! namelist input
+  use dice_shr_mod   , only: rest_file_strm ! namelist input
+  use dice_shr_mod   , only: flux_swpf      ! namelist input -short-wave penatration factor
+  use dice_shr_mod   , only: flux_Qmin      ! namelist input -bound on melt rate
+  use dice_shr_mod   , only: flux_Qacc      ! namelist input -activates water accumulation/melt wrt Q
+  use dice_shr_mod   , only: flux_Qacc0     ! namelist input -initial water accumulation value
+  use dice_shr_mod   , only: nullstr
   use dice_flux_atmice_mod, only: dice_flux_atmice
 
   ! !PUBLIC TYPES:
@@ -55,7 +53,6 @@ module dice_comp_mod
   character(CS) :: myModelName = 'ice'   ! user defined model name
   logical       :: firstcall = .true.    ! first call logical
   character(len=*),parameter :: rpfile = 'rpointer.ice'
-  integer(IN)   :: dbug = 0              ! debug level (higher is more)
 
   real(R8),parameter  :: pi     = shr_const_pi      ! pi
   real(R8),parameter  :: spval  = shr_const_spval   ! flags invalid data
@@ -79,7 +76,6 @@ module dice_comp_mod
   real(R8),parameter  :: ax_nidr = ai_nidr*(1.0_R8-snwfrac) + as_nidr*snwfrac
   real(R8),parameter  :: ax_vsdr = ai_vsdr*(1.0_R8-snwfrac) + as_vsdr*snwfrac
 
-  integer(IN) :: km
   integer(IN) :: kswvdr,kswndr,kswvdf,kswndf,kq,kz,kua,kva,kptem,kshum,kdens,ktbot
   integer(IN) :: kiFrac,kt,kavsdr,kanidr,kavsdf,kanidf,kswnet,kmelth,kmeltw
   integer(IN) :: ksen,klat,klwup,kevap,ktauxa,ktauya,ktref,kqref,kswpen,ktauxo,ktauyo,ksalt
@@ -100,17 +96,15 @@ module dice_comp_mod
   !  real(R8)    , pointer :: ifrac0(:)
 
   !--------------------------------------------------------------------------
-  integer(IN)  , parameter :: ktrans = 1
+  integer(IN),parameter :: ktrans = 1
   character(16),parameter  :: avofld(1:ktrans) = (/"Si_ifrac        "/)
   character(16),parameter  :: avifld(1:ktrans) = (/"ifrac           "/)
-  !--------------------------------------------------------------------------
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   !===============================================================================
-
   subroutine dice_comp_init(Eclock, x2i, i2x, &
        seq_flds_x2i_fields, seq_flds_i2x_fields, seq_flds_i2o_per_cat, &
        SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
@@ -142,16 +136,11 @@ CONTAINS
     real(R8)               , intent(in)    :: scmLon               ! single column lon
 
     !--- local variables ---
-    integer(IN)   :: n,k         ! generic counters
-    integer(IN)   :: ierr        ! error code
     integer(IN)   :: lsize       ! local size
     integer(IN)   :: kfld        ! field reference
-    logical       :: exists,exists1      ! file existance logical
+    logical       :: exists      ! file existance logical
     integer(IN)   :: nu          ! unit number
     character(CL) :: calendar    ! calendar type
-    logical       :: write_restart
-    integer(IN)   :: currentYMD    ! model date
-    integer(IN)   :: currentTOD    ! model sec into model date
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dice_comp_init) ',8a)"
@@ -241,7 +230,6 @@ CONTAINS
     call mct_aVect_init(i2x, rList=seq_flds_i2x_fields, lsize=lsize)
     call mct_aVect_zero(i2x)
 
-    km     = mct_aVect_indexRA(i2x,'Si_imask', perrwith='quiet')
     kiFrac = mct_aVect_indexRA(i2x,'Si_ifrac')
     kt     = mct_aVect_indexRA(i2x,'Si_t')
     ktref  = mct_aVect_indexRA(i2x,'Si_tref')
@@ -268,7 +256,6 @@ CONTAINS
     kflxdst= mct_aVect_indexRA(i2x,'Fioi_flxdst')
 
     ! optional per thickness category fields
-
     if (seq_flds_i2o_per_cat) then
        kiFrac_01       = mct_aVect_indexRA(i2x,'Si_ifrac_01')
        kswpen_iFrac_01 = mct_aVect_indexRA(i2x,'PFioi_swpen_ifrac_01')
@@ -314,15 +301,10 @@ CONTAINS
     allocate(tfreeze(lsize))
     ! allocate(iFrac0(lsize))
 
-    ! Note that the module array, imask, does not change after initialization
     kfld = mct_aVect_indexRA(ggrid%data,'mask')
     imask(:) = nint(ggrid%data%rAttr(kfld,:))
     kfld = mct_aVect_indexRA(ggrid%data,'lat')
     yc(:) = ggrid%data%rAttr(kfld,:)
-
-    if (km /= 0) then
-       i2x%rAttr(km, :) = imask(:)
-    end if
 
     call t_stopf('dice_initmctavs')
 
@@ -331,24 +313,23 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     if (read_restart) then
-       exists = .false.
-       exists1 = .false.
-       if (trim(rest_file)      == trim(nullstr) .and. &
-           trim(rest_file_strm) == trim(nullstr)) then
+       if (trim(rest_file) == trim(nullstr) .and. &
+            trim(rest_file_strm) == trim(nullstr)) then
           if (my_task == master_task) then
-             write(logunit,F00) ' restart filenames from rpointer = ',trim(rpfile)
+             write(logunit,F00) ' restart filenames from rpointer'
              call shr_sys_flush(logunit)
              inquire(file=trim(rpfile)//trim(inst_suffix),exist=exists)
-             if (exists) then
-                nu = shr_file_getUnit()
-                open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
-                read(nu,'(a)') rest_file
-                read(nu,'(a)') rest_file_strm
-                close(nu)
-                call shr_file_freeUnit(nu)
-                inquire(file=trim(rest_file_strm),exist=exists)
-                inquire(file=trim(rest_file),exist=exists1)
+             if (.not.exists) then
+                write(logunit,F00) ' ERROR: rpointer file does not exist'
+                call shr_sys_abort(trim(subname)//' ERROR: rpointer file missing')
              endif
+             nu = shr_file_getUnit()
+             open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
+             read(nu,'(a)') rest_file
+             read(nu,'(a)') rest_file_strm
+             close(nu)
+             call shr_file_freeUnit(nu)
+             inquire(file=trim(rest_file_strm),exist=exists)
           endif
           call shr_mpi_bcast(rest_file,mpicom,'rest_file')
           call shr_mpi_bcast(rest_file_strm,mpicom,'rest_file_strm')
@@ -360,18 +341,10 @@ CONTAINS
              inquire(file=trim(rest_file_strm),exist=exists)
           endif
        endif
-
        call shr_mpi_bcast(exists,mpicom,'exists')
-       call shr_mpi_bcast(exists1,mpicom,'exists1')
-
-       if (exists1) then
-          if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
-          call shr_pcdf_readwrite('read',SDICE%pio_subsystem, SDICE%io_type, &
-               trim(rest_file),mpicom,gsmap=gsmap,rf1=water,rf1n='water',io_format=SDICE%io_format)
-       else
-          if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file)
-       endif
-
+       if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
+       call shr_pcdf_readwrite('read',SDICE%pio_subsystem, SDICE%io_type, &
+            trim(rest_file),mpicom,gsmap=gsmap,rf1=water,rf1n='water',io_format=SDICE%io_format)
        if (exists) then
           if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file_strm)
           call shr_strdata_restRead(trim(rest_file_strm),SDICE,mpicom)
@@ -398,16 +371,10 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     call t_adj_detailf(+2)
-
-    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
-
-    write_restart = .false.
     call dice_comp_run(EClock, x2i, i2x, &
          seq_flds_i2o_per_cat, &
          SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, logunit, read_restart, write_restart, &
-         currentYMD, currentTOD)
-
+         inst_suffix, logunit, read_restart)
     call t_adj_detailf(-2)
 
     call t_stopf('DICE_INIT')
@@ -415,13 +382,11 @@ CONTAINS
   end subroutine dice_comp_init
 
   !===============================================================================
-
   subroutine dice_comp_run(EClock, x2i, i2x, &
        seq_flds_i2o_per_cat, &
        SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, read_restart, write_restart, &
-       target_ymd, target_tod, case_name)
-
+       inst_suffix, logunit, read_restart, case_name)
+    use shr_cal_mod, only : shr_cal_ymdtod2string
     ! !DESCRIPTION: run method for dice model
     implicit none
 
@@ -440,13 +405,12 @@ CONTAINS
     character(len=*)       , intent(in)    :: inst_suffix          ! char string associated with instance
     integer(IN)            , intent(in)    :: logunit              ! logging unit number
     logical                , intent(in)    :: read_restart         ! start from restart
-    logical                , intent(in)    :: write_restart        ! restart now
-    integer(IN)            , intent(in)    :: target_ymd
-    integer(IN)            , intent(in)    :: target_tod
     character(CL)          , intent(in), optional :: case_name     ! case name
 
     !--- local ---
-    integer(IN)   :: yy,mm,dd,tod      ! year month day time-of-day
+    integer(IN)   :: CurrentYMD        ! model date
+    integer(IN)   :: CurrentTOD        ! model sec into model date
+    integer(IN)   :: yy,mm,dd          ! year month day
     integer(IN)   :: n                 ! indices
     integer(IN)   :: lsize             ! size of attr vect
     integer(IN)   :: idt               ! integer timestep
@@ -456,10 +420,10 @@ CONTAINS
     real(R8)      :: cosarg            ! for setting ice temp pattern
     real(R8)      :: jday, jday0       ! elapsed day counters
     character(CS) :: calendar          ! calendar type
+    logical       :: write_restart     ! restart now
     character(len=18) :: date_str
 
     character(*), parameter :: F00   = "('(dice_comp_run) ',8a)"
-    character(*), parameter :: F01   = "('(dice_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
     character(*), parameter :: F04   = "('(dice_comp_run) ',2a,2i8,'s')"
     character(*), parameter :: subName = "(dice_comp_run) "
     !-------------------------------------------------------------------------------
@@ -467,8 +431,12 @@ CONTAINS
     call t_startf('DICE_RUN')
 
     call t_startf('dice_run1')
+
+    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
+    call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd)
     call seq_timemgr_EClockGetData( EClock, dtime=idt, calendar=calendar)
     dt = idt * 1.0_r8
+    write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
 
     call t_stopf('dice_run1')
 
@@ -483,7 +451,7 @@ CONTAINS
 
     if (trim(datamode) /= 'NULL') then
        call t_startf('dice_strdata_advance')
-       call shr_strdata_advance(SDICE,target_ymd,target_tod,mpicom,'dice')
+       call shr_strdata_advance(SDICE,currentYMD,currentTOD,mpicom,'dice')
        call t_stopf('dice_strdata_advance')
        call t_barrierf('dice_scatter_BARRIER',mpicom)
        call t_startf('dice_scatter')
@@ -498,8 +466,6 @@ CONTAINS
     !-------------------------------------------------
     ! Determine data model behavior based on the mode
     !-------------------------------------------------
-
-    call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd, curr_tod=tod)
 
     call t_startf('dice_datamode')
     select case (trim(datamode))
@@ -518,11 +484,9 @@ CONTAINS
        !   this could be improved for use in gregorian calendar
        !      call shr_cal_ymd2eday(0,mm,dd,eDay ,calendar)    ! model date
        !      call shr_cal_ymd2eday(0,09,01,eDay0,calendar)    ! sept 1st
-       !      cosArg = 2.0_R8*pi*(real(eDay,R8) + real(target_tod,R8)/cDay - real(eDay0,R8))/365.0_R8
-
-       call shr_cal_ymd2julian(0, mm, dd, target_tod, jDay , calendar)    ! julian day for model
-       call shr_cal_ymd2julian(0,  9,  1,          0, jDay0, calendar)    ! julian day for Sept 1
-
+       !      cosArg = 2.0_R8*pi*(real(eDay,R8) + real(currentTOD,R8)/cDay - real(eDay0,R8))/365.0_R8
+       call shr_cal_ymd2julian(0,mm,dd,currentTOD,jDay ,calendar)    ! julian day for model
+       call shr_cal_ymd2julian(0, 9, 1,0         ,jDay0,calendar)    ! julian day for Sept 1
        cosArg = 2.0_R8*pi*(jday - jday0)/365.0_R8
 
        lsize = mct_avect_lsize(i2x)
@@ -645,11 +609,9 @@ CONTAINS
              !--- salt flux ---
              i2x%rAttr(ksalt ,n) = 0.0_R8
           end if
-          if (km /= 0) then
-             i2x%rAttr(km, n) = imask(n)
-          end if
-          ! !--- save ifrac for next timestep
-          ! iFrac0(n) = i2x%rAttr(kiFrac,n)
+
+          !         !--- save ifrac for next timestep
+          !         iFrac0(n) = i2x%rAttr(kiFrac,n)
        end do
 
        ! Compute outgoing aerosol fluxes
@@ -677,76 +639,13 @@ CONTAINS
 
     call t_stopf('dice_datamode')
 
-    !----------------------------------------------------------
-    ! Debug output
-    !----------------------------------------------------------
-
-#if (1 == 0)
-    if (dbug > 1 .and. my_task == master_task) then
-       do n = 1,lsize
-          write(logunit,F01)'import: ymd,tod,n,Faxa_swvdr    = ', target_ymd, target_tod, n, x2i%rattr(kswvdr,n)    
-          write(logunit,F01)'import: ymd,tod,n,Faxa_swndr    = ', target_ymd, target_tod, n, x2i%rattr(kswndr,n)        
-          write(logunit,F01)'import: ymd,tod,n,Faxa_swvdf    = ', target_ymd, target_tod, n, x2i%rattr(kswvdf,n)        
-          write(logunit,F01)'import: ymd,tod,n,Faxa_swndf    = ', target_ymd, target_tod, n, x2i%rattr(kswndf,n)        
-          write(logunit,F01)'import: ymd,tod,n,Fioo_q        = ', target_ymd, target_tod, n, x2i%rattr(kq,n)            
-          write(logunit,F01)'import: ymd,tod,n,Sa_z          = ', target_ymd, target_tod, n, x2i%rattr(kz,n)            
-          write(logunit,F01)'import: ymd,tod,n,Sa_u          = ', target_ymd, target_tod, n, x2i%rattr(kua,n)           
-          write(logunit,F01)'import: ymd,tod,n,Sa_v          = ', target_ymd, target_tod, n, x2i%rattr(kva,n)           
-          write(logunit,F01)'import: ymd,tod,n,Sa_ptem       = ', target_ymd, target_tod, n, x2i%rattr(kptem,n)         
-          write(logunit,F01)'import: ymd,tod,n,Sa_shum       = ', target_ymd, target_tod, n, x2i%rattr(kshum,n)         
-          write(logunit,F01)'import: ymd,tod,n,Sa_dens       = ', target_ymd, target_tod, n, x2i%rattr(kdens,n)         
-          write(logunit,F01)'import: ymd,tod,n,Sa_tbot       = ', target_ymd, target_tod, n, x2i%rattr(ktbot,n)         
-          write(logunit,F01)'import: ymd,tod,n,So_s          = ', target_ymd, target_tod, n, x2i%rattr(ksalinity,n)     
-          write(logunit,F01)'import: ymd,tod,n,Faxa_bcphidry = ', target_ymd, target_tod, n, x2i%rattr(kbcphidry,n)     
-          write(logunit,F01)'import: ymd,tod,n,Faxa_bcphodry = ', target_ymd, target_tod, n, x2i%rattr(kbcphodry,n)     
-          write(logunit,F01)'import: ymd,tod,n,Faxa_bcphiwet = ', target_ymd, target_tod, n, x2i%rattr(kbcphiwet,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_ocphidry = ', target_ymd, target_tod, n, x2i%rattr(kocphidry,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_ocphodry = ', target_ymd, target_tod, n, x2i%rattr(kocphodry,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_ocphiwet = ', target_ymd, target_tod, n, x2i%rattr(kocphiwet,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_dstdry1  = ', target_ymd, target_tod, n, x2i%rattr(kdstdry1,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_dstdry2  = ', target_ymd, target_tod, n, x2i%rattr(kdstdry2,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_dstdry3  = ', target_ymd, target_tod, n, x2i%rattr(kdstdry3,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_dstdry4  = ', target_ymd, target_tod, n, x2i%rattr(kdstdry4,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_dstwet1  = ', target_ymd, target_tod, n, x2i%rattr(kdstwet1,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_dstwet2  = ', target_ymd, target_tod, n, x2i%rattr(kdstwet2,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_dstwet3  = ', target_ymd, target_tod, n, x2i%rattr(kdstwet3,n)
-          write(logunit,F01)'import: ymd,tod,n,Faxa_dstwet4  = ', target_ymd, target_tod, n, x2i%rattr(kdstwet4,n)
-
-          write(logunit,F01)'export: ymd,tod,n,Si_ifrac      = ', target_ymd, target_tod, n, i2x%rattr(kiFrac ,n)
-          write(logunit,F01)'export: ymd,tod,n,Si_t          = ', target_ymd, target_tod, n, i2x%rattr(kt     ,n)
-          write(logunit,F01)'export: ymd,tod,n,Si_tref       = ', target_ymd, target_tod, n, i2x%rattr(ktref  ,n)
-          write(logunit,F01)'export: ymd,tod,n,Si_qref       = ', target_ymd, target_tod, n, i2x%rattr(kqref  ,n)
-          write(logunit,F01)'export: ymd,tod,n,Si_avsdr      = ', target_ymd, target_tod, n, i2x%rattr(kavsdr ,n)
-          write(logunit,F01)'export: ymd,tod,n,Si_anidr      = ', target_ymd, target_tod, n, i2x%rattr(kanidr ,n)
-          write(logunit,F01)'export: ymd,tod,n,Si_avsdf      = ', target_ymd, target_tod, n, i2x%rattr(kavsdf ,n)
-          write(logunit,F01)'export: ymd,tod,n,Si_anidf      = ', target_ymd, target_tod, n, i2x%rattr(kanidf ,n)
-          write(logunit,F01)'export: ymd,tod,n,Faii_swnet    = ', target_ymd, target_tod, n, i2x%rattr(kswnet ,n)
-          write(logunit,F01)'export: ymd,tod,n,Faii_sen      = ', target_ymd, target_tod, n, i2x%rattr(ksen   ,n)
-          write(logunit,F01)'export: ymd,tod,n,Faii_lat      = ', target_ymd, target_tod, n, i2x%rattr(klat   ,n)
-          write(logunit,F01)'export: ymd,tod,n,Faii_lwup     = ', target_ymd, target_tod, n, i2x%rattr(klwup  ,n)
-          write(logunit,F01)'export: ymd,tod,n,Faii_evap     = ', target_ymd, target_tod, n, i2x%rattr(kevap  ,n)
-          write(logunit,F01)'export: ymd,tod,n,Faii_taux     = ', target_ymd, target_tod, n, i2x%rattr(ktauxa ,n)
-          write(logunit,F01)'export: ymd,tod,n,Faii_tauy     = ', target_ymd, target_tod, n, i2x%rattr(ktauya ,n)
-          write(logunit,F01)'export: ymd,tod,n,Fioi_melth    = ', target_ymd, target_tod, n, i2x%rattr(kmelth ,n)
-          write(logunit,F01)'export: ymd,tod,n,Fioi_meltw    = ', target_ymd, target_tod, n, i2x%rattr(kmeltw ,n)
-          write(logunit,F01)'export: ymd,tod,n,Fioi_swpen    = ', target_ymd, target_tod, n, i2x%rattr(kswpen ,n)
-          write(logunit,F01)'export: ymd,tod,n,Fioi_taux     = ', target_ymd, target_tod, n, i2x%rattr(ktauxo ,n)
-          write(logunit,F01)'export: ymd,tod,n,Fioi_tauy     = ', target_ymd, target_tod, n, i2x%rattr(ktauyo ,n)
-          write(logunit,F01)'export: ymd,tod,n,Fioi_salt     = ', target_ymd, target_tod, n, i2x%rattr(ksalt  ,n)
-          write(logunit,F01)'export: ymd,tod,n,Fioi_bcpho    = ', target_ymd, target_tod, n, i2x%rattr(kbcpho ,n)
-          write(logunit,F01)'export: ymd,tod,n,Fioi_bcphi    = ', target_ymd, target_tod, n, i2x%rattr(kbcphi ,n)
-          write(logunit,F01)'export: ymd,tod,n,Fioi_flxdst   = ', target_ymd, target_tod, n, i2x%rattr(kflxdst,n)
-       end do
-    end if
-#endif
-
     !--------------------
     ! Write restart
     !--------------------
 
     if (write_restart) then
        call t_startf('dice_restart')
-       call shr_cal_datetod2string(date_str, target_ymd, target_tod)
+       call shr_cal_ymdtod2string(date_str, yy, mm, dd, currentTOD)
        write(rest_file,"(6a)") &
             trim(case_name), '.dice',trim(inst_suffix),'.r.', &
             trim(date_str),'.nc'
@@ -761,10 +660,10 @@ CONTAINS
           close(nu)
           call shr_file_freeUnit(nu)
        endif
-       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),target_ymd,target_tod
+       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),currentYMD,currentTOD
        call shr_pcdf_readwrite('write',SDICE%pio_subsystem, SDICE%io_type, &
             trim(rest_file),mpicom,gsmap,clobber=.true.,rf1=water,rf1n='water')
-       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),target_ymd,target_tod
+       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),currentYMD,currentTOD
        call shr_strdata_restWrite(trim(rest_file_strm),SDICE,mpicom,trim(case_name),'SDICE strdata')
        call shr_sys_flush(logunit)
        call t_stopf('dice_restart')
@@ -778,7 +677,7 @@ CONTAINS
 
     call t_startf('dice_run2')
     if (my_task == master_task) then
-       write(logunit,F04) trim(myModelName),': model date ', target_ymd,target_tod
+       write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
        call shr_sys_flush(logunit)
     end if
 

@@ -41,6 +41,7 @@ contains
 !===============================================================================
 
   subroutine med_phases_ocnalb_init(gcomp, ocnalb, rc)
+
     !-----------------------------------------------------------------------
     ! Initialize pointers to the module variables and then use the module
     ! variables in the med_ocnalb phase
@@ -191,9 +192,9 @@ contains
     use med_constants_mod     , only : CS, CL, R8
     use med_constants_mod     , only : dbug_flag =>med_constants_dbug_flag
     use med_internalstate_mod , only : InternalState, logunit
-    use esmFlds               , only : flds_scalar_name
-    use esmFlds               , only : flds_scalar_num
-    use esmFlds               , only : flds_scalar_index_nextsw_cday
+    use shr_nuopc_scalars_mod , only : flds_scalar_name
+    use shr_nuopc_scalars_mod , only : flds_scalar_num
+    use shr_nuopc_scalars_mod , only : flds_scalar_index_nextsw_cday
     use esmFlds               , only : compatm, compocn
 
     ! input/output variables
