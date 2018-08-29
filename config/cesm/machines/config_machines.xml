@@ -989,7 +989,7 @@ This allows using a different mpirun command to launch unit tests
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
-      <env name="ESMFMKFILE">/home/dunlap/ESMF-INSTALL/master/lib/libO/Linux.intel.64.mvapich2.default/esmf.mk</env>
+      <env name="ESMFMKFILE">/home/dunlap/ESMF-INSTALL/8.0.0bs15/lib/libg/Linux.intel.64.mvapich2.default/esmf.mk</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
@@ -2294,7 +2294,7 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">netcdf/4.3.0</command>
 	<command name="load">pnetcdf</command>
 	<command name="use">/scratch4/NCEPDEV/nems/noscrub/emc.nemspara/soft/modulefiles</command>
-	<command name="load">esmf/8.0.0bs08</command>
+	<command name="load">esmf/8.0.0bs15</command>
       </modules>
     </module_system>
   </machine>
