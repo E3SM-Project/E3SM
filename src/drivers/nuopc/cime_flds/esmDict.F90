@@ -73,6 +73,17 @@ contains
     call ESMF_VMGet(vm, localPet=localPet, mpiCommunicator=mpicom, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    ! initialize number of elevation classes
+    call NUOPC_CompAttributeGet(gcomp, name='glc_nec', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) glc_nec
+    call ESMF_LogWrite('esmDict glc_nec = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
+
+    call NUOPC_CompAttributeGet(gcomp, name='flds_i2o_per_cat', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) flds_i2o_per_cat
+    call ESMF_LogWrite('flds_i2o_per_cat = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
+
     mastertask = .false.
     if (localPet == 0) mastertask=.true.
 
@@ -785,12 +796,6 @@ contains
     units    = '1'
     call shr_nuopc_fldList_AddMetadata("Sg_icemask_coupled_fluxes", longname, stdname, units)
 
-    ! initialize number of elevation classes
-    call NUOPC_CompAttributeGet(gcomp, name='glc_nec', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) glc_nec
-    call ESMF_LogWrite('glc_nec = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
-
     longname = 'Fraction of glacier area'
     stdname  = 'glacier_area_fraction'
     units    = '1'
@@ -1144,11 +1149,6 @@ contains
     !-----------------------------------------------------------------------------
     ! optional per thickness category fields
     !-----------------------------------------------------------------------------
-
-    call NUOPC_CompAttributeGet(gcomp, name='flds_i2o_per_cat', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) flds_i2o_per_cat
-    call ESMF_LogWrite('flds_i2o_per_cat = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
 
     if (flds_i2o_per_cat) then
     

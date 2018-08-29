@@ -153,12 +153,12 @@ module seq_timemgr_mod
 
   type(seq_timemgr_type)      :: SyncClock                    ! array of all clocks & alarm
   type(ESMF_Calendar), target :: seq_timemgr_cal              ! calendar
-  character(CL)      :: seq_timemgr_calendar         ! calendar string
+  character(CL)               :: seq_timemgr_calendar         ! calendar string
   integer, parameter          :: SecPerDay = 86400            ! Seconds per day
   integer                     :: seq_timemgr_pause_sig_index  ! Index of pause comp with smallest dt
   logical                     :: seq_timemgr_esp_run_on_pause ! Run ESP component on pause cycle
   logical                     :: seq_timemgr_end_restart      ! write restarts at end of run?
-  character(CL)      :: tmpstr
+  character(CL)               :: tmpstr
   integer                     :: dbrc
   integer, parameter          :: dbug_flag = 10
   character(len=*), parameter :: sp_str = 'str_undefined'
@@ -168,33 +168,28 @@ module seq_timemgr_mod
 contains
 !===============================================================================
 
-  subroutine seq_timemgr_clockInit(driver, mastertask, pioid, mpicom, &
+  subroutine seq_timemgr_clockInit(driver, logunit, &
        EClock_drv, EClock_atm, EClock_lnd, EClock_ocn, &
-       EClock_ice, Eclock_glc, Eclock_rof, EClock_wav, Eclock_esp)
+       EClock_ice, Eclock_glc, Eclock_rof, EClock_wav, Eclock_esp, rc)
 
     ! !DESCRIPTION:  Initializes clock
     use med_constants_mod     , only : CS, CL, IN
     use NUOPC                 , only : NUOPC_CompAttributeGet
-    use ESMF                  , only : ESMF_GridComp, ESMF_ClockSet, ESMF_CalendarCreate, ESMF_FAILURE
-    use ESMF                  , only : ESMF_Time, ESMF_TimeInterval, ESMF_CalKind_Flag
+    use ESMF                  , only : ESMF_GridComp, ESMF_GridCompGet, ESMF_ClockSet, ESMF_CalendarCreate, ESMF_FAILURE
+    use ESMF                  , only : ESMF_Time, ESMF_TimeInterval, ESMF_CalKind_Flag, ESMF_VM, ESMF_VMGet
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_LOGERR_PASSTHRU
     use ESMF                  , only : ESMF_LogFoundError, ESMF_TimeIntervalSet, ESMF_AlarmGet
     use ESMF                  , only : ESMF_CALKIND_NOLEAP, ESMF_CALKIND_GREGORIAN, ESMF_CalKind_Flag
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-    use pio                   , only : file_desc_t
     use shr_mpi_mod           , only : shr_mpi_bcast
     use shr_sys_mod           , only : shr_sys_abort
-    use seq_comm_mct          , only : seq_comm_iamin, CPLID, logunit, seq_comm_gloroot
     use shr_cal_mod           , only : shr_cal_calendarName
-    use netcdf                , only : nf90_open, nf90_nowrite, nf90_noerr, nf90_inq_varid, nf90_get_var
-    use netcdf                , only : nf90_close
     use shr_file_mod          , only : shr_file_getUnit, shr_file_freeUnit
+    use netcdf                , only : nf90_open, nf90_nowrite, nf90_noerr, nf90_inq_varid, nf90_get_var, nf90_close
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_GridComp),     intent(inout) :: driver
-    logical,                 intent(in)    :: mastertask
-    type(file_desc_t),       intent(in)    :: pioid        ! TODO:  where is this set???
-    integer,                 intent(in)    :: mpicom       ! MPI communicator
+    integer            ,     intent(in)    :: logunit
     type(ESMF_clock),target, intent(in)    :: EClock_drv   ! drv clock
     type(ESMF_clock),target, intent(in)    :: EClock_atm   ! atm clock
     type(ESMF_clock),target, intent(in)    :: EClock_lnd   ! lnd clock
@@ -204,8 +199,11 @@ contains
     type(ESMF_clock),target, intent(in)    :: EClock_rof   ! rof clock
     type(ESMF_clock),target, intent(in)    :: EClock_wav   ! wav clock
     type(ESMF_clock),target, intent(in)    :: EClock_esp   ! esp clock
+    integer                , intent(out)   :: rc
 
     !----- local -----
+    integer                 :: mpicom       ! MPI communicator
+    logical                 :: mastertask
     logical                 :: read_restart
     character(CL)           :: restart_file
     character(CL)           :: restart_pfile
@@ -217,7 +215,6 @@ contains
     type(ESMF_Time)         :: StopTime2            ! Stop time
     type(ESMF_TimeInterval) :: TimeStep             ! Clock time-step
     type(ESMF_CalKind_Flag) :: esmf_caltype         ! local esmf calendar
-    integer                 :: rc                   ! Return code
     integer                 :: n, i                 ! index
     logical                 :: found
     integer                 :: iam, unitn
@@ -265,6 +262,7 @@ contains
     logical                 :: end_restart          ! Write restart at end of run
     integer(IN)             :: ierr                 ! Return code
     integer(IN)             :: status, ncid, varid  ! netcdf stuff
+    type(ESMF_VM)           :: vm
     character(len=*), parameter :: F0A = "(2A,A)"
     character(len=*), parameter :: F0I = "(2A,I10)"
     character(len=*), parameter :: F0L = "(2A,L3)"
@@ -276,7 +274,17 @@ contains
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
 
-    call MPI_COMM_RANK(mpicom,iam,ierr)
+    call ESMF_GridCompGet(driver, vm=vm, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_VMGet(vm, mpiCommunicator=mpicom, localPet=iam, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (iam == 0) then
+       mastertask=.true.
+    else
+       mastertask = .false.
+    end if
 
     call NUOPC_CompAttributeGet(driver, name='read_restart', value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -758,8 +766,7 @@ contains
        call shr_sys_abort( subname//'ERROR:: bad calendar for ESMF' )
     end if
 
-    seq_timemgr_cal = ESMF_CalendarCreate( name='CCSM_'//seq_timemgr_calendar, &
-         calkindflag=esmf_caltype, rc=rc )
+    seq_timemgr_cal = ESMF_CalendarCreate( name='CMEPS_'//seq_timemgr_calendar, calkindflag=esmf_caltype, rc=rc )
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! --- Initialize start, ref, and current date ---
@@ -1085,16 +1092,17 @@ contains
     use ESMF, only : ESMF_TimeIntervalSet, ESMF_TimeSet, ESMF_TimeInterval
     use ESMF, only: ESMF_AlarmCreate
     use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
+
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock)             , intent(INOUT) :: EClock    ! clock
-    type(ESMF_Alarm)             , intent(INOUT) :: EAlarm    ! alarm
-    character(len=*)             , intent(in)    :: option    ! alarm option
-    integer(IN),optional, intent(in)    :: opt_n     ! alarm freq
-    integer(IN),optional, intent(in)    :: opt_ymd   ! alarm ymd
-    integer(IN),optional, intent(in)    :: opt_tod   ! alarm tod (sec)
-    type(ESMF_Time)     ,optional, intent(in)    :: RefTime   ! ref time
-    character(len=*)    ,optional, intent(in)    :: alarmname ! alarm name
-    integer                      , intent(INOUT) :: rc        ! Return code
+    type(ESMF_Clock)           , intent(INOUT) :: EClock    ! clock
+    type(ESMF_Alarm)           , intent(INOUT) :: EAlarm    ! alarm
+    character(len=*)           , intent(in)    :: option    ! alarm option
+    integer(IN)      ,optional , intent(in)    :: opt_n     ! alarm freq
+    integer(IN)      ,optional , intent(in)    :: opt_ymd   ! alarm ymd
+    integer(IN)      ,optional , intent(in)    :: opt_tod   ! alarm tod (sec)
+    type(ESMF_Time)  ,optional , intent(in)    :: RefTime   ! ref time
+    character(len=*) ,optional , intent(in)    :: alarmname ! alarm name
+    integer                    , intent(INOUT) :: rc        ! Return code
 
     !----- local -----
     integer                 :: lymd             ! local ymd

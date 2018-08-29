@@ -117,8 +117,6 @@ module ESM
     use ESMF                  , only : ESMF_GridCompSet, ESMF_SUCCESS, ESMF_METHOD_INITIALIZE
     use NUOPC                 , only : NUOPC_CompSetInternalEntryPoint, NUOPC_CompAttributeGet
     use NUOPC_Driver          , only : NUOPC_DriverAddComp
-    use MED                   , only : med_SS => SetServices
-    use esmFlds               , only : esmFlds_Init
     use esmDict               , only : esmDict_Init
     use seq_comm_mct          , only : CPLID, GLOID, ATMID, LNDID, OCNID, ICEID, GLCID, ROFID, WAVID, ESPID
     use seq_comm_mct          , only : num_inst_total
@@ -126,10 +124,10 @@ module ESM
     use seq_comm_mct          , only : seq_comm_getinfo => seq_comm_setptrs
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
     use shr_pio_mod           , only : shr_pio_init1
-    use mpi                   , only : MPI_COMM_WORLD
     use shr_file_mod          , only : shr_file_getlogunit, shr_file_setLogunit
     use shr_file_mod          , only : shr_file_getlogLevel, shr_file_setLogLevel
     use shr_file_mod          , only : shr_file_getUnit, shr_file_freeUnit
+    use med                   , only : med_SS         => SetServices
     use atm_comp_nuopc        , only : ATMSetServices => SetServices
     use ice_comp_nuopc        , only : ICESetServices => SetServices
     use lnd_comp_nuopc        , only : LNDSetServices => SetServices
@@ -137,6 +135,9 @@ module ESM
     use wav_comp_nuopc        , only : WAVSetServices => SetServices
     use rof_comp_nuopc        , only : ROFSetServices => SetServices
     use glc_comp_nuopc        , only : GLCSetServices => SetServices
+    use pio                   , only : pio_file_is_open, pio_closefile, file_desc_t
+    use seq_timemgr_mod       , only : seq_timemgr_clockInit
+    use mpi                   , only : MPI_COMM_WORLD
 
     type(ESMF_GridComp)    :: driver
     integer, intent(out)   :: rc
@@ -146,6 +147,7 @@ module ESM
     type(ESMF_GridComp)    :: child
     type(ESMF_Config)      :: config
     integer                :: compid
+    type(file_desc_t)      :: pioid
     integer                :: n, n1, stat
     integer, pointer       :: petList(:)
     character(len=20)      :: model, prefix
@@ -233,7 +235,7 @@ module ESM
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !-------------------------------------------
-    ! Initialize communicators and PIO and
+    ! Initialize communicators and PIO 
     !-------------------------------------------
 
     ! Call first phase of pio initialization The call to pio_init1
@@ -295,15 +297,20 @@ module ESM
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !-------------------------------------------
-    ! Initialize clocks
+    ! Initialize driver clock
     !-------------------------------------------
 
-    call InitClocks(driver, Eclock_d, Eclock_a, Eclock_l, Eclock_o, &
-         Eclock_i, Eclock_g, Eclock_r, Eclock_w, Eclock_e, rc)
+    ! TODO: get rid of all other clocks other than driver clock - and maybe esp clock?
+    call seq_timemgr_clockInit(driver, logunit, EClock_d, EClock_a, EClock_l, EClock_o, &
+         EClock_i, Eclock_g, Eclock_r, Eclock_w, Eclock_e, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    if (pio_file_is_open(pioid)) then
+       call pio_closefile(pioid)
+    end if
+
     !-------------------------------------------
-    ! Initialize other attributes
+    ! Initialize other attributes (after initializing driver clock)
     !-------------------------------------------
 
     call InitAttributes(driver, rc)
@@ -506,10 +513,6 @@ module ESM
         call AddAttributes(child, driver, config, compid, 'MED', rc=rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-        ! Initialize mediator flds (should be identical to the list in esmDict_Init) 
-        ! Note that this is ONLY done on the mediator PETS
-        call esmFlds_Init(child, rc)
-        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
         ! Print out present flags to mediator log file
         if (iamroot_med) then
@@ -1013,65 +1016,6 @@ module ESM
 
   !================================================================================
 
-  subroutine InitClocks(driver, Eclock_d, Eclock_a, Eclock_l, Eclock_o, &
-       Eclock_i, Eclock_g, Eclock_r, Eclock_w, Eclock_e, rc)
-
-    !----------------------------------------------------------
-    ! Initialize time manager
-    !----------------------------------------------------------
-    use ESMF            , only : ESMF_GridComp, ESMF_Clock, ESMF_VM, ESMF_GridCompGet, ESMF_VMGet
-    use ESMF            , only : ESMF_LogWrite, ESMF_SUCCESS, ESMF_LOGMSG_INFO
-    use pio             , only : pio_file_is_open, pio_closefile, file_desc_t
-    use seq_timemgr_mod , only : seq_timemgr_clockInit
-
-    ! INPUT/OUTPUT PARAMETERS:
-    type(ESMF_GridComp)    , intent(inout) :: driver
-    type(ESMF_Clock)       , intent(inout) :: EClock_d
-    type(ESMF_Clock)       , intent(inout) :: EClock_a
-    type(ESMF_Clock)       , intent(inout) :: EClock_l
-    type(ESMF_Clock)       , intent(inout) :: EClock_o
-    type(ESMF_Clock)       , intent(inout) :: EClock_i
-    type(ESMF_Clock)       , intent(inout) :: EClock_g
-    type(ESMF_Clock)       , intent(inout) :: EClock_r
-    type(ESMF_Clock)       , intent(inout) :: EClock_w
-    type(ESMF_Clock)       , intent(inout) :: EClock_e
-    integer                , intent(out)   :: rc
-
-    ! local variables
-    type(ESMF_VM)     :: vm
-    type(file_desc_t) :: pioid
-    integer           :: lmpicom
-    integer :: dbrc
-    character(len=*) , parameter    :: subname = '(InitClocks)'
-    !----------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-
-    !----------------------------------------------------------
-    ! Initialize time manager
-    !----------------------------------------------------------
-
-    call ESMF_GridCompGet(driver, vm=vm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_VMGet(vm, mpiCommunicator=lmpicom, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call seq_timemgr_clockInit(driver, mastertask, pioid, lmpicom, &
-         EClock_d, EClock_a, EClock_l, EClock_o, &
-         EClock_i, Eclock_g, Eclock_r, Eclock_w, Eclock_e)
-
-    if (pio_file_is_open(pioid)) then
-       call pio_closefile(pioid)
-    endif
-
-  end subroutine InitClocks
-
-  !================================================================================
-
   subroutine InitAttributes(driver, rc)
     use shr_sys_mod      , only : shr_sys_abort
     use ESMF             , only : ESMF_GridComp, ESMF_SUCCESS, ESMF_LogWrite, ESMF_LogSetError, ESMF_LOGMSG_INFO
@@ -1145,7 +1089,7 @@ module ESM
     character(len=*) , parameter    :: orb_fixed_year       = 'fixed_year'
     character(len=*) , parameter    :: orb_variable_year    = 'variable_year'
     character(len=*) , parameter    :: orb_fixed_parameters = 'fixed_parameters'
-    character(len=*) , parameter    :: subname = '(SetAttributes_and_InitClocks)'
+    character(len=*) , parameter    :: subname = '(SetAttributes)'
     !----------------------------------------------------------
 
     rc = ESMF_SUCCESS
