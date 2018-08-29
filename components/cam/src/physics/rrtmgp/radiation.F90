@@ -2693,7 +2693,7 @@ subroutine output_fluxes_sw(icall, state, flux_all, flux_clr)
    call outfld('FSNTOAC'//diag(icall), flux_clr%flux_net(1:ncol,ktop_rad), ncol, state%lchnk)
 
    ! Calculate and output the shortwave cloud radiative effect (SWCF in history)
-   cloud_radiative_effect(1:ncol) = flux_all%flux_net(1:ncol,ktop_rad) - flux_clr%flux_new(1:ncol,ktop_rad)
+   cloud_radiative_effect(1:ncol) = flux_all%flux_net(1:ncol,ktop_rad) - flux_clr%flux_net(1:ncol,ktop_rad)
    call outfld('SWCF'//diag(icall), cloud_radiative_effect, ncol, state%lchnk)
    
 end subroutine output_fluxes_sw
@@ -2755,7 +2755,7 @@ subroutine output_fluxes_lw(icall, state, flux_all, flux_clr)
    call outfld('FLDSC'//diag(icall), flux_clr%flux_dn(1:ncol,kbot+1), ncol, state%lchnk)
 
    ! Calculate and output the cloud radiative effect (LWCF in history)
-   cloud_radiative_effect(1:ncol) = flux_clr%flux_net(1:ncol,ktop) - flux_all%flux_new(1:ncol,ktop)
+   cloud_radiative_effect(1:ncol) = flux_clr%flux_net(1:ncol,ktop) - flux_all%flux_net(1:ncol,ktop)
    call outfld('LWCF'//diag(icall), cloud_radiative_effect, ncol, state%lchnk)
    
 end subroutine output_fluxes_lw
