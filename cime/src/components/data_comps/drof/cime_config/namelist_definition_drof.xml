@@ -77,7 +77,7 @@
     <desc>Stream domain file path(s).</desc>
     <values>
       <value stream="rof.diatren_ann_rx1">runoff.daitren.annual.090225.nc</value>
-      <value stream="rof.diatren_iaf_rx1">runoff.daitren.iaf.20120419.AISx0.45.nc</value>
+      <value stream="rof.diatren_iaf_rx1">runoff.daitren.iaf.20120419.merino.calving.nc</value>
       <value stream="rof.iaf_jra">domain.roff.JRA025.170111.nc</value>
       <value stream="rof.cplhist">null</value>
     </values>
@@ -133,7 +133,7 @@
     <desc>Stream data file path(s).</desc>
     <values>
       <value stream="rof.diatren_ann_rx1">runoff.daitren.annual.090225.nc</value>
-      <value stream="rof.diatren_iaf_rx1">runoff.daitren.iaf.20120419.AISx0.45.nc</value>
+      <value stream="rof.diatren_iaf_rx1">runoff.daitren.iaf.20120419.merino.calving.nc</value>
       <value stream="rof.iaf_jra">
            JRA.v1.1.runoff.1958.170807.nc
            JRA.v1.1.runoff.1959.170807.nc
