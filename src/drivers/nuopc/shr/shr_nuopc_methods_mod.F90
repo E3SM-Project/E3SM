@@ -4,14 +4,14 @@ module shr_nuopc_methods_mod
   ! Generic operation methods used by the Mediator Component.
   !-----------------------------------------------------------------------------
 
-  use ESMF              , only : operator(<), operator(/=), operator(+), operator(-), operator(*) , operator(>=)
-  use ESMF              , only : operator(<=), operator(>), operator(==)
-  use ESMF              , only : ESMF_GeomType_Flag, ESMF_FieldStatus_Flag, ESMF_PoleMethod_Flag
-  use ESMF              , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_FAILURE
-  use ESMF              , only : ESMF_LOGERR_PASSTHRU, ESMF_LogFoundError, ESMF_LOGMSG_ERROR
-  use ESMF              , only : ESMF_MAXSTR, ESMF_LOGMSG_WARNING, ESMF_POLEMETHOD_ALLAVG
-  use med_constants_mod , only : dbug_flag => med_constants_dbug_flag
-
+  use ESMF               , only : operator(<), operator(/=), operator(+), operator(-), operator(*) , operator(>=)
+  use ESMF               , only : operator(<=), operator(>), operator(==)
+  use ESMF               , only : ESMF_GeomType_Flag, ESMF_FieldStatus_Flag, ESMF_PoleMethod_Flag
+  use ESMF               , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_FAILURE
+  use ESMF               , only : ESMF_LOGERR_PASSTHRU, ESMF_LogFoundError, ESMF_LOGMSG_ERROR
+  use ESMF               , only : ESMF_MAXSTR, ESMF_LOGMSG_WARNING, ESMF_POLEMETHOD_ALLAVG
+  use med_constants_mod  , only : dbug_flag => med_constants_dbug_flag
+  use shr_nuopc_utils_mod, only : shr_nuopc_methods_ChkErr => shr_nuopc_utils_ChkErr
   implicit none
   private
 
@@ -3869,36 +3869,6 @@ module shr_nuopc_methods_mod
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine shr_nuopc_methods_Field_UpdateTimestamp
-
-  !-----------------------------------------------------------------------------
-
-  logical function shr_nuopc_methods_ChkErr(rc, line, file, mpierr)
-    use mpi , only : MPI_ERROR_STRING, MPI_MAX_ERROR_STRING, MPI_SUCCESS
-    use ESMF, only : ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU, ESMF_LOGMSG_INFO
-
-    integer, intent(in) :: rc
-    integer, intent(in) :: line
-
-    character(len=*), intent(in) :: file
-    logical, optional, intent(in) :: mpierr
-
-    character(MPI_MAX_ERROR_STRING) :: lstring
-    integer :: dbrc, lrc, len, ierr
-
-    shr_nuopc_methods_ChkErr = .false.
-    lrc = rc
-    if (present(mpierr) .and. mpierr) then
-       if (rc == MPI_SUCCESS) return
-       call MPI_ERROR_STRING(rc, lstring, len, ierr)
-       call ESMF_LogWrite("ERROR: "//trim(lstring), ESMF_LOGMSG_INFO, line=line, file=file, rc=dbrc)
-       lrc = ESMF_FAILURE
-    endif
-
-    if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=line, file=file)) then
-      shr_nuopc_methods_ChkErr = .true.
-    endif
-
-  end function shr_nuopc_methods_ChkErr
 
   !-----------------------------------------------------------------------------
 
