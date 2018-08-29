@@ -1644,10 +1644,10 @@ subroutine radiation_tend(state,   ptend,    pbuf,          cam_out, cam_in,  &
    end if  ! dolw
 
    ! Check net fluxes
-   call assert_valid(fsns, 'fsns')
-   call assert_valid(fsnt, 'fsnt')
-   call assert_valid(flns, 'flns')
-   call assert_valid(flnt, 'flnt')
+   call assert_valid(fsns(1:ncol), 'fsns')
+   call assert_valid(fsnt(1:ncol), 'fsnt')
+   call assert_valid(flns(1:ncol), 'flns')
+   call assert_valid(flnt(1:ncol), 'flnt')
 
    ! Compute net radiative heating tendency
    call t_startf('radheat_tend')
