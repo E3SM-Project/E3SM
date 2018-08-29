@@ -10,9 +10,17 @@ import logging, os, re, stat, filecmp
 logger = logging.getLogger(__name__)
 
 BLESS_LOG_NAME = "bless_log"
+
 NO_COMPARE     = "had no compare counterpart"
 NO_ORIGINAL    = "had no original counterpart"
 DIFF_COMMENT   = "did NOT match"
+# COMPARISON_COMMENT_OPTIONS should include all of the above: these are any of the special
+# comment strings that describe the reason for a comparison failure
+COMPARISON_COMMENT_OPTIONS = set([NO_COMPARE,
+                                  NO_ORIGINAL,
+                                  DIFF_COMMENT])
+# Comments that indicate a true baseline comparison problem - not simply a BFAIL
+NON_BFAIL_COMMENT_OPTIONS = COMPARISON_COMMENT_OPTIONS - set([NO_COMPARE])
 
 def _iter_model_file_substrs(case):
     models = case.get_compset_components()
@@ -492,6 +500,8 @@ def get_ts_synopsis(comments):
     'DIFF'
     >>> get_ts_synopsis('stuff\n    File foo did NOT match bar with suffix baz\n    File foo had no compare counterpart in bar with suffix baz\nPass\n')
     'DIFF'
+    >>> get_ts_synopsis('File foo had no compare counterpart in bar with suffix baz\n File foo had no original counterpart in bar with suffix baz\n')
+    'DIFF'
     """
     if not comments:
         return ""
@@ -503,8 +513,9 @@ def get_ts_synopsis(comments):
         for line in comments.splitlines():
             if NO_COMPARE in line:
                 has_bfails = True
-            elif DIFF_COMMENT in line:
-                has_real_fails = True
+            for non_bfail_comment in NON_BFAIL_COMMENT_OPTIONS:
+                if non_bfail_comment in line:
+                    has_real_fails = True
 
         if has_real_fails:
             return "DIFF"
