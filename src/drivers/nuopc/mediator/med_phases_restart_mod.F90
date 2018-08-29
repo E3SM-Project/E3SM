@@ -367,6 +367,7 @@ contains
     character(ESMF_MAXSTR) :: cpl_inst_tag   ! instance tag
     character(len=*)   , parameter :: sp_str = 'str_undefined'
     integer                        :: dbrc
+    logical   :: isPresent
     character(len=*), parameter :: subname='(med_phases_restart_read)'
     !---------------------------------------
 
@@ -391,8 +392,15 @@ contains
     call NUOPC_CompAttributeGet(gcomp, name='case_name', value=case_name, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call NUOPC_CompAttributeGet(gcomp, name='inst_string', value=cpl_inst_tag, rc=rc)
+    call NUOPC_CompAttributeGet(gcomp, name='inst_suffix', isPresent=isPresent, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if(isPresent) then
+       call NUOPC_CompAttributeGet(gcomp, name='inst_suffix', value=cpl_inst_tag, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       cpl_inst_tag = ""
+    endif
+
     !---------------------------------------
     ! --- Get the clock info
     !---------------------------------------

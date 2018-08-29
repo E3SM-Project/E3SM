@@ -490,6 +490,19 @@ module ESM
         call AddAttributes(child, driver, config, compid, 'MED', inst_suffix, rc=rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+        iamroot_med = localPet == petList(1)
+        call shr_file_getLogUnit (shrlogunit)
+        if (iamroot_med) then
+           logunit = shr_file_getUnit()
+           open(logunit,file=trim(diro)//"/"//trim(logfile))
+        else
+           logUnit = shrlogunit
+        endif
+
+        call shr_file_getLogLevel(shrloglev)
+        call shr_file_setLogLevel(max(shrloglev,1))
+        call shr_file_setLogUnit (logunit)
+        if(iamroot_med) print *,__FILE__,__LINE__,logunit, shrlogunit
 
         ! Print out present flags to mediator log file
         if (iamroot_med) then
