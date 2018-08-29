@@ -82,10 +82,10 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
    USE_CXX = true
 endif
 
-HOMMEXX ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_TARGET --value)
-ifeq ($(strip $(HOMMEXX)), preqx_kokkos)
+HOMME_TARGET ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_TARGET --value)
+ifeq ($(strip $(HOMME_TARGET)), preqx_kokkos)
    USE_CXX = true
-   USE_HOMMEXX = TRUE
+   USE_KOKKOS = TRUE
 endif
 
 ifndef MOD_SUFFIX
@@ -277,12 +277,12 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
   include $(ALBANY_PATH)/export_albany.in
 endif
 
-ifeq ($(strip $(USE_HOMMEXX)), TRUE)
+ifeq ($(strip $(USE_KOKKOS)), TRUE)
   ifdef KOKKOS_PATH
     INC_KOKKOS:=$(KOKKOS_PATH)/include
     LIB_KOKKOS:=$(KOKKOS_PATH)/lib
   else
-    $(error HOMMEXX requires KOKKOS_PATH to be set)
+    $(error $(HOMME_TARGET) requires KOKKOS_PATH to be set)
   endif
 endif
 
