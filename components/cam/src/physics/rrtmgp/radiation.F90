@@ -2656,7 +2656,7 @@ subroutine output_fluxes_sw(icall, state, flux_all, flux_clr)
    type(ty_fluxes_byband), intent(in) :: flux_clr
 
    ! SW cloud radiative effect
-   real(r8) :: cloud_radiative_effect(state%ncol, pver)
+   real(r8) :: cloud_radiative_effect(state%ncol)
 
    ! Working variables
    integer :: ncol
@@ -2712,7 +2712,7 @@ subroutine output_fluxes_lw(icall, state, flux_all, flux_clr)
    type(ty_fluxes_byband), intent(in) :: flux_clr
 
    ! Cloud radiative effect for output files
-   real(r8) :: cloud_radiative_effect(state%ncol, pver)
+   real(r8) :: cloud_radiative_effect(state%ncol)
 
    ! Working arrays
    real(r8), dimension(pcols,pver+1) :: flux_up, flux_dn, flux_net
