@@ -1712,8 +1712,8 @@ module advance_clubb_core_module
       sqrt_em_zt = SQRT( MAX( em_min, zm2zt( em ) ) )
 
       tau_zt = MIN( Lscale / sqrt_em_zt, taumax )
-      tau_zm = MIN( ( MAX( zt2zm( Lscale ), zero_threshold )  & 
-                     / SQRT( MAX( em_min, em ) ) ), taumax )
+      tau_zm = MAX(90.0_core_rknd, MIN( ( MAX( zt2zm( Lscale ), zero_threshold )  & 
+                     / SQRT( MAX( em_min, em ) ) ), taumax ))
 ! End Vince Larson's replacement.
 
       ! Determine the static stability corrected version of tau_zm

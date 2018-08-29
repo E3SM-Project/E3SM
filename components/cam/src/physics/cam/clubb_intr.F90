@@ -1874,13 +1874,13 @@ end subroutine clubb_init_cnst
       um_forcing(1:pverp_clubb)   = 0._r8
       vm_forcing(1:pverp_clubb)   = 0._r8
  
-      wprtp_forcing(1:pverp)   = 0._r8
-      wpthlp_forcing(1:pverp)  = 0._r8
-      rtp2_forcing(1:pverp)    = 0._r8
-      thlp2_forcing(1:pverp)   = 0._r8
-      rtpthlp_forcing(1:pverp) = 0._r8
+      wprtp_forcing(1:pverp_clubb)   = 0._r8
+      wpthlp_forcing(1:pverp_clubb)  = 0._r8
+      rtp2_forcing(1:pverp_clubb)    = 0._r8
+      thlp2_forcing(1:pverp_clubb)   = 0._r8
+      rtpthlp_forcing(1:pverp_clubb) = 0._r8
  
-      ice_supersat_frac(1:pverp) = 0._r8
+      ice_supersat_frac(1:pverp_clubb) = 0._r8
  
       !  Set stats output and increment equal to CLUBB and host dt
       stats_tsamp = dtime
@@ -1891,17 +1891,6 @@ end subroutine clubb_init_cnst
       
       ! For FIVE we need to make sure that the high resolution grid
       !  is read into 
-     
-      !  Read in parameters for CLUBB.  Just read in default values 
-      call read_parameters( -99, "", clubb_params )
- 
-      !  Set-up CLUBB core at each CLUBB call because heights can change 
-      call setup_grid(pverp_clubb, sfc_elevation, l_implemented, grid_type, &
-        zi_g(2), zi_g(1), zi_g(pverp), zi_g(1:pverp), zt_g(1:pverp), &
-        begin_height, end_height)
- 
-      call setup_parameters(zi_g(2), clubb_params, pverp, grid_type, &
-        zi_g(begin_height:end_height), zt_g(begin_height:end_height), err_code)
  
       
       !  Surface fluxes provided by host model
@@ -1981,6 +1970,17 @@ end subroutine clubb_init_cnst
          thlphmp_zt(k,:)     = 0._r8
  
       enddo
+      
+      !  Read in parameters for CLUBB.  Just read in default values 
+      call read_parameters( -99, "", clubb_params )
+ 
+      !  Set-up CLUBB core at each CLUBB call because heights can change 
+      call setup_grid(pverp_clubb, sfc_elevation, l_implemented, grid_type, &
+        zi_g_in(2), zi_g_in(1), zi_g_in(pverp_clubb), zi_g_in(1:pverp_clubb), zt_g_in(1:pverp_clubb), &
+        begin_height, end_height)
+ 
+      call setup_parameters(zi_g_in(2), clubb_params, pverp_clubb, grid_type, &
+        zi_g_in(begin_height:end_height), zt_g_in(begin_height:end_height), err_code)      
       
       !  Compute some inputs from the thermodynamic grid
       !  to the momentum grid
@@ -2094,12 +2094,12 @@ end subroutine clubb_init_cnst
       write(*,*) 'rtpthlp_in', rtpthlp_in
 
       ! Print stuff
-      icnt=0
-      do ixind=1,pcnst
-        write(*,*) 'edsclr_in ',ixind,  edsclr_in(:,ixind)
-      enddo
-      write(*,*) 'edsclr_in ', pcnst+1, edsclr_in(:,pcnst+1)
-      write(*,*) 'edsclr_in ', pcnst+2, edsclr_in(:,pcnst+2)
+!      icnt=0
+!      do ixind=1,pcnst
+!        write(*,*) 'edsclr_in ',ixind,  edsclr_in(:,ixind)
+!      enddo
+!      write(*,*) 'edsclr_in ', pcnst+1, edsclr_in(:,pcnst+1)
+!      write(*,*) 'edsclr_in ', pcnst+2, edsclr_in(:,pcnst+2)
 
       call t_startf('adv_clubb_core_ts_loop')
       do t=1,nadv    ! do needed number of "sub" timesteps for each CAM step
@@ -2210,12 +2210,12 @@ end subroutine clubb_init_cnst
       write(*,*) 'rtpthlp_in', rtpthlp_in
 
       ! Print stuff
-      icnt=0
-      do ixind=1,pcnst
-        write(*,*) 'edsclr_in ',ixind,  edsclr_in(:,ixind)
-      enddo
-      write(*,*) 'edsclr_in ', pcnst+1, edsclr_in(:,pcnst+1)
-      write(*,*) 'edsclr_in ', pcnst+2, edsclr_in(:,pcnst+2)
+!      icnt=0
+!      do ixind=1,pcnst
+!        write(*,*) 'edsclr_in ',ixind,  edsclr_in(:,ixind)
+!      enddo
+!      write(*,*) 'edsclr_in ', pcnst+1, edsclr_in(:,pcnst+1)
+!      write(*,*) 'edsclr_in ', pcnst+2, edsclr_in(:,pcnst+2)
  
       if (clubb_do_adv) then
          if (macmic_it .eq. cld_macmic_num_steps) then 
