@@ -15,4 +15,4 @@ TEST_CASE("scream", "stubs") {
   REQUIRE(val_shoc == 42);
 }
 
-} // empty namespace
+}  // namespace

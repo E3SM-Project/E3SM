@@ -10,4 +10,4 @@ TEST_CASE("Coupler", "stub") {
   REQUIRE(val == 42);
 }
 
-} // empty namespace
+}  // namespace

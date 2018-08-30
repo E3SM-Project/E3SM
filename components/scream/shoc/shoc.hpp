@@ -6,7 +6,7 @@ namespace shoc {
 
 int shoc_stub();
 
-}  // namespace Shoc
-}  // namespace Scream
+}  // namespace shoc
+}  // namespace scream
 
 #endif

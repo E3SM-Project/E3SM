@@ -14,7 +14,7 @@ TEST_CASE("FortranDataIterator", "p3") {
   const auto d = Factory::create(Factory::mixed);
   scream::p3::FortranDataIterator fdi(d);
   REQUIRE(fdi.nfield() == 34);
-  const auto& f = fdi.getfield(0);
+  const auto &f = fdi.getfield(0);
   REQUIRE(f.dim == 2);
   REQUIRE(f.extent[0] == 1);
   REQUIRE(f.extent[1] == 72);
@@ -38,4 +38,4 @@ TEST_CASE("p3_ic", "p3") {
   REQUIRE(nerr == 0);
 }
 
-} // empty namespace
+}  // namespace

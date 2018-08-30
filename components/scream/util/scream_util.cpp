@@ -1,41 +1,37 @@
 #include "scream_util.hpp"
-#include "scream_types.hpp"
 #include "scream_kokkos.hpp"
+#include "scream_types.hpp"
 
 #include <sstream>
 
 #ifdef _OPENMP
-# include <omp.h>
+#include <omp.h>
 #endif
 
 #ifdef SCREAM_FPE
-# include <xmmintrin.h>
+#include <xmmintrin.h>
 #endif
 
 namespace scream {
 namespace util {
 
-void activate_floating_point_exceptions_if_enabled () {
+void activate_floating_point_exceptions_if_enabled() {
 #ifdef SCREAM_FPE
   _MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() &
-                         ~( _MM_MASK_INVALID |
-                            _MM_MASK_DIV_ZERO |
-                            _MM_MASK_OVERFLOW |
-                            _MM_MASK_UNDERFLOW ));
+                         ~(_MM_MASK_INVALID | _MM_MASK_DIV_ZERO |
+                           _MM_MASK_OVERFLOW | _MM_MASK_UNDERFLOW));
 #endif
 }
 
-void initialize (int argc, char **argv) {
+void initialize(int argc, char **argv) {
   activate_floating_point_exceptions_if_enabled();
   Kokkos::initialize(argc, argv);
   std::cout << config_string() << "\n";
 }
 
-void finalize () {
-  Kokkos::finalize();
-}
+void finalize() { Kokkos::finalize(); }
 
-std::string active_avx_string () {
+std::string active_avx_string() {
   std::string s;
 #if defined __AVX512F__
   s += "-AVX512F";
@@ -49,39 +45,39 @@ std::string active_avx_string () {
   return s;
 }
 
-std::string config_string () {
+std::string config_string() {
   std::stringstream ss;
-  ss << "sizeof(Real) " << sizeof(Real)
-     << " avx " << active_avx_string()
-     << " compiler " <<
+  ss << "sizeof(Real) " << sizeof(Real) << " avx " << active_avx_string()
+     << " compiler "
+     <<
 #if defined __INTEL_COMPILER
-    "Intel"
+      "Intel"
 #elif defined __GNUG__
-    "GCC"
+      "GCC"
 #else
-    "unknown"
+      "unknown"
 #endif
-     << " FPE " <<
+     << " FPE "
+     <<
 #ifdef SCREAM_FPE
-    "on"
+      "on"
 #else
-    "off"
+      "off"
 #endif
      << " #threads " <<
 #ifdef _OPENMP
-    omp_get_max_threads()
+      omp_get_max_threads()
 #else
-    1
+      1
 #endif
-    ;
+      ;
   return ss.str();
 }
 
-bool eq (const std::string& a, const char* const b1, const char* const b2) {
+bool eq(const std::string &a, const char *const b1, const char *const b2) {
   return (a == std::string(b1) || (b2 && a == std::string(b2)) ||
           a == std::string("-") + std::string(b1));
-
 }
 
-} // namespace util
-} // namespace scream
+}  // namespace util
+}  // namespace scream

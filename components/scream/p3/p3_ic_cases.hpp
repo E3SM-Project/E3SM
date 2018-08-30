@@ -15,8 +15,8 @@ struct Factory {
   static FortranData::Ptr create(IC ic);
 };
 
-} // namespace ic
-} // namespace p3
-} // namespace scream
+}  // namespace ic
+}  // namespace p3
+}  // namespace scream
 
 #endif
