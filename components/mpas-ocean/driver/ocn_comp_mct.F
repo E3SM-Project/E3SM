@@ -1529,8 +1529,8 @@ contains
                                   latentHeatFluxField, sensibleHeatFluxField, &
                                   longWaveHeatFluxUpField, &
                                   longWaveHeatFluxDownField, &
-                                  evaporationFluxField, seaIceHeatFluxField, &
-                                  snowFluxField, seaIceFreshWaterFluxField, &
+                                  evaporationFluxField, seaIceHeatFluxField, icebergHeatFluxField, &
+                                  snowFluxField, seaIceFreshWaterFluxField, icebergFreshWaterFluxField, &
                                   seaIceSalinityFluxField, &
                                   riverRunoffFluxField, iceRunoffFluxField, &
                                   shortWaveHeatFluxField, rainFluxField, &
@@ -1556,8 +1556,8 @@ contains
                                                latentHeatFlux, sensibleHeatFlux, &
                                                longWaveHeatFluxUp, &
                                                longWaveHeatFluxDown, &
-                                               evaporationFlux, seaIceHeatFlux, &
-                                               snowFlux, seaIceFreshWaterFlux, &
+                                               evaporationFlux, seaIceHeatFlux, icebergHeatFlux, &
+                                               snowFlux, seaIceFreshWaterFlux, icebergFreshWaterFlux, &
                                                seaIceSalinityFlux, &
                                                riverRunoffFlux, iceRunoffFlux, &
                                                shortWaveHeatFlux, rainFlux, &
@@ -1623,8 +1623,10 @@ contains
       call mpas_pool_get_field(forcingPool, 'longWaveHeatFluxDown', longWaveHeatFluxDownField)
       call mpas_pool_get_field(forcingPool, 'evaporationFlux', evaporationFluxField)
       call mpas_pool_get_field(forcingPool, 'seaIceHeatFlux', seaIceHeatFluxField)
+      call mpas_pool_get_field(forcingPool, 'icebergHeatFlux', icebergHeatFluxField)
       call mpas_pool_get_field(forcingPool, 'snowFlux', snowFluxField)
       call mpas_pool_get_field(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFluxField)
+      call mpas_pool_get_field(forcingPool, 'icebergFreshWaterFlux', icebergFreshWaterFluxField)
       call mpas_pool_get_field(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFluxField)
       call mpas_pool_get_field(forcingPool, 'riverRunoffFlux', riverRunoffFluxField)
       call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
@@ -1643,8 +1645,10 @@ contains
       longWaveHeatFluxDown => longWaveHeatFluxDownField % array
       evaporationFlux => evaporationFluxField % array
       seaIceHeatFlux => seaIceHeatFluxField % array
+      icebergHeatFlux => icebergHeatFluxField % array
       snowFlux => snowFluxField % array
       seaIceFreshWaterFlux => seaIceFreshWaterFluxField % array
+      icebergFreshWaterFlux => icebergFreshWaterFluxField % array
       seaIceSalinityFlux => seaIceSalinityFluxField % array
       riverRunoffFlux => riverRunoffFluxField % array
       iceRunoffFlux => iceRunoffFluxField % array
@@ -1738,12 +1742,17 @@ contains
         if ( seaIceHeatFluxField % isActive ) then
            seaIceHeatFlux(i) = x2o_o % rAttr(index_x2o_Fioi_melth, n)
         end if
+        if ( icebergHeatFluxField % isActive ) then
+           icebergHeatFlux(i) = x2o_o % rAttr(index_x2o_Fioi_meltibh, n)
+        end if
         if ( snowFluxField % isActive ) then
            snowFlux(i) = x2o_o % rAttr(index_x2o_Faxa_snow, n)
         end if
-
         if ( seaIceFreshWaterFluxField % isActive ) then
            seaIceFreshWaterFlux(i) = x2o_o % rAttr(index_x2o_Fioi_meltw, n)
+        end if
+        if ( icebergFreshWaterFluxField % isActive ) then
+           icebergFreshWaterFlux(i) = x2o_o % rAttr(index_x2o_Fioi_meltibw, n)
         end if
         if ( seaIceSalinityFluxField % isActive ) then
            seaIceSalinityFlux(i) = x2o_o % rAttr(index_x2o_Fioi_salt, n)
@@ -1757,7 +1766,6 @@ contains
                call shr_sys_abort ('Error: incoming rofi_F is negative')
            end if
         end if
-
         if ( shortWaveHeatFluxField % isActive ) then
            shortWaveHeatFlux(i) = max(x2o_o % rAttr(index_x2o_Foxx_swnet, n), 0.0_RKIND)
         end if
@@ -1880,8 +1888,10 @@ contains
    call mpas_pool_get_field(forcingPool, 'longWaveHeatFluxDown', longWaveHeatFluxDownField)
    call mpas_pool_get_field(forcingPool, 'evaporationFlux', evaporationFluxField)
    call mpas_pool_get_field(forcingPool, 'seaIceHeatFlux', seaIceHeatFluxField)
+   call mpas_pool_get_field(forcingPool, 'icebergHeatFlux', icebergHeatFluxField)
    call mpas_pool_get_field(forcingPool, 'snowFlux', snowFluxField)
    call mpas_pool_get_field(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFluxField)
+   call mpas_pool_get_field(forcingPool, 'icebergFreshWaterFlux', icebergFreshWaterFluxField)
    call mpas_pool_get_field(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFluxField)
    call mpas_pool_get_field(forcingPool, 'riverRunoffFlux', riverRunoffFluxField)
    call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
@@ -1890,7 +1900,6 @@ contains
    call mpas_pool_get_field(forcingPool, 'atmosphericPressure', atmosphericPressureField)
    call mpas_pool_get_field(forcingPool, 'seaIcePressure', seaIcePressureField)
    call mpas_pool_get_field(forcingPool, 'iceFraction', iceFractionField)
-   call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
 
    ! BGC fields
    if (config_use_ecosysTracers) then
@@ -1947,11 +1956,17 @@ contains
    if ( seaIceHeatFluxField % isActive ) then
       call mpas_dmpar_exch_halo_field(seaIceHeatFluxField)
    end if
+   if ( icebergHeatFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(icebergHeatFluxField)
+   end if
    if ( snowFluxField % isActive ) then
       call mpas_dmpar_exch_halo_field(snowFluxField)
    end if
    if ( seaIceFreshWaterFluxField % isActive ) then
       call mpas_dmpar_exch_halo_field(seaIceFreshWaterFluxField)
+   end if
+   if ( icebergFreshWaterFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(icebergFreshWaterFluxField)
    end if
    if ( seaIceSalinityFluxField % isActive ) then
       call mpas_dmpar_exch_halo_field(seaIceSalinityFluxField)
