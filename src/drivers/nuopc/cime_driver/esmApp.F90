@@ -10,7 +10,9 @@ program esmApp
   use ESMF, only : ESMF_GridCompDestroy, ESMF_LOGMSG_INFO, ESMF_GridComp, ESMF_GridCompRun
   use ESMF, only : ESMF_GridCompFinalize, ESMF_GridCompCreate, ESMF_GridCompInitialize
   use ESMF, only : ESMF_LOGKIND_MULTI_ON_ERROR
-  use ESM,  only: esmSS => SetServices
+  use ESM,  only : esmSS => SetServices
+  use ESMF
+  use NUOPC   
 
   implicit none
 
@@ -38,7 +40,21 @@ program esmApp
     file=__FILE__)) &
     call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
+  !-----------------------------------------------------------------------------
+  ! Operate on the NUOPC Field dictionary
+  !-----------------------------------------------------------------------------
+
+  ! Load custom Field dictionary if available
+  call NUOPC_FieldDictionarySetup("fd.yaml", rc=rc)
+  if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+    line=__LINE__, &
+    file=__FILE__)) &
+    call ESMF_Finalize(endflag=ESMF_END_ABORT)
+  
+  !-----------------------------------------------------------------------------
   ! Create the earth system Component
+  !-----------------------------------------------------------------------------
+
   esmComp = ESMF_GridCompCreate(name="esm", rc=rc)
   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
     line=__LINE__, &

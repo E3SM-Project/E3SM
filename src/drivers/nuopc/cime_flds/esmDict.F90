@@ -3,28 +3,10 @@ module esmDict
   ! Establish the NUOPC dictionary for field names
   ! The call to the dictionary initialization needs to be done on all PETS
 
-  use med_constants_mod     , only : CXX, CX, CS, CL
-  use seq_drydep_mod        , only : lnd_drydep
-  use shr_megan_mod         , only : shr_megan_mechcomps_n
-  use shr_fire_emis_mod     , only : shr_fire_emis_mechcomps_n
-  use shr_fire_emis_mod     , only : shr_fire_emis_ztop_token
-  use shr_string_mod        , only : shr_string_listGetNum, shr_string_listGetName
-  use glc_elevclass_mod     , only : glc_elevclass_as_string
-
   implicit none
   public
 
   public :: esmDict_Init
-
-  character(len=CXX) :: drydep_fields    = ''      ! List of dry-deposition fields
-  character(len=CXX) :: megan_voc_fields = ''      ! List of MEGAN VOC emission fields
-  character(len=CXX) :: fire_emis_fields = ''      ! List of fire emission fields
-  character(len=CXX) :: carma_fields     = ''      ! List of CARMA fields from lnd->atm
-  character(len=CXX) :: ndep_fields      = ''      ! List of nitrogen deposition fields from atm->lnd/ocn
-  logical            :: add_ndep_fields  = .false. ! .true. => add ndep fields
-  integer            :: ice_ncat                   ! number of sea ice thickness categories
-  integer            :: glc_nec                    ! number of land-ice elevation classes
-  logical            :: flds_i2o_per_cat           ! .true. => select per ice thickness category fields passed from ice to ocn
 
   character(*), parameter :: u_FILE_u = &
        __FILE__
@@ -33,59 +15,49 @@ module esmDict
 contains
 !================================================================================
 
-  subroutine esmDict_Init(gcomp, rc)
+  subroutine esmDict_Init(rc)
 
-    use ESMF
-    use NUOPC
-    use seq_drydep_mod        , only : seq_drydep_readnl, seq_drydep_init
-    use shr_carma_mod         , only : shr_carma_readnl
-    use shr_ndep_mod          , only : shr_ndep_readnl
-    use shr_megan_mod         , only : shr_megan_readnl
-    use shr_fire_emis_mod     , only : shr_fire_emis_readnl
-    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_AddMetaData
+    use ESMF                  , only : ESMF_SUCCESS
+    use med_constants_mod     , only : CS
+    use glc_elevclass_mod     , only : glc_elevclass_as_string
     use shr_nuopc_scalars_mod , only : flds_scalar_name
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_chkerr
+    use shr_nuopc_fldlist_mod , only : shr_nuopc_fldList_AddMetadata
 
     ! input/output variables:
-    type(ESMF_GridComp)    :: gcomp
     integer, intent(inout) :: rc
 
     ! local variables:
-    type(ESMF_VM)      :: vm
-    integer            :: dbrc
-    integer            :: n, num
-    integer            :: mpicom
-    integer            :: localPet
-    logical            :: mastertask
-    character(len= 2)  :: cnum
-    character(len=CL)  :: cvalue
-    character(len=CS)  :: units
-    character(len=CS)  :: longname
-    character(len=CS)  :: stdname
-    character(len=CS)  :: name, fldname
+    integer                     :: ice_ncat                   ! number of sea ice thickness categories
+    integer                     :: glc_nec                    ! number of land-ice elevation classes
+    integer                     :: max_megan
+    integer                     :: max_ddep   
+    integer                     :: max_fire
+    logical                     :: flds_i2o_per_cat
+    integer                     :: n, num
+    character(len= 2)           :: cnum
+    character(len=CS)           :: units
+    character(len=CS)           :: longname
+    character(len=CS)           :: stdname
+    character(len=CS)           :: name, fldname
     character(len=*), parameter :: subname='(esmDict_Init)'
     !--------------------------------------
+
     rc = ESMF_SUCCESS
 
-    call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    !---------------------------
+    ! For now hardwire these
+    !---------------------------
 
-    call ESMF_VMGet(vm, localPet=localPet, mpiCommunicator=mpicom, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    max_megan = 20
+    max_ddep  = 80
+    max_fire  = 10
+    glc_nec   = 10
+    ice_ncat  =  5 
+    flds_i2o_per_cat = .true.
 
-    ! initialize number of elevation classes
-    call NUOPC_CompAttributeGet(gcomp, name='glc_nec', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) glc_nec
-    call ESMF_LogWrite('esmDict glc_nec = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
-
-    call NUOPC_CompAttributeGet(gcomp, name='flds_i2o_per_cat', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) flds_i2o_per_cat
-    call ESMF_LogWrite('flds_i2o_per_cat = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
-
-    mastertask = .false.
-    if (localPet == 0) mastertask=.true.
+    !---------------------------
+    ! Create dictionary names
+    !---------------------------
 
     longname = trim(flds_scalar_name)
     stdname  = trim(flds_scalar_name)
@@ -1152,11 +1124,6 @@ contains
 
     if (flds_i2o_per_cat) then
     
-       call NUOPC_CompAttributeGet(gcomp, name='ice_ncat', value=cvalue, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       read(cvalue,*) ice_ncat
-       call ESMF_LogWrite('ice_ncat = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
-
        do num = 1, ice_ncat
           write(cnum,'(i2.2)') num
 
@@ -1189,6 +1156,7 @@ contains
        stdname = 'product_of_net_downward_shortwave_flux_at_sea_water_surface_and_atmosphere_area_fraction'
        units = 'W m-2'
        call shr_nuopc_fldList_AddMetadata('Foxx_swnet_afracr', longname, stdname, units)
+
     end if
 
     !-----------------------------------------------------------------------------
@@ -1196,97 +1164,70 @@ contains
     ! if carma_flds are specified then setup fields for CLM to CAM communication
     !-----------------------------------------------------------------------------
 
-    call shr_carma_readnl('drv_flds_in', mpicom, mastertask, carma_fields)
-    if (carma_fields /= ' ') then
-       longname = 'Volumetric soil water'
-       stdname  = 'soil_water'
-       units    = 'm3/m3'
-       do n = 1,shr_string_listGetNum(carma_fields)
-          call shr_string_listGetName(carma_fields, n, fldname)
-          call shr_nuopc_fldList_AddMetadata(trim(fldname), longname, stdname, units)
-       enddo
-    endif
+    ! TODO: fill this in
+    ! longname = 'Volumetric soil water'
+    ! stdname  = 'soil_water'
+    ! units    = 'm3/m3'
+    ! carma_fields = 
+    ! do n = 1,shr_string_listGetNum(carma_fields)
+    !    call shr_string_listGetName(carma_fields, n, fldname)
+    !    call shr_nuopc_fldList_AddMetadata(trim(fldname), longname, stdname, units)
+    ! endif
 
     !-----------------------------------------------------------------------------
     ! MEGAN emissions fluxes fields
     ! if MEGAN emission are specified then setup fields for CLM to CAM communication
     !-----------------------------------------------------------------------------
 
-    ! Note that shr_megan_readnl returns megan_voc_fields which is a
-    ! colon deliminated string of the megan foc fields that will be
-    ! exported by the land model
-
-    call shr_megan_readnl('drv_flds_in', mpicom, mastertask, megan_voc_fields)
-    if (shr_megan_mechcomps_n > 0) then
-       longname = 'MEGAN emission fluxes'
-       stdname  = 'megan'
-       units    = 'molecules/m2/sec'
-       do n = 1,shr_string_listGetNum(megan_voc_fields)
-          call shr_string_listGetName(megan_voc_fields, n, fldname)
-          call shr_nuopc_fldList_AddMetadata(trim(fldname), longname, stdname, units)
-       enddo
-    endif
+    longname = 'MEGAN emission fluxes'
+    stdname  = 'megan'
+    units    = 'molecules/m2/sec'
+    do num = 1, max_megan
+       write(cnum,'(i2.2)') num
+       fldname = 'Fall_voc' // cnum
+       call shr_nuopc_fldList_AddMetadata(trim(fldname), longname, stdname, units)
+    end do
 
     !-----------------------------------------------------------------------------
     ! Fire emissions fluxes fields
-    ! if fire emission are specified then setup fields for CLM to CAM communication
-    ! (emissions fluxes)
     !-----------------------------------------------------------------------------
 
-    call shr_fire_emis_readnl('drv_flds_in', mpicom, mastertask, fire_emis_fields)
-    if (shr_fire_emis_mechcomps_n>0) then
-       longname = 'wild fire emission fluxes'
-       stdname  = 'fire_emis'
-       units    = 'kg/m2/sec'
-       do n = 1,shr_string_listGetNum(fire_emis_fields)
-          call shr_string_listGetName(fire_emis_fields, n, fldname)
-          call shr_nuopc_fldList_AddMetadata(trim(fldname), longname, stdname, units)
-       enddo
+    longname = 'wild fire emission fluxes'
+    stdname  = 'fire_emis'
+    units    = 'kg/m2/sec'
+    do num = 1, max_fire
+       write(cnum,'(i2.2)') num
+       fldname  = 'Fall_fire' // cnum
+       call shr_nuopc_fldList_AddMetadata(trim(fldname), longname, stdname, units)
+    enddo
 
-       longname = 'wild fire plume height'
-       stdname  = 'fire_plume_top'
-       units    = 'm'
-       call shr_nuopc_fldList_AddMetadata(trim(shr_fire_emis_ztop_token), longname, stdname, units)
-    endif
+    longname = 'wild fire plume height'
+    stdname  = 'fire_plume_top'
+    units    = 'm'
+    call shr_nuopc_fldList_AddMetadata('Sl_fztop', longname, stdname, units)
 
     !-----------------------------------------------------------------------------
     ! Dry Deposition fields
-    ! First read namelist and figure out the drydep field list to pass
-    ! Then check if file exists and if not, n_drydep will be zero
-    ! Then add dry deposition fields to land export and atmosphere import states
-    ! Then initialize dry deposition fields
-    ! Note: CAM and CLM will then call seq_drydep_setHCoeff
     !-----------------------------------------------------------------------------
 
-    call seq_drydep_readnl("drv_flds_in", mpicom, mastertask, drydep_fields)
-    if ( lnd_drydep ) then
-       longname = 'dry deposition velocity'
-       stdname  = 'drydep_vel'
-       units    = 'cm/sec'
-       do n = 1,shr_string_listGetNum(drydep_fields)
-          call shr_string_listGetName(drydep_fields, n, fldname)
-          call shr_nuopc_fldList_AddMetadata(fldname, longname, stdname, units)
-       enddo
-    endif
-    call seq_drydep_init( )
+    longname = 'dry deposition velocity'
+    stdname  = 'drydep_vel'
+    units    = 'cm/sec'
+    do num = 1, max_ddep
+       write(cnum,'(i2.2)') num
+       fldname  = 'Sl_dd' // cnum
+       call shr_nuopc_fldList_AddMetadata(trim(fldname), longname, stdname, units)
+    end do
 
     !-----------------------------------------------------------------------------
     ! Nitrogen Deposition fields
-    ! First read namelist and figure out the ndepdep field list to pass
-    ! Then check if file exists and if not, n_drydep will be zero
-    ! Then add nitrogen deposition fields to atm export, lnd import and ocn import
     !-----------------------------------------------------------------------------
 
-    call shr_ndep_readnl("drv_flds_in", mpicom, mastertask, ndep_fields, add_ndep_fields)
-    if (add_ndep_fields) then
-       longname = 'nitrogen deposition flux'
-       stdname  = 'nitrogen_deposition'
-       units    = 'kg(N)/m2/sec'
-       do n = 1,shr_string_listGetNum(ndep_fields)
-          call shr_string_listGetName(ndep_fields, n, fldname)
-          call shr_nuopc_fldList_AddMetadata(trim(fldname), longname, stdname, units)
-       enddo
-    end if
+    longname = 'nitrogen deposition flux'
+    stdname  = 'nitrogen_deposition'
+    units    = 'kg(N)/m2/sec'
+    call shr_nuopc_fldList_AddMetadata('Faxa_noy', longname, stdname, units)
+    call shr_nuopc_fldList_AddMetadata('Faxa_nhx', longname, stdname, units)
 
   end subroutine esmDict_Init
 

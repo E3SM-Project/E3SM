@@ -117,7 +117,6 @@ module ESM
     use ESMF                  , only : ESMF_GridCompSet, ESMF_SUCCESS, ESMF_METHOD_INITIALIZE
     use NUOPC                 , only : NUOPC_CompSetInternalEntryPoint, NUOPC_CompAttributeGet
     use NUOPC_Driver          , only : NUOPC_DriverAddComp
-    use esmDict               , only : esmDict_Init
     use seq_comm_mct          , only : CPLID, GLOID, ATMID, LNDID, OCNID, ICEID, GLCID, ROFID, WAVID, ESPID
     use seq_comm_mct          , only : num_inst_total
     use seq_comm_mct          , only : seq_comm_init, seq_comm_printcomms, seq_comm_petlist
@@ -227,13 +226,6 @@ module ESM
 
     call CheckAttributes(driver, rc)
 
-    !----------------------------------------------------------
-    ! Initialize dictionary of all possible fields
-    !----------------------------------------------------------
-
-    call esmDict_Init(driver, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     !-------------------------------------------
     ! Initialize communicators and PIO 
     !-------------------------------------------
@@ -301,7 +293,8 @@ module ESM
     !-------------------------------------------
 
     ! TODO: get rid of all other clocks other than driver clock - and maybe esp clock?
-    call seq_timemgr_clockInit(driver, logunit, EClock_d, EClock_a, EClock_l, EClock_o, &
+    call seq_timemgr_clockInit(driver, logunit, &
+         EClock_d, EClock_a, EClock_l, EClock_o, &
          EClock_i, Eclock_g, Eclock_r, Eclock_w, Eclock_e, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -625,28 +618,6 @@ module ESM
 
     call NUOPC_FreeFormatDestroy(runSeqFF, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !--------
-    ! Update Clocks
-    !--------
-
-    call NUOPC_DriverSetRunSequence(driver, slot=1, clock=EClock_o, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call NUOPC_DriverSetRunSequence(driver, slot=2, clock=EClock_a, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (mastertask) then
-       call shr_nuopc_methods_Clock_TimePrint(Eclock_o, subname//'EClock_o',rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call shr_nuopc_methods_Clock_TimePrint(Eclock_a,subname//'EClock_a',rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       ! Only print driver info for masterproc
-       call NUOPC_DriverPrint(driver,  rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)

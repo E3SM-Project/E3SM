@@ -401,9 +401,13 @@ def buildnml(case, caseroot, component):
 
     # copy drv_in, drv_flds_in, cesm.runconfig and all *modio* fiels to rundir
     rundir = case.get_value("RUNDIR")
-
     shutil.copy(os.path.join(confdir,"drv_in"), rundir)
     shutil.copy(os.path.join(confdir,"cesm.runconfig"), rundir)
+
+    # copy fd.yaml to rundir
+    config_dir = os.path.dirname(definition_file[0])
+    filename = os.path.join(config_dir,"fd.yaml")
+    shutil.copy(filename, rundir)
 
     drv_flds_in = os.path.join(caseroot, "CaseDocs", "drv_flds_in")
     if os.path.isfile(drv_flds_in):
