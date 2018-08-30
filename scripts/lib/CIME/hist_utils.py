@@ -44,9 +44,7 @@ def _get_all_hist_files(model, from_dir, file_extensions, suffix="", ref_case=No
         test_hists.extend([os.path.join(from_dir,f) for f in os.listdir(from_dir) if pfile.search(f)])
 
     if ref_case:
-        for test in test_hists:
-            if ref_case in os.path.basename(test):
-                test_hists.remove(test)
+        test_hists = [h for h in test_hists if not (ref_case in os.path.basename(h))]
 
     test_hists = list(set(test_hists))
     test_hists.sort()
