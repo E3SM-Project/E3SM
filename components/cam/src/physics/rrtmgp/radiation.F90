@@ -1147,8 +1147,7 @@ contains
 
       !----------------------------------------------------------------------
 
-      ! Number of physics columns in this "chunk"; used in multiple places
-      ! throughout this subroutine, so set once for convenience
+      ! Number of physics columns in this "chunk"
       ncol = state%ncol
 
       ! Set pointers to heating rates stored on physics buffer. These will be
@@ -1164,7 +1163,8 @@ contains
          call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nswbands, fluxes_clrsky, do_direct=.true.)
 
          ! Call the shortwave radiation driver
-         call radiation_driver_sw(state, pbuf, cam_in, is_cmip6_volc, fluxes_allsky, fluxes_clrsky, qrs, qrsc)
+         call radiation_driver_sw(state, pbuf, cam_in, is_cmip6_volc, &
+                                  fluxes_allsky, fluxes_clrsky, qrs, qrsc)
         
          ! Set net fluxes used by other components (land?) 
          call set_net_fluxes_sw(fluxes_allsky, fsds, fsns, fsnt)
@@ -1196,7 +1196,8 @@ contains
          call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_clrsky)
 
          ! Call the longwave radiation driver to calculate fluxes and heating rates
-         call radiation_driver_lw(state, pbuf, cam_in, is_cmip6_volc, fluxes_allsky, fluxes_clrsky, qrl, qrlc)
+         call radiation_driver_lw(state, pbuf, cam_in, is_cmip6_volc, &
+                                  fluxes_allsky, fluxes_clrsky, qrl, qrlc)
         
          ! Set net fluxes used in other components
          call set_net_fluxes_lw(fluxes_allsky, flns, flnt)
@@ -1217,12 +1218,6 @@ contains
 
       end if  ! dolw
 
-      ! Check net fluxes
-      call assert_valid(fsns(1:ncol), 'fsns')
-      call assert_valid(fsnt(1:ncol), 'fsnt')
-      call assert_valid(flns(1:ncol), 'flns')
-      call assert_valid(flnt(1:ncol), 'flnt')
-
       ! Compute net radiative heating tendency
       call t_startf('radheat_tend')
       call radheat_tend(state, pbuf, ptend, &
@@ -1241,7 +1236,8 @@ contains
 
    !----------------------------------------------------------------------------
 
-   subroutine radiation_driver_sw(state, pbuf, cam_in, is_cmip6_volc, fluxes_allsky, fluxes_clrsky, qrs, qrsc)
+   subroutine radiation_driver_sw(state, pbuf, cam_in, is_cmip6_volc, &
+                                  fluxes_allsky, fluxes_clrsky, qrs, qrsc)
      
       use rad_constituents, only: N_DIAG, rad_cnst_get_call_list
       use perf_mod, only: t_startf, t_stopf
@@ -1487,7 +1483,8 @@ contains
 
    !----------------------------------------------------------------------------
 
-   subroutine radiation_driver_lw(state, pbuf, cam_in, is_cmip6_volc, fluxes_allsky, fluxes_clrsky, qrl, qrlc)
+   subroutine radiation_driver_lw(state, pbuf, cam_in, is_cmip6_volc, &
+                                  fluxes_allsky, fluxes_clrsky, qrl, qrlc)
     
       use rad_constituents, only: N_DIAG, rad_cnst_get_call_list
       use perf_mod, only: t_startf, t_stopf
