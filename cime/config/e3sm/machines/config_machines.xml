@@ -700,11 +700,12 @@
         <command name="load">sems-env</command>
         <command name="load">acme-env</command>
         <command name="load">sems-git</command>
+        <command name="load">acme-binutils</command>
         <command name="load">sems-python/2.7.9</command>
         <command name="load">sems-cmake/2.8.12</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">sems-gcc/5.3.0</command>
+        <command name="load">sems-gcc/7.3.0</command>
       </modules>
       <modules compiler="intel">
         <command name="load">sems-intel/16.0.3</command>
