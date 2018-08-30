@@ -58,6 +58,9 @@ use mo_rte_kind, only: wp
 ! Use my assertion routines to perform sanity checks
 use assertions, only: assert, assert_valid, assert_range
 
+use radiation_state, only: ktop, kbot, nlev_rad
+use radiation_utils, only: compress_day_columns, expand_day_columns
+
 implicit none
 private
 save
@@ -170,10 +173,6 @@ integer :: nswbands, nlwbands
 ! Also, save number of g-points as private module data
 integer :: nswgpts, nlwgpts
 
-! Number of vertical levels in radiation calculations. This will generally
-! include an extra layer above the model top (nlev_rad = pver + 1).
-integer :: nlev_rad
-
 ! Set name for this module (for purpose of writing output and log files)
 character(len=*), parameter :: module_name = 'radiation'
 
@@ -209,25 +208,12 @@ integer, dimension(14) :: map_rrtmg_to_rrtmgp_swbands = (/ &
    14, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 &
 /)
 
-! Indices to the top and bottom of the model vertical grid. This is to handle
-! cases where we want to add an extra layer ABOVE the model grid. In the case of
-! 1 level above the model top, ktop would be 2 and kbot would be pver, since the
-! top model level would be the second level in the radiation grid. The bottom
-! level should always be kbot = pver
-integer :: ktop, kbot
-
 ! Interface blocks for overloaded procedures
 interface clip_values
    module procedure clip_values_1d, clip_values_2d
 end interface clip_values
 
-interface compress_day_columns
-   module procedure compress_day_columns_1d, compress_day_columns_2d
-end interface compress_day_columns
 
-interface expand_day_columns
-   module procedure expand_day_columns_1d, expand_day_columns_2d
-end interface expand_day_columns
 !===============================================================================
 
 ! Dummy type to hold allocatales as targets for flux pointers
@@ -1239,7 +1225,6 @@ subroutine radiation_tend(state,   ptend,    pbuf,          cam_out, cam_in,  &
    ! ---------------------------------------------------------------------------
    ! Local variables
    ! ---------------------------------------------------------------------------
-   integer :: nstep  ! current timestep number
 
    ! Pointers to heating rates on physics buffer
    real(r8), pointer :: qrs(:,:) => null()  ! shortwave radiative heating rate 
@@ -1254,15 +1239,10 @@ subroutine radiation_tend(state,   ptend,    pbuf,          cam_out, cam_in,  &
    ! TODO: what does this mean?
    logical :: conserve_energy = .true.
 
-   ! Diagnostic call number
-   integer :: icall
-
    ! Number of columns
    integer :: ncol
 
-   ! Loop indices
-   integer :: icol, ilev
-
+   ! Everyone needs a name
    character(*), parameter :: subroutine_name = 'radiation_tend'
 
    ! Radiative fluxes
@@ -1355,14 +1335,9 @@ subroutine radiation_tend(state,   ptend,    pbuf,          cam_out, cam_in,  &
    call t_stopf('radheat_tend')
 
    ! convert radiative heating rates to Q*dp for energy conservation
-   ! TODO: this gets converted back here? what is going on here?
    if (conserve_energy) then
-      do ilev = 1,pver
-         do icol = 1,ncol
-            qrs(icol,ilev) = qrs(icol,ilev)*state%pdel(icol,ilev)
-            qrl(icol,ilev) = qrl(icol,ilev)*state%pdel(icol,ilev)
-         end do
-      end do
+      qrs(1:ncol,1:pver) = qrs(1:ncol,1:pver) * state%pdel(1:ncol,1:pver)
+      qrl(1:ncol,1:pver) = qrl(1:ncol,1:pver) * state%pdel(1:ncol,1:pver)
    end if
 
 end subroutine radiation_tend
@@ -1380,6 +1355,7 @@ subroutine radiation_driver_sw(state, pbuf, cam_in, is_cmip6_volc, fluxes_allsky
    use mo_fluxes_byband, only: ty_fluxes_byband
    use mo_optical_props, only: ty_optical_props_2str
    use mo_gas_concentrations, only: ty_gas_concs
+   use radiation_state, only: set_rad_state
 
    ! Inputs
    type(physics_state), intent(in) :: state
@@ -1622,6 +1598,7 @@ subroutine radiation_driver_lw(state, pbuf, cam_in, is_cmip6_volc, fluxes_allsky
    use mo_fluxes_byband, only: ty_fluxes_byband
    use mo_optical_props, only: ty_optical_props_1scl
    use mo_gas_concentrations, only: ty_gas_concs
+   use radiation_state, only: set_rad_state
 
    ! Inputs
    type(physics_state), intent(in) :: state
@@ -1771,114 +1748,6 @@ subroutine compute_boundary_flux_sw(pressure_mid, pressure_int, temperature_mid,
 
 end subroutine compute_boundary_flux_sw
 #endif
-
-
-subroutine set_rad_state(state, cam_in, tmid, tint, pmid, pint, col_indices)
-
-   use physics_types, only: physics_state
-   use camsrfexch, only: cam_in_t
-   use physconst, only: stebol
-
-   type(physics_state), intent(in) :: state
-   type(cam_in_t), intent(in) :: cam_in
-   real(r8), intent(out) :: tmid(:,:)
-   real(r8), intent(out) :: tint(:,:)
-   real(r8), intent(out) :: pmid(:,:)
-   real(r8), intent(out) :: pint(:,:)
-   integer, intent(in), optional :: col_indices(:)
-
-   real(r8) :: tint_cam(pcols,pver+1)
-   integer :: ncol, nday
-
-   ncol = state%ncol
-
-   if (present(col_indices)) then
-      nday = count(col_indices > 0)
-   else
-      nday = ncol
-   end if
-
-   ! Map CAM to rad fields
-   if (present(col_indices)) then
-      call compress_day_columns(state%t(1:ncol,1:pver), tmid(1:nday,ktop:kbot), col_indices(1:nday))
-      call compress_day_columns(state%pmid(1:ncol,1:pver), pmid(1:nday,ktop:kbot), col_indices(1:nday))
-      call compress_day_columns(state%pint(1:ncol,1:pver+1), pint(1:nday,ktop:kbot+1), col_indices(1:nday))
-   else
-      tmid(1:ncol,ktop:kbot) = state%t(1:ncol,1:pver)
-      pmid(1:ncol,ktop:kbot) = state%pmid(1:ncol,1:pver)
-      pint(1:ncol,ktop:kbot+1) = state%pint(1:ncol,1:pver+1)
-   end if
-
-   ! Calculate interface temperature explicitly
-   call set_interface_temperature(state, cam_in, tint_cam(1:ncol,1:pver+1))
-   if (present(col_indices)) then
-      call compress_day_columns(tint_cam(1:ncol,1:pver+1), tint(1:nday,ktop:kbot+1), col_indices(1:nday))
-   else
-      tint(1:ncol,ktop:kbot+1) = tint_cam(1:ncol,1:pver+1)
-   end if
-
-   ! Fill layer above model top; this is done 
-   ! consistent with the RRTMG implementation
-   if (nlev_rad > pver) then
-      tmid(:,1) = tmid(:,ktop) !state%t(:ncol,1)
-      tint(:,1) = tint(:,ktop)
-      pmid(:,1) = 0.5_r8 * pint(:,ktop) !state%pint(:ncol,1)
-      pint(:,1) = 1.01_r8
-   end if
-
-#ifdef DEBUG
-   ! Make sure top is less than immediately below?
-   call assert(all(pint(:,1) <= pint(:,2)), 'pint inconsistent.')
-   call assert(all(pint(:,1) <= pmid(:,1)), 'pint and pmid inconsistent.')
-#endif
-   call assert(all(tmid > 0), 'tmid goes negative')
-   call assert(all(tint > 0), 'tint goes negative')
-
-end subroutine set_rad_state
-
-
-subroutine set_interface_temperature(state, cam_in, tint)
-
-   use physics_types, only: physics_state
-   use camsrfexch, only: cam_in_t
-   use physconst, only: stebol
-
-   type(physics_state), intent(in) :: state
-   type(cam_in_t), intent(in) :: cam_in
-   real(r8), intent(inout) :: tint(:,:)
-   real(r8) :: dy
-   integer :: i, k
-
-   ! Calculate interface temperatures (following method used in radtpl for the
-   ! longwave), using surface upward flux and stebol constant in mks units.
-   !
-   ! NOTE: this code copied from RRTMG implementation, and DIFFERS from what is
-   ! done in RRTMGP if interface temperatures are omitted! Letting RRTMGP handle
-   ! this leads to large differences in near-surface fluxes with RRTMG. TODO:
-   ! why is this? Are we doing something wrong here? Maybe it's just the surface
-   ! temperature (tint(:,pverp)) that is to blame?
-   !
-   ! TODO: physics_state provides interface temperatures, we should use those
-   ! instead, but this is consistent with RRTMG implementation
-   do i = 1,state%ncol
-
-      ! Set top level interface temperature
-      tint(i,1) = state%t(i,1)
-
-      ! Calculate interface temperatures between top and bottom
-      do k = 2,pver
-         dy = (state%lnpint(i,k) - state%lnpmid(i,k)) / (state%lnpmid(i,k-1) - state%lnpmid(i,k))
-         tint(i,k) = state%t(i,k) - dy * (state%t(i,k) - state%t(i,k-1))
-      end do
-
-      ! Surface temperature
-      ! TODO: we should *not* be doing this like this here! Land model ought to
-      ! say *something* about emissivity or surface temperature, but this
-      ! assumes that the emissivity is 1, all the time, regardless! This is bad!
-      tint(i,pver+1) = sqrt(sqrt(cam_in%lwup(i)/stebol))
-   end do
-
-end subroutine set_interface_temperature
 
 
 subroutine export_surface_fluxes(fluxes, cam_out, band)
@@ -2176,142 +2045,6 @@ subroutine set_aerosol_optics_sw(icall, state, pbuf, &
    
 end subroutine set_aerosol_optics_sw
 
-
-subroutine compress_day_columns_1d(xcol, xday, day_indices)
-
-   real(r8), intent(in) :: xcol(:)
-   real(r8), intent(inout) :: xday(:)
-   integer, intent(in) :: day_indices(:)
-   integer :: icol, iday
-   character(len=32) :: subname = 'compress_day_columns'
-
-#ifdef DEBUG
-   ! Check dimensions
-   call assert(size(xday, 1) == size(day_indices, 1), trim(subname) // ': inconsistent sizes')
-   call assert(size(xcol, 1) >= size(day_indices, 1), trim(subname) // ': inconsistent sizes')
-#endif
-   
-   ! Do mapping
-   do iday = 1,count(day_indices>0)
-      icol = day_indices(iday)
-      xday(iday) = xcol(icol)
-   end do
-
-end subroutine
-!-------------------------------------------------------------------------------
-subroutine compress_day_columns_2d(xcol, xday, day_indices)
-
-   real(r8), intent(in) :: xcol(:,:)
-   real(r8), intent(inout) :: xday(:,:)
-   integer, intent(in) :: day_indices(:)
-   integer :: icol, iday
-   character(len=32) :: subname = 'compress_day_columns'
-
-#ifdef DEBUG
-   ! Check dimensions
-   call assert(size(xday, 1) == size(day_indices, 1), trim(subname) // ': inconsistent sizes')
-   call assert(size(xcol, 1) >= size(day_indices, 1), trim(subname) // ': inconsistent sizes')
-   call assert(size(xday, 2) == size(xcol, 2), trim(subname) // ': inconsistent sizes')
-#endif
-
-   ! Do mapping
-   do iday = 1,count(day_indices>0)
-      icol = day_indices(iday)
-      xday(iday,:) = xcol(icol,:)
-   end do
-
-end subroutine
-!-------------------------------------------------------------------------------
-subroutine expand_day_columns_1d(xday, xcol, day_indices)
-
-   real(r8), intent(in) :: xday(:)
-   real(r8), intent(inout) :: xcol(:)
-   integer, intent(in) :: day_indices(:)
-   integer :: icol, iday
-   character(len=32) :: subname = 'expand_day_columns_1d'
-
-#ifdef DEBUG
-   ! Check dimensions
-   call assert(size(xday, 1) == size(day_indices, 1), trim(subname) // ': inconsistent sizes')
-   call assert(size(xcol, 1) >= size(day_indices, 1), trim(subname) // ': inconsistent sizes')
-#endif
-
-   ! We need to reset to zero because we only populate the daytime columns
-   xcol(:) = 0._r8
-
-   ! Do mapping
-   do iday = 1,count(day_indices>0)
-      icol = day_indices(iday)
-      xcol(icol) = xday(iday)
-   end do
-end subroutine expand_day_columns_1d
-!-------------------------------------------------------------------------------
-subroutine expand_day_columns_2d(xday, xcol, day_indices)
-
-   real(r8), intent(in) :: xday(:,:)
-   real(r8), intent(inout) :: xcol(:,:)
-   integer, intent(in) :: day_indices(:)
-   integer :: icol, iday
-   character(len=32) :: subname = 'expand_day_columns_2d'
-
-#ifdef DEBUG
-   ! Check dimensions
-   call assert(size(xday, 1) == size(day_indices, 1), trim(subname) // ': inconsistent sizes')
-   call assert(size(xcol, 1) >= size(day_indices, 1), trim(subname) // ': inconsistent sizes')
-   call assert(size(xday, 2) == size(xcol, 2), trim(subname) // ': inconsistent sizes')
-#endif
-
-   ! We need to reset to zero because we only populate the daytime columns
-   xcol(:,:) = 0._r8
-
-   ! Do mapping
-   do iday = 1,count(day_indices>0)
-      icol = day_indices(iday)
-      xcol(icol,:) = xday(iday,:)
-   end do
-
-end subroutine expand_day_columns_2d
-
-subroutine expand_day_fluxes(daytime_fluxes, expanded_fluxes, day_indices)
-   use mo_rte_kind, only: wp
-   use mo_fluxes_byband, only: ty_fluxes_byband
-   type(ty_fluxes_byband), intent(in) :: daytime_fluxes
-   type(ty_fluxes_byband), intent(inout) :: expanded_fluxes
-   integer, intent(in) :: day_indices(:)
-
-   integer :: nday, iday, icol
-
-   ! Reset fluxes in expanded_fluxes object to zero
-   call reset_fluxes(expanded_fluxes)
-
-   ! Number of daytime columns is number of indices greater than zero
-   nday = count(day_indices > 0)
-
-   ! Loop over daytime indices and map daytime fluxes into expanded arrays
-   do iday = 1,nday
-
-      ! Map daytime index to proper column index
-      icol = day_indices(iday)
-
-      ! Expand broadband fluxes
-      expanded_fluxes%flux_up(icol,:) = daytime_fluxes%flux_up(iday,:)
-      expanded_fluxes%flux_dn(icol,:) = daytime_fluxes%flux_dn(iday,:)
-      expanded_fluxes%flux_net(icol,:) = daytime_fluxes%flux_net(iday,:)
-      if (associated(daytime_fluxes%flux_dn_dir)) then
-         expanded_fluxes%flux_dn_dir(icol,:) = daytime_fluxes%flux_dn_dir(iday,:)
-      end if
-
-      ! Expand band-by-band fluxes
-      expanded_fluxes%bnd_flux_up(icol,:,:) = daytime_fluxes%bnd_flux_up(iday,:,:)
-      expanded_fluxes%bnd_flux_dn(icol,:,:) = daytime_fluxes%bnd_flux_dn(iday,:,:)
-      expanded_fluxes%bnd_flux_net(icol,:,:) = daytime_fluxes%bnd_flux_net(iday,:,:)
-      if (associated(daytime_fluxes%bnd_flux_dn_dir)) then
-         expanded_fluxes%bnd_flux_dn_dir(icol,:,:) = daytime_fluxes%bnd_flux_dn_dir(iday,:,:)
-      end if
-
-   end do
-
-end subroutine expand_day_fluxes
 
 
 subroutine reset_fluxes(fluxes)
@@ -3468,6 +3201,48 @@ subroutine set_cloud_optics_lw(state, pbuf, kdist, optics_out)
    call optics_cam%finalize()
 
 end subroutine set_cloud_optics_lw
+
+
+   subroutine expand_day_fluxes(daytime_fluxes, expanded_fluxes, day_indices)
+      use mo_rte_kind, only: wp
+      use mo_fluxes_byband, only: ty_fluxes_byband
+      type(ty_fluxes_byband), intent(in) :: daytime_fluxes
+      type(ty_fluxes_byband), intent(inout) :: expanded_fluxes
+      integer, intent(in) :: day_indices(:)
+
+      integer :: nday, iday, icol
+
+      ! Reset fluxes in expanded_fluxes object to zero
+      call reset_fluxes(expanded_fluxes)
+
+      ! Number of daytime columns is number of indices greater than zero
+      nday = count(day_indices > 0)
+
+      ! Loop over daytime indices and map daytime fluxes into expanded arrays
+      do iday = 1,nday
+
+         ! Map daytime index to proper column index
+         icol = day_indices(iday)
+
+         ! Expand broadband fluxes
+         expanded_fluxes%flux_up(icol,:) = daytime_fluxes%flux_up(iday,:)
+         expanded_fluxes%flux_dn(icol,:) = daytime_fluxes%flux_dn(iday,:)
+         expanded_fluxes%flux_net(icol,:) = daytime_fluxes%flux_net(iday,:)
+         if (associated(daytime_fluxes%flux_dn_dir)) then
+            expanded_fluxes%flux_dn_dir(icol,:) = daytime_fluxes%flux_dn_dir(iday,:)
+         end if
+
+         ! Expand band-by-band fluxes
+         expanded_fluxes%bnd_flux_up(icol,:,:) = daytime_fluxes%bnd_flux_up(iday,:,:)
+         expanded_fluxes%bnd_flux_dn(icol,:,:) = daytime_fluxes%bnd_flux_dn(iday,:,:)
+         expanded_fluxes%bnd_flux_net(icol,:,:) = daytime_fluxes%bnd_flux_net(iday,:,:)
+         if (associated(daytime_fluxes%bnd_flux_dn_dir)) then
+            expanded_fluxes%bnd_flux_dn_dir(icol,:,:) = daytime_fluxes%bnd_flux_dn_dir(iday,:,:)
+         end if
+
+      end do
+
+   end subroutine expand_day_fluxes
 
 
 end module radiation
