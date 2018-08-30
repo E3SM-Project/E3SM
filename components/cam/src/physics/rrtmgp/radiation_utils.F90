@@ -7,7 +7,8 @@ module radiation_utils
    private
 
    public :: compress_day_columns, expand_day_columns, &
-             calculate_heating_rate, clip_values
+             calculate_heating_rate, clip_values, &
+             handle_error
 
    ! Interface blocks for overloaded procedures
    interface compress_day_columns
@@ -279,6 +280,32 @@ contains
       end if
 
    end subroutine clip_values_2d
+
+   !----------------------------------------------------------------------------
+
+   subroutine handle_error(error_message, stop_on_error)
+      use cam_abortutils, only: endrun
+      character(len=*), intent(in) :: error_message
+      logical, intent(in), optional :: stop_on_error
+      logical :: stop_on_error_local = .true.
+
+      ! Allow passing of an optional flag to not stop the run if an error is
+      ! encountered. This allows this subroutine to be used when inquiring if a
+      ! variable exists without failing.
+      if (present(stop_on_error)) then
+         stop_on_error_local = stop_on_error
+      else
+         stop_on_error_local = .true.
+      end if
+
+      ! If we encounter an error, fail if we require success. Otherwise do
+      ! nothing and return silently.
+      if (len(trim(error_message)) > 0) then
+         if (stop_on_error_local) then
+            call endrun(module_name // ': ' // error_message)
+         end if
+      end if
+   end subroutine handle_error
 
    !----------------------------------------------------------------------------
 

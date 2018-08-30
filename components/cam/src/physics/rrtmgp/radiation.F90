@@ -6,38 +6,6 @@ module radiation
 !
 ! Revision history:
 ! Nov 2017  B. Hillman  Initial version, adapted from RRTMG interface.
-!
-! # NOTES
-! 
-! ## How to clean up this module
-! This is a bit of a mess right now, but the code runs and computes both clear
-! and cloudy sky fluxes using RRTMGP. There are some differences to sort out
-! with RRTMG, but this can be done while cleaning up the interface to enable
-! adding support for the super-parameterized configuration. In doing so, we
-! would like to make this interface flexible enough to allow using for
-! calculated fluxes at the CRM level...that is, calling some form of this driver
-! from within the CRM itself to calculate the radiative heating on both the CRM
-! spatial and time domain so that we can update the CRM heating at each CRM
-! timestep. Instead, the current behavior (implemented in RRTMG) uses
-! the time-averaged CRM state to calculate some kind of averaged heating rate,
-! and then applies that same heating rate at each CRM timestep the next time the
-! CRM is called.
-!
-! In order to allow using this with the CRM, either at this level or at the CRM
-! level, we can try to contain the RRTMGP interface to a single subroutine that
-! takes as arguments either just simple arrays, or derived types we know about
-! (i.e., cam_fluxes, cam_optics), and doing whatever conversions are necessary
-! within that routine. This could all be contained within the cam_fluxes class,
-! so maybe this would look something like:
-!
-!    cam_fluxes_sw%initialize()
-!    cam_cloud_optics_sw%initialize()
-!    cam_aerosol_optics_sw%initialize()
-!    cam_fluxes_sw%calculate(k_dist_sw, cam_cloud_optics_sw, cam_aerosol_optics_sw)
-! 
-! It would then be straightforward to implement routines to populate a
-! cam_optics object with CRM-scale inputs, and use cam_fluxes%calculate to
-! calculate fluxes on the CRM domain.
 !---------------------------------------------------------------------------------
 
    ! E3SM-specific modules that are used throughout this module. An effort was made
@@ -59,7 +27,8 @@ module radiation
    use assertions, only: assert, assert_valid, assert_range
 
    use radiation_state, only: ktop, kbot, nlev_rad
-   use radiation_utils, only: compress_day_columns, expand_day_columns
+   use radiation_utils, only: compress_day_columns, expand_day_columns, &
+                              handle_error
 
    implicit none
    private
@@ -202,11 +171,6 @@ module radiation
    ! Total number of physics chunks until this processor (TODO: what exactly does
    ! this mean?)
    integer, public, allocatable :: tot_chnk_till_this_prc(:,:,:)
-
-   ! Mapping from old RRTMG sw bands to new band ordering in RRTMGP
-   integer, dimension(14) :: map_rrtmg_to_rrtmgp_swbands = (/ &
-      14, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 &
-   /)
 
    !============================================================================
 
@@ -1297,6 +1261,7 @@ end function get_band_midpoints
       use mo_gas_concentrations, only: ty_gas_concs
       use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate
+      use cam_optics, only: set_cloud_optics_sw, set_aerosol_optics_sw
 
       ! Inputs
       type(physics_state), intent(in) :: state
@@ -1542,6 +1507,7 @@ end function get_band_midpoints
       use mo_gas_concentrations, only: ty_gas_concs
       use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate
+      use cam_optics, only: set_cloud_optics_lw, set_aerosol_optics_lw
 
       ! Inputs
       type(physics_state), intent(in) :: state
@@ -1787,636 +1753,446 @@ end function get_band_midpoints
 
    !----------------------------------------------------------------------------
 
-subroutine set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, optics_out)
-   use physics_types, only: physics_state
-   use physics_buffer, only: physics_buffer_desc, pbuf_get_index, &
-                             pbuf_get_field
-   use mo_optical_props, only: ty_optical_props_1scl
-   use aer_rad_props, only: aer_rad_props_lw
-   use radconstants, only: nlwbands
+   subroutine reset_fluxes(fluxes)
 
-   integer, intent(in) :: icall
-   type(physics_state), intent(in) :: state
-   type(physics_buffer_desc), pointer :: pbuf(:)
-   logical, intent(in) :: is_cmip6_volc
-   type(ty_optical_props_1scl), intent(inout) :: optics_out
+      use mo_rte_kind, only: wp
+      use mo_fluxes_byband, only: ty_fluxes_byband
+      type(ty_fluxes_byband), intent(inout) :: fluxes
 
-   ! Subroutine name for error messages
-   character(len=*), parameter :: subroutine_name = 'set_aerosol_optics_lw'
+      ! Reset broadband fluxes
+      fluxes%flux_up(:,:) = 0._wp
+      fluxes%flux_dn(:,:) = 0._wp
+      fluxes%flux_net(:,:) = 0._wp
+      if (associated(fluxes%flux_dn_dir)) fluxes%flux_dn_dir(:,:) = 0._wp
 
-   ! Output from CAM routines; expected to have dimension pcols
-   real(r8) :: absorption_tau(pcols,pver,nlwbands)
+      ! Reset band-by-band fluxes
+      fluxes%bnd_flux_up(:,:,:) = 0._wp
+      fluxes%bnd_flux_dn(:,:,:) = 0._wp
+      fluxes%bnd_flux_net(:,:,:) = 0._wp
+      if (associated(fluxes%bnd_flux_dn_dir)) fluxes%bnd_flux_dn_dir(:,:,:) = 0._wp
 
-   ! Loop variables
-   integer :: ilev
-   integer :: ncol
-
-   ! Get aerosol absorption optical depth from CAM routine
-   absorption_tau = 0.0
-   call aer_rad_props_lw(is_cmip6_volc, icall, state, pbuf, absorption_tau)
-
-   ! Populate the RRTMGP optical properties object with CAM optical depth
-   optics_out%tau(:,:,:) = 0.0
-   ncol = state%ncol
-   optics_out%tau(1:ncol,ktop:kbot,1:nlwbands) = absorption_tau(1:ncol,1:pver,1:nlwbands)
-
-end subroutine set_aerosol_optics_lw
+   end subroutine reset_fluxes
 
 
-subroutine set_aerosol_optics_sw(icall, state, pbuf, &
-                                 day_indices, night_indices, &
-                                 is_cmip6_volc, &
-                                 optics_out)
-   use ppgrid, only: pcols, pver
-   use physics_types, only: physics_state
-   use physics_buffer, only: physics_buffer_desc
-   use aer_rad_props, only: aer_rad_props_sw
-   use radconstants, only: nswbands
-   use mo_optical_props, only: ty_optical_props_2str
-   integer, intent(in) :: icall
-   type(physics_state), intent(in) :: state
-   type(physics_buffer_desc), pointer :: pbuf(:)
-   integer, intent(in) :: day_indices(:), night_indices(:)
-   logical, intent(in) :: is_cmip6_volc
-   type(ty_optical_props_2str), intent(inout) :: optics_out
+   subroutine set_daynight_indices(coszrs, day_indices, night_indices)
+      ! Input: cosine of solar zenith angle
+      real(r8), intent(in) :: coszrs(:)
 
-   ! NOTE: aer_rad_props expects 0:pver indexing on these! It appears this is to
-   ! account for the extra layer added above model top, but it is not entirely
-   ! clear. This is not done for the longwave, and it is not really documented
-   ! anywhere that I can find. Regardless, optical properties for the zero index
-   ! are set to zero in aer_rad_props_sw as far as I can tell.
-   !
-   ! NOTE: dimension ordering is different than for cloud optics!
-   real(r8), dimension(pcols,0:pver,nswbands) :: tau, tau_w, tau_w_g, tau_w_f
+      ! Output: array of indices to daytime columns
+      integer, intent(inout) :: day_indices(:), night_indices(:)
 
-   integer :: ncol
-   integer :: iday, icol, ilay
+      ! Loop indices; icol is index to physics columns in current chunk and iday is
+      ! index to daytime indices
+      integer :: icol, iday, inight
 
-   ! Everyone needs a name
-   character(len=*), parameter :: subroutine_name = 'set_aerosol_optics_sw'
+      ! Subroutine name for error messages
+      character(len=128) :: subname = 'set_daynight_indices'
 
-   ncol = state%ncol
+      ! Initialize array of daytime indices to be all zero. If any zeros exist when
+      ! we are done, something went wrong.
+      day_indices(:) = 0
+      night_indices(:) = 0
 
-   ! Get aerosol absorption optical depth from CAM routine
-   tau = 0.0
-   tau_w = 0.0
-   tau_w_g = 0.0
-   tau_w_f = 0.0
-   call aer_rad_props_sw(icall, state, pbuf, &
-                         count(night_indices > 0), night_indices, is_cmip6_volc, &
-                         tau, tau_w, tau_w_g, tau_w_f)
-
-   ! Reset outputs (also handles case where radiation grid contains an extra
-   ! layer above CAM grid)
-   optics_out%tau = 0
-   optics_out%ssa = 1
-   optics_out%g = 0
-
-   ! Assign daytime columns
-   do iday = 1,count(day_indices > 0)
-
-      ! Get index into full chunk-wide array for this daytime index
-      icol = day_indices(iday)
-
-      ! Copy cloud optical depth over directly
-      optics_out%tau(iday,ktop:kbot,1:nswbands) = tau(icol,1:pver,1:nswbands)
-
-      ! Extract single scattering albedo from the product-defined fields
-      where (tau(icol,1:pver,1:nswbands) > 0)
-         optics_out%ssa(iday,ktop:kbot,1:nswbands) &
-            = tau_w(icol,1:pver,1:nswbands) / tau(icol,1:pver,1:nswbands)
-      elsewhere
-         optics_out%ssa(iday,ktop:kbot,1:nswbands) = 1
-      endwhere
-
-      ! Extract assymmetry parameter from the product-defined fields
-      where (tau_w(icol,1:pver,1:nswbands) > 0)
-         optics_out%g(iday,ktop:kbot,1:nswbands) &
-            = tau_w_g(icol,1:pver,1:nswbands) / tau_w(icol,1:pver,1:nswbands)
-      elsewhere
-         optics_out%g(iday,ktop:kbot,1:nswbands) = 0
-      endwhere
-
-   end do
-
-   ! We need to fix band ordering because the old input files assume RRTMG band
-   ! ordering, but this has changed in RRTMGP.
-   ! TODO: fix the input files themselves!
-   do icol = 1,size(optics_out%tau,1)
-      do ilay = 1,size(optics_out%tau,2)
-         optics_out%tau(icol,ilay,:) = reordered(optics_out%tau(icol,ilay,:), map_rrtmg_to_rrtmgp_swbands)
-         optics_out%ssa(icol,ilay,:) = reordered(optics_out%ssa(icol,ilay,:), map_rrtmg_to_rrtmgp_swbands)
-         optics_out%g(icol,ilay,:) = reordered(optics_out%g(icol,ilay,:), map_rrtmg_to_rrtmgp_swbands)
+      ! Loop over columns and identify daytime columns as those where the cosine
+      ! solar zenith angle exceeds zero. Note that we wrap the setting of
+      ! day_indices in an if-then to make sure we are not accesing day_indices out
+      ! of bounds, and stopping with an informative error message if we do for some
+      ! reason.
+      iday = 0
+      inight = 0
+      do icol = 1,size(coszrs)
+         if (coszrs(icol) > 0._r8) then
+            iday = iday + 1
+            day_indices(iday) = icol
+         else
+            inight = inight + 1
+            night_indices(inight) = icol
+         end if
       end do
-   end do
 
-   ! Check values
-   call handle_error(optics_out%validate())
-   
-end subroutine set_aerosol_optics_sw
+      ! Check indices
+      call assert(count(day_indices > 0) == count(coszrs > 0), &
+                  trim(subname) // ': count(day_indices > 0) != count(coszrs > 0)')
+      call assert(count(night_indices > 0) == count(coszrs <= 0), &
+                  trim(subname) // ': count(night_indices > 0) != count(coszrs <= 0)')
+      call assert(count(day_indices > 0) + count(night_indices > 0) == size(coszrs), &
+                  trim(subname) // ': day_indices + night_indices != size(coszrs)')
+      call assert_range(day_indices, 0, size(coszrs), trim(subname) // 'day_indices')
 
-
-
-subroutine reset_fluxes(fluxes)
-
-   use mo_rte_kind, only: wp
-   use mo_fluxes_byband, only: ty_fluxes_byband
-   type(ty_fluxes_byband), intent(inout) :: fluxes
-
-   ! Reset broadband fluxes
-   fluxes%flux_up(:,:) = 0._wp
-   fluxes%flux_dn(:,:) = 0._wp
-   fluxes%flux_net(:,:) = 0._wp
-   if (associated(fluxes%flux_dn_dir)) fluxes%flux_dn_dir(:,:) = 0._wp
-
-   ! Reset band-by-band fluxes
-   fluxes%bnd_flux_up(:,:,:) = 0._wp
-   fluxes%bnd_flux_dn(:,:,:) = 0._wp
-   fluxes%bnd_flux_net(:,:,:) = 0._wp
-   if (associated(fluxes%bnd_flux_dn_dir)) fluxes%bnd_flux_dn_dir(:,:,:) = 0._wp
-
-end subroutine reset_fluxes
+   end subroutine set_daynight_indices
 
 
-subroutine output_cloud_optics_lw(state, optics)
+   ! Subroutine to calculate the solar insolation, accounting for orbital
+   ! eccentricity and solar variability
+   function get_eccentricity_factor() result(eccentricity_factor)
+      use cam_control_mod, only: eccen, mvelpp, lambm0, obliqr
+      use shr_orb_mod, only: shr_orb_decl
+      use time_manager, only: get_curr_calday
 
-   use physics_types, only: physics_state
-   use cam_optics, only: cam_optics_type
-   use cam_history, only: outfld
+      ! Variables needed to use shr_orb_decl to get orbital eccentricity factor 
+      ! (earth-sun distance factor)
+      real(r8) :: calday ! Calendar day, including fraction
+      real(r8) :: solar_declination    ! Solar declination angle in rad
+      real(r8) :: eccentricity_factor  ! Earth-sun distance factor (ie. (1/r)**2)
 
-   type(physics_state), intent(in) :: state
-   type(cam_optics_type), intent(in) :: optics
-   
-#ifdef DEBUG
-   ! Output 
-   call assert_valid(optics%optical_depth(1:state%ncol,1:pver,1:nlwbands), 'cloud_tau_lw')
-#endif
-   call outfld('CLOUD_TAU_LW', optics%optical_depth(1:state%ncol,1:pver,1:nlwbands), state%ncol, state%lchnk)
+      ! Get orbital eccentricity factor for the current calendar day
+      calday = get_curr_calday()
+      call shr_orb_decl(calday, eccen, mvelpp, lambm0, obliqr, &
+                        solar_declination, eccentricity_factor)
 
-end subroutine output_cloud_optics_lw
-
-
-subroutine output_cloud_optics_sw(state, optics)
-   use physics_types, only: physics_state
-   use cam_optics, only: cam_optics_type
-   use cam_history, only: outfld
-   use radconstants, only: idx_sw_diag
-
-   type(physics_state), intent(in) :: state
-   type(cam_optics_type), intent(in) :: optics
-   character(len=*), parameter :: subname = 'output_cloud_optics_sw'
-
-#ifdef DEBUG
-   ! Check values
-   call assert_valid(optics%optical_depth(1:state%ncol,1:pver,1:nswbands), &
-                     trim(subname) // ': optics%optical_depth')
-   call assert_valid(optics%single_scattering_albedo(1:state%ncol,1:pver,1:nswbands), &
-                     trim(subname) // ': optics%single_scattering_albedo')
-   call assert_valid(optics%assymmetry_parameter(1:state%ncol,1:pver,1:nswbands), &
-                     trim(subname) // ': optics%assymmetry_parameter')
-#endif
-
-   ! Send outputs to history buffer
-   call outfld('CLOUD_TAU_SW', &
-               optics%optical_depth(1:state%ncol,1:pver,1:nswbands), &
-               state%ncol, state%lchnk)
-   call outfld('CLOUD_SSA_SW', &
-               optics%single_scattering_albedo(1:state%ncol,1:pver,1:nswbands), &
-               state%ncol, state%lchnk)
-   call outfld('CLOUD_G_SW', &
-               optics%assymmetry_parameter(1:state%ncol,1:pver,1:nswbands), &
-               state%ncol, state%lchnk)
-   call outfld('TOT_ICLD_VISTAU', &
-               optics%optical_depth(1:state%ncol,1:pver,idx_sw_diag), &
-               state%ncol, state%lchnk)
-end subroutine output_cloud_optics_sw
+   end function get_eccentricity_factor
 
 
-subroutine set_daynight_indices(coszrs, day_indices, night_indices)
-   ! Input: cosine of solar zenith angle
-   real(r8), intent(in) :: coszrs(:)
+   ! Get and set cosine of the solar zenith angle for all columns in a physics chuck
+   ! based on input physics_state object and timestep. This routine serves mainly
+   ! as a wrapper for the "zenith" subroutine that handles the task of grabbing the
+   ! appropriate calendar day for this timestep and the latitude and longitude 
+   ! values for the columns in the current chunk, and containing addition CAM
+   ! module use to improve readability of the main radiation_tend routine.
+   subroutine set_cosine_solar_zenith_angle(state, dt, coszrs)
+      use physics_types,   only: physics_state
+      use phys_grid,       only: get_rlat_all_p, get_rlon_all_p
+      use time_manager,    only: get_curr_calday
+      use orbit,           only: zenith
 
-   ! Output: array of indices to daytime columns
-   integer, intent(inout) :: day_indices(:), night_indices(:)
+      ! Inputs
+      type(physics_state), intent(in) :: state
+      real(r8), intent(in) :: dt
 
-   ! Loop indices; icol is index to physics columns in current chunk and iday is
-   ! index to daytime indices
-   integer :: icol, iday, inight
+      ! Output cosine solar zenith angle. Note that this is declared as an
+      ! assumed-shape array, but below we will require coszrs to be at least as
+      ! large as state%ncol (because latitudes and longitudes are only defined for
+      ! the state%ncol columns that exist in the current physics "chunk")
+      real(r8), intent(inout) :: coszrs(:)
 
-   ! Subroutine name for error messages
-   character(len=128) :: subname = 'set_daynight_indices'
+      ! Local variables
+      real(r8) :: calday  ! current calendar day
+      real(r8) :: clat(size(coszrs))  ! current latitudes(radians)
+      real(r8) :: clon(size(coszrs))  ! current longitudes(radians)
 
-   ! Initialize array of daytime indices to be all zero. If any zeros exist when
-   ! we are done, something went wrong.
-   day_indices(:) = 0
-   night_indices(:) = 0
+      ! Make sure desired coszrs has the correct shape. The "zenith" subroutine
+      ! expects input arrays to have shape state%ncol, although this should
+      ! probably be relaxed to take assumed-shape arrays.
+      call assert(size(coszrs) >= state%ncol, 'size(coszrs) < ncol')
 
-   ! Loop over columns and identify daytime columns as those where the cosine
-   ! solar zenith angle exceeds zero. Note that we wrap the setting of
-   ! day_indices in an if-then to make sure we are not accesing day_indices out
-   ! of bounds, and stopping with an informative error message if we do for some
-   ! reason.
-   iday = 0
-   inight = 0
-   do icol = 1,size(coszrs)
-      if (coszrs(icol) > 0._r8) then
-         iday = iday + 1
-         day_indices(iday) = icol
+      ! Get solar zenith angle from CAM utility routine. The "zenith" routine needs
+      ! the current calendar day, and the latitude and longitudes for all columns
+      ! in the current physics "chunk", so we use CAM routines to retrieve those
+      ! values here.
+      calday = get_curr_calday()
+      call get_rlat_all_p(state%lchnk, state%ncol, clat(1:state%ncol))
+      call get_rlon_all_p(state%lchnk, state%ncol, clon(1:state%ncol))
+
+      ! Call zenith to calculate cosine solar zenith angle. Note we only pass the
+      ! first state%ncol columns in case coszrs was allocated to be larger than
+      ! ncol in the calling routine (i.e, pcols).
+      call zenith(calday, clat(1:state%ncol), clon(1:state%ncol), &
+                  coszrs(1:state%ncol), state%ncol, dt)
+   end subroutine set_cosine_solar_zenith_angle
+
+
+   ! Set surface albedos from cam surface exchange object for direct and diffuse
+   ! beam radiation. This code was copied from the RRTMG implementation, but moved
+   ! to a subroutine with some better variable names.
+   subroutine set_albedo(cam_in, albedo_direct, albedo_diffuse)
+      use camsrfexch, only: cam_in_t
+      use radiation_utils, only: clip_values
+
+      type(cam_in_t), intent(in) :: cam_in
+      real(r8), intent(inout) :: albedo_direct(:,:)   ! surface albedo, direct radiation
+      real(r8), intent(inout) :: albedo_diffuse(:,:)  ! surface albedo, diffuse radiation
+
+      ! Local namespace
+      real(r8) :: wavenumber_limits(2,nswbands)
+      integer :: ncol, iband
+
+      ! Check dimension sizes of output arrays.
+      ! albedo_direct and albedo_diffuse should have sizes nswbands,ncol, but ncol
+      ! can change so we just check that it is less than or equal to pcols (the
+      ! maximum size ncol is ever allowed to be).
+      call assert(size(albedo_direct, 1) == nswbands, &
+                  'set_albedo: size(albedo_direct, 1) /= nswbands')
+      call assert(size(albedo_direct, 2) <= pcols, &
+                  'set_albedo: size(albedo_direct, 2) > pcols')
+      call assert(all(shape(albedo_direct) == shape(albedo_diffuse)), &
+                  'set_albedo: albedo_direct and albedo_diffuse have inconsistent shapes')
+      
+      ncol = size(albedo_direct, 2)
+
+      ! Initialize albedo
+      albedo_direct(:,:) = 0._r8
+      albedo_diffuse(:,:) = 0._r8
+
+      ! Albedos are input as broadband (visible, and near-IR), and we need to map
+      ! these to appropriate bands. Bands are categorized broadly as "visible" or
+      ! "infrared" based on wavenumber, so we get the wavenumber limits here
+      wavenumber_limits = k_dist_sw%get_band_lims_wavenumber()
+
+      ! Loop over bands, and determine for each band whether it is broadly in the
+      ! visible or infrared part of the spectrum (visible or "not visible")
+      do iband = 1,nswbands
+         if (is_visible(wavenumber_limits(1,iband)) .and. &
+             is_visible(wavenumber_limits(2,iband))) then
+
+            ! Entire band is in the visible
+            albedo_direct(iband,1:ncol) = cam_in%asdir(1:ncol)
+            albedo_diffuse(iband,1:ncol) = cam_in%asdif(1:ncol)
+
+         else if (.not.is_visible(wavenumber_limits(1,iband)) .and. &
+                  .not.is_visible(wavenumber_limits(2,iband))) then
+
+            ! Entire band is in the longwave (near-infrared)
+            albedo_direct(iband,1:ncol) = cam_in%aldir(1:ncol)
+            albedo_diffuse(iband,1:ncol) = cam_in%aldif(1:ncol)
+
+         else
+
+            ! Band straddles the visible to near-infrared transition, so we take
+            ! the albedo to be the average of the visible and near-infrared
+            ! broadband albedos
+            albedo_direct(iband,1:ncol) = 0.5 * (cam_in%aldir(1:ncol) + cam_in%asdir(1:ncol))
+            albedo_diffuse(iband,1:ncol) = 0.5 * (cam_in%aldif(1:ncol) + cam_in%asdif(1:ncol))
+
+         end if
+      end do
+
+      ! Check values and clip if necessary (albedos should not be larger than 1)
+      ! NOTE: this does actually issue warnings for albedos larger than 1, but this
+      ! was never checked for RRTMG, so albedos will probably be slight different
+      ! than the implementation in RRTMG!
+      call clip_values(albedo_direct, 0._r8, 1._r8, varname='albedo_direct')
+      call clip_values(albedo_diffuse, 0._r8, 1._r8, varname='albedo_diffuse')
+
+   end subroutine set_albedo
+
+   !-------------------------------------------------------------------------------
+
+   ! Function to check if a wavenumber is in the visible or IR
+   logical function is_visible(wavenumber)
+
+      use mo_rte_kind, only: wp
+      
+      ! Input wavenumber; this needs to be input in inverse cm (cm^-1)
+      real(wp), intent(in) :: wavenumber
+
+      ! Threshold between visible and infrared is 0.7 micron, or 14286 cm^-1
+      real(wp), parameter :: visible_wavenumber_threshold = 14286._wp  ! cm^-1
+
+      ! Wavenumber is in the visible if it is above the visible threshold
+      ! wavenumber, and in the infrared if it is below the threshold
+      if (wavenumber > visible_wavenumber_threshold) then
+         is_visible = .true.
       else
-         inight = inight + 1
-         night_indices(inight) = icol
+         is_visible = .false.
       end if
-   end do
 
-#ifdef DEBUG
-   ! Check indices
-   call assert(count(day_indices > 0) == count(coszrs > 0), &
-               trim(subname) // ': count(day_indices > 0) != count(coszrs > 0)')
-   call assert(count(night_indices > 0) == count(coszrs <= 0), &
-               trim(subname) // ': count(night_indices > 0) != count(coszrs <= 0)')
-   call assert(count(day_indices > 0) + count(night_indices > 0) == size(coszrs), &
-               trim(subname) // ': day_indices + night_indices != size(coszrs)')
-   call assert_range(day_indices, 0, size(coszrs), trim(subname) // 'day_indices')
-#endif
+   end function is_visible
 
-end subroutine set_daynight_indices
+   !-------------------------------------------------------------------------------
 
+   ! Send shortwave fluxes and heating rates to history buffer
+   subroutine output_fluxes_sw(icall, state, flux_all, flux_clr, qrs, qrsc)
+      use physconst, only: cpair
+      use physics_types, only: physics_state
+      use cam_history, only: outfld
+      use mo_fluxes_byband, only: ty_fluxes_byband
+      
+      integer, intent(in) :: icall
+      type(physics_state), intent(in) :: state
+      type(ty_fluxes_byband), intent(in) :: flux_all
+      type(ty_fluxes_byband), intent(in) :: flux_clr
+      real(r8), intent(in) :: qrs(:,:), qrsc(:,:)
 
-! Subroutine to calculate the solar insolation, accounting for orbital
-! eccentricity and solar variability
-function get_eccentricity_factor() result(eccentricity_factor)
-   use cam_control_mod, only: eccen, mvelpp, lambm0, obliqr
-   use shr_orb_mod, only: shr_orb_decl
-   use time_manager, only: get_curr_calday
+      ! SW cloud radiative effect
+      real(r8) :: cloud_radiative_effect(state%ncol)
 
-   ! Variables needed to use shr_orb_decl to get orbital eccentricity factor 
-   ! (earth-sun distance factor)
-   real(r8) :: calday ! Calendar day, including fraction
-   real(r8) :: solar_declination    ! Solar declination angle in rad
-   real(r8) :: eccentricity_factor  ! Earth-sun distance factor (ie. (1/r)**2)
+      ! Working variables
+      integer :: ncol
+      integer :: ktop_rad = 1
 
-   ! Get orbital eccentricity factor for the current calendar day
-   calday = get_curr_calday()
-   call shr_orb_decl(calday, eccen, mvelpp, lambm0, obliqr, &
-                     solar_declination, eccentricity_factor)
+      ncol = state%ncol
 
-end function get_eccentricity_factor
+      ! All-sky flux_all%fluxes at model interfaces
+      call outfld('FDS'//diag(icall), flux_all%flux_dn(1:ncol,ktop:kbot+1), ncol, state%lchnk)
+      call outfld('FUS'//diag(icall), flux_all%flux_up(1:ncol,ktop:kbot+1), ncol, state%lchnk)
+      call outfld('FNS'//diag(icall), flux_all%flux_net(1:ncol,ktop:kbot+1), ncol, state%lchnk)
+      call outfld('FDS_DIR'//diag(icall), flux_all%flux_dn_dir(1:ncol,ktop:kbot+1), ncol, state%lchnk)
 
+      ! Clear-sky fluxes at model interfaces
+      call outfld('FDSC'//diag(icall), flux_clr%flux_dn(1:ncol,ktop:kbot+1), ncol, state%lchnk)
+      call outfld('FUSC'//diag(icall), flux_clr%flux_up(1:ncol,ktop:kbot+1), ncol, state%lchnk)
+      call outfld('FNSC'//diag(icall), flux_clr%flux_net(1:ncol,ktop:kbot+1), ncol, state%lchnk)
+      call outfld('FDSC_DIR'//diag(icall), flux_clr%flux_dn_dir(1:ncol,ktop:kbot+1), ncol, state%lchnk)
 
-! Get and set cosine of the solar zenith angle for all columns in a physics chuck
-! based on input physics_state object and timestep. This routine serves mainly
-! as a wrapper for the "zenith" subroutine that handles the task of grabbing the
-! appropriate calendar day for this timestep and the latitude and longitude 
-! values for the columns in the current chunk, and containing addition CAM
-! module use to improve readability of the main radiation_tend routine.
-subroutine set_cosine_solar_zenith_angle(state, dt, coszrs)
-   use physics_types,   only: physics_state
-   use phys_grid,       only: get_rlat_all_p, get_rlon_all_p
-   use time_manager,    only: get_curr_calday
-   use orbit,           only: zenith
+      ! All-sky fluxes
+      call outfld('FSNT'//diag(icall), flux_all%flux_net(1:ncol,ktop), ncol, state%lchnk)
+      call outfld('FSNS'//diag(icall), flux_all%flux_net(1:ncol,kbot+1), ncol, state%lchnk)
+      call outfld('FSDS'//diag(icall), flux_all%flux_dn(1:ncol,kbot+1), ncol, state%lchnk)
 
-   ! Inputs
-   type(physics_state), intent(in) :: state
-   real(r8), intent(in) :: dt
+      ! TOA fluxes (above model top, use index to rad top)
+      call outfld('FSUTOA'//diag(icall), flux_all%flux_up(1:ncol,ktop_rad), ncol, state%lchnk)
+      call outfld('FSNTOA'//diag(icall), flux_all%flux_net(1:ncol,ktop_rad), ncol, state%lchnk)
 
-   ! Output cosine solar zenith angle. Note that this is declared as an
-   ! assumed-shape array, but below we will require coszrs to be at least as
-   ! large as state%ncol (because latitudes and longitudes are only defined for
-   ! the state%ncol columns that exist in the current physics "chunk")
-   real(r8), intent(inout) :: coszrs(:)
+      ! Clear-sky fluxes
+      call outfld('FSNTC'//diag(icall), flux_clr%flux_net(1:ncol,ktop), ncol, state%lchnk)
+      call outfld('FSNSC'//diag(icall), flux_clr%flux_net(1:ncol,kbot+1), ncol, state%lchnk)
+      call outfld('FSDSC'//diag(icall), flux_clr%flux_dn(1:ncol,kbot+1), ncol, state%lchnk)
+      call outfld('FSUTOAC'//diag(icall), flux_clr%flux_up(1:ncol,ktop_rad), ncol, state%lchnk)
+      call outfld('FSNTOAC'//diag(icall), flux_clr%flux_net(1:ncol,ktop_rad), ncol, state%lchnk)
 
-   ! Local variables
-   real(r8) :: calday  ! current calendar day
-   real(r8) :: clat(size(coszrs))  ! current latitudes(radians)
-   real(r8) :: clon(size(coszrs))  ! current longitudes(radians)
+      ! Calculate and output the shortwave cloud radiative effect (SWCF in history)
+      cloud_radiative_effect(1:ncol) = flux_all%flux_net(1:ncol,ktop_rad) - flux_clr%flux_net(1:ncol,ktop_rad)
+      call outfld('SWCF'//diag(icall), cloud_radiative_effect, ncol, state%lchnk)
 
-#ifdef DEBUG
-   ! Make sure desired coszrs has the correct shape. The "zenith" subroutine
-   ! expects input arrays to have shape state%ncol, although this should
-   ! probably be relaxed to take assumed-shape arrays.
-   call assert(size(coszrs) >= state%ncol, 'size(coszrs) < ncol')
-#endif
+      ! Send solar insolation to history buffer
+      call outfld('SOLIN'//diag(icall), flux_clr%flux_dn(1:ncol,1), ncol, state%lchnk)
+                        
+      ! Send heating rates to history buffer
+      call outfld('QRS'//diag(icall), qrs(1:ncol,1:pver)/cpair, ncol, state%lchnk)
+      call outfld('QRSC'//diag(icall), qrsc(1:ncol,1:pver)/cpair, ncol, state%lchnk)
 
-   ! Get solar zenith angle from CAM utility routine. The "zenith" routine needs
-   ! the current calendar day, and the latitude and longitudes for all columns
-   ! in the current physics "chunk", so we use CAM routines to retrieve those
-   ! values here.
-   calday = get_curr_calday()
-   call get_rlat_all_p(state%lchnk, state%ncol, clat(1:state%ncol))
-   call get_rlon_all_p(state%lchnk, state%ncol, clon(1:state%ncol))
-
-   ! Call zenith to calculate cosine solar zenith angle. Note we only pass the
-   ! first state%ncol columns in case coszrs was allocated to be larger than
-   ! ncol in the calling routine (i.e, pcols).
-   call zenith(calday, clat(1:state%ncol), clon(1:state%ncol), &
-               coszrs(1:state%ncol), state%ncol, dt)
-end subroutine set_cosine_solar_zenith_angle
+   end subroutine output_fluxes_sw
 
 
-! Set surface albedos from cam surface exchange object for direct and diffuse
-! beam radiation. This code was copied from the RRTMG implementation, but moved
-! to a subroutine with some better variable names.
-subroutine set_albedo(cam_in, albedo_direct, albedo_diffuse)
-   use camsrfexch, only: cam_in_t
-   use radiation_utils, only: clip_values
+   ! Send longwave fluxes and heating rates to history buffer
+   subroutine output_fluxes_lw(icall, state, flux_all, flux_clr, qrl, qrlc)
+      use physconst, only: cpair
+      use physics_types, only: physics_state
+      use cam_history, only: outfld
+      use mo_fluxes_byband, only: ty_fluxes_byband
+      
+      integer, intent(in) :: icall
+      type(physics_state), intent(in) :: state
+      type(ty_fluxes_byband), intent(in) :: flux_all
+      type(ty_fluxes_byband), intent(in) :: flux_clr
 
-   type(cam_in_t), intent(in) :: cam_in
-   real(r8), intent(inout) :: albedo_direct(:,:)   ! surface albedo, direct radiation
-   real(r8), intent(inout) :: albedo_diffuse(:,:)  ! surface albedo, diffuse radiation
+      ! Heating rates
+      real(r8), intent(in) :: qrl(:,:), qrlc(:,:)
 
-   ! Local namespace
-   real(r8) :: wavenumber_limits(2,nswbands)
-   integer :: ncol, iband
+      ! Cloud radiative effect for output files
+      real(r8) :: cloud_radiative_effect(state%ncol)
 
-#ifdef DEBUG
-   ! Check dimension sizes of output arrays.
-   ! albedo_direct and albedo_diffuse should have sizes nswbands,ncol, but ncol
-   ! can change so we just check that it is less than or equal to pcols (the
-   ! maximum size ncol is ever allowed to be).
-   call assert(size(albedo_direct, 1) == nswbands, &
-               'set_albedo: size(albedo_direct, 1) /= nswbands')
-   call assert(size(albedo_direct, 2) <= pcols, &
-               'set_albedo: size(albedo_direct, 2) > pcols')
-   call assert(all(shape(albedo_direct) == shape(albedo_diffuse)), &
-               'set_albedo: albedo_direct and albedo_diffuse have inconsistent shapes')
-#endif
-   
-   ncol = size(albedo_direct, 2)
+      ! Working arrays
+      real(r8), dimension(pcols,pver+1) :: flux_up, flux_dn, flux_net
+      integer :: ncol
 
-   ! Initialize albedo
-   albedo_direct(:,:) = 0._r8
-   albedo_diffuse(:,:) = 0._r8
+      ncol = state%ncol
 
-   ! Albedos are input as broadband (visible, and near-IR), and we need to map
-   ! these to appropriate bands. Bands are categorized broadly as "visible" or
-   ! "infrared" based on wavenumber, so we get the wavenumber limits here
-   wavenumber_limits = k_dist_sw%get_band_lims_wavenumber()
+      ! Do all-sky fluxes, map first
+      flux_up(1:ncol,1:pver+1) = flux_all%flux_up(1:ncol,ktop:kbot+1)
+      flux_dn(1:ncol,1:pver+1) = flux_all%flux_dn(1:ncol,ktop:kbot+1)
+      flux_net(1:ncol,1:pver+1) = flux_up(1:ncol,1:pver+1) - flux_dn(1:ncol,1:pver+1)
 
-   ! Loop over bands, and determine for each band whether it is broadly in the
-   ! visible or infrared part of the spectrum (visible or "not visible")
-   do iband = 1,nswbands
-      if (is_visible(wavenumber_limits(1,iband)) .and. &
-          is_visible(wavenumber_limits(2,iband))) then
+      ! All-sky fluxes at model interfaces
+      call outfld('FDL'//diag(icall), flux_dn(1:ncol,1:pver+1), ncol, state%lchnk)
+      call outfld('FUL'//diag(icall), flux_up(1:ncol,1:pver+1), ncol, state%lchnk)
+      call outfld('FNL'//diag(icall), flux_net(1:ncol,1:pver+1), ncol, state%lchnk)
 
-         ! Entire band is in the visible
-         albedo_direct(iband,1:ncol) = cam_in%asdir(1:ncol)
-         albedo_diffuse(iband,1:ncol) = cam_in%asdif(1:ncol)
+      ! Clear-sky fluxes at model interfaces
+      flux_up(1:ncol,1:pver+1) = flux_clr%flux_up(1:ncol,ktop:kbot+1)
+      flux_dn(1:ncol,1:pver+1) = flux_clr%flux_dn(1:ncol,ktop:kbot+1)
+      flux_net(1:ncol,1:pver+1) = flux_up(1:ncol,1:pver+1) - flux_dn(1:ncol,1:pver+1)
+      call outfld('FDLC'//diag(icall), flux_dn(1:ncol,1:pver+1), ncol, state%lchnk)
+      call outfld('FULC'//diag(icall), flux_up(1:ncol,1:pver+1), ncol, state%lchnk)
+      call outfld('FNLC'//diag(icall), flux_net(1:ncol,1:pver+1), ncol, state%lchnk)
 
-      else if (.not.is_visible(wavenumber_limits(1,iband)) .and. &
-               .not.is_visible(wavenumber_limits(2,iband))) then
+      ! All-sky fluxes
+      ! NOTE: sign change on net fluxes because internally net fluxes are assumed
+      ! to down minus up, but for longwave outputs we want upward positive
+      call outfld('FLNT'//diag(icall), -flux_all%flux_net(1:ncol,ktop), ncol, state%lchnk)
+      call outfld('FLNS'//diag(icall), -flux_all%flux_net(1:ncol,kbot+1), ncol, state%lchnk)
+      call outfld('FLUT'//diag(icall), flux_all%flux_up(1:ncol,ktop), ncol, state%lchnk)
+      call outfld('FLDS'//diag(icall), flux_all%flux_dn(1:ncol,kbot+1), ncol, state%lchnk)
 
-         ! Entire band is in the longwave (near-infrared)
-         albedo_direct(iband,1:ncol) = cam_in%aldir(1:ncol)
-         albedo_diffuse(iband,1:ncol) = cam_in%aldif(1:ncol)
+      ! Clear-sky fluxes
+      ! NOTE: sign change on net fluxes because internally net fluxes are assumed
+      ! to down minus up, but for longwave outputs we want upward positive
+      call outfld('FLNTC'//diag(icall), -flux_clr%flux_net(1:ncol,ktop), ncol, state%lchnk)
+      call outfld('FLNSC'//diag(icall), -flux_clr%flux_net(1:ncol,kbot+1), ncol, state%lchnk)
+      call outfld('FLUTC'//diag(icall), flux_clr%flux_up(1:ncol,ktop), ncol, state%lchnk)
+      call outfld('FLDSC'//diag(icall), flux_clr%flux_dn(1:ncol,kbot+1), ncol, state%lchnk)
 
+      ! Calculate and output the cloud radiative effect (LWCF in history)
+      cloud_radiative_effect(1:ncol) = flux_clr%flux_net(1:ncol,ktop) - flux_all%flux_net(1:ncol,ktop)
+      call outfld('LWCF'//diag(icall), cloud_radiative_effect, ncol, state%lchnk)
+
+      ! Send heating rates to history buffer
+      call outfld('QRL'//diag(icall), qrl(1:ncol,1:pver)/cpair, ncol, state%lchnk)
+      call outfld('QRLC'//diag(icall), qrlc(1:ncol,1:pver)/cpair, ncol, state%lchnk)
+
+   end subroutine output_fluxes_lw
+
+
+   ! For some reason the RRTMGP flux objects do not include initialization
+   ! routines, but rather expect the user to associate the individual fluxes (which
+   ! are pointers) with appropriate targets. Instead, this routine treats those
+   ! pointers as allocatable members and allocates space for them. TODO: is this
+   ! appropriate use?
+   subroutine initialize_rrtmgp_fluxes(ncol, nlevels, nbands, fluxes, do_direct)
+
+      use mo_fluxes_byband, only: ty_fluxes_byband
+      integer, intent(in) :: ncol, nlevels, nbands
+      type(ty_fluxes_byband), intent(inout) :: fluxes
+      logical, intent(in), optional :: do_direct
+
+      logical :: do_direct_local
+
+      if (present(do_direct)) then
+         do_direct_local = .true.
       else
-
-         ! Band straddles the visible to near-infrared transition, so we take
-         ! the albedo to be the average of the visible and near-infrared
-         ! broadband albedos
-         albedo_direct(iband,1:ncol) = 0.5 * (cam_in%aldir(1:ncol) + cam_in%asdir(1:ncol))
-         albedo_diffuse(iband,1:ncol) = 0.5 * (cam_in%aldif(1:ncol) + cam_in%asdif(1:ncol))
-
+         do_direct_local = .false.
       end if
-   end do
 
-   ! Check values and clip if necessary (albedos should not be larger than 1)
-   ! NOTE: this does actually issue warnings for albedos larger than 1, but this
-   ! was never checked for RRTMG, so albedos will probably be slight different
-   ! than the implementation in RRTMG!
-   call clip_values(albedo_direct, 0._r8, 1._r8, varname='albedo_direct')
-   call clip_values(albedo_diffuse, 0._r8, 1._r8, varname='albedo_diffuse')
+      ! Allocate flux arrays
+      ! NOTE: fluxes defined at interfaces, so need to either pass nlevels as
+      ! number of model levels plus one, or allocate as nlevels+1 if nlevels
+      ! represents number of model levels rather than number of interface levels.
 
-end subroutine set_albedo
+      ! Broadband fluxes
+      allocate(fluxes%flux_up(ncol, nlevels))
+      allocate(fluxes%flux_dn(ncol, nlevels))
+      allocate(fluxes%flux_net(ncol, nlevels))
+      if (do_direct_local) allocate(fluxes%flux_dn_dir(ncol, nlevels))
 
-!-------------------------------------------------------------------------------
+      ! Fluxes by band
+      allocate(fluxes%bnd_flux_up(ncol, nlevels, nbands))
+      allocate(fluxes%bnd_flux_dn(ncol, nlevels, nbands))
+      allocate(fluxes%bnd_flux_net(ncol, nlevels, nbands))
+      if (do_direct_local) allocate(fluxes%bnd_flux_dn_dir(ncol, nlevels, nbands))
 
-! Function to check if a wavenumber is in the visible or IR
-logical function is_visible(wavenumber)
+      ! Initialize
+      call reset_fluxes(fluxes)
 
-   use mo_rte_kind, only: wp
-   
-   ! Input wavenumber; this needs to be input in inverse cm (cm^-1)
-   real(wp), intent(in) :: wavenumber
+   end subroutine initialize_rrtmgp_fluxes
 
-   ! Threshold between visible and infrared is 0.7 micron, or 14286 cm^-1
-   real(wp), parameter :: visible_wavenumber_threshold = 14286._wp  ! cm^-1
+   subroutine free_fluxes(fluxes)
+      use mo_fluxes_byband, only: ty_fluxes_byband
+      type(ty_fluxes_byband), intent(inout) :: fluxes
+      if (associated(fluxes%flux_up)) deallocate(fluxes%flux_up)
+      if (associated(fluxes%flux_dn)) deallocate(fluxes%flux_dn)
+      if (associated(fluxes%flux_net)) deallocate(fluxes%flux_net)
+      if (associated(fluxes%flux_dn_dir)) deallocate(fluxes%flux_dn_dir)
+      if (associated(fluxes%bnd_flux_up)) deallocate(fluxes%bnd_flux_up)
+      if (associated(fluxes%bnd_flux_dn)) deallocate(fluxes%bnd_flux_dn)
+      if (associated(fluxes%bnd_flux_net)) deallocate(fluxes%bnd_flux_net)
+      if (associated(fluxes%bnd_flux_dn_dir)) deallocate(fluxes%bnd_flux_dn_dir)
+   end subroutine free_fluxes
 
-   ! Wavenumber is in the visible if it is above the visible threshold
-   ! wavenumber, and in the infrared if it is below the threshold
-   if (wavenumber > visible_wavenumber_threshold) then
-      is_visible = .true.
-   else
-      is_visible = .false.
-   end if
+   subroutine free_optics_sw(optics)
+      use mo_optical_props, only: ty_optical_props_2str
+      type(ty_optical_props_2str), intent(inout) :: optics
+      if (allocated(optics%tau)) deallocate(optics%tau)
+      if (allocated(optics%ssa)) deallocate(optics%ssa)
+      if (allocated(optics%g)) deallocate(optics%g)
+      call optics%finalize()
+   end subroutine free_optics_sw
 
-end function is_visible
-
-!-------------------------------------------------------------------------------
-
-! Send shortwave fluxes and heating rates to history buffer
-subroutine output_fluxes_sw(icall, state, flux_all, flux_clr, qrs, qrsc)
-   use physconst, only: cpair
-   use physics_types, only: physics_state
-   use cam_history, only: outfld
-   use mo_fluxes_byband, only: ty_fluxes_byband
-   
-   integer, intent(in) :: icall
-   type(physics_state), intent(in) :: state
-   type(ty_fluxes_byband), intent(in) :: flux_all
-   type(ty_fluxes_byband), intent(in) :: flux_clr
-   real(r8), intent(in) :: qrs(:,:), qrsc(:,:)
-
-   ! SW cloud radiative effect
-   real(r8) :: cloud_radiative_effect(state%ncol)
-
-   ! Working variables
-   integer :: ncol
-   integer :: ktop_rad = 1
-
-   ncol = state%ncol
-
-   ! All-sky flux_all%fluxes at model interfaces
-   call outfld('FDS'//diag(icall), flux_all%flux_dn(1:ncol,ktop:kbot+1), ncol, state%lchnk)
-   call outfld('FUS'//diag(icall), flux_all%flux_up(1:ncol,ktop:kbot+1), ncol, state%lchnk)
-   call outfld('FNS'//diag(icall), flux_all%flux_net(1:ncol,ktop:kbot+1), ncol, state%lchnk)
-   call outfld('FDS_DIR'//diag(icall), flux_all%flux_dn_dir(1:ncol,ktop:kbot+1), ncol, state%lchnk)
-
-   ! Clear-sky fluxes at model interfaces
-   call outfld('FDSC'//diag(icall), flux_clr%flux_dn(1:ncol,ktop:kbot+1), ncol, state%lchnk)
-   call outfld('FUSC'//diag(icall), flux_clr%flux_up(1:ncol,ktop:kbot+1), ncol, state%lchnk)
-   call outfld('FNSC'//diag(icall), flux_clr%flux_net(1:ncol,ktop:kbot+1), ncol, state%lchnk)
-   call outfld('FDSC_DIR'//diag(icall), flux_clr%flux_dn_dir(1:ncol,ktop:kbot+1), ncol, state%lchnk)
-
-   ! All-sky fluxes
-   call outfld('FSNT'//diag(icall), flux_all%flux_net(1:ncol,ktop), ncol, state%lchnk)
-   call outfld('FSNS'//diag(icall), flux_all%flux_net(1:ncol,kbot+1), ncol, state%lchnk)
-   call outfld('FSDS'//diag(icall), flux_all%flux_dn(1:ncol,kbot+1), ncol, state%lchnk)
-
-   ! TOA fluxes (above model top, use index to rad top)
-   call outfld('FSUTOA'//diag(icall), flux_all%flux_up(1:ncol,ktop_rad), ncol, state%lchnk)
-   call outfld('FSNTOA'//diag(icall), flux_all%flux_net(1:ncol,ktop_rad), ncol, state%lchnk)
-
-   ! Clear-sky fluxes
-   call outfld('FSNTC'//diag(icall), flux_clr%flux_net(1:ncol,ktop), ncol, state%lchnk)
-   call outfld('FSNSC'//diag(icall), flux_clr%flux_net(1:ncol,kbot+1), ncol, state%lchnk)
-   call outfld('FSDSC'//diag(icall), flux_clr%flux_dn(1:ncol,kbot+1), ncol, state%lchnk)
-   call outfld('FSUTOAC'//diag(icall), flux_clr%flux_up(1:ncol,ktop_rad), ncol, state%lchnk)
-   call outfld('FSNTOAC'//diag(icall), flux_clr%flux_net(1:ncol,ktop_rad), ncol, state%lchnk)
-
-   ! Calculate and output the shortwave cloud radiative effect (SWCF in history)
-   cloud_radiative_effect(1:ncol) = flux_all%flux_net(1:ncol,ktop_rad) - flux_clr%flux_net(1:ncol,ktop_rad)
-   call outfld('SWCF'//diag(icall), cloud_radiative_effect, ncol, state%lchnk)
-
-   ! Send solar insolation to history buffer
-   call outfld('SOLIN'//diag(icall), flux_clr%flux_dn(1:ncol,1), ncol, state%lchnk)
-                     
-   ! Send heating rates to history buffer
-   call outfld('QRS'//diag(icall), qrs(1:ncol,1:pver)/cpair, ncol, state%lchnk)
-   call outfld('QRSC'//diag(icall), qrsc(1:ncol,1:pver)/cpair, ncol, state%lchnk)
-
-end subroutine output_fluxes_sw
-
-
-! Send longwave fluxes and heating rates to history buffer
-subroutine output_fluxes_lw(icall, state, flux_all, flux_clr, qrl, qrlc)
-   use physconst, only: cpair
-   use physics_types, only: physics_state
-   use cam_history, only: outfld
-   use mo_fluxes_byband, only: ty_fluxes_byband
-   
-   integer, intent(in) :: icall
-   type(physics_state), intent(in) :: state
-   type(ty_fluxes_byband), intent(in) :: flux_all
-   type(ty_fluxes_byband), intent(in) :: flux_clr
-
-   ! Heating rates
-   real(r8), intent(in) :: qrl(:,:), qrlc(:,:)
-
-   ! Cloud radiative effect for output files
-   real(r8) :: cloud_radiative_effect(state%ncol)
-
-   ! Working arrays
-   real(r8), dimension(pcols,pver+1) :: flux_up, flux_dn, flux_net
-   integer :: ncol
-
-   ncol = state%ncol
-
-   ! Do all-sky fluxes, map first
-   flux_up(1:ncol,1:pver+1) = flux_all%flux_up(1:ncol,ktop:kbot+1)
-   flux_dn(1:ncol,1:pver+1) = flux_all%flux_dn(1:ncol,ktop:kbot+1)
-   flux_net(1:ncol,1:pver+1) = flux_up(1:ncol,1:pver+1) - flux_dn(1:ncol,1:pver+1)
-
-   ! All-sky fluxes at model interfaces
-   call outfld('FDL'//diag(icall), flux_dn(1:ncol,1:pver+1), ncol, state%lchnk)
-   call outfld('FUL'//diag(icall), flux_up(1:ncol,1:pver+1), ncol, state%lchnk)
-   call outfld('FNL'//diag(icall), flux_net(1:ncol,1:pver+1), ncol, state%lchnk)
-
-   ! Clear-sky fluxes at model interfaces
-   flux_up(1:ncol,1:pver+1) = flux_clr%flux_up(1:ncol,ktop:kbot+1)
-   flux_dn(1:ncol,1:pver+1) = flux_clr%flux_dn(1:ncol,ktop:kbot+1)
-   flux_net(1:ncol,1:pver+1) = flux_up(1:ncol,1:pver+1) - flux_dn(1:ncol,1:pver+1)
-   call outfld('FDLC'//diag(icall), flux_dn(1:ncol,1:pver+1), ncol, state%lchnk)
-   call outfld('FULC'//diag(icall), flux_up(1:ncol,1:pver+1), ncol, state%lchnk)
-   call outfld('FNLC'//diag(icall), flux_net(1:ncol,1:pver+1), ncol, state%lchnk)
-
-   ! All-sky fluxes
-   ! NOTE: sign change on net fluxes because internally net fluxes are assumed
-   ! to down minus up, but for longwave outputs we want upward positive
-   call outfld('FLNT'//diag(icall), -flux_all%flux_net(1:ncol,ktop), ncol, state%lchnk)
-   call outfld('FLNS'//diag(icall), -flux_all%flux_net(1:ncol,kbot+1), ncol, state%lchnk)
-   call outfld('FLUT'//diag(icall), flux_all%flux_up(1:ncol,ktop), ncol, state%lchnk)
-   call outfld('FLDS'//diag(icall), flux_all%flux_dn(1:ncol,kbot+1), ncol, state%lchnk)
-
-   ! Clear-sky fluxes
-   ! NOTE: sign change on net fluxes because internally net fluxes are assumed
-   ! to down minus up, but for longwave outputs we want upward positive
-   call outfld('FLNTC'//diag(icall), -flux_clr%flux_net(1:ncol,ktop), ncol, state%lchnk)
-   call outfld('FLNSC'//diag(icall), -flux_clr%flux_net(1:ncol,kbot+1), ncol, state%lchnk)
-   call outfld('FLUTC'//diag(icall), flux_clr%flux_up(1:ncol,ktop), ncol, state%lchnk)
-   call outfld('FLDSC'//diag(icall), flux_clr%flux_dn(1:ncol,kbot+1), ncol, state%lchnk)
-
-   ! Calculate and output the cloud radiative effect (LWCF in history)
-   cloud_radiative_effect(1:ncol) = flux_clr%flux_net(1:ncol,ktop) - flux_all%flux_net(1:ncol,ktop)
-   call outfld('LWCF'//diag(icall), cloud_radiative_effect, ncol, state%lchnk)
-
-   ! Send heating rates to history buffer
-   call outfld('QRL'//diag(icall), qrl(1:ncol,1:pver)/cpair, ncol, state%lchnk)
-   call outfld('QRLC'//diag(icall), qrlc(1:ncol,1:pver)/cpair, ncol, state%lchnk)
-
-end subroutine output_fluxes_lw
-
-
-! For some reason the RRTMGP flux objects do not include initialization
-! routines, but rather expect the user to associate the individual fluxes (which
-! are pointers) with appropriate targets. Instead, this routine treats those
-! pointers as allocatable members and allocates space for them. TODO: is this
-! appropriate use?
-subroutine initialize_rrtmgp_fluxes(ncol, nlevels, nbands, fluxes, do_direct)
-
-   use mo_fluxes_byband, only: ty_fluxes_byband
-   integer, intent(in) :: ncol, nlevels, nbands
-   type(ty_fluxes_byband), intent(inout) :: fluxes
-   logical, intent(in), optional :: do_direct
-
-   logical :: do_direct_local
-
-   if (present(do_direct)) then
-      do_direct_local = .true.
-   else
-      do_direct_local = .false.
-   end if
-
-   ! Allocate flux arrays
-   ! NOTE: fluxes defined at interfaces, so need to either pass nlevels as
-   ! number of model levels plus one, or allocate as nlevels+1 if nlevels
-   ! represents number of model levels rather than number of interface levels.
-
-   ! Broadband fluxes
-   allocate(fluxes%flux_up(ncol, nlevels))
-   allocate(fluxes%flux_dn(ncol, nlevels))
-   allocate(fluxes%flux_net(ncol, nlevels))
-   if (do_direct_local) allocate(fluxes%flux_dn_dir(ncol, nlevels))
-
-   ! Fluxes by band
-   allocate(fluxes%bnd_flux_up(ncol, nlevels, nbands))
-   allocate(fluxes%bnd_flux_dn(ncol, nlevels, nbands))
-   allocate(fluxes%bnd_flux_net(ncol, nlevels, nbands))
-   if (do_direct_local) allocate(fluxes%bnd_flux_dn_dir(ncol, nlevels, nbands))
-
-   ! Initialize
-   call reset_fluxes(fluxes)
-
-end subroutine initialize_rrtmgp_fluxes
-
-subroutine free_fluxes(fluxes)
-   use mo_fluxes_byband, only: ty_fluxes_byband
-   type(ty_fluxes_byband), intent(inout) :: fluxes
-   if (associated(fluxes%flux_up)) deallocate(fluxes%flux_up)
-   if (associated(fluxes%flux_dn)) deallocate(fluxes%flux_dn)
-   if (associated(fluxes%flux_net)) deallocate(fluxes%flux_net)
-   if (associated(fluxes%flux_dn_dir)) deallocate(fluxes%flux_dn_dir)
-   if (associated(fluxes%bnd_flux_up)) deallocate(fluxes%bnd_flux_up)
-   if (associated(fluxes%bnd_flux_dn)) deallocate(fluxes%bnd_flux_dn)
-   if (associated(fluxes%bnd_flux_net)) deallocate(fluxes%bnd_flux_net)
-   if (associated(fluxes%bnd_flux_dn_dir)) deallocate(fluxes%bnd_flux_dn_dir)
-end subroutine free_fluxes
-
-subroutine free_optics_sw(optics)
-   use mo_optical_props, only: ty_optical_props_2str
-   type(ty_optical_props_2str), intent(inout) :: optics
-   if (allocated(optics%tau)) deallocate(optics%tau)
-   if (allocated(optics%ssa)) deallocate(optics%ssa)
-   if (allocated(optics%g)) deallocate(optics%g)
-   call optics%finalize()
-end subroutine free_optics_sw
-
-subroutine free_optics_lw(optics)
-   use mo_optical_props, only: ty_optical_props_1scl
-   type(ty_optical_props_1scl), intent(inout) :: optics
-   if (allocated(optics%tau)) deallocate(optics%tau)
-   call optics%finalize()
-end subroutine free_optics_lw
+   subroutine free_optics_lw(optics)
+      use mo_optical_props, only: ty_optical_props_1scl
+      type(ty_optical_props_1scl), intent(inout) :: optics
+      if (allocated(optics%tau)) deallocate(optics%tau)
+      call optics%finalize()
+   end subroutine free_optics_lw
 
 subroutine set_gas_concentrations(icall, state, pbuf, &
                                   gas_concentrations, &
@@ -2586,338 +2362,6 @@ logical function string_in_list(string, list)
       end if
    end do
 end function string_in_list
-
-
-subroutine handle_error(error_message, stop_on_error)
-   character(len=*), intent(in) :: error_message
-   logical, intent(in), optional :: stop_on_error
-   logical :: stop_on_error_local = .true.
-
-   ! Allow passing of an optional flag to not stop the run if an error is
-   ! encountered. This allows this subroutine to be used when inquiring if a
-   ! variable exists without failing.
-   if (present(stop_on_error)) then
-      stop_on_error_local = stop_on_error
-   else
-      stop_on_error_local = .true.
-   end if
-
-   ! If we encounter an error, fail if we require success. Otherwise do
-   ! nothing and return silently.
-   if (len(trim(error_message)) > 0) then
-      if (stop_on_error_local) then
-         call endrun(module_name // ': ' // error_message)
-      end if
-   end if
-end subroutine handle_error
-
-
-subroutine set_cloud_optics_sw(state, pbuf, day_indices, kdist, optics_out)
-   
-   use ppgrid, only: pcols, pver, pverp
-   use physics_types, only: physics_state
-   use physics_buffer, only: physics_buffer_desc, &
-                             pbuf_get_field, &
-                             pbuf_get_index
-   use mo_optical_props, only: ty_optical_props_2str
-   use mo_gas_optics, only: ty_gas_optics
-   use mcica_subcol_gen, only: mcica_subcol_mask
-   use cam_optics, only: cam_optics_type, get_cloud_optics_sw
-
-   type(physics_state), intent(in) :: state
-   type(physics_buffer_desc), pointer :: pbuf(:)
-   integer, intent(in) :: day_indices(:)
-   type(ty_gas_optics), intent(in) :: kdist
-   type(ty_optical_props_2str), intent(inout) :: optics_out
-
-   ! Type to hold optics on CAM grid
-   type(cam_optics_type) :: optics_cam
-
-   ! Pointer to cloud fraction on physics buffer
-   real(r8), pointer :: cloud_fraction(:,:), snow_fraction(:,:)
-
-   ! Combined cloud and snow fraction
-   real(r8) :: combined_cloud_fraction(pcols,pver)
-
-   ! For MCICA sampling routine
-   integer, parameter :: changeseed = 1
-
-   ! Dimension sizes
-   integer :: ngpt, ncol, nday, nlay
-
-   ! McICA subcolumn cloud flag
-   logical, dimension(nswgpts,pcols,pver) :: iscloudy
-
-   ! Loop variables
-   integer :: icol, ilev, igpt, iband, iday, ilev_cam, ilev_rad
-
-   ! Set a name for this subroutine to write to error messages
-   character(len=32) :: subname = 'set_cloud_optics_sw'
-
-   ncol = state%ncol
-   ngpt = kdist%get_ngpt()
-
-   ! Initialize output cloud optics object
-   nday = count(day_indices > 0)
-   call handle_error(optics_out%alloc_2str(nday, nlev_rad, kdist))
-   call optics_out%set_name('shortwave cloud optics')
-
-   ! Retrieve the mean in-cloud optical properties via CAM cloud radiative
-   ! properties interface (cloud_rad_props). This retrieves cloud optical
-   ! properties by *band* -- these will be mapped to g-points when doing
-   ! the subcolumn sampling to account for cloud overlap.
-   call optics_cam%initialize(nswbands, ncol, pver)
-   call get_cloud_optics_sw(state, pbuf, optics_cam)
-
-   ! We need to fix band ordering because the old input files assume RRTMG band
-   ! ordering, but this has changed in RRTMGP.
-   ! TODO: fix the input files themselves!
-   do icol = 1,size(optics_cam%optical_depth,1)
-      do ilev = 1,size(optics_cam%optical_depth,2)
-         optics_cam%optical_depth(icol,ilev,:) = reordered( &
-            optics_cam%optical_depth(icol,ilev,:), map_rrtmg_to_rrtmgp_swbands &
-         )
-         optics_cam%single_scattering_albedo(icol,ilev,:) = reordered( &
-            optics_cam%single_scattering_albedo(icol,ilev,:), map_rrtmg_to_rrtmgp_swbands &
-         )
-         optics_cam%assymmetry_parameter(icol,ilev,:) = reordered( &
-            optics_cam%assymmetry_parameter(icol,ilev,:), map_rrtmg_to_rrtmgp_swbands &
-         )
-      end do
-   end do
-
-   ! Send in-cloud optical depth for visible band to history buffer
-   call output_cloud_optics_sw(state, optics_cam)
-
-   ! Initialize (or reset) output cloud optics object
-   optics_out%tau = 0.0
-   optics_out%ssa = 1.0
-   optics_out%g = 0.0
-
-!  ! Set pointer to cloud fraction; this is used by McICA routines
-!  ! TODO: why the extra arguments to pbuf_get_field here? Are these necessary?
-!  call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cloud_fraction, &
-!                      start=(/1,1,pbuf_old_tim_idx()/), &
-!                      kount=(/pcols,pver,1/))
-
-   ! Get cloud and snow fractions, and combine
-   call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cloud_fraction)
-   call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), snow_fraction)
-   combined_cloud_fraction(1:ncol,1:pver) = max(cloud_fraction(1:ncol,1:pver), &
-                                                snow_fraction(1:ncol,1:pver))
-
-   ! Do MCICA sampling of optics here. This will map bands to gpoints,
-   ! while doing stochastic sampling of cloud state
-   call mcica_subcol_mask(ngpt, ncol, pver, changeseed, &
-                          state%pmid(1:ncol,1:pver), &
-                          combined_cloud_fraction(1:ncol,1:pver), &
-                          iscloudy(1:ngpt,1:ncol,1:pver))
-   
-   ! -- generate subcolumns for homogeneous clouds -----
-   ! where there is a cloud, set the subcolumn cloud properties;
-   optics_out%tau(:,:,:) = 0
-   optics_out%ssa(:,:,:) = 1
-   optics_out%g(:,:,:) = 0
-   do ilev_cam = 1,pver  ! Loop over indices on the CAM grid
-
-      ! Index to radiation grid
-      ilev_rad = ilev_cam + (nlev_rad - pver)
-
-      ! Loop over columns and map CAM columns to those on radiation grid
-      ! (daytime-only columns)
-      do iday = 1,size(day_indices)
-
-         ! Map daytime to column indices
-         icol = day_indices(iday)
-
-         ! Loop over g-points and map bands to g-points; each subcolumn
-         ! corresponds to a single g-point. This is how this code implements the
-         ! McICA assumptions: simultaneously sampling over cloud state and
-         ! g-point.
-         do igpt = 1,ngpt
-            if (iscloudy(igpt,icol,ilev_cam) .and. &
-                combined_cloud_fraction(icol,ilev_cam) > 0._r8) then
-            
-               iband = kdist%convert_gpt2band(igpt)
-               optics_out%tau(iday,ilev_rad,igpt) = optics_cam%optical_depth(icol,ilev_cam,iband)
-               optics_out%ssa(iday,ilev_rad,igpt) = optics_cam%single_scattering_albedo(icol,ilev_cam,iband)
-               optics_out%g(iday,ilev_rad,igpt) = optics_cam%assymmetry_parameter(icol,ilev_cam,iband)
-            else
-               optics_out%tau(iday,ilev_rad,igpt) = 0._r8
-               optics_out%ssa(iday,ilev_rad,igpt) = 1._r8
-               optics_out%g(iday,ilev_rad,igpt) = 0._r8
-            end if
-         end do  ! igpt
-      end do  ! iday
-   end do  ! ilev_cam
-
-   ! Apply delta scaling to account for forward-scattering
-   ! TODO: delta_scale takes the forward scattering fraction as an optional
-   ! parameter. In the current cloud optics_sw scheme, forward scattering is taken
-   ! just as g^2, which delta_scale assumes if forward scattering fraction is
-   ! omitted in the function call. In the future, we should explicitly pass
-   ! this. This just requires modifying the get_cloud_optics_sw procedures to also
-   ! pass the foward scattering fraction that the CAM cloud optics_sw assumes.
-   call handle_error(optics_out%delta_scale())
-
-   ! Check cloud optics_sw
-   call handle_error(optics_out%validate())
-
-   call optics_cam%finalize()
-end subroutine set_cloud_optics_sw
-
-
-function reordered(array_in, new_indexing) result(array_out)
-
-   ! Inputs
-   real(r8), intent(in) :: array_in(:)
-   integer, intent(in) :: new_indexing(:)
-
-   ! Output, reordered array
-   real(r8), dimension(size(array_in)) :: array_out
-
-   ! Loop index
-   integer :: ii
-
-#ifdef DEBUG
-   ! Check inputs
-   call assert(size(array_in) == size(new_indexing), 'reorder_array: sizes inconsistent')
-#endif
-
-   ! Reorder array based on input index mapping, which maps old indices to new
-   do ii = 1,size(new_indexing)
-      array_out(ii) = array_in(new_indexing(ii))
-   end do
-
-end function reordered
-
-
-subroutine set_cloud_optics_lw(state, pbuf, kdist, optics_out)
-   
-   use ppgrid, only: pcols, pver
-   use physics_types, only: physics_state
-   use physics_buffer, only: physics_buffer_desc, &
-                             pbuf_get_field, pbuf_get_index
-   use mo_optical_props, only: ty_optical_props_1scl
-   use mo_gas_optics, only: ty_gas_optics
-   use mcica_subcol_gen, only: mcica_subcol_mask
-   use cam_optics, only: cam_optics_type, get_cloud_optics_lw
-
-   type(physics_state), intent(in) :: state
-   type(physics_buffer_desc), pointer :: pbuf(:)
-   type(ty_gas_optics), intent(in) :: kdist
-   type(ty_optical_props_1scl), intent(inout) :: optics_out
-
-   type(cam_optics_type) :: optics_cam
-   real(r8), pointer :: cloud_fraction(:,:)
-   real(r8), pointer :: snow_fraction(:,:)
-   real(r8) :: combined_cloud_fraction(pcols,pver)
-
-   ! For MCICA sampling routine
-   integer, parameter :: changeseed = 1
-
-   ! Dimension sizes
-   integer :: ngpt, ncol
-
-   ! Temporary arrays to hold mcica-sampled cloud optics (ngpt,ncol,pver)
-   real(r8), dimension(pcols,pver,nlwgpts) :: optical_depth_gpt
-   logical, dimension(nlwgpts,pcols,pver) :: iscloudy
-
-   ! Loop variables
-   integer :: icol, ilev_rad, igpt, iband, ilev_cam
-
-   ! Initialize (or reset) output cloud optics object
-   optics_out%tau = 0.0
-
-   ! Set dimension size working variables
-   ngpt = kdist%get_ngpt()
-   ncol = state%ncol
-
-   ! Initialize cloud optics object; cloud_optics_lw will be indexed by
-   ! g-point, rather than by band, and subcolumn routines will associate each
-   ! g-point with a stochastically-sampled cloud state
-   call handle_error(optics_out%alloc_1scl(ncol, nlev_rad, kdist))
-   call optics_out%set_name('longwave cloud optics')
-
-   ! Get cloud optics using CAM routines. This should combine cloud with snow
-   ! optics, if "snow clouds" are being considered
-   call optics_cam%initialize(nlwbands, ncol, pver)
-   call get_cloud_optics_lw(state, pbuf, optics_cam)
-
-#ifdef DEBUG
-   ! Check values
-   call assert_range(optics_cam%optical_depth, 0._r8, 1e20_r8, &
-                     'set_cloud_optics_lw: optics_cam%optical_depth')
-#endif
-
-   ! Send cloud optics to history buffer
-   call output_cloud_optics_lw(state, optics_cam)
-
-   ! Get cloud and snow fractions, and combine
-   call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cloud_fraction)
-   call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), snow_fraction)
-
-   ! Combine cloud and snow fractions for MCICA sampling
-   combined_cloud_fraction(1:ncol,1:pver) = max(cloud_fraction(1:ncol,1:pver), &
-                                                snow_fraction(1:ncol,1:pver))
-
-   ! Do MCICA sampling of optics here. This will map bands to gpoints,
-   ! while doing stochastic sampling of cloud state
-   !
-   ! First, just get the stochastic subcolumn cloudy mask...
-   call mcica_subcol_mask(ngpt, ncol, pver, changeseed, &
-                          state%pmid(1:ncol,1:pver), &
-                          combined_cloud_fraction(1:ncol,1:pver), &
-                          iscloudy(1:ngpt,1:ncol,1:pver))
-
-   ! ... and now map optics to g-points, selecting a single subcolumn for each
-   ! g-point. This implementation generates homogeneous clouds, but it would be
-   ! straightforward to extend this to handle horizontally heterogeneous clouds
-   ! as well.
-   ! NOTE: incoming optics should be in-cloud quantites and not grid-averaged 
-   ! quantities!
-   optics_out%tau = 0
-   do ilev_cam = 1,pver
-
-      ! Get level index on CAM grid (i.e., the index that this rad level
-      ! corresponds to in CAM fields). If this index is above the model top
-      ! (index less than 0) then skip setting the optical properties for this
-      ! level (leave set to zero)
-      ilev_rad = ilev_cam + (nlev_rad - pver)
-
-      do icol = 1,ncol
-         do igpt = 1,ngpt
-            if (iscloudy(igpt,icol,ilev_cam) .and. (combined_cloud_fraction(icol,ilev_cam) > 0._r8) ) then
-               iband = kdist%convert_gpt2band(igpt)
-               optics_out%tau(icol,ilev_rad,igpt) = optics_cam%optical_depth(icol,ilev_cam,iband)
-            else
-               optics_out%tau(icol,ilev_rad,igpt) = 0._r8
-            end if
-         end do
-      end do
-   end do
-
-   ! Apply delta scaling to account for forward-scattering
-   ! TODO: delta_scale takes the forward scattering fraction as an optional
-   ! parameter. In the current cloud optics_lw scheme, forward scattering is taken
-   ! just as g^2, which delta_scale assumes if forward scattering fraction is
-   ! omitted in the function call. In the future, we should explicitly pass
-   ! this. This just requires modifying the get_cloud_optics_lw procedures to also
-   ! pass the foward scattering fraction that the CAM cloud optics_lw assumes.
-   call handle_error(optics_out%delta_scale())
-
-#ifdef DEBUG
-   ! Check values
-   call assert_range(optics_out%tau, 0._r8, 1e20_r8, &
-                     'set_cloud_optics_lw: optics_out%tau')
-#endif
-
-   ! Check cloud optics
-   call handle_error(optics_out%validate())
-
-   call optics_cam%finalize()
-
-end subroutine set_cloud_optics_lw
 
 
    subroutine expand_day_fluxes(daytime_fluxes, expanded_fluxes, day_indices)
