@@ -8,8 +8,8 @@ module five_intr
   implicit none
   
   integer :: five_add_nlevels
-  integer, parameter :: pver_five = 93
-  integer, parameter :: pverp_five = 94
+  integer, parameter :: pver_five = 97
+  integer, parameter :: pverp_five = 98
   
   real(r8) :: pmid_five(pver_five)
   real(r8) :: pint_five(pverp_five) 
@@ -37,7 +37,8 @@ module five_intr
     94498.3215332031_r8, 95028.8940429688_r8, 95547.7447509766_r8, 96054.833984375_r8, &
     96549.7344970703_r8, 97032.4768066406_r8, 97502.6275634766_r8, 97960.1837158203_r8, &
     98404.7332763672_r8, 98836.3037109375_r8, 99213.9038085938_r8, 99537.4938964844_r8, &
-    99774.4415283203_r8, 99924.7985839844_r8/  
+    99774.4415283203_r8, 99924.7985839844_r8, 100375.329450090_r8, 100759.95623136699_r8, &
+    101144.583012644_r8, 101626.967611472_r8/  
     
 
     

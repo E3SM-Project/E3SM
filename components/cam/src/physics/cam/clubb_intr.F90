@@ -1894,17 +1894,17 @@ end subroutine clubb_init_cnst
  
       
       !  Surface fluxes provided by host model
-      wpthlp_sfc = cam_in%shf(i)/(cpair*rho_ds_zt(1))       ! Sensible heat flux
-      wprtp_sfc  = cam_in%cflx(i,1)/(rho_ds_zt(1))      ! Latent heat flux
-      upwp_sfc   = cam_in%wsx(i)/rho_ds_zt(1)               ! Surface meridional momentum flux
-      vpwp_sfc   = cam_in%wsy(i)/rho_ds_zt(1)               ! Surface zonal momentum flux  
-      
+      wpthlp_sfc = cam_in%shf(i)/(cpair*rho_ds_zt(pverp_clubb))       ! Sensible heat flux
+      wprtp_sfc  = cam_in%cflx(i,1)/(rho_ds_zt(pverp_clubb))      ! Latent heat flux
+      upwp_sfc   = cam_in%wsx(i)/rho_ds_zt(pverp_clubb)               ! Surface meridional momentum flux
+      vpwp_sfc   = cam_in%wsy(i)/rho_ds_zt(pverp_clubb)               ! Surface zonal momentum flux  
+     
       ! ------------------------------------------------- !
       ! Apply TMS                                         !
       ! ------------------------------------------------- !    
        if ( do_tms) then
-          upwp_sfc = upwp_sfc-((ksrftms(i)*state1%u(i,pver))/rho_ds_zt(1))
-          vpwp_sfc = vpwp_sfc-((ksrftms(i)*state1%v(i,pver))/rho_ds_zt(1))           
+          upwp_sfc = upwp_sfc-((ksrftms(i)*state1%u(i,pver))/rho_ds_zt(pverp_clubb))
+          vpwp_sfc = vpwp_sfc-((ksrftms(i)*state1%v(i,pver))/rho_ds_zt(pverp_clubb))           
        endif
   
       !  Need to flip arrays around for CLUBB core
@@ -2069,29 +2069,29 @@ end subroutine clubb_init_cnst
       ! --------------------------------------------------------- !  
 
       write(*,*) 'BEFORE'
-      write(*,*) 'p_in_Pa_in', p_in_Pa_in
-      write(*,*) 'rho_zm', rho_zm
-      write(*,*) 'rho_zt_in', rho_zt_in
-      write(*,*) 'exner_in', exner_in
-      write(*,*) 'rho_ds_zm', rho_ds_zm
-      write(*,*) 'rho_ds_zt', rho_ds_zt_in
-      write(*,*) 'invrs_rho_ds_zm', invrs_rho_ds_zm
-      write(*,*) 'invrs_rho_ds_zt_in', invrs_rho_ds_zt_in
-      write(*,*) 'thv_ds_zm', thv_ds_zm
-      write(*,*) 'thv_ds_zt_in', thv_ds_zt_in
-      write(*,*) 'um_in', um_in
-      write(*,*) 'vm_in', vm_in
-      write(*,*) 'upwp_in', upwp_in
-      write(*,*) 'vpwp_in', vpwp_in
-      write(*,*) 'thlm_in', thlm_in
-      write(*,*) 'rtm_in', rtm_in
-      write(*,*) 'wprtp_in', wprtp_in
-      write(*,*) 'wpthlp_in', wpthlp_in
-      write(*,*) 'wp2_in', wp2_in
-      write(*,*) 'wp3_in', wp3_in
-      write(*,*) 'rtp2_in', rtp2_in
-      write(*,*) 'thlp2_in', thlp2_in
-      write(*,*) 'rtpthlp_in', rtpthlp_in
+      write(*,*) 'p_in_Pa_in before', p_in_Pa_in
+      write(*,*) 'rho_zm before', rho_zm
+      write(*,*) 'rho_zt_in before', rho_zt_in
+      write(*,*) 'exner_in before', exner_in
+      write(*,*) 'rho_ds_zm before', rho_ds_zm
+      write(*,*) 'rho_ds_zt before', rho_ds_zt_in
+      write(*,*) 'invrs_rho_ds_zm before', invrs_rho_ds_zm
+      write(*,*) 'invrs_rho_ds_zt_in before', invrs_rho_ds_zt_in
+      write(*,*) 'thv_ds_zm before', thv_ds_zm
+      write(*,*) 'thv_ds_zt_in before', thv_ds_zt_in
+      write(*,*) 'um_in before', um_in
+      write(*,*) 'vm_in before', vm_in
+      write(*,*) 'upwp_in before', upwp_in
+      write(*,*) 'vpwp_in before', vpwp_in
+      write(*,*) 'thlm_in before', thlm_in
+      write(*,*) 'rtm_in before', rtm_in
+      write(*,*) 'wprtp_in before', wprtp_in
+      write(*,*) 'wpthlp_in before', wpthlp_in
+      write(*,*) 'wp2_in before', wp2_in
+      write(*,*) 'wp3_in before', wp3_in
+      write(*,*) 'rtp2_in before', rtp2_in
+      write(*,*) 'thlp2_in before', thlp2_in
+      write(*,*) 'rtpthlp_in before', rtpthlp_in
 
       ! Print stuff
 !      icnt=0
@@ -2185,29 +2185,29 @@ end subroutine clubb_init_cnst
       call t_stopf('adv_clubb_core_ts_loop')
    
       write(*,*) 'AFTER'
-      write(*,*) 'p_in_Pa_in', p_in_Pa_in
-      write(*,*) 'rho_zm', rho_zm
-      write(*,*) 'rho_zt_in', rho_zt_in
-      write(*,*) 'exner_in', exner_in
-      write(*,*) 'rho_ds_zm', rho_ds_zm
-      write(*,*) 'rho_ds_zt', rho_ds_zt_in
-      write(*,*) 'invrs_rho_ds_zm', invrs_rho_ds_zm
-      write(*,*) 'invrs_rho_ds_zt_in', invrs_rho_ds_zt_in
-      write(*,*) 'thv_ds_zm', thv_ds_zm
-      write(*,*) 'thv_ds_zt_in', thv_ds_zt_in
-      write(*,*) 'um_in', um_in
-      write(*,*) 'vm_in', vm_in
-      write(*,*) 'upwp_in', upwp_in
-      write(*,*) 'vpwp_in', vpwp_in
-      write(*,*) 'thlm_in', thlm_in
-      write(*,*) 'rtm_in', rtm_in
-      write(*,*) 'wprtp_in', wprtp_in
-      write(*,*) 'wpthlp_in', wpthlp_in
-      write(*,*) 'wp2_in', wp2_in
-      write(*,*) 'wp3_in', wp3_in
-      write(*,*) 'rtp2_in', rtp2_in
-      write(*,*) 'thlp2_in', thlp2_in
-      write(*,*) 'rtpthlp_in', rtpthlp_in
+!      write(*,*) 'p_in_Pa_in', p_in_Pa_in
+!      write(*,*) 'rho_zm', rho_zm
+!      write(*,*) 'rho_zt_in', rho_zt_in
+!      write(*,*) 'exner_in', exner_in
+!      write(*,*) 'rho_ds_zm', rho_ds_zm
+!      write(*,*) 'rho_ds_zt', rho_ds_zt_in
+!      write(*,*) 'invrs_rho_ds_zm', invrs_rho_ds_zm
+!      write(*,*) 'invrs_rho_ds_zt_in', invrs_rho_ds_zt_in
+!      write(*,*) 'thv_ds_zm', thv_ds_zm
+!      write(*,*) 'thv_ds_zt_in', thv_ds_zt_in
+      write(*,*) 'um_in after', um_in
+      write(*,*) 'vm_in after', vm_in
+      write(*,*) 'upwp_in after', upwp_in
+      write(*,*) 'vpwp_in after', vpwp_in
+      write(*,*) 'thlm_in after', thlm_in
+      write(*,*) 'rtm_in after', rtm_in
+      write(*,*) 'wprtp_in after', wprtp_in
+      write(*,*) 'wpthlp_in after', wpthlp_in
+      write(*,*) 'wp2_in after', wp2_in
+      write(*,*) 'wp3_in after', wp3_in
+      write(*,*) 'rtp2_in after', rtp2_in
+      write(*,*) 'thlp2_in after', thlp2_in
+      write(*,*) 'rtpthlp_in after', rtpthlp_in
 
       ! Print stuff
 !      icnt=0
@@ -2302,6 +2302,7 @@ end subroutine clubb_init_cnst
       write(*,*) 'pmid ', state1%pmid(i,:) 
       write(*,*) 'THLM_pre ', thlm_pre(i,:)
       write(*,*) 'THLM ', thlm(i,:)
+      write(*,*) 'RTM_pre ', rtm(i,:)
       write(*,*) 'RTM ', rtm(i,:)
       write(*,*) 'UM ', um(i,:)
       write(*,*) 'VM ', vm(i,:)
