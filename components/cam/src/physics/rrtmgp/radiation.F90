@@ -40,204 +40,179 @@ module radiation
 ! calculate fluxes on the CRM domain.
 !---------------------------------------------------------------------------------
 
-! E3SM-specific modules that are used throughout this module. An effort was made
-! to keep imports as local as possible, so we only load a few of these at the
-! module (rather than the subroutine) level.
-use shr_kind_mod,     only: r8=>shr_kind_r8, cl=>shr_kind_cl
-use ppgrid,           only: pcols, pver, pverp, begchunk, endchunk
-use cam_abortutils,   only: endrun
-use scamMod,          only: scm_crm_mode, single_column, swrad_off
-use rad_constituents, only: N_DIAG
+   ! E3SM-specific modules that are used throughout this module. An effort was made
+   ! to keep imports as local as possible, so we only load a few of these at the
+   ! module (rather than the subroutine) level.
+   use shr_kind_mod,     only: r8=>shr_kind_r8, cl=>shr_kind_cl
+   use ppgrid,           only: pcols, pver, pverp, begchunk, endchunk
+   use cam_abortutils,   only: endrun
+   use scamMod,          only: scm_crm_mode, single_column, swrad_off
+   use rad_constituents, only: N_DIAG
 
-! RRTMGP gas optics object to store coefficient information. This is imported
-! here so that we can make the k_dist objects module data and only load them
-! once.
-use mo_gas_optics, only: ty_gas_optics
-use mo_rte_kind, only: wp
+   ! RRTMGP gas optics object to store coefficient information. This is imported
+   ! here so that we can make the k_dist objects module data and only load them
+   ! once.
+   use mo_gas_optics, only: ty_gas_optics
+   use mo_rte_kind, only: wp
 
-! Use my assertion routines to perform sanity checks
-use assertions, only: assert, assert_valid, assert_range
+   ! Use my assertion routines to perform sanity checks
+   use assertions, only: assert, assert_valid, assert_range
 
-use radiation_state, only: ktop, kbot, nlev_rad
-use radiation_utils, only: compress_day_columns, expand_day_columns
+   use radiation_state, only: ktop, kbot, nlev_rad
+   use radiation_utils, only: compress_day_columns, expand_day_columns
 
-implicit none
-private
-save
+   implicit none
+   private
+   save
 
-! Public routines provided by this module.
-! TODO: radiation_defaultopts, radiation_setops, and radiation_printops exist
-! only because the radiation namelist has traditionally been read at the driver
-! level by runtime_opts. I am not sure this is the best solution, and in fact
-! CESM seems to have gone away from this practice altogether, opting instead for
-! individual modules to be responsible for reading their own namelists. This
-! might be a better practice going forward, and would simplify the logic here
-! somewhat. To do this, we would need to use the radiation_readnl routine
-! (copied below), and add a line in runtime_opts that calls this routine, and
-! then remove the code in runtime_opts that reads the radiation namelist
-! variables from the CAM namelist. The calls to radiation_defaultopts,
-! radiation_setops, and radiation_printops would also then need to be removed
-! from runtime_ops.
-public :: &
-   radiation_register,    &! registers radiation physics buffer fields
-   radiation_nextsw_cday, &! calendar day of next radiation calculation
-   radiation_do,          &! query which radiation calcs are done this timestep
-   radiation_init,        &! calls radini
-   radiation_readnl,      &! read radiation namelist
-   radiation_tend          ! moved from radctl.F90
+   ! Public routines provided by this module.
+   ! TODO: radiation_defaultopts, radiation_setops, and radiation_printops exist
+   ! only because the radiation namelist has traditionally been read at the driver
+   ! level by runtime_opts. I am not sure this is the best solution, and in fact
+   ! CESM seems to have gone away from this practice altogether, opting instead for
+   ! individual modules to be responsible for reading their own namelists. This
+   ! might be a better practice going forward, and would simplify the logic here
+   ! somewhat. To do this, we would need to use the radiation_readnl routine
+   ! (copied below), and add a line in runtime_opts that calls this routine, and
+   ! then remove the code in runtime_opts that reads the radiation namelist
+   ! variables from the CAM namelist. The calls to radiation_defaultopts,
+   ! radiation_setops, and radiation_printops would also then need to be removed
+   ! from runtime_ops.
+   public :: &
+      radiation_register,    &! registers radiation physics buffer fields
+      radiation_nextsw_cday, &! calendar day of next radiation calculation
+      radiation_do,          &! query which radiation calcs are done this timestep
+      radiation_init,        &! calls radini
+      radiation_readnl,      &! read radiation namelist
+      radiation_tend          ! moved from radctl.F90
 
-! Counter variables for use with the CFMIP Observation Simulator Package (COSP).
-! TODO: This seems like somewhat of an awkward way of determining when to run
-! COSP, and it might make more sense to implement a more elegant routine to call
-! that determines whether or not to run COSP at a given timestep (similar to the
-! radiation_do routine in this module).
-! TODO: move these to COSP interface instead
-integer, public, allocatable :: cosp_cnt(:)       ! counter for cosp
-integer, public              :: cosp_cnt_init = 0 ! initial value for cosp counter
+   ! Counter variables for use with the CFMIP Observation Simulator Package (COSP).
+   ! TODO: This seems like somewhat of an awkward way of determining when to run
+   ! COSP, and it might make more sense to implement a more elegant routine to call
+   ! that determines whether or not to run COSP at a given timestep (similar to the
+   ! radiation_do routine in this module).
+   ! TODO: move these to COSP interface instead
+   integer, public, allocatable :: cosp_cnt(:)       ! counter for cosp
+   integer, public              :: cosp_cnt_init = 0 ! initial value for cosp counter
 
-! Declare namelist variables as module data. This also sets default values for
-! namelist variables.
-integer :: iradsw = -1  ! freq. of shortwave radiation calc in time steps (positive)
-                        ! or hours (negative).
-integer :: iradlw = -1  ! frequency of longwave rad. calc. in time steps (positive)
-                        ! or hours (negative).
-integer :: irad_always = 0  ! Specifies length of time in timesteps (positive)
-                            ! or hours (negative) SW/LW radiation will be
-                            ! run continuously from the start of an
-                            ! initial or restart run
+   ! Declare namelist variables as module data. This also sets default values for
+   ! namelist variables.
+   integer :: iradsw = -1  ! freq. of shortwave radiation calc in time steps (positive)
+                           ! or hours (negative).
+   integer :: iradlw = -1  ! frequency of longwave rad. calc. in time steps (positive)
+                           ! or hours (negative).
+   integer :: irad_always = 0  ! Specifies length of time in timesteps (positive)
+                               ! or hours (negative) SW/LW radiation will be
+                               ! run continuously from the start of an
+                               ! initial or restart run
 
-! The spectralflux flag determines whether or not spectral (per band) fluxes are
-! calculated. If true, upward and downward fluxes are calculated per band,
-! otherwise just broadband "shortwave" and "longwave" fluxes are calculated.
-! TODO: while it seems that setting spectralflux = .true. add spectral fluxes to
-! the physics buffer, I do not see where these fields are added to the history
-! buffer. It might be that the output of these fields are just handled by the
-! physics buffer output routines (they are declared with "global" scope, so
-! written on restart files at least), but it would be good to include them on
-! the history buffer too so that we can annotate them with a description of what
-! they are, rather than expecting the user to know what they are from the pbuf
-! fields.
-logical :: spectralflux  = .false.  ! calculate fluxes (up and down) per band.
+   ! The spectralflux flag determines whether or not spectral (per band) fluxes are
+   ! calculated. If true, upward and downward fluxes are calculated per band,
+   ! otherwise just broadband "shortwave" and "longwave" fluxes are calculated.
+   ! TODO: while it seems that setting spectralflux = .true. add spectral fluxes to
+   ! the physics buffer, I do not see where these fields are added to the history
+   ! buffer. It might be that the output of these fields are just handled by the
+   ! physics buffer output routines (they are declared with "global" scope, so
+   ! written on restart files at least), but it would be good to include them on
+   ! the history buffer too so that we can annotate them with a description of what
+   ! they are, rather than expecting the user to know what they are from the pbuf
+   ! fields.
+   logical :: spectralflux  = .false.  ! calculate fluxes (up and down) per band.
 
-! Flag to indicate whether or not to use the radiation timestep for solar zenith
-! angle calculations. If true, use the radiation timestep for all solar zenith 
-! angle (cosz) calculations.
-! TODO: How does this differ if value is .false.?
-logical :: use_rad_dt_cosz  = .false. 
+   ! Flag to indicate whether or not to use the radiation timestep for solar zenith
+   ! angle calculations. If true, use the radiation timestep for all solar zenith 
+   ! angle (cosz) calculations.
+   ! TODO: How does this differ if value is .false.?
+   logical :: use_rad_dt_cosz  = .false. 
 
-! Model data that is not controlled by namelist fields specifically follows
-! below.
+   ! Model data that is not controlled by namelist fields specifically follows
+   ! below.
 
-! TODO: it seems CAM allows for multiple passes through the radiation (and other
-! physics?) for different diagnostic purposes, but this does not seem to be well
-! documented anywhere. We should add some documentation here on this if we are
-! going to keep this functionality.
-character(len=4) :: diag(0:N_DIAG) =(/'    ','_d1 ','_d2 ','_d3 ','_d4 ','_d5 ', &
-                                      '_d6 ','_d7 ','_d8 ','_d9 ','_d10'/)
+   ! TODO: it seems CAM allows for multiple passes through the radiation (and other
+   ! physics?) for different diagnostic purposes, but this does not seem to be well
+   ! documented anywhere. We should add some documentation here on this if we are
+   ! going to keep this functionality.
+   character(len=4) :: diag(0:N_DIAG) =(/'    ','_d1 ','_d2 ','_d3 ','_d4 ','_d5 ', &
+                                         '_d6 ','_d7 ','_d8 ','_d9 ','_d10'/)
 
-! Output diagnostic brightness temperatures at the top of the
-! atmosphere for 7 TOVS/HIRS channels (2,4,6,8,10,11,12) and 4 TOVS/MSU 
-! channels (1,2,3,4).
-! TODO: where are these options set?
-logical :: dohirs = .false. 
-integer :: ihirsfq = 1      ! frequency (timesteps) of brightness temperature calcs
+   ! Output diagnostic brightness temperatures at the top of the
+   ! atmosphere for 7 TOVS/HIRS channels (2,4,6,8,10,11,12) and 4 TOVS/MSU 
+   ! channels (1,2,3,4).
+   ! TODO: where are these options set?
+   logical :: dohirs = .false. 
+   integer :: ihirsfq = 1      ! frequency (timesteps) of brightness temperature calcs
 
-! time step to use for the shr_orb_cosz calculation, if use_rad_dt_cosz set to true
-! TODO: where is this set, and what is shr_orb_cosz? Alternative solar zenith
-! angle calculation? What is the other behavior?
-real(r8) :: dt_avg = 0.0_r8  
+   ! time step to use for the shr_orb_cosz calculation, if use_rad_dt_cosz set to true
+   ! TODO: where is this set, and what is shr_orb_cosz? Alternative solar zenith
+   ! angle calculation? What is the other behavior?
+   real(r8) :: dt_avg = 0.0_r8  
 
-! k-distribution coefficients. These will be populated by reading from the
-! RRTMGP coefficients files, specified by coefficients_file_sw and
-! coefficients_file_lw in the radiation namelist. They exist as module data
-! because we only want to load those files once.
-type(ty_gas_optics) :: k_dist_sw, k_dist_lw
+   ! k-distribution coefficients. These will be populated by reading from the
+   ! RRTMGP coefficients files, specified by coefficients_file_sw and
+   ! coefficients_file_lw in the radiation namelist. They exist as module data
+   ! because we only want to load those files once.
+   type(ty_gas_optics) :: k_dist_sw, k_dist_lw
 
-! k-distribution coefficients files to read from. These are set via namelist
-! variables.
-character(len=cl) :: coefficients_file_sw, coefficients_file_lw
+   ! k-distribution coefficients files to read from. These are set via namelist
+   ! variables.
+   character(len=cl) :: coefficients_file_sw, coefficients_file_lw
 
-! Number of shortwave and longwave bands in use by the RRTMGP radiation code.
-! This information will be stored in the k_dist_sw and k_dist_lw objects and may
-! be retrieved using the k_dist_sw%get_nband() and k_dist_lw%get_nband()
-! methods, but I think we need to save these as private module data so that we
-! can automatically allocate arrays later in subroutine headers, i.e.:
-!
-!     real(r8) :: cld_tau(pcols,pver,nswbands)
-!
-! and so forth. Previously some of this existed in radconstants.F90, but I do
-! not think we need to use that.
-! EDIT: maybe these JUST below in radconstants.F90?
-integer :: nswbands, nlwbands
+   ! Number of shortwave and longwave bands in use by the RRTMGP radiation code.
+   ! This information will be stored in the k_dist_sw and k_dist_lw objects and may
+   ! be retrieved using the k_dist_sw%get_nband() and k_dist_lw%get_nband()
+   ! methods, but I think we need to save these as private module data so that we
+   ! can automatically allocate arrays later in subroutine headers, i.e.:
+   !
+   !     real(r8) :: cld_tau(pcols,pver,nswbands)
+   !
+   ! and so forth. Previously some of this existed in radconstants.F90, but I do
+   ! not think we need to use that.
+   ! EDIT: maybe these JUST below in radconstants.F90?
+   integer :: nswbands, nlwbands
 
-! Also, save number of g-points as private module data
-integer :: nswgpts, nlwgpts
+   ! Also, save number of g-points as private module data
+   integer :: nswgpts, nlwgpts
 
-! Set name for this module (for purpose of writing output and log files)
-character(len=*), parameter :: module_name = 'radiation'
+   ! Set name for this module (for purpose of writing output and log files)
+   character(len=*), parameter :: module_name = 'radiation'
 
-! Gases that we want to use in the radiative calculations. These need to be set
-! here, because the RRTMGP kdist initialization needs to know the names of the
-! gases before these are available via the rad_cnst interface. So, if we want to
-! change which gases are used at some point, this needs to be changed here, or
-! we need to come up with a more clever way of getting these from the model,
-! since this is kind of a hack to hard-code them in here.
-character(len=3), dimension(8) :: active_gases = (/ &
-   'H2O', 'CO2', 'O3 ', 'N2O', &
-   'CO ', 'CH4', 'O2 ', 'N2 ' &
-/)
+   ! Gases that we want to use in the radiative calculations. These need to be set
+   ! here, because the RRTMGP kdist initialization needs to know the names of the
+   ! gases before these are available via the rad_cnst interface. So, if we want to
+   ! change which gases are used at some point, this needs to be changed here, or
+   ! we need to come up with a more clever way of getting these from the model,
+   ! since this is kind of a hack to hard-code them in here.
+   character(len=3), dimension(8) :: active_gases = (/ &
+      'H2O', 'CO2', 'O3 ', 'N2O', &
+      'CO ', 'CH4', 'O2 ', 'N2 ' &
+   /)
 
-! Stuff to generate random numbers for perturbation growth tests. This needs to
-! be public module data because restart_physics needs to read it to write it to
-! restart files (I think). Making this public module data may not be the best
-! way of doing this, so maybe this should be reconsidered in the future.
-!
-! kiss_seed_num is number of seed values to use?
-integer, public, parameter :: kiss_seed_num = 4
+   ! Stuff to generate random numbers for perturbation growth tests. This needs to
+   ! be public module data because restart_physics needs to read it to write it to
+   ! restart files (I think). Making this public module data may not be the best
+   ! way of doing this, so maybe this should be reconsidered in the future.
+   !
+   ! kiss_seed_num is number of seed values to use?
+   integer, public, parameter :: kiss_seed_num = 4
 
-! TODO: what does this mean? This seems to be part of the additions for the
-! perturbation growth functionality.
-integer, public, allocatable :: rad_randn_seedrst(:,:,:)
+   ! TODO: what does this mean? This seems to be part of the additions for the
+   ! perturbation growth functionality.
+   integer, public, allocatable :: rad_randn_seedrst(:,:,:)
 
-! Total number of physics chunks until this processor (TODO: what exactly does
-! this mean?)
-integer, public, allocatable :: tot_chnk_till_this_prc(:,:,:)
+   ! Total number of physics chunks until this processor (TODO: what exactly does
+   ! this mean?)
+   integer, public, allocatable :: tot_chnk_till_this_prc(:,:,:)
 
-! Mapping from old RRTMG sw bands to new band ordering in RRTMGP
-integer, dimension(14) :: map_rrtmg_to_rrtmgp_swbands = (/ &
-   14, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 &
-/)
+   ! Mapping from old RRTMG sw bands to new band ordering in RRTMGP
+   integer, dimension(14) :: map_rrtmg_to_rrtmgp_swbands = (/ &
+      14, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 &
+   /)
 
-! Interface blocks for overloaded procedures
-interface clip_values
-   module procedure clip_values_1d, clip_values_2d
-end interface clip_values
-
-
-!===============================================================================
-
-! Dummy type to hold allocatales as targets for flux pointers
-! This is done solely so that we can manage the memory associated with the
-! ty_fluxes class, because members in the ty_fluxes class are declared as
-! pointers.
-type cam_flux_type
-   real(r8), allocatable :: flux_up(:,:)
-   real(r8), allocatable :: flux_dn(:,:)
-   real(r8), allocatable :: flux_net(:,:)
-   real(r8), allocatable :: flux_dn_dir(:,:)
-
-   real(r8), allocatable :: bnd_flux_up(:,:,:)
-   real(r8), allocatable :: bnd_flux_dn(:,:,:)
-   real(r8), allocatable :: bnd_flux_net(:,:,:)
-   real(r8), allocatable :: bnd_flux_dn_dir(:,:,:)
-contains
-   procedure :: initialize => cam_flux_initialize
-   procedure :: finalize => cam_flux_finalize
-end type cam_flux_type
+   !============================================================================
 
 contains
 
-!===============================================================================
+   !============================================================================
 
 subroutine radiation_readnl(nlfile, dtime_in)
 !-------------------------------------------------------------------------------
@@ -464,8 +439,6 @@ subroutine radiation_init(state)
    use cam_history,        only: addfld, horiz_only, add_default
    use cam_history_support, only: add_hist_coord
    use constituents,       only: cnst_get_ind
-   use physconst,          only: gravit, epsilo, stebol, &
-                                 pstd, mwdry, mwco2, mwo3
    use phys_control,       only: phys_getopts
    use rad_constituents,   only: N_DIAG, rad_cnst_get_call_list, rad_cnst_get_info
    use cospsimulator_intr, only: docosp, cospsimulator_intr_init
@@ -1100,822 +1073,719 @@ end function get_band_midpoints
 
 
 !===============================================================================
-  
-subroutine radiation_tend(state,   ptend,    pbuf,          cam_out, cam_in,  &
-                          landfrac,landm,    icefrac,       snowh,            &
-                          fsns,    fsnt,     flns,          flnt,             &
-                          fsds,    net_flux, is_cmip6_volc                    )
-!-------------------------------------------------------------------------------
-! 
-! Purpose: 
-! Driver for radiation computation.
-! 
-! Method: 
-! Radiation uses cgs units, so conversions must be done from
-! model fields to radiation fields.
-!
-! Revision history:
-! May 2004    D.B. Coleman     Merge of code from radctl.F90 and parts of tphysbc.F90.
-! 2004-08-09  B. Eaton         Add pointer variables for constituents.
-! 2004-08-24  B. Eaton         Access O3 and GHG constituents from chem_get_cnst.
-! 2004-08-30  B. Eaton         Replace chem_get_cnst by rad_constituent_get.
-! 2007-11-05  M. Iacono        Install rrtmg_lw and sw as radiation model.
-! 2007-12-27  M. Iacono        Modify to use CAM cloud optical properties with rrtmg.
-! 2009-06     Minghuai Wang,   add treatments for MMF CAM
-!              These modifications are based on the spcam3.5, which was developled
-!              by Marat Khairoutdinov (mkhairoutdin@ms.cc.sunysb.edu). The spcam3.5 
-!              only have one radiation package (camrt). 
-!              Short wave and long wave radiation codes are called for every column
-!              of the CRM domain. CRM fields are named as *_crm, and domain-averaged fields are
-!              named as *_m. The domain-averaged fields and CRM fields are outputed at the end
-!              of the CRM domain loop (last_column=.true.).
-!              Several variables in state are updated with those from CRM output
-!              (liquid water, qc_rad; ice water, qi_rad; water vapor, qv_rad; 
-!              and temperature, t_rad). Several variables in pbuf are also updated 
-!              with those in CRM domain (cld, cicewp, cliqwp, csnowp, cldfsnow).  
-!              At the end of the radiation calculation, state and those in pbuf are
-!              restored to the old values. 
-!              Finally, a new cloud simulator are called, which takes account of cloud fileds 
-!              from the CRM domain. 
-! 2009-07-13, Minghuai Wang: MMF CAM
-!             When Morrison's two momenent microphysics is used in SAM, droplet and ice crystal effective radius
-!             used in this radiation code are calcualted at each CRM column by calling m2005_effradius
-! 2009-10-21, Minghuai Wang: MMF CAM
-!             CRM-scale aerosol water is used to calculate aerosol optical depth
-! 2017-11     Ben Hillman: Adapted for use with RRTMGP
-!----------------------------------------------------------------------------------------------
-
-   ! Performance module needed for timing functions
-   use perf_mod, only: t_startf, t_stopf
-
-   ! CAM derived types; needed for surface exchange fields, physics state, and
-   ! tendency fields
-   use camsrfexch, only: cam_out_t, cam_in_t
-   use physics_types, only: physics_state, physics_ptend
-
-   ! Utilities for interacting with the physics buffer
-   use physics_buffer, only: physics_buffer_desc, pbuf_get_field, &
-                             pbuf_get_index, pbuf_old_tim_idx
-
-   ! For calculating radiative heating tendencies
-   use radheat, only: radheat_tend
-
-   ! For getting radiative constituent gases
-   use rad_constituents, only: N_DIAG, rad_cnst_get_call_list
-
-   ! Index to visible channel for diagnostic outputs
-   use radconstants, only: idx_sw_diag
-
-   ! RRTMGP radiation drivers and derived types
-   use mo_rrtmgp_clr_all_sky, only: rte_lw
-   use mo_gas_concentrations, only: ty_gas_concs
-   use mo_optical_props, only: ty_optical_props, &
-                               ty_optical_props_1scl
-   use mo_fluxes_byband, only: ty_fluxes_byband
-
-   ! CAM history module provides subroutine to send output data to the history
-   ! buffer to be aggregated and written to disk
-   use cam_history, only: outfld
-
-   ! CAM optical properties; includes cam_optics_type class for holding optical
-   ! properties, and subroutines to get CAM aerosol and cloud optical properties
-   ! via CAM parameterizations
-   use cam_optics, only: cam_optics_type
-   use physconst, only: cpair, stebol
-
-   ! ---------------------------------------------------------------------------
-   ! Arguments
-   ! ---------------------------------------------------------------------------
-
-   ! Physics state variables
-   type(physics_state), intent(in), target :: state
-
-   ! Heating tendencies calculated in this subroutine
-   type(physics_ptend), intent(out) :: ptend
-
-   ! Fields from other parameterizations that persist across timesteps
-   type(physics_buffer_desc), pointer :: pbuf(:)
-
-   ! Surface fluxes?
-   type(cam_out_t), intent(inout) :: cam_out
-   type(cam_in_t), intent(in) :: cam_in
-
-   ! Net flux calculated in this routine; used to check energy conservation in
-   ! the physics package driver?
-   real(r8), intent(inout) :: net_flux(pcols)
-
-   ! This should be module data or something specific to aerosol where it is
-   ! used?
-   logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
-
-   ! These are not used anymore and exist only because the radiation call is
-   ! inflexible
-   real(r8), intent(in)    :: landfrac(pcols)  ! land fraction
-   real(r8), intent(in)    :: landm(pcols)     ! land fraction ramp
-   real(r8), intent(in)    :: icefrac(pcols)   ! land fraction
-   real(r8), intent(in)    :: snowh(pcols)     ! Snow depth (liquid water equivalent)
-
-   ! Surface and top fluxes
-   real(r8), intent(inout) :: fsns(pcols)      ! Surface solar absorbed flux
-   real(r8), intent(inout) :: fsnt(pcols)      ! Net column abs solar flux at model top
-   real(r8), intent(inout) :: flns(pcols)      ! Srf longwave cooling (up-down) flux
-   real(r8), intent(inout) :: flnt(pcols)      ! Net outgoing lw flux at model top
-   real(r8), intent(inout) :: fsds(pcols)      ! Surface solar down flux
-
-   ! ---------------------------------------------------------------------------
-   ! Local variables
-   ! ---------------------------------------------------------------------------
-
-   ! Pointers to heating rates on physics buffer
-   real(r8), pointer :: qrs(:,:) => null()  ! shortwave radiative heating rate 
-   real(r8), pointer :: qrl(:,:) => null()  ! longwave  radiative heating rate 
-
-   ! Clear-sky heating rates are not on the physics buffer, and we have no
-   ! reason to put them there, so declare these are regular arrays here
-   real(r8) :: qrsc(pcols,pver) = 0._r8
-   real(r8) :: qrlc(pcols,pver) = 0._r8
-
-   ! Flag to carry (QRS,QRL)*dp across time steps. 
-   ! TODO: what does this mean?
-   logical :: conserve_energy = .true.
-
-   ! Number of columns
-   integer :: ncol
-
-   ! Everyone needs a name
-   character(*), parameter :: subroutine_name = 'radiation_tend'
-
-   ! Radiative fluxes
-   type(ty_fluxes_byband) :: fluxes_allsky, fluxes_clrsky
-
-   !----------------------------------------------------------------------
-
-   ! Number of physics columns in this "chunk"; used in multiple places
-   ! throughout this subroutine, so set once for convenience
-   ncol = state%ncol
-
-   ! Set pointers to heating rates stored on physics buffer. These will be
-   ! modified in this routine.
-   call pbuf_get_field(pbuf, pbuf_get_index('QRS'), qrs)
-   call pbuf_get_field(pbuf, pbuf_get_index('QRL'), qrl)
-  
-   ! Do shortwave stuff...
-   if (radiation_do('sw')) then
-
-      ! Allocate shortwave fluxes
-      call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nswbands, fluxes_allsky, do_direct=.true.)
-      call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nswbands, fluxes_clrsky, do_direct=.true.)
-
-      ! Call the shortwave radiation driver
-      call radiation_driver_sw(state, pbuf, cam_in, is_cmip6_volc, fluxes_allsky, fluxes_clrsky, qrs, qrsc)
      
-      ! Set net fluxes used by other components (land?) 
-      call set_net_fluxes_sw(fluxes_allsky, fsds, fsns, fsnt)
+   !----------------------------------------------------------------------------
+   ! Main driver for radiation computation. Calls the shortwave and longwave
+   ! drivers, and calculates the radiative heating from the resulting fluxes.
+   ! Primary output from this routine is the heating tendency due to radiative
+   ! transfer, as a ptend object.
+   subroutine radiation_tend(state,   ptend,    pbuf,          cam_out, cam_in,  &
+                             landfrac,landm,    icefrac,       snowh,            &
+                             fsns,    fsnt,     flns,          flnt,             &
+                             fsds,    net_flux, is_cmip6_volc                    )
 
-      ! Set surface fluxes that are used by the land model
-      call export_surface_fluxes(fluxes_allsky, cam_out, 'shortwave')
-      
-      ! Free memory allocated for shortwave fluxes
-      call free_fluxes(fluxes_allsky)
-      call free_fluxes(fluxes_clrsky)
+      ! Performance module needed for timing functions
+      use perf_mod, only: t_startf, t_stopf
 
-   else
+      ! CAM derived types; needed for surface exchange fields, physics state, and
+      ! tendency fields
+      use camsrfexch, only: cam_out_t, cam_in_t
+      use physics_types, only: physics_state, physics_ptend
 
-      ! Conserve energy
+      ! Utilities for interacting with the physics buffer
+      use physics_buffer, only: physics_buffer_desc, pbuf_get_field, &
+                                pbuf_get_index
+
+      ! For calculating radiative heating tendencies
+      use radheat, only: radheat_tend
+
+      ! For getting radiative constituent gases
+      use rad_constituents, only: N_DIAG, rad_cnst_get_call_list
+
+      ! Index to visible channel for diagnostic outputs
+      use radconstants, only: idx_sw_diag
+
+      ! RRTMGP radiation drivers and derived types
+      use mo_rrtmgp_clr_all_sky, only: rte_lw
+      use mo_gas_concentrations, only: ty_gas_concs
+      use mo_optical_props, only: ty_optical_props, &
+                                  ty_optical_props_1scl
+      use mo_fluxes_byband, only: ty_fluxes_byband
+
+      ! CAM history module provides subroutine to send output data to the history
+      ! buffer to be aggregated and written to disk
+      use cam_history, only: outfld
+
+      ! CAM optical properties; includes cam_optics_type class for holding optical
+      ! properties, and subroutines to get CAM aerosol and cloud optical properties
+      ! via CAM parameterizations
+      use cam_optics, only: cam_optics_type
+      use physconst, only: cpair, stebol
+
+      ! ---------------------------------------------------------------------------
+      ! Arguments
+      ! ---------------------------------------------------------------------------
+
+      ! Physics state variables
+      type(physics_state), intent(in), target :: state
+
+      ! Heating tendencies calculated in this subroutine
+      type(physics_ptend), intent(out) :: ptend
+
+      ! Fields from other parameterizations that persist across timesteps
+      type(physics_buffer_desc), pointer :: pbuf(:)
+
+      ! Surface fluxes?
+      type(cam_out_t), intent(inout) :: cam_out
+      type(cam_in_t), intent(in) :: cam_in
+
+      ! Net flux calculated in this routine; used to check energy conservation in
+      ! the physics package driver?
+      real(r8), intent(inout) :: net_flux(pcols)
+
+      ! This should be module data or something specific to aerosol where it is
+      ! used?
+      logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
+
+      ! These are not used anymore and exist only because the radiation call is
+      ! inflexible
+      real(r8), intent(in)    :: landfrac(pcols)  ! land fraction
+      real(r8), intent(in)    :: landm(pcols)     ! land fraction ramp
+      real(r8), intent(in)    :: icefrac(pcols)   ! land fraction
+      real(r8), intent(in)    :: snowh(pcols)     ! Snow depth (liquid water equivalent)
+
+      ! Surface and top fluxes
+      real(r8), intent(inout) :: fsns(pcols)      ! Surface solar absorbed flux
+      real(r8), intent(inout) :: fsnt(pcols)      ! Net column abs solar flux at model top
+      real(r8), intent(inout) :: flns(pcols)      ! Srf longwave cooling (up-down) flux
+      real(r8), intent(inout) :: flnt(pcols)      ! Net outgoing lw flux at model top
+      real(r8), intent(inout) :: fsds(pcols)      ! Surface solar down flux
+
+      ! ---------------------------------------------------------------------------
+      ! Local variables
+      ! ---------------------------------------------------------------------------
+
+      ! Pointers to heating rates on physics buffer
+      real(r8), pointer :: qrs(:,:) => null()  ! shortwave radiative heating rate 
+      real(r8), pointer :: qrl(:,:) => null()  ! longwave  radiative heating rate 
+
+      ! Clear-sky heating rates are not on the physics buffer, and we have no
+      ! reason to put them there, so declare these are regular arrays here
+      real(r8) :: qrsc(pcols,pver) = 0._r8
+      real(r8) :: qrlc(pcols,pver) = 0._r8
+
+      ! Flag to carry (QRS,QRL)*dp across time steps. 
+      ! TODO: what does this mean?
+      logical :: conserve_energy = .true.
+
+      ! Number of columns
+      integer :: ncol
+
+      ! Everyone needs a name
+      character(*), parameter :: subroutine_name = 'radiation_tend'
+
+      ! Radiative fluxes
+      type(ty_fluxes_byband) :: fluxes_allsky, fluxes_clrsky
+
+      !----------------------------------------------------------------------
+
+      ! Number of physics columns in this "chunk"; used in multiple places
+      ! throughout this subroutine, so set once for convenience
+      ncol = state%ncol
+
+      ! Set pointers to heating rates stored on physics buffer. These will be
+      ! modified in this routine.
+      call pbuf_get_field(pbuf, pbuf_get_index('QRS'), qrs)
+      call pbuf_get_field(pbuf, pbuf_get_index('QRL'), qrl)
+     
+      ! Do shortwave stuff...
+      if (radiation_do('sw')) then
+
+         ! Allocate shortwave fluxes
+         call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nswbands, fluxes_allsky, do_direct=.true.)
+         call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nswbands, fluxes_clrsky, do_direct=.true.)
+
+         ! Call the shortwave radiation driver
+         call radiation_driver_sw(state, pbuf, cam_in, is_cmip6_volc, fluxes_allsky, fluxes_clrsky, qrs, qrsc)
+        
+         ! Set net fluxes used by other components (land?) 
+         call set_net_fluxes_sw(fluxes_allsky, fsds, fsns, fsnt)
+
+         ! Set surface fluxes that are used by the land model
+         call export_surface_fluxes(fluxes_allsky, cam_out, 'shortwave')
+         
+         ! Free memory allocated for shortwave fluxes
+         call free_fluxes(fluxes_allsky)
+         call free_fluxes(fluxes_clrsky)
+
+      else
+
+         ! Conserve energy
+         if (conserve_energy) then
+            qrs(1:ncol,1:pver) = qrs(1:ncol,1:pver) / state%pdel(1:ncol,1:pver)
+         end if
+
+      end if  ! dosw
+
+      ! Do longwave stuff...
+      if (radiation_do('lw')) then
+
+         ! Allocate longwave outputs; why is this not part of the
+         ! ty_fluxes_byband object?
+         ! NOTE: fluxes defined at interfaces, so initialize to have vertical
+         ! dimension nlev_rad+1
+         call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_allsky)
+         call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_clrsky)
+
+         ! Call the longwave radiation driver to calculate fluxes and heating rates
+         call radiation_driver_lw(state, pbuf, cam_in, is_cmip6_volc, fluxes_allsky, fluxes_clrsky, qrl, qrlc)
+        
+         ! Set net fluxes used in other components
+         call set_net_fluxes_lw(fluxes_allsky, flns, flnt)
+
+         ! Export surface fluxes that are used by the land model
+         call export_surface_fluxes(fluxes_allsky, cam_out, 'longwave')
+
+         ! Free memory allocated for shortwave fluxes
+         call free_fluxes(fluxes_allsky)
+         call free_fluxes(fluxes_clrsky)
+
+      else
+
+         ! Conserve energy (what does this mean exactly?)
+         if (conserve_energy) then
+            qrl(1:ncol,1:pver) = qrl(1:ncol,1:pver) / state%pdel(1:ncol,1:pver)
+         end if
+
+      end if  ! dolw
+
+      ! Check net fluxes
+      call assert_valid(fsns(1:ncol), 'fsns')
+      call assert_valid(fsnt(1:ncol), 'fsnt')
+      call assert_valid(flns(1:ncol), 'flns')
+      call assert_valid(flnt(1:ncol), 'flnt')
+
+      ! Compute net radiative heating tendency
+      call t_startf('radheat_tend')
+      call radheat_tend(state, pbuf, ptend, &
+                        qrl, qrs, &
+                        fsns, fsnt, flns, flnt, &
+                        cam_in%asdir, net_flux)
+      call t_stopf('radheat_tend')
+
+      ! convert radiative heating rates to Q*dp for energy conservation
       if (conserve_energy) then
-         qrs(1:ncol,1:pver) = qrs(1:ncol,1:pver) / state%pdel(1:ncol,1:pver)
+         qrs(1:ncol,1:pver) = qrs(1:ncol,1:pver) * state%pdel(1:ncol,1:pver)
+         qrl(1:ncol,1:pver) = qrl(1:ncol,1:pver) * state%pdel(1:ncol,1:pver)
       end if
 
-   end if  ! dosw
+   end subroutine radiation_tend
 
-   ! Do longwave stuff...
-   if (radiation_do('lw')) then
+   !----------------------------------------------------------------------------
 
-      ! Allocate longwave outputs; why is this not part of the
-      ! ty_fluxes_byband object?
+   subroutine radiation_driver_sw(state, pbuf, cam_in, is_cmip6_volc, fluxes_allsky, fluxes_clrsky, qrs, qrsc)
+     
+      use rad_constituents, only: N_DIAG, rad_cnst_get_call_list
+      use perf_mod, only: t_startf, t_stopf
+      use cam_history, only: outfld
+      use physics_types, only: physics_state
+      use physics_buffer, only: physics_buffer_desc
+      use camsrfexch, only: cam_in_t
+      use mo_rrtmgp_clr_all_sky, only: rte_sw
+      use mo_fluxes_byband, only: ty_fluxes_byband
+      use mo_optical_props, only: ty_optical_props_2str
+      use mo_gas_concentrations, only: ty_gas_concs
+      use radiation_state, only: set_rad_state
+      use radiation_utils, only: calculate_heating_rate
+
+      ! Inputs
+      type(physics_state), intent(in) :: state
+      type(physics_buffer_desc), pointer :: pbuf(:)
+      type(cam_in_t), intent(in) :: cam_in
+      type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
+      real(r8), intent(inout) :: qrs(:,:), qrsc(:,:)
+      logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
+
+      ! Temporary fluxes compressed to daytime only arrays
+      type(ty_fluxes_byband) :: fluxes_allsky_day, fluxes_clrsky_day
+
+      ! Temporary heating rates on radiation vertical grid (and daytime only)
+      real(r8), dimension(pcols,nlev_rad) :: qrs_rad, qrsc_rad
+
+      ! Albedo for shortwave calculations
+      real(r8) :: albedo_direct(nswbands,pcols), albedo_direct_day(nswbands,pcols)
+      real(r8) :: albedo_diffuse(nswbands,pcols), albedo_diffuse_day(nswbands,pcols)
+
+      ! Cloud and aerosol optics
+      type(ty_optical_props_2str) :: aerosol_optics_sw, cloud_optics_sw
+
+      ! Gas concentrations
+      type(ty_gas_concs) :: gas_concentrations
+
+      ! Cosine solar zenith angle for all columns in chunk
+      real(r8) :: coszrs(pcols)
+
+      ! Incoming solar radiation, scaled for solar zenith angle 
+      ! and earth-sun distance
+      real(r8) :: solar_irradiance_by_gpt(pcols,nswgpts)
+
+      ! Gathered indicies of day and night columns 
+      ! chunk_column_index = day_indices(daylight_column_index)
+      integer :: nday, nnight     ! Number of daylight columns
+      integer :: day_indices(pcols), night_indices(pcols)   ! Indicies of daylight coumns
+
+      ! Cosine solar zenith angle for daytime columns
+      real(r8) :: coszrs_day(pcols)  ! cosine solar zenith angle
+
+      ! Scaling factor for total sky irradiance; used to account for orbital
+      ! eccentricity, and could be used to scale total sky irradiance for different
+      ! climates as well (i.e., paleoclimate simulations)
+      real(r8) :: tsi_scaling
+
+      ! Number of columns
+      integer :: ncol
+
+      ! Loop indices
+      integer :: iband
+
+      ! For loops over diagnostic calls
+      logical :: active_calls(0:N_DIAG)
+      integer :: icall
+
+      ! State fields that are passed into RRTMGP. Some of these may need to
+      ! modified from what exist in the physics_state object, i.e. to clip
+      ! temperatures to make sure they are within the valid range.
+      real(r8), dimension(pcols,nlev_rad) :: tmid, pmid
+      real(r8), dimension(pcols,nlev_rad+1) :: pint, tint
+
+      ! Everybody needs a name
+      character(*), parameter :: subroutine_name = 'radiation_driver_sw'
+
+
+      ! Number of physics columns in this "chunk"; used in multiple places
+      ! throughout this subroutine, so set once for convenience
+      ncol = state%ncol
+
+      ! Get cosine solar zenith angle for current time step. 
+      call set_cosine_solar_zenith_angle(state, dt_avg, coszrs(1:ncol))
+
+      ! Send values for this chunk to history buffer
+      call outfld('COSZRS', coszrs(1:ncol), ncol, state%lchnk)
+
+      ! Get orbital eccentricity factor to scale total sky irradiance
+      tsi_scaling = get_eccentricity_factor()
+
+      ! If the swrad_off flag is set, meaning we should not do SW radiation, then 
+      ! we just set coszrs to zero everywhere. TODO: why not just set dosw false 
+      ! and skip the loop?
+      if (swrad_off) coszrs(:) = 0._r8
+
+      ! Gather night/day column indices for subsetting SW inputs; we only want to
+      ! do the shortwave radiative transfer during the daytime to save
+      ! computational cost (and because RRTMGP will fail for cosine solar zenith
+      ! angles less than or equal to zero)
+      call set_daynight_indices(coszrs(1:ncol), day_indices(1:ncol), night_indices(1:ncol))
+      nday = count(day_indices(1:ncol) > 0)
+      nnight = count(night_indices(1:ncol) > 0)
+
+
+      ! Populate RRTMGP input variables. Use the day_indices index array to
+      ! map CAM variables on all columns to the daytime-only arrays, and take
+      ! only the ktop:kbot vertical levels (mapping CAM vertical grid to
+      ! RRTMGP vertical grid). Note that we populate the state separately for
+      ! shortwave and longwave, because we need to compress to just the daytime
+      ! columns for the shortwave, but the longwave uses all columns
+      call set_rad_state(state, cam_in, &
+                         tmid(1:nday,1:nlev_rad), & 
+                         tint(1:nday,1:nlev_rad+1), &
+                         pmid(1:nday,1:nlev_rad), &
+                         pint(1:nday,1:nlev_rad+1), &
+                         col_indices=day_indices(1:nday))
+
+      ! Get albedo. This uses CAM routines internally and just provides a
+      ! wrapper to improve readability of the code here.
+      call set_albedo(cam_in, albedo_direct(1:nswbands,1:ncol), albedo_diffuse(1:nswbands,1:ncol))
+
+      ! Send albedos to history buffer (useful for debugging)
+      call outfld('SW_ALBEDO_DIR', transpose(albedo_direct(1:nswbands,1:ncol)), ncol, state%lchnk)
+      call outfld('SW_ALBEDO_DIF', transpose(albedo_diffuse(1:nswbands,1:ncol)), ncol, state%lchnk)
+
+      ! Compress to daytime-only arrays
+      do iband = 1,nswbands
+         call compress_day_columns(albedo_direct(iband,1:ncol), albedo_direct_day(iband,1:nday), day_indices(1:nday))
+         call compress_day_columns(albedo_diffuse(iband,1:ncol), albedo_diffuse_day(iband,1:nday), day_indices(1:nday))
+      end do
+      call compress_day_columns(coszrs(1:ncol), coszrs_day(1:nday), day_indices(1:nday))
+
+      ! Allocate shortwave fluxes (allsky and clearsky)
+      ! TODO: why do I need to provide my own routines to do this? Why is 
+      ! this not part of the ty_fluxes_byband object?
+      !
       ! NOTE: fluxes defined at interfaces, so initialize to have vertical
-      ! dimension nlev_rad+1
-      call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_allsky)
-      call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_clrsky)
+      ! dimension nlev_rad+1, while we initialized the RRTMGP input variables to
+      ! have vertical dimension nlev_rad (defined at midpoints).
+      call initialize_rrtmgp_fluxes(nday, nlev_rad+1, nswbands, fluxes_allsky_day, do_direct=.true.)
+      call initialize_rrtmgp_fluxes(nday, nlev_rad+1, nswbands, fluxes_clrsky_day, do_direct=.true.)
 
-      ! Call the longwave radiation driver to calculate fluxes and heating rates
-      call radiation_driver_lw(state, pbuf, cam_in, is_cmip6_volc, fluxes_allsky, fluxes_clrsky, qrl, qrlc)
-     
-      ! Set net fluxes used in other components
-      call set_net_fluxes_lw(fluxes_allsky, flns, flnt)
+      ! Do shortwave cloud optics calculations
+      ! TODO: refactor the set_cloud_optics codes to allow passing arrays
+      ! rather than state/pbuf so that we can use this for superparameterized
+      ! simulations...or alternatively add logic within the set_cloud_optics
+      ! routines to handle this.
+      call t_startf('shortwave cloud optics')
+      call set_cloud_optics_sw(state, pbuf, &
+                               day_indices(1:nday), &
+                               k_dist_sw, cloud_optics_sw)
+      call t_stopf('shortwave cloud optics')
 
-      ! Export surface fluxes that are used by the land model
-      call export_surface_fluxes(fluxes_allsky, cam_out, 'longwave')
+      ! Initialize aerosol optics; passing only the wavenumber bounds for each
+      ! "band" rather than passing the full spectral discretization object, and
+      ! omitting the "g-point" mapping forces the optics to be indexed and
+      ! stored by band rather than by g-point. This is most consistent with our
+      ! treatment of aerosol optics in the model, and prevents us from having to
+      ! map bands to g-points ourselves since that will all be handled by the
+      ! private routines internal to the optics class.
+      call handle_error(aerosol_optics_sw%alloc_2str(nday, nlev_rad, k_dist_sw%get_band_lims_wavenumber()))
+      call aerosol_optics_sw%set_name('shortwave aerosol optics')
 
-      ! Free memory allocated for shortwave fluxes
-      call free_fluxes(fluxes_allsky)
-      call free_fluxes(fluxes_clrsky)
+      ! Loop over diagnostic calls 
+      ! TODO: more documentation on what this means
+      !
+      ! NOTE: the climate (icall==0) calculation must occur last, so we loop
+      ! backwards.
+      call rad_cnst_get_call_list(active_calls)
+      do icall = N_DIAG,0,-1
+         if (active_calls(icall)) then
 
-   else
+            ! Get shortwave aerosol optics
+            call t_startf('rad_aerosol_optics_sw')
+            call set_aerosol_optics_sw(icall, state, pbuf, &
+                                       day_indices(1:nday), &
+                                       night_indices(1:nnight), &
+                                       is_cmip6_volc, &
+                                       aerosol_optics_sw)
+            call t_stopf('rad_aerosol_optics_sw')
 
-      ! Conserve energy (what does this mean exactly?)
-      if (conserve_energy) then
-         qrl(1:ncol,1:pver) = qrl(1:ncol,1:pver) / state%pdel(1:ncol,1:pver)
+            ! Set gas concentrations (I believe the gases may change for
+            ! different values of icall, which is why we do this within the
+            ! loop)
+            call t_startf('rad_gas_concentrations_sw')
+            call set_gas_concentrations(icall, state, pbuf, &
+                                        gas_concentrations, &
+                                        day_indices=day_indices(1:nday))
+            call t_stopf('rad_gas_concentrations_sw')
+
+            ! Do shortwave radiative transfer calculations
+            call t_startf('rad_calculations_sw')
+            call handle_error(rte_sw( &
+               k_dist_sw, gas_concentrations, &
+               pmid(1:nday,1:nlev_rad), &
+               tmid(1:nday,1:nlev_rad), &
+               pint(1:nday,1:nlev_rad+1), &
+               coszrs_day(1:nday), &
+               albedo_direct_day(1:nswbands,1:nday), &
+               albedo_diffuse_day(1:nswbands,1:nday), &
+               cloud_optics_sw, &
+               fluxes_allsky_day, fluxes_clrsky_day, &
+               aer_props=aerosol_optics_sw, &
+               tsi_scaling=tsi_scaling &
+            ))
+            call t_stopf('rad_calculations_sw')
+
+            ! Calculate heating rates on the DAYTIME columns
+            call t_startf('rad_heating_rate_sw')
+            call calculate_heating_rate(fluxes_allsky_day, pint(1:nday,1:nlev_rad+1), &
+                                        qrs_rad(1:nday,1:nlev_rad))
+            call calculate_heating_rate(fluxes_clrsky_day, pint(1:nday,1:nlev_rad+1), &
+                                        qrsc_rad(1:nday,1:nlev_rad))
+            call t_stopf('rad_heating_rate_sw')
+
+            ! Expand fluxes from daytime-only arrays to full chunk arrays
+            call t_startf('rad_expand_fluxes_sw')
+            call expand_day_fluxes(fluxes_allsky_day, fluxes_allsky, day_indices(1:nday))
+            call expand_day_fluxes(fluxes_clrsky_day, fluxes_clrsky, day_indices(1:nday))
+            call t_stopf('rad_expand_fluxes_sw')
+
+            ! Expand heating rates to all columns and map back to CAM levels
+            call t_startf('rad_expand_heating_rate_sw')
+            call expand_day_columns(qrs_rad(1:nday,ktop:kbot), qrs(1:ncol,1:pver), day_indices(1:nday))
+            call expand_day_columns(qrsc_rad(1:nday,ktop:kbot), qrsc(1:ncol,1:pver), day_indices(1:nday))
+            call t_stopf('rad_expand_heating_rate_sw')
+
+            ! Send fluxes to history buffer
+            call output_fluxes_sw(icall, state, fluxes_allsky, fluxes_clrsky, qrs,  qrsc)
+
+         end if
+      end do
+
+      ! Free fluxes and optical properties
+      call free_optics_sw(cloud_optics_sw)
+      call free_optics_sw(aerosol_optics_sw)
+      call free_fluxes(fluxes_allsky_day)
+      call free_fluxes(fluxes_clrsky_day)
+
+   end subroutine radiation_driver_sw
+
+   !----------------------------------------------------------------------------
+
+   subroutine radiation_driver_lw(state, pbuf, cam_in, is_cmip6_volc, fluxes_allsky, fluxes_clrsky, qrl, qrlc)
+    
+      use rad_constituents, only: N_DIAG, rad_cnst_get_call_list
+      use perf_mod, only: t_startf, t_stopf
+      use cam_history, only: outfld
+      use physics_types, only: physics_state
+      use physics_buffer, only: physics_buffer_desc
+      use camsrfexch, only: cam_in_t
+      use mo_rrtmgp_clr_all_sky, only: rte_lw
+      use mo_fluxes_byband, only: ty_fluxes_byband
+      use mo_optical_props, only: ty_optical_props_1scl
+      use mo_gas_concentrations, only: ty_gas_concs
+      use radiation_state, only: set_rad_state
+      use radiation_utils, only: calculate_heating_rate
+
+      ! Inputs
+      type(physics_state), intent(in) :: state
+      type(physics_buffer_desc), pointer :: pbuf(:)
+      type(cam_in_t), intent(in) :: cam_in
+      type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
+      real(r8), intent(inout) :: qrl(:,:), qrlc(:,:)
+      logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
+
+      ! Everybody needs a name
+      character(*), parameter :: subroutine_name = 'radiation_driver_lw'
+
+      ! For loops over diagnostic calls (TODO: what does this mean?)
+      logical :: active_calls(0:N_DIAG)
+
+      ! State fields that are passed into RRTMGP. Some of these may need to
+      ! modified from what exist in the physics_state object, i.e. to clip
+      ! temperatures to make sure they are within the valid range.
+      real(r8), dimension(pcols,nlev_rad) :: tmid, pmid
+      real(r8), dimension(pcols,nlev_rad+1) :: pint, tint
+
+      ! Surface emissivity needed for longwave
+      real(r8) :: surface_emissivity(nlwbands,pcols)
+
+      ! Temporary heating rates on radiation vertical grid
+      real(r8), dimension(pcols,nlev_rad) :: qrl_rad, qrlc_rad
+
+      ! RRTMGP types
+      type(ty_gas_concs) :: gas_concentrations
+      type(ty_optical_props_1scl) :: aerosol_optics_lw
+      type(ty_optical_props_1scl) :: cloud_optics_lw
+
+      integer :: ncol, icall
+
+      ! Number of physics columns in this "chunk"; used in multiple places
+      ! throughout this subroutine, so set once for convenience
+      ncol = state%ncol
+
+      ! Set rad state variables
+      call set_rad_state(state, cam_in, &
+                         tmid(1:ncol,1:nlev_rad), &
+                         tint(1:ncol,1:nlev_rad+1), &
+                         pmid(1:ncol,1:nlev_rad), &
+                         pint(1:ncol,1:nlev_rad+1))
+       
+      ! Set surface emissivity to 1 here. There is a note in the RRTMG
+      ! implementation that this is treated in the land model, but the old
+      ! RRTMG implementation also sets this to 1. This probably does not make
+      ! a lot of difference either way, but if a more intelligent value
+      ! exists or is assumed in the model we should use it here as well.
+      ! TODO: set this more intelligently?
+      surface_emissivity(1:nlwbands,1:ncol) = 1.0_r8
+
+      ! Do longwave cloud optics calculations
+      call t_startf('longwave cloud optics')
+      call set_cloud_optics_lw(state, pbuf, k_dist_lw, cloud_optics_lw)
+      call t_stopf('longwave cloud optics')
+
+      ! Initialize aerosol optics; passing only the wavenumber bounds for each
+      ! "band" rather than passing the full spectral discretization object, and
+      ! omitting the "g-point" mapping forces the optics to be indexed and
+      ! stored by band rather than by g-point. This is most consistent with our
+      ! treatment of aerosol optics in the model, and prevents us from having to
+      ! map bands to g-points ourselves since that will all be handled by the
+      ! private routines internal to the optics class.
+      call handle_error(aerosol_optics_lw%alloc_1scl(ncol, nlev_rad, k_dist_lw%get_band_lims_wavenumber()))
+      call aerosol_optics_lw%set_name('longwave aerosol optics')
+
+      ! Loop over diagnostic calls (what does this mean?)
+      call rad_cnst_get_call_list(active_calls)
+      do icall = N_DIAG,0,-1
+         if (active_calls(icall)) then
+
+            ! Set gas concentrations (I believe the active gases may change
+            ! for different values of icall, which is why we do this within
+            ! the loop).
+            call t_startf('rad_gas_concentrations_lw')
+            call set_gas_concentrations(icall, state, pbuf, gas_concentrations)
+            call t_stopf('rad_gas_concentrations_lw')
+
+            ! Get longwave aerosol optics
+            call t_startf('rad_aerosol_optics_lw')
+            call set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, aerosol_optics_lw)
+            call t_stopf('rad_aerosol_optics_lw')
+
+            ! Do longwave radiative transfer calculations
+            call t_startf('rad_calculations_lw')
+            call handle_error(rte_lw( &
+               k_dist_lw, gas_concentrations, &
+               pmid(1:ncol,1:nlev_rad), tmid(1:ncol,1:nlev_rad), &
+               pint(1:ncol,1:nlev_rad+1), tint(1:ncol,nlev_rad+1), &
+               surface_emissivity(1:nlwbands,1:ncol), &
+               cloud_optics_lw, &
+               fluxes_allsky, fluxes_clrsky, &
+               aer_props=aerosol_optics_lw, &
+               t_lev=tint(1:ncol,1:nlev_rad+1), &
+               n_gauss_angles=1 & ! Set to 3 for consistency with RRTMG
+            ))
+            call t_stopf('rad_calculations_lw')
+
+            ! Check stuff
+            call assert_valid(fluxes_allsky%flux_up, 'flux_up invalid')
+            call assert_valid(fluxes_allsky%flux_dn, 'flux_dn invalid')
+
+            ! Calculate heating rates
+            call calculate_heating_rate(fluxes_allsky, pint(1:ncol,1:nlev_rad+1), &
+                                        qrl_rad(1:ncol,1:nlev_rad))
+            call calculate_heating_rate(fluxes_clrsky, pint(1:ncol,1:nlev_rad+1), &
+                                        qrlc_rad(1:ncol,1:nlev_rad))
+
+            ! Map heating rates to CAM columns and levels
+            qrl(1:ncol,1:pver) = qrl_rad(1:ncol,ktop:kbot)
+            qrlc(1:ncol,1:pver) = qrlc_rad(1:ncol,ktop:kbot)
+                        
+            ! Send fluxes to history buffer
+            call output_fluxes_lw(icall, state, fluxes_allsky, fluxes_clrsky, qrl, qrlc)
+
+         end if  ! active calls
+      end do  ! loop over diagnostic calls
+
+      ! Free fluxes and optical properties
+      call free_optics_lw(cloud_optics_lw)
+      call free_optics_lw(aerosol_optics_lw)
+
+   end subroutine radiation_driver_lw
+
+   !----------------------------------------------------------------------------
+
+   subroutine export_surface_fluxes(fluxes, cam_out, band)
+      use mo_fluxes_byband, only: ty_fluxes_byband
+      use camsrfexch, only: cam_out_t
+
+      type(ty_fluxes_byband), intent(in) :: fluxes
+      type(cam_out_t), intent(inout) :: cam_out
+      character(len=*), intent(in) :: band
+      integer :: icol
+      real(r8), dimension(size(fluxes%bnd_flux_dn,1), &
+                          size(fluxes%bnd_flux_dn,2), &
+                          size(fluxes%bnd_flux_dn,3)) :: flux_dn_diffuse
+
+      ! TODO: check this code! This seems to differ from what is in RRTMG. 
+      !
+      ! Export surface fluxes
+      !
+      ! To break the fluxes into the UV/vis and near-IR bands use the same scheme 
+      ! as for the albedos which is hardcoded for 14 spectral bands.
+      !
+      ! sols(pcols)      Direct solar rad on surface (< 0.7)
+      ! soll(pcols)      Direct solar rad on surface (>= 0.7)
+      !
+      ! Near-IR bands (1-10), 820-16000 cm-1, 0.625-12.195 microns
+      !
+      ! Put half of band 10 in each of the UV/visible and near-IR values,
+      ! since this band straddles 0.7 microns:
+      !
+      ! UV/visible bands 11-14, 16000-50000 cm-1, 0.200-0.625 micron
+      !
+      ! NOTE: bands are shifted relative to RRTMG! Band 10 used to be band 9, band
+      ! 1 used to be band 14.
+      !
+      ! TODO: this hard-coded band mapping is BAD! We need to do this more
+      ! intelligently.
+      if (trim(band) == 'shortwave') then
+
+         ! Reset fluxes
+         cam_out%soll = 0
+         cam_out%sols = 0
+         cam_out%solld = 0
+         cam_out%solsd = 0
+
+         ! Calculate diffuse flux from total and direct
+         flux_dn_diffuse = fluxes%bnd_flux_dn - fluxes%bnd_flux_dn_dir
+
+         ! Calculate broadband surface solar fluxes (UV/visible vs near IR) for
+         ! each column.
+         do icol = 1,size(fluxes%bnd_flux_dn, 1)
+
+            ! Direct fluxes
+            cam_out%soll(icol) &
+               = sum(fluxes%bnd_flux_dn_dir(icol,kbot+1,1:9)) &
+               + 0.5_r8 * fluxes%bnd_flux_dn_dir(icol,kbot+1,10)
+            cam_out%sols(icol) &
+               = 0.5_r8 * fluxes%bnd_flux_dn_dir(icol,kbot+1,10) &
+               + sum(fluxes%bnd_flux_dn_dir(icol,kbot+1,11:14))
+
+            ! Diffuse fluxes
+            cam_out%solld(icol) &
+               = sum(flux_dn_diffuse(icol,kbot+1,1:9)) &
+               + 0.5_r8 * flux_dn_diffuse(icol,kbot+1,10)
+            cam_out%solsd(icol) &
+               = 0.5_r8 * flux_dn_diffuse(icol,kbot+1,10) &
+               + sum(flux_dn_diffuse(icol,kbot+1,11:14))
+
+            ! Net shortwave flux at surface
+            cam_out%netsw(icol) = fluxes%flux_net(icol,kbot+1)
+         end do
+      else if (trim(band) == 'longwave') then
+         do icol = 1,size(fluxes%flux_dn, 1)
+            cam_out%flwds(icol) = fluxes%flux_dn(icol,kbot+1)
+         end do
+      else
+         call endrun('flux_type ' // band // ' not known.')
       end if
 
-   end if  ! dolw
+   end subroutine export_surface_fluxes
 
-   ! Check net fluxes
-   call assert_valid(fsns(1:ncol), 'fsns')
-   call assert_valid(fsnt(1:ncol), 'fsnt')
-   call assert_valid(flns(1:ncol), 'flns')
-   call assert_valid(flnt(1:ncol), 'flnt')
+   !----------------------------------------------------------------------------
 
-   ! Compute net radiative heating tendency
-   call t_startf('radheat_tend')
-   call radheat_tend(state, pbuf, ptend, &
-                     qrl, qrs, &
-                     fsns, fsnt, flns, flnt, &
-                     cam_in%asdir, net_flux)
-   call t_stopf('radheat_tend')
+   subroutine set_net_fluxes_sw(fluxes, fsds, fsns, fsnt)
 
-   ! convert radiative heating rates to Q*dp for energy conservation
-   if (conserve_energy) then
-      qrs(1:ncol,1:pver) = qrs(1:ncol,1:pver) * state%pdel(1:ncol,1:pver)
-      qrl(1:ncol,1:pver) = qrl(1:ncol,1:pver) * state%pdel(1:ncol,1:pver)
-   end if
+      use mo_fluxes_byband, only: ty_fluxes_byband
+      type(ty_fluxes_byband), intent(in) :: fluxes
+      real(r8), intent(inout) :: fsds(:)
+      real(r8), intent(inout) :: fsns(:)
+      real(r8), intent(inout) :: fsnt(:)
 
-end subroutine radiation_tend
+      integer :: ncol
 
+      ! Copy data
+      ncol = size(fluxes%flux_up, 1)
+      fsds(1:ncol) = fluxes%flux_dn(1:ncol,kbot+1)
+      fsns(1:ncol) = fluxes%flux_dn(1:ncol,kbot+1) - fluxes%flux_up(1:ncol,kbot+1)
+      fsnt(1:ncol) = fluxes%flux_dn(1:ncol,ktop) - fluxes%flux_up(1:ncol,ktop)
 
-subroutine radiation_driver_sw(state, pbuf, cam_in, is_cmip6_volc, fluxes_allsky, fluxes_clrsky, qrs, qrsc)
-  
-   use rad_constituents, only: N_DIAG, rad_cnst_get_call_list
-   use perf_mod, only: t_startf, t_stopf
-   use cam_history, only: outfld
-   use physics_types, only: physics_state
-   use physics_buffer, only: physics_buffer_desc
-   use camsrfexch, only: cam_in_t
-   use mo_rrtmgp_clr_all_sky, only: rte_sw
-   use mo_fluxes_byband, only: ty_fluxes_byband
-   use mo_optical_props, only: ty_optical_props_2str
-   use mo_gas_concentrations, only: ty_gas_concs
-   use radiation_state, only: set_rad_state
+   end subroutine set_net_fluxes_sw
 
-   ! Inputs
-   type(physics_state), intent(in) :: state
-   type(physics_buffer_desc), pointer :: pbuf(:)
-   type(cam_in_t), intent(in) :: cam_in
-   type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
-   real(r8), intent(inout) :: qrs(:,:), qrsc(:,:)
-   logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
+   !----------------------------------------------------------------------------
 
-   ! Temporary fluxes compressed to daytime only arrays
-   type(ty_fluxes_byband) :: fluxes_allsky_day, fluxes_clrsky_day
+   subroutine set_net_fluxes_lw(fluxes, flns, flnt)
 
-   ! Temporary heating rates on radiation vertical grid (and daytime only)
-   real(r8), dimension(pcols,nlev_rad) :: qrs_rad, qrsc_rad
+      use mo_fluxes_byband, only: ty_fluxes_byband
+      type(ty_fluxes_byband), intent(in) :: fluxes
+      real(r8), intent(inout) :: flns(:)
+      real(r8), intent(inout) :: flnt(:)
+      integer :: ncol
 
-   ! Albedo for shortwave calculations
-   real(r8) :: albedo_direct(nswbands,pcols), albedo_direct_day(nswbands,pcols)
-   real(r8) :: albedo_diffuse(nswbands,pcols), albedo_diffuse_day(nswbands,pcols)
+      ! Copy data
+      ncol = size(fluxes%flux_up, 1)
+      flns(1:ncol) = fluxes%flux_up(1:ncol,kbot+1) - fluxes%flux_dn(1:ncol,kbot+1)
+      flnt(1:ncol) = fluxes%flux_up(1:ncol,ktop) - fluxes%flux_dn(1:ncol,ktop)
 
-   ! Cloud and aerosol optics
-   type(ty_optical_props_2str) :: aerosol_optics_sw, cloud_optics_sw
+   end subroutine set_net_fluxes_lw
 
-   ! Gas concentrations
-   type(ty_gas_concs) :: gas_concentrations
-
-   ! Cosine solar zenith angle for all columns in chunk
-   real(r8) :: coszrs(pcols)
-
-   ! Incoming solar radiation, scaled for solar zenith angle 
-   ! and earth-sun distance
-   real(r8) :: solar_irradiance_by_gpt(pcols,nswgpts)
-
-   ! Gathered indicies of day and night columns 
-   ! chunk_column_index = day_indices(daylight_column_index)
-   integer :: nday, nnight     ! Number of daylight columns
-   integer :: day_indices(pcols), night_indices(pcols)   ! Indicies of daylight coumns
-
-   ! Cosine solar zenith angle for daytime columns
-   real(r8) :: coszrs_day(pcols)  ! cosine solar zenith angle
-
-   ! Scaling factor for total sky irradiance; used to account for orbital
-   ! eccentricity, and could be used to scale total sky irradiance for different
-   ! climates as well (i.e., paleoclimate simulations)
-   real(r8) :: tsi_scaling
-
-   ! Number of columns
-   integer :: ncol
-
-   ! Loop indices
-   integer :: iband
-
-   ! For loops over diagnostic calls
-   logical :: active_calls(0:N_DIAG)
-   integer :: icall
-
-   ! State fields that are passed into RRTMGP. Some of these may need to
-   ! modified from what exist in the physics_state object, i.e. to clip
-   ! temperatures to make sure they are within the valid range.
-   real(r8), dimension(pcols,nlev_rad) :: tmid, pmid
-   real(r8), dimension(pcols,nlev_rad+1) :: pint, tint
-
-   ! Everybody needs a name
-   character(*), parameter :: subroutine_name = 'radiation_driver_sw'
-
-
-   ! Number of physics columns in this "chunk"; used in multiple places
-   ! throughout this subroutine, so set once for convenience
-   ncol = state%ncol
-
-   ! Get cosine solar zenith angle for current time step. 
-   call set_cosine_solar_zenith_angle(state, dt_avg, coszrs(1:ncol))
-
-   ! Send values for this chunk to history buffer
-   call outfld('COSZRS', coszrs(1:ncol), ncol, state%lchnk)
-
-   ! Get orbital eccentricity factor to scale total sky irradiance
-   tsi_scaling = get_eccentricity_factor()
-
-   ! If the swrad_off flag is set, meaning we should not do SW radiation, then 
-   ! we just set coszrs to zero everywhere. TODO: why not just set dosw false 
-   ! and skip the loop?
-   if (swrad_off) coszrs(:) = 0._r8
-
-   ! Gather night/day column indices for subsetting SW inputs; we only want to
-   ! do the shortwave radiative transfer during the daytime to save
-   ! computational cost (and because RRTMGP will fail for cosine solar zenith
-   ! angles less than or equal to zero)
-   call set_daynight_indices(coszrs(1:ncol), day_indices(1:ncol), night_indices(1:ncol))
-   nday = count(day_indices(1:ncol) > 0)
-   nnight = count(night_indices(1:ncol) > 0)
-
-
-   ! Populate RRTMGP input variables. Use the day_indices index array to
-   ! map CAM variables on all columns to the daytime-only arrays, and take
-   ! only the ktop:kbot vertical levels (mapping CAM vertical grid to
-   ! RRTMGP vertical grid). Note that we populate the state separately for
-   ! shortwave and longwave, because we need to compress to just the daytime
-   ! columns for the shortwave, but the longwave uses all columns
-   call set_rad_state(state, cam_in, &
-                      tmid(1:nday,1:nlev_rad), & 
-                      tint(1:nday,1:nlev_rad+1), &
-                      pmid(1:nday,1:nlev_rad), &
-                      pint(1:nday,1:nlev_rad+1), &
-                      col_indices=day_indices(1:nday))
-
-   ! Get albedo. This uses CAM routines internally and just provides a
-   ! wrapper to improve readability of the code here.
-   call set_albedo(cam_in, albedo_direct(1:nswbands,1:ncol), albedo_diffuse(1:nswbands,1:ncol))
-
-   ! Send albedos to history buffer (useful for debugging)
-   call outfld('SW_ALBEDO_DIR', transpose(albedo_direct(1:nswbands,1:ncol)), ncol, state%lchnk)
-   call outfld('SW_ALBEDO_DIF', transpose(albedo_diffuse(1:nswbands,1:ncol)), ncol, state%lchnk)
-
-   ! Compress to daytime-only arrays
-   do iband = 1,nswbands
-      call compress_day_columns(albedo_direct(iband,1:ncol), albedo_direct_day(iband,1:nday), day_indices(1:nday))
-      call compress_day_columns(albedo_diffuse(iband,1:ncol), albedo_diffuse_day(iband,1:nday), day_indices(1:nday))
-   end do
-   call compress_day_columns(coszrs(1:ncol), coszrs_day(1:nday), day_indices(1:nday))
-
-   ! Allocate shortwave fluxes (allsky and clearsky)
-   ! TODO: why do I need to provide my own routines to do this? Why is 
-   ! this not part of the ty_fluxes_byband object?
-   !
-   ! NOTE: fluxes defined at interfaces, so initialize to have vertical
-   ! dimension nlev_rad+1, while we initialized the RRTMGP input variables to
-   ! have vertical dimension nlev_rad (defined at midpoints).
-   call initialize_rrtmgp_fluxes(nday, nlev_rad+1, nswbands, fluxes_allsky_day, do_direct=.true.)
-   call initialize_rrtmgp_fluxes(nday, nlev_rad+1, nswbands, fluxes_clrsky_day, do_direct=.true.)
-
-   ! Do shortwave cloud optics calculations
-   ! TODO: refactor the set_cloud_optics codes to allow passing arrays
-   ! rather than state/pbuf so that we can use this for superparameterized
-   ! simulations...or alternatively add logic within the set_cloud_optics
-   ! routines to handle this.
-   call t_startf('shortwave cloud optics')
-   call set_cloud_optics_sw(state, pbuf, &
-                            day_indices(1:nday), &
-                            k_dist_sw, cloud_optics_sw)
-   call t_stopf('shortwave cloud optics')
-
-   ! Initialize aerosol optics; passing only the wavenumber bounds for each
-   ! "band" rather than passing the full spectral discretization object, and
-   ! omitting the "g-point" mapping forces the optics to be indexed and
-   ! stored by band rather than by g-point. This is most consistent with our
-   ! treatment of aerosol optics in the model, and prevents us from having to
-   ! map bands to g-points ourselves since that will all be handled by the
-   ! private routines internal to the optics class.
-   call handle_error(aerosol_optics_sw%alloc_2str(nday, nlev_rad, k_dist_sw%get_band_lims_wavenumber()))
-   call aerosol_optics_sw%set_name('shortwave aerosol optics')
-
-   ! Loop over diagnostic calls 
-   ! TODO: more documentation on what this means
-   !
-   ! NOTE: the climate (icall==0) calculation must occur last, so we loop
-   ! backwards.
-   call rad_cnst_get_call_list(active_calls)
-   do icall = N_DIAG,0,-1
-      if (active_calls(icall)) then
-
-         ! Get shortwave aerosol optics
-         call t_startf('rad_aerosol_optics_sw')
-         call set_aerosol_optics_sw(icall, state, pbuf, &
-                                    day_indices(1:nday), &
-                                    night_indices(1:nnight), &
-                                    is_cmip6_volc, &
-                                    aerosol_optics_sw)
-         call t_stopf('rad_aerosol_optics_sw')
-
-         ! Set gas concentrations (I believe the gases may change for
-         ! different values of icall, which is why we do this within the
-         ! loop)
-         call t_startf('rad_gas_concentrations_sw')
-         call set_gas_concentrations(icall, state, pbuf, &
-                                     gas_concentrations, &
-                                     day_indices=day_indices(1:nday))
-         call t_stopf('rad_gas_concentrations_sw')
-
-         ! Do shortwave radiative transfer calculations
-         call t_startf('rad_calculations_sw')
-         call handle_error(rte_sw( &
-            k_dist_sw, gas_concentrations, &
-            pmid(1:nday,1:nlev_rad), &
-            tmid(1:nday,1:nlev_rad), &
-            pint(1:nday,1:nlev_rad+1), &
-            coszrs_day(1:nday), &
-            albedo_direct_day(1:nswbands,1:nday), &
-            albedo_diffuse_day(1:nswbands,1:nday), &
-            cloud_optics_sw, &
-            fluxes_allsky_day, fluxes_clrsky_day, &
-            aer_props=aerosol_optics_sw, &
-            tsi_scaling=tsi_scaling &
-         ))
-         call t_stopf('rad_calculations_sw')
-
-         ! Calculate heating rates on the DAYTIME columns
-         call t_startf('rad_heating_rate_sw')
-         call calculate_heating_rate(fluxes_allsky_day, pint(1:nday,1:nlev_rad+1), &
-                                     qrs_rad(1:nday,1:nlev_rad))
-         call calculate_heating_rate(fluxes_clrsky_day, pint(1:nday,1:nlev_rad+1), &
-                                     qrsc_rad(1:nday,1:nlev_rad))
-         call t_stopf('rad_heating_rate_sw')
-
-         ! Expand fluxes from daytime-only arrays to full chunk arrays
-         call t_startf('rad_expand_fluxes_sw')
-         call expand_day_fluxes(fluxes_allsky_day, fluxes_allsky, day_indices(1:nday))
-         call expand_day_fluxes(fluxes_clrsky_day, fluxes_clrsky, day_indices(1:nday))
-         call t_stopf('rad_expand_fluxes_sw')
-
-         ! Expand heating rates to all columns and map back to CAM levels
-         call t_startf('rad_expand_heating_rate_sw')
-         call expand_day_columns(qrs_rad(1:nday,ktop:kbot), qrs(1:ncol,1:pver), day_indices(1:nday))
-         call expand_day_columns(qrsc_rad(1:nday,ktop:kbot), qrsc(1:ncol,1:pver), day_indices(1:nday))
-         call t_stopf('rad_expand_heating_rate_sw')
-
-         ! Send fluxes to history buffer
-         call output_fluxes_sw(icall, state, fluxes_allsky, fluxes_clrsky, qrs,  qrsc)
-
-      end if
-   end do
-
-   ! Free fluxes and optical properties
-   call free_optics_sw(cloud_optics_sw)
-   call free_optics_sw(aerosol_optics_sw)
-   call free_fluxes(fluxes_allsky_day)
-   call free_fluxes(fluxes_clrsky_day)
-
-end subroutine radiation_driver_sw
-
-
-subroutine radiation_driver_lw(state, pbuf, cam_in, is_cmip6_volc, fluxes_allsky, fluxes_clrsky, qrl, qrlc)
- 
-   use rad_constituents, only: N_DIAG, rad_cnst_get_call_list
-   use perf_mod, only: t_startf, t_stopf
-   use cam_history, only: outfld
-   use physics_types, only: physics_state
-   use physics_buffer, only: physics_buffer_desc
-   use camsrfexch, only: cam_in_t
-   use mo_rrtmgp_clr_all_sky, only: rte_lw
-   use mo_fluxes_byband, only: ty_fluxes_byband
-   use mo_optical_props, only: ty_optical_props_1scl
-   use mo_gas_concentrations, only: ty_gas_concs
-   use radiation_state, only: set_rad_state
-
-   ! Inputs
-   type(physics_state), intent(in) :: state
-   type(physics_buffer_desc), pointer :: pbuf(:)
-   type(cam_in_t), intent(in) :: cam_in
-   type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
-   real(r8), intent(inout) :: qrl(:,:), qrlc(:,:)
-   logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
-
-   ! Everybody needs a name
-   character(*), parameter :: subroutine_name = 'radiation_driver_lw'
-
-   ! For loops over diagnostic calls (TODO: what does this mean?)
-   logical :: active_calls(0:N_DIAG)
-
-   ! State fields that are passed into RRTMGP. Some of these may need to
-   ! modified from what exist in the physics_state object, i.e. to clip
-   ! temperatures to make sure they are within the valid range.
-   real(r8), dimension(pcols,nlev_rad) :: tmid, pmid
-   real(r8), dimension(pcols,nlev_rad+1) :: pint, tint
-
-   ! Surface emissivity needed for longwave
-   real(r8) :: surface_emissivity(nlwbands,pcols)
-
-   ! Temporary heating rates on radiation vertical grid
-   real(r8), dimension(pcols,nlev_rad) :: qrl_rad, qrlc_rad
-
-   ! RRTMGP types
-   type(ty_gas_concs) :: gas_concentrations
-   type(ty_optical_props_1scl) :: aerosol_optics_lw
-   type(ty_optical_props_1scl) :: cloud_optics_lw
-
-   integer :: ncol, icall
-
-   ! Number of physics columns in this "chunk"; used in multiple places
-   ! throughout this subroutine, so set once for convenience
-   ncol = state%ncol
-
-   ! Set rad state variables
-   call set_rad_state(state, cam_in, &
-                      tmid(1:ncol,1:nlev_rad), &
-                      tint(1:ncol,1:nlev_rad+1), &
-                      pmid(1:ncol,1:nlev_rad), &
-                      pint(1:ncol,1:nlev_rad+1))
-    
-   ! Set surface emissivity to 1 here. There is a note in the RRTMG
-   ! implementation that this is treated in the land model, but the old
-   ! RRTMG implementation also sets this to 1. This probably does not make
-   ! a lot of difference either way, but if a more intelligent value
-   ! exists or is assumed in the model we should use it here as well.
-   ! TODO: set this more intelligently?
-   surface_emissivity(1:nlwbands,1:ncol) = 1.0_r8
-
-   ! Do longwave cloud optics calculations
-   call t_startf('longwave cloud optics')
-   call set_cloud_optics_lw(state, pbuf, k_dist_lw, cloud_optics_lw)
-   call t_stopf('longwave cloud optics')
-
-   ! Initialize aerosol optics; passing only the wavenumber bounds for each
-   ! "band" rather than passing the full spectral discretization object, and
-   ! omitting the "g-point" mapping forces the optics to be indexed and
-   ! stored by band rather than by g-point. This is most consistent with our
-   ! treatment of aerosol optics in the model, and prevents us from having to
-   ! map bands to g-points ourselves since that will all be handled by the
-   ! private routines internal to the optics class.
-   call handle_error(aerosol_optics_lw%alloc_1scl(ncol, nlev_rad, k_dist_lw%get_band_lims_wavenumber()))
-   call aerosol_optics_lw%set_name('longwave aerosol optics')
-
-   ! Loop over diagnostic calls (what does this mean?)
-   call rad_cnst_get_call_list(active_calls)
-   do icall = N_DIAG,0,-1
-      if (active_calls(icall)) then
-
-         ! Set gas concentrations (I believe the active gases may change
-         ! for different values of icall, which is why we do this within
-         ! the loop).
-         call t_startf('rad_gas_concentrations_lw')
-         call set_gas_concentrations(icall, state, pbuf, gas_concentrations)
-         call t_stopf('rad_gas_concentrations_lw')
-
-         ! Get longwave aerosol optics
-         call t_startf('rad_aerosol_optics_lw')
-         call set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, aerosol_optics_lw)
-         call t_stopf('rad_aerosol_optics_lw')
-
-         ! Do longwave radiative transfer calculations
-         call t_startf('rad_calculations_lw')
-         call handle_error(rte_lw( &
-            k_dist_lw, gas_concentrations, &
-            pmid(1:ncol,1:nlev_rad), tmid(1:ncol,1:nlev_rad), &
-            pint(1:ncol,1:nlev_rad+1), tint(1:ncol,nlev_rad+1), &
-            surface_emissivity(1:nlwbands,1:ncol), &
-            cloud_optics_lw, &
-            fluxes_allsky, fluxes_clrsky, &
-            aer_props=aerosol_optics_lw, &
-            t_lev=tint(1:ncol,1:nlev_rad+1), &
-            n_gauss_angles=1 & ! Set to 3 for consistency with RRTMG
-         ))
-         call t_stopf('rad_calculations_lw')
-
-         ! Check stuff
-         call assert_valid(fluxes_allsky%flux_up, 'flux_up invalid')
-         call assert_valid(fluxes_allsky%flux_dn, 'flux_dn invalid')
-
-         ! Calculate heating rates
-         call calculate_heating_rate(fluxes_allsky, pint(1:ncol,1:nlev_rad+1), &
-                                     qrl_rad(1:ncol,1:nlev_rad))
-         call calculate_heating_rate(fluxes_clrsky, pint(1:ncol,1:nlev_rad+1), &
-                                     qrlc_rad(1:ncol,1:nlev_rad))
-
-         ! Map heating rates to CAM columns and levels
-         qrl(1:ncol,1:pver) = qrl_rad(1:ncol,ktop:kbot)
-         qrlc(1:ncol,1:pver) = qrlc_rad(1:ncol,ktop:kbot)
-                     
-         ! Send fluxes to history buffer
-         call output_fluxes_lw(icall, state, fluxes_allsky, fluxes_clrsky, qrl, qrlc)
-
-      end if  ! active calls
-   end do  ! loop over diagnostic calls
-
-   ! Free fluxes and optical properties
-   call free_optics_lw(cloud_optics_lw)
-   call free_optics_lw(aerosol_optics_lw)
-
-end subroutine radiation_driver_lw
-
-
-#ifdef rad_boundary_flux
-subroutine compute_boundary_flux_sw(pressure_mid, pressure_int, temperature_mid, fluxes)
-   
-   real(r8), intent(in) :: pressure_mid(:,:)
-   real(r8), intent(in) :: pressure_int(:,:)
-   type(ty_fluxes_bygpoint) :: fluxes
-
-   type(ty_optical_props_2str) :: gas_optics
-
-   ! Build a 1-layer atmosphere on which to calculate the boundary flux
-
-   ! Calculate gas optics for our layer
-   call gas_optics%init_and_alloc_2str(ncol, 1, k_dist)
-   call handle_error(k_dist%gas_optics(p_lay, p_lev, t_lay, gas_concs, &
-                                       gas_optics, toa_flux)
-
-   call handle_error(rte_sw(gas_optics, top_at_1, coszrs, solin, &
-                            sfc_alb_dir, sfc_alb_dif, &
-                            fluxes))
-
-end subroutine compute_boundary_flux_sw
-#endif
-
-
-subroutine export_surface_fluxes(fluxes, cam_out, band)
-   use mo_fluxes_byband, only: ty_fluxes_byband
-   use camsrfexch, only: cam_out_t
-
-   type(ty_fluxes_byband), intent(in) :: fluxes
-   type(cam_out_t), intent(inout) :: cam_out
-   character(len=*), intent(in) :: band
-   integer :: icol
-   real(r8), dimension(size(fluxes%bnd_flux_dn,1), &
-                       size(fluxes%bnd_flux_dn,2), &
-                       size(fluxes%bnd_flux_dn,3)) :: flux_dn_diffuse
-
-   ! TODO: check this code! This seems to differ from what is in RRTMG. 
-   !
-   ! Export surface fluxes
-   !
-   ! To break the fluxes into the UV/vis and near-IR bands use the same scheme 
-   ! as for the albedos which is hardcoded for 14 spectral bands.
-   !
-   ! sols(pcols)      Direct solar rad on surface (< 0.7)
-   ! soll(pcols)      Direct solar rad on surface (>= 0.7)
-   !
-   ! Near-IR bands (1-10), 820-16000 cm-1, 0.625-12.195 microns
-   !
-   ! Put half of band 10 in each of the UV/visible and near-IR values,
-   ! since this band straddles 0.7 microns:
-   !
-   ! UV/visible bands 11-14, 16000-50000 cm-1, 0.200-0.625 micron
-   !
-   ! NOTE: bands are shifted relative to RRTMG! Band 10 used to be band 9, band
-   ! 1 used to be band 14.
-   !
-   ! TODO: this hard-coded band mapping is BAD! We need to do this more
-   ! intelligently.
-   if (trim(band) == 'shortwave') then
-
-      ! Reset fluxes
-      cam_out%soll = 0
-      cam_out%sols = 0
-      cam_out%solld = 0
-      cam_out%solsd = 0
-
-      ! Calculate diffuse flux from total and direct
-      flux_dn_diffuse = fluxes%bnd_flux_dn - fluxes%bnd_flux_dn_dir
-
-      ! Calculate broadband surface solar fluxes (UV/visible vs near IR) for
-      ! each column.
-      do icol = 1,size(fluxes%bnd_flux_dn, 1)
-
-         ! Direct fluxes
-         cam_out%soll(icol) &
-            = sum(fluxes%bnd_flux_dn_dir(icol,kbot+1,1:9)) &
-            + 0.5_r8 * fluxes%bnd_flux_dn_dir(icol,kbot+1,10)
-         cam_out%sols(icol) &
-            = 0.5_r8 * fluxes%bnd_flux_dn_dir(icol,kbot+1,10) &
-            + sum(fluxes%bnd_flux_dn_dir(icol,kbot+1,11:14))
-
-         ! Diffuse fluxes
-         cam_out%solld(icol) &
-            = sum(flux_dn_diffuse(icol,kbot+1,1:9)) &
-            + 0.5_r8 * flux_dn_diffuse(icol,kbot+1,10)
-         cam_out%solsd(icol) &
-            = 0.5_r8 * flux_dn_diffuse(icol,kbot+1,10) &
-            + sum(flux_dn_diffuse(icol,kbot+1,11:14))
-
-         ! Net shortwave flux at surface
-         cam_out%netsw(icol) = fluxes%flux_net(icol,kbot+1)
-      end do
-   else if (trim(band) == 'longwave') then
-      do icol = 1,size(fluxes%flux_dn, 1)
-         cam_out%flwds(icol) = fluxes%flux_dn(icol,kbot+1)
-      end do
-   else
-      call endrun('flux_type ' // band // ' not known.')
-   end if
-
-end subroutine export_surface_fluxes
-
-
-subroutine set_net_fluxes_sw(fluxes, fsds, fsns, fsnt)
-
-   use mo_fluxes_byband, only: ty_fluxes_byband
-   type(ty_fluxes_byband), intent(in) :: fluxes
-   real(r8), intent(inout) :: fsds(:)
-   real(r8), intent(inout) :: fsns(:)
-   real(r8), intent(inout) :: fsnt(:)
-
-   integer :: ncol
-
-   ! Copy data
-   ncol = size(fluxes%flux_up, 1)
-   fsds(1:ncol) = fluxes%flux_dn(1:ncol,kbot+1)
-   fsns(1:ncol) = fluxes%flux_dn(1:ncol,kbot+1) - fluxes%flux_up(1:ncol,kbot+1)
-   fsnt(1:ncol) = fluxes%flux_dn(1:ncol,ktop) - fluxes%flux_up(1:ncol,ktop)
-
-end subroutine set_net_fluxes_sw
-
-subroutine set_net_fluxes_lw(fluxes, flns, flnt)
-
-   use mo_fluxes_byband, only: ty_fluxes_byband
-   type(ty_fluxes_byband), intent(in) :: fluxes
-   real(r8), intent(inout) :: flns(:)
-   real(r8), intent(inout) :: flnt(:)
-   integer :: ncol
-
-   ! Copy data
-   ncol = size(fluxes%flux_up, 1)
-   flns(1:ncol) = fluxes%flux_up(1:ncol,kbot+1) - fluxes%flux_dn(1:ncol,kbot+1)
-   flnt(1:ncol) = fluxes%flux_up(1:ncol,ktop) - fluxes%flux_dn(1:ncol,ktop)
-
-end subroutine set_net_fluxes_lw
-
-!-------------------------------------------------------------------------------
-
-subroutine calculate_heating_rate(fluxes, pint, heating_rate)
-
-   use physconst, only: gravit
-   use mo_fluxes_byband, only: ty_fluxes_byband
-
-   ! Inputs
-   type(ty_fluxes_byband), intent(in) :: fluxes
-   real(r8), intent(in) :: pint(:,:)
-
-   ! Output heating rate; same size as pint with one fewer vertical level
-   real(r8), intent(out) :: heating_rate(:,:)
-
-   ! Loop indices
-   integer :: icol, ilev
-
-   ! Everyone needs a name
-   character(len=32) :: subname = 'calculate_heating_rate'
-
-#ifdef DEBUG
-   ! Get dimension sizes and make sure arrays conform
-   call assert(size(pint,1) == size(fluxes%flux_up,1), subname // ': sizes do not conform.')
-   call assert(size(pint,2) == size(fluxes%flux_up,2), subname // ': sizes do not conform.')
-   call assert(size(heating_rate,1) == size(fluxes%flux_up,1), subname // ': sizes do not conform.')
-   call assert(size(heating_rate,2) == size(fluxes%flux_up,2)-1, subname // ': sizes do not conform.')
-#endif
-
-   ! Loop over levels and calculate heating rates; note that the fluxes *should*
-   ! be defined at interfaces, so the loop ktop,kbot and grabbing the current
-   ! and next value of k should be safe. ktop should be the top interface, and
-   ! kbot + 1 should be the bottom interface.
-   !
-   ! NOTE: to get heating rate in K/day, normally we would use:
-   !
-   !     H = dF / dp * g * (sec/day) * (1e-5) / (cpair)
-   !
-   ! Here we just use
-   !
-   !     H = dF / dp * g
-   !
-   ! Why? Something to do with convenience with applying the fluxes to the
-   ! heating tendency?
-   do ilev = 1,size(pint,2)-1
-      do icol = 1,size(pint,1)
-         heating_rate(icol,ilev) = ( &
-            fluxes%flux_up(icol,ilev+1) - fluxes%flux_up(icol,ilev) - &
-            fluxes%flux_dn(icol,ilev+1) + fluxes%flux_dn(icol,ilev) &
-         ) * gravit / (pint(icol,ilev+1) - pint(icol,ilev))
-      end do
-   end do
-
-end subroutine calculate_heating_rate
-    
+   !----------------------------------------------------------------------------
 
 subroutine set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, optics_out)
    use physics_types, only: physics_state
@@ -2248,6 +2118,8 @@ end subroutine set_cosine_solar_zenith_angle
 ! to a subroutine with some better variable names.
 subroutine set_albedo(cam_in, albedo_direct, albedo_diffuse)
    use camsrfexch, only: cam_in_t
+   use radiation_utils, only: clip_values
+
    type(cam_in_t), intent(in) :: cam_in
    real(r8), intent(inout) :: albedo_direct(:,:)   ! surface albedo, direct radiation
    real(r8), intent(inout) :: albedo_diffuse(:,:)  ! surface albedo, diffuse radiation
@@ -2341,118 +2213,6 @@ logical function is_visible(wavenumber)
 end function is_visible
 
 !-------------------------------------------------------------------------------
-
-subroutine clip_values_1d(x, min_x, max_x, varname, warn)
-   real(r8), intent(inout) :: x(:)
-   real(r8), intent(in) :: min_x
-   real(r8), intent(in) :: max_x
-   character(len=*), intent(in), optional :: varname
-   logical, intent(in), optional :: warn
-
-   logical :: warn_local
-
-   warn_local = .false.
-   if (present(warn)) then
-      warn_local = warn
-   end if
-
-   ! Look for values less than threshold
-   if (any(x < min_x)) then
-      ! Raise warning?
-      if (warn_local) then
-         if (present(varname)) then
-            print *, module_name // ' warning: ', &
-                     count(x < min_x), ' values are below threshold for variable ', &
-                     trim(varname), '; min = ', minval(x)
-         else
-            print *, module_name // ' warning: ', &
-                     count(x < min_x), ' values are below threshold; min = ', minval(x)
-         end if
-      end if
-
-      ! Clip values
-      where (x < min_x)
-         x = min_x
-      endwhere
-   end if
-
-   ! Look for values greater than threshold 
-   if (any(x > max_x)) then 
-      ! Raise warning?
-      if (warn_local) then
-         if (present(varname)) then
-            print *, module_name // ' warning: ', &
-                     count(x > max_x), ' values are above threshold for variable ', &
-                     trim(varname), '; max = ', maxval(x)
-         else
-            print *, module_name // ' warning: ', &
-                     count(x > max_x), ' values are above threshold; max = ', maxval(x)
-         end if
-      end if
-
-      ! Clip values
-      where (x > max_x)
-         x = max_x
-      end where
-   end if
-end subroutine clip_values_1d
-
-subroutine clip_values_2d(x, min_x, max_x, varname, warn)
-   real(r8), intent(inout) :: x(:,:)
-   real(r8), intent(in) :: min_x
-   real(r8), intent(in) :: max_x
-   character(len=*), intent(in), optional :: varname
-   logical, intent(in), optional :: warn
-
-   logical :: warn_local
-
-   warn_local = .false.
-   if (present(warn)) then
-      warn_local = warn
-   end if
-
-   ! look for values less than threshold
-   if (any(x < min_x)) then
-      ! Raise warning?
-      if (warn_local) then
-         if (present(varname)) then
-            print *, module_name // ' warning: ', &
-                     count(x < min_x), ' values are below threshold for variable ', &
-                     trim(varname), '; min = ', minval(x)
-         else
-            print *, module_name // ' warning: ', &
-                     count(x < min_x), ' values are below threshold; min = ', minval(x)
-         end if
-      end if
-
-      ! Clip values
-      where (x < min_x)
-         x = min_x
-      endwhere
-   end if
-
-   ! Look for values greater than threshold
-   if (any(x > max_x)) then 
-      ! Raise warning?
-      if (warn_local) then
-         if (present(varname)) then
-            print *, module_name // ' warning: ', &
-                     count(x > max_x), ' values are above threshold for variable ', &
-                     trim(varname), '; max = ', maxval(x)
-         else
-            print *, module_name // ' warning: ', &
-                     count(x > max_x), ' values are above threshold; max = ', maxval(x)
-         end if
-      end if
-
-      ! Clip values
-      where (x > max_x)
-         x = max_x
-      end where
-   end if
-
-end subroutine clip_values_2d
-
 
 ! Send shortwave fluxes and heating rates to history buffer
 subroutine output_fluxes_sw(icall, state, flux_all, flux_clr, qrs, qrsc)
@@ -2628,49 +2388,6 @@ subroutine initialize_rrtmgp_fluxes(ncol, nlevels, nbands, fluxes, do_direct)
    call reset_fluxes(fluxes)
 
 end subroutine initialize_rrtmgp_fluxes
-
-subroutine cam_flux_initialize(this, ncol, nlev, nbands, do_direct)
-
-   class(cam_flux_type), intent(inout) :: this
-   integer, intent(in) :: ncol, nlev, nbands
-   logical, optional, intent(in) :: do_direct
-   logical :: do_direct_local
-
-   if (present(do_direct)) then
-      do_direct_local = .true.
-   else
-      do_direct_local = .false.
-   end if
-
-
-   if (.not. allocated(this%flux_up)) allocate(this%flux_up(ncol,nlev))
-   if (.not. allocated(this%flux_dn)) allocate(this%flux_dn(ncol,nlev))
-   if (.not. allocated(this%flux_net)) allocate(this%flux_net(ncol,nlev))
-   if (do_direct_local) then
-      if (.not. allocated(this%flux_dn_dir)) allocate(this%flux_dn_dir(ncol,nlev))
-   end if
-
-   if (.not. allocated(this%bnd_flux_up)) allocate(this%bnd_flux_up(ncol,nlev,nbands))
-   if (.not. allocated(this%bnd_flux_dn)) allocate(this%bnd_flux_dn(ncol,nlev,nbands))
-   if (.not. allocated(this%bnd_flux_net)) allocate(this%bnd_flux_net(ncol,nlev,nbands))
-   if (do_direct_local) then
-      if (.not. allocated(this%bnd_flux_dn_dir)) allocate(this%bnd_flux_dn_dir(ncol,nlev,nbands))
-   end if
-
-end subroutine cam_flux_initialize
-!-------------------------------------------------------------------------------
-subroutine cam_flux_finalize(this)
-   class(cam_flux_type), intent(inout) :: this
-   if (allocated(this%flux_up)) deallocate(this%flux_up)
-   if (allocated(this%flux_dn)) deallocate(this%flux_dn)
-   if (allocated(this%flux_net)) deallocate(this%flux_net)
-   if (allocated(this%flux_dn_dir)) deallocate(this%flux_dn_dir)
-
-   if (allocated(this%bnd_flux_up)) deallocate(this%bnd_flux_up)
-   if (allocated(this%bnd_flux_dn)) deallocate(this%bnd_flux_dn)
-   if (allocated(this%bnd_flux_net)) deallocate(this%bnd_flux_net)
-   if (allocated(this%bnd_flux_dn_dir)) deallocate(this%bnd_flux_dn_dir)
-end subroutine cam_flux_finalize
 
 subroutine free_fluxes(fluxes)
    use mo_fluxes_byband, only: ty_fluxes_byband
