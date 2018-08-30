@@ -1572,7 +1572,7 @@ module ESM
 
     else
 
-       call NUOPC_CompAttributeAdd(gcomp, attrList=(/'inst_name','inst_index','inst_suffix'/), rc=rc)
+       call NUOPC_CompAttributeAdd(gcomp, attrList=(/'inst_name','inst_index'/), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call NUOPC_CompAttributeSet(gcomp, name='inst_name', value=trim(seq_comm_name(compid)), rc=rc)
@@ -1583,6 +1583,9 @@ module ESM
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        if (seq_comm_suffix(compid) /= '') then
+          call NUOPC_CompAttributeAdd(gcomp, attrList=(/'inst_suffix'/), rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          
           call NUOPC_CompAttributeSet(gcomp, name='inst_suffix', value=trim(seq_comm_suffix(compid)), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
