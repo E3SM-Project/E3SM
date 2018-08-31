@@ -17,11 +17,11 @@ from CIME.hist_utils import rename_all_hist_files
 
 logger = logging.getLogger(__name__)
 
-class SRC(SystemTestsCommon):
+class TSC(SystemTestsCommon):
 
     def __init__(self, case):
         """
-        initialize an object interface to the SRC test
+        initialize an object interface to the TSC test
         """
         SystemTestsCommon.__init__(self, case)
 
