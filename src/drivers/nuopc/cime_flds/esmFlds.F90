@@ -78,7 +78,7 @@ module esmFlds
   character(len=CX)  :: carma_fields        ! List of CARMA fields from lnd->atm
   character(len=CX)  :: ndep_fields         ! List of nitrogen deposition fields from atm->lnd/ocn
   integer            :: ice_ncat            ! number of sea ice thickness categories
-  logical            :: add_ndep_fields     ! .true. => add ndep fields
+  integer            :: megan_nflds
   logical            :: flds_i2o_per_cat    ! .true. => select per ice thickness category fields passed from ice to ocn
 
   integer     , parameter :: CSS = 256           ! use longer short character
@@ -142,6 +142,9 @@ contains
     logical                :: flds_co2b  ! use case
     logical                :: flds_co2c  ! use case
     integer                :: glc_nec
+    integer                :: drydep_nflds
+    integer                :: ndep_nflds
+    integer                :: emis_nflds
     integer                :: mpicom
     character(len=*), parameter :: subname='(shr_nuopc_fldList_Init)'
     !--------------------------------------
@@ -2420,7 +2423,7 @@ contains
     ! if carma_flds are specified then setup fields for CLM to CAM communication
     !-----------------------------------------------------------------------------
 
-    call shr_carma_readnl('drv_flds_in', mpicom, mastertask, carma_fields)
+    call shr_carma_readnl('drv_flds_in', carma_fields)
     if (carma_fields /= ' ') then
        longname = 'Volumetric soil water'
        stdname  = 'soil_water'
@@ -2444,7 +2447,7 @@ contains
     ! colon deliminated string of the megan foc fields that will be
     ! exported by the land model
 
-    call shr_megan_readnl('drv_flds_in', mpicom, mastertask, megan_voc_fields)
+    call shr_megan_readnl('drv_flds_in', megan_voc_fields, megan_nflds)
     if (shr_megan_mechcomps_n > 0) then
        longname = 'MEGAN emission fluxes'
        stdname  = 'megan'
@@ -2465,7 +2468,7 @@ contains
     ! (emissions fluxes)
     !-----------------------------------------------------------------------------
 
-    call shr_fire_emis_readnl('drv_flds_in', mpicom, mastertask, fire_emis_fields)
+    call shr_fire_emis_readnl('drv_flds_in', fire_emis_fields, emis_nflds)
     if (shr_fire_emis_mechcomps_n>0) then
        longname = 'wild fire emission fluxes'
        stdname  = 'fire_emis'
@@ -2498,12 +2501,12 @@ contains
     ! Note: CAM and CLM will then call seq_drydep_setHCoeff
     !-----------------------------------------------------------------------------
 
-    call seq_drydep_readnl("drv_flds_in", mpicom, mastertask, drydep_fields)
-    if ( lnd_drydep ) then
+    call seq_drydep_readnl("drv_flds_in", drydep_fields, drydep_nflds)
+    if ( drydep_nflds>0 ) then
        longname = 'dry deposition velocity'
        stdname  = 'drydep_vel'
        units    = 'cm/sec'
-       do n = 1,shr_string_listGetNum(drydep_fields)
+       do n = 1,drydep_nflds
           call shr_string_listGetName(drydep_fields, n, fldname)
           call shr_nuopc_fldList_AddMetadata(fldname=fldname, longname=longname, stdname=stdname, units=units)
           call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, trim(fldname), fldindex=n1)
@@ -2521,12 +2524,12 @@ contains
     ! Then add nitrogen deposition fields to atm export, lnd import and ocn import
     !-----------------------------------------------------------------------------
 
-    call shr_ndep_readnl("drv_flds_in", mpicom, mastertask, ndep_fields, add_ndep_fields)
-    if (add_ndep_fields) then
+    call shr_ndep_readnl("drv_flds_in", ndep_fields, ndep_nflds)
+    if (ndep_nflds > 0) then
        longname = 'nitrogen deposition flux'
        stdname  = 'nitrogen_deposition'
        units    = 'kg(N)/m2/sec'
-       do n = 1,shr_string_listGetNum(ndep_fields)
+       do n = 1,ndep_nflds
           call shr_string_listGetName(ndep_fields, n, fldname)
           call shr_nuopc_fldList_AddMetadata(fldname=trim(fldname), longname=longname, stdname=stdname, units=units)
           call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, trim(fldname), fldindex=n1)

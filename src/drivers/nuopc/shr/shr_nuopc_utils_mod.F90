@@ -36,7 +36,7 @@ contains
     integer :: rc
     logical :: isPresent
     character(len=4) :: cvalue
-
+   
     call NUOPC_CompAttributeGet(gcomp, name="inst_suffix", isPresent=isPresent, rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     if (isPresent) then
@@ -52,11 +52,11 @@ contains
   end subroutine shr_nuopc_get_component_instance
 
   subroutine shr_nuopc_set_component_logging(gcomp, mastertask, logunit, shrlogunit, shrloglev)
-    use ESMF, only : ESMF_GridComp
+    use ESMF, only : ESMF_GridComp, ESMF_VM, ESMF_VMGet, ESMF_GridCompGet
     use NUOPC, only : NUOPC_CompAttributeGet
     use med_constants_mod, only : shr_file_getunit, shr_file_getLogUnit, shr_file_getLogLevel
     use med_constants_mod, only : shr_file_setLogLevel, CL, shr_file_setlogunit
-
+    
     type(ESMF_GridComp) :: gcomp
     logical, intent(in) :: mastertask
     integer, intent(out) :: logunit
@@ -67,19 +67,15 @@ contains
     character(len=CL) :: logfile
     integer :: rc
 
-    call shr_file_getLogUnit (shrlogunit)
     if (mastertask) then
        call NUOPC_CompAttributeGet(gcomp, name="diro", value=diro, rc=rc)
        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
        call NUOPC_CompAttributeGet(gcomp, name="logfile", value=logfile, rc=rc)
        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-       logunit = shr_file_getUnit()
-       open(logunit,file=trim(diro)//"/"//trim(logfile))
+       open(newunit=logunit,file=trim(diro)//"/"//trim(logfile))
     else
-       logUnit = shrlogunit
+       logUnit = 6
     endif
-    call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogLevel(max(shrloglev,1))
     call shr_file_setLogUnit (logunit)
   end subroutine shr_nuopc_set_component_logging
 

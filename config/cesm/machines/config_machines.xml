@@ -935,6 +935,7 @@ This allows using a different mpirun command to launch unit tests
       <arguments>
 	<arg name="machine_file">--machinefile $ENV{PBS_NODEFILE}</arg>
 	<arg name="num_tasks"> -n {{ total_tasks }} </arg>
+	<arg name="labelio"> -prepend-rank </arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="openmpi">
@@ -960,7 +961,7 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">tool/netcdf/4.6.1/intel</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich2">
-	<command name="load">mpi/intel/mvapich2-2.1-qlc</command>
+	<command name="load">mpi/intel/mvapich2-2.3rc2-intel-18.0.3</command>
       </modules>
       <modules compiler="pgi">
 	<command name="load">compiler/pgi/18.1</command>

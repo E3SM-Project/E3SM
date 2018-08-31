@@ -89,17 +89,19 @@ contains
   !     corresponding chemical tracers.
   !
   !-------------------------------------------------------------------------
-  subroutine shr_fire_emis_readnl( NLFileName, mpicom, mastertask, emis_fields )
-
+  subroutine shr_fire_emis_readnl( NLFileName, emis_fields, emis_nflds )
+    use ESMF, only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMGet, ESMF_VMBroadcast
     use shr_nl_mod,     only : shr_nl_find_group_name
     use shr_file_mod,   only : shr_file_getUnit, shr_file_freeUnit
-    use shr_mpi_mod,    only : shr_mpi_bcast
+
 
     character(len=*), intent(in)  :: NLFileName  ! name of namelist file
-    integer         , intent(in)  :: mpicom
-    logical         , intent(in)  :: mastertask
     character(len=*), intent(out) :: emis_fields ! emis flux fields
+    integer, intent(out) :: emis_nflds
 
+    type(ESMF_VM) :: vm
+    integer :: localPet
+    integer :: rc
     integer :: unitn            ! namelist unit number
     integer :: ierr             ! error code
     logical :: exists           ! if file exists or not
@@ -107,11 +109,15 @@ contains
     character(len=2*CX)    :: fire_emis_specifier(maxspc) = ' '
     character(len=CL)      :: fire_emis_factors_file = ' '
     logical                :: fire_emis_elevated = .true.
+    integer :: i, tmp(1)
     character(*),parameter :: F00   = "('(shr_fire_emis_readnl) ',2a)"
 
     namelist /fire_emis_nl/ fire_emis_specifier, fire_emis_factors_file, fire_emis_elevated
 
-    if (mastertask) then
+    call ESMF_VMGetCurrent(vm, rc=rc)
+    call ESMF_VMGet(vm, localPet=localPet, rc=rc)
+    emis_nflds=0
+    if (localPet==0) then
        inquire( file=trim(NLFileName), exist=exists)
 
        if ( exists ) then
@@ -128,11 +134,24 @@ contains
           endif
           close( unitn )
           call shr_file_freeUnit( unitn )
+          do i=1,maxspc
+             if(len_trim(fire_emis_specifier(i))>0) then
+                emis_nflds=emis_nflds+1
+             endif
+          enddo
        end if
     end if
-    call shr_mpi_bcast( fire_emis_specifier, mpicom)
-    call shr_mpi_bcast( fire_emis_factors_file, mpicom)
-    call shr_mpi_bcast( fire_emis_elevated, mpicom)
+    tmp = emis_nflds
+    call ESMF_VMBroadcast( vm, tmp, 1, 0, rc=rc)
+    emis_nflds = tmp(1)
+    if (emis_nflds > 0) then
+       call ESMF_VMBroadcast( vm, fire_emis_specifier, emis_nflds, 0, rc=rc)
+       call ESMF_VMBroadcast( vm, fire_emis_factors_file, 1, 0, rc=rc)
+       tmp = 0
+       if (fire_emis_elevated) tmp = 1
+       call ESMF_VMBroadcast( vm, tmp, 1, 0, rc=rc)
+       if(tmp(1) == 1) fire_emis_elevated = .true.
+    endif
 
     shr_fire_emis_factors_file = fire_emis_factors_file
     shr_fire_emis_elevated = fire_emis_elevated

@@ -504,7 +504,7 @@ CONTAINS
 
 !====================================================================================
 
-  subroutine seq_drydep_readnl(NLFilename, mpicom, mastertask, seq_drydep_fields)
+  subroutine seq_drydep_readnl(NLFilename, seq_drydep_fields, seq_drydep_nflds)
 
     !========================================================================
     ! reads drydep_inparm namelist and sets up CCSM driver list of fields for
@@ -513,7 +513,7 @@ CONTAINS
     ! !REVISION HISTORY:
     !  2009-Feb-20 - E. Kluzek - Separate out as subroutine from previous input_init
     !========================================================================
-
+    use ESMF, only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMGet, ESMF_VMBroadcast
     use shr_file_mod,only : shr_file_getUnit, shr_file_freeUnit
     use shr_log_mod, only : s_logunit => shr_log_Unit
     use shr_mpi_mod, only : shr_mpi_bcast
@@ -521,17 +521,18 @@ CONTAINS
     implicit none
 
     character(len=*), intent(in)  :: NLFilename ! Namelist filename
-    integer         , intent(in)  :: mpicom
-    logical         , intent(in)  :: mastertask
     character(len=*), intent(out) :: seq_drydep_fields
-
+    integer, intent(out)          :: seq_drydep_nflds
     !----- local -----
     integer :: i                ! Indices
     integer :: unitn            ! namelist unit number
     integer :: ierr             ! error code
     logical :: exists           ! if file exists or not
     character(len=8) :: token   ! dry dep field name to add
-
+    type(ESMF_VM) :: vm
+    integer :: localPet
+    integer :: tmp(1)
+    integer :: rc
     !----- formats -----
     character(*),parameter :: subName = '(seq_drydep_read) '
     character(*),parameter :: F00   = "('(seq_drydep_read) ',8a)"
@@ -548,8 +549,10 @@ CONTAINS
     if ( len_trim(NLFilename) == 0  )then
        call shr_sys_abort( subName//'ERROR: nlfilename not set' )
     end if
-
-    if (mastertask) then
+    call ESMF_VMGetCurrent(vm, rc=rc)
+    call ESMF_VMGet(vm, localPet=localPet, rc=rc)
+    seq_drydep_nflds=0
+    if (localPet==0) then
        inquire( file=trim(NLFileName), exist=exists)
        if ( exists ) then
           unitn = shr_file_getUnit()
@@ -570,36 +573,43 @@ CONTAINS
           endif
           close( unitn )
           call shr_file_freeUnit( unitn )
+          do i=1,maxspc
+             if(len_trim(drydep_list(i)) > 0) then
+                seq_drydep_nflds=seq_drydep_nflds+1
+             endif
+          enddo
+          
        end if
     end if
-    call shr_mpi_bcast( drydep_list, mpicom )
-    call shr_mpi_bcast( drydep_method, mpicom )
-
-    n_drydep = 0
+    tmp = seq_drydep_nflds
+    call ESMF_VMBroadcast(vm, tmp, 1, 0, rc=rc)
+    seq_drydep_nflds = tmp(1)
+    if(seq_drydep_nflds > 0) then
+       call ESMF_VMBroadcast(vm, drydep_list, seq_drydep_nflds, 0, rc=rc)
+       call ESMF_VMBroadcast(vm, drydep_method, 1, 0, rc=rc)
+    endif
 
     !--- Loop over species to fill list of fields to communicate for drydep ---
     seq_drydep_fields = ' '
-    do i=1,maxspc
-       if ( len_trim(drydep_list(i))==0 ) exit
+    do i=1,seq_drydep_nflds
        write(token,333) i
        seq_drydep_fields = trim(seq_drydep_fields)//':'//trim(token)
        if ( i == 1 ) then
           seq_drydep_fields = trim(token)
           drydep_fields_token = trim(token)
        endif
-       n_drydep = n_drydep+1
     enddo
 
     !--- Make sure method is valid and determine if land is passing drydep fields ---
-    lnd_drydep = n_drydep>0 .and. drydep_method == DD_XLND
+    lnd_drydep = seq_drydep_nflds>0 .and. drydep_method == DD_XLND
 
-    if (mastertask) then
+    if (localpet==0) then
        if ( s_loglev > 0 ) then
           write(s_logunit,*) 'seq_drydep_read: drydep_method: ', trim(drydep_method)
-          if ( n_drydep == 0 )then
+          if ( seq_drydep_nflds == 0 )then
              write(s_logunit,F00) 'No dry deposition fields will be transfered'
           else
-             write(s_logunit,FI1) 'Number of dry deposition fields transfered is ', n_drydep
+             write(s_logunit,FI1) 'Number of dry deposition fields transfered is ', seq_drydep_nflds
           end if
        end if
     end if

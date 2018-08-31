@@ -39,7 +39,8 @@ module shr_log_mod
 
   ! low-level shared variables for logging, these may not be parameters
   integer(SHR_KIND_IN) :: shr_log_Level = 1
-  integer(SHR_KIND_IN) :: shr_log_Unit  = output_unit
+!  integer(SHR_KIND_IN) :: shr_log_Unit  = output_unit
+  integer(SHR_KIND_IN) :: shr_log_Unit  = 6
 
 contains
 
