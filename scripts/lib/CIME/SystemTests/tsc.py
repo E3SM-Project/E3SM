@@ -9,7 +9,7 @@ This class inherits from SystemTestsCommon.
 
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
-from CIME.case_setup import case_setup
+from CIME.case.case_setup import case_setup
 from CIME.build import post_build
 from CIME.hist_utils import rename_all_hist_files
 #import CIME.utils
