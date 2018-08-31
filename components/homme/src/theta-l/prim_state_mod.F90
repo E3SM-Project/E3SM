@@ -136,7 +136,7 @@ contains
     real (kind=real_kind) :: KEH1,KEH2,KEV1,KEV2
     real (kind=real_kind) :: KEwH1,KEwH2,KEwH3,KEwV1,KEwV2
     real (kind=real_kind) :: ddt_tot,ddt_diss, ddt_diss_adj
-    integer               :: n0, nm1, np1, n0q
+    integer               :: n0, n0q
     integer               :: npts,n,q
     
     call t_startf('prim_printstate')
@@ -155,8 +155,6 @@ contains
     IEner    = 0
     ! dynamics timelevels
     n0=tl%n0
-    nm1=tl%nm1
-    np1=tl%np1
     call TimeLevel_Qdp( tl, qsplit, n0q) !get n0 level into t2_qdp 
 
 
@@ -361,9 +359,6 @@ contains
        tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0) 
     enddo
     Mass2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-    do ie=nets,nete
-       tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,np1) 
-    enddo
 
     !
     !   ptop =  hvcoord%hyai(1)*hvcoord%ps0)  + hvcoord%hybi(1)*ps(i,j)

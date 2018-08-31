@@ -138,8 +138,6 @@ contains
     IEner_wet = 0
     ! dynamics timelevels
     n0=tl%n0
-    nm1=tl%nm1
-    np1=tl%np1
 
     dt=tstep*qsplit
     if (rsplit>0) dt = tstep*qsplit*rsplit  ! vertical REMAP timestep 
@@ -314,9 +312,6 @@ contains
        tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0) 
     enddo
     Mass2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-    do ie=nets,nete
-       tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,np1) 
-    enddo
 
     !
     !   ptop =  hvcoord%hyai(1)*hvcoord%ps0)  + hvcoord%hybi(1)*ps(i,j)

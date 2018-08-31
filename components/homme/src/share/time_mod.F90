@@ -19,7 +19,6 @@ module time_mod
 
   ! smooth now in namelist
   real (kind=real_kind), public :: smooth  = 0.05D0    ! Timestep filter
-  integer, parameter :: ptimelevels = 3                           ! number of time levels in the dycore
 
   type, public :: TimeLevel_t
      integer nm1      ! relative time level n-1
