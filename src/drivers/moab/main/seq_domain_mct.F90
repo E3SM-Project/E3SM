@@ -1,1 +1,1 @@
-seq_domain_mct.F90
+../../mct/main/seq_domain_mct.F90

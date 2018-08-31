@@ -1,1 +1,1 @@
-prep_lnd_mod.F90
+../../mct/main/prep_lnd_mod.F90
