@@ -16,7 +16,7 @@ module prim_advance_mod
     laplace_z, vorticity_sphere, vlaplace_sphere_wk 
   use derivative_mod,     only: subcell_div_fluxes, subcell_dss_fluxes
   use dimensions_mod,     only: max_corner_elem, nelemd, nlev, nlevp, np, qsize
-  use edge_mod,           only: edgeDGVunpack, edgevpack, edgevunpack, initEdgeBuffer
+  use edge_mod,           only: edge_g, edgevpack_nlyr, edgevunpack_nlyr
   use edgetype_mod,       only: EdgeBuffer_t,  EdgeDescriptor_t, edgedescriptor_t
   use element_mod,        only: element_t
   use element_state,      only: max_itercnt_perstep,avg_itercnt,max_itererr_perstep
@@ -47,8 +47,6 @@ module prim_advance_mod
   public :: prim_advance_exp, prim_advance_init1, &
        applyCAMforcing_dynamics, applyCAMforcing, vertical_mesh_init2
 
-!  type (EdgeBuffer_t) :: edge5
-  type (EdgeBuffer_t) :: edge6
   real (kind=real_kind), allocatable :: ur_weights(:)
 
 contains
@@ -64,9 +62,6 @@ contains
     character(len=*)    , intent(in) :: integration
     integer :: i
     integer :: ie
-
-!    call initEdgeBuffer(par,edge5,elem,5*nlev)
-    call initEdgeBuffer(par,edge6,elem,6*nlev+1)
 
     ! compute averaging weights for RK+LF (tstep_type=1) timestepping:
     allocate(ur_weights(qsplit))
@@ -119,11 +114,6 @@ contains
     real (kind=real_kind) :: dt2, time, dt_vis, x, eta_ave_w
     real (kind=real_kind) :: itertol,a1,a2,a3,a4,a5,a6,ahat1,ahat2
     real (kind=real_kind) :: ahat3,ahat4,ahat5,ahat6,dhat1,dhat2,dhat3,dhat4
-    real (kind=real_kind) :: statesave(nets:nete,np,np,nlevp,6)
-    real (kind=real_kind) :: statesave0(nets:nete,np,np,nlevp,6)
-    real (kind=real_kind) :: statesave2(nets:nete,np,np,nlevp,6)
-    real (kind=real_kind) :: statesave3(nets:nete,np,np,nlevp,6)
-
     real (kind=real_kind) ::  gamma,delta
 
     integer :: ie,nm1,n0,np1,nstep,qsplit_stage,k, qn0
@@ -179,17 +169,14 @@ contains
     if (tstep_type==1) then 
        ! RK2                                                                                                              
        ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))                                               
-       call t_startf("RK2_timestep")                                                                                      
        call compute_andor_apply_rhs(np1,n0,n0,qn0,dt/2,elem,hvcoord,hybrid,&                                              
             deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)                                                      
        ! leapfrog:  u(dt) = u(0) + dt RHS(dt/2)     (store in u(np1))                                                     
        call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&                                               
             deriv,nets,nete,.false.,eta_ave_w,1.d0,1.d0,1.d0)                                                             
-       call t_stopf("RK2_timestep")   
     else if (tstep_type==5) then
        ! Ullrich 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
        ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
-       call t_startf("U3-5stage_timestep")
        call compute_andor_apply_rhs(nm1,n0,n0,qn0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,1.d0,1.d0)
        ! u2 = u0 + dt/5 RHS(u1)
@@ -219,10 +206,8 @@ contains
             deriv,nets,nete,.false.,3*eta_ave_w/4,1.d0,1.d0,1.d0)
        ! final method is the same as:
        ! u5 = u0 +  dt/4 RHS(u0)) + 3dt/4 RHS(u4)
-       call t_stopf("U3-5stage_timestep")  
 !=========================================================================================
     elseif (tstep_type == 6) then  ! IMEX-KG243
-      call t_startf("IMEX-KG243_timestep")
 
       a1 = 1./4.
       a2 = 1./3.
@@ -277,10 +262,8 @@ contains
 
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 
-      call t_stopf("IMEX-KG243_timestep")
 !==============================================================================================
     elseif (tstep_type == 7) then 
-      call t_startf("IMEX-KG254_timestep")
 
       max_itercnt_perstep = 0
       max_itererr_perstep = 0.0
@@ -359,7 +342,6 @@ contains
 
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 
-      call t_stopf("IMEX-KG254_timestep")
     else
        call abortmp('ERROR: bad choice of tstep_type')
     endif
@@ -373,11 +355,11 @@ contains
     ! for consistency, dt_vis = t-1 - t*, so this is timestep method dependent
     ! forward-in-time, hypervis applied to dp3d
     if (hypervis_order == 2 .and. nu>0) &
-         call advance_hypervis(edge6,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
+         call advance_hypervis(elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
 
 
     ! warning: advance_physical_vis currently requires levels that are equally spaced in z
-    if (dcmip16_mu>0) call advance_physical_vis(edge6,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt,dcmip16_mu_s,dcmip16_mu)
+    if (dcmip16_mu>0) call advance_physical_vis(elem,hvcoord,hybrid,deriv,np1,nets,nete,dt,dcmip16_mu_s,dcmip16_mu)
 
     call t_stopf('prim_advance_exp')
   end subroutine prim_advance_exp
@@ -511,7 +493,7 @@ contains
 
 
 
-  subroutine advance_hypervis(edgebuf,elem,hvcoord,hybrid,deriv,nt,nets,nete,dt2,eta_ave_w)
+  subroutine advance_hypervis(elem,hvcoord,hybrid,deriv,nt,nets,nete,dt2,eta_ave_w)
   !
   !  take one timestep of:
   !          u(:,:,:,np) = u(:,:,:,np) +  dt2*nu*laplacian**order ( u )
@@ -524,7 +506,6 @@ contains
 
   type (hybrid_t)      , intent(in) :: hybrid
   type (element_t)     , intent(inout), target :: elem(:)
-  type (EdgeBuffer_t)  , intent(inout) :: edgebuf
   type (derivative_t)  , intent(in) :: deriv
   type (hvcoord_t), intent(in)      :: hvcoord
 
@@ -534,7 +515,7 @@ contains
   ! local
   real (kind=real_kind) :: eta_ave_w  ! weighting for mean flux terms
   real (kind=real_kind) :: nu_scale_top
-  integer :: k2,k,kptr,i,j,ie,ic,nt
+  integer :: k2,k,kptr,i,j,ie,ic,nt,nlyr_tot,ssize
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens
   real (kind=real_kind), dimension(np,np,nlev,4,nets:nete)      :: stens  ! dp3d,theta,w,phi
 
@@ -560,8 +541,15 @@ contains
 
   call t_startf('advance_hypervis')
 
-
   dt=dt2/hypervis_subcycle
+
+  if (theta_hydrostatic_mode) then
+     nlyr_tot=4*nlev        ! dont bother to dss w_i and phinh_i
+     ssize=2*nlev
+  else
+     nlyr_tot=6*nlev  ! total amount of data for DSS
+     ssize=4*nlev
+  endif
   
   do k=1,nlev
      exner0(k) = (hvcoord%etam(k)*hvcoord%ps0/p0 )**kappa
@@ -623,7 +611,7 @@ contains
         enddo
      enddo
      
-     call biharmonic_wk_theta(elem,stens,vtens,deriv,edge6,hybrid,nt,nets,nete)
+     call biharmonic_wk_theta(elem,stens,vtens,deriv,edge_g,hybrid,nt,nets,nete)
      
      do ie=nets,nete
         
@@ -672,21 +660,21 @@ contains
 
            enddo
 
-           kptr=0;      call edgeVpack(edgebuf,vtens(:,:,:,:,ie),2*nlev,kptr,ie)
-           kptr=2*nlev; call edgeVpack(edgebuf,stens(:,:,:,:,ie),4*nlev,kptr,ie)
+           kptr=0;      call edgeVpack_nlyr(edge_g,elem(ie)%desc,vtens(:,:,:,:,ie),2*nlev,kptr,nlyr_tot)
+           kptr=2*nlev; call edgeVpack_nlyr(edge_g,elem(ie)%desc,stens(:,:,:,:,ie),ssize,kptr,nlyr_tot)
 
         enddo
 
         call t_startf('ahdp_bexchV2')
-        call bndry_exchangeV(hybrid,edgebuf)
+        call bndry_exchangeV(hybrid,edge_g)
         call t_stopf('ahdp_bexchV2')
 
         do ie=nets,nete
 
            kptr=0
-           call edgeVunpack(edgebuf, vtens(:,:,:,:,ie), 2*nlev, kptr, ie)
+           call edgeVunpack_nlyr(edge_g,elem(ie)%desc,vtens(:,:,:,:,ie),2*nlev,kptr,nlyr_tot)
            kptr=2*nlev
-           call edgeVunpack(edgebuf, stens(:,:,:,:,ie), 4*nlev, kptr, ie)
+           call edgeVunpack_nlyr(edge_g,elem(ie)%desc,stens(:,:,:,:,ie),ssize,kptr,nlyr_tot)
 
 
            ! apply inverse mass matrix, accumulate tendencies
@@ -801,7 +789,7 @@ contains
 
 
 
-  subroutine advance_physical_vis(edgebuf,elem,hvcoord,hybrid,deriv,nt,nets,nete,dt,mu_s,mu)
+  subroutine advance_physical_vis(elem,hvcoord,hybrid,deriv,nt,nets,nete,dt,mu_s,mu)
   !
   !  take one timestep of of physical viscosity (single laplace operator) for
   !  all state variables in both horizontal and vertical
@@ -816,7 +804,6 @@ contains
 
   type (hybrid_t)      , intent(in) :: hybrid
   type (element_t)     , intent(inout), target :: elem(:)
-  type (EdgeBuffer_t)  , intent(inout) :: edgebuf
   type (derivative_t)  , intent(in) :: deriv
   type (hvcoord_t), intent(in)      :: hvcoord
 
@@ -895,20 +882,20 @@ contains
      enddo
 
      kptr=0
-     call edgeVpack(edgebuf,vtens(:,:,:,:,ie),2*nlev,kptr,ie)
+     call edgeVpack_nlyr(edge_g,elem(ie)%desc,vtens(:,:,:,:,ie),2*nlev,kptr,6*nlev)
      kptr=2*nlev
-     call edgeVpack(edgebuf,stens(:,:,:,:,ie),4*nlev,kptr,ie)
+     call edgeVpack_nlyr(edge_g,elem(ie)%desc,stens(:,:,:,:,ie),4*nlev,kptr,6*nlev)
      
   enddo
 
-  call bndry_exchangeV(hybrid,edgebuf)
+  call bndry_exchangeV(hybrid,edge_g)
   
   do ie=nets,nete
      
      kptr=0
-     call edgeVunpack(edgebuf, vtens(:,:,:,:,ie), 2*nlev, kptr, ie)
+     call edgeVunpack_nlyr(edge_g,elem(ie)%desc,vtens(:,:,:,:,ie),2*nlev,kptr,6*nlev)
      kptr=2*nlev
-     call edgeVunpack(edgebuf, stens(:,:,:,:,ie), 4*nlev, kptr, ie)
+     call edgeVunpack_nlyr(edge_g,elem(ie)%desc,stens(:,:,:,:,ie),4*nlev,kptr,6*nlev)
      
      ! apply inverse mass matrix, accumulate tendencies
      do k=1,nlev
@@ -1039,12 +1026,19 @@ contains
   real (kind=real_kind) ::  vtemp(np,np,2,nlev)       ! generic gradient storage
   real (kind=real_kind), dimension(np,np) :: sdot_sum ! temporary field
   real (kind=real_kind) ::  v1,v2,w,d_eta_dot_dpdn_dn
-  integer :: i,j,k,kptr,ie
+  integer :: i,j,k,kptr,ie, nlyr_tot
 
 
   real (kind=real_kind) ::  wtemp(np,np,nelemd)
 
   call t_startf('compute_andor_apply_rhs')
+
+  if (theta_hydrostatic_mode) then
+     nlyr_tot=4*nlev        ! dont bother to dss w_i and phinh_i
+  else
+     nlyr_tot=5*nlev+nlevp  ! total amount of data for DSS
+  endif
+     
 
   do ie=nets,nete
      if (.not. theta_hydrostatic_mode) then
@@ -1492,33 +1486,37 @@ contains
 
 
      kptr=0
-     call edgeVpack(edge6, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr, ie)
+     call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,nlyr_tot)
+     kptr=kptr+2*nlev
+     call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr, nlyr_tot)
      kptr=kptr+nlev
-     call edgeVpack(edge6, elem(ie)%state%theta_dp_cp(:,:,:,np1),nlev,kptr,ie)
-     kptr=kptr+nlev
-     call edgeVpack(edge6, elem(ie)%state%w_i(:,:,:,np1),nlevp,kptr,ie)
-     kptr=kptr+nlevp
-     call edgeVpack(edge6, elem(ie)%state%phinh_i(:,:,:,np1),nlev,kptr,ie)
-     kptr=kptr+nlev
-     call edgeVpack(edge6, elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,ie)
+     call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%theta_dp_cp(:,:,:,np1),nlev,kptr,nlyr_tot)
+     if (.not. theta_hydrostatic_mode) then
+        kptr=kptr+nlev
+        call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%w_i(:,:,:,np1),nlevp,kptr,nlyr_tot)
+        kptr=kptr+nlevp
+        call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%phinh_i(:,:,:,np1),nlev,kptr,nlyr_tot)
+     endif
+
    end do ! end do for the ie=nets,nete loop
 
   call t_startf('caar_bexchV')
-  call bndry_exchangeV(hybrid,edge6)
+  call bndry_exchangeV(hybrid,edge_g)
   call t_stopf('caar_bexchV')
 
   do ie=nets,nete
      kptr=0
-     call edgeVunpack(edge6, elem(ie)%state%dp3d(:,:,:,np1), nlev, kptr, ie)
+     call edgeVunpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,nlyr_tot)
+     kptr=kptr+2*nlev
+     call edgeVunpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,nlyr_tot)
      kptr=kptr+nlev
-     call edgeVunpack(edge6, elem(ie)%state%theta_dp_cp(:,:,:,np1), nlev, kptr, ie)
-     kptr=kptr+nlev
-     call edgeVunpack(edge6, elem(ie)%state%w_i(:,:,:,np1), nlevp, kptr, ie)
-     kptr=kptr+nlevp
-     call edgeVunpack(edge6, elem(ie)%state%phinh_i(:,:,:,np1), nlev, kptr, ie)
-     kptr=kptr+nlev
-     call edgeVunpack(edge6, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, ie)
-
+     call edgeVunpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%theta_dp_cp(:,:,:,np1),nlev,kptr,nlyr_tot)
+     if (.not. theta_hydrostatic_mode) then
+        kptr=kptr+nlev
+        call edgeVunpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%w_i(:,:,:,np1),nlevp,kptr,nlyr_tot)
+        kptr=kptr+nlevp
+        call edgeVunpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%phinh_i(:,:,:,np1),nlev,kptr,nlyr_tot)
+     endif
       
      ! ====================================================
      ! Scale tendencies by inverse mass matrix

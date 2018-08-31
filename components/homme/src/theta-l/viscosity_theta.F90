@@ -18,10 +18,10 @@ use parallel_mod, only : parallel_t
 use element_mod, only : element_t
 use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
 use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
-use edge_mod, only : edgevpack, edgevunpack
+use edge_mod, only : edgevpack_nlyr, edgevunpack_nlyr
 
 use bndry_mod, only : bndry_exchangev
-use control_mod, only : hypervis_scaling, nu, nu_div
+use control_mod, only : hypervis_scaling, nu, nu_div, theta_hydrostatic_mode
 use perf_mod, only: t_startf, t_stopf
 
 implicit none
@@ -52,13 +52,22 @@ type (EdgeBuffer_t)  , intent(inout) :: edgebuf  ! initialized for 5 vars
 type (derivative_t)  , intent(in) :: deriv
 
 ! local
-integer :: i,j,k,kptr,ie
+integer :: i,j,k,kptr,ie,nlyr_tot,ssize
 real (kind=real_kind), dimension(:,:), pointer :: rspheremv
 real (kind=real_kind), dimension(np,np) :: tmp
 real (kind=real_kind), dimension(np,np) :: tmp2
 real (kind=real_kind), dimension(np,np,2) :: v
 real (kind=real_kind) :: nu_ratio1, nu_ratio2
 logical var_coef1
+
+if (theta_hydrostatic_mode) then
+   nlyr_tot=4*nlev        ! dont bother to dss w_i and phinh_i
+   ssize=2*nlev
+else
+   nlyr_tot=6*nlev  ! total amount of data for DSS
+   ssize=4*nlev
+endif
+
 
    !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
    !so tensor is only used on second call to laplace_sphere_wk
@@ -103,9 +112,9 @@ logical var_coef1
               var_coef=var_coef1,nu_ratio=nu_ratio1)
       enddo
       kptr=0
-      call edgeVpack(edgebuf, vtens(1,1,1,1,ie),2*nlev,kptr,ie)
+      call edgeVpack_nlyr(edgebuf,elem(ie)%desc,vtens(1,1,1,1,ie),2*nlev,kptr,nlyr_tot)
       kptr=2*nlev
-      call edgeVpack(edgebuf, stens(1,1,1,1,ie),4*nlev,kptr,ie)
+      call edgeVpack_nlyr(edgebuf,elem(ie)%desc,stens(1,1,1,1,ie),ssize,kptr,nlyr_tot)
    enddo
    
    call t_startf('biwkdp3d_bexchV')
@@ -116,9 +125,9 @@ logical var_coef1
       rspheremv     => elem(ie)%rspheremp(:,:)
       
       kptr=0
-      call edgeVunpack(edgebuf, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
+      call edgeVunpack_nlyr(edgebuf,elem(ie)%desc,vtens(1,1,1,1,ie),2*nlev,kptr,nlyr_tot)
       kptr=2*nlev
-      call edgeVunpack(edgebuf, stens(1,1,1,1,ie), 4*nlev, kptr, ie)
+      call edgeVunpack_nlyr(edgebuf,elem(ie)%desc,stens(1,1,1,1,ie),ssize,kptr,nlyr_tot)
 
 
       
