@@ -1,1 +1,1 @@
-seq_diag_mct.F90
+../../mct/main/seq_diag_mct.F90

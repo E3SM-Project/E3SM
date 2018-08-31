@@ -1,1 +1,1 @@
-seq_frac_mct.F90
+../../mct/main/seq_frac_mct.F90

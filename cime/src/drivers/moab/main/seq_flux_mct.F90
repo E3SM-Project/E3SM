@@ -1,1 +1,1 @@
-seq_flux_mct.F90
+../../mct/main/seq_flux_mct.F90

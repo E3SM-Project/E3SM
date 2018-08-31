@@ -1,1 +1,1 @@
-seq_rest_mod.F90
+../../mct/main/seq_rest_mod.F90

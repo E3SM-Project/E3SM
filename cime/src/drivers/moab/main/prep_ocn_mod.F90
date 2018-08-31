@@ -1,1 +1,1 @@
-prep_ocn_mod.F90
+../../mct/main/prep_ocn_mod.F90

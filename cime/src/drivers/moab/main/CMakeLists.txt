@@ -1,1 +1,1 @@
-CMakeLists.txt
+../../mct/main/CMakeLists.txt
