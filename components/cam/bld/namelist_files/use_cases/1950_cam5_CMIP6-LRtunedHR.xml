@@ -98,10 +98,6 @@
 <cldfrc_dp1          >0.039D0</cldfrc_dp1>
 <clubb_C8            >4.73D0</clubb_C8>
 <clubb_C14           >1.75D0</clubb_C14>
-<se_nsplit           >6</se_nsplit>
-<rsplit              >2</rsplit>
-<qsplit              >1</qsplit>
-<cld_macmic_num_steps>3</cld_macmic_num_steps>
 
 <!-- Energy fixer options -->
 <l_ieflx_fix> .true.</l_ieflx_fix>
