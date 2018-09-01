@@ -31,7 +31,7 @@ module element_state
 
     real (kind=real_kind) :: v   (np,np,2,nlev,timelevels)        ! horizontal velocity 
     real (kind=real_kind) :: w_i (np,np,nlevp,timelevels)         ! vertical velocity at interfaces
-    real (kind=real_kind) :: theta_dp_cp(np,np,nlev,timelevels)   ! potential temperature                       
+    real (kind=real_kind) :: vtheta_dp(np,np,nlev,timelevels)     ! virtual potential temperature (mass)
     real (kind=real_kind) :: phinh_i(np,np,nlevp,timelevels)      ! geopotential used by NH model at interfaces
     real (kind=real_kind) :: dp3d(np,np,nlev,timelevels)          ! delta p on levels                  
     real (kind=real_kind) :: ps_v(np,np,timelevels)               ! surface pressure                   

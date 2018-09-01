@@ -17,7 +17,7 @@ module prim_state_mod
   use hybvcoord_mod,    only: hvcoord_t
   use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
   use element_mod,      only: element_t
-  use element_ops,      only: get_field, get_kappa_star, get_phi
+  use element_ops,      only: get_field, get_phi
   use element_state,    only: max_itercnt_perstep,max_itererr_perstep,avg_itercnt
   use eos,              only: get_pnh_and_exner
   use viscosity_mod,    only: compute_zeta_C0
@@ -221,7 +221,7 @@ contains
        vmax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,2,:,n0))
        wmax_local(ie)    = MAXVAL(elem(ie)%state%w_i(:,:,:,n0))
        phimax_local(ie)  = MAXVAL(dphi(:,:,:))
-       thetamax_local(ie) = MAXVAL(elem(ie)%state%theta_dp_cp(:,:,:,n0)) 
+       thetamax_local(ie) = MAXVAL(elem(ie)%state%vtheta_dp(:,:,:,n0)) 
 
        fumax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,1,:))
        fvmax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,2,:))
@@ -239,7 +239,7 @@ contains
        umin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,2,:,n0))
        Wmin_local(ie)    = MINVAL(elem(ie)%state%w_i(:,:,:,n0))
-       thetamin_local(ie) = MINVAL(elem(ie)%state%theta_dp_cp(:,:,:,n0))
+       thetamin_local(ie) = MINVAL(elem(ie)%state%vtheta_dp(:,:,:,n0))
        phimin_local(ie)  = MINVAL(dphi)
 
        Fumin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,1,:))
@@ -260,7 +260,7 @@ contains
        usum_local(ie)    = SUM(elem(ie)%state%v(:,:,1,:,n0))
        vsum_local(ie)    = SUM(elem(ie)%state%v(:,:,2,:,n0))
        Wsum_local(ie)    = SUM(elem(ie)%state%w_i(:,:,:,n0))
-       thetasum_local(ie)= SUM(elem(ie)%state%theta_dp_cp(:,:,:,n0))
+       thetasum_local(ie)= SUM(elem(ie)%state%vtheta_dp(:,:,:,n0))
        phisum_local(ie)  = SUM(dphi)
        Fusum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,1,:))
        Fvsum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,2,:))
@@ -821,7 +821,6 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp) 
     real (kind=real_kind) :: exner(np,np,nlev)  ! exner nh pressure
     real (kind=real_kind) :: pnh_i(np,np,nlevp)  ! pressure on intefaces
-    real (kind=real_kind) :: kappa_star(np,np,nlev)  ! exner nh pressure
 
 
     integer:: tmp, t1_qdp   ! the time pointers for Qdp are not the same
@@ -838,9 +837,8 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
           dpt1(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t1)
        enddo
-       call get_kappa_star(kappa_star,elem(ie)%state%Q(:,:,:,1))
-       call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,t1),dpt1,&
-            elem(ie)%state%phinh_i(:,:,:,t1),kappa_star,pnh,exner,dpnh_dp_i,pnh_i)
+       call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,t1),dpt1,&
+            elem(ie)%state%phinh_i(:,:,:,t1),pnh,exner,dpnh_dp_i,pnh_i)
        call get_phi(elem(ie),phi,phi_i,hvcoord,t1,t1_qdp)
 
    
@@ -878,7 +876,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        suml2=0
        do k=1,nlev
           suml(:,:)=suml(:,:)+&
-                elem(ie)%state%theta_dp_cp(:,:,k,t1)*exner(:,:,k) 
+                Cp*elem(ie)%state%vtheta_dp(:,:,k,t1)*exner(:,:,k) 
           suml2(:,:) = suml2(:,:)+(phi_i(:,:,k+1)-phi_i(:,:,k))*pnh(:,:,k)
        enddo
        elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:) +&

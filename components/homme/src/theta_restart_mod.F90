@@ -85,7 +85,7 @@ contains
 #endif
     call AddStateField(RestDesc,len,type)
 
-    len = SIZE(state%theta_dp_cp)
+    len = SIZE(state%vtheta_dp)
     call AddStateField(RestDesc,len,type)
 
     len = SIZE(state%ps_v)
