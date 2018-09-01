@@ -1085,6 +1085,9 @@ contains
            phi_i(:,:,k)=phi_i(:,:,k+1)+&
                 kappa_star(:,:,k)*theta_dp_cp(:,:,k)*exner(:,:,k)/pnh(:,:,k)
         enddo
+        ! in H mode, ignore w contibutions to KE term
+        ! set to zero so H and NH can share code and reduce if statements
+        elem(ie)%state%w_i(:,:,:,n0)=0   
      endif
 
      do k=1,nlev
