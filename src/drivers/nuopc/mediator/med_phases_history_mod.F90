@@ -11,6 +11,7 @@ module med_phases_history_mod
 
   character(*)      , parameter :: u_FILE_u  = __FILE__
   type(ESMF_Alarm)              :: AlarmHist
+  type(ESMF_Alarm)              :: AlarmHistAvg
 
   public  :: med_phases_history_write
 
@@ -70,15 +71,16 @@ contains
     character(len=64)       :: currtimestr
     character(len=64)       :: nexttimestr
     type(InternalState)     :: is_local
+    character(CS)           :: histavg_option ! Histavg option units
     integer                 :: i,j,m,n,n1,ncnt
     integer                 :: mpicom, iam
-    integer(IN)             :: start_ymd      ! Starting date YYYYMMDD
-    integer(IN)             :: start_tod      ! Starting time-of-day (s)
-    integer(IN)             :: nx,ny          ! global grid size
-    integer(IN)             :: yr,mon,day,sec ! time units
+    integer                 :: start_ymd      ! Starting date YYYYMMDD
+    integer                 :: start_tod      ! Starting time-of-day (s)
+    integer                 :: nx,ny          ! global grid size
+    integer                 :: yr,mon,day,sec ! time units
     real(r8)                :: rval           ! real tmp value
     real(r8)                :: dayssince      ! Time interval since reference time
-    integer(IN)             :: fk             ! index
+    integer                 :: fk             ! index
     character(CL)           :: time_units     ! units of time variable
     character(CL)           :: calendar       ! calendar type
     character(CL)           :: case_name      ! case name
@@ -86,7 +88,7 @@ contains
     character(CS)           :: cpl_inst_tag   ! instance tag
     character(CL)           :: cvalue         ! attribute string
     character(CL)           :: freq_option    ! freq_option setting (ndays, nsteps, etc)
-    integer(IN)             :: freq_n         ! freq_n setting relative to freq_option
+    integer                 :: freq_n         ! freq_n setting relative to freq_option
     logical                 :: alarmIsOn      ! generic alarm flag
     real(r8)                :: tbnds(2)       ! CF1.0 time bounds
     logical                 :: whead,wdata    ! for writing restart/history cdf files
@@ -178,10 +180,12 @@ contains
          // trim(med_io_date2yyyymmdd(start_ymd)) // ' ' // med_io_sec2hms(start_tod)
 
     !---------------------------------------
-    ! --- History Alarm
+    ! --- History Alarms
     !---------------------------------------
 
     if (.not. ESMF_AlarmIsCreated(AlarmHist, rc=rc)) then
+ 
+       ! Set instantaneous history output alarm
        call NUOPC_CompAttributeGet(gcomp, name='history_option', value=cvalue, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        freq_option = cvalue
@@ -195,9 +199,31 @@ contains
 
        call shr_nuopc_time_alarmInit(clock, AlarmHist, option=freq_option, opt_n=freq_n, &
             RefTime=RefTime, alarmname='history', rc=rc)
+
+       ! Set average history output alarm 
+       call NUOPC_CompAttributeGet(gcomp, name="histavg_option", value=histavg_option, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       freq_option = cvalue
+
+       call NUOPC_CompAttributeGet(gcomp, name="histavg_n", value=cvalue, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       read(cvalue,*) freq_n
+
+       call shr_nuopc_time_alarmInit(clock, AlarmHistAvg, option=freq_option, opt_n=freq_n, &
+            RefTime=RefTime, alarmname='history_avg', rc=rc)
+
     endif
 
     if (ESMF_AlarmIsRinging(AlarmHist, rc=rc)) then
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       alarmIsOn = .true.
+       call ESMF_AlarmRingerOff( AlarmHist, rc=rc )
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       alarmisOn = .false.
+    endif
+
+    if (.not. alarmIsOn .and. ESMF_AlarmIsRinging(AlarmHistAvg, rc=rc)) then
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        alarmIsOn = .true.
        call ESMF_AlarmRingerOff( AlarmHist, rc=rc )

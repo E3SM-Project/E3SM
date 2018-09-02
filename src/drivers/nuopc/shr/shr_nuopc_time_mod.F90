@@ -1,13 +1,21 @@
 module shr_nuopc_time_mod
 
   ! !USES:
-  use ESMF                  , only : ESMF_Time, ESMF_Clock, ESMF_Calendar, ESMF_Alarm 
-  use ESMF                  , only : ESMF_TimeGet, ESMF_TimeSet
+  use ESMF                  , only : ESMF_GridComp, ESMF_GridCompGet, ESMF_GridCompSet
+  use ESMF                  , only : ESMF_Clock, ESMF_ClockCreate, ESMF_ClockGet, ESMF_ClockSet
+  use ESMF                  , only : ESMF_ClockAdvance
+  use ESMF                  , only : ESMF_Alarm, ESMF_AlarmCreate, ESMF_AlarmGet
+  use ESMF                  , only : ESMF_Calendar, ESMF_CalKind_Flag, ESMF_CalendarCreate
+  use ESMF                  , only : ESMF_CALKIND_NOLEAP, ESMF_CALKIND_GREGORIAN
+  use ESMF                  , only : ESMF_Time, ESMF_TimeGet, ESMF_TimeSet
   use ESMF                  , only : ESMF_TimeInterval, ESMF_TimeIntervalSet
-  use ESMF                  , only : ESMF_ClockGet, ESMF_AlarmCreate 
-  use ESMF                  , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO
-  use ESMF                  , only : operator(<), operator(/=), operator(+), operator(-), operator(*) , operator(>=)
+  use ESMF                  , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_FAILURE
+  use ESMF                  , only : ESMF_VM, ESMF_VMGet, ESMF_VMBroadcast
+  use ESMF                  , only : operator(<), operator(/=), operator(+)
+  use ESMF                  , only : operator(-), operator(*) , operator(>=)
   use ESMF                  , only : operator(<=), operator(>), operator(==)
+  use NUOPC                 , only : NUOPC_CompAttributeGet
+  use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
   use shr_nuopc_utils_mod   , only : shr_nuopc_abort
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
 
@@ -15,6 +23,7 @@ module shr_nuopc_time_mod
   private    ! default private
 
   public  :: shr_nuopc_time_alarmInit  ! initialize an alarm
+  public  :: shr_nuopc_time_clockInit  ! initialize driver clock
 
   private :: shr_nuopc_time_timeInit
   private :: shr_nuopc_time_date2ymd
@@ -50,6 +59,426 @@ module shr_nuopc_time_mod
 
 !===============================================================================
 contains
+!===============================================================================
+
+  subroutine shr_nuopc_time_clockInit(gcomp, logunit, rc)
+
+    use med_constants_mod     , only : CL, CS
+    use shr_file_mod          , only : shr_file_getUnit, shr_file_freeUnit
+    use netcdf                , only : nf90_open, nf90_nowrite, nf90_noerr
+    use netcdf                , only : nf90_inq_varid, nf90_get_var, nf90_close
+    use shr_cal_mod           , only : shr_cal_noleap, shr_cal_gregorian, shr_cal_calendarname
+    use shr_mpi_mod           , only : shr_mpi_bcast
+
+    ! input/output variables
+    type(ESMF_GridComp)  :: gcomp
+    integer, intent(in)  :: logunit  
+    integer, intent(out) :: rc
+
+    ! local variables
+    type(ESMF_Clock)        :: clock
+    type(ESMF_VM)           :: vm
+    type(ESMF_Time)         :: StartTime           ! Start time
+    type(ESMF_Time)         :: RefTime             ! Reference time
+    type(ESMF_Time)         :: CurrTime            ! Current time
+    type(ESMF_Time)         :: StopTime            ! Stop time
+    type(ESMF_Time)         :: StopTime1           ! Stop time
+    type(ESMF_Time)         :: StopTime2           ! Stop time
+    type(ESMF_Time)         :: Clocktime           ! Loop time
+    type(ESMF_TimeInterval) :: TimeStep            ! Clock time-step
+    type(ESMF_Calendar)     :: calendar            ! esmf calendar
+    type(ESMF_CalKind_Flag) :: caltype             ! esmf calendar type
+    type(ESMF_Alarm)        :: alarm_stop          ! alarm
+    type(ESMF_Alarm)        :: alarm_datestop      ! alarm
+    integer                 :: status, ncid, varid ! netcdf stuff
+    integer                 :: ref_ymd             ! Reference date (YYYYMMDD)
+    integer                 :: ref_tod             ! Reference time of day (seconds)
+    integer                 :: start_ymd           ! Start date (YYYYMMDD)
+    integer                 :: start_tod           ! Start time of day (seconds)
+    integer                 :: curr_ymd            ! Current ymd (YYYYMMDD)
+    integer                 :: curr_tod            ! Current tod (seconds)
+    integer                 :: stop_n              ! Number until stop
+    integer                 :: stop_ymd            ! Stop date (YYYYMMDD)
+    integer                 :: stop_tod            ! Stop time-of-day
+    character(CS)           :: stop_option         ! Stop option units
+    integer                 :: atm_cpl_dt          ! Atmosphere coupling interval
+    integer                 :: lnd_cpl_dt          ! Land coupling interval
+    integer                 :: ice_cpl_dt          ! Sea-Ice coupling interval
+    integer                 :: ocn_cpl_dt          ! Ocean coupling interval
+    integer                 :: glc_cpl_dt          ! Glc coupling interval
+    integer                 :: rof_cpl_dt          ! Runoff coupling interval
+    integer                 :: wav_cpl_dt          ! Wav coupling interval
+    integer                 :: esp_cpl_dt          ! Esp coupling interval
+    character(CS)           :: glc_avg_period      ! Glc avering coupling period
+    logical                 :: read_restart
+    character(len=CL)       :: restart_file
+    character(len=CL)       :: restart_pfile
+    character(len=CL)       :: cvalue
+    integer                 :: dtime_drv           ! time-step to use
+    integer                 :: yr, mon, day        ! Year, month, day as integers
+    integer                 :: iam                 ! local pet
+    integer                 :: unitn               ! unit number
+    integer                 :: ierr                ! Return code
+    character(CL)           :: tmpstr              ! temporary
+    character(CS)           :: calendar_name       ! Calendar name
+    integer                 :: mpicom              ! MPI communicator
+    integer                 :: dbrc
+    character(len=*), parameter :: subname = '(shr_nuopc_time_clockInit): '
+    !-------------------------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    if (dbug_flag > 5) then
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
+    endif
+
+    call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_VMGet(vm, mpiCommunicator=mpicom, localPet=iam, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !---------------------------------------------------------------------------
+    ! Create the driver calendar
+    !---------------------------------------------------------------------------
+
+    call NUOPC_CompAttributeGet(gcomp, name="calendar", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    calendar_name = shr_cal_calendarName(cvalue)
+
+    if ( trim(calendar_name) == trim(shr_cal_noleap)) then
+       caltype = ESMF_CALKIND_NOLEAP
+    else if ( trim(calendar_name) == trim(shr_cal_gregorian)) then
+       caltype = ESMF_CALKIND_GREGORIAN
+    else
+       call ESMF_LogWrite(trim(subname)//': unrecognized ESMF calendar specified: '//&
+            trim(calendar_name), ESMF_LOGMSG_INFO, rc=rc)
+       rc = ESMF_FAILURE
+       return
+    end if
+
+    call ESMF_LogWrite(trim(subname)//': driver calendar is : '// trim(calendar_name), &
+         ESMF_LOGMSG_INFO, rc=rc)
+
+    calendar = ESMF_CalendarCreate( name='CMEPS_'//trim(calendar_name), &
+         calkindflag=caltype, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !---------------------------------------------------------------------------
+    ! Determine clock start time, reference time and current time
+    !---------------------------------------------------------------------------
+
+    curr_ymd = 0
+    curr_tod = 0
+
+    call NUOPC_CompAttributeGet(gcomp, name="start_ymd", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) start_ymd
+    call NUOPC_CompAttributeGet(gcomp, name="start_tod", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) start_tod
+
+    call NUOPC_CompAttributeGet(gcomp, name="ref_ymd", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) ref_ymd
+    call NUOPC_CompAttributeGet(gcomp, name="ref_tod", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) ref_tod
+
+    call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) read_restart
+      
+    if (read_restart) then
+
+       if (iam == 0) then
+          call NUOPC_CompAttributeGet(gcomp, name='driver_restart_file', value=restart_file, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          !--- read rpointer if restart_file is set to str_undefined ---
+          if (trim(restart_file) == 'str_undefined') then
+
+             ! Error check on restart_pfile
+             call NUOPC_CompAttributeGet(gcomp, name="driver_restart_pfile", value=restart_pfile, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+             if ( len_trim(restart_pfile) == 0 ) then
+                rc = ESMF_FAILURE
+                call ESMF_LogWrite(trim(subname)//' ERROR driver_restart_pfile must be defined', &
+                     ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
+                return
+             end if
+
+             unitn = shr_file_getUnit()
+             call ESMF_LogWrite(trim(subname)//" read rpointer file = "//trim(restart_pfile), &
+                  ESMF_LOGMSG_INFO, rc=dbrc)
+             open(unitn, file=restart_pfile, form='FORMATTED', status='old',iostat=ierr)
+             if (ierr < 0) then
+                rc = ESMF_FAILURE
+                call ESMF_LogWrite(trim(subname)//' ERROR rpointer file open returns error', &
+                     ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
+                return
+             end if
+             read(unitn,'(a)', iostat=ierr) restart_file
+             if (ierr < 0) then
+                rc = ESMF_FAILURE
+                call ESMF_LogWrite(trim(subname)//' ERROR rpointer file read returns error', &
+                     ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
+                return
+             end if
+             close(unitn)
+             call shr_file_freeUnit( unitn )
+             call ESMF_LogWrite(trim(subname)//" read driver restart from file = "//trim(restart_file), &
+                  ESMF_LOGMSG_INFO, rc=dbrc)
+          endif
+
+          ! use netcdf here since it's serial
+          status = nf90_open(restart_file, NF90_NOWRITE, ncid)
+          if (status /= nf90_NoErr) call shr_nuopc_abort(trim(subname)//' ERROR: nf90_open')
+          status = nf90_inq_varid(ncid, 'start_ymd', varid)
+          if (status /= nf90_NoErr) call shr_nuopc_abort(trim(subname)//' ERROR: nf90_inq_varid start_ymd')
+          status = nf90_get_var(ncid, varid, start_ymd)
+          if (status /= nf90_NoErr) call shr_nuopc_abort(trim(subname)//' ERROR: nf90_get_var start_ymd')
+          status = nf90_inq_varid(ncid, 'start_tod', varid)
+          if (status /= nf90_NoErr) call shr_nuopc_abort(trim(subname)//' ERROR: nf90_inq_varid start_tod')
+          status = nf90_get_var(ncid, varid, start_tod)
+          if (status /= nf90_NoErr) call shr_nuopc_abort(trim(subname)//' ERROR: nf90_get_var start_tod')
+          status = nf90_inq_varid(ncid, 'ref_ymd', varid)
+          if (status /= nf90_NoErr) call shr_nuopc_abort(trim(subname)//' ERROR: nf90_inq_varid ref_ymd')
+          status = nf90_get_var(ncid, varid, ref_ymd)
+          if (status /= nf90_NoErr) call shr_nuopc_abort(trim(subname)//' ERROR: nf90_get_var ref_ymd')
+          status = nf90_inq_varid(ncid, 'ref_tod', varid)
+          if (status /= nf90_NoErr) call shr_nuopc_abort(trim(subname)//' ERROR: nf90_inq_varid ref_tod')
+          status = nf90_get_var(ncid, varid, ref_tod)
+          if (status /= nf90_NoErr) call shr_nuopc_abort(trim(subname)//' ERROR: nf90_get_var ref_tod')
+          status = nf90_inq_varid(ncid, 'curr_ymd', varid)
+          if (status /= nf90_NoErr) call shr_nuopc_abort(trim(subname)//' ERROR: nf90_inq_varid curr_ymd')
+          status = nf90_get_var(ncid, varid, curr_ymd)
+          if (status /= nf90_NoErr) call shr_nuopc_abort(trim(subname)//' ERROR: nf90_get_var curr_ymd')
+          status = nf90_inq_varid(ncid, 'curr_tod', varid)
+          if (status /= nf90_NoErr) call shr_nuopc_abort(trim(subname)//' ERROR: nf90_inq_varid curr_tod')
+          status = nf90_get_var(ncid, varid, curr_tod)
+          if (status /= nf90_NoErr) call shr_nuopc_abort(trim(subname)//' ERROR: nf90_get_var curr_tod')
+          status = nf90_close(ncid)
+          if (status /= nf90_NoErr) call shr_nuopc_abort(trim(subname)//' ERROR: nf90_close')
+
+          write(tmpstr,*) trim(subname)//" read start_ymd = ",start_ymd
+          call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+          write(tmpstr,*) trim(subname)//" read start_tod = ",start_tod
+          call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+          write(tmpstr,*) trim(subname)//" read ref_ymd   = ",ref_ymd
+          call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+          write(tmpstr,*) trim(subname)//" read ref_tod   = ",ref_tod
+          call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+          write(tmpstr,*) trim(subname)//" read curr_ymd  = ",curr_ymd
+          call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+          write(tmpstr,*) trim(subname)//" read curr_tod  = ",curr_tod
+          call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+
+       endif
+
+       call shr_mpi_bcast(start_ymd, mpicom)
+       call shr_mpi_bcast(start_tod, mpicom)
+       call shr_mpi_bcast(  ref_ymd, mpicom)
+       call shr_mpi_bcast(  ref_tod, mpicom)
+       call shr_mpi_bcast( curr_ymd, mpicom)
+       call shr_mpi_bcast( curr_tod, mpicom)
+
+    end if
+
+    if ( ref_ymd == 0 ) then
+       ref_ymd = start_ymd
+       ref_tod = start_tod
+    endif
+    if ( curr_ymd == 0 ) then
+       curr_ymd = start_ymd
+       curr_tod = start_tod
+    endif
+
+    ! Determine start time
+    call shr_nuopc_time_date2ymd(start_ymd, yr, mon, day)
+    call ESMF_TimeSet( StartTime, yy=yr, mm=mon, dd=day, s=start_tod, calendar=calendar, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    write(tmpstr,'(i10)') start_ymd
+    call ESMF_LogWrite(trim(subname)//': driver start_ymd: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+    write(logunit,*)   trim(subname)//': driver start_ymd: '// trim(tmpstr)
+    write(tmpstr,'(i10)') start_tod
+    call ESMF_LogWrite(trim(subname)//': driver start_tod: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+    write(logunit,*)   trim(subname)//': driver start_tod: '// trim(tmpstr)
+
+    ! Determine reference time
+    call shr_nuopc_time_date2ymd(ref_ymd, yr, mon, day)
+    call ESMF_TimeSet( RefTime, yy=yr, mm=mon, dd=day, s=ref_tod, calendar=calendar, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    write(tmpstr,'(i10)') ref_ymd
+    call ESMF_LogWrite(trim(subname)//': driver ref_ymd: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+    write(logunit,*)   trim(subname)//': driver ref_ymd: '// trim(tmpstr)
+    write(tmpstr,'(i10)') ref_tod
+    call ESMF_LogWrite(trim(subname)//': driver ref_tod: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+    write(logunit,*)   trim(subname)//': driver ref_tod: '// trim(tmpstr)
+
+    ! Determine current time
+    call shr_nuopc_time_date2ymd(curr_ymd, yr, mon, day)
+    call ESMF_TimeSet( CurrTime, yy=yr, mm=mon, dd=day, s=curr_tod, calendar=calendar, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    write(tmpstr,'(i10)') curr_ymd
+    call ESMF_LogWrite(trim(subname)//': driver curr_ymd: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+    write(logunit,*)   trim(subname)//': driver curr_ymd: '// trim(tmpstr)
+    write(tmpstr,'(i10)') curr_tod
+    call ESMF_LogWrite(trim(subname)//': driver curr_tod: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+    write(logunit,*)   trim(subname)//': driver curr_tod: '// trim(tmpstr)
+
+    !---------------------------------------------------------------------------
+    ! Determine driver clock timestep
+    !---------------------------------------------------------------------------
+
+    call NUOPC_CompAttributeGet(gcomp, name="atm_cpl_dt", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) atm_cpl_dt
+
+    call NUOPC_CompAttributeGet(gcomp, name="lnd_cpl_dt", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) lnd_cpl_dt
+
+    call NUOPC_CompAttributeGet(gcomp, name="ice_cpl_dt", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) ice_cpl_dt
+
+    call NUOPC_CompAttributeGet(gcomp, name="ocn_cpl_dt", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) ocn_cpl_dt
+
+    call NUOPC_CompAttributeGet(gcomp, name="glc_cpl_dt", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) glc_cpl_dt
+
+    call NUOPC_CompAttributeGet(gcomp, name="rof_cpl_dt", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) rof_cpl_dt
+
+    call NUOPC_CompAttributeGet(gcomp, name="wav_cpl_dt", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) wav_cpl_dt
+
+    call NUOPC_CompAttributeGet(gcomp, name="glc_avg_period", value=glc_avg_period, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) glc_avg_period
+
+    ! TODO: for now - this is not in the namelist_definition_drv.xml file
+    ! call NUOPC_CompAttributeGet(gcomp, name="esp_cpl_dt", value=cvalue, rc=rc)
+    ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    ! read(cvalue,*) esp_cpl_dt
+    esp_cpl_dt = 9999
+
+    dtime_drv = 9999
+    dtime_drv = min(dtime_drv, atm_cpl_dt)
+    dtime_drv = min(dtime_drv, lnd_cpl_dt)
+    dtime_drv = min(dtime_drv, ocn_cpl_dt)
+    dtime_drv = min(dtime_drv, ice_cpl_dt)
+    dtime_drv = min(dtime_drv, glc_cpl_dt)
+    dtime_drv = min(dtime_drv, rof_cpl_dt)
+    dtime_drv = min(dtime_drv, wav_cpl_dt)
+    dtime_drv = min(dtime_drv, esp_cpl_dt)
+
+    write(tmpstr,'(i10)') dtime_drv
+    call ESMF_LogWrite(trim(subname)//': driver time interval is : '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
+    write(logunit,*)   trim(subname)//': driver time interval is : '// trim(tmpstr)
+
+    call ESMF_TimeIntervalSet( TimeStep, s=dtime_drv, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !---------------------------------------------------------------------------
+    ! Create the driver clock with an artificial stop time
+    !---------------------------------------------------------------------------
+
+    clock = ESMF_ClockCreate(TimeStep, StartTime, refTime=RefTime, name='ESMF Driver Clock', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Set the driver gridded component clock to the created clock
+    call ESMF_GridCompSet(gcomp, clock=clock, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !-------------------------------
+    ! Set driver clock stop time
+    !-------------------------------
+
+    call NUOPC_CompAttributeGet(gcomp, name="stop_option", value=stop_option, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call NUOPC_CompAttributeGet(gcomp, name="stop_n", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) stop_n
+    call NUOPC_CompAttributeGet(gcomp, name="stop_ymd", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) stop_ymd
+    call NUOPC_CompAttributeGet(gcomp, name="stop_tod", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) stop_tod
+
+    if ( stop_ymd < 0) then
+       stop_ymd = 99990101
+       stop_tod = 0
+    endif
+
+    write(tmpstr,'(i10)') stop_ymd
+    call ESMF_LogWrite(trim(subname)//': driver stop_ymd: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+    write(logunit,*)   trim(subname)//': driver stop_ymd: '// trim(tmpstr)
+    write(tmpstr,'(i10)') stop_tod
+    call ESMF_LogWrite(trim(subname)//': driver stop_tod: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+    write(logunit,*)   trim(subname)//': driver stop_tod: '// trim(tmpstr)
+
+    call shr_nuopc_time_alarmInit(clock, &
+         alarm   = alarm_stop,           &
+         option  = stop_option,          &
+         opt_n   = stop_n,               &
+         opt_ymd = stop_ymd,             &
+         opt_tod = stop_tod,             &
+         RefTime = CurrTime,             &
+         alarmname = 'alarm_stop', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call shr_nuopc_time_alarmInit(clock, &
+         alarm     = alarm_datestop,     &
+         option    = optDate,            &
+         opt_ymd   = stop_ymd,           &
+         opt_tod   = stop_tod,           &
+         RefTime   = StartTime,          &
+         alarmname = 'alarm_datestop', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_AlarmGet(alarm_stop, RingTime=StopTime1, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_AlarmGet(alarm_datestop, RingTime=StopTime2, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+   if (StopTime2 < StopTime1) then
+      call ESMF_ClockSet(clock, StopTime=StopTime2, rc=rc)
+      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+   else
+      call ESMF_ClockSet(clock, StopTime=StopTime1, rc=rc)
+      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+   endif
+
+    !---------------------------------------------------------------------------
+    ! Advance driver clock to the current time (in case of a restart)
+    !---------------------------------------------------------------------------
+
+    call ESMF_ClockGet(clock, currTime=clocktime, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    do while( clocktime < CurrTime)
+       call ESMF_ClockAdvance( clock, rc=rc )
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call ESMF_ClockGet( clock, currTime=clocktime, rc=rc )
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end do
+
+ end subroutine shr_nuopc_time_clockInit
+
 !===============================================================================
 
   subroutine shr_nuopc_time_alarmInit( clock, alarm, option, &
@@ -109,7 +538,7 @@ contains
     call ESMF_TimeGet(CurrTime, yy=nyy, mm=nmm, dd=ndd, s=nsec, rc=rc )
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! initial guess of next alarm, this will be updated below 
+    ! initial guess of next alarm, this will be updated below
     if (present(RefTime)) then
        NextAlarm = RefTime
     else

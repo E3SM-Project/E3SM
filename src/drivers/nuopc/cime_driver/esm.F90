@@ -5,25 +5,14 @@ module ESM
   !-----------------------------------------------------------------------------
 
   use ESMF                  , only : ESMF_Clock
-  use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-
   use shr_kind_mod          , only : SHR_KIND_R8, SHR_KIND_CS, SHR_KIND_CL
   use shr_log_mod           , only : shr_log_Unit, shr_log_Level
+  use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
   use med_internalstate_mod , only : logunit, loglevel
 
   implicit none
   private
-
-  type(ESMF_Clock), target :: EClock_d
-  type(ESMF_Clock), target :: EClock_a
-  type(ESMF_Clock), target :: EClock_l
-  type(ESMF_Clock), target :: EClock_o
-  type(ESMF_Clock), target :: EClock_i
-  type(ESMF_Clock), target :: EClock_g
-  type(ESMF_Clock), target :: EClock_r
-  type(ESMF_Clock), target :: EClock_w
-  type(ESMF_Clock), target :: EClock_e
 
   character(len=512)             :: msgstr
   logical                        :: mastertask ! master processor for driver gcomp
@@ -51,6 +40,7 @@ module ESM
 !================================================================================
 
   subroutine SetServices(driver, rc)
+
     use NUOPC        , only : NUOPC_CompDerive, NUOPC_CompSpecialize, NUOPC_CompSetInternalEntryPoint
     use NUOPC_Driver , only : driver_routine_SS             => SetServices
     use NUOPC_Driver , only : driver_label_SetModelServices => label_SetModelServices
@@ -110,6 +100,7 @@ module ESM
   !================================================================================
 
   subroutine SetModelServices(driver, rc)
+
     use ESMF                  , only : ESMF_GridComp, ESMF_VM, ESMF_Config, ESMF_VMBarrier
     use ESMF                  , only : ESMF_GridCompGet, ESMF_VMGet, ESMF_ConfigGetAttribute
     use ESMF                  , only : ESMF_ConfigGetLen, ESMF_RC_NOT_VALID, ESMF_LogFoundAllocError
@@ -122,7 +113,6 @@ module ESM
     use seq_comm_mct          , only : seq_comm_init, seq_comm_printcomms, seq_comm_petlist
     use seq_comm_mct          , only : seq_comm_getinfo => seq_comm_setptrs
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
-    use shr_pio_mod           , only : shr_pio_init1
     use shr_file_mod          , only : shr_file_getlogunit, shr_file_setLogunit
     use shr_file_mod          , only : shr_file_getlogLevel, shr_file_setLogLevel
     use shr_file_mod          , only : shr_file_getUnit, shr_file_freeUnit
@@ -134,14 +124,16 @@ module ESM
     use wav_comp_nuopc        , only : WAVSetServices => SetServices
     use rof_comp_nuopc        , only : ROFSetServices => SetServices
     use glc_comp_nuopc        , only : GLCSetServices => SetServices
+    use shr_pio_mod           , only : shr_pio_init1
     use pio                   , only : pio_file_is_open, pio_closefile, file_desc_t
-    use seq_timemgr_mod       , only : seq_timemgr_clockInit
+    use shr_nuopc_time_mod    , only : shr_nuopc_time_clockInit
     use mpi                   , only : MPI_COMM_WORLD
 
     type(ESMF_GridComp)    :: driver
     integer, intent(out)   :: rc
 
     ! local variables
+    type(ESMF_Clock)       :: clock
     type(ESMF_VM)          :: vm
     type(ESMF_GridComp)    :: child
     type(ESMF_Config)      :: config
@@ -227,7 +219,7 @@ module ESM
     call CheckAttributes(driver, rc)
 
     !-------------------------------------------
-    ! Initialize communicators and PIO 
+    ! Initialize communicators and PIO
     !-------------------------------------------
 
     ! Call first phase of pio initialization The call to pio_init1
@@ -251,10 +243,14 @@ module ESM
     ! MCT which is still needed for some models
     call seq_comm_init(global_comm, nlfilename)
 
-    !Create logfile for mediator
+    !-------------------------------------------
+    ! Create logfile for mediator
+    !-------------------------------------------
+
     !TODO: this is not directing things correctly - not sure why
     call ReadAttributes(driver, config, "MED_modelio::", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     call seq_comm_getinfo(CPLID, iamroot=iamroot_med)
     if (iamroot_med) then
        call NUOPC_CompAttributeGet(driver, name="diro", value=diro, rc=rc)
@@ -277,30 +273,27 @@ module ESM
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     if (iamroot_med) call seq_comm_printcomms()
 
-    ! Now finish the pio initialization (this calls shr_pio_init2)
-    call InitPIO(driver, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     !-------------------------------------------
     ! Perform restarts if appropriate
     !-------------------------------------------
 
-    call InitRestart(driver, rc)
+    ! finish the pio initialization (this calls shr_pio_init2)
+    call InitPIO(driver, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    !-------------------------------------------
-    ! Initialize driver clock
-    !-------------------------------------------
-
-    ! TODO: get rid of all other clocks other than driver clock - and maybe esp clock?
-    call seq_timemgr_clockInit(driver, logunit, &
-         EClock_d, EClock_a, EClock_l, EClock_o, &
-         EClock_i, Eclock_g, Eclock_r, Eclock_w, Eclock_e, rc=rc)
+    call InitRestart(driver, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (pio_file_is_open(pioid)) then
        call pio_closefile(pioid)
     end if
+
+    !-------------------------------------------
+    ! Initialize driver clock
+    !-------------------------------------------
+
+    call shr_nuopc_time_clockInit(driver, logunit, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !-------------------------------------------
     ! Initialize other attributes (after initializing driver clock)
@@ -534,18 +527,6 @@ module ESM
     !--------
     deallocate(compLabels)
 
-    !--------
-    ! Set baseline clock
-    !--------
-
-    call ESMF_GridCompSet(driver, clock=Eclock_o, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (mastertask) then
-       call shr_nuopc_methods_Clock_TimePrint(Eclock_o,subname//'EClock_base',rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
-
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
@@ -569,7 +550,6 @@ module ESM
     use NUOPC                 , only : NUOPC_FreeFormatCreate
     use NUOPC_Driver          , only : NUOPC_DriverIngestRunSequence, NUOPC_DriverSetRunSequence
     use NUOPC_Driver          , only : NUOPC_DriverPrint
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
 
     type(ESMF_GridComp)  :: driver
     integer, intent(out) :: rc
@@ -988,8 +968,11 @@ module ESM
   !================================================================================
 
   subroutine InitAttributes(driver, rc)
+
     use shr_sys_mod      , only : shr_sys_abort
-    use ESMF             , only : ESMF_GridComp, ESMF_SUCCESS, ESMF_LogWrite, ESMF_LogSetError, ESMF_LOGMSG_INFO
+    use ESMF             , only : ESMF_GridComp, ESMF_GridCompGet
+    use ESMF             , only : ESMF_Clock, ESMF_ClockGet, ESMF_Time, ESMF_TimeGet
+    use ESMF             , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LogSetError, ESMF_LOGMSG_INFO
     use ESMF             , only : ESMF_RC_NOT_VALID
     use NUOPC            , only : NUOPC_CompAttributeGet, NUOPC_CompAttributeSet, NUOPC_CompAttributeAdd
     use shr_orb_mod      , only : shr_orb_params, SHR_ORB_UNDEF_INT, SHR_ORB_UNDEF_REAL
@@ -1001,7 +984,6 @@ module ESM
     use shr_const_mod    , only : shr_const_mwwv, shr_const_mwdair
     use shr_frz_mod      , only : shr_frz_freezetemp_init
     use shr_reprosum_mod , only : shr_reprosum_setopts
-    use seq_timemgr_mod  , only : seq_timemgr_EClockGetData
     use shr_wv_sat_mod   , only : shr_wv_sat_set_default, shr_wv_sat_init
     use shr_wv_sat_mod   , only : shr_wv_sat_make_tables, ShrWVSatTableSpec
     use shr_wv_sat_mod   , only : shr_wv_sat_get_scheme_idx, shr_wv_sat_valid_idx
@@ -1012,20 +994,17 @@ module ESM
     integer             , intent(out)   :: rc                    ! return code
 
     ! local variables
+    type(ESMF_Clock)                :: clock
+    type(ESMF_Time)                 :: currTime
     character(SHR_KIND_CL)          :: errstring
     character(SHR_KIND_CL)          :: cvalue
-    integer                         :: mpicom_GLOID          ! MPI global communicator
     integer                         :: mpicom_OCNID          ! MPI ocn communicator for ensemble member 1
     logical                         :: iamroot_med           ! mediator masterproc
     logical                         :: drv_threading         ! driver threading control
     logical                         :: reprosum_use_ddpdd    ! setup reprosum, use ddpdd
     real(SHR_KIND_R8)               :: reprosum_diffmax      ! setup reprosum, set rel_diff_max
     logical                         :: reprosum_recompute    ! setup reprosum, recompute if tolerance exceeded
-    integer                         :: ymd                   ! Current date (YYYYMMDD)
     integer                         :: year                  ! Current date (YYYY)
-    integer                         :: month                 ! Current date (MM)
-    integer                         :: day                   ! Current date (DD)
-    integer                         :: tod                   ! Current time of day (seconds)
     character(SHR_KIND_CS)          :: tfreeze_option        ! Freezing point calculation
     character(SHR_KIND_CL)          :: orb_mode              ! orbital mode
     integer                         :: orb_iyear             ! orbital year
@@ -1171,8 +1150,15 @@ module ESM
 
     call seq_comm_getinfo(CPLID, iamroot=iamroot_med)
     if (trim(orb_mode) == trim(orb_variable_year)) then
-       call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd)
-       call shr_cal_date2ymd(ymd,year,month,day)
+       call ESMF_GridCompGet(driver, clock=clock, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call ESMF_ClockGet(clock, CurrTime=CurrTime, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call ESMF_TimeGet(CurrTime, yy=year, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
        orb_cyear = orb_iyear + (year - orb_iyear_align)
        call shr_orb_params(orb_cyear, orb_eccen, orb_obliq, orb_mvelp, &
                            orb_obliqr, orb_lambm0, orb_mvelpp, iamroot_med)
@@ -1211,13 +1197,14 @@ module ESM
     call NUOPC_CompAttributeSet(driver, name="orb_mvelpp", value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    !----------------------------------------------------------
-    ! Initialize atm/ocn flux info
-    !----------------------------------------------------------
+    ! TODO: need to update orbital parameters during run time - actually - each component needs to update its orbital
+    ! parameters to be consistent
 
     !----------------------------------------------------------
     ! Initialize water vapor info
     !----------------------------------------------------------
+
+    ! TODO: this does not seem to belong here - where should it go?
 
     call NUOPC_CompAttributeGet(driver, name="wv_sat_scheme", value=wv_sat_scheme, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
