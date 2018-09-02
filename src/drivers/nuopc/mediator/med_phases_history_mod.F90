@@ -184,7 +184,6 @@ contains
     !---------------------------------------
 
     if (.not. ESMF_AlarmIsCreated(AlarmHist, rc=rc)) then
- 
        ! Set instantaneous history output alarm
        call NUOPC_CompAttributeGet(gcomp, name='history_option', value=cvalue, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -199,19 +198,6 @@ contains
 
        call shr_nuopc_time_alarmInit(clock, AlarmHist, option=freq_option, opt_n=freq_n, &
             RefTime=RefTime, alarmname='history', rc=rc)
-
-       ! Set average history output alarm 
-       call NUOPC_CompAttributeGet(gcomp, name="histavg_option", value=histavg_option, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       freq_option = cvalue
-
-       call NUOPC_CompAttributeGet(gcomp, name="histavg_n", value=cvalue, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       read(cvalue,*) freq_n
-
-       call shr_nuopc_time_alarmInit(clock, AlarmHistAvg, option=freq_option, opt_n=freq_n, &
-            RefTime=RefTime, alarmname='history_avg', rc=rc)
-
     endif
 
     if (ESMF_AlarmIsRinging(AlarmHist, rc=rc)) then
@@ -223,14 +209,25 @@ contains
        alarmisOn = .false.
     endif
 
-    if (.not. alarmIsOn .and. ESMF_AlarmIsRinging(AlarmHistAvg, rc=rc)) then
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       alarmIsOn = .true.
-       call ESMF_AlarmRingerOff( AlarmHist, rc=rc )
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    else
-       alarmisOn = .false.
-    endif
+    ! Set average history output alarm TODO: fix the following
+    ! if (.not. ESMF_AlarmIsCreated(AlarmHistAvg, rc=rc)) then
+    !    call NUOPC_CompAttributeGet(gcomp, name="histavg_option", value=histavg_option, rc=rc)
+    !    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    !    freq_option = cvalue
+    !    call NUOPC_CompAttributeGet(gcomp, name="histavg_n", value=cvalue, rc=rc)
+    !    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    !    read(cvalue,*) freq_n
+    !    call shr_nuopc_time_alarmInit(clock, AlarmHistAvg, option=freq_option, opt_n=freq_n, &
+    !         RefTime=RefTime, alarmname='history_avg', rc=rc)
+    ! end if
+    ! if (ESMF_AlarmIsRinging(AlarmHistAvg, rc=rc)) then
+    !    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    !    alarmIsOn = .true.
+    !    call ESMF_AlarmRingerOff( AlarmHist, rc=rc )
+    !    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    ! else
+    !    alarmisOn = .false.
+    ! endif
 
     !---------------------------------------
     ! --- History File

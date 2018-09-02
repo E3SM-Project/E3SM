@@ -8,7 +8,7 @@ module shr_nuopc_time_mod
   use ESMF                  , only : ESMF_Calendar, ESMF_CalKind_Flag, ESMF_CalendarCreate
   use ESMF                  , only : ESMF_CALKIND_NOLEAP, ESMF_CALKIND_GREGORIAN
   use ESMF                  , only : ESMF_Time, ESMF_TimeGet, ESMF_TimeSet
-  use ESMF                  , only : ESMF_TimeInterval, ESMF_TimeIntervalSet
+  use ESMF                  , only : ESMF_TimeInterval, ESMF_TimeIntervalSet, ESMF_TimeIntervalGet
   use ESMF                  , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_FAILURE
   use ESMF                  , only : ESMF_VM, ESMF_VMGet, ESMF_VMBroadcast
   use ESMF                  , only : operator(<), operator(/=), operator(+)
@@ -394,8 +394,19 @@ contains
     ! Create the driver clock with an artificial stop time
     !---------------------------------------------------------------------------
 
+    ! Create the clock
     clock = ESMF_ClockCreate(TimeStep, StartTime, refTime=RefTime, name='ESMF Driver Clock', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Advance the clock to the current time (in case of a restart)
+    call ESMF_ClockGet(clock, currTime=clocktime, rc=rc )
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    do while( clocktime < CurrTime)
+       call ESMF_ClockAdvance( clock, rc=rc )
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_ClockGet( clock, currTime=clocktime, rc=rc )
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end do
 
     ! Set the driver gridded component clock to the created clock
     call ESMF_GridCompSet(gcomp, clock=clock, rc=rc)
@@ -416,12 +427,10 @@ contains
     call NUOPC_CompAttributeGet(gcomp, name="stop_tod", value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) stop_tod
-
     if ( stop_ymd < 0) then
        stop_ymd = 99990101
        stop_tod = 0
     endif
-
     write(tmpstr,'(i10)') stop_ymd
     call ESMF_LogWrite(trim(subname)//': driver stop_ymd: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
     write(logunit,*)   trim(subname)//': driver stop_ymd: '// trim(tmpstr)
@@ -450,33 +459,17 @@ contains
 
     call ESMF_AlarmGet(alarm_stop, RingTime=StopTime1, rc=rc )
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     call ESMF_AlarmGet(alarm_datestop, RingTime=StopTime2, rc=rc )
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-   if (StopTime2 < StopTime1) then
-      call ESMF_ClockSet(clock, StopTime=StopTime2, rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-   else
-      call ESMF_ClockSet(clock, StopTime=StopTime1, rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-   endif
-
-    !---------------------------------------------------------------------------
-    ! Advance driver clock to the current time (in case of a restart)
-    !---------------------------------------------------------------------------
-
-    call ESMF_ClockGet(clock, currTime=clocktime, rc=rc )
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    do while( clocktime < CurrTime)
-       call ESMF_ClockAdvance( clock, rc=rc )
+    if (StopTime2 < StopTime1) then
+       call ESMF_ClockSet(clock, StopTime=StopTime2, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call ESMF_ClockGet( clock, currTime=clocktime, rc=rc )
+    else
+       call ESMF_ClockSet(clock, StopTime=StopTime1, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    end do
-
+    endif
+    
  end subroutine shr_nuopc_time_clockInit
 
 !===============================================================================
@@ -511,12 +504,12 @@ contains
     integer                 :: lymd             ! local ymd
     integer                 :: ltod             ! local tod
     integer                 :: cyy,cmm,cdd,csec ! time info
-    integer                 :: nyy,nmm,ndd,nsec ! time info
     character(len=64)       :: lalarmname       ! local alarm name
     logical                 :: update_nextalarm ! update next alarm
     type(ESMF_Time)         :: CurrTime         ! Current Time
     type(ESMF_Time)         :: NextAlarm        ! Next restart alarm time
     type(ESMF_TimeInterval) :: AlarmInterval    ! Alarm interval
+    integer                 :: sec
     character(len=*), parameter :: subname = '(shr_nuopc_time_alarmInit): '
     !-------------------------------------------------------------------------------
 
@@ -533,9 +526,6 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_TimeGet(CurrTime, yy=cyy, mm=cmm, dd=cdd, s=csec, rc=rc )
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_TimeGet(CurrTime, yy=nyy, mm=nmm, dd=ndd, s=nsec, rc=rc )
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! initial guess of next alarm, this will be updated below
@@ -790,7 +780,8 @@ contains
        enddo
     endif
 
-    alarm = ESMF_AlarmCreate( name=lalarmname, clock=clock, ringTime=NextAlarm, ringInterval=AlarmInterval, rc=rc)
+    alarm = ESMF_AlarmCreate( name=lalarmname, clock=clock, ringTime=NextAlarm, &
+         ringInterval=AlarmInterval, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine shr_nuopc_time_alarmInit
@@ -811,7 +802,7 @@ contains
     character(len=*)    , intent(in), optional :: desc ! description of time to set
     integer             , intent(in), optional :: logunit
 
-    ! local varaibles
+    ! local variables
     integer                     :: yr, mon, day ! Year, month, day as integers
     integer                     :: ltod         ! local tod
     character(len=256)          :: ldesc        ! local desc
