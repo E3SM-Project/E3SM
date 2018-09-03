@@ -2282,6 +2282,23 @@
   </entry>
 
   <!-- =========================== -->
+  <!-- group esmf_inparm           -->
+  <!-- =========================== -->
+
+  <entry id="esmf_logfile_kind" modify_via_xml="ESMF_LOGFILE_KIND">
+    <type>char</type>
+    <category>driver</category>
+    <group>esmf_inparm</group>
+    <valid_values>ESMF_LOGKIND_SINGLE,ESMF_LOGKIND_MULTI,ESMF_LOGKIND_MULTI_ON_ERROR,ESMF_LOGKIND_NONE</valid_values>
+    <desc>
+      Specify type of ESMF logging
+    </desc>
+    <values>
+      <value>$ESMF_LOGFILE_KIND</value>
+    </values>
+  </entry>
+
+  <!-- =========================== -->
   <!-- group seq_cime_pes          -->
   <!-- =========================== -->
 

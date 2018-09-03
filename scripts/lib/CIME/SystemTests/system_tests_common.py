@@ -177,6 +177,10 @@ class SystemTestsCommon(object):
         if success and get_model() == "e3sm":
             save_test_time(self._case.get_value("BASELINE_ROOT"), self._casebaseid, time_taken)
 
+        if get_model() == "cesm" and self._case.get_value("GENERATE_BASELINE"):
+            baseline_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
+            generate_teststatus(self._caseroot, baseline_dir)
+
         # We return success if the run phase worked; memleaks, diffs will not be taken into account
         # with this return value.
         return success
@@ -482,7 +486,7 @@ class SystemTestsCommon(object):
             append_testlog(comments)
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
             baseline_name = self._case.get_value("BASECMP_CASE")
-            ts_comments = (os.path.dirname(baseline_name) + ": " + comments) if "\n" not in comments else os.path.dirname(baseline_name)
+            ts_comments = os.path.dirname(baseline_name) + ": " + get_ts_synopsis(comments)
             self._test_status.set_status(BASELINE_PHASE, status, comments=ts_comments)
 
     def _generate_baseline(self):
