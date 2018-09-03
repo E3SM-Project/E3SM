@@ -10,4 +10,4 @@ TEST_CASE("Shoc", "stub") {
   REQUIRE(val == 42);
 }
 
-}  // namespace
+} // empty namespace

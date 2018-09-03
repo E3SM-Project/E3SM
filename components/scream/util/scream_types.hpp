@@ -11,6 +11,6 @@ typedef float Real;
 
 typedef int Int;
 
-}  // namespace scream
+} // namespace scream
 
 #endif
