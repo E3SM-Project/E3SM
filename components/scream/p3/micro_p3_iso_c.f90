@@ -19,12 +19,11 @@ contains
     write (string, '(a,i1,a1)') prefix, sizeof(s), C_NULL_CHAR
   end subroutine append_precision
 
-  subroutine p3_init_c(lookup_file_dir_c, ncat, info) bind(c)
+  subroutine p3_init_c(lookup_file_dir_c, info) bind(c)
     use array_io_mod
     use micro_p3, only: p3_init_a, p3_init_b, p3_set_tables, p3_get_tables
 
     type(c_ptr), intent(in) :: lookup_file_dir_c
-    integer(kind=c_int), value, intent(in) :: ncat
     integer(kind=c_int), intent(out) :: info
 
     real(kind=c_real), dimension(150), target :: mu_r_table
@@ -37,7 +36,7 @@ contains
 
     call c_f_pointer(lookup_file_dir_c, lookup_file_dir)
     len = index(lookup_file_dir, C_NULL_CHAR) - 1
-    call p3_init_a(lookup_file_dir(1:len), ncat)
+    call p3_init_a(lookup_file_dir(1:len))
 
     info = 0
     ok = .false.

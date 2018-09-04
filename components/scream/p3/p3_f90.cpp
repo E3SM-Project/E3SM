@@ -5,7 +5,7 @@
 using scream::Real;
 using scream::Int;
 extern "C" {
-  void p3_init_c(const char** lookup_file_dir, int ncat, int* info);
+  void p3_init_c(const char** lookup_file_dir, int* info);
   void p3_main_c(Real* qc, Real* nc, Real* qr, Real* nr, Real* th_old, Real* th,
                  Real* qv_old, Real* qv, Real dt, Real* qitot, Real* qirim,
                  Real* nitot, Real* birim, Real* ssat, Real* uzpl, Real* pres,
@@ -100,7 +100,7 @@ FortranDataIterator::getfield (Int i) const {
 void p3_init () {
   static const char* dir = ".";
   Int info;
-  p3_init_c(&dir, 1, &info);
+  p3_init_c(&dir, &info);
   scream_throw_if(info != 0, "p3_init_c returned info " << info);
 }
 

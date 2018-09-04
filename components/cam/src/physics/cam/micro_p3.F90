@@ -83,7 +83,7 @@
 
 !==================================================================================================!
 
- SUBROUTINE p3_init(lookup_file_dir,nCat)
+ SUBROUTINE p3_init(lookup_file_dir)
 !------------------------------------------------------------------------------------------!
 ! This subroutine initializes all physical constants and parameters needed by the P3       !
 ! scheme, including reading in two lookup table files and creating a third.                !
@@ -94,9 +94,8 @@
 
 ! Passed arguments:
  character*(*), intent(in)    :: lookup_file_dir                !directory of the lookup tables
- integer,       intent(in)    :: nCat                           !number of free ice categories
 
- call p3_init_a(lookup_file_dir, nCat)
+ call p3_init_a(lookup_file_dir)
  call p3_init_b()
 
  print*, '   P3_INIT DONE.'
@@ -104,10 +103,9 @@
 
  END SUBROUTINE p3_init
 
- SUBROUTINE p3_init_a(lookup_file_dir,nCat)
+ SUBROUTINE p3_init_a(lookup_file_dir)
 ! Passed arguments:
  character*(*), intent(in)    :: lookup_file_dir                !directory of the lookup tables
- integer,       intent(in)    :: nCat                           !number of free ice categories
 
  character(len=16), parameter :: version_p3  = '2.8.2'          !version number of P3 package
  character(len=1024)          :: version_header_table1          !version number from header, table 1
@@ -308,13 +306,7 @@
 ! hm add fix to prevent end-of-file error in nested runs, 3/28/14
  close(10)
 
-! read in ice-ice collision lookup table
-
-!------------------------------------------------------------------------------------------!
-
-!                   *** used for multicategory only ***
-
-!PMC nCat deleted...
+!PMC: deleted ice-ice collision lookup table here b/c only used for nCat>1.
  
     itabcolli1 = 0.
     itabcolli2 = 0.
