@@ -1676,10 +1676,12 @@
 			<var name="longWaveHeatFluxUp"/>
 			<var name="longWaveHeatFluxDown"/>
 			<var name="seaIceHeatFlux"/>
+			<var name="icebergHeatFlux"/>
 			<var name="shortWaveHeatFlux"/>
 			<var name="evaporationFlux"/>
 			<var name="seaIceSalinityFlux"/>
 			<var name="seaIceFreshWaterFlux"/>
+			<var name="icebergFreshWaterFlux"/>
 			<var name="riverRunoffFlux"/>
 			<var name="iceRunoffFlux"/>
 			<var name="rainFlux"/>
@@ -2742,6 +2744,10 @@
 			 description="Sea ice heat flux at cell centers from coupler. Positive into the ocean."
 			 packages="activeTracersBulkRestoringPKG"
 		/>
+		<var name="icebergHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+			 description="Iceberg heat flux at cell centers from coupler. Positive into the ocean."
+			 packages="activeTracersBulkRestoringPKG"
+		/>
 		<var name="shortWaveHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
 			 description="Short wave flux at cell centers from coupler. Positive into the ocean."
 			 packages="activeTracersBulkRestoringPKG;ecosysTracersPKG"
@@ -2759,6 +2765,10 @@
 		/>
 		<var name="seaIceFreshWaterFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from sea ice at cell centers from coupler. Positive into the ocean."
+			 packages="thicknessBulkPKG"
+		/>
+		<var name="icebergFreshWaterFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from iceberg melt at cell centers from coupler. Positive into the ocean."
 			 packages="thicknessBulkPKG"
 		/>
 		<var name="riverRunoffFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
