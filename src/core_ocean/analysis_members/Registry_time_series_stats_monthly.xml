@@ -150,10 +150,12 @@
 			<var name="longWaveHeatFluxUp"/>
 			<var name="longWaveHeatFluxDown"/>
 			<var name="seaIceHeatFlux"/>
+			<var name="icebergHeatFlux"/>
 			<var name="shortWaveHeatFlux"/>
 			<var name="evaporationFlux"/>
 			<var name="seaIceSalinityFlux"/>
 			<var name="seaIceFreshWaterFlux"/>
+			<var name="icebergFreshWaterFlux"/>
 			<var name="riverRunoffFlux"/>
 			<var name="iceRunoffFlux"/>
 			<var name="rainFlux"/>
