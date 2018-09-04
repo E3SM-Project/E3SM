@@ -67,9 +67,9 @@ MODULE MICRO_P3
   ! physical and mathematical constants
   real, private  :: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,bimm,aimm,rin,mi0,nccnst,  &
        eci,eri,bcn,cpw,e0,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
-       inv_rhow,qsmall,nsmall,bsmall,zsmall,cp,g,rd,rv,ep_2,inv_cp,mw,osm,   &
+       inv_rhow,qsmall,nsmall,bsmall,cp,g,rd,rv,ep_2,inv_cp,mw,osm,   &
        vi,epsm,rhoa,map,ma,rr,bact,inv_rm1,inv_rm2,sig1,nanew1,f11,f21,sig2, &
-       nanew2,f12,f22,pi,thrd,sxth,piov3,piov6,diff_nucthrs,rho_rimeMin,     &
+       nanew2,f12,f22,pi,thrd,sxth,piov3,piov6,rho_rimeMin,     &
        rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
        clbfact_dep
 
@@ -174,7 +174,6 @@ contains
     qsmall = 1.e-14
     nsmall = 1.e-16
     bsmall = qsmall*inv_rho_rimeMax
-    !zsmall = 1.e-35
 
     ! Bigg (1953)
     !bimm   = 100.
@@ -986,7 +985,7 @@ contains
              call find_lookupTable_indices_1a(dumi,dumjj,dumii,dumzz,dum1,dum4,          &
                   dum5,dum6,isize,rimsize,densize,zsize,                &
                   qitot(i,k),nitot(i,k),qirim(i,k),      &
-                  999.,rhop)
+                  rhop)
              !qirim(i,k),zitot(i,k),rhop)
              call find_lookupTable_indices_1b(dumj,dum3,rcollsize,qr(i,k),nr(i,k))
 
@@ -2161,7 +2160,7 @@ contains
                    call find_lookupTable_indices_1a(dumi,dumjj,dumii,dumzz,dum1,dum4,    &
                         dum5,dum6,isize,rimsize,densize,zsize,          &
                         qitot(i,k),nitot(i,k),qirim(i,k),&
-                        999.,rhop)
+                        rhop)
                    call access_lookup_table(dumjj,dumii,dumi, 1,dum1,dum4,dum5,f1pr01)
                    call access_lookup_table(dumjj,dumii,dumi, 2,dum1,dum4,dum5,f1pr02)
                    call access_lookup_table(dumjj,dumii,dumi, 7,dum1,dum4,dum5,f1pr09)
@@ -2374,7 +2373,7 @@ contains
              call find_lookupTable_indices_1a(dumi,dumjj,dumii,dumzz,dum1,dum4,          &
                   dum5,dum6,isize,rimsize,densize,zsize,     &
                   qitot(i,k),nitot(i,k),           &
-                  qirim(i,k),999.,rhop)
+                  qirim(i,k),rhop)
              !qirim(i,k),zitot(i,k),rhop)
 
              call access_lookup_table(dumjj,dumii,dumi, 2,dum1,dum4,dum5,f1pr02)
@@ -3332,7 +3331,7 @@ contains
 
   subroutine find_lookupTable_indices_1a(dumi,dumjj,dumii,dumzz,dum1,dum4,dum5,dum6,      &
        isize,rimsize,densize,zsize,qitot,nitot,qirim,   &
-       zitot_in,rhop)
+       rhop)
 
     !------------------------------------------------------------------------------------------!
     ! Finds indices in 3D ice (only) lookup table
@@ -3344,10 +3343,7 @@ contains
     integer, intent(out) :: dumi,dumjj,dumii,dumzz
     real,    intent(out) :: dum1,dum4,dum5,dum6
     integer, intent(in)  :: isize,rimsize,densize,zsize
-    real,    intent(in)  :: qitot,nitot,qirim,zitot_in,rhop
-
-    ! local variables:
-    real                 :: zitot
+    real,    intent(in)  :: qitot,nitot,qirim,rhop
 
     !------------------------------------------------------------------------------------------!
 
@@ -3387,16 +3383,6 @@ contains
     dumjj = max(1,dumjj)
     dumjj = min(densize-1,dumjj)
 
-    ! ! ! find index for moment6
-    ! !             !invert equation in lookupTable1 that assigns mom6 values
-    ! !             !to index values:  Z_value = 9.**i_Z*1.e-30
-    ! !              dum6  = (alog10(zitot)+30.)*1.04795
-    ! !              dumzz = int(dum6)
-    ! !              ! set limits
-    ! !              dum6  = min(dum6,real(zsize))
-    ! !              dum6  = max(dum6,1.)
-    ! !              dumzz = max(1,dumzz)
-    ! !              dumzz = min(zsize-1,dumzz)
     dum6  = -99
     dumzz = -99
 
