@@ -232,20 +232,18 @@ CONTAINS
        if (read_restart) then
           if (trim(rest_file) == trim(nullstr)) then
              if (my_task == master_task) then
-                write(logunit,F00) ' restart filename from rpointer'
+                write(logunit,F00) ' restart filename from rpointer = ',trim(rpfile)
                 call shr_sys_flush(logunit)
                 inquire(file=trim(rpfile)//trim(inst_suffix),exist=exists)
-                if (.not. exists) then
-                   write(logunit,F00) ' ERROR: rpointer file does not exist'
-                   call shr_sys_abort(trim(subname)//' ERROR: rpointer file missing')
-                end if
-                nu = shr_file_getUnit()
-                open(nu, file=trim(rpfile)//trim(inst_suffix), form='formatted')
-                read(nu,'(a)') rest_file
-                close(nu)
-                call shr_file_freeUnit(nu)
-                inquire(file=trim(rest_file),exist=exists)
-             end if
+                if (exists) then
+                   nu = shr_file_getUnit()
+                   open(nu, file=trim(rpfile)//trim(inst_suffix), form='formatted')
+                   read(nu,'(a)') rest_file
+                   close(nu)
+                   call shr_file_freeUnit(nu)
+                   inquire(file=trim(rest_file),exist=exists)
+                endif
+             endif
              call shr_mpi_bcast(rest_file,mpicom,'rest_file')
           else
              ! use namelist already read

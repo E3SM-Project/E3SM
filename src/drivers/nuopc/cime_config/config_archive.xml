@@ -1,0 +1,19 @@
+<components version="2.0">
+  <comp_archive_spec compname="drv" compclass="cpl">
+    <rest_file_extension>r</rest_file_extension>
+    <hist_file_extension>hi?\d*.*\.nc$</hist_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer>
+      <rpointer_file>rpointer$NINST_STRING.drv</rpointer_file>
+      <rpointer_content >$CASE.cpl$NINST_STRING.r.$DATENAME.nc</rpointer_content>
+    </rpointer>
+    <test_file_names>
+      <tfile disposition="move">cpl_0001.log.5548574.chadmin1.180228-124723.gz</tfile>
+      <tfile disposition="copy">casename.cpl.r.1976-01-01-00000.nc</tfile>
+      <tfile disposition="copy">rpointer.drv_0001</tfile>
+      <tfile disposition="copy">rpointer.drv</tfile>
+      <tfile disposition="ignore">casenamenot.cpl.r.1976-01-01-00000.nc</tfile>
+    </test_file_names>
+  </comp_archive_spec>
+
+</components>

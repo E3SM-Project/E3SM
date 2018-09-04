@@ -211,6 +211,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
         logger.info("You can now run './preview_run' to get more info on how your case will be run")
 
+        logger.info("You can now run './preview_run' to get more info on how your case will be run")
+
 ###############################################################################
 def case_setup(self, clean=False, test_mode=False, reset=False):
 ###############################################################################

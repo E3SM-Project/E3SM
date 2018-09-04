@@ -435,8 +435,12 @@ def wait_for_tests(test_paths,
                    cdash_project=E3SM_MAIN_CDASH,
                    cdash_build_group=CDASH_DEFAULT_BUILD_GROUP,
                    timeout=None,
+<<<<<<< HEAD
                    force_log_upload=False,
                    no_run=False):
+=======
+                   force_log_upload=False):
+>>>>>>> mvertens/clocks
 ###############################################################################
     # Set up signal handling, we want to print results before the program
     # is terminated

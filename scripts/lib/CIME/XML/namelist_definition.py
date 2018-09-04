@@ -260,7 +260,6 @@ class NamelistDefinition(EntryID):
         appear in the namelist (even for scalar variables, in which case the
         length of the list is always 1).
         """
-        name = name.lower()
         # Separate into a type, optional length, and optional size.
         type_, max_len, size = self.split_type_string(name)
         invalid = []

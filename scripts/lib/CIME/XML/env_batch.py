@@ -552,6 +552,7 @@ class EnvBatch(EnvBase):
         batch_env_flag = self.get_value("batch_env", subgroup=None)
         if not batch_env_flag:
             return run_args_str
+
         elif len(run_args_str) > 0:
             batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
             logger.info("batch_system: {}: ".format(batch_system))

@@ -71,6 +71,10 @@ using a fortran linker.
   <CPPDEFS>
     <append> -D$ENV{OS} </append>
     <append MODEL="pop"> -D_USE_FLOW_CONTROL </append>
+    <!-- This is not seem to be the right place for this, should be in a MOM6-specific place - RSD -->
+    <append MODEL="mom"> -DMOM6_CAP </append>
+    <!-- See if we can remove -DCESMCOUPLED below after MOM6 NUOPC cap is unified -->
+    <append> -DCESMCOUPLED </append>
   </CPPDEFS>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
 </compiler>
@@ -687,6 +691,9 @@ using a fortran linker.
     <append MPILIB="mvapich2"> -mkl=cluster </append>
   </SLIBS>
   <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">/fs/cgd/csm/tools/pFUnit/pFUnit3.2.8_hobart_Intel15.0.2_noMPI_noOpenMP</PFUNIT_PATH>
+  <FFLAGS>
+    <append MODEL="mom"> -r8 </append>
+  </FFLAGS>
 </compiler>
 
 <compiler MACH="hobart" COMPILER="nag">
@@ -1049,6 +1056,9 @@ using a fortran linker.
   <PFUNIT_PATH MPILIB="mpt" compile_threaded="true">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_MPI_openMP</PFUNIT_PATH>
   <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+  <FFLAGS>
+    <append MODEL="mom"> -r8 </append>
+  </FFLAGS>
 </compiler>
 
 <compiler MACH="laramie">
@@ -1192,6 +1202,16 @@ using a fortran linker.
   <CPPDEFS>
      <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
   </CPPDEFS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="theia">
+  <MPICC> mpiicc  </MPICC>
+  <MPICXX> mpiicpc </MPICXX>
+  <MPIFC> mpiifort </MPIFC>
+  <NETCDF_PATH>/apps/netcdf/4.3.0-intel</NETCDF_PATH>
+  <FFLAGS>
+    <append MODEL="mom"> -r8 </append>
+  </FFLAGS>
 </compiler>
 
 </config_compilers>
