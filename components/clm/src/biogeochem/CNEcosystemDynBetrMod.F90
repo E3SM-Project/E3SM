@@ -299,7 +299,6 @@ module CNEcosystemDynBetrMod
           call t_stopf('CNRootDyn')
        end if
 
-!       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'loc01')
        !--------------------------------------------
        ! CNUpdate0
        !--------------------------------------------
@@ -357,11 +356,9 @@ module CNEcosystemDynBetrMod
        call NStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars, nitrogenflux_vars, nitrogenstate_vars)
 
-!       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'loc11')
        call PStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars, phosphorusflux_vars, phosphorusstate_vars)
 
-!       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'loc1')
        call t_stopf('CNUpdate1')
 !       if(get_nstep()/=254044)then
        call t_startf('CNGapMortality')
@@ -444,7 +441,6 @@ module CNEcosystemDynBetrMod
        call PStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             phosphorusflux_vars, phosphorusstate_vars)
 
-!       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'loc2')
 !       if(get_nstep()/=254044)then
        call CNWoodProducts(num_soilc, filter_soilc, &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars, &
@@ -516,7 +512,7 @@ module CNEcosystemDynBetrMod
        call t_stopf('PUpdate3')
 
     endif
-!    call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'loc3')
+    call carbonflux_vars%summary_cflux_for_betr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
   end subroutine CNEcosystemDynBetr
 
 
@@ -558,6 +554,8 @@ module CNEcosystemDynBetrMod
 
     call CNPrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars,phosphorusstate_vars)
+
+
 
     call carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'bulk')
 

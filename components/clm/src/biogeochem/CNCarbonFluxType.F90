@@ -430,6 +430,7 @@ module CNCarbonFluxType
      procedure , public  :: ZeroDWT
      procedure , public  :: Summary
      procedure , public  :: summary_cflux_for_ch4
+     procedure,  public  :: summary_cflux_for_betr
      procedure , public  :: summary_rr
      procedure , private :: InitAllocate 
      procedure , private :: InitHistory
@@ -5554,6 +5555,61 @@ end subroutine CSummary_interface
   end subroutine summary_rr
 
 
+  subroutine summary_cflux_for_betr( this, bounds, num_soilp, filter_soilp, num_soilc, filter_soilc )
+  implicit none 
+  ! !ARGUMENTS:
+    class(carbonflux_type) :: this
+    type(bounds_type), intent(in)  :: bounds
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    integer  :: c,p,j,k,l       ! indices
+    integer  :: fp,fc           ! lake filter indices
+    ! patch loop
+    do fp = 1,num_soilp
+       p = filter_soilp(fp)   
+
+       ! aboveground NPP: leaf, live stem, dead stem (AGNPP)
+       ! This is supposed to correspond as closely as possible to
+       ! field measurements of AGNPP, so it ignores the storage pools
+       ! and only treats the fluxes into displayed pools.
+
+       this%agnpp_patch(p) = &
+            this%cpool_to_leafc_patch(p)                  + &
+            this%leafc_xfer_to_leafc_patch(p)             + &
+            this%cpool_to_livestemc_patch(p)              + &
+            this%livestemc_xfer_to_livestemc_patch(p)     + &
+            this%cpool_to_deadstemc_patch(p)              + &
+            this%deadstemc_xfer_to_deadstemc_patch(p)
+
+       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+          this%agnpp_patch(p) =                    &
+               this%agnpp_patch(p)               + &
+               this%cpool_to_grainc_patch(p)     + &
+               this%grainc_xfer_to_grainc_patch(p)
+       endif
+
+       ! belowground NPP: fine root, live coarse root, dead coarse root (BGNPP)
+       ! This is supposed to correspond as closely as possible to
+       ! field measurements of BGNPP, so it ignores the storage pools
+       ! and only treats the fluxes into displayed pools.
+       this%bgnpp_patch(p) = &
+            this%cpool_to_frootc_patch(p)                   + &
+            this%frootc_xfer_to_frootc_patch(p)             + &
+            this%cpool_to_livecrootc_patch(p)               + &
+            this%livecrootc_xfer_to_livecrootc_patch(p)     + &
+            this%cpool_to_deadcrootc_patch(p)               + &
+            this%deadcrootc_xfer_to_deadcrootc_patch(p)
+
+       this%agwdnpp_patch(p) = &
+            this%cpool_to_livestemc_patch(p)              + &
+            this%livestemc_xfer_to_livestemc_patch(p)     + &
+            this%cpool_to_deadstemc_patch(p)              + &
+            this%deadstemc_xfer_to_deadstemc_patch(p)
+
+    enddo  
+  end subroutine summary_cflux_for_betr
     !-----------------------------------------------------------------------
 
   subroutine summary_cflux_for_ch4( this, bounds, num_soilp, filter_soilp, num_soilc, filter_soilc )

@@ -1488,20 +1488,20 @@ contains
       enddo
     enddo
 
-    if(spinup_state==1)then
-      call getfil (fsurdat, locfn, 0)
-      call ncd_pio_openfile (ncid, locfn, 0)
-      call ncd_io(ncid=ncid, varname='wethr_scal', flag='read', data=this%weather_scalar, dim1name=grlnd, readvar=readvar)
-      if (.not. readvar) then
-         call endrun(msg=' ERROR: wethr_scal NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
-      end if
-      call ncd_pio_closefile(ncid)
-      do g = bounds%begg, bounds%endg
-        if(abs(this%weather_scalar(g))<2._r8)then
-          this%weather_scalar(g)=max(this%weather_scalar(g),0.01)*100._r8
-        endif
-      enddo
-    endif
+!    if(spinup_state==1)then
+!      call getfil (fsurdat, locfn, 0)
+!      call ncd_pio_openfile (ncid, locfn, 0)
+!      call ncd_io(ncid=ncid, varname='wethr_scal', flag='read', data=this%weather_scalar, dim1name=grlnd, readvar=readvar)
+!      if (.not. readvar) then
+!         call endrun(msg=' ERROR: wethr_scal NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
+!      end if
+!      call ncd_pio_closefile(ncid)
+!      do g = bounds%begg, bounds%endg
+!        if(abs(this%weather_scalar(g))<2._r8)then
+!          this%weather_scalar(g)=max(this%weather_scalar(g),0.01)*100._r8
+!        endif
+!      enddo
+!    endif
   end subroutine readProfileP
   !-----------------------------------------------------------------------
   subroutine SetValues ( this, &
