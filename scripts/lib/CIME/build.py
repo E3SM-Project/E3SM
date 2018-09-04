@@ -112,7 +112,7 @@ def _build_checks(case, build_threaded, comp_interface, use_esmf_lib,
     ninst_value  = case.get_value("NINST_VALUE")
     smp_build    = case.get_value("SMP_BUILD")
     build_status = case.get_value("BUILD_STATUS")
-    expect(comp_interface == "mct", "Only supporting mct comp_interface at this time")
+    expect(comp_interface == "mct" or comp_interface == "moab", "Only supporting mct or moab comp_interface at this time")
 
     smpstr = ""
     inststr = ""
@@ -215,7 +215,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
         if (not os.path.exists(shared_item)):
             os.makedirs(shared_item)
     mpilib = case.get_value("MPILIB")
-    libs = ["gptl", comp_interface, "pio", "csm_share"]
+    libs = ["gptl", "mct", "pio", "csm_share"]
     if mpilib == "mpi-serial":
         libs.insert(0, mpilib)
     logs = []
