@@ -1505,7 +1505,8 @@ contains
                        config_use_DMSTracers,    &
                        config_use_DMSTracers_sea_ice_coupling,  &
                        config_use_MacroMoleculesTracers,  &
-                       config_use_MacroMoleculesTracers_sea_ice_coupling
+                       config_use_MacroMoleculesTracers_sea_ice_coupling, &
+                       config_remove_AIS_coupler_runoff
 
    character(len=StrKIND), pointer :: config_ecosys_atm_co2_option, &
                                       config_ecosys_atm_alt_co2_option
@@ -1575,11 +1576,17 @@ contains
                                                iceFluxFeParticulate, &
                                                iceFluxFeDissolved, &
                                                iceFluxDust
-           
+
+   real (kind=RKIND), dimension(:), pointer :: removedRiverRunoffFlux, removedIceRunoffFlux
+
+   real (kind=RKIND), dimension(:), pointer :: latCell
 
    real (kind=RKIND), dimension(:,:), pointer :: iceFluxPhytoC, &
                                                  iceFluxDOC
-   
+
+   real (kind=RKIND) :: removedRiverRunoffFluxThisProc, removedIceRunoffFluxThisProc
+   real (kind=RKIND) :: removedRiverRunoffFluxReduced, removedIceRunoffFluxReduced
+
 !----------------------------------------------------------------------- 
 !
 !  zero out padded cells 
@@ -1606,8 +1613,12 @@ contains
                                                 config_use_DMSTracers_sea_ice_coupling)
    call mpas_pool_get_config(domain % configs, 'config_use_MacroMoleculesTracers_sea_ice_coupling',  &
                                                 config_use_MacroMoleculesTracers_sea_ice_coupling)
+   call mpas_pool_get_config(domain % configs, 'config_remove_AIS_coupler_runoff', config_remove_AIS_coupler_runoff)
 
    n = 0
+   removedRiverRunoffFluxThisProc = 0.0_RKIND
+   removedIceRunoffFluxThisProc = 0.0_RKIND
+
    block_ptr => domain % blocklist
    do while(associated(block_ptr))
       call mpas_pool_get_subpool(block_ptr % structs, 'mesh',    meshPool)
@@ -1654,6 +1665,10 @@ contains
       seaIcePressure => seaIcePressureField % array
       iceFraction => iceFractionField % array
       iceRunoffFlux => iceRunoffFluxField % array
+
+      call mpas_pool_get_array(meshPool, 'latCell', latCell)
+      call mpas_pool_get_field(forcingPool, 'removedRiverRunoffFlux', removedRiverRunoffFlux)
+      call mpas_pool_get_field(forcingPool, 'removedIceRunoffFlux', removedIceRunoffFlux)
 
       ! BGC fields
       if (config_use_ecosysTracers) then
@@ -1711,6 +1726,12 @@ contains
          iceFluxDMSP => iceFluxDMSPField % array
       endif
 
+      if (config_remove_AIS_coupler_runoff) then
+         ! Initialize these fields
+         removedRiverRunoffFlux(:) = 0.0_RKIND
+         removedIceRunoffFlux(:) = 0.0_RKIND
+      endif
+
       do i = 1, nCellsSolve
         n = n + 1
         if ( windStressZonalField % isActive ) then
@@ -1750,12 +1771,26 @@ contains
         end if
         if ( riverRunoffFluxField % isActive ) then
            riverRunoffFlux(i) = x2o_o % rAttr(index_x2o_Foxx_rofl, n)
+           if (config_remove_AIS_coupler_runoff) then
+              if (latCell(i) < -1.04719666667_RKIND) then ! 60S in radians
+                 removedRiverRunoffFlux(i) = riverRunoffFlux(i)
+                 riverRunoffFlux(i) = 0.0_RKIND
+                 removedRiverRunoffFluxThisProc = removedRiverRunoffFluxThisProc + removedRiverRunoffFlux(i)
+               endif
+           endif
         end if
         if ( iceRunoffFluxField % isActive ) then
            iceRunoffFlux(i) = x2o_o % rAttr(index_x2o_Foxx_rofi, n)
            if(iceRunoffFlux(n) < 0.0_RKIND) then
                call shr_sys_abort ('Error: incoming rofi_F is negative')
            end if
+           if (config_remove_AIS_coupler_runoff) then
+              if (latCell(i) < -1.04719666667_RKIND) then ! 60S in radians
+                 removedIceRunoffFlux(i) = iceRunoffFlux(i)
+                 iceRunoffFlux(i) = 0.0_RKIND
+                 removedIceRunoffFluxThisProc = removedIceRunoffFluxThisProc + removedIceRunoffFlux(i)
+              endif
+           endif
         end if
 
         if ( shortWaveHeatFluxField % isActive ) then
@@ -2034,6 +2069,23 @@ contains
       if ( iceFluxDMSPField % isActive ) then
          call mpas_dmpar_exch_halo_field(iceFluxDMSPField)
       endif
+   endif
+
+   ! global sum of removed runoff
+   if (config_remove_AIS_coupler_runoff) then
+      call MPAS_dmpar_sum_real(domain % dminfo, removedRiverRunoffFluxThisProc, removedRiverRunoffFluxReduced)
+      call MPAS_dmpar_sum_real(domain % dminfo, removedIceRunoffFluxThisProc, removedIceRunoffFluxReduced)
+      block_ptr => domain % blocklist
+      do while(associated(block_ptr))
+         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+
+         call mpas_pool_get_array(forcingPool, 'totalRemovedRiverRunoffFlux', totalRemovedRiverRunoffFlux)
+         call mpas_pool_get_array(forcingPool, 'totalRemovedIceRunoffFlux', totalRemovedIceRunoffFlux)
+         totalRemovedRiverRunoffFlux = removedRiverRunoffFluxReduced
+         totalRemovedIceRunoffFlux = removedIceRunoffFluxReduced
+
+         block_ptr => block_ptr % next
+      end do
    endif
 
 !-----------------------------------------------------------------------
