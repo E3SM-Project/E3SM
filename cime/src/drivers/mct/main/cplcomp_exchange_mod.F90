@@ -1006,7 +1006,7 @@ contains
     integer                  :: ierr
     character*32             :: appname, outfile, wopts, tagnameProj
     integer                  :: maxMH, maxMPO ! max pids for moab apps
-    integer                  :: tagtype, numco,  tagindex
+    integer                  :: tagtype, numco,  tagindex, partMethod
 
     !-----------------------------------------------------
 
@@ -1029,6 +1029,8 @@ contains
     if (seq_comm_iamroot(CPLID) ) then
        write(logunit, *) "MOAB coupling:  maxMH: ", maxMH, " maxMPO: ", maxMPO
     endif
+
+    partMethod = 1 ! this assumes moab was built with zoltan
     ! this works now for atmosphere
     if ( comp%oneletterid == 'a' .and. maxMH /= -1) then
       call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
@@ -1036,7 +1038,7 @@ contains
       ! now, if on coupler pes, receive mesh; if on comp pes, send mesh
       if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
         !  send mesh to coupler
-        ierr = iMOAB_SendMesh(mhid, mpicom_join, mpigrp_cplid, id_join);
+        ierr = iMOAB_SendMesh(mhid, mpicom_join, mpigrp_cplid, id_join, partMethod);
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
         appname = "COUPLE_ATM"//CHAR(0)
@@ -1056,7 +1058,7 @@ contains
 
       if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
         !  send mesh to coupler
-        ierr = iMOAB_SendMesh(mpoid, mpicom_join, mpigrp_cplid, id_join);
+        ierr = iMOAB_SendMesh(mpoid, mpicom_join, mpigrp_cplid, id_join, partMethod);
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
         appname = "COUPLE_MPASO"//CHAR(0)
