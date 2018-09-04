@@ -2199,7 +2199,7 @@ end subroutine clubb_init_cnst
       write(*,*) 'rtp2_in after', rtp2_in
       write(*,*) 'thlp2_in after', thlp2_in
       write(*,*) 'rtpthlp_in after', rtpthlp_in
-
+      write(*,*) 'rcm_out after', rcm_out 
       ! Print stuff
 !      icnt=0
 !      do ixind=1,pcnst
@@ -2292,7 +2292,7 @@ end subroutine clubb_init_cnst
       
       write(*,*) 'pmid_five ', pmid_five
       write(*,*) 'pmid ', state1%pmid(i,:) 
-      write(*,*) 'THLM_pre ', thlm_pre(i,:)
+      write(*,*) 'THLM_pre ', thlm_pre(:)
       write(*,*) 'THLM ', thlm(i,:)
       write(*,*) 'RTM_pre ', rtm(i,:)
       write(*,*) 'RTM ', rtm(i,:)
