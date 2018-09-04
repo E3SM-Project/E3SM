@@ -206,7 +206,14 @@ module clubb_intr
   logical :: relvar_fix = .FALSE. !PMA for relvar fix
   
   real(r8) :: micro_mg_accre_enhan_fac = huge(1.0_r8) !Accretion enhancement factor from namelist
-  
+ 
+  ! Set the number of vertical levels that CLUBB will be operating on.
+  !  If FIVE is used, then CLUBB will use the number of vertical levels
+  !  set by FIVE.  If not, it will simply use the default number of vertical
+  !  levels used by E3SM.  Either way, the variables "pverp_clubb" and 
+  !  "pver_clubb" is defined.   
+  ! The addition of these variables is a crucial component for allowing
+  !  CLUBB to be run on a different vertical grid than E3SM
 #ifdef FIVE
    integer, parameter :: pverp_clubb = pverp_five
    integer, parameter :: pver_clubb = pver_five
@@ -277,46 +284,29 @@ module clubb_intr
     call pbuf_add_field('CONCLD',     'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    concld_idx)
     call pbuf_add_field('CLD',        'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    cld_idx)
     call pbuf_add_field('FICE',       'physpkg',dtype_r8, (/pcols,pver/),               fice_idx)
-    call pbuf_add_field('RAD_CLUBB',  'global', dtype_r8, (/pcols,pver/),               radf_idx)
     call pbuf_add_field('CMELIQ',     'physpkg',dtype_r8, (/pcols,pver/),                  cmeliq_idx)
-        
-    ! Make copies of these for FIVE variables
-#ifdef FIVE
-    call pbuf_add_field('WP2_nadv',        'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), wp2_idx)
-    call pbuf_add_field('WP3_nadv',        'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), wp3_idx)
-    call pbuf_add_field('WPTHLP_nadv',     'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), wpthlp_idx)
-    call pbuf_add_field('WPRTP_nadv',      'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), wprtp_idx)
-    call pbuf_add_field('RTPTHLP_nadv',    'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), rtpthlp_idx)
-    call pbuf_add_field('RTP2_nadv',       'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), rtp2_idx)
-    call pbuf_add_field('THLP2_nadv',      'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), thlp2_idx)
-    call pbuf_add_field('UP2_nadv',        'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), up2_idx)
-    call pbuf_add_field('VP2_nadv',        'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), vp2_idx)    
 
-    call pbuf_add_field('UPWP',       'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), upwp_idx)
-    call pbuf_add_field('VPWP',       'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), vpwp_idx)
-!    call pbuf_add_field('THLM',       'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), thlm_idx)
-!    call pbuf_add_field('RTM',        'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), rtm_idx)
-!    call pbuf_add_field('UM',         'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), um_idx)
-!    call pbuf_add_field('VM',         'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), vm_idx)   
-    call pbuf_add_field('RAD_CLUBB',  'global', dtype_r8, (/pcols,pver_five/),               radf_idx) 
-#else   
-    call pbuf_add_field('WP2_nadv',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wp2_idx)
-    call pbuf_add_field('WP3_nadv',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wp3_idx)
-    call pbuf_add_field('WPTHLP_nadv',     'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wpthlp_idx)
-    call pbuf_add_field('WPRTP_nadv',      'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wprtp_idx)
-    call pbuf_add_field('RTPTHLP_nadv',    'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), rtpthlp_idx)
-    call pbuf_add_field('RTP2_nadv',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), rtp2_idx)
-    call pbuf_add_field('THLP2_nadv',      'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), thlp2_idx)
-    call pbuf_add_field('UP2_nadv',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), up2_idx)
-    call pbuf_add_field('VP2_nadv',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), vp2_idx)    
+    ! The following variables are defined on the "pverp_clubb" FIVE grid
+    !  The reason is that these variables are saved timestep to timestep and only
+    !  used in CLUBB.  Thus, interpolation to/from the E3SM grid is not required.  
+    !  NOTE: an exception to this is the WP2_nadv variable, because this variable 
+    !  is used for aerosol activation.  Thus, an additional variable will need to be defined 
+    !  to account for this.  
+    ! Also note that the definitions of "THLM", "RTM", "UM", and "VM" were removed as they
+    !  were deemed unnesessary as these variables are initialized each step from the E3SM state  
+    call pbuf_add_field('RAD_CLUBB',  'global', dtype_r8, (/pcols,pver_clubb/),               radf_idx)    
+    call pbuf_add_field('WP2_nadv',        'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), wp2_idx)
+    call pbuf_add_field('WP3_nadv',        'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), wp3_idx)
+    call pbuf_add_field('WPTHLP_nadv',     'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), wpthlp_idx)
+    call pbuf_add_field('WPRTP_nadv',      'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), wprtp_idx)
+    call pbuf_add_field('RTPTHLP_nadv',    'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), rtpthlp_idx)
+    call pbuf_add_field('RTP2_nadv',       'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), rtp2_idx)
+    call pbuf_add_field('THLP2_nadv',      'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), thlp2_idx)
+    call pbuf_add_field('UP2_nadv',        'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), up2_idx)
+    call pbuf_add_field('VP2_nadv',        'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), vp2_idx)    
 
-    call pbuf_add_field('UPWP',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), upwp_idx)
-    call pbuf_add_field('VPWP',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), vpwp_idx)
-!    call pbuf_add_field('THLM',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), thlm_idx)
-!    call pbuf_add_field('RTM',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), rtm_idx)
-!    call pbuf_add_field('UM',         'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), um_idx)
-!    call pbuf_add_field('VM',         'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), vm_idx)
-#endif 
+    call pbuf_add_field('UPWP',       'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), upwp_idx)
+    call pbuf_add_field('VPWP',       'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), vpwp_idx)   
 
 #endif 
 
@@ -571,6 +561,7 @@ end subroutine clubb_init_cnst
     integer :: ixnumliq
     integer :: lptr
 
+    ! Define the height arrays to initialize CLUBB
 #ifdef FIVE
     real(r8)  :: zt_g(pverp_five)                        ! Height dummy array
     real(r8)  :: zi_g(pverp_five)                        ! Height dummy array
@@ -688,6 +679,8 @@ end subroutine clubb_init_cnst
       
     !  Fill in dummy arrays for height.  Note that these are overwrote
     !  at every CLUBB step to physical values.    
+    !  Height arrays should be filled in for the "pverp_clubb" or the 
+    !  FIVE grid
     do k=1,pverp_clubb
        zt_g(k) = ((k-1)*1000._r8)-500._r8  !  this is dummy garbage
        zi_g(k) = (k-1)*1000._r8            !  this is dummy garbage
@@ -1033,6 +1026,10 @@ end subroutine clubb_init_cnst
    
    real(r8) :: frac_limit, ic_limit
 
+   ! Input/output variables to/from CLUBB need to be changed so that their 
+   !  dimensions are of the "pver(p)_clubb" variety (i.e on the high resolution grid.  
+   ! If a variable has dimensions of "pver(p)" this means that this variable is directly 
+   ! related to the E3SM grid as opposed to the CLUBB grid.   
    real(r8) :: dtime                            ! CLUBB time step                              [s]   
    real(r8) :: edsclr_in(pverp_clubb,edsclr_dim)      ! Scalars to be diffused through CLUBB         [units vary]
    real(r8) :: wp2_in(pverp_clubb)                    ! vertical velocity variance (CLUBB)           [m^2/s^2]
@@ -1067,15 +1064,12 @@ end subroutine clubb_init_cnst
    real(r8) :: thlprcp_out(pverp_clubb)
    real(r8) :: rho_ds_zm(pverp_clubb)                 ! Dry, static density on momentum levels        [kg/m^3]
    real(r8) :: rho_ds_zt(pverp_clubb)                 ! Dry, static density on thermodynamic levels   [kg/m^3]
-   real(r8) :: rho_ds_zt_pre(pverp)
    real(r8) :: invrs_rho_ds_zm(pverp_clubb)           ! Inv. dry, static density on momentum levels   [m^3/kg]
    real(r8) :: invrs_rho_ds_zt(pverp_clubb)           ! Inv. dry, static density on thermo. levels    [m^3/kg]
-   real(r8) :: invrs_rho_ds_zt_pre(pverp)
    real(r8) :: thv_ds_zm(pverp_clubb)                 ! Dry, base-state theta_v on momentum levels    [K]
    real(r8) :: thv_ds_zt(pverp_clubb)                 ! Dry, base-state theta_v on thermo. levels     [K]
    real(r8) :: thv_ds_zt_pre(pverp)
    
-   real(r8) :: edsclr_pre(pverp,edsclr_dim)
    real(r8) :: edsclr(pverp_clubb,edsclr_dim)
    
    real(r8) :: zt_g_in(pverp_clubb)
@@ -1090,21 +1084,24 @@ end subroutine clubb_init_cnst
    real(r8) :: rad_in(pverp_clubb)
 
 #ifdef FIVE
-   real(r8) :: thlm_five(pcols,pverp_clubb)
-   real(r8) :: rtm_five(pcols,pverp_clubb)
-   real(r8) :: rvm_five(pcols,pverp_clubb)
-   real(r8) :: um_five(pcols,pverp_clubb)
-   real(r8) :: vm_five(pcols,pverp_clubb)
+   real(r8) :: thlm_five(pverp_clubb)
+   real(r8) :: rtm_five(pverp_clubb)
+   real(r8) :: rvm_five(pverp_clubb)
+   real(r8) :: um_five(pverp_clubb)
+   real(r8) :: vm_five(pverp_clubb)
 #endif
    
+   ! A number of "pre" variables are added.  These are intermediate variables
+   !  that are used AFTER interpolation but before grid is "flipped" to the 
+   !  CLUBB grid.  
    real(r8) :: p_in_pa_in(pverp_clubb)
    real(r8) :: rad_pre(pverp_clubb)
    real(r8) :: rad(pverp_clubb)
-   real(r8) :: thlm_pre(pcols,pverp_clubb)
-   real(r8) :: rtm_pre(pcols,pverp_clubb)
-   real(r8) :: rvm_pre(pcols,pverp_clubb)
-   real(r8) :: um_pre(pcols,pverp_clubb)
-   real(r8) :: vm_pre(pcols,pverp_clubb)
+   real(r8) :: thlm_pre(pverp_clubb)
+   real(r8) :: rtm_pre(pverp_clubb)
+   real(r8) :: rvm_pre(pverp_clubb)
+   real(r8) :: um_pre(pverp_clubb)
+   real(r8) :: vm_pre(pverp_clubb)
    real(r8) :: rcm_pre(pverp_clubb)
    real(r8) :: wprcp_pre(pverp_clubb)
    real(r8) :: cloud_frac_pre(pverp_clubb)
@@ -1115,6 +1112,9 @@ end subroutine clubb_init_cnst
    real(r8) :: khzm_pre(pverp_clubb)
    real(r8) :: khzt_pre(pverp_clubb)
    real(r8) :: qclvar_pre(pverp_clubb)
+   real(r8) :: rho_ds_zt_pre(pverp)
+   real(r8) :: edsclr_pre(pverp,edsclr_dim)
+   real(r8) :: invrs_rho_ds_zt_pre(pverp)
    
    real(r8) :: rfrzm(pverp_clubb)
    real(r8) :: rfrzm_pre(pverp)
@@ -1271,12 +1271,9 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: up2      ! east-west wind variance                      [m^2/s^2]
    real(r8), pointer, dimension(:,:) :: vp2      ! north-south wind variance                    [m^2/s^2]
 
+!  Note that the pointers for "thlm", "rtm", "um", and "vm" are removed.  
    real(r8), pointer, dimension(:,:) :: upwp     ! east-west momentum flux                      [m^2/s^2]
    real(r8), pointer, dimension(:,:) :: vpwp     ! north-south momentum flux                    [m^2/s^2]
-!   real(r8), pointer, dimension(:,:) :: thlm     ! mean temperature                             [K]
-!   real(r8), pointer, dimension(:,:) :: rtm      ! mean moisture mixing ratio                   [kg/kg]
-!   real(r8), pointer, dimension(:,:) :: um       ! mean east-west wind                          [m/s]
-!   real(r8), pointer, dimension(:,:) :: vm       ! mean north-south wind                        [m/s]
    real(r8), pointer, dimension(:,:) :: cld      ! cloud fraction                               [fraction]
    real(r8), pointer, dimension(:,:) :: concld   ! convective cloud fraction                    [fraction]
    real(r8), pointer, dimension(:,:) :: ast      ! stratiform cloud fraction                    [fraction]
@@ -1367,7 +1364,8 @@ end subroutine clubb_init_cnst
    
    itim_old = pbuf_old_tim_idx() 
 
-   !  Establish associations between pointers and physics buffer fields   
+   !  Establish associations between pointers and physics buffer fields 
+   !  Pointers for the CLUBB moments have dimensions of "pverp_clubb"  
    call pbuf_get_field(pbuf, wp2_idx,     wp2,     start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
    call pbuf_get_field(pbuf, wp3_idx,     wp3,     start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
    call pbuf_get_field(pbuf, wpthlp_idx,  wpthlp,  start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
@@ -1381,11 +1379,6 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, upwp_idx,    upwp,    start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
    call pbuf_get_field(pbuf, vpwp_idx,    vpwp,    start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
    call pbuf_get_field(pbuf, radf_idx,    radf_clubb)
-   
-!   call pbuf_get_field(pbuf, thlm_idx,    thlm,    start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
-!   call pbuf_get_field(pbuf, rtm_idx,     rtm,     start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
-!   call pbuf_get_field(pbuf, um_idx,      um,      start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
-!   call pbuf_get_field(pbuf, vm_idx,      vm,      start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
    
    call pbuf_get_field(pbuf, tke_idx,     tke)
    call pbuf_get_field(pbuf, qrl_idx,     qrl)
@@ -1563,37 +1556,6 @@ end subroutine clubb_init_cnst
      enddo
    enddo
    
-    ! Do some interpolation to get inputs on FIVE grid  
-#ifdef FIVE
-   do i=1,ncol    
-     call linear_interp(state1%pmid(i,:),pmid_five,thlm(i,1:pver),thlm_five(i,1:pver_five),pver,pver_five)
-     call linear_interp(state1%pmid(i,:),pmid_five,rtm(i,1:pver),rtm_five(i,1:pver_five),pver,pver_five)
-     call linear_interp(state1%pmid(i,:),pmid_five,um(i,1:pver),um_five(i,1:pver_five),pver,pver_five)
-     call linear_interp(state1%pmid(i,:),pmid_five,vm(i,1:pver),vm_five(i,1:pver_five),pver,pver_five)
-     call linear_interp(state1%pmid(i,:),pmid_five,rvm(i,1:pver),rvm_five(i,1:pver_five),pver,pver_five)
-   enddo
-   
-   write(*,*) 'pver and pverfive', pver, pver_five
-   write(*,*) 'PMIDlow ', state1%pmid(1,:)
-   write(*,*) 'PMIDfive ', pmid_five
-   write(*,*) 'THLMlow ', thlm(1,:)
-   write(*,*) 'THLMhigh ', thlm_five(1,:)
-   write(*,*) 'RTMlow ', rtm(1,:)
-   write(*,*) 'RTMhigh ', rtm_five(1,:)
-   
-   thlm_pre(:,1:pver_five) = thlm_five(:,1:pver_five)
-   rtm_pre(:,1:pver_five) = rtm_five(:,1:pver_five)
-   um_pre(:,1:pver_five) = um_five(:,1:pver_five)
-   vm_pre(:,1:pver_five) = vm_five(:,1:pver_five)
-   rvm_pre(:,1:pver_five) = rvm_five(:,1:pver_five)
-#else
-   thlm_pre(:,1:pver) = thlm(:,1:pver)
-   rtm_pre(:,1:pver) = rtm(:,1:pver)
-   um_pre(:,1:pver) = um(:,1:pver)
-   vm_pre(:,1:pver) = vm(:,1:pver)
-   rvm_pre(:,1:pver) = rvm(:,1:pver)
-#endif  
-   
    if (clubb_do_adv) then
      ! If not last step of macmic loop then set apply_const back to 
      !   zero to prevent output from being corrupted.  
@@ -1602,13 +1564,7 @@ end subroutine clubb_init_cnst
      else
        apply_const = 0._r8
      endif
-   endif   
-
-   ! surface toundary conditions
-   rtm_pre(1:ncol,pverp_five)  = rtm_pre(1:ncol,pver_five)
-   um_pre(1:ncol,pverp_five)   = um_pre(1:ncol,pver_five) 
-   vm_pre(1:ncol,pverp_five)   = vm_pre(1:ncol,pver_five)
-   thlm_pre(1:ncol,pverp_five) = thlm_pre(1:ncol,pver_five)   
+   endif     
   
    if (clubb_do_adv) then 
       thlp2(1:ncol,pverp)=thlp2(1:ncol,pver)
@@ -1682,11 +1638,15 @@ end subroutine clubb_init_cnst
       fcor = 0._r8 
 
       !  Define the CLUBB momentum grid (in height, units of m)
+      !   but don't "flip" yet, as potential interpolation 
+      !   to the FIVE grid needs to be done
       do k=1,pverp
          zi_g_pre(k) = state1%zi(i,k)-state1%zi(i,pver+1)
       enddo 
 
       !  Define the CLUBB thermodynamic grid (in units of m)
+      !   but don't "flip" yet, as potential interpolation
+      !   to the FIVE grid needs to be done
       do k=1,pver
          zt_g_pre(k) = state1%zm(i,k)-state1%zi(i,pver+1)
          dz_g(k) = state1%zi(i,k)-state1%zi(i,k+1)  ! compute thickness
@@ -1700,6 +1660,8 @@ end subroutine clubb_init_cnst
 
       !  Compute thermodynamic stuff needed for CLUBB on thermo levels.  
       !  Inputs for the momentum levels are set below setup_clubb core
+      !  but don't "flip" these yet, as potential interpolation
+      !  to the FIVE grid needs to be done
       do k=1,pver
          exner_pre(k)           = 1._r8/exner_clubb(i,k)
          rho_ds_zt_pre(k)       = (1._r8/gravit)*(state1%pdel(i,k)/dz_g(k))
@@ -1712,6 +1674,8 @@ end subroutine clubb_init_cnst
       enddo
       
       do k=1,pver_clubb
+      ! this block of code is probably temporary 
+      !  and really just for testing purposes
 #ifdef FIVE
         p_in_Pa(k) = pmid_five(k)
 #else
@@ -1738,7 +1702,6 @@ end subroutine clubb_init_cnst
       rho(i,pverp)           = rho_ds_zt_pre(pver)
       thv_ds_zt_pre(pverp)       = thv_ds_zt_pre(pver)
       rho_zt_pre(:)          = rho(i,:)
-!      p_in_Pa(pverp)         = p_in_Pa(pver)
       exner_pre(pverp)           = exner_pre(pver)
       rfrzm_pre(pverp)           = rfrzm_pre(pver)
       radf_pre(pverp)            = radf_pre(pver)
@@ -1752,7 +1715,39 @@ end subroutine clubb_init_cnst
       
       wm_zt_pre(pverp) = wm_zt_pre(pver)
       
-#ifdef FIVE
+      ! Do some interpolation to get inputs on FIVE grid
+      ! At this step, the input first order moments are on the E3SM grid.  
+      ! Need to do some interpolation to get these variables on the higher-resolution FIVE grid.
+      ! NOTE: the interpolation currently used here is very simple and really just a placeholder.     
+#ifdef FIVE  
+      call linear_interp(state1%pmid(i,:),pmid_five,thlm(i,1:pver),thlm_five(1:pver_five),pver,pver_five)
+      call linear_interp(state1%pmid(i,:),pmid_five,rtm(i,1:pver),rtm_five(1:pver_five),pver,pver_five)
+      call linear_interp(state1%pmid(i,:),pmid_five,um(i,1:pver),um_five(1:pver_five),pver,pver_five)
+      call linear_interp(state1%pmid(i,:),pmid_five,vm(i,1:pver),vm_five(1:pver_five),pver,pver_five)
+      call linear_interp(state1%pmid(i,:),pmid_five,rvm(i,1:pver),rvm_five(1:pver_five),pver,pver_five)
+
+      write(*,*) 'pver and pverfive', pver, pver_five
+      write(*,*) 'PMIDlow ', state1%pmid(1,:)
+      write(*,*) 'PMIDfive ', pmid_five
+      write(*,*) 'THLMlow ', thlm(1,:)
+      write(*,*) 'THLMhigh ', thlm_five(:)
+      write(*,*) 'RTMlow ', rtm(1,:)
+      write(*,*) 'RTMhigh ', rtm_five(:)
+   
+      ! If FIVE is used then these "pre" values are on the high resolution grid
+      !  but not yet "flipped" for CLUBB
+      thlm_pre(1:pver_five) = thlm_five(1:pver_five)
+      rtm_pre(1:pver_five) = rtm_five(1:pver_five)
+      um_pre(1:pver_five) = um_five(1:pver_five)
+      vm_pre(1:pver_five) = vm_five(1:pver_five)
+      rvm_pre(1:pver_five) = rvm_five(1:pver_five) 
+      
+      ! surface boundary conditions
+      rtm_pre(pverp_five)  = rtm_pre(pver_five)
+      um_pre(pverp_five)   = um_pre(pver_five) 
+      vm_pre(pverp_five)   = vm_pre(pver_five)
+      thlm_pre(pverp_five) = thlm_pre(pver_five)      
+      
       call linear_interp(state1%pmid(i,:),pmid_five,zt_g_pre(1:pver),zt_g(1:pver_five),pver,pver_five)
       call linear_interp(state1%pmid(i,:),pmid_five,zi_g_pre(1:pver),zi_g(1:pver_five),pver,pver_five)
       call linear_interp(state1%pmid(i,:),pmid_five,wm_zt_pre(1:pver),wm_zt(1:pver_five),pver,pver_five)
@@ -1779,7 +1774,7 @@ end subroutine clubb_init_cnst
      rfrzm(pverp_five) = rfrzm(pver_five)
      rad(pverp_five) = rad(pver_five)
      
-      
+     ! Linear interpolation for the tracers 
      icnt=0
      do ixind=1,pcnst
        if (lq(ixind)) then
@@ -1792,9 +1787,14 @@ end subroutine clubb_init_cnst
 
        endif
      enddo
-
-     write(*,*) 'PMIDfuckhere ', state1%pmid(i,:)
 #else
+      ! If FIVE is not used then these "pre" values are essentially just copies
+      thlm_pre(1:pver) = thlm(i,1:pver)
+      rtm_pre(1:pver) = rtm(i,1:pver)
+      um_pre(1:pver) = um(i,1:pver)
+      vm_pre(1:pver) = vm(i,1:pver)
+      rvm_pre(1:pver) = rvm(i,1:pver)
+   
       p_in_Pa(pverp) = p_in_Pa(pver)
       zi_g(:) = zi_g_pre
       zt_g(:) = zt_g_pre
@@ -1891,7 +1891,6 @@ end subroutine clubb_init_cnst
       
       ! For FIVE we need to make sure that the high resolution grid
       !  is read into 
- 
       
       !  Surface fluxes provided by host model
       wpthlp_sfc = cam_in%shf(i)/(cpair*rho_ds_zt(pverp_clubb))       ! Sensible heat flux
@@ -1909,8 +1908,8 @@ end subroutine clubb_init_cnst
   
       !  Need to flip arrays around for CLUBB core
       do k=1,pverp_clubb
-         um_in(k)      = um_pre(i,pverp_clubb-k+1)
-         vm_in(k)      = vm_pre(i,pverp_clubb-k+1)
+         um_in(k)      = um_pre(pverp_clubb-k+1)
+         vm_in(k)      = vm_pre(pverp_clubb-k+1)
 
          upwp_in(k)    = upwp(i,pverp_clubb-k+1)
          vpwp_in(k)    = vpwp(i,pverp_clubb-k+1)
@@ -1924,9 +1923,9 @@ end subroutine clubb_init_cnst
          wpthlp_in(k)  = wpthlp(i,pverp_clubb-k+1)
          rtpthlp_in(k) = rtpthlp(i,pverp_clubb-k+1)
 
-         thlm_in(k)    = thlm_pre(i,pverp_clubb-k+1)
-         rtm_in(k)     = rtm_pre(i,pverp_clubb-k+1)
-         rvm_in(k)     = rvm_pre(i,pverp_clubb-k+1)
+         thlm_in(k)    = thlm_pre(pverp_clubb-k+1)
+         rtm_in(k)     = rtm_pre(pverp_clubb-k+1)
+         rvm_in(k)     = rvm_pre(pverp_clubb-k+1)
 	 
 	 zi_g_in(k) = zi_g(pverp_clubb-k+1)
          zt_g_in(k) = zt_g(pverp_clubb-k+1)
@@ -1975,6 +1974,8 @@ end subroutine clubb_init_cnst
       call read_parameters( -99, "", clubb_params )
  
       !  Set-up CLUBB core at each CLUBB call because heights can change 
+      !  Note that the location of this subroutine call was moved because we need to call 
+      !  it AFTER the input height grid has been "flipped" to the CLUBB grid
       call setup_grid(pverp_clubb, sfc_elevation, l_implemented, grid_type, &
         zi_g_in(2), zi_g_in(1), zi_g_in(pverp_clubb), zi_g_in(1:pverp_clubb), zt_g_in(1:pverp_clubb), &
         begin_height, end_height)
@@ -2027,8 +2028,8 @@ end subroutine clubb_init_cnst
       
       if (do_expldiff) then 
         do k=1,pver_clubb
-          edsclr_in(k+1,icnt+1) = thlm_pre(i,pver_clubb-k+1)
-          edsclr_in(k+1,icnt+2) = rtm_pre(i,pver_clubb-k+1)
+          edsclr_in(k+1,icnt+1) = thlm_pre(pver_clubb-k+1)
+          edsclr_in(k+1,icnt+2) = rtm_pre(pver_clubb-k+1)
         enddo
         
         edsclr_in(1,icnt+1) = edsclr_in(2,icnt+1)
@@ -2185,16 +2186,6 @@ end subroutine clubb_init_cnst
       call t_stopf('adv_clubb_core_ts_loop')
    
       write(*,*) 'AFTER'
-!      write(*,*) 'p_in_Pa_in', p_in_Pa_in
-!      write(*,*) 'rho_zm', rho_zm
-!      write(*,*) 'rho_zt_in', rho_zt_in
-!      write(*,*) 'exner_in', exner_in
-!      write(*,*) 'rho_ds_zm', rho_ds_zm
-!      write(*,*) 'rho_ds_zt', rho_ds_zt_in
-!      write(*,*) 'invrs_rho_ds_zm', invrs_rho_ds_zm
-!      write(*,*) 'invrs_rho_ds_zt_in', invrs_rho_ds_zt_in
-!      write(*,*) 'thv_ds_zm', thv_ds_zm
-!      write(*,*) 'thv_ds_zt_in', thv_ds_zt_in
       write(*,*) 'um_in after', um_in
       write(*,*) 'vm_in after', vm_in
       write(*,*) 'upwp_in after', upwp_in
@@ -2243,14 +2234,14 @@ end subroutine clubb_init_cnst
       !  Arrays need to be "flipped" to CAM grid 
       do k=1,pverp_clubb
      
-          um_pre(i,k)           = um_in(pverp_clubb-k+1)
-          vm_pre(i,k)           = vm_in(pverp_clubb-k+1)
+          um_pre(k)           = um_in(pverp_clubb-k+1)
+          vm_pre(k)           = vm_in(pverp_clubb-k+1)
           upwp(i,k)         = upwp_in(pverp_clubb-k+1)
           vpwp(i,k)         = vpwp_in(pverp_clubb-k+1)
           up2(i,k)          = up2_in(pverp_clubb-k+1)
           vp2(i,k)          = vp2_in(pverp_clubb-k+1)
-          thlm_pre(i,k)         = thlm_in(pverp_clubb-k+1)
-          rtm_pre(i,k)          = rtm_in(pverp_clubb-k+1)
+          thlm_pre(k)         = thlm_in(pverp_clubb-k+1)
+          rtm_pre(k)          = rtm_in(pverp_clubb-k+1)
           wprtp(i,k)        = wprtp_in(pverp_clubb-k+1)
           wpthlp(i,k)       = wpthlp_in(pverp_clubb-k+1)
           wp2(i,k)          = wp2_in(pverp_clubb-k+1)
@@ -2276,13 +2267,14 @@ end subroutine clubb_init_cnst
 
       enddo 
 
+      ! Now we need to interpolate from CLUBB grid back to the E3SM grid.
 #ifdef FIVE      
       write(*,*) 'pmidBEFORE ', state1%pmid(i,:)
       write(*,*) 'coli ', i
-      call linear_interp(pmid_five,state1%pmid(i,:),thlm_pre(i,1:pver_five),thlm(i,1:pver),pver_five,pver)
-      call linear_interp(pmid_five,state1%pmid(i,:),rtm_pre(i,1:pver_five),rtm(i,1:pver),pver_five,pver)
-      call linear_interp(pmid_five,state1%pmid(i,:),um_pre(i,1:pver_five),um(i,1:pver),pver_five,pver)
-      call linear_interp(pmid_five,state1%pmid(i,:),vm_pre(i,1:pver_five),vm(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five,state1%pmid(i,:),thlm_pre(1:pver_five),thlm(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five,state1%pmid(i,:),rtm_pre(1:pver_five),rtm(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five,state1%pmid(i,:),um_pre(1:pver_five),um(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five,state1%pmid(i,:),vm_pre(1:pver_five),vm(i,1:pver),pver_five,pver)
       call linear_interp(pmid_five,state1%pmid(i,:),rcm_pre(1:pver_five),rcm(i,1:pver),pver_five,pver)
       
       call linear_interp(pmid_five,state1%pmid(i,:),wprcp_pre(1:pver_five),wprcp(i,1:pver),pver_five,pver)
@@ -2309,10 +2301,11 @@ end subroutine clubb_init_cnst
       write(*,*) 'RCM ', rcm(i,:)
  
 #else
-      thlm(i,:) = thlm_pre(i,:)
-      rtm(i,:) = rtm_pre(i,:)
-      um(i,:) = um_pre(i,:)
-      vm(i,:) = vm_pre(i,:)
+      ! If FIVE is not used, then simply just copy the arrays over
+      thlm(i,:) = thlm_pre(:)
+      rtm(i,:) = rtm_pre(:)
+      um(i,:) = um_pre(:)
+      vm(i,:) = vm_pre(:)
       rcm(i,:) = rcm_pre(i,:)
       
       wprcp(i,:) = wprcp_pre(:)
