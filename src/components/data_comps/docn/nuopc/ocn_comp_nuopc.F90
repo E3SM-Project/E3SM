@@ -453,14 +453,6 @@ module ocn_comp_nuopc
        end if
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       if (ocn_prognostic) then
-          if (my_task == master_task) then
-             call mct_aVect_info(2, x2o, istr=subname//':AV')
-          end if
-          call shr_nuopc_methods_State_diagnose(importState,subname//':IS',rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
     endif
 
     !----------------------------------------------------------------------------

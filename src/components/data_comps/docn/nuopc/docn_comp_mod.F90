@@ -146,7 +146,7 @@ contains
          model_fld_concat=flds_o2x, model_fld_index=ku, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
 
     call dshr_fld_add(data_fld='v', data_fld_array=avifld, model_fld='So_v', model_fld_array=avofld, &
-         model_fld_concat=flds_o2x, model_fld_index=ku, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+         model_fld_concat=flds_o2x, model_fld_index=kv, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
 
     call dshr_fld_add(data_fld='dhdx', data_fld_array=avifld, model_fld='So_dhdx', model_fld_array=avofld, &
          model_fld_concat=flds_o2x, model_fld_index=kdhdx, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
@@ -351,9 +351,6 @@ contains
     kmask = mct_aVect_indexRA(ggrid%data,'mask')
     imask(:) = nint(ggrid%data%rAttr(kmask,:))
 
-    kfrac = mct_aVect_indexRA(ggrid%data,'frac')
-    o2x%rAttr(ksomask,:) = ggrid%data%rAttr(kfrac,:)
-
     allocate(xc(lsize))
     index_lon = mct_aVect_indexRA(ggrid%data,'lon')
     xc(:) = ggrid%data%rAttr(index_lon,:)
@@ -371,6 +368,9 @@ contains
 
     call mct_aVect_init(o2x, rList=flds_o2x_mod, lsize=lsize)
     call mct_aVect_zero(o2x)
+
+    kfrac = mct_aVect_indexRA(ggrid%data,'frac')
+    o2x%rAttr(ksomask,:) = ggrid%data%rAttr(kfrac,:)
 
     if (ocn_prognostic_mod) then
        call mct_aVect_init(x2o, rList=flds_x2o_mod, lsize=lsize)
@@ -557,6 +557,20 @@ contains
     character(*), parameter :: F0D   = "('(docn_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
     character(*), parameter :: subName = "(docn_comp_run) "
     !-------------------------------------------------------------------------------
+
+    !--------------------
+    ! Debug input
+    !--------------------
+
+    if (dbug > 1 .and. my_task == master_task) then
+       do nfld = 1, mct_aVect_nRAttr(x2o)
+          call shr_string_listGetName(trim(flds_x2o_mod), nfld, fldname)
+          do n = 1, mct_aVect_lsize(x2o)
+             write(logunit,F0D)'import: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
+                  n, x2o%rattr(nfld,n)
+          end do
+       end do
+    end if
 
     call t_startf('DOCN_RUN')
     call t_barrierf('docn_BARRIER',mpicom)
@@ -751,13 +765,6 @@ contains
     !--------------------
 
     if (dbug > 1 .and. my_task == master_task) then
-       do nfld = 1, mct_aVect_nRAttr(x2o)
-          call shr_string_listGetName(trim(flds_x2o_mod), nfld, fldname)
-          do n = 1, mct_aVect_lsize(x2o)
-             write(logunit,F0D)'import: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
-                  n, x2o%rattr(nfld,n)
-          end do
-       end do
        do nfld = 1, mct_aVect_nRAttr(o2x)
           call shr_string_listGetName(trim(flds_o2x_mod), nfld, fldname)
           do n = 1, mct_aVect_lsize(o2x)
