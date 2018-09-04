@@ -3328,14 +3328,6 @@ SUBROUTINE access_lookup_table_coll(dumjj,dumii,dumj,dumi,index,dum1,dum3,      
 
 !------------------------------------------------------------------------------------------!
 
- logical function isnan(arg1)
-       real,intent(in) :: arg1
-       isnan=( arg1  .ne. arg1 )
-       return
- end function isnan
-
-!------------------------------------------------------------------------------------------!
-
 !======================================================================================!
 
  subroutine find_lookupTable_indices_1a(dumi,dumjj,dumii,dumzz,dum1,dum4,dum5,dum6,      &
