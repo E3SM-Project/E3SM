@@ -77,22 +77,22 @@ contains
   end subroutine p3_init_c
 
   subroutine p3_main_c(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,uzpl,   &
-       pres,dzq,it,prt_liq,prt_sol,its,ite,kts,kte,nCat,diag_ze,diag_effc,     &
+       pres,dzq,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
        diag_effi,diag_vmi,diag_di,diag_rhoi,n_diag_2d,diag_2d,n_diag_3d,       &
        diag_3d,log_predictNc_in,typeDiags_ON_in,model_in,prt_drzl,prt_rain,prt_crys,    &
        prt_snow,prt_grpl,prt_pell,prt_hail,prt_sndp) bind(C)
     use micro_p3, only : p3_main
 
     real(kind=c_real), intent(inout), dimension(its:ite,kts:kte) :: qc, nc, qr, nr, ssat, qv, th, th_old, qv_old
-    real(kind=c_real), intent(inout), dimension(its:ite,kts:kte,nCat) :: qitot, qirim, nitot, birim
+    real(kind=c_real), intent(inout), dimension(its:ite,kts:kte) :: qitot, qirim, nitot, birim
     real(kind=c_real), intent(in), dimension(its:ite,kts:kte) :: uzpl, pres, dzq
     real(kind=c_real), value, intent(in) :: dt
     real(kind=c_real), intent(out), dimension(its:ite) :: prt_liq, prt_sol
     real(kind=c_real), intent(out), dimension(its:ite,kts:kte) :: diag_ze, diag_effc
-    real(kind=c_real), intent(out), dimension(its:ite,kts:kte,nCat) :: diag_effi, diag_vmi, diag_di, diag_rhoi
+    real(kind=c_real), intent(out), dimension(its:ite,kts:kte) :: diag_effi, diag_vmi, diag_di, diag_rhoi
     real(kind=c_real), intent(out), dimension(its:ite,n_diag_2d) :: diag_2d
     real(kind=c_real), intent(out), dimension(its:ite,kts:kte,n_diag_3d) :: diag_3d
-    integer(kind=c_int), value, intent(in) :: its,ite, kts,kte, it, nCat, n_diag_2d, n_diag_3d
+    integer(kind=c_int), value, intent(in) :: its,ite, kts,kte, it, n_diag_2d, n_diag_3d
     logical(kind=c_bool), value, intent(in) :: log_predictNc_in, typeDiags_ON_in
     type(c_ptr), intent(in) :: model_in
     real(kind=c_real), intent(out), dimension(its:ite), optional :: &
@@ -109,7 +109,7 @@ contains
     len = index(model, C_NULL_CHAR) - 1
 
     call p3_main(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,uzpl,   &
-         pres,dzq,it,prt_liq,prt_sol,its,ite,kts,kte,nCat,diag_ze,diag_effc,     &
+         pres,dzq,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
          diag_effi,diag_vmi,diag_di,diag_rhoi,n_diag_2d,diag_2d,n_diag_3d,       &
          diag_3d,log_predictNc,typeDiags_ON,model(1:len),prt_drzl,prt_rain,prt_crys,    &
          prt_snow,prt_grpl,prt_pell,prt_hail,prt_sndp)

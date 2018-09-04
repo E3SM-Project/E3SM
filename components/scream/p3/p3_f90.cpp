@@ -10,7 +10,7 @@ extern "C" {
                  Real* qv_old, Real* qv, Real dt, Real* qitot, Real* qirim,
                  Real* nitot, Real* birim, Real* ssat, Real* uzpl, Real* pres,
                  Real* dzq, Int it, Real* prt_liq, Real* prt_sol, Int its,
-                 Int ite, Int kts, Int kte, Int nCat, Real* diag_ze,
+                 Int ite, Int kts, Int kte, Real* diag_ze,
                  Real* diag_effc, Real* diag_effi, Real* diag_vmi,
                  Real* diag_di, Real* diag_rhoi, Int n_diag_2d, Real* diag_2d,
                  Int n_diag_3d, Real* diag_3d, bool log_predictNc,
@@ -34,10 +34,10 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   nc = Array2("cloud liquid drop number, #/kg", ncol, nlev);
   qr = Array2("rain water mixing ratio, kg/kg", ncol, nlev);
   nr = Array2("rain drop number, #/kg", ncol, nlev);
-  qitot = Array3("total ice mass mixing ratio, kg/kg", ncol, nlev, ncat);
-  nitot = Array3("total ice number, #/kg", ncol, nlev, ncat);
-  qirim = Array3("rime ice mass mixing ratio, kg/kg", ncol, nlev, ncat);
-  birim = Array3("rime ice volume mixing ratio, m3/kg", ncol, nlev, ncat);
+  qitot = Array2("total ice mass mixing ratio, kg/kg", ncol, nlev);
+  nitot = Array2("total ice number, #/kg", ncol, nlev);
+  qirim = Array2("rime ice mass mixing ratio, kg/kg", ncol, nlev);
+  birim = Array2("rime ice volume mixing ratio, m3/kg", ncol, nlev);
   ssat = Array2("supersaturation (qv - qs), kg/kg", ncol, nlev);
   qv = Array2("water vapor mixing ratio, kg/kg", ncol, nlev);
   th = Array2("potential temperature, K", ncol, nlev);
@@ -60,10 +60,10 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   diag_ze = Array2("equivalent reflectivity, dBZ", ncol, nlev);
   diag_effc = Array2("effective radius, cloud, m", ncol, nlev);
   diag_2d = Array2("user-defined 2D diagnostic fields", ncol, n_diag_2d);
-  diag_effi = Array3("effective radius, ice, m", ncol, nlev, ncat);
-  diag_vmi = Array3("mass-weighted fall speed of ice, m/s", ncol, nlev, ncat);
-  diag_di = Array3("mean diameter of ice, m", ncol, nlev, ncat);
-  diag_rhoi = Array3("bulk density of ice, kg/m", ncol, nlev, ncat);
+  diag_effi = Array2("effective radius, ice, m", ncol, nlev);
+  diag_vmi = Array2("mass-weighted fall speed of ice, m/s", ncol, nlev);
+  diag_di = Array2("mean diameter of ice, m", ncol, nlev);
+  diag_rhoi = Array2("bulk density of ice, kg/m", ncol, nlev);
   diag_3d = Array3("user-defined 3D diagnostic fields", ncol, nlev, n_diag_3d);
 }
 
@@ -110,7 +110,7 @@ void p3_main (const FortranData& d) {
             d.th.data(), d.qv_old.data(), d.qv.data(), d.dt, d.qitot.data(),
             d.qirim.data(), d.nitot.data(), d.birim.data(), d.ssat.data(),
             d.uzpl.data(), d.pres.data(), d.dzq.data(), d.it, d.prt_liq.data(),
-            d.prt_sol.data(), 1, d.ncol, 1, d.nlev, d.ncat, d.diag_ze.data(),
+            d.prt_sol.data(), 1, d.ncol, 1, d.nlev, d.diag_ze.data(),
             d.diag_effc.data(), d.diag_effi.data(), d.diag_vmi.data(),
             d.diag_di.data(), d.diag_rhoi.data(), d.diag_2d.extent_int(1),
             d.diag_2d.data(), d.diag_3d.extent_int(2), d.diag_3d.data(),
@@ -124,9 +124,9 @@ Int check_against_python (const FortranData& d) {
   Int nerr = 0;
   if (util::is_single_precision<Real>::value) {
     const double tol = 0;
-    if (util::reldif<double>(d.birim(0,d.nlev-1,0), 7.237245824853744e-08) > tol)
+    if (util::reldif<double>(d.birim(0,d.nlev-1), 7.237245824853744e-08) > tol)
       ++nerr;
-    if (util::reldif<double>(d.qirim(0,d.nlev-1,0), 9.047746971191373e-06) > tol)
+    if (util::reldif<double>(d.qirim(0,d.nlev-1), 9.047746971191373e-06) > tol)
       ++nerr;
     if (util::reldif<double>(d.nr(0,d.nlev-1), 3.177030468750000e+04) > tol)
       ++nerr;
