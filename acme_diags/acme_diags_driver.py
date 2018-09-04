@@ -22,23 +22,21 @@ from acme_diags.acme_viewer import create_viewer
 from acme_diags.driver.utils import get_set_name, SET_NAMES
 
 
-def _get_default_diags(set_num, dataset, run_type):
+def _get_default_diags(set_name, run_type):
     """
-    Returns the path for the default diags corresponding to set_num.
+    Returns the path for the default diags for plotset set_name.
+    These are different depending on the run_type.
     """
-    set_num = get_set_name(set_num)
+    set_name = get_set_name(set_name)
 
-    if dataset and run_type == 'model_vs_obs':  # either 'ACME' or 'AMWG', use the jsons
-        fnm = '{}_{}.json'.format(set_num, dataset)
-    else:  # use the cfgs
-        fnm = '{}_{}.cfg'.format(set_num, run_type)
-
-    folder = '{}'.format(set_num)
+    folder = '{}'.format(set_name)
+    fnm = '{}_{}.cfg'.format(set_name, run_type)
     pth = os.path.join(acme_diags.INSTALL_PATH, folder, fnm)
-    print('Using {} for {}'.format(pth, set_num))
+
+    print('Using {} for {}.'.format(pth, set_name))
     if not os.path.exists(pth):
         raise RuntimeError(
-            "Plotting via set '{}' not supported, file {} not installed".format(set_num, fnm))
+            "Plotting via set '{}' not supported, file {} not installed".format(set_name, fnm))
     return pth
 
 
@@ -136,6 +134,68 @@ def save_provenance(results_dir, parser):
     _save_parameter_files(results_dir, parser)
 
 
+def get_parameters(parser=ACMEParser()):
+    """
+    Get the parameters from the parser.
+    """
+    args = parser.view_args()
+
+    # There weren't any arguments defined
+    if not any(getattr(args, arg) for arg in vars(args)):
+        parser.print_help()
+        sys.exit()
+
+    if args.parameters and not args.other_parameters:  # -p only
+        cmdline_parameter = parser.get_cmdline_parameters()
+        # If just a -p with no command line parameters, check the py for errors.
+        # Otherwise don't check for errors, the command line args might have some missing ones.
+        check_values = True if not cmdline_parameter else False
+        # default_vars needs to be True in original_parameter b/c 
+        original_parameter = parser.get_orig_parameters(check_values=check_values)
+        #if not hasattr(original_parameter, 'sets'):
+        #    # Since sets is a selector, it must be in there.
+
+        # WITHOUT THIS, THERE ARE A BUNCH OF RESULTS.
+        # It's need to get the default selector and everything.
+        # But when this is done, it even gets the default EVERYTHING, case_id, etc.
+        # And all of them overwrite all of the stuff in the CFG.
+        # THIS CANNOT HAPPEN.
+        # parser.add_default_values(original_parameter, default_vars=True)
+        # We need some way to get the default values in original_parameter before it gets run through select().
+
+        # Maybe the selector should use something other than the *py to look for the values??
+        # Maybe create an original_param with all of the defaults with user options on top of it.
+        # And just use this to select the values.
+
+        # Load the default cfg files.
+        default_diags_paths = []
+        # TODO: Fix how the run_type is retrieved.
+        run_type = 'model_vs_obs' # original_parameter.run_type
+        for set_name in SET_NAMES:
+            default_diags_paths.append(_get_default_diags(set_name, run_type))
+
+        other_parameters = parser.get_other_parameters(files_to_open=default_diags_paths)
+
+        # NEW INFO:
+        # Need to add selectors in the original_parameter before combine_parameter()
+        # Because it's used as vars_to_ignore.
+        '''
+        parameters = parser.get_parameters(cmdline_parameters=cmdline_parameter,
+            orig_parameters=original_parameter, other_parameters=other_parameters)
+        '''
+        parameters = parser.get_parameters(other_parameters=other_parameters, cmd_default_vars=False)
+
+    elif not args.parameters and args.other_parameters:  # -d only
+        cmdline_parameter = parser.get_cmdline_parameters()
+        other_parameters = parser.get_other_parameters()
+        parameters = parser.get_parameters(cmdline_parameters=cmdline_parameter, 
+            other_parameters=other_parameters, cmd_default_vars=False)
+    else:  # -p and -d, or just command line arguments.
+        parameters = parser.get_parameters(cmd_default_vars=False)
+
+    return parameters
+
+
 def run_diag(parameters):
     """
     For a single set of parameters, run the corresponding diags.
@@ -162,62 +222,21 @@ def run_diag(parameters):
 
 def main():
     parser = ACMEParser()
-    args = parser.view_args()
+    parameters = get_parameters(parser)
 
-    # There weren't any arguments defined
-    if not any(getattr(args, arg) for arg in vars(args)):
-        parser.print_help()
-        sys.exit()
+    print(len(parameters))
+    for p in parameters:
+        print(p.selectors, end=' ')
+        # print(p.granulate, end=' ')
+        print(p.sets, end=' ')
+        print(p.variables, end=' ')
+        print(p.seasons, end=' ')
+        #print(p.case_id)
+        print(p.ref_name)
 
-    if args.parameters and not args.other_parameters:  # -p only
-        cmdline_parameter = parser.get_cmdline_parameters()
-        # If just a -p with no command line parameters, check the py for errors
-        # Otherwise don't check for errors, the command line args might have some missing ones
-        check_values = True if not cmdline_parameter else False
-        original_parameter = parser.get_orig_parameters(check_values)
-
-        # Special case, until selector parameter is added.
-        if hasattr(cmdline_parameter, 'sets'):
-            original_parameter.sets = cmdline_parameter.sets
-        elif not hasattr(original_parameter, 'sets'):
-            original_parameter.sets = SET_NAMES
-
-        # load the default cfg files
-        default_diags_paths = []
-        for set_num in original_parameter.sets:
-            run_type = 'model_vs_obs'
-            dataset = ''
-            if hasattr(original_parameter, 'dataset'):
-                dataset = original_parameter.dataset
-            if hasattr(original_parameter, 'run_type'):
-                run_type = original_parameter.run_type
-            default_diags_paths.append(_get_default_diags(set_num, dataset, run_type))
-
-        other_parameters = parser.get_other_parameters(files_to_open=default_diags_paths)
-
-        # Don't put the sets from the Python parameters to each of the parameters.
-        # Ex. if sets=[5, 7] in the Python parameters, don't change sets in the
-        # default jsons like lat_lon_ACME_default.json
-        vars_to_ignore = ['sets']
-        parameters = parser.get_parameters(cmdline_parameters=cmdline_parameter,
-            orig_parameters=original_parameter, other_parameters=other_parameters,
-            vars_to_ignore=vars_to_ignore, cmd_default_vars=False)
-
-    elif not args.parameters and args.other_parameters:  # -d only
-        cmdline_parameter = parser.get_cmdline_parameters()
-        other_parameters = parser.get_other_parameters()
-        parameters = parser.get_parameters(cmdline_parameters=cmdline_parameter, 
-            other_parameters=other_parameters, cmd_default_vars=False)
-
-    else:  # -p and -d, or just command line arguments
-        parameters = parser.get_parameters(cmd_default_vars=False)
-
+    quit()
     dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     for p in parameters:
-        # needed for distributed running
-        # chown of all generated files to the user who ran the diags
-        p.user = getpass.getuser()
-
         if not hasattr(p, 'results_dir'):
             p.results_dir = '{}-{}'.format('e3sm_diags_results', dt)
 

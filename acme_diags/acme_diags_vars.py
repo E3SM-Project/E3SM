@@ -8,10 +8,14 @@ This is used to get the correct variable names from the derived variables dictio
 import os
 import argparse
 import glob
+import traceback
 import cdms2
 import acme_diags
+from acme_diags.acme_diags_driver import get_parameters
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.derivations.acme import derived_variables
+
+DUMMY_FILE_PATH = '/Users/shaheen2/test_model_data_for_acme_diags/20161118.beta0.FC5COSP.ne30_ne30.edison_ANN_climo.nc'
 
 def main():
     vars_in_e3sm_diags = list_of_vars_in_e3sm_diags()
@@ -24,9 +28,12 @@ def list_of_vars_in_user_file():
     """
     Given a path to an nc file, return all of the variables in it.
     """
-    parser = argparse.ArgumentParser()
-    parser.add_argument("path")
+    #parser = argparse.ArgumentParser()
+    #parser.add_argument("path")
+    #path = parser.parse_args().path
+    # path = DUMMY_FILE_PATH
     path = parser.parse_args().path
+    print('Using the file: {}'.format(path))
 
     if not os.path.exists(path):
         msg = 'The file ({}) does not exist.'.format(path)
@@ -34,26 +41,42 @@ def list_of_vars_in_user_file():
     with cdms2.open(path) as f:
         return f.variables.keys()
 
+parser = ACMEParser()
+parser.add_argument('path', default=DUMMY_FILE_PATH, nargs='?')
+
 def list_of_vars_in_e3sm_diags():
     """
     Get a list of all of the variables used in e3sm_diags.
     Open all of the *.cfg files located in acme_diags/acme_diags/driver/default_diags/
     and get all of the 'variables' parameters.
     """
-    # Looks for these files in their installed location.
-    pth = os.path.join(acme_diags.INSTALL_PATH)
-    # The first '*' is the folder of the set, the second is the actual file.
-    # Ex: {acme_diags.INSTALL_PATH}/lat_lon/lat_lon_model_vs_obs.cfg
-    file_paths = [p for p in glob.glob(pth + '*/*.cfg')]
 
     # Get all of the 'variables' parameter from each file.
     vars_used = []
-    parser = ACMEParser()
-    parser.add_argument('path')  # Needed so the filename can be passed in.
-    parameters = parser.get_other_parameters(files_to_open=file_paths, check_values=False)
+    #print('hi')
+    #args = parser.parse_args()
+    #print(dir(args))
+    try:
+        print('something')
+        parameters = get_parameters(parser)
+        print('USING USER ARGUMENTS')
+    except Exception as e:
+        print(e)
+        # Looks for these files in their installed location.
+        pth = os.path.join(acme_diags.INSTALL_PATH)
+        # The first '*' is the folder of the set, the second is the actual file.
+        # Ex: {acme_diags.INSTALL_PATH}/lat_lon/lat_lon_model_vs_obs.cfg
+        file_paths = [p for p in glob.glob(pth + '*/*.cfg')]
+        ## NOT NEEDED:
+        ## parser.add_argument('path')  # Needed so the filename can be passed in.
+        #parser.add_args_and_values([DUMMY_FILE_PATH])
+        parameters = parser.get_other_parameters(files_to_open=file_paths, check_values=False)
+
     for p in parameters:
+        print('p.variables', p.variables)
         vars_used.extend(p.variables)
 
+    # print('vars_used', sorted(list(set(vars_used))))
     # We convert to a set because we only want one of each variable.
     return set(vars_used)
 
@@ -81,7 +104,7 @@ def check_for_derived_vars(e3sm_vars):
 
             var_added = False
             for list_of_vars in possible_vars:
-                if not var_added and vars_in_user_file.issuperset(set(list_of_vars)):
+                if not var_added and vars_in_user_file.issuperset(list_of_vars):
                     # All of the variables (list_of_vars) are in the input file.
                     # These are needed.
                     vars_used.extend(list_of_vars)

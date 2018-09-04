@@ -11,7 +11,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.test_data_path = ''
         self.viewer_descr = {}
 
-        self.sets = []
+        self.sets = ['zonal_mean_xy', 'zonal_mean_2d', 'lat_lon', 'polar', 'cosp_histogram']
         self.dataset = ''
         self.run_type = 'model_vs_obs'
         self.variables = []
@@ -63,6 +63,8 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.debug = False
 
         self.granulate = ['variables', 'seasons', 'regions', 'plevs']
+        self.selectors = ['sets', 'seasons']
+        #self.selectors = ['sets', 'seasons', 'variables']
 
     def check_values(self):
         if not hasattr(
