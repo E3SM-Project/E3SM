@@ -158,8 +158,6 @@
 <!-- sim_year used for CLM datasets and SSTs forcings -->
 <sim_year>1955</sim_year>
 
-<!-- land datasets -->
 <!-- Set in components/clm/bld/namelist_files/use_cases/1950_CMIP6LR_control.xml -->
-
 
 </namelist_defaults>
