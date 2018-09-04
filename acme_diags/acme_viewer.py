@@ -468,7 +468,7 @@ def generate_lat_lon_taylor_diag(viewer, root_dir, parameters):
 
     season_to_png = {}
     for season in LAT_LON_TABLE_INFO:
-        csv_path = _create_csv_from_dict_taylor_diag(taylor_diag_dir, season, parameters[0].test_name, parameters[0].run_type, parameters[0].ref_name)
+        csv_path = _create_csv_from_dict_taylor_diag(taylor_diag_dir, season, parameters[0].test_name, parameters[0].run_type, getattr(parameters[0], 'ref_name', ''))
         # Remove any reference to the results_dir when inserting the links into HTML pages.
         # This is because that folder can be renamed.
         csv_path = csv_path.split('viewer')[-1]
@@ -545,7 +545,7 @@ def create_viewer(root_dir, parameters, ext):
             # ref_name-variable-season-region
             # or
             # ref_name-variable-plev'mb'-season-region
-            ref_name = parameter.ref_name
+            ref_name = getattr(parameter, 'ref_name', '')
             for var in parameter.variables:
                 for season in parameter.seasons:
                     for region in parameter.regions:

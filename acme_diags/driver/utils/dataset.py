@@ -82,7 +82,7 @@ class Dataset():
         #   - This is done with the ref_timeseries_input and test_timeseries_input parameters.
         if self.ref and self.is_timeseries():
             # Get the reference variable from timeseries files.
-            data_path = self.parameters.ref_data_path
+            data_path = self.parameters.reference_data_path
             start_yr = self.parameters.ref_start_yr
             end_yr = self.parameters.ref_end_yr
             variables = self._get_timeseries_var(data_path, start_yr, end_yr, season)
