@@ -16,7 +16,7 @@ module med_constants_mod
   use shr_cal_mod    , only : med_constants_noleap => shr_cal_noleap
   use shr_cal_mod    , only : med_constants_gregorian => shr_cal_gregorian
   use shr_log_mod    , only : shr_log_Unit
-  use shr_cal_mod    , only : shr_cal_ymd2date 
+  use shr_cal_mod    , only : shr_cal_ymd2date
   use shr_cal_mod    , only : shr_cal_noleap
   use shr_cal_mod    , only : shr_cal_gregorian
   use shr_file_mod   , only : shr_file_getlogunit
@@ -37,6 +37,6 @@ module med_constants_mod
 
   !-----------------------------------------------------------------------------
   ! TODO: This is not a constant and should be moved elsewhere
-  integer :: med_constants_dbug_flag = 10
+  integer :: med_constants_dbug_flag = 0
 
 end module med_constants_mod
