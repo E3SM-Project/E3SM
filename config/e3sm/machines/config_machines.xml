@@ -88,6 +88,7 @@
       <arg name="num_tasks" > -n {{ total_tasks }}</arg>
       <arg name="thread_count"> -c $SHELL{echo 48/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
       <arg name="binding"> $SHELL{if [ 24 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+      <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
   </mpirun>
   <module_system type="module">
@@ -235,6 +236,7 @@
       <arg name="num_tasks" > -n {{ total_tasks }}</arg>
       <arg name="thread_count">-c $SHELL{echo 64/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
       <arg name="binding"> $SHELL{if [ 32 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+      <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
   </mpirun>
   <module_system type="module">
@@ -374,6 +376,7 @@
       <arg name="num_tasks" > -n {{ total_tasks }}</arg>
       <arg name="thread_count">-c $SHELL{echo 272/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
       <arg name="binding"> $SHELL{if [ 68 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+      <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
   </mpirun>
   <module_system type="module">
