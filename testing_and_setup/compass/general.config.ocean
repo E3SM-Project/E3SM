@@ -9,29 +9,28 @@
 # init namelists in the default_inputs directory after a successful build of
 # the ocean model.
 [namelists]
-forward = /turquoise/usr/projects/climate/sbrus/MPAS-Model/namelist.ocean.forward
-init    = /turquoise/usr/projects/climate/sbrus/MPAS-Model/namelist.ocean.init
+forward = FULL_PATH_TO_MPAS_MODEL_REPO/namelist.ocean.forward
+init    = FULL_PATH_TO_MPAS_MODEL_REPO/namelist.ocean.init
 
 # The streams section defines paths to template streams files that will be used
 # to generate specific streams files. Typically these will point to the forward and
 # init streams files in the default_inputs directory after a successful build of
 # the ocean model.
 [streams]
-forward = /turquoise/usr/projects/climate/sbrus/MPAS-Model/streams.ocean.forward
-init    = /turquoise/usr/projects/climate/sbrus/MPAS-Model/streams.ocean.init
+forward = FULL_PATH_TO_MPAS_MODEL_REPO/streams.ocean.forward
+init    = FULL_PATH_TO_MPAS_MODEL_REPO/streams.ocean.init
 
 # The executables section defines paths to required executables. These
 # executables are provided for use by specific test cases.
 # Full paths should be provided in order to access the executables from
 # anywhere on the machine.
 [executables]
-model = /turquoise/usr/projects/climate/sbrus/MPAS-Model/ocean_model
-metis = /turquoise/usr/projects/climate/SHARED_CLIMATE/software/grizzly/metis/5.1.0/bin/gpmetis 
-mesh_converter = /turquoise/usr/projects/climate/sbrus/MPAS-Tools/mesh_tools/mesh_conversion_tools/MpasMeshConverter.x
-cell_culler    = /turquoise/usr/projects/climate/sbrus/MPAS-Tools/mesh_tools/mesh_conversion_tools/MpasCellCuller.x
-mask_creator   = /turquoise/usr/projects/climate/sbrus/MPAS-Tools/mesh_tools/mesh_conversion_tools/MpasMaskCreator.x
+model = FULL_PATH_TO_MPAS_MODEL_REPO/ocean_model
+metis = FULL_PATH_TO_METIS
+mesh_converter = FULL_PATH_TO_MPAS_TOOLS_REPO/mesh_tools/mesh_conversion_tools/MpasMeshConverter.x
+cell_culler    = FULL_PATH_TO_MPAS_TOOLS_REPO/mesh_tools/mesh_conversion_tools/MpasCellCuller.x
+mask_creator   = FULL_PATH_TO_MPAS_TOOLS_REPO/mesh_tools/mesh_conversion_tools/MpasMaskCreator.x
 mesh_generator = FULL_PATH_TO_EXECUTABLE_MESH_GENERATION_SCRIPT
-mpi_runtime = /usr/bin/srun
 
 # The paths section describes paths that are used within the ocean core test
 # cases.
@@ -42,11 +41,9 @@ mpi_runtime = /usr/bin/srun
 # the same directory, or different directory. Additionally, if they are empty
 # some test cases might download data into them, which will then be reused if
 # the test case is run again later.
-mpas_model = /turquoise/usr/projects/climate/sbrus/MPAS-Model 
-mpas_tools = /turquoise/usr/projects/climate/sbrus/MPAS-Tools 
-geometric_features = /turquoise/usr/projects/climate/mpeterse/repos/geometric_features/master 
-jigsaw-geo-matlab =/turquoise/usr/projects/climate/sbrus/jigsaw-geo-matlab 
-mesh_database = /usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/mesh_database 
-initial_condition_database = /usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/initial_condition_database 
-bathymetry_database = /turquoise/usr/projects/climate/sbrus/bathy_data
-jigsaw_to_MPAS = /turquoise/usr/projects/climate/sbrus/MPAS-Model/testing_and_setup/compass/ocean/jigsaw_to_MPAS
+mpas_model = FULL_PATH_TO_MPAS_MODEL_REPO
+mpas_tools = FULL_PATH_TO_MPAS_TOOLS_REPO
+geometric_features = FULL_PATH_TO_LOCAL_CHECKOUT_OF_GEOMETRIC_FEATURES_REPO
+jigsaw-geo-matlab = FULL_PATH_TO_JIGSAW_REPO
+mesh_database = FULL_PATH_TO_LOCAL_MESH_DATABASE
+initial_condition_database = FULL_PATH_TO_LOCAL_INITIAL_CONDITION_DATABASE

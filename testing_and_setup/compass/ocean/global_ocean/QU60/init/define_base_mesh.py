@@ -17,4 +17,5 @@ def cellWidthVsLatLon():
     lon = np.arange(-180, 180.01, ddeg)
 
     cellWidth = constantCellWidth*np.ones((lat.size, lon.size))
+    print 'cellWidth',cellWidth
     return cellWidth,lon,lat

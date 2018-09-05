@@ -26,7 +26,7 @@
 
 	<add_executable source="metis" dest="metis"/>
 
-	<add_link source="../culled_mesh/culled_mesh_final.nc" dest="mesh.nc"/>
+	<add_link source="../culled_mesh/culled_mesh.nc" dest="mesh.nc"/>
 	<add_link source="../culled_mesh/culled_graph.info" dest="graph.info"/>
 	<add_link source="../culled_mesh/critical_passages_mask_final.nc" dest="critical_passages.nc"/>
 	<add_link source_path="initial_condition_database" source="salinity.80Layer.180619.nc" dest="layer_depth.nc"/>
@@ -38,7 +38,7 @@
 	<add_link source_path="mpas_tools" source="visualization/paraview_vtk_field_extractor/paraview_vtk_field_extractor.py" dest="paraview_vtk_field_extractor.py"/>
 
 	<namelist name="namelist.ocean" mode="init">
-		<template file="template_init2.xml" path_base="script_configuration_dir"/>
+		<template file="template_initial_state.xml" path_base="script_configuration_dir"/>
 		<template file="template_critical_passages.xml" path_base="script_core_dir" path="global_ocean"/>
 		<option name="config_global_ocean_depth_file">'layer_depth.nc'</option>
 		<option name="config_global_ocean_minimum_depth">10</option>
@@ -46,7 +46,7 @@
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
-		<template file="template_init2.xml" path_base="script_configuration_dir"/>
+		<template file="template_initial_state.xml" path_base="script_configuration_dir"/>
 		<template file="template_critical_passages.xml" path_base="script_core_dir" path="global_ocean"/>
 	</streams>
 

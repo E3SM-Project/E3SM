@@ -1,15 +1,1 @@
-<?xml version="1.0"?>
-<config case="mesh_metrics">
-
-	<add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
-        <add_link source="../culled_mesh/culled_mesh_final.nc" dest="mesh.nc"/>
-
-
-	<run_script name="run.py">
-		<step executable="./MpasMeshConverter.x">
-                     <argument flag="mesh.nc"></argument>
-                     <argument flag="mesh_with_metrics.nc"></argument>
-		</step>
-	</run_script>
-
-</config>
+../../config_files/config_mesh_metrics.xml

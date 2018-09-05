@@ -47,13 +47,4 @@ args = ['./MpasMeshConverter.x',
 print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
 
-#print 'Step 5. Create vtk file for visualization'
-#args = ['./paraview_vtk_field_extractor.py',
-#        '--ignore_time',
-#				'-d','maxEdges=0',
-#        '-v', 'allOnCells',
-#        '-f', 'base_mesh.nc',
-#        '-o', 'base_mesh_vtk']
-#print "running", ' '.join(args)
-#subprocess.check_call(args, env=os.environ.copy())
 
