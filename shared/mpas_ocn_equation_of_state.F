@@ -76,12 +76,12 @@ contains
 !> \date    September 2011, modified May 2018
 !> \details
 !>  This routine calls the equation of state to compute a density
-!>  from model temperature and salinity. 
-!>  If kDisplaced equals 0, density for the current vertical level is 
+!>  from model temperature and salinity.
+!>  If kDisplaced equals 0, density for the current vertical level is
 !>           returned
-!>  If kDisplaced is not 0, density is returned for a parcel 
+!>  If kDisplaced is not 0, density is returned for a parcel
 !>           adiabatically displaced from its original level to level
-!>           kDisplaced.  
+!>           kDisplaced.
 !>  When using the linear EOS, these options are ignored since the
 !>           density is independent of pressure/depth.
 !
@@ -91,7 +91,7 @@ contains
                            meshPool, scratchPool, nCells, kDisplaced,  &
                            displacement_type, density, err,            &
                            thermalExpansionCoeff,                      &
-                           salineContractionCoeff, timeLevelIn) 
+                           salineContractionCoeff, timeLevelIn)
       !{{{
       !-----------------------------------------------------------------
       ! Input variables

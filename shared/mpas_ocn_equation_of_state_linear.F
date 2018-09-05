@@ -166,7 +166,7 @@ contains
 
       ! copy some intent(in) into local work space
 
-      !*** if surfaceDisplaced, then compute density at all levels 
+      !*** if surfaceDisplaced, then compute density at all levels
       !*** based on input surface values
 
       if (trim(displacementType) == 'surfaceDisplaced') then
@@ -299,7 +299,7 @@ contains
 
       ! copy some intent(in) into local work space
 
-      !*** if surfaceDisplaced, then compute density at all levels 
+      !*** if surfaceDisplaced, then compute density at all levels
       !*** based on input surface values
       !*** return fixed values of expansion coefficients
 
@@ -388,7 +388,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), pointer ::    &
-         config_eos_linear_densityref, &! linear options extracted  
+         config_eos_linear_densityref, &! linear options extracted
          config_eos_linear_alpha,      &!  from input namelist
          config_eos_linear_beta,       &
          config_eos_linear_Tref,       &
