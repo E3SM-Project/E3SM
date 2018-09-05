@@ -65,7 +65,7 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
 def run_diag(parameter):
     variables = parameter.variables
     seasons = parameter.seasons
-    ref_name = parameter.ref_name
+    ref_name = getattr(parameter, 'ref_name', '')
     regions = parameter.regions
 
     test_data = utils.dataset.Dataset(parameter, test=True)
