@@ -23,7 +23,7 @@ do
     for file1 in ${var}_*nc
     do
         echo $file1
-        cdo splityear $file1 ${time_series_output_path}ERA_Interim_yearly_${var}_
+        cdo splityear $file1 ${time_series_output_path}ERA-Interim_yearly_${var}_
     done
 
     for yr in $(eval echo "{$start_yr..$end_yr}"); do
@@ -31,11 +31,11 @@ do
         yyyy=`printf "%04d" $yr`
         for mth in {1..12}; do
             mm=`printf "%02d" $mth`
-           ncks -O -F -d time,${mth} ${time_series_output_path}ERA_Interim_yearly_${var}_${yyyy}.nc ${time_series_output_path}ERA_Interim_monthly_${var}_${yyyy}${mm}.nc
+           ncks -O -F -d time,${mth} ${time_series_output_path}ERA-Interim_yearly_${var}_${yyyy}.nc ${time_series_output_path}ERA-Interim_monthly_${var}_${yyyy}${mm}.nc
         done
     done
-    ncrcat ${time_series_output_path}ERA_Interim_yearly_${var}_${yyyy}.nc ${time_series_output_path}ERA_Interim_${var}_${start_yr}_${end_yr}.nc 
-    ncclimo -a sdd --lnk_flg -c ERA_Interim_monthly_${var}_${start_yr}01.nc -s $start_yr -e $end_yr -i ${time_series_output_path} -o ${climo_output_path}
+    ncrcat ${time_series_output_path}ERA-Interim_yearly_${var}_${yyyy}.nc ${time_series_output_path}ERA-Interim_${var}_${start_yr}_${end_yr}.nc 
+    ncclimo -a sdd --lnk_flg -c ERA-Interim_monthly_${var}_${start_yr}01.nc -s $start_yr -e $end_yr -i ${time_series_output_path} -o ${climo_output_path}
 rm ${time_series_output_path}*yearly*nc
 rm ${time_series_output_path}*monthly*nc
         
@@ -55,10 +55,10 @@ do
     #for i in "${var[@]}"
     for i in $vars
     do
-    ncks -A ERA_Interim_monthly_${i}_${j}_*nc ERA_Interim_monthly_vas_${j}_*nc
+    ncks -A ERA-Interim_monthly_${i}_${j}_*nc ERA-Interim_monthly_vas_${j}_*nc
     done
 done
 
-for i in ERA_Interim_monthly_vas*.nc; do mv "$i" "${i/ERA_Interim_monthly_vas/ERA_Interim}" ; done
-rm ERA_Interim_monthly_*.nc
+for i in ERA-Interim_monthly_vas*.nc; do mv "$i" "${i/ERA-Interim_monthly_vas/ERA-Interim}" ; done
+rm ERA-Interim_monthly_*.nc
 
