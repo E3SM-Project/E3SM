@@ -124,7 +124,7 @@ subroutine shoc_main ( &
   real(r8) :: w_sec(shcol,nlev)
   real(r8) :: thl_sec(shcol,nlev)
   real(r8) :: qw_sec(shcol,nlev)
-  real(r8) :: qwthl_sec(shcol,0:nlev)
+  real(r8) :: qwthl_sec(shcol,nlev)
   real(r8) :: wthl_sec(shcol,0:nlev)
   real(r8) :: wqw_sec(shcol,0:nlev)
   real(r8) :: wtke_sec(shcol,0:nlev)
@@ -159,7 +159,7 @@ subroutine shoc_main ( &
   call diag_second_shoc_moments(shcol,nlev,&  ! Input
          num_qtracers,thetal,qw,&             ! Input
 	 u_wind,v_wind,qtracers,tke,&         ! Input
-	 isotropy,tkh,tk,shoc_mix,&           ! Input
+	 isotropy,tkh,tk,&                    ! Input
 	 adz_zt,adz_zm, dz,&                  ! Input
 	 zt_grid,zm_grid,&                    ! Input
 	 wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,&     ! Input
@@ -315,7 +315,7 @@ end subroutine update_prognostics
 subroutine diag_second_shoc_moments(shcol,nlev, &   ! Input
              num_tracer,thetal,qw, &                ! Input
 	     u_wind,v_wind,tracer,tke, &            ! Input
-	     isotropy,tkh,tk,shoc_mix,&             ! Input
+	     isotropy,tkh,tk,&                      ! Input
 	     adz,adzw,dz,&                          ! Input   
 	     zt_grid,zm_grid,&                      ! Input
 	     wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &   ! Input    
@@ -339,7 +339,6 @@ subroutine diag_second_shoc_moments(shcol,nlev, &   ! Input
   real(r8), intent(in) :: isotropy(shcol,nlev) ! return to isotropy timescale
   real(r8), intent(in) :: tkh(shcol,nlev) ! thermal conductivity
   real(r8), intent(in) :: tk(shcol,nlev) ! momentum conductivity
-  real(r8), intent(in) :: shoc_mix(shcol,nlev) ! mixing length
   real(r8), intent(in) :: tracer(shcol,nlev,num_tracer)
   
   real(r8), intent(in) :: zt_grid(shcol,nlev)
@@ -357,7 +356,7 @@ subroutine diag_second_shoc_moments(shcol,nlev, &   ! Input
   real(r8), intent(out) :: w_sec(shcol,nlev)	! second order vertical velocity
   real(r8), intent(out) :: thl_sec(shcol,nlev)  ! second order liquid wat. potential temp.
   real(r8), intent(out) :: qw_sec(shcol,nlev)   ! second order total water mixing rat.
-  real(r8), intent(out) :: qwthl_sec(shcol,0:nlev) ! covariance of temp and moisture
+  real(r8), intent(out) :: qwthl_sec(shcol,nlev) ! covariance of temp and moisture
   real(r8), intent(out) :: wthl_sec(shcol,0:nlev) ! vertical flux of heat
   real(r8), intent(out) :: wqw_sec(shcol,0:nlev) ! vertical flux of total water
   real(r8), intent(out) :: uw_sec(shcol,0:nlev) ! vertical flux of u
