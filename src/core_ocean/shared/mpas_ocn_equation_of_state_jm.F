@@ -64,7 +64,7 @@ module ocn_equation_of_state_jm
 
    !*** temporary array to hold modified T,S for EOS calculation
    !*** declared here to make it thread-shared - could be replaced
-   !***   by a local subroutine temporary in a different thread model 
+   !***   by a local subroutine temporary in a different thread model
 
    real (kind=RKIND), dimension(:,:), allocatable :: &
       tracerTemp, tracerSalt
@@ -159,8 +159,8 @@ contains
 !> \author  Mark Petersen and Todd Ringler, modified Phil Jones
 !> \date    September 2011, updated August 2013, May 2018
 !> \details
-!>  This routine computes the density from model temperature and 
-!>  salinity using a potential-temperature-based bulk modulus from 
+!>  This routine computes the density from model temperature and
+!>  salinity using a potential-temperature-based bulk modulus from
 !>  Jackett and McDougall (JTECH, Vol.12, pp 381-389, April, 1995)
 !>  to approximate the UNESCO equation of state.
 !>
@@ -296,7 +296,7 @@ contains
          enddo
       endif
 
-      !*** compute modified T,S to account for displacement and 
+      !*** compute modified T,S to account for displacement and
       !*** valid range
 
       !$omp single
@@ -416,8 +416,8 @@ contains
 !> \author  Mark Petersen and Todd Ringler, modified Phil Jones
 !> \date    September 2011, updated August 2013, May 2018
 !> \details
-!>  This routine computes the density from model temperature and 
-!>  salinity using a potential-temperature-based bulk modulus from 
+!>  This routine computes the density from model temperature and
+!>  salinity using a potential-temperature-based bulk modulus from
 !>  Jackett and McDougall (JTECH, Vol.12, pp 381-389, April, 1995)
 !>  to approximate the UNESCO equation of state.
 !>
@@ -498,7 +498,7 @@ contains
          bulkMod,          &! Bulk modulus
          denomk,           &! temp for avoiding division
          work1, work2,     &! temporary work space
-         work3, work4,     &! 
+         work3, work4,     &!
          drdt0,            &! d(density)/d(temperature), for surface
          drds0,            &! d(density)/d(salinity   ), for surface
          dkdt,             &! d(bulk modulus)/d(pot. temp.)
@@ -568,7 +568,7 @@ contains
          enddo
       endif
 
-      !*** compute modified T,S to account for displacement and 
+      !*** compute modified T,S to account for displacement and
       !*** valid range
 
       !$omp single
@@ -664,7 +664,7 @@ contains
          !*** compute density
          !***
 
-         denomk = 1.0/(bulkMod - p(k))
+         denomk = 1.0_RKIND/(bulkMod - p(k))
 
          density(k, iCell) = (unt0 + rhosfc)*bulkMod*denomk
 
@@ -810,8 +810,8 @@ contains
       !***  using a mean density derived from depth-dependent global
       !***  average temperatures and salinities from Levitus 1994, and
       !***  integrating using hydrostatic balance.
-      !*** Note this calculation uses refBottomDepth, so pressure on 
-      !***  top level does not include SSH contribution. 
+      !*** Note this calculation uses refBottomDepth, so pressure on
+      !***  top level does not include SSH contribution.
       !*** Also note that this is only valid for case in which the
       !***  vertical mesh does not vary significantly in time. Future
       !***  Lagrangian meshes will likely need to use full
