@@ -788,7 +788,7 @@ end function shoc_implements_cnst
 	  um_in, vm_in, rcm_in, edsclr_in, &
 	  edsclr_dim, wthv_in, &
 	  cloudfrac_shoc, rcm_shoc) 
- 
+
    enddo  ! end time loop
    
    ! Arrays need to be "flipped" to CAM grid

@@ -369,6 +369,7 @@ subroutine diag_second_shoc_moments(shcol,nlev, &   ! Input
 ! Local variables  
   integer :: kb, k, i, p
   real(r8) :: grid_dz2,grid_dz,grid_dzw
+  real(r8) :: gr1,gr2,grw1
   real(r8) :: isotropy_zm(shcol,nlev)
   real(r8) :: tkh_zm(shcol,nlev)
   real(r8) :: sm ! Mixing coefficient
@@ -395,28 +396,29 @@ subroutine diag_second_shoc_moments(shcol,nlev, &   ! Input
 	grid_dzw=dz(i)*adzw(i,k)
       endif
     
-      grid_dz=(1./grid_dz)
-      grid_dz2=(1._r8/grid_dz)**2
+      gr1=(1._r8/grid_dz)
+      gr2=(1._r8/grid_dz)**2
+      grw1=(1._r8/grid_dzw)
     
       sm=isotropy_zm(i,k)*tkh_zm(i,k)
       
-      thl_sec(i,k)=thl2tune*sm*grid_dz2*(thetal(i,k)-thetal(i,kb))**2
-      qw_sec(i,k)=qw2tune*sm*grid_dz2*(qw(i,k)-qw(i,kb))**2
-      qwthl_sec(i,k)=qwthl2tune*sm*grid_dz2*((thetal(i,k)-thetal(i,kb))* &
+      thl_sec(i,k)=thl2tune*sm*gr2*(thetal(i,k)-thetal(i,kb))**2
+      qw_sec(i,k)=qw2tune*sm*gr2*(qw(i,k)-qw(i,kb))**2
+      qwthl_sec(i,k)=qwthl2tune*sm*gr2*((thetal(i,k)-thetal(i,kb))* &
         (qw(i,k)-qw(i,kb)) )
 	
       ! diagnose vertical heat flux
-      wthl_sec(i,k)=-1._r8*tkh_zm(i,k)*grid_dz*(thetal(i,k)-thetal(i,kb))
-      wqw_sec(i,k)=-1._r8*tkh_zm(i,k)*grid_dz*(qw(i,k)-qw(i,kb))
+      wthl_sec(i,k)=-1._r8*tkh_zm(i,k)*gr1*(thetal(i,k)-thetal(i,kb))
+      wqw_sec(i,k)=-1._r8*tkh_zm(i,k)*gr1*(qw(i,k)-qw(i,kb))
       
-      wtke_sec(i,k)=-1._r8*tkh_zm(i,k)*grid_dz*(tke(i,k)-tke(i,kb))
+      wtke_sec(i,k)=-1._r8*tkh_zm(i,k)*gr1*(tke(i,k)-tke(i,kb))
       
       ! diagnose vertical momentum transport
-      uw_sec(i,k)=-1._r8*tk(i,k)*grid_dzw*(u_wind(i,k)-u_wind(i,kb))
-      vw_sec(i,k)=-1._r8*tk(i,k)*grid_dzw*(v_wind(i,k)-v_wind(i,kb))
+      uw_sec(i,k)=-1._r8*tk(i,k)*grw1*(u_wind(i,k)-u_wind(i,kb))
+      vw_sec(i,k)=-1._r8*tk(i,k)*grw1*(v_wind(i,k)-v_wind(i,kb))
       
       do p=1,num_tracer
-        wtracer_sec(i,k,p)=tkh_zm(i,k)*grid_dz*(tracer(i,k,p)-tracer(i,kb,p))
+        wtracer_sec(i,k,p)=tkh_zm(i,k)*gr1*(tracer(i,k,p)-tracer(i,kb,p))
       enddo
     
     enddo ! end i loop (column loop)
@@ -1014,7 +1016,7 @@ subroutine shoc_tke(shcol,nlev,dtime,& ! Input
   real(r8) :: buoy_sgs,ratio,a_prod_sh,a_prod_bu,a_diss
   real(r8) :: lstarn, lstarp, bbb, omn, omp
   real(r8) :: qsatt,dqsat,tk_in, uw_sec, vw_sec
-  real(r8) :: tscale1,lambda,buoy_sgs_save,grid_dzw
+  real(r8) :: tscale1,lambda,buoy_sgs_save,grid_dzw,grw1
   integer i,j,k,kc,kb	 
   
   Cs = 0.15_r8
@@ -1040,10 +1042,12 @@ subroutine shoc_tke(shcol,nlev,dtime,& ! Input
         kb=nlev-1
 	grid_dzw=dz(i)*adzw(i,k)
       endif
-    
+ 
+      grw1=(1._r8/grid_dzw)      
+   
       tk_in=Ck*shoc_mix(i,k)*sqrt(tke(i,k))
-      uw_sec=grid_dzw*(u_wind(i,k)-u_wind(i,kb))
-      vw_sec=grid_dzw*(v_wind(i,k)-v_wind(i,kb))  
+      uw_sec=grw1*(u_wind(i,k)-u_wind(i,kb))
+      vw_sec=grw1*(v_wind(i,k)-v_wind(i,kb))  
       shear_prod(i,k)=uw_sec**2+vw_sec**2 
     enddo
   enddo
