@@ -18,13 +18,13 @@ program esmApp
   type(ESMF_GridComp)     :: esmComp
 
   ! Initialize ESMF
-!#ifdef DEBUG
+#ifdef DEBUG
   call ESMF_Initialize(logkindflag=ESMF_LOGKIND_MULTI, logappendflag=.false., &
     defaultCalkind=ESMF_CALKIND_GREGORIAN, ioUnitLBound=5001, ioUnitUBound=5101, rc=rc)
-!#else
-!  call ESMF_Initialize(logkindflag=ESMF_LOGKIND_MULTI_ON_ERROR, logappendflag=.false., &
-!    defaultCalkind=ESMF_CALKIND_GREGORIAN, ioUnitLBound=5001, ioUnitUBound=5101, rc=rc)
-!#endif
+#else
+  call ESMF_Initialize(logkindflag=ESMF_LOGKIND_MULTI_ON_ERROR, logappendflag=.false., &
+    defaultCalkind=ESMF_CALKIND_GREGORIAN, ioUnitLBound=5001, ioUnitUBound=5101, rc=rc)
+#endif
   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
     line=__LINE__, &
     file=__FILE__)) &
