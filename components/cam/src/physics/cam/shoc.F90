@@ -821,19 +821,19 @@ subroutine shoc_assumed_pdf(shcol,nlev, &       ! Input
           Skew_qw=((1.2*Skew_w)/0.2)*(tsign-0.2)
         endif
 
-      qw2_1=min(100.,max(0.,(3.*qw1_2*(1.-a*qw1_1**2-(1.-a)*qw1_2**2) &
-        -(Skew_qw-a*qw1_1**3-(1.-a)*qw1_2**3))/ &
-        (3.*a*(qw1_2-qw1_1))))*qwsec
+        qw2_1=min(100.,max(0.,(3.*qw1_2*(1.-a*qw1_1**2-(1.-a)*qw1_2**2) &
+          -(Skew_qw-a*qw1_1**3-(1.-a)*qw1_2**3))/ &
+          (3.*a*(qw1_2-qw1_1))))*qwsec
 
-      qw2_2=min(100.,max(0.,(-3.*qw1_1*(1.-a*qw1_1**2-(1.-a)*qw1_2**2) &
-      +(Skew_qw-a*qw1_1**3-(1.-a)*qw1_2**3))/ &
-      (3.*(1.-a)*(qw1_2-qw1_1))))*qwsec
+        qw2_2=min(100.,max(0.,(-3.*qw1_1*(1.-a*qw1_1**2-(1.-a)*qw1_2**2) &
+          +(Skew_qw-a*qw1_1**3-(1.-a)*qw1_2**3))/ &
+          (3.*(1.-a)*(qw1_2-qw1_1))))*qwsec
 
-      qw1_1=qw1_1*sqrtqt+qw_first
-      qw1_2=qw1_2*sqrtqt+qw_first
+        qw1_1=qw1_1*sqrtqt+qw_first
+        qw1_2=qw1_2*sqrtqt+qw_first
 
-      sqrtqw2_1=sqrt(qw2_1)
-      sqrtqw2_2=sqrt(qw2_2)
+        sqrtqw2_1=sqrt(qw2_1)
+        sqrtqw2_2=sqrt(qw2_2)
 
       endif
       
@@ -859,10 +859,6 @@ subroutine shoc_assumed_pdf(shcol,nlev, &       ! Input
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !  BEGIN TO COMPUTE CLOUD PROPERTY STATISTICS
 
-      ! THIS DEFINITION WILL NEED TO BE CHANGED! +DPAB
-!      Tl1_1=thl1_1-ggr/cp*z(k)+fac_cond*qpl(i,j,k)+fac_sub*(qci(i,j,k)+qpi(i,j,k))
-!      Tl1_2=thl1_2-ggr/cp*z(k)+fac_cond*qpl(i,j,k)+fac_sub*(qci(i,j,k)+qpi(i,j,k))
-
       Tl1_1=thl1_1/((100000._r8/pval)**(rgas/cp))
       Tl1_2=thl1_2/((100000._r8/pval)**(rgas/cp))
 
@@ -870,8 +866,6 @@ subroutine shoc_assumed_pdf(shcol,nlev, &       ! Input
 
       esval1_1=0.
       esval1_2=0.
-      esval2_1=0.
-      esval2_2=0.
       om1=1.
       om2=1. 
      
@@ -879,8 +873,6 @@ subroutine shoc_assumed_pdf(shcol,nlev, &       ! Input
       esval1_1=esatw_shoc(Tl1_1)*100.
       lstarn1=lcond 
 	
-      esval2_1=0._r8   ! +DPAB is this right?
-      
       qs1=0.622_r8*esval1_1/max(esval1_1,pval-esval1_1)
       beta1=(rgas/rv)*(lstarn1/(rgas*Tl1_1))*(lstarn1/(cp*Tl1_1))
       
@@ -891,13 +883,11 @@ subroutine shoc_assumed_pdf(shcol,nlev, &       ! Input
         qs2=qs1     
         beta2=beta1
       else
-        esval1_2=esatw_shoc(Tl1_2)*100._r8 
-	esval2_2 = 0._r8
-      endif
-      
-      qs2=0.622*esval1_2/max(esval1_2,pval-esval1_2)
-      beta2=(rgas/rv)*(lstarn2/(rgas*Tl1_2))*(lstarn2/(cp*Tl1_2)) 
-      
+        esval1_2=esatw_shoc(Tl1_2)*100._r8  
+        qs2=0.622*esval1_2/max(esval1_2,pval-esval1_2)
+        beta2=(rgas/rv)*(lstarn2/(rgas*Tl1_2))*(lstarn2/(cp*Tl1_2)) 
+      endif      
+
       !!!!!  Now compute cloud stuff
       !!!!!!  compute s term    
       
