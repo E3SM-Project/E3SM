@@ -123,6 +123,8 @@ def pressure_to_plevs(var, plev):
     """Convert from pressure coordinate to desired pressure level(s)."""
     # Construct pressure level for interpolation
     var_plv = var.getLevel()
+    if var_plv.units == 'Pa':
+        var_plv[:] = var_plv[:]/100.0 #convert Pa to mb
     levels_orig = MV2.array(var_plv[:])
     levels_orig.setAxis(0, var_plv)
     # grow 1d levels_orig to mv dimention
