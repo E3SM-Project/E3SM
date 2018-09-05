@@ -959,12 +959,12 @@ subroutine shoc_assumed_pdf(shcol,nlev, &       ! Input
 
       endif
       
-      shoc_cldfrac(i,k) = min(1.,a*C1+(1._r8-a)*C1)
+      shoc_cldfrac(i,k) = min(1.,a*C1+(1._r8-a)*C2)
       
       ql1=min(qn1,qw1_1)
       ql2=min(qn2,qw1_2)
       
-      shoc_ql(i,k) = max(0._r8,a*ql1+(1._r8+a)*ql2)
+      shoc_ql(i,k) = max(0._r8,a*ql1+(1._r8-a)*ql2)
       
       ! update temperature here? +PAB
       
@@ -976,7 +976,7 @@ subroutine shoc_assumed_pdf(shcol,nlev, &       ! Input
 	
     enddo  ! end i loop here
   enddo	  ! end k loop here
-	                      
+	                     
   return                              
      
 end subroutine shoc_assumed_pdf

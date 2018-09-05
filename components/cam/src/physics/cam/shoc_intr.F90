@@ -126,7 +126,7 @@ module shoc_intr
     cnst_names=(/'TKE   '/)    
  
     ! TKE is prognostic in SHOC and should be advected by dynamics
-    call cnst_add('SHOC_TKE',0._r8,0._r8,0._r8,ixtke,longname='turbulent kinetic energy',cam_outfld=.true.)
+    call cnst_add('SHOC_TKE',0._r8,0._r8,0._r8,ixtke,longname='turbulent kinetic energy',cam_outfld=.false.)
   
     ! Fields that are not prognostic should be added to PBUF
     call pbuf_add_field('WTHV', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wthv_idx) 
