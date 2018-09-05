@@ -49,21 +49,23 @@ namespace Homme {
 // advantage of this to optimize memory access.
 template <typename ExecSpace>
 struct SerialLimiter {
-  template <int limiter_option, typename ArrayGll, typename ArrayGllLvl, typename Array2Lvl>
+  template <int limiter_option, typename ArrayGll, typename ArrayGllLvl, typename Array2Lvl,
+            typename Array2GllLvl>
   KOKKOS_INLINE_FUNCTION static void
   run(const ArrayGll& sphweights, const ArrayGllLvl& idpmass,
       const Array2Lvl& iqlim, const ArrayGllLvl& iptens,
-      const ArrayGllLvl& irwrk);
+      const Array2GllLvl& irwrk);
 };
 // GPU doesn't have a serial impl.
 #if defined KOKKOS_ENABLE_CUDA
 template <>
 struct SerialLimiter<Kokkos::Cuda> {
-  template <int limiter_option, typename ArrayGll, typename ArrayGllLvl, typename Array2Lvl>
+  template <int limiter_option, typename ArrayGll, typename ArrayGllLvl, typename Array2Lvl,
+            typename Array2GllLvl>
   KOKKOS_INLINE_FUNCTION static void
   run (const ArrayGll& sphweights, const ArrayGllLvl& idpmass,
        const Array2Lvl& iqlim, const ArrayGllLvl& iptens,
-       const ArrayGllLvl& irwrk) {
+       const Array2GllLvl& irwrk) {
     Kokkos::abort("SerialLimiter::run: Should not be called on GPU.");
   }
 };
@@ -647,7 +649,7 @@ private:
     if ( ! OnGpu<ExecSpace>::value && kv.team.team_size() == 1)
       SerialLimiter<ExecSpace>::run<8>(
         sphweights, dpmass, qlim, ptens,
-        Homme::subview(m_sphere_ops.scalar_buf_ml, kv.team_idx, 0));
+        Homme::subview(m_sphere_ops.vector_buf_ml, kv.team_idx, 0));
     else
       limiter_optim_iter_full(kv.team, sphweights, dpmass, qlim, ptens);
   }
@@ -662,7 +664,7 @@ private:
     if ( ! OnGpu<ExecSpace>::value && kv.team.team_size() == 1)
       SerialLimiter<ExecSpace>::run<9>(
         sphweights, dpmass, qlim, ptens,
-        Homme::subview(m_sphere_ops.scalar_buf_ml, kv.team_idx, 0));
+        Homme::subview(m_sphere_ops.vector_buf_ml, kv.team_idx, 0));
     else
       limiter_clip_and_sum(kv.team, sphweights, dpmass, qlim, ptens);
   }
@@ -743,12 +745,14 @@ private:
       if (sums.v[0] > maxp*sums.v[1])
         maxp = qlim(1,vpi)[vsi] = sums.v[0]/sums.v[1];
 
+      const bool modified =
       limit(team, sums.v[0], minp, maxp, x.data(), c.data());
 
-      Dispatch<>::parallel_for_NP2(team, [&] (const int& k) {
-          const int i = k / NP, j = k % NP;
-          ptens(i,j,vpi)[vsi] = x[k]*dpmass(i,j,vpi)[vsi];
-        });
+      if (modified)
+        Dispatch<>::parallel_for_NP2(team, [&] (const int& k) {
+            const int i = k / NP, j = k % NP;
+            ptens(i,j,vpi)[vsi] = x[k]*dpmass(i,j,vpi)[vsi];
+          });
     };
 
     if (OnGpu<ExecSpace>::value || team.team_size() > 1) {
@@ -771,7 +775,7 @@ public: // Expose for unit testing.
                            const ArrayGll& sphweights, const ArrayGllLvl& dpmass,
                            const Array2Lvl& qlim, const ArrayGllLvl& ptens) {
     struct Limit {
-      KOKKOS_INLINE_FUNCTION void
+      KOKKOS_INLINE_FUNCTION bool
       operator() (const TeamMember& team, const Real& mass,
                   const Real& minp, const Real& maxp,
                   Real* KOKKOS_RESTRICT const x,
@@ -818,6 +822,7 @@ public: // Expose for unit testing.
               });
           }
         }
+        return true;
       }
     };
 
@@ -831,28 +836,28 @@ public: // Expose for unit testing.
                         const ArrayGll& sphweights, const ArrayGllLvl& dpmass,
                         const Array2Lvl& qlim, const ArrayGllLvl& ptens) {
     struct Limit {
-      KOKKOS_INLINE_FUNCTION void
+      KOKKOS_INLINE_FUNCTION bool
       operator() (const TeamMember& team, const Real& mass,
                   const Real& minp, const Real& maxp,
                   Real* KOKKOS_RESTRICT const x,
                   Real const* KOKKOS_RESTRICT const c) const {
         // Clip.
-        Real addmass = 0;
-        Dispatch<>::parallel_reduce_NP2(team, [&] (const int& k, Real& addmass) {
+        Kokkos::Real2 reds;
+        Dispatch<>::parallel_reduce_NP2(team, [&] (const int& k, Kokkos::Real2& reds) {
             Real delta = 0;
             if (x[k] > maxp) {
               delta = x[k] - maxp;
               x[k] = maxp;
+              reds.v[1] += 1;
             } else if (x[k] < minp) {
               delta = x[k] - minp;
               x[k] = minp;
+              reds.v[1] += 1;
             }
-            addmass += delta*c[k];
-          }, addmass);
-
-        // No need for a tol: this isn't iterative. If it happens to be exactly
-        // 0, then return early.
-        if (addmass == 0) return;
+            reds.v[0] += delta*c[k];
+          }, reds);
+        if (reds.v[0] == 0) return false;
+        const Real addmass = reds.v[0];
 
         if (addmass > 0) {
           Real fac = 0;
@@ -879,6 +884,7 @@ public: // Expose for unit testing.
               });
           }
         }
+        return true;
       }
     };
 
@@ -886,47 +892,51 @@ public: // Expose for unit testing.
   }
 };
 
+// Code repetition results from needing BFB and slight differences between lim 8
+// and 9 Fortran impls.
 template <typename ExecSpace>
-template <int limiter_option, typename ArrayGll, typename ArrayGllLvl, typename Array2Lvl>
+template <int limiter_option, typename ArrayGll, typename ArrayGllLvl, typename Array2Lvl,
+          typename Array2GllLvl>
 KOKKOS_INLINE_FUNCTION void SerialLimiter<ExecSpace>
 ::run (const ArrayGll& sphweights, const ArrayGllLvl& idpmass,
        const Array2Lvl& iqlim, const ArrayGllLvl& iptens,
-       const ArrayGllLvl& irwrk) {
+       const Array2GllLvl& irwrk) {
 
-# define forij for (int i = 0; i < NP; ++i) for (int j = 0; j < NP; ++j)
-# define forlev for (int lev = 0; lev < NUM_PHYSICAL_LEV; ++lev)
+#define forij for (int i = 0; i < NP; ++i) for (int j = 0; j < NP; ++j)
+#define forlev for (int lev = 0; lev < NUM_PHYSICAL_LEV; ++lev)
 
   ViewUnmanaged<const Real[NP][NP][NUM_LEV*VECTOR_SIZE]>
     dpmass(&idpmass(0,0,0)[0]);
-  ViewUnmanaged<Real[NP][NP][NUM_LEV*VECTOR_SIZE]>
-    x(&iptens(0,0,0)[0]), c(&irwrk(0,0,0)[0]);
+  ViewUnmanaged<Real[NP][NP][NUM_PHYSICAL_LEV]>
+    c(&irwrk(0,0,0,0)[0]);
   ViewUnmanaged<Real[2][NUM_LEV*VECTOR_SIZE]>
     qlim(&iqlim(0,0)[0]);
 
-  Real mass[NUM_PHYSICAL_LEV] = {0}, sumc[NUM_PHYSICAL_LEV] = {0};
-  forij {
-    const auto& sphij = sphweights(i,j);
-VECTOR_SIMD_LOOP
-    forlev {
-      const auto& dpm = dpmass(i,j,lev);
-      c(i,j,lev) = sphij*dpm;
-      x(i,j,lev) /= dpm;
-      mass[lev] += c(i,j,lev)*x(i,j,lev);
-      sumc[lev] += c(i,j,lev);
-    }
-  }
-
-VECTOR_SIMD_LOOP
-  forlev {
-    if (qlim(0,lev) < 0)
-      qlim(0,lev) = 0;
-    if (mass[lev] < qlim(0,lev)*sumc[lev])
-      qlim(0,lev) = mass[lev]/sumc[lev];
-    if (mass[lev] > qlim(1,lev)*sumc[lev])
-      qlim(1,lev) = mass[lev]/sumc[lev];
-  }
-
   if (limiter_option == 8) {
+    ViewUnmanaged<Real[NP][NP][NUM_LEV*VECTOR_SIZE]>
+      x(&iptens(0,0,0)[0]);
+    Real mass[NUM_PHYSICAL_LEV] = {0}, sumc[NUM_PHYSICAL_LEV] = {0};
+
+    forij {
+      const auto& sphij = sphweights(i,j);
+      VECTOR_SIMD_LOOP forlev {
+        const auto& dpm = dpmass(i,j,lev);
+        c(i,j,lev) = sphij*dpm;
+        x(i,j,lev) /= dpm;
+        mass[lev] += c(i,j,lev)*x(i,j,lev);
+        sumc[lev] += c(i,j,lev);
+      }
+    }
+
+    VECTOR_SIMD_LOOP forlev {
+      if (qlim(0,lev) < 0)
+        qlim(0,lev) = 0;
+      if (mass[lev] < qlim(0,lev)*sumc[lev])
+        qlim(0,lev) = mass[lev]/sumc[lev];
+      if (mass[lev] > qlim(1,lev)*sumc[lev])
+        qlim(1,lev) = mass[lev]/sumc[lev];
+    }
+
     static const int maxiter = NP*NP - 1;
     static const Real tol_limiter = 5e-14;
     int donecnt = 0;
@@ -935,8 +945,7 @@ VECTOR_SIMD_LOOP
       Real addmass[NUM_PHYSICAL_LEV] = {0};
 
       forij {
-VECTOR_SIMD_LOOP
-        forlev {
+        VECTOR_SIMD_LOOP forlev {
           auto& xij = x(i,j,lev);
           Real delta = 0;
           if (xij < qlim(0,lev)) {
@@ -961,8 +970,7 @@ VECTOR_SIMD_LOOP
 
       Real f[NUM_PHYSICAL_LEV] = {0};
       forij {
-VECTOR_SIMD_LOOP
-        forlev {
+        VECTOR_SIMD_LOOP forlev {
           if (done[lev]) continue;
           if (addmass[lev] <= 0) {
             if (x(i,j,lev) > qlim(0,lev))
@@ -974,15 +982,13 @@ VECTOR_SIMD_LOOP
         }
       }
 
-VECTOR_SIMD_LOOP
-      forlev {
+      VECTOR_SIMD_LOOP forlev {
         if (f[lev] != 0)
           f[lev] = addmass[lev] / f[lev];
       }
 
       forij {
-VECTOR_SIMD_LOOP
-        forlev {
+        VECTOR_SIMD_LOOP forlev {
           if (done[lev]) continue;
           if (addmass[lev] <= 0) {
             if (x(i,j,lev) > qlim(0,lev))
@@ -994,29 +1000,66 @@ VECTOR_SIMD_LOOP
         }
       }
     }
-  } else if (limiter_option == 9) {
-    Real addmass[NUM_PHYSICAL_LEV] = {0};
 
     forij {
-VECTOR_SIMD_LOOP
-      forlev {
+      VECTOR_SIMD_LOOP forlev {
+        x(i,j,lev) *= dpmass(i,j,lev);
+      }
+    }
+  } else if (limiter_option == 9) {
+    ViewUnmanaged<Real[NP][NP][NUM_PHYSICAL_LEV]>
+      ptens(&iptens(0,0,0)[0]);
+    ViewUnmanaged<Real[NP][NP][NUM_PHYSICAL_LEV]>
+      x(&irwrk(1,0,0,0)[0]);
+    Real mass[NUM_PHYSICAL_LEV] = {0}, sumc[NUM_PHYSICAL_LEV] = {0};
+
+    forij {
+      const auto& sphij = sphweights(i,j);
+      VECTOR_SIMD_LOOP forlev {
+        const auto& dpm = dpmass(i,j,lev);
+        c(i,j,lev) = sphij*dpm;
+        x(i,j,lev) = ptens(i,j,lev) / dpm;
+        mass[lev] += c(i,j,lev)*x(i,j,lev);
+        sumc[lev] += c(i,j,lev);
+      }
+    }
+
+    VECTOR_SIMD_LOOP forlev {
+      if (qlim(0,lev) < 0)
+        qlim(0,lev) = 0;
+      if (mass[lev] < qlim(0,lev)*sumc[lev])
+        qlim(0,lev) = mass[lev]/sumc[lev];
+      if (mass[lev] > qlim(1,lev)*sumc[lev])
+        qlim(1,lev) = mass[lev]/sumc[lev];
+    }
+
+    Real addmass[NUM_PHYSICAL_LEV] = {0};
+    // This is here to be BFB with the Fortran impl. When BFB is no longer
+    // required, it is almost certainly better to remove this variable and the
+    // conditionals on it.
+    int modified[NUM_PHYSICAL_LEV] = {0};
+
+    forij {
+      VECTOR_SIMD_LOOP forlev {
         auto& xij = x(i,j,lev);
         Real delta = 0;
         if (xij < qlim(0,lev)) {
           delta = xij - qlim(0,lev);
           xij = qlim(0,lev);
+          modified[lev] = 1;
         } else if (xij > qlim(1,lev)) {
           delta = xij - qlim(1,lev);
           xij = qlim(1,lev);
+          modified[lev] = 1;
         }
-        addmass[lev] += delta*c(i,j,lev);
+        if (modified[lev])
+          addmass[lev] += delta*c(i,j,lev);
       }
     }
 
     Real f[NUM_PHYSICAL_LEV] = {0};
     forij {
-VECTOR_SIMD_LOOP
-      forlev {
+      VECTOR_SIMD_LOOP forlev {
         auto& xij = x(i,j,lev);
         if (addmass[lev] <= 0) {
           if (xij > qlim(0,lev))
@@ -1027,16 +1070,14 @@ VECTOR_SIMD_LOOP
         }
       }
     }
-
-VECTOR_SIMD_LOOP
-    forlev {
+    
+    VECTOR_SIMD_LOOP forlev {
       if (f[lev] != 0)
         f[lev] = addmass[lev] / f[lev];
     }
 
     forij {
-VECTOR_SIMD_LOOP
-      forlev {
+      VECTOR_SIMD_LOOP forlev {
         auto& xij = x(i,j,lev);
         if (addmass[lev] <= 0) {
           if (xij > qlim(0,lev))
@@ -1046,21 +1087,21 @@ VECTOR_SIMD_LOOP
             xij += f[lev]*(qlim(1,lev) - xij);
         }
       }
-    }      
+    }
+
+    forij {
+      VECTOR_SIMD_LOOP forlev {
+        if (modified[lev])
+          ptens(i,j,lev) = x(i,j,lev) * dpmass(i,j,lev);
+      }
+    }
   } else {
     Kokkos::abort("Only limiter_option 8 and 9 is impl'ed.");
   }
 
-  forij {
-VECTOR_SIMD_LOOP
-    forlev {
-      x(i,j,lev) *= dpmass(i,j,lev);
-    }
-  }
-
 # undef forlev
 # undef forij
-}//end SerialLimiter
+} // end SerialLimiter
 
 }
 
