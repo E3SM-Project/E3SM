@@ -1104,7 +1104,8 @@ contains
        call GridBalanceCheck(bounds_clump                             , &
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c              , &
             atm2lnd_vars, glc2lnd_vars, solarabs_vars, waterflux_vars , &
-            waterstate_vars, energyflux_vars, canopystate_vars)
+            waterstate_vars, energyflux_vars, canopystate_vars        , &
+            soilhydrology_vars)
        call t_stopf('gridbalchk')
 
        if (.not. use_fates)then
@@ -1354,7 +1355,8 @@ contains
     end if
 
     if (get_nstep()>0 .and. do_budgets) then
-       call WaterBudget_Run(bounds_proc, atm2lnd_vars, lnd2atm_vars, waterstate_vars)
+       call WaterBudget_Run(bounds_proc, atm2lnd_vars, lnd2atm_vars, waterstate_vars, &
+            soilhydrology_vars)
        call WaterBudget_Accum()
        call WaterBudget_Print(budget_inst,  budget_daily,  budget_month,  &
             budget_ann,  budget_ltann,  budget_ltend)
