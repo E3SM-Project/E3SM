@@ -181,8 +181,44 @@ module cime_comp_mod
 
   private
 
-  public cime_pre_init1, cime_pre_init2, cime_init, cime_run, cime_final
-  public timing_dir, mpicom_GLOID
+  ! public data
+  public  :: timing_dir, mpicom_GLOID
+
+  ! public routines
+  public  :: cime_pre_init1
+  public  :: cime_pre_init2
+  public  :: cime_init
+  public  :: cime_run
+  public  :: cime_final
+
+  ! private routines
+  private :: cime_esmf_readnl
+  private :: cime_printlogheader
+  private :: cime_comp_barriers
+  private :: cime_cpl_init
+  private :: cime_run_atmocn_fluxes
+  private :: cime_run_ocn_albedos
+  private :: cime_run_atm_setup_send
+  private :: cime_run_atm_recv_post
+  private :: cime_run_ocn_setup_send
+  private :: cime_run_ocn_recv_post
+  private :: cime_run_atmocn_setup
+  private :: cime_run_lnd_setup_send
+  private :: cime_run_lnd_recv_post
+  private :: cime_run_glc_setup_send
+  private :: cime_run_glc_recv_post
+  private :: cime_run_rof_setup_send
+  private :: cime_run_rof_recv_post
+  private :: cime_run_ice_setup_send
+  private :: cime_run_ice_recv_post
+  private :: cime_run_wav_setup_send
+  private :: cime_run_wav_recv_post
+  private :: cime_run_update_fractions
+  private :: cime_run_calc_budgets1
+  private :: cime_run_calc_budgets2
+  private :: cime_run_calc_budgets3
+  private :: cime_run_write_history
+  private :: cime_run_write_restart
 
 #include <mpif.h>
 
@@ -774,7 +810,7 @@ contains
     !----------------------------------------------------------
     ! Read ESMF namelist settings
     !----------------------------------------------------------
-    call esmf_readnl(NLFileName, mpicom_GLOID, esmf_log_option)
+    call cime_esmf_readnl(NLFileName, mpicom_GLOID, esmf_log_option)
 
     !
     !  When using io servers (pio_async_interface=.true.) the server tasks do not return from
@@ -785,9 +821,8 @@ contains
   end subroutine cime_pre_init1
 
   !===============================================================================
-  !*******************************************************************************
-  !===============================================================================
-  subroutine esmf_readnl(NLFileName, mpicom, esmf_logfile_kind)
+
+  subroutine cime_esmf_readnl(NLFileName, mpicom, esmf_logfile_kind)
      use shr_file_mod, only: shr_file_getUnit, shr_file_freeUnit
 
      character(len=*),  intent(in)  :: NLFileName
@@ -825,7 +860,7 @@ contains
 
      call mpi_bcast(esmf_logfile_kind, CS, MPI_CHARACTER, 0, mpicom, ierr)
 
-  end subroutine esmf_readnl
+   end subroutine cime_esmf_readnl
 
   !===============================================================================
   !*******************************************************************************
@@ -887,7 +922,7 @@ contains
     ! Print Model heading and copyright message
     !----------------------------------------------------------
 
-    if (iamroot_CPLID) call seq_cime_printlogheader()
+    if (iamroot_CPLID) call cime_printlogheader()
 
     !----------------------------------------------------------
     !| Initialize coupled fields (depends on infodata)
@@ -1160,7 +1195,6 @@ contains
   !===============================================================================
 
   subroutine cime_init()
-
 
 104 format( A, i10.8, i8)
 
@@ -2294,17 +2328,17 @@ contains
           call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE1_BARRIER')
           call t_drvstartf ('CPL:OCNPRE1',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-          
+
           call prep_ocn_calc_a2x_ox(timer='CPL:ocnpre1_atm2ocn')
-          
+
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
           call t_drvstopf  ('CPL:OCNPRE1',cplrun=.true.,hashint=hashint(3))
        endif
-       
+
        !----------------------------------------------------------
        !| ATM/OCN SETUP (rasm_option1)
        !----------------------------------------------------------
-       ! The following maps to the ocean, computes atm/ocn fluxes, merges to the ocean, 
+       ! The following maps to the ocean, computes atm/ocn fluxes, merges to the ocean,
        ! accumulates ocn input and computes ocean albedos
        if (ocn_present) then
           if (trim(cpl_seq_option) == 'RASM_OPTION1') then
@@ -2322,7 +2356,7 @@ contains
               trim(cpl_seq_option) == 'RASM_OPTION1') then
              call cime_run_ocn_setup_send()
           end if
-       endif 
+       endif
 
        !----------------------------------------------------------
        !| LND SETUP-SEND
@@ -2426,7 +2460,7 @@ contains
        !----------------------------------------------------------
        !| ATM/OCN SETUP (cesm1_mod or cesm1_mod_tight)
        !----------------------------------------------------------
-       ! The following maps to the ocean, computes atm/ocn fluxes, merges to the ocean, 
+       ! The following maps to the ocean, computes atm/ocn fluxes, merges to the ocean,
        ! accumulates ocn input and computes ocean albedos
        if (ocn_present) then
           if (trim(cpl_seq_option) == 'CESM1_MOD'       .or. &
@@ -2476,11 +2510,11 @@ contains
        !| Update fractions based on new ice fractions
        !----------------------------------------------------------
        call cime_run_update_fractions()
-       
+
        !----------------------------------------------------------
        !| ATM/OCN SETUP (rasm_option2)
        !----------------------------------------------------------
-       ! The following maps to the ocean, computes atm/ocn fluxes, merges to the ocean, 
+       ! The following maps to the ocean, computes atm/ocn fluxes, merges to the ocean,
        ! accumulates ocn input and computes ocean albedos
        if (ocn_present) then
           if (trim(cpl_seq_option) == 'RASM_OPTION2') then
@@ -2588,9 +2622,7 @@ contains
        !----------------------------------------------------------
        !| Write driver restart file
        !----------------------------------------------------------
-       if (restart_alarm .or. drv_pause) then
-          call cime_run_write_restart()
-       endif
+       call cime_run_write_restart(drv_pause, restart_alarm, drv_resume)
 
        !----------------------------------------------------------
        !| Write history file, only AVs on CPLID
@@ -2649,8 +2681,8 @@ contains
                timer_barrier= 'CPL:ESP_RUN_BARRIER', timer_comp_run='CPL:ESP_RUN', &
                run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=esp_layout)
 
+          !---------------------------------------------------------------------
           !| ESP computes resume options for other components -- update everyone
-
           !---------------------------------------------------------------------
           call seq_resume_get_files('a', resume_files)
           if (associated(resume_files)) then
@@ -2953,7 +2985,7 @@ contains
   !*******************************************************************************
   !===============================================================================
 
-  subroutine seq_cime_printlogheader()
+  subroutine cime_printlogheader()
 
     !-----------------------------------------------------------------------
     !
@@ -2999,7 +3031,7 @@ contains
     write(logunit,*)' '
     write(logunit,*)' '
 
-  end subroutine seq_cime_printlogheader
+  end subroutine cime_printlogheader
 
   !===============================================================================
 
@@ -3014,6 +3046,8 @@ contains
        call t_drvstopf (trim(timer))
     endif
   end subroutine cime_comp_barriers
+
+  !===============================================================================
 
   subroutine cime_cpl_init(comm_in, comm_out, num_inst_driver, id)
     !-----------------------------------------------------------------------
@@ -3082,8 +3116,6 @@ contains
   end subroutine cime_cpl_init
 
   !===============================================================================
-  !*******************************************************************************
-  !===============================================================================
 
   subroutine cime_run_atmocn_fluxes(hashint)
     integer, intent(inout) :: hashint(:)
@@ -3095,7 +3127,7 @@ contains
        ! compute o2x_ax for flux_atmocn, will be updated before atm merge
        ! do not use fractions because fractions here are NOT consistent with fractions in atm_mrg
        if (ocn_c2_atm) call prep_atm_calc_o2x_ax(timer='CPL:atmoca_ocn2atm')
-       
+
        call t_drvstartf ('CPL:atmocna_fluxa',barrier=mpicom_CPLID, hashint=hashint(6))
        do exi = 1,num_inst_xao
           eai = mod((exi-1),num_inst_atm) + 1
@@ -3107,10 +3139,10 @@ contains
           call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ax, o2x_ax(eoi), xao_ax(exi))
        enddo
        call t_drvstopf  ('CPL:atmocna_fluxa',hashint=hashint(6))
-       
+
        if (atm_c2_ocn) call prep_aoflux_calc_xao_ox(timer='CPL:atmocna_atm2ocn')
     endif  ! aoflux_grid
-    
+
     !----------------------------------------------------------
     !| atm/ocn flux on ocn grid
     !----------------------------------------------------------
@@ -3127,7 +3159,7 @@ contains
        enddo
        call t_drvstopf  ('CPL:atmocnp_fluxo',hashint=hashint(6))
     endif  ! aoflux_grid
-    
+
   end subroutine cime_run_atmocn_fluxes
 
 !----------------------------------------------------------------------------------
@@ -3154,7 +3186,7 @@ contains
     !----------------------------------------------------------
     !| atm prep-merge
     !----------------------------------------------------------
-    
+
     if (iamin_CPLID .and. atm_prognostic) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMPREP_BARRIER')
        call t_drvstartf ('CPL:ATMPREP',cplrun=.true.,barrier=mpicom_CPLID)
@@ -3239,7 +3271,7 @@ contains
   subroutine cime_run_ocn_setup_send()
 
     !----------------------------------------------------
-    ! "startup" wait 
+    ! "startup" wait
     !----------------------------------------------------
     if (iamin_CPLALLOCNID) then
        ! want to know the time the ocean pes waited for the cpl pes
@@ -3256,7 +3288,7 @@ contains
     endif
 
     !----------------------------------------------------
-    ! ocn average 
+    ! ocn average
     !----------------------------------------------------
     if (iamin_CPLID .and. ocn_prognostic) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPREP_BARRIER')
@@ -3275,7 +3307,7 @@ contains
     endif
 
     !----------------------------------------------------
-    ! cpl -> ocn 
+    ! cpl -> ocn
     !----------------------------------------------------
     if (iamin_CPLALLOCNID .and. ocn_prognostic) then
        call component_exch(ocn, flow='x2c', &
@@ -3292,7 +3324,7 @@ contains
   subroutine cime_run_ocn_recv_post()
 
     !----------------------------------------------------------
-    ! ocn -> cpl 
+    ! ocn -> cpl
     !----------------------------------------------------------
     if (iamin_CPLALLOCNID) then
        call component_exch(ocn, flow='c2x', &
@@ -3303,7 +3335,7 @@ contains
     endif
 
     !----------------------------------------------------------
-    ! ocn post 
+    ! ocn post
     !----------------------------------------------------------
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPOSTT_BARRIER')
@@ -3343,26 +3375,27 @@ contains
           end if
        end if
 
-       ! atm/ocn flux on atm grid 
+       ! atm/ocn flux on either atm or ocean grid
        call cime_run_atmocn_fluxes(hashint)
-       
+
+       ! ocn prep-merge (cesm1_mod or cesm1_mod_tight)
        if (ocn_prognostic) then
-          ! ocn prep-merge 
+          ! ocn prep-merge
           xao_ox => prep_aoflux_get_xao_ox()
           call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
 
           ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
           call prep_ocn_accum(timer='CPL:atmocnp_accum')
-       endif
-       
+       end if
+
        !----------------------------------------------------------
-       ! ocn albedos 
+       ! ocn albedos
        ! (MUST BE AFTER prep_ocn_mrg for swnet to ocn to be computed properly
        !----------------------------------------------------------
        call cime_run_ocn_albedos(hashint)
 
        !----------------------------------------------------------
-       ! ocn budget 
+       ! ocn budget
        !----------------------------------------------------------
        if (do_budgets) then
           call cime_run_calc_budgets3()
@@ -3541,7 +3574,7 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        call t_drvstopf  ('CPL:GLCPOST',cplrun=.true.)
     endif
-    
+
   end subroutine cime_run_glc_recv_post
 
 !----------------------------------------------------------------------------------
@@ -3643,16 +3676,16 @@ contains
     !  Note that for atm->ice mapping below will leverage the assumption that the
     !  ice and ocn are on the same grid and that mapping of atm to ocean is
     !  done already for use by atmocn flux and ice model prep
-    
+
     !----------------------------------------------------
     ! ice prep-merge
     !----------------------------------------------------
     if (iamin_CPLID .and. ice_prognostic) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ICEPREP_BARRIER')
-       
+
        call t_drvstartf ('CPL:ICEPREP',cplrun=.true.,barrier=mpicom_CPLID)
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-       
+
        if (ocn_c2_ice) call prep_ice_calc_o2x_ix(timer='CPL:iceprep_ocn2ice')
        if (trim(cpl_seq_option(1:5)) == 'NUOPC') then
           if (rof_c2_ice) call prep_ice_calc_r2x_ix(timer='CPL:rofpost_rof2ice')
@@ -3722,7 +3755,7 @@ contains
 
 !----------------------------------------------------------------------------------
 
-  subroutine cime_run_wav_setup_send
+  subroutine cime_run_wav_setup_send()
 
     !----------------------------------------------------------
     ! wav prep-merge
@@ -3815,13 +3848,18 @@ contains
 !----------------------------------------------------------------------------------
 
   subroutine cime_run_calc_budgets1()
+
+    !----------------------------------------------------------
+    ! Budget with old fractions
+    !----------------------------------------------------------
+
     ! WJS (2-17-11): I am just using the first instance for the budgets because we
     ! don't expect budgets to be conserved for our case (I case). Also note that we
     ! don't expect budgets to be conserved for the interactive ensemble use case either.
     ! tcraig (aug 2012): put this after rof->cpl so the budget sees the new r2x_rx.
     ! it will also use the current r2x_ox here which is the value from the last timestep
     ! consistent with the ocean coupling
-    
+
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET1_BARRIER')
        call t_drvstartf ('CPL:BUDGET1',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
@@ -3838,7 +3876,14 @@ contains
     end if
   end subroutine cime_run_calc_budgets1
 
+!----------------------------------------------------------------------------------
+
   subroutine cime_run_calc_budgets2()
+
+    !----------------------------------------------------------
+    ! Budget with new fractions
+    !----------------------------------------------------------
+
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET2_BARRIER')
 
@@ -3866,7 +3911,14 @@ contains
     end if
   end subroutine cime_run_calc_budgets2
 
+!----------------------------------------------------------------------------------
+
   subroutine cime_run_calc_budgets3()
+
+    !----------------------------------------------------------
+    ! ocn budget (rasm_option2)
+    !----------------------------------------------------------
+
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
        call t_drvstartf ('CPL:BUDGET0',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
@@ -3881,18 +3933,16 @@ contains
 
   subroutine cime_run_write_history()
 
+    !----------------------------------------------------------
+    ! Write history file, only AVs on CPLID
+    !----------------------------------------------------------
+
     ! local variables
     logical            :: lnd2glc_averaged_now  ! Whether lnd2glc averages were taken this timestep
     type(ESMF_Time)    :: etime_curr            ! Current model time
     real(r8)           :: tbnds1_offset         ! Time offset for call to seq_hist_writeaux
 
-    !----------------------------------------------------------
-    !| Write history file, only AVs on CPLID
-    !----------------------------------------------------------
-
     if (iamin_CPLID) then
-
-       lnd2glc_averaged_now = .false.
 
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:HISTORY_BARRIER')
        call t_drvstartf ('CPL:HISTORY',cplrun=.true.,barrier=mpicom_CPLID)
@@ -4073,32 +4123,54 @@ contains
        endif
        call t_drvstopf  ('CPL:HISTORY',cplrun=.true.)
 
-    endif
+    end if
 
 104 format( A, i10.8, i8)
   end subroutine cime_run_write_history
 
 !----------------------------------------------------------------------------------
 
-  subroutine cime_run_write_restart()
-    if (iamin_CPLID) then
-       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:RESTART_BARRIER')
-       call t_drvstartf ('CPL:RESTART',cplrun=.true.,barrier=mpicom_CPLID)
-       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-       if (iamroot_CPLID) then
-          write(logunit,104) ' Write restart file at ',ymd,tod
-          call shr_sys_flush(logunit)
-       endif
+  subroutine cime_run_write_restart(drv_pause, write_restart, drv_resume)
 
-       call seq_rest_write(EClock_d, seq_SyncClock, infodata,       &
-            atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
-            fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-            fractions_rx, fractions_gx, fractions_wx, trim(cpl_inst_tag))
+    !----------------------------------------------------------
+    ! Write driver restart file
+    !----------------------------------------------------------
 
-       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-       call t_drvstopf  ('CPL:RESTART',cplrun=.true.)
-    end if
+    logical         , intent(in)    :: drv_pause
+    logical         , intent(in)    :: write_restart
+    character(len=*), intent(inout) :: drv_resume ! Driver resets state from restart file
+
+103 format( 5A )
 104 format( A, i10.8, i8)
+
+    if (iamin_CPLID) then
+       if ( (restart_alarm .or. drv_pause)) then
+          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:RESTART_BARRIER')
+          call t_drvstartf ('CPL:RESTART',cplrun=.true.,barrier=mpicom_CPLID)
+          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+          if (iamroot_CPLID) then
+             write(logunit,104) ' Write restart file at ',ymd,tod
+             call shr_sys_flush(logunit)
+          endif
+
+          call seq_rest_write(EClock_d, seq_SyncClock, infodata,       &
+               atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
+               fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
+               fractions_rx, fractions_gx, fractions_wx,               &
+               trim(cpl_inst_tag), drv_resume)
+
+          if (iamroot_CPLID) then
+             write(logunit,103) ' Restart filename: ',trim(drv_resume)
+             call shr_sys_flush(logunit)
+          endif
+
+          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+          call t_drvstopf  ('CPL:RESTART',cplrun=.true.)
+       else
+          drv_resume = ''
+       endif
+    end if
+
   end subroutine cime_run_write_restart
 
 end module cime_comp_mod
