@@ -104,6 +104,21 @@ module WaterstateType
      real(r8), pointer :: errh2o_col             (:)   ! water conservation error (mm H2O)
      real(r8), pointer :: errh2osno_col          (:)   ! snow water conservation error(mm H2O)
 
+     real(r8), pointer :: h2osoi_liq_depth_intg_col(:) ! grid-level depth integrated liquid soil water
+     real(r8), pointer :: h2osoi_ice_depth_intg_col(:) ! grid-level depth integrated ice soil water
+
+     real(r8), pointer :: beg_h2ocan_grc         (:)   ! grid-level canopy water at begining of the time step (mm H2O)
+     real(r8), pointer :: beg_h2osno_grc         (:)   ! grid-level snow water at begining of the time step (mm H2O)
+     real(r8), pointer :: beg_h2osfc_grc         (:)   ! grid-level surface water at begining of the time step (mm H2O)
+     real(r8), pointer :: beg_h2osoi_liq_grc     (:)   ! grid-level liquid water at begining of the time step (kg/m2)
+     real(r8), pointer :: beg_h2osoi_ice_grc     (:)   ! grid-level ice lens at begining of the time step (kg/m2)
+
+     real(r8), pointer :: end_h2ocan_grc         (:)   ! grid-level canopy water at end of the time step (mm H2O)
+     real(r8), pointer :: end_h2osno_grc         (:)   ! grid-level snow water at end of the time step (mm H2O)
+     real(r8), pointer :: end_h2osfc_grc         (:)   ! grid-level surface water at end of the time step (mm H2O)
+     real(r8), pointer :: end_h2osoi_liq_grc     (:)   ! grid-level liquid water at end of the time step (kg/m2)
+     real(r8), pointer :: end_h2osoi_ice_grc     (:)   ! grid-level ice lens at end of the time step (kg/m2)
+
      ! For VSFM
      real(r8), pointer :: vsfm_fliq_col_1d       (:)   ! fraction of liquid saturation for VSFM [-]
      real(r8), pointer :: vsfm_sat_col_1d        (:)   ! liquid saturation from VSFM [-]
@@ -250,6 +265,21 @@ contains
     allocate(this%errh2o_patch           (begp:endp))                     ; this%errh2o_patch           (:)   = nan
     allocate(this%errh2o_col             (begc:endc))                     ; this%errh2o_col             (:)   = nan
     allocate(this%errh2osno_col          (begc:endc))                     ; this%errh2osno_col          (:)   = nan
+
+    allocate(this%h2osoi_liq_depth_intg_col(begc:endc))                   ; this%h2osoi_liq_depth_intg_col(:) = nan
+    allocate(this%h2osoi_ice_depth_intg_col(begc:endc))                   ; this%h2osoi_ice_depth_intg_col(:) = nan
+
+    allocate(this%beg_h2ocan_grc          (begg:endg))                    ; this%beg_h2ocan_grc         (:)   = nan
+    allocate(this%beg_h2osno_grc          (begg:endg))                    ; this%beg_h2osno_grc         (:)   = nan
+    allocate(this%beg_h2osfc_grc          (begg:endg))                    ; this%beg_h2osfc_grc         (:)   = nan
+    allocate(this%beg_h2osoi_liq_grc      (begg:endg))                    ; this%beg_h2osoi_liq_grc     (:)   = nan
+    allocate(this%beg_h2osoi_ice_grc      (begg:endg))                    ; this%beg_h2osoi_ice_grc     (:)   = nan
+
+    allocate(this%end_h2ocan_grc          (begg:endg))                    ; this%end_h2ocan_grc         (:)   = nan
+    allocate(this%end_h2osno_grc          (begg:endg))                    ; this%end_h2osno_grc         (:)   = nan
+    allocate(this%end_h2osfc_grc          (begg:endg))                    ; this%end_h2osfc_grc         (:)   = nan
+    allocate(this%end_h2osoi_liq_grc      (begg:endg))                    ; this%end_h2osoi_liq_grc     (:)   = nan
+    allocate(this%end_h2osoi_ice_grc      (begg:endg))                    ; this%end_h2osoi_ice_grc     (:)   = nan
 
     ncells = (endc - begc + 1)*nlevgrnd
     allocate(this%vsfm_fliq_col_1d(          ncells))                     ; this%vsfm_fliq_col_1d       (:)   = nan

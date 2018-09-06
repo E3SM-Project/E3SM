@@ -726,23 +726,37 @@ contains
     real(r8) :: h2osoi_vol
     real(r8) :: h2ocan_col(bounds%begc:bounds%endc)
     real(r8) :: begwb_col (bounds%begc:bounds%endc)
+    real(r8) :: h2osoi_liq_depth_intg(bounds%begc:bounds%endc)
+    real(r8) :: h2osoi_ice_depth_intg(bounds%begc:bounds%endc)
 
-    associate(                                                                     &
-         zi                     =>    col_pp%zi                                  , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
-         h2ocan_patch           =>    waterstate_vars%h2ocan_patch               , & ! Input:  [real(r8) (:)   ]  canopy water (mm H2O) (pft-level)
-         h2osfc                 =>    waterstate_vars%h2osfc_col                 , & ! Input:  [real(r8) (:)   ]  surface water (mm)
-         h2osno                 =>    waterstate_vars%h2osno_col                 , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)
-         h2osoi_ice             =>    waterstate_vars%h2osoi_ice_col             , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
-         h2osoi_liq             =>    waterstate_vars%h2osoi_liq_col             , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
-         total_plant_stored_h2o =>    waterstate_vars%total_plant_stored_h2o_col , & ! Input:  [real(r8) (:)   ]  dynamic water stored in plants
-         zwt                    =>    soilhydrology_vars%zwt_col                 , & ! Input:  [real(r8) (:)   ]  water table depth (m)
-         wa                     =>    soilhydrology_vars%wa_col                  , & ! Output: [real(r8) (:)   ]  water in the unconfined aquifer (mm)    
-         begwb_grc              =>    waterstate_vars%begwb_grc                    & ! Output: [real(r8) (:)   ]  water mass begining of the time step
+    associate(                                                                        &
+         zi                        =>    col_pp%zi                                  , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
+         h2ocan_patch              =>    waterstate_vars%h2ocan_patch               , & ! Input:  [real(r8) (:)   ]  canopy water (mm H2O) (pft-level)
+         h2osfc                    =>    waterstate_vars%h2osfc_col                 , & ! Input:  [real(r8) (:)   ]  surface water (mm)
+         h2osno                    =>    waterstate_vars%h2osno_col                 , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)
+         h2osoi_ice                =>    waterstate_vars%h2osoi_ice_col             , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
+         h2osoi_liq                =>    waterstate_vars%h2osoi_liq_col             , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
+         total_plant_stored_h2o    =>    waterstate_vars%total_plant_stored_h2o_col , & ! Input:  [real(r8) (:)   ]  dynamic water stored in plants
+         zwt                       =>    soilhydrology_vars%zwt_col                 , & ! Input:  [real(r8) (:)   ]  water table depth (m)
+         wa                        =>    soilhydrology_vars%wa_col                  , & ! Output: [real(r8) (:)   ]  water in the unconfined aquifer (mm)
+         beg_wa_grc                =>    soilhydrology_vars%beg_wa_grc              , & ! Output: [real(r8) (:)   ]  grid-level water in the unconfined aquifer at begining of the time step (mm)
+         begwb_grc                 =>    waterstate_vars%begwb_grc                  , & ! Output: [real(r8) (:)   ]  grid-level water mass at begining of the time step (mm)
+         beg_h2ocan_grc            =>    waterstate_vars%beg_h2ocan_grc             , & ! Output: [real(r8) (:)   ]  grid-level canopy water at begining of the time step (mm)
+         beg_h2osno_grc            =>    waterstate_vars%beg_h2osno_grc             , & ! Output: [real(r8) (:)   ]  grid-level snow at begining of the time step (mm)
+         beg_h2osfc_grc            =>    waterstate_vars%beg_h2osfc_grc             , & ! Output: [real(r8) (:)   ]  grid-level surface water at begining of the time step (mm)
+         beg_h2osoi_liq_grc        =>    waterstate_vars%beg_h2osoi_liq_grc         , & ! Output: [real(r8) (:)   ]  grid-level depth integrated liquid soil water at begining of the time step (mm)
+         beg_h2osoi_ice_grc        =>    waterstate_vars%beg_h2osoi_ice_grc         , & ! Output: [real(r8) (:)   ]  grid-level depth integrated ice soil water at begining of the time step (mm)
+         h2osoi_liq_depth_intg_col =>    waterstate_vars%h2osoi_liq_depth_intg_col  , &
+         h2osoi_ice_depth_intg_col =>    waterstate_vars%h2osoi_ice_depth_intg_col    &
          )
 
       ! Set to zero
       begwb_col (bounds%begc:bounds%endc) = 0._r8
       h2ocan_col(bounds%begc:bounds%endc) = 0._r8
+      h2osoi_liq_depth_intg(bounds%begc:bounds%endc) = 0._r8
+      h2osoi_ice_depth_intg(bounds%begc:bounds%endc) = 0._r8
+      h2osoi_liq_depth_intg_col(bounds%begc:bounds%endc) = 0._r8
+      h2osoi_ice_depth_intg_col(bounds%begc:bounds%endc) = 0._r8
 
       ! Determine beginning water balance for time step
       ! pft-level canopy water averaged to column
@@ -783,6 +797,8 @@ contains
                  .or. col_pp%itype(c) == icol_roof) .and. j > nlevurb) then
             else
                begwb_col(c) = begwb_col(c) + h2osoi_ice(c,j) + h2osoi_liq(c,j)
+               h2osoi_liq_depth_intg(c) = h2osoi_liq_depth_intg(c) + h2osoi_liq(c,j)
+               h2osoi_ice_depth_intg(c) = h2osoi_ice_depth_intg(c) + h2osoi_ice(c,j)
             end if
          end do
       end do
@@ -792,11 +808,18 @@ contains
          begwb_col(c) = h2osno(c)
          do j = 1, nlevgrnd
             begwb_col(c) = begwb_col(c) + h2osoi_ice(c,j) + h2osoi_liq(c,j)
+            h2osoi_liq_depth_intg(c) = h2osoi_liq_depth_intg(c) + h2osoi_liq(c,j)
+            h2osoi_ice_depth_intg(c) = h2osoi_ice_depth_intg(c) + h2osoi_ice(c,j)
          enddo
       end do
 
-      call c2g(bounds, begwb_col, begwb_grc, &
-           c2l_scale_type= 'unity', l2g_scale_type='unity' )
+      call c2g(bounds, begwb_col             , begwb_grc          , c2l_scale_type= 'unity', l2g_scale_type='unity' )
+      call c2g(bounds, wa                    , beg_wa_grc         , c2l_scale_type= 'unity', l2g_scale_type='unity' )
+      call c2g(bounds, h2ocan_col            , beg_h2ocan_grc     , c2l_scale_type= 'unity', l2g_scale_type='unity' )
+      call c2g(bounds, h2osno                , beg_h2osno_grc     , c2l_scale_type= 'unity', l2g_scale_type='unity' )
+      call c2g(bounds, h2osfc                , beg_h2osfc_grc     , c2l_scale_type= 'unity', l2g_scale_type='unity' )
+      call c2g(bounds, h2osoi_liq_depth_intg , beg_h2osoi_liq_grc , c2l_scale_type= 'unity', l2g_scale_type='unity' )
+      call c2g(bounds, h2osoi_ice_depth_intg , beg_h2osoi_ice_grc , c2l_scale_type= 'unity', l2g_scale_type='unity' )
       
     end associate
 
@@ -805,7 +828,7 @@ contains
    !-----------------------------------------------------------------------
    subroutine GridBalanceCheck( bounds, num_do_smb_c, filter_do_smb_c, &
         atm2lnd_vars, glc2lnd_vars, solarabs_vars, waterflux_vars, &
-        waterstate_vars, energyflux_vars, canopystate_vars)
+        waterstate_vars, energyflux_vars, canopystate_vars, soilhydrology_vars)
      !
      ! !DESCRIPTION:
      !
@@ -831,12 +854,12 @@ contains
      type(waterstate_type) , intent(inout) :: waterstate_vars
      type(energyflux_type) , intent(inout) :: energyflux_vars
      type(canopystate_type), intent(inout) :: canopystate_vars
+     type(soilhydrology_type), intent(inout) :: soilhydrology_vars
      !
      ! !LOCAL VARIABLES:
      integer  :: p,c,l,g,fc                             ! indices
      real(r8) :: dtime                                  ! land model time step (sec)
      real(r8) :: qflx_net_col (bounds%begc:bounds%endc)
-     real(r8) :: qflx_net_grc (bounds%begg:bounds%endg)
      real(r8) :: forc_rain_col(bounds%begc:bounds%endc) ! column level rain rate [mm/s]
      real(r8) :: forc_snow_col(bounds%begc:bounds%endc) ! column level snow rate [mm/s]
 
@@ -850,7 +873,7 @@ contains
           glc_dyn_runoff_routing     =>    glc2lnd_vars%glc_dyn_runoff_routing_grc    , & ! Input:  [real(r8) (:)   ]  whether we're doing runoff routing appropriate for having a dynamic icesheet
 
           do_capsnow                 =>    waterstate_vars%do_capsnow_col             , & ! Input:  [logical (:)    ]  true => do snow capping                  
-          h2osno                     =>    waterstate_vars%h2osno_col                 , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
+          h2osno_col                 =>    waterstate_vars%h2osno_col                 , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)
           h2osno_old                 =>    waterstate_vars%h2osno_old_col             , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O) at previous time step
           frac_sno_eff               =>    waterstate_vars%frac_sno_eff_col           , & ! Input:  [real(r8) (:)   ]  effective snow fraction                 
           frac_sno                   =>    waterstate_vars%frac_sno_col               , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
@@ -929,7 +952,19 @@ contains
           ftid                       =>    surfalb_vars%ftid_patch                    , & ! Input:  [real(r8) (:,:)]  down diffuse flux below canopy per unit direct flux
           ftii                       =>    surfalb_vars%ftii_patch                    , & ! Input:  [real(r8) (:,:)]  down diffuse flux below canopy per unit diffuse flux
 
-          netrad                     =>    energyflux_vars%netrad_patch                 & ! Output: [real(r8) (:)   ]  net radiation (positive downward) (W/m**2)
+          netrad                     =>    energyflux_vars%netrad_patch               , & ! Output: [real(r8) (:)   ]  net radiation (positive downward) (W/m**2)
+          h2ocan_patch               =>    waterstate_vars%h2ocan_patch               , & ! Input:  [real(r8) (:)   ]  canopy water (mm H2O) (pft-level)
+          wa                         =>    soilhydrology_vars%wa_col                  , & ! Output: [real(r8) (:)   ]  water in the unconfined aquifer (mm)
+          h2ocan_col                 =>    waterstate_vars%h2ocan_col                 , & ! Input:  [real(r8) (:)   ]  canopy water (mm H2O)
+          h2osfc_col                 =>    waterstate_vars%h2osfc_col                 , & ! Input:  [real(r8) (:)   ]  surface water (mm)
+          h2osoi_liq_depth_intg      =>    waterstate_vars%h2osoi_liq_depth_intg_col  , & ! Input:  [real(r8) (:)   ]  depth integrated liquid soil water (kg/m**2)
+          h2osoi_ice_depth_intg      =>    waterstate_vars%h2osoi_ice_depth_intg_col  , & ! Input:  [real(r8) (:)   ]  depth integrated ice soil water (kg/m**2)
+          end_wa_grc                 =>    soilhydrology_vars%end_wa_grc              , & ! Output: [real(r8) (:)   ]  grid-level water in the unconfined aquifer at end of the time step (mm)
+          end_h2ocan_grc             =>    waterstate_vars%end_h2ocan_grc             , & ! Output: [real(r8) (:)   ]  grid-level canopy water at end of the time step (mm)
+          end_h2osno_grc             =>    waterstate_vars%end_h2osno_grc             , & ! Output: [real(r8) (:)   ]  grid-level snow at end of the time step (mm)
+          end_h2osfc_grc             =>    waterstate_vars%end_h2osfc_grc             , & ! Output: [real(r8) (:)   ]  grid-level surface water at end of the time step (mm)
+          end_h2osoi_liq_grc         =>    waterstate_vars%end_h2osoi_liq_grc         , & ! Output: [real(r8) (:)   ]  grid-level depth integrated liquid soil water at end of the time step (mm)
+          end_h2osoi_ice_grc         =>    waterstate_vars%end_h2osoi_ice_grc           & ! Output: [real(r8) (:)   ]  grid-level depth integrated liquid soil water at end of the time step (mm)
           )
 
        dtime = get_step_size()
@@ -966,11 +1001,13 @@ contains
 
       end do
 
-      call c2g(bounds, endwb_col, endwb_grc, &
-           c2l_scale_type= 'unity', l2g_scale_type='unity' )
-
-      call c2g(bounds, qflx_net_col, qflx_net_grc, &
-           c2l_scale_type= 'unity', l2g_scale_type='unity' )
+      call c2g(bounds, endwb_col             , endwb_grc          , c2l_scale_type= 'unity', l2g_scale_type='unity' )
+      call c2g(bounds, wa                    , end_wa_grc         , c2l_scale_type= 'unity', l2g_scale_type='unity' )
+      call c2g(bounds, h2ocan_col            , end_h2ocan_grc     , c2l_scale_type= 'unity', l2g_scale_type='unity' )
+      call c2g(bounds, h2osno_col            , end_h2osno_grc     , c2l_scale_type= 'unity', l2g_scale_type='unity' )
+      call c2g(bounds, h2osfc_col            , end_h2osfc_grc     , c2l_scale_type= 'unity', l2g_scale_type='unity' )
+      call c2g(bounds, h2osoi_liq_depth_intg , end_h2osoi_liq_grc , c2l_scale_type= 'unity', l2g_scale_type='unity' )
+      call c2g(bounds, h2osoi_ice_depth_intg , end_h2osoi_ice_grc , c2l_scale_type= 'unity', l2g_scale_type='unity' )
 
     end associate
 
