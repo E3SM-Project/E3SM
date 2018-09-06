@@ -1,16 +1,17 @@
 module WaterBudgetMod
   ! !USES:
-  use shr_kind_mod   , only : r8 => shr_kind_r8
-  use shr_log_mod    , only : errMsg => shr_log_errMsg
-  use shr_sys_mod    , only : shr_sys_abort
-  use decompMod      , only : bounds_type
-  use abortutils     , only : endrun
-  use clm_varctl     , only : iulog
-  use atm2lndType    , only : atm2lnd_type
-  use lnd2atmType    , only : lnd2atm_type
-  use WaterstateType , only : waterstate_type
-  use WaterfluxType  , only : waterflux_type
-  use spmdMod        , only : masterproc
+  use shr_kind_mod      , only : r8 => shr_kind_r8
+  use shr_log_mod       , only : errMsg => shr_log_errMsg
+  use shr_sys_mod       , only : shr_sys_abort
+  use decompMod         , only : bounds_type
+  use abortutils        , only : endrun
+  use clm_varctl        , only : iulog
+  use atm2lndType       , only : atm2lnd_type
+  use lnd2atmType       , only : lnd2atm_type
+  use WaterstateType    , only : waterstate_type
+  use WaterfluxType     , only : waterflux_type
+  use spmdMod           , only : masterproc
+  use SoilHydrologyType , only : soilhydrology_type
 
   implicit none
   save
@@ -42,15 +43,39 @@ module WaterBudgetMod
        /)
 
   !--- S for state ---
-  integer, parameter :: s_wbeg = 1
-  integer, parameter :: s_wend = 2
+  integer, parameter :: s_w_beg     = 1
+  integer, parameter :: s_w_end     = 2
+  integer, parameter :: s_wcan_beg  = 3
+  integer, parameter :: s_wcan_end  = 4
+  integer, parameter :: s_wsno_beg  = 5
+  integer, parameter :: s_wsno_end  = 6
+  integer, parameter :: s_wsfc_beg  = 7
+  integer, parameter :: s_wsfc_end  = 8
+  integer, parameter :: s_wsliq_beg = 9
+  integer, parameter :: s_wsliq_end = 10
+  integer, parameter :: s_wsice_beg = 11
+  integer, parameter :: s_wsice_end = 12
+  integer, parameter :: s_wwa_beg   = 13
+  integer, parameter :: s_wwa_end   = 14
 
-  integer, parameter :: s_size = s_wend
+  integer, parameter :: s_size = s_wwa_end
 
   character(len=12),parameter :: sname(s_size) = &
        (/&
        ' total_w_beg', &
-       ' total_w_end'  &
+       ' total_w_end', &
+       'canopy_w_beg', &
+       'canopy_w_end', &
+       '  snow_w_beg', &
+       '  snow_w_end', &
+       '   sfc_w_beg', &
+       '   sfc_w_end', &
+       'soiliq_w_beg', &
+       'soiliq_w_end', &
+       'soiice_w_beg', &
+       'soiice_w_end', &
+       ' aquif_w_beg', &
+       ' aquif_w_end'  &
        /)
 
   !--- P for period ---
@@ -77,10 +102,12 @@ module WaterBudgetMod
   logical,save :: first_time = .true.
 
   !----- formats -----
-  character(*),parameter :: FA0= "('    ',12x,2(3x,a10,2x))"
-  character(*),parameter :: FF = "('    ',a12,2f15.8)"
-  character(*),parameter :: FF2= "('    ',a12,a15,f15.8)"
-  character(*),parameter :: FS = "('    ',a12,f15.8)"
+  character(*),parameter :: FA0= "('    ',12x,(3x,a10,2x),' | ',(3x,a10,2x))"
+  character(*),parameter :: FF = "('    ',a12,f15.8,' | ',f15.8)"
+  character(*),parameter :: FF2= "('    ',a12,a15,' | ',f15.8)"
+  character(*),parameter :: FS = "('    ',a12,6(f15.8),' | ',(f15.8))"
+  character(*),parameter :: FS0= "('    ',12x,6(a15),' | ',(a15))"
+  character(*),parameter :: FS2= "('    ',a12,38x,f15.8,37x,' | ',f15.8)"
 
 contains
 
@@ -182,50 +209,61 @@ contains
     !
     implicit none
     !
-    integer                :: ip
+    integer                :: ip, nf
     integer                :: year_prev, month_prev, day_prev, sec_prev
     integer                :: year_curr, month_curr, day_curr, sec_curr
     character(*),parameter :: subName = '(WaterBudget_Accum)'
+    logical                :: update_state_beg, update_state_end
 
     call get_prev_date(year_prev, month_prev, day_prev, sec_prev)
     call get_curr_date(year_curr, month_curr, day_curr, sec_curr)
 
     do ip = p_inst+1, p_size
        budg_fluxL(:,ip) = budg_fluxL(:,ip) + budg_fluxL(:,p_inst)
+       update_state_beg = .false.
+       update_state_end = .false.
 
        select case (ip)
        case (p_day)
-          if (sec_prev == 0) then
-             budg_stateL(s_wbeg,ip) = budg_stateL(s_wbeg,p_inst)
-          end if
-          if (sec_curr == 0) then
-             budg_stateL(s_wend,ip) = budg_stateL(s_wend,p_inst)
-          end if
+          if (sec_prev == 0) update_state_beg = .true.
+          if (sec_curr == 0) update_state_end = .true.
        case (p_mon)
-          if (sec_prev == 0 .and. day_prev == 1) then
-             budg_stateL(s_wbeg,ip) = budg_stateL(s_wbeg,p_inst)
-          end if
-          if (sec_curr == 0 .and. day_curr == 1) then
-             budg_stateL(s_wend,ip) = budg_stateL(s_wend,p_inst)
-          end if
+          if (sec_prev == 0 .and. day_prev == 1) update_state_beg = .true.
+          if (sec_curr == 0 .and. day_curr == 1) update_state_end = .true.
        case (p_ann)
-          if (sec_prev == 0 .and. day_prev == 1 .and. month_prev == 1) then
-             budg_stateL(s_wbeg,ip) = budg_stateL(s_wbeg,p_inst)
-          end if
-          if (sec_curr == 0 .and. day_curr == 1 .and. month_curr == 1) then
-             budg_stateL(s_wend,ip) = budg_stateL(s_wend,p_inst)
-          end if
+          if (sec_prev == 0 .and. day_prev == 1 .and. month_prev == 1) update_state_beg = .true.
+          if (sec_curr == 0 .and. day_curr == 1 .and. month_curr == 1) update_state_end = .true.
        case (p_inf)
-          budg_stateL(s_wend,ip) = budg_stateL(s_wend,p_inst)
+          update_state_end = .true.
        end select
 
+       if (update_state_beg) then
+          nf = s_w_beg     ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
+          nf = s_wcan_beg  ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
+          nf = s_wsno_beg  ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
+          nf = s_wsfc_beg  ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
+          nf = s_wsliq_beg ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
+          nf = s_wsice_beg ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
+          nf = s_wwa_beg   ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
+       endif
+
+       if (update_state_end) then
+          nf = s_w_end     ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
+          nf = s_wcan_end  ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
+          nf = s_wsno_end  ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
+          nf = s_wsfc_end  ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
+          nf = s_wsliq_end ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
+          nf = s_wsice_end ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
+          nf = s_wwa_end   ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
+       endif
     end do
     budg_fluxN(:,:) = budg_fluxN(:,:) + 1
     
   end subroutine WaterBudget_Accum
 
   !-----------------------------------------------------------------------
-  subroutine WaterBudget_Run(bounds, atm2lnd_vars, lnd2atm_vars, waterstate_vars)
+  subroutine WaterBudget_Run(bounds, atm2lnd_vars, lnd2atm_vars, waterstate_vars, &
+       soilhydrology_vars)
     !
     ! !DESCRIPTION:
     !
@@ -234,26 +272,39 @@ contains
     !
     implicit none
 
-    type(bounds_type)     , intent(in) :: bounds     
-    type(atm2lnd_type)    , intent(in) :: atm2lnd_vars
-    type(lnd2atm_type)    , intent(in) :: lnd2atm_vars
-    type(waterstate_type) , intent(in) :: waterstate_vars
+    type(bounds_type)        , intent(in) :: bounds
+    type(atm2lnd_type)       , intent(in) :: atm2lnd_vars
+    type(lnd2atm_type)       , intent(in) :: lnd2atm_vars
+    type(waterstate_type)    , intent(in) :: waterstate_vars
+    type(soilhydrology_type) , intent(in) :: soilhydrology_vars
 
     integer  :: g, nf, ip
     real(r8) :: af, one_over_re2
 
-    associate(                                                            & 
-         forc_rain         => atm2lnd_vars%forc_rain_not_downscaled_grc , &
-         forc_snow         => atm2lnd_vars%forc_snow_not_downscaled_grc , &
-         qflx_evap_tot     => lnd2atm_vars%qflx_evap_tot_grc            , &
-         qflx_rofice       => lnd2atm_vars%qflx_rofice_grc              , &
-         qflx_rofliq_qsur  => lnd2atm_vars%qflx_rofliq_qsur_grc         , &
-         qflx_rofliq_qsurp => lnd2atm_vars%qflx_rofliq_qsurp_grc        , &
-         qflx_rofliq_qsub  => lnd2atm_vars%qflx_rofliq_qsub_grc         , &
-         qflx_rofliq_qsubp => lnd2atm_vars%qflx_rofliq_qsubp_grc        , &
-         qflx_rofliq_qgwl  => lnd2atm_vars%qflx_rofliq_qgwl_grc         , &
-         begwb_grc         => waterstate_vars%begwb_grc                 , &
-         endwb_grc         => waterstate_vars%endwb_grc                   &
+    associate(                                                             &
+         forc_rain          => atm2lnd_vars%forc_rain_not_downscaled_grc , &
+         forc_snow          => atm2lnd_vars%forc_snow_not_downscaled_grc , &
+         qflx_evap_tot      => lnd2atm_vars%qflx_evap_tot_grc            , &
+         qflx_rofice        => lnd2atm_vars%qflx_rofice_grc              , &
+         qflx_rofliq_qsur   => lnd2atm_vars%qflx_rofliq_qsur_grc         , &
+         qflx_rofliq_qsurp  => lnd2atm_vars%qflx_rofliq_qsurp_grc        , &
+         qflx_rofliq_qsub   => lnd2atm_vars%qflx_rofliq_qsub_grc         , &
+         qflx_rofliq_qsubp  => lnd2atm_vars%qflx_rofliq_qsubp_grc        , &
+         qflx_rofliq_qgwl   => lnd2atm_vars%qflx_rofliq_qgwl_grc         , &
+         begwb_grc          => waterstate_vars%begwb_grc                 , &
+         endwb_grc          => waterstate_vars%endwb_grc                 , &
+         beg_wa_grc         => soilhydrology_vars%beg_wa_grc             , &
+         beg_h2ocan_grc     => waterstate_vars%beg_h2ocan_grc            , &
+         beg_h2osno_grc     => waterstate_vars%beg_h2osno_grc            , &
+         beg_h2osfc_grc     => waterstate_vars%beg_h2osfc_grc            , &
+         beg_h2osoi_liq_grc => waterstate_vars%beg_h2osoi_liq_grc        , &
+         beg_h2osoi_ice_grc => waterstate_vars%beg_h2osoi_ice_grc        , &
+         end_wa_grc         => soilhydrology_vars%end_wa_grc             , &
+         end_h2ocan_grc     => waterstate_vars%end_h2ocan_grc            , &
+         end_h2osno_grc     => waterstate_vars%end_h2osno_grc            , &
+         end_h2osfc_grc     => waterstate_vars%end_h2osfc_grc            , &
+         end_h2osoi_liq_grc => waterstate_vars%end_h2osoi_liq_grc        , &
+         end_h2osoi_ice_grc => waterstate_vars%end_h2osoi_ice_grc          &
          )
 
       ip = p_inst
@@ -265,7 +316,7 @@ contains
 
          af   = (ldomain%area(g) * one_over_re2) * & ! area (converting km**2 to radians**2)
                 ldomain%frac(g)                      ! land fraction
-         
+
          nf = f_rain; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) + forc_rain(g)*af
          nf = f_snow; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) + forc_snow(g)*af
          nf = f_evap; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - qflx_evap_tot(g)*af
@@ -275,8 +326,20 @@ contains
               - qflx_rofliq_qgwl(g)
          nf = f_ioff; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - qflx_rofice(g)*af
 
-         nf = s_wbeg; budg_stateL(nf,ip) = budg_stateL(nf,ip) + begwb_grc(g)*af
-         nf = s_wend; budg_stateL(nf,ip) = budg_stateL(nf,ip) + endwb_grc(g)*af
+         nf = s_w_beg     ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + begwb_grc(g)          *af
+         nf = s_w_end     ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + endwb_grc(g)          *af
+         nf = s_wcan_beg  ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + beg_h2ocan_grc(g)     *af
+         nf = s_wcan_end  ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + end_h2ocan_grc(g)     *af
+         nf = s_wsno_beg  ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + beg_h2osno_grc(g)     *af
+         nf = s_wsno_end  ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + end_h2osno_grc(g)     *af
+         nf = s_wsfc_beg  ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + beg_h2osfc_grc(g)     *af
+         nf = s_wsfc_end  ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + end_h2osfc_grc(g)     *af
+         nf = s_wsliq_beg ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + beg_h2osoi_liq_grc(g) *af
+         nf = s_wsliq_end ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + end_h2osoi_liq_grc(g) *af
+         nf = s_wsice_beg ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + beg_h2osoi_ice_grc(g) *af
+         nf = s_wsice_end ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + end_h2osoi_ice_grc(g) *af
+         nf = s_wwa_beg   ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + beg_wa_grc(g)         *af
+         nf = s_wwa_end   ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + end_wa_grc(g)         *af
       end do
 
     end associate
@@ -383,20 +446,62 @@ contains
              write(iulog,*)'NET WATER FLUXES (mm H2O/s): period ',trim(pname(ip)),': date = ',cdate,sec
              write(iulog,FA0)'  Time  ','  Time    '
              write(iulog,FA0)'averaged','integrated'
+             write(iulog,'(32("-"),"|",20("-"))')
              do f = 1, f_size
                 write(iulog,FF)fname(f),budg_fluxGpr(f,ip),budg_fluxG(f,ip)/(4.0_r8*shr_const_pi)*1.0e6_r8
              end do
+             write(iulog,'(32("-"),"|",20("-"))')
              write(iulog,FF)'   *SUM*', &
                   sum(budg_fluxGpr(:,ip)), sum(budg_fluxG(:,ip))
              write(iulog,FF2)'*EXP CHANGE*', &
                   '            ',sum(budg_fluxG(:,ip))*get_step_size()
+             write(iulog,'(32("-"),"|",20("-"))')
 
              write(iulog,*)''
              write(iulog,*)'WATER STATES (mm H2O): period ',trim(pname(ip)),': date = ',cdate,sec
-             do s = 1, s_size
-                write(iulog,FS)sname(s),budg_stateG(s,ip)
-             end do
-             write(iulog,FS)'*NET CHANGE*',budg_stateG(s_wend,ip)-budg_stateG(s_wbeg,ip)
+             write(iulog,FS0),&
+                  '       Canopy  ', &
+                  '       Snow    ', &
+                  '       SFC     ', &
+                  '     Soil Liq  ', &
+                  '     Soil Ice  ', &
+                  '      Aquifer  ', &
+                  '       TOTAL   '
+             write(iulog,'(107("-"),"|",23("-"))')
+             write(iulog,FS), '         beg', &
+                  budg_stateG(s_wcan_beg  , ip), &
+                  budg_stateG(s_wsno_beg  , ip), &
+                  budg_stateG(s_wsfc_beg  , ip), &
+                  budg_stateG(s_wsliq_beg , ip), &
+                  budg_stateG(s_wsice_beg , ip), &
+                  budg_stateG(s_wwa_beg   , ip), &
+                  budg_stateG(s_w_beg     , ip)
+             write(iulog,FS), '         end', &
+                  budg_stateG(s_wcan_end  , ip), &
+                  budg_stateG(s_wsno_end  , ip), &
+                  budg_stateG(s_wsfc_end  , ip), &
+                  budg_stateG(s_wsliq_end , ip), &
+                  budg_stateG(s_wsice_end , ip), &
+                  budg_stateG(s_wwa_end   , ip), &
+                  budg_stateG(s_w_end     , ip)
+             write(iulog,FS)'*NET CHANGE*', &
+                  budg_stateG(s_wcan_end  ,ip) - budg_stateG(s_wcan_beg  ,ip), &
+                  budg_stateG(s_wsno_end  ,ip) - budg_stateG(s_wsno_beg  ,ip), &
+                  budg_stateG(s_wsfc_end  ,ip) - budg_stateG(s_wsfc_beg  ,ip), &
+                  budg_stateG(s_wsliq_end ,ip) - budg_stateG(s_wsliq_beg ,ip), &
+                  budg_stateG(s_wsice_end ,ip) - budg_stateG(s_wsice_beg ,ip), &
+                  budg_stateG(s_wwa_end   ,ip) - budg_stateG(s_wwa_beg   ,ip), &
+                  budg_stateG(s_w_end     ,ip) - budg_stateG(s_w_beg     ,ip)
+             write(iulog,'(107("-"),"|",23("-"))')
+             write(iulog,FS2)'   *SUM*    ', &
+                  budg_stateG(s_wcan_end  ,ip) - budg_stateG(s_wcan_beg  ,ip) + &
+                  budg_stateG(s_wsno_end  ,ip) - budg_stateG(s_wsno_beg  ,ip) + &
+                  budg_stateG(s_wsfc_end  ,ip) - budg_stateG(s_wsfc_beg  ,ip) + &
+                  budg_stateG(s_wsliq_end ,ip) - budg_stateG(s_wsliq_beg ,ip) + &
+                  budg_stateG(s_wsice_end ,ip) - budg_stateG(s_wsice_beg ,ip) + &
+                  budg_stateG(s_wwa_end   ,ip) - budg_stateG(s_wwa_beg   ,ip),   &
+                  budg_stateG(s_w_end     ,ip) - budg_stateG(s_w_beg     ,ip)
+             write(iulog,'(107("-"),"|",23("-"))')
           end if
        end if
     end do

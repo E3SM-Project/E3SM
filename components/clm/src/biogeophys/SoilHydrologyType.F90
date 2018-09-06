@@ -34,6 +34,8 @@ Module SoilHydrologyType
      real(r8), pointer :: zwts_col          (:)     ! col water table depth, the shallower of the two water depths     
      real(r8), pointer :: zwt_perched_col   (:)     ! col perched water table depth
      real(r8), pointer :: wa_col            (:)     ! col water in the unconfined aquifer (mm)
+     real(r8), pointer :: beg_wa_grc        (:)     ! grid-level water in the unconfined aquifer at beginning of the time step (mm)
+     real(r8), pointer :: end_wa_grc        (:)     ! grid-level water in the unconfined aquifer at end of the time step (mm)
      real(r8), pointer :: qflx_bot_col      (:)
      real(r8), pointer :: qcharge_col       (:)     ! col aquifer recharge rate (mm/s) 
      real(r8), pointer :: fracice_col       (:,:)   ! col fractional impermeability (-)
@@ -121,6 +123,8 @@ contains
     allocate(this%zwts_col          (begc:endc))                 ; this%zwts_col          (:)     = nan
 
     allocate(this%wa_col            (begc:endc))                 ; this%wa_col            (:)     = nan
+    allocate(this%beg_wa_grc        (begg:endg))                 ; this%beg_wa_grc        (:)     = nan
+    allocate(this%end_wa_grc        (begg:endg))                 ; this%end_wa_grc        (:)     = nan
     allocate(this%qcharge_col       (begc:endc))                 ; this%qcharge_col       (:)     = nan
     allocate(this%fracice_col       (begc:endc,nlevgrnd))        ; this%fracice_col       (:,:)   = nan
     allocate(this%icefrac_col       (begc:endc,nlevgrnd))        ; this%icefrac_col       (:,:)   = nan
