@@ -1756,21 +1756,20 @@
   </machine>
 
   <machine MACH="cascade">
-    <DESC>PNL Intel KNC cluster, OS is Linux, batch system is SLURM</DESC>
+    <DESC>PNNL Intel KNC cluster, OS is Linux, batch system is SLURM</DESC>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
-    <MPILIBS>mvapich2</MPILIBS>
+    <MPILIBS>impi,mvapich2</MPILIBS>
     <NODENAME_REGEX>glogin</NODENAME_REGEX>
-    <CESMSCRATCHROOT>/dtemp/$USER</CESMSCRATCHROOT>
-    <RUNDIR>/dtemp/$USER/csmruns/$CASE/run</RUNDIR>
-    <EXEROOT>/dtemp/$USER/csmruns/$CASE/bld</EXEROOT>
-    <CIME_OUTPUT_ROOT>/dtemp/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/dtemp/sing201/acme/inputdata/</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/dtemp/sing201/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/dtemp/sing201/$USER/archive/$CASE</DOUT_S_ROOT>
+    <CIME_OUTPUT_ROOT>/dtemp/$PROJECT/$USER</CIME_OUTPUT_ROOT>
+    <RUNDIR>$CIME_OUTPUT_ROOT/csmruns/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/csmruns/$CASE/bld</EXEROOT>
+    <DIN_LOC_ROOT>/dtemp/st49401/sing201/acme/inputdata/</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/dtemp/st49401/sing201/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/dtemp/sing201/acme/acme_baselines</CCSM_BASELINE>
-    <CCSM_CPRNC>/dtemp/sing201/acme/acme_baselines/cprnc/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>$CIME_OUTPUT_ROOT/acme/acme_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>$CIME_OUTPUT_ROOT/acme/acme_baselines/cprnc/cprnc</CCSM_CPRNC>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>balwinder.singh -at- pnnl.gov</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
@@ -1779,6 +1778,12 @@
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="mpi-serial">
       <executable></executable>
+    </mpirun>
+    <mpirun mpilib="impi">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -np {{ total_tasks }}</arg>
+      </arguments>
     </mpirun>
     <mpirun mpilib="mvapich2">
       <executable>srun</executable>
@@ -1803,8 +1808,11 @@
 	<command name="load">python/2.7.9</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">intel/15.0.090</command>
+	<command name="load">intel/ips_18</command>
 	<command name="load">mkl/14.0</command>
+      </modules>
+      <modules mpilib="impi">
+        <command name="load">impi/4.1.2.040</command>
       </modules>
       <modules mpilib="mvapich2">
 	<command name="load">mvapich2/1.9</command>
