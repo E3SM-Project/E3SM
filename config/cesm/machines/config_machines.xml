@@ -377,7 +377,7 @@ This allows using a different mpirun command to launch unit tests
       <env name="MPI_TYPE_DEPTH">16</env>
       <env name="MPI_IB_CONGESTED">1</env>
       <env name="MPI_USE_ARRAY"/>
-      <env name="ESMFMKFILE">/glade/u/home/dunlap/ESMF-INSTALL/8.0.0bs08/lib/libO/Linux.intel.64.mpich2.default/esmf.mk</env>
+      <env name="ESMFMKFILE">/glade/u/home/dunlap/ESMF-INSTALL/8.0.0bs16/lib/libg/Linux.intel.64.mpich2.default/esmf.mk</env>
     </environment_variables>
     <environment_variables unit_testing="true">
       <env name="MPI_USE_ARRAY">false</env>
@@ -935,6 +935,7 @@ This allows using a different mpirun command to launch unit tests
       <arguments>
 	<arg name="machine_file">--machinefile $ENV{PBS_NODEFILE}</arg>
 	<arg name="num_tasks"> -n {{ total_tasks }} </arg>
+	<arg name="labelio"> -prepend-rank </arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="openmpi">
@@ -960,7 +961,7 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">tool/netcdf/4.6.1/intel</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich2">
-	<command name="load">mpi/intel/mvapich2-2.1-qlc</command>
+	<command name="load">mpi/intel/mvapich2-2.3rc2-intel-18.0.3</command>
       </modules>
       <modules compiler="pgi">
 	<command name="load">compiler/pgi/18.1</command>
@@ -989,7 +990,7 @@ This allows using a different mpirun command to launch unit tests
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
-      <env name="ESMFMKFILE">/home/dunlap/ESMF-INSTALL/master/lib/libO/Linux.intel.64.mvapich2.default/esmf.mk</env>
+      <env name="ESMFMKFILE">/home/dunlap/ESMF-INSTALL/8.0.0bs16/lib/libg/Linux.intel.64.mvapich2.default/esmf.mk</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
@@ -2294,7 +2295,7 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">netcdf/4.3.0</command>
 	<command name="load">pnetcdf</command>
 	<command name="use">/scratch4/NCEPDEV/nems/noscrub/emc.nemspara/soft/modulefiles</command>
-	<command name="load">esmf/8.0.0bs08</command>
+	<command name="load">esmf/8.0.0bs15</command>
       </modules>
     </module_system>
   </machine>
