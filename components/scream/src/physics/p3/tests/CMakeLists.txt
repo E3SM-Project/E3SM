@@ -1,7 +1,7 @@
 link_directories(${SCREAM_LIBRARY_DIRS})
 
 add_executable(p3_tests
-  ${SCREAM_SRC_DIR}/util/scream_catch_main.cpp
+  ${SCREAM_SRC_DIR}/share/util/scream_catch_main.cpp
   p3_tests.cpp)
 add_executable(p3_run_and_cmp
   p3_run_and_cmp.cpp)
@@ -15,7 +15,7 @@ foreach (exe p3_tests p3_run_and_cmp)
   target_include_directories(${exe} PUBLIC ${CATCH_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..)
   target_link_libraries(${exe} p3)
   set_target_properties(${exe} PROPERTIES LINK_FLAGS "${SCREAM_LINK_FLAGS}")
-  target_link_libraries(${exe} scream_util ${SCREAM_LIBRARIES})
+  target_link_libraries(${exe} scream_share ${SCREAM_LIBRARIES})
 endforeach ()
 
 add_test(run_p3_tests p3_tests)

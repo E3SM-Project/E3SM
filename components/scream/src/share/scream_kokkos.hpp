@@ -1,5 +1,5 @@
-#ifndef INCLUDE_SCREAM_KOKKOS
-#define INCLUDE_SCREAM_KOKKOS
+#ifndef SCREAM_KOKKOS_HPP
+#define SCREAM_KOKKOS_HPP
 
 #include <Kokkos_Core.hpp>
 
@@ -27,8 +27,9 @@ using std::min;
 using std::max;
 using std::isfinite;
 using std::max_element;
-#endif
+#endif // KOKKOS_ENABLE_CUDA
+
 } // namespace ko
 } // namespace scream
 
-#endif
+#endif // SCREAM_KOKKOS_HPP

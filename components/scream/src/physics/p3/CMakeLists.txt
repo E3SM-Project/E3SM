@@ -16,6 +16,6 @@ target_include_directories(p3 PUBLIC ${SCREAM_INCLUDE_DIRS})
 set_target_properties(p3 PROPERTIES
   LINK_FLAGS "${SCREAM_LINK_FLAGS}"
   Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
-target_link_libraries(p3 scream_util ${SCREAM_LIBRARIES})
+target_link_libraries(p3 scream_share ${SCREAM_LIBRARIES})
 
 add_subdirectory(tests)

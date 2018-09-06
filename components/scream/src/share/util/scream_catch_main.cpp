@@ -2,13 +2,12 @@
 
 #include "catch2/catch.hpp"
 
-#include "scream_kokkos.hpp"
-#include "scream_util.hpp"
+#include "share/scream_session.hpp"
 
 int main (int argc, char **argv) {
   int result = -1;
-  scream::util::initialize(argc, argv); {
+  scream::initialize(argc, argv); {
     result = Catch::Session().run(argc, argv);
-  } scream::util::finalize();
+  } scream::finalize();
   return result;
 }

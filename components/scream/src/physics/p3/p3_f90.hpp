@@ -1,8 +1,8 @@
 #ifndef SCREAM_P3_F90_HPP
 #define SCREAM_P3_F90_HPP
 
-#include "util/scream_kokkos.hpp"
-#include "util/scream_types.hpp"
+#include "share/scream_kokkos.hpp"
+#include "share/scream_types.hpp"
 
 #include <memory>
 #include <vector>

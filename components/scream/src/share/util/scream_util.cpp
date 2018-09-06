@@ -1,6 +1,6 @@
-#include "scream_util.hpp"
-#include "scream_types.hpp"
-#include "scream_kokkos.hpp"
+#include "share/util/scream_util.hpp"
+#include "share/scream_types.hpp"
+#include "share/scream_kokkos.hpp"
 
 #include <sstream>
 
@@ -23,16 +23,6 @@ void activate_floating_point_exceptions_if_enabled () {
                             _MM_MASK_OVERFLOW |
                             _MM_MASK_UNDERFLOW ));
 #endif
-}
-
-void initialize (int argc, char **argv) {
-  activate_floating_point_exceptions_if_enabled();
-  Kokkos::initialize(argc, argv);
-  std::cout << config_string() << "\n";
-}
-
-void finalize () {
-  Kokkos::finalize();
 }
 
 std::string active_avx_string () {

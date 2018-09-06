@@ -1,6 +1,6 @@
 #include "catch2/catch.hpp"
 
-#include "scream_util.hpp"
+#include "share/util/scream_util.hpp"
 
 namespace {
 

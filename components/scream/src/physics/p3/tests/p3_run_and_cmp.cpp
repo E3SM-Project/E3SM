@@ -1,6 +1,7 @@
-#include "util/scream_kokkos.hpp"
-#include "util/scream_util.hpp"
-#include "util/scream_types.hpp"
+#include "share/scream_session.hpp"
+#include "share/scream_kokkos.hpp"
+#include "share/util/scream_util.hpp"
+#include "share/scream_types.hpp"
 #include "p3_f90.hpp"
 #include "p3_ic_cases.hpp"
 
@@ -170,7 +171,7 @@ int main (int argc, char** argv) {
   std::string baseline_fn(argv[argc-1]);
   baseline_fn += std::to_string(sizeof(scream::Real));
 
-  scream::util::initialize(argc, argv); {
+  scream::initialize(argc, argv); {
     Baseline bln;
     if (generate) {
       std::cout << "Generating to " << baseline_fn << "\n";
@@ -179,7 +180,7 @@ int main (int argc, char** argv) {
       printf("Comparing with %s at tol %1.1e\n", baseline_fn.c_str(), tol);
       nerr += bln.run_and_cmp(baseline_fn, tol);
     }    
-  } scream::util::finalize();
+  } scream::finalize();
 
   return nerr;
 }

@@ -1,5 +1,5 @@
-#include "scream_types.hpp"
-#include "scream_util.hpp"
+#include "share/scream_types.hpp"
+#include "share/util/scream_util.hpp"
 
 #include <sys/stat.h>
 

@@ -56,9 +56,6 @@
 namespace scream {
 namespace util {
 
-void initialize(int argc, char **argv);
-void finalize();
-
 struct FILECloser { void operator() (FILE* fh) { fclose(fh); } };
 using FILEPtr = std::unique_ptr<FILE, FILECloser>;
 
