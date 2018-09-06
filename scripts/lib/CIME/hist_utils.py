@@ -1,6 +1,7 @@
 """
 Functions for actions pertaining to history files.
 """
+#TODO: mvertens - this needs to be reconciled with the cmeps implementation for mom output
 
 from CIME.XML.standard_module_setup import *
 from CIME.test_status import TEST_NO_BASELINES_COMMENT, TEST_STATUS_FILENAME
@@ -38,10 +39,7 @@ def _get_all_hist_files(model, from_dir, file_extensions, suffix="", ref_case=No
             continue
         if extension.endswith('$'):
             extension = extension[:-1]
-        # TODO mvertens: which one is right below??
         string = model+r'\d?_?(\d{4})?\.'+extension+suffix+'$'
-        #string = model+r'\d?_?\d*\.'+extension+suffix+r'$'
-
         logger.debug ("Regex is {}".format(string))
         pfile = re.compile(string)
         test_hists.extend([os.path.join(from_dir,f) for f in os.listdir(from_dir) if pfile.search(f)])
@@ -56,7 +54,6 @@ def _get_all_hist_files(model, from_dir, file_extensions, suffix="", ref_case=No
 
 def _get_latest_hist_files(model, from_dir, file_extensions, suffix="", ref_case=None):
     test_hists = _get_all_hist_files(model, from_dir, file_extensions, suffix=suffix, ref_case=ref_case)
-
     latest_files = {}
     histlist = []
     for hist in test_hists:
@@ -78,7 +75,6 @@ def copy(case, suffix):
     """
     rundir   = case.get_value("RUNDIR")
     ref_case = case.get_value("RUN_REFCASE")
-
     # Loop over models
     archive = case.get_env("archive")
     comments = "Copying hist files to suffix '{}'\n".format(suffix)
@@ -384,26 +380,10 @@ def get_extension(model, filepath):
     >>> get_extension("mom", "ga0xnw.mom6.sfc.day._0001_001.nc")
     'sfc'
     """
-    # TODO mvertens: which on is right below?
-    # basename = os.path.basename(filepath)
-    # regex = model+r'\d?_?(\d{4})?\.(\w+)[-\w\.]*\.nc\.?'
-    # ext_regex = re.compile(regex)
-    # m = ext_regex.search(basename)
     basename = os.path.basename(filepath)
-    m = None
-    if model == "mom":
-        ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](frc.?)([.].*[^.])?[.]nc' % model)
-        m = ext_regex.match(basename)
-        if m is None:
-            ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](sfc.day.?)([.].*[^.])?[.]nc' % model)
-            m = ext_regex.match(basename)
-    elif model == 'cice':
-        ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h_inst.?)([.].*[^.])?[.]nc' % model)
-        m = ext_regex.match(basename)
-
-    if m is None:
-        ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h.?)([.].*[^.])?[.]nc' % model)
-        m = ext_regex.match(basename)
+    regex = model+r'\d?_?(\d{4})?\.(\w+)[-\w\.]*\.nc\.?'
+    ext_regex = re.compile(regex)
+    m = ext_regex.search(basename)
 
     expect(m is not None, "Failed to get extension for file '{}'".format(filepath))
 
@@ -477,15 +457,11 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
 
     # copy latest cpl log to baseline
     # drop the date so that the name is generic
-    if case.get_value("COMP_INTERFACE") == "nuopc":
-        cplname = "med"
-    else:
-        cplname = "cpl"
-    newestcpllogfile = case.get_latest_cpl_log(coupler_log_path=case.get_value("RUNDIR"), cplname=cplname)
+    newestcpllogfile = case.get_latest_cpl_log(coupler_log_path=case.get_value("RUNDIR"))
     if newestcpllogfile is None:
-        logger.warning("No {}.log file found in directory {}".format(cplname,case.get_value("RUNDIR")))
+        logger.warning("No cpl.log file found in directory {}".format(case.get_value("RUNDIR")))
     else:
-        safe_copy(newestcpllogfile, os.path.join(basegen_dir, "{}.log.gz".format(cplname)))
+        safe_copy(newestcpllogfile, os.path.join(basegen_dir, "cpl.log.gz"))
 
     expect(num_gen > 0, "Could not generate any hist files for case '{}', something is seriously wrong".format(os.path.join(rundir, testcase)))
     #make sure permissions are open in baseline directory
