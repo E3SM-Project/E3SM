@@ -20,7 +20,7 @@ class Archive(ArchiveBase):
         schema = files.get_schema("ARCHIVE_SPEC_FILE")
         super(Archive, self).__init__(infile, schema)
 
-    def setup(self, env_archive, components, files=None, driver=None):
+    def setup(self, env_archive, components, files=None):
         if files is None:
             files = Files()
 
@@ -33,7 +33,6 @@ class Archive(ArchiveBase):
             components.append('dart')
 
         for comp in components:
-            expect(driver != None, "must specify driver to acceptable value")
             infile = files.get_value("ARCHIVE_SPEC_FILE", {"component":comp})
 
             if infile is not None and os.path.isfile(infile):

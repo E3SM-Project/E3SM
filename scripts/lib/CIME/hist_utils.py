@@ -1,8 +1,6 @@
 """
 Functions for actions pertaining to history files.
 """
-#TODO: mvertens - this needs to be reconciled with the cmeps implementation for mom output
-
 from CIME.XML.standard_module_setup import *
 from CIME.test_status import TEST_NO_BASELINES_COMMENT, TEST_STATUS_FILENAME
 from CIME.utils import get_current_commit, get_timestamp, get_model, safe_copy
@@ -458,10 +456,15 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
     # copy latest cpl log to baseline
     # drop the date so that the name is generic
     newestcpllogfile = case.get_latest_cpl_log(coupler_log_path=case.get_value("RUNDIR"))
+    comp_interface = case.get_value("COMP_INTERFACE")
+    if comp_interface == 'mct':
+        cplname = "cpl"
+    elif comp_interface == "nuopc":
+        cplname = "med"
     if newestcpllogfile is None:
-        logger.warning("No cpl.log file found in directory {}".format(case.get_value("RUNDIR")))
+        logger.warning("No {}.log file found in directory {}".format(cplname,case.get_value("RUNDIR")))
     else:
-        safe_copy(newestcpllogfile, os.path.join(basegen_dir, "cpl.log.gz"))
+        safe_copy(newestcpllogfile, os.path.join(basegen_dir, cplname + ".log.gz"))
 
     expect(num_gen > 0, "Could not generate any hist files for case '{}', something is seriously wrong".format(os.path.join(rundir, testcase)))
     #make sure permissions are open in baseline directory

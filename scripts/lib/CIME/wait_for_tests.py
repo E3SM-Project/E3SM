@@ -437,7 +437,6 @@ def wait_for_tests(test_paths,
                    timeout=None,
                    force_log_upload=False,
                    no_run=False):
-
 ###############################################################################
     # Set up signal handling, we want to print results before the program
     # is terminated

@@ -346,10 +346,6 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
         self.set_value("CONTINUE_RUN",
                        self.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
 
-    if set_continue_run:
-        self.set_value("CONTINUE_RUN",
-                       self.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
-
     logger.warning("check for resubmit")
     if submit_resubmits:
         _resubmit_check(self)

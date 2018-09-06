@@ -399,9 +399,6 @@ class GenericXML(object):
         valnodes = self.get_children(vid)
         for node in valnodes:
             self.set_text(node, value)
-        if valnodes:
-            return value
-        return None
 
         return value if valnodes else None
 
