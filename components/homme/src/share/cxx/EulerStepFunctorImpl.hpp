@@ -907,7 +907,7 @@ KOKKOS_INLINE_FUNCTION void SerialLimiter<ExecSpace>
 
   ViewUnmanaged<const Real[NP][NP][NUM_LEV*VECTOR_SIZE]>
     dpmass(&idpmass(0,0,0)[0]);
-  ViewUnmanaged<Real[NP][NP][NUM_PHYSICAL_LEV]>
+  ViewUnmanaged<Real[NP][NP][NUM_LEV*VECTOR_SIZE]>
     c(&irwrk(0,0,0,0)[0]);
   ViewUnmanaged<Real[2][NUM_LEV*VECTOR_SIZE]>
     qlim(&iqlim(0,0)[0]);
@@ -1007,9 +1007,9 @@ KOKKOS_INLINE_FUNCTION void SerialLimiter<ExecSpace>
       }
     }
   } else if (limiter_option == 9) {
-    ViewUnmanaged<Real[NP][NP][NUM_PHYSICAL_LEV]>
+    ViewUnmanaged<Real[NP][NP][NUM_LEV*VECTOR_SIZE]>
       ptens(&iptens(0,0,0)[0]);
-    ViewUnmanaged<Real[NP][NP][NUM_PHYSICAL_LEV]>
+    ViewUnmanaged<Real[NP][NP][NUM_LEV*VECTOR_SIZE]>
       x(&irwrk(1,0,0,0)[0]);
     Real mass[NUM_PHYSICAL_LEV] = {0}, sumc[NUM_PHYSICAL_LEV] = {0};
 
