@@ -176,8 +176,8 @@ contains
     ! Initialize xrof
     !----------------------------------------------------------------------------
 
-    call dead_init_nuopc('rof', mpicom, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, logunit, lsize, gbuf, nxg, nyg)
+    call dead_init_nuopc('rof',  inst_suffix, logunit, lsize, gbuf, nxg, nyg)
+
 
     allocate(gindex(lsize))
     allocate(lon(lsize))
@@ -356,6 +356,7 @@ contains
   !===============================================================================
 
   subroutine ModelAdvance(gcomp, rc)
+    use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -460,7 +461,7 @@ contains
     rc = ESMF_SUCCESS
     if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
-    call dead_final_nuopc('rof', my_task, master_task, logunit)
+    call dead_final_nuopc('rof', logunit)
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 

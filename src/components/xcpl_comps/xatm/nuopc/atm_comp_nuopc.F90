@@ -62,7 +62,7 @@ module atm_comp_nuopc
   character(len=12)          :: inst_name            ! fullname of current instance (ie. "lnd_0001")
   character(len=5)          :: inst_suffix      ! char string associated with instance (ie. "_0001" or "")
   integer                    :: logunit              ! logging unit number
-  integer    ,parameter      :: master_task=0        ! task number of master task
+  logical :: mastertask
   integer                    :: dbrc
   logical                    :: atm_prognostic
 
@@ -158,8 +158,7 @@ module atm_comp_nuopc
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call mpi_comm_dup(lmpicom, mpicom, ierr)
-    mastertask = my_task == master_task
-
+    mastertask = my_task==0
     !----------------------------------------------------------------------------
     ! determine instance information
     !----------------------------------------------------------------------------
@@ -171,14 +170,13 @@ module atm_comp_nuopc
     ! set logunit and set shr logging to my log file
     !----------------------------------------------------------------------------
 
-    call shr_nuopc_set_component_logging(gcomp, my_task==master_task, logunit, shrlogunit, shrloglev)
+    call shr_nuopc_set_component_logging(gcomp, mastertask, logunit, shrlogunit, shrloglev)
 
     !----------------------------------------------------------------------------
     ! Initialize xatm
     !----------------------------------------------------------------------------
 
-    call dead_init_nuopc('atm', mpicom, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, logunit, lsize, gbuf, nxg, nyg)
+    call dead_init_nuopc('atm', inst_suffix, logunit, lsize, gbuf, nxg, nyg)
 
     allocate(gindex(lsize))
     allocate(lon(lsize))
@@ -386,7 +384,7 @@ module atm_comp_nuopc
     !--------------------------------
 
     if (dbug > 1) then
-       if (my_task == master_task) then
+       if (mastertask) then
           call Print_FieldExchInfo(values=d2x, logunit=logunit, &
                fldlist=fldsFrAtm, nflds=fldsFrAtm_num, istr="InitializeRealize: atm->mediator")
        end if
@@ -417,6 +415,7 @@ module atm_comp_nuopc
   !===============================================================================
 
   subroutine ModelAdvance(gcomp, rc)
+    use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -494,7 +493,7 @@ module atm_comp_nuopc
     !--------------------------------
 
     if (dbug > 1) then
-       if (my_task == master_task) then
+       if (mastertask) then
           call Print_FieldExchInfo(values=d2x, logunit=logunit, &
                fldlist=fldsFrAtm, nflds=fldsFrAtm_num, istr="ModelAdvance: atm->mediator")
        end if
@@ -532,7 +531,7 @@ module atm_comp_nuopc
     rc = ESMF_SUCCESS
     if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
-    call dead_final_nuopc('atm', my_task, master_task, logunit)
+    call dead_final_nuopc('atm', logunit)
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
