@@ -146,52 +146,21 @@ def get_parameters(parser=ACMEParser()):
         sys.exit()
 
     if args.parameters and not args.other_parameters:  # -p only
-        cmdline_parameter = parser.get_cmdline_parameters()
-        # If just a -p with no command line parameters, check the py for errors.
-        # Otherwise don't check for errors, the command line args might have some missing ones.
-        check_values = True if not cmdline_parameter else False
-        # default_vars needs to be True in original_parameter b/c 
-        original_parameter = parser.get_orig_parameters(check_values=check_values)
-        #if not hasattr(original_parameter, 'sets'):
-        #    # Since sets is a selector, it must be in there.
-
-        # WITHOUT THIS, THERE ARE A BUNCH OF RESULTS.
-        # It's need to get the default selector and everything.
-        # But when this is done, it even gets the default EVERYTHING, case_id, etc.
-        # And all of them overwrite all of the stuff in the CFG.
-        # THIS CANNOT HAPPEN.
-        # parser.add_default_values(original_parameter, default_vars=True)
-        # We need some way to get the default values in original_parameter before it gets run through select().
-
-        # Maybe the selector should use something other than the *py to look for the values??
-        # Maybe create an original_param with all of the defaults with user options on top of it.
-        # And just use this to select the values.
+        original_parameter = parser.get_orig_parameters(argparse_vals_only=False)
 
         # Load the default cfg files.
-        default_diags_paths = []
-        # TODO: Fix how the run_type is retrieved.
-        run_type = 'model_vs_obs' # original_parameter.run_type
-        for set_name in SET_NAMES:
-            default_diags_paths.append(_get_default_diags(set_name, run_type))
+        run_type = getattr(original_parameter, 'run_type', 'model_vs_obs')
+        default_diags_paths = [_get_default_diags(set_name, run_type) for set_name in SET_NAMES]
 
-        other_parameters = parser.get_other_parameters(files_to_open=default_diags_paths)
+        other_parameters = parser.get_other_parameters(files_to_open=default_diags_paths, argparse_vals_only=False)
 
-        # NEW INFO:
-        # Need to add selectors in the original_parameter before combine_parameter()
-        # Because it's used as vars_to_ignore.
-        '''
-        parameters = parser.get_parameters(cmdline_parameters=cmdline_parameter,
-            orig_parameters=original_parameter, other_parameters=other_parameters)
-        '''
-        parameters = parser.get_parameters(other_parameters=other_parameters, cmd_default_vars=False)
+        parameters = parser.get_parameters(orig_parameters=original_parameter,
+            other_parameters=other_parameters, cmd_default_vars=False, argparse_vals_only=False)
 
-    elif not args.parameters and args.other_parameters:  # -d only
-        cmdline_parameter = parser.get_cmdline_parameters()
-        other_parameters = parser.get_other_parameters()
-        parameters = parser.get_parameters(cmdline_parameters=cmdline_parameter, 
-            other_parameters=other_parameters, cmd_default_vars=False)
-    else:  # -p and -d, or just command line arguments.
-        parameters = parser.get_parameters(cmd_default_vars=False)
+    else:
+        parameters = parser.get_parameters(cmd_default_vars=False, argparse_vals_only=False)
+
+    parser.check_values_of_params(parameters)
 
     return parameters
 
@@ -224,17 +193,6 @@ def main():
     parser = ACMEParser()
     parameters = get_parameters(parser)
 
-    print(len(parameters))
-    for p in parameters:
-        print(p.selectors, end=' ')
-        # print(p.granulate, end=' ')
-        print(p.sets, end=' ')
-        print(p.variables, end=' ')
-        print(p.seasons, end=' ')
-        #print(p.case_id)
-        print(p.ref_name)
-
-    quit()
     dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     for p in parameters:
         if not hasattr(p, 'results_dir'):
