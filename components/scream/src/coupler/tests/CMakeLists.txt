@@ -5,7 +5,7 @@ set(COUPLER_TEST_SRCS
 
 add_executable(coupler_tests ${COUPLER_TEST_SRCS})
 
-target_include_directories(coupler_tests PUBLIC ${CATCH_INCL_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(coupler_tests PUBLIC ${CATCH_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 target_link_libraries(coupler_tests coupler)
 

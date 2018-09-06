@@ -1,6 +1,6 @@
-#include "scream_kokkos.hpp"
-#include "scream_util.hpp"
-#include "scream_types.hpp"
+#include "util/scream_kokkos.hpp"
+#include "util/scream_util.hpp"
+#include "util/scream_types.hpp"
 #include "p3_f90.hpp"
 #include "p3_ic_cases.hpp"
 

@@ -1,6 +1,6 @@
 #include "p3_f90.hpp"
 #include "p3_ic_cases.hpp"
-#include "scream_util.hpp"
+#include "util/scream_util.hpp"
 
 using scream::Real;
 using scream::Int;

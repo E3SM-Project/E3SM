@@ -10,7 +10,7 @@ set(UTIL_HEADERS
 )
 
 add_library(scream_util ${UTIL_SRC})
-target_include_directories(scream_util PUBLIC ${SCREAM_INCLUDES})
+target_include_directories(scream_util PUBLIC ${SCREAM_INCLUDE_DIRS})
 set_target_properties(scream_util PROPERTIES
   Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
 

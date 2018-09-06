@@ -5,7 +5,7 @@ set(RRTMGP_TEST_SRCS
 
 add_executable(rrtmgp_tests ${RRTMGP_TEST_SRCS})
 
-target_include_directories(rrtmgp_tests PUBLIC ${CATCH_INCL_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(rrtmgp_tests PUBLIC ${CATCH_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 target_link_libraries(rrtmgp_tests rrtmgp)
 
