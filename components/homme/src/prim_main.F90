@@ -242,7 +242,7 @@ program prim_main
      if((restartfreq > 0) .and. (MODULO(tl%nstep,restartfreq) ==0)) then 
         call WriteRestart(elem, ithr,1,nelemd,tl)
      endif
-  end do
+  end do !end of while tl%nstep < nEndStep
   call t_stopf('prim_main_loop')
 
   if(par%masterproc) print *,"Finished main timestepping loop",tl%nstep

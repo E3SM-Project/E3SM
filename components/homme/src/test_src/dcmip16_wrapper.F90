@@ -30,8 +30,8 @@ use time_mod,             only: time_at, TimeLevel_t
 
 implicit none
 
+! this cannot be made stack variable, nelemd is not compile option
 real(rl),dimension(:,:,:), allocatable :: precl ! storage for column precip
-
 real(rl):: zi(nlevp), zm(nlev)                                          ! z coordinates
 real(rl):: ddn_hyai(nlevp), ddn_hybi(nlevp)                             ! vertical derivativess of hybrid coefficients
 real(rl):: tau
@@ -41,6 +41,23 @@ real(rl), parameter :: rh2o    = 461.5d0,            &                  ! Gas co
 real(rl) :: sample_period  = 60.0_rl
 real(rl) :: rad2dg = 180.0_rl/pi
 contains
+
+!---------------------------------------------------------------------
+!init routine to call before any dcmip16 inin routines, including restart runs
+subroutine dcmip2016_init()
+  implicit none
+!$OMP BARRIER
+!$OMP MASTER
+  if (.not.allocated(precl)) then
+    allocate(precl(np,np,nelemd))
+    precl(:,:,:) = 0.0
+  else
+    call abortmp('ERROR: in dcmip2016_init() precl has already been allocated') 
+  endif
+!$OMP END MASTER
+!$OMP BARRIER
+
+end subroutine dcmip2016_init
 
 !_____________________________________________________________________
 subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
@@ -64,9 +81,9 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
   real(rl), dimension(np,np):: ps, phis
   real(rl), dimension(np,np,nlev,5):: q
 
-real(rl) :: min_thetav, max_thetav
-min_thetav = +huge(rl)
-max_thetav = -huge(rl)
+  real(rl) :: min_thetav, max_thetav
+  min_thetav = +huge(rl)
+  max_thetav = -huge(rl)
 
   moist = 0
   if (use_moisture) moist=1
@@ -74,9 +91,6 @@ max_thetav = -huge(rl)
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 1: moist baroclinic wave'
 
   if (qsize<5) call abortmp('ERROR: test requires qsize>=5')
-  ! allocate storage for total precip, for output to file
-  allocate(precl(np,np,nelemd))
-  precl = 0
 
   ! set initial conditions
   do ie = nets,nete
@@ -130,10 +144,6 @@ subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 2: tropical cyclone'
   !use vertical levels specificed in cam30 file
-
-  ! allocate storage for total precip, for output to file
-  allocate(precl(np,np,nelemd))
-  precl = 0
 
   ! set initial conditions
   do ie = nets,nete
@@ -192,10 +202,6 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
   real(rl) :: p1,thetav1,rho1,q1
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 3: supercell storm'
-
-  ! allocate storage for total precip, for output to file
-  allocate(precl(np,np,nelemd))
-  precl = 0
 
   ! initialize hydrostatic state
   call supercell_init()
@@ -396,7 +402,8 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       th_c = theta_kess(i,j,nlev:1:-1)
 
       ! get forced versions of u,v,p,qv,qc,qr. rho is constant
-      call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, z_c, zi_c, lat, nlev, precl(i,j,ie), pbl_type, prec_type)
+      call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, z_c, zi_c, lat, nlev, &
+                             precl(i,j,ie), pbl_type, prec_type)
 
       ! revert column
       u(i,j,:)  = u_c(nlev:1:-1)
@@ -444,7 +451,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 end subroutine
 
 !_______________________________________________________________________
-subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
+subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
 
   type(element_t),    intent(inout), target :: elem(:)                  ! element array
   type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
@@ -519,7 +526,8 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
       th_c = theta_kess(i,j,nlev:1:-1)
 
       ! get forced versions of u,v,p,qv,qc,qr. rho is constant
-      call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, z_c, zi_c, lat, nlev, precl(i,j,ie), pbl_type, prec_type)
+      call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, z_c, zi_c, lat, nlev, &
+                             precl(i,j,ie), pbl_type, prec_type)
 
       ! revert column
       u(i,j,:)  = u_c(nlev:1:-1)
@@ -554,7 +562,7 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
 
   call dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
 
-end subroutine
+end subroutine dcmip2016_test2_forcing
 
 !_______________________________________________________________________
 subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
@@ -581,7 +589,7 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   do ie = nets,nete
 
-    precl(:,:,ie) = 0
+    precl(:,:,ie) = 0.0
 
     ! get current element state
     call get_state(u,v,w,T,p,dp,ps,rho,z,g,elem(ie),hvcoord,nt,ntQ)
