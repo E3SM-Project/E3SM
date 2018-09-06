@@ -9,6 +9,8 @@ add_executable(p3_run_and_cmp
 add_custom_target(p3_baseline
   COMMAND $<TARGET_FILE:p3_run_and_cmp> -g ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline)
 
+add_dependencies(baseline p3_baseline)
+
 foreach (exe p3_tests p3_run_and_cmp)
   target_include_directories(${exe} PUBLIC ${CATCH_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..)
   target_link_libraries(${exe} p3)

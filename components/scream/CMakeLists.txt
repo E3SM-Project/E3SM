@@ -72,7 +72,7 @@ set (SCREAM_DATA_DIR ${CMAKE_SOURCE_DIR}/data)
 
 file(MAKE_DIRECTORY ${SCREAM_TEST_DATA_DIR})
 
+add_custom_target(baseline)
+
 add_subdirectory(src)
 add_subdirectory(tests)
-
-add_custom_target(baseline DEPENDS p3_baseline)
