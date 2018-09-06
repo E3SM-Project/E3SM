@@ -990,7 +990,7 @@ This allows using a different mpirun command to launch unit tests
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
-      <env name="ESMFMKFILE">/home/dunlap/ESMF-INSTALL/8.0.0bs15/lib/libg/Linux.intel.64.mvapich2.default/esmf.mk</env>
+      <env name="ESMFMKFILE">/home/dunlap/ESMF-INSTALL/8.0.0bs16/lib/libg/Linux.intel.64.mvapich2.default/esmf.mk</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
