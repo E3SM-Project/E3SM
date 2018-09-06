@@ -35,7 +35,7 @@ module shr_megan_mod
   logical          , public :: megan_initialized       = .false. ! true => shr_megan_readnl alreay called
   character(len=CS), public :: shr_megan_fields_token  = ''      ! First drydep fields token
   character(len=CL), public :: shr_megan_factors_file  = ''
-  character(len=CX), public :: shr_megan_fields        = '' 
+  character(len=CX), public :: shr_megan_fields        = ''
 
   ! MEGAN compound data structure (or user defined type)
   type shr_megan_megcomp_t
@@ -170,10 +170,9 @@ contains
     tmp = megan_nflds
     call ESMF_VMBroadcast(vm, tmp, 1, 0, rc=rc)
     megan_nflds = tmp(1)
-    print *,__FILE__,__LINE__,tmp, megan_nflds
     if(megan_nflds > 0) then
-       call ESMF_VMBroadcast(vm, megan_specifier, megan_nflds, 0, rc=rc)
-       call ESMF_VMBroadcast(vm, megan_factors_file, 1, 0, rc=rc)
+       call ESMF_VMBroadcast(vm, megan_specifier, 2*CX*megan_nflds, 0, rc=rc)
+       call ESMF_VMBroadcast(vm, megan_factors_file, CL, 0, rc=rc)
        tmp = 0
        if(megan_mapped_emisfctrs) tmp=1
        call ESMF_VMBroadcast(vm, tmp, 1, 0, rc=rc)
@@ -185,7 +184,6 @@ contains
 
     ! parse the namelist info and initialize the module data
     call shr_megan_init( megan_specifier, megan_fields )
-
   end subroutine shr_megan_readnl
 
   !-------------------------------------------------------------------------

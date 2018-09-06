@@ -74,7 +74,7 @@ contains
     end if
     call ESMF_VMBroadcast(vm, tmp, 1, 0, rc=rc)
     if(tmp(1) == 1) then
-       call ESMF_VMBroadcast(vm, carma_fields, 1, 0, rc=rc)
+       call ESMF_VMBroadcast(vm, carma_fields, CX, 0, rc=rc)
     endif
 
   end subroutine shr_carma_readnl

@@ -145,8 +145,8 @@ contains
     call ESMF_VMBroadcast( vm, tmp, 1, 0, rc=rc)
     emis_nflds = tmp(1)
     if (emis_nflds > 0) then
-       call ESMF_VMBroadcast( vm, fire_emis_specifier, emis_nflds, 0, rc=rc)
-       call ESMF_VMBroadcast( vm, fire_emis_factors_file, 1, 0, rc=rc)
+       call ESMF_VMBroadcast( vm, fire_emis_specifier, 2*CX*emis_nflds, 0, rc=rc)
+       call ESMF_VMBroadcast( vm, fire_emis_factors_file, CL, 0, rc=rc)
        tmp = 0
        if (fire_emis_elevated) tmp = 1
        call ESMF_VMBroadcast( vm, tmp, 1, 0, rc=rc)

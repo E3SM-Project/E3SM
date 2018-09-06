@@ -110,9 +110,9 @@ CONTAINS
     ndep_fields = ' '
 
     if(ndep_nflds > 0) then
-       call ESMF_VMBroadcast(vm, ndep_list, ndep_nflds, 0, rc=rc)
+       call ESMF_VMBroadcast(vm, ndep_list, 32*ndep_nflds, 0, rc=rc)
        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-       ! Loop over species to fill list of fields to communicate for ndep 
+       ! Loop over species to fill list of fields to communicate for ndep
        do i=1,ndep_nflds
           if ( len_trim(ndep_list(i))==0 ) exit
           if ( i == 1 ) then

@@ -52,7 +52,7 @@ module seq_drydep_mod
 
   logical, public  :: lnd_drydep                           ! If dry-dep fields passed
   integer, public  :: n_drydep = 0                         ! Number in drypdep list
-  character(len=32), public, dimension(maxspc) :: drydep_list = ''   ! List of dry-dep species
+  character(len=CS), public, dimension(maxspc) :: drydep_list = ''   ! List of dry-dep species
 
   character(len=CS), public :: drydep_fields_token = ''   ! First drydep fields token
 
@@ -578,15 +578,15 @@ CONTAINS
                 seq_drydep_nflds=seq_drydep_nflds+1
              endif
           enddo
-          
+
        end if
     end if
     tmp = seq_drydep_nflds
     call ESMF_VMBroadcast(vm, tmp, 1, 0, rc=rc)
     seq_drydep_nflds = tmp(1)
     if(seq_drydep_nflds > 0) then
-       call ESMF_VMBroadcast(vm, drydep_list, seq_drydep_nflds, 0, rc=rc)
-       call ESMF_VMBroadcast(vm, drydep_method, 1, 0, rc=rc)
+       call ESMF_VMBroadcast(vm, drydep_list, CS*seq_drydep_nflds, 0, rc=rc)
+       call ESMF_VMBroadcast(vm, drydep_method, 16, 0, rc=rc)
     endif
 
     !--- Loop over species to fill list of fields to communicate for drydep ---

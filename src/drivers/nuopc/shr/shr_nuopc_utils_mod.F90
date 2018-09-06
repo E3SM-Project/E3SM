@@ -36,7 +36,7 @@ contains
     integer :: rc
     logical :: isPresent
     character(len=4) :: cvalue
-   
+
     call NUOPC_CompAttributeGet(gcomp, name="inst_suffix", isPresent=isPresent, rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     if (isPresent) then
@@ -56,7 +56,7 @@ contains
     use NUOPC, only : NUOPC_CompAttributeGet
     use med_constants_mod, only : shr_file_getunit, shr_file_getLogUnit, shr_file_getLogLevel
     use med_constants_mod, only : shr_file_setLogLevel, CL, shr_file_setlogunit
-    
+
     type(ESMF_GridComp) :: gcomp
     logical, intent(in) :: mastertask
     integer, intent(out) :: logunit
@@ -66,7 +66,7 @@ contains
     character(len=CL) :: diro
     character(len=CL) :: logfile
     integer :: rc
-
+    shrlogunit = 6
     if (mastertask) then
        call NUOPC_CompAttributeGet(gcomp, name="diro", value=diro, rc=rc)
        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
