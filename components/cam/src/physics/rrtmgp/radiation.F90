@@ -2104,7 +2104,7 @@ contains
       call outfld('FLDSC'//diag(icall), flux_clr%flux_dn(1:ncol,kbot+1), ncol, state%lchnk)
 
       ! Calculate and output the cloud radiative effect (LWCF in history)
-      cloud_radiative_effect(1:ncol) = flux_all%flux_net(1:ncol,ktop_rad) - flux_clr%flux_net(1:ncol,ktop_rad)
+      cloud_radiative_effect(1:ncol) = flux_all%flux_net(1:ncol,ktop) - flux_clr%flux_net(1:ncol,ktop)
       call outfld('LWCF'//diag(icall), cloud_radiative_effect, ncol, state%lchnk)
 
       ! Send heating rates to history buffer
