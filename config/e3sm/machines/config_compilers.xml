@@ -259,6 +259,11 @@ for mct, etc.
     <append DEBUG="FALSE"> -O2 -debug minimal </append>
     <append DEBUG="TRUE"> -O0 -g </append>
   </CFLAGS>
+  <CXXFLAGS>
+    <base> -std=c++11 -fp-model source -qopenmp </base>
+    <append DEBUG="TRUE"> -O0 -g </append>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CXXFLAGS>
   <CPPDEFS>
     <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
     <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</append>
@@ -1607,10 +1612,6 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CXXFLAGS>
-    <base> -std=c++11 -g </base>
-    <append compile_threaded="true"> -qopenmp </append>
-  </CXXFLAGS>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
