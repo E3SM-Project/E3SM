@@ -323,7 +323,7 @@ contains
          nf = f_roff; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) &
               - qflx_rofliq_qsur(g)*af - qflx_rofliq_qsurp(g)*af &
               - qflx_rofliq_qsub(g)*af - qflx_rofliq_qsubp(g)*af &
-              - qflx_rofliq_qgwl(g)
+              - qflx_rofliq_qgwl(g)*af
          nf = f_ioff; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - qflx_rofice(g)*af
 
          nf = s_w_beg     ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + begwb_grc(g)          *af
