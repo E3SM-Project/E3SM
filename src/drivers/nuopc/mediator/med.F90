@@ -501,14 +501,15 @@ contains
     use ESMF                  , only : ESMF_LogMsg_Info, ESMF_LogWrite
     use NUOPC                 , only : NUOPC_AddNamespace, NUOPC_Advertise
     use med_constants_mod     , only : CS
-    use med_internalstate_mod , only: InternalState
-    use shr_nuopc_scalars_mod , only: flds_scalar_name, flds_scalar_num
-    use esmFlds               , only: ncomps, compmed, compatm, compocn
-    use esmFlds               , only: compice, complnd, comprof, compwav, compglc, compname
-    use esmFlds               , only: fldListMed_ocnalb_o, fldListMed_aoflux_a, fldListMed_aoflux_o
-    use esmFlds               , only: fldListFr, fldListTo
-    use shr_nuopc_fldList_mod , only: shr_nuopc_fldList_GetNumFlds
-    use shr_nuopc_fldList_mod , only: shr_nuopc_fldList_GetFldInfo
+    use med_internalstate_mod , only : InternalState
+    use shr_nuopc_scalars_mod , only : flds_scalar_name, flds_scalar_num
+    use esmFlds               , only : esmFlds_Init
+    use esmFlds               , only : ncomps, compmed, compatm, compocn
+    use esmFlds               , only : compice, complnd, comprof, compwav, compglc, compname
+    use esmFlds               , only : fldListMed_ocnalb_o, fldListMed_aoflux_a, fldListMed_aoflux_o
+    use esmFlds               , only : fldListFr, fldListTo
+    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetNumFlds
+    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetFldInfo
 
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
@@ -583,6 +584,13 @@ contains
          nestedState=is_local%wrap%NStateExp(compglc), rc=rc)
 
     !------------------
+    ! Initialize mediator flds (should be identical to the list in esmDict_Init) 
+    !------------------
+
+    call esmFlds_Init(gcomp, rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !------------------
     ! Advertise import/export mediator field names
     !------------------
 
@@ -591,7 +599,6 @@ contains
           nflds = shr_nuopc_fldList_GetNumFlds(fldListFr(ncomp))
           do n = 1,nflds
              call shr_nuopc_fldList_GetFldInfo(fldListFr(ncomp), n, activefld, stdname, shortname)
-             ! Skip if field is not active
              if (activefld) then
                 if (trim(shortname) == flds_scalar_name) then
                    transferOffer = 'will provide'
@@ -609,7 +616,6 @@ contains
           nflds = shr_nuopc_fldList_GetNumFlds(fldListTo(ncomp))
           do n = 1,nflds
              call shr_nuopc_fldList_GetFldInfo(fldListTo(ncomp), n, activefld, stdname, shortname)
-             ! Skip if field is not active
              if (activefld) then
                 if (trim(shortname) == flds_scalar_name) then
                    transferOffer = 'will provide'
