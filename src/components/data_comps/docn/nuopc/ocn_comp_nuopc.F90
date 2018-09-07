@@ -447,6 +447,7 @@ module ocn_comp_nuopc
   !===============================================================================
 
   subroutine ModelAdvance(gcomp, rc)
+    use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
