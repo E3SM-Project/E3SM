@@ -438,48 +438,49 @@ end function shoc_implements_cnst
    integer :: icnt
    
    real(r8) :: dtime                            ! SHOC time step                              [s]   
-   real(r8) :: edsclr_in(pcols,pverp,edsclr_dim)      ! Scalars to be diffused through SHOC         [units vary]   
-   real(r8) :: edsclr_out(pcols,pverp,edsclr_dim)
-   real(r8) :: tke_in(pcols,pverp)
-   real(r8) :: thlm_in(pcols,pverp)
-   real(r8) :: qv_in(pcols,pverp)
-   real(r8) :: rcm_in(pcols,pverp)
-   real(r8) :: rvm_in(pcols,pverp)
-   real(r8) :: rtm_in(pcols,pverp)
-   real(r8) :: wthv_in(pcols,pverp)
-   real(r8) :: pres_in(pcols,pverp)
-   real(r8) :: um_in(pcols,pverp)
-   real(r8) :: vm_in(pcols,pverp)
-   real(r8) :: cloudfrac_shoc(pcols,pverp)
-   real(r8) :: rcm_shoc(pcols,pverp)
+   real(r8) :: edsclr_in(pcols,pver,edsclr_dim)      ! Scalars to be diffused through SHOC         [units vary]   
+   real(r8) :: edsclr_out(pcols,pver,edsclr_dim)
+   real(r8) :: tke_in(pcols,pver)
+   real(r8) :: thlm_in(pcols,pver)
+   real(r8) :: qv_in(pcols,pver)
+   real(r8) :: rcm_in(pcols,pver)
+   real(r8) :: rvm_in(pcols,pver)
+   real(r8) :: rtm_in(pcols,pver)
+   real(r8) :: wthv_in(pcols,pver)
+   real(r8) :: pres_in(pcols,pver)
+   real(r8) :: um_in(pcols,pver)
+   real(r8) :: vm_in(pcols,pver)
+   real(r8) :: cloudfrac_shoc(pcols,pver)
+   real(r8) :: rcm_shoc(pcols,pver)
    real(r8) :: newfice(pcols,pver)              ! fraction of ice in cloud at CLUBB start       [-]
-   real(r8) :: exner(pcols,pverp)
-   real(r8) :: thlm(pcols,pverp)
-   real(r8) :: um(pcols,pverp)
-   real(r8) :: vm(pcols,pverp)
-   real(r8) :: rvm(pcols,pverp)
-   real(r8) :: rtm(pcols,pverp)
-   real(r8) :: rcm(pcols,pverp)
-   real(r8) :: tke(pcols,pverp)
+   real(r8) :: exner(pcols,pver)
+   real(r8) :: thlm(pcols,pver)
+   real(r8) :: um(pcols,pver)
+   real(r8) :: vm(pcols,pver)
+   real(r8) :: rvm(pcols,pver)
+   real(r8) :: rtm(pcols,pver)
+   real(r8) :: rcm(pcols,pver)
+   real(r8) :: tke(pcols,pver)
    real(r8) :: ksrftms(pcols)                   ! Turbulent mountain stress surface drag        [kg/s/m2]
    real(r8) :: tautmsx(pcols)                   ! U component of turbulent mountain stress      [N/m2]
    real(r8) :: tautmsy(pcols)                   ! V component of turbulent mountain stress      [N/m2]
-   real(r8) :: wm_zt(pcols,pverp)
-   real(r8) :: zt_g(pcols,pverp)
-   real(r8) :: dz_g(pcols,pverp)
+   real(r8) :: wm_zt(pcols,pver)
+   real(r8) :: zt_g(pcols,pver)
+   real(r8) :: dz_g(pcols,pver)
    real(r8) :: zi_g(pcols,pverp)
-   real(r8) :: cloud_frac(pcols,pverp)          ! CLUBB cloud fraction                          [fraction]
-   real(r8) :: dlf2(pcols,pverp)
+   real(r8) :: cloud_frac(pcols,pver)          ! CLUBB cloud fraction                          [fraction]
+   real(r8) :: dlf2(pcols,pver)
    real(r8) :: host_dx_in(pcols), host_dy_in(pcols)  
  
    real(r8) :: obklen(pcols), ustar2(pcols), kinheat(pcols), kinwat(pcols)
-   real(r8) :: dummy2(pcols), dummy3(pcols), kbfs(pcols), th(pcols,pverp), thv(pcols,pverp)
+   real(r8) :: dummy2(pcols), dummy3(pcols), kbfs(pcols), th(pcols,pver), thv(pcols,pver)
    
-   real(r8) :: minqn, rrho(pcols,pverp)                      ! minimum total cloud liquid + ice threshold    [kg/kg]
+   real(r8) :: minqn, rrho(pcols,pver)                      ! minimum total cloud liquid + ice threshold    [kg/kg]
    real(r8) :: cldthresh, frac_limit
    real(r8) :: ic_limit, dum1
  
    real(r8) :: wpthlp_sfc(pcols), wprtp_sfc(pcols), upwp_sfc(pcols), vpwp_sfc(pcols)
+   real(r8) :: wtracer_sfc(pcols,edsclr_dim)
   
    ! Variables below are needed to compute energy integrals for conservation
    real(r8) :: ke_a(pcols), ke_b(pcols), te_a(pcols), te_b(pcols)
@@ -549,7 +550,7 @@ end function shoc_implements_cnst
    itim_old = pbuf_old_tim_idx()     
    
    !  Establish associations between pointers and physics buffer fields   
-   call pbuf_get_field(pbuf, wthv_idx,     wthv,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))  
+   call pbuf_get_field(pbuf, wthv_idx,     wthv,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))  
    call pbuf_get_field(pbuf, cld_idx,     cld,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
    call pbuf_get_field(pbuf, concld_idx,  concld,  start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
    call pbuf_get_field(pbuf, ast_idx,     ast,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
@@ -646,15 +647,7 @@ end function shoc_implements_cnst
 !       endif
      
      enddo
-   enddo    
-   
-   rvm(1:ncol,pverp) = rvm(1:ncol,pver)
-   rcm(1:ncol,pverp) = rcm(1:ncol,pver)
-   rtm(1:ncol,pverp) = rtm(1:ncol,pver)
-   um(1:ncol,pverp) = um(1:ncol,pver)
-   vm(1:ncol,pverp) = vm(1:ncol,pver)
-   thlm(1:ncol,pverp) = thlm(1:ncol,pver) 
-   tke(1:ncol,pverp) = tke(1:ncol,pver)     
+   enddo        
    
    ! Compute integrals of static energy, kinetic energy, water vapor, and liquid water
    ! for the computation of total energy before CLUBB is called.  This is for an 
@@ -715,8 +708,6 @@ end function shoc_implements_cnst
      enddo
    enddo       
    
-   zt_g(:,1) = -1._r8*zt_g(:,2)
-   
    ! Figure out way to deal with surface fluxes
    ! and TMS
    do i=1,ncol
@@ -725,39 +716,41 @@ end function shoc_implements_cnst
       wprtp_sfc(i)  = cam_in%cflx(i,1)/(rrho(i,1))      ! Latent heat flux
       upwp_sfc(i)   = cam_in%wsx(i)/rrho(i,1)               ! Surface meridional momentum flux
       vpwp_sfc(i)   = cam_in%wsy(i)/rrho(i,1)               ! Surface zonal momentum flux  
+      wtracer_sfc(i,:) = 0._r8  ! in CAM tracer fluxes are done elsewhere
    enddo   
-      ! ------------------------------------------------- !
-      ! Apply TMS                                         !
-      ! ------------------------------------------------- !    
-      if ( do_tms) then
-        do i=1,ncol
-          upwp_sfc(i) = upwp_sfc(i)-((ksrftms(i)*state1%u(i,pver))/rrho(i,1))
-          vpwp_sfc(i) = vpwp_sfc(i)-((ksrftms(i)*state1%v(i,pver))/rrho(i,1))
-        enddo 
-      endif           
+      
+   ! ------------------------------------------------- !
+   ! Apply TMS                                         !
+   ! ------------------------------------------------- !    
+   if ( do_tms) then
+     do i=1,ncol
+       upwp_sfc(i) = upwp_sfc(i)-((ksrftms(i)*state1%u(i,pver))/rrho(i,1))
+       vpwp_sfc(i) = vpwp_sfc(i)-((ksrftms(i)*state1%v(i,pver))/rrho(i,1))
+     enddo 
+   endif           
 
-    ! Need to flip arrays around for SHOC 
-    do k=1,pverp
-      do i=1,ncol
-        um_in(i,k)      = um(i,pverp-k+1)
-        vm_in(i,k)      = vm(i,pverp-k+1)   
-        rvm_in(i,k)     = rvm(i,pverp-k+1)
-        rcm_in(i,k)     = rcm(i,pverp-k+1)
-	rtm_in(i,k)     = rtm(i,pverp-k+1)
-        thlm_in(i,k)    = thlm(i,pverp-k+1)
-        tke_in(i,k)     = tke(i,pverp-k+1)
-	wthv_in(i,k)    = wthv(i,pverp-k+1)
+   ! Need to flip arrays around for SHOC 
+   do k=1,pver
+     do i=1,ncol
+       um_in(i,k)      = um(i,pver-k+1)
+       vm_in(i,k)      = vm(i,pver-k+1)   
+       rvm_in(i,k)     = rvm(i,pver-k+1)
+       rcm_in(i,k)     = rcm(i,pver-k+1)
+       rtm_in(i,k)     = rtm(i,pver-k+1)
+       thlm_in(i,k)    = thlm(i,pver-k+1)
+       tke_in(i,k)     = tke(i,pver-k+1)
+       thv_in(i,k)    = wthv(i,pver-k+1)
 !        pres_in(i,k)    = state1%pmid(i,pver-k+1)
-      enddo  
-    enddo   
+     enddo  
+   enddo   
    
-    do k=1,pver
-      do i=1,ncol
-        pres_in(i,k+1) = state1%pmid(i,pver-k+1)
-      enddo
-    enddo
+   do k=1,pver
+     do i=1,ncol
+       pres_in(i,k+1) = state1%pmid(i,pver-k+1)
+     enddo
+   enddo
  
-    pres_in(:,1) = pres_in(:,2)
+   pres_in(:,1) = pres_in(:,2)
 
    !  Do the same for tracers 
    icnt=0
@@ -779,33 +772,34 @@ end function shoc_implements_cnst
    
    do t=1,nadv
    
-     call shoc_main &
-          (pcols, pverp, dtime, &
-	  host_dx_in, host_dy_in, &
-          zt_g, zi_g, pres_in, &
-	  tke_in, thlm_in, rtm_in, wm_zt, &
-	  wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, &
-	  um_in, vm_in, rcm_in, edsclr_in, &
-	  edsclr_dim, wthv_in, &
-	  cloudfrac_shoc, rcm_shoc) 
+     call shoc_main( &
+          pcols, pver, pverp, dtime, &                 ! Input
+	  host_dx_in, host_dy_in, &                    ! Input
+          zt_g, zi_g, pres_in, &                       ! Input
+	  wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, & ! Input
+	  wtracer_sfc, edsclr_dim, &                   ! Input
+	  tke_in, thlm_in, rtm_in, wm_zt, &            ! Input/Ouput
+	  um_in, vm_in, rcm_in, edsclr_in, &           ! Input/Output
+	  wthv_in, &                                   ! Input/Output
+	  cloudfrac_shoc, rcm_shoc)                    ! Output
 
    enddo  ! end time loop
    
    ! Arrays need to be "flipped" to CAM grid
    
-   do k=1,pverp
+   do k=1,pver
      do i=1,ncol 
-       um(i,k) = um_in(i,pverp-k+1)
-       vm(i,k) = vm_in(i,pverp-k+1)
-       thlm(i,k) = thlm_in(i,pverp-k+1)
-       rtm(i,k) = rtm_in(i,pverp-k+1)
-       rcm(i,k) = rcm_shoc(i,pverp-k+1)
-       cloud_frac(i,k) = min(cloudfrac_shoc(i,pverp-k+1),1._r8)
-       wthv(i,k) = wthv_in(i,pverp-k+1)
-       tke(i,k) = tke_in(i,pverp-k+1)
+       um(i,k) = um_in(i,pver-k+1)
+       vm(i,k) = vm_in(i,pver-k+1)
+       thlm(i,k) = thlm_in(i,pver-k+1)
+       rtm(i,k) = rtm_in(i,pver-k+1)
+       rcm(i,k) = rcm_shoc(i,pver-k+1)
+       cloud_frac(i,k) = min(cloudfrac_shoc(i,pver-k+1),1._r8)
+       wthv(i,k) = wthv_in(i,pver-k+1)
+       tke(i,k) = tke_in(i,pver-k+1)
        
        do ixind=1,edsclr_dim
-         edsclr_out(i,k,ixind) = edsclr_in(i,pverp-k+1,ixind)
+         edsclr_out(i,k,ixind) = edsclr_in(i,pver-k+1,ixind)
        enddo       
        
      enddo
