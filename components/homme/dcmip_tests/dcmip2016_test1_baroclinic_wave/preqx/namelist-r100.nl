@@ -9,10 +9,10 @@
   ne                = 30                        ! number of elements per cube face
   qsize             = 5                         ! num tracer fields
   ndays             = 30
-  statefreq         = 10                        ! number of steps between screen dumps
+  statefreq         = 72                        ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run
-  tstep             = 100                       ! largest timestep in seconds
+  tstep             = 300                       ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 5
   rsplit            = 3
