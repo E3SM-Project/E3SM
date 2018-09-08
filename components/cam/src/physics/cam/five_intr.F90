@@ -4,12 +4,19 @@ module five_intr
 ! Module to interface FIVE With E3SM
 
   use shr_kind_mod,  only: r8=>shr_kind_r8
+  use ppgrid,           only : pcols, pver, pverp, begchunk, endchunk
 
   implicit none
   
   integer :: five_add_nlevels
   integer, parameter :: pver_five = 97
   integer, parameter :: pverp_five = 98
+  
+  ! define physics buffer indicies here
+  integer :: t_five_idx, &
+             q_five_idx, &
+	     u_five_idx, &
+	     v_five_idx
   
   real(r8) :: pmid_five(pver_five)
   real(r8) :: pint_five(pverp_five) 
@@ -119,7 +126,64 @@ module five_intr
   !                                          !
   ! ======================================== !
   
-  subroutine five_init_cam()
+  subroutine five_register_e3sm
+  
+    use physics_buffer,  only: pbuf_add_field, dtype_r8, dyn_time_lvls
+    use ppgrid,          only: pver, pverp, pcols
+    
+    ! Define PBUF for prognostics 
+    call pbuf_add_field('T_FIVE',       'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), t_five_idx)
+    call pbuf_add_field('Q_FIVE',        'global', dtype_r8, (/pcols,pverp_five,pcnst,dyn_time_lvls/), q_five_idx)
+    call pbuf_add_field('U_FIVE',         'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), u_five_idx)
+    call pbuf_add_field('V_FIVE',         'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), v_five_idx)
+  
+  end subroutine five_register_e3sm
+  ! ======================================== !
+  !                                          !
+  ! ======================================== !
+  
+  subroutine five_init_e3sm(phys_state, pbuf2d)
+  
+    use time_manager, only: is_first_step
+  
+    type(physics_state), intent(in):: phys_state(begchunk:endchunk)
+    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    
+    real(r8) :: t_host(pver)
+    real(r8) :: q_host(pver)
+    real(r8) :: u_host(pver)
+    real(r8) :: v_host(pver)
+    
+    real(r8) :: t_five(pcols,pver_five)
+    real(r8) :: q_five(pcols,pver_five,pcnst)
+    real(r8) :: u_five(pcols,pver_five)
+    real(r8) :: v_five(pcols,pver_five)
+    
+    integer :: ncol, i, p
+    
+    ncol = phys_state%ncol
+    
+    do i=1,ncol
+    
+      t_host(:) = phys_state%t(i,:)
+      u_host(:) = phys_state%u(i,:)
+      v_host(:) = phys_state%v(i,:)
+      
+      call linear_interp(phys_state%pmid(i,:),pmid_five,t_host,t_five(i,:),pver,pver_five)
+      call linear_interp(phys_state%pmid(i,:),pmid_five,u_host,u_five(i,:),pver,pver_five)
+      call linear_interp(phys_state%pmid(i,:),pmid_five,v_host,v_five(i,:),pver,pver_five)
+      
+      do p=1,pcnst
+        q_host(:) = phys_state%q(i,:,p)
+        call linear_interp(phys_state%pmid(i,:),pmid_five,q_host,q_five(i,:,p),pver,pver_five)
+      enddo
+    
+    enddo
+    
+    call pbuf_set_field(pbuf2d, t_five_idx, t_five)
+    call pbuf_set_field(pbuf2d, q_five_idx, q_five)
+    call pbuf_set_field(pbuf2d, u_five_idx, u_five)
+    call pbuf_set_field(pbuf2d, v_five_idx, v_five)
 
   ! Here we initialize the FIVE grid
   
@@ -128,14 +192,35 @@ module five_intr
   !  will involve algorithm to generate the needed
   !  levels
   
-  ! define pver_five, pverp_five
-  !  define the arrays pmid_five and pint_five  
+  end subroutine five_init_e3sm
   
-  ! default pver = 72, pverp = 73
+  ! ======================================== !
+  !                                          !
+  ! ======================================== !  
   
-!    pmid_five=pmid_five*100._r8
-!    pint_five=pint_five*100._r8 
-  
-  end subroutine five_init_cam
+  subroutine linear_interp(x1,x2,y1,y2,km1,km2)
+    implicit none
+
+    integer :: km1, km2, k1, k2
+    real(KIND=8) :: x1(km1), y1(km1)
+    real(KIND=8) :: x2(km2), y2(km2)
+
+    do k2=1,km2
+
+      if( x2(k2) <= x1(1) ) then
+        y2(k2) = y1(1) + (y1(2)-y1(1))*(x2(k2)-x1(1))/(x1(2)-x1(1))
+      elseif( x2(k2) >= x1(km1) ) then
+        y2(k2) = y1(km1) + (y1(km1)-y1(km1-1))*(x2(k2)-x1(km1))/(x1(km1)-x1(km1-1))    
+      else
+        do k1 = 2,km1
+          if( (x2(k2)>=x1(k1-1)).and.(x2(k2)<x1(k1)) ) then
+            y2(k2) = y1(k1-1) + (y1(k1)-y1(k1-1))*(x2(k2)-x1(k1-1))/(x1(k1)-x1(k1-1))
+          endif
+        enddo
+      endif
+     
+    enddo
+
+  end subroutine linear_interp  
 
 end module five_intr

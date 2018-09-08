@@ -121,6 +121,7 @@ subroutine phys_register
     use microp_aero,        only: microp_aero_register
     use macrop_driver,      only: macrop_driver_register
     use clubb_intr,         only: clubb_register_cam
+    use five_intr,          only: five_register_e3sm
     use conv_water,         only: conv_water_register
     use physconst,          only: mwdry, cpair, mwh2o, cpwv
     use tracers,            only: tracers_register
@@ -221,6 +222,10 @@ subroutine phys_register
        
        ! Register CLUBB_SGS here
        if (do_clubb_sgs) call clubb_register_cam()
+       
+#ifdef FIVE
+       call five_register_e3sm()
+#endif
        
 
        call pbuf_add_field('PREC_STR',  'physpkg',dtype_r8,(/pcols/),prec_str_idx)
@@ -863,9 +868,9 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! initiate CLUBB within CAM
     if (do_clubb_sgs) call clubb_ini_cam(pbuf2d,dp1)
     
-!#ifdef FIVE
-!    call five_init_cam()
-!#endif
+#ifdef FIVE
+    call five_init_e3sm()
+#endif
 
     call qbo_init
 
