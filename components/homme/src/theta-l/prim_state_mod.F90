@@ -23,6 +23,7 @@ module prim_state_mod
   use reduction_mod,    only: parallelmax,parallelmin
   use perf_mod,         only: t_startf, t_stopf
   use physical_constants, only : p0,Cp,g,Rgas
+  use common_io_mod,    only: output_dir  !JRUB
 
 implicit none
 private
@@ -198,6 +199,7 @@ contains
        qvsum_p(q) = global_shared_sum(1)
     enddo
 
+
     !
     do ie=nets,nete
        if (theta_hydrostatic_mode) then
@@ -293,7 +295,16 @@ contains
        global_shared_buf(ie,10)= dpsum_local(ie)
        global_shared_buf(ie,11)= phisum_local(ie)
        global_shared_buf(ie,12)=thetasum_local(ie)
+
+       !write(iulog,*) "JRUB glob shared buf 2=",global_shared_buf(ie,2)
+       !write(iulog,*) "JRUB glob shared buf 3=",global_shared_buf(ie,3)
+       !if (global_shared_buf(ie,12) /= global_shared_buf(ie,12) ) &                      
+       !write(iulog,*) "global_shared_buf with NaNs JRUB12"
+
+
     end do
+
+
 
     !JMD This is a Thread Safe Reduction 
     umin_p = ParallelMin(umin_local,hybrid)
@@ -334,7 +345,9 @@ contains
     phimin_p = ParallelMin(phimin_local,hybrid)
     phimax_p = ParallelMax(phimax_local,hybrid)
 
+    !write(iulog,*) "before JRUB"
     call wrap_repro_sum(nvars=12, comm=hybrid%par%comm)
+
     usum_p = global_shared_sum(1)
     vsum_p = global_shared_sum(2)
     tsum_p = global_shared_sum(3)
@@ -660,21 +673,48 @@ contains
           write(iulog,'(a,2e22.14)')'KEu v-adv,sum=0:',KEV1,KEV2
           write(iulog,'(a,3e22.14)')'IE  v-adv,sum=0:',IEvert1,PEvert1
           write(iulog,'(a,2e22.14)')'KE->I+P,I+P->KE:',(T1+PEhorz2),(S1+PEhorz1)
-          
+
           ddt_tot  =  (KEner(2)-KEner(1))/dt
           ddt_diss = ddt_tot -(T1+PEhorz2)
           write(iulog,'(a,3E22.14)') " KE,d/dt,diss:",KEner(2),ddt_tot,ddt_diss
+          !---
+          open(unit=667,file=trim(output_dir) // "/KE.txt",status="unknown",position="append") !JRUB
+          write(667,*)tl%nstep,Time_at(tl%nstep),KEner(2),ddt_tot,ddt_diss!JRUB
+          close(667) !JRUB
+          !----
 
           ddt_tot  =  (IEner(2)-IEner(1))/dt
           write(iulog,'(a,3E22.14)') " IE,d/dt     :",IEner(2),ddt_tot
+          !---
+          open(unit=667,file=trim(output_dir) // "/IE.txt",status="unknown",position="append") !JRUB
+          write(667,*)tl%nstep,Time_at(tl%nstep),IEner(2),ddt_tot,ddt_diss!JRUB
+          close(667) !JRUB
+          !----
+
           ddt_tot  =  (PEner(2)-PEner(1))/dt
           write(iulog,'(a,3E22.14)') " PE,d/dt     :",PEner(2),ddt_tot
+          !---
+          open(unit=667,file=trim(output_dir) // "/PE.txt",status="unknown",position="append") !JRUB
+          write(667,*)tl%nstep,Time_at(tl%nstep),PEner(2),ddt_tot,ddt_diss!JRUB
+          close(667) !JRUB
+          !----
 
           ddt_tot =  (PEner(2)+IEner(2)-PEner(1)-IEner(1))/dt
           ddt_diss = ddt_tot - (S1+PEhorz1)
           write(iulog,'(a,3E22.14)') "I+P,d/dt,diss:",PEner(2)+IEner(2),ddt_tot,ddt_diss
+          !---
+          open(unit=667,file=trim(output_dir) // "/IpP.txt",status="unknown",position="append") !JRUB
+          write(667,*)tl%nstep,Time_at(tl%nstep),PEner(2)+IEner(2),ddt_tot,ddt_diss!JRUB
+          close(667) !JRUB
+          !----
+
           ddt_tot = (TOTE(2)-TOTE(1))/dt
           write(iulog,'(a,3E22.14)') "  E,d/dt,diss:",TOTE(2),ddt_tot
+          !---
+          open(unit=667,file=trim(output_dir) // "/E.txt",status="unknown",position="append") !JRUB
+          write(667,*)tl%nstep,Time_at(tl%nstep),TOTE(2),ddt_tot,ddt_diss!JRUB
+          close(667) !JRUB
+          !----
        else
           write(iulog,'(a,2e22.14)')'KEu h-adv,sum=0:',KEH1,KEH2
           write(iulog,'(a,3e22.14)')'KEw h-adv,sum=0:',KEwH1+KEwH3,KEwH2
@@ -690,6 +730,12 @@ contains
           ddt_tot  =  (KEner(2)-KEner(1))/dt
           ddt_diss = ddt_tot -(T1+T2+P1) 
           write(iulog,'(a,3E22.14)') "KE,d/dt,diss:",KEner(2),ddt_tot,ddt_diss
+          !---
+          open(unit=667,file=trim(output_dir) // "/KE.txt",status="unknown",position="append") !JRUB
+          write(667,*)tl%nstep,Time_at(tl%nstep),KEner(2),ddt_tot,ddt_diss!JRUB
+          close(667) !JRUB
+          !----
+
           !ddt_diss_adj = ddt_tot -(T1+T2+P1+KEwH1+KEwH2)
           !write(iulog,'(a,3E22.14)') "KE diss(adj):",ddt_diss_adj
           
@@ -698,13 +744,33 @@ contains
           write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss
           !ddt_diss_adj = ddt_tot - (S1+S2+IEvert1+IEvert2)
           !write(iulog,'(a,3E22.14)') "IE diss(adj):",ddt_diss_adj
+
+          !---
+          open(unit=667,file=trim(output_dir) // "/IE.txt",status="unknown",position="append") !JRUB
+          write(667,*)tl%nstep,Time_at(tl%nstep),IEner(2),ddt_tot,ddt_diss!JRUB
+          close(667) !JRUB
+          !----
+
+
           
           ddt_tot = (PEner(2)-PEner(1))/dt
           ddt_diss = ddt_tot - P2
           write(iulog,'(a,3E22.14)') "PE,d/dt,diss:",PEner(2),ddt_tot,ddt_diss
+          !---
+          open(unit=667,file=trim(output_dir) // "/PE.txt",status="unknown",position="append") !JRUB
+          write(667,*)tl%nstep,Time_at(tl%nstep),PEner(2),ddt_tot,ddt_diss!JRUB
+          close(667) !JRUB
+          !----
+
           ddt_tot = (TOTE(2)-TOTE(1))/dt
           !ddt_diss = ddt_tot - (KEwH1+KEwH2+IEvert1+IEvert2)
           write(iulog,'(a,3E22.14)') " E,d/dt,diss:",TOTE(2),ddt_tot!,ddt_diss
+          !---
+          open(unit=667,file=trim(output_dir) // "/E.txt",status="unknown",position="append") !JRUB
+          write(667,*)tl%nstep,Time_at(tl%nstep),TOTE(2),ddt_tot,ddt_diss!JRUB
+          close(667) !JRUB
+          !----
+
        endif
 #else
        write(iulog,'(a,3E22.14)') "KE,d/dt      ",KEner(2),(KEner(2)-KEner(1))/dt

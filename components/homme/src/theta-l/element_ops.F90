@@ -224,7 +224,7 @@ contains
   real (kind=real_kind) :: kappa_star(np,np,nlev)
   integer :: k
   
-  
+
   do k=1,nlev
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
@@ -237,7 +237,10 @@ contains
 
   do k=1,nlev
      dpnh_dp(:,:,k)=(dpnh_dp_i(:,:,k)+dpnh_dp_i(:,:,k+1))/2
+     !write(iulog,*) "tdiag dpnh_dp JRUB", SUM(dpnh_dp(:,:,k))
   enddo
+
+
   end subroutine 
 
   !_____________________________________________________________________

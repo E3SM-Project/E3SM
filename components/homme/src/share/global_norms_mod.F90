@@ -963,6 +963,7 @@ contains
     ! CAM already does this, no need to do it twice
     do n=1,nvars
        do i=1,nsize_use
+          !if (global_shared_buf(i,n) /= global_shared_buf(i,n) ) write(iulog,*)"NaNs in repro sum JRUB" 
           if (global_shared_buf(i,n) /= global_shared_buf(i,n) ) &
                call abortmp('NaNs detected in repro sum input')
        enddo

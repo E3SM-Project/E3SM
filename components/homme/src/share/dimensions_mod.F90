@@ -12,6 +12,8 @@ module dimensions_mod
 ! set MAX number of tracers.  actual number of tracers is a run time argument  
 #ifdef CAM
 #else
+! balu/jrub below QSIZE_D is set to 5 as a hack for thea-l-nlev60, which was set to 4 in config.h (which is wrong)
+!#define QSIZE_D 5 dont do tgis, instead go to test_execs/theta-nlev60/CMaleList.txt and name target NP NC PLEV USE_PIO WITH_ENERGY QSIZE_D
 #ifdef QSIZE_D
   integer, parameter         :: qsize_d=QSIZE_D
 #else

@@ -824,9 +824,11 @@ contains
 
 
     if (hybrid%masterthread) write(iulog,*) "initial state:"
+
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete)
 
     call model_init2(elem(:), hybrid,deriv1,hvcoord,tl,nets,nete)
+
     call Prim_Advec_Init2(elem(:), hvcoord, hybrid)
 
   end subroutine prim_init2
