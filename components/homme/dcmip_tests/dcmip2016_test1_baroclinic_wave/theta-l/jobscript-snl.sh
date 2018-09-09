@@ -9,7 +9,7 @@
 #PBS -l walltime=30:00
 #PBS -l nodes=25
 #
-# 25 nodes, 30min sufficient for all 3 resolutions, wet & dry
+# 25 nodes, 30min sufficient for all 5 runs
 # 12 nodes, 10min for r400 an r100
 # 
 
@@ -27,7 +27,7 @@ if [ -n "$SLURM_NNODES" ]; then
 fi
 
 # hydrostatic preqx
-EXEC=../../../test_execs/preqx-nlev30-interp/preqx-nlev30-interp  
+EXEC=../../../test_execs/theta-l-nlev30/theta-l-nlev30
 
 
 
@@ -52,13 +52,12 @@ ncl plot-lat-lon-TPLSPS.ncl 'var_choice=3'
 \mv -f movies/dcmip2016_test11.nc    movies/${prefix}_dcmip2016_test11.nc
 }
 
-prefix=r400-dry; run $(($NCPU>384?384:NCPU))
 prefix=r400    ; run $(($NCPU>384?384:NCPU))
 
 prefix=r100-dry; run $NCPU
+prefix=r100-h  ; run $NCPU
 prefix=r100    ; run $NCPU
 
-prefix=r50-dry; run $NCPU
 prefix=r50    ; run $NCPU
 
 

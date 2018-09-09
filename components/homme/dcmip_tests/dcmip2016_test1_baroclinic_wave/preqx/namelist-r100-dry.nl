@@ -38,13 +38,14 @@
 !  output_prefix     = "r100-dry-"
   output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 2,                        ! 0=timesteps, 1=days, 2=hours, 3=seconds
-  output_frequency  = 6                         ! every 3 hours
-  output_varnames1  ='T','ps','pnh','geo','u','v','w','omega','Th','Q','Q2','Q3','Q4','Q5','rho','precl','zeta'   ! variables to write to file
-  interp_type       = 0                         ! 0=native grid, 1=bilinear
+  output_frequency  = 24                         ! every 3 hours
+!  output_varnames1  ='T','ps','pnh','geo','u','v','w','omega','Th','Q','Q2','Q3','Q4','Q5','rho','precl','zeta'   ! variables to write to file
+  output_varnames1  ='T','ps','pnh','geo','u','Th','Q','Q2','Q3','Q4','Q5','precl','zeta'   ! variables to write to file
+  interp_type       = 1                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
   num_io_procs      = 16
-  interp_nlon       = 360
-  interp_nlat       = 181
+!  interp_nlon       = 360
+!  interp_nlat       = 181
   interp_gridtype   = 1
 /
 &prof_inparm

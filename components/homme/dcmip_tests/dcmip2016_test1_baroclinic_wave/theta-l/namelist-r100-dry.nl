@@ -14,7 +14,7 @@
   runtype           = 0                         ! 0 => new run
   tstep             = 300                       ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
-  tstep_type        = 5
+  tstep_type        = 7
   rsplit            = 3
   qsplit            = 1
   nu                = 1e15                      ! default= 1e15*(ne30/ne30)**3.2 = 1e15
@@ -24,9 +24,9 @@
   limiter_option    = 9
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
-  moisture          = 'wet'
-  theta_hydrostatic_mode = .true.
-  dcmip16_prec_type = 0                          ! 0=kessler physics
+  moisture          = 'dry'
+  theta_hydrostatic_mode = .false.
+  dcmip16_prec_type = -1                          ! 0=kessler physics
   dcmip16_pbl_type  = -1                         ! 0=reed-jablonowski pbl, -1 = none
 /
 &vert_nl
@@ -35,9 +35,10 @@
   vfile_int         = "../vcoord/cami-30.ascii"
 /
 &analysis_nl
+!  output_prefix     = "r100-dry-"
   output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 2,                        ! 0=timesteps, 1=days, 2=hours, 3=seconds
-  output_frequency  = 24                         ! every 3 hours
+  output_frequency  = 24                        ! every N hours
 !  output_varnames1  ='T','ps','pnh','geo','u','v','w','omega','Th','Q','Q2','Q3','Q4','Q5','rho','precl','zeta'   ! variables to write to file
   output_varnames1  ='T','ps','pnh','geo','u','Th','Q','Q2','Q3','Q4','Q5','precl','zeta'   ! variables to write to file
   interp_type       = 1                         ! 0=native grid, 1=bilinear
