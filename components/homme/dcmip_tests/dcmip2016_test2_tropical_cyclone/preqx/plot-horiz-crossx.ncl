@@ -37,8 +37,8 @@ hasTimeIx=True               ; does file have time index?
 timeStep=nt                   ; If yes, what time index do you want to plot?
 model="cam-se"              ; used for mainStr, but also for model specific if statements
 mainStr=model+" Day 8"       ; main string for plot titles
-;out_type="pdf"                ; output format, popular options are x11, png, pdf, eps
-out_type="x11"                ; output format, popular options are x11, png, pdf, eps
+out_type="pdf"                ; output format, popular options are x11, png, pdf, eps
+;out_type="x11"                ; output format, popular options are x11, png, pdf, eps
 
 Uname="u"                    ; Variable name of zonal wind (typically "U" or "ua")
 Vname="v"                    ; Variable name of meridional wind (typically "V" or "ua")
