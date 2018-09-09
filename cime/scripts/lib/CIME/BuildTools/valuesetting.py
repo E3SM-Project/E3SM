@@ -25,15 +25,17 @@ class ValueSetting(object):
 
     Public methods:
     is_ambiguous_with
+    has_special_case
     """
 
-    def __init__(self, value, do_append, conditions, set_up, tear_down): #  pylint: disable=too-many-arguments
+    def __init__(self, value, do_append, conditions, set_up, tear_down, force_no_append=False): #  pylint: disable=too-many-arguments
         """Create a ValueSetting object by specifying all its data."""
         self.value = value
         self.do_append = do_append
         self.conditions = conditions
         self.set_up = set_up
         self.tear_down = tear_down
+        self.force_no_append = force_no_append
 
     def is_ambiguous_with(self, other):
         """Check to see if this setting conflicts with another one.
@@ -97,11 +99,47 @@ class ValueSetting(object):
             if self.conditions[var_name] != other.conditions[var_name]:
                 return False
         # Specificity check.
-        # One setting being more specific than the other is equivalent to
-        # its set of conditions being a proper superset of the others.
         self_set = set(self.conditions.keys())
         other_set = set(other.conditions.keys())
-        if self_set < other_set or self_set > other_set:
+        if self_set < other_set or other_set < self_set:
             return False
         # Any situation we couldn't resolve is ambiguous.
+        return True
+
+    def has_special_case(self, other):
+        """Check to see if another setting is a special case of this one.
+
+        The purpose of this routine is to see if one of the settings requires
+        conditions that are a strict subset of another's conditions. This is
+        used to check whether a setting can be thrown out entirely in favor of a
+        more general, but machine-specific setting.
+
+        >>> a = ValueSetting('foo', False, {"DEBUG": "TRUE"}, [], [])
+        >>> b = ValueSetting('bar', False, {"DEBUG": "TRUE", "MPILIB": "mpich2"}, [], [])
+        >>> c = ValueSetting('bar', False, {"DEBUG": "TRUE", "compile_threaded": "false"}, [], [])
+        >>> d = ValueSetting('foo', False, {"DEBUG": "FALSE"}, [], [])
+        >>> a.has_special_case(b)
+        True
+        >>> b.has_special_case(a)
+        False
+        >>> a.has_special_case(c)
+        True
+        >>> c.has_special_case(a)
+        False
+        >>> b.has_special_case(c)
+        False
+        >>> c.has_special_case(b)
+        False
+        >>> a.has_special_case(a)
+        True
+        >>> d.has_special_case(a)
+        False
+        >>> d.has_special_case(b)
+        False
+        """
+        for var_name in self.conditions:
+            if var_name not in other.conditions:
+                return False
+            if self.conditions[var_name] != other.conditions[var_name]:
+                return False
         return True

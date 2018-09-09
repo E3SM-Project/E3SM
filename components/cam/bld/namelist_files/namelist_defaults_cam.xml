@@ -130,6 +130,7 @@
 <ncdata           hgrid="64x128"    nlev="26"              ic_ymd="901" >atm/cam/inic/gaus/cami_0000-09-01_64x128_L26_c030918.nc</ncdata>
 <ncdata           hgrid="64x128"    nlev="30"              ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_64x128_L30_c090102.nc</ncdata>
 <ncdata           hgrid="64x128"    nlev="30"              ic_ymd="901" >atm/cam/inic/gaus/cami_0000-09-01_64x128_L30_c031210.nc</ncdata>
+<ncdata           hgrid="64x128"    nlev="72"              ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_64x128_L72_c031210.nc</ncdata>
 <ncdata           hgrid="48x96"     nlev="26"              ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_48x96_L26_c091218.nc</ncdata>
 <ncdata dyn="eul" hgrid="48x96"     nlev="26"              ic_ymd="901" >atm/cam/inic/gaus/cami_0000-09-01_48x96_L26_c040420.nc</ncdata>
 <ncdata           hgrid="48x96"     nlev="30"              ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_48x96_L30_c100426.nc</ncdata>

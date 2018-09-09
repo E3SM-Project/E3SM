@@ -44,7 +44,8 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-       applyCAMforcing_dynamics, applyCAMforcing, vertical_mesh_init2
+       applycamforcing_ps, applycamforcing_dp3d, &
+       applyCAMforcing_dynamics, vertical_mesh_init2
 
   real (kind=real_kind), allocatable :: ur_weights(:)
 
@@ -98,7 +99,8 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
+  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics, &
+                              single_column)
 
     type (element_t),      intent(inout), target :: elem(:)
     type (derivative_t),   intent(in)            :: deriv
@@ -108,7 +110,7 @@ contains
     type (TimeLevel_t)   , intent(in)            :: tl
     integer              , intent(in)            :: nets
     integer              , intent(in)            :: nete
-    logical,               intent(in)            :: compute_diagnostics
+    logical,               intent(in)            :: compute_diagnostics, single_column
 
     real (kind=real_kind) :: dt2, time, dt_vis, x, eta_ave_w
     real (kind=real_kind) :: itertol,a1,a2,a3,a4,a5,a6,ahat1,ahat2
@@ -357,6 +359,8 @@ contains
          call advance_hypervis(elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
 
 
+
+
     ! warning: advance_physical_vis currently requires levels that are equally spaced in z
     if (dcmip16_mu>0) call advance_physical_vis(elem,hvcoord,hybrid,deriv,np1,nets,nete,dt,dcmip16_mu_s,dcmip16_mu)
 
@@ -366,8 +370,19 @@ contains
 
 
 
+!placeholder
+  subroutine applyCAMforcing_dp3d(elem,hvcoord,np1,dt,nets,nete)
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: np1,nets,nete
+  end subroutine applyCAMforcing_dp3d
 
-  subroutine applyCAMforcing(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
+
+!renaming it just to build
+!
+  subroutine applyCAMforcing_ps(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
 
   implicit none
   type (element_t),       intent(inout) :: elem(:)
@@ -462,7 +477,7 @@ contains
 
   enddo
   call applyCAMforcing_dynamics(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
-  end subroutine applyCAMforcing
+  end subroutine applyCAMforcing_ps
 
 
 

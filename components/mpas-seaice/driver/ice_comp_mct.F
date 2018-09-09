@@ -53,6 +53,7 @@ module ice_comp_mct
    use seaice_initialize, only: seaice_init_post_clock_advance
    use seaice_mesh, only: seaice_latlon_vector_rotation_backward
    use seaice_time_integration
+   use seaice_error, only: seaice_check_critical_error
 
    use ice_constants_colpkg, only: &
        Tffresh
@@ -829,7 +830,9 @@ contains
 
         if (debugOn) call mpas_log_write('   Starting forward update', masterOnly=.true.)
         call mpas_timer_start("time integration", .false.)
+        ierr = 0
         call seaice_timestep(domain, domain % clock, itimestep, ierr)
+        call seaice_check_critical_error(domain, ierr)
         call mpas_timer_stop("time integration")
         if (debugOn) call mpas_log_write('   Finished forward update', masterOnly=.true.)
 

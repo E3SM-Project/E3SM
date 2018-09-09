@@ -4,24 +4,32 @@
 Setting up a Case
 *********************************
 
+After creating a case, some aspects of the case are fixed (any variables in env_case.xml). Changing the pe-layout
+(see :ref:`Changing Pes<defining-pes>`) or some aspects of the batch system you may be using must be modified before running
+**case.setup**.
+
 ===================================
 Calling **case.setup**
 ===================================
 
-After creating a case or changing aspects of a case, such as the pe-layout, call the **case.setup** command from ``$CASEROOT``. This creates additional files and directories in ``$CASEROOT``. They are described below.
+After creating a case or changing aspects of a case, such as the pe-layout, call the `case.setup <../Tools_user/case.setup.html>`_ command from ``$CASEROOT``.
+This creates the following additional files and directories in ``$CASEROOT``:
 
    =============================   ===============================================================================================================================
-   case.run                        Run script containing the batch directives. The directives are generated using the contents
-                                   of **env_mach_pes.xml**. Running ``case.setup --clean`` will remove this file.
+   .case.run                       A (hidden) file with the commands that will be used to run the model (such as “mpirun”) and any batch directives needed. 
+                                   The directive values are generated using the contents
+                                   of **env_mach_pes.xml**. Running `case.setup --clean <../Tools_user/case.setup.html>`_  will remove this file. 
+				   This file should not be edited directly and instead controlled through XML variables in **env_batch.xml**. It should also
+				   *never* be run directly.
 
    Macros.make                     File containing machine-specific makefile directives for your target platform/compiler.
                                    This file is created if it does not already exist.
 
                                    The user can modify the file to change certain aspects of the build, such as compiler flags.
-                                   Running ``case.setup --clean`` will not remove the file once it has been created.
-                                   However. if you remove or rename the Macros.make file, running **case.setup** recreates it.
+                                   Running `case.setup --clean <../Tools_user/case.setup.html>`_  will not remove the file once it has been created.
+                                   However. if you remove or rename the Macros.make file, running `case.setup <../Tools_user/case.setup.html>`_ recreates it.
 
-   user_nl_xxx[_NNNN] files        Files where all user modifications to component namelists are made.
+   user_nl_xxx[_NNNN]              Files where all user modifications to component namelists are made.
 
                                    **xxx** is any one of the set of components targeted for the case.
                                    For example, for a full active CESM compset, **xxx** is cam, clm or rtm, and so on.
@@ -34,7 +42,7 @@ After creating a case or changing aspects of a case, such as the pe-layout, call
 
                                    A user_nl file of a given name is created only once.
 
-                                   Calling ``case.setup --clean`` will *not remove* any user_nl files.
+                                   Calling `case.setup --clean <../Tools_user/case.setup.html>`_ will *not remove* any user_nl files.
 
                                    Changing the number of instances in the **env_mach_pes.xml** file will cause only
                                    new user_nl files to be added to ``$CASEROOT``.
@@ -48,7 +56,6 @@ After creating a case or changing aspects of a case, such as the pe-layout, call
                                    the scripts in ``$CASEROOT`` are called. These files are not used by the case but can be
                                    useful for debugging **module load** and environment settings.
 
-   software_environment.txt        This file records some aspects of the computing system on which the case is built, 
+   software_environment.txt        This file records some aspects of the computing system on which the case is built,
                                    such as the shell environment.
    =============================   ===============================================================================================================================
-

@@ -15,9 +15,10 @@ LIB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),"..","lib")
 sys.path.append(LIB_DIR)
 # Remove all pyc files to ensure we're testing the right things
 import subprocess, argparse
-subprocess.call('/bin/rm $(find . -name "*.pyc")', shell=True, cwd=LIB_DIR)
-from six import assertRaisesRegex
+subprocess.call('/bin/rm -f $(find . -name "*.pyc")', shell=True, cwd=LIB_DIR)
 import six
+from six import assertRaisesRegex
+
 
 import collections
 
@@ -42,15 +43,16 @@ FAST_ONLY   = False
 NO_BATCH    = False
 NO_CMAKE    = False
 TEST_ROOT   = None
+NO_TEARDOWN = False
 
 os.environ["CIME_GLOBAL_WALLTIME"] = "0:05:00"
 
 # pragma pylint: disable=protected-access
 ###############################################################################
-def run_cmd_assert_result(test_obj, cmd, from_dir=None, expected_stat=0, env=None):
+def run_cmd_assert_result(test_obj, cmd, from_dir=None, expected_stat=0, env=None, verbose=False):
 ###############################################################################
     from_dir = os.getcwd() if from_dir is None else from_dir
-    stat, output, errput = run_cmd(cmd, from_dir=from_dir, env=env)
+    stat, output, errput = run_cmd(cmd, from_dir=from_dir, env=env, verbose=verbose)
     if expected_stat == 0:
         expectation = "SHOULD HAVE WORKED, INSTEAD GOT STAT %s" % stat
     else:
@@ -128,10 +130,10 @@ def make_fake_teststatus(path, testname, status, phase):
     with TestStatus(test_dir=path, test_name=testname) as ts:
         for core_phase in CORE_PHASES:
             if core_phase == phase:
-                ts.set_status(core_phase, status)
+                ts.set_status(core_phase, status, comments=("time=42" if phase == RUN_PHASE else ""))
                 break
             else:
-                ts.set_status(core_phase, TEST_PASS_STATUS)
+                ts.set_status(core_phase, TEST_PASS_STATUS, comments=("time=42" if phase == RUN_PHASE else ""))
 
 ###############################################################################
 def parse_test_status(line):
@@ -245,7 +247,7 @@ class N_TestUnitTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None)
+        do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None) and not NO_TEARDOWN
 
         teardown_root = True
         for tfile in cls._testdirs:
@@ -299,23 +301,41 @@ class J_TestCreateNewcase(unittest.TestCase):
         run_cmd_assert_result(self, "./case.build", from_dir=testdir)
         with Case(testdir, read_only=False) as case:
             case.set_value("CHARGE_ACCOUNT", "fred")
-        # this should fail with a locked file issue
-        run_cmd_assert_result(self, "./case.build",
-                              from_dir=testdir, expected_stat=1)
-        run_cmd_assert_result(self, "./case.setup --reset", from_dir=testdir)
-        run_cmd_assert_result(self, "./case.build", from_dir=testdir)
+        # this should not fail with a locked file issue
+        run_cmd_assert_result(self, "./case.build",from_dir=testdir, expected_stat=0)
 
-        run_cmd_assert_result(self, "./case.st_archive --test", from_dir=testdir)
+        run_cmd_assert_result(self, "./case.st_archive --test-all", from_dir=testdir)
 
         cls._do_teardown.append(testdir)
 
     def test_aa_no_flush_on_instantiate(self):
         testdir = os.path.join(self.__class__._testroot, 'testcreatenewcase')
         with Case(testdir, read_only=False) as case:
-            self.assertFalse(case._env_files_that_need_rewrite, msg="Instantiating a case should not trigger a flush call")
+            for env_file in case._files:
+                self.assertFalse(env_file.needsrewrite, msg="Instantiating a case should not trigger a flush call")
         with Case(testdir, read_only=False) as case:
-            case.set_value("HIST_OPTION","nsteps")
-            self.assertTrue(case._env_files_that_need_rewrite, msg="Expected flush call not triggered")
+            case.set_value("HIST_OPTION","nyears")
+            runfile = case.get_env('run')
+            self.assertTrue(runfile.needsrewrite, msg="Expected flush call not triggered")
+            for env_file in case._files:
+                if env_file != runfile:
+                    self.assertFalse(env_file.needsrewrite, msg="Unexpected flush triggered for file {}"
+                                     .format(env_file.filename))
+            # Flush the file
+            runfile.write()
+            # set it again to the same value
+            case.set_value("HIST_OPTION","nyears")
+            # now the file should not need to be flushed
+            for env_file in case._files:
+                self.assertFalse(env_file.needsrewrite, msg="Unexpected flush triggered for file {}"
+                                 .format(env_file.filename))
+
+        # Check once more with a new instance
+        with Case(testdir, read_only=False) as case:
+            case.set_value("HIST_OPTION","nyears")
+            for env_file in case._files:
+                self.assertFalse(env_file.needsrewrite, msg="Unexpected flush triggered for file {}"
+                                 .format(env_file.filename))
 
     def test_b_user_mods(self):
         cls = self.__class__
@@ -636,7 +656,7 @@ class J_TestCreateNewcase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None)
+        do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None) and not NO_TEARDOWN
 
         for tfile in cls._testdirs:
             if tfile not in cls._do_teardown:
@@ -653,24 +673,39 @@ class M_TestWaitForTests(unittest.TestCase):
     def setUp(self):
     ###########################################################################
         self._testroot = os.path.join(TEST_ROOT,"TestWaitForTests")
+
+        # basic tests
         self._testdir_all_pass    = os.path.join(self._testroot, 'scripts_regression_tests.testdir_all_pass')
         self._testdir_with_fail   = os.path.join(self._testroot, 'scripts_regression_tests.testdir_with_fail')
         self._testdir_unfinished  = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished')
         self._testdir_unfinished2 = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished2')
-        testdirs = [self._testdir_all_pass, self._testdir_with_fail, self._testdir_unfinished, self._testdir_unfinished2]
-        for testdir in testdirs:
+
+        # live tests
+        self._testdir_teststatus1 = os.path.join(self._testroot, 'scripts_regression_tests.testdir_teststatus1')
+        self._testdir_teststatus2 = os.path.join(self._testroot, 'scripts_regression_tests.testdir_teststatus2')
+
+        self._testdirs = [self._testdir_all_pass, self._testdir_with_fail, self._testdir_unfinished, self._testdir_unfinished2,
+                          self._testdir_teststatus1, self._testdir_teststatus2]
+        basic_tests = self._testdirs[:self._testdirs.index(self._testdir_teststatus1)]
+
+        for testdir in self._testdirs:
             if os.path.exists(testdir):
                 shutil.rmtree(testdir)
             os.makedirs(testdir)
 
         for r in range(10):
-            for testdir in testdirs:
+            for testdir in basic_tests:
                 os.makedirs(os.path.join(testdir, str(r)))
                 make_fake_teststatus(os.path.join(testdir, str(r)), "Test_%d" % r, TEST_PASS_STATUS, RUN_PHASE)
 
         make_fake_teststatus(os.path.join(self._testdir_with_fail,   "5"), "Test_5", TEST_FAIL_STATUS, RUN_PHASE)
         make_fake_teststatus(os.path.join(self._testdir_unfinished,  "5"), "Test_5", TEST_PEND_STATUS, RUN_PHASE)
         make_fake_teststatus(os.path.join(self._testdir_unfinished2, "5"), "Test_5", TEST_PASS_STATUS, SUBMIT_PHASE)
+
+        integration_tests = self._testdirs[len(basic_tests):]
+        for integration_test in integration_tests:
+            os.makedirs(os.path.join(integration_test, "0"))
+            make_fake_teststatus(os.path.join(integration_test, "0"), "Test_0", TEST_PASS_STATUS, CORE_PHASES[0])
 
         # Set up proxy if possible
         self._unset_proxy = setup_proxy()
@@ -680,9 +715,11 @@ class M_TestWaitForTests(unittest.TestCase):
     ###########################################################################
     def tearDown(self):
     ###########################################################################
-        shutil.rmtree(self._testdir_all_pass)
-        shutil.rmtree(self._testdir_with_fail)
-        shutil.rmtree(self._testdir_unfinished)
+        do_teardown = sys.exc_info() == (None, None, None) and not NO_TEARDOWN
+
+        if do_teardown:
+            for testdir in self._testdirs:
+                shutil.rmtree(testdir)
 
         kill_subprocesses()
 
@@ -701,7 +738,7 @@ class M_TestWaitForTests(unittest.TestCase):
                                        from_dir=testdir, expected_stat=expected_stat)
 
         lines = [line for line in output.splitlines() if line.startswith("Test '")]
-        self.assertEqual(len(lines), 10)
+        self.assertEqual(len(lines), len(expected_results))
         for idx, line in enumerate(lines):
             testname, status = parse_test_status(line)
             self.assertEqual(status, expected_results[idx])
@@ -850,9 +887,45 @@ class M_TestWaitForTests(unittest.TestCase):
             xml_contents = open(xml_file, "r").read()
             self.assertTrue(r'<TestList><Test>Test_0</Test><Test>Test_1</Test><Test>Test_2</Test><Test>Test_3</Test><Test>Test_4</Test><Test>Test_5</Test><Test>Test_6</Test><Test>Test_7</Test><Test>Test_8</Test><Test>Test_9</Test></TestList>'
                             in xml_contents)
-            self.assertTrue(r'<Test Status="failed"><Name>Test_5</Name>' in xml_contents)
+            self.assertTrue(r'<Test Status="notrun"><Name>Test_5</Name>' in xml_contents)
 
             # TODO: Any further checking of xml output worth doing?
+
+    ###########################################################################
+    def live_test_impl(self, testdir, expected_results, last_phase, last_status):
+    ###########################################################################
+        run_thread = threading.Thread(target=self.threaded_test, args=(testdir, expected_results))
+        run_thread.daemon = True
+        run_thread.start()
+
+        time.sleep(5)
+
+        self.assertTrue(run_thread.isAlive(), msg="wait_for_tests should have waited")
+
+        for core_phase in CORE_PHASES[1:]:
+            with TestStatus(test_dir=os.path.join(self._testdir_teststatus1, "0")) as ts:
+                ts.set_status(core_phase, last_status if core_phase == last_phase else TEST_PASS_STATUS)
+
+            time.sleep(5)
+
+            if core_phase != last_phase:
+                self.assertTrue(run_thread.isAlive(), msg="wait_for_tests should have waited after passing phase {}".format(core_phase))
+            else:
+                run_thread.join(timeout=10)
+                self.assertFalse(run_thread.isAlive(), msg="wait_for_tests should have finished after phase {}".format(core_phase))
+                break
+
+        self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
+
+    ###########################################################################
+    def test_wait_for_test_test_status_integration_pass(self):
+    ###########################################################################
+        self.live_test_impl(self._testdir_teststatus1, ["PASS"], RUN_PHASE, TEST_PASS_STATUS)
+
+    ###########################################################################
+    def test_wait_for_test_test_status_integration_submit_fail(self):
+    ###########################################################################
+        self.live_test_impl(self._testdir_teststatus1, ["FAIL"], SUBMIT_PHASE, TEST_FAIL_STATUS)
 
 ###############################################################################
 class TestCreateTestCommon(unittest.TestCase):
@@ -869,7 +942,7 @@ class TestCreateTestCommon(unittest.TestCase):
         self._baseline_area     = os.path.join(TEST_ROOT, "baselines")
         self._testroot          = TEST_ROOT
         self._hasbatch          = MACHINE.has_batch_system() and not NO_BATCH
-        self._do_teardown       = True # Will never do teardown if test failed
+        self._do_teardown       = not NO_TEARDOWN
 
     ###########################################################################
     def tearDown(self):
@@ -1208,6 +1281,14 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
         self._jenkins_root = os.path.join(self._testdir, "J")
 
     ###########################################################################
+    def tearDown(self):
+    ###########################################################################
+        TestCreateTestCommon.tearDown(self)
+
+        if "TESTRUNDIFF_ALTERNATE" in os.environ:
+            del os.environ["TESTRUNDIFF_ALTERNATE"]
+
+    ###########################################################################
     def simple_test(self, expect_works, extra_args, build_name=None):
     ###########################################################################
         if NO_BATCH:
@@ -1217,7 +1298,7 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
         if CIME.utils.get_model() == "e3sm" and build_name is not None:
             extra_args += " -p ACME_test --submit-to-cdash --cdash-build-group=Nightly -c %s" % build_name
 
-        run_cmd_assert_result(self, "%s/jenkins_generic_job -r %s %s" % (TOOLS_DIR, self._testdir, extra_args),
+        run_cmd_assert_result(self, "%s/jenkins_generic_job -r %s %s -B %s" % (TOOLS_DIR, self._testdir, extra_args, self._baseline_area),
                               from_dir=self._testdir, expected_stat=(0 if expect_works else CIME.utils.TESTS_FAILED_ERR_CODE))
 
     ###########################################################################
@@ -1229,9 +1310,9 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
             self._thread_error = str(e)
 
     ###########################################################################
-    def assert_num_leftovers(self):
+    def assert_num_leftovers(self, suite):
     ###########################################################################
-        num_tests_in_tiny = len(get_tests.get_test_suite("cime_test_only_pass"))
+        num_tests_in_tiny = len(get_tests.get_test_suite(suite))
 
         jenkins_dirs = glob.glob("%s/*%s*/" % (self._jenkins_root, self._baseline_name.capitalize())) # case dirs
         # scratch_dirs = glob.glob("%s/*%s*/" % (self._testroot, test_id)) # blr/run dirs
@@ -1248,16 +1329,14 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
     ###########################################################################
     def test_jenkins_generic_job(self):
     ###########################################################################
-        # Unfortunately, this test is very long-running
-
         # Generate fresh baselines so that this test is not impacted by
         # unresolved diffs
         self.simple_test(True, "-t cime_test_only_pass -g -b %s" % self._baseline_name)
-        self.assert_num_leftovers()
+        self.assert_num_leftovers("cime_test_only_pass")
 
         build_name = "jenkins_generic_job_pass_%s" % CIME.utils.get_timestamp()
         self.simple_test(True, "-t cime_test_only_pass -b %s" % self._baseline_name, build_name=build_name)
-        self.assert_num_leftovers() # jenkins_generic_job should have automatically cleaned up leftovers from prior run
+        self.assert_num_leftovers("cime_test_only_pass") # jenkins_generic_job should have automatically cleaned up leftovers from prior run
         assert_dashboard_has_build(self, build_name)
 
     ###########################################################################
@@ -1276,6 +1355,44 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
 
         self.assertFalse(run_thread.isAlive(), msg="jenkins_generic_job should have finished")
         self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
+        assert_dashboard_has_build(self, build_name)
+
+    ###########################################################################
+    def test_jenkins_generic_job_realistic_dash(self):
+    ###########################################################################
+        # The actual quality of the cdash results for this test can only
+        # be inspected manually
+
+        # Generate fresh baselines so that this test is not impacted by
+        # unresolved diffs
+        self.simple_test(False, "-t cime_test_all -g -b %s" % self._baseline_name)
+        self.assert_num_leftovers("cime_test_all")
+
+        # Should create a diff
+        os.environ["TESTRUNDIFF_ALTERNATE"] = "True"
+
+        # Should create a nml diff
+        # Modify namelist
+        fake_nl = """
+ &fake_nml
+   fake_item = 'fake'
+   fake = .true.
+/"""
+        baseline_glob = glob.glob(os.path.join(self._baseline_area, self._baseline_name, "TESTRUNPASS*"))
+        self.assertEqual(len(baseline_glob), 1, msg="Expected one match, got:\n%s" % "\n".join(baseline_glob))
+
+        import stat
+        for baseline_dir in baseline_glob:
+            nl_path = os.path.join(baseline_dir, "CaseDocs", "datm_in")
+            self.assertTrue(os.path.isfile(nl_path), msg="Missing file %s" % nl_path)
+
+            os.chmod(nl_path, stat.S_IRUSR | stat.S_IWUSR)
+            with open(nl_path, "a") as nl_file:
+                nl_file.write(fake_nl)
+
+        build_name = "jenkins_generic_job_mixed_%s" % CIME.utils.get_timestamp()
+        self.simple_test(False, "-t cime_test_all -b %s" % self._baseline_name, build_name=build_name)
+        self.assert_num_leftovers("cime_test_all") # jenkins_generic_job should have automatically cleaned up leftovers from prior run
         assert_dashboard_has_build(self, build_name)
 
 ###############################################################################
@@ -1541,29 +1658,29 @@ class K_TestCimeCase(TestCreateTestCommon):
                             msg="Build complete had wrong value '%s'" %
                             build_complete)
 
-#            model_specific_val = case.get_value("CPL_SEQ_OPTION")
-#            if CIME.utils.get_model() == 'cesm':
-#                self.assertEqual(model_specific_val, "RASM_OPTION1")
-#            else:
-#                self.assertEqual(model_specific_val, "CESM1_MOD")
-
             # Test some test properties
             self.assertEqual(case.get_value("TESTCASE"), "TESTRUNPASS")
+
+    def _batch_test_fixture(self, testcase_name):
+        if not MACHINE.has_batch_system() or NO_BATCH:
+            self.skipTest("Skipping testing user prerequisites without batch systems")
+        testdir = os.path.join(TEST_ROOT, testcase_name)
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+        run_cmd_assert_result(self, ("{}/create_newcase --case {} --script-root {} " +
+                                     "--compset X --res f19_g16 --handle-preexisting-dirs=r --output-root {}").format(
+                                         SCRIPT_DIR, testcase_name, testdir, testdir),
+                              from_dir=SCRIPT_DIR)
+        return testdir
 
     ###########################################################################
     def test_cime_case_prereq(self):
     ###########################################################################
-        if not MACHINE.has_batch_system() or NO_BATCH:
-            self.skipTest("Skipping testing user prerequisites without batch systems")
         testcase_name = 'prereq_test'
-        testdir = os.path.join(TEST_ROOT, testcase_name)
-        if os.path.exists(testdir):
-            shutil.rmtree(testdir)
-        run_cmd_assert_result(self, ("%s/create_newcase --case %s --script-root %s --compset X --res f19_g16 --output-root %s"
-                                     % (SCRIPT_DIR, testcase_name, testdir, testdir)),
-                              from_dir=SCRIPT_DIR)
-
+        testdir = self._batch_test_fixture(testcase_name)
         with Case(testdir, read_only=False) as case:
+            if case.get_value("depend_string") is None:
+                self.skipTest("Skipping prereq test, depend_string was not provided for this batch system")
             job_name = "case.run"
             prereq_name = 'prereq_test'
             batch_commands = case.submit_jobs(prereq=prereq_name, job=job_name, skip_pnl=True, dry_run=True)
@@ -1579,7 +1696,7 @@ class K_TestCimeCase(TestCreateTestCommon):
                 self.assertTrue(isinstance(batch_cmd[1], six.string_types), "case.submit_jobs returned internal sequences without the batch command string as the second parameter: {}".format(batch_cmd[1]))
                 batch_cmd_args = batch_cmd[1]
 
-                jobid_ident = 'jobid'
+                jobid_ident = "jobid"
                 dep_str_fmt = case.get_env('batch').get_value('depend_string', subgroup=None)
                 self.assertTrue(jobid_ident in dep_str_fmt, "dependency string doesn't include the jobid identifier {}".format(jobid_ident))
                 dep_str = dep_str_fmt[:dep_str_fmt.index(jobid_ident)]
@@ -1593,6 +1710,64 @@ class K_TestCimeCase(TestCreateTestCommon):
                         break
 
                 self.assertTrue(prereq_name in prereq_substr, "Dependencies added, but not the user specified one")
+
+    ###########################################################################
+    def test_cime_case_allow_failed_prereq(self):
+    ###########################################################################
+        testcase_name = 'allow_failed_prereq_test'
+        testdir = self._batch_test_fixture(testcase_name)
+        with Case(testdir, read_only=False) as case:
+            depend_allow = case.get_value("depend_allow_string")
+            if depend_allow is None:
+                self.skipTest("Skipping allow_failed_prereq test, depend_allow_string was not provided for this batch system")
+            job_name = "case.run"
+            prereq_name = "prereq_allow_fail_test"
+            depend_allow = depend_allow.replace("jobid", prereq_name)
+            batch_commands = case.submit_jobs(prereq=prereq_name, allow_fail=True, job=job_name, skip_pnl=True, dry_run=True)
+            self.assertTrue(isinstance(batch_commands, collections.Sequence), "case.submit_jobs did not return a sequence for a dry run")
+            num_submissions = 1
+            if case.get_value("DOUT_S"):
+                num_submissions = 2
+            self.assertTrue(len(batch_commands) == num_submissions, "case.submit_jobs did not return any job submission strings")
+            self.assertTrue(depend_allow in batch_commands[0][1])
+
+    ###########################################################################
+    def test_cime_case_resubmit_immediate(self):
+    ###########################################################################
+        testcase_name = 'resubmit_immediate_test'
+        testdir = self._batch_test_fixture(testcase_name)
+        with Case(testdir, read_only=False) as case:
+            depend_string = case.get_value("depend_string")
+            if depend_string is None:
+                self.skipTest("Skipping resubmit_immediate test, depend_string was not provided for this batch system")
+            depend_string = depend_string.replace("jobid", "")
+            job_name = "case.run"
+            num_submissions = 6
+            case.set_value("RESUBMIT", num_submissions - 1)
+            batch_commands = case.submit_jobs(job=job_name, skip_pnl=True, dry_run=True, resubmit_immediate=True)
+            self.assertTrue(isinstance(batch_commands, collections.Sequence), "case.submit_jobs did not return a sequence for a dry run")
+            if case.get_value("DOUT_S"):
+                num_submissions = 12
+            self.assertTrue(len(batch_commands) == num_submissions, "case.submit_jobs did not return {} submitted jobs".format(num_submissions))
+            for i, cmd in enumerate(batch_commands):
+                if i > 0:
+                    self.assertTrue(depend_string in cmd[1])
+
+    ###########################################################################
+    def test_cime_case_st_archive_resubmit(self):
+    ###########################################################################
+        testcase_name = "st_archive_resubmit_test"
+        testdir = self._batch_test_fixture(testcase_name)
+        with Case(testdir, read_only=False) as case:
+            case.case_setup(clean=False, test_mode=False, reset=True)
+            orig_resubmit = 2
+            case.set_value("RESUBMIT", orig_resubmit)
+            case.case_st_archive(resubmit=False)
+            new_resubmit = case.get_value("RESUBMIT")
+            self.assertTrue(orig_resubmit == new_resubmit, "st_archive resubmitted when told not to")
+            case.case_st_archive(resubmit=True)
+            new_resubmit = case.get_value("RESUBMIT")
+            self.assertTrue((orig_resubmit - 1) == new_resubmit, "st_archive did not resubmit when told to")
 
     ###########################################################################
     def test_cime_case_build_threaded_1(self):
@@ -1773,12 +1948,16 @@ class K_TestCimeCase(TestCreateTestCommon):
 
         test_name = "ERS_P1.f19_g16_rx1.A"
         machine, compiler = "blues", "gnu"
-        self._create_test(["--no-setup", "--machine={}".format(machine), "--queue=slartibartfast", test_name], test_id=self._baseline_name,
+        self._create_test(["--no-setup", "--machine={}".format(machine), test_name], test_id=self._baseline_name,
                           env_changes="unset CIME_GLOBAL_WALLTIME &&")
 
         casedir = os.path.join(self._testroot,
                                "%s.%s" % (CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler), self._baseline_name))
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+
+        run_cmd_assert_result(self, "./xmlchange JOB_QUEUE=slartibartfast --subgroup=case.test", from_dir=casedir, expected_stat=1)
+
+        run_cmd_assert_result(self, "./xmlchange JOB_QUEUE=slartibartfast --force --subgroup=case.test", from_dir=casedir)
 
         result = run_cmd_assert_result(self, "./xmlquery JOB_WALLCLOCK_TIME --subgroup=case.test --value", from_dir=casedir)
         self.assertEqual(result, "03:00:00")
@@ -1891,6 +2070,21 @@ class K_TestCimeCase(TestCreateTestCommon):
 
             self.assertEqual(problems, "", msg=problems)
 
+    ###########################################################################
+    def test_case_submit_interface(self):
+    ###########################################################################
+        try:
+            import imp
+        except ImportError:
+            print("imp not found, skipping case.submit interface test")
+            return
+        sys.path.append(TOOLS_DIR)
+        case_submit_path = os.path.join(TOOLS_DIR, "case.submit")
+        submit_interface = imp.load_source("case_submit_interface", case_submit_path)
+        sys.argv = ["case.submit", "--batch-args", "'random_arguments_here.%j'",
+                    "--mail-type", "fail", "--mail-user", "'random_arguments_here.%j'"]
+        submit_interface._main_func(None, True)
+
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
 ###############################################################################
@@ -1986,7 +2180,7 @@ class MockMachines(object):
 
 
 def get_macros(macro_maker, build_xml, build_system):
-    """Generate build system ("Macros" file) output from config_build XML.
+    """Generate build system ("Macros" file) output from config_compilers XML.
 
     Arguments:
     macro_maker - The underlying Build object.
@@ -2012,16 +2206,16 @@ def get_macros(macro_maker, build_xml, build_system):
     return str(output.getvalue())
 
 
-def _wrap_config_build_xml(inner_string):
-    """Utility function to create a config_build XML string.
+def _wrap_config_compilers_xml(inner_string):
+    """Utility function to create a config_compilers XML string.
 
     Pass this function a string containing <compiler> elements, and it will add
     the necessary header/footer to the file.
     """
     _xml_template = """<?xml version="1.0" encoding="UTF-8"?>
-<config_build>
+<config_compilers>
 {}
-</config_build>
+</config_compilers>
 """
 
     return _xml_template.format(inner_string)
@@ -2230,7 +2424,7 @@ class G_TestMacrosBasic(unittest.TestCase):
         """The test script can be called on valid output without dying."""
         # This is really more a smoke test of this script than anything else.
         maker = Compilers(MockMachines("mymachine", "SomeOS"), version=2.0)
-        test_xml = _wrap_config_build_xml("<compiler><SUPPORTS_CXX>FALSE</SUPPORTS_CXX></compiler>")
+        test_xml = _wrap_config_compilers_xml("<compiler><SUPPORTS_CXX>FALSE</SUPPORTS_CXX></compiler>")
         get_macros(maker, test_xml, "Makefile")
 
     def test_script_rejects_bad_xml(self):
@@ -2260,16 +2454,17 @@ class H_TestMakeMacros(unittest.TestCase):
     Aside from the usual setUp and test methods, this class has a utility method
     (xml_to_tester) that converts XML input directly to a MakefileTester object.
     """
-
-    test_os = "SomeOS"
-    test_machine = "mymachine"
-
     def setUp(self):
+        self.test_os       = "SomeOS"
+        self.test_machine  = "mymachine"
+        self.test_compiler = MACHINE.get_default_compiler() if TEST_COMPILER is None else TEST_COMPILER
+        self.test_mpilib   = MACHINE.get_default_MPIlib(attributes={"compiler":self.test_compiler}) if TEST_MPILIB is None else TEST_MPILIB
+
         self._maker = Compilers(MockMachines(self.test_machine, self.test_os), version=2.0)
 
     def xml_to_tester(self, xml_string):
         """Helper that directly converts an XML string to a MakefileTester."""
-        test_xml = _wrap_config_build_xml(xml_string)
+        test_xml = _wrap_config_compilers_xml(xml_string)
         return MakefileTester(self, get_macros(self._maker, test_xml, "Makefile"))
 
     def test_generic_item(self):
@@ -2307,6 +2502,25 @@ class H_TestMakeMacros(unittest.TestCase):
         tester.assert_variable_equals("SUPPORTS_CXX", "TRUE")
         tester = self.xml_to_tester(xml2+xml1)
         tester.assert_variable_equals("SUPPORTS_CXX", "TRUE")
+
+    def test_mach_other_compiler(self):
+        """The macro writer compiler-specific logic works as expected."""
+        xml1 = """<compiler COMPILER="{}"><CFLAGS><base>a b c</base></CFLAGS></compiler>""".format(self.test_compiler)
+        xml2 = """<compiler MACH="{}" COMPILER="other"><CFLAGS><base>x y z</base></CFLAGS></compiler>""".format(self.test_machine)
+        xml3 = """<compiler MACH="{}" COMPILER="{}"><CFLAGS><append>x y z</append></CFLAGS></compiler>""".format(self.test_machine,self.test_compiler)
+        xml4 = """<compiler MACH="{}" COMPILER="{}"><CFLAGS><base>x y z</base></CFLAGS></compiler>""".format(self.test_machine,self.test_compiler)
+        tester = self.xml_to_tester(xml1)
+        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":self.test_compiler})
+        tester = self.xml_to_tester(xml1+xml2)
+        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":self.test_compiler})
+        tester = self.xml_to_tester(xml2+xml1)
+        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":self.test_compiler})
+        tester = self.xml_to_tester(xml1+xml3)
+        tester.assert_variable_equals("CFLAGS", "a b c x y z",env={"COMPILER":self.test_compiler})
+        tester = self.xml_to_tester(xml1+xml4)
+        tester.assert_variable_equals("CFLAGS", "x y z",env={"COMPILER":self.test_compiler})
+        tester = self.xml_to_tester(xml4+xml1)
+        tester.assert_variable_equals("CFLAGS", "x y z",env={"COMPILER":self.test_compiler})
 
     def test_mach_beats_os(self):
         """The macro writer chooses machine-specific over os-specific matches."""
@@ -2347,7 +2561,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml2 = """<compiler><MPI_PATH>/path/to/other_default</MPI_PATH></compiler>"""
         with assertRaisesRegex(self,
                 SystemExit,
-                "Variable MPI_PATH is set ambiguously in config_build.xml."):
+                "Variable MPI_PATH is set ambiguously in config_compilers.xml."):
             self.xml_to_tester(xml1+xml2)
 
     def test_reject_duplicates(self):
@@ -2356,7 +2570,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml2 = """<compiler><MPI_PATH MPILIB="mpich">/path/to/mpich2</MPI_PATH></compiler>"""
         with assertRaisesRegex(self,
                 SystemExit,
-                "Variable MPI_PATH is set ambiguously in config_build.xml."):
+                "Variable MPI_PATH is set ambiguously in config_compilers.xml."):
             self.xml_to_tester(xml1+xml2)
 
     def test_reject_ambiguous(self):
@@ -2365,7 +2579,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml2 = """<compiler><MPI_PATH DEBUG="FALSE">/path/to/mpi-debug</MPI_PATH></compiler>"""
         with assertRaisesRegex(self,
                 SystemExit,
-                "Variable MPI_PATH is set ambiguously in config_build.xml."):
+                "Variable MPI_PATH is set ambiguously in config_compilers.xml."):
             self.xml_to_tester(xml1+xml2)
 
     def test_compiler_changeable_at_build_time(self):
@@ -2426,14 +2640,14 @@ class H_TestMakeMacros(unittest.TestCase):
         tester = self.xml_to_tester(xml1+xml2)
         tester.assert_variable_matches("FFLAGS", "^(-delicious -cake|-cake -delicious)$")
 
-    def test_machine_specific_base_over_append_flags(self):
-        """Test that machine-specific base flags override default append flags."""
+    def test_machine_specific_base_keeps_append_flags(self):
+        """Test that machine-specific base flags don't override default append flags."""
         xml1 = """<compiler><FFLAGS><append>-delicious</append></FFLAGS></compiler>"""
         xml2 = """<compiler MACH="{}"><FFLAGS><base>-cake</base></FFLAGS></compiler>""".format(self.test_machine)
         tester = self.xml_to_tester(xml1+xml2)
-        tester.assert_variable_equals("FFLAGS", "-cake")
+        tester.assert_variable_equals("FFLAGS", "-cake -delicious")
         tester = self.xml_to_tester(xml2+xml1)
-        tester.assert_variable_equals("FFLAGS", "-cake")
+        tester.assert_variable_equals("FFLAGS", "-cake -delicious")
 
     def test_machine_specific_base_and_append_flags(self):
         """Test that machine-specific base flags coexist with machine-specific append flags."""
@@ -2459,11 +2673,7 @@ class H_TestMakeMacros(unittest.TestCase):
         tester.assert_variable_matches("FFLAGS", "^(-cake -and-pie|-and-pie -cake)$", env={"DEBUG": "TRUE"})
 
     def test_environment_variable_insertion(self):
-        """Test that <env> elements insert environment variables."""
-        xml1 = """<compiler><LDFLAGS><append>-L<env>NETCDF</env> -lnetcdf</append></LDFLAGS></compiler>"""
-        tester = self.xml_to_tester(xml1)
-        tester.assert_variable_equals("LDFLAGS", "-L/path/to/netcdf -lnetcdf",
-                                      env={"NETCDF": "/path/to/netcdf"})
+        """Test that ENV{..} inserts environment variables."""
         # DO it again with $ENV{} style
         xml1 = """<compiler><LDFLAGS><append>-L$ENV{NETCDF} -lnetcdf</append></LDFLAGS></compiler>"""
         tester = self.xml_to_tester(xml1)
@@ -2471,46 +2681,28 @@ class H_TestMakeMacros(unittest.TestCase):
                                       env={"NETCDF": "/path/to/netcdf"})
 
     def test_shell_command_insertion(self):
-        """Test that <shell> elements insert shell command output."""
-        xml1 = """<compiler><FFLAGS><base>-O<shell>echo 2</shell> -fast</base></FFLAGS></compiler>"""
-        tester = self.xml_to_tester(xml1)
-        tester.assert_variable_equals("FFLAGS", "-O2 -fast")
+        """Test that $SHELL insert shell command output."""
         xml1 = """<compiler><FFLAGS><base>-O$SHELL{echo 2} -fast</base></FFLAGS></compiler>"""
         tester = self.xml_to_tester(xml1)
         tester.assert_variable_equals("FFLAGS", "-O2 -fast")
 
     def test_multiple_shell_commands(self):
-        """Test that more than one <shell> element can be used."""
-        xml1 = """<compiler><FFLAGS><base>-O<shell>echo 2</shell> -<shell>echo fast</shell></base></FFLAGS></compiler>"""
-        tester = self.xml_to_tester(xml1)
-        tester.assert_variable_equals("FFLAGS", "-O2 -fast")
+        """Test that more than one $SHELL element can be used."""
         xml1 = """<compiler><FFLAGS><base>-O$SHELL{echo 2} -$SHELL{echo fast}</base></FFLAGS></compiler>"""
         tester = self.xml_to_tester(xml1)
         tester.assert_variable_equals("FFLAGS", "-O2 -fast")
 
     def test_env_and_shell_command(self):
-        """Test that <env> elements work inside <shell> elements."""
-        xml1 = """<compiler><FFLAGS><base>-O<shell>echo <env>OPT_LEVEL</env></shell> -fast</base></FFLAGS></compiler>"""
+        """Test that $ENV works inside $SHELL elements."""
+        xml1 = """<compiler><FFLAGS><base>-O$SHELL{echo $ENV{OPT_LEVEL}} -fast</base></FFLAGS></compiler>"""
         tester = self.xml_to_tester(xml1)
         tester.assert_variable_equals("FFLAGS", "-O2 -fast", env={"OPT_LEVEL": "2"})
-        xml1 = """<compiler><FFLAGS><base>-O$SHELL{echo $ENV{OPT_LEVEL}} -fast</base></FFLAGS></compiler>"""
-        err_msg = "Nesting not allowed.*"
-        with assertRaisesRegex(self,SystemExit, err_msg):
-            self.xml_to_tester(xml1)
 
     def test_config_variable_insertion(self):
-        """Test that <var> elements insert variables from config_build."""
+        """Test that $VAR insert variables from config_compilers."""
         # Construct an absurd chain of references just to sure that we don't
         # pass by accident, e.g. outputting things in the right order just due
         # to good luck in a hash somewhere.
-        xml1 = """<MPI_LIB_NAME>stuff-<var>MPI_PATH</var>-stuff</MPI_LIB_NAME>"""
-        xml2 = """<MPI_PATH><var>MPICC</var></MPI_PATH>"""
-        xml3 = """<MPICC><var>MPICXX</var></MPICC>"""
-        xml4 = """<MPICXX><var>MPIFC</var></MPICXX>"""
-        xml5 = """<MPIFC>mpicc</MPIFC>"""
-        tester = self.xml_to_tester("<compiler>"+xml1+xml2+xml3+xml4+xml5+"</compiler>")
-        tester.assert_variable_equals("MPI_LIB_NAME", "stuff-mpicc-stuff")
-
         xml1 = """<MPI_LIB_NAME>stuff-${MPI_PATH}-stuff</MPI_LIB_NAME>"""
         xml2 = """<MPI_PATH>${MPICC}</MPI_PATH>"""
         xml3 = """<MPICC>${MPICXX}</MPICC>"""
@@ -2520,47 +2712,163 @@ class H_TestMakeMacros(unittest.TestCase):
         tester.assert_variable_equals("MPI_LIB_NAME", "stuff-mpicc-stuff")
 
     def test_config_reject_self_references(self):
-        """Test that <var> self-references are rejected."""
+        """Test that $VAR self-references are rejected."""
         # This is a special case of the next test, which also checks circular
         # references.
-        xml1 = """<MPI_LIB_NAME><var>MPI_LIB_NAME</var></MPI_LIB_NAME>"""
-        err_msg = ".* has bad <var> references."
-        with assertRaisesRegex(self,SystemExit, err_msg):
-            self.xml_to_tester("<compiler>"+xml1+"</compiler>")
-
         xml1 = """<MPI_LIB_NAME>${MPI_LIB_NAME}</MPI_LIB_NAME>"""
-        err_msg = ".* has bad <var> references."
+        err_msg = r".* has bad \$VAR references. Check for circular references or variables that are used in a \$VAR but not actually defined."
         with assertRaisesRegex(self,SystemExit, err_msg):
             self.xml_to_tester("<compiler>"+xml1+"</compiler>")
 
     def test_config_reject_cyclical_references(self):
-        """Test that cyclical <var> references are rejected."""
-        xml1 = """<MPI_LIB_NAME><var>MPI_PATH</var></MPI_LIB_NAME>"""
-        xml2 = """<MPI_PATH><var>MPI_LIB_NAME</var></MPI_PATH>"""
-        err_msg = ".* has bad <var> references."
-        with assertRaisesRegex(self,SystemExit, err_msg):
-            self.xml_to_tester("<compiler>"+xml1+xml2+"</compiler>")
+        """Test that cyclical $VAR references are rejected."""
         xml1 = """<MPI_LIB_NAME>${MPI_PATH}</MPI_LIB_NAME>"""
         xml2 = """<MPI_PATH>${MPI_LIB_NAME}</MPI_PATH>"""
-        err_msg = ".* has bad <var> references."
+        err_msg = r".* has bad \$VAR references. Check for circular references or variables that are used in a \$VAR but not actually defined."
         with assertRaisesRegex(self,SystemExit, err_msg):
             self.xml_to_tester("<compiler>"+xml1+xml2+"</compiler>")
 
     def test_variable_insertion_with_machine_specific_setting(self):
-        """Test that machine-specific <var> dependencies are correct."""
+        """Test that machine-specific $VAR dependencies are correct."""
         xml1 = """<compiler><MPI_LIB_NAME>something</MPI_LIB_NAME></compiler>"""
-        xml2 = """<compiler MACH="{}"><MPI_LIB_NAME><var>MPI_PATH</var></MPI_LIB_NAME></compiler>""".format(self.test_machine)
-        xml3 = """<compiler><MPI_PATH><var>MPI_LIB_NAME</var></MPI_PATH></compiler>"""
-        err_msg = ".* has bad <var> references."
+        xml2 = """<compiler MACH="{}"><MPI_LIB_NAME>$MPI_PATH</MPI_LIB_NAME></compiler>""".format(self.test_machine)
+        xml3 = """<compiler><MPI_PATH>${MPI_LIB_NAME}</MPI_PATH></compiler>"""
+        err_msg = r".* has bad \$VAR references. Check for circular references or variables that are used in a \$VAR but not actually defined."
         with assertRaisesRegex(self,SystemExit, err_msg):
             self.xml_to_tester(xml1+xml2+xml3)
 
-        xml1 = """<compiler><MPI_LIB_NAME>something</MPI_LIB_NAME></compiler>"""
-        xml2 = """<compiler MACH="{}"><MPI_LIB_NAME><var>MPI_PATH</var></MPI_LIB_NAME></compiler>""".format(self.test_machine)
-        xml3 = """<compiler><MPI_PATH>${MPI_LIB_NAME}</MPI_PATH></compiler>"""
-        err_msg = ".* has bad <var> references."
-        with assertRaisesRegex(self,SystemExit, err_msg):
-            self.xml_to_tester(xml1+xml2+xml3)
+    def test_override_with_machine_and_new_attributes(self):
+        """Test that overrides with machine-specific settings with added attributes work correctly."""
+        xml1 = """
+<compiler COMPILER="{}">
+  <SCC>icc</SCC>
+  <MPICXX>mpicxx</MPICXX>
+  <MPIFC>mpif90</MPIFC>
+  <MPICC>mpicc</MPICC>
+</compiler>""".format(self.test_compiler)
+        xml2 = """
+<compiler COMPILER="{}" MACH="{}">
+  <MPICXX>mpifoo</MPICXX>
+  <MPIFC MPILIB="{}">mpiffoo</MPIFC>
+  <MPICC MPILIB="NOT_MY_MPI">mpifouc</MPICC>
+</compiler>
+""".format(self.test_compiler, self.test_machine, self.test_mpilib)
+
+        tester = self.xml_to_tester(xml1+xml2)
+
+        tester.assert_variable_equals("SCC", "icc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPICXX", "mpifoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPIFC", "mpiffoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPICC", "mpicc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+
+        tester = self.xml_to_tester(xml2+xml1)
+
+        tester.assert_variable_equals("SCC", "icc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPICXX", "mpifoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPIFC", "mpiffoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPICC", "mpicc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+
+    def test_override_with_machine_and_same_attributes(self):
+        """Test that machine-specific conditional overrides with the same attribute work correctly."""
+        xml1 = """
+<compiler COMPILER="{}">
+  <MPIFC MPILIB="{}">mpifc</MPIFC>
+</compiler>""".format(self.test_compiler, self.test_mpilib)
+        xml2 = """
+<compiler MACH="{}" COMPILER="{}">
+  <MPIFC MPILIB="{}">mpif90</MPIFC>
+</compiler>
+""".format(self.test_machine, self.test_compiler, self.test_mpilib)
+
+        tester = self.xml_to_tester(xml1+xml2)
+
+        tester.assert_variable_equals("MPIFC", "mpif90", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+
+        tester = self.xml_to_tester(xml2+xml1)
+
+        tester.assert_variable_equals("MPIFC", "mpif90", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+
+    def test_appends_not_overriden(self):
+        """Test that machine-specific base value changes don't interfere with appends."""
+        xml1="""
+<compiler COMPILER="{}">
+ <FFLAGS>
+   <base>-base1</base>
+   <append DEBUG="FALSE">-debug1</append>
+ </FFLAGS>
+</compiler>""".format(self.test_compiler)
+
+        xml2="""
+<compiler MACH="{}" COMPILER="{}">
+ <FFLAGS>
+   <base>-base2</base>
+   <append DEBUG="TRUE">-debug2</append>
+ </FFLAGS>
+</compiler>""".format(self.test_machine, self.test_compiler)
+
+        tester = self.xml_to_tester(xml1+xml2)
+
+        tester.assert_variable_equals("FFLAGS", "-base2", env={"COMPILER": self.test_compiler})
+        tester.assert_variable_equals("FFLAGS", "-base2 -debug2", env={"COMPILER": self.test_compiler, "DEBUG": "TRUE"})
+        tester.assert_variable_equals("FFLAGS", "-base2 -debug1", env={"COMPILER": self.test_compiler, "DEBUG": "FALSE"})
+
+        tester = self.xml_to_tester(xml2+xml1)
+
+        tester.assert_variable_equals("FFLAGS", "-base2", env={"COMPILER": self.test_compiler})
+        tester.assert_variable_equals("FFLAGS", "-base2 -debug2", env={"COMPILER": self.test_compiler, "DEBUG": "TRUE"})
+        tester.assert_variable_equals("FFLAGS", "-base2 -debug1", env={"COMPILER": self.test_compiler, "DEBUG": "FALSE"})
+
+    def test_multilevel_specificity(self):
+        """Check that settings with multiple levels of machine-specificity can be resolved."""
+        xml1="""
+<compiler>
+ <MPIFC DEBUG="FALSE">mpifc</MPIFC>
+</compiler>"""
+
+        xml2="""
+<compiler OS="{}">
+ <MPIFC MPILIB="{}">mpif03</MPIFC>
+</compiler>""".format(self.test_os, self.test_mpilib)
+
+        xml3="""
+<compiler MACH="{}">
+ <MPIFC DEBUG="TRUE">mpif90</MPIFC>
+</compiler>""".format(self.test_machine)
+
+        # To verify order-independence, test every possible ordering of blocks.
+        testers = []
+        testers.append(self.xml_to_tester(xml1+xml2+xml3))
+        testers.append(self.xml_to_tester(xml1+xml3+xml2))
+        testers.append(self.xml_to_tester(xml2+xml1+xml3))
+        testers.append(self.xml_to_tester(xml2+xml3+xml1))
+        testers.append(self.xml_to_tester(xml3+xml1+xml2))
+        testers.append(self.xml_to_tester(xml3+xml2+xml1))
+
+        for tester in testers:
+            tester.assert_variable_equals("MPIFC", "mpif90", env={"COMPILER": self.test_compiler, "MPILIB": self.test_mpilib, "DEBUG": "TRUE"})
+            tester.assert_variable_equals("MPIFC", "mpif03", env={"COMPILER": self.test_compiler, "MPILIB": self.test_mpilib, "DEBUG": "FALSE"})
+            tester.assert_variable_equals("MPIFC", "mpifc", env={"COMPILER": self.test_compiler, "MPILIB": "NON_MATCHING_MPI", "DEBUG": "FALSE"})
+
+    def test_remove_dependency_issues(self):
+        """Check that overridden settings don't cause inter-variable dependencies."""
+        xml1="""
+<compiler>
+ <MPIFC>${SFC}</MPIFC>
+</compiler>"""
+
+        xml2="""
+<compiler MACH="{}">""".format(self.test_machine) + """
+ <SFC>${MPIFC}</SFC>
+ <MPIFC>mpif90</MPIFC>
+</compiler>"""
+
+        tester = self.xml_to_tester(xml1+xml2)
+        tester.assert_variable_equals("SFC", "mpif90")
+        tester.assert_variable_equals("MPIFC", "mpif90")
+
+        tester = self.xml_to_tester(xml2+xml1)
+        tester.assert_variable_equals("SFC", "mpif90")
+        tester.assert_variable_equals("MPIFC", "mpif90")
 
 
 ###############################################################################
@@ -2577,7 +2885,7 @@ class I_TestCMakeMacros(H_TestMakeMacros):
 
     def xml_to_tester(self, xml_string):
         """Helper that directly converts an XML string to a MakefileTester."""
-        test_xml = _wrap_config_build_xml(xml_string)
+        test_xml = _wrap_config_compilers_xml(xml_string)
         if (NO_CMAKE):
             self.skipTest("Skipping cmake test")
         else:
@@ -2628,7 +2936,7 @@ def make_pylint_test(pyfile, all_files):
     def test(self):
         if B_CheckCode.all_results is None:
             B_CheckCode.all_results = check_code(all_files)
-        result = B_CheckCode.all_results[pyfile]
+        result = B_CheckCode.all_results[pyfile] # pylint: disable=unsubscriptable-object
         self.assertTrue(result == "", msg=result)
 
     return test
@@ -2668,6 +2976,7 @@ def _main_func(description):
     global TEST_MPILIB
     global TEST_ROOT
     global GLOBAL_TIMEOUT
+    global NO_TEARDOWN
     config = CIME.utils.get_cime_config()
 
     help_str = \
@@ -2701,6 +3010,9 @@ OR
     parser.add_argument("--no-cmake", action="store_true",
                         help="Do not run cmake tests")
 
+    parser.add_argument("--no-teardown", action="store_true",
+                        help="Do not delete directories left behind by testing")
+
     parser.add_argument("--machine",
                         help="Select a specific machine setting for cime")
 
@@ -2725,6 +3037,7 @@ OR
     NO_BATCH       = ns.no_batch
     NO_CMAKE       = ns.no_cmake
     GLOBAL_TIMEOUT = ns.timeout
+    NO_TEARDOWN    = ns.no_teardown
 
     if ns.machine is not None:
         MACHINE = Machines(machine=ns.machine)
@@ -2791,7 +3104,7 @@ OR
             print("Detected failures, leaving directory:", TEST_ROOT)
         else:
             print("All pass, removing directory:", TEST_ROOT)
-            if os.path.exists(TEST_ROOT):
+            if os.path.exists(TEST_ROOT) and not NO_TEARDOWN:
                 shutil.rmtree(TEST_ROOT)
 
         raise

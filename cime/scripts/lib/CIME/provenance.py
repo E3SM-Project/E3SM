@@ -5,7 +5,7 @@ Library for saving build/run provenance.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import touch, gzip_existing_file, SharedArea, copy_umask, convert_to_babylonian_time, get_current_commit
+from CIME.utils import touch, gzip_existing_file, SharedArea, copy_umask, convert_to_babylonian_time, get_current_commit, indent_string, run_cmd, run_cmd_no_fail
 
 import tarfile, getpass, signal, glob, shutil, sys
 
@@ -23,6 +23,8 @@ def _get_batch_job_id_for_syslog(case):
             return os.environ["SLURM_JOB_ID"]
         elif mach in ['mira', 'theta']:
             return os.environ["COBALT_JOBID"]
+        elif mach in ['summit']:
+            return os.environ["LSB_JOBID"]
     except:
         pass
 
@@ -80,10 +82,30 @@ def _save_build_provenance_cesm(case, lid): # pylint: disable=unused-argument
     version = case.get_value("MODEL_VERSION")
     # version has already been recorded
     srcroot = case.get_value("SRCROOT")
-    manic = os.path.join(srcroot, "manage_externals","checkout_externals")
+    manic = os.path.join("manage_externals","checkout_externals")
+    manic_full_path = os.path.join(srcroot, manic)
     out = None
-    if os.path.exists(manic):
-        out = run_cmd_no_fail(manic + " --status --verbose --no-logging", from_dir=srcroot)
+    if os.path.exists(manic_full_path):
+        args = " --status --verbose --no-logging"
+        stat, out, err = run_cmd(manic_full_path + args, from_dir=srcroot)
+        errmsg = """Error gathering provenance information from manage_externals.
+
+manage_externals error message:
+{err}
+
+manage_externals output:
+{out}
+
+To solve this, either:
+
+(1) Find and fix the problem: From {srcroot}, try to get this command to work:
+    {manic}{args}
+
+(2) If you don't need provenance information, rebuild with --skip-provenance-check
+""".format(out=indent_string(out, 4), err=indent_string(err, 4),
+           srcroot=srcroot, manic=manic, args=args)
+        expect(stat==0,errmsg)
+
     caseroot = case.get_value("CASEROOT")
     with open(os.path.join(caseroot, "CaseStatus"), "a") as fd:
         if version is not None and version != "unknown":
@@ -172,6 +194,13 @@ def _save_prerun_timing_e3sm(case, lid):
             for cmd, filename in [("qstat -f -1 acme >", "qstatf"),
                                   ("qstat -f %s >" % job_id, "qstatf_jobid"),
                                   ("qstat -r acme >", "qstatr")]:
+                full_cmd = cmd + " " + filename
+                run_cmd_no_fail(full_cmd + "." + lid, from_dir=full_timing_dir)
+                gzip_existing_file(os.path.join(full_timing_dir, filename + "." + lid))
+        elif mach == "summit":
+            for cmd, filename in [("bjobs -u all >", "bjobsu_all"),
+                                  ("bjobs -r -u all -o 'jobid slots exec_host' >", "bjobsru_allo"),
+                                  ("bjobs -l -UF %s >" % job_id, "bjobslUF_jobid")]:
                 full_cmd = cmd + " " + filename
                 run_cmd_no_fail(full_cmd + "." + lid, from_dir=full_timing_dir)
                 gzip_existing_file(os.path.join(full_timing_dir, filename + "." + lid))
@@ -340,10 +369,13 @@ def _save_postrun_timing_e3sm(case, lid):
             globs_to_copy.append("%s*cobaltlog" % job_id)
         elif mach in ["edison", "cori-haswell", "cori-knl"]:
             globs_to_copy.append("%s*run*%s" % (case.get_value("CASE"), job_id))
+        elif mach == "summit":
+            globs_to_copy.append("e3sm.stderr.%s" % job_id)
+            globs_to_copy.append("e3sm.stdout.%s" % job_id)
 
     globs_to_copy.append("logs/run_environment.txt.{}".format(lid))
-    globs_to_copy.append("logs/e3sm.log.{}.gz".format(lid))
-    globs_to_copy.append("logs/cpl.log.{}.gz".format(lid))
+    globs_to_copy.append(os.path.join(rundir, "e3sm.log.{}.gz".format(lid)))
+    globs_to_copy.append(os.path.join(rundir, "cpl.log.{}.gz".format(lid)))
     globs_to_copy.append("timing/*.{}*".format(lid))
     globs_to_copy.append("CaseStatus")
 
@@ -405,7 +437,7 @@ def get_recommended_test_time_based_on_past(baseline_root, test, raw=False):
                 return convert_to_babylonian_time(best_walltime)
         except:
             # We NEVER want a failure here to kill the run
-            logger.warning("Failed to read test time: {}".format(sys.exc_info()[0]))
+            logger.warning("Failed to read test time: {}".format(sys.exc_info()[1]))
 
     return None
 
@@ -421,4 +453,4 @@ def save_test_time(baseline_root, test, time_seconds):
                 fd.write("{}\n".format(int(time_seconds)))
         except:
             # We NEVER want a failure here to kill the run
-            logger.warning("Failed to store test time: {}".format(sys.exc_info()[0]))
+            logger.warning("Failed to store test time: {}".format(sys.exc_info()[1]))

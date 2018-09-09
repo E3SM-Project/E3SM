@@ -1,13 +1,10 @@
-
 subroutine forecast(lat, psm1, psm2,ps, &
-	           u3, u3m1, u3m2, &
-		   v3, v3m1, v3m2, &
-		   t3, t3m1, t3m2, &
+                   u3, u3m1, u3m2, &
+                   v3, v3m1, v3m2, &
+                   t3, t3m1, t3m2, &
                    q3, q3m1, q3m2, ztodt, t2, &
-		   fu, fv, qfcst,etamid,cwava, &
-                   qminus  ,hw2al   ,hw2bl   , &
-                   hw3al   ,hw3bl   ,hwxal   ,hwxbl , &
-                   nlon) 
+                   fu, fv, qfcst,etamid, &
+                   qminus, nlon)
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -21,14 +18,14 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
    use shr_kind_mod,   only: r8 => shr_kind_r8, i8 => shr_kind_i8
    use pmgrid
-   use pspect
-   use commap
-   use cam_history,    only: outfld
    use constituents,   only: pcnst, cnst_get_ind
+   use time_manager,   only: is_first_step
+   use pspect
    use physconst,      only: rair,cpair,gravit,rga
-   use scamMod
-   use eul_control_mod
+   use dycore,         only: dycore_is
    use cam_logfile,    only: iulog
+   use scamMod
+   use cam_history,    only: outfld
 !-----------------------------------------------------------------------
    implicit none
 !-----------------------------------------------------------------------
@@ -38,9 +35,9 @@ subroutine forecast(lat, psm1, psm2,ps, &
    real(r8), intent(inout) :: t2(plev)         ! temp tendency
    real(r8), intent(inout) :: fu(plev)         ! u wind tendency
    real(r8), intent(inout) :: fv(plev)         ! v wind tendency
-   real(r8), intent(in) :: ps(plon)            ! surface pressure (time n)
-   real(r8), intent(in) :: psm1(plon)          ! surface pressure (time n)
-   real(r8), intent(in) :: psm2(plon)          ! surface pressure (time n-1)
+   real(r8), intent(inout) :: ps            ! surface pressure (time n)
+   real(r8), intent(in) :: psm1          ! surface pressure (time n)
+   real(r8), intent(in) :: psm2          ! surface pressure (time n-1)
    real(r8), intent(out) :: u3(plev)   ! u-wind (time n)
    real(r8), intent(in) :: u3m1(plev)   ! u-wind (time n)
    real(r8), intent(in) :: u3m2(plev) ! u-wind (time n-1)
@@ -55,14 +52,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
    real(r8), intent(inout) :: q3m1(plev,pcnst)   ! constituent conc(tim
    real(r8), intent(inout) :: q3m2(plev,pcnst)   ! constituent conc(time n: h2o first)
    real(r8), intent(in) :: etamid(plev)       ! vertical coords at midpoints
-   real(r8), intent(inout) :: qfcst(plon,plev,pcnst)  
-   real(r8), intent(in) :: cwava              ! normalization factor (1/g*plon)
-   real(r8), intent(out) :: hw2al(pcnst)  ! -
-   real(r8), intent(out) :: hw2bl(pcnst)  !  | lat contributions to components
-   real(r8), intent(out) :: hw3al(pcnst)  !  | of slt global mass integrals 
-   real(r8), intent(out) :: hw3bl(pcnst)  ! -
-   real(r8), intent(out) :: hwxal(pcnst,4)
-   real(r8), intent(out) :: hwxbl(pcnst,4)
+   real(r8), intent(inout) :: qfcst(plon,plev,pcnst)
 
    real(r8), intent(in) :: ztodt                       ! twice time step unless nstep=0
    integer lat               ! latitude index for S->N storage
@@ -87,6 +77,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
    real(r8) pintm1f(plevp) ! pressure at model interfaces (n  )
    real(r8) pdelm1f(plev)  ! pdel(k)   = pint  (k+1)-pint  (k)
    real(r8) pdelb(plon,plev)  ! pressure diff bet intfcs (press defined using the "B" part 
+   real(r8) pdela(plon,plev)
    real(r8) weight,fac
    real(r8) psfcst
    real(r8) tfcst(plev)
@@ -97,10 +88,6 @@ subroutine forecast(lat, psm1, psm2,ps, &
    real(r8) udwdp(plev)
    real(r8) qdwdp(plev,pcnst)
    real(r8) wfldint(plevp)     ! midpoint values of eta (a+b)
-!!$   real(r8) tdiff(plev)
-!!$   real(r8) udiff(plev)
-!!$   real(r8) vdiff(plev)
-!!$   real(r8) qdiff(plev,pcnst)
    real(r8) tfmod(plev)
    real(r8) ufmod(plev)
    real(r8) vfmod(plev)
@@ -125,7 +112,6 @@ subroutine forecast(lat, psm1, psm2,ps, &
    real(r8) hwava (pcnst)     ! temporary variable for mass fixer
    real(r8) ptb               ! potential temperature before advection
    real(r8) ptf               ! potential temperature after advection
-   real(r8) hcwavaw            ! 0.5*cwava*w(lat)
    real(r8) dotproda           ! dot product
    real(r8) dotprodb           ! dot product
    integer i,k,m           ! longitude, level, constituent indices
@@ -157,18 +143,19 @@ subroutine forecast(lat, psm1, psm2,ps, &
 !
 !  diagnostic variables for maintaining n-1 values of observed T and q
 !
-   real(r8) tobsm1(plev)     
+   real(r8) tobsm1(plev)
    real(r8) qobsm1(plev)
    save qobsm1, tobsm1
 
    real(r8) q3forecast,t3forecast
    real(r8) forecastdiff,bestforecastdiff
+   real(r8) qmassf
    integer  j,icldliq,icldice
 
    l_conv  = .true.       ! .f. doesn't use divT and divq
    l_divtr = .false.      ! .t. includes some div of condensate
 !     
-   if(use_iop) then         
+   if(use_iop) then
       l_uvadvect = .false.
       l_uvphys   = .false.
    else
@@ -176,7 +163,6 @@ subroutine forecast(lat, psm1, psm2,ps, &
       l_uvphys   = .false.
    end if
 
-	
 !
    call plevs0(nlon    ,plon   ,plev    ,psm1   ,pintm1  ,pmidm1 ,pdelm1)
    call plevs0(nlon    ,plon   ,plev    ,psm2   ,pintm2  ,pmidm2 ,pdelm2)
@@ -201,18 +187,15 @@ subroutine forecast(lat, psm1, psm2,ps, &
       i=1
       do k=1,plev
          tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d(k)
-!            qfcst(1,k,m) = qminus(1,k,m) +  divq3d(k,m)*ztodt
       end do
       do m=1,pcnst
          do k=1,plev
             qfcst(1,k,m) = qminus(1,k,m) +  divq3d(k,m)*ztodt
-!            write(iulog,'(a,i,a,i,a,i,a,z16,ES30.16)'),'qfcst(',i,',',k,',',m,')=',qfcst(i,k,m),qfcst(i,k,m),'qminus(',i,',',k,',',m,')=',&
-!                 qminus(i,k,m),qminus(i,k,m),'divq3d(',i,',',k,',',m,')=',divq3d(k,m),divq3d(k,m)
          end do
       enddo
-     
+
       go to 1000
-      
+
    end if
 
 !
@@ -222,7 +205,6 @@ subroutine forecast(lat, psm1, psm2,ps, &
 !  appropriate 2d and/or 3d forcing is available so there is no need to
 !  place software checks here to guard agains missing data.
 !
-
 
       if((.not. (have_divt .and. have_divq)) .and. use_iop) then
 !
@@ -274,45 +256,61 @@ subroutine forecast(lat, psm1, psm2,ps, &
 !
 !  Eularian forecast for u,v and t
 !
-   do k=2,plev-1
-      fac = ztodt/(2.0_r8*pdelm1(k))
-      tfcst(k) = t3m2(k) &
+
+   if (dycore_is('EUL')) then 
+
+     do k=2,plev-1
+       fac = ztodt/(2.0_r8*pdelm1(k))
+       tfcst(k) = t3m2(k) &
            - fac*(wfldint(k+1)*(t3m1(k+1) - t3m1(k)) &
            + wfldint(k)*(t3m1(k) - t3m1(k-1)))
-      vfcst(k) = v3m2(k) &
+       vfcst(k) = v3m2(k) &
            - fac*(wfldint(k+1)*(v3m1(k+1) - v3m1(k)) &
            + wfldint(k)*(v3m1(k) - v3m1(k-1)))
-      ufcst(k) = u3m2(k) &
+       ufcst(k) = u3m2(k) &
            - fac*(wfldint(k+1)*(u3m1(k+1) - u3m1(k)) &
            + wfldint(k)*(u3m1(k) - u3m1(k-1)))
-   end do
+
+     end do
+
 !     
 !     - top and bottom levels next -
 !     
-   k = 1
-   fac = ztodt/(2.0_r8*pdelm1(k))
-   tfcst(k) = t3m2(k) - fac*(wfldint(k+1)*(t3m1(k+1) - t3m1(k)))
-   vfcst(k) = v3m2(k) - fac*(wfldint(k+1)*(v3m1(k+1) - v3m1(k)))
-   ufcst(k) = u3m2(k) - fac*(wfldint(k+1)*(u3m1(k+1) - u3m1(k)))
-!     
-   k = plev
-   fac = ztodt/(2.0_r8*pdelm1(plev))
-   tfcst(k) = t3m2(k) - fac*(wfldint(k)*(t3m1(k) - t3m1(k-1)))
-   vfcst(k) = v3m2(k) - fac*(wfldint(k)*(v3m1(k) - v3m1(k-1)))
-   ufcst(k) = u3m2(k) - fac*(wfldint(k)*(u3m1(k) - u3m1(k-1)))
+
+     k = 1
+     fac = ztodt/(2.0_r8*pdelm1(k))
+     tfcst(k) = t3m2(k) - fac*(wfldint(k+1)*(t3m1(k+1) - t3m1(k)))
+     vfcst(k) = v3m2(k) - fac*(wfldint(k+1)*(v3m1(k+1) - v3m1(k)))
+     ufcst(k) = u3m2(k) - fac*(wfldint(k+1)*(u3m1(k+1) - u3m1(k)))
+
+     k = plev
+     fac = ztodt/(2.0_r8*pdelm1(plev))
+     tfcst(k) = t3m2(k) - fac*(wfldint(k)*(t3m1(k) - t3m1(k-1)))
+     vfcst(k) = v3m2(k) - fac*(wfldint(k)*(v3m1(k) - v3m1(k-1)))
+     ufcst(k) = u3m2(k) - fac*(wfldint(k)*(u3m1(k) - u3m1(k-1)))
+
 !
 !  SLT is used for constituents only
 !  so that a centered approximation is used for T, U and V, and Q
 !  check to see if we should be using a forward approximation for 
 !  constituents
-   do k=1,plev
-      tdwdp(k) = t3m1(k)*(wfldint(k+1)-wfldint(k))/pdelm1(k)
-      udwdp(k) = u3m1(k)*(wfldint(k+1)-wfldint(k))/pdelm1(k)
-      vdwdp(k) = v3m1(k)*(wfldint(k+1)-wfldint(k))/pdelm1(k)
-      do m=1,pcnst
-        qdwdp(k,m) = qminus(1,k,m)*(wfldint(k+1)-wfldint(k))/pdelm2(k)
-      end do
-   end do
+     do k=1,plev
+       tdwdp(k) = t3m1(k)*(wfldint(k+1)-wfldint(k))/pdelm1(k)
+       udwdp(k) = u3m1(k)*(wfldint(k+1)-wfldint(k))/pdelm1(k)
+       vdwdp(k) = v3m1(k)*(wfldint(k+1)-wfldint(k))/pdelm1(k)
+       do m=1,pcnst
+         qdwdp(k,m) = qminus(1,k,m)*(wfldint(k+1)-wfldint(k))/pdelm2(k)
+       end do
+     end do
+   
+   else if (dycore_is('SE')) then
+   
+     tfcst(:) = t3m2(:)
+     qfcst(1,:,:) = q3m2(:,:)
+     ufcst(:) = u3m2(:)
+     vfcst(:) = v3m2(:)
+   
+   endif
 
 if (.not.use_iop) then
 !
@@ -349,7 +347,7 @@ if (.not.use_iop) then
       ptf = 0.0_r8
       do k=1,plev
          ptb = ptb + (t3m1(k)*((100000.0_r8/pmidm1(k))**.28571_r8)) &
-            *(pdelm1(k)/(psm1(1) - pintm1(1)))
+            *(pdelm1(k)/(psm1 - pintm1(1)))
          ptf = ptf + (tfcst(k)*((100000.0_r8/pmidm1f(k))**.28571_r8)) &
             *(pdelm1f(k)/(psfcst - pintm1f(1)))
       end do
@@ -369,7 +367,7 @@ if (.not.use_iop) then
          (tfcst(k)-t3m1(k)), &
          q3m1(k,1), qfcst(1,k,1), &
          (qfcst(1,k,1)-q3m1(k,1)), &
-         864.0_r8*wfld(k), 0.01_r8*pdelm1(k), k=1,plev) 
+         864.0_r8*wfld(k), 0.01_r8*pdelm1(k), k=1,plev)
 987   format (1x, 0p, 3f11.4, 3p, 3f11.4, 0p, 2f11.4)
 !
 !        print water vapor correction required for conservation
@@ -379,8 +377,6 @@ if (.not.use_iop) then
 1105  format (' qmassb, qmassf; ptb, ptf =>',1p,2e12.3,'; ',3x,2e14.5)
 !
    endif !=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
-
-
 
 !
 !
@@ -429,7 +425,7 @@ if (.not.use_iop) then
          (tfcst(k)-t3m1(k)), &
          q3m1(k,1), qfcst(1,k,1), &
          (qfcst(1,k,1)-q3m1(k,1)), &
-         864.0_r8*wfld(k), 0.01_r8*pdelm1(k), k=1,plev) 
+         864.0_r8*wfld(k), 0.01_r8*pdelm1(k), k=1,plev)
 !
       write(iulog,1105) qmassb(1), qmassf, ptb, ptf
 !
@@ -465,13 +461,15 @@ end if
 !  Note: if including relaxation as part of the forward forecast step
 !        add it here to t2 and dqv
 !
+
    do k=1,plev
-      tfcst(k) = tfcst(k) + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
+     tfcst(k) = tfcst(k) + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
          + ztodt*(t2(k) + divt(k))
-      do m=1,pcnst
-        qfcst(1,k,m) = qfcst(1,k,m) + ztodt*divq(k,m)
-      end do
+     do m=1,pcnst
+       qfcst(1,k,m) = qfcst(1,k,m) + ztodt*divq(k,m)
+     end do
    enddo
+
 !     
 !---ESTIMATE VERTICAL ADVECTION TENDENCY FOR T,q (DIAGNOSTIC)------
 !   using eulerian form for evaluating advection (can actually
@@ -497,7 +495,7 @@ end if
 !
    k = 1
    fac = 1.0_r8/(2.0_r8*pdelm1(k))
-   tvadv(k) = - fac*(wfldint(k+1)*(t3m1(k+1) - t3m1(k))) & 
+   tvadv(k) = - fac*(wfldint(k+1)*(t3m1(k+1) - t3m1(k))) &
       + wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k))
    do m=1,pcnst
       qvadv(k,m) = - fac*(wfldint(k+1)*(q3m1(k+1,m) - q3m1(k,m)))
@@ -557,7 +555,6 @@ end if
    u3(:)=ufcst(:)
    v3(:)=vfcst(:)
 
-!
    if (scm_relaxation) then
 !
 !    THIS IS WHERE WE RELAX THE SOLUTION IF REQUESTED
@@ -577,33 +574,29 @@ end if
          relaxq(k) = 0.0_r8
       end do
 !
-!      if(scm_relaxation) then
-!            dist = 300000.      ! distance across the ARM domain
-         do k=1,plev
-!               denom = 2.0*sqrt(u3(k)**2 + v3(k)**2)
-!               rtau(k)   = dist/denom
-!
-!     set relaxation time to constant here if desired
-!
-           if (pmidm1(k) .le. scm_relaxation_low*100._r8 .and. &
-	     pmidm1(k) .ge. scm_relaxation_high*100._r8) then 
+      do k=1,plev
+           
+        if (pmidm1(k) .le. scm_relaxation_low*100._r8 .and. &
+          pmidm1(k) .ge. scm_relaxation_high*100._r8) then
 
-             rtau(k)   = 10800._r8          ! 3-hr adj. time scale
-             rtau(k)   = max(ztodt,rtau(k))
-             relaxt(k) = -(t3(k)   - tobs(k))/rtau(k)
-             relaxq(k) = -(q3(k,1) - qobs(k))/rtau(k)
+          rtau(k)   = 10800._r8          ! 3-hr adj. time scale
+          rtau(k)   = max(ztodt,rtau(k))
+          relaxt(k) = -(t3(k)   - tobs(k))/rtau(k)
+          relaxq(k) = -(q3(k,1) - qobs(k))/rtau(k)
 !
-             t3(k)     = t3(k)   + relaxt(k)*ztodt
-             q3(k,1)   = q3(k,1) + relaxq(k)*ztodt
-	   
-	   endif
-         end do
+          t3(k)     = t3(k)   + relaxt(k)*ztodt
+          q3(k,1)   = q3(k,1) + relaxq(k)*ztodt
+        
+        endif
+
+      end do
 !
          call outfld('TRELAX',relaxt,plon,lat )
          call outfld('QRELAX',relaxq,plon,lat )
          call outfld('TAURELAX',rtau,plon,lat )
 !      end if
    end if
+
 !     
 !  evaluate the difference in state information from observed
 !
@@ -623,7 +616,7 @@ end if
 !===============================================================
 !
 !  outfld calls moved from linemsbc
-!
+
    call outfld('TOBS',tobs,plon,lat)
    call outfld('QOBS',qobs,plon,lat)
    call outfld('TDIFF',tdiff,plon,lat)
@@ -645,59 +638,14 @@ end if
 !
 ! Diagnose pressure arrays needed by DIFCOR
 !
-   call pdelb0 (psm1, pdelb, nlon)
-!
-! Accumulate mass integrals
-!
-   sum = 0._r8
-   do i=1,nlon
-      sum = sum + psm1(1)
-   end do
-   tmass(lat) = w(lat)*rga*sum/nlon
-
-!
-! Add spegrd calculations to fix water mass
-!
-!
-! Calculate SLT moisture and constituent integrals
-!
-   hcwavaw = 0.5_r8*cwava*w(lat)
-   do m=1,pcnst
-      hw2al(m) = 0._r8
-      hw2bl(m) = 0._r8
-      hw3al(m) = 0._r8
-      hw3bl(m) = 0._r8
-      hwxal(m,1) = 0._r8
-      hwxal(m,2) = 0._r8
-      hwxal(m,3) = 0._r8
-      hwxal(m,4) = 0._r8
-      hwxbl(m,1) = 0._r8
-      hwxbl(m,2) = 0._r8
-      hwxbl(m,3) = 0._r8
-      hwxbl(m,4) = 0._r8
-      do k=1,plev
-         dotproda = 0._r8
-         dotprodb = 0._r8
-         do i=1,nlon
-            dotproda = dotproda + qfcst(i,k,m)*pdela(i,k)
-            dotprodb = dotprodb + qfcst(i,k,m)*pdelb(i,k)
-         end do
-         hw2al(m) = hw2al(m) + hcwavaw*dotproda
-         hw2bl(m) = hw2bl(m) + hcwavaw*dotprodb
-      end do
-   end do
-
-   call qmassd (cwava, etamid, w(lat), qminus, qfcst, &
-                pdela, hw3al, nlon)
-
-   call qmassd (cwava, etamid, w(lat), qminus, qfcst, &
-                pdelb, hw3bl, nlon)
-
-   if (pcnst.gt.1) then
-      call xqmass (cwava, etamid, w(lat), qminus, qfcst, &
-                   qminus, qfcst, pdela, pdelb, hwxal, &
-                   hwxbl, nlon)
-   end if
-
-   return
 end subroutine forecast
+
+
+!
+!-----------------------------------------------------------------------
+!
+
+!
+!-----------------------------------------------------------------------
+
+

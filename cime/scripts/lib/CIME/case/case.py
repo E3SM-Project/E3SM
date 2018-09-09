@@ -13,7 +13,7 @@ from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model
 from CIME.utils                     import get_project, get_charge_account, check_name
 from CIME.utils                     import get_current_commit, safe_copy
-from CIME.locked_files         import LOCKED_DIR, lock_file
+from CIME.locked_files              import LOCKED_DIR, lock_file
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
 from CIME.XML.files                 import Files
@@ -71,7 +71,7 @@ class Case(object):
     from CIME.case.case_test  import case_test
     from CIME.case.case_submit import check_DA_settings, check_case, submit
     from CIME.case.case_st_archive import case_st_archive, restore_from_archive, \
-        archive_last_restarts, test_st_archive
+        archive_last_restarts, test_st_archive, test_env_archive
     from CIME.case.case_run import case_run
     from CIME.case.case_cmpgen_namelists import case_cmpgen_namelists
     from CIME.case.check_lockedfiles import check_lockedfile, check_lockedfiles, check_pelayouts_require_rebuild
@@ -84,7 +84,6 @@ class Case(object):
             case_root = os.getcwd()
         self._caseroot = case_root
         logger.debug("Initializing Case.")
-        self._env_files_that_need_rewrite = set()
         self._read_only_mode = True
         self._force_read_only = read_only
         self._primary_component = None
@@ -124,6 +123,7 @@ class Case(object):
         self.spare_nodes = None
         self.tasks_per_numa = None
         self.cores_per_task = None
+        self.srun_binding = None
 
         # check if case has been configured and if so initialize derived
         if self.get_value("CASEROOT") is not None:
@@ -179,6 +179,8 @@ class Case(object):
 
         os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
 
+        self.srun_binding = smt_factor*max_mpitasks_per_node / self.tasks_per_node
+
     # Define __enter__ and __exit__ so that we can use this as a context manager
     # and force a flush on exit.
     def __enter__(self):
@@ -191,16 +193,7 @@ class Case(object):
         self._read_only_mode = True
         return False
 
-    def schedule_rewrite(self, env_file):
-        assert not self._read_only_mode, \
-            "case.py scripts error: attempted to modify an env file while in " \
-            "read-only mode"
-        self._env_files_that_need_rewrite.add(env_file)
-
     def read_xml(self):
-        if self._env_files_that_need_rewrite:
-            expect(False, "Object(s) {} seem to have newer data than the corresponding case file".format(" ".join([env_file.filename for env_file in self._env_files_that_need_rewrite])))
-
         self._env_entryid_files = []
         self._env_entryid_files.append(EnvCase(self._caseroot, components=None))
         components = self._env_entryid_files[0].get_values("COMP_CLASSES")
@@ -251,12 +244,8 @@ class Case(object):
         if not os.path.isdir(self._caseroot):
             # do not flush if caseroot wasnt created
             return
-        if flushall:
-            for env_file in self._files:
-                self.schedule_rewrite(env_file)
-        for env_file in self._env_files_that_need_rewrite:
-            env_file.write()
-        self._env_files_that_need_rewrite = set()
+        for env_file in self._files:
+            env_file.write(force_write=flushall)
 
     def get_values(self, item, attribute=None, resolved=True, subgroup=None):
         for env_file in self._files:
@@ -387,7 +376,6 @@ class Case(object):
             result = env_file.set_value(item, value, subgroup, ignore_type)
             if (result is not None):
                 logger.debug("Will rewrite file {} {}".format(env_file.filename, item))
-                self._env_files_that_need_rewrite.add(env_file)
                 return result
 
         if len(self._files) == 1:
@@ -406,7 +394,6 @@ class Case(object):
             result = env_file.set_valid_values(item, valid_values)
             if (result is not None):
                 logger.debug("Will rewrite file {} {}".format(env_file.filename, item))
-                self._env_files_that_need_rewrite.add(env_file)
                 return result
 
     def set_lookup_value(self, item, value):
@@ -499,7 +486,7 @@ class Case(object):
             # this is a "J" compset
             primary_component = "allactive"
         elif progcomps["ATM"]:
-            if "DOCN%SOM" in self._compsetname:
+            if "DOCN%SOM" in self._compsetname and progcomps["LND"]:
                 # This is an "E" compset
                 primary_component = "allactive"
             else:
@@ -538,7 +525,6 @@ class Case(object):
                                             {"component":component}, resolved=False)
 
         self.set_lookup_value("COMPSETS_SPEC_FILE" ,compset_spec_file)
-
         if pesfile is None:
             self._pesfile = files.get_value("PES_SPEC_FILE", {"component":component})
             pesfile_unresolved = files.get_value("PES_SPEC_FILE", {"component":component}, resolved=False)
@@ -772,7 +758,7 @@ class Case(object):
                   multi_driver=False, ninst=1, test=False,
                   walltime=None, queue=None, output_root=None,
                   run_unsupported=False, answer=None,
-                  input_dir=None, driver=None):
+                  input_dir=None, driver=None, non_local=False):
 
         expect(check_name(compset_name, additional_chars='.'), "Invalid compset name {}".format(compset_name))
 
@@ -864,7 +850,6 @@ class Case(object):
         # Create env_mach_specific settings from machine info.
         env_mach_specific_obj = self.get_env("mach_specific")
         env_mach_specific_obj.populate(machobj)
-        self.schedule_rewrite(env_mach_specific_obj)
 
         self._setup_mach_pes(pecount, multi_driver, ninst, machine_name, mpilib)
 
@@ -881,7 +866,6 @@ class Case(object):
         logger.debug("archive defaults located in {}".format(infile))
         archive = Archive(infile=infile, files=files)
         archive.setup(env_archive, self._components, files=files)
-        self.schedule_rewrite(env_archive)
 
         self.set_value("COMPSET",self._compsetname)
 
@@ -915,6 +899,10 @@ class Case(object):
         if output_root is None:
             output_root = self.get_value("CIME_OUTPUT_ROOT")
         self.set_value("CIME_OUTPUT_ROOT", output_root)
+        if non_local:
+            self.set_value("EXEROOT", os.path.join(output_root, self.get_value("CASE"), "bld"))
+            self.set_value("RUNDIR", os.path.join(output_root, self.get_value("CASE"), "run"))
+            self.set_value("NONLOCAL", True)
 
         # Overwriting an existing exeroot or rundir can cause problems
         exeroot = self.get_value("EXEROOT")
@@ -968,7 +956,6 @@ class Case(object):
             self.set_value("USER_REQUESTED_QUEUE", queue, subgroup=self.get_primary_job())
 
         env_batch.set_job_defaults(bjobs, self)
-        self.schedule_rewrite(env_batch)
 
         # Make sure that parallel IO is not specified if total_tasks==1
         if self.total_tasks == 1:
@@ -1060,6 +1047,16 @@ class Case(object):
                 safe_copy(os.path.join(machines_dir, "syslog.{}".format(machine)), os.path.join(casetools, "mach_syslog"))
             else:
                 safe_copy(os.path.join(machines_dir, "syslog.noop"), os.path.join(casetools, "mach_syslog"))
+
+        # add archive_metadata to the CASEROOT but only for CESM
+        if get_model() == "cesm":
+            try:
+                exefile = os.path.join(toolsdir, "archive_metadata")
+                destfile = os.path.join(self._caseroot,os.path.basename(exefile))
+                os.symlink(exefile, destfile)
+            except Exception as e:
+                logger.warning("FAILED to set up exefiles: {}".format(str(e)))
+
 
     def _create_caseroot_sourcemods(self):
         components = self.get_compset_components()
@@ -1197,14 +1194,15 @@ directory, NOT in this subdirectory."""
         else:
             return comp_user_mods
 
-    def submit_jobs(self, no_batch=False, job=None, prereq=None, skip_pnl=False,
-                    mail_user=None, mail_type=None, batch_args=None,
+    def submit_jobs(self, no_batch=False, job=None, skip_pnl=None, prereq=None, allow_fail=False,
+                    resubmit_immediate=False, mail_user=None, mail_type=None, batch_args=None,
                     dry_run=False):
         env_batch = self.get_env('batch')
-        result =  env_batch.submit_jobs(self, no_batch=no_batch, job=job, user_prereq=prereq,
-                                     skip_pnl=skip_pnl, mail_user=mail_user,
-                                     mail_type=mail_type, batch_args=batch_args,
-                                     dry_run=dry_run)
+        result =  env_batch.submit_jobs(self, no_batch=no_batch, skip_pnl=skip_pnl,
+                                        job=job, user_prereq=prereq, allow_fail=allow_fail,
+                                        resubmit_immediate=resubmit_immediate,
+                                        mail_user=mail_user, mail_type=mail_type,
+                                        batch_args=batch_args, dry_run=dry_run)
         return result
 
     def get_job_info(self):
@@ -1406,11 +1404,8 @@ directory, NOT in this subdirectory."""
         elif old_object in self._env_generic_files:
             self._env_generic_files.remove(old_object)
             self._env_generic_files.append(new_object)
-        if old_object in self._env_files_that_need_rewrite:
-            self._env_files_that_need_rewrite.remove(old_object)
         self._files.remove(old_object)
         self._files.append(new_object)
-        self.schedule_rewrite(new_object)
 
     def get_latest_cpl_log(self, coupler_log_path=None):
         """
@@ -1434,7 +1429,7 @@ directory, NOT in this subdirectory."""
                multi_driver=False, ninst=1, test=False,
                walltime=None, queue=None, output_root=None,
                run_unsupported=False, answer=None,
-               input_dir=None, driver=None):
+               input_dir=None, driver=None, non_local=False):
         try:
             # Set values for env_case.xml
             self.set_lookup_value("CASE", os.path.basename(casename))
@@ -1450,7 +1445,7 @@ directory, NOT in this subdirectory."""
                            walltime=walltime, queue=queue,
                            output_root=output_root,
                            run_unsupported=run_unsupported, answer=answer,
-                           input_dir=input_dir, driver=driver)
+                           input_dir=input_dir, driver=driver, non_local=non_local)
 
             self.create_caseroot()
 

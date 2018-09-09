@@ -3,7 +3,7 @@ Base class for CIME system tests
 """
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_run import EnvRun
-from CIME.utils import append_testlog, get_model, safe_copy
+from CIME.utils import append_testlog, get_model, safe_copy, get_timestamp
 from CIME.test_status import *
 from CIME.hist_utils import *
 from CIME.provenance import save_test_time
@@ -119,8 +119,10 @@ class SystemTestsCommon(object):
         """
         Perform an individual build
         """
+        model = self._case.get_value('MODEL')
         build.case_build(self._caseroot, case=self._case,
-                         sharedlib_only=sharedlib_only, model_only=model_only)
+                         sharedlib_only=sharedlib_only, model_only=model_only,
+                         save_build_provenance=not model=='cesm')
 
     def clean_build(self, comps=None):
         if comps is None:
@@ -149,6 +151,9 @@ class SystemTestsCommon(object):
                 self._compare_baseline()
 
             self._check_for_memleak()
+
+            self._st_archive_case_test()
+
 
         except BaseException as e:
             success = False
@@ -206,6 +211,8 @@ class SystemTestsCommon(object):
         stop_option = self._case.get_value("STOP_OPTION")
         run_type    = self._case.get_value("RUN_TYPE")
         rundir      = self._case.get_value("RUNDIR")
+        is_batch    = self._case.get_value("BATCH_SYSTEM") != "none"
+
         # remove any cprnc output leftover from previous runs
         for compout in glob.iglob(os.path.join(rundir,"*.cprnc.out")):
             os.remove(compout)
@@ -221,7 +228,7 @@ class SystemTestsCommon(object):
 
         logger.info(infostr)
 
-        self._case.case_run(skip_pnl=self._skip_pnl)
+        self._case.case_run(skip_pnl=self._skip_pnl, submit_resubmits=is_batch)
 
         if not self._coupler_log_indicates_run_complete():
             expect(False, "Coupler did not indicate run passed")
@@ -230,7 +237,7 @@ class SystemTestsCommon(object):
             self._component_compare_copy(suffix)
 
         if st_archive:
-            self._case.case_st_archive()
+            self._case.case_st_archive(resubmit=True)
 
     def _coupler_log_indicates_run_complete(self):
         newestcpllogfiles = self._get_latest_cpl_logs()
@@ -274,6 +281,15 @@ class SystemTestsCommon(object):
         tests
         """
         return compare_test(self._case, suffix1, suffix2)
+
+    def _st_archive_case_test(self):
+        result = self._case.test_env_archive()
+        with self._test_status:
+            if result:
+                self._test_status.set_status(STARCHIVE_PHASE, TEST_PASS_STATUS)
+            else:
+                self._test_status.set_status(STARCHIVE_PHASE, TEST_FAIL_STATUS)
+
 
     def _get_mem_usage(self, cpllog):
         """
@@ -585,6 +601,11 @@ class TESTBUILDFAIL(TESTRUNPASS):
             TESTRUNPASS.build_phase(self, sharedlib_only, model_only)
         else:
             if (not sharedlib_only):
+                blddir = self._case.get_value("EXEROOT")
+                bldlog = os.path.join(blddir, "{}.bldlog.{}".format(get_model(), get_timestamp("%y%m%d-%H%M%S")))
+                with open(bldlog, "w") as fd:
+                    fd.write("BUILD FAIL: Intentional fail for testing infrastructure")
+
                 expect(False, "BUILD FAIL: Intentional fail for testing infrastructure")
 
 class TESTBUILDFAILEXC(FakeTest):

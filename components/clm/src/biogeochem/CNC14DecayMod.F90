@@ -116,7 +116,7 @@ contains
             do j = 1, nlevdecomp
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  if (spinup_term .eq. 1 .and. yr .ge. 40 .and. nu_com .eq. 'RD') then
+                  if (spinup_term > 1._r8 .and. yr .ge. 40) then
                       decomp_cpools_vr(c,j,l) = decomp_cpools_vr(c,j,l) * (1._r8 - decay_const * &
                           (spinup_term / cnstate_vars%scalaravg_col(c,j)) * dt)
                   else

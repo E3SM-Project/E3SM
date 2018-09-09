@@ -1,135 +1,147 @@
 #!/usr/bin/env python
 
+"""
+Script to create a new CIME Case Control System (CSS) experimental case.
+"""
+
 from Tools.standard_script_setup import *
-from CIME.utils         import expect, get_model
+from CIME.utils         import expect, get_model, get_cime_config
 from CIME.case          import Case
+from argparse           import RawTextHelpFormatter
 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
 def parse_command_line(args, cimeroot, description):
 ###############################################################################
-    help_str = \
-"""
-{0} --case [CASE] --compset [COMPSET] --res [GRID] [--machine ...] [--compiler ...]
-OR
-{0} --help
-""".format(os.path.basename(args[0]))
-    model = get_model()
-
-    parser = argparse.ArgumentParser(usage=help_str,
-                                     description=description,
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
+    parser = argparse.ArgumentParser(description=description,
+                                     formatter_class=RawTextHelpFormatter)
 
     CIME.utils.setup_standard_logging_options(parser)
+    try:
+        cime_config = get_cime_config()
+    except:
+        cime_config = None
 
-    parser.add_argument("--case", "-case", required=True,
+    parser.add_argument("--case", "-case", required=True, metavar="CASENAME",
                         help="(required) Specify the case name. "
-                        "If not a full pathname, then the case is created "
-                        "under then current working directory ")
+                        "\nIf this is simply a name (not a path), the case directory is created in the current working directory."
+                        "\nThis can also be a relative or absolute path specifying where the case should be created;"
+                        "\nwith this usage, the name of the case will be the last component of the path.")
 
     parser.add_argument("--compset", "-compset", required=True,
                         help="(required) Specify a compset. "
-                        "To see list of current compsets, use the utility query_config in this directory")
+                        "\nTo see list of current compsets, use the utility ./query_config --compsets in this directory.\n")
 
-    parser.add_argument("--res", "-res", required=True,
+    parser.add_argument("--res", "-res", required=True, metavar="GRID",
                         help="(required) Specify a model grid resolution. "
-                        "To see list of current compsets, use the utility query_config in this directory")
+                        "\nTo see list of current model resolutions, use the utility "
+                        "\n./query_config --grids in this directory.")
 
     parser.add_argument("--machine", "-mach",
-                        help="Specify a machine. default: match NODENAME_REGEX in config_machines.xml "
-                        "To see list of current  machines, use the utility query_config in this directory"
-                        )
+                        help="Specify a machine. "
+                        "The default value is the match to NODENAME_REGEX in config_machines.xml. To see "
+                        "\nthe list of current machines, invoke ./query_config --machines.")
 
     parser.add_argument("--compiler", "-compiler",
                         help="Specify a compiler. "
-                        "To see list of supported compilers for each machine, use the utility query_config in this directory")
+                        "\nTo see list of supported compilers for each machine, use the utility "
+                        "\n./query_config --machines in this directory. "
+                        "\nThe default value will be the first one listed.")
 
     parser.add_argument("--multi-driver",action="store_true",
-                        help="Specify that ninst should modify number of driver/coupler instances "
-                        "default is to have one driver/coupler supporting multiple component instances.")
+                        help="Specify that --ninst should modify the number of driver/coupler instances. "
+                        "\nThe default is to have one driver/coupler supporting multiple component instances.")
 
     parser.add_argument("--ninst",default=1,
                         help="Specify number of model ensemble instances. "
-                        "Default is multiple components and one driver/coupler.  Use --multi-driver to "
-                        "run multiple driver/couplers in the ensemble.")
+                        "\nThe default is multiple components and one driver/coupler. "
+                        "\nUse --multi-driver to run multiple driver/couplers in the ensemble.")
 
     parser.add_argument("--mpilib", "-mpilib",
-                        help="Specify the mpilib. "
-                        "To see list of supported mpilibs for each machine, use the utility query_config in this directory. "
-                        "The default is the first listing in MPILIBS in config_machines.xml")
+                        help="Specify the MPI library. "
+                        "To see list of supported mpilibs for each machine, invoke ./query_config --machines."
+                        "\nThe default is the first listing in MPILIBS in config_machines.xml.\n")
 
     parser.add_argument("--project", "-project",
-                        help="Specify a project id")
+                        help="Specify a project id as used in batch system accounting.")
 
     parser.add_argument("--pecount", "-pecount",  default="M",
-                        help="Specify a target size description for the number of cores"
-                         "Allowed options are   ('S','M','L','X1','X2','[0-9]x[0-9]','[0-9]')")
+                        help="Specify a target size description for the number of cores. "
+                        "\nThis is used to query the appropriate config_pes.xml file and find the "
+                        "\noptimal PE-layout for your case - if it exists there. "
+                        "\nAllowed options are  ('S','M','L','X1','X2','[0-9]x[0-9]','[0-9]').\n")
 
-    parser.add_argument("--user-mods-dir", "-user_mods_dir",
-                        help="Path to directory with user_nl_* files and xmlchange "
-                        "commands to utilize. This can also include SourceMods. "
-                        "This can be an absolute path, a path relative to the "
-                        "current directory, or a path relative to "
-                        "cime_config/usermods_dirs/ under the primary component "
-                        "for the given compset (for example, in an F compset "
-                        "whose primary component is cam, '--user-mods-dir foo' "
-                        "could be found in components/cam/cime_config/usermods_dirs/foo).")
+    parser.add_argument("--user-mods-dir",
+                        help="Full pathname to a directory containing any combination of user_nl_* files "
+                        "\nand a shell_commands script (typically containing xmlchange commands). "
+                        "\nThe directory can also contain an SourceMods/ directory with the same structure "
+                        "\nas would be found in a case directory.")
 
     parser.add_argument("--pesfile",
-                        help="Full pathname of an optional pes specification "
-                        "file. The file can follow either the config_pes.xml or "
-                        "the env_mach_pes.xml format.")
+                        help="Full pathname of an optional pes specification file. "
+                        "\nThe file can follow either the config_pes.xml or the env_mach_pes.xml format.")
 
     parser.add_argument("--user-grid", action="store_true",
-                        help="If set, then the -grid argument is treated as a user specified grid."
-                        "As such, the additional argument --gridfile must also be specified"
-                        "and all of the grid settings in the --res argument name (which must be a grid longname"
-                        "have been defined in the grid file pointed to by --gridfile")
+                        help="If set, then the --res argument is treated as a user specified grid, "
+                        "\nthe additional argument --gridfile must also be specified "
+                        "\nand all of the grid settings in the --res argument name (which must be a grid longname "
+                        "\nmust defined in the grid file pointed to by --gridfile.")
 
     parser.add_argument("--gridfile",
-                        help="Full pathname of config grid file to use"
-                        "This should be a copy of config/config_grids.xml"
-                        "with the new user grid changes added to it"
-                        "This argument is required if --user-grid is True")
+                        help="Full pathname of config grid file to use. "
+                        "\nThis should be a copy of config/config_grids.xml with the new user grid changes added to it. "
+                        "\nThis argument is required if --user-grid is an argument.")
 
-    parser.add_argument("--srcroot", default=os.path.dirname(cimeroot),
-                        help="Alternative path for source root directory. By default this is set to"
-                        "cimeroot/../")
+    if cime_config and cime_config.has_option('main','SRCROOT'):
+        srcroot_default = cime_config.get('main', 'srcroot')
+    else:
+        srcroot_default = os.path.dirname(cimeroot)
+
+    parser.add_argument("--srcroot", default=srcroot_default,
+                        help="Alternative pathname for source root directory. "
+                        "The default is cimeroot/../")
 
     parser.add_argument("--output-root",
-                        help="Alternative path for the directory where case output is written")
+                        help="Alternative pathname for the directory where case output is written.")
 
-    parser.add_argument("--script-root", dest="script_root", default=None,
-                        help="Alternative path for the directory where the cime scripts are written")
+    # The following is a deprecated option
+    parser.add_argument("--script-root", dest="script_root", default=None, help=argparse.SUPPRESS)
+    if cime_config:
+        model = get_model()
+    else:
+        model = None
 
     if model == "cesm":
         parser.add_argument("--run-unsupported", action="store_true",
-                            help="Force the creation of a case not tested or supported by CESM developers")
-
-
+                            help="Force the creation of a case that is not tested or supported by CESM developers.")
     # hidden argument indicating called from create_test
-    parser.add_argument("--test", "-test", action="store_true",
-                        help="Used to indicate that create_newcase was called from create_test"
-                        "- do not use otherwise")
+    # Indicates that create_newcase was called from create_test - do not use otherwise.
+    parser.add_argument("--test", "-test", action="store_true", help=argparse.SUPPRESS)
 
     parser.add_argument("--walltime", default=os.getenv("CIME_GLOBAL_WALLTIME"),
-                        help="Set the wallclock limit for this case. "
-                        "Can use env var CIME_GLOBAL_WALLTIME to set this.")
+                        help="Set the wallclock limit for this case in the format (the usual format is HH:MM:SS). "
+                        "\nYou may use env var CIME_GLOBAL_WALLTIME to set this. "
+                        "\nIf CIME_GLOBAL_WALLTIME is not defined in the environment, then the walltime"
+                        "\nwill be the maximum allowed time defined for the queue in config_batch.xml.")
 
     parser.add_argument("-q", "--queue", default=None,
-                        help="Force batch system to use a certain queue")
+                        help="Force batch system to use the specified queue. ")
 
     parser.add_argument("--handle-preexisting-dirs", dest="answer", choices=("a", "r", "u"), default=None,
-                        help="Pre-answer what to do pre-existing bld/exe dirs. Valid answers are (a)bort (r)eplace or (u)se existing."
-                        "This can be useful if you need to run create_newcase non-iteractively.")
+                        help="Do not query how to handle pre-existing bld/exe dirs. "
+                        "\nValid options are (a)bort (r)eplace or (u)se existing. "
+                        "\nThis can be useful if you need to run create_newcase non-iteractively.")
 
     parser.add_argument("-i", "--input-dir",
-                        help="Use a non-default location for input files")
+                        help="Use a non-default location for input files. This will change the xml value of DIN_LOC_ROOT.")
 
-    parser.add_argument("--driver",
-                        help="Select a driver. No selection implies mct driver")
+    # Select a driver. No selection implies mct driver
+    parser.add_argument("--driver", help=argparse.SUPPRESS)
+
+    parser.add_argument("-n", "--non-local", action="store_true",
+                        help="Use when you've requested a machine that you aren't on. "
+                        "Will reduce errors for missing directories etc.")
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
@@ -159,13 +171,15 @@ OR
 
     if args.input_dir is not None:
         args.input_dir = os.path.abspath(args.input_dir)
+    elif cime_config and cime_config.has_option("main","input_dir"):
+        args.input_dir = os.path.abspath(cime_config.get("main","input_dir"))
 
     return args.case, args.compset, args.res, args.machine, args.compiler,\
         args.mpilib, args.project, args.pecount, \
         args.user_mods_dir, args.pesfile, \
         args.user_grid, args.gridfile, args.srcroot, args.test, args.multi_driver, \
         args.ninst, args.walltime, args.queue, args.output_root, args.script_root, \
-        run_unsupported, args.answer, args.input_dir, args.driver
+        run_unsupported, args.answer, args.input_dir, args.driver, args.non_local
 
 ###############################################################################
 def _main_func(description):
@@ -177,7 +191,7 @@ def _main_func(description):
         user_mods_dir, pesfile, \
         user_grid, gridfile, srcroot, test, multi_driver, ninst, walltime, \
         queue, output_root, script_root, run_unsupported, \
-        answer, input_dir, driver = parse_command_line(sys.argv, cimeroot, description)
+        answer, input_dir, driver, non_local = parse_command_line(sys.argv, cimeroot, description)
 
     if script_root is None:
         caseroot = os.path.abspath(casename)
@@ -202,7 +216,7 @@ def _main_func(description):
                     multi_driver=multi_driver, ninst=ninst, test=test,
                     walltime=walltime, queue=queue, output_root=output_root,
                     run_unsupported=run_unsupported, answer=answer,
-                    input_dir=input_dir, driver=driver)
+                    input_dir=input_dir, driver=driver, non_local=non_local)
 
 ###############################################################################
 

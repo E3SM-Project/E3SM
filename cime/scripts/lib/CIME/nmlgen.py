@@ -301,7 +301,7 @@ class NamelistGenerator(object):
 
         Replace any instance of the following substring indicators with the
         appropriate values:
-            %glc = two-digit GLC elevation class from 01 through glc_nec
+            %glc = two-digit GLC elevation class from 00 through glc_nec
 
         The difference between this function and `_sub_paths` is that this
         function is intended to be used for variable names (especially from the
@@ -316,6 +316,7 @@ class NamelistGenerator(object):
              s2x_Ss_tsrf%glc   tsrf%glc
          then the returned array will be:
              foo               bar
+             s2x_Ss_tsrf00     tsrf00
              s2x_Ss_tsrf01     tsrf01
              s2x_Ss_tsrf02     tsrf02
              s2x_Ss_tsrf03     tsrf03
@@ -327,11 +328,9 @@ class NamelistGenerator(object):
                 continue
             if "%glc" in line:
                 if self._case.get_value('GLC_NEC') == 0:
-                    glc_nec_indices = [0]
+                    glc_nec_indices = []
                 else:
-                    glc_nec_indices = list(range(self._case.get_value('GLC_NEC')))
-                glc_nec_indices.append(glc_nec_indices[-1] + 1)
-                glc_nec_indices.pop(0)
+                    glc_nec_indices = range(self._case.get_value('GLC_NEC')+1)
                 for i in glc_nec_indices:
                     new_lines.append(line.replace("%glc", "{:02d}".format(i)))
             else:

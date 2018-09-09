@@ -52,6 +52,15 @@
     <desc>full pathname of case</desc>
   </entry>
 
+  <entry id="NONLOCAL">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>user is not on the requested machine</desc>
+  </entry>
+
   <entry id="CASETOOLS">
     <type>char</type>
     <default_value>$CASEROOT/Tools</default_value>
@@ -658,7 +667,7 @@
 
   <entry id="COMP_INTERFACE">
     <type>char</type>
-    <valid_values>mct,nuopc</valid_values>
+    <valid_values>mct,nuopc,moab</valid_values>
     <default_value>mct</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
@@ -1798,8 +1807,29 @@
     <group>run_din</group>
     <file>env_run.xml</file>
     <desc>
-      A regular expression to search for an indication that a run failure was caused by a node failure
-      and should therefore be re-attempted.
+      A regular expression to search for an indication that a run failure
+       was caused by a node failure and should therefore be re-attempted.
+    </desc>
+  </entry>
+
+  <entry id="MPIRUN_RETRY_REGEX">
+    <type>char</type>
+    <group>run_din</group>
+    <file>env_run.xml</file>
+    <desc>
+      A regular expression to search for an indication that a run failure
+      was caused by a known event such as a timeout and should therefore
+      be re-attempted.
+    </desc>
+  </entry>
+
+  <entry id="MPIRUN_RETRY_COUNT">
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>run_din</group>
+    <file>env_run.xml</file>
+    <desc>The number of times to reattempt the mpirun command if
+    MPIRUN_RETRY_REGEX is matched but ALLOCATE_SPARE_NODES is False
     </desc>
   </entry>
 

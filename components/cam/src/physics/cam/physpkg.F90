@@ -32,7 +32,6 @@ module physpkg
   use zm_conv,          only: trigmem
   use scamMod,          only: single_column, scm_crm_mode
   use flux_avg,         only: flux_avg_init
-  use infnan,           only: posinf, assignment(=)
 #ifdef SPMD
   use mpishorthand
 #endif
@@ -387,7 +386,10 @@ subroutine phys_inidat( cam_out, pbuf2d )
        sgh = 0._r8
        sgh30 = 0._r8
        landm = 0._r8
+       if (masterproc) write(iulog,*) 'AQUA_PLANET simulation, sgh, sgh30, landm initialized to 0.'
     else
+       if (masterproc) write(iulog,*) 'NOT AN AQUA_PLANET simulation, initialize &
+                                       sgh, sgh30, land m using data from file.'
        fh_topo=>topo_file_get_id()
        call infld('SGH', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
             sgh, found, gridname='physgrid')
@@ -458,10 +460,6 @@ subroutine phys_inidat( cam_out, pbuf2d )
        call pbuf_set_field(pbuf2d, m, tptr, start=(/1,n/), kount=(/pcols,1/))
     end do
     deallocate(tptr)
-
-    do lchnk=begchunk,endchunk
-       cam_out(lchnk)%tbot(:) = posinf
-    end do
 
     !
     ! 3-D fields
@@ -815,7 +813,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     ! co2 cycle            
     if (co2_transport()) then
-       call co2_init()
+       call co2_init(phys_state, pbuf2d)
     end if
 
     ! CAM3 prescribed ozone
@@ -1553,7 +1551,6 @@ if (l_tracer_aero) then
 
 end if ! l_tracer_aero
 
-if (l_vdiff) then
     !===================================================
     ! Vertical diffusion/pbl calculation
     ! Call vertical diffusion code (pbl, free atmosphere and molecular)
@@ -1570,6 +1567,7 @@ if (l_vdiff) then
        call physics_update(state, ptend, ztodt, tend)
 
     else
+    if (l_vdiff) then
 
        call t_startf('vertical_diffusion_tend')
        call vertical_diffusion_tend (ztodt ,state ,cam_in%wsx, cam_in%wsy,   &
@@ -1587,9 +1585,9 @@ if (l_vdiff) then
        call physics_update(state, ptend, ztodt, tend)
        call t_stopf ('vertical_diffusion_tend')
     
+    end if ! l_vdiff
     endif
 
-end if ! l_vdiff
 
 if (l_rayleigh) then
     !===================================================
@@ -1921,6 +1919,7 @@ subroutine tphysbc (ztodt,               &
     real(r8), pointer, dimension(:,:) :: tm1   ! intermediate T between n and n-1 time step
     real(r8), pointer, dimension(:,:) :: qm1   ! intermediate q between n and n-1 time step
 !>songxl 2011-09-20----------------------------
+    character(len=16)  :: deep_scheme      ! Default set in phys_control.F90
 
     ! physics buffer fields for total energy and mass adjustment
     real(r8), pointer, dimension(:  ) :: teout
@@ -2022,6 +2021,7 @@ subroutine tphysbc (ztodt,               &
     call phys_getopts( microp_scheme_out      = microp_scheme, &
                        macrop_scheme_out      = macrop_scheme, &
                        use_subcol_microp_out  = use_subcol_microp, &
+                       deep_scheme_out        = deep_scheme,       &
                        state_debug_checks_out = state_debug_checks &
                       ,l_bc_energy_fix_out    = l_bc_energy_fix    &
                       ,l_dry_adj_out          = l_dry_adj          &
@@ -2093,10 +2093,12 @@ subroutine tphysbc (ztodt,               &
 !   if(trigmem)then
 #ifdef USE_UNICON
 #else
+    if (deep_scheme.eq.'ZM') then
       ifld = pbuf_get_index('TM1')
       call pbuf_get_field(pbuf, ifld, tm1, (/1,1/),(/pcols,pver/))
       ifld = pbuf_get_index('QM1')
       call pbuf_get_field(pbuf, ifld, qm1, (/1,1/),(/pcols,pver/))
+    end if
 #endif
 !   endif
 !>songxl 2011-09-20---------------------------
@@ -2374,7 +2376,7 @@ end if
 
     if( microp_scheme == 'RK' ) then
 
-     if (l_st_mac) then
+     if (l_st_mac.or.l_st_mic) then
        !===================================================
        ! Calculate stratiform tendency (sedimentation, detrain, cloud fraction and microphysics )
        !===================================================
@@ -2405,6 +2407,8 @@ end if
        snow_pcw_macmic = 0._r8
 
        do macmic_it = 1, cld_macmic_num_steps
+
+        if (l_st_mac) then
 
           if (micro_do_icesupersat) then 
 
@@ -2501,10 +2505,12 @@ end if
           endif
 
           call t_stopf('macrop_tend')
+        end if ! l_st_mac
 
           !===================================================
           ! Calculate cloud microphysics 
           !===================================================
+        if (l_st_mic) then
 
           if (is_subcol_on()) then
              ! Allocate sub-column structures. 
@@ -2571,6 +2577,17 @@ end if
                snow_str(:ncol)/cld_macmic_num_steps, zero)
 
           call t_stopf('microp_tend')
+
+        else 
+        ! If microphysics is off, set surface cloud liquid/ice and rain/snow fluxes to zero
+
+          prec_sed = 0._r8
+          snow_sed = 0._r8
+          prec_pcw = 0._r8
+          snow_pcw = 0._r8
+
+        end if ! l_st_mic
+
           prec_sed_macmic(:ncol) = prec_sed_macmic(:ncol) + prec_sed(:ncol)
           snow_sed_macmic(:ncol) = snow_sed_macmic(:ncol) + snow_sed(:ncol)
           prec_pcw_macmic(:ncol) = prec_pcw_macmic(:ncol) + prec_pcw(:ncol)
@@ -2585,7 +2602,7 @@ end if
        prec_str(:ncol) = prec_pcw(:ncol) + prec_sed(:ncol)
        snow_str(:ncol) = snow_pcw(:ncol) + snow_sed(:ncol)
 
-     end if ! l_st_mic
+     end if !microp_scheme
 
 if (l_tracer_aero) then
 
@@ -2653,7 +2670,7 @@ if (l_tracer_aero) then
 end if ! l_tracer_aero
 
 !<songxl 2011-9-20---------------------------------
-   if(trigmem)then
+   if(deep_scheme.eq.'ZM' .and. trigmem)then
       do k=1,pver
         qm1(:ncol,k) = state%q(:ncol,k,1)
         tm1(:ncol,k) = state%t(:ncol,k)
