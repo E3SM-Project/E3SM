@@ -35,7 +35,7 @@ module prim_advance_mod
   use test_mod,           only: set_prescribed_wind
   use viscosity_theta,    only: biharmonic_wk_theta
 
-#ifdef applycamforcing_ps, applycamforcing_dp3d, TRILINOS
+#ifdef TRILINOS
     use prim_derived_type_mod ,only : derived_type, initialize
     use, intrinsic :: iso_c_binding
 #endif
@@ -44,7 +44,8 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-       applyCAMforcing_dynamics, applyCAMforcing, vertical_mesh_init2
+       applycamforcing_ps, applycamforcing_dp3d, &
+       applyCAMforcing_dynamics, vertical_mesh_init2
 
   real (kind=real_kind), allocatable :: ur_weights(:)
 
@@ -98,7 +99,8 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
+  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics, &
+                              single_column)
 
     type (element_t),      intent(inout), target :: elem(:)
     type (derivative_t),   intent(in)            :: deriv
@@ -108,7 +110,7 @@ contains
     type (TimeLevel_t)   , intent(in)            :: tl
     integer              , intent(in)            :: nets
     integer              , intent(in)            :: nete
-    logical,               intent(in)            :: compute_diagnostics
+    logical,               intent(in)            :: compute_diagnostics, single_column
 
     real (kind=real_kind) :: dt2, time, dt_vis, x, eta_ave_w
     real (kind=real_kind) :: itertol,a1,a2,a3,a4,a5,a6,ahat1,ahat2
