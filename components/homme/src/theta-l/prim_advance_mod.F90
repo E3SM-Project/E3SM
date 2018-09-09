@@ -35,7 +35,7 @@ module prim_advance_mod
   use test_mod,           only: set_prescribed_wind
   use viscosity_theta,    only: biharmonic_wk_theta
 
-#ifdef TRILINOS
+#ifdef applycamforcing_ps, applycamforcing_dp3d, TRILINOS
     use prim_derived_type_mod ,only : derived_type, initialize
     use, intrinsic :: iso_c_binding
 #endif
@@ -357,6 +357,8 @@ contains
          call advance_hypervis(elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
 
 
+
+
     ! warning: advance_physical_vis currently requires levels that are equally spaced in z
     if (dcmip16_mu>0) call advance_physical_vis(elem,hvcoord,hybrid,deriv,np1,nets,nete,dt,dcmip16_mu_s,dcmip16_mu)
 
@@ -366,8 +368,19 @@ contains
 
 
 
+!placeholder
+  subroutine applyCAMforcing_dp3d(elem,hvcoord,np1,dt,nets,nete)
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: np1,nets,nete
+  end subroutine applyCAMforcing_dp3d
 
-  subroutine applyCAMforcing(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
+
+!renaming it just to build
+!
+  subroutine applyCAMforcing_ps(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
 
   implicit none
   type (element_t),       intent(inout) :: elem(:)
@@ -462,7 +475,7 @@ contains
 
   enddo
   call applyCAMforcing_dynamics(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
-  end subroutine applyCAMforcing
+  end subroutine applyCAMforcing_ps
 
 
 
