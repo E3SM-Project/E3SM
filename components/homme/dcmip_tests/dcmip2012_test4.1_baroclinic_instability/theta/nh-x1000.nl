@@ -14,7 +14,7 @@ nmax = 6480
 statefreq=60
 runtype       = 0
 mesh_file='/dev/null'
-tstep=0.2
+tstep=0.2           ! for tstep>0.15, need to subcycle viscosity
 rsplit=1
 qsplit = 1
 tstep_type = 5
@@ -26,12 +26,11 @@ nu_q=1e6
 nu_s=1e6
 nu_top = 0
 se_ftype     = 0
-limiter_option = 8
+limiter_option = 9
 vert_remap_q_alg = 0
 hypervis_scaling=0
 hypervis_order = 2
-hypervis_subcycle=3
-hypervis_subcycle=3
+hypervis_subcycle = 2
 /
 &vert_nl
 vform         = "ccm"

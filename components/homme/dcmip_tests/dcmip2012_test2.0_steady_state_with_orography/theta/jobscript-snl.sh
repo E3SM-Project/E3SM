@@ -3,16 +3,24 @@
 # nonhydrostatic model with explicit timestep: 25 nodes, 2h 20min
 # hydrostatic: 300x faster.  4 nodes: 3min
 #
+#SBATCH -p ec
 #SBATCH --job-name d20-theta
 #SBATCH --account=FY150001
 #SBATCH -N 25
 #SBATCH --time=3:00:00
 #XXSBATCH -N 4
 #XXSBATCH --time=0:10:00
-#SBATCH -p ec
+#PBS -q acme
+#PBS -l walltime=3:00:00
+#PBS -l nodes=25    
+
 
 set OMP_NUM_THREADS = 1
 set NCPU = 40 
+if ( ${?PBS_ENVIRONMENT} ) then   # anvil
+  set NCPU = $PBS_NNODES
+  if ( $PBS_ENVIRONMENT == PBS_BATCH ) cd $PBS_O_WORKDIR     
+endif
 if ( ${?SLURM_NNODES} ) then   
     set NCPU = $SLURM_NNODES
     @ NCPU *= 16

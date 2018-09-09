@@ -1362,11 +1362,10 @@ contains
 !   the second deta(i) factor below.  But if this routine is used for
 !   variables like u or theta and not multiplied by eta_dot_dpdn, this will need some work
 !
-    integer :: ncomp
     real(kind=real_kind), intent(in) :: v(np,np,ncomp,nlev)
     real(kind=real_kind), intent(out):: laplace(np,np,ncomp,nlev)
     real(kind=real_kind), intent(in) :: etam(nlev)
-
+    integer :: ncomp
 
     ! local
     integer k,n
@@ -1387,7 +1386,7 @@ contains
 #endif
 
 
-  subroutine laplace_z(v,laplace,ncomp,dz) 
+  subroutine laplace_z(v,laplace,ncomp,nk,dz) 
 !
 !   input:  v = scalar 
 !   ouput:  vertical laplace operator in z coordinates
@@ -1397,24 +1396,24 @@ contains
 !   This routine is currently only used for the supercell test, which uses equally spaced
 !   levels ( dz=20km/nlev ) so currently only a constant dz is supported
 !
-    integer :: ncomp
-    real(kind=real_kind), intent(in) :: v(np,np,ncomp,nlev)
-    real(kind=real_kind), intent(out):: laplace(np,np,ncomp,nlev)
+    integer :: ncomp,nk
+    real(kind=real_kind), intent(in) :: v(np,np,ncomp,nk)
+    real(kind=real_kind), intent(out):: laplace(np,np,ncomp,nk)
     real(kind=real_kind), intent(in) :: dz
 
 
     ! local
-    real(kind=real_kind) :: u_z(np,np,nlev+1)
+    real(kind=real_kind) :: u_z(np,np,nk+1)
     integer :: k,n
 
     ! no flux b.c.
     u_z(:,:,1)=0
-    u_z(:,:,nlev+1)=0
+    u_z(:,:,nk+1)=0
     do n=1,ncomp
-       do k=2,nlev
+       do k=2,nk
           u_z(:,:,k) = (v(:,:,n,k)-v(:,:,n,k-1)) / dz        ! dz(k-.5)  
        enddo
-       do k=1,nlev
+       do k=1,nk
           laplace(:,:,n,k) =( u_z(:,:,k+1) - u_z(:,:,k) )/dz    ! dz(k)
        enddo
     enddo

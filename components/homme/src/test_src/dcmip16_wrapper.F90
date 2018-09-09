@@ -22,7 +22,8 @@ use hybrid_mod,           only: hybrid_t
 use hybvcoord_mod,        only: hvcoord_t, set_layer_locations
 use kinds,                only: rl=>real_kind, iulog
 use parallel_mod,         only: abortmp
-use element_ops,          only: set_state, set_elem_state, get_state, tests_finalize, set_forcing_rayleigh_friction, set_thermostate
+use element_ops,          only: set_state, set_state_i, set_elem_state, get_state, tests_finalize,&
+     set_forcing_rayleigh_friction, set_thermostate
 use physical_constants,   only: p0, g, Rgas, kappa, Cp, Rwater_vapor, pi=>dd_pi
 use reduction_mod,        only: parallelmax, parallelmin
 use terminator,           only: initial_value_terminator, tendency_terminator
@@ -78,6 +79,7 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
   real(rl):: lon,lat                                                    ! pointwise coordiantes
 
   real(rl), dimension(np,np,nlev):: p,z,u,v,w,T,thetav,rho,dp           ! field values
+  real(rl), dimension(np,np,nlevp):: p_i,w_i,z_i
   real(rl), dimension(np,np):: ps, phis
   real(rl), dimension(np,np,nlev,5):: q
 
@@ -94,6 +96,19 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
 
   ! set initial conditions
   do ie = nets,nete
+    do k=1,nlevp; do j=1,np; do i=1,np
+
+        ! no surface topography
+        p_i(i,j,k)  = p0*hvcoord%etai(k)
+
+        lon = elem(ie)%spherep(i,j)%lon
+        lat = elem(ie)%spherep(i,j)%lat
+
+        w_i(i,j,k)   = 0.0d0
+        ! call this only to compute z_i, will ignore all other output
+        call baroclinic_wave_test(is_deep,moist,pertt,dcmip_X,lon,lat,p_i(i,j,k),&
+            z_i(i,j,k),use_zcoords,u(i,j,1),v(i,j,1),T(i,j,1),thetav(i,j,1),phis(i,j),ps(i,j),rho(i,j,1),q(i,j,1,1))
+    enddo; enddo; enddo
     do k=1,nlev; do j=1,np; do i=1,np
 
         ! no surface topography
@@ -118,7 +133,7 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
 
     enddo; enddo; enddo
 
-    call set_elem_state(u,v,w,T,ps,phis,p,dp,z,g,elem(ie),1,nt,ntQ=1)
+    call set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,z,z_i,g,elem(ie),1,nt,ntQ=1)
     call tests_finalize(elem(ie),hvcoord,1,nt)
 
   enddo
@@ -140,7 +155,7 @@ subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
 
   integer :: i,j,k,ie , ierr                                                  ! loop indices
   real(rl):: lon,lat,ntop                                               ! pointwise coordiantes
-  real(rl):: p,z,u,v,w,T,thetav,phis,ps,rho,q(4),dp                     ! pointwise field values
+  real(rl):: p,z,u,v,w,T,thetav,phis,ps,rho,q(3),dp                     ! pointwise field values
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 2: tropical cyclone'
   !use vertical levels specificed in cam30 file
@@ -164,11 +179,32 @@ subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
         w  = 0
         q(2)=0
         q(3)=0
-        q(4)=1
 
         call set_state(u,v,w,T,ps,phis,p,dp,z,g,i,j,k,elem(ie),1,nt)
-        call set_tracers(q,4,dp,i,j,k,lat,lon,elem(ie))
+        call set_tracers(q,3,dp,i,j,k,lat,lon,elem(ie))
      enddo; enddo; enddo;
+
+
+
+     do k=1,nlevp; do j=1,np; do i=1,np
+
+        ! get surface pressure
+        lon = elem(ie)%spherep(i,j)%lon
+        lat = elem(ie)%spherep(i,j)%lat
+        z=0; call tropical_cyclone_test(lon,lat,p,z,1,u,v,T,thetav,phis,ps,rho,q(1))
+
+        ! get pressure at level midpoints
+        p = p0*hvcoord%hyai(k) + ps*hvcoord%hybi(k)
+
+        ! get initial conditions at pressure level p
+        call tropical_cyclone_test(lon,lat,p,z,0,u,v,T,thetav,phis,ps,rho,q(1))
+
+        dp = pressure_thickness(ps,k,hvcoord)
+        w  = 0
+
+        call set_state_i(u,v,w,T,ps,phis,p,dp,z,g,i,j,k,elem(ie),1,nt)
+     enddo; enddo; enddo;
+
 
     call tests_finalize(elem(ie),hvcoord,1,nt)
   enddo
@@ -195,8 +231,9 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
   real(rl), parameter :: ztop3  = 20000_rl                              ! top of model at 20km
 
-  real(rl), dimension(np,np,nlev,qsize_d) :: q
+  real(rl), dimension(np,np,nlev,3) :: q
   real(rl), dimension(np,np,nlev) :: p,dp,z,u,v,w,T,thetav,rho,rhom
+  real(rl), dimension(np,np,nlevp) :: p_i,z_i,w_i
   real(rl), dimension(np,np) :: phis, ps
 
   real(rl) :: p1,thetav1,rho1,q1
@@ -223,6 +260,28 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
   do ie = nets,nete
   if (hybrid%masterthread) write(*,"(A,I5,A)",advance="NO") " ie=",ie,achar(13)
 
+    do k=1,nlevp
+
+      do j=1,np; do i=1,np
+
+        lon = elem(ie)%spherep(i,j)%lon
+        lat = elem(ie)%spherep(i,j)%lat
+
+        ! get surface pressure ps(i,j) at lat, lon, z=0, ignore all other output
+        z_i(i,j,k)=0; call supercell_test(lon,lat,p(i,j,1),z_i(i,j,k),1,u(i,j,1),v(i,j,1),&
+             T(i,j,1),thetav(i,j,1),ps(i,j),rho(i,j,1),q(i,j,1,1),pert)
+
+        ! get hydrostatic pressure at level k
+        p_i(i,j,k)  = p0*hvcoord%hyai(k) + ps(i,j)*hvcoord%hybi(k)
+
+        ! call this only to compute z_i, will ignore all other output
+        call supercell_test(lon,lat,p_i(i,j,k),z_i(i,j,k),zcoords,u(i,j,1),v(i,j,1),T(i,j,1),&
+             thetav(i,j,1),ps(i,j),rho(i,j,1),q(i,j,1,1),pert)
+
+        w_i (i,j,k)  = 0 ! no vertical motion
+
+      enddo; enddo
+    enddo
     do k=1,nlev
 
       do j=1,np; do i=1,np
@@ -243,16 +302,12 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
         phis(i,j)    = 0 ! no topography
         q   (i,j,k,2)= 0 ! no initial clouds
         q   (i,j,k,3)= 0 ! no initial rain
-        q   (i,j,k,4)= 0 ! precip
 
-        call set_tracers(q(i,j,k,:),qsize,dp(i,j,k),i,j,k,lat,lon,elem(ie))
+        call set_tracers(q(i,j,k,:),3,dp(i,j,k),i,j,k,lat,lon,elem(ie))
 
       enddo; enddo
-
-!      call set_elem_state(u,v,w,T,ps,phis,p,dp,z,g,elem(ie),1,nt,ntQ=1)
-
     enddo
-    call set_elem_state(u,v,w,T,ps,phis,p,dp,z,g,elem(ie),1,nt,ntQ=1)
+    call set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,z,z_i,g,elem(ie),1,nt,ntQ=1)
 
     ! set density to ensure hydrostatic balance and save initial state
     call tests_finalize(elem(ie),hvcoord,1,nt,ie)

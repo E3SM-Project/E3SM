@@ -33,17 +33,12 @@ begin
   ; if you are outputting 1 file per time, you can run "ncrcat dcmip1.files.*.nc cat.nc"
   ; for one file
 
-
-ft="4" ; choices are n1 (that is neg. one), 0, 3, 4
-var_choice = 1 ; 1,2,3
-rsplit="1";
-
-	f = addfile("./movies/branch-f"+ft+"-r400-wet-rsplit"+rsplit+"-dcmip2016_test11.nc","r")
+	f = addfile("./movies/dcmip2016_test11.nc","r")
 
   ; Input useful parameters
 
 	lat  = f->lat
-  lon  = f->lon
+        lon  = f->lon
 	lev  = f->lev
 	nlat = getfilevardimsizes(f, "lat" )
 	nlon = getfilevardimsizes(f, "lon" )
@@ -57,6 +52,11 @@ rsplit="1";
   ; 2 - Large-scale precipitation
   ; 3 - Surface Pressure
 
+        if(isvar("var_choice")) then
+        else
+           var_choice = 1
+        end if
+	
 	if (var_choice .eq. 1) then ; Select T
 		if (isfilevar(f,"T850")) then
 			varload = f->T850
@@ -91,9 +91,7 @@ rsplit="1";
 	else if (var_choice .eq. 2) then			; Select Large-scale precipitation
 
 		varload = f->precl
-                varload=varload*8.64e7		
-                ;varload=varload*1e10
-                ;print(varload)		
+    varload=varload*8.64e7		
 
 	else if (var_choice .eq. 3) then			; Select PS
 
@@ -168,14 +166,13 @@ day15  = closest_val( 15, time)
 
 	if (var_choice .eq. 1) then 	;================ Temperature plot ====================
  
-	pltTitle="ACME Test 16-1, T850 hPa" 			; Plot title if required
+	pltTitle="PREQX Test 16-1, T850 hPa" 			; Plot title if required
 	pres@txString = pltTitle
 
 		; Change the output type and name
 
 	;wks  = gsn_open_wks("X11","acme-test16-1-latlonT850")   	; output using X11
-	;wks  = gsn_open_wks("eps","acme-test16-1latlonT850")   	; output using eps
-	wks  = gsn_open_wks("pdf","f"+ft+"-rsplit"+rsplit+"-test16-1latlonT850")   	; output using png
+	wks  = gsn_open_wks("pdf","preqx-test16-1latlonT850")   	; output using eps
 	gsn_define_colormap(wks,"gui_default")  
 
 	res1@cnMaxLevelValF  = 300.0				; max contour color label
@@ -184,7 +181,7 @@ day15  = closest_val( 15, time)
  
 	else if (var_choice .eq. 2) then 	;================ Large-scale precipitation plot ====================
  
-	pltTitle="ACME Test 16-1, Large-scale precipitation" 	; Plot title if required
+	pltTitle="PREQX Test 16-1, Large-scale precipitation" 	; Plot title if required
 	pres@txString = pltTitle
 
 	var1@units = " "
@@ -197,13 +194,10 @@ day15  = closest_val( 15, time)
 		; Change the output type and name
 
 	;wks  = gsn_open_wks("X11","acme-test16-1latlonPRECL")   	; output using X11
-	;wks  = gsn_open_wks("eps","acme-test16-1latlonPRECL")   	; output using eps
-	wks  = gsn_open_wks("pdf","f"+ft+"-rsplit"+rsplit+"-test16-1latlonPRECL")   	; output using png
+	wks  = gsn_open_wks("pdf","preqx-test16-1latlonPRECL")   	; output using eps
 	gsn_define_colormap(wks,"gui_default")  
 
 		; Note that the maximum might be larger than these contour spacing values
-
-
 
 	res1@cnMaxLevelValF  = 50.0				; max contour color label
 	res1@cnMinLevelValF  = 0.0				; min contour color label
@@ -211,7 +205,7 @@ day15  = closest_val( 15, time)
  
 	else if (var_choice .eq. 3) then 	;================ Surface Pressure plot ====================
  
-	pltTitle="ACME Test 16-1, PS" 			; Plot title if required
+	pltTitle="PREQX Test 16-1, PS" 			; Plot title if required
 	pres@txString = pltTitle
 
 		; Convert to hPa 
@@ -229,8 +223,7 @@ day15  = closest_val( 15, time)
 		; Change the output type and name
 
 	;wks  = gsn_open_wks("X11","acme-test16-1latlonPS")   	; output using X11
-	;wks  = gsn_open_wks("eps","acme-test16-1latlonPS")   	; output using eps
-	wks  = gsn_open_wks("pdf","f"+ft+"-rsplit"+rsplit+"-test16-1latlonPS")   	; output using png
+	wks  = gsn_open_wks("pdf","preqx-test16-1latlonPS")   	; output using eps
 	gsn_define_colormap(wks,"gui_default")  
 
 	res1@cnMaxLevelValF  = 1020.0				; max contour color label

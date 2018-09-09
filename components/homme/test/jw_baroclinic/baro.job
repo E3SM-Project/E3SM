@@ -17,17 +17,20 @@
 #SBATCH -N 12
 #SBATCH --time=0:30:00
 #SBATCH -p ec
+#PBS -l walltime=3:00:00
+#PBS -l nodes=60
+#PBS -q acme
 #
 #  set paths to source code, build directory and run directory
 #
 set wdir =  ~/scratch1/preqx             # run directory
-set HOMME = `pwd`/../..                  # HOMME svn checkout     
+set HOMME = ~/codes/acme/components/homme                 # HOMME svn checkout     
 set input = $HOMME/test/jw_baroclinic    # input files for test case
 set vdir = $HOMME/test/vcoord            # vertical coordinate files
 set bld = $wdir/bld                      # cmake/build directory
 
 #set MACH = $HOMME/cmake/machineFiles/sandia-srn-sems.cmake
-set MACH = $HOMME/cmake/machineFiles/skybridge.cmake
+set MACH = $HOMME/cmake/machineFiles/anvil.cmake
 #set MACH = $HOMME/cmake/machineFiles/titan.cmake
 #set MACH = $HOMME/cmake/machineFiles/titan-cuda.cmake    # CMAKE file for Titan GPU support
 #set MACH = $HOMME/cmake/machineFiles/darwin.cmake
@@ -46,11 +49,14 @@ if ( ${?SLURM_NNODES} ) then   # redsky
     @ NCPU *= 16
     @ NCPU /= $OMP_NUM_THREADS
 endif
-if ( ${?PBS_NUM_NODES} ) then  # titan, other PBS based systems?
-    set NCPU = $PBS_NUM_NODES
-    @ NCPU *= $PBS_NUM_PPN
-    @ NCPU /= $OMP_NUM_THREADS
+if ( ${?PBS_ENVIRONMENT} ) then   # anvil
+  set NCPU = $PBS_NNODES
+  if ( $PBS_ENVIRONMENT == PBS_BATCH ) cd $PBS_O_WORKDIR     
 endif
+
+
+
+
 
 
 
@@ -67,13 +73,18 @@ set mpirun = "mpirun -np $NCPU"
 set u_perturb = 1
 set rotate = 0
 
+# ne30: 1.5min  20 nodes (4 tracers)
+# ne120 16min    20 nodes (0 tracers)
+# ne240 128min   20 nodes
+# ne240 ?min   60 nodes
                   # number of elemnets:  6*ne*ne
-set ne = 16        # horizontal resolution   4,16,30,60,120,240
-set qsize = 4     # use 4 tracers for testing
+set ne = 240        # horizontal resolution   4,16,30,60,120,240
+
 
 # CAM4
 set nlev=26       # vertical resolution
 set qsize = 4     # number of passive tracers
+
 
 # simulate CAM5:
 #set nlev=30
@@ -82,7 +93,7 @@ set qsize = 4     # number of passive tracers
 # simulate ACME v1
 # NE=120, nlev=72, qsize=35
 #set nlev=72
-#set qsize=35
+#set qsize=40
 
 set namelist = jw_baroclinic.nl  # CAM-style, vertically lagrangian
 #set namelist = jw_baroclinic-eul.nl
@@ -122,7 +133,7 @@ set name = jw-ne${ne}-nlev${nlev}-qsize${qsize}
 set run = $wdir/$name
 set mesh_file = /dev/null
 set hypervis_scaling = 0
-set hypervis_subcycle=3
+set hypervis_subcycle=3  ! most tests can use 1, high-res with nu_top>0 may require 3
 
 if ( $ne == 0 ) then
     # CAM defaults
@@ -219,6 +230,10 @@ sed s:mesh_file.\*:mesh_file="'$mesh_file'": | \
 sed s:vfile_mid.\*:"vfile_mid = '$vfile_mid'":  |\
 sed s:vfile_int.\*:"vfile_int = '$vfile_int'":  |\
 sed s/qsize.\*/"qsize = $qsize"/  > input.nl
+
+
+
+
 
 date
 $mpirun $exe  < input.nl
