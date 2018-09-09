@@ -27,7 +27,7 @@ from CIME.XML.standard_module_setup import *
 
 from collections import OrderedDict
 
-import os
+import os, itertools
 
 TEST_STATUS_FILENAME = "TestStatus"
 
@@ -57,6 +57,7 @@ RUN_PHASE             = "RUN"
 THROUGHPUT_PHASE      = "TPUTCOMP"
 MEMCOMP_PHASE         = "MEMCOMP"
 MEMLEAK_PHASE         = "MEMLEAK"
+STARCHIVE_PHASE       = "SHORT_TERM_ARCHIVER"
 COMPARE_PHASE         = "COMPARE" # This is one special, real phase will be COMPARE_$WHAT, this is for internal test comparisons, there could be multiple variations of this phase in one test
 BASELINE_PHASE        = "BASELINE"
 GENERATE_PHASE        = "GENERATE"
@@ -74,6 +75,7 @@ ALL_PHASES = [CREATE_NEWCASE_PHASE,
               THROUGHPUT_PHASE,
               MEMCOMP_PHASE,
               MEMLEAK_PHASE,
+              STARCHIVE_PHASE,
               GENERATE_PHASE]
 
 # These are mandatory phases that a test must go through
@@ -90,13 +92,23 @@ def _test_helper1(file_contents):
     ts._parse_test_status(file_contents) # pylint: disable=protected-access
     return ts._phase_statuses # pylint: disable=protected-access
 
-def _test_helper2(file_contents, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False):
-    ts = TestStatus(test_dir="/", test_name="ERS.foo.A")
-    ts._parse_test_status(file_contents) # pylint: disable=protected-access
-    return ts.get_overall_test_status(wait_for_run=wait_for_run,
-                                      check_throughput=check_throughput,
-                                      check_memory=check_memory,
-                                      ignore_namelists=ignore_namelists)
+def _test_helper2(file_contents, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False, no_run=False):
+    lines = file_contents.splitlines()
+    rv = None
+    for perm in itertools.permutations(lines):
+        ts = TestStatus(test_dir="/", test_name="ERS.foo.A")
+        ts._parse_test_status("\n".join(perm)) # pylint: disable=protected-access
+        the_status = ts.get_overall_test_status(wait_for_run=wait_for_run,
+                                                check_throughput=check_throughput,
+                                                check_memory=check_memory,
+                                                ignore_namelists=ignore_namelists,
+                                                no_run=no_run)
+        if rv is not None and the_status != rv:
+            return "{} != {}".format(rv, the_status)
+        else:
+            rv = the_status
+
+    return rv
 
 class TestStatus(object):
 
@@ -134,6 +146,12 @@ class TestStatus(object):
     def __iter__(self):
         for phase, data in self._phase_statuses.items():
             yield phase, data[0]
+
+    def __eq__(self, rhs):
+        return self._phase_statuses == rhs._phase_statuses # pylint: disable=protected-access
+
+    def __ne__(self, rhs):
+        return not self.__eq__(rhs)
 
     def get_name(self):
         return self._test_name
@@ -269,58 +287,25 @@ class TestStatus(object):
         with open(self._filename, "r") as fd:
             self._parse_test_status(fd.read())
 
-    def get_overall_test_status(self, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False, ignore_memleak=False):
-        r"""
-        Given the current phases and statuses, produce a single results for this test. Preference
-        is given to PEND since we don't want to stop waiting for a test
-        that hasn't finished. Namelist diffs are given the lowest precedence.
+    def _get_overall_status_based_on_phases(self, phases, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False, ignore_memleak=False, no_run=False):
 
-        >>> _test_helper2('PASS ERS.foo.A RUN')
-        'PASS'
-        >>> _test_helper2('PASS ERS.foo.A SHAREDLIB_BUILD\nPEND ERS.foo.A RUN')
-        'PEND'
-        >>> _test_helper2('FAIL ERS.foo.A MODEL_BUILD\nPEND ERS.foo.A RUN')
-        'PEND'
-        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPASS ERS.foo.A RUN')
-        'PASS'
-        >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A TPUTCOMP')
-        'PASS'
-        >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A TPUTCOMP', check_throughput=True)
-        'FAIL'
-        >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A NLCOMP')
-        'NLFAIL'
-        >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A MEMCOMP')
-        'PASS'
-        >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A NLCOMP', ignore_namelists=True)
-        'PASS'
-        >>> _test_helper2('PASS ERS.foo.A COMPARE_1\nFAIL ERS.foo.A NLCOMP\nFAIL ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
-        'FAIL'
-        >>> _test_helper2('FAIL ERS.foo.A BASELINE\nFAIL ERS.foo.A NLCOMP\nPASS ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
-        'DIFF'
-        >>> _test_helper2('FAIL ERS.foo.A BASELINE\nFAIL ERS.foo.A NLCOMP\nFAIL ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
-        'FAIL'
-        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD')
-        'PASS'
-        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD', wait_for_run=True)
-        'PEND'
-        >>> _test_helper2('FAIL ERS.foo.A MODEL_BUILD', wait_for_run=True)
-        'FAIL'
-        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPEND ERS.foo.A RUN', wait_for_run=True)
-        'PEND'
-        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nFAIL ERS.foo.A RUN', wait_for_run=True)
-        'FAIL'
-        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPASS ERS.foo.A RUN', wait_for_run=True)
-        'PASS'
-        """
         rv = TEST_PASS_STATUS
         run_phase_found = False
-        for phase, data in self._phase_statuses.items():
+        for phase in phases: # ensure correct order of processing phases
+            if phase in self._phase_statuses:
+                data = self._phase_statuses[phase]
+            else:
+                continue
+
             status = data[0]
             if phase == RUN_PHASE:
                 run_phase_found = True
 
+            if phase in [SUBMIT_PHASE, RUN_PHASE] and no_run:
+                break
+
             if (status == TEST_PEND_STATUS):
-                return status
+                rv = TEST_PEND_STATUS
 
             elif (status == TEST_FAIL_STATUS):
                 if ( (not check_throughput and phase == THROUGHPUT_PHASE) or
@@ -336,6 +321,9 @@ class TestStatus(object):
                 elif (rv in [NAMELIST_FAIL_STATUS, TEST_PASS_STATUS] and phase == BASELINE_PHASE):
                     rv = TEST_DIFF_STATUS
 
+                elif phase in CORE_PHASES:
+                    return TEST_FAIL_STATUS
+
                 else:
                     rv = TEST_FAIL_STATUS
 
@@ -345,3 +333,79 @@ class TestStatus(object):
             rv = TEST_PEND_STATUS
 
         return rv
+
+    def get_overall_test_status(self, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False, ignore_memleak=False, no_run=False):
+        r"""
+        Given the current phases and statuses, produce a single results for this test. Preference
+        is given to PEND since we don't want to stop waiting for a test
+        that hasn't finished. Namelist diffs are given the lowest precedence.
+
+        >>> _test_helper2('PASS ERS.foo.A RUN')
+        'PASS'
+        >>> _test_helper2('PASS ERS.foo.A SHAREDLIB_BUILD\nPEND ERS.foo.A RUN')
+        'PEND'
+        >>> _test_helper2('FAIL ERS.foo.A MODEL_BUILD\nPEND ERS.foo.A RUN')
+        'FAIL'
+        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPASS ERS.foo.A RUN')
+        'PASS'
+        >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A TPUTCOMP')
+        'PASS'
+        >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A TPUTCOMP', check_throughput=True)
+        'FAIL'
+        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPASS ERS.foo.A RUN\nFAIL ERS.foo.A NLCOMP')
+        'NLFAIL'
+        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPEND ERS.foo.A RUN\nFAIL ERS.foo.A NLCOMP')
+        'PEND'
+        >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A MEMCOMP')
+        'PASS'
+        >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A NLCOMP', ignore_namelists=True)
+        'PASS'
+        >>> _test_helper2('PASS ERS.foo.A COMPARE_1\nFAIL ERS.foo.A NLCOMP\nFAIL ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
+        'FAIL'
+        >>> _test_helper2('FAIL ERS.foo.A BASELINE\nFAIL ERS.foo.A NLCOMP\nPASS ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
+        'DIFF'
+        >>> _test_helper2('FAIL ERS.foo.A BASELINE\nFAIL ERS.foo.A NLCOMP\nFAIL ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
+        'FAIL'
+        >>> _test_helper2('PEND ERS.foo.A COMPARE_2\nFAIL ERS.foo.A RUN')
+        'FAIL'
+        >>> _test_helper2('PEND ERS.foo.A COMPARE_2\nPASS ERS.foo.A RUN')
+        'PEND'
+        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD')
+        'PASS'
+        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD', wait_for_run=True)
+        'PEND'
+        >>> _test_helper2('FAIL ERS.foo.A MODEL_BUILD', wait_for_run=True)
+        'FAIL'
+        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPEND ERS.foo.A RUN', wait_for_run=True)
+        'PEND'
+        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nFAIL ERS.foo.A RUN', wait_for_run=True)
+        'FAIL'
+        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPASS ERS.foo.A RUN', wait_for_run=True)
+        'PASS'
+        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nFAIL ERS.foo.A RUN\nPEND ERS.foo.A COMPARE')
+        'FAIL'
+        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPEND ERS.foo.A RUN', no_run=True)
+        'PASS'
+        """
+        # Core phases take priority
+        core_rv = self._get_overall_status_based_on_phases(CORE_PHASES,
+                                                           wait_for_run=wait_for_run,
+                                                           check_throughput=check_throughput,
+                                                           check_memory=check_memory,
+                                                           ignore_namelists=ignore_namelists,
+                                                           ignore_memleak=ignore_memleak,
+                                                           no_run=no_run)
+        if core_rv != TEST_PASS_STATUS:
+            return core_rv
+        else:
+            phase_order = list(CORE_PHASES)
+            phase_order.extend([item for item in self._phase_statuses if item not in CORE_PHASES])
+
+            return self._get_overall_status_based_on_phases(phase_order,
+                                                            wait_for_run=wait_for_run,
+                                                            check_throughput=check_throughput,
+                                                            check_memory=check_memory,
+                                                            ignore_namelists=ignore_namelists,
+                                                            ignore_memleak=ignore_memleak,
+                                                            no_run=no_run)
+

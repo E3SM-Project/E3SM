@@ -53,7 +53,7 @@ class MacroConditionTree(object): # pylint: disable=too-many-instance-attributes
                         "found after the ambiguity check was complete, " \
                         "or there is a mixture of appending and initial " \
                         "settings in the condition tree."
-                self._assignments.append((name, setting.value))
+                self._assignments.append((name, setting.value, setting.force_no_append))
                 self._set_up += setting.set_up
                 self._tear_down += setting.tear_down
         else:
@@ -138,8 +138,8 @@ class MacroConditionTree(object): # pylint: disable=too-many-instance-attributes
         if self._is_leaf:
             for line in self._set_up:
                 writer.write_line(line)
-            for (name, value) in self._assignments:
-                if self._do_append:
+            for (name, value, force_no_append) in self._assignments:
+                if self._do_append and not force_no_append:
                     writer.append_variable(name, value)
                 else:
                     writer.set_variable(name, value)

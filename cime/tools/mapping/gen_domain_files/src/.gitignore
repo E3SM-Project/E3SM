@@ -4,3 +4,4 @@ Depends*
 Macros.make
 *.o
 *.mod
+*.optrpt

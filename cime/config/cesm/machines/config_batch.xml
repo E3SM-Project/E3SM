@@ -80,7 +80,7 @@
     <batch_query>qstat</batch_query>
     <batch_submit>qsub</batch_submit>
     <batch_cancel>qdel</batch_cancel>
-    <batch_env>-v</batch_env>
+    <batch_env>--env</batch_env>
     <batch_directive>#COBALT</batch_directive>
     <jobid_pattern>(\d+)</jobid_pattern>
     <depend_string> --dependencies</depend_string>
@@ -104,6 +104,7 @@
     <batch_directive>#BSUB</batch_directive>
     <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
     <depend_string> -w 'done(jobid)'</depend_string>
+    <depend_allow_string> -w 'ended(jobid)'</depend_allow_string>
     <depend_separator>&amp;&amp;</depend_separator>
     <walltime_format>%H:%M</walltime_format>
     <batch_mail_flag>-u</batch_mail_flag>
@@ -133,6 +134,7 @@
     <batch_directive>#PBS</batch_directive>
     <jobid_pattern>^(\S+)$</jobid_pattern>
     <depend_string> -W depend=afterok:jobid</depend_string>
+    <depend_allow_string> -W depend=afterany:jobid</depend_allow_string>
     <depend_separator>:</depend_separator>
     <walltime_format>%H:%M:%S</walltime_format>
     <batch_mail_flag>-M</batch_mail_flag>
@@ -158,6 +160,7 @@
     <batch_directive>#SBATCH</batch_directive>
     <jobid_pattern>(\d+)$</jobid_pattern>
     <depend_string> --dependency=afterok:jobid</depend_string>
+    <depend_allow_string> --dependency=afterany:jobid</depend_allow_string>
     <depend_separator>,</depend_separator>
     <walltime_format>%H:%M:%S</walltime_format>
     <batch_mail_flag>--mail-user</batch_mail_flag>
@@ -502,8 +505,8 @@
       <arg flag="--account" name="$PROJECT"/>
     </submit_args>
     <queues>
-      <queue walltimemax="48:00:00" nodemin="1" nodemax="256" >skx-normal</queue>
-      <queue walltimemax="02:00:00" nodemin="1" nodemax="4" default="true">skx-dev</queue>
+      <queue walltimemax="48:00:00" nodemin="1" nodemax="256" default="true">skx-normal</queue>
+      <queue walltimemax="02:00:00" nodemin="1" nodemax="4" >skx-dev</queue>
     </queues>
   </batch_system>
 

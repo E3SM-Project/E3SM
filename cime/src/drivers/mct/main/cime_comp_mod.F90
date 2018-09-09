@@ -33,6 +33,7 @@ module cime_comp_mod
   use shr_mpi_mod,       only: shr_mpi_bcast, shr_mpi_commrank, shr_mpi_commsize
   use shr_mem_mod,       only: shr_mem_init, shr_mem_getusage
   use shr_cal_mod,       only: shr_cal_date2ymd, shr_cal_ymd2date, shr_cal_advdateInt
+  use shr_cal_mod,       only: shr_cal_ymds2rday_offset
   use shr_orb_mod,       only: shr_orb_params
   use shr_frz_mod,       only: shr_frz_freezetemp_init
   use shr_reprosum_mod,  only: shr_reprosum_setopts
@@ -416,6 +417,7 @@ module cime_comp_mod
   logical  :: shr_map_dopole         ! logical for dopole in shr_map_mod
   logical  :: domain_check           ! .true.  => check consistency of domains
   logical  :: reprosum_use_ddpdd     ! setup reprosum, use ddpdd
+  logical  :: reprosum_allow_infnan  ! setup reprosum, allow INF and NaN in summands
   real(r8) :: reprosum_diffmax       ! setup reprosum, set rel_diff_max
   logical  :: reprosum_recompute     ! setup reprosum, recompute if tolerance exceeded
 
@@ -429,7 +431,7 @@ module cime_comp_mod
   logical :: do_hist_r2x             ! create aux files: r2x
   logical :: do_hist_l2x             ! create aux files: l2x
   logical :: do_hist_a2x24hr         ! create aux files: a2x
-  logical :: do_hist_l2x1yr          ! create aux files: l2x
+  logical :: do_hist_l2x1yrg         ! create aux files: l2x 1yr glc forcings
   logical :: do_hist_a2x             ! create aux files: a2x
   logical :: do_hist_a2x3hrp         ! create aux files: a2x 3hr precip
   logical :: do_hist_a2x3hr          ! create aux files: a2x 3hr states
@@ -914,7 +916,7 @@ contains
          histaux_a2x3hrp=do_hist_a2x3hrp           , &
          histaux_a2x24hr=do_hist_a2x24hr           , &
          histaux_l2x=do_hist_l2x                   , &
-         histaux_l2x1yr=do_hist_l2x1yr             , &
+         histaux_l2x1yrg=do_hist_l2x1yrg           , &
          histaux_r2x=do_hist_r2x                   , &
          run_barriers=run_barriers                 , &
          mct_usealltoall=mct_usealltoall           , &
@@ -934,6 +936,7 @@ contains
          wall_time_limit=wall_time_limit           , &
          force_stop_at=force_stop_at               , &
          reprosum_use_ddpdd=reprosum_use_ddpdd     , &
+         reprosum_allow_infnan=reprosum_allow_infnan, &
          reprosum_diffmax=reprosum_diffmax         , &
          reprosum_recompute=reprosum_recompute, &
          max_cplstep_time=max_cplstep_time)
@@ -945,6 +948,7 @@ contains
 
     call shr_reprosum_setopts(&
          repro_sum_use_ddpdd_in    = reprosum_use_ddpdd, &
+         repro_sum_allow_infnan_in = reprosum_allow_infnan, &
          repro_sum_rel_diff_max_in = reprosum_diffmax, &
          repro_sum_recompute_in    = reprosum_recompute)
 
@@ -2094,6 +2098,10 @@ contains
     logical            :: drv_pause  ! Driver writes pause restart file
     character(len=CL)  :: drv_resume ! Driver resets state from restart file
 
+    type(ESMF_Time)    :: etime_curr            ! Current model time
+    real(r8)           :: tbnds1_offset         ! Time offset for call to seq_hist_writeaux
+    logical            :: lnd2glc_averaged_now  ! Whether lnd2glc averages were taken this timestep
+
 101 format( A, i10.8, i8, 12A, A, F8.2, A, F8.2 )
 102 format( A, i10.8, i8, A, 8L3 )
 103 format( 5A )
@@ -2147,7 +2155,7 @@ contains
        !----------------------------------------------------------
 
        call seq_timemgr_clockAdvance( seq_SyncClock, force_stop, force_stop_ymd, force_stop_tod)
-       call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod )
+       call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod)
        call shr_cal_date2ymd(ymd,year,month,day)
        stop_alarm    = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_stop)
        atmrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_atmrun)
@@ -2206,6 +2214,8 @@ contains
        if (mod(tod,43200) == 0) t12hr_alarm = .true.
        if (tod            == 0) t24hr_alarm = .true.
        if (month==1 .and. day==1 .and. tod==0) t1yr_alarm = .true.
+
+       lnd2glc_averaged_now = .false.
 
        if (seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_datestop)) then
           if (iamroot_CPLID) then
@@ -2935,6 +2945,7 @@ contains
                 ! NOTE - only create appropriate input to glc if the avg_alarm is on
                 if (glcrun_avg_alarm) then
                    call prep_glc_accum_avg(timer='CPL:glcprep_avg')
+                   lnd2glc_averaged_now = .true.
 
                    ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
                    call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
@@ -3532,7 +3543,8 @@ contains
           call t_drvstartf ('CPL:BUDGETF',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
           if (.not. dead_comps) then
              call seq_diag_print_mct(EClock_d,stop_alarm,budget_inst, &
-                  budget_daily, budget_month, budget_ann, budget_ltann, budget_ltend)
+                  budget_daily, budget_month, budget_ann, budget_ltann, &
+                  budget_ltend, infodata)
           endif
           call seq_diag_zero_mct(EClock=EClock_d)
 
@@ -3716,15 +3728,60 @@ contains
              enddo
           endif
 
-          if (do_hist_l2x1yr .and. glcrun_alarm) then
-             ! Use yr_offset=-1 so the file with fields from year 1 has time stamp
-             ! 0001-01-01 rather than 0002-01-01, etc.
-             do eli = 1,num_inst_lnd
-                suffix = component_get_suffix(lnd(eli))
-                call seq_hist_writeaux(infodata, EClock_d, lnd(eli), flow='c2x', &
-                     aname='l2x'//trim(suffix), dname='doml', &
-                     nx=lnd_nx, ny=lnd_ny, nt=1, write_now=t1yr_alarm, yr_offset=-1)
-             enddo
+          if (do_hist_l2x1yrg) then
+             ! We use a different approach here than for other aux hist files: For other
+             ! files, we let seq_hist_writeaux accumulate fields in time. However, if we
+             ! stop in the middle of an accumulation period, these accumulated fields get
+             ! reset (because they aren't written to the cpl restart file); this is
+             ! potentially a problem for this year-long accumulation. Thus, here, we use
+             ! the existing accumulated fields from prep_glc_mod, because those *do*
+             ! continue properly through a restart.
+
+             ! The logic here assumes that we average the lnd2glc fields exactly at the
+             ! year boundary - no more and no less. If that's not the case, we're likely
+             ! to be writing the wrong thing to these aux files, so we check that
+             ! assumption here.
+             if (t1yr_alarm .and. .not. lnd2glc_averaged_now) then
+                write(logunit,*) 'ERROR: histaux_l2x1yrg requested;'
+                write(logunit,*) 'it is the year boundary, but lnd2glc fields were not averaged this time step.'
+                write(logunit,*) 'One possible reason is that you are running with a stub glc model.'
+                write(logunit,*) '(It only works to request histaux_l2x1yrg if running with a prognostic glc model.)'
+                call shr_sys_abort(subname// &
+                     ' do_hist_l2x1yrg and t1yr_alarm are true, but lnd2glc_averaged_now is false')
+             end if
+             if (lnd2glc_averaged_now .and. .not. t1yr_alarm) then
+                ! If we're averaging more frequently than yearly, then just writing the
+                ! current values of the averaged fields once per year won't give the true
+                ! annual averages.
+                write(logunit,*) 'ERROR: histaux_l2x1yrg requested;'
+                write(logunit,*) 'lnd2glc fields were averaged this time step, but it is not the year boundary.'
+                write(logunit,*) '(It only works to request histaux_l2x1yrg if GLC_AVG_PERIOD is yearly.)'
+                call shr_sys_abort(subname// &
+                     ' do_hist_l2x1yrg and lnd2glc_averaged_now are true, but t1yr_alarm is false')
+             end if
+
+             if (t1yr_alarm) then
+                call seq_timemgr_EClockGetData( EClock_d, ECurrTime = etime_curr)
+                ! We need to pass in tbnds1_offset because (unlike with most
+                ! seq_hist_writeaux calls) here we don't call seq_hist_writeaux every time
+                ! step, so the automatically determined lower time bound can be wrong. For
+                ! typical runs with a noleap calendar, we want tbnds1_offset =
+                ! -365. However, to determine this more generally, based on the calendar
+                ! we're using, we call this shr_cal routine.
+                call shr_cal_ymds2rday_offset(etime=etime_curr, &
+                     rdays_offset = tbnds1_offset, &
+                     years_offset = -1)
+                do eli = 1,num_inst_lnd
+                   suffix = component_get_suffix(lnd(eli))
+                   ! Use yr_offset=-1 so the file with fields from year 1 has time stamp
+                   ! 0001-01-01 rather than 0002-01-01, etc.
+                   call seq_hist_writeaux(infodata, EClock_d, lnd(eli), flow='c2x', &
+                        aname='l2x1yr_glc'//trim(suffix), dname='doml', &
+                        nx=lnd_nx, ny=lnd_ny, nt=1, write_now=.true., &
+                        tbnds1_offset = tbnds1_offset, yr_offset=-1, &
+                        av_to_write=prep_glc_get_l2gacc_lx_one_instance(eli))
+                enddo
+             endif
           endif
 
           if (do_hist_l2x) then

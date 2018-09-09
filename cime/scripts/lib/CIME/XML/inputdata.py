@@ -25,7 +25,7 @@ class Inputdata(GenericXML):
         self._servernode = None
 
     def get_next_server(self):
-        protocal = None
+        protocol = None
         address = None
         servernodes = self.get_children("server")
         if self._servernode is None:
@@ -40,7 +40,7 @@ class Inputdata(GenericXML):
                 self._servernode = None
 
         if self._servernode is not None:
-            protocal = self.text(self.get_child("protocal", root = self._servernode))
+            protocol = self.text(self.get_child("protocol", root = self._servernode))
             address =  self.text(self.get_child("address", root = self._servernode))
 
-        return protocal, address
+        return protocol, address

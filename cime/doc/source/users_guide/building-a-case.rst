@@ -4,7 +4,10 @@
 Building a Case
 ******************
 
-The following describes the process of building the model executable.
+Once the case has been created and setup, its time to build the executable.
+Several directories full of source code must be built all with the same compiler and flags.
+**case.build** performs all build operations (setting dependecies, invoking Make,
+creating the executable).
 
 .. _building-the-model:
 
@@ -12,25 +15,25 @@ The following describes the process of building the model executable.
 Calling **case.build**
 ========================
 
-After calling **case.setup**, run **case.build** to build the model executable. Running this will:
+After calling `case.setup <../Tools_user/case.setup.html>`_ , run `case.build <../Tools_user/case.build.html>`_  to build the model executable. Running this will:
 
 1. Create the component namelists in ``$RUNDIR`` and ``$CASEROOT/CaseDocs``.
-2. Create the necessary compiled libraries ``mct``, ``pio``, ``gptl`` and ``csm_share``.
+2. Create the necessary compiled libraries used by coupler and component models ``mct``, ``pio``, ``gptl`` and ``csm_share``.
    The libraries will be placed in a path below ``$SHAREDLIBROOT``.
-3. Create the necessary compiled libraries. These are be placed in ``$EXEROOT/bld/lib``.
+3. Create the necessary compiled libraries for each component model. These are be placed in ``$EXEROOT/bld/lib``.
 4. Create the model executable (``$MODEL.exe``), which is placed in ``$EXEROOT``.
 
 You do not need to change the default build settings to create the executable, but it is useful to become familiar with them in order to make optimal use of the system. The CIME scripts provide you with a great deal of flexibility in customizing the build process.
 
 The **env_build.xml** variables control various aspects of building the executable. Most of the variables should not be modified, but users can modify these:
 
-- ``$BUILD_THREADED``
+- ``$BUILD_THREADED`` : if TRUE, the model will be built with OpenMP.
 
-- ``$DEBUG``
+- ``$DEBUG`` : if TRUE, the model is compiled with debugging instead of optimization flags.
 
-- ``$GMAKE_J``
+- ``$GMAKE_J`` : How many threads GNUMake should use while building.
 
-The best way to see what xml variables are in your ``$CASEROOT`` directory is to use the **xmlquery** command. For usage information, run:
+The best way to see what xml variables are in your ``$CASEROOT`` directory is to use the `xmlquery <../Tools_user/xmlquery.html>`_  command. For usage information, run:
 ::
 
    > ./xmlquery --help
@@ -43,9 +46,10 @@ To build the model, change to your ``$CASEROOT`` directory and execute **case.bu
 
 Diagnostic comments appear as the build proceeds.
 
-The **case.build** command generates the utility and component libraries and the model executable, and it generates build logs for each component. Each log file is named form: **$component.bldlog.$datestamp**. They are located in ``$BLDDIR``. If they are compressed (as indicated by a .gz file extension), the build ran successfully.
+The `case.build <../Tools_user/case.build.html>`_  command generates the utility and component libraries and the model executable, and it generates build logs for each component.
+Each log file is named form: **$component.bldlog.$datestamp**. They are located in ``$BLDDIR``. If they are compressed (as indicated by a .gz file extension), the build ran successfully.
 
-Invoking **case.build** creates the following directory structure in ``$EXEROOT`` if the Intel compiler is used:
+Invoking `case.build <../Tools_user/case.build.html>`_  creates the following directory structure in ``$EXEROOT`` if the Intel compiler is used:
 ::
 
    atm/, cpl/, esp/, glc/, ice/, intel/, lib/, lnd/, ocn/, rof/, wav/
@@ -71,7 +75,7 @@ If either **env_build.xml** or **Macros.make** has been modified, and/or if code
 ::
 
    > cd $CASEROOT
-   > ./case.build --clean
+   > ./case.build --clean-all
 
 If you have ONLY modified the PE layout in **env_mach_pes.xml**, a clean may not be required.
 ::
@@ -91,7 +95,7 @@ If the threading has been changed (turned on or off) in any component since the 
       ./case.build
 
     ---- OR ----
-    
+
     You can override this error message at your own risk by executing:
       ./xmlchange SMP_BUILD=0
     Then rerun the build script interactively.
@@ -129,16 +133,17 @@ Input data can occupy significant space on a system, so users should share a com
 
 The build process handles input data as follows:
 
-- The **buildnml** scripts in the various component **cime_config** directories create listings of required component input data sets in the **Buildconf/$component.input_data_list** files.
+- The **buildnml** scripts in the various component ``cime_config`` directories create listings of required component input data sets in the ``Buildconf/$component.input_data_list`` files.
 
-- **check_input_data**, which is called by **case.build**, checks for the presence of the required input data files in the root directory ``$DIN_LOC_ROOT``.
+- `check_input_data <../Tools_user/check_input_data.html>`_ , which is called by `case.build <../Tools_user/case.build.html>`_ , checks for the presence of the required input data files in the root directory ``$DIN_LOC_ROOT``.
 
 - If all required data sets are found on the local disk, the build can proceed.
 
-- If any of the required input data sets are not found locally, the files that are missing are listed. At this point, you must obtain the required data from the input data server with **check_input_data** as shown here:
-  ::
+- If any of the required input data sets are not found locally, the
+  files that are missing are listed. At this point, you must obtain
+  the required data from the input data server with `check_input_data
+  <../Tools_user/check_input_data.html>`_ as shown here: ::
 
-     check_input_data --export
+     check_input_data --download
 
 The **env_run.xml** variables ``$DIN_LOC_ROOT`` and ``$DIN_LOC_ROOT_CLMFORC`` determine where you should expect input data to reside on a local disk.
-

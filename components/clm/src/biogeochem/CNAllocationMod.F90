@@ -34,6 +34,7 @@ module CNAllocationMod
   use clm_varctl          , only : nu_com
   use SoilStatetype       , only : soilstate_type
   use WaterStateType      , only : waterstate_type
+  use clm_varctl          , only : NFIX_PTASE_plant
 
   !
   implicit none
@@ -2963,6 +2964,8 @@ contains
          npool_to_grainn_storage      => nitrogenflux_vars%npool_to_grainn_storage_patch     , & ! Output: [real(r8) (:)   ]  allocation to grain N storage (gN/m2/s)
          retransn_to_npool            => nitrogenflux_vars%retransn_to_npool_patch           , & ! Output: [real(r8) (:)   ]  deployment of retranslocated N (gN/m2/s)
          sminn_to_npool               => nitrogenflux_vars%sminn_to_npool_patch              , & ! Output: [real(r8) (:)   ]  deployment of soil mineral N uptake (gN/m2/s)
+         nfix_to_plantn               => nitrogenflux_vars%nfix_to_plantn_patch              , &
+         biochem_pmin_to_plant        => phosphorusflux_vars%biochem_pmin_to_plant_patch     , &
          npool_to_leafn               => nitrogenflux_vars%npool_to_leafn_patch              , & ! Output: [real(r8) (:)   ]  allocation to leaf N (gN/m2/s)
          npool_to_leafn_storage       => nitrogenflux_vars%npool_to_leafn_storage_patch      , & ! Output: [real(r8) (:)   ]  allocation to leaf N storage (gN/m2/s)
          npool_to_frootn              => nitrogenflux_vars%npool_to_frootn_patch             , & ! Output: [real(r8) (:)   ]  allocation to fine root N (gN/m2/s)
@@ -3036,6 +3039,8 @@ contains
          grain_flag                   => cnstate_vars%grain_flag_patch                         , &
          cn_scalar                    => cnstate_vars%cn_scalar                                , &
          cp_scalar                    => cnstate_vars%cp_scalar                                , &
+         cn_scalar_runmean            => cnstate_vars%cn_scalar_runmean                        , &
+         cp_scalar_runmean            => cnstate_vars%cp_scalar_runmean                        , &
          annmax_retransp              => cnstate_vars%annmax_retransp_patch                    , &
          cpool_to_xsmrpool            => carbonflux_vars%cpool_to_xsmrpool_patch               , &
          w_scalar                     => carbonflux_vars%w_scalar_col                          , &
@@ -3285,8 +3290,8 @@ contains
              ! 'ECA' or 'MIC' mode
              ! dynamic allocation based on light limitation (more woody growth) vs nutrient limitations (more fine root growth)
              ! set allocation coefficients
-             N_lim_factor(p) = cn_scalar(p) ! N stress factor
-             P_lim_factor(p) = cp_scalar(p) ! P stress factor
+             N_lim_factor(p) = cn_scalar_runmean(p) ! N stress factor
+             P_lim_factor(p) = cp_scalar_runmean(p) ! P stress factor
 
              if (cnallocate_carbon_only()) then
                  N_lim_factor(p) = 0.0_r8
@@ -3374,8 +3379,13 @@ contains
              retransn_to_npool(p) = avail_retransn(p)
              retransp_to_ppool(p) = avail_retransp(p)
 
-             plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(p)
-             plant_palloc(p) = sminp_to_ppool(p) + retransp_to_ppool(p)
+             if (NFIX_PTASE_plant) then
+                plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(p) + nfix_to_plantn(p)
+                plant_palloc(p) = sminp_to_ppool(p) + retransp_to_ppool(p) + biochem_pmin_to_plant(p)
+             else
+                plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(p)
+                plant_palloc(p) = sminp_to_ppool(p) + retransp_to_ppool(p)
+             endif
              
              mr = leaf_mr(p) + froot_mr(p)
              if (woody(ivt(p)) == 1.0_r8) then
@@ -4231,7 +4241,8 @@ contains
     ! if lai greater than laimax then no allocation to leaf; leaf allocation goes to stem or fine root
     if (laindex > laimax) then 
        if (woody == 1.0_r8) then
-          alloc_stem = alloc_stem + alloc_leaf - 0.01_r8
+          alloc_stem = alloc_stem + alloc_leaf/2._r8 - 0.005_r8
+          alloc_froot = alloc_froot + alloc_leaf/2._r8 - 0.005_r8
        else
           alloc_froot = alloc_froot + alloc_leaf - 0.01_r8
        end if

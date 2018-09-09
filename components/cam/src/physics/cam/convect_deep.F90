@@ -296,7 +296,11 @@ subroutine convect_deep_tend( &
   ! If we added this, set it.
   if (ttend_dp_idx > 0) then
      call pbuf_get_field(pbuf, ttend_dp_idx, ttend_dp)
-     ttend_dp(:state%ncol,:pver) = ptend%s(:state%ncol,:pver)/cpair
+     if ( allocated(ptend%s) ) then
+        ttend_dp(:state%ncol,:pver) = ptend%s(:state%ncol,:pver)/cpair
+     else
+        ttend_dp(:state%ncol,:pver) = 0.0_r8
+     endif
   end if
 
   call outfld( 'ICWMRDP ', ql  , pcols, state%lchnk )

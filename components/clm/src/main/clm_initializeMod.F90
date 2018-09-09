@@ -619,6 +619,8 @@ contains
        call crop_vars%initAccBuffer(bounds_proc)
     end if
 
+    call cnstate_vars%initAccBuffer(bounds_proc)
+
     call print_accum_fields()
 
     call t_stopf('init_accflds')
@@ -831,6 +833,7 @@ contains
     if (crop_prog) then
        call crop_vars%initAccVars(bounds_proc)
     end if
+    call cnstate_vars%initAccVars(bounds_proc)
 
     !------------------------------------------------------------       
     ! Read monthly vegetation
