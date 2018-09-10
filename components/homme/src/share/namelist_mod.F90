@@ -21,8 +21,6 @@ module namelist_mod
     numnodes,      &
     sub_case,      &
     tasknum,       &       ! used dg model in AIX machine
-    remapfreq,     &       ! number of steps per remapping call
-    remap_type,    &       ! selected remapping option
     statefreq,     &       ! number of steps per printstate call
     restartfreq,   &
     restartfile,   &       ! name of the restart file for INPUT
@@ -204,8 +202,6 @@ module namelist_mod
       numnodes,      &
       ne,            &             ! element resolution factor
       tasknum,       &
-      remapfreq,     &             ! number of steps per remapping call
-      remap_type,    &             ! selected remapping option
       statefreq,     &             ! number of steps per printstate call
       integration,   &             ! integration method
       theta_hydrostatic_mode,       &   
@@ -353,8 +349,6 @@ module namelist_mod
     restartdir    = "./restart/"
     runtype       = 0
     statefreq     = 1
-    remapfreq     = 240
-    remap_type    = "parabolic"
     tasknum       =-1
     integration   = "explicit"
     moisture      = "dry"
@@ -548,19 +542,21 @@ module namelist_mod
           if(output_timeunits(i).eq.1) then  ! per_day
              output_frequency(i) = output_frequency(i)*(secpday/tstep)
              output_start_time(i)= output_start_time(i)*(secpday/tstep)
-             output_end_time(i)  = output_end_time(i)*(secpday/tstep)
+             if (output_end_time(i)>=0) &
+                  output_end_time(i)  = output_end_time(i)*(secpday/tstep)
           else if(output_timeunits(i).eq.2) then  ! per_hour
              output_frequency(i) = output_frequency(i)*(secphr/tstep)
              output_start_time(i)= output_start_time(i)*(secphr/tstep)
-             output_end_time(i)  = output_end_time(i)*(secphr/tstep)
+             if (output_end_time(i)>=0) &
+                  output_end_time(i)  = output_end_time(i)*(secphr/tstep)
           else if(output_timeunits(i).eq.3) then  ! per_seconds
              output_frequency(i) = output_frequency(i)/tstep
              output_start_time(i)= output_start_time(i)/tstep
-             output_end_time(i)  = output_end_time(i)/tstep
+             if (output_end_time(i)>=0) &
+                  output_end_time(i)  = output_end_time(i)/tstep
           end if
-          if(output_end_time(i)<0) then
-             output_end_time(i)=nEndStep
-          endif
+          if(output_end_time(i)<0) output_end_time(i)=nEndStep
+          if ( output_start_time(i) > output_end_time(i) ) output_frequency(i)=0
        end do
 
 !=======================================================================================================!
@@ -593,8 +589,6 @@ module namelist_mod
     call MPI_bcast(ne,              1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(qsize,           1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(sub_case,        1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(remapfreq,       1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(remap_type, MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
     call MPI_bcast(statefreq,       1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(restartfreq,     1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(runtype,         1,MPIinteger_t,par%root,par%comm,ierr)
@@ -774,8 +768,12 @@ module namelist_mod
     end if
     ! set map
     if (cubed_sphere_map<0) then
+#if ( defined MODEL_THETA_C || defined MODEL_THETA_L ) 
+       cubed_sphere_map=2  ! theta model default = element local
+#else
        cubed_sphere_map=0  ! default is equi-angle gnomonic
-       if (ne.eq.0) cubed_sphere_map=2  ! element_local for var-res grids
+#endif
+       if (ne.eq.0) cubed_sphere_map=2  ! must use element_local for var-res grids
     endif
     if (par%masterproc) write (iulog,*) "Reference element projection: cubed_sphere_map=",cubed_sphere_map
 
@@ -911,6 +909,7 @@ module namelist_mod
        if (integration == "runge_kutta"  ) then
           write(iulog,*)"readnl: rk_stage_user   = ",rk_stage_user
        endif
+       write(iulog,*)"readnl: theta_hydrostatic_mode = ",theta_hydrostatic_mode
        write(iulog,*)"readnl: use_semi_lagrange_transport   = ",use_semi_lagrange_transport
        write(iulog,*)"readnl: use_semi_lagrange_transport_local_conservation=",use_semi_lagrange_transport_local_conservation
        write(iulog,*)"readnl: tstep_type    = ",tstep_type

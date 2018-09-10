@@ -16,12 +16,13 @@
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 5
   rsplit            = 0
-  qsplit            = 10
+  qsplit            = 5                         ! dt_tracer <= 1.5s  
   nu                = 6.3e7                     ! default= 1e15/(120)^3 *(ne30/ne60)**3.2
-  nu_s              = 6.3e7
+  nu_s              = 0
   nu_p              = 0
   nu_q              = 0
   nu_top            = 0                         ! 2.5e5/(120)^(1)
+  vert_remap_q_alg  = -1
   limiter_option    = 4
   dcmip16_mu        = 500.0d0                   ! additional uniform viscosity
   dcmip16_mu_s      = 1500.0d0
@@ -44,6 +45,7 @@
   output_varnames1  ='T','p','ps','pnh','geo','u','v','w','Th','Q','Q2','Q3','precl'   ! variables to write to file
   interp_nlon       = 360
   interp_nlat       = 181
+  interp_gridtype   = 1
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   interp_lon0       = -180.0                    ! shift lon range to [-180,+180)
   output_type       ='netcdf'                   ! netcdf or pnetcdf

@@ -133,7 +133,7 @@ contains
     real (kind=real_kind) :: T1,T2,S1,S2,P1,P2
     real (kind=real_kind) :: PEhorz1,PEhorz2
     real (kind=real_kind) :: KEH1,KEH2,KEV1,KEV2
-    real (kind=real_kind) :: KEwH1,KEwH2,KEwV1,KEwV2
+    real (kind=real_kind) :: KEwH1,KEwH2,KEwH3,KEwV1,KEwV2
     real (kind=real_kind) :: ddt_tot,ddt_diss, ddt_diss_adj
     integer               :: n0, nm1, np1, n0q
     integer               :: npts,n,q
@@ -452,12 +452,6 @@ contains
        
        do ie=nets,nete
           tmp(:,:,ie)=elem(ie)%accum%PEner(:,:,n)
-          if (SUM(tmp(:,:,ie)) /= SUM(elem(ie)%accum%PEner(:,:,n))) then
-             ! print *,'IAM: ',iam,',n,ie,prim_printstate:SUM(PEner): ',n,ie,SUM(tmp(:,:,ie))
-             ! PEner is NaN, reset to 0
-             elem(ie)%accum%PEner(:,:,n) = 0
-             tmp(:,:,ie)=elem(ie)%accum%PEner(:,:,n)
-          endif
        enddo
        PEner(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
        PEner(n) = PEner(n)*scale
@@ -529,6 +523,12 @@ contains
     enddo
     KEwH2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEwH2 = KEwH2*scale
+
+    do ie=nets,nete
+      tmp(:,:,ie) = elem(ie)%accum%KEw_horiz3
+    enddo
+    KEwH3 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    KEwH3 = KEwH3*scale
 
     do ie=nets,nete
       tmp(:,:,ie) = elem(ie)%accum%KEw_vert1
@@ -623,7 +623,7 @@ contains
 #else
     T1=0; T2=0; S1=0; S2=0; P1=0; P2=0; 
     IEvert1=0; PEhorz1=0; PEhorz2=0; PEvert1=0; PEvert2=0; 
-    KEH1=0; KEH2=0;  KEV1=0; KEV2=0;  KEwH1=0; KEwH2=0;  KEwV1=0; KEwV2=0; 
+    KEH1=0; KEH2=0;  KEV1=0; KEV2=0;  KEwH1=0; KEwH2=0; KEwH3=0;  KEwV1=0; KEwV2=0; 
 #endif
 
 
@@ -640,7 +640,6 @@ contains
        if (theta_hydrostatic_mode) then
           write(iulog,'(a,2e22.14)')'KEu h-adv,sum=0:',KEH1,KEH2
           write(iulog,'(a,2e22.14)')'KEu v-adv,sum=0:',KEV1,KEV2
-          !write(iulog,'(a,3e22.14)')'IE  v-adv,sum~0:',IEvert1,PEvert1,IEvert1+PEvert1
           write(iulog,'(a,3e22.14)')'IE  v-adv,sum=0:',IEvert1,PEvert1
           write(iulog,'(a,2e22.14)')'KE->IE, IE->KE :',(T1+PEhorz2),(S1+PEhorz1)
           
@@ -650,40 +649,39 @@ contains
           
           ddt_tot =  (IEner(2)-IEner(1))/dt
           ddt_diss = ddt_tot - (S1+PEhorz1)
-          !ddt_diss_adj = ddt_tot - (S1+PEhorz1 + IEvert1+PEvert1)
           write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss
           ddt_tot = (TOTE(2)-TOTE(1))/dt
-          !write(iulog,'(a,3E22.14)') " E,d/dt,diss:",TOTE(2),ddt_tot,ddt_tot - ( IEvert1+PEvert1)
           write(iulog,'(a,3E22.14)') " E,d/dt,diss:",TOTE(2),ddt_tot
        else
           write(iulog,'(a,2e22.14)')'KEu h-adv,sum=0:',KEH1,KEH2
-          write(iulog,'(a,3e22.14)')'KEw h-adv,sum~0:',KEwH1,KEwH2,KEwH1+KEwH2
+          write(iulog,'(a,3e22.14)')'KEw h-adv,sum=0:',KEwH1+KEwH3,KEwH2  !,KEwH1+KEwH2
           write(iulog,'(a,2e22.14)')'KEu v-adv,sum=0:',KEV1,KEV2
           write(iulog,'(a,2e22.14)')'KEw v-adv,sum=0:',KEwV1,KEwV2
           write(iulog,'(a,2e22.14)')'PE h-adv, sum=0:',PEhorz1,PEhorz2
           write(iulog,'(a,2e22.14)')'PE v-adv, sum=0:',PEvert1,PEvert2
-          write(iulog,'(a,3e22.14)')'IE v-adv, sum~0:',IEvert1,IEvert2,IEvert1+IEvert2
+          write(iulog,'(a,3e22.14)')'IE v-adv, sum=0:',IEvert1,IEvert2  !,IEvert1+IEvert2
+          write(iulog,'(a,2e22.14)')'KEw wvor, ~0:   ',KEwH3
           write(iulog,'(a,2e22.14)')'KE->PE, PE->KE :',P1,P2
           write(iulog,'(a,2e22.14)')'KE->IE, IE->KE :',T1+T2,S1+S2
           
           ddt_tot  =  (KEner(2)-KEner(1))/dt
           ddt_diss = ddt_tot -(T1+T2+P1) 
-          ddt_diss_adj = ddt_tot -(T1+T2+P1+KEwH1+KEwH2)
-          write(iulog,'(a,3E22.14)') "KE,d/dt,diss:",KEner(2),ddt_tot,ddt_diss_adj
+          write(iulog,'(a,3E22.14)') "KE,d/dt,diss:",KEner(2),ddt_tot,ddt_diss
+          !ddt_diss_adj = ddt_tot -(T1+T2+P1)+KEwH1+KEwH2)
           !write(iulog,'(a,3E22.14)') "KE diss(adj):",ddt_diss_adj
           
           ddt_tot =  (IEner(2)-IEner(1))/dt
           ddt_diss = ddt_tot - (S1+S2)
-          ddt_diss_adj = ddt_tot - (S1+S2+IEvert1+IEvert2)
-          write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss_adj
+          write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss
+          !ddt_diss_adj = ddt_tot - (S1+S2+IEvert1+IEvert2)
           !write(iulog,'(a,3E22.14)') "IE diss(adj):",ddt_diss_adj
           
           ddt_tot = (PEner(2)-PEner(1))/dt
           ddt_diss = ddt_tot - P2
           write(iulog,'(a,3E22.14)') "PE,d/dt,diss:",PEner(2),ddt_tot,ddt_diss
           ddt_tot = (TOTE(2)-TOTE(1))/dt
-          ddt_diss = ddt_tot - (KEwH1+KEwH2+IEvert1+IEvert2)
-          write(iulog,'(a,3E22.14)') " E,d/dt,diss:",TOTE(2),ddt_tot,ddt_diss
+          !ddt_diss = ddt_tot - (KEwH1+KEwH2+IEvert1+IEvert2)
+          write(iulog,'(a,3E22.14)') " E,d/dt,diss:",TOTE(2),ddt_tot!,ddt_diss
        endif
 #else
        write(iulog,'(a,3E22.14)') "KE,d/dt      ",KEner(2),(KEner(2)-KEner(1))/dt
@@ -815,7 +813,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
           dpt1(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t1)
        enddo
-       call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,t1_qdp),dpt1)
+       call get_kappa_star(kappa_star,elem(ie)%state%Q(:,:,:,1))
        call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,t1),dpt1,&
             elem(ie)%state%phinh(:,:,:,t1), &
             elem(ie)%state%phis(:,:),kappa_star,pnh,dpnh,exner,exner_i,pnh_i)

@@ -78,17 +78,27 @@ contains
     !=========================================
     len = SIZE(state%v)
     call AddStateField(RestDesc,len,type)
-
+#ifdef MODEL_THETA_L
+    len = SIZE(state%w_i)
+#else
     len = SIZE(state%w)
+#endif
     call AddStateField(RestDesc,len,type)
-
+#ifdef MODEL_THETA_L
+    len = SIZE(state%vtheta_dp)
+#else
     len = SIZE(state%theta_dp_cp)
+#endif
     call AddStateField(RestDesc,len,type)
 
     len = SIZE(state%ps_v)
     call AddStateField(RestDesc,len,type)
 
+#ifdef MODEL_THETA_L
+    len = SIZE(state%phinh_i)
+#else
     len = SIZE(state%phinh)
+#endif
     call AddStateField(RestDesc,len,type)
 
     len = SIZE(state%phis)

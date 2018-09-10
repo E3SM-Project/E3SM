@@ -504,10 +504,10 @@ contains
     deallocate(HeadPartition)
 
     ! single global edge buffer for all models:
-    ! hydrostatic 4*nlev      NH:  6*nlev
+    ! hydrostatic 4*nlev      NH:  6*nlev+1
     ! SL tracers: (qsize+1)*nlev
     ! if this is too small, code will abort with an error message
-    call initEdgeBuffer(par,edge_g,elem,max(qsize+1,6)*nlev)
+    call initEdgeBuffer(par,edge_g,elem,max((qsize+1)*nlev,6*nlev+1))
 
 
     allocate(dom_mt(0:hthreads-1))
