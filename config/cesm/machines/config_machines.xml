@@ -378,7 +378,10 @@
       <modules compiler="gnu" mpilib="mpi-serial">
 	<command name="load">netcdf/4.6.1</command>
       </modules>
-      <modules compiler="!gnu" mpilib="mpi-serial">
+      <modules compiler="pgi" mpilib="mpi-serial">
+	<command name="load">netcdf/4.4.1.1</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial">
 	<command name="load">netcdf/4.5.0</command>
       </modules>
     </module_system>
@@ -1006,6 +1009,8 @@
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
+      <!-- The following is needed to access qsub from the compute nodes -->
+      <env name="PATH">$ENV{PATH}:/cluster/torque/bin</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
@@ -2009,7 +2014,7 @@
       <executable>aprun</executable>
       <arguments>
 	<arg name="num_tasks" >-n {{ total_tasks }}</arg>
-	<arg name="tasks_per_node" >-N $MAX_MPITASKS_PER_NODE</arg>
+	<arg name="tasks_per_node" >-N {{ tasks_per_node }} </arg>
 	<arg name="thread_count">--cc depth -d $OMP_NUM_THREADS</arg>
 	<arg name="env_omp_stacksize">-e OMP_STACKSIZE=64M</arg>
 	<arg name="env_thread_count">-e OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>

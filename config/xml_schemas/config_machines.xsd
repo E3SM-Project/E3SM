@@ -13,7 +13,6 @@
   <xs:attribute name="type" type="xs:NCName"/>
   <xs:attribute name="lang" type="xs:NCName"/>
   <xs:attribute name="name" type="xs:NCName"/>
-  <xs:attribute name="allow_error" type="xs:boolean"/>
 
   <!-- simple elements -->
   <xs:simpleType name="upperBoolean">
