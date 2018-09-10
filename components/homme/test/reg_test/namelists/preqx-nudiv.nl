@@ -1,5 +1,5 @@
 &ctl_nl
-vthreads          = 1
+vthreads  = 1
 NThreads          = 1
 partmethod        = 4
 topology          = "cube"
@@ -14,14 +14,14 @@ restartfreq       = 43200
 restartfile       = "./R0001"
 runtype           = 0
 mesh_file         = '/dev/null'
-tstep             = 100
+tstep             = 600
 rsplit            = ${HOMME_TEST_RSPLIT}
-qsplit            = 6
+qsplit            = 1
 tstep_type        = 5
 integration       = "explicit"
 smooth            = 0
 nu                = 7e15
-nu_div            = 7e15
+nu_div            = 1e15
 nu_p              = 7e15
 nu_q              = 7e15
 nu_s              =-1

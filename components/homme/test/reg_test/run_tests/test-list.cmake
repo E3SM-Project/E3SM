@@ -47,6 +47,8 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
     preqx-nlev72-qsize4-r3-q6-dry-kokkos.cmake
     preqx-nlev72-qsize4-r3-tensorhv-dry.cmake
     preqx-nlev72-qsize4-r3-tensorhv-dry-kokkos.cmake
+    preqx-nlev72-qsize4-r3-nudiv-dry.cmake
+    preqx-nlev72-qsize4-r3-nudiv-dry-kokkos.cmake
     preqx-nlev72-qsize10-r3-lim9-dry.cmake
     preqx-nlev72-qsize10-r3-lim9-dry-kokkos.cmake
   )
@@ -67,6 +69,7 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
     preqx-nlev72-qsize4-r3-moist
     preqx-nlev72-qsize4-r3-q6-dry
     preqx-nlev72-qsize4-r3-tensorhv-dry
+    preqx-nlev72-qsize4-r3-nudiv-dry
     preqx-nlev72-qsize10-r3-lim9-dry
   )
 ENDIF()
