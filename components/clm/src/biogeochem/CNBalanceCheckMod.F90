@@ -456,6 +456,11 @@ contains
             ! here is '-' adjustment. It says that the adding to PF decomp n pools was less.
          end if
 
+!         if(c==38749 .and. get_nstep()==2)then
+!            err_found = .true.
+!            err_index = c
+!            exit
+!         endif
          if (abs(col_errnb(c)) > 1e-8_r8)then ! .or. nitrogenstate_vars%sminn_col(c)>1000._r8) then
             err_found = .true.
             err_index = c
@@ -485,6 +490,7 @@ contains
             write(iulog,*)'soyfx                 = ',soyfixn_to_sminn(c)*dt
          endif
          write(iulog,*)'fire                  = ',col_fire_nloss(c)*dt
+         write(iulog,*)'abg fire              = ',nitrogenflux_vars%fire_nloss_p2c_col(c)*dt
          write(iulog,*)'dwt                   = ',dwt_nloss(c)*dt
          write(iulog,*)'prod                  = ',product_nloss(c)*dt
          write(iulog,*)'output_mass           = ',col_noutputs(c)*dt
@@ -526,7 +532,6 @@ contains
          call endrun(msg=errMsg(__FILE__, __LINE__))
 
       end if
-
     end associate
 
   end subroutine NBalanceCheck
@@ -541,6 +546,8 @@ contains
     ! On the radiation time step, perform phosphorus mass conservation check
     ! for column and pft
     !
+    use CNAllocationMod         , only: suplphos
+    use tracer_varcon,  only : is_active_betr_bgc
     ! !ARGUMENTS:
     type(bounds_type)         , intent(in)    :: bounds          
     integer                   , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -698,10 +705,25 @@ contains
 !         col_poutputs(c) =  flux_mineralization_col(c)/dt
 !          col_poutputs(c) = sminp_to_plant(c)
          col_poutputs(c) = col_poutputs(c) - som_p_leached(c) + som_p_runoff_col(c)
+
+         if(is_active_betr_bgc .and. suplphos=='ALL')then
+           err_blg= phosphorusstate_vars%begblgp_col(c)- phosphorusstate_vars%totblgp_col(c) &
+             + primp_to_labilep(c) * dt &
+             + supplement_to_sminp(c) * dt &
+             + phosphorusflux_vars%pflx_plant_to_soilbgc_col(c)*dt &
+             - secondp_to_occlp(c) * dt  &
+             - sminp_leached(c) * dt + som_p_leached(c) * dt  &
+             - som_p_runoff_col(c)*dt-phosphorusflux_vars%sminp_to_plant_col(c)*dt &
+             - phosphorusflux_vars%fire_decomp_ploss_col(c)*dt
+           if(err_blg<0._r8)then
+             supplement_to_sminp(c) = supplement_to_sminp(c) - err_blg/dt
+             col_pinputs(c) = col_pinputs(c)  - err_blg/dt
+           endif
+         endif
          ! calculate the total column-level phosphorus balance error for this time step
          col_errpb(c) = (col_pinputs(c) - col_poutputs(c))*dt - &
               (col_endpb(c) - col_begpb(c))
-!         if(c==18619  .and. get_nstep()== 254044)then
+!         if(c==15986  .and. get_nstep()== 9)then
 !            err_found = .true.
 !            err_index = c
 !            exit
@@ -742,6 +764,7 @@ contains
          write(iulog,*)'abgp           = ', phosphorusstate_vars%totabgp_col(c)
          write(iulog,*)'blgp           = ', phosphorusstate_vars%totblgp_col(c)
          write(iulog,*)'sminp_to_ppool = ', phosphorusflux_vars%sminp_to_ppool_col(c)*dt
+
          err_blg= phosphorusstate_vars%begblgp_col(c)- phosphorusstate_vars%totblgp_col(c) &
            + primp_to_labilep(c) * dt &
            + supplement_to_sminp(c) * dt &

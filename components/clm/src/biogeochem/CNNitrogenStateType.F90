@@ -1581,6 +1581,7 @@ contains
     use clm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
     use clm_time_manager    , only : get_nstep
+    use spmdMod , only : iam
     !
     ! !ARGUMENTS:
     class (nitrogenstate_type) :: this
@@ -1625,7 +1626,13 @@ contains
             this%totprodn_col(c) + &
             this%seedn_col(c) + &
             this%plant_n_buffer_col(c)
-
+!       if(iam == 68 .and. c==38749)then
+!         print*,'totabg',this%totabgn_col (c)
+!         print*,'totpftn', this%totpftn_col(c) 
+!         print*,'totprodn', this%totprodn_col(c)
+!         print*,'seedn', this%seedn_col(c)
+!         print*,'plant_n_buffer', this%plant_n_buffer_col(c)
+!       endif
 
        this%totblgn_col(c) = &
             this%cwdn_col(c) + &

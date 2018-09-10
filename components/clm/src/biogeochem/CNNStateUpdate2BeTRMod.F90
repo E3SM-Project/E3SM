@@ -6,7 +6,7 @@ module CNNStateUpdate2BeTRMod
   !
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
-  use clm_time_manager    , only : get_step_size
+  use clm_time_manager    , only : get_step_size,get_nstep
   use clm_varpar          , only : nlevsoi, nlevdecomp
   use clm_varpar          , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use clm_varctl          , only : iulog
@@ -51,6 +51,7 @@ contains
     integer  :: c,p,j,l ! indices
     integer  :: fp,fc   ! lake filter indices
     real(r8) :: dt      ! radiation time step (seconds)
+    real(r8) :: totdif
     !-----------------------------------------------------------------------
 
     associate(                      &
@@ -60,11 +61,37 @@ contains
 
       ! set time steps
       dt = real( get_step_size(), r8 )
-
+!      totdif=0._r8
       ! patch -level nitrogen fluxes from gap-phase mortality
 
       do fp = 1,num_soilp
          p = filter_soilp(fp)
+!         if(veg_pp%column(p)==15981 .and. get_nstep()==2)then
+!         print*,'bf==='
+!         print*,p,'leafn',ns%leafn_patch(p)
+!         print*,p,'frootn',ns%frootn_patch(p)
+!         print*,p,'livestemn',ns%livestemn_patch(p)
+!         print*,p,'deadstemn',ns%deadstemn_patch(p)
+!         print*,p,'livecrootn',ns%livecrootn_patch(p)
+!         print*,p,'deadcrootn',ns%deadcrootn_patch(p)
+!         print*,p,'retransn',ns%retransn_patch(p)
+
+         ! storage pools
+!         print*,p,'leafn_s',ns%leafn_storage_patch(p)
+!         print*,p,'frootn_s',ns%frootn_storage_patch(p)
+!         print*,p,'livestemn_s',ns%livestemn_storage_patch(p)
+!         print*,p,'deadstemn_s',ns%deadstemn_storage_patch(p)
+!         print*,p,'livecrootn_s',ns%livecrootn_storage_patch(p)
+!         print*,p,'deadcrootn_s',ns%deadcrootn_storage_patch(p)
+
+         ! transfer pools
+!         print*,p,'leafn_x',ns%leafn_xfer_patch(p)
+!         print*,p,'frootn_x',ns%frootn_xfer_patch(p)
+!         print*,p,'livestemn_x',ns%livestemn_xfer_patch(p)
+!         print*,p,'deadstemn_x',ns%deadstemn_xfer_patch(p)
+!         print*,p,'livecrootn_x',ns%livecrootn_xfer_patch(p)
+!         print*,p,'deadcrootn_x',ns%deadcrootn_xfer_patch(p)
+!         endif
 
          ! displayed pools
          ns%leafn_patch(p)              =  ns%leafn_patch(p)      - nf%m_leafn_to_litter_patch(p)      * dt
@@ -74,6 +101,7 @@ contains
          ns%livecrootn_patch(p)         =  ns%livecrootn_patch(p) - nf%m_livecrootn_to_litter_patch(p) * dt
          ns%deadcrootn_patch(p)         =  ns%deadcrootn_patch(p) - nf%m_deadcrootn_to_litter_patch(p) * dt
          ns%retransn_patch(p)           =  ns%retransn_patch(p)   - nf%m_retransn_to_litter_patch(p)   * dt
+         ns%npool_patch(p)              =  ns%npool_patch(p)      - nf%m_npool_to_litter_patch(p)      * dt
 
          ! storage pools
          ns%leafn_storage_patch(p)      =  ns%leafn_storage_patch(p)      - nf%m_leafn_storage_to_litter_patch(p)      * dt
@@ -91,8 +119,43 @@ contains
          ns%livecrootn_xfer_patch(p)    =  ns%livecrootn_xfer_patch(p) - nf%m_livecrootn_xfer_to_litter_patch(p) * dt
          ns%deadcrootn_xfer_patch(p)    =  ns%deadcrootn_xfer_patch(p) - nf%m_deadcrootn_xfer_to_litter_patch(p) * dt
 
-      end do
+!         if(veg_pp%column(p)==15981 .and. get_nstep()==2)then
+!         print*,'afff'
+!         print*,p,'leafn',ns%leafn_patch(p!)              
+!         print*,p,'frootn',ns%frootn_patch(p)             
+!         print*,p,'livestemn',ns%livestemn_patch(p)          
+!         print*,p,'deadstemn',ns%deadstemn_patch(p)         
+!         print*,p,'livecrootn',ns%livecrootn_patch(p)        
+!         print*,p,'deadcrootn',ns%deadcrootn_patch(p)       
+!         print*,p,'retransn',ns%retransn_patch(p)          
 
+         ! storage pools
+!         print*,p,'leafn_s',ns%leafn_storage_patch(p)     
+!         print*,p,'frootn_s',ns%frootn_storage_patch(p)    
+!         print*,p,'livestemn_s',ns%livestemn_storage_patch(p)  
+!         print*,p,'deadstemn_s',ns%deadstemn_storage_patch(p)  
+!         print*,p,'livecrootn_s',ns%livecrootn_storage_patch(p) 
+!         print*,p,'deadcrootn_s',ns%deadcrootn_storage_patch(p) 
+
+!         totdif=totdif    + dt * veg_pp%wtcol(p) * (nf%m_leafn_to_litter_patch(p)      &
+!          + nf%m_frootn_to_litter_patch(p)     &
+!          + nf%m_livestemn_to_litter_patch(p)  &
+!          + nf%m_deadstemn_to_litter_patch(p)  &
+!          + nf%m_livecrootn_to_litter_patch(p) &
+!          + nf%m_deadcrootn_to_litter_patch(p) &
+!          + nf%m_retransn_to_litter_patch(p)   &
+!          + nf%m_leafn_storage_to_litter_patch(p)      &
+!          + nf%m_frootn_storage_to_litter_patch(p))     
+         ! transfer pools
+!         print*,p,'leafn_x',ns%leafn_xfer_patch(p)        
+!         print*,p,'frootn_x',ns%frootn_xfer_patch(p)      
+!         print*,p,'livestemn_x',ns%livestemn_xfer_patch(p)    
+!         print*,p,'deadstemn_x',ns%deadstemn_xfer_patch(p)    
+!         print*,p,'livecrootn_x',ns%livecrootn_xfer_patch(p)    
+!         print*,p,'deadcrootn_x',ns%deadcrootn_xfer_patch(p)    
+!         endif
+      end do
+!      print*,'totdif',totdif
     end associate
 
   end subroutine NStateUpdate2

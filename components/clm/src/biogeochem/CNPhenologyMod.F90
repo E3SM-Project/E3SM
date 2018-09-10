@@ -2340,6 +2340,7 @@ contains
     !
     ! !USES:
     use pftvarcon , only : npcropmin
+    use spmdMod   , only : iam
     !
     ! !ARGUMENTS:
     integer                 , intent(in)    :: num_soilp       ! number of soil patches in filter
@@ -2431,9 +2432,10 @@ contains
 
       ! The litterfall transfer rate starts at 0.0 and increases linearly
       ! over time, with displayed growth going to 0.0 on the last day of litterfall
+!      if(iam==30)print*,'CNOffsetLitterfall'
       do fp = 1,num_soilp
          p = filter_soilp(fp)
-
+!         if(iam==30)print*,p,offset_flag(p),offset_counter(p),nu_com
          ! only calculate fluxes during offset period
          if (offset_flag(p) == 1._r8) then
 
@@ -2501,7 +2503,9 @@ contains
 
                      livestemn_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * livestemn(p)) + npool_to_livestemn(p))
                      livestemp_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * livestemp(p)) + ppool_to_livestemp(p))
-                        
+!                     if(p==39810)then
+!                        print*,presharv(ivt(p)), t1,  livestemn(p), npool_to_livestemn(p)
+!                     endif   
                   else
                      leafn_to_litter(p)   = (max(t1 * leafn(p),0._r8) + npool_to_leafn(p))*0.38_r8
                      leafn_to_retransn(p) = (max(t1 * leafn(p),0._r8) + npool_to_leafn(p))*0.62_r8

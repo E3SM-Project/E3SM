@@ -1721,8 +1721,13 @@ contains
             this%totlitp_col(c) + &
             this%totsomp_col(c) + &
             this%sminp_col(c)
-!         if(c==18619 .and.   get_nstep()==  254860)then
-!           write(iulog,*)trim(loc),' totabg',this%begabgp_col(c),this%totabgp_col(c)
+!         if(c==8586)then
+!           print*,'==========================='
+!           write(iulog,*)trim(loc),' totabg',get_nstep(),this%totabgp_col(c)
+!           write(iulog,*)'totpftp',this%totpftp_col(c)
+!           write(iulog,*)'totprodp',this%totprodp_col(c)
+!           write(iulog,*)'seedp',this%seedp_col(c)
+!           write(iulog,*)'plantpbf',this%plant_p_buffer_col(c)
 !         endif
       end do
    end subroutine Summary_betr

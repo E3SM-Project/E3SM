@@ -1505,31 +1505,31 @@ contains
          nlc = min(nlc_adjust_high ,plant_calloc(p) / c_allometry(p) )
 
 
-         cpool_to_leafc(p)          = nlc * fcur
-         cpool_to_leafc_storage(p)  = nlc * (1._r8 - fcur)
-         cpool_to_frootc(p)         = nlc * f1 * fcur
-         cpool_to_frootc_storage(p) = nlc * f1 * (1._r8 - fcur)
+         cpool_to_leafc(p)          = max(nlc * fcur,0._r8)
+         cpool_to_leafc_storage(p)  = max(nlc * (1._r8 - fcur),0._r8)
+         cpool_to_frootc(p)         = max(nlc * f1 * fcur,0._r8)
+         cpool_to_frootc_storage(p) = max(nlc * f1 * (1._r8 - fcur),0._r8)
          if (woody(ivt(p)) == 1._r8) then
-            cpool_to_livestemc(p)          = nlc * f3 * f4 * fcur
-            cpool_to_livestemc_storage(p)  = nlc * f3 * f4 * (1._r8 - fcur)
-            cpool_to_deadstemc(p)          = nlc * f3 * (1._r8 - f4) * fcur
-            cpool_to_deadstemc_storage(p)  = nlc * f3 * (1._r8 - f4) * (1._r8 - fcur)
-            cpool_to_livecrootc(p)         = nlc * f2 * f3 * f4 * fcur
-            cpool_to_livecrootc_storage(p) = nlc * f2 * f3 * f4 * (1._r8 - fcur)
-            cpool_to_deadcrootc(p)         = nlc * f2 * f3 * (1._r8 - f4) * fcur
-            cpool_to_deadcrootc_storage(p) = nlc * f2 * f3 * (1._r8 - f4) * (1._r8 - fcur)
+            cpool_to_livestemc(p)          = max(nlc * f3 * f4 * fcur,0._r8)
+            cpool_to_livestemc_storage(p)  = max(nlc * f3 * f4 * (1._r8 - fcur),0._r8)
+            cpool_to_deadstemc(p)          = max(nlc * f3 * (1._r8 - f4) * fcur,0._r8)
+            cpool_to_deadstemc_storage(p)  = max(nlc * f3 * (1._r8 - f4) * (1._r8 - fcur),0._r8)
+            cpool_to_livecrootc(p)         = max(nlc * f2 * f3 * f4 * fcur,0._r8)
+            cpool_to_livecrootc_storage(p) = max(nlc * f2 * f3 * f4 * (1._r8 - fcur),0._r8)
+            cpool_to_deadcrootc(p)         = max(nlc * f2 * f3 * (1._r8 - f4) * fcur,0._r8)
+            cpool_to_deadcrootc_storage(p) = max(nlc * f2 * f3 * (1._r8 - f4) * (1._r8 - fcur),0._r8)
          end if
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
-            cpool_to_livestemc(p)          = nlc * f3 * f4 * fcur
-            cpool_to_livestemc_storage(p)  = nlc * f3 * f4 * (1._r8 - fcur)
-            cpool_to_deadstemc(p)          = nlc * f3 * (1._r8 - f4) * fcur
-            cpool_to_deadstemc_storage(p)  = nlc * f3 * (1._r8 - f4) * (1._r8 - fcur)
-            cpool_to_livecrootc(p)         = nlc * f2 * f3 * f4 * fcur
-            cpool_to_livecrootc_storage(p) = nlc * f2 * f3 * f4 * (1._r8 - fcur)
-            cpool_to_deadcrootc(p)         = nlc * f2 * f3 * (1._r8 - f4) * fcur
-            cpool_to_deadcrootc_storage(p) = nlc * f2 * f3 * (1._r8 - f4) * (1._r8 - fcur)
-            cpool_to_grainc(p)             = nlc * f5 * fcur
-            cpool_to_grainc_storage(p)     = nlc * f5 * (1._r8 -fcur)
+            cpool_to_livestemc(p)          = max(nlc * f3 * f4 * fcur,0._r8)
+            cpool_to_livestemc_storage(p)  = max(nlc * f3 * f4 * (1._r8 - fcur),0._r8)
+            cpool_to_deadstemc(p)          = max(nlc * f3 * (1._r8 - f4) * fcur,0._r8)
+            cpool_to_deadstemc_storage(p)  = max(nlc * f3 * (1._r8 - f4) * (1._r8 - fcur),0._r8)
+            cpool_to_livecrootc(p)         = max(nlc * f2 * f3 * f4 * fcur,0._r8)
+            cpool_to_livecrootc_storage(p) = max(nlc * f2 * f3 * f4 * (1._r8 - fcur),0._r8)
+            cpool_to_deadcrootc(p)         = max(nlc * f2 * f3 * (1._r8 - f4) * fcur,0._r8)
+            cpool_to_deadcrootc_storage(p) = max(nlc * f2 * f3 * (1._r8 - f4) * (1._r8 - fcur),0._r8)
+            cpool_to_grainc(p)             = max(nlc * f5 * fcur,0._r8)
+            cpool_to_grainc_storage(p)     = max(nlc * f5 * (1._r8 -fcur),0._r8)
          end if
 
          ! corresponding N fluxes
@@ -1737,8 +1737,6 @@ contains
              npool_to_grainn_storage(p) =  cpool_to_grainc_storage(p) / cng
             end if
             !take supp n from buffer if possible
-            plant_n_buffer_patch(p) = plant_n_buffer_patch(p) + sminn_to_npool(p) * dt
-            sminn_to_npool(p) = 0._r8
             plant_n_buffer_patch(p) = plant_n_buffer_patch(p) - supplement_to_sminn_surf(p) * dt
             if(plant_n_buffer_patch(p)>=0._r8)then
               supplement_to_sminn_surf(p) = 0._r8
@@ -1746,7 +1744,6 @@ contains
               supplement_to_sminn_surf(p) = -plant_n_buffer_patch(p)/dt
               plant_n_buffer_patch(p) = 0._r8 
             endif
-            supplement_to_sminn_vr(c,1) = supplement_to_sminn_vr(c,1) + supplement_to_sminn_surf(p) * veg_pp%wtcol(p) / dzsoi_decomp(1)
           else if (cnallocate_carbon_only() .or. cnallocate_carbonnitrogen_only()) then
 
             supplement_to_sminp_surf(p) = supplement_to_sminp_surf(p) +  &
@@ -1842,6 +1839,14 @@ contains
                   ppool_to_grainp(p) = cpool_to_grainc(p) / cpg
                   ppool_to_grainp_storage(p) =  cpool_to_grainc_storage(p) / cpg
              end if
+            !take supp p from buffer if possible
+             plant_p_buffer_patch(p) = plant_p_buffer_patch(p) - supplement_to_sminp_surf(p) * dt
+             if(plant_p_buffer_patch(p)>=0._r8)then
+               supplement_to_sminp_surf(p) = 0._r8
+             else
+               supplement_to_sminp_surf(p) = -plant_p_buffer_patch(p)/dt
+               plant_p_buffer_patch(p) = 0._r8
+             endif
          end if
       end do ! end pft loop
       !----------------------------------------------------------------

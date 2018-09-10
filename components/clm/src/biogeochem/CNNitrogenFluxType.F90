@@ -2536,12 +2536,12 @@ contains
        this%fire_nloss_litter(i)                         = value_patch
        this%hrv_nloss_litter(i)                          = value_patch
        this%sen_nloss_litter(i)                          = value_patch
+       this%livestemn_to_litter_patch(i)              = value_patch
     end do
 
     if ( crop_prog )then
        do fi = 1,num_patch
           i = filter_patch(fi)
-          this%livestemn_to_litter_patch(i)              = value_patch
           this%grainn_to_food_patch(i)                   = value_patch
           this%grainn_xfer_to_grainn_patch(i)            = value_patch
           this%npool_to_grainn_patch(i)                  = value_patch
@@ -2931,26 +2931,26 @@ contains
         if(dtmp/=0._r8 .and. .false.)then
           write(*,*)'==========================='
           write(*,*)'j',j
-          write(*,*)'phenology_n_to_litr_met_n_col    =',this%phenology_n_to_litr_met_n_col(c,j)
-          write(*,*)'dwt_frootn_to_litr_met_n_col     =', this%dwt_frootn_to_litr_met_n_col(c,j)
-          write(*,*)'gap_mortality_n_to_litr_met_n_col=',this%gap_mortality_n_to_litr_met_n_col(c,j)
-          write(*,*)'harvest_n_to_litr_met_n_col      =',this%harvest_n_to_litr_met_n_col(c,j)
-          write(*,*)'m_n_to_litr_met_fire_col         =',this%m_n_to_litr_met_fire_col(c,j)
-          write(*,*)'phenology_n_to_litr_cel_n_col    =', this%phenology_n_to_litr_cel_n_col(c,j)
-          write(*,*)'dwt_frootn_to_litr_cel_n_col     =',this%dwt_frootn_to_litr_cel_n_col(c,j)
-          write(*,*)'gap_mortality_n_to_litr_cel_n_col=',this%gap_mortality_n_to_litr_cel_n_col(c,j)
-          write(*,*)'harvest_n_to_litr_cel_n_col      =',this%harvest_n_to_litr_cel_n_col(c,j)
-          write(*,*)'m_n_to_litr_cel_fire_col         =',this%m_n_to_litr_cel_fire_col(c,j)
-          write(*,*)'phenology_n_to_litr_lig_n_col    =',this%phenology_n_to_litr_lig_n_col(c,j)
-          write(*,*)'dwt_frootn_to_litr_lig_n_col     =',this%dwt_frootn_to_litr_lig_n_col(c,j)
-          write(*,*)'gap_mortality_n_to_litr_lig_n_col=',this%gap_mortality_n_to_litr_lig_n_col(c,j)
-          write(*,*)'harvest_n_to_litr_lig_n_col      =',this%harvest_n_to_litr_lig_n_col(c,j)
-          write(*,*)'m_n_to_litr_lig_fire_col         =',this%m_n_to_litr_lig_fire_col(c,j)
-          write(*,*)'dwt_livecrootn_to_cwdn_col       =',this%dwt_livecrootn_to_cwdn_col(c,j)
-          write(*,*)'dwt_deadcrootn_to_cwdn_col       =',this%dwt_deadcrootn_to_cwdn_col(c,j)
-          write(*,*)'gap_mortality_n_to_cwdn_col      =',this%gap_mortality_n_to_cwdn_col(c,j)
-          write(*,*)'harvest_n_to_cwdn_col            =',this%harvest_n_to_cwdn_col(c,j)
-          write(*,*)'fire_mortality_n_to_cwdn_col     =',this%fire_mortality_n_to_cwdn_col(c,j)
+          write(*,*)'phenology_n_to_litr_met_n_col    =',this%phenology_n_to_litr_met_n_col(c,j)*dzsoi_decomp(j)
+          write(*,*)'dwt_frootn_to_litr_met_n_col     =', this%dwt_frootn_to_litr_met_n_col(c,j)*dzsoi_decomp(j)
+          write(*,*)'gap_mortality_n_to_litr_met_n_col=',this%gap_mortality_n_to_litr_met_n_col(c,j)*dzsoi_decomp(j)
+          write(*,*)'harvest_n_to_litr_met_n_col      =',this%harvest_n_to_litr_met_n_col(c,j)*dzsoi_decomp(j)
+          write(*,*)'m_n_to_litr_met_fire_col         =',this%m_n_to_litr_met_fire_col(c,j)*dzsoi_decomp(j)
+          write(*,*)'phenology_n_to_litr_cel_n_col    =', this%phenology_n_to_litr_cel_n_col(c,j)*dzsoi_decomp(j)
+          write(*,*)'dwt_frootn_to_litr_cel_n_col     =',this%dwt_frootn_to_litr_cel_n_col(c,j)*dzsoi_decomp(j)
+          write(*,*)'gap_mortality_n_to_litr_cel_n_col=',this%gap_mortality_n_to_litr_cel_n_col(c,j)*dzsoi_decomp(j)
+          write(*,*)'harvest_n_to_litr_cel_n_col      =',this%harvest_n_to_litr_cel_n_col(c,j)*dzsoi_decomp(j)
+          write(*,*)'m_n_to_litr_cel_fire_col         =',this%m_n_to_litr_cel_fire_col(c,j)*dzsoi_decomp(j)
+          write(*,*)'phenology_n_to_litr_lig_n_col    =',this%phenology_n_to_litr_lig_n_col(c,j)*dzsoi_decomp(j)
+          write(*,*)'dwt_frootn_to_litr_lig_n_col     =',this%dwt_frootn_to_litr_lig_n_col(c,j)*dzsoi_decomp(j)
+          write(*,*)'gap_mortality_n_to_litr_lig_n_col=',this%gap_mortality_n_to_litr_lig_n_col(c,j)*dzsoi_decomp(j)
+          write(*,*)'harvest_n_to_litr_lig_n_col      =',this%harvest_n_to_litr_lig_n_col(c,j)*dzsoi_decomp(j)
+          write(*,*)'m_n_to_litr_lig_fire_col         =',this%m_n_to_litr_lig_fire_col(c,j)*dzsoi_decomp(j)
+          write(*,*)'dwt_livecrootn_to_cwdn_col       =',this%dwt_livecrootn_to_cwdn_col(c,j)*dzsoi_decomp(j)
+          write(*,*)'dwt_deadcrootn_to_cwdn_col       =',this%dwt_deadcrootn_to_cwdn_col(c,j)*dzsoi_decomp(j)
+          write(*,*)'gap_mortality_n_to_cwdn_col      =',this%gap_mortality_n_to_cwdn_col(c,j)*dzsoi_decomp(j)
+          write(*,*)'harvest_n_to_cwdn_col            =',this%harvest_n_to_cwdn_col(c,j)*dzsoi_decomp(j)
+          write(*,*)'fire_mortality_n_to_cwdn_col     =',this%fire_mortality_n_to_cwdn_col(c,j)*dzsoi_decomp(j)
         endif
        enddo
      end do
@@ -2963,7 +2963,8 @@ contains
     use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
     use clm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
-    use pftvarcon     , only : npcropmin 
+    use spmdMod       , only: iam
+    use pftvarcon     , only: npcropmin 
     use tracer_varcon , only: is_active_betr_bgc
     use clm_varpar    , only: nlevdecomp_full
     !
