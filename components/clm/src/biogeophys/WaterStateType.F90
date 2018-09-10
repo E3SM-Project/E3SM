@@ -102,6 +102,7 @@ module WaterstateType
      real(r8), pointer :: endwb_grc              (:)   ! water mass end of the time step
      real(r8), pointer :: errh2o_patch           (:)   ! water conservation error (mm H2O)
      real(r8), pointer :: errh2o_col             (:)   ! water conservation error (mm H2O)
+     real(r8), pointer :: errh2o_grc             (:)   ! water conservation error (mm H2O)
      real(r8), pointer :: errh2osno_col          (:)   ! snow water conservation error(mm H2O)
 
      real(r8), pointer :: h2osoi_liq_depth_intg_col(:) ! grid-level depth integrated liquid soil water
@@ -264,6 +265,7 @@ contains
     allocate(this%endwb_grc              (begg:endg))                     ; this%endwb_grc              (:)   = nan
     allocate(this%errh2o_patch           (begp:endp))                     ; this%errh2o_patch           (:)   = nan
     allocate(this%errh2o_col             (begc:endc))                     ; this%errh2o_col             (:)   = nan
+    allocate(this%errh2o_grc             (begg:endg))                     ; this%errh2o_grc             (:)   = nan
     allocate(this%errh2osno_col          (begc:endc))                     ; this%errh2osno_col          (:)   = nan
 
     allocate(this%h2osoi_liq_depth_intg_col(begc:endc))                   ; this%h2osoi_liq_depth_intg_col(:) = nan
