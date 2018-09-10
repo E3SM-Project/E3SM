@@ -119,7 +119,7 @@ void Elements::init_2d(const int ie, CF90Ptr &D, CF90Ptr &Dinv, CF90Ptr &fcor,
   TensorViewF90 h_d_f90            (D);
   TensorViewF90 h_dinv_f90         (Dinv);
   TensorViewF90 h_tensorvisc_f90   (tensorvisc);
-  TensorViewF90 h_vec_sph2cart_f90 (vec_sph2cart);
+  Tensor23ViewF90 h_vec_sph2cart_f90 (vec_sph2cart);
   
   // 2d scalars
   for (int igp = 0; igp < NP; ++igp) {
@@ -152,13 +152,16 @@ void Elements::init_2d(const int ie, CF90Ptr &D, CF90Ptr &Dinv, CF90Ptr &fcor,
         for (int igp = 0; igp < NP; ++igp) {
           for (int jgp = 0; jgp < NP; ++jgp) {
             h_tensorvisc   (idim,jdim,igp,jgp) = h_tensorvisc_f90   (idim,jdim,igp,jgp);
-            h_vec_sph2cart (idim,jdim,igp,jgp) = h_vec_sph2cart_f90 (idim,jdim,igp,jgp);
           }
         }
       }
-      for (int igp = 0; igp < NP; ++igp) {
-        for (int jgp = 0; jgp < NP; ++jgp) {
-          h_vec_sph2cart (idim,2,igp,jgp) = h_vec_sph2cart_f90 (idim,2,igp,jgp);
+    }
+    for (int idim = 0; idim < 2; ++idim) {
+      for (int jdim = 0; jdim < 3; ++jdim) {
+        for (int igp = 0; igp < NP; ++igp) {
+          for (int jgp = 0; jgp < NP; ++jgp) {
+            h_vec_sph2cart (idim,jdim,igp,jgp) = h_vec_sph2cart_f90 (idim,jdim,igp,jgp);
+          }
         }
       }
     }
