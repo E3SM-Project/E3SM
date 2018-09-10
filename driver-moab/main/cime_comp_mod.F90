@@ -3548,7 +3548,8 @@ contains
           call t_drvstartf ('CPL:BUDGETF',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
           if (.not. dead_comps) then
              call seq_diag_print_mct(EClock_d,stop_alarm,budget_inst, &
-                  budget_daily, budget_month, budget_ann, budget_ltann, budget_ltend)
+                  budget_daily, budget_month, budget_ann, budget_ltann,&
+                  budget_ltend, infodata)
           endif
           call seq_diag_zero_mct(EClock=EClock_d)
 
