@@ -107,10 +107,10 @@ module WaterBudgetMod
   character(*),parameter :: FA0= "('    ',12x,(3x,a10,2x),' | ',(3x,a10,2x))"
   character(*),parameter :: FF = "('    ',a12,f15.8,' | ',f15.8)"
   character(*),parameter :: FF2= "('    ',a12,a15,' | ',f15.8)"
-  character(*),parameter :: FS = "('    ',a12,6(f18.8),18x,' | ',(f18.8))"
+  character(*),parameter :: FS = "('    ',a12,6(f18.2),18x,' | ',(f18.2))"
   character(*),parameter :: FS0= "('    ',12x,7(a18),' | ',(a18))"
-  character(*),parameter :: FS2= "('    ',a12,54x,f18.8,54x,' | ',f18.8)"
-  character(*),parameter :: FS3= "('    ',a12,7(f18.8),' | ',(f18.8))"
+  character(*),parameter :: FS2= "('    ',a12,54x,f18.2,54x,' | ',f18.2)"
+  character(*),parameter :: FS3= "('    ',a12,7(f18.2),' | ',(f18.2))"
 
 contains
 
@@ -258,8 +258,8 @@ contains
           nf = s_wsliq_end ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
           nf = s_wsice_end ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
           nf = s_wwa_end   ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
-          nf = s_w_errh2o  ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
        endif
+       nf = s_w_errh2o  ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + budg_stateL(nf, p_inst)
     end do
     budg_fluxN(:,:) = budg_fluxN(:,:) + 1
     
