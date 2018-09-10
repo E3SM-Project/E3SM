@@ -880,6 +880,7 @@ contains
           begwb_col                  =>    waterstate_vars%begwb_col                  , & ! Input:  [real(r8) (:)   ]  water mass begining of the time step    
           begwb_grc                  =>    waterstate_vars%begwb_grc                  , & ! Input:  [real(r8) (:)   ]  water mass begining of the time step    
           errh2o                     =>    waterstate_vars%errh2o_col                 , & ! Output: [real(r8) (:)   ]  water conservation error (mm H2O)       
+          errh2o_grc                 =>    waterstate_vars%errh2o_grc                 , & ! Output: [real(r8) (:)   ]  water conservation error (mm H2O)
           errh2osno                  =>    waterstate_vars%errh2osno_col              , & ! Output: [real(r8) (:)   ]  error in h2osno (kg m-2)                
           endwb_col                  =>    waterstate_vars%endwb_col                  , & ! Output: [real(r8) (:)   ]  water mass end of the time step         
           endwb_grc                  =>    waterstate_vars%endwb_grc                  , & ! Output: [real(r8) (:)   ]  water mass end of the time step         
@@ -1008,6 +1009,7 @@ contains
       call c2g(bounds, h2osfc_col            , end_h2osfc_grc     , c2l_scale_type= 'unity', l2g_scale_type='unity' )
       call c2g(bounds, h2osoi_liq_depth_intg , end_h2osoi_liq_grc , c2l_scale_type= 'unity', l2g_scale_type='unity' )
       call c2g(bounds, h2osoi_ice_depth_intg , end_h2osoi_ice_grc , c2l_scale_type= 'unity', l2g_scale_type='unity' )
+      call c2g(bounds, errh2o                , errh2o_grc         , c2l_scale_type= 'unity', l2g_scale_type='unity' )
 
     end associate
 

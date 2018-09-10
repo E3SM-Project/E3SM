@@ -57,8 +57,9 @@ module WaterBudgetMod
   integer, parameter :: s_wsice_end = 12
   integer, parameter :: s_wwa_beg   = 13
   integer, parameter :: s_wwa_end   = 14
+  integer, parameter :: s_w_errh2o  = 15
 
-  integer, parameter :: s_size = s_wwa_end
+  integer, parameter :: s_size = s_w_errh2o
 
   character(len=12),parameter :: sname(s_size) = &
        (/&
@@ -75,7 +76,8 @@ module WaterBudgetMod
        'soiice_w_beg', &
        'soiice_w_end', &
        ' aquif_w_beg', &
-       ' aquif_w_end'  &
+       ' aquif_w_end', &
+       '   error h2o'  &
        /)
 
   !--- P for period ---
@@ -105,9 +107,10 @@ module WaterBudgetMod
   character(*),parameter :: FA0= "('    ',12x,(3x,a10,2x),' | ',(3x,a10,2x))"
   character(*),parameter :: FF = "('    ',a12,f15.8,' | ',f15.8)"
   character(*),parameter :: FF2= "('    ',a12,a15,' | ',f15.8)"
-  character(*),parameter :: FS = "('    ',a12,6(f15.8),' | ',(f15.8))"
-  character(*),parameter :: FS0= "('    ',12x,6(a15),' | ',(a15))"
-  character(*),parameter :: FS2= "('    ',a12,38x,f15.8,37x,' | ',f15.8)"
+  character(*),parameter :: FS = "('    ',a12,6(f18.8),18x,' | ',(f18.8))"
+  character(*),parameter :: FS0= "('    ',12x,7(a18),' | ',(a18))"
+  character(*),parameter :: FS2= "('    ',a12,54x,f18.8,54x,' | ',f18.8)"
+  character(*),parameter :: FS3= "('    ',a12,7(f18.8),' | ',(f18.8))"
 
 contains
 
@@ -255,6 +258,7 @@ contains
           nf = s_wsliq_end ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
           nf = s_wsice_end ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
           nf = s_wwa_end   ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
+          nf = s_w_errh2o  ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
        endif
     end do
     budg_fluxN(:,:) = budg_fluxN(:,:) + 1
@@ -304,7 +308,8 @@ contains
          end_h2osno_grc     => waterstate_vars%end_h2osno_grc            , &
          end_h2osfc_grc     => waterstate_vars%end_h2osfc_grc            , &
          end_h2osoi_liq_grc => waterstate_vars%end_h2osoi_liq_grc        , &
-         end_h2osoi_ice_grc => waterstate_vars%end_h2osoi_ice_grc          &
+         end_h2osoi_ice_grc => waterstate_vars%end_h2osoi_ice_grc        , &
+         errh2o_grc         => waterstate_vars%errh2o_grc                  &
          )
 
       ip = p_inst
@@ -340,6 +345,7 @@ contains
          nf = s_wsice_end ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + end_h2osoi_ice_grc(g) *af
          nf = s_wwa_beg   ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + beg_wa_grc(g)         *af
          nf = s_wwa_end   ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + end_wa_grc(g)         *af
+         nf = s_w_errh2o  ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + errh2o_grc(g)         *af
       end do
 
     end associate
@@ -395,6 +401,7 @@ contains
     integer :: year, mon, day, sec
     integer :: cdate
     logical :: sumdone
+    real(r8) :: unit_conversion
     real(r8) :: budg_fluxGpr (f_size,p_size) ! values to print, scaled and such
 
     sumdone = .false.
@@ -429,11 +436,12 @@ contains
        endif
 
        if (plev > 0) then
+          unit_conversion = 1.d0/(4.0_r8*shr_const_pi)*1.0e6_r8
           if (.not.sumdone) then
              sumdone = .true.
              call WaterBudget_Sum0()
              budg_fluxGpr = budg_fluxG
-             budg_fluxGpr = budg_fluxGpr/(4.0_r8*shr_const_pi)*1.0e6_r8
+             budg_fluxGpr = budg_fluxGpr*unit_conversion
              budg_fluxGpr = budg_fluxGpr/budg_fluxN
           end if
 
@@ -443,22 +451,23 @@ contains
 
           if (masterproc) then
              write(iulog,*)''
-             write(iulog,*)'NET WATER FLUXES (mm H2O/s): period ',trim(pname(ip)),': date = ',cdate,sec
+             write(iulog,*)'NET WATER FLUXES : period ',trim(pname(ip)),': date = ',cdate,sec
              write(iulog,FA0)'  Time  ','  Time    '
              write(iulog,FA0)'averaged','integrated'
+             write(iulog,FA0)'kg/m2s*1e6','kg/m2*1e6'
              write(iulog,'(32("-"),"|",20("-"))')
              do f = 1, f_size
-                write(iulog,FF)fname(f),budg_fluxGpr(f,ip),budg_fluxG(f,ip)/(4.0_r8*shr_const_pi)*1.0e6_r8
+                write(iulog,FF)fname(f),budg_fluxGpr(f,ip),budg_fluxG(f,ip)*unit_conversion
              end do
              write(iulog,'(32("-"),"|",20("-"))')
              write(iulog,FF)'   *SUM*', &
-                  sum(budg_fluxGpr(:,ip)), sum(budg_fluxG(:,ip))
+                  sum(budg_fluxGpr(:,ip)), sum(budg_fluxG(:,ip))*unit_conversion
              write(iulog,FF2)'*EXP CHANGE*', &
-                  '            ',sum(budg_fluxG(:,ip))*get_step_size()
+                  '            ',sum(budg_fluxG(:,ip))*unit_conversion*get_step_size()
              write(iulog,'(32("-"),"|",20("-"))')
 
              write(iulog,*)''
-             write(iulog,*)'WATER STATES (mm H2O): period ',trim(pname(ip)),': date = ',cdate,sec
+             write(iulog,*)'WATER STATES (kg/m2*1e6): period ',trim(pname(ip)),': date = ',cdate,sec
              write(iulog,FS0),&
                   '       Canopy  ', &
                   '       Snow    ', &
@@ -466,42 +475,45 @@ contains
                   '     Soil Liq  ', &
                   '     Soil Ice  ', &
                   '      Aquifer  ', &
+                  ' Grid-level Err', &
                   '       TOTAL   '
-             write(iulog,'(107("-"),"|",23("-"))')
+             write(iulog,'(143("-"),"|",23("-"))')
              write(iulog,FS), '         beg', &
-                  budg_stateG(s_wcan_beg  , ip), &
-                  budg_stateG(s_wsno_beg  , ip), &
-                  budg_stateG(s_wsfc_beg  , ip), &
-                  budg_stateG(s_wsliq_beg , ip), &
-                  budg_stateG(s_wsice_beg , ip), &
-                  budg_stateG(s_wwa_beg   , ip), &
-                  budg_stateG(s_w_beg     , ip)
+                  budg_stateG(s_wcan_beg  , ip)*unit_conversion, &
+                  budg_stateG(s_wsno_beg  , ip)*unit_conversion, &
+                  budg_stateG(s_wsfc_beg  , ip)*unit_conversion, &
+                  budg_stateG(s_wsliq_beg , ip)*unit_conversion, &
+                  budg_stateG(s_wsice_beg , ip)*unit_conversion, &
+                  budg_stateG(s_wwa_beg   , ip)*unit_conversion, &
+                  budg_stateG(s_w_beg     , ip)*unit_conversion
              write(iulog,FS), '         end', &
-                  budg_stateG(s_wcan_end  , ip), &
-                  budg_stateG(s_wsno_end  , ip), &
-                  budg_stateG(s_wsfc_end  , ip), &
-                  budg_stateG(s_wsliq_end , ip), &
-                  budg_stateG(s_wsice_end , ip), &
-                  budg_stateG(s_wwa_end   , ip), &
-                  budg_stateG(s_w_end     , ip)
-             write(iulog,FS)'*NET CHANGE*', &
-                  budg_stateG(s_wcan_end  ,ip) - budg_stateG(s_wcan_beg  ,ip), &
-                  budg_stateG(s_wsno_end  ,ip) - budg_stateG(s_wsno_beg  ,ip), &
-                  budg_stateG(s_wsfc_end  ,ip) - budg_stateG(s_wsfc_beg  ,ip), &
-                  budg_stateG(s_wsliq_end ,ip) - budg_stateG(s_wsliq_beg ,ip), &
-                  budg_stateG(s_wsice_end ,ip) - budg_stateG(s_wsice_beg ,ip), &
-                  budg_stateG(s_wwa_end   ,ip) - budg_stateG(s_wwa_beg   ,ip), &
-                  budg_stateG(s_w_end     ,ip) - budg_stateG(s_w_beg     ,ip)
-             write(iulog,'(107("-"),"|",23("-"))')
+                  budg_stateG(s_wcan_end  , ip)*unit_conversion, &
+                  budg_stateG(s_wsno_end  , ip)*unit_conversion, &
+                  budg_stateG(s_wsfc_end  , ip)*unit_conversion, &
+                  budg_stateG(s_wsliq_end , ip)*unit_conversion, &
+                  budg_stateG(s_wsice_end , ip)*unit_conversion, &
+                  budg_stateG(s_wwa_end   , ip)*unit_conversion, &
+                  budg_stateG(s_w_end     , ip)*unit_conversion
+             write(iulog,FS3)'*NET CHANGE*', &
+                  (budg_stateG(s_wcan_end  ,ip) - budg_stateG(s_wcan_beg  ,ip))*unit_conversion, &
+                  (budg_stateG(s_wsno_end  ,ip) - budg_stateG(s_wsno_beg  ,ip))*unit_conversion, &
+                  (budg_stateG(s_wsfc_end  ,ip) - budg_stateG(s_wsfc_beg  ,ip))*unit_conversion, &
+                  (budg_stateG(s_wsliq_end ,ip) - budg_stateG(s_wsliq_beg ,ip))*unit_conversion, &
+                  (budg_stateG(s_wsice_end ,ip) - budg_stateG(s_wsice_beg ,ip))*unit_conversion, &
+                  (budg_stateG(s_wwa_end   ,ip) - budg_stateG(s_wwa_beg   ,ip))*unit_conversion, &
+                  budg_stateG(s_w_errh2o ,ip) *unit_conversion, &
+                  (budg_stateG(s_w_end     ,ip) - budg_stateG(s_w_beg     ,ip))*unit_conversion
+             write(iulog,'(143("-"),"|",23("-"))')
              write(iulog,FS2)'   *SUM*    ', &
-                  budg_stateG(s_wcan_end  ,ip) - budg_stateG(s_wcan_beg  ,ip) + &
-                  budg_stateG(s_wsno_end  ,ip) - budg_stateG(s_wsno_beg  ,ip) + &
-                  budg_stateG(s_wsfc_end  ,ip) - budg_stateG(s_wsfc_beg  ,ip) + &
-                  budg_stateG(s_wsliq_end ,ip) - budg_stateG(s_wsliq_beg ,ip) + &
-                  budg_stateG(s_wsice_end ,ip) - budg_stateG(s_wsice_beg ,ip) + &
-                  budg_stateG(s_wwa_end   ,ip) - budg_stateG(s_wwa_beg   ,ip),   &
-                  budg_stateG(s_w_end     ,ip) - budg_stateG(s_w_beg     ,ip)
-             write(iulog,'(107("-"),"|",23("-"))')
+                  (budg_stateG(s_wcan_end  ,ip) - budg_stateG(s_wcan_beg  ,ip))*unit_conversion + &
+                  (budg_stateG(s_wsno_end  ,ip) - budg_stateG(s_wsno_beg  ,ip))*unit_conversion + &
+                  (budg_stateG(s_wsfc_end  ,ip) - budg_stateG(s_wsfc_beg  ,ip))*unit_conversion + &
+                  (budg_stateG(s_wsliq_end ,ip) - budg_stateG(s_wsliq_beg ,ip))*unit_conversion + &
+                  (budg_stateG(s_wsice_end ,ip) - budg_stateG(s_wsice_beg ,ip))*unit_conversion + &
+                  (budg_stateG(s_wwa_end   ,ip) - budg_stateG(s_wwa_beg   ,ip))*unit_conversion + &
+                  -budg_stateG(s_w_errh2o ,ip) *unit_conversion, &
+                  (budg_stateG(s_w_end     ,ip) - budg_stateG(s_w_beg     ,ip))*unit_conversion
+             write(iulog,'(143("-"),"|",23("-"))')
           end if
        end if
     end do
