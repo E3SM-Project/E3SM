@@ -656,7 +656,7 @@
 
 <machine MACH="melvin">
     <DESC>Linux workstation for Jenkins testing</DESC>
-    <NODENAME_REGEX>(melvin|watson|s999964|climate|penn)</NODENAME_REGEX>
+    <NODENAME_REGEX>(sems-|melvin|watson|s999964|climate|penn)</NODENAME_REGEX>
     <PROXY>sonproxy.sandia.gov:80</PROXY>
     <TESTS>e3sm_developer</TESTS>
     <OS>LINUX</OS>
