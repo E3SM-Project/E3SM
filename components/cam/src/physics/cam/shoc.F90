@@ -177,7 +177,7 @@ subroutine shoc_main ( &
 	 isotropy,tkh,tk,&                    ! Input
 	 dz_zi,zt_grid,zi_grid,&              ! Input
 	 wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,&     ! Input
-	 wtracer_sfc,&                        ! Input
+	 wtracer_sfc,shoc_mix,&               ! Input
          w_sec,thl_sec,qw_sec,&               ! Output
 	 wthl_sec,wqw_sec,&                   ! Output
 	 qwthl_sec,uw_sec,vw_sec,wtke_sec,&   ! Output
@@ -345,7 +345,7 @@ subroutine diag_second_shoc_moments(&
 	     isotropy,tkh,tk,&                      ! Input
 	     dz_zi,zt_grid,zi_grid,&                ! Input
 	     wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &   ! Input   
-	     wtracer_sfc, &                         ! Input 
+	     wtracer_sfc,shoc_mix, &                ! Input 
 	     w_sec, thl_sec, qw_sec,&               ! Output
 	     wthl_sec,wqw_sec,&                     ! Output
 	     qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Output
@@ -386,6 +386,7 @@ subroutine diag_second_shoc_moments(&
   real(r8), intent(in) :: vw_sfc(shcol) ! Surface momentum flux (v-direction)
   
   real(r8), intent(in) :: wtracer_sfc(shcol,num_tracer)
+  real(r8), intent(in) :: shoc_mix(shcol,nlev)
 
 ! Output variables
 ! Note that all of these output variables are on the interface grid
@@ -408,6 +409,7 @@ subroutine diag_second_shoc_moments(&
   real(r8) :: isotropy_zi(shcol,nlevi)
   real(r8) :: tkh_zi(shcol,nlevi)
   real(r8) :: tk_zi(shcol,nlevi)
+  real(r8) :: shoc_mix_zi(shcol,nlevi)
   real(r8) :: sm ! Mixing coefficient
   real(r8) :: ustar2, wstar, uf
   
@@ -419,7 +421,8 @@ subroutine diag_second_shoc_moments(&
   call linear_interp(zt_grid,zi_grid,isotropy,isotropy_zi,nlev,nlevi,shcol,largeneg)
   call linear_interp(zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,shcol,largeneg)
   call linear_interp(zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,shcol,largeneg)
-  
+  call linear_interp(zt_grid,zi_grid,shoc_mix,shoc_mix_zi,nlev,nlevi,shcol,largeneg)
+ 
   ! Vertical velocity variance is assumed to be propotional
   !  to the TKE
   w_sec = (2._r8/3._r8)*tke
@@ -457,7 +460,8 @@ subroutine diag_second_shoc_moments(&
       grid_dz=1._r8/dz_zi(i,k) ! Define the vertical grid difference
       grid_dz2=(1._r8/dz_zi(i,k))**2 !squared
     
-      sm=isotropy_zi(i,k)*tkh_zi(i,k) ! coefficient for variances
+!      sm=isotropy_zi(i,k)*tkh_zi(i,k) ! coefficient for variances
+      sm=shoc_mix_zi(i,k)**2
       
       ! Compute variance of thetal
       thl_sec(i,k)=thl2tune*sm*grid_dz2*(thetal(i,k)-thetal(i,kb))**2
@@ -1161,7 +1165,8 @@ subroutine shoc_tke(&
       isotropy(i,k)=min(2000._r8,tscale1/(1._r8+lambda*buoy_sgs_save*tscale1**2))
    
       tk(i,k)=Ck*smix*sqrt(tke(i,k))
-      tkh(i,k)=Ck*isotropy(i,k)*tke(i,k)              
+      tkh(i,k)=Ck*smix*sqrt(tke(i,k))
+!      tkh(i,k)=Ck*isotropy(i,k)*tke(i,k)              
    
       tke(i,k) = max(mintke,tke(i,k))
  
