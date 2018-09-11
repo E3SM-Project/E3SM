@@ -51,7 +51,7 @@ class MVK(SystemTestsCommon):
         # Only want this to happen once. It will impact the sharedlib build
         # so it has to happen there.
         if not model_only:
-            logging.warn('Starting to build multi-instance exe')
+            logging.warning('Starting to build multi-instance exe')
             for comp in self._case.get_values("COMP_CLASSES"):
                 self._case.set_value('NTHRDS_{}'.format(comp), 1)
 
