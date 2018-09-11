@@ -28,7 +28,9 @@ program cime_driver
   use ESMF,          only : ESMF_Initialize, ESMF_Finalize
   use ESMF,          only : ESMF_LogKind_Flag, ESMF_LOGKIND_NONE
   use ESMF,          only : ESMF_LOGKIND_SINGLE, ESMF_LOGKIND_MULTI
-  use ESMF
+#if (! defined(USE_ESMF_LIB) ) || (ESMF_VERSION_MAJOR > 7)
+  use ESMF,          only : ESMF_LOGKIND_MULTI_ON_ERROR
+#endif
   use cime_comp_mod, only : cime_pre_init1
   use cime_comp_mod, only : cime_pre_init2
   use cime_comp_mod, only : cime_init
