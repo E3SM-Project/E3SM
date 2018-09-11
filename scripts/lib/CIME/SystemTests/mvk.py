@@ -21,8 +21,8 @@ from CIME.utils import expect
 
 import CIME.test_status
 
-import evv4esm
-from evv4esm.__main__ import main as evv
+import evv4esm  # pylint: disable=import-error
+from evv4esm.__main__ import main as evv # pylint: disable=import-error
 
 
 evv_lib_dir = os.path.abspath(os.path.dirname(evv4esm.__file__))
