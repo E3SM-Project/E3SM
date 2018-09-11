@@ -692,13 +692,13 @@ end function shoc_implements_cnst
      enddo
    enddo
    
-   !  Define the CLUBB thermodynamic grid (in units of m)
+   !  Define the SHOC thermodynamic grid (in units of m)
    wm_zt(:,1) = 0._r8
    do k=1,pver
      do i=1,ncol
-       zt_g(i,k+1) = state1%zm(i,pver-k+1)-state1%zi(i,pver+1)
+       zt_g(i,k) = state1%zm(i,pver-k+1)-state1%zi(i,pver+1)
        rrho(i,k)=(1._r8/gravit)*(state1%pdel(i,pver-k+1)/dz_g(i,pver-k+1))
-       wm_zt(i,k+1) = -1._r8*state1%omega(i,pver-k+1)/(rrho(i,k)*gravit)
+       wm_zt(i,k) = -1._r8*state1%omega(i,pver-k+1)/(rrho(i,k)*gravit)
      enddo
    enddo
      
@@ -739,14 +739,14 @@ end function shoc_implements_cnst
        rtm_in(i,k)     = rtm(i,pver-k+1)
        thlm_in(i,k)    = thlm(i,pver-k+1)
        tke_in(i,k)     = tke(i,pver-k+1)
-       thv_in(i,k)    = wthv(i,pver-k+1)
+       wthv_in(i,k)    = wthv(i,pver-k+1)
 !        pres_in(i,k)    = state1%pmid(i,pver-k+1)
      enddo  
    enddo   
    
    do k=1,pver
      do i=1,ncol
-       pres_in(i,k+1) = state1%pmid(i,pver-k+1)
+       pres_in(i,k) = state1%pmid(i,pver-k+1)
      enddo
    enddo
  
@@ -759,10 +759,10 @@ end function shoc_implements_cnst
        icnt=icnt+1
        do k=1,pver
          do i=1,ncol
-           edsclr_in(i,k+1,icnt) = state1%q(i,pver-k+1,ixind)
+           edsclr_in(i,k,icnt) = state1%q(i,pver-k+1,ixind)
          enddo
        enddo
-       edsclr_in(:,1,icnt) = edsclr_in(:,2,icnt)
+!       edsclr_in(:,1,icnt) = edsclr_in(:,2,icnt)
      end if
    enddo    
     
@@ -864,7 +864,7 @@ end function shoc_implements_cnst
        
    !  Apply tendencies to ice mixing ratio, liquid and ice number, and aerosol constituents.
    !  Loading up this array doesn't mean the tendencies are applied.  
-   ! edsclr_out is compressed with just the constituents being used, ptend and state are not compressed
+   !  edsclr_out is compressed with just the constituents being used, ptend and state are not compressed
 
        icnt=0
        do ixind=1,pcnst

@@ -9,9 +9,11 @@ module shoc
 ! email: bogenschutz1@llnl.gov
 !--------------------------------------------------------------
 
-use shr_kind_mod,  only: r8=>shr_kind_r8
+!use shr_kind_mod,  only: r8=>shr_kind_r8
 
 implicit none
+
+integer, parameter, public :: r8 = selected_real_kind(12)
 
 !=========================================================
 ! Constants set in initialization
@@ -38,6 +40,9 @@ real, parameter :: basetemp = 300._r8
 
 real, parameter :: maxlen = 2000.0_r8
 real, parameter :: maxtke = 5.0_r8
+real, parameter :: mintke = 0.0004_r8
+
+real, parameter :: largeneg = -999999999.99_r8
 
 !==============================================================
 contains
@@ -142,7 +147,8 @@ subroutine shoc_main ( &
   ! Define vertical grid arrays needed for 
   !   vertical derivatives     
   call shoc_grid( &
-         shcol,nlev,zt_grid,zi_grid,&         ! Input
+         shcol,nlev,nlevi,&                   ! Input
+	 zt_grid,zi_grid,&                    ! Input
          dz_zt,dz_zi)  		              ! Output
 
   ! Update the turbulent length scale	 
@@ -158,6 +164,7 @@ subroutine shoc_main ( &
          shcol,nlev,nlevi,dtime,&             ! Input
          wthv_sec,shoc_mix,dz_zi,&            ! Input
 	 u_wind,v_wind,brunt,&                ! Input
+	 uw_sfc,vw_sfc,&                      ! Input
 	 zt_grid,zi_grid,&                    ! Input
          tke,&				      ! Input/Output
 	 tk,tkh,isotropy)                     ! Output
@@ -170,6 +177,7 @@ subroutine shoc_main ( &
 	 isotropy,tkh,tk,&                    ! Input
 	 dz_zi,zt_grid,zi_grid,&              ! Input
 	 wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,&     ! Input
+	 wtracer_sfc,&                        ! Input
          w_sec,thl_sec,qw_sec,&               ! Output
 	 wthl_sec,wqw_sec,&                   ! Output
 	 qwthl_sec,uw_sec,vw_sec,wtke_sec,&   ! Output
@@ -181,15 +189,15 @@ subroutine shoc_main ( &
          w_sec,thl_sec,qw_sec,qwthl_sec,&     ! Input
 	 wthl_sec,isotropy,brunt,&            ! Input
 	 thetal,tke,&                         ! Input
-	 adz_zt,adz_zm,dz,&                   ! Input
-	 zt_grid,zm_grid,&                    ! Input
+	 dz_zt,dz_zi,&                        ! Input
+	 zt_grid,zi_grid,&                    ! Input
 	 w3)                                  ! Output
 	 
   ! Update thetal, qw, tracers, and wind components
   !   based on SGS mixing
   call update_prognostics(&
          shcol,nlev,nlevi,num_qtracers,&      ! Input
-         dtime,adz_zt,adz_zm,dz,wthl_sec,&    ! Input
+         dtime,dz_zt,wthl_sec,&               ! Input
          wqw_sec,wtke_sec,uw_sec,&            ! Input
 	 vw_sec,wtracer_sec,&                 ! Input
          thetal,qw,qtracers,tke,&             ! Input/Output	
@@ -201,7 +209,7 @@ subroutine shoc_main ( &
          thetal,qw,w_field,thl_sec,qw_sec,&   ! Input
 	 wthl_sec,w_sec,&                     ! Input
 	 wqw_sec,qwthl_sec,w3,pres,&          ! Input
-	 zt_grid,zm_grid,&                    ! Input
+	 zt_grid,zi_grid,&                    ! Input
 	 shoc_cldfrac,shoc_ql,wthv_sec)       ! Output
 	
   return
@@ -212,8 +220,9 @@ end subroutine shoc_main
 ! Define grid variables needed for the parameterization
 
 subroutine shoc_grid( &
-              shcol,nlev,zt_grid,zi_grid,& ! Input 
-              adz_zt,adz_zm)               ! Output
+              shcol,nlev,nlevi,&           ! Input
+	      zt_grid,zi_grid,&            ! Input 
+              dz_zt,dz_zi)                 ! Output
 
   ! Purpose of this subroutine is to define the thickness
   !  arrays of each column, to be used for finite differencing
@@ -223,7 +232,8 @@ subroutine shoc_grid( &
 
   ! input variables
   integer, intent(in) :: shcol   ! number of columns
-  integer, intent(in) :: nlev    ! number of levels
+  integer, intent(in) :: nlev    ! number of mid-point levels
+  integer, intent(in) :: nlevi   ! number of interface levels
   real(r8), intent(in) :: zt_grid(shcol,nlev)  ! mid-point grid
   real(r8), intent(in) :: zi_grid(shcol,nlevi) ! interface grid
   
@@ -334,7 +344,8 @@ subroutine diag_second_shoc_moments(&
 	     u_wind,v_wind,tracer,tke, &            ! Input
 	     isotropy,tkh,tk,&                      ! Input
 	     dz_zi,zt_grid,zi_grid,&                ! Input
-	     wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &   ! Input    
+	     wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &   ! Input   
+	     wtracer_sfc, &                         ! Input 
 	     w_sec, thl_sec, qw_sec,&               ! Output
 	     wthl_sec,wqw_sec,&                     ! Output
 	     qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Output
@@ -367,13 +378,14 @@ subroutine diag_second_shoc_moments(&
   
   real(r8), intent(in) :: zt_grid(shcol,nlev) ! heights of mid-point grid
   real(r8), intent(in) :: zi_grid(shcol,nlevi) ! heights of interface grid
-  real(r8), intent(in) :: dz_zt(shcol,nlev) ! dz of mid-point grid
   real(r8), intent(in) :: dz_zi(shcol,nlev) ! dz of interface grid
   
   real(r8), intent(in) :: wthl_sfc(shcol) ! Surface sensible heat flux
   real(r8), intent(in) :: wqw_sfc(shcol) ! Surface latent heat flux
   real(r8), intent(in) :: uw_sfc(shcol) ! Surface momentum flux (u-direction)
   real(r8), intent(in) :: vw_sfc(shcol) ! Surface momentum flux (v-direction)
+  
+  real(r8), intent(in) :: wtracer_sfc(shcol,num_tracer)
 
 ! Output variables
 ! Note that all of these output variables are on the interface grid
@@ -390,18 +402,23 @@ subroutine diag_second_shoc_moments(&
                                                               ! of tracer
 
 ! Local variables  
-  integer :: kb, k, i, p
+  integer :: kb, kt, k, i, p
   real(r8) :: grid_dz2,grid_dz,grid_dzw
   real(r8) :: gr1,gr2,grw1
   real(r8) :: isotropy_zi(shcol,nlevi)
   real(r8) :: tkh_zi(shcol,nlevi)
   real(r8) :: tk_zi(shcol,nlevi)
   real(r8) :: sm ! Mixing coefficient
+  real(r8) :: ustar2, wstar, uf
+  
+  real(r8), parameter :: a_const = 1.8_r8
+  real(r8), parameter :: z_const = 1.0_r8 
+  real(r8), parameter :: ufmin = 0.01_r8
   
   ! Interpolate some variables from the midpoint grid to the interface grid
-  call linear_interp(zt_grid,zi_grid,isotropy,isotropy_zi,nlev,nlevi,shcol)
-  call linear_interp(zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,shcol)
-  call linear_interp(zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,shcol)
+  call linear_interp(zt_grid,zi_grid,isotropy,isotropy_zi,nlev,nlevi,shcol,largeneg)
+  call linear_interp(zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,shcol,largeneg)
+  call linear_interp(zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,shcol,largeneg)
   
   ! Vertical velocity variance is assumed to be propotional
   !  to the TKE
@@ -413,14 +430,22 @@ subroutine diag_second_shoc_moments(&
     wqw_sec(i,1) = wqw_sfc(i)
     uw_sec(i,1) = uw_sfc(i)
     vw_sec(i,1) = vw_sfc(i)
-    wtracer_sec(i,1,:) = 0._r8
     wtke_sec(i,1) = 0._r8
     
-    ! +PAB notes: perhaps these should
-    !   be parameterized?
-    thl_sec(i,1) = 0._r8
-    qw_sec(i,1) = 0._r8
-    qwthl_sec(i,1) = 0._r8
+    ! Parameterize following terms via Andre et al. 1978
+    ustar2 = sqrt(uw_sfc(i) * uw_sfc(i) + vw_sfc(i) * vw_sfc(i))
+    wstar = (1._r8/basetemp * ggr * wthl_sfc(i) * z_const)**(1._r8/3._r8)
+    uf = sqrt(ustar2 + 0.3_r8 * wstar * wstar)
+    uf = max(ufmin,uf)
+    
+    thl_sec(i,1) = 0.4_r8 * a_const * (wthl_sfc(i)/uf)**2
+    qw_sec(i,1) = 0.4_r8 * a_const * (wqw_sfc(i)/uf)**2
+    qwthl_sec(i,1) = 0.2_r8 * a_const * (wthl_sfc(i)/uf) * &
+                     (wqw_sfc(i)/uf)
+    
+    do p=1,num_tracer
+      wtracer_sec(i,1,p) = wtracer_sfc(i,p)
+    enddo
   enddo ! end i loop (column loop)
   
   ! Calculate the second moments, which are on the
@@ -455,7 +480,7 @@ subroutine diag_second_shoc_moments(&
 
       ! diagnose vertical flux of tracers      
       do p=1,num_tracer
-        wtracer_sec(i,k,p)=-1._r8*tkh_zi(i,k)*grid_dz*(tracer(i,kt,p)-tracer(i,k,p))
+        wtracer_sec(i,k,p)=-1._r8*tkh_zi(i,k)*grid_dz*(tracer(i,k,p)-tracer(i,kb,p))
       enddo
     
     enddo ! end i loop (column loop)
@@ -539,10 +564,10 @@ subroutine diag_third_shoc_moments(&
   real(r8) :: thetal_zi(shcol,nlevi)
 
   ! Interpolate variables onto the interface levels
-  call linear_interp(zt_grid,zi_grid,isotropy,isotropy_zi,nlev,nlevi,shcol)
-  call linear_interp(zt_grid,zi_grid,brunt,brunt_zi,nlev,nlevi,shcol)
-  call linear_interp(zt_grid,zi_grid,w_sec,w_sec_zi,nlev,nlevi,shcol)
-  call linear_interp(zt_grid,zi_grid,thetal,thetal_zi,nlev,nlevi,shcol)
+  call linear_interp(zt_grid,zi_grid,isotropy,isotropy_zi,nlev,nlevi,shcol,largeneg)
+  call linear_interp(zt_grid,zi_grid,brunt,brunt_zi,nlev,nlevi,shcol,largeneg)
+  call linear_interp(zt_grid,zi_grid,w_sec,w_sec_zi,nlev,nlevi,shcol,(2._r8/3._r8)*mintke)
+  call linear_interp(zt_grid,zi_grid,thetal,thetal_zi,nlev,nlevi,shcol,largeneg)
   
   c=7._r8
   a0=(0.52_r8*c**(-2))/(c-2._r8)
@@ -582,7 +607,7 @@ subroutine diag_third_shoc_moments(&
         (w_sec(i,k)-w_sec(i,kb))+ 2._r8 * thedz2 * bet2 * &    ! +DPAB check bet2 here
 	isosqrt * w_sec_zi(i,k) * (wthl_sec(i,kc) - wthl_sec(i,kb)) 
 	
-      f3=thedz * bet2 * isosqrt * w_sec_zm(i,k) * &
+      f3=thedz * bet2 * isosqrt * w_sec_zi(i,k) * &
         (wthl_sec(i,kc) - wthl_sec(i,kb)) + thedz * &
 	bet2 * isosqrt * (wthl_sec(i,k) * (tke(i,k) - tke(i,kb)))
 	
@@ -730,13 +755,13 @@ subroutine shoc_assumed_pdf(&
   shoc_cldfrac(:,:)=0._r8
   shoc_ql(:,1)=0._r8 
 
-  call linear_interp(zi_grid,zt_grid,w3,w3_zt,nlevi,nlev,shcol)  
-  call linear_interp(zi_grid,zt_grid,thl_sec,thl_sec_zt,nlevi,nlev,shcol)
-  call linear_interp(zi_grid,zt_grid,wthl_sec(:,1:nlev),wthl_sec_zt,nlevi,nlev,shcol)
-  call linear_interp(zi_grid,zt_grid,qwthl_sec,qwthl_sec_zt,nlevi,nlev,shcol)
-  call linear_interp(zi_grid,zt_grid,wqw_sec(:,1:nlev),wqw_sec_zt,nlevi,nlev,shcol)
-  call linear_interp(zi_grid,zt_grid,qw_sec,qw_sec_zt,nlevi,nlev,shcol)  
-  call linear_interp(zi_grid,zt_grid,w_field,w_field_zt,nlevi,nlev,shcol)
+  call linear_interp(zi_grid,zt_grid,w3,w3_zt,nlevi,nlev,shcol,largeneg)  
+  call linear_interp(zi_grid,zt_grid,thl_sec,thl_sec_zt,nlevi,nlev,shcol,largeneg)
+  call linear_interp(zi_grid,zt_grid,wthl_sec(:,1:nlev),wthl_sec_zt,nlevi,nlev,shcol,largeneg)
+  call linear_interp(zi_grid,zt_grid,qwthl_sec,qwthl_sec_zt,nlevi,nlev,shcol,largeneg)
+  call linear_interp(zi_grid,zt_grid,wqw_sec(:,1:nlev),wqw_sec_zt,nlevi,nlev,shcol,largeneg)
+  call linear_interp(zi_grid,zt_grid,qw_sec,qw_sec_zt,nlevi,nlev,shcol,largeneg)  
+  call linear_interp(zi_grid,zt_grid,w_field,w_field_zt,nlevi,nlev,shcol,largeneg)
   
 ! Initialize the buoyancy flux (probably doesn't need to be here)
   wthv_sec(:,1)=wthl_sec_zt(:,1)+((1.-epsterm)/epsterm)&
@@ -1027,6 +1052,7 @@ subroutine shoc_tke(&
              shcol,nlev,nlevi,dtime,&           ! Input
              wthv_sec,shoc_mix,dz_zi,&          ! Input  
 	     u_wind,v_wind,brunt,&              ! Input
+	     uw_sfc,vw_sfc,&                    ! Input
 	     zt_grid,zi_grid,&                  ! Input
              tke, &                             ! Input/Output
              tk,tkh,isotropy)                   ! Output
@@ -1045,6 +1071,8 @@ subroutine shoc_tke(&
   real(r8), intent(in) :: shoc_mix(shcol,nlev) ! Mixing length [m]
   real(r8), intent(in) :: u_wind(shcol,nlev) ! Meridional wind [m/s]
   real(r8), intent(in) :: v_wind(shcol,nlev) ! Zonal wind [m/s]
+  real(r8), intent(in) :: uw_sfc(shcol) ! Zonal momentum flux at sfc [m2/s2]
+  real(r8), intent(in) :: vw_sfc(shcol) ! Meridional momentum flux at sfc [m2/s2]
   real(r8), intent(in) :: dz_zi(shcol,nlev) ! dz on interface grid [m]
   real(r8), intent(in) :: brunt(shcol,nlev) ! Brunt Vaisalla frequncy 
   real(r8), intent(in) :: zt_grid(shcol,nlev) ! heights on midpoint grid
@@ -1065,7 +1093,7 @@ subroutine shoc_tke(&
   real(r8) :: buoy_sgs,ratio,a_prod_sh,a_prod_bu,a_diss
   real(r8) :: lstarn, lstarp, bbb, omn, omp
   real(r8) :: qsatt,dqsat,tk_in, uw_sec, vw_sec
-  real(r8) :: tscale1,lambda,buoy_sgs_save,grid_dzw,grw1
+  real(r8) :: tscale1,lambda,buoy_sgs_save,grid_dzw,grw1,grid_dz
   integer i,j,k,kc,kb	 
   
   Cs = 0.15_r8
@@ -1091,19 +1119,24 @@ subroutine shoc_tke(&
   enddo
   
   ! Set lower and upper bound (check this)
-  shear_prod(i,1) = 0._r8
-  shear_prod(i,nlevi) = 0._r8
+  do i=1,shcol
+    shear_prod(i,1) = uw_sfc(i)**2 + vw_sfc(i)**2 
+  enddo
   
-  call linear_interp(zi_grid,zt_grid,shear_prod,shear_prod_zt,nlevi,nlev,shcol)
+  shear_prod(:,nlevi) = 0._r8
+  
+  call linear_interp(zi_grid,zt_grid,shear_prod,shear_prod_zt,nlevi,nlev,shcol,largeneg)
   
   do k=1,nlev
     do i=1,shcol
     
+      grid_dzw=dz_zi(i,1)
       tk_in=Ck*shoc_mix(i,k)*sqrt(tke(i,k))
       smix=shoc_mix(i,k)
       a_prod_bu=(ggr/basetemp)*wthv_sec(i,k)
       buoy_sgs=-1._r8*a_prod_bu/(Pr*(tk_in+0.001_r8))
       buoy_sgs_save=brunt(i,k)  
+      grid_dzw=dz_zi(i,k)
     
       if (buoy_sgs .le. 0._r8) then 
         smix=grid_dzw
@@ -1130,7 +1163,7 @@ subroutine shoc_tke(&
       tk(i,k)=Ck*smix*sqrt(tke(i,k))
       tkh(i,k)=Ck*isotropy(i,k)*tke(i,k)              
    
-      tke(i,k) = max(0.0004,tke(i,k))
+      tke(i,k) = max(mintke,tke(i,k))
  
     enddo ! end i loop
   enddo ! end k loop
@@ -1244,9 +1277,9 @@ subroutine shoc_length(&
       ! End of computation of local stability
       if (k .eq. 1) then
         term=600._r8 * tkes
-	shoc_mix(i,k)=term+(0.4_r8*z_in(i,k)-term)*exp(-z_in(i,k)/100._r8)
+	shoc_mix(i,k)=term+(0.4_r8*zt_grid(i,k)-term)*exp(-zt_grid(i,k)/100._r8)
       else
-        shoc_mix(i,k)=min(maxlen,(2.8284*sqrt(1._r8/((1._r8/(tscale*tkes*vonk*z_in(i,k))) &
+        shoc_mix(i,k)=min(maxlen,(2.8284*sqrt(1._r8/((1._r8/(tscale*tkes*vonk*zt_grid(i,k))) &
 	  +(1._r8/(tscale*tkes*l_inf(i)))+0.01_r8*(brunt2(i,k)/tke(i,k)))))/0.3_r8)  
       endif      
       
@@ -1330,7 +1363,7 @@ end subroutine shoc_length
 !==============================================================
 ! Linear interpolation to get values on various grids
 
-subroutine linear_interp(x1,x2,y1,y2,km1,km2,ncol)
+subroutine linear_interp(x1,x2,y1,y2,km1,km2,ncol,minval)
   implicit none
 
   integer :: ncol
@@ -1351,6 +1384,11 @@ subroutine linear_interp(x1,x2,y1,y2,km1,km2,ncol)
           endif
         enddo ! end k1 loop
       endif 
+      
+      if (y2(k2,i) .lt. minval) then
+        y2(k2,i) = minval
+      endif
+      
     enddo ! end k2 loop
   enddo ! i loop
   
