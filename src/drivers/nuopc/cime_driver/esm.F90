@@ -117,13 +117,14 @@ module ESM
     use ESMF                  , only : ESMF_ConfigGetLen, ESMF_RC_NOT_VALID, ESMF_LogFoundAllocError
     use ESMF                  , only : ESMF_LogSetError, ESMF_LogWrite, ESMF_LOGMSG_INFO
     use ESMF                  , only : ESMF_GridCompSet, ESMF_SUCCESS, ESMF_METHOD_INITIALIZE
+    use ESMF                  , only : ESMF_VMisCreated
     use NUOPC                 , only : NUOPC_CompSetInternalEntryPoint, NUOPC_CompAttributeGet
     use NUOPC_Driver          , only : NUOPC_DriverAddComp
     use seq_comm_mct          , only : CPLID, GLOID, ATMID, LNDID, OCNID, ICEID, GLCID, ROFID, WAVID, ESPID
     use seq_comm_mct          , only : seq_comm_init, seq_comm_printcomms, seq_comm_petlist
     use seq_comm_mct          , only : seq_comm_getinfo => seq_comm_setptrs
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
-    use shr_file_mod          , only : shr_file_setLogunit
+    use shr_file_mod          , only : shr_file_setLogunit, shr_file_getunit
     use med                   , only : med_SS         => SetServices
     use atm_comp_nuopc        , only : ATMSetServices => SetServices
     use ice_comp_nuopc        , only : ICESetServices => SetServices
@@ -152,7 +153,7 @@ module ESM
     integer, pointer       :: petList(:)
     character(len=20)      :: model, prefix
     integer                :: petCount, i
-    integer                :: localPet
+    integer                :: localPet, medpet
     logical                :: is_set
     character(SHR_KIND_CS) :: cvalue
     character(len=5) inst_suffix
@@ -161,7 +162,6 @@ module ESM
     integer                :: shrlogunit  ! original log unit
     integer                :: shrloglev   ! original log level
     integer                :: global_comm
-    logical                :: iamroot_med ! mediator masterproc
     logical                :: isPresent
     integer                :: dbrc
     character(len=*), parameter    :: subname = "(esm.F90:SetModelServices)"
@@ -173,6 +173,7 @@ module ESM
     endif
     !-------------------------------------------
     ! Set the io logunit to the value defined in ensemble_driver
+    ! it may be corrected below if the med mastertask is not the driver mastertask
     !-------------------------------------------
     call shr_file_setLogunit(logunit)
 
@@ -485,8 +486,28 @@ module ESM
         call AddAttributes(child, driver, config, compid, 'MED', inst_suffix, rc=rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+        call ESMF_GridCompGet(child, vm=vm, rc=rc)
+        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+        medPet = -1
+        if (ESMF_VMisCreated(vm)) then
+           call ESMF_VMGet(vm, localPet=medPet, rc=rc)
+           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+        endif
+        ! ensemble_driver set the med pet to task 0, correct it here
+        if(medPet == 0 .and. localPet /= 0) then
+           call NUOPC_CompAttributeGet(driver, name="diro", value=diro, rc=rc)
+           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+           call NUOPC_CompAttributeGet(driver, name="logfile", value=logfile, rc=rc)
+           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+           logunit = shr_file_getUnit()
+           open(logunit,file=trim(diro)//"/"//trim(logfile), position='append')
+           mastertask = .true.
+        else if (medPet /= localPet) then
+           logUnit = shrlogunit
+           mastertask = .false.
+        endif
         ! Print out present flags to mediator log file
-        if (iamroot_med) then
+        if (medPet==0) then
            write(logunit,*) trim(subname)//":atm_present="//trim(atm_present)
            write(logunit,*) trim(subname)//":lnd_present="//trim(lnd_present)
            write(logunit,*) trim(subname)//":ocn_present="//trim(ocn_present)
@@ -496,6 +517,8 @@ module ESM
            write(logunit,*) trim(subname)//":glc_present="//trim(glc_present)
            write(logunit,*) trim(subname)//":med_present="//trim(med_present)
         end if
+
+
 
       else
 
@@ -889,16 +912,9 @@ module ESM
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
 
-    call ESMF_GridCompGet(driver, vm=vm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_VMGet(vm, mpiCommunicator=lmpicom, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     !-----------------------------------------------------
     ! Carry out restart if appropriate
     !-----------------------------------------------------
-
 
     ! Add rest_case_name to driver attributes
     call NUOPC_CompAttributeAdd(driver, attrList=(/'rest_case_name'/), rc=rc)
@@ -1380,7 +1396,6 @@ module ESM
 
        call ReadAttributes(gcomp, config, "MED_history_attributes::", rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
 
        call ReadAttributes(gcomp, config, "FLDS_attributes::", rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

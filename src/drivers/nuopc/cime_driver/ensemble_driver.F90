@@ -201,6 +201,8 @@ module Ensemble_driver
              write(inst_suffix,'(a,i4.4)') '_',inst
              call NUOPC_CompAttributeSet(driver, name='inst_suffix', value=inst_suffix, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          else
+             inst_suffix = ''
           endif
           write(cvalue,*) read_restart
           call NUOPC_CompAttributeAdd(driver, attrList=(/'read_restart'/), rc=rc)
@@ -210,8 +212,7 @@ module Ensemble_driver
 
           call ReadAttributes(driver, config, "CLOCK_attributes::", rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-          call ReadAttributes(driver, config, "MED_modelio::", rc=rc)
+          call ReadAttributes(driver, config, "MED_modelio"//trim(inst_suffix)//"::", rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
           if (localPet == petlist(1)) then

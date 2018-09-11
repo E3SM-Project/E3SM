@@ -427,6 +427,7 @@ module atm_comp_nuopc
     integer          :: n
     integer          :: shrlogunit ! original log unit
     integer          :: shrloglev  ! original log level
+    character(len=CL)      :: clockstr
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
@@ -501,15 +502,12 @@ module atm_comp_nuopc
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
 
-    call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing ATM from: ", rc=rc)
+    call ESMF_ClockPrint(clock, options="currTime", unit=clockstr, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
+    if (mastertask) write(logunit, *) "------->Advancing ATM from: ",trim(clockstr)
+    call ESMF_ClockPrint(clock, options="stopTime", unit=clockstr, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call shr_file_setLogLevel(shrloglev)
-    call shr_file_setLogUnit (shrlogunit)
-
+    if (mastertask) write(logunit, *) "--------------------------------> to: ",trim(clockstr)
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelAdvance
