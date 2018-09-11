@@ -52,9 +52,6 @@ MODULE MICRO_P3
 
   !ice lookup table values for ice-rain collision/collection
   double precision, private, dimension(densize,rimsize,isize,rcollsize,colltabsize)    :: itabcoll
-  ! separated into itabcolli1 and itabcolli2, due to max of 7 dimensional arrays on some FORTRAN compilers
-  double precision, private, dimension(iisize,rimsize,densize,iisize,rimsize,densize) :: itabcolli1
-  double precision, private, dimension(iisize,rimsize,densize,iisize,rimsize,densize) :: itabcolli2
 
   ! integer switch for warm rain autoconversion/accretion schemes
   integer, private :: iparam
@@ -108,18 +105,14 @@ contains
 
     character(len=16), parameter :: version_p3  = '2.8.2'          !version number of P3 package
     character(len=1024)          :: version_header_table1          !version number from header, table 1
-    character(len=1024)          :: version_header_table2          !version number from header, table 2
     character(len=1024)          :: lookup_file_1                  !lookup table, main
-    character(len=1024)          :: lookup_file_2                  !lookup table for ice-ice interactions
     character(len=1024)          :: dumstr
-    integer                      :: i,j,k,ii,jj,kk,jjj,jjj2,jjjj,jjjj2
-    real                         :: lamr,mu_r,lamold,dum,initlamr,dm,dum1,dum2,dum3,dum4,dum5,  &
-         dum6,dd,amg,vt,dia,vn,vm
+    integer                      :: i,j,ii,jj
+    real                         :: dum
 
     !------------------------------------------------------------------------------------------!
 
     lookup_file_1 = trim(lookup_file_dir)//'/'//'p3_lookup_table_1.dat-v'//trim(version_p3)
-    lookup_file_2 = trim(lookup_file_dir)//'/'//'p3_lookup_table_2.dat-v'//trim(version_p3)
 
     !------------------------------------------------------------------------------------------!
 
@@ -306,9 +299,6 @@ contains
 
     !PMC: deleted ice-ice collision lookup table here b/c only used for nCat>1.
 
-    itabcolli1 = 0.
-    itabcolli2 = 0.
-
   END SUBROUTINE p3_init_a
 
   subroutine p3_get_tables(mu_r_user, revap_user, vn_user, vm_user)
@@ -333,9 +323,9 @@ contains
 
   SUBROUTINE p3_init_b()
     implicit none
-    integer                      :: i,j,k,ii,jj,kk,jjj,jjj2,jjjj,jjjj2
+    integer                      :: i,ii,jj,kk
     real                         :: lamr,mu_r,lamold,dum,initlamr,dm,dum1,dum2,dum3,dum4,dum5,  &
-         dum6,dd,amg,vt,dia,vn,vm
+         dd,amg,vt,dia
 
     !------------------------------------------------------------------------------------------!
 
@@ -455,7 +445,7 @@ contains
 
   !==========================================================================================!
 
-  SUBROUTINE p3_main(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,uzpl,   &
+  SUBROUTINE p3_main(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
        pres,dzq,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
        diag_effi,diag_vmi,diag_di,diag_rhoi,n_diag_2d,diag_2d,n_diag_3d,       &
        diag_3d,log_predictNc,typeDiags_ON,model,prt_drzl,prt_rain,prt_crys,    &
@@ -494,7 +484,6 @@ contains
     real, intent(inout), dimension(its:ite,kts:kte)      :: th         ! potential temperature            K
     real, intent(inout), dimension(its:ite,kts:kte)      :: th_old     ! beginning of time step value of theta K
     real, intent(inout), dimension(its:ite,kts:kte)      :: qv_old     ! beginning of time step value of qv    kg kg-1
-    real, intent(in),    dimension(its:ite,kts:kte)      :: uzpl       ! vertical air velocity            m s-1
     real, intent(in),    dimension(its:ite,kts:kte)      :: pres       ! pressure                         Pa
     real, intent(in),    dimension(its:ite,kts:kte)      :: dzq        ! vertical grid spacing            m
     real, intent(in)                                     :: dt         ! model time step                  s
@@ -540,7 +529,6 @@ contains
 
     real, dimension(its:ite,kts:kte) :: lamc
     real, dimension(its:ite,kts:kte) :: lamr
-    real, dimension(its:ite,kts:kte) :: n0c
     real, dimension(its:ite,kts:kte) :: logn0r
     real, dimension(its:ite,kts:kte) :: mu_c
     !real, dimension(its:ite,kts:kte) :: diag_effr   (currently not used)
@@ -548,13 +536,7 @@ contains
     real, dimension(its:ite,kts:kte) :: cdist
     real, dimension(its:ite,kts:kte) :: cdist1
     real, dimension(its:ite,kts:kte) :: cdistr
-    real, dimension(its:ite,kts:kte) :: Vt_nc
     real, dimension(its:ite,kts:kte) :: Vt_qc
-    real, dimension(its:ite,kts:kte) :: Vt_nr
-    real, dimension(its:ite,kts:kte) :: Vt_qr
-    real, dimension(its:ite,kts:kte) :: Vt_qit
-    real, dimension(its:ite,kts:kte) :: Vt_nit
-    !real, dimension(its:ite,kts:kte) :: Vt_zit
 
     ! liquid-phase microphysical process rates:
     !  (all Q process rates in kg kg-1 s-1)
@@ -607,7 +589,6 @@ contains
     real :: nimul     ! change in Ni, ice multiplication from rime-splintering (not included in the paper)
     real :: ncshdc    ! source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper)
     real :: rhorime_c ! density of rime (from cloud)
-    real :: rhorime_r ! density of rime (from rain)
 
     logical   :: log_wetgrowth
 
@@ -617,33 +598,31 @@ contains
     real, dimension(its:ite,kts:kte) :: diam_ice
 
     real, dimension(its:ite,kts:kte)      :: inv_dzq,inv_rho,ze_ice,ze_rain,prec,rho,       &
-         rhofacr,rhofaci,acn,xxls,xxlv,xlf,qvs,qvi,sup,supi,ss,vtrmi1,vtrnitot,       &
+         rhofacr,rhofaci,acn,xxls,xxlv,xlf,qvs,qvi,sup,supi,vtrmi1,       &
          tmparr1
 
-    real, dimension(kts:kte) :: dum_qit,dum_qr,dum_nit,dum_qir,dum_bir,dum_zit,dum_nr,      &
-         dum_qc,dum_nc,V_qr,V_qit,V_nit,V_nr,V_qc,V_nc,V_zit,flux_qr,flux_qit,        &
-         flux_qx,flux_nx,flux_qm,flux_qb,V_qx,V_qn,V_qm,V_qb,                         &
-         flux_nit,flux_nr,flux_qir,flux_bir,flux_zit,flux_qc,flux_nc,tend_qc,tend_qr, &
-         tend_nr,tend_qit,tend_qir,tend_bir,tend_nit,tend_nc !,tend_zit
+    real, dimension(kts:kte) ::  V_qr,V_qit,V_nit,V_nr,V_qc,V_nc,flux_qit,        &
+         flux_qx,flux_nx,                     &
+         flux_nit,flux_qir,flux_bir
 
     real    :: lammax,lammin,mu,dv,sc,dqsdt,ab,kap,epsr,epsc,xx,aaa,epsilon,sigvl,epsi_tot, &
-         aact,alpha,gamm,gg,psi,eta1,eta2,sm1,sm2,smax,uu1,uu2,dum,dum0,dum1,dum2,    &
-         dumqv,dumqvs,dums,dumqc,ratio,qsat0,udiff,dum3,dum4,dum5,dum6,lamold,rdumii, &
-         rdumjj,dqsidt,abi,dumqvi,dap,nacnt,rhop,v_impact,ri,iTc,D_c,D_r,dumlr,tmp1,  &
-         tmp2,tmp3,inv_nstep,inv_dum,inv_dum3,odt,oxx,oabi,zero,test,test2,test3,     &
-         onstep,fluxdiv_qr,fluxdiv_qit,fluxdiv_nit,fluxdiv_qir,fluxdiv_bir,prt_accum, &
-         fluxdiv_qx,fluxdiv_nx,fluxdiv_qm,fluxdiv_qb,flux_qx_kbot,Co_max,dt_sub,      &
-         fluxdiv_zit,fluxdiv_qc,fluxdiv_nc,fluxdiv_nr,rgvm,D_new,Q_nuc,N_nuc,         &
-         deltaD_init,dum1c,dum4c,dum5c,dumt,qcon_satadj,qdep_satadj,sources,sinks,    &
-         drhop,timeScaleFactor,dt_left,tmp4,tmp5,tmp6,tmp7,tmp8,tmp9
+         aact,sm1,sm2,uu1,uu2,dum,dum1,dum2,    &
+         dumqv,dumqvs,dums,ratio,qsat0,dum3,dum4,dum5,dum6,rdumii, &
+         rdumjj,dqsidt,abi,dumqvi,rhop,v_impact,ri,iTc,D_c,tmp1,  &
+         tmp2,inv_dum3,odt,oxx,oabi,     &
+         fluxdiv_qit,fluxdiv_nit,fluxdiv_qir,fluxdiv_bir,prt_accum, &
+         fluxdiv_qx,fluxdiv_nx,Co_max,dt_sub,      &
+         Q_nuc,N_nuc,         &
+         deltaD_init,dumt,qcon_satadj,qdep_satadj,sources,sinks,    &
+         timeScaleFactor,dt_left
 
 
-    integer :: dumi,i,k,kk,ii,jj,j,dumk,dumj,dumii,dumjj,dumzz,n,nstep,      &
-         tmpint1,tmpint2,ktop,kbot,kdir,qcindex,qrindex,qiindex,dumic,dumiic,dumjjc,  &
-         catcoll,k_qxbot,k_qxtop,k_temp
+    integer :: dumi,i,k,dumj,dumii,dumjj,dumzz,      &
+         tmpint1,ktop,kbot,kdir,  &
+         k_qxbot,k_qxtop,k_temp
 
-    logical :: log_nucleationPossible,log_hydrometeorsPresent,log_predictSsat,log_tmp1,     &
-         log_exitlevel,log_qcpresent,log_qrpresent,log_qipresent,       &
+    logical :: log_nucleationPossible,log_hydrometeorsPresent,log_predictSsat,     &
+         log_exitlevel,       &
          log_qxpresent
 
 
@@ -659,14 +638,14 @@ contains
     real    :: f1pr08   ! collection of rain mass by ice
     real    :: f1pr09   ! minimum ice number (lambda limiter)
     real    :: f1pr10   ! maximum ice number (lambda limiter)
-    real    :: f1pr11   ! not used
-    real    :: f1pr12   ! not used
+!    real    :: f1pr11   ! not used
+!    real    :: f1pr12   ! not used
     real    :: f1pr13   ! reflectivity
     real    :: f1pr14   ! melting (ventilation term)
     real    :: f1pr15   ! mass-weighted mean diameter
     real    :: f1pr16   ! mass-weighted mean particle density
-    real    :: f1pr17   ! ice-ice category collection change in number
-    real    :: f1pr18   ! ice-ice category collection change in mass
+!    real    :: f1pr17   ! ice-ice category collection change in number (not used)
+!    real    :: f1pr18   ! ice-ice category collection change in mass (not used)
 
     ! quantities related to diagnostic hydrometeor/precipitation types
     real,    parameter                       :: freq3DtypeDiag     = 60.     !frequency (min) for full-column diagnostics
@@ -717,10 +696,6 @@ contains
 
     deltaD_init = 999.    !not used if n_iceCat=1 (but should be defined)
 
-
-    ! deltaD_init = 250.e-6   !for testing
-    ! deltaD_init = dummy_in   !temporary; passed in from cld1d
-
     ! Note:  Code for prediction of supersaturation is available in current version.
     !        In the future 'log_predictSsat' will be a user-defined namelist key.
     log_predictSsat = .false.
@@ -749,7 +724,6 @@ contains
     diag_2d   = 0.
     diag_3d   = 0.
     rhorime_c = 400.
-    !rhorime_r = 400.
 
     tmparr1 = (pres*1.e-5)**(rd*inv_cp)
     t       = th    *tmparr1    !compute temperature from theta (value at beginning of microphysics step)
@@ -1229,35 +1203,14 @@ contains
 
              endif    !if qc>qsmall
 
-             ! rain:
-             ! assume rime density for rain collecting ice is 900 kg/m3
-             !            if (qr(i,k).ge.qsmall) then
-             !               D_r = (mu_r(i,k)+1.)/lamr(i,k)
-             !               V_impact  = abs(vtrmi1(i,k)-Vt_qr(i,k))
-             !               Ri        = -(0.5e+6*D_r)*V_impact*iTc
-             !               Ri        = max(1.,min(Ri,8.))
-             !               rhorime_r  = (0.051 + 0.114*Ri - 0.0055*Ri*Ri)*1000.
-             !            else
-             !               rhorime_r = 400.
-             !            endif
-
           else
              rhorime_c = 400.
-             !             rhorime_r = 400.
           endif ! qi > qsmall and T < 273.15
 
           !............................................................
           ! contact and immersion freezing droplets
 
-          ! contact freezing currently turned off
-          !         dum=7.37*t(i,k)/(288.*10.*pres(i,k))/100.
-          !         dap=4.*pi*1.38e-23*t(i,k)*(1.+dum/rin)/ &
-          !                (6.*pi*rin*mu)
-          !         nacnt=exp(-2.80+0.262*(273.15-t(i,k)))*1000.
-
           if (qc(i,k).ge.qsmall .and. t(i,k).le.269.15) then
-             !         qchetc = pi*pi/3.*Dap*Nacnt*rhow*cdist1(i,k)*gamma(mu_c(i,k)+5.)/lamc(i,k)**4
-             !         nchetc = 2.*pi*Dap*Nacnt*cdist1(i,k)*gamma(mu_c(i,k)+2.)/lamc(i,k)
              ! for future: calculate gamma(mu_c+4) in one place since its used multiple times
              dum   = (1./lamc(i,k))**3
              Q_nuc = cons6*cdist1(i,k)*gamma(7.+mu_c(i,k))*exp(aimm*(273.15-t(i,k)))*dum**2
@@ -1356,8 +1309,6 @@ contains
           ! may change and t and t_old were both diagnosed using the current pressure
           ! errors from this assumption are small
           dum = -cp/g*(t(i,k)-t_old(i,k))*odt
-
-          !       dum = qvs(i,k)*rho(i,k)*g*uzpl(i,k)/max(1.e-3,(pres(i,k)-polysvp1(t(i,k),0)))
 
           if (t(i,k).lt.273.15) then
              aaa = (qv(i,k)-qv_old(i,k))*odt - dqsdt*(-dum*g*inv_cp)-(qvs(i,k)-dumqvi)*     &
@@ -1696,12 +1647,10 @@ contains
           sinks   = (qisub+qimlt)*dt
           sources = qitot(i,k) + (qidep+qinuc+qrcol+qccol+  &
                qrhetc+qrheti+qchetc+qcheti+qrmul)*dt
-          !PMC nCat deleted catcoll
           if (sinks.gt.sources .and. sinks.ge.1.e-20) then
              ratio = sources/sinks
              qisub = qisub*ratio
              qimlt = qimlt*ratio
-             !PMC deleted catcoll
           endif
 
 
@@ -2118,7 +2067,7 @@ contains
 
 
        !------------------------------------------------------------------------------------------!
-       ! Ice sedimentation:  (adaptivive substepping)
+       ! Ice sedimentation:  (adaptive substepping)
 
 
        log_qxpresent = .false.  !note: this applies to ice category 'iice' only
@@ -2151,7 +2100,6 @@ contains
              Co_max = 0.
              V_qit = 0.
              V_nit = 0.
-             !V_zit = 0.
 
              kloop_sedi_i1: do k = k_qxtop,k_qxbot,-kdir
 
@@ -2178,7 +2126,6 @@ contains
                    !zitot(i,k) = max(zitot(i,k),f1pr021)
                    V_qit(k) = f1pr02*rhofaci(i,k)     !mass-weighted  fall speed (with density factor)
                    V_nit(k) = f1pr01*rhofaci(i,k)     !number-weighted    fall speed (with density factor)
-                   !V_zit(k) = f1pr19*rhofaci(i,k)     !moment6-weighted fall speed (with density factor)
                    !==
 
                 endif qi_notsmall_i1
@@ -2203,7 +2150,6 @@ contains
                 flux_nit(k) = V_nit(k)*nitot(i,k)*rho(i,k)
                 flux_qir(k) = V_qit(k)*qirim(i,k)*rho(i,k)
                 flux_bir(k) = V_qit(k)*birim(i,k)*rho(i,k)
-                !flux_zit(k) = V_zit(k)*zitot(i,k)*rho(i,k)
              enddo
 
              !accumulated precip during time step
@@ -2217,7 +2163,6 @@ contains
              fluxdiv_qir = -flux_qir(k)*inv_dzq(i,k)
              fluxdiv_bir = -flux_bir(k)*inv_dzq(i,k)
              fluxdiv_nit = -flux_nit(k)*inv_dzq(i,k)
-             !fluxdiv_zit = -flux_zit(k)*inv_dzq(i,k)
              !-- update prognostic variables
              qitot(i,k) = qitot(i,k) + fluxdiv_qit*dt_sub*inv_rho(i,k)
              qirim(i,k) = qirim(i,k) + fluxdiv_qir*dt_sub*inv_rho(i,k)
@@ -2232,7 +2177,6 @@ contains
                 fluxdiv_qir = (flux_qir(k+kdir) - flux_qir(k))*inv_dzq(i,k)
                 fluxdiv_bir = (flux_bir(k+kdir) - flux_bir(k))*inv_dzq(i,k)
                 fluxdiv_nit = (flux_nit(k+kdir) - flux_nit(k))*inv_dzq(i,k)
-                !fluxdiv_zit = (flux_zit(k+kdir) - flux_zit(k))*inv_dzq(i,k)
                 !-- update prognostic variables
                 qitot(i,k) = qitot(i,k) + fluxdiv_qit*dt_sub*inv_rho(i,k)
                 qirim(i,k) = qirim(i,k) + fluxdiv_qir*dt_sub*inv_rho(i,k)
@@ -2325,8 +2269,6 @@ contains
           ! rain:
           if (qr(i,k).ge.qsmall) then
 
-             !           call get_rain_dsd(qr(i,k),nr(i,k),mu_r(i,k),rdumii,dumii,lamr(i,k),mu_r_table, &
-             !                             tmp1,tmp2,log_tmp1,tmpint1,tmpint2)
              call get_rain_dsd2(qr(i,k),nr(i,k),mu_r(i,k),rdumii,dumii,lamr(i,k),mu_r_table,   &
                   !                        cdistr(i,k),logn0r(i,k))
                   tmp1,tmp2)
@@ -2580,26 +2522,11 @@ contains
           elseif (Q_hail(i,kbot) > 0.)    then
              prt_hail(i) = prt_hail(i) + prt_sol(i)    !precip rate of hail
           endif
-          !--- optimized version above above IF block (does not work on all FORTRAN compilers)
-          !           tmp3 = -(Q_crystals(i,kbot) > 0.)
-          !           tmp4 = -(Q_ursnow(i,kbot)   > 0.)
-          !           tmp5 = -(Q_lrsnow(i,kbot)   > 0.)
-          !           tmp6 = -(Q_grpl(i,kbot)     > 0.)
-          !           tmp7 = -(Q_pellets(i,kbot)  > 0.)
-          !           tmp8 = -(Q_hail(i,kbot)     > 0.)
-          !           prt_crys(i) = prt_crys(i) + prt_sol(i)*tmp3                   !precip rate of small crystals
-          !           prt_snow(i) = prt_snow(i) + prt_sol(i)*tmp4 + prt_sol(i)*tmp5 !precip rate of unrimed + lightly rimed snow
-          !           prt_grpl(i) = prt_grpl(i) + prt_sol(i)*tmp6                   !precip rate of graupel
-          !           prt_pell(i) = prt_pell(i) + prt_sol(i)*tmp7                   !precip rate of ice pellets
-          !           prt_hail(i) = prt_hail(i) + prt_sol(i)*tmp8                   !precip rate of hail
-          !===
 
           !precip rate of unmelted total "snow":
           !  For now, an instananeous solid-to-liquid ratio (tmp1) is assumed and is multiplied
           !  by the total liquid-equivalent precip rates of snow (small crystals + lightly-rime + ..)
           !  Later, this can be computed explicitly as the volume flux of unmelted ice.
-          !tmp1 = 10.  !assumes 10:1 ratio
-          !tmp1 = 1000./max(1., diag_rhoi(i,kbot))
           tmp1 = 1000./max(1., 5.*diag_rhoi(i,kbot))
           prt_sndp(i) = prt_sndp(i) + tmp1*(prt_crys(i) + prt_snow(i) + prt_grpl(i))
 
@@ -2626,31 +2553,6 @@ contains
 
     ! end of main microphysics routine
 
-
-    !.....................................................................................
-    ! output only
-    !      do i = its,ite
-    !       do k = kbot,ktop,kdir
-    !     !calculate temperature from theta
-    !       t(i,k) = th(i,k)*(pres(i,k)*1.e-5)**(rd*inv_cp)
-    !     !calculate some time-varying atmospheric variables
-    !       qvs(i,k) = qv_sat(t(i,k),pres(i,k),0)
-    !       if (qc(i,k).gt.1.e-5) then
-    !          write(6,'(a10,2i5,5e15.5)')'after',i,k,qc(i,k),qr(i,k),nc(i,k),  &
-    !           qv(i,k)/qvs(i,k),uzpl(i,k)
-    !       end if
-    !       end do
-    !      enddo !i-loop
-    !   !saturation ratio at end of microphysics step:
-    !    do i = its,ite
-    !     do k = kbot,ktop,kdir
-    !        dum1     = th(i,k)*(pres(i,k)*1.e-5)**(rd*inv_cp)   !i.e. t(i,k)
-    !        qvs(i,k) = qv_sat(dumt,pres(i,k),0)
-    !        diag_3d(i,k,2) = qv(i,k)/qvs(i,k)
-    !     enddo
-    !    enddo !i-loop
-    !.....................................................................................
-
     return
 
   END SUBROUTINE p3_main
@@ -2661,7 +2563,7 @@ contains
 
     implicit none
 
-    real    :: dum1,dum4,dum5,proc,dproc1,dproc2,iproc1,gproc1,tmp1,tmp2
+    real    :: dum1,dum4,dum5,proc,iproc1,gproc1,tmp1,tmp2
     integer :: dumjj,dumii,dumi,index
 
     ! get value at current density index
@@ -2703,8 +2605,7 @@ contains
 
     implicit none
 
-    real    :: dum1,dum3,dum4,dum5,proc,dproc1,dproc2,iproc1,gproc1,tmp1,tmp2,dproc11, &
-         dproc12,dproc21,dproc22
+    real    :: dum1,dum3,dum4,dum5,proc,dproc1,dproc2,iproc1,gproc1,tmp1,tmp2
     integer :: dumjj,dumii,dumj,dumi,index
 
 

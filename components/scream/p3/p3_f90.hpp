@@ -29,7 +29,7 @@ struct FortranData {
   // In
   Real dt;
   Int it;
-  Array2 qv, th, qv_old, th_old, pres, dzq, qc, nc, qr, nr, ssat, uzpl, qitot, nitot, qirim, birim;
+  Array2 qv, th, qv_old, th_old, pres, dzq, qc, nc, qr, nr, ssat, qitot, nitot, qirim, birim;
   // Out
   Array1 prt_liq, prt_sol, prt_drzl, prt_rain, prt_crys, prt_snow, prt_grpl, prt_pell, prt_hail, prt_sndp;
   Array2 diag_ze, diag_effc, diag_2d, diag_effi, diag_vmi, diag_di, diag_rhoi;

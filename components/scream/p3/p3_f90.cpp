@@ -8,7 +8,7 @@ extern "C" {
   void p3_init_c(const char** lookup_file_dir, int* info);
   void p3_main_c(Real* qc, Real* nc, Real* qr, Real* nr, Real* th_old, Real* th,
                  Real* qv_old, Real* qv, Real dt, Real* qitot, Real* qirim,
-                 Real* nitot, Real* birim, Real* ssat, Real* uzpl, Real* pres,
+                 Real* nitot, Real* birim, Real* ssat, Real* pres,
                  Real* dzq, Int it, Real* prt_liq, Real* prt_sol, Int its,
                  Int ite, Int kts, Int kte, Real* diag_ze,
                  Real* diag_effc, Real* diag_effi, Real* diag_vmi,
@@ -43,7 +43,6 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   th = Array2("potential temperature, K", ncol, nlev);
   qv_old = Array2("qv at beginning of timestep, kg/kg", ncol, nlev);
   th_old = Array2("theta at beginning of timestep, K", ncol, nlev);
-  uzpl = Array2("vertical air velocity, m/s", ncol, nlev);
   pres = Array2("pressure, Pa", ncol, nlev);
   dzq = Array2("vertical grid spacing, m", ncol, nlev);
   // Out
@@ -73,7 +72,7 @@ FortranDataIterator::FortranDataIterator (const FortranData::Ptr& d) {
 
 void FortranDataIterator::init (const FortranData::Ptr& dp) {
   d_ = dp;
-  fields_.reserve(34);
+  fields_.reserve(33);
 #define fdipb(name)                                                     \
   fields_.push_back({#name,                                             \
         2,                                                              \
@@ -82,7 +81,7 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
         d_->name.size()})
   fdipb(qv); fdipb(th); fdipb(qv_old); fdipb(th_old); fdipb(pres);
   fdipb(dzq); fdipb(qc); fdipb(nc); fdipb(qr); fdipb(nr);
-  fdipb(ssat); fdipb(uzpl); fdipb(qitot); fdipb(nitot);
+  fdipb(ssat); fdipb(qitot); fdipb(nitot);
   fdipb(qirim); fdipb(birim); fdipb(prt_liq); fdipb(prt_sol);
   fdipb(prt_drzl); fdipb(prt_rain); fdipb(prt_crys); fdipb(prt_snow);
   fdipb(prt_grpl); fdipb(prt_pell); fdipb(prt_hail); fdipb(prt_sndp);
@@ -109,7 +108,7 @@ void p3_main (const FortranData& d) {
   p3_main_c(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(), d.th_old.data(),
             d.th.data(), d.qv_old.data(), d.qv.data(), d.dt, d.qitot.data(),
             d.qirim.data(), d.nitot.data(), d.birim.data(), d.ssat.data(),
-            d.uzpl.data(), d.pres.data(), d.dzq.data(), d.it, d.prt_liq.data(),
+            d.pres.data(), d.dzq.data(), d.it, d.prt_liq.data(),
             d.prt_sol.data(), 1, d.ncol, 1, d.nlev, d.diag_ze.data(),
             d.diag_effc.data(), d.diag_effi.data(), d.diag_vmi.data(),
             d.diag_di.data(), d.diag_rhoi.data(), d.diag_2d.extent_int(1),

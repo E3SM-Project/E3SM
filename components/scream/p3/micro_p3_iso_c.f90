@@ -76,7 +76,7 @@ contains
     end if
   end subroutine p3_init_c
 
-  subroutine p3_main_c(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,uzpl,   &
+  subroutine p3_main_c(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
        pres,dzq,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
        diag_effi,diag_vmi,diag_di,diag_rhoi,n_diag_2d,diag_2d,n_diag_3d,       &
        diag_3d,log_predictNc_in,typeDiags_ON_in,model_in,prt_drzl,prt_rain,prt_crys,    &
@@ -85,7 +85,7 @@ contains
 
     real(kind=c_real), intent(inout), dimension(its:ite,kts:kte) :: qc, nc, qr, nr, ssat, qv, th, th_old, qv_old
     real(kind=c_real), intent(inout), dimension(its:ite,kts:kte) :: qitot, qirim, nitot, birim
-    real(kind=c_real), intent(in), dimension(its:ite,kts:kte) :: uzpl, pres, dzq
+    real(kind=c_real), intent(in), dimension(its:ite,kts:kte) :: pres, dzq
     real(kind=c_real), value, intent(in) :: dt
     real(kind=c_real), intent(out), dimension(its:ite) :: prt_liq, prt_sol
     real(kind=c_real), intent(out), dimension(its:ite,kts:kte) :: diag_ze, diag_effc
@@ -108,7 +108,7 @@ contains
     call c_f_pointer(model_in, model)
     len = index(model, C_NULL_CHAR) - 1
 
-    call p3_main(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,uzpl,   &
+    call p3_main(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
          pres,dzq,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
          diag_effi,diag_vmi,diag_di,diag_rhoi,n_diag_2d,diag_2d,n_diag_3d,       &
          diag_3d,log_predictNc,typeDiags_ON,model(1:len),prt_drzl,prt_rain,prt_crys,    &
