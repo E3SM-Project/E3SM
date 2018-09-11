@@ -106,7 +106,7 @@ module WaterBudgetMod
   !----- formats -----
   character(*),parameter :: FA0= "('    ',12x,(3x,a10,2x),' | ',(3x,a10,2x))"
   character(*),parameter :: FF = "('    ',a12,f15.8,' | ',f15.8)"
-  character(*),parameter :: FF2= "('    ',a12,a15,' | ',f15.8)"
+  character(*),parameter :: FF2= "('    ',a12,a15,' | ',f18.2)"
   character(*),parameter :: FS = "('    ',a12,6(f18.2),18x,' | ',(f18.2))"
   character(*),parameter :: FS0= "('    ',12x,7(a18),' | ',(a18))"
   character(*),parameter :: FS2= "('    ',a12,54x,f18.2,54x,' | ',f18.2)"
