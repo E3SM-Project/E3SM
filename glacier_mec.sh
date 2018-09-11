@@ -20,10 +20,57 @@ machine=titan
 projectname=cli115
 
 # Name of run type
-compset=ICLM45GLCMEC
+# compset=ICLM45GLCMEC         # 2000_DATM%QIA_CLM45%CN_SICE_SOCN_MOSART_CISM1_SWAV_TEST
+# compset=IG1850CLM45          # 1850_DATM%QIA_CLM45%SP_SICE_SOCN_MOSART_CISM1_SWAV
+# compset=IGCLM45              # 2000_DATM%QIA_CLM45%SP_SICE_SOCN_MOSART_CISM1_SWAV
+# compset=IG20TRCLM45          # 20TR_DATM%QIA_CLM45%SP_SICE_SOCN_MOSART_CISM1_SWAV
+# compset=IGRCP85CLM45CN       # RCP8_DATM%QIA_CLM45%CN_SICE_SOCN_MOSART_CISM1_SWAV
+# compset=IGRCP45CLM45CN       # RCP4_DATM%QIA_CLM45%CN_SICE_SOCN_MOSART_CISM1_SWAV
+
+# compset=IGCLM45IS2           # 2000_DATM%QIA_CLM45%SP_SICE_SOCN_MOSART_CISM2P_SWAV
+
+
+
+compset=IGCLM45_MLI          # 2000_DATM%QIA_CLM45%SP_SICE_SOCN_MOSART_MALI%SIA_SWAV
+# compset=TG_MLI               # 2000_SATM_DLND%SCPL_SICE_SOCN_SROF_MALI_SWAV
+# compset=MALISIA              # RCP8_SATM_SLND_SICE_SOCN_SROF_MALI%SIA_SWAV
+# compset=MALI                 # RCP8_SATM_SLND_SICE_SOCN_SROF_MALI_SWAV
+# grid=f09_g16_g
+grid=f09_g16_a
+
+# compset=A_CRYO               # 2000_CAM5%AV1C-L_CLM45%SPBC_MPASCICE_MPASO_MOSART_MALI_SWAV
+# compset=A_BG1850CN           # 1850_CAM5_CLM45%CN_MPASCICE_MPASO_MOSART_MALI%SIA_SWAV
+# compset=MPAS_LISIO_TEST      # 2000_DATM%NYF_SLND_MPASCICE_MPASO_DROF%NYF_MALI%SIA_SWAV
+# grid=f09_g16_g
+# grid=f09_g16_a
+# grid=T62_m120_g
+# grid=f09_oEC_a
+# grid=T62_oQU120_ais20
+
 
 # grid resolution
-grid=ne30_ne30
+# grid=f09_g16_g
+#      alias: f09_g16_g (only for compsets that are _MALI )
+#        non-default grids are: atm:0.9x1.25  lnd:0.9x1.25  ocnice:gx1v6  rof:r05  glc:mpas.gis20km  wav:null
+#        mask is: gx1v6
+# grid=f09_g16_a
+#      alias: f09_g16_a (only for compsets that are _MALI )
+#        non-default grids are: atm:0.9x1.25  lnd:0.9x1.25  ocnice:gx1v6  rof:r05  glc:mpas.ais20km  wav:null
+#        mask is: gx1v6
+#
+# grid=f09_oEC_a
+#      alias: f09_oEC_a (only for compsets that are MPASO.*_MALI )
+#        non-default grids are: atm:0.9x1.25  lnd:0.9x1.25  ocnice:oEC60to30  rof:r05  glc:mpas.ais20km  wav:null
+#        mask is: oEC60to30
+# grid=T62_m120_g
+#      alias: T62_m120_g (only for compsets that are MPASO.*_MALI )
+#        non-default grids are: atm:T62  lnd:T62  ocnice:mpas120  rof:rx1  glc:mpas.gis20km  wav:null
+#        mask is: mpas120
+# grid=T62_oQU120_ais20
+#      alias: T62_oQU120_ais20 (only for compsets that are MPASO.*_MALI )
+#        non-default grids are: atm:T62  lnd:T62  ocnice:oQU120  rof:rx1  glc:mpas.ais20km  wav:null
+#        mask is: oQU120
+
 
 # User enter any needed modules to load or use below
 module load python/2.7.9
@@ -31,11 +78,11 @@ module load python/2.7.9
 # Directory where code lives
 code_dir=$HOME/ACME
 
-# Code tag name 
-code_tag=ACME   
-                                                         
+# Code tag name
+code_tag=ACME
+
 # Create new case
-$code_dir/$code_tag/cime/scripts/create_newcase -case $casedirectory/$casename -mach $machine -project $projectname -compset $compset -res $grid 
+$code_dir/$code_tag/cime/scripts/create_newcase -case $casedirectory/$casename -mach $machine -project $projectname -compset $compset -res $grid
 
 cd $casedirectory/$casename
 
