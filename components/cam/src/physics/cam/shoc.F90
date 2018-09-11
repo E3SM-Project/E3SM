@@ -34,15 +34,15 @@ real(r8), parameter :: qwthl2tune=1.0_r8
 
 logical, parameter :: dothetal_skew = .false.
 
-real, parameter :: sqrt2 = sqrt(2._r8)
-real, parameter :: sqrtpi = sqrt(2._r8*3.14_r8)
-real, parameter :: basetemp = 300._r8
+real(r8), parameter :: sqrt2 = sqrt(2._r8)
+real(r8), parameter :: sqrtpi = sqrt(2._r8*3.14_r8)
+real(r8), parameter :: basetemp = 300._r8
 
-real, parameter :: maxlen = 2000.0_r8
-real, parameter :: maxtke = 5.0_r8
-real, parameter :: mintke = 0.0004_r8
+real(r8), parameter :: maxlen = 2000.0_r8
+real(r8), parameter :: maxtke = 5.0_r8
+real(r8), parameter :: mintke = 0.0004_r8
 
-real, parameter :: largeneg = -999999999.99_r8
+real(r8), parameter :: largeneg = -999999999.99_r8
 
 !==============================================================
 contains
@@ -1370,6 +1370,7 @@ subroutine linear_interp(x1,x2,y1,y2,km1,km2,ncol,minval)
   integer :: km1, km2, k1, k2, i
   real(KIND=8) :: x1(km1), y1(km1,ncol)
   real(KIND=8) :: x2(km2), y2(km2,ncol)
+  real(KIND=8) :: minval
 
   do i=1,ncol
     do k2=1,km2
