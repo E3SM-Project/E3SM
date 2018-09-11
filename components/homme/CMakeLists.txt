@@ -134,7 +134,7 @@ ENDIF()
 # Options for floating point model.
 ##############################################################################
 
-SET (HOMME_FPMODEL "precise" CACHE STRING "Floating point model for HOMME")
+SET (HOMME_FPMODEL "fast" CACHE STRING "Floating point model for HOMME")
 SET (HOMME_FPMODEL_UT "strict" CACHE STRING "Floating point model for HOMME unit tests; overrides HOMME_FPMODEL")
 
 ##############################################################################
