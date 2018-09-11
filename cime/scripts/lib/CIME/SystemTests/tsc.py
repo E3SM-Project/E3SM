@@ -132,6 +132,9 @@ class TSC(SystemTestsCommon):
                  atmnlfile.write("empty_htapes = .true. \n")
                  atmnlfile.write("fincl1 = 'PS','U','V','T','Q','CLDLIQ','CLDICE','NUMLIQ','NUMICE','num_a1','num_a2','num_a3','LANDFRAC' \n")
 
+        # Force rebuild namelists
+        self._skip_pnl = False
+
         # Namelist settings done. Now run the model.
         self.run_indv()
 
