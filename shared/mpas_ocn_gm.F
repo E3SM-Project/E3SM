@@ -43,7 +43,6 @@ module ocn_gm
 
    ! Config options
    real (kind=RKIND), pointer :: config_gravWaveSpeed_trunc
-   real (kind=RKIND), pointer :: config_standardGM_tracer_kappa
    real (kind=RKIND), pointer :: config_max_relative_slope
    real (kind=RKIND), pointer :: config_Redi_kappa
    logical, pointer :: config_disable_redi_k33
@@ -717,11 +716,21 @@ contains
       !-----------------------------------------------------------------
 
       integer, intent(out) :: err !< Output: error flag
+      character (len=StrKIND), pointer :: config_GM_Bolus_kappa_function
+      real (kind=RKIND), pointer :: config_standardGM_tracer_kappa
+      real (kind=RKIND), pointer :: config_GM_Bolus_kappa_min
+      real (kind=RKIND), pointer :: config_GM_Bolus_kappa_max
+      real (kind=RKIND), pointer :: config_GM_Bolus_cell_size_min
+      real (kind=RKIND), pointer :: config_GM_Bolus_cell_size_max
 
       err = 0
 
       call mpas_pool_get_config(ocnConfigs, 'config_gravWaveSpeed_trunc',config_gravWaveSpeed_trunc)
       call mpas_pool_get_config(ocnConfigs, 'config_standardGM_tracer_kappa',config_standardGM_tracer_kappa)
+      call mpas_pool_get_config(ocnConfigs, 'config_GM_Bolus_kappa_min',config_GM_Bolus_kappa_min)
+      call mpas_pool_get_config(ocnConfigs, 'config_GM_Bolus_kappa_max',config_GM_Bolus_kappa_max)
+      call mpas_pool_get_config(ocnConfigs, 'config_GM_Bolus_cell_size_min',config_GM_Bolus_cell_size_min)
+      call mpas_pool_get_config(ocnConfigs, 'config_GM_Bolus_cell_size_max',config_GM_Bolus_cell_size_max)
       call mpas_pool_get_config(ocnConfigs, 'config_max_relative_slope',config_max_relative_slope)
       call mpas_pool_get_config(ocnConfigs, 'config_Redi_kappa', config_Redi_kappa)
       call mpas_pool_get_config(ocnConfigs, 'config_disable_redi_k33',config_disable_redi_k33)
