@@ -123,9 +123,7 @@ module ESM
     use seq_comm_mct          , only : seq_comm_init, seq_comm_printcomms, seq_comm_petlist
     use seq_comm_mct          , only : seq_comm_getinfo => seq_comm_setptrs
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
-    use shr_file_mod          , only : shr_file_getlogunit, shr_file_setLogunit
-    use shr_file_mod          , only : shr_file_getlogLevel, shr_file_setLogLevel
-    use shr_file_mod          , only : shr_file_getUnit, shr_file_freeUnit
+    use shr_file_mod          , only : shr_file_setLogunit
     use med                   , only : med_SS         => SetServices
     use atm_comp_nuopc        , only : ATMSetServices => SetServices
     use ice_comp_nuopc        , only : ICESetServices => SetServices
@@ -173,6 +171,10 @@ module ESM
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    !-------------------------------------------
+    ! Set the io logunit to the value defined in ensemble_driver
+    !-------------------------------------------
+    call shr_file_setLogunit(logunit)
 
     !-------------------------------------------
     ! Get the config and vm objects from the driver
@@ -272,19 +274,12 @@ module ESM
     call InitPIO(driver, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call InitRestart(driver, rc)
+    call InitRestart(driver, logunit, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (pio_file_is_open(pioid)) then
        call pio_closefile(pioid)
     end if
-
-    !-------------------------------------------
-    ! Initialize driver clock
-    !-------------------------------------------
-
-    call shr_nuopc_time_clockInit(driver, logunit, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !-------------------------------------------
     ! Initialize other attributes (after initializing driver clock)
@@ -490,20 +485,6 @@ module ESM
         call AddAttributes(child, driver, config, compid, 'MED', inst_suffix, rc=rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-        iamroot_med = localPet == petList(1)
-        call shr_file_getLogUnit (shrlogunit)
-        if (iamroot_med) then
-           logunit = shr_file_getUnit()
-           open(logunit,file=trim(diro)//"/"//trim(logfile))
-        else
-           logUnit = shrlogunit
-        endif
-
-        call shr_file_getLogLevel(shrloglev)
-        call shr_file_setLogLevel(max(shrloglev,1))
-        call shr_file_setLogUnit (logunit)
-        if(iamroot_med) print *,__FILE__,__LINE__,logunit, shrlogunit
-
         ! Print out present flags to mediator log file
         if (iamroot_med) then
            write(logunit,*) trim(subname)//":atm_present="//trim(atm_present)
@@ -534,13 +515,6 @@ module ESM
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
-
-    !----------------------------------------------------------------------------
-    ! Reset shr logging to original values
-    !----------------------------------------------------------------------------
-
-    call shr_file_setLogLevel(shrloglev)
-    call shr_file_setLogUnit (shrlogunit)
 
   end subroutine SetModelServices
 
@@ -878,7 +852,7 @@ module ESM
 
   !================================================================================
 
-  subroutine InitRestart(driver, rc)
+  subroutine InitRestart(driver, logunit, rc)
 
     !-----------------------------------------------------
     ! Determine if will restart and read pointer file
@@ -893,6 +867,7 @@ module ESM
 
     ! input/output variables
     type(ESMF_GridComp)    , intent(inout) :: driver
+    integer                , intent(in)    :: logunit
     integer                , intent(out)   :: rc
 
     ! local variables
