@@ -10,12 +10,11 @@ set(P3_HEADERS
   p3_ic_cases.hpp
 )
 
-link_directories(${SCREAM_LIBRARY_DIRS})
+# link_directories(${SCREAM_TPL_LIBRARY_DIRS} ${SCREAM_LIBRARY_DIRS})
 add_library(p3 ${P3_SRCS})
-target_include_directories(p3 PUBLIC ${SCREAM_INCLUDE_DIRS})
+target_include_directories(p3 PUBLIC ${SCREAM_INCLUDE_DIRS} ${SCREAM_TPL_INCLUDE_DIRS})
 set_target_properties(p3 PROPERTIES
-  LINK_FLAGS "${SCREAM_LINK_FLAGS}"
   Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
-target_link_libraries(p3 scream_share ${SCREAM_LIBRARIES})
+# target_link_libraries(p3 scream_share ${SCREAM_TPL_LIBRARIES})
 
 add_subdirectory(tests)

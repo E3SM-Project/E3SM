@@ -1,6 +1,5 @@
-#include "share/util/scream_util.hpp"
+#include "share/util/scream_utils.hpp"
 #include "share/scream_types.hpp"
-#include "share/scream_kokkos.hpp"
 
 #include <sstream>
 

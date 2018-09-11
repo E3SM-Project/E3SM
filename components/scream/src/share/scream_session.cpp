@@ -1,5 +1,5 @@
 #include "scream_session.hpp"
-#include "util/scream_util.hpp"
+#include "share/util/scream_utils.hpp"
 
 #ifdef SCREAM_FPE
 # include <xmmintrin.h>

@@ -1,7 +1,7 @@
 #ifndef SCREAM_P3_F90_HPP
 #define SCREAM_P3_F90_HPP
 
-#include "share/scream_kokkos.hpp"
+#include "share/util/math_utils.hpp"
 #include "share/scream_types.hpp"
 
 #include <memory>

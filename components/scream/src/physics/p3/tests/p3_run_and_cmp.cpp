@@ -1,7 +1,9 @@
 #include "share/scream_session.hpp"
-#include "share/scream_kokkos.hpp"
-#include "share/util/scream_util.hpp"
+#include "share/util/file_utils.hpp"
+#include "share/util/scream_utils.hpp"
 #include "share/scream_types.hpp"
+#include "share/error_defs.hpp"
+
 #include "p3_f90.hpp"
 #include "p3_ic_cases.hpp"
 
@@ -9,8 +11,8 @@
 
 namespace {
 using namespace scream;
-using namespace scream::p3;
 using namespace scream::util;
+using namespace scream::p3;
 
 template <typename Scalar>
 static Int compare (const std::string& label, const Scalar* a,

@@ -1,11 +1,13 @@
-#ifndef SCREAM_KOKKOS_HPP
-#define SCREAM_KOKKOS_HPP
+#ifndef SCREAM_MATH_UTILS_HPP
+#define SCREAM_MATH_UTILS_HPP
 
 #include <Kokkos_Core.hpp>
 
 namespace scream {
-// Replacements for namespace std functions that don't run on the GPU.
-namespace ko {
+
+namespace util {
+
+// Replacements foro namespace std functions that don't run on the GPU.
 #ifdef KOKKOS_ENABLE_CUDA
 template <typename T> KOKKOS_INLINE_FUNCTION
 const T& min (const T& a, const T& b) { return a < b ? a : b; }
@@ -29,7 +31,12 @@ using std::isfinite;
 using std::max_element;
 #endif // KOKKOS_ENABLE_CUDA
 
-} // namespace ko
+template <typename Real>
+Real reldif (const Real& a, const Real& b) {
+  return std::abs(b - a)/std::abs(a);
+}
+
+} // namespace util
 } // namespace scream
 
-#endif // SCREAM_KOKKOS_HPP
+#endif // SCREAM_MATH_UTILS_HPP

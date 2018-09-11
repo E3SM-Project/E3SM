@@ -1,5 +1,6 @@
 #include "p3_ic_cases.hpp"
-#include "share/util/scream_util.hpp"
+#include "share/util/scream_utils.hpp"
+#include "share/error_defs.hpp"
 
 namespace scream {
 namespace p3 {
