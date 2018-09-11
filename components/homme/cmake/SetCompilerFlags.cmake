@@ -246,6 +246,20 @@ IF (${DEBUG_TRACE})
   SET (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG_TRACE")
 ENDIF ()
 
+# One would expect that CMake build type RelWithDebInfo yields to both
+# _RELEASE and _DEBUG flags being added, but that's not the case.
+# In particular, with RelWithDebInfo cmake ignores the _DEBUG and _RELEASE
+# varaibles, and picks -O2. To avoid this inconsistency, we manually
+# set the add the _DEBUG and _RELEASE flags into the _RELWITHDEBINFO flags.
+SET (CMAKE_Fortran_FLAGS_RELWITHDEBINFO
+     "${CMAKE_Fortran_FLAGS_RELEASE} ${CMAKE_Fortran_FLAGS_DEBUG}")
+
+SET (CMAKE_C_FLAGS_RELWITHDEBINFO
+     "${CMAKE_C_FLAGS_RELEASE} ${CMAKE_C_FLAGS_DEBUG}")
+
+SET (CMAKE_CXX_FLAGS_RELWITHDEBINFO
+     "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
+
 ##############################################################################
 # OpenMP
 # Two flavors:
