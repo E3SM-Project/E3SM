@@ -709,19 +709,20 @@ contains
 
    subroutine ocn_gm_init(err)!{{{
 
-      !-----------------------------------------------------------------
-      !
-      ! Output Variables
-      !
-      !-----------------------------------------------------------------
+      type (domain_type) :: domain
 
       integer, intent(out) :: err !< Output: error flag
+
       character (len=StrKIND), pointer :: config_GM_Bolus_kappa_function
       real (kind=RKIND), pointer :: config_standardGM_tracer_kappa
       real (kind=RKIND), pointer :: config_GM_Bolus_kappa_min
       real (kind=RKIND), pointer :: config_GM_Bolus_kappa_max
       real (kind=RKIND), pointer :: config_GM_Bolus_cell_size_min
       real (kind=RKIND), pointer :: config_GM_Bolus_cell_size_max
+
+      integer                          :: iEdge, nEdges
+      real(kind=RKIND), dimension(:), pointer   :: dcEdge
+      real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa
 
       err = 0
 
@@ -739,6 +740,45 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_Redi_surface_layer_tapering_extent',config_Redi_surface_layer_tapering_extent)
       call mpas_pool_get_config(ocnConfigs, 'config_Redi_bottom_layer_tapering_depth',config_Redi_bottom_layer_tapering_depth)
 
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_array(meshPool, 'dcEdge',  dcEdge)
+      call mpas_pool_get_array(meshPool, 'gmBolusKappa', gmBolusKappa)
+
+      ! do I need a block loop here? mrp
+
+      block => domain % blocklist
+      do while (associated(block))
+
+         ! initialize Bolus kappa array
+         if (config_GM_Bolus_kappa_function == 'constant') then
+            !$omp do schedule(runtime)
+            do iEdge = 1, nEdges
+               gmBolusKappa(iEdge) = config_standardGM_tracer_kappa
+            end do
+            !$omp end do
+         else if (config_GM_Bolus_kappa_function == 'ramp') then
+            !$omp do schedule(runtime)
+            do iEdge = 1, nEdges
+               if (dcEdge(iEdge) < config_GM_Bolus_cell_size_min) then
+                  gmBolusKappa(iEdge) = config_GM_Bolus_cell_size_min
+               else if (dcEdge(iEdge) > config_GM_Bolus_cell_size_max) then
+                  gmBolusKappa(iEdge) = config_GM_Bolus_cell_size_max
+               else
+                  gmBolusKappa(iEdge) = config_GM_Bolus_kappa_min + &
+                      (config_GM_Bolus_kappa_max - config_GM_Bolus_kappa_min) &
+                     /(config_GM_Bolus_cell_size_max - config_GM_Bolus_kappa_min) &
+                     *(dcEdge(iEdge) - config_GM_Bolus_kappa_min)
+               end if
+            end do
+            !$omp end do
+         else
+            call mpas_log_write( 'Invalid choice of config_GM_Bolus_kappa_function.', MPAS_LOG_CRIT)
+            iErr = 1
+            call mpas_dmpar_finalize(domain % dminfo)
+         end if
+
+         block => block % next
+      end do
    end subroutine ocn_gm_init!}}}
 
 !***********************************************************************
