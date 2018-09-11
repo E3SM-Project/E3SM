@@ -1223,6 +1223,7 @@
 		<package name="initMode" description="This package controls variables that are intended to be used within the init run mode of the ocean model."/>
 		<package name="cullCells" description="This package controls variables that provide information on what cells should be culled."/>
 		<package name="tracerBudget" description="This package controls variables that record the tracer budget."/>
+		<package name="gm" description="This package is for GM variables, which are only needed at lower resolutions."/>
 	</packages>
 
 	<streams>
