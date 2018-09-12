@@ -2,12 +2,13 @@
 ! This module contains the Predicted Particle Property (P3) bulk microphysics scheme.      !
 !                                                                                          !
 ! This code was originally written by H. Morrison,  MMM Division, NCAR (Dec 2012).         !
-! Modification were made by J. Milbrandt, RPN, Environment Canada (July 2014).             !
+! Modifications were made by J. Milbrandt, RPN, Environment Canada (July 2014).            !
+! Peter Caldwell (caldwell19@llnl.gov) further modified this code to remove multiple       !
+! ice categories and to clean up/simplify the code for conversion to C++ (9/11/18)         !
 !                                                                                          !
 ! Three configurations of the P3 scheme are currently available:                           !
 !  1) specified droplet number (i.e. 1-moment cloud water), 1 ice category                 !
 !  2) predicted droplet number (i.e. 2-moment cloud water), 1 ice category                 !
-!  3) predicted droplet number (i.e. 2-moment cloud water), 2 ice categories               !
 !                                                                                          !
 !  The  2-moment cloud version is based on a specified aerosol distribution and            !
 !  does not include a subgrid-scale vertical velocity for droplet activation. Hence,       !
@@ -22,8 +23,8 @@
 !    Jason Milbrandt (jason.milbrandt@canada.ca)                                           !
 !__________________________________________________________________________________________!
 !                                                                                          !
-! Version:       2.8.2.4                                                                   !
-! Last updated:  2018-02-06                                                                !
+! Version:       2.8.2.4 + Peter's fixes                                                   !
+! Last updated:  2018-09-11                                                                !
 !__________________________________________________________________________________________!
 
 MODULE MICRO_P3
@@ -38,13 +39,11 @@ MODULE MICRO_P3
 
   ! ice microphysics lookup table array dimensions
   integer, private, parameter :: isize        = 50
-  integer, private, parameter :: iisize       = 25
   integer, private, parameter :: densize      =  5
   integer, private, parameter :: rimsize      =  4
   integer, private, parameter :: rcollsize    = 30
   integer, private, parameter :: tabsize      = 12  ! number of quantities used from lookup table
   integer, private, parameter :: colltabsize  =  2  ! number of ice-rain collection  quantities used from lookup table
-  integer, private, parameter :: collitabsize =  2  ! number of ice-ice collection  quantities used from lookup table
 
   real, private, parameter    :: real_rcollsize = real(rcollsize)
 
