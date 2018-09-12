@@ -91,7 +91,7 @@ struct Baseline {
         p3_main(*d);
         ne = compare("ref", tol, d_ref, d);
         if (ne) std::cout << "Ref impl failed.\n";
-        nerr += nerr;
+        nerr += ne;
       }
     }
     return nerr;
