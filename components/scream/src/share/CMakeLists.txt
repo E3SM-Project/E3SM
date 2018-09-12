@@ -1,4 +1,5 @@
 set(SHARE_SRC
+  error_defs.cpp
   scream_session.cpp
   util/scream_utils.cpp
   util/array_io.cpp
@@ -6,7 +7,11 @@ set(SHARE_SRC
 )
 
 set(SHARE_HEADERS
+  atmosphere_process.hpp
+  error_defs.hpp
+  field_repository.hpp
   scream_session.hpp
+  util/file_utils.hpp
   util/math_utils.hpp
   util/scream_utils.hpp
 )

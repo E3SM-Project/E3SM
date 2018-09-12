@@ -1,6 +1,8 @@
 #ifndef SCREAM_ERROR_DEFS_HPP
 #define SCREAM_ERROR_DEFS_HPP
 
+#include <string>
+
 #ifndef NDEBUG
   #define scream_assert(condition) do {                                   \
       if ( ! (condition)) {                                               \
@@ -31,5 +33,14 @@
     if (condition)                                                  \
       Kokkos::abort(#condition " led to the exception\n" message);  \
   } while (0)
+
+namespace scream {
+namespace error {
+
+void runtime_check(bool cond, const std::string& message, int code);
+void runtime_abort(const std::string& message, int code);
+
+} // namespace error
+} // namespace scream
 
 #endif // SCREAM_ERROR_DEFS_HPP
