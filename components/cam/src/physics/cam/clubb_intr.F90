@@ -30,7 +30,8 @@ module clubb_intr
   use cam_history_support, only: fillvalue
 #ifdef FIVE
   use five_intr,     only: pver_five, pverp_five, &
-                           pmid_five, pint_five
+                           pmid_five, pint_five, &
+			   linear_interp
 #endif
 
   implicit none
@@ -1017,7 +1018,7 @@ end subroutine clubb_init_cnst
    type(physics_state) :: state1                ! Local copy of state variable
    type(physics_ptend) :: ptend_loc             ! Local tendency from processes, added up to return as ptend_all
    
-   integer :: i, j, k, t, ixind, nadv
+   integer :: i, j, k, t, ixind, nadv, p
    integer :: ixcldice, ixcldliq, ixnumliq, ixnumice, ixq
    integer :: itim_old
    integer :: ncol, lchnk                       ! # of columns, and chunk identifier
@@ -1238,6 +1239,7 @@ end subroutine clubb_init_cnst
    integer  :: ktop(pcols,pver)
    integer  :: ncvfin(pcols)
    real(r8) :: chs(pcols,pverp)
+   real(r8) :: t_out(pcols,pver)
    real(r8) :: lwp_CL(pver)
    real(r8) :: opt_depth_CL(pver)
    real(r8) :: radinvfrac_CL(pver)
@@ -1275,10 +1277,10 @@ end subroutine clubb_init_cnst
 !  Note that the pointers for "thlm", "rtm", "um", and "vm" are removed.  
    real(r8), pointer, dimension(:,:) :: upwp     ! east-west momentum flux                      [m^2/s^2]
    real(r8), pointer, dimension(:,:) :: vpwp     ! north-south momentum flux                    [m^2/s^2]
-   real(r8), pointer, dimension(:,:) :: thlm     ! mean temperature                             [K]
-   real(r8), pointer, dimension(:,:) :: rtm      ! mean moisture mixing ratio                   [kg/kg]
-   real(r8), pointer, dimension(:,:) :: um       ! mean east-west wind                          [m/s]
-   real(r8), pointer, dimension(:,:) :: vm       ! mean north-south wind                        [m/s]   
+!   real(r8), pointer, dimension(:,:) :: thlm     ! mean temperature                             [K]
+!   real(r8), pointer, dimension(:,:) :: rtm      ! mean moisture mixing ratio                   [kg/kg]
+!   real(r8), pointer, dimension(:,:) :: um       ! mean east-west wind                          [m/s]
+!   real(r8), pointer, dimension(:,:) :: vm       ! mean north-south wind                        [m/s]   
    real(r8), pointer, dimension(:,:) :: cld      ! cloud fraction                               [fraction]
    real(r8), pointer, dimension(:,:) :: concld   ! convective cloud fraction                    [fraction]
    real(r8), pointer, dimension(:,:) :: ast      ! stratiform cloud fraction                    [fraction]
@@ -1315,10 +1317,15 @@ end subroutine clubb_init_cnst
    real(r8) :: v_five_low(pcols,pver)
    real(r8) :: q_five_low(pcols,pver,pcnst)
    
+   real(r8) :: t_five_tend(pcols,pver_five)
+   real(r8) :: u_five_tend(pcols,pver_five)
+   real(r8) :: v_five_tend(pcols,pver_five)
+   real(r8) :: q_five_tend(pcols,pver_five,pcnst)
+   
    real(r8) :: t_five_tend_low(pcols,pver)
    real(r8) :: u_five_tend_low(pcols,pver)
    real(r8) :: v_five_tend_low(pcols,pver)
-   real(r8) :: q_five_tend_low(pcols,pver,pcnst)
+   real(r8) :: q_five_tend_low(pcols,pver,pcnst)   
 #endif
    
 !PMA
@@ -1401,10 +1408,10 @@ end subroutine clubb_init_cnst
 
    call pbuf_get_field(pbuf, upwp_idx,    upwp,    start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
    call pbuf_get_field(pbuf, vpwp_idx,    vpwp,    start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
-   call pbuf_get_field(pbuf, thlm_idx,    thlm,    start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
-   call pbuf_get_field(pbuf, rtm_idx,     rtm,     start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
-   call pbuf_get_field(pbuf, um_idx,      um,      start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
-   call pbuf_get_field(pbuf, vm_idx,      vm,      start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))   
+!   call pbuf_get_field(pbuf, thlm_idx,    thlm,    start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
+!   call pbuf_get_field(pbuf, rtm_idx,     rtm,     start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
+!   call pbuf_get_field(pbuf, um_idx,      um,      start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
+!   call pbuf_get_field(pbuf, vm_idx,      vm,      start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))   
    call pbuf_get_field(pbuf, radf_idx,    radf_clubb)
    
    call pbuf_get_field(pbuf, tke_idx,     tke)
@@ -1583,14 +1590,14 @@ end subroutine clubb_init_cnst
    
    ! Now interpolate this tendency to the FIVE grid
    call linear_interp(state1%pmid(i,:),pmid_five,t_five_tend_low(i,1:pver),&
-                      t_five_tend(1:pver_five),pver,pver_five)
+                      t_five_tend(i,1:pver_five),pver,pver_five)
    call linear_interp(state1%pmid(i,:),pmid_five,u_five_tend_low(i,1:pver),&
-                      u_five_tend(1:pver_five),pver,pver_five)	
+                      u_five_tend(i,1:pver_five),pver,pver_five)	
    call linear_interp(state1%pmid(i,:),pmid_five,v_five_tend_low(i,1:pver),&
-                      v_five_tend(1:pver_five),pver,pver_five)	
+                      v_five_tend(i,1:pver_five),pver,pver_five)	
    do p=1,pcnst
-     call linear_interp(state1%pmid(i,:),pmid_five,q_five_tend_low(i,1:pver,q), &
-                      q_five_tend(1:pver_five,q),pver,pver_five)
+     call linear_interp(state1%pmid(i,:),pmid_five,q_five_tend_low(i,1:pver,p), &
+                      q_five_tend(i,1:pver_five,p),pver,pver_five)
    enddo	      	      
 
    ! Now update FIVE values based on this tendency
@@ -1877,11 +1884,11 @@ end subroutine clubb_init_cnst
      enddo
      
      do k=1,pver_five
-       thlm_pre(i,k) = t_five(i,k) * exner(i,k) - (latvap/cpair) * q_five(i,k,ixcldliq) ! cloud water
-       um_pre(i,k) = u_five(i,k)
-       vm_pre(i,k) = v_five(i,k) 
-       rtm_pre(i,k) = q_five(i,k,ixq) + q_five(i,k,ixcldliq)
-       rvm_pre(i,k) = q_five(i,k,ixq)
+       thlm_pre(k) = t_five(i,k) * exner(k) - (latvap/cpair) * q_five(i,k,ixcldliq) ! cloud water
+       um_pre(k) = u_five(i,k)
+       vm_pre(k) = v_five(i,k) 
+       rtm_pre(k) = q_five(i,k,ixq) + q_five(i,k,ixcldliq)
+       rvm_pre(k) = q_five(i,k,ixq)
      enddo  
      
      rtm_pre(pverp_five)  = rtm_pre(pver_five)
@@ -2373,11 +2380,11 @@ end subroutine clubb_init_cnst
 #ifdef FIVE      
 
       do k=1,pver_five
-        t_five(i,k) = (thlm_pre(i,k)+(latvap/cpair)*rcm_pre(1:pver))/exner(i,k)
-	u_five(i,k) = um_pre(i,k)
-	v_five(i,k) = vm_pre(i,k)
-	q_five(i,k,ixq) = rtm_pre(i,k) - rcm_pre(i,k)
-	q_five(i,k,ixcldliq) = rcm_pre(i,k)
+        t_five(i,k) = (thlm_pre(k)+(latvap/cpair)*rcm_pre(k))/exner(k)
+	u_five(i,k) = um_pre(k)
+	v_five(i,k) = vm_pre(k)
+	q_five(i,k,ixq) = rtm_pre(k) - rcm_pre(k)
+	q_five(i,k,ixcldliq) = rcm_pre(k)
 	  
 	do p=3,pcnst
 	  q_five(i,k,p) = edsclr(k,p)
@@ -2395,10 +2402,10 @@ end subroutine clubb_init_cnst
       
       ! Transfer these variables to the ones that the tendencies will see
       t_out(i,:) = t_five_low(i,:)
-      rtm(i,:) = q_five_low(i,1:pver,ixq) + q_five_low(i,1:pver,ixcldliq)
-      um(i,:) = u_five_low(i,1:pver)
-      vm(i,:) = v_five_low(i,1:pver)
-      rcm(i,:) = q_five_low(i,1:pver,ixcldliq)  
+      rtm(i,1:pver) = q_five_low(i,1:pver,ixq) + q_five_low(i,1:pver,ixcldliq)
+      um(i,1:pver) = u_five_low(i,1:pver)
+      vm(i,1:pver) = v_five_low(i,1:pver)
+      rcm(i,1:pver) = q_five_low(i,1:pver,ixcldliq)  
 
 !      call linear_interp(pmid_five,state1%pmid(i,:),thlm_pre(1:pver_five),thlm(i,1:pver),pver_five,pver)
 !      call linear_interp(pmid_five,state1%pmid(i,:),rtm_pre(1:pver_five),rtm(i,1:pver),pver_five,pver)

@@ -5,6 +5,9 @@ module five_intr
 
   use shr_kind_mod,  only: r8=>shr_kind_r8
   use ppgrid,           only : pcols, pver, pverp, begchunk, endchunk
+  use physics_types, only: physics_state
+  use physics_buffer, only: physics_buffer_desc
+  use constituents, only: pcnst
 
   implicit none
   
@@ -145,9 +148,11 @@ module five_intr
   subroutine five_init_e3sm(phys_state, pbuf2d)
   
     use time_manager, only: is_first_step
+    use physics_buffer, only: pbuf_set_field, pbuf_get_chunk
   
     type(physics_state), intent(in):: phys_state(begchunk:endchunk)
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    type(physics_buffer_desc), pointer :: pbuf2d_chunk(:)
     
     real(r8) :: t_host(pver)
     real(r8) :: q_host(pver)
@@ -159,31 +164,36 @@ module five_intr
     real(r8) :: u_five(pcols,pver_five)
     real(r8) :: v_five(pcols,pver_five)
     
-    integer :: ncol, i, p
+    integer :: ncol, i, p, lchnk
     
-    ncol = phys_state%ncol
+    do lchnk = begchunk,endchunk
+    
+    ncol = phys_state(lchnk)%ncol
+    pbuf2d_chunk => pbuf_get_chunk(pbuf2d,lchnk)
     
     do i=1,ncol
     
-      t_host(:) = phys_state%t(i,:)
-      u_host(:) = phys_state%u(i,:)
-      v_host(:) = phys_state%v(i,:)
+      t_host(:) = phys_state(lchnk)%t(i,:)
+      u_host(:) = phys_state(lchnk)%u(i,:)
+      v_host(:) = phys_state(lchnk)%v(i,:)
       
-      call linear_interp(phys_state%pmid(i,:),pmid_five,t_host,t_five(i,:),pver,pver_five)
-      call linear_interp(phys_state%pmid(i,:),pmid_five,u_host,u_five(i,:),pver,pver_five)
-      call linear_interp(phys_state%pmid(i,:),pmid_five,v_host,v_five(i,:),pver,pver_five)
+      call linear_interp(phys_state(lchnk)%pmid(i,:),pmid_five,t_host,t_five(i,:),pver,pver_five)
+      call linear_interp(phys_state(lchnk)%pmid(i,:),pmid_five,u_host,u_five(i,:),pver,pver_five)
+      call linear_interp(phys_state(lchnk)%pmid(i,:),pmid_five,v_host,v_five(i,:),pver,pver_five)
       
       do p=1,pcnst
-        q_host(:) = phys_state%q(i,:,p)
-        call linear_interp(phys_state%pmid(i,:),pmid_five,q_host,q_five(i,:,p),pver,pver_five)
+        q_host(:) = phys_state(lchnk)%q(i,:,p)
+        call linear_interp(phys_state(lchnk)%pmid(i,:),pmid_five,q_host,q_five(i,:,p),pver,pver_five)
       enddo
     
     enddo
     
-    call pbuf_set_field(pbuf2d, t_five_idx, t_five)
-    call pbuf_set_field(pbuf2d, q_five_idx, q_five)
-    call pbuf_set_field(pbuf2d, u_five_idx, u_five)
-    call pbuf_set_field(pbuf2d, v_five_idx, v_five)
+    call pbuf_set_field(pbuf2d_chunk, t_five_idx, t_five(:,:))
+    call pbuf_set_field(pbuf2d_chunk, q_five_idx, q_five(:,:,:))
+    call pbuf_set_field(pbuf2d_chunk, u_five_idx, u_five(:,:))
+    call pbuf_set_field(pbuf2d_chunk, v_five_idx, v_five(:,:))
+    
+    enddo
 
   ! Here we initialize the FIVE grid
   
