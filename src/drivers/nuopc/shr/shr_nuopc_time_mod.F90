@@ -191,24 +191,23 @@ contains
 
     if (read_restart) then
 
-       if (mastertask) then
-          call NUOPC_CompAttributeGet(esmdriver, name='driver_restart_file', value=restart_file, rc=rc)
+       call NUOPC_CompAttributeGet(esmdriver, name='restart_file', value=restart_file, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       !--- read rpointer if restart_file is set to str_undefined ---
+       if (trim(restart_file) == 'str_undefined') then
+
+          ! Error check on restart_pfile
+          call NUOPC_CompAttributeGet(esmdriver, name="restart_pfile", value=restart_pfile, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-          !--- read rpointer if restart_file is set to str_undefined ---
-          if (trim(restart_file) == 'str_undefined') then
-
-             ! Error check on restart_pfile
-             call NUOPC_CompAttributeGet(esmdriver, name="driver_restart_pfile", value=restart_pfile, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-             if ( len_trim(restart_pfile) == 0 ) then
-                rc = ESMF_FAILURE
-                call ESMF_LogWrite(trim(subname)//' ERROR driver_restart_pfile must be defined', &
-                     ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
-                return
-             end if
-
+          if ( len_trim(restart_pfile) == 0 ) then
+             rc = ESMF_FAILURE
+             call ESMF_LogWrite(trim(subname)//' ERROR restart_pfile must be defined', &
+                  ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
+             return
+          end if
+          if (mastertask) then
              unitn = shr_file_getUnit()
              call ESMF_LogWrite(trim(subname)//" read rpointer file = "//trim(restart_pfile), &
                   ESMF_LOGMSG_INFO, rc=dbrc)
@@ -231,10 +230,10 @@ contains
              call ESMF_LogWrite(trim(subname)//" read driver restart from file = "//trim(restart_file), &
                   ESMF_LOGMSG_INFO, rc=dbrc)
           endif
-
+       endif
+       if (mastertask) then
           call shr_nuopc_time_read_restart_calendar_settings(restart_file, &
                start_ymd, start_tod, ref_ymd, ref_tod, curr_ymd, curr_tod)
-
        endif
        tmp(1) = start_ymd
        tmp(2) = start_tod
@@ -438,8 +437,8 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Create the ensemble driver clock
-    TimeStep = StopTime-StartTime
-    clock = ESMF_ClockCreate(TimeStep, StartTime, StopTime=StopTime, &
+    TimeStep = StopTime-ClockTime
+    clock = ESMF_ClockCreate(TimeStep, ClockTime, StopTime=StopTime, &
          refTime=RefTime, name='ESMF ensemble Driver Clock', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_GridCompSet(ensemble_driver, clock=clock, rc=rc)
@@ -853,7 +852,10 @@ contains
 
     ! use netcdf here since it's serial
     status = nf90_open(restart_file, NF90_NOWRITE, ncid)
-    if (status /= nf90_NoErr) call shr_nuopc_abort(trim(subname)//' ERROR: nf90_open')
+    if (status /= nf90_NoErr) then
+       print *,__FILE__,__LINE__,trim(restart_file)
+       call shr_nuopc_abort(trim(subname)//' ERROR: nf90_open')
+    endif
     status = nf90_inq_varid(ncid, 'start_ymd', varid)
     if (status /= nf90_NoErr) call shr_nuopc_abort(trim(subname)//' ERROR: nf90_inq_varid start_ymd')
     status = nf90_get_var(ncid, varid, start_ymd)

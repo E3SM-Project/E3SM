@@ -696,30 +696,6 @@
     </values>
   </entry>
 
-  <entry id="driver_restart_pfile">
-    <type>char</type>
-    <category>expdef</category>
-    <group>DRIVER_attributes</group>
-    <desc>
-      Mediator restart pointer file.
-    </desc>
-    <values>
-      <value>rpointer.med</value>
-    </values>
-  </entry>
-
-  <entry id="driver_restart_file">
-    <type>char</type>
-    <category>expdef</category>
-    <group>DRIVER_attributes</group>
-    <desc>
-      Full archive path to restart file for mediator
-    </desc>
-    <values>
-      <value>str_undefined</value>
-    </values>
-  </entry>
-
   <entry id="logFilePostFix">
     <type>char</type>
     <category>expdef</category>

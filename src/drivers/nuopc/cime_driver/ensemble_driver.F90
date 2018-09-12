@@ -29,7 +29,6 @@ module Ensemble_driver
     use ESMF         , only : ESMF_GridComp, ESMF_Config, ESMF_GridCompSet, ESMF_ConfigLoadFile
     use ESMF         , only : ESMF_ConfigCreate
     use ESMF         , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO
-
     type(ESMF_GridComp)  :: ensemble_driver
     integer, intent(out) :: rc
 
@@ -82,6 +81,7 @@ module Ensemble_driver
     use esm, only : ESMSetServices => SetServices, ReadAttributes
     use shr_nuopc_time_mod    , only : shr_nuopc_time_clockInit
     use med_internalstate_mod , only : logunit  ! initialized here
+    use shr_log_mod           , only : shrloglev=>shr_log_level, shrlogunit=> shr_log_unit
     use shr_file_mod          , only : shr_file_getUnit, shr_file_getLoglevel
     use shr_file_mod          , only : shr_file_setloglevel, shr_file_setlogunit
 
@@ -100,8 +100,6 @@ module Ensemble_driver
     logical                :: is_set
     character(len=512)     :: diro
     character(len=512)     :: logfile
-    integer                :: shrlogunit  ! original log unit
-    integer                :: shrloglev   ! original log level
     integer                :: global_comm
     logical                :: iamroot_med ! mediator masterproc
     logical                :: read_restart
@@ -145,9 +143,6 @@ module Ensemble_driver
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ReadAttributes(ensemble_driver, config, "CLOCK_attributes::", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ReadAttributes(ensemble_driver, config, "MED_attributes::", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ReadAttributes(ensemble_driver, config, "PELAYOUT_attributes::", rc=rc)
@@ -210,11 +205,15 @@ module Ensemble_driver
           call NUOPC_CompAttributeSet(driver, name='read_restart', value=trim(cvalue), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-          call ReadAttributes(driver, config, "CLOCK_attributes::", rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ReadAttributes(driver, config, "MED_modelio"//trim(inst_suffix)//"::", rc=rc)
+          call ReadAttributes(driver, config, "MED_attributes::", rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+          call ReadAttributes(driver, config, "CLOCK_attributes::", rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          call ReadAttributes(driver, config, "MED_modelio"//trim(inst_suffix)//"::", rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          ! Set the mediator log to the driver task 0, this is corrected to be the ROOTPE_CPL in esm.F90
           if (localPet == petlist(1)) then
              call NUOPC_CompAttributeGet(driver, name="diro", value=diro, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

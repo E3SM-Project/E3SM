@@ -136,7 +136,7 @@ module ESM
     use shr_pio_mod           , only : shr_pio_init1
     use pio                   , only : pio_file_is_open, pio_closefile, file_desc_t
     use shr_nuopc_time_mod    , only : shr_nuopc_time_clockInit
-    use mpi                   , only : MPI_COMM_WORLD
+    use shr_log_mod           , only : shrlogunit=> shr_log_unit
 
     type(ESMF_GridComp)    :: driver
     integer, intent(out)   :: rc
@@ -159,8 +159,6 @@ module ESM
     character(len=5) inst_suffix
     character(len=512)     :: diro
     character(len=512)     :: logfile
-    integer                :: shrlogunit  ! original log unit
-    integer                :: shrloglev   ! original log level
     integer                :: global_comm
     logical                :: isPresent
     integer                :: dbrc
@@ -493,7 +491,7 @@ module ESM
            call ESMF_VMGet(vm, localPet=medPet, rc=rc)
            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
         endif
-        ! ensemble_driver set the med pet to task 0, correct it here
+        ! ensemble_driver set the med pet to task 0 of the member driver, correct it here
         if(medPet == 0 .and. localPet /= 0) then
            call NUOPC_CompAttributeGet(driver, name="diro", value=diro, rc=rc)
            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
