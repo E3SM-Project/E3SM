@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 #include "coupler/coupler.hpp"
-#include "rrtmgp/rrtmgp.hpp"
-#include "shoc/shoc.hpp"
+#include "physics/rrtmgp/rrtmgp.hpp"
+#include "physics/shoc/shoc.hpp"
 
 namespace {
 
