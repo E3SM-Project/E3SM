@@ -23,12 +23,12 @@ FortranData::Ptr make_mixed () {
   for (k = 0; k < nk; ++k) d.nr(0,k) = 1e6;
 
   //                                                      v (in the python)
-  for (k = 0; k < 15; ++k) d.qitot(0,nk-20+k,0) = 1e-4; //*(1 - double(k)/14)
-  for (k = 0; k < nk; ++k) d.nitot(0,k,0) = 1e6;
-  for (k = 0; k < 15; ++k) d.qirim(0,nk-20+k,0) = 1e-4*(1 - double(k)/14);
+  for (k = 0; k < 15; ++k) d.qitot(0,nk-20+k) = 1e-4; //*(1 - double(k)/14)
+  for (k = 0; k < nk; ++k) d.nitot(0,k) = 1e6;
+  for (k = 0; k < 15; ++k) d.qirim(0,nk-20+k) = 1e-4*(1 - double(k)/14);
   // guess at reasonable value based on: m3/kg is 1/density and liquid water has
   // a density of 1000 kg/m3
-  for (k = 0; k < 15; ++k) d.birim(0,nk-20+k,0) = 1e-2;
+  for (k = 0; k < 15; ++k) d.birim(0,nk-20+k) = 1e-2;
 
   // qv goes to zero halfway through profile (to avoid condensate near model
   // top)
@@ -57,7 +57,7 @@ FortranData::Ptr make_mixed () {
 
   // The next section modifies inout variables to satisfy weird conditions
   // needed for code coverage.
-  d.qitot(0,nk-1,0) = 1e-9;
+  d.qitot(0,nk-1) = 1e-9;
   d.qv(0,nk-1) = 5e-2; // also needs to be supersaturated to avoid getting set
                        // to 0 earlier.
   
@@ -67,7 +67,7 @@ FortranData::Ptr make_mixed () {
   d.qc(0,nk-1) = 1e-6;
 
   // make qitot>1e-8 where qr=0 to test rain collection conditional.
-  d.qitot(0,nk-25,0) = 5e-8;
+  d.qitot(0,nk-25) = 5e-8;
 
   // make qc>0 and qr>0 where T<233.15 to test homogeneous freezing.
   d.qc(0,35) = 1e-7;
