@@ -274,7 +274,7 @@ contains
     integer, intent(in) :: c  ! column index
     !
     ! !LOCAL VARIABLES:
-    integer  :: g             ! grid cell index
+    integer  :: t             ! topounit index
     real(r8) :: area_glacier  ! fractional area of the glacier_mec landunit in this grid cell
     real(r8) :: area_this_col ! fractional area of column c in the grid cell
 
@@ -282,16 +282,16 @@ contains
     character(len=*), parameter :: subname = 'bareland_normalization'
     !-----------------------------------------------------------------------
 
-    g = col_pp%gridcell(c)
-
-    area_glacier = get_landunit_weight(g, istice_mec)
+    t = col_pp%topounit(c)
+    
+    area_glacier = get_landunit_weight(t, istice_mec)
 
     if (abs(area_glacier - 1.0_r8) < tol) then
        ! If the whole grid cell is glacier, then the normalization factor is arbitrary;
        ! set it to 1 so we don't do any normalization in this case
        bareland_normalization = 1.0_r8
     else
-       area_this_col = col_pp%wtgcell(c)
+       area_this_col = col_pp%wttopounit(c)
        bareland_normalization = area_this_col / (1.0_r8 - area_glacier)
     end if
 

@@ -491,7 +491,7 @@ contains
     if (l == ispval) then
        weight = 0._r8
     else
-       weight = lun_pp%wtgcell(l)
+       weight = lun_pp%wttopounit(l)
     end if
 
   end function get_landunit_weight
@@ -518,7 +518,7 @@ contains
 
     l = top_pp%landunit_indices(ltype, t)
     if (l /= ispval) then
-       lun_pp%wtgcell(l) = weight
+       lun_pp%wttopounit(l) = weight
     else if (weight > 0._r8) then
        write(iulog,*) subname//' ERROR: Attempt to assign non-zero weight to a non-existent landunit'
        write(iulog,*) 'g, t, l, ltype, weight = ', top_pp%gridcell(t), t, l, ltype, weight
