@@ -75,7 +75,7 @@
       <value compset="20TR_CAM5%CMIP6_CLM">20thC_CMIP6_transient</value>
       <value compset="20TR_CAM5%CMIP6_CLM45.*_BGC%BCRC">20thC_CMIP6bgc_transient</value> 
       <value compset="20TR.*_CLM45%[^_]*BGC">20thC_bgc_transient</value>
-      <value compset="1950_CAM5%CMIP6-LR*_CLM">1950_CMIP6LR_control</value>
+      <value compset="1950_CAM5%CMIP6-LR.*_CLM">1950_CMIP6LR_control</value>
       <value compset="1950_CAM5%CMIP6-HR_CLM">1950_CMIP6HR_control</value>
     </values>
     <group>run_component_clm</group>
