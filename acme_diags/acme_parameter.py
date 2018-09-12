@@ -7,7 +7,7 @@ import cdp.cdp_parameter
 class ACMEParameter(cdp.cdp_parameter.CDPParameter):
     def __init__(self):
         self.case_id = ''
-        # The user must define these, so don't give an defaults.
+        # The user must define these, so don't give any defaults.
         # self.reference_data_path = ''
         # self.test_data_path = ''
         self.viewer_descr = {}
@@ -22,7 +22,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.regrid_method = 'conservative'
         self.plevs = []
 
-        # Plotting related
+        # Plotting related.
         self.main_title = ''
         self.backend = 'mpl'
         self.save_netcdf = False
