@@ -311,22 +311,22 @@ subroutine update_prognostics( &
       thedz=1._r8/dz_zt(i,k) ! define the thickness of the layer
 
       ! Update temperature
-      thetal(i,k)=thetal(i,k)-dtime*(wthl_sec(i,kt)-wthl_sec(i,k))*thedz
+      thetal(i,k)=thetal(i,k)+dtime*(wthl_sec(i,kt)-wthl_sec(i,k))*thedz
       
       ! Update total water mixing ratio
-      qw(i,k)=qw(i,k)-dtime*(wqw_sec(i,kt)-wqw_sec(i,k))*thedz
+      qw(i,k)=qw(i,k)+dtime*(wqw_sec(i,kt)-wqw_sec(i,k))*thedz
 
       ! Update turbulent kinetic energy
-      tke(i,k)=tke(i,k)-dtime*(wtke_sec(i,kt)-wtke_sec(i,k))*thedz
+      tke(i,k)=tke(i,k)+dtime*(wtke_sec(i,kt)-wtke_sec(i,k))*thedz
 
       ! Update tracers
       do p=1,num_tracer
-        tracer(i,k,p)=tracer(i,k,p)-dtime*(wtracer_sec(i,kt,p)-wtracer_sec(i,k,p))*thedz
+        tracer(i,k,p)=tracer(i,k,p)+dtime*(wtracer_sec(i,kt,p)-wtracer_sec(i,k,p))*thedz
       enddo
 
       ! Update the u and v wind components      
-      u_wind(i,k)=u_wind(i,k)-dtime*(uw_sec(i,kt)-uw_sec(i,k))*thedz
-      v_wind(i,k)=v_wind(i,k)-dtime*(vw_sec(i,kt)-vw_sec(i,k))*thedz
+      u_wind(i,k)=u_wind(i,k)+dtime*(uw_sec(i,kt)-uw_sec(i,k))*thedz
+      v_wind(i,k)=v_wind(i,k)+dtime*(vw_sec(i,kt)-vw_sec(i,k))*thedz
       
     enddo ! end i loop (column loop)
   enddo ! end k loop (vertical loop)
