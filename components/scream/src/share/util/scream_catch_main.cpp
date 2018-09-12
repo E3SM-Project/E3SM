@@ -6,8 +6,8 @@
 
 int main (int argc, char **argv) {
   int result = -1;
-  scream::initialize(argc, argv); {
+  scream::initialize_scream_session(argc, argv); {
     result = Catch::Session().run(argc, argv);
-  } scream::finalize();
+  } scream::finalize_scream_session();
   return result;
 }
