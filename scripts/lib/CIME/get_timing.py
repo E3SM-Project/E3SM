@@ -65,13 +65,13 @@ class _TimingParser:
 
         heading = '"' + heading_padded.strip() + '"'
         for line in self.finlines:
-            m = re.match(r'\s*{}\s*(\d+)\s*\d+\s*(\S+)'.format(heading), line)
+            m = re.match(r'\s*{}\s+\S\s+(\d+)\s*\d+\s*(\S+)'.format(heading), line)
             if m:
                 nprocs = int(float(m.groups()[0]))
                 ncount = int(float(m.groups()[1]))
                 return (nprocs, ncount)
             else:
-                m = re.match(r'\s*{}\s+(\d+)\s'.format(heading), line)
+                m = re.match(r'\s*{}\s+\S\s+(\d+)\s'.format(heading), line)
                 if m:
                     nprocs = 1
                     ncount = int(float(m.groups()[0]))
@@ -85,7 +85,7 @@ class _TimingParser:
         maxval = 0
 
         for line in self.finlines:
-            m = re.match(r'\s*{}\s*\d+\s*\d+\s*\S+\s*\S+\s*(\d*\.\d+)\s*\(.*\)\s*(\d*\.\d+)\s*\(.*\)'.format(heading), line)
+            m = re.match(r'\s*{}\s+\S\s+\d+\s*\d+\s*\S+\s*\S+\s*(\d*\.\d+)\s*\(.*\)\s*(\d*\.\d+)\s*\(.*\)'.format(heading), line)
             if m:
                 maxval = float(m.groups()[0])
                 minval = float(m.groups()[1])
