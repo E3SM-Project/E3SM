@@ -16,6 +16,9 @@ Get Kokkos:
 ```
 cd ${KOKKOS_SRC_LOC}
 git clone http://github.com/kokkos/kokkos
+#The next step avoids bug where kokkos_generated_settings.cmake
+#can get put in unexpected directory locations:
+git checkout develop                    
 ```
 Configure it as a debug build and build it:
 ```
