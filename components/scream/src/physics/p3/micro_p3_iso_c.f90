@@ -79,7 +79,7 @@ contains
   subroutine p3_main_c(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
        pres,dzq,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
        diag_effi,diag_vmi,diag_di,diag_rhoi,n_diag_2d,diag_2d,n_diag_3d,       &
-       diag_3d,log_predictNc_in,typeDiags_ON_in,model_in,prt_drzl,prt_rain,prt_crys,    &
+       diag_3d,log_predictNc_in,typeDiags_ON_in,prt_drzl,prt_rain,prt_crys,    &
        prt_snow,prt_grpl,prt_pell,prt_hail,prt_sndp) bind(C)
     use micro_p3, only : p3_main
 
@@ -94,21 +94,13 @@ contains
     real(kind=c_real), intent(out), dimension(its:ite,kts:kte,n_diag_3d) :: diag_3d
     integer(kind=c_int), value, intent(in) :: its,ite, kts,kte, it, n_diag_2d, n_diag_3d
     logical(kind=c_bool), value, intent(in) :: log_predictNc_in, typeDiags_ON_in
-    type(c_ptr), intent(in) :: model_in
     real(kind=c_real), intent(out), dimension(its:ite), optional :: &
          prt_drzl, prt_rain, prt_crys, prt_snow, prt_grpl, prt_pell, prt_hail, prt_sndp
 
-    character(len=64), pointer :: model
     logical :: log_predictNc, typeDiags_ON
-    integer :: len
 
     log_predictNc = log_predictNc_in
     typeDiags_ON = typeDiags_ON_in
-
-!PMC deleted model from function call... should delete everywhere now.
-    
-    call c_f_pointer(model_in, model)
-    len = index(model, C_NULL_CHAR) - 1
 
     call p3_main(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
          pres,dzq,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &

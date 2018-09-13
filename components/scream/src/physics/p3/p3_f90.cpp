@@ -18,7 +18,7 @@ extern "C" {
                  Real* diag_effc, Real* diag_effi, Real* diag_vmi,
                  Real* diag_di, Real* diag_rhoi, Int n_diag_2d, Real* diag_2d,
                  Int n_diag_3d, Real* diag_3d, bool log_predictNc,
-                 bool typeDiags_ON, const char** model, Real* prt_drzl,
+                 bool typeDiags_ON, Real* prt_drzl,
                  Real* prt_rain, Real* prt_crys, Real* prt_snow, Real* prt_grpl,
                  Real* prt_pell, Real* prt_hail, Real* prt_sndp);
 }
@@ -108,7 +108,6 @@ void p3_init () {
 }
 
 void p3_main (const FortranData& d) {
-  static const char* model = "GEM";
   p3_main_c(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(), d.th_old.data(),
             d.th.data(), d.qv_old.data(), d.qv.data(), d.dt, d.qitot.data(),
             d.qirim.data(), d.nitot.data(), d.birim.data(), d.ssat.data(),
@@ -117,7 +116,7 @@ void p3_main (const FortranData& d) {
             d.diag_effc.data(), d.diag_effi.data(), d.diag_vmi.data(),
             d.diag_di.data(), d.diag_rhoi.data(), d.diag_2d.extent_int(1),
             d.diag_2d.data(), d.diag_3d.extent_int(2), d.diag_3d.data(),
-            d.log_predictnc, d.typediags_on, &model, d.prt_drzl.data(),
+            d.log_predictnc, d.typediags_on, d.prt_drzl.data(),
             d.prt_rain.data(), d.prt_crys.data(), d. prt_snow.data(),
             d.prt_grpl.data(), d.prt_pell.data(), d.prt_hail.data(),
             d.prt_sndp.data());
