@@ -78,9 +78,7 @@ contains
 
   subroutine p3_main_c(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
        pres,dzq,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
-       diag_effi,diag_vmi,diag_di,diag_rhoi,       &
-       log_predictNc_in,typeDiags_ON_in,prt_drzl,prt_rain,prt_crys,    &
-       prt_snow,prt_grpl,prt_pell,prt_hail,prt_sndp) bind(C)
+       diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc_in) bind(C)
     use micro_p3, only : p3_main
 
     real(kind=c_real), intent(inout), dimension(its:ite,kts:kte) :: qc, nc, qr, nr, ssat, qv, th, th_old, qv_old
@@ -91,19 +89,14 @@ contains
     real(kind=c_real), intent(out), dimension(its:ite,kts:kte) :: diag_ze, diag_effc
     real(kind=c_real), intent(out), dimension(its:ite,kts:kte) :: diag_effi, diag_vmi, diag_di, diag_rhoi
     integer(kind=c_int), value, intent(in) :: its,ite, kts,kte, it
-    logical(kind=c_bool), value, intent(in) :: log_predictNc_in, typeDiags_ON_in
-    real(kind=c_real), intent(out), dimension(its:ite), optional :: &
-         prt_drzl, prt_rain, prt_crys, prt_snow, prt_grpl, prt_pell, prt_hail, prt_sndp
+    logical(kind=c_bool), value, intent(in) :: log_predictNc_in
 
-    logical :: log_predictNc, typeDiags_ON
+    logical :: log_predictNc
 
     log_predictNc = log_predictNc_in
-    typeDiags_ON = typeDiags_ON_in
 
     call p3_main(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
          pres,dzq,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
-         diag_effi,diag_vmi,diag_di,diag_rhoi,       &
-         log_predictNc,typeDiags_ON,prt_drzl,prt_rain,prt_crys,    &
-         prt_snow,prt_grpl,prt_pell,prt_hail,prt_sndp)
+         diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc)
   end subroutine p3_main_c
 end module micro_p3_iso_c
