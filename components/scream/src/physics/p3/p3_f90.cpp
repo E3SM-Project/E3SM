@@ -16,11 +16,8 @@ extern "C" {
                  Real* dzq, Int it, Real* prt_liq, Real* prt_sol, Int its,
                  Int ite, Int kts, Int kte, Real* diag_ze,
                  Real* diag_effc, Real* diag_effi, Real* diag_vmi,
-                 Real* diag_di, Real* diag_rhoi, Int n_diag_2d, Real* diag_2d,
-                 Int n_diag_3d, Real* diag_3d, bool log_predictNc,
-                 bool typeDiags_ON, const char** model, Real* prt_drzl,
-                 Real* prt_rain, Real* prt_crys, Real* prt_snow, Real* prt_grpl,
-                 Real* prt_pell, Real* prt_hail, Real* prt_sndp);
+                 Real* diag_di, Real* diag_rhoi, 
+                 bool log_predictNc);
 }
 
 namespace scream {
@@ -29,7 +26,6 @@ namespace p3 {
 FortranData::FortranData (Int ncol_, Int nlev_)
   : ncol(ncol_), nlev(nlev_)
 {
-  const Int n_diag_2d = 1, n_diag_3d = 1;
 
   dt = -1; // model time step, s; set to invalid -1
   it = 1;  // seems essentially unused
@@ -52,22 +48,12 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   // Out
   prt_liq = Array1("precipitation rate, liquid  m/s", ncol);
   prt_sol = Array1("precipitation rate, solid   m/s", ncol);
-  prt_drzl = Array1("precip rate, drizzle       m/s", ncol);
-  prt_rain = Array1("precip rate, rain          m/s", ncol);
-  prt_crys = Array1("precip rate, ice cystals   m/s", ncol);
-  prt_snow = Array1("precip rate, snow          m/s", ncol);
-  prt_grpl = Array1("precip rate, graupel       m/s", ncol);
-  prt_pell = Array1("precip rate, ice pellets   m/s", ncol);
-  prt_hail = Array1("precip rate, hail          m/s", ncol);
-  prt_sndp = Array1("precip rate, unmelted snow m/s", ncol);
   diag_ze = Array2("equivalent reflectivity, dBZ", ncol, nlev);
   diag_effc = Array2("effective radius, cloud, m", ncol, nlev);
-  diag_2d = Array2("user-defined 2D diagnostic fields", ncol, n_diag_2d);
   diag_effi = Array2("effective radius, ice, m", ncol, nlev);
   diag_vmi = Array2("mass-weighted fall speed of ice, m/s", ncol, nlev);
   diag_di = Array2("mean diameter of ice, m", ncol, nlev);
   diag_rhoi = Array2("bulk density of ice, kg/m", ncol, nlev);
-  diag_3d = Array3("user-defined 3D diagnostic fields", ncol, nlev, n_diag_3d);
 }
 
 FortranDataIterator::FortranDataIterator (const FortranData::Ptr& d) {
@@ -76,7 +62,6 @@ FortranDataIterator::FortranDataIterator (const FortranData::Ptr& d) {
 
 void FortranDataIterator::init (const FortranData::Ptr& dp) {
   d_ = dp;
-  fields_.reserve(33);
 #define fdipb(name)                                                     \
   fields_.push_back({#name,                                             \
         2,                                                              \
@@ -87,10 +72,8 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
   fdipb(dzq); fdipb(qc); fdipb(nc); fdipb(qr); fdipb(nr);
   fdipb(ssat); fdipb(qitot); fdipb(nitot);
   fdipb(qirim); fdipb(birim); fdipb(prt_liq); fdipb(prt_sol);
-  fdipb(prt_drzl); fdipb(prt_rain); fdipb(prt_crys); fdipb(prt_snow);
-  fdipb(prt_grpl); fdipb(prt_pell); fdipb(prt_hail); fdipb(prt_sndp);
-  fdipb(diag_ze); fdipb(diag_effc); fdipb(diag_2d); fdipb(diag_effi);
-  fdipb(diag_vmi); fdipb(diag_di); fdipb(diag_rhoi); fdipb(diag_3d);
+  fdipb(diag_ze); fdipb(diag_effc); fdipb(diag_effi);
+  fdipb(diag_vmi); fdipb(diag_di); fdipb(diag_rhoi);
 #undef fdipb
 }
 
@@ -108,19 +91,14 @@ void p3_init () {
 }
 
 void p3_main (const FortranData& d) {
-  static const char* model = "GEM";
   p3_main_c(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(), d.th_old.data(),
             d.th.data(), d.qv_old.data(), d.qv.data(), d.dt, d.qitot.data(),
             d.qirim.data(), d.nitot.data(), d.birim.data(), d.ssat.data(),
             d.pres.data(), d.dzq.data(), d.it, d.prt_liq.data(),
             d.prt_sol.data(), 1, d.ncol, 1, d.nlev, d.diag_ze.data(),
             d.diag_effc.data(), d.diag_effi.data(), d.diag_vmi.data(),
-            d.diag_di.data(), d.diag_rhoi.data(), d.diag_2d.extent_int(1),
-            d.diag_2d.data(), d.diag_3d.extent_int(2), d.diag_3d.data(),
-            d.log_predictnc, d.typediags_on, &model, d.prt_drzl.data(),
-            d.prt_rain.data(), d.prt_crys.data(), d. prt_snow.data(),
-            d.prt_grpl.data(), d.prt_pell.data(), d.prt_hail.data(),
-            d.prt_sndp.data());
+            d.diag_di.data(), d.diag_rhoi.data(),
+            d.log_predictnc);
 }
 
 Int check_against_python (const FortranData& d) {

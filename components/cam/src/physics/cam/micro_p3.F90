@@ -446,9 +446,7 @@ contains
 
   SUBROUTINE p3_main(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
        pres,dzq,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
-       diag_effi,diag_vmi,diag_di,diag_rhoi,n_diag_2d,diag_2d,n_diag_3d,       &
-       diag_3d,log_predictNc,typeDiags_ON,model,prt_drzl,prt_rain,prt_crys,    &
-       prt_snow,prt_grpl,prt_pell,prt_hail,prt_sndp)
+       diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc)
 
     !----------------------------------------------------------------------------------------!
     !                                                                                        !
@@ -496,27 +494,11 @@ contains
     real, intent(out),   dimension(its:ite,kts:kte)      :: diag_di    ! mean diameter of ice             m
     real, intent(out),   dimension(its:ite,kts:kte)      :: diag_rhoi  ! bulk density of ice              kg m-1
 
-    real, intent(out),   dimension(its:ite,n_diag_2d)         :: diag_2d  ! user-defined 2D diagnostic fields
-    real, intent(out),   dimension(its:ite,kts:kte,n_diag_3d) :: diag_3d  ! user-defined 3D diagnostic fields
-
     integer, intent(in)                                  :: its,ite    ! array bounds (horizontal)
     integer, intent(in)                                  :: kts,kte    ! array bounds (vertical)
     integer, intent(in)                                  :: it         ! time step counter NOTE: starts at 1 for first time step
-    integer, intent(in)                                  :: n_diag_2d  ! number of 2D diagnostic fields
-    integer, intent(in)                                  :: n_diag_3d  ! number of 3D diagnostic fields
 
     logical, intent(in)                                  :: log_predictNc ! .T. (.F.) for prediction (specification) of Nc
-    logical, intent(in)                                  :: typeDiags_ON  !for diagnostic hydrometeor/precip rate types
-    character(len=*), intent(in)                         :: model         !driving model
-
-    real, intent(out), dimension(its:ite), optional      :: prt_drzl      ! precip rate, drizzle          m s-1
-    real, intent(out), dimension(its:ite), optional      :: prt_rain      ! precip rate, rain             m s-1
-    real, intent(out), dimension(its:ite), optional      :: prt_crys      ! precip rate, ice cystals      m s-1
-    real, intent(out), dimension(its:ite), optional      :: prt_snow      ! precip rate, snow             m s-1
-    real, intent(out), dimension(its:ite), optional      :: prt_grpl      ! precip rate, graupel           m s-1
-    real, intent(out), dimension(its:ite), optional      :: prt_pell      ! precip rate, ice pellets       m s-1
-    real, intent(out), dimension(its:ite), optional      :: prt_hail      ! precip rate, hail              m s-1
-    real, intent(out), dimension(its:ite), optional      :: prt_sndp      ! precip rate, unmelted snow     m s-1
 
     !----- Local variables and parameters:  -------------------------------------------------!
 
@@ -646,13 +628,6 @@ contains
 !    real    :: f1pr17   ! ice-ice category collection change in number (not used)
 !    real    :: f1pr18   ! ice-ice category collection change in mass (not used)
 
-    ! quantities related to diagnostic hydrometeor/precipitation types
-    real,    parameter                       :: freq3DtypeDiag     = 60.     !frequency (min) for full-column diagnostics
-    real,    parameter                       :: thres_raindrop     = 100.e-6 !size threshold for drizzle vs. rain
-    real,    dimension(its:ite,kts:kte)      :: Q_drizzle,Q_rain
-    real,    dimension(its:ite,kts:kte) :: Q_crystals,Q_ursnow,Q_lrsnow,Q_grpl,Q_pellets,Q_hail
-    integer                                  :: ktop_typeDiag
-
     !--These will be added as namelist parameters in the future
     logical, parameter :: debug_ON     = .false.  !.true. to switch on debugging checks/traps throughout code
     logical, parameter :: debug_ABORT  = .false.  !.true. will result in forced abort in s/r 'check_values'
@@ -661,35 +636,11 @@ contains
     !  End of variables/parameters declarations
     !-----------------------------------------------------------------------------------!
 
-    !-----------------------------------------------------------------------------------!
-    ! Note, the array 'diag_3d(ni,nk,n_diag_3d)' provides a placeholder to output 3D diagnostic fields.
-    ! The entire array array is inialized to zero (below).  Code can be added to store desired fields
-    ! by simply adding the appropriate assignment statements.  For example, if one wishs to output the
-    ! rain condensation and evaporation rates, simply add assignments in the appropriate locations.
-    !  e.g.:
-    !
-    !   diag_3d(i,k,1) = qrcon
-    !   diag_3d(i,k,2) = qrevp
-    !
-    ! The fields will automatically be passed to the driving model.  In GEM, these arrays can be
-    ! output by adding 'SS01' and 'SS02' to the model output list.
-    !
-    ! Similarly, 'diag_2d(ni,n_diag_2d) is a placeholder to output 2D diagnostic fields.
-    !  e.g.:
-    !
-    !   diag_2d(i,1) = maxval(qr(i,:))  !column-maximum qr
-    !-----------------------------------------------------------------------------------!
-
     ! direction of vertical leveling:
-    if (trim(model)=='GEM' .or. trim(model)=='KIN1D') then
-       ktop = kts        !k of top level
-       kbot = kte        !k of bottom level
-       kdir = -1         !(k: 1=top, nk=bottom)
-    else
-       ktop = kte        !k of top level
-       kbot = kts        !k of bottom level
-       kdir = 1          !(k: 1=bottom, nk=top)
-    endif
+    !PMC got rid of 'model' option so we could just replace ktop with kts everywhere...
+    ktop = kts        !k of top level
+    kbot = kte        !k of bottom level
+    kdir = -1         !(k: 1=top, nk=bottom)
 
     !PMC deleted 'threshold size difference' calculation for multicategory here
 
@@ -720,8 +671,6 @@ contains
     diag_vmi  = 0.
     diag_di   = 0.
     diag_rhoi = 0.
-    diag_2d   = 0.
-    diag_3d   = 0.
     rhorime_c = 400.
 
     tmparr1 = (pres*1.e-5)**(rd*inv_cp)
@@ -2400,152 +2349,7 @@ contains
     enddo i_loop_main
 
     !PMC deleted "if WRF" stuff
-
-    !...........................................................................................
-    ! Compute diagnostic hydrometeor types for output as 3D fields and
-    ! for partitioning into corresponding surface precipitation rates.
-
-    compute_type_diags: if (typeDiags_ON) then
-
-       if (.not.(present(prt_drzl).and.present(prt_rain).and.present(prt_crys).and. &
-            present(prt_snow).and.present(prt_grpl).and.present(prt_pell).and. &
-            present(prt_hail).and.present(prt_sndp))) then
-          print*,'***  ABORT IN P3_MAIN ***'
-          print*,'*  typeDiags_ON = .true. but prt_drzl, etc. are not passed into P3_MAIN'
-          print*,'*************************'
-          stop
-       endif
-       prt_drzl = 0.
-       prt_rain = 0.
-       prt_crys = 0.
-       prt_snow = 0.
-       prt_grpl = 0.
-       prt_pell = 0.
-       prt_hail = 0.
-       prt_sndp = 0.
-
-       if (freq3DtypeDiag>0. .and. mod(it*dt,freq3DtypeDiag*60.)==0.) then
-          !diagnose hydrometeor types for full columns
-          ktop_typeDiag = ktop
-       else
-          !diagnose hydrometeor types at bottom level only (for specific precip rates)
-          ktop_typeDiag = kbot
-       endif
-
-       i_loop_typediag: do i = its,ite
-
-          !-- rain vs. drizzle:
-          k_loop_typdiag_1: do k = kbot,ktop_typeDiag,kdir
-
-             Q_drizzle(i,k) = 0.
-             Q_rain(i,k)    = 0.
-             !note:  theese can be broken down further (outside of microphysics) into
-             !       liquid rain (drizzle) vs. freezing rain (drizzle) based on sfc temp.
-             if (qr(i,k)>qsmall .and. nr(i,k)>nsmall) then
-                tmp1 = (qr(i,k)/(pi*rhow*nr(i,k)))**thrd   !mean-mass diameter
-                if (tmp1 < thres_raindrop) then
-                   Q_drizzle(i,k) = qr(i,k)
-                else
-                   Q_rain(i,k)    = qr(i,k)
-                endif
-             endif
-
-          enddo k_loop_typdiag_1
-
-          if (Q_drizzle(i,kbot) > 0.) then
-             prt_drzl(i) = prt_liq(i)
-          elseif (Q_rain(i,kbot) > 0.) then
-             prt_rain(i) = prt_liq(i)
-          endif
-          !--- optimized version above above IF block (does not work on all FORTRAN compilers)
-          !        tmp1 = -(Q_drizzle(i,kbot) > 0.)  !note: tmp1=1.0 if Q_drizzle>0., else tmp1=0.0
-          !        tmp2 = -(Q_rain(i,kbot)    > 0.)
-          !        prt_drzl(i) = prt_liq(i)*tmp1  !precip rate of drizzle
-          !        prt_rain(i) = prt_liq(i)*tmp2  !precip rate of rain
-          !===
-
-          !-- ice-phase:
-
-          k_loop_typdiag_2: do k = kbot,ktop_typeDiag,kdir
-
-             Q_crystals(i,k) = 0.
-             Q_ursnow(i,k)   = 0.
-             Q_lrsnow(i,k)   = 0.
-             Q_grpl(i,k)     = 0.
-             Q_pellets(i,k)  = 0.
-             Q_hail(i,k)     = 0.
-
-             if (qitot(i,k)>qsmall) then
-                tmp1 = qirim(i,k)/qitot(i,k)   !rime mass fraction
-                if (tmp1<0.1) then
-                   !zero or trace rime:
-                   if (diag_di(i,k)<150.e-6) then
-                      Q_crystals(i,k) = qitot(i,k)
-                   else
-                      Q_ursnow(i,k) = qitot(i,k)
-                   endif
-                elseif (tmp1>=0.1 .and. tmp1<0.25) then
-                   !lightly rimed:
-                   Q_lrsnow(i,k) = qitot(i,k)
-                elseif (tmp1>=0.25 .and. tmp1<=1.) then
-                   !moderate-to-heavily rimed:
-                   if (diag_rhoi(i,k)<700.) then
-                      Q_grpl(i,k) = qitot(i,k)
-                   else
-                      if (diag_di(i,k)<1.e-3) then
-                         Q_pellets(i,k) = qitot(i,k)
-                      else
-                         Q_hail(i,k) = qitot(i,k)
-                      endif
-                   endif
-                else
-                   print*, 'STOP -- unrealistic rime fraction: ',tmp1
-                   stop
-                endif
-             endif !qitot>0
-
-          enddo k_loop_typdiag_2
-
-          !diagnostics for sfc precipitation rates: (liquid-equivalent volume flux, m s-1)
-          !  note: these are summed for all ice categories
-          if (Q_crystals(i,kbot) > 0.)    then
-             prt_crys(i) = prt_crys(i) + prt_sol(i)    !precip rate of small crystals
-          elseif (Q_ursnow(i,kbot) > 0.)  then
-             prt_snow(i) = prt_snow(i) + prt_sol(i)    !precip rate of unrimed + lightly rimed snow
-          elseif (Q_lrsnow(i,kbot) > 0.)  then
-             prt_snow(i) = prt_snow(i) + prt_sol(i)    !precip rate of unrimed + lightly rimed snow
-          elseif (Q_grpl(i,kbot) > 0.)    then
-             prt_grpl(i) = prt_grpl(i) + prt_sol(i)    !precip rate of graupel
-          elseif (Q_pellets(i,kbot) > 0.) then
-             prt_pell(i) = prt_pell(i) + prt_sol(i)    !precip rate of ice pellets
-          elseif (Q_hail(i,kbot) > 0.)    then
-             prt_hail(i) = prt_hail(i) + prt_sol(i)    !precip rate of hail
-          endif
-
-          !precip rate of unmelted total "snow":
-          !  For now, an instananeous solid-to-liquid ratio (tmp1) is assumed and is multiplied
-          !  by the total liquid-equivalent precip rates of snow (small crystals + lightly-rime + ..)
-          !  Later, this can be computed explicitly as the volume flux of unmelted ice.
-          tmp1 = 1000./max(1., 5.*diag_rhoi(i,kbot))
-          prt_sndp(i) = prt_sndp(i) + tmp1*(prt_crys(i) + prt_snow(i) + prt_grpl(i))
-
-       enddo i_loop_typediag
-
-       !- for output of 3D fields of diagnostic hydrometeor type (for iice = 1)
-       !     if (ktop_typeDiag == ktop) then
-       !        diag_3d(:,:,1) = Q_drizzle(:,:)
-       !        diag_3d(:,:,2) = Q_rain(:,:)
-       !        diag_3d(:,:,3) = Q_crystals(:,:)
-       !        diag_3d(:,:,4) = Q_ursnow(:,:)
-       !        diag_3d(:,:,5) = Q_lrsnow(:,:)
-       !        diag_3d(:,:,6) = Q_grpl(:,:)
-       !        diag_3d(:,:,7) = Q_pellets(:,:)
-       !        diag_3d(:,:,8) = Q_hail(:,:)
-       !     endif
-       !=
-
-    endif compute_type_diags
-
+    !PMC deleted typeDiags optional output stuff
 
     !=== (end of section for diagnostic hydrometeor/precip types)
 
