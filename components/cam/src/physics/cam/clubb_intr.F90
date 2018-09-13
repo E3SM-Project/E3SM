@@ -31,7 +31,7 @@ module clubb_intr
 #ifdef FIVE
   use five_intr,     only: pver_five, pverp_five, &
                            pmid_five, pint_five, &
-			   linear_interp
+			   linear_interp, five_syncronize_e3sm
 #endif
 
   implicit none
@@ -652,6 +652,10 @@ end subroutine clubb_init_cnst
     prer_evap_idx   = pbuf_get_index('PRER_EVAP')
     qrl_idx         = pbuf_get_index('QRL')
     cmfmc_sh_idx    = pbuf_get_index('CMFMC_SH')
+    t_five_idx = pbuf_get_index('T_FIVE')
+    q_five_idx = pbuf_get_index('Q_FIVE')
+    u_five_idx = pbuf_get_index('U_FIVE')
+    v_five_idx = pbuf_get_index('V_FIVE')
 
     iisclr_rt  = -1
     iisclr_thl = -1
@@ -1315,17 +1319,7 @@ end subroutine clubb_init_cnst
    real(r8) :: t_five_low(pcols,pver)
    real(r8) :: u_five_low(pcols,pver)
    real(r8) :: v_five_low(pcols,pver)
-   real(r8) :: q_five_low(pcols,pver,pcnst)
-   
-   real(r8) :: t_five_tend(pcols,pver_five)
-   real(r8) :: u_five_tend(pcols,pver_five)
-   real(r8) :: v_five_tend(pcols,pver_five)
-   real(r8) :: q_five_tend(pcols,pver_five,pcnst)
-   
-   real(r8) :: t_five_tend_low(pcols,pver)
-   real(r8) :: u_five_tend_low(pcols,pver)
-   real(r8) :: v_five_tend_low(pcols,pver)
-   real(r8) :: q_five_tend_low(pcols,pver,pcnst)   
+   real(r8) :: q_five_low(pcols,pver,pcnst)   
 #endif
    
 !PMA
@@ -1439,10 +1433,10 @@ end subroutine clubb_init_cnst
    
    ! Get FIVE related fields
 #ifdef FIVE
-   call pbuf_get_field(pbuf, t_five_idx,    t_five,    start=(/1,1,itim_old/), kount=(/pcols,pverp_five,1/))
-   call pbuf_get_field(pbuf, q_five_idx,    q_five,     start=(/1,1,1,itim_old/), kount=(/pcols,pverp_five,pcnst,1/))
-   call pbuf_get_field(pbuf, u_five_idx,    u_five,      start=(/1,1,itim_old/), kount=(/pcols,pverp_five,1/))
-   call pbuf_get_field(pbuf, v_five_idx,    v_five,      start=(/1,1,itim_old/), kount=(/pcols,pverp_five,1/))  
+   call pbuf_get_field(pbuf, t_five_idx,    t_five,    start=(/1,1,itim_old/), kount=(/pcols,pver_five,1/))
+   call pbuf_get_field(pbuf, q_five_idx,    q_five,     start=(/1,1,1,itim_old/), kount=(/pcols,pver_five,pcnst,1/))
+   call pbuf_get_field(pbuf, u_five_idx,    u_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_five,1/))
+   call pbuf_get_field(pbuf, v_five_idx,    v_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_five,1/))  
 #endif 
 
    ! Intialize the apply_const variable (note special logic is due to eularian backstepping)
@@ -1565,54 +1559,14 @@ end subroutine clubb_init_cnst
    enddo
    
 #ifdef FIVE
-   ! should be mass weighted vertical average!
-   do i=1,ncol
-     call linear_interp(pmid_five,state1%pmid(i,:),t_five(i,1:pver_five),t_five_low(i,1:pver),pver_five,pver)
-     call linear_interp(pmid_five,state1%pmid(i,:),u_five(i,1:pver_five),u_five_low(i,1:pver),pver_five,pver)
-     call linear_interp(pmid_five,state1%pmid(i,:),v_five(i,1:pver_five),v_five_low(i,1:pver),pver_five,pver)
-     do p=1,pcnst
-       call linear_interp(pmid_five,state1%pmid(i,:),q_five(i,1:pver_five,p),q_five_low(i,1:pver,p),pver_five,pver)
-     enddo
-   enddo
-   
-   do k=1,pver
-     do i=1,ncol
-       t_five_tend_low(i,k) = (state1%t(i,k) - t_five_low(i,k))/dtime 
-       u_five_tend_low(i,k) = (state1%u(i,k) - u_five_low(i,k))/dtime 
-       v_five_tend_low(i,k) = (state1%v(i,k) - v_five_low(i,k))/dtime
-       
-       do p=1,pcnst
-         q_five_tend_low(i,k,p) = (state1%q(i,k,p) - q_five_low(i,k,p))/dtime
-       enddo
-        
-     enddo
-   enddo
-   
-   ! Now interpolate this tendency to the FIVE grid
-   call linear_interp(state1%pmid(i,:),pmid_five,t_five_tend_low(i,1:pver),&
-                      t_five_tend(i,1:pver_five),pver,pver_five)
-   call linear_interp(state1%pmid(i,:),pmid_five,u_five_tend_low(i,1:pver),&
-                      u_five_tend(i,1:pver_five),pver,pver_five)	
-   call linear_interp(state1%pmid(i,:),pmid_five,v_five_tend_low(i,1:pver),&
-                      v_five_tend(i,1:pver_five),pver,pver_five)	
-   do p=1,pcnst
-     call linear_interp(state1%pmid(i,:),pmid_five,q_five_tend_low(i,1:pver,p), &
-                      q_five_tend(i,1:pver_five,p),pver,pver_five)
-   enddo	      	      
 
-   ! Now update FIVE values based on this tendency
-   do k=1,pver_five
-     do i=1,ncol
-       t_five(i,k) = t_five(i,k) + dtime * t_five_tend(i,k)
-       u_five(i,k) = u_five(i,k) + dtime * u_five_tend(i,k)
-       v_five(i,k) = v_five(i,k) + dtime * v_five_tend(i,k)
-       
-       do p=1,pcnst
-         q_five(i,k,p) = q_five(i,k,p) + dtime * q_five_tend(i,k,p)
-       enddo
-       
-     enddo
-   enddo
+   ! Syncronize FIVE variables from E3SM state
+   call five_syncronize_e3sm(state1,dtime,t_five,u_five,v_five,q_five)
+
+   write(*,*) 'TFIVE after tend ', t_five(1,:)
+   write(*,*) 'QFIVE tend ', q_five(1,:,1)
+   write(*,*) 'QFIVE tend ', q_five(1,:,2)
+   write(*,*) 'UFIVE tend ', u_five(1,:)   
 #endif   
 
    !  At each CLUBB call, initialize mean momentum  and thermo CLUBB state 
@@ -1814,34 +1768,12 @@ end subroutine clubb_init_cnst
       ! Need to do some interpolation to get these variables on the higher-resolution FIVE grid.
       ! NOTE: the interpolation currently used here is very simple and really just a placeholder.     
 #ifdef FIVE  
-!      call linear_interp(state1%pmid(i,:),pmid_five,thlm(i,1:pver),thlm_five(1:pver_five),pver,pver_five)
-!      call linear_interp(state1%pmid(i,:),pmid_five,rtm(i,1:pver),rtm_five(1:pver_five),pver,pver_five)
-!      call linear_interp(state1%pmid(i,:),pmid_five,um(i,1:pver),um_five(1:pver_five),pver,pver_five)
-!      call linear_interp(state1%pmid(i,:),pmid_five,vm(i,1:pver),vm_five(1:pver_five),pver,pver_five)
-!      call linear_interp(state1%pmid(i,:),pmid_five,rvm(i,1:pver),rvm_five(1:pver_five),pver,pver_five)
 
       write(*,*) 'pver and pverfive', pver, pver_five
       write(*,*) 'PMIDlow ', state1%pmid(1,:)
-      write(*,*) 'PMIDfive ', pmid_five
-      write(*,*) 'THLMlow ', thlm(1,:)
-      write(*,*) 'THLMhigh ', thlm_five(:)
-      write(*,*) 'RTMlow ', rtm(1,:)
-      write(*,*) 'RTMhigh ', rtm_five(:)
-   
-      ! If FIVE is used then these "pre" values are on the high resolution grid
-      !  but not yet "flipped" for CLUBB
-!      thlm_pre(1:pver_five) = thlm_five(1:pver_five)
-!      rtm_pre(1:pver_five) = rtm_five(1:pver_five)
-!      um_pre(1:pver_five) = um_five(1:pver_five)
-!      vm_pre(1:pver_five) = vm_five(1:pver_five)
-!      rvm_pre(1:pver_five) = rvm_five(1:pver_five) 
+      write(*,*) 'PMIDfive ', pmid_five      
       
-      ! surface boundary conditions
-!      rtm_pre(pverp_five)  = rtm_pre(pver_five)
-!      um_pre(pverp_five)   = um_pre(pver_five) 
-!      vm_pre(pverp_five)   = vm_pre(pver_five)
-!      thlm_pre(pverp_five) = thlm_pre(pver_five)      
-      
+      ! Linearly interpolate CLUBB input variables to the FIVE grid
       call linear_interp(state1%pmid(i,:),pmid_five,zt_g_pre(1:pver),zt_g(1:pver_five),pver,pver_five)
       call linear_interp(state1%pmid(i,:),pmid_five,zi_g_pre(1:pver),zi_g(1:pver_five),pver,pver_five)
       call linear_interp(state1%pmid(i,:),pmid_five,wm_zt_pre(1:pver),wm_zt(1:pver_five),pver,pver_five)
@@ -1858,43 +1790,45 @@ end subroutine clubb_init_cnst
       write(*,*) 'RHObefore ', rho_zt_pre
       write(*,*) 'RHOafter ', rho_zt
 
-     p_in_Pa(pverp_five) = p_in_Pa(pver_five)
-     wm_zt(pverp_five) = wm_zt(pver_five)
-     rho_zt(pverp_five) = rho_zt(pver_five)
-     exner(pverp_five) = exner(pver_five)
-     rho_ds_zt(pverp_five) = rho_ds_zt(pver_five)
-     invrs_rho_ds_zt(pverp_five) = invrs_rho_ds_zt(pver_five)
-     thv_ds_zt(pverp_five) = thv_ds_zt(pver_five)
-     rfrzm(pverp_five) = rfrzm(pver_five)
-     rad(pverp_five) = rad(pver_five)
+      ! Provide the lower boundary condition
+      p_in_Pa(pverp_five) = p_in_Pa(pver_five)
+      wm_zt(pverp_five) = wm_zt(pver_five)
+      rho_zt(pverp_five) = rho_zt(pver_five)
+      exner(pverp_five) = exner(pver_five)
+      rho_ds_zt(pverp_five) = rho_ds_zt(pver_five)
+      invrs_rho_ds_zt(pverp_five) = invrs_rho_ds_zt(pver_five)
+      thv_ds_zt(pverp_five) = thv_ds_zt(pver_five)
+      rfrzm(pverp_five) = rfrzm(pver_five)
+      rad(pverp_five) = rad(pver_five)
      
-     ! Linear interpolation for the tracers 
-     icnt=0
-     do ixind=1,pcnst
-       if (lq(ixind)) then
-         icnt=icnt+1
-!	 do k=1,pver
-!	   call linear_interp(state1%pmid(i,:),pmid_five,edsclr_pre(1:pver,icnt),edsclr(1:pver_five,icnt),pver,pver_five)
-!	 enddo
+      ! Initialize the tracer array from the FIVE state
+      icnt=0
+      do ixind=1,pcnst
+        if (lq(ixind)) then
+          icnt=icnt+1
  
-         edsclr(1:pver_five,icnt) = q_five(i,1:pver_five,icnt)
-         edsclr(pverp_five,icnt) = edsclr(pver_five,icnt)
+          edsclr(1:pver_five,icnt) = q_five(i,1:pver_five,ixind)
+	  ! Provide lower boundary condition
+          edsclr(pverp_five,icnt) = edsclr(pver_five,icnt)
 
-       endif
-     enddo
+        endif
+      enddo
      
-     do k=1,pver_five
-       thlm_pre(k) = t_five(i,k) * exner(k) - (latvap/cpair) * q_five(i,k,ixcldliq) ! cloud water
-       um_pre(k) = u_five(i,k)
-       vm_pre(k) = v_five(i,k) 
-       rtm_pre(k) = q_five(i,k,ixq) + q_five(i,k,ixcldliq)
-       rvm_pre(k) = q_five(i,k,ixq)
-     enddo  
+      ! Initialize CLUBB's prognostic variables here, based on the 
+      !   FIVE state
+      do k=1,pver_five
+        thlm_pre(k) = t_five(i,k)/exner(k) - (latvap/cpair) * q_five(i,k,ixcldliq) ! cloud water
+        um_pre(k) = u_five(i,k)
+        vm_pre(k) = v_five(i,k) 
+        rtm_pre(k) = q_five(i,k,ixq) + q_five(i,k,ixcldliq)
+        rvm_pre(k) = q_five(i,k,ixq)
+      enddo  
      
-     rtm_pre(pverp_five)  = rtm_pre(pver_five)
-     um_pre(pverp_five)   = um_pre(pver_five) 
-     vm_pre(pverp_five)   = vm_pre(pver_five)
-     thlm_pre(pverp_five) = thlm_pre(pver_five)        
+      ! provide lower boundary condition
+      rtm_pre(pverp_five)  = rtm_pre(pver_five)
+      um_pre(pverp_five)   = um_pre(pver_five) 
+      vm_pre(pverp_five)   = vm_pre(pver_five)
+      thlm_pre(pverp_five) = thlm_pre(pver_five)        
      
 #else
       ! If FIVE is not used then these "pre" values are essentially just copies
@@ -2203,14 +2137,6 @@ end subroutine clubb_init_cnst
       write(*,*) 'thlp2_in before', thlp2_in
       write(*,*) 'rtpthlp_in before', rtpthlp_in
 
-      ! Print stuff
-!      icnt=0
-!      do ixind=1,pcnst
-!        write(*,*) 'edsclr_in ',ixind,  edsclr_in(:,ixind)
-!      enddo
-!      write(*,*) 'edsclr_in ', pcnst+1, edsclr_in(:,pcnst+1)
-!      write(*,*) 'edsclr_in ', pcnst+2, edsclr_in(:,pcnst+2)
-
       call t_startf('adv_clubb_core_ts_loop')
       do t=1,nadv    ! do needed number of "sub" timesteps for each CAM step
     
@@ -2309,13 +2235,6 @@ end subroutine clubb_init_cnst
       write(*,*) 'thlp2_in after', thlp2_in
       write(*,*) 'rtpthlp_in after', rtpthlp_in
       write(*,*) 'rcm_out after', rcm_out 
-      ! Print stuff
-!      icnt=0
-!      do ixind=1,pcnst
-!        write(*,*) 'edsclr_in ',ixind,  edsclr_in(:,ixind)
-!      enddo
-!      write(*,*) 'edsclr_in ', pcnst+1, edsclr_in(:,pcnst+1)
-!      write(*,*) 'edsclr_in ', pcnst+2, edsclr_in(:,pcnst+2)
  
       if (clubb_do_adv) then
          if (macmic_it .eq. cld_macmic_num_steps) then 
@@ -2376,20 +2295,28 @@ end subroutine clubb_init_cnst
 
       enddo 
 
-      ! Now we need to interpolate from CLUBB grid back to the E3SM grid.
-#ifdef FIVE      
-
+#ifdef FIVE            
+      ! Transfer stuff back into FIVE arrays
+      icnt=0
+      do ixind=1,pcnst
+        if (lq(ixind)) then
+          icnt=icnt+1
+	 
+	  do k=1,pver_five
+	    q_five(i,k,ixind) = edsclr(k,icnt)
+	  enddo
+	 
+        endif
+      enddo
+      
+      !  Note that the ixq and ixqcldliq arrays here will be overwritten 
+      !   from the above call.  This is intentional
       do k=1,pver_five
-        t_five(i,k) = (thlm_pre(k)+(latvap/cpair)*rcm_pre(k))/exner(k)
+        t_five(i,k) = (thlm_pre(k)+(latvap/cpair)*rcm_pre(k))*exner(k)
 	u_five(i,k) = um_pre(k)
 	v_five(i,k) = vm_pre(k)
 	q_five(i,k,ixq) = rtm_pre(k) - rcm_pre(k)
 	q_five(i,k,ixcldliq) = rcm_pre(k)
-	  
-	do p=3,pcnst
-	  q_five(i,k,p) = edsclr(k,p)
-	enddo
-	  
       enddo
       
       ! Again, this code below is temporary.  Need to replace with layer average
@@ -2406,13 +2333,10 @@ end subroutine clubb_init_cnst
       um(i,1:pver) = u_five_low(i,1:pver)
       vm(i,1:pver) = v_five_low(i,1:pver)
       rcm(i,1:pver) = q_five_low(i,1:pver,ixcldliq)  
-
-!      call linear_interp(pmid_five,state1%pmid(i,:),thlm_pre(1:pver_five),thlm(i,1:pver),pver_five,pver)
-!      call linear_interp(pmid_five,state1%pmid(i,:),rtm_pre(1:pver_five),rtm(i,1:pver),pver_five,pver)
-!      call linear_interp(pmid_five,state1%pmid(i,:),um_pre(1:pver_five),um(i,1:pver),pver_five,pver)
-!      call linear_interp(pmid_five,state1%pmid(i,:),vm_pre(1:pver_five),vm(i,1:pver),pver_five,pver)
-!      call linear_interp(pmid_five,state1%pmid(i,:),rcm_pre(1:pver_five),rcm(i,1:pver),pver_five,pver)
       
+      ! Linearly interpolate variables that E3SM needs to use for other routines (i.e. cloud fraction)
+      !  +QUESTION:  Should things like cloud fraction be saved on the FIVE grid so they can be used
+      !    for microphysics and radiation, etc. etc. ?!
       call linear_interp(pmid_five,state1%pmid(i,:),wprcp_pre(1:pver_five),wprcp(i,1:pver),pver_five,pver)
       call linear_interp(pmid_five,state1%pmid(i,:),cloud_frac_pre(1:pver_five),cloud_frac(i,1:pver),pver_five,pver)
       call linear_interp(pmid_five,state1%pmid(i,:),rcm_in_layer_pre(1:pver_five),rcm_in_layer(i,1:pver),pver_five,pver)
@@ -2422,19 +2346,8 @@ end subroutine clubb_init_cnst
       call linear_interp(pmid_five,state1%pmid(i,:),khzm_pre(1:pver_five),khzm(i,1:pver),pver_five,pver)
       call linear_interp(pmid_five,state1%pmid(i,:),qclvar_pre(1:pver_five),qclvar(i,1:pver),pver_five,pver)
       
-!      do ixind=1,edsclr_dim
-!        call linear_interp(pmid_five,state1%pmid(i,:),edsclr(1:pver_five,ixind),edsclr_out(1:pver,ixind),pver_five,pver)
-!      enddo
-      
       write(*,*) 'pmid_five ', pmid_five
       write(*,*) 'pmid ', state1%pmid(i,:) 
-      write(*,*) 'THLM_pre ', thlm_pre(:)
-      write(*,*) 'THLM ', thlm(i,:)
-      write(*,*) 'RTM_pre ', rtm(i,:)
-      write(*,*) 'RTM ', rtm(i,:)
-      write(*,*) 'UM ', um(i,:)
-      write(*,*) 'VM ', vm(i,:)
-      write(*,*) 'RCM ', rcm(i,:)
  
 #else
       ! If FIVE is not used, then simply just copy the arrays over

@@ -135,18 +135,21 @@ module five_intr
     use ppgrid,          only: pver, pverp, pcols
     
     ! Define PBUF for prognostics 
-    call pbuf_add_field('T_FIVE',       'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), t_five_idx)
-    call pbuf_add_field('Q_FIVE',        'global', dtype_r8, (/pcols,pverp_five,pcnst,dyn_time_lvls/), q_five_idx)
-    call pbuf_add_field('U_FIVE',         'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), u_five_idx)
-    call pbuf_add_field('V_FIVE',         'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), v_five_idx)
+    call pbuf_add_field('T_FIVE',       'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), t_five_idx)
+    call pbuf_add_field('Q_FIVE',        'global', dtype_r8, (/pcols,pver_five,pcnst,dyn_time_lvls/), q_five_idx)
+    call pbuf_add_field('U_FIVE',         'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), u_five_idx)
+    call pbuf_add_field('V_FIVE',         'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), v_five_idx)
   
   end subroutine five_register_e3sm
   ! ======================================== !
   !                                          !
   ! ======================================== !
   
-  subroutine five_init_e3sm(phys_state, pbuf2d)
+  subroutine init_five_profiles(phys_state, pbuf2d)
   
+    ! Purpose is to initialize FIVE profiles.  
+    ! Here we initialize using the state variables (on E3SM grid),
+    !   then interpolate onto the FIVE grid
     use time_manager, only: is_first_step
     use physics_buffer, only: pbuf_set_field, pbuf_get_chunk
   
@@ -168,41 +171,129 @@ module five_intr
     
     do lchnk = begchunk,endchunk
     
-    ncol = phys_state(lchnk)%ncol
-    pbuf2d_chunk => pbuf_get_chunk(pbuf2d,lchnk)
+      ncol = phys_state(lchnk)%ncol
+      pbuf2d_chunk => pbuf_get_chunk(pbuf2d,lchnk)
     
-    do i=1,ncol
+      do i=1,ncol
     
-      t_host(:) = phys_state(lchnk)%t(i,:)
-      u_host(:) = phys_state(lchnk)%u(i,:)
-      v_host(:) = phys_state(lchnk)%v(i,:)
+        t_host(:) = phys_state(lchnk)%t(i,:)
+        u_host(:) = phys_state(lchnk)%u(i,:)
+        v_host(:) = phys_state(lchnk)%v(i,:)
       
-      call linear_interp(phys_state(lchnk)%pmid(i,:),pmid_five,t_host,t_five(i,:),pver,pver_five)
-      call linear_interp(phys_state(lchnk)%pmid(i,:),pmid_five,u_host,u_five(i,:),pver,pver_five)
-      call linear_interp(phys_state(lchnk)%pmid(i,:),pmid_five,v_host,v_five(i,:),pver,pver_five)
+        call linear_interp(phys_state(lchnk)%pmid(i,:),pmid_five,t_host,t_five(i,:),pver,pver_five)
+        call linear_interp(phys_state(lchnk)%pmid(i,:),pmid_five,u_host,u_five(i,:),pver,pver_five)
+        call linear_interp(phys_state(lchnk)%pmid(i,:),pmid_five,v_host,v_five(i,:),pver,pver_five)
       
-      do p=1,pcnst
-        q_host(:) = phys_state(lchnk)%q(i,:,p)
-        call linear_interp(phys_state(lchnk)%pmid(i,:),pmid_five,q_host,q_five(i,:,p),pver,pver_five)
+        do p=1,pcnst
+          q_host(:) = phys_state(lchnk)%q(i,:,p)
+          call linear_interp(phys_state(lchnk)%pmid(i,:),pmid_five,q_host,q_five(i,:,p),pver,pver_five)
+        enddo
+    
       enddo
     
+      call pbuf_set_field(pbuf2d_chunk, t_five_idx, t_five(:,:))
+      call pbuf_set_field(pbuf2d_chunk, q_five_idx, q_five(:,:,:))
+      call pbuf_set_field(pbuf2d_chunk, u_five_idx, u_five(:,:))
+      call pbuf_set_field(pbuf2d_chunk, v_five_idx, v_five(:,:))
+    
     enddo
+  
+  end subroutine init_five_profiles
+  
+  ! ======================================== !
+  !                                          !
+  ! ======================================== !  
+  
+  subroutine five_syncronize_e3sm(&
+                state, dtime, &
+		t_five, u_five, v_five, q_five)
+
+    ! Subroutine will syncronize FIVE variables
+    !  with the E3SM state.  
+		
+    type(physics_state), intent(in) :: state
+    real(r8) :: dtime
+    real(r8) :: t_five(pcols,pver_five)
+    real(r8) :: u_five(pcols,pver_five)
+    real(r8) :: v_five(pcols,pver_five)
+    real(r8) :: q_five(pcols,pver_five,pcnst)    
+		
+    integer :: k, i, p, ncol
     
-    call pbuf_set_field(pbuf2d_chunk, t_five_idx, t_five(:,:))
-    call pbuf_set_field(pbuf2d_chunk, q_five_idx, q_five(:,:,:))
-    call pbuf_set_field(pbuf2d_chunk, u_five_idx, u_five(:,:))
-    call pbuf_set_field(pbuf2d_chunk, v_five_idx, v_five(:,:))
+    real(r8) :: t_five_low(pcols,pver)
+    real(r8) :: u_five_low(pcols,pver)
+    real(r8) :: v_five_low(pcols,pver)
+    real(r8) :: q_five_low(pcols,pver,pcnst)
     
+    real(r8) :: t_five_tend_low(pcols,pver)
+    real(r8) :: u_five_tend_low(pcols,pver)
+    real(r8) :: v_five_tend_low(pcols,pver)
+    real(r8) :: q_five_tend_low(pcols,pver,pcnst)
+    
+    real(r8) :: t_five_tend(pcols,pver_five)
+    real(r8) :: u_five_tend(pcols,pver_five)
+    real(r8) :: v_five_tend(pcols,pver_five)
+    real(r8) :: q_five_tend(pcols,pver_five,pcnst)
+    
+    ncol = state%ncol
+  
+   ! First compute a mass weighted average of the five variables onto the 
+   !   the lower resolution E3SM grid   
+   ! THIS SHOULD BE A MASS WEIGHTED VERTICAL AVERAGE
+    do i=1,ncol
+      call linear_interp(pmid_five,state%pmid(i,:),t_five(i,1:pver_five),t_five_low(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five,state%pmid(i,:),u_five(i,1:pver_five),u_five_low(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five,state%pmid(i,:),v_five(i,1:pver_five),v_five_low(i,1:pver),pver_five,pver)
+      do p=1,pcnst
+        call linear_interp(pmid_five,state%pmid(i,:),q_five(i,1:pver_five,p),q_five_low(i,1:pver,p),pver_five,pver)
+      enddo
+    enddo  
+   
+    ! Next compute the tendency of FIVE variables from the state
+    do k=1,pver
+      do i=1,ncol
+        t_five_tend_low(i,k) = (state%t(i,k) - t_five_low(i,k))/dtime 
+        u_five_tend_low(i,k) = (state%u(i,k) - u_five_low(i,k))/dtime 
+        v_five_tend_low(i,k) = (state%v(i,k) - v_five_low(i,k))/dtime
+       
+        do p=1,pcnst
+          q_five_tend_low(i,k,p) = (state%q(i,k,p) - q_five_low(i,k,p))/dtime
+        enddo
+        
+      enddo
     enddo
 
-  ! Here we initialize the FIVE grid
-  
-  ! For now, for testing purposes, let's just
-  !  hardcode the levels in.  Future implementaitons
-  !  will involve algorithm to generate the needed
-  !  levels
-  
-  end subroutine five_init_e3sm
+    ! Now interpolate this tendency to the FIVE grid   
+    do i=1,ncol
+      call linear_interp(state%pmid(i,:),pmid_five,t_five_tend_low(i,1:pver),&
+                      t_five_tend(i,1:pver_five),pver,pver_five)
+      call linear_interp(state%pmid(i,:),pmid_five,u_five_tend_low(i,1:pver),&
+                      u_five_tend(i,1:pver_five),pver,pver_five)	
+      call linear_interp(state%pmid(i,:),pmid_five,v_five_tend_low(i,1:pver),&
+                      v_five_tend(i,1:pver_five),pver,pver_five)	
+      do p=1,pcnst
+        call linear_interp(state%pmid(i,:),pmid_five,q_five_tend_low(i,1:pver,p), &
+                      q_five_tend(i,1:pver_five,p),pver,pver_five)
+      enddo	
+    enddo      	      
+
+    ! Now update FIVE values based on this tendency
+    do k=1,pver_five
+      do i=1,ncol
+        t_five(i,k) = t_five(i,k) + dtime * t_five_tend(i,k)
+        u_five(i,k) = u_five(i,k) + dtime * u_five_tend(i,k)
+        v_five(i,k) = v_five(i,k) + dtime * v_five_tend(i,k)
+       
+        do p=1,pcnst
+          q_five(i,k,p) = q_five(i,k,p) + dtime * q_five_tend(i,k,p)
+        enddo
+       
+      enddo
+    enddo    
+		
+    return
+		
+   end subroutine five_syncronize_e3sm
   
   ! ======================================== !
   !                                          !

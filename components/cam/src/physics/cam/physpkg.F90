@@ -716,9 +716,9 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use ionosphere,	    only: ionos_init  ! Initialization of ionosphere module (WACCM-X)
     use majorsp_diffusion,  only: mspd_init   ! Initialization of major species diffusion module (WACCM-X)
     use clubb_intr,         only: clubb_ini_cam
-#ifdef FIVE
-    use five_intr,          only: five_init_e3sm
-#endif
+!#ifdef FIVE
+!    use five_intr,          only: five_init_e3sm
+!#endif
     use sslt_rebin,         only: sslt_rebin_init
     use tropopause,         only: tropopause_init
     use solar_data,         only: solar_data_init
@@ -871,9 +871,9 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! initiate CLUBB within CAM
     if (do_clubb_sgs) call clubb_ini_cam(pbuf2d,dp1)
     
-#ifdef FIVE
-    call five_init_e3sm(phys_state,pbuf2d)
-#endif
+!#ifdef FIVE
+!    call five_init_e3sm(phys_state,pbuf2d)
+!#endif
 
     call qbo_init
 
@@ -936,6 +936,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     use time_manager,   only: get_nstep
     use cam_diagnostics,only: diag_allocate, diag_physvar_ic
     use check_energy,   only: check_energy_gmean
+    use five_intr,      only: init_five_profiles
 
     use physics_buffer,         only: physics_buffer_desc, pbuf_get_chunk, pbuf_allocate
 #if (defined BFB_CAM_SCAM_IOP )
@@ -1031,6 +1032,16 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
        call t_barrierf('sync_bc_physics', mpicom)
        call t_startf ('bc_physics')
        !call t_adj_detailf(+1)
+       
+#ifdef FIVE
+       ! At first timestep, initialize the FIVE
+       !  variables in PBUF.  Note that this is 
+       !  done here, after the state is updated
+       !  from dynamics physics coupling
+       if (nstep == 0) then
+         call init_five_profiles(phys_state,pbuf2d)
+       endif
+#endif
 
 !$OMP PARALLEL DO PRIVATE (C, phys_buffer_chunk)
        do c=begchunk, endchunk
