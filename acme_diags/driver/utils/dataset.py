@@ -402,10 +402,19 @@ class Dataset():
         """
         Returns True if a file exists in data_path in the form:
             {var}_{start_yr}01_{end_yr}12.nc
+        Or
+            {self.parameters.ref_name}/{var}_{start_yr}01_{end_yr}12.nc
         """
         file_name = '{}_{}01_{}12.nc'.format(var, start_yr, end_yr)
-        file_name = os.path.join(data_path, file_name)
-        return os.path.exists(file_name)
+        path = os.path.join(data_path, file_name)
+        if os.path.exists(path):
+            return True
+        
+        # Try looking for the file with the ref_name prepended to it.
+        ref_name = getattr(self.parameters, 'ref_name', '')
+        path = os.path.join(data_path, ref_name, file_name)
+        # If it's not here, then the file doesn't exist.
+        return os.path.exists(path)
 
 
     def _get_original_vars_timeseries(self, vars_to_func_dict, data_path, start_yr, end_yr):
@@ -432,6 +441,8 @@ class Dataset():
         """
         Get var from this file located in data_path:
             {var}_{start_yr}01_{end_yr}12.nc
+        Or
+            {self.parameters.ref_name}/{var}_{start_yr}01_{end_yr}12.nc
         If var_to_get is defined, get that from the file instead of var.
         """
         start_time_slice, end_time_slice = self.get_start_end_time_slice()
@@ -440,9 +451,11 @@ class Dataset():
         end_time_slice = int(end_time_slice)
         
         file_name = '{}_{}01_{}12.nc'.format(var, start_yr, end_yr)
-        file_name = os.path.join(data_path, file_name)
+        path = os.path.join(data_path, file_name)
+        if not os.path.exists(path):
+            ref_name = getattr(self.parameters, 'ref_name', '')
+            path = os.path.join(data_path, ref_name, file_name)
 
         var = var_to_get if var_to_get else var
-        with cdms2.open(file_name) as f:
+        with cdms2.open(path) as f:
             return f(var, time=slice(start_time_slice, end_time_slice+1))(squeeze=1)
-
