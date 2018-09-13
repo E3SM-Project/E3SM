@@ -541,32 +541,16 @@ contains
    if ( .not. timing_initialized ) then
 
       if ( present(papi_ctr1_in) ) then
-         if (papi_ctr1_in < 0) then
-            papi_ctr1 = papi_ctr1_in
-         else
-            papi_ctr1 = PAPI_NULL
-         endif
+         papi_ctr1 = papi_ctr1_in
       endif
       if ( present(papi_ctr2_in) ) then
-         if (papi_ctr2_in < 0) then
-            papi_ctr2 = papi_ctr2_in
-         else
-            papi_ctr2 = PAPI_NULL
-         endif
+         papi_ctr2 = papi_ctr2_in
       endif
       if ( present(papi_ctr3_in) ) then
-         if (papi_ctr3_in < 0) then
-            papi_ctr3 = papi_ctr3_in
-         else
-            papi_ctr3 = PAPI_NULL
-         endif
+         papi_ctr3 = papi_ctr3_in
       endif
       if ( present(papi_ctr4_in) ) then
-         if (papi_ctr4_in < 0) then
-            papi_ctr4 = papi_ctr4_in
-         else
-            papi_ctr4 = PAPI_NULL
-         endif
+         papi_ctr4 = papi_ctr4_in
       endif
 !
 #ifdef DEBUG
