@@ -147,8 +147,8 @@ module perf_mod
 
    logical, parameter :: def_perf_add_detail = .false.         ! default
    logical, private   :: perf_add_detail = def_perf_add_detail
-                         ! flag indicating whether to prefix the
-                         ! timer name with the current detail level.
+                         ! flag indicating whether to add the current 
+                         ! detail level as a suffix to the timer name.
                          ! This requires that even t_startf/t_stopf
                          ! calls do not cross detail level changes
 
@@ -288,7 +288,7 @@ contains
    logical, intent(out), optional :: perf_papi_enable_out
    ! measure overhead of profiling directly
    logical, intent(out), optional :: perf_ovhd_measurement_out
-   ! prefix timer name with current detail level
+   ! 'suffix' timer name with current detail level
    logical, intent(out), optional :: perf_add_detail_out
 !-----------------------------------------------------------------------
    if ( present(timing_disable_out) ) then
@@ -379,7 +379,7 @@ contains
    logical, intent(in), optional :: perf_papi_enable_in
    ! measure overhead of profiling directly
    logical, intent(in), optional :: perf_ovhd_measurement_in
-   ! prefix timer name with current detail level
+   ! 'suffix' timer name with current detail level
    logical, intent(in), optional :: perf_add_detail_in
 !
 !---------------------------Local workspace-----------------------------
@@ -722,7 +722,7 @@ contains
 !
    integer  ierr                          ! GPTL error return
    integer  str_length, i                 ! support for adding
-                                          !  detail prefix
+                                          !  detail suffix
    character(len=2) cdetail               ! char variable for detail
    real(shr_kind_r8) ovhd_start, ovhd_stop, usr, sys
                                           ! for overhead calculation
@@ -751,11 +751,11 @@ contains
       if (prefix_len > 0) then
          str_length = min(SHR_KIND_CM-prefix_len-5,len_trim(event))
          ierr = GPTLstart( &
-            cdetail//'_'//event_prefix(1:prefix_len)// &
-            event(1:str_length))
+            event_prefix(1:prefix_len)// &
+            event(1:str_length)//'_'//cdetail)
       else
          str_length = min(SHR_KIND_CM-5,len_trim(event))
-         ierr = GPTLstart(cdetail//'_'//event(1:str_length))
+         ierr = GPTLstart(event(1:str_length)//'_'//cdetail)
       endif
 
    else
@@ -812,7 +812,7 @@ contains
 !
    integer  ierr                          ! GPTL error return
    integer  str_length, i                 ! support for adding
-                                          !  detail prefix
+                                          !  detail suffix
    character(len=2) cdetail               ! char variable for detail
    real(shr_kind_r8) ovhd_start, ovhd_stop, usr, sys
                                           ! for overhead calculation
@@ -841,11 +841,11 @@ contains
       if (prefix_len > 0) then
          str_length = min(SHR_KIND_CM-prefix_len-5,len_trim(event))
          ierr = GPTLstop( &
-              cdetail//'_'//event_prefix(1:prefix_len)// &
-              event(1:str_length))
+              event_prefix(1:prefix_len)// &
+              event(1:str_length)//'_'//cdetail)
       else
          str_length = min(SHR_KIND_CM-5,len_trim(event))
-         ierr = GPTLstop(cdetail//'_'//event(1:str_length))
+         ierr = GPTLstop(event(1:str_length)//'_'//cdetail)
       endif
 
    else
@@ -908,7 +908,7 @@ contains
 !
    integer  ierr                          ! GPTL error return
    integer  str_length, i                 ! support for adding 
-                                          !  detail prefix
+                                          !  detail suffix
    character(len=2) cdetail               ! char variable for detail
    integer  callcnt                       ! call count increment
    real(shr_kind_r8) wtime                ! walltime increment (seconds)
@@ -955,12 +955,12 @@ contains
       if (prefix_len > 0) then
          str_length = min(SHR_KIND_CM-prefix_len-5,len_trim(event))
          ierr = GPTLstartstop_vals( &
-            cdetail//'_'//event_prefix(1:prefix_len)// &
-            event(1:str_length), wtime, callcnt)
+            event_prefix(1:prefix_len)// &
+            event(1:str_length)//'_'//cdetail, wtime, callcnt)
       else
          str_length = min(SHR_KIND_CM-5,len_trim(event))
          ierr = GPTLstartstop_vals( &
-            cdetail//'_'//event(1:str_length), wtime, callcnt)
+            event(1:str_length)//'_'//cdetail, wtime, callcnt)
       endif
 
    else
