@@ -693,15 +693,10 @@ module atm_core
 
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
-         block_ptr => domain % blocklist
-         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
-         call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
-         call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
-         call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
-
       end do
    
    end function atm_core_run
+
    
    subroutine atm_compute_output_diagnostics(state, time_lev, diag, mesh)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
