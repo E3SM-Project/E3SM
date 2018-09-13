@@ -447,7 +447,7 @@ contains
   SUBROUTINE p3_main(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
        pres,dzq,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
        diag_effi,diag_vmi,diag_di,diag_rhoi,n_diag_2d,diag_2d,n_diag_3d,       &
-       diag_3d,log_predictNc,typeDiags_ON,model,prt_drzl,prt_rain,prt_crys,    &
+       diag_3d,log_predictNc,typeDiags_ON,prt_drzl,prt_rain,prt_crys,    &
        prt_snow,prt_grpl,prt_pell,prt_hail,prt_sndp)
 
     !----------------------------------------------------------------------------------------!
@@ -507,7 +507,6 @@ contains
 
     logical, intent(in)                                  :: log_predictNc ! .T. (.F.) for prediction (specification) of Nc
     logical, intent(in)                                  :: typeDiags_ON  !for diagnostic hydrometeor/precip rate types
-    character(len=*), intent(in)                         :: model         !driving model
 
     real, intent(out), dimension(its:ite), optional      :: prt_drzl      ! precip rate, drizzle          m s-1
     real, intent(out), dimension(its:ite), optional      :: prt_rain      ! precip rate, rain             m s-1
@@ -681,15 +680,10 @@ contains
     !-----------------------------------------------------------------------------------!
 
     ! direction of vertical leveling:
-    if (trim(model)=='GEM' .or. trim(model)=='KIN1D') then
-       ktop = kts        !k of top level
-       kbot = kte        !k of bottom level
-       kdir = -1         !(k: 1=top, nk=bottom)
-    else
-       ktop = kte        !k of top level
-       kbot = kts        !k of bottom level
-       kdir = 1          !(k: 1=bottom, nk=top)
-    endif
+    !PMC got rid of 'model' option so we could just replace ktop with kts everywhere...
+    ktop = kts        !k of top level
+    kbot = kte        !k of bottom level
+    kdir = -1         !(k: 1=top, nk=bottom)
 
     !PMC deleted 'threshold size difference' calculation for multicategory here
 

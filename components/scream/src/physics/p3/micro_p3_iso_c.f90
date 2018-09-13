@@ -105,13 +105,15 @@ contains
     log_predictNc = log_predictNc_in
     typeDiags_ON = typeDiags_ON_in
 
+!PMC deleted model from function call... should delete everywhere now.
+    
     call c_f_pointer(model_in, model)
     len = index(model, C_NULL_CHAR) - 1
 
     call p3_main(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
          pres,dzq,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
          diag_effi,diag_vmi,diag_di,diag_rhoi,n_diag_2d,diag_2d,n_diag_3d,       &
-         diag_3d,log_predictNc,typeDiags_ON,model(1:len),prt_drzl,prt_rain,prt_crys,    &
+         diag_3d,log_predictNc,typeDiags_ON,prt_drzl,prt_rain,prt_crys,    &
          prt_snow,prt_grpl,prt_pell,prt_hail,prt_sndp)
   end subroutine p3_main_c
 end module micro_p3_iso_c
