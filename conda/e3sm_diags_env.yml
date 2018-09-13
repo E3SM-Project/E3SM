@@ -6,7 +6,7 @@ channels:
   - cdat
   - defaults
 dependencies:
-  - e3sm_diags=1.3.4
+  - e3sm_diags=1.4.0
   - asn1crypto=0.24.0
   - backports=1.0
   - backports.functools_lru_cache=1.5
