@@ -218,16 +218,16 @@ contains
          !------------------------------------------------------
 
          ! displayed pools
-         nitrogenflux_vars%m_leafn_to_litter_patch(p)               = nitrogenstate_vars%leafn_patch(p)               * m
-         nitrogenflux_vars%m_frootn_to_litter_patch(p)              = nitrogenstate_vars%frootn_patch(p)              * m
-         nitrogenflux_vars%m_livestemn_to_litter_patch(p)           = nitrogenstate_vars%livestemn_patch(p)           * m
-         nitrogenflux_vars%m_deadstemn_to_litter_patch(p)           = nitrogenstate_vars%deadstemn_patch(p)           * m
-         nitrogenflux_vars%m_livecrootn_to_litter_patch(p)          = nitrogenstate_vars%livecrootn_patch(p)          * m
-         nitrogenflux_vars%m_deadcrootn_to_litter_patch(p)          = nitrogenstate_vars%deadcrootn_patch(p)          * m
+         nitrogenflux_vars%m_leafn_to_litter_patch(p)               = max(nitrogenstate_vars%leafn_patch(p)               * m,0._r8)
+         nitrogenflux_vars%m_frootn_to_litter_patch(p)              = max(nitrogenstate_vars%frootn_patch(p)              * m,0._r8)
+         nitrogenflux_vars%m_livestemn_to_litter_patch(p)           = max(nitrogenstate_vars%livestemn_patch(p)           * m,0._r8)
+         nitrogenflux_vars%m_deadstemn_to_litter_patch(p)           = max(nitrogenstate_vars%deadstemn_patch(p)           * m,0._r8)
+         nitrogenflux_vars%m_livecrootn_to_litter_patch(p)          = max(nitrogenstate_vars%livecrootn_patch(p)          * m,0._r8)
+         nitrogenflux_vars%m_deadcrootn_to_litter_patch(p)          = max(nitrogenstate_vars%deadcrootn_patch(p)          * m,0._r8)
          if (ivt(p) < npcropmin) then
-            nitrogenflux_vars%m_retransn_to_litter_patch(p) = nitrogenstate_vars%retransn_patch(p) * m
+            nitrogenflux_vars%m_retransn_to_litter_patch(p) = max(nitrogenstate_vars%retransn_patch(p) * m,0._r8)
          end if
-         nitrogenflux_vars%m_npool_to_litter_patch(p)               = nitrogenstate_vars%npool_patch(p)               * m
+         nitrogenflux_vars%m_npool_to_litter_patch(p)               = max(nitrogenstate_vars%npool_patch(p)               * m,0._r8)
 
          if (spinup_state >= 1) then
            nitrogenflux_vars%m_deadstemn_to_litter_patch(p)         = nitrogenstate_vars%deadstemn_patch(p)  * m &
@@ -237,36 +237,36 @@ contains
          end if
    
          ! storage pools
-         nitrogenflux_vars%m_leafn_storage_to_litter_patch(p)       = nitrogenstate_vars%leafn_storage_patch(p)       * m
-         nitrogenflux_vars%m_frootn_storage_to_litter_patch(p)      = nitrogenstate_vars%frootn_storage_patch(p)      * m
-         nitrogenflux_vars%m_livestemn_storage_to_litter_patch(p)   = nitrogenstate_vars%livestemn_storage_patch(p)   * m
-         nitrogenflux_vars%m_deadstemn_storage_to_litter_patch(p)   = nitrogenstate_vars%deadstemn_storage_patch(p)   * m
-         nitrogenflux_vars%m_livecrootn_storage_to_litter_patch(p)  = nitrogenstate_vars%livecrootn_storage_patch(p)  * m
-         nitrogenflux_vars%m_deadcrootn_storage_to_litter_patch(p)  = nitrogenstate_vars%deadcrootn_storage_patch(p)  * m
+         nitrogenflux_vars%m_leafn_storage_to_litter_patch(p)       = max(nitrogenstate_vars%leafn_storage_patch(p)       * m,0._r8)
+         nitrogenflux_vars%m_frootn_storage_to_litter_patch(p)      = max(nitrogenstate_vars%frootn_storage_patch(p)      * m,0._r8)
+         nitrogenflux_vars%m_livestemn_storage_to_litter_patch(p)   = max(nitrogenstate_vars%livestemn_storage_patch(p)   * m,0._r8)
+         nitrogenflux_vars%m_deadstemn_storage_to_litter_patch(p)   = max(nitrogenstate_vars%deadstemn_storage_patch(p)   * m,0._r8)
+         nitrogenflux_vars%m_livecrootn_storage_to_litter_patch(p)  = max(nitrogenstate_vars%livecrootn_storage_patch(p)  * m,0._r8)
+         nitrogenflux_vars%m_deadcrootn_storage_to_litter_patch(p)  = max(nitrogenstate_vars%deadcrootn_storage_patch(p)  * m,0._r8)
 
          ! transfer pools
-         nitrogenflux_vars%m_leafn_xfer_to_litter_patch(p)          = nitrogenstate_vars%leafn_xfer_patch(p)          * m
-         nitrogenflux_vars%m_frootn_xfer_to_litter_patch(p)         = nitrogenstate_vars%frootn_xfer_patch(p)         * m
-         nitrogenflux_vars%m_livestemn_xfer_to_litter_patch(p)      = nitrogenstate_vars%livestemn_xfer_patch(p)      * m
-         nitrogenflux_vars%m_deadstemn_xfer_to_litter_patch(p)      = nitrogenstate_vars%deadstemn_xfer_patch(p)      * m
-         nitrogenflux_vars%m_livecrootn_xfer_to_litter_patch(p)     = nitrogenstate_vars%livecrootn_xfer_patch(p)     * m
-         nitrogenflux_vars%m_deadcrootn_xfer_to_litter_patch(p)     = nitrogenstate_vars%deadcrootn_xfer_patch(p)     * m
+         nitrogenflux_vars%m_leafn_xfer_to_litter_patch(p)          = max(nitrogenstate_vars%leafn_xfer_patch(p)          * m,0._r8)
+         nitrogenflux_vars%m_frootn_xfer_to_litter_patch(p)         = max(nitrogenstate_vars%frootn_xfer_patch(p)         * m,0._r8)
+         nitrogenflux_vars%m_livestemn_xfer_to_litter_patch(p)      = max(nitrogenstate_vars%livestemn_xfer_patch(p)      * m,0._r8)
+         nitrogenflux_vars%m_deadstemn_xfer_to_litter_patch(p)      = max(nitrogenstate_vars%deadstemn_xfer_patch(p)      * m,0._r8)
+         nitrogenflux_vars%m_livecrootn_xfer_to_litter_patch(p)     = max(nitrogenstate_vars%livecrootn_xfer_patch(p)     * m,0._r8)
+         nitrogenflux_vars%m_deadcrootn_xfer_to_litter_patch(p)     = max(nitrogenstate_vars%deadcrootn_xfer_patch(p)     * m,0._r8)
 
          !------------------------------------------------------
          ! patch-level gap mortality phosphorus fluxes
          !------------------------------------------------------
 
          ! displayed pools
-         phosphorusflux_vars%m_leafp_to_litter_patch(p)               = phosphorusstate_vars%leafp_patch(p)               * m
-         phosphorusflux_vars%m_frootp_to_litter_patch(p)              = phosphorusstate_vars%frootp_patch(p)              * m
-         phosphorusflux_vars%m_livestemp_to_litter_patch(p)           = phosphorusstate_vars%livestemp_patch(p)           * m
-         phosphorusflux_vars%m_deadstemp_to_litter_patch(p)           = phosphorusstate_vars%deadstemp_patch(p)           * m
-         phosphorusflux_vars%m_livecrootp_to_litter_patch(p)          = phosphorusstate_vars%livecrootp_patch(p)          * m
-         phosphorusflux_vars%m_deadcrootp_to_litter_patch(p)          = phosphorusstate_vars%deadcrootp_patch(p)          * m
+         phosphorusflux_vars%m_leafp_to_litter_patch(p)               = max(phosphorusstate_vars%leafp_patch(p)           * m,0._r8)
+         phosphorusflux_vars%m_frootp_to_litter_patch(p)              = max(phosphorusstate_vars%frootp_patch(p)          * m,0._r8)
+         phosphorusflux_vars%m_livestemp_to_litter_patch(p)           = max(phosphorusstate_vars%livestemp_patch(p)       * m,0._r8)
+         phosphorusflux_vars%m_deadstemp_to_litter_patch(p)           = max(phosphorusstate_vars%deadstemp_patch(p)       * m,0._r8)
+         phosphorusflux_vars%m_livecrootp_to_litter_patch(p)          = max(phosphorusstate_vars%livecrootp_patch(p)      * m,0._r8)
+         phosphorusflux_vars%m_deadcrootp_to_litter_patch(p)          = max(phosphorusstate_vars%deadcrootp_patch(p)      * m,0._r8)
          if (ivt(p) < npcropmin) then
-            phosphorusflux_vars%m_retransp_to_litter_patch(p) = phosphorusstate_vars%retransp_patch(p) * m
+            phosphorusflux_vars%m_retransp_to_litter_patch(p) = max(phosphorusstate_vars%retransp_patch(p) * m,0._r8)
          end if
-         phosphorusflux_vars%m_ppool_to_litter_patch(p)               = phosphorusstate_vars%ppool_patch(p)               * m
+         phosphorusflux_vars%m_ppool_to_litter_patch(p)               = max(phosphorusstate_vars%ppool_patch(p)           * m,0._r8)
 
          if (spinup_state >= 1) then
            phosphorusflux_vars%m_deadstemp_to_litter_patch(p)         = phosphorusstate_vars%deadstemp_patch(p)  * m &
@@ -276,20 +276,20 @@ contains
          end if
            
          ! storage pools
-         phosphorusflux_vars%m_leafp_storage_to_litter_patch(p)       = phosphorusstate_vars%leafp_storage_patch(p)       * m
-         phosphorusflux_vars%m_frootp_storage_to_litter_patch(p)      = phosphorusstate_vars%frootp_storage_patch(p)      * m
-         phosphorusflux_vars%m_livestemp_storage_to_litter_patch(p)   = phosphorusstate_vars%livestemp_storage_patch(p)   * m
-         phosphorusflux_vars%m_deadstemp_storage_to_litter_patch(p)   = phosphorusstate_vars%deadstemp_storage_patch(p)   * m
-         phosphorusflux_vars%m_livecrootp_storage_to_litter_patch(p)  = phosphorusstate_vars%livecrootp_storage_patch(p)  * m
-         phosphorusflux_vars%m_deadcrootp_storage_to_litter_patch(p)  = phosphorusstate_vars%deadcrootp_storage_patch(p)  * m
+         phosphorusflux_vars%m_leafp_storage_to_litter_patch(p)       = max(phosphorusstate_vars%leafp_storage_patch(p)   * m,0._r8)
+         phosphorusflux_vars%m_frootp_storage_to_litter_patch(p)      = max(phosphorusstate_vars%frootp_storage_patch(p)  * m,0._r8)
+         phosphorusflux_vars%m_livestemp_storage_to_litter_patch(p)   = max(phosphorusstate_vars%livestemp_storage_patch(p)* m,0._r8)
+         phosphorusflux_vars%m_deadstemp_storage_to_litter_patch(p)   = max(phosphorusstate_vars%deadstemp_storage_patch(p)* m,0._r8)
+         phosphorusflux_vars%m_livecrootp_storage_to_litter_patch(p)  = max(phosphorusstate_vars%livecrootp_storage_patch(p)  * m,0._r8)
+         phosphorusflux_vars%m_deadcrootp_storage_to_litter_patch(p)  = max(phosphorusstate_vars%deadcrootp_storage_patch(p)  * m,0._r8)
 
          ! transfer pools
-         phosphorusflux_vars%m_leafp_xfer_to_litter_patch(p)          = phosphorusstate_vars%leafp_xfer_patch(p)          * m
-         phosphorusflux_vars%m_frootp_xfer_to_litter_patch(p)         = phosphorusstate_vars%frootp_xfer_patch(p)         * m
-         phosphorusflux_vars%m_livestemp_xfer_to_litter_patch(p)      = phosphorusstate_vars%livestemp_xfer_patch(p)      * m
-         phosphorusflux_vars%m_deadstemp_xfer_to_litter_patch(p)      = phosphorusstate_vars%deadstemp_xfer_patch(p)      * m
-         phosphorusflux_vars%m_livecrootp_xfer_to_litter_patch(p)     = phosphorusstate_vars%livecrootp_xfer_patch(p)     * m
-         phosphorusflux_vars%m_deadcrootp_xfer_to_litter_patch(p)     = phosphorusstate_vars%deadcrootp_xfer_patch(p)     * m
+         phosphorusflux_vars%m_leafp_xfer_to_litter_patch(p)          = max(phosphorusstate_vars%leafp_xfer_patch(p)      * m,0._r8)
+         phosphorusflux_vars%m_frootp_xfer_to_litter_patch(p)         = max(phosphorusstate_vars%frootp_xfer_patch(p)     * m,0._r8)
+         phosphorusflux_vars%m_livestemp_xfer_to_litter_patch(p)      = max(phosphorusstate_vars%livestemp_xfer_patch(p)  * m,0._r8)
+         phosphorusflux_vars%m_deadstemp_xfer_to_litter_patch(p)      = max(phosphorusstate_vars%deadstemp_xfer_patch(p)  * m,0._r8)
+         phosphorusflux_vars%m_livecrootp_xfer_to_litter_patch(p)     = max(phosphorusstate_vars%livecrootp_xfer_patch(p) * m,0._r8)
+         phosphorusflux_vars%m_deadcrootp_xfer_to_litter_patch(p)     = max(phosphorusstate_vars%deadcrootp_xfer_patch(p) * m,0._r8)
 
          ! added by F. Li and S. Levis
          if (use_cndv) then

@@ -706,20 +706,20 @@ contains
 !          col_poutputs(c) = sminp_to_plant(c)
          col_poutputs(c) = col_poutputs(c) - som_p_leached(c) + som_p_runoff_col(c)
 
-         if(is_active_betr_bgc .and. suplphos=='ALL')then
-           err_blg= phosphorusstate_vars%begblgp_col(c)- phosphorusstate_vars%totblgp_col(c) &
-             + primp_to_labilep(c) * dt &
-             + supplement_to_sminp(c) * dt &
-             + phosphorusflux_vars%pflx_plant_to_soilbgc_col(c)*dt &
-             - secondp_to_occlp(c) * dt  &
-             - sminp_leached(c) * dt + som_p_leached(c) * dt  &
-             - som_p_runoff_col(c)*dt-phosphorusflux_vars%sminp_to_plant_col(c)*dt &
-             - phosphorusflux_vars%fire_decomp_ploss_col(c)*dt
-           if(err_blg<0._r8)then
-             supplement_to_sminp(c) = supplement_to_sminp(c) - err_blg/dt
-             col_pinputs(c) = col_pinputs(c)  - err_blg/dt
-           endif
-         endif
+!         if(is_active_betr_bgc .and. suplphos=='ALL')then
+!           err_blg= phosphorusstate_vars%begblgp_col(c)- phosphorusstate_vars%totblgp_col(c) &
+!             + primp_to_labilep(c) * dt &
+!             + supplement_to_sminp(c) * dt &
+!             + phosphorusflux_vars%pflx_plant_to_soilbgc_col(c)*dt &
+!             - secondp_to_occlp(c) * dt  &
+!             - sminp_leached(c) * dt + som_p_leached(c) * dt  &
+!             - som_p_runoff_col(c)*dt-phosphorusflux_vars%sminp_to_plant_col(c)*dt &
+!             - phosphorusflux_vars%fire_decomp_ploss_col(c)*dt
+!           if(err_blg<0._r8)then
+!             supplement_to_sminp(c) = supplement_to_sminp(c) - err_blg/dt
+!             col_pinputs(c) = col_pinputs(c)  - err_blg/dt
+!           endif
+!         endif
          ! calculate the total column-level phosphorus balance error for this time step
          col_errpb(c) = (col_pinputs(c) - col_poutputs(c))*dt - &
               (col_endpb(c) - col_begpb(c))
