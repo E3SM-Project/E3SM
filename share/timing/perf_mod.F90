@@ -751,22 +751,22 @@ contains
       if (prefix_len > 0) then
          str_length = min(SHR_KIND_CM-prefix_len-5,len_trim(event))
          ierr = GPTLstart( &
-            '"'//cdetail//'_'//event_prefix(1:prefix_len)// &
-            event(1:str_length)//'"')
+            cdetail//'_'//event_prefix(1:prefix_len)// &
+            event(1:str_length))
       else
          str_length = min(SHR_KIND_CM-5,len_trim(event))
-         ierr = GPTLstart('"'//cdetail//'_'//event(1:str_length)//'"')
+         ierr = GPTLstart(cdetail//'_'//event(1:str_length))
       endif
 
    else
 
       if (prefix_len > 0) then
          str_length = min(SHR_KIND_CM-prefix_len-2,len_trim(event))
-         ierr = GPTLstart('"'//event_prefix(1:prefix_len)// &
-              event(1:str_length)//'"')
+         ierr = GPTLstart(event_prefix(1:prefix_len)// &
+              event(1:str_length))
       else
          str_length = min(SHR_KIND_CM-2,len_trim(event))
-         ierr = GPTLstart('"'//event(1:str_length)//'"')
+         ierr = GPTLstart(event(1:str_length))
       endif
 
 !pw   if ( present (handle) ) then
@@ -841,22 +841,22 @@ contains
       if (prefix_len > 0) then
          str_length = min(SHR_KIND_CM-prefix_len-5,len_trim(event))
          ierr = GPTLstop( &
-              '"'//cdetail//'_'//event_prefix(1:prefix_len)// &
-              event(1:str_length)//'"')
+              cdetail//'_'//event_prefix(1:prefix_len)// &
+              event(1:str_length))
       else
          str_length = min(SHR_KIND_CM-5,len_trim(event))
-         ierr = GPTLstop('"'//cdetail//'_'//event(1:str_length)//'"')
+         ierr = GPTLstop(cdetail//'_'//event(1:str_length))
       endif
 
    else
 
       if (prefix_len > 0) then
          str_length = min(SHR_KIND_CM-prefix_len-2,len_trim(event))
-         ierr = GPTLstop('"'//event_prefix(1:prefix_len)// &
-              event(1:str_length)//'"')
+         ierr = GPTLstop(event_prefix(1:prefix_len)// &
+              event(1:str_length))
      else
          str_length = min(SHR_KIND_CM-2,len_trim(event))
-         ierr = GPTLstop('"'//event(1:str_length)//'"')
+         ierr = GPTLstop(event(1:str_length))
      endif
 
 !pw   if ( present (handle) ) then
@@ -955,23 +955,23 @@ contains
       if (prefix_len > 0) then
          str_length = min(SHR_KIND_CM-prefix_len-5,len_trim(event))
          ierr = GPTLstartstop_vals( &
-            '"'//cdetail//'_'//event_prefix(1:prefix_len)// &
-            event(1:str_length)//'"', wtime, callcnt)
+            cdetail//'_'//event_prefix(1:prefix_len)// &
+            event(1:str_length), wtime, callcnt)
       else
          str_length = min(SHR_KIND_CM-5,len_trim(event))
          ierr = GPTLstartstop_vals( &
-            '"'//cdetail//'_'//event(1:str_length)//'"', wtime, callcnt)
+            cdetail//'_'//event(1:str_length), wtime, callcnt)
       endif
 
    else
 
       if (prefix_len > 0) then
          str_length = min(SHR_KIND_CM-prefix_len-2,len_trim(event))
-         ierr = GPTLstartstop_vals('"'//event_prefix(1:prefix_len)// &
-              event(1:str_length)//'"', wtime, callcnt)
+         ierr = GPTLstartstop_vals(event_prefix(1:prefix_len)// &
+              event(1:str_length), wtime, callcnt)
       else
          str_length = min(SHR_KIND_CM-2,len_trim(event))
-         ierr = GPTLstartstop_vals('"'//trim(event)//'"', wtime, callcnt)
+         ierr = GPTLstartstop_vals(trim(event), wtime, callcnt)
       endif
 
 !pw   if ( present (handle) ) then
@@ -1750,7 +1750,12 @@ contains
    !
    if (gptlsetoption (gptlcpu, 0) < 0) call shr_sys_abort (subname//':: gptlsetoption')
    !
+   ! Enable addition of double quotes to the output of timer names
    !
+   if (gptlsetoption (gptldopr_quotes, 1) < 0) &
+     call shr_sys_abort (subname//':: gptlsetoption')
+   !
+   ! Set maximum number of threads
    !
    if ( present(MaxThreads) ) then
       if (gptlsetoption (gptlmaxthreads, MaxThreads) < 0) &

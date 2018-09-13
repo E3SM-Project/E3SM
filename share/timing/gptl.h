@@ -79,9 +79,10 @@ typedef enum {
   GPTL_LSTPL2M       = 25, /* Load-stores per L2 miss */
   GPTL_L3MRT         = 26, /* L3 read miss rate (fraction) */
   /*
-  ** New ACME option for GPTL
+  ** New ESMF options for GPTL
   */
-  GPTLprofile_ovhd   = 27  /* Direct measurement of profiling overhead (false) */
+  GPTLprofile_ovhd   = 27, /* Direct measurement of profiling overhead (false) */
+  GPTLdopr_quotes    = 28  /* Add double quotes to timer names on output (false) */
 } Option;
 
 /*

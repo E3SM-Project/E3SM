@@ -54,6 +54,7 @@ static bool dopr_preamble = true;   /* whether to print preamble info */
 static bool dopr_threadsort = true; /* whether to print sorted thread stats */
 static bool dopr_multparent = true; /* whether to print multiple parent info */
 static bool dopr_collision = true;  /* whether to print hash collision info */
+static bool dopr_quotes = false;    /* whether to surround timer names with double quotes */
 
 static time_t ref_gettimeofday = -1; /* ref start point for gettimeofday */
 static time_t ref_clock_gettime = -1;/* ref start point for clock_gettime */
@@ -331,6 +332,11 @@ int GPTLsetoption (const int option,  /* option */
     if (verbose)
       printf ("%s: boolean dopr_collision = %d\n", thisfunc, val);
     return 0;
+  case GPTLdopr_quotes:
+    dopr_quotes = (bool) val;
+    if (verbose)
+      printf ("%s: boolean dopr_quotes = %d\n", thisfunc, val);
+    return 0;
   case GPTLprint_mode:
     print_mode = (PRMode) val; 
     if (verbose)
@@ -344,7 +350,6 @@ int GPTLsetoption (const int option,  /* option */
   case GPTLtablesize:
     if (val < 1)
       return GPTLerror ("%s: tablesize must be positive. %d is invalid\n", thisfunc, val);
-
     tablesize = val;
     if (verbose)
       printf ("%s: tablesize = %d\n", thisfunc, tablesize);
@@ -2325,8 +2330,13 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
     for (n = 0; n < max_depth[t]+1; ++n)    /* +1 to always indent timer name */
       fprintf (fp, "  ");
-    for (n = 0; n < max_name_len[t]; ++n) /* longest timer name */
-      fprintf (fp, " ");
+    if (dopr_quotes){
+      for (n = 0; n < max_name_len[t]+2; ++n) /* longest timer name + quotes */
+        fprintf (fp, " ");
+    } else {
+      for (n = 0; n < max_name_len[t]; ++n)   /* longest timer name */
+        fprintf (fp, " ");
+    }
 
     fprintf (fp, " On  Called Recurse");
 
@@ -2901,7 +2911,11 @@ static void printstats (const Timer *timer,
       fprintf (fp, "  ");
   }
 
-  fprintf (fp, "%s", timer->name);
+  if (dopr_quotes){
+    fprintf (fp, "\"%s\"", timer->name);
+  } else {
+    fprintf (fp, "%s", timer->name);
+  }
 
   /* Pad to length of longest name */
 
@@ -3172,7 +3186,11 @@ int GPTLpr_summary_file (int comm,
     /* Print heading */
 
     fprintf (fp, "name");
-    extraspace = max_name_length - strlen ("name");
+    if (dopr_quotes){
+      extraspace = (max_name_length+2) - strlen ("name");
+    } else {
+      extraspace = max_name_length - strlen ("name");
+    }
     for (n = 0; n < extraspace; ++n)
       fprintf (fp, " ");
     fprintf (fp, " on  processes  threads        count");
@@ -3194,7 +3212,11 @@ int GPTLpr_summary_file (int comm,
       memcpy( tempname, timerlist[0] + x, (MAX_CHARS + 1) * sizeof(char) );
 
       x += (MAX_CHARS + 1);
-      fprintf (fp, "%s", tempname);
+      if (dopr_quotes){
+        fprintf (fp, "\"%s\"", tempname);
+      } else {
+        fprintf (fp, "%s", tempname);
+      }
       extraspace = max_name_length - strlen (tempname);
       for (n = 0; n < extraspace; ++n)
         fprintf (fp, " ");

@@ -39,6 +39,7 @@
       integer GPTL_L3MRT
 
       integer GPTLprofile_ovhd
+      integer GPTLdopr_quotes
 
       integer GPTLnanotime
       integer GPTLmpiwtime
@@ -87,6 +88,7 @@
       parameter (GPTL_L3MRT         = 26)
 
       parameter (GPTLprofile_ovhd   = 27)
+      parameter (GPTLdopr_quotes    = 28)
 
       parameter (GPTLgettimeofday   = 1)
       parameter (GPTLnanotime       = 2)
