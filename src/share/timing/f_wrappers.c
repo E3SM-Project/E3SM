@@ -22,6 +22,8 @@
 #define gptlpr_summary GPTLPR_SUMMARY
 #define gptlpr_summary_FILE GPTLPR_SUMMARY_FILE
 #define gptlbarrier GPTLBARRIER
+#define gptlprefix_set GPTLPREFIX_SET
+#define gptlprefix_unset GPTLPREFIX_UNSET
 #define gptlreset GPTLRESET
 #define gptlstamp GPTLSTAMP
 #define gptlstart GPTLSTART
@@ -56,6 +58,8 @@
 #define gptlpr_summary              FCI_GLOBAL(gptlpr_summary,GPTLPR_SUMMARY)
 #define gptlpr_summary_file         FCI_GLOBAL(gptlpr_summary_file,GPTLPR_SUMMARY_FILE)
 #define gptlbarrier                 FCI_GLOBAL(gptlbarrier,GPTLBARRIER)
+#define gptlprefix_set              FCI_GLOBAL(gptlprefix_set,GPTLPREFIX_SET)
+#define gptlprefix_unset            FCI_GLOBAL(gptlprefix_unset,GPTLPREFIX_UNSET)
 #define gptlreset                   FCI_GLOBAL(gptlreset,GPTLRESET)
 #define gptlstamp                   FCI_GLOBAL(gptlstamp,GPTLSTAMP)
 #define gptlstart                   FCI_GLOBAL(gptlstart,GPTLSTART)
@@ -90,6 +94,8 @@
 #define gptlpr_summary gptlpr_summary_
 #define gptlpr_summary_file gptlpr_summary_file_
 #define gptlbarrier gptlbarrier_
+#define gptlprefix_set gptlprefix_set_
+#define gptlprefix_unset gptlprefix_unset_
 #define gptlreset gptlreset_
 #define gptlstamp gptlstamp_
 #define gptlstart gptlstart_
@@ -124,6 +130,8 @@
 #define gptlpr_summary gptlpr_summary__
 #define gptlpr_summary_file gptlpr_summary_file__
 #define gptlbarrier gptlbarrier__
+#define gptlprefix_set gptlprefix_set__
+#define gptlprefix_unset gptlprefix_unset__
 #define gptlreset gptlreset__
 #define gptlstamp gptlstamp__
 #define gptlstart gptlstart__
@@ -162,6 +170,8 @@ int gptlpr_file (char *file, int nc1);
 int gptlpr_summary (int *fcomm);
 int gptlpr_summary_file (int *fcomm, char *name, int nc1);
 int gptlbarrier (int *fcomm, char *name, int nc1);
+int gptlprefix_set (char *name, int nc1);
+int gptlprefix_unset (void);
 int gptlreset (void);
 int gptlstamp (double *wall, double *usr, double *sys);
 int gptlstart (char *name, int nc1);
@@ -312,6 +322,23 @@ int gptlbarrier (int *fcomm, char *name, int nc1)
   }
   cname[numchars] = '\0';
   return GPTLbarrier (ccomm, cname);
+}
+
+int gptlprefix_set (char *name, int nc1)
+{
+  /*  char cname[MAX_CHARS+1]; */
+  /*  int numchars; */
+
+  /*  numchars = MIN (nc1, MAX_CHARS);*/
+  /*  strncpy (cname, name, numchars);*/
+  /*  cname[numchars] = '\0';*/
+  /*  return GPTLprefix_set (cname);*/
+  return GPTLprefix_setf (name, nc1);
+}
+
+int gptlprefix_unset (void)
+{
+  return GPTLprefix_unset ();
 }
 
 int gptlreset (void)
