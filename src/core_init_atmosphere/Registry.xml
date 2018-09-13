@@ -272,7 +272,8 @@
         <packages>
                 <package name="initial_conds" description="Used by test cases that produce initial conditions."/>
                 <package name="sfc_update" description="Used by test cases that produce surface updates."/>
-                <package name="gwd_stage_in" description="Active only if GWD static fields will be generated and other static fields will not be generated"/>
+                <package name="gwd_stage_in" description="Active only if GWD static fields are be generated and other static fields are not being generated"/>
+                <package name="gwd_stage_out" description="Active only if GWD static fields are be generated and other static fields are not being generated"/>
                 <package name="vertical_stage_in" description="Active only if a vertical grid is being generated"/>
                 <package name="vertical_stage_out" description="Active only if a vertical grid is being generated"/>
                 <package name="met_stage_in" description="Active only if meteorological fields are being interpolated"/>
@@ -343,16 +344,16 @@
                         <var name="shdmin" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="shdmax" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="albedo12m" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
-                        <var name="var2d" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
-                        <var name="con" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
-                        <var name="oa1" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
-                        <var name="oa2" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
-                        <var name="oa3" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
-                        <var name="oa4" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
-                        <var name="ol1" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
-                        <var name="ol2" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
-                        <var name="ol3" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
-                        <var name="ol4" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="var2d" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="con" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="oa1" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="oa2" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="oa3" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="oa4" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="ol1" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="ol2" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="ol3" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="ol4" packages="vertical_stage_in;met_stage_in"/>
                         <var name="deriv_two" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="advCells" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="defc_a" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
@@ -436,16 +437,16 @@
                         <var name="shdmin"/>
                         <var name="shdmax"/>
                         <var name="albedo12m"/>
-                        <var name="var2d"/>
-                        <var name="con"/>
-                        <var name="oa1"/>
-                        <var name="oa2"/>
-                        <var name="oa3"/>
-                        <var name="oa4"/>
-                        <var name="ol1"/>
-                        <var name="ol2"/>
-                        <var name="ol3"/>
-                        <var name="ol4"/>
+                        <var name="var2d" packages="gwd_stage_out;vertical_stage_out;met_stage_out"/>
+                        <var name="con" packages="gwd_stage_out;vertical_stage_out;met_stage_out"/>
+                        <var name="oa1" packages="gwd_stage_out;vertical_stage_out;met_stage_out"/>
+                        <var name="oa2" packages="gwd_stage_out;vertical_stage_out;met_stage_out"/>
+                        <var name="oa3" packages="gwd_stage_out;vertical_stage_out;met_stage_out"/>
+                        <var name="oa4" packages="gwd_stage_out;vertical_stage_out;met_stage_out"/>
+                        <var name="ol1" packages="gwd_stage_out;vertical_stage_out;met_stage_out"/>
+                        <var name="ol2" packages="gwd_stage_out;vertical_stage_out;met_stage_out"/>
+                        <var name="ol3" packages="gwd_stage_out;vertical_stage_out;met_stage_out"/>
+                        <var name="ol4" packages="gwd_stage_out;vertical_stage_out;met_stage_out"/>
                         <var name="deriv_two"/>
                         <var name="advCells"/>
                         <var name="defc_a"/>
