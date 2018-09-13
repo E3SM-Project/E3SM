@@ -141,6 +141,14 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             required=False)
 
         self.add_argument(
+            '--output_format_subplot',
+            nargs='+',
+            dest='output_format_subplot',
+            help="What output format the individual subplots should be saved in (leave empty for no subplots)."
+                 + "Possible values are: ['png', 'pdf', 'svg'].",
+            required=False)
+
+        self.add_argument(
             '--canvas_size_w',
             type=int,
             dest='canvas_size_w',

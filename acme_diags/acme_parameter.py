@@ -7,25 +7,27 @@ import cdp.cdp_parameter
 class ACMEParameter(cdp.cdp_parameter.CDPParameter):
     def __init__(self):
         self.case_id = ''
-        self.reference_data_path = ''
-        self.test_data_path = ''
+        # The user must define these, so don't give any defaults.
+        # self.reference_data_path = ''
+        # self.test_data_path = ''
         self.viewer_descr = {}
 
-        self.sets = []
+        self.sets = ['zonal_mean_xy', 'zonal_mean_2d', 'lat_lon', 'polar', 'cosp_histogram']
         self.dataset = ''
         self.run_type = 'model_vs_obs'
         self.variables = []
-        self.seasons = []
+        self.seasons = ['ANN', 'DJF', 'MAM', 'JJA', 'SON']
         self.regions = ['global']
         self.regrid_tool = 'esmf'
         self.regrid_method = 'conservative'
         self.plevs = []
 
-        # Plotting related
+        # Plotting related.
         self.main_title = ''
-        # self.backend = 'vcs'  # No default backend for now, user needs to specify which one
+        self.backend = 'mpl'
         self.save_netcdf = False
         self.output_format = ['png']
+        self.output_format_subplot = []
         self.canvas_size_w = 1212
         self.canvas_size_h = 1628
         self.figsize = [8.5, 11.0]
@@ -33,23 +35,20 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.arrows = True
         self.logo = False
 
-        self.contour_levels = []  # used both in test and reference
+        self.contour_levels = []
         self.test_name = ''
         self.short_test_name = ''
         self.test_title = ''
-        # self.test_colormap = 'viridis'
         self.test_colormap = 'cet_rainbow.rgb'
         self.test_units = ''
 
         self.reference_name = ''
         self.reference_title = ''
-        # self.reference_colormap = 'viridis'
         self.reference_colormap = 'cet_rainbow.rgb'
         self.reference_units = ''
 
         self.diff_name = ''
         self.diff_title = 'Model - Observation'
-        # self.diff_colormap = 'cet_diverging_bwr_55_98_c37'
         self.diff_colormap = 'diverging_bwr.rgb'
         self.diff_levels = []
         self.diff_units = ''
@@ -62,19 +61,13 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.debug = False
 
         self.granulate = ['variables', 'seasons', 'regions', 'plevs']
+        self.selectors = ['sets', 'seasons']
 
     def check_values(self):
-        if not hasattr(
-                self, 'reference_data_path') or self.reference_data_path == '':
-            print('You need to specify reference_data_path in the parameters file or in the command line using --reference_data_path')
-            sys.exit()
-        if not hasattr(self, 'test_data_path') or self.test_data_path == '':
-            print('You need to specify test_data_path in the parameters file or in the command line using --test_data_path')
-            sys.exit()
-        if hasattr(self, 'multiprocessing') and hasattr(
-                self, 'distributed') and self.multiprocessing and self.distributed:
-            print("Why are you trying to run the diags multiprocessed and distributedly? You can't do this, only choose one or none.")
-            sys.exit()
-        if not hasattr(self, 'backend'):
-            print("You need to define the 'backend' parameter to 'vcs' or 'mpl'/'matplotlib'/'cartopy'.")
-            sys.exit()
+        if not hasattr(self, 'reference_data_path'):
+            msg = 'You need to specify reference_data_path in the parameters file or in the command line using --reference_data_path'
+            raise RuntimeError(msg)
+        if not hasattr(self, 'test_data_path'):
+            msg = 'You need to specify test_data_path in the parameters file or in the command line using --test_data_path'
+            raise RuntimeError(msg)
+

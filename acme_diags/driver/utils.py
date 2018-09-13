@@ -34,7 +34,7 @@ def get_set_name(set_name):
 
 def _findfile(path_name, data_name, season):
     """Locate file name based on data_name and season."""
-    dir_files = os.listdir(path_name)
+    dir_files = sorted(os.listdir(path_name))
     for filename in dir_files:
         if filename.startswith(data_name + '_' + season):
             return os.path.join(path_name, filename)
@@ -45,18 +45,12 @@ def _findfile(path_name, data_name, season):
     raise IOError("No file found for {} and {}".format(data_name, season))
 
 
-def _chown(path, user, group=-1):
-    """Chown the path with the user and group"""
-    uid = pwd.getpwnam(user).pw_uid
-    if group != -1:
-        group = grp.getgrnam(group).gr_gid
-    os.chown(path, uid, group)
-
-
 def get_test_filename(parameters, season):
     """Return the test file name based on
     the season and other parameters"""
     if hasattr(parameters, 'test_file'):
+        print(parameters.test_data_path)
+        print(parameters.test_file)
         fnm = os.path.join(parameters.test_data_path, parameters.test_file)
         if not os.path.exists(fnm):
             raise IOError('File not found: {}'.format(fnm))
@@ -215,7 +209,6 @@ def save_ncfiles(set_num, test, ref, diff, parameter):
         test.id = parameter.var_id
         file_test.write(test)
         file_test.close()
-        _chown(test_pth, parameter.user)
 
         # Save reference file
         ref_pth = os.path.join(pth, parameter.output_file + '_ref.nc')
@@ -223,7 +216,6 @@ def save_ncfiles(set_num, test, ref, diff, parameter):
         ref.id = parameter.var_id
         file_ref.write(ref)
         file_ref.close()
-        _chown(ref_pth, parameter.user)
 
         # Save difference file
         diff_pth = os.path.join(pth, parameter.output_file + '_diff.nc')
@@ -231,7 +223,6 @@ def save_ncfiles(set_num, test, ref, diff, parameter):
         diff.id = parameter.var_id + '(test - reference)'
         file_diff.write(diff)
         file_diff.close()
-        _chown(diff_pth, parameter.user)
 
 
 def get_output_dir(set_num, parameter):
@@ -246,7 +237,5 @@ def get_output_dir(set_num, parameter):
         except OSError as e:
             if e.errno != os.errno.EEXIST:
                 raise
-    _chown(os.path.join(parameter.results_dir,
-                        '{}'.format(set_num)), parameter.user)
-    _chown(pth, parameter.user)
+
     return pth

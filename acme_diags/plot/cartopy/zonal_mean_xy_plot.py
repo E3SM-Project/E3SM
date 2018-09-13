@@ -1,23 +1,25 @@
 from __future__ import print_function
 
 import os
+import numpy as np
 import numpy.ma as ma
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from cartopy.mpl.ticker import LatitudeFormatter
-from acme_diags.driver.utils import get_output_dir, _chown
+from acme_diags.driver.utils import get_output_dir
 
 plotTitle = {'fontsize': 12.5}
 plotSideTitle = {'fontsize': 11.5}
 
-# panel = [(0.1691,0.4961,0.6465,0.2258),
-#         (0.1691,0.2112,0.6465,0.2258),
-#         ]
-panel = [(0.1191, 0.5461, 0.6465 * 1.2, 0.2258 * 1.3),
-         (0.1191, 0.1612, 0.6465 * 1.2, 0.2258 * 1.3),
+# Position and sizes of subplot axes in page coordinates (0 to 1)
+panel = [(0.1500, 0.5500, 0.7500, 0.3000),
+         (0.1500, 0.1300, 0.7500, 0.3000),
          ]
 
+# Border padding relative to subplot axes for saving individual panels
+# (left, bottom, right, top) in page coordinates
+border = (-0.14, -0.06, 0.04, 0.08)
 
 def get_ax_size(fig, ax):
     bbox = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
@@ -29,46 +31,41 @@ def get_ax_size(fig, ax):
 
 def plot(reference, test, diff, metrics_dict, parameter):
 
-    # Create figure, projection
+    # Create figure
     fig = plt.figure(figsize=parameter.figsize, dpi=parameter.dpi)
-    # proj = ccrs.PlateCarree(central_longitude=180)
-    ax = fig.add_axes(panel[0])
-    ax.plot(test.getLatitude()[:], ma.squeeze(test.asma()), 'k', linewidth=2)
 
-    ax.plot(reference.getLatitude()[:], ma.squeeze(
+    # Top panel
+    ax1 = fig.add_axes(panel[0])
+    ax1.plot(test.getLatitude()[:], ma.squeeze(test.asma()), 'k', linewidth=2)
+    ax1.plot(reference.getLatitude()[:], ma.squeeze(
         reference.asma()), 'r', linewidth=2)
-    ax1 = fig.add_axes(panel[1])
-    ax1.plot(diff.getLatitude()[:], ma.squeeze(diff.asma()), 'k', linewidth=2)
-    ax1.axhline(y=0, color='0.5')
+    ax1.set_xticks([-90, -60, -30, 0, 30, 60, 90])
+    ax1.set_xlim(-90, 90)
+    ax1.tick_params(labelsize=11.0, direction='out', width=1)
+    ax1.xaxis.set_ticks_position('bottom')
+    ax1.set_ylabel(test.long_name + ' (' + test.units + ')')
 
     test_title = "Test" if parameter.test_title == '' else parameter.test_title
     test_title += ' : {}'.format(parameter.test_name_yrs)
-    fig.text(panel[0][0], panel[0][2] + 0.095, test_title,
-             ha='left', fontdict=plotSideTitle, color='black')
-
     ref_title = "Reference" if parameter.reference_title == '' else parameter.reference_title
     ref_title += ' : {}'.format(parameter.reference_name)
-    fig.text(panel[0][0], panel[0][2] + 0.07, ref_title,
+    fig.text(panel[0][0], panel[0][1]+panel[0][3]+0.03, test_title,
+             ha='left', fontdict=plotSideTitle, color='black')
+    fig.text(panel[0][0], panel[0][1]+panel[0][3]+0.01, ref_title,
              ha='left', fontdict=plotSideTitle, color='red')
-    fig.text(panel[1][0], panel[0][2] - 0.3, parameter.diff_title,
-             ha='left', fontdict=plotSideTitle)
-    ax.set_xticks([-90, -60, -30, 0, 30, 60, 90])  # crs=ccrs.PlateCarree())
-    ax.set_xlim(-90, 90)
-    ax1.set_xticks([-90, -60, -30, 0, 30, 60, 90])  # crs=ccrs.PlateCarree())
-    ax1.set_xlim(-90, 90)
-    # lon_formatter = LongitudeFormatter(zero_direction_label=True, number_format='.0f')
-    LatitudeFormatter()
-    # ax.xaxis.set_major_formatter(lon_formatter)
-    # ax.xaxis.set_major_formatter(lat_formatter)
-    # ax1.xaxis.set_major_formatter(lat_formatter)
-    ax.tick_params(labelsize=11.0, direction='out', width=1)
-    ax1.tick_params(labelsize=11.0, direction='out', width=1)
-    ax.xaxis.set_ticks_position('bottom')
-    ax1.xaxis.set_ticks_position('bottom')
-    ax.set_ylabel(test.long_name + ' (' + test.units + ')')
-    ax1.set_ylabel(test.long_name + ' (' + test.units + ')')
-    # ax.yaxis.set_ticks_position('left')
 
+    # Bottom panel
+    ax2 = fig.add_axes(panel[1])
+    ax2.plot(diff.getLatitude()[:], ma.squeeze(diff.asma()), 'k', linewidth=2)
+    ax2.axhline(y=0, color='0.5')
+    ax2.set_title(parameter.diff_title, fontdict=plotSideTitle, loc='center') 
+    ax2.set_xticks([-90, -60, -30, 0, 30, 60, 90])
+    ax2.set_xlim(-90, 90)
+    ax2.tick_params(labelsize=11.0, direction='out', width=1)
+    ax2.xaxis.set_ticks_position('bottom')
+    ax2.set_ylabel(test.long_name + ' (' + test.units + ')')
+
+    # Figure title
     fig.suptitle(parameter.main_title, x=0.5, y=0.95, fontsize=18)
 
     # Save figure
@@ -77,5 +74,25 @@ def plot(reference, test, diff, metrics_dict, parameter):
         fnm = os.path.join(get_output_dir(
             parameter.current_set, parameter), parameter.output_file)
         plt.savefig(fnm + '.' + f)
-        _chown(fnm + '.' + f, parameter.user)
         print('Plot saved in: ' + fnm + '.' + f)
+
+    # Save individual subplots
+    for f in parameter.output_format_subplot:
+        fnm = os.path.join(get_output_dir(
+            parameter.current_set, parameter), parameter.output_file)
+        page = fig.get_size_inches()
+        i = 0
+        for p in panel:
+            # Extent of subplot
+            subpage = np.array(p).reshape(2,2)
+            subpage[1,:] = subpage[0,:] + subpage[1,:]
+            subpage = subpage + np.array(border).reshape(2,2)
+            subpage = list(((subpage)*page).flatten())
+            extent = matplotlib.transforms.Bbox.from_extents(*subpage)
+            # Save suplot
+            fname = fnm + '.%i.' %(i) + f
+            plt.savefig(fname, bbox_inches=extent)
+            print('Sub-plot saved in: ' + fname)
+            i += 1
+
+    plt.close()

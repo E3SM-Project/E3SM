@@ -5,7 +5,7 @@ import sys
 import vcs
 import acme_diags
 import acme_diags.plot.vcs as utils
-from acme_diags.driver.utils import get_output_dir, _chown
+from acme_diags.driver.utils import get_output_dir
 
 textcombined_objs = {}
 
@@ -284,12 +284,9 @@ def plot(ref, test, diff, metrics_dict, parameters):
         f = f.lower().split('.')[-1]
         if f == 'png':
             vcs_canvas.png(fnm)
-            _chown(fnm + '.png', parameters.user)
         elif f == 'pdf':
             vcs_canvas.pdf(fnm)
-            _chown(fnm + '.pdf', parameters.user)
         elif f == 'svg':
             vcs_canvas.svg(fnm)
-            _chown(fnm + '.svg', parameters.user)
         print('Plot saved in: ' + fnm + '.' + f)
     vcs_canvas.clear()

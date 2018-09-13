@@ -5,7 +5,7 @@ import sys
 import vcs
 import acme_diags
 import acme_diags.plot.vcs as utils
-from acme_diags.driver.utils import get_output_dir, _chown
+from acme_diags.driver.utils import get_output_dir
 
 textcombined_objs = {}
 
@@ -62,10 +62,28 @@ def plot(reference, test, diff, metrics_dict, parameter):
 
     reference_isofill = vcs.getisofill('reference_isofill')
     reference_isofill.missing = 'grey'
+    reference_isofill.xticlabels1 = {
+        0: "0", 30: "30$^\circ$E", 60: "60$^\circ$E", 90: "90$^\circ$E", 120: "120$^\circ$E",
+        150: "150$^\circ$E", 180: "180$^\circ$W", 210: "150$^\circ$W", 240: "120$^\circ$W",
+        270: "90$^\circ$W", 300: "60$^\circ$W", 330: "30$^\circ$W"
+    }
+    
     test_isofill = vcs.getisofill('test_isofill')
     test_isofill.missing = 'grey'
+    test_isofill.xticlabels1 = {
+        0: "0", 30: "30$^\circ$E", 60: "60$^\circ$E", 90: "90$^\circ$E", 120: "120$^\circ$E",
+        150: "150$^\circ$E", 180: "180$^\circ$W", 210: "150$^\circ$W", 240: "120$^\circ$W",
+        270: "90$^\circ$W", 300: "60$^\circ$W", 330: "30$^\circ$W"
+    }
+
     diff_isofill = vcs.getisofill('diff_isofill')
     diff_isofill.missing = 'grey'
+    diff_isofill.xticlabels1 = {
+        0: "0", 30: "30$^\circ$E", 60: "60$^\circ$E", 90: "90$^\circ$E", 120: "120$^\circ$E",
+        150: "150$^\circ$E", 180: "180$^\circ$W", 210: "150$^\circ$W", 240: "120$^\circ$W",
+        270: "90$^\circ$W", 300: "60$^\circ$W", 330: "30$^\circ$W"
+    }
+
     if parameter.var_region.lower().find('polar') != -1:
         reference_isofill.projection = 'polar'
         test_isofill.projection = 'polar'
@@ -132,12 +150,9 @@ def plot(reference, test, diff, metrics_dict, parameter):
         f = f.lower().split('.')[-1]
         if f == 'png':
             vcs_canvas.png(fnm)
-            _chown(fnm + '.png', parameter.user)
         elif f == 'pdf':
             vcs_canvas.pdf(fnm)
-            _chown(fnm + '.pdf', parameter.user)
         elif f == 'svg':
             vcs_canvas.svg(fnm)
-            _chown(fnm + '.svg', parameter.user)
         print('Plot saved in: ' + fnm + '.' + f)
     vcs_canvas.clear()
