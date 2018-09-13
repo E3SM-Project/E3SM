@@ -1324,8 +1324,6 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 
 		fortprintf(fd, "      do index_counter = 1, size(%s(%d) %% constituentNames, dim=1)\n", pointer_name, time_lev);
 		fortprintf(fd, "         allocate(%s(%d) %% attLists(index_counter) %% attList)\n", pointer_name, time_lev);
-		fortprintf(fd, "         %s(%d) %% attLists(index_counter) %% attList %% attName = ''\n", pointer_name, time_lev);
-		fortprintf(fd, "         %s(%d) %% attLists(index_counter) %% attList %% attType = -1\n", pointer_name, time_lev);
 		fortprintf(fd, "      end do\n");
 
 		for(var_xml = ezxml_child(var_arr_xml, "var"); var_xml; var_xml = var_xml->next){
@@ -1551,8 +1549,6 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 		}
 		fortprintf(fd, "      allocate(%s(%d) %% attLists(1))\n", pointer_name, time_lev);
 		fortprintf(fd, "      allocate(%s(%d) %% attLists(1) %% attList)\n", pointer_name, time_lev);
-		fortprintf(fd, "      %s(%d) %% attLists(1) %% attList %% attName = ''\n", pointer_name, time_lev);
-		fortprintf(fd, "      %s(%d) %% attLists(1) %% attList %% attType = -1\n", pointer_name, time_lev);
 
 		if ( varunits != NULL ) {
 			string = strdup(varunits);
