@@ -62,7 +62,6 @@ FortranDataIterator::FortranDataIterator (const FortranData::Ptr& d) {
 
 void FortranDataIterator::init (const FortranData::Ptr& dp) {
   d_ = dp;
-  fields_.reserve(23);
 #define fdipb(name)                                                     \
   fields_.push_back({#name,                                             \
         2,                                                              \
