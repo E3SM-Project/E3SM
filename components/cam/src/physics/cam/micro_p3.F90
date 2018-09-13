@@ -446,8 +446,8 @@ contains
 
   SUBROUTINE p3_main(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
        pres,dzq,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
-       diag_effi,diag_vmi,diag_di,diag_rhoi,n_diag_2d,diag_2d,n_diag_3d,       &
-       diag_3d,log_predictNc,typeDiags_ON,prt_drzl,prt_rain,prt_crys,    &
+       diag_effi,diag_vmi,diag_di,diag_rhoi,       &
+       log_predictNc,typeDiags_ON,prt_drzl,prt_rain,prt_crys,    &
        prt_snow,prt_grpl,prt_pell,prt_hail,prt_sndp)
 
     !----------------------------------------------------------------------------------------!
@@ -496,14 +496,9 @@ contains
     real, intent(out),   dimension(its:ite,kts:kte)      :: diag_di    ! mean diameter of ice             m
     real, intent(out),   dimension(its:ite,kts:kte)      :: diag_rhoi  ! bulk density of ice              kg m-1
 
-    real, intent(out),   dimension(its:ite,n_diag_2d)         :: diag_2d  ! user-defined 2D diagnostic fields
-    real, intent(out),   dimension(its:ite,kts:kte,n_diag_3d) :: diag_3d  ! user-defined 3D diagnostic fields
-
     integer, intent(in)                                  :: its,ite    ! array bounds (horizontal)
     integer, intent(in)                                  :: kts,kte    ! array bounds (vertical)
     integer, intent(in)                                  :: it         ! time step counter NOTE: starts at 1 for first time step
-    integer, intent(in)                                  :: n_diag_2d  ! number of 2D diagnostic fields
-    integer, intent(in)                                  :: n_diag_3d  ! number of 3D diagnostic fields
 
     logical, intent(in)                                  :: log_predictNc ! .T. (.F.) for prediction (specification) of Nc
     logical, intent(in)                                  :: typeDiags_ON  !for diagnostic hydrometeor/precip rate types
@@ -660,25 +655,6 @@ contains
     !  End of variables/parameters declarations
     !-----------------------------------------------------------------------------------!
 
-    !-----------------------------------------------------------------------------------!
-    ! Note, the array 'diag_3d(ni,nk,n_diag_3d)' provides a placeholder to output 3D diagnostic fields.
-    ! The entire array array is inialized to zero (below).  Code can be added to store desired fields
-    ! by simply adding the appropriate assignment statements.  For example, if one wishs to output the
-    ! rain condensation and evaporation rates, simply add assignments in the appropriate locations.
-    !  e.g.:
-    !
-    !   diag_3d(i,k,1) = qrcon
-    !   diag_3d(i,k,2) = qrevp
-    !
-    ! The fields will automatically be passed to the driving model.  In GEM, these arrays can be
-    ! output by adding 'SS01' and 'SS02' to the model output list.
-    !
-    ! Similarly, 'diag_2d(ni,n_diag_2d) is a placeholder to output 2D diagnostic fields.
-    !  e.g.:
-    !
-    !   diag_2d(i,1) = maxval(qr(i,:))  !column-maximum qr
-    !-----------------------------------------------------------------------------------!
-
     ! direction of vertical leveling:
     !PMC got rid of 'model' option so we could just replace ktop with kts everywhere...
     ktop = kts        !k of top level
@@ -714,8 +690,6 @@ contains
     diag_vmi  = 0.
     diag_di   = 0.
     diag_rhoi = 0.
-    diag_2d   = 0.
-    diag_3d   = 0.
     rhorime_c = 400.
 
     tmparr1 = (pres*1.e-5)**(rd*inv_cp)
