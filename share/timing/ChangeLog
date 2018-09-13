@@ -1,3 +1,7 @@
+timing_180911: Moved detail to end of timer name when specify
+               profile_add_detail (so that will not interfere with
+               planned move of the prefix logic into gptl.c)
+               [Patrick Worley]
 timing_180910: Removed addition of double quotes to timer names in
                perf_mod.F90 and added this as an output option in 
                gptl.c (so internally the names do not have the quotes)
