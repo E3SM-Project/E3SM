@@ -130,6 +130,9 @@ extern "C" {
 
 extern int GPTLsetoption (const int, const int);
 extern int GPTLinitialize (void);
+extern int GPTLprefix_set (const char *);
+extern int GPTLprefix_setf (const char *, const int);
+extern int GPTLprefix_unset (void);
 extern int GPTLstart (const char *);
 extern int GPTLstart_handle (const char *, void **);
 extern int GPTLstartf (const char *, const int);

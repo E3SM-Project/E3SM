@@ -152,15 +152,6 @@ module perf_mod
                          ! This requires that even t_startf/t_stopf
                          ! calls do not cross detail level changes
 
-   character(len=SHR_KIND_CS), private :: event_prefix
-                         ! current prefix for all event names.
-                         ! Default defined to be blank via
-                         ! prefix_len_def
-   integer, parameter :: prefix_len_def = 0                    ! default
-   integer, private   :: prefix_len = prefix_len_def
-                         ! For convenience, contains len_trim of
-                         ! event_prefix, if set.
-
 #ifdef HAVE_MPI
    integer, parameter :: def_perf_timer = GPTLmpiwtime         ! default
 #else
@@ -613,7 +604,6 @@ contains
    subroutine t_set_prefixf(prefix_string)
 !-----------------------------------------------------------------------
 ! Purpose: Set prefix for subsequent time event names.
-!          Ignored in threaded regions.
 ! Author: P. Worley
 !-----------------------------------------------------------------------
 !---------------------------Input arguments-----------------------------
@@ -623,25 +613,14 @@ contains
 !
 !---------------------------Local workspace-----------------------------
 !
-   integer i                              ! loop index
-!
-!---------------------------Externals-----------------------------------
-!
-#if ( defined _OPENMP )
-   logical omp_in_parallel
-   external omp_in_parallel
-#endif
+   integer  ierr                          ! GPTL error return
+   integer  i                             ! loop index
 !
 !-----------------------------------------------------------------------
 !
-#if ( defined _OPENMP )
-   if (omp_in_parallel()) return
-#endif
+   if (.not. timing_initialized) return
 
-   prefix_len = min(SHR_KIND_CS,len_trim(prefix_string))
-   if (prefix_len > 0) then
-     event_prefix(1:prefix_len) = prefix_string(1:prefix_len)
-   endif
+   ierr = GPTLprefix_set(trim(prefix_string))
 
    end subroutine t_set_prefixf
 !
@@ -653,20 +632,15 @@ contains
 !          Ignored in threaded regions.
 ! Author: P. Worley
 !
-!---------------------------Externals-----------------------------------
+!---------------------------Local workspace-----------------------------
 !
-#if ( defined _OPENMP )
-   logical omp_in_parallel
-   external omp_in_parallel
-#endif
+   integer  ierr                          ! GPTL error return
 !
 !-----------------------------------------------------------------------
 !
-#if ( defined _OPENMP )
-   if (omp_in_parallel()) return
-#endif
+   if (.not. timing_initialized) return
 
-   prefix_len = 0
+   ierr = GPTLprefix_unset()
 
    end subroutine t_unset_prefixf
 !
@@ -748,26 +722,13 @@ contains
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
 
       write(cdetail,'(i2.2)') cur_timing_detail
-      if (prefix_len > 0) then
-         str_length = min(SHR_KIND_CM-prefix_len-5,len_trim(event))
-         ierr = GPTLstart( &
-            event_prefix(1:prefix_len)// &
-            event(1:str_length)//'_'//cdetail)
-      else
-         str_length = min(SHR_KIND_CM-5,len_trim(event))
-         ierr = GPTLstart(event(1:str_length)//'_'//cdetail)
-      endif
+      str_length = min(SHR_KIND_CM-3,len_trim(event))
+      ierr = GPTLstart(event(1:str_length)//'_'//cdetail)
 
    else
 
-      if (prefix_len > 0) then
-         str_length = min(SHR_KIND_CM-prefix_len-2,len_trim(event))
-         ierr = GPTLstart(event_prefix(1:prefix_len)// &
-              event(1:str_length))
-      else
-         str_length = min(SHR_KIND_CM-2,len_trim(event))
-         ierr = GPTLstart(event(1:str_length))
-      endif
+      str_length = min(SHR_KIND_CM,len_trim(event))
+      ierr = GPTLstart(event(1:str_length))
 
 !pw   if ( present (handle) ) then
 !pw      ierr = GPTLstart_handle(event, handle)
@@ -838,26 +799,13 @@ contains
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
 
       write(cdetail,'(i2.2)') cur_timing_detail
-      if (prefix_len > 0) then
-         str_length = min(SHR_KIND_CM-prefix_len-5,len_trim(event))
-         ierr = GPTLstop( &
-              event_prefix(1:prefix_len)// &
-              event(1:str_length)//'_'//cdetail)
-      else
-         str_length = min(SHR_KIND_CM-5,len_trim(event))
-         ierr = GPTLstop(event(1:str_length)//'_'//cdetail)
-      endif
+      str_length = min(SHR_KIND_CM-3,len_trim(event))
+      ierr = GPTLstop(event(1:str_length)//'_'//cdetail)
 
    else
 
-      if (prefix_len > 0) then
-         str_length = min(SHR_KIND_CM-prefix_len-2,len_trim(event))
-         ierr = GPTLstop(event_prefix(1:prefix_len)// &
-              event(1:str_length))
-     else
-         str_length = min(SHR_KIND_CM-2,len_trim(event))
-         ierr = GPTLstop(event(1:str_length))
-     endif
+      str_length = min(SHR_KIND_CM,len_trim(event))
+      ierr = GPTLstop(event(1:str_length))
 
 !pw   if ( present (handle) ) then
 !pw      ierr = GPTLstop_handle(event, handle)
@@ -952,27 +900,14 @@ contains
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
 
       write(cdetail,'(i2.2)') cur_timing_detail
-      if (prefix_len > 0) then
-         str_length = min(SHR_KIND_CM-prefix_len-5,len_trim(event))
-         ierr = GPTLstartstop_vals( &
-            event_prefix(1:prefix_len)// &
-            event(1:str_length)//'_'//cdetail, wtime, callcnt)
-      else
-         str_length = min(SHR_KIND_CM-5,len_trim(event))
-         ierr = GPTLstartstop_vals( &
-            event(1:str_length)//'_'//cdetail, wtime, callcnt)
-      endif
+      str_length = min(SHR_KIND_CM-3,len_trim(event))
+      ierr = GPTLstartstop_vals( &
+         event(1:str_length)//'_'//cdetail, wtime, callcnt)
 
    else
 
-      if (prefix_len > 0) then
-         str_length = min(SHR_KIND_CM-prefix_len-2,len_trim(event))
-         ierr = GPTLstartstop_vals(event_prefix(1:prefix_len)// &
-              event(1:str_length), wtime, callcnt)
-      else
-         str_length = min(SHR_KIND_CM-2,len_trim(event))
-         ierr = GPTLstartstop_vals(trim(event), wtime, callcnt)
-      endif
+      str_length = min(SHR_KIND_CM,len_trim(event))
+      ierr = GPTLstartstop_vals(trim(event), wtime, callcnt)
 
 !pw   if ( present (handle) ) then
 !pw      ierr = GPTLstartstop_vals_handle(event, wtime, handle)

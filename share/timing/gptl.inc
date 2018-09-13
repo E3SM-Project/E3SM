@@ -109,6 +109,9 @@
 
       integer gptlsetoption
       integer gptlinitialize
+      integer gptlprefix_set
+      integer gptlprefix_setf
+      integer gptlprefix_unset
       integer gptlstart
       integer gptlstart_handle
       integer gptlstartf
@@ -146,6 +149,9 @@
 
       external gptlsetoption
       external gptlinitialize
+      external gptlprefix_set
+      external gptlprefix_setf
+      external gptlprefix_unset
       external gptlstart
       external gptlstart_handle
       external gptlstartf
