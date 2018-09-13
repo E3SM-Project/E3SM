@@ -1542,10 +1542,9 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 			free(tofree);
 		}
 
-		fortprintf(fd, "     %s(%d) %% defaultValue = %s\n", pointer_name, time_lev, default_value);
-		fortprintf(fd, "     %s(%d) %% defaultValue = %s\n", pointer_name, time_lev, default_value);
+		fortprintf(fd, "      %s(%d) %% defaultValue = %s\n", pointer_name, time_lev, default_value);
 		if ( ndims == 0 ) {
-			fortprintf(fd, "     %s(%d) %% scalar = %s\n", pointer_name, time_lev, default_value);
+			fortprintf(fd, "      %s(%d) %% scalar = %s\n", pointer_name, time_lev, default_value);
 		}
 		fortprintf(fd, "      allocate(%s(%d) %% attLists(1))\n", pointer_name, time_lev);
 		fortprintf(fd, "      allocate(%s(%d) %% attLists(1) %% attList)\n", pointer_name, time_lev);
