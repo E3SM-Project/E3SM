@@ -54,7 +54,6 @@ static bool dopr_preamble = true;   /* whether to print preamble info */
 static bool dopr_threadsort = true; /* whether to print sorted thread stats */
 static bool dopr_multparent = true; /* whether to print multiple parent info */
 static bool dopr_collision = true;  /* whether to print hash collision info */
-static bool pr_append = false;      /* whether to append to output file */
 
 static time_t ref_gettimeofday = -1; /* ref start point for gettimeofday */
 static time_t ref_clock_gettime = -1;/* ref start point for clock_gettime */
@@ -101,6 +100,7 @@ typedef struct {
   double wallmax;
   double wallmin;
   double walltotal;
+  int onflgs;
   int processes;
   int threads;
 #ifdef HAVE_PAPI
@@ -140,6 +140,7 @@ static Timer ***callstack;       /* call stack */
 static Nofalse *stackidx;        /* index into callstack: */
 
 static Method method = GPTLmost_frequent;  /* default parent/child printing mechanism */
+static PRMode print_mode = GPTLprint_write;  /* default output mode */
 
 /* Local function prototypes */
 
@@ -163,6 +164,7 @@ static int num_descendants (Timer *);
 static int is_descendant (const Timer *, const Timer *);
 static int show_descendant (const int, const Timer *, const Timer *);
 static char *methodstr (Method);
+static char *modestr (PRMode);
 
 /* Prototypes from previously separate file threadutil.c */
 
@@ -329,6 +331,11 @@ int GPTLsetoption (const int option,  /* option */
     if (verbose)
       printf ("%s: boolean dopr_collision = %d\n", thisfunc, val);
     return 0;
+  case GPTLprint_mode:
+    print_mode = (PRMode) val; 
+    if (verbose)
+      printf ("%s: print_mode = %s\n", thisfunc, modestr (print_mode));
+    return 0;
   case GPTLprint_method:
     method = (Method) val;
     if (verbose)
@@ -349,6 +356,13 @@ int GPTLsetoption (const int option,  /* option */
 #endif
     if (verbose)
       printf ("%s: boolean sync_mpi = %d\n", thisfunc, val);
+    return 0;
+
+  case GPTLmaxthreads:
+    if (val < 1)
+      return GPTLerror ("%s: maxthreads must be positive. %d is invalid\n", thisfunc, val);
+
+    maxthreads = val;
     return 0;
 
   /*
@@ -583,7 +597,7 @@ int GPTLfinalize (void)
   dopr_threadsort = true;
   dopr_multparent = true;
   dopr_collision = true;
-  pr_append = false;
+  print_mode = GPTLprint_write;
   ref_gettimeofday = -1;
   ref_clock_gettime = -1;
 #ifdef _AIX
@@ -2072,51 +2086,24 @@ int GPTLreset (void)
 }
 
 /*
-** GPTLpr_set_append: set GPTLpr_file and GPTLpr_summary_file
-** to use append mode
+** GPTLprint_mode_set: set output mode to use for
+** GPTLpr_file and GPTLpr_summary_file
 */
 
-int GPTLpr_set_append (void)
+int GPTLprint_mode_set (int pr_mode)
 {
-  pr_append = true;
+  print_mode = (PRMode) pr_mode;
   return 0;
 }
 
 /*
-** GPTLpr_query_append: query whether GPTLpr_file and GPTLpr_summary_file
-** use append mode
+** GPTLprint_mode_query: query output mode used
+** for GPTLpr_file and GPTLpr_summary_file
 */
 
-int GPTLpr_query_append (void)
+int GPTLprint_mode_query (void)
 {
-  if (pr_append)
-    return 1;
-  else
-    return 0;
-}
-
-/*
-** GPTLpr_set_write: set GPTLpr_file and GPTLpr_summary_file
-** to use write mode
-*/
-
-int GPTLpr_set_write (void)
-{
-  pr_append = false;
-  return 0;
-}
-
-/*
-** GPTLpr_query_write: query whether GPTLpr_file and GPTLpr_summary_file
-** use write mode
-*/
-
-int GPTLpr_query_write (void)
-{
-  if (pr_append)
-    return 0;
-  else
-    return 1;
+  return (int) print_mode;
 }
 
 /*
@@ -2210,7 +2197,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
      strcpy (outpath, outfile);
   }
 
-  if (pr_append){
+  if (print_mode == GPTLprint_append){
     if ( ! (fp = fopen (outpath, "a")))
       fp = stderr;
   }
@@ -2667,6 +2654,22 @@ int construct_tree (Timer *timerst, Method method)
   return 0;
 }
 
+/* 
+** modestr: Return a pointer to a string that represents the mode
+**
+** Input arguments:
+**   mode: print mode type (write or append)
+*/
+static char *modestr (PRMode prmode)
+{
+  if (prmode == GPTLprint_write)
+    return "write";
+  else if (prmode == GPTLprint_append)
+    return "append";
+  else
+    return "Unknown";
+}
+
 /*
 ** methodstr: Return a pointer to a string which represents the method
 **
@@ -2913,9 +2916,9 @@ static void printstats (const Timer *timer,
       fprintf (fp, "  ");
 
   if (timer->onflg)
-    fprintf (fp, " y ");
+    fprintf (fp, "  y");
   else
-    fprintf (fp, " - ");
+    fprintf (fp, "  -");
 
   if (timer->count < PRTHRESH) {
     if (timer->nrecurse > 0)
@@ -3125,7 +3128,7 @@ int GPTLpr_summary_file (int comm,
       strcpy (outpath, outfile);
     }
 
-    if (pr_append){
+    if (print_mode == GPTLprint_append){
       if ( ! (fp = fopen (outpath, "a")))
         fp = stderr;
     }
@@ -3138,10 +3141,12 @@ int GPTLpr_summary_file (int comm,
 
     fprintf (fp, "$Id: gptl.c,v 1.157 2011-03-28 20:55:18 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
+    fprintf (fp, "'on' indicates whether the timer was active during output, and so stats are lower or upper bounds.\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
     fprintf (fp, "This is even for MPI codes.\n");
 #endif
+    fprintf (fp, "\n");
 
     count = merge_thread_data(); /*merges events from all threads*/
 
@@ -3170,7 +3175,7 @@ int GPTLpr_summary_file (int comm,
     extraspace = max_name_length - strlen ("name");
     for (n = 0; n < extraspace; ++n)
       fprintf (fp, " ");
-    fprintf (fp, " processes  threads        count");
+    fprintf (fp, " on  processes  threads        count");
     fprintf (fp, "      walltotal   wallmax (proc   thrd  )   wallmin (proc   thrd  )");
 
     for (n = 0; n < nevents; ++n) {
@@ -3193,6 +3198,10 @@ int GPTLpr_summary_file (int comm,
       extraspace = max_name_length - strlen (tempname);
       for (n = 0; n < extraspace; ++n)
         fprintf (fp, " ");
+      if (storage[k].onflgs > 0)
+        fprintf (fp, "  y ");
+      else
+        fprintf (fp, "  - ");
       temp = storage[k].count;
       fprintf(fp, "  %8d %8d %12.6e ",
               storage[k].processes, storage[k].threads, temp);
@@ -3733,6 +3742,9 @@ void get_threadstats (const int iam,
   for (t = 0; t < nthreads; ++t) {
     if ((ptr = getentry (hashtable[t], name, &indx))) {
 
+      if (ptr->onflg)
+        summarystats->onflgs++;
+
       if (ptr->count > 0) {
         summarystats->threads++;
         summarystats->walltotal += ptr->wall.accum;
@@ -3824,6 +3836,7 @@ void get_summarystats (Summarystats *summarystats,
   }
 #endif
 
+  summarystats->onflgs    += summarystats_slave->onflgs;
   summarystats->count     += summarystats_slave->count;
   summarystats->walltotal += summarystats_slave->walltotal;
   summarystats->processes += summarystats_slave->processes;
@@ -4957,7 +4970,13 @@ static int threadinit (void)
     return GPTLerror ("OMP %s: has already been called.\nMaybe mistakenly called by multiple threads?",
 		      thisfunc);
 
-  maxthreads = MAX ((1), (omp_get_max_threads ()));
+  /*
+  ** maxthreads may have been set by the user, in which case use that. But if as
+  ** yet uninitialized, set to the current value of OMP_NUM_THREADS.
+  */
+  if (maxthreads == -1)
+    maxthreads = MAX ((1), (omp_get_max_threads ()));
+
   if ( ! (threadid_omp = (int *) GPTLallocate (maxthreads * sizeof (int))))
     return GPTLerror ("OMP %s: malloc failure for %d elements of threadid_omp\n", thisfunc, maxthreads);
 

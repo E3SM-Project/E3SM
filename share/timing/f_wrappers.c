@@ -15,10 +15,8 @@
 
 #define gptlinitialize GPTLINITIALIZE
 #define gptlfinalize GPTLFINALIZE
-#define gptlpr_set_append GPTLPR_SET_APPEND
-#define gptlpr_query_append GPTLPR_QUERY_APPEND
-#define gptlpr_set_write GPTLPR_SET_WRITE
-#define gptlpr_query_write GPTLPR_QUERY_WRITE
+#define gptlprint_mode_query GPTLPRINT_MODE_QUERY
+#define gptlprint_mode_set GPTLPRINT_MODE_SET
 #define gptlpr GPTLPR
 #define gptlpr_file GPTLPR_FILE
 #define gptlpr_summary GPTLPR_SUMMARY
@@ -51,10 +49,8 @@
 
 #define gptlinitialize              FCI_GLOBAL(gptlinitialize,GPTLINITIALIZE)
 #define gptlfinalize                FCI_GLOBAL(gptlfinalize,GPTLFINALIZE)
-#define gptlpr_set_append           FCI_GLOBAL(gptlpr_set_append,GPTLPR_SET_APPEND)
-#define gptlpr_query_append         FCI_GLOBAL(gptlpr_query_append,GPTLPR_QUERY_APPEND)
-#define gptlpr_set_write            FCI_GLOBAL(gptlpr_set_write,GPTLPR_SET_WRITE)
-#define gptlpr_query_write          FCI_GLOBAL(gptlpr_query_write,GPTLPR_QUERY_WRITE)
+#define gptlprint_mode_query        FCI_GLOBAL(gptlprint_mode_query,GPTLPRINT_MODE_QUERY)
+#define gptlprint_mode_set          FCI_GLOBAL(gptlprint_mode_set,GPTLPRINT_MODE_SET)
 #define gptlpr                      FCI_GLOBAL(gptlpr,GPTLPR)
 #define gptlpr_file                 FCI_GLOBAL(gptlpr_file,GPTLPR_FILE)
 #define gptlpr_summary              FCI_GLOBAL(gptlpr_summary,GPTLPR_SUMMARY)
@@ -87,10 +83,8 @@
 
 #define gptlinitialize gptlinitialize_
 #define gptlfinalize gptlfinalize_
-#define gptlpr_set_append gptlpr_set_append_
-#define gptlpr_query_append gptlpr_query_append_
-#define gptlpr_set_write gptlpr_set_write_
-#define gptlpr_query_write gptlpr_query_write_
+#define gptlprint_mode_query gptlprint_mode_query_
+#define gptlprint_mode_set gptlprint_mode_set_
 #define gptlpr gptlpr_
 #define gptlpr_file gptlpr_file_
 #define gptlpr_summary gptlpr_summary_
@@ -123,10 +117,8 @@
 
 #define gptlinitialize gptlinitialize__
 #define gptlfinalize gptlfinalize__
-#define gptlpr_set_append gptlpr_set_append__
-#define gptlpr_query_append gptlpr_query_append__
-#define gptlpr_set_write gptlpr_set_write__
-#define gptlpr_query_write gptlpr_query_write__
+#define gptlprint_mode_query gptlprint_mode_query__
+#define gptlprint_mode_set gptlprint_mode_set__
 #define gptlpr gptlpr__
 #define gptlpr_file gptlpr_file__
 #define gptlpr_summary gptlpr_summary__
@@ -163,10 +155,8 @@
 
 int gptlinitialize (void);
 int gptlfinalize (void);
-int gptlpr_set_append (void);
-int gptlpr_query_append (void);
-int gptlpr_set_write (void);
-int gptlpr_query_write (void);
+int gptlprint_mode_query (void);
+int gptlprint_mode_set (int *pr_mode);
 int gptlpr (int *procid);
 int gptlpr_file (char *file, int nc1);
 int gptlpr_summary (int *fcomm);
@@ -214,24 +204,14 @@ int gptlfinalize (void)
   return GPTLfinalize ();
 }
 
-int gptlpr_set_append (void)
+int gptlprint_mode_query (void)
 {
-  return GPTLpr_set_append ();
+  return GPTLprint_mode_query ();
 }
 
-int gptlpr_query_append (void)
+int gptlprint_mode_set (int *pr_mode)
 {
-  return GPTLpr_set_append ();
-}
-
-int gptlpr_set_write (void)
-{
-  return GPTLpr_set_append ();
-}
-
-int gptlpr_query_write (void)
-{
-  return GPTLpr_set_append ();
+  return GPTLprint_mode_set (*pr_mode);
 }
 
 int gptlpr (int *procid)
