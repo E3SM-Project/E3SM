@@ -1,3 +1,12 @@
+timing_180731: Refactored implementation of append/write modes; tweaked
+               "running processes" logic and output format
+               [Patrick Worley]
+timing_180730: Added support for setting GPTLmaxthreads. Cleaned up white space.
+               Added SEQUENTIAL to fortran open, to avoid problems on some systems.
+               Added timing overhead measurement to perf_mod. Fixed errors in
+               f_wrappers.c in definition of gptlpr_query_append and 
+               gptlpr_XXX_write.
+               [Patrick Worley (some from Jim Rosinksi)]
 timing_180403: Added GPTLstartstop_val(f) to gptl.h, to provide explicit
                typing and eliminate compile-time warning for some compilers.
                Also do not define the CPP tokens HAVE_COMM_F2C and 
