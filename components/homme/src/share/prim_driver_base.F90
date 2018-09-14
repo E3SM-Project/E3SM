@@ -974,6 +974,36 @@ contains
     call t_stopf("copy_qdp_h2d")
 #endif
 
+
+
+!temp test code
+!this only makes sense if qsplit=1
+if (ftype == 5) then
+if(qsize >= 8) then
+  do ie=nets,nete
+  do k=1,nlev
+    !elem(ie)%state%Qdp(:,:,k,6,n0q)=elem(ie)%derived%FM(:,:,1,k)*elem(ie)%state%dp3d(:,:,k,tl%n0)
+    !elem(ie)%state%Qdp(:,:,k,7,n0q)=elem(ie)%derived%FM(:,:,2,k)*elem(ie)%state%dp3d(:,:,k,tl%n0)
+    !elem(ie)%state%Qdp(:,:,k,8,n0q)=elem(ie)%derived%FT(:,:,k)*elem(ie)%state%dp3d(:,:,k,tl%n0)
+#if 1
+    elem(ie)%state%Qdp(:,:,k,6,n0_qdp)=elem(ie)%derived%FM(:,:,1,k)
+    elem(ie)%state%Qdp(:,:,k,7,n0_qdp)=elem(ie)%derived%FM(:,:,2,k)
+    elem(ie)%state%Qdp(:,:,k,8,n0_qdp)=elem(ie)%derived%FT(:,:,k)
+#endif
+  enddo
+  enddo
+else
+print *,'qsize is less than 8'
+stop
+endif
+endif
+
+
+
+
+
+
+
     ! Loop over rsplit vertically lagrangian timesiteps
     call t_startf("prim_step_rX")
     call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, compute_diagnostics,single_column)
@@ -1091,7 +1121,7 @@ contains
     use prim_advance_mod,   only: prim_advance_exp
     use prim_advection_mod, only: prim_advec_tracers_remap
     use reduction_mod,      only: parallelmax
-    use time_mod,           only: time_at,TimeLevel_t, timelevel_update, nsplit
+    use time_mod,           only: time_at,TimeLevel_t,timelevel_update,timelevel_qdp, nsplit
     use prim_advance_mod,   only: applycamforcing_dp3d
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
 
@@ -1106,10 +1136,11 @@ contains
     real(kind=real_kind) :: st, st1, dp, dt_q
     integer :: ie, t, q,k,i,j,n
     real (kind=real_kind)                          :: maxcflx, maxcfly
-    real (kind=real_kind) :: dp_np1(np,np)
+    !real (kind=real_kind) :: dp_np1(np,np)
     logical :: compute_diagnostics
     logical :: single_column
 
+    integer :: n0q, np1q
 
     dt_q = dt*qsplit
  
@@ -1134,13 +1165,16 @@ contains
 !applyCAMforcing_dp3d should be glued to the call of prim_advance_exp
 !energy diagnostics is broken for ftype 3,4
     call ApplyCAMforcing_dp3d(elem,hvcoord,tl%n0,dt,nets,nete)
+
+!temp test code
+!this only makes sense if qsplit=1
+
     ! ===============
     ! Dynamical Step
     ! ===============
     call t_startf("prim_step_dyn")
     call prim_advance_exp(elem, deriv1, hvcoord,   &
-         hybrid, dt, tl, nets, nete, compute_diagnostics, &
-	 single_column)
+         hybrid, dt, tl, nets, nete, compute_diagnostics, single_column)
     do n=2,qsplit
        call TimeLevel_update(tl,"leapfrog")
 !applyCAMforcing_dp3d should be glued to the call of prim_advance_exp
@@ -1178,6 +1212,26 @@ contains
         call t_stopf("PAT_remap")
       end if
       call t_stopf("prim_step_advec")
+
+call TimeLevel_Qdp( tl, qsplit, n0q, np1q)
+#if 1
+!temp test code
+!this only makes sense if qsplit=1
+if (ftype == 5) then
+if(qsize >= 8) then
+  do ie=nets,nete
+  do k=1,nlev
+#if 1
+    elem(ie)%derived%FM(:,:,1,k) =elem(ie)%state%Qdp(:,:,k,6,np1q)
+    elem(ie)%derived%FM(:,:,2,k) = elem(ie)%state%Qdp(:,:,k,7,np1q)
+    elem(ie)%derived%FT(:,:,k) = elem(ie)%state%Qdp(:,:,k,8,np1q)
+#endif
+  enddo
+  enddo
+endif
+endif
+#endif
+
     endif
 
   end subroutine prim_step
