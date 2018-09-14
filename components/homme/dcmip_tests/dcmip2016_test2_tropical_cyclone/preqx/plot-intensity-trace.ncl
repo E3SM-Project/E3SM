@@ -14,7 +14,7 @@ begin
 ;=======================================================================================
 
 top_to_bottom = True       ; is data top to bottom? (false for bottom to top)
-model         = "ACME-A"
+model         = "PREQX"
 
 ; needs to be a catted file ordered time, lev, lat, lon (or time, lat, lon for PS)
 filename="./movies/dcmip2016_test21.nc"

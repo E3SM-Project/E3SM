@@ -41,6 +41,7 @@
   interp_type       = 1                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
   num_io_procs      = 16
+  interp_lon0       = -180.0                    ! shift lon range to [-180,+180)
 !  interp_nlon       = 360
 !  interp_nlat       = 181
   interp_gridtype   = 1

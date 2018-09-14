@@ -41,25 +41,18 @@ date
 
 ncl plot-tropical-cyclone-init.ncl  # u,t,th,q,pnh,geo,ps, time=0
 ncl plot-horiz-crossx.ncl     # contour plot, time=10d, U,V,T,ps,precl,Q,geo
-# time series plots from .txt files:
-ncl plot-intensity-trace.ncl  
-ncl plot-precip.ncl           
-ncl plot-ps.ncl               
-ncl plot-wvel.ncl             
+ncl plot-intensity-trace.ncl
 
 # save output
-\mv -f movies/dcmip2016_test21.nc   movies/${prefix}_dcmip2016_test21.nc
+#\mv -f movies/dcmip2016_test21.nc   movies/${prefix}_dcmip2016_test21.nc
 
 \mv -f init.pdf ${prefix}_init.pdf
-#wind.pdf
-#ps.pdf
-#x-sections.pdf
-\mv -f min_ps.pdf ${prefix}_min_ps.pdf
-\mv -f max_precip.pdf ${prefix}_max_precip.pdf
-\mv -f max_w.pdf ${prefix}_max_w.pdf
+\mv -f x-sections.pdf ${prefix}_x-sections.pdf
+\mv -f wind.pdf ${prefix}_wind.pdf
+\mv -f ps.pdf ${prefix}_ps.pdf
 }
 
 
-prefix=r400 ;  run $(($NCPU>384?384:NCPU))
+#prefix=r400 ;  run $(($NCPU>384?384:NCPU))
 prefix=r100 ;  run $NCPU
 #prefix=r50 ;  run $NCPU
