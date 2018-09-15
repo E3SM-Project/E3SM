@@ -94,7 +94,7 @@ module arkode_mod
     real(real_kind) :: lintol ! linear convergence tolerance factor (0 indicates default)
     ! General Iteration Info
     real(real_kind) :: rtol ! relative tolerance for iteration convergence
-    real(real_kind) :: atol(6) ! absolute tolerances (u,v,w,phinh,theta_dp_cp,dp3d)
+    real(real_kind) :: atol(6) ! absolute tolerances (u,v,w,phinh,vtheta_dp,dp3d)
   end type parameter_list
 
   public :: parameter_list, update_arkode, get_solution_ptr, get_hvcoord_ptr
@@ -419,7 +419,7 @@ contains
       atol_F%elem(ie)%state%v(:,:,2,:,atol_F%tl_idx) = ap%atol(2)
       atol_F%elem(ie)%state%w_i(:,:,:,atol_F%tl_idx) = ap%atol(3)
       atol_F%elem(ie)%state%phinh_i(:,:,:,atol_F%tl_idx) = ap%atol(4)
-      atol_F%elem(ie)%state%theta_dp_cp(:,:,:,atol_F%tl_idx) = ap%atol(5)
+      atol_F%elem(ie)%state%vtheta_dp(:,:,:,atol_F%tl_idx) = ap%atol(5)
       atol_F%elem(ie)%state%dp3d(:,:,:,atol_F%tl_idx) = ap%atol(6)
     end do
 
@@ -510,7 +510,7 @@ contains
       elem(i)%state%v(:,:,2,:,4) = ap%atol(2)
       elem(i)%state%w_i(:,:,:,4) = ap%atol(3)
       elem(i)%state%phinh_i(:,:,:,4) = ap%atol(4)
-      elem(i)%state%theta_dp_cp(:,:,:,4) = ap%atol(5)
+      elem(i)%state%vtheta_dp(:,:,:,4) = ap%atol(5)
       elem(i)%state%dp3d(:,:,:,4) = ap%atol(6)
     end do
     call MakeHommeNVector(elem, nets, nete, 4, atol_F, ierr)

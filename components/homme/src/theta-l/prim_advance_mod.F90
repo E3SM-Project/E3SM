@@ -45,7 +45,8 @@ module prim_advance_mod
   save
   public :: prim_advance_exp, prim_advance_init1, &
        applycamforcing_ps, applycamforcing_dp3d, &
-       applyCAMforcing_dynamics, vertical_mesh_init2
+       applyCAMforcing_dynamics, vertical_mesh_init2, &
+       compute_andor_apply_rhs
 
   real (kind=real_kind), allocatable :: ur_weights(:)
 
@@ -483,7 +484,7 @@ contains
           arkode_parameters%atol(2) = 1.d1*arkode_parameters%rtol ! assumes v ~ 1e1
           arkode_parameters%atol(3) = 1.d1*arkode_parameters%rtol ! assumes w_i ~ 1e1
           arkode_parameters%atol(4) = 1.d5*arkode_parameters%rtol ! assumes phinh_i ~ 1e5
-          arkode_parameters%atol(5) = 1.d8*arkode_parameters%rtol ! assumes theta_dp_cp ~ 1e8
+          arkode_parameters%atol(5) = 1.d6*arkode_parameters%rtol ! assumes vtheta_dp ~ 1e6
           arkode_parameters%atol(6) = 1.d0*arkode_parameters%rtol ! assumes dp3d ~ 1e0
         else
           arkode_parameters%atol(:) = abs_tol

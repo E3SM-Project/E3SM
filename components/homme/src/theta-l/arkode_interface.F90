@@ -337,7 +337,6 @@ subroutine FColumnSolSolve(b_C, t, y_C, gamma, ierr)
   !======= Inclusions ===========
   use arkode_mod,         only: get_hvcoord_ptr, get_qn0
   use control_mod,        only: theta_hydrostatic_mode
-  use element_ops,        only: get_kappa_star
   use eos,                only: get_pnh_and_exner, get_dirk_jacobian
   use kinds,              only: real_kind
   use HommeNVector,       only: NVec_t
@@ -361,22 +360,19 @@ subroutine FColumnSolSolve(b_C, t, y_C, gamma, ierr)
   type(hvcoord_t)       :: hvcoord
   type(NVec_t), pointer :: b  => NULL()
   type(NVec_t), pointer :: y  => NULL()
+  real (kind=real_kind), pointer, dimension(:,:,:) :: phi_np1
+  real (kind=real_kind), pointer, dimension(:,:,:) :: dp3d
+  real (kind=real_kind), pointer, dimension(:,:,:) :: vtheta_dp
+  real (kind=real_kind), pointer, dimension(:,:)   :: phis
   real (kind=real_kind) :: JacD(nlev,np,np)
   real (kind=real_kind) :: JacL(nlev-1,np,np)
   real (kind=real_kind) :: JacU(nlev-1,np,np)
   real (kind=real_kind) :: JacU2(nlev-2,np,np)
-  real (kind=real_kind), pointer, dimension(:,:,:) :: phi_np1_i
-  real (kind=real_kind), pointer, dimension(:,:,:) :: dp3d
-  real (kind=real_kind), pointer, dimension(:,:,:) :: theta_dp_cp
-  real (kind=real_kind), pointer, dimension(:,:)   :: phis
   real (kind=real_kind) :: pnh(np,np,nlev)
-  real (kind=real_kind) :: dpnh(np,np,nlev)
-  real (kind=real_kind) :: kappa_star(np,np,nlev)
-  real (kind=real_kind) :: kappa_star_i(np,np,nlevp)
   real (kind=real_kind) :: pnh_i(np,np,nlevp)
-  real (kind=real_kind) :: exner(np,np,nlev)
-  real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
   real (kind=real_kind) :: dp3d_i(np,np,nlevp)
+  real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
+  real (kind=real_kind) :: exner(np,np,nlev)
   real (kind=real_kind) :: b1(nlev,np,np)
   integer :: qn0, i, j, k, ie, info(np,np), Ipiv(nlev,np,np)
 
@@ -414,7 +410,7 @@ subroutine FColumnSolSolve(b_C, t, y_C, gamma, ierr)
   ! The diagonals of M are constructed in the call get_dirk_jacobian().
   !
   ! For our problem, we consider a 'state vector'
-  !    U = [v1; v2; w; phi; theta_dp_cp; dp3d]
+  !    U = [v1; v2; w; phi; vtheta_dp; dp3d]
   ! and we solve an IMEX problem of the form  U' = fE(U) + fI(U), where the implicit
   ! portion has structure
   !    fI(U) = [0; 0; fI_w(phi); fI_phi(w); 0; 0], where
@@ -460,32 +456,25 @@ subroutine FColumnSolSolve(b_C, t, y_C, gamma, ierr)
      !-------------
      ! set pointers for this ie
      dp3d  => y%elem(ie)%state%dp3d(:,:,:,y%tl_idx)
-     theta_dp_cp  => y%elem(ie)%state%theta_dp_cp(:,:,:,y%tl_idx)
-     phi_np1_i => y%elem(ie)%state%phinh_i(:,:,:,y%tl_idx)
+     vtheta_dp  => y%elem(ie)%state%vtheta_dp(:,:,:,y%tl_idx)
+     phi_np1 => y%elem(ie)%state%phinh_i(:,:,:,y%tl_idx)
      phis => y%elem(ie)%state%phis(:,:)
 
      ! compute intermediate variables for Jacobian calculation
-     call get_kappa_star(kappa_star, y%elem(ie)%state%Q(:,:,:,1))
-     call get_pnh_and_exner(hvcoord, theta_dp_cp, dp3d, phi_np1_i, &
-             kappa_star, pnh, exner, dpnh_dp_i, pnh_i_out=pnh_i)
+     call get_pnh_and_exner(hvcoord, vtheta_dp, dp3d, phi_np1, &
+             pnh, exner, dpnh_dp_i, pnh_i_out=pnh_i)
 
-     ! compute kappa_star_i and dp3d_i -- note that compute_stage_value_dirk
+     ! compute dp3d_i -- note that compute_stage_value_dirk
      ! computes this twice (with potential memory reference issues in the second pass)
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
-     do k=1,nlev-1
-        kappa_star_i(:,:,k+1) = 0.5d0*(kappa_star(:,:,k+1) + kappa_star(:,:,k))
-        dp3d_i(:,:,k+1) = 0.5d0*(dp3d(:,:,k+1) + dp3d(:,:,k))
-     end do
-     kappa_star_i(:,:,1) = kappa_star(:,:,1)
-     kappa_star_i(:,:,nlevp) = kappa_star(:,:,nlev)
      dp3d_i(:,:,1) = dp3d(:,:,1)
      dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
+     do k=2,nlev
+        dp3d_i(:,:,k) = 0.5d0*(dp3d(:,:,k) + dp3d(:,:,k-1))
+     end do
 
      ! get tridigonal matrix M
      info(:,:) = 0
-     call get_dirk_jacobian(JacL,JacD,JacU,gamma,dp3d,phi_np1_i,phis,kappa_star_i,pnh_i,1,pnh=pnh)
+     call get_dirk_jacobian(JacL,JacD,JacU,gamma,dp3d,phi_np1,pnh,1)
 
      ! loop over components of this ie
 #if (defined COLUMN_OPENMP)

@@ -125,8 +125,8 @@ subroutine FNVExtPrint(x_C)
             rank, ie, inpx, inpy, inlev, x%elem(ie)%state%v(inpx,inpy,1,inlev,x%tl_idx)
           print '("proc ",i2,",", " elem ",i4,",", " v(",i1,",",i1,",",i2,") = ",f15.5)', &
             rank, ie, inpx, inpy, inlev, x%elem(ie)%state%v(inpx,inpy,2,inlev,x%tl_idx)
-          print '("proc ",i2,",", " elem ",i4,",", " theta_dp_cp(",i1,",",i1,",",i2,") = ",f15.5)', &
-            rank, ie, inpx, inpy, inlev, x%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,x%tl_idx)
+          print '("proc ",i2,",", " elem ",i4,",", " vtheta_dp(",i1,",",i1,",",i2,") = ",f15.5)', &
+            rank, ie, inpx, inpy, inlev, x%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,x%tl_idx)
           print '("proc ",i2,",", " elem ",i4,",", " dp3d(",i1,",",i1,",",i2,") = ",f15.5,/)', &
             rank, ie, inpx, inpy, inlev, x%elem(ie)%state%dp3d(inpx,inpy,inlev,x%tl_idx)
         end do
@@ -267,9 +267,9 @@ subroutine FNVExtLinearSum(aval, x_C, bval, y_C, z_C)
           z%elem(ie)%state%v(inpx,inpy,2,inlev,z%tl_idx) = &
             aval * x%elem(ie)%state%v(inpx,inpy,2,inlev,x%tl_idx) + &
             bval * y%elem(ie)%state%v(inpx,inpy,2,inlev,y%tl_idx)
-          z%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,z%tl_idx) = &
-            aval * x%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,x%tl_idx) + &
-            bval * y%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,y%tl_idx)
+          z%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,z%tl_idx) = &
+            aval * x%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,x%tl_idx) + &
+            bval * y%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,y%tl_idx)
           z%elem(ie)%state%dp3d(inpx,inpy,inlev,z%tl_idx) = &
             aval * x%elem(ie)%state%dp3d(inpx,inpy,inlev,x%tl_idx) + &
             bval * y%elem(ie)%state%dp3d(inpx,inpy,inlev,y%tl_idx)
@@ -320,7 +320,7 @@ subroutine FNVExtConst(cval, z_C)
      z%elem(ie)%state%v(:,:,:,:,z%tl_idx) = cval
      z%elem(ie)%state%w_i(:,:,:,z%tl_idx) = cval
      z%elem(ie)%state%phinh_i(:,:,:,z%tl_idx) = cval
-     z%elem(ie)%state%theta_dp_cp(:,:,:,z%tl_idx) = cval
+     z%elem(ie)%state%vtheta_dp(:,:,:,z%tl_idx) = cval
      z%elem(ie)%state%dp3d(:,:,:,z%tl_idx) = cval
   end do
 
@@ -366,9 +366,9 @@ subroutine FNVExtProd(x_C, y_C, z_C)
           z%elem(ie)%state%v(inpx,inpy,2,inlev,z%tl_idx) = &
             x%elem(ie)%state%v(inpx,inpy,2,inlev,x%tl_idx)* &
             y%elem(ie)%state%v(inpx,inpy,2,inlev,y%tl_idx)
-          z%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,z%tl_idx) = &
-            x%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,x%tl_idx)* &
-            y%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,y%tl_idx)
+          z%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,z%tl_idx) = &
+            x%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,x%tl_idx)* &
+            y%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,y%tl_idx)
           z%elem(ie)%state%dp3d(inpx,inpy,inlev,z%tl_idx) = &
             x%elem(ie)%state%dp3d(inpx,inpy,inlev,x%tl_idx)* &
             y%elem(ie)%state%dp3d(inpx,inpy,inlev,y%tl_idx)
@@ -431,9 +431,9 @@ subroutine FNVExtDiv(x_C, y_C, z_C)
           z%elem(ie)%state%v(inpx,inpy,2,inlev,z%tl_idx) = &
             x%elem(ie)%state%v(inpx,inpy,2,inlev,x%tl_idx)/ &
             y%elem(ie)%state%v(inpx,inpy,2,inlev,y%tl_idx)
-          z%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,z%tl_idx) = &
-            x%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,x%tl_idx)/ &
-            y%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,y%tl_idx)
+          z%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,z%tl_idx) = &
+            x%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,x%tl_idx)/ &
+            y%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,y%tl_idx)
           z%elem(ie)%state%dp3d(inpx,inpy,inlev,z%tl_idx) = &
             x%elem(ie)%state%dp3d(inpx,inpy,inlev,x%tl_idx)/ &
             y%elem(ie)%state%dp3d(inpx,inpy,inlev,y%tl_idx)
@@ -492,8 +492,8 @@ subroutine FNVExtScale(cval, x_C, z_C)
             cval * x%elem(ie)%state%v(inpx,inpy,1,inlev,x%tl_idx)
           z%elem(ie)%state%v(inpx,inpy,2,inlev,z%tl_idx) = &
             cval * x%elem(ie)%state%v(inpx,inpy,2,inlev,x%tl_idx)
-          z%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,z%tl_idx) = &
-            cval * x%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,x%tl_idx)
+          z%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,z%tl_idx) = &
+            cval * x%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,x%tl_idx)
           z%elem(ie)%state%dp3d(inpx,inpy,inlev,z%tl_idx) = &
             cval * x%elem(ie)%state%dp3d(inpx,inpy,inlev,x%tl_idx)
         end do ! inpx
@@ -548,8 +548,8 @@ subroutine FNVExtAbs(x_C, z_C)
             abs(x%elem(ie)%state%v(inpx,inpy,1,inlev,x%tl_idx))
           z%elem(ie)%state%v(inpx,inpy,2,inlev,z%tl_idx) = &
             abs(x%elem(ie)%state%v(inpx,inpy,2,inlev,x%tl_idx))
-          z%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,z%tl_idx) = &
-            abs(x%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,x%tl_idx))
+          z%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,z%tl_idx) = &
+            abs(x%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,x%tl_idx))
           z%elem(ie)%state%dp3d(inpx,inpy,inlev,z%tl_idx) = &
             abs(x%elem(ie)%state%dp3d(inpx,inpy,inlev,x%tl_idx))
         end do ! inpx
@@ -604,8 +604,8 @@ subroutine FNVExtInv(x_C, z_C)
             1.d0 / x%elem(ie)%state%v(inpx,inpy,1,inlev,x%tl_idx)
           z%elem(ie)%state%v(inpx,inpy,2,inlev,z%tl_idx) = &
             1.d0 / x%elem(ie)%state%v(inpx,inpy,2,inlev,x%tl_idx)
-          z%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,z%tl_idx) = &
-            1.d0 / x%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,x%tl_idx)
+          z%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,z%tl_idx) = &
+            1.d0 / x%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,x%tl_idx)
           z%elem(ie)%state%dp3d(inpx,inpy,inlev,z%tl_idx) = &
             1.d0 / x%elem(ie)%state%dp3d(inpx,inpy,inlev,x%tl_idx)
         end do ! inpx
@@ -660,8 +660,8 @@ subroutine FNVExtAddConst(cval, x_C, z_C)
             x%elem(ie)%state%v(inpx,inpy,1,inlev,x%tl_idx) + cval
           z%elem(ie)%state%v(inpx,inpy,2,inlev,z%tl_idx) = &
             x%elem(ie)%state%v(inpx,inpy,2,inlev,x%tl_idx) + cval
-          z%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,z%tl_idx) = &
-            x%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,x%tl_idx) + cval
+          z%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,z%tl_idx) = &
+            x%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,x%tl_idx) + cval
           z%elem(ie)%state%dp3d(inpx,inpy,inlev,z%tl_idx) = &
             x%elem(ie)%state%dp3d(inpx,inpy,inlev,x%tl_idx) + cval
         end do ! inpx
@@ -723,8 +723,8 @@ subroutine FNVExtDotProd(x_C, y_C, cval)
               y%elem(ie)%state%v(inpx,inpy,1,inlev,y%tl_idx) + &
             x%elem(ie)%state%v(inpx,inpy,2,inlev,x%tl_idx)* &
               y%elem(ie)%state%v(inpx,inpy,2,inlev,y%tl_idx) + &
-            x%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,x%tl_idx)* &
-              y%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,y%tl_idx) + &
+            x%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,x%tl_idx)* &
+              y%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,y%tl_idx) + &
             x%elem(ie)%state%dp3d(inpx,inpy,inlev,x%tl_idx)* &
               y%elem(ie)%state%dp3d(inpx,inpy,inlev,y%tl_idx)) &
             * x%elem(ie)%spheremp(inpx,inpy)
@@ -789,7 +789,7 @@ subroutine FNVExtMaxNorm(x_C, cval)
           cval_loc = max(cval_loc, &
             abs(x%elem(ie)%state%v(inpx,inpy,1,inlev,x%tl_idx)), &
             abs(x%elem(ie)%state%v(inpx,inpy,2,inlev,x%tl_idx)), &
-            abs(x%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,x%tl_idx)), &
+            abs(x%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,x%tl_idx)), &
             abs(x%elem(ie)%state%dp3d(inpx,inpy,inlev,x%tl_idx)))
         end do ! inpx
       end do ! inpy
@@ -858,8 +858,8 @@ subroutine FNVExtWrmsNorm(x_C, w_C, cval)
                 w%elem(ie)%state%v(inpx,inpy,1,inlev,w%tl_idx))**2 + &
               (x%elem(ie)%state%v(inpx,inpy,2,inlev,x%tl_idx)* &
                 w%elem(ie)%state%v(inpx,inpy,2,inlev,w%tl_idx))**2 + &
-              (x%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,x%tl_idx)* &
-                w%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,w%tl_idx))**2 + &
+              (x%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,x%tl_idx)* &
+                w%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,w%tl_idx))**2 + &
               (x%elem(ie)%state%dp3d(inpx,inpy,inlev,x%tl_idx)* &
                 w%elem(ie)%state%dp3d(inpx,inpy,inlev,w%tl_idx))**2 &
             ) * x%elem(ie)%spheremp(inpx,inpy)
@@ -927,7 +927,7 @@ subroutine FNVExtMin(x_C, cval)
           cval_loc = min(cval_loc, &
             abs(x%elem(ie)%state%v(inpx,inpy,1,inlev,x%tl_idx)), &
             abs(x%elem(ie)%state%v(inpx,inpy,2,inlev,x%tl_idx)), &
-            abs(x%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,x%tl_idx)), &
+            abs(x%elem(ie)%state%vtheta_dp(inpx,inpy,inlev,x%tl_idx)), &
             abs(x%elem(ie)%state%dp3d(inpx,inpy,inlev,x%tl_idx)))
         end do ! inpx
       end do ! inpy
