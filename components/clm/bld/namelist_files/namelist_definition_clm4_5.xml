@@ -351,62 +351,62 @@ If TRUE, indicates do NOT output any default history fields (requires you to use
 hist_fincl* to set the exact output fields to use)..
 </entry>
 
-<entry id="hist_fexcl1" type="char*34(1000)" category="history"
+<entry id="hist_fexcl1" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to exclude from history tape series 1.
 </entry>
 
-<entry id="hist_fexcl2" type="char*34(1000)" category="history"
+<entry id="hist_fexcl2" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to exclude from history tape series  2.
 </entry>
 
-<entry id="hist_fexcl3" type="char*34(1000)" category="history"
+<entry id="hist_fexcl3" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to exclude from history tape series  3.
 </entry>
 
-<entry id="hist_fexcl4" type="char*34(1000)" category="history"
+<entry id="hist_fexcl4" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to exclude from history tape series  4.
 </entry>
 
-<entry id="hist_fexcl5" type="char*34(1000)" category="history"
+<entry id="hist_fexcl5" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to exclude from history tape series  5.
 </entry>
 
-<entry id="hist_fexcl6" type="char*34(1000)" category="history"
+<entry id="hist_fexcl6" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to exclude from history tape series  6.
 </entry>
 
-<entry id="hist_fincl1" type="char*34(1000)" category="history"
+<entry id="hist_fincl1" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to add to history tape series  1.
 </entry>
 
-<entry id="hist_fincl2" type="char*34(1000)" category="history"
+<entry id="hist_fincl2" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to add to history tape series  2.
 </entry>
 
-<entry id="hist_fincl3" type="char*34(1000)" category="history"
+<entry id="hist_fincl3" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to add to history tape series  3.
 </entry>
 
-<entry id="hist_fincl4" type="char*34(1000)" category="history"
+<entry id="hist_fincl4" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to add to history tape series  4.
 </entry>
 
-<entry id="hist_fincl5" type="char*34(1000)" category="history"
+<entry id="hist_fincl5" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to add to history tape series  5.
 </entry>
 
-<entry id="hist_fincl6" type="char*34(1000)" category="history"
+<entry id="hist_fincl6" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to add to history tape series  6.
 </entry>
@@ -1180,7 +1180,7 @@ Representative concentration pathway for future scenarios [radiative forcing at 
 
 <entry id="mask" type="char*20" category="default_settings"
        group="default_settings"  
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,cruncep,oEC60to30,oEC60to30v3,oEC60to30wLI,oEC60to30v3wLI,oRRS18to6,oRRS18to6v3,oRRS15to5,mp120v1,oQU240,oQU240wLI,oQU120,oRRS30to10,oRRS30to10v3,oRRS30to10wLI,oRRS30to10v3wLI,360x720cru,NLDASww3a,tx0.1v2">
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,cruncep,oEC60to30,oEC60to30v3,oEC60to30wLI,oEC60to30v3wLI,oRRS18to6,oRRS18to6v3,oRRS15to5,mp120v1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10,oRRS30to10v3,oRRS30to10wLI,oRRS30to10v3wLI,360x720cru,NLDASww3a,tx0.1v2">
 Land mask description
 </entry> 
 

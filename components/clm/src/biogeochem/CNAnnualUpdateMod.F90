@@ -74,6 +74,10 @@ contains
              cnstate_vars%annmax_retransn_patch(p)  = cnstate_vars%tempmax_retransn_patch(p)
              cnstate_vars%tempmax_retransn_patch(p) = 0._r8
 
+             ! update annual total P retranslocation accumulator
+             cnstate_vars%annmax_retransp_patch(p)  = cnstate_vars%tempmax_retransp_patch(p)
+             cnstate_vars%tempmax_retransp_patch(p) = 0._r8
+
              ! update annual average 2m air temperature accumulator
              cnstate_vars%annavg_t2m_patch(p)  = cnstate_vars%tempavg_t2m_patch(p)
              cnstate_vars%tempavg_t2m_patch(p) = 0._r8

@@ -182,11 +182,13 @@
 
   <!-- for lawrence livermore computing -->
   <batch_system type="lc_slurm">
+    <batch_query per_job_arg="-j">squeue</batch_query>
     <batch_submit>sbatch</batch_submit>
     <batch_cancel>scancel</batch_cancel>
     <batch_directive>#SBATCH</batch_directive>
     <jobid_pattern>(\d+)$</jobid_pattern>
-    <depend_string> -l depend=jobid</depend_string>
+    <depend_string>--dependency=afterok:jobid</depend_string>
+    <depend_allow_string>--dependency=afterany:jobid</depend_allow_string>
     <depend_separator>:</depend_separator>
     <walltime_format>%H:%M:%S</walltime_format>
     <batch_mail_flag>--mail-user</batch_mail_flag>
@@ -205,6 +207,7 @@
     </directives>
     <queues>
       <queue walltimemax="01:00:00" nodemax="270" default="true">pbatch</queue>
+      <queue walltimemax="00:30:00">pdebug</queue>
     </queues>
   </batch_system>
   <!-- for lawrence livermore computing -->
@@ -367,10 +370,11 @@
 
     <batch_system MACH="cascade" type="slurm">
       <directives>
-	<directive>--mail-user=email@pnnl.gov</directive>
+	<directive>--output=slurm.out</directive>
+	<directive>--error=slurm.err</directive>
       </directives>
       <queues>
-	<queue walltimemax="00:30:00" default="true">small</queue>
+	<queue walltimemax="00:30:00" default="true">large</queue>
       </queues>
     </batch_system>
 
@@ -514,6 +518,18 @@
 	   >4		1 hour
 	   jobmax = 54nodes*20cores*16th = 8640
 	   -->
+     </queues>
+   </batch_system>
+
+   <batch_system MACH="snl-white" type="lsf" >
+     <queues>
+       <queue walltimemax="02:00" default="true">rhel7G</queue>
+     </queues>
+   </batch_system>
+
+   <batch_system MACH="snl-blake" type="slurm" >
+     <queues>
+       <queue walltimemax="02:00" default="true">blake</queue>
      </queues>
    </batch_system>
 

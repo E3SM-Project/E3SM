@@ -15,6 +15,8 @@ class SVN(GenericServer):
         if passwd:
             self._args += "--password {}".format(passwd)
 
+        self._svn_loc = address
+
         err = run_cmd("svn --non-interactive --trust-server-cert {} ls {}".format(self._args, address))[0]
         if err != 0:
             logging.warning(
@@ -23,7 +25,6 @@ Could not connect to svn repo '{0}'
 This is most likely either a credential, proxy, or network issue .
 To check connection and store your credential run 'svn ls {0}' and permanently store your password""".format(address))
             return None
-        self._svn_loc = address
 
     def fileexists(self, rel_path):
         full_url = os.path.join(self._svn_loc, rel_path)
@@ -54,7 +55,3 @@ To check connection and store your credential run 'svn ls {0}' and permanently s
         else:
             logging.info("SUCCESS\n")
             return True
-
-
-
-        

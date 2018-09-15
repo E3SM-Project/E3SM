@@ -54,7 +54,7 @@ contains
     use clm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version  
     use pftvarcon                 , only: pftconrd
     use soilorder_varcon          , only: soilorder_conrd
-    use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_glcp
+    use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_gtlcp
     use domainMod                 , only: domain_check, ldomain, domain_init
     use surfrdMod                 , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data
     use controlMod                , only: control_init, control_print, NLFilename
@@ -268,14 +268,14 @@ contains
     
 
     ! ------------------------------------------------------------------------
-    ! Determine decomposition of subgrid scale landunits, columns, patches
+    ! Determine decomposition of subgrid scale landunits, topounits, columns, patches
     ! ------------------------------------------------------------------------
 
     if (create_glacier_mec_landunit) then
-       call decompInit_clumps(ns, ni, nj, ldomain%glcmask)
+       call decompInit_clumps(ldomain%glcmask)
        call decompInit_ghosts(ldomain%glcmask)
     else
-       call decompInit_clumps(ns, ni, nj)
+       call decompInit_clumps()
        call decompInit_ghosts()
     endif
 
@@ -288,16 +288,25 @@ contains
     ! Note that the assumption is made that none of the subgrid initialization
     ! can depend on other elements of the subgrid in the calls below
 
+    ! Initialize the gridcell data types
     call grc_pp%Init (bounds_proc%begg_all, bounds_proc%endg_all)
-    ! --ALM-v1: add initialization for topographic unit data types. 
-    ! For preliminary testing, use the same dimensions as gridcell (one topounit per gridcell)
-    call top_pp%Init (bounds_proc%begg, bounds_proc%endg) ! topology and physical properties
-    call top_es%Init (bounds_proc%begg, bounds_proc%endg) ! energy state
-    call top_ws%Init (bounds_proc%begg, bounds_proc%endg) ! water state
-    ! --end ALM-v1 block
+    
+    ! Initialize the topographic unit data types
+    call top_pp%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! topology and physical properties
+    call top_es%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! energy state
+    call top_ws%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! water state
+    
+    ! Initialize the landunit data types
     call lun_pp%Init (bounds_proc%begl_all, bounds_proc%endl_all)
+    
+    ! Initialize the column data types
     call col_pp%Init (bounds_proc%begc_all, bounds_proc%endc_all)
+    
+    ! Initialize the vegetation (PFT) data types
     call veg_pp%Init (bounds_proc%begp_all, bounds_proc%endp_all)
+    
+    ! Initialize the cohort data types (nothing here yet)
+    ! ...to be added later...
 
     ! Determine the number of active external models.
     call EMI_Determine_Active_EMs()
@@ -310,9 +319,9 @@ contains
     ! Set global seg maps for gridcells, landlunits, columns and patches
 
     if (create_glacier_mec_landunit) then
-       call decompInit_glcp(ns, ni, nj, ldomain%glcmask)
+       call decompInit_gtlcp(ns, ni, nj, ldomain%glcmask)
     else
-       call decompInit_glcp(ns, ni, nj)
+       call decompInit_gtlcp(ns, ni, nj)
     endif
 
     ! Set filters
@@ -619,6 +628,8 @@ contains
        call crop_vars%initAccBuffer(bounds_proc)
     end if
 
+    call cnstate_vars%initAccBuffer(bounds_proc)
+
     call print_accum_fields()
 
     call t_stopf('init_accflds')
@@ -831,6 +842,7 @@ contains
     if (crop_prog) then
        call crop_vars%initAccVars(bounds_proc)
     end if
+    call cnstate_vars%initAccVars(bounds_proc)
 
     !------------------------------------------------------------       
     ! Read monthly vegetation

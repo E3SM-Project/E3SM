@@ -6,7 +6,6 @@ from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.files import Files
 from CIME.XML.compilerblock import CompilerBlock
-from CIME.BuildTools.macrowriterbase import write_macros_file_v1
 from CIME.BuildTools.makemacroswriter import MakeMacroWriter
 from CIME.BuildTools.cmakemacroswriter import CMakeMacroWriter
 from CIME.BuildTools.macroconditiontree import merge_optional_trees
@@ -129,10 +128,6 @@ class Compilers(GenericXML):
         if node is not None:
             value = self.text(node)
 
-        if value is None:
-            # if all else fails
-            value = GenericXML.get_value(self, name)
-
         if resolved:
             if value is not None:
                 value = self.get_resolved_value(value)
@@ -143,17 +138,7 @@ class Compilers(GenericXML):
 
     def write_macros_file(self, macros_file="Macros.make", output_format="make", xml=None):
         if self._version <= 1.0:
-            # Parse the xml settings into the $macros hash structure
-            # put conditional settings in the _COND_ portion of the hash
-            # and handle them seperately
-            macros = {"_COND_" : {}}
-
-            # Do worst matches first
-            for compiler_node in reversed(self.compiler_nodes):
-                _add_to_macros(self, compiler_node, macros)
-            write_macros_file_v1(macros, self.compiler, self.os,
-                                        self.machine, macros_file=macros_file,
-                                        output_format=output_format)
+            expect(False, "config_compilers.xml version '{}' is no longer supported".format(self._version))
         else:
             if output_format == "make":
                 format_ = "Makefile"
@@ -164,11 +149,11 @@ class Compilers(GenericXML):
 
             if isinstance(macros_file, six.string_types):
                 with open(macros_file, "w") as macros:
-                    self._write_macros_file_v2(format_, macros)
+                    self._write_macros_file(format_, macros)
             else:
-                self._write_macros_file_v2(format_, macros_file, xml)
+                self._write_macros_file(format_, macros_file, xml)
 
-    def _write_macros_file_v2(self, build_system, output, xml=None):
+    def _write_macros_file(self, build_system, output, xml=None):
         """Write a Macros file for this machine.
 
         Arguments:
@@ -210,57 +195,33 @@ class Compilers(GenericXML):
             # Variables that are ready to be written.
             ready_variables = [
                 var_name for var_name in value_lists
-                if value_lists[var_name].depends <= vars_written
+                if value_lists[var_name].dependencies() <= vars_written
             ]
             expect(len(ready_variables) > 0,
-                   "The file {} has bad <var> references. "
+                   "The file {} has bad $VAR references. "
                    "Check for circular references or variables that "
-                   "are in a <var> tag but not actually defined.".format(self.filename))
-            big_normal_tree = None
+                   "are used in a $VAR but not actually defined.".format(self.filename))
+            big_normal_trees = {}
             big_append_tree = None
             for var_name in ready_variables:
                 # Note that we're writing this variable.
                 vars_written.add(var_name)
                 # Make the conditional trees and write them out.
-                normal_tree, append_tree = \
+                normal_trees, append_tree = \
                     value_lists[var_name].to_cond_trees()
-                big_normal_tree = merge_optional_trees(normal_tree,
-                                                        big_normal_tree)
+                for spec in normal_trees:
+                    if spec in big_normal_trees:
+                        big_normal_trees[spec] = merge_optional_trees(normal_trees[spec],
+                                                                      big_normal_trees[spec])
+                    else:
+                        big_normal_trees[spec] = normal_trees[spec]
                 big_append_tree = merge_optional_trees(append_tree,
                                                         big_append_tree)
                 # Remove this variable from the list of variables to handle
                 # next iteration.
                 del value_lists[var_name]
-            if big_normal_tree is not None:
-                big_normal_tree.write_out(writer)
+            specificities = sorted(list(big_normal_trees.keys()))
+            for spec in specificities:
+                big_normal_trees[spec].write_out(writer)
             if big_append_tree is not None:
                 big_append_tree.write_out(writer)
-
-def _add_to_macros(db, node, macros):
-    for child in db.get_children(root=node):
-        name = db.name(child)
-        attrib = db.attrib(child)
-        value = db.text(child)
-
-        if not attrib:
-            if name.startswith("ADD_"):
-                basename = name[4:]
-                if basename in macros:
-                    macros[basename] = "{} {}".format(macros[basename], value)
-                elif name in macros:
-                    macros[name] = "{} {}".format(macros[name], value)
-                else:
-                    macros[name] = value
-            else:
-                macros[name] = value
-
-        else:
-            cond_macros = macros["_COND_"]
-            for key, value2 in attrib.items():
-                if key not in cond_macros:
-                    cond_macros[key] = {}
-                if value2 not in cond_macros[key]:
-                    cond_macros[key][value2] = {}
-                cond_macros = cond_macros[key][value2]
-
-            cond_macros[name] = value

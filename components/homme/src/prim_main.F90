@@ -224,7 +224,7 @@ program prim_main
      nstep = nextoutputstep(tl)
      do while(tl%nstep<nstep)
         call t_startf('prim_run')
-        call prim_run_subcycle(elem, hybrid,nets,nete, tstep, tl, hvcoord,1)
+        call prim_run_subcycle(elem, hybrid,nets,nete, tstep, .false., tl, hvcoord,1)
         call t_stopf('prim_run')
      end do
 #if (defined HORIZ_OPENMP)
@@ -245,7 +245,7 @@ program prim_main
      if((restartfreq > 0) .and. (MODULO(tl%nstep,restartfreq) ==0)) then
         call WriteRestart(elem, ithr,1,nelemd,tl)
      endif
-  end do
+  end do !end of while tl%nstep < nEndStep
   call t_stopf('prim_main_loop')
 
   if(par%masterproc) print *,"Finished main timestepping loop",tl%nstep

@@ -173,10 +173,10 @@ contains
                 call t_stopf('PBiochemMin')
              else
                 ! nu_com_phosphatase is true
-                call t_startf('PBiochemMin')
-                call PBiochemMin_balance(bounds,num_soilc, filter_soilc, &
-                     cnstate_vars,nitrogenstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-                call t_stopf('PBiochemMin')
+                !call t_startf('PBiochemMin')
+                !call PBiochemMin_balance(bounds,num_soilc, filter_soilc, &
+                !     cnstate_vars,nitrogenstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+                !call t_stopf('PBiochemMin')
              end if
        !end if
        

@@ -43,15 +43,16 @@ FAST_ONLY   = False
 NO_BATCH    = False
 NO_CMAKE    = False
 TEST_ROOT   = None
+NO_TEARDOWN = False
 
 os.environ["CIME_GLOBAL_WALLTIME"] = "0:05:00"
 
 # pragma pylint: disable=protected-access
 ###############################################################################
-def run_cmd_assert_result(test_obj, cmd, from_dir=None, expected_stat=0, env=None):
+def run_cmd_assert_result(test_obj, cmd, from_dir=None, expected_stat=0, env=None, verbose=False):
 ###############################################################################
     from_dir = os.getcwd() if from_dir is None else from_dir
-    stat, output, errput = run_cmd(cmd, from_dir=from_dir, env=env)
+    stat, output, errput = run_cmd(cmd, from_dir=from_dir, env=env, verbose=verbose)
     if expected_stat == 0:
         expectation = "SHOULD HAVE WORKED, INSTEAD GOT STAT %s" % stat
     else:
@@ -129,10 +130,10 @@ def make_fake_teststatus(path, testname, status, phase):
     with TestStatus(test_dir=path, test_name=testname) as ts:
         for core_phase in CORE_PHASES:
             if core_phase == phase:
-                ts.set_status(core_phase, status)
+                ts.set_status(core_phase, status, comments=("time=42" if phase == RUN_PHASE else ""))
                 break
             else:
-                ts.set_status(core_phase, TEST_PASS_STATUS)
+                ts.set_status(core_phase, TEST_PASS_STATUS, comments=("time=42" if phase == RUN_PHASE else ""))
 
 ###############################################################################
 def parse_test_status(line):
@@ -246,7 +247,7 @@ class N_TestUnitTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None)
+        do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None) and not NO_TEARDOWN
 
         teardown_root = True
         for tfile in cls._testdirs:
@@ -655,7 +656,7 @@ class J_TestCreateNewcase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None)
+        do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None) and not NO_TEARDOWN
 
         for tfile in cls._testdirs:
             if tfile not in cls._do_teardown:
@@ -672,24 +673,39 @@ class M_TestWaitForTests(unittest.TestCase):
     def setUp(self):
     ###########################################################################
         self._testroot = os.path.join(TEST_ROOT,"TestWaitForTests")
+
+        # basic tests
         self._testdir_all_pass    = os.path.join(self._testroot, 'scripts_regression_tests.testdir_all_pass')
         self._testdir_with_fail   = os.path.join(self._testroot, 'scripts_regression_tests.testdir_with_fail')
         self._testdir_unfinished  = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished')
         self._testdir_unfinished2 = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished2')
-        testdirs = [self._testdir_all_pass, self._testdir_with_fail, self._testdir_unfinished, self._testdir_unfinished2]
-        for testdir in testdirs:
+
+        # live tests
+        self._testdir_teststatus1 = os.path.join(self._testroot, 'scripts_regression_tests.testdir_teststatus1')
+        self._testdir_teststatus2 = os.path.join(self._testroot, 'scripts_regression_tests.testdir_teststatus2')
+
+        self._testdirs = [self._testdir_all_pass, self._testdir_with_fail, self._testdir_unfinished, self._testdir_unfinished2,
+                          self._testdir_teststatus1, self._testdir_teststatus2]
+        basic_tests = self._testdirs[:self._testdirs.index(self._testdir_teststatus1)]
+
+        for testdir in self._testdirs:
             if os.path.exists(testdir):
                 shutil.rmtree(testdir)
             os.makedirs(testdir)
 
         for r in range(10):
-            for testdir in testdirs:
+            for testdir in basic_tests:
                 os.makedirs(os.path.join(testdir, str(r)))
                 make_fake_teststatus(os.path.join(testdir, str(r)), "Test_%d" % r, TEST_PASS_STATUS, RUN_PHASE)
 
         make_fake_teststatus(os.path.join(self._testdir_with_fail,   "5"), "Test_5", TEST_FAIL_STATUS, RUN_PHASE)
         make_fake_teststatus(os.path.join(self._testdir_unfinished,  "5"), "Test_5", TEST_PEND_STATUS, RUN_PHASE)
         make_fake_teststatus(os.path.join(self._testdir_unfinished2, "5"), "Test_5", TEST_PASS_STATUS, SUBMIT_PHASE)
+
+        integration_tests = self._testdirs[len(basic_tests):]
+        for integration_test in integration_tests:
+            os.makedirs(os.path.join(integration_test, "0"))
+            make_fake_teststatus(os.path.join(integration_test, "0"), "Test_0", TEST_PASS_STATUS, CORE_PHASES[0])
 
         # Set up proxy if possible
         self._unset_proxy = setup_proxy()
@@ -699,9 +715,11 @@ class M_TestWaitForTests(unittest.TestCase):
     ###########################################################################
     def tearDown(self):
     ###########################################################################
-        shutil.rmtree(self._testdir_all_pass)
-        shutil.rmtree(self._testdir_with_fail)
-        shutil.rmtree(self._testdir_unfinished)
+        do_teardown = sys.exc_info() == (None, None, None) and not NO_TEARDOWN
+
+        if do_teardown:
+            for testdir in self._testdirs:
+                shutil.rmtree(testdir)
 
         kill_subprocesses()
 
@@ -720,7 +738,7 @@ class M_TestWaitForTests(unittest.TestCase):
                                        from_dir=testdir, expected_stat=expected_stat)
 
         lines = [line for line in output.splitlines() if line.startswith("Test '")]
-        self.assertEqual(len(lines), 10)
+        self.assertEqual(len(lines), len(expected_results))
         for idx, line in enumerate(lines):
             testname, status = parse_test_status(line)
             self.assertEqual(status, expected_results[idx])
@@ -869,9 +887,45 @@ class M_TestWaitForTests(unittest.TestCase):
             xml_contents = open(xml_file, "r").read()
             self.assertTrue(r'<TestList><Test>Test_0</Test><Test>Test_1</Test><Test>Test_2</Test><Test>Test_3</Test><Test>Test_4</Test><Test>Test_5</Test><Test>Test_6</Test><Test>Test_7</Test><Test>Test_8</Test><Test>Test_9</Test></TestList>'
                             in xml_contents)
-            self.assertTrue(r'<Test Status="failed"><Name>Test_5</Name>' in xml_contents)
+            self.assertTrue(r'<Test Status="notrun"><Name>Test_5</Name>' in xml_contents)
 
             # TODO: Any further checking of xml output worth doing?
+
+    ###########################################################################
+    def live_test_impl(self, testdir, expected_results, last_phase, last_status):
+    ###########################################################################
+        run_thread = threading.Thread(target=self.threaded_test, args=(testdir, expected_results))
+        run_thread.daemon = True
+        run_thread.start()
+
+        time.sleep(5)
+
+        self.assertTrue(run_thread.isAlive(), msg="wait_for_tests should have waited")
+
+        for core_phase in CORE_PHASES[1:]:
+            with TestStatus(test_dir=os.path.join(self._testdir_teststatus1, "0")) as ts:
+                ts.set_status(core_phase, last_status if core_phase == last_phase else TEST_PASS_STATUS)
+
+            time.sleep(5)
+
+            if core_phase != last_phase:
+                self.assertTrue(run_thread.isAlive(), msg="wait_for_tests should have waited after passing phase {}".format(core_phase))
+            else:
+                run_thread.join(timeout=10)
+                self.assertFalse(run_thread.isAlive(), msg="wait_for_tests should have finished after phase {}".format(core_phase))
+                break
+
+        self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
+
+    ###########################################################################
+    def test_wait_for_test_test_status_integration_pass(self):
+    ###########################################################################
+        self.live_test_impl(self._testdir_teststatus1, ["PASS"], RUN_PHASE, TEST_PASS_STATUS)
+
+    ###########################################################################
+    def test_wait_for_test_test_status_integration_submit_fail(self):
+    ###########################################################################
+        self.live_test_impl(self._testdir_teststatus1, ["FAIL"], SUBMIT_PHASE, TEST_FAIL_STATUS)
 
 ###############################################################################
 class TestCreateTestCommon(unittest.TestCase):
@@ -888,7 +942,7 @@ class TestCreateTestCommon(unittest.TestCase):
         self._baseline_area     = os.path.join(TEST_ROOT, "baselines")
         self._testroot          = TEST_ROOT
         self._hasbatch          = MACHINE.has_batch_system() and not NO_BATCH
-        self._do_teardown       = True # Will never do teardown if test failed
+        self._do_teardown       = not NO_TEARDOWN
 
     ###########################################################################
     def tearDown(self):
@@ -1227,6 +1281,14 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
         self._jenkins_root = os.path.join(self._testdir, "J")
 
     ###########################################################################
+    def tearDown(self):
+    ###########################################################################
+        TestCreateTestCommon.tearDown(self)
+
+        if "TESTRUNDIFF_ALTERNATE" in os.environ:
+            del os.environ["TESTRUNDIFF_ALTERNATE"]
+
+    ###########################################################################
     def simple_test(self, expect_works, extra_args, build_name=None):
     ###########################################################################
         if NO_BATCH:
@@ -1236,7 +1298,7 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
         if CIME.utils.get_model() == "e3sm" and build_name is not None:
             extra_args += " -p ACME_test --submit-to-cdash --cdash-build-group=Nightly -c %s" % build_name
 
-        run_cmd_assert_result(self, "%s/jenkins_generic_job -r %s %s" % (TOOLS_DIR, self._testdir, extra_args),
+        run_cmd_assert_result(self, "%s/jenkins_generic_job -r %s %s -B %s" % (TOOLS_DIR, self._testdir, extra_args, self._baseline_area),
                               from_dir=self._testdir, expected_stat=(0 if expect_works else CIME.utils.TESTS_FAILED_ERR_CODE))
 
     ###########################################################################
@@ -1248,9 +1310,9 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
             self._thread_error = str(e)
 
     ###########################################################################
-    def assert_num_leftovers(self):
+    def assert_num_leftovers(self, suite):
     ###########################################################################
-        num_tests_in_tiny = len(get_tests.get_test_suite("cime_test_only_pass"))
+        num_tests_in_tiny = len(get_tests.get_test_suite(suite))
 
         jenkins_dirs = glob.glob("%s/*%s*/" % (self._jenkins_root, self._baseline_name.capitalize())) # case dirs
         # scratch_dirs = glob.glob("%s/*%s*/" % (self._testroot, test_id)) # blr/run dirs
@@ -1267,16 +1329,14 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
     ###########################################################################
     def test_jenkins_generic_job(self):
     ###########################################################################
-        # Unfortunately, this test is very long-running
-
         # Generate fresh baselines so that this test is not impacted by
         # unresolved diffs
         self.simple_test(True, "-t cime_test_only_pass -g -b %s" % self._baseline_name)
-        self.assert_num_leftovers()
+        self.assert_num_leftovers("cime_test_only_pass")
 
         build_name = "jenkins_generic_job_pass_%s" % CIME.utils.get_timestamp()
         self.simple_test(True, "-t cime_test_only_pass -b %s" % self._baseline_name, build_name=build_name)
-        self.assert_num_leftovers() # jenkins_generic_job should have automatically cleaned up leftovers from prior run
+        self.assert_num_leftovers("cime_test_only_pass") # jenkins_generic_job should have automatically cleaned up leftovers from prior run
         assert_dashboard_has_build(self, build_name)
 
     ###########################################################################
@@ -1295,6 +1355,44 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
 
         self.assertFalse(run_thread.isAlive(), msg="jenkins_generic_job should have finished")
         self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
+        assert_dashboard_has_build(self, build_name)
+
+    ###########################################################################
+    def test_jenkins_generic_job_realistic_dash(self):
+    ###########################################################################
+        # The actual quality of the cdash results for this test can only
+        # be inspected manually
+
+        # Generate fresh baselines so that this test is not impacted by
+        # unresolved diffs
+        self.simple_test(False, "-t cime_test_all -g -b %s" % self._baseline_name)
+        self.assert_num_leftovers("cime_test_all")
+
+        # Should create a diff
+        os.environ["TESTRUNDIFF_ALTERNATE"] = "True"
+
+        # Should create a nml diff
+        # Modify namelist
+        fake_nl = """
+ &fake_nml
+   fake_item = 'fake'
+   fake = .true.
+/"""
+        baseline_glob = glob.glob(os.path.join(self._baseline_area, self._baseline_name, "TESTRUNPASS*"))
+        self.assertEqual(len(baseline_glob), 1, msg="Expected one match, got:\n%s" % "\n".join(baseline_glob))
+
+        import stat
+        for baseline_dir in baseline_glob:
+            nl_path = os.path.join(baseline_dir, "CaseDocs", "datm_in")
+            self.assertTrue(os.path.isfile(nl_path), msg="Missing file %s" % nl_path)
+
+            os.chmod(nl_path, stat.S_IRUSR | stat.S_IWUSR)
+            with open(nl_path, "a") as nl_file:
+                nl_file.write(fake_nl)
+
+        build_name = "jenkins_generic_job_mixed_%s" % CIME.utils.get_timestamp()
+        self.simple_test(False, "-t cime_test_all -b %s" % self._baseline_name, build_name=build_name)
+        self.assert_num_leftovers("cime_test_all") # jenkins_generic_job should have automatically cleaned up leftovers from prior run
         assert_dashboard_has_build(self, build_name)
 
 ###############################################################################
@@ -2357,9 +2455,10 @@ class H_TestMakeMacros(unittest.TestCase):
     (xml_to_tester) that converts XML input directly to a MakefileTester object.
     """
     def setUp(self):
-        self.test_os = "SomeOS"
-        self.test_machine = "mymachine"
+        self.test_os       = "SomeOS"
+        self.test_machine  = "mymachine"
         self.test_compiler = MACHINE.get_default_compiler() if TEST_COMPILER is None else TEST_COMPILER
+        self.test_mpilib   = MACHINE.get_default_MPIlib(attributes={"compiler":self.test_compiler}) if TEST_MPILIB is None else TEST_MPILIB
 
         self._maker = Compilers(MockMachines(self.test_machine, self.test_os), version=2.0)
 
@@ -2411,17 +2510,17 @@ class H_TestMakeMacros(unittest.TestCase):
         xml3 = """<compiler MACH="{}" COMPILER="{}"><CFLAGS><append>x y z</append></CFLAGS></compiler>""".format(self.test_machine,self.test_compiler)
         xml4 = """<compiler MACH="{}" COMPILER="{}"><CFLAGS><base>x y z</base></CFLAGS></compiler>""".format(self.test_machine,self.test_compiler)
         tester = self.xml_to_tester(xml1)
-        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":self.test_compiler})
         tester = self.xml_to_tester(xml1+xml2)
-        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":self.test_compiler})
         tester = self.xml_to_tester(xml2+xml1)
-        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":self.test_compiler})
         tester = self.xml_to_tester(xml1+xml3)
-        tester.assert_variable_equals("CFLAGS", "a b c x y z",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester.assert_variable_equals("CFLAGS", "a b c x y z",env={"COMPILER":self.test_compiler})
         tester = self.xml_to_tester(xml1+xml4)
-        tester.assert_variable_equals("CFLAGS", "x y z",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester.assert_variable_equals("CFLAGS", "x y z",env={"COMPILER":self.test_compiler})
         tester = self.xml_to_tester(xml4+xml1)
-        tester.assert_variable_equals("CFLAGS", "x y z",env={"COMPILER":"{}".format(self.test_compiler)})
+        tester.assert_variable_equals("CFLAGS", "x y z",env={"COMPILER":self.test_compiler})
 
     def test_mach_beats_os(self):
         """The macro writer chooses machine-specific over os-specific matches."""
@@ -2541,14 +2640,14 @@ class H_TestMakeMacros(unittest.TestCase):
         tester = self.xml_to_tester(xml1+xml2)
         tester.assert_variable_matches("FFLAGS", "^(-delicious -cake|-cake -delicious)$")
 
-    def test_machine_specific_base_over_append_flags(self):
-        """Test that machine-specific base flags override default append flags."""
+    def test_machine_specific_base_keeps_append_flags(self):
+        """Test that machine-specific base flags don't override default append flags."""
         xml1 = """<compiler><FFLAGS><append>-delicious</append></FFLAGS></compiler>"""
         xml2 = """<compiler MACH="{}"><FFLAGS><base>-cake</base></FFLAGS></compiler>""".format(self.test_machine)
         tester = self.xml_to_tester(xml1+xml2)
-        tester.assert_variable_equals("FFLAGS", "-cake")
+        tester.assert_variable_equals("FFLAGS", "-cake -delicious")
         tester = self.xml_to_tester(xml2+xml1)
-        tester.assert_variable_equals("FFLAGS", "-cake")
+        tester.assert_variable_equals("FFLAGS", "-cake -delicious")
 
     def test_machine_specific_base_and_append_flags(self):
         """Test that machine-specific base flags coexist with machine-specific append flags."""
@@ -2638,6 +2737,139 @@ class H_TestMakeMacros(unittest.TestCase):
         with assertRaisesRegex(self,SystemExit, err_msg):
             self.xml_to_tester(xml1+xml2+xml3)
 
+    def test_override_with_machine_and_new_attributes(self):
+        """Test that overrides with machine-specific settings with added attributes work correctly."""
+        xml1 = """
+<compiler COMPILER="{}">
+  <SCC>icc</SCC>
+  <MPICXX>mpicxx</MPICXX>
+  <MPIFC>mpif90</MPIFC>
+  <MPICC>mpicc</MPICC>
+</compiler>""".format(self.test_compiler)
+        xml2 = """
+<compiler COMPILER="{}" MACH="{}">
+  <MPICXX>mpifoo</MPICXX>
+  <MPIFC MPILIB="{}">mpiffoo</MPIFC>
+  <MPICC MPILIB="NOT_MY_MPI">mpifouc</MPICC>
+</compiler>
+""".format(self.test_compiler, self.test_machine, self.test_mpilib)
+
+        tester = self.xml_to_tester(xml1+xml2)
+
+        tester.assert_variable_equals("SCC", "icc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPICXX", "mpifoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPIFC", "mpiffoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPICC", "mpicc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+
+        tester = self.xml_to_tester(xml2+xml1)
+
+        tester.assert_variable_equals("SCC", "icc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPICXX", "mpifoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPIFC", "mpiffoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPICC", "mpicc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+
+    def test_override_with_machine_and_same_attributes(self):
+        """Test that machine-specific conditional overrides with the same attribute work correctly."""
+        xml1 = """
+<compiler COMPILER="{}">
+  <MPIFC MPILIB="{}">mpifc</MPIFC>
+</compiler>""".format(self.test_compiler, self.test_mpilib)
+        xml2 = """
+<compiler MACH="{}" COMPILER="{}">
+  <MPIFC MPILIB="{}">mpif90</MPIFC>
+</compiler>
+""".format(self.test_machine, self.test_compiler, self.test_mpilib)
+
+        tester = self.xml_to_tester(xml1+xml2)
+
+        tester.assert_variable_equals("MPIFC", "mpif90", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+
+        tester = self.xml_to_tester(xml2+xml1)
+
+        tester.assert_variable_equals("MPIFC", "mpif90", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+
+    def test_appends_not_overriden(self):
+        """Test that machine-specific base value changes don't interfere with appends."""
+        xml1="""
+<compiler COMPILER="{}">
+ <FFLAGS>
+   <base>-base1</base>
+   <append DEBUG="FALSE">-debug1</append>
+ </FFLAGS>
+</compiler>""".format(self.test_compiler)
+
+        xml2="""
+<compiler MACH="{}" COMPILER="{}">
+ <FFLAGS>
+   <base>-base2</base>
+   <append DEBUG="TRUE">-debug2</append>
+ </FFLAGS>
+</compiler>""".format(self.test_machine, self.test_compiler)
+
+        tester = self.xml_to_tester(xml1+xml2)
+
+        tester.assert_variable_equals("FFLAGS", "-base2", env={"COMPILER": self.test_compiler})
+        tester.assert_variable_equals("FFLAGS", "-base2 -debug2", env={"COMPILER": self.test_compiler, "DEBUG": "TRUE"})
+        tester.assert_variable_equals("FFLAGS", "-base2 -debug1", env={"COMPILER": self.test_compiler, "DEBUG": "FALSE"})
+
+        tester = self.xml_to_tester(xml2+xml1)
+
+        tester.assert_variable_equals("FFLAGS", "-base2", env={"COMPILER": self.test_compiler})
+        tester.assert_variable_equals("FFLAGS", "-base2 -debug2", env={"COMPILER": self.test_compiler, "DEBUG": "TRUE"})
+        tester.assert_variable_equals("FFLAGS", "-base2 -debug1", env={"COMPILER": self.test_compiler, "DEBUG": "FALSE"})
+
+    def test_multilevel_specificity(self):
+        """Check that settings with multiple levels of machine-specificity can be resolved."""
+        xml1="""
+<compiler>
+ <MPIFC DEBUG="FALSE">mpifc</MPIFC>
+</compiler>"""
+
+        xml2="""
+<compiler OS="{}">
+ <MPIFC MPILIB="{}">mpif03</MPIFC>
+</compiler>""".format(self.test_os, self.test_mpilib)
+
+        xml3="""
+<compiler MACH="{}">
+ <MPIFC DEBUG="TRUE">mpif90</MPIFC>
+</compiler>""".format(self.test_machine)
+
+        # To verify order-independence, test every possible ordering of blocks.
+        testers = []
+        testers.append(self.xml_to_tester(xml1+xml2+xml3))
+        testers.append(self.xml_to_tester(xml1+xml3+xml2))
+        testers.append(self.xml_to_tester(xml2+xml1+xml3))
+        testers.append(self.xml_to_tester(xml2+xml3+xml1))
+        testers.append(self.xml_to_tester(xml3+xml1+xml2))
+        testers.append(self.xml_to_tester(xml3+xml2+xml1))
+
+        for tester in testers:
+            tester.assert_variable_equals("MPIFC", "mpif90", env={"COMPILER": self.test_compiler, "MPILIB": self.test_mpilib, "DEBUG": "TRUE"})
+            tester.assert_variable_equals("MPIFC", "mpif03", env={"COMPILER": self.test_compiler, "MPILIB": self.test_mpilib, "DEBUG": "FALSE"})
+            tester.assert_variable_equals("MPIFC", "mpifc", env={"COMPILER": self.test_compiler, "MPILIB": "NON_MATCHING_MPI", "DEBUG": "FALSE"})
+
+    def test_remove_dependency_issues(self):
+        """Check that overridden settings don't cause inter-variable dependencies."""
+        xml1="""
+<compiler>
+ <MPIFC>${SFC}</MPIFC>
+</compiler>"""
+
+        xml2="""
+<compiler MACH="{}">""".format(self.test_machine) + """
+ <SFC>${MPIFC}</SFC>
+ <MPIFC>mpif90</MPIFC>
+</compiler>"""
+
+        tester = self.xml_to_tester(xml1+xml2)
+        tester.assert_variable_equals("SFC", "mpif90")
+        tester.assert_variable_equals("MPIFC", "mpif90")
+
+        tester = self.xml_to_tester(xml2+xml1)
+        tester.assert_variable_equals("SFC", "mpif90")
+        tester.assert_variable_equals("MPIFC", "mpif90")
+
 
 ###############################################################################
 class I_TestCMakeMacros(H_TestMakeMacros):
@@ -2704,7 +2936,7 @@ def make_pylint_test(pyfile, all_files):
     def test(self):
         if B_CheckCode.all_results is None:
             B_CheckCode.all_results = check_code(all_files)
-        result = B_CheckCode.all_results[pyfile]
+        result = B_CheckCode.all_results[pyfile] # pylint: disable=unsubscriptable-object
         self.assertTrue(result == "", msg=result)
 
     return test
@@ -2744,6 +2976,7 @@ def _main_func(description):
     global TEST_MPILIB
     global TEST_ROOT
     global GLOBAL_TIMEOUT
+    global NO_TEARDOWN
     config = CIME.utils.get_cime_config()
 
     help_str = \
@@ -2777,6 +3010,9 @@ OR
     parser.add_argument("--no-cmake", action="store_true",
                         help="Do not run cmake tests")
 
+    parser.add_argument("--no-teardown", action="store_true",
+                        help="Do not delete directories left behind by testing")
+
     parser.add_argument("--machine",
                         help="Select a specific machine setting for cime")
 
@@ -2801,6 +3037,7 @@ OR
     NO_BATCH       = ns.no_batch
     NO_CMAKE       = ns.no_cmake
     GLOBAL_TIMEOUT = ns.timeout
+    NO_TEARDOWN    = ns.no_teardown
 
     if ns.machine is not None:
         MACHINE = Machines(machine=ns.machine)
@@ -2867,7 +3104,7 @@ OR
             print("Detected failures, leaving directory:", TEST_ROOT)
         else:
             print("All pass, removing directory:", TEST_ROOT)
-            if os.path.exists(TEST_ROOT):
+            if os.path.exists(TEST_ROOT) and not NO_TEARDOWN:
                 shutil.rmtree(TEST_ROOT)
 
         raise

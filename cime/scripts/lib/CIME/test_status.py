@@ -27,7 +27,7 @@ from CIME.XML.standard_module_setup import *
 
 from collections import OrderedDict
 
-import os
+import os, itertools
 
 TEST_STATUS_FILENAME = "TestStatus"
 
@@ -92,13 +92,23 @@ def _test_helper1(file_contents):
     ts._parse_test_status(file_contents) # pylint: disable=protected-access
     return ts._phase_statuses # pylint: disable=protected-access
 
-def _test_helper2(file_contents, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False):
-    ts = TestStatus(test_dir="/", test_name="ERS.foo.A")
-    ts._parse_test_status(file_contents) # pylint: disable=protected-access
-    return ts.get_overall_test_status(wait_for_run=wait_for_run,
-                                      check_throughput=check_throughput,
-                                      check_memory=check_memory,
-                                      ignore_namelists=ignore_namelists)
+def _test_helper2(file_contents, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False, no_run=False):
+    lines = file_contents.splitlines()
+    rv = None
+    for perm in itertools.permutations(lines):
+        ts = TestStatus(test_dir="/", test_name="ERS.foo.A")
+        ts._parse_test_status("\n".join(perm)) # pylint: disable=protected-access
+        the_status = ts.get_overall_test_status(wait_for_run=wait_for_run,
+                                                check_throughput=check_throughput,
+                                                check_memory=check_memory,
+                                                ignore_namelists=ignore_namelists,
+                                                no_run=no_run)
+        if rv is not None and the_status != rv:
+            return "{} != {}".format(rv, the_status)
+        else:
+            rv = the_status
+
+    return rv
 
 class TestStatus(object):
 
@@ -136,6 +146,12 @@ class TestStatus(object):
     def __iter__(self):
         for phase, data in self._phase_statuses.items():
             yield phase, data[0]
+
+    def __eq__(self, rhs):
+        return self._phase_statuses == rhs._phase_statuses # pylint: disable=protected-access
+
+    def __ne__(self, rhs):
+        return not self.__eq__(rhs)
 
     def get_name(self):
         return self._test_name
@@ -271,7 +287,54 @@ class TestStatus(object):
         with open(self._filename, "r") as fd:
             self._parse_test_status(fd.read())
 
-    def get_overall_test_status(self, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False, ignore_memleak=False):
+    def _get_overall_status_based_on_phases(self, phases, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False, ignore_memleak=False, no_run=False):
+
+        rv = TEST_PASS_STATUS
+        run_phase_found = False
+        for phase in phases: # ensure correct order of processing phases
+            if phase in self._phase_statuses:
+                data = self._phase_statuses[phase]
+            else:
+                continue
+
+            status = data[0]
+            if phase == RUN_PHASE:
+                run_phase_found = True
+
+            if phase in [SUBMIT_PHASE, RUN_PHASE] and no_run:
+                break
+
+            if (status == TEST_PEND_STATUS):
+                rv = TEST_PEND_STATUS
+
+            elif (status == TEST_FAIL_STATUS):
+                if ( (not check_throughput and phase == THROUGHPUT_PHASE) or
+                     (not check_memory and phase == MEMCOMP_PHASE) or
+                     (ignore_namelists and phase == NAMELIST_PHASE) or
+                     (ignore_memleak and phase == MEMLEAK_PHASE) ):
+                    continue
+
+                if (phase == NAMELIST_PHASE):
+                    if (rv == TEST_PASS_STATUS):
+                        rv = NAMELIST_FAIL_STATUS
+
+                elif (rv in [NAMELIST_FAIL_STATUS, TEST_PASS_STATUS] and phase == BASELINE_PHASE):
+                    rv = TEST_DIFF_STATUS
+
+                elif phase in CORE_PHASES:
+                    return TEST_FAIL_STATUS
+
+                else:
+                    rv = TEST_FAIL_STATUS
+
+        # The test did not fail but the RUN phase was not found, so if the user requested
+        # that we wait for the RUN phase, then the test must still be considered pending.
+        if rv != TEST_FAIL_STATUS and not run_phase_found and wait_for_run:
+            rv = TEST_PEND_STATUS
+
+        return rv
+
+    def get_overall_test_status(self, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False, ignore_memleak=False, no_run=False):
         r"""
         Given the current phases and statuses, produce a single results for this test. Preference
         is given to PEND since we don't want to stop waiting for a test
@@ -282,15 +345,17 @@ class TestStatus(object):
         >>> _test_helper2('PASS ERS.foo.A SHAREDLIB_BUILD\nPEND ERS.foo.A RUN')
         'PEND'
         >>> _test_helper2('FAIL ERS.foo.A MODEL_BUILD\nPEND ERS.foo.A RUN')
-        'PEND'
+        'FAIL'
         >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPASS ERS.foo.A RUN')
         'PASS'
         >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A TPUTCOMP')
         'PASS'
         >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A TPUTCOMP', check_throughput=True)
         'FAIL'
-        >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A NLCOMP')
+        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPASS ERS.foo.A RUN\nFAIL ERS.foo.A NLCOMP')
         'NLFAIL'
+        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPEND ERS.foo.A RUN\nFAIL ERS.foo.A NLCOMP')
+        'PEND'
         >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A MEMCOMP')
         'PASS'
         >>> _test_helper2('PASS ERS.foo.A RUN\nFAIL ERS.foo.A NLCOMP', ignore_namelists=True)
@@ -317,37 +382,30 @@ class TestStatus(object):
         'FAIL'
         >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPASS ERS.foo.A RUN', wait_for_run=True)
         'PASS'
+        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nFAIL ERS.foo.A RUN\nPEND ERS.foo.A COMPARE')
+        'FAIL'
+        >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPEND ERS.foo.A RUN', no_run=True)
+        'PASS'
         """
-        rv = TEST_PASS_STATUS
-        run_phase_found = False
-        for phase, data in self._phase_statuses.items():
-            status = data[0]
-            if phase == RUN_PHASE:
-                run_phase_found = True
+        # Core phases take priority
+        core_rv = self._get_overall_status_based_on_phases(CORE_PHASES,
+                                                           wait_for_run=wait_for_run,
+                                                           check_throughput=check_throughput,
+                                                           check_memory=check_memory,
+                                                           ignore_namelists=ignore_namelists,
+                                                           ignore_memleak=ignore_memleak,
+                                                           no_run=no_run)
+        if core_rv != TEST_PASS_STATUS:
+            return core_rv
+        else:
+            phase_order = list(CORE_PHASES)
+            phase_order.extend([item for item in self._phase_statuses if item not in CORE_PHASES])
 
-            if (status == TEST_PEND_STATUS):
-                rv = TEST_PEND_STATUS
+            return self._get_overall_status_based_on_phases(phase_order,
+                                                            wait_for_run=wait_for_run,
+                                                            check_throughput=check_throughput,
+                                                            check_memory=check_memory,
+                                                            ignore_namelists=ignore_namelists,
+                                                            ignore_memleak=ignore_memleak,
+                                                            no_run=no_run)
 
-            elif (status == TEST_FAIL_STATUS):
-                if ( (not check_throughput and phase == THROUGHPUT_PHASE) or
-                     (not check_memory and phase == MEMCOMP_PHASE) or
-                     (ignore_namelists and phase == NAMELIST_PHASE) or
-                     (ignore_memleak and phase == MEMLEAK_PHASE) ):
-                    continue
-
-                if (phase == NAMELIST_PHASE):
-                    if (rv == TEST_PASS_STATUS):
-                        rv = NAMELIST_FAIL_STATUS
-
-                elif (rv in [NAMELIST_FAIL_STATUS, TEST_PASS_STATUS] and phase == BASELINE_PHASE):
-                    rv = TEST_DIFF_STATUS
-
-                else:
-                    rv = TEST_FAIL_STATUS
-
-        # The test did not fail but the RUN phase was not found, so if the user requested
-        # that we wait for the RUN phase, then the test must still be considered pending.
-        if rv != TEST_FAIL_STATUS and not run_phase_found and wait_for_run:
-            rv = TEST_PEND_STATUS
-
-        return rv

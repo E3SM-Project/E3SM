@@ -1408,17 +1408,17 @@ contains
                         countj=countj+1
                       endif
                       if(trim(spnam).ne.'num') then
-                          aero_q_data(ii,k,2)=(aero_q_data(ii,k,2)*pp(k)) /rho(ii,k)
+                          aero_q_data(ii,k,begchunk)=(aero_q_data(ii,k,begchunk)*pp(k)) /rho(ii,k)
                       endif
-                         sumii=sumii + aero_q_data(ii,k,2)
+                         sumii=sumii + aero_q_data(ii,k,begchunk)
                     enddo
                   enddo
                    meanO=sumii/countj
                   do k = 1, pver
                     if(meanO.ne.0.) then
-                          aero_q_data(1,k,2)=pp(k)*meanO
+                          aero_q_data(1,k,begchunk)=pp(k)*meanO
                      else                 
-                        aero_q_data(1,k,2)=0._r8
+                        aero_q_data(1,k,begchunk)=0._r8
                     endif
                   enddo
               endif

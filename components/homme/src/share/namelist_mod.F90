@@ -829,6 +829,15 @@ module namelist_mod
     endif
 #endif
 
+#ifndef CAM
+!standalone homme does not support ftype=1 (cause it is identical to ftype=0).
+!also, standalone ftype=0 is the same as standalone ftype=2.
+    if ((ftype == 0).or.(ftype == 2).or.(ftype == 3).or.(ftype == 4).or.(ftype == -1)) then
+    else
+       call abortmp('Standalone homme supports only se_ftype=-1,0,2,3,4')
+    endif
+#endif
+
     if((prescribed_wind/=0).and.(prescribed_wind/=1))then
           call abortmp('prescribed_wind should be either 0 or 1')
     endif
@@ -1025,6 +1034,13 @@ module namelist_mod
        end if
 #endif
 ! ^ ifndef CAM
+
+#ifndef CAM
+#ifdef HOMME_SHA1
+      write(iulog,*)"HOMME SHA = ", HOMME_SHA1
+#endif
+#endif
+
 
 !=======================================================================================================!
     endif

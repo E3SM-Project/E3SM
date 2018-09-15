@@ -118,6 +118,11 @@ def buildnml(case, caseroot, compname):
         grid_prefix += 'cice.QU240wLI'
         decomp_date += '160929'
         decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oQU480':
+        grid_date += '180705'
+        grid_prefix += 'seaice.oQU480'
+        decomp_date += '180705'
+        decomp_prefix += 'mpas-seaice.graph.legacy.'
     elif ice_grid == 'mpasgx1':
         grid_date += '121116'
         grid_prefix += 'grid_gx1'
@@ -196,7 +201,7 @@ def buildnml(case, caseroot, compname):
 
         inst_string = ""
         if ninst_ice > 1:
-            inst_string = "{0:04d}".format(inst_counter)
+            inst_string = "_{0:04d}".format(inst_counter)
 
             # If multi-instance case does not have restart file, use single-case restart
             # for each instance

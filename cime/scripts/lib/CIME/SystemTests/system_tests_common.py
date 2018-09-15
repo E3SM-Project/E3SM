@@ -3,7 +3,7 @@ Base class for CIME system tests
 """
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_run import EnvRun
-from CIME.utils import append_testlog, get_model, safe_copy
+from CIME.utils import append_testlog, get_model, safe_copy, get_timestamp
 from CIME.test_status import *
 from CIME.hist_utils import *
 from CIME.provenance import save_test_time
@@ -601,6 +601,11 @@ class TESTBUILDFAIL(TESTRUNPASS):
             TESTRUNPASS.build_phase(self, sharedlib_only, model_only)
         else:
             if (not sharedlib_only):
+                blddir = self._case.get_value("EXEROOT")
+                bldlog = os.path.join(blddir, "{}.bldlog.{}".format(get_model(), get_timestamp("%y%m%d-%H%M%S")))
+                with open(bldlog, "w") as fd:
+                    fd.write("BUILD FAIL: Intentional fail for testing infrastructure")
+
                 expect(False, "BUILD FAIL: Intentional fail for testing infrastructure")
 
 class TESTBUILDFAILEXC(FakeTest):
