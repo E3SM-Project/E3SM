@@ -14,7 +14,7 @@
   runtype           = 0                         ! 0 => new run
   tstep             = 900.0                     ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
-  tstep_type        = 5
+  tstep_type        = 7
   rsplit            = 0
   qsplit            = 1
   nu                = 4e16                      ! default= 1e15*(ne30/ne8)**3.2 = 6.9e16
