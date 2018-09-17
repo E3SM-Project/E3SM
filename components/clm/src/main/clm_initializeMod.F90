@@ -25,7 +25,7 @@ module clm_initializeMod
   ! Definition of component types
   !-----------------------------------------
   use GridcellType           , only : grc_pp
-  use TopounitType           , only : top_pp, top_as, top_es, top_ws
+  use TopounitType           , only : top_pp, top_as, top_es
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
   use VegetationType         , only : veg_pp                
@@ -295,7 +295,6 @@ contains
     call top_pp%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! topology and physical properties
     call top_as%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! atmospheric state variables (forcings)
     call top_es%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! energy state
-    call top_ws%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! water state
     
     ! Initialize the landunit data types
     call lun_pp%Init (bounds_proc%begl_all, bounds_proc%endl_all)

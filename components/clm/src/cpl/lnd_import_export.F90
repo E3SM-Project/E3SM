@@ -979,7 +979,16 @@ contains
          top_as%vbot(topo)    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
          top_as%zbot(topo)    = x2l(index_x2l_Sa_z,i)         ! zgcmxy    Atm state m
          ! assign the forcing fields derived from other inputs
+         ! Horizontal windspeed (m/s)
          top_as%windbot(topo) = sqrt(top_as%ubot(topo)**2 + top_as%vbot(topo)**2)
+         ! Relative humidity (percent)
+         if (top_as%tbot(topo) > SHR_CONST_TKFRZ) then
+            e = esatw(tdc(top_as%tbot(topo)))
+         else
+            e = esati(tdc(top_as%tbot(topo)))
+         end if
+         qsat           = 0.622_r8*e / (top_as%pbot(topo) - 0.378_r8*e)
+         top_as%rhbot(topo) = 100.0_r8*(top_as%qbot(topo) / qsat)
        end do
          
 #endif

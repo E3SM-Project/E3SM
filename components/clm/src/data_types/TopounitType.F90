@@ -66,6 +66,7 @@ module TopounitType
     real(r8), pointer :: thbot      (:) => null() ! potential temperature of air at atmospheric forcing height (K)
     real(r8), pointer :: pbot       (:) => null() ! air pressure at atmospheric forcing height (Pa)
     real(r8), pointer :: qbot       (:) => null() ! specific humidity at atmospheric forcing height (kg H2O/kg moist air)
+    real(r8), pointer :: rhbot      (:) => null() ! relative humidity at atmospheric forcing height (%)
     real(r8), pointer :: ubot       (:) => null() ! wind speed in U (east) direction at atmospheric forcing height (m/s)
     real(r8), pointer :: vbot       (:) => null() ! wind speed in V (north) direction at atmospheric forcing height (m/s)
     real(r8), pointer :: windbot    (:) => null() ! horizontal component of wind at atmospheric forcing height (m/s)
@@ -85,21 +86,10 @@ module TopounitType
     procedure, public :: Clean => clean_top_es
   end type topounit_energy_state
 
-  type, public :: topounit_water_state
-    real(r8), pointer :: vp_atm     (:) => null() ! vapor pressure of air at atmospheric forcing height (Pa)
-    real(r8), pointer :: q_atm      (:) => null() ! specific humidity of air at atmopspheric forcing height (kg H2O/ kg dry air)
-    real(r8), pointer :: rh_atm     (:) => null() ! relative humidity of air at atmospheric forcing height (0 to 1)
-    ! glacier ice mass here? 
-  contains
-    procedure, public :: Init   => init_top_ws
-    procedure, public :: Clean  => clean_top_ws
-  end type topounit_water_state
-
   ! declare the public instances of topounit types
   type(topounit_physical_properties),  public, target :: top_pp
   type(topounit_atmospheric_state),    public, target :: top_as
   type(topounit_energy_state),         public, target :: top_es
-  type(topounit_water_state),          public, target :: top_ws
   
   contains
   
@@ -170,6 +160,7 @@ module TopounitType
     allocate(this%thbot    (begt:endt)) ; this%thbot     (:) = spval
     allocate(this%pbot     (begt:endt)) ; this%pbot      (:) = spval
     allocate(this%qbot     (begt:endt)) ; this%qbot      (:) = spval
+    allocate(this%rhbot    (begt:endt)) ; this%rhbot     (:) = spval
     allocate(this%ubot     (begt:endt)) ; this%ubot      (:) = spval
     allocate(this%vbot     (begt:endt)) ; this%vbot      (:) = spval
     allocate(this%windbot  (begt:endt)) ; this%windbot   (:) = spval
@@ -196,6 +187,7 @@ module TopounitType
     deallocate(this%thbot)
     deallocate(this%pbot)
     deallocate(this%qbot)
+    deallocate(this%rhbot)
     deallocate(this%ubot)
     deallocate(this%vbot)
     deallocate(this%windbot)
@@ -220,24 +212,5 @@ module TopounitType
     deallocate(this%t_rad    )
   end subroutine clean_top_es
   
-  subroutine init_top_ws(this, begt, endt)
-    class(topounit_water_state) :: this
-    integer, intent(in) :: begt   ! beginning topographic unit index
-    integer, intent(in) :: endt   ! ending topographic unit index
-
-    allocate(this%vp_atm  (begt:endt))  ; this%vp_atm   (:) = nan
-    allocate(this%q_atm   (begt:endt))  ; this%q_atm    (:) = nan
-    allocate(this%rh_atm  (begt:endt))  ; this%rh_atm   (:) = nan
-  end subroutine init_top_ws
-  
-  subroutine clean_top_ws(this, begt, endt)
-    class(topounit_water_state) :: this
-    integer, intent(in) :: begt   ! beginning topographic unit index
-    integer, intent(in) :: endt   ! ending topographic unit index
-    
-    deallocate(this%vp_atm  )
-    deallocate(this%q_atm   )
-    deallocate(this%rh_atm  )
-  end subroutine clean_top_ws
     
 end module TopounitType

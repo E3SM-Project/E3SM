@@ -191,7 +191,7 @@ contains
     associate(                                                                & 
          is_cwd             =>    decomp_cascade_con%is_cwd                 , & ! Input:  [logical  (:)     ]  TRUE => pool is a cwd pool                         
          
-         forc_rh            =>    atm2lnd_vars%forc_rh_grc                  , & ! Input:  [real(r8) (:)     ]  relative humidity                                 
+         forc_rh            =>    top_as%rhbot                              , & ! Input:  [real(r8) (:)     ]  relative humidity                                 
          forc_wind          =>    top_as%windbot                            , & ! Input:  [real(r8) (:)     ]  atmospheric wind speed (m/s)                       
          forc_t             =>    top_as%tbot                               , & ! Input:  [real(r8) (:)     ]  atmospheric temperature (Kelvin)                  
          forc_rain          =>    atm2lnd_vars%forc_rain_downscaled_col     , & ! Input:  [real(r8) (:)     ]  downscaled rain                                              
@@ -589,7 +589,7 @@ contains
               fb       = max(0.0_r8,min(1.0_r8,(fuelc(c)-lfuel)/(ufuel-lfuel)))
               m        = max(0._r8,wf(c))
               fire_m   = exp(-SHR_CONST_PI *(m/0.69_r8)**2)*(1.0_r8 - max(0._r8, &
-                   min(1._r8,(forc_rh(g)-30._r8)/(80._r8-30._r8))))*  &
+                   min(1._r8,(forc_rh(t)-30._r8)/(80._r8-30._r8))))*  &
                    min(1._r8,exp(SHR_CONST_PI*(forc_t(t)-SHR_CONST_TKFRZ)/10._r8))
               lh       = 0.0035_r8*6.8_r8*hdmlf**(0.43_r8)/30._r8/24._r8
               fs       = 1._r8-(0.01_r8+0.98_r8*exp(-0.025_r8*hdmlf))
@@ -599,7 +599,7 @@ contains
               if ( wtlf(c) > 0.0_r8 )then
                  spread_m = (1.0_r8 - max(0._r8,min(1._r8,(btran_col(c)/wtlf(c)-0.3_r8)/ &
                       (0.7_r8-0.3_r8))))*(1.0_r8-max(0._r8, &
-                      min(1._r8,(forc_rh(g)-30._r8)/(80._r8-30._r8))))
+                      min(1._r8,(forc_rh(t)-30._r8)/(80._r8-30._r8))))
               else
                  spread_m = 0.0_r8
               end if
