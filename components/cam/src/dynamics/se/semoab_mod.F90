@@ -27,8 +27,6 @@ module semoab_mod
   integer local_map(np,np) !  what is the index of gll point (i,j) in a local moabconn(start: start+(np-1)*(np-1)*4-1)
   integer, target, allocatable :: moabconn(:) ! will have the connectivity in terms of local index in verts
   integer                         num_calls_export
-
-#include "moab/MOABConfig.h"
   
 contains
 

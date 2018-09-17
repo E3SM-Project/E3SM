@@ -19,6 +19,7 @@ module cplcomp_exchange_mod
   implicit none
   private  ! except
 #include <mpif.h>
+#include "moab/MOABConfig.h"
   save
 
   !--------------------------------------------------------------------------
@@ -997,7 +998,7 @@ contains
     integer                  :: ierr
     character*32             :: appname, outfile, wopts, tagnameProj
     integer                  :: maxMH, maxMPO ! max pids for moab apps
-    integer                  :: tagtype, numco,  tagindex
+    integer                  :: tagtype, numco,  tagindex, partMethod
 
     !-----------------------------------------------------
 
@@ -1010,6 +1011,11 @@ contains
     mpicom_new  = mpicom_cplid
     mpicom_old  = comp%mpicom_compid
     mpicom_join = comp%mpicom_cplcompid
+
+    partMethod = 0 ! trivial partitioning
+#ifdef MOAB_HAVE_ZOLTAN
+    partMethod = 1
+#endif
 
     call seq_comm_getinfo(ID_old ,mpicom=mpicom_old)
     call seq_comm_getinfo(ID_new ,mpicom=mpicom_new)
@@ -1027,7 +1033,7 @@ contains
       ! now, if on coupler pes, receive mesh; if on comp pes, send mesh
       if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
         !  send mesh to coupler
-        ierr = iMOAB_SendMesh(mhid, mpicom_join, mpigrp_cplid, id_join);
+        ierr = iMOAB_SendMesh(mhid, mpicom_join, mpigrp_cplid, id_join, partMethod)
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
         appname = "COUPLE_ATM"//CHAR(0)
@@ -1047,7 +1053,7 @@ contains
 
       if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
         !  send mesh to coupler
-        ierr = iMOAB_SendMesh(mpoid, mpicom_join, mpigrp_cplid, id_join);
+        ierr = iMOAB_SendMesh(mpoid, mpicom_join, mpigrp_cplid, id_join, partMethod)
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
         appname = "COUPLE_MPASO"//CHAR(0)
