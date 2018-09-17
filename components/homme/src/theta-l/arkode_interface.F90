@@ -289,7 +289,7 @@ subroutine farkdiags(iout, rout, ap)
   ! linear solver statistics
   print '(4x,A,i9)','Total linear iterations    =',iout(21)
   if (iout(9) > 0)  print '(4x,A,i9)','Num lin solver setup calls =',iout(9)
-  if (.not. ap%useColumnSolver) then
+  if (.not.use_column_solver) then
      if (iout(17) > 0) print '(4x,A,i9)','Num lin solver rhs calls   =',iout(17)
      if (iout(18) > 0) print '(4x,A,i9)','Num lin solver Jac calls   =',iout(18)
      if (iout(19) > 0) print '(4x,A,i9)','Num PSet routine calls     =',iout(19)
@@ -299,7 +299,7 @@ subroutine farkdiags(iout, rout, ap)
   ! error statistics
   if (iout(10) > 0) print '(4x,A,i9)','Num error test failures    =',iout(10)
   if (iout(12) > 0) print '(4x,A,i9)','Num nonlin conv failures   =',iout(12)
-  if (.not. ap%useColumnSolver) then
+  if (.not.use_column_solver) then
      if (iout(22) > 0) print '(4x,A,i9)','Num linear conv failures   =',iout(22)
   endif
 

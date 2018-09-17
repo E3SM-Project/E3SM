@@ -46,6 +46,7 @@ module arkode_mod
   real(real_kind), public :: rel_tol = 1.d-8
   real(real_kind), public :: abs_tol = 1.d-8  ! val < 0 indicates array atol
   logical, public         :: calc_nonlinear_stats = .true.
+  logical, public         :: use_column_solver = .true.
 
   ! data type for passing ARKode Butcher table names
   type :: table_list
@@ -87,7 +88,6 @@ module arkode_mod
     real(real_kind) :: bi2(max_stage_num)
     real(real_kind) :: ci(max_stage_num)
     ! Linear Solver Info (flag for columnwise/GMRES, GMRES parameters)
-    logical         :: useColumnSolver
     integer         :: precLR ! preconditioning: 0=none, 1=left, 2=right, 3=left+right
     integer         :: gstype ! Gram-Schmidt orthogonalization: 1=modified, 2=classical
     integer         :: maxl = freelevels ! max size of Krylov subspace (# of iterations/vectors)
@@ -594,7 +594,7 @@ contains
   !  endif
 
 
-      if (ap%useColumnSolver) then
+      if (use_column_solver) then
       ! use the HOMME columnwise direct solver
         call FColumnSolInit(ierr)
         if (ierr /= 0) then
