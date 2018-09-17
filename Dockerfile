@@ -30,4 +30,4 @@ ENTRYPOINT ["e3sm_diags"]
 # and where it'll store the output *relative to this container*.
 # When running the container, mount WORKDIR to a local directory
 # on the machine running the container.
-WORKDIR /e3sm_diags_container_io
+WORKDIR /e3sm_diags_container_cwd

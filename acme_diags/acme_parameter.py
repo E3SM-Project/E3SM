@@ -10,7 +10,6 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         # The user must define these, so don't give any defaults.
         # self.reference_data_path = ''
         # self.test_data_path = ''
-        self.viewer_descr = {}
 
         self.sets = ['zonal_mean_xy', 'zonal_mean_2d', 'lat_lon', 'polar', 'cosp_histogram']
         self.dataset = ''
@@ -62,12 +61,12 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
 
         self.granulate = ['variables', 'seasons', 'regions', 'plevs']
         self.selectors = ['sets', 'seasons']
+        self.viewer_descr = {}
 
     def check_values(self):
-        if not hasattr(self, 'reference_data_path'):
-            msg = 'You need to specify reference_data_path in the parameters file or in the command line using --reference_data_path'
-            raise RuntimeError(msg)
-        if not hasattr(self, 'test_data_path'):
-            msg = 'You need to specify test_data_path in the parameters file or in the command line using --test_data_path'
-            raise RuntimeError(msg)
+        must_have_params = ['reference_data_path', 'test_data_path', 'results_dir']
 
+        for param in must_have_params:
+            if not hasattr(self, param):
+                msg = 'You need to specify {p} in the parameters file or via the command line using --{p}'.format(p=param)
+                raise RuntimeError(msg)
