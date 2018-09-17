@@ -1724,6 +1724,61 @@ n    </desc>
   <!-- FLDS attributes              -->
   <!-- =========================== -->
 
+  <entry id="ScalarFieldName">
+    <type>char</type>
+    <category>expdef</category>
+    <group>ALLCOMP_attributes</group>
+    <desc>
+      name of the coupling field with scalar information
+    </desc>
+    <values>
+      <value>cpl_scalars</value>
+    </values>
+  </entry>
+
+  <!-- 
+       TODO:  
+       need a way to ensure the three values below stay consistent with
+       cime/src/drivers/nuopc/shr/shr_nuopc_scalars_mod.F90
+       This includes: ScalarFieldCount, ScalarFieldIdxGridNX, ScalarFieldIdxNY
+  -->      
+  
+  <entry id="ScalarFieldCount">
+    <type>integer</type>
+    <category>expdef</category>
+    <group>ALLCOMP_attributes</group>
+    <desc>
+      total number of scalars in the scalar coupling field
+    </desc>
+    <values>
+      <value>15</value>
+    </values>
+  </entry>
+
+  <entry id="ScalarFieldIdxGridNX">
+    <type>integer</type>
+    <category>expdef</category>
+    <group>ALLCOMP_attributes</group>
+    <desc>
+      index of scalar containing global grid cell count in X dimension
+    </desc>
+    <values>
+      <value>1</value>
+    </values>
+  </entry>
+
+  <entry id="ScalarFieldIdxGridNY">
+    <type>integer</type>
+    <category>expdef</category>
+    <group>ALLCOMP_attributes</group>
+    <desc>
+      index of scalar containing global grid cell count in Y dimension
+    </desc>
+    <values>
+      <value>2</value>
+    </values>
+  </entry>
+
   <entry id="atm2ocn_fmapname"    modify_via_xml="ATM2OCN_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
