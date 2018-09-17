@@ -1344,7 +1344,7 @@ contains
          forc_pbot            =>   top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
          forc_po2             =>   atm2lnd_vars%forc_po2_grc                 , & ! Input:  [real(r8) (:)   ]  O2 partial pressure (Pa)                          
          forc_pco2            =>   top_as%pco2bot                            , & ! Input:  [real(r8) (:)   ]  CO2 partial pressure (Pa)                         
-         forc_pch4            =>   atm2lnd_vars%forc_pch4_grc                , & ! Input:  [real(r8) (:)   ]  CH4 partial pressure (Pa)                         
+         forc_pch4            =>   top_as%pch4bot                            , & ! Input:  [real(r8) (:)   ]  CH4 partial pressure (Pa)                         
 
          zwt                  =>   soilhydrology_vars%zwt_col                , & ! Input:  [real(r8) (:)   ]  water table depth (m) 
          zwt_perched          =>   soilhydrology_vars%zwt_perched_col        , & ! Input:  [real(r8) (:)   ]  perched water table depth (m)                     
@@ -1436,16 +1436,16 @@ contains
          ! topounit level
          t = grc_pp%topi(g)
          if (ch4offline) then
-            forc_pch4(g) = atmch4*forc_pbot(t)
+            forc_pch4(t) = atmch4*forc_pbot(t)
          else
-            if (forc_pch4(g) == 0._r8) then
+            if (forc_pch4(t) == 0._r8) then
                write(iulog,*)'not using ch4offline, but methane concentration not passed from the atmosphere', &
                     'to land model! CLM Model is stopping.'
                call endrun(msg=' ERROR: Methane not being passed to atmosphere'//&
                     errMsg(__FILE__, __LINE__))
             end if
          end if
-         c_atm(g,1) =  forc_pch4(g) / rgasm / forc_t(t) ! [mol/m3 air]
+         c_atm(g,1) =  forc_pch4(t) / rgasm / forc_t(t) ! [mol/m3 air]
          c_atm(g,2) =  forc_po2(g)  / rgasm / forc_t(t) ! [mol/m3 air]
          c_atm(g,3) =  forc_pco2(t) / rgasm / forc_t(t) ! [mol/m3 air]
       end do
@@ -1584,7 +1584,7 @@ contains
          ! PET 8/10/2018 - replace this later once gas concentrations (c_atm) are also being tracked at
          ! topounit level
          t = grc_pp%topi(g)
-         c_atm(g,1) =  forc_pch4(g) / rgasm / forc_t(t) ! [mol/m3 air]
+         c_atm(g,1) =  forc_pch4(t) / rgasm / forc_t(t) ! [mol/m3 air]
          c_atm(g,2) =  forc_po2(g)  / rgasm / forc_t(t) ! [mol/m3 air]
         !c_atm(g,3) =  forc_pco2(t) / rgasm / forc_t(t) ! [mol/m3 air] - Not currently used
       enddo

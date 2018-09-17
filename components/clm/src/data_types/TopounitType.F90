@@ -73,6 +73,7 @@ module TopounitType
     real(r8), pointer :: zbot       (:) => null() ! atmospheric forcing height (m)
     real(r8), pointer :: pco2bot    (:) => null() ! partial pressure of CO2 at atmospheric forcing height (Pa) 
     real(r8), pointer :: pc13o2bot  (:) => null() ! partial pressure of C13O2 at atmospheric forcing height (Pa) 
+    real(r8), pointer :: pch4bot    (:) => null() ! partial pressure of CH4 at atmospheric forcing height (Pa) 
   contains
     procedure, public :: Init  => init_top_as
     procedure, public :: Clean => clean_top_as
@@ -167,6 +168,7 @@ module TopounitType
     allocate(this%zbot     (begt:endt)) ; this%zbot      (:) = spval
     allocate(this%pco2bot  (begt:endt)) ; this%pco2bot   (:) = spval
     allocate(this%pc13o2bot(begt:endt)) ; this%pc13o2bot (:) = spval
+    allocate(this%pch4bot  (begt:endt)) ; this%pch4bot   (:) = spval
     
     ! Set history fields for atmospheric state forcing variables
     !call hist_addfld1d (fname='TBOT', units='K',  &
@@ -194,6 +196,7 @@ module TopounitType
     deallocate(this%zbot)
     deallocate(this%pco2bot)
     deallocate(this%pc13o2bot)
+    deallocate(this%pch4bot)
   end subroutine clean_top_as
 
   subroutine init_top_es(this, begt, endt)

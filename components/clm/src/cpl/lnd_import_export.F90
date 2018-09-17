@@ -1012,6 +1012,12 @@ contains
             top_as%pc13o2bot(topo) = top_as%pco2bot(topo) * c13ratio;
          end if
        end do
+       ! CH4
+       if (index_x2l_Sa_methane /= 0) then
+          do topo = grc_pp%topi(g), grc_pp%topf(g)
+            top_as%pch4bot(topo) = x2l(index_x2l_Sa_methane,i)
+          end do
+       endif
         
          
 
