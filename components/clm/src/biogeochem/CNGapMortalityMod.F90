@@ -183,35 +183,35 @@ contains
          !------------------------------------------------------
 
          ! displayed pools
-         carbonflux_vars%m_leafc_to_litter_patch(p)               = carbonstate_vars%leafc_patch(p)               * m
-         carbonflux_vars%m_frootc_to_litter_patch(p)              = carbonstate_vars%frootc_patch(p)              * m
-         carbonflux_vars%m_livestemc_to_litter_patch(p)           = carbonstate_vars%livestemc_patch(p)           * m
-         carbonflux_vars%m_deadstemc_to_litter_patch(p)           = carbonstate_vars%deadstemc_patch(p)           * m
-         carbonflux_vars%m_livecrootc_to_litter_patch(p)          = carbonstate_vars%livecrootc_patch(p)          * m
-         carbonflux_vars%m_deadcrootc_to_litter_patch(p)          = carbonstate_vars%deadcrootc_patch(p)          * m
+         carbonflux_vars%m_leafc_to_litter_patch(p)               = max(carbonstate_vars%leafc_patch(p)               * m,0._r8)
+         carbonflux_vars%m_frootc_to_litter_patch(p)              = max(carbonstate_vars%frootc_patch(p)              * m,0._r8)
+         carbonflux_vars%m_livestemc_to_litter_patch(p)           = max(carbonstate_vars%livestemc_patch(p)           * m,0._r8)
+         carbonflux_vars%m_deadstemc_to_litter_patch(p)           = max(carbonstate_vars%deadstemc_patch(p)           * m,0._r8)
+         carbonflux_vars%m_livecrootc_to_litter_patch(p)          = max(carbonstate_vars%livecrootc_patch(p)          * m,0._r8)
+         carbonflux_vars%m_deadcrootc_to_litter_patch(p)          = max(carbonstate_vars%deadcrootc_patch(p)          * m,0._r8)
          if (spinup_state >= 1) then 
            carbonflux_vars%m_deadstemc_to_litter_patch(p)         = carbonstate_vars%deadstemc_patch(p)*m * spinup_mortality_factor
            carbonflux_vars%m_deadcrootc_to_litter_patch(p)        = carbonstate_vars%deadcrootc_patch(p)*m * spinup_mortality_factor
          end if
 
          ! storage pools
-         carbonflux_vars%m_leafc_storage_to_litter_patch(p)       = carbonstate_vars%leafc_storage_patch(p)       * m
-         carbonflux_vars%m_frootc_storage_to_litter_patch(p)      = carbonstate_vars%frootc_storage_patch(p)      * m
-         carbonflux_vars%m_livestemc_storage_to_litter_patch(p)   = carbonstate_vars%livestemc_storage_patch(p)   * m
-         carbonflux_vars%m_deadstemc_storage_to_litter_patch(p)   = carbonstate_vars%deadstemc_storage_patch(p)   * m
-         carbonflux_vars%m_livecrootc_storage_to_litter_patch(p)  = carbonstate_vars%livecrootc_storage_patch(p)  * m
-         carbonflux_vars%m_deadcrootc_storage_to_litter_patch(p)  = carbonstate_vars%deadcrootc_storage_patch(p)  * m
-         carbonflux_vars%m_gresp_storage_to_litter_patch(p)       = carbonstate_vars%gresp_storage_patch(p)       * m
-         carbonflux_vars%m_cpool_to_litter_patch(p)               = carbonstate_vars%cpool_patch(p)               * m
+         carbonflux_vars%m_leafc_storage_to_litter_patch(p)       = max(carbonstate_vars%leafc_storage_patch(p)       * m,0._r8)
+         carbonflux_vars%m_frootc_storage_to_litter_patch(p)      = max(carbonstate_vars%frootc_storage_patch(p)      * m,0._r8)
+         carbonflux_vars%m_livestemc_storage_to_litter_patch(p)   = max(carbonstate_vars%livestemc_storage_patch(p)   * m,0._r8)
+         carbonflux_vars%m_deadstemc_storage_to_litter_patch(p)   = max(carbonstate_vars%deadstemc_storage_patch(p)   * m,0._r8)
+         carbonflux_vars%m_livecrootc_storage_to_litter_patch(p)  = max(carbonstate_vars%livecrootc_storage_patch(p)  * m,0._r8)
+         carbonflux_vars%m_deadcrootc_storage_to_litter_patch(p)  = max(carbonstate_vars%deadcrootc_storage_patch(p)  * m,0._r8)
+         carbonflux_vars%m_gresp_storage_to_litter_patch(p)       = max(carbonstate_vars%gresp_storage_patch(p)       * m,0._r8)
+         carbonflux_vars%m_cpool_to_litter_patch(p)               = max(carbonstate_vars%cpool_patch(p)               * m,0._r8)
  
          ! transfer pools
-         carbonflux_vars%m_leafc_xfer_to_litter_patch(p)          = carbonstate_vars%leafc_xfer_patch(p)          * m
-         carbonflux_vars%m_frootc_xfer_to_litter_patch(p)         = carbonstate_vars%frootc_xfer_patch(p)         * m
-         carbonflux_vars%m_livestemc_xfer_to_litter_patch(p)      = carbonstate_vars%livestemc_xfer_patch(p)      * m
-         carbonflux_vars%m_deadstemc_xfer_to_litter_patch(p)      = carbonstate_vars%deadstemc_xfer_patch(p)      * m
-         carbonflux_vars%m_livecrootc_xfer_to_litter_patch(p)     = carbonstate_vars%livecrootc_xfer_patch(p)     * m
-         carbonflux_vars%m_deadcrootc_xfer_to_litter_patch(p)     = carbonstate_vars%deadcrootc_xfer_patch(p)     * m
-         carbonflux_vars%m_gresp_xfer_to_litter_patch(p)          = carbonstate_vars%gresp_xfer_patch(p)          * m
+         carbonflux_vars%m_leafc_xfer_to_litter_patch(p)          = max(carbonstate_vars%leafc_xfer_patch(p)          * m,0._r8)
+         carbonflux_vars%m_frootc_xfer_to_litter_patch(p)         = max(carbonstate_vars%frootc_xfer_patch(p)         * m,0._r8)
+         carbonflux_vars%m_livestemc_xfer_to_litter_patch(p)      = max(carbonstate_vars%livestemc_xfer_patch(p)      * m,0._r8)
+         carbonflux_vars%m_deadstemc_xfer_to_litter_patch(p)      = max(carbonstate_vars%deadstemc_xfer_patch(p)      * m,0._r8)
+         carbonflux_vars%m_livecrootc_xfer_to_litter_patch(p)     = max(carbonstate_vars%livecrootc_xfer_patch(p)     * m,0._r8)
+         carbonflux_vars%m_deadcrootc_xfer_to_litter_patch(p)     = max(carbonstate_vars%deadcrootc_xfer_patch(p)     * m,0._r8)
+         carbonflux_vars%m_gresp_xfer_to_litter_patch(p)          = max(carbonstate_vars%gresp_xfer_patch(p)          * m,0._r8)
 
          !------------------------------------------------------
          ! patch-level gap mortality nitrogen fluxes

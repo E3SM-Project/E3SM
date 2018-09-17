@@ -1064,135 +1064,135 @@ contains
 
         m_veg = 1.0_r8
         if (spinup_state == 1) m_veg = spinup_mortality_factor
-        m_leafc_to_fire(p)               =  leafc(p)              * f * cc_leaf(veg_pp%itype(p))
-        m_leafc_storage_to_fire(p)       =  leafc_storage(p)      * f * cc_other(veg_pp%itype(p))
-        m_leafc_xfer_to_fire(p)          =  leafc_xfer(p)         * f * cc_other(veg_pp%itype(p))
-        m_livestemc_to_fire(p)           =  livestemc(p)          * f * cc_lstem(veg_pp%itype(p))
-        m_livestemc_storage_to_fire(p)   =  livestemc_storage(p)  * f * cc_other(veg_pp%itype(p))
-        m_livestemc_xfer_to_fire(p)      =  livestemc_xfer(p)     * f * cc_other(veg_pp%itype(p))
-        m_deadstemc_to_fire(p)           =  deadstemc(p)          * m_veg * f * cc_dstem(veg_pp%itype(p))
-        m_deadstemc_storage_to_fire(p)   =  deadstemc_storage(p)  * f * cc_other(veg_pp%itype(p))
-        m_deadstemc_xfer_to_fire(p)      =  deadstemc_xfer(p)     * f * cc_other(veg_pp%itype(p))
-        m_frootc_to_fire(p)              =  frootc(p)             * f * 0._r8
-        m_frootc_storage_to_fire(p)      =  frootc_storage(p)     * f * cc_other(veg_pp%itype(p)) 
-        m_frootc_xfer_to_fire(p)         =  frootc_xfer(p)        * f * cc_other(veg_pp%itype(p))
-        m_livecrootc_to_fire(p)          =  livecrootc(p)         * f * 0._r8
-        m_livecrootc_storage_to_fire(p)  =  livecrootc_storage(p) * f * cc_other(veg_pp%itype(p)) 
-        m_livecrootc_xfer_to_fire(p)     =  livecrootc_xfer(p)    * f * cc_other(veg_pp%itype(p)) 
-        m_deadcrootc_to_fire(p)          =  deadcrootc(p)         * m_veg * f * 0._r8
-        m_deadcrootc_storage_to_fire(p)  =  deadcrootc_storage(p) * f*  cc_other(veg_pp%itype(p)) 
-        m_deadcrootc_xfer_to_fire(p)     =  deadcrootc_xfer(p)    * f * cc_other(veg_pp%itype(p)) 
-        m_gresp_storage_to_fire(p)       =  gresp_storage(p)      * f * cc_other(veg_pp%itype(p))
-        m_gresp_xfer_to_fire(p)          =  gresp_xfer(p)         * f * cc_other(veg_pp%itype(p))
-        m_cpool_to_fire(p)               =  cpool(p)              * f * cc_other(veg_pp%itype(p))
+        m_leafc_to_fire(p)               =  max(leafc(p)              * f * cc_leaf(veg_pp%itype(p)) ,0._r8)
+        m_leafc_storage_to_fire(p)       =  max(leafc_storage(p)      * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_leafc_xfer_to_fire(p)          =  max(leafc_xfer(p)         * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_livestemc_to_fire(p)           =  max(livestemc(p)          * f * cc_lstem(veg_pp%itype(p)),0._r8)
+        m_livestemc_storage_to_fire(p)   =  max(livestemc_storage(p)  * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_livestemc_xfer_to_fire(p)      =  max(livestemc_xfer(p)     * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_deadstemc_to_fire(p)           =  max(deadstemc(p)          * m_veg * f * cc_dstem(veg_pp%itype(p)),0._r8)
+        m_deadstemc_storage_to_fire(p)   =  max(deadstemc_storage(p)  * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_deadstemc_xfer_to_fire(p)      =  max(deadstemc_xfer(p)     * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_frootc_to_fire(p)              =  max(frootc(p)             * f * 0._r8,0._r8)
+        m_frootc_storage_to_fire(p)      =  max(frootc_storage(p)     * f * cc_other(veg_pp%itype(p)),0._r8) 
+        m_frootc_xfer_to_fire(p)         =  max(frootc_xfer(p)        * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_livecrootc_to_fire(p)          =  max(livecrootc(p)         * f * 0._r8,0._r8)
+        m_livecrootc_storage_to_fire(p)  =  max(livecrootc_storage(p) * f * cc_other(veg_pp%itype(p)),0._r8) 
+        m_livecrootc_xfer_to_fire(p)     =  max(livecrootc_xfer(p)    * f * cc_other(veg_pp%itype(p)),0._r8) 
+        m_deadcrootc_to_fire(p)          =  max(deadcrootc(p)         * m_veg * f * 0._r8,0._r8)
+        m_deadcrootc_storage_to_fire(p)  =  max(deadcrootc_storage(p) * f*  cc_other(veg_pp%itype(p)),0._r8) 
+        m_deadcrootc_xfer_to_fire(p)     =  max(deadcrootc_xfer(p)    * f * cc_other(veg_pp%itype(p)),0._r8) 
+        m_gresp_storage_to_fire(p)       =  max(gresp_storage(p)      * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_gresp_xfer_to_fire(p)          =  max(gresp_xfer(p)         * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_cpool_to_fire(p)               =  max(cpool(p)              * f * cc_other(veg_pp%itype(p)),0._r8)
 
         ! nitrogen fluxes
-        m_leafn_to_fire(p)               =  leafn(p)              * f * cc_leaf(veg_pp%itype(p))
-        m_leafn_storage_to_fire(p)       =  leafn_storage(p)      * f * cc_other(veg_pp%itype(p))
-        m_leafn_xfer_to_fire(p)          =  leafn_xfer(p)         * f * cc_other(veg_pp%itype(p))
-        m_livestemn_to_fire(p)           =  livestemn(p)          * f * cc_lstem(veg_pp%itype(p))
-        m_livestemn_storage_to_fire(p)   =  livestemn_storage(p)  * f * cc_other(veg_pp%itype(p))
-        m_livestemn_xfer_to_fire(p)      =  livestemn_xfer(p)     * f * cc_other(veg_pp%itype(p))
-        m_deadstemn_to_fire(p)           =  deadstemn(p)          * m_veg * f * cc_dstem(veg_pp%itype(p))
-        m_deadstemn_storage_to_fire(p)   =  deadstemn_storage(p)  * f * cc_other(veg_pp%itype(p))
-        m_deadstemn_xfer_to_fire(p)      =  deadstemn_xfer(p)     * f * cc_other(veg_pp%itype(p))
-        m_frootn_to_fire(p)              =  frootn(p)             * f * 0._r8
-        m_frootn_storage_to_fire(p)      =  frootn_storage(p)     * f * cc_other(veg_pp%itype(p))
-        m_frootn_xfer_to_fire(p)         =  frootn_xfer(p)        * f * cc_other(veg_pp%itype(p))
-        m_livecrootn_to_fire(p)          =  livecrootn(p)         * f * 0._r8 
-        m_livecrootn_storage_to_fire(p)  =  livecrootn_storage(p) * f * cc_other(veg_pp%itype(p)) 
-        m_livecrootn_xfer_to_fire(p)     =  livecrootn_xfer(p)    * f * cc_other(veg_pp%itype(p))
-        m_deadcrootn_to_fire(p)          =  deadcrootn(p)         * m_veg * f * 0._r8
-        m_deadcrootn_xfer_to_fire(p)     =  deadcrootn_xfer(p)    * f * cc_other(veg_pp%itype(p)) 
-        m_deadcrootn_storage_to_fire(p)  =  deadcrootn_storage(p) * f * cc_other(veg_pp%itype(p))
-        m_retransn_to_fire(p)            =  retransn(p)           * f * cc_other(veg_pp%itype(p))
-        m_npool_to_fire(p)               =  npool(p)              * f * cc_other(veg_pp%itype(p))
+        m_leafn_to_fire(p)               =  max(leafn(p)              * f * cc_leaf(veg_pp%itype(p)) ,0._r8)
+        m_leafn_storage_to_fire(p)       =  max(leafn_storage(p)      * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_leafn_xfer_to_fire(p)          =  max(leafn_xfer(p)         * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_livestemn_to_fire(p)           =  max(livestemn(p)          * f * cc_lstem(veg_pp%itype(p)),0._r8)
+        m_livestemn_storage_to_fire(p)   =  max(livestemn_storage(p)  * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_livestemn_xfer_to_fire(p)      =  max(livestemn_xfer(p)     * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_deadstemn_to_fire(p)           =  max(deadstemn(p)          * m_veg * f * cc_dstem(veg_pp%itype(p)),0._r8)
+        m_deadstemn_storage_to_fire(p)   =  max(deadstemn_storage(p)  * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_deadstemn_xfer_to_fire(p)      =  max(deadstemn_xfer(p)     * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_frootn_to_fire(p)              =  max(frootn(p)             * f * 0._r8,0._r8)
+        m_frootn_storage_to_fire(p)      =  max(frootn_storage(p)     * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_frootn_xfer_to_fire(p)         =  max(frootn_xfer(p)        * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_livecrootn_to_fire(p)          =  max(livecrootn(p)         * f * 0._r8,0._r8) 
+        m_livecrootn_storage_to_fire(p)  =  max(livecrootn_storage(p) * f * cc_other(veg_pp%itype(p)),0._r8) 
+        m_livecrootn_xfer_to_fire(p)     =  max(livecrootn_xfer(p)    * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_deadcrootn_to_fire(p)          =  max(deadcrootn(p)         * m_veg * f * 0._r8,0._r8)
+        m_deadcrootn_xfer_to_fire(p)     =  max(deadcrootn_xfer(p)    * f * cc_other(veg_pp%itype(p)),0._r8) 
+        m_deadcrootn_storage_to_fire(p)  =  max(deadcrootn_storage(p) * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_retransn_to_fire(p)            =  max(retransn(p)           * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_npool_to_fire(p)               =  max(npool(p)              * f * cc_other(veg_pp%itype(p)),0._r8)
 
         ! phosphorus fluxes
-        m_leafp_to_fire(p)               =  leafp(p)              * f * cc_leaf(veg_pp%itype(p))
-        m_leafp_storage_to_fire(p)       =  leafp_storage(p)      * f * cc_other(veg_pp%itype(p))
-        m_leafp_xfer_to_fire(p)          =  leafp_xfer(p)         * f * cc_other(veg_pp%itype(p))
-        m_livestemp_to_fire(p)           =  livestemp(p)          * f * cc_lstem(veg_pp%itype(p))
-        m_livestemp_storage_to_fire(p)   =  livestemp_storage(p)  * f * cc_other(veg_pp%itype(p))
-        m_livestemp_xfer_to_fire(p)      =  livestemp_xfer(p)     * f * cc_other(veg_pp%itype(p))
+        m_leafp_to_fire(p)               =  max(leafp(p)              * f * cc_leaf(veg_pp%itype(p)) ,0._r8)
+        m_leafp_storage_to_fire(p)       =  max(leafp_storage(p)      * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_leafp_xfer_to_fire(p)          =  max(leafp_xfer(p)         * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_livestemp_to_fire(p)           =  max(livestemp(p)          * f * cc_lstem(veg_pp%itype(p)),0._r8)
+        m_livestemp_storage_to_fire(p)   =  max(livestemp_storage(p)  * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_livestemp_xfer_to_fire(p)      =  max(livestemp_xfer(p)     * f * cc_other(veg_pp%itype(p)),0._r8)
         !m_deadstemp_to_fire(p)           =  deadstemp(p)          * m_veg * f * cc_dstem(veg_pp%itype(p))
-        m_deadstemp_to_fire(p)           =  deadstemp(p)          * f * cc_dstem(veg_pp%itype(p))
-        m_deadstemp_storage_to_fire(p)   =  deadstemp_storage(p)  * f * cc_other(veg_pp%itype(p))
-        m_deadstemp_xfer_to_fire(p)      =  deadstemp_xfer(p)     * f * cc_other(veg_pp%itype(p))
-        m_frootp_to_fire(p)              =  frootp(p)             * f * 0._r8
-        m_frootp_storage_to_fire(p)      =  frootp_storage(p)     * f * cc_other(veg_pp%itype(p))
-        m_frootp_xfer_to_fire(p)         =  frootp_xfer(p)        * f * cc_other(veg_pp%itype(p))
-        m_livecrootp_to_fire(p)          =  livecrootp(p)         * f * 0._r8 
-        m_livecrootp_storage_to_fire(p)  =  livecrootp_storage(p) * f * cc_other(veg_pp%itype(p)) 
-        m_livecrootp_xfer_to_fire(p)     =  livecrootp_xfer(p)    * f * cc_other(veg_pp%itype(p))
-        m_deadcrootp_to_fire(p)          =  deadcrootp(p)         * m_veg * f * 0._r8
-        m_deadcrootp_xfer_to_fire(p)     =  deadcrootp_xfer(p)    * f * cc_other(veg_pp%itype(p)) 
-        m_deadcrootp_storage_to_fire(p)  =  deadcrootp_storage(p) * f * cc_other(veg_pp%itype(p))
-        m_retransp_to_fire(p)            =  retransp(p)           * f * cc_other(veg_pp%itype(p))
-        m_ppool_to_fire(p)               =  ppool(p)              * f * cc_other(veg_pp%itype(p))
+        m_deadstemp_to_fire(p)           =  max(deadstemp(p)          * f * cc_dstem(veg_pp%itype(p)),0._r8)
+        m_deadstemp_storage_to_fire(p)   =  max(deadstemp_storage(p)  * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_deadstemp_xfer_to_fire(p)      =  max(deadstemp_xfer(p)     * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_frootp_to_fire(p)              =  max(frootp(p)             * f * 0._r8,0._r8)
+        m_frootp_storage_to_fire(p)      =  max(frootp_storage(p)     * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_frootp_xfer_to_fire(p)         =  max(frootp_xfer(p)        * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_livecrootp_to_fire(p)          =  max(livecrootp(p)         * f * 0._r8,0._r8) 
+        m_livecrootp_storage_to_fire(p)  =  max(livecrootp_storage(p) * f * cc_other(veg_pp%itype(p)),0._r8) 
+        m_livecrootp_xfer_to_fire(p)     =  max(livecrootp_xfer(p)    * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_deadcrootp_to_fire(p)          =  max(deadcrootp(p)         * m_veg * f * 0._r8,0._r8)
+        m_deadcrootp_xfer_to_fire(p)     =  max(deadcrootp_xfer(p)    * f * cc_other(veg_pp%itype(p)),0._r8) 
+        m_deadcrootp_storage_to_fire(p)  =  max(deadcrootp_storage(p) * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_retransp_to_fire(p)            =  max(retransp(p)           * f * cc_other(veg_pp%itype(p)),0._r8)
+        m_ppool_to_fire(p)               =  max(ppool(p)              * f * cc_other(veg_pp%itype(p)),0._r8)
 
 
         ! mortality due to fire
         ! carbon pools
-        m_leafc_to_litter_fire(p)                   =  leafc(p) * f * &
+        m_leafc_to_litter_fire(p)                   =  max(leafc(p) * f * &
              (1._r8 - cc_leaf(veg_pp%itype(p))) * &
-             fm_leaf(veg_pp%itype(p))
-        m_leafc_storage_to_litter_fire(p)           =  leafc_storage(p) * f * &
+             fm_leaf(veg_pp%itype(p)),0._r8)
+        m_leafc_storage_to_litter_fire(p)           =  max(leafc_storage(p) * f * &
              (1._r8 - cc_other(veg_pp%itype(p))) * &
-             fm_other(veg_pp%itype(p))
-        m_leafc_xfer_to_litter_fire(p)              =  leafc_xfer(p) * f * &
+             fm_other(veg_pp%itype(p)),0._r8)
+        m_leafc_xfer_to_litter_fire(p)              =  max(leafc_xfer(p) * f * &
              (1._r8 - cc_other(veg_pp%itype(p))) * &
-             fm_other(veg_pp%itype(p))
-        m_livestemc_to_litter_fire(p)               =  livestemc(p) * f * &
+             fm_other(veg_pp%itype(p)),0._r8)
+        m_livestemc_to_litter_fire(p)               =  max(livestemc(p) * f * &
              (1._r8 - cc_lstem(veg_pp%itype(p))) * &
-             fm_droot(veg_pp%itype(p))    
-        m_livestemc_storage_to_litter_fire(p)       =  livestemc_storage(p) * f * &
+             fm_droot(veg_pp%itype(p)),0._r8)    
+        m_livestemc_storage_to_litter_fire(p)       =  max(livestemc_storage(p) * f * &
              (1._r8 - cc_other(veg_pp%itype(p))) * &
-             fm_other(veg_pp%itype(p))
-        m_livestemc_xfer_to_litter_fire(p)          =  livestemc_xfer(p) * f * &
+             fm_other(veg_pp%itype(p)),0._r8)
+        m_livestemc_xfer_to_litter_fire(p)          =  max(livestemc_xfer(p) * f * &
              (1._r8 - cc_other(veg_pp%itype(p))) * &
-             fm_other(veg_pp%itype(p)) 
-        m_livestemc_to_deadstemc_fire(p)            =  livestemc(p) * f * &
+             fm_other(veg_pp%itype(p)),0._r8) 
+        m_livestemc_to_deadstemc_fire(p)            =  max(livestemc(p) * f * &
              (1._r8 - cc_lstem(veg_pp%itype(p))) * &
-             (fm_lstem(veg_pp%itype(p))-fm_droot(veg_pp%itype(p)))
-        m_deadstemc_to_litter_fire(p)               =  deadstemc(p) * m_veg * f * &
+             (fm_lstem(veg_pp%itype(p))-fm_droot(veg_pp%itype(p))),0._r8)
+        m_deadstemc_to_litter_fire(p)               =  max(deadstemc(p) * m_veg * f * &
              (1._r8 - cc_dstem(veg_pp%itype(p))) * &
-             fm_droot(veg_pp%itype(p))    
-        m_deadstemc_storage_to_litter_fire(p)       =  deadstemc_storage(p) * f * &
+             fm_droot(veg_pp%itype(p)),0._r8)    
+        m_deadstemc_storage_to_litter_fire(p)       =  max(deadstemc_storage(p) * f * &
              (1._r8 - cc_other(veg_pp%itype(p))) * &
-             fm_other(veg_pp%itype(p))
-        m_deadstemc_xfer_to_litter_fire(p)          =  deadstemc_xfer(p) * f * &
+             fm_other(veg_pp%itype(p)),0._r8)
+        m_deadstemc_xfer_to_litter_fire(p)          =  max(deadstemc_xfer(p) * f * &
              (1._r8 - cc_other(veg_pp%itype(p))) * &
-             fm_other(veg_pp%itype(p))
-        m_frootc_to_litter_fire(p)                  =  frootc(p)             * f * &
-             fm_root(veg_pp%itype(p))
-        m_frootc_storage_to_litter_fire(p)          =  frootc_storage(p)     * f * &
-             fm_other(veg_pp%itype(p))
-        m_frootc_xfer_to_litter_fire(p)             =  frootc_xfer(p)        * f * &
-             fm_other(veg_pp%itype(p))
-        m_livecrootc_to_litter_fire(p)              =  livecrootc(p)         * f * &
-             fm_droot(veg_pp%itype(p))
-        m_livecrootc_storage_to_litter_fire(p)      =  livecrootc_storage(p) * f * &
-             fm_other(veg_pp%itype(p)) 
-        m_livecrootc_xfer_to_litter_fire(p)         =  livecrootc_xfer(p)    * f * &
-             fm_other(veg_pp%itype(p)) 
-        m_livecrootc_to_deadcrootc_fire(p)          =  livecrootc(p)         * f * &
-             (fm_lroot(veg_pp%itype(p))-fm_droot(veg_pp%itype(p)))
-        m_deadcrootc_to_litter_fire(p)              =  deadcrootc(p)   * m_veg * f * &
-             fm_droot(veg_pp%itype(p))
-        m_deadcrootc_storage_to_litter_fire(p)      =  deadcrootc_storage(p) * f * &
-             fm_other(veg_pp%itype(p))
-        m_deadcrootc_xfer_to_litter_fire(p)         =  deadcrootc_xfer(p)    * f * &
-             fm_other(veg_pp%itype(p))      
-        m_gresp_storage_to_litter_fire(p)           =  gresp_storage(p) * f * &
+             fm_other(veg_pp%itype(p)),0._r8)
+        m_frootc_to_litter_fire(p)                  =  max(frootc(p)             * f * &
+             fm_root(veg_pp%itype(p)),0._r8)
+        m_frootc_storage_to_litter_fire(p)          =  max(frootc_storage(p)     * f * &
+             fm_other(veg_pp%itype(p)),0._r8)
+        m_frootc_xfer_to_litter_fire(p)             =  max(frootc_xfer(p)        * f * &
+             fm_other(veg_pp%itype(p)),0._r8)
+        m_livecrootc_to_litter_fire(p)              =  max(livecrootc(p)         * f * &
+             fm_droot(veg_pp%itype(p)),0._r8)
+        m_livecrootc_storage_to_litter_fire(p)      =  max(livecrootc_storage(p) * f * &
+             fm_other(veg_pp%itype(p)),0._r8) 
+        m_livecrootc_xfer_to_litter_fire(p)         =  max(livecrootc_xfer(p)    * f * &
+             fm_other(veg_pp%itype(p)),0._r8) 
+        m_livecrootc_to_deadcrootc_fire(p)          =  max(livecrootc(p)         * f * &
+             (fm_lroot(veg_pp%itype(p))-fm_droot(veg_pp%itype(p))),0._r8)
+        m_deadcrootc_to_litter_fire(p)              =  max(deadcrootc(p)   * m_veg * f * &
+             fm_droot(veg_pp%itype(p)),0._r8)
+        m_deadcrootc_storage_to_litter_fire(p)      =  max(deadcrootc_storage(p) * f * &
+             fm_other(veg_pp%itype(p)),0._r8)
+        m_deadcrootc_xfer_to_litter_fire(p)         =  max(deadcrootc_xfer(p)    * f * &
+             fm_other(veg_pp%itype(p)),0._r8)      
+        m_gresp_storage_to_litter_fire(p)           =  max(gresp_storage(p) * f * &
              (1._r8 - cc_other(veg_pp%itype(p))) * &
-             fm_other(veg_pp%itype(p))  
-        m_gresp_xfer_to_litter_fire(p)              =  gresp_xfer(p) * f * &
+             fm_other(veg_pp%itype(p)),0._r8)  
+        m_gresp_xfer_to_litter_fire(p)              =  max(gresp_xfer(p) * f * &
              (1._r8 - cc_other(veg_pp%itype(p))) * &
-             fm_other(veg_pp%itype(p)) 
-        m_cpool_to_litter_fire(p)                   =  cpool(p) * f * &
+             fm_other(veg_pp%itype(p)),0._r8) 
+        m_cpool_to_litter_fire(p)                   =  max(cpool(p) * f * &
              (1._r8 - cc_other(veg_pp%itype(p))) * &
-             fm_other(veg_pp%itype(p))
+             fm_other(veg_pp%itype(p)),0._r8)
 
         ! nitrogen pools    
         m_leafn_to_litter_fire(p)                  =  max(leafn(p) * f * &
