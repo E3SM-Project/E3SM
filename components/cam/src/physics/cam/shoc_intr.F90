@@ -60,7 +60,7 @@ module shoc_intr
 
   integer :: cmfmc_sh_idx = 0
     
-  real, parameter :: tke_tol = (2.e-2_r8)**2
+  real, parameter :: tke_tol = 0.0004_r8
 
   real(r8), parameter :: &
       host_dx = 100000._r8, &           ! Host model deltax [m]
@@ -841,8 +841,8 @@ end function shoc_implements_cnst
      se_dis(i) = (te_a(i) - te_b(i))/(state1%pint(i,pverp)-state1%pint(i,shoctop(i)))  
    enddo    
    
-   do k=1,pver
-     do i=1,ncol
+   do i=1,ncol
+     do k=shoctop(i),pver
        shoc_s(i,k) = shoc_s(i,k) - se_dis(i)*gravit
      enddo
    enddo
