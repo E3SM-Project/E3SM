@@ -76,7 +76,7 @@ end subroutine shoc_init
 subroutine shoc_main ( &
      shcol, nlev, nlevi, dtime, &         ! Input
      host_dx, host_dy, &                  ! Input
-     zt_grid,zi_grid,pres,&               ! Input
+     zt_grid,zi_grid,pres,pdel,&          ! Input
      wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, & ! Input
      wtracer_sfc,num_qtracers, &          ! Input     
      tke, thetal, qw, w_field,&           ! Input/Output
@@ -98,6 +98,7 @@ subroutine shoc_main ( &
   real(r8), intent(in) :: zt_grid(shcol,nlev)	! heights, for thermo grid [m]
   real(r8), intent(in) :: zi_grid(shcol,nlevi)   ! heights, for interface grid [m]
   real(r8), intent(in) :: pres(shcol,nlev) ! pressure levels on thermo grid [hPa]
+  real(r8), intent(in) :: pdel(shcol,nlev)
 
   real(r8), intent(in) :: cldliq(shcol,nlev) ! cloud liquid mixing ratio [kg/kg]
   real(r8), intent(in) :: w_field(shcol,nlev) ! large scale vertical velocity [m/s]
@@ -140,6 +141,7 @@ subroutine shoc_main ( &
   real(r8) :: vw_sec(shcol,nlevi)
   real(r8) :: w3(shcol,nlev)
   real(r8) :: brunt(shcol,nlev)
+  real(r8) :: rho_zt(shcol,nlev)
   
   real(r8) :: dz_zt(shcol,nlev), dz_zi(shcol,nlev)
   real(r8) :: dz(shcol)
@@ -148,8 +150,8 @@ subroutine shoc_main ( &
   !   vertical derivatives     
   call shoc_grid( &
          shcol,nlev,nlevi,&                   ! Input
-	 zt_grid,zi_grid,&                    ! Input
-         dz_zt,dz_zi)  		              ! Output
+	 zt_grid,zi_grid,pdel,&               ! Input
+         dz_zt,dz_zi,rho_zt)  		      ! Output
 
   ! Update the turbulent length scale	 
   call shoc_length(&
@@ -200,6 +202,7 @@ subroutine shoc_main ( &
          dtime,dz_zt,wthl_sec,&               ! Input
          wqw_sec,wtke_sec,uw_sec,&            ! Input
 	 vw_sec,wtracer_sec,&                 ! Input
+         rho_zt,zt_grid,zi_grid,&             ! Input
          thetal,qw,qtracers,tke,&             ! Input/Output	
 	 u_wind,v_wind)                       ! Input/Output
   
@@ -221,8 +224,8 @@ end subroutine shoc_main
 
 subroutine shoc_grid( &
               shcol,nlev,nlevi,&           ! Input
-	      zt_grid,zi_grid,&            ! Input 
-              dz_zt,dz_zi)                 ! Output
+	      zt_grid,zi_grid,pdel,&       ! Input 
+              dz_zt,dz_zi,rho_zt)          ! Output
 
   ! Purpose of this subroutine is to define the thickness
   !  arrays of each column, to be used for finite differencing
@@ -236,11 +239,13 @@ subroutine shoc_grid( &
   integer, intent(in) :: nlevi   ! number of interface levels
   real(r8), intent(in) :: zt_grid(shcol,nlev)  ! mid-point grid
   real(r8), intent(in) :: zi_grid(shcol,nlevi) ! interface grid
-  
+  real(r8), intent(in) :: pdel(shcol,nlev) 
+ 
   ! output variables 
   real(r8), intent(out) :: dz_zt(shcol,nlev) ! dz on the thermo grid
   real(r8), intent(out) :: dz_zi(shcol,nlev) ! dz on interface grid
-  
+  real(r8), intent(out) :: rho_zt(shcol,nlev)  
+
   ! local variables
   integer :: i, k
   
@@ -255,6 +260,8 @@ subroutine shoc_grid( &
       else
         dz_zi(i,k) = zt_grid(i,k) - zt_grid(i,k-1)
       endif
+
+      rho_zt(i,k) = (1._r8/ggr)*(pdel(i,k)/dz_zt(i,k))
       
     enddo ! end i loop (column loop)
   enddo ! end k loop (vertical loop)
@@ -271,6 +278,7 @@ subroutine update_prognostics( &
              dtime,dz_zt,wthl_sec,&           ! Input
 	     wqw_sec,wtke_sec,uw_sec,&        ! Input
 	     vw_sec,wtracer_sec,&             ! Input
+             rho_zt,zt_grid,zi_grid,&         ! Input
 	     thetal,qw,tracer,tke,&           ! Input/Output
 	     u_wind,v_wind)                   ! Input/Output
 
@@ -292,6 +300,9 @@ subroutine update_prognostics( &
   real(r8), intent(in) :: uw_sec(shcol,nlevi)
   real(r8), intent(in) :: vw_sec(shcol,nlevi)
   real(r8), intent(in) :: wtke_sec(shcol,nlevi)
+  real(r8), intent(in) :: rho_zt(shcol,nlev)
+  real(r8), intent(in) :: zt_grid(shcol,nlev)
+  real(r8), intent(in) :: zi_grid(shcol,nlevi)
 
 ! In/out variables  
   real(r8), intent(inout) :: thetal(shcol,nlev)
@@ -303,30 +314,39 @@ subroutine update_prognostics( &
   
 ! Local variables  
   integer :: kb, kt, k, i, p  
-  real(r8) :: thedz
-  
+  real(r8) :: thedz, r1, r2, r3
+  real(r8) :: rho_zi(shcol,nlevi)
+ 
+  call linear_interp(zt_grid,zi_grid,rho_zt,rho_zi,nlev,nlevi,shcol,largeneg)
+ 
   do i=1,shcol
     do k=1,nlev
       kt=k+1
-      thedz=1._r8/dz_zt(i,k) ! define the thickness of the layer
+!      thedz=1._r8/dz_zt(i,k) ! define the thickness of the layer
+
+      r1=rho_zi(i,kt)
+      r2=rho_zi(i,k)
+      r3=rho_zt(i,k)
+
+      thedz=1._r8/(dz_zt(i,k)*r3)
 
       ! Update temperature
-      thetal(i,k)=thetal(i,k)-dtime*(wthl_sec(i,kt)-wthl_sec(i,k))*thedz
+      thetal(i,k)=thetal(i,k)-dtime*(r1*wthl_sec(i,kt)-r2*wthl_sec(i,k))*thedz
       
       ! Update total water mixing ratio
-      qw(i,k)=qw(i,k)-dtime*(wqw_sec(i,kt)-wqw_sec(i,k))*thedz
+      qw(i,k)=qw(i,k)-dtime*(r1*wqw_sec(i,kt)-r2*wqw_sec(i,k))*thedz
 
       ! Update turbulent kinetic energy
-      tke(i,k)=tke(i,k)-dtime*(wtke_sec(i,kt)-wtke_sec(i,k))*thedz
+      tke(i,k)=tke(i,k)-dtime*(r1*wtke_sec(i,kt)-r2*wtke_sec(i,k))*thedz
 
       ! Update tracers
       do p=1,num_tracer
-        tracer(i,k,p)=tracer(i,k,p)-dtime*(wtracer_sec(i,kt,p)-wtracer_sec(i,k,p))*thedz
+        tracer(i,k,p)=tracer(i,k,p)-dtime*(r1*wtracer_sec(i,kt,p)-r2*wtracer_sec(i,k,p))*thedz
       enddo
 
       ! Update the u and v wind components      
-      u_wind(i,k)=u_wind(i,k)-dtime*(uw_sec(i,kt)-uw_sec(i,k))*thedz
-      v_wind(i,k)=v_wind(i,k)-dtime*(vw_sec(i,kt)-vw_sec(i,k))*thedz
+      u_wind(i,k)=u_wind(i,k)-dtime*(r1*uw_sec(i,kt)-r2*uw_sec(i,k))*thedz
+      v_wind(i,k)=v_wind(i,k)-dtime*(r1*vw_sec(i,kt)-r2*vw_sec(i,k))*thedz
       
     enddo ! end i loop (column loop)
   enddo ! end k loop (vertical loop)

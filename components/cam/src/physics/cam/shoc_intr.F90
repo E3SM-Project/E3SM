@@ -60,7 +60,7 @@ module shoc_intr
 
   integer :: cmfmc_sh_idx = 0
     
-  real, parameter :: tke_tol = 0.0004_r8
+  real(r8), parameter :: tke_tol = 0.0004_r8
 
   real(r8), parameter :: &
       host_dx = 100000._r8, &           ! Host model deltax [m]
@@ -450,6 +450,7 @@ end function shoc_implements_cnst
    real(r8) :: pres_in(pcols,pver)
    real(r8) :: um_in(pcols,pver)
    real(r8) :: vm_in(pcols,pver)
+   real(r8) :: pdel_in(pcols,pver)
    real(r8) :: cloudfrac_shoc(pcols,pver)
    real(r8) :: rcm_shoc(pcols,pver)
    real(r8) :: newfice(pcols,pver)              ! fraction of ice in cloud at CLUBB start       [-]
@@ -740,6 +741,7 @@ end function shoc_implements_cnst
        thlm_in(i,k)    = thlm(i,pver-k+1)
        tke_in(i,k)     = tke(i,pver-k+1)
        wthv_in(i,k)    = wthv(i,pver-k+1)
+       pdel_in(i,k)    = state1%pdel(i,pver-k+1)
 !        pres_in(i,k)    = state1%pmid(i,pver-k+1)
      enddo  
    enddo   
@@ -775,7 +777,7 @@ end function shoc_implements_cnst
      call shoc_main( &
           pcols, pver, pverp, dtime, &                 ! Input
 	  host_dx_in, host_dy_in, &                    ! Input
-          zt_g, zi_g, pres_in, &                       ! Input
+          zt_g, zi_g, pres_in, pdel_in,&               ! Input
 	  wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, & ! Input
 	  wtracer_sfc, edsclr_dim, &                   ! Input
 	  tke_in, thlm_in, rtm_in, wm_zt, &            ! Input/Ouput
@@ -832,7 +834,7 @@ end function shoc_implements_cnst
    ! Limit the energy fixer to find highest layer where CLUBB is active
    ! Find first level where wp2 is higher than lowest threshold
    do i=1,ncol
-      shoctop(i) = 1
+     shoctop(i) = 1
      do while (tke(i,shoctop(i)) .eq. tke_tol .and. shoctop(i) .lt. pver-1)
        shoctop(i) = shoctop(i) + 1
      enddo   
