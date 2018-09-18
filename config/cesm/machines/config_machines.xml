@@ -326,16 +326,16 @@
 	<command name="load">pgi/17.9</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE">
-	<command name="load">esmf-7.0.0-defio-mpi-g</command>
+	<command name="load">esmf-7.1.0r-defio-mpi-g</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE">
-	<command name="load">esmf-7.0.0-defio-mpi-O</command>
+	<command name="load">esmf-7.1.0r-defio-mpi-O</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE">
-	<command name="load">esmf-7.0.0-ncdfio-uni-g</command>
+	<command name="load">esmf-7.1.0r-ncdfio-uni-g</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE">
-	<command name="load">esmf-7.0.0-ncdfio-uni-O</command>
+	<command name="load">esmf-7.1.0r-ncdfio-uni-O</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gnu/6.3.0</command>
