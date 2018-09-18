@@ -182,16 +182,6 @@
     </directives>
   </batch_system>
 
-  <!-- brutus is PBS -->
-  <batch_system type="pbs" MACH="brutus" >
-    <directives>
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-    </directives>
-    <queues>
-      <queue walltimemax="00:59:00" nodemin="1" nodemax="624" default="true">batch</queue>
-    </queues>
-  </batch_system>
-
   <!-- euler2 is LSF -->
   <batch_system MACH="euler2" type="lsf" >
     <directives>
@@ -236,13 +226,6 @@
       <queue walltimemax="24:00:00">normal</queue>
       <queue walltimemax="00:30:00" nodemin="1" nodemax="16" default="true">debug</queue>
     </queues>
-  </batch_system>
-
-  <!-- brutus is PBS -->
-  <batch_system MACH="brutus" type="pbs">
-    <directives>
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-    </directives>
   </batch_system>
 
   <!-- eos is PBS -->

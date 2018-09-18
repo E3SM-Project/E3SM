@@ -144,67 +144,6 @@
     </environment_variables>
   </machine>
 
-  <machine MACH="brutus">
-    <DESC>Brutus Linux Cluster ETH (pgi(9.0-1)/intel(10.1.018) with openi(1.4.1)/mvapich2(1.4rc2), 16 pes/node, batch system LSF, added by UB</DESC>
-    <OS>LINUX</OS>
-    <COMPILERS>pgi,intel</COMPILERS>
-    <MPILIBS>openmpi,mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>/cluster/work/uwis/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/cluster/work/uwis/ccsm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/cluster/work/uwis/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/cluster/work/uwis/$USER/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/cluster/work/uwis/ccsm/ccsm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/cluster/work/uwis/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>1</GMAKE_J>
-    <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
-    <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
-    <mpirun mpilib="mpich">
-      <executable>mpirun</executable>
-      <arguments>
-	<arg name="machine_file">-hostfile $ENV{PBS_JOBID}</arg>
-	<arg name="tasks_per_node"> -ppn $MAX_MPITASKS_PER_NODE</arg>
-	<arg name="num_tasks"> -n {{ total_tasks }}</arg>
-      </arguments>
-    </mpirun>
-    <mpirun mpilib="openmpi">
-      <executable>ompirun</executable>
-      <arguments>
-      </arguments>
-    </mpirun>
-    <module_system type="module">
-      <init_path lang="perl">/etc/profile.d/modules.perl</init_path>
-      <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
-      <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
-      <!-- This is a guess!! -->
-      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <modules>
-	<command name="purge"/>
-      </modules>
-      <modules compiler="intel">
-	<command name="load">intel/10.1.018</command>
-      </modules>
-      <modules compiler="pgi">
-	<command name="load">pgi/9.0-1</command>
-      </modules>
-      <modules mpilib="mpich">
-	<command name="load">mvapich2/1.4rc2</command>
-      </modules>
-      <modules mpilib="openmpi">
-	<command name="load">open_mpi/1.4.1</command>
-      </modules>
-      <modules>
-	<command name="load">netcdf/4.0.1</command>
-      </modules>
-    </module_system>
-    <environment_variables>
-      <env name="OMP_STACKSIZE">64M</env>
-    </environment_variables>
-  </machine>
-
   <machine MACH="euler2">
     <DESC>Euler II Linux Cluster ETH, 24 pes/node, InfiniBand, XeonE5_2680v3, batch system LSF</DESC>
     <OS>LINUX</OS>
