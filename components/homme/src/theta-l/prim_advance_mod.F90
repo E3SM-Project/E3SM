@@ -398,7 +398,7 @@ contains
 #endif
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat5/a5,1d0)
+        deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat5/a5,1d0)
 
 #ifdef ARKODE
       if (calc_nonlinear_stats) then
