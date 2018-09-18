@@ -282,7 +282,7 @@ ifeq ($(strip $(USE_KOKKOS)), TRUE)
     INC_KOKKOS:=$(KOKKOS_PATH)/include
     LIB_KOKKOS:=$(KOKKOS_PATH)/lib
   else
-    $(error $(HOMME_TARGET) requires KOKKOS_PATH to be set)
+    $(error $(HOMME_TARGET) requires env. variable KOKKOS_ROOT to be set)
   endif
 	CPPDEFS += -DUSE_KOKKOS_KERNELS
 endif
