@@ -2,40 +2,6 @@
 # Compiler specific options
 ##############################################################################
 
-# Small function to set the compiler flag '-fp model' given the name of the model
-# Note: this is an Intel-only flag
-FUNCTION (HOMME_set_fpmodel_flags fpmodel_string flags)
-  STRING(TOLOWER "${fpmodel_string}" fpmodel_string_lower)
-  IF (("${fpmodel_string_lower}" STREQUAL "precise") OR
-      ("${fpmodel_string_lower}" STREQUAL "strict") OR
-      ("${fpmodel_string_lower}" STREQUAL "fast") OR
-      ("${fpmodel_string_lower}" STREQUAL "fast=1") OR
-      ("${fpmodel_string_lower}" STREQUAL "fast=2"))
-    IF (CMAKE_Fortran_COMPILER_ID STREQUAL Intel)
-      SET (${flags} "-fp-model ${fpmodel_string_lower}" PARENT_SCOPE)
-    ELSEIF (CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
-      IF ("${fpmodel_string_lower}" STREQUAL "strict")
-        SET (${flags} "-ffp-contract=off" PARENT_SCOPE)
-      ENDIF ()
-    ENDIF ()
-  ELSEIF ("${fpmodel_string_lower}" STREQUAL "")
-    SET (${flags} "" PARENT_SCOPE)
-  ELSE()
-    MESSAge(FATAL_ERROR "FP_MODEL_FLAG string '${fpmodel_string}' is not recognized.")
-  ENDIF()
-ENDFUNCTION()
-
-SET (FP_MODEL_FLAG "")
-SET (UT_FP_MODEL_FLAG "")
-IF (DEFINED HOMME_FPMODEL)
-  HOMME_set_fpmodel_flags("${HOMME_FPMODEL}" FP_MODEL_FLAG)
-  HOMME_set_fpmodel_flags("${HOMME_FPMODEL_UT}" UT_FP_MODEL_FLAG)
-ELSEIF (CMAKE_Fortran_COMPILER_ID STREQUAL Intel)
-  SET(${FP_MODEL_FLAG} "-fp-model precise")
-  SET(${UT_FP_MODEL} "-fp-model precise")
-ENDIF ()
-
-
 MESSAGE(STATUS "CMAKE_Fortran_COMPILER_ID = ${CMAKE_Fortran_COMPILER_ID}")
 # Need this for a fix in repro_sum_mod
 IF (${CMAKE_Fortran_COMPILER_ID} STREQUAL XL)
@@ -55,14 +21,12 @@ ELSE ()
     SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -extend-source")
   ELSEIF (CMAKE_Fortran_COMPILER_ID STREQUAL Intel)
     SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -assume byterecl")
-    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${FP_MODEL_FLAG}")
-    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ftz")
+    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fp-model fast -ftz")
     #SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fp-model fast -qopt-report=5 -ftz")
     #SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -mP2OPT_hpo_matrix_opt_framework=0 -fp-model fast -qopt-report=5 -ftz")
 
     SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -diag-disable 8291")
 
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FP_MODEL_FLAG}")
     # remark #8291: Recommended relationship between field width 'W' and the number of fractional digits 'D' in this edit descriptor is 'W>=D+7'.
 
     # Needed by csm_share
@@ -88,8 +52,6 @@ ENDIF ()
 IF (${HOMME_USE_CXX})
   IF (DEFINED BASE_CPPFLAGS)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${BASE_CPPFLAGS}")
-  ELSE ()
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FP_MODEL_FLAG}")
   ENDIF ()
 
   # C++ Flags

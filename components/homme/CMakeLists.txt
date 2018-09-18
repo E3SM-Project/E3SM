@@ -3,13 +3,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
 
 PROJECT(HOMME C Fortran)
 
-IF (NOT CMAKE_BUILD_TYPE)
-  # Default build type is RelWithDebInfo
-  set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING
-      "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel."
-      FORCE)
-ENDIF ()
-
 ENABLE_LANGUAGE(Fortran) 
 
 # Print the sha of the last commit,
@@ -80,34 +73,37 @@ ENDIF ()
 OPTION(BUILD_HOMME_SWEQX "Shallow water equations FEM" ON)
 OPTION(BUILD_HOMME_PREQX "Primitive equations FEM" ON)
 OPTION(BUILD_HOMME_THETA "SB81 NH model with theta and Exner pressure" ON)
-OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" OFF)
+OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" ON)
 OPTION(BUILD_HOMME_PREQX_KOKKOS "Primitive equations FEM with Kokkos" OFF)
 OPTION(BUILD_HOMME_PESE  "Primitive equations with vertical spectral elements" OFF)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
 
-SET (HOMME_USE_TRILINOS OFF)
-SET (HOMME_USE_KOKKOS OFF)
+#by default we don't need cxx
+SET(HOMME_USE_CXX FALSE)
+
 # swim and prim executables require C++ compiler
 IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
-  SET (HOMME_USE_TRILINOS TRUE)
-ELSEIF (${BUILD_HOMME_PREQX_KOKKOS})
-  SET (HOMME_USE_KOKKOS TRUE)
-ENDIF ()
-
-IF (${HOMME_USE_TRILINOS} OR ${HOMME_USE_KOKKOS}) 
   SET (HOMME_USE_CXX TRUE)
-ELSE ()
-  SET (HOMME_USE_CXX FALSE)
+  SET (HOMME_USE_TRILINOS TRUE)
+ENDIF ()
+#if trilinos is needed, we need cxx
+IF (${HOMME_USE_TRILINOS})
+  SET (HOMME_USE_CXX TRUE)
 ENDIF()
-
+#if kokkos is needed, then so is cxx
+SET (HOMME_USE_KOKKOS FALSE)
+IF (${BUILD_HOMME_PREQX_KOKKOS})
+  SET (HOMME_USE_KOKKOS TRUE)
+  SET (HOMME_USE_CXX TRUE)
+ENDIF ()
 
 IF (${HOMME_USE_CXX})
   MESSAGE(STATUS "This configuration of HOMME requires a C++ compiler")
   ENABLE_LANGUAGE(CXX)
 ENDIF ()
 
-IF (HOMME_USE_KOKKOS)
+IF (${HOMME_USE_KOKKOS})
   ############################################
   # Selection of Kokkos execution space
   ############################################
@@ -141,8 +137,8 @@ ENDIF()
 # Options for floating point model.
 ##############################################################################
 
-SET (HOMME_FPMODEL "fast" CACHE STRING "Floating point model for HOMME")
-SET (HOMME_FPMODEL_UT "strict" CACHE STRING "Floating point model for HOMME unit tests; overrides HOMME_FPMODEL")
+#SET (HOMME_FPMODEL "fast" CACHE STRING "Floating point model for HOMME")
+#SET (HOMME_FPMODEL_UT "strict" CACHE STRING "Floating point model for HOMME unit tests; overrides HOMME_FPMODEL")
 
 ##############################################################################
 # Compiler options set in cmake/SetCompiler.cmake
@@ -189,38 +185,12 @@ IF (${HOMME_USE_TRILINOS})
   link_directories(${Trilinos_TPL_LIBRARY_DIRS})
 ENDIF ()
 
-# Print the compiler flags to be used
-STRING (TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
-
-MESSAGE(STATUS "Fortran Flags ${CMAKE_BUILD_TYPE} = ${CMAKE_Fortran_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
-MESSAGE(STATUS "C Flags ${CMAKE_BUILD_TYPE} = ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
-MESSAGE(STATUS "CXX Flags ${CMAKE_BUILD_TYPE} = ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
 MESSAGE(STATUS "Fortran Flags = ${CMAKE_Fortran_FLAGS}")
 MESSAGE(STATUS "C Flags = ${CMAKE_C_FLAGS}")
 MESSAGE(STATUS "CXX Flags = ${CMAKE_CXX_FLAGS}")
 MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 
 IF (${HOMME_USE_KOKKOS})
-  # Check first if Kokkos is already provided in Trilinos
-  IF (${HOMME_USE_TRILINOS})
-    IF ("${Trilinos_PACKAGE_LIST}" MATHCES "KokkosCore")
-      SET (KOKKOS_INCLUDE_DIR ${Trilinos_INCLUDE_DIRS})
-      SET (KOKKOS_LIBRARY_DIR ${Trilinos_LIBRARY_DIRS})
-      SET (KOKKOS_LIBRARIES "kokkosalgorithms;kokkoscore;kokkoscontainers")
-      SET (KOKKOS_TPL_LIBRARIES "dl")
-      MESSAGE (STATUS "Kokkos found inside Trilinos! Here are the details:")
-      MESSAGE ("    KOKKOS_INCLUDE_DIR: ${KOKKOS_INCLUDE_DIR}")
-      MESSAGE ("    KOKKOS_LIBRARY_DIR: ${KOKKOS_LIBRARY_DIR}")
-      MESSAGE ("    KOKKOS_LIBRARIES: ${KOKKOS_LIBRARIES}")
-    ELSE ()
-      MESSAGE(STATUS "Kokkos not found inside Trilinos")
-      INCLUDE (Kokkos)
-    ENDIF()
-  ELSE ()
-    INCLUDE (Kokkos)
-  ENDIF ()
-
-
   IF (${CUDA_FOUND})
     string(TOLOWER "${HOMME_FPMODEL}" fpmodel_string_lower)
     if ("${fpmodel_string_lower}" STREQUAL "strict")
@@ -239,9 +209,8 @@ IF (${HOMME_USE_KOKKOS})
 
 ENDIF ()
 
+
 ##############################################################################
-
-
 # Zoltan partitioning library
 IF (DEFINED ZOLTAN_DIR)
   MESSAGE(STATUS "Building with Zoltan")
@@ -349,6 +318,11 @@ ENDIF()
 
 IF(${BUILD_HOMME_PREQX_KOKKOS})
   ADD_SUBDIRECTORY(src/preqx_kokkos)
+  IF (CMAKE_Fortran_COMPILER_ID STREQUAL Intel)
+    SET (UT_FPMODEL_FLAG "-fp-model strict " CACHE STRING "")
+  ELSEIF (CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
+    SET (UT_FPMODEL_FLAG "-ffp-contract=off" CACHE STRING "")
+  ENDIF ()
 ENDIF()
 
 IF(${BUILD_HOMME_PESE})
