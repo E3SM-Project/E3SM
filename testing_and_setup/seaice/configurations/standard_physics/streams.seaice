@@ -56,11 +56,14 @@
                   filename_interval="none"
                   input_interval="none" />
 
-<immutable_stream name="dataIcebergForcing"
+<stream name="dataIcebergForcing"
                   type="input"
                   filename_template="forcing/data_icebergs.nc"
                   filename_interval="none"
-                  input_interval="none" />
+                  input_interval="none" >
+    <var name="bergFreshWaterFluxData"/>
+    <var name="xtime" />
+</stream>
 
 <stream name="abort_block"
         type="output"
