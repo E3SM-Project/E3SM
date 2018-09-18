@@ -82,10 +82,10 @@ contains
        ! init the ocean forcing
        call init_oceanic_forcing(domain)
 
-       ! init the data iceberg forcing
-       if (config_use_data_icebergs) call init_data_iceberg_forcing(domain)
-
     endif
+
+    ! init the data iceberg forcing
+    if (config_use_data_icebergs) call init_data_iceberg_forcing(domain)
 
   end subroutine seaice_forcing_init
 
@@ -334,15 +334,15 @@ contains
             simulationClock, &
             firstTimeStep)
 
-       ! data iceberg forcing
-       if (config_use_data_icebergs) then
+    endif
 
-          call data_iceberg_forcing(&
-               streamManager, &
-               domain, &
-               simulationClock)
+    ! data iceberg forcing
+    if (config_use_data_icebergs) then
 
-       endif
+       call data_iceberg_forcing(&
+            streamManager, &
+            domain, &
+            simulationClock)
 
     endif
 
