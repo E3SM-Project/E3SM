@@ -126,10 +126,10 @@
 
     <modules>
       <command name="rm">craype</command>
-      <command name="load">craype/2.5.12</command>
+      <command name="load">craype/2.5.14</command>
       <command name="load">craype-ivybridge</command>
       <command name="rm">pmi</command>
-      <command name="load">pmi/5.0.12</command>
+      <command name="load">pmi/5.0.13</command>
       <command name="rm">cray-mpich</command>
       <command name="load">cray-mpich/7.7.0</command>
     </modules>
@@ -137,7 +137,7 @@
     <modules compiler="intel">
       <command name="load">PrgEnv-intel/6.0.4</command>
       <command name="rm">intel</command>
-      <command name="load">intel/17.0.2.174</command>
+      <command name="load">intel/18.0.1.163</command>
       <command name="rm">cray-libsci</command>
     </modules>
 
@@ -152,9 +152,9 @@
       <command name="rm">PrgEnv-intel</command>
       <command name="load">PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
-      <command name="load">gcc/6.3.0</command>
+      <command name="load">gcc/7.3.0</command>
       <command name="rm">cray-libsci</command>
-      <command name="load">cray-libsci/17.06.1</command>
+      <command name="load">cray-libsci/18.03.1</command>
     </modules>
 
     <modules compiler="gnu7">
