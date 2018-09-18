@@ -656,7 +656,7 @@ contains
   call t_startf("ApplyCAMForcing")
   if ((ftype == 3).or.(ftype == 5)) then
     call ApplyCAMForcing_dynamics_dp(elem,hvcoord,dyn_timelev,dt_dyn,nets,nete)
-  elseif ((ftype == 4).or.(ftype == 5)) then
+  elseif ((ftype == 4)) then
     call ApplyCAMForcing_dynamics   (elem,hvcoord,dyn_timelev,dt_dyn,nets,nete)
   endif
   call t_stopf("ApplyCAMForcing")
