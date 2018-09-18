@@ -1839,7 +1839,6 @@
       <executable>srun</executable>
       <arguments>
 	<arg name="num_tasks"> -n {{ total_tasks }}</arg>
-	<arg name="tasks_per_node"> -N $MAX_MPITASKS_PER_NODE</arg>
 	<arg name="thread_count"> -d $ENV{OMP_NUM_THREADS}</arg>
       </arguments>
     </mpirun>
