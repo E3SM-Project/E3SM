@@ -51,20 +51,8 @@ def get_test_output(test_path):
         return ""
 
 ###############################################################################
-def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname):
+def create_cdash_xml_boiler(phase, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, git_commit):
 ###############################################################################
-    # We assume all cases were created from the same code repo
-    first_result_case = os.path.dirname(list(results.items())[0][1][0])
-    try:
-        srcroot = run_cmd_no_fail("./xmlquery --value CIMEROOT", from_dir=first_result_case)
-    except:
-        # Use repo containing this script as last resort
-        srcroot = CIME.utils.get_cime_root()
-
-    git_commit = CIME.utils.get_current_commit(repo=srcroot)
-
-    data_rel_path = os.path.join("Testing", utc_time)
-
     site_elem = xmlet.Element("Site")
 
     if ("JENKINS_START_TIME" in os.environ):
@@ -79,40 +67,89 @@ def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time
     site_elem.attrib["Hostname"] = hostname
     site_elem.attrib["OSVersion"] = "Commit: {}{}".format(git_commit, time_info_str)
 
-    testing_elem = xmlet.SubElement(site_elem, "Testing")
+    phase_elem = xmlet.SubElement(site_elem, phase)
 
-    start_date_time_elem = xmlet.SubElement(testing_elem, "StartDateTime")
-    start_date_time_elem.text = time.ctime(current_time)
+    xmlet.SubElement(phase_elem, "StartDateTime").text = time.ctime(current_time)
+    xmlet.SubElement(phase_elem, "Start{}Time".format("Test" if phase == "Testing" else phase)).text = str(int(current_time))
 
-    start_test_time_elem = xmlet.SubElement(testing_elem, "StartTestTime")
-    start_test_time_elem.text = str(int(current_time))
+    return site_elem, phase_elem
+
+###############################################################################
+def create_cdash_config_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit):
+###############################################################################
+    site_elem, config_elem = create_cdash_xml_boiler("Configure", cdash_build_name, cdash_build_group, utc_time, current_time, hostname, git_commit)
+
+    xmlet.SubElement(config_elem, "ConfigureCommand").text = "namelists"
+
+    config_results = []
+    for test_name in sorted(results):
+        test_status = results[test_name][1]
+        config_results.append("{} {} Config {}".format("" if test_status != NAMELIST_FAIL_STATUS else "CMake Warning:\n", test_name, "PASS" if test_status != NAMELIST_FAIL_STATUS else "NML DIFF"))
+
+    xmlet.SubElement(config_elem, "Log").text = "\n".join(config_results)
+
+    xmlet.SubElement(config_elem, "ConfigureStatus").text = "0"
+    xmlet.SubElement(config_elem, "ElapsedMinutes").text = "0" # Skip for now
+
+    etree = xmlet.ElementTree(site_elem)
+    etree.write(os.path.join(data_rel_path, "Configure.xml"))
+
+###############################################################################
+def create_cdash_build_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit):
+###############################################################################
+    site_elem, build_elem = create_cdash_xml_boiler("Build", cdash_build_name, cdash_build_group, utc_time, current_time, hostname, git_commit)
+
+    xmlet.SubElement(build_elem, "ConfigureCommand").text = "case.build"
+
+    build_results = []
+    for test_name in sorted(results):
+        build_results.append(test_name)
+
+    xmlet.SubElement(build_elem, "Log").text = "\n".join(build_results)
+
+    for idx, test_name in enumerate(sorted(results)):
+        test_path = results[test_name][0]
+        test_norm_path = test_path if os.path.isdir(test_path) else os.path.dirname(test_path)
+        if get_test_time(test_norm_path) == 0:
+            error_elem = xmlet.SubElement(build_elem, "Error")
+            xmlet.SubElement(error_elem, "Text").text = test_name
+            xmlet.SubElement(error_elem, "BuildLogLine").text = str(idx)
+            xmlet.SubElement(error_elem, "PreContext").text = test_name
+            xmlet.SubElement(error_elem, "PostContext").text = ""
+            xmlet.SubElement(error_elem, "RepeatCount").text = "0"
+
+    xmlet.SubElement(build_elem, "ElapsedMinutes").text = "0" # Skip for now
+
+    etree = xmlet.ElementTree(site_elem)
+    etree.write(os.path.join(data_rel_path, "Build.xml"))
+
+###############################################################################
+def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit):
+###############################################################################
+    site_elem, testing_elem = create_cdash_xml_boiler("Testing", cdash_build_name, cdash_build_group, utc_time, current_time, hostname, git_commit)
 
     test_list_elem = xmlet.SubElement(testing_elem, "TestList")
     for test_name in sorted(results):
-        test_elem = xmlet.SubElement(test_list_elem, "Test")
-        test_elem.text = test_name
+        xmlet.SubElement(test_list_elem, "Test").text = test_name
 
     for test_name in sorted(results):
         test_path, test_status = results[test_name]
-        test_passed = test_status == TEST_PASS_STATUS
+        test_passed = test_status in [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS]
         test_norm_path = test_path if os.path.isdir(test_path) else os.path.dirname(test_path)
 
         full_test_elem = xmlet.SubElement(testing_elem, "Test")
-        if (test_passed):
+        if test_passed:
             full_test_elem.attrib["Status"] = "passed"
-        elif (test_status == NAMELIST_FAIL_STATUS):
+        elif (test_status == TEST_PEND_STATUS):
             full_test_elem.attrib["Status"] = "notrun"
         else:
             full_test_elem.attrib["Status"] = "failed"
 
-        name_elem = xmlet.SubElement(full_test_elem, "Name")
-        name_elem.text = test_name
+        xmlet.SubElement(full_test_elem, "Name").text = test_name
 
-        path_elem = xmlet.SubElement(full_test_elem, "Path")
-        path_elem.text = test_norm_path
+        xmlet.SubElement(full_test_elem, "Path").text = test_norm_path
 
-        full_name_elem = xmlet.SubElement(full_test_elem, "FullName")
-        full_name_elem.text = test_name
+        xmlet.SubElement(full_test_elem, "FullName").text = test_name
 
         xmlet.SubElement(full_test_elem, "FullCommandLine")
         # text ?
@@ -132,20 +169,39 @@ def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time
             named_measurement_elem.attrib["type"] = type_attr
             named_measurement_elem.attrib["name"] = name_attr
 
-            value_elem = xmlet.SubElement(named_measurement_elem, "Value")
-            value_elem.text = value
+            xmlet.SubElement(named_measurement_elem, "Value").text = value
 
         measurement_elem = xmlet.SubElement(results_elem, "Measurement")
 
         value_elem = xmlet.SubElement(measurement_elem, "Value")
         value_elem.text = ''.join([item for item in get_test_output(test_norm_path) if ord(item) < 128])
 
-    elapsed_time_elem = xmlet.SubElement(testing_elem, "ElapsedMinutes")
-    elapsed_time_elem.text = "0" # Skip for now
+    xmlet.SubElement(testing_elem, "ElapsedMinutes").text = "0" # Skip for now
 
     etree = xmlet.ElementTree(site_elem)
 
     etree.write(os.path.join(data_rel_path, "Test.xml"))
+
+###############################################################################
+def create_cdash_xml_fakes(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname):
+###############################################################################
+    # We assume all cases were created from the same code repo
+    first_result_case = os.path.dirname(list(results.items())[0][1][0])
+    try:
+        srcroot = run_cmd_no_fail("./xmlquery --value CIMEROOT", from_dir=first_result_case)
+    except:
+        # Use repo containing this script as last resort
+        srcroot = CIME.utils.get_cime_root()
+
+    git_commit = CIME.utils.get_current_commit(repo=srcroot)
+
+    data_rel_path = os.path.join("Testing", utc_time)
+
+    create_cdash_config_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit)
+
+    create_cdash_build_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit)
+
+    create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit)
 
 ###############################################################################
 def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_time, hostname, force_log_upload):
@@ -165,7 +221,8 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
                 test_case_dir = os.path.dirname(test_path)
                 ts = TestStatus(test_case_dir)
 
-                build_status    = ts.get_status(MODEL_BUILD_PHASE)
+                build_status    = ts.get_status(SHAREDLIB_BUILD_PHASE)
+                build_status    = TEST_FAIL_STATUS if build_status == TEST_FAIL_STATUS else ts.get_status(MODEL_BUILD_PHASE)
                 run_status      = ts.get_status(RUN_PHASE)
                 baseline_status = ts.get_status(BASELINE_PHASE)
 
@@ -276,14 +333,14 @@ NightlyStartTime: {5} UTC
     with open("Testing/TAG", "w") as tag_fd:
         tag_fd.write("{}\n{}\n".format(utc_time, cdash_build_group))
 
-    create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname)
+    create_cdash_xml_fakes(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname)
 
     create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_time, hostname, force_log_upload)
 
     run_cmd_no_fail("ctest -VV -D NightlySubmit", verbose=True)
 
 ###############################################################################
-def wait_for_test(test_path, results, wait, check_throughput, check_memory, ignore_namelists, ignore_memleak):
+def wait_for_test(test_path, results, wait, check_throughput, check_memory, ignore_namelists, ignore_memleak, no_run):
 ###############################################################################
     if (os.path.isdir(test_path)):
         test_status_filepath = os.path.join(test_path, TEST_STATUS_FILENAME)
@@ -291,39 +348,57 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
         test_status_filepath = test_path
 
     logging.debug("Watching file: '{}'".format(test_status_filepath))
+    test_log_path = os.path.join(os.path.dirname(test_status_filepath), ".internal_test_status.log")
 
-    while (True):
-        if (os.path.exists(test_status_filepath)):
-            ts = TestStatus(test_dir=os.path.dirname(test_status_filepath))
-            test_name = ts.get_name()
-            test_status = ts.get_overall_test_status(wait_for_run=True, # Important
-                                                     check_throughput=check_throughput,
-                                                     check_memory=check_memory, ignore_namelists=ignore_namelists,
-                                                     ignore_memleak=ignore_memleak)
+    # We don't want to make it a requirement that wait_for_tests has write access
+    # to all case directories
+    try:
+        fd = open(test_log_path, "w")
+        fd.close()
+    except:
+        test_log_path = "/dev/null"
 
-            if (test_status == TEST_PEND_STATUS and (wait and not SIGNAL_RECEIVED)):
-                time.sleep(SLEEP_INTERVAL_SEC)
-                logging.debug("Waiting for test to finish")
+    prior_ts = None
+    with open(test_log_path, "w") as log_fd:
+        while (True):
+            if (os.path.exists(test_status_filepath)):
+                ts = TestStatus(test_dir=os.path.dirname(test_status_filepath))
+                test_name = ts.get_name()
+                test_status = ts.get_overall_test_status(wait_for_run=not no_run, # Important
+                                                         no_run=no_run,
+                                                         check_throughput=check_throughput,
+                                                         check_memory=check_memory, ignore_namelists=ignore_namelists,
+                                                         ignore_memleak=ignore_memleak)
+
+                if prior_ts is not None and prior_ts != ts:
+                    log_fd.write(ts.phase_statuses_dump())
+                    log_fd.write("OVERALL: {}\n\n".format(test_status))
+
+                prior_ts = ts
+
+                if (test_status == TEST_PEND_STATUS and (wait and not SIGNAL_RECEIVED)):
+                    time.sleep(SLEEP_INTERVAL_SEC)
+                    logging.debug("Waiting for test to finish")
+                else:
+                    results.put( (test_name, test_path, test_status) )
+                    break
+
             else:
-                results.put( (test_name, test_path, test_status) )
-                break
-
-        else:
-            if (wait and not SIGNAL_RECEIVED):
-                logging.debug("File '{}' does not yet exist".format(test_status_filepath))
-                time.sleep(SLEEP_INTERVAL_SEC)
-            else:
-                test_name = os.path.abspath(test_status_filepath).split("/")[-2]
-                results.put( (test_name, test_path, "File '{}' doesn't exist".format(test_status_filepath)) )
-                break
+                if (wait and not SIGNAL_RECEIVED):
+                    logging.debug("File '{}' does not yet exist".format(test_status_filepath))
+                    time.sleep(SLEEP_INTERVAL_SEC)
+                else:
+                    test_name = os.path.abspath(test_status_filepath).split("/")[-2]
+                    results.put( (test_name, test_path, "File '{}' doesn't exist".format(test_status_filepath)) )
+                    break
 
 ###############################################################################
-def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check_memory=False, ignore_namelists=False, ignore_memleak=False):
+def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check_memory=False, ignore_namelists=False, ignore_memleak=False, no_run=False):
 ###############################################################################
     results = queue.Queue()
 
     for test_path in test_paths:
-        t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait, check_throughput, check_memory, ignore_namelists, ignore_memleak))
+        t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait, check_throughput, check_memory, ignore_namelists, ignore_memleak, no_run))
         t.daemon = True
         t.start()
 
@@ -360,14 +435,15 @@ def wait_for_tests(test_paths,
                    cdash_project=E3SM_MAIN_CDASH,
                    cdash_build_group=CDASH_DEFAULT_BUILD_GROUP,
                    timeout=None,
-                   force_log_upload=False):
+                   force_log_upload=False,
+                   no_run=False):
 ###############################################################################
     # Set up signal handling, we want to print results before the program
     # is terminated
     set_up_signal_handlers()
 
     with Timeout(timeout, action=signal_handler):
-        test_results = wait_for_tests_impl(test_paths, no_wait, check_throughput, check_memory, ignore_namelists, ignore_memleak)
+        test_results = wait_for_tests_impl(test_paths, no_wait, check_throughput, check_memory, ignore_namelists, ignore_memleak, no_run)
 
     all_pass = True
     for test_name, test_data in sorted(test_results.items()):

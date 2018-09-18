@@ -54,7 +54,7 @@
     <DESC>ORNL XE6, os is CNL, 32 pes/node, batch system is PBS</DESC>
     <NODENAME_REGEX>h2o</NODENAME_REGEX>
     <OS>CNL</OS>
-    <COMPILERS>pgi,cray,gnu</COMPILERS>
+    <COMPILERS>intel,pgi,cray,gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>banu</PROJECT>
     <CIME_OUTPUT_ROOT>/scratch/sciteam/$USER</CIME_OUTPUT_ROOT>
@@ -89,10 +89,22 @@
       <cmd_path lang="csh">module</cmd_path>
       <modules>
 	<command name="rm">PrgEnv-pgi</command>
+	<command name="rm">PrgEnv-intel</command>
 	<command name="rm">PrgEnv-cray</command>
 	<command name="rm">PrgEnv-gnu</command>
 	<command name="rm">pgi</command>
 	<command name="rm">cray</command>
+	<command name="rm">intel</command>
+	<command name="rm">cray-netcdf</command>
+	<command name="rm">gcc</command>
+      </modules>
+      <modules compiler="intel">
+	<command name="load">PrgEnv-intel</command>
+	<command name="rm">intel</command>
+	<command name="load">intel/17.0.4.196</command>
+	<!-- the PrgEnv-intel loads a gcc compiler that causes several
+	problems -->
+	<command name="rm">gcc</command>
       </modules>
       <modules compiler="pgi">
 	<command name="load">PrgEnv-pgi</command>
@@ -128,6 +140,7 @@
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
+      <env name="PATH">$ENV{HOME}/bin:$ENV{PATH}</env>
     </environment_variables>
   </machine>
 
@@ -456,7 +469,7 @@
     <MPILIBS compiler="gnu" >openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>$ENV{CESMDATAROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT_CLMFORC>/glade/p/cgd/tss/CTSM_datm_forcing_data</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{CESMDATAROOT}/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc.cheyenne</CCSM_CPRNC>
@@ -557,7 +570,10 @@
       <modules compiler="gnu" mpilib="mpi-serial">
 	<command name="load">netcdf/4.6.1</command>
       </modules>
-      <modules compiler="!gnu" mpilib="mpi-serial">
+      <modules compiler="pgi" mpilib="mpi-serial">
+	<command name="load">netcdf/4.4.1.1</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial">
 	<command name="load">netcdf/4.5.0</command>
       </modules>
     </module_system>
@@ -698,6 +714,7 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n {{ total_tasks }}</arg>
+	<arg name="binding"> -c {{ srun_binding }}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -731,7 +748,7 @@
 
       <modules compiler="intel">
 	<command name="load">PrgEnv-intel</command>
-	<command name="switch">intel intel/18.0.1.163</command>
+	<command name="switch">intel intel/18.0.2.199</command>
 	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/cori</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" >
@@ -743,11 +760,11 @@
 
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.6.2</command>
+	<command name="switch">cce cce/8.6.5</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
-	<command name="switch">gcc gcc/7.1.0</command>
+	<command name="switch">gcc gcc/7.3.0</command>
       </modules>
       <modules>
 	<command name="load">cray-memkind</command>
@@ -755,18 +772,18 @@
 	<command name="swap">craype craype/2.5.12</command>
       </modules>
       <modules>
-	<command name="switch">cray-libsci/17.09.1</command>
+	<command name="switch">cray-libsci/18.03.1</command>
       </modules>
       <modules>
-	<command name="load">cray-mpich/7.6.2</command>
+	<command name="load">cray-mpich/7.7.0</command>
       </modules>
       <modules mpilib="mpi-serial">
-	<command name="load">cray-hdf5/1.10.0.3</command>
-	<command name="load">cray-netcdf/4.4.1.1.3</command>
+	<command name="load">cray-hdf5/1.10.1.1</command>
+	<command name="load">cray-netcdf/4.4.1.1.6</command>
       </modules>
       <modules mpilib="!mpi-serial">
-	<command name="load">cray-netcdf-hdf5parallel/4.4.1.1.3</command>
-	<command name="load">cray-hdf5-parallel/1.10.0.3</command>
+	<command name="load">cray-netcdf-hdf5parallel/4.4.1.1.6</command>
+	<command name="load">cray-hdf5-parallel/1.10.1.1</command>
 	<command name="load">cray-parallel-netcdf/1.8.1.3</command>
       </modules>
       <modules>
@@ -775,6 +792,8 @@
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">256M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
     </environment_variables>
   </machine>
   <machine MACH="cori-knl">
@@ -802,7 +821,7 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n {{ total_tasks }}</arg>
-	<arg name="binding"> -c 4 --cpu_bind=cores</arg>
+	<arg name="binding"> -c {{ srun_binding }} --cpu_bind=cores</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -846,30 +865,30 @@
 
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.6.2</command>
+	<command name="switch">cce cce/8.6.5</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
-	<command name="switch">gcc gcc/7.1.0</command>
+	<command name="switch">gcc gcc/7.3.0</command>
       </modules>
       <modules>
 	<command name="load">cray-memkind</command>
 	<command name="load">craype-mic-knl</command>
-	<command name="swap">craype craype/2.5.12</command>
+	<command name="swap">craype craype/2.5.14</command>
       </modules>
       <modules>
-	<command name="switch">cray-libsci/17.09.1</command>
+	<command name="switch">cray-libsci/18.03.1</command>
       </modules>
       <modules>
-	<command name="load">cray-mpich/7.6.2</command>
+	<command name="load">cray-mpich/7.7.0</command>
       </modules>
       <modules mpilib="mpi-serial">
-	<command name="load">cray-hdf5/1.10.0.3</command>
-	<command name="load">cray-netcdf/4.4.1.1.3</command>
+	<command name="load">cray-hdf5/1.10.1.1</command>
+	<command name="load">cray-netcdf/4.4.1.1.6</command>
       </modules>
       <modules mpilib="!mpi-serial">
-	<command name="load">cray-netcdf-hdf5parallel/4.4.1.1.3</command>
-	<command name="load">cray-hdf5-parallel/1.10.0.3</command>
+	<command name="load">cray-netcdf-hdf5parallel/4.4.1.1.6</command>
+	<command name="load">cray-hdf5-parallel/1.10.1.1</command>
 	<command name="load">cray-parallel-netcdf/1.8.1.3</command>
       </modules>
       <modules>
@@ -878,6 +897,8 @@
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">256M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
     </environment_variables>
   </machine>
 
@@ -959,7 +980,7 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n {{ total_tasks }}</arg>
-	<arg name="thread_count" > -c $ENV{OMP_NUM_THREADS}</arg>
+	<arg name="thread_count" > -c {{ srun_binding }}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -1005,35 +1026,37 @@
       </modules>
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.6.2</command>
-	<command name="switch">cray-libsci/17.09.1</command>
+	<command name="switch">cce cce/8.6.5</command>
+	<command name="switch">cray-libsci/18.03.1</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
-	<command name="switch">gcc gcc/7.1.0</command>
-	<command name="switch">cray-libsci/17.09.1</command>
+	<command name="switch">gcc gcc/7.3.0</command>
+	<command name="switch">cray-libsci/18.03.1</command>
       </modules>
       <modules>
-	<command name="load">papi/5.5.1.3</command>
-	<command name="swap">craype craype/2.5.12</command>
+	<command name="load">papi/5.5.1.4</command>
+	<command name="swap">craype craype/2.5.14</command>
 	<command name="load">craype-ivybridge</command>
       </modules>
       <modules>
-	<command name="load">cray-mpich/7.6.2</command>
+	<command name="load">cray-mpich/7.7.0</command>
       </modules>
       <modules mpilib="mpi-serial">
-	<command name="load">cray-hdf5/1.10.0.3</command>
-	<command name="load">cray-netcdf/4.4.1.1.3</command>
+	<command name="load">cray-hdf5/1.10.1.1</command>
+	<command name="load">cray-netcdf/4.4.1.1.6</command>
       </modules>
       <modules mpilib="!mpi-serial">
-	<command name="load">cray-netcdf-hdf5parallel/4.4.1.1.3</command>
-	<command name="load">cray-hdf5-parallel/1.10.0.3</command>
+	<command name="load">cray-netcdf-hdf5parallel/4.4.1.1.6</command>
+	<command name="load">cray-hdf5-parallel/1.10.1.1</command>
 	<command name="load">cray-parallel-netcdf/1.8.1.3</command>
       </modules>
     </module_system>
 
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
     </environment_variables>
 
   </machine>
@@ -1132,7 +1155,7 @@
 	<arg name="num_tasks"> -n {{ total_tasks }} </arg>
       </arguments>
     </mpirun>
-    <module_system type="module">
+    <module_system type="module" allow_error="true">
       <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
       <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
       <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
@@ -1145,27 +1168,41 @@
 	<command name="purge"></command>
       </modules>
       <modules compiler="intel">
-	<command name="load">compiler/intel/15.0.2.164</command>
+	<command name="load">compiler/intel/18.0.3</command>
+	<command name="load">tool/netcdf/4.6.1/intel</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich2">
-	<command name="load">  tool/parallel-netcdf/1.7.0/intel/mvapich2  </command>
+	<command name="load">mpi/intel/mvapich2-2.3rc2-intel-18.0.3</command>
       </modules>
       <modules compiler="pgi">
-	<command name="load">compiler/pgi/17.04</command>
-      </modules>
-      <modules  compiler="pgi" mpilib="mvapich2">
-	  <command name="load">  tool/parallel-netcdf/1.6.1/pgi/mvapich2  </command>
+	<command name="load">compiler/pgi/18.1</command>
+	<command name="load">tool/netcdf/4.6.1/pgi</command>
       </modules>
       <modules compiler="nag">
-	<command name="load">compiler/nag/6.1</command>
+	<command name="load">compiler/nag/6.2</command>
+	<command name="load">tool/netcdf/4.6.1/nag</command>
+      </modules>
+      <modules compiler="nag" mpilib="mvapich2">
+	<command name="load">mpi/nag/mvapich2-2.3rc2</command>
+      </modules>
+      <modules compiler="nag" mpilib="openmpi">
+	<command name="load">mpi/nag/openmpi-3.1.0</command>
+      </modules>
+      <modules compiler="gnu">
+	<command name="load">compiler/gnu/8.1.0</command>
+	<command name="load">tool/netcdf/4.6.1/gcc</command>
       </modules>
       <modules compiler="gnu" mpilib="openmpi">
-	<command name="load">compiler/gnu/5.4.0</command>
-	<command name="load">  tool/parallel-netcdf/1.8.1/gnu-5.4.0/openmpi  </command>
+	<command name="load">mpi/gcc/openmpi-3.1.0a</command>
+      </modules>
+      <modules compiler="gnu" mpilib="mvapich2">
+	<command name="load">mpi/gcc/mvapich2-2.3rc2-qlc</command>
       </modules>
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
+      <!-- The following is needed to access qsub from the compute nodes -->
+      <env name="PATH">$ENV{PATH}:/cluster/torque/bin</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
@@ -2169,7 +2206,7 @@
       <executable>aprun</executable>
       <arguments>
 	<arg name="num_tasks" >-n {{ total_tasks }}</arg>
-	<arg name="tasks_per_node" >-N $MAX_MPITASKS_PER_NODE</arg>
+	<arg name="tasks_per_node" >-N {{ tasks_per_node }} </arg>
 	<arg name="thread_count">--cc depth -d $OMP_NUM_THREADS</arg>
 	<arg name="env_omp_stacksize">-e OMP_STACKSIZE=64M</arg>
 	<arg name="env_thread_count">-e OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>

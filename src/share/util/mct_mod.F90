@@ -988,7 +988,7 @@ subroutine mct_avect_vecmult(av,vec,avlist,mask_spval)
 !EOP
 
    !--- local ---
-   integer(IN) :: n,m            ! generic indicies
+   integer(IN) :: n,m,p          ! generic indicies
    integer(IN) :: npts           ! number of points (local) in an aVect field
    integer(IN) :: nfld           ! number of fields (local) in an aVect field
    integer(IN) :: nptsx          ! number of points (local) in an aVect field
@@ -1016,49 +1016,37 @@ subroutine mct_avect_vecmult(av,vec,avlist,mask_spval)
 
    if (present(avlist)) then
 
-     call mct_list_init(blist,avlist)
+      call mct_list_init(blist,avlist)
 
-     nfld=mct_list_nitem(blist)
+      nfld=mct_list_nitem(blist)
 
-     allocate(kfldin(nfld))
-     do m=1,nfld
-       call mct_list_get(tattr,m,blist)
-       kfldin(m) = mct_aVect_indexRA(av,mct_string_toChar(tattr))
-       call mct_string_clean(tattr)
-     enddo
-     call mct_list_clean(blist)
+      allocate(kfldin(nfld))
+      do m=1,nfld
+         call mct_list_get(tattr,m,blist)
+         kfldin(m) = mct_aVect_indexRA(av,mct_string_toChar(tattr))
+         call mct_string_clean(tattr)
+      enddo
+      call mct_list_clean(blist)
 
-     if (lmspval) then
+      if (lmspval) then
 
-#ifdef CPP_VECTOR
-        do m=1,nfld
-!CDIR SELECT(VECTOR)
-!DIR$ CONCURRENT
-        do n=1,npts
-#else
-        do n=1,npts
-        do m=1,nfld
-#endif
-           if (.not. shr_const_isspval(av%rAttr(kfldin(m),n))) then
-              av%rAttr(kfldin(m),n) = av%rAttr(kfldin(m),n)*vec(n)
-           endif
-        enddo
-        enddo
+         !$omp simd
+         do n = 1, npts
+            do p = 1, nfld
+               if (.not. shr_const_isspval(av%rAttr(kfldin(p),n))) then
+                  av%rAttr(kfldin(p),n) = av%rAttr(kfldin(p),n)*vec(n)
+               end if
+            end do
+        end do
 
      else  ! lmspval
 
-#ifdef CPP_VECTOR
-        do m=1,nfld
-!CDIR SELECT(VECTOR)
-!DIR$ CONCURRENT
-        do n=1,npts
-#else
-        do n=1,npts
-        do m=1,nfld
-#endif
-           av%rAttr(kfldin(m),n) = av%rAttr(kfldin(m),n)*vec(n)
-        enddo
-        enddo
+        !$omp simd
+        do n = 1, npts
+           do p = 1, nfld
+              av%rAttr(kfldin(p),n) = av%rAttr(kfldin(p),n)*vec(n)
+           end do
+        end do
 
      endif  ! lmspval
 
@@ -1070,34 +1058,18 @@ subroutine mct_avect_vecmult(av,vec,avlist,mask_spval)
 
      if (lmspval) then
 
-#ifdef CPP_VECTOR
-        do m=1,nfld
-!CDIR SELECT(VECTOR)
-!DIR$ CONCURRENT
+        !$omp simd
         do n=1,npts
-#else
-        do n=1,npts
-        do m=1,nfld
-#endif
-           if (.not. shr_const_isspval(av%rAttr(m,n))) then
-              av%rAttr(m,n) = av%rAttr(m,n)*vec(n)
-           endif
-        enddo
+	   where (.not. shr_const_isspval(av%rAttr(:,n)))
+              av%rAttr(:,n) = av%rAttr(:,n)*vec(n)
+           endwhere
         enddo
 
      else  ! lmspval
 
-#ifdef CPP_VECTOR
-        do m=1,nfld
-!CDIR SELECT(VECTOR)
-!DIR$ CONCURRENT
+        !$omp simd
         do n=1,npts
-#else
-        do n=1,npts
-        do m=1,nfld
-#endif
-           av%rAttr(m,n) = av%rAttr(m,n)*vec(n)
-        enddo
+           av%rAttr(:,n) = av%rAttr(:,n)*vec(n)
         enddo
 
      endif   ! lmspval

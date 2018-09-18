@@ -18,6 +18,8 @@ Script to create, build and run CIME tests. This script can:
    ./create_test SUITE ^TESTNAME
   - Run all tests in a suite except for tests that are in another suite
    ./create_test SUITE1 ^SUITE2
+  - Run all tests in a suite with baseline comparisons against master baselines
+   ./create_test SUITE1 -c -b master
 4) Run a CESM test suite(s):
    ./create_test --xml-category XML_CATEGORY [--xml-machine XML_MACHINE] [--xml-compiler XML_COMPILER] [ --xml-testlist XML_TESTLIST]
 
@@ -31,6 +33,7 @@ from CIME.test_scheduler import TestScheduler, RUN_PHASE
 from CIME.utils          import expect, convert_to_seconds, compute_total_time, convert_to_babylonian_time, run_cmd_no_fail, get_cime_config
 from CIME.XML.machines   import Machines
 from CIME.case           import Case
+from CIME.test_utils     import get_tests_from_xml
 from argparse            import RawTextHelpFormatter
 
 import argparse, math, glob
@@ -378,9 +381,9 @@ def parse_command_line(args, description):
                    "At least one of --xml-machine, --xml-testlist, "
                    "--xml-compiler, --xml-category or a valid test name must be provided.")
 
-            test_data = CIME.test_utils.get_tests_from_xml(args.xml_machine, args.xml_category,
-                                                           args.xml_compiler, args.xml_testlist,
-                                                           machine_name, args.compiler)
+            test_data = get_tests_from_xml(args.xml_machine, args.xml_category,
+                                           args.xml_compiler, args.xml_testlist,
+                                           machine_name, args.compiler)
             test_names = [item["name"] for item in test_data]
             for test_datum in test_data:
                 test_extra_data[test_datum["name"]] = test_datum

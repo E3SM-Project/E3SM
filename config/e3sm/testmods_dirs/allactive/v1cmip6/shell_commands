@@ -4,9 +4,3 @@
 ./xmlchange PIO_TYPENAME=netcdf
 if [ `./xmlquery --value MACH` == cetus ]||[ `./xmlquery --value MACH` == mira ]; then sed s/64M/128M/ env_mach_specific.xml >tmp && mv tmp env_mach_specific.xml; fi
 
-if [ `./xmlquery --value MACH` == theta ]; then
-  ./xmlchange --id NTASKS --val 1024
-  ./xmlchange --id ROOTPE --val 0
-  ./xmlchange --id JOB_WALLCLOCK_TIME --val 02:00:00
-  ./xmlchange --id JOB_QUEUE --val default
-fi
