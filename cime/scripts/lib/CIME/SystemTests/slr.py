@@ -17,8 +17,8 @@ import os
 import glob
 import shutil
 import numpy as np
+import scipy.stats as stats
 
-from shutil import copyfile
 from netCDF4 import Dataset
 from math import sqrt
 from sklearn.metrics import mean_squared_error
@@ -52,10 +52,6 @@ from CIME.utils import expect
 #5. For comparison: Compute rmse of current netcdf files w.r.t baselines and give pass/fail
 #6. change code so that pergro_ptend_names.txt is not generated if it is already there or only one instance writes this file...
 
-
-
-
-
 logger = logging.getLogger(__name__)
 
 #number of inital conditions
@@ -65,6 +61,17 @@ ninit_cond = 1 #12
 prt        = [0.0, 1.0e-14, -1.0e-14]
 prtstr     = ['woprt','posprt','negprt']
 
+#file names for file containing PGE cloud
+fcld_nc  = 'cloud.nc'
+#fcld_grp = 'cloud_data'
+
+#For preparing paths for namelist files for initial condition files
+
+file_pref_atm = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.cam.i.0002-"
+file_pref_lnd = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.clm2.r.0002-"
+
+file_suf_atm = "-01-00000.nc"
+file_suf_lnd = "-01-00000.nc"
 
 index = False #DEBUGGING: print out max rmse diffs if set to True
 
@@ -164,24 +171,18 @@ class SLR(SystemTestsCommon):
         # Do this already in build_phase so that we can check the xml and
         # namelist files before job starts running.
         #----------------------------------------------------------------
+        
+        logging.warn("SLR_INFO: Updating user_nl_* files")
 
-        #Prepare paths for namelist file
-
-        # generate paths/file names to get files to set initial conditons
         csmdata_root = self._case.get_value("DIN_LOC_ROOT")
         csmdata_atm  = csmdata_root+"atm/cam/inic/homme/"
         csmdata_lnd  = csmdata_root+"lnd/clm2/initdata/"
-        file_pref_atm = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.cam.i.0002-"
-        file_pref_lnd = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.clm2.r.0002-"
 
-        file_suf_atm = "-01-00000.nc"
-        file_suf_lnd = "-01-00000.nc"
-
-        
-        logging.warn("SLR_INFO: Updating user_nl_* files")
         iinst = 1
         for icond in range(ninit_cond):
             icond_label_2digits = str(icond+1).zfill(2)
+            fatm_in = file_pref_atm + icond_label_2digits + file_suf_atm
+            flnd_in = file_pref_lnd + icond_label_2digits + file_suf_lnd
             for iprt in prt:
                 with open('user_nl_cam_'+str(iinst).zfill(4), 'w') as atmnlfile, \
                         open('user_nl_clm_'+str(iinst).zfill(4), 'w') as lndnlfile:
@@ -189,8 +190,8 @@ class SLR(SystemTestsCommon):
                     #atm/lnd intitial conditions                   
                     
                     #initial condition files to use for atm and land
-                    atmnlfile.write("ncdata  = '"+ "/pic/projects/uq_climate/wanh895/acme_input/ne4_v1_init/" + file_pref_atm + icond_label_2digits + file_suf_atm+"' \n")
-                    lndnlfile.write("finidat = '"+ "/pic/projects/uq_climate/wanh895/acme_input/ne4_v1_init/" + file_pref_lnd + icond_label_2digits + file_suf_lnd+"' \n")
+                    atmnlfile.write("ncdata  = '"+ "/pic/projects/uq_climate/wanh895/acme_input/ne4_v1_init/" + fatm_in+"' \n")
+                    lndnlfile.write("finidat = '"+ "/pic/projects/uq_climate/wanh895/acme_input/ne4_v1_init/" + flnd_in+"' \n")
                     
                     #uncomment the following when there files are on SVN server
                     #atmnlfile.write("ncdata  = '"+ csmdata_atm + file_pref_atm + icond_label_2digits + file_suf_atm+"' \n")
@@ -245,11 +246,6 @@ class SLR(SystemTestsCommon):
         return  map(str.strip,var_list)
         
     def rmse_var(self,ifile_test, ifile_cntl,  var_list, var_suffix ):
-        from netCDF4 import Dataset
-        from math import sqrt
-        from sklearn.metrics import mean_squared_error
-        import numpy as np
-        
         
         #------------------ARGS-------------------------
         #ifile_test: path of test file
@@ -297,6 +293,7 @@ class SLR(SystemTestsCommon):
                     print(ind_max)
                     print_str = var+' '+str(max_diff)+' '+str(vtest[ind_max])+' ' +str(vcntl[ind_max])+' '+str(lat[ind_max[1]])+' '+ str(lon[ind_max[1]])+' '+str(ind_max[0])
                     print("{}".format(print_str))
+                    #print('{0:15}{1:15}{2:15}\n'.format(name, a, b))#TRY THIS!!
 
 
                 #normalize by mean values of the field in the control case
@@ -319,6 +316,7 @@ class SLR(SystemTestsCommon):
 
         var_list = self.get_var_list()
         len_var_list = len(var_list)
+        nprt         = len(prt)
 
         #baseline directory names
         base_root = self._case.get_value("BASELINE_ROOT")
@@ -329,7 +327,35 @@ class SLR(SystemTestsCommon):
 
         #for test cases (new environment etc.)
         print('SLR_INFO: Test case comparison...')
-        tst_res = np.empty([ninit_cond,len(prt),len_var_list])
+
+        #---------------------------------------------
+        # Write netcdf file for comparison
+        #---------------------------------------------
+        fcomp_nc = 'comp_cld.nc'
+        fcomp_cld = Dataset(fcomp_nc,'w', format='NETCDF4')
+        compgrp = fcomp_cld.createGroup('cloud_comp_data')
+
+        #create dims
+        compgrp.createDimension('ninit', ninit_cond)
+        compgrp.createDimension('nprt', nprt)
+        #compgrp.createDimension('nprt_m1', nprt-1)
+        compgrp.createDimension('nvars', len_var_list)
+
+
+        #create variables in the file
+        init_cond_nc = compgrp.createVariable('init_cond_fnames', 'string', 'ninit')
+        prt_nc       = compgrp.createVariable('perturb_strings', 'string', 'nprt')
+        variables_nc = compgrp.createVariable('perturb_vnames', 'string', 'nvars')
+        comp_rmse_nc  = compgrp.createVariable('comp_rmse', 'd', ('ninit', 'nprt', 'nvars'))
+
+
+        #assign variables for writing to the netcdf file
+        for iprt in range(nprt):
+            prt_nc[iprt]       = prtstr[iprt]
+
+        for ivar in range(len_var_list):
+            variables_nc[ivar] = var_list[ivar]
+
         iinst = 0
         for icond in range(ninit_cond):
             iprt = 0
@@ -338,12 +364,44 @@ class SLR(SystemTestsCommon):
                 ifile_cntl = os.path.join(base_dir,self.get_fname_wo_ext('','',iinst)+'_'+aprt+'.nc')
                 expect(os.path.isfile(ifile_cntl), "ERROR: File "+ifile_cntl+" does not exist")
                 print('SLR_INFO:CNTL_TST:'+ifile_cntl)
+
                 ifile_test = os.path.join(rundir,self.get_fname_wo_ext(rundir,casename,iinst)+'_'+aprt+'.nc')
                 expect(os.path.isfile(ifile_test), "ERROR: File "+ifile_test+" does not exist")
-                tst_res[icond,iprt,0:len_var_list] = self.rmse_var(ifile_test, ifile_cntl,  var_list, 't_' )
+                comp_rmse_nc[icond,iprt,0:len_var_list] = self.rmse_var(ifile_test, ifile_cntl,  var_list, 't_' )
                 print('SLR_INFO:Compared to TEST_TST:'+ifile_test)
-                print(tst_res[icond,iprt,0:len_var_list])
+
                 iprt += 1
+
+
+        
+        #--------------------------------------------
+        #Student's t-test
+        #-------------------------------------------
+
+        #Extract last element of each PGE curve of the cloud
+        path_cld_nc  = os.path.join(base_dir,fcld_nc)
+        expect(fcld_nc, "ERROR: "+fcld_nc+"  does not exist at:"+path_cld_nc)
+
+        fcld         = Dataset(path_cld_nc,'r', format='NETCDF4')
+
+        pge_ends_cld  = fcld.variables['cld_rmse'][:,:,len_var_list-1]
+        pge_ends_comp = comp_rmse_nc[:,0:nprt-1,len_var_list-1]
+
+        #run the t-test
+        print(pge_ends_comp)
+        pge_ends_cld = pge_ends_cld.flatten()
+        pge_ends_comp = pge_ends_comp.flatten()    
+        print('BALLI')
+        print(pge_ends_cld)
+        
+        t_stat, p_val = stats.ttest_ind(pge_ends_cld, pge_ends_comp)
+
+        print(t_stat)
+        print(p_val)
+
+        
+        #Close this file after you access "comp_rmse_nc" variable
+        fcomp_cld.close()
 
         print('SLR_INFO: POST PROCESSING PHASE ENDS')
         
@@ -354,7 +412,7 @@ class SLR(SystemTestsCommon):
     def run_phase(self):
         print('SLR_INFO: RUN PHASE')
         
-        self.run_indv()
+        #self.run_indv()
 
         #cwd = os.getcwd()
         #Here were are in case directory, we need to go to the run directory and rename files
@@ -415,8 +473,9 @@ class SLR(SystemTestsCommon):
             print('SLR_INFO: cloud generation-gen base' )
 
 
-            var_list = self.get_var_list()
+            var_list     = self.get_var_list()
             len_var_list = len(var_list)
+            nprt         = len(prt)
 
             #baseline directory names
             base_root = self._case.get_value("BASELINE_ROOT")
@@ -427,9 +486,46 @@ class SLR(SystemTestsCommon):
 
             #for trusted cloud sims
             print('SLR_INFO: Computing cloud')
-            cld_res = np.empty([ninit_cond,len(prt)-1,len_var_list])
+            cld_res = np.empty([len_var_list])
+            
+            #---------------------------------------------
+            # Write netcdf file for cloud
+            #---------------------------------------------
+            fcld = Dataset(fcld_nc,'w', format='NETCDF4')
+            #cldgrp = fcld.createGroup(fcld_grp)
+
+            #create dims
+            #cldgrp.createDimension('ninit', ninit_cond)
+            #cldgrp.createDimension('nprt', nprt)
+            #cldgrp.createDimension('nprt_m1', nprt-1)
+            #cldgrp.createDimension('nvars', len_var_list)
+
+            fcld.createDimension('ninit', ninit_cond)
+            fcld.createDimension('nprt', nprt)
+            fcld.createDimension('nprt_m1', nprt-1)
+            fcld.createDimension('nvars', len_var_list)
+
+
+            #create variables in the file
+            init_cond_nc = fcld.createVariable('init_cond_fnames', 'string', 'ninit')
+            prt_nc       = fcld.createVariable('perturb_strings', 'string', 'nprt')
+            variables_nc = fcld.createVariable('perturb_vnames', 'string', 'nvars')
+            cld_rmse_nc  = fcld.createVariable('cld_rmse', 'd', ('ninit', 'nprt_m1', 'nvars'))
+
+            
+            #assign variables for writing to the netcdf file
+            for iprt in range(nprt):
+                prt_nc[iprt]       = prtstr[iprt]
+            
+            for ivar in range(len_var_list):
+                variables_nc[ivar] = var_list[ivar]
+
             iinst = 0
             for icond in range(ninit_cond):
+                icond_label_2digits = str(icond+1).zfill(2)
+                init_cond_nc[icond] =  file_pref_atm + icond_label_2digits + file_suf_atm
+                #flnd_in = file_pref_lnd + icond_label_2digits + file_suf_lnd
+                
 
                 iinst += 1;  iprt = 0
                 ifile_cntl = os.path.join(base_dir,self.get_fname_wo_ext('','',iinst)+'_'+prtstr[iprt]+'.nc')
@@ -438,13 +534,19 @@ class SLR(SystemTestsCommon):
             
                 for aprt in prtstr[1:]:
                     iinst += 1;
+                    iprt = prtstr.index(aprt) - 1 # subtracted 1 as we will only get two curves for each inic (wo-pos and wo-neg)
                     ifile_test = os.path.join(base_dir,self.get_fname_wo_ext('','',iinst)+'_'+aprt+'.nc')
                     expect(os.path.isfile(ifile_test), "ERROR: File "+ifile_test+" does not exist")
-                    cld_res[icond,iprt,0:len_var_list] = self.rmse_var(ifile_test, ifile_cntl,  var_list, 't_' )
+                    cld_rmse_nc[icond,iprt,0:len_var_list] = self.rmse_var(ifile_test, ifile_cntl,  var_list, 't_' )
                     print('SLR_INFO:Compared to CLD:'+ifile_test)
-                    print(cld_res[icond,iprt,0:len_var_list])
 
-        #store results of cld_res in a text file and use it when comparing baselines...
+            fcld.close()
+
+            #copy cloud.nc file to baseline directory
+            print('SLR_INFO:copy:'+fcld_nc+' to '+base_dir)
+            shutil.copy(fcld_nc,base_dir)
+
+
         print('SLR_INFO: RUN PHASE ENDS' )
 
 
