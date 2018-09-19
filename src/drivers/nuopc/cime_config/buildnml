@@ -58,6 +58,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     config['COMP_ROF'] = case.get_value("COMP_ROF")
     config['COMP_WAV'] = case.get_value("COMP_WAV")
 
+
     if case.get_value('RUN_TYPE') == 'startup':
         config['run_type'] = 'startup'
     elif case.get_value('RUN_TYPE') == 'hybrid':
@@ -77,6 +78,11 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     if start_type != 'startup':
         if case.get_value('CASE') == case.get_value('RUN_REFCASE'):
             nmlgen.set_value('brnch_retain_casename' , value='.true.')
+
+    # set aquaplanet if appropriate
+    if config['COMP_OCN'] == 'docn' and 'aqua' in case.get_value("DOCN_MODE"):
+        nmlgen.set_value('aqua_planet' , value='.true.')
+
 
     #--------------------------------
     # Overwrite: set component coupling frequencies

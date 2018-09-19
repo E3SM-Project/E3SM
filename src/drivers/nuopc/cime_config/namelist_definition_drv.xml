@@ -901,7 +901,7 @@
     </values>
   </entry>
 
-  <entry id="aqua_planet">
+  <entry id="aqua_planet" modify_via_xml="DOCN_MODE">
     <type>logical</type>
     <category>expdef</category>
     <group>ALLCOMP_attributes</group>

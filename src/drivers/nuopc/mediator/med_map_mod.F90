@@ -317,7 +317,7 @@ contains
     integer            :: DstMaskValue
     real(R8), pointer  :: factorList(:)
     integer            :: dbrc
-    character(len=*), parameter :: subname=' (module_med_map: Fractions_init) '
+    character(len=*), parameter :: subname=' (med_map_fractions_init: ) '
     !---------------------------------------------
 
     if (dbug_flag > 1) then
