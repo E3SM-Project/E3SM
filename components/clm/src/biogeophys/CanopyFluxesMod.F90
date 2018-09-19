@@ -333,7 +333,7 @@ contains
          forc_v               => top_as%vbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)                       
          forc_pco2            => top_as%pco2bot                            , & ! Input:  [real(r8) (:)   ]  partial pressure co2 (Pa)                                             
          forc_pc13o2          => top_as%pc13o2bot                          , & ! Input:  [real(r8) (:)   ]  partial pressure c13o2 (Pa)                                           
-         forc_po2             => atm2lnd_vars%forc_po2_grc                 , & ! Input:  [real(r8) (:)   ]  partial pressure o2 (Pa)                                              
+         forc_po2             => top_as%po2bot                             , & ! Input:  [real(r8) (:)   ]  partial pressure o2 (Pa)                                              
 
          dleaf                => veg_vp%dleaf                          , & ! Input:  [real(r8) (:)   ]  characteristic leaf dimension (m)                                     
          smpso                => veg_vp%smpso                          , & ! Input:  [real(r8) (:)   ]  soil water potential at full stomatal opening (mm)                    
@@ -689,7 +689,7 @@ contains
          ! Determine atmospheric co2 and o2
 
          co2(p) = forc_pco2(t)
-         o2(p)  = forc_po2(g)
+         o2(p)  = forc_po2(t)
 
          if ( use_c13 ) then
             c13o2(p) = forc_pc13o2(t)

@@ -859,7 +859,7 @@ contains
     associate(                                             &
          forc_pco2   => top_as%pco2bot                   , & ! Input:  [real(r8) (:) ]  partial pressure co2 (Pa)                                             
          forc_pc13o2 => top_as%pc13o2bot                 , & ! Input:  [real(r8) (:) ]  partial pressure c13o2 (Pa)                                           
-         forc_po2    => atm2lnd_vars%forc_po2_grc        , & ! Input:  [real(r8) (:) ]  partial pressure o2 (Pa)                                              
+         forc_po2    => top_as%po2bot                    , & ! Input:  [real(r8) (:) ]  partial pressure o2 (Pa)                                              
 
          rc14_atm    => cnstate_vars%rc14_atm_patch      , & ! Input : [real(r8) (:) ]  C14O2/C12O2 in atmosphere 
 

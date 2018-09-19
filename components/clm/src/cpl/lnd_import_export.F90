@@ -989,6 +989,8 @@ contains
          end if
          qsat           = 0.622_r8*e / (top_as%pbot(topo) - 0.378_r8*e)
          top_as%rhbot(topo) = 100.0_r8*(top_as%qbot(topo) / qsat)
+         ! partial pressure of oxygen
+         top_as%po2bot(topo) = o2_molar_const * top_as%pbot(topo)
        end do
          
 #endif
