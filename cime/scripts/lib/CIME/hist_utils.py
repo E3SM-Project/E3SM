@@ -103,30 +103,37 @@ def copy(case, suffix):
     return comments
 
 def rename_all_hist_files(case, suffix):
-    """renaming all hist files in a case, adding the given suffix.
+    """Renaming all hist files in a case, adding the given suffix.
 
     case - The case containing the files you want to save
     suffix - The string suffix you want to add to saved files, this can be used to find them later.
     """
     rundir   = case.get_value("RUNDIR")
-    testcase = case.get_value("CASE")
-
+    ref_case = case.get_value("RUN_REFCASE")
     # Loop over models
-    comments = "Renaming hist files to suffix '%s'\n" % suffix
+    archive = case.get_env("archive")
+    comments = "Renaming hist files by adding suffix '{}'\n".format(suffix)
     num_renamed = 0
     for model in _iter_model_file_substrs(case):
-        comments += "  Renaming hist files for model '%s'\n" % model
-        test_hists = _get_all_hist_files(testcase, model, rundir)
+        comments += "  Renaming hist files for model '{}'\n".format(model)
+        if model == 'cpl':
+            file_extensions = archive.get_hist_file_extensions(archive.get_entry('drv'))
+        else:
+            file_extensions = archive.get_hist_file_extensions(archive.get_entry(model))
+        test_hists = _get_all_hist_files(model, rundir, file_extensions, ref_case=ref_case)
         num_renamed += len(test_hists)
         for test_hist in test_hists:
-            new_file = "%s.%s" % (test_hist, suffix)
+            new_file = "{}.{}".format(test_hist, suffix)
             if os.path.exists(new_file):
                 os.remove(new_file)
 
-            comments += "    Renaming '%s' to '%s'\n" % (test_hist, new_file)
-            shutil.move(test_hist, new_file)
+            comments += "    Renaming '{}' to '{}'\n".format(test_hist, new_file)
 
-    expect(num_renamed > 0, "Renaming failed: no hist files found in rundir '%s'" % rundir)
+           #safe_copy(test_hist, new_file)
+           #os.remove(test_hist)
+            os.rename(test_hist, new_file)
+
+    expect(num_renamed > 0, "renaming failed: no hist files found in rundir '{}'".format(rundir))
 
     return comments
 
