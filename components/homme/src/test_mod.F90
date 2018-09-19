@@ -21,7 +21,7 @@ use asp_tests,            only: asp_tracer, asp_baroclinic, asp_rossby, asp_moun
 use baroclinic_inst_mod,  only: binst_init_state, jw_baroclinic
 use dcmip12_wrapper,      only: dcmip2012_test1_1, dcmip2012_test1_2, dcmip2012_test1_3,&
                                 dcmip2012_test2_0, dcmip2012_test2_x, dcmip2012_test3,  &
-                                dcmip2012_test4_init, mtest_init
+                                dcmip2012_test4_init, mtest_init, dcmip2012_test2_2 !JRUB dcmip2012_test2_2
 use dcmip16_wrapper,      only: dcmip2016_test1, dcmip2016_test2, dcmip2016_test3, dcmip2016_forcing,dcmip2016_test1_forcing, dcmip2016_test3_forcing
 use held_suarez_mod,      only: hs0_init_state
 
@@ -59,6 +59,7 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
     case('dcmip2012_test2_0');  call dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
     case('dcmip2012_test2_1');  call dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,0)
     case('dcmip2012_test2_2');  call dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,1)
+    case('dcmip2012_test2_22'); call dcmip2012_test2_2(elem,hybrid,hvcoord,nets,nete,1) !JRUB
     case('dcmip2012_test3');    call dcmip2012_test3  (elem,hybrid,hvcoord,nets,nete)
     case('dcmip2012_test4');    call dcmip2012_test4_init(elem,hybrid,hvcoord,nets,nete)
     case('dcmip2016_test1');    call dcmip2016_test1  (elem,hybrid,hvcoord,nets,nete)

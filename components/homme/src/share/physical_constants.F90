@@ -60,6 +60,7 @@ module physical_constants
   real (kind=real_kind), public, parameter :: g            = 9.80616D0  ! m s^-2
   real (kind=real_kind), public            :: ginv         = 1.0_real_kind/g
   real (kind=real_kind), public, parameter :: omega0       = 7.292D-5   ! s^-1
+  !real (kind=real_kind), public, parameter :: omega0       = 0.0D0   ! s^-1 JRUB
   real (kind=real_kind), public            :: omega        = omega0
   real (kind=real_kind), public, parameter :: Rgas         = 287.04D0        
   real (kind=real_kind), public, parameter :: Cp           = 1005.0D0

@@ -507,6 +507,7 @@ contains
        call abortmp('equi-distance gnomonic map not yet implemented')
     else if (ref_map==2) then
        call dmap_elementlocal(D,a,b,corners3D)
+       !'JRUB using element local'
     else
        call abortmp('bad value of ref_map')
     endif

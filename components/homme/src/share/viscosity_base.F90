@@ -17,7 +17,7 @@ use dimensions_mod, only : np, nlev,qsize,nelemd
 use hybrid_mod, only : hybrid_t, hybrid_create
 use parallel_mod, only : parallel_t
 use element_mod, only : element_t
-use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, vorticity_sphere, derivinit, divergence_sphere
+use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, vorticity_sphere, derivinit, divergence_sphere, vorticity_i_sphere, vorticity_j_sphere !JRUB added vorticity_[i-j]_sphere
 use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
 use edge_mod, only : edgevpack, edgevunpack, edgevunpackmin, &
     edgevunpackmax, initEdgeBuffer, FreeEdgeBuffer, edgeSunpackmax, edgeSunpackmin,edgeSpack
@@ -25,6 +25,7 @@ use edge_mod, only : edgevpack, edgevunpack, edgevunpackmin, &
 use bndry_mod, only : bndry_exchangev, bndry_exchangeS, bndry_exchangeS_start,bndry_exchangeS_finish
 use control_mod, only : hypervis_scaling, nu, nu_div
 use perf_mod, only: t_startf, t_stopf
+use prim_si_mod,    only : preq_vertgrad !JRUB this was not used, can delete
 
 implicit none
 private
@@ -42,10 +43,24 @@ public :: smooth_phis
 ! compute vorticity/divergence and then project to make continious
 ! high-level routines uses only for I/O
 public :: compute_zeta_C0
+public :: compute_zeta_i_C0 !JRUB
+public :: compute_zeta_j_C0 !JRUB
 public :: compute_div_C0
 interface compute_zeta_C0
     module procedure compute_zeta_C0_hybrid       ! hybrid version
     module procedure compute_zeta_C0_par          ! single threaded
+end interface
+interface compute_zeta_i_C0
+    !JRUB  added for i -component of relative vorticity, 
+    !JRUB  both _hybrid and _par are used as in compute_zeta_C0 
+    module procedure compute_zeta_i_C0_hybrid       ! hybrid version
+    module procedure compute_zeta_i_C0_par          ! single threaded
+end interface
+interface compute_zeta_j_C0
+    !JRUB  added for j -component of relative vorticity, 
+    !JRUB  both _hybrid and _par are used as in compute_zeta_C0 
+    module procedure compute_zeta_j_C0_hybrid       ! hybrid version
+    module procedure compute_zeta_j_C0_par          ! single threaded
 end interface
 interface compute_div_C0
     module procedure compute_div_C0_hybrid
@@ -328,6 +343,62 @@ call compute_zeta_C0_hybrid(zeta,elem,hybrid,1,nelemd,nt)
 
 end subroutine
 
+subroutine compute_zeta_i_C0_par(zeta,elem,par,nt)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! JRUB added for i-component ofrelative vorticity
+! compute C0 vorticity.  That is, solve:  
+!     < PHI, zeta > = <PHI, curl(elem%state%v >
+!
+!    input:  v (stored in elem()%, in lat-lon coordinates)
+!    output: zeta(:,:,:,:)   
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+type (parallel_t) :: par
+type (element_t)     , intent(in), target :: elem(:)
+real (kind=real_kind), dimension(np,np,nlev,nelemd) :: zeta
+integer :: nt
+
+! local
+type (hybrid_t)              :: hybrid
+integer :: k,i,j,ie,ic
+type (derivative_t)          :: deriv
+
+! single thread
+hybrid = hybrid_create(par,0,1)
+
+call compute_zeta_i_C0_hybrid(zeta,elem,hybrid,1,nelemd,nt)
+!call compute_zeta_C0_hybrid(zeta,elem,hybrid,1,nelemd,nt)
+
+end subroutine
+
+subroutine compute_zeta_j_C0_par(zeta,elem,par,nt)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! JRUB added for j-component ofrelative vorticity
+! compute C0 vorticity.  That is, solve:  
+!     < PHI, zeta > = <PHI, curl(elem%state%v >
+!
+!    input:  v (stored in elem()%, in lat-lon coordinates)
+!    output: zeta(:,:,:,:)   
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+type (parallel_t) :: par
+type (element_t)     , intent(in), target :: elem(:)
+real (kind=real_kind), dimension(np,np,nlev,nelemd) :: zeta
+integer :: nt
+
+! local
+type (hybrid_t)              :: hybrid
+integer :: k,i,j,ie,ic
+type (derivative_t)          :: deriv
+
+! single thread
+hybrid = hybrid_create(par,0,1)
+
+call compute_zeta_j_C0_hybrid(zeta,elem,hybrid,1,nelemd,nt)
+!call compute_zeta_C0_hybrid(zeta,elem,hybrid,1,nelemd,nt)
+
+end subroutine
+ 
 
 subroutine compute_div_C0_par(zeta,elem,par,nt)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -390,7 +461,95 @@ enddo
 enddo
 
 call make_C0(zeta,elem,hybrid,nets,nete)
+end subroutine
 
+subroutine compute_zeta_i_C0_hybrid(zeta,elem,hybrid,nets,nete,nt)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! JRUB added to compute -component of relative vorticity
+! compute C0 vorticity.  That is, solve:  
+!     < PHI, zeta > = <PHI, curl(elem%state%v >
+!
+!    input:  v (stored in elem()%, in lat-lon coordinates)
+!    output: zeta(:,:,:,:)   
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+type (hybrid_t)      , intent(in) :: hybrid
+type (element_t)     , intent(in), target :: elem(:)
+integer :: nt,nets,nete
+!integer :: n0   !JRUB
+real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
+!real (kind=real_kind), pointer, dimension(:,:) :: dp3d   !JRUB 
+! local
+integer :: k,i,j,ie,ic
+type (derivative_t)          :: deriv
+
+call derivinit(deriv)
+
+do ie=nets,nete
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k)
+#endif
+!   zeta(:,:,:,ie)=vorticity_i_sphere(elem(ie)%state%v(:,:,:,:,nt),deriv,elem(ie))
+
+
+
+do k=1,nlev
+   !    zeta(:,:,k,ie)=elem(ie)%state%zeta(:,:,k)
+   !zeta(:,:,k,ie)=vorticity_sphere(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie)) !JRUB commented out
+
+   !dp3d  => elem(ie)%state%dp3d(:,:,k,nt)  !JRUB 
+   !call preq_vertgrad(elem(ie)%state%v(:,:,:,k,nt),dp3d,u_grad)    !JRUB
+   !call preq_vertgrad(elem(ie)%state%v(:,:,:,k,nt),dp3d,v_grad)    !JRUB
+   zeta(:,:,k,ie)=vorticity_i_sphere(elem(ie)%state%v(:,:,:,:,nt),deriv,elem(ie),k)
+   !zeta(:,:,k,ie)=vorticity_i_sphere(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie))
+enddo
+
+enddo
+
+call make_C0(zeta,elem,hybrid,nets,nete)
+end subroutine
+
+subroutine compute_zeta_j_C0_hybrid(zeta,elem,hybrid,nets,nete,nt)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! JRUB added to compute -component of relative vorticity
+! compute C0 vorticity.  That is, solve:  
+!     < PHI, zeta > = <PHI, curl(elem%state%v >
+!
+!    input:  v (stored in elem()%, in lat-lon coordinates)
+!    output: zeta(:,:,:,:)   
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+type (hybrid_t)      , intent(in) :: hybrid
+type (element_t)     , intent(in), target :: elem(:)
+integer :: nt,nets,nete
+!integer :: n0   !JRUB
+real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
+!real (kind=real_kind), pointer, dimension(:,:) :: dp3d   !JRUB 
+! local
+integer :: k,i,j,ie,ic
+type (derivative_t)          :: deriv
+
+call derivinit(deriv)
+
+do ie=nets,nete
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k)
+#endif
+!   zeta(:,:,:,ie)=vorticity_i_sphere(elem(ie)%state%v(:,:,:,:,nt),deriv,elem(ie))
+
+
+
+do k=1,nlev
+   !    zeta(:,:,k,ie)=elem(ie)%state%zeta(:,:,k)
+   !zeta(:,:,k,ie)=vorticity_sphere(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie)) !JRUB commented out
+   zeta(:,:,k,ie)=vorticity_j_sphere(elem(ie)%state%v(:,:,:,:,nt),deriv,elem(ie),k)
+enddo
+
+enddo
+
+call make_C0(zeta,elem,hybrid,nets,nete)
 end subroutine
 
 

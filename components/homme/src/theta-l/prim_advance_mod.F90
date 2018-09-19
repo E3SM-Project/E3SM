@@ -1580,8 +1580,9 @@ contains
         ! ===========================================================
         ! Compute vertical advection of v from eq. CCM2 (3.b.1)
         ! ==============================================
+        print *,'before preq_vertadv_v1 JRUB'  
         call preq_vertadv_v1(elem(ie)%state%v(:,:,:,:,n0),eta_dot_dpdn,dp3d,v_vadv)
-
+        print *,'after preq_vertadv_v1 JRUB'  
         ! compute (cp*theta) at interfaces
         ! for energy conservation, use averaging consistent with EOS
         ! dont bother to compute at surface and top since it will be multiplied by eta-dot
@@ -1668,11 +1669,13 @@ contains
     gradw_i(:,:,:,k)   = gradient_sphere(elem(ie)%state%w_i(:,:,k,n0),deriv,elem(ie)%Dinv)
     v_gradw_i(:,:,k) = v_i(:,:,1,k)*gradw_i(:,:,1,k) + v_i(:,:,2,k)*gradw_i(:,:,2,k)
     ! w - tendency on interfaces
+    !JRUB terms in Eq. 83, theta model?
     w_tens(:,:,k) = (-w_vadv_i(:,:,k) - v_gradw_i(:,:,k))*scale1 - scale1*g*(1-dpnh_dp_i(:,:,k) )
 
     ! phi - tendency on interfaces
     v_gradphinh_i(:,:,k) = v_i(:,:,1,k)*gradphinh_i(:,:,1,k) &
      +v_i(:,:,2,k)*gradphinh_i(:,:,2,k)
+    !JRUB Eq. 84?
     phi_tens(:,:,k) =  (-phi_vadv_i(:,:,k) - v_gradphinh_i(:,:,k))*scale1 &
     + scale1*g*elem(ie)%state%w_i(:,:,k,n0)
     
@@ -1691,6 +1694,7 @@ contains
         v_theta(:,:,1,k)=elem(ie)%state%v(:,:,1,k,n0)*theta_dp_cp(:,:,k)
         v_theta(:,:,2,k)=elem(ie)%state%v(:,:,2,k,n0)*theta_dp_cp(:,:,k)
         div_v_theta(:,:,k)=divergence_sphere(v_theta(:,:,:,k),deriv,elem(ie))
+        !JRUB Eq. 85?
         theta_tens(:,:,k)=(-theta_vadv(:,:,k)-div_v_theta(:,:,k))*scale1
 
         ! w vorticity correction term

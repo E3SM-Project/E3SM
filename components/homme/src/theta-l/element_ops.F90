@@ -77,12 +77,15 @@ contains
   
 
   select case(name)
-    case ('temperature','T'); call get_temperature(elem,field,hvcoord,nt,ntQ)
-    case ('pottemp','Th');    call get_pottemp(elem,field,hvcoord,nt,ntQ)
-    case ('phi','geo');       call get_phi(elem,field,phi_i,hvcoord,nt,ntQ)
-    case ('dpnh_dp');         call get_dpnh_dp(elem,field,hvcoord,nt,ntQ)
-    case ('pnh');             call get_nonhydro_pressure(elem,field,tmp  ,hvcoord,nt,ntQ)
-    case ('exner');           call get_nonhydro_pressure(elem,tmp  ,field,hvcoord,nt,ntQ)
+    case ('temperature','T')          ; call get_temperature(elem,field,hvcoord,nt,ntQ)
+    case ('pottemp','Th')             ; call get_pottemp(elem,field,hvcoord,nt,ntQ)
+    case ('gradpottemp_i','gradTh_i'); call get_gradpottemp_i(elem,field,hvcoord,nt,ntQ)   !JRUB
+    case ('gradpottemp_j','gradTh_j'); call get_gradpottemp_j(elem,field,hvcoord,nt,ntQ)   !JRUB
+    case ('gradpottemp_k','gradTh_k'); call get_gradpottemp_k(elem,field,hvcoord,nt,ntQ)   !JRUB 23042018
+    case ('phi','geo');             call get_phi(elem,field,phi_i,hvcoord,nt,ntQ)
+    case ('dpnh_dp');               call get_dpnh_dp(elem,field,hvcoord,nt,ntQ)
+    case ('pnh');                   call get_nonhydro_pressure(elem,field,tmp  ,hvcoord,nt,ntQ)
+    case ('exner');                 call get_nonhydro_pressure(elem,tmp  ,field,hvcoord,nt,ntQ)
 
     case ('p');
       do k=1,nlev
@@ -155,7 +158,148 @@ contains
   pottemp(:,:,:) = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star(:,:,:)*dp(:,:,:))
   
   end subroutine get_pottemp
+  !_____________________________________________________________________
+  subroutine get_gradpottemp_i(elem,grad,hvcoord,nt,ntQ)
+  ! JRUB
+  ! Should only be called outside timestep loop, state variables on reference levels
+  !
+  use derivative_mod, only : derivinit, derivative_t, gradient_i_sphere
+
+  implicit none
+    
+  type (element_t), intent(in)        :: elem
+  real (kind=real_kind)               :: pottemp(np,np,nlev)
+  real (kind=real_kind), intent(out)  :: grad(np,np,nlev)
+  type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
+  integer, intent(in) :: nt
+  integer, intent(in) :: ntQ
+  type (derivative_t)  :: deriv !JRUB  
+  !   local
+  real (kind=real_kind) :: dp(np,np,nlev)
+  real (kind=real_kind) :: cp_star(np,np,nlev)
+  integer :: k
+
+  call derivinit(deriv)
+
+  do k=1,nlev
+     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
+  enddo
+  call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp(:,:,:))
   
+  pottemp(:,:,:) = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star(:,:,:)*dp(:,:,:))
+
+  do k=1,nlev
+     grad(:,:,k) = gradient_i_sphere(pottemp(:,:,k),deriv,elem%Dinv) 
+  enddo
+  
+  end subroutine get_gradpottemp_i
+
+   !_____________________________________________________________________
+  subroutine get_gradpottemp_j(elem,grad,hvcoord,nt,ntQ)
+  ! JRUB
+  ! Should only be called outside timestep loop, state variables on reference levels
+  !
+  use derivative_mod, only : derivinit, derivative_t, gradient_j_sphere
+
+  implicit none
+    
+  type (element_t), intent(in)        :: elem
+  real (kind=real_kind)               :: pottemp(np,np,nlev)
+  real (kind=real_kind), intent(out)  :: grad(np,np,nlev)
+  type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
+  integer, intent(in) :: nt
+  integer, intent(in) :: ntQ
+  type (derivative_t)  :: deriv !JRUB  
+  !   local
+  real (kind=real_kind) :: dp(np,np,nlev)
+  real (kind=real_kind) :: cp_star(np,np,nlev)
+  integer :: k
+
+  call derivinit(deriv)
+
+  do k=1,nlev
+     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
+  enddo
+  call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp(:,:,:))
+  
+  pottemp(:,:,:) = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star(:,:,:)*dp(:,:,:))
+
+  do k=1,nlev
+     grad(:,:,k) = gradient_j_sphere(pottemp(:,:,k),deriv,elem%Dinv) 
+  enddo
+  
+  end subroutine get_gradpottemp_j
+
+
+  !_____________________________________________________________________
+  subroutine get_gradpottemp_k(elem,grad,hvcoord,nt,ntQ)
+  ! JRUB
+  ! Should only be called outside timestep loop, state variables on reference levels
+  !
+  use derivative_mod, only : derivinit, derivative_t, gradient_j_sphere
+
+  implicit none
+    
+  type (element_t), intent(in)        :: elem
+  real (kind=real_kind)               :: pottemp(np,np,nlev)
+  real (kind=real_kind), intent(out)  :: grad(np,np,nlev)
+  type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
+  integer, intent(in) :: nt
+  integer, intent(in) :: ntQ
+  type (derivative_t)  :: deriv !JRUB  
+  !   local
+  real (kind=real_kind) :: dp(np,np,nlev)
+  real (kind=real_kind) :: cp_star(np,np,nlev)
+  integer :: k
+  !added 23042018
+  real (kind=real_kind):: dp2d(np,np)   !JRUB
+  real (kind=real_kind):: theta_tmp(np,np,3) !theta at k-1,k,k+1 JRUB
+  real (kind=real_kind):: dthetadp(np,np)   !JRUB
+  real (kind=real_kind):: dphidp(np,np)   !JRUB
+  real (kind=real_kind):: dthetadz(np,np)   !JRUB
+
+
+
+
+  call derivinit(deriv)
+
+  do k=1,nlev
+     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
+  enddo
+  call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp(:,:,:))
+  
+  pottemp(:,:,:) = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star(:,:,:)*dp(:,:,:))
+
+  do k=1,nlev
+     dp2d  = elem%state%dp3d(:,:,k,2)  !JRUB time levels are nm1,n0,np1 then n0 =2
+
+     theta_tmp(:,:,:) = 0.0D0 
+     theta_tmp(:,:,2)=pottemp(:,:,k)
+
+     if (k.GT.1) then
+        theta_tmp(:,:,1) = pottemp(:,:,k-1)
+     else
+        theta_tmp(:,:,1) = theta_tmp(:,:,2)
+     end if                                                                                                             
+ 
+     if (k.LT.nlev) then
+        theta_tmp(:,:,3) = pottemp(:,:,k+1)
+     else
+        theta_tmp(:,:,3) = theta_tmp(:,:,2)
+     end if      
+ 
+     dthetadp(:,:) = (theta_tmp(:,:,3) - theta_tmp(:,:,1) ) / dp2d !
+
+     dphidp = (elem%state%phinh_i(:,:,k+1,2) - elem%state%phinh_i(:,:,k,2)) / dp2d
+     dthetadz = -g * dthetadp / dphidp 
+
+     grad(:,:,k) = dthetadz
+  enddo
+  
+  end subroutine get_gradpottemp_k
 
   !_____________________________________________________________________
   subroutine get_temperature(elem,temperature,hvcoord,nt,ntQ)

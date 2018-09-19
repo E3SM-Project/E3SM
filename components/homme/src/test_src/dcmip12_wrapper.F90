@@ -11,7 +11,7 @@ module dcmip12_wrapper
 
 use control_mod,          only: test_case, dcmip4_moist, dcmip4_X
 use dcmip2012_test1_2_3,  only: test1_advection_deformation, test1_advection_hadley, test1_advection_orography, &
-                                test2_steady_state_mountain, test2_schaer_mountain,test3_gravity_wave
+                                test2_steady_state_mountain, test2_schaer_mountain,test3_gravity_wave,test2_schaer_mountain2 !JRUB
 use dcmip2012_test4,      only: test4_baroclinic_wave 
 use mtests,               only: mtest_state
 use derivative_mod,       only: derivative_t, gradient_sphere
@@ -382,6 +382,72 @@ subroutine dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,shear)
 
 end subroutine
 
+!_____________________________________________________________________
+subroutine dcmip2012_test2_2(elem,hybrid,hvcoord,nets,nete,shear)
+  ! JRUB: copied from dcmip2012_test2_x and modified top account for (1 - z/zc) term in U, for critical layers
+  ! nonhydrostatic orographic waves (with or without shear)
+
+  type(element_t),    intent(inout), target :: elem(:)                  ! element array
+  type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
+  type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
+  integer,            intent(in)            :: nets,nete                ! start, end element index
+  integer,            intent(in)            :: shear                    ! flag: 1=shear 0=no shear
+
+  integer,  parameter :: zcoords = 0                                    ! we are not using z coords
+  logical,  parameter :: use_eta = .true.                               ! we are using hybrid eta coords
+  real(rl), parameter ::   &
+      Teq     = 300.d0,    &                                            ! temperature at equator
+      ztop    = 30000.d0,	 &                                            ! model top (m)
+      H       = Rd*Teq/g                                                ! characteristic height scale
+
+  integer :: i,j,k,ie                                                   ! loop indices
+  real(rl):: lon,lat,hyam,hybm,hyai,hybi                                ! pointwise coordiantes
+  real(rl):: p,z,phis,u,v,w,T,phis_ps,ps,rho,q(1),dp    ! pointwise field values
+
+  if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 2-x: steady state atmosphere with orography'
+
+  !set \tau to 25.0, bound to X, [\tau]=[sec]
+  tau = 25.0d0
+
+  ! set analytic vertical coordinates
+  call get_evenly_spaced_z(zi,zm, 0.0_rl,ztop)                                    ! get evenly spaced z levels
+  hvcoord%etai  = exp(-zi/H)                                            ! set eta levels from z in orography-free region
+  call set_hybrid_coefficients(hvcoord,hybrid,  hvcoord%etai(1), 1.0_rl)! set hybrid A and B from eta levels
+  call set_layer_locations(hvcoord, .true., hybrid%masterthread)
+
+  ! set initial conditions
+  do ie = nets,nete; 
+     do k=1,nlev; do j=1,np; do i=1,np
+        call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
+        call test2_schaer_mountain2(lon,lat,p,z,zcoords,use_eta,hyam,hybm,shear,u,v,w,T,phis,ps,rho,q(1)) !JRUB
+        dp = pressure_thickness(ps,k,hvcoord)
+        ! original
+        !    call set_state(u,v,w,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),1,nt)
+        ! This test obtains analytical height and returns it, so, we use it for \phi ...
+        call set_state(u,v,w,T,ps,phis,p,dp,z,g, i,j,k,elem(ie),1,nt)
+        call set_tracers(q,qsize,dp,i,j,k,lat,lon,elem(ie))
+        ! ... or we can use discrete hydro state to init \phi. 
+        
+     enddo; enddo; enddo; 
+     do k=1,nlevp; do j=1,np; do i=1,np
+        call get_coordinates(lat,lon,hyai,hybi, i,j,k,elem(ie),hvcoord)
+        call test2_schaer_mountain2(lon,lat,p,z,zcoords,use_eta,hyai,hybi,shear,u,v,w,T,phis,ps,rho,q(1)) !JRUB
+        dp = pressure_thickness(ps,k,hvcoord)
+        call set_state_i(u,v,w,T,ps,phis,p,dp,z,g, i,j,k,elem(ie),1,nt)
+     enddo; enddo; enddo; 
+     call tests_finalize(elem(ie),hvcoord,1,nt)
+  enddo
+
+  ! store initial velocity fields for use in sponge layer
+  allocate( u0(np,np,nlev,nelemd) )
+  allocate( v0(np,np,nlev,nelemd) )
+
+  do ie = nets,nete
+    u0(:,:,:,ie) = elem(ie)%state%v(:,:,1,:,1)
+    v0(:,:,:,ie) = elem(ie)%state%v(:,:,2,:,1)
+  enddo
+
+end subroutine
 
 !_____________________________________________________________________
 subroutine mtest_init(elem,hybrid,hvcoord,nets,nete,testid)

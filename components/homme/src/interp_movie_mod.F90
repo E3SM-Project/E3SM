@@ -48,12 +48,14 @@ module interp_movie_mod
 #undef V_IS_LATLON
 #if defined(_PRIM)
 #define V_IS_LATLON
-  integer, parameter :: varcnt = 42 !45
+  integer, parameter :: varcnt = 47 !was 42, JRUB added 2
   integer, parameter :: maxdims =  5
   character*(*), parameter :: varnames(varcnt)=(/'ps       ', &
                                                  'geos     ', &
                                                  'precl    ', &
                                                  'zeta     ', &
+                                                 'zeta_i   ', & !JRUB added
+                                                 'zeta_j   ', & !JRUB added
                                                  'dp3d     ', &
                                                  'p        ', &
                                                  'pnh      ', &
@@ -61,6 +63,9 @@ module interp_movie_mod
                                                  'div      ', &
                                                  'T        ', &
                                                  'Th       ', &
+                                                 'gradTh_i ', &  !JRUB
+                                                 'gradTh_j ', &  !JRUB
+                                                 'gradTh_k ', &  !JRUB
                                                  'u        ', &
                                                  'v        ', &
                                                  'w        ', &
@@ -92,10 +97,10 @@ module interp_movie_mod
                                                  'hyai     ', &
                                                  'hybi     ', &
                                                  'time     '/)
-  integer, parameter :: vartype(varcnt)=(/PIO_double,PIO_double,PIO_double,PIO_double,PIO_double,&
-                                          PIO_double,PIO_double,PIO_double,PIO_double, &
-                                          PIO_double,PIO_double,PIO_double,PIO_double, PIO_double,&
-                                          PIO_double,PIO_double,PIO_double,PIO_double,&
+  integer, parameter :: vartype(varcnt)=(/PIO_double,PIO_double,PIO_double,PIO_double,PIO_double,PIO_double,& !JRUB added 1
+                                          PIO_double,PIO_double,PIO_double,PIO_double,PIO_double, &   !JRUB added 1
+                                          PIO_double,PIO_double,PIO_double,PIO_double,PIO_double, PIO_double,& !JRUB added 1
+                                          PIO_double,PIO_double,PIO_double,PIO_double,PIO_double, PIO_double,& !JRUB added 2
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,&
@@ -106,8 +111,8 @@ module interp_movie_mod
                                           PIO_double,PIO_double,&
                                           PIO_double,PIO_double,&
                                           PIO_double/)
-  logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,.false.,&
-                                              .false.,.false.,.false., .false., .false., &
+  logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false.,&  !JRUB added 2
+                                              .false.,.false.,.false., .false., .false.,.false.,.false., .false.,& !JRUB added 4
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
@@ -122,6 +127,8 @@ module interp_movie_mod
        1,2,0,0,0,  &   ! geos
        1,2,5,0,0,  &   ! precl
        1,2,3,5,0,  &   ! zeta
+       1,2,3,5,0,  &   ! zeta_i, JRUB added
+       1,2,3,5,0,  &   ! zeta_j, RUB added
        1,2,3,5,0,  &   ! dp3d
        1,2,3,5,0,  &   ! p
        1,2,3,5,0,  &   ! pnh
@@ -129,6 +136,9 @@ module interp_movie_mod
        1,2,3,5,0,  &   ! div
        1,2,3,5,0,  &   ! T
        1,2,3,5,0,  &   ! Th
+       1,2,3,5,0,  &   ! gradTh_i  JRUB added
+       1,2,3,5,0,  &   ! gradTh_j  JRUB added
+       1,2,3,5,0,  &   ! gradTh_k  JRUB added
        1,2,3,5,0,  &   ! u
        1,2,3,5,0,  &   ! v
        1,2,3,5,0,  &   ! w
@@ -319,12 +329,16 @@ contains
     call nf_variable_attributes(ncdf, 'ps',   'surface pressure','Pa')
     call nf_variable_attributes(ncdf, 'u',    'longitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'v',    'latitudinal wind component','meters/second')
-    call nf_variable_attributes(ncdf, 'zeta', 'Relative vorticity','1/s')
+    call nf_variable_attributes(ncdf, 'zeta', 'Relative vorticity-vertical component','1/s')
+    call nf_variable_attributes(ncdf, 'zeta_i', 'Relative vorticity-zonal component','1/s')
+    call nf_variable_attributes(ncdf, 'zeta_j', 'Relative vorticity-meridional component','1/s')
 #if defined(_PRIM)
     call nf_variable_attributes(ncdf, 'geo',  'Geopotential','m^2/s^2')
     call nf_variable_attributes(ncdf, 'geos', 'Surface geopotential','m^2/s^2')
     call nf_variable_attributes(ncdf, 'precl','Precipitation rate','meters of water/s')
     call nf_variable_attributes(ncdf, 'T',    'Temperature','degrees kelvin')
+    call nf_variable_attributes(ncdf, 'Th',    'Potential Temperature','degrees kelvin')
+    call nf_variable_attributes(ncdf, 'gradTh_i','grad Th -zonal component','K/m')
     call nf_variable_attributes(ncdf, 'dp3d', 'delta p','Pa')
     call nf_variable_attributes(ncdf, 'p',    'hydrostatic pressure','Pa')
     call nf_variable_attributes(ncdf, 'pnh',  'total pressure','Pa')
@@ -429,7 +443,7 @@ contains
     use pio, only : pio_setdebuglevel, pio_syncfile ! _EXTERNAL
 
     use viscosity_mod, only : compute_zeta_C0, make_c0, compute_zeta_c0_contra,&
-                              compute_div_c0,compute_div_c0_contra
+                              compute_div_c0,compute_div_c0_contra , compute_zeta_i_C0, compute_zeta_j_C0 !JRUBadded compute_zeta_[i-j]_C0
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     use time_mod   , only : TimeLevel_Qdp
     ! ---------------------
@@ -451,6 +465,7 @@ contains
     real(kind=real_kind), allocatable :: datall(:,:), var3d(:,:,:,:)
     real(kind=real_kind), allocatable :: varvtmp(:,:,:,:), ulatlon(:,:,:,:,:)
     real(kind=real_kind)  :: temp3d(np,np,nlev)    
+
     integer :: st, en
 
     integer :: ierr
@@ -519,8 +534,10 @@ contains
                 allocate(var3d(np,np,nlev,nelemd))
 #ifdef V_IS_LATLON
                 ! velocities are on sphere for primitive equations
+                !print *,'JRUB using zeta_C0' !This seems to be what is used 
                 call compute_zeta_C0(var3d,elem,par,n0)
 #else
+                print *,'JRUB using zeta_C0_contra'
                 call compute_zeta_C0_contra(var3d,elem,par,n0)
 #endif
                 st=1
@@ -533,6 +550,54 @@ contains
                 call nf_put_var(ncdf(ios),datall,start3d, count3d, name='zeta')
                 deallocate(datall, var3d)
              end if
+
+             !begin writing zetai JRUB
+             if(nf_selectedvar('zeta_i', output_varnames)) then
+#ifdef V_IS_LATLON
+                if (par%masterproc) print *,'writing zeta_i...'
+                allocate(datall(ncnt,nlev))
+                allocate(var3d(np,np,nlev,nelemd))
+                ! velocities are on sphere for primitive equations
+                !print *,'JRUB using zeta_C0' !This seems to be what is used 
+                call compute_zeta_i_C0(var3d,elem,par,n0)
+                !call compute_zeta_C0(var3d,elem,par,n0)
+                st=1
+                do ie=1,nelemd
+                   en=st+interpdata(ie)%n_interp-1
+                   call interpolate_scalar(interpdata(ie), var3d(:,:,:,ie), &
+                        np, nlev, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='zeta_i')
+
+                deallocate(datall, var3d)
+#endif
+             end if
+             !end writing zetai JRUB
+
+             !begin writing zeta_j JRUB
+             if(nf_selectedvar('zeta_j', output_varnames)) then
+#ifdef V_IS_LATLON
+                if (par%masterproc) print *,'writing zeta_j...'
+                allocate(datall(ncnt,nlev))
+                allocate(var3d(np,np,nlev,nelemd))
+                ! velocities are on sphere for primitive equations
+                !print *,'JRUB using zeta_C0' !This seems to be what is used 
+                call compute_zeta_j_C0(var3d,elem,par,n0)
+                !call compute_zeta_C0(var3d,elem,par,n0)
+                st=1
+                do ie=1,nelemd
+                   en=st+interpdata(ie)%n_interp-1
+                   call interpolate_scalar(interpdata(ie), var3d(:,:,:,ie), &
+                        np, nlev, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='zeta_j')
+
+                deallocate(datall, var3d)
+#endif
+             end if
+             !end writing zeta_j JRUB
 
              if(nf_selectedvar('div', output_varnames)) then
                 if (par%masterproc) print *,'writing div...'
@@ -881,7 +946,60 @@ contains
                 call nf_put_var(ncdf(ios),datall,start3d, count3d, name='Th')
                 deallocate(datall,var3d)
              end if
+             
+             !JRUB output grad-Theta 
+             if(nf_selectedvar('gradTh_i', output_varnames)) then
+                if (par%masterproc) print *,'writing gradTh_i...'
+                st=1
+                allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))  ! np,np,nlev,3(1) JRUB
+                !call derivinit(deriv)
+                do ie=1,nelemd
+                   call get_field(elem(ie),'gradpottemp_i',temp3d,hvcoord,n0,n0_Q)
+                   en=st+interpdata(ie)%n_interp-1
+                   call interpolate_scalar(interpdata(ie), temp3d, &
+                        np, nlev, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                end do
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='gradTh_i')
+                deallocate(datall,var3d)
+             end if
+             !JRUB
 
+             !JRUB output grad-Theta needs a lot more work
+             if(nf_selectedvar('gradTh_j', output_varnames)) then
+                if (par%masterproc) print *,'writing gradTh_j...'
+                st=1
+                allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))  ! np,np,nlev,3(1) JRUB
+                !call derivinit(deriv)
+                do ie=1,nelemd
+                   call get_field(elem(ie),'gradpottemp_j',temp3d,hvcoord,n0,n0_Q)
+                   en=st+interpdata(ie)%n_interp-1
+                   call interpolate_scalar(interpdata(ie), temp3d, &
+                        np, nlev, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                end do
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='gradTh_j')
+                deallocate(datall,var3d)
+             end if
+             !JRUB
+
+             !JRUB output grad-Theta k
+             if(nf_selectedvar('gradTh_k', output_varnames)) then
+                if (par%masterproc) print *,'writing gradTh_k...'
+                st=1
+                allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))  ! np,np,nlev,3(1) JRUB
+                !call derivinit(deriv)
+                do ie=1,nelemd
+                   call get_field(elem(ie),'gradpottemp_k',temp3d,hvcoord,n0,n0_Q)
+                   en=st+interpdata(ie)%n_interp-1
+                   call interpolate_scalar(interpdata(ie), temp3d, &
+                        np, nlev, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                end do
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='gradTh_k')
+                deallocate(datall,var3d)
+             end if
+             !JRUB
 
              do qindex=1,min(qsize,5)
                 write(vname,'(a1,i1)') 'Q',qindex

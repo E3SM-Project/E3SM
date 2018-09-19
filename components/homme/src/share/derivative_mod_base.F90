@@ -11,7 +11,8 @@ module derivative_mod_base
   use parallel_mod,   only : abortmp
   use element_mod,    only : element_t
   use control_mod,    only : hypervis_scaling, hypervis_power
-  use physical_constants, only : rrearth
+  use physical_constants, only : rrearth, g !JRUB g
+  use prim_si_mod,    only : preq_vertgrad !JRUB
 
 implicit none
 private
@@ -67,10 +68,14 @@ private
 ! contra or co-variant test functions, so 
 !
   public  :: gradient_sphere
+  public  :: gradient_i_sphere   !JRUB
+  public  :: gradient_j_sphere   !JRUB
   public  :: gradient_sphere_wk_testcov
   public  :: gradient_sphere_wk_testcontra   ! only used for debugging
   public  :: ugradv_sphere
   public  :: vorticity_sphere
+  public  :: vorticity_i_sphere   !JRUB added
+  public  :: vorticity_j_sphere   !JRUB added
   public  :: vorticity_sphere_diag
   public  :: divergence_sphere
   public  :: curl_sphere
@@ -416,7 +421,7 @@ contains
 !   input s:  scalar
 !   output  ds: spherical gradient of s, lat-lon coordinates
 !
-
+!JRUB check this for getting grad Theta?
     type (derivative_t), intent(in) :: deriv
     real(kind=real_kind), intent(in), dimension(np,np,2,2) :: Dinv
     real(kind=real_kind), intent(in) :: s(np,np)
@@ -452,6 +457,140 @@ contains
     enddo
 
     end function gradient_sphere
+
+
+!   function gradient3D_sphere(s,deriv,Dinv) result(ds)
+! !   JRUB added vertical component of gradient
+! !   input s:  scalar
+! !   output  ds: spherical gradient of s, lat-lon coordinates
+! !
+! !JRUB check this for getting grad Theta?
+!     type (derivative_t), intent(in) :: deriv
+!     real(kind=real_kind), intent(in), dimension(np,np,2,2) :: Dinv
+!     real(kind=real_kind), intent(in) :: s(np,np)
+
+!     real(kind=real_kind) :: ds(np,np,3)
+
+!     integer i
+!     integer j
+!     integer l
+
+!     real(kind=real_kind) ::  dsdx00, dsdy00
+!     real(kind=real_kind) ::  v1(np,np),v2(np,np)
+
+!     do j=1,np
+!        do l=1,np
+!           dsdx00=0.0d0
+!           dsdy00=0.0d0
+! !DIR$ UNROLL(NP)
+!           do i=1,np
+!              dsdx00 = dsdx00 + deriv%Dvv(i,l  )*s(i,j  )
+!              dsdy00 = dsdy00 + deriv%Dvv(i,l  )*s(j  ,i)
+!           end do
+!           v1(l  ,j  ) = dsdx00*rrearth
+!           v2(j  ,l  ) = dsdy00*rrearth
+!        end do
+!     end do
+!     ! convert covarient to latlon
+!     do j=1,np
+!        do i=1,np
+!           ds(i,j,1)=Dinv(i,j,1,1)*v1(i,j) + Dinv(i,j,2,1)*v2(i,j)
+!           ds(i,j,2)=Dinv(i,j,1,2)*v1(i,j) + Dinv(i,j,2,2)*v2(i,j)
+!        enddo
+!     enddo
+    
+!     !JRUB added
+!     dp2d  = elem%state%dp3d(:,:,k,2)  !JRUB time levels are nm1,n0,np1 then n0 =2
+
+
+!     dsdp(:,:) = (vco(:,:,3) - vco(:,:,1) ) / dp2d
+
+!     dphidp = (elem%state%phinh_i(:,:,k+1,2) - elem%state%phinh_i(:,:,k,2)) / dp2d
+!     dvdz = -g * dvdp / dphidp 
+
+
+!     end function gradient3D_sphere
+
+  function gradient_i_sphere(s,deriv,Dinv) result(ds)
+!   JRUB added vertical component of gradient
+!   input s:  scalar
+!   output  ds: spherical gradient of s, lat-lon coordinates
+!
+!JRUB check this for getting grad Theta?
+    type (derivative_t), intent(in) :: deriv
+    real(kind=real_kind), intent(in), dimension(np,np,2,2) :: Dinv
+    real(kind=real_kind), intent(in) :: s(np,np)
+
+    real(kind=real_kind) :: ds(np,np)
+
+    integer i
+    integer j
+    integer l
+
+    real(kind=real_kind) ::  dsdx00, dsdy00
+    real(kind=real_kind) ::  v1(np,np),v2(np,np)
+
+    do j=1,np
+       do l=1,np
+          dsdx00=0.0d0
+          dsdy00=0.0d0
+!DIR$ UNROLL(NP)
+          do i=1,np
+             dsdx00 = dsdx00 + deriv%Dvv(i,l  )*s(i,j  )
+             dsdy00 = dsdy00 + deriv%Dvv(i,l  )*s(j  ,i)
+          end do
+          v1(l  ,j  ) = dsdx00*rrearth
+          v2(j  ,l  ) = dsdy00*rrearth
+       end do
+    end do
+    ! convert covarient to latlon
+    do j=1,np
+       do i=1,np
+          ds(i,j)=Dinv(i,j,1,1)*v1(i,j) + Dinv(i,j,2,1)*v2(i,j)
+       enddo
+    enddo
+    end function gradient_i_sphere
+
+
+  function gradient_j_sphere(s,deriv,Dinv) result(ds)
+!   JRUB added vertical component of gradient
+!   input s:  scalar
+!   output  ds: spherical gradient of s, lat-lon coordinates
+!
+!JRUB check this for getting grad Theta?
+    type (derivative_t), intent(in) :: deriv
+    real(kind=real_kind), intent(in), dimension(np,np,2,2) :: Dinv
+    real(kind=real_kind), intent(in) :: s(np,np)
+
+    real(kind=real_kind) :: ds(np,np)
+
+    integer i
+    integer j
+    integer l
+
+    real(kind=real_kind) ::  dsdx00, dsdy00
+    real(kind=real_kind) ::  v1(np,np),v2(np,np)
+
+    do j=1,np
+       do l=1,np
+          dsdx00=0.0d0
+          dsdy00=0.0d0
+!DIR$ UNROLL(NP)
+          do i=1,np
+             dsdx00 = dsdx00 + deriv%Dvv(i,l  )*s(i,j  )
+             dsdy00 = dsdy00 + deriv%Dvv(i,l  )*s(j  ,i)
+          end do
+          v1(l  ,j  ) = dsdx00*rrearth
+          v2(j  ,l  ) = dsdy00*rrearth
+       end do
+    end do
+    ! convert covarient to latlon
+    do j=1,np
+       do i=1,np
+          ds(i,j)=Dinv(i,j,1,2)*v1(i,j) + Dinv(i,j,2,2)*v2(i,j)
+       enddo
+    enddo
+    end function gradient_j_sphere
 
 
   function curl_sphere_wk_testcov(s,deriv,elem) result(ds)
@@ -1043,6 +1182,7 @@ contains
           dvdx00=0.0d0
 
 !DIR$ UNROLL(NP)
+          !JRUB approximate derivative of lagrange polynomial?
           do i=1,np
              dvdx00 = dvdx00 + deriv%Dvv(i,l  )*vco(i,j  ,2)
              dudy00 = dudy00 + deriv%Dvv(i,l  )*vco(j  ,i,1)
@@ -1060,6 +1200,167 @@ contains
     end do
 
   end function vorticity_sphere
+
+  function vorticity_i_sphere(v,deriv,elem,k) result(vort)
+!   JRUB adapting vorticity_sphere to compute zonal component of vorticity instead
+!   input:  v = velocity in lat-lon coordinates
+!   ouput:  spherical vorticity of v
+!
+
+    type (derivative_t), intent(in) :: deriv
+    type (element_t), intent(in) :: elem
+    real(kind=real_kind), intent(in) :: v(np,np,2,nlev) !JRUB
+    !real(kind=real_kind), intent(in) :: w(np,np,nlev) !JRUB
+    real(kind=real_kind) :: vort(np,np)
+    real (kind=real_kind):: dp2d(np,np)   !JRUB
+    real (kind=real_kind):: dvdp(np,np)   !JRUB
+    real (kind=real_kind):: dvdz(np,np)   !JRUB
+    real (kind=real_kind):: dphidp(np,np)   !JRUB
+    integer i
+    integer j
+    integer k   !JRUB
+    integer l
+    
+    real(kind=real_kind) ::  dwdy00      ! JRUB dvdx00,dudy00
+    real(kind=real_kind) ::  vco(np,np,3) !v at k-1,k,k+1 JRUB
+    real(kind=real_kind) ::  w_int(np,np) !v at k-1,k,k+1 JRUB
+    real(kind=real_kind) ::  vtemp(np,np)
+
+    ! convert to covariant form
+    vco(:,:,:) = 0.0D0
+
+    do j=1,np
+       do i=1,np
+          !do k=1,nlev
+          !vco(i,j,1)=(elem%D(i,j,1,1)*v(i,j,1) + elem%D(i,j,2,1)*v(i,j,2)) !JRUB zonal velocity ot needed for i-vorticity
+          vco(i,j,2)=(elem%D(i,j,1,2)*v(i,j,1,k) + elem%D(i,j,2,2)*v(i,j,2,k))
+
+          if (k.GT.1) then
+             vco(i,j,1) = (elem%D(i,j,1,2)*v(i,j,1,k-1) + elem%D(i,j,2,2)*v(i,j,2,k-1))
+          else
+             vco(i,j,1) = vco(i,j,2)
+          end if
+
+          if (k.LT.nlev) then
+             vco(i,j,3) = (elem%D(i,j,1,2)*v(i,j,1,k+1) + elem%D(i,j,2,2)*v(i,j,2,k+1))
+          else
+             vco(i,j,3) = vco(i,j,2)
+          end if
+
+             
+          !enddo
+       enddo
+    enddo
+
+    dp2d  = elem%state%dp3d(:,:,k,2)  !JRUB time levels are nm1,n0,np1 then n0 =2
+    dvdp(:,:) = (vco(:,:,3) - vco(:,:,1) ) / dp2d
+    dphidp = (elem%state%phinh_i(:,:,k+1,2) - elem%state%phinh_i(:,:,k,2)) / dp2d
+    dvdz = -g * dvdp / dphidp 
+
+    w_int = 0.5_real_kind * (elem%state%w_i(:,:,k,2) + elem%state%w_i(:,:,k+1,2))
+
+    do j=1,np
+       do l=1,np
+          dwdy00=0.0d0
+!DIR$ UNROLL(NP)
+          !JRUB approximate derivative of lagrange polynomial?
+          do i=1,np
+             dwdy00 = dwdy00 + deriv%Dvv(i,l  )*w_int(j  ,i)
+          enddo
+ 
+          vtemp(j  ,l  ) = dwdy00
+
+       enddo
+    enddo
+
+    do j=1,np
+       do i=1,np
+          !do k=1,nlev
+          !!@vort(i,j)=(vort(i,j)-vtemp(i,j))*(elem%rmetdet(i,j)*rrearth)
+          vort(i,j)= (vtemp(i,j) - dvdz(i,j))*(elem%rmetdet(i,j)*rrearth)  !JRUB
+          !end do
+       end do
+    end do
+
+  end function vorticity_i_sphere
+
+
+  function vorticity_j_sphere(v,deriv,elem,k) result(vort)
+!   JRUB adapting vorticity_sphere to compute meridional component of vorticity instead
+!   input:  v = velocity in lat-lon coordinates
+!   ouput:  spherical vorticity of v
+!
+
+    type (derivative_t), intent(in) :: deriv
+    type (element_t), intent(in) :: elem
+    real(kind=real_kind), intent(in) :: v(np,np,2,nlev) !JRUB
+    !real(kind=real_kind), intent(in) :: w(np,np,nlev) !JRUB
+    real(kind=real_kind) :: vort(np,np)
+    real (kind=real_kind):: dp2d(np,np)   !JRUB
+    real (kind=real_kind):: dudp(np,np)   !JRUB
+    real (kind=real_kind):: dudz(np,np)   !JRUB
+    real (kind=real_kind):: dphidp(np,np)   !JRUB
+    integer i
+    integer j
+    integer k   !JRUB
+    integer l
+    
+    real(kind=real_kind) ::  dwdx00      ! JRUB dvdx00,dudy00
+    real(kind=real_kind) ::  vco(np,np,3) !v at k-1,k,k+1 JRUB
+    real(kind=real_kind) ::  w_int(np,np) !v at k-1,k,k+1 JRUB
+    real(kind=real_kind) ::  vtemp(np,np)
+
+    ! convert to covariant form
+    vco(:,:,:) = 0.0D0
+
+    do j=1,np
+       do i=1,np
+          vco(i,j,2)=(elem%D(i,j,1,1)*v(i,j,1,k) + elem%D(i,j,2,1)*v(i,j,2,k)) !only u-component needed 
+          if (k.GT.1) then
+             vco(i,j,1) = (elem%D(i,j,1,1)*v(i,j,1,k-1) + elem%D(i,j,2,1)*v(i,j,2,k-1))
+          else
+             vco(i,j,1) = vco(i,j,2)
+          end if
+
+          if (k.LT.nlev) then
+             vco(i,j,3) = (elem%D(i,j,1,1)*v(i,j,1,k+1) + elem%D(i,j,2,1)*v(i,j,2,k+1))
+          else
+             vco(i,j,3) = vco(i,j,2)
+          end if
+       enddo
+    enddo
+
+    dp2d  = elem%state%dp3d(:,:,k,2)  !JRUB time levels are nm1,n0,np1 then n0 =2
+    dudp(:,:) = (vco(:,:,3) - vco(:,:,1) ) / dp2d
+    dphidp = (elem%state%phinh_i(:,:,k+1,2) - elem%state%phinh_i(:,:,k,2)) / dp2d
+    dudz = -g * dudp / dphidp 
+
+    w_int = 0.5_real_kind * (elem%state%w_i(:,:,k,2) + elem%state%w_i(:,:,k+1,2))
+
+    do j=1,np
+       do l=1,np
+          dwdx00=0.0d0
+!DIR$ UNROLL(NP)
+          !JRUB approximate derivative of lagrange polynomial?
+          do i=1,np
+             dwdx00 = dwdx00 + deriv%Dvv(i,l  )*w_int(i  ,j)
+          enddo
+ 
+          vtemp(l  ,j  ) = dwdx00
+
+       enddo
+    enddo
+
+    do j=1,np
+       do i=1,np
+          !do k=1,nlev
+          !!@vort(i,j)=(vort(i,j)-vtemp(i,j))*(elem%rmetdet(i,j)*rrearth)
+          vort(i,j)= (dudz(i,j) - vtemp(i,j))*(elem%rmetdet(i,j)*rrearth)  !JRUB
+          !end do
+       end do
+    end do
+
+  end function vorticity_j_sphere
 
   function vorticity_sphere_diag(v,deriv,elem) result(vort)
   !

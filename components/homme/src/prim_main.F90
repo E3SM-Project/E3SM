@@ -231,6 +231,7 @@ program prim_main
 #ifdef VERTICAL_INTERPOLATION
      call netcdf_interp_write(elem, tl, hybrid, hvcoord)
 #elif defined PIO_INTERP
+     !print *,'JRUB interp_movie_output is used'
      call interp_movie_output(elem, tl, par, 0d0,hvcoord=hvcoord)
 #else
      call prim_movie_output(elem, tl, hvcoord, par)
