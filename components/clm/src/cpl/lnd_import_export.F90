@@ -36,6 +36,7 @@ contains
     use fileutils        , only: getavu, relavu
     use spmdmod          , only: masterproc, mpicom, MPI_REAL8
     use clm_nlUtilsMod   , only : find_nlgroup_name
+    use lnd_disagg_forc
     use netcdf
     !
     ! !ARGUMENTS:
@@ -978,6 +979,8 @@ contains
          top_as%ubot(topo)    = x2l(index_x2l_Sa_u,i)         ! forc_uxy  Atm state m/s
          top_as%vbot(topo)    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
          top_as%zbot(topo)    = x2l(index_x2l_Sa_z,i)         ! zgcmxy    Atm state m
+	 call downscale_atmo_state_to_top(g, i, grc_pp%topi(g), grc_pp%topf(g), x2l, top_as)
+
          ! assign the forcing fields derived from other inputs
          ! Horizontal windspeed (m/s)
          top_as%windbot(topo) = sqrt(top_as%ubot(topo)**2 + top_as%vbot(topo)**2)
