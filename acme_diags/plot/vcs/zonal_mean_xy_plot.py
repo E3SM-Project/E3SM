@@ -288,5 +288,9 @@ def plot(ref, test, diff, metrics_dict, parameters):
             vcs_canvas.pdf(fnm)
         elif f == 'svg':
             vcs_canvas.svg(fnm)
+        # Get the filename that the user has passed in and display that.
+        # When running in a container, the paths are modified.
+        fnm = os.path.join(get_output_dir(parameters.current_set, parameters,
+            ignore_container=True), parameters.output_file)
         print('Plot saved in: ' + fnm + '.' + f)
     vcs_canvas.clear()
