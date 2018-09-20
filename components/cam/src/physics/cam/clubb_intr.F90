@@ -30,7 +30,6 @@ module clubb_intr
   use cam_history_support, only: fillvalue
 #ifdef FIVE
   use five_intr,     only: pver_five, pverp_five, &
-                           pmid_five, pint_five, &
 			   linear_interp, five_syncronize_e3sm
 #endif
 
@@ -181,7 +180,9 @@ module clubb_intr
     t_five_idx, &
     q_five_idx, &
     u_five_idx, &
-    v_five_idx 
+    v_five_idx, &
+    pmid_five_idx, &
+    pint_five_idx 
  
   integer, public :: & 
     ixthlp2 = 0, &
@@ -656,6 +657,8 @@ end subroutine clubb_init_cnst
     q_five_idx = pbuf_get_index('Q_FIVE')
     u_five_idx = pbuf_get_index('U_FIVE')
     v_five_idx = pbuf_get_index('V_FIVE')
+    pmid_five_idx = pbuf_get_index('PMID_FIVE')
+    pint_five_idx = pbuf_get_index('PINT_FIVE')
 
     iisclr_rt  = -1
     iisclr_thl = -1
@@ -1315,6 +1318,8 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: u_five
    real(r8), pointer, dimension(:,:) :: v_five
    real(r8), pointer, dimension(:,:,:) :: q_five
+   real(r8), pointer, dimension(:,:) :: pmid_five
+   real(r8), pointer, dimension(:,:) :: pint_five
    
    real(r8) :: t_five_low(pcols,pver)
    real(r8) :: u_five_low(pcols,pver)
@@ -1436,7 +1441,9 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, t_five_idx,    t_five,    start=(/1,1,itim_old/), kount=(/pcols,pver_five,1/))
    call pbuf_get_field(pbuf, q_five_idx,    q_five,     start=(/1,1,1,itim_old/), kount=(/pcols,pver_five,pcnst,1/))
    call pbuf_get_field(pbuf, u_five_idx,    u_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_five,1/))
-   call pbuf_get_field(pbuf, v_five_idx,    v_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_five,1/))  
+   call pbuf_get_field(pbuf, v_five_idx,    v_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_five,1/))
+   call pbuf_get_field(pbuf, pmid_five_idx,    pmid_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_five,1/)) 
+   call pbuf_get_field(pbuf, pint_five_idx,    pint_five,      start=(/1,1,itim_old/), kount=(/pcols,pverp_five,1/))     
 #endif 
 
    ! Intialize the apply_const variable (note special logic is due to eularian backstepping)
@@ -1561,7 +1568,7 @@ end subroutine clubb_init_cnst
 #ifdef FIVE
 
    ! Syncronize FIVE variables from E3SM state
-   call five_syncronize_e3sm(state1,dtime,t_five,u_five,v_five,q_five)
+   call five_syncronize_e3sm(state1,dtime,pint_five,pmid_five,t_five,u_five,v_five,q_five)
 
    write(*,*) 'TFIVE after tend ', t_five(1,:)
    write(*,*) 'QFIVE tend ', q_five(1,:,1)
@@ -1725,7 +1732,7 @@ end subroutine clubb_init_cnst
       ! this block of code is probably temporary 
       !  and really just for testing purposes
 #ifdef FIVE
-        p_in_Pa(k) = pmid_five(k)
+        p_in_Pa(k) = pmid_five(i,k)
 #else
         p_in_Pa(k) = state1%pmid(i,k)
 #endif
@@ -1771,19 +1778,19 @@ end subroutine clubb_init_cnst
 
       write(*,*) 'pver and pverfive', pver, pver_five
       write(*,*) 'PMIDlow ', state1%pmid(1,:)
-      write(*,*) 'PMIDfive ', pmid_five      
+      write(*,*) 'PMIDfive ', pmid_five(1,:)      
       
       ! Linearly interpolate CLUBB input variables to the FIVE grid
-      call linear_interp(state1%pmid(i,:),pmid_five,zt_g_pre(1:pver),zt_g(1:pver_five),pver,pver_five)
-      call linear_interp(state1%pmid(i,:),pmid_five,zi_g_pre(1:pver),zi_g(1:pver_five),pver,pver_five)
-      call linear_interp(state1%pmid(i,:),pmid_five,wm_zt_pre(1:pver),wm_zt(1:pver_five),pver,pver_five)
-      call linear_interp(state1%pmid(i,:),pmid_five,rho_zt_pre(1:pver),rho_zt(1:pver_five),pver,pver_five)
-      call linear_interp(state1%pmid(i,:),pmid_five,exner_pre(1:pver),exner(1:pver_five),pver,pver_five)
-      call linear_interp(state1%pmid(i,:),pmid_five,rho_ds_zt_pre(1:pver),rho_ds_zt(1:pver_five),pver,pver_five)
-      call linear_interp(state1%pmid(i,:),pmid_five,invrs_rho_ds_zt_pre(1:pver),invrs_rho_ds_zt(1:pver_five),pver,pver_five)
-      call linear_interp(state1%pmid(i,:),pmid_five,thv_ds_zt_pre(1:pver),thv_ds_zt(1:pver_five),pver,pver_five)
-      call linear_interp(state1%pmid(i,:),pmid_five,rfrzm_pre(1:pver),rfrzm(1:pver_five),pver,pver_five)
-      call linear_interp(state1%pmid(i,:),pmid_five,radf_pre(1:pver),rad(1:pver_five),pver,pver_five)
+      call linear_interp(state1%pmid(i,:),pmid_five(i,:),zt_g_pre(1:pver),zt_g(1:pver_five),pver,pver_five)
+      call linear_interp(state1%pmid(i,:),pmid_five(i,:),zi_g_pre(1:pver),zi_g(1:pver_five),pver,pver_five)
+      call linear_interp(state1%pmid(i,:),pmid_five(i,:),wm_zt_pre(1:pver),wm_zt(1:pver_five),pver,pver_five)
+      call linear_interp(state1%pmid(i,:),pmid_five(i,:),rho_zt_pre(1:pver),rho_zt(1:pver_five),pver,pver_five)
+      call linear_interp(state1%pmid(i,:),pmid_five(i,:),exner_pre(1:pver),exner(1:pver_five),pver,pver_five)
+      call linear_interp(state1%pmid(i,:),pmid_five(i,:),rho_ds_zt_pre(1:pver),rho_ds_zt(1:pver_five),pver,pver_five)
+      call linear_interp(state1%pmid(i,:),pmid_five(i,:),invrs_rho_ds_zt_pre(1:pver),invrs_rho_ds_zt(1:pver_five),pver,pver_five)
+      call linear_interp(state1%pmid(i,:),pmid_five(i,:),thv_ds_zt_pre(1:pver),thv_ds_zt(1:pver_five),pver,pver_five)
+      call linear_interp(state1%pmid(i,:),pmid_five(i,:),rfrzm_pre(1:pver),rfrzm(1:pver_five),pver,pver_five)
+      call linear_interp(state1%pmid(i,:),pmid_five(i,:),radf_pre(1:pver),rad(1:pver_five),pver,pver_five)
       
       write(*,*) 'PMIDbefore ', state1%pmid(i,:)
       write(*,*) 'PMIDafter ', i 
@@ -2320,11 +2327,11 @@ end subroutine clubb_init_cnst
       enddo
       
       ! Again, this code below is temporary.  Need to replace with layer average
-      call linear_interp(pmid_five,state1%pmid(i,:),t_five(i,1:pver_five),t_five_low(i,1:pver),pver_five,pver)
-      call linear_interp(pmid_five,state1%pmid(i,:),u_five(i,1:pver_five),u_five_low(i,1:pver),pver_five,pver)
-      call linear_interp(pmid_five,state1%pmid(i,:),v_five(i,1:pver_five),v_five_low(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five(i,:),state1%pmid(i,:),t_five(i,1:pver_five),t_five_low(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five(i,:),state1%pmid(i,:),u_five(i,1:pver_five),u_five_low(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five(i,:),state1%pmid(i,:),v_five(i,1:pver_five),v_five_low(i,1:pver),pver_five,pver)
       do p=1,pcnst
-        call linear_interp(pmid_five,state1%pmid(i,:),q_five(i,1:pver_five,p),q_five_low(i,1:pver,p),pver_five,pver)
+        call linear_interp(pmid_five(i,:),state1%pmid(i,:),q_five(i,1:pver_five,p),q_five_low(i,1:pver,p),pver_five,pver)
       enddo  
       
       ! Transfer these variables to the ones that the tendencies will see
@@ -2337,16 +2344,16 @@ end subroutine clubb_init_cnst
       ! Linearly interpolate variables that E3SM needs to use for other routines (i.e. cloud fraction)
       !  +QUESTION:  Should things like cloud fraction be saved on the FIVE grid so they can be used
       !    for microphysics and radiation, etc. etc. ?!
-      call linear_interp(pmid_five,state1%pmid(i,:),wprcp_pre(1:pver_five),wprcp(i,1:pver),pver_five,pver)
-      call linear_interp(pmid_five,state1%pmid(i,:),cloud_frac_pre(1:pver_five),cloud_frac(i,1:pver),pver_five,pver)
-      call linear_interp(pmid_five,state1%pmid(i,:),rcm_in_layer_pre(1:pver_five),rcm_in_layer(i,1:pver),pver_five,pver)
-      call linear_interp(pmid_five,state1%pmid(i,:),cloud_cover_pre(1:pver_five),cloud_cover(i,1:pver),pver_five,pver)
-      call linear_interp(pmid_five,state1%pmid(i,:),zt_out_pre(1:pver_five),zt_out(i,1:pver),pver_five,pver)
-      call linear_interp(pmid_five,state1%pmid(i,:),zi_out_pre(1:pver_five),zi_out(i,1:pver),pver_five,pver)
-      call linear_interp(pmid_five,state1%pmid(i,:),khzm_pre(1:pver_five),khzm(i,1:pver),pver_five,pver)
-      call linear_interp(pmid_five,state1%pmid(i,:),qclvar_pre(1:pver_five),qclvar(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five(i,:),state1%pmid(i,:),wprcp_pre(1:pver_five),wprcp(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five(i,:),state1%pmid(i,:),cloud_frac_pre(1:pver_five),cloud_frac(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five(i,:),state1%pmid(i,:),rcm_in_layer_pre(1:pver_five),rcm_in_layer(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five(i,:),state1%pmid(i,:),cloud_cover_pre(1:pver_five),cloud_cover(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five(i,:),state1%pmid(i,:),zt_out_pre(1:pver_five),zt_out(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five(i,:),state1%pmid(i,:),zi_out_pre(1:pver_five),zi_out(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five(i,:),state1%pmid(i,:),khzm_pre(1:pver_five),khzm(i,1:pver),pver_five,pver)
+      call linear_interp(pmid_five(i,:),state1%pmid(i,:),qclvar_pre(1:pver_five),qclvar(i,1:pver),pver_five,pver)
       
-      write(*,*) 'pmid_five ', pmid_five
+      write(*,*) 'pmid_five ', pmid_five(i,:)
       write(*,*) 'pmid ', state1%pmid(i,:) 
  
 #else
