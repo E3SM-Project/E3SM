@@ -22,7 +22,9 @@ module five_intr
   ! The top layer to which we will add layers to
   real, parameter :: five_top_toadd = 80000._r8
   
-  ! These shouldn't be hardcoded +PAB figure this out!
+  ! These shouldn't be hardcoded, but currently they are
+  !   because PBUF needs these to be initialized.
+  !   PAB task: figure out a better way for this
   integer, parameter :: pver_five = 78
   integer, parameter :: pverp_five = 79
   
@@ -42,6 +44,10 @@ module five_intr
   
   subroutine five_readnl(nlfile)
   
+    ! Currently this subroutine is not called,
+    !   here as a placeholder once a more flexible
+    !   framework is put in to define layers added
+    !   at the namelist level
     use spmd_utils,    only: masterproc  
     use units,         only: getunit, freeunit
     use namelist_utils,  only: find_group_name
@@ -115,15 +121,20 @@ module five_intr
     use physics_buffer, only: pbuf_set_field, pbuf_get_chunk, &
                         dyn_time_lvls
   
+    ! Input/output variables
     type(physics_state), intent(in):: phys_state(begchunk:endchunk)
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+
+    ! Local Variables
     type(physics_buffer_desc), pointer :: pbuf2d_chunk(:)
     
-    real(r8) :: t_host(pver)
-    real(r8) :: q_host(pver)
-    real(r8) :: u_host(pver)
-    real(r8) :: v_host(pver)
+    ! Prognostics on the E3SM grid
+    real(r8) :: t_host(pver) ! temperature
+    real(r8) :: q_host(pver) ! tracers
+    real(r8) :: u_host(pver) ! U-wind
+    real(r8) :: v_host(pver) ! V-wind
     
+    ! Prognostics on the FIVE grid
     real(r8) :: t_five(pcols,pver_five)
     real(r8) :: q_five(pcols,pver_five,pcnst)
     real(r8) :: u_five(pcols,pver_five)
@@ -142,20 +153,32 @@ module five_intr
       pint_host = phys_state(lchnk)%pint
       pbuf2d_chunk => pbuf_get_chunk(pbuf2d,lchnk)
     
-      ! First define the FIVE grid.  
-      !  Add layers to the interface grid, then interpolate
-      !  onto the pmid grid
+      ! First define the FIVE grid.
+      ! This is done based on the parameter "five_add_nlevels".
+      ! If this value is set to 1, then one layer will be added in between
+      ! the default E3SM grid, but only in the area of the grid 
+      ! that we twll it to.  This is based on "five_bot_toadd" and
+      ! "five_top_toadd" parameters.    
+      !
+      ! Add layers to the interface grid, then interpolate
+      ! onto the pmid grid
       do i=1,ncol       
-        kh=1
-        do k=1,pverp
+        kh=1 ! kh is layer index on FIVE grid
+        do k=1,pverp ! k is layer index on E3SM grid
           
-	  pint_five(i,kh) = pint_host(i,k)
+	  pint_five(i,kh) = pint_host(i,k) ! Copy pre-existing level 
+	                                   ! to FIVE grid
 	  kh=kh+1
+	  ! Test to see if this is within the bounds of the grid
+	  ! we want to add layers to
 	  if (pint_host(i,k) .le. five_bot_toadd .and. &
 	      pint_host(i,k) .ge. five_top_toadd) then
 	  
+	    ! If we are inside the portion of grid we want to add layers
+	    ! to then compute the pressure increment (resolution)
 	    incr=(pint_host(i,k+1)-pint_host(i,k))/(five_add_nlevels+1)
 	    
+	    ! Define the new layer
 	    do ki=1,five_add_nlevels
 	      pint_five(i,kh) = pint_five(i,kh-1)+incr
 	      kh=kh+1
@@ -164,7 +187,7 @@ module five_intr
 	  endif
 	  
 	enddo
-	write(*,*) 'NUMBERofLAYERS ', kh
+
       enddo
       
       ! Now define five_mid layers
@@ -173,17 +196,18 @@ module five_intr
 	  pmid_five(i,k) = (pint_five(i,k)+pint_five(i,k+1))/2.0_r8
 	enddo
       enddo
-      
-      write(*,*) 'PINT_HOST ', pint_host(1,:)
-      write(*,*) 'PINT_FIVE ', pint_five(1,:)
-      write(*,*) 'PMID_FIVE ', pmid_five(1,:)
     
+      ! Now we want to initialize stuff on the FIVE grid.  
+      ! Here we initialize the prognostics (temperature, tracers, u, v)
+      ! Also store the FIVE pressure levels on the PBUF 
       do i=1,ncol
     
+        ! Copy variables from state to FIVE, on the E3SM grid
         t_host(:) = phys_state(lchnk)%t(i,:)
         u_host(:) = phys_state(lchnk)%u(i,:)
         v_host(:) = phys_state(lchnk)%v(i,:)
       
+        ! Now interpolate onto the FIVE grid
         call linear_interp(phys_state(lchnk)%pmid(i,:),pmid_five(i,:),t_host,t_five(i,:),pver,pver_five)
         call linear_interp(phys_state(lchnk)%pmid(i,:),pmid_five(i,:),u_host,u_five(i,:),pver,pver_five)
         call linear_interp(phys_state(lchnk)%pmid(i,:),pmid_five(i,:),v_host,v_five(i,:),pver,pver_five)
@@ -194,7 +218,9 @@ module five_intr
         enddo
     
       enddo
-      write(*,*) 'TFIVEinINIT', t_five(:,:)
+
+      ! Store all needed variables onto the PBUF, so they can be used by the 
+      !  parameterizations
       do n=1,dyn_time_lvls
         call pbuf_set_field(pbuf2d_chunk, t_five_idx, t_five,(/1,1,n/),(/pcols,pver_five,1/))
         call pbuf_set_field(pbuf2d_chunk, q_five_idx, q_five,(/1,1,1,n/),(/pcols,pver_five,pcnst,1/))
@@ -219,17 +245,32 @@ module five_intr
 		t_five, u_five, v_five, q_five)
 
     ! Subroutine will syncronize FIVE variables
-    !  with the E3SM state.  
-		
+    !   with the E3SM state. 
+    ! This subroutine should be called BEFORE
+    !   a parameterization is called that uses FIVE
+    
+    ! First, a mass weighted vertical average will
+    !   be called to get FIVE values of T, q, u, v
+    !   onto E3SM grid.
+    ! Second, the tendency will be computed on the 
+    !   the E3SM grid
+    ! Third, this tendency will be interpolated onto
+    !   the high resolution FIVE grid
+    ! Finally, this tendency will be applied to the 
+    !   FIVE prognostics, for updated values to be 
+    !   used by parameterizations 
+	
+    ! Input/Output variables		
     type(physics_state), intent(in) :: state
-    real(r8) :: dtime
-    real(r8) :: pmid_five(pcols,pver_five)
-    real(r8) :: pint_five(pcols,pverp_five)
-    real(r8) :: t_five(pcols,pver_five)
-    real(r8) :: u_five(pcols,pver_five)
-    real(r8) :: v_five(pcols,pver_five)
-    real(r8) :: q_five(pcols,pver_five,pcnst)    
-		
+    real(r8), intent(in) :: dtime
+    real(r8), intent(in) :: pmid_five(pcols,pver_five)
+    real(r8), intent(in) :: pint_five(pcols,pverp_five)
+    real(r8), intent(inout) :: t_five(pcols,pver_five)
+    real(r8), intent(inout) :: u_five(pcols,pver_five)
+    real(r8), intent(inout) :: v_five(pcols,pver_five)
+    real(r8), intent(inout) :: q_five(pcols,pver_five,pcnst)    
+	
+    ! Local variables		
     integer :: k, i, p, ncol
     
     real(r8) :: t_five_low(pcols,pver)
@@ -261,25 +302,22 @@ module five_intr
     ! First compute a mass weighted average of the five variables onto the 
     !   the lower resolution E3SM grid   
     do i=1,ncol
-      ! Mass weight for temperature
+      ! Mass weighted vertical average for temperature
       call masswgt_vert_avg(state%t(i,:),t_five(i,:),state%pdel(i,:),pdel_five(i,:),&
                             state%pint(i,:),pmid_five(i,:),state%pmid(i,:),&
 			    t_five(i,:),t_five_low(i,:))
 			    
-      call masswgt_vert_avg(state%t(i,:),t_five(i,1:pver_five),state%pdel(i,:),pdel_five(i,:),&
-                            state%pint(i,:),pmid_five(i,:),state%pmid(i,:),&
-			    v_five(i,1:pver_five),v_five_low(i,1:pver))
-			    
-      ! Mass weight for u wind
+      ! Mass weighted vertical average for u wind
       call masswgt_vert_avg(state%t(i,:),t_five(i,:),state%pdel(i,:),pdel_five(i,:),&
                             state%pint(i,:),pmid_five(i,:),state%pmid(i,:),&
 			    u_five(i,:),u_five_low(i,:))
 			    
-      ! Mass weight for v wind
+      ! Mass weighted vertical average for v wind
       call masswgt_vert_avg(state%t(i,:),t_five(i,:),state%pdel(i,:),pdel_five(i,:),&
                             state%pint(i,:),pmid_five(i,:),state%pmid(i,:),&
 			    v_five(i,:),v_five_low(i,:))			    
       
+      ! Mass weighted vertical average for tracers 
       do p=1,pcnst
         call masswgt_vert_avg(state%t(i,:),t_five(i,:),state%pdel(i,:),pdel_five(i,:),&
                             state%pint(i,:),pmid_five(i,:),state%pmid(i,:),&
@@ -288,7 +326,8 @@ module five_intr
       
     enddo  
    
-    ! Next compute the tendency of FIVE variables from the state
+    ! Next compute the tendency of FIVE variables from the state, this is 
+    !   done on the E3SM grid
     do k=1,pver
       do i=1,ncol
         t_five_tend_low(i,k) = (state%t(i,k) - t_five_low(i,k))/dtime 
@@ -316,7 +355,7 @@ module five_intr
       enddo	
     enddo      	      
 
-    ! Now update FIVE prognostic variables based on this tendency
+    ! Finally update FIVE prognostic variables based on this tendency
     do k=1,pver_five
       do i=1,ncol
         t_five(i,k) = t_five(i,k) + dtime * t_five_tend(i,k)
@@ -364,21 +403,22 @@ module five_intr
     real(r8) :: dz_high(pver_five)
     real(r8) :: dz_host(pver)
     
-    ! Define the density on the host and 
-    !  high resolution grids    
+    ! Define the density on the E3SM grid   
     do k=1,pver
       rho_host(k) = pmid_host(k)/(rair*t_host(k))
     enddo
     
+    ! Compute density on FIVE grid
     do k=1,pver_five
       rho_high(k) = pmid_high(k)/(rair*t_high(k))
     enddo
     
-    ! define dz_host and dz_high
+    ! define dz on E3SM grid
     do k=1,pver
       dz_host(k) = pdel_host(k)/(rho_host(k)*gravit)
     enddo
     
+    ! define dz on the FIVE grid
     do k=1,pver_five
       dz_high(k) = pdel_high(k)/(rho_high(k)*gravit)
     enddo
@@ -386,17 +426,16 @@ module five_intr
     ! Initialize host variable
     var_host(:) = 0._r8
     
-    kh=1
-    do k=1,pver
+    kh=1 ! Vertical index for FIVE 
+    do k=1,pver ! Vertical index for E3SM
        
+      ! Check to see how many FIVE layers there are within
+      !   an E3SM layer 
       do while ( pmid_high(kh) .lt. pint_host(k+1) .and. &
                  pmid_high(kh) .gt. pint_host(k))
       
         var_host(k) = var_host(k) + rho_high(kh) * &
 	  var_high(kh) * dz_high(kh)
-	  
-!	write(*,*) 'Stuff ', k, kh, pmid_high(kh), pint_host(k), pint_host(k+1)	  
-!	write(*,*) 'Stuff2 ', var_host(k), rho_high(kh), var_high(kh), dz_high(kh)
 	  
 	kh = kh + 1 ! increase high res model by one layer
 	if (kh .gt. pver_five) goto 10
@@ -404,8 +443,8 @@ module five_intr
       end do ! end while loop for kh
 10 continue
       
+      ! Compute the mass weighted vertical average
       var_host(k) = var_host(k)/(rho_host(k)*dz_host(k))
-!      write(*,*) 'VAR_HOST ', var_host(k), rho_host(k), dz_host(k)
       
     enddo
     
@@ -420,6 +459,9 @@ module five_intr
   subroutine linear_interp(x1,x2,y1,y2,km1,km2)
     implicit none
 
+    ! Simple linear interpolation routine
+    ! WILL LIKELY BE REPLACED
+    
     integer :: km1, km2, k1, k2
     real(KIND=8) :: x1(km1), y1(km1)
     real(KIND=8) :: x2(km2), y2(km2)

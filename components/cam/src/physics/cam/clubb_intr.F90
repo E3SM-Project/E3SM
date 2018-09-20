@@ -1092,15 +1092,6 @@ end subroutine clubb_init_cnst
    real(r8) :: thv_ds_zt_in(pverp_clubb)
    real(r8) :: rfrzm_in(pverp_clubb)
    real(r8) :: rad_in(pverp_clubb)
-
-#ifdef FIVE
-   real(r8) :: thlm_five(pverp_clubb)
-   real(r8) :: rtm_five(pverp_clubb)
-   real(r8) :: rvm_five(pverp_clubb)
-   real(r8) :: um_five(pverp_clubb)
-   real(r8) :: vm_five(pverp_clubb)
-   real(r8) :: pdel_five(pverp_clubb)
-#endif
    
    ! A number of "pre" variables are added.  These are intermediate variables
    !  that are used AFTER interpolation but before grid is "flipped" to the 
@@ -1314,8 +1305,8 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: qrl
    real(r8), pointer, dimension(:,:) :: radf_clubb   
    
-   ! Define the pointer arrays needed for FIVE
 #ifdef FIVE
+   ! Define the pointer arrays needed for FIVE
    real(r8), pointer, dimension(:,:) :: t_five
    real(r8), pointer, dimension(:,:) :: u_five
    real(r8), pointer, dimension(:,:) :: v_five
@@ -1325,10 +1316,13 @@ end subroutine clubb_init_cnst
    
    real(r8) :: t_five_host(pver)
    
+   ! Five variables on the E3SM grid
    real(r8) :: t_five_low(pcols,pver)
    real(r8) :: u_five_low(pcols,pver)
    real(r8) :: v_five_low(pcols,pver)
-   real(r8) :: q_five_low(pcols,pver,pcnst)   
+   real(r8) :: q_five_low(pcols,pver,pcnst) 
+   
+   real(r8) :: pdel_five(pverp_clubb)  
 #endif
    
 !PMA
@@ -1570,20 +1564,14 @@ end subroutine clubb_init_cnst
    enddo
    
 #ifdef FIVE
-
-   write(*,*) 'TFIVE before tend ', t_five(1,:)
-   ! Syncronize FIVE variables from E3SM state
-   call five_syncronize_e3sm(state1,dtime,pint_five,pmid_five,t_five,u_five,v_five,q_five)
-
-   write(*,*) 'TFIVE after tend ', t_five(1,:)
-   write(*,*) 'QFIVE tend ', q_five(1,:,1)
-   write(*,*) 'QFIVE tend ', q_five(1,:,2)
-   write(*,*) 'UFIVE tend ', u_five(1,:)   
+   ! Syncronize FIVE variables to E3SM state
+   call five_syncronize_e3sm(state1,dtime,pint_five,pmid_five,t_five,u_five,v_five,q_five) 
 #endif   
 
    !  At each CLUBB call, initialize mean momentum  and thermo CLUBB state 
    !  from the CAM state
-   !  If we are calling FIVE, we do NOT want to initialize from the state
+   !  If we are calling FIVE, we do NOT want to initialize from the state, since
+   !    we have already syncronized FIVE variables to E3SM state
 #ifndef FIVE   
    do k=1,pver   ! loop over levels
      do i=1,ncol ! loop over columns
@@ -1734,8 +1722,7 @@ end subroutine clubb_init_cnst
       enddo
       
       do k=1,pver_clubb
-      ! this block of code is probably temporary 
-      !  and really just for testing purposes
+      ! Fill in with appropriate pressure arrays
 #ifdef FIVE
         p_in_Pa(k) = pmid_five(i,k)
 #else
@@ -1775,16 +1762,10 @@ end subroutine clubb_init_cnst
       
       wm_zt_pre(pverp) = wm_zt_pre(pver)
       
-      ! Do some interpolation to get inputs on FIVE grid
-      ! At this step, the input first order moments are on the E3SM grid.  
+      ! Do some interpolation to get inputs (which are NOT prognostic variables) on FIVE grid  
       ! Need to do some interpolation to get these variables on the higher-resolution FIVE grid.
       ! NOTE: the interpolation currently used here is very simple and really just a placeholder.     
-#ifdef FIVE  
-
-      write(*,*) 'pver and pverfive', pver, pver_five
-      write(*,*) 'PMIDlow ', state1%pmid(1,:)
-      write(*,*) 'PMIDfive ', pmid_five(1,:)      
-      
+#ifdef FIVE       
       ! Linearly interpolate CLUBB input variables to the FIVE grid
       call linear_interp(state1%pmid(i,:),pmid_five(i,:),zt_g_pre(1:pver),zt_g(1:pver_five),pver,pver_five)
       call linear_interp(state1%pmid(i,:),pmid_five(i,:),zi_g_pre(1:pver),zi_g(1:pver_five),pver,pver_five)
@@ -1796,11 +1777,6 @@ end subroutine clubb_init_cnst
       call linear_interp(state1%pmid(i,:),pmid_five(i,:),thv_ds_zt_pre(1:pver),thv_ds_zt(1:pver_five),pver,pver_five)
       call linear_interp(state1%pmid(i,:),pmid_five(i,:),rfrzm_pre(1:pver),rfrzm(1:pver_five),pver,pver_five)
       call linear_interp(state1%pmid(i,:),pmid_five(i,:),radf_pre(1:pver),rad(1:pver_five),pver,pver_five)
-      
-      write(*,*) 'PMIDbefore ', state1%pmid(i,:)
-      write(*,*) 'PMIDafter ', i 
-      write(*,*) 'RHObefore ', rho_zt_pre
-      write(*,*) 'RHOafter ', rho_zt
 
       ! Provide the lower boundary condition
       p_in_Pa(pverp_five) = p_in_Pa(pver_five)
@@ -2124,31 +2100,6 @@ end subroutine clubb_init_cnst
       ! End cloud-top radiative cooling contribution to CLUBB     !
       ! --------------------------------------------------------- !  
 
-      write(*,*) 'BEFORE'
-      write(*,*) 'p_in_Pa_in before', p_in_Pa_in
-      write(*,*) 'rho_zm before', rho_zm
-      write(*,*) 'rho_zt_in before', rho_zt_in
-      write(*,*) 'exner_in before', exner_in
-      write(*,*) 'rho_ds_zm before', rho_ds_zm
-      write(*,*) 'rho_ds_zt before', rho_ds_zt_in
-      write(*,*) 'invrs_rho_ds_zm before', invrs_rho_ds_zm
-      write(*,*) 'invrs_rho_ds_zt_in before', invrs_rho_ds_zt_in
-      write(*,*) 'thv_ds_zm before', thv_ds_zm
-      write(*,*) 'thv_ds_zt_in before', thv_ds_zt_in
-      write(*,*) 'um_in before', um_in
-      write(*,*) 'vm_in before', vm_in
-      write(*,*) 'upwp_in before', upwp_in
-      write(*,*) 'vpwp_in before', vpwp_in
-      write(*,*) 'thlm_in before', thlm_in
-      write(*,*) 'rtm_in before', rtm_in
-      write(*,*) 'wprtp_in before', wprtp_in
-      write(*,*) 'wpthlp_in before', wpthlp_in
-      write(*,*) 'wp2_in before', wp2_in
-      write(*,*) 'wp3_in before', wp3_in
-      write(*,*) 'rtp2_in before', rtp2_in
-      write(*,*) 'thlp2_in before', thlp2_in
-      write(*,*) 'rtpthlp_in before', rtpthlp_in
-
       call t_startf('adv_clubb_core_ts_loop')
       do t=1,nadv    ! do needed number of "sub" timesteps for each CAM step
     
@@ -2231,22 +2182,6 @@ end subroutine clubb_init_cnst
 
       enddo  ! end time loop
       call t_stopf('adv_clubb_core_ts_loop')
-   
-      write(*,*) 'AFTER'
-      write(*,*) 'um_in after', um_in
-      write(*,*) 'vm_in after', vm_in
-      write(*,*) 'upwp_in after', upwp_in
-      write(*,*) 'vpwp_in after', vpwp_in
-      write(*,*) 'thlm_in after', thlm_in
-      write(*,*) 'rtm_in after', rtm_in
-      write(*,*) 'wprtp_in after', wprtp_in
-      write(*,*) 'wpthlp_in after', wpthlp_in
-      write(*,*) 'wp2_in after', wp2_in
-      write(*,*) 'wp3_in after', wp3_in
-      write(*,*) 'rtp2_in after', rtp2_in
-      write(*,*) 'thlp2_in after', thlp2_in
-      write(*,*) 'rtpthlp_in after', rtpthlp_in
-      write(*,*) 'rcm_out after', rcm_out 
  
       if (clubb_do_adv) then
          if (macmic_it .eq. cld_macmic_num_steps) then 
@@ -2308,7 +2243,13 @@ end subroutine clubb_init_cnst
       enddo 
 
 #ifdef FIVE            
+      ! If FIVE is used then transfer CLUBB prognostics
+      !  back to FIVE variables.  Then perform mass
+      !  weighted average of these variables to the E3SM 
+      !  grid.  Then we can syncronize E3SM to FIVE.
+
       ! Transfer stuff back into FIVE arrays
+      ! First deal with constituents
       icnt=0
       do ixind=1,pcnst
         if (lq(ixind)) then
@@ -2321,8 +2262,9 @@ end subroutine clubb_init_cnst
         endif
       enddo
       
-      !  Note that the ixq and ixqcldliq arrays here will be overwritten 
-      !   from the above call.  This is intentional
+      ! Transfer CLUBB prognostics to FIVE prognostics
+      ! Note that the ixq and ixqcldliq arrays here will be overwritten 
+      !  from the above call.  This is intentional.  
       do k=1,pver_five
         t_five(i,k) = (thlm_pre(k)+(latvap/cpair)*rcm_pre(k))*exner(k)
 	u_five(i,k) = um_pre(k)
@@ -2358,7 +2300,7 @@ end subroutine clubb_init_cnst
 			      q_five(i,1:pver_five,p),q_five_low(i,1:pver,p))        
       enddo		    		    		     
       
-      ! Transfer these variables to the ones that the tendencies will see
+      ! Transfer these variables to the ones that the E3SM tendencies will see
       t_out(i,:) = t_five_low(i,:)
       rtm(i,1:pver) = q_five_low(i,1:pver,ixq) + q_five_low(i,1:pver,ixcldliq)
       um(i,1:pver) = u_five_low(i,1:pver)
@@ -2376,9 +2318,6 @@ end subroutine clubb_init_cnst
       call linear_interp(pmid_five(i,:),state1%pmid(i,:),zi_out_pre(1:pver_five),zi_out(i,1:pver),pver_five,pver)
       call linear_interp(pmid_five(i,:),state1%pmid(i,:),khzm_pre(1:pver_five),khzm(i,1:pver),pver_five,pver)
       call linear_interp(pmid_five(i,:),state1%pmid(i,:),qclvar_pre(1:pver_five),qclvar(i,1:pver),pver_five,pver)
-      
-      write(*,*) 'pmid_five ', pmid_five(i,:)
-      write(*,*) 'pmid ', state1%pmid(i,:) 
  
 #else
       ! If FIVE is not used, then simply just copy the arrays over
