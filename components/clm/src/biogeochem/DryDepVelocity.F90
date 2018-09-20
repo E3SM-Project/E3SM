@@ -62,7 +62,7 @@ Module DryDepVelocity
   use PhotosynthesisType   , only : photosyns_type
   use WaterstateType       , only : waterstate_type
   use GridcellType         , only : grc_pp
-  use TopounitType         , only : top_as  
+  use TopounitType         , only : top_as, top_af ! atmospheric state and flux variables  
   use LandunitType         , only : lun_pp                
   use VegetationType       , only : veg_pp                
   !
@@ -220,7 +220,7 @@ CONTAINS
          forc_t     =>    top_as%tbot                           , & ! Input:  [real(r8) (:)   ] atmospheric temperature (Kelvin)                   
          forc_q     =>    top_as%qbot                           , & ! Input:  [real(r8) (:)   ] atmospheric specific humidity (kg/kg)              
          forc_psrf  =>    top_as%pbot                           , & ! Input:  [real(r8) (:)   ] surface pressure (Pa)                              
-         forc_rain  =>    atm2lnd_vars%forc_rain_downscaled_col , & ! Input:  [real(r8) (:)   ] downscaled rain rate [mm/s]                                   
+         forc_rain  =>    top_af%rain                           , & ! Input:  [real(r8) (:)   ] rain rate (kg H2O/m**2/s, or mm liquid H2O/s)                                   
 
          h2osoi_vol =>    waterstate_vars%h2osoi_vol_col        , & ! Input:  [real(r8) (:,:) ] volumetric soil water (0<=h2osoi_vol<=watsat)   
          snow_depth =>    waterstate_vars%snow_depth_col        , & ! Input:  [real(r8) (:)   ] snow height (m)                                   
@@ -255,7 +255,7 @@ CONTAINS
 
             pg         = forc_psrf(t)  
             spec_hum   = forc_q(t)
-            rain       = forc_rain(c) 
+            rain       = forc_rain(t) 
             sfc_temp   = forc_t(t) 
             solar_flux = forc_solad(g,1) 
             lat        = grc_pp%latdeg(g) 

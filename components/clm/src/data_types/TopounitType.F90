@@ -58,9 +58,7 @@ module TopounitType
     procedure, public :: Clean => clean_top_pp  
   end type topounit_physical_properties
     
-  ! Define the data structure that passes atmospheric state information to the land model.
-  ! Primary point of exchange is assumed to be at the topounit level, where the influences
-  ! of topography can be represented
+  ! Define the data structure where land model receives atmospheric state information.
   type, public :: topounit_atmospheric_state
     real(r8), pointer :: tbot       (:) => null() ! temperature of air at atmospheric forcing height (K)
     real(r8), pointer :: thbot      (:) => null() ! potential temperature of air at atmospheric forcing height (K)
@@ -80,6 +78,19 @@ module TopounitType
     procedure, public :: Init  => init_top_as
     procedure, public :: Clean => clean_top_as
   end type topounit_atmospheric_state
+
+  ! Define the data structure that where land model receives atmospheric flux information.
+  type, public :: topounit_atmospheric_flux
+    real(r8), pointer :: rain       (:) => null() ! rain rate (kg H2O/m**2/s, equivalent to mm liquid H2O/s)
+    real(r8), pointer :: snow       (:) => null() ! snow rate (kg H2O/m**2/s, equivalent to mm liquid H2O/s)
+    real(r8), pointer :: prec24h    (:) => null() ! 24-hour mean precip rate (kg H2O/m**2/s, equivalent to mm liquid H2O/s)
+    real(r8), pointer :: prec10d    (:) => null() ! 10-day mean precip rate (kg H2O/m**2/s, equivalent to mm liquid H2O/s)
+    real(r8), pointer :: prec60d    (:) => null() ! 60-day mean precip rate (kg H2O/m**2/s, equivalent to mm liquid H2O/s)
+    
+  contains
+    procedure, public :: Init  => init_top_af
+    procedure, public :: Clean => clean_top_af
+  end type topounit_atmospheric_flux
   
   ! Define the data structure that holds energy state information for land at the level of topographic unit.
   type, public :: topounit_energy_state
@@ -92,6 +103,7 @@ module TopounitType
   ! declare the public instances of topounit types
   type(topounit_physical_properties),  public, target :: top_pp
   type(topounit_atmospheric_state),    public, target :: top_as
+  type(topounit_atmospheric_flux),     public, target :: top_af
   type(topounit_energy_state),         public, target :: top_es
   
   contains
@@ -204,6 +216,40 @@ module TopounitType
     deallocate(this%pc13o2bot)
     deallocate(this%pch4bot)
   end subroutine clean_top_as
+
+  subroutine init_top_af(this, begt, endt)
+    class(topounit_atmospheric_flux) :: this
+    integer, intent(in) :: begt   ! beginning topographic unit index
+    integer, intent(in) :: endt   ! ending topographic unit index
+   
+    ! Allocate for atmospheric flux forcing variables, initialize to special value
+    allocate(this%rain     (begt:endt)) ; this%rain      (:) = spval
+    allocate(this%snow     (begt:endt)) ; this%snow      (:) = spval
+    allocate(this%prec24h  (begt:endt)) ; this%prec24h   (:) = spval
+    allocate(this%prec10d  (begt:endt)) ; this%prec10d   (:) = spval
+    allocate(this%prec60d  (begt:endt)) ; this%prec60d   (:) = spval
+    
+    ! Set history fields for atmospheric flux forcing variables
+    !call hist_addfld1d (fname='TBOT', units='K',  &
+    !     avgflag='A', long_name='temperature of air at atmospheric forcing height', &
+    !     ptr_lnd=this%tbot)
+
+    !call hist_addfld1d (fname='THBOT', units='K',  &
+    !     avgflag='A', long_name='potential temperature of air at atmospheric forcing height', &
+    !     ptr_lnd=this%thbot)
+  end subroutine init_top_af
+
+  subroutine clean_top_af(this, begt, endt)
+    class(topounit_atmospheric_flux) :: this
+    integer, intent(in) :: begt   ! beginning topographic unit index
+    integer, intent(in) :: endt   ! ending topographic unit index
+
+    deallocate(this%rain)
+    deallocate(this%snow)
+    deallocate(this%prec24h)
+    deallocate(this%prec10d)
+    deallocate(this%prec60d)
+  end subroutine clean_top_af
 
   subroutine init_top_es(this, begt, endt)
     class(topounit_energy_state) :: this

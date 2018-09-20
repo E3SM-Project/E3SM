@@ -44,7 +44,7 @@ module CNFireMod
   use TemperatureType        , only : temperature_type
   use WaterstateType         , only : waterstate_type
   use GridcellType           , only : grc_pp
-  use TopounitType           , only : top_as  
+  use TopounitType           , only : top_as, top_af ! atmospheric state and flux variables  
   use ColumnType             , only : col_pp                
   use VegetationType         , only : veg_pp                
   use mct_mod
@@ -194,8 +194,8 @@ contains
          forc_rh            =>    top_as%rhbot                              , & ! Input:  [real(r8) (:)     ]  relative humidity                                 
          forc_wind          =>    top_as%windbot                            , & ! Input:  [real(r8) (:)     ]  atmospheric wind speed (m/s)                       
          forc_t             =>    top_as%tbot                               , & ! Input:  [real(r8) (:)     ]  atmospheric temperature (Kelvin)                  
-         forc_rain          =>    atm2lnd_vars%forc_rain_downscaled_col     , & ! Input:  [real(r8) (:)     ]  downscaled rain                                              
-         forc_snow          =>    atm2lnd_vars%forc_snow_downscaled_col     , & ! Input:  [real(r8) (:)     ]  downscaled snow                                              
+         forc_rain          =>    top_af%rain                               , & ! Input:  [real(r8) (:)     ]  rain rate (kg H2O/m**2/s, or mm liquid H2O/s)                                              
+         forc_snow          =>    top_af%snow                               , & ! Input:  [real(r8) (:)     ]  snow rate (kg H2O/m**2/s, or mm liquid H2O/s)                                            
 #ifdef CPL_BYPASS
          forc_hdm           =>    atm2lnd_vars%forc_hdm                     , & ! Input:  [real(r8) (:)     ]  population density
          forc_lnfm          =>    atm2lnd_vars%forc_lnfm                    , & ! Input:  [real(r8) (:)     ]  ligntning data 
@@ -506,7 +506,7 @@ contains
               p = col_pp%pfti(c) + pi - 1
               ! For crop
               if( forc_t(t)  >=  SHR_CONST_TKFRZ .and. veg_pp%itype(p)  >  nc4_grass .and.  &
-                   kmo == abm_lf(c) .and. forc_rain(c)+forc_snow(c) == 0._r8  .and. &
+                   kmo == abm_lf(c) .and. forc_rain(t)+forc_snow(t) == 0._r8  .and. &
                    burndate(p) >= 999 .and. veg_pp%wtcol(p)  >  0._r8 )then ! catch  crop burn time
 
                  ! calculate human density impact on ag. fire
@@ -623,7 +623,7 @@ contains
                     cli = (max(0._r8,min(1._r8,(cri-prec60_col(c)*secspday)/cri))**0.5)* &
                          (max(0._r8,min(1._r8,(cri-prec10_col(c)*secspday)/cri))**0.5)* &
                          max(0.0005_r8,min(1._r8,19._r8*dtrotr_col(c)*dayspyr*secspday/dt-0.001_r8))* &
-                         max(0._r8,min(1._r8,(0.25_r8-(forc_rain(c)+forc_snow(c))*secsphr)/0.25_r8))
+                         max(0._r8,min(1._r8,(0.25_r8-(forc_rain(t)+forc_snow(t))*secsphr)/0.25_r8))
                     farea_burned(c) = cli*(cli_scale/secspday)+baf_crop(c)+baf_peatf(c)
                     ! burned area out of conversion region due to land use fire
                     fbac1(c) = max(0._r8,cli*(cli_scale/secspday) - 2.0_r8*lfc(c)/dt)   

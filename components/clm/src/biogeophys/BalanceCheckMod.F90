@@ -19,7 +19,8 @@ module BalanceCheckMod
   use SoilHydrologyType  , only : soilhydrology_type  
   use WaterstateType     , only : waterstate_type
   use WaterfluxType      , only : waterflux_type
-  use GridcellType       , only : grc_pp                
+  use GridcellType       , only : grc_pp
+  use TopounitType       , only : top_af ! atmospheric flux variables  
   use LandunitType       , only : lun_pp                
   use ColumnType         , only : col_pp                
   use VegetationType          , only : veg_pp                
@@ -186,7 +187,7 @@ contains
      type(canopystate_type), intent(inout) :: canopystate_vars
      !
      ! !LOCAL VARIABLES:
-     integer  :: p,c,l,g,fc                             ! indices
+     integer  :: p,c,l,t,g,fc                           ! indices
      real(r8) :: dtime                                  ! land model time step (sec)
      integer  :: nstep                                  ! time step number
      logical  :: found                                  ! flag in search loop
@@ -199,8 +200,8 @@ contains
           volr                       =>    atm2lnd_vars%volr_grc                      , & ! Input:  [real(r8) (:)   ]  river water storage (m3)                 
           forc_solad                 =>    atm2lnd_vars%forc_solad_grc                , & ! Input:  [real(r8) (:,:) ]  direct beam radiation (vis=forc_sols , nir=forc_soll )
           forc_solai                 =>    atm2lnd_vars%forc_solai_grc                , & ! Input:  [real(r8) (:,:) ]  diffuse radiation     (vis=forc_solsd, nir=forc_solld)
-          forc_rain                  =>    atm2lnd_vars%forc_rain_downscaled_col      , & ! Input:  [real(r8) (:)   ]  rain rate [mm/s]
-          forc_snow                  =>    atm2lnd_vars%forc_snow_downscaled_col      , & ! Input:  [real(r8) (:)   ]  snow rate [mm/s]
+          forc_rain                  =>    top_af%rain                                , & ! Input:  [real(r8) (:)   ]  rain rate (kg H2O/m**2/s, or mm liquid H2O/s)
+          forc_snow                  =>    top_af%snow                                , & ! Input:  [real(r8) (:)   ]  snow rate (kg H2O/m**2/s, or mm liquid H2O/s)
           forc_lwrad                 =>    atm2lnd_vars%forc_lwrad_downscaled_col     , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
           glc_dyn_runoff_routing     =>    glc2lnd_vars%glc_dyn_runoff_routing_grc    , & ! Input:  [real(r8) (:)   ]  whether we're doing runoff routing appropriate for having a dynamic icesheet
 
@@ -290,19 +291,21 @@ contains
        nstep = get_nstep()
        dtime = get_step_size()
 
-       ! Determine column level incoming snow and rain
+       ! Determine column level incoming snow and rain.
+       ! Assume that all columns on a topounit have the same atmospheric forcing.
        ! Assume no incident precipitation on urban wall columns (as in CanopyHydrologyMod.F90).
 
        do c = bounds%begc,bounds%endc
           g = col_pp%gridcell(c)
+          t = col_pp%topounit(c)
           l = col_pp%landunit(c)       
 
           if (col_pp%itype(c) == icol_sunwall .or.  col_pp%itype(c) == icol_shadewall) then
              forc_rain_col(c) = 0.
              forc_snow_col(c) = 0.
           else
-             forc_rain_col(c) = forc_rain(c)
-             forc_snow_col(c) = forc_snow(c)
+             forc_rain_col(c) = forc_rain(t)
+             forc_snow_col(c) = forc_snow(t)
           end if
        end do
 

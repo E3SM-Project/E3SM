@@ -19,7 +19,7 @@ module LakeHydrologyMod
   ! ! USES
   use shr_kind_mod         , only : r8 => shr_kind_r8
   use decompMod            , only : bounds_type
-  use TopounitType         , only : top_as            ! atmospheric state variables at topounit level
+  use TopounitType         , only : top_as, top_af    ! atmospheric state and flux variables
   use ColumnType           , only : col_pp                
   use VegetationType       , only : veg_pp                
   use atm2lndType          , only : atm2lnd_type
@@ -119,6 +119,7 @@ contains
 
     associate(                                                            & 
          pcolumn              =>  veg_pp%column                            , & ! Input:  [integer  (:)   ]  pft's column index                       
+         ptopounit            =>  veg_pp%topounit                          , & ! Input:  [integer  (:)   ]  pft's topounit index                     
          pgridcell            =>  veg_pp%gridcell                          , & ! Input:  [integer  (:)   ]  pft's gridcell index                     
          cgridcell            =>  col_pp%gridcell                          , & ! Input:  [integer  (:)   ]  column's gridcell                        
          clandunit            =>  col_pp%landunit                          , & ! Input:  [integer  (:)   ]  column's landunit                        
@@ -128,8 +129,8 @@ contains
          zi                   =>  col_pp%zi                                , & ! Input:  [real(r8) (:,:) ]  interface depth (m)                   
          snl                  =>  col_pp%snl                               , & ! Input:  [integer  (:)   ]  number of snow layers                    
 
-         forc_rain            =>  atm2lnd_vars%forc_rain_downscaled_col , & ! Input:  [real(r8) (:)   ]  rain rate [mm/s]                        
-         forc_snow            =>  atm2lnd_vars%forc_snow_downscaled_col , & ! Input:  [real(r8) (:)   ]  snow rate [mm/s]                        
+         forc_rain            =>  top_af%rain                           , & ! Input:  [real(r8) (:)   ]  rain rate (kg H2O/m**2/s, or mm liquid H2O/s)                        
+         forc_snow            =>  top_af%snow                           , & ! Input:  [real(r8) (:)   ]  snow rate (kg H2O/m**2/s, or mm liquid H2O/s)                        
          forc_t               =>  top_as%tbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)        
          qflx_floodg          =>  atm2lnd_vars%forc_flood_grc           , & ! Input:  [real(r8) (:)   ]  gridcell flux of flood water from RTM   
 
@@ -226,9 +227,10 @@ contains
       do fp = 1, num_lakep
          p = filter_lakep(fp)
          c = pcolumn(p)
+         t = ptopounit(p)
 
-         qflx_prec_grnd_snow(p) = forc_snow(c)
-         qflx_prec_grnd_rain(p) = forc_rain(c)
+         qflx_prec_grnd_snow(p) = forc_snow(t)
+         qflx_prec_grnd_rain(p) = forc_rain(t)
          qflx_prec_grnd(p) = qflx_prec_grnd_snow(p) + qflx_prec_grnd_rain(p)
 
          if (do_capsnow(c)) then
@@ -643,6 +645,7 @@ contains
       do fp = 1,num_lakep
          p = filter_lakep(fp)
          c = pcolumn(p)
+         t = ptopounit(p)
          g = pgridcell(p)
 
          qflx_drain_perched(c) = 0._r8
@@ -655,7 +658,7 @@ contains
          qflx_irrig_col(c)     = 0._r8
 
          ! Insure water balance using qflx_qrgwl
-         qflx_qrgwl(c)     = forc_rain(c) + forc_snow(c) - qflx_evap_tot(p) - qflx_snwcp_ice(p) - &
+         qflx_qrgwl(c)     = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp_ice(p) - &
               (endwb(c)-begwb(c))/dtime + qflx_floodg(g)
          qflx_floodc(c)    = qflx_floodg(g)
          qflx_runoff(c)    = qflx_drain(c) + qflx_qrgwl(c)
