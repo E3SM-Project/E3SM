@@ -18,6 +18,8 @@ import glob
 import shutil
 import numpy as np
 import scipy.stats as stats
+from CIME.test_status import *
+
 
 from netCDF4 import Dataset
 from math import sqrt
@@ -63,7 +65,6 @@ prtstr     = ['woprt','posprt','negprt']
 
 #file names for file containing PGE cloud
 fcld_nc  = 'cloud.nc'
-#fcld_grp = 'cloud_data'
 
 #For preparing paths for namelist files for initial condition files
 
@@ -333,20 +334,20 @@ class SLR(SystemTestsCommon):
         #---------------------------------------------
         fcomp_nc = 'comp_cld.nc'
         fcomp_cld = Dataset(fcomp_nc,'w', format='NETCDF4')
-        compgrp = fcomp_cld.createGroup('cloud_comp_data')
+
 
         #create dims
-        compgrp.createDimension('ninit', ninit_cond)
-        compgrp.createDimension('nprt', nprt)
-        #compgrp.createDimension('nprt_m1', nprt-1)
-        compgrp.createDimension('nvars', len_var_list)
+        fcomp_cld.createDimension('ninit', ninit_cond)
+        fcomp_cld.createDimension('nprt', nprt)
+        fcomp_cld.createDimension('nprt_m1', nprt-1)
+        fcomp_cld.createDimension('nvars', len_var_list)
 
 
         #create variables in the file
-        init_cond_nc = compgrp.createVariable('init_cond_fnames', 'string', 'ninit')
-        prt_nc       = compgrp.createVariable('perturb_strings', 'string', 'nprt')
-        variables_nc = compgrp.createVariable('perturb_vnames', 'string', 'nvars')
-        comp_rmse_nc  = compgrp.createVariable('comp_rmse', 'd', ('ninit', 'nprt', 'nvars'))
+        init_cond_nc = fcomp_cld.createVariable('init_cond_fnames', 'string', 'ninit')
+        prt_nc       = fcomp_cld.createVariable('perturb_strings', 'string', 'nprt')
+        variables_nc = fcomp_cld.createVariable('perturb_vnames', 'string', 'nvars')
+        comp_rmse_nc  = fcomp_cld.createVariable('comp_rmse', 'd', ('ninit', 'nprt_m1', 'nvars'))
 
 
         #assign variables for writing to the netcdf file
@@ -358,13 +359,13 @@ class SLR(SystemTestsCommon):
 
         iinst = 0
         for icond in range(ninit_cond):
+            iinst += 1;                
+            ifile_cntl = os.path.join(base_dir,self.get_fname_wo_ext('','',iinst)+'_woprt.nc')
+            expect(os.path.isfile(ifile_cntl), "ERROR: File "+ifile_cntl+" does not exist")
+            print('SLR_INFO:CNTL_TST:'+ifile_cntl)
             iprt = 0
-            for aprt in prtstr:
-                iinst += 1;
-                ifile_cntl = os.path.join(base_dir,self.get_fname_wo_ext('','',iinst)+'_'+aprt+'.nc')
-                expect(os.path.isfile(ifile_cntl), "ERROR: File "+ifile_cntl+" does not exist")
-                print('SLR_INFO:CNTL_TST:'+ifile_cntl)
-
+            for aprt in prtstr[1:]:
+                iinst += 1;                
                 ifile_test = os.path.join(rundir,self.get_fname_wo_ext(rundir,casename,iinst)+'_'+aprt+'.nc')
                 expect(os.path.isfile(ifile_test), "ERROR: File "+ifile_test+" does not exist")
                 comp_rmse_nc[icond,iprt,0:len_var_list] = self.rmse_var(ifile_test, ifile_cntl,  var_list, 't_' )
@@ -388,18 +389,21 @@ class SLR(SystemTestsCommon):
         pge_ends_comp = comp_rmse_nc[:,0:nprt-1,len_var_list-1]
 
         #run the t-test
-        print(pge_ends_comp)
         pge_ends_cld = pge_ends_cld.flatten()
         pge_ends_comp = pge_ends_comp.flatten()    
-        print('BALLI')
-        print(pge_ends_cld)
         
         t_stat, p_val = stats.ttest_ind(pge_ends_cld, pge_ends_comp)
 
-        print(t_stat)
-        print(p_val)
+        print('SLR_INFO: T value:'+str(t_stat))
+        print('SLR_INFO: P value:'+str(p_val))
 
-        
+        if (abs(t_stat) < 3):
+            with self._test_status:
+                self._test_status.set_status(BASELINE_PHASE, TEST_FAIL_STATUS)
+        else:
+            with self._test_status:
+                self._test_status.set_status(BASELINE_PHASE, TEST_PASS_STATUS)
+                    
         #Close this file after you access "comp_rmse_nc" variable
         fcomp_cld.close()
 
@@ -467,9 +471,10 @@ class SLR(SystemTestsCommon):
                     print('SLR_INFO: Renamed file already exists:'+renamed_fname)
                 
                 iinst += 1
-        self._generate_baseline()
+
 
         if(self._case.get_value("GENERATE_BASELINE")):
+            self._generate_baseline()#BALLI-CHECK IF THIS IS OKAY
             print('SLR_INFO: cloud generation-gen base' )
 
 
@@ -492,13 +497,6 @@ class SLR(SystemTestsCommon):
             # Write netcdf file for cloud
             #---------------------------------------------
             fcld = Dataset(fcld_nc,'w', format='NETCDF4')
-            #cldgrp = fcld.createGroup(fcld_grp)
-
-            #create dims
-            #cldgrp.createDimension('ninit', ninit_cond)
-            #cldgrp.createDimension('nprt', nprt)
-            #cldgrp.createDimension('nprt_m1', nprt-1)
-            #cldgrp.createDimension('nvars', len_var_list)
 
             fcld.createDimension('ninit', ninit_cond)
             fcld.createDimension('nprt', nprt)
@@ -523,9 +521,7 @@ class SLR(SystemTestsCommon):
             iinst = 0
             for icond in range(ninit_cond):
                 icond_label_2digits = str(icond+1).zfill(2)
-                init_cond_nc[icond] =  file_pref_atm + icond_label_2digits + file_suf_atm
-                #flnd_in = file_pref_lnd + icond_label_2digits + file_suf_lnd
-                
+                init_cond_nc[icond] =  file_pref_atm + icond_label_2digits + file_suf_atm                
 
                 iinst += 1;  iprt = 0
                 ifile_cntl = os.path.join(base_dir,self.get_fname_wo_ext('','',iinst)+'_'+prtstr[iprt]+'.nc')
