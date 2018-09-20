@@ -469,9 +469,9 @@ contains
 
     call ESMF_LogWrite(trim(subname)//": Mediator verbosity is "//trim(value), ESMF_LOGMSG_INFO, rc=dbrc)
 
-    dbug_flag = ESMF_UtilString2Int(value, &
-         specialStringList=(/"min","max","high"/), specialValueList=(/0,255,255/), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+!    dbug_flag = ESMF_UtilString2Int(value, &
+!         specialStringList=(/"min","max","high"/), specialValueList=(/0,255,255/), rc=rc)
+!    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     write(msgString,'(A,i6)') trim(subname)//' dbug_flag = ',dbug_flag
     call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
@@ -584,7 +584,7 @@ contains
          nestedState=is_local%wrap%NStateExp(compglc), rc=rc)
 
     !------------------
-    ! Initialize mediator flds (should be identical to the list in esmDict_Init) 
+    ! Initialize mediator flds (should be identical to the list in esmDict_Init)
     !------------------
 
     call esmFlds_Init(gcomp, rc)
@@ -1355,7 +1355,7 @@ contains
     use NUOPC                   , only : NUOPC_CompAttributeSet, NUOPC_IsAtTime, NUOPC_SetAttribute
     use NUOPC                   , only : NUOPC_CompAttributeGet
     use med_internalstate_mod   , only : InternalState
-    use med_internalstate_mod   , only : med_coupling_allowed, llogunit=>logunit
+    use med_internalstate_mod   , only : med_coupling_allowed, logunit
     use med_internalstate_mod   , only : mastertask
     use shr_sys_mod             , only : shr_sys_flush
     use esmFlds                 , only : ncomps, compname, ncomps, compmed, compatm, compocn
@@ -1517,34 +1517,34 @@ contains
       ! create tables of output
       if (mastertask) then
          if (dbug_flag > 5) then
-            write(llogunit,*) ' '
-            write(llogunit,'(A)') subname//' Allowed coupling flags'
-            write(llogunit,'(2x,A10,20(A5))') '|from to->',(compname(n2),n2=1,ncomps)
+            write(logunit,*) ' '
+            write(logunit,'(A)') subname//' Allowed coupling flags'
+            write(logunit,'(2x,A10,20(A5))') '|from to->',(compname(n2),n2=1,ncomps)
             do n1 = 1,ncomps
                write(msgString,'(2x,a1,A,5x,20(L5))') '|',trim(compname(n1)),(med_coupling_allowed(n1,n2),n2=1,ncomps)
                do n2 = 1,len_trim(msgString)
                   if (msgString(n2:n2) == 'F') msgString(n2:n2)='-'
                enddo
-               write(llogunit,'(A)') trim(msgString)
+               write(logunit,'(A)') trim(msgString)
             enddo
-            write(llogunit,*) ' '
-            call shr_sys_flush(llogunit)
+            write(logunit,*) ' '
+            call shr_sys_flush(logunit)
          endif
 
          if (dbug_flag >= 0) then
-            write(llogunit,*) ' '
-            write(llogunit,'(A)') subname//' Active coupling flags'
-            write(llogunit,'(2x,A10,20(A5))') '|from to->',(compname(n2),n2=1,ncomps)
+            write(logunit,*) ' '
+            write(logunit,'(A)') subname//' Active coupling flags'
+            write(logunit,'(2x,A10,20(A5))') '|from to->',(compname(n2),n2=1,ncomps)
             do n1 = 1,ncomps
                write(msgString,'(2x,a1,A,5x,20(L5))') '|',trim(compname(n1)),&
                     (is_local%wrap%med_coupling_active(n1,n2),n2=1,ncomps)
                do n2 = 1,len_trim(msgString)
                   if (msgString(n2:n2) == 'F') msgString(n2:n2)='-'
                enddo
-               write(llogunit,'(A)') trim(msgString)
+               write(logunit,'(A)') trim(msgString)
             enddo
-            write(llogunit,*) ' '
-            call shr_sys_flush(llogunit)
+            write(logunit,*) ' '
+            call shr_sys_flush(logunit)
          endif
       endif
 
@@ -1569,7 +1569,7 @@ contains
               ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc) .and. &
               ESMF_StateIsCreated(is_local%wrap%NStateExp(n1),rc=rc)) then
 
-            if (mastertask) write(llogunit,*) subname,' initializing FBs for '//trim(compname(n1))
+            if (mastertask) write(logunit,*) subname,' initializing FBs for '//trim(compname(n1))
 
             call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(n1,n1), flds_scalar_name, &
                  STgeom=is_local%wrap%NStateImp(n1), &
@@ -1604,7 +1604,7 @@ contains
             call shr_nuopc_methods_FB_reset(is_local%wrap%FBExpAccum(n1), value=czero, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
          endif
-         if (mastertask) call shr_sys_flush(llogunit)
+         if (mastertask) call shr_sys_flush(logunit)
 
          ! These are the FBImp mapped to different grids, FBImp(n1,n1) is handled above
          do n2 = 1,ncomps
@@ -1612,7 +1612,7 @@ contains
                  is_local%wrap%med_coupling_active(n1,n2) .and. &
                  ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc) .and. &
                  ESMF_StateIsCreated(is_local%wrap%NStateExp(n2),rc=rc)) then
-               if (mastertask) write(llogunit,*) subname,' initializing FBs for '//trim(compname(n1))//'_'//trim(compname(n2))
+               if (mastertask) write(logunit,*) subname,' initializing FBs for '//trim(compname(n1))//'_'//trim(compname(n2))
 
                ! TODO:
                ! The NStateImp(n2) should be used here rather than NStateExp(n2), since
@@ -1629,16 +1629,16 @@ contains
             endif
          enddo
       enddo
-      if (mastertask) call shr_sys_flush(llogunit)
+      if (mastertask) call shr_sys_flush(logunit)
 
       !---------------------------------------
       !--- Initialize route handles and required normalization field bunds
       !---------------------------------------
 
-      call med_map_RouteHandles_init(gcomp, llogunit, rc)
+      call med_map_RouteHandles_init(gcomp, logunit, rc)
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-      call med_map_MapNorm_init(gcomp, llogunit, rc)
+      call med_map_MapNorm_init(gcomp, logunit, rc)
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
       !---------------------------------------
@@ -1647,7 +1647,7 @@ contains
 
       if (is_local%wrap%med_coupling_active(compocn,compatm) .or. &
           is_local%wrap%med_coupling_active(compatm,compocn)) then
-         
+
          ! NOTE: the NStateImp(compocn) or NStateImp(compatm) used below
          ! rather than NStateExp(n2), since the export state might only
          ! contain control data and no grid information if if the target
@@ -2018,17 +2018,19 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_finalize(gcomp, rc)
-
-    use ESMF                  , only : ESMF_GridComp, ESMF_SUCCESS
-    use med_internalstate_mod , only: llogunit=>logunit, mastertask
+    use ESMF, only                  : ESMF_GridComp, ESMF_SUCCESS
+    use med_internalstate_mod, only : logunit, mastertask
+    use shr_nuopc_utils_mod, only   : shr_nuopc_memcheck
+    use shr_file_mod, only          : shr_file_setlogunit
 
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
+    call shr_file_setlogunit(logunit)
     rc = ESMF_SUCCESS
-
+    call shr_nuopc_memcheck("med_finalize", 0, mastertask)
     if (mastertask) then
-       write(llogunit,*)' SUCCESSFUL TERMINATION '
+       write(logunit,*)' SUCCESSFUL TERMINATION '
     end if
 
   end subroutine med_finalize

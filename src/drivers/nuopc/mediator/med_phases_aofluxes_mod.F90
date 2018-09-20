@@ -2,6 +2,8 @@ module med_phases_aofluxes_mod
 
   use med_constants_mod , only : R8
   use med_constants_mod , only : dbug_flag => med_constants_dbug_flag
+  use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
+  use med_internalstate_mod, only : mastertask
 
   implicit none
   private
@@ -206,7 +208,7 @@ contains
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
     rc = ESMF_SUCCESS
-
+    call shr_nuopc_memcheck(subname, 5, mastertask)
     ! Get the clock from the mediator Component
     call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -336,13 +338,14 @@ contains
     logical                  :: flds_wiso  ! use case
     integer                  :: dbrc
     character(len=CX)        :: tmpstr
+
     !-----------------------------------------------------------------------
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
     rc = ESMF_SUCCESS
-
+    call shr_nuopc_memcheck(subname, 5, mastertask)
     ! The following is for debugging
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -621,6 +624,8 @@ contains
     write(tmpstr,'(i12,g22.12,i12)') lsize,sum(aoflux%rmask),sum(aoflux%mask)
     call ESMF_LogWrite(trim(subname)//" : maskB= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
+    write(tmpstr,'(g22.12,g22.12)') sum(aoflux%dens),sum(aoflux%tocn)
+    call ESMF_LogWrite(trim(subname)//" : dens,tocn= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
     !----------------------------------
     ! Update atmosphere/ocean surface fluxes
     !----------------------------------

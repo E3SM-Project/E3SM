@@ -44,6 +44,7 @@ contains
     use med_io_mod            , only : med_io_close, med_io_date2yyyymmdd
     use med_io_mod            , only : med_io_sec2hms
 
+
     ! Input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -84,7 +85,8 @@ contains
     logical                    :: whead,wdata    ! for writing restart/restart cdf files
     integer                    :: iam,mpicom     ! vm stuff
     character(len=ESMF_MAXSTR) :: tmpstr
-    integer                    :: dbrc
+    integer                        :: dbrc
+    logical             :: isPresent
     character(len=*), parameter :: subname='(med_phases_restart_write)'
     !---------------------------------------
 
@@ -108,13 +110,22 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompAttributeGet(gcomp, name='case_name', value=case_name, rc=rc)
-    cpl_inst_tag = ''
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call NUOPC_CompAttributeGet(gcomp, name='inst_suffix', isPresent=isPresent, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if(isPresent) then
+       call NUOPC_CompAttributeGet(gcomp, name='inst_suffix', value=cpl_inst_tag, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       cpl_inst_tag = ""
+    endif
 
     !---------------------------------------
     ! --- Get the clock info
     !---------------------------------------
 
-    call ESMF_GridCompGet(gcomp, clock=clock)
+    call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
@@ -199,13 +210,14 @@ contains
        !---------------------------------------
 
        write(restart_file,"(6a)") &
-           !trim(case_name), '.cpl',trim(cpl_inst_tag),'.r.', trim(currtimestr),'.nc'
             trim(case_name), '.cpl',trim(cpl_inst_tag),'.r.', trim(nexttimestr),'.nc'
 
        if (iam == 0) then
-          call NUOPC_CompAttributeGet(gcomp, name='restart_pfile', value=restart_pfile, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
+          if(len_trim(cpl_inst_tag) > 1) then
+             restart_pfile = "rpointer.med_"//cpl_inst_tag
+          else
+             restart_pfile = "rpointer.med"
+          endif
           call ESMF_LogWrite(trim(subname)//" write rpointer file = "//trim(restart_pfile), ESMF_LOGMSG_INFO, rc=dbrc)
           unitn = shr_file_getUnit()
           open(unitn, file=restart_pfile, form='FORMATTED')
@@ -355,6 +367,7 @@ contains
     character(ESMF_MAXSTR) :: cpl_inst_tag   ! instance tag
     character(len=*)   , parameter :: sp_str = 'str_undefined'
     integer                        :: dbrc
+    logical   :: isPresent
     character(len=*), parameter :: subname='(med_phases_restart_read)'
     !---------------------------------------
 
@@ -377,7 +390,16 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompAttributeGet(gcomp, name='case_name', value=case_name, rc=rc)
-    cpl_inst_tag = ''
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call NUOPC_CompAttributeGet(gcomp, name='inst_suffix', isPresent=isPresent, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if(isPresent) then
+       call NUOPC_CompAttributeGet(gcomp, name='inst_suffix', value=cpl_inst_tag, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       cpl_inst_tag = ""
+    endif
 
     !---------------------------------------
     ! --- Get the clock info
@@ -403,46 +425,32 @@ contains
     ! --- Restart File
     !---------------------------------------
 
-    ! Error check on restart_pfile
-    call NUOPC_CompAttributeGet(gcomp, name="restart_pfile", value=restart_pfile, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if ( len_trim(restart_pfile) == 0 ) then
-       call ESMF_LogWrite(trim(subname)//' ERROR restart_pfile must be set', &
-            ESMF_LOGMSG_ERROR, line=__LINE__, file=__FILE__, rc=rc)
-       rc = ESMF_FAILURE
-       return
-    end if
+    if(len_trim(cpl_inst_tag) > 1) then
+       restart_pfile = "rpointer.med_"//cpl_inst_tag
+    else
+       restart_pfile = "rpointer.med"
+    endif
 
     if (iam == 0) then
-       call NUOPC_CompAttributeGet(gcomp, name='restart_file', value=restart_file, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       !--- read rpointer if restart_file is set to sp_str ---
-
-       if (trim(restart_file) == trim(sp_str)) then
-          call NUOPC_CompAttributeGet(gcomp, name='restart_pfile', value=restart_file, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-          unitn = shr_file_getUnit()
-          call ESMF_LogWrite(trim(subname)//" read rpointer file = "//trim(restart_pfile), ESMF_LOGMSG_INFO, rc=dbrc)
-          open(unitn, file=restart_pfile, form='FORMATTED', status='old',iostat=ierr)
-          if (ierr < 0) then
-             call ESMF_LogWrite(trim(subname)//' rpointer file open returns error', ESMF_LOGMSG_INFO, rc=dbrc)
-             rc=ESMF_Failure
-             return
-          end if
-          read(unitn,'(a)', iostat=ierr) restart_file
-          if (ierr < 0) then
-             call ESMF_LogWrite(trim(subname)//' rpointer file read returns error', ESMF_LOGMSG_INFO, rc=dbrc)
-             rc=ESMF_Failure
-             return
-          end if
-          close(unitn)
-          call shr_file_freeUnit( unitn )
-          call ESMF_LogWrite(trim(subname)//' restart file from rpointer = '//trim(restart_file), &
-               ESMF_LOGMSG_INFO, rc=dbrc)
-       endif
+       unitn = shr_file_getUnit()
+       call ESMF_LogWrite(trim(subname)//" read rpointer file = "//trim(restart_pfile), ESMF_LOGMSG_INFO, rc=dbrc)
+       open(unitn, file=restart_pfile, form='FORMATTED', status='old',iostat=ierr)
+       if (ierr < 0) then
+          call ESMF_LogWrite(trim(subname)//' rpointer file open returns error', ESMF_LOGMSG_INFO, rc=dbrc)
+          rc=ESMF_Failure
+          return
+       end if
+       read(unitn,'(a)', iostat=ierr) restart_file
+       if (ierr < 0) then
+          call ESMF_LogWrite(trim(subname)//' rpointer file read returns error', ESMF_LOGMSG_INFO, rc=dbrc)
+          rc=ESMF_Failure
+          return
+       end if
+       close(unitn)
+       call shr_file_freeUnit( unitn )
+       call ESMF_LogWrite(trim(subname)//' restart file from rpointer = '//trim(restart_file), &
+            ESMF_LOGMSG_INFO, rc=dbrc)
     endif
     call shr_mpi_bcast(restart_file, mpicom)
 

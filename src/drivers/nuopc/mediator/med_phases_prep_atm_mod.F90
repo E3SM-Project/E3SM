@@ -1,5 +1,5 @@
 module med_phases_prep_atm_mod
-
+  use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
   implicit none
   private
   character(*)      , parameter :: u_FILE_u  = __FILE__
@@ -51,12 +51,12 @@ module med_phases_prep_atm_mod
     character(len=*),parameter  :: subname='(med_phases_prep_atm)'
     integer                       :: dbrc
 
-
-    !---------------------------------------
+    !-------------------------------------------------------------------------------
 
     if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call shr_nuopc_memcheck(subname, 3, mastertask)
     rc = ESMF_SUCCESS
 
     !---------------------------------------
@@ -88,7 +88,6 @@ module med_phases_prep_atm_mod
     !---------------------------------------
     !--- Get the current time from the clock
     !---------------------------------------
-
     call ESMF_GridCompGet(gcomp, clock=clock)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -109,7 +108,6 @@ module med_phases_prep_atm_mod
     !---------------------------------------
     !--- map import field bundles from n1 grid to atm grid - FBimp(:,compatm)
     !---------------------------------------
-
     do n1 = 1,ncomps
        if (is_local%wrap%med_coupling_active(n1,compatm)) then
           call med_map_FB_Regrid_Norm( &
@@ -127,7 +125,6 @@ module med_phases_prep_atm_mod
     !---------------------------------------
     !--- map ocean albedos from ocn to atm grid
     !---------------------------------------
-
     if (is_local%wrap%med_coupling_active(compocn,compatm)) then
        call med_phases_ocnalb_mapo2a(gcomp, rc)
     end if
@@ -152,7 +149,6 @@ module med_phases_prep_atm_mod
     !---------------------------------------
     !--- merge all fields to atm
     !---------------------------------------
-
     call med_merge_auto(trim(compname(compatm)), &
          is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
          is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
@@ -164,7 +160,6 @@ module med_phases_prep_atm_mod
        call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compatm), string=trim(subname)//' FBexp(compatm) ', rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
-
     !---------------------------------------
     !--- custom calculations
     !---------------------------------------
@@ -198,7 +193,6 @@ module med_phases_prep_atm_mod
           dataptr1(n) = dataptr2(n)
        end do
     end if
-
 #if (1 == 0)
     !---  ocn and ice fraction for merges
     call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compatm), 'Si_ifrac', icewgt, rc=rc)

@@ -3,7 +3,6 @@ module glc_comp_nuopc
   !----------------------------------------------------------------------------
   ! This is the NUOPC cap for XGLC
   !----------------------------------------------------------------------------
-
   use ESMF
   use NUOPC                 , only : NUOPC_CompDerive, NUOPC_CompSetEntryPoint, NUOPC_CompSpecialize
   use NUOPC                 , only : NUOPC_CompAttributeGet, NUOPC_Advertise
@@ -62,6 +61,7 @@ module glc_comp_nuopc
   character(len=16)          :: inst_suffix = ""     ! char string associated with instance (ie. "_0001" or "")
   integer                    :: logunit              ! logging unit number
   integer    ,parameter      :: master_task=0        ! task number of master task
+  logical :: mastertask
   character(len=*),parameter :: grid_option = "mesh" ! grid_de, grid_arb, grid_reg, mesh
   integer, parameter         :: dbug = 10
   integer                    :: dbrc
@@ -159,11 +159,11 @@ contains
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_VMGet(vm, mpiCommunicator=lmpicom, rc=rc)
+    call ESMF_VMGet(vm, mpiCommunicator=lmpicom, localpet=my_task, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call mpi_comm_dup(lmpicom, mpicom, ierr)
-    call mpi_comm_rank(mpicom, my_task, ierr)
+    mastertask = my_task == master_task
 
     !----------------------------------------------------------------------------
     ! determine instance information
@@ -182,8 +182,7 @@ contains
     ! Initialize xglc
     !----------------------------------------------------------------------------
 
-    call dead_init_nuopc('glc', mpicom, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, logunit, lsize, gbuf, nxg, nyg)
+    call dead_init_nuopc('glc', inst_suffix, logunit, lsize, gbuf, nxg, nyg)
 
     allocate(gindex(lsize))
     allocate(lon(lsize))
@@ -371,6 +370,7 @@ contains
   !===============================================================================
 
   subroutine ModelAdvance(gcomp, rc)
+    use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -384,8 +384,10 @@ contains
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-
+    if (dbug > 5) then
+       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    endif
+    call shr_nuopc_memcheck(subname, 3, mastertask)
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogLevel(max(shrloglev,1))
@@ -474,7 +476,7 @@ contains
     rc = ESMF_SUCCESS
     if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
-    call dead_final_nuopc('glc', my_task, master_task, logunit)
+    call dead_final_nuopc('glc', logunit)
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 

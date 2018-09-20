@@ -1,7 +1,8 @@
 module med_phases_prep_ocn_mod
 
   use med_constants_mod, only : dbug_flag=>med_constants_dbug_flag
-
+  use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
+  use med_internalstate_mod, only : mastertask
   !-----------------------------------------------------------------------------
   ! Carry out fast accumulation for the ocean
   !-----------------------------------------------------------------------------
@@ -40,12 +41,14 @@ contains
     integer                     :: n1, ncnt
     character(len=*), parameter :: subname='(med_phases_prep_ocn_map)'
     integer :: dbrc
-    !---------------------------------------
+
+    !-------------------------------------------------------------------------------
 
     if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
     endif
     rc = ESMF_SUCCESS
+    call shr_nuopc_memcheck(subname, 5, mastertask)
 
     !---------------------------------------
     ! --- Get the internal state
@@ -138,9 +141,10 @@ contains
     !---------------------------------------
 
     if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
     endif
     rc = ESMF_SUCCESS
+    call shr_nuopc_memcheck(subname, 5, mastertask)
 
     !---------------------------------------
     ! --- Get the internal state

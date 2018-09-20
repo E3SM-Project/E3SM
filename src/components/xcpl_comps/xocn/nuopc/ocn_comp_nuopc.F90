@@ -3,7 +3,6 @@ module ocn_comp_nuopc
   !----------------------------------------------------------------------------
   ! This is the NUOPC cap for XOCN
   !----------------------------------------------------------------------------
-
   use ESMF
   use NUOPC                 , only : NUOPC_CompDerive, NUOPC_CompSetEntryPoint, NUOPC_CompSpecialize
   use NUOPC                 , only : NUOPC_CompAttributeGet, NUOPC_Advertise
@@ -31,6 +30,7 @@ module ocn_comp_nuopc
   use dead_nuopc_mod        , only : fld_list_add, fld_list_realize, fldsMax, fld_list_type
   use dead_nuopc_mod        , only : state_getimport, state_setexport
   use dead_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, Print_FieldExchInfo
+  use med_constants_mod, only : dbug=> med_constants_dbug_flag
 
   implicit none
   private ! except
@@ -62,8 +62,8 @@ module ocn_comp_nuopc
   character(len=16)          :: inst_suffix = ""     ! char string associated with instance (ie. "_0001" or "")
   integer                    :: logunit              ! logging unit number
   integer    ,parameter      :: master_task=0        ! task number of master task
+  logical :: mastertask
   character(len=*),parameter :: grid_option = "mesh" ! grid_de, grid_arb, grid_reg, mesh
-  integer, parameter         :: dbug = 10
   integer                    :: dbrc
   character(*),parameter     :: modName =  "(xocn_comp_nuopc)"
   character(*),parameter     :: u_FILE_u = __FILE__
@@ -121,6 +121,7 @@ contains
   subroutine InitializeAdvertise(gcomp, importState, exportState, clock, rc)
     use shr_nuopc_utils_mod, only : shr_nuopc_set_component_logging
     use shr_nuopc_utils_mod, only : shr_nuopc_get_component_instance
+
     type(ESMF_GridComp)  :: gcomp
     type(ESMF_State)     :: importState, exportState
     type(ESMF_Clock)     :: clock
@@ -152,11 +153,11 @@ contains
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_VMGet(vm, mpiCommunicator=lmpicom, rc=rc)
+    call ESMF_VMGet(vm, mpiCommunicator=lmpicom, localpet=my_task, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call mpi_comm_dup(lmpicom, mpicom, ierr)
-    call mpi_comm_rank(mpicom, my_task, ierr)
+    mastertask = my_task == master_task
 
     !----------------------------------------------------------------------------
     ! determine instance information
@@ -175,8 +176,8 @@ contains
     ! Initialize xocn
     !----------------------------------------------------------------------------
 
-    call dead_init_nuopc('ocn', mpicom, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, logunit, lsize, gbuf, nxg, nyg)
+    call dead_init_nuopc('ocn', inst_suffix, logunit, lsize, gbuf, nxg, nyg)
+
 
     allocate(gindex(lsize))
     allocate(lon(lsize))
@@ -371,6 +372,7 @@ contains
   !===============================================================================
 
   subroutine ModelAdvance(gcomp, rc)
+    use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -384,8 +386,10 @@ contains
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-
+    if (dbug > 5) then
+       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    endif
+    call shr_nuopc_memcheck(subname, 3, mastertask)
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogLevel(max(shrloglev,1))
@@ -474,7 +478,7 @@ contains
     rc = ESMF_SUCCESS
     if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
-    call dead_final_nuopc('ocn', my_task, master_task, logunit)
+    call dead_final_nuopc('ocn', logunit)
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 

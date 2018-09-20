@@ -159,12 +159,12 @@ contains
     integer            :: shrlogunit     ! original log unit
     integer            :: shrloglev      ! original log level
     logical            :: isPresent
-    character(len=512) :: diro
-    character(len=512) :: logfile
-    logical            :: flds_co2a      ! use case
-    logical            :: flds_co2b      ! use case
-    logical            :: flds_co2c      ! use case
-    logical            :: flds_wiso      ! use case
+
+    logical            :: flds_co2a  ! use case
+    logical            :: flds_co2b  ! use case
+    logical            :: flds_co2c  ! use case
+    logical            :: flds_wiso  ! use case
+
     character(len=*),parameter :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
@@ -187,6 +187,7 @@ contains
     !----------------------------------------------------------------------------
     ! determine instance information
     !----------------------------------------------------------------------------
+
     call shr_nuopc_get_component_instance(gcomp, inst_suffix, inst_index)
     inst_name = "ATM"//trim(inst_suffix)
 

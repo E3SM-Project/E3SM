@@ -1780,54 +1780,26 @@
     <file>env_mach_pes.xml</file>
     <desc>ROOTPE (mpi task in MPI_COMM_WORLD) for each component</desc>
   </entry>
-
   <entry id="MULTI_DRIVER">
     <type>logical</type>
-    <default_value>FALSE</default_value>
-    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>TRUE</default_value>
+    <valid_values>TRUE</valid_values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
     <desc>MULTI_DRIVER mode provides a separate driver/coupler component for each
-    ensemble member.  All components must have an equal number of members.  If
-    MULTI_DRIVER mode is False prognostic components must have the same number
-    of members but data or stub components may also have 1 member. </desc>
+    ensemble member.  All components must have an equal number of members.
+    Multidriver is always true for nuopc, variable is left for compatibility with the mct driver</desc>
   </entry>
 
   <entry id="NINST">
     <type>integer</type>
     <values>
-      <value compclass="ATM">1</value>
-      <value compclass="OCN">1</value>
-      <value compclass="WAV">1</value>
-      <value compclass="GLC">1</value>
-      <value compclass="ICE">1</value>
-      <value compclass="ROF">1</value>
-      <value compclass="LND">1</value>
-      <value compclass="ESP">1</value>
+      <value>1</value>
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>Number of instances for each component.  If MULTI_DRIVER is True
-    the NINST_MAX value will be used.
+    <desc>Number of instances of the model.
     </desc>
-  </entry>
-
-  <entry id="NINST_LAYOUT">
-    <type>char</type>
-    <valid_values>sequential,concurrent</valid_values>
-    <values>
-      <value compclass="ATM">concurrent</value>
-      <value compclass="OCN">concurrent</value>
-      <value compclass="WAV">concurrent</value>
-      <value compclass="GLC">concurrent</value>
-      <value compclass="ICE">concurrent</value>
-      <value compclass="ROF">concurrent</value>
-      <value compclass="LND">concurrent</value>
-      <value compclass="ESP">concurrent</value>
-    </values>
-    <group>mach_pes</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of component instances for each component</desc>
   </entry>
 
   <entry id="PSTRID">
@@ -2337,7 +2309,7 @@
 
   <entry id="INFO_DBUG">
     <type>integer</type>
-    <valid_values>0,1,2,3</valid_values>
+    <valid_values>0,1,2,3,4,5,6,7,8,9</valid_values>
     <default_value>1</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>

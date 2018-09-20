@@ -195,7 +195,7 @@
     <category>nuopc</category>
     <group>DRIVER_attributes</group>
     <values>
-      <value>1</value>
+      <value>$INFO_DBUG</value>
     </values>
   </entry>
 
@@ -224,7 +224,7 @@
     <category>nuopc</category>
     <group>MED_attributes</group>
     <values>
-      <value>1</value>
+      <value>$INFO_DBUG</value>
     </values>
   </entry>
 
@@ -242,7 +242,7 @@
     <category>nuopc</category>
     <group>ATM_attributes</group>
     <values>
-      <value>1</value>
+      <value>$INFO_DBUG</value>
     </values>
   </entry>
 
@@ -260,7 +260,7 @@
     <category>nuopc</category>
     <group>OCN_attributes</group>
     <values>
-      <value>1</value>
+      <value>$INFO_DBUG</value>
     </values>
   </entry>
 
@@ -278,7 +278,7 @@
     <category>nuopc</category>
     <group>ICE_attributes</group>
     <values>
-      <value>1</value>
+      <value>$INFO_DBUG</value>
     </values>
   </entry>
 
@@ -296,7 +296,7 @@
     <category>nuopc</category>
     <group>ROF_attributes</group>
     <values>
-      <value>1</value>
+      <value>$INFO_DBUG</value>
     </values>
   </entry>
 
@@ -314,7 +314,7 @@
     <category>nuopc</category>
     <group>LND_attributes</group>
     <values>
-      <value>1</value>
+      <value>$INFO_DBUG</value>
     </values>
   </entry>
 
@@ -332,7 +332,7 @@
     <category>nuopc</category>
     <group>GLC_attributes</group>
     <values>
-      <value>1</value>
+      <value>$INFO_DBUG</value>
     </values>
   </entry>
 
@@ -350,7 +350,7 @@
     <category>nuopc</category>
     <group>WAV_attributes</group>
     <values>
-      <value>1</value>
+      <value>$INFO_DBUG</value>
     </values>
   </entry>
 
@@ -696,30 +696,6 @@
     </values>
   </entry>
 
-  <entry id="driver_restart_pfile">
-    <type>char</type>
-    <category>expdef</category>
-    <group>DRIVER_attributes</group>
-    <desc>
-      Mediator restart pointer file.
-    </desc>
-    <values>
-      <value>rpointer.med</value>
-    </values>
-  </entry>
-
-  <entry id="driver_restart_file">
-    <type>char</type>
-    <category>expdef</category>
-    <group>DRIVER_attributes</group>
-    <desc>
-      Full archive path to restart file for mediator
-    </desc>
-    <values>
-      <value>str_undefined</value>
-    </values>
-  </entry>
-
   <entry id="logFilePostFix">
     <type>char</type>
     <category>expdef</category>
@@ -925,7 +901,7 @@
     </values>
   </entry>
 
-  <entry id="aqua_planet">
+  <entry id="aqua_planet" modify_via_xml="DOCN_MODE">
     <type>logical</type>
     <category>expdef</category>
     <group>ALLCOMP_attributes</group>
@@ -963,30 +939,6 @@
   <!-- =========================================== -->
   <!-- MED general attributes                      -->
   <!-- =========================================== -->
-
-  <entry id="restart_pfile">
-    <type>char</type>
-    <category>expdef</category>
-    <group>MED_attributes</group>
-    <desc>
-      Mediator restart pointer file.
-    </desc>
-    <values>
-      <value>rpointer.med</value>
-    </values>
-  </entry>
-
-  <entry id="restart_file">
-    <type>char</type>
-    <category>expdef</category>
-    <group>MED_attributes</group>
-    <desc>
-      Full archive path to restart file for mediator
-    </desc>
-    <values>
-      <value>str_undefined</value>
-    </values>
-  </entry>
 
   <entry id="flux_convergence">
     <type>real</type>
@@ -1277,7 +1229,7 @@
     <valid_values>none,cart3d,cart3d_diag,cart3d_uvw,cart3d_uvw_diag</valid_values>
     <desc>
       Turns on the vector mapping option for u and v vector mapping between
-      atm and ocean grids in the coupler.  The options are none, 
+      atm and ocean grids in the coupler.  The options are none,
       cart3d, cart3d_diag, cart3d_uvw, and cart3d_uvw_diag.  The none option
       results in scalar mapping independently for the u and v field which
       tends to generate large errors near the poles. The cart3d
@@ -1341,6 +1293,29 @@
 n    </desc>
     <values>
       <value>0</value>
+    </values>
+  </entry>
+ <entry id="restart_pfile">
+    <type>char</type>
+    <category>expdef</category>
+    <group>MED_attributes</group>
+    <desc>
+      Mediator restart pointer file.
+    </desc>
+    <values>
+      <value>rpointer.med</value>
+    </values>
+  </entry>
+
+  <entry id="restart_file">
+    <type>char</type>
+    <category>expdef</category>
+    <group>MED_attributes</group>
+    <desc>
+      Full archive path to restart file for mediator
+    </desc>
+    <values>
+      <value>str_undefined</value>
     </values>
   </entry>
 
@@ -2955,6 +2930,18 @@ n    </desc>
   <!-- group seq_cime_pes          -->
   <!-- =========================== -->
 
+  <entry id="ninst" modify_via_xml="NINST">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>PELAYOUT_attributes</group>
+    <desc>
+      The number of model instances in the executable
+    </desc>
+    <values>
+      <value>$NINST</value>
+    </values>
+  </entry>
+
   <entry id="atm_ntasks" modify_via_xml="NTASKS_ATM">
     <type>integer</type>
     <category>cime_pes</category>
@@ -3004,19 +2991,6 @@ n    </desc>
     </desc>
     <values>
       <value>$PSTRID_ATM</value>
-    </values>
-  </entry>
-
-  <entry id="atm_layout" modify_via_xml="NINST_ATM_LAYOUT">
-    <type>char</type>
-    <category>cime_pes</category>
-    <group>cime_pes</group>
-    <valid_values>concurrent,sequential</valid_values>
-    <desc>
-      Layout of multi-instance atms (if there are more than 1)
-    </desc>
-    <values>
-      <value>$NINST_ATM_LAYOUT</value>
     </values>
   </entry>
 
@@ -3072,19 +3046,6 @@ n    </desc>
     </values>
   </entry>
 
-  <entry id="lnd_layout" modify_via_xml="NINST_LND_LAYOUT">
-    <type>char</type>
-    <category>cime_pes</category>
-    <group>cime_pes</group>
-    <valid_values>concurrent,sequential</valid_values>
-    <desc>
-      Layout of multi-instance lnds (if there are more than 1)
-    </desc>
-    <values>
-      <value>$NINST_LND_LAYOUT</value>
-    </values>
-  </entry>
-
   <entry id="ice_ntasks" modify_via_xml="NTASKS_ICE">
     <type>integer</type>
     <category>cime_pes</category>
@@ -3134,19 +3095,6 @@ n    </desc>
     </desc>
     <values>
       <value>$PSTRID_ICE</value>
-    </values>
-  </entry>
-
-  <entry id="ice_layout" modify_via_xml="NINST_ICE_LAYOUT">
-    <type>char</type>
-    <category>cime_pes</category>
-    <group>cime_pes</group>
-    <valid_values>concurrent,sequential</valid_values>
-    <desc>
-      Layout of multi-instance ices (if there are more than 1)
-    </desc>
-    <values>
-      <value>$NINST_ICE_LAYOUT</value>
     </values>
   </entry>
 
@@ -3202,19 +3150,6 @@ n    </desc>
     </values>
   </entry>
 
-  <entry id="ocn_layout" modify_via_xml="NINST_OCN_LAYOUT">
-    <type>char</type>
-    <category>cime_pes</category>
-    <group>cime_pes</group>
-    <valid_values>concurrent,sequential</valid_values>
-    <desc>
-      Layout of multi-instance ocns (if there are more than 1)
-    </desc>
-    <values>
-      <value>$NINST_OCN_LAYOUT</value>
-    </values>
-  </entry>
-
   <entry id="glc_ntasks" modify_via_xml="NTASKS_GLC">
     <type>integer</type>
     <category>cime_pes</category>
@@ -3264,19 +3199,6 @@ n    </desc>
     </desc>
     <values>
       <value>$PSTRID_GLC</value>
-    </values>
-  </entry>
-
-  <entry id="glc_layout" modify_via_xml="NINST_GLC_LAYOUT">
-    <type>char</type>
-    <category>cime_pes</category>
-    <group>cime_pes</group>
-    <valid_values>concurrent,sequential</valid_values>
-    <desc>
-      Layout of multi-instance glcs (if there are more than 1)
-    </desc>
-    <values>
-      <value>$NINST_GLC_LAYOUT</value>
     </values>
   </entry>
 
@@ -3332,19 +3254,6 @@ n    </desc>
     </values>
   </entry>
 
-  <entry id="wav_layout" modify_via_xml="NINST_WAV_LAYOUT">
-    <type>char</type>
-    <category>cime_pes</category>
-    <group>cime_pes</group>
-    <valid_values>concurrent,sequential</valid_values>
-    <desc>
-      Layout of multi-instance wavs (if there are more than 1)
-    </desc>
-    <values>
-      <value>$NINST_WAV_LAYOUT</value>
-    </values>
-  </entry>
-
   <entry id="rof_ntasks" modify_via_xml="NTASKS_ROF">
     <type>integer</type>
     <category>cime_pes</category>
@@ -3397,19 +3306,6 @@ n    </desc>
     </values>
   </entry>
 
-  <entry id="rof_layout" modify_via_xml="NINST_ROF_LAYOUT">
-    <type>char</type>
-    <category>cime_pes</category>
-    <group>cime_pes</group>
-    <valid_values>concurrent,sequential</valid_values>
-    <desc>
-      Layout of multi-instance lnds (if there are more than 1)
-    </desc>
-    <values>
-      <value>$NINST_ROF_LAYOUT</value>
-    </values>
-  </entry>
-
   <entry id="esp_ntasks" modify_via_xml="NTASKS_ESP">
     <type>integer</type>
     <category>cime_pes</category>
@@ -3459,19 +3355,6 @@ n    </desc>
     </desc>
     <values>
       <value>$PSTRID_ESP</value>
-    </values>
-  </entry>
-
-  <entry  id="esp_layout" modify_via_xml="NINST_ESP_LAYOUT">
-    <type>char</type>
-    <category>cime_pes</category>
-    <group>cime_pes</group>
-    <valid_values>concurrent,sequential</valid_values>
-    <desc>
-      Layout of multi-instance external system processor (if there are more than 1)
-    </desc>
-    <values>
-      <value>$NINST_ESP_LAYOUT</value>
     </values>
   </entry>
 

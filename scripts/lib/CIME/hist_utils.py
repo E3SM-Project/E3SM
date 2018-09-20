@@ -360,15 +360,24 @@ def get_extension(model, filepath):
     'frc'
     >>> get_extension("mom", "ga0xnw.mom6.sfc.day._0001_001.nc")
     'sfc.day'
+    >>> get_extension("mom", "bixmc5.mom6.prog._0001_01_05_84600.nc")
+    'prog'
+    >>> get_extension("mom", "bixmc5.mom6.hm._0001_01_03_42300.nc")
+    'hm'
+    >>> get_extension("mom", "bixmc5.mom6.hmz._0001_01_03_42300.nc")
+    'hmz'
     """
     basename = os.path.basename(filepath)
     m = None
     if model == "mom":
-        ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](frc.?)([.].*[^.])?[.]nc' % model)
-        m = ext_regex.match(basename)
-        if m is None:
-            ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](sfc.day.?)([.].*[^.])?[.]nc' % model)
+        for ext in ('frc', 'sfc.day', 'prog', 'hmz', 'hm'):
+            regex_str = r'.*' + model + r'[^_]*_?([0-9]{4})?[.](' + ext + r'.?)([.].*[^.])?[.]nc'
+            ext_regex = re.compile(regex_str)
             m = ext_regex.match(basename)
+            if m is not None:
+                break
+#            ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](sfc.day.?)([.].*[^.])?[.]nc' % model)
+#            m = ext_regex.match(basename)
     elif model == 'cice':
         ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h_inst.?)([.].*[^.])?[.]nc' % model)
         m = ext_regex.match(basename)
