@@ -183,6 +183,27 @@ def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time
     etree.write(os.path.join(data_rel_path, "Test.xml"))
 
 ###############################################################################
+def create_cdash_xml_fakes(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname):
+###############################################################################
+    # We assume all cases were created from the same code repo
+    first_result_case = os.path.dirname(list(results.items())[0][1][0])
+    try:
+        srcroot = run_cmd_no_fail("./xmlquery --value CIMEROOT", from_dir=first_result_case)
+    except:
+        # Use repo containing this script as last resort
+        srcroot = CIME.utils.get_cime_root()
+
+    git_commit = CIME.utils.get_current_commit(repo=srcroot)
+
+    data_rel_path = os.path.join("Testing", utc_time)
+
+    create_cdash_config_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit)
+
+    create_cdash_build_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit)
+
+    create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit)
+
+###############################################################################
 def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_time, hostname, force_log_upload):
 ###############################################################################
 
@@ -414,7 +435,8 @@ def wait_for_tests(test_paths,
                    cdash_project=E3SM_MAIN_CDASH,
                    cdash_build_group=CDASH_DEFAULT_BUILD_GROUP,
                    timeout=None,
-                   force_log_upload=False):
+                   force_log_upload=False,
+                   no_run=False):
 ###############################################################################
     # Set up signal handling, we want to print results before the program
     # is terminated

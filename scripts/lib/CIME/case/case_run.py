@@ -120,6 +120,8 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
         logger.debug("{} MODEL EXECUTION BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
         run_func = lambda: run_cmd(cmd, from_dir=rundir)[0]
         stat = run_and_log_case_status(run_func, "model execution", caseroot=case.get_value("CASEROOT"))
+        logger.debug("{} MODEL EXECUTION HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+
         model_logfile = os.path.join(rundir, model + ".log." + lid)
         # Determine if failure was due to a failed node, if so, try to restart
         if retry_run_re or node_fail_re:
@@ -156,8 +158,6 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
         if stat != 0 and not loop:
             # We failed and we're not restarting
             expect(False, "RUN FAIL: Command '{}' failed\nSee log file for details: {}".format(cmd, model_logfile))
-
-    logger.info("{} MODEL EXECUTION HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
     logger.debug("{} POST_RUN_CHECK BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
     _post_run_check(case, lid)
@@ -310,10 +310,12 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
         lid = _run_model(self, lid, skip_pnl, da_cycle=cycle)
         logger.debug("{} RUN_MODEL HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
-        # TODO: remove the hard-wiring for nuopc below
+        # TODO mvertens: remove the hard-wiring for nuopc below
         if driver == 'mct':
             if self.get_value("CHECK_TIMING") or self.get_value("SAVE_TIMING"):
+                logger.debug("{} GET_TIMING BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
                 get_timing(self, lid)     # Run the getTiming script
+                logger.debug("{} GET_TIMING HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
         else:
             self.set_value("CHECK_TIMING",False)
 
@@ -344,12 +346,10 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
         self.set_value("CONTINUE_RUN",
                        self.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
 
-    if set_continue_run:
-        self.set_value("CONTINUE_RUN",
-                       self.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
-
     logger.warning("check for resubmit")
     if submit_resubmits:
         _resubmit_check(self)
+
+    logger.debug("{} CASE.RUN HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
     return True

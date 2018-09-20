@@ -338,7 +338,6 @@ This allows using a different mpirun command to launch unit tests
       <modules compiler="pgi">
 	<command name="load">pgi/17.9</command>
       </modules>
-<!--
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE">
 	<command name="load">esmf-7.0.0-defio-mpi-g</command>
       </modules>
@@ -351,7 +350,6 @@ This allows using a different mpirun command to launch unit tests
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE">
 	<command name="load">esmf-7.0.0-ncdfio-uni-O</command>
       </modules>
--->
       <modules compiler="gnu">
         <command name="load">gnu/7.3.0</command>
         <command name="load">openblas/0.2.20</command>
@@ -380,7 +378,10 @@ This allows using a different mpirun command to launch unit tests
       <modules compiler="gnu" mpilib="mpi-serial">
 	<command name="load">netcdf/4.6.1</command>
       </modules>
-      <modules compiler="!gnu" mpilib="mpi-serial">
+-      <modules compiler="pgi" mpilib="mpi-serial">
+	<command name="load">netcdf/4.4.1.1</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial">
 	<command name="load">netcdf/4.5.0</command>
       </modules>
     </module_system>
@@ -390,7 +391,7 @@ This allows using a different mpirun command to launch unit tests
       <env name="MPI_TYPE_DEPTH">16</env>
       <env name="MPI_IB_CONGESTED">1</env>
       <env name="MPI_USE_ARRAY"/>
-      <env name="ESMFMKFILE">/glade/u/home/dunlap/ESMF-INSTALL/8.0.0bs16/lib/libg/Linux.intel.64.mpich2.default/esmf.mk</env>
+<!--      <env name="ESMFMKFILE">/glade/u/home/dunlap/ESMF-INSTALL/8.0.0bs16/lib/libg/Linux.intel.64.mpich2.default/esmf.mk</env> -->
     </environment_variables>
     <environment_variables unit_testing="true">
       <env name="MPI_USE_ARRAY">false</env>

@@ -70,10 +70,7 @@ using a fortran linker.
 <compiler>
   <CPPDEFS>
     <!-- See if we can remove -DCESMCOUPLED below after MOM6 NUOPC cap is unified -->
-    <append> -D<env>OS</env> -DCESMCOUPLED </append>
     <append MODEL="pop"> -D_USE_FLOW_CONTROL </append>
-    <!-- This is not seem to be the right place for this, should be in a MOM6-specific place - RSD -->
-    <append MODEL="mom"> -DMOM6_CAP </append>
   </CPPDEFS>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
 </compiler>
@@ -1034,6 +1031,7 @@ using a fortran linker.
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
 </compiler>
+
 <compiler MACH="cheyenne" COMPILER="intel">
   <CFLAGS>
     <append> -qopt-report -xCORE_AVX2 -no-fma</append>
@@ -1051,6 +1049,13 @@ using a fortran linker.
   <FFLAGS>
     <append MODEL="mom"> -r8 </append>
   </FFLAGS>
+</compiler>
+
+<compiler MACH="cheyenne" COMPILER="pgi">
+  <SLIBS>
+    <append> -llapack -lblas </append>
+    <append MPILIB="mpi-serial"> -ldl </append>
+  </SLIBS>
 </compiler>
 
 <compiler MACH="laramie">

@@ -171,6 +171,8 @@ Below is an example of status messages:
   ``$REST_OPTION``, ``$REST_N`` and/or ``$REST_DATE``, and ``$RESUBMIT``
   before resubmitting.
 
+See the :ref:`basic example<basic_example>` for a complete example of how to run a case.
+
 ---------------------------------
 Troubleshooting a job that fails
 ---------------------------------

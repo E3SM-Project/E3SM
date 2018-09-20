@@ -348,14 +348,14 @@ class Case(object):
         return result
 
     def get_resolved_value(self, item, recurse=0, allow_unresolved_envvars=False):
-        reference_re = re.compile(r'\${?(\w+)}?')
+        #reference_re = re.compile(r'\${?(\w+)}?')
         num_unresolved = item.count("$") if item else 0
         recurse_limit = 10
         if (num_unresolved > 0 and recurse < recurse_limit ):
-            for m in reference_re.finditer(item):
-                var = m.groups()[0]
-                if var in self.lookups:
-                    item = item.replace(m.group(), self.lookups[var])
+            # for m in reference_re.finditer(item):
+            #     var = m.groups()[0]
+            #     if var in self.lookups:
+            #         item = item.replace(m.group(), self.lookups[var])
 
             for env_file in self._env_entryid_files:
                 item = env_file.get_resolved_value(item,
@@ -872,7 +872,7 @@ class Case(object):
         infile = self.get_resolved_value(infile)
         logger.debug("archive defaults located in {}".format(infile))
         archive = Archive(infile=infile, files=files)
-        archive.setup(env_archive, self._components, files=files, driver=driver)
+        archive.setup(env_archive, self._components, files=files)
 
         self.set_value("COMPSET",self._compsetname)
 
@@ -1417,7 +1417,7 @@ directory, NOT in this subdirectory."""
         self._files.remove(old_object)
         self._files.append(new_object)
 
-    def get_latest_cpl_log(self, coupler_log_path=None, cplname="med"):
+    def get_latest_cpl_log(self, coupler_log_path=None):
         """
         find and return the latest cpl log file in the
         coupler_log_path directory
@@ -1425,6 +1425,11 @@ directory, NOT in this subdirectory."""
         if coupler_log_path is None:
             coupler_log_path = self.get_value("RUNDIR")
         cpllog = None
+        comp_interface = self.get_value("COMP_INTERFACE")
+        if comp_interface == 'mct':
+            cplname = "cpl"
+        elif comp_interface == "nuopc":
+            cplname = "med"
         cpllogs = glob.glob(os.path.join(coupler_log_path, '{}.log.*'.format(cplname)))
         if cpllogs:
             cpllog = max(cpllogs, key=os.path.getctime)

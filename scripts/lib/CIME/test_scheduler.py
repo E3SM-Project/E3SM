@@ -124,7 +124,7 @@ class TestScheduler(object):
     ###########################################################################
         self._cime_root       = get_cime_root()
         self._cime_model      = get_model()
-        self._cime_driver     = "nuopc"
+        self._cime_driver     = "mct"
         self._save_timing     = save_timing
         self._queue           = queue
         self._test_data       = {} if test_data is None else test_data # Format:  {test_name -> {data_name -> data}}
@@ -436,6 +436,7 @@ class TestScheduler(object):
 
         if test_mods is not None:
             files = Files(comp_interface=self._cime_driver)
+
             if test_mods.find('/') != -1:
                 (component, modspath) = test_mods.split('/', 1)
             else:
@@ -443,9 +444,7 @@ class TestScheduler(object):
                 self._log_output(test, error)
                 return False, error
 
-            # TODO: to get the right attributes of COMP_ROOT_DIR_CPL in evaluating definition_file - need
-            # to do the following first - this needs to be changed so that the following two lines are not needed!
-            comp_root_dir_cpl = files.get_value( "COMP_ROOT_DIR_CPL",{"component":"drv-nuopc"}, resolved=False)
+            comp_root_dir_cpl = files.get_value( "COMP_ROOT_DIR_CPL", resolved=False)
             files.set_value("COMP_ROOT_DIR_CPL", comp_root_dir_cpl)
 
             testmods_dir = files.get_value("TESTS_MODS_DIR", {"component": component})

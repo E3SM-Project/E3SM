@@ -31,6 +31,7 @@ from CIME.test_scheduler import TestScheduler, RUN_PHASE
 from CIME.utils          import expect, convert_to_seconds, compute_total_time, convert_to_babylonian_time, run_cmd_no_fail, get_cime_config
 from CIME.XML.machines   import Machines
 from CIME.case           import Case
+from CIME.test_utils     import get_tests_from_xml
 from argparse            import RawTextHelpFormatter
 
 import argparse, math, glob

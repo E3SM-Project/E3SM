@@ -78,6 +78,7 @@ contains
     call MPI_COMM_SIZE(local_comm,totpe,ierr)
 
     ! Read input parms
+
     call dead_read_inparms(model, mpicom, my_task, master_task, &
        inst_index, inst_suffix, inst_name, logunit, &
        nxg, nyg, decomp_type, nproc_x, seg_len, flood)
