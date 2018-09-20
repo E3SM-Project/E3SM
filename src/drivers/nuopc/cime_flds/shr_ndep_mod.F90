@@ -17,12 +17,12 @@ module shr_ndep_mod
 
   ! !PUBLIC MEMBER FUNCTIONS
   public :: shr_ndep_readnl       ! Read namelist
-
+  character(len=*), parameter :: u_FILE_u=__FILE__
 !====================================================================================
 CONTAINS
 !====================================================================================
 
-  subroutine shr_ndep_readnl(NLFilename, mpicom, mastertask, ndep_fields, add_ndep_fields)
+  subroutine shr_ndep_readnl(NLFilename, ndep_fields, ndep_nflds)
 
     !========================================================================
     ! reads ndep_inparm namelist and sets up driver list of fields for
@@ -30,26 +30,28 @@ CONTAINS
     !========================================================================
 
     use shr_file_mod , only : shr_file_getUnit, shr_file_freeUnit
-    use shr_mpi_mod  , only : shr_mpi_bcast
     use shr_nl_mod   , only : shr_nl_find_group_name
+    use ESMF         , only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMBroadcast, ESMF_VMGet
+    use shr_nuopc_utils_mod , only : shr_nuopc_utils_chkerr
+
     implicit none
 
     character(len=*), intent(in)  :: NLFilename ! Namelist filename
-    integer         , intent(in)  :: mpicom
-    logical         , intent(in)  :: mastertask
     character(len=*), intent(out) :: ndep_fields
-    logical         , intent(out) :: add_ndep_fields
+    integer         , intent(out) :: ndep_nflds
 
     !----- local -----
+    type(ESMF_VM) :: vm
     integer :: i                ! Indices
     integer :: unitn            ! namelist unit number
     integer :: ierr             ! error code
+    integer :: tmp(1)
     logical :: exists           ! if file exists or not
     character(len=8) :: token   ! dry dep field name to add
-
+    integer :: rc
     integer, parameter :: maxspc = 100             ! Maximum number of species
     character(len=32)  :: ndep_list(maxspc) = ''   ! List of ndep species
-
+    integer :: localpet
     !----- formats -----
     character(*),parameter :: subName = '(shr_ndep_read) '
     character(*),parameter :: F00   = "('(shr_ndep_read) ',8a)"
@@ -66,8 +68,12 @@ CONTAINS
     if ( len_trim(NLFilename) == 0 ) then
        call shr_sys_abort( subName//'ERROR: nlfilename not set' )
     end if
-
-    if (mastertask) then
+    call ESMF_VMGetCurrent(vm, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_VMGet(vm, localpet=localpet, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    ndep_nflds=0
+    if (localpet==0) then
        inquire( file=trim(NLFileName), exist=exists)
        if ( exists ) then
           unitn = shr_file_getUnit()
@@ -89,17 +95,25 @@ CONTAINS
           endif
           close( unitn )
           call shr_file_freeUnit( unitn )
+          do i=1,maxspc
+             if (len_trim(ndep_list(i)) > 0) then
+                ndep_nflds = ndep_nflds+1
+             endif
+          enddo
        end if
     end if
-    call shr_mpi_bcast( ndep_list, mpicom )
+    tmp = ndep_nflds
+    call ESMF_VMBroadcast(vm, tmp, 1, 0, rc=rc)
+    ndep_nflds=tmp(1)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ndep_fields = ' '
-    if (len_trim(ndep_list(1)) == 0) then
-       add_ndep_fields = .false.
-    else
-       ! Loop over species to fill list of fields to communicate for ndep 
-       add_ndep_fields = .true.
-       do i=1,maxspc
+
+    if(ndep_nflds > 0) then
+       call ESMF_VMBroadcast(vm, ndep_list, 32*ndep_nflds, 0, rc=rc)
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+       ! Loop over species to fill list of fields to communicate for ndep
+       do i=1,ndep_nflds
           if ( len_trim(ndep_list(i))==0 ) exit
           if ( i == 1 ) then
              ndep_fields = 'Faxa_' // trim(ndep_list(i))

@@ -399,6 +399,9 @@ class GenericXML(object):
         valnodes = self.get_children(vid)
         for node in valnodes:
             self.set_text(node, value)
+        if valnodes:
+            return value
+        return None
 
         return value if valnodes else None
 
@@ -450,11 +453,7 @@ class GenericXML(object):
         for m in reference_re.finditer(item_data):
             var = m.groups()[0]
             logger.debug("find: {}".format(var))
-
-            # The overridden versions of this method do not simply return None
-            # so the pylint should not be flagging this
             ref = self.get_value(var) # pylint: disable=assignment-from-none
-
             if ref is not None:
                 logger.debug("resolve: " + str(ref))
                 item_data = item_data.replace(m.group(), self.get_resolved_value(str(ref)))

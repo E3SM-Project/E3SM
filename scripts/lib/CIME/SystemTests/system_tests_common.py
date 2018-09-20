@@ -233,7 +233,7 @@ class SystemTestsCommon(object):
 
         logger.info(infostr)
 
-        self._case.case_run(skip_pnl=self._skip_pnl, submit_resubmits=is_batch)
+        self._case.case_run(skip_pnl=self._skip_pnl, submit_resubmits=True)
 
         if not self._coupler_log_indicates_run_complete():
             expect(False, "Coupler did not indicate run passed")

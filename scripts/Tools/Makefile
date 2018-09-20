@@ -86,7 +86,7 @@ endif
 
 ifeq ($(strip $(USE_FMS)), TRUE)
   SLIBS += -lfms
-endif 
+endif
 
 ifndef MOD_SUFFIX
    MOD_SUFFIX := mod
@@ -99,7 +99,9 @@ endif
 CPPDEFS := $(USER_CPPDEFS) -D$(OS)
 
 # Unless DEBUG mode is enabled, use NDEBUG to turn off assert statements.
-ifneq ($(strip $(DEBUG)),TRUE)
+ifeq ($(strip $(DEBUG)),TRUE)
+   CPPDEFS += -DDEBUG
+else
    CPPDEFS += -DNDEBUG
 endif
 

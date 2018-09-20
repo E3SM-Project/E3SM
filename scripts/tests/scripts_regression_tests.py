@@ -313,7 +313,6 @@ class J_TestCreateNewcase(unittest.TestCase):
         with Case(testdir, read_only=False) as case:
             for env_file in case._files:
                 self.assertFalse(env_file.needsrewrite, msg="Instantiating a case should not trigger a flush call")
-
         with Case(testdir, read_only=False) as case:
             case.set_value("HIST_OPTION","nyears")
             runfile = case.get_env('run')
@@ -1674,8 +1673,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
         run_cmd_assert_result(self, ("{}/create_newcase --case {} --script-root {} " +
-
-                                     "--compset X --res f19_g16 --handle-preexisting-dirs=r --output-root {}").format(
+                                     "--compset X --res f19_g16 --output-root {}").format(
                                          SCRIPT_DIR, testcase_name, testdir, testdir),
                               from_dir=SCRIPT_DIR)
         return testdir
@@ -2943,11 +2941,7 @@ def make_pylint_test(pyfile, all_files):
     def test(self):
         if B_CheckCode.all_results is None:
             B_CheckCode.all_results = check_code(all_files)
-<<<<<<< HEAD
-        result = B_CheckCode.all_results[pyfile] # pylint: disable=unsubscriptable-object
-=======
         result = B_CheckCode.all_results[pyfile]  # pylint: disable=unsubscriptable-object
->>>>>>> mvertens/clocks
         self.assertTrue(result == "", msg=result)
 
     return test

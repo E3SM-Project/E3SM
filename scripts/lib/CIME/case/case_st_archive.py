@@ -385,7 +385,7 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
     for suffix in archive.get_rest_file_extensions(archive_entry):
 #        logger.debug("suffix is {} ninst {}".format(suffix, ninst))
         restfiles = ""
-        if compname.find('mpas') == 0 or compname == 'mali':
+        if compname.find("mpas") == 0:
             pattern = compname + r'\.' + suffix + r'\.' + '_'.join(datename_str.rsplit('-', 1))
             pfile = re.compile(pattern)
             restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]

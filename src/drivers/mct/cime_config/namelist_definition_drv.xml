@@ -916,7 +916,7 @@
     <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <valid_values>CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2,NUOPC,NUOPC_TIGHT</valid_values>
+    <valid_values>CESM1_ORIG,CESM1_MOD,CESM1_ORIG_TIGHT,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2,NUOPC,NUOPC_TIGHT</valid_values>
     <desc>
       Set the coupler sequencing.
     </desc>

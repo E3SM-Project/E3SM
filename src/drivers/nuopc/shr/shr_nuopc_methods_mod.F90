@@ -4,14 +4,15 @@ module shr_nuopc_methods_mod
   ! Generic operation methods used by the Mediator Component.
   !-----------------------------------------------------------------------------
 
-  use ESMF              , only : operator(<), operator(/=), operator(+), operator(-), operator(*) , operator(>=)
-  use ESMF              , only : operator(<=), operator(>), operator(==)
-  use ESMF              , only : ESMF_GeomType_Flag, ESMF_FieldStatus_Flag, ESMF_PoleMethod_Flag
-  use ESMF              , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_FAILURE
-  use ESMF              , only : ESMF_LOGERR_PASSTHRU, ESMF_LogFoundError, ESMF_LOGMSG_ERROR
-  use ESMF              , only : ESMF_MAXSTR, ESMF_LOGMSG_WARNING, ESMF_POLEMETHOD_ALLAVG
-  use med_constants_mod , only : dbug_flag => med_constants_dbug_flag
+  use ESMF               , only : operator(<), operator(/=), operator(+), operator(-), operator(*) , operator(>=)
+  use ESMF               , only : operator(<=), operator(>), operator(==)
+  use ESMF               , only : ESMF_GeomType_Flag, ESMF_FieldStatus_Flag, ESMF_PoleMethod_Flag
+  use ESMF               , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_FAILURE
+  use ESMF               , only : ESMF_LOGERR_PASSTHRU, ESMF_LogFoundError, ESMF_LOGMSG_ERROR
+  use ESMF               , only : ESMF_MAXSTR, ESMF_LOGMSG_WARNING, ESMF_POLEMETHOD_ALLAVG
+  use med_constants_mod  , only : dbug_flag => med_constants_dbug_flag
 
+  use shr_nuopc_utils_mod, only : shr_nuopc_methods_ChkErr => shr_nuopc_utils_ChkErr
   implicit none
   private
 
@@ -1110,25 +1111,30 @@ module shr_nuopc_methods_mod
 
   !-----------------------------------------------------------------------------
 
-  subroutine shr_nuopc_methods_FB_FieldRegrid(FBin,fldin,FBout,fldout,RH,rc)
+  subroutine shr_nuopc_methods_FB_FieldRegrid(FBin,fldin,FBout,fldout,RH,rc,debug)
 
     ! ----------------------------------------------
     ! Regrid a field in a field bundle to another field in a field bundle
     ! ----------------------------------------------
     use ESMF, only : ESMF_FieldBundle, ESMF_RouteHandle, ESMF_FieldRegrid, ESMF_Field
-    use ESMF, only : ESMF_TERMORDER_SRCSEQ
-
+    use ESMF, only : ESMF_TERMORDER_SRCSEQ, ESMF_FieldRegridStore, ESMF_SparseMatrixWrite
+    use med_constants_mod, only : R8
+    use mpi, only : mpi_comm_rank, MPI_COMM_WORLD
     type(ESMF_FieldBundle), intent(inout) :: FBin
     character(len=*)      , intent(in)    :: fldin
     type(ESMF_FieldBundle), intent(inout) :: FBout
     character(len=*)      , intent(in)    :: fldout
     type(ESMF_RouteHandle), intent(inout) :: RH
     integer               , intent(out)   :: rc
-
+    logical, intent(in), optional :: debug
     ! local
+    real(R8),             pointer :: factorList(:)
+    integer,          pointer :: factorIndexList(:,:)
     type(ESMF_Field) :: field1, field2
     integer :: dbrc
     character(len=*),parameter :: subname='(shr_nuopc_methods_FB_FieldRegrid)'
+    integer :: rank
+    character(len=8) :: filename
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -1145,9 +1151,10 @@ module shr_nuopc_methods_mod
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
       call ESMF_FieldRegrid(field1, field2, routehandle=RH, &
-        termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+        termorderflag=ESMF_TERMORDER_SRCSEQ, checkflag=.true., rc=rc)
+
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    else
+   else
 
       if (dbug_flag > 1) then
         call ESMF_LogWrite(trim(subname)//" field not found: "//trim(fldin)//","//trim(fldout), ESMF_LOGMSG_INFO, rc=dbrc)
@@ -1828,10 +1835,9 @@ module shr_nuopc_methods_mod
     character(len=*),parameter      :: subname='(shr_nuopc_methods_State_diagnose)'
     ! ----------------------------------------------
 
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
     endif
-    rc = ESMF_SUCCESS
 
     lstring = ''
     if (present(string)) then
@@ -1849,44 +1855,44 @@ module shr_nuopc_methods_mod
        call shr_nuopc_methods_State_GetFldPtr(State, lfieldnamelist(n), &
             fldptr1=dataPtr1d, fldptr2=dataPtr2d, rank=lrank, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       if (lrank == 0) then
-          ! no local data
-
-       elseif (lrank == 1) then
-          if (size(dataPtr1d) > 0) then
-             write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
-                  minval(dataPtr1d), maxval(dataPtr1d), sum(dataPtr1d), size(dataPtr1d)
-          else
-             write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
-                  " no data"
-          endif
-
-       elseif (lrank == 2) then
-          if (size(dataPtr2d) > 0) then
-             write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
-                  minval(dataPtr2d), maxval(dataPtr2d), sum(dataPtr2d), size(dataPtr2d)
-          else
-             write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
-                  " no data"
-          endif
-
-       else
-          call ESMF_LogWrite(trim(subname)//": ERROR rank not supported ", ESMF_LOGMSG_ERROR, line=__LINE__, &
-               file=u_FILE_u, rc=dbrc)
-          rc = ESMF_FAILURE
-          return
-       endif
        if (dbug_flag > 1) then
+          if (lrank == 0) then
+             ! no local data
+
+          elseif (lrank == 1) then
+             if (size(dataPtr1d) > 0) then
+                write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
+                     minval(dataPtr1d), maxval(dataPtr1d), sum(dataPtr1d), size(dataPtr1d)
+             else
+                write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
+                     " no data"
+             endif
+
+          elseif (lrank == 2) then
+             if (size(dataPtr2d) > 0) then
+                write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
+                     minval(dataPtr2d), maxval(dataPtr2d), sum(dataPtr2d), size(dataPtr2d)
+             else
+                write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
+                     " no data"
+             endif
+
+          else
+             call ESMF_LogWrite(trim(subname)//": ERROR rank not supported ", ESMF_LOGMSG_ERROR, line=__LINE__, &
+                  file=u_FILE_u, rc=dbrc)
+             rc = ESMF_FAILURE
+             return
+          endif
+
           call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
        end if
     enddo
 
     deallocate(lfieldnamelist)
 
-    if (dbug_flag > 10) then
+    if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+   endif
 
   end subroutine shr_nuopc_methods_State_diagnose
 
@@ -3869,36 +3875,6 @@ module shr_nuopc_methods_mod
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine shr_nuopc_methods_Field_UpdateTimestamp
-
-  !-----------------------------------------------------------------------------
-
-  logical function shr_nuopc_methods_ChkErr(rc, line, file, mpierr)
-    use mpi , only : MPI_ERROR_STRING, MPI_MAX_ERROR_STRING, MPI_SUCCESS
-    use ESMF, only : ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU, ESMF_LOGMSG_INFO
-
-    integer, intent(in) :: rc
-    integer, intent(in) :: line
-
-    character(len=*), intent(in) :: file
-    logical, optional, intent(in) :: mpierr
-
-    character(MPI_MAX_ERROR_STRING) :: lstring
-    integer :: dbrc, lrc, len, ierr
-
-    shr_nuopc_methods_ChkErr = .false.
-    lrc = rc
-    if (present(mpierr) .and. mpierr) then
-       if (rc == MPI_SUCCESS) return
-       call MPI_ERROR_STRING(rc, lstring, len, ierr)
-       call ESMF_LogWrite("ERROR: "//trim(lstring), ESMF_LOGMSG_INFO, line=line, file=file, rc=dbrc)
-       lrc = ESMF_FAILURE
-    endif
-
-    if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=line, file=file)) then
-      shr_nuopc_methods_ChkErr = .true.
-    endif
-
-  end function shr_nuopc_methods_ChkErr
 
   !-----------------------------------------------------------------------------
 

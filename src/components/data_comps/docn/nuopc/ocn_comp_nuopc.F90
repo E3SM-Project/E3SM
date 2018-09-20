@@ -70,7 +70,6 @@ module ocn_comp_nuopc
   integer                  :: inst_index                ! number of current instance (ie. 1)
   character(len=16)        :: inst_name                 ! fullname of current instance (ie. "lnd_0001")
   character(len=16)        :: inst_suffix = ""          ! char string associated with instance (ie. "_0001" or "")
-  integer                  :: logunit                   ! logging unit number
   integer, parameter       :: master_task=0             ! task number of master task
   integer                  :: localPet
   logical                  :: read_restart              ! start from restart
@@ -81,6 +80,9 @@ module ocn_comp_nuopc
   integer, parameter       :: dbug = 10
   character(CXX)           :: flds_o2x = ''
   character(CXX)           :: flds_x2o = ''
+  integer                  :: logunit                   ! logging unit number
+  integer            :: shrlogunit ! original log unit
+  integer            :: shrloglev  ! original log level
 
   logical                  :: use_esmf_metadata = .false.
   character(*),parameter   :: modName =  "(ocn_comp_nuopc)"
@@ -143,6 +145,9 @@ module ocn_comp_nuopc
   !===============================================================================
 
   subroutine InitializeAdvertise(gcomp, importState, exportState, clock, rc)
+    use shr_nuopc_utils_mod, only : shr_nuopc_set_component_logging
+    use shr_nuopc_utils_mod, only : shr_nuopc_get_component_instance
+
     type(ESMF_GridComp)  :: gcomp
     type(ESMF_State)     :: importState, exportState
     type(ESMF_Clock)     :: clock
@@ -155,8 +160,6 @@ module ocn_comp_nuopc
     logical            :: activefld
     integer            :: n,nflds
     integer            :: ierr       ! error code
-    integer            :: shrlogunit ! original log unit
-    integer            :: shrloglev  ! original log level
     integer            :: dbrc
     logical            :: isPresent
     character(len=512) :: diro
@@ -185,41 +188,14 @@ module ocn_comp_nuopc
     ! determine instance information
     !----------------------------------------------------------------------------
 
-    call NUOPC_CompAttributeGet(gcomp, name="inst_name", value=inst_name, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call NUOPC_CompAttributeGet(gcomp, name="inst_index", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) inst_index
-
-    call ESMF_AttributeGet(gcomp, name="inst_suffix", isPresent=isPresent, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (isPresent) then
-       call NUOPC_CompAttributeGet(gcomp, name="inst_suffix", value=inst_suffix, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    else
-       inst_suffix = ''
-    end if
+    call shr_nuopc_get_component_instance(gcomp, inst_suffix, inst_index)
+    inst_name = "OCN"//trim(inst_suffix)
 
     !----------------------------------------------------------------------------
     ! set logunit and set shr logging to my log file
     !----------------------------------------------------------------------------
 
-    if (my_task == master_task) then
-       call NUOPC_CompAttributeGet(gcomp, name="diro", value=diro, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call NUOPC_CompAttributeGet(gcomp, name="logfile", value=logfile, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       logunit = shr_file_getUnit()
-       open(logunit,file=trim(diro)//"/"//trim(logfile))
-    else
-       logUnit = 6
-    endif
-
-    call shr_file_getLogUnit (shrlogunit)
-    call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogLevel(max(shrloglev,1))
-    call shr_file_setLogUnit (logunit)
+    call shr_nuopc_set_component_logging(gcomp, my_task==master_task, logunit, shrlogunit, shrloglev)
 
     !----------------------------------------------------------------------------
     ! Read input namelists and set present and prognostic flags
@@ -248,7 +224,6 @@ module ocn_comp_nuopc
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
-
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine InitializeAdvertise
@@ -277,8 +252,6 @@ module ocn_comp_nuopc
     integer                 :: nx_global, ny_global
     integer                 :: n
     character(CL)           :: cvalue
-    integer                 :: shrlogunit                ! original log unit
-    integer                 :: shrloglev                 ! original log level
     integer                 :: ierr                      ! error code
     logical                 :: scmMode = .false.         ! single column mode
     real(R8)                :: scmLat  = shr_const_SPVAL ! single column lat
@@ -474,6 +447,7 @@ module ocn_comp_nuopc
   !===============================================================================
 
   subroutine ModelAdvance(gcomp, rc)
+    use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -486,8 +460,6 @@ module ocn_comp_nuopc
     type(ESMF_Time)         :: currTime
     type(ESMF_Time)         :: nextTime
     type(ESMF_TimeInterval) :: timeStep
-    integer                 :: shrlogunit    ! original log unit
-    integer                 :: shrloglev     ! original log level
     logical                 :: write_restart ! restart alarm is ringing
     integer                 :: currentYMD    ! model date
     integer                 :: currentTOD    ! model sec into model date
@@ -503,7 +475,7 @@ module ocn_comp_nuopc
 
     rc = ESMF_SUCCESS
     if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-
+    call shr_nuopc_memcheck(subname, 5, my_task==master_task)
     !--------------------------------
     ! Reset shr logging to my log file
     !--------------------------------

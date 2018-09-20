@@ -1,365 +1,114 @@
 ======================================================================
 
 Originator: Chris Fischer 
-Date: 8-30-2018
-Tag: cime5.7.3
+Date: 6-5-2018
+Tag: cime_cesm2_0_rel_04
 Answer Changes: None
 Tests: scripts_regression_tests
 Dependencies:
 
 Brief Summary:
-    - Fix pruning of test_hists with refcase in their name.
-    - Do not report BFAIL for a test that is missing a file.
-    - Fix use of test_utils.
-    - Rewrite array code as loops to appease NAG.
-    - Make a new grid to ensure ADWAV works with f19_f19.
-    - Add options to cs.status to allow just summarizing failures.
-    - Fix DAE test for scripts_regression_tests.
-
-User interface changes: 
-    - Adds some optional arguments to cs.status, but no other changes.
-
-PR summary: git log --oneline --first-parent [previous_tag]..master 
-33b347b Merge pull request #2794 from billsacks/fix_eri
-442c6a6 Merge pull request #2789 from billsacks/no_bfail_if_no_original
-bc8166b Merge pull request #2785 from billsacks/fix_create_test
-04075df Merge pull request #2784 from gold2718/fix_mct_mod
-1a2724e Merge pull request #2780 from ESMCI/jgfouca/fix_e3sm_adwav_test
-4ec710a Merge pull request #2775 from billsacks/cs_status_fails_only
-9b09698 Merge pull request #2777 from gold2718/fix_dae
-
-
-Modified files: git diff --name-status [previous_tag]
-M       config/e3sm/config_grids.xml
-D       scripts/Tools/cimeteststatus
-M       scripts/Tools/cs.status
-M       scripts/create_test
-M       scripts/data_assimilation/da_no_data_mod.sh
-M       scripts/lib/CIME/SystemTests/dae.py
-A       scripts/lib/CIME/cs_status.py
-M       scripts/lib/CIME/cs_status_creator.py
-M       scripts/lib/CIME/hist_utils.py
-M       scripts/lib/CIME/test_status.py
-A       scripts/lib/CIME/tests/test_cs_status.py
-M       scripts/lib/cs.status.template
-M       scripts/lib/get_tests.py
-A       scripts/lib/six_additions.py
-M       src/share/util/mct_mod.F90
-
-
-======================================================================
-
-======================================================================
-
-Originator: Chris Fischer 
-Date: 8-23-2018
-Tag: cime5.7.2
-Answer Changes: None
-Tests: scripts_regression_tests 
-Dependencies:
-
-Brief Summary:
-   - Add a comment to special interfaces.
-   - Merge maint-5.6 branch.
-   - Update DWAV model to be compatible with the new post-data-assimilation functionality.
-   - Propagate --project value to CHARGE_ACCOUNT.
-   - Re-implementation of pause/resume with a few features.
-   - Allow TestStatus file to be copied into baselines.
+    - Remove a "this is a test" line.
+    - Module updates for theta and edison
+    - Update PyCECT tool to v3.0.7
+    - Improvements to addmetadata script.
+    - More doc updates.
+    - Check options in config sections main and create_test and make sure each is supported. 
+    - Remove entries duplicated in components.
+    - Add half degree grid.
+    - Allow space after string in namelist.
+    - Fix issues with mpi-serial build.
 
 User interface changes: 
 
 PR summary: git log --oneline --first-parent [previous_tag]..master 
-c4f0206 add a comment to special interfaces
-b4bb592 Merge branch 'mymaint-5.6'
-aa3c8db Merge pull request #2765 from gold2718/fix_dwav
-b1bc5d6 Merge pull request #2763 from ESMCI/sarich/fix-charge-account
-ca3ac20 Merge pull request #2751 from gold2718/new_resume_method
-2f57f3e Merge pull request #2761 from ESMCI/jgfouca/generate_test_status
-
-Modified files: git diff --name-status [previous_tag]
-M       config/cesm/config_grids.xml
-M       config/cesm/machines/config_compilers.xml
-M       config/cesm/machines/config_machines.xml
-M       scripts/data_assimilation/da_no_data_mod.sh
-M       scripts/lib/CIME/Servers/wget.py
-M       scripts/lib/CIME/SystemTests/system_tests_common.py
-M       scripts/lib/CIME/XML/component.py
-M       scripts/lib/CIME/XML/env_mach_pes.py
-M       scripts/lib/CIME/XML/machines.py
-M       scripts/lib/CIME/case/case.py
-M       scripts/lib/CIME/hist_utils.py
-M       scripts/lib/CIME/test_scheduler.py
-M       src/components/data_comps/desp/desp_comp_mod.F90
-M       src/components/data_comps/desp/mct/esp_comp_mct.F90
-M       src/components/data_comps/docn/cime_config/config_component.xml
-M       src/components/data_comps/dwav/mct/wav_comp_mct.F90
-M       src/drivers/mct/cime_config/config_component.xml
-M       src/drivers/mct/cime_config/namelist_definition_drv.xml
-M       src/drivers/mct/cime_config/testdefs/testlist_drv.xml
-M       src/drivers/mct/main/cime_comp_mod.F90
-M       src/drivers/mct/main/cime_driver.F90
-M       src/drivers/mct/main/component_mod.F90
-M       src/drivers/mct/main/component_type_mod.F90
-M       src/drivers/mct/main/seq_rest_mod.F90
-M       src/drivers/mct/shr/CMakeLists.txt
-M       src/drivers/mct/shr/seq_cdata_mod.F90
-M       src/drivers/mct/shr/seq_comm_mct.F90
-M       src/drivers/mct/shr/seq_infodata_mod.F90
-A       src/drivers/mct/shr/seq_pauseresume_mod.F90
-M       src/share/esmf_wrf_timemgr/ESMF_Stubs.F90
-M       tools/mapping/gen_domain_files/src/gen_domain.F90
-
-
-======================================================================
-
-======================================================================
-
-Originator: Chris Fischer 
-Date: 8-20-2018
-Tag: cime5.7.1
-Answer Changes: None
-Tests: scripts_regression_tests
-Dependencies:
-
-Brief Summary:
-    - DAE test improve.
-    - Extract code for creating a test suite-specific cs.status script.
-    - Disable problematic task-node output by default.
-    - Add BFAIL in more contexts when doing baseline comparisons.
-    - Do a better job of handling exceptions in sub-phases of run.
-    - Merge acme split 2018-08-08.
-    - Use information from env_archive.xml to determine history files for baselines and compares.
-    - For inputdata servers make it so key members are always defined.
-    - Add exception for archive_metadata.
-    - Fix merge issue
-    - Merge maint-5.6 to master
-    - Need to specify compiler to mpilibs.
-    - Use RawConfigParser instead of ConfigParser.
-    - Fix pylint error.
-    - Improve compiler not support msg.
-    - Couple minor fixes to e3sm cime mgmt tools.
-    - Turn off auto conflict resolution by default for e3sm cime mgmt tools.
-    - Rework machine overrides in config_compilers.
-    - Merge acme split 2018-07-11.
-    - Merge acme split 2018-07-06.
-    - More fixes and tests for V2 compiler macro system.
-    - Automatically handle easy conflicts in e3sm cime management.
-    - Add return_values to machines.py for XML to HTML machine script.
-    - Needed a function to get all compset longnames from config_compsets.xml.
-    - Fix for passing run arguments in LSF.
-    - Use ConfigParser rather than SafeConfigParser.
-    - Merge acme split 2018-06-25.
-
-User interface changes: 
-
-PR summary: git log --oneline --first-parent [previous_tag]..master 
-84d14aeac Merge pull request #2759 from gold2718/dae_test_improve
-f1349f993 Merge pull request #2755 from billsacks/custom_cs_status
-86c25a010 Merge pull request #2750 from ESMCI/jgfouca/fix_fortran_unit_tests
-9d352467d Merge pull request #2744 from ESMCI/jgfouca/more_bfails
-955ecba43 Merge pull request #2745 from ESMCI/jgfouca/fix_exc_handling_systest
-07d476de1 (tag: to-acme-2018-08-09) Merge pull request #2743 from ESMCI/jgfouca/branch-for-acme-split-2018-08-08
-4723dd25f Merge pull request #2728 from jedwards4b/hist_utils_use_archive_xml
-4da37d863 Merge pull request #2740 from ESMCI/jgfouca/fixes_for_servers
-dfbbe0827 add exception for archive_metadata :-(
-4f41034b0 fix merge issue
-194640859 merge maint-5.6 to master
-b0dc6ee0f Merge pull request #2723 from jedwards4b/multi_mpilibs_fix
-9fd318849 Merge pull request #2722 from ESMCI/mfdeakin-sandia/submit/ConfigParser
-ea7d206fe Merge pull request #2721 from ESMCI/jgfouca/fix_py3_pylint_errs
-23f27bafa Merge pull request #2720 from ESMCI/jgfouca/improve_msg
-1aa9cbf6e Couple minor fixes to e3sm cime mgmt tools
-5885138c2 (tag: to-acme-2018-07-12) Merge pull request #2712 from ESMCI/jgfouca/turn_off_autoconf_by_de
-869115d64 Merge pull request #2710 from ESMCI/quantheory/redo_machine_specific_compilers
-df89bcec5 Merge pull request #2711 from ESMCI/jgfouca/branch-for-acme-split-2018-07-11
-d52719d86 (tag: to-acme-2018-07-06) Merge pull request #2704 from ESMCI/jgfouca/branch-for-acme-split-2018-07-06
-516831614 Merge pull request #2703 from ESMCI/jgfouca/compilers_fix
-290b78033 Merge pull request #2696 from ESMCI/jgfouca/e3sm_mgmt_autohandle_ez_confs
-25630d675 (tag: to-acme-2018-06-28) Merge pull request #2694 from bertinia/maint-5.6-machines
-1f4215d1f Merge pull request #2691 from jedwards4b/compsets 
-fc534795f Merge pull request #2692 from ESMCI/mfdeakin-sandia/lsf-fix
-b76de49d5 Merge pull request #2680 from ESMCI/mfdeakin-sandia/case_submit/config_no_interpolate
-4948d663b Merge pull request #2689 from ESMCI/jgfouca/branch-for-acme-split-2018-06-25
-
-Modified files: git diff --name-status [previous_tag]
-M	config/cesm/machines/config_compilers.xml
-M	config/cesm/machines/config_machines.xml
-M	config/config_tests.xml
-M	config/e3sm/allactive/config_compsets.xml
-M	config/e3sm/allactive/config_pesall.xml
-M	config/e3sm/config_files.xml
-M	config/e3sm/config_grids.xml
-M	config/e3sm/machines/config_batch.xml
-M	config/e3sm/machines/config_compilers.xml
-M	config/e3sm/machines/config_machines.xml
-M	config/e3sm/machines/config_pio.xml
-A	config/e3sm/machines/syslog.summit
-M	config/e3sm/machines/template.st_archive
-M	config/e3sm/testmods_dirs/allactive/mach/pet/shell_commands
-M	config/e3sm/testmods_dirs/allactive/v1cmip6/shell_commands
-M	config/e3sm/tests.py
-M	config/xml_schemas/config_compilers_v2.xsd
-M	config/xml_schemas/config_machines.xsd
-M	doc/source/users_guide/create-a-case.rst
-M	scripts/Tools/Makefile
-A	scripts/Tools/archive_metadata
-M	scripts/Tools/case.submit
-M	scripts/Tools/e3sm_cime_merge
-M	scripts/Tools/e3sm_cime_split
-M	scripts/Tools/jenkins_generic_job
-M	scripts/Tools/preview_run
-M	scripts/Tools/testreporter.py
-M	scripts/Tools/wait_for_tests
-M	scripts/Tools/xmlquery
-M	scripts/create_newcase
-M	scripts/data_assimilation/da_no_data_mod.sh
-M	scripts/lib/CIME/BuildTools/possiblevalues.py
-M	scripts/lib/CIME/BuildTools/valuesetting.py
-M	scripts/lib/CIME/Servers/ftp.py
-M	scripts/lib/CIME/Servers/svn.py
-M	scripts/lib/CIME/Servers/wget.py
-M	scripts/lib/CIME/SystemTests/dae.py
-M	scripts/lib/CIME/SystemTests/homme.py
-M	scripts/lib/CIME/SystemTests/rep.py
-M	scripts/lib/CIME/SystemTests/system_tests_common.py
-M	scripts/lib/CIME/XML/batch.py
-M	scripts/lib/CIME/XML/compilerblock.py
-M	scripts/lib/CIME/XML/compilers.py
-M	scripts/lib/CIME/XML/compsets.py
-M	scripts/lib/CIME/XML/env_batch.py
-M	scripts/lib/CIME/XML/generic_xml.py
-M	scripts/lib/CIME/XML/machines.py
-M	scripts/lib/CIME/XML/pio.py
-M	scripts/lib/CIME/case/case.py
-M	scripts/lib/CIME/case/case_run.py
-M	scripts/lib/CIME/case/case_submit.py
-M	scripts/lib/CIME/case/preview_namelists.py
-M	scripts/lib/CIME/code_checker.py
-M	scripts/lib/CIME/compare_test_results.py
-A	scripts/lib/CIME/cs_status_creator.py
-M	scripts/lib/CIME/hist_utils.py
-M	scripts/lib/CIME/provenance.py
-M	scripts/lib/CIME/test_scheduler.py
-M	scripts/lib/CIME/test_status.py
-M	scripts/lib/CIME/tests/SystemTests/test_utils/test_user_nl_utils.py
-M	scripts/lib/CIME/tests/test_case_fake.py
-M	scripts/lib/CIME/tests/test_utils.py
-M	scripts/lib/CIME/utils.py
-M	scripts/lib/CIME/wait_for_tests.py
-M	scripts/lib/e3sm_cime_mgmt.py
-M	scripts/lib/get_tests.py
-M	scripts/lib/jenkins_generic_job.py
-M	scripts/tests/scripts_regression_tests.py
-M	src/build_scripts/buildlib.csm_share
-M	src/components/data_comps/dwav/mct/wav_comp_mct.F90
-M	src/drivers/mct/cime_config/config_archive.xml
-M	src/drivers/mct/cime_config/config_component_e3sm.xml
-M	src/drivers/mct/cime_config/namelist_definition_drv.xml
-M	src/drivers/mct/main/cime_comp_mod.F90
-M	src/drivers/mct/main/seq_diag_mct.F90
-M	src/drivers/mct/main/seq_map_mod.F90
-M	src/drivers/mct/shr/seq_comm_mct.F90
-M	src/drivers/mct/shr/seq_infodata_mod.F90
-M	src/share/util/mct_mod.F90
-M	src/share/util/shr_const_mod.F90
-M	src/share/util/shr_reprosum_mod.F90
-A	src/share/util/shr_taskmap_mod.F90
-======================================================================
-
-======================================================================
-
-Originator:Chris Fischer
-Date: 6-25-2018
-Tag: cime5.7.0
-Answer Changes: None
-Tests: scripts_regression_tests
-       xmllint of env_mach_specific.xml
-Dependencies:
-
-Brief Summary:
-    - Merge in changes from maint-5.6(CESM release) branch.
-    - Fix issue with e3sm mali file archiving.
-    - Config compiler parser fix.
-    - XSD definitions did not match implementation.
-    - config_compilers.xml updates from e3sm.
-    - Fix minor issue with recent non-local PR.
-    - Allow users to go up through the setup phase on non-local machines.
-    - e3sm st_archive fix for ESP.
-    - Import fixes and updates from e3sm.
-    - Update e3sm to compilers v2.
-    - Maint 5.6 merge to master.
-    - Add the allow_error flag to schema.
-    - Fix weird whitespace.
-    - Improve robustness of compare-two tests.
-    - Fix find_circular_dependency.py.
-    - Maint 5.6 merge to master.
-    - Jgfouca/branch for acme split 2018 05 18.
-    - Add commas to output using --value.
-    - Multisubmit tests were not resubmitting.
-    - New script to add additional metadata for stat ensemble test.
-    - Fix formatting issue.
-    - Update iyear for 2000 runs.
-    - Merge branch 'master' of github.com:ESMCI/cime.
-    - Add grid neede for cime standalone testing.
-    - Updated the wrappers for the ESMF mapping tools to work on NCAR machines.
-
-User interface changes:
-    - New --non-local flag for create_test/create_newcase.
-
-PR summary: git log --oneline --first-parent [previous_tag]..master
-6ceaf73 Merge pull request #2690 from ESMCI/maint-5.6
-aeaac31 Merge pull request #2683 from jedwards4b/e3sm_st_archive_fix
-b78593b Merge pull request #2671 from jedwards4b/config_compiler_test
-58a5e43 Merge pull request #2670 from ESMCI/jgfouca/fix_directive_selection
-95fe393 config_compilers.xml updates from e3sm
-4888867 Fix minor issue with recent non-local PR
-43a6812 Merge pull request #2665 from ESMCI/jgfouca/allow_non_local_machine_setup
-8a2f9d5 Merge pull request #2663 from jedwards4b/e3sm_st_archive
-22ab62b Merge pull request #2661 from ESMCI/jgfouca/fix_e3sm_compilers
-18f23fc Merge pull request #2655 from ESMCI/jgfouca/update_e3sm_to_compilersv2
-c1eff51 Merge pull request #2657 from ESMCI/maint-5.6
-6b01d3b Merge pull request #2654 from jedwards4b/validate_allow_error
-8e4054b Fix weird whitespace
-ed9d13b Merge pull request #2635 from ESMCI/jgfouca/preemptively_add_compare_pend
-3d65363 Merge pull request #2630 from gold2718/fix_circular
-5dd50b1 Merge pull request #2627 from ESMCI/maint-5.6
-6933518 Merge pull request #2613 from ESMCI/jgfouca/branch-for-acme-split-2018-05-18
-2e997e0 Merge pull request #2607 from jedwards4b/xmlquery_multivalue
-f1d501f Merge pull request #2600 from jedwards4b/test_issues
-5c256ec Merge pull request #2582 from jedwards4b/stattest_add_metadata
-8ce38a4 fix formatting issue
-6c53cfc Merge pull request #2594 from jedwards4b/orb_iyear_2000
-c04da3c Merge branch 'master' of github.com:ESMCI/cime
-166a40c these grids are needed for cime standalone testing
-7cef855 Merge pull request #2589 from mnlevy1981/mlevy/mapping_on_geyser
+1da3a1d Merge pull request #2638 from billsacks/fix_doc
+e2fd6fa Merge pull request #2637 from ESMCI/fischer/machines_update
+db6080f Merge pull request #2634 from ESMCI/fischer/pyCECT
+87648e4 Merge pull request #2632 from ESMCI/fischer/addmetadata
+84ffa89 Merge pull request #2628 from ESMCI/mvertens/more_doc_updates
+827272e Merge pull request #2626 from jedwards4b/config_sanity
+3fd63b6 Merge pull request #2625 from jedwards4b/config_archive_update
+d3073e9 Merge pull request #2624 from jedwards4b/new_half_degree
+0e6c7a7 allow space after string in namelists
+30d0879 Merge pull request #2623 from jedwards4b/mpi_serial_bugfix
 
 
 Modified files: git diff --name-status [previous_tag]
-M	.gitignore
 M	config/cesm/config_archive.xml
 M	config/cesm/config_files.xml
 M	config/cesm/config_grids.xml
-M	config/cesm/machines/config_batch.xml
-M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	doc/source/users_guide/create-a-case.rst
+M	doc/source/users_guide/pes-threads.rst
+M	doc/source/users_guide/timers.rst
+M	doc/source/users_guide/workflows.rst
+M	scripts/create_newcase
+M	scripts/create_test
+M	scripts/lib/CIME/XML/machines.py
+M	scripts/lib/CIME/compare_namelists.py
+M	scripts/lib/CIME/utils.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/externals/pio1/pio/box_rearrange.F90.in
+M	src/externals/pio1/pio/pio_support.F90
+M	src/externals/pio1/pio/piolib_mod.F90
+M	tools/statistical_ensemble_test/addmetadata.sh
+A	tools/statistical_ensemble_test/pyCECT/.gitignore
+A	tools/statistical_ensemble_test/pyCECT/EET.py
+M	tools/statistical_ensemble_test/pyCECT/LICENSE.txt
+M	tools/statistical_ensemble_test/pyCECT/README_pyCECT.rst
+M	tools/statistical_ensemble_test/pyCECT/README_pyEnsSum.rst
+M	tools/statistical_ensemble_test/pyCECT/ens_excluded_varlist.json
+A	tools/statistical_ensemble_test/pyCECT/ens_sub.pbs
+M	tools/statistical_ensemble_test/pyCECT/ens_sub.sh
+A	tools/statistical_ensemble_test/pyCECT/exclude_empty.json
+A	tools/statistical_ensemble_test/pyCECT/included_varlist.json
+M	tools/statistical_ensemble_test/pyCECT/pyCECT.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsLib.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsSum.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsSumPop.py
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer
+Date: 5-22-2018
+Tag: cime_cesm2_0_rel_03
+Answer Changes: None
+Tests: scripts_regression_tests, build tests on Cori.
+Dependencies:
+
+Brief Summary: Third release candidate.
+    - Update environment modules for Cori.
+    - Change PRE.f09_f09.ADESP_TEST.hobart_nag test to f19_f19.
+    - Tweaks to cism-specific documentation.
+    - Update for Sphinx v1.7 and doc version 5.6.
+    - More doc updates.
+    - Maint 5.6 - documentation updates.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+ed9ced8 Merge pull request #2619 from ESMCI/fischer/nersc
+c1dade4 Merge pull request #2618 from ESMCI/fischer/testfix
+1f41bc6 Merge pull request #2617 from billsacks/update_cism_doc
+08f12ea Merge pull request #2616 from bertinia/maint-5.6
+72ed273 Merge pull request #2615 from ESMCI/mvertens/more_doc_updates
+7049dab Merge pull request #2614 from bertinia/maint-5.6
+
+Modified files: git diff --name-status [previous_tag]
+M	.gitignore
 M	config/cesm/machines/config_machines.xml
 M	config/cesm/machines/template.case.run
 M	config/cesm/machines/template.case.test
 M	config/cesm/machines/template.st_archive
-M	config/e3sm/allactive/config_pesall.xml
-M	config/e3sm/machines/config_batch.xml
-M	config/e3sm/machines/config_compilers.xml
-M	config/e3sm/machines/config_machines.xml
-M	config/e3sm/machines/template.st_archive
-M	config/xml_schemas/config_batch.xsd
-M	config/xml_schemas/config_machines.xsd
-M	config/xml_schemas/testlist.xsd
 M	doc/Makefile
 M	doc/README
 D	doc/source/README
 M	doc/source/conf.py
 M	doc/source/users_guide/building-a-case.rst
 A	doc/source/users_guide/cime-change-namelist.rst
-A	doc/source/users_guide/cime-dir.rst
 M	doc/source/users_guide/cloning-a-case.rst
 M	doc/source/users_guide/compsets.rst
 M	doc/source/users_guide/create-a-case.rst
@@ -385,48 +134,85 @@ D	doc/source/users_guide/use_cases/use-cases.rst
 A	doc/source/users_guide/workflows.rst
 M	doc/tools_autodoc.cfg
 M	doc/tools_autodoc.py
-M	scripts/Tools/Makefile
 M	scripts/Tools/xmlquery
-M	scripts/create_newcase
-M	scripts/create_test
-M	scripts/fortran_unit_testing/run_tests.py
-M	scripts/lib/CIME/BuildTools/macrowriterbase.py
-M	scripts/lib/CIME/BuildTools/possiblevalues.py
-M	scripts/lib/CIME/Servers/gftp.py
+D	scripts/manage_pes
+M	src/drivers/mct/cime_config/testdefs/testlist_drv.xml
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 5-17-2018
+Tag: cime_cesm2_0_rel_02
+Answer Changes: Round Off for Cheyenne gnu
+Tests: scripts_regression_tests, prealpha gnu tests on cheyenne
+Dependencies:
+
+Brief Summary:
+    - Update Cheyenne gnu compiler to 7.3.0
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+    Merge pull request #2611 from ESMCI/fischer/gnu7
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_compilers.xml
+M       config/cesm/machines/config_machines.xml
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 5-17-2018
+Tag: cime_cesm2_0_rel_01
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Move cam section out of config archive.
+    - Add commas to output using --value.
+    - Fix multisubmit tests were not resubmitting.
+    - A new script to add additional metadata for stat ensemble test.
+    - Fix formatting issue.
+    - Update iyear for 2000 runs.
+    - Merge branch 'master' of github.com:ESMCI/cime
+    - These grids are needed for cime standalone testing.
+    - Updated the wrappers for the ESMF mapping tools to work on NCAR machines. 
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+950cda0 Merge pull request #2608 from jedwards4b/config_archive_dist
+2e997e0 Merge pull request #2607 from jedwards4b/xmlquery_multivalue
+f1d501f Merge pull request #2600 from jedwards4b/test_issues
+5c256ec Merge pull request #2582 from jedwards4b/stattest_add_metadata
+8ce38a4 fix formatting issue
+6c53cfc Merge pull request #2594 from jedwards4b/orb_iyear_2000
+c04da3c Merge branch 'master' of github.com:ESMCI/cime
+166a40c these grids are needed for cime standalone testing
+7cef855 Merge pull request #2589 from mnlevy1981/mlevy/mapping_on_geyser
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_archive.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/template.case.test
+M	config/cesm/machines/template.st_archive
+M	scripts/Tools/xmlquery
 M	scripts/lib/CIME/SystemTests/pet.py
 M	scripts/lib/CIME/SystemTests/system_tests_common.py
 M	scripts/lib/CIME/SystemTests/system_tests_compare_two.py
-M	scripts/lib/CIME/XML/compilerblock.py
-M	scripts/lib/CIME/XML/compilers.py
 M	scripts/lib/CIME/XML/env_base.py
-M	scripts/lib/CIME/XML/env_batch.py
 M	scripts/lib/CIME/XML/env_mach_specific.py
-M	scripts/lib/CIME/XML/grids.py
-M	scripts/lib/CIME/XML/machines.py
-M	scripts/lib/CIME/bless_test_results.py
-M	scripts/lib/CIME/case/case.py
-M	scripts/lib/CIME/case/case_setup.py
 M	scripts/lib/CIME/case/case_st_archive.py
-M	scripts/lib/CIME/case/case_submit.py
-M	scripts/lib/CIME/case/check_input_data.py
-M	scripts/lib/CIME/compare_namelists.py
 M	scripts/lib/CIME/test_scheduler.py
-M	scripts/lib/CIME/test_status.py
-M	scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two.py
-M	scripts/lib/CIME/utils.py
-M	scripts/lib/CIME/wait_for_tests.py
-D	scripts/manage_pes
-M	scripts/tests/scripts_regression_tests.py
-M	src/build_scripts/buildlib.csm_share
 M	src/components/data_comps/datm/datm_comp_mod.F90
 M	src/components/data_comps/datm/mct/atm_comp_mct.F90
-M	src/drivers/mct/cime_config/config_component.xml
-M	src/drivers/mct/cime_config/config_component_e3sm.xml
 M	src/drivers/mct/cime_config/namelist_definition_drv.xml
-M	src/drivers/mct/cime_config/testdefs/testlist_drv.xml
-M	src/externals/pio1/pio/box_rearrange.F90.in
-M	src/externals/pio1/pio/pio_support.F90
-M	src/externals/pio1/pio/piolib_mod.F90
 M	tools/mapping/check_maps/README
 M	tools/mapping/check_maps/check_map.sh
 M	tools/mapping/check_maps/src/ESMF_RegridWeightGenCheck.F90
@@ -448,140 +234,14 @@ M	tools/mapping/map_field/src/Makefile
 M	tools/statistical_ensemble_test/README
 A	tools/statistical_ensemble_test/addmetadata.sh
 A	tools/statistical_ensemble_test/ensemble.py
-A	tools/statistical_ensemble_test/pyCECT/.gitignore
-A	tools/statistical_ensemble_test/pyCECT/EET.py
-M	tools/statistical_ensemble_test/pyCECT/LICENSE.txt
-M	tools/statistical_ensemble_test/pyCECT/README_pyCECT.rst
-M	tools/statistical_ensemble_test/pyCECT/README_pyEnsSum.rst
-M	tools/statistical_ensemble_test/pyCECT/ens_excluded_varlist.json
-A	tools/statistical_ensemble_test/pyCECT/ens_sub.pbs
-M	tools/statistical_ensemble_test/pyCECT/ens_sub.sh
-A	tools/statistical_ensemble_test/pyCECT/exclude_empty.json
-A	tools/statistical_ensemble_test/pyCECT/included_varlist.json
-M	tools/statistical_ensemble_test/pyCECT/pyCECT.py
-M	tools/statistical_ensemble_test/pyCECT/pyEnsLib.py
-M	tools/statistical_ensemble_test/pyCECT/pyEnsSum.py
-M	tools/statistical_ensemble_test/pyCECT/pyEnsSumPop.py
 A	tools/statistical_ensemble_test/single_run.py
-M	tools/utils/find_circular_dependency.py
 
-======================================================================
-=======
-Originator: Chris Fischer
-Date: 7-13-2018
-Tag: cime5.6.10
-Answer Changes: None
-Tests: hand test
-       code_checker on create_newcase; manually checked create_newcase --help
-       ERS_Ln9.f19_g17.X.hobart_intel , ERS_Ln9.f19_g17.X.hobart_gnu,
-       ERS_Ln9.f19_g17.X.hobart_nag
-Dependencies:
-
-Brief Summary:
-   - Add scripts/Tools/archive_metadata to CIME for use in CESM cases only.
-   - Change DIN_LOC_ROOT_CLMFORC for new glade setup on cheyenne.
-   - Make docs more consistent.
-   - cprnc compiler updates for hobart.
-
-User interface changes:
-    - archive_metadata --help stand_alone script.
-
-PR summary: git log --oneline --first-parent [previous_tag]..master
-9f4377c Merge pull request #2715 from bertinia/maint-5.6_archive_metadata
-ef2f2e4 Merge pull request #2714 from ekluzek/newgladedinlocclmfrc
-154b475 Merge pull request #2693 from billsacks/make_docs_more_consistent
-631869c Merge pull request #2709 from ESMCI/fischer/hobart_cprnc
-
-
-Modified files: git diff --name-status [previous_tag]
-M       config/cesm/machines/config_machines.xml
-M       doc/source/users_guide/create-a-case.rst
-A       scripts/Tools/archive_metadata
-M       scripts/create_newcase
-M       scripts/lib/CIME/case/case.py
-M       scripts/lib/CIME/utils.py
 
 ======================================================================
 
 ======================================================================
 
-Originator: Chris Fiscehr
-Date: 7-5-2018
-Tag: cime5.6.9
-Answer Changes: None
-Tests: prealpha on edison, cori-haswell, cori-knl
-       scripts_regression_tests, ect-uf on bluewaters
-Dependencies:
-
-Brief Summary:
-    - Maint-5.6 nersc update.
-    - Maint-5.6 hobart update.
-    - Fix issue with rebuilding csm_share.
-    - Bluewaters update.
-    - Edit and cleanup parts of CCS users guide.
-    - Change -v to --env for theta.
-    - Fix unittest.
-    - Tryagain with tput code.
-    - ww3 data staging fix.
-    - Fix refcase logiv.
-    - Add and clarify pieces that describe adding a test to the prebeta testing.
-    - Archive test refinement.
-
-User interface changes:
-    -  --test becomes --test-all and --test-case is added
-
-PR summary: git log --oneline --first-parent [previous_tag]..master
-3ee8b07 Merge pull request #2697 from jedwards4b/maint-5.6-nersc-update
-b76c449 Merge pull request #2701 from jedwards4b/maint-5.6-hobart-update
-34677a4 Merge pull request #2684 from jedwards4b/improve_shared_build_performance
-57c8924 Merge pull request #2675 from jedwards4b/bluewaters_update
-3a5281d Merge pull request #2662 from ESMCI/rljacob/doc/ug1-read
-f8cc2a7 Merge pull request #2666 from jedwards4b/theta_fix
-2e9973f fix unittest
-49f59b6 tryagain with tput code
-0819198 Merge branch 'ww3_data_staging' into maint-5.6
-7478f2f Merge branch 'fix_refcase_logic' into maint-5.6
-cd64838 Merge pull request #2647 from ESMCI/fischer/augment_testing_doc
-3016427 Merge pull request #2656 from jedwards4b/archive_test_refinement
-
-Modified files: git diff --name-status [previous_tag]
-M       config/cesm/machines/config_batch.xml
-M       config/cesm/machines/config_compilers.xml
-M       config/cesm/machines/config_machines.xml
-M       config/cesm/machines/template.st_archive
-M       config/e3sm/machines/template.st_archive
-M       config/xml_schemas/config_machines.xsd
-M       config/xml_schemas/testlist.xsd
-M       doc/source/users_guide/building-a-case.rst
-M       doc/source/users_guide/cime-change-namelist.rst
-A       doc/source/users_guide/cime-dir.rst
-M       doc/source/users_guide/compsets.rst
-M       doc/source/users_guide/create-a-case.rst
-M       doc/source/users_guide/index.rst
-M       doc/source/users_guide/introduction-and-overview.rst
-M       doc/source/users_guide/pes-threads.rst
-M       doc/source/users_guide/running-a-case.rst
-M       doc/source/users_guide/setting-up-a-case.rst
-M       doc/source/users_guide/testing.rst
-M       scripts/Tools/Makefile
-M       scripts/Tools/preview_run
-M       scripts/lib/CIME/SystemTests/system_tests_common.py
-M       scripts/lib/CIME/XML/env_batch.py
-M       scripts/lib/CIME/case/case.py
-M       scripts/lib/CIME/case/case_st_archive.py
-M       scripts/lib/CIME/case/case_submit.py
-M       scripts/lib/CIME/case/check_input_data.py
-M       scripts/lib/CIME/test_scheduler.py
-M       scripts/lib/CIME/test_status.py
-M       scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two.py
-M       scripts/tests/scripts_regression_tests.py
-M       src/build_scripts/buildlib.csm_share
-
-======================================================================
-
-======================================================================
-
-Originator: Chris Fischer
+Originator: Chris Fischer 
 Date: 5-14-2018
 Tag: cime5.6.7
 Answer Changes: None
@@ -598,9 +258,9 @@ Brief Summary:
     - Adds T85_T85_mg17 grid.
     - Correct spelling of protocol.
 
-User interface changes:
+User interface changes: 
 
-PR summary: git log --oneline --first-parent [previous_tag]..master
+PR summary: git log --oneline --first-parent [previous_tag]..master 
 5a54b88 Merge pull request #2588 from jedwards4b/xmlquery_fix
 0b07cb5 Merge pull request #2591 from jedwards4b/configure_mpilib
 5f4c8e4 Merge pull request #2586 from gold2718/pelayout_fixes
@@ -655,19 +315,19 @@ M	tools/configure
 
 ======================================================================
 
-Originator: Chris Fischer
+Originator: Chris Fischer 
 Date: 5-02-2018
 Tag: cime5.6.3
 Answer Changes: None
-Tests:
+Tests: 
 Dependencies:
 
 Brief Summary:
     - Fix config write of logical.
 
-User interface changes:
+User interface changes: 
 
-PR summary: git log --oneline --first-parent [previous_tag]..master
+PR summary: git log --oneline --first-parent [previous_tag]..master 
 974839b fix config write of logical
 
 Modified files: git diff --name-status [previous_tag]
@@ -678,21 +338,21 @@ M       scripts/Tools/case.submit
 
 ======================================================================
 
-Originator: Chris Fischer
+Originator: Chris Fischer 
 Date: 5-01-2018
 Tag: cime5.6.2
 Answer Changes: None
 Tests: load_balancing_test.py
-       hand tested create_newcase --case foo --compset QSC6 --res f19_f19_mg17
+       hand tested create_newcase --case foo --compset QSC6 --res f19_f19_mg17 
 Dependencies:
 
 Brief Summary:
     - Refine distinction of E vs Q compset.
     - Update load balance tool.
 
-User interface changes:
+User interface changes: 
 
-PR summary: git log --oneline --first-parent [previous_tag]..master
+PR summary: git log --oneline --first-parent [previous_tag]..master 
 b2a19cd Merge pull request #2525 from jedwards4b/better_distinguish_compset_Q_from_E
 28b8634 Merge pull request #2520 from ESMCI/sarich/update-loadbalancingtool
 
@@ -731,12 +391,12 @@ Brief Summary:
     - wait_for_tests needs to upload case2 logs if there are some
     - Another fix for testreporter.py.
 
-User interface changes:
+User interface changes: 
     - manage_testlist was removed.
     - Changes to matching behavior in env_mach_specific.
     - New option to wait_for_tests.
 
-PR summary: git log --oneline --first-parent [previous_tag]..master
+PR summary: git log --oneline --first-parent [previous_tag]..master 
 5af0e02 Merge pull request #2516 from jedwards4b/refine_retry
 5e8a173 Merge pull request #2518 from jedwards4b/save_submit_options
 1d7a27d need schema description for NODE_FAIL_REGEX
@@ -800,7 +460,7 @@ M	src/share/util/shr_flux_mod.F90
 
 ======================================================================
 
-Originator: Chris Fischer
+Originator: Chris Fischer 
 Date: 4-19-2018
 Tag: cime5.6.0
 Answer Changes: None
@@ -1534,7 +1194,7 @@ Brief Summary:
 
 User interface changes:
     - (cesm only) create_test and query_testlist now have --supported-only flag
-    - New allow_error attribute for module systems.
+    - New allow_error attribute for module systems. 
     - check_input_data replace --svn-loc with --server and --protocol
     - Some Tools with "acme" in the name now say "e3sm".
 
@@ -2242,7 +1902,7 @@ Brief Summary:
 
 User interface changes:
     - (cesm only) create_test and query_testlist now have --supported-only flag
-    - New allow_error attribute for module systems.
+    - New allow_error attribute for module systems. 
     - check_input_data replace --svn-loc with --server and --protocol
     - Some Tools with "acme" in the name now say "e3sm".
 

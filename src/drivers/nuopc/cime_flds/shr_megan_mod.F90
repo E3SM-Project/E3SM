@@ -35,7 +35,7 @@ module shr_megan_mod
   logical          , public :: megan_initialized       = .false. ! true => shr_megan_readnl alreay called
   character(len=CS), public :: shr_megan_fields_token  = ''      ! First drydep fields token
   character(len=CL), public :: shr_megan_factors_file  = ''
-  character(len=CX), public :: shr_megan_fields        = '' 
+  character(len=CX), public :: shr_megan_fields        = ''
 
   ! MEGAN compound data structure (or user defined type)
   type shr_megan_megcomp_t
@@ -105,17 +105,17 @@ contains
   !  megan_factors_file = '$datapath/megan_emis_factors.nc'
   ! /
   !-------------------------------------------------------------------------
-  subroutine shr_megan_readnl( NLFileName, mpicom, mastertask, megan_fields )
-
+  subroutine shr_megan_readnl( NLFileName, megan_fields, megan_nflds )
+    use ESMF, only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMBroadcast, ESMF_VMGet
     use shr_nl_mod,     only : shr_nl_find_group_name
     use shr_file_mod,   only : shr_file_getUnit, shr_file_freeUnit
-    use shr_mpi_mod,    only : shr_mpi_bcast
 
     character(len=*), intent(in)  :: NLFileName
-    integer         , intent(in)  :: mpicom
-    logical         , intent(in)  :: mastertask
     character(len=*), intent(out) :: megan_fields
+    integer,          intent(out) :: megan_nflds
 
+    type(ESMF_VM)   :: vm
+    integer :: localPet
     integer :: unitn            ! namelist unit number
     integer :: ierr             ! error code
     logical :: exists           ! if file exists or not
@@ -123,7 +123,8 @@ contains
     character(len=2*CX) :: megan_specifier(maxspc) = ' '
     logical             :: megan_mapped_emisfctrs = .false.
     character(len=CL)   :: megan_factors_file = ' '
-
+    integer :: rc
+    integer :: i, tmp(1)
     character(*),parameter :: F00   = "('(shr_megan_readnl) ',2a)"
 
     namelist /megan_emis_nl/ megan_specifier, megan_factors_file, megan_mapped_emisfctrs
@@ -132,10 +133,13 @@ contains
     ! the megan_fields that have already been set
     if (megan_initialized) then
        megan_fields = trim(shr_megan_fields)
+       megan_nflds = shr_megan_mechcomps_n
        return
     end if
-
-    if (mastertask) then
+    call ESMF_VMGetCurrent(vm, rc=rc)
+    call ESMF_VMGet(vm, localpet=localpet, rc=rc)
+    megan_nflds = 0
+    if (localPet==0) then
        inquire( file=trim(NLFileName), exist=exists)
        if ( exists ) then
           unitn = shr_file_getUnit()
@@ -156,18 +160,30 @@ contains
 
           close( unitn )
           call shr_file_freeUnit( unitn )
+          do i=1,maxspc
+             if(len_trim(megan_specifier(i)) > 0) then
+                megan_nflds=megan_nflds+1
+             endif
+          enddo
        end if
     end if
-    call shr_mpi_bcast( megan_specifier, mpicom )
-    call shr_mpi_bcast( megan_factors_file, mpicom )
-    call shr_mpi_bcast( megan_mapped_emisfctrs, mpicom )
+    tmp = megan_nflds
+    call ESMF_VMBroadcast(vm, tmp, 1, 0, rc=rc)
+    megan_nflds = tmp(1)
+    if(megan_nflds > 0) then
+       call ESMF_VMBroadcast(vm, megan_specifier, 2*CX*megan_nflds, 0, rc=rc)
+       call ESMF_VMBroadcast(vm, megan_factors_file, CL, 0, rc=rc)
+       tmp = 0
+       if(megan_mapped_emisfctrs) tmp=1
+       call ESMF_VMBroadcast(vm, tmp, 1, 0, rc=rc)
+       if(tmp(1)==1) megan_mapped_emisfctrs=.true.
+    endif
 
     shr_megan_factors_file = megan_factors_file
     shr_megan_mapped_emisfctrs = megan_mapped_emisfctrs
 
     ! parse the namelist info and initialize the module data
     call shr_megan_init( megan_specifier, megan_fields )
-
   end subroutine shr_megan_readnl
 
   !-------------------------------------------------------------------------

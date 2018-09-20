@@ -70,7 +70,7 @@ module docn_comp_mod
 
   type(mct_rearr)            :: rearr
   type(mct_avect)            :: avstrm             ! av of data created from all stream input
-  character(len=CS), pointer :: avifld(:)          ! names of fields in input streams 
+  character(len=CS), pointer :: avifld(:)          ! names of fields in input streams
   character(len=CS), pointer :: avofld(:)          ! local names of fields in input streams for import/export
   character(len=CS), pointer :: stifld(:)          ! names of fields in input streams
   character(len=CS), pointer :: stofld(:)          ! local names of fields in input streams for calculations
@@ -79,14 +79,14 @@ module docn_comp_mod
   character(len=CXX)         :: flds_x2o_mod       ! set in docn_comp_advertise
   logical                    :: ocn_prognostic_mod ! set in docn_comp_advertise
 
-  real(R8), pointer          :: somtp(:)           ! SOM ocean temperature 
+  real(R8), pointer          :: somtp(:)           ! SOM ocean temperature
   real(R8), pointer          :: tfreeze(:)         ! SOM ocean freezing temperature
   integer(IN), pointer       :: imask(:)           ! integer ocean mask
   real(R8), pointer          :: xc(:), yc(:) ! arrays of model latitudes and longitudes
 
   logical                    :: firstcall = .true.              ! first call logical
   character(len=*),parameter :: rpfile = 'rpointer.ocn'         ! name of ocean ropinter file
-  integer(IN)                :: dbug = 1                        ! debug level (higher is more)
+  integer(IN)                :: dbug = 10                        ! debug level (higher is more)
   character(*),parameter     :: u_FILE_u = &
        __FILE__
 
@@ -215,9 +215,9 @@ contains
 
     ! - stifld is a character array of stream field names
     ! - stofld is a character array of data model field names that have a one-to-one correspondence with names in stifld
-    ! - flds_strm is a colon delimited string of field names that is created from the field names in stofld for ONLY 
+    ! - flds_strm is a colon delimited string of field names that is created from the field names in stofld for ONLY
     !   those field names that are available in the data streams present in SDOCN%sdatm
-    ! - avstrm is an attribute vector created from flds_strm 
+    ! - avstrm is an attribute vector created from flds_strm
 
     if (ocn_prognostic_mod) then
        call dshr_fld_add(data_fld="h"   , data_fld_array=stifld, model_fld="strm_h"   , model_fld_array=stofld)
@@ -398,7 +398,7 @@ contains
              endif
           enddo
        enddo
-    
+
        ! Initialize avstrm based on the active streams determined above
        if (my_task == master_task) write(logunit,F00) ' flds_strm = ',trim(flds_strm)
        call mct_aVect_init(avstrm, rList=flds_strm, lsize=lsize)
@@ -557,6 +557,20 @@ contains
     character(*), parameter :: F0D   = "('(docn_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
     character(*), parameter :: subName = "(docn_comp_run) "
     !-------------------------------------------------------------------------------
+
+    !--------------------
+    ! Debug input
+    !--------------------
+
+    if (dbug > 1 .and. my_task == master_task) then
+       do nfld = 1, mct_aVect_nRAttr(x2o)
+          call shr_string_listGetName(trim(flds_x2o_mod), nfld, fldname)
+          do n = 1, mct_aVect_lsize(x2o)
+             write(logunit,F0D)'import: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
+                  n, x2o%rattr(nfld,n)
+          end do
+       end do
+    end if
 
     call t_startf('DOCN_RUN')
     call t_barrierf('docn_BARRIER',mpicom)
@@ -751,13 +765,6 @@ contains
     !--------------------
 
     if (dbug > 1 .and. my_task == master_task) then
-       do nfld = 1, mct_aVect_nRAttr(x2o)
-          call shr_string_listGetName(trim(flds_x2o_mod), nfld, fldname)
-          do n = 1, mct_aVect_lsize(x2o)
-             write(logunit,F0D)'import: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
-                  n, x2o%rattr(nfld,n)
-          end do
-       end do
        do nfld = 1, mct_aVect_nRAttr(o2x)
           call shr_string_listGetName(trim(flds_o2x_mod), nfld, fldname)
           do n = 1, mct_aVect_lsize(o2x)

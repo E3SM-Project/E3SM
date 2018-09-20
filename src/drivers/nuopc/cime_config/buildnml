@@ -58,6 +58,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     config['COMP_ROF'] = case.get_value("COMP_ROF")
     config['COMP_WAV'] = case.get_value("COMP_WAV")
 
+
     if case.get_value('RUN_TYPE') == 'startup':
         config['run_type'] = 'startup'
     elif case.get_value('RUN_TYPE') == 'hybrid':
@@ -77,6 +78,11 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     if start_type != 'startup':
         if case.get_value('CASE') == case.get_value('RUN_REFCASE'):
             nmlgen.set_value('brnch_retain_casename' , value='.true.')
+
+    # set aquaplanet if appropriate
+    if config['COMP_OCN'] == 'docn' and 'aqua' in case.get_value("DOCN_MODE"):
+        nmlgen.set_value('aqua_planet' , value='.true.')
+
 
     #--------------------------------
     # Overwrite: set component coupling frequencies
@@ -304,16 +310,16 @@ def _create_component_modelio_namelists(confdir, case, files):
     maxinst = 1
     if case.get_value("MULTI_DRIVER"):
         maxinst = case.get_value("NINST_MAX")
+        multi_driver = True
 
     nuopc_config_file = os.path.join(confdir, "cesm.runconfig")
-
     for model in case.get_values("COMP_CLASSES"):
         model = model.lower()
         with NamelistGenerator(case, definition_file) as nmlgen:
             config = {}
             config['component'] = model
             entries = nmlgen.init_defaults(infiles, config, skip_entry_loop=True)
-            if maxinst == 1 and model != 'cpl':
+            if maxinst == 1 and model != 'cpl' and not multi_driver:
                 inst_count = case.get_value("NINST_" + model.upper())
             else:
                 inst_count = maxinst
@@ -329,8 +335,9 @@ def _create_component_modelio_namelists(confdir, case, files):
                 for entry in entries:
                     nmlgen.add_default(entry)
 
-                modelio_file = model + "_modelio.nml" + inst_string
-                nmlgen.write_nuopc_modelio_file(os.path.join(confdir, modelio_file))
+                if model != "cpl":
+                    modelio_file = model + "_modelio.nml" + inst_string
+                    nmlgen.write_nuopc_modelio_file(os.path.join(confdir, modelio_file))
 
                 # Output the following to cesm.runconfig
                 moddiro = case.get_value('RUNDIR')
@@ -341,16 +348,19 @@ def _create_component_modelio_namelists(confdir, case, files):
 
                 with open(nuopc_config_file, 'a') as outfile:
                     if model == 'cpl':
-                        model = 'MED'
-                    if inst_string:
-                        outfile.write("{}::\n".format(model.upper() + "_modelio_" + inst_string))
+                        name = "MED"
                     else:
-                        outfile.write("{}::\n".format(model.upper() + "_modelio"))
+                        name = model.upper()
+                    if inst_string:
+                        outfile.write("{}_modelio{}::\n".format(name,inst_string))
+                    else:
+                        outfile.write("{}_modelio::\n".format(name))
                     outfile.write("     {}{}{}".format("diro = ", moddiro,"\n"))
                     outfile.write("     {}{}{}".format("logfile = ", logfile,"\n"))
                     outfile.write("::\n\n")
 
                 inst_index = inst_index + 1
+
 
 ###############################################################################
 def buildnml(case, caseroot, component):

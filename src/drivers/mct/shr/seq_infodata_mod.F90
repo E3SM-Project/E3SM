@@ -636,11 +636,10 @@ CONTAINS
        infodata%glc_gnam              = glc_gnam
        infodata%wav_gnam              = wav_gnam
        infodata%shr_map_dopole        = shr_map_dopole
-#ifdef COMPARE_TO_NUOPC
+       !TODO: for now are hard-wiring this rather than using a cpp-ifdef
+       !for nuopc driver need to determine how to handle vect_map not equal to 1
        infodata%vect_map              = 'none'
-#else
-       infodata%vect_map              = vect_map
-#endif
+      !infodata%vect_map              = vect_map
        infodata%aoflux_grid           = aoflux_grid
        infodata%cpl_decomp            = cpl_decomp
        infodata%cpl_seq_option        = cpl_seq_option

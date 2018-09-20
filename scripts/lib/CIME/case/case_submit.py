@@ -142,7 +142,7 @@ def submit(self, job=None, no_batch=False, prereq=None, allow_fail=False, resubm
         if mail_user is None and config.has_option('SubmitOptions', 'mail_user'):
             mail_user = config.get('SubmitOptions', 'mail_user')
         if mail_type is None and config.has_option('SubmitOptions', 'mail_type'):
-            mail_type = str(config.get('SubmitOptions', 'mail_type')).split(',')
+            mail_type = config.get('SubmitOptions', 'mail_type').split(',')
         if batch_args is None and config.has_option('SubmitOptions', 'batch_args'):
             batch_args = config.get('SubmitOptions', 'batch_args')
 

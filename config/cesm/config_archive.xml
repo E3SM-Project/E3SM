@@ -22,17 +22,6 @@
     </test_file_names>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="mom" compclass="ocn">
-    <rest_file_extension>r</rest_file_extension>
-    <hist_file_extension>frc\._\d+_\d+\.nc</hist_file_extension>
-    <hist_file_extension>sfc.day\._\d+_\d+\.nc</hist_file_extension>
-    <rpointer>
-      <rpointer_file>rpointer.ocn$NINST_STRING</rpointer_file>
-    </rpointer>
-    <test_file_names>
-    </test_file_names>
-  </comp_archive_spec>
-
   <comp_archive_spec compname="cice" compclass="ice">
     <rest_file_extension>[ri]</rest_file_extension>
     <hist_file_extension>h\d*.*\.nc$</hist_file_extension>

@@ -106,7 +106,7 @@ module dice_comp_mod
 
   logical                    :: firstcall = .true. ! first call logical
   character(len=*),parameter :: rpfile = 'rpointer.ice'
-  integer(IN)                :: dbug = 2           ! debug level (higher is more)
+  integer(IN)                :: dbug = 0           ! debug level (higher is more)
   character(*),parameter     :: u_FILE_u = &
        __FILE__
 

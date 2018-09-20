@@ -72,7 +72,7 @@ contains
     integer           :: num, i, n
     integer           :: n1, n2, n3, n4
     integer           :: mpicom
-    character(len=2)  :: cnum
+    character(len=3)  :: cnum
     character(len=CL) :: cvalue
     character(len=CS) :: name, fldname
     character(len=CX) :: atm2ice_fmapname
@@ -1938,7 +1938,7 @@ contains
     !-----------------------------------------------------------------------------
 
     do num = 1, max_megan
-       write(cnum,'(i2.2)') num
+       write(cnum,'(i3.3)') num
        fldname = 'Fall_voc' // cnum
        call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, trim(fldname), fldindex=n1)
        call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1), complnd, compatm, mapconsf, 'one', atm2lnd_fmapname)

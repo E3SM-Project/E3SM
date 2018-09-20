@@ -441,7 +441,8 @@
     </modules>
 
     <modules compiler="gnu7">
-      <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.4</command>
+      <command name="rm">PrgEnv-intel</command>
+      <command name="load">PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
       <command name="load">gcc/7.3.0</command>
       <command name="rm">cray-libsci</command>

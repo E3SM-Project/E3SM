@@ -138,7 +138,7 @@
 
   <entry id="CPL_SEQ_OPTION">
     <type>char</type>
-    <valid_values>CESM1_ORIG,CESM1_ORIG_TIGHT,CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2</valid_values>
+    <valid_values>CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2</valid_values>
     <default_value>CESM1_MOD_TIGHT</default_value>
     <values match="last">
       <value compset="_DATM.*_DOCN%SOM"          >CESM1_MOD</value>
@@ -154,7 +154,6 @@
     <file>env_run.xml</file>
     <desc>
       Coupler sequencing option. This is used to set the driver namelist variable cpl_seq_option.
-      CESM1_ORIG is the cesm1.1 implementation.
       CESM1_MOD includes a cesm1.3 mod that swaps ocean merging and atm/ocn flux
       computation.
       RASM_OPTION1 runs prep ocean before the ocean coupling reducing
@@ -163,10 +162,7 @@
       RASM_OPTION2 is similar to RASM_OPTION1
       but sequences the ice model, prep ocean and ocean model in that order.  The
       ocean model loses some of the concurrency with the ice model.
-      CESM1_ORIG_TIGHT and CESM1_MOD_TIGHT are consistent with the old variables
-      ocean_tight_coupling = true in the driver.  That namelist is gone and the
-      cpl_seq_option flags take it's place.
-      TIGHT coupling makes no sense with the OPTION5 and OPTION6 flags.
+      CESM1_MOD_TIGHT are consistent with the old variables ocean_tight_coupling = true in the driver. 
     </desc>
   </entry>
 
@@ -279,7 +275,6 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
-      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU480">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240wLI">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU120">24</value>
@@ -377,7 +372,6 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
-      <value compset="_MPASO" grid="oi%oQU480">6</value>
       <value compset="_MPASO" grid="oi%oQU240">12</value>
       <value compset="_MPASO" grid="oi%oQU240wLI">12</value>
       <value compset="_MPASO" grid="oi%oQU120">24</value>

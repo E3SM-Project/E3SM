@@ -3,7 +3,6 @@ module atm_comp_nuopc
   !----------------------------------------------------------------------------
   ! This is the NUOPC cap for XATM
   !----------------------------------------------------------------------------
-
   use ESMF
   use NUOPC                 , only : NUOPC_CompDerive, NUOPC_CompSetEntryPoint, NUOPC_CompSpecialize
   use NUOPC                 , only : NUOPC_CompAttributeGet, NUOPC_Advertise
@@ -31,7 +30,8 @@ module atm_comp_nuopc
   use dead_nuopc_mod        , only : dead_init_nuopc, dead_run_nuopc, dead_final_nuopc
   use dead_nuopc_mod        , only : fld_list_add, fld_list_realize, fldsMax, fld_list_type
   use dead_nuopc_mod        , only : state_getimport, state_setexport
-  use dead_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, Print_FieldExchInfo 
+  use dead_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, Print_FieldExchInfo
+  use med_constants_mod, only : dbug => med_constants_dbug_flag
 
   implicit none
   private ! except
@@ -59,15 +59,17 @@ module atm_comp_nuopc
   integer                    :: mpicom               ! mpi communicator
   integer                    :: my_task              ! my task in mpi communicator mpicom
   integer                    :: inst_index           ! number of current instance (ie. 1)
-  character(len=16)          :: inst_name            ! fullname of current instance (ie. "lnd_0001")
-  character(len=16)          :: inst_suffix = ""     ! char string associated with instance (ie. "_0001" or "")
+  character(len=12)          :: inst_name            ! fullname of current instance (ie. "lnd_0001")
+  character(len=5)          :: inst_suffix      ! char string associated with instance (ie. "_0001" or "")
   integer                    :: logunit              ! logging unit number
-  integer    ,parameter      :: master_task=0        ! task number of master task
-  integer, parameter         :: dbug = 10
+  logical :: mastertask
   integer                    :: dbrc
-  character(*),parameter     :: modName =  "(atm_comp_nuopc)"
-  character(*),parameter     :: u_FILE_u = &
-       __FILE__
+  logical                    :: atm_prognostic
+
+  !----- formats -----
+  character(*),parameter :: modName =  "(xatm_comp_nuopc)"
+  character(*),parameter :: u_FILE_u = __FILE__
+
 
   !===============================================================================
   contains
@@ -118,6 +120,9 @@ module atm_comp_nuopc
   !===============================================================================
 
   subroutine InitializeAdvertise(gcomp, importState, exportState, clock, rc)
+    use shr_nuopc_utils_mod, only : shr_nuopc_set_component_logging
+    use shr_nuopc_utils_mod, only : shr_nuopc_get_component_instance
+
     type(ESMF_GridComp)  :: gcomp
     type(ESMF_State)     :: importState, exportState
     type(ESMF_Clock)     :: clock
@@ -149,58 +154,29 @@ module atm_comp_nuopc
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_VMGet(vm, mpiCommunicator=lmpicom, rc=rc)
+    call ESMF_VMGet(vm, mpiCommunicator=lmpicom, localpet=my_task, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call mpi_comm_dup(lmpicom, mpicom, ierr)
-    call mpi_comm_rank(mpicom, my_task, ierr)
-
+    mastertask = my_task==0
     !----------------------------------------------------------------------------
     ! determine instance information
     !----------------------------------------------------------------------------
 
-    call NUOPC_CompAttributeGet(gcomp, name="inst_name", value=inst_name, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call NUOPC_CompAttributeGet(gcomp, name="inst_index", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) inst_index
-
-    call ESMF_AttributeGet(gcomp, name="inst_suffix", isPresent=isPresent, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (isPresent) then
-       call NUOPC_CompAttributeGet(gcomp, name="inst_suffix", value=inst_suffix, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    else
-       inst_suffix = ''
-    end if
+    call shr_nuopc_get_component_instance(gcomp, inst_suffix, inst_index)
+    inst_name = "ATM"//trim(inst_suffix)
 
     !----------------------------------------------------------------------------
     ! set logunit and set shr logging to my log file
     !----------------------------------------------------------------------------
 
-    if (my_task == master_task) then
-       call NUOPC_CompAttributeGet(gcomp, name="diro", value=diro, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call NUOPC_CompAttributeGet(gcomp, name="logfile", value=logfile, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       logunit = shr_file_getUnit()
-       open(logunit,file=trim(diro)//"/"//trim(logfile))
-    else
-       logUnit = 6
-    endif
-
-    call shr_file_getLogUnit (shrlogunit)
-    call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogLevel(max(shrloglev,1))
-    call shr_file_setLogUnit (logunit)
+    call shr_nuopc_set_component_logging(gcomp, mastertask, logunit, shrlogunit, shrloglev)
 
     !----------------------------------------------------------------------------
     ! Initialize xatm
     !----------------------------------------------------------------------------
 
-    call dead_init_nuopc('atm', mpicom, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, logunit, lsize, gbuf, nxg, nyg)
+    call dead_init_nuopc('atm', inst_suffix, logunit, lsize, gbuf, nxg, nyg)
 
     allocate(gindex(lsize))
     allocate(lon(lsize))
@@ -408,7 +384,7 @@ module atm_comp_nuopc
     !--------------------------------
 
     if (dbug > 1) then
-       if (my_task == master_task) then
+       if (mastertask) then
           call Print_FieldExchInfo(values=d2x, logunit=logunit, &
                fldlist=fldsFrAtm, nflds=fldsFrAtm_num, istr="InitializeRealize: atm->mediator")
        end if
@@ -439,6 +415,7 @@ module atm_comp_nuopc
   !===============================================================================
 
   subroutine ModelAdvance(gcomp, rc)
+    use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -450,12 +427,15 @@ module atm_comp_nuopc
     integer          :: n
     integer          :: shrlogunit ! original log unit
     integer          :: shrloglev  ! original log level
+    character(len=CL)      :: clockstr
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-
+    if (dbug > 5) then
+       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    endif
+    call shr_nuopc_memcheck(subname, 3, mastertask)
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogLevel(max(shrloglev,1))
@@ -514,7 +494,7 @@ module atm_comp_nuopc
     !--------------------------------
 
     if (dbug > 1) then
-       if (my_task == master_task) then
+       if (mastertask) then
           call Print_FieldExchInfo(values=d2x, logunit=logunit, &
                fldlist=fldsFrAtm, nflds=fldsFrAtm_num, istr="ModelAdvance: atm->mediator")
        end if
@@ -522,15 +502,12 @@ module atm_comp_nuopc
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
 
-    call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing ATM from: ", rc=rc)
+    call ESMF_ClockPrint(clock, options="currTime", unit=clockstr, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
+    if (mastertask) write(logunit, *) "------->Advancing ATM from: ",trim(clockstr)
+    call ESMF_ClockPrint(clock, options="stopTime", unit=clockstr, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call shr_file_setLogLevel(shrloglev)
-    call shr_file_setLogUnit (shrlogunit)
-
+    if (mastertask) write(logunit, *) "--------------------------------> to: ",trim(clockstr)
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelAdvance
@@ -552,7 +529,7 @@ module atm_comp_nuopc
     rc = ESMF_SUCCESS
     if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
-    call dead_final_nuopc('atm', my_task, master_task, logunit)
+    call dead_final_nuopc('atm', logunit)
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 

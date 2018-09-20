@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class Files(EntryID):
 
-    def __init__(self, comp_interface="mct"):
+    def __init__(self, comp_interface="nuopc"):
         """
         initialize an object
 

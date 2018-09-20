@@ -15,9 +15,11 @@ module med_map_mod
   public :: med_map_FB_Regrid_Norm
 
   ! private module variables
-  integer :: srcTermProcessing_Value = 0
-  character(*), parameter :: u_FILE_u = &
-       __FILE__
+
+  character(*)      , parameter :: u_FILE_u    = __FILE__
+  ! should this be a module variable?
+  integer                       :: srcTermProcessing_Value = 0
+  logical                       :: mastertask
 
 !================================================================================
 contains
@@ -90,7 +92,6 @@ contains
     character(len=CS)       :: string
     integer                          :: mapindex
     logical                          :: rhprint_flag = .false.
-    logical                       :: mastertask
     real(R8)     , pointer :: factorList(:)
     character(CL) , pointer :: fldnames(:)
     type(ESMF_PoleMethod_Flag), parameter :: polemethod=ESMF_POLEMETHOD_ALLAVG
@@ -110,7 +111,6 @@ contains
     call ESMF_VMGet(vm, localPet=localPet, rc=rc)
     mastertask = .false.
     if (localPet == 0) mastertask=.true.
-
     ! Get the internal state from Component.
     nullify(is_local%wrap)
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
@@ -251,11 +251,16 @@ contains
                          if (rhprint_flag) then
                             call NUOPC_Write(factorList, "array_med_"//trim(string)//"_consf.nc", rc)
                             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                            call ESMF_RouteHandlePrint(is_local%wrap%RH(n1,n2,mapindex), rc=rc)
-                            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                          endif
-                         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                       end if
+                      if (rhprint_flag) then
+                         call ESMF_LogWrite(trim(subname)//trim(string)//": printing  RH for "//trim(mapname), &
+                              ESMF_LOGMSG_INFO, rc=dbrc)
+
+                         call ESMF_RouteHandlePrint(is_local%wrap%RH(n1,n2,mapindex), rc=rc)
+                         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                      endif
+                      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                       ! Check that a valid route handle has been created
                       if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(n1,n2,mapindex), rc=rc)) then
                          call ESMF_LogWrite(trim(subname)//trim(string)//": failed   RH "//trim(mapname), &
@@ -312,7 +317,7 @@ contains
     integer            :: DstMaskValue
     real(R8), pointer  :: factorList(:)
     integer            :: dbrc
-    character(len=*), parameter :: subname=' (module_med_map: Fractions_init) '
+    character(len=*), parameter :: subname=' (med_map_fractions_init: ) '
     !---------------------------------------------
 
     if (dbug_flag > 1) then
@@ -510,6 +515,10 @@ contains
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_FldChk
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_Field_diagnose
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_ChkErr
+    use shr_nuopc_utils_mod   , only: shr_nuopc_memcheck
+    ! ----------------------------------------------
+    ! Map field bundles with appropriate fraction weighting
+    ! ----------------------------------------------
 
     ! input/output variables
     type(shr_nuopc_fldList_entry_type) , pointer       :: fldsSrc(:)
@@ -524,25 +533,31 @@ contains
     integer                            , intent(out)   :: rc
 
     ! local variables
-    integer                :: i, n
-    type(ESMF_Field)       :: lfield
-    type(ESMF_FieldBundle) :: FBSrcTmp
-    type(ESMF_FieldBundle) :: FBNormSrc
-    type(ESMF_FieldBundle) :: FBNormDst
-    integer                :: mapindex
-    character(len=CS)      :: lstring
-    character(len=CS)      :: mapnorm
-    character(len=CS)      :: fldname
-    character(len=CS)      :: csize1, csize2
-    real(R8), pointer      :: data_srctmp(:)
-    real(R8), pointer      :: data_src(:)
-    real(R8), pointer      :: data_dst(:)
-    real(R8), pointer      :: data_srcnorm(:)
-    real(R8), pointer      :: data_dstnorm(:)
-    real(R8), pointer      :: data_frac(:)
-    real(R8), pointer      :: data_norm(:)
-    integer                :: dbrc
-    character(len=*), parameter :: subname='(module_med_map:med_map_Regrid_Norm)'
+    integer                     :: i, n
+    type(ESMF_FieldBundle)      :: FBSrcTmp        ! temporary
+    type(ESMF_FieldBundle)      :: FBNormSrc       ! temporary
+    type(ESMF_FieldBundle)      :: FBNormDst       ! temporary
+    integer                     :: mapindex
+    character(len=CS)  :: lstring
+    character(len=CS)  :: mapnorm
+    character(len=CS)  :: fldname
+    character(len=CS)  :: csize1, csize2
+    real(R8), pointer :: data_srctmp(:)  ! temporary
+    real(R8), pointer :: data_src(:)     ! temporary
+    real(R8), pointer :: data_dst(:)     ! temporary
+    real(R8), pointer :: data_srcnorm(:) ! temporary
+    real(R8), pointer :: data_dstnorm(:) ! temporary
+    real(R8), pointer :: data_frac(:)    ! temporary
+    real(R8), pointer :: data_norm(:)    ! temporary
+    character(len=*), parameter :: subname='(module_MED_Map:med_map_Regrid_Norm)'
+    integer :: dbrc
+
+    !-------------------------------------------------------------------------------
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    endif
+    call shr_nuopc_memcheck(subname, 1, mastertask)
+
     !---------------------------------------
 
     if (present(string)) then
@@ -551,9 +566,6 @@ contains
       lstring = " "
     endif
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called for "//trim(lstring), ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
     rc = ESMF_SUCCESS
 
     !---------------------------------------
@@ -574,15 +586,24 @@ contains
     end if
 
     do n = 1,size(fldsSrc)
-
        ! Determine if field is a scalar - and if so go to next iternation
        fldname  = fldsSrc(n)%shortname
        if (fldname == flds_scalar_name) CYCLE
 
        ! Determine if there is a map index and if its zero go to next iteration
        mapindex = fldsSrc(n)%mapindex(destcomp)
-       if (mapindex == 0) then
-          CYCLE
+       if (mapindex == 0) CYCLE
+       mapnorm  = fldsSrc(n)%mapnorm(destcomp)
+
+       ! Error checks
+       if (.not. shr_nuopc_methods_FB_FldChk(FBSrc, fldname, rc=rc)) then
+          if (dbug_flag > 1) then
+             call ESMF_LogWrite(trim(subname)//" field not found in FBSrc: "//trim(fldname), ESMF_LOGMSG_INFO, rc=dbrc)
+          endif
+       else if (.not. shr_nuopc_methods_FB_FldChk(FBDst, fldname, rc=rc)) then
+          if (dbug_flag > 1) then
+             call ESMF_LogWrite(trim(subname)//" field not found in FBDst: "//trim(fldname), ESMF_LOGMSG_INFO, rc=dbrc)
+          endif
        else if (.not. ESMF_RouteHandleIsCreated(RouteHandles(mapindex), rc=rc)) then
           call ESMF_LogWrite(trim(subname)//trim(lstring)//&
                ": ERROR RH not available for "//mapnames(mapindex)//": fld="//trim(fldname), &
@@ -612,7 +633,6 @@ contains
 
           call shr_nuopc_methods_FB_FieldRegrid(FBSrc, fldname, FBDst, fldname, RouteHandles(mapindex), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
        else
 
           if (.not. ESMF_FieldBundleIsCreated(FBSrcTmp)) then
@@ -625,7 +645,6 @@ contains
              call shr_nuopc_methods_FB_GetFldPtr(FBSrcTmp, 'data_srctmp', data_srctmp, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           end if
-
           ! Get pointer to source field data in FBSrc
           call shr_nuopc_methods_FB_GetFldPtr(FBSrc, fldname, data_src, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -757,7 +776,7 @@ contains
 
     end do  ! loop over fields
 
-    ! Clean up temporary field bundle
+    ! Clean up temporary field bundles
     if (ESMF_FieldBundleIsCreated(FBSrcTmp)) then
        call shr_nuopc_methods_FB_clean(FBSrcTmp, rc=rc)
        if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return

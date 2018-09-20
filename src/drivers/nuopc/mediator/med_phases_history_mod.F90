@@ -95,6 +95,8 @@ contains
     integer                 :: dbrc
     logical,save            :: first_call = .true.
     character(len=*), parameter :: subname='(med_phases_history_write)'
+    logical :: isPresent
+
     !---------------------------------------
 
     if (dbug_flag > 5) then
@@ -121,13 +123,21 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompAttributeGet(gcomp, name='case_name', value=case_name, rc=rc)
-    cpl_inst_tag = ''
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    call NUOPC_CompAttributeGet(gcomp, name='inst_suffix', isPresent=isPresent, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if(isPresent) then
+       call NUOPC_CompAttributeGet(gcomp, name='inst_suffix', value=cpl_inst_tag, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       cpl_inst_tag = ""
+    endif
     !---------------------------------------
     ! --- Get the clock info
     !---------------------------------------
 
-    call ESMF_GridCompGet(gcomp, clock=clock)
+    call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_ClockGet(clock, currtime=currtime, reftime=reftime, starttime=starttime, rc=rc)
@@ -236,11 +246,8 @@ contains
     !---------------------------------------
 
     if (alarmIsOn) then
-
        write(hist_file,"(6a)") &
-            !trim(case_name), '.cpl',trim(cpl_inst_tag),'.hi.', trim(currtimestr),'.nc'
             trim(case_name), '.cpl',trim(cpl_inst_tag),'.hi.', trim(nexttimestr),'.nc'
-
        call ESMF_LogWrite(trim(subname)//": write "//trim(hist_file), ESMF_LOGMSG_INFO, rc=dbrc)
        call med_io_wopen(hist_file, mpicom, iam, clobber=.true.)
 

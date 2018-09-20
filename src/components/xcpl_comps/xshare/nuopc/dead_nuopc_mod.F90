@@ -8,17 +8,16 @@ module dead_nuopc_mod
   use ESMF                  , only : ESMF_STATEITEM_NOTFOUND, ESMF_StateItem_Flag
   use ESMF                  , only : ESMF_FIELDSTATUS_COMPLETE, ESMF_FAILURE
   use ESMF                  , only : operator(/=), operator(==), operator(+)
-  use shr_kind_mod          , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
+  use med_constants_mod, only : IN, R8, CS, CL
   use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
-  use shr_mpi_mod           , only : shr_mpi_bcast
   use shr_sys_mod           , only : shr_sys_abort
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+  use shr_nuopc_utils_mod , only : shr_nuopc_utils_ChkErr
 
   implicit none
   private
 
-  public :: dead_setNewGrid
-  public :: dead_read_inparms
+!  public :: dead_setNewGrid
+!  public :: dead_read_inparms
   public :: dead_init_nuopc
   public :: dead_run_nuopc
   public :: dead_final_nuopc
@@ -57,18 +56,12 @@ module dead_nuopc_mod
 contains
 !===============================================================================
 
-  subroutine dead_read_inparms(model, mpicom, my_task, master_task, &
-       inst_index, inst_suffix, inst_name, logunit, &
+  subroutine dead_read_inparms(model,  inst_suffix, logunit, &
        nxg, nyg, decomp_type, nproc_x, seg_len, flood)
-
+    use ESMF, only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMBroadcast, ESMF_VMGet
     ! !INPUT/OUTPUT PARAMETERS:
     character(len=*)       , intent(in)    :: model
-    integer(IN)            , intent(in)    :: mpicom      ! mpi communicator
-    integer(IN)            , intent(in)    :: my_task     ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task ! task number of master task
-    integer                , intent(in)    :: inst_index  ! number of current instance (ie. 1)
     character(len=16)      , intent(in)    :: inst_suffix ! char string associated with instance
-    character(len=16)      , intent(in)    :: inst_name   ! fullname of current instance (ie. "lnd_0001")
     integer(IN)            , intent(in)    :: logunit     ! logging unit number
     integer(IN)		   , intent(out)   :: nproc_x
     integer(IN)            , intent(out)   :: seg_len
@@ -78,11 +71,14 @@ contains
     logical                , intent(out)   :: flood       ! rof flood flag
 
     !--- local variables ---
+    type(ESMF_VM) :: vm
     character(CL) :: fileName    ! generic file name
     integer(IN)   :: nunit       ! unit number
     integer(IN)   :: ierr        ! error code
     integer(IN)   :: unitn       ! Unit for namelist file
-
+    integer(IN) :: tmp(6)     ! array for broadcast
+    integer(IN) :: localPet   ! mpi id of current task in current context
+    integer :: rc                  ! EMSF return code
     !--- formats ---
     character(*), parameter :: F00   = "('(dead_read_inparms) ',8a)"
     character(*), parameter :: F01   = "('(dead_read_inparms) ',a,a,4i8)"
@@ -96,8 +92,15 @@ contains
     nproc_x        =  -9999
     seg_len        =  -9999
     decomp_type    =  -9999
+    flood = .false.
 
-    if (my_task == master_task) then
+    call ESMF_VMGetCurrent(vm, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_VMGet(vm, localPet=localPet, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+
+    if (localPet==0) then
        unitn = shr_file_getUnit()
        open(unitn, file='x'//model//'_in'//trim(inst_suffix), status='old' )
        read(unitn,*) nxg
@@ -112,16 +115,27 @@ contains
        call shr_file_freeunit(unitn)
     endif
 
-    call shr_mpi_bcast(nxg        , mpicom,'x'//model//' nxg')
-    call shr_mpi_bcast(nyg        , mpicom,'x'//model//' nyg')
-    call shr_mpi_bcast(decomp_type, mpicom,'x'//model//' decomp_type')
-    call shr_mpi_bcast(nproc_x    , mpicom,'x'//model//' nproc_x')
-    call shr_mpi_bcast(seg_len    , mpicom,'x'//model//' seg_len')
-    if (model.eq.'rof') then
-       call shr_mpi_bcast(flood    , mpicom,'xrof flood')
-    end if
+    tmp(1) = nxg
+    tmp(2) = nyg
+    tmp(3) = decomp_type
+    tmp(4) = nproc_x
+    tmp(5) = seg_len
+    if (model.eq.'rof' .and. flood) then
+       tmp(6) = 1
+    else
+       tmp(6) = 0
+    endif
+    call ESMF_VMBroadcast(vm, tmp, 6, 0, rc=rc)
+    nxg = tmp(1)
+    nyg = tmp(2)
+    decomp_type = tmp(3)
+    nproc_x = tmp(4)
+    seg_len = tmp(5)
+    if(tmp(6) == 1) then
+       flood = .true.
+    endif
 
-    if (my_task == master_task) then
+    if (localPet==0) then
        write(logunit,*)' Read in X'//model//' input from file= x'//model//'_in'
        write(logunit,F00) model
        write(logunit,F00) model,'         Model  :  ',model
@@ -130,8 +144,6 @@ contains
        write(logunit,F01) model,' Decomposition  :  ',decomp_type
        write(logunit,F03) model,' Num pes in X   :  ',nproc_x,'  (type 3 only)'
        write(logunit,F03) model,' Segment Length :  ',seg_len,'  (type 11 only)'
-       write(logunit,F01) model,'    inst_index  :  ',inst_index
-       write(logunit,F00) model,'    inst_name   :  ',trim(inst_name)
        write(logunit,F00) model,'    inst_suffix :  ',trim(inst_suffix)
        if (model.eq.'rof') then
           write(logunit,F01) ' Flood mode     :  ',flood
@@ -141,9 +153,9 @@ contains
   end subroutine dead_read_inparms
 
   !===============================================================================
-  subroutine dead_setNewGrid(decomp_type, nxg, nyg, totpe, mype, logunit, lsize,  &
+  subroutine dead_setNewGrid(decomp_type, nxg, nyg, logunit, lsize,  &
                              gbuf, seg_len, nproc_x)
-
+    use ESMF, only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VmGet
     use shr_const_mod, only : shr_const_pi, shr_const_rearth
 
     ! DESCRIPTION:
@@ -153,8 +165,6 @@ contains
     ! input/output parameters:
     integer(IN) ,intent(in)          :: decomp_type !
     integer(IN) ,intent(in)          :: nxg,nyg     ! global grid sizes
-    integer(IN) ,intent(in)          :: totpe       ! total number of pes
-    integer(IN) ,intent(in)          :: mype        ! local pe number
     integer(IN) ,intent(in)          :: logunit     ! output logunit
     integer(IN) ,intent(out)         :: lsize       ! local grid sizes
     real(R8)    ,pointer             :: gbuf(:,:)   ! output data
@@ -162,6 +172,10 @@ contains
     integer(IN) ,intent(in),optional :: nproc_x     ! 2d decomp setting
 
     !--- local ---
+    type(ESMF_VM) :: vm
+    integer(IN)   :: rc
+    integer(IN) ::  mype
+    integer(IN) :: totpe       ! total number of pes
     integer(IN)             :: ierr            ! error code
     logical                 :: found
     integer(IN)             :: i,j,ig,jg
@@ -176,6 +190,11 @@ contains
     character(*), parameter :: F01   = "('(dead_setNewGrid) ',a,4i8)"
     character(*), parameter :: subName = "(dead_setNewGrid) "
     !-------------------------------------------------------------------------------
+
+    call ESMF_VMGetCurrent(vm, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_VMGet(vm, localPet=mype, peCount=totpe, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (decomp_type == 1 .or. &
          decomp_type == 2 .or. &
@@ -371,17 +390,11 @@ contains
   end subroutine dead_setNewGrid
 
   !===============================================================================
-  subroutine dead_init_nuopc(model, mpicom, my_task, master_task, &
-       inst_index, inst_suffix, inst_name, logunit, lsize, gbuf, nxg, nyg)
+  subroutine dead_init_nuopc(model, inst_suffix, logunit, lsize, gbuf, nxg, nyg)
 
     ! input/output parameters:
     character(len=*) , intent(in)    :: model
-    integer          , intent(in)    :: mpicom      ! mpi communicator
-    integer          , intent(in)    :: my_task     ! my task in mpi communicator mpicom
-    integer          , intent(in)    :: master_task ! task number of master task
-    integer          , intent(in)    :: inst_index  ! instance number
     character(len=*) , intent(in)    :: inst_suffix ! char string associated with instance
-    character(len=*) , intent(in)    :: inst_name   ! fullname of current instance (ie. "lnd_0001")
     integer          , intent(in)    :: logunit     ! logging unit number
     integer          , intent(out)   :: lsize       ! logging unit number
     real(r8)         , pointer       :: gbuf(:,:)   ! model grid
@@ -401,21 +414,14 @@ contains
     character(*), parameter  :: subName = "(dead_init_nuopc) "
     !-------------------------------------------------------------------------------
 
-    ! Determine communicator groups and sizes
-
-    local_comm = mpicom
-    call MPI_COMM_RANK(local_comm,mype ,ierr)
-    call MPI_COMM_SIZE(local_comm,totpe,ierr)
-
     ! Read input parms
 
-    call dead_read_inparms(model, mpicom, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, logunit, &
+    call dead_read_inparms(model, inst_suffix, logunit, &
          nxg, nyg, decomp_type, nproc_x, seg_len, flood)
 
     ! Initialize grid
 
-    call dead_setNewGrid(decomp_type, nxg, nyg, totpe, mype, logunit, &
+    call dead_setNewGrid(decomp_type, nxg, nyg, logunit, &
          lsize, gbuf, seg_len, nproc_x)
 
   end subroutine dead_init_nuopc
@@ -545,15 +551,18 @@ contains
   end subroutine dead_run_nuopc
 
   !===============================================================================
-  subroutine dead_final_nuopc(model, my_task, master_task, logunit)
-
+  subroutine dead_final_nuopc(model, logunit)
+    use ESMF, only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMGet
     ! DESCRIPTION: finalize method for datm model
 
     ! input/output parameters:
     character(len=*) , intent(in) :: model
-    integer          , intent(in) :: my_task     ! my task in mpi communicator mpicom
-    integer          , intent(in) :: master_task ! task number of master task
     integer          , intent(in) :: logunit     ! logging unit number
+
+    !-- local --
+    type(ESMF_VM) :: vm
+    integer :: rc
+    integer :: localPet
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dead_comp_final) ',8a)"
@@ -561,7 +570,12 @@ contains
     character(*), parameter :: subName = "(dead_comp_final) "
     !-------------------------------------------------------------------------------
 
-    if (my_task == master_task) then
+    call ESMF_VMGetCurrent(vm, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_VMGet(vm, localPet=localPet, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (localPet==0) then
        write(logunit,F91)
        write(logunit,F00) trim(model),': end of main integration loop'
        write(logunit,F91)
@@ -720,7 +734,7 @@ contains
 
     ! Switch to IPDv01 by filtering all other phaseMap entries
     call NUOPC_CompFilterPhaseMap(gcomp, ESMF_METHOD_INITIALIZE, acceptStringList=(/"IPDv01p"/), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine ModelInitPhase
 
@@ -756,13 +770,13 @@ contains
 
     ! query the Component for its clocks
     call NUOPC_ModelGet(gcomp, driverClock=dclock, modelClock=mclock, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_ClockGet(dclock, currTime=dcurrtime, timeStep=dtimestep, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_ClockGet(mclock, currTime=mcurrtime, timeStep=mtimestep, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
     ! force model clock currtime and timestep to match driver and set stoptime
@@ -770,30 +784,30 @@ contains
 
     mstoptime = mcurrtime + dtimestep
     call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
     ! set restart alarm
     !--------------------------------
 
     call ESMF_ClockGetAlarmList(mclock, alarmlistflag=ESMF_ALARMLIST_ALL, alarmCount=alarmCount, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (alarmCount == 0) then
 
        call ESMF_GridCompGet(gcomp, name=name, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
        call ESMF_LogWrite(subname//'setting alarms for' // trim(name), ESMF_LOGMSG_INFO, rc=dbrc)
 
        call NUOPC_CompAttributeGet(gcomp, name="restart_option", value=restart_option, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call NUOPC_CompAttributeGet(gcomp, name="restart_n", value=cvalue, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) restart_n
 
        call NUOPC_CompAttributeGet(gcomp, name="restart_ymd", value=cvalue, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) restart_ymd
 
        call shr_nuopc_time_alarmInit(mclock, restart_alarm, restart_option, &
@@ -801,10 +815,10 @@ contains
             opt_ymd = restart_ymd,         &
             RefTime = mcurrTime,           &
             alarmname = 'alarm_restart', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call ESMF_AlarmSet(restart_alarm, clock=mclock, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     end if
 
@@ -813,10 +827,10 @@ contains
     !--------------------------------
 
     call ESMF_ClockAdvance(mclock,rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug_flag > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
@@ -847,14 +861,14 @@ contains
 
     ! Determine if field with name fldname exists in state
     call ESMF_StateGet(state, trim(fldname), itemFlag, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! if field exists then create output array - else do nothing
     if (itemflag /= ESMF_STATEITEM_NOTFOUND) then
 
        ! get field pointer
        call state_getfldptr(state, trim(fldname), fldptr, rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        ! determine output array
        do g = 1,size(fldptr)
@@ -868,7 +882,7 @@ contains
 
   subroutine state_setexport(state, fldname, input,  rc)
     ! ----------------------------------------------
-    ! Map input array to export state field 
+    ! Map input array to export state field
     ! ----------------------------------------------
 
     ! input/output variables
@@ -889,14 +903,14 @@ contains
 
     ! Determine if field with name fldname exists in state
     call ESMF_StateGet(state, trim(fldname), itemFlag, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! if field exists then create output array - else do nothing
     if (itemflag /= ESMF_STATEITEM_NOTFOUND) then
 
        ! get field pointer
        call state_getfldptr(state, trim(fldname), fldptr,  rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        ! set fldptr values to input array
        do g = 1,size(fldptr)
@@ -937,10 +951,10 @@ contains
     endif
 
     call ESMF_StateGet(State, itemName=trim(fldname), field=lfield, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_FieldGet(lfield, status=status, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (status /= ESMF_FIELDSTATUS_COMPLETE) then
        call ESMF_LogWrite(trim(subname)//": ERROR data not allocated ", ESMF_LOGMSG_INFO, rc=rc)
@@ -948,10 +962,10 @@ contains
        return
     else
        call ESMF_FieldGet(lfield, mesh=lmesh, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call ESMF_MeshGet(lmesh, numOwnedNodes=nnodes, numOwnedElements=nelements, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        if (nnodes == 0 .and. nelements == 0) then
           call ESMF_LogWrite(trim(subname)//": no local nodes or elements ", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -960,7 +974,7 @@ contains
        end if
 
        call ESMF_FieldGet(lfield, farrayPtr=fldptr, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif  ! status
 
     if (dbug_flag > 10) then
