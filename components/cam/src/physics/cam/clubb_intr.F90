@@ -30,7 +30,8 @@ module clubb_intr
   use cam_history_support, only: fillvalue
 #ifdef FIVE
   use five_intr,     only: pver_five, pverp_five, &
-			   linear_interp, five_syncronize_e3sm
+			   linear_interp, five_syncronize_e3sm, &
+			   masswgt_vert_avg
 #endif
 
   implicit none
@@ -1098,6 +1099,7 @@ end subroutine clubb_init_cnst
    real(r8) :: rvm_five(pverp_clubb)
    real(r8) :: um_five(pverp_clubb)
    real(r8) :: vm_five(pverp_clubb)
+   real(r8) :: pdel_five(pverp_clubb)
 #endif
    
    ! A number of "pre" variables are added.  These are intermediate variables
@@ -1321,6 +1323,8 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: pmid_five
    real(r8), pointer, dimension(:,:) :: pint_five
    
+   real(r8) :: t_five_host(pver)
+   
    real(r8) :: t_five_low(pcols,pver)
    real(r8) :: u_five_low(pcols,pver)
    real(r8) :: v_five_low(pcols,pver)
@@ -1442,8 +1446,8 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, q_five_idx,    q_five,     start=(/1,1,1,itim_old/), kount=(/pcols,pver_five,pcnst,1/))
    call pbuf_get_field(pbuf, u_five_idx,    u_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_five,1/))
    call pbuf_get_field(pbuf, v_five_idx,    v_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_five,1/))
-   call pbuf_get_field(pbuf, pmid_five_idx,    pmid_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_five,1/)) 
-   call pbuf_get_field(pbuf, pint_five_idx,    pint_five,      start=(/1,1,itim_old/), kount=(/pcols,pverp_five,1/))     
+   call pbuf_get_field(pbuf, pmid_five_idx,    pmid_five,      start=(/1,1,1/), kount=(/pcols,pver_five,1/)) 
+   call pbuf_get_field(pbuf, pint_five_idx,    pint_five,      start=(/1,1,1/), kount=(/pcols,pverp_five,1/))     
 #endif 
 
    ! Intialize the apply_const variable (note special logic is due to eularian backstepping)
@@ -1567,6 +1571,7 @@ end subroutine clubb_init_cnst
    
 #ifdef FIVE
 
+   write(*,*) 'TFIVE before tend ', t_five(1,:)
    ! Syncronize FIVE variables from E3SM state
    call five_syncronize_e3sm(state1,dtime,pint_five,pmid_five,t_five,u_five,v_five,q_five)
 
@@ -2326,13 +2331,32 @@ end subroutine clubb_init_cnst
 	q_five(i,k,ixcldliq) = rcm_pre(k)
       enddo
       
-      ! Again, this code below is temporary.  Need to replace with layer average
-      call linear_interp(pmid_five(i,:),state1%pmid(i,:),t_five(i,1:pver_five),t_five_low(i,1:pver),pver_five,pver)
-      call linear_interp(pmid_five(i,:),state1%pmid(i,:),u_five(i,1:pver_five),u_five_low(i,1:pver),pver_five,pver)
-      call linear_interp(pmid_five(i,:),state1%pmid(i,:),v_five(i,1:pver_five),v_five_low(i,1:pver),pver_five,pver)
+      ! Compute pdel on five grid, needed for mass weighted vertical average
+      do k=1,pver_five
+        pdel_five(k) = pint_five(i,k+1)-pint_five(i,k)
+      enddo
+      
+      ! Compute temperature on host model grid for density calculation
+      call linear_interp(pmid_five(i,:),state1%pmid(i,:),t_five(i,1:pver_five),t_five_host,pver_five,pver)
+      
+      ! Compute mass weighted vertical average of variables from FIVE grid to E3SM grid
+      call masswgt_vert_avg(t_five_host,t_five(i,1:pver_five),state1%pdel(i,:),pdel_five(:),&
+                            state%pint(i,:),pmid_five(i,:),state1%pmid(i,:),&
+			    t_five(i,1:pver_five),t_five_low(i,1:pver))
+			    
+      call masswgt_vert_avg(t_five_host,t_five(i,1:pver_five),state1%pdel(i,:),pdel_five(:),&
+                            state%pint(i,:),pmid_five(i,:),state1%pmid(i,:),&
+			    u_five(i,1:pver_five),u_five_low(i,1:pver))	
+			    
+      call masswgt_vert_avg(t_five_host,t_five(i,1:pver_five),state1%pdel(i,:),pdel_five(:),&
+                            state%pint(i,:),pmid_five(i,:),state1%pmid(i,:),&
+			    v_five(i,1:pver_five),v_five_low(i,1:pver))	
+			    
       do p=1,pcnst
-        call linear_interp(pmid_five(i,:),state1%pmid(i,:),q_five(i,1:pver_five,p),q_five_low(i,1:pver,p),pver_five,pver)
-      enddo  
+        call masswgt_vert_avg(t_five_host,t_five(i,1:pver_five),state1%pdel(i,:),pdel_five(:),&
+                              state%pint(i,:),pmid_five(i,:),state1%pmid(i,:),&
+			      q_five(i,1:pver_five,p),q_five_low(i,1:pver,p))        
+      enddo		    		    		     
       
       ! Transfer these variables to the ones that the tendencies will see
       t_out(i,:) = t_five_low(i,:)
