@@ -1,33 +1,33 @@
-# Always use the latest Docker image of Miniconda,
-# since we have to update it anyways.
-# This is because there are/were many issues with older versions
-# that prevented building from working properly.
-FROM continuumio/miniconda:latest
+# Specify the version of the Docker image of Miniconda.
+# This is so we create the same image each time.
+# Also, there are/were many issues with older versions
+# that prevented the building process from working properly.
+FROM continuumio/miniconda:4.5.4
 
 LABEL maintainer="shaheen2@llnl.gov"
 
-COPY conda/e3sm_diags_env.yml e3sm_diags_env.yml
+# Copy the entire project dir because we'll install from source.
+COPY . .
 
 # Set bash as the default shell for all RUN commands.
 SHELL ["/bin/bash", "-c"]
 
 # AVOID CREATING ANOTHER ANACONDA ENV IN THE CONTAINER!
 # So we don't have:
-#   RUN conda env create -f e3sm_diags_env.yml
+#   RUN conda env create -f e3sm_diags_env_dev.yml
 # This caused many issues.
-# We just update the root environment.
-# We also need to update conda, to make
-# sure that everything works.
-RUN conda update -n base conda && \
-        conda env update -n root --file e3sm_diags_env.yml && \
-        conda clean --all -y
+# We just update the base environment.
+RUN conda env update -n base --file conda/e3sm_diags_env_dev.yml && \
+        conda clean --all -y && \
+        source activate base && \
+        python setup.py install && \
+        rm -r build/
 
-# Needs to be a list, otherwise arguments aren't 
+# Needs to be a list, otherwise arguments aren't
 # passed correctly when you run the container.
 ENTRYPOINT ["e3sm_diags"]
 
-# Where e3sm_diags will read the input files,
-# and where it'll store the output *relative to this container*.
-# When running the container, mount WORKDIR to a local directory
-# on the machine running the container.
+# When running the container, you might need to mount WORKDIR
+# to the cwd on the machine running the container, so that
+# the input py and cfg files can be read properly.
 WORKDIR /e3sm_diags_container_cwd
