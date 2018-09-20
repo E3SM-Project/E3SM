@@ -1413,6 +1413,24 @@ contains
     attname  = 'Fioi_meltw'
     call metadata_set(attname, longname, stdname, units)
 
+    ! Heat flux from melting icebergs
+    call seq_flds_add(i2x_fluxes,"Fioi_bergh")
+    call seq_flds_add(x2o_fluxes,"Fioi_bergh")
+    longname = 'Heat flux from melting icebergs'
+    stdname  = 'surface_iceberg_melt_heat_flux'
+    units    = 'W m-2'
+    attname  = 'Fioi_bergh'
+    call metadata_set(attname, longname, stdname, units)
+
+    ! Water flux from melting icebergs
+    call seq_flds_add(i2x_fluxes,"Fioi_bergw")
+    call seq_flds_add(x2o_fluxes,"Fioi_bergw")
+    longname = 'Water flux due to melting icebergs'
+    stdname  = 'surface_iceberg_melt_flux'
+    units    = 'kg m-2 s-1'
+    attname  = 'Fioi_bergw'
+    call metadata_set(attname, longname, stdname, units)
+
     ! Salt flux
     call seq_flds_add(i2x_fluxes,"Fioi_salt")
     call seq_flds_add(x2o_fluxes,"Fioi_salt")
