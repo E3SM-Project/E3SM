@@ -3,7 +3,7 @@
     config_calendar_type = 'gregorian_noleap'
     config_start_time = '2000-01-01_00:00:00'
     config_stop_time = 'none'
-    config_run_duration = '00-00-01_00:00:00'
+    config_run_duration = '00-01-00_00:00:00'
     config_num_halos = 2
 /
 &io
@@ -483,3 +483,7 @@
     config_AM_timeSeriesStatsCustom_reset_intervals = '00-00-07_00:00:00'
     config_AM_timeSeriesStatsCustom_backward_output_offset = '00-00-01_00:00:00'
 /
+&snicar_variables
+    config_turn_snicar_system_on = true
+/
+
