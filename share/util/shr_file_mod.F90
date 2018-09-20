@@ -901,7 +901,7 @@ CONTAINS
     !-------------------------------------------------------------------------------
     ! Notes: Caller must be sure it's a valid unit number
     !-------------------------------------------------------------------------------
-    if (s_loglev > 1 .and. s_logunit-unit /= 0) then
+    if (s_loglev > 2 .and. s_logunit-unit /= 0) then
        write(s_logunit,*) subName,': reset log unit number from/to ',s_logunit, unit
        write(     unit,*) subName,': reset log unit number from/to ',s_logunit, unit
     endif
