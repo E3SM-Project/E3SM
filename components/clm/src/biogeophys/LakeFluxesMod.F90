@@ -156,7 +156,7 @@ contains
          forc_th          =>    top_as%thbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)        
          forc_pbot        =>    top_as%pbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
          forc_q           =>    top_as%qbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)             
-         forc_rho         =>    atm2lnd_vars%forc_rho_downscaled_col   , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                 
+         forc_rho         =>    top_as%rhobot                          , & ! Input:  [real(r8) (:)   ]  air density (kg/m**3)                                 
          forc_lwrad       =>    atm2lnd_vars%forc_lwrad_downscaled_col , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)   
          forc_snow        =>    atm2lnd_vars%forc_snow_downscaled_col  , & ! Input:  [real(r8) (:)   ]  snow rate [mm/s]                                  
          forc_rain        =>    atm2lnd_vars%forc_rain_downscaled_col  , & ! Input:  [real(r8) (:)   ]  rain rate [mm/s]                                  
@@ -405,12 +405,12 @@ contains
             ! Also adjusted so that if there are snow layers present, the top layer absorption
             ! from SNICAR is assigned to the surface skin.
             ax  = betaprime(c)*sabg(p) + emg_lake*forc_lwrad(c) + 3._r8*stftg3(p)*tgbef(c) &
-                 + forc_rho(c)*cpair/rah(p)*thm(p) &
-                 - htvp(c)*forc_rho(c)/raw(p)*(qsatg(c)-qsatgdT(c)*tgbef(c) - forc_q(t)) &
+                 + forc_rho(t)*cpair/rah(p)*thm(p) &
+                 - htvp(c)*forc_rho(t)/raw(p)*(qsatg(c)-qsatgdT(c)*tgbef(c) - forc_q(t)) &
                  + tksur(c)*tsur(c)/dzsur(c)
             !Changed sabg(p) to betaprime(c)*sabg(p).
-            bx  = 4._r8*stftg3(p) + forc_rho(c)*cpair/rah(p) &
-                 + htvp(c)*forc_rho(c)/raw(p)*qsatgdT(c) + tksur(c)/dzsur(c)
+            bx  = 4._r8*stftg3(p) + forc_rho(t)*cpair/rah(p) &
+                 + htvp(c)*forc_rho(t)/raw(p)*qsatgdT(c) + tksur(c)/dzsur(c)
 
             t_grnd(c) = ax/bx
             !prevent too large numerical step
@@ -429,8 +429,8 @@ contains
             ! Surface fluxes of momentum, sensible and latent heat
             ! using ground temperatures from previous time step
 
-            eflx_sh_grnd(p) = forc_rho(c)*cpair*(t_grnd(c)-thm(p))/rah(p)
-            qflx_evap_soi(p) = forc_rho(c)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-tgbef(c))-forc_q(t))/raw(p)
+            eflx_sh_grnd(p) = forc_rho(t)*cpair*(t_grnd(c)-thm(p))/rah(p)
+            qflx_evap_soi(p) = forc_rho(t)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-tgbef(c))-forc_q(t))/raw(p)
 
             ! Re-calculate saturated vapor pressure, specific humidity and their
             ! derivatives at lake surface
@@ -537,15 +537,15 @@ contains
          if ( (snl(c) < 0 .or. t_lake(c,1) <= tfrz) .and. t_grnd(c) > tfrz) then
             t_grnd_temp = t_grnd(c)
             t_grnd(c) = tfrz
-            eflx_sh_grnd(p) = forc_rho(c)*cpair*(t_grnd(c)-thm(p))/rah(p)
-            qflx_evap_soi(p) = forc_rho(c)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-t_grnd_temp) - forc_q(t))/raw(p)
+            eflx_sh_grnd(p) = forc_rho(t)*cpair*(t_grnd(c)-thm(p))/rah(p)
+            qflx_evap_soi(p) = forc_rho(t)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-t_grnd_temp) - forc_q(t))/raw(p)
          else if ( (t_lake(c,1) > t_grnd(c) .and. t_grnd(c) > tdmax) .or. &
               (t_lake(c,1) < t_grnd(c) .and. t_lake(c,1) > tfrz .and. t_grnd(c) < tdmax) ) then
             ! Convective mixing will occur at surface
             t_grnd_temp = t_grnd(c)
             t_grnd(c) = t_lake(c,1)
-            eflx_sh_grnd(p) = forc_rho(c)*cpair*(t_grnd(c)-thm(p))/rah(p)
-            qflx_evap_soi(p) = forc_rho(c)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-t_grnd_temp) - forc_q(t))/raw(p)
+            eflx_sh_grnd(p) = forc_rho(t)*cpair*(t_grnd(c)-thm(p))/rah(p)
+            qflx_evap_soi(p) = forc_rho(t)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-t_grnd_temp) - forc_q(t))/raw(p)
          end if
 
          ! Update htvp
@@ -572,8 +572,8 @@ contains
          ! The variable eflx_gnet will be used to pass the actual heat flux
          !from the ground interface into the lake.
 
-         taux(p) = -forc_rho(c)*forc_u(t)/ram(p)
-         tauy(p) = -forc_rho(c)*forc_v(t)/ram(p)
+         taux(p) = -forc_rho(t)*forc_u(t)/ram(p)
+         tauy(p) = -forc_rho(t)*forc_v(t)/ram(p)
 
          eflx_sh_tot(p)   = eflx_sh_grnd(p)
          qflx_evap_tot(p) = qflx_evap_soi(p)

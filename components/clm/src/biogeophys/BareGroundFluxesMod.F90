@@ -116,7 +116,7 @@ contains
          forc_v           =>    top_as%vbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)
          forc_th          =>    top_as%thbot                          , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)
          forc_pbot        =>    top_as%pbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)
-         forc_rho         =>    atm2lnd_vars%forc_rho_downscaled_col  , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)
+         forc_rho         =>    top_as%rhobot                         , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)
          forc_q           =>    top_as%qbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)
 
          forc_hgt_u_patch =>    frictionvel_vars%forc_hgt_u_patch     , & ! Input:
@@ -276,7 +276,7 @@ contains
          ram  = 1._r8/(ustar(p)*ustar(p)/um(p))
          rah  = 1._r8/(temp1(p)*ustar(p))
          raw  = 1._r8/(temp2(p)*ustar(p))
-         raih = forc_rho(c)*cpair/rah
+         raih = forc_rho(t)*cpair/rah
          if (use_lch4) then
             grnd_ch4_cond(p) = 1._r8/raw
          end if
@@ -287,11 +287,11 @@ contains
 
          !changed by K.Sakaguchi. Soilbeta is used for evaporation
          if (dqh(p) > 0._r8) then  !dew  (beta is not applied, just like rsoil used to be)
-            raiw = forc_rho(c)/(raw)
+            raiw = forc_rho(t)/(raw)
          else
             if(do_soilevap_beta())then
                ! Lee and Pielke 1992 beta is applied
-               raiw    = soilbeta(c)*forc_rho(c)/(raw)
+               raiw    = soilbeta(c)*forc_rho(t)/(raw)
             endif
          end if
 
@@ -305,8 +305,8 @@ contains
 
          ! Surface fluxes of momentum, sensible and latent heat
          ! using ground temperatures from previous time step
-         taux(p)          = -forc_rho(c)*forc_u(t)/ram
-         tauy(p)          = -forc_rho(c)*forc_v(t)/ram
+         taux(p)          = -forc_rho(t)*forc_u(t)/ram
+         tauy(p)          = -forc_rho(t)*forc_v(t)/ram
          eflx_sh_grnd(p)  = -raih*dth(p)
          eflx_sh_tot(p)   = eflx_sh_grnd(p)
 

@@ -64,6 +64,7 @@ contains
     real(r8) :: a0,a1,a2,a3,a4,a5,a6 ! coefficients for esat over water
     real(r8) :: b0,b1,b2,b3,b4,b5,b6 ! coefficients for esat over ice
     real(r8) :: tdc, t               ! Kelvins to Celcius function and its input
+    real(r8) :: vp                   ! water vapor pressure (Pa)
     integer  :: num, nu_nml, nml_error                 
     real(r8) :: swndf, swndr, swvdf, swvdr, ratio_rvrf, frac, q
     real(r8) :: thiscosz, avgcosz, szenith
@@ -989,8 +990,11 @@ contains
          end if
          qsat           = 0.622_r8*e / (top_as%pbot(topo) - 0.378_r8*e)
          top_as%rhbot(topo) = 100.0_r8*(top_as%qbot(topo) / qsat)
-         ! partial pressure of oxygen
+         ! partial pressure of oxygen (Pa)
          top_as%po2bot(topo) = o2_molar_const * top_as%pbot(topo)
+         ! air density (kg/m**3) - uses a temporary calculation of water vapor pressure (Pa)
+         vp = top_as%qbot(topo) * top_as%pbot(topo)  / (0.622_r8 + 0.378_r8 * top_as%qbot(topo))
+         top_as%rhobot(topo) = (top_as%pbot(topo) - 0.378_r8 * vp) / (rair * top_as%tbot(topo))
        end do
          
 #endif

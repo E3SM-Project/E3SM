@@ -65,6 +65,7 @@ module TopounitType
     real(r8), pointer :: tbot       (:) => null() ! temperature of air at atmospheric forcing height (K)
     real(r8), pointer :: thbot      (:) => null() ! potential temperature of air at atmospheric forcing height (K)
     real(r8), pointer :: pbot       (:) => null() ! air pressure at atmospheric forcing height (Pa)
+    real(r8), pointer :: rhobot     (:) => null() ! air density at atmospheric forcing height (kg/m**3)
     real(r8), pointer :: qbot       (:) => null() ! specific humidity at atmospheric forcing height (kg H2O/kg moist air)
     real(r8), pointer :: rhbot      (:) => null() ! relative humidity at atmospheric forcing height (%)
     real(r8), pointer :: ubot       (:) => null() ! wind speed in U (east) direction at atmospheric forcing height (m/s)
@@ -161,6 +162,7 @@ module TopounitType
     allocate(this%tbot     (begt:endt)) ; this%tbot      (:) = spval
     allocate(this%thbot    (begt:endt)) ; this%thbot     (:) = spval
     allocate(this%pbot     (begt:endt)) ; this%pbot      (:) = spval
+    allocate(this%rhobot   (begt:endt)) ; this%rhobot    (:) = spval
     allocate(this%qbot     (begt:endt)) ; this%qbot      (:) = spval
     allocate(this%rhbot    (begt:endt)) ; this%rhbot     (:) = spval
     allocate(this%ubot     (begt:endt)) ; this%ubot      (:) = spval
@@ -190,6 +192,7 @@ module TopounitType
     deallocate(this%tbot)
     deallocate(this%thbot)
     deallocate(this%pbot)
+    deallocate(this%rhobot)
     deallocate(this%qbot)
     deallocate(this%rhbot)
     deallocate(this%ubot)

@@ -327,7 +327,7 @@ contains
          forc_q               => top_as%qbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)                                 
          forc_pbot            => top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
          forc_th              => top_as%thbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)                            
-         forc_rho             => atm2lnd_vars%forc_rho_downscaled_col      , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                                     
+         forc_rho             => top_as%rhobot                             , & ! Input:  [real(r8) (:)   ]  air density (kg/m**3)                                                     
          forc_t               => top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                                      
          forc_u               => top_as%ubot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)                        
          forc_v               => top_as%vbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)                       
@@ -932,7 +932,7 @@ contains
                canopy_cond(p) = (laisun(p)/(rb(p)+rssun(p)) + laisha(p)/(rb(p)+rssha(p)))/max(elai(p), 0.01_r8)
             end if
 
-            efpot = forc_rho(c)*wtl*(qsatl(p)-qaf(p))
+            efpot = forc_rho(t)*wtl*(qsatl(p)-qaf(p))
 
             if (efpot > 0._r8) then
                if (btran(p) > btran0) then
@@ -983,8 +983,8 @@ contains
             wtgaq    = wtaq0(p)+wtgq0     ! air + ground
             wtalq(p) = wtaq0(p)+wtlq0(p)  ! air + leaf
 
-            dc1 = forc_rho(c)*cpair*wtl
-            dc2 = hvap*forc_rho(c)*wtlq
+            dc1 = forc_rho(t)*cpair*wtl
+            dc2 = hvap*forc_rho(t)*wtlq
 
             efsh   = dc1*(wtga*t_veg(p)-wtg0*t_grnd(c)-wta0(p)*thm(p))
             efe(p) = dc2*(wtgaq*qsatl(p)-wtgq0*qg(c)-wtaq0(p)*forc_q(t))
@@ -1023,7 +1023,7 @@ contains
             ! result in an imbalance in "hvap*qflx_evap_veg" and
             ! "efe + dc2*wtgaq*qsatdt_veg"
 
-            efpot = forc_rho(c)*wtl*(wtgaq*(qsatl(p)+qsatldT(p)*dt_veg(p)) &
+            efpot = forc_rho(t)*wtl*(wtgaq*(qsatl(p)+qsatldT(p)*dt_veg(p)) &
                  -wtgq0*qg(c)-wtaq0(p)*forc_q(t))
             qflx_evap_veg(p) = rpp*efpot
 
@@ -1090,7 +1090,8 @@ contains
 
          do f = 1, fn
            p = filterp(f)
-           lbl_rsc_h2o(p) = getlblcef(forc_rho(c),t_veg(p))*uaf(p)/(uaf(p)**2._r8+1.e-10_r8)   !laminar boundary resistance for h2o over leaf, should I make this consistent for latent heat calculation?
+           t = veg_pp%topounit(p)
+           lbl_rsc_h2o(p) = getlblcef(forc_rho(t),t_veg(p))*uaf(p)/(uaf(p)**2._r8+1.e-10_r8)   !laminar boundary resistance for h2o over leaf, should I make this consistent for latent heat calculation?
          enddo
             
          ! Test for convergence
@@ -1139,30 +1140,30 @@ contains
          ! Fluxes from ground to canopy space
 
          delt    = wtal(p)*t_grnd(c)-wtl0(p)*t_veg(p)-wta0(p)*thm(p)
-         taux(p) = -forc_rho(c)*forc_u(t)/ram1(p)
-         tauy(p) = -forc_rho(c)*forc_v(t)/ram1(p)
-         eflx_sh_grnd(p) = cpair*forc_rho(c)*wtg(p)*delt
+         taux(p) = -forc_rho(t)*forc_u(t)/ram1(p)
+         tauy(p) = -forc_rho(t)*forc_v(t)/ram1(p)
+         eflx_sh_grnd(p) = cpair*forc_rho(t)*wtg(p)*delt
 
          ! compute individual sensible heat fluxes
          delt_snow = wtal(p)*t_soisno(c,snl(c)+1)-wtl0(p)*t_veg(p)-wta0(p)*thm(p)
-         eflx_sh_snow(p) = cpair*forc_rho(c)*wtg(p)*delt_snow
+         eflx_sh_snow(p) = cpair*forc_rho(t)*wtg(p)*delt_snow
 
          delt_soil  = wtal(p)*t_soisno(c,1)-wtl0(p)*t_veg(p)-wta0(p)*thm(p)
-         eflx_sh_soil(p) = cpair*forc_rho(c)*wtg(p)*delt_soil
+         eflx_sh_soil(p) = cpair*forc_rho(t)*wtg(p)*delt_soil
 
          delt_h2osfc  = wtal(p)*t_h2osfc(c)-wtl0(p)*t_veg(p)-wta0(p)*thm(p)
-         eflx_sh_h2osfc(p) = cpair*forc_rho(c)*wtg(p)*delt_h2osfc
-         qflx_evap_soi(p) = forc_rho(c)*wtgq(p)*delq(p)
+         eflx_sh_h2osfc(p) = cpair*forc_rho(t)*wtg(p)*delt_h2osfc
+         qflx_evap_soi(p) = forc_rho(t)*wtgq(p)*delq(p)
 
          ! compute individual latent heat fluxes
          delq_snow = wtalq(p)*qg_snow(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
-         qflx_ev_snow(p) = forc_rho(c)*wtgq(p)*delq_snow
+         qflx_ev_snow(p) = forc_rho(t)*wtgq(p)*delq_snow
 
          delq_soil = wtalq(p)*qg_soil(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
-         qflx_ev_soil(p) = forc_rho(c)*wtgq(p)*delq_soil
+         qflx_ev_soil(p) = forc_rho(t)*wtgq(p)*delq_soil
 
          delq_h2osfc = wtalq(p)*qg_h2osfc(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
-         qflx_ev_h2osfc(p) = forc_rho(c)*wtgq(p)*delq_h2osfc
+         qflx_ev_h2osfc(p) = forc_rho(t)*wtgq(p)*delq_h2osfc
 
          ! 2 m height air temperature
 
@@ -1192,8 +1193,8 @@ contains
 
          ! Derivative of soil energy flux with respect to soil temperature
 
-         cgrnds(p) = cgrnds(p) + cpair*forc_rho(c)*wtg(p)*wtal(p)
-         cgrndl(p) = cgrndl(p) + forc_rho(c)*wtgq(p)*wtalq(p)*dqgdT(c)
+         cgrnds(p) = cgrnds(p) + cpair*forc_rho(t)*wtg(p)*wtal(p)
+         cgrndl(p) = cgrndl(p) + forc_rho(t)*wtgq(p)*wtalq(p)*dqgdT(c)
          cgrnd(p)  = cgrnds(p) + cgrndl(p)*htvp(c)
 
          ! Update dew accumulation (kg/m2)

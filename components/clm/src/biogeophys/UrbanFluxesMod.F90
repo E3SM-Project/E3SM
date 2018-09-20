@@ -193,7 +193,7 @@ contains
 
          forc_t              =>   top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (K)                       
          forc_th             =>   top_as%thbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (K)             
-         forc_rho            =>   atm2lnd_vars%forc_rho_not_downscaled_grc  , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                 
+         forc_rho            =>   top_as%rhobot                             , & ! Input:  [real(r8) (:)   ]  air density (kg/m**3)                                 
          forc_q              =>   top_as%qbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)             
          forc_pbot           =>   top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
          forc_u              =>   top_as%ubot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)    
@@ -394,6 +394,7 @@ contains
 
          do fl = 1, num_urbanl
             l = filter_urbanl(fl)
+            t = lun_pp%topounit(l)
             g = lun_pp%gridcell(l)
 
             ! Determine aerodynamic resistance to fluxes from urban canopy air to
@@ -413,7 +414,7 @@ contains
             ! shaded walls) to urban canopy air, since it is only dependent on wind speed
             ! Also from Masson 2000.
 
-            canyon_resistance(l) = cpair * forc_rho(g) / (11.8_r8 + 4.2_r8*canyon_wind(l))
+            canyon_resistance(l) = cpair * forc_rho(t) / (11.8_r8 + 4.2_r8*canyon_wind(l))
 
          end do
 
@@ -688,33 +689,33 @@ contains
          ! ground temperature
 
          if (ctype(c) == icol_roof) then
-            cgrnds(p) = forc_rho(g) * cpair * (wtas(l) + wtus_road_perv(l) +  &
+            cgrnds(p) = forc_rho(t) * cpair * (wtas(l) + wtus_road_perv(l) +  &
                  wtus_road_imperv(l) + wtus_sunwall(l) + wtus_shadewall(l)) * &
                  (wtus_roof_unscl(l)/wts_sum(l))
-            cgrndl(p) = forc_rho(g) * (wtaq(l) + wtuq_road_perv(l) +  &
+            cgrndl(p) = forc_rho(t) * (wtaq(l) + wtuq_road_perv(l) +  &
                  wtuq_road_imperv(l) + wtuq_sunwall(l) + wtuq_shadewall(l)) * &
                  (wtuq_roof_unscl(l)/wtq_sum(l))*dqgdT(c)
          else if (ctype(c) == icol_road_perv) then
-            cgrnds(p) = forc_rho(g) * cpair * (wtas(l) + wtus_roof(l) +  &
+            cgrnds(p) = forc_rho(t) * cpair * (wtas(l) + wtus_roof(l) +  &
                  wtus_road_imperv(l) + wtus_sunwall(l) + wtus_shadewall(l)) * &
                  (wtus_road_perv_unscl(l)/wts_sum(l))
-            cgrndl(p) = forc_rho(g) * (wtaq(l) + wtuq_roof(l) +  &
+            cgrndl(p) = forc_rho(t) * (wtaq(l) + wtuq_roof(l) +  &
                  wtuq_road_imperv(l) + wtuq_sunwall(l) + wtuq_shadewall(l)) * &
                  (wtuq_road_perv_unscl(l)/wtq_sum(l))*dqgdT(c)
          else if (ctype(c) == icol_road_imperv) then
-            cgrnds(p) = forc_rho(g) * cpair * (wtas(l) + wtus_roof(l) +  &
+            cgrnds(p) = forc_rho(t) * cpair * (wtas(l) + wtus_roof(l) +  &
                  wtus_road_perv(l) + wtus_sunwall(l) + wtus_shadewall(l)) * &
                  (wtus_road_imperv_unscl(l)/wts_sum(l))
-            cgrndl(p) = forc_rho(g) * (wtaq(l) + wtuq_roof(l) +  &
+            cgrndl(p) = forc_rho(t) * (wtaq(l) + wtuq_roof(l) +  &
                  wtuq_road_perv(l) + wtuq_sunwall(l) + wtuq_shadewall(l)) * &
                  (wtuq_road_imperv_unscl(l)/wtq_sum(l))*dqgdT(c)
          else if (ctype(c) == icol_sunwall) then
-            cgrnds(p) = forc_rho(g) * cpair * (wtas(l) + wtus_roof(l) +  &
+            cgrnds(p) = forc_rho(t) * cpair * (wtas(l) + wtus_roof(l) +  &
                  wtus_road_perv(l) + wtus_road_imperv(l) + wtus_shadewall(l)) * &
                  (wtus_sunwall_unscl(l)/wts_sum(l))
             cgrndl(p) = 0._r8
          else if (ctype(c) == icol_shadewall) then
-            cgrnds(p) = forc_rho(g) * cpair * (wtas(l) + wtus_roof(l) +  &
+            cgrnds(p) = forc_rho(t) * cpair * (wtas(l) + wtus_roof(l) +  &
                  wtus_road_perv(l) + wtus_road_imperv(l) + wtus_sunwall(l)) * &
                  (wtus_shadewall_unscl(l)/wts_sum(l))
             cgrndl(p) = 0._r8
@@ -723,34 +724,34 @@ contains
 
          ! Surface fluxes of momentum, sensible and latent heat
 
-         taux(p)          = -forc_rho(g)*forc_u(t)/ramu(l)
-         tauy(p)          = -forc_rho(g)*forc_v(t)/ramu(l)
+         taux(p)          = -forc_rho(t)*forc_u(t)/ramu(l)
+         tauy(p)          = -forc_rho(t)*forc_v(t)/ramu(l)
 
          ! Use new canopy air temperature
          dth(l) = taf(l) - t_grnd(c)
 
          if (ctype(c) == icol_roof) then
-            eflx_sh_grnd(p)  = -forc_rho(g)*cpair*wtus_roof_unscl(l)*dth(l)
+            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_roof_unscl(l)*dth(l)
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
          else if (ctype(c) == icol_road_perv) then
-            eflx_sh_grnd(p)  = -forc_rho(g)*cpair*wtus_road_perv_unscl(l)*dth(l)
+            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_road_perv_unscl(l)*dth(l)
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
          else if (ctype(c) == icol_road_imperv) then
-            eflx_sh_grnd(p)  = -forc_rho(g)*cpair*wtus_road_imperv_unscl(l)*dth(l)
+            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_road_imperv_unscl(l)*dth(l)
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
          else if (ctype(c) == icol_sunwall) then
-            eflx_sh_grnd(p)  = -forc_rho(g)*cpair*wtus_sunwall_unscl(l)*dth(l)
+            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_sunwall_unscl(l)*dth(l)
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
          else if (ctype(c) == icol_shadewall) then
-            eflx_sh_grnd(p)  = -forc_rho(g)*cpair*wtus_shadewall_unscl(l)*dth(l)
+            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_shadewall_unscl(l)*dth(l)
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
@@ -762,21 +763,21 @@ contains
          dqh(l) = qaf(l) - qg(c)
 
          if (ctype(c) == icol_roof) then
-            qflx_evap_soi(p) = -forc_rho(g)*wtuq_roof_unscl(l)*dqh(l)
+            qflx_evap_soi(p) = -forc_rho(t)*wtuq_roof_unscl(l)*dqh(l)
          else if (ctype(c) == icol_road_perv) then
             ! Evaporation assigned to soil term if dew or snow
             ! or if no liquid water available in soil column
             if (dqh(l) > 0._r8 .or. frac_sno(c) > 0._r8 .or. soilalpha_u(c) <= 0._r8) then
-               qflx_evap_soi(p) = -forc_rho(g)*wtuq_road_perv_unscl(l)*dqh(l)
+               qflx_evap_soi(p) = -forc_rho(t)*wtuq_road_perv_unscl(l)*dqh(l)
                qflx_tran_veg(p) = 0._r8
                ! Otherwise, evaporation assigned to transpiration term
             else
                qflx_evap_soi(p) = 0._r8
-               qflx_tran_veg(p) = -forc_rho(g)*wtuq_road_perv_unscl(l)*dqh(l)
+               qflx_tran_veg(p) = -forc_rho(t)*wtuq_road_perv_unscl(l)*dqh(l)
             end if
             qflx_evap_veg(p) = qflx_tran_veg(p)
          else if (ctype(c) == icol_road_imperv) then
-            qflx_evap_soi(p) = -forc_rho(g)*wtuq_road_imperv_unscl(l)*dqh(l)
+            qflx_evap_soi(p) = -forc_rho(t)*wtuq_road_imperv_unscl(l)*dqh(l)
          else if (ctype(c) == icol_sunwall) then
             qflx_evap_soi(p) = 0._r8
          else if (ctype(c) == icol_shadewall) then
@@ -784,8 +785,8 @@ contains
          end if
 
          ! SCALED sensible and latent heat flux for error check
-         eflx_sh_grnd_scale(p)  = -forc_rho(g)*cpair*wtus(c)*dth(l)
-         qflx_evap_soi_scale(p) = -forc_rho(g)*wtuq(c)*dqh(l)
+         eflx_sh_grnd_scale(p)  = -forc_rho(t)*cpair*wtus(c)*dth(l)
+         qflx_evap_soi_scale(p) = -forc_rho(t)*wtuq(c)*dqh(l)
 
       end do
 
@@ -795,8 +796,8 @@ contains
          l = filter_urbanl(fl)
          t = lun_pp%topounit(l)
          g = lun_pp%gridcell(l)
-         eflx(l)       = -(forc_rho(g)*cpair/rahu(l))*(thm_g(l) - taf(l))
-         qflx(l)       = -(forc_rho(g)/rawu(l))*(forc_q(t) - qaf(l))
+         eflx(l)       = -(forc_rho(t)*cpair/rahu(l))*(thm_g(l) - taf(l))
+         qflx(l)       = -(forc_rho(t)/rawu(l))*(forc_q(t) - qaf(l))
          eflx_scale(l) = sum(eflx_sh_grnd_scale(lun_pp%pfti(l):lun_pp%pftf(l)))
          qflx_scale(l) = sum(qflx_evap_soi_scale(lun_pp%pfti(l):lun_pp%pftf(l)))
          eflx_err(l)   = eflx_scale(l) - eflx(l)
