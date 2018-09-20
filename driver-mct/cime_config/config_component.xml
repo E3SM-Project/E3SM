@@ -494,6 +494,15 @@
     </desc>
   </entry>
 
+  <entry id="RUN_WITH_SUBMIT">
+    <type>logical</type>
+    <group>run_begin_stop_restart</group>
+    <default_value>FALSE</default_value>
+    <valid_values>TRUE,FALSE</valid_values>
+    <file>env_run.xml</file>
+    <desc>Logical to determine whether CESM run has been submitted with the submit script or not</desc>
+  </entry>
+
  <entry id="JOB_IDS">
    <type>char</type>
    <default_value></default_value>
@@ -581,7 +590,37 @@
     <desc>Perl 5 library directory</desc>
   </entry>
 
+  <entry id="mpirun">
+    <type>char</type>
+    <default_value></default_value>
+    <group>config_batch</group>
+    <file>env_case.xml</file>
+    <desc>The mpi run command associated with the machine configured batch system</desc>
+  </entry>
 
+  <entry id="module_system">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>config_batch</group>
+    <file>env_case.xml</file>
+    <desc>The module system type defined for this machine</desc>
+  </entry>
+
+  <entry id="module_init_path">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>config_batch</group>
+    <file>env_case.xml</file>
+    <desc>The module initialization path for module system defined for this machine</desc>
+  </entry>
+
+  <entry id="module_cmd_path">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>config_batch</group>
+    <file>env_case.xml</file>
+    <desc>The module command path for module system defined for this machine</desc>
+  </entry>
 
   <!-- ===================================================================== -->
   <!-- definitions build -->
@@ -668,7 +707,7 @@
   <entry id="USE_ESMF_LIB">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
+    <default_value>TRUE</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
     <desc>TRUE implies using the ESMF library specified by ESMF_LIBDIR or ESMFMKFILE</desc>
@@ -2695,7 +2734,6 @@
    <file>env_build.xml</file>
    <desc>TRUE=>turn on CPP variable COMPARE_TO_NUOPC</desc>
  </entry>
-
 
  <help>
     =========================================
