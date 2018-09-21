@@ -713,6 +713,7 @@
 			<var name="noahres"/>
 			<var name="potevp"/>
 			<var name="sfc_albedo"/>
+			<var name="sfc_albedo_seaice"/>
 			<var name="sfc_emiss"/>
 			<var name="sfc_emibck"/>
 			<var name="sfcrunoff"/>
@@ -2615,6 +2616,9 @@
 
                 <var name="sfc_albedo" type="real" dimensions="nCells Time" units="unitless"
                      description="surface albedo"/>
+
+                <var name="sfc_albedo_seaice" type="real" dimensions="nCells Time" units="unitless"
+                     description="surface albedo over seaice"/>
 
                 <var name="sfc_emiss" type="real" dimensions="nCells Time" units="unitless"
                      description="surface emissivity"/>

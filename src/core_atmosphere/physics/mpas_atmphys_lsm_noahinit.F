@@ -42,6 +42,10 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
 ! * added "use mpas_kind_types" at the top of the module.
 !   Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
+! * in subroutine soil_veg_gen_parm, modified reading the updated file VEGPARM.TBL so that we can update the NOAH
+!   land surface scheme.added the categories low_density_residential,high_density_residential,and high_intensity_
+!   industrial.added the variables ztopvtbl and zbotvtbl.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-01-25.
 
 
  contains
@@ -263,7 +267,7 @@
           lumatch=1
        else
           call physics_message('    skipping over lutype = ' // trim ( lutype ))
-          do lc = 1, lucats+12
+          do lc = 1, lucats+20
              read(16,*)
           enddo
        endif
@@ -283,16 +287,19 @@
        size(z0maxtbl)     < lucats .or. &
        size(albedomintbl) < lucats .or. &
        size(albedomaxtbl) < lucats .or. &
+       size(ztopvtbl)     < lucats .or. &
+       size(zbotvtbl)     < lucats .or. &
        size(emissmintbl ) < lucats .or. &
        size(emissmaxtbl ) < lucats) then
-!      call wrf_error_fatal('table sizes too small for value of lucats in module_sf_noahdrv.f')
+       call physics_error_fatal('table sizes too small for value of lucats in module_sf_noahdrv.f')
     endif
 
     if(lutype.eq.mminlu)then
        do lc = 1, lucats
-          read(16,*) iindex,shdtbl(lc),nrotbl(lc),rstbl(lc),rgltbl(lc),hstbl(lc),snuptbl(lc), &
-                     maxalb(lc),laimintbl(lc),laimaxtbl(lc),emissmintbl(lc),emissmaxtbl(lc),  &
-                     albedomintbl(lc),albedomaxtbl(lc),z0mintbl(lc),z0maxtbl(lc)
+          read(16,*) iindex,shdtbl(lc),nrotbl(lc),rstbl(lc),rgltbl(lc),hstbl(lc),snuptbl(lc),  &
+                     maxalb(lc),laimintbl(lc),laimaxtbl(lc),emissmintbl(lc),emissmaxtbl(lc),   &
+                     albedomintbl(lc),albedomaxtbl(lc),z0mintbl(lc),z0maxtbl(lc),ztopvtbl(lc), &
+                     zbotvtbl(lc)
        enddo
        read (16,*)
        read (16,*)topt_data
@@ -306,6 +313,14 @@
        read (16,*)bare
        read (16,*)
        read (16,*)natural
+       read (16,*)
+       read (16,*)
+       read (16,*)
+       read (16,*)low_density_residential
+       read (16,*)
+       read (16,*)high_density_residential
+       read (16,*)
+       read (16,*)high_intensity_industrial
     endif
 
     2002 continue
@@ -334,6 +349,8 @@
  DM_BCAST_REALS(emissmaxtbl)
  DM_BCAST_REALS(albedomintbl)
  DM_BCAST_REALS(albedomaxtbl)
+ DM_BCAST_REALS(ztopvtbl)
+ DM_BCAST_REALS(zbotvtbl)
  DM_BCAST_REALS(maxalb)
  DM_BCAST_REAL(topt_data)
  DM_BCAST_REAL(cmcmax_data)
@@ -341,6 +358,9 @@
  DM_BCAST_REAL(rsmax_data)
  DM_BCAST_INTEGER(bare)
  DM_BCAST_INTEGER(natural)
+ DM_BCAST_INTEGER(low_density_residential)
+ DM_BCAST_INTEGER(high_density_residential)
+ DM_BCAST_INTEGER(high_intensity_industrial)
 
 !call mpas_log_write(' LUTYPE  = '//trim(lutype))
 !call mpas_log_write(' LUCATS  = $i',intArgs=(/lucats/))
@@ -353,13 +373,16 @@
 !call mpas_log_write(' RSMAX_DATA  = $r',realArgs=(/rsmax_data/))
 !call mpas_log_write(' BARE        = $i',intArgs=(/bare/))
 !call mpas_log_write(' NATURAL     = $i',intArgs=(/natural/))
-
+!call mpas_log_write(' LOW_DENSITY_RESIDENTIAL   = $i , intArgs=(/low_density_residential/))
+!call mpas_log_write(' HIGH_DENSITY_RESIDENTIAL  = $i , intArgs=(/high_density_residential/))
+!call mpas_log_write(' HIGH_DENSITY_INDUSTRIAL   = $i , intArgs=(/high_density_industrial/))
 !call mpas_log_write('')
 !do lc = 1, lucats
-!   call mpas_log_write('$i $r $r $r $r $r $r $r $r $r $r $r $r $r $r $r', intArgs=(/lc/), &
+!   call mpas_log_write('$i $r $r $r $r $r $r $r $r $r $r $r $r $r $r $r $r $r', intArgs=(/lc/),     &
 !                realArgs=(/shdtbl(lc),float(nrotbl(lc)),rstbl(lc),rgltbl(lc),hstbl(lc),snuptbl(lc), &
-!                maxalb(lc),laimintbl(lc),laimaxtbl(lc),emissmintbl(lc),emissmaxtbl(lc),     &
-!                albedomintbl(lc),albedomaxtbl(lc),z0mintbl(lc),z0maxtbl(lc)/))
+!                maxalb(lc),laimintbl(lc),laimaxtbl(lc),emissmintbl(lc),emissmaxtbl(lc),             &
+!                albedomintbl(lc),albedomaxtbl(lc),z0mintbl(lc),z0maxtbl(lc),ztopvtbl(lc),           &
+!                zbottvtbl(lc)/))
 !enddo
  call mpas_log_write('    end read VEGPARM.TBL')
 
