@@ -102,12 +102,13 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         debug = case.get_value("DEBUG")
         mpilib = case.get_value("MPILIB")
         sysos = case.get_value("OS")
+        comp_interface = case.get_value("COMP_INTERFACE")
         expect(mach is not None, "xml variable MACH is not set")
 
         # creates the Macros.make, Depends.compiler, Depends.machine, Depends.machine.compiler
         # and env_mach_specific.xml if they don't already exist.
         if not os.path.isfile("Macros.make") or not os.path.isfile("env_mach_specific.xml"):
-            configure(Machines(machine=mach), caseroot, ["Makefile"], compiler, mpilib, debug, sysos)
+            configure(Machines(machine=mach), caseroot, ["Makefile"], compiler, mpilib, debug, comp_interface, sysos)
 
         # Set tasks to 1 if mpi-serial library
         if mpilib == "mpi-serial":
