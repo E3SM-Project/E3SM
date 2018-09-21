@@ -2,9 +2,7 @@ module ice_comp_mct
 
   ! !USES:
 
-  use esmf
-  use mct_mod
-  use perf_mod
+  use esmf            , only; ESMF_Clock
   use seq_cdata_mod   , only: seq_cdata, seq_cdata_setptrs
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_putdata, seq_infodata_getdata
   use seq_comm_mct    , only: seq_comm_inst, seq_comm_name, seq_comm_suffix
