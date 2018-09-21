@@ -666,7 +666,6 @@ subroutine ieflx_gmean(state, tend, pbuf2d, cam_in, cam_out, nstep)
 
 !- 
     ieflx_glob = 0._r8
-    ieflx      = 0._r8 
 
     qflx = 0._r8 
     rain = 0._r8 
