@@ -371,7 +371,9 @@
 	<directive>--error=slurm.err</directive>
       </directives>
       <queues>
-	<queue walltimemax="00:30:00" default="true">large</queue>
+	<queue walltimemax="00:59:00" nodemin="1"  nodemax="15"  >small</queue>
+	<queue walltimemax="00:59:00" nodemin="16" nodemax="127" >medium</queue>
+	<queue walltimemax="00:59:00" nodemin="128" default="true" >large</queue>
       </queues>
     </batch_system>
 
