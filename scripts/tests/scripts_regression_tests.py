@@ -1455,7 +1455,7 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         else:
             genargs = ["-g", self._baseline_name, "-o", test_name]
             compargs = ["-c", self._baseline_name, test_name]
-
+        print "HERE genargs={}".format(genargs)
         self._create_test(genargs)
 
         # Hist compare should pass
