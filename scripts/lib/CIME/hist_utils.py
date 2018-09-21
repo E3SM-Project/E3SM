@@ -460,7 +460,7 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
             file_extensions = archive.get_hist_file_extensions(archive.get_entry('drv'))
         else:
             file_extensions = archive.get_hist_file_extensions(archive.get_entry(model))
-        hists =  _get_latest_hist_files(model, rundir, file_extensions=file_extensions)
+        hists =  _get_latest_hist_files(model, rundir, file_extensions, ref_case=ref_case)
         logger.debug("latest_files: {}".format(hists))
         num_gen += len(hists)
         for hist in hists:

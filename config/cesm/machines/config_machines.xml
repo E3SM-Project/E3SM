@@ -332,22 +332,22 @@ This allows using a different mpirun command to launch unit tests
       </modules>
       <modules compiler="intel">
 	<command name="load">intel/17.0.1</command>
-	<!-- <command name="load">esmf_libs</command> -->
+	<command name="load">esmf_libs</command>
 	<command name="load">mkl</command>
       </modules>
       <modules compiler="pgi">
 	<command name="load">pgi/17.9</command>
       </modules>
-      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE">
+      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="mct">
 	<command name="load">esmf-7.0.0-defio-mpi-g</command>
       </modules>
-      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE">
+      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE" comp_interface="mct">
 	<command name="load">esmf-7.0.0-defio-mpi-O</command>
       </modules>
-      <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE">
+      <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE" comp_interface="mct">
 	<command name="load">esmf-7.0.0-ncdfio-uni-g</command>
       </modules>
-      <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE">
+      <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="mct">
 	<command name="load">esmf-7.0.0-ncdfio-uni-O</command>
       </modules>
       <modules compiler="gnu">
@@ -378,7 +378,7 @@ This allows using a different mpirun command to launch unit tests
       <modules compiler="gnu" mpilib="mpi-serial">
 	<command name="load">netcdf/4.6.1</command>
       </modules>
--      <modules compiler="pgi" mpilib="mpi-serial">
+      <modules compiler="pgi" mpilib="mpi-serial">
 	<command name="load">netcdf/4.4.1.1</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial">
@@ -391,7 +391,9 @@ This allows using a different mpirun command to launch unit tests
       <env name="MPI_TYPE_DEPTH">16</env>
       <env name="MPI_IB_CONGESTED">1</env>
       <env name="MPI_USE_ARRAY"/>
-<!--      <env name="ESMFMKFILE">/glade/u/home/dunlap/ESMF-INSTALL/8.0.0bs16/lib/libg/Linux.intel.64.mpich2.default/esmf.mk</env> -->
+    </environment_variables>
+    <environment_variables comp_interface="nuopc">
+      <env name="ESMFMKFILE">/glade/u/home/dunlap/ESMF-INSTALL/8.0.0bs16/lib/libg/Linux.intel.64.mpich2.default/esmf.mk</env>
     </environment_variables>
     <environment_variables unit_testing="true">
       <env name="MPI_USE_ARRAY">false</env>

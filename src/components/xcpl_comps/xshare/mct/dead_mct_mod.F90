@@ -10,7 +10,7 @@ module dead_mct_mod
   use mct_mod         , only : mct_gsmap_orderedpoints
   use dead_data_mod   , only : dead_grid_lat, dead_grid_lon, dead_grid_area, dead_grid_mask, dead_grid_frac, dead_grid_index
   use dead_mod        , only : dead_setnewgrid, dead_read_inparms
-  use seq_flds_mod    , only : shr_flds_dom_coord, shr_flds_dom_other
+  use seq_flds_mod    , only : seq_flds_dom_coord, seq_flds_dom_other
   use seq_timemgr_mod , only : seq_timemgr_EClockGetData
 
   implicit none
@@ -287,8 +287,8 @@ contains
     !
     ! Initialize mct dead domain
     !
-    call mct_gGrid_init( GGrid=domain, CoordChars=trim(shr_flds_dom_coord), &
-         OtherChars=trim(shr_flds_dom_other), &
+    call mct_gGrid_init( GGrid=domain, CoordChars=trim(seq_flds_dom_coord), &
+         OtherChars=trim(seq_flds_dom_other), &
          lsize=mct_gsMap_lsize(gsMap, mpicom) )
     call mct_aVect_zero(domain%data)
     !

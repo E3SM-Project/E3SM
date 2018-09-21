@@ -216,7 +216,6 @@ class SystemTestsCommon(object):
         stop_option = self._case.get_value("STOP_OPTION")
         run_type    = self._case.get_value("RUN_TYPE")
         rundir      = self._case.get_value("RUNDIR")
-        is_batch    = self._case.get_value("BATCH_SYSTEM") != "none"
 
         # remove any cprnc output leftover from previous runs
         for compout in glob.iglob(os.path.join(rundir,"*.cprnc.out")):
