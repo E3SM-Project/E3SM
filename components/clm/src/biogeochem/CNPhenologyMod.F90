@@ -30,9 +30,10 @@ module CNPhenologyMod
   use atm2lndType         , only : atm2lnd_type
   use TemperatureType     , only : temperature_type
   use WaterstateType      , only : waterstate_type
-  use ColumnType          , only : col_pp                
+  use ColumnType          , only : col_pp 
+  use TopounitType        , only : top_af  
   use GridcellType        , only : grc_pp                
-  use VegetationType           , only : veg_pp                
+  use VegetationType      , only : veg_pp                
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
   use clm_varctl          , only : nu_com 
@@ -901,7 +902,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     real(r8),parameter :: secspqtrday = secspday / 4  ! seconds per quarter day
-    integer :: g,c,p           ! indices
+    integer :: g,t,c,p           ! indices
     integer :: fp              ! lake filter pft index
     real(r8):: dayspyr         ! days per year
     real(r8):: crit_onset_gdd  ! degree days for onset trigger
@@ -922,7 +923,7 @@ contains
          
          t_soisno                            =>    temperature_vars%t_soisno_col                         , & ! Input:  [real(r8)  (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
          
-         prec10                              =>    atm2lnd_vars%prec10_patch                             , & ! Input:  [real(r8) (:)    ]  10-day running mean precipitation
+         prec10                              =>    top_af%prec10d                                        , & ! Input:  [real(r8) (:)    ]  10-day running mean precipitation, mm H2O/s
          dormant_flag                        =>    cnstate_vars%dormant_flag_patch                       , & ! Output:  [real(r8) (:)   ]  dormancy flag                                     
          days_active                         =>    cnstate_vars%days_active_patch                        , & ! Output:  [real(r8) (:)   ]  number of days since last dormancy                
          onset_flag                          =>    cnstate_vars%onset_flag_patch                         , & ! Output:  [real(r8) (:)   ]  onset flag                                        
@@ -1032,6 +1033,7 @@ contains
       do fp = 1,num_soilp
          p = filter_soilp(fp)
          c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
          g = veg_pp%gridcell(p)
 
          if (stress_decid(ivt(p)) == 1._r8) then
@@ -1175,7 +1177,7 @@ contains
                end if
                ! Require cumulative precipitation threshold for onset 
                ! Dahlin et al., Biogeosciences 2015.
-               if (prec10(p) * 86400._r8 * 10._r8 < cumprec_onset .and. nu_com .eq. 'RD') then
+               if (prec10(t) * 86400._r8 * 10._r8 < cumprec_onset .and. nu_com .eq. 'RD') then
                   onset_flag(p) = 0._r8
                end if
 

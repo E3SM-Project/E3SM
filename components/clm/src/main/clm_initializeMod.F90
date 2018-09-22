@@ -616,6 +616,8 @@ contains
     call t_startf('init_accflds')
 
     call atm2lnd_vars%initAccBuffer(bounds_proc)
+    
+    call top_af%InitAccBuffer(bounds_proc)
 
     call temperature_vars%initAccBuffer(bounds_proc)
 
@@ -835,6 +837,7 @@ contains
     ! must be called after the restart file is read 
 
     call atm2lnd_vars%initAccVars(bounds_proc)
+    call top_af%InitAccVars(bounds_proc)
     call temperature_vars%initAccVars(bounds_proc)
     call canopystate_vars%initAccVars(bounds_proc)
     if (use_cndv) then

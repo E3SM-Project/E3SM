@@ -1,7 +1,7 @@
 module TopounitType
   
   ! -------------------------------------------------------- 
-  ! ALM sub-grid hierarchy:
+  ! ELM sub-grid hierarchy:
   ! Define topographic unit data types, with Init and Clean for each
   ! Init() calls allocate memory and set history fields
   ! -------------------------------------------------------- 
@@ -9,15 +9,20 @@ module TopounitType
   
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
+  use shr_log_mod    , only : errMsg => shr_log_errMsg
+  use abortutils     , only : endrun
   use landunit_varcon, only : max_lunit
   use clm_varcon     , only : ispval, spval
   use clm_varpar     , only : numrad
+  use clm_varctl     , only : iulog, use_cn, use_fates
   use histFileMod    , only : hist_addfld1d
+  use decompMod      , only : bounds_type
 
   implicit none
   save
   private
   
+  !-----------------------------------------------------------------------
   ! sub-grid topology and physical properties defined at the topographic unit level
   type, public :: topounit_physical_properties
 
@@ -58,6 +63,7 @@ module TopounitType
     procedure, public :: Clean => clean_top_pp  
   end type topounit_physical_properties
     
+  !-----------------------------------------------------------------------
   ! Define the data structure where land model receives atmospheric state information.
   type, public :: topounit_atmospheric_state
     real(r8), pointer :: tbot       (:) => null() ! temperature of air at atmospheric forcing height (K)
@@ -79,6 +85,7 @@ module TopounitType
     procedure, public :: Clean => clean_top_as
   end type topounit_atmospheric_state
 
+  !-----------------------------------------------------------------------
   ! Define the data structure that where land model receives atmospheric flux information.
   type, public :: topounit_atmospheric_flux
     real(r8), pointer :: rain       (:) => null() ! rain rate (kg H2O/m**2/s, equivalent to mm liquid H2O/s)
@@ -90,8 +97,12 @@ module TopounitType
   contains
     procedure, public :: Init  => init_top_af
     procedure, public :: Clean => clean_top_af
+    procedure, public :: InitAccBuffer => init_acc_buffer_top_af
+    procedure, public :: InitAccVars => init_acc_vars_top_af
+    procedure, public :: UpdateAccVars => update_acc_vars_top_af
   end type topounit_atmospheric_flux
   
+  !-----------------------------------------------------------------------
   ! Define the data structure that holds energy state information for land at the level of topographic unit.
   type, public :: topounit_energy_state
     real(r8), pointer :: t_rad      (:) => null() ! mean radiative temperature of land surface (K)
@@ -100,6 +111,7 @@ module TopounitType
     procedure, public :: Clean => clean_top_es
   end type topounit_energy_state
 
+  !-----------------------------------------------------------------------
   ! declare the public instances of topounit types
   type(topounit_physical_properties),  public, target :: top_pp
   type(topounit_atmospheric_state),    public, target :: top_as
@@ -108,6 +120,7 @@ module TopounitType
   
   contains
   
+  !-----------------------------------------------------------------------
   subroutine init_top_pp(this, begt, endt)
     class(topounit_physical_properties) :: this
     integer, intent(in) :: begt   ! beginning topographic unit index
@@ -138,6 +151,7 @@ module TopounitType
     allocate(this%surfalb_dif (begt:endt,1:numrad)) ; this%surfalb_dif(:,:) = nan
   end subroutine init_top_pp
   
+  !-----------------------------------------------------------------------
   subroutine clean_top_pp(this)
     class(topounit_physical_properties) :: this
   
@@ -165,6 +179,7 @@ module TopounitType
     deallocate(this%surfalb_dif )
   end subroutine clean_top_pp
   
+  !-----------------------------------------------------------------------
   subroutine init_top_as(this, begt, endt)
     class(topounit_atmospheric_state) :: this
     integer, intent(in) :: begt   ! beginning topographic unit index
@@ -196,6 +211,7 @@ module TopounitType
     !     ptr_lnd=this%thbot)
   end subroutine init_top_as
 
+  !-----------------------------------------------------------------------
   subroutine clean_top_as(this, begt, endt)
     class(topounit_atmospheric_state) :: this
     integer, intent(in) :: begt   ! beginning topographic unit index
@@ -217,6 +233,7 @@ module TopounitType
     deallocate(this%pch4bot)
   end subroutine clean_top_as
 
+  !-----------------------------------------------------------------------
   subroutine init_top_af(this, begt, endt)
     class(topounit_atmospheric_flux) :: this
     integer, intent(in) :: begt   ! beginning topographic unit index
@@ -225,9 +242,13 @@ module TopounitType
     ! Allocate for atmospheric flux forcing variables, initialize to special value
     allocate(this%rain     (begt:endt)) ; this%rain      (:) = spval
     allocate(this%snow     (begt:endt)) ; this%snow      (:) = spval
-    allocate(this%prec24h  (begt:endt)) ; this%prec24h   (:) = spval
-    allocate(this%prec10d  (begt:endt)) ; this%prec10d   (:) = spval
-    allocate(this%prec60d  (begt:endt)) ; this%prec60d   (:) = spval
+    if (use_fates) then
+      allocate(this%prec24h  (begt:endt)) ; this%prec24h   (:) = spval
+    end if
+    if (use_cn) then
+      allocate(this%prec10d  (begt:endt)) ; this%prec10d   (:) = spval
+      allocate(this%prec60d  (begt:endt)) ; this%prec60d   (:) = spval
+    end if
     
     ! Set history fields for atmospheric flux forcing variables
     !call hist_addfld1d (fname='TBOT', units='K',  &
@@ -239,6 +260,7 @@ module TopounitType
     !     ptr_lnd=this%thbot)
   end subroutine init_top_af
 
+  !-----------------------------------------------------------------------
   subroutine clean_top_af(this, begt, endt)
     class(topounit_atmospheric_flux) :: this
     integer, intent(in) :: begt   ! beginning topographic unit index
@@ -246,11 +268,157 @@ module TopounitType
 
     deallocate(this%rain)
     deallocate(this%snow)
-    deallocate(this%prec24h)
-    deallocate(this%prec10d)
-    deallocate(this%prec60d)
+    if (use_fates) then
+      deallocate(this%prec24h)
+    end if
+    if (use_cn) then
+      deallocate(this%prec10d)
+      deallocate(this%prec60d)
+    end if
   end subroutine clean_top_af
+  
+  !-----------------------------------------------------------------------
+  subroutine init_acc_buffer_top_af (this, bounds)
+    ! !DESCRIPTION:
+    ! Initialize accumulation buffer for all required module accumulated fields
+    ! This routine set defaults values that are then overwritten by the
+    ! restart file for restart or branch runs
+    !
+    ! !USES 
+    use clm_varcon  , only : spval
+    use accumulMod  , only : init_accum_field
+    !
+    ! !ARGUMENTS:
+    class(topounit_atmospheric_flux) :: this
+    type(bounds_type), intent(in) :: bounds  
+    !---------------------------------------------------------------------
+    ! Accumulator flux variables used by CN
+    if (use_cn) then
+      call init_accum_field (name='PREC10D', units='MM H2O/S', &
+         desc='10-day running mean of total precipitation', accum_type='runmean', accum_period=-10, &
+         subgrid_type='topounit', numlev=1, init_value=0._r8)
+      call init_accum_field (name='PREC60D', units='MM H2O/S', &
+         desc='60-day running mean of total precipitation', accum_type='runmean', accum_period=-60, &
+         subgrid_type='topounit', numlev=1, init_value=0._r8)
+    end if
+    ! Accumulator flux variables used by FATES
+    if (use_fates) then
+       call init_accum_field (name='PREC24H', units='MM H2O/S', &
+            desc='24hr running mean of total precipitation', accum_type='runmean', accum_period=-1, &
+            subgrid_type='topounit', numlev=1, init_value=0._r8)
+    end if
+  end subroutine init_acc_buffer_top_af
+  
+  !-----------------------------------------------------------------------
+  subroutine init_acc_vars_top_af(this, bounds)
+    ! !DESCRIPTION:
+    ! Initialize module variables that are associated with
+    ! time accumulated fields. This routine is called for both an initial run
+    ! and a restart run (and must therefore must be called after the restart file 
+    ! is read in and the accumulation buffer is obtained)
+    !
+    ! !USES 
+    use accumulMod       , only : extract_accum_field
+    use clm_time_manager , only : get_nstep
+    !
+    ! !ARGUMENTS:
+    class(topounit_atmospheric_flux) :: this
+    type(bounds_type), intent(in)    :: bounds  
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: begt, endt
+    integer  :: nstep
+    integer  :: ier
+    real(r8), pointer :: rbufslt(:)  ! temporary
+    !---------------------------------------------------------------------
 
+    begt = bounds%begt; endt = bounds%endt
+
+    ! Allocate needed dynamic memory for single level pft field
+    allocate(rbufslt(begt:endt), stat=ier)
+    if (ier/=0) then
+       write(iulog,*)' in '
+       call endrun(msg="extract_accum_hist allocation error for rbufslt"//&
+            errMsg(__FILE__, __LINE__))
+    endif
+
+    ! Determine time step
+    nstep = get_nstep()
+
+    if (use_cn) then
+       call extract_accum_field ('PREC10D', rbufslt, nstep)
+       this%prec10d(begt:endt) = rbufslt(begt:endt)
+
+       call extract_accum_field ('PREC60D', rbufslt, nstep)
+       this%prec60d(begt:endt) = rbufslt(begt:endt)
+    end if
+
+    if (use_fates) then
+       call extract_accum_field ('PREC24H', rbufslt, nstep)
+       this%prec24h(begt:endt) = rbufslt(begt:endt)
+
+    end if
+
+    deallocate(rbufslt)
+
+  end subroutine init_acc_vars_top_af
+
+  !-----------------------------------------------------------------------
+  subroutine update_acc_vars_top_af (this, bounds)
+    !
+    ! USES
+    use clm_time_manager, only : get_nstep
+    use accumulMod      , only : update_accum_field, extract_accum_field
+    !
+    ! !ARGUMENTS:
+    class(topounit_atmospheric_flux)    :: this
+    type(bounds_type)      , intent(in) :: bounds  
+    !
+    ! !LOCAL VARIABLES:
+    integer :: g,t,c,p                   ! indices
+    integer :: dtime                     ! timestep size [seconds]
+    integer :: nstep                     ! timestep number
+    integer :: ier                       ! error status
+    integer :: begt, endt
+    real(r8), pointer :: rbufslt(:)      ! temporary single level - topounit level
+    !---------------------------------------------------------------------
+
+    begt = bounds%begt; endt = bounds%endt
+
+    nstep = get_nstep()
+
+    ! Allocate needed dynamic memory for single level pft field
+
+    allocate(rbufslt(begt:endt), stat=ier)
+    if (ier/=0) then
+       write(iulog,*)'update_accum_hist allocation error for rbufslt'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    do t = begt,endt
+       rbufslt(t) = this%rain(t) + this%snow(t)
+    end do
+
+    if (use_cn) then
+       ! Accumulate and extract PREC60D (accumulates total precipitation as 60-day running mean)
+       call update_accum_field  ('PREC60D', rbufslt, nstep)
+       call extract_accum_field ('PREC60D', this%prec60d, nstep)
+
+       ! Accumulate and extract PREC10D (accumulates total precipitation as 10-day running mean)
+       call update_accum_field  ('PREC10D', rbufslt, nstep)
+       call extract_accum_field ('PREC10D', this%prec10d, nstep)
+    end if
+
+    if (use_fates) then
+       call update_accum_field  ('PREC24H', rbufslt, nstep)
+       call extract_accum_field ('PREC24H', this%prec24h, nstep)
+    end if
+
+    deallocate(rbufslt)
+
+  end subroutine update_acc_vars_top_af
+
+  !-----------------------------------------------------------------------
   subroutine init_top_es(this, begt, endt)
     class(topounit_energy_state) :: this
     integer, intent(in) :: begt   ! beginning topographic unit index
@@ -259,6 +427,7 @@ module TopounitType
     allocate(this%t_rad   (begt:endt)) ; this%t_rad   (:) = nan
   end subroutine init_top_es
   
+  !-----------------------------------------------------------------------
   subroutine clean_top_es(this, begt, endt)
     class(topounit_energy_state) :: this
     integer, intent(in) :: begt   ! beginning topographic unit index

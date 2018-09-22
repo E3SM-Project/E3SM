@@ -182,10 +182,6 @@ contains
     real(r8) :: hdmlf    ! human density
     real(r8) :: btran_col(bounds%begc:bounds%endc)
     logical  :: transient_landcover  ! whether this run has any prescribed transient landcover
-    real(r8), target  :: prec60_col_target(bounds%begc:bounds%endc)
-    real(r8), target  :: prec10_col_target(bounds%begc:bounds%endc)
-    real(r8), pointer :: prec60_col(:)
-    real(r8), pointer :: prec10_col(:)
     !-----------------------------------------------------------------------
 
     associate(                                                                & 
@@ -200,8 +196,8 @@ contains
          forc_hdm           =>    atm2lnd_vars%forc_hdm                     , & ! Input:  [real(r8) (:)     ]  population density
          forc_lnfm          =>    atm2lnd_vars%forc_lnfm                    , & ! Input:  [real(r8) (:)     ]  ligntning data 
 #endif 
-         prec60             =>    atm2lnd_vars%prec60_patch                 , & ! Input:  [real(r8) (:)     ]  60-day running mean of tot. precipitation         
-         prec10             =>    atm2lnd_vars%prec10_patch                 , & ! Input:  [real(r8) (:)     ]  10-day running mean of tot. precipitation         
+         prec60             =>    top_af%prec60d                            , & ! Input:  [real(r8) (:)     ]  60-day running mean of tot. precipitation, mm liquid H2O/s 
+         prec10             =>    top_af%prec10d                            , & ! Input:  [real(r8) (:)     ]  10-day running mean of tot. precipitation, mm liquid H2O/s 
          
          tsoi17             =>    temperature_vars%t_soi17cm_col            , & ! Input:  [real(r8) (:)     ]  soil T for top 0.17 m                             
          
@@ -263,16 +259,6 @@ contains
       transient_landcover = run_has_transient_landcover()
 
       !pft to column average 
-      prec10_col => prec10_col_target
-      call p2c(bounds, num_soilc, filter_soilc, &
-           prec10(bounds%begp:bounds%endp), &
-           prec10_col(bounds%begc:bounds%endc))
-
-      prec60_col => prec60_col_target
-      call p2c(bounds, num_soilc, filter_soilc, &
-           prec60(bounds%begp:bounds%endp), &
-           prec60_col(bounds%begc:bounds%endc))
-
       call p2c(bounds, num_soilc, filter_soilc, &
            totvegc(bounds%begp:bounds%endp), &
            totvegc_col(bounds%begc:bounds%endc))
@@ -533,10 +519,11 @@ contains
      !
      do fc = 1, num_soilc
         c = filter_soilc(fc)
-        g= col_pp%gridcell(c)
+        t = col_pp%topounit(c) 
+        g = col_pp%gridcell(c)
         if(grc_pp%latdeg(g) < borealat )then
            baf_peatf(c) = non_boreal_peatfire_c/secsphr*max(0._r8, &
-                min(1._r8,(4.0_r8-prec60_col(c)*secspday)/ &
+                min(1._r8,(4.0_r8-prec60(t)*secspday)/ &
                 4.0_r8))**2*peatf_lf(c)*(1._r8-fsat(c))
         else
            baf_peatf(c) = boreal_peatfire_c/secsphr*exp(-SHR_CONST_PI*(max(wf2(c),0._r8)/0.3_r8))* &
@@ -620,8 +607,8 @@ contains
                     farea_burned(c) = baf_crop(c)+baf_peatf(c)
                  else
                     cri = (4.0_r8*trotr1_col(c)+1.8_r8*trotr2_col(c))/(trotr1_col(c)+trotr2_col(c))
-                    cli = (max(0._r8,min(1._r8,(cri-prec60_col(c)*secspday)/cri))**0.5)* &
-                         (max(0._r8,min(1._r8,(cri-prec10_col(c)*secspday)/cri))**0.5)* &
+                    cli = (max(0._r8,min(1._r8,(cri-prec60(t)*secspday)/cri))**0.5)* &
+                         (max(0._r8,min(1._r8,(cri-prec10(t)*secspday)/cri))**0.5)* &
                          max(0.0005_r8,min(1._r8,19._r8*dtrotr_col(c)*dayspyr*secspday/dt-0.001_r8))* &
                          max(0._r8,min(1._r8,(0.25_r8-(forc_rain(t)+forc_snow(t))*secsphr)/0.25_r8))
                     farea_burned(c) = cli*(cli_scale/secspday)+baf_crop(c)+baf_peatf(c)

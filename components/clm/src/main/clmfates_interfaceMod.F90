@@ -65,6 +65,7 @@ module CLMFatesInterfaceMod
    use clm_varpar        , only : nlevdecomp_full
    use clm_varpar        , only : i_met_lit, i_cel_lit, i_lig_lit
    use PhotosynthesisType , only : photosyns_type
+   Use TopounitType      , only : topounit_atmospheric_flux
    use atm2lndType       , only : atm2lnd_type
    use SurfaceAlbedoType , only : surfalb_type
    use SolarAbsorbedType , only : solarabs_type
@@ -537,9 +538,9 @@ contains
 
    ! ------------------------------------------------------------------------------------
 
-   subroutine dynamics_driv(this, bounds_clump,              &
-         atm2lnd_inst, soilstate_inst, temperature_inst,     &
-         waterstate_inst, canopystate_inst, carbonflux_inst, &
+   subroutine dynamics_driv(this, bounds_clump,                       &
+         top_af_inst, atm2lnd_inst, soilstate_inst, temperature_inst, &
+         waterstate_inst, canopystate_inst, carbonflux_inst,          &
          frictionvel_inst )
     
       ! This wrapper is called daily from clm_driver
@@ -550,6 +551,7 @@ contains
       implicit none
       class(hlm_fates_interface_type), intent(inout) :: this
       type(bounds_type),intent(in)                   :: bounds_clump
+      type(topounit_atmospheric_flux), intent(in)    :: top_af_inst
       type(atm2lnd_type)      , intent(in)           :: atm2lnd_inst
       type(soilstate_type)    , intent(in)           :: soilstate_inst
       type(temperature_type)  , intent(in)           :: temperature_inst
@@ -561,6 +563,7 @@ contains
       ! !LOCAL VARIABLES:
       integer  :: s                        ! site index
       integer  :: c                        ! column index (HLM)
+      integer  :: t                        ! topounit index (HLM)
       integer  :: ifp                      ! patch index
       integer  :: p                        ! HLM patch index
       integer  :: nc                       ! clump index
@@ -614,6 +617,7 @@ contains
       do s=1,this%fates(nc)%nsites
 
          c = this%f2hmap(nc)%fcolumn(s)
+         t = col_pp%topounit(c)
 
          nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
 
@@ -632,7 +636,7 @@ contains
                  temperature_inst%t_veg24_patch(p)
 
             this%fates(nc)%bc_in(s)%precip24_pa(ifp) = &
-                  atm2lnd_inst%prec24_patch(p)
+                  top_af_inst%prec24h(t)
 
             this%fates(nc)%bc_in(s)%relhumid24_pa(ifp) = &
                   atm2lnd_inst%rh24_patch(p)

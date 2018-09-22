@@ -50,7 +50,7 @@ module accumulMod
      character(len=128) :: desc     !field description
      character(len=  8) :: units    !field units
      character(len=  8) :: acctype  !accumulation type: ["timeavg","runmean","runaccum"]
-     character(len=  8) :: type1d   !subgrid type: ["gridcell","landunit","column" or "pft"]
+     character(len=  8) :: type1d   !subgrid type: ["gridcell","topounit","landunit","column" or "pft"]
      character(len=  8) :: type2d   !type2d ('','levsoi','numrad',..etc. )
      integer            :: beg1d    !subgrid type beginning index
      integer            :: end1d    !subgrid type ending index
@@ -96,7 +96,7 @@ contains
     character(len=*), intent(in)           :: desc         !field description
     character(len=*), intent(in)           :: accum_type   !field type: tavg, runm, runa, ins
     integer , intent(in)                   :: accum_period !field accumulation period
-    character(len=*), intent(in)           :: subgrid_type !["gridcell","landunit","column" or "pft"]
+    character(len=*), intent(in)           :: subgrid_type !["gridcell","topounit","landunit","column" or "pft"]
     integer , intent(in)                   :: numlev       !number of vertical levels
     real(r8), intent(in)                   :: init_value   !field initial or reset value
     character(len=*), intent(in), optional :: type2d       !level type (optional) - needed if numlev > 1
@@ -154,6 +154,10 @@ contains
        beg1d = begg
        end1d = endg
        num1d = numg
+    case ('topounit')
+       beg1d = begt
+       end1d = endt
+       num1d = numt
     case ('landunit')
        beg1d = begl
        end1d = endl
