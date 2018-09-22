@@ -208,7 +208,7 @@ class SystemTestsCommon(object):
         self._case.load_env(reset=True)
         self._caseroot = case.get_value("CASEROOT")
 
-    def run_indv(self, suffix="base", st_archive=False):
+    def run_indv(self, suffix="base", st_archive=False, is_batch=True):
         """
         Perform an individual run. Raises an EXCEPTION on fail.
         """
@@ -232,7 +232,7 @@ class SystemTestsCommon(object):
 
         logger.info(infostr)
 
-        self._case.case_run(skip_pnl=self._skip_pnl, submit_resubmits=True)
+        self._case.case_run(skip_pnl=self._skip_pnl, submit_resubmits=is_batch)
 
         if not self._coupler_log_indicates_run_complete():
             expect(False, "Coupler did not indicate run passed")
