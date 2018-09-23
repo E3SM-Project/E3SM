@@ -191,18 +191,18 @@ contains
      real(r8) :: dtime                                  ! land model time step (sec)
      integer  :: nstep                                  ! time step number
      logical  :: found                                  ! flag in search loop
-     integer  :: indexp,indexc,indexl,indexg            ! index of first found in search loop
+     integer  :: indexp,indexc,indexl,indext,indexg     ! index of first found in search loop
      real(r8) :: forc_rain_col(bounds%begc:bounds%endc) ! column level rain rate [mm/s]
      real(r8) :: forc_snow_col(bounds%begc:bounds%endc) ! column level snow rate [mm/s]
      !-----------------------------------------------------------------------
 
      associate(                                                                         & 
           volr                       =>    atm2lnd_vars%volr_grc                      , & ! Input:  [real(r8) (:)   ]  river water storage (m3)                 
-          forc_solad                 =>    atm2lnd_vars%forc_solad_grc                , & ! Input:  [real(r8) (:,:) ]  direct beam radiation (vis=forc_sols , nir=forc_soll )
-          forc_solai                 =>    atm2lnd_vars%forc_solai_grc                , & ! Input:  [real(r8) (:,:) ]  diffuse radiation     (vis=forc_solsd, nir=forc_solld)
+          forc_solad                 =>    top_af%solad                               , & ! Input:  [real(r8) (:,:) ]  direct beam radiation (vis=forc_sols , nir=forc_soll) (W/m**2)
+          forc_solai                 =>    top_af%solai                               , & ! Input:  [real(r8) (:,:) ]  diffuse radiation     (vis=forc_solsd, nir=forc_solld) (W/m**2)
           forc_rain                  =>    top_af%rain                                , & ! Input:  [real(r8) (:)   ]  rain rate (kg H2O/m**2/s, or mm liquid H2O/s)
           forc_snow                  =>    top_af%snow                                , & ! Input:  [real(r8) (:)   ]  snow rate (kg H2O/m**2/s, or mm liquid H2O/s)
-          forc_lwrad                 =>    atm2lnd_vars%forc_lwrad_downscaled_col     , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
+          forc_lwrad                 =>    top_af%lwrad                               , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
           glc_dyn_runoff_routing     =>    glc2lnd_vars%glc_dyn_runoff_routing_grc    , & ! Input:  [real(r8) (:)   ]  whether we're doing runoff routing appropriate for having a dynamic icesheet
 
           do_capsnow                 =>    waterstate_vars%do_capsnow_col             , & ! Input:  [logical (:)    ]  true => do snow capping                  
@@ -535,6 +535,7 @@ contains
           if (veg_pp%active(p)) then
              c = veg_pp%column(p)
              l = veg_pp%landunit(p)
+             t = veg_pp%topounit(p)
              g = veg_pp%gridcell(p)
 
              ! Solar radiation energy balance
@@ -543,7 +544,7 @@ contains
              ! in the urban radiation module
              if (.not. lun_pp%urbpoi(l)) then
                 errsol(p) = fsa(p) + fsr(p) &
-                     - (forc_solad(g,1) + forc_solad(g,2) + forc_solai(g,1) + forc_solai(g,2))
+                     - (forc_solad(t,1) + forc_solad(t,2) + forc_solai(t,1) + forc_solai(t,2))
              else
                 errsol(p) = spval
              end if
@@ -553,7 +554,7 @@ contains
              ! level because of interactions between columns and since a separate check is done
              ! in the urban radiation module
              if (.not. lun_pp%urbpoi(l)) then
-                errlon(p) = eflx_lwrad_out(p) - eflx_lwrad_net(p) - forc_lwrad(c)
+                errlon(p) = eflx_lwrad_out(p) - eflx_lwrad_net(p) - forc_lwrad(t)
              else
                 errlon(p) = spval
              end if
@@ -565,7 +566,7 @@ contains
              ! and a separate check is done above for these terms.
 
              if (.not. lun_pp%urbpoi(l)) then
-                errseb(p) = sabv(p) + sabg_chk(p) + forc_lwrad(c) - eflx_lwrad_out(p) &
+                errseb(p) = sabv(p) + sabg_chk(p) + forc_lwrad(t) - eflx_lwrad_out(p) &
                      - eflx_sh_tot(p) - eflx_lh_tot(p) - eflx_soil_grnd(p)
              else
                 errseb(p) = sabv(p) + sabg(p) &
@@ -586,6 +587,7 @@ contains
              if ( (errsol(p) /= spval) .and. (abs(errsol(p)) > 1.e-7_r8) ) then
                 found = .true.
                 indexp = p
+                indext = veg_pp%topounit(indexp)
                 indexg = veg_pp%gridcell(indexp)
              end if
           end if
@@ -598,12 +600,12 @@ contains
              write(iulog,*)'clm model is stopping - error is greater than 1e-5 (W/m2)'
              write(iulog,*)'fsa           = ',fsa(indexp)
              write(iulog,*)'fsr           = ',fsr(indexp)
-             write(iulog,*)'forc_solad(1) = ',forc_solad(indexg,1)
-             write(iulog,*)'forc_solad(2) = ',forc_solad(indexg,2)
-             write(iulog,*)'forc_solai(1) = ',forc_solai(indexg,1)
-             write(iulog,*)'forc_solai(2) = ',forc_solai(indexg,2)
-             write(iulog,*)'forc_tot      = ',forc_solad(indexg,1)+forc_solad(indexg,2) &
-               +forc_solai(indexg,1)+forc_solai(indexg,2)
+             write(iulog,*)'forc_solad(1) = ',forc_solad(indext,1)
+             write(iulog,*)'forc_solad(2) = ',forc_solad(indext,2)
+             write(iulog,*)'forc_solai(1) = ',forc_solai(indext,1)
+             write(iulog,*)'forc_solai(2) = ',forc_solai(indext,2)
+             write(iulog,*)'forc_tot      = ',forc_solad(indext,1)+forc_solad(indext,2) &
+               +forc_solai(indext,1)+forc_solai(indext,2)
              write(iulog,*)'clm model is stopping'
              call endrun(decomp_index=indexp, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
           end if
@@ -639,6 +641,7 @@ contains
                 found = .true.
                 indexp = p
                 indexc = veg_pp%column(indexp)
+                indext = veg_pp%topounit(indexp)
              end if
           end if
        end do
@@ -653,8 +656,8 @@ contains
              write(iulog,*)'sabg           = ' ,sabg(indexp), ((1._r8- frac_sno(indexc))*sabg_soil(indexp) + &
                   frac_sno(indexc)*sabg_snow(indexp)),sabg_chk(indexp)
 
-             write(iulog,*)'forc_tot      = '  ,forc_solad(indexg,1) + forc_solad(indexg,2) + &
-                  forc_solai(indexg,1) + forc_solai(indexg,2)
+             write(iulog,*)'forc_tot      = '  ,forc_solad(indext,1) + forc_solad(indext,2) + &
+                  forc_solai(indext,1) + forc_solai(indext,2)
 
              write(iulog,*)'eflx_lwrad_net = ' ,eflx_lwrad_net(indexp)
              write(iulog,*)'eflx_sh_tot    = ' ,eflx_sh_tot(indexp)

@@ -157,7 +157,7 @@ contains
          forc_pbot        =>    top_as%pbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
          forc_q           =>    top_as%qbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)             
          forc_rho         =>    top_as%rhobot                          , & ! Input:  [real(r8) (:)   ]  air density (kg/m**3)                                 
-         forc_lwrad       =>    atm2lnd_vars%forc_lwrad_downscaled_col , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)   
+         forc_lwrad       =>    top_af%lwrad                           , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)   
          forc_snow        =>    top_af%snow                            , & ! Input:  [real(r8) (:)   ]  snow rate (kg H2O/m**2/s, or mm liquid H2O/s)                                  
          forc_rain        =>    top_af%rain                            , & ! Input:  [real(r8) (:)   ]  rain rate (kg H2O/m**2/s, or mm liquid H2O/s)                                  
          forc_u           =>    top_as%ubot                            , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)    
@@ -404,7 +404,7 @@ contains
             ! Changed surface temperature from t_lake(c,1) to tsur(c).
             ! Also adjusted so that if there are snow layers present, the top layer absorption
             ! from SNICAR is assigned to the surface skin.
-            ax  = betaprime(c)*sabg(p) + emg_lake*forc_lwrad(c) + 3._r8*stftg3(p)*tgbef(c) &
+            ax  = betaprime(c)*sabg(p) + emg_lake*forc_lwrad(t) + 3._r8*stftg3(p)*tgbef(c) &
                  + forc_rho(t)*cpair/rah(p)*thm(p) &
                  - htvp(c)*forc_rho(t)/raw(p)*(qsatg(c)-qsatgdT(c)*tgbef(c) - forc_q(t)) &
                  + tksur(c)*tsur(c)/dzsur(c)
@@ -559,11 +559,11 @@ contains
          ! eflx_lwrad_out(p) = (1._r8-emg_lake)*forc_lwrad(c) + stftg3(p)*(-3._r8*tgbef(c)+4._r8*t_grnd(c))
          ! What is tgbef doing in this equation? Can't it be exact now? --Zack Subin, 4/14/09
 
-         eflx_lwrad_out(p) = (1._r8-emg_lake)*forc_lwrad(c) + emg_lake*sb*t_grnd(c)**4._r8
+         eflx_lwrad_out(p) = (1._r8-emg_lake)*forc_lwrad(t) + emg_lake*sb*t_grnd(c)**4._r8
 
          ! Ground heat flux
 
-         eflx_soil_grnd(p) = sabg(p) + forc_lwrad(c) - eflx_lwrad_out(p) - &
+         eflx_soil_grnd(p) = sabg(p) + forc_lwrad(t) - eflx_lwrad_out(p) - &
               eflx_sh_grnd(p) - htvp(c)*qflx_evap_soi(p)
          ! The original code in Biogeophysiclake had a bug that calculated incorrect fluxes but conserved energy.
          ! This is kept as the full sabg (not just that absorbed at surface) so that the energy balance check will be correct.
@@ -595,7 +595,7 @@ contains
          ! Energy residual used for melting snow
          ! Effectively moved to LakeTemp
 
-         eflx_gnet(p) = betaprime(c) * sabg(p) + forc_lwrad(c) - (eflx_lwrad_out(p) + &
+         eflx_gnet(p) = betaprime(c) * sabg(p) + forc_lwrad(t) - (eflx_lwrad_out(p) + &
               eflx_sh_tot(p) + eflx_lh_tot(p))
          ! This is the actual heat flux from the ground interface into the lake, not including
          ! the light that penetrates the surface.
@@ -625,7 +625,7 @@ contains
          t = veg_pp%topounit(p)
          
          t_veg(p) = forc_t(t)
-         eflx_lwrad_net(p)  = eflx_lwrad_out(p) - forc_lwrad(c)
+         eflx_lwrad_net(p)  = eflx_lwrad_out(p) - forc_lwrad(t)
          qflx_prec_grnd(p) = forc_rain(t) + forc_snow(t)
 
          ! Because they will be used in pft2col initialize here.

@@ -215,8 +215,8 @@ CONTAINS
     if ( n_drydep == 0 .or. drydep_method /= DD_XLND ) return
 
     associate(                                                    & 
-         forc_solai =>    atm2lnd_vars%forc_solai_grc           , & ! Input:  [real(r8) (:,:) ] direct beam radiation (visible only)             
-         forc_solad =>    atm2lnd_vars%forc_solad_grc           , & ! Input:  [real(r8) (:,:) ] direct beam radiation (visible only)             
+         forc_solai =>    top_af%solai                          , & ! Input:  [real(r8) (:,:) ] direct beam radiation (W/m**2)          
+         forc_solad =>    top_af%solad                          , & ! Input:  [real(r8) (:,:) ] diffuse beam radiation (W/m**2)             
          forc_t     =>    top_as%tbot                           , & ! Input:  [real(r8) (:)   ] atmospheric temperature (Kelvin)                   
          forc_q     =>    top_as%qbot                           , & ! Input:  [real(r8) (:)   ] atmospheric specific humidity (kg/kg)              
          forc_psrf  =>    top_as%pbot                           , & ! Input:  [real(r8) (:)   ] surface pressure (Pa)                              
@@ -257,7 +257,7 @@ CONTAINS
             spec_hum   = forc_q(t)
             rain       = forc_rain(t) 
             sfc_temp   = forc_t(t) 
-            solar_flux = forc_solad(g,1) 
+            solar_flux = forc_solad(t,1) 
             lat        = grc_pp%latdeg(g) 
             lon        = grc_pp%londeg(g) 
             clmveg     = veg_pp%itype(pi) 

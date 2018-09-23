@@ -698,6 +698,7 @@ contains
 
        do p = bounds%begp,bounds%endp
           c = veg_pp%column(p)
+          g = veg_pp%gridcell(p)
           rbufslp(p) = this%forc_wind_grc(g) 
        end do
        call update_accum_field  ('WIND24', rbufslp, nstep)
@@ -705,6 +706,7 @@ contains
 
        do p = bounds%begp,bounds%endp
           c = veg_pp%column(p)
+          g = veg_pp%gridcell(p)
           rbufslp(p) = this%forc_rh_grc(g) 
        end do
        call update_accum_field  ('RH24', rbufslp, nstep)

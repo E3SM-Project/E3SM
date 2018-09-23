@@ -998,8 +998,16 @@ contains
          top_as%rhobot(topo) = (top_as%pbot(topo) - 0.378_r8 * vp) / (rair * top_as%tbot(topo))
          
          ! second, all the flux forcings
-         top_af%rain(topo) = forc_rainc + forc_rainl   ! sum of convective and large-scale rain
-         top_af%snow(topo) = forc_snowc + forc_snowl   ! sum of convective and large-scale snow
+         top_af%rain(topo)    = forc_rainc + forc_rainl       ! sum of convective and large-scale rain
+         top_af%snow(topo)    = forc_snowc + forc_snowl       ! sum of convective and large-scale snow
+         top_af%solad(topo,2) = x2l(index_x2l_Faxa_swndr,i)   ! forc_sollxy  Atm flux  W/m^2
+         top_af%solad(topo,1) = x2l(index_x2l_Faxa_swvdr,i)   ! forc_solsxy  Atm flux  W/m^2
+         top_af%solai(topo,2) = x2l(index_x2l_Faxa_swndf,i)   ! forc_solldxy Atm flux  W/m^2
+         top_af%solai(topo,1) = x2l(index_x2l_Faxa_swvdf,i)   ! forc_solsdxy Atm flux  W/m^2
+         top_af%lwrad(topo)   = x2l(index_x2l_Faxa_lwdn,i)    ! flwdsxy Atm flux  W/m^2
+         ! derived flux forcings
+         top_af%solar(topo) = top_af%solad(topo,2) + top_af%solad(topo,1) + &
+                              top_af%solai(topo,2) + top_af%solai(topo,1)
        end do
          
 #endif

@@ -1283,7 +1283,7 @@ contains
 
    ! ======================================================================================
    
-   subroutine wrap_sunfrac(this,bounds_clump,atm2lnd_inst,canopystate_inst)
+   subroutine wrap_sunfrac(this,bounds_clump,top_af_inst,canopystate_inst)
          
       ! ---------------------------------------------------------------------------------
       ! This interface function is a wrapper call on ED_SunShadeFracs. The only
@@ -1298,7 +1298,7 @@ contains
       type(bounds_type)              , intent(in)    :: bounds_clump
       
       ! direct and diffuse downwelling radiation (W/m2)
-      type(atm2lnd_type),intent(in)        :: atm2lnd_inst
+      type(topounit_atmospheric_flux),intent(in)     :: top_af_inst
       
       ! Input/Output Arguments to CLM
       type(canopystate_type),intent(inout) :: canopystate_inst
@@ -1306,6 +1306,7 @@ contains
       ! Local Variables
       integer  :: p                           ! global index of the host patch
       integer  :: g                           ! global index of the host gridcell
+      integer  :: t                           ! global index of the host topounit
       integer  :: c                           ! global index of the host column
 
       integer  :: s                           ! FATES site index
@@ -1317,8 +1318,8 @@ contains
       type(ed_patch_type), pointer :: cpatch  ! c"urrent" patch  INTERF-TODO: SHOULD
                                               ! BE HIDDEN AS A FATES PRIVATE
 
-      associate( forc_solad => atm2lnd_inst%forc_solad_grc, &
-                 forc_solai => atm2lnd_inst%forc_solai_grc, &
+      associate( forc_solad => top_af_inst%solad, &
+                 forc_solai => top_af_inst%solai, &
                  fsun       => canopystate_inst%fsun_patch, &
                  laisun     => canopystate_inst%laisun_patch, &               
                  laisha     => canopystate_inst%laisha_patch )
@@ -1331,6 +1332,7 @@ contains
 
         do s = 1, this%fates(nc)%nsites
            c = this%f2hmap(nc)%fcolumn(s)
+           t = col_pp%topounit(c)
            g = col_pp%gridcell(c)
 
            do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
@@ -1338,8 +1340,8 @@ contains
 
               p = ifp+col_pp%pfti(c)
 
-              this%fates(nc)%bc_in(s)%solad_parb(ifp,:) = forc_solad(g,:)
-              this%fates(nc)%bc_in(s)%solai_parb(ifp,:) = forc_solai(g,:)
+              this%fates(nc)%bc_in(s)%solad_parb(ifp,:) = forc_solad(t,:)
+              this%fates(nc)%bc_in(s)%solai_parb(ifp,:) = forc_solai(t,:)
 
            end do
         end do

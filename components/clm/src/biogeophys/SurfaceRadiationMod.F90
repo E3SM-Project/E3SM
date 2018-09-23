@@ -16,7 +16,8 @@ module SurfaceRadiationMod
   use CanopyStateType   , only : canopystate_type
   use SurfaceAlbedoType , only : surfalb_type
   use SolarAbsorbedType , only : solarabs_type
-  use GridcellType      , only : grc_pp                
+  use GridcellType      , only : grc_pp  
+  use TopounitType      , only : top_af  
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
   use VegetationType    , only : veg_pp
@@ -351,6 +352,7 @@ contains
      integer  :: p                                   ! patch index
      integer  :: c                                   ! column index
      integer  :: l                                   ! landunit index
+     integer  :: t                                   ! topounit index
      integer  :: g                                   ! grid cell index
      integer  :: ib                                  ! waveband number (1=vis, 2=nir)
      integer  :: iv                                  ! canopy layer
@@ -383,8 +385,8 @@ contains
      associate(                                                     & 
           snl             =>    col_pp%snl                           , & ! Input:  [integer  (:)   ] negative number of snow layers [nbr]     
 
-          forc_solad      =>    atm2lnd_vars%forc_solad_grc       , & ! Input:  [real(r8) (:,:) ] direct beam radiation (W/m**2)        
-          forc_solai      =>    atm2lnd_vars%forc_solai_grc       , & ! Input:  [real(r8) (:,:) ] diffuse radiation (W/m**2)            
+          forc_solad      =>    top_af%solad                      , & ! Input:  [real(r8) (:,:) ] direct beam radiation (W/m**2)        
+          forc_solai      =>    top_af%solai                      , & ! Input:  [real(r8) (:,:) ] diffuse radiation (W/m**2)            
 
           snow_depth      =>    waterstate_vars%snow_depth_col    , & ! Input:  [real(r8) (:)   ] snow height (m)                         
           frac_sno        =>    waterstate_vars%frac_sno_col      , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
@@ -512,12 +514,13 @@ contains
              p = filter_nourbanp(fp)
              c = veg_pp%column(p)
              l = veg_pp%landunit(p)
+             t = veg_pp%topounit(p)
              g = veg_pp%gridcell(p)
 
              ! Absorbed by canopy
 
-             cad(p,ib) = forc_solad(g,ib)*fabd(p,ib)
-             cai(p,ib) = forc_solai(g,ib)*fabi(p,ib)
+             cad(p,ib) = forc_solad(t,ib)*fabd(p,ib)
+             cai(p,ib) = forc_solai(t,ib)*fabi(p,ib)
              sabv(p) = sabv(p) + cad(p,ib) + cai(p,ib)
              fsa(p)  = fsa(p)  + cad(p,ib) + cai(p,ib)
              if (ib == 1) then
@@ -529,8 +532,8 @@ contains
 
              ! Transmitted = solar fluxes incident on ground
 
-             trd(p,ib) = forc_solad(g,ib)*ftdd(p,ib)
-             tri(p,ib) = forc_solad(g,ib)*ftid(p,ib) + forc_solai(g,ib)*ftii(p,ib)
+             trd(p,ib) = forc_solad(t,ib)*ftdd(p,ib)
+             tri(p,ib) = forc_solad(t,ib)*ftid(p,ib) + forc_solai(t,ib)*ftii(p,ib)
              ! Solar radiation absorbed by ground surface
              ! calculate absorbed solar by soil/snow separately
              absrad  = trd(p,ib)*(1._r8-albsod(c,ib)) + tri(p,ib)*(1._r8-albsoi(c,ib))
@@ -720,31 +723,32 @@ contains
        
        do fp = 1,num_nourbanp
           p = filter_nourbanp(fp)
+          t = veg_pp%topounit(p)
           g = veg_pp%gridcell(p)
 
           ! NDVI and reflected solar radiation
 
-          rvis = albd(p,1)*forc_solad(g,1) + albi(p,1)*forc_solai(g,1)
-          rnir = albd(p,2)*forc_solad(g,2) + albi(p,2)*forc_solai(g,2)
+          rvis = albd(p,1)*forc_solad(t,1) + albi(p,1)*forc_solai(t,1)
+          rnir = albd(p,2)*forc_solad(t,2) + albi(p,2)*forc_solai(t,2)
           fsr(p) = rvis + rnir
 
-          fsds_vis_d(p) = forc_solad(g,1)
-          fsds_nir_d(p) = forc_solad(g,2)
-          fsds_vis_i(p) = forc_solai(g,1)
-          fsds_nir_i(p) = forc_solai(g,2)
-          fsr_vis_d(p)  = albd(p,1)*forc_solad(g,1)
-          fsr_nir_d(p)  = albd(p,2)*forc_solad(g,2)
-          fsr_vis_i(p)  = albi(p,1)*forc_solai(g,1)
-          fsr_nir_i(p)  = albi(p,2)*forc_solai(g,2)
+          fsds_vis_d(p) = forc_solad(t,1)
+          fsds_nir_d(p) = forc_solad(t,2)
+          fsds_vis_i(p) = forc_solai(t,1)
+          fsds_nir_i(p) = forc_solai(t,2)
+          fsr_vis_d(p)  = albd(p,1)*forc_solad(t,1)
+          fsr_nir_d(p)  = albd(p,2)*forc_solad(t,2)
+          fsr_vis_i(p)  = albi(p,1)*forc_solai(t,1)
+          fsr_nir_i(p)  = albi(p,2)*forc_solai(t,2)
 
           local_secp1 = secs + nint((grc_pp%londeg(g)/degpsec)/dtime)*dtime
           local_secp1 = mod(local_secp1,isecspday)
           if (local_secp1 == isecspday/2) then
-             fsds_vis_d_ln(p) = forc_solad(g,1)
-             fsds_nir_d_ln(p) = forc_solad(g,2)
-             fsr_vis_d_ln(p) = albd(p,1)*forc_solad(g,1)
-             fsr_nir_d_ln(p) = albd(p,2)*forc_solad(g,2)
-             fsds_vis_i_ln(p) = forc_solai(g,1)
+             fsds_vis_d_ln(p) = forc_solad(t,1)
+             fsds_nir_d_ln(p) = forc_solad(t,2)
+             fsr_vis_d_ln(p) = albd(p,1)*forc_solad(t,1)
+             fsr_nir_d_ln(p) = albd(p,2)*forc_solad(t,2)
+             fsds_vis_i_ln(p) = forc_solai(t,1)
              parveg_ln(p)     = parveg(p)
           else
              fsds_vis_d_ln(p) = spval
@@ -759,10 +763,10 @@ contains
           ! (OPTIONAL)
           c = veg_pp%column(p)
           if (snl(c) < 0) then
-             fsds_sno_vd(p) = forc_solad(g,1)
-             fsds_sno_nd(p) = forc_solad(g,2)
-             fsds_sno_vi(p) = forc_solai(g,1)
-             fsds_sno_ni(p) = forc_solai(g,2)
+             fsds_sno_vd(p) = forc_solad(t,1)
+             fsds_sno_nd(p) = forc_solad(t,2)
+             fsds_sno_vi(p) = forc_solai(t,1)
+             fsds_sno_ni(p) = forc_solai(t,2)
 
              fsr_sno_vd(p) = fsds_vis_d(p)*albsnd_hst(c,1)
              fsr_sno_nd(p) = fsds_nir_d(p)*albsnd_hst(c,2)
@@ -783,6 +787,7 @@ contains
 
        do fp = 1,num_urbanp
           p = filter_urbanp(fp)
+          t = veg_pp%topounit(p)
           g = veg_pp%gridcell(p)
 
           local_secp1 = secs + nint((grc_pp%londeg(g)/degpsec)/dtime)*dtime
@@ -795,16 +800,16 @@ contains
         endif
           ! Solar incident 
 
-          fsds_vis_d(p) = forc_solad(g,1)
-          fsds_nir_d(p) = forc_solad(g,2)    
-          fsds_vis_i(p) = forc_solai(g,1)
-          fsds_nir_i(p) = forc_solai(g,2)
+          fsds_vis_d(p) = forc_solad(t,1)
+          fsds_nir_d(p) = forc_solad(t,2)    
+          fsds_vis_i(p) = forc_solai(t,1)
+          fsds_nir_i(p) = forc_solai(t,2)
 
           ! Determine local noon incident solar
           if (local_secp1 == noonsec) then
-             fsds_vis_d_ln(p) = forc_solad(g,1)
-             fsds_nir_d_ln(p) = forc_solad(g,2)
-             fsds_vis_i_ln(p) = forc_solai(g,1)
+             fsds_vis_d_ln(p) = forc_solad(t,1)
+             fsds_nir_d_ln(p) = forc_solad(t,2)
+             fsds_vis_i_ln(p) = forc_solai(t,1)
              parveg_ln(p)     = 0._r8
           else
              fsds_vis_d_ln(p) = spval 
@@ -816,10 +821,10 @@ contains
           ! Solar reflected 
           ! per unit ground area (roof, road) and per unit wall area (sunwall, shadewall)
 
-          fsr_vis_d(p) = albd(p,1) * forc_solad(g,1)
-          fsr_nir_d(p) = albd(p,2) * forc_solad(g,2)
-          fsr_vis_i(p) = albi(p,1) * forc_solai(g,1)
-          fsr_nir_i(p) = albi(p,2) * forc_solai(g,2)
+          fsr_vis_d(p) = albd(p,1) * forc_solad(t,1)
+          fsr_nir_d(p) = albd(p,2) * forc_solad(t,2)
+          fsr_vis_i(p) = albi(p,1) * forc_solai(t,1)
+          fsr_nir_i(p) = albi(p,2) * forc_solai(t,2)
 
           ! Determine local noon reflected solar
           if (local_secp1 == noonsec) then
@@ -875,6 +880,7 @@ contains
       ! local variables
       integer           :: fp                         ! non-urban filter patch index
       integer           :: p                          ! patch index
+      integer           :: t                          ! topounit index
       integer           :: g                          ! gridcell index
       integer           :: iv                         ! canopy layer index
       integer,parameter :: ipar = 1                   ! The band index for PAR
@@ -882,8 +888,8 @@ contains
       associate( tlai_z  => surfalb_vars%tlai_z_patch,    & ! tlai increment for canopy layer
             fsun_z      => surfalb_vars%fsun_z_patch,     & ! sunlit fraction of canopy layer
             elai        => canopystate_vars%elai_patch,   & ! one-sided leaf area index 
-            forc_solad  => atm2lnd_vars%forc_solad_grc,   & ! direct beam radiation (W/m**2)
-            forc_solai  => atm2lnd_vars%forc_solai_grc,   & ! diffuse radiation (W/m**2)
+            forc_solad  => top_af%solad,                  & ! direct beam radiation (W/m**2)
+            forc_solai  => top_af%solai,                  & ! diffuse radiation (W/m**2)
             fabd_sun_z  => surfalb_vars%fabd_sun_z_patch, & ! absorbed sunlit leaf direct PAR
             fabd_sha_z  => surfalb_vars%fabd_sha_z_patch, & ! absorbed shaded leaf direct PAR
             fabi_sun_z  => surfalb_vars%fabi_sun_z_patch, & ! absorbed sunlit leaf diffuse PAR
@@ -900,6 +906,7 @@ contains
         do fp = 1,num_nourbanp
            
            p = filter_nourbanp(fp)
+           t = veg_pp%topounit(p)
            
            do iv = 1, nrad(p)
               parsun_z(p,iv) = 0._r8
@@ -934,8 +941,8 @@ contains
            g = veg_pp%gridcell(p)
            
            do iv = 1, nrad(p)
-              parsun_z(p,iv) = forc_solad(g,ipar)*fabd_sun_z(p,iv) + forc_solai(g,ipar)*fabi_sun_z(p,iv)
-              parsha_z(p,iv) = forc_solad(g,ipar)*fabd_sha_z(p,iv) + forc_solai(g,ipar)*fabi_sha_z(p,iv)
+              parsun_z(p,iv) = forc_solad(t,ipar)*fabd_sun_z(p,iv) + forc_solai(t,ipar)*fabi_sun_z(p,iv)
+              parsha_z(p,iv) = forc_solad(t,ipar)*fabd_sha_z(p,iv) + forc_solai(t,ipar)*fabi_sha_z(p,iv)
            end do
            
         end do ! end of fp = 1,num_nourbanp loop

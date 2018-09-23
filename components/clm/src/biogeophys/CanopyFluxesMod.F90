@@ -38,7 +38,7 @@ module CanopyFluxesMod
   use ch4Mod                , only : ch4_type
   use PhotosynthesisType    , only : photosyns_type
   use GridcellType          , only : grc_pp 
-  use TopounitType          , only : top_as  
+  use TopounitType          , only : top_as, top_af  
   use ColumnType            , only : col_pp                
   use VegetationType        , only : veg_pp                
   use PhosphorusStateType   , only : phosphorusstate_type
@@ -323,7 +323,7 @@ contains
          dayl                 => grc_pp%dayl                                  , & ! Input:  [real(r8) (:)   ]  daylength (s)
          max_dayl             => grc_pp%max_dayl                              , & ! Input:  [real(r8) (:)   ]  maximum daylength for this grid cell (s)
 
-         forc_lwrad           => atm2lnd_vars%forc_lwrad_downscaled_col    , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)                       
+         forc_lwrad           => top_af%lwrad                              , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)                       
          forc_q               => top_as%qbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)                                 
          forc_pbot            => top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
          forc_th              => top_as%thbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)                            
@@ -677,7 +677,7 @@ contains
          ! Net absorbed longwave radiation by canopy and ground
          ! =air+bir*t_veg**4+cir*t_grnd(c)**4
 
-         air(p) =   emv(p) * (1._r8+(1._r8-emv(p))*(1._r8-emg(c))) * forc_lwrad(c)
+         air(p) =   emv(p) * (1._r8+(1._r8-emv(p))*(1._r8-emg(c))) * forc_lwrad(t)
          bir(p) = - (2._r8-emv(p)*(1._r8-emg(c))) * emv(p) * sb
          cir(p) =   emv(p)*emg(c)*sb
 
@@ -1182,12 +1182,12 @@ contains
 
          ! Downward longwave radiation below the canopy
 
-         dlrad(p) = (1._r8-emv(p))*emg(c)*forc_lwrad(c) + &
+         dlrad(p) = (1._r8-emv(p))*emg(c)*forc_lwrad(t) + &
               emv(p)*emg(c)*sb*tlbef(p)**3*(tlbef(p) + 4._r8*dt_veg(p))
 
          ! Upward longwave radiation above the canopy
 
-         ulrad(p) = ((1._r8-emg(c))*(1._r8-emv(p))*(1._r8-emv(p))*forc_lwrad(c) &
+         ulrad(p) = ((1._r8-emg(c))*(1._r8-emv(p))*(1._r8-emv(p))*forc_lwrad(t) &
               + emv(p)*(1._r8+(1._r8-emg(c))*(1._r8-emv(p)))*sb*tlbef(p)**3*(tlbef(p) + &
               4._r8*dt_veg(p)) + emg(c)*(1._r8-emv(p))*sb*lw_grnd)
 

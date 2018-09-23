@@ -29,7 +29,7 @@ module VOCEmissionMod
   use SoilStateType      , only : soilstate_type
   use SolarAbsorbedType  , only : solarabs_type
   use TemperatureType    , only : temperature_type
-  use TopounitType       , only : top_as
+  use TopounitType       , only : top_as, top_af
   use VegetationType     , only : veg_pp                
   !
   ! !PUBLIC TYPES:
@@ -475,8 +475,8 @@ contains
          !h2osoi_vol   => waterstate_vars%h2osoi_vol_col        , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (m3/m3)                   
          !h2osoi_ice   => waterstate_vars%h2osoi_ice_col        , & ! Input:  [real(r8) (:,:) ]  ice soil content (kg/m3)                        
          
-         forc_solad    => atm2lnd_vars%forc_solad_grc           , & ! Input:  [real(r8) (:,:) ]  direct beam radiation (visible only)            
-         forc_solai    => atm2lnd_vars%forc_solai_grc           , & ! Input:  [real(r8) (:,:) ]  diffuse radiation     (visible only)            
+         forc_solad    => top_af%solad                          , & ! Input:  [real(r8) (:,:) ]  direct beam radiation (W/m**2)            
+         forc_solai    => top_af%solai                          , & ! Input:  [real(r8) (:,:) ]  diffuse radiation     (W/m**2)            
          forc_pbot     => top_as%pbot                           , & ! Input:  [real(r8) (:)   ]  downscaled atmospheric pressure (Pa)                          
          forc_solad24  => atm2lnd_vars%fsd24_patch              , & ! Input:  [real(r8) (:)   ]  direct beam radiation last 24hrs  (visible only)  
          forc_solad240 => atm2lnd_vars%fsd240_patch             , & ! Input:  [real(r8) (:)   ]  direct beam radiation last 240hrs (visible only)  
@@ -547,12 +547,12 @@ contains
           ! Calculate PAR: multiply w/m2 by 4.6 to get umol/m2/s for par (added 8/14/02)
           !------------------------
           ! SUN:
-          par_sun    = (forc_solad(g,1)  + fsun(p)    * forc_solai(g,1))  * 4.6_r8
+          par_sun    = (forc_solad(t,1)  + fsun(p)    * forc_solai(t,1))  * 4.6_r8
           par24_sun  = (forc_solad24(p)  + fsun24(p)  * forc_solai24(p))  * 4.6_r8
           par240_sun = (forc_solad240(p) + fsun240(p) * forc_solai240(p)) * 4.6_r8
 
           ! SHADE:
-          par_sha    = ((1._r8 - fsun(p))    * forc_solai(g,1))  * 4.6_r8
+          par_sha    = ((1._r8 - fsun(p))    * forc_solai(t,1))  * 4.6_r8
           par24_sha  = ((1._r8 - fsun24(p))  * forc_solai24(p))  * 4.6_r8
           par240_sha = ((1._r8 - fsun240(p)) * forc_solai240(p)) * 4.6_r8
 

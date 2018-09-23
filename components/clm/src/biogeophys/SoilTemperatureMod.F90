@@ -23,6 +23,7 @@ module SoilTemperatureMod
   use SoilStateType     , only : soilstate_type
   use EnergyFluxType    , only : energyflux_type
   use TemperatureType   , only : temperature_type
+  use TopounitType      , only : top_af
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
   use VegetationType    , only : veg_pp                
@@ -229,8 +230,6 @@ contains
          
          t_building_max          => urbanparams_vars%t_building_max         , & ! Input:  [real(r8) (:)   ]  maximum internal building temperature (K)
          t_building_min          => urbanparams_vars%t_building_min         , & ! Input:  [real(r8) (:)   ]  minimum internal building temperature (K)
-         
-         forc_lwrad              => atm2lnd_vars%forc_lwrad_downscaled_col  , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
          
          frac_veg_nosno          => canopystate_vars%frac_veg_nosno_patch   , & ! Input:  [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
          
@@ -1726,7 +1725,7 @@ end subroutine SolveTemperature
     type(temperature_type) , intent(in)    :: temperature_vars
     !
     ! !LOCAL VARIABLES:
-    integer  :: j,c,p,l,g,pi                                           ! indices
+    integer  :: j,c,p,l,t,g,pi                                         ! indices
     integer  :: fc                                                     ! lake filtered column indices
     real(r8) :: hs(bounds%begc:bounds%endc)                            ! net energy flux into the surface (w/m2)
     real(r8) :: lwrad_emit(bounds%begc:bounds%endc)                    ! emitted longwave radiation
@@ -1750,10 +1749,10 @@ end subroutine SolveTemperature
     SHR_ASSERT_ALL((ubound(sabg_lyr_col)  == (/bounds%endc,1/)), errMsg(__FILE__, __LINE__))
 
     associate(                                                                &
-         snl                     => col_pp%snl                                 , & ! Input:  [integer (:)    ]  number of snow layers
-         z                       => col_pp%z                                   , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)
+         snl                     => col_pp%snl                              , & ! Input:  [integer (:)    ]  number of snow layers
+         z                       => col_pp%z                                , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)
          
-         forc_lwrad              => atm2lnd_vars%forc_lwrad_downscaled_col  , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
+         forc_lwrad              => top_af%lwrad                            , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
          
          frac_veg_nosno          => canopystate_vars%frac_veg_nosno_patch   , & ! Input:  [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
          
@@ -1823,26 +1822,27 @@ end subroutine SolveTemperature
             if ( pi <= col_pp%npfts(c) ) then
                p = col_pp%pfti(c) + pi - 1
                l = veg_pp%landunit(p)
+               t = veg_pp%topounit(p)
                g = veg_pp%gridcell(p)
 
                if (veg_pp%active(p)) then
                   if (.not. lun_pp%urbpoi(l)) then
                      eflx_gnet(p) = sabg(p) + dlrad(p) &
-                          + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) - lwrad_emit(c) &
+                          + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) - lwrad_emit(c) &
                           - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
                      ! save sabg for balancecheck, in case frac_sno is set to zero later
                      sabg_chk(p) = frac_sno_eff(c) * sabg_snow(p) + (1._r8 - frac_sno_eff(c) ) * sabg_soil(p)
 
                      eflx_gnet_snow = sabg_snow(p) + dlrad(p) &
-                          + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) - lwrad_emit_snow(c) &
+                          + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) - lwrad_emit_snow(c) &
                           - (eflx_sh_snow(p)+qflx_ev_snow(p)*htvp(c))
 
                      eflx_gnet_soil = sabg_soil(p) + dlrad(p) &
-                          + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) - lwrad_emit_soil(c) &
+                          + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) - lwrad_emit_soil(c) &
                           - (eflx_sh_soil(p)+qflx_ev_soil(p)*htvp(c))
 
                      eflx_gnet_h2osfc = sabg_soil(p) + dlrad(p) &
-                          + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) - lwrad_emit_h2osfc(c) &
+                          + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) - lwrad_emit_h2osfc(c) &
                           - (eflx_sh_h2osfc(p)+qflx_ev_h2osfc(p)*htvp(c))
                   else
                      ! For urban columns we use the net longwave radiation (eflx_lwrad_net) because of
@@ -1903,18 +1903,19 @@ end subroutine SolveTemperature
                p = col_pp%pfti(c) + pi - 1
                if (veg_pp%active(p)) then
                   g = veg_pp%gridcell(p)
+                  t = veg_pp%topounit(p)
                   l = veg_pp%landunit(p)
                   if (.not. lun_pp%urbpoi(l)) then
 
-                     eflx_gnet_top = sabg_lyr(p,lyr_top) + dlrad(p) + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) &
+                     eflx_gnet_top = sabg_lyr(p,lyr_top) + dlrad(p) + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) &
                           - lwrad_emit(c) - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
 
                      hs_top(c) = hs_top(c) + eflx_gnet_top*veg_pp%wtcol(p)
 
-                     eflx_gnet_snow = sabg_lyr(p,lyr_top) + dlrad(p) + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) &
+                     eflx_gnet_snow = sabg_lyr(p,lyr_top) + dlrad(p) + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) &
                           - lwrad_emit_snow(c) - (eflx_sh_snow(p)+qflx_ev_snow(p)*htvp(c))
 
-                     eflx_gnet_soil = sabg_lyr(p,lyr_top) + dlrad(p) + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) &
+                     eflx_gnet_soil = sabg_lyr(p,lyr_top) + dlrad(p) + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) &
                           - lwrad_emit_soil(c) - (eflx_sh_soil(p)+qflx_ev_soil(p)*htvp(c))
 
                      hs_top_snow(c) = hs_top_snow(c) + eflx_gnet_snow*veg_pp%wtcol(p)
