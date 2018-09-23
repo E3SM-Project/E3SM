@@ -478,10 +478,10 @@ contains
          forc_solad    => top_af%solad                          , & ! Input:  [real(r8) (:,:) ]  direct beam radiation (W/m**2)            
          forc_solai    => top_af%solai                          , & ! Input:  [real(r8) (:,:) ]  diffuse radiation     (W/m**2)            
          forc_pbot     => top_as%pbot                           , & ! Input:  [real(r8) (:)   ]  downscaled atmospheric pressure (Pa)                          
-         forc_solad24  => atm2lnd_vars%fsd24_patch              , & ! Input:  [real(r8) (:)   ]  direct beam radiation last 24hrs  (visible only)  
-         forc_solad240 => atm2lnd_vars%fsd240_patch             , & ! Input:  [real(r8) (:)   ]  direct beam radiation last 240hrs (visible only)  
-         forc_solai24  => atm2lnd_vars%fsi24_patch              , & ! Input:  [real(r8) (:)   ]  diffuse radiation  last 24hrs     (visible only)  
-         forc_solai240 => atm2lnd_vars%fsi240_patch             , & ! Input:  [real(r8) (:)   ]  diffuse radiation  last 240hrs    (visible only)  
+         forc_solad24  => top_af%fsd24h                         , & ! Input:  [real(r8) (:)   ]  direct beam radiation last 24hrs  (visible only)  
+         forc_solad240 => top_af%fsd240h                        , & ! Input:  [real(r8) (:)   ]  direct beam radiation last 240hrs (visible only)  
+         forc_solai24  => top_af%fsi24h                         , & ! Input:  [real(r8) (:)   ]  diffuse radiation  last 24hrs     (visible only)  
+         forc_solai240 => top_af%fsi240h                        , & ! Input:  [real(r8) (:)   ]  diffuse radiation  last 240hrs    (visible only)  
 
          fsun          => canopystate_vars%fsun_patch           , & ! Input:  [real(r8) (:)   ]  sunlit fraction of canopy                         
          fsun24        => canopystate_vars%fsun24_patch         , & ! Input:  [real(r8) (:)   ]  sunlit fraction of canopy last 24 hrs             
@@ -548,13 +548,13 @@ contains
           !------------------------
           ! SUN:
           par_sun    = (forc_solad(t,1)  + fsun(p)    * forc_solai(t,1))  * 4.6_r8
-          par24_sun  = (forc_solad24(p)  + fsun24(p)  * forc_solai24(p))  * 4.6_r8
-          par240_sun = (forc_solad240(p) + fsun240(p) * forc_solai240(p)) * 4.6_r8
+          par24_sun  = (forc_solad24(t)  + fsun24(p)  * forc_solai24(t))  * 4.6_r8
+          par240_sun = (forc_solad240(t) + fsun240(p) * forc_solai240(t)) * 4.6_r8
 
           ! SHADE:
           par_sha    = ((1._r8 - fsun(p))    * forc_solai(t,1))  * 4.6_r8
-          par24_sha  = ((1._r8 - fsun24(p))  * forc_solai24(p))  * 4.6_r8
-          par240_sha = ((1._r8 - fsun240(p)) * forc_solai240(p)) * 4.6_r8
+          par24_sha  = ((1._r8 - fsun24(p))  * forc_solai24(t))  * 4.6_r8
+          par240_sha = ((1._r8 - fsun240(p)) * forc_solai240(t)) * 4.6_r8
 
           ! Activity factor for LAI (Guenther et al., 2006): all species
           gamma_l = get_gamma_L(fsun240(p), elai(p))
@@ -585,7 +585,7 @@ contains
 
              ! Activity factor for PPFD
              gamma_p = get_gamma_P(par_sun, par24_sun, par240_sun, par_sha, par24_sha, par240_sha, &
-                  fsun(p), fsun240(p), forc_solad240(p),forc_solai240(p), LDF(class_num), cp, alpha)
+                  fsun(p), fsun240(p), forc_solad240(t),forc_solai240(t), LDF(class_num), cp, alpha)
 
              ! Activity factor for T
              gamma_t = get_gamma_T(t_veg240(p), t_veg24(p),t_veg(p), ct1(class_num), ct2(class_num),&

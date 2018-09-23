@@ -88,16 +88,20 @@ module TopounitType
   !-----------------------------------------------------------------------
   ! Define the data structure that where land model receives atmospheric flux information.
   type, public :: topounit_atmospheric_flux
-    real(r8), pointer :: rain       (:)   => null() ! rain rate (kg H2O/m**2/s, equivalent to mm liquid H2O/s)
-    real(r8), pointer :: snow       (:)   => null() ! snow rate (kg H2O/m**2/s, equivalent to mm liquid H2O/s)
-    real(r8), pointer :: solad      (:,:) => null() ! direct beam radiation (numrad) (vis=forc_sols , nir=forc_soll) (W/m**2)
-    real(r8), pointer :: solai      (:,:) => null() ! diffuse radiation (numrad) (vis=forc_solsd, nir=forc_solld) (W/m**2)
-    real(r8), pointer :: solar      (:)   => null() ! incident solar radiation (W/m**2)
-    real(r8), pointer :: lwrad      (:)   => null() ! atm downwrd IR longwave radiation (W/m**2) 
-    ! Accumulated fields
-    real(r8), pointer :: prec24h    (:)   => null() ! 24-hour mean precip rate (kg H2O/m**2/s, equivalent to mm liquid H2O/s)
-    real(r8), pointer :: prec10d    (:)   => null() ! 10-day mean precip rate (kg H2O/m**2/s, equivalent to mm liquid H2O/s)
-    real(r8), pointer :: prec60d    (:)   => null() ! 60-day mean precip rate (kg H2O/m**2/s, equivalent to mm liquid H2O/s)
+    real(r8), pointer :: rain      (:)   => null() ! rain rate (kg H2O/m**2/s, equivalent to mm liquid H2O/s)
+    real(r8), pointer :: snow      (:)   => null() ! snow rate (kg H2O/m**2/s, equivalent to mm liquid H2O/s)
+    real(r8), pointer :: solad     (:,:) => null() ! direct beam radiation (numrad) (vis=forc_sols , nir=forc_soll) (W/m**2)
+    real(r8), pointer :: solai     (:,:) => null() ! diffuse radiation (numrad) (vis=forc_solsd, nir=forc_solld) (W/m**2)
+    real(r8), pointer :: solar     (:)   => null() ! incident solar radiation (W/m**2)
+    real(r8), pointer :: lwrad     (:)   => null() ! atm downwrd IR longwave radiation (W/m**2) 
+    ! Accumulated fields           
+    real(r8), pointer :: prec24h   (:)   => null() ! 24-hour mean precip rate (kg H2O/m**2/s, equivalent to mm liquid H2O/s)
+    real(r8), pointer :: prec10d   (:)   => null() ! 10-day mean precip rate (kg H2O/m**2/s, equivalent to mm liquid H2O/s)
+    real(r8), pointer :: prec60d   (:)   => null() ! 60-day mean precip rate (kg H2O/m**2/s, equivalent to mm liquid H2O/s)
+    real(r8), pointer :: fsd24h    (:)   => null() ! 24hr average of direct beam radiation (W/m**2)
+    real(r8), pointer :: fsd240h   (:)   => null() ! 240hr average of direct beam radiation (W/m**2) 
+    real(r8), pointer :: fsi24h    (:)   => null() ! 24hr average of diffuse beam radiation (W/m**2) 
+    real(r8), pointer :: fsi240h   (:)   => null() ! 240hr average of diffuse beam radiation (W/m**2) 
     
   contains
     procedure, public :: Init  => init_top_af
@@ -258,6 +262,10 @@ module TopounitType
       allocate(this%prec10d  (begt:endt)) ; this%prec10d   (:) = spval
       allocate(this%prec60d  (begt:endt)) ; this%prec60d   (:) = spval
     end if
+    allocate(this%fsd24h   (begt:endt))          ; this%fsd24h    (:) = spval
+    allocate(this%fsd240h  (begt:endt))          ; this%fsd240h   (:) = spval
+    allocate(this%fsi24h   (begt:endt))          ; this%fsi24h    (:) = spval
+    allocate(this%fsi240h  (begt:endt))          ; this%fsi240h   (:) = spval
     
     ! Set history fields for atmospheric flux forcing variables
     !call hist_addfld1d (fname='TBOT', units='K',  &
@@ -288,6 +296,10 @@ module TopounitType
       deallocate(this%prec10d)
       deallocate(this%prec60d)
     end if
+    deallocate(this%fsd24h)
+    deallocate(this%fsd240h)
+    deallocate(this%fsi24h)
+    deallocate(this%fsi240h)
   end subroutine clean_top_af
   
   !-----------------------------------------------------------------------
@@ -320,6 +332,22 @@ module TopounitType
             desc='24hr running mean of total precipitation', accum_type='runmean', accum_period=-1, &
             subgrid_type='topounit', numlev=1, init_value=0._r8)
     end if
+    ! Accumulator variables for radiation fluxes
+    call init_accum_field (name='FSD24H', units='W/m2',                                             &
+         desc='24hr average of direct solar radiation',  accum_type='runmean', accum_period=-1,    &
+         subgrid_type='topounit', numlev=1, init_value=0._r8)
+
+    call init_accum_field (name='FSD240H', units='W/m2',                                            &
+         desc='240hr average of direct solar radiation',  accum_type='runmean', accum_period=-10,  &
+         subgrid_type='topounit', numlev=1, init_value=0._r8)
+
+    call init_accum_field (name='FSI24H', units='W/m2',                                             &
+         desc='24hr average of diffuse solar radiation',  accum_type='runmean', accum_period=-1,   &
+         subgrid_type='topounit', numlev=1, init_value=0._r8)
+
+    call init_accum_field (name='FSI240H', units='W/m2',                                            &
+         desc='240hr average of diffuse solar radiation',  accum_type='runmean', accum_period=-10, &
+         subgrid_type='topounit', numlev=1, init_value=0._r8)
   end subroutine init_acc_buffer_top_af
   
   !-----------------------------------------------------------------------
@@ -357,6 +385,18 @@ module TopounitType
 
     ! Determine time step
     nstep = get_nstep()
+
+    call extract_accum_field ('FSD24H', rbufslt, nstep)
+    this%fsd24h(begt:endt) = rbufslt(begt:endt)
+
+    call extract_accum_field ('FSD240H', rbufslt, nstep)
+    this%fsd240h(begt:endt) = rbufslt(begt:endt)
+
+    call extract_accum_field ('FSI24H', rbufslt, nstep)
+    this%fsi24h(begt:endt) = rbufslt(begt:endt)
+
+    call extract_accum_field ('FSI240H', rbufslt, nstep)
+    this%fsi240h(begt:endt) = rbufslt(begt:endt)
 
     if (use_cn) then
        call extract_accum_field ('PREC10D', rbufslt, nstep)
@@ -408,10 +448,28 @@ module TopounitType
        call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
 
+    ! Accumulate and extract forc_solad24 & forc_solad240 
+    do t = begt,endt
+       rbufslt(t) = this%solad(t,1)
+    end do
+    call update_accum_field  ('FSD240H', rbufslt              , nstep)
+    call extract_accum_field ('FSD240H', this%fsd240h         , nstep)
+    call update_accum_field  ('FSD24H' , rbufslt              , nstep)
+    call extract_accum_field ('FSD24H' , this%fsd24h          , nstep)
+
+    ! Accumulate and extract forc_solai24 & forc_solai240 
+    do t = begt,endt
+       rbufslt(t) = this%solai(t,1)
+    end do
+    call update_accum_field  ('FSI24H' , rbufslt              , nstep)
+    call extract_accum_field ('FSI24H' , this%fsi24h          , nstep)
+    call update_accum_field  ('FSI240H', rbufslt              , nstep)
+    call extract_accum_field ('FSI240H', this%fsi240h         , nstep)
+
+    ! Accumulate and extract total precip
     do t = begt,endt
        rbufslt(t) = this%rain(t) + this%snow(t)
     end do
-
     if (use_cn) then
        ! Accumulate and extract PREC60D (accumulates total precipitation as 60-day running mean)
        call update_accum_field  ('PREC60D', rbufslt, nstep)
