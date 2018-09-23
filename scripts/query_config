@@ -18,6 +18,7 @@ import CIME.XML.machines
 from argparse           import RawTextHelpFormatter
 
 logger = logging.getLogger(__name__)
+supported_comp_interfaces = ["mct", "nuopc", "moab"]
 
 def query_grids(files, long_output):
     """
@@ -178,8 +179,7 @@ def parse_command_line(args, description):
 
     valid_components = ['all']
     files = {}
-    for comp_interface in ('mct', 'nuopc'):
-        print "comp_interface {}".format(comp_interface)
+    for comp_interface in supported_comp_interfaces:
         files[comp_interface] = Files(comp_interface=comp_interface)
         components = files[comp_interface].get_components("COMPSETS_SPEC_FILE")
         for item in components:
@@ -191,8 +191,13 @@ def parse_command_line(args, description):
 
     # Loop through the elements for each component class (in config_files.xml)
     valid_components = ['all']
-    for comp_interface in ('mct', 'nuopc'):
-        components = get_components(files[comp_interface])
+    tmp_comp_interfaces = supported_comp_interfaces
+    for comp_interface in tmp_comp_interfaces:
+        try:
+            components = get_components(files[comp_interface])
+        except:
+            supported_comp_interfaces.remove(comp_interface)
+            pass
         for comp in components:
             if cime_model == "cesm":
                 string = "COMP_ROOT_DIR_{}".format(comp)
@@ -201,9 +206,9 @@ def parse_command_line(args, description):
 
             # determine all components in string
             components = files[comp_interface].get_components(string)
-
-            for item in components:
-                valid_components.append(item)
+            if components:
+                for item in components:
+                    valid_components.append(item)
 
     parser.add_argument("--components", nargs='?', const='all', choices=valid_components,
                         help="Query component settings corresponding to the target component for {} model."
@@ -227,7 +232,7 @@ def parse_command_line(args, description):
     parser.add_argument("--long", action="store_true",
                         help="Provide long output for queries")
 
-    parser.add_argument("--comp_interface", choices=['mct', 'nuopc'],
+    parser.add_argument("--comp_interface", choices=supported_comp_interfaces,
                         default='mct',
                         help="Coupler/Driver interface")
 
