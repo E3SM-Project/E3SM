@@ -1084,6 +1084,7 @@ contains
 
          do f = 1, fn
            p = filterp(f)
+           c = veg_pp%column(p)
            lbl_rsc_h2o(p) = getlblcef(forc_rho(c),t_veg(p))*uaf(p)/(uaf(p)**2._r8+1.e-10_r8)   !laminar boundary resistance for h2o over leaf, should I make this consistent for latent heat calculation?
          enddo
             
