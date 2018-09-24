@@ -17,13 +17,13 @@ void AtmosphereDriver::initialize ( /* inputs? */ ) {
   for (const auto& atm_subcomp : m_atm_processes) {
     if (atm_subcomp->type()==AtmosphereProcessType::Dynamics) {
       // We already found a Dynamics process. Issue an error.
-      errors::runtime_abort("More than one Dynamics process found. This makes no sense. Aborting.\n", -1); 
+      error::runtime_abort("More than one Dynamics process found. This makes no sense. Aborting.\n", -1); 
       dynamics_found = true;
     }
   }
   if (!dynamics_found) {
     // We did not find a Dynamics process. Issue an error.
-    errors::runtime_abort("No Dynamics process found. This makes no sense. Aborting.\n", -2); 
+    error::runtime_abort("No Dynamics process found. This makes no sense. Aborting.\n", -2); 
   }
 
   // Initialize the processes
