@@ -118,6 +118,7 @@ contains
     integer                 :: ierr                ! Return code
     character(CL)           :: tmpstr              ! temporary
     character(CS)           :: calendar_name       ! Calendar name
+    character(CS)           :: inst_suffix
     integer                 :: mpicom              ! MPI communicator
     integer                 :: tmp(6)              ! Array for Broadcast
     integer                 :: dbrc
@@ -201,12 +202,16 @@ contains
           call NUOPC_CompAttributeGet(esmdriver, name="restart_pfile", value=restart_pfile, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+          call NUOPC_CompAttributeGet(esmdriver, name="inst_suffix", value=inst_suffix, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
           if ( len_trim(restart_pfile) == 0 ) then
              rc = ESMF_FAILURE
              call ESMF_LogWrite(trim(subname)//' ERROR restart_pfile must be defined', &
                   ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
              return
           end if
+          restart_pfile = trim(restart_pfile)//inst_suffix
           if (mastertask) then
              unitn = shr_file_getUnit()
              call ESMF_LogWrite(trim(subname)//" read rpointer file = "//trim(restart_pfile), &
