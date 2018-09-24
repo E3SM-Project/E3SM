@@ -36,7 +36,7 @@ def _build_usernl_files(case, model, comp):
 
     if multi_driver:
         ninst_max = case.get_value("NINST_MAX")
-        if comp_interface == "mct" and model not in ("DRV","CPL","ESP"):
+        if comp_interface != "nuopc" and model not in ("DRV","CPL","ESP"):
             ninst_model = case.get_value("NINST_{}".format(model))
             expect(ninst_model==ninst_max,"MULTI_DRIVER mode, all components must have same NINST value.  NINST_{} != {}".format(model,ninst_max))
     if comp == "cpl":
@@ -131,7 +131,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             if comp_interface != "nuopc":
                 ninst  = case.get_value("NINST_{}".format(comp))
             if multi_driver:
-                if comp_interface == "mct":
+                if comp_interface != "nuopc":
                     expect(case.get_value("NINST_LAYOUT_{}".format(comp)) == "concurrent",
                            "If multi_driver is TRUE, NINST_LAYOUT_{} must be concurrent".format(comp))
                 case.set_value("NTASKS_PER_INST_{}".format(comp), ntasks)

@@ -179,10 +179,10 @@ def _post_run_check(case, lid):
     model = case.get_value("MODEL")
     driver = case.get_value("COMP_INTERFACE")
 
-    if driver == 'mct':
-        file_prefix = 'cpl'
-    elif driver == 'nuopc':
+    if driver == 'nuopc':
         file_prefix = 'med'
+    else:
+        file_prefix = 'cpl'
 
     cpl_ninst = 1
     if case.get_value("MULTI_DRIVER"):
@@ -311,7 +311,7 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
         logger.debug("{} RUN_MODEL HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
         # TODO mvertens: remove the hard-wiring for nuopc below
-        if driver == 'mct':
+        if driver != 'nuopc':
             if self.get_value("CHECK_TIMING") or self.get_value("SAVE_TIMING"):
                 logger.debug("{} GET_TIMING BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
                 get_timing(self, lid)     # Run the getTiming script
