@@ -290,6 +290,8 @@
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS30to10wLI">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS18to6v3">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS15to5">96</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oARRM60to10">96</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oARRM60to6">96</value>
       <value compset="_CAM.*_CLM.*MPASO">48</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</value>
@@ -388,6 +390,8 @@
       <value compset="_MPASO" grid="oi%oRRS30to10wLI">48</value>
       <value compset="_MPASO" grid="oi%oRRS18to6v3">48</value>
       <value compset="_MPASO" grid="oi%oRRS15to5">96</value>
+      <value compset="_MPASO" grid="oi%oARRM60to10">48</value>
+      <value compset="_MPASO" grid="oi%oARRM60to6">48</value>
 
     </values>
     <group>run_coupling</group>
