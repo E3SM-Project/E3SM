@@ -23,7 +23,7 @@ struct Mask {
 
   KOKKOS_FORCEINLINE_FUNCTION explicit Mask () {}
 
-  KOKKOS_FORCEINLINE_FUNCTION Mask (const bool& init) {
+  KOKKOS_FORCEINLINE_FUNCTION explicit Mask (const bool& init) {
     //vector_simd // Intel 18 is having an issue with this loop.
     for (int i = 0; i < n; ++i) d[i] = init;
   }
@@ -85,7 +85,7 @@ OnlyMask<Mask> operator ~ (const Mask& m) {
   }
 #define scream_pack_gen_assign_op_all(op)       \
   scream_pack_gen_assign_op_p(op)               \
-  scream_pack_gen_assign_op_s(op)               \
+  scream_pack_gen_assign_op_s(op)
 
 template <typename SCALAR, int PACKN>
 struct Pack {
