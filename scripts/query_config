@@ -197,7 +197,7 @@ def parse_command_line(args, description):
             components = get_components(files[comp_interface])
         except:
             supported_comp_interfaces.remove(comp_interface)
-            pass
+
         for comp in components:
             if cime_model == "cesm":
                 string = "COMP_ROOT_DIR_{}".format(comp)

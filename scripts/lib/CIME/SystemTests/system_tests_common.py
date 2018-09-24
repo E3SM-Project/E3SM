@@ -535,7 +535,7 @@ class FakeTest(SystemTestsCommon):
 
             build.post_build(self._case, [], build_complete=True)
 
-    def run_indv(self, suffix='base', st_archive=False):
+    def run_indv(self, suffix="base", st_archive=False, is_batch=True):
         mpilib = self._case.get_value("MPILIB")
         # This flag is needed by mpt to run a script under mpiexec
         if mpilib == "mpt":
