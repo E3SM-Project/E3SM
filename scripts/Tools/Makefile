@@ -334,6 +334,28 @@ else
   EXTRA_PIO_CPPDEFS = -D_NO_MPI_RSEND
 endif
 
+# Set esmf.mk location with ESMF_LIBDIR having precedent over ESMFMKFILE
+CIME_ESMFMKFILE := undefined_ESMFMKFILE
+ifdef ESMFMKFILE
+   CIME_ESMFMKFILE := $(ESMFMKFILE)
+endif
+ifdef ESMF_LIBDIR
+   CIME_ESMFMKFILE := $(ESMF_LIBDIR)/esmf.mk
+endif
+# For compiling and linking with external ESMF.
+# If linking to external ESMF library then include esmf.mk
+# ESMF_F90COMPILEPATHS
+# ESMF_F90LINKPATHS
+# ESMF_F90LINKRPATHS
+# ESMF_F90ESMFLINKLIBS
+ifeq ($(USE_ESMF_LIB), TRUE)
+  -include $(CIME_ESMFMKFILE)
+  CPPDEFS += -DESMF_VERSION_MAJOR=$(ESMF_VERSION_MAJOR) -DESMF_VERSION_MINOR=$(ESMF_VERSION_MINOR)
+  FFLAGS += $(ESMF_F90COMPILEPATHS)
+  SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
+endif
+
+
 ifdef CPRE
   FPPDEFS := $(subst $(comma),\\$(comma),$(CPPDEFS))
   FPPDEFS := $(patsubst -D%,$(CPRE)%,$(FPPDEFS))
@@ -530,15 +552,6 @@ endif
 
 endif
 
-# Set esmf.mk location with ESMF_LIBDIR having precedent over ESMFMKFILE
-CCSM_ESMFMKFILE := undefined_CCSM_ESMFMKFILE
-ifdef ESMFMKFILE
-   CCSM_ESMFMKFILE := $(ESMFMKFILE)
-endif
-ifdef ESMF_LIBDIR
-   CCSM_ESMFMKFILE := $(ESMF_LIBDIR)/esmf.mk
-endif
-
 
 # System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
 ifndef SLIBS
@@ -563,17 +576,6 @@ ifdef LIB_MPI
    endif
 endif
 
-# For compiling and linking with external ESMF.
-# If linking to external ESMF library then include esmf.mk
-# ESMF_F90COMPILEPATHS
-# ESMF_F90LINKPATHS
-# ESMF_F90LINKRPATHS
-# ESMF_F90ESMFLINKLIBS
-ifeq ($(USE_ESMF_LIB), TRUE)
-  -include $(CCSM_ESMFMKFILE)
-  FFLAGS += $(ESMF_F90COMPILEPATHS)
-  SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
-endif
 
 # Add PETSc libraries
 ifeq ($(strip $(USE_PETSC)), TRUE)
