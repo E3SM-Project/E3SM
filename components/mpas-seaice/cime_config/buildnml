@@ -168,6 +168,16 @@ def buildnml(case, caseroot, compname):
         grid_prefix += 'seaice.RRS.15to5km'
         decomp_date += '151209'
         decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oARRM60to10':
+        grid_date += '180715'
+        grid_prefix += 'seaice.ARRM60to10'
+        decomp_date += '180723'
+        decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oARRM60to6':
+        grid_date += '180803'
+        grid_prefix += 'seaice.ARRM60to6'
+        decomp_date += '180820'
+        decomp_prefix += 'mpas-cice.graph.info.'
 
     #--------------------------------------------------------------------
     # Set the initial file, changing to a restart file for branch and hybrid runs

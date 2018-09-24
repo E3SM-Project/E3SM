@@ -183,6 +183,16 @@ def buildnml(case, caseroot, compname):
         ic_prefix += 'ocean.RRS.15-5km'
         decomp_date += '151209'
         decomp_prefix += 'mpas-o.graph.info.'
+    elif ocn_grid == 'oARRM60to10':
+        ic_date += '180715'
+        ic_prefix += 'ocean.ARRM60to10'
+        decomp_date += '180723'
+        decomp_prefix += 'mpas-o.graph.info.'
+    elif ocn_grid == 'oARRM60to6':
+        ic_date += '180803'
+        ic_prefix += 'ocean.ARRM60to6'
+        decomp_date += '180820'
+        decomp_prefix += 'mpas-o.graph.info.'
 
     #--------------------------------------------------------------------
     # Set OCN_FORCING = core_forced_restoring if restoring file is available
