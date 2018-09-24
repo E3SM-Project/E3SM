@@ -5,27 +5,27 @@
 module compose_test_mod
 
 interface
-   subroutine compose_unittest()
+   subroutine compose_unittest() bind(c)
    end subroutine compose_unittest
 
-   subroutine compose_stt_init(np, nlev, qsize, qsize_d, nelemd)
-     integer, intent(in) :: np, nlev, qsize, qsize_d, nelemd
+   subroutine compose_stt_init(np, nlev, qsize, qsize_d, nelemd) bind(c)
+     integer, value, intent(in) :: np, nlev, qsize, qsize_d, nelemd
    end subroutine compose_stt_init
 
-   subroutine compose_stt_fill_uniform_density(ie, np1, dp3d, dp)
+   subroutine compose_stt_fill_uniform_density(ie, np1, dp3d, dp) bind(c)
      use kinds, only: real_kind
-     use dimensions_mod, only : nlev, np
-     use element_state, only : timelevels
-     integer, intent(in) :: ie, np1
+     use dimensions_mod, only: nlev, np
+     use element_state, only: timelevels
+     integer, value, intent(in) :: ie, np1
      real (kind=real_kind), intent(in) :: dp3d(np,np,nlev,timelevels), &
           dp(np,np,nlev)
    end subroutine compose_stt_fill_uniform_density
 
-   subroutine compose_stt_fill_ics(ie, p_elem, dp, n0_qdp, qdp)
+   subroutine compose_stt_fill_ics(ie, p_elem, dp, n0_qdp, qdp) !bind(c) can't b/c spherical_polar_t isn't
      use kinds, only: real_kind
-     use dimensions_mod, only : nlev, np, qsize_d
-     use coordinate_systems_mod, only : spherical_polar_t
-     integer, intent(in) :: ie, n0_qdp
+     use dimensions_mod, only: nlev, np, qsize_d
+     use coordinate_systems_mod, only: spherical_polar_t
+     integer, value, intent(in) :: ie, n0_qdp
      type(spherical_polar_t), intent(in) :: p_elem(np,np)
      real (kind=real_kind), intent(in) :: dp(np,np,nlev), &
           qdp(np,np,nlev,qsize_d,2)
@@ -33,29 +33,29 @@ interface
 
    subroutine compose_stt_fill_v(ie, p_elem, t, v)
      use kinds, only: real_kind
-     use dimensions_mod, only : nlev, np
-     use coordinate_systems_mod, only : spherical_polar_t
-     integer, intent(in) :: ie
+     use dimensions_mod, only: nlev, np
+     use coordinate_systems_mod, only: spherical_polar_t
+     integer, value, intent(in) :: ie
      type(spherical_polar_t), intent(in) :: p_elem(np,np)
      real (kind=real_kind), intent(in) :: t, v(np,np,2,nlev)
    end subroutine compose_stt_fill_v
 
-   subroutine compose_stt_begin_record()
+   subroutine compose_stt_begin_record() bind(c)
    end subroutine compose_stt_begin_record
 
    subroutine compose_stt_record_q(ie, p_elem, spheremp, np1, dp3d, n0_qdp, qdp)
      use kinds, only: real_kind
-     use dimensions_mod, only : nlev, np, qsize_d
-     use element_state, only : timelevels
-     use coordinate_systems_mod, only : spherical_polar_t
-     integer, intent(in) :: ie, np1, n0_qdp
+     use dimensions_mod, only: nlev, np, qsize_d
+     use element_state, only: timelevels
+     use coordinate_systems_mod, only: spherical_polar_t
+     integer, value, intent(in) :: ie, np1, n0_qdp
      type(spherical_polar_t), intent(in) :: p_elem(np,np)
      real (kind=real_kind), intent(in) :: spheremp(np,np), &
           dp3d(np,np,nlev,timelevels), qdp(np,np,nlev,qsize_d,2)
    end subroutine compose_stt_record_q
 
-   subroutine compose_stt_finish(comm, root, rank)
-     integer, intent(in) :: comm, root, rank
+   subroutine compose_stt_finish(comm, root, rank) bind(c)
+     integer, value, intent(in) :: comm, root, rank
    end subroutine compose_stt_finish
 end interface
 
@@ -137,6 +137,7 @@ contains
   end subroutine print_software_statistics
 
   subroutine compose_stt(hybrid, nets, nete, hvcoord, deriv, elem)
+    use iso_c_binding, only: c_loc
     use parallel_mod, only: parallel_t
     use hybrid_mod, only: hybrid_t
     use element_mod, only: element_t

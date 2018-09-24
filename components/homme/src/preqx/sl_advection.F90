@@ -450,14 +450,14 @@ subroutine apply_cobra(elem, hybrid, tl, nets, nete, n0_qdp, np1_qdp, minq, maxq
   type (hybrid_t)      , intent(in   ) :: hybrid
   type (TimeLevel_t)   , intent(in   ) :: tl
   integer              , intent(in   ) :: nets, nete, n0_qdp, np1_qdp
-  real(kind=real_kind) , intent(in   )          :: minq        (np,np,nlev,qsize,nets:nete)
-  real(kind=real_kind) , intent(in   )          :: maxq        (np,np,nlev,qsize,nets:nete)
+  real(kind=real_kind) , intent(in   ) :: minq        (np,np,nlev,qsize,nets:nete)
+  real(kind=real_kind) , intent(in   ) :: maxq        (np,np,nlev,qsize,nets:nete)
 
-  real(kind=real_kind)                          :: Que         (np,np,nlev,qsize,nets:nete)
-  real(kind=real_kind)                          :: Que_t       (np,np,nlev,qsize,nets:nete)
-  real(kind=real_kind)                          :: mass              (nlev,qsize)
-  real(kind=real_kind)                          :: elem_mass         (nlev,qsize,nets:nete)
-  real(kind=real_kind)                          :: rho         (np,np,nlev,      nets:nete)
+  real(kind=real_kind)                 :: Que         (np,np,nlev,qsize,nets:nete)
+  real(kind=real_kind)                 :: Que_t       (np,np,nlev,qsize,nets:nete)
+  real(kind=real_kind)                 :: mass              (nlev,qsize)
+  real(kind=real_kind)                 :: elem_mass         (nlev,qsize,nets:nete)
+  real(kind=real_kind)                 :: rho         (np,np,nlev,      nets:nete)
   integer :: ie, n, k, q, j
 
   ! compute original mass, at tl_1%n0

@@ -130,10 +130,11 @@ int all_reduce(const Parallel& p, const T* sendbuf, T* rcvbuf, int count, MPI_Op
 
 template <typename T>
 int isend(const Parallel& p, const T* buf, int count, int dest, int tag,
-          MPI_Request* ireq);
+          MPI_Request* ireq = nullptr);
 
 template <typename T>
-int irecv(const Parallel& p, T* buf, int count, int src, int tag, MPI_Request* ireq);
+int irecv(const Parallel& p, T* buf, int count, int src, int tag,
+          MPI_Request* ireq = nullptr);
 
 int waitany(int count, MPI_Request* reqs, int* index, MPI_Status* stats = nullptr);
 
@@ -3758,15 +3759,21 @@ struct InputParser {
 
 // -------------------- Homme-specific impl details -------------------- //
 
+#if 0
+// Includes if using compose library.
+#include "compose/cedr.hpp"
+// Use these when rewriting each CDR's run() function to interact nicely with
+// Homme's nested OpenMP and top-level horizontal threading scheme.
+#include "compose/cedr_qlt.hpp"
+#include "compose/cedr_caas.hpp"
+#endif
+
 #define THREAD_QLT_RUN
 #ifndef QLT_MAIN
 # ifdef HAVE_CONFIG_H
 #  include "config.h.c"
 # endif
 #endif
-
-// Rewrite each CDR's run() function to interact nicely with Homme's nested
-// OpenMP and top-level horizontal threading scheme.
 
 namespace homme {
 namespace compose {
@@ -3863,13 +3870,20 @@ struct QLT : public cedr::qlt::QLT<ES> {
 #       pragma omp master
 #endif
         {
-          for (size_t i = 0; i < lvl.me.size(); ++i) {
-            const auto& mmd = lvl.me[i];
-            mpi::isend(*p_, &bd_.l2r_data(mmd.offset*l2rndps), mmd.size*l2rndps, mmd.rank,
-                       mpitag, &lvl.me_send_req[i]);
-          }
-          if (il+1 == ns_->levels.size())
+          if (il+1 == ns_->levels.size()) {
+            for (size_t i = 0; i < lvl.me.size(); ++i) {
+              const auto& mmd = lvl.me[i];
+              mpi::isend(*p_, &bd_.l2r_data(mmd.offset*l2rndps), mmd.size*l2rndps,
+                         mmd.rank, mpitag, &lvl.me_send_req[i]);
+            }
             mpi::waitall(lvl.me_send_req.size(), lvl.me_send_req.data());
+          } else {
+            for (size_t i = 0; i < lvl.me.size(); ++i) {
+              const auto& mmd = lvl.me[i];
+              mpi::isend(*p_, &bd_.l2r_data(mmd.offset*l2rndps), mmd.size*l2rndps,
+                         mmd.rank, mpitag);
+            }            
+          }
         }
 
 #if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
@@ -3990,23 +4004,11 @@ struct QLT : public cedr::qlt::QLT<ES> {
         {
           for (size_t i = 0; i < lvl.kids.size(); ++i) {
             const auto& mmd = lvl.kids[i];
-            mpi::isend(*p_, &bd_.r2l_data(mmd.offset*r2lndps), mmd.size*r2lndps, mmd.rank,
-                       mpitag, &lvl.kids_req[i]);
+            mpi::isend(*p_, &bd_.r2l_data(mmd.offset*r2lndps), mmd.size*r2lndps,
+                       mmd.rank, mpitag);
           }
         }
       }
-
-      // Wait on sends to clean up.
-#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
-#     pragma omp master
-#endif
-      for (size_t il = 0; il < ns_->levels.size(); ++il) {
-        auto& lvl = ns_->levels[il];
-        if (il+1 < ns_->levels.size())
-          mpi::waitall(lvl.me_send_req.size(), lvl.me_send_req.data());
-        mpi::waitall(lvl.kids_req.size(), lvl.kids_req.data());
-      }
-
 #if ! defined THREAD_QLT_RUN && defined HORIZ_OPENMP
     }
 #endif
@@ -4071,8 +4073,6 @@ int main (int argc, char** argv) {
   return 0;
 }
 #endif
-
-//todo Move to a separate file, qlt_homme.cpp.
 
 namespace homme {
 namespace qlt = cedr::qlt;
@@ -4151,7 +4151,7 @@ struct CDR {
       case 20: return qlt_super_level;
       case 3:  return caas;
       case 30: return caas_super_level;
-      case 42: return qlt;
+      case 42: return caas_super_level; // actually none
       default: cedr_throw_if(true,  "cdr_alg " << cdr_alg << " is invalid.");
       }
     }
@@ -4641,102 +4641,96 @@ void check (CDR& cdr, Data& d, const Real* q_min_r, const Real* q_max_r,
 } // namespace homme
 
 // Interface for Homme, through compose_mod.F90.
-extern "C" void kokkos_init_ () {
+extern "C" void kokkos_init () {
   Kokkos::InitArguments args;
   args.disable_warnings = true;
   Kokkos::initialize(args);
 }
 
-extern "C" void kokkos_finalize_ () { Kokkos::finalize_all(); }
+extern "C" void kokkos_finalize () { Kokkos::finalize_all(); }
 
 static homme::CDR::Ptr g_cdr;
 
 extern "C" void
-cedr_init_impl_ (const homme::Int* fcomm, const homme::Int* cdr_alg,
-                 const homme::Int** sc2gci, const homme::Int** sc2rank,
-                 const homme::Int* gbl_ncell, const homme::Int* lcl_ncell,
-                 const homme::Int* nlev) {
-  const auto p = cedr::mpi::make_parallel(MPI_Comm_f2c(*fcomm));
-  g_cdr = std::make_shared<homme::CDR>(*cdr_alg, *gbl_ncell, *lcl_ncell, *nlev,
+cedr_init_impl (const homme::Int fcomm, const homme::Int cdr_alg,
+                const homme::Int** sc2gci, const homme::Int** sc2rank,
+                const homme::Int gbl_ncell, const homme::Int lcl_ncell,
+                const homme::Int nlev) {
+  const auto p = cedr::mpi::make_parallel(MPI_Comm_f2c(fcomm));
+  g_cdr = std::make_shared<homme::CDR>(cdr_alg, gbl_ncell, lcl_ncell, nlev,
                                        *sc2gci, *sc2rank, p);
 }
 
-extern "C" void
-cedr_unittest_ (const homme::Int* fcomm, homme::Int* nerrp) {
+extern "C" void cedr_unittest (const homme::Int fcomm, homme::Int* nerrp) {
   cedr_assert(g_cdr);
-  auto p = cedr::mpi::make_parallel(MPI_Comm_f2c(*fcomm));
+  auto p = cedr::mpi::make_parallel(MPI_Comm_f2c(fcomm));
   if (homme::CDR::Alg::is_qlt(g_cdr->alg))
-    *nerrp = cedr::qlt::test::TestQLT(p, g_cdr->tree,
-                                      g_cdr->nsublev*g_cdr->ncell).run();
+    *nerrp = cedr::qlt::test::test_qlt(p, g_cdr->tree,
+                                       g_cdr->nsublev*g_cdr->ncell);
   else
     *nerrp = cedr::caas::test::unittest(p);
 }
 
-extern "C" void
-cedr_set_ie2gci_ (const homme::Int* ie, const homme::Int* gci) {
+extern "C" void cedr_set_ie2gci (const homme::Int ie, const homme::Int gci) {
   cedr_assert(g_cdr);
   // Now is a good time to drop the tree, whose persistence was used for unit
   // testing if at all.
   g_cdr->tree = nullptr;
-  homme::set_ie2gci(*g_cdr, *ie - 1, *gci - 1);
+  homme::set_ie2gci(*g_cdr, ie - 1, gci - 1);
 }
 
 static homme::sl::Data::Ptr g_sl;
 
-extern "C" homme::Int cedr_sl_init_ (
-  const homme::Int* np, const homme::Int* nlev, const homme::Int* qsize,
-  const homme::Int* qsized, const homme::Int* timelevels,
-  const homme::Int* need_conservation)
+extern "C" homme::Int cedr_sl_init (
+  const homme::Int np, const homme::Int nlev, const homme::Int qsize,
+  const homme::Int qsized, const homme::Int timelevels,
+  const homme::Int need_conservation)
 {
   cedr_assert(g_cdr);
-  g_sl = std::make_shared<homme::sl::Data>(g_cdr->nlclcell, *np, *nlev, *qsize,
-                                           *qsized, *timelevels);
+  g_sl = std::make_shared<homme::sl::Data>(g_cdr->nlclcell, np, nlev, qsize,
+                                           qsized, timelevels);
   homme::init_ie2lci(*g_cdr);
-  homme::init_tracers(*g_cdr, *nlev, *qsize, *need_conservation);
+  homme::init_tracers(*g_cdr, nlev, qsize, need_conservation);
   homme::sl::check(*g_cdr, *g_sl);
   return 1;
 }
 
-extern "C" void cedr_sl_set_pointers_begin_ (
-  homme::Int* nets, homme::Int* nete)
-{}
-
-extern "C" void cedr_sl_set_spheremp_ (homme::Int* ie, homme::Real* v)
-{ homme::sl::insert(g_sl, *ie - 1, 0, v); }
-extern "C" void cedr_sl_set_qdp_ (homme::Int* ie, homme::Real* v, homme::Int* n0_qdp,
-                                  homme::Int* n1_qdp)
-{ homme::sl::insert(g_sl, *ie - 1, 1, v, *n0_qdp - 1, *n1_qdp - 1); }
-extern "C" void cedr_sl_set_dp3d_ (homme::Int* ie, homme::Real* v, homme::Int* tl_np1)
-{ homme::sl::insert(g_sl, *ie - 1, 2, v, *tl_np1 - 1); }
-extern "C" void cedr_sl_set_q_ (homme::Int* ie, homme::Real* v)
-{ homme::sl::insert(g_sl, *ie - 1, 3, v); }
-
-extern "C" void cedr_sl_set_pointers_end_ () {}
+extern "C" void cedr_sl_set_pointers_begin (homme::Int nets, homme::Int nete) {}
+extern "C" void cedr_sl_set_spheremp (homme::Int ie, homme::Real* v)
+{ homme::sl::insert(g_sl, ie - 1, 0, v); }
+extern "C" void cedr_sl_set_qdp (homme::Int ie, homme::Real* v, homme::Int n0_qdp,
+                                  homme::Int n1_qdp)
+{ homme::sl::insert(g_sl, ie - 1, 1, v, n0_qdp - 1, n1_qdp - 1); }
+extern "C" void cedr_sl_set_dp3d (homme::Int ie, homme::Real* v, homme::Int tl_np1)
+{ homme::sl::insert(g_sl, ie - 1, 2, v, tl_np1 - 1); }
+extern "C" void cedr_sl_set_q (homme::Int ie, homme::Real* v)
+{ homme::sl::insert(g_sl, ie - 1, 3, v); }
+extern "C" void cedr_sl_set_pointers_end () {}
 
 // Run QLT.
-extern "C" void cedr_sl_run_ (const homme::Real* minq, const homme::Real* maxq,
-                              homme::Int* nets, homme::Int* nete) {
+extern "C" void cedr_sl_run (const homme::Real* minq, const homme::Real* maxq,
+                             homme::Int nets, homme::Int nete) {
   cedr_assert(minq != maxq);
   cedr_assert(g_cdr);
   cedr_assert(g_sl);
-  homme::sl::run(*g_cdr, *g_sl, minq, maxq, *nets-1, *nete-1);
+  homme::sl::run(*g_cdr, *g_sl, minq, maxq, nets-1, nete-1);
 }
 
 // Run the cell-local limiter problem.
-extern "C" void cedr_sl_run_local_ (const homme::Real* minq, const homme::Real* maxq,
-                                    homme::Int* nets, homme::Int* nete, homme::Int* use_ir,
-                                    homme::Int* limiter_option) {
+extern "C" void cedr_sl_run_local (const homme::Real* minq, const homme::Real* maxq,
+                                   homme::Int nets, homme::Int nete, homme::Int use_ir,
+                                   homme::Int limiter_option) {
   cedr_assert(minq != maxq);
   cedr_assert(g_cdr);
   cedr_assert(g_sl);
-  homme::sl::run_local(*g_cdr, *g_sl, minq, maxq, *nets-1, *nete-1, *use_ir,
-                       *limiter_option);
+  homme::sl::run_local(*g_cdr, *g_sl, minq, maxq, nets-1, nete-1, use_ir,
+                       limiter_option);
 }
 
 // Check properties for this transport step.
-extern "C" void cedr_sl_check_ (const homme::Real* minq, const homme::Real* maxq,
-                                homme::Int* nets, homme::Int* nete) {
+extern "C" void cedr_sl_check (const homme::Real* minq, const homme::Real* maxq,
+                               homme::Int nets, homme::Int nete) {
   cedr_assert(g_cdr);
   cedr_assert(g_sl);
-  homme::sl::check(*g_cdr, *g_sl, minq, maxq, *nets-1, *nete-1);
+  homme::sl::check(*g_cdr, *g_sl, minq, maxq, nets-1, nete-1);
 }

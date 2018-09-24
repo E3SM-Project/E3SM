@@ -528,60 +528,60 @@ struct StandaloneTracersTester {
 static StandaloneTracersTester::Ptr g_stt;
 } // namespace anon
 
-extern "C" void compose_unittest_ () {
+extern "C" void compose_unittest () {
   slmm_unittest();
 }
 
-extern "C" void compose_stt_init_ (
-  Int* np, Int* nlev, Int* qsize, Int* qsize_d, Int* nelemd)
+extern "C" void compose_stt_init (
+  Int np, Int nlev, Int qsize, Int qsize_d, Int nelemd)
 {
 #ifdef HORIZ_OPENMP
 # pragma omp barrier
 # pragma omp master
 #endif
     g_stt = std::make_shared<StandaloneTracersTester>(
-      *np, *nlev, *qsize, *qsize_d, *nelemd);
+      np, nlev, qsize, qsize_d, nelemd);
 #ifdef HORIZ_OPENMP
 # pragma omp barrier
 #endif
 }
 
-extern "C" void compose_stt_fill_uniform_density_ (
-  Int* ie, Int* np1, Real* dp3d, Real* dp)
+extern "C" void compose_stt_fill_uniform_density (
+  Int ie, Int np1, Real* dp3d, Real* dp)
 {
-  const size_t os = square(g_stt->np) * g_stt->nlev * (*np1 - 1);
-  g_stt->fill_uniform_density(*ie-1, dp3d + os);
-  g_stt->fill_uniform_density(*ie-1, dp);
+  const size_t os = square(g_stt->np) * g_stt->nlev * (np1 - 1);
+  g_stt->fill_uniform_density(ie-1, dp3d + os);
+  g_stt->fill_uniform_density(ie-1, dp);
 }
 
 extern "C" void compose_stt_fill_ics_ (
-  Int* ie, Real* p_elem, Real* dp, Int* n0_qdp, Real* qdp)
+  Int ie, Real* p_elem, Real* dp, Int n0_qdp, Real* qdp)
 {
-  g_stt->fill_ics(*ie-1, reinterpret_cast<const Real*>(p_elem), dp,
+  g_stt->fill_ics(ie-1, reinterpret_cast<const Real*>(p_elem), dp,
                   qdp + square(g_stt->np) * g_stt->nlev * g_stt->qsize_d *
-                  (*n0_qdp - 1));
+                  (n0_qdp - 1));
 }
 
-extern "C" void compose_stt_fill_v_ ( Int* ie, Real* p_elem, Real* t, Real* v) {
-  g_stt->fill_v(*ie-1, reinterpret_cast<const Real*>(p_elem), *t, v);
+extern "C" void compose_stt_fill_v_ (Int ie, Real* p_elem, Real* t, Real* v) {
+  g_stt->fill_v(ie-1, reinterpret_cast<const Real*>(p_elem), *t, v);
 }
 
-extern "C" void compose_stt_begin_record_ () {
+extern "C" void compose_stt_begin_record () {
   g_stt->record_begin();
 }
 
 extern "C" void compose_stt_record_q_ (
-  Int* ie, Real* p_elem, Real* spheremp, Int* np1, Real* dp3d, Int* n0_qdp,
+  Int ie, Real* p_elem, Real* spheremp, Int np1, Real* dp3d, Int n0_qdp,
   Real* qdp)
 {
-  g_stt->record(*ie-1, reinterpret_cast<const Real*>(p_elem), spheremp,
-                dp3d + square(g_stt->np) * g_stt->nlev * (*np1 - 1),
+  g_stt->record(ie-1, reinterpret_cast<const Real*>(p_elem), spheremp,
+                dp3d + square(g_stt->np) * g_stt->nlev * (np1 - 1),
                 qdp + square(g_stt->np) * g_stt->nlev * g_stt->qsize_d *
-                (*n0_qdp - 1));
+                (n0_qdp - 1));
 }
 
-extern "C" void compose_stt_finish_ (Int* fcomm, Int* root, Int* rank) {
-  g_stt->record_end(MPI_Comm_f2c(*fcomm), *root, *rank);
+extern "C" void compose_stt_finish (Int fcomm, Int root, Int rank) {
+  g_stt->record_end(MPI_Comm_f2c(fcomm), root, rank);
 #ifdef HORIZ_OPENMP
 # pragma omp barrier
 # pragma omp master
