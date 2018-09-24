@@ -2312,6 +2312,14 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_data_icebergs" type="logical"
+	category="ocean" group="ocean">
+Use data iceberg meltwater forcing
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- diagnostics -->
 

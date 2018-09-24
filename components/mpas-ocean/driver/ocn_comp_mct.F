@@ -1515,6 +1515,8 @@ contains
 
    real (kind=RKIND), pointer :: config_density0
 
+   real (kind=RKIND), pointer :: totalRemovedRiverRunoffFlux, totalRemovedIceRunoffFlux
+
    type (block_type), pointer :: block_ptr
 
    type (mpas_pool_type), pointer :: meshPool,             &
@@ -1534,6 +1536,7 @@ contains
                                   snowFluxField, seaIceFreshWaterFluxField, icebergFreshWaterFluxField, &
                                   seaIceSalinityFluxField, &
                                   riverRunoffFluxField, iceRunoffFluxField, &
+                                  removedRiverRunoffFluxField, removedIceRunoffFluxField, &
                                   shortWaveHeatFluxField, rainFluxField, &
                                   atmosphericPressureField, iceFractionField, &
                                   seaIcePressureField, windSpeedSquared10mField, &
@@ -1561,6 +1564,7 @@ contains
                                                snowFlux, seaIceFreshWaterFlux, icebergFreshWaterFlux, &
                                                seaIceSalinityFlux, &
                                                riverRunoffFlux, iceRunoffFlux, &
+                                               removedRiverRunoffFlux, removedIceRunoffFlux, &
                                                shortWaveHeatFlux, rainFlux, &
                                                atmosphericPressure, iceFraction, &
                                                seaIcePressure, windSpeedSquared10m, &
@@ -1576,8 +1580,6 @@ contains
                                                iceFluxFeParticulate, &
                                                iceFluxFeDissolved, &
                                                iceFluxDust
-
-   real (kind=RKIND), dimension(:), pointer :: removedRiverRunoffFlux, removedIceRunoffFlux
 
    real (kind=RKIND), dimension(:), pointer :: latCell
 
@@ -1647,6 +1649,8 @@ contains
       call mpas_pool_get_field(forcingPool, 'seaIcePressure', seaIcePressureField)
       call mpas_pool_get_field(forcingPool, 'iceFraction', iceFractionField)
       call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
+      call mpas_pool_get_field(forcingPool, 'removedRiverRunoffFlux', removedRiverRunoffFluxField)
+      call mpas_pool_get_field(forcingPool, 'removedIceRunoffFlux', removedIceRunoffFluxField)
 
       windStressZonal => windStressZonalField % array
       windStressMeridional => windStressMeridionalField % array
@@ -1669,10 +1673,10 @@ contains
       seaIcePressure => seaIcePressureField % array
       iceFraction => iceFractionField % array
       iceRunoffFlux => iceRunoffFluxField % array
+      removedRiverRunoffFlux => removedRiverRunoffFluxField % array
+      removedIceRunoffFlux => removedIceRunoffFluxField % array
 
       call mpas_pool_get_array(meshPool, 'latCell', latCell)
-      call mpas_pool_get_field(forcingPool, 'removedRiverRunoffFlux', removedRiverRunoffFlux)
-      call mpas_pool_get_field(forcingPool, 'removedIceRunoffFlux', removedIceRunoffFlux)
 
       ! BGC fields
       if (config_use_ecosysTracers) then
@@ -1764,7 +1768,7 @@ contains
            seaIceHeatFlux(i) = x2o_o % rAttr(index_x2o_Fioi_melth, n)
         end if
         if ( icebergHeatFluxField % isActive ) then
-           icebergHeatFlux(i) = x2o_o % rAttr(index_x2o_Fioi_meltibh, n)
+           icebergHeatFlux(i) = x2o_o % rAttr(index_x2o_Fioi_bergh, n)
         end if
         if ( snowFluxField % isActive ) then
            snowFlux(i) = x2o_o % rAttr(index_x2o_Faxa_snow, n)
@@ -1773,7 +1777,7 @@ contains
            seaIceFreshWaterFlux(i) = x2o_o % rAttr(index_x2o_Fioi_meltw, n)
         end if
         if ( icebergFreshWaterFluxField % isActive ) then
-           icebergFreshWaterFlux(i) = x2o_o % rAttr(index_x2o_Fioi_meltibw, n)
+           icebergFreshWaterFlux(i) = x2o_o % rAttr(index_x2o_Fioi_bergw, n)
         end if
         if ( seaIceSalinityFluxField % isActive ) then
            seaIceSalinityFlux(i) = x2o_o % rAttr(index_x2o_Fioi_salt, n)

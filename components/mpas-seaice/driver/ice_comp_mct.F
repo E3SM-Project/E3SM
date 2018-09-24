@@ -812,8 +812,13 @@ contains
 
         ! final initialization after clock advance 
         if (first) then
+           call seaice_forcing_get(domain % streamManager, domain, domain % clock, .true.)
+
            call seaice_init_post_clock_advance(domain, domain % clock)
            first = .false.
+        else
+           ! forcing
+           call seaice_forcing_get(domain % streamManager, domain, domain % clock, .false.)
         endif
 
         currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
@@ -1880,6 +1885,7 @@ contains
       atmosCoupling,    &
       atmosFluxes,      &
       oceanFluxes,      &
+      icebergFluxes,    &
       biogeochemistry
 
    integer, pointer :: &
@@ -1889,7 +1895,8 @@ contains
       config_rotate_cartesian_grid,      &
       config_use_topo_meltponds,         &
       config_use_column_biogeochemistry, &
-      config_use_column_shortwave
+      config_use_column_shortwave,       &
+      config_use_data_icebergs
 
    real(kind=RKIND), pointer :: &
       sphere_radius
@@ -1927,6 +1934,8 @@ contains
       oceanShortwaveFlux,          &
       oceanFreshWaterFlux,         &
       oceanSaltFlux,               &
+      bergFreshWaterFlux,          &
+      bergLatentHeatFlux,          &
       oceanNitrateFlux,            &
       oceanSilicateFlux,           &
       oceanAmmoniumFlux,           &
@@ -1958,6 +1967,7 @@ contains
       call MPAS_pool_get_config(configs, "config_use_topo_meltponds", config_use_topo_meltponds)
       call MPAS_pool_get_config(configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
       call MPAS_pool_get_config(configs, "config_use_column_shortwave", config_use_column_shortwave)
+      call MPAS_pool_get_config(configs, "config_use_data_icebergs", config_use_data_icebergs)
 
       call MPAS_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
       call MPAS_pool_get_subpool(block_ptr % structs, "tracers_aggregate", tracersAggregate)
@@ -2007,6 +2017,13 @@ contains
       call MPAS_pool_get_array(oceanFluxes, 'oceanShortwaveFlux', oceanShortwaveFlux)
       call MPAS_pool_get_array(oceanFluxes, 'oceanFreshWaterFlux', oceanFreshWaterFlux)
       call MPAS_pool_get_array(oceanFluxes, 'oceanSaltFlux', oceanSaltFlux)
+
+      if (config_use_data_icebergs) then
+         call MPAS_pool_get_subpool(block_ptr % structs, "iceberg_fluxes", icebergFluxes)
+
+         call MPAS_pool_get_array(icebergFluxes, "bergFreshWaterFlux", bergFreshWaterFlux)
+         call MPAS_pool_get_array(icebergFluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
+      endif
 
       if (config_use_column_biogeochemistry) then
          call mpas_pool_get_subpool(block_ptr % structs, 'biogeochemistry', biogeochemistry)
@@ -2118,6 +2135,11 @@ contains
             i2x_i % rAttr(index_i2x_Fioi_salt ,n) = oceanSaltFlux(i)
             i2x_i % rAttr(index_i2x_Fioi_taux ,n) = tauxo
             i2x_i % rAttr(index_i2x_Fioi_tauy ,n) = tauyo
+
+            if (config_use_data_icebergs) then
+               i2x_i % rAttr(index_i2x_Fioi_bergw,n) = bergFreshWaterFlux(i)
+               i2x_i % rAttr(index_i2x_Fioi_bergh,n) = bergLatentHeatFlux(i)
+            endif
 
             ! export biogeochemistry fields, if configured
             if (config_use_column_biogeochemistry) then

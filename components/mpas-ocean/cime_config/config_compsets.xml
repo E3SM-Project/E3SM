@@ -32,6 +32,16 @@
   </compset>
 
   <compset>
+    <alias>GMPAS-DIB-NYF</alias>
+    <lname>2000_DATM%NYF_SLND_MPASCICE%DIB_MPASO%IBCOREFORCED_DROF%NYF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-DIB-IAF</alias>
+    <lname>2000_DATM%IAF_SLND_MPASCICE%DIB_MPASO%IBCOREFORCED_DROF%IAF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>GMPAS-OECO-IAF</alias>
     <lname>2000_DATM%IAF_SLND_MPASCICE_MPASO%OECO_DROF%IAF_SGLC_SWAV</lname>
   </compset>

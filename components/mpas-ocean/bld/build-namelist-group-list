@@ -17,11 +17,11 @@ my @groups = qw(run_modes
                 hmix_del2_tensor
                 hmix_del4_tensor
                 rayleigh_damping
-                vmix
+                cvmix
                 vmix_const
                 vmix_rich
+                vmix
                 vmix_tanh
-                cvmix
                 forcing
                 coupling
                 shortwaveradiation

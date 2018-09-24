@@ -391,6 +391,7 @@ add_default($nl, 'config_ocean_heat_transfer_type');
 add_default($nl, 'config_sea_freezing_temperature_type');
 add_default($nl, 'config_ocean_surface_type');
 add_default($nl, 'config_couple_biogeochemistry_fields');
+add_default($nl, 'config_use_data_icebergs');
 
 ###############################
 # Namelist group: diagnostics #
