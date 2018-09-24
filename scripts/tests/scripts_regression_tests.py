@@ -659,7 +659,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         # Test that case.setup runs for nuopc and moab drivers
         cls = self.__class__
         for driver in ("nuopc", "moab"):
-            testdir = os.path.join(cls._testroot, 'testcreatenewcase', driver)
+            testdir = os.path.join(cls._testroot, 'testcreatenewcase.{}'.format( driver))
             if os.path.exists(testdir):
                 shutil.rmtree(testdir)
             args =  " --driver {} --case {} --compset X --res f19_g16 --output-root {} --handle-preexisting-dirs=r".format(driver, testdir, cls._testroot)
@@ -695,7 +695,7 @@ class J_TestCreateNewcase(unittest.TestCase):
                 try:
                     print ("Attempt to remove directory {}".format(tfile))
                     shutil.rmtree(tfile)
-                except:
+                except BaseException:
                     print("Could not remove directory {}".format(tfile))
 
 ###############################################################################
