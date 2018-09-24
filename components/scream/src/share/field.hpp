@@ -1,6 +1,7 @@
 #ifndef SCREAM_FIELD_HPP
 #define SCREAM_FIELD_HPP
 
+#include "field_tag.hpp"
 #include "scream_types.hpp"
 
 #include <vector>
@@ -28,9 +29,10 @@ struct FieldHeader {
   // Besides, we may want to be able to query name/rank/dims BEFORE the view is actually instantiated.
   // Finally, if you look at Field, you may notice that the way we store the view
   // in the manager may lose info about the rank/dims.
-  std::string       m_name;
-  int               m_rank;
-  std::vector<int>  m_dims;
+  std::string           m_name;
+  int                   m_rank;
+  std::vector<int>      m_dims;
+  std::vector<FieldTag> m_tags;
   // Something about output/restart?
   // Perhaps something about the timestamp of the field (when it was last updated)?
 };
