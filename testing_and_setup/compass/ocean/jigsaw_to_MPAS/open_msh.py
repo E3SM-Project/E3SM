@@ -10,6 +10,7 @@ Phillip J. Wolfram
 
 import numpy as np
 
+
 def readmsh(fname):
     """
     Reads JIGSAW msh structure and produces a dictionary with values.
@@ -18,7 +19,7 @@ def readmsh(fname):
     09/22/2017
     """
 
-    def store_datavals(datavals, dataset): # {{{
+    def store_datavals(datavals, dataset):  # {{{
 
         if datavals['ARRAY'] is not None:
             # remove empty data
@@ -31,7 +32,8 @@ def readmsh(fname):
                 else:
                     dataset[key] = datavals[key]
                 datavals.pop(key)
-            entryname = [aval for aval in datavals.keys() if aval not in ['ARRAY']]
+            entryname = [aval for aval in datavals.keys() if aval not in [
+                'ARRAY']]
 
             if 'TRI' in entryname[0]:
                 dtype = 'i'
@@ -39,12 +41,13 @@ def readmsh(fname):
                 dtype = 'f8'
             datavals['ARRAY'] = np.asarray(datavals['ARRAY'], dtype=dtype)
 
-            # decided to throw away "index" from msh because it isn't truly a real number
+            # decided to throw away "index" from msh because it isn't truly a
+            # real number
             dataset[entryname[0]] = datavals['ARRAY']
             datavals = {}
             datavals['ARRAY'] = None
 
-        return datavals, dataset # }}}
+        return datavals, dataset  # }}}
 
     dataset = {}
     datavals = {}
@@ -85,4 +88,5 @@ def readmsh(fname):
 if __name__ == "__main__":
     import sys
     msh = readmsh(sys.argv[1])
-    import pdb; pdb.set_trace()
+    import pdb
+    pdb.set_trace()

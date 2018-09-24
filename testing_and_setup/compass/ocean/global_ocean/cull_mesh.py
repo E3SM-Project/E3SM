@@ -34,6 +34,7 @@ def removeFile(fileName):
     except OSError:
         pass
 
+
 parser = OptionParser()
 parser.add_option("--with_cavities", action="store_true", dest="with_cavities")
 parser.add_option("--with_critical_passages", action="store_true",
@@ -76,8 +77,12 @@ subprocess.check_call(args, env=os.environ.copy())
 # Create the land mask based on the land coverage, i.e. coastline data.
 # Run command is:
 # ./MpasMaskCreator.x  base_mesh.nc land_mask.nc -f land_coverage.geojson
-args = ['./MpasMaskCreator.x', 'base_mesh.nc', 'land_mask_1_from_land_coverage.nc',
-        '-f', 'land_coverage.geojson']
+args = [
+    './MpasMaskCreator.x',
+    'base_mesh.nc',
+    'land_mask_1_from_land_coverage.nc',
+    '-f',
+    'land_coverage.geojson']
 print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
 

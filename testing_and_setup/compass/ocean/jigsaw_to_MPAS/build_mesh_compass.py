@@ -16,18 +16,22 @@ import subprocess
 import scipy.io as sio
 import define_base_mesh
 
+
 def removeFile(fileName):
     try:
         os.remove(fileName)
     except OSError:
         pass
 
-print 'Step 1. Build cellWidth array as function of latitude and longitude'
-cellWidth,lon,lat = define_base_mesh.cellWidthVsLatLon()
-sio.savemat('cellWidthVsLatLon.mat',{'cellWidth':cellWidth,'lon':lon,'lat':lat})
 
-print 'Step 2. Build mesh using JIGSAW' 
-args = ["octave","--silent","--eval",
+print 'Step 1. Build cellWidth array as function of latitude and longitude'
+cellWidth, lon, lat = define_base_mesh.cellWidthVsLatLon()
+sio.savemat(
+    'cellWidthVsLatLon.mat', {
+        'cellWidth': cellWidth, 'lon': lon, 'lat': lat})
+
+print 'Step 2. Build mesh using JIGSAW'
+args = ["octave", "--silent", "--eval",
         "jigsaw_driver"]
 print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
@@ -46,5 +50,3 @@ args = ['./MpasMeshConverter.x',
         'base_mesh.nc']
 print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
-
-

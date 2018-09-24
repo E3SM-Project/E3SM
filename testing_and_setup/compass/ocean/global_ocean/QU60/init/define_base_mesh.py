@@ -8,6 +8,7 @@
 """
 import numpy as np
 
+
 def cellWidthVsLatLon():
 
     ddeg = 10
@@ -16,6 +17,6 @@ def cellWidthVsLatLon():
     lat = np.arange(-90, 90.01, ddeg)
     lon = np.arange(-180, 180.01, ddeg)
 
-    cellWidth = constantCellWidth*np.ones((lat.size, lon.size))
-    print 'cellWidth',cellWidth
-    return cellWidth,lon,lat
+    cellWidth = constantCellWidth * np.ones((lat.size, lon.size))
+    print 'cellWidth', cellWidth
+    return cellWidth, lon, lat

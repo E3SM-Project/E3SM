@@ -16,18 +16,22 @@ import subprocess
 import scipy.io as sio
 import define_base_mesh
 
+
 def removeFile(fileName):
     try:
         os.remove(fileName)
     except OSError:
         pass
 
-print 'Step 1. Build cellWidth array as function of latitude and longitude'
-cellWidth,lon,lat = define_base_mesh.cellWidthVsLatLon()
-sio.savemat('cellWidthVsLatLon.mat',{'cellWidth':cellWidth,'lon':lon,'lat':lat})
 
-print 'Step 2. Build mesh using JIGSAW' 
-args = ["octave","--silent","--eval",
+print 'Step 1. Build cellWidth array as function of latitude and longitude'
+cellWidth, lon, lat = define_base_mesh.cellWidthVsLatLon()
+sio.savemat(
+    'cellWidthVsLatLon.mat', {
+        'cellWidth': cellWidth, 'lon': lon, 'lat': lat})
+
+print 'Step 2. Build mesh using JIGSAW'
+args = ["octave", "--silent", "--eval",
         "jigsaw_driver"]
 print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
@@ -61,7 +65,7 @@ print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
 
 #print 'Step 6. Create vtk file for visualization'
-#args = ['./paraview_vtk_field_extractor.py',
+# args = ['./paraview_vtk_field_extractor.py',
 #        '--ignore_time',
 #				'-d','maxEdges=0',
 #        '-v', 'allOnCells',
@@ -74,7 +78,7 @@ print 'Step 7. Cull land cells'
 args = ['./MpasCellCuller.x',
         'base_mesh.nc',
         'base_mesh_culled.nc']
-print "running",' '.join(args)
+print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
 
 print 'Step 8. Injecting bathymetry'
@@ -86,4 +90,3 @@ subprocess.check_call(args, env=os.environ.copy())
 print "***********************************************"
 print "**    The global mesh file is base_mesh.nc   **"
 print "***********************************************"
-

@@ -1,4 +1,4 @@
-#/usr/bin/env python
+# /usr/bin/env python
 """
 % Create cell width for this mesh on a regular latitude-longitude grid.
 % Outputs:
@@ -9,11 +9,12 @@
 import numpy as np
 import mesh_definition_tools as mdt
 
+
 def cellWidthVsLatLon():
     lat = np.arange(-90, 90.01, 0.1)
     lon = np.arange(-180, 180.01, 10.0)
 
     cellWidthVsLat = mdt.EC_CellWidthVsLat(lat)
-    cellWidth = np.outer(cellWidthVsLat,np.ones([1, lon.size]))
+    cellWidth = np.outer(cellWidthVsLat, np.ones([1, lon.size]))
 
-    return cellWidth,lon,lat
+    return cellWidth, lon, lat
