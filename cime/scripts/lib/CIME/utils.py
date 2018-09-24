@@ -1756,3 +1756,7 @@ def run_bld_cmd_ensure_logging(cmd, arg_logger, from_dir=None):
 
 def get_batch_script_for_job(job):
     return job if "st_archive" in job else "." + job
+
+def model_log(model, arg_logger, msg):
+    if get_model() == model:
+        arg_logger.info(msg)
