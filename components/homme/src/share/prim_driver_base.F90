@@ -114,7 +114,7 @@ contains
     use prim_implicit_mod,  only : prim_implicit_init
 #endif
 
-    use compose_mod, only: compose_init, cedr_unittest, cedr_set_ie2gci
+    use compose_mod, only: kokkos_init, compose_init, cedr_unittest, cedr_set_ie2gci
 
     implicit none
 
