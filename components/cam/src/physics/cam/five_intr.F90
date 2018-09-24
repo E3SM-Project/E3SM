@@ -1,7 +1,7 @@
 module five_intr
 
 !-------------------------------------------
-! Module to interface FIVE with E3SM
+! Module to interface FIVE with E3SM physics packages
 
   use shr_kind_mod,  only: r8=>shr_kind_r8
   use ppgrid,           only : pcols, pver, pverp, begchunk, endchunk
@@ -21,14 +21,18 @@ module five_intr
   
   ! The top layer to which we will add layers to
   real, parameter :: five_top_toadd = 80000._r8
+  ! TASK: the parameters above should probably be moved to the
+  !   E3SM atm_in namelist
   
   ! These shouldn't be hardcoded, but currently they are
   !   because PBUF needs these to be initialized.
-  !   PAB task: figure out a better way for this
+  !   TASK: figure out a better way so these can be computed
+  !   on the fly and not user specified!
   integer, parameter :: pver_five = 78
   integer, parameter :: pverp_five = 79
   
-  ! define physics buffer indicies here
+  ! define physics buffer indicies here for the FIVE
+  !  variables added to the PBUF
   integer :: t_five_idx, &
              q_five_idx, &
 	     u_five_idx, &
@@ -94,15 +98,17 @@ module five_intr
   
   subroutine five_register_e3sm
   
+    ! Register FIVE fields to the physics buffer
     use physics_buffer,  only: pbuf_add_field, dtype_r8, dyn_time_lvls
     use ppgrid,          only: pver, pverp, pcols
     
     ! Define PBUF for prognostics 
     call pbuf_add_field('T_FIVE',       'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), t_five_idx)
-    call pbuf_add_field('Q_FIVE',        'global', dtype_r8, (/pcols,pver_five,pcnst,dyn_time_lvls/), q_five_idx)
-    call pbuf_add_field('U_FIVE',         'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), u_five_idx)
-    call pbuf_add_field('V_FIVE',         'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), v_five_idx)
+    call pbuf_add_field('Q_FIVE',       'global', dtype_r8, (/pcols,pver_five,pcnst,dyn_time_lvls/), q_five_idx)
+    call pbuf_add_field('U_FIVE',       'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), u_five_idx)
+    call pbuf_add_field('V_FIVE',       'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), v_five_idx)
     ! Not prognostic, but save PMID and PINT for FIVE
+    ! Probably also need to save things like cloud fraction
     call pbuf_add_field('PMID_FIVE', 'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), pmid_five_idx)
     call pbuf_add_field('PINT_FIVE', 'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), pint_five_idx)
   
@@ -147,10 +153,11 @@ module five_intr
     real(r8) :: pmid_five(pcols,pver_five)
     real :: incr   
     
+    ! Loop over all the physics "chunks" in E3SM
     do lchnk = begchunk,endchunk
     
-      ncol = phys_state(lchnk)%ncol
-      pint_host = phys_state(lchnk)%pint
+      ncol = phys_state(lchnk)%ncol ! number of columns in this chunk
+      pint_host = phys_state(lchnk)%pint ! E3SM interface pressures
       pbuf2d_chunk => pbuf_get_chunk(pbuf2d,lchnk)
     
       ! First define the FIVE grid.
@@ -220,7 +227,9 @@ module five_intr
       enddo
 
       ! Store all needed variables onto the PBUF, so they can be used by the 
-      !  parameterizations
+      !  parameterizations.  Loop over all the dynamics time levels, which is needed
+      !  when Eulerian Dynamical core is used since that value is 2 (otherwise the second
+      !  dynamics time level will be initialized with NaNs
       do n=1,dyn_time_lvls
         call pbuf_set_field(pbuf2d_chunk, t_five_idx, t_five,(/1,1,n/),(/pcols,pver_five,1/))
         call pbuf_set_field(pbuf2d_chunk, q_five_idx, q_five,(/1,1,1,n/),(/pcols,pver_five,pcnst,1/))
@@ -341,7 +350,8 @@ module five_intr
       enddo
     enddo
 
-    ! Now interpolate this tendency to the FIVE grid   
+    ! Now interpolate this tendency to the higher resolution FIVE grid 
+    !  TASK: interpolation scheme needs to be updated  
     do i=1,ncol
       call linear_interp(state%pmid(i,:),pmid_five,t_five_tend_low(i,1:pver),&
                       t_five_tend(i,1:pver_five),pver,pver_five)
@@ -355,7 +365,7 @@ module five_intr
       enddo	
     enddo      	      
 
-    ! Finally update FIVE prognostic variables based on this tendency
+    ! Finally, update FIVE prognostic variables based on this tendency
     do k=1,pver_five
       do i=1,ncol
         t_five(i,k) = t_five(i,k) + dtime * t_five_tend(i,k)

@@ -297,7 +297,7 @@ module clubb_intr
     !  The reason is that these variables are saved timestep to timestep and only
     !  used in CLUBB.  Thus, interpolation to/from the E3SM grid is not required.  
     !  NOTE: an exception to this is the WP2_nadv variable, because this variable 
-    !  is used for aerosol activation.  Thus, an additional variable will need to be defined 
+    !  is used for aerosol activation.  TASK: an additional variable will need to be defined 
     !  to account for this.   
     call pbuf_add_field('RAD_CLUBB',  'global', dtype_r8, (/pcols,pver_clubb/),               radf_idx)    
     call pbuf_add_field('WP2_nadv',        'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), wp2_idx)
@@ -1037,7 +1037,7 @@ end subroutine clubb_init_cnst
    real(r8) :: frac_limit, ic_limit
 
    ! Input/output variables to/from CLUBB need to be changed so that their 
-   !  dimensions are of the "pver(p)_clubb" variety (i.e on the high resolution grid.  
+   !  dimensions are of the "pver(p)_clubb" variety (i.e on the high resolution grid).  
    ! If a variable has dimensions of "pver(p)" this means that this variable is directly 
    ! related to the E3SM grid as opposed to the CLUBB grid.   
    real(r8) :: dtime                            ! CLUBB time step                              [s]   
@@ -1274,7 +1274,8 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: up2      ! east-west wind variance                      [m^2/s^2]
    real(r8), pointer, dimension(:,:) :: vp2      ! north-south wind variance                    [m^2/s^2]
 
-!  Note that the pointers for "thlm", "rtm", "um", and "vm" are removed.  
+!  Note that the pointers for "thlm", "rtm", "um", and "vm" are removed, as they were deemed 
+!   not neccessary since these variables are always initialized from E3SM state
    real(r8), pointer, dimension(:,:) :: upwp     ! east-west momentum flux                      [m^2/s^2]
    real(r8), pointer, dimension(:,:) :: vpwp     ! north-south momentum flux                    [m^2/s^2]
 !   real(r8), pointer, dimension(:,:) :: thlm     ! mean temperature                             [K]
@@ -1767,11 +1768,12 @@ end subroutine clubb_init_cnst
       ! NOTE: the interpolation currently used here is very simple and really just a placeholder.     
 #ifdef FIVE       
       ! Linearly interpolate CLUBB input variables to the FIVE grid
+      !  TASK: this interpolation scheme needs to be replaced
       call linear_interp(state1%pmid(i,:),pmid_five(i,:),zt_g_pre(1:pver),zt_g(1:pver_five),pver,pver_five)
       call linear_interp(state1%pmid(i,:),pmid_five(i,:),zi_g_pre(1:pver),zi_g(1:pver_five),pver,pver_five)
       call linear_interp(state1%pmid(i,:),pmid_five(i,:),wm_zt_pre(1:pver),wm_zt(1:pver_five),pver,pver_five)
       call linear_interp(state1%pmid(i,:),pmid_five(i,:),rho_zt_pre(1:pver),rho_zt(1:pver_five),pver,pver_five)
-      call linear_interp(state1%pmid(i,:),pmid_five(i,:),exner_pre(1:pver),exner(1:pver_five),pver,pver_five)
+!      call linear_interp(state1%pmid(i,:),pmid_five(i,:),exner_pre(1:pver),exner(1:pver_five),pver,pver_five)
       call linear_interp(state1%pmid(i,:),pmid_five(i,:),rho_ds_zt_pre(1:pver),rho_ds_zt(1:pver_five),pver,pver_five)
       call linear_interp(state1%pmid(i,:),pmid_five(i,:),invrs_rho_ds_zt_pre(1:pver),invrs_rho_ds_zt(1:pver_five),pver,pver_five)
       call linear_interp(state1%pmid(i,:),pmid_five(i,:),thv_ds_zt_pre(1:pver),thv_ds_zt(1:pver_five),pver,pver_five)
@@ -1782,12 +1784,18 @@ end subroutine clubb_init_cnst
       p_in_Pa(pverp_five) = p_in_Pa(pver_five)
       wm_zt(pverp_five) = wm_zt(pver_five)
       rho_zt(pverp_five) = rho_zt(pver_five)
-      exner(pverp_five) = exner(pver_five)
+!      exner(pverp_five) = exner(pver_five)
       rho_ds_zt(pverp_five) = rho_ds_zt(pver_five)
       invrs_rho_ds_zt(pverp_five) = invrs_rho_ds_zt(pver_five)
       thv_ds_zt(pverp_five) = thv_ds_zt(pver_five)
       rfrzm(pverp_five) = rfrzm(pver_five)
       rad(pverp_five) = rad(pver_five)
+      
+      ! Overwrite Exner values to that using FIVE pressure levels
+      do k=1,pver_five
+        exner(i,k) = 1._r8/(pmid_five(i,k)/p0_clubb)**(rair/cpair)
+      enddo
+      exner(pverp_five) = exner(pver_five)
      
       ! Initialize the tracer array from the FIVE state
       icnt=0
