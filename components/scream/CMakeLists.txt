@@ -91,6 +91,7 @@ print_var(SCREAM_LIBRARIES)
 # whether to include scream_config.h.
 add_definitions(-DSCREAM_CONFIG_IS_CMAKE)
 CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in ${CMAKE_BINARY_DIR}/src/scream_config.h)
+CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.f.in ${CMAKE_BINARY_DIR}/src/scream_config.f)
 
 set (SCREAM_F90_MODULES ${CMAKE_BINARY_DIR}/modules)
 set (SCREAM_DATA_DIR ${CMAKE_SOURCE_DIR}/data)
