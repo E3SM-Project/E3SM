@@ -2306,7 +2306,7 @@
         <NODENAME_REGEX>ba-fe.*.lanl.gov</NODENAME_REGEX>
         <TESTS>e3sm_developer</TESTS>
         <COMPILERS>gnu,intel</COMPILERS>
-        <MPILIBS>mvapich,openmpi</MPILIBS>
+        <MPILIBS>openmpi,mvapich</MPILIBS>
 	<OS>LINUX</OS>
 	<RUNDIR>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/cases/$CASE/run</RUNDIR>
 	<EXEROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/cases/$CASE/bld</EXEROOT>
@@ -2337,7 +2337,7 @@
 			<command name="load">gcc/6.4.0</command>
 		</modules>
 		<modules compiler="intel">
-			<command name="load">intel/18.0.2</command>
+			<command name="load">intel/17.0.4</command>
 		</modules>
 		<modules mpilib="openmpi">
 			<command name="load">openmpi/2.1.2</command>
@@ -2355,6 +2355,10 @@
 	<environment_variables>
 		<env name="PNETCDF_HINTS">romio_ds_write=disable;romio_ds_read=disable;romio_cb_write=enable;romio_cb_read=enable</env>
 	</environment_variables>
+
+        <environment_variables compiler="gnu">
+		<env name="MKLROOT">/opt/intel/17.0/mkl</env>
+        </environment_variables>
 
 	<BATCH_SYSTEM>slurm</BATCH_SYSTEM>
 	<mpirun mpilib="default">
@@ -2436,10 +2440,17 @@
 		<modules>
 			<command name="load">parallel-netcdf/1.5.0</command>
 		</modules>
+		<modules>
+			<command name="load">mkl</command>
+		</modules>
 	</module_system>
 	<environment_variables>
 		<env name="PNETCDF_HINTS">romio_ds_write=disable;romio_ds_read=disable;romio_cb_write=enable;romio_cb_read=enable</env>
 	</environment_variables>
+
+        <environment_variables compiler="gnu">
+		<env name="MKLROOT">/opt/intel/17.0/mkl</env>
+        </environment_variables>
 
 	<BATCH_SYSTEM>slurm</BATCH_SYSTEM>
 	<mpirun mpilib="default">
