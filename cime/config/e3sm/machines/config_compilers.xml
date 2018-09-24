@@ -467,16 +467,36 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="gnu" MACH="mymac" >
-  <NETCDF_PATH> $(NETCDF_PATH)</NETCDF_PATH>
-  <ADD_LDFLAGS compile_threaded="true"> -L $(GCC_ROOT)/lib/gcc/x86_64-apple-darwin15.4.0/5.3.0 -fopenmp </ADD_LDFLAGS>
-  <ADD_LDFLAGS>-framework Accelerate</ADD_LDFLAGS>
-  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -framework Accelerate</ADD_SLIBS>
-  <SFC>$(GCC_ROOT)/bin/gfortran</SFC>
-  <SCC>$(GCC_ROOT)/bin/gcc</SCC>
-  <SCXX>$(GCC_ROOT)/bin/g++</SCXX>
+  <CFLAGS> -mcmodel=small </CFLAGS>
+    <!-- for Mac OSX high sierra, clang-based gcc may have issue with '-mcmodel=medium' for libcsm_share.a, as following
+         ld: in ../../gnu/mpich/nodebug/nothreads/mct/noesmf/c1a1l1i1o1r1g1w1e1/lib/libcsm_share.a(dSFMT.o), 
+             in section __TEXT,__text reloc 3: length != 2 and X86_64_RELOC_GOT not supported file 
+             '../../gnu/mpich/nodebug/nothreads/mct/noesmf/c1a1l1i1o1r1g1w1e1/lib/libcsm_share.a' for architecture x86_64
+         collect2: error: ld returned 1 exit status 
+    -->
+  <ADD_CFLAGS compile_threaded="true"> -fopenmp </ADD_CFLAGS>
+  <ADD_CFLAGS  DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</ADD_CFLAGS>
+  <ADD_CFLAGS  DEBUG="FALSE"> -O </ADD_CFLAGS>
+  <ADD_CFLAGS  MODEL="csm_share"> -std=c99 </ADD_CFLAGS>
+
+  <FFLAGS> -mcmodel=small -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none</FFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -fopenmp   </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O </ADD_FFLAGS>
+
+  <ADD_LDFLAGS compile_threaded="true"> -fopenmp </ADD_LDFLAGS>
+  <ADD_LDFLAGS> -framework Accelerate </ADD_LDFLAGS>
+  <ADD_LDFLAGS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf </ADD_LDFLAGS>
+  <ADD_LDFLAGS>-L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -lhdf5hl_fortran -lhdf5_fortran </ADD_LDFLAGS>
+  <!--ADD_LDFLAGS>-L$(PNETCDF_PATH)/lib -lpnetcdf </ADD_LDFLAGS> -->
+  <ADD_LDFLAGS>-L$(CC_ROOT)/lib -lgomp </ADD_LDFLAGS> 
+  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -framework Accelerate </ADD_SLIBS>
+  <SFC>$(FC_ROOT)/bin/gfortran</SFC>
+  <SCC>$(CC_ROOT)/bin/gcc</SCC>
+  <SCXX>$(CC_ROOT)/bin/g++</SCXX>
   <MPICC>$(MPI_ROOT)/bin/mpicc</MPICC>
   <MPICXX>$(MPI_ROOT)/bin/mpicxx</MPICXX>
-  <MPIFC>$(MPI_ROOT)/bin/mpif90</MPIFC>
+  <MPIFC>$(MPI_ROOT)/bin/mpifort</MPIFC>
 </compiler>
 
 <compiler COMPILER="pathscale">
@@ -559,7 +579,8 @@ for mct, etc.
 
 <compiler OS="Darwin">
    <ADD_CPPDEFS> -DSYSDARWIN </ADD_CPPDEFS>
-   <ADD_LDFLAGS MODEL="driver"> -all_load </ADD_LDFLAGS>
+   <!-- The following may cause duplicate symbol issue -->
+   <!-- ADD_LDFLAGS MODEL="driver"> -all_load </ADD_LDFLAGS> -->
 </compiler>
 
 <compiler COMPILER="intel" OS="Darwin" >
@@ -879,34 +900,6 @@ for mct, etc.
   <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
   <ADD_SLIBS>$(shell /usr/workspace/wsa/climdat/spack/opt/spack/linux-rhel7-x86_64/intel-17.0.0/netcdf-fortran-4.4.4-4naprkre2m7kriadyxwboauil7nc3jtc/bin/nf-config --flibs)</ADD_SLIBS>
   <ADD_LDFLAGS> -llapack -lblas</ADD_LDFLAGS>
-</compiler>
-
-<compiler MACH="oic2" COMPILER="gnu">
-  <NETCDF_PATH>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/</NETCDF_PATH>
-  <ADD_SLIBS>-L/user/lib64 -llapack -lblas -lnetcdff </ADD_SLIBS>
-  <SFC>/projects/cesm/devtools/gcc-4.8.1/bin/gfortran</SFC>
-  <SCC>/projects/cesm/devtools/gcc-4.8.1/bin/gcc</SCC>
-  <SCXX>/projects/cesm/devtools/gcc-4.8.1/bin/g++</SCXX>
-  <MPICC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpicc</MPICC>
-  <MPIFC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpif90</MPIFC>
-</compiler>
-
-<compiler MACH="oic2" COMPILER="pgi">
-  <NETCDF_PATH>/home/zdr/opt/netcdf-4.1.3_pgf95</NETCDF_PATH>
-</compiler>
-
-<compiler MACH="oic5" COMPILER="gnu">
-  <NETCDF_PATH>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/</NETCDF_PATH>
-  <ADD_SLIBS>-L/user/lib64 -llapack -lblas -lnetcdff </ADD_SLIBS>
-  <SFC>/projects/cesm/devtools/gcc-4.8.1/bin/gfortran</SFC>
-  <SCC>/projects/cesm/devtools/gcc-4.8.1/bin/gcc</SCC>
-  <SCXX>/projects/cesm/devtools/gcc-4.8.1/bin/g++</SCXX>
-  <MPICC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpicc</MPICC>
-  <MPIFC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpif90</MPIFC>
-</compiler>
-
-<compiler MACH="oic5" COMPILER="pgi">
-  <NETCDF_PATH>/home/zdr/opt/netcdf-4.1.3_pgf95</NETCDF_PATH>
 </compiler>
 
 <compiler COMPILER="gnu" MACH="cades">
