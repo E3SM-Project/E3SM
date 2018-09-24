@@ -1331,7 +1331,7 @@ directory, NOT in this subdirectory."""
             tests_spec_file = self.get_value("TESTS_SPEC_FILE")
 
         testcnt = 0
-        if compset_alias is not None:
+        if os.path.isfile(tests_spec_file) and compset_alias is not None:
             # It's important that we not try to find matching tests if
             # compset_alias is None, since compset=None tells get_tests to find
             # tests of all compsets!

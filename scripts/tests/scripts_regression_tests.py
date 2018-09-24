@@ -655,6 +655,34 @@ class J_TestCreateNewcase(unittest.TestCase):
         self.assertEqual("mymachine" in machlist_after, True, msg="Not able to append config_machines.xml")
 
 
+    def test_m_createnewcase_alternate_drivers(self):
+        # Test that case.setup runs for nuopc and moab drivers
+        cls = self.__class__
+        for driver in ("nuopc", "moab"):
+            testdir = os.path.join(cls._testroot, 'testcreatenewcase', driver)
+            if os.path.exists(testdir):
+                shutil.rmtree(testdir)
+            args =  " --driver {} --case {} --compset X --res f19_g16 --output-root {} --handle-preexisting-dirs=r".format(driver, testdir, cls._testroot)
+            if CIME.utils.get_model() == "cesm":
+                args += " --run-unsupported"
+            if TEST_COMPILER is not None:
+                args = args +  " --compiler %s"%TEST_COMPILER
+            if TEST_MPILIB is not None:
+                args = args +  " --mpilib %s"%TEST_MPILIB
+
+            cls._testdirs.append(testdir)
+            run_cmd_assert_result(self, "./create_newcase %s"%(args), from_dir=SCRIPT_DIR)
+            self.assertTrue(os.path.exists(testdir))
+            self.assertTrue(os.path.exists(os.path.join(testdir, "case.setup")))
+
+            run_cmd_assert_result(self, "./case.setup", from_dir=testdir)
+            with Case(testdir, read_only=False) as case:
+                comp_interface = case.get_value("COMP_INTERFACE")
+                self.assertTrue(driver == comp_interface, msg="%s != %s"%(driver, comp_interface))
+
+            cls._do_teardown.append(testdir)
+
+
     @classmethod
     def tearDownClass(cls):
         do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None) and not NO_TEARDOWN
@@ -664,7 +692,11 @@ class J_TestCreateNewcase(unittest.TestCase):
                 print("Detected failed test or user request no teardown")
                 print("Leaving case directory : %s"%tfile)
             elif do_teardown:
-                shutil.rmtree(tfile)
+                try:
+                    print ("Attempt to remove directory {}".format(tfile))
+                    shutil.rmtree(tfile)
+                except:
+                    print("Could not remove directory {}".format(tfile))
 
 ###############################################################################
 class M_TestWaitForTests(unittest.TestCase):

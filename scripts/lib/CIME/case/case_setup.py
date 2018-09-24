@@ -128,7 +128,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             ntasks = case.get_value("NTASKS_{}".format(comp))
             if comp == "CPL":
                 continue
-            if comp_interface == "mct":
+            if comp_interface != "nuopc":
                 ninst  = case.get_value("NINST_{}".format(comp))
             if multi_driver:
                 if comp_interface == "mct":
