@@ -69,7 +69,6 @@ using a fortran linker.
      compilers -->
 <compiler>
   <CPPDEFS>
-    <append> -D$ENV{OS} </append>
     <append MODEL="pop"> -D_USE_FLOW_CONTROL </append>
   </CPPDEFS>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
@@ -484,6 +483,124 @@ using a fortran linker.
     <append> -nofma </append>
   </FFLAGS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+</compiler>
+
+<compiler MACH="daint" COMPILER="pgi">
+  <FFLAGS>
+    <append> -I/project/s824/edavin/OASIS3-MCT_2.0/build.pgi/build/lib/mct -I/project/s824/edavin/OASIS3-MCT_2.0/build.pgi/build/lib/psmile.MPI1 </append>
+  </FFLAGS>
+  <SLIBS>
+    <append> -llapack -lblas </append>
+    <append> -L/project/s824/edavin/OASIS3-MCT_2.0/build.pgi/lib -lpsmile.MPI1 -lscrip -lmct_oasis -lmpeu_oasis </append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="daint" COMPILER="cray">
+  <FFLAGS>
+    <append> -I/project/s824/edavin/OASIS3-MCT_2.0/build.cray/build/lib/mct -I/project/s824/edavin/OASIS3-MCT_2.0/build.cray/build/lib/psmile.MPI1 </append>
+  </FFLAGS>
+  <SLIBS>
+    <append> -L/project/s824/edavin/OASIS3-MCT_2.0/build.cray/lib -lpsmile.MPI1 -lscrip -lmct_oasis -lmpeu_oasis </append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="euler2">
+  <CPPDEFS>
+    <append> -DLINUX </append>
+  </CPPDEFS>
+  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
+  <SLIBS>
+    <base> -L$ENV{NETCDF}/lib -lnetcdf -lnetcdff </base>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="euler2" COMPILER="intel">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -xCORE-AVX2 </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -xCORE-AVX2 </append>
+  </FFLAGS>
+  <LDFLAGS>
+    <append> -mkl </append>
+  </LDFLAGS>
+</compiler>
+
+<compiler MACH="euler2" COMPILER="pgi">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </FFLAGS>
+</compiler>
+
+<compiler MACH="euler3">
+  <CPPDEFS>
+    <append> -DLINUX </append>
+  </CPPDEFS>
+  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
+  <SLIBS>
+    <base> -L$ENV{NETCDF}/lib -lnetcdf -lnetcdff </base>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="euler3" COMPILER="intel">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -xCORE-AVX2 </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -xCORE-AVX2 </append>
+  </FFLAGS>
+  <LDFLAGS>
+    <append> -mkl </append>
+  </LDFLAGS>
+</compiler>
+
+<compiler MACH="euler3" COMPILER="pgi">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </FFLAGS>
+</compiler>
+
+<compiler MACH="euler4">
+  <CPPDEFS>
+    <append> -DLINUX </append>
+  </CPPDEFS>
+  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
+  <SLIBS>
+    <base> -L$ENV{NETCDF}/lib -lnetcdf -lnetcdff </base>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="euler4" COMPILER="intel">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -xCORE-AVX2 </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -xCORE-AVX2 </append>
+  </FFLAGS>
+  <LDFLAGS>
+    <append> -mkl </append>
+  </LDFLAGS>
+</compiler>
+
+<compiler MACH="euler4" COMPILER="pgi">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </FFLAGS>
 </compiler>
 
 <compiler MACH="constance" COMPILER="intel">
@@ -1016,6 +1133,13 @@ using a fortran linker.
   </CPPDEFS>
   <SLIBS>
     <append> -ldl </append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="cheyenne" COMPILER="pgi">
+  <SLIBS>
+    <append> -llapack -lblas </append>
+    <append MPILIB="mpi-serial"> -ldl </append>
   </SLIBS>
 </compiler>
 
