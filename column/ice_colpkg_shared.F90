@@ -93,7 +93,7 @@
 
       ! snicar 5 band system, set in namelist
       logical (kind=log_kind), public :: &
-         snicar_system    ! if true, use 5-band snicar IOPs for
+         use_snicar    ! if true, use 5-band snicar IOPs for
                           ! shortwave radiative calculation of
                           ! snow-coverd sea ice
 

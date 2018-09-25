@@ -353,7 +353,6 @@
 			possible_values="true or false"
 		/>
 	</nml_record>
-
 	<nml_record name="decomposition" in_defaults="true">
 		<nml_option name="config_block_decomp_file_prefix" type="character" default_value="graphs/graph.info.part." units="unitless"
 			description="Defines the prefix for the block decomposition file. Can include a path. The number of blocks is appended to the end of the prefix at run-time."
@@ -1404,6 +1403,10 @@
 			possible_values="'ccsm3' or 'constant'"
 			icepack_name="albedo_type"
 		/>
+		 <nml_option name="config_use_snicar" type="logical" default_value="false" units="unitless"
+			description="If true turn on snicar 5-band snow system"
+			possible_values="true or false"
+		/>
 		<nml_option name="config_visible_ice_albedo" type="real" default_value="0.78" units="unitless"
 			description="Visible ice albedo for ice thickness greater than config_variable_albedo_thickness_limit."
 			possible_values="Any real number between 0 and 1."
@@ -1651,15 +1654,6 @@
 			possible_values="true or false"
 		/>
 	</nml_record>
-
-	<!-- snicar variable namelist record -->
-	<nml_record name="snicar_variables" in_defaults="true">
-		 <nml_option name="config_turn_snicar_system_on" type="logical" default_value="false" units="unitless"
-	        	description="If true turn on snicar 5-band snow system"
-	        	possible_values="true or false"
-		/>
-	</nml_record>
-
 
 	<nml_record name="diagnostics" in_defaults="true">
 		<nml_option name="config_check_state" type="logical" default_value="false" units="unitless"
@@ -1918,34 +1912,26 @@
 			<var name="modalSingleScatterAlbedo"/>
 		</stream>
 
-                <!-- snicar 5 band input stream name -->
 	 	<stream name="SnicarInput"
-			        type="input"
-		        	filename_template="snicar_optics_5bnd_snow_and_aerosols.nc"
-		        	filename_interval="none"
-		        	input_interval="initial_only"
-		        	immutable="true">
-                
-                    <!-- snow grain optical properties-->
-            		<var name="iceAsymmtryParameterDirect"/>
-            		<var name="iceAsymmtryParameterDiffuse"/>
-            		<var name="iceSingleScatterAlbedoDirect"/>
-            		<var name="iceSingleScatterAlbedoDiffuse"/>
-            		<var name="iceMassExtinctionCrossSectionDirect"/>
-            		<var name="iceMassExtinctionCrossSectionDiffuse"/>
-        
-                    <!-- same to stream name ModalAerosolsInput but for 5 bands-->
-                       <var name="modalAsymmetryParameter_5bd"/>
-                       <var name="modalBCabsorptionParameter_5bd"/>
-                       <var name="modalMassExtinctionCrossSection_5bd"/>
-                       <var name="modalSingleScatterAlbedo_5bd"/>
-                    
-                    <!-- same to stream name StandardAerosolsInput but for 5 bands-->
-                       <var name="aerosolAsymmetryParameter_5bd"/>
-                       <var name="aerosolMassExtinctionCrossSection_5bd"/>
-                       <var name="aerosolSingleScatterAlbedo_5bd"/>
+        			type="input"
+      				filename_template="snicar_optics_5bnd_snow_and_aerosols.nc"
+      				filename_interval="none"
+     			 	input_interval="initial_only"
+      				immutable="true">
+  			<var name="iceAsymmtryParameterDirect"/>
+  			<var name="iceAsymmtryParameterDiffuse"/>
+  			<var name="iceSingleScatterAlbedoDirect"/>
+  			<var name="iceSingleScatterAlbedoDiffuse"/>
+  			<var name="iceMassExtinctionCrossSectionDirect"/>
+  			<var name="iceMassExtinctionCrossSectionDiffuse"/>
+			<var name="modalAsymmetryParameter5band"/>
+			<var name="modalBCabsorptionParameter5band"/>
+			<var name="modalMassExtinctionCrossSection5band"/>
+			<var name="modalSingleScatterAlbedo5band"/>
+			<var name="aerosolAsymmetryParameter5band"/>
+			<var name="aerosolMassExtinctionCrossSection5band"/>
+			<var name="aerosolSingleScatterAlbedo5band"/>
 		</stream>
-
 
 		<stream name="pointLocationsInput"
 				type="input"
@@ -2216,10 +2202,8 @@
 		<!-- forcing -->
 		<package name="pkgForcing" description="On if the framework forcing is being used"/>
 
-        <!-- Snicar -->
-        <package name="pkgSnicarSystem" description="add snicar 5 bands snow SSP in CICE"/>
-
-
+    <!-- Snicar -->
+    <package name="pkgSnicar" description="add snicar 5 bands snow SSP in CICE"/>
 	</packages>
 
 <!--TODO WHL - Convert iceVolume and snowVolume to iceThickness and snowThickness (and change the source code accordingly) -->
@@ -3803,34 +3787,21 @@
 	</var_struct>
 
 	<!-- Snicar 5-band optical property varables -->
-	<var_struct name="snicar_variables" time_levs="1" packages="pkgSnicarSystem">
-        	<var name="iceAsymmtryParameterDirect"		type="real"	 dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR" 	 name_in_code="iceAsymmtryParameterDirect"/>
-        
-        	<var name="iceAsymmtryParameterDiffuse" 	type="real" 	 dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	name_in_code="iceAsymmtryParameterDiffuse"/>
-        
-       		 <var name="iceSingleScatterAlbedoDirect"	type="real"	dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	 name_in_code="iceSingleScatterAlbedoDirect"/>
-        
-        	<var name="iceSingleScatterAlbedoDiffuse"	 type="real"	 dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	 name_in_code="iceSingleScatterAlbedoDiffuse"/>
-        
-        	<var name="iceMassExtinctionCrossSectionDirect"		type="real"	 dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	 name_in_code="iceMassExtinctionCrossSectionDirect"/>
-        
-        	<var name="iceMassExtinctionCrossSectionDiffuse"	type="real" 	dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	name_in_code="iceMassExtinctionCrossSectionDiffuse"/>
-            
-            <var name="aerosolMassExtinctionCrossSection_5bd"    type="real"    dimensions="nSpectralIntervalsSNICAR maxAerosolType"    name_in_code="aerosolMassExtinctionCrossSection_5bd"/>
-            
-            <var name="aerosolSingleScatterAlbedo_5bd"        type="real"    dimensions="nSpectralIntervalsSNICAR maxAerosolType"    name_in_code="aerosolSingleScatterAlbedo_5bd"/>
-            
-            <var name="aerosolAsymmetryParameter_5bd"        type="real"    dimensions="nSpectralIntervalsSNICAR maxAerosolType"    name_in_code="aerosolAsymmetryParameter_5bd"/>
-            
-            <var name="modalMassExtinctionCrossSection_5bd"    type="real"    dimensions="nSpectralIntervalsSNICAR nModal1"    name_in_code="modalMassExtinctionCrossSection_5bd"/>
-            
-            <var name="modalSingleScatterAlbedo_5bd"        type="real"    dimensions="nSpectralIntervalsSNICAR nModal1"    name_in_code="modalSingleScatterAlbedo_5bd"/>
-            
-            <var name="modalAsymmetryParameter_5bd"        type="real"    dimensions="nSpectralIntervalsSNICAR nModal1"    name_in_code="modalAsymmetryParameter_5bd"/>
-            
-            <var name="modalBCabsorptionParameter_5bd"        type="real"    dimensions="nSpectralIntervalsSNICAR nModal1 nModal2" name_in_code="modalBCabsorptionParameter_5bd"/>
+	<var_struct name="snicar" time_levs="1" packages="pkgSnicar">
+		<var name="iceAsymmtryParameterDirect"	type="real"	 dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR" 	 name_in_code="iceAsymmtryParameterDirect"/>
+		<var name="iceAsymmtryParameterDiffuse" 	type="real" 	 dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	name_in_code="iceAsymmtryParameterDiffuse"/>
+		<var name="iceSingleScatterAlbedoDirect"	type="real"	dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	 name_in_code="iceSingleScatterAlbedoDirect"/>
+		<var name="iceSingleScatterAlbedoDiffuse"	 type="real"	 dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	 name_in_code="iceSingleScatterAlbedoDiffuse"/>
+		<var name="iceMassExtinctionCrossSectionDirect"		type="real"	 dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	 name_in_code="iceMassExtinctionCrossSectionDirect"/>
+		<var name="iceMassExtinctionCrossSectionDiffuse"	 type="real" 	dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	name_in_code="iceMassExtinctionCrossSectionDiffuse"/>
+		<var name="aerosolMassExtinctionCrossSection5band"   type="real"    dimensions="nSpectralIntervalsSNICAR maxAerosolType"    name_in_code="aerosolMassExtinctionCrossSection5band"/>
+		<var name="aerosolSingleScatterAlbedo5band"   type="real"    dimensions="nSpectralIntervalsSNICAR maxAerosolType"    name_in_code="aerosolSingleScatterAlbedo5band"/>
+		<var name="aerosolAsymmetryParameter5band"   type="real"    dimensions="nSpectralIntervalsSNICAR maxAerosolType"    name_in_code="aerosolAsymmetryParameter5band"/>
+		<var name="modalMassExtinctionCrossSection5band"    type="real"    dimensions="nSpectralIntervalsSNICAR nModal1"    name_in_code="modalMassExtinctionCrossSection5band"/>
+		<var name="modalSingleScatterAlbedo5band"   type="real"    dimensions="nSpectralIntervalsSNICAR nModal1"    name_in_code="modalSingleScatterAlbedo5band"/>
+		<var name="modalAsymmetryParameter5band"    type="real"    dimensions="nSpectralIntervalsSNICAR nModal1"    name_in_code="modalAsymmetryParameter5band"/>
+		<var name="modalBCabsorptionParameter5band"    type="real"    dimensions="nSpectralIntervalsSNICAR nModal1 nModal2" name_in_code="modalBCabsorptionParameter5band"/>
 	</var_struct>
-
 
 	<!-- Point diagnostics -->
 	<var_struct name="pointLocations" time_levs="1">

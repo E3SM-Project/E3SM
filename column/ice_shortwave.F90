@@ -718,7 +718,7 @@
                           dhsn,     ffracn,    &
                           l_print_point,       &
                           initonly,            &
-                          snicar_system,         &
+                          use_snicar,         &
                           asm_prm_ice_drc,       &
                           asm_prm_ice_dfs,       &
                           ss_alb_ice_drc,        &
@@ -866,7 +866,7 @@
            fswpenln    ! visible SW entering ice layers (W m-2)
 
       logical (kind=log_kind), intent(in) :: &
-           snicar_system    ! if true, use 5-band snicar IOPs for
+           use_snicar       ! if true, use 5-band snicar IOPs for
                             ! shortwave radiative calculation of
                             ! snow-coverd sea ice
 
@@ -1089,20 +1089,20 @@
                              albicen(n),                    &
                              albsnon(n),    albpndn(n),     &
                              fswpenln(:,n), zbion(:,n),     &
-                             l_print_point, &
-                             snicar_system,         &
-                             asm_prm_ice_drc,       &
-                             asm_prm_ice_dfs,       &
-                             ss_alb_ice_drc,        &
-                             ss_alb_ice_dfs,        &
-                             ext_cff_mss_ice_drc,   &
-                             ext_cff_mss_ice_dfs,   &
-                             kaer_tab_5bd,          &
-                             waer_tab_5bd,          &
-                             gaer_tab_5bd,          &
-                             kaer_bc_tab_5bd,       &
-                             waer_bc_tab_5bd,       &
-                             gaer_bc_tab_5bd,       &
+                             l_print_point,                 &
+                             use_snicar,                    &
+                             asm_prm_ice_drc,               &
+                             asm_prm_ice_dfs,               &
+                             ss_alb_ice_drc,                &
+                             ss_alb_ice_dfs,                &
+                             ext_cff_mss_ice_drc,           &
+                             ext_cff_mss_ice_dfs,           &
+                             kaer_tab_5bd,                  &
+                             waer_tab_5bd,                  &
+                             gaer_tab_5bd,                  &
+                             kaer_bc_tab_5bd,               &
+                             waer_bc_tab_5bd,               &
+                             gaer_bc_tab_5bd,               &  
                              bcenh_5bd)
 
          endif ! aicen > puny
@@ -1169,7 +1169,7 @@
                                   albsno,   albpnd,      &
                                   fswpenl,  zbio,        &
                                   l_print_point,         &
-                                  snicar_system,         &
+                                  use_snicar,            &
                                   asm_prm_ice_drc,       &
                                   asm_prm_ice_dfs,       &
                                   ss_alb_ice_drc,        &
@@ -1259,7 +1259,7 @@
          albpnd      ! pond albedo, for history
 
       logical (kind=log_kind), intent(in) :: &
-         snicar_system    ! if true, use 5-band snicar IOPs for
+         use_snicar    ! if true, use 5-band snicar IOPs for
                            ! shortwave radiative calculation of
                            ! snow-coverd sea ice
 
@@ -1438,7 +1438,7 @@
 
                 srftyp = 1
 
-              if (snicar_system) then ! use 5-band snicar IOPs for snow
+              if (use_snicar) then ! use 5-band snicar IOPs for snow
 
                  call compute_dEdd_5bd(nilyr, nslyr, klev, klevp,      &
                         n_zaero,   zbio,        dEdd_algae,               &

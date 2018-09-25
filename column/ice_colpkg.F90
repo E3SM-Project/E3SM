@@ -2946,19 +2946,19 @@
                           dhsn,         ffracn,         &
                           l_print_point,                &
                           linitonly,                    &
-                          snicar_system,         &
-                          asm_prm_ice_drc,       &
-                          asm_prm_ice_dfs,       &
-                          ss_alb_ice_drc,        &
-                          ss_alb_ice_dfs,        &
-                          ext_cff_mss_ice_drc,   &
-                          ext_cff_mss_ice_dfs,   &
-                          kaer_tab_5bd,          &
-                          waer_tab_5bd,          &
-                          gaer_tab_5bd,          &
-                          kaer_bc_tab_5bd,       &
-                          waer_bc_tab_5bd,       &
-                          gaer_bc_tab_5bd,       &
+                          use_snicar,                   &
+                          asm_prm_ice_drc,              &
+                          asm_prm_ice_dfs,              &
+                          ss_alb_ice_drc,               &
+                          ss_alb_ice_dfs,               &
+                          ext_cff_mss_ice_drc,          &
+                          ext_cff_mss_ice_dfs,          &
+                          kaer_tab_5bd,                 &
+                          waer_tab_5bd,                 &
+                          gaer_tab_5bd,                 &
+                          kaer_bc_tab_5bd,              &
+                          waer_bc_tab_5bd,              &
+                          gaer_bc_tab_5bd,              &
                           bcenh_5bd)
  
          else  ! .not. dEdd
@@ -3677,7 +3677,7 @@
            phi_c_slow_mode_in, &
            phi_i_mushy_in, &
            shortwave_in, &
-           snicar_system_in, &
+           use_snicar_in, &
            albedo_type_in, &
            albicev_in, &
            albicei_in, &
@@ -3861,7 +3861,7 @@
              phi_c_slow_mode, &
              phi_i_mushy, &
              shortwave, &
-             snicar_system, &
+             use_snicar, &
              albedo_type, &
              albicev, &
              albicei, &
@@ -4092,7 +4092,7 @@
 
         ! snicar 5 band system, set in namelist
         logical (kind=log_kind), intent(in) :: &
-             snicar_system_in ! if true, use 5-band snicar IOPs for
+             use_snicar_in ! if true, use 5-band snicar IOPs for
                               ! shortwave radiative calculation of
                               ! snow-coverd sea ice
 
@@ -4345,7 +4345,7 @@
         phi_c_slow_mode = phi_c_slow_mode_in
         phi_i_mushy = phi_i_mushy_in
         shortwave = shortwave_in
-        snicar_system = snicar_system_in
+        use_snicar = use_snicar_in
         albedo_type = albedo_type_in
         albicev = albicev_in
         albicei = albicei_in
