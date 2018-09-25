@@ -50,7 +50,7 @@ from CIME.utils import expect
 #3. change code so that pergro_ptend_names.txt is not generated if it is already there or only one instance writes this file...
 #4. Plot generation is very basic at this point(no lables, legends etc.), improve it! 
 #5. Remove "debug" flag and replace it with logger.debug
-#6. Decision making about PASS fail should have multiple criteria
+#6. Decision making about PASS/FAIL should have multiple criteria
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ logger = logging.getLogger(__name__)
 #--------------------------------------------------------
 
 #number of inital conditions
-ninit_cond = 1 #12
+ninit_cond = 12
         
 #perturbations for runs
 prt        = [0.0, 1.0e-14, -1.0e-14]
@@ -83,10 +83,10 @@ file_suf_lnd = "-01-00000.nc"
 index = False 
 
 #set to True to print out debug info, should use loggers for this
-debug = True  #It may impact performance!
+debug = False  #It may impact performance!
 
 # generate a plot
-doplot = True  #It impacts performance!
+doplot = False  #It impacts performance!
 
 class SLR(SystemTestsCommon):
 
