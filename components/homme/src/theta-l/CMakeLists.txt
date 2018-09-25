@@ -40,13 +40,19 @@ SET(THETAL_SRCS_F90
   ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
 )
 
+SET(THETAL_SRCS_CXX
+  ${SRC_SHARE_DIR}/cedr.cpp
+  ${SRC_SHARE_DIR}/slmm.cpp
+  ${SRC_SHARE_DIR}/compose_test.cpp
+)
+
 # If the user specified a file for custom compiler options use those
 IF (DEFINED THETA_CUSTOM_FLAGS_FILE)
   setCustomCompilerFlags(THETA_CUSTOM_FLAGS_FILE THETAL_SRCS_F90)
 ENDIF ()
 
 # Make SRCS global so the tests can access it
-SET(EXEC_SOURCES ${THETAL_SRCS} ${THETAL_SRCS_F90} )
+SET(EXEC_SOURCES ${THETAL_SRCS} ${THETAL_SRCS_F90} ${THETAL_SRCS_CXX})
 
 # Set up defaults
 IF (NOT PREQX_NP)
