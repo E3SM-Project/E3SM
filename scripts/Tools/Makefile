@@ -30,6 +30,7 @@ CP    := cp
 exec_se: $(EXEC_SE)  Depends
 complib: $(COMPLIB)  Depends
 
+
 CIME_MODEL ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MODEL --value)
 COMP_INTERFACE ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMP_INTERFACE --value)
 EXEROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) EXEROOT --value)
@@ -205,7 +206,7 @@ ifdef NETCDF_C_PATH
     LIB_NETCDF_C:=$(NETCDF_C_PATH)/lib
   endif
   ifndef LIB_NETCDF_FORTRAN
-    LIB_NETCDF_FORTRAN:=$(NETCDF_C_PATH)/lib
+    LIB_NETCDF_FORTRAN:=$(NETCDF_FORTRAN_PATH)/lib
   endif
  else ifdef NETCDF_FORTRAN_PATH
   $(error "NETCDF_FORTRAN_PATH specified without NETCDF_C_PATH")
@@ -332,6 +333,28 @@ ifeq ($(PIO_VERSION),2)
 else
   EXTRA_PIO_CPPDEFS = -D_NO_MPI_RSEND
 endif
+
+# Set esmf.mk location with ESMF_LIBDIR having precedent over ESMFMKFILE
+CIME_ESMFMKFILE := undefined_ESMFMKFILE
+ifdef ESMFMKFILE
+   CIME_ESMFMKFILE := $(ESMFMKFILE)
+endif
+ifdef ESMF_LIBDIR
+   CIME_ESMFMKFILE := $(ESMF_LIBDIR)/esmf.mk
+endif
+# For compiling and linking with external ESMF.
+# If linking to external ESMF library then include esmf.mk
+# ESMF_F90COMPILEPATHS
+# ESMF_F90LINKPATHS
+# ESMF_F90LINKRPATHS
+# ESMF_F90ESMFLINKLIBS
+ifeq ($(USE_ESMF_LIB), TRUE)
+  -include $(CIME_ESMFMKFILE)
+  CPPDEFS += -DESMF_VERSION_MAJOR=$(ESMF_VERSION_MAJOR) -DESMF_VERSION_MINOR=$(ESMF_VERSION_MINOR)
+  FFLAGS += $(ESMF_F90COMPILEPATHS)
+  SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
+endif
+
 
 ifdef CPRE
   FPPDEFS := $(subst $(comma),\\$(comma),$(CPPDEFS))
@@ -480,7 +503,6 @@ INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include
 #
 CFLAGS+=$(CPPDEFS)
 CXXFLAGS := $(CFLAGS)
-
 CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
                 MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
                 CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
@@ -530,15 +552,6 @@ endif
 
 endif
 
-# Set esmf.mk location with ESMF_LIBDIR having precedent over ESMFMKFILE
-CCSM_ESMFMKFILE := undefined_CCSM_ESMFMKFILE
-ifdef ESMFMKFILE
-   CCSM_ESMFMKFILE := $(ESMFMKFILE)
-endif
-ifdef ESMF_LIBDIR
-   CCSM_ESMFMKFILE := $(ESMF_LIBDIR)/esmf.mk
-endif
-
 
 # System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
 ifndef SLIBS
@@ -563,17 +576,6 @@ ifdef LIB_MPI
    endif
 endif
 
-# For compiling and linking with external ESMF.
-# If linking to external ESMF library then include esmf.mk
-# ESMF_F90COMPILEPATHS
-# ESMF_F90LINKPATHS
-# ESMF_F90LINKRPATHS
-# ESMF_F90ESMFLINKLIBS
-ifeq ($(USE_ESMF_LIB), TRUE)
-  -include $(CCSM_ESMFMKFILE)
-  FFLAGS += $(ESMF_F90COMPILEPATHS)
-  SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
-endif
 
 # Add PETSc libraries
 ifeq ($(strip $(USE_PETSC)), TRUE)
@@ -875,21 +877,23 @@ $(MCTLIBS)  : $(MPISERIAL)
 $(PIOLIB) : $(MPISERIAL) $(GPTLLIB)
 
 $(CSMSHARELIB):  $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
+
 ifneq ($(MODEL),csm_share)
   $(OBJS):  $(CSMSHARELIB)
+else
+  complib: install_lib
 endif
+
+install_lib: $(COMPLIB)
+	$(CP) -p $(COMPLIB) $(CSMSHARELIB)
+	$(CP) -p *.$(MOD_SUFFIX) *.h $(INCLUDE_DIR)
+
 
 $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(LDFLAGS)
 
-ifdef INCLUDE_DIR
-  $(COMPLIB): $(OBJS)
+$(COMPLIB): $(OBJS)
 	$(AR) -r $(COMPLIB) $(OBJS)
-	$(CP) *.$(MOD_SUFFIX) *.h $(INCLUDE_DIR)
-else
-  $(COMPLIB): $(OBJS)
-	$(AR) -r $(COMPLIB) $(OBJS)
-endif
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS)  $<

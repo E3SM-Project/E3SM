@@ -112,10 +112,8 @@ def _build_checks(case, build_threaded, comp_interface, use_esmf_lib,
     ninst_value  = case.get_value("NINST_VALUE")
     smp_build    = case.get_value("SMP_BUILD")
     build_status = case.get_value("BUILD_STATUS")
-    expect(comp_interface == "nuopc" or comp_interface =="mct",
-           "COMP_INTERFACE is {}, Only supporting mct or nuopc comp_interface settings at this time".\
-           format(comp_interface))
-
+    expect(comp_interface in ("mct", "moab", "nuopc"),
+           "Only supporting mct nuopc, or moab comp_interfaces at this time, found {}".format(comp_interface))
     smpstr = ""
     inststr = ""
     for model, _, nthrds, ninst, _ in complist:

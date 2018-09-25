@@ -8,7 +8,7 @@ module cplcomp_exchange_mod
   use mct_mod
   use seq_map_type_mod
   use component_type_mod
-  use shr_flds_mod, only: shr_flds_dom_coord, shr_flds_dom_other
+  use seq_flds_mod, only: seq_flds_dom_coord, seq_flds_dom_other
   use seq_comm_mct, only: cplid, logunit
   use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs, seq_comm_iamin
   use seq_diag_mct
@@ -444,10 +444,10 @@ contains
     call seq_mctext_avExtend(GG1_old%data, ID_old, ID_join)
 
     if (present(ggrid_new)) then
-       call mct_gGrid_init(GGrid=ggrid_new, CoordChars=shr_flds_dom_coord, OtherChars=shr_flds_dom_other, lsize=lsize )
+       call mct_gGrid_init(GGrid=ggrid_new, CoordChars=seq_flds_dom_coord, OtherChars=seq_flds_dom_other, lsize=lsize )
        call mct_avect_zero(ggrid_new%data)
     else
-       call mct_gGrid_init(GGrid=GG1_new, CoordChars=shr_flds_dom_coord, OtherChars=shr_flds_dom_other, lsize=lsize )
+       call mct_gGrid_init(GGrid=GG1_new, CoordChars=seq_flds_dom_coord, OtherChars=seq_flds_dom_other, lsize=lsize )
        call mct_avect_zero(GG1_new%data)
     end if
 

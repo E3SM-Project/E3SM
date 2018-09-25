@@ -25,6 +25,13 @@ module seq_io_read_mod
 
   ! !USES:
 
+  use shr_kind_mod, only: r8 => shr_kind_r8, in => shr_kind_in
+  use shr_kind_mod, only: cl => shr_kind_cl, cs => shr_kind_cs
+  use shr_pio_mod,  only: shr_pio_getiosys, shr_pio_getiotype
+  use shr_sys_mod       ! system calls
+  use seq_comm_mct
+  use mct_mod           ! mct wrappers
+  use pio
 
   implicit none
   private
@@ -58,6 +65,8 @@ module seq_io_read_mod
   character(*) , parameter :: prefix = "seq_io_"
   character(*) , parameter :: version ='cpl7v10'
   character(*) , parameter :: version0='cpl7v00'
+  character(CL)            :: charvar   ! buffer for string read/write
+
   !=================================================================================
 contains
   !=================================================================================
@@ -76,7 +85,6 @@ contains
   ! !INTERFACE: ------------------------------------------------------------------
 
   subroutine seq_io_read_int(filename,pioid,idata,dname)
-    use pio, only: file_desc_t
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -113,8 +121,7 @@ contains
   ! !INTERFACE: ------------------------------------------------------------------
 
   subroutine seq_io_read_int1d(filename,pioid,idata,dname)
-    use shr_kind_mod, only : CL=>shr_kind_cl, in=>shr_kind_in
-    use pio, only: file_desc_t, pio_inq_varid, pio_get_var, var_desc_t
+
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
     character(len=*),intent(in)   :: filename ! file
@@ -145,15 +152,6 @@ contains
   end subroutine seq_io_read_int1d
 
   subroutine seq_io_read_openfile(filename,pioid,addprefix)
-    use shr_kind_mod, only: in=>shr_kind_in, CL=>shr_kind_cl
-    use shr_sys_mod, only : shr_sys_abort
-    use pio, only : file_desc_t, pio_file_is_open, pio_openfile, pio_get_att, pio_nowrite
-    use pio, only : pio_global,pio_get_att, pio_seterrorhandling
-    use pio, only : PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, iosystem_desc_t
-    use shr_mpi_mod, only : shr_mpi_bcast
-    use shr_pio_mod,  only: shr_pio_getiosys, shr_pio_getiotype
-    use seq_comm_mct, only: CPLID, seq_comm_setptrs, seq_comm_name, logunit, seq_comm_namelen
-
     character(len=*), intent(in) :: filename
     type(file_desc_t) :: pioid
     logical, intent(out) :: addprefix
@@ -209,8 +207,6 @@ contains
   ! !INTERFACE: ------------------------------------------------------------------
 
   subroutine seq_io_read_r8(filename,pioid,rdata,dname)
-    use shr_kind_mod, only : R8=>shr_kind_R8
-    use pio, only :  file_desc_t
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -247,8 +243,6 @@ contains
   ! !INTERFACE: ------------------------------------------------------------------
 
   subroutine seq_io_read_r81d(filename,pioid,rdata,dname)
-    use shr_kind_mod, only : CL=>shr_kind_cl, R8=>SHR_KIND_R8
-    use pio, only : pio_inq_varid, pio_get_var, file_desc_t, var_desc_t
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -294,8 +288,7 @@ contains
   ! !INTERFACE: ------------------------------------------------------------------
 
   subroutine seq_io_read_char(filename,pioid,rdata,dname)
-    use shr_kind_mod, only : CL=>shr_kind_cl
-    use pio, only : pio_inq_varid, pio_get_var, file_desc_t, var_desc_t
+
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
     character(len=*),intent(in)    :: filename ! file
@@ -310,7 +303,6 @@ contains
     character(*),parameter          :: subName = '(seq_io_read_char) '
     logical :: addprefix
     integer :: rcode
-    character(CL)            :: charvar   ! buffer for string read/write
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------

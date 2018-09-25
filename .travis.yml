@@ -11,4 +11,4 @@ script: cd scripts/tests; ./scripts_regression_tests.py --machine centos7-linux 
 # it's pushed
 branches:
   only:
-  - nuopc-cmeps
+  - master

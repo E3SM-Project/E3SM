@@ -142,7 +142,7 @@ def submit(self, job=None, no_batch=False, prereq=None, allow_fail=False, resubm
         if mail_user is None and config.has_option('SubmitOptions', 'mail_user'):
             mail_user = config.get('SubmitOptions', 'mail_user')
         if mail_type is None and config.has_option('SubmitOptions', 'mail_type'):
-            mail_type = config.get('SubmitOptions', 'mail_type').split(',')
+            mail_type = str(config.get('SubmitOptions', 'mail_type')).split(',')
         if batch_args is None and config.has_option('SubmitOptions', 'batch_args'):
             batch_args = config.get('SubmitOptions', 'batch_args')
 
@@ -168,6 +168,11 @@ def check_case(self):
     self.create_namelists() # Must be called before check_all_input_data
     logger.info("Checking that inputdata is available as part of case submission")
     self.check_all_input_data()
+
+    if self.get_value('COMP_WAV') == 'ww':
+        # the ww3 buildnml has dependancies on inputdata so we must run it again
+        self.create_namelists(component='WAV')
+
 
     expect(self.get_value("BUILD_COMPLETE"), "Build complete is "
            "not True please rebuild the model by calling case.build")

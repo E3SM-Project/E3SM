@@ -23,15 +23,17 @@ def parse_command_line(args, cimeroot, description):
     except:
         cime_config = None
 
-    parser.add_argument("--case", "-case", required=True,
+    parser.add_argument("--case", "-case", required=True, metavar="CASENAME",
                         help="(required) Specify the case name. "
-                        "\nIf not a full pathname, then the case is created under then current working directory.")
+                        "\nIf this is simply a name (not a path), the case directory is created in the current working directory."
+                        "\nThis can also be a relative or absolute path specifying where the case should be created;"
+                        "\nwith this usage, the name of the case will be the last component of the path.")
 
     parser.add_argument("--compset", "-compset", required=True,
                         help="(required) Specify a compset. "
                         "\nTo see list of current compsets, use the utility ./query_config --compsets in this directory.\n")
 
-    parser.add_argument("--res", "-res", required=True,
+    parser.add_argument("--res", "-res", required=True, metavar="GRID",
                         help="(required) Specify a model grid resolution. "
                         "\nTo see list of current model resolutions, use the utility "
                         "\n./query_config --grids in this directory.")
@@ -133,10 +135,13 @@ def parse_command_line(args, cimeroot, description):
 
     parser.add_argument("-i", "--input-dir",
                         help="Use a non-default location for input files. This will change the xml value of DIN_LOC_ROOT.")
-
-    # Select a driver. No selection implies mct driver
-    parser.add_argument("--driver", "-driver", default="nuopc", choices=('mct','nuopc'),
+    parser.add_argument("--driver", default="mct",
+                        choices=('mct','nuopc', 'moab'),
                         help=argparse.SUPPRESS)
+
+    parser.add_argument("-n", "--non-local", action="store_true",
+                        help="Use when you've requested a machine that you aren't on. "
+                        "Will reduce errors for missing directories etc.")
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
@@ -174,7 +179,7 @@ def parse_command_line(args, cimeroot, description):
         args.user_mods_dir, args.pesfile, \
         args.user_grid, args.gridfile, args.srcroot, args.test, args.multi_driver, \
         args.ninst, args.walltime, args.queue, args.output_root, args.script_root, \
-        run_unsupported, args.answer, args.input_dir, args.driver
+        run_unsupported, args.answer, args.input_dir, args.driver, args.non_local
 
 ###############################################################################
 def _main_func(description):
@@ -186,7 +191,7 @@ def _main_func(description):
         user_mods_dir, pesfile, \
         user_grid, gridfile, srcroot, test, multi_driver, ninst, walltime, \
         queue, output_root, script_root, run_unsupported, \
-        answer, input_dir, driver = parse_command_line(sys.argv, cimeroot, description)
+        answer, input_dir, driver, non_local = parse_command_line(sys.argv, cimeroot, description)
 
     if script_root is None:
         caseroot = os.path.abspath(casename)
@@ -211,7 +216,7 @@ def _main_func(description):
                     multi_driver=multi_driver, ninst=ninst, test=test,
                     walltime=walltime, queue=queue, output_root=output_root,
                     run_unsupported=run_unsupported, answer=answer,
-                    input_dir=input_dir, driver=driver)
+                    input_dir=input_dir, driver=driver, non_local=non_local)
 
 ###############################################################################
 

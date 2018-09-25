@@ -402,16 +402,16 @@
   <entry id="CPL_SEQ_OPTION">
     <type>char</type>
     <valid_values>CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2,NUOPC,NUOPC_TIGHT</valid_values>
-    <default_value>NUOPC_TIGHT</default_value>
+    <default_value>CESM1_MOD_TIGHT</default_value>
     <values match="last">
-      <value compset="_DATM.*_DOCN%SOM"              >NUOPC</value>
-      <value compset="_POP2"                         >NUOPC</value>
-      <value compset="_POP2" grid="oi%gx1v6"         >NUOPC</value>
-      <value compset="_POP2" grid="oi%gx1v7"         >NUOPC</value>
-      <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN">NUOPC</value>
-      <value compset="_XATM.*_XLND.*_XICE.*_XOCN"    >NUOPC</value>
-      <value compset="_SOCN"                         >NUOPC</value>
-      <value compset="_MPAS"                         >NUOPC</value>
+      <value compset="_DATM.*_DOCN%SOM"			>CESM1_MOD</value>
+      <value compset="_POP2"				>CESM1_MOD</value>
+      <value compset="_POP2" grid="oi%gx1v6"		>RASM_OPTION1</value>
+      <value compset="_POP2" grid="oi%gx1v7"		>RASM_OPTION1</value>
+      <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN"	>CESM1_MOD</value>
+      <value compset="_XATM.*_XLND.*_XICE.*_XOCN"	>CESM1_MOD</value>
+      <value compset="_SOCN"				>CESM1_MOD</value>
+      <value compset="_MPAS"				>CESM1_MOD</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -425,7 +425,7 @@
       RASM_OPTION2 is similar to RASM_OPTION1
       but sequences the ice model, prep ocean and ocean model in that order.  The
       ocean model loses some of the concurrency with the ice model.
-      CESM1_MOD_TIGHT are consistent with the old variables ocean_tight_coupling = true in the driver. 
+      CESM1_MOD_TIGHT are consistent with the old variables ocean_tight_coupling = true in the driver.
     </desc>
   </entry>
 

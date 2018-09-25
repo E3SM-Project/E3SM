@@ -192,8 +192,8 @@
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="cmd_path"/>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="modules"/>
       </xs:sequence>
-      <xs:attribute ref="allow_error"/>
       <xs:attribute ref="type" use="required"/>
+      <xs:attribute ref="allow_error" />
     </xs:complexType>
   </xs:element>
   <xs:element name="init_path">
@@ -214,6 +214,7 @@
       <xs:attribute ref="compiler" />
       <xs:attribute ref="DEBUG" />
       <xs:attribute ref="mpilib"/>
+      <xs:attribute ref="comp_interface"/>
     </xs:complexType>
   </xs:element>
   <xs:element name="command">

@@ -63,6 +63,9 @@ class EnvMachPes(EnvBase):
                 ninst = self.get_value("NINST_{}".format(comp))
                 expect(ninst == ninst_max,
                        "All components must have the same NINST value in multi_driver mode.  NINST_{}={} shoud be {}".format(comp,ninst,ninst_max))
+        if "NTASKS" in vid or "NTHRDS" in vid:
+            expect(value != 0, "Cannot set NTASKS or NTHRDS to 0")
+
 
         return EnvBase.set_value(self, vid, value, subgroup=subgroup, ignore_type=ignore_type)
 
@@ -80,15 +83,14 @@ class EnvMachPes(EnvBase):
     def get_total_tasks(self, comp_classes):
         total_tasks = 0
         maxinst = self.get_value("NINST")
-        if maxinst is None:
-            comp_interface = "mct"
-        else:
+        comp_interface = 'unknown'
+        if maxinst:
             comp_interface = "nuopc"
         for comp in comp_classes:
             ntasks = self.get_value("NTASKS", attribute={"compclass":comp})
             rootpe = self.get_value("ROOTPE", attribute={"compclass":comp})
             pstrid = self.get_value("PSTRID", attribute={"compclass":comp})
-            if comp != "CPL" and comp_interface=="mct":
+            if comp != "CPL" and comp_interface!="nuopc":
                 ninst = self.get_value("NINST", attribute={"compclass":comp})
                 maxinst = max(maxinst, ninst)
             tt = rootpe + (ntasks - 1) * pstrid + 1

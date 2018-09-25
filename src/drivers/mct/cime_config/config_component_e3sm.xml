@@ -4,7 +4,7 @@
 
   <entry id="MODEL_DOI_URL">
     <type>char</type>
-    <default_value>unset</default_value>
+    <default_value>https://doi.org/10.11578/E3SM/dc.20180418.36</default_value>
     <group>run_metadata</group>
     <file>env_case.xml</file>
     <desc>run DOI</desc>
@@ -138,7 +138,7 @@
 
   <entry id="CPL_SEQ_OPTION">
     <type>char</type>
-    <valid_values>CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2</valid_values>
+    <valid_values>CESM1_ORIG,CESM1_ORIG_TIGHT,CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2</valid_values>
     <default_value>CESM1_MOD_TIGHT</default_value>
     <values match="last">
       <value compset="_DATM.*_DOCN%SOM"          >CESM1_MOD</value>
@@ -154,6 +154,7 @@
     <file>env_run.xml</file>
     <desc>
       Coupler sequencing option. This is used to set the driver namelist variable cpl_seq_option.
+      CESM1_ORIG is the cesm1.1 implementation.
       CESM1_MOD includes a cesm1.3 mod that swaps ocean merging and atm/ocn flux
       computation.
       RASM_OPTION1 runs prep ocean before the ocean coupling reducing
@@ -162,28 +163,35 @@
       RASM_OPTION2 is similar to RASM_OPTION1
       but sequences the ice model, prep ocean and ocean model in that order.  The
       ocean model loses some of the concurrency with the ice model.
-      CESM1_MOD_TIGHT are consistent with the old variables ocean_tight_coupling = true in the driver. 
+      CESM1_ORIG_TIGHT and CESM1_MOD_TIGHT are consistent with the old variables
+      ocean_tight_coupling = true in the driver.  That namelist is gone and the
+      cpl_seq_option flags take it's place.
+      TIGHT coupling makes no sense with the OPTION5 and OPTION6 flags.
     </desc>
   </entry>
 
   <entry id="CCSM_BGC">
     <type>char</type>
-    <valid_values>none,CO2A,CO2A_OI,CO2B,CO2C,CO2_DMSA</valid_values>
+    <valid_values>none,CO2A,CO2A_OI,CO2B,CO2C,CO2C_OI,CO2_DMSA</valid_values>
     <default_value>none</default_value>
     <values match="last">
       <value compset="_CAM\d+"     >CO2A</value>
       <value compset="_DATM"    >none</value>
       <value compset="_BGC%BPRP">CO2C</value>
-      <value compset="_BGC%BDRD">CO2C</value>
       <value compset="HIST.*_DATM%(QIA|CRU|GSW)">CO2A</value>
       <value compset="20TR.*_DATM%(QIA|CRU|GSW)">CO2A</value>
       <value compset="RCP.*_DATM%(QIA|CRU|GSW)" >CO2A</value>
       <value compset="_DATM%IAF.*_MPASO%OECO" >CO2A</value>
       <value compset="_MPASCICE%BGC.*_MPASO%OIECO" >CO2A_OI</value>
       <value compset="_MPASCICE%BGC.*_MPASO%TOIECO_" >CO2A_OI</value>
-      <value compset="_BGC%BCRD">CO2C</value>
-      <value compset="_BGC%BDRC">CO2C</value>
-      <value compset="_BGC%BCRC">CO2C</value>
+      <value compset="_MPASCICE_MPASO_.*_BGC%BCRC" >CO2C</value>
+      <value compset="_MPASCICE_MPASO_.*_BGC%BCRD" >CO2C</value>
+      <value compset="_MPASCICE_MPASO_.*_BGC%BDRC" >CO2C</value>
+      <value compset="_MPASCICE_MPASO_.*_BGC%BDRD" >CO2C</value>
+      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BCRC" >CO2C_OI</value>
+      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BCRD" >CO2C_OI</value>
+      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BDRC" >CO2C_OI</value>
+      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BDRD" >CO2C_OI</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -271,6 +279,7 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU480">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240wLI">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU120">24</value>
@@ -368,6 +377,7 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
+      <value compset="_MPASO" grid="oi%oQU480">6</value>
       <value compset="_MPASO" grid="oi%oQU240">12</value>
       <value compset="_MPASO" grid="oi%oQU240wLI">12</value>
       <value compset="_MPASO" grid="oi%oQU120">24</value>
@@ -633,6 +643,14 @@
     <file>env_case.xml</file>
     <desc>If set to off, this component set/ grid specification is not scientifically supported.
     If set to on, this component set/ grid specification is scientifically supported</desc>
+  </entry>
+
+  <entry id="MAX_GB_OLD_TEST_DATA">
+    <type>integer</type>
+    <default_value>500</default_value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>How much old test to allow</desc>
   </entry>
 
   <entry id="GLC_NEC">

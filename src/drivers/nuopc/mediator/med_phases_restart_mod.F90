@@ -213,11 +213,7 @@ contains
             trim(case_name), '.cpl',trim(cpl_inst_tag),'.r.', trim(nexttimestr),'.nc'
 
        if (iam == 0) then
-          if(len_trim(cpl_inst_tag) > 1) then
-             restart_pfile = "rpointer.med_"//cpl_inst_tag
-          else
-             restart_pfile = "rpointer.med"
-          endif
+          restart_pfile = "rpointer.med"//cpl_inst_tag
           call ESMF_LogWrite(trim(subname)//" write rpointer file = "//trim(restart_pfile), ESMF_LOGMSG_INFO, rc=dbrc)
           unitn = shr_file_getUnit()
           open(unitn, file=restart_pfile, form='FORMATTED')
@@ -426,11 +422,7 @@ contains
     !---------------------------------------
 
 
-    if(len_trim(cpl_inst_tag) > 1) then
-       restart_pfile = "rpointer.med_"//cpl_inst_tag
-    else
-       restart_pfile = "rpointer.med"
-    endif
+    restart_pfile = "rpointer.med"//cpl_inst_tag
 
     if (iam == 0) then
        unitn = shr_file_getUnit()

@@ -28,8 +28,8 @@ contains
     integer(IN)            , intent(in)    :: my_task     ! my task in mpi communicator mpicom
     integer(IN)            , intent(in)    :: master_task ! task number of master task
     integer                , intent(in)    :: inst_index  ! number of current instance (ie. 1)
-    character(len=*)      , intent(in)    :: inst_suffix ! char string associated with instance
-    character(len=*)      , intent(in)    :: inst_name   ! fullname of current instance (ie. "lnd_0001")
+    character(len=16)      , intent(in)    :: inst_suffix ! char string associated with instance
+    character(len=16)      , intent(in)    :: inst_name   ! fullname of current instance (ie. "lnd_0001")
     integer(IN)            , intent(in)    :: logunit     ! logging unit number
     integer(IN)		   , intent(out)   :: nproc_x
     integer(IN)            , intent(out)   :: seg_len
