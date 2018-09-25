@@ -46,7 +46,7 @@ contains
     use thread_mod, only : nthreads, hthreads, vthreads
     ! --------------------------------
     use control_mod, only : runtype, restartfreq, integration, topology, &
-         partmethod, use_semi_lagrange_transport, z2_map_method, cubed_sphere_map
+         partmethod, transport_alg, semi_lagrange_cdr_alg, z2_map_method, cubed_sphere_map
     ! --------------------------------
     use prim_state_mod, only : prim_printstate_init
     ! --------------------------------
@@ -114,6 +114,8 @@ contains
 #ifdef TRILINOS
     use prim_implicit_mod,  only : prim_implicit_init
 #endif
+
+    use compose_mod, only: kokkos_init, compose_init, cedr_unittest, cedr_set_ie2gci
 
     implicit none
 
@@ -482,6 +484,22 @@ contains
 #endif
     !DBG  write(iulog,*) 'prim_init: after call to initRestartFile'
 
+    if (transport_alg > 0) then
+       call sort_neighbor_buffer_mapping(par, elem,1,nelemd)
+    end if
+
+    call kokkos_init()
+    if (transport_alg > 0 .and. semi_lagrange_cdr_alg > 1) then
+       call compose_init(par%comm, elem, GridVertex)
+       !call cedr_unittest(par%comm, ierr)
+       if (par%masterproc) then
+          write(iulog,*) "CEDR unittest returned", ierr
+       end if
+       do ie = 1, nelemd
+          call cedr_set_ie2gci(ie, elem(ie)%vertex%number)
+       end do
+    end if
+
     deallocate(GridEdge)
     do j =1,nelem
        call deallocate_gridvertex_nbrs(GridVertex(j))
@@ -509,7 +527,6 @@ contains
     ! if this is too small, code will abort with an error message
     call initEdgeBuffer(par,edge_g,elem,max((qsize+1)*nlev,6*nlev+1))
 
-
     allocate(dom_mt(0:hthreads-1))
     do ith=0,hthreads-1
        dom_mt(ith)=decompose(1,nelemd,hthreads,ith)
@@ -517,16 +534,12 @@ contains
     ith=0
     nets=1
     nete=nelemd
+
     call prim_advance_init1(par,elem,integration)
 #ifdef TRILINOS
     call prim_implicit_init(par, elem)
 #endif
     call Prim_Advec_Init1(par, elem)
-
-
-    if ( use_semi_lagrange_transport) then
-      call sort_neighbor_buffer_mapping(par, elem,1,nelemd)
-    end if
 
     call TimeLevel_init(tl)
 
@@ -1085,7 +1098,7 @@ contains
   !
   !
     use control_mod,        only: statefreq, integration, ftype, qsplit, nu_p, rsplit
-    use control_mod,        only: use_semi_lagrange_transport
+    use control_mod,        only: transport_alg
     use hybvcoord_mod,      only : hvcoord_t
     use parallel_mod,       only: abortmp
     use prim_advance_mod,   only: prim_advance_exp
@@ -1125,7 +1138,7 @@ contains
          elem(ie)%derived%dpdiss_ave=0
          elem(ie)%derived%dpdiss_biharmonic=0
       endif
-      if (use_semi_lagrange_transport) then
+      if (transport_alg > 0) then
         elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,tl%n0)
       end if
       elem(ie)%derived%dp(:,:,:)=elem(ie)%state%dp3d(:,:,:,tl%n0)

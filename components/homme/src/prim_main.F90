@@ -15,7 +15,7 @@ program prim_main
                               omp_get_num_threads, omp_get_max_threads
   use time_mod,         only: tstep, nendstep, timelevel_t, TimeLevel_init
   use dimensions_mod,   only: nelemd, qsize
-  use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype, integration, statefreq, tstep_type
+  use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype, integration, statefreq, tstep_type, transport_alg
   use domain_mod,       only: domain1d_t, decompose
   use element_mod,      only: element_t
   use common_io_mod,    only: output_dir
@@ -23,6 +23,7 @@ program prim_main
   use perf_mod,         only: t_initf, t_prf, t_finalizef, t_startf, t_stopf ! _EXTERNAL
   use restart_io_mod ,  only: restartheader_t, writerestart
   use hybrid_mod,       only: hybrid_create
+  use compose_test_mod, only: compose_test
 
 #ifdef VERTICAL_INTERPOLATION
   use netcdf_interp_mod, only: netcdf_interp_init, netcdf_interp_write, netcdf_interp_finish
@@ -205,6 +206,11 @@ program prim_main
 #endif
   endif
 
+  if ((transport_alg >= 17 .and. transport_alg <= 19) .or. &
+       transport_alg == 29 .or. transport_alg == 39) then
+     nEndStep = -1
+     call compose_test(par, hvcoord, dom_mt, elem)
+  end if
 
   if(par%masterproc) print *,"Entering main timestepping loop"
   call t_startf('prim_main_loop')

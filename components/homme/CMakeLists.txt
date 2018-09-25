@@ -77,7 +77,8 @@ IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
   SET (HOMME_USE_CXX TRUE)
   SET (HOMME_USE_TRILINOS TRUE)
 ELSE ()
-  SET(HOMME_USE_CXX FALSE)
+  SET(HOMME_USE_CXX TRUE)
+  SET(HOMME_USE_TRILINOS FALSE)
 ENDIF ()
 
 IF (${HOMME_USE_TRILINOS}) 
@@ -88,6 +89,7 @@ ENDIF()
 IF (${HOMME_USE_CXX})
   MESSAGE(STATUS "This configuration of HOMME requires a C++ compiler")
   ENABLE_LANGUAGE(CXX)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 ENDIF ()
 
 ##############################################################################
