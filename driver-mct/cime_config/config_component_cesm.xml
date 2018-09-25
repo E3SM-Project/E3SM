@@ -70,7 +70,7 @@
     <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>
-      integer indicating maximum detail level to profile. This xml
+    integer indicating maximum detail level to profile. This xml
     variable is used to set the namelist variable
     timing_detail_limit. This namelist variable is used by perf_mod
     (in $CIMEROOT/src/share/timing/perf_mod.F90) to turn timers off
@@ -79,10 +79,6 @@
     timer detail level is incremented by 1 and compared to the
     time_detail_limit obtained from the namelist.  If the limit is
     exceeded then the timer is turned off.
-
-
-
-
     </desc>
   </entry>
 
@@ -405,23 +401,22 @@
 
   <entry id="CPL_SEQ_OPTION">
     <type>char</type>
-    <valid_values>CESM1_ORIG,CESM1_ORIG_TIGHT,CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2</valid_values>
+    <valid_values>CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2,NUOPC,NUOPC_TIGHT</valid_values>
     <default_value>CESM1_MOD_TIGHT</default_value>
     <values match="last">
-      <value compset="_DATM.*_DOCN%SOM"          >CESM1_MOD</value>
-      <value compset="_POP2"                     >CESM1_MOD</value>
-      <value compset="_POP2" grid="oi%gx1v6"     >RASM_OPTION1</value>
-      <value compset="_POP2" grid="oi%gx1v7"     >RASM_OPTION1</value>
-      <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN">CESM1_MOD</value>
-      <value compset="_XATM.*_XLND.*_XICE.*_XOCN">CESM1_MOD</value>
-      <value compset="_SOCN"                     >CESM1_MOD</value>
-      <value compset="_MPAS"                     >CESM1_MOD</value>
+      <value compset="_DATM.*_DOCN%SOM"			>CESM1_MOD</value>
+      <value compset="_POP2"				>CESM1_MOD</value>
+      <value compset="_POP2" grid="oi%gx1v6"		>RASM_OPTION1</value>
+      <value compset="_POP2" grid="oi%gx1v7"		>RASM_OPTION1</value>
+      <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN"	>CESM1_MOD</value>
+      <value compset="_XATM.*_XLND.*_XICE.*_XOCN"	>CESM1_MOD</value>
+      <value compset="_SOCN"				>CESM1_MOD</value>
+      <value compset="_MPAS"				>CESM1_MOD</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
     <desc>
       Coupler sequencing option. This is used to set the driver namelist variable cpl_seq_option.
-      CESM1_ORIG is the cesm1.1 implementation.
       CESM1_MOD includes a cesm1.3 mod that swaps ocean merging and atm/ocn flux
       computation.
       RASM_OPTION1 runs prep ocean before the ocean coupling reducing
@@ -430,10 +425,7 @@
       RASM_OPTION2 is similar to RASM_OPTION1
       but sequences the ice model, prep ocean and ocean model in that order.  The
       ocean model loses some of the concurrency with the ice model.
-      CESM1_ORIG_TIGHT and CESM1_MOD_TIGHT are consistent with the old variables
-      ocean_tight_coupling = true in the driver.  That namelist is gone and the
-      cpl_seq_option flags take it's place.
-      TIGHT coupling makes no sense with the OPTION5 and OPTION6 flags.
+      CESM1_MOD_TIGHT are consistent with the old variables ocean_tight_coupling = true in the driver.
     </desc>
   </entry>
 
