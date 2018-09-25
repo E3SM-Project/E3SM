@@ -21,9 +21,8 @@ from CIME.utils import expect
 
 import CIME.test_status
 
-import evv4esm
-from evv4esm.__main__ import main as evv
-
+import evv4esm  # pylint: disable=import-error
+from evv4esm.__main__ import main as evv # pylint: disable=import-error
 
 evv_lib_dir = os.path.abspath(os.path.dirname(evv4esm.__file__))
 logger = logging.getLogger(__name__)
@@ -51,7 +50,7 @@ class MVK(SystemTestsCommon):
         # Only want this to happen once. It will impact the sharedlib build
         # so it has to happen there.
         if not model_only:
-            logging.warn('Starting to build multi-instance exe')
+            logging.warning('Starting to build multi-instance exe')
             for comp in self._case.get_values("COMP_CLASSES"):
                 self._case.set_value('NTHRDS_{}'.format(comp), 1)
 
