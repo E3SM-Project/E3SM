@@ -1,5 +1,6 @@
 #include "share/util/scream_utils.hpp"
 #include "share/scream_types.hpp"
+#include "share/scream_config.hpp"
 
 #include <sstream>
 
@@ -42,6 +43,7 @@ std::string config_string () {
   std::stringstream ss;
   ss << "sizeof(Real) " << sizeof(Real)
      << " avx " << active_avx_string()
+     << " packsize " << SCREAM_PACK_SIZE
      << " compiler " <<
 #if defined __INTEL_COMPILER
     "Intel"

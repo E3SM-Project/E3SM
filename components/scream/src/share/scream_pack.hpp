@@ -214,11 +214,21 @@ OnlyPackReturn<Pack, typename Pack::scalar> min (const Pack& p) {
   vector_simd for (int i = 0; i < Pack::n; ++i) v = util::min(v, p[i]);
   return v;
 }
+
 template <typename Pack> KOKKOS_INLINE_FUNCTION
 OnlyPackReturn<Pack, typename Pack::scalar> max (const Pack& p) {
   typename Pack::scalar v(p[0]);
   vector_simd for (int i = 0; i < Pack::n; ++i) v = util::max(v, p[i]);
   return v;
+}
+
+// min(init, min(p(mask)))
+template <typename Pack> KOKKOS_INLINE_FUNCTION
+OnlyPackReturn<Pack, typename Pack::scalar>
+min (const Mask<Pack::n>& mask, typename Pack::scalar init, const Pack& p) {
+  vector_simd for (int i = 0; i < Pack::n; ++i)
+    if (mask[i]) init = util::min(init, p[i]);
+  return init;
 }
 
 // max(init, max(p(mask)))
