@@ -280,7 +280,7 @@ module ESM
     call InitPIO(driver, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call InitRestart(driver, logunit, rc)
+    call InitRestart(driver, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (pio_file_is_open(pioid)) then
@@ -946,16 +946,12 @@ module ESM
 
     ! input/output variables
     type(ESMF_GridComp)    , intent(inout) :: driver
-    integer                , intent(in)    :: logunit
     integer                , intent(out)   :: rc
 
     ! local variables
     character(SHR_KIND_CL)       :: cvalue         ! temporary
     logical                      :: read_restart   ! read the restart file, based on start_type
-    character(SHR_KIND_CL)       :: restart_file   ! Full archive path to restart file
-    character(SHR_KIND_CL)       :: restart_pfile  ! Restart pointer file
     character(SHR_KIND_CL)       :: rest_case_name ! Short case identification
-    character(len=*) , parameter :: sp_str = 'str_undefined'
     character(len=*) , parameter :: subname = "(esm.F90:InitRestart)"
     !-------------------------------------------
 
