@@ -157,7 +157,14 @@ def coastal_refined_mesh(params, cell_width=None, lon_grd=None, lat_grd=None):  
     if cell_width is None:
         # Create the background cell width array
         lon_grd, lat_grd, cell_width = create_background_mesh(
-            params["grd_box"], params["ddeg"], params["mesh_type"], params["dx_min_global"], params["dx_max_global"], params["plot_option"], params["plot_box"], call_count)
+            params["grd_box"], 
+            params["ddeg"], 
+            params["mesh_type"], 
+            params["dx_min_global"], 
+            params["dx_max_global"], 
+            params["plot_option"], 
+            params["plot_box"], 
+            call_count)
 
     # Get coastlines from bathy/topo  data set
     coastlines = extract_coastlines(
@@ -180,8 +187,7 @@ def coastal_refined_mesh(params, cell_width=None, lon_grd=None, lat_grd=None):  
         params["plot_box"],
         call_count)
 
-    # Blend coastline and background resolution, save cell_width array as .mat
-    # file
+    # Blend coastline and background resolution, save cell_width array as .mat file
     cell_width = compute_cell_width(
         D,
         cell_width,
@@ -225,8 +231,7 @@ def create_background_mesh(grd_box, ddeg, mesh_type, dx_min, dx_max,  # {{{
     elif mesh_type == 'EC':
         cell_width_lat = mdt.EC_CellWidthVsLat(lat_grd)
     elif mesh_type == 'RRS':
-        cell_width_lat = mdt.RRS_CellWidthVsLat(
-            lat_grd, dx_max / km, dx_min / km)
+        cell_width_lat = mdt.RRS_CellWidthVsLat(lat_grd, dx_max / km, dx_min / km)
     cell_width = np.tile(cell_width_lat, (nx_grd, 1)).T * km
 
     # Plot background cell width
@@ -265,8 +270,7 @@ def extract_coastlines(nc_file, region_box, z_contour=0, n_longest=10,  # {{{
     for box in region_box["include"]:
 
         # Find coordinates and data inside bounding box
-        lon_region, lat_region, z_region = get_data_inside_box(
-            lon, lat, zdata, box)
+        lon_region, lat_region, z_region = get_data_inside_box(lon, lat, zdata, box)
         print "Regional bathymetry data shape:", z_region.shape
 
         # Find coastline contours
@@ -277,10 +281,8 @@ def extract_coastlines(nc_file, region_box, z_contour=0, n_longest=10,  # {{{
         contours.sort(key=len, reverse=True)
         for c in contours[:n_longest]:
             # Convert from pixel to lon,lat
-            c[:, 0] = (box[3] - box[2]) / \
-                float(len(lat_region)) * c[:, 0] + box[2]
-            c[:, 1] = (box[1] - box[0]) / \
-                float(len(lon_region)) * c[:, 1] + box[0]
+            c[:, 0] = (box[3] - box[2]) / float(len(lat_region)) * c[:, 0] + box[2]
+            c[:, 1] = (box[1] - box[0]) / float(len(lon_region)) * c[:, 1] + box[0]
             c = np.fliplr(c)
 
             exclude = False
@@ -308,8 +310,7 @@ def extract_coastlines(nc_file, region_box, z_contour=0, n_longest=10,  # {{{
     if plot_option:
 
         # Find coordinates and data inside plotting box
-        lon_plot, lat_plot, z_plot = get_data_inside_box(
-            lon, lat, zdata, plot_box)
+        lon_plot, lat_plot, z_plot = get_data_inside_box(lon, lat, zdata, plot_box)
 
         # Plot bathymetry data, coastlines and region boxes
         plt.figure()
@@ -344,8 +345,7 @@ def distance_to_coast(coastlines, lon_grd, lat_grd, origin, nn_search,  # {{{
     # Convert to x,y and create kd-tree
     coast_pts = coastlines[np.isfinite(coastlines).all(axis=1)]
     coast_pts_xy = np.copy(coast_pts)
-    coast_pts_xy[:, 0], coast_pts_xy[:, 1] = CPP_projection(
-        coast_pts[:, 0], coast_pts[:, 1], origin)
+    coast_pts_xy[:, 0], coast_pts_xy[:, 1] = CPP_projection(coast_pts[:, 0], coast_pts[:, 1], origin)
     if nn_search == "kdtree":
         tree = spatial.KDTree(coast_pts_xy)
     elif nn_search == "flann":
@@ -355,8 +355,7 @@ def distance_to_coast(coastlines, lon_grd, lat_grd, origin, nn_search,  # {{{
             algorithm='kdtree',
             target_precision=1.0)
 
-    # Put x,y backgound grid coordinates in a nx_grd x 2 array for kd-tree
-    # query
+    # Put x,y backgound grid coordinates in a nx_grd x 2 array for kd-tree query
     Lon_grd, Lat_grd = np.meshgrid(lon_grd, lat_grd)
     X_grd, Y_grd = CPP_projection(Lon_grd, Lat_grd, origin)
     pts = np.vstack([X_grd.ravel(), Y_grd.ravel()]).T
@@ -425,32 +424,18 @@ def compute_cell_width(D, cell_width, lon, lat, dx_min, trans_start, trans_width
     if restrict_box:
         for box in restrict_box["include"]:
             idx = get_indices_inside_quad(lon, lat, box)
-            cell_width[idx] = (
-                dx_min *
-                dist_weight[idx] +
-                np.multiply(
-                    cell_width[idx],
-                    backgnd_weight[idx]))
+            cell_width[idx] = (dx_min * dist_weight[idx] + np.multiply(cell_width[idx],backgnd_weight[idx]))
     else:
-        cell_width = (
-            dx_min *
-            dist_weight +
-            np.multiply(
-                cell_width,
-                backgnd_weight))
+        cell_width = (dx_min * dist_weight + np.multiply(cell_width,backgnd_weight))
 
     if plot_option:
 
         # Find coordinates and data inside plotting box
-        lon_plot, lat_plot, cell_width_plot = get_data_inside_box(
-            lon_grd, lat_grd, cell_width / km, plot_box)
+        lon_plot, lat_plot, cell_width_plot = get_data_inside_box(lon_grd, lat_grd, cell_width / km, plot_box)
 
         # Plot cell width
         plt.figure()
-        levels = np.linspace(
-            np.amin(cell_width_plot),
-            np.amax(cell_width_plot),
-            100)
+        levels = np.linspace(np.amin(cell_width_plot),np.amax(cell_width_plot),100)
         plt.contourf(lon_plot, lat_plot, cell_width_plot, levels=levels)
         plot_coarse_coast(plot_box)
         plt.plot(coastlines[:, 0], coastlines[:, 1], color='white')
@@ -471,12 +456,11 @@ def compute_cell_width(D, cell_width, lon, lat, dx_min, trans_start, trans_width
 
 def save_matfile(cell_width, lon, lat):
 
-    io.savemat(
-        'cellWidthVsLatLon.mat',
-        mdict={
-            'cellWidth': cell_width,
-            'lon': lon,
-            'lat': lat})
+    io.savemat('cellWidthVsLatLon.mat',
+               mdict={
+                      'cellWidth': cell_width,
+                      'lon': lon,
+                      'lat': lat})
 
 ##############################################################
 
@@ -569,41 +553,16 @@ def get_indices_inside_quad(lon, lat, box):
                     phi3 * box[2, 1] + phi4 * box[3, 1]) - y
 
         # Compute Jacobian
-        df1ds = .25 * ((r - 1.0) * box[0,
-                                       0] - (1.0 + r) * box[1,
-                                                            0] + (1.0 + r) * box[2,
-                                                                                 0] + (1.0 - r) * box[3,
-                                                                                                      0])
-        df1dr = .25 * ((s - 1.0) * box[0,
-                                       0] + (1.0 - s) * box[1,
-                                                            0] + (1.0 + s) * box[2,
-                                                                                 0] - (1.0 + s) * box[3,
-                                                                                                      0])
-        df2ds = .25 * ((r - 1.0) * box[0,
-                                       1] - (1.0 + r) * box[1,
-                                                            1] + (1.0 + r) * box[2,
-                                                                                 1] + (1.0 - r) * box[3,
-                                                                                                      1])
-        df2dr = .25 * ((s - 1.0) * box[0,
-                                       1] + (1.0 - s) * box[1,
-                                                            1] + (1.0 + s) * box[2,
-                                                                                 1] - (1.0 + s) * box[3,
-                                                                                                      1])
+        df1ds = .25 * ((r - 1.0) * box[0,0] - (1.0 + r) * box[1,0] + (1.0 + r) * box[2,0] + (1.0 - r) * box[3,0])
+        df1dr = .25 * ((s - 1.0) * box[0,0] + (1.0 - s) * box[1,0] + (1.0 + s) * box[2,0] - (1.0 + s) * box[3,0])
+        df2ds = .25 * ((r - 1.0) * box[0,1] - (1.0 + r) * box[1,1] + (1.0 + r) * box[2,1] + (1.0 - r) * box[3,1])
+        df2dr = .25 * ((s - 1.0) * box[0,1] + (1.0 - s) * box[1,1] + (1.0 + s) * box[2,1] - (1.0 + s) * box[3,1])
 
         # Inverse of 2x2 matrix
         det_recip = np.multiply(df1dr, df2ds) - np.multiply(df2dr, df1ds)
         det_recip = 1.0 / det_recip
-        dr = np.multiply(
-            det_recip,
-            np.multiply(
-                df2ds,
-                f1) -
-            np.multiply(
-                df1ds,
-                f2))
-        ds = np.multiply(det_recip, -
-                         np.multiply(df2dr, f1) +
-                         np.multiply(df1dr, f2))
+        dr = np.multiply(det_recip,  np.multiply(df2ds, f1) - np.multiply(df1ds,f2))
+        ds = np.multiply(det_recip, -np.multiply(df2dr, f1) + np.multiply(df1dr, f2))
 
         # Apply Newton's method
         rnew = r - dr
