@@ -4,6 +4,8 @@
 #ifndef NDEBUG
 # define NDEBUG
 #endif
+// Uncomment this to look for MPI-related memory leaks.
+//#define COMPOSE_DEBUG_MPI
 
 #define BUILD_CISL
 
@@ -3886,6 +3888,34 @@ Parallel::Ptr make_parallel (MPI_Comm comm) {
   return std::make_shared<Parallel>(comm);
 }
 
+struct Request {
+  MPI_Request request;
+
+#ifdef COMPOSE_DEBUG_MPI
+  int unfreed;
+  Request();
+  ~Request();
+#endif
+};
+
+#ifdef COMPOSE_DEBUG_MPI
+Request::Request () : unfreed(0) {}
+Request::~Request () {
+  if (unfreed) {
+    std::stringstream ss;
+    ss << "Request is being deleted with unfreed = " << unfreed;
+    int fin;
+    MPI_Finalized(&fin);
+    if (fin) {
+      ss << "\n";
+      std::cerr << ss.str();
+    } else {
+      pr(ss.str());
+    }
+  }
+}
+#endif
+
 template <typename T> MPI_Datatype get_type();
 template <> inline MPI_Datatype get_type<int>() { return MPI_INT; }
 template <> inline MPI_Datatype get_type<double>() { return MPI_DOUBLE; }
@@ -3893,33 +3923,61 @@ template <> inline MPI_Datatype get_type<long>() { return MPI_LONG_INT; }
 
 template <typename T>
 int isend (const Parallel& p, const T* buf, int count, int dest, int tag,
-           MPI_Request* ireq = nullptr) {
+           Request* ireq) {
   MPI_Datatype dt = get_type<T>();
   MPI_Request ureq;
-  MPI_Request* req = ireq ? ireq : &ureq;
+  MPI_Request* req = ireq ? &ireq->request : &ureq;
   int ret = MPI_Isend(const_cast<T*>(buf), count, dt, dest, tag, p.comm(), req);
   if ( ! ireq) MPI_Request_free(req);
+#ifdef COMPOSE_DEBUG_MPI
+  else ireq->unfreed++;
+#endif
   return ret;
 }
 
 template <typename T>
-int irecv (const Parallel& p, T* buf, int count, int src, int tag,
-           MPI_Request* ireq = nullptr) {
+int irecv (const Parallel& p, T* buf, int count, int src, int tag, Request* ireq) {
   MPI_Datatype dt = get_type<T>();
   MPI_Request ureq;
-  MPI_Request* req = ireq ? ireq : &ureq;
+  MPI_Request* req = ireq ? &ireq->request : &ureq;
   int ret = MPI_Irecv(buf, count, dt, src, tag, p.comm(), req);
   if ( ! ireq) MPI_Request_free(req);
+#ifdef COMPOSE_DEBUG_MPI
+  else ireq->unfreed++;
+#endif
   return ret;
 }
 
-inline int waitany (int count, MPI_Request* reqs, int* index,
-                    MPI_Status* stats = nullptr) {
-  return MPI_Waitany(count, reqs, index, stats ? stats : MPI_STATUS_IGNORE);
+int waitany (int count, Request* reqs, int* index, MPI_Status* stats = nullptr) {
+#ifdef COMPOSE_DEBUG_MPI
+  std::vector<MPI_Request> vreqs(count);
+  for (int i = 0; i < count; ++i) vreqs[i] = reqs[i].request;
+  const auto out = MPI_Waitany(count, vreqs.data(), index,
+                               stats ? stats : MPI_STATUS_IGNORE);
+  for (int i = 0; i < count; ++i) reqs[i].request = vreqs[i];
+  reqs[*index].unfreed--;
+  return out;
+#else
+  return MPI_Waitany(count, reinterpret_cast<MPI_Request*>(reqs), index,
+                     stats ? stats : MPI_STATUS_IGNORE);
+#endif
 }
 
-int waitall (int count, MPI_Request* reqs, MPI_Status* stats = nullptr) {
-  return MPI_Waitall(count, reqs, stats ? stats : MPI_STATUS_IGNORE);
+int waitall (int count, Request* reqs, MPI_Status* stats = nullptr) {
+#ifdef COMPOSE_DEBUG_MPI
+  std::vector<MPI_Request> vreqs(count);
+  for (int i = 0; i < count; ++i) vreqs[i] = reqs[i].request;
+  const auto out = MPI_Waitall(count, vreqs.data(),
+                               stats ? stats : MPI_STATUS_IGNORE);
+  for (int i = 0; i < count; ++i) {
+    reqs[i].request = vreqs[i];
+    reqs[i].unfreed--;
+  }
+  return out;
+#else
+  return MPI_Waitall(count, reinterpret_cast<MPI_Request*>(reqs),
+                     stats ? stats : MPI_STATUS_IGNORE);
+#endif
 }
 } // namespace mpi
 
@@ -4158,7 +4216,7 @@ struct CslMpi {
   // MPI comm data.
   ListOfLists<Real> sendbuf, recvbuf;
   FixedCapList<Int> sendcount;
-  FixedCapList<MPI_Request> sendreq, recvreq;
+  FixedCapList<mpi::Request> sendreq, recvreq;
 
   bool horiz_openmp;
 #ifdef HORIZ_OPENMP
@@ -4246,7 +4304,7 @@ void comm_lid_on_rank (CslMpi& cm, const Rank2Gids& rank2rmtgids,
     rn += e.second.size();
   const Int nrecv = rank2rmtgids.size();
   std::vector<Int> recv(rn), recvptr(nrecv+1), recvrank(nrecv);
-  std::vector<MPI_Request> reqs(nrecv);
+  std::vector<mpi::Request> reqs(nrecv);
   recvptr[0] = 0;
   Int ir = 0;
   rn = 0;
@@ -4265,7 +4323,7 @@ void comm_lid_on_rank (CslMpi& cm, const Rank2Gids& rank2rmtgids,
   for (const auto& e: rank2owngids)
     sn += e.second.size();
   std::vector<Int> send(sn);
-  std::vector<MPI_Request> sendreqs(rank2owngids.size());
+  std::vector<mpi::Request> sendreqs(rank2owngids.size());
   sn = 0;
   for (const auto& e: rank2owngids) {
     // Iteration through a set gives increasing GID, which means the LID list is

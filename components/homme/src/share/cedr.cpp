@@ -3,6 +3,8 @@
 #ifndef NDEBUG
 # define NDEBUG
 #endif
+// Uncomment this to look for MPI-related memory leaks.
+//#define COMPOSE_DEBUG_MPI
 
 //>> cedr_kokkos.hpp
 #ifndef INCLUDE_CEDR_KOKKOS_HPP
@@ -100,6 +102,7 @@ struct ProblemType {
 
 #include <mpi.h>
 
+//#include "compose_config.hpp"
 //#include "cedr.hpp"
 
 namespace cedr {
@@ -117,6 +120,16 @@ public:
   bool amroot () const { return rank() == root(); }
 };
 
+struct Request {
+  MPI_Request request;
+
+#ifdef COMPOSE_DEBUG_MPI
+  int unfreed;
+  Request();
+  ~Request();
+#endif
+};
+
 Parallel::Ptr make_parallel(MPI_Comm comm);
 
 template <typename T> MPI_Datatype get_type();
@@ -130,15 +143,15 @@ int all_reduce(const Parallel& p, const T* sendbuf, T* rcvbuf, int count, MPI_Op
 
 template <typename T>
 int isend(const Parallel& p, const T* buf, int count, int dest, int tag,
-          MPI_Request* ireq = nullptr);
+          Request* ireq = nullptr);
 
 template <typename T>
 int irecv(const Parallel& p, T* buf, int count, int src, int tag,
-          MPI_Request* ireq = nullptr);
+          Request* ireq = nullptr);
 
-int waitany(int count, MPI_Request* reqs, int* index, MPI_Status* stats = nullptr);
+int waitany(int count, Request* reqs, int* index, MPI_Status* stats = nullptr);
 
-int waitall(int count, MPI_Request* reqs, MPI_Status* stats = nullptr);
+int waitall(int count, Request* reqs, MPI_Status* stats = nullptr);
 
 template<typename T>
 int gather(const Parallel& p, const T* sendbuf, int sendcount,
@@ -404,7 +417,7 @@ struct NodeSets {
     // MPI information for this level.
     std::vector<MPIMetaData> me, kids;
     // Have to keep requests separate so we can call waitall if we want to.
-    mutable std::vector<MPI_Request> me_send_req, me_recv_req, kids_req;
+    mutable std::vector<mpi::Request> me_send_req, me_recv_req, kids_req;
   };
   
   // Levels. nodes[0] is level 0, the leaf level.
@@ -453,7 +466,9 @@ public:
   typedef QLT<ExeSpace> Me;
   typedef std::shared_ptr<Me> Ptr;
   
-  // Set up QLT topology and communication data structures based on a tree.
+  // Set up QLT topology and communication data structures based on a tree. Both
+  // ncells and tree refer to the global mesh, not just this processor's
+  // part. The tree must be identical across ranks.
   QLT(const Parallel::Ptr& p, const Int& ncells, const tree::Node::Ptr& tree);
 
   void print(std::ostream& os) const override;
@@ -825,22 +840,28 @@ int all_reduce (const Parallel& p, const T* sendbuf, T* rcvbuf, int count, MPI_O
 
 template <typename T>
 int isend (const Parallel& p, const T* buf, int count, int dest, int tag,
-           MPI_Request* ireq) {
+           Request* ireq) {
   MPI_Datatype dt = get_type<T>();
   MPI_Request ureq;
-  MPI_Request* req = ireq ? ireq : &ureq;
+  MPI_Request* req = ireq ? &ireq->request : &ureq;
   int ret = MPI_Isend(const_cast<T*>(buf), count, dt, dest, tag, p.comm(), req);
   if ( ! ireq) MPI_Request_free(req);
+#ifdef COMPOSE_DEBUG_MPI
+  else ireq->unfreed++;
+#endif
   return ret;
 }
 
 template <typename T>
-int irecv (const Parallel& p, T* buf, int count, int src, int tag, MPI_Request* ireq) {
+int irecv (const Parallel& p, T* buf, int count, int src, int tag, Request* ireq) {
   MPI_Datatype dt = get_type<T>();
   MPI_Request ureq;
-  MPI_Request* req = ireq ? ireq : &ureq;
+  MPI_Request* req = ireq ? &ireq->request : &ureq;
   int ret = MPI_Irecv(buf, count, dt, src, tag, p.comm(), req);
   if ( ! ireq) MPI_Request_free(req);
+#ifdef COMPOSE_DEBUG_MPI
+  else ireq->unfreed++;
+#endif
   return ret;
 }
 
@@ -1738,6 +1759,7 @@ Int unittest () {
 
 //>> cedr_mpi.cpp
 //#include "cedr_mpi.hpp"
+//#include "cedr_util.hpp"
 
 namespace cedr {
 namespace mpi {
@@ -1758,16 +1780,58 @@ Int Parallel::rank () const {
   return pid;
 }
 
+#ifdef COMPOSE_DEBUG_MPI
+Request::Request () : unfreed(0) {}
+Request::~Request () {
+  if (unfreed) {
+    std::stringstream ss;
+    ss << "Request is being deleted with unfreed = " << unfreed;
+    int fin;
+    MPI_Finalized(&fin);
+    if (fin) {
+      ss << "\n";
+      std::cerr << ss.str();
+    } else {
+      pr(ss.str());
+    }
+  }
+}
+#endif
+
 template <> MPI_Datatype get_type<int>() { return MPI_INT; }
 template <> MPI_Datatype get_type<double>() { return MPI_DOUBLE; }
 template <> MPI_Datatype get_type<long>() { return MPI_LONG_INT; }
 
-int waitany (int count, MPI_Request* reqs, int* index, MPI_Status* stats) {
-  return MPI_Waitany(count, reqs, index, stats ? stats : MPI_STATUS_IGNORE);
+int waitany (int count, Request* reqs, int* index, MPI_Status* stats) {
+#ifdef COMPOSE_DEBUG_MPI
+  std::vector<MPI_Request> vreqs(count);
+  for (int i = 0; i < count; ++i) vreqs[i] = reqs[i].request;
+  const auto out = MPI_Waitany(count, vreqs.data(), index,
+                               stats ? stats : MPI_STATUS_IGNORE);
+  for (int i = 0; i < count; ++i) reqs[i].request = vreqs[i];
+  reqs[*index].unfreed--;
+  return out;
+#else
+  return MPI_Waitany(count, reinterpret_cast<MPI_Request*>(reqs), index,
+                     stats ? stats : MPI_STATUS_IGNORE);
+#endif
 }
 
-int waitall (int count, MPI_Request* reqs, MPI_Status* stats) {
-  return MPI_Waitall(count, reqs, stats ? stats : MPI_STATUS_IGNORE);
+int waitall (int count, Request* reqs, MPI_Status* stats) {
+#ifdef COMPOSE_DEBUG_MPI
+  std::vector<MPI_Request> vreqs(count);
+  for (int i = 0; i < count; ++i) vreqs[i] = reqs[i].request;
+  const auto out = MPI_Waitall(count, vreqs.data(),
+                               stats ? stats : MPI_STATUS_IGNORE);
+  for (int i = 0; i < count; ++i) {
+    reqs[i].request = vreqs[i];
+    reqs[i].unfreed--;
+  }
+  return out;
+#else
+  return MPI_Waitall(count, reinterpret_cast<MPI_Request*>(reqs),
+                     stats ? stats : MPI_STATUS_IGNORE);
+#endif
 }
 
 bool all_ok (const Parallel& p, bool im_ok) {
@@ -1776,8 +1840,8 @@ bool all_ok (const Parallel& p, bool im_ok) {
   return static_cast<bool>(msg);
 }
 
-}
-}
+} // namespace mpi
+} // namespace cedr
 
 //>> cedr_qlt.cpp
 //#include "cedr_qlt.hpp"
@@ -2130,7 +2194,6 @@ Int test_comm_pattern (const Parallel::Ptr& p, const NodeSets::ConstPtr& ns,
       mpi::irecv(*p, &data[mmd.offset], mmd.size, mmd.rank, NodeSets::mpitag,
                  &lvl.kids_req[i]);
     }
-    //todo Replace with simultaneous waitany and isend.
     mpi::waitall(lvl.kids_req.size(), lvl.kids_req.data());
     // Combine kids' data.
     for (auto& n : lvl.nodes) {
@@ -2142,11 +2205,8 @@ Int test_comm_pattern (const Parallel::Ptr& p, const NodeSets::ConstPtr& ns,
     // Send to parents.
     for (size_t i = 0; i < lvl.me.size(); ++i) {
       const auto& mmd = lvl.me[i];
-      mpi::isend(*p, &data[mmd.offset], mmd.size, mmd.rank, NodeSets::mpitag,
-                 &lvl.me_send_req[i]);
+      mpi::isend(*p, &data[mmd.offset], mmd.size, mmd.rank, NodeSets::mpitag);
     }
-    if (il+1 == ns->levels.size())
-      mpi::waitall(lvl.me_send_req.size(), lvl.me_send_req.data());
   }
   // Root to leaves.
   for (size_t il = ns->levels.size(); il > 0; --il) {
@@ -2157,7 +2217,6 @@ Int test_comm_pattern (const Parallel::Ptr& p, const NodeSets::ConstPtr& ns,
       mpi::irecv(*p, &data[mmd.offset], mmd.size, mmd.rank, NodeSets::mpitag,
                  &lvl.me_recv_req[i]);
     }    
-    //todo Replace with simultaneous waitany and isend.
     mpi::waitall(lvl.me_recv_req.size(), lvl.me_recv_req.data());
     // Pass to kids.
     for (auto& n : lvl.nodes) {
@@ -2168,16 +2227,8 @@ Int test_comm_pattern (const Parallel::Ptr& p, const NodeSets::ConstPtr& ns,
     // Send.
     for (size_t i = 0; i < lvl.kids.size(); ++i) {
       const auto& mmd = lvl.kids[i];
-      mpi::isend(*p, &data[mmd.offset], mmd.size, mmd.rank, NodeSets::mpitag,
-                 &lvl.kids_req[i]);
+      mpi::isend(*p, &data[mmd.offset], mmd.size, mmd.rank, NodeSets::mpitag);
     }
-  }
-  // Wait on sends to clean up.
-  for (size_t il = 0; il < ns->levels.size(); ++il) {
-    auto& lvl = ns->levels[il];
-    if (il+1 < ns->levels.size())
-      mpi::waitall(lvl.me_send_req.size(), lvl.me_send_req.data());
-    mpi::waitall(lvl.kids_req.size(), lvl.kids_req.data());
   }
   { // Check that all leaf nodes have the right number.
     const Int desired_sum = (ncells*(ncells - 1)) / 2;
@@ -2199,7 +2250,8 @@ Int unittest (const Parallel::Ptr& p, const NodeSets::ConstPtr& ns,
   if (nerr) return nerr;
   nerr += check_leaf_nodes(p, ns, ncells);
   if (nerr) return nerr;
-  nerr += test_comm_pattern(p, ns, ncells);
+  for (Int trial = 0; trial < 11; ++trial)
+    nerr += test_comm_pattern(p, ns, ncells);
   if (nerr) return nerr;
   return nerr;
 }
@@ -3870,19 +3922,10 @@ struct QLT : public cedr::qlt::QLT<ES> {
 #       pragma omp master
 #endif
         {
-          if (il+1 == ns_->levels.size()) {
-            for (size_t i = 0; i < lvl.me.size(); ++i) {
-              const auto& mmd = lvl.me[i];
-              mpi::isend(*p_, &bd_.l2r_data(mmd.offset*l2rndps), mmd.size*l2rndps,
-                         mmd.rank, mpitag, &lvl.me_send_req[i]);
-            }
-            mpi::waitall(lvl.me_send_req.size(), lvl.me_send_req.data());
-          } else {
-            for (size_t i = 0; i < lvl.me.size(); ++i) {
-              const auto& mmd = lvl.me[i];
-              mpi::isend(*p_, &bd_.l2r_data(mmd.offset*l2rndps), mmd.size*l2rndps,
-                         mmd.rank, mpitag);
-            }            
+          for (size_t i = 0; i < lvl.me.size(); ++i) {
+            const auto& mmd = lvl.me[i];
+            mpi::isend(*p_, &bd_.l2r_data(mmd.offset*l2rndps), mmd.size*l2rndps,
+                       mmd.rank, mpitag);
           }
         }
 
