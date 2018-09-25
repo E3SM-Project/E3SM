@@ -114,7 +114,6 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
         expect(atmdt == mindt, 'Active atm should match shortest model timestep atmdt={} mindt={}'
                .format(atmdt, mindt))
 
-
     #--------------------------------
     # Overwrite: set start_ymd
     #--------------------------------
