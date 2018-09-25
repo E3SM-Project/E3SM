@@ -12,7 +12,7 @@ FUNCTION(CreateUnitTest target_name target_srcs scream_libs num_mpi_ranks config
   link_directories(${SCREAM_TPL_LIBRARY_DIRS})
 
   # Create the executable
-  add_executable (${target_name} ${${target_name}_SRCS} ${SCREAM_SRC_DIR}/share/util/scream_catch_main.cpp)
+  add_executable (${target_name} ${target_srcs} ${SCREAM_SRC_DIR}/share/util/scream_catch_main.cpp)
 
   # Set all target properties
   target_link_libraries(${target_name} ${scream_libs} ${SCREAM_TPL_LIBRARIES})

@@ -2,11 +2,12 @@ module unit_test_mod
   implicit none
 contains
 
-  function test_array_io() result(nerr)
+  function test_array_io() result(nerr) bind(c)
     use array_io_mod
     use iso_c_binding
 
-    integer :: nerr, i, j
+    integer(kind=c_int) :: nerr
+    integer ::  i, j
     real, target :: a(10,3), b(10,3)
     logical :: ok
 
@@ -33,19 +34,3 @@ contains
   end function test_array_io
 
 end module unit_test_mod
-
-program unit_test
-  use array_io_mod
-  use unit_test_mod
-  implicit none
-
-  integer :: nerr, ne
-
-  nerr = 0
-  ne = test_array_io()
-  if (ne > 0) print *, "test_array_io FAILed", ne
-  nerr = nerr + ne
-  if (nerr == 0) print *, "summary: PASS"
-  if (nerr > 0) print *, "summary: FAIL"
-  call exit(nerr)
-end program unit_test
