@@ -6,7 +6,7 @@ from testing_utils import *
 
 #-------------------------------------------------------------------------
 
-def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, options, check):
+def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, options, check, oversubscribe):
 
     # find available directory name
     iTest = 1
@@ -36,7 +36,7 @@ def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, option
     streamChanges = [{"streamName":"restart", "attributeName":"output_interval", "newValue":"24:00:00"}, \
                      {"streamName":"output" , "attributeName":"output_interval", "newValue":"none"}]
 
-    if (run_model("base", mpasDevelopmentDir, domainsDir, domain, configuration, nmlChanges, streamChanges, nProcs, logfile) != 0):
+    if (run_model("base", mpasDevelopmentDir, domainsDir, domain, configuration, nmlChanges, streamChanges, nProcs, logfile, oversubscribe) != 0):
         run_failed("restartability")
         os.chdir("..")
         return 1
@@ -51,7 +51,7 @@ def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, option
     streamChanges = [{"streamName":"restart", "attributeName":"output_interval", "newValue":"12:00:00"}, \
                      {"streamName":"output" , "attributeName":"output_interval", "newValue":"none"}]
 
-    if (run_model("restart", mpasDevelopmentDir, domainsDir, domain, configuration, nmlChanges, streamChanges, nProcs, logfile) != 0):
+    if (run_model("restart", mpasDevelopmentDir, domainsDir, domain, configuration, nmlChanges, streamChanges, nProcs, logfile, oversubscribe) != 0):
         run_failed("restartability")
         os.chdir("..")
         return 1
@@ -76,7 +76,7 @@ def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, option
 
     streamChanges = []
 
-    if (restart_model("restart", nmlChanges, streamChanges, nProcs, logfile) != 0):
+    if (restart_model("restart", nmlChanges, streamChanges, nProcs, logfile, oversubscribe) != 0):
         run_failed("restartability")
         os.chdir("..")
         return 1
