@@ -1,6 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "share/scream_config.hpp"
+#include "share/scream_types.hpp"
 #include "share/scream_pack.hpp"
 
 namespace {
@@ -54,7 +55,7 @@ struct TestMask {
   }
 };
 
-TEST_CASE("mask", "mask") {
+TEST_CASE("Mask", "scream::pack") {
   TestMask<1>::run();
   TestMask<2>::run();
   TestMask<3>::run();
@@ -62,6 +63,63 @@ TEST_CASE("mask", "mask") {
   TestMask<8>::run();
   TestMask<16>::run();
   TestMask<32>::run();
+}
+
+template <int PACKN>
+struct TestPack {
+  typedef scream::pack::Mask<PACKN> Mask;
+  typedef scream::pack::Pack<scream::Real, PACKN> Pack;
+
+  static void test_index () {
+    
+  }
+
+  static void test_range () {
+    
+  }
+
+#define test_pack_gen_assign_op_all(op)
+#define test_pack_gen_bin_op_all(op)
+#define test_pack_gen_unary_unary_fn(op)
+#define test_mask_gen_bin_op_all(op)
+
+  static void run () {
+    test_pack_gen_assign_op_all(=);
+    test_pack_gen_assign_op_all(+=);
+    test_pack_gen_assign_op_all(-=);
+    test_pack_gen_assign_op_all(*=);
+    test_pack_gen_assign_op_all(/=);
+
+    test_pack_gen_bin_op_all(+);
+    test_pack_gen_bin_op_all(-);
+    test_pack_gen_bin_op_all(*);
+    test_pack_gen_bin_op_all(/);
+
+    test_pack_gen_unary_unary_fn(abs);
+    test_pack_gen_unary_unary_fn(exp);
+    test_pack_gen_unary_unary_fn(log);
+    test_pack_gen_unary_unary_fn(log10);
+    test_pack_gen_unary_unary_fn(tgamma);
+
+    test_mask_gen_bin_op_all(==);
+    test_mask_gen_bin_op_all(>=);
+    test_mask_gen_bin_op_all(<=);
+    test_mask_gen_bin_op_all(>);
+    test_mask_gen_bin_op_all(<);
+
+    test_index();
+    test_range();
+  }
+};
+
+TEST_CASE("Pack", "scream::pack") {
+  TestPack<1>::run();
+  TestPack<2>::run();
+  TestPack<3>::run();
+  TestPack<4>::run();
+  TestPack<8>::run();
+  TestPack<16>::run();
+  TestPack<32>::run();
 }
 
 } // empty namespace
