@@ -97,22 +97,15 @@ module compose_mod
 
      subroutine slmm_init_local_mesh(ie, neigh_corners, num_neighbors, pinside)
        use coordinate_systems_mod, only : cartesian3D_t
-       integer, value, intent(in) :: ie, num_neighbors
+       integer, intent(in) :: ie, num_neighbors
        type(cartesian3D_t), intent(in) :: neigh_corners(:,:), pinside
      end subroutine slmm_init_local_mesh
 
      subroutine slmm_check_ref2sphere(ie, sphere_cart_coord)
        use coordinate_systems_mod, only : cartesian3D_t
-       integer, value, intent(in) :: ie
+       integer, intent(in) :: ie
        type(cartesian3D_t), intent(in) :: sphere_cart_coord
      end subroutine slmm_check_ref2sphere
-
-     subroutine slmm_study(globalID, corners, globalIDs, neigh_corners, n)
-       use coordinate_systems_mod, only : cartesian3D_t
-       integer, value, intent(in) :: globalID, n
-       integer, intent(in) :: globalIDs(:)
-       type(cartesian3D_t), intent(in) :: corners(4), neigh_corners(:,:)
-     end subroutine slmm_study
 
      subroutine slmm_advect(lev, ie, nnc, np, nlev, qsize, nets, nete, &
           dep_points, Qj_src, metdet, dp3d, tl_np1, q, minq, maxq)
@@ -120,7 +113,7 @@ module compose_mod
        use kinds, only : real_kind
        use dimensions_mod, only : qsize_d, max_neigh_edges
        use element_state, only : timelevels
-       integer, value, intent(in) :: lev, ie, nnc, np, nlev, qsize, nets, nete, tl_np1
+       integer, intent(in) :: lev, ie, nnc, np, nlev, qsize, nets, nete, tl_np1
        type(cartesian3D_t), intent(in) :: dep_points(np,np)
        real(kind=real_kind), intent(in) :: Qj_src(np,np,qsize+1,max_neigh_edges+1), &
             metdet(np,np), dp3d(np,np,nlev,timelevels)
@@ -140,7 +133,7 @@ module compose_mod
        use kinds         , only : real_kind
        use dimensions_mod, only : np, nlev, nelemd, qsize
        use coordinate_systems_mod, only : cartesian3D_t
-       integer, value, intent(in) :: nets, nete
+       integer, intent(in) :: nets, nete
        ! dep_points is const in principle, but if lev <=
        ! semi_lagrange_nearest_point_lev, a departure point may be altered if
        ! the winds take it outside of the comm halo.

@@ -555,15 +555,15 @@ extern "C" void compose_stt_fill_uniform_density (
 }
 
 extern "C" void compose_stt_fill_ics_ (
-  Int ie, Real* p_elem, Real* dp, Int n0_qdp, Real* qdp)
+  Int* ie, Real* p_elem, Real* dp, Int* n0_qdp, Real* qdp)
 {
-  g_stt->fill_ics(ie-1, reinterpret_cast<const Real*>(p_elem), dp,
+  g_stt->fill_ics(*ie-1, reinterpret_cast<const Real*>(p_elem), dp,
                   qdp + square(g_stt->np) * g_stt->nlev * g_stt->qsize_d *
-                  (n0_qdp - 1));
+                  (*n0_qdp - 1));
 }
 
-extern "C" void compose_stt_fill_v_ (Int ie, Real* p_elem, Real* t, Real* v) {
-  g_stt->fill_v(ie-1, reinterpret_cast<const Real*>(p_elem), *t, v);
+extern "C" void compose_stt_fill_v_ (Int* ie, Real* p_elem, Real* t, Real* v) {
+  g_stt->fill_v(*ie-1, reinterpret_cast<const Real*>(p_elem), *t, v);
 }
 
 extern "C" void compose_stt_begin_record () {
@@ -571,13 +571,13 @@ extern "C" void compose_stt_begin_record () {
 }
 
 extern "C" void compose_stt_record_q_ (
-  Int ie, Real* p_elem, Real* spheremp, Int np1, Real* dp3d, Int n0_qdp,
+  Int* ie, Real* p_elem, Real* spheremp, Int* np1, Real* dp3d, Int* n0_qdp,
   Real* qdp)
 {
-  g_stt->record(ie-1, reinterpret_cast<const Real*>(p_elem), spheremp,
-                dp3d + square(g_stt->np) * g_stt->nlev * (np1 - 1),
+  g_stt->record(*ie-1, reinterpret_cast<const Real*>(p_elem), spheremp,
+                dp3d + square(g_stt->np) * g_stt->nlev * (*np1 - 1),
                 qdp + square(g_stt->np) * g_stt->nlev * g_stt->qsize_d *
-                (n0_qdp - 1));
+                (*n0_qdp - 1));
 }
 
 extern "C" void compose_stt_finish (Int fcomm, Int root, Int rank) {

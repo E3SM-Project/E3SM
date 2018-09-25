@@ -25,7 +25,7 @@ interface
      use kinds, only: real_kind
      use dimensions_mod, only: nlev, np, qsize_d
      use coordinate_systems_mod, only: spherical_polar_t
-     integer, value, intent(in) :: ie, n0_qdp
+     integer, intent(in) :: ie, n0_qdp
      type(spherical_polar_t), intent(in) :: p_elem(np,np)
      real (kind=real_kind), intent(in) :: dp(np,np,nlev), &
           qdp(np,np,nlev,qsize_d,2)
@@ -35,7 +35,7 @@ interface
      use kinds, only: real_kind
      use dimensions_mod, only: nlev, np
      use coordinate_systems_mod, only: spherical_polar_t
-     integer, value, intent(in) :: ie
+     integer, intent(in) :: ie
      type(spherical_polar_t), intent(in) :: p_elem(np,np)
      real (kind=real_kind), intent(in) :: t, v(np,np,2,nlev)
    end subroutine compose_stt_fill_v
@@ -48,7 +48,7 @@ interface
      use dimensions_mod, only: nlev, np, qsize_d
      use element_state, only: timelevels
      use coordinate_systems_mod, only: spherical_polar_t
-     integer, value, intent(in) :: ie, np1, n0_qdp
+     integer, intent(in) :: ie, np1, n0_qdp
      type(spherical_polar_t), intent(in) :: p_elem(np,np)
      real (kind=real_kind), intent(in) :: spheremp(np,np), &
           dp3d(np,np,nlev,timelevels), qdp(np,np,nlev,qsize_d,2)

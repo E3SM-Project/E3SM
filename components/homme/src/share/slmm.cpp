@@ -5122,27 +5122,15 @@ void slmm_get_mpi_pattern (homme::Int* sl_mpi) {
   *sl_mpi = g_csl_mpi ? 1 : 0;
 }
 
-// Figure shtuff out.
-void slmm_study_ (
-  homme::Int elem_global_id, homme::Cartesian3D* corners,
-  homme::Int** desc_global_ids, homme::Cartesian3D** desc_neigh_corners,
-  homme::Int n)
-{
-  static int gid_max = -1;
-  if (elem_global_id <= gid_max) return;
-  gid_max = elem_global_id;
-  homme::study(elem_global_id, corners, *desc_global_ids, *desc_neigh_corners, n + 1);
-}
-
 void slmm_init_local_mesh_ (
-  homme::Int ie, homme::Cartesian3D** neigh_corners, homme::Int nnc,
+  homme::Int* ie, homme::Cartesian3D** neigh_corners, homme::Int* nnc,
   homme::Cartesian3D* p_inside)
 {
   homme::g_advecter->init_local_mesh_if_needed(
-    ie - 1, homme::FA3<const homme::Real>(
-      reinterpret_cast<const homme::Real*>(*neigh_corners), 3, 4, nnc),
+    *ie - 1, homme::FA3<const homme::Real>(
+      reinterpret_cast<const homme::Real*>(*neigh_corners), 3, 4, *nnc),
     reinterpret_cast<const homme::Real*>(p_inside));
-  if (ie == homme::g_advecter->nelem())
+  if (*ie == homme::g_advecter->nelem())
     homme::g_advecter->init_M_tgt_if_needed();
 }
 
@@ -5152,23 +5140,23 @@ void slmm_check_ref2sphere_ (homme::Int* ie, homme::Cartesian3D* p) {
 }
 
 void slmm_advect_ (
-  homme::Int lev, homme::Int ie, homme::Int nnc, homme::Int np, homme::Int nlev,
-  homme::Int qsize, homme::Int nets, homme::Int nete,
+  homme::Int* lev, homme::Int* ie, homme::Int* nnc, homme::Int* np, homme::Int* nlev,
+  homme::Int* qsize, homme::Int* nets, homme::Int* nete,
   homme::Cartesian3D* dep_points, homme::Real* neigh_q, homme::Real* J_t,
-  homme::Real* dp3d, homme::Int tl_np1, homme::Real* q, homme::Real* minq,
+  homme::Real* dp3d, homme::Int* tl_np1, homme::Real* q, homme::Real* minq,
   homme::Real* maxq)
 {
   if (homme::g_advecter->is_cisl()) {
 #ifdef BUILD_CISL
-    homme::slmm_project(lev - 1, nets - 1, ie - 1, nnc, np, nlev, qsize,
-                        dep_points, neigh_q, J_t, dp3d, tl_np1 - 1, q, minq, maxq);
+    homme::slmm_project(*lev - 1, *nets - 1, *ie - 1, *nnc, *np, *nlev, *qsize,
+                        dep_points, neigh_q, J_t, dp3d, *tl_np1 - 1, q, minq, maxq);
 #else
     throw std::runtime_error("Closed for business to speed up compilation.");
 #endif
   } else {
     slmm_assert(np == 4);
-    homme::slmm_csl<4>(lev - 1, nets - 1, ie - 1, nnc, nlev, qsize,
-                       dep_points, neigh_q, J_t, dp3d, tl_np1 - 1, q, minq, maxq);
+    homme::slmm_csl<4>(*lev - 1, *nets - 1, *ie - 1, *nnc, *nlev, *qsize,
+                       dep_points, neigh_q, J_t, dp3d, *tl_np1 - 1, q, minq, maxq);
   }
 }
 
@@ -5182,13 +5170,13 @@ void slmm_csl_set_elem_data (
 }
 
 void slmm_csl_ (
-  homme::Int nets, homme::Int nete, homme::Cartesian3D* dep_points,
+  homme::Int* nets, homme::Int* nete, homme::Cartesian3D* dep_points,
   homme::Real* minq, homme::Real* maxq, homme::Int* info)
 {
   slmm_assert(g_csl_mpi);
   *info = 0;
   try {
-    homme::cslmpi::step<4>(*g_csl_mpi, nets - 1, nete - 1,
+    homme::cslmpi::step<4>(*g_csl_mpi, *nets - 1, *nete - 1,
                            dep_points, minq, maxq);
   } catch (const std::exception& e) {
     std::cerr << e.what();
