@@ -507,14 +507,14 @@ contains
 
     logical, pointer :: &
          config_do_restart, &
-         config_turn_snicar_system_on
+         config_use_snicar
 
     character(len=strKINDWarnings), dimension(:), allocatable :: &
          warnings
 
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
-    call MPAS_pool_get_config(domain % configs, "config_turn_snicar_system_on", config_turn_snicar_system_on)
+    call MPAS_pool_get_config(domain % configs, "config_use_snicar", config_use_snicar)
 
     if (trim(config_shortwave_type) == "dEdd") then
 
@@ -2209,12 +2209,12 @@ contains
          iceSingleScatterAlbedoDiffuse,      &
          iceMassExtinctionCrossSectionDirect, &
          iceMassExtinctionCrossSectionDiffuse, &
-         aerosolAsymmetryParameter_5bd, &
-         aerosolMassExtinctionCrossSection_5bd, &
-         aerosolSingleScatterAlbedo_5bd, &
-         modalAsymmetryParameter_5bd, &
-         modalMassExtinctionCrossSection_5bd, &
-         modalSingleScatterAlbedo_5bd
+         aerosolAsymmetryParameter5band, &
+         aerosolMassExtinctionCrossSection5band, &
+         aerosolSingleScatterAlbedo5band, &
+         modalAsymmetryParameter5band, &
+         modalMassExtinctionCrossSection5band, &
+         modalSingleScatterAlbedo5band
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -2235,7 +2235,7 @@ contains
          brineFraction, &
          modalBCabsorptionParameter, &
          bioTracerShortwave,  &
-         modalBCabsorptionParameter_5bd
+         modalBCabsorptionParameter5band
 
 
     real(kind=RKIND), pointer :: &
@@ -2378,20 +2378,13 @@ contains
        call MPAS_pool_get_array(snicar_variables, "iceSingleScatterAlbedoDiffuse", iceSingleScatterAlbedoDiffuse)
        call MPAS_pool_get_array(snicar_variables, "iceMassExtinctionCrossSectionDirect", iceMassExtinctionCrossSectionDirect)
        call MPAS_pool_get_array(snicar_variables, "iceMassExtinctionCrossSectionDiffuse", iceMassExtinctionCrossSectionDiffuse)
-
-       call MPAS_pool_get_array(snicar_variables, "aerosolMassExtinctionCrossSection_5bd",  aerosolMassExtinctionCrossSection_5bd)
-
-       call MPAS_pool_get_array(snicar_variables, "aerosolSingleScatterAlbedo_5bd", aerosolSingleScatterAlbedo_5bd)
-
-       call MPAS_pool_get_array(snicar_variables,"aerosolAsymmetryParameter_5bd", aerosolAsymmetryParameter_5bd)
-
-       call MPAS_pool_get_array(snicar_variables, "modalMassExtinctionCrossSection_5bd", modalMassExtinctionCrossSection_5bd)
-
-       call MPAS_pool_get_array(snicar_variables,"modalSingleScatterAlbedo_5bd", modalSingleScatterAlbedo_5bd)
-
-       call MPAS_pool_get_array(snicar_variables, "modalAsymmetryParameter_5bd", modalAsymmetryParameter_5bd)
-
-       call MPAS_pool_get_array(snicar_variables, "modalBCabsorptionParameter_5bd", modalBCabsorptionParameter_5bd)
+       call MPAS_pool_get_array(snicar_variables, "aerosolMassExtinctionCrossSection5band", aerosolMassExtinctionCrossSection5band)
+       call MPAS_pool_get_array(snicar_variables, "aerosolSingleScatterAlbedo5band", aerosolSingleScatterAlbedo5band)
+       call MPAS_pool_get_array(snicar_variables,"aerosolAsymmetryParameter5band", aerosolAsymmetryParameter5band)
+       call MPAS_pool_get_array(snicar_variables, "modalMassExtinctionCrossSection5band", modalMassExtinctionCrossSection5band)
+       call MPAS_pool_get_array(snicar_variables,"modalSingleScatterAlbedo5band", modalSingleScatterAlbedo5band)
+       call MPAS_pool_get_array(snicar_variables, "modalAsymmetryParameter5band", modalAsymmetryParameter5band)
+       call MPAS_pool_get_array(snicar_variables, "modalBCabsorptionParameter5band", modalBCabsorptionParameter5band)
 
        ! calendar type
        call MPAS_pool_get_config(block % configs, "config_calendar_type", config_calendar_type)
@@ -2505,20 +2498,20 @@ contains
                pondSnowDepthDifference(:,iCell), &
                pondLidMeltFluxFraction(:,iCell), &
                .false., &
-               lInitialization,          &
-               iceAsymmtryParameterDirect(:,:),     &
-               iceAsymmtryParameterDiffuse(:,:),     &
-               iceSingleScatterAlbedoDirect(:,:),      &
-               iceSingleScatterAlbedoDiffuse(:,:),      &
+               lInitialization, &
+               iceAsymmtryParameterDirect(:,:), &
+               iceAsymmtryParameterDiffuse(:,:), &
+               iceSingleScatterAlbedoDirect(:,:), &
+               iceSingleScatterAlbedoDiffuse(:,:), &
                iceMassExtinctionCrossSectionDirect(:,:), &
                iceMassExtinctionCrossSectionDiffuse(:,:), &
-               aerosolMassExtinctionCrossSection_5bd(:,:), &
-               aerosolSingleScatterAlbedo_5bd(:,:), &
-               aerosolAsymmetryParameter_5bd(:,:), &
-               modalMassExtinctionCrossSection_5bd(:,:), &
-               modalSingleScatterAlbedo_5bd(:,:), &
-               modalAsymmetryParameter_5bd(:,:), &
-               modalBCabsorptionParameter_5bd(:,:,:))
+               aerosolMassExtinctionCrossSection5band(:,:), &
+               aerosolSingleScatterAlbedo5band(:,:), &
+               aerosolAsymmetryParameter5band(:,:), &
+               modalMassExtinctionCrossSection5band(:,:), &
+               modalSingleScatterAlbedo5band(:,:), &
+               modalAsymmetryParameter5band(:,:), &
+               modalBCabsorptionParameter5band(:,:,:))
 
           call colpkg_get_warnings(warnings)
           call column_write_warnings(warnings)
@@ -2672,7 +2665,6 @@ contains
        call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
        call MPAS_pool_get_subpool(block % structs, "initial", initial)
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
-
 
        call MPAS_pool_get_config(block % configs, "config_dynamics_subcycle_number", config_dynamics_subcycle_number)
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
@@ -8868,7 +8860,7 @@ contains
          config_use_skeletal_biochemistry, &
          config_use_vertical_zsalinity, &
          config_use_modal_aerosols, &
-         config_turn_snicar_system_on
+         config_use_snicar
 
     real(kind=RKIND), pointer :: &
          config_min_friction_velocity, &
@@ -9036,7 +9028,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_slow_mode_critical_porosity", config_slow_mode_critical_porosity)
     call MPAS_pool_get_config(domain % configs, "config_congelation_ice_porosity", config_congelation_ice_porosity)
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
-    call MPAS_pool_get_config(domain % configs, "config_turn_snicar_system_on", config_turn_snicar_system_on)
+    call MPAS_pool_get_config(domain % configs, "config_use_snicar", config_use_snicar)
     call MPAS_pool_get_config(domain % configs, "config_albedo_type", config_albedo_type)
     call MPAS_pool_get_config(domain % configs, "config_visible_ice_albedo", config_visible_ice_albedo)
     call MPAS_pool_get_config(domain % configs, "config_infrared_ice_albedo", config_infrared_ice_albedo)
@@ -9215,7 +9207,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_scales_absorption_phaeocystis", config_scales_absorption_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_proteins", config_ratio_C_to_N_proteins)
 
-
     call colpkg_init_parameters(&
          config_cice_int("config_thermodynamics_type", config_thermodynamics_type), &
          config_heat_conductivity_type, &
@@ -9229,7 +9220,7 @@ contains
          config_slow_mode_critical_porosity, &
          config_congelation_ice_porosity, &
          config_shortwave_type, &
-         config_turn_snicar_system_on, &
+         config_use_snicar, &
          config_albedo_type, &
          config_visible_ice_albedo, &
          config_infrared_ice_albedo, &
