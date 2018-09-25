@@ -1,0 +1,10 @@
+<driver_script name="run.py">
+	<case name="test">
+		<step executable="./run.py" quiet="true" pre_message=" * Running short test of ocean model..." post_message="     complete!"/>
+	</case>
+	<validation>
+		<compare_fields file1="forward/output.nc">
+			<template file="prognostic_comparison.xml" path_base="script_core_dir" path="templates/validations"/>
+		</compare_fields>
+	</validation>
+</driver_script>

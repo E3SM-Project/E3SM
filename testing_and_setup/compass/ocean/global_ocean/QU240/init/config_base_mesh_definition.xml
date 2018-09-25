@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<config case="base_mesh">
+	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/global_ocean/QU240/init/define_base_mesh.py" dest="define_base_mesh.py"/>
+
+</config>
