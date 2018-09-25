@@ -18,13 +18,13 @@ import glob
 import shutil
 import numpy as np
 import scipy.stats as stats
-from CIME.test_status import *
 
 
 from netCDF4 import Dataset
 from math import sqrt
 from sklearn.metrics import mean_squared_error
 
+from CIME.test_status import *
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case.case_setup import case_setup
@@ -34,27 +34,29 @@ from CIME.utils import expect
 
 #Logic for SLR ensemble runs:
 # We need two inputs:
-# 1. Number of inic cond files
-# 2. perturbations (e.g. currently we have no prt, pos prt and neg prt)
-# Based of the above, we compute number of instances to have
-# We change the user_nl* files accordingly (during build time) 
-# and rename history files (after run).
-# In baseline generation step, we compute cloud
-# In comparison step, we compare against baseline cloud to know pass/fail
+# A. Number of inic cond files
+# B. perturbations (e.g. currently we have: without prt, pos prt and neg prt)
+
+# Based off the above, we compute number of instances to have (A * B)
+# Build phase               : Change the user_nl* files to add perturbations and other flags 
+# Run pahse                 : Rename history files
+# Baselines generation phase: Compute cloud, store in netcdf file, copy netcdf file to baseline folder
+# Baseline Comparison phase : Compare against baseline cloud to know pass/fail, and plot (optional)
 
 
 #TODO: 
 #1. The loop to change user_nl* files is run twice as we call build again after changing ninst, which changes ntasks
 #2. Do we want to remove user_nl_cam, user_nl_clm etc. files as they are not used in the simulation?
-#3. The loop for modifying namelists and renaming history files should be EXACTLY same. Try devising a function
-#   with these loops and calling another function within the loops for either modifying namelists (for build pahse)
-#   or renaming history files (run phase) so that these loops stay the same for both modifying namelists
-#   and renaming history files.
-#4. For generating baselines: rename files and generate cloud. Store that cloud so that we can re-use it when we run it for comparison
-#5. For comparison: Compute rmse of current netcdf files w.r.t baselines and give pass/fail
-#6. change code so that pergro_ptend_names.txt is not generated if it is already there or only one instance writes this file...
+#3. change code so that pergro_ptend_names.txt is not generated if it is already there or only one instance writes this file...
+#4. Plot generation is very basic at this point(no lables, legends etc.), improve it! 
+#5. Remove "debug" flag and replace it with logger.debug
+#6. Decision making about PASS fail should have multiple criteria
 
 logger = logging.getLogger(__name__)
+
+#--------------------------------------------------------
+#Variables which needs global scope for various functions
+#--------------------------------------------------------
 
 #number of inital conditions
 ninit_cond = 1 #12
@@ -63,18 +65,28 @@ ninit_cond = 1 #12
 prt        = [0.0, 1.0e-14, -1.0e-14]
 prtstr     = ['woprt','posprt','negprt']
 
-#file names for file containing PGE cloud
+#file name for file containing PGE cloud
 fcld_nc  = 'cloud.nc'
 
 #For preparing paths for namelist files for initial condition files
-
 file_pref_atm = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.cam.i.0002-"
 file_pref_lnd = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.clm2.r.0002-"
 
 file_suf_atm = "-01-00000.nc"
 file_suf_lnd = "-01-00000.nc"
 
-index = False #DEBUGGING: print out max rmse diffs if set to True
+#------------------------------------------------------------
+# Some flags for debugging or invoking extra features
+#------------------------------------------------------------
+
+#DEBUGGING: prints out max rmse diffs if set to True
+index = False 
+
+#set to True to print out debug info, should use loggers for this
+debug = True  #It may impact performance!
+
+# generate a plot
+doplot = True  #It impacts performance!
 
 class SLR(SystemTestsCommon):
 
@@ -106,7 +118,8 @@ class SLR(SystemTestsCommon):
         nprt       = len(prt)
         ninst      = ninit_cond * nprt
 
-        logging.warn('SLR_INFO: number of instance: '+str(ninst))
+        if(debug):
+            print('SLR_INFO: number of instance: '+str(ninst))
         
         #------------------------------------------------------
         #Fake Build:
@@ -143,7 +156,8 @@ class SLR(SystemTestsCommon):
             # so it has to happen here.
             if not model_only:
                 # Lay all of the components out concurrently
-                logging.warn("SLR_INFO: Updating NINST for multi-instance in env_mach_pes.xml")
+                if(debug):
+                    print("SLR_INFO: Updating NINST for multi-instance in env_mach_pes.xml")
                 for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
                     ntasks = self._case.get_value("NTASKS_%s"%comp)
                     self._case.set_value("ROOTPE_%s"%comp, 0)
@@ -158,7 +172,8 @@ class SLR(SystemTestsCommon):
 
         #Faking a bld can save the time code spend in building the model components
         if fake_bld:
-            logging.warn("SLR_INFO: FAKE Build")
+            if(debug):
+                print("SLR_INFO: FAKE Build")
             if (not sharedlib_only):
                 post_build(self._case, [])
         else:
@@ -167,13 +182,13 @@ class SLR(SystemTestsCommon):
 
 
         #----------------------------------------------------------------
-        # Run-time settings:
+        # Namelist settings:
         #~~~~~~~~~~~~~~~~~~
         # Do this already in build_phase so that we can check the xml and
         # namelist files before job starts running.
         #----------------------------------------------------------------
-        
-        logging.warn("SLR_INFO: Updating user_nl_* files")
+        if(debug):
+            print("SLR_INFO: Updating user_nl_* files")
 
         csmdata_root = self._case.get_value("DIN_LOC_ROOT")
         csmdata_atm  = csmdata_root+"atm/cam/inic/homme/"
@@ -204,10 +219,11 @@ class SLR(SystemTestsCommon):
                     atmnlfile.write("nhtfrq = 1 \n")
                     atmnlfile.write("mfilt  = 2  \n")
                     atmnlfile.write("ndens  = 1  \n")
-                    #atmnlfile.write("empty_htapes = .true. \n")
-                    #atmnlfile.write("fincl1 = 'PS','U','V','T','Q','CLDLIQ','CLDICE','NUMLIQ','NUMICE','num_a1','num_a2','num_a3','LANDFRAC' \n")
                     atmnlfile.write("pergro_mods  = .true. \n")
                     atmnlfile.write("pergro_test_active = .true. \n")
+
+                    #atmnlfile.write("empty_htapes = .true. \n")
+                    #atmnlfile.write("fincl1 = 'PS','U','V','T','Q','CLDLIQ','CLDICE','NUMLIQ','NUMICE','num_a1','num_a2','num_a3','LANDFRAC' \n")
                     #atmnlfile.write("phys_debug_lat = 41.3495891345")
                     #atmnlfile.write("phys_debug_lon = 45.0" )
                 
@@ -216,15 +232,23 @@ class SLR(SystemTestsCommon):
                         
                     iinst += 1
 
-        #=================================================================
+        #--------------------------------
         #Settings common to all instances
-        #=================================================================
+        #--------------------------------
 
         #Coupler settings which are applicable to ALL the instances (as there is only one coupler for all instances)
         self._case.set_value("STOP_N",     "1")
         self._case.set_value("STOP_OPTION","nsteps")
 
+
+    #===========================================================
+    # Some user defined functions to avoid repeated calculations
+    #===========================================================
+
     def get_fname_wo_ext(self,rundir,casename,iinst):
+        """
+        construct file name given the input
+        """
         #form file name withOUT extension
         tstmp    = '00000'
         date_str = '.h0.0001-01-01-'
@@ -234,6 +258,9 @@ class SLR(SystemTestsCommon):
         return os.path.join(rundir,casename+cam_str+str(iinst).zfill(4)+date_str+tstmp)
 
     def get_var_list(self):
+        """
+        Get variable list for pergro specific output vars
+        """
         rundir    = self._case.get_value("RUNDIR")
         casename  = self._case.get_value("CASE")    
         prg_fname = 'pergro_ptend_names.txt'
@@ -242,17 +269,60 @@ class SLR(SystemTestsCommon):
 
         with open(var_file, 'r') as fvar:
             var_list = fvar.readlines()
-            fvar.close()
-            
+                    
         return  map(str.strip,var_list)
+
+    def nc_write_handle(self,fname_nc,rmse_nc_var):
+        """
+        Opens and write netcdf file for PGE curves
+        This function is here purely to avoid duplicate 
+        codes so that it is easy to maintain code longterm        
+        """
+
+        fhndl = Dataset(fname_nc,'w', format='NETCDF4')
+
+        var_list     = self.get_var_list()
+        len_var_list = len(var_list)
+        nprt         = len(prt)
+
+        #create dims
+        fhndl.createDimension('ninit', ninit_cond)
+        fhndl.createDimension('nprt', nprt)
+        fhndl.createDimension('nprt_m1', nprt-1)
+        fhndl.createDimension('nvars', len_var_list)
+
+
+        #create variables in the file
+        init_cond_nc = fhndl.createVariable('init_cond_fnames', 'string', 'ninit')
+        prt_nc       = fhndl.createVariable('perturb_strings', 'string', 'nprt')
+        variables_nc = fhndl.createVariable('perturb_vnames', 'string', 'nvars')
+        rmse_nc      = fhndl.createVariable(rmse_nc_var, 'd', ('ninit', 'nprt_m1', 'nvars'))
+
+
+        #assign variables for writing to the netcdf file
+        for iprt in range(nprt):
+            prt_nc[iprt]       = prtstr[iprt]
+
+        for ivar in range(len_var_list):
+            variables_nc[ivar] = var_list[ivar]
+
+        for icond in range(ninit_cond):
+            icond_label_2digits = str(icond+1).zfill(2)
+            init_cond_nc[icond] =  file_pref_atm + icond_label_2digits + file_suf_atm
+
+        return fhndl, rmse_nc
         
     def rmse_var(self,ifile_test, ifile_cntl,  var_list, var_suffix ):
+        """
+        Compute RMSE difference between ifile_test and ifile_cntl for
+        variables listed in var_list
+        """
         
         #------------------ARGS-------------------------
         #ifile_test: path of test file
         #ifile_cntl: path of control file
         #var_list  : List of all variables
-        #var_suffix: Suffix for var_list (e.g. T_, S_ QV_ etc.)
+        #var_suffix: Suffix for var_list (e.g. t_, t_ qv_ etc.)
         #-----------------------------------------------
 
         # See if the files exists or not....
@@ -288,6 +358,7 @@ class SLR(SystemTestsCommon):
                 rmse[icntvar]  = sqrt(mean_squared_error(vtest.reshape((nx,ny*nz)), vcntl.reshape((nx,ny*nz))))
 
                 if(index):
+                    #NEED to work on formatting this....
                     diff_arr = abs(vtest[...] - vcntl[...])
                     max_diff = np.amax(diff_arr)
                     ind_max = np.unravel_index(diff_arr.argmax(),diff_arr.shape)
@@ -309,8 +380,15 @@ class SLR(SystemTestsCommon):
 
     def _compare_baseline(self):
         
-        print('SLR_INFO:BASELINE COMPARISON STARTS')
-
+        #import time
+        #t0 = time.time()
+        """
+        Compare baselines in the pergro test sense. That is,
+        compare PGE from the test simulation with the baseline 
+        cloud
+        """
+        if(debug):
+            print("SLR_INFO:BASELINE COMPARISON STARTS")
 
         rundir    = self._case.get_value("RUNDIR")
         casename  = self._case.get_value("CASE") 
@@ -327,53 +405,32 @@ class SLR(SystemTestsCommon):
         base_dir = os.path.join(base_root,base_comp)
 
         #for test cases (new environment etc.)
-        print('SLR_INFO: Test case comparison...')
+        if(debug):
+            print("SLR_INFO: Test case comparison...")
 
         #---------------------------------------------
         # Write netcdf file for comparison
         #---------------------------------------------
         fcomp_nc = 'comp_cld.nc'
-        fcomp_cld = Dataset(fcomp_nc,'w', format='NETCDF4')
-
-
-        #create dims
-        fcomp_cld.createDimension('ninit', ninit_cond)
-        fcomp_cld.createDimension('nprt', nprt)
-        fcomp_cld.createDimension('nprt_m1', nprt-1)
-        fcomp_cld.createDimension('nvars', len_var_list)
-
-
-        #create variables in the file
-        init_cond_nc = fcomp_cld.createVariable('init_cond_fnames', 'string', 'ninit')
-        prt_nc       = fcomp_cld.createVariable('perturb_strings', 'string', 'nprt')
-        variables_nc = fcomp_cld.createVariable('perturb_vnames', 'string', 'nvars')
-        comp_rmse_nc  = fcomp_cld.createVariable('comp_rmse', 'd', ('ninit', 'nprt_m1', 'nvars'))
-
-
-        #assign variables for writing to the netcdf file
-        for iprt in range(nprt):
-            prt_nc[iprt]       = prtstr[iprt]
-
-        for ivar in range(len_var_list):
-            variables_nc[ivar] = var_list[ivar]
+        fcomp_cld, comp_rmse_nc  = self.nc_write_handle(fcomp_nc,'comp_rmse')
 
         iinst = 0
         for icond in range(ninit_cond):
-            iinst += 1;                
+            iinst += 1;  iprt = 0
             ifile_cntl = os.path.join(base_dir,self.get_fname_wo_ext('','',iinst)+'_woprt.nc')
             expect(os.path.isfile(ifile_cntl), "ERROR: File "+ifile_cntl+" does not exist")
-            print('SLR_INFO:CNTL_TST:'+ifile_cntl)
-            iprt = 0
+            if(debug):
+                print("SLR_INFO:CNTL_TST:"+ifile_cntl)
+
             for aprt in prtstr[1:]:
                 iinst += 1;                
                 ifile_test = os.path.join(rundir,self.get_fname_wo_ext(rundir,casename,iinst)+'_'+aprt+'.nc')
                 expect(os.path.isfile(ifile_test), "ERROR: File "+ifile_test+" does not exist")
                 comp_rmse_nc[icond,iprt,0:len_var_list] = self.rmse_var(ifile_test, ifile_cntl,  var_list, 't_' )
-                print('SLR_INFO:Compared to TEST_TST:'+ifile_test)
+                if(debug):
+                    print("SLR_INFO:Compared to TEST_TST:"+ifile_test)
 
                 iprt += 1
-
-
         
         #--------------------------------------------
         #Student's t-test
@@ -385,44 +442,83 @@ class SLR(SystemTestsCommon):
 
         fcld         = Dataset(path_cld_nc,'r', format='NETCDF4')
 
+        #Get dimentions of cloud PGE curves
+        ninic_cld = fcld.variables['cld_rmse'].shape[0]
+        nprt_cld  = fcld.variables['cld_rmse'].shape[1]
+        nvar_cld  = fcld.variables['cld_rmse'].shape[2]
+
+        expect(ninic_cld == ninit_cond, "BASELINE COMPARISON: Number of initial conditions should be same:" \
+               "inic cld:"+str(ninic_cld)+"  inic comp:"+str(ninit_cond))
+
+        expect(nprt_cld == nprt-1, "BASELINE COMPARISON: Number of perturbations should be same:" \
+               "prt cld:"+str(nprt_cld)+"  prt comp:"+str(nprt - 1))
+
+        expect(nvar_cld == len_var_list, "BASELINE COMPARISON: Number of phys update variables should be same:" \
+               "nvar cld:"+str(nvar_cld)+"  nvar comp:"+str(len_var_list))
+
+
+        pgecld =  fcld.variables['cld_rmse']
+
+        if (doplot):
+            import pylab as pl            
+            #generate plot
+            ax = pl.gca()
+            for icond in range(ninit_cond):
+                for iprt in range(nprt-1):
+                    ax.semilogy(pgecld[icond,iprt,:],color='b')
+                    ax.semilogy(comp_rmse_nc[icond,iprt,:],color='r')
+            pl.savefig('plot_comp.png')
+
         pge_ends_cld  = fcld.variables['cld_rmse'][:,:,len_var_list-1]
         pge_ends_comp = comp_rmse_nc[:,0:nprt-1,len_var_list-1]
 
         #run the t-test
         pge_ends_cld = pge_ends_cld.flatten()
-        pge_ends_comp = pge_ends_comp.flatten()    
-        
+        pge_ends_comp = pge_ends_comp.flatten()        
+
         t_stat, p_val = stats.ttest_ind(pge_ends_cld, pge_ends_comp)
 
-        print('SLR_INFO: T value:'+str(t_stat))
-        print('SLR_INFO: P value:'+str(p_val))
+        t_stat = abs(t_stat) #only value of t_stat matters, not the sign
 
-        if (abs(t_stat) < 3):
+        print("SLR_INFO: T value:"+str(t_stat))
+        print("SLR_INFO: P value:"+str(p_val))
+        
+        
+        #There should be multiple criteria to determin pass/fail
+        #This part of decision making should be more polished
+
+        if (t_stat > 3):
             with self._test_status:
                 self._test_status.set_status(BASELINE_PHASE, TEST_FAIL_STATUS)
+            print('SLR_INFO:TEST FAIL')
         else:
             with self._test_status:
                 self._test_status.set_status(BASELINE_PHASE, TEST_PASS_STATUS)
+            print('SLR_INFO:TEST PASS')
                     
         #Close this file after you access "comp_rmse_nc" variable
         fcomp_cld.close()
-
-        print('SLR_INFO: POST PROCESSING PHASE ENDS')
+        if(debug):
+            print("SLR_INFO: POST PROCESSING PHASE ENDS")
         
-
+        #t1 = time.time()
+        #print('time: '+str(t1-t0))
     #=================================================================
     # run_phase
     #=================================================================
     def run_phase(self):
-        print('SLR_INFO: RUN PHASE')
+        if(debug):
+            print("SLR_INFO: RUN PHASE")
         
-        #self.run_indv()
+        self.run_indv()
 
         #cwd = os.getcwd()
+
         #Here were are in case directory, we need to go to the run directory and rename files
         rundir   = self._case.get_value("RUNDIR")
         casename = self._case.get_value("CASE") 
-        print('SLR_INFO: Case name is:'+casename )
+        if(debug):
+            print("SLR_INFO: Case name is:"+casename )
 
         iinst = 1
         for icond in range(ninit_cond):
@@ -444,11 +540,13 @@ class SLR(SystemTestsCommon):
                             found = True
                             prtval = float(line.split('=')[1])
                             expect(prtval == prt[iprt], "ERROR: prtval doesn't match, prtval:"+str(prtval)+"; prt["+str(iprt)+"]:"+str(prt[iprt]))
-                            print("SLR_INFO:prtval:"+str(prtval)+"; prt["+str(iprt)+"]:"+str(prt[iprt]))
+                            if(debug):
+                                print("SLR_INFO:prtval:"+str(prtval)+"; prt["+str(iprt)+"]:"+str(prt[iprt]))
                 
                 if(not found):
                     expect(prtval == prt[iprt], "ERROR: default prtval doesn't match, prtval:"+str(prtval)+"; prt["+str(iprt)+"]:"+str(prt[iprt]))
-                    print("SLR_INFO:def prtval:"+str(prtval)+"; prt["+str(iprt)+"]:"+str(prt[iprt]))
+                    if(debug):
+                        print("SLR_INFO:def prtval:"+str(prtval)+"; prt["+str(iprt)+"]:"+str(prt[iprt]))
                   
                 #---------------------------------------------------------
                 #Rename file
@@ -456,7 +554,8 @@ class SLR(SystemTestsCommon):
 
                 #form file name
                 fname = self.get_fname_wo_ext(rundir,casename,iinst) #NOTE:without extension
-                print('SLR_INFO: fname to rename:'+fname )
+                if(debug):
+                    print("SLR_INFO: fname to rename:"+fname )
                 
                 renamed_fname = fname +'_'+prtstr[iprt]+'.nc'
                 fname_w_ext   = fname + '.nc' #add extention
@@ -465,18 +564,22 @@ class SLR(SystemTestsCommon):
                 if (os.path.isfile(fname_w_ext)):
                     #rename file
                     shutil.move(fname_w_ext,renamed_fname)
-                    print('SLR_INFO: Renamed file:'+renamed_fname)
+                    if(debug):
+                        print("SLR_INFO: Renamed file:"+renamed_fname)
                 else:
                     expect(os.path.isfile(renamed_fname), "ERROR: File "+renamed_fname+" does not exist")
-                    print('SLR_INFO: Renamed file already exists:'+renamed_fname)
+                    if(debug):
+                        print("SLR_INFO: Renamed file already exists:"+renamed_fname)
                 
                 iinst += 1
 
 
         if(self._case.get_value("GENERATE_BASELINE")):
-            self._generate_baseline()#BALLI-CHECK IF THIS IS OKAY
-            print('SLR_INFO: cloud generation-gen base' )
 
+            #first copy files to the baseline directory
+            self._generate_baseline()#BALLI-CHECK IF THIS IS OKAY
+            if(debug):
+                print("SLR_INFO: cloud generation-gen base")
 
             var_list     = self.get_var_list()
             len_var_list = len(var_list)
@@ -490,43 +593,22 @@ class SLR(SystemTestsCommon):
             base_dir = os.path.join(base_root,base_gen)
 
             #for trusted cloud sims
-            print('SLR_INFO: Computing cloud')
+            if(debug):
+                print("SLR_INFO: Computing cloud")
             cld_res = np.empty([len_var_list])
             
             #---------------------------------------------
             # Write netcdf file for cloud
             #---------------------------------------------
-            fcld = Dataset(fcld_nc,'w', format='NETCDF4')
-
-            fcld.createDimension('ninit', ninit_cond)
-            fcld.createDimension('nprt', nprt)
-            fcld.createDimension('nprt_m1', nprt-1)
-            fcld.createDimension('nvars', len_var_list)
-
-
-            #create variables in the file
-            init_cond_nc = fcld.createVariable('init_cond_fnames', 'string', 'ninit')
-            prt_nc       = fcld.createVariable('perturb_strings', 'string', 'nprt')
-            variables_nc = fcld.createVariable('perturb_vnames', 'string', 'nvars')
-            cld_rmse_nc  = fcld.createVariable('cld_rmse', 'd', ('ninit', 'nprt_m1', 'nvars'))
-
-            
-            #assign variables for writing to the netcdf file
-            for iprt in range(nprt):
-                prt_nc[iprt]       = prtstr[iprt]
-            
-            for ivar in range(len_var_list):
-                variables_nc[ivar] = var_list[ivar]
+            fcld, cld_rmse_nc = self.nc_write_handle(fcld_nc,'cld_rmse')
 
             iinst = 0
             for icond in range(ninit_cond):
-                icond_label_2digits = str(icond+1).zfill(2)
-                init_cond_nc[icond] =  file_pref_atm + icond_label_2digits + file_suf_atm                
-
                 iinst += 1;  iprt = 0
                 ifile_cntl = os.path.join(base_dir,self.get_fname_wo_ext('','',iinst)+'_'+prtstr[iprt]+'.nc')
                 expect(os.path.isfile(ifile_cntl), "ERROR: File "+ifile_cntl+" does not exist")
-                print('SLR_INFO:CNTL_CLD:'+ifile_cntl)            
+                if(debug):
+                    print("SLR_INFO:CNTL_CLD:"+ifile_cntl)            
             
                 for aprt in prtstr[1:]:
                     iinst += 1;
@@ -534,16 +616,18 @@ class SLR(SystemTestsCommon):
                     ifile_test = os.path.join(base_dir,self.get_fname_wo_ext('','',iinst)+'_'+aprt+'.nc')
                     expect(os.path.isfile(ifile_test), "ERROR: File "+ifile_test+" does not exist")
                     cld_rmse_nc[icond,iprt,0:len_var_list] = self.rmse_var(ifile_test, ifile_cntl,  var_list, 't_' )
-                    print('SLR_INFO:Compared to CLD:'+ifile_test)
+                    if(debug):
+                        print("SLR_INFO:Compared to CLD:"+ifile_test)
 
             fcld.close()
 
             #copy cloud.nc file to baseline directory
-            print('SLR_INFO:copy:'+fcld_nc+' to '+base_dir)
+            if(debug):
+                print("SLR_INFO:copy:"+fcld_nc+" to "+base_dir)
             shutil.copy(fcld_nc,base_dir)
 
-
-        print('SLR_INFO: RUN PHASE ENDS' )
+        if(debug):
+            print("SLR_INFO: RUN PHASE ENDS" )
 
 
 #=====================================================
