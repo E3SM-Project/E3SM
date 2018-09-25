@@ -1,18 +1,13 @@
-link_directories(${SCREAM_LIBRARY_DIRS} ${SCREAM_TPL_LIBRARY_DIRS})
-add_executable(util_unittest_f90 unit_test.f90)
-add_executable(util_tests
-  util_tests.cpp
-  ../util/scream_catch_main.cpp)
-add_executable(pack_tests
-  pack_tests.cpp
-  ../util/scream_catch_main.cpp)
-foreach (exe util_tests pack_tests util_unittest_f90)
-  target_link_libraries(${exe} scream_share ${SCREAM_TPL_LIBRARIES})
-  target_include_directories(${exe} PUBLIC ${SCREAM_INCLUDE_DIRS} ${CATCH_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..)
-  set_target_properties(${exe} PROPERTIES
-    LINK_FLAGS "${SCREAM_LINK_FLAGS}"
-    Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
-  add_test(run_${exe} ${exe})
-endforeach ()
+INCLUDE (ScreamUtils)
 
+SET (num_mpi_ranks 1)
+SET (config_defines "")
 
+# Test utilities (f90)
+CreateUnitTest(util_f90 util_test.f90 scream_share num_mpi_ranks config_defines)
+
+# Test utilities (c++)
+CreateUnitTest(util_cxx util_tests.cpp scream_share num_mpi_ranks config_defines)
+
+# Test packs
+CreateUnitTest(packs pack_tests.cpp scream_share num_mpi_ranks config_defines)
