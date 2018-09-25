@@ -1,4 +1,4 @@
-INCLUDE (ScreamMacros)
+INCLUDE (ScreamUtils)
 
 SET (num_mpi_ranks 1)
 SET (config_defines "")

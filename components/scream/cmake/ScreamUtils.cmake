@@ -1,4 +1,4 @@
-# This macro takes the following arguments:
+# This function takes the following arguments:
 #    - target_name: the name of the executable
 #    - target_srcs: a list of src files for the executable
 #      Note: no need to include catch_main; this macro will add it
@@ -7,7 +7,7 @@
 #    - num_mpi_ranks: the number of mpi ranks for the test
 #    - config_defines: specific define directives to be passed to the compiler
 
-MACRO(CreateUnitTest target_name target_srcs scream_libs num_mpi_ranks config_defines)
+FUNCTION(CreateUnitTest target_name target_srcs scream_libs num_mpi_ranks config_defines)
   # Set link directories (must be done BEFORE add_executable is called)
   link_directories(${SCREAM_TPL_LIBRARY_DIRS})
 
@@ -28,4 +28,4 @@ MACRO(CreateUnitTest target_name target_srcs scream_libs num_mpi_ranks config_de
     ADD_TEST(${target_name}_ut ${target_name})
   ENDIF()
 
-ENDMACRO(CreateUnitTest)
+ENDFUNCTION(CreateUnitTest)
