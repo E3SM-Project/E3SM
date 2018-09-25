@@ -129,11 +129,10 @@ module seq_flds_mod
   use shr_fire_emis_mod , only : shr_fire_emis_readnl, shr_fire_emis_mechcomps_n, shr_fire_emis_ztop_token
   use shr_carma_mod     , only : shr_carma_readnl
   use shr_ndep_mod      , only : shr_ndep_readnl
-  use shr_flds_mod      , only : seq_flds_dom_coord, seq_flds_dom_other
+  use shr_flds_mod      , only : seq_flds_dom_coord=>shr_flds_dom_coord, seq_flds_dom_other=>shr_flds_dom_other
 
   implicit none
   public
-  save
 
   interface seq_flds_lookup; module procedure &
        seq_flds_esmf_metadata_get

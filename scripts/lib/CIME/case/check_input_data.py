@@ -192,7 +192,6 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                             no_files_missing = False
                         else:
                             logging.debug("  Found input file: '{}'".format(full_path))
-
                     else:
                         # There are some special values of rel_path that
                         # we need to ignore - some of the component models

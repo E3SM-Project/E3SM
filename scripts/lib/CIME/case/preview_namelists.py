@@ -99,7 +99,7 @@ def create_namelists(self, component=None):
         except (OSError, IOError) as e:
             expect(False, "Failed to write {}/README: {}".format(docdir, e))
 
-    for cpglob in ["*_in_[0-9]*", "*modelio*", "*_in",
+    for cpglob in ["*_in_[0-9]*", "*modelio*", "*_in", "cesm.runconfig*",
                    "*streams*txt*", "*stxt", "*maps.rc", "*cism.config*"]:
         for file_to_copy in glob.glob(os.path.join(rundir, cpglob)):
             logger.debug("Copy file from '{}' to '{}'".format(file_to_copy, docdir))

@@ -804,6 +804,9 @@ using a fortran linker.
     <append MPILIB="mvapich2"> -mkl=cluster </append>
   </SLIBS>
   <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">/fs/cgd/csm/tools/pFUnit/pFUnit3.2.8_hobart_Intel15.0.2_noMPI_noOpenMP</PFUNIT_PATH>
+  <FFLAGS>
+    <append MODEL="mom"> -r8 </append>
+  </FFLAGS>
 </compiler>
 
 <compiler MACH="hobart" COMPILER="nag">
@@ -1136,13 +1139,6 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
-<compiler MACH="cheyenne" COMPILER="pgi">
-  <SLIBS>
-    <append> -llapack -lblas </append>
-    <append MPILIB="mpi-serial"> -ldl </append>
-  </SLIBS>
-</compiler>
-
 <compiler MACH="cheyenne">
   <CPPDEFS>
     <!-- these flags enable nano timers -->
@@ -1152,6 +1148,7 @@ using a fortran linker.
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
 </compiler>
+
 <compiler MACH="cheyenne" COMPILER="intel">
   <CFLAGS>
     <append> -qopt-report -xCORE_AVX2 -no-fma</append>
@@ -1166,6 +1163,16 @@ using a fortran linker.
   <PFUNIT_PATH MPILIB="mpt" compile_threaded="true">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_MPI_openMP</PFUNIT_PATH>
   <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+  <FFLAGS>
+    <append MODEL="mom"> -r8 </append>
+  </FFLAGS>
+</compiler>
+
+<compiler MACH="cheyenne" COMPILER="pgi">
+  <SLIBS>
+    <append> -llapack -lblas </append>
+    <append MPILIB="mpi-serial"> -ldl </append>
+  </SLIBS>
 </compiler>
 
 <compiler MACH="laramie">
@@ -1309,6 +1316,16 @@ using a fortran linker.
   <CPPDEFS>
      <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
   </CPPDEFS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="theia">
+  <MPICC> mpiicc  </MPICC>
+  <MPICXX> mpiicpc </MPICXX>
+  <MPIFC> mpiifort </MPIFC>
+  <NETCDF_PATH>/apps/netcdf/4.3.0-intel</NETCDF_PATH>
+  <FFLAGS>
+    <append MODEL="mom"> -r8 </append>
+  </FFLAGS>
 </compiler>
 
 </config_compilers>

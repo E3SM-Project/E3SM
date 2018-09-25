@@ -2687,6 +2687,16 @@
    <desc>whether the PROJECT value is required on this machine</desc>
  </entry>
 
+ <entry id="COMPARE_TO_NUOPC">
+   <type>logical</type>
+   <valid_values>TRUE,FALSE</valid_values>
+   <default_value>FALSE</default_value>
+   <group>comparison_to_nuopc</group>
+   <file>env_build.xml</file>
+   <desc>TRUE=>turn on CPP variable COMPARE_TO_NUOPC</desc>
+ </entry>
+
+
  <help>
     =========================================
     Notes:

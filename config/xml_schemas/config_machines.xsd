@@ -5,6 +5,7 @@
   <xs:attribute name="MACH" type="xs:NCName"/>
   <xs:attribute name="compiler" type="xs:string"/>
   <xs:attribute name="mpilib" type="xs:string"/>
+  <xs:attribute name="comp_interface" type="xs:string"/>
   <xs:attribute name="queue" type="xs:string"/>
   <xs:attribute name="DEBUG" type="upperBoolean"/>
   <xs:attribute name="threaded" type="xs:boolean"/>
@@ -213,6 +214,7 @@
       <xs:attribute ref="compiler" />
       <xs:attribute ref="DEBUG" />
       <xs:attribute ref="mpilib"/>
+      <xs:attribute ref="comp_interface"/>
     </xs:complexType>
   </xs:element>
   <xs:element name="command">

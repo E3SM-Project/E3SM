@@ -135,9 +135,9 @@ def parse_command_line(args, cimeroot, description):
 
     parser.add_argument("-i", "--input-dir",
                         help="Use a non-default location for input files. This will change the xml value of DIN_LOC_ROOT.")
-
-    # Select a driver. No selection implies mct driver
-    parser.add_argument("--driver", help=argparse.SUPPRESS)
+    parser.add_argument("--driver", default="mct",
+                        choices=('mct','nuopc', 'moab'),
+                        help=argparse.SUPPRESS)
 
     parser.add_argument("-n", "--non-local", action="store_true",
                         help="Use when you've requested a machine that you aren't on. "

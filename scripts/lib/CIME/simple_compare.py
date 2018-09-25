@@ -18,6 +18,12 @@ def _normalize_string_value(value, case):
     if ("/" in value):
         # File path, just return the basename
         return os.path.basename(value)
+    elif ("username" in value):
+        return ''
+    elif (".log." in value):
+        # Remove the part that's prone to diff
+        components = value.split(".")
+        return os.path.basename(".".join(components[0:-1]))
     else:
         return value
 
