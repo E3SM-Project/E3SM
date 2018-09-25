@@ -14,6 +14,7 @@ module lnd_disagg_forc
   use clm_varpar     , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
   use clm_varcon     , only : rair, grav, cpair, hfus, tfrz, spval
   use clm_varctl     , only : iulog, use_c13, use_cn, use_lch4, iulog
+  use clm_cpl_indices
   use seq_drydep_mod , only : n_drydep, drydep_method, DD_XLND
   use abortutils     , only : endrun
   use decompMod      , only : bounds_type
@@ -76,9 +77,9 @@ contains
     real(r8) :: egcm_t, rhos_t
     real(r8) :: dum1,   dum2
 
-    real(r8), dimension(bounds%begg : bounds%endg) :: sum_qbot_g    ! weighted sum of column-level lwrad
-    real(r8), dimension(bounds%begg : bounds%endg) :: sum_wts_g      ! sum of weights that contribute to sum_lwrad_g
-    real(r8), dimension(bounds%begg : bounds%endg) :: qbot_norm_g   ! normalization factors
+!    real(r8), dimension(bounds%begg : bounds%endg) :: sum_qbot_g    ! weighted sum of column-level lwrad
+!    real(r8), dimension(bounds%begg : bounds%endg) :: sum_wts_g      ! sum of weights that contribute to sum_lwrad_g
+!    real(r8), dimension(bounds%begg : bounds%endg) :: qbot_norm_g   ! normalization factors
 
     character(len=*), parameter :: subname = 'downscale_forcings'
     !-----------------------------------------------------------------------
@@ -135,7 +136,7 @@ contains
          call Qsat(tbot_t,pbot_t,es_t,dum1,qs_t,dum2)
 
          qbot_t = qbot_g*(qs_t/qs_g)
-         egcm_t = qbot_t*pbot_c/(0.622+0.378*qbot_t)
+         egcm_t = qbot_t*pbot_t/(0.622+0.378*qbot_t)
          rhos_t = (pbot_t-0.378*egcm_t) / (rair*tbot_t)
 
 	 top_as%tbot(t) = tbot_t
@@ -149,8 +150,6 @@ contains
 !      call downscale_longwave_top(bounds, atm2lnd_vars, top_pp, top_es)
 
 !      call check_downscale_consistency(bounds, atm2lnd_vars)
-
-    end associate
 
   end subroutine downscale_atmo_state_to_top
 
