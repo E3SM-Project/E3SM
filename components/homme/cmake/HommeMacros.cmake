@@ -249,6 +249,12 @@ macro (setUpTestDir TEST_DIR)
   FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
 
   # openMP runs
+
+  IF (EXEC_NAME MATCHES "kokkos$")
+    #not doing logic around omp_num_mpi...
+    FILE(APPEND ${THIS_TEST_SCRIPT} "OMP_NUMBER_THREADS_KOKKOS=${OMP_NUM_THREADS}\n") # new line
+  ENDIF()
+
   IF (NOT "${OMP_NAMELIST_FILES}" STREQUAL "")
     IF (${ENABLE_HORIZ_OPENMP})
       FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND}===============================\n")

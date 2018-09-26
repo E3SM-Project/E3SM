@@ -13,6 +13,9 @@ SET(NC_OUTPUT_FILES
   jw_baroclinic1.nc
   jw_baroclinic2.nc)
 
+#not flexible way to deal with threads, be fixed in future
+set (OMP_NUM_THREADS 1)
+
 # Specify test options, used to replace the cmake variables in the namelist
 SET (HOMME_TEST_QSIZE 4)
 SET (HOMME_TEST_RSPLIT 3)
