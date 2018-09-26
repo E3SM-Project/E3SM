@@ -87,8 +87,8 @@ class TSC(SystemTestsCommon):
         
         # generate paths/file names for initial conditons
         csmdata_root = self._case.get_value("DIN_LOC_ROOT")
-        csmdata_atm  = csmdata_root+"atm/cam/inic/homme/ne4_v1_init"
-        csmdata_lnd  = csmdata_root+"lnd/clm2/initdata/ne4_v1_init"  
+        csmdata_atm  = csmdata_root+"atm/cam/inic/homme/ne4_v1_init/"
+        csmdata_lnd  = csmdata_root+"lnd/clm2/initdata/ne4_v1_init/"  
         file_pref_atm = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.cam.i.0002-"
         file_pref_lnd = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.clm2.r.0002-"
         
@@ -108,8 +108,8 @@ class TSC(SystemTestsCommon):
 
                  inst_label_2digits = str(iinst).zfill(2)
 
-                #atmnlfile.write("ncdata  = '"+ csmdata_atm + file_pref_atm + inst_label_2digits + file_suf_atm+"' \n")
-                #lndnlfile.write("finidat = '"+ csmdata_lnd + file_pref_lnd + inst_label_2digits + file_suf_lnd+"' \n")
+                 atmnlfile.write("ncdata  = '"+ csmdata_atm + "/" + file_pref_atm + inst_label_2digits + file_suf_atm+"' \n")
+                 lndnlfile.write("finidat = '"+ csmdata_lnd + "/" + file_pref_lnd + inst_label_2digits + file_suf_lnd+"' \n")
 
                 # for initial testing on constance@pnnl
                  atmnlfile.write("ncdata  = '"+ "/pic/projects/uq_climate/wanh895/acme_input/ne4_v1_init/" + file_pref_atm + inst_label_2digits + file_suf_atm+"' \n")
