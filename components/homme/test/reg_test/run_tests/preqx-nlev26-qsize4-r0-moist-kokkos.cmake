@@ -24,4 +24,4 @@ SET (HOMME_TEST_VCOORD_INT_FILE cami-26.ascii)
 SET (HOMME_TEST_VCOORD_MID_FILE camm-26.ascii)
 
 # For GPU testbeds, for now.
-SET(TIMEOUT 240)
+SET(TIMEOUT 400)

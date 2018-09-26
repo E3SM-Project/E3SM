@@ -26,4 +26,4 @@ SET (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
 # For GPU testbeds, for now. This particular TIMEOUT should not be required; the
 # test should pass. But set it until we figure out why it's not. Seems to have
 # something to do with MPI.
-SET(TIMEOUT 240)
+SET(TIMEOUT 400)

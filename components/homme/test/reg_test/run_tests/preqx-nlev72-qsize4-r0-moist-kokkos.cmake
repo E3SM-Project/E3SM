@@ -24,4 +24,4 @@ SET (HOMME_TEST_VCOORD_INT_FILE acme-72i.ascii)
 SET (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
 
 # For GPU testbeds, for now.
-SET(TIMEOUT 240)
+SET(TIMEOUT 400)
