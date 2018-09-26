@@ -342,12 +342,12 @@ module prim_cxx_driver_base
     use parallel_mod,   only : abortmp
     use prim_state_mod, only: prim_printstate
     interface
-      subroutine prim_run_subcycle_c(tstep,nstep,nm1,n0,np1,last_time_step) bind(c)
+      subroutine prim_run_subcycle_c(tstep,nstep,nm1,n0,np1,next_output_step) bind(c)
         use iso_c_binding, only: c_int, c_double
         !
         ! Inputs
         !
-        integer(kind=c_int),  intent(in) :: nstep, nm1, n0, np1, last_time_step
+        integer(kind=c_int),  intent(in) :: nstep, nm1, n0, np1, next_output_step
         real (kind=c_double), intent(in) :: tstep
       end subroutine prim_run_subcycle_c
 
@@ -398,7 +398,7 @@ module prim_cxx_driver_base
       compute_diagnostics = .true.
     endif
 
-    call prim_run_subcycle_c(dt,nstep_c,nm1_c,n0_c,np1_c,nsubstep)
+    call prim_run_subcycle_c(dt,nstep_c,nm1_c,n0_c,np1_c,nextOutputStep)
 
     ! Set final timelevels from C into Fortran structure
     tl%nstep = nstep_c
@@ -406,7 +406,7 @@ module prim_cxx_driver_base
     tl%n0    = n0_c  + 1
     tl%np1   = np1_c + 1
 
-    if (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep .or. nsubstep==nsplit) then
+    if (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep) then
       ! Set pointers to states
       elem_state_v_ptr         = c_loc(elem_state_v)
       elem_state_temp_ptr      = c_loc(elem_state_temp)
