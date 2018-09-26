@@ -1042,7 +1042,8 @@ contains
     logical                  :: lwrite_now
     logical                  :: whead, wdata  ! for writing restart/history cdf files
     real(r8)                 :: tbnds(2)
-    character(len=12) :: date_str
+! KDR changed from 12(why 12?) to 16 (YYYY-MM-DD-SSSSS)
+    character(len=16) :: date_str
 
     integer(IN), parameter   :: maxout = 20
     integer(IN)       , save :: ntout = 0
@@ -1164,7 +1165,8 @@ contains
              if (present(yr_offset)) then
                 yy = yy + yr_offset
              end if
-             call shr_cal_ymdtod2string(date_str, yy, mm, dd)
+! KDR orig             call shr_cal_ymdtod2string(date_str, yy, mm, dd)
+             call shr_cal_ymdtod2string(date_str, yy, mm, dd, curr_tod)
              write(hist_file(found), "(8a)") &
                   trim(case_name),'.cpl',trim(inst_suffix),'.h',trim(aname),'.',trim(date_str), '.nc'
           else
