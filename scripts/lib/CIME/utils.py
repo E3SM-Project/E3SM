@@ -1352,11 +1352,11 @@ def does_file_have_string(filepath, text):
     """
     return os.path.isfile(filepath) and text in open(filepath).read()
 
-
-def is_last_process_complete(filepath, expect_text, fail_text ):
+def is_last_process_complete(filepath, expect_text, fail_text):
     """
     Search the filepath in reverse order looking for expect_text
-    before finding fail_text.
+    before finding fail_text. This utility is used by archive_metadata.
+
     """
     complete = False
     fh = open(filepath, 'r')
