@@ -191,8 +191,8 @@ class PGN(SystemTestsCommon):
             print("PGN_INFO: Updating user_nl_* files")
 
         csmdata_root = self._case.get_value("DIN_LOC_ROOT")
-        csmdata_atm  = csmdata_root+"atm/cam/inic/homme/ne4_v1_init"
-        csmdata_lnd  = csmdata_root+"lnd/clm2/initdata/ne4_v1_init"
+        csmdata_atm  = csmdata_root+"atm/cam/inic/homme/ne4_v1_init/"
+        csmdata_lnd  = csmdata_root+"lnd/clm2/initdata/ne4_v1_init/"
 
         iinst = 1
         for icond in range(ninit_cond):
@@ -210,8 +210,8 @@ class PGN(SystemTestsCommon):
                     #lndnlfile.write("finidat = '"+ "/pic/projects/uq_climate/wanh895/acme_input/ne4_v1_init/" + flnd_in+"' \n")
                     
                     #uncomment the following when there files are on SVN server
-                    atmnlfile.write("ncdata  = '"+ csmdata_atm + fatm_in+"' \n")
-                    lndnlfile.write("finidat = '"+ csmdata_lnd + flnd_in+"' \n")
+                    atmnlfile.write("ncdata  = '"+ csmdata_atm + "/" + fatm_in+"' \n")
+                    lndnlfile.write("finidat = '"+ csmdata_lnd + "/" + flnd_in+"' \n")
                     
                     
                     #atm model output
