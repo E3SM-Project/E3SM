@@ -1,0 +1,37 @@
+########
+# SMB  #
+########
+
+FCTR
+FCEV
+FGEV
+FGR
+FIRA
+FIRE
+FLDS
+FSA
+FSDS
+FSH
+FSM
+FSNO
+FSR
+Q2M
+QICE
+QICE_FORC (QICE forcing sent to GLC) --> sfcMassBal and totalSfcMassBal in MALI
+QICE_FRZ
+QICE_MELT
+QRUNOFF
+QSNOFRZ
+QSNOMELT
+QSOIL
+RAIN
+RH2M
+SNOW
+SNOWICE
+SNOWLIQ
+TSA
+WIND
+SNO_BW # Can be added to namelist, but undocumented! (suggested by Jan)  
+
+# history fields definition for CLM as it was in CESM1.2...
+    http://www.cesm.ucar.edu/models/cesm1.2/clm/models/lnd/clm/doc/UsersGuide/history_fields_table_40.xhtml
