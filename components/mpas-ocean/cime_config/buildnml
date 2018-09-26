@@ -103,8 +103,8 @@ def buildnml(case, caseroot, compname):
         decomp_date += '160830'
         decomp_prefix += 'mpas-o.graph.info.'
     elif ocn_grid == 'oEC60to30v3wLI':
-        ic_date += '170328'
-        ic_prefix += 'oEC60to30v3wLI'
+        ic_date += '171031'
+        ic_prefix += 'oEC60to30v3wLI60lev'
         decomp_date += '170328'
         decomp_prefix += 'mpas-o.graph.info.'
         restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3wLI.nc'
