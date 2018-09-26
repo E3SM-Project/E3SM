@@ -32,7 +32,7 @@ from CIME.build import post_build
 from CIME.hist_utils import rename_all_hist_files
 from CIME.utils import expect
 
-#Logic for SLR ensemble runs:
+#Logic for PGN ensemble runs:
 # We need two inputs:
 # A. Number of inic cond files
 # B. perturbations (e.g. currently we have: without prt, pos prt and neg prt)
@@ -88,11 +88,11 @@ debug = False  #It may impact performance!
 # generate a plot
 doplot = False  #It impacts performance!
 
-class SLR(SystemTestsCommon):
+class PGN(SystemTestsCommon):
 
     def __init__(self, case):
         """
-        initialize an object interface to the SLR test
+        initialize an object interface to the PGN test
         """
 
         #perturbation values and number of perturbation strings should be same
@@ -119,7 +119,7 @@ class SLR(SystemTestsCommon):
         ninst      = ninit_cond * nprt
 
         if(debug):
-            print('SLR_INFO: number of instance: '+str(ninst))
+            print('PGN_INFO: number of instance: '+str(ninst))
         
         #------------------------------------------------------
         #Fake Build:
@@ -147,7 +147,7 @@ class SLR(SystemTestsCommon):
         #NINST > 1 (e.g. rebuilding an old case) the following 
         #loop will increase the ntasks to a multiple of ninst 
         #(requiring a clean build again). We hit this issue if 
-        #we launch ./case.build in the case directory of SLR 
+        #we launch ./case.build in the case directory of PGN 
         #test
         #------------------------------------------------------
 
@@ -157,7 +157,7 @@ class SLR(SystemTestsCommon):
             if not model_only:
                 # Lay all of the components out concurrently
                 if(debug):
-                    print("SLR_INFO: Updating NINST for multi-instance in env_mach_pes.xml")
+                    print("PGN_INFO: Updating NINST for multi-instance in env_mach_pes.xml")
                 for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
                     ntasks = self._case.get_value("NTASKS_%s"%comp)
                     self._case.set_value("ROOTPE_%s"%comp, 0)
@@ -173,7 +173,7 @@ class SLR(SystemTestsCommon):
         #Faking a bld can save the time code spend in building the model components
         if fake_bld:
             if(debug):
-                print("SLR_INFO: FAKE Build")
+                print("PGN_INFO: FAKE Build")
             if (not sharedlib_only):
                 post_build(self._case, [])
         else:
@@ -188,11 +188,11 @@ class SLR(SystemTestsCommon):
         # namelist files before job starts running.
         #----------------------------------------------------------------
         if(debug):
-            print("SLR_INFO: Updating user_nl_* files")
+            print("PGN_INFO: Updating user_nl_* files")
 
         csmdata_root = self._case.get_value("DIN_LOC_ROOT")
-        csmdata_atm  = csmdata_root+"atm/cam/inic/homme/"
-        csmdata_lnd  = csmdata_root+"lnd/clm2/initdata/"
+        csmdata_atm  = csmdata_root+"atm/cam/inic/homme/ne4_v1_init"
+        csmdata_lnd  = csmdata_root+"lnd/clm2/initdata/ne4_v1_init"
 
         iinst = 1
         for icond in range(ninit_cond):
@@ -206,12 +206,12 @@ class SLR(SystemTestsCommon):
                     #atm/lnd intitial conditions                   
                     
                     #initial condition files to use for atm and land
-                    atmnlfile.write("ncdata  = '"+ "/pic/projects/uq_climate/wanh895/acme_input/ne4_v1_init/" + fatm_in+"' \n")
-                    lndnlfile.write("finidat = '"+ "/pic/projects/uq_climate/wanh895/acme_input/ne4_v1_init/" + flnd_in+"' \n")
+                    #atmnlfile.write("ncdata  = '"+ "/pic/projects/uq_climate/wanh895/acme_input/ne4_v1_init/" + fatm_in+"' \n")
+                    #lndnlfile.write("finidat = '"+ "/pic/projects/uq_climate/wanh895/acme_input/ne4_v1_init/" + flnd_in+"' \n")
                     
                     #uncomment the following when there files are on SVN server
-                    #atmnlfile.write("ncdata  = '"+ csmdata_atm + file_pref_atm + icond_label_2digits + file_suf_atm+"' \n")
-                    #lndnlfile.write("finidat = '"+ csmdata_lnd + file_pref_lnd + icond_label_2digits + file_suf_lnd+"' \n")
+                    atmnlfile.write("ncdata  = '"+ csmdata_atm + fatm_in+"' \n")
+                    lndnlfile.write("finidat = '"+ csmdata_lnd + flnd_in+"' \n")
                     
                     
                     #atm model output
@@ -388,7 +388,7 @@ class SLR(SystemTestsCommon):
         cloud
         """
         if(debug):
-            print("SLR_INFO:BASELINE COMPARISON STARTS")
+            print("PGN_INFO:BASELINE COMPARISON STARTS")
 
         rundir    = self._case.get_value("RUNDIR")
         casename  = self._case.get_value("CASE") 
@@ -406,7 +406,7 @@ class SLR(SystemTestsCommon):
 
         #for test cases (new environment etc.)
         if(debug):
-            print("SLR_INFO: Test case comparison...")
+            print("PGN_INFO: Test case comparison...")
 
         #---------------------------------------------
         # Write netcdf file for comparison
@@ -420,7 +420,7 @@ class SLR(SystemTestsCommon):
             ifile_cntl = os.path.join(base_dir,self.get_fname_wo_ext('','',iinst)+'_woprt.nc')
             expect(os.path.isfile(ifile_cntl), "ERROR: File "+ifile_cntl+" does not exist")
             if(debug):
-                print("SLR_INFO:CNTL_TST:"+ifile_cntl)
+                print("PGN_INFO:CNTL_TST:"+ifile_cntl)
 
             for aprt in prtstr[1:]:
                 iinst += 1;                
@@ -428,7 +428,7 @@ class SLR(SystemTestsCommon):
                 expect(os.path.isfile(ifile_test), "ERROR: File "+ifile_test+" does not exist")
                 comp_rmse_nc[icond,iprt,0:len_var_list] = self.rmse_var(ifile_test, ifile_cntl,  var_list, 't_' )
                 if(debug):
-                    print("SLR_INFO:Compared to TEST_TST:"+ifile_test)
+                    print("PGN_INFO:Compared to TEST_TST:"+ifile_test)
 
                 iprt += 1
         
@@ -480,8 +480,8 @@ class SLR(SystemTestsCommon):
 
         t_stat = abs(t_stat) #only value of t_stat matters, not the sign
 
-        print("SLR_INFO: T value:"+str(t_stat))
-        print("SLR_INFO: P value:"+str(p_val))
+        print("PGN_INFO: T value:"+str(t_stat))
+        print("PGN_INFO: P value:"+str(p_val))
         
         
         #There should be multiple criteria to determin pass/fail
@@ -490,16 +490,16 @@ class SLR(SystemTestsCommon):
         if (t_stat > 3):
             with self._test_status:
                 self._test_status.set_status(BASELINE_PHASE, TEST_FAIL_STATUS)
-            print('SLR_INFO:TEST FAIL')
+            print('PGN_INFO:TEST FAIL')
         else:
             with self._test_status:
                 self._test_status.set_status(BASELINE_PHASE, TEST_PASS_STATUS)
-            print('SLR_INFO:TEST PASS')
+            print('PGN_INFO:TEST PASS')
                     
         #Close this file after you access "comp_rmse_nc" variable
         fcomp_cld.close()
         if(debug):
-            print("SLR_INFO: POST PROCESSING PHASE ENDS")
+            print("PGN_INFO: POST PROCESSING PHASE ENDS")
         
         #t1 = time.time()
         #print('time: '+str(t1-t0))
@@ -508,7 +508,7 @@ class SLR(SystemTestsCommon):
     #=================================================================
     def run_phase(self):
         if(debug):
-            print("SLR_INFO: RUN PHASE")
+            print("PGN_INFO: RUN PHASE")
         
         self.run_indv()
 
@@ -518,7 +518,7 @@ class SLR(SystemTestsCommon):
         rundir   = self._case.get_value("RUNDIR")
         casename = self._case.get_value("CASE") 
         if(debug):
-            print("SLR_INFO: Case name is:"+casename )
+            print("PGN_INFO: Case name is:"+casename )
 
         iinst = 1
         for icond in range(ninit_cond):
@@ -541,12 +541,12 @@ class SLR(SystemTestsCommon):
                             prtval = float(line.split('=')[1])
                             expect(prtval == prt[iprt], "ERROR: prtval doesn't match, prtval:"+str(prtval)+"; prt["+str(iprt)+"]:"+str(prt[iprt]))
                             if(debug):
-                                print("SLR_INFO:prtval:"+str(prtval)+"; prt["+str(iprt)+"]:"+str(prt[iprt]))
+                                print("PGN_INFO:prtval:"+str(prtval)+"; prt["+str(iprt)+"]:"+str(prt[iprt]))
                 
                 if(not found):
                     expect(prtval == prt[iprt], "ERROR: default prtval doesn't match, prtval:"+str(prtval)+"; prt["+str(iprt)+"]:"+str(prt[iprt]))
                     if(debug):
-                        print("SLR_INFO:def prtval:"+str(prtval)+"; prt["+str(iprt)+"]:"+str(prt[iprt]))
+                        print("PGN_INFO:def prtval:"+str(prtval)+"; prt["+str(iprt)+"]:"+str(prt[iprt]))
                   
                 #---------------------------------------------------------
                 #Rename file
@@ -555,7 +555,7 @@ class SLR(SystemTestsCommon):
                 #form file name
                 fname = self.get_fname_wo_ext(rundir,casename,iinst) #NOTE:without extension
                 if(debug):
-                    print("SLR_INFO: fname to rename:"+fname )
+                    print("PGN_INFO: fname to rename:"+fname )
                 
                 renamed_fname = fname +'_'+prtstr[iprt]+'.nc'
                 fname_w_ext   = fname + '.nc' #add extention
@@ -565,11 +565,11 @@ class SLR(SystemTestsCommon):
                     #rename file
                     shutil.move(fname_w_ext,renamed_fname)
                     if(debug):
-                        print("SLR_INFO: Renamed file:"+renamed_fname)
+                        print("PGN_INFO: Renamed file:"+renamed_fname)
                 else:
                     expect(os.path.isfile(renamed_fname), "ERROR: File "+renamed_fname+" does not exist")
                     if(debug):
-                        print("SLR_INFO: Renamed file already exists:"+renamed_fname)
+                        print("PGN_INFO: Renamed file already exists:"+renamed_fname)
                 
                 iinst += 1
 
@@ -579,7 +579,7 @@ class SLR(SystemTestsCommon):
             #first copy files to the baseline directory
             self._generate_baseline()#BALLI-CHECK IF THIS IS OKAY
             if(debug):
-                print("SLR_INFO: cloud generation-gen base")
+                print("PGN_INFO: cloud generation-gen base")
 
             var_list     = self.get_var_list()
             len_var_list = len(var_list)
@@ -594,7 +594,7 @@ class SLR(SystemTestsCommon):
 
             #for trusted cloud sims
             if(debug):
-                print("SLR_INFO: Computing cloud")
+                print("PGN_INFO: Computing cloud")
             cld_res = np.empty([len_var_list])
             
             #---------------------------------------------
@@ -608,7 +608,7 @@ class SLR(SystemTestsCommon):
                 ifile_cntl = os.path.join(base_dir,self.get_fname_wo_ext('','',iinst)+'_'+prtstr[iprt]+'.nc')
                 expect(os.path.isfile(ifile_cntl), "ERROR: File "+ifile_cntl+" does not exist")
                 if(debug):
-                    print("SLR_INFO:CNTL_CLD:"+ifile_cntl)            
+                    print("PGN_INFO:CNTL_CLD:"+ifile_cntl)            
             
                 for aprt in prtstr[1:]:
                     iinst += 1;
@@ -617,17 +617,17 @@ class SLR(SystemTestsCommon):
                     expect(os.path.isfile(ifile_test), "ERROR: File "+ifile_test+" does not exist")
                     cld_rmse_nc[icond,iprt,0:len_var_list] = self.rmse_var(ifile_test, ifile_cntl,  var_list, 't_' )
                     if(debug):
-                        print("SLR_INFO:Compared to CLD:"+ifile_test)
+                        print("PGN_INFO:Compared to CLD:"+ifile_test)
 
             fcld.close()
 
             #copy cloud.nc file to baseline directory
             if(debug):
-                print("SLR_INFO:copy:"+fcld_nc+" to "+base_dir)
+                print("PGN_INFO:copy:"+fcld_nc+" to "+base_dir)
             shutil.copy(fcld_nc,base_dir)
 
         if(debug):
-            print("SLR_INFO: RUN PHASE ENDS" )
+            print("PGN_INFO: RUN PHASE ENDS" )
 
 
 #=====================================================
