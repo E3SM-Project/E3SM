@@ -191,8 +191,8 @@ class PGN(SystemTestsCommon):
             print("PGN_INFO: Updating user_nl_* files")
 
         csmdata_root = self._case.get_value("DIN_LOC_ROOT")
-        csmdata_atm  = csmdata_root+"atm/cam/inic/homme/ne4_v1_init/"
-        csmdata_lnd  = csmdata_root+"lnd/clm2/initdata/ne4_v1_init/"
+        csmdata_atm  = csmdata_root+"/atm/cam/inic/homme/ne4_v1_init/"
+        csmdata_lnd  = csmdata_root+"/lnd/clm2/initdata/ne4_v1_init/"
 
         iinst = 1
         for icond in range(ninit_cond):
