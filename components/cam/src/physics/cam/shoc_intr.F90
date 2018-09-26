@@ -24,6 +24,7 @@ module shoc_intr
   use perf_mod,      only: t_startf, t_stopf
   use spmd_utils,    only: masterproc
   use cam_logfile,   only: iulog 
+  use shoc,          only: linear_interp, largeneg
  
   implicit none	
 
@@ -476,7 +477,7 @@ end function shoc_implements_cnst
    real(r8) :: obklen(pcols), ustar2(pcols), kinheat(pcols), kinwat(pcols)
    real(r8) :: dummy2(pcols), dummy3(pcols), kbfs(pcols), th(pcols,pver), thv(pcols,pver)
    
-   real(r8) :: minqn, rrho(pcols,pver)                      ! minimum total cloud liquid + ice threshold    [kg/kg]
+   real(r8) :: minqn, rrho(pcols,pver), rrho_i(pcols,pverp)    ! minimum total cloud liquid + ice threshold    [kg/kg]
    real(r8) :: cldthresh, frac_limit
    real(r8) :: ic_limit, dum1
  
@@ -707,17 +708,18 @@ end function shoc_implements_cnst
      do i=1,ncol
        zi_g(i,k) = state1%zi(i,pverp-k+1)-state1%zi(i,pver+1)
      enddo
-   enddo       
-   
-   ! Figure out way to deal with surface fluxes
-   ! and TMS
+   enddo
+
+   ! Get Density on the interface grid
+   call linear_interp(zt_g,zi_g,rrho,rrho_i,pver,pverp,ncol,largeneg)       
+
    do i=1,ncol
       !  Surface fluxes provided by host model
-      wpthlp_sfc(i) = cam_in%shf(i)/(cpair*rrho(i,1))       ! Sensible heat flux
-      wprtp_sfc(i)  = cam_in%cflx(i,1)/(rrho(i,1))      ! Latent heat flux
-      upwp_sfc(i)   = cam_in%wsx(i)/rrho(i,1)               ! Surface meridional momentum flux
-      vpwp_sfc(i)   = cam_in%wsy(i)/rrho(i,1)               ! Surface zonal momentum flux  
-      wtracer_sfc(i,:) = 0._r8  ! in CAM tracer fluxes are done elsewhere
+      wpthlp_sfc(i) = cam_in%shf(i)/(cpair*rrho_i(i,1))       ! Sensible heat flux
+      wprtp_sfc(i)  = cam_in%cflx(i,1)/(rrho_i(i,1))      ! Latent heat flux
+      upwp_sfc(i)   = cam_in%wsx(i)/rrho_i(i,1)               ! Surface meridional momentum flux
+      vpwp_sfc(i)   = cam_in%wsy(i)/rrho_i(i,1)               ! Surface zonal momentum flux  
+      wtracer_sfc(i,:) = 0._r8  ! in E3SM tracer fluxes are done elsewhere
    enddo   
       
    ! ------------------------------------------------- !
@@ -725,8 +727,8 @@ end function shoc_implements_cnst
    ! ------------------------------------------------- !    
    if ( do_tms) then
      do i=1,ncol
-       upwp_sfc(i) = upwp_sfc(i)-((ksrftms(i)*state1%u(i,pver))/rrho(i,1))
-       vpwp_sfc(i) = vpwp_sfc(i)-((ksrftms(i)*state1%v(i,pver))/rrho(i,1))
+       upwp_sfc(i) = upwp_sfc(i)-((ksrftms(i)*state1%u(i,pver))/rrho_i(i,1))
+       vpwp_sfc(i) = vpwp_sfc(i)-((ksrftms(i)*state1%v(i,pver))/rrho_i(i,1))
      enddo 
    endif           
 
@@ -842,7 +844,7 @@ end function shoc_implements_cnst
      ! Compute the disbalance of total energy, over depth where CLUBB is active
      se_dis(i) = (te_a(i) - te_b(i))/(state1%pint(i,pverp)-state1%pint(i,shoctop(i)))  
    enddo    
-   
+
    do i=1,ncol
      do k=shoctop(i),pver
        shoc_s(i,k) = shoc_s(i,k) - se_dis(i)*gravit

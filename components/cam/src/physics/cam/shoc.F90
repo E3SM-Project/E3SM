@@ -14,6 +14,7 @@ module shoc
 implicit none
 
 integer, parameter, public :: r8 = selected_real_kind(12)
+real(r8), parameter, public :: largeneg = -99999999.99_r8
 
 !=========================================================
 ! Constants set in initialization
@@ -41,8 +42,6 @@ real(r8), parameter :: basetemp = 300._r8
 real(r8), parameter :: maxlen = 2000.0_r8
 real(r8), parameter :: maxtke = 5.0_r8
 real(r8), parameter :: mintke = 0.0004_r8
-
-real(r8), parameter :: largeneg = -999999999.99_r8
 
 !==============================================================
 contains
