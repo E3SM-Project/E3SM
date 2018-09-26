@@ -73,8 +73,45 @@ struct TestPack {
 
   static const double tol;
 
+  template <typename Pack>
+  static void compare (const Pack& a, const Pack& b) {
+    REQUIRE(max(abs(a - b)) <= tol);
+  }
+
+  static void compare (const Mask& a, const Mask& b) {
+    vector_novec for (int i = 0; i < Mask::n; ++i)
+      REQUIRE(a[i] == b[i]);
+  }
+
+  static void setup (Pack& a, Pack& b, scalar& c,
+                     const bool limit = false) {
+    using scream::util::min;
+    vector_novec for (int i = 0; i < Pack::n; ++i) {
+      const auto sign = (2*(i % 2) - 1);
+      a[i] = i + 3.5;
+      if (limit) a[i] = min<scalar>(3, a[i]);
+      a[i] *= sign;
+    }
+    vector_novec for (int i = 0; i < Pack::n; ++i) {
+      const auto sign = (2*(i % 2) - 1);
+      b[i] = i - 11;
+      if (limit) b[i] = min<scalar>(3, b[i]);
+      if (b[i] == 0) b[i] = 2;
+      b[i] *= sign;
+    }
+    c = 42;
+  }
+
   static void test_conversion () {
-    
+    typedef scream::pack::Pack<scream::Int, PACKN> IntPack;
+    Pack a;
+    IntPack a_int_true;
+    vector_novec for (int i = 0; i < Pack::n; ++i) {
+      a[i] = (i + 0.5);
+      a_int_true[i] = i;
+    }
+    IntPack a_int(a);
+    compare(a_int_true, a_int);
   }
 
   static void test_unary_min_max () {
@@ -92,40 +129,10 @@ struct TestPack {
     }
   }
 
-  static void test_index () {
-    
-  }
-
   static void test_range () {
-    
-  }
-
-  static void setup (Pack& a, Pack& b, scalar& c,
-                     const bool limit = false) {
-    using scream::util::min;
-    for (int i = 0; i < Pack::n; ++i) {
-      const auto sign = (2*(i % 2) - 1);
-      a[i] =  i + 3.5;
-      if (limit) a[i] = min<scalar>(3, a[i]);
-      a[i] *= sign;
-    }
-    for (int i = 0; i < Pack::n; ++i) {
-      const auto sign = (2*(i % 2) - 1);
-      b[i] = i - 11;
-      if (limit) b[i] = min<scalar>(3, b[i]);
-      if (b[i] == 0) b[i] = 2;
-      b[i] *= sign;
-    }
-    c = 42;
-  }
-
-  static void compare (const Pack& a, const Pack& b) {
-    REQUIRE(max(abs(a - b)) <= tol);
-  }
-
-  static void compare (const Mask& a, const Mask& b) {
-    vector_novec for (int i = 0; i < Mask::n; ++i)
-      REQUIRE(a[i] == b[i]);
+    const auto p = scream::pack::range<Pack>(42);
+    vector_novec for (int i = 0; i < Pack::n; ++i)
+      REQUIRE(p[i] == static_cast<scalar>(42 + i));
   }
 
 #define test_pack_gen_assign_op_all(op) do {        \
@@ -192,7 +199,8 @@ struct TestPack {
     compare(ac, a);                                 \
   } while (0)
 
-#define test_pack_gen_unary_stdfn(op) test_pack_gen_unary_fn(op, std::op)
+#define test_pack_gen_unary_stdfn(op)           \
+  test_pack_gen_unary_fn(op, std::op)
 
 #define test_mask_gen_bin_op_all(op) do {           \
     Pack a, b;                                      \
@@ -242,7 +250,6 @@ struct TestPack {
 
     test_conversion();
     test_unary_min_max();
-    test_index();
     test_range();
   }
 };
@@ -259,6 +266,7 @@ TEST_CASE("Pack", "scream::pack") {
   TestPack<int,8>::run();
   TestPack<int,16>::run();
   TestPack<int,32>::run();
+  TestPack<int,64>::run();
   TestPack<long,1>::run();
   TestPack<long,2>::run();
   TestPack<long,3>::run();
@@ -273,6 +281,7 @@ TEST_CASE("Pack", "scream::pack") {
   TestPack<float,8>::run();
   TestPack<float,16>::run();
   TestPack<float,32>::run();
+  TestPack<float,64>::run();
   TestPack<double,1>::run();
   TestPack<double,2>::run();
   TestPack<double,3>::run();
