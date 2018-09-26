@@ -24,8 +24,8 @@ struct Mask {
   KOKKOS_FORCEINLINE_FUNCTION explicit Mask () {}
 
   KOKKOS_FORCEINLINE_FUNCTION explicit Mask (const bool& init) {
-    //vector_simd // Intel 18 is having an issue with this loop.
-    for (int i = 0; i < n; ++i) d[i] = init;
+    // Intel 18 is having an issue with this loop.
+    vector_disabled for (int i = 0; i < n; ++i) d[i] = init;
   }
 
   KOKKOS_FORCEINLINE_FUNCTION void set (const int& i, const bool& val) { d[i] = val; }
@@ -211,7 +211,7 @@ scream_pack_gen_unary_stdfn(tgamma)
 template <typename Pack> KOKKOS_INLINE_FUNCTION
 OnlyPackReturn<Pack, typename Pack::scalar> min (const Pack& p) {
   typename Pack::scalar v(p[0]);
-  vector_simd for (int i = 0; i < Pack::n; ++i) v = util::min(v, p[i]);
+  vector_disabled for (int i = 0; i < Pack::n; ++i) v = util::min(v, p[i]);
   return v;
 }
 
@@ -226,7 +226,7 @@ OnlyPackReturn<Pack, typename Pack::scalar> max (const Pack& p) {
 template <typename Pack> KOKKOS_INLINE_FUNCTION
 OnlyPackReturn<Pack, typename Pack::scalar>
 min (const Mask<Pack::n>& mask, typename Pack::scalar init, const Pack& p) {
-  vector_simd for (int i = 0; i < Pack::n; ++i)
+  vector_disabled for (int i = 0; i < Pack::n; ++i)
     if (mask[i]) init = util::min(init, p[i]);
   return init;
 }

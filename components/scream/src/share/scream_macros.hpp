@@ -21,4 +21,9 @@
 # define restrict
 #endif
 
+// Annotate a loop with this symbol if vector_simd should work but
+// currently does not due to a compiler issue. For example,
+// compilation to reduce_min seems not to work in Intel 17.
+#define vector_disabled vector_novec
+
 #endif // SCREAM_MACROS_HPP

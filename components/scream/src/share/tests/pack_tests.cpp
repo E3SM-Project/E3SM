@@ -1,8 +1,9 @@
 #include "catch2/catch.hpp"
 
+#include "share/scream_pack.hpp"
 #include "share/scream_config.hpp"
 #include "share/scream_types.hpp"
-#include "share/scream_pack.hpp"
+#include "share/util/scream_utils.hpp"
 
 namespace {
 
@@ -29,6 +30,7 @@ struct TestMask {
     {
       Mask m(true);
       REQUIRE(m.any());
+      REQUIRE( ! ( ! m).any());
       for (int i = 0; i < Mask::n; ++i) REQUIRE(m[i]);
       REQUIRE(sum_true(m) == Mask::n);
     }
@@ -56,7 +58,9 @@ struct TestMask {
 };
 
 TEST_CASE("Mask", "scream::pack") {
+#ifndef __INTEL_COMPILER
   TestMask<1>::run();
+#endif
   TestMask<2>::run();
   TestMask<3>::run();
   TestMask<4>::run();
@@ -73,15 +77,15 @@ struct TestPack {
 
   static const double tol;
 
-  template <typename Pack>
-  static void compare (const Pack& a, const Pack& b) {
-    REQUIRE(max(abs(a - b)) <= tol);
-  }
+  // Use macros so that catch2 reports useful line numbers.
+#define compare_packs(a, b) do {                  \
+    REQUIRE(max(abs(a - b)) <= tol*max(abs(a)));  \
+  } while (0)
 
-  static void compare (const Mask& a, const Mask& b) {
-    vector_novec for (int i = 0; i < Mask::n; ++i)
-      REQUIRE(a[i] == b[i]);
-  }
+#define compare_masks(a, b) do {                    \
+    vector_novec for (int i = 0; i < Mask::n; ++i)  \
+      REQUIRE(a[i] == b[i]);                        \
+  } while (0)
 
   static void setup (Pack& a, Pack& b, scalar& c,
                      const bool limit = false) {
@@ -111,14 +115,15 @@ struct TestPack {
       a_int_true[i] = i;
     }
     IntPack a_int(a);
-    compare(a_int_true, a_int);
+    compare_packs(a_int_true, a_int);
   }
 
   static void test_unary_min_max () {
     Mask m(true);
+    REQUIRE( ! ( ! m).any());
     Pack p;
-    for (int i = 0; i < p.n; ++i) {
-      for (int j = 0; j < p.n; ++j)
+    vector_novec for (int i = 0; i < p.n; ++i) {
+      vector_novec for (int j = 0; j < p.n; ++j)
         p[j] = j;
       p[i] = -1;
       REQUIRE(min(p) == -1);
@@ -144,32 +149,32 @@ struct TestPack {
     a op b;                                         \
     vector_novec for (int i = 0; i < Pack::n; ++i)  \
       ac[i] op b[i];                                \
-    compare(ac, a);                                 \
+    compare_packs(ac, a);                           \
     a = a0;                                         \
     ac = a0;                                        \
     a op c;                                         \
     vector_novec for (int i = 0; i < Pack::n; ++i)  \
       ac[i] op c;                                   \
-    compare(ac, a);                                 \
+    compare_packs(ac, a);                           \
   } while (0)
 
-#define test_pack_gen_bin_op_all(op) do {           \
-    Pack a, b, d, dc;                               \
-    scalar c;                                       \
-    setup(a, b, c);                                 \
-    d = a op b;                                     \
-    vector_novec for (int i = 0; i < Pack::n; ++i)  \
-      dc[i] = a[i] op b[i];                         \
-    compare(dc, d);                                 \
-    d = a op c;                                     \
-    vector_novec for (int i = 0; i < Pack::n; ++i)  \
-      dc[i] = a[i] op c;                            \
-    compare(dc, d);                                 \
-    d = c op b;                                     \
-    vector_novec for (int i = 0; i < Pack::n; ++i)  \
-      dc[i] = c op b[i];                            \
-    compare(dc, d);                                 \
-  } while (0)
+#define test_pack_gen_bin_op_all(op) do {         \
+  Pack a, b, d, dc;                               \
+  scalar c;                                       \
+  setup(a, b, c);                                 \
+  d = a op b;                                     \
+  vector_novec for (int i = 0; i < Pack::n; ++i)  \
+    dc[i] = a[i] op b[i];                         \
+  compare_packs(dc, d);                           \
+  d = a op c;                                     \
+  vector_novec for (int i = 0; i < Pack::n; ++i)  \
+    dc[i] = a[i] op c;                            \
+  compare_packs(dc, d);                           \
+  d = c op b;                                     \
+  vector_novec for (int i = 0; i < Pack::n; ++i)  \
+    dc[i] = c op b[i];                            \
+  compare_packs(dc, d);                           \
+} while (0)
 
 #define test_pack_gen_bin_fn_all(op, impl) do {     \
     Pack a, b, d, dc;                               \
@@ -178,26 +183,26 @@ struct TestPack {
     d = op(a, b);                                   \
     vector_novec for (int i = 0; i < Pack::n; ++i)  \
       dc[i] = impl(a[i], b[i]);                     \
-    compare(dc, d);                                 \
+    compare_packs(dc, d);                           \
     d = op(a, c);                                   \
     vector_novec for (int i = 0; i < Pack::n; ++i)  \
       dc[i] = impl(a[i], c);                        \
-    compare(dc, d);                                 \
+    compare_packs(dc, d);                           \
     d = op(c, b);                                   \
     vector_novec for (int i = 0; i < Pack::n; ++i)  \
       dc[i] = impl(c, b[i]);                        \
-    compare(dc, d);                                 \
+    compare_packs(dc, d);                           \
   } while (0)
 
-#define test_pack_gen_unary_fn(op, impl) do {       \
-    Pack a, b, ac;                                  \
-    scalar c;                                       \
-    setup(a, b, c, true);                           \
-    a = op(abs(b));                                 \
-    vector_novec for (int i = 0; i < Pack::n; ++i)  \
-      ac[i] = impl(std::abs(b[i]));                 \
-    compare(ac, a);                                 \
-  } while (0)
+#define test_pack_gen_unary_fn(op, impl) do {     \
+  Pack a, b, ac;                                  \
+  scalar c;                                       \
+  setup(a, b, c, true);                           \
+  a = op(abs(b));                                 \
+  vector_novec for (int i = 0; i < Pack::n; ++i)  \
+    ac[i] = impl(std::abs(b[i]));                 \
+  compare_packs(ac, a);                           \
+} while (0)
 
 #define test_pack_gen_unary_stdfn(op)           \
   test_pack_gen_unary_fn(op, std::op)
@@ -210,15 +215,15 @@ struct TestPack {
     m = a op b;                                     \
     vector_novec for (int i = 0; i < Pack::n; ++i)  \
       mc.set(i, a[i] op b[i]);                      \
-    compare(mc, m);                                 \
+    compare_masks(mc, m);                           \
     m = a op c;                                     \
     vector_novec for (int i = 0; i < Pack::n; ++i)  \
       mc.set(i, a[i] op c);                         \
-    compare(mc, m);                                 \
+    compare_masks(mc, m);                           \
     m = c op b;                                     \
     vector_novec for (int i = 0; i < Pack::n; ++i)  \
       mc.set(i, c op b[i]);                         \
-    compare(mc, m);                                 \
+    compare_masks(mc, m);                           \
   } while (0)
 
   static void run () {
@@ -256,39 +261,25 @@ struct TestPack {
 
 template <typename Scalar, int PACKN>
 const double TestPack<Scalar,PACKN>::tol =
-  std::numeric_limits<Scalar>::epsilon();
+  2*std::numeric_limits<Scalar>::epsilon();
 
 TEST_CASE("Pack", "scream::pack") {
-  TestPack<int,1>::run();
-  TestPack<int,2>::run();
-  TestPack<int,3>::run();
-  TestPack<int,4>::run();
-  TestPack<int,8>::run();
   TestPack<int,16>::run();
-  TestPack<int,32>::run();
-  TestPack<int,64>::run();
-  TestPack<long,1>::run();
-  TestPack<long,2>::run();
-  TestPack<long,3>::run();
-  TestPack<long,4>::run();
-  TestPack<long,8>::run();
   TestPack<long,16>::run();
-  TestPack<long,32>::run();
-  TestPack<float,1>::run();
-  TestPack<float,2>::run();
-  TestPack<float,3>::run();
-  TestPack<float,4>::run();
-  TestPack<float,8>::run();
   TestPack<float,16>::run();
-  TestPack<float,32>::run();
-  TestPack<float,64>::run();
-  TestPack<double,1>::run();
-  TestPack<double,2>::run();
-  TestPack<double,3>::run();
-  TestPack<double,4>::run();
-  TestPack<double,8>::run();
   TestPack<double,16>::run();
-  TestPack<double,32>::run();
+
+#ifndef __INTEL_COMPILER
+  // Intel emits "remark: simd loop has only one iteration", and
+  // apparently this cannot be silenced with pragma warning, so skip
+  // these in an Intel build.
+  TestPack<int,1>::run();
+  TestPack<long,1>::run();
+  TestPack<float,1>::run();
+  TestPack<double,1>::run();
+#endif
+
+  scream::util::activate_floating_point_exceptions_if_enabled();
 }
 
 } // empty namespace
