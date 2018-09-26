@@ -1027,6 +1027,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
         tests = get_tests.get_full_test_names(["cime_test_only",
                                                        "^TESTMEMLEAKFAIL_P1.f09_g16.X",
                                                        "^TESTMEMLEAKPASS_P1.f09_g16.X",
+                                                       "^TESTRUNSTARCFAIL_P1.f19_g16_rx1.A",
                                                        "^TESTTESTDIFF_P1.f19_g16_rx1.A",
                                                        "^TESTBUILDFAILEXC_P1.f19_g16_rx1.A",
                                                        "^TESTRUNFAILEXC_P1.f19_g16_rx1.A"],
@@ -1114,6 +1115,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
         test_diff_test      = [item for item in tests if "TESTTESTDIFF" in item][0]
         mem_fail_test       = [item for item in tests if "TESTMEMLEAKFAIL" in item][0]
         mem_pass_test       = [item for item in tests if "TESTMEMLEAKPASS" in item][0]
+        st_arch_fail_test   = [item for item in tests if "TESTRUNSTARCFAIL" in item][0]
 
         log_lvl = logging.getLogger().getEffectiveLevel()
         logging.disable(logging.CRITICAL)
@@ -1158,6 +1160,9 @@ class O_TestTestScheduler(TestCreateTestCommon):
             elif (test_name == test_diff_test):
                 assert_test_status(self, test_name, ts, "COMPARE_base_rest", TEST_FAIL_STATUS)
                 assert_test_status(self, test_name, ts, RUN_PHASE, TEST_PASS_STATUS)
+            elif test_name == st_arch_fail_test:
+                assert_test_status(self, test_name, ts, RUN_PHASE, TEST_PASS_STATUS)
+                assert_test_status(self, test_name, ts, STARCHIVE_PHASE, TEST_FAIL_STATUS)
             else:
                 self.assertTrue(test_name in [pass_test, mem_pass_test])
                 assert_test_status(self, test_name, ts, RUN_PHASE, TEST_PASS_STATUS)
