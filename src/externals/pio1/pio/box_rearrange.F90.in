@@ -43,13 +43,7 @@ module box_rearrange
 
   use pio_kinds, only : pio_offset, r4, r8, i4, i8
   use pio_types
-#ifdef NO_MPI2
-  use pio_support, only : MPI_TYPE_CREATE_INDEXED_BLOCK, piodie, &
-                          Debug, DebugIO, CheckMPIReturn, pio_fc_gather_offset
-#else
   use pio_support, only : piodie, Debug, DebugIO, CheckMPIReturn, pio_fc_gather_offset
-
-#endif
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf  !_EXTERNAL
 #endif

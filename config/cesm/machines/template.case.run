@@ -27,18 +27,8 @@ import argparse
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
-    parser = argparse.ArgumentParser(
-        usage="""\n{0} [--verbose]
-OR
-{0} --help
-
-\033[1mEXAMPLES:\033[0m
-    \033[1;32m# case.run SMS\033[0m
-    > {0}
-""".format(os.path.basename(args[0])),
-        description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
+    parser = argparse.ArgumentParser(description=description,
+                                     formatter_class=argparse.RawTextHelpFormatter)
 
     CIME.utils.setup_standard_logging_options(parser)
 

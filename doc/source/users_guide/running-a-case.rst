@@ -10,22 +10,22 @@ Running a Case
 Calling **case.submit**
 ========================
 
-The script **case.submit** submits your run to the batch queueing system.
-If you do not have a batch queueing system, **case.submit** will start the job interactively, given that you have a proper MPI environment defined.
-Running **case.submit** is the **only** way you should start a job.
+The script `case.submit <../Tools_user/case.submit.html>`_  will submit your run to the batch queueing system on your machine.
+If you do not have a batch queueing system, `case.submit <../Tools_user/case.submit.html>`_ will start the job interactively, given that you have a proper MPI environment defined.
+Running `case.submit <../Tools_user/case.submit.html>`_ is the **ONLY** way you should start a job.
 
-To see the options to **case.submit**, issue the command
+To see the options to `case.submit <../Tools_user/case.submit.html>`_, issue the command
 ::
 
    > ./case.submit --help
 
-A good way to see what **case.submit** will do, is to first run the command
+A good way to see what `case.submit <../Tools_user/case.submit.html>`_ will do, is to first call `preview_run <../Tools_user/preview_run.html>`_
 ::
 
    > ./preview_run
 
-Running this command will output the environment for the run, the batch submit and mpirun commands.
-As an example, on the NCAR machine, cheyenne, for an A compset at the f19_g17_rx1 resolution, the following is output from **preview_run**
+which will output the environment for your run along with the batch submit and mpirun commands.
+As an example, on the NCAR machine, cheyenne, for an A compset at the f19_g17_rx1 resolution, the following is output from `preview_run <../Tools_user/preview_run.html>`_:
 ::
 
    CASE INFO:
@@ -60,7 +60,8 @@ As an example, on the NCAR machine, cheyenne, for an A compset at the f19_g17_rx
    MPIRUN:
       mpiexec_mpt  -np 36 -p "%g:"  omplace -tm open64  /glade/scratch/mvertens/jim/bld/cesm.exe  >> cesm.log.$LID 2>&1
 
-Each of the above sections is defined in the various **$CASEROOT** xml files and the associated variables can be modified using the **xmlchange** command (or in the case of tasks and threads, this can also be done with the **pelayout** command).
+Each of the above sections is defined in the various **$CASEROOT** xml files and the associated variables can be modified using the
+`xmlchange <../Tools_user/xmlchange.html>`_ command (or in the case of tasks and threads, this can also be done with the `pelayout <../Tools_user/pelayout.html>`_ command).
 
 - The PE layout is set by the xml variables **NTASKS**, **NTHRDS** and **ROOTPE**. To see the exact settings for each component, issue the command
   ::
@@ -93,12 +94,12 @@ Each of the above sections is defined in the various **$CASEROOT** xml files and
        ./xmlchange JOB_WALLCLOCK_TIME=00:20:00 --subgroup case.run
 
 
-Before you submit the case using **case.submit**, make sure the batch queue variables are set correctly for your run
+Before you submit the case using `case.submit <../Tools_user/case.submit.html>`_, make sure the batch queue variables are set correctly for your run
 In particular, make sure that you have appropriate account numbers (``PROJECT``), time limits (``JOB_WALLCLOCK_TIME``), and queue (``JOB_QUEUE``).
 
 Also modify **$CASEROOT/env_run.xml** for your case using **xmlchange**.
 
-Once you have executed **case.setup** and **case.build**, run **case.submit**
+Once you have executed `case.setup <../Tools_user/case.setup.html>`_ and `case.build <../Tools_user/case.build.html>`_ , call `case.submit <../Tools_user/case.submit.html>`_
 to submit the run to your machine's batch queue system.
 ::
 
@@ -109,40 +110,35 @@ to submit the run to your machine's batch queue system.
 Result of running case.submit
 ---------------------------------
 
-When called, the **case.submit** script will:
+When called, the `case.submit <../Tools_user/case.submit.html>`_ script will:
 
 - Load the necessary environment.
 
 - Confirm that locked files are consistent with the current xml files.
 
-- Run **preview_namelist**, which in turn will run each component's **buildnml**.
+- Run `preview_namelist <../Tools_user/preview_namelist.html>`_, which in turn will run each component's **cime_config/buildnml** script.
 
-- Run :ref:`check_input_data<input_data>` to verify that the required
-  data are present.
+- Run :ref:`check_input_data<input_data>` to verify that the required data are present.
 
-- Submit the job to the batch queue. which in turn will run the **case.run** script.
+- Submit the job to the batch queue. which in turn will run the `case.run <../Tools_user/case.run.html>`_ script.
 
-Upon successful completion of the run, **case.run** will:
+Upon successful completion of the run, `case.run <../Tools_user/case.run.html>`_  will:
 
 - Put timing information in **$CASEROOT/timing**.
   See :ref:`model timing data<model-timing-data>` for details.
 
-- Submit the short-term archiver script **case.st_archive**
-  to the batch queue if ``$DOUT_S`` is TRUE.
+- Submit the short-term archiver script `case.st_archive <../Tools_user/case.st_archive.html>`_  to the batch queue if ``$DOUT_S`` is TRUE.
+  Short-term archiving will copy and move component history, log, diagnostic, and restart files from ``$RUNDIR`` to the short-term archive directory ``$DOUT_S_ROOT``.
 
-- Resubmit **case.run** if ``$RESUBMIT`` > 0.
+- Resubmit `case.run <../Tools_user/case.run.html>`_ if ``$RESUBMIT`` > 0.
 
-Short-term archiving will copy and move component history, log,
-diagnostic, and restart files from ``$RUNDIR`` to the short-term
-archive directory ``$DOUT_S_ROOT``.
 
 ---------------------------------
 Monitoring case job statuses
 ---------------------------------
 
-The **$CASEROOT/CaseStatus** file contains a log of all the job states
-and **xmlchange** commands in chronological order. Here is an example of status
-messages:
+The **$CASEROOT/CaseStatus** file contains a log of all the job states and `xmlchange <../Tools_user/xmlchange.html>`_ commands in chronological order.
+Below is an example of status messages:
 ::
 
   2017-02-14 15:29:50: case.setup starting
@@ -166,10 +162,8 @@ messages:
   2017-02-14 16:20:58: st_archive success
   ---------------------------------------------------
 
-
 .. note::
-  After a successful first run, set the **env_run.xml** variable
-  ``$CONTINUE_RUN`` to ``TRUE`` before resubmitting or the job will not
+  After a successful first run, set the **env_run.xml** variable ``$CONTINUE_RUN`` to ``TRUE`` before resubmitting or the job will not
   progress.
 
   You may also need to modify the **env_run.xml** variables
@@ -177,8 +171,7 @@ messages:
   ``$REST_OPTION``, ``$REST_N`` and/or ``$REST_DATE``, and ``$RESUBMIT``
   before resubmitting.
 
-See :ref:`the basic example<use-cases-basic-example>` for a complete example
-of how to run a case.
+See the :ref:`basic example<basic_example>` for a complete example of how to run a case.
 
 ---------------------------------
 Troubleshooting a job that fails
@@ -285,6 +278,8 @@ throughput and batch queue limits. For example, if the model runs 5
 model years/day, set ``RESUBMIT=30, STOP_OPTION= nyears, and STOP_N=
 5``. The model will then run in five-year increments and stop after
 30 submissions.
+
+.. _run-type-init:
 
 ---------------------------------------------------
 Run-type initialization
@@ -399,7 +394,7 @@ restart files that are required for restart.
 Archiving (referred to as short-term archiving here) is the phase of a model run when output data are
 moved from ``$RUNDIR`` to a local disk area (short-term archiving).
 It has no impact on the production run except to clean up disk space
-in the ``$RUNDIR`` and help manage user quotas.
+in the ``$RUNDIR`` which can help manage user disk quotas.
 
 Several variables in **env_run.xml** control the behavior of
 short-term archiving. This is an example of how to control the
@@ -432,8 +427,7 @@ By default, each component also periodically writes history files
 (usually monthly) in netCDF format and also writes netCDF or binary
 restart files in the ``$RUNDIR`` directory. The history and log files
 are controlled independently by each component. History output control
-(for example, output fields and frequency) is set in the
-**Buildconf/$component.buildnml.csh** files.
+(for example, output fields and frequency) is set in each component's namelists.
 
 The raw history data does not lend itself well to easy time-series
 analysis. For example, CAM writes one or more large netCDF history

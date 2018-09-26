@@ -28,6 +28,7 @@ from CIME.case       import Case
 from CIME.utils      import is_last_process_complete
 
 # import handler for config file
+
 if sys.version_info[0] == 2:
     from ConfigParser import SafeConfigParser as config_parser
 else:
@@ -71,6 +72,7 @@ _pp_diag_vars = {'atm' : ['ATMDIAG_test_first_yr', 'ATMDIAG_test_nyrs'],
 
 # setting the ssl context to avoid issues with CGD certificates
 _context = ssl._create_unverified_context() # pylint:disable=protected-access
+
 
 # -------------------------------------------------------------------------------
 class PasswordPromptAction(argparse.Action):
@@ -331,7 +333,6 @@ def get_pp_path(pp_dir, comp, subdir):
             pp_path = os.path.join(pp_path, subdir)
         elif comp == 'ice' and subdir == 'diag':
             pp_path = pp_path.replace('climo', 'diag', 1)
-
     os.chdir(cwd)
     return pp_path
 
@@ -490,7 +491,6 @@ def get_pp_status(case_dict):
     case_dict['xconform_path'] = get_pp_path(pp_dir, 'xconform', subdir=None)
     (xconform_size, case_dict['xconform_size']) = get_disk_usage(case_dict['xconform_path'])
     case_dict['xconform_size'] = bytes_2_human(xconform_size)
-
     xconform_logs = list()
     xconform_file_pattern = ("{0}/xconform.log.*".format(pp_log_dir))
     xconform_logs = glob.glob(xconform_file_pattern)
@@ -563,7 +563,6 @@ def get_case_status(case_dict):
     case_dict['run_path'] = case_dict['RUNDIR']
     case_dict['run_size'] = 0
     case_dict['run_last_date'] = case_dict['RUN_STARTDATE']
-
     case_dict['sta_status'] = 'Unknown'
     case_dict['sta_path'] = case_dict['DOUT_S_ROOT']
     case_dict['sta_size'] = 0
@@ -676,7 +675,6 @@ def query_expdb_cmip6(case_dict, username, password):
             fname.write(json.dumps(output, ensure_ascii=False))
             fname.close()
         exists = True
-
     return exists
 
 # ---------------------------------------------------------------------
@@ -770,6 +768,7 @@ def create_temp_archive(case_dict):
 
     return archive_temp_dir
 
+
 # ---------------------------------------------------------------------
 def check_svn_repo(case_dict, username, password):
 # ---------------------------------------------------------------------
@@ -854,7 +853,6 @@ def create_readme(case_dict):
     Create a generic README.archive file
     """
     logger.debug('create_readme')
-
     os.chdir(case_dict['archive_temp_dir'])
 
     fname = open('README.archive', 'w')
@@ -1161,7 +1159,6 @@ def populate_local_repo(case_dict, ignore_logs, ignore_timing):
                 shutil.rmtree('./logs')
             except OSError:
                 logger.warning('in "populate_local_repo" - Unable to remove "logs" in archive_temp_dir.')
-
         if os.path.isdir('./postprocess/logs'):
             os.chdir('./postprocess')
             try:

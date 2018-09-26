@@ -57,6 +57,7 @@ RUN_PHASE             = "RUN"
 THROUGHPUT_PHASE      = "TPUTCOMP"
 MEMCOMP_PHASE         = "MEMCOMP"
 MEMLEAK_PHASE         = "MEMLEAK"
+STARCHIVE_PHASE       = "SHORT_TERM_ARCHIVER"
 COMPARE_PHASE         = "COMPARE" # This is one special, real phase will be COMPARE_$WHAT, this is for internal test comparisons, there could be multiple variations of this phase in one test
 BASELINE_PHASE        = "BASELINE"
 GENERATE_PHASE        = "GENERATE"
@@ -74,6 +75,7 @@ ALL_PHASES = [CREATE_NEWCASE_PHASE,
               THROUGHPUT_PHASE,
               MEMCOMP_PHASE,
               MEMLEAK_PHASE,
+              STARCHIVE_PHASE,
               GENERATE_PHASE]
 
 # These are mandatory phases that a test must go through

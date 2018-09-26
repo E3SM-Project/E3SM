@@ -174,12 +174,30 @@ def _read_cime_config_file():
     CIME_MODEL=e3sm,cesm
     PROJECT=someprojectnumber
     """
+    allowed_sections = ("main", "create_test")
+
+    allowed_in_main = ("cime_model", "project", "charge_account", "srcroot", "mail_type",
+                       "mail_user", "machine", "mpilib", "compiler", "input_dir")
+    allowed_in_create_test = ("mail_type", "mail_user", "save_timing", "single_submit",
+                              "test_root", "output_root", "baseline_root", "clean",
+                              "machine", "mpilib", "compiler", "parallel_jobs", "proc_pool",
+                              "walltime", "job_queue", "allow_baseline_overwrite", "wait",
+                              "force_procs", "force_threads", "input_dir", "pesfile", "retry",
+                              "walltime")
 
     cime_config_file = os.path.abspath(os.path.join(os.path.expanduser("~"),
                                                   ".cime","config"))
     cime_config = configparser.SafeConfigParser()
     if(os.path.isfile(cime_config_file)):
         cime_config.read(cime_config_file)
+        for section in cime_config.sections():
+            expect(section in allowed_sections,"Unknown section {} in .cime/config\nallowed sections are {}".format(section, allowed_sections))
+        if cime_config.has_section('main'):
+            for item,_ in cime_config.items('main'):
+                expect(item in allowed_in_main,"Unknown option in config section \"main\": \"{}\"\nallowed options are {}".format(item, allowed_in_main))
+        if cime_config.has_section('create_test'):
+            for item,_ in cime_config.items('create_test'):
+                expect(item in allowed_in_create_test,"Unknown option in config section \"test\": \"{}\"\nallowed options are {}".format(item, allowed_in_create_test))
     else:
         logger.debug("File {} not found".format(cime_config_file))
         cime_config.add_section('main')
@@ -231,6 +249,8 @@ def set_model(model):
     Set the model to be used in this session
     """
     cime_config = get_cime_config()
+    if not cime_config.has_section('main'):
+        cime_config.add_section('main')
     cime_config.set('main','CIME_MODEL',model)
 
 def get_model():
@@ -257,7 +277,11 @@ def get_model():
 
     # One last try
     if (model is None):
-        srcroot = os.path.dirname(os.path.abspath(get_cime_root()))
+        srcroot = None
+        if cime_config.has_section('main') and cime_config.has_option('main', 'SRCROOT'):
+            srcroot = cime_config.get('main','SRCROOT')
+        if srcroot is None:
+            srcroot = os.path.dirname(os.path.abspath(get_cime_root()))
         if os.path.isfile(os.path.join(srcroot, "SVN_EXTERNAL_DIRECTORIES")) \
            or os.path.isdir(os.path.join(srcroot, "manage_externals")):
             model = 'cesm'
@@ -995,7 +1019,8 @@ def parse_args_and_handle_standard_logging_options(args, parser=None):
 
     # scripts_regression_tests is the only thing that should pass a None argument in parser
     if parser is not None:
-        _check_for_invalid_args(args[1:])
+        if "--help" not in args[1:]:
+            _check_for_invalid_args(args[1:])
         args = parser.parse_args(args[1:])
 
     # --verbose adds to the message format but does not impact the log level
@@ -1327,11 +1352,11 @@ def does_file_have_string(filepath, text):
     """
     return os.path.isfile(filepath) and text in open(filepath).read()
 
-
 def is_last_process_complete(filepath, expect_text, fail_text):
     """
     Search the filepath in reverse order looking for expect_text
     before finding fail_text. This utility is used by archive_metadata.
+
     """
     complete = False
     fh = open(filepath, 'r')
