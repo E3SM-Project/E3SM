@@ -100,7 +100,7 @@
     type of prescribed SST mode used specifically for an aquaplanet setup in
     which global SSTs correspond to an analytic form set by the index value.
     Currently, indices for 10 SST profiles are supported [e.g., index 3 corresponds
-    to the “QOBS” profile of Neale and Hoskins (2001, Atmos. Sci. Lett.)].
+    to the "QOBS" profile of Neale and Hoskins (2001, Atmos. Sci. Lett.)].
     With source code modifications, it is possible for users to create their own
     analytic SST distributions and match them to indices 11 or greater.
     </desc>
