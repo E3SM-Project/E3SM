@@ -107,7 +107,8 @@ module five_intr
     call pbuf_add_field('Q_FIVE',       'global', dtype_r8, (/pcols,pver_five,pcnst,dyn_time_lvls/), q_five_idx)
     call pbuf_add_field('U_FIVE',       'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), u_five_idx)
     call pbuf_add_field('V_FIVE',       'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), v_five_idx)
-    ! Not prognostic, but save PMID and PINT for FIVE
+    
+    ! Define PBUF for non-prognostic variables
     ! Probably also need to save things like cloud fraction
     call pbuf_add_field('PMID_FIVE', 'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), pmid_five_idx)
     call pbuf_add_field('PINT_FIVE', 'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), pint_five_idx)
@@ -120,9 +121,12 @@ module five_intr
   
   subroutine init_five_profiles(phys_state, pbuf2d)
   
-    ! Purpose is to initialize FIVE profiles.  
-    ! Here we initialize using the state variables (on E3SM grid),
-    !   then interpolate onto the FIVE grid
+    ! Purpose is to initialize FIVE profiles.
+    ! 1)  The interface and midlayers are defined for FIVE
+    !     based on the user input
+    ! 2)  We initialize the FIVE variables from the E3SM state,
+    !     then interpolate onto the FIVE grid
+
     use time_manager, only: is_first_step
     use physics_buffer, only: pbuf_set_field, pbuf_get_chunk, &
                         dyn_time_lvls
@@ -219,6 +223,7 @@ module five_intr
         call linear_interp(phys_state(lchnk)%pmid(i,:),pmid_five(i,:),u_host,u_five(i,:),pver,pver_five)
         call linear_interp(phys_state(lchnk)%pmid(i,:),pmid_five(i,:),v_host,v_five(i,:),pver,pver_five)
       
+        ! For Q constituents 
         do p=1,pcnst
           q_host(:) = phys_state(lchnk)%q(i,:,p)
           call linear_interp(phys_state(lchnk)%pmid(i,:),pmid_five(i,:),q_host,q_five(i,:,p),pver,pver_five)
@@ -258,16 +263,16 @@ module five_intr
     ! This subroutine should be called BEFORE
     !   a parameterization is called that uses FIVE
     
-    ! First, a mass weighted vertical average will
-    !   be called to get FIVE values of T, q, u, v
-    !   onto E3SM grid.
-    ! Second, the tendency will be computed on the 
-    !   the E3SM grid
-    ! Third, this tendency will be interpolated onto
-    !   the high resolution FIVE grid
-    ! Finally, this tendency will be applied to the 
-    !   FIVE prognostics, for updated values to be 
-    !   used by parameterizations 
+    ! 1) A mass weighted vertical average will
+    !    be called to get FIVE values of T, q, u, v
+    !    onto E3SM grid.
+    ! 2) The tendency will be computed on the 
+    !    the E3SM grid
+    ! 3) This tendency will be interpolated onto
+    !    the high resolution FIVE grid
+    ! 4) Finally, this tendency will be applied to the 
+    !    FIVE prognostics, for updated values to be 
+    !    used by parameterizations 
 	
     ! Input/Output variables		
     type(physics_state), intent(in) :: state

@@ -1078,7 +1078,6 @@ end subroutine clubb_init_cnst
    real(r8) :: invrs_rho_ds_zt(pverp_clubb)           ! Inv. dry, static density on thermo. levels    [m^3/kg]
    real(r8) :: thv_ds_zm(pverp_clubb)                 ! Dry, base-state theta_v on momentum levels    [K]
    real(r8) :: thv_ds_zt(pverp_clubb)                 ! Dry, base-state theta_v on thermo. levels     [K]
-   real(r8) :: thv_ds_zt_pre(pverp)
    
    real(r8) :: edsclr(pverp_clubb,edsclr_dim)
    
@@ -1114,9 +1113,6 @@ end subroutine clubb_init_cnst
    real(r8) :: khzm_pre(pverp_clubb)
    real(r8) :: khzt_pre(pverp_clubb)
    real(r8) :: qclvar_pre(pverp_clubb)
-   real(r8) :: rho_ds_zt_pre(pverp)
-   real(r8) :: edsclr_pre(pverp,edsclr_dim)
-   real(r8) :: invrs_rho_ds_zt_pre(pverp)
    
    real(r8) :: rfrzm(pverp_clubb)
    real(r8) :: rfrzm_pre(pverp)
@@ -1128,8 +1124,6 @@ end subroutine clubb_init_cnst
    real(r8) :: thlp2_forcing(pverp_clubb)
    real(r8) :: rtpthlp_forcing(pverp_clubb)
    real(r8) :: ice_supersat_frac(pverp_clubb)
-   real(r8) :: zt_g_pre(pverp)
-   real(r8) :: zi_g_pre(pverp)
    real(r8) :: zt_g(pverp_clubb)                      ! Thermodynamic grid of CLUBB                   [m]
    real(r8) :: zi_g(pverp_clubb)                      ! Momentum grid of CLUBB                        [m]
    real(r8) :: zt_out(pcols,pverp)              ! output for the thermo CLUBB grid              [m] 
@@ -1145,10 +1139,7 @@ end subroutine clubb_init_cnst
    real(r8) :: vm_forcing(pverp_clubb)                ! v wind forcing (thermodynamic levels)         [m/s/s]
    real(r8) :: wm_zm(pverp_clubb)                     ! w mean wind component on momentum levels      [m/s]
    real(r8) :: wm_zt(pverp_clubb)                     ! w mean wind component on thermo. levels       [m/s]
-   real(r8) :: wm_zt_pre(pverp)
-   real(r8) :: wm_zm_pre(pverp)
    real(r8) :: p_in_Pa(pverp_clubb)                   ! Air pressure (thermodynamic levels)           [Pa]
-   real(r8) :: rho_zt_pre(pverp)
    real(r8) :: rho_zt(pverp_clubb)                    ! Air density on thermo levels                  [kt/m^3]
    real(r8) :: rho_zm(pverp_clubb)                    ! Air density on momentum levels                [kg/m^3]
    real(r8) :: exner_pre(pverp)
@@ -1178,7 +1169,7 @@ end subroutine clubb_init_cnst
    real(r8) :: qclvar_out(pverp_clubb)                ! cloud water variance                          [kg^2/kg^2]
    real(r8) :: qclvar(pcols,pverp)              ! cloud water variance                          [kg^2/kg^2]
    real(r8) :: zo                               ! roughness height                              [m]
-   real(r8) :: dz_g(pver)                       ! thickness of layer                            [m]
+   real(r8) :: dz_g(pver_clubb)                       ! thickness of layer                            [m]
    real(r8) :: newfice(pcols,pver)              ! fraction of ice in cloud at CLUBB start       [-]
    real(r8) :: minqn                            ! minimum total cloud liquid + ice threshold    [kg/kg]
    real(r8) :: tempqn                           ! temporary total cloud liquid + ice            [kg/kg]
@@ -1202,10 +1193,10 @@ end subroutine clubb_init_cnst
    real(r8) :: thetal_output(pcols,pver)        ! Liquid water potential temperature output     [K]
    real(r8) :: sl_output(pcols,pver)            ! Liquid water static energy                    [J/kg]
    real(r8) :: ustar2(pcols)                    ! Surface stress for PBL height                 [m2/s2]
-   real(r8) :: rho(pcols,pverp)                 ! Midpoint density in CAM                       [kg/m^3]
+   real(r8) :: rho(pcols,pverp_clubb)           ! Midpoint density in CAM                       [kg/m^3]
    real(r8) :: thv(pcols,pver)                  ! virtual potential temperature                 [K]
    real(r8) :: edsclr_out(pverp,edsclr_dim)     ! Scalars to be diffused through CLUBB          [units vary]
-   real(r8) :: rcm(pcols,pverp)                 ! CLUBB cloud water mixing ratio                [kg/kg]
+   real(r8) :: rcm(pcols,pverp)           ! CLUBB cloud water mixing ratio                [kg/kg]
    real(r8) :: cloud_frac(pcols,pverp)          ! CLUBB cloud fraction                          [fraction]
    real(r8) :: rcm_in_layer(pcols,pverp)        ! CLUBB in-cloud liquid water mixing ratio      [kg/kg]
    real(r8) :: cloud_cover(pcols,pverp)         ! CLUBB in-cloud cloud fraction                 [fraction]
@@ -1249,7 +1240,7 @@ end subroutine clubb_init_cnst
    real(r8) :: qs(pcols,pver)
    real(r8) :: gam(pcols,pver)
    real(r8) :: tmp_array(state%ncol,pverp)
-   real(r8) :: bfact, orgparam, delpavg
+   real(r8) :: bfact, orgparam, delpavg, hkl, hkk
    character(len=6) :: choice_radf
    
    integer                               :: time_elapsed                ! time keep track of stats          [s]
@@ -1323,7 +1314,11 @@ end subroutine clubb_init_cnst
    real(r8) :: v_five_low(pcols,pver)
    real(r8) :: q_five_low(pcols,pver,pcnst) 
    
-   real(r8) :: pdel_five(pverp_clubb)  
+   real(r8) :: pdel_five(pverp_five)  
+   real(r8) :: tv_five(pver_five)
+   real(r8) :: thv_five(pver_five)
+   real(r8) :: omega_five(pver_five)
+   real(r8) :: exner_five(pver_five)
 #endif
    
 !PMA
@@ -1686,50 +1681,51 @@ end subroutine clubb_init_cnst
       !  to zero.
       fcor = 0._r8 
 
+      !  If FIVE is not called, then do not call the following
+      !    code, as many CLUBB inputs will be defined 
+      !    from the FIVE state
+#ifndef FIVE
       !  Define the CLUBB momentum grid (in height, units of m)
       !   but don't "flip" yet, as potential interpolation 
       !   to the FIVE grid needs to be done
       do k=1,pverp
-         zi_g_pre(k) = state1%zi(i,k)-state1%zi(i,pver+1)
+         zi_g(k) = state1%zi(i,k)-state1%zi(i,pver+1)
       enddo 
 
       !  Define the CLUBB thermodynamic grid (in units of m)
       !   but don't "flip" yet, as potential interpolation
       !   to the FIVE grid needs to be done
       do k=1,pver
-         zt_g_pre(k) = state1%zm(i,k)-state1%zi(i,pver+1)
+         zt_g(k) = state1%zm(i,k)-state1%zi(i,pver+1)
          dz_g(k) = state1%zi(i,k)-state1%zi(i,k+1)  ! compute thickness
       enddo
  
       !  Thermodynamic ghost point is below surface 
-      zt_g_pre(pverp) = -1._r8*zt_g_pre(pver)
-
-      !  Set the elevation of the surface
-      sfc_elevation = state1%zi(i,pver+1)
+      zt_g(pverp) = -1._r8*zt_g(pver)
 
       !  Compute thermodynamic stuff needed for CLUBB on thermo levels.  
       !  Inputs for the momentum levels are set below setup_clubb core
       !  but don't "flip" these yet, as potential interpolation
       !  to the FIVE grid needs to be done
       do k=1,pver
-         exner_pre(k)           = 1._r8/exner_clubb(i,k)
-         rho_ds_zt_pre(k)       = (1._r8/gravit)*(state1%pdel(i,k)/dz_g(k))
-         invrs_rho_ds_zt_pre(k) = 1._r8/(rho_ds_zt_pre(k))                               ! Inverse ds rho at thermo
-         rho(i,k)           = rho_ds_zt_pre(k)                                       ! rho on thermo 
-         thv_ds_zt_pre(k)       = thv(i,k)                                      ! thetav on thermo
-         rfrzm_pre(k)           = state1%q(i,k,ixcldice)   
-         radf_pre(k)            = radf_clubb(i,k)
-         qrl_clubb(k)       = qrl(i,k)/(cpair*state1%pdel(i,k))
+         exner(k)           = 1._r8/exner_clubb(i,k)
+         rho_ds_zt(k)       = (1._r8/gravit)*(state1%pdel(i,k)/dz_g(k))
+         invrs_rho_ds_zt(k) = 1._r8/(rho_ds_zt(k))                               ! Inverse ds rho at thermo
+         rho(i,k)           = rho_ds_zt(k)                                       ! rho on thermo 
+         thv_ds_zt(k)       = thv(i,k)                                      ! thetav on thermo
       enddo
       
       do k=1,pver_clubb
-      ! Fill in with appropriate pressure arrays
-#ifdef FIVE
-        p_in_Pa(k) = pmid_five(i,k)
-#else
         p_in_Pa(k) = state1%pmid(i,k)
-#endif
       enddo     
+        
+      !  Below computes the same stuff for the ghost point.  May or may
+      !  not be needed, just to be safe to avoid NaN's
+      rho_ds_zt(pverp)       = rho_ds_zt(pver)
+      invrs_rho_ds_zt(pverp) = invrs_rho_ds_zt(pver)
+      rho(i,pverp)           = rho_ds_zt(pver)
+      thv_ds_zt(pverp)       = thv_ds_zt(pver)
+      exner(pverp)           = exner(pver)
       
       !  Do the same for tracers 
       icnt=0
@@ -1742,60 +1738,106 @@ end subroutine clubb_init_cnst
             edsclr_pre(pverp,icnt) = edsclr_pre(pver,icnt)
          end if
       enddo
-        
-      !  Below computes the same stuff for the ghost point.  May or may
-      !  not be needed, just to be safe to avoid NaN's
-      rho_ds_zt_pre(pverp)       = rho_ds_zt_pre(pver)
-      invrs_rho_ds_zt_pre(pverp) = invrs_rho_ds_zt_pre(pver)
-      rho(i,pverp)           = rho_ds_zt_pre(pver)
-      thv_ds_zt_pre(pverp)       = thv_ds_zt_pre(pver)
-      rho_zt_pre(:)          = rho(i,:)
-      exner_pre(pverp)           = exner_pre(pver)
-      rfrzm_pre(pverp)           = rfrzm_pre(pver)
-      radf_pre(pverp)            = radf_pre(pver)
-      qrl_clubb(pverp)       = qrl_clubb(pver)
-
+      
       !  Compute mean w wind on thermo grid, convert from omega to w 
-      wm_zt_pre(1) = 0._r8
       do k=1,pver
-         wm_zt_pre(k) = -1._r8*state1%omega(i,k)/(rho(i,k)*gravit)
+         wm_zt(k) = -1._r8*state1%omega(i,k)/(rho(i,k)*gravit)
       enddo
       
-      wm_zt_pre(pverp) = wm_zt_pre(pver)
+      wm_zt(pverp) = wm_zt(pver)
       
+#endif
+
+      ! do the following regardless if FIVE is called or not
+      do k=1,pver   
+        rfrzm_pre(k)           = state1%q(i,k,ixcldice)   
+        radf_pre(k)            = radf_clubb(i,k)
+        qrl_clubb(k)           = qrl(i,k)/(cpair*state1%pdel(i,k))  
+      enddo    
+
+      rfrzm_pre(pverp)           = rfrzm_pre(pver)
+      radf_pre(pverp)            = radf_pre(pver)
+      qrl_clubb(pverp)           = qrl_clubb(pver)
+      
+      !  Set the elevation of the surface
+      sfc_elevation = state1%zi(i,pver+1)
+    
       ! Do some interpolation to get inputs (which are NOT prognostic variables) on FIVE grid  
       ! Need to do some interpolation to get these variables on the higher-resolution FIVE grid.
-      ! NOTE: the interpolation currently used here is very simple and really just a placeholder.     
-#ifdef FIVE       
-      ! Linearly interpolate CLUBB input variables to the FIVE grid
-      !  TASK: this interpolation scheme needs to be replaced
-      call linear_interp(state1%pmid(i,:),pmid_five(i,:),zt_g_pre(1:pver),zt_g(1:pver_five),pver,pver_five)
-      call linear_interp(state1%pmid(i,:),pmid_five(i,:),zi_g_pre(1:pver),zi_g(1:pver_five),pver,pver_five)
-      call linear_interp(state1%pmid(i,:),pmid_five(i,:),wm_zt_pre(1:pver),wm_zt(1:pver_five),pver,pver_five)
-      call linear_interp(state1%pmid(i,:),pmid_five(i,:),rho_zt_pre(1:pver),rho_zt(1:pver_five),pver,pver_five)
-!      call linear_interp(state1%pmid(i,:),pmid_five(i,:),exner_pre(1:pver),exner(1:pver_five),pver,pver_five)
-      call linear_interp(state1%pmid(i,:),pmid_five(i,:),rho_ds_zt_pre(1:pver),rho_ds_zt(1:pver_five),pver,pver_five)
-      call linear_interp(state1%pmid(i,:),pmid_five(i,:),invrs_rho_ds_zt_pre(1:pver),invrs_rho_ds_zt(1:pver_five),pver,pver_five)
-      call linear_interp(state1%pmid(i,:),pmid_five(i,:),thv_ds_zt_pre(1:pver),thv_ds_zt(1:pver_five),pver,pver_five)
+      ! NOTE: the interpolation currently used here is very simple and really just a placeholder.
+      ! Also, define CLUBB inputs based on things we can derive directly from the FIVE state,
+      ! instead of doing interpolation.       
+#ifdef FIVE  
+
+      do k=1,pver_clubb
+        p_in_Pa(k) = pmid_five(i,k)
+      enddo 
+
+      ! Compute the Exner values to that using FIVE pressure levels
+      do k=1,pver_five
+        exner_five(k) = 1._r8/(pmid_five(i,k)/p0_clubb)**(rair/cpair)
+      enddo
+      
+      ! Compute pdel on five grid
+      do k=1,pver_five
+        pdel_five(k) = pint_five(i,k+1)-pint_five(i,k)
+      enddo
+      
+      ! Define virtual temperature
+      do k=1,pver_five
+        tv_five(k) = t_five(i,k)*(1._r8+zvir*q_five(i,k,ixq)-q_five(i,k,ixcldliq))
+	thv_five(k) = exner_five(k)*tv_five(k)
+      enddo
+      
+      ! First compute the heights (in [m]) on the FIVE grid
+      ! Do this in a consistent manner how it is done in geopotential.F90
+      
+      zi_g(pverp_clubb) = 0.0_r8 ! Surface always zero by definition
+      do k = pver_clubb, 1, -1
+      
+        hkl = pdel_five(k)/pmid_five(i,k)
+	hkk = 0.5_r8 * hkl
+	
+	zt_g(k) = zi_g(k+1) + (rair/gravit)*tv_five(k)*hkk
+	zi_g(k) = zi_g(k+1) + (rair/gravit)*tv_five(k)*hkl
+      
+      enddo
+      
+      !  Thermodynamic ghost point for CLUBB is below surface 
+      zt_g(pverp_clubb) = -1._r8*zt_g(pver_clubb)
+      
+      ! Now define rho on the FIVE grid
+      do k = 1,pver_clubb
+        dz_g(k) = zi_g(k) - zi_g(k+1)
+        rho_ds_zt(k) = (1._r8/gravit)*(pdel_five(k)/dz_g(k))
+	invrs_rho_ds_zt(k) = 1._r8/(rho_ds_zt(k))
+	rho(i,k) = rho_ds_zt(k)
+	rho_zt(k) = rho(i,k)
+	thv_ds_zt(k) =thv_five(k)
+	exner(k) = 1._r8/exner_five(k)
+      enddo
+           
+      ! Linearly interpolate other CLUBB input variables to the FIVE grid, which 
+      !   cannot be derived from the FIVE state 
       call linear_interp(state1%pmid(i,:),pmid_five(i,:),rfrzm_pre(1:pver),rfrzm(1:pver_five),pver,pver_five)
       call linear_interp(state1%pmid(i,:),pmid_five(i,:),radf_pre(1:pver),rad(1:pver_five),pver,pver_five)
+      call linear_interp(state1%pmid(i,:),pmid_five(i,:),state1%omega(i,1:pver),omega_five(1:pver_five),pver,pver_five)
+      
+      !  Compute mean w wind on thermo grid, convert from omega to w 
+      do k=1,pver_clubb
+         wm_zt(k) = -1._r8*omega_five(k)/(rho(i,k)*gravit)
+      enddo      
 
-      ! Provide the lower boundary condition
+      ! Provide the lower boundary conditions for all inputs
       p_in_Pa(pverp_five) = p_in_Pa(pver_five)
       wm_zt(pverp_five) = wm_zt(pver_five)
       rho_zt(pverp_five) = rho_zt(pver_five)
-!      exner(pverp_five) = exner(pver_five)
+      exner(pverp_five) = exner(pver_five)
       rho_ds_zt(pverp_five) = rho_ds_zt(pver_five)
       invrs_rho_ds_zt(pverp_five) = invrs_rho_ds_zt(pver_five)
       thv_ds_zt(pverp_five) = thv_ds_zt(pver_five)
       rfrzm(pverp_five) = rfrzm(pver_five)
       rad(pverp_five) = rad(pver_five)
-      
-      ! Overwrite Exner values to that using FIVE pressure levels
-      do k=1,pver_five
-        exner(i,k) = 1._r8/(pmid_five(i,k)/p0_clubb)**(rair/cpair)
-      enddo
-      exner(pverp_five) = exner(pver_five)
      
       ! Initialize the tracer array from the FIVE state
       icnt=0
@@ -1813,7 +1855,7 @@ end subroutine clubb_init_cnst
       ! Initialize CLUBB's prognostic variables here, based on the 
       !   FIVE state
       do k=1,pver_five
-        thlm_pre(k) = t_five(i,k)/exner(k) - (latvap/cpair) * q_five(i,k,ixcldliq) ! cloud water
+        thlm_pre(k) = t_five(i,k)*exner_five(k) - (latvap/cpair) * q_five(i,k,ixcldliq) ! cloud water
         um_pre(k) = u_five(i,k)
         vm_pre(k) = v_five(i,k) 
         rtm_pre(k) = q_five(i,k,ixq) + q_five(i,k,ixcldliq)
@@ -1833,19 +1875,11 @@ end subroutine clubb_init_cnst
       um_pre(1:pver) = um(i,1:pver)
       vm_pre(1:pver) = vm(i,1:pver)
       rvm_pre(1:pver) = rvm(i,1:pver)
-   
+      
       p_in_Pa(pverp) = p_in_Pa(pver)
-      zi_g(:) = zi_g_pre
-      zt_g(:) = zt_g_pre
-      wm_zt(:) = wm_zt_pre
-      rho_zt(:) = rho_zt_pre
-      rad(:) = rad_pre
-      exner(:) = exner_pre
-      rho_ds_zt(:) = rho_ds_zt_pre
-      thv_ds_zt(:) = thv_ds_zt_pre
-      invrs_rho_ds_zt(:) = Invrs_rho_ds_zt_pre
+      rad(:) = radf_pre
       rfrzm(:) = rfrzm_pre
-      edsclr(:,:) = edsclr_pre(:,:)
+      edsclr(:,:) = edsclr_pre(:,:)xs
 #endif
     
       ! ------------------------------------------------- !
@@ -2116,6 +2150,23 @@ end subroutine clubb_init_cnst
             time_elapsed = time_elapsed+dtime
             call stats_begin_timestep(time_elapsed, 1, 1)
          endif 
+	 
+	 write(*,*) 'WM_ZM ', wm_zm
+	 write(*,*) 'WM_ZT ', wm_zt_in
+	 write(*,*) 'pressure ', p_in_Pa_in
+	 write(*,*) 'rho_zm ', rho_zm
+	 write(*,*) 'rho_zt_in ', rho_zt_in
+	 write(*,*) 'exner_in ', exner_in
+	 write(*,*) 'rho_ds_zm ', rho_ds_zm
+	 write(*,*) 'rho_ds_zt_in ', rho_ds_zt_in
+	 write(*,*) 'invrs_rho_ds_zm ', invrs_rho_ds_zm
+	 write(*,*) 'invrs_rho_ds_zt_in ', invrs_rho_ds_zt_in
+	 write(*,*) 'thv_ds_zm ', thv_ds_zm
+	 write(*,*) 'thv_ds_zt_in ', thv_ds_zt_in
+	 write(*,*) 'rfrzm_in ', rfrzm_in
+	 write(*,*) 'rad_in ', rad_in
+	 write(*,*) 'thlm_in ', thlm_in
+	 write(*,*) 'rtm_in ', rtm_in
 
          !  Advance CLUBB CORE one timestep in the future
          call t_startf('advance_clubb_core')
@@ -2281,11 +2332,6 @@ end subroutine clubb_init_cnst
 	q_five(i,k,ixcldliq) = rcm_pre(k)
       enddo
       
-      ! Compute pdel on five grid, needed for mass weighted vertical average
-      do k=1,pver_five
-        pdel_five(k) = pint_five(i,k+1)-pint_five(i,k)
-      enddo
-      
       ! Compute temperature on host model grid for density calculation
       call linear_interp(pmid_five(i,:),state1%pmid(i,:),t_five(i,1:pver_five),t_five_host,pver_five,pver)
       
@@ -2313,7 +2359,21 @@ end subroutine clubb_init_cnst
       rtm(i,1:pver) = q_five_low(i,1:pver,ixq) + q_five_low(i,1:pver,ixcldliq)
       um(i,1:pver) = u_five_low(i,1:pver)
       vm(i,1:pver) = v_five_low(i,1:pver)
-      rcm(i,1:pver) = q_five_low(i,1:pver,ixcldliq)  
+      rcm(i,1:pver) = q_five_low(i,1:pver,ixcldliq) 
+      
+      ! Transfer stuff back into FIVE arrays
+      ! First deal with constituents
+      icnt=0
+      do ixind=1,pcnst
+        if (lq(ixind)) then
+          icnt=icnt+1
+	 
+	  do k=1,pver
+	    edsclr_out(k,icnt) = q_five_low(i,k,ixind)
+	  enddo
+	 
+        endif
+      enddo     
       
       ! Linearly interpolate variables that E3SM needs to use for other routines (i.e. cloud fraction)
       !  +QUESTION:  Should things like cloud fraction be saved on the FIVE grid so they can be used
@@ -2327,17 +2387,16 @@ end subroutine clubb_init_cnst
       call linear_interp(pmid_five(i,:),state1%pmid(i,:),khzm_pre(1:pver_five),khzm(i,1:pver),pver_five,pver)
       call linear_interp(pmid_five(i,:),state1%pmid(i,:),qclvar_pre(1:pver_five),qclvar(i,1:pver),pver_five,pver)
  
-#else
+#else 
       ! If FIVE is not used, then simply just copy the arrays over
       thlm(i,:) = thlm_pre(:)
       rtm(i,:) = rtm_pre(:)
       um(i,:) = um_pre(:)
       vm(i,:) = vm_pre(:)
-      rcm(i,:) = rcm_pre(i,:)
-      
+      rcm(i,:) = rcm_pre(i,:)   
       ! Define temperature
       do k=1,pver
-        t_out(i,k) = (thlm(i,k) + (latvap/cpair) * rcm(i,k))/exner_clubb(i,k)
+        t_host(i,k) = (thlm(i,k) + (latvap/cpair) * rcm(i,k))/exner_clubb(i,k)
       end
       
       wprcp(i,:) = wprcp_pre(:)
