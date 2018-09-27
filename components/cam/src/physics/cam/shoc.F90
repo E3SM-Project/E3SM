@@ -77,12 +77,16 @@ subroutine shoc_main ( &
      host_dx, host_dy, &                  ! Input
      zt_grid,zi_grid,pres,pdel,&          ! Input
      wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, & ! Input
-     wtracer_sfc,num_qtracers, &          ! Input     
-     tke, thetal, qw, w_field,&           ! Input/Output
+     wtracer_sfc,num_qtracers,w_field, &  ! Input     
+     tke, thetal, qw, &                   ! Input/Output
      u_wind, v_wind,cldliq,qtracers,&     ! Input/Output
      wthv_sec,&                           ! Input/Output
-     shoc_cldfrac,shoc_ql )               ! Output
-     
+     shoc_cldfrac,shoc_ql,&               ! Output
+     shoc_mix, tk, tkh,&                  ! Output (diagnostic)
+     w_sec, thl_sec, qw_sec, qwthl_sec,&  ! Output (diagnostic)
+     wthl_sec, wqw_sec, wtke_sec,&        ! Output (diagnostic)
+     uw_sec, vw_sec, w3)                  ! Output (diagnostic)    
+
   implicit none
   
   ! input variables
@@ -123,12 +127,10 @@ subroutine shoc_main ( &
   real(r8), intent(out) :: shoc_cldfrac(shcol,nlev)
   real(r8), intent(out) :: shoc_ql(shcol,nlev)
   
-  ! Local variables
-  real(r8) :: wtracer_sec(shcol,nlevi,num_qtracers)
+  ! also output variables, but part of the SHOC diagnostics
   real(r8) :: shoc_mix(shcol,nlev) ! Turbulent length scale [m]
   real(r8) :: tk(shcol,nlev) ! eddy viscosity
   real(r8) :: tkh(shcol,nlev) 
-  real(r8) :: isotropy(shcol,nlev)
   real(r8) :: w_sec(shcol,nlev)
   real(r8) :: thl_sec(shcol,nlevi)
   real(r8) :: qw_sec(shcol,nlevi)
@@ -139,6 +141,10 @@ subroutine shoc_main ( &
   real(r8) :: uw_sec(shcol,nlevi)
   real(r8) :: vw_sec(shcol,nlevi)
   real(r8) :: w3(shcol,nlev)
+
+  ! local variables
+  real(r8) :: wtracer_sec(shcol,nlevi,num_qtracers)
+  real(r8) :: isotropy(shcol,nlev)
   real(r8) :: brunt(shcol,nlev)
   real(r8) :: rho_zt(shcol,nlev)
   
@@ -238,12 +244,11 @@ subroutine shoc_grid( &
   integer, intent(in) :: nlevi   ! number of interface levels
   real(r8), intent(in) :: zt_grid(shcol,nlev)  ! mid-point grid
   real(r8), intent(in) :: zi_grid(shcol,nlevi) ! interface grid
-  real(r8), intent(in) :: pdel(shcol,nlev) 
- 
+  real(r8), intent(in) :: pdel(shcol,nlev) ! pressure difference 
   ! output variables 
   real(r8), intent(out) :: dz_zt(shcol,nlev) ! dz on the thermo grid
   real(r8), intent(out) :: dz_zi(shcol,nlev) ! dz on interface grid
-  real(r8), intent(out) :: rho_zt(shcol,nlev)  
+  real(r8), intent(out) :: rho_zt(shcol,nlev) ! density on thermo grid 
 
   ! local variables
   integer :: i, k
@@ -321,7 +326,6 @@ subroutine update_prognostics( &
   do i=1,shcol
     do k=1,nlev
       kt=k+1
-!      thedz=1._r8/dz_zt(i,k) ! define the thickness of the layer
 
       r1=rho_zi(i,kt)
       r2=rho_zi(i,k)
@@ -440,7 +444,7 @@ subroutine diag_second_shoc_moments(&
   call linear_interp(zt_grid,zi_grid,isotropy,isotropy_zi,nlev,nlevi,shcol,largeneg)
   call linear_interp(zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,shcol,largeneg)
   call linear_interp(zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,shcol,largeneg)
-  call linear_interp(zt_grid,zi_grid,shoc_mix,shoc_mix_zi,nlev,nlevi,shcol,largeneg)
+  call linear_interp(zt_grid,zi_grid,shoc_mix,shoc_mix_zi,nlev,nlevi,shcol,0._r8)
  
   ! Vertical velocity variance is assumed to be propotional
   !  to the TKE
@@ -522,7 +526,7 @@ subroutine diag_second_shoc_moments(&
     qw_sec(i,nlevi) = 0._r8
     qwthl_sec(i,nlevi) = 0._r8    
   enddo ! end i loop (column loop)
-  
+ 
   return
 
 end subroutine diag_second_shoc_moments
@@ -627,7 +631,7 @@ subroutine diag_third_shoc_moments(&
 	w_sec_zi(i,k)*(thl_sec(i,kc)-thl_sec(i,kb))
 	
       f2=thedz * bet2 * isosqrt * wthl_sec(i,k) * &
-        (w_sec(i,k)-w_sec(i,kb))+ 2._r8 * thedz2 * bet2 * &    ! +DPAB check bet2 here
+        (w_sec(i,k)-w_sec(i,kb))+ 2._r8 * thedz2 * bet2 * &   
 	isosqrt * w_sec_zi(i,k) * (wthl_sec(i,kc) - wthl_sec(i,kb)) 
 	
       f3=thedz * bet2 * isosqrt * w_sec_zi(i,k) * &
@@ -780,22 +784,18 @@ subroutine shoc_assumed_pdf(&
 
   call linear_interp(zi_grid,zt_grid,w3,w3_zt,nlevi,nlev,shcol,largeneg)  
   call linear_interp(zi_grid,zt_grid,thl_sec,thl_sec_zt,nlevi,nlev,shcol,largeneg)
-  call linear_interp(zi_grid,zt_grid,wthl_sec(:,1:nlev),wthl_sec_zt,nlevi,nlev,shcol,largeneg)
+  call linear_interp(zi_grid,zt_grid,wthl_sec,wthl_sec_zt,nlevi,nlev,shcol,largeneg) !Alert
   call linear_interp(zi_grid,zt_grid,qwthl_sec,qwthl_sec_zt,nlevi,nlev,shcol,largeneg)
-  call linear_interp(zi_grid,zt_grid,wqw_sec(:,1:nlev),wqw_sec_zt,nlevi,nlev,shcol,largeneg)
+  call linear_interp(zi_grid,zt_grid,wqw_sec,wqw_sec_zt,nlevi,nlev,shcol,largeneg) !Alert
   call linear_interp(zi_grid,zt_grid,qw_sec,qw_sec_zt,nlevi,nlev,shcol,largeneg)  
   call linear_interp(zi_grid,zt_grid,w_field,w_field_zt,nlevi,nlev,shcol,largeneg)
   
-! Initialize the buoyancy flux (probably doesn't need to be here)
-  wthv_sec(:,1)=wthl_sec_zt(:,1)+((1.-epsterm)/epsterm)&
-     *basetemp*wqw_sec_zt(:,1)
-    
   do k=1,nlev
     do i=1,shcol
 
       pval = pres(i,k) 
 
-      ! Get all needed input moments for the PDf
+      ! Get all needed input moments for the PDF
       !  at this particular point
       thl_first = thetal(i,k)
       w_first = w_field_zt(i,k)
@@ -1153,7 +1153,6 @@ subroutine shoc_tke(&
   do k=1,nlev
     do i=1,shcol
     
-      grid_dzw=dz_zi(i,1)
       tk_in=Ck*shoc_mix(i,k)*sqrt(tke(i,k))
       smix=shoc_mix(i,k)
       a_prod_bu=(ggr/basetemp)*wthv_sec(i,k)

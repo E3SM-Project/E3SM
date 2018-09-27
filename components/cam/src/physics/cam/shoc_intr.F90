@@ -333,6 +333,38 @@ end function shoc_implements_cnst
        end if
     endif
 
+    ! Add SHOC fields
+    call addfld('SHOC_TKE', (/'lev'/), 'A', 'm2/s2', 'TKE')
+    call addfld('WTHV_SEC', (/'lev'/), 'A', 'K m/s', 'Buoyancy Flux')
+    call addfld('SHOC_MIX', (/'lev'/), 'A', 'm', 'SHOC length scale')
+    call addfld('TK',(/'lev'/), 'A', 'm2/s','Eddy viscosity for momentum')
+    call addfld('TKH', (/'lev'/), 'A', 'm2/s', 'Eddy viscosity for heat')
+    call addfld('W_SEC', (/'ilev'/), 'A', 'm2/s2', 'Vertical velocity variance')
+    call addfld('THL_SEC',(/'ilev'/), 'A', 'K2', 'Temperature variance')
+    call addfld('QW_SEC',(/'ilev'/), 'A', 'kg2/kg2', 'Moisture variance')
+    call addfld('QWTHL_SEC',(/'ilev'/), 'A', 'K kg/kg', 'Temperature and moisture correlation')
+    call addfld('WTHL_SEC',(/'ilev'/), 'A', 'K m/s', 'Heat flux')
+    call addfld('WQW_SEC',(/'ilev'/), 'A', 'kg/kg m/s', 'Moisture flux')
+    call addfld('WTKE_SEC',(/'ilev'/), 'A', 'm3/s3', 'Vertical flux of turbulence')
+    call addfld('UW_SEC',(/'ilev'/), 'A', 'm2/s2', 'Momentum flux')
+    call addfld('VW_SEC',(/'ilev'/), 'A', 'm2/s2', 'Momentum flux')
+    call addfld('W3',(/'lev'/), 'A', 'm3/s3', 'Third moment vertical velocity')
+
+    call add_default('SHOC_TKE', 1, ' ')
+    call add_default('WTHV_SEC', 1, ' ')
+    call add_default('SHOC_MIX', 1, ' ')
+    call add_default('TK', 1, ' ')
+    call add_default('TKH', 1, ' ')
+    call add_default('W_SEC', 1, ' ')
+    call add_default('THL_SEC', 1, ' ')
+    call add_default('QW_SEC', 1, ' ')
+    call add_default('QWTHL_SEC', 1, ' ')
+    call add_default('WTHL_SEC', 1, ' ')
+    call add_default('WQW_SEC', 1, ' ')
+    call add_default('WTKE_SEC', 1, ' ')
+    call add_default('UW_SEC', 1, ' ')
+    call add_default('VW_SEC', 1, ' ')
+    call add_default('W3', 1, ' ')
     ! ---------------------------------------------------------------!
     ! Initialize SHOC                                                !
     ! ---------------------------------------------------------------!
@@ -386,7 +418,8 @@ end function shoc_implements_cnst
     use hb_diff,                   only: pblintd
     use trb_mtn_stress,            only: compute_tms
     use shoc,           only: shoc_main
-    
+    use cam_history,    only: outfld   
+ 
     implicit none
     
    ! --------------- !
@@ -473,7 +506,19 @@ end function shoc_implements_cnst
    real(r8) :: cloud_frac(pcols,pver)          ! CLUBB cloud fraction                          [fraction]
    real(r8) :: dlf2(pcols,pver)
    real(r8) :: host_dx_in(pcols), host_dy_in(pcols)  
- 
+   real(r8) :: shoc_mix_out(pcols,pver), tk_out(pcols,pver), tkh_out(pcols,pver)
+   real(r8) :: w_sec_out(pcols,pver), thl_sec_out(pcols,pverp)
+   real(r8) :: qw_sec_out(pcols,pverp), qwthl_sec_out(pcols,pverp)
+   real(r8) :: wthl_sec_out(pcols,pverp), wqw_sec_out(pcols,pverp)
+   real(r8) :: wtke_sec_out(pcols,pverp), uw_sec_out(pcols,pverp)
+   real(r8) :: vw_sec_out(pcols,pverp), w3_out(pcols,pver)
+   real(r8) :: shoc_mix(pcols,pver), tk(pcols,pver), tkh(pcols,pver)
+   real(r8) :: w_sec(pcols,pver), thl_sec(pcols,pverp)
+   real(r8) :: qw_sec(pcols,pverp), qwthl_sec(pcols,pverp)
+   real(r8) :: wthl_sec(pcols,pverp), wqw_sec(pcols,pverp)
+   real(r8) :: wtke_sec(pcols,pverp), uw_sec(pcols,pverp)
+   real(r8) :: vw_sec(pcols,pverp), w3(pcols,pver)
+
    real(r8) :: obklen(pcols), ustar2(pcols), kinheat(pcols), kinwat(pcols)
    real(r8) :: dummy2(pcols), dummy3(pcols), kbfs(pcols), th(pcols,pver), thv(pcols,pver)
    
@@ -488,6 +533,7 @@ end function shoc_implements_cnst
    real(r8) :: ke_a(pcols), ke_b(pcols), te_a(pcols), te_b(pcols)
    real(r8) :: wv_a(pcols), wv_b(pcols), wl_b(pcols), wl_a(pcols)
    real(r8) :: se_dis(pcols), se_a(pcols), se_b(pcols), shoc_s(pcols,pver)
+   real(r8) :: shoc_t(pcols,pver)
    
    ! --------------- !
    ! Pointers        !
@@ -540,7 +586,7 @@ end function shoc_implements_cnst
    call cnst_get_ind('NUMLIQ',ixnumliq)
    call cnst_get_ind('NUMICE',ixnumice)
    
-   call physics_ptend_init(ptend_loc,state%psetcols, 'clubb_ice1', ls=.true., lu=.true., lv=.true., lq=lq)
+   call physics_ptend_init(ptend_loc,state%psetcols, 'shoc', ls=.true., lu=.true., lv=.true., lq=lq)
    
    call physics_state_copy(state,state1)
    
@@ -744,18 +790,10 @@ end function shoc_implements_cnst
        tke_in(i,k)     = tke(i,pver-k+1)
        wthv_in(i,k)    = wthv(i,pver-k+1)
        pdel_in(i,k)    = state1%pdel(i,pver-k+1)
-!        pres_in(i,k)    = state1%pmid(i,pver-k+1)
+       pres_in(i,k)    = state1%pmid(i,pver-k+1)
      enddo  
    enddo   
    
-   do k=1,pver
-     do i=1,ncol
-       pres_in(i,k) = state1%pmid(i,pver-k+1)
-     enddo
-   enddo
- 
-   pres_in(:,1) = pres_in(:,2)
-
    !  Do the same for tracers 
    icnt=0
    do ixind=1,pcnst
@@ -766,7 +804,6 @@ end function shoc_implements_cnst
            edsclr_in(i,k,icnt) = state1%q(i,pver-k+1,ixind)
          enddo
        enddo
-!       edsclr_in(:,1,icnt) = edsclr_in(:,2,icnt)
      end if
    enddo    
     
@@ -777,19 +814,23 @@ end function shoc_implements_cnst
    do t=1,nadv
    
      call shoc_main( &
-          pcols, pver, pverp, dtime, &                 ! Input
-	  host_dx_in, host_dy_in, &                    ! Input
-          zt_g, zi_g, pres_in, pdel_in,&               ! Input
-	  wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, & ! Input
-	  wtracer_sfc, edsclr_dim, &                   ! Input
-	  tke_in, thlm_in, rtm_in, wm_zt, &            ! Input/Ouput
-	  um_in, vm_in, rcm_in, edsclr_in, &           ! Input/Output
-	  wthv_in, &                                   ! Input/Output
-	  cloudfrac_shoc, rcm_shoc)                    ! Output
+          pcols, pver, pverp, dtime, &                         ! Input
+	  host_dx_in, host_dy_in, &                            ! Input
+          zt_g, zi_g, pres_in, pdel_in,&                       ! Input
+	  wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, &         ! Input
+	  wtracer_sfc, edsclr_dim, wm_zt, &                    ! Input
+	  tke_in, thlm_in, rtm_in, &                           ! Input/Ouput
+	  um_in, vm_in, rcm_in, edsclr_in, &                   ! Input/Output
+	  wthv_in, &                                           ! Input/Output
+	  cloudfrac_shoc, rcm_shoc, &                          ! Output
+          shoc_mix_out, tk_out, tkh_out, &                     ! Output (diagnostic)
+          w_sec_out, thl_sec_out, qw_sec_out, qwthl_sec_out, & ! Output (diagnostic)          
+          wthl_sec_out, wqw_sec_out, wtke_sec_out, &           ! Output (diagnostic)
+          uw_sec_out, vw_sec_out, w3_out)                      ! Output (diagnostic)
 
    enddo  ! end time loop
    
-   ! Arrays need to be "flipped" to CAM grid
+   ! Arrays need to be "flipped" to E3SM grid
    
    do k=1,pver
      do i=1,ncol 
@@ -804,8 +845,29 @@ end function shoc_implements_cnst
        
        do ixind=1,edsclr_dim
          edsclr_out(i,k,ixind) = edsclr_in(i,pver-k+1,ixind)
-       enddo       
-       
+       enddo      
+
+       shoc_mix(i,k) = shoc_mix_out(i,pver-k+1)
+       tk(i,k) = tk_out(i,pver-k+1)
+       tkh(i,k) = tkh_out(i,pver-k+1)
+       w3(i,k) = w3_out(i,pver-k+1)
+       w_sec(i,k) = w_sec_out(i,pver-k+1)
+ 
+     enddo
+   enddo
+
+   do k=1,pverp
+     do i=1,ncol
+
+       thl_sec(i,k) = thl_sec_out(i,pverp-k+1)
+       qw_sec(i,k) = qw_sec_out(i,pverp-k+1)
+       qwthl_sec(i,k) = qwthl_sec_out(i,pverp-k+1)
+       wthl_sec(i,k) = wthl_sec_out(i,pverp-k+1)
+       wqw_sec(i,k) = wqw_sec_out(i,pverp-k+1)
+       wtke_sec(i,k) = wtke_sec_out(i,pverp-k+1)
+       uw_sec(i,k) = uw_sec_out(i,pverp-k+1)
+       vw_sec(i,k) = vw_sec_out(i,pverp-k+1)
+
      enddo
    enddo
    
@@ -817,7 +879,8 @@ end function shoc_implements_cnst
    wl_a = 0._r8
    do k=1,pver
      do i=1,ncol
-       shoc_s(i,k) = cpair*((thlm(i,k)+(latvap/cpair)*rcm(i,k))/exner(i,k))+ &
+       shoc_t(i,k) = (thlm(i,k)+(latvap/cpair)*rcm(i,k))/exner(i,k)
+       shoc_s(i,k) = cpair*shoc_t(i,k)+ &
                       gravit*state1%zm(i,k)+state1%phis(i)
        se_a(i) = se_a(i) + shoc_s(i,k)*state1%pdel(i,k)/gravit
        ke_a(i) = ke_a(i) + 0.5_r8*(um(i,k)**2+vm(i,k)**2)*state1%pdel(i,k)/gravit
@@ -825,7 +888,12 @@ end function shoc_implements_cnst
        wl_a(i) = wl_a(i) + (rcm(i,k))*state1%pdel(i,k)/gravit
      enddo    
    enddo     
-   
+  
+   write(*,*) 'TafterSHOC ', shoc_t(1,:)
+   write(*,*) 'RTMafterSHOC ', rtm(1,:)
+   write(*,*) 'RCMafterSHOC ', rcm(1,:)
+   write(*,*) 'TKEafterSHOC ', tke(1,:)
+ 
    ! Based on these integrals, compute the total energy before and after CLUBB call
    do i=1,ncol
      te_a(i) = se_a(i) + ke_a(i) + (latvap+latice)*wv_a(i)+latice*wl_a(i)
@@ -862,9 +930,7 @@ end function shoc_implements_cnst
        ptend_loc%q(i,k,ixcldliq) = (rcm(i,k)-state1%q(i,k,ixcldliq))/hdtime   ! Tendency of liquid water
        ptend_loc%s(i,k) = (shoc_s(i,k)-state1%s(i,k))/hdtime
        
-!       if (macmic_it .eq. cld_macmic_num_steps) then
-         ptend_loc%q(i,k,ixtke)=(tke(i,k)-state1%q(i,k,ixtke))/hdtime ! TKE
-!       endif
+       ptend_loc%q(i,k,ixtke)=(tke(i,k)-state1%q(i,k,ixtke))/hdtime ! TKE
        
    !  Apply tendencies to ice mixing ratio, liquid and ice number, and aerosol constituents.
    !  Loading up this array doesn't mean the tendencies are applied.  
@@ -884,12 +950,16 @@ end function shoc_implements_cnst
    enddo   
    
    cmeliq(:,:) = ptend_loc%q(:,:,ixcldliq)
-   
+  
+   write(*,*) 'STATETbefore ', state1%t(1,:)
+ 
    ! Update physics tendencies
    call physics_ptend_init(ptend_all, state%psetcols, 'shoc')
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
    call physics_update(state1,ptend_loc,hdtime)
    
+   write(*,*) 'STATETafter ', state%t(1,:)
+
    ! ------------------------------------------------------------ !
    ! ------------------------------------------------------------ ! 
    ! ------------------------------------------------------------ !
@@ -1085,7 +1155,30 @@ end function shoc_implements_cnst
                 state1%zi, cloud_frac(:,1:pver), 1._r8-cam_in%landfrac, dummy3)  
 		
     ! Assign the first pver levels of cloud_frac back to cld
-    cld(:,1:pver) = cloud_frac(:,1:pver)		 
+    cld(:,1:pver) = cloud_frac(:,1:pver)	
+
+    ! --------------------------------------------------------!
+    ! Output fields
+    !---------------------------------------------------------!
+
+    call outfld('SHOC_TKE', tke, pcols, lchnk)
+    call outfld('WTHV_SEC', wthv, pcols, lchnk)
+    call outfld('SHOC_MIX', shoc_mix, pcols, lchnk)
+    call outfld('TK', tk, pcols, lchnk)
+    call outfld('TKH', tkh, pcols, lchnk)
+    call outfld('W_SEC', w_sec, pcols, lchnk)
+    call outfld('THL_SEC', thl_sec, pcols, lchnk)
+    call outfld('QW_SEC', qw_sec, pcols, lchnk)
+    call outfld('QWTHL_SEC', qwthl_sec, pcols, lchnk)
+    call outfld('WTHL_SEC', wthl_sec, pcols, lchnk)
+    call outfld('WQW_SEC', wqw_sec, pcols, lchnk)
+    call outfld('WTKE_SEC', wtke_sec, pcols, lchnk)
+    call outfld('UW_SEC', uw_sec, pcols, lchnk)
+    call outfld('VW_SEC', vw_sec, pcols, lchnk)
+    call outfld('W3', w3, pcols, lchnk)
+
+
+	 
     return
 #endif             
   end subroutine shoc_tend_e3sm      
