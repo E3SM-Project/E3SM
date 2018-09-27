@@ -134,13 +134,6 @@ IF (${HOMME_USE_KOKKOS})
 ENDIF()
 
 ##############################################################################
-# Options for floating point model.
-##############################################################################
-
-#SET (HOMME_FPMODEL "fast" CACHE STRING "Floating point model for HOMME")
-#SET (HOMME_FPMODEL_UT "strict" CACHE STRING "Floating point model for HOMME unit tests; overrides HOMME_FPMODEL")
-
-##############################################################################
 # Compiler options set in cmake/SetCompiler.cmake
 ##############################################################################
 INCLUDE(SetCompilerFlags)
@@ -192,10 +185,8 @@ MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 
 IF (${HOMME_USE_KOKKOS})
   IF (${CUDA_FOUND})
-    string(TOLOWER "${HOMME_FPMODEL}" fpmodel_string_lower)
-    if ("${fpmodel_string_lower}" STREQUAL "strict")
-      ADD_DEFINITIONS(-DHOMMEXX_GPU_BFB_WITH_CPU)
-    ENDIF ()
+    # Note: If you ask for GPU to be bfb with CPU, you should also ask for a strict fp model on cpu.
+    OPTION (HOMMEXX_GPU_BFB_WITH_CPU OFF CACHE BOOL "Whether we want cpu and gpu solution to be bfb")
   ENDIF ()
 
   SET (HOMMEXX_VECTOR_SIZE 8 CACHE STRING
@@ -318,11 +309,6 @@ ENDIF()
 
 IF(${BUILD_HOMME_PREQX_KOKKOS})
   ADD_SUBDIRECTORY(src/preqx_kokkos)
-  IF (CMAKE_Fortran_COMPILER_ID STREQUAL Intel)
-    SET (UT_FPMODEL_FLAG "-fp-model strict " CACHE STRING "")
-  ELSEIF (CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
-    SET (UT_FPMODEL_FLAG "-ffp-contract=off" CACHE STRING "")
-  ENDIF ()
 ENDIF()
 
 IF(${BUILD_HOMME_PESE})
