@@ -1,0 +1,17 @@
+#
+# Gfortran 7
+#
+
+# Fortran compiler command
+export FC = gfortran
+
+# Fortran compiler flags
+#
+# Optimized
+#
+export FCFLAGS = -ffree-line-length-none -m64 -std=f2003 -march=native -O3
+#
+# Debugging - -mno-avx is particular to (broken) gcc setups using MacPorts
+#
+export FCFLAGS = -ffree-line-length-none -m64 -std=f2003 -march=native -mno-avx -pedantic -g -fbounds-check -Wall -fbacktrace -finit-real=nan
+#export FCFLAGS = -ffree-line-length-none -m64 -std=f2003 -march=native          -pedantic -g -fbounds-check -Wall -fbacktrace -finit-real=nan
