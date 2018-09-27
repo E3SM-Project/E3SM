@@ -83,9 +83,11 @@ class EnvMachPes(EnvBase):
     def get_total_tasks(self, comp_classes):
         total_tasks = 0
         maxinst = self.get_value("NINST")
-        comp_interface = 'unknown'
         if maxinst:
             comp_interface = "nuopc"
+        else:
+            comp_interface = 'unknown'
+            maxinst = 1
         for comp in comp_classes:
             ntasks = self.get_value("NTASKS", attribute={"compclass":comp})
             rootpe = self.get_value("ROOTPE", attribute={"compclass":comp})
