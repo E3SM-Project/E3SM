@@ -1,5 +1,6 @@
 #include "share/util/scream_utils.hpp"
 #include "share/scream_types.hpp"
+#include "share/scream_config.hpp"
 
 #include <sstream>
 
@@ -14,13 +15,22 @@
 namespace scream {
 namespace util {
 
+#ifdef SCREAM_FPE
+static unsigned int constexpr exceptions =
+  _MM_MASK_INVALID |
+  _MM_MASK_DIV_ZERO |
+  _MM_MASK_OVERFLOW;
+#endif
+
 void activate_floating_point_exceptions_if_enabled () {
 #ifdef SCREAM_FPE
-  _MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() &
-                         ~( _MM_MASK_INVALID |
-                            _MM_MASK_DIV_ZERO |
-                            _MM_MASK_OVERFLOW |
-                            _MM_MASK_UNDERFLOW ));
+  _MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() & ~exceptions);
+#endif
+}
+
+void deactivate_floating_point_exceptions_if_enabled () {
+#ifdef SCREAM_FPE
+  _MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() | exceptions);
 #endif
 }
 
@@ -42,6 +52,7 @@ std::string config_string () {
   std::stringstream ss;
   ss << "sizeof(Real) " << sizeof(Real)
      << " avx " << active_avx_string()
+     << " packsize " << SCREAM_PACK_SIZE
      << " compiler " <<
 #if defined __INTEL_COMPILER
     "Intel"

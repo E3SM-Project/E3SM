@@ -39,7 +39,7 @@ set(CATCH_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/extern/catch2/include)
 # then proceed with setting the rest of the compiler(s) flags
 include(Kokkos)
 set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
-SET (CMAKE_CXX_FLAGS ${KOKKOS_CXXFLAGS_STR})
+SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${KOKKOS_CXXFLAGS_STR}")
 
 # Determine if this is a Cuda build.
 string(FIND "${KOKKOS_GMAKE_DEVICES}" "Cuda" cuda_str_pos)
@@ -81,7 +81,6 @@ print_var(CUDA_BUILD)
 print_var(SCREAM_DOUBLE_PRECISION)
 print_var(SCREAM_ENABLE_FPE)
 print_var(SCREAM_PACK_SIZE)
-print_var(SCREAM_COMPILE_FLAGS)
 print_var(SCREAM_INCLUDE_DIRS)
 print_var(SCREAM_LINK_FLAGS)
 print_var(SCREAM_LIBRARY_DIRS)

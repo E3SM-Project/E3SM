@@ -24,8 +24,8 @@ struct Mask {
   KOKKOS_FORCEINLINE_FUNCTION explicit Mask () {}
 
   KOKKOS_FORCEINLINE_FUNCTION explicit Mask (const bool& init) {
-    //vector_simd // Intel 18 is having an issue with this loop.
-    for (int i = 0; i < n; ++i) d[i] = init;
+    // Intel 18 is having an issue with this loop.
+    vector_disabled for (int i = 0; i < n; ++i) d[i] = init;
   }
 
   KOKKOS_FORCEINLINE_FUNCTION void set (const int& i, const bool& val) { d[i] = val; }
@@ -52,6 +52,9 @@ using OnlyMaskReturn = typename std::enable_if<Mask::masktag,Return>::type;
 #define scream_masked_loop_no_force_vec(mask) \
   vector_ivdep for (int s = 0; s < mask.n; ++s) if (mask[s])
 
+#define scream_masked_loop_no_vec(mask) \
+  vector_novec for (int s = 0; s < mask.n; ++s) if (mask[s])
+
 #define scream_mask_gen_bin_op_mm(op, impl)                   \
   template <typename Mask> KOKKOS_INLINE_FUNCTION             \
   OnlyMask<Mask> operator op (const Mask& a, const Mask& b) { \
@@ -65,7 +68,7 @@ scream_mask_gen_bin_op_mm(&&, &&)
 scream_mask_gen_bin_op_mm(||, ||)
 
 template <typename Mask> KOKKOS_INLINE_FUNCTION
-OnlyMask<Mask> operator ~ (const Mask& m) {
+OnlyMask<Mask> operator ! (const Mask& m) {
   Mask nm(false);
   vector_simd for (int i = 0; i < Mask::n; ++i) nm.set(i, ! m[i]);
   return nm;
@@ -208,14 +211,24 @@ scream_pack_gen_unary_stdfn(tgamma)
 template <typename Pack> KOKKOS_INLINE_FUNCTION
 OnlyPackReturn<Pack, typename Pack::scalar> min (const Pack& p) {
   typename Pack::scalar v(p[0]);
-  vector_simd for (int i = 0; i < Pack::n; ++i) v = util::min(v, p[i]);
+  vector_disabled for (int i = 0; i < Pack::n; ++i) v = util::min(v, p[i]);
   return v;
 }
+
 template <typename Pack> KOKKOS_INLINE_FUNCTION
 OnlyPackReturn<Pack, typename Pack::scalar> max (const Pack& p) {
   typename Pack::scalar v(p[0]);
   vector_simd for (int i = 0; i < Pack::n; ++i) v = util::max(v, p[i]);
   return v;
+}
+
+// min(init, min(p(mask)))
+template <typename Pack> KOKKOS_INLINE_FUNCTION
+OnlyPackReturn<Pack, typename Pack::scalar>
+min (const Mask<Pack::n>& mask, typename Pack::scalar init, const Pack& p) {
+  vector_disabled for (int i = 0; i < Pack::n; ++i)
+    if (mask[i]) init = util::min(init, p[i]);
+  return init;
 }
 
 // max(init, max(p(mask)))
@@ -340,27 +353,6 @@ scream_mask_gen_bin_op_all(>=)
 scream_mask_gen_bin_op_all(<=)
 scream_mask_gen_bin_op_all(>)
 scream_mask_gen_bin_op_all(<)
-
-// Index a scalar array with Pack indices, returning a compatible Pack of array
-// values.
-template<typename Array1, typename IdxPack> KOKKOS_INLINE_FUNCTION
-OnlyPackReturn<IdxPack, Pack<typename Array1::value_type, IdxPack::n> >
-index (const Array1& a, const IdxPack& i0,
-       typename std::enable_if<Array1::Rank == 1>::type* = nullptr) {
-  Pack<typename Array1::non_const_value_type, IdxPack::n> p;
-  vector_simd for (int i = 0; i < IdxPack::n; ++i)
-    p[i] = a(i0[i]);
-  return p;
-}
-template<typename Array2, typename IdxPack> KOKKOS_INLINE_FUNCTION
-OnlyPackReturn<IdxPack, Pack<typename Array2::value_type, IdxPack::n> >
-index (const Array2& a, const IdxPack& i0, const IdxPack& i1,
-       typename std::enable_if<Array2::Rank == 2>::type* = nullptr) {
-  Pack<typename Array2::non_const_value_type, IdxPack::n> p;
-  vector_simd for (int i = 0; i < IdxPack::n; ++i)
-    p[i] = a(i0[i], i1[i]);
-  return p;
-}
 
 template <typename Pack> KOKKOS_INLINE_FUNCTION
 OnlyPackReturn<Pack,Int> npack(const Int& nscalar) {
