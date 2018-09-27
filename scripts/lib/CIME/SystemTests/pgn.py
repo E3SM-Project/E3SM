@@ -1,16 +1,10 @@
 """
-Solution reproducibility test - common parts shared by
-different test methods. The CESM/ACME model's
+Perturbation Growth New (PGN) - The CESM/ACME model's
 multi-instance capability is used to conduct an ensemble
 of simulations starting from different initial conditions.
 
 This class inherits from SystemTestsCommon.
 
-Different solution reproducibility test methods use
-different namelist settings and postprocessing.
-We will decide later whether separate test types
-will be created for those different methods
-(pergro, time step convergence, statistical methods)
 """
 
 import os
