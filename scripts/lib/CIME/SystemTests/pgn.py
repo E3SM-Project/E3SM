@@ -59,7 +59,7 @@ logger = logging.getLogger(__name__)
 #--------------------------------------------------------
 
 #number of inital conditions
-ninit_cond = 12
+ninit_cond = 6 #12
         
 #perturbations for runs
 prt        = [0.0, 1.0e-14, -1.0e-14]
@@ -293,10 +293,10 @@ class PGN(SystemTestsCommon):
 
 
         #create variables in the file
-        init_cond_nc = fhndl.createVariable('init_cond_fnames', 'string', 'ninit')
-        prt_nc       = fhndl.createVariable('perturb_strings', 'string', 'nprt')
-        variables_nc = fhndl.createVariable('perturb_vnames', 'string', 'nvars')
-        rmse_nc      = fhndl.createVariable(rmse_nc_var, 'd', ('ninit', 'nprt_m1', 'nvars'))
+        init_cond_nc = fhndl.createVariable('init_cond_fnames', 'S1', 'ninit')
+        prt_nc       = fhndl.createVariable('perturb_strings', 'S1', 'nprt')
+        variables_nc = fhndl.createVariable('perturb_vnames', 'S1', 'nvars')
+        rmse_nc      = fhndl.createVariable(rmse_nc_var, 'f8', ('ninit', 'nprt_m1', 'nvars'))
 
 
         #assign variables for writing to the netcdf file
