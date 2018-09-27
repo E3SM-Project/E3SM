@@ -635,6 +635,10 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="oceanSaltFlux"/>')
         lines.append('    <var name="uAirVelocity"/>')
         lines.append('    <var name="vAirVelocity"/>')
+        if iceberg_mode != 'none':
+            lines.append('    <var name="bergFreshWaterFlux"/>')
+            lines.append('    <var name="bergLatentHeatFlux"/>')
+
         if ice_bgc == 'ice_bgc':
             lines.append('    <var name="totalVerticalBiologyIce"/>')
             lines.append('    <var name="totalChlorophyll"/>')

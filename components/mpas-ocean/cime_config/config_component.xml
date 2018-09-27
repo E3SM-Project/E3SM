@@ -39,6 +39,19 @@
         <desc>Option to describe the MPASO iceberg coupling</desc>
   </entry>
 
+  <entry id="MPASO_ISMF">
+        <type>char</type>
+        <valid_values>false,true</valid_values>
+        <default_value>false</default_value>
+        <values>
+           <value compset="MPASO_">false</value>
+           <value compset="_MPASO%.*ISMF">true</value>
+        </values>
+        <group>case_comp</group>
+        <file>env_case.xml</file>
+        <desc>Option to describe how MPASO will hanlde landice melt fluxes</desc>
+  </entry>
+
   <entry id="MPASO_BGC">
         <type>char</type>
         <valid_values></valid_values>
