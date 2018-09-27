@@ -3,7 +3,6 @@
 
 //TODO
 // - bounds checking define
-// - unit tests
 
 #include "util/math_utils.hpp" // for min, max
 #include "scream_types.hpp"    // for Int
@@ -369,5 +368,23 @@ OnlyPack<Pack> range (const typename Pack::scalar& start) {
 
 } // namespace pack
 } // namespace scream
+
+#undef scream_pack_gen_assign_op_p
+#undef scream_pack_gen_assign_op_s
+#undef scream_pack_gen_assign_op_all
+#undef scream_pack_gen_bin_op_pp
+#undef scream_pack_gen_bin_op_ps
+#undef scream_pack_gen_bin_op_sp
+#undef scream_pack_gen_bin_op_all
+#undef scream_pack_gen_unary_fn
+#undef scream_pack_gen_unary_stdfn
+#undef scream_pack_gen_bin_fn_pp
+#undef scream_pack_gen_bin_fn_ps
+#undef scream_pack_gen_bin_fn_sp
+#undef scream_pack_gen_bin_fn_all
+#undef scream_mask_gen_bin_op_pp
+#undef scream_mask_gen_bin_op_ps
+#undef scream_mask_gen_bin_op_sp
+#undef scream_mask_gen_bin_op_all
 
 #endif // INCLUDE_SCREAM_PACK
