@@ -211,6 +211,12 @@
   <lname>20TR_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASCICE%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BDRD</lname>
 </compset>
 
+<!-- E3SM v1 cryosphere compsets -->
+
+<compset>
+  <alias>A_WCYCL1850-DIB-ISMF</alias>
+  <lname>1850_CAM5%AV1C-L_CLM45%SPBC_MPASCICE%DIB_MPASO%IBISMF_MOSART_SGLC_SWAV</lname>
+</compset>
 
 <!-- E3SM backup compsets -->
 <compset>
