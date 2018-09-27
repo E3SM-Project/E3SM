@@ -278,8 +278,6 @@ TEST_CASE("Pack", "scream::pack") {
   TestPack<float,1>::run();
   TestPack<double,1>::run();
 #endif
-
-  scream::util::activate_floating_point_exceptions_if_enabled();
 }
 
 } // empty namespace
