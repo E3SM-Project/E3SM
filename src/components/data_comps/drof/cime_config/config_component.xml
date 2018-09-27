@@ -13,12 +13,15 @@
   -->
 
   <description modifier_mode="1">
-    <desc rof="DROF[%NULL][%NYF][%IAF][%CPLHIST][%JRA]">Data runoff model</desc>
-    <desc option="NULL">NULL mode</desc>
-    <desc option="NYF" >COREv2 normal year forcing:</desc>
-    <desc option="IAF" >COREv2 interannual year forcing:</desc>
-    <desc option="CPLHIST">CPLHIST mode:</desc>
-    <desc option="JRA">JRA55 interannual forcing</desc>
+    <desc rof="DROF[%NULL][%NYF][%IAF][%IAFAIS00][%IAFAIS45][%IAFAIS55][%CPLHIST][%JRA]">Data runoff model</desc>
+    <desc option="NULL"     >NULL mode</desc>
+    <desc option="NYF"      >COREv2 normal year forcing:</desc>
+    <desc option="IAF"      >COREv2 interannual year forcing:</desc>
+    <desc option="IAFAIS00" >COREv2 interannual year forcing:</desc>
+    <desc option="IAFAIS45" >COREv2 interannual year forcing:</desc>
+    <desc option="IAFAIS55" >COREv2 interannual year forcing:</desc>
+    <desc option="CPLHIST"  >CPLHIST mode:</desc>
+    <desc option="JRA"      >JRA55 interannual forcing</desc>
   </description>
 
   <entry id="COMP_ROF">
@@ -32,12 +35,18 @@
 
   <entry id="DROF_MODE">
     <type>char</type>
-    <valid_values>CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1,IAF_JRA,NULL</valid_values>
+    <valid_values>CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1,DIATREN_IAF_AIS00_RX1,DIATREN_IAF_AIS45_RX1,DIATREN_IAF_AIS55_RX1,IAF_JRA,NULL</valid_values>
     <default_value>DIATREN_ANN_RX1</default_value>
     <values match="last">
       <value compset="_DROF%NULL">NULL</value>
       <value compset="_DROF%NYF" >DIATREN_ANN_RX1</value>
+      <value compset="_DROF%NYFAIS00" >DIATREN_ANN_AIS00_RX1</value>
+      <value compset="_DROF%NYFAIS45" >DIATREN_ANN_AIS45_RX1</value>
+      <value compset="_DROF%NYFAIS55" >DIATREN_ANN_AIS55_RX1</value>
       <value compset="_DROF%IAF" >DIATREN_IAF_RX1</value>
+      <value compset="_DROF%IAFAIS00" >DIATREN_IAF_AIS00_RX1</value>
+      <value compset="_DROF%IAFAIS45" >DIATREN_IAF_AIS45_RX1</value>
+      <value compset="_DROF%IAFAIS55" >DIATREN_IAF_AIS55_RX1</value>
       <value compset="_DROF%CPLHIST">CPLHIST</value>
       <value compset="_DROF%JRA" >IAF_JRA</value>
       <value compset=".+" grid="r%null">NULL</value> <!-- overwrites above if runoff grid is null -->
