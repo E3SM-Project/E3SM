@@ -411,6 +411,7 @@
       <command name="rm">zlib</command>
 
       <!-- first load basic defaults, then remove/swap/load as necessary -->
+      <command name="load">python/2.7-anaconda-5.2</command>
       <command name="load">craype</command>
       <command name="load">PrgEnv-intel</command>
       <command name="load">cray-mpich</command>
