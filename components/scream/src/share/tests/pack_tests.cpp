@@ -264,20 +264,22 @@ const double TestPack<Scalar,PACKN>::tol =
   2*std::numeric_limits<Scalar>::epsilon();
 
 TEST_CASE("Pack", "scream::pack") {
-  TestPack<int,16>::run();
-  TestPack<long,16>::run();
-  TestPack<float,16>::run();
-  TestPack<double,16>::run();
+  TestPack<int,SCREAM_PACK_SIZE>::run();
+  TestPack<long,SCREAM_PACK_SIZE>::run();
+  TestPack<float,SCREAM_PACK_SIZE>::run();
+  TestPack<double,SCREAM_PACK_SIZE>::run();
 
+  if (SCREAM_PACK_SIZE != 1) {
 #ifndef __INTEL_COMPILER
-  // Intel emits "remark: simd loop has only one iteration", and
-  // apparently this cannot be silenced with pragma warning, so skip
-  // these in an Intel build.
-  TestPack<int,1>::run();
-  TestPack<long,1>::run();
-  TestPack<float,1>::run();
-  TestPack<double,1>::run();
+    // Intel emits "remark: simd loop has only one iteration", and
+    // apparently this cannot be silenced with pragma warning, so skip
+    // these in an Intel build.
+    TestPack<int,1>::run();
+    TestPack<long,1>::run();
+    TestPack<float,1>::run();
+    TestPack<double,1>::run();
 #endif
+  }
 }
 
 } // empty namespace
