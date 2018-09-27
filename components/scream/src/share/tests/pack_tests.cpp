@@ -14,9 +14,9 @@ struct TestMask {
 
   static int sum_true (const Mask& m) {
     int sum1 = 0, sum2 = 0, sum3 = 0;
-    scream_masked_loop(m) ++sum1;
-    scream_masked_loop_no_force_vec(m) ++sum2;
-    scream_masked_loop_no_vec(m) ++sum3;
+    scream_masked_loop(m, s) ++sum1;
+    scream_masked_loop_no_force_vec(m, s) ++sum2;
+    scream_masked_loop_no_vec(m, s) ++sum3;
     REQUIRE(sum1 == sum2);
     REQUIRE(sum2 == sum3);
     return sum1;
@@ -46,9 +46,9 @@ struct TestMask {
       for (int i = 0; i < Mask::n; ++i)
         b[i] = i;
       const auto m1 = a > b;
-      scream_masked_loop_no_vec(m1) REQUIRE(m1[s] == (s % 2 == 1));
+      scream_masked_loop_no_vec(m1, s) REQUIRE(m1[s] == (s % 2 == 1));
       const auto m2 = b < a;
-      scream_masked_loop_no_vec(m2) REQUIRE(m2[s] == (s % 2 == 1));
+      scream_masked_loop_no_vec(m2, s) REQUIRE(m2[s] == (s % 2 == 1));
       REQUIRE(sum_true(m1 && m2) == Mask::n / 2);
       REQUIRE(sum_true(m1 || m2) == Mask::n / 2);
       REQUIRE(sum_true(m1 && ! m2) == 0);
