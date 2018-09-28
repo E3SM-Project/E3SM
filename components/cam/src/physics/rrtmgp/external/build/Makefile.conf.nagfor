@@ -1,0 +1,12 @@
+#
+# NAG Fortran
+#
+# Fortran compiler command
+export FC = nagfor
+
+# Fortran compiler flags
+#
+# Debugging
+#
+export FCFLAGS  = -g -f2003 -ieee=nonstd -gline -colour -C -C=dangling
+export F77FLAGS = -g        -ieee=nonstd -gline -colour -C -C=dangling -dusty
