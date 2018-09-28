@@ -11,6 +11,26 @@ TEST_CASE("index", "scream::pack") {
 }
 
 TEST_CASE("scalarize", "scream::pack") {
+  using scream::pack::Pack;
+  using scream::pack::scalarize;
+
+  typedef Kokkos::View<Pack<double, 16>*> Array1;
+  typedef Kokkos::View<Pack<double, 16>**> Array2;
+
+  {
+    const Array1 a1("a1", 10);
+    const auto a2 = scalarize(a1);
+    static_assert(decltype(a2)::traits::memory_traits::Unmanaged, "Um");
+    REQUIRE(a2.extent_int(0) == 160);
+  }  
+
+  {
+    const Array2 a1("a1", 10, 4);
+    const auto a2 = scalarize(a1);
+    static_assert(decltype(a2)::traits::memory_traits::Unmanaged, "Um");
+    REQUIRE(a2.extent_int(0) == 10);
+    REQUIRE(a2.extent_int(1) == 64);
+  }  
 }
 
 TEST_CASE("repack", "scream::pack") {
@@ -36,7 +56,7 @@ TEST_CASE("repack", "scream::pack") {
     REQUIRE(a4.extent_int(0) == 8*a1.extent_int(0));    
     const auto a6 = repack<16>(a1);
     static_assert(decltype(a6)::traits::memory_traits::Unmanaged, "Um");
-    REQUIRE(a4.extent_int(0) == a1.extent_int(0));    
+    REQUIRE(a6.extent_int(0) == a1.extent_int(0));    
   }
 
   {
