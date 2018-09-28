@@ -15,13 +15,18 @@ module seq_comm_mct
 !!! (or else, only accept one entry for these quantities when reading
 !!! the namelist).  ARE OTHER PROTECTIONS/CHECKS NEEDED???
 
-
-  use mct_mod     , only : mct_world_init, mct_world_clean, mct_die
-  use shr_sys_mod , only : shr_sys_abort, shr_sys_flush
-  use shr_mpi_mod , only : shr_mpi_chkerr, shr_mpi_bcast, shr_mpi_max
-  use shr_file_mod, only : shr_file_getUnit, shr_file_freeUnit
-  use esmf        , only : ESMF_LogKind_Flag, ESMF_LOGKIND_NONE
-  use esmf        , only : ESMF_LOGKIND_SINGLE, ESMF_LOGKIND_MULTI
+  use mct_mod        , only : mct_world_init, mct_world_clean, mct_die
+  use shr_sys_mod    , only : shr_sys_abort, shr_sys_flush
+  use shr_mpi_mod    , only : shr_mpi_chkerr, shr_mpi_bcast, shr_mpi_max
+  use shr_file_mod   , only : shr_file_getUnit, shr_file_freeUnit
+  ! gptl timing library is not built for unit tests but it is on
+  ! by default for Makefile (model) builds.
+#ifdef TIMING
+  use shr_taskmap_mod, only : shr_taskmap_write
+  use perf_mod       , only : t_startf, t_stopf
+#endif
+  use esmf           , only : ESMF_LogKind_Flag, ESMF_LOGKIND_NONE
+  use esmf           , only : ESMF_LOGKIND_SINGLE, ESMF_LOGKIND_MULTI
 
   implicit none
 
@@ -144,8 +149,6 @@ module seq_comm_mct
   integer, public :: CPLWAVID(num_inst_wav)
   integer, public :: CPLESPID(num_inst_esp)
 
-  type(ESMF_LogKind_Flag), public :: esmf_logfile_kind
-
   integer, parameter, public :: seq_comm_namelen=16
 
   ! suffix for log and timing files if multi coupler driver
@@ -222,6 +225,7 @@ contains
     integer, pointer :: comps(:) ! array with component ids
     integer, pointer :: comms(:) ! array with mpicoms
     integer :: nu
+    character(len=8) :: c_global_numpes ! global number of pes
     character(len=seq_comm_namelen) :: valid_comps(ncomps)
 
     integer :: &
@@ -290,6 +294,19 @@ contains
        write(logunit,*) trim(subname),' ERROR: numpes driver: ', numpes, ' should divide global_numpes: ',global_numpes
        call shr_sys_abort(trim(subname)//' ERROR decomposition error ')
     endif
+
+#ifdef TIMING
+    ! output task-to-node mapping
+    if (mype == 0) then
+       write(c_global_numpes,'(i8)') global_numpes
+       write(logunit,100) trim(adjustl(c_global_numpes))
+100    format(/,a,' pes participating in computation of coupled model')
+       call shr_sys_flush(logunit)
+    endif
+    call t_startf("shr_taskmap_write")
+    call shr_taskmap_write(logunit, GLOBAL_COMM_IN, 'GLOBAL', verbose=.true.)
+    call t_stopf("shr_taskmap_write")
+#endif
 
     ! Initialize gloiam on all IDs
 

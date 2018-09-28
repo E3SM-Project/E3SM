@@ -1,5 +1,5 @@
 """
-GridFTP Server class.  Interact with a server using GridFTP protocal
+GridFTP Server class.  Interact with a server using GridFTP protocol
 """
 # pylint: disable=super-init-not-called
 from CIME.XML.standard_module_setup import *
@@ -11,8 +11,6 @@ logger = logging.getLogger(__name__)
 class GridFTP(GenericServer):
     def __init__(self, address, user='', passwd=''):
         self._root_address = address
-        
-        
 
     def fileexists(self, rel_path):
         stat,out,err = run_cmd("globus-url-copy -list {}".format(os.path.join(self._root_address, os.path.dirname(rel_path))+os.sep))

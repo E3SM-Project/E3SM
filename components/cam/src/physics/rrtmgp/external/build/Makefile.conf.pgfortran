@@ -1,0 +1,12 @@
+#
+# PG Fortran
+#
+# Fortran compiler command
+export FC = pgfortran
+
+# Fortran compiler flags
+#
+# Debugging
+#
+export FCFLAGS  = -g -Mallocatable=03 -Mbounds -Mchkptr -Mstandard -Kieee -Mchkstk
+export F77FLAGS = $(FCFLAGS)

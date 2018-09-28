@@ -96,19 +96,19 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- Plant function types (relative to {csmdata}) -->
 <paramfile                 >lnd/clm2/paramdata/clm_params_c180301.nc</paramfile>
 <paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c180301.nc</paramfile>
-<paramfile nu_com="ECA"    >lnd/clm2/paramdata/clm_params.c180403.nc</paramfile>
-<paramfile nu_com="RD" use_crop=".false." >lnd/clm2/paramdata/clm_params_c180312.nc</paramfile>
+<paramfile nu_com="ECA"    >lnd/clm2/paramdata/clm_params.c180713.nc</paramfile>
+<paramfile nu_com="RD" use_crop=".false." >lnd/clm2/paramdata/clm_params_c180524.nc</paramfile>
 
 
 <!-- ================================================================== -->
 <!-- FATES default parameter file                                       -->
 <!-- ================================================================== -->
-<fates_paramfile >lnd/clm2/paramdata/fates_params_2trop.c180413.nc</fates_paramfile>
+<fates_paramfile >lnd/clm2/paramdata/fates_params_default_2trop.c180518.nc</fates_paramfile>
 
 
 <!-- soil order related parameters (relative to {csmdata}) -->
 <fsoilordercon             >lnd/clm2/paramdata/CNP_parameters_c131108.nc</fsoilordercon> 
-<fsoilordercon nu_com="RD" >lnd/clm2/paramdata/CNP_parameters_c180312.nc</fsoilordercon> 
+<fsoilordercon nu_com="RD" >lnd/clm2/paramdata/CNP_parameters_c180529.nc</fsoilordercon> 
 
 <!-- HOMME grid ne4 resolution -->
 

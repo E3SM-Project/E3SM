@@ -770,6 +770,8 @@ contains
                    enddo
                    call nf_put_var(ncdf(ios),datall(:,1),start2d,count2d,name='precl')
                    deallocate(datall)
+                else
+                   if (par%masterproc) print *,'not writing precl because it was not allocated...'
                 endif
              endif
 

@@ -216,13 +216,18 @@ def load_balancing_submit(compset, res, pesfile, mpilib, compiler, project, mach
         raise SystemExit(1)
 
     pesize_list = []
-    for node in pesobj.get_nodes('pes'):
-        pesize = node.get('pesize')
-        if not pesize:
-            logger.critical('No pesize for pes node in file %s', pesfile)
-        if pesize in pesize_list:
-            logger.critical('pesize %s duplicated in file %s', pesize, pesfile)
-        pesize_list.append(pesize)
+    grid_nodes = pesobj.get_children("grid")
+    for gnode in grid_nodes:
+        mach_nodes = pesobj.get_children("mach", root=gnode)
+        for mnode in mach_nodes:
+            pes_nodes = pesobj.get_children("pes", root=mnode)
+            for pnode in pes_nodes:
+                pesize = pesobj.get(pnode, 'pesize')
+                if not pesize:
+                    logger.critical('No pesize for pes node in file %s', pesfile)
+                if pesize in pesize_list:
+                    logger.critical('pesize %s duplicated in file %s', pesize, pesfile)
+                pesize_list.append(pesize)
 
     if not pesize_list:
         logger.critical('ERROR: No grid entries found in pes file %s', pesfile)
@@ -269,7 +274,7 @@ def load_balancing_submit(compset, res, pesfile, mpilib, compiler, project, mach
         testnames.append( testname)
         logger.info("test is {}".format(testname))
         with Case(testname) as case:
-            pes_ntasks, pes_nthrds, pes_rootpe, _ = \
+            pes_ntasks, pes_nthrds, pes_rootpe, _, _, _ = \
                                                     pesobj.find_pes_layout('any', 'any', 'any', pesize_opts=pesize_list.pop(0))
             for key in pes_ntasks:
                 case.set_value(key, pes_ntasks[key])

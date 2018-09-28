@@ -1,0 +1,1326 @@
+#!/usr/bin/env python
+"""
+Gather all the case metadata and send it to the experiments databases
+via a web post and SVN check-in
+
+Author: CSEG <cseg@cgd.ucar.edu>
+"""
+
+from standard_script_setup import *
+
+from CIME.case       import Case
+from CIME.utils      import expect, append_status, is_last_process_complete
+
+import base64
+import datetime
+import errno
+import difflib
+import filecmp
+import getpass
+import glob
+import gzip
+import json
+import io
+from os.path import expanduser
+import re
+import shlex
+import shutil
+import ssl
+import subprocess
+import sys
+from string import Template
+import textwrap
+import urllib, urllib2
+
+if sys.version_info[0] == 2:
+    from ConfigParser import SafeConfigParser as config_parser
+else:
+    from configparser import ConfigParser as config_parser
+
+logger = logging.getLogger(__name__)
+
+# define global variables
+_now = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+
+_expdb_url = 'https://csegweb.cgd.ucar.edu/expdb2.0'
+_JSON_expdb_url = 'https://csegweb.cgd.ucar.edu/expdb2.0/cgi-bin/processJSON.cgi'
+_query_expdb_url = 'https://csegweb.cgd.ucar.edu/expdb2.0/cgi-bin/query.cgi'
+_SVN_expdb_url = 'https://svn-cesm2-expdb.cgd.ucar.edu'
+_exp_types = ['CMIP6','production','tuning']
+
+_XML_vars = ['CASE','COMPILER','COMPSET','CONTINUE_RUN','DOUT_L_MS',
+             'DOUT_L_MSROOT','DOUT_S','DOUT_S_ROOT','GRID',
+             'MACH','MPILIB','MODEL','MODEL_VERSION','REST_N','REST_OPTION',
+             'RUNDIR','RUN_REFCASE','RUN_REFDATE','RUN_STARTDATE',
+             'RUN_TYPE','STOP_N','STOP_OPTION','USER']
+
+_run_vars = ['JOB_QUEUE','JOB_WALLCLOCK_TIME','PROJECT']
+
+_archive_list = ['Buildconf','CaseDocs','CaseStatus','LockedFiles',
+                 'Macros.make','README.case','SourceMods','software_environment.txt',
+                 'timing','logs','postprocess']
+
+_call_template = Template('in "$function" - Ignoring SVN repo update\n'
+                          'SVN error executing command "$cmd". \n'
+                          '$error: $strerror')
+
+_copy_template = Template('in "$function" - Unable to copy "$source" to "$dest"'
+                          '$error: $strerror')
+
+# file patterns to ignore when checking into SVN
+_IGNORE_PATTERNS = ['*.pyc','^.git','tmp','.svn','*~']
+
+# file patterns to ignore when doing comparisons for SVN updates
+# most of these are symbolic links back to CIME source tree
+_EXCLUDE_FILES = ['archive_metadata','case.build',
+                  'case.cmpgen_namelists','case.lt_archive','.case.run',
+                  'case.setup','case.st_archive','case.submit','check_case',
+                  'check_input_data','preview_namelists','xmlchange','xmlquery',
+                  '.env_mach_specific.csh','.env_mach_specific.sh',
+                  'archive_files', 'Makefile', 'check_lockedfiles', 'getTiming',
+                  'lt_archive.sh', 'mkDepends', 'mkSrcfiles', 'save_provenance',
+                  'README.archive','case.qstatus','pelayout','preview_run']
+_EXCLUDE_DIRS = ['archive_files','Tools','.svn','.git','tmp']
+
+# get the path settings for postprocessing
+_pp_xml_vars = { 'atm'        : 'ATMDIAG_OUTPUT_ROOT_PATH',
+                 'glc'        : '',
+                 'lnd'        : 'LNDDIAG_OUPTUT_ROOT_PATH',
+                 'ice'        : 'ICEDIAG_PATH_CLIMO_CONT',
+                 'ocn'        : 'OCNDIAG_TAVGDIR',
+                 'rof'        : '',
+                 'timeseries' : 'TIMESERIES_OUTPUT_ROOTDIR',
+                 'xconform'   : 'CONFORM_OUTPUT_DIR' }
+
+# -------------------------------------------------------------------------------
+class PasswordPromptAction(argparse.Action):
+# -------------------------------------------------------------------------------
+    def __init__(self,
+             option_strings,
+             dest=None,
+             nargs=0,
+             default=None,
+             required=False,
+             type=None,
+             metavar=None,
+             help=None):
+
+        super(PasswordPromptAction, self).__init__(
+             option_strings=option_strings,
+             dest=dest,
+             nargs=nargs,
+             default=default,
+             required=required,
+             metavar=metavar,
+             type=type,
+             help=help)
+
+    def __call__(self, parser, args, values, option_string=None):
+        # check if home .subversion/cmip6.conf
+        home = expanduser("~")
+        conf_path = os.path.join(home, ".subversion/cmip6.conf")
+        if os.path.exists(conf_path):
+            # read the .cmip6.conf file
+            config = config_parser()
+            config.read(conf_path)
+            password = config.get('svn','password')
+        else:
+            password = getpass.getpass()
+        setattr(args, self.dest, password)
+
+# ---------------------------------------------------------------------
+def basic_authorization(user, password):
+# ---------------------------------------------------------------------
+    s = user + ":" + password
+    return "Basic " + s.encode("base64").rstrip()
+
+# ---------------------------------------------------------------------
+class SVNException(Exception):
+# ---------------------------------------------------------------------
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
+# -------------------------------------------------------------------------------
+def commandline_options(args):
+# -------------------------------------------------------------------------------
+    """ Process the command line arguments.
+    """
+    parser = argparse.ArgumentParser(
+        description='Query and parse the caseroot files to gather metadata information' \
+            ' that can be posted to the CESM experiments database.' \
+            ' ' \
+            ' CMIP6 experiment case names must be reserved already in the' \
+            ' experiment database. Please see:' \
+            ' https://csesgweb.cgd.ucar.edu/expdb2.0 for details.')
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument('--user', dest='user', type=str, default=None, required=True,
+                        help='User name for SVN CESM developer access')
+
+    parser.add_argument('--password', dest='password', action=PasswordPromptAction, type=str, default='', required=True,
+                        help='Password for SVN CESM developer access')
+
+    parser.add_argument('--caseroot', nargs=1, required=False, 
+                        help='Fully quailfied path to case root directory (optional). ' \
+                             'Defaults to current working directory.')
+
+    parser.add_argument('--workdir', nargs=1, required=False, 
+                        help='Fully quailfied path to directory for storing intermediate '\
+                             'case files. A sub-directory called '\
+                             'temp_archive_dir_YYYYmmdd_hhmm is created, populated '\
+                             'with case files, and posted to the CESM experiments database. '\
+                             'This argument can be used to archive a caseroot when the user ' \
+                             'does not have write permission in the caseroot (optional). ' \
+                             'Defaults to current working directory.')
+
+    parser.add_argument('--expType', nargs=1, required=True, choices=_exp_types,
+                        help='Experiment type. For CMIP6 experiments, the case must already ' \
+                             'exist in the experiments database at URL '\
+                             ' http://csegweb.cgd.ucar.edu/expdb2.0. ' \
+                             'Must be one of {0}'.format(_exp_types))
+
+    parser.add_argument('--title', nargs=1, required=False, default=None,
+                        help='Title of experiment (optional).')
+
+    parser.add_argument('--ignoreLogs', action='store_true',
+                        help='Ignore updating the SVN repository with the caseroot/logs files. ' \
+                             'The experiments database and SVN repository will be updated.')
+
+    parser.add_argument('--ignoreTiming', action='store_true',
+                        help='Ignore updating the experiments database with timing data.')
+
+    parser.add_argument('--ignoreRepoUpdate', action='store_true',
+                        help='Ignore updating the SVN repository with all the caseroot files. ' \
+                             'The experiments database will be updated.')
+
+    parser.add_argument('--dryrun', action='store_true',
+                        help='Parse settings and print what actions will be taken but ' \
+                             'do not execute the action.')
+
+    parser.add_argument('--query_cmip6', nargs=2, required=False, 
+                        help='Query the experiments database global attributes ' \
+                             'for specified CMIP6 casename as argument 1. ' \
+                             'Writes a json formatted output file, specified by argument 2, ' \
+                             'to subdir archive_files (optional).')
+
+    options = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
+
+    return options
+
+# ---------------------------------------------------------------------
+def get_case_vars(case_dict, case):
+# ---------------------------------------------------------------------
+    """ get_case_vars
+    loop through the global list of XML vars and get the values
+    from the case object into a case dictionary
+
+    Arguments:
+        case_dict (dict) - case dictionary to store XML variables
+        case (object) - case object
+    """
+    logger.debug('get_case_vars')
+
+    for xml_id in _XML_vars:
+        case_dict[xml_id] = case.get_value(xml_id, resolved=True, subgroup=None)
+
+    for xml_id in _run_vars:
+        case_dict[xml_id] = case.get_value(xml_id, resolved=True, subgroup='case.run')
+
+    return case_dict
+
+# ---------------------------------------------------------------------
+def get_disk_size(start_path, exclude=None):
+# ---------------------------------------------------------------------
+    """get_disk_size
+    return the total disk usage for a given path ignoring symlinks.
+
+    Arguments:
+        start_path - path to start 
+        exclude - a directory to exclude - should this be a list?
+    """
+    logger.debug('get_disk_size')
+    total_size = 0
+    for dirpath, dirnames, filenames in os.walk(start_path):
+        if exclude and exclude in dirnames:
+            continue
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            if os.path.islink(fp):
+                continue
+            total_size += os.path.getsize(fp)
+        
+    return total_size
+
+# ---------------------------------------------------------------------
+def get_pp_path(pp_dir, comp, subdir):
+# ---------------------------------------------------------------------
+    """get_pp_path
+    return the path to postprocessing
+
+    Arguments:
+        root_path - path to start 
+        comp - component name
+        subdir - postprocess subdir
+    """
+    logger.debug('get_pp_path')
+
+    cwd = os.getcwd()
+    os.chdir(pp_dir)
+
+    pp_path = ''
+    if comp == 'timeseries':
+        pp_path_var = _pp_xml_vars['timeseries']
+        subdir = ''
+    elif subdir == 'timeseries' or comp in ['glc','rof']:
+        pp_path_var = _pp_xml_vars['timeseries']
+        subdir = 'tseries'
+    elif comp == 'xconform':
+        pp_path_var = _pp_xml_vars['xconform']
+    elif comp == 'ocn' and subdir == 'diag':
+        pp_path_var = 'OCNDIAG_WORKDIR'
+    else:
+        pp_path_var = _pp_xml_vars[comp]
+
+    cmd = ['./pp_config', '--get', pp_path_var, '--value']
+    try:
+        pp_path = subprocess.check_output(cmd)
+    except subprocess.CalledProcessError as e:
+        msg = "Error executing command = '{0}'".format(cmd)
+        logger.warning(msg)
+
+    # construct the final path basaed on comp and subdir
+    pp_path = pp_path.rstrip()
+    if len(pp_path) > 2:
+        if comp not in ['timeseries', 'xconform']:
+            pp_path = os.path.join(pp_path, comp, 'proc', subdir)
+
+    os.chdir(cwd)
+    return pp_path
+
+# ---------------------------------------------------------------------
+def get_pp_status(case_dict):
+# ---------------------------------------------------------------------
+    """ get_pp_status
+    Parse the postprocessing log files
+    looking for status information
+
+    Arguments:
+        case_dict (dict) - case dictionary to store XML variables
+    """
+    logger.debug('get_pp_status')
+
+    # initialize status variables
+    msg_avg = dict()
+    msg_diags = dict()
+    diag_comps = ['atm','ice','lnd','ocn']
+    tseries_comps = ['atm','glc','ice','lnd','ocn','rof']
+
+    pp_dir = os.path.join(case_dict['CASEROOT'],'postprocess')
+    pp_log_dir =  os.path.join(case_dict['CASEROOT'],'postprocess','logs')
+
+    msg_avg['atm'] = "Successfully completed generating atmosphere climatology averages"
+    msg_diags['atm'] = "Successfully completed generating atmosphere diagnostics"
+
+    msg_avg['ice'] = "Successfully completed generating ice climatology averages"
+    msg_diags['ice'] = "Successfully completed generating ice diagnostics"
+
+    msg_avg['lnd'] = "Successfully completed generating land climatology averages"
+    msg_diags['lnd'] = "Successfully completed generating land diagnostics"
+
+    msg_avg['ocn'] = "Successfully completed generating ocean climatology averages"
+    msg_diags['ocn'] = "Successfully completed generating ocean diagnostics"
+
+    for comp in diag_comps:
+        case_dict[comp+'_avg_status'] = 'Unknown'
+        case_dict[comp+'_diag_status'] = 'Unknown'
+
+        case_dict[comp+'_avg_path'] = ''
+        case_dict[comp+'_avg_size'] = 0
+
+        case_dict[comp+'_diag_path'] = ''
+        case_dict[comp+'_diag_size'] = 0
+
+        avg_logs = list()
+        avg_file_pattern = ("{0}/{1}_averages.log.*".format(pp_log_dir,comp))
+        avg_logs = glob.glob(avg_file_pattern)
+
+        if (avg_logs):
+            log_file = max(avg_logs, key=os.path.getctime)
+            if (is_last_process_complete(log_file, msg_avg[comp], 
+                                         'Average list complies with standards.')):
+                case_dict[comp+'_avg_status'] = 'Complete'
+            else:
+                case_dict[comp+'_avg_status'] = 'Started'
+
+            # get path and the file sizes
+            case_dict[comp+'_avg_size'] = 0
+            case_dict[comp+'_avg_path'] = get_pp_path(pp_dir, comp, 'climo')
+            if case_dict[comp+'_avg_path'] is not None:
+                case_dict[comp+'_avg_size'] = get_disk_size(case_dict[comp+'_avg_path'])
+
+        diag_logs = list()
+        diag_file_pattern = ("{0}/{1}_diagnostics.log.*".format(pp_log_dir,comp))
+        diag_logs = glob.glob(diag_file_pattern)
+
+        if (diag_logs):
+            log_file = max(diag_logs, key=os.path.getctime)
+            if (is_last_process_complete(log_file, msg_diags[comp], 'ncks version')):
+                case_dict[comp+'_diag_status'] = 'Complete'
+            else:
+                case_dict[comp+'_diag_status'] = 'Started'
+
+            # get path and the file sizes
+            case_dict[comp+'_diag_size'] = 0
+            case_dict[comp+'_diag_path'] = get_pp_path(pp_dir, comp, 'diag')
+            if case_dict[comp+'_diag_path'] is not None:
+                case_dict[comp+'_diag_size'] = get_disk_size(case_dict[comp+'_diag_path'])
+
+
+    # get timeseries status
+    case_dict['timeseries_status'] = 'Unknown'
+    case_dict['timeseries_path'] = get_pp_path(pp_dir, 'timeseries', '')
+    case_dict['timeseries_size'] = 0
+    tseries_logs = list()
+    tseries_file_pattern = ("{0}/timeseries.log.*".format(pp_log_dir))
+    tseries_logs = glob.glob(tseries_file_pattern)
+    if (tseries_logs):
+      log_file = max(tseries_logs, key=os.path.getctime)
+      if (is_last_process_complete(log_file, 'Successfully completed generating variable time-series files', 
+                                   'opening')):
+          case_dict['timeseries_status'] = 'Complete'
+      else:
+          case_dict['timeseries_status'] = 'Started'
+    for comp in tseries_comps:
+        case_dict[comp+'_timeseries_path'] = get_pp_path(pp_dir, comp, 'timeseries')
+        case_dict[comp+'_timeseries_size'] = get_disk_size(case_dict[comp+'_timeseries_path'])
+        case_dict[comp+'_timeseries_status'] = case_dict['timeseries_status']
+        case_dict['timeseries_size'] = case_dict['timeseries_size'] + case_dict[comp+'_timeseries_size']
+
+    # get iconform status = this initializes files in the POSTPROCESS_PATH
+    case_dict['iconform_status'] = 'Unknown'
+    case_dict['iconform_path'] = ''
+    case_dict['iconform_size'] = 0
+
+    iconform_logs = list()
+    iconform_file_pattern = ("{0}/iconform.log.*".format(pp_log_dir))
+    iconform_logs = glob.glob(iconform_file_pattern)
+    if (iconform_logs):
+        log_file = max(iconform_logs, key=os.path.getctime)
+        if (is_last_process_complete(log_file, 'Successfully created the conform tool', 
+                                   'Running createOutputSpecs')):
+            case_dict['iconform_status'] = 'Complete'
+        else:
+            case_dict['iconform_status'] = 'Started'
+
+    # get xconform status
+    case_dict['xconform_status'] = 'Unknown'
+    case_dict['xconform_path'] = get_pp_path(pp_dir, 'xconform', subdir=None)
+    case_dict['xconform_size'] = get_disk_size(case_dict['xconform_path'])
+
+    xconform_logs = list()
+    xconform_file_pattern = ("{0}/xconform.log.*".format(pp_log_dir))
+    xconform_logs = glob.glob(xconform_file_pattern)
+    if (xconform_logs):
+        log_file = max(xconform_logs, key=os.path.getctime)
+        if (is_last_process_complete(log_file, 'Successfully completed converting all files', 
+                                   'cesm_conform_generator INFO')):
+            case_dict['xconform_status'] = 'Complete'
+        else:
+            case_dict['xconform_status'] = 'Started'
+
+    return case_dict
+
+# ---------------------------------------------------------------------
+def get_case_status(case_dict):
+# ---------------------------------------------------------------------
+    """ get_case_status
+    Parse the CaseStatus and postprocessing log files
+    looking for status information
+
+    Arguments:
+        case_dict (dict) - case dictionary to store XML variables
+    """
+    logger.debug('get_case_status')
+
+    # initialize status variables
+    case_dict['run_status'] = 'Unknown'
+    case_dict['run_path'] = case_dict['RUNDIR']
+    case_dict['run_size'] = get_disk_size(case_dict['run_path'])
+
+    case_dict['sta_status'] = 'Unknown'
+    case_dict['sta_path'] = case_dict['DOUT_S_ROOT']
+    case_dict['sta_size'] = 0
+    if case_dict['DOUT_S'] == True:
+        # get only the history, rest and logs dir - ignoring the proc subdirs
+        case_dict['sta_size'] = get_disk_size(case_dict['sta_path'], exclude='proc')
+
+    cs = case_dict['CASEROOT']+'/CaseStatus'
+    if os.path.exists(cs):
+        # get the run status
+        status = is_last_process_complete(cs, "case.run success", "case.run starting")
+        case_dict['run_status'] = 'Succeeded'
+        if status is False:
+            case_dict['run_status'] = 'Unknown'
+
+        # get the STA status
+        if case_dict['DOUT_S']:
+            status = is_last_process_complete(cs, "st_archive success", "st_archive starting")
+            case_dict['sta_status'] = 'Succeeded'
+            if status is False:
+                case_dict['sta_status'] = 'Unknown'
+
+    # check if the postprocess dir exists in the caseroot
+    case_dict['postprocess'] = False
+    if os.path.exists(case_dict['CASEROOT']+'/postprocess'):
+        case_dict['postprocess'] = True
+        case_dict = get_pp_status(case_dict)
+
+    return case_dict
+
+# ---------------------------------------------------------------------
+def check_expdb_case(case_dict, username, password):
+# ---------------------------------------------------------------------
+    """ check_exp_case
+    Cross check the casename with the database for a CMIP6 experiment
+
+    Arguments:
+        case_dict (dict) - case dictionary to store XML variables
+        username (string) - SVN developer's username
+        password (string) - SVN developer's password
+
+    Return true if a matching casename exists in the database or
+    false if not.
+    """
+    logger.debug('check_expdb_case')
+    exists = False
+    data_dict = {'casename':case_dict['CASE'], 'queryType':'checkCaseExists', 'expType':case_dict['expType']}
+    data = json.dumps(data_dict)
+    params = urllib.urlencode(dict(username=username, password=password, data=data))
+    try:
+        context = ssl._create_unverified_context()
+        response = urllib2.urlopen(url=_query_expdb_url, data=params, context=context)
+        html = response.read()
+        if html.find('True'):
+            exists = True
+    except urllib2.HTTPError as http_e:
+        logger.info('ERROR archive_metadata HTTP post failed "{0} - {1}"'.format(http_e.code, http_e.code))
+    except urllib2.URLError as url_e:
+        logger.info('ERROR archive_metadata URL failed "{0}"'.format(url_e.reason))
+
+    return exists
+
+# ---------------------------------------------------------------------
+def query_expdb_cmip6(case_dict, username, password):
+# ---------------------------------------------------------------------
+    """ query_exp_case
+    Query the expdb for CMIP6 casename = case_dict['q_casename'] metadata. 
+    Write out a json file to case_dict['q_outfile']. 
+
+    Arguments:
+        case_dict (dict) - case dictionary to store XML variables
+        username (string) - SVN developer's username
+        password (string) - SVN developer's password
+
+    """
+    logger.debug('query_expdb_cmip6')
+    exists = False
+    data_dict = {'casename':case_dict['q_casename'], 'queryType':'CMIP6GlobalAtts', 'expType':'CMIP6'}
+    data = json.dumps(data_dict)
+    params = urllib.urlencode(dict(username=username, password=password, data=data))
+    try:
+        context = ssl._create_unverified_context()
+        response = urllib2.urlopen(url=_query_expdb_url, data=params, context=context)
+        output = json.load(response)
+        exists = True
+    except urllib2.HTTPError as http_e:
+        logger.info('ERROR archive_metadata HTTP post failed "{0} - {1}"'.format(http_e.code, http_e.code))
+    except urllib2.URLError as url_e:
+        logger.info('ERROR archive_metadata URL failed "{0}"'.format(url_e.reason))
+
+    if output:
+        if not os.path.exists('{0}/archive_files'.format(case_dict['workdir'])):
+            os.makedirs('{0}/archive_files'.format(case_dict['workdir']))
+
+        filename = '{0}/archive_files/{1}'.format(case_dict['workdir'], case_dict['q_outfile'])
+        with io.open(filename, 'w+', encoding='utf-8') as f:
+            f.write(json.dumps(output, ensure_ascii=False))
+            f.close()
+
+    return exists
+
+# ---------------------------------------------------------------------
+def create_JSON(case_dict):
+# ---------------------------------------------------------------------
+    """ create_JSON
+    Create a JSON file in the caseroot/archive_files dir.
+
+    Arguments:
+        case_dict (dict) - case dictionary to store XML variables
+    """
+    logger.debug('create_json')
+
+    if not os.path.exists('{0}/archive_files'.format(case_dict['workdir'])):
+        os.makedirs('{0}/archive_files'.format(case_dict['workdir']))
+
+    filename = '{0}/archive_files/json.{1}'.format(case_dict['workdir'], _now)
+    with io.open(filename, 'w', encoding='utf-8') as f:
+        f.write(unicode(json.dumps(case_dict, indent=4, sort_keys=True, ensure_ascii=True)))
+        f.close()
+
+# ---------------------------------------------------------------------
+def post_JSON(case_dict, username, password):
+# ---------------------------------------------------------------------
+    """ post_JSON
+    Post a JSON file in the caseroot/archive_files to the 
+    remote expdb URL.
+
+    Arguments:
+        case_dict (dict) - case dictionary to store XML variables
+        username (string) - SVN developers username
+        password (string) - SVN developers password
+    """
+    logger.debug('post_json')
+
+    case_dict['COMPSET'] = urllib.quote(case_dict['COMPSET'])
+    case_dict['GRID'] = urllib.quote(case_dict['GRID'])
+    data = json.dumps(case_dict)
+    params = urllib.urlencode(dict(username=username, password=password, data=data))
+    try:
+        context = ssl._create_unverified_context()
+        response = urllib2.urlopen(url=_JSON_expdb_url, data=params, context=context)
+    except urllib2.HTTPError as http_e:
+        logger.info('ERROR archive_metadata HTTP post failed "{0} - {1}"'.format(http_e.code, http_e.code))
+    except urllib2.URLError as url_e:
+        logger.info('ERROR archive_metadata URL failed "{0}"'.format(url_e.reason))
+                  
+# ---------------------------------------------------------------------
+def check_svn():
+# ---------------------------------------------------------------------
+    """ check_svn
+
+    make sure svn client is installed and accessible
+    """
+    logger.debug('check_svn')
+
+    cmd = ['svn','--version']
+    svn_exists = True
+    try: 
+        result = subprocess.check_output(cmd)
+        if 'version' not in result:
+            msg = 'SVN is not available. Ignoring SVN update'
+            raise SVNException(msg)
+            svn_exists = False
+    except subprocess.CalledProcessError as e:
+        msg = _SVNError_template.substitute(function='check_svn',cmd=cmd,
+                                            error=e.returncode, strerror=e.output)
+        logger.info(msg)
+        raise SVNException(msg)
+        svn_exists = False
+    
+    return svn_exists
+
+# ---------------------------------------------------------------------
+def create_temp_archive(case_dict):
+# ---------------------------------------------------------------------
+    """ create_temp_archive
+
+    Create a temporary SVN sandbox directory in the current caseroot
+    """
+
+    c = datetime.datetime.now()
+    temp_archive_dir = '{0}/temp_archive_dir_{1}{2}{3}_{4}{5}'.format(case_dict['workdir'], c.year,
+                                                                      str(c.month).zfill(2), 
+                                                                      str(c.day).zfill(2), 
+                                                                      str(c.hour).zfill(2), 
+                                                                      str(c.minute).zfill(2))
+
+    logger.debug('create_temp_archive %s',temp_archive_dir)
+
+    if not os.path.exists(temp_archive_dir):
+        os.makedirs(temp_archive_dir)
+
+    return temp_archive_dir
+
+# ---------------------------------------------------------------------
+def get_PBS_files(case_dict):
+# ---------------------------------------------------------------------
+    """ return a list of PBS output files from a CESM case
+    """
+    logger.debug('get_PBS_files')
+
+    files = list()
+    tmp_files = list()
+
+    os.chdir(case_dict['CASEROOT'])
+    patterns = ['{0}.run.o*'.format(case_dict['CASE']),
+                '{0}.run.e*'.format(case_dict['CASE']),
+                '{0}.st_archive.o*'.format(case_dict['CASE']),
+                '{0}.st_archive.e*'.format(case_dict['CASE']) ]
+
+    for pattern in patterns:
+        tmp_files = list()
+        tmp_files = glob.glob(pattern)
+        files.append(tmp_files)
+
+    return files
+
+# ---------------------------------------------------------------------
+def check_svn_repo(case_dict, username, password):
+# ---------------------------------------------------------------------
+    """ check_svn_repo
+
+    check if a SVN repo exists for this case
+    """
+    logger.debug('check_svn_repo')
+
+    repo_exists = False
+    svn_repo = '{0}/trunk'.format(case_dict['svn_repo_url'])
+    cmd = ['svn','list', svn_repo, '--username', username, '--password', password]
+    try:
+        result = subprocess.check_output(cmd)
+        if re.search('README.archive', result):
+            repo_exists = True
+    except subprocess.CalledProcessError as e:
+        msg = 'SVN repo does not exist for this case. A new one will be created.'
+        logger.warning(msg)
+
+    return repo_exists
+
+# ---------------------------------------------------------------------
+def get_trunk_tag(case_dict, username, password):
+# ---------------------------------------------------------------------
+    """ get_trunk_tag
+
+    return the most recent trunk tag as an integer
+    """
+    logger.debug('get_trunk_tag')
+
+    tag = 0
+    svn_repo = '{0}/trunk_tags'.format(case_dict['svn_repo_url'])
+    cmd = ['svn','list', svn_repo, '--username', username, '--password', password]
+    try: 
+        result = subprocess.check_output(cmd)
+        last_tag = [i for i in result.split('\n') if i][-1]
+        last_tag = last_tag[:-1].split('_')[-1]
+        tag = int(last_tag.strip('0'))
+    except subprocess.CalledProcessError as e:
+        msg = _call_template.substitute(function='get_trunk_tag',cmd=cmd,
+                                        error=e.returncode, strerror=e.output)
+        logger.warning(msg)
+        raise SVNException(msg)
+
+    return tag
+
+# ---------------------------------------------------------------------
+def checkout_repo(case_dict, username, password):
+# ---------------------------------------------------------------------
+    """ checkout_repo
+
+    checkout the repo into the archive_temp_dir
+    """
+    logger.debug('checkout_repo')
+
+    os.chdir(case_dict['archive_temp_dir'])
+    svn_repo = '{0}/trunk'.format(case_dict['svn_repo_url'])
+    cmd = ['svn', 'co', '--username', username,'--password', password, svn_repo, '.']
+    try:
+        result = subprocess.check_call(cmd)
+    except subprocess.CalledProcessError as e:
+        msg = _call_template.substitute(function='checkout_repo',cmd=cmd,
+                                        error=e.returncode, strerror=e.output)
+        logger.warning(msg)
+        raise SVNException(msg)
+
+    os.chdir(case_dict['CASEROOT'])
+
+# ---------------------------------------------------------------------
+def create_readme(case_dict):
+# ---------------------------------------------------------------------
+    """ create_readme
+
+    Create a generic README.archive file
+    """
+    logger.debug('create_readme')
+    
+    os.chdir(case_dict['archive_temp_dir'])
+    
+    f = open('README.archive','w')
+    f.write('Archived metadata is available for this case at URL:\n')
+    f.write(_expdb_url)
+    f.close()
+
+# ---------------------------------------------------------------------
+def update_repo_add_file(filename, dir1, dir2):
+# ---------------------------------------------------------------------
+    src = os.path.join(dir1, filename)
+    dest = os.path.join(dir2, filename)
+    logger.debug('left_only: '+src+' -> '+dest)
+    shutil.copy2(src, dest)
+    cmd = ['svn', 'add', dest]
+    try:
+        result = subprocess.check_call(cmd)
+    except subprocess.CalledProcessError as e:
+        msg = _call_template.substitute(function='update_lcoal_repo',cmd=cmd,
+                                        error=e.returncode, strerror=e.output)
+        logger.warning(msg)
+        raise SVNException(msg)
+
+# ---------------------------------------------------------------------
+def update_repo_rm_file(filename, dir1, dir2):
+# ---------------------------------------------------------------------
+    src = os.path.join(dir2, filename)
+    dest = os.path.join(dir1, filename)
+    logger.debug('right_only: '+src+' -> '+dest)
+    if os.path.exists(dest):
+        cmd = ['svn', 'rm', dest]
+        try:
+            result = subprocess.check_call(cmd)
+        except subprocess.CalledProcessError as e:
+            msg = _call_template.substitute(function='update_lcoal_repo',cmd=cmd,
+                                            error=e.returncode, strerror=e.output)
+            logger.warning(msg)
+            raise SVNException(msg)
+
+# ---------------------------------------------------------------------
+def update_repo_copy_file(filename, dir1, dir2):
+# ---------------------------------------------------------------------
+    src = os.path.join(dir1, filename)
+    dest = os.path.join(dir2, filename)
+    shutil.copy2(src, dest)
+
+# ---------------------------------------------------------------------
+def compare_dir_trees(dir1, dir2, exclude_files, exclude_dirs):
+# ---------------------------------------------------------------------
+    """
+    Compare two directories recursively. Files in each directory are
+    assumed to be equal if their names and contents are equal.
+   """
+    dirs_cmp = filecmp.dircmp(dir1, dir2, exclude_files)
+
+    tmp_lf = [fn for fn in dirs_cmp.left_only if fn not in exclude_dirs]
+    lf = [fn for fn in tmp_lf if fn not in exclude_files]
+
+    tmp_rf = [fn for fn in dirs_cmp.right_only if fn not in exclude_dirs]
+    rf = [fn for fn in tmp_rf if fn not in exclude_files]
+
+    tmp_ff = [fn for fn in dirs_cmp.funny_files if fn not in exclude_dirs]
+    ff = [fn for fn in tmp_ff if fn not in exclude_files]
+
+    # files and directories need to be added to svn repo from the caseroot
+    if len(lf)>0:
+        for filename in lf:
+            if os.path.isfile(os.path.join(dir1, filename)) and filename[-1] != '~':
+                update_repo_add_file(filename, dir1, dir2)
+            else:
+                new_dir1 = os.path.join(dir1, filename)
+                new_dir2 = os.path.join(dir2, filename)
+                os.makedirs(new_dir2)
+                cmd = ['svn', 'add', '--depth=empty', new_dir2]
+                try:
+                    result = subprocess.check_call(cmd)
+                except subprocess.CalledProcessError as e:
+                    msg = _call_template.substitute(function='update_lcoal_repo',cmd=cmd,
+                                                    error=e.returncode, strerror=e.output)
+                    logger.warning(msg)
+                    raise SVNException(msg)
+
+                # recurse through this new subdir
+                compare_dir_trees(new_dir1, new_dir2, exclude_files, exclude_dirs)
+
+    # files need to be removed from svn repo that are no longer in the caseroot
+    if len(rf)>0:
+        for filename in rf:
+            if os.path.isfile(os.path.join(dir1, filename)) and filename[-1] != '~':
+                update_repo_rm_file(filename, dir1, dir2)
+
+    # files are the same but could not be compared so copy the caseroot version
+    if len(ff)>0:
+        for filename in ff:
+            if os.path.isfile(os.path.join(dir1, filename)) and filename[-1] != '~':
+                update_repo_copy_file(filename, dir1, dir2)
+
+    # common files have changed in the caseroot and need to be copied to the svn repo
+    (_, mismatch, errors) =  filecmp.cmpfiles(
+        dir1, dir2, dirs_cmp.common_files, shallow=False)
+    if len(mismatch)>0:
+        for filename in mismatch :
+            if os.path.isfile(os.path.join(dir1, filename)) and filename[-1] != '~':
+                update_repo_copy_file(filename, dir1, dir2)
+
+    # error in file comparison so copy the caseroot file to the svn repo
+    if len(errors)>0:
+        for filename in errors :
+            if os.path.isfile(os.path.join(dir1, filename)) and filename[-1] != '~':
+                update_repo_copy_file(filename, dir1, dir2)
+
+    # recurse through the subdirs
+    common_dirs = dirs_cmp.common_dirs
+    if len(common_dirs)>0:
+        for common_dir in common_dirs:
+            if common_dir not in exclude_dirs:
+                new_dir1 = os.path.join(dir1, common_dir)
+                new_dir2 = os.path.join(dir2, common_dir)
+                compare_dir_trees(new_dir1, new_dir2, exclude_files, exclude_dirs)
+    else:
+        return
+
+# ---------------------------------------------------------------------
+def update_local_repo(case_dict, ignoreLogs):
+# ---------------------------------------------------------------------
+    """ update_local_repo
+    
+    Compare and update local SVN sandbox
+    """    
+    logger.debug('update_local_repo')
+
+    archive_temp_dir = os.path.basename(os.path.normpath(case_dict['archive_temp_dir']))
+    from_dir = case_dict['CASEROOT']
+    to_dir = case_dict['archive_temp_dir']
+
+    # append the archive_temp_dir to the exclude dirs list
+    exclude_dirs = _EXCLUDE_DIRS
+    exclude_dirs.append(archive_temp_dir)
+
+    # append all the PBS output files to the exclude files list
+    pbs_files = get_PBS_files(case_dict)
+    exclude_files = _EXCLUDE_FILES + pbs_files
+    
+    compare_dir_trees(from_dir, to_dir, exclude_files, exclude_dirs)
+
+    # check if ignoreLogs is specified
+    if ignoreLogs:
+        os.chdir(case_dict['archive_temp_dir'])
+        if os.path.isdir('./logs'):
+            try:
+                shutil.rmtree('./logs')
+            except OSError as e:
+                logger.warning('in "update_local_repo" - Unable to remove "logs" in archive dir.')
+
+            cmd = ['svn', 'delete', './logs']
+            try:
+                result = subprocess.check_call(cmd)
+            except subprocess.CalledProcessError as e:
+                msg = _call_template.substitute(function='update_lcoal_repo',cmd=cmd,
+                                                error=e.returncode, strerror=e.output)
+                logger.warning(msg)
+                raise SVNException(msg)
+         
+        if os.path.isdir('./postprocess/logs'):
+            os.chdir('./postprocess')
+            try:
+                shutil.rmtree('./logs')
+            except OSError as e:
+                logger.warning('in "update_local_repo" - Unable to remove "postprocess/logs" in archive dir.')
+
+            cmd = ['svn', 'delete', './logs']
+            try:
+                result = subprocess.check_call(cmd)
+            except subprocess.CalledProcessError as e:
+                msg = _call_template.substitute(function='update_lcoal_repo',cmd=cmd,
+                                                error=e.returncode, strerror=e.output)
+                logger.warning(msg)
+                raise SVNException(msg)
+
+# ---------------------------------------------------------------------
+def populate_local_repo(case_dict, ignoreLogs):
+# ---------------------------------------------------------------------
+    """ populate_local_repo
+
+    Populate local SVN sandbox
+    """
+    logger.debug('populate_local_repo')
+
+    os.chdir(case_dict['CASEROOT'])
+
+    # loop through the _archive_list and copy to the temp archive dir
+    for archive in _archive_list:
+        if os.path.exists(archive):
+            if os.path.isdir(archive):
+                try:
+                    target = case_dict['archive_temp_dir']+'/'+archive
+                    shutil.copytree(archive, target, symlinks=False, 
+                                    ignore=shutil.ignore_patterns(*_IGNORE_PATTERNS))
+                except OSError as e:
+                    msg = _copy_template.substitute(function='populate_local_repo',
+                                                    source=archive, dest=case_dict['archive_temp_dir'],
+                                                    error=e.errno, strerror=e.strerror)
+                    logger.warning(msg)
+            else:
+                try:
+                    shutil.copy2(archive, case_dict['archive_temp_dir'])
+                except OSError as e:
+                    msg = _copy_template.substitute(function='populate_local_repo',
+                                                    source=archive, dest=case_dict['archive_temp_dir'],
+                                                    error=e.errno, strerror=e.strerror)
+                    logger.warning(msg)
+
+    # add files with .xml as the prefix
+    xml_files = glob.glob('*.xml')
+    for xml_file in xml_files:
+        if os.path.isfile(xml_file):
+            try:
+                shutil.copy2(xml_file, case_dict['archive_temp_dir'])
+            except OSError as e:
+                msg = _copy_template.substitute(function='populate_local_repo',
+                                                source=xml_file, dest=case_dict['archive_temp_dir'],
+                                                error=e.errno, strerror=e.strerror)
+                logger.warning(msg)
+        
+    # add files with user_ as the suffix
+    user_files = glob.glob('user_*')
+    for user_file in user_files:
+        if os.path.isfile(user_file):
+            try:
+                shutil.copy2(user_file, case_dict['archive_temp_dir'])
+            except OSError as e:
+                msg = _copy_template.substitute(function='populate_local_repo',
+                                                source=user_file, dest=case_dict['archive_temp_dir'],
+                                                error=e.errno, strerror=e.strerror)
+                logger.warning(msg)
+
+        
+    # add files with Depends as the suffix
+    conf_files = glob.glob('Depends.*')
+    for conf_file in conf_files:
+        if os.path.isfile(conf_file):
+            try:
+                shutil.copy2(conf_file, case_dict['archive_temp_dir'])
+            except OSError as e:
+                msg = _copy_template.substitute(function='populate_local_repo',
+                                                source=conf_file, dest=case_dict['archive_temp_dir'],
+                                                error=e.errno, strerror=e.strerror)
+                logger.warning(msg)
+
+    # check if ignoreLogs is specified
+    if ignoreLogs:
+        os.chdir(case_dict['archive_temp_dir'])
+        if os.path.isdir('./logs'):
+            try:
+                shutil.rmtree('./logs')
+            except OSError as e:
+                logger.warning('in "populate_local_repo" - Unable to remove "logs" in archive dir.')
+        
+        if os.path.isdir('./postprocess/logs'):
+            os.chdir('./postprocess')
+            try:
+                shutil.rmtree('./logs')
+            except OSError as e:
+                logger.warning('in "populate_local_repo" - Unable to remove "postprocess/logs" in archive dir.')
+
+# ---------------------------------------------------------------------
+def checkin_trunk(case_dict, svn_cmd, message,  username, password):
+# ---------------------------------------------------------------------
+    """ checkin_trunk
+
+    Check in the local SVN sandbox to the remote trunk
+    """
+    logger.debug('checkin_trunk')
+
+    os.chdir(case_dict['archive_temp_dir'])
+    svn_repo = '{0}/trunk'.format(case_dict['svn_repo_url'])
+    msg = '"{0}"'.format(message)
+    cmd = ['svn', svn_cmd, '--username', username, '--password', password, '.', '--message', msg]
+
+    if svn_cmd in ['import']:
+        # create the trunk dir
+        msg = '"create trunk"'
+        cmd = ['svn', 'mkdir', '--parents', svn_repo, '--username', username, '--password', password, '--message', msg]
+        try:
+            result = subprocess.check_call(cmd)
+        except subprocess.CalledProcessError as e:
+            msg = _call_template.substitute(function='checkin_trunk',cmd=cmd,
+                                            error=e.returncode, strerror=e.output)
+            logger.warning(msg)
+            raise SVNException(msg)
+
+        # create the trunk_tags dir
+        tags = '{0}/trunk_tags'.format(case_dict['svn_repo_url'])
+        msg = '"create trunk_tags"'
+        cmd = ['svn', 'mkdir', tags, '--username', username, '--password', password, '--message', msg]
+        try:
+            result = subprocess.check_call(cmd)
+        except subprocess.CalledProcessError as e:
+            msg = _call_template.substitute(function='checkin_trunk',cmd=cmd,
+                                            error=e.returncode, strerror=e.output)
+            logger.warning(msg)
+            raise SVNException(msg)
+
+        msg = '"{0}"'.format(message)
+        cmd = ['svn', svn_cmd, '--username', username, '--password', password, '.', svn_repo, '--message', msg]
+
+    # check-in the trunk to svn
+    try:
+        result = subprocess.check_call(cmd)
+    except subprocess.CalledProcessError as e:
+        msg = _call_template.substitute(function='checkin_trunk',cmd=cmd,
+                                        error=e.returncode, strerror=e.output)
+        logger.warning(msg)
+        raise SVNException(msg)
+
+# ---------------------------------------------------------------------
+def create_tag(case_dict, new_tag, username, password):
+# ---------------------------------------------------------------------
+    """ create_tag
+
+    create a new trunk tag in the remote repo
+    """
+    logger.debug('create_tag')
+
+    # create a new trunk tag
+    os.chdir(case_dict['archive_temp_dir'])
+    svn_repo = '{0}/trunk'.format(case_dict['svn_repo_url'])
+    svn_repo_tag = '{0}/trunk_tags/{1}'.format(case_dict['svn_repo_url'],new_tag)
+    msg = '"create new trunk tag"'
+    cmd = ['svn', 'copy', '--username', username, '--password', password, svn_repo, svn_repo_tag, '--message', msg]
+    try:
+        result = subprocess.check_call(cmd)
+    except subprocess.CalledProcessError as e:
+        msg = _call_template.substitute(function='checkin_trunk',cmd=cmd,
+                                        error=e.returncode, strerror=e.output)
+        logger.warning(msg)
+        raise SVNException(msg)
+
+# ---------------------------------------------------------------------
+def update_repo(ignoreLogs, case_dict, username, password):
+# ---------------------------------------------------------------------
+    """ update_repo
+
+    Update SVN repo
+    """
+    logger.debug('update_repo')
+
+    try:
+        # check if svn client is installed
+        svn_exists = check_svn()
+
+        if svn_exists:
+            # check if the case repo exists
+            case_dict['svn_repo_url'] = '{0}/{1}'.format(_SVN_expdb_url, case_dict['CASE'])
+            repo_exists = check_svn_repo(case_dict, username, password)
+            case_dict['archive_temp_dir'] = create_temp_archive(case_dict)
+
+            if repo_exists:
+                # need to update trunk and make a new tag
+                last_tag = get_trunk_tag(case_dict, username, password)
+                new_tag = '{0}_{1}'.format(case_dict['CASE'],str(last_tag+1).zfill(4))
+                checkout_repo(case_dict, username, password)
+                update_local_repo(case_dict, ignoreLogs)
+                msg = 'update case metadata for {0} by {1}'.format(case_dict['CASE'],username)
+                checkin_trunk(case_dict, 'ci', msg, username, password)
+                create_tag(case_dict, new_tag, username, password)
+                logger.info('SVN repository trunk updated at URL "%s"', case_dict['svn_repo_url'])
+                logger.info('   and a new trunk tag created for  "%s"', new_tag)
+            else:
+                # create a new case repo
+                new_tag = '{0}_0001'.format(case_dict['CASE'])
+                create_readme(case_dict)
+                populate_local_repo(case_dict, ignoreLogs)
+                msg = 'initial import of case metadata for {0} by {1}'.format(case_dict['CASE'],username)
+                checkin_trunk(case_dict, 'import', msg, username, password)
+                create_tag(case_dict, new_tag, username, password)
+                logger.info('SVN repository imported to trunk URL "%s"', case_dict['svn_repo_url'])
+                logger.info('   and a new trunk tag created for  "%s"', new_tag)
+
+    except SVNException as e:
+        pass
+
+    return case_dict
+
+# ---------------------------------------------------------------------
+def get_timing_data(case_dict):
+# ---------------------------------------------------------------------
+    """ get_timing_data
+    parse the timing data file and add information to the case_dict
+
+    Arguments:
+        case_dict (dict) - case dictionary to store XML variables
+    """
+    logger.debug('get_timing_data')
+
+    # initialize the timing values in the dictionary
+    case_dict['model_cost'] = 'undefined'
+    case_dict['model_throughput'] = 'undefined'
+
+    if case_dict['run_status'] == 'Succeeded':
+        timing_dir = case_dict['CASEROOT']+'/timing'
+        last_time = ''
+        if os.path.exists(timing_dir):
+            # check if timing files exists
+            timing_file_pattern = 'cesm_timing.'+case_dict['CASE']
+            last_time = max(glob.glob(timing_dir+'/'+timing_file_pattern+'.*'), key=os.path.getctime)
+            if len(last_time) > 0:
+                if 'gz' in last_time:
+                    # gunzip file first
+                    with gzip.open(last_time, 'rb') as f:
+                        file_content = f.readlines()
+                else:
+                    with open(last_time, 'r') as f:
+                        file_content = f.readlines()
+                        
+                # search the file content for matching lines
+                model_cost = [line for line in file_content if 'Model Cost:' in line]
+                model_throughput = [line for line in file_content if 'Model Throughput:' in line]
+
+                case_dict['model_cost'] = ' '.join(model_cost[0].split())
+                case_dict['model_throughput'] = ' '.join(model_throughput[0].split())
+
+    return case_dict
+
+# ---------------------------------------------------------------------
+def initialize_main(options):
+# ---------------------------------------------------------------------
+    """ initialize_main
+
+    Initialize the case dictionary data structure with command line options
+    """
+    logger.debug('intialize_main')
+
+    case_dict = dict()
+
+    case_dict['CASEROOT'] = os.getcwd()
+    if options.caseroot:
+        case_dict['CASEROOT'] = options.caseroot[0]
+
+    case_dict['workdir'] = case_dict['CASEROOT']
+    if options.workdir:
+        case_dict['workdir'] = options.workdir[0]
+
+    username = None
+    if options.user:
+        username = options.user
+        case_dict['svnlogin'] = username
+
+    password = None
+    if options.password:
+        password = options.password
+
+    if options.expType:
+        case_dict['expType'] = options.expType[0]
+
+    case_dict['title'] = None
+    if options.title:
+        case_dict['title'] = options.title[0]
+
+    case_dict['dryrun'] = False
+    if options.dryrun:
+        case_dict['dryrun'] = True
+
+    case_dict['archive_temp_dir'] = ''
+
+    case_dict['q_casename'] = ''
+    case_dict['q_outfile'] = ''
+    if options.query_cmip6:
+        case_dict['q_casename'] = options.query_cmip6[0]
+        case_dict['q_outfile'] = options.query_cmip6[1]
+
+    return case_dict, username, password
+
+# ---------------------------------------------------------------------
+def main(options):
+# ---------------------------------------------------------------------
+    """ main
+
+    Arguments:
+        options (list) - input options from command line
+    """
+    logger.debug('main')
+
+    (case_dict, username, password) = initialize_main(options)
+
+    # loop through the _XML_vars gathering values
+    with Case(case_dict['CASEROOT'], read_only=True) as case:
+        if case_dict['dryrun']:
+            logger.info('Dryrun - calling get_case_vars')
+        else:
+            case_dict = get_case_vars(case_dict, case)
+
+    # get the case status into the case_dict 
+    if case_dict['dryrun']:
+        logger.info('Dryrun - calling get_case_status')
+    else:
+        case_dict = get_case_status(case_dict)
+
+    # check if query_cmip6 argument is specified
+    if options.query_cmip6:
+        if case_dict['dryrun']:
+            logger.info('Dryrun - calling query_expdb_cmip6 for case metadata')
+        else:
+            if query_expdb_cmip6(case_dict, username, password):
+                logger.info('{0} experiments database CMIP6 global attribute metadata written to {1}'.format(case_dict['q_casename'], case_dict['q_outfile']))
+                logger.info('Successful completion of archive_metadata')
+                sys.exit(0)
+            else:
+                logger.info('ERROR archive_metadata failed to find {0} in experiments database.'.format(case_dict['q_casename']))
+                sys.exit(1)
+ 
+    # check that the casename is reserved in the expdb 
+    # for CMIP6 experiments
+    if (case_dict['expType'].lower() == 'cmip6'):
+        if case_dict['dryrun']:
+            logger.info('Dryrun - calling check_expdb_case for CMIP6 experiment reservation')
+        else:
+            if not check_expdb_case(case_dict, username, password):
+                logger.info('Unable to archive CMIP6 metadata. '
+                            '"%s" casename does not exist in database. '
+                            'All CMIP6 experiments casenames must be '
+                            'reserved in the experiments database at URL: '
+                            'https://csegweb.cgd.ucar.edu/expdb2.0 '
+                            'prior to running archive_metadata.',case_dict['CASE'])
+                sys.exit(1)
+
+    # create / update the cesm expdb repo with the caseroot files
+    if not options.ignoreRepoUpdate:
+        if case_dict['dryrun']:
+            logger.info('Dryrun - calling update_repo')
+        else:
+            case_dict = update_repo(options.ignoreLogs, case_dict,
+                                    username, password)
+
+    # parse the timing data into the case_dict
+    if not options.ignoreTiming:
+        if case_dict['dryrun']:
+            logger.info('Dryrun - calling get_timing_data')
+        else:
+            case_dict = get_timing_data(case_dict)
+
+    # create a JSON file containing the case_dict with the date appended to the filename
+    if case_dict['dryrun']:
+        logger.info('Dryrun - calling create_JSON')
+    else:
+        create_JSON(case_dict)
+
+    # post the JSON to the remote DB
+    if case_dict['dryrun']:
+        logger.info('Dryrun - calling post_JSON')
+    else:
+        post_JSON(case_dict, username, password)
+
+    # clean-up the temporary archive files dir
+    if case_dict['dryrun']:
+        logger.info('Dryrun - removing temporary directory')
+    else:
+        if not options.ignoreRepoUpdate and os.path.exists(case_dict['archive_temp_dir']):
+            shutil.rmtree(case_dict['archive_temp_dir'])
+
+    logger.info('Successful completion of archive_metadata')
+
+
+#===================================                                                           
+if __name__ == "__main__":
+
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    options = commandline_options(sys.argv)
+    try:
+        status = main(options)
+        sys.exit(status)
+    except Exception as error:
+        print(str(error))
+        sys.exit(1)
+

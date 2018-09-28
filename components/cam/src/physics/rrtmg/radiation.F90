@@ -38,13 +38,10 @@ save
 
 public :: &
    radiation_register,    &! registers radiation physics buffer fields
-   radiation_defaultopts, &! set default values of namelist variables in runtime_opts
-   radiation_setopts,     &! set namelist values from runtime_opts
-   radiation_printopts,   &! print namelist values to log
-   radiation_get,         &! provide read access to private module data
    radiation_nextsw_cday, &! calendar day of next radiation calculation
    radiation_do,          &! query which radiation calcs are done this timestep
    radiation_init,        &! calls radini
+   radiation_readnl,      &! read radiation namelist
    radiation_tend          ! moved from radctl.F90
 
 integer,public, allocatable :: cosp_cnt(:)       ! counter for cosp
@@ -97,6 +94,73 @@ integer :: firstblock, lastblock      ! global block indices
 !===============================================================================
 contains
 !===============================================================================
+
+subroutine radiation_readnl(nlfile, dtime_in)
+!-------------------------------------------------------------------------------
+! Purpose: Read radiation_nl namelist group.
+!-------------------------------------------------------------------------------
+
+   use namelist_utils,  only: find_group_name
+   use units,           only: getunit, freeunit
+   use spmd_utils,      only: mpicom, mstrid=>masterprocid, mpi_integer, mpi_logical, &
+                              mpi_character, masterproc
+   use time_manager,    only: get_step_size
+
+   ! File containing namelist input
+   character(len=*), intent(in) :: nlfile
+   integer, intent(in), optional :: dtime_in
+
+   ! Local variables
+   integer :: unitn, ierr
+   integer :: dtime  ! timestep size
+   character(len=*), parameter :: subroutine_name = 'radiation_readnl'
+
+   ! Variables defined in namelist
+   namelist /radiation_nl/ iradsw, iradlw, irad_always, &
+                           use_rad_dt_cosz, spectralflux
+
+   ! Read the namelist, only if called from master process
+   ! TODO: better documentation and cleaner logic here?
+   if (masterproc) then
+      unitn = getunit()
+      open(unitn, file=trim(nlfile), status='old')
+      call find_group_name(unitn, 'radiation_nl', status=ierr)
+      if (ierr == 0) then
+         read(unitn, radiation_nl, iostat=ierr)
+         if (ierr /= 0) then
+            call endrun(subroutine_name // ':: ERROR reading namelist')
+         end if
+      end if
+      close(unitn)
+      call freeunit(unitn)
+   end if
+
+#ifdef SPMD
+   ! Broadcast namelist variables
+   call mpibcast(iradsw, 1, mpi_integer, mstrid, mpicom, ierr)
+   call mpibcast(iradlw, 1, mpi_integer, mstrid, mpicom, ierr)
+   call mpibcast(irad_always, 1, mpi_integer, mstrid, mpicom, ierr)
+   call mpibcast(use_rad_dt_cosz, 1, mpi_logical, mstrid, mpicom, ierr)
+   call mpibcast(spectralflux, 1, mpi_logical, mstrid, mpicom, ierr)
+#endif
+
+   ! Convert iradsw, iradlw and irad_always from hours to timesteps if necessary
+   if (present(dtime_in)) then
+      dtime = dtime_in
+   else
+      dtime  = get_step_size()
+   end if
+   if (iradsw      < 0) iradsw      = nint((-iradsw     *3600._r8)/dtime)
+   if (iradlw      < 0) iradlw      = nint((-iradlw     *3600._r8)/dtime)
+   if (irad_always < 0) irad_always = nint((-irad_always*3600._r8)/dtime)
+
+   ! Print runtime options to log.
+   if (masterproc) then
+      call radiation_printopts()
+   end if
+
+end subroutine radiation_readnl
+
 
   subroutine radiation_register
 !-----------------------------------------------------------------------

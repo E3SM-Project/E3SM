@@ -20,13 +20,13 @@ subroutine scam_use_iop_srf( cam_in )
        do c=begchunk,endchunk
           ncol = cam_in(c)%ncol
           if(have_lhflx) then
-             cam_in(c)%lhf(1) = lhflxobs(1)
-             cam_in(c)%cflx(1,1) = lhflxobs(1)/latvap
+             cam_in(c)%lhf(:ncol) = lhflxobs(1)
+             cam_in(c)%cflx(:ncol,1) = lhflxobs(1)/latvap
           endif
-          if(have_shflx) cam_in(c)%shf(1) = shflxobs(1)
+          if(have_shflx) cam_in(c)%shf(:ncol) = shflxobs(1)
           if(have_tg) then
-             cam_in(c)%ts(1) = tground(1)
-             cam_in(c)%lwup(1) = stebol * tground(1)**4
+             cam_in(c)%ts(:ncol) = tground(1)
+             cam_in(c)%lwup(:ncol) = stebol * tground(1)**4
           endif
        end do
     endif

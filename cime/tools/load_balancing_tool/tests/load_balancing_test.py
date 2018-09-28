@@ -210,10 +210,11 @@ class LoadBalanceTests(unittest.TestCase):
 
             self.assertTrue(os.access(pes_file.name, os.R_OK), "pesfile %s not written" % pes_file.name)
             pesobj = CIME.XML.pes.Pes(pes_file.name)
-        for node in pesobj.get_nodes('pes'):
-            pesize = node.get('pesize')
-            pes_ntasks, pes_nthrds, pes_rootpe, _ = \
-               pesobj.find_pes_layout('any', 'any', 'any', pesize_opts=pesize)
+
+        pes_ntasks, pes_nthrds, pes_rootpe, _, _, _ = \
+               pesobj.find_pes_layout('any', 'any', 'any', '')
+        self.assertTrue(pes_ntasks['NTASKS_ATM']==992)
+        
 
     def test_set_blocksize_atm(self):
         cmd = "./load_balancing_solve.py --timing-dir %s --total-tasks 64 --blocksize 2 --blocksize-atm 4 --layout IceLndAtmOcn" % os.path.join(TEST_DIR, "timing")

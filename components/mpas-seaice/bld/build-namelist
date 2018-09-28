@@ -56,7 +56,8 @@ OPTIONS
      -ice_bgc              variable for enabling sea ice BGC
      -surface_mode         variable for surface mode
                            Options are: free, non-free
-
+     -ntasks_ice           NTASKS_ICE for this case
+     -ninst_ice            NINST_ICE for this case
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
       1. namelist values set by specific command-line options, i.e. (none right now)
@@ -102,6 +103,8 @@ my %opts = ( help          => 0,
              ice_bgc       => undef,
              surface_mode  => undef,
              cfg_dir       => $cfgdir,
+             ntasks_ice    => 0,
+             ninst_ice     => 0,
            );
 
 GetOptions(
@@ -121,6 +124,8 @@ GetOptions(
     "surface_mode=s"  => \$opts{'surface_mode'},
     "cfg_dir=s"       => \$opts{'cfg_dir'},
     "preview"         => \$opts{'preview'},
+    "ntasks_ice=i"    => \$opts{'ntasks_ice'},
+    "ninst_ice=i"     => \$opts{'ninst_ice'},
 )  or usage();
 
 # Give usage message.
@@ -154,6 +159,8 @@ my $date_stamp    = $opts{'date_stamp'};
 my $ic_mode       = $opts{'ic_mode'};
 my $ice_bgc       = $opts{'ice_bgc'};
 my $surface_mode  = $opts{'surface_mode'};
+my $NINST_ICE     = $opts{'ninst_ice'};
+my $NTASKS_ICE    = $opts{'ntasks_ice'};
 $cfgdir           = $opts{'cfg_dir'};
 
 my $CIMEROOT;     
@@ -392,8 +399,6 @@ my $CALENDAR               = "$xmlvars{'CALENDAR'}";
 my $NCPL_BASE_PERIOD       = "$xmlvars{'NCPL_BASE_PERIOD'}";
 my $ICE_NCPL               = "$xmlvars{'ICE_NCPL'}";
 my $ICE_COUPLING           = "$xmlvars{'ICE_COUPLING'}";
-my $NTASKS_ICE             = `$CASEROOT/xmlquery NTASKS_ICE -value -caseroot $CASEROOT`;
-my $NINST_ICE              = `$CASEROOT/xmlquery NINST_ICE -value -caseroot $CASEROOT`;
 my $INFO_DBUG              = "$xmlvars{'INFO_DBUG'}";
 my $RUN_TYPE               = "$xmlvars{'RUN_TYPE'}";
 my $RUN_STARTDATE          = "$xmlvars{'RUN_STARTDATE'}";

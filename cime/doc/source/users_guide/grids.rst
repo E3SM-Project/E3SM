@@ -4,7 +4,9 @@
 Model grids
 ========================
 
-CIME looks at the xml node ``GRIDS_SPEC_FILE`` in the **config_files.xml** file to identify supported out-of-the-box model grids for the target model. The node has the following contents:
+CIME looks at the xml node ``GRIDS_SPEC_FILE`` in  **$CIMEROOT/config/$models/config_files.xml** file to identify supported out-of-the-box model grids for the target model.
+
+The node has the following contents:
 ::
 
    <entry id="GRIDS_SPEC_FILE">
@@ -18,6 +20,8 @@ CIME looks at the xml node ``GRIDS_SPEC_FILE`` in the **config_files.xml** file 
 
 Grid longname
 -------------
+
+CIME model grids generally are associated with a specific combination of atmosphere, land, land-ice, river-runoff and ocean/ice grids. The naming convention for these grids uses only atmosphere, land, and ocean/ice grid specifications.
 
 A model grid longname has the form::
 
@@ -67,6 +71,7 @@ Component grids are denoted by the following naming convention:
 - "oRSS[x]to[y]" is an MPAS grid with grid spacing from x to y kilometers.
 
 - "oEC[x]to[y]" is an MPAS grid with grid spacing from x to y kilometers.
+
 .. _adding-cases:
 
 Adding grids
@@ -74,26 +79,23 @@ Adding grids
 
 .. _adding-a-grid:
 
-CIME supports numerous out-of-the box model resolutions. To see the grids that are supported, call **manage_case** as shown here:
+CIME supports numerous out-of-the box model resolutions. To see the grids that are supported, call `query_config <../Tools_user/query_config.html>`_ as shown below.
    ::
 
-      > manage_case --query-grids
-
-
-CIME model grids generally are associated with a specific combination of atmosphere, land, land-ice, river-runoff and ocean/ice grids. The naming convention for these grids uses only atmosphere, land, and ocean/ice grid specifications.
+      > query_config --grids
 
 The most common resolutions have the atmosphere and land components on one grid and the ocean and ice on a second grid. The following overview assumes that this is the case.
-The naming convention looks like *f19_g16*, where the f19 indicates that the atmosphere and land are on the 1.9x2.5 (finite volume dycore) grid while the g16 means the ocean and ice are on the gx1v6 one-degree displaced pole grid.
+The naming convention looks like *f19_g17*, where the f19 indicates that the atmosphere and land are on the 1.9x2.5 (finite volume dycore) grid while the g17 means the ocean and ice are on the gx1v6 one-degree displaced pole grid.
 
 CIME enables users to add their own component grid combinations.
-The steps for adding a new component grid to the model system follow. gain, this process can be simplified if the atmosphere and land are running on the same grid.
+The steps for adding a new component grid to the model system follow. This process can be simplified if the atmosphere and land are running on the same grid.
 
 1. The first step is to generate SCRIP grid files for the atmosphere, land, ocean, land-ice, river and wave component grids that will comprise your model grid.
    If you are introducing just one new grid, you can leverage SCRIP grid files that are already in place for the other components.
    There is no supported functionality for creating the SCRIP format file.
 
 2. Build the **check_map** utility by following the instructions in **$CCSMROOT/mapping/check_maps/INSTALL**. Also confirm that the `ESMF <http://www.cesm.ucar.edu/models2.0/external-link-here>`_ toolkit is installed on your machine.
-   
+
    When you add new user-defined grid files, you also need to generate a set of mapping files so the coupler can send data from a component on one grid to a component on another grid.
    There is an ESMF tool that tests the mapping file by comparing a mapping of a smooth function to its true value on the destination grid.
    We have tweaked this utility to test a suite of smooth functions, as well as ensure conservation (when the map is conservative).
@@ -210,4 +212,3 @@ The steps for adding a new component grid to the model system follow. gain, this
       (write an example)
       Test the new grid with CAM(newgrid), CLM(newgrid), DOCN(gx1v6), DICE(gx1v6)
       (write an example)
-

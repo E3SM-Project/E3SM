@@ -539,7 +539,7 @@ contains
 
     integer         , intent(in) :: fid          ! nc file  ID
     character(LEN=*), intent(in) :: fmap         ! file name ( input nc file)
-    character(LEN=*), intent(in) :: units_xc, units_yc  ! netCDF attribute name string
+    character(LEN=*), intent(inout) :: units_xc, units_yc  ! netCDF attribute name string
     integer         , intent(in) :: n            ! size of 1d domain
     integer         , intent(in) :: ni           ! size of i-axis of 2d domain
     integer         , intent(in) :: nj           ! size of j-axis of 2d domain
@@ -723,10 +723,12 @@ contains
     if (units_xc(1:7) == 'radians') then
        xc = xc * 180._r8 / pi
        xv = xv * 180._r8 / pi
+       units_xc(1:7) = 'degrees'
     end if
     if (units_yc(1:7) == 'radians') then
        yc = yc * 180._r8 / pi
        yv = yv * 180._r8 / pi
+       units_yc(1:7) = 'degrees'
     end if
 
     call check_ret(nf_inq_varid(fid, 'xc', vid))
@@ -779,7 +781,7 @@ SUBROUTINE sys_getenv(name, val, rcode)
 
    call pxfgetenv(name, lenname, val, lenval, rcode)
 
-#elif (defined AIX || defined OSF1 || defined SUNOS || defined LINUX || defined NEC_SX)
+#elif (defined AIX || defined OSF1 || defined SUNOS || defined LINUX || defined NEC_SX || defined CPRINTEL)
 #ifdef F2003
     call GET_ENVIRONMENT_VARIABLE(trim(name),value=val, length=lenval, status=rcode)
 #else
