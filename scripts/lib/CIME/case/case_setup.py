@@ -143,7 +143,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                     else:
                         expect(False, "NINST_{} value {:d} greater than NTASKS_{} {:d}".format(comp, ninst, comp, ntasks))
             if comp_interface != "nuopc":
-                case.set_value("NTASKS_PER_INST_{}".format(comp), int(ntasks / ninst))
+                case.set_value("NTASKS_PER_INST_{}".format(comp), max(1,int(ntasks / ninst)))
 
         if os.path.exists(get_batch_script_for_job(case.get_primary_job())):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
