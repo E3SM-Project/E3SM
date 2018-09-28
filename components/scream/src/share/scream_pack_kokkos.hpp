@@ -21,6 +21,7 @@ index (const Array1& a, const IdxPack& i0,
     p[i] = a(i0[i]);
   return p;
 }
+
 template<typename Array2, typename IdxPack> KOKKOS_INLINE_FUNCTION
 OnlyPackReturn<IdxPack, Pack<typename Array2::value_type, IdxPack::n> >
 index (const Array2& a, const IdxPack& i0, const IdxPack& i1,
@@ -31,11 +32,48 @@ index (const Array2& a, const IdxPack& i0, const IdxPack& i1,
   return p;
 }
 
+// Turn a View of Packs into a View of scalars.
+template <typename T, typename ...Parms, int pack_size> KOKKOS_FORCEINLINE_FUNCTION
+typename ko::Unmanaged<Kokkos::View<T*, Parms...> >::type
+scalarize (const Kokkos::View<Pack<T, pack_size>*, Parms...>& vp) {
+  return typename ko::Unmanaged<Kokkos::View<T*, Parms...> >::type(
+    reinterpret_cast<T*>(vp.data()), pack_size * vp.extent_int(0));
+}
+
 template <typename T, typename ...Parms, int pack_size> KOKKOS_FORCEINLINE_FUNCTION
 typename ko::Unmanaged<Kokkos::View<T**, Parms...> >::type
-scalarize (const Kokkos::View<scream::pack::Pack<T, pack_size>**, Parms...>& vp) {
-return typename ko::Unmanaged<Kokkos::View<T**, Parms...> >::type(
+scalarize (const Kokkos::View<Pack<T, pack_size>**, Parms...>& vp) {
+  return typename ko::Unmanaged<Kokkos::View<T**, Parms...> >::type(
     reinterpret_cast<T*>(vp.data()), vp.extent_int(0), pack_size * vp.extent_int(1));
+}
+
+// Turn a View of Pack<T,N>s into a View of Pack<T,M>s. M must divide N:
+//     N % M == 0.
+template <int new_pack_size,
+          typename T, typename ...Parms, int old_pack_size>
+KOKKOS_FORCEINLINE_FUNCTION
+typename ko::Unmanaged<Kokkos::View<Pack<T,new_pack_size>*, Parms...> >::type
+repack (const Kokkos::View<Pack<T, old_pack_size>*, Parms...>& vp) {
+  static_assert(new_pack_size > 0 &&
+                old_pack_size % new_pack_size == 0,
+                "New pack size must divide old pack size.");
+  return typename ko::Unmanaged<Kokkos::View<Pack<T,new_pack_size>*, Parms...> >::type(
+    reinterpret_cast<Pack<T, new_pack_size>*>(vp.data()),
+    (old_pack_size / new_pack_size) * vp.extent_int(0));
+}
+
+template <int new_pack_size,
+          typename T, typename ...Parms, int old_pack_size>
+KOKKOS_FORCEINLINE_FUNCTION
+typename ko::Unmanaged<Kokkos::View<Pack<T,new_pack_size>**, Parms...> >::type
+repack (const Kokkos::View<Pack<T, old_pack_size>**, Parms...>& vp) {
+  static_assert(new_pack_size > 0 &&
+                old_pack_size % new_pack_size == 0,
+                "New pack size must divide old pack size.");
+  return typename ko::Unmanaged<Kokkos::View<Pack<T,new_pack_size>**, Parms...> >::type(
+    reinterpret_cast<Pack<T, new_pack_size>*>(vp.data()),
+    vp.extent_int(0),
+    (old_pack_size / new_pack_size) * vp.extent_int(1));
 }
 
 } // namespace pack

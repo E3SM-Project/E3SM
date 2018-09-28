@@ -40,6 +40,9 @@ TEST_CASE("Unmanaged", "scream::ko") {
     typedef Unmanaged<VUm>::type VUmUm;
     static_assert(VUmUm::traits::memory_traits::RandomAccess, "Um");
     static_assert(VUmUm::traits::memory_traits::Unmanaged, "Um");
+    static_assert( ! VUmUm::traits::memory_traits::Atomic, "Um");
+    static_assert( ! VUmUm::traits::memory_traits::Aligned, "Um");
+    static_assert( ! VUmUm::traits::memory_traits::Restrict, "Um");
     VUmUm v_umum(v);
   }
 
