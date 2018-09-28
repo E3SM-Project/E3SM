@@ -7,34 +7,8 @@
 
 namespace {
 
-TEST_CASE("index", "scream::pack") {
-}
-
 template <typename View, int rank>
 using OnlyRank = typename std::enable_if<View::Rank == rank>::type;
-
-TEST_CASE("scalarize", "scream::pack") {
-  using scream::pack::Pack;
-  using scream::pack::scalarize;
-
-  typedef Kokkos::View<Pack<double, 16>*> Array1;
-  typedef Kokkos::View<Pack<double, 32>**> Array2;
-
-  {
-    const Array1 a1("a1", 10);
-    const auto a2 = scalarize(a1);
-    static_assert(decltype(a2)::traits::memory_traits::Unmanaged, "Um");
-    REQUIRE(a2.extent_int(0) == 160);
-  }  
-
-  {
-    const Array2 a1("a1", 10, 4);
-    const auto a2 = scalarize(a1);
-    static_assert(decltype(a2)::traits::memory_traits::Unmanaged, "Um");
-    REQUIRE(a2.extent_int(0) == 10);
-    REQUIRE(a2.extent_int(1) == 128);
-  }
-}
 
 template <typename View>
 OnlyRank<View, 1> fill (const View& a) {
@@ -68,6 +42,73 @@ OnlyRank<VA, 2> compare (const VA& a, const VB& b) {
   for (int i = 0; i < ma.extent_int(0); ++i)
     for (int j = 0; j < ma.extent_int(1); ++j)
       REQUIRE(ma(i,j) == mb(i,j));
+}
+
+TEST_CASE("index", "scream::pack") {
+  using scream::pack::scalarize;
+  using scream::pack::Pack;
+
+  {
+    static constexpr int pack_size = 16;
+    using IdxPack = Pack<int, pack_size>;
+    Kokkos::View<double*> data("data", 100);
+    fill(data);
+    IdxPack idx;
+    for (int i = 0; i < pack_size; ++i) idx[i] = 2*i;
+    int nerr = 0;
+    Kokkos::parallel_reduce(
+      1, KOKKOS_LAMBDA (const int /* unused */, int& nerr) {
+        const auto data_idx = index(data, idx);
+        for (int i = 0; i < pack_size; ++i)
+          if (data_idx[i] != idx[i])
+            ++nerr;
+      },
+      nerr);
+    REQUIRE(nerr == 0);
+  }
+
+  {
+    static constexpr int pack_size = 8;
+    using IdxPack = Pack<int, pack_size>;
+    Kokkos::View<double**> data("data", 19, 24);
+    fill(data);
+    IdxPack i0, i1;
+    for (int i = 0; i < pack_size; ++i) i0[i] = 2*i;
+    for (int i = 0; i < pack_size; ++i) i1[i] = 3*i;
+    int nerr = 0;
+    Kokkos::parallel_reduce(
+      1, KOKKOS_LAMBDA (const int /* unused */, int& nerr) {
+        const auto data_idx = index(data, i0, i1);
+        for (int i = 0; i < pack_size; ++i)
+          if (data_idx[i] != data(i0[i], i1[i]))
+            ++nerr;
+      },
+      nerr);
+    REQUIRE(nerr == 0);
+  }
+}
+
+TEST_CASE("scalarize", "scream::pack") {
+  using scream::pack::Pack;
+  using scream::pack::scalarize;
+
+  typedef Kokkos::View<Pack<double, 16>*> Array1;
+  typedef Kokkos::View<Pack<double, 32>**> Array2;
+
+  {
+    const Array1 a1("a1", 10);
+    const auto a2 = scalarize(a1);
+    static_assert(decltype(a2)::traits::memory_traits::Unmanaged, "Um");
+    REQUIRE(a2.extent_int(0) == 160);
+  }  
+
+  {
+    const Array2 a1("a1", 10, 4);
+    const auto a2 = scalarize(a1);
+    static_assert(decltype(a2)::traits::memory_traits::Unmanaged, "Um");
+    REQUIRE(a2.extent_int(0) == 10);
+    REQUIRE(a2.extent_int(1) == 128);
+  }
 }
 
 template <int repack_size, typename Src, typename Dst>
@@ -135,4 +176,4 @@ TEST_CASE("repack", "scream::pack") {
   }
 }
 
-} // empty namespace
+} // namespace

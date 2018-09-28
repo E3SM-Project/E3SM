@@ -282,4 +282,4 @@ TEST_CASE("Pack", "scream::pack") {
   }
 }
 
-} // empty namespace
+} // namespace

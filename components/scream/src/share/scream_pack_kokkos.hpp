@@ -33,6 +33,7 @@ index (const Array2& a, const IdxPack& i0, const IdxPack& i1,
 }
 
 // Turn a View of Packs into a View of scalars.
+// Example: const auto b = scalarize(a);
 template <typename T, typename ...Parms, int pack_size> KOKKOS_FORCEINLINE_FUNCTION
 ko::Unmanaged<Kokkos::View<T*, Parms...> >
 scalarize (const Kokkos::View<Pack<T, pack_size>*, Parms...>& vp) {
@@ -49,15 +50,16 @@ scalarize (const Kokkos::View<Pack<T, pack_size>**, Parms...>& vp) {
 
 // Turn a View of Pack<T,N>s into a View of Pack<T,M>s. M must divide N:
 //     N % M == 0.
+// Example: const auto b = repack<4>(a);
 template <int new_pack_size,
           typename T, typename ...Parms, int old_pack_size>
 KOKKOS_FORCEINLINE_FUNCTION
-ko::Unmanaged<Kokkos::View<Pack<T,new_pack_size>*, Parms...> >
+ko::Unmanaged<Kokkos::View<Pack<T, new_pack_size>*, Parms...> >
 repack (const Kokkos::View<Pack<T, old_pack_size>*, Parms...>& vp) {
   static_assert(new_pack_size > 0 &&
                 old_pack_size % new_pack_size == 0,
                 "New pack size must divide old pack size.");
-  return ko::Unmanaged<Kokkos::View<Pack<T,new_pack_size>*, Parms...> >(
+  return ko::Unmanaged<Kokkos::View<Pack<T, new_pack_size>*, Parms...> >(
     reinterpret_cast<Pack<T, new_pack_size>*>(vp.data()),
     (old_pack_size / new_pack_size) * vp.extent_int(0));
 }
@@ -65,12 +67,12 @@ repack (const Kokkos::View<Pack<T, old_pack_size>*, Parms...>& vp) {
 template <int new_pack_size,
           typename T, typename ...Parms, int old_pack_size>
 KOKKOS_FORCEINLINE_FUNCTION
-ko::Unmanaged<Kokkos::View<Pack<T,new_pack_size>**, Parms...> >
+ko::Unmanaged<Kokkos::View<Pack<T, new_pack_size>**, Parms...> >
 repack (const Kokkos::View<Pack<T, old_pack_size>**, Parms...>& vp) {
   static_assert(new_pack_size > 0 &&
                 old_pack_size % new_pack_size == 0,
                 "New pack size must divide old pack size.");
-  return ko::Unmanaged<Kokkos::View<Pack<T,new_pack_size>**, Parms...> >(
+  return ko::Unmanaged<Kokkos::View<Pack<T, new_pack_size>**, Parms...> >(
     reinterpret_cast<Pack<T, new_pack_size>*>(vp.data()),
     vp.extent_int(0),
     (old_pack_size / new_pack_size) * vp.extent_int(1));
