@@ -10,12 +10,15 @@ namespace {
 TEST_CASE("index", "scream::pack") {
 }
 
+template <typename View, int rank>
+using OnlyRank = typename std::enable_if<View::Rank == rank>::type;
+
 TEST_CASE("scalarize", "scream::pack") {
   using scream::pack::Pack;
   using scream::pack::scalarize;
 
   typedef Kokkos::View<Pack<double, 16>*> Array1;
-  typedef Kokkos::View<Pack<double, 16>**> Array2;
+  typedef Kokkos::View<Pack<double, 32>**> Array2;
 
   {
     const Array1 a1("a1", 10);
@@ -29,25 +32,59 @@ TEST_CASE("scalarize", "scream::pack") {
     const auto a2 = scalarize(a1);
     static_assert(decltype(a2)::traits::memory_traits::Unmanaged, "Um");
     REQUIRE(a2.extent_int(0) == 10);
-    REQUIRE(a2.extent_int(1) == 64);
+    REQUIRE(a2.extent_int(1) == 128);
   }
 }
 
-template <int repack_size, typename Src, typename Dst>
-typename std::enable_if<Src::Rank == 1>::type
-repack_test (const Src& a_src, const Dst& a) {
-  static_assert(Dst::traits::memory_traits::Unmanaged, "Um");
-  static_assert(Dst::value_type::n == repack_size, "Pack::n");
-  REQUIRE(a.extent_int(0) == (a_src(0).n/repack_size)*a_src.extent_int(0));
+template <typename View>
+OnlyRank<View, 1> fill (const View& a) {
+  const auto m = Kokkos::create_mirror_view(a);
+  for (int i = 0; i < m.extent_int(0); ++i)
+    m(i) = i;
+  Kokkos::deep_copy(a, m);
+}
+
+template <typename View>
+OnlyRank<View, 2> fill (const View& a) {
+  const auto m = Kokkos::create_mirror_view(a);
+  for (int i = 0; i < m.extent_int(0); ++i)
+    for (int j = 0; j < m.extent_int(1); ++j)
+      a(i,j) = j*m.extent_int(0) + i;
+  Kokkos::deep_copy(a, m);
+}
+
+template <typename VA, typename VB>
+OnlyRank<VA, 1> compare (const VA& a, const VB& b) {
+  const auto ma = Kokkos::create_mirror_view(a);
+  const auto mb = Kokkos::create_mirror_view(b);
+  for (int i = 0; i < ma.extent_int(0); ++i)
+    REQUIRE(ma(i) == mb(i));
+}
+
+template <typename VA, typename VB>
+OnlyRank<VA, 2> compare (const VA& a, const VB& b) {
+  const auto ma = Kokkos::create_mirror_view(a);
+  const auto mb = Kokkos::create_mirror_view(b);
+  for (int i = 0; i < ma.extent_int(0); ++i)
+    for (int j = 0; j < ma.extent_int(1); ++j)
+      REQUIRE(ma(i,j) == mb(i,j));
 }
 
 template <int repack_size, typename Src, typename Dst>
-typename std::enable_if<Src::Rank == 2>::type
-repack_test (const Src& a_src, const Dst& a) {
+OnlyRank<Src, 1> repack_test (const Src& a_src, const Dst& a) {
+  static_assert(Dst::traits::memory_traits::Unmanaged, "Um");
+  static_assert(Dst::value_type::n == repack_size, "Pack::n");
+  REQUIRE(a.extent_int(0) == (a_src(0).n/repack_size)*a_src.extent_int(0));
+  compare(scalarize(a_src), scalarize(a));
+}
+
+template <int repack_size, typename Src, typename Dst>
+OnlyRank<Src, 2> repack_test (const Src& a_src, const Dst& a) {
   static_assert(Dst::traits::memory_traits::Unmanaged, "Um");
   static_assert(Dst::value_type::n == repack_size, "Pack::n");
   REQUIRE(a.extent_int(0) == a_src.extent_int(0));
   REQUIRE(a.extent_int(1) == (a_src(0,0).n/repack_size)*a_src.extent_int(1));
+  compare(scalarize(a_src), scalarize(a));
 }
 
 TEST_CASE("repack", "scream::pack") {
@@ -59,6 +96,7 @@ TEST_CASE("repack", "scream::pack") {
 
   {
     const Array1 a1("a1", 10);
+    fill(a1);
 
     const auto a2 = repack<8>(a1);
     repack_test<8>(a1, a2);
@@ -78,6 +116,7 @@ TEST_CASE("repack", "scream::pack") {
 
   {
     const Array2 a1("a1", 10, 4);
+    fill(a1);
 
     const auto a2 = repack<8>(a1);
     repack_test<8>(a1, a2);
