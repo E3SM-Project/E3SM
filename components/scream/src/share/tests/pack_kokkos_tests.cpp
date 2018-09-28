@@ -30,7 +30,24 @@ TEST_CASE("scalarize", "scream::pack") {
     static_assert(decltype(a2)::traits::memory_traits::Unmanaged, "Um");
     REQUIRE(a2.extent_int(0) == 10);
     REQUIRE(a2.extent_int(1) == 64);
-  }  
+  }
+}
+
+template <int repack_size, typename Src, typename Dst>
+typename std::enable_if<Src::Rank == 1>::type
+repack_test (const Src& a_src, const Dst& a) {
+  static_assert(Dst::traits::memory_traits::Unmanaged, "Um");
+  static_assert(Dst::value_type::n == repack_size, "Pack::n");
+  REQUIRE(a.extent_int(0) == (a_src(0).n/repack_size)*a_src.extent_int(0));
+}
+
+template <int repack_size, typename Src, typename Dst>
+typename std::enable_if<Src::Rank == 2>::type
+repack_test (const Src& a_src, const Dst& a) {
+  static_assert(Dst::traits::memory_traits::Unmanaged, "Um");
+  static_assert(Dst::value_type::n == repack_size, "Pack::n");
+  REQUIRE(a.extent_int(0) == a_src.extent_int(0));
+  REQUIRE(a.extent_int(1) == (a_src(0,0).n/repack_size)*a_src.extent_int(1));
 }
 
 TEST_CASE("repack", "scream::pack") {
@@ -38,49 +55,44 @@ TEST_CASE("repack", "scream::pack") {
   using scream::pack::repack;
 
   typedef Kokkos::View<Pack<double, 16>*> Array1;
-  typedef Kokkos::View<Pack<double, 16>**> Array2;
+  typedef Kokkos::View<Pack<double, 32>**> Array2;
 
   {
     const Array1 a1("a1", 10);
+
     const auto a2 = repack<8>(a1);
-    static_assert(decltype(a2)::traits::memory_traits::Unmanaged, "Um");
-    REQUIRE(a2.extent_int(0) == 2*a1.extent_int(0));
+    repack_test<8>(a1, a2);
+
     const auto a3 = repack<4>(a2);
-    static_assert(decltype(a3)::traits::memory_traits::Unmanaged, "Um");
-    REQUIRE(a3.extent_int(0) == 4*a1.extent_int(0));    
+    repack_test<4>(a2, a3);
+
     const auto a4 = repack<2>(a3);
-    static_assert(decltype(a4)::traits::memory_traits::Unmanaged, "Um");
-    REQUIRE(a4.extent_int(0) == 8*a1.extent_int(0));    
+    repack_test<2>(a3, a4);
+
     const auto a5 = repack<2>(a1);
-    static_assert(decltype(a5)::traits::memory_traits::Unmanaged, "Um");
-    REQUIRE(a4.extent_int(0) == 8*a1.extent_int(0));    
+    repack_test<2>(a1, a5);
+
     const auto a6 = repack<16>(a1);
-    static_assert(decltype(a6)::traits::memory_traits::Unmanaged, "Um");
-    REQUIRE(a6.extent_int(0) == a1.extent_int(0));    
+    repack_test<16>(a1, a6);
   }
 
   {
     const Array2 a1("a1", 10, 4);
+
     const auto a2 = repack<8>(a1);
-    static_assert(decltype(a2)::traits::memory_traits::Unmanaged, "Um");
-    REQUIRE(a2.extent_int(0) ==   a1.extent_int(0));
-    REQUIRE(a2.extent_int(1) == 2*a1.extent_int(1));
+    repack_test<8>(a1, a2);
+
     const auto a3 = repack<4>(a2);
-    static_assert(decltype(a3)::traits::memory_traits::Unmanaged, "Um");
-    REQUIRE(a3.extent_int(0) ==   a1.extent_int(0));
-    REQUIRE(a3.extent_int(1) == 4*a1.extent_int(1));
+    repack_test<4>(a2, a3);
+
     const auto a4 = repack<2>(a3);
-    static_assert(decltype(a4)::traits::memory_traits::Unmanaged, "Um");
-    REQUIRE(a4.extent_int(0) ==   a1.extent_int(0));
-    REQUIRE(a4.extent_int(1) == 8*a1.extent_int(1));
+    repack_test<2>(a3, a4);
+
     const auto a5 = repack<2>(a1);
-    static_assert(decltype(a5)::traits::memory_traits::Unmanaged, "Um");
-    REQUIRE(a5.extent_int(0) ==   a1.extent_int(0));
-    REQUIRE(a5.extent_int(1) == 8*a1.extent_int(1));
-    const auto a6 = repack<16>(a1);
-    static_assert(decltype(a6)::traits::memory_traits::Unmanaged, "Um");
-    REQUIRE(a6.extent_int(0) ==   a1.extent_int(0));
-    REQUIRE(a6.extent_int(1) ==   a1.extent_int(1));
+    repack_test<2>(a1, a5);
+
+    const auto a6 = repack<32>(a1);
+    repack_test<32>(a1, a6);
   }
 }
 
