@@ -75,7 +75,7 @@ Cosp/LIDAR      physics/cosp/actsim             CNRS                BSD
 Cosp/quickbeam  physics/cosp/quickbeam          author              BSD
 Cosp/MODIS      physics/cosp/MODIS_simulator    U Colo.             BSD
 icarus-scops    physics/icarus-scops            BCC                 BSD
-HOMMEXX         components/homme/src/share/cxx  NTESS               BSD
+HOMMEXX         components/homme/src/share/cxx  SNL                 BSD
                 components/homme/src/share/cxx/COPYRIGHT
 
 -------------------------------------------------------------------------------
