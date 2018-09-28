@@ -11,6 +11,15 @@
 namespace scream {
 namespace pack {
 
+/* Pack is a vectorization pack, and Mask is a conditional mask for Pack::set
+   constructed from operators among packs.
+
+   If pack size (PACKN) is 1, then a Pack behaves as a scalar, and a Mask
+   behaves roughly as a bool. Mask purposely does not support 'operator bool'
+   because it is ambiguous whether operator bool should act as any() or all(),
+   so we want the caller to be explicit.
+ */
+
 template <int PACKN>
 struct Mask {
   // One tends to think a short boolean type would be useful here, but that is
@@ -366,9 +375,6 @@ OnlyPack<Pack> range (const typename Pack::scalar& start) {
   return p;
 }
 
-} // namespace pack
-} // namespace scream
-
 #undef scream_pack_gen_assign_op_p
 #undef scream_pack_gen_assign_op_s
 #undef scream_pack_gen_assign_op_all
@@ -386,5 +392,8 @@ OnlyPack<Pack> range (const typename Pack::scalar& start) {
 #undef scream_mask_gen_bin_op_ps
 #undef scream_mask_gen_bin_op_sp
 #undef scream_mask_gen_bin_op_all
+
+} // namespace pack
+} // namespace scream
 
 #endif // INCLUDE_SCREAM_PACK
