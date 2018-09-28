@@ -10,4 +10,4 @@ CreateUnitTest(array_io "array_io_tests.cpp;unit_test.f90" scream_share num_mpi_
 CreateUnitTest(util_cxx util_tests.cpp scream_share num_mpi_ranks config_defines)
 
 # Test packs
-CreateUnitTest(packs pack_tests.cpp scream_share num_mpi_ranks config_defines)
+CreateUnitTest(packs "pack_tests.cpp;pack_kokkos_tests.cpp" scream_share num_mpi_ranks config_defines)

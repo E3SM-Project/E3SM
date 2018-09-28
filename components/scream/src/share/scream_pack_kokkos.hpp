@@ -2,6 +2,7 @@
 #define INCLUDE_SCREAM_PACK_KOKKOS
 
 #include "scream_pack.hpp"
+#include "scream_kokkos_meta.hpp"
 
 namespace scream {
 namespace pack {
