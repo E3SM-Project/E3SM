@@ -31,6 +31,8 @@ template <typename VA, typename VB>
 OnlyRank<VA, 1> compare (const VA& a, const VB& b) {
   const auto ma = Kokkos::create_mirror_view(a);
   const auto mb = Kokkos::create_mirror_view(b);
+  Kokkos::deep_copy(ma, a);
+  Kokkos::deep_copy(mb, b);
   for (int i = 0; i < ma.extent_int(0); ++i)
     REQUIRE(ma(i) == mb(i));
 }
@@ -39,6 +41,8 @@ template <typename VA, typename VB>
 OnlyRank<VA, 2> compare (const VA& a, const VB& b) {
   const auto ma = Kokkos::create_mirror_view(a);
   const auto mb = Kokkos::create_mirror_view(b);
+  Kokkos::deep_copy(ma, a);
+  Kokkos::deep_copy(mb, b);
   for (int i = 0; i < ma.extent_int(0); ++i)
     for (int j = 0; j < ma.extent_int(1); ++j)
       REQUIRE(ma(i,j) == mb(i,j));
