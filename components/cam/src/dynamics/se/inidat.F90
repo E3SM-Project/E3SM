@@ -536,17 +536,23 @@ contains
     ! once we've read all the fields we do a boundary exchange to 
     ! update the redundent columns in the dynamics
 
-    if (.false.) then !(elem(1)%model == 1 )then
+#if 0 
+!(elem(1)%model == 1 )then
     if(par%dynproc) then
        call initEdgeBuffer(par, edge, elem, (3+pcnst)*nlev+2)
     end if
-    elseif (.true.) then !(elem(1)%model == 2 )then
+#else 
+!(elem(1)%model == 2 )then
     if(par%dynproc) then
        call initEdgeBuffer(par, edge, elem, (4+pcnst)*nlev+2)
     end if
-    endif
+#endif
 
-    if (.false.) then!(elem(1)%model == 1 )then
+#if 0 
+!(elem(1)%model == 1 )then
+
+!all this does is dss state+Q, this can be routine in homme
+!depending on model
     do ie=1,nelemd
        kptr=0
        call edgeVpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
@@ -574,7 +580,8 @@ contains
        kptr=kptr+nlev
        call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
     end do
-    elseif (.true.) then!(elem(1)%model == 2) then
+#else 
+!(elem(1)%model == 2) then
     do ie=1,nelemd
        kptr=0
        call edgeVpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
@@ -583,13 +590,30 @@ contains
        kptr=kptr+1
        call edgeVpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
        kptr=kptr+2*nlev
-       call edgeVpack(edge, elem(ie)%state%theta_dp_cp(:,:,:,1),nlev,kptr,ie)
+       call edgeVpack(edge, elem(ie)%state%vtheta_dp(:,:,:,1),nlev,kptr,ie)
        kptr=kptr+nlev
        call edgeVpack(edge, elem(ie)%state%w_i(:,:,:,1),nlevp,kptr,ie)
        kptr=kptr+nlevp
        call edgeVpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
     end do
-    endif
+    if(par%dynproc) then
+       call bndry_exchangeV(par,edge)
+    end if
+    do ie=1,nelemd
+       kptr=0
+       call edgeVunpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
+       kptr=kptr+1
+       call edgeVunpack(edge, elem(ie)%state%phis,1,kptr,ie)
+       kptr=kptr+1
+       call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
+       kptr=kptr+2*nlev
+       call edgeVunpack(edge, elem(ie)%state%vtheta_dp(:,:,:,1),nlev,kptr,ie)
+       kptr=kptr+nlevp
+       call edgeVunpack(edge, elem(ie)%state%w_i(:,:,:,1),nlevp,kptr,ie)
+       kptr=kptr+nlev
+       call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
+    end do
+#endif
     
     endif !NOT single column
 
