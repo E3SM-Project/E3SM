@@ -9,6 +9,7 @@
 #  3) mkl/18.0.0.128     6) sems-openmpi/1.10.5   9) sems-hdf5/1.8.12/base
 #
 # However we may want to bring each machine file into sync with cime options for this machine. 
+# Then mpiexec options (binding) may require changes.
 # For example, right now in cime/config/e3sm/machines/config_machines.xml for sandiatoss3 
 # these options are listed:
 #  <mpirun mpilib="default">
