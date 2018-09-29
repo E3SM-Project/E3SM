@@ -924,11 +924,6 @@ contains
                avgflag='A', long_name='total heterotrophic respiration', &
                ptr_col=this%hr_col)
 
-          this%som_c_runoff_col(begc:endc) = spval
-          call hist_addfld1d (fname='SOMC_RUNOFF', units='gC/m^2/s', &
-               avgflag='A', long_name='loss of organic C through runoff', &
-               ptr_col=this%hr_col)
-
        end if
 
        return
@@ -944,6 +939,11 @@ contains
                avgflag='A', long_name='grain C to food', &
                ptr_patch=this%grainc_to_food_patch, default='inactive')
        end if
+
+       this%som_c_runoff_col(begc:endc) = spval
+       call hist_addfld1d (fname='SOMC_RUNOFF', units='gC/m^2/s', &
+            avgflag='A', long_name='loss of organic C through runoff', &
+            ptr_col=this%hr_col)
 
        this%woodc_alloc_patch(begp:endp) = spval
        call hist_addfld1d (fname='WOODC_ALLOC', units='gC/m^2/s', &
