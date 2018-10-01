@@ -288,6 +288,9 @@ lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr1850_c160503.nc</fsurdat>
 <fsurdat hgrid="ne0np4_conus_x4v1_lowcon" sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
 
+<fsurdat hgrid="ne0np4_conus_30x8" sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_conus_30_x8_16pfts_simyr1978_c170216.nc</fsurdat>
+
 <fsurdat hgrid="ne0np4_enax4v1" sim_year="1850" use_crop=".false." >
     lnd/clm2/surfdata/surfdata_enax4v1_mp24_simyr1850_c170518.nc</fsurdat>
 <fsurdat hgrid="ne0np4_enax4v1" sim_year="2000" use_crop=".false." >
@@ -304,6 +307,10 @@ lnd/clm2/surfdata_map/surfdata_armx8v3_simyr2000_c140518.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr1850_c160503.nc</fsurdat>
 <fsurdat hgrid="ne0np4_conus_x4v1_lowcon"    sim_year="2000" irrig=".false." >
 lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
+
+<fsurdat hgrid="ne0np4_conus_30x8" sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_conus_30_x8_16pfts_simyr1978_c170216.nc</fsurdat>
+
 <fsurdat hgrid="ne0np4_enax4v1" sim_year="1850" irrig=".false." >
     lnd/clm2/surfdata/surfdata_enax4v1_mp24_simyr1850_c170518.nc</fsurdat>
 <fsurdat hgrid="ne0np4_enax4v1" sim_year="2000" irrig=".false." >
