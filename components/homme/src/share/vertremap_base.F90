@@ -706,7 +706,8 @@ function compute_ppm( a , dx )    result(coefs)
     !Computed these coefficients from the edge values and cell mean in Maple. Assumes normalized coordinates: xi=(x-x0)/dx
     coefs(0,j) = 1.5 * a(j) - ( al + ar ) / 4.
     coefs(1,j) = ar - al
-    coefs(2,j) = -6. * a(j) + 3. * ( al + ar )
+    ! coefs(2,j) = -6. * a(j) + 3. * ( al + ar )
+    coefs(2,j) = 3. * (-2. * a(j) + ( al + ar ))
   enddo
 
   !If vert_remap_q_alg == 2, use piecewise constant in the boundaries, and don't use ghost cells.
@@ -729,7 +730,7 @@ function integrate_parabola( a , x1 , x2 )    result(mass)
   real(kind=real_kind), intent(in) :: x1      !lower domain bound for integration
   real(kind=real_kind), intent(in) :: x2      !upper domain bound for integration
   real(kind=real_kind)             :: mass
-  mass = a(0) * (x2 - x1) + a(1) * (x2 ** 2 - x1 ** 2) / 0.2D1 + a(2) * (x2 ** 3 - x1 ** 3) / 0.3D1
+  mass = a(0) * (x2 - x1) + a(1) * (x2 * x2 - x1 * x1) / 0.2D1 + a(2) * (x2 * x2 * x2 - x1 * x1 * x1) / 0.3D1
 end function integrate_parabola
 
 
