@@ -3,6 +3,8 @@
 
 #include <Kokkos_Core.hpp>
 
+#include "share/scream_types.hpp"
+
 namespace scream {
 
 namespace util {
