@@ -115,9 +115,11 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hvcoord, hybrid , dt , 
   use dimensions_mod,         only : max_neigh_edges
   use bndry_mod,              only : ghost_exchangevfull
   use interpolate_mod,        only : interpolate_tracers, minmax_tracers
-  use control_mod   ,         only : qsplit, nu_q, semi_lagrange_hv_q_all
-  use control_mod,            only : transport_alg, semi_lagrange_cdr_alg, &
-       semi_lagrange_cdr_check
+  use control_mod,            only : qsplit, nu_q, semi_lagrange_hv_q_all,&
+       transport_alg, semi_lagrange_cdr_alg, semi_lagrange_cdr_check
+  ! For DCMIP16 supercell test case.
+  use control_mod,            only : dcmip16_mu_s
+  use prim_advection_base,    only : advance_physical_vis
 
   implicit none
   type (element_t)     , intent(inout) :: elem(:)
@@ -129,21 +131,21 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hvcoord, hybrid , dt , 
   integer              , intent(in   ) :: nets
   integer              , intent(in   ) :: nete
 
-  type(cartesian3D_t)                           :: dep_points  (np,np)
-  integer                                       :: elem_indexes(np,np)
-  type(cartesian2D_t)                           :: para_coords (np,np)
-  real(kind=real_kind)                          :: minq        (np,np,nlev,qsize,nets:nete)
-  real(kind=real_kind)                          :: maxq        (np,np,nlev,qsize,nets:nete)
-  real(kind=real_kind)                          :: f                      (qsize)
-  real(kind=real_kind)                          :: g                      (qsize)
+  type(cartesian3D_t)   :: dep_points  (np,np)
+  integer               :: elem_indexes(np,np)
+  type(cartesian2D_t)   :: para_coords (np,np)
+  real(kind=real_kind)  :: minq        (np,np,nlev,qsize,nets:nete)
+  real(kind=real_kind)  :: maxq        (np,np,nlev,qsize,nets:nete)
+  real(kind=real_kind)  :: f                      (qsize)
+  real(kind=real_kind)  :: g                      (qsize)
 
   !TODO we don't want this. i think it causes a temp array in the
   !     ghostVpack_unoriented call.
-  real(kind=real_kind)                          :: neigh_q     (np,np,qsize+1,max_neigh_edges+1)
-  real(kind=real_kind)                          :: u           (np,np,qsize+1)
+  real(kind=real_kind)  :: neigh_q     (np,np,qsize+1,max_neigh_edges+1)
+  real(kind=real_kind)  :: u           (np,np,qsize+1)
 
-  integer                                       :: i,j,k,l,n,q,ie,kptr, n0_qdp, np1_qdp
-  integer                                       :: num_neighbors, scalar_q_bounds, info
+  integer               :: i,j,k,l,n,q,ie,kptr, n0_qdp, np1_qdp
+  integer               :: num_neighbors, scalar_q_bounds, info
   logical :: slmm, cisl, qos
 
   call t_barrierf('Prim_Advec_Tracers_remap_ALE', hybrid%par%comm)
@@ -432,13 +434,14 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hvcoord, hybrid , dt , 
      if (barrier) call perf_barrier(hybrid)
      call t_stopf('CEDR_check')
   end if
-  if (semi_lagrange_cdr_alg /= 1) then
-     call t_stopf('Prim_Advec_Tracers_remap_ALE')
-     return
-  else
+  if (semi_lagrange_cdr_alg == 1) then
      call apply_cobra(elem, hybrid, tl, nets, nete, n0_qdp, np1_qdp, minq, maxq)
-     call t_stopf('Prim_Advec_Tracers_remap_ALE')
   end if
+  ! physical viscosity for supercell test case
+  if (dcmip16_mu_s > 0) then
+     call advance_physical_vis(elem, hvcoord, hybrid, deriv, tl%np1, np1_qdp, nets, nete, dt, dcmip16_mu_s)
+  endif
+  call t_stopf('Prim_Advec_Tracers_remap_ALE')
 end subroutine Prim_Advec_Tracers_remap_ALE
 
 subroutine apply_cobra(elem, hybrid, tl, nets, nete, n0_qdp, np1_qdp, minq, maxq)
