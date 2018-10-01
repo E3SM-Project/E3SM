@@ -10,7 +10,7 @@ module atm_core
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
-   use mpas_log, only : mpas_log_write
+   use mpas_log, only : mpas_log_write, mpas_log_info
 
    type (MPAS_Clock_type), pointer :: clock
 
@@ -76,6 +76,7 @@ module atm_core
       ! Set "local" clock to point to the clock contained in the domain type
       !
       clock => domain % clock
+      mpas_log_info => domain % logInfo
 
 
       call mpas_pool_get_config(domain % blocklist % configs, 'config_do_restart', config_do_restart)
@@ -494,6 +495,9 @@ module atm_core
       real (kind=R8KIND) :: output_start_time, output_stop_time
       
       ierr = 0
+
+      clock => domain % clock
+      mpas_log_info => domain % logInfo
       
       ! Eventually, dt should be domain specific
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dt', dt)
@@ -851,6 +855,9 @@ module atm_core
       real (kind=RKIND) :: xtime_s
       integer :: ierr
 
+      clock => domain % clock
+      mpas_log_info => domain % logInfo
+
       startTime = mpas_get_clock_time(clock, MPAS_START_TIME, ierr)
       currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
          
@@ -892,6 +899,9 @@ module atm_core
       integer :: ierr
 
       ierr = 0
+
+      clock => domain % clock
+      mpas_log_info => domain % logInfo
 
       call mpas_atm_diag_cleanup()
 
