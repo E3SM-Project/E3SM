@@ -102,14 +102,16 @@ TEST_CASE("scalarize", "scream::pack") {
   {
     const Array1 a1("a1", 10);
     const auto a2 = scalarize(a1);
-    static_assert(decltype(a2)::traits::memory_traits::Unmanaged, "Um");
+    typedef decltype(a2) VT;
+    static_assert(VT::traits::memory_traits::Unmanaged, "Um");
     REQUIRE(a2.extent_int(0) == 160);
   }  
 
   {
     const Array2 a1("a1", 10, 4);
     const auto a2 = scalarize(a1);
-    static_assert(decltype(a2)::traits::memory_traits::Unmanaged, "Um");
+    typedef decltype(a2) VT;
+    static_assert(VT::traits::memory_traits::Unmanaged, "Um");
     REQUIRE(a2.extent_int(0) == 10);
     REQUIRE(a2.extent_int(1) == 128);
   }
