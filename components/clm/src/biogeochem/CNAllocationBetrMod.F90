@@ -35,6 +35,7 @@ module CNAllocationBeTRMod
   use WaterStateType      , only : waterstate_type
   use PlantMicKineticsMod , only : PlantMicKinetics_type
   use CNAllocationMod     , only : CNAllocParamsInst
+  use clm_varctl      , only: iulog
   !
   implicit none
   save
@@ -1737,15 +1738,14 @@ contains
              npool_to_grainn_storage(p) =  cpool_to_grainc_storage(p) / cng
             end if
             !take supp n from buffer if possible
-            plant_n_buffer_patch(p) = plant_n_buffer_patch(p) - supplement_to_sminn_surf(p) * dt
             if(plant_n_buffer_patch(p)>=0._r8)then
               supplement_to_sminn_surf(p) = 0._r8
             else
-              supplement_to_sminn_surf(p) = -plant_n_buffer_patch(p)/dt
+              supplement_to_sminn_surf(p) = supplement_to_sminn_surf(p)-plant_n_buffer_patch(p)/dt
               plant_n_buffer_patch(p) = 0._r8 
             endif
           else if (cnallocate_carbon_only() .or. cnallocate_carbonnitrogen_only()) then
-
+            if(get_nstep()==23)write(iulog,*)'p',p,supplement_to_sminp_surf(p)
             supplement_to_sminp_surf(p) = supplement_to_sminp_surf(p) +  &
                  (max(cpool_to_leafc(p) / cpl - ppool_to_leafp(p),0._r8))
 
@@ -1840,11 +1840,10 @@ contains
                   ppool_to_grainp_storage(p) =  cpool_to_grainc_storage(p) / cpg
              end if
             !take supp p from buffer if possible
-             plant_p_buffer_patch(p) = plant_p_buffer_patch(p) - supplement_to_sminp_surf(p) * dt
              if(plant_p_buffer_patch(p)>=0._r8)then
                supplement_to_sminp_surf(p) = 0._r8
              else
-               supplement_to_sminp_surf(p) = -plant_p_buffer_patch(p)/dt
+               supplement_to_sminp_surf(p) = supplement_to_sminp_surf(p)-plant_p_buffer_patch(p)/dt
                plant_p_buffer_patch(p) = 0._r8
              endif
          end if

@@ -260,16 +260,16 @@ module CNEcosystemDynBetrMod
        ! CNphenology needs to be called after CNdecompAlloc, because it
        ! depends on current time-step fluxes to new growth on the last
        ! litterfall timestep in deciduous systems
-
+!       if(get_nstep()/=23)then
        call t_startf('CNPhenology')
        call CNPhenology(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             num_pcropp, filter_pcropp, doalb, atm2lnd_vars, &
             waterstate_vars, temperature_vars, crop_vars, canopystate_vars, soilstate_vars, &
             dgvs_vars, cnstate_vars, carbonstate_vars, carbonflux_vars, &
             nitrogenstate_vars, nitrogenflux_vars,&
-            phosphorusstate_vars,phosphorusflux_vars)!, litfall_on=(get_nstep()/=9))
+            phosphorusstate_vars,phosphorusflux_vars)!, litfall_on=(get_nstep()/=23))
        call t_stopf('CNPhenology')
-
+!       endif
 
       !--------------------------------------------
        ! Growth respiration
@@ -363,7 +363,7 @@ module CNEcosystemDynBetrMod
 !       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'loc1')
 
        call t_stopf('CNUpdate1')
-!       if(get_nstep()/=3)then
+!       if(get_nstep()/=23)then
        call t_startf('CNGapMortality')
 !       call nitrogenstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)    
        call CNGapMortality( num_soilc, filter_soilc, num_soilp, filter_soilp, &

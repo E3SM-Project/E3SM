@@ -1721,8 +1721,8 @@ contains
             this%totlitp_col(c) + &
             this%totsomp_col(c) + &
             this%sminp_col(c)
-!         if(c==8586)then
-!           print*,'==========================='
+!         if(get_nstep()==23)then
+!           write(iulog,*)'==========================='
 !           write(iulog,*)trim(loc),' totabg',get_nstep(),this%totabgp_col(c)
 !           write(iulog,*)'totpftp',this%totpftp_col(c)
 !           write(iulog,*)'totprodp',this%totprodp_col(c)
