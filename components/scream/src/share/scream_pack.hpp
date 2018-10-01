@@ -3,7 +3,6 @@
 
 //TODO
 // - bounds checking define
-// - unit tests
 
 #include "util/math_utils.hpp" // for min, max
 #include "scream_types.hpp"    // for Int
@@ -11,6 +10,15 @@
 
 namespace scream {
 namespace pack {
+
+/* Pack is a vectorization pack, and Mask is a conditional mask for Pack::set
+   constructed from operators among packs.
+
+   If pack size (PACKN) is 1, then a Pack behaves as a scalar, and a Mask
+   behaves roughly as a bool. Mask purposely does not support 'operator bool'
+   because it is ambiguous whether operator bool should act as any() or all(),
+   so we want the caller to be explicit.
+ */
 
 template <int PACKN>
 struct Mask {
@@ -46,13 +54,13 @@ using OnlyMask = typename std::enable_if<Mask::masktag,Mask>::type;
 template <typename Mask, typename Return>
 using OnlyMaskReturn = typename std::enable_if<Mask::masktag,Return>::type;
 
-#define scream_masked_loop(mask) \
+#define scream_masked_loop(mask, s)                         \
   vector_simd for (int s = 0; s < mask.n; ++s) if (mask[s])
 
-#define scream_masked_loop_no_force_vec(mask) \
+#define scream_masked_loop_no_force_vec(mask, s)              \
   vector_ivdep for (int s = 0; s < mask.n; ++s) if (mask[s])
 
-#define scream_masked_loop_no_vec(mask) \
+#define scream_masked_loop_no_vec(mask, s)                    \
   vector_novec for (int s = 0; s < mask.n; ++s) if (mask[s])
 
 #define scream_mask_gen_bin_op_mm(op, impl)                   \
@@ -366,6 +374,24 @@ OnlyPack<Pack> range (const typename Pack::scalar& start) {
   vector_simd for (int i = 0; i < Pack::n; ++i) p[i] = start + i;
   return p;
 }
+
+#undef scream_pack_gen_assign_op_p
+#undef scream_pack_gen_assign_op_s
+#undef scream_pack_gen_assign_op_all
+#undef scream_pack_gen_bin_op_pp
+#undef scream_pack_gen_bin_op_ps
+#undef scream_pack_gen_bin_op_sp
+#undef scream_pack_gen_bin_op_all
+#undef scream_pack_gen_unary_fn
+#undef scream_pack_gen_unary_stdfn
+#undef scream_pack_gen_bin_fn_pp
+#undef scream_pack_gen_bin_fn_ps
+#undef scream_pack_gen_bin_fn_sp
+#undef scream_pack_gen_bin_fn_all
+#undef scream_mask_gen_bin_op_pp
+#undef scream_mask_gen_bin_op_ps
+#undef scream_mask_gen_bin_op_sp
+#undef scream_mask_gen_bin_op_all
 
 } // namespace pack
 } // namespace scream

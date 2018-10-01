@@ -56,7 +56,7 @@ struct Baseline {
   }
 
   Int generate_baseline (const std::string& filename) {
-    const auto fid = FILEPtr(fopen(filename.c_str(), "w"));
+    auto fid = FILEPtr(fopen(filename.c_str(), "w"));
     scream_throw_if( ! fid, "generate_baseline can't write " << filename);
     Int nerr = 0;
     bool first = true;
@@ -78,7 +78,7 @@ struct Baseline {
   }
 
   Int run_and_cmp (const std::string& filename, const double& tol) {
-    const auto fid = FILEPtr(fopen(filename.c_str(), "r"));
+    auto fid = FILEPtr(fopen(filename.c_str(), "r"));
     scream_throw_if( ! fid, "generate_baseline can't read " << filename);
     Int nerr = 0, ne;
     for (auto ps : params_) {
