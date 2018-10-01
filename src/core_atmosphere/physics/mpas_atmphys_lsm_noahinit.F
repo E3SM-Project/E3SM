@@ -16,6 +16,7 @@
  use mpas_dmpar
  use mpas_kind_types
  use mpas_pool_routines
+ use mpas_io_units
 
  use mpas_atmphys_constants
  use mpas_atmphys_utilities
@@ -214,7 +215,7 @@
 
  integer,parameter:: open_ok = 0
  integer:: lumatch,iindex,lc,num_slope
- integer:: istat
+ integer:: read_unit, istat
 
 !-----SPECIFY VEGETATION RELATED CHARACTERISTICS :
 !ALBBCK: SFC albedo (in percentage)
@@ -245,16 +246,21 @@
 !read in the vegetation properties from vegparm.tbl:
 
  if(dminfo % my_proc_id == IO_NODE) then
-    open(16,file='VEGPARM.TBL',form='FORMATTED',status='OLD',iostat=istat)
+    !get a unit to open init file:
+    call mpas_new_unit(read_unit)
+    if ( read_unit < 0 ) &
+       call physics_error_fatal('soil_veg_gen_parm: All file units are taken.  Change maxUnits in mpas_io_units.F')
+
+    open(read_unit,file='VEGPARM.TBL',form='FORMATTED',status='OLD',iostat=istat)
     if(istat /= open_ok) &
        call physics_error_fatal('subroutine soil_veg_gen_arm: ' // &
                                 'failure opening VEGPARM.TBL')
 
     lumatch=0
     find_lutype : do while (lumatch == 0)
-       read(16,*,end=2002)
-       read(16,*,end=2002) lutype
-       read(16,*) lucats,iindex
+       read(read_unit,*,end=2002)
+       read(read_unit,*,end=2002) lutype
+       read(read_unit,*) lucats,iindex
 
        if(lutype.eq.trim(mminlu))then
           write(mess,*) '   landuse type = ' // trim ( lutype ) // ' found', &
@@ -264,7 +270,7 @@
        else
           call physics_message('    skipping over lutype = ' // trim ( lutype ))
           do lc = 1, lucats+12
-             read(16,*)
+             read(read_unit,*)
           enddo
        endif
     enddo find_lutype
@@ -290,26 +296,26 @@
 
     if(lutype.eq.mminlu)then
        do lc = 1, lucats
-          read(16,*) iindex,shdtbl(lc),nrotbl(lc),rstbl(lc),rgltbl(lc),hstbl(lc),snuptbl(lc), &
+          read(read_unit,*) iindex,shdtbl(lc),nrotbl(lc),rstbl(lc),rgltbl(lc),hstbl(lc),snuptbl(lc), &
                      maxalb(lc),laimintbl(lc),laimaxtbl(lc),emissmintbl(lc),emissmaxtbl(lc),  &
                      albedomintbl(lc),albedomaxtbl(lc),z0mintbl(lc),z0maxtbl(lc)
        enddo
-       read (16,*)
-       read (16,*)topt_data
-       read (16,*)
-       read (16,*)cmcmax_data
-       read (16,*)
-       read (16,*)cfactr_data
-       read (16,*)
-       read (16,*)rsmax_data
-       read (16,*)
-       read (16,*)bare
-       read (16,*)
-       read (16,*)natural
+       read (read_unit,*)
+       read (read_unit,*)topt_data
+       read (read_unit,*)
+       read (read_unit,*)cmcmax_data
+       read (read_unit,*)
+       read (read_unit,*)cfactr_data
+       read (read_unit,*)
+       read (read_unit,*)rsmax_data
+       read (read_unit,*)
+       read (read_unit,*)bare
+       read (read_unit,*)
+       read (read_unit,*)natural
     endif
 
     2002 continue
-    close (16)
+    close (read_unit)
     if(lumatch == 0) &
        call physics_error_fatal ('land use dataset '''//mminlu//''' not found in VEGPARM.TBL.')
       
@@ -366,7 +372,7 @@
 !read in soil properties from soilparm.tbl:
 
  if(dminfo % my_proc_id == IO_NODE) then
-    open(16,file='SOILPARM.TBL',form='FORMATTED',status='OLD',iostat=istat)
+    open(read_unit,file='SOILPARM.TBL',form='FORMATTED',status='OLD',iostat=istat)
     if(istat /= open_ok) &
        call physics_error_fatal('module_sf_noahlsm.F: soil_veg_gen_parm: ' // &
                                 'failure opening SOILPARM.TBL' )
@@ -375,10 +381,10 @@
     call physics_message(mess)
 
     lumatch=0
-    read(16,*)
-    read(16,2000,end=2003) sltype
+    read(read_unit,*)
+    read(read_unit,2000,end=2003) sltype
     2000 format(a4)
-    read(16,*)slcats,iindex
+    read(read_unit,*)slcats,iindex
     if(sltype.eq.mminsl)then
        write(mess,*) '   soil texture classification = ', trim ( sltype ) , ' found', &
                   slcats,' categories'
@@ -401,13 +407,13 @@
     endif
     if(sltype.eq.mminsl) then
        do lc = 1, slcats
-          read(16,*) iindex,bb(lc),drysmc(lc),f11(lc),maxsmc(lc),refsmc(lc),satpsi(lc), &
+          read(read_unit,*) iindex,bb(lc),drysmc(lc),f11(lc),maxsmc(lc),refsmc(lc),satpsi(lc), &
                       satdk(lc),satdw(lc),wltsmc(lc),qtz(lc)
        enddo
     endif
 
     2003 continue
-    close(16)
+    close(read_unit)
     if(lumatch.eq.0)then
        call physics_message( 'soil texture in input file does not ' )
        call physics_message( 'match soilparm table'                 )
@@ -449,13 +455,13 @@
 !read in general parameters from genparm.tbl:
 
  if(dminfo % my_proc_id == IO_NODE) then
-    open(16,file='GENPARM.TBL',form='FORMATTED',status='OLD',iostat=istat)
+    open(read_unit,file='GENPARM.TBL',form='FORMATTED',status='OLD',iostat=istat)
     if(istat /= open_ok) &
        call physics_error_fatal('module_sf_noahlsm.F: soil_veg_gen_parm: ' // &
                                 'failure opening GENPARM.TBL' )
-    read(16,*)
-    read(16,*)
-    read(16,*) num_slope
+    read(read_unit,*)
+    read(read_unit,*)
+    read(read_unit,*) num_slope
 
     slpcats=num_slope
 !prevent possible array overwrite, Bill Bovermann, IBM, May 6, 2008:
@@ -464,33 +470,34 @@
                                 'in module_sf_noahdrv')
 
     do lc = 1, slpcats
-       read(16,*)slope_data(lc)
+       read(read_unit,*)slope_data(lc)
     enddo
-    read(16,*)
-    read(16,*)sbeta_data
-    read(16,*)
-    read(16,*)fxexp_data
-    read(16,*)
-    read(16,*)csoil_data
-    read(16,*)
-    read(16,*)salp_data
-    read(16,*)
-    read(16,*)refdk_data
-    read(16,*)
-    read(16,*)refkdt_data
-    read(16,*)
-    read(16,*)frzk_data
-    read(16,*)
-    read(16,*)zbot_data
-    read(16,*)
-    read(16,*)czil_data
-    read(16,*)
-    read(16,*)smlow_data
-    read(16,*)
-    read(16,*)smhigh_data
-    read(16,*)
-    read(16,*)lvcoef_data
-    close(16)
+    read(read_unit,*)
+    read(read_unit,*)sbeta_data
+    read(read_unit,*)
+    read(read_unit,*)fxexp_data
+    read(read_unit,*)
+    read(read_unit,*)csoil_data
+    read(read_unit,*)
+    read(read_unit,*)salp_data
+    read(read_unit,*)
+    read(read_unit,*)refdk_data
+    read(read_unit,*)
+    read(read_unit,*)refkdt_data
+    read(read_unit,*)
+    read(read_unit,*)frzk_data
+    read(read_unit,*)
+    read(read_unit,*)zbot_data
+    read(read_unit,*)
+    read(read_unit,*)czil_data
+    read(read_unit,*)
+    read(read_unit,*)smlow_data
+    read(read_unit,*)
+    read(read_unit,*)smhigh_data
+    read(read_unit,*)
+    read(read_unit,*)lvcoef_data
+    close(read_unit)
+    call mpas_release_unit(read_unit)
  endif
 
  DM_BCAST_INTEGER(num_slope)
