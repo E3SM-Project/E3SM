@@ -277,6 +277,7 @@ contains
     end if
 
     call t_startf ('physics_update_main')
+    call reduce_ptend_precesion(ptend)
     !-----------------------------------------------------------------------
     ! cpairv_loc and rairv_loc need to be allocated to a size which matches state and ptend
     ! If psetcols == pcols, the cpairv is the correct size and just copy
@@ -492,6 +493,42 @@ contains
 
 
   end subroutine physics_update_main
+
+!===============================================================================
+
+  subroutine reduce_ptend_precesion (ptend)
+    !-----------------------------------------------------------------------
+    ! This subroutine reduces precision of all real datatypes in ptend
+    !-----------------------------------------------------------------------
+    
+    !arguments
+    type(physics_ptend), intent(inout)  :: ptend
+    
+    if (ptend%ls) then
+       ptend%s = dble(real(ptend%s))
+       ptend%hflux_srf = dble(real(ptend%hflux_srf))
+       ptend%hflux_top = dble(real(ptend%hflux_top))
+    end if
+    
+    if (ptend%lu) then
+       ptend%u = dble(real(ptend%u))
+       ptend%taux_srf  = dble(real(ptend%taux_srf))
+       ptend%taux_top  = dble(real(ptend%taux_top))
+    end if
+    
+    if (ptend%lv) then
+       ptend%v = dble(real(ptend%v))
+       ptend%tauy_srf  = dble(real(ptend%tauy_srf))
+       ptend%tauy_top  = dble(real(ptend%tauy_top))
+    end if
+    
+    if (any(ptend%lq(:))) then
+       ptend%q = dble(real(ptend%q))
+       ptend%cflx_srf  = dble(real(ptend%cflx_srf))
+       ptend%cflx_top  = dble(real(ptend%cflx_top))
+    end if
+    
+  end subroutine reduce_ptend_precesion
 
 !===============================================================================
 
