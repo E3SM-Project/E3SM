@@ -186,7 +186,7 @@ MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 IF (${HOMME_USE_KOKKOS})
   IF (${CUDA_FOUND})
     # Note: If you ask for GPU to be bfb with CPU, you should also ask for a strict fp model on cpu.
-    OPTION (HOMMEXX_GPU_BFB_WITH_CPU OFF CACHE BOOL "Whether we want cpu and gpu solution to be bfb")
+    OPTION (HOMMEXX_GPU_BFB_WITH_CPU "Whether we want cpu and gpu solution to be bfb" OFF)
   ENDIF ()
 
   SET (HOMMEXX_VECTOR_SIZE 8 CACHE STRING
