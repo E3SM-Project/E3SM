@@ -53,12 +53,22 @@ TEST_CASE("Unmanaged", "scream::ko") {
       V;
     static_assert( ! V::traits::memory_traits::Unmanaged, "Um");
     V v("v");
-    typedef Unmanaged<V> VUm;
-    static_assert(VUm::traits::memory_traits::Atomic, "Um");
-    static_assert(VUm::traits::memory_traits::Aligned, "Um");
-    static_assert(VUm::traits::memory_traits::Restrict, "Um");
-    static_assert(VUm::traits::memory_traits::Unmanaged, "Um");
-    VUm v_um(v);
+    typedef Unmanaged<V>::const_type CVUm;
+    static_assert(CVUm::traits::memory_traits::Atomic, "Um");
+    static_assert(CVUm::traits::memory_traits::Aligned, "Um");
+    static_assert(CVUm::traits::memory_traits::Restrict, "Um");
+    static_assert(CVUm::traits::memory_traits::Unmanaged, "Um");
+
+    using Kokkos::Impl::ViewMapping;
+    static_assert(ViewMapping<CVUm::traits, V::traits, void>::is_assignable,
+                  "CVUm <- V");
+    static_assert( ! ViewMapping<V::traits, CVUm::traits, void>::is_assignable,
+                  "V </- CVUm");
+    static_assert(ViewMapping<CVUm::traits, Unmanaged<V>::traits, void>::is_assignable,
+                  "CVUm <- VUm");
+    static_assert( ! ViewMapping<Unmanaged<V>::traits, CVUm::traits, void>::is_assignable,
+                  "VUm </- CVUm");
+    CVUm cv_um(v);
   }
 }
 
