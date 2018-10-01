@@ -31,7 +31,7 @@ module lnd_disagg_forc
   save
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: downscale_atmo_state_to_top    ! Downscale atm state forcing fields from gridcell to column
+  public :: downscale_atmo_state_to_topounit    ! Downscale atm state forcing fields from gridcell to column
   !
   ! !PRIVATE MEMBER FUNCTIONS:
 !  private :: downscale_longwave_top      ! Downscale longwave radiation from gridcell to column
@@ -42,7 +42,7 @@ module lnd_disagg_forc
 contains
 
   !-----------------------------------------------------------------------
-  subroutine downscale_atmo_state_to_top(g, i, topi, topf, x2l, top_as)
+  subroutine downscale_atmo_state_to_topounit(g, i, topi, topf, x2l, top_as)
     !
     ! !DESCRIPTION:
     ! Downscale atmospheric forcing fields from gridcell to topounit
