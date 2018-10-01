@@ -23,7 +23,7 @@ OnlyRank<View, 2> fill (const View& a) {
   const auto m = Kokkos::create_mirror_view(a);
   for (int i = 0; i < m.extent_int(0); ++i)
     for (int j = 0; j < m.extent_int(1); ++j)
-      a(i,j) = j*m.extent_int(0) + i;
+      m(i,j) = j*m.extent_int(0) + i;
   Kokkos::deep_copy(a, m);
 }
 
@@ -121,7 +121,7 @@ template <int repack_size, typename Src, typename Dst>
 OnlyRank<Src, 1> repack_test (const Src& a_src, const Dst& a) {
   static_assert(Dst::traits::memory_traits::Unmanaged, "Um");
   static_assert(Dst::value_type::n == repack_size, "Pack::n");
-  REQUIRE(a.extent_int(0) == (a_src(0).n/repack_size)*a_src.extent_int(0));
+  REQUIRE(a.extent_int(0) == (Src::value_type::n/repack_size)*a_src.extent_int(0));
   compare(scalarize(a_src), scalarize(a));
 }
 
@@ -130,7 +130,7 @@ OnlyRank<Src, 2> repack_test (const Src& a_src, const Dst& a) {
   static_assert(Dst::traits::memory_traits::Unmanaged, "Um");
   static_assert(Dst::value_type::n == repack_size, "Pack::n");
   REQUIRE(a.extent_int(0) == a_src.extent_int(0));
-  REQUIRE(a.extent_int(1) == (a_src(0,0).n/repack_size)*a_src.extent_int(1));
+  REQUIRE(a.extent_int(1) == (Src::value_type::n/repack_size)*a_src.extent_int(1));
   compare(scalarize(a_src), scalarize(a));
 }
 
