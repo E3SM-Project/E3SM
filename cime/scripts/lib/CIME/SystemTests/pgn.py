@@ -287,9 +287,9 @@ class PGN(SystemTestsCommon):
 
 
         #create variables in the file
-        init_cond_nc = fhndl.createVariable('init_cond_fnames', 'S1', 'ninit')
-        prt_nc       = fhndl.createVariable('perturb_strings', 'S1', 'nprt')
-        variables_nc = fhndl.createVariable('perturb_vnames', 'S1', 'nvars')
+        init_cond_nc = fhndl.createVariable('init_cond_fnames', 'S100', 'ninit')
+        prt_nc       = fhndl.createVariable('perturb_strings', 'S10', 'nprt')
+        variables_nc = fhndl.createVariable('perturb_vnames', 'S20', 'nvars')
         rmse_nc      = fhndl.createVariable(rmse_nc_var, 'f8', ('ninit', 'nprt_m1', 'nvars'))
 
 
@@ -476,6 +476,9 @@ class PGN(SystemTestsCommon):
 
         print("PGN_INFO: T value:"+str(t_stat))
         print("PGN_INFO: P value:"+str(p_val))
+
+        logger.warn(" T value:"+str(t_stat))
+        logger.warn(" P value:"+str(p_val))
         
         
         #There should be multiple criteria to determin pass/fail
