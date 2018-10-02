@@ -3,6 +3,7 @@
 
 #include "field_tag.hpp"
 #include "scream_types.hpp"
+#include "util/time_stamp.hpp"
 
 #include <vector>
 #include <memory>
@@ -22,6 +23,19 @@
 namespace scream
 {
 
+class AtmosphereProcess;
+
+// A small structure to hold tracking information about a field
+// This structure is used to track whether a field has been updated
+// (by comparing time stamps), and to track what atm processes
+// require/compute a field, so that teh driver can compute a dag.
+struct FieldTracking {
+  util::TimeStamp   m_last_update;
+
+  std::vector<AtmosphereProcess*> m_computed_by;
+  std::vector<AtmosphereProcess*> m_required_by;
+};
+
 // A small structure to hold info about a field
 struct FieldHeader {
   // These could actually be retrieved from the Kokkos View, but it probably makes sens
@@ -33,8 +47,10 @@ struct FieldHeader {
   int                   m_rank;
   std::vector<int>      m_dims;
   std::vector<FieldTag> m_tags;
+
+  FieldTracking         m_tracking;
+
   // Something about output/restart?
-  // Perhaps something about the timestamp of the field (when it was last updated)?
 };
 
 // A field should be composed of metadata info (the header) and a pointer to the view
