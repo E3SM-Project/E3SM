@@ -95,12 +95,12 @@ contains
       	    wa(c) = 0._r8                ! Made 0 for variable soil thickness
 	 end do
       else
-	 do f = 1, num_hydrologyc
-            c = filter_hydrologyc(f)
-            if (zwt(c) <= zi(c,nlevsoi)) then
-               wa(c) = 5000._r8
-	    end if
-         end do
+	 !do f = 1, num_hydrologyc
+         !   c = filter_hydrologyc(f)
+         !   if (zwt(c) <= zi(c,nlevsoi)) then
+         !      wa(c) = 5000._r8
+	 !   end if
+         !end do
       end if
       
       do f = 1, num_nolakec
