@@ -8,6 +8,7 @@ namespace scream
 {
 
 enum class AtmosphereProcessType {
+  Coupling,
   Dynamics,
   Physics
 };
@@ -27,7 +28,7 @@ enum class AtmosphereProcessType {
 class AtmosphereProcess
 {
 public:
-  // The type of the block (dynamics or physics)
+  // The type of the block (e.g., dynamics or physics)
   virtual AtmosphereProcessType type () const = 0;
 
   // The name of the block 

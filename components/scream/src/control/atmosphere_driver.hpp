@@ -56,7 +56,6 @@ public:
 protected:
 
   field_repo_type<ExecViewManaged<Real*>>         m_device_field_repo;
-  field_repo_type<HostViewUnmanaged<Real*>>       m_host_field_repo;
 
   std::list<std::shared_ptr<atm_process_type>>    m_atm_processes;
 };

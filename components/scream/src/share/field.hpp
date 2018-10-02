@@ -13,12 +13,9 @@
 // be done by the FieldRepository? Or should a Field store its own? I lean toward
 // the latter.
 // NOTE: if two parametrizations both compute/update a field, we need to ensure 
-//       that the two parametrizations are run sequentially. We need to devise
-//       a mechanism to ensure that, or at the very least, a test to check it.
-//       Notice that some fields are needed/computed/updated only within Scream, so
-//       we can store a pointer to the Parametrization, but other are computed/needed
-//       in other components, so for those we can at best store a string that
-//       identifies the component (at least informally).
+//       that the two parametrizations are run sequentially. The FieldTracking
+//       structure can be used (among other things) to enforce this requirement,
+//       by checking the time stamps of the fields.
 
 namespace scream
 {

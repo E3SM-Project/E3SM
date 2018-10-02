@@ -12,18 +12,28 @@ void AtmosphereDriver::initialize ( /* inputs? */ ) {
 
   // Create processes, store them in the requested order
 
-  // Check: make sure there is a dynamics process.
-  bool dynamics_found = false;
+  // Check: make sure there is one (and only one) dynamics process, and one (and only one)
+  //        surface coupling process.
+  bool dynamics_found = false, coupling_found = false;
   for (const auto& atm_subcomp : m_atm_processes) {
+    if (atm_subcomp->type()==AtmosphereProcessType::Coupling) {
+      // We already found a Coupling process. Issue an error.
+      error::runtime_check(!coupling_found,"More than one Coupling process found. This makes no sense. Aborting.\n", -1); 
+      coupling_found = true;
+    }
     if (atm_subcomp->type()==AtmosphereProcessType::Dynamics) {
       // We already found a Dynamics process. Issue an error.
-      error::runtime_abort("More than one Dynamics process found. This makes no sense. Aborting.\n", -1); 
+      error::runtime_check(!dynamics_found,"More than one Dynamics process found. This makes no sense. Aborting.\n", -1); 
       dynamics_found = true;
     }
   }
   if (!dynamics_found) {
     // We did not find a Dynamics process. Issue an error.
     error::runtime_abort("No Dynamics process found. This makes no sense. Aborting.\n", -2); 
+  }
+  if (!coupling_found) {
+    // We did not find a Coupling process. Issue an error.
+    error::runtime_abort("No Coupling process found. This makes no sense. Aborting.\n", -2); 
   }
 
   // Initialize the processes
