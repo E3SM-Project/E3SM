@@ -804,7 +804,7 @@
        alias: mean_down_sw_flx
        canonical_units: W m-2
        description: atmosphere export
-         mean downward SW heat flux
+         mean downward LW heat flux
      #
      - standard_name: Faxa_lwdn
        alias: mean_down_lw_flx
@@ -812,20 +812,40 @@
        description: atmosphere export
          mean downward SW heat flux
      #
+     - standard_name: mean_down_lw_flx
+       canonical_units: W m-2
+       description: atmosphere export
+         mean downward long wave radiation flux (fv3 only)
+     #
      - standard_name: inst_down_lw_flx
        canonical_units: W m-2
        description: atmosphere export
          instantaneous downward long wave radiation flux (fv3 only)
+     #
+     - standard_name: mean_net_lw_flx
+       canonical_units: W m-2
+       description: atmosphere export
+         mean NET long wave radiation flux (fv3 only)
      #
      - standard_name: inst_net_lw_flx
        canonical_units: W m-2
        description: atmosphere export
          instantaneous NET long wave radiation flux (fv3 only)
      #
+     - standard_name: mean_down_sw_flx
+       canonical_units: W m-2
+       description: atmosphere export
+         mean downward solar radiation flux (fv3 only)
+     #
      - standard_name: inst_down_sw_flx
        canonical_units: W m-2
        description: atmosphere export
          instantaneous downward solar radiation flux (fv3 only)
+     #
+     - standard_name: mean_net_sw_flx
+       canonical_units: W m-2
+       description: atmosphere export
+         mean NET solar radiation flux over the ocean (fv3 only)
      #
      - standard_name: inst_net_sw_flx
        canonical_units: W m-2
@@ -1051,7 +1071,6 @@
          topographic height
      #
      - standard_name: Sa_dens
-       alias: air_density_height_lowest
        canonical_units: kg m-3
        description: atmosphere export
          density at the lowest model layer (cesm only)
@@ -1079,6 +1098,11 @@
        description: atmosphere export
          bottom layer specific humidity
      #
+     - standard_name: inst_spec_humid_height2m
+       canonical_units: K
+       description: atmosphere export
+         instantaneous specific humidity 2m above ground (fv3 only)
+     #
      - standard_name: Sa_shum_16O
        canonical_units: kg kg-1
        description: atmosphere export
@@ -1093,11 +1117,6 @@
        canonical_units: kg kg-1
        description: atmosphere export
          bottom layer specific humidity HDO (cesm only)
-     #
-     - standard_name: inst_spec_humid_height2m
-       canonical_units: K
-       description: atmosphere export
-         instantaneous specific humidity 2m above ground (fv3 only)
      #
      - standard_name: Sa_tbot
        alias: inst_temp_height_lowest
@@ -1261,56 +1280,6 @@
      - standard_name: inst_surface_roughness
        canonical_units: tbd
        description: atmosphere export (fv3 only)
-
-######### fv3 work
-
-     - standard_name: Faxa_taux
-       alias: mean_zonal_moment_flx_atm
-       canonical_units: N m-2
-       description: atmosphere export
-         zonal component of momentum flux
-     #
-     - standard_name: Faxa_tauy
-       alias: mean_merid_moment_flx_atm
-       canonical_units: N m-2
-       description: atmosphere export
-         meridional component of momentum flux
-     #
-     - standard_name: Faxa_lat
-       alias: mean_laten_heat_flx_atm
-       canonical_units: W m-2
-       description: atmosphere export
-     #
-     - standard_name: Faxa_sen
-       alias: mean_sensi_heat_flx_atm
-       canonical_units: W m-2
-       description: atmosphere export
-     #
-     - standard_name: inst_zonal_moment_flx_atm
-       canonical_units: N m-2
-       description: atmosphere export
-         zonal component of momentum flux
-     #
-     - standard_name: inst_merid_moment_flx_atm
-       canonical_units: N m-2
-       description: atmosphere export
-         meridional component of momentum flux
-     #
-     - standard_name: inst_laten_heat_flx_atm
-       canonical_units: W m-2
-       description: atmosphere export
-     #
-     - standard_name: inst_sensi_heat_flx_atm
-       canonical_units: W m-2
-       description: atmosphere export
-
-
-
-############
-
-
-
-
      #
      #-----------------------------------
      # atmosphere import
@@ -1335,9 +1304,10 @@
      - standard_name: Faxx_lat
        alias: mean_laten_heat_flx
        canonical_units: W m-2
-       description: atmosphere import (cesm) or sent from atm (fv3)
+       description: atmosphere import
      #
      - standard_name: Faxx_lwup
+       alias: mean_up_lw_flx
        canonical_units: W m-2
        description: atmosphere import
      #
@@ -1348,13 +1318,11 @@
      #
      - standard_name: Faxx_taux
        alias: mean_zonal_moment_flx
-       alias: mean_zonal_moment_flx_atm
        canonical_units: N m-2
        description: atmosphere import
          zonal component of momentum flux
          for fv3, for sea ice covered area
          for cesm, merged ice/ocn/land
-
      #
      - standard_name: Faxx_tauy
        alias: mean_merid_moment_flx
@@ -1613,16 +1581,13 @@
        description: sea-ice export
      #
      - standard_name: Faii_lat
-       alias: mean_laten_heat_flx_atm_into_ice
        canonical_units: W m-2
-       description: sea-ice export to atm
-         atm/ice latent heat flux
+       description: sea-ice export
+         latent heat flux
      #
-     - standard_name: Faii_sen
-       alias: mean_sensi_heat_flx_atm_into_ice
-       canonical_units: W m-2
-       description: sea-ice export to atm
-         atm/ice sensible heat flux
+     - alias: mean_laten_heat_flx_atm_into_ice
+       standard_name: Faii_lat
+       description: sea-ice export
      #
      - standard_name: Faii_lwup
        alias: mean_up_lw_flx_ice
@@ -1630,63 +1595,59 @@
        description: sea-ice export
          outgoing logwave radiation
      #
+     - standard_name: Faii_sen
+       alias: mean_sensi_heat_flx_atm_into_ice
+       canonical_units: W m-2
+       description: sea-ice export
+         sensible heat flux
+     #
      - standard_name: Faii_swnet
        canonical_units: W m-2
-       description: sea-ice export to atm
+       description: sea-ice export
      #
      - standard_name: Faii_taux
        alias: stress_on_air_ice_zonal
-       canonical_units: N m-2 
-       description: sea-ice export to atm
-         air ice zonal stress
+       canonical_units: N m-2
      #
      - standard_name: Faii_tauy
        alias: stress_on_air_ice_merid
        canonical_units: N m-2
        description: sea-ice export
-         air ice meridional stress
      #
      - standard_name: Fioi_bcphi
        canonical_units: kg m-2 s-1
-       description: sea-ice export to ocean
-         hydrophilic black carbon flux to ocean
+       description: sea-ice export
      #
      - standard_name: Fioi_bcpho
        canonical_units: kg m-2 s-1
-       description: sea-ice export to ocean
-         hydrophobic black carbon flux to ocean
+       description: sea-ice export
      #
      - standard_name: Fioi_flxdst
        canonical_units: kg m-2 s-1
-       description: sea-ice export to ocean
-         dust aerosol flux to ocean 
+       description: sea-ice export
      #
      - standard_name: Fioi_melth
        alias: net_heat_flx_to_ocn
        canonical_units: W m-2
-       description: sea-ice export to ocean
+       description: sea-ice export
          net heat flux to ocean
      #
      - standard_name: Fioi_melth_16O
        canonical_units: kg m-2 s-1
-       description: sea-ice export to ocean
-         isotope head flux to ocean
+       description: sea-ice export
      #
      - standard_name: Fioi_melth_18O
        canonical_units: kg m-2 s-1
-       description: sea-ice export to ocean
-         isotope head flux to ocean
+       description: sea-ice export
      #
      - standard_name: Fioi_melth_HDO
        canonical_units: kg m-2 s-1
-       description: sea-ice export to ocean
-         isotope head flux to ocean
+       description: sea-ice export
      #
      - standard_name: Fioi_meltw
        alias: mean_fresh_water_to_ocean_rate
        canonical_units: kg m-2 s-1
-       description: sea-ice export to ocean
-         fresh water to ocean (h2o flux from melting)
+       description: sea-ice export
      #
      - standard_name: Fioi_meltw_16O
        canonical_units: kg m-2 s-1
@@ -1703,85 +1664,88 @@
      - standard_name: Fioi_salt
        alias: mean_salt_rate
        canonical_units: kg m-2 s-1
-       description: sea-ice export to ocean
-         salt to ocean (salt flux from melting)
+       description: sea-ice export
      #
      - standard_name: Fioi_swpen
        alias: mean_sw_pen_to_ocn
        canonical_units: W m-2
-       description: sea-ice export to ocean
-         flux of shortwave through ice to ocean
+       description: sea-ice export
      #
-     # NOTE: the following alias requires a new name change for CICE export
-     - standard_name: Fioi_swpen_vdr
-       alias: mean_net_swpen_vis_dir_flx
+     - standard_name: mean_net_sw_ir_dir_flx
        canonical_units: W m-2
-       description: sea-ice export to ocean
-         flux of vis dir shortwave through ice to ocean
+       description: sea-ice export
      #
-     # NOTE: the following alias requires a new name change for CICE export
-     - standard_name: Fioi_swpen_vdf
-       alias: mean_net_swpen_vis_dif_flx 
+     - standard_name: mean_net_sw_ir_dif_flx
        canonical_units: W m-2
-       description: sea-ice export to ocean
-         flux of vif dir shortwave through ice to ocean
+       description: sea-ice export
      #
-     # NOTE: the following alias requires a new name change for CICE export
-     - standard_name: Fioi_swpen_idr
-       alias: mean_net_swpen_ir_dir_flx
+     - standard_name: mean_net_sw_vis_dir_flx
        canonical_units: W m-2
-       description: sea-ice export to ocean
-         flux of ir dir shortwave through ice to ocean
+       description: sea-ice export
      #
-     # NOTE: the following alias requires a new name change for CICE export
-     - standard_name: Fioi_swpen_idf
-       alias: mean_net_swpen_ir_dif_flx
+     - standard_name: mean_net_sw_vis_dif_flx
        canonical_units: W m-2
-       description: sea-ice export to ocean
-         flux of ir dif shortwave through ice to ocean
+       description: sea-ice export
      #
      - standard_name: Fioi_taux
        alias: stress_on_ocn_ice_zonal
        canonical_units: N m-2
-       description: sea-ice export to ocean
-         ice ocean zonal stress
+       description: sea-ice export
      #
      - standard_name: Fioi_tauy
        alias: stress_on_ocn_ice_merid
        canonical_units: N m-2
-       description: sea-ice export to ocean
-         ice ocean meridional stress
+       description: sea-ice export
      #
      - standard_name: Si_anidf
        alias: inst_ice_ir_dif_albedo
        canonical_units: 1
-       description: sea-ice export to atm
+       description: sea-ice export
      #
      - standard_name: Si_anidr
        alias: inst_ice_ir_dir_albedo
        canonical_units: 1
-       description: sea-ice export to atm
+       description: sea-ice export
      #
      - standard_name: Si_avsdf
        alias: inst_ice_vis_dif_albedo
        canonical_units: 1
-       description: sea-ice export to atm
+       description: sea-ice export
      #
      - standard_name: Si_avsdr
        alias: inst_ice_vis_dir_albedo
        canonical_units: 1
-       description: sea-ice export to atm
+       description: sea-ice export
      #
      - standard_name: Si_ifrac
        alias: ice_fraction
        canonical_units: 1
-       description: sea-ice export to atm
-         ice fraction (varies with time)
+       description: sea-ice export
      #
-     - standard_name: Si_ifrac_n
+     - standard_name: Si_ifrac_01
        canonical_units: 1
        description: sea-ice export
-         ice fraction per category (varies with time) (cesm only)
+         cesm only
+     #
+     - standard_name: Si_ifrac_02
+       canonical_units: 1
+       description: sea-ice export
+         cesm only
+     #
+     - standard_name: Si_ifrac_03
+       canonical_units: 1
+       description: sea-ice export
+         cesm only
+     #
+     - standard_name: Si_ifrac_04
+       canonical_units: 1
+       description: sea-ice export
+         cesm only
+     #
+     - standard_name: Si_ifrac_05
+       canonical_units: 1
+       description: sea-ice export
+         cesm only
      #
      - standard_name: Si_imask
        alias: ice_mask
@@ -1791,17 +1755,17 @@
      #
      - standard_name: Si_qref
        canonical_units: kg kg-1
-       description: sea-ice export to atm
+       description: sea-ice export
          cesm only
      #
      - standard_name: Si_qref_16O
        canonical_units: kg kg-1
-       description: sea-ice export to atm
+       description: sea-ice export
          cesm only
      #
      - standard_name: Si_qref_18O
        canonical_units: kg kg-1
-       description: sea-ice export to atm
+       description: sea-ice export
          cesm only
      #
      - standard_name: Si_qref_HDO
@@ -1810,8 +1774,7 @@
          cesm only
      #
      - standard_name: Si_snowh
-# ambiguous with Si_vsno
-#       alias: mean_snow_volume
+       alias: mean_snow_volume
        canonical_units: m
        description: sea-ice export
          volume of snow per unit area
@@ -1829,24 +1792,16 @@
        canonical_units: m
        description: sea-ice export
      #
-     - standard_name: Si_vice
-       alias: mean_ice_volume
+     - standard_name: mean_ice_volume
        canonical_units: m
        description: sea-ice export
          volume of ice per unit area
-     #
-     - standard_name: Si_vsno
-       alias: mean_snow_volume
-       canonical_units: m
-       description: sea-ice export
-         volume of snow per unit area
      #
      #-----------------------------------
      # ocean export
      #-----------------------------------
      #
      - standard_name: Fioo_q
-       alias: freezing_melting_potential
        canonical_units: W m-2
        description: ocean export
      #
@@ -1871,7 +1826,6 @@
        description: ocean export
      #
      - standard_name: So_bldepth
-       alias: mixed_layer_depth
        canonical_units: m
        description: ocean export
      #
@@ -2090,7 +2044,7 @@
      #-----------------------------------
      #
      - standard_name: Foxx_evap
-       alias: mean_evap_rate
+       alias: mean_evap_rage
        canonical_units: kg m-2 s-1
        description: ocean import
          specific humidity flux
@@ -2127,12 +2081,6 @@
        description: ocean import
          surface upward longwave heat flux
      #
-     - standard_name: Foxx_lwnet
-       alias: mean_net_lw_flx
-       canonical_units: W m-2
-       description: ocean import
-         mean NET long wave radiation flux to ocean
-     #
      - standard_name: Foxx_rofi
        canonical_units: kg m-2 s-1
        description: ocean import
@@ -2144,39 +2092,16 @@
          water flux due to runoff (liquid)
      #
      - standard_name: Foxx_swnet
-       alias: mean_net_sw_flx
        canonical_units: W m-2
        description: ocean import
-         net shortwave radiation to ocean
-     #
-     - standard_name: Foxx_swnet_vdr
-       alias: mean_net_sw_vis_dir_flx
-       canonical_units: W m-2
-       description: ocean import
-         net shortwave visible direct radiation to ocean
-     #
-     - standard_name: Foxx_swnet_vdf
-       alias: mean_net_sw_vis_dif_flx
-       canonical_units: W m-2
-       description: ocean import
-         net shortwave visible diffuse radiation to ocean
-     #
-     - standard_name: Foxx_swnet_idr
-       alias: mean_net_sw_ir_dir_flx
-       canonical_units: W m-2
-       description: ocean import
-         net shortwave ir direct radiation to ocean
-     #
-     - standard_name: Foxx_swnet_idf
-       alias: mean_net_sw_ir_dif_flx
-       canonical_units: W m-2
-       description: ocean import
-         net shortwave ir diffuse radiation to ocean
+         net shortwave radiation penetrating into ice and ocean
+         cesm only
      #
      - standard_name: Foxx_swnet_afracr
        canonical_units: W m-2
        description: ocean import
-         net shortwave radiation times atmosphere fraction (cesm only)
+         net shortwave radiation times atmosphere fraction
+         cesm only
      #
      - standard_name: Foxx_taux
        alias: mean_zonal_moment_flx
@@ -2190,10 +2115,34 @@
        description: ocean import
          meridional surface stress
      #
-     - standard_name: Fioi_swpen_ifrac_n
+     - standard_name: PFioi_swpen_ifrac_01
        canonical_units: W m-2
        description: ocean import
          net shortwave radiation penetrating into ice and ocean times ice fraction for thickness category 1
+         cesm only
+     #
+     - standard_name: PFioi_swpen_ifrac_02
+       canonical_units: W m-2
+       description: ocean import
+         net shortwave radiation penetrating into ice and ocean times ice fraction for thickness category 2
+         cesm only
+     #
+     - standard_name: PFioi_swpen_ifrac_03
+       canonical_units: W m-2
+       description: ocean import
+         net shortwave radiation penetrating into ice and ocean times ice fraction for thickness category 3
+         cesm only
+     #
+     - standard_name: PFioi_swpen_ifrac_04
+       canonical_units: W m-2
+       description: ocean import
+         net shortwave radiation penetrating into ice and ocean times ice fraction for thickness category 4
+         cesm only
+     #
+     - standard_name: PFioi_swpen_ifrac_05
+       canonical_units: W m-2
+       description: ocean import
+         net shortwave radiation penetrating into ice and ocean times ice fraction for thickness category 2
          cesm only
      #
      - standard_name: Sf_afrac

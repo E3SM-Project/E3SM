@@ -158,7 +158,6 @@
           MED med_phases_restart_write
        @
       </value>
-
       <value COMP_ATM="fv3gfs" COMP_OCN="docn" COMP_WAV="swav">
       @ocn_cpl_dt   #ocean coupling step
           MED med_phases_prep_ocn_accum_avg
@@ -190,7 +189,6 @@
           MED med_phases_restart_write
        @
       </value>
-
       <value COMP_ATM="fv3gfs" COMP_OCN="mom">
       @ocn_cpl_dt   #ocean coupling step
           MED med_phases_prep_ocn_accum_avg
@@ -221,7 +219,6 @@
           MED med_phases_restart_write
        @
       </value>
-
     </values>
   </entry>
 
