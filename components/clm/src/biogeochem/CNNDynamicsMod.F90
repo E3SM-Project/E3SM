@@ -212,9 +212,9 @@ contains
          soilflux_org, urea_resid
     real(r8) :: tanprod_from_urea(3), ureapools(2), fert_no3, fert_generic
     !real(r8), parameter :: fract_urea=0.545, fract_no3=0.048
-    real(r8) :: fract_urea, fract_no3, soilph_min, soilph_max
+    real(r8) :: fract_urea, fract_no3, soilph_min, soilph_max, max_runoff
     integer, parameter :: ind_region = 1
-    integer :: def_ph_count
+    integer :: def_ph_count, bad_runoff_count
 
     Hconc_grz(1:2) = (/10**(-8.5_r8), 10**(-8.0_r8)/)
     Hconc_slr(1:3) = (/10.0_r8**(-8.0_r8), 10.0_r8**(-8.0_r8), 10.0_r8**(-8.0_r8)/)
@@ -222,6 +222,8 @@ contains
     soilph_max = -999
     def_ph_count = 0
     do_balance_checks = mod(get_nstep(), balance_check_freq) == 0
+    bad_runoff_count = 0
+    max_runoff = -999
     
     associate(&
          ngrz => nitrogenflux_vars%man_n_grz_col, &
@@ -376,10 +378,11 @@ contains
        infiltr_m_s = max(waterflux_vars%qflx_infl_col(c), 0.0) * 1e-3 
        evap_m_s = waterflux_vars%qflx_evap_grnd_col(c) * 1e-3
        runoff_m_s = max(waterflux_vars%qflx_runoff_col(c), 0.0) * 1e-3
-
-       !!
-       runoff_m_s = 0
-       !!
+       if (runoff_m_s > 1e-3) then
+          bad_runoff_count = bad_runoff_count + 1
+          runoff_m_s = 0.0
+       end if
+       if (runoff_m_s > max_runoff) max_runoff = runoff_m_s
        
        !
        ! grazing
@@ -635,6 +638,7 @@ contains
        call balance_check('Fertilizer', nsoilfert_old, &
             get_total_n(ns, nf, 'pools_fertilizer'), get_total_n(ns, nf, 'fluxes_fertilizer'))
        write(iulog, *) 'SoilPH check:', soilph_min, soilph_max, def_ph_count
+       write(iulog, *) 'Runoff check:', bad_runoff_count, max_runoff
     end if
 
   end associate
