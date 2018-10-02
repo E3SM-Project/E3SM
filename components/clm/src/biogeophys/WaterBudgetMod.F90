@@ -208,7 +208,7 @@ contains
 !-----------------------------------------------------------------------
   subroutine WaterBudget_Accum()
     !
-    use clm_time_manager, only : get_curr_date, get_prev_date
+    use clm_time_manager, only : get_curr_date, get_prev_date, get_nstep
     !
     implicit none
     !
@@ -237,6 +237,7 @@ contains
           if (sec_prev == 0 .and. day_prev == 1 .and. month_prev == 1) update_state_beg = .true.
           if (sec_curr == 0 .and. day_curr == 1 .and. month_curr == 1) update_state_end = .true.
        case (p_inf)
+          if (get_nstep() == 1) update_state_beg = .true.
           update_state_end = .true.
        end select
 
