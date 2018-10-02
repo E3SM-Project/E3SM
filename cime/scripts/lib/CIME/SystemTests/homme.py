@@ -39,12 +39,32 @@ class HOMME(SystemTestsCommon):
                 basename = ""
                 baselinedir = exeroot
 
-            cmake_cmd = "cmake -C {}/components/homme/cmake/machineFiles/{}.cmake -DUSE_NUM_PROCS={} {}/components/homme -DHOMME_BASELINE_DIR={}/{} -DCPRNC_DIR={}/..".format(srcroot, mach, procs, srcroot, baselinedir, basename, cprnc)
+            if (mach in ["sandiatoss3"]):
+                preqx_kokkos_args = "-DBUILD_HOMME_PREQX_KOKKOS=ON -DKOKKOS_PATH=/home/onguba/kokkos/build-omp-nodebug"
+            elif (mach in ["anvil"]):
+                preqx_kokkos_args = "-DBUILD_HOMME_PREQX_KOKKOS=ON -DKOKKOS_PATH=/home/onguba/kokkos/build-serial-omp-nodebug"
+            else :
+                preqx_kokkos_args = ""
 
-            run_cmd_no_fail(cmake_cmd, arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)
-            run_cmd_no_fail("{} -j8".format(gmake), arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)
 
-            post_build(self._case, [os.path.join(exeroot, "homme.bldlog")], build_complete=True)
+            cmake_cmd_fast = "cmake -C {}/components/homme/cmake/machineFiles/{}.cmake -DUSE_NUM_PROCS={} {} {}/components/homme -DHOMME_TESTING_PROFILE=dev -DHOMME_BASELINE_DIR={}/{} -DCPRNC_DIR={}/..".format(srcroot, mach, procs, preqx_kokkos_args, srcroot, baselinedir, basename, cprnc)
+            cmake_cmd_strict = "cmake -C {}/components/homme/cmake/machineFiles/{}-strict.cmake -DUSE_NUM_PROCS={} {} {}/components/homme -DHOMME_TESTING_PROFILE=dev -DHOMME_BASELINE_DIR={}/{} -DCPRNC_DIR={}/..".format(srcroot, mach, procs, preqx_kokkos_args, srcroot, baselinedir, basename, cprnc)
+
+            exeroot_fast = os.path.join(exeroot, "fast")
+            exeroot_strict = os.path.join(exeroot, "strict")
+
+            os.mkdir(exeroot_fast)
+            os.mkdir(exeroot_strict)
+            run_cmd_no_fail(cmake_cmd_fast, arg_stdout=os.path.join(exeroot_fast, "homme.bldlog"), combine_output=True, from_dir=exeroot_fast)
+            if (mach in ["anvil", "sandiatoss3"]):
+                run_cmd_no_fail(cmake_cmd_strict, arg_stdout=os.path.join(exeroot_strict, "homme.bldlog"), combine_output=True, from_dir=exeroot_strict)
+
+            run_cmd_no_fail("{} -j8".format(gmake), arg_stdout=os.path.join(exeroot_fast, "homme.bldlog"), combine_output=True, from_dir=exeroot_fast)
+            if (mach in ["anvil", "sandiatoss3"]):
+                run_cmd_no_fail("{} -j8".format(gmake), arg_stdout=os.path.join(exeroot_strict, "homme.bldlog"), combine_output=True, from_dir=exeroot_strict)
+
+            post_build(self._case, [os.path.join(exeroot_fast, "homme.bldlog")], build_complete=True)
+            post_build(self._case, [os.path.join(exeroot_strict, "homme.bldlog")], build_complete=True)
 
     def run_phase(self):
 
@@ -55,26 +75,41 @@ class HOMME(SystemTestsCommon):
         generate = self._case.get_value("GENERATE_BASELINE")
         basegen  = self._case.get_value("BASEGEN_CASE")
         gmake    = self._case.get_value("GMAKE")
+        mach     = self._case.get_value("MACH")
 
         log = os.path.join(rundir, "homme.log")
         if os.path.exists(log):
             os.remove(log)
 
+        exeroot_fast = os.path.join(exeroot, "fast")
+        exeroot_strict = os.path.join(exeroot, "strict")
+
         if generate:
             full_baseline_dir = os.path.join(baseline, basegen, "tests", "baseline")
-            stat = run_cmd("{} -j 4 baseline".format(gmake), arg_stdout=log, combine_output=True, from_dir=exeroot)[0]
+            stat = run_cmd("{} -j 4 baseline".format(gmake), arg_stdout=log, combine_output=True, from_dir=exeroot_fast)[0]
+            if (mach in ["anvil", "sandiatoss3"]):
+                stat = run_cmd("{} -j 4 baseline".format(gmake), arg_stdout=log, combine_output=True, from_dir=exeroot_strict)[0]
             if stat == 0:
                 if os.path.isdir(full_baseline_dir):
                     shutil.rmtree(full_baseline_dir)
 
-                shutil.copytree(os.path.join(exeroot, "tests", "baseline"), full_baseline_dir)
+                shutil.copytree(os.path.join(exeroot_fast, "tests", "baseline"), full_baseline_dir)
+                if (mach in ["anvil", "sandiatoss3"]):
+                    shutil.copytree(os.path.join(exeroot_strict, "tests", "baseline"), full_baseline_dir)
 
         elif compare:
-            stat = run_cmd("{} -j 4 check".format(gmake), arg_stdout=log, combine_output=True, from_dir=exeroot)[0]
+            stat = run_cmd("ctest -E cxx", arg_stdout=log, combine_output=True, from_dir=exeroot_fast)[0]
+            if (mach in ["anvil", "sandiatoss3"]):
+                stat = run_cmd("ctest", arg_stdout=log, combine_output=True, from_dir=exeroot_strict)[0]
 
         else:
-            stat = run_cmd("{} -j 4 baseline".format(gmake), arg_stdout=log, combine_output=True, from_dir=exeroot)[0]
-            stat = run_cmd("{} -j 4 check".format(gmake), arg_stdout=log, combine_output=True, from_dir=exeroot)[0]
+            stat = run_cmd("{} -j 4 baseline".format(gmake), arg_stdout=log, combine_output=True, from_dir=exeroot_fast)[0]
+            if (mach in ["anvil", "sandiatoss3"]):
+                stat = run_cmd("{} -j 4 baseline".format(gmake), arg_stdout=log, combine_output=True, from_dir=exeroot_strict)[0]
+
+            stat = run_cmd("ctest -E cxx", arg_stdout=log, combine_output=True, from_dir=exeroot_fast)[0]
+            if (mach in ["anvil", "sandiatoss3"]):
+                stat = run_cmd("ctest", arg_stdout=log, combine_output=True, from_dir=exeroot_strict)[0]
 
         # Add homme.log output to TestStatus.log so that it can
         # appear on the dashboard. Otherwise, the TestStatus.log
