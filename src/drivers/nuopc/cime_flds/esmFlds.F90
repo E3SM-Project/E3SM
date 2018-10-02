@@ -49,6 +49,8 @@ module esmFlds
   character(*), parameter :: u_FILE_u = &
        __FILE__
 
+  logical :: use_fv3 = .true.
+
 !================================================================================
 contains
 !================================================================================
@@ -787,7 +789,7 @@ contains
          merge_from2=compice, merge_field2='Si_qref', merge_type2='merge', merge_fracname2='ifrac', &
          merge_from3=compmed, merge_field3='So_qref', merge_type3='merge', merge_fracname3='ofrac')
 
-    ! 'Surface temperature'
+    ! 'Surface temperature' (cesm)
     call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Sl_t', fldindex=n1)
     call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1), complnd, compatm, mapconsf , 'lfrin', lnd2atm_fmapname)
     call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Si_t', fldindex=n1)
@@ -802,11 +804,12 @@ contains
          merge_from3=compocn, merge_field3='So_t', merge_type3='merge', merge_fracname3='ofrac')
     call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'So_t', &
          merge_from1=compocn, merge_field1='So_t', merge_type1='copy')
+    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Si_t', &
+         merge_from1=compice, merge_field1='Si_t', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'So_t', &
          merge_from1=compocn, merge_field1='So_t', merge_type1='copy')
     call shr_nuopc_fldList_AddFld(fldListTo(compwav)%flds, 'So_t', &
          merge_from1=compocn, merge_field1='So_t', merge_type1='copy')
-
 
     ! 'Surface fraction velocity in land'
     call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Sl_fv', fldindex=n1)
@@ -831,6 +834,12 @@ contains
     call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compatm, mapconsf, 'ifrac', ice2atm_fmapname)
     call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Si_snowh', &
          merge_from1=compice, merge_field1='Si_snowh', merge_type1='copy')
+
+    ! 'Sea ice volume' (fv3 only)
+    call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'mean_ice_volume', fldindex=n1)
+    call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compatm, mapconsf, 'ifrac', ice2atm_fmapname)
+    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'mean_ice_volume', &
+         merge_from1=compice, merge_field1='mean_ice_volume', merge_type1='copy')
 
     ! 'Surface saturation specific humidity in ocean'
     call shr_nuopc_fldList_AddFld(fldListMed_aoflux_a%flds, 'So_ssq', fldindex=n1)
@@ -873,10 +882,12 @@ contains
     call shr_nuopc_fldList_AddMap(fldListMed_aoflux_a%flds(n1), compatm, compocn, mapconsf, 'one'  , atm2ocn_fmapname) ! map atm->ocn
     call shr_nuopc_fldList_AddFld(fldListMed_aoflux_o%flds, 'Faox_taux', fldindex=n1)
     call shr_nuopc_fldList_AddMap(fldListMed_aoflux_o%flds(n1), compocn, compatm, mapconsf, 'ofrac', ocn2atm_fmapname) ! map ocn->atm
-    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds , 'Faxx_taux', &
+    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds , 'Faxx_taux', &  ! for cesm
          merge_from1=complnd, merge_field1='Fall_taux', merge_type1='merge', merge_fracname1='lfrac', &
          merge_from2=compice, merge_field2='Faii_taux', merge_type2='merge', merge_fracname2='ifrac', &
          merge_from3=compmed, merge_field3='Faox_taux', merge_type3='merge', merge_fracname3='ofrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds , 'Faii_taux', &  ! for fv3
+         merge_from1=compice, merge_field1='Faii_taux', merge_type1='copy_with_weights', merge_fracname1='ifrac')
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'Foxx_taux', &
          merge_from1=compmed, merge_field1='Faox_taux', merge_type1='merge', merge_fracname1='ofrac', &
          merge_from2=compice, merge_field2='Fioi_taux', merge_type2='merge', merge_fracname2='ifrac')
@@ -896,6 +907,8 @@ contains
          merge_from1=complnd, merge_field1='Fall_tauy', merge_type1='merge', merge_fracname1='lfrac', &
          merge_from2=compice, merge_field2='Faii_tauy', merge_type2='merge', merge_fracname2='ifrac', &
          merge_from3=compmed, merge_field3='Faox_tauy', merge_type3='merge', merge_fracname3='ofrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds , 'Faii_tauy', &  ! for fv3
+         merge_from1=compice, merge_field1='Faii_tauy', merge_type1='copy_with_weights', merge_fracname1='ifrac')
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_tauy', &
          merge_from1=compmed, merge_field1='Faox_tauy', merge_type1='merge', merge_fracname1='ofrac', &
          merge_from2=compice, merge_field2='Fioi_tauy', merge_type2='merge', merge_fracname2='ifrac')
@@ -909,10 +922,12 @@ contains
     call shr_nuopc_fldList_AddMap(fldListMed_aoflux_a%flds(n1), compatm, compocn, mapconsf, 'one'  , atm2ocn_fmapname) ! map atm->ocn
     call shr_nuopc_fldList_AddFld(fldListMed_aoflux_o%flds, 'Faox_lat', fldindex=n1)
     call shr_nuopc_fldList_AddMap(fldListMed_aoflux_o%flds(n1), compocn, compatm, mapconsf, 'ofrac', ocn2atm_fmapname) ! map ocn->atm
-    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds , 'Faxx_lat', &
+    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds , 'Faxx_lat', &        ! for cesm
          merge_from1=complnd, merge_field1='Fall_lat', merge_type1='merge', merge_fracname1='lfrac', &
          merge_from2=compice, merge_field2='Faii_lat', merge_type2='merge', merge_fracname2='ifrac', &
          merge_from3=compmed, merge_field3='Faox_lat', merge_type3='merge', merge_fracname3='ofrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds , 'Faii_lat', &  !     ! for fv3
+         merge_from1=compice, merge_field1='Faii_lat', merge_type1='copy_with_weights', merge_fracname1='ifrac')
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'Foxx_lat', &
          merge_from1=compmed, merge_field1='Faox_lat', merge_type1='merge', merge_fracname1='ofrac')
 
@@ -925,10 +940,12 @@ contains
     call shr_nuopc_fldList_AddMap(fldListMed_aoflux_a%flds(n1), compatm, compocn, mapconsf, 'one'  , atm2ocn_fmapname) ! map atm->ocn
     call shr_nuopc_fldList_AddFld(fldListMed_aoflux_o%flds, 'Faox_sen', fldindex=n1)
     call shr_nuopc_fldList_AddMap(fldListMed_aoflux_o%flds(n1), compocn, compatm, mapconsf, 'ofrac', ocn2atm_fmapname) ! map ocn->atm
-    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds , 'Faxx_sen', &
+    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds , 'Faxx_sen', &        ! for cesm
          merge_from1=complnd, merge_field1='Fall_sen', merge_type1='merge', merge_fracname1='lfrac', &
          merge_from2=compice, merge_field2='Faii_sen', merge_type2='merge', merge_fracname2='ifrac', &
          merge_from3=compmed, merge_field3='Faox_sen', merge_type3='merge', merge_fracname3='ofrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds , 'Faii_sen', &  !     ! for fv3
+         merge_from1=compice, merge_field1='Faii_sen', merge_type1='copy_with_weights', merge_fracname1='ifrac')
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'Foxx_sen', &
          merge_from1=compmed, merge_field1='Faox_sen', merge_type1='merge', merge_fracname1='ofrac')
 
@@ -941,10 +958,12 @@ contains
     call shr_nuopc_fldList_AddMap(fldListMed_aoflux_a%flds(n1), compatm, compocn, mapconsf, 'one'  , atm2ocn_fmapname) ! map atm->ocn
     call shr_nuopc_fldList_AddFld(fldListMed_aoflux_o%flds, 'Faox_lwup', fldindex=n1)
     call shr_nuopc_fldList_AddMap(fldListMed_aoflux_o%flds(n1), compocn, compatm, mapconsf, 'ofrac', ocn2atm_fmapname) ! map ocn->atm
-    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds , 'Faxx_lwup', &
+    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds , 'Faxx_lwup', &  ! for cesm
          merge_from1=complnd, merge_field1='Fall_lwup', merge_type1='merge', merge_fracname1='lfrac', &
          merge_from2=compice, merge_field2='Faii_lwup', merge_type2='merge', merge_fracname2='ifrac', &
          merge_from3=compmed, merge_field3='Faox_lwup', merge_type3='merge', merge_fracname3='ofrac')
+    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds , 'Faii_lwup', &  ! for fv3
+         merge_from1=compice, merge_field1='Faii_lwup', merge_type1='copy_with_weights', merge_fracname1='ifrac')
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'Foxx_lwup', &
          merge_from1=compmed, merge_field1='Faox_lwup', merge_type1='merge', merge_fracname1='ofrac')
 

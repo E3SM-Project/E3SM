@@ -1,14 +1,14 @@
 module med_fraction_mod
 
   !-----------------------------------------------------------------------------
-  ! Mediator Component.
-  ! Sets fracations on all component grids
-  !  the fractions fields are now afrac, ifrac, ofrac, lfrac, and lfrin.
+  ! Mediator phase that sets fracations on all component grids
+  !
+  ! the fractions fields are now afrac, ifrac, ofrac, lfrac, and lfrin.
   !    afrac = fraction of atm on a grid
   !    lfrac = fraction of lnd on a grid
   !    ifrac = fraction of ice on a grid
   !    ofrac = fraction of ocn on a grid
-  !    lfrin = land fraction defined by the land model
+  !    lfrin = fraction of lnd on a grid defined by the land model
   !    ifrad = fraction of ocn on a grid at last radiation time
   !    ofrad = fraction of ice on a grid at last radiation time
   !
@@ -112,15 +112,12 @@ module med_fraction_mod
   !
   !-----------------------------------------------------------------------------
 
-  use med_constants_mod      , only : R8
-  use esmFlds, only : ncomps
+  use med_constants_mod, only : R8
+  use esmFlds          , only : ncomps 
 
   implicit none
   private
 
-  character(*)      , parameter :: u_FILE_u =  __FILE__
-
-  ! Note - everything is private in this module other than these routines
   public med_fraction_init
   public med_fraction_set
 
@@ -135,25 +132,28 @@ module med_fraction_mod
   character(len=5),parameter,dimension(1) :: fraclist_w = (/'wfrac'/)
 
   !--- standard ---
-  real(R8),parameter :: eps_fracsum = 1.0e-02      ! allowed error in sum of fracs
-  real(R8),parameter :: eps_fracval = 1.0e-02      ! allowed error in any frac +- 0,1
-  real(R8),parameter :: eps_fraclim = 1.0e-03      ! truncation limit in fractions_a(lfrac)
-  logical           ,parameter :: atm_frac_correct = .false. ! turn on frac correction on atm grid
+  real(R8) ,parameter :: eps_fracsum = 1.0e-02      ! allowed error in sum of fracs
+  real(R8) ,parameter :: eps_fracval = 1.0e-02      ! allowed error in any frac +- 0,1
+  real(R8) ,parameter :: eps_fraclim = 1.0e-03      ! truncation limit in fractions_a(lfrac)
+  logical  ,parameter :: atm_frac_correct = .false. ! turn on frac correction on atm grid
 
   !--- standard plus atm fraction consistency ---
-  !  real(R8),parameter :: eps_fracsum = 1.0e-12   ! allowed error in sum of fracs
-  !  real(R8),parameter :: eps_fracval = 1.0e-02   ! allowed error in any frac +- 0,1
-  !  real(R8),parameter :: eps_fraclim = 1.0e-03   ! truncation limit in fractions_a(lfrac)
+  !  real(R8),parameter :: eps_fracsum = 1.0e-12     ! allowed error in sum of fracs
+  !  real(R8),parameter :: eps_fracval = 1.0e-02     ! allowed error in any frac +- 0,1
+  !  real(R8),parameter :: eps_fraclim = 1.0e-03     ! truncation limit in fractions_a(lfrac)
   !  logical ,parameter :: atm_frac_correct = .true. ! turn on frac correction on atm grid
 
   !--- unconstrained and area conserving? ---
-  !  real(R8),parameter :: eps_fracsum = 1.0e-12   ! allowed error in sum of fracs
-  !  real(R8),parameter :: eps_fracval = 1.0e-02   ! allowed error in any frac +- 0,1
-  !  real(R8),parameter :: eps_fraclim = 1.0e-20   ! truncation limit in fractions_a(lfrac)
+  !  real(R8),parameter :: eps_fracsum = 1.0e-12     ! allowed error in sum of fracs
+  !  real(R8),parameter :: eps_fracval = 1.0e-02     ! allowed error in any frac +- 0,1
+  !  real(R8),parameter :: eps_fraclim = 1.0e-20     ! truncation limit in fractions_a(lfrac)
   !  logical ,parameter :: atm_frac_correct = .true. ! turn on frac correction on atm grid
 
+  character(*), parameter :: u_FILE_u = &
+       __FILE__
+
 !-----------------------------------------------------------------------------
-  contains
+contains
 !-----------------------------------------------------------------------------
 
   subroutine med_fraction_init(gcomp, rc)
@@ -164,7 +164,6 @@ module med_fraction_mod
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only : ESMF_GridCompGet, ESMF_StateIsCreated, ESMF_RouteHandleIsCreated
     use med_constants_mod     , only : czero=>med_constants_czero
-    use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
     use esmFlds               , only : compatm, compocn, compice, complnd
     use esmFlds               , only : comprof, compglc, compwav, compname
     use shr_nuopc_scalars_mod , only : flds_scalar_name
@@ -201,9 +200,7 @@ module med_fraction_mod
     character(len=*),parameter :: subname='(med_fraction_init)'
     !---------------------------------------
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
 
     ! query the Component for its clock, importState and exportState
@@ -649,9 +646,7 @@ module med_fraction_mod
     !--- clean up
     !---------------------------------------
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine med_fraction_init
 
@@ -663,10 +658,8 @@ module med_fraction_mod
 
     use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time, ESMF_State, ESMF_Field
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
-    use ESMF                  , only : ESMF_GridCompGet, ESMF_FieldBundleIsCreated
-    use esmFlds               , only : compatm, compocn, compice, complnd
-    use esmFlds               , only : comprof, compglc, compwav, compname
-    use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
+    use ESMF                  , only : ESMF_GridCompGet, ESMF_FieldBundleIsCreated, ESMF_RouteHandleIsCreated
+    use esmFlds               , only : compatm, compocn, compice, compname
     use med_internalstate_mod , only : InternalState
     use shr_nuopc_fldList_mod , only : mapconsf, mapfcopy
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
@@ -679,27 +672,16 @@ module med_fraction_mod
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)           :: clock
-    type(ESMF_Time)            :: time
-    character(len=64)          :: timestr
-    type(ESMF_State)           :: importState, exportState
-    type(ESMF_Field)           :: field
     type(InternalState)        :: is_local
     real(R8), pointer          :: dataPtr1(:),dataPtr2(:),dataPtr3(:),dataPtr4(:)
-    integer                    :: i,j,n,n1
+    integer                    :: n
     integer                    :: dbrc
+    integer                    :: maptype
     character(len=*),parameter :: subname='(med_fraction_set)'
     !---------------------------------------
 
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
-
-    ! query the Component for its clock, importState and exportState
-    call ESMF_GridCompGet(gcomp, clock=clock, importState=importState, &
-         exportState=exportState, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Get the internal state from Component.
     nullify(is_local%wrap)
@@ -735,8 +717,9 @@ module med_fraction_mod
        ! for FBfrac(compice): set ofrac = Si_imask - ifrac
        dataPtr4(:) = dataPtr2(:) - dataPtr1(:)
 
-       ! Set ocean grid fractions
+       ! Update ocean grid fractions (FBFrac(compocn))
        if (is_local%wrap%comp_present(compocn)) then
+
           ! Map 'ifrac' from FBfrac(compice) to FBfrac(compocn)
           if (is_local%wrap%med_coupling_active(compice,compocn)) then
              call shr_nuopc_methods_FB_FieldRegrid(&
@@ -746,7 +729,7 @@ module med_fraction_mod
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           end if
 
-          ! Map 'ofrac' from FBfrac(compice) to FBfrac(comp)
+          ! Map 'ofrac' from FBfrac(compice) to FBfrac(compocn)
           if (is_local%wrap%med_coupling_active(compice,compocn)) then
              call shr_nuopc_methods_FB_FieldRegrid(&
                   is_local%wrap%FBfrac(compice), 'ofrac', &
@@ -756,24 +739,29 @@ module med_fraction_mod
           endif
        end if
 
-       ! Set atm grid fractions for ice and ocean
+       ! Update atm grid fractions for ice and ocean (FBFrac(compatm))
        if (is_local%wrap%comp_present(compatm)) then
 
-          ! Map 'ifrac' from FBfrac(compice) to FBfrac(compatm)
           if (is_local%wrap%med_coupling_active(compice,compatm)) then
+             ! Determine mapping type
+             if (ESMF_RouteHandleIsCreated(is_local%wrap%RH(compice,compatm,mapfcopy), rc=rc)) then
+                maptype = mapfcopy
+             else
+                maptype = mapconsf
+             end if
+
+             ! Map 'ifrac' from FBfrac(compice) to FBfrac(compatm)
              call shr_nuopc_methods_FB_FieldRegrid(&
                   is_local%wrap%FBfrac(compice), 'ifrac', &
                   is_local%wrap%FBfrac(compatm), 'ifrac', &
-                  is_local%wrap%RH(compice,compatm,mapconsf), rc=rc)
+                  is_local%wrap%RH(compice,compatm,maptype), rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          end if
 
-          ! Map 'ofrac' from FBfrac(compice) to FBfrac(compatm)
-          if (is_local%wrap%med_coupling_active(compocn,compatm)) then
+             ! Map 'ofrac' from FBfrac(compice) to FBfrac(compatm)
              call shr_nuopc_methods_FB_FieldRegrid(&
                   is_local%wrap%FBfrac(compice), 'ofrac', &
                   is_local%wrap%FBfrac(compatm), 'ofrac', &
-                  is_local%wrap%RH(compice,compatm,mapconsf), rc=rc)
+                  is_local%wrap%RH(compice,compatm,maptype), rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           end if
 
@@ -781,10 +769,8 @@ module med_fraction_mod
           if (atm_frac_correct) then
              call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'ifrac', dataPtr1, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
              call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'ofrac', dataPtr2, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
              call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'lfrac', dataPtr3, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              where (dataPtr1 + dataPtr2 > 0.0_R8)
@@ -803,15 +789,14 @@ module med_fraction_mod
     !--- clean up
     !---------------------------------------
 
-    if (dbug_flag > 5) then
-       do n1 = 1,ncomps
-          if (ESMF_FieldBundleIsCreated(is_local%wrap%FBfrac(n1),rc=rc)) then
-             call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBfrac(n1), subname // trim(compname(n1))//' frac', rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          endif
-       enddo
-       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    do n = 1,ncomps
+       if (ESMF_FieldBundleIsCreated(is_local%wrap%FBfrac(n),rc=rc)) then
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBfrac(n), &
+               subname // trim(compname(n))//' frac', rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       endif
+    enddo
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine med_fraction_set
 

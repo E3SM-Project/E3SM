@@ -174,6 +174,37 @@
           MED med_phases_restart_write
        @
       </value>
+      <value COMP_ATM="fv3gfs" COMP_OCN="docn" COMP_WAV="swav">
+      @ocn_cpl_dt   #ocean coupling step
+          MED med_phases_prep_ocn_accum_avg
+          MED med_connectors_prep_med2ocn
+          MED -> OCN :remapMethod=redist
+          OCN
+  	  @atm_cpl_dt # atmosphere coupling step
+	    MED med_phases_prep_atm
+            MED med_connectors_prep_med2atm
+	    MED -> ATM :remapMethod=redist
+	    ATM
+	    ATM -> MED :remapMethod=redist
+	    MED med_connectors_post_atm2med
+	    MED med_phases_prep_ice
+            MED med_connectors_prep_med2ice
+            MED -> ICE :remapMethod=redist
+	    ICE
+            ICE -> MED :remapMethod=redist
+            MED med_connectors_post_ice2med
+            MED med_fraction_set
+            MED med_phases_prep_ocn_map
+	    MED med_phases_aofluxes_run
+	    MED med_phases_prep_ocn_merge
+	    MED med_phases_prep_ocn_accum_fast
+            MED med_phases_history_write
+	  @
+          OCN -> MED :remapMethod=redist
+          MED med_connectors_post_ocn2med
+          MED med_phases_restart_write
+       @
+      </value>
     </values>
   </entry>
 

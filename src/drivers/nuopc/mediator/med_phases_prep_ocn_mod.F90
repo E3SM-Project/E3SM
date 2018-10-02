@@ -1,8 +1,7 @@
 module med_phases_prep_ocn_mod
 
-  use med_constants_mod, only : dbug_flag=>med_constants_dbug_flag
-  use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
-  use med_internalstate_mod, only : mastertask
+  use med_internalstate_mod , only : mastertask
+
   !-----------------------------------------------------------------------------
   ! Carry out fast accumulation for the ocean
   !-----------------------------------------------------------------------------
@@ -23,11 +22,13 @@ contains
 !-----------------------------------------------------------------------------
 
   subroutine med_phases_prep_ocn_map(gcomp, rc)
+
     use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
     use ESMF                  , only : ESMF_FieldBundleGet
     use med_internalstate_mod , only : InternalState
+    use shr_nuopc_utils_mod   , only : shr_nuopc_memcheck
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use med_map_mod           , only : med_map_FB_Regrid_Norm
     use esmFlds               , only : fldListFr
@@ -44,9 +45,8 @@ contains
 
     !-------------------------------------------------------------------------------
 
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+
     rc = ESMF_SUCCESS
     call shr_nuopc_memcheck(subname, 5, mastertask)
 
@@ -68,10 +68,8 @@ contains
     call ESMF_FieldBundleGet(is_local%wrap%FBExp(compocn), fieldCount=ncnt, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     if (ncnt == 0) then
-       if (dbug_flag > 5) then
-          call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compocn), returning", &
-               ESMF_LOGMSG_INFO, rc=dbrc)
-       endif
+       call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compocn), returning", &
+            ESMF_LOGMSG_INFO, rc=dbrc)
        RETURN
     end if
 
@@ -102,6 +100,7 @@ contains
 
     use ESMF                  , only : ESMF_GridComp, ESMF_FieldBundleGet
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use shr_nuopc_utils_mod   , only : shr_nuopc_memcheck
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
@@ -140,9 +139,8 @@ contains
     character(len=*), parameter :: subname='(med_phases_prep_ocn_merge)'
     !---------------------------------------
 
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+
     rc = ESMF_SUCCESS
     call shr_nuopc_memcheck(subname, 5, mastertask)
 
@@ -165,10 +163,8 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (ncnt == 0) then
-       if (dbug_flag > 5) then
-          call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compocn), returning", &
-               ESMF_LOGMSG_INFO, rc=dbrc)
-       endif
+       call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compocn), returning", &
+            ESMF_LOGMSG_INFO, rc=dbrc)
        RETURN
     end if
 
@@ -331,16 +327,12 @@ contains
     !-------------
     deallocate(atmwgt,customwgt)
 
-    if (dbug_flag > 1) then
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), string=trim(subname)//' FB4ocn_AFmrg ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
+    call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), string=trim(subname)//' FB4ocn_AFmrg ', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 #endif
 
-    if (dbug_flag > 1) then
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), string=trim(subname)//' FBexp(compocn) ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
+    call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), string=trim(subname)//' FBexp(compocn) ', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     first_call = .false.
 
@@ -348,9 +340,7 @@ contains
     !--- clean up
     !---------------------------------------
 
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine med_phases_prep_ocn_merge
 
@@ -381,9 +371,7 @@ contains
     integer :: dbrc
     !---------------------------------------
 
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
 
     !---------------------------------------
@@ -405,10 +393,8 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (ncnt == 0) then
-       if (dbug_flag > 5) then
-          call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compocn), returning", &
-               ESMF_LOGMSG_INFO, rc=dbrc)
-       endif
+       call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compocn), returning", &
+            ESMF_LOGMSG_INFO, rc=dbrc)
        RETURN
     end if
 
@@ -424,9 +410,7 @@ contains
 
     call ESMF_TimeGet(time,timestring=timestr)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (dbug_flag > 1) then
-       call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
 
     if (mastertask) then
        call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
@@ -442,19 +426,15 @@ contains
 
     is_local%wrap%FBExpAccumCnt(compocn) = is_local%wrap%FBExpAccumCnt(compocn) + 1
 
-    if (dbug_flag > 1) then
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
-            string=trim(subname)//' FBaccOcn_AFaccum ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
+    call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
+         string=trim(subname)//' FBaccOcn_AFaccum ', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
     !--- clean up
     !---------------------------------------
 
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine med_phases_prep_ocn_accum_fast
 
@@ -487,9 +467,7 @@ contains
     integer :: dbrc
     !---------------------------------------
 
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
 
     !---------------------------------------
@@ -511,10 +489,8 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (ncnt == 0) then
-       if (dbug_flag > 5) then
-          call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compocn), returning", &
-               ESMF_LOGMSG_INFO, rc=dbrc)
-       endif
+       call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compocn), returning", &
+            ESMF_LOGMSG_INFO, rc=dbrc)
        RETURN
     end if
 
@@ -522,21 +498,17 @@ contains
     !--- average ocn accumulator
     !---------------------------------------
 
-    if (dbug_flag > 5) then
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
-            string=trim(subname)//' FBExpAccum(compocn) before avg ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
+    call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
+         string=trim(subname)//' FBExpAccum(compocn) before avg ', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call shr_nuopc_methods_FB_average(is_local%wrap%FBExpAccum(compocn), &
          is_local%wrap%FBExpAccumCnt(compocn), rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug_flag > 5) then
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
-            string=trim(subname)//' FBaccO_avg ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
+    call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
+         string=trim(subname)//' FBaccO_avg ', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
     !--- copy to FBExp(compocn)
@@ -555,11 +527,9 @@ contains
     call shr_nuopc_methods_FB_reset(is_local%wrap%FBExpAccum(compocn), value=czero, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug_flag > 5) then
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
-            string=trim(subname)//' FBExpAccum(compocn) after avg ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
+    call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
+         string=trim(subname)//' FBExpAccum(compocn) after avg ', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine med_phases_prep_ocn_accum_avg
 

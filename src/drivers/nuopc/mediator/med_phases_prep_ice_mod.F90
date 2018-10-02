@@ -57,9 +57,7 @@ module med_phases_prep_ice_mod
     character(len=*),parameter :: subname='(med_phases_prep_ice)'
     !---------------------------------------
 
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
 
     !---------------------------------------
@@ -81,10 +79,8 @@ module med_phases_prep_ice_mod
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (ncnt == 0) then
-       if (dbug_flag > 5) then
-          call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compice), returning", &
+       call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compice), returning", &
                ESMF_LOGMSG_INFO, rc=dbrc)
-       endif
        RETURN
     end if
 
@@ -100,9 +96,7 @@ module med_phases_prep_ice_mod
 
     call ESMF_TimeGet(time,timestring=timestr)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (dbug_flag > 1) then
-       call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
 
     if (mastertask) then
        call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
@@ -137,10 +131,8 @@ module med_phases_prep_ice_mod
          document=first_call, string='(merge_to_ice)', mastertask=mastertask, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug_flag > 1) then
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compice), string=trim(subname)//' FBexp(compice) ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
+    call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compice), string=trim(subname)//' FBexp(compice) ', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
     !--- custom calculations
@@ -183,9 +175,7 @@ module med_phases_prep_ice_mod
 
     first_call = .false.
 
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine med_phases_prep_ice
 

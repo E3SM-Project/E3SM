@@ -1696,9 +1696,7 @@ module shr_nuopc_methods_mod
     character(len=*), parameter     :: subname='(shr_nuopc_methods_FB_diagnose)'
     ! ----------------------------------------------
 
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
 
     lstring = ''
@@ -1748,17 +1746,13 @@ module shr_nuopc_methods_mod
           rc = ESMF_FAILURE
           return
        endif
-       if (dbug_flag > 1) then
-          call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
-       end if
+       call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
     enddo
 
     ! Deallocate memory
     deallocate(lfieldnamelist)
 
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine shr_nuopc_methods_FB_diagnose
 
