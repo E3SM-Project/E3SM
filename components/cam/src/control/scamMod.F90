@@ -356,13 +356,13 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                  if (ret/=NF90_NOERR) then
                     call endrun('SCAM_SETOPTS: error reading latitude variable from iopfile')
                  end if
-                 if (ioplon.lt.0) ioplon=ioplon+360._r8
 !!$                 if (ioplon-scmlon.gt.5.) then
 !!$                    write(iulog,*)'WARNING: SCMLON/SCMLAT specified in namelist is different'
 !!$                    write(iulog,*)'from the IOP file lat,lon by more than 5 degrees'
 !!$                    write(iulog,*)'Using specified SCMLAT and SCMLON for all boundary data'
 !!$                 endif
                  call shr_scam_GetCloseLatLon(ncid,scmlat,scmlon,ioplat,ioplon,latidx,lonidx)
+                 if (ioplon.lt.0) ioplon=ioplon+360._r8
                  scmlat=ioplat
                  scmlon=ioplon
                  write(iulog,*)'For CAM Generated IOP using closest dataset lat and lon'
