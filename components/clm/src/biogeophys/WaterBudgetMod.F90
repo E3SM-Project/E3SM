@@ -457,11 +457,11 @@ contains
              write(iulog,FA0)'kg/m2s*1e6','kg/m2*1e6'
              write(iulog,'(32("-"),"|",20("-"))')
              do f = 1, f_size
-                write(iulog,FF)fname(f),budg_fluxGpr(f,ip),budg_fluxG(f,ip)*unit_conversion
+                write(iulog,FF)fname(f),budg_fluxGpr(f,ip),budg_fluxG(f,ip)*unit_conversion*get_step_size()
              end do
              write(iulog,'(32("-"),"|",20("-"))')
              write(iulog,FF)'   *SUM*', &
-                  sum(budg_fluxGpr(:,ip)), sum(budg_fluxG(:,ip))*unit_conversion
+                  sum(budg_fluxGpr(:,ip)), sum(budg_fluxG(:,ip))*unit_conversion*get_step_size()
              write(iulog,FF2)'*EXP CHANGE*', &
                   '            ',sum(budg_fluxG(:,ip))*unit_conversion*get_step_size()
              write(iulog,'(32("-"),"|",20("-"))')
