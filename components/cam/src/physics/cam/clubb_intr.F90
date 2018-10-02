@@ -654,12 +654,15 @@ end subroutine clubb_init_cnst
     prer_evap_idx   = pbuf_get_index('PRER_EVAP')
     qrl_idx         = pbuf_get_index('QRL')
     cmfmc_sh_idx    = pbuf_get_index('CMFMC_SH')
+
+#ifdef FIVE
     t_five_idx = pbuf_get_index('T_FIVE')
     q_five_idx = pbuf_get_index('Q_FIVE')
     u_five_idx = pbuf_get_index('U_FIVE')
     v_five_idx = pbuf_get_index('V_FIVE')
     pmid_five_idx = pbuf_get_index('PMID_FIVE')
     pint_five_idx = pbuf_get_index('PINT_FIVE')
+#endif
 
     iisclr_rt  = -1
     iisclr_thl = -1
@@ -1733,9 +1736,9 @@ end subroutine clubb_init_cnst
          if (lq(ixind))  then 
             icnt=icnt+1
             do k=1,pver
-               edsclr_pre(k,icnt) = state1%q(i,k,ixind)
+               edsclr(k,icnt) = state1%q(i,k,ixind)
             enddo
-            edsclr_pre(pverp,icnt) = edsclr_pre(pver,icnt)
+            edsclr(pverp,icnt) = edsclr(pver,icnt)
          end if
       enddo
       
@@ -1860,13 +1863,7 @@ end subroutine clubb_init_cnst
         vm_pre(k) = v_five(i,k) 
         rtm_pre(k) = q_five(i,k,ixq) + q_five(i,k,ixcldliq)
         rvm_pre(k) = q_five(i,k,ixq)
-      enddo  
-     
-      ! provide lower boundary condition
-      rtm_pre(pverp_five)  = rtm_pre(pver_five)
-      um_pre(pverp_five)   = um_pre(pver_five) 
-      vm_pre(pverp_five)   = vm_pre(pver_five)
-      thlm_pre(pverp_five) = thlm_pre(pver_five)        
+      enddo         
      
 #else
       ! If FIVE is not used then these "pre" values are essentially just copies
@@ -1879,8 +1876,14 @@ end subroutine clubb_init_cnst
       p_in_Pa(pverp) = p_in_Pa(pver)
       rad(:) = radf_pre
       rfrzm(:) = rfrzm_pre
-      edsclr(:,:) = edsclr_pre(:,:)xs
+!      edsclr(:,:) = edsclr_pre(:,:)
 #endif
+
+      ! provide lower boundary condition
+      rtm_pre(pverp_clubb)  = rtm_pre(pver_clubb)
+      um_pre(pverp_clubb)   = um_pre(pver_clubb) 
+      vm_pre(pverp_clubb)   = vm_pre(pver_clubb)
+      thlm_pre(pverp_clubb) = thlm_pre(pver_clubb) 
     
       ! ------------------------------------------------- !
       ! Begin case specific code for SCAM cases.          !
@@ -2393,11 +2396,11 @@ end subroutine clubb_init_cnst
       rtm(i,:) = rtm_pre(:)
       um(i,:) = um_pre(:)
       vm(i,:) = vm_pre(:)
-      rcm(i,:) = rcm_pre(i,:)   
+      rcm(i,:) = rcm_pre(:)   
       ! Define temperature
       do k=1,pver
-        t_host(i,k) = (thlm(i,k) + (latvap/cpair) * rcm(i,k))/exner_clubb(i,k)
-      end
+        t_out(i,k) = (thlm(i,k) + (latvap/cpair) * rcm(i,k))/exner_clubb(i,k)
+      enddo
       
       wprcp(i,:) = wprcp_pre(:)
       cloud_frac(i,:) = cloud_frac_pre(:)
