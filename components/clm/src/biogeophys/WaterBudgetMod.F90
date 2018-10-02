@@ -463,8 +463,6 @@ contains
              write(iulog,'(32("-"),"|",20("-"))')
              write(iulog,FF)'   *SUM*', &
                   sum(budg_fluxGpr(:,ip)), sum(budg_fluxG(:,ip))*unit_conversion*get_step_size()
-             write(iulog,FF2)'*EXP CHANGE*', &
-                  '            ',sum(budg_fluxG(:,ip))*unit_conversion*get_step_size()
              write(iulog,'(32("-"),"|",20("-"))')
 
              write(iulog,*)''
