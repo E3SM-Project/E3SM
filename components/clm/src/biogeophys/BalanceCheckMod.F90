@@ -766,20 +766,6 @@ contains
             h2ocan_patch(bounds%begp:bounds%endp), &
             h2ocan_col(bounds%begc:bounds%endc))
 
-      if (use_var_soil_thick) then
-	 do f = 1, num_hydrologyc
-            c = filter_hydrologyc(f)
-      	    wa(c) = 0._r8
-	 end do
-      else
-	 do f = 1, num_hydrologyc
-            c = filter_hydrologyc(f)
-            if (zwt(c) <= zi(c,nlevsoi)) then
-               wa(c) = 5000._r8
-	    end if
-         end do
-      end if
-
       wa_local_col(:) = wa(:)
 
       do f = 1, num_nolakec
