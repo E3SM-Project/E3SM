@@ -3178,7 +3178,7 @@ sub setup_logic_fan {
      if ( value_is_true( $nl_flags->{'use_ed'} ) && value_is_true( $nl_flags->{'use_fan'} ) ) {
         fatal_error("Cannot turn use_fan on when use_ed is on\n" );
      }
-     if ($nl_flags->{'use_crop'} ne ".true.") {
+     if (!value_is_true($nl_flags->{'use_crop'}) && value_is_true( $nl_flags->{'use_fan'} )) {
        fatal_error('Cannot use_fan if use_crop is false');
      }
 	 
