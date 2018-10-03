@@ -79,6 +79,7 @@ class PasswordPromptAction(argparse.Action):
 # -------------------------------------------------------------------------------
     """ SVN developer's password class handler
     """
+    # pylint: disable=redefined-builtin
     def __init__(self,
                  option_strings=None,
                  dest=None,
@@ -521,7 +522,7 @@ def get_run_last_date(casename, run_path):
     cpl_files = sorted(glob.glob(os.path.join(run_path, pattern)))
 
     if cpl_files:
-        head, cpl_file = os.path.split(cpl_files[-1])
+        _, cpl_file = os.path.split(cpl_files[-1])
         fparts = cpl_file.split('.')
         return fparts[-2]
 
@@ -541,7 +542,7 @@ def get_sta_last_date(sta_path):
     rest_dirs = sorted(glob.glob(os.path.join(sta_path, 'rest/*')))
 
     if rest_dirs:
-        head, rest_dir = os.path.split(rest_dirs[-1])
+        _, rest_dir = os.path.split(rest_dirs[-1])
         return rest_dir
 
     return '0000-00-00'
@@ -591,7 +592,7 @@ def get_case_status(case_dict):
                                'lnd/hist', 'logs', 'ocn/hist', 'rest', 'rof/hist',
                                'wav/hist']:
                     path = os.path.join(case_dict['sta_path'], subdir)
-                    (raw_disk, toss) = get_disk_usage(path)
+                    (raw_disk, _) = get_disk_usage(path)
                     sta_size += raw_disk
                 case_dict['sta_size'] = bytes_2_human(sta_size)
 
@@ -1454,7 +1455,7 @@ def main_func(options):
                 sys.exit(0)
             else:
                 logger.info('ERROR archive_metadata failed to find "%s" '\
-                            'in experiments database at "%s".', 
+                            'in experiments database at "%s".',
                             case_dict['q_casename'], case_dict['query_expdb_url'])
                 sys.exit(1)
 
