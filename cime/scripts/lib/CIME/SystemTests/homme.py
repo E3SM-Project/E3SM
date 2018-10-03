@@ -64,7 +64,8 @@ class HOMME(SystemTestsCommon):
                 run_cmd_no_fail("{} -j8".format(gmake), arg_stdout=os.path.join(exeroot_strict, "homme.bldlog"), combine_output=True, from_dir=exeroot_strict)
 
             post_build(self._case, [os.path.join(exeroot_fast, "homme.bldlog")], build_complete=True)
-            post_build(self._case, [os.path.join(exeroot_strict, "homme.bldlog")], build_complete=True)
+            if (mach in ["anvil", "sandiatoss3"]):
+                post_build(self._case, [os.path.join(exeroot_strict, "homme.bldlog")], build_complete=True)
 
     def run_phase(self):
 
