@@ -315,6 +315,9 @@ module cam_history
   public :: hist_fld_col_active       ! Determine if a field is active on any history file at
   ! each column in a chunk
 
+
+type(var_desc_t) :: levid
+
 CONTAINS
 
   subroutine init_masterlinkedlist()
@@ -1743,6 +1746,7 @@ CONTAINS
       ! Check to see if the mdim is registered
       if (get_hist_coord_index(trim(mdimnames(f))) <= 0) then
         ! We need to register this mdim (hist_coord)
+         print*,'BALLI:',trim(mdimnames(f)),f,mdimcnt
         call add_hist_coord(trim(mdimnames(f)))
       end if
     end do
@@ -3432,6 +3436,7 @@ end subroutine print_active_fldlst
     ierr=pio_inq_varid (tape(t)%File,'date    ',    tape(t)%dateid)
     ierr=pio_inq_varid (tape(t)%File,'datesec ',    tape(t)%datesecid)
     ierr=pio_inq_varid (tape(t)%File,'time    ',    tape(t)%timeid)
+    ierr=pio_inq_varid (tape(t)%File,'lev    ',    levid)
 
 
     !
@@ -3742,6 +3747,10 @@ end subroutine print_active_fldlst
     nbdate = yr*10000 + mon*100 + day
     ierr=pio_def_var (tape(t)%File,'time',pio_double,(/timdim/),tape(t)%timeid)
     ierr=pio_put_att (tape(t)%File, tape(t)%timeid, 'long_name', 'time')
+    ierr=pio_put_att (tape(t)%File, tape(t)%timeid, 'balli', 'time')
+    ierr=pio_put_att (tape(t)%File, levid, 'balli', 'ithe')
+    
+
     str = 'days since ' // date2yyyymmdd(nbdate) // ' ' // sec2hms(nbsec)
     ierr=pio_put_att (tape(t)%File, tape(t)%timeid, 'units', trim(str))
 
