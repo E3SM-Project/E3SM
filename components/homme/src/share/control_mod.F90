@@ -221,6 +221,7 @@ module control_mod
 
   ! for dcmip 2016 test 3
   real (kind=real_kind), public :: dcmip16_mu      = 0        ! additional uniform viscosity (momentum)
-  real (kind=real_kind), public :: dcmip16_mu_s    = 0        ! additional uniform viscosity (scalars)
+  real (kind=real_kind), public :: dcmip16_mu_s    = 0        ! additional uniform viscosity (scalar dynamical variables)
+  real (kind=real_kind), public :: dcmip16_mu_q    = 0        ! additional uniform viscosity (scalar tracers)
   real (kind=real_kind), public :: interp_lon0     = 0.0d0
 end module control_mod

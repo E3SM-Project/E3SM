@@ -118,7 +118,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hvcoord, hybrid , dt , 
   use control_mod,            only : qsplit, nu_q, semi_lagrange_hv_q_all,&
        transport_alg, semi_lagrange_cdr_alg, semi_lagrange_cdr_check
   ! For DCMIP16 supercell test case.
-  use control_mod,            only : dcmip16_mu_s
+  use control_mod,            only : dcmip16_mu_q
   use prim_advection_base,    only : advance_physical_vis
 
   implicit none
@@ -438,8 +438,8 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hvcoord, hybrid , dt , 
      call apply_cobra(elem, hybrid, tl, nets, nete, n0_qdp, np1_qdp, minq, maxq)
   end if
   ! physical viscosity for supercell test case
-  if (dcmip16_mu_s > 0) then
-     call advance_physical_vis(elem, hvcoord, hybrid, deriv, tl%np1, np1_qdp, nets, nete, dt, dcmip16_mu_s)
+  if (dcmip16_mu_q > 0) then
+     call advance_physical_vis(elem, hvcoord, hybrid, deriv, tl%np1, np1_qdp, nets, nete, dt, dcmip16_mu_q)
   endif
   call t_stopf('Prim_Advec_Tracers_remap_ALE')
 end subroutine Prim_Advec_Tracers_remap_ALE

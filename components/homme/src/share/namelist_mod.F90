@@ -53,6 +53,7 @@ module namelist_mod
     nu_top,        &
     dcmip16_mu,     &
     dcmip16_mu_s,   &
+    dcmip16_mu_q,   &
     dcmip16_prec_type, &
     dcmip16_pbl_type,&
     interp_lon0,    &
@@ -234,6 +235,7 @@ module namelist_mod
       nu_top,        &
       dcmip16_mu,     &
       dcmip16_mu_s,   &
+      dcmip16_mu_q,   &
       dcmip16_prec_type,&
       dcmip16_pbl_type,&
       psurf_vis,     &
@@ -655,6 +657,7 @@ module namelist_mod
 
     call MPI_bcast(dcmip16_mu,      1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(dcmip16_mu_s,    1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(dcmip16_mu_q,    1, MPIreal_t   , par%root,par%comm,ierr)
 
     call MPI_bcast(dcmip16_prec_type, 1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(dcmip16_pbl_type , 1, MPIinteger_t, par%root,par%comm,ierr)
@@ -875,6 +878,7 @@ module namelist_mod
     if(nu_q<0)    nu_q  = nu
     if(nu_div<0)  nu_div= nu
     if(dcmip16_mu_s<0)    dcmip16_mu_s  = dcmip16_mu
+    if(dcmip16_mu_q<0)    dcmip16_mu_q  = dcmip16_mu_s
 
     nnodes = npart/nmpi_per_node
     if(numnodes > 0 ) then
@@ -971,6 +975,7 @@ module namelist_mod
 
        if(dcmip16_mu/=0)  write(iulog,'(a,2e9.2)')"1st order viscosity:  dcmip16_mu   = ",dcmip16_mu
        if(dcmip16_mu_s/=0)write(iulog,'(a,2e9.2)')"1st order viscosity:  dcmip16_mu_s = ",dcmip16_mu_s
+       if(dcmip16_mu_q/=0)write(iulog,'(a,2e9.2)')"1st order viscosity:  dcmip16_mu_q = ",dcmip16_mu_q
 
        if(initial_total_mass>0) then
           write(iulog,*) "initial_total_mass = ",initial_total_mass
