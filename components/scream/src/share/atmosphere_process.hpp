@@ -4,6 +4,8 @@
 #include <string>
 #include <list>
 
+#include "share/mpi/scream_comm.hpp"
+
 namespace scream
 {
 
@@ -33,6 +35,9 @@ public:
 
   // The name of the block 
   virtual std::string name () const = 0;
+
+  // The communicator associated with this atm process
+  virtual const Comm& get_comm () const = 0;
 
   // These are the three main interfaces:
   //   - the initialize method sets up all the stuff the process needs to run,

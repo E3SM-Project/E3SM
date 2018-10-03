@@ -28,7 +28,10 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Dynamics; }
 
   // The name of the subcomponent 
-  std::string name () const { return "Scream::Dynamics"; }
+  std::string name () const { return "scream::dynamics"; }
+
+  // The communicator used by the dynamics
+  const Comm& get_comm () const { return m_dynamics_comm; }
 
   // These are the three main interfaces:
   void initialize (/* what inputs? */);
@@ -41,6 +44,8 @@ public:
   const std::list<std::string>&  get_computed_fields () const;
 
 protected:
+
+  Comm      m_dynamics_comm;
 
 };
 

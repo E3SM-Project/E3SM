@@ -16,6 +16,11 @@ public:
   // The type of the block (dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Coupling; }
 
+  std::string name () const { return "scream::surface_coupling"; }
+
+  // The communicator associated with this atm process
+  const Comm& get_comm () const { return m_surface_coupling_comm; }
+
   // The initialization method should prepare all stuff needed to import/export from/to
   // f90 structures.
   void initialize ( /* inputs? */ );
@@ -31,6 +36,8 @@ protected:
 
   field_repo_type<ExecViewManaged<Real*>>   m_device_field_repo;
   field_repo_type<HostViewManaged<Real*>>   m_host_field_repo;
+
+  Comm    m_surface_coupling_comm;
 };
 
 } // namespace scream
