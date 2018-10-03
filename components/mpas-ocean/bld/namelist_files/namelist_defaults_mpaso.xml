@@ -154,6 +154,7 @@
 <config_use_Redi_bottom_layer_tapering>.false.</config_use_Redi_bottom_layer_tapering>
 <config_Redi_bottom_layer_tapering_depth>0.0</config_Redi_bottom_layer_tapering_depth>
 <config_standardGM_tracer_kappa>1800.0</config_standardGM_tracer_kappa>
+<config_standardGM_tracer_kappa ocn_grid="oEC60to30v3wLI">600.0</config_standardGM_tracer_kappa>
 <config_Redi_kappa>0.0</config_Redi_kappa>
 <config_gravWaveSpeed_trunc>0.3</config_gravWaveSpeed_trunc>
 <config_max_relative_slope>0.01</config_max_relative_slope>
@@ -281,10 +282,13 @@
 <config_land_ice_flux_cp_ice>2.009e3</config_land_ice_flux_cp_ice>
 <config_land_ice_flux_rho_ice>918</config_land_ice_flux_rho_ice>
 <config_land_ice_flux_topDragCoeff>2.5e-3</config_land_ice_flux_topDragCoeff>
+<config_land_ice_flux_topDragCoeff ocn_grid="oEC60to30v3wLI">4.48e-3</config_land_ice_flux_topDragCoeff>
 <config_land_ice_flux_ISOMIP_gammaT>1e-4</config_land_ice_flux_ISOMIP_gammaT>
 <config_land_ice_flux_rms_tidal_velocity>5e-2</config_land_ice_flux_rms_tidal_velocity>
 <config_land_ice_flux_jenkins_heat_transfer_coefficient>0.011</config_land_ice_flux_jenkins_heat_transfer_coefficient>
+<config_land_ice_flux_jenkins_heat_transfer_coefficient ocn_grid="oEC60to30v3wLI">0.00295</config_land_ice_flux_jenkins_heat_transfer_coefficient>
 <config_land_ice_flux_jenkins_salt_transfer_coefficient>3.1e-4</config_land_ice_flux_jenkins_salt_transfer_coefficient>
+<config_land_ice_flux_jenkins_salt_transfer_coefficient ocn_grid="oEC60to30v3wLI">8.42e-5</config_land_ice_flux_jenkins_salt_transfer_coefficient>
 
 <!-- advection -->
 <config_vert_tracer_adv>'stencil'</config_vert_tracer_adv>
