@@ -1,6 +1,7 @@
 set(SHARE_SRC
   error_defs.cpp
   scream_session.cpp
+  mpi/scream_comm.cpp
   util/scream_utils.cpp
   util/array_io.cpp
   util/array_io_mod.f90
@@ -11,6 +12,7 @@ set(SHARE_HEADERS
   error_defs.hpp
   field_repository.hpp
   scream_session.hpp
+  mpi/scream_comm.hpp
   util/file_utils.hpp
   util/math_utils.hpp
   util/scream_utils.hpp
