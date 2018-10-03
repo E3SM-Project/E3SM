@@ -160,7 +160,7 @@ def buildnml(case, caseroot, compname):
         ic_prefix += 'oRRS30to10v3wLI'
         decomp_date += '171109'
         decomp_prefix += 'mpas-o.graph.info.'
-        restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.oRRS30to10v3wLI.nc'
+        restoring_file += 'sss.monthlyClimatology.PHC2_salx.2004_08_03.180503.nc'
         analysis_mask_file += 'masks_SingleRegionAtlanticWTransportTransects_RRS30to10v3wLI.nc'
     elif ocn_grid == 'oRRS18to6':
         ic_date += '160830'
