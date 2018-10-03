@@ -7,12 +7,13 @@ module med_phases_prep_ice_mod
   implicit none
   private
 
-  character(*)      , parameter :: u_FILE_u  = __FILE__
-
   public  :: med_phases_prep_ice
 
+  character(*), parameter :: u_FILE_u = &
+       __FILE__
+
 !-----------------------------------------------------------------------------
-  contains
+contains
 !-----------------------------------------------------------------------------
 
   subroutine med_phases_prep_ice(gcomp, rc)
@@ -46,6 +47,11 @@ module med_phases_prep_ice_mod
     character(len=64)          :: timestr
     type(InternalState)        :: is_local
     real(R8), pointer          :: dataPtr1(:), dataPtr2(:), dataPtr3(:), dataPtr4(:)
+    real(R8), pointer          :: potential_temperature(:)
+    real(R8), pointer          :: temperature(:)
+    real(R8), pointer          :: humidity(:)
+    real(R8), pointer          :: pressure(:)
+    real(R8), pointer          :: air_density(:)
     integer                    :: i,n,n1,ncnt
     character(len=CS)          :: fldname
     real(R8), pointer          :: dataptr(:)
@@ -131,9 +137,6 @@ module med_phases_prep_ice_mod
          document=first_call, string='(merge_to_ice)', mastertask=mastertask, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compice), string=trim(subname)//' FBexp(compice) ', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     !---------------------------------------
     !--- custom calculations
     !---------------------------------------
@@ -162,6 +165,60 @@ module med_phases_prep_ice_mod
           write(logunit,'(a)')'(merge_to_ice): Scaling Fixx_rofi by flux_epbalfact '
        end if
     end if
+
+    ! calculate air density if it is is not sent by the atm 
+    
+    if (.not. shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compatm,compice), 'Sa_dens', rc=rc)) then
+       call ESMF_LogWrite(trim(subname)//" : calculating bottom level atmospheric air density &
+            since it is obtained from atmosphere")
+
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_tbot', temperature, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_pbot', pressure, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_shum', humidity, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Sa_dens', air_density, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       do n = 1,size(temperature)
+          if (temperature(n) /= 0._R8) then
+             air_density(n) = pressure(n) / (287.058_R8*(1._R8 + 0.608_R8*humidity(n))*temperature(n))
+          else
+             air_density(n) = 0._R8
+          endif
+       enddo
+    end if
+
+    ! calculate potential temperature if is not sent by the atm
+
+    if (.not. shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compatm,compice), 'Sa_ptem', rc=rc)) then
+       call ESMF_LogWrite(trim(subname)//" : calculating bottom level potential temperature &
+            since it is obtained from atmosphere")
+
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_tbot', temperature, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_pbot', pressure, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Sa_ptem', potential_temperature, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       do n = 1,size(temperature)
+          potential_temperature(n) = temperature(n)*((100000._R8/pressure(n))**0.286_R8)  
+       end do
+    end if
+
+    !---------------------------------------
+    !--- diagnose export to ice
+    !---------------------------------------
+
+    call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compice), string=trim(subname)//' FBexp(compice) ', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
     !--- update local scalar data

@@ -188,7 +188,7 @@ contains
     do n = 1,fldsFrOcn_num
        call NUOPC_Advertise(exportState, standardName=fldsFrOcn(n)%stdname, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_LogWrite('(ocn_comp_nuopc):(InitializeAdvertise):Fr_ocn'//trim(fldsFrOcn(n)%stdname), &
+       call ESMF_LogWrite('(ocn_comp_nuopc):(InitializeAdvertise):Fr_ocn '//trim(fldsFrOcn(n)%stdname), &
             ESMF_LOGMSG_INFO)
     enddo
 
@@ -196,7 +196,7 @@ contains
        do n = 1,fldsToOcn_num
           call NUOPC_Advertise(importState, standardName=fldsToOcn(n)%stdname, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_LogWrite('(ocn_comp_nuopc):(InitializeAdvertise):To_ocn'//trim(fldsToOcn(n)%stdname), &
+          call ESMF_LogWrite('(ocn_comp_nuopc):(InitializeAdvertise):To_ocn '//trim(fldsToOcn(n)%stdname), &
                ESMF_LOGMSG_INFO)
        end do
     end if
@@ -303,7 +303,8 @@ contains
           ! Special logic for either prescribed or som aquaplanet - overwrite and
           call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar, reset_domain_mask=.true.)
        else
-          call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar)
+          !call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar)
+          call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar, reset_domain_mask=.true.)
        end if
     endif
 
