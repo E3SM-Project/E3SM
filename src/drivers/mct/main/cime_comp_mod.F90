@@ -3091,8 +3091,7 @@ contains
                    inst_suffix =  component_get_suffix(rof(eri))
                    call seq_hist_writeaux(infodata, EClock_d, rof(eri), flow='c2x', &
                         aname='r2x',dname='domrb',inst_suffix=trim(inst_suffix),  &
-                        nx=rof_nx, ny=rof_ny, nt=1, write_now=t6hr_alarm)
-! KDR orig                        nx=rof_nx, ny=rof_ny, nt=1, write_now=t24hr_alarm)
+                        nx=rof_nx, ny=rof_ny, nt=1, write_now=t24hr_alarm)
                 enddo
                 call t_drvstopf ('driver_rofpost_histaux')
              endif
