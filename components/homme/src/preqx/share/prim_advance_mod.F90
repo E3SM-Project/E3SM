@@ -25,9 +25,8 @@ module prim_advance_mod
   implicit none
   private
   save
-  public :: prim_advance_exp, prim_advance_init1, &
-            applyCAMforcing_ps, applyCAMforcing_dp3d, &
-            vertical_mesh_init2
+  public :: prim_advance_exp, prim_advance_init1, vertical_mesh_init2 !,&
+!            applyCAMforcing_ps, applyCAMforcing_dp3d
 
   real (kind=real_kind), allocatable :: ur_weights(:)
 
@@ -561,7 +560,7 @@ contains
 !pw call t_adj_detailf(-1)
   end subroutine prim_advance_exp
 
-
+#if 0
 !ftype logic
 !should be called with dt_remap, on 'eulerian' levels, only before homme remap timestep
   subroutine applyCAMforcing_ps(elem,hvcoord,dyn_timelev,tr_timelev,dt_remap,nets,nete)
@@ -614,7 +613,7 @@ contains
   endif
   call t_stopf("ApplyCAMForcing")
   end subroutine applyCAMforcing_dp3d
-
+#endif
 
 !applies tracer tendencies and adjusts ps depending on moisture
   subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
@@ -630,7 +629,7 @@ contains
   ! local
   integer :: i,j,k,ie,q
   real (kind=real_kind) :: v1,dp
-  real (kind=real_kind) :: beta(np,np),E0(np,np),ED(np,np),dp0m1(np,np),dpsum(np,np)
+!  real (kind=real_kind) :: beta(np,np),E0(np,np),ED(np,np),dp0m1(np,np),dpsum(np,np)
 
   do ie=nets,nete
      ! apply forcing to Qdp
@@ -742,6 +741,17 @@ contains
      enddo
   enddo
   end subroutine applyCAMforcing_dynamics_dp
+
+
+!for preqx model this routine does nothing
+  subroutine convert_thermo_forcing(elem,hvcoord,n0,nets,nete)
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: nets,nete
+  integer,                intent(in)    :: n0
+  end subroutine convert_thermo_forcing
+
 
 
   subroutine advance_hypervis_dp(elem,hvcoord,hybrid,deriv,nt,nets,nete,dt2,eta_ave_w)

@@ -881,7 +881,7 @@ contains
 #if USE_OPENACC
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
-    use prim_advance_mod,   only: applycamforcing_ps
+    use prim_advance_mod,   only: convert_thermo_forcing
 
     implicit none
 
@@ -935,6 +935,7 @@ contains
     ! compute HOMME test case forcing
     ! by calling it here, it mimics eam forcings computations in standalone.
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
+    call convert_thermo_forcing(elem,hvcoord,tl%n0,nets,nete)
 #endif
 
     ! Apply CAM Physics forcing
@@ -1111,7 +1112,7 @@ contains
     use prim_advection_mod, only: prim_advec_tracers_remap
     use reduction_mod,      only: parallelmax
     use time_mod,           only: time_at,TimeLevel_t, timelevel_update, nsplit
-    use prim_advance_mod,   only: applycamforcing_dp3d
+!    use prim_advance_mod,   only: applycamforcing_dp3d
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
 
     type(element_t),      intent(inout) :: elem(:)
@@ -1195,6 +1196,69 @@ contains
     call t_stopf("prim_step_advec")
 
   end subroutine prim_step
+
+!ftype logic
+!should be called with dt_dynamics timestep. 
+!if called on eulerian levels (like at the very beginning, in first of qsplit
+!calls of
+!prim_step), make sure that dp3d is updated before, based on ps_v.
+!if called within lagrangian step, it uses lagrangian dp3d
+  subroutine applyCAMforcing_dp3d(elem,hvcoord,dyn_timelev,dt_dyn,nets,nete)
+  use control_mod, only : ftype
+  use prim_advance_mod,   only: applycamforcing_dynamics,applycamforcing_dynamics_dp
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt_dyn
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: dyn_timelev,nets,nete
+
+  call t_startf("ApplyCAMForcing")
+  if (ftype == 3) then
+    call ApplyCAMForcing_dynamics_dp(elem,hvcoord,dyn_timelev,dt_dyn,nets,nete)
+  elseif (ftype == 4) then
+    call ApplyCAMForcing_dynamics   (elem,hvcoord,dyn_timelev,dt_dyn,nets,nete)
+  endif
+  call t_stopf("ApplyCAMForcing")
+  end subroutine applyCAMforcing_dp3d
+
+
+!ftype logic
+!should be called with dt_remap, on 'eulerian' levels, only before homme remap
+!timestep
+  subroutine applyCAMforcing_ps(elem,hvcoord,dyn_timelev,tr_timelev,dt_remap,nets,nete)
+  use control_mod, only : ftype
+  use prim_advance_mod,   only: applycamforcing_dynamics,applycamforcing_tracers
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt_remap
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: dyn_timelev,tr_timelev,nets,nete
+
+  call t_startf("ApplyCAMForcing")
+  if (ftype==0) then
+    call applyCAMforcing_dynamics(elem,hvcoord,dyn_timelev,dt_remap,nets,nete)
+    call applyCAMforcing_tracers(elem,hvcoord,dyn_timelev,tr_timelev,dt_remap,nets,nete)
+  elseif (ftype==2) then
+    call ApplyCAMForcing_dynamics(elem,hvcoord,dyn_timelev,dt_remap,nets,nete)
+  endif
+#ifndef CAM
+  ! for standalone homme, we need tracer tendencies injected similarly to CAM
+  ! for ftypes of interest, 2,3,4.
+  ! standalone homme does not support ftype=1 (because in standalone version,
+  ! it is identical to ftype=0).
+  ! leaving option ftype=-1 for standalone homme when no forcing is applied ever
+  if ((ftype /= 0 ).and.(ftype > 0)) then
+    call ApplyCAMForcing_tracers (elem,hvcoord,dyn_timelev,tr_timelev,dt_remap,nets,nete)
+  endif
+#endif
+  call t_stopf("ApplyCAMForcing")
+  end subroutine applyCAMforcing_ps
+
+
+
+
+
+
   
   
   subroutine prim_step_scm(elem, nets,nete, dt, tl, hvcoord)
@@ -1225,7 +1289,7 @@ contains
     use prim_advance_mod,   only: prim_advance_exp
     use reduction_mod,      only: parallelmax
     use time_mod,           only: time_at,TimeLevel_t, timelevel_update, timelevel_qdp, nsplit
-    use prim_advance_mod,   only: applycamforcing_dp3d
+!    use prim_advance_mod,   only: applycamforcing_dp3d
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
 
     type(element_t),      intent(inout) :: elem(:)

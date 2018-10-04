@@ -88,10 +88,10 @@ contains
 
     ! additional solver specific initializations (called from prim_init2)
 
-    type (element_t),			intent(inout), target :: elem(:)! array of element_t structures
-    integer,				intent(in) :: nets,nete		! start and end element indices
-    type (hybrid_t),			intent(in) :: hybrid		! mpi/omp data struct
-    type (hvcoord_t),			intent(inout)	:: hvcoord	! hybrid vertical coord data struct
+    type (element_t), intent(inout), target :: elem(:)! array of element_t structures
+    integer, intent(in) :: nets,nete! start and end element indices
+    type (hybrid_t),intent(in) :: hybrid! mpi/omp data struct
+    type (hvcoord_t),intent(inout):: hvcoord! hybrid vertical coord data struct
 
   end subroutine vertical_mesh_init2
 
@@ -367,21 +367,42 @@ contains
   end subroutine prim_advance_exp
 
 
-
-
-!placeholder
-  subroutine applyCAMforcing_dp3d(elem,hvcoord,np1,dt,nets,nete)
+!converting T tendencies to theta, can be called from homme and EAM
+!tests and EAM return thermo tendencies in T, this call converts them to theta
+!should be called BEFORE applyCAMforcing_tracers, before ps_v is updated
+!that is, theta tendencies are computed wrt the same pressure levels 
+!that were used to compute temperature tendencies
+  subroutine convert_thermo_forcing(elem,hvcoord,n0,nets,nete)
   implicit none
   type (element_t),       intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt
+!  real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete
-  end subroutine applyCAMforcing_dp3d
+  integer,                intent(in)    :: nets,nete
+  integer,                intent(in)    :: n0
+  integer                               :: ie,k
+  real(kind=real_kind)                  :: ipressure, exner(np,np), p(np,np), dp(np,np), Rstar(np,np,nlev)
+
+  do ie=nets,nete
+     !would it be better to have 2d array as input instead? or not?
+     call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
+
+     ipressure = elem(ie)%state%ps_v(:,:,n0)
+     do k=1,nlev
+        dp(:,:)=&
+            ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+            ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(:,:,n0)
+        ipressure = ipressure + dp 
+        p(:,:) = ipressure - dp/2
+
+        exner = (p(:,:)/p0)**kappa
+        elem(ie)%state%FT(:,:,k)=elem(ie)%state%FT(:,:,k)*Rstar(:,:,k)/Rgas*dp/exner
+     enddo
+  enddo
+  end subroutine convert_thermo_forcing
 
 
-!renaming it just to build
-!
-  subroutine applyCAMforcing_ps(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
+!THIS IS REPEATED CODE NOW, MOVE TO PRIM-DRIVER?
+  subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
 
   implicit none
   type (element_t),       intent(inout) :: elem(:)
@@ -402,16 +423,6 @@ contains
   do ie=nets,nete
      ! apply forcing to Qdp
      elem(ie)%derived%FQps(:,:)=0
-
-     ! apply forcing to temperature
-     call get_temperature(elem(ie),temperature,hvcoord,np1)
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
-     do k=1,nlev
-        temperature(:,:,k) = temperature(:,:,k) + dt*elem(ie)%derived%FT(:,:,k)
-     enddo
-
      
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(q,k,i,j,v1)
@@ -464,25 +475,12 @@ contains
            elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp(:,:,k)
         enddo
      enddo
-
-     ! now that we have updated Qdp and dp, compute vtheta_dp from temperature
-     call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),dp,&
-         elem(ie)%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i)
-
-     call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
-     elem(ie)%state%vtheta_dp(:,:,:,np1) = &
-          (Rstar(:,:,:)/Rgas)*temperature(:,:,:)*&
-          dp(:,:,:)/exner(:,:,:)
-
   enddo
-  call applyCAMforcing_dynamics(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
-  end subroutine applyCAMforcing_ps
+
+  end subroutine applyCAMforcing_tracers
 
 
-
-
-
-  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
+  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,dt,nets,nete)
 
   type (element_t)     ,  intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt
@@ -491,6 +489,9 @@ contains
 
   integer :: k,ie
   do ie=nets,nete
+
+     elem(ie)%state%vtheta_dp(:,:,:,np1) = elem(ie)%state%vtheta_dp(:,:,:,np1) + dt*elem(ie)%derived%FT(:,:,:)
+
      elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,1:2,:)
      elem(ie)%state%w_i(:,:,1:nlev,np1) = elem(ie)%state%w_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FM(:,:,3,:)
 
@@ -501,8 +502,17 @@ contains
   
   end subroutine applyCAMforcing_dynamics
 
-
-
+!a dummy with error message
+  subroutine applyCAMforcing_dynamics_dp(elem,hvcoord,np1,dt,nets,nete)
+  use hybvcoord_mod,  only: hvcoord_t
+  implicit none
+  type (element_t)     ,  intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: np1,nets,nete
+  
+  call abortmp(__FILE__LINE__'ERROR: theta-l model doesnt have ftype=3 option and cannot call applyCAMforcing_dynamics_dp')
+  end subroutine applyCAMforcing_dynamics_dp
 
 
   subroutine advance_hypervis(elem,hvcoord,hybrid,deriv,nt,nets,nete,dt2,eta_ave_w)
