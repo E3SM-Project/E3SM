@@ -201,7 +201,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     # (2) Write namelist file drv_in and initial input dataset list.
     #--------------------------------
     namelist_file = os.path.join(confdir, "drv_in")
-    drv_namelist_groups = ["cime_pes", "papi_inparm", "pio_default_inparm", "prof_inparm"]
+    drv_namelist_groups = ["papi_inparm", "pio_default_inparm", "prof_inparm"]
     nmlgen.write_output_file(namelist_file, data_list_path=data_list_path, groups=drv_namelist_groups)
 
     #--------------------------------
