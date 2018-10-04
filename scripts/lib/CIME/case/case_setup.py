@@ -134,7 +134,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                 if comp_interface != "nuopc":
                     expect(case.get_value("NINST_LAYOUT_{}".format(comp)) == "concurrent",
                            "If multi_driver is TRUE, NINST_LAYOUT_{} must be concurrent".format(comp))
-                    case.set_value("NTASKS_PER_INST_{}".format(comp), ntasks)
+                case.set_value("NTASKS_PER_INST_{}".format(comp), ntasks)
             else:
                 if ninst > ntasks:
                     if ntasks == 1:
@@ -142,7 +142,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                         ntasks = ninst
                     else:
                         expect(False, "NINST_{} value {:d} greater than NTASKS_{} {:d}".format(comp, ninst, comp, ntasks))
-            if comp_interface != "nuopc":
                 case.set_value("NTASKS_PER_INST_{}".format(comp), max(1,int(ntasks / ninst)))
 
         if os.path.exists(get_batch_script_for_job(case.get_primary_job())):
