@@ -108,7 +108,8 @@
       <value compset="_CAM.%L60"      >-nlev 60</value>
       <value compset="_CAM%IDEAL"     >-phys ideal</value>              
       <value compset="_CAM%ADIAB"     >-phys adiabatic</value>              
-      <value compset="_CLM45%[^_]*BC"     >-bc_dep_to_snow_updates</value>
+      <value compset="_CLM45%[^_]*BC" >-bc_dep_to_snow_updates</value>
+      <value compset="_CAM5%.*-RRTMGP">-rad rrtmgp</value>
     </values>
     <group>build_component_cam</group>
     <file>env_build.xml</file>
