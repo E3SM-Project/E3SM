@@ -25,7 +25,7 @@ module coordinate_systems_mod
      real(real_kind) :: z             ! z coordinate
   end type cartesian3D_t
 
-  type, public :: spherical_polar_t
+  type, bind(C), public :: spherical_polar_t
      real(real_kind) :: r             ! radius
      real(real_kind) :: lon           ! longitude
      real(real_kind) :: lat           ! latitude

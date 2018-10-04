@@ -44,13 +44,15 @@ contains
 
 !=================================================================================================!
 
-subroutine sl_parse_transport_alg(transport_alg, slmm, cisl, qos)
+subroutine sl_parse_transport_alg(transport_alg, slmm, cisl, qos, sl_test)
   integer, intent(in) :: transport_alg
-  logical, intent(out) :: slmm, cisl, qos
+  logical, intent(out) :: slmm, cisl, qos, sl_test
 
   slmm = transport_alg > 1
   cisl = transport_alg == 2 .or. transport_alg == 3 .or. transport_alg >= 20
   qos  = cisl .and. (transport_alg == 3 .or. transport_alg == 39)  
+  sl_test = (transport_alg >= 17 .and. transport_alg <= 19) .or. &
+       transport_alg == 29 .or. transport_alg == 39
 end subroutine sl_parse_transport_alg
 
 subroutine sl_init1(par, elem)
@@ -63,15 +65,15 @@ subroutine sl_init1(par, elem)
   type (element_t) :: elem(:)
   type (cartesian3D_t) :: pinside
   integer :: nslots, ie, num_neighbors, need_conservation, i, j
-  logical :: slmm, cisl, qos
+  logical :: slmm, cisl, qos, sl_test
   
   if (transport_alg > 0) then
+     call sl_parse_transport_alg(transport_alg, slmm, cisl, qos, sl_test)
      if (par%masterproc .and. nu_q > 0) &
           print *, 'COMPOSE> use HV; nu_q, all:', nu_q, semi_lagrange_hv_q_all
-     if (cubed_sphere_map /= 2) then
-        call abortmp('transport_alg > 0 requires cubed_sphere_map = 2')
+     if (cubed_sphere_map /= 2 .and. cisl) then
+        call abortmp('CISL transport_alg requires cubed_sphere_map = 2')
      end if
-     call sl_parse_transport_alg(transport_alg, slmm, cisl, qos)
      nslots = nlev*qsize
      if (cisl) nslots = nslots + nlev
      sl_mpi = 0
@@ -90,7 +92,7 @@ subroutine sl_init1(par, elem)
            num_neighbors = elem(ie)%desc%actual_neigh_edges + 1
            call slmm_init_local_mesh(ie, elem(ie)%desc%neigh_corners, num_neighbors, &
                 pinside)
-           if (.false.) then
+           if (sl_test) then
               do j = 1,np
                  do i = 1,np
                     pinside = change_coordinates(elem(ie)%spherep(i,j))
@@ -146,12 +148,12 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hvcoord, hybrid , dt , 
 
   integer               :: i,j,k,l,n,q,ie,kptr, n0_qdp, np1_qdp
   integer               :: num_neighbors, scalar_q_bounds, info
-  logical :: slmm, cisl, qos
+  logical :: slmm, cisl, qos, sl_test
 
   call t_barrierf('Prim_Advec_Tracers_remap_ALE', hybrid%par%comm)
   call t_startf('Prim_Advec_Tracers_remap_ALE')
 
-  call sl_parse_transport_alg(transport_alg, slmm, cisl, qos)
+  call sl_parse_transport_alg(transport_alg, slmm, cisl, qos, sl_test)
 
   call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
 

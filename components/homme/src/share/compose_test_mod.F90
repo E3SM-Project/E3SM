@@ -21,21 +21,21 @@ interface
           dp(np,np,nlev)
    end subroutine compose_stt_fill_uniform_density
 
-   subroutine compose_stt_fill_ics(ie, p_elem, dp, n0_qdp, qdp) !bind(c) can't b/c spherical_polar_t isn't
+   subroutine compose_stt_fill_ics(ie, p_elem, dp, n0_qdp, qdp) bind(c)
      use kinds, only: real_kind
      use dimensions_mod, only: nlev, np, qsize_d
      use coordinate_systems_mod, only: spherical_polar_t
-     integer, intent(in) :: ie, n0_qdp
+     integer, value, intent(in) :: ie, n0_qdp
      type(spherical_polar_t), intent(in) :: p_elem(np,np)
      real (kind=real_kind), intent(in) :: dp(np,np,nlev), &
           qdp(np,np,nlev,qsize_d,2)
    end subroutine compose_stt_fill_ics
 
-   subroutine compose_stt_fill_v(ie, p_elem, t, v)
+   subroutine compose_stt_fill_v(ie, p_elem, t, v) bind(c)
      use kinds, only: real_kind
      use dimensions_mod, only: nlev, np
      use coordinate_systems_mod, only: spherical_polar_t
-     integer, intent(in) :: ie
+     integer, value, intent(in) :: ie
      type(spherical_polar_t), intent(in) :: p_elem(np,np)
      real (kind=real_kind), intent(in) :: t, v(np,np,2,nlev)
    end subroutine compose_stt_fill_v
@@ -43,12 +43,12 @@ interface
    subroutine compose_stt_begin_record() bind(c)
    end subroutine compose_stt_begin_record
 
-   subroutine compose_stt_record_q(ie, p_elem, spheremp, np1, dp3d, n0_qdp, qdp)
+   subroutine compose_stt_record_q(ie, p_elem, spheremp, np1, dp3d, n0_qdp, qdp) bind(c)
      use kinds, only: real_kind
      use dimensions_mod, only: nlev, np, qsize_d
      use element_state, only: timelevels
      use coordinate_systems_mod, only: spherical_polar_t
-     integer, intent(in) :: ie, np1, n0_qdp
+     integer, value, intent(in) :: ie, np1, n0_qdp
      type(spherical_polar_t), intent(in) :: p_elem(np,np)
      real (kind=real_kind), intent(in) :: spheremp(np,np), &
           dp3d(np,np,nlev,timelevels), qdp(np,np,nlev,qsize_d,2)

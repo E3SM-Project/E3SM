@@ -95,25 +95,25 @@ module compose_mod
        integer, value, intent(in) :: nets, nete
      end subroutine cedr_sl_check
 
-     subroutine slmm_init_local_mesh(ie, neigh_corners, num_neighbors, pinside)
+     subroutine slmm_init_local_mesh(ie, neigh_corners, num_neighbors, pinside) bind(c)
        use coordinate_systems_mod, only : cartesian3D_t
-       integer, intent(in) :: ie, num_neighbors
+       integer, value, intent(in) :: ie, num_neighbors
        type(cartesian3D_t), intent(in) :: neigh_corners(:,:), pinside
      end subroutine slmm_init_local_mesh
 
-     subroutine slmm_check_ref2sphere(ie, sphere_cart_coord)
+     subroutine slmm_check_ref2sphere(ie, sphere_cart_coord) bind(c)
        use coordinate_systems_mod, only : cartesian3D_t
-       integer, intent(in) :: ie
+       integer, value, intent(in) :: ie
        type(cartesian3D_t), intent(in) :: sphere_cart_coord
      end subroutine slmm_check_ref2sphere
 
      subroutine slmm_advect(lev, ie, nnc, np, nlev, qsize, nets, nete, &
-          dep_points, Qj_src, metdet, dp3d, tl_np1, q, minq, maxq)
+          dep_points, Qj_src, metdet, dp3d, tl_np1, q, minq, maxq) bind(c)
        use coordinate_systems_mod, only : cartesian3D_t
        use kinds, only : real_kind
        use dimensions_mod, only : qsize_d, max_neigh_edges
        use element_state, only : timelevels
-       integer, intent(in) :: lev, ie, nnc, np, nlev, qsize, nets, nete, tl_np1
+       integer, value, intent(in) :: lev, ie, nnc, np, nlev, qsize, nets, nete, tl_np1
        type(cartesian3D_t), intent(in) :: dep_points(np,np)
        real(kind=real_kind), intent(in) :: Qj_src(np,np,qsize+1,max_neigh_edges+1), &
             metdet(np,np), dp3d(np,np,nlev,timelevels)
@@ -129,11 +129,11 @@ module compose_mod
        integer, value, intent(in) :: ie, nelem_in_patch
      end subroutine slmm_csl_set_elem_data
 
-     subroutine slmm_csl(nets, nete, dep_points, minq, maxq, info)
+     subroutine slmm_csl(nets, nete, dep_points, minq, maxq, info) bind(c)
        use kinds         , only : real_kind
        use dimensions_mod, only : np, nlev, nelemd, qsize
        use coordinate_systems_mod, only : cartesian3D_t
-       integer, intent(in) :: nets, nete
+       integer, value, intent(in) :: nets, nete
        ! dep_points is const in principle, but if lev <=
        ! semi_lagrange_nearest_point_lev, a departure point may be altered if
        ! the winds take it outside of the comm halo.

@@ -3031,55 +3031,12 @@ struct Advecter {
   bool is_cisl () const { return Alg::is_cisl(alg_); }
 
   template <typename Array3D>
-  void init_local_mesh_if_needed (const Int ie, const Array3D& corners,
-                                  const Real* p_inside) {
-    slmm_assert(ie < static_cast<Int>(local_mesh_.size()));
-    if (local_mesh_[ie].p.extent_int(0) != 0) return;
-    auto& m = local_mesh_[ie];
-    const Int
-      nd = 3,
-      nvert = corners.extent_int(1),
-      ncell = corners.extent_int(2),
-      N = nvert*ncell;
-    m.p = typename Mesh::RealArray("p", N);
-    m.e = typename Mesh::IntArray("e", ncell, nvert);
-    for (Int ci = 0, k = 0; ci < ncell; ++ci)
-      for (Int vi = 0; vi < nvert; ++vi, ++k) {
-        for (int j = 0; j < nd; ++j)
-          m.p(k,j) = corners(j,vi,ci);
-        m.e(ci,vi) = k;
-      }
-    siqk::test::fill_normals<siqk::SphereGeometry>(m);
-    local_mesh_tgt_elem_[ie] = slmm::get_src_cell(m, p_inside);
-    slmm_assert(local_mesh_tgt_elem_[ie] >= 0 &&
-                local_mesh_tgt_elem_[ie] < ncell);
-    if (nearest_point_permitted_lev_bdy_ >= 0)
-      init_nearest_point_data(local_mesh_[ie],
-                              local_mesh_nearest_point_data_[ie]);
-  }
+  void init_local_mesh_if_needed(const Int ie, const Array3D& corners,
+                                 const Real* p_inside);
 
   // Check that our ref <-> sphere map agrees with Homme's. p_homme is a GLL
   // point on the sphere. Check that we map it to a GLL ref point.
-  void check_ref2sphere (const Int ie, const Real* p_homme) {
-    const auto& m = local_mesh(ie);
-    const auto& me = local_mesh_tgt_elem(ie);
-    Real ref_coord[2];
-    siqk::sqr::Info info;
-    siqk::sqr::calc_sphere_to_ref(m.p, slice(m.e, me), p_homme,
-                                  ref_coord[0], ref_coord[1], &info);
-    const slmm::Basis basis(4, 0);
-    const slmm::GLL gll;
-    const Real* x, * wt;
-    gll.get_coef(basis, x, wt);
-    int fnd[2] = {0};
-    for (int i = 0; i < 4; ++i)
-      for (int j = 0; j < 2; ++j)
-        if (std::abs(ref_coord[j] - x[i]) < 1e-12)
-          fnd[j] = 1;
-    if ( ! fnd[0] || ! fnd[1])
-      printf("COMPOSE check_ref2sphere: %1.15e %1.15e %d %d\n",
-             ref_coord[0], ref_coord[1], info.success, info.n_iterations);
-  }
+  void check_ref2sphere(const Int ie, const Real* p_homme);
 
   void init_M_tgt_if_needed();
 
@@ -3103,6 +3060,7 @@ struct Advecter {
   }
 
   std::vector<Real>& mass_mix_buffer () { return mass_mix_; }
+
   const Real* M_tgt (const Int& ie) {
     slmm_assert(ie >= 0 && ie < nelem());
     return alg_ == Alg::jct ?
@@ -3126,6 +3084,34 @@ private:
   Int nearest_point_permitted_lev_bdy_;
   std::vector<MeshNearestPointData> local_mesh_nearest_point_data_;
 };
+
+template <typename Array3D>
+void Advecter::init_local_mesh_if_needed (const Int ie, const Array3D& corners,
+                                          const Real* p_inside) {
+  slmm_assert(ie < static_cast<Int>(local_mesh_.size()));
+  if (local_mesh_[ie].p.extent_int(0) != 0) return;
+  auto& m = local_mesh_[ie];
+  const Int
+    nd = 3,
+    nvert = corners.extent_int(1),
+    ncell = corners.extent_int(2),
+    N = nvert*ncell;
+  m.p = typename Mesh::RealArray("p", N);
+  m.e = typename Mesh::IntArray("e", ncell, nvert);
+  for (Int ci = 0, k = 0; ci < ncell; ++ci)
+    for (Int vi = 0; vi < nvert; ++vi, ++k) {
+      for (int j = 0; j < nd; ++j)
+        m.p(k,j) = corners(j,vi,ci);
+      m.e(ci,vi) = k;
+    }
+  siqk::test::fill_normals<siqk::SphereGeometry>(m);
+  local_mesh_tgt_elem_[ie] = slmm::get_src_cell(m, p_inside);
+  slmm_assert(local_mesh_tgt_elem_[ie] >= 0 &&
+              local_mesh_tgt_elem_[ie] < ncell);
+  if (nearest_point_permitted_lev_bdy_ >= 0)
+    init_nearest_point_data(local_mesh_[ie],
+                            local_mesh_nearest_point_data_[ie]);
+}
 
 void Advecter::init_M_tgt_if_needed ()  {
   if ( ! Alg::is_cisl(alg_)) return;
@@ -3230,6 +3216,27 @@ void Advecter::init_M_tgt_if_needed ()  {
       M_tgt += np4_;
     }
   }
+}
+
+void Advecter::check_ref2sphere (const Int ie, const Real* p_homme) {
+  const auto& m = local_mesh(ie);
+  const auto& me = local_mesh_tgt_elem(ie);
+  Real ref_coord[2];
+  siqk::sqr::Info info;
+  siqk::sqr::calc_sphere_to_ref(m.p, slice(m.e, me), p_homme,
+                                ref_coord[0], ref_coord[1], &info);
+  const slmm::Basis basis(4, 0);
+  const slmm::GLL gll;
+  const Real* x, * wt;
+  gll.get_coef(basis, x, wt);
+  int fnd[2] = {0};
+  for (int i = 0; i < 4; ++i)
+    for (int j = 0; j < 2; ++j)
+      if (std::abs(ref_coord[j] - x[i]) < 1e-12)
+        fnd[j] = 1;
+  if ( ! fnd[0] || ! fnd[1])
+    printf("COMPOSE check_ref2sphere: %1.15e %1.15e %d %d\n",
+           ref_coord[0], ref_coord[1], info.success, info.n_iterations);
 }
 } // namespace slmm
 
@@ -5122,41 +5129,41 @@ void slmm_get_mpi_pattern (homme::Int* sl_mpi) {
   *sl_mpi = g_csl_mpi ? 1 : 0;
 }
 
-void slmm_init_local_mesh_ (
-  homme::Int* ie, homme::Cartesian3D** neigh_corners, homme::Int* nnc,
+void slmm_init_local_mesh (
+  homme::Int ie, homme::Cartesian3D** neigh_corners, homme::Int nnc,
   homme::Cartesian3D* p_inside)
 {
   homme::g_advecter->init_local_mesh_if_needed(
-    *ie - 1, homme::FA3<const homme::Real>(
-      reinterpret_cast<const homme::Real*>(*neigh_corners), 3, 4, *nnc),
+    ie - 1, homme::FA3<const homme::Real>(
+      reinterpret_cast<const homme::Real*>(*neigh_corners), 3, 4, nnc),
     reinterpret_cast<const homme::Real*>(p_inside));
-  if (*ie == homme::g_advecter->nelem())
+  if (ie == homme::g_advecter->nelem())
     homme::g_advecter->init_M_tgt_if_needed();
 }
 
-void slmm_check_ref2sphere_ (homme::Int* ie, homme::Cartesian3D* p) {
+void slmm_check_ref2sphere (homme::Int ie, homme::Cartesian3D* p) {
   homme::g_advecter->check_ref2sphere(
-    *ie - 1, reinterpret_cast<const homme::Real*>(p));
+    ie - 1, reinterpret_cast<const homme::Real*>(p));
 }
 
-void slmm_advect_ (
-  homme::Int* lev, homme::Int* ie, homme::Int* nnc, homme::Int* np, homme::Int* nlev,
-  homme::Int* qsize, homme::Int* nets, homme::Int* nete,
+void slmm_advect (
+  homme::Int lev, homme::Int ie, homme::Int nnc, homme::Int np, homme::Int nlev,
+  homme::Int qsize, homme::Int nets, homme::Int nete,
   homme::Cartesian3D* dep_points, homme::Real* neigh_q, homme::Real* J_t,
-  homme::Real* dp3d, homme::Int* tl_np1, homme::Real* q, homme::Real* minq,
+  homme::Real* dp3d, homme::Int tl_np1, homme::Real* q, homme::Real* minq,
   homme::Real* maxq)
 {
   if (homme::g_advecter->is_cisl()) {
 #ifdef BUILD_CISL
-    homme::slmm_project(*lev - 1, *nets - 1, *ie - 1, *nnc, *np, *nlev, *qsize,
-                        dep_points, neigh_q, J_t, dp3d, *tl_np1 - 1, q, minq, maxq);
+    homme::slmm_project(lev - 1, nets - 1, ie - 1, nnc, np, nlev, qsize,
+                        dep_points, neigh_q, J_t, dp3d, tl_np1 - 1, q, minq, maxq);
 #else
     throw std::runtime_error("Closed for business to speed up compilation.");
 #endif
   } else {
     slmm_assert(np == 4);
-    homme::slmm_csl<4>(*lev - 1, *nets - 1, *ie - 1, *nnc, *nlev, *qsize,
-                       dep_points, neigh_q, J_t, dp3d, *tl_np1 - 1, q, minq, maxq);
+    homme::slmm_csl<4>(lev - 1, nets - 1, ie - 1, nnc, nlev, qsize,
+                       dep_points, neigh_q, J_t, dp3d, tl_np1 - 1, q, minq, maxq);
   }
 }
 
@@ -5169,14 +5176,14 @@ void slmm_csl_set_elem_data (
                                nelem_in_patch);
 }
 
-void slmm_csl_ (
-  homme::Int* nets, homme::Int* nete, homme::Cartesian3D* dep_points,
+void slmm_csl (
+  homme::Int nets, homme::Int nete, homme::Cartesian3D* dep_points,
   homme::Real* minq, homme::Real* maxq, homme::Int* info)
 {
   slmm_assert(g_csl_mpi);
   *info = 0;
   try {
-    homme::cslmpi::step<4>(*g_csl_mpi, *nets - 1, *nete - 1,
+    homme::cslmpi::step<4>(*g_csl_mpi, nets - 1, nete - 1,
                            dep_points, minq, maxq);
   } catch (const std::exception& e) {
     std::cerr << e.what();
