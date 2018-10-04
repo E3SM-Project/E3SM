@@ -47,7 +47,7 @@ module element_ops
 
   use dimensions_mod, only: np, nlev, nlevp, nelemd
   use element_mod,    only: element_t
-  use element_state,  only: elem_state_t
+  use element_state,  only: elem_state_t, timelevels
   use hybvcoord_mod,  only: hvcoord_t
   use kinds,          only: real_kind, iulog
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
@@ -161,6 +161,9 @@ contains
   end subroutine get_pottemp
   
 
+
+! why is hvcoord input here?
+! ps routine. however it makes sense to move all interfaces to use dp as input?
   !_____________________________________________________________________
   subroutine get_temperature(elem,temperature,hvcoord,nt)
   !
@@ -319,7 +322,7 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine set_thermostate(elem,temperature,hvcoord,nt,ntQ)
+  subroutine set_thermostate(elem,temperature,hvcoord,nt)
   !
   ! Assuming a hydrostatic intital state and given surface pressure,
   ! and no moisture, compute theta and phi 
@@ -332,11 +335,12 @@ contains
   type (element_t), intent(inout)   :: elem
   real (kind=real_kind), intent(in) :: temperature(np,np,nlev)
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
-  
+  integer, intent(in)               :: nt  
+
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: dp(np,np,nlev)
-  integer :: k,nt,ntQ
+  integer :: k
 
   do k=1,nlev
      p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
@@ -349,12 +353,12 @@ contains
           (p(:,:,k)/p0)**(-kappa)
   enddo
 
-  call tests_finalize(elem,hvcoord,nt,ntQ)
+  call tests_finalize(elem,hvcoord,nt)
 
   end subroutine set_thermostate
 
 
-
+!zm,g is not used
   !_____________________________________________________________________
   subroutine set_state(u,v,w,T,ps,phis,p,dp,zm,g,i,j,k,elem,n0,n1)
   !
@@ -376,7 +380,7 @@ contains
 
   end subroutine set_state
 
-
+!bunch of input not used
   subroutine set_state_i(u,v,w,T,ps,phis,p,dp,zm,g,i,j,k,elem,n0,n1)
   !
   ! set state variables at node(i,j,k) at layer interfaces
@@ -516,7 +520,6 @@ contains
   real(real_kind), intent(in)   :: u0(np,np,nlev) ! reference u
   real(real_kind), intent(in)   :: v0(np,np,nlev) ! reference v
   integer,         intent(in)   :: n              ! timestep
-
   real(real_kind):: f_d(np,np,nlev)
   integer :: k
 
@@ -538,7 +541,7 @@ contains
   end subroutine 
 
   !_____________________________________________________________________
-  subroutine tests_finalize(elem, hvcoord,ns,ne,ie)
+  subroutine tests_finalize(elem,hvcoord,ns,ie)
 
   ! Now that all variables have been initialized, set phi to be in hydrostatic balance
 
@@ -546,7 +549,7 @@ contains
 
   type(hvcoord_t),     intent(in)   :: hvcoord
   type(element_t),     intent(inout):: elem
-  integer,             intent(in)   :: ns,ne
+  integer,             intent(in)   :: ns
   integer, optional,   intent(in)   :: ie ! optional element index, to save initial state
 
   integer :: k,tl, ntQ
@@ -576,9 +579,8 @@ contains
      endif
   enddo
   
-
-  do tl = ns+1,ne
-    call copy_state(elem,ns,tl)
+  do tl = 1,timelevels
+    if (ns .ne. tl) call copy_state(elem,ns,tl)
   enddo
 
   if(present(ie)) call save_initial_state(elem%state,ie)

@@ -134,12 +134,13 @@ contains
   type (element_t), intent(in)        :: elem
   real (kind=real_kind), intent(out)  :: pottemp(np,np,nlev)
   type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
-  integer, intent(in) :: nt
-  integer, intent(in) :: ntQ
+  integer, intent(in) :: nt, ntQ
   
   !   local
   real (kind=real_kind) :: pfull(np,np,nlev)
   integer :: k
+
+!dry kappa? i m confused
 
 
 #if (defined COLUMN_OPENMP)

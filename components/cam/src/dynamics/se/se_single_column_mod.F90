@@ -49,6 +49,7 @@ subroutine scm_setinitial(elem)
 
 1000 continue
 
+#if 0
           if (get_nstep() .le. 1) then
             do k=1,thelev-1
               tobs(k)=elem(ie)%state%T(i,j,k,1)
@@ -77,6 +78,7 @@ subroutine scm_setinitial(elem)
             enddo
 
           endif
+#endif
 
         enddo
       enddo
@@ -179,6 +181,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     dummy2(:) = 0.0
     forecast_ps = elem(ie)%state%ps_v(i,j,t1)
 
+#if 0
     call forecast(97,elem(ie)%state%ps_v(i,j,t1),&
            elem(ie)%state%ps_v(i,j,t1),forecast_ps,forecast_u,&
            elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,1,:,t1),&
@@ -189,6 +192,8 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
            stateQin_qfcst,p(i,j,:),stateQin1,1)         
 
     elem(ie)%state%T(i,j,:,t1) = forecast_t(:)
+#endif
+
     elem(ie)%state%v(i,j,1,:,t1) = forecast_u(:)
     elem(ie)%state%v(i,j,2,:,t1) = forecast_v(:)
     elem(ie)%state%Q(i,j,:,:) = forecast_q(:,:)

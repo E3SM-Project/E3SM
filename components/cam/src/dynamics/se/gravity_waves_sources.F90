@@ -112,23 +112,26 @@ CONTAINS
     use dyn_comp, only : hvcoord
     use spmd_utils,      only : iam 
     use parallel_mod,    only : par 
+    use element_ops,     only : get_temperature 
     implicit none
     type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(inout), target :: elem(:)
     type (derivative_t)  , intent(in) :: ederiv
     integer, intent(in) :: nets,nete
-    integer, intent(in) :: tl ! timelevel to use
+    integer, intent(in) :: tl ! timelevels to use
     real(kind=real_kind), intent(out) ::  frontgf(np,np,nlev,nets:nete)
     real(kind=real_kind), intent(out) ::  frontga(np,np,nlev,nets:nete)
   
     ! local
     integer :: k,kptr,i,j,ie,component
     real(kind=real_kind)  ::  gradth(np,np,2,nlev,nets:nete)  ! grad(theta)
-    real(kind=real_kind)  :: p(np,np)        ! pressure at mid points
-    real(kind=real_kind)  :: theta(np,np)    ! potential temperature at mid points
+    real(kind=real_kind)  ::  p(np,np)        ! pressure at mid points
+    real(kind=real_kind)  ::  theta(np,np), pottemp(np,np,nlev)    ! potential temperature at mid points
+    real(kind=real_kind)  ::  temperature(np,np,nlev)    ! potential temperature at mid points
     real(kind=real_kind)  ::  C(np,np,2)     
     
     do ie=nets,nete
+
        do k=1,nlev
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
         ! potential temperature: theta = T (p/p0)^kappa
@@ -136,7 +139,13 @@ CONTAINS
           
           ! pressure at mid points
           p(:,:)   = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
-          theta(:,:) = elem(ie)%state%T(:,:,k,tl)*(psurf_ref / p(:,:))**kappa
+
+          ! old preqx call
+          ! theta(:,:) = elem(ie)%state%T(:,:,k,tl)*(psurf_ref / p(:,:))**kappa
+          
+          call get_temperature(elem(ie),temperature,hvcoord,tl)
+            
+          theta(:,:) = temperature(:,:,k)*(psurf_ref / p(:,:))**kappa
           gradth(:,:,:,k,ie) = gradient_sphere(theta,ederiv,elem(ie)%Dinv)
           
           ! compute C = (grad(theta) dot grad ) u

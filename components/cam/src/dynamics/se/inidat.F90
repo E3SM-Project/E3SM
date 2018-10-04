@@ -30,7 +30,7 @@ contains
 
 
   subroutine read_inidat( ncid_ini, ncid_topo, dyn_in)
-    use dyn_comp,      only: dyn_import_t
+    use dyn_comp,      only: dyn_import_t, hvcoord
     use parallel_mod,     only: par
     use bndry_mod,     only: bndry_exchangev
     use constituents, only: cnst_name, cnst_read_iv, qmin
@@ -70,6 +70,7 @@ contains
     real(r8), allocatable :: tmp(:,:,:)    ! (npsp,nlev,nelemd)
     real(r8), allocatable :: qtmp(:,:)     ! (npsp*nelemd,nlev)
     logical,  allocatable :: tmpmask(:,:)  ! (npsp,nlev,nelemd) unique grid val
+    real(r8)              :: temptmp(np,np,nlev)  ! (npsp,nlev,nelemd) unique grid val
     integer :: ie, k, t
     integer :: indx_scm, ie_scm, i_scm, j_scm
     character(len=max_fieldname_len) :: fieldname
@@ -93,8 +94,10 @@ contains
     real(r8), parameter :: D2_0 = 2.0_r8
     real(r8) :: scmposlon, minpoint, testlat, testlon, testval 
     character*16 :: subname='READ_INIDAT'
-
     logical :: iop_update_surface
+
+    integer :: tl
+    tl = 1
 
     if(par%dynproc) then
        elem=> dyn_in%elem
@@ -169,7 +172,7 @@ contains
        indx = 1
        do j = 1, np
           do i = 1, np
-             elem(ie)%state%v(i,j,1,:,1) = tmp(indx,:,ie)
+             elem(ie)%state%v(i,j,1,:,tl) = tmp(indx,:,ie)
              if (single_column) elem(ie)%state%v(i,j,1,:,1)=tmp(indx_scm,:,ie_scm)
              indx = indx + 1
           end do
@@ -188,13 +191,14 @@ contains
        indx = 1
        do j = 1, np
           do i = 1, np
-             elem(ie)%state%v(i,j,2,:,1) = tmp(indx,:,ie)
+             elem(ie)%state%v(i,j,2,:,tl) = tmp(indx,:,ie)
              if (single_column) elem(ie)%state%v(i,j,2,:,1) = tmp(indx_scm,:,ie_scm)
              indx = indx + 1
           end do
        end do
     end do
 
+#if 0
     fieldname = 'T'
     tmp = 0.0_r8
     call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
@@ -208,12 +212,12 @@ contains
        indx = 1
        do j = 1, np
           do i = 1, np
-             elem(ie)%state%T(i,j,:,1) = tmp(indx,:,ie)
+             elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
              if (single_column) elem(ie)%state%T(i,j,:,1) = tmp(indx_scm,:,ie_scm)
              indx = indx + 1
           end do
        end do
-    end do
+    end do !ie
 
     if (pertlim .ne. D0_0) then
       if(masterproc) then
@@ -251,7 +255,7 @@ contains
                 call random_number(pertval)
               endif
               pertval = D2_0*pertlim*(D0_5 - pertval)
-              elem(ie)%state%T(i,j,k,1) = elem(ie)%state%T(i,j,k,1)*(D1_0 + pertval)
+              elem(ie)%state%T(i,j,k,tl) = elem(ie)%state%T(i,j,k,tl)*(D1_0 + pertval)
             end do
           end do
         end do
@@ -259,7 +263,9 @@ contains
 
       deallocate(rndm_seed)
     end if
+#endif 
 
+!what s this?
     if (associated(ldof)) then
        call endrun(trim(subname)//': ldof should not be associated')
     end if
@@ -336,7 +342,7 @@ contains
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' set to 0.'
               qtmp = 0.0_r8
           end if
-          ! Since the rest of processing uses tmp, copy qtmp into tmp
+          ! Since the rest of processing uses tmp,  thencopy qtmp into tmp
           do ie = 1, nelemd
             do k=1,nlev
               do i = 1, npsq
@@ -403,16 +409,17 @@ contains
           indx = 1
           do j = 1, np
              do i = 1, np
-                elem(ie)%state%ps_v(i,j,1) = tmp(indx,1,ie)
+                elem(ie)%state%ps_v(i,j,tl) = tmp(indx,1,ie)
                 if (single_column) elem(ie)%state%ps_v(i,j,1) = tmp(indx_scm,1,ie_scm)
                 indx = indx + 1
              end do
           end do
     end do
 
+
     if ( (ideal_phys .or. aqua_planet)) then
        tmp(:,1,:) = 0._r8
-    else    
+    else
        fieldname = 'PHIS'
        tmp(:,1,:) = 0.0_r8
        call infld(fieldname, ncid_topo, 'ncol',      &
@@ -433,7 +440,90 @@ contains
           end do
        end do
     end do
-    
+
+
+#if 1 
+! theta needs p inited before T
+    fieldname = 'T'
+    tmp = 0.0_r8
+    call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
+         1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+    if(.not. found) then
+       call endrun('Could not find T field on input datafile')
+    end if
+
+    do ie=1,nelemd
+!preqx
+!       elem(ie)%state%T=0.0_r8
+!do ne need to nullify here?
+!       temptmp(:,:,:) = 0.0_r8
+!       call set_termostate(elem(ie),temptmp,hvcoord,tl)
+
+       indx = 1
+       do j = 1, np
+          do i = 1, np
+             !preqx
+             !elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
+             temptmp(i,j,:) = tmp(indx,:,ie)
+             indx = indx + 1
+          end do
+       end do
+       call set_termostate(elem(ie),temptmp,hvcoord,tl)
+    end do !ie
+
+    if (pertlim .ne. D0_0) then
+      if(masterproc) then
+        write(iulog,*) trim(subname), ': Adding random perturbation bounded', &
+                       'by +/- ', pertlim, ' to initial temperature field'
+      end if
+
+      if (new_random) then
+        rndm_seed_sz = 1
+      else
+        call random_seed(size=rndm_seed_sz)
+      endif
+      allocate(rndm_seed(rndm_seed_sz))
+
+      do ie=1,nelemd
+        ! seed random number generator based on element ID
+        ! (possibly include a flag to allow clock-based random seeding)
+        rndm_seed(:) = elem(ie)%GlobalId
+        if (seed_custom > 0) rndm_seed(:) = ieor( rndm_seed(1) , int(seed_custom,kind(rndm_seed(1))) )
+        if (seed_clock) then
+          call system_clock(sysclk)
+          rndm_seed(:) = ieor( sysclk , int(rndm_seed(1),kind(sysclk)) )
+        endif
+        if (new_random) then
+          call init_ranx(rndm_seed(1))
+        else
+          call random_seed(put=rndm_seed)
+        endif
+
+        call get_temperature(elem(ie), temptmp, hvcoord, tl)
+
+        do i=1,np
+          do j=1,np
+            do k=1,nlev
+              if (new_random) then
+                pertval = ranx()
+              else
+                call random_number(pertval)
+              endif
+              pertval = D2_0*pertlim*(D0_5 - pertval)
+!preqx
+!              elem(ie)%state%T(i,j,k,tl) = elem(ie)%state%T(i,j,k,tl)*(D1_0 + pertval)
+              temptmp(i,j,k) = temptmp(i,j,k)*(D1_0 + pertval)
+            end do !k
+          end do
+        end do! i
+        call set_termostate(elem(ie),temptmp,hvcoord,tl)
+      end do! ie
+
+      deallocate(rndm_seed)
+    end if
+#endif 
+
+
     if (single_column) then
       iop_update_surface = .false.
       call setiopupdate()
@@ -441,49 +531,97 @@ contains
       call scm_setinitial(elem)
     endif
 
-    if (.not. single_column) then    
+    if (.not. single_column) then
 
-      ! once we've read all the fields we do a boundary exchange to 
-      ! update the redundent columns in the dynamics
-      if(par%dynproc) then
-        call initEdgeBuffer(par, edge, elem, (3+pcnst)*nlev+2)
-      end if
-      do ie=1,nelemd
-        kptr=0
-        call edgeVpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
-        kptr=kptr+1
-        call edgeVpack(edge, elem(ie)%state%phis,1,kptr,ie)
-        kptr=kptr+1
-        call edgeVpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
-        kptr=kptr+2*nlev
-        call edgeVpack(edge, elem(ie)%state%T(:,:,:,1),nlev,kptr,ie)
-        kptr=kptr+nlev
-        call edgeVpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
-      end do
-      if(par%dynproc) then
-        call bndry_exchangeV(par,edge)
-      end if
-      do ie=1,nelemd
-        kptr=0
-        call edgeVunpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
-        kptr=kptr+1
-        call edgeVunpack(edge, elem(ie)%state%phis,1,kptr,ie)
-        kptr=kptr+1
-        call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
-        kptr=kptr+2*nlev
-        call edgeVunpack(edge, elem(ie)%state%T(:,:,:,1),nlev,kptr,ie)
-        kptr=kptr+nlev
-        call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
-      end do
+    ! once we've read all the fields we do a boundary exchange to 
+    ! update the redundent columns in the dynamics
+
+#if 0 
+!(elem(1)%model == 1 )then
+    if(par%dynproc) then
+       call initEdgeBuffer(par, edge, elem, (3+pcnst)*nlev+2)
+    end if
+#else 
+!(elem(1)%model == 2 )then
+    if(par%dynproc) then
+       call initEdgeBuffer(par, edge, elem, (4+pcnst)*nlev+2)
+    end if
+#endif
+
+#if 0 
+!(elem(1)%model == 1 )then
+
+!all this does is dss state+Q, this can be routine in homme
+!depending on model
+    do ie=1,nelemd
+       kptr=0
+       call edgeVpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
+       kptr=kptr+1
+       call edgeVpack(edge, elem(ie)%state%phis,1,kptr,ie)
+       kptr=kptr+1
+       call edgeVpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
+       kptr=kptr+2*nlev
+       call edgeVpack(edge, elem(ie)%state%T(:,:,:,1),nlev,kptr,ie)
+       kptr=kptr+nlev
+       call edgeVpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
+    end do
+    if(par%dynproc) then
+       call bndry_exchangeV(par,edge)
+    end if
+    do ie=1,nelemd
+       kptr=0
+       call edgeVunpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
+       kptr=kptr+1
+       call edgeVunpack(edge, elem(ie)%state%phis,1,kptr,ie)
+       kptr=kptr+1
+       call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
+       kptr=kptr+2*nlev
+       call edgeVunpack(edge, elem(ie)%state%T(:,:,:,1),nlev,kptr,ie)
+       kptr=kptr+nlev
+       call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
+    end do
+#else 
+!(elem(1)%model == 2) then
+    do ie=1,nelemd
+       kptr=0
+       call edgeVpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
+       kptr=kptr+1
+       call edgeVpack(edge, elem(ie)%state%phis,1,kptr,ie)
+       kptr=kptr+1
+       call edgeVpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
+       kptr=kptr+2*nlev
+       call edgeVpack(edge, elem(ie)%state%vtheta_dp(:,:,:,1),nlev,kptr,ie)
+       kptr=kptr+nlev
+       call edgeVpack(edge, elem(ie)%state%w_i(:,:,:,1),nlevp,kptr,ie)
+       kptr=kptr+nlevp
+       call edgeVpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
+    end do
+    if(par%dynproc) then
+       call bndry_exchangeV(par,edge)
+    end if
+    do ie=1,nelemd
+       kptr=0
+       call edgeVunpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
+       kptr=kptr+1
+       call edgeVunpack(edge, elem(ie)%state%phis,1,kptr,ie)
+       kptr=kptr+1
+       call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
+       kptr=kptr+2*nlev
+       call edgeVunpack(edge, elem(ie)%state%vtheta_dp(:,:,:,1),nlev,kptr,ie)
+       kptr=kptr+nlevp
+       call edgeVunpack(edge, elem(ie)%state%w_i(:,:,:,1),nlevp,kptr,ie)
+       kptr=kptr+nlev
+       call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
+    end do
+#endif
     
-    endif
+    endif !NOT single column
 
-!$omp parallel do private(ie, t, m_cnst)
+
+!$omp parallel do private(ie, t)
     do ie=1,nelemd
        do t=2,3
-          elem(ie)%state%ps_v(:,:,t)=elem(ie)%state%ps_v(:,:,1)
-          elem(ie)%state%v(:,:,:,:,t)=elem(ie)%state%v(:,:,:,:,1)
-          elem(ie)%state%T(:,:,:,t)=elem(ie)%state%T(:,:,:,1)
+          call copy_state(elem(ie),tl,t)
        end do
     end do
 

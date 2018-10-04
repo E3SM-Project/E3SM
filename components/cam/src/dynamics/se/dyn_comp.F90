@@ -3,7 +3,7 @@ Module dyn_comp
   use shr_kind_mod, only: r8 => shr_kind_r8
   use domain_mod, only : domain1d_t
   use element_mod, only : element_t
-  use time_mod, only : TimeLevel_t, se_nsplit=>nsplit
+  use time_mod, only : TimeLevel_t, TimeLevel_Qdp, se_nsplit=>nsplit
   use hybvcoord_mod, only : hvcoord_t, set_layer_locations
   use hybrid_mod, only : hybrid_t
   use thread_mod, only: nthreads, hthreads, vthreads, omp_get_max_threads, omp_get_thread_num
@@ -279,8 +279,14 @@ CONTAINS
                 elem(ie)%state%ps_v(:,:,:) =dyn_ps0
 
                 elem(ie)%state%phis(:,:)=0.0_r8
+!not sure what to do here? 
+!the closest would be to move this line after assignment of q (so kappa is well
+!defined), and compute dp, then compute theta=Tinit/Exner, Exner=(p/po)^kappa,
+!then do thetacpdp=theta*cp*dp...
 
-                elem(ie)%state%T(:,:,:,:) =Tinit
+!disabling to get other calls
+!use set_thermostate here
+!                elem(ie)%state%T(:,:,:,:) =Tinit
 
                 elem(ie)%state%v(:,:,:,:,:) =0.0_r8
 

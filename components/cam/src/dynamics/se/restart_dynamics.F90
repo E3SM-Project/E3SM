@@ -80,7 +80,7 @@ CONTAINS
          pio_put_var, pio_initdecomp, pio_setframe, &
          pio_freedecomp, pio_enddef, file_desc_t
     use cam_pio_utils, only : pio_subsystem
-    use dyn_comp, only : timelevel
+    use dyn_comp, only : timelevel, hvcoord
     use control_mod, only: qsplit
     use time_mod, only : tstep, TimeLevel_Qdp
     use element_mod, only : element_t
@@ -89,7 +89,7 @@ CONTAINS
     use time_manager, only: get_curr_time
     use parallel_mod, only: par
     use hycoef, only: write_restart_hycoef
-
+    use element_ops, only : get_temperature
 
     implicit none
     type(file_desc_t) :: File
@@ -106,6 +106,8 @@ CONTAINS
     real(kind=r8) :: time
     integer :: ndcur, nscur
     integer, pointer :: ldof(:)
+
+    real(kind=r8) :: temperature(np,np,nlev)
 
     call write_restart_hycoef(File)
 
@@ -211,16 +213,31 @@ CONTAINS
     call PIO_Setframe(File,Vdesc, t)
     call PIO_Write_Darray(File,Vdesc,iodesc3d,var3d,ierr)
 
+!replace this with write thermo var? (so T or theta)
+!or recompute? 
     ! Write T
 !$omp parallel do private(ie, k, j, i)
     do ie=1,nelemd
+
+       call get_temperature(elem(ie),temperature,hvcoord,tl)
+
        do k=1,nlev
           do j=1,np
              do i=1,np
-                var3d(i,j,ie,k) = elem(ie)%state%T(i,j,k,tl)
+                var3d(i,j,ie,k) = temperature(i,j,k)
              end do
           end do
        end do
+
+!original code, bar3d has diff indexing
+!       do k=1,nlev
+!          do j=1,np
+!             do i=1,np
+!                var3d(i,j,ie,k) = elem(ie)%state%T(i,j,k,tl)
+!             end do
+!          end do
+!       end do
+
     end do
 
     call PIO_Setframe(File,Tdesc, t)
@@ -493,20 +510,6 @@ CONTAINS
        end do
     end do
 
-    call pio_setframe(File,tdesc, t)
-    call pio_read_darray(File, tdesc, iodesc3d, var3d, ierr)
-    cnt=0
-    do k=1,nlev
-       do ie=1,nelemd
-          do j=1,np
-             do i=1,np
-                cnt=cnt+1
-                elem(ie)%state%T(i,j,k,tl) = var3d(cnt)
-             end do
-          end do
-       end do
-    end do
-
     do q=1,qsize_d
        call pio_setframe(File,qdesc(q), t)
        call pio_read_darray(File, qdesc(q), iodesc3d, var3d, ierr)
@@ -537,6 +540,24 @@ CONTAINS
        end do
 
     end do
+
+!same as for idealized phys init before, temp will be set based on q(1) and
+!dp,... so, moving this call down
+    call pio_setframe(File,tdesc, t)
+    call pio_read_darray(File, tdesc, iodesc3d, var3d, ierr)
+    cnt=0
+    do k=1,nlev
+       do ie=1,nelemd
+          do j=1,np
+             do i=1,np
+                cnt=cnt+1
+!disabling to move on
+!                elem(ie)%state%T(i,j,k,tl) = var3d(cnt)
+             end do
+          end do
+       end do
+    end do
+
 
     deallocate(var3d,var2d)
 
