@@ -29,7 +29,7 @@ module prim_advance_mod
   use parallel_mod,       only: abortmp, global_shared_buf, global_shared_sum, iam, parallel_t
   use physical_constants, only: Cp, cp, cpwater_vapor, g, kappa, Rgas, Rwater_vapor, p0 
   use physics_mod,        only: virtual_specific_heat, virtual_temperature
-  use prim_si_mod,        only: preq_vertadv_v1, preq_omega_ps
+  use prim_si_mod,        only: preq_vertadv_v1
   use reduction_mod,      only: parallelmax, reductionbuffer_ordered_1d_t
   use time_mod,           only: timelevel_qdp, timelevel_t
   use test_mod,           only: set_prescribed_wind
@@ -1004,7 +1004,8 @@ contains
    
   real (kind=real_kind) :: vtheta(np,np,nlev)
   real (kind=real_kind) :: vtheta_i(np,np,nlevp)
-  real (kind=real_kind) :: omega_p(np,np,nlev)
+  real (kind=real_kind) :: omega_i(np,np,nlevp)
+  real (kind=real_kind) :: omega(np,np,nlev)
   real (kind=real_kind) :: vort(np,np,nlev)           ! vorticity
   real (kind=real_kind) :: divdp(np,np,nlev)     
   real (kind=real_kind) :: phi(np,np,nlev)
@@ -1127,23 +1128,21 @@ contains
         vort(:,:,k)=vorticity_sphere(elem(ie)%state%v(:,:,:,k,n0),deriv,elem(ie))
      enddo
 
-     ! Compute omega_p = 1/pi Dpi/Dt
-     ! first compute hydrostatic pressure
+     ! Compute omega =  Dpi/Dt   Used only as a DIAGNOSTIC
+     ! for historical reasons, we actually compute w/pi
      pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+     omega_i(:,:,1)=0
      do k=1,nlev
         pi_i(:,:,k+1)=pi_i(:,:,k) + dp3d(:,:,k)
+        omega_i(:,:,k+1)=omega_i(:,:,k)+divdp(:,:,k)
      enddo
      do k=1,nlev
         pi(:,:,k)=pi_i(:,:,k) + dp3d(:,:,k)/2
-     enddo
-     do k=1,nlev
-        ! get hydrostatic pressure flux to compute omega=dp/dt
         vtemp(:,:,:,k) = gradient_sphere( pi(:,:,k), deriv, elem(ie)%Dinv);
         vgrad_p(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1,k)+&
              elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2,k)
+        omega(:,:,k) = (vgrad_p(:,:,k) - ( omega_i(:,:,k)+omega_i(:,:,k+1))/2) 
      enddo        
-     call preq_omega_ps(omega_p,hvcoord,pi,vgrad_p,divdp)
-
 
      ! ==================================================
      ! Compute eta_dot_dpdn
@@ -1241,7 +1240,7 @@ contains
         elem(ie)%derived%eta_dot_dpdn(:,:,k) = &
              elem(ie)%derived%eta_dot_dpdn(:,:,k) + eta_ave_w*eta_dot_dpdn(:,:,k)
         elem(ie)%derived%omega_p(:,:,k) = &
-             elem(ie)%derived%omega_p(:,:,k) + eta_ave_w*omega_p(:,:,k)
+             elem(ie)%derived%omega_p(:,:,k) + eta_ave_w*omega(:,:,k)
      enddo
      elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) = &
              elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) + eta_ave_w*eta_dot_dpdn(:,:,nlev+1)

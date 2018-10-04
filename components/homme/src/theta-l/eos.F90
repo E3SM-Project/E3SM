@@ -26,7 +26,6 @@ module eos
   use parallel_mod,   only: abortmp
   use physical_constants, only : p0, kappa, g, Rgas
   use control_mod,    only: theta_hydrostatic_mode
-  use prim_si_mod,    only: preq_hydrostatic_v2, preq_omega_ps
   implicit none
 
 
