@@ -76,14 +76,6 @@ res@gsnYAxisIrregular2Linear = True
   ilon0   = 0          ; location of perturbation
   ilon1   = nlon/2     ; +180 degrees
 
-; original dcmip 2016 NCL script plots:
-;  T, theta,qv  at ilon1     
-;  u,p          at ilon0
-;  pp  perturbation from ilon0 and ilon1
-;  but then we dont see the purturbation in T and theta, so
-;  we plot at ilon0
-;
-
   print("max u="+max(u))
   print("max u xsection="+max(u(:,:,ilon0))+" lon="+lon(ilon0))
 

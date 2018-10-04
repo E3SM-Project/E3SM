@@ -103,8 +103,7 @@ contains
       enddo
 
     case ('omega');
-      call get_field(elem,'p',p,hvcoord,nt,ntQ)
-      field = elem%derived%omega_p*p
+      field = elem%derived%omega_p
 
     case('rho')
        
@@ -471,7 +470,7 @@ contains
 
     if(theta_hydrostatic_mode) then
        ! overwrite w and phi_i computed above
-       w = -(elem%derived%omega_p*pnh)/(rho*g)
+       w = -(elem%derived%omega_p)/(rho*g)
        
        do k=nlev,1,-1
           temp(:,:,k) = Rgas*elem%state%vtheta_dp(:,:,k,nt)*exner(:,:,k)/pnh(:,:,k)

@@ -1,6 +1,6 @@
 #!/bin/bash -i
 #
-#SBATCH --job-name d16-2-preqx 
+#SBATCH --job-name d16-2-theta-l
 #SBATCH --account=FY150001
 #SBATCH -N 12
 #SBATCH --time=0:20:00
@@ -26,8 +26,8 @@ if [ -n "$SLURM_NNODES" ]; then
     let NCPU/=$OMP_NUM_THREADS
 fi
 
-# hydrostatic preqx
-EXEC=../../../test_execs/preqx-nlev30-interp/preqx-nlev30-interp  
+# theta model
+EXEC=../../../test_execs/theta-l-nlev30/theta-l-nlev30
 
 
 function run {
@@ -56,3 +56,4 @@ ncl plot-intensity-trace.ncl
 prefix=r400 ;  run $(($NCPU>384?384:NCPU))
 #prefix=r100 ;  run $NCPU
 #prefix=r50 ;  run $NCPU
+#prefix=r50-h ;  run $NCPU
