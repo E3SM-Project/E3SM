@@ -92,6 +92,7 @@ contains
     use clm_varcon       , only: secspday
     use pftvarcon        , only: npcropmin
     use clm_varctl       , only: use_cndv, spinup_state, spinup_mortality_factor
+    use pftvarcon        , only: r_mort_grid, r_mort_grid_present
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -110,6 +111,7 @@ contains
 
     !
     ! !LOCAL VARIABLES:
+    integer :: g             ! grid index
     integer :: p             ! patch index
     integer :: fp            ! patch filter index
     real(r8):: am            ! rate for fractional mortality (1/yr)
@@ -175,6 +177,11 @@ contains
              am = cnstate_vars%r_mort_cal_patch(p)
          end if
 
+         ! Use gridded mortality rate if it is available
+         if (r_mort_grid_present) then
+            g = veg_pp%gridcell(p)
+            am = r_mort_grid(g,veg_pp%itype(p))
+         end if
 
          m  = am/(get_days_per_year() * secspday)
 
@@ -606,7 +613,6 @@ contains
     ! USES
     use pftvarcon       , only: nbrdlf_evr_trp_tree, nbrdlf_dcd_trp_tree
     use soilorder_varcon, only: r_mort_soilorder
-    use pftvarcon       , only: r_mort_grid, r_mort_grid_present
 
     !
     ! !ARGUMENTS:
@@ -623,26 +629,17 @@ contains
        isoilorder     =>    cnstate_vars%isoilorder               , &
        r_mort_cal     =>    cnstate_vars%r_mort_cal_patch )
 
-       ! loop over the patches
-      if (.not.r_mort_grid_present) then
-         ! Gridded mortality rate is unavailable, so use default approach
-         do fp = 1,num_soilp
-            p = filter_soilp(fp)
-            c = veg_pp%column(p)
-            if( veg_pp%itype(p) == nbrdlf_evr_trp_tree .or. veg_pp%itype(p) == nbrdlf_dcd_trp_tree )then
-               r_mort_cal(p) = r_mort_soilorder( isoilorder(c) )
-            else
-               r_mort_cal(p) = 0.02_r8                 ! Default mortality rate 
-            endif
-         end do
-      else
-         ! Use gridded mortality rate
-         do fp = 1,num_soilp
-            p = filter_soilp(fp)
-            g = veg_pp%gridcell(p)
-            r_mort_cal(p) = r_mort_grid(g,p)
-         end do
-      end if
+      ! loop over the patches
+      ! Gridded mortality rate is unavailable, so use default approach
+      do fp = 1,num_soilp
+         p = filter_soilp(fp)
+         c = veg_pp%column(p)
+         if( veg_pp%itype(p) == nbrdlf_evr_trp_tree .or. veg_pp%itype(p) == nbrdlf_dcd_trp_tree )then
+            r_mort_cal(p) = r_mort_soilorder( isoilorder(c) )
+         else
+            r_mort_cal(p) = 0.02_r8                 ! Default mortality rate 
+         endif
+      end do
 
      end associate
 
