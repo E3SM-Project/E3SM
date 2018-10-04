@@ -10,14 +10,14 @@ u_perturb = 1
 rotate_grid = 0
 ne=30
 qsize = 0
-nmax = 10800  ! need to run 1296s.  
-statefreq=60
+nmax = 4320  ! need to run 1296s.  
+statefreq=72
 runtype       = 0
 mesh_file='/dev/null'
-tstep=0.12   !  this case can run with tstep=0.2 if tstep_type=5
-rsplit=6     ! aborts with dt_remap=1.2 (rsplit=10)
+tstep=0.3
+rsplit=6     
 qsplit = 1
-tstep_type = 7
+tstep_type = 5
 integration   = "explicit"
 nu=1e6
 nu_div=1e6
@@ -49,9 +49,11 @@ profile_single_file             = .true.
 ! interp_nlon = 1024
  interp_gridtype=2
 
+! output daily, from day 7 to 30
+! 1 day = 86.4/dt = 288 steps
  output_timeunits=0              ! 1 is days, 2- hours, 0 - tsteps
- output_frequency=720
- output_start_time=5040
+ output_frequency=288
+ output_start_time=2016
  output_end_time=300000000
  output_varnames1='ps','zeta','u','v','T'
  num_io_procs      = 16

@@ -7,16 +7,16 @@
   topology          = "cube"                    ! mesh type: cubed sphere
   test_case         = "dcmip2016_test3"         ! test identifier
   ne                = 60                        ! number of elements per cube face
-  qsize             = 4                         ! num tracer fields
-  nmax              = 28800                     ! 7200s(120min)/tstep
-  statefreq         = 100                       ! number of steps between screen dumps
+  qsize             = 3                         ! num tracer fields
+  nmax              = 7200                      ! 7200s(120min)/tstep
+  statefreq         = 360                       ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run
-  tstep             = 0.5                       ! largest timestep in seconds
+  tstep             = 1.0                       ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 7
   rsplit            = 3
-  qsplit            = 3                         ! dt_tracer <= 1.5s  
+  qsplit            = 2                         ! dt_tracer <= 1.5s  
   nu                = 6.3e7                     ! default= 1e15/(120)^3 *(ne30/ne60)**3.2
   nu_s              = 0
   nu_p              = 0
@@ -41,12 +41,12 @@
 &analysis_nl
   output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 3                         ! 0=timesteps, 1=days, 2=hours, 3=seconds
-  output_frequency  = 300                       ! 300 seconds
+  output_frequency  = 600                       ! 300 seconds
   output_varnames1  ='T','p','ps','pnh','geo','u','v','w','Th','Q','Q2','Q3','precl'   ! variables to write to file
-  interp_nlon       = 360
-  interp_nlat       = 181
+!  interp_nlon       = 360
+!  interp_nlat       = 181
   interp_gridtype   = 1
-  interp_type       = 0                         ! 0=native grid, 1=bilinear
+  interp_type       = 1                         ! 0=native grid, 1=bilinear
   interp_lon0       = -180.0                    ! shift lon range to [-180,+180)
   output_type       ='netcdf'                   ! netcdf or pnetcdf
   num_io_procs      = 16         

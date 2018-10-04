@@ -47,8 +47,6 @@ module prim_advance_mod
        applycamforcing_ps, applycamforcing_dp3d, &
        applyCAMforcing_dynamics, vertical_mesh_init2
 
-  real (kind=real_kind), allocatable :: ur_weights(:)
-
 contains
 
 
@@ -63,20 +61,6 @@ contains
     integer :: i
     integer :: ie
 
-    ! compute averaging weights for RK+LF (tstep_type=1) timestepping:
-    allocate(ur_weights(qsplit))
-    ur_weights(:)=0.0d0
-
-    if(mod(qsplit,2).NE.0)then
-       ur_weights(1)=1.0d0/qsplit
-       do i=3,qsplit,2
-        ur_weights(i)=2.0d0/qsplit
-       enddo
-    else
-       do i=2,qsplit,2
-         ur_weights(i)=2.0d0/qsplit
-       enddo
-    endif
 
   end subroutine prim_advance_init1
 
@@ -175,6 +159,22 @@ contains
        ! leapfrog:  u(dt) = u(0) + dt RHS(dt/2)     (store in u(np1))                                                     
        call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&                                               
             deriv,nets,nete,.false.,eta_ave_w,1.d0,1.d0,1.d0)                                                             
+
+
+    else if (tstep_type==4) then ! explicit table from IMEX-KG254  method                                                              
+      call compute_andor_apply_rhs(np1,n0,n0,qn0,dt/4,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/6,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,3*dt/8,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,eta_ave_w*1d0,1.d0,1.d0,1.d0)
+
+
+
     else if (tstep_type==5) then
        ! Ullrich 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
        ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
@@ -269,21 +269,31 @@ contains
       max_itercnt_perstep = 0
       max_itererr_perstep = 0.0
 
-      a1 = 1./4.
-      a2 = 1./6.
-      a3 = 3./8.
-      a4 = 1./2.
+      a1 = 1/4d0
+      a2 = 1/6d0
+      a3 = 3/8d0
+      a4 = 1/2d0
       a5 = 1
-      ahat1 = 0.
-      ahat5 = 1.
+      ahat1 = 0
+      ahat5 = 1
+
+
+      ! IMEX-KGO254 most stable coefficients
+      dhat2 = 1d0
+      dhat3 = 1d0
+      dhat4 = 1d0
+      ahat4 = 1d0/2d0-dhat4
+      dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
+        (ahat5-dhat3-dhat2-dhat4)
+
 
       ! IMEX-KGO254c coefficients
-      dhat2 = 5./6.
-      dhat3 = 5./6.
-      dhat4 = 2./3.
-      ahat4 = 1./2.-dhat4
-       dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
-        (ahat5-dhat3-dhat2-dhat4)
+      !dhat2 = 5/6d0
+      !dhat3 = 5/6d0
+      !dhat4 = 2/3d0
+      !ahat4 = 1/2d0-dhat4
+      ! dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
+      !  (ahat5-dhat3-dhat2-dhat4)
 
       ! IMEX-KGO254b coefficients NOT GOOD
 !      dhat2 = 1./6.
@@ -586,18 +596,22 @@ contains
              (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps_ref(:,:)
      enddo
 
-     call get_phinh(hvcoord,elem(ie)%state%phis,&
-          elem(ie)%state%vtheta_dp(:,:,:,nt),elem(ie)%state%dp3d(:,:,:,nt),&
-          phi_ref(:,:,:,ie))
-
      do k=1,nlev
         ! convert vtheta_dp -> theta
         elem(ie)%state%vtheta_dp(:,:,k,nt)=&
              elem(ie)%state%vtheta_dp(:,:,k,nt)/elem(ie)%state%dp3d(:,:,k,nt)
      enddo
 
-     call set_theta_ref(hvcoord,elem(ie)%state%dp3d(:,:,:,nt),theta_ref(:,:,:,ie))
+!     call set_theta_ref(hvcoord,elem(ie)%state%dp3d(:,:,:,nt),theta_ref(:,:,:,ie))
+     call set_theta_ref(hvcoord,dp_ref(:,:,:,ie),theta_ref(:,:,:,ie))
+
+     ! compute vtheta_dp_ref, store in 'heating' as temp array:
+     heating(:,:,:)=theta_ref(:,:,:,ie)*dp_ref(:,:,:,ie)
+     call get_phinh(hvcoord,elem(ie)%state%phis,&
+          heating(:,:,:),dp_ref(:,:,:,ie),phi_ref(:,:,:,ie))
+
 #if 0
+     ! disable reference background states
      theta_ref(:,:,:,ie)=0
      phi_ref(:,:,:,ie)=0
      dp_ref(:,:,:,ie)=0
@@ -776,8 +790,9 @@ contains
            endif
            
            elem(ie)%state%vtheta_dp(:,:,k,nt)=elem(ie)%state%vtheta_dp(:,:,k,nt) &
-                +stens(:,:,k,2,ie)*hvcoord%dp0(k)*exner0(k)/(exner(:,:,k)*elem(ie)%state%dp3d(:,:,k,nt))&
-                -heating(:,:,k)
+                +stens(:,:,k,2,ie)*hvcoord%dp0(k)*exner0(k)/(exner(:,:,k)*elem(ie)%state%dp3d(:,:,k,nt))
+!&
+!                -heating(:,:,k)
         enddo
         
      enddo
@@ -1070,8 +1085,7 @@ contains
      vtheta(:,:,:) = vtheta_dp(:,:,:)/dp3d(:,:,:)
      phi_i => elem(ie)%state%phinh_i(:,:,:,n0)
 
-     call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_i,&
-             pnh,exner,dpnh_dp_i)
+     call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,dpnh_dp_i)
 
      dp3d_i(:,:,1) = dp3d(:,:,1)
      dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
@@ -1631,7 +1645,6 @@ contains
   real (kind=real_kind) :: phi_n0(np,np,nlevp)    
   real (kind=real_kind) :: Ipiv(nlev,np,np)
   real (kind=real_kind) :: Fn(np,np,nlev),x(nlev,np,np)
-  real (kind=real_kind) :: pnh_i(np,np,nlevp)
   real (kind=real_kind) :: itererr,itererrtemp(np,np)
   real (kind=real_kind) :: itercountmax,itererrmax
   real (kind=real_kind) :: norminfr0(np,np),norminfJ0(np,np)
@@ -1659,8 +1672,7 @@ contains
     phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
     phis => elem(ie)%state%phis(:,:)
 
-    call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_np1,&
-         pnh,exner,dpnh_dp_i,pnh_i_out=pnh_i)
+    call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i)
 
     dp3d_i(:,:,1) = dp3d(:,:,1)
     dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
@@ -1706,6 +1718,7 @@ contains
     maxnorminfJ0r0=max(maxval(norminfJ0(:,:)),maxval(norminfr0(:,:)))
     itererr=maxval(itererrtemp(:,:))/maxnorminfJ0r0
 
+
     do while ((itercount < maxiter).and.(itererr > itertol))
 
       info(:,:) = 0
@@ -1730,8 +1743,7 @@ contains
       end do
       end do
 
-      call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_np1,&
-        pnh,exner,dpnh_dp_i,pnh_i_out=pnh_i)
+      call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i)
 
       ! update approximate solution of w
       elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &

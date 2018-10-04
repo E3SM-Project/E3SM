@@ -224,8 +224,8 @@ implicit none
   ! The rule-of-thumb optimal epsie  is epsie = norm(elem)*sqrt(macheps)
   !===================================================================================
     real (kind=real_kind), intent(out) :: JacD(nlev,np,np)
-    real (kind=real_kind), intent(out) :: JacL(nlev-1,np,np),JacU(nlev-1,np,np), phi_i(np,np,nlevp)
-    real (kind=real_kind), intent(in)    :: dp3d(np,np,nlev)
+    real (kind=real_kind), intent(out) :: JacL(nlev-1,np,np),JacU(nlev-1,np,np)
+    real (kind=real_kind), intent(in)    :: dp3d(np,np,nlev), phi_i(np,np,nlevp)
     real (kind=real_kind), intent(inout) :: pnh(np,np,nlev)
     real (kind=real_kind), intent(in)    :: dt2
 

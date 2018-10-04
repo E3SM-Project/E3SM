@@ -10,11 +10,11 @@
   ne                = 30                        ! number of elements per cube face
   qsize             = 0                         ! num tracer fields
   ndays             = 6                         ! num simulation days: 0 = use nmax steps
-  statefreq         = 288                       ! number of steps between screen dumps
+  statefreq         = 144                       ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 = new run
   tstep             = 300                       ! largest timestep in seconds
-  rsplit            = 3
+  rsplit            = 6
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 5                         ! 1 => default method
   nu                = 1e15                      ! hyperviscosity
