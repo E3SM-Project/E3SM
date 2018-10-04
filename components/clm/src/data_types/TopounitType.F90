@@ -79,10 +79,16 @@ module TopounitType
     real(r8), pointer :: po2bot     (:) => null() ! partial pressure of O2 at atmospheric forcing height (Pa)
     real(r8), pointer :: pco2bot    (:) => null() ! partial pressure of CO2 at atmospheric forcing height (Pa) 
     real(r8), pointer :: pc13o2bot  (:) => null() ! partial pressure of C13O2 at atmospheric forcing height (Pa) 
-    real(r8), pointer :: pch4bot    (:) => null() ! partial pressure of CH4 at atmospheric forcing height (Pa) 
+    real(r8), pointer :: pch4bot    (:) => null() ! partial pressure of CH4 at atmospheric forcing height (Pa)
+    ! Accumulated fields
+    real(r8), pointer :: rh24h      (:) => null() ! 24-hour running mean of relative humidity at atmospheric forcing height (%)
+    real(r8), pointer :: wind24h    (:) => null() ! 24-hour running mean of horizontal wind at atmospheric forcing height (m/s)
   contains
     procedure, public :: Init  => init_top_as
     procedure, public :: Clean => clean_top_as
+    procedure, public :: InitAccBuffer => init_acc_buffer_top_as
+    procedure, public :: InitAccVars   => init_acc_vars_top_as
+    procedure, public :: UpdateAccVars => update_acc_vars_top_as
   end type topounit_atmospheric_state
 
   !-----------------------------------------------------------------------
@@ -107,7 +113,7 @@ module TopounitType
     procedure, public :: Init  => init_top_af
     procedure, public :: Clean => clean_top_af
     procedure, public :: InitAccBuffer => init_acc_buffer_top_af
-    procedure, public :: InitAccVars => init_acc_vars_top_af
+    procedure, public :: InitAccVars   => init_acc_vars_top_af
     procedure, public :: UpdateAccVars => update_acc_vars_top_af
   end type topounit_atmospheric_flux
   
@@ -209,6 +215,10 @@ module TopounitType
     allocate(this%pco2bot  (begt:endt)) ; this%pco2bot   (:) = spval
     allocate(this%pc13o2bot(begt:endt)) ; this%pc13o2bot (:) = spval
     allocate(this%pch4bot  (begt:endt)) ; this%pch4bot   (:) = spval
+    if (use_fates) then
+      allocate(this%rh24h  (begt:endt)) ; this%rh24h     (:) = spval
+      allocate(this%wind24h(begt:endt)) ; this%wind24h   (:) = spval
+    end if
     
     ! Set history fields for atmospheric state forcing variables
     !call hist_addfld1d (fname='TBOT', units='K',  &
@@ -240,7 +250,137 @@ module TopounitType
     deallocate(this%pco2bot)
     deallocate(this%pc13o2bot)
     deallocate(this%pch4bot)
+    if (use_fates) then
+      deallocate(this%rh24h)
+      deallocate(this%wind24h)
+    end if
   end subroutine clean_top_as
+  
+  !-----------------------------------------------------------------------
+  subroutine init_acc_buffer_top_as (this, bounds)
+    ! !DESCRIPTION:
+    ! Initialize accumulation buffer for accumulated fields for atmospheric state
+    ! This routine set defaults values that are then overwritten by the
+    ! restart file for restart or branch runs
+    !
+    ! !USES 
+    use clm_varcon  , only : spval
+    use accumulMod  , only : init_accum_field
+    !
+    ! !ARGUMENTS:
+    class(topounit_atmospheric_state) :: this
+    type(bounds_type), intent(in) :: bounds  
+    !---------------------------------------------------------------------
+    ! Accumulator state variables used by FATES
+    if (use_fates) then
+       call init_accum_field (name='RH24H', units='%', &
+            desc='24hr running mean of relative humidity', accum_type='runmean', accum_period=-1, &
+            subgrid_type='topounit', numlev=1, init_value=0._r8)
+       call init_accum_field (name='WIND24H', units='m/s', &
+            desc='24hr running mean of wind', accum_type='runmean', accum_period=-1, &
+            subgrid_type='topounit', numlev=1, init_value=0._r8)
+    end if
+  end subroutine init_acc_buffer_top_as
+
+  !-----------------------------------------------------------------------
+  subroutine init_acc_vars_top_as(this, bounds)
+    ! !DESCRIPTION:
+    ! Initialize variables associated with atmospheric state
+    ! time accumulated fields. This routine is called for both an initial run
+    ! and a restart run (and must therefore must be called after the restart file 
+    ! is read in and the accumulation buffer is obtained)
+    !
+    ! !USES 
+    use accumulMod       , only : extract_accum_field
+    use clm_time_manager , only : get_nstep
+    !
+    ! !ARGUMENTS:
+    class(topounit_atmospheric_state) :: this
+    type(bounds_type), intent(in)    :: bounds  
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: begt, endt
+    integer  :: nstep
+    integer  :: ier
+    real(r8), pointer :: rbufslt(:)  ! temporary
+    !---------------------------------------------------------------------
+
+    begt = bounds%begt; endt = bounds%endt
+
+    ! Allocate needed dynamic memory for single level topounit field
+    allocate(rbufslt(begt:endt), stat=ier)
+    if (ier/=0) then
+       write(iulog,*)' in '
+       call endrun(msg="extract_accum_hist allocation error for rbufslt"//&
+            errMsg(__FILE__, __LINE__))
+    endif
+
+    ! Determine time step
+    nstep = get_nstep()
+
+    if (use_fates) then
+       call extract_accum_field ('RH24H', rbufslt, nstep)
+       this%rh24h(begt:endt) = rbufslt(begt:endt)
+
+       call extract_accum_field ('WIND24H', rbufslt, nstep)
+       this%wind24h(begt:endt) = rbufslt(begt:endt)
+    end if
+
+    deallocate(rbufslt)
+  end subroutine init_acc_vars_top_as
+
+  !-----------------------------------------------------------------------
+  subroutine update_acc_vars_top_as (this, bounds)
+    !
+    ! USES
+    use clm_time_manager, only : get_nstep
+    use accumulMod      , only : update_accum_field, extract_accum_field
+    !
+    ! !ARGUMENTS:
+    class(topounit_atmospheric_state)    :: this
+    type(bounds_type)      , intent(in) :: bounds  
+    !
+    ! !LOCAL VARIABLES:
+    integer :: g,t,c,p                   ! indices
+    integer :: dtime                     ! timestep size [seconds]
+    integer :: nstep                     ! timestep number
+    integer :: ier                       ! error status
+    integer :: begt, endt
+    real(r8), pointer :: rbufslt(:)      ! temporary single level - topounit level
+    !---------------------------------------------------------------------
+
+    begt = bounds%begt; endt = bounds%endt
+
+    nstep = get_nstep()
+
+    ! Allocate needed dynamic memory for single level topounit field
+
+    allocate(rbufslt(begt:endt), stat=ier)
+    if (ier/=0) then
+       write(iulog,*)'update_accum_hist allocation error for rbufslt'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    ! Accumulate 24-hour running mean of relative humidity
+    do t = begt,endt
+       rbufslt(t) = this%rhbot(t)
+    end do
+    if (use_fates) then
+       call update_accum_field  ('RH24H', rbufslt, nstep)
+       call extract_accum_field ('RH24H', this%rh24h, nstep)
+    end if
+    
+    ! Accumulate 24-hour running mean of wind speed
+    do t = begt,endt
+       rbufslt(t) = this%windbot(t)
+    end do
+    if (use_fates) then
+       call update_accum_field  ('WIND24H', rbufslt, nstep)
+       call extract_accum_field ('WIND24H', this%wind24h, nstep)
+    end if
+
+    deallocate(rbufslt)
+  end subroutine update_acc_vars_top_as
 
   !-----------------------------------------------------------------------
   subroutine init_top_af(this, begt, endt)
@@ -305,7 +445,7 @@ module TopounitType
   !-----------------------------------------------------------------------
   subroutine init_acc_buffer_top_af (this, bounds)
     ! !DESCRIPTION:
-    ! Initialize accumulation buffer for all required module accumulated fields
+    ! Initialize accumulation buffer accumulated fields for atmospheric flux
     ! This routine set defaults values that are then overwritten by the
     ! restart file for restart or branch runs
     !
@@ -353,7 +493,7 @@ module TopounitType
   !-----------------------------------------------------------------------
   subroutine init_acc_vars_top_af(this, bounds)
     ! !DESCRIPTION:
-    ! Initialize module variables that are associated with
+    ! Initialize variables associated with atmospheric flux
     ! time accumulated fields. This routine is called for both an initial run
     ! and a restart run (and must therefore must be called after the restart file 
     ! is read in and the accumulation buffer is obtained)
@@ -375,7 +515,7 @@ module TopounitType
 
     begt = bounds%begt; endt = bounds%endt
 
-    ! Allocate needed dynamic memory for single level pft field
+    ! Allocate needed dynamic memory for single level topounit field
     allocate(rbufslt(begt:endt), stat=ier)
     if (ier/=0) then
        write(iulog,*)' in '
@@ -409,11 +549,9 @@ module TopounitType
     if (use_fates) then
        call extract_accum_field ('PREC24H', rbufslt, nstep)
        this%prec24h(begt:endt) = rbufslt(begt:endt)
-
     end if
 
     deallocate(rbufslt)
-
   end subroutine init_acc_vars_top_af
 
   !-----------------------------------------------------------------------
@@ -440,7 +578,7 @@ module TopounitType
 
     nstep = get_nstep()
 
-    ! Allocate needed dynamic memory for single level pft field
+    ! Allocate needed dynamic memory for single level topounit field
 
     allocate(rbufslt(begt:endt), stat=ier)
     if (ier/=0) then

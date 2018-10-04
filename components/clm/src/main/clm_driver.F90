@@ -125,7 +125,7 @@ module clm_driver
   use tracer_varcon          , only : is_active_betr_bgc
   use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetr, CNFluxStateBetrSummary
   use GridcellType           , only : grc_pp
-  use TopounitType           , only : top_af  
+  use TopounitType           , only : top_as, top_af  
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
   use VegetationType         , only : veg_pp
@@ -1101,7 +1101,7 @@ contains
                 write(iulog,*)  'clm: calling FATES model ', get_nstep()
              end if
              
-             call alm_fates%dynamics_driv( bounds_clump,                  &
+             call alm_fates%dynamics_driv( bounds_clump, top_as,          &
                   top_af, atm2lnd_vars, soilstate_vars, temperature_vars, &
                   waterstate_vars, canopystate_vars, carbonflux_vars,     &
                   frictionvel_vars)
@@ -1296,6 +1296,8 @@ contains
        call t_startf('accum')
        
        call atm2lnd_vars%UpdateAccVars(bounds_proc)
+       
+       call top_as%UpdateAccVars(bounds_proc)
        
        call top_af%UpdateAccVars(bounds_proc)
        
