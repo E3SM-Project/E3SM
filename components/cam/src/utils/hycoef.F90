@@ -180,7 +180,7 @@ subroutine hycoef_init(file)
         'hybrid level at midpoints (1000*(A+B))', 'hPa', alev,              &
         positive='down',                                                    &
         standard_name='atmosphere_hybrid_sigma_pressure_coordinate',        &
-        formula_terms=formula_terms)
+        formula_terms=formula_terms, bounds_name='lev_bnds', bounds_dim1=2,bounds_dim2=plev)
 
    formula_terms%a_name       =  'hyai'
    formula_terms%a_long_name  =  'hybrid A coefficient at layer interfaces'

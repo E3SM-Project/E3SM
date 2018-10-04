@@ -1308,7 +1308,6 @@ contains
     character(len=120)               :: errormsg
     integer                          :: i
 
-    write(iulog,*)'BALLI:',name,index
     if ((trim(name) == trim(horiz_only)) .or. (len_trim(name) == 0)) then
       call endrun('ADD_HIST_COORD: '//trim(name)//' is not a valid coordinate name')
     end if
@@ -1363,7 +1362,7 @@ contains
     ! Register the name if necessary
     if (i == 0) then
       call add_hist_coord(trim(name), i)
-      if(masterproc) write(iulog,*) 'BALLI Registering hist coord ',name,'(',i,') with length: ',vlen
+      !  if(masterproc) write(iulog,*) 'Registering hist coord',name,'(',i,') with length: ',vlen
     end if
 
     ! Set the coord's values
@@ -1419,7 +1418,7 @@ contains
     ! Register the name if necessary
     if (i == 0) then
       call add_hist_coord(trim(name), i)
-      if(masterproc) write(iulog,*) 'BALLI_1_Registering hist coord ',name,'(',i,') with length: ',vlen
+      !  if(masterproc) write(iulog,*) 'Registering hist coord',name,'(',i,') with length: ',vlen
     end if
 
     ! Set the coord's size
@@ -1465,7 +1464,7 @@ contains
   end subroutine add_hist_coord_r8
 
   subroutine add_vert_coord(name, vlen, long_name, units, values,            &
-       positive, standard_name, formula_terms)
+       positive, standard_name, formula_terms,bounds_name,bounds_dim1, bounds_dim2)
 
     ! Input variables
     character(len=*),      intent(in)                    :: name
@@ -1476,6 +1475,9 @@ contains
     character(len=*),      intent(in),          optional :: positive
     character(len=*),      intent(in),          optional :: standard_name
     type(formula_terms_t), intent(in),          optional :: formula_terms
+    character(len=*),      intent(in),          optional :: bounds_name
+    integer,               intent(in),          optional :: bounds_dim1
+    integer,               intent(in),          optional :: bounds_dim2
 
     ! Local variable
     integer                                              :: i
@@ -1490,14 +1492,17 @@ contains
            positive=positive, standard_name=standard_name,                    &
            vertical_coord=.true.)
       i = get_hist_coord_index(trim(name))
-        if(masterproc) write(iulog,*) 'BALLI_2_ Registering hist coord ',name,'(',i,') with length: ',vlen
+      !  if(masterproc) write(iulog,*) 'Registering hist coord',name,'(',i,') with length: ',vlen
     end if
 
     if (present(formula_terms)) then
       hist_coords(i)%formula_terms = formula_terms
-      hist_coords(i)%bounds_name= name//'_bnds_balli'
-      allocate(hist_coords(i)%bounds(2,vlen))
     end if
+
+    if (present(bounds_name) .and. present(bounds_dim1) .and. present(bounds_dim2)) then
+       hist_coords(i)%bounds_name= bounds_name
+       allocate(hist_coords(i)%bounds(bounds_dim1,bounds_dim2))
+    endif
 
   end subroutine add_vert_coord
 
@@ -1542,7 +1547,7 @@ contains
         call cam_pio_def_var(File, trim(hist_coords(mdimind)%name), dtype,    &
              (/dimid/), vardesc, existOK=.false.)
         ! long_name
-        ierr=pio_put_att(File, vardesc, 'long_name_balli', trim(hist_coords(mdimind)%long_name))
+        ierr=pio_put_att(File, vardesc, 'long_name', trim(hist_coords(mdimind)%long_name))
         call cam_pio_handle_error(ierr, 'Error writing "long_name" attr in write_hist_coord_attr')
         ! units
         if(len_trim(hist_coords(mdimind)%units) > 0) then

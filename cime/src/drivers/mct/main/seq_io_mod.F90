@@ -1463,10 +1463,10 @@ contains
        endif
        rcode = pio_put_att(cpl_io_file(lfile_ind),varid,'calendar',trim(lcalendar))
        if (present(tbnds)) then
-          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,'bounds','time_bnds_balli_1')
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,'bounds','time_bnds')
           dimid2(2)=dimid(1)
           rcode = pio_def_dim(cpl_io_file(lfile_ind),'ntb',2,dimid2(1))
-          rcode = pio_def_var(cpl_io_file(lfile_ind),'time_bnds_balli_2',PIO_DOUBLE,dimid2,varid)
+          rcode = pio_def_var(cpl_io_file(lfile_ind),'time_bnds',PIO_DOUBLE,dimid2,varid)
        endif
        if (lwdata) call seq_io_enddef(filename, file_ind=lfile_ind)
     endif
@@ -1481,7 +1481,7 @@ contains
        rcode = pio_inq_varid(cpl_io_file(lfile_ind),'time',varid)
        rcode = pio_put_var(cpl_io_file(lfile_ind),varid,start,count,time_val_1d)
        if (present(tbnds)) then
-          rcode = pio_inq_varid(cpl_io_file(lfile_ind),'time_bnds_balli_3',varid)
+          rcode = pio_inq_varid(cpl_io_file(lfile_ind),'time_bnds',varid)
           start = 1
           count = 1
           if (present(nt)) then
