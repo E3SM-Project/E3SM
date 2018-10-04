@@ -81,7 +81,7 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
   real(rl), dimension(np,np,nlev):: p,z,u,v,w,T,thetav,rho,dp           ! field values
   real(rl), dimension(np,np,nlevp):: p_i,w_i,z_i
   real(rl), dimension(np,np):: ps, phis
-  real(rl), dimension(np,np,nlev,5):: q
+  real(rl), dimension(np,np,nlev,6):: q
 
   real(rl) :: min_thetav, max_thetav
   min_thetav = +huge(rl)
@@ -118,7 +118,8 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
         lon = elem(ie)%spherep(i,j)%lon
         lat = elem(ie)%spherep(i,j)%lat
 
-        q(i,j,k,:) = 0.0d0
+        q(i,j,k,1:5) = 0.0d0
+        q(i,j,k,6) = 1
         w(i,j,k)   = 0.0d0
 
         call baroclinic_wave_test(is_deep,moist,pertt,dcmip_X,lon,lat,p(i,j,k),&
@@ -126,7 +127,7 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
 
         ! initialize tracer chemistry
         call initial_value_terminator( lat*rad2dg, lon*rad2dg, q(i,j,k,4), q(i,j,k,5) )
-        call set_tracers(q(i,j,k,1:5),5,dp(i,j,k),i,j,k,lat,lon,elem(ie))
+        call set_tracers(q(i,j,k,1:6),6,dp(i,j,k),i,j,k,lat,lon,elem(ie))
 
         min_thetav =  min( min_thetav,   thetav(i,j,k) )
         max_thetav =  max( max_thetav,   thetav(i,j,k) )

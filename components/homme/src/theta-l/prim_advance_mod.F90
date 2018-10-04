@@ -785,14 +785,13 @@ contains
                    elem(ie)%state%v(:,:,2,k,nt)*vtens(:,:,2,k,ie)  +&
                    (elem(ie)%state%w_i(:,:,k,nt)*stens(:,:,k,3,ie)  +&
                      elem(ie)%state%w_i(:,:,k2,nt)*stens(:,:,k2,3,ie))/2  +&
-                   stens(:,:,k,4,ie) ) / &
+                   ( stens(:,:,k,4,ie)+stens(:,:,k2,4,ie))/2 ) / &
                    (exner(:,:,k)*Cp)  
            endif
            
            elem(ie)%state%vtheta_dp(:,:,k,nt)=elem(ie)%state%vtheta_dp(:,:,k,nt) &
-                +stens(:,:,k,2,ie)*hvcoord%dp0(k)*exner0(k)/(exner(:,:,k)*elem(ie)%state%dp3d(:,:,k,nt))
-!&
-!                -heating(:,:,k)
+                +stens(:,:,k,2,ie)*hvcoord%dp0(k)*exner0(k)/(exner(:,:,k)*elem(ie)%state%dp3d(:,:,k,nt))&
+                -heating(:,:,k)
         enddo
         
      enddo
@@ -1066,6 +1065,7 @@ contains
      
 
   do ie=nets,nete
+#if 0
      if (.not. theta_hydrostatic_mode) then
         temp(:,:,1) =  (elem(ie)%state%v(:,:,1,nlev,n0)*elem(ie)%derived%gradphis(:,:,1) + &
              elem(ie)%state%v(:,:,2,nlev,n0)*elem(ie)%derived%gradphis(:,:,2))/g
@@ -1079,7 +1079,7 @@ contains
         elem(ie)%state%w_i(:,:,nlevp,n0) = (elem(ie)%state%v(:,:,1,nlev,n0)*elem(ie)%derived%gradphis(:,:,1) + &
              elem(ie)%state%v(:,:,2,nlev,n0)*elem(ie)%derived%gradphis(:,:,2))/g
      endif
-
+#endif
      dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
      vtheta_dp  => elem(ie)%state%vtheta_dp(:,:,:,n0)
      vtheta(:,:,:) = vtheta_dp(:,:,:)/dp3d(:,:,:)

@@ -7,7 +7,7 @@
   topology          = "cube"                    ! mesh type: cubed sphere
   test_case         = "dcmip2016_test1"         ! test identifier
   ne                = 8                         ! number of elements per cube face
-  qsize             = 5                         ! num tracer fields
+  qsize             = 6                         ! num tracer fields
   ndays             = 30
   statefreq         = 24                        ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
