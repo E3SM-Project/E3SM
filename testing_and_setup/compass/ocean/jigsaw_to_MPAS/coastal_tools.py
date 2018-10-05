@@ -312,6 +312,7 @@ def create_background_mesh(grd_box, ddeg, mesh_type, dx_min, dx_max,  # {{{
             str(call) +
             '.png',
             bbox_inches='tight')
+        plt.close()
 
     return (lon_grd, lat_grd, cell_width)  # }}}
 
@@ -395,6 +396,7 @@ def extract_coastlines(nc_file, region_box, z_contour=0, n_longest=10, lon_wrap=
             str(call) +
             '.png',
             bbox_inches='tight')
+        plt.close()
 
     return coastlines  # }}}
 
@@ -480,7 +482,7 @@ def distance_to_coast(coastlines,lon_grd,lat_grd,origin,nn_search,smooth_window,
         plt.colorbar()
         plt.axis('equal')
         plt.savefig('distance' + str(call) + '.png', bbox_inches='tight')
-
+        plt.close()
     return D  # }}}
 
 ##############################################################
@@ -543,23 +545,25 @@ def compute_cell_width(D, cell_width, lon, lat, dx_min, trans_start, trans_width
         plt.colorbar()
         plt.axis('equal')
         plt.savefig('cell_width' + str(call) + '.png', bbox_inches='tight')
+        plt.close()
 
-    # Plot cell width transistion functions
-    ts = trans_start/km
-    tw = trans_width/km
-    d = np.linspace(0,2*(ts+tw),1000)
-    bw = .5*(np.tanh((d-ts-.5*tw)/(.2*tw))+1)
-    dw = 1-bw
-    plt.figure()
-    plt.plot(d,bw)
-    plt.plot(d,dw)
-    plt.legend(('background','coastal region'))
-    plt.plot([ts,ts],[0.0,1.0],'k-')
-    plt.plot([ts+tw,ts+tw],[0.0,1.0],'k-')
-    plt.tight_layout()
-    plt.xlabel('distance (km)')
-    plt.ylabel('weight')
-    plt.savefig('trans_func'+str(call)+'.png',bbox_inches='tight')
+        # Plot cell width transistion functions
+        ts = trans_start/km
+        tw = trans_width/km
+        d = np.linspace(0,2*(ts+tw),1000)
+        bw = .5*(np.tanh((d-ts-.5*tw)/(.2*tw))+1)
+        dw = 1-bw
+        plt.figure()
+        plt.plot(d,bw)
+        plt.plot(d,dw)
+        plt.legend(('background','coastal region'))
+        plt.plot([ts,ts],[0.0,1.0],'k-')
+        plt.plot([ts+tw,ts+tw],[0.0,1.0],'k-')
+        plt.tight_layout()
+        plt.xlabel('distance (km)')
+        plt.ylabel('weight')
+        plt.savefig('trans_func'+str(call)+'.png',bbox_inches='tight')
+        plt.close()
 
     return cell_width  # }}}
 
