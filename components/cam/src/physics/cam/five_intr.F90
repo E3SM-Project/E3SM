@@ -9,6 +9,7 @@ module five_intr
   use physics_buffer, only: physics_buffer_desc
   use constituents, only: pcnst
   use physconst, only: rair, gravit
+  use cam_logfile, only: iulog
 
   implicit none
   
@@ -17,7 +18,7 @@ module five_intr
   
   ! The bottom layer to which we will add layers to (set
   !   to a very large value to add all the way to surface)
-  real, parameter :: five_bot_toadd = 90000._r8
+  real, parameter :: five_bot_toadd = 100000._r8
   
   ! The top layer to which we will add layers to
   real, parameter :: five_top_toadd = 80000._r8
@@ -28,8 +29,8 @@ module five_intr
   !   because PBUF needs these to be initialized.
   !   TASK: figure out a better way so these can be computed
   !   on the fly and not user specified!
-  integer, parameter :: pver_five = 78
-  integer, parameter :: pverp_five = 79
+  integer, parameter :: pver_five = 87
+  integer, parameter :: pverp_five = 88
   
   ! define physics buffer indicies here for the FIVE
   !  variables added to the PBUF
@@ -198,6 +199,7 @@ module five_intr
 	  endif
 	  
 	enddo
+	write(iulog,*) 'NUMBER OF FIVE LEVELS', kh-1
 
       enddo
       
@@ -415,6 +417,7 @@ module five_intr
     integer :: i, k, kh
     real(r8) :: rho_high(pver_five)
     real(r8) :: rho_host(pver)
+    real(r8) :: rho_host_avg(pver)
     real(r8) :: dz_high(pver_five)
     real(r8) :: dz_host(pver)
     
@@ -440,6 +443,7 @@ module five_intr
     
     ! Initialize host variable
     var_host(:) = 0._r8
+    rho_host_avg(:) = 0._r8
     
     kh=1 ! Vertical index for FIVE 
     do k=1,pver ! Vertical index for E3SM
@@ -451,6 +455,8 @@ module five_intr
       
         var_host(k) = var_host(k) + rho_high(kh) * &
 	  var_high(kh) * dz_high(kh)
+	rho_host_avg(k) = rho_host_avg(k) + rho_high(kh) * &
+	  dz_high(kh)
 	  
 	kh = kh + 1 ! increase high res model by one layer
 	if (kh .gt. pver_five) goto 10
@@ -458,8 +464,12 @@ module five_intr
       end do ! end while loop for kh
 10 continue
       
+      ! Compute rho on host grid
+      rho_host_avg(k) = rho_host_avg(k)/dz_host(k)
+      
       ! Compute the mass weighted vertical average
-      var_host(k) = var_host(k)/(rho_host(k)*dz_host(k))
+!      var_host(k) = var_host(k)/(rho_host(k)*dz_host(k))
+      var_host(k) = var_host(k)/(rho_host_avg(k)*dz_host(k))
       
     enddo
     

@@ -1271,11 +1271,7 @@ end subroutine clubb_init_cnst
 !  Note that the pointers for "thlm", "rtm", "um", and "vm" are removed, as they were deemed 
 !   not neccessary since these variables are always initialized from E3SM state
    real(r8), pointer, dimension(:,:) :: upwp     ! east-west momentum flux                      [m^2/s^2]
-   real(r8), pointer, dimension(:,:) :: vpwp     ! north-south momentum flux                    [m^2/s^2]
-!   real(r8), pointer, dimension(:,:) :: thlm     ! mean temperature                             [K]
-!   real(r8), pointer, dimension(:,:) :: rtm      ! mean moisture mixing ratio                   [kg/kg]
-!   real(r8), pointer, dimension(:,:) :: um       ! mean east-west wind                          [m/s]
-!   real(r8), pointer, dimension(:,:) :: vm       ! mean north-south wind                        [m/s]   
+   real(r8), pointer, dimension(:,:) :: vpwp     ! north-south momentum flux                    [m^2/s^2] 
    real(r8), pointer, dimension(:,:) :: cld      ! cloud fraction                               [fraction]
    real(r8), pointer, dimension(:,:) :: concld   ! convective cloud fraction                    [fraction]
    real(r8), pointer, dimension(:,:) :: ast      ! stratiform cloud fraction                    [fraction]
@@ -1403,11 +1399,7 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, vp2_idx,     vp2,     start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
 
    call pbuf_get_field(pbuf, upwp_idx,    upwp,    start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
-   call pbuf_get_field(pbuf, vpwp_idx,    vpwp,    start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
-!   call pbuf_get_field(pbuf, thlm_idx,    thlm,    start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
-!   call pbuf_get_field(pbuf, rtm_idx,     rtm,     start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
-!   call pbuf_get_field(pbuf, um_idx,      um,      start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
-!   call pbuf_get_field(pbuf, vm_idx,      vm,      start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))   
+   call pbuf_get_field(pbuf, vpwp_idx,    vpwp,    start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))   
    call pbuf_get_field(pbuf, radf_idx,    radf_clubb)
    
    call pbuf_get_field(pbuf, tke_idx,     tke)
@@ -2153,23 +2145,6 @@ end subroutine clubb_init_cnst
             time_elapsed = time_elapsed+dtime
             call stats_begin_timestep(time_elapsed, 1, 1)
          endif 
-	 
-	 write(*,*) 'WM_ZM ', wm_zm
-	 write(*,*) 'WM_ZT ', wm_zt_in
-	 write(*,*) 'pressure ', p_in_Pa_in
-	 write(*,*) 'rho_zm ', rho_zm
-	 write(*,*) 'rho_zt_in ', rho_zt_in
-	 write(*,*) 'exner_in ', exner_in
-	 write(*,*) 'rho_ds_zm ', rho_ds_zm
-	 write(*,*) 'rho_ds_zt_in ', rho_ds_zt_in
-	 write(*,*) 'invrs_rho_ds_zm ', invrs_rho_ds_zm
-	 write(*,*) 'invrs_rho_ds_zt_in ', invrs_rho_ds_zt_in
-	 write(*,*) 'thv_ds_zm ', thv_ds_zm
-	 write(*,*) 'thv_ds_zt_in ', thv_ds_zt_in
-	 write(*,*) 'rfrzm_in ', rfrzm_in
-	 write(*,*) 'rad_in ', rad_in
-	 write(*,*) 'thlm_in ', thlm_in
-	 write(*,*) 'rtm_in ', rtm_in
 
          !  Advance CLUBB CORE one timestep in the future
          call t_startf('advance_clubb_core')
@@ -2339,20 +2314,20 @@ end subroutine clubb_init_cnst
       call linear_interp(pmid_five(i,:),state1%pmid(i,:),t_five(i,1:pver_five),t_five_host,pver_five,pver)
       
       ! Compute mass weighted vertical average of variables from FIVE grid to E3SM grid
-      call masswgt_vert_avg(t_five_host,t_five(i,1:pver_five),state1%pdel(i,:),pdel_five(:),&
+      call masswgt_vert_avg(state1%t(i,:),t_five(i,1:pver_five),state1%pdel(i,:),pdel_five(:),&
                             state%pint(i,:),pmid_five(i,:),state1%pmid(i,:),&
 			    t_five(i,1:pver_five),t_five_low(i,1:pver))
 			    
-      call masswgt_vert_avg(t_five_host,t_five(i,1:pver_five),state1%pdel(i,:),pdel_five(:),&
+      call masswgt_vert_avg(state1%t(i,:),t_five(i,1:pver_five),state1%pdel(i,:),pdel_five(:),&
                             state%pint(i,:),pmid_five(i,:),state1%pmid(i,:),&
 			    u_five(i,1:pver_five),u_five_low(i,1:pver))	
 			    
-      call masswgt_vert_avg(t_five_host,t_five(i,1:pver_five),state1%pdel(i,:),pdel_five(:),&
+      call masswgt_vert_avg(state1%t(i,:),t_five(i,1:pver_five),state1%pdel(i,:),pdel_five(:),&
                             state%pint(i,:),pmid_five(i,:),state1%pmid(i,:),&
 			    v_five(i,1:pver_five),v_five_low(i,1:pver))	
 			    
       do p=1,pcnst
-        call masswgt_vert_avg(t_five_host,t_five(i,1:pver_five),state1%pdel(i,:),pdel_five(:),&
+        call masswgt_vert_avg(state1%t(i,:),t_five(i,1:pver_five),state1%pdel(i,:),pdel_five(:),&
                               state%pint(i,:),pmid_five(i,:),state1%pmid(i,:),&
 			      q_five(i,1:pver_five,p),q_five_low(i,1:pver,p))        
       enddo		    		    		     
