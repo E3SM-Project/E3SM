@@ -37,53 +37,62 @@ call_count = 0
 # ---------------
 
 # Bays and estuaries
-Delaware_Bay =  {"include":[np.array([-75.61903,-74.22, 37.8, 40.312747])],
-                 "exclude":[]}
-Galveston_Bay = {"include":[np.array([-95.45,-94.4, 29, 30])],
-                 "exclude":[]}
+Delaware_Bay = {"include": [np.array([-75.61903, -74.22, 37.8, 40.312747])],
+                "exclude": []}
+Galveston_Bay = {"include": [np.array([-95.45, -94.4, 29, 30])],
+                 "exclude": []}
 
 # Regions
-Delaware_Region = {"include":[np.array([-77, -69.8 ,35.5, 41])],
-                   "exclude":[]}
+Delaware_Region = {"include": [np.array([-77, -69.8, 35.5, 41])],
+                   "exclude": []}
 
 # Coastlines
-US_East_Coast = {"include":[np.array([-81.7,-62.3,25.1,44.50])],  # East FL to Bay of Fundy
-                 "exclude":[np.array([-66.0,-64.0,31.5,33.0]),    # Bermuda
-                            np.array([-79.75,-70.0,20.0,28.5]),   # Bahamas
-                            np.array([-65.15,-62.43,43.0,45.55]), # Gulf of St. Lawence
-                            np.array([-66.65,-62.43,43.0,45.0])]} # '' 
-US_Gulf_Coast = {"include":[np.array([-98.0,-80.0,24.0,31.0]),    # West FL to NE Mexico
-                            np.array([-98.5,-95.5,20.0,24.0]),    # East Mexico
-                            np.array([-91.0,-86.0,20.0,22.0])     # Yucatan
-                           ],
-                 "exclude":[]}
-Caribbean     = {"include":[np.array([-89.85,-59.73,9.35,20.86]),
-                            ],
-                 "exclude":[]}
-US_West_Coast = {"include":[np.array([-127.0,-116.0,32.5,49.0]),  # California
-                            np.array([-117.5,-108.0,22.8,32.5])   # Baja and West Mexico
-                            ],
-                 "exclude":[np.array([-116.5,-115.0,32.8,33.8]),  # Salton Sea
-                            np.array([-120.5,-116.5,35.5,40.5]),  # Lake Tahoe, etc.
-                            np.array([[-111.89,21.24],            # Baja
-                                      [-107.17,22.48],
-                                      [-113.94,30.77],
-                                      [-119.44,33.09]])]}
-Hawaii        = {"include":[np.array([-161.0,-154.0,18.0,23.0])],
-                 "exclude":[]}
-Alaska        = {"include":[np.array([-170.0,-141.0,49.0,63.0]),
-                            np.array([-141.0,-129.5,49.0,61.0]),  # Southeast
-                            np.array([-129.5,-121.0,49.0,55.0])   # Connects AK to CA
-                           ],
-                 "exclude":[np.array([-171.0,-151.79,49.54,58.83])]} # Aleutian Islands
-Bering_Sea_E  = {"include":[np.array([-180.0,-168.5,56.00,64.0])],
-                 "exclude":[]}
-Bering_Sea_W  = {"include":[np.array([161.83,180.0,51.13,66.63])],
-                 "exclude":[]}
-Aleutian_Islands_E={"include":[np.array([-180.0,-151.79,49.54,58.83])],
-                    "exclude":[np.array([-173.16,-164.37,55.81,57.55])]}
-Aleutian_Islands_W={"include":[np.array([ 171.8,180.0,49.54,58.83])],
-                    "exclude":[np.array([178.5,179.5,51.25,51.75])]}
+US_East_Coast = {"include": [np.array([-81.7, -62.3, 25.1, 44.50])],  # East FL to Bay of Fundy
+                 "exclude": [np.array([-66.0, -64.0, 31.5, 33.0]),    # Bermuda
+                             np.array([-79.75, -70.0, 20.0, 28.5]),   # Bahamas
+                             np.array([-65.15, -62.43, 43.0, 45.55]), # Gulf of St. Lawence
+                             np.array([-66.65, -62.43, 43.0, 45.0])]} # ''
+
+US_Gulf_Coast = {"include": [np.array([-98.0, -80.0, 24.0, 31.0]),    # West FL to NE Mexico
+                             np.array([-98.5, -95.5, 20.0, 24.0]),    # East Mexico
+                             np.array([-91.0, -86.0, 20.0, 22.0])     # Yucatan
+                             ],
+                 "exclude": []}
+
+Caribbean = {"include": [np.array([-89.85, -59.73, 9.35, 20.86]),
+                         ],
+             "exclude": []}
+
+US_West_Coast = {"include": [np.array([-127.0, -116.0, 32.5, 49.0]),  # California
+                             np.array([-117.5, -108.0, 22.8, 32.5])   # Baja and West Mexico
+                             ],
+                 "exclude": [np.array([-116.5, -115.0, 32.8, 33.8]),  # Salton Sea
+                             np.array([-120.5, -116.5, 35.5, 40.5]),  # Lake Tahoe, etc.
+                             np.array([[-111.89, 21.24],              # Baja
+                                       [-107.17, 22.48],
+                                       [-113.94, 30.77],
+                                       [-119.44, 33.09]])]}
+
+Hawaii = {"include": [np.array([-161.0, -154.0, 18.0, 23.0])],
+          "exclude": []}
+
+Alaska = {"include": [np.array([-170.0, -141.0, 49.0, 63.0]),
+                      np.array([-141.0, -129.5, 49.0, 61.0]),  # Southeast
+                      np.array([-129.5, -121.0, 49.0, 55.0])   # Connects AK to CA
+                      ],
+          "exclude": [np.array([-171.0, -151.79, 49.54, 58.83])]}  # Aleutian Islands
+
+Bering_Sea_E = {"include": [np.array([-180.0, -168.5, 56.00, 64.0])],
+                "exclude": []}
+
+Bering_Sea_W = {"include": [np.array([161.83, 180.0, 51.13, 66.63])],
+                "exclude": []}
+
+Aleutian_Islands_E = {"include": [np.array([-180.0, -151.79, 49.54, 58.83])],
+                      "exclude": [np.array([-173.16, -164.37, 55.81, 57.55])]}
+
+Aleutian_Islands_W = {"include": [np.array([171.8, 180.0, 49.54, 58.83])],
+                      "exclude": [np.array([178.5, 179.5, 51.25, 51.75])]}
 
 
 # Combined coastlines
@@ -113,8 +122,8 @@ Entire_Globe = np.array([-180, 180, -90, 90])
 # Restrict Boxes
 # -----------------
 
-Empty =             {"include":[],
-                     "exclude":[]}
+Empty = {"include": [],
+         "exclude": []}
 
 Delaware_restrict = {"include": [np.array([[-75.853, 39.732],
                                            [-74.939, 36.678],
@@ -126,39 +135,39 @@ Delaware_restrict = {"include": [np.array([[-75.853, 39.732],
                                            [-75.274, 38.318]])],
                      "exclude": []}
 
-Gulf_restrict =     {"include":[np.array([[-85.04,13.80],
-                                          [-76.90,16.60],
-                                          [-86.24,36.80],
-                                          [-105.55,22.63]])],
-                     "exclude":[]}
+Gulf_restrict = {"include": [np.array([[-85.04, 13.80],
+                                       [-76.90, 16.60],
+                                       [-86.24, 36.80],
+                                       [-105.55, 22.63]])],
+                 "exclude": []}
 
-Caribbean_restrict ={"include":[np.array([[-76.39, 4.55],
-                                          [-53.22, 4.29],
-                                          [-53.22,38.94],
-                                          [-94.99,18.47]])],
-                     "exclude":[np.array([[-80.72, 1.66],
-                                          [-73.70, 3.03],
-                                          [-78.94, 9.33],
-                                          [-84.98 , 7.67]]),
-                                np.array([[-100.18,13.76],
-                                          [-82.93,6.51],
-                                          [-85.08,13.74],
-                                          [-95.86,18.04]])]}
+Caribbean_restrict = {"include": [np.array([[-76.39, 4.55],
+                                            [-53.22, 4.29],
+                                            [-53.22, 38.94],
+                                            [-94.99, 18.47]])],
+                      "exclude": [np.array([[-80.72, 1.66],
+                                            [-73.70, 3.03],
+                                            [-78.94, 9.33],
+                                            [-84.98, 7.67]]),
+                                  np.array([[-100.18, 13.76],
+                                            [-82.93, 6.51],
+                                            [-85.08, 13.74],
+                                            [-95.86, 18.04]])]}
 
-East_Coast_restrict = {"include":[],
-                       "exclude":[np.array([[-72.0,46.69],
-                                            [-61.74,45.48],
-                                            [-44.07,49.49],
-                                            [-63.47,53.76]])]}
-Bering_Sea_restrict = {"include":[],
-                       "exclude":[np.array([[143.46,51.79],
-                                            [156.55,51.97],
-                                            [165.97,62.99],
-                                            [148.63,62.30]]),
-                                  np.array([[161.14,68.41],
-                                            [-173.80,65.94],
-                                            [-161.81,72.02],
-                                            [163.64,73.70]])]}
+East_Coast_restrict = {"include": [],
+                       "exclude": [np.array([[-72.0, 46.69],
+                                             [-61.74, 45.48],
+                                             [-44.07, 49.49],
+                                             [-63.47, 53.76]])]}
+Bering_Sea_restrict = {"include": [],
+                       "exclude": [np.array([[143.46, 51.79],
+                                             [156.55, 51.97],
+                                             [165.97, 62.99],
+                                             [148.63, 62.30]]),
+                                   np.array([[161.14, 68.41],
+                                             [-173.80, 65.94],
+                                             [-161.81, 72.02],
+                                             [163.64, 73.70]])]}
 
 ##########################################################################
 # User-defined inputs
@@ -177,12 +186,13 @@ default_params = {
     # Coastline extraction parameters
     "z_contour": 0.0,
     "n_longest": 10,
-    "smooth_coastline":0,
+    "smooth_coastline": 0,
 
     # Global mesh parameters
     "grd_box": Entire_Globe,
     "ddeg": .1,
-    "mesh_type": 'EC', # 'EC' (defaults to 60to30), 'QU' (uses dx_max_global), 'RRS' (uses dx_max_global and dx_min_global)
+    # 'EC' (defaults to 60to30), 'QU' (uses dx_max_global), 'RRS' (uses dx_max_global and dx_min_global)
+    "mesh_type": 'EC',
     "dx_max_global": 30.0 * km,
     "dx_min_global": 10.0 * km,
     "lon_wrap": False,
@@ -271,6 +281,7 @@ def coastal_refined_mesh(params, cell_width=None, lon_grd=None, lat_grd=None):  
 
     return (cell_width, lon_grd, lat_grd)
 
+
     # }}}
 coastal_refined_mesh.counter = 0
 
@@ -319,7 +330,7 @@ def create_background_mesh(grd_box, ddeg, mesh_type, dx_min, dx_max,  # {{{
 ##############################################################
 
 
-def extract_coastlines(nc_file, region_box, z_contour=0, n_longest=10, lon_wrap=False, # {{{
+def extract_coastlines(nc_file, region_box, z_contour=0, n_longest=10, lon_wrap=False,  # {{{
                        plot_option=False, plot_box=[], call=None):
 
     # Open NetCDF file and read cooordintes
@@ -351,14 +362,15 @@ def extract_coastlines(nc_file, region_box, z_contour=0, n_longest=10, lon_wrap=
             exclude = False
             for area in region_box["exclude"]:
                 # Determine coastline coordinates in exclude area
-                idx = get_indices_inside_quad(c[:,0],c[:,1],area,grid=False,wrap=lon_wrap)
+                idx = get_indices_inside_quad(
+                    c[:, 0], c[:, 1], area, grid=False, wrap=lon_wrap)
 
                 # Exlude coastlines that are entirely contained in exclude area
                 if idx.size == c.shape[0]:
                     exclude = True
                     break
                 elif idx.size != 0:
-                    c = np.delete(c,idx,axis=0)
+                    c = np.delete(c, idx, axis=0)
 
             # Keep coastlines not entirely contained in exclude areas
             if not exclude:
@@ -373,7 +385,8 @@ def extract_coastlines(nc_file, region_box, z_contour=0, n_longest=10, lon_wrap=
     if plot_option:
 
         # Find coordinates and data inside plotting box
-        lon_plot, lat_plot, z_plot = get_data_inside_box(lon, lat, zdata, plot_box)
+        lon_plot, lat_plot, z_plot = get_data_inside_box(
+            lon, lat, zdata, plot_box)
 
         # Plot bathymetry data, coastlines and region boxes
         plt.figure()
@@ -403,29 +416,34 @@ def extract_coastlines(nc_file, region_box, z_contour=0, n_longest=10, lon_wrap=
 ##############################################################
 
 
-def distance_to_coast(coastlines,lon_grd,lat_grd,origin,nn_search,smooth_window,lon_wrap, #{{{
-                      plot_option=False,plot_box=[],call=None):
+def distance_to_coast(coastlines, lon_grd, lat_grd, origin, nn_search, smooth_window, lon_wrap,  # {{{
+                      plot_option=False, plot_box=[], call=None):
 
     # Remove Nan values separating coastlines
     coast_pts = coastlines[np.isfinite(coastlines).all(axis=1)]
 
     # Smooth coast points if necessary
     if smooth_window > 1:
-      coast_pts[:,0],coast_pts[:,1] = smooth_coastline(coast_pts[:,0],coast_pts[:,1],smooth_window)
+        coast_pts[:, 0], coast_pts[:, 1] = smooth_coastline(
+            coast_pts[:, 0], coast_pts[:, 1], smooth_window)
 
     # Apply correction for the regions near the antimeridian
-    Lon_grd,Lat_grd = np.meshgrid(lon_grd,lat_grd)
+    Lon_grd, Lat_grd = np.meshgrid(lon_grd, lat_grd)
     if lon_wrap:
         coast_pts_adj = np.copy(coast_pts)
-        idx = get_data_inside_box(lon_grd,lat_grd,Lon_grd,[-180.0,0.0,-90.0,90.0],idx=True)
+        idx = get_data_inside_box(
+            lon_grd, lat_grd, Lon_grd, [-180.0, 0.0, -90.0, 90.0], idx=True)
         Lon_grd[idx] = Lon_grd[idx] + 180.0
-        idx = get_indices_inside_quad(coast_pts[:,0],coast_pts[:,1],np.array([-180.0,0.0,-90.0,90.0]),grid=False)
-        coast_pts_adj[idx,0] = coast_pts[idx,0] + 180.0
+        idx = get_indices_inside_quad(coast_pts[:, 0], coast_pts[:, 1], np.array(
+            [-180.0, 0.0, -90.0, 90.0]), grid=False)
+        coast_pts_adj[idx, 0] = coast_pts[idx, 0] + 180.0
 
-        idx = get_data_inside_box(lon_grd,lat_grd,Lon_grd,[0.0,180.0,-90.0,90.0],idx=True)
+        idx = get_data_inside_box(lon_grd, lat_grd, Lon_grd, [
+                                  0.0, 180.0, -90.0, 90.0], idx=True)
         Lon_grd[idx] = Lon_grd[idx] - 180.0
-        idx = get_indices_inside_quad(coast_pts[:,0],coast_pts[:,1],np.array([0.0,180.0,-90.0,90.0]),grid=False)
-        coast_pts_adj[idx,0] = coast_pts[idx,0] - 180.0
+        idx = get_indices_inside_quad(coast_pts[:, 0], coast_pts[:, 1], np.array([
+                                      0.0, 180.0, -90.0, 90.0]), grid=False)
+        coast_pts_adj[idx, 0] = coast_pts[idx, 0] - 180.0
         coast_pts = coast_pts_adj
 
     # Convert to x,y and create kd-tree
@@ -450,7 +468,7 @@ def distance_to_coast(coastlines,lon_grd,lat_grd,origin,nn_search,smooth_window,
     if nn_search == "kdtree":
         d, idx = tree.query(pts)
     elif nn_search == "flann":
-        idx,d = flann.nn_index(pts,checks=1000)
+        idx, d = flann.nn_index(pts, checks=1000)
         d = np.sqrt(d)
     end = timeit.default_timer()
     print "Done"
@@ -505,43 +523,44 @@ def compute_cell_width(D, cell_width, lon, lat, dx_min, trans_start, trans_width
     #h = np.fmin(h,dx_max)
     #h = np.fmax(dx_min,h)
 
-
-
     cell_width_old = np.copy(cell_width)
 
     # Apply cell width function
     if len(restrict_box["include"]) > 0:
         # Only apply inside include regions
         for box in restrict_box["include"]:
-            idx = get_indices_inside_quad(lon,lat,box,wrap=lon_wrap)
-            cell_width[idx] = (dx_min*dist_weight[idx] + \
+            idx = get_indices_inside_quad(lon, lat, box, wrap=lon_wrap)
+            cell_width[idx] = (dx_min*dist_weight[idx] +
                                np.multiply(cell_width_old[idx], backgnd_weight[idx]))
     else:
         # Apply everywhere
-        cell_width = (dx_min*dist_weight + np.multiply(cell_width_old,backgnd_weight))
+        cell_width = (dx_min*dist_weight +
+                      np.multiply(cell_width_old, backgnd_weight))
 
     # Don't applt cell width function in exclude regions (revert to previous values)
     if restrict_box["exclude"] > 0:
         for box in restrict_box["exclude"]:
-            idx = get_indices_inside_quad(lon,lat,box,wrap=lon_wrap)
+            idx = get_indices_inside_quad(lon, lat, box, wrap=lon_wrap)
             cell_width[idx] = cell_width_old[idx]
 
     if plot_option:
 
         # Find coordinates and data inside plotting box
-        lon_plot, lat_plot, cell_width_plot = get_data_inside_box(lon_grd, lat_grd, cell_width / km, plot_box)
+        lon_plot, lat_plot, cell_width_plot = get_data_inside_box(
+            lon_grd, lat_grd, cell_width / km, plot_box)
 
         # Plot cell width
         plt.figure()
-        levels = np.linspace(np.amin(cell_width_plot),np.amax(cell_width_plot),100)
+        levels = np.linspace(np.amin(cell_width_plot),
+                             np.amax(cell_width_plot), 100)
         plt.contourf(lon_plot, lat_plot, cell_width_plot, levels=levels)
         plot_coarse_coast(plot_box)
         plt.plot(coastlines[:, 0], coastlines[:, 1], color='white')
         if restrict_box:
-          for box in restrict_box["include"]:
-            plot_region_box(box,'b')
-          for box in restrict_box["exclude"]:
-            plot_region_box(box,'r')
+            for box in restrict_box["include"]:
+                plot_region_box(box, 'b')
+            for box in restrict_box["exclude"]:
+                plot_region_box(box, 'r')
         plt.colorbar()
         plt.axis('equal')
         plt.savefig('cell_width' + str(call) + '.png', bbox_inches='tight')
@@ -574,9 +593,9 @@ def save_matfile(cell_width, lon, lat):
 
     io.savemat('cellWidthVsLatLon.mat',
                mdict={
-                      'cellWidth': cell_width,
-                      'lon': lon,
-                      'lat': lat})
+                   'cellWidth': cell_width,
+                   'lon': lon,
+                   'lat': lat})
 
 ##############################################################
 
@@ -591,15 +610,18 @@ def CPP_projection(lon, lat, origin):
     return x, y
 
 ##############################################################
-def smooth_coastline(x,y,window):
+
+
+def smooth_coastline(x, y, window):
     xs = np.copy(x)
     ys = np.copy(y)
     offset = (window-1)/2
-    for pt in range(offset-1,x.size-offset):
-      xs[pt] = np.mean(x[pt-offset:pt+offset])
-      ys[pt] = np.mean(y[pt-offset:pt+offset])
-    return xs,ys
+    for pt in range(offset-1, x.size-offset):
+        xs[pt] = np.mean(x[pt-offset:pt+offset])
+        ys[pt] = np.mean(y[pt-offset:pt+offset])
+    return xs, ys
 ##############################################################
+
 
 def get_data_inside_box(lon, lat, data, box, idx=False):
 
@@ -629,16 +651,17 @@ def get_data_inside_box(lon, lat, data, box, idx=False):
 
 ##############################################################
 
-def get_indices_inside_quad(lon,lat,box,grid=True,wrap=False):
+
+def get_indices_inside_quad(lon, lat, box, grid=True, wrap=False):
 
     lon_adj = np.copy(lon)
     if wrap:
-         idx = np.where((lon_adj >= -180.0) & (lon_adj <= -90.0))
-         lon_adj[idx] = lon_adj[idx] + 360.0
+        idx = np.where((lon_adj >= -180.0) & (lon_adj <= -90.0))
+        lon_adj[idx] = lon_adj[idx] + 360.0
 
     if grid:
         # Create vectors of all coordinates
-        Lon_grd,Lat_grd = np.meshgrid(lon_adj,lat)
+        Lon_grd, Lat_grd = np.meshgrid(lon_adj, lat)
         X = Lon_grd.ravel()
         Y = Lat_grd.ravel()
     else:
@@ -659,8 +682,8 @@ def get_indices_inside_quad(lon,lat,box,grid=True,wrap=False):
     else:
         if wrap:
             for i in range(4):
-                if box[i,0] >= -180.0 and box[i,0] <= -90.0:
-                    box[i,0] = box[i,0] + 360.0
+                if box[i, 0] >= -180.0 and box[i, 0] <= -90.0:
+                    box[i, 0] = box[i, 0] + 360.0
 
         xb1 = np.amin(box[:, 0])
         xb2 = np.amax(box[:, 0])
@@ -706,15 +729,15 @@ def get_indices_inside_quad(lon,lat,box,grid=True,wrap=False):
                     phi3 * box[2, 1] + phi4 * box[3, 1]) - y
 
         # Compute Jacobian
-        df1ds = .25 * ((r - 1.0) * box[0,0] - (1.0 + r) * box[1,0] + (1.0 + r) * box[2,0] + (1.0 - r) * box[3,0])
-        df1dr = .25 * ((s - 1.0) * box[0,0] + (1.0 - s) * box[1,0] + (1.0 + s) * box[2,0] - (1.0 + s) * box[3,0])
-        df2ds = .25 * ((r - 1.0) * box[0,1] - (1.0 + r) * box[1,1] + (1.0 + r) * box[2,1] + (1.0 - r) * box[3,1])
-        df2dr = .25 * ((s - 1.0) * box[0,1] + (1.0 - s) * box[1,1] + (1.0 + s) * box[2,1] - (1.0 + s) * box[3,1])
+        df1ds = .25 * ((r - 1.0) * box[0, 0] - (1.0 + r) * box[1, 0] + (1.0 + r) * box[2, 0] + (1.0 - r) * box[3, 0])
+        df1dr = .25 * ((s - 1.0) * box[0, 0] + (1.0 - s) * box[1, 0] + (1.0 + s) * box[2, 0] - (1.0 + s) * box[3, 0])
+        df2ds = .25 * ((r - 1.0) * box[0, 1] - (1.0 + r) * box[1, 1] + (1.0 + r) * box[2, 1] + (1.0 - r) * box[3, 1])
+        df2dr = .25 * ((s - 1.0) * box[0, 1] + (1.0 - s) * box[1, 1] + (1.0 + s) * box[2, 1] - (1.0 + s) * box[3, 1])
 
         # Inverse of 2x2 matrix
         det_recip = np.multiply(df1dr, df2ds) - np.multiply(df2dr, df1ds)
         det_recip = 1.0 / det_recip
-        dr = np.multiply(det_recip,  np.multiply(df2ds, f1) - np.multiply(df1ds,f2))
+        dr = np.multiply(det_recip,  np.multiply(df2ds, f1) - np.multiply(df1ds, f2))
         ds = np.multiply(det_recip, -np.multiply(df2dr, f1) + np.multiply(df1dr, f2))
 
         # Apply Newton's method
@@ -734,7 +757,7 @@ def get_indices_inside_quad(lon,lat,box,grid=True,wrap=False):
 
         # Find indicies of unconverged values
         idx = np.delete(idx, idx_conv)
-        #print "Iteration: ", it, "unconverged values: ",idx.size
+        # print "Iteration: ", it, "unconverged values: ", idx.size
 
         # Terminate once all values are converged
         if idx.size == 0:
@@ -745,7 +768,6 @@ def get_indices_inside_quad(lon,lat,box,grid=True,wrap=False):
         s = S[idx]
         x = X[idx]
         y = Y[idx]
-
 
     # Find any remaining unconverged values
     if grid == True:
@@ -761,16 +783,16 @@ def get_indices_inside_quad(lon,lat,box,grid=True,wrap=False):
         idx = np.unravel_index(idx, Lon_grd.shape)
 
     ## Plot values inside quad region
-    #plt.figure()
-    #plt.plot(X,Y,'.')
-    #if grid == True:
+    # plt.figure()
+    # plt.plot(X,Y,'.')
+    # if grid == True:
     #  plt.plot(Lon_grd[idx],Lat_grd[idx],'.')
     #  plt.plot(Lon_grd[idx_nc],Lat_grd[idx_nc],'.')
-    #else:
+    # else:
     #  plt.plot(lon[idx],lat[idx],'.')
     #  plt.plot(lon[idx_nc],lat[idx_nc],'.')
-    #plt.plot(box[:,0],box[:,1],'o')
-    #plt.savefig("restrict_box.png")
+    # plt.plot(box[:,0],box[:,1],'o')
+    # plt.savefig("restrict_box.png")
 
     return idx
 
@@ -794,11 +816,10 @@ def plot_region_box(box, color):
         plt.plot([box[1], box[0]], [box[3], box[3]], ls)
         plt.plot([box[0], box[0]], [box[3], box[2]], ls)
     else:
-        plt.plot([box[0,0],box[1,0]],[box[0,1],box[1,1]],ls)
-        plt.plot([box[1,0],box[2,0]],[box[1,1],box[2,1]],ls)
-        plt.plot([box[2,0],box[3,0]],[box[2,1],box[3,1]],ls)
-        plt.plot([box[3,0],box[0,0]],[box[3,1],box[0,1]],ls)
-
+        plt.plot([box[0, 0], box[1, 0]], [box[0, 1], box[1, 1]], ls)
+        plt.plot([box[1, 0], box[2, 0]], [box[1, 1], box[2, 1]], ls)
+        plt.plot([box[2, 0], box[3, 0]], [box[2, 1], box[3, 1]], ls)
+        plt.plot([box[3, 0], box[0, 0]], [box[3, 1], box[0, 1]], ls)
 
 
 ##########################################################################
