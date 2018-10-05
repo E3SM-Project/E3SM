@@ -524,7 +524,7 @@ contains
             abortFlag, &
             abortMessage)
        call colpkg_get_warnings(warnings)
-       call column_write_warnings(warnings)
+       call column_write_warnings(warnings, abortFlag)
 
        if (abortFlag) then
           call mpas_log_write("colpkg_init_orbit: "//trim(abortMessage), messageType=MPAS_LOG_CRIT)
@@ -1618,7 +1618,7 @@ contains
                abortFlag, &
                abortMessage)
           call colpkg_get_warnings(warnings)
-          call column_write_warnings(warnings)
+          call column_write_warnings(warnings, abortFlag)
 
           ! code abort
           if (abortFlag) then
@@ -1944,7 +1944,7 @@ contains
                freezeOnset(iCell), &
                dayOfYear)
           call colpkg_get_warnings(warnings)
-          call column_write_warnings(warnings)
+          call column_write_warnings(warnings, abortFlag)
 
           ! update
           do iCategory = 1, nCategories
@@ -2467,7 +2467,7 @@ contains
                .false., &
                lInitialization)
           call colpkg_get_warnings(warnings)
-          call column_write_warnings(warnings)
+          call column_write_warnings(warnings, .false.)
 
           ! set the category tracer array
           call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
@@ -2736,7 +2736,7 @@ contains
                abortFlag, &
                abortMessage)
           call colpkg_get_warnings(warnings)
-          call column_write_warnings(warnings)
+          call column_write_warnings(warnings, abortFlag)
 
           ! update
           do iCategory = 1, nCategories
@@ -3223,7 +3223,7 @@ contains
                abortFlag, &
                abortMessage)
           call colpkg_get_warnings(warnings)
-          call column_write_warnings(warnings)
+          call column_write_warnings(warnings, abortFlag)
 
           ! code abort
           if (abortFlag) then
@@ -13269,19 +13269,26 @@ contains
 ! Warning messages
 !-----------------------------------------------------------------------
 
-  subroutine column_write_warnings(warnings)
+  subroutine column_write_warnings(warnings, logAsErrors)
 
     character(len=strKINDWarnings), dimension(:), intent(in) :: &
          warnings
 
+    logical, intent(in) :: &
+         logAsErrors
+
     integer :: &
          iWarning
 
-    do iWarning = 1, size(warnings)
-
-       call mpas_log_write(trim(warnings(iWarning)), messageType=MPAS_LOG_WARN)
-
-    enddo ! iWarning
+    if (logAsErrors) then
+       do iWarning = 1, size(warnings)
+          call mpas_log_write(trim(warnings(iWarning)), messageType=MPAS_LOG_ERR)
+       enddo ! iWarning
+    else
+       do iWarning = 1, size(warnings)
+          call mpas_log_write(trim(warnings(iWarning)), messageType=MPAS_LOG_WARN)
+       enddo ! iWarning
+    endif
 
   end subroutine column_write_warnings
 
