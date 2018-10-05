@@ -117,9 +117,9 @@ module ESM
     use ESMF                  , only : ESMF_ConfigGetLen, ESMF_RC_NOT_VALID, ESMF_LogFoundAllocError
     use ESMF                  , only : ESMF_LogSetError, ESMF_LogWrite, ESMF_LOGMSG_INFO
     use ESMF                  , only : ESMF_GridCompSet, ESMF_SUCCESS, ESMF_METHOD_INITIALIZE
-    use ESMF                  , only : ESMF_VMisCreated
+    use ESMF                  , only : ESMF_VMisCreated, ESMF_GridCompIsPetLocal
     use NUOPC                 , only : NUOPC_CompSetInternalEntryPoint, NUOPC_CompAttributeGet
-    use NUOPC_Driver          , only : NUOPC_DriverAddComp
+    use NUOPC_Driver          , only : NUOPC_DriverGetComp
     use seq_comm_mct          , only : CPLID, GLOID, ATMID, LNDID, OCNID, ICEID, GLCID, ROFID, WAVID, ESPID
     use seq_comm_mct          , only : seq_comm_printcomms, seq_comm_petlist
     use seq_comm_mct          , only : seq_comm_getinfo => seq_comm_setptrs
@@ -143,6 +143,7 @@ module ESM
 
 
     ! local variables
+    type(ESMF_GridComp)    :: mediator
     type(ESMF_Clock)       :: clock
     type(ESMF_VM)          :: vm
     type(ESMF_GridComp)    :: child
@@ -253,6 +254,45 @@ module ESM
     !-------------------------------------------
 
     call esm_init_pelayout(driver)
+    !-------------------------------------------
+    ! Reset log unit for mediator
+    !-------------------------------------------
+    call NUOPC_DriverGetComp(driver, 'MED', comp=mediator, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    medPet = -1
+    if (ESMF_GridCompIsPetLocal(mediator, rc=rc)) then
+       call ESMF_GridCompGet(mediator, vm=vm, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_VMGet(vm, localPet=medPet, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       ! ensemble_driver set the med pet to task 0 of the member driver, correct it here
+       if(medPet == 0 .and. localPet /= 0) then
+          call NUOPC_CompAttributeGet(driver, name="diro", value=diro, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          call NUOPC_CompAttributeGet(driver, name="logfile", value=logfile, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          logunit = shr_file_getUnit()
+          open(logunit,file=trim(diro)//"/"//trim(logfile), position='append')
+          mastertask = .true.
+       else
+          logUnit = shrlogunit
+          mastertask = .false.
+       endif
+    else
+       logUnit = shrlogunit
+       mastertask = .false.
+    endif
+          ! Print out present flags to mediator log file
+    if (medPet==0) then
+       write(logunit,*) trim(subname)//":atm_present="//trim(atm_present)
+       write(logunit,*) trim(subname)//":lnd_present="//trim(lnd_present)
+       write(logunit,*) trim(subname)//":ocn_present="//trim(ocn_present)
+       write(logunit,*) trim(subname)//":ice_present="//trim(ice_present)
+       write(logunit,*) trim(subname)//":rof_present="//trim(rof_present)
+       write(logunit,*) trim(subname)//":wav_present="//trim(wav_present)
+       write(logunit,*) trim(subname)//":glc_present="//trim(glc_present)
+       write(logunit,*) trim(subname)//":med_present="//trim(med_present)
+    end if
 
     !-------------------------------------------
     ! Perform restarts if appropriate
@@ -1263,7 +1303,7 @@ module ESM
 
   subroutine InitAdvertize(driver, importState, exportState, clock, rc)
     use ESMF, only : ESMF_GridComp, ESMF_State, ESMF_Clock
-    use ESMF, only: ESMF_LogWrite, ESMF_SUCCESS, ESMF_LOGMSG_INFO
+    use ESMF, only : ESMF_LogWrite, ESMF_SUCCESS, ESMF_LOGMSG_INFO
     type(ESMF_GridComp)  :: driver
     type(ESMF_State)     :: importState, exportState
     type(ESMF_Clock)     :: clock
@@ -1284,6 +1324,7 @@ module ESM
     use ESMF, only : ESMF_LogWrite, ESMF_SUCCESS, ESMF_LOGMSG_INFO, ESMF_Config
     use ESMF, only : ESMF_ConfigGetLen, ESMF_LogFoundAllocError, ESMF_ConfigGetAttribute
     use ESMF, only : ESMF_RC_NOT_VALID, ESMF_LogSetError
+    use ESMF, only : ESMF_GridCompIsPetLocal
     use NUOPC, only : NUOPC_CompAttributeGet
     use NUOPC_Driver, only: NUOPC_DriverAddComp
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
@@ -1298,13 +1339,13 @@ module ESM
     use rof_comp_nuopc   , only : ROFSetServices => SetServices
     use glc_comp_nuopc   , only : GLCSetServices => SetServices
     use MED              , only : MEDSetServices => SetServices
+    use mpi, only  : MPI_COMM_NULL
     ! These should be removed
     use seq_comm_mct, only: GLOID, CPLID, ATMID, LNDID, OCNID, ICEID, GLCID, ROFID, WAVID, ESPID
     use seq_comm_mct, only: seq_comm_setcomm
     use mct_mod, only : mct_world_init
 
     type(ESMF_GridComp) :: driver
-
     type(ESMF_GridComp) :: child
     type(ESMF_VM) :: vm
     type(ESMF_Config) :: config
@@ -1516,10 +1557,14 @@ module ESM
 !          call seq_comm_setcomm(ESPID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
 !          call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ESPSetServices, PetList=petlist, comp=child, rc=rc)
        endif
-       call ESMF_GridCompGet(child, vm=vm, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_VMGet(vm, mpiCommunicator=comms(i+1), rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ESMF_GridCompIsPetLocal(child, rc=rc)) then
+          call ESMF_GridCompGet(child, vm=vm, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          call ESMF_VMGet(vm, mpiCommunicator=comms(i+1), rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       else
+          comms(i+1) = MPI_COMM_NULL
+       endif
     enddo
     print *, __FILE__,__LINE__,"Here ", componentcount, " comms: ", comms, " comps: ",comps
 
