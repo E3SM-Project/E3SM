@@ -16,8 +16,18 @@ void runtime_check(bool cond, const std::string& message, int code) {
 
 void runtime_abort(const std::string& message, int code) {
   std::cerr << message << std::endl << "Exiting..." << std::endl;
+
+  // Finalize scream (e.g., finalize kokkos);
   finalize_scream_session();
-  MPI_Abort(MPI_COMM_WORLD, code);
+
+  // Check if mpi is active. If so, use MPI_Abort, otherwise, simply std::abort
+  int flag;
+  MPI_Initialized(&flag);
+  if (flag!=0) {
+    MPI_Abort(MPI_COMM_WORLD, code);
+  } else {
+    std::abort();
+  }
 }
 
 } // namespace scream 
