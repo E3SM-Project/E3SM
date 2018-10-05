@@ -97,6 +97,7 @@
     CLMGSWP3v1.TPQW
 
     co2tseries.20tr
+    co2tseries.20tr.latbnd
     co2tseries.rcp2.6
     co2tseries.rcp4.5
     co2tseries.rcp6.0
@@ -247,7 +248,7 @@
     <category>streams</category>
     <group>streams_file</group>
     <desc>Stream domain file path(s).</desc>
-    <values>
+    <values match="first">
       <value>null</value>
       <value stream="CLM1PT.1x1_mexicocityMEX">domain.lnd.1x1pt-mexicocityMEX_navy.090715.nc</value>
       <value stream="CLM1PT.1x1_vancouverCAN">domain.lnd.1x1pt-vancouverCAN_navy.090715.nc </value>
@@ -293,8 +294,8 @@
       <value stream="CORE_IAF_JRA.NCEP.U_10">domain.atm.TL319.151007.nc</value>
       <value stream="CORE_IAF_JRA.NCEP.V_10">domain.atm.TL319.151007.nc</value>
       <value stream="CORE_IAF_JRA.CORE2.ArcFactor">CORE2.t_10.ArcFactor.T62.1997-2004.nc</value>
-      <value stream="co2tseries.20tr">fco2_datm_global_simyr_1750-2014_CMIP6_c180929.nc</value>
       <value stream="co2tseries.20tr.latbnd">fco2_datm_lat-bands_simyr_1750-2015_CMIP6_c180929.nc</value>
+      <value stream="co2tseries.20tr">fco2_datm_global_simyr_1750-2014_CMIP6_c180929.nc</value>
       <value stream="co2tseries.rcp2.6">fco2_datm_rcp2.6_1765-2500_c130312.nc</value>
       <value stream="co2tseries.rcp4.5">fco2_datm_rcp4.5_1765-2500_c130312.nc</value>
       <value stream="co2tseries.rcp6.0">fco2_datm_rcp6.0_1765-2500_c130312.nc</value>
@@ -435,7 +436,7 @@
     <category>streams</category>
     <group>streams_file</group>
     <desc>Stream data file path(s).</desc>
-    <values>
+    <values match="first">
       <value>null</value>
       <value  stream="CLM1PT.1x1_mexicocityMEX">clm1pt-1993-12.nc</value>
       <value  stream="CLM1PT.1x1_vancouverCAN">clm1pt-1992-08.nc</value>
@@ -1624,7 +1625,8 @@
         JRA.v1.3.v_10.TL319.2016.171019.nc
       </value> 
       <value stream="CORE_IAF_JRA.CORE2.ArcFactor">CORE2.t_10.ArcFactor.T62.1997-2004.nc</value>
-      <value stream="co2tseries.20tr">fco2_datm_1765-2007_c100614.nc</value>
+      <value stream="co2tseries.20tr.latbnd">fco2_datm_lat-bands_simyr_1750-2015_CMIP6_c180929.nc</value>
+      <value stream="co2tseries.20tr">fco2_datm_global_simyr_1750-2014_CMIP6_c180929.nc</value>
       <value stream="co2tseries.rcp2.6">fco2_datm_rcp2.6_1765-2500_c130312.nc</value>
       <value stream="co2tseries.rcp4.5">fco2_datm_rcp4.5_1765-2500_c130312.nc</value>
       <value stream="co2tseries.rcp6.0">fco2_datm_rcp6.0_1765-2500_c130312.nc</value>
@@ -2016,9 +2018,9 @@
       <value stream="BC.CRUNCEP.CMAP.Precip">1979</value>
       <value stream="Anomaly.Forcing">2006</value>
       <value stream="presaero.cplhist">$DATM_CPLHIST_YR_ALIGN</value>
-      <value stream="presaero.clim1850">1850</value>
-      <value stream="presaero.clim2000">2000</value>
-      <value stream="presaero.clim2010">2010</value>
+      <value stream="presaero.clim_1850">1</value>
+      <value stream="presaero.clim_2000">1</value>
+      <value stream="presaero.clim_2010">1</value>
       <value stream="presaero.trans_1850-2000">1849</value>
       <value stream="presaero.rcp">1849</value>
       <value stream="topo.observed">1</value>
@@ -2136,7 +2138,7 @@
       <value stream="CORE_IAF_JRA.NCEP.U_10">2016</value>
       <value stream="CORE_IAF_JRA.NCEP.V_10">2016</value>
       <value stream="CORE_IAF_JRA.CORE2.ArcFactor">2016</value>
-      <value stream="co2tseries.20tr">2007</value>
+      <value stream="co2tseries.20tr">2014</value>
       <value stream="co2tseries.rcp">2500</value>
       <value stream="BC.QIAN.Precip">2004</value>
       <value stream="BC.CRUNCEP.GPCP.Precip">2012</value>
@@ -2146,7 +2148,7 @@
       <value stream="presaero.clim_1850">1850</value>
       <value stream="presaero.clim_2000">2000</value>
       <value stream="presaero.clim_2010">2010</value>
-      <value stream="presaero.trans_1850-2000">2006</value>
+      <value stream="presaero.trans_1850-2000">2014</value>
       <value stream="presaero.rcp">2104</value>
       <value stream="topo.observed">1</value>
       <value stream="topo.cplhist">$DATM_CPLHIST_YR_END</value>
