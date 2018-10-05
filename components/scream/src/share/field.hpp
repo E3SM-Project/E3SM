@@ -1,12 +1,10 @@
 #ifndef SCREAM_FIELD_HPP
 #define SCREAM_FIELD_HPP
 
-#include "field_tag.hpp"
+#include "field_header.hpp"
 #include "scream_types.hpp"
-#include "util/time_stamp.hpp"
 
-#include <vector>
-#include <memory>
+#include <memory>   // For std::shared_ptr
 
 // I have to decide where to store a field's providers and customers, that is,
 // a list of parametrizations that compute or need a given field. Should it
@@ -20,42 +18,29 @@
 namespace scream
 {
 
-class AtmosphereProcess;
-
-// A small structure to hold tracking information about a field
-// This structure is used to track whether a field has been updated
-// (by comparing time stamps), and to track what atm processes
-// require/compute a field, so that teh driver can compute a dag.
-struct FieldTracking {
-  util::TimeStamp   m_last_update;
-
-  std::vector<AtmosphereProcess*> m_computed_by;
-  std::vector<AtmosphereProcess*> m_required_by;
-};
-
-// A small structure to hold info about a field
-struct FieldHeader {
-  // These could actually be retrieved from the Kokkos View, but it probably makes sens
-  // to be able to retrieve info from a header, without having to query the view
-  // Besides, we may want to be able to query name/rank/dims BEFORE the view is actually instantiated.
-  // Finally, if you look at Field, you may notice that the way we store the view
-  // in the manager may lose info about the rank/dims.
-  std::string           m_name;
-  int                   m_rank;
-  std::vector<int>      m_dims;
-  std::vector<FieldTag> m_tags;
-
-  FieldTracking         m_tracking;
-
-  // Something about output/restart?
-};
+// ======================== FIELD ======================== //
 
 // A field should be composed of metadata info (the header) and a pointer to the view
-template<typename ViewType>
-struct Field {
-  using header_type = FieldHeader;
-  using view_type   = ViewType;
+template<typename DataType, typename MemSpace>
+class Field {
+public:
+  using header_type   = FieldHeader;
+  using view_type     = ViewManaged<DataType,MemSpace>;
+  using view_ptr_type = std::shared_ptr<view_type>;
 
+  // Constructor(s)
+  Field () = default;
+  Field (const Field&) = default;
+  Field (const header_type& header);
+
+  // Assignment (defaulted)
+  Field& operator= (const Field&) = default;
+
+  // Getters
+  const header_type& header () const { return m_header; }
+  const view_type&   view   () const { error::runtime_check(m_view, "Error! View not set yet.", -1); return m_view; }
+
+protected:
   // Metadata (name, rank, dims,...)
   header_type                 m_header;
   // Actual data.
@@ -64,8 +49,19 @@ struct Field {
   // I'm not 100% sure we need a shared_ptr. If we use Field's always by
   // reference, we should be fine with just a ViewType. However, if parametrizations
   // want to store copies of a Field, we need the shared_ptr
-  std::shared_ptr<view_type>  m_field;
+  std::shared_ptr<view_type>  m_view;
 };
+
+template<typename DataType, typename MemSpace>
+Field<DataType,MemSpace>::Field (const header_type& header) {
+  m_header = header;
+  Kokkos::LayoutRight layout;
+  for (int idim=0; idim<m_header.rank(); ++idim) {
+    layout.dimension[idim] = m_header.dim(idim);
+  }
+
+  m_view = std::make_shared<view_type>(m_header.name(),layout);
+}
 
 } // namespace scream
 

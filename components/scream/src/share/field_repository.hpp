@@ -21,20 +21,20 @@
 namespace scream
 {
 
-// We template a field (and a field manager) over the view type. The primary goal is
-// to have two managers: one for the device views, which are be Managed, and one
+// We template a field (and a field repository) over the view type.
+// The primary goal is to have two managers: one for the device views, which are be Managed, and one
 // for the host views, which are Unmanaged, and simply store a pointer to the array
 // that is managed by Fortran. The latter, is basically a manager for storing all
 // the fields that are passed to the atmosphere by the coupler, or that the atmosphere
 // needs to pass back to the coupler.
 // NOTE: we will NOT pass fields back and forth at each iteration. We will instead set
 //       all the pointers in the manager sometimes during the atm_init_mct call.
-template<typename ViewType>
+template<typename MemSpace>
 class FieldRepository {
 public:
 
   // Public types
-  using field_type  = Field<ViewType>;
+  using field_type  = Field<Real*,MemSpace>;
   using header_type = typename field_type::header_type;
   using view_type   = typename field_type::view_type;
 
@@ -53,14 +53,13 @@ public:
 
   // Methods to add new fields to the manager
   void register_field (const header_type& header) { create_field(header); }
-  void register_field (const header_type& header, ViewType view) { create_field(header); *m_fields.at[header.m_name].m_field = view; }
 
   // Methods to query the database
   const field_type& get_field        (const std::string& name) const { return m_fields.at(name);          }
   const header_type& get_field_header (const std::string& name) const { return get_field(name).m_header;   }
 
-  // Do we need/want this? It is only a shortcut to *get_field(name).m_field
-  view_type get_field_view (const std::string& name) const { return *(get_field(name).m_field); }
+  // Do we need/want this? It is only a shortcut to *get_field(name).m_view
+  view_type get_field_view (const std::string& name) const { return *(get_field(name).m_view); }
   
 protected:
 
