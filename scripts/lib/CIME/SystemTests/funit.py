@@ -14,20 +14,25 @@ class FUNIT(SystemTestsCommon):
 
     def __init__(self, case):
         """
-        initialize an object interface to the SMS system test
+        initialize an object interface to the FUNIT system test
         """
         SystemTestsCommon.__init__(self, case)
         case.load_env()
 
     def build_phase(self, sharedlib_only=False, model_only=False):
         if not sharedlib_only:
-            # Build HOMME
             exeroot  = self._case.get_value("EXEROOT")
             logfile = os.path.join(exeroot, "funit.bldlog")
             with open(logfile, "w") as fd:
                 fd.write("No-op\n")
 
             post_build(self._case, [logfile], build_complete=True)
+
+    def get_test_spec_dir(self):
+        """
+        Override this to change what gets tested.
+        """
+        return get_cime_root()
 
     def run_phase(self):
 
@@ -39,7 +44,7 @@ class FUNIT(SystemTestsCommon):
         if os.path.exists(log):
             os.remove(log)
 
-        test_spec_dir = get_cime_root()
+        test_spec_dir = self.get_test_spec_dir()
         unit_test_tool = os.path.abspath(os.path.join(test_spec_dir,"scripts","fortran_unit_testing","run_tests.py"))
         args = "--build-dir {} --test-spec-dir {} --machine {}".format(exeroot, test_spec_dir, mach)
         stat = run_cmd("{} {} >& funit.log".format(unit_test_tool, args), from_dir=rundir)[0]
