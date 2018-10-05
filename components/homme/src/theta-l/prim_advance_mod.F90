@@ -277,7 +277,7 @@ contains
       ahat1 = 0
       ahat5 = 1
 
-
+#if 1
       ! IMEX-KGO254 most stable coefficients
       dhat2 = 1d0
       dhat3 = 1d0
@@ -285,24 +285,27 @@ contains
       ahat4 = 1d0/2d0-dhat4
       dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
         (ahat5-dhat3-dhat2-dhat4)
+#endif
 
-
+#if 0
       ! IMEX-KGO254c coefficients
-      !dhat2 = 5/6d0
-      !dhat3 = 5/6d0
-      !dhat4 = 2/3d0
-      !ahat4 = 1/2d0-dhat4
-      ! dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
-      !  (ahat5-dhat3-dhat2-dhat4)
+      dhat2 = 5/6d0
+      dhat3 = 5/6d0
+      dhat4 = 2/3d0
+      ahat4 = 1/2d0-dhat4
+      dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
+           (ahat5-dhat3-dhat2-dhat4)
+#endif
 
+#if 0
       ! IMEX-KGO254b coefficients NOT GOOD
-!      dhat2 = 1./6.
-!      dhat3 = 1./6.
-!      dhat4 = 1./6.
-!      ahat4 = 1./2.-dhat4
-!!      dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
-!       (ahat5-dhat3-dhat2-dhat4)
-
+      dhat2 = 1./6.
+      dhat3 = 1./6.
+      dhat4 = 1./6.
+      ahat4 = 1./2.-dhat4
+      dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
+           (ahat5-dhat3-dhat2-dhat4)
+#endif
 
       ! IMEX-KG254
       ahat3 = (- ahat4*ahat5*dhat1 - ahat4*ahat5*dhat2+ ahat5*dhat1*dhat2 + ahat5*dhat1*dhat3 +&
@@ -602,13 +605,21 @@ contains
              elem(ie)%state%vtheta_dp(:,:,k,nt)/elem(ie)%state%dp3d(:,:,k,nt)
      enddo
 
-!     call set_theta_ref(hvcoord,elem(ie)%state%dp3d(:,:,:,nt),theta_ref(:,:,:,ie))
+#if 0
+     ! reference state based only on ps:
      call set_theta_ref(hvcoord,dp_ref(:,:,:,ie),theta_ref(:,:,:,ie))
 
      ! compute vtheta_dp_ref, store in 'heating' as temp array:
      heating(:,:,:)=theta_ref(:,:,:,ie)*dp_ref(:,:,:,ie)
      call get_phinh(hvcoord,elem(ie)%state%phis,&
           heating(:,:,:),dp_ref(:,:,:,ie),phi_ref(:,:,:,ie))
+#endif
+#if 1
+     ! most realistic reference state based on hydrostatic pressure
+     call set_theta_ref(hvcoord,elem(ie)%state%dp3d(:,:,:,nt),theta_ref(:,:,:,ie))
+     call get_phinh(hvcoord,elem(ie)%state%phis,&
+          elem(ie)%state%vtheta_dp(:,:,:,nt),elem(ie)%state%dp3d(:,:,:,nt),phi_ref(:,:,:,ie))
+#endif
 
 #if 0
      ! disable reference background states
@@ -757,11 +768,6 @@ contains
         ! we want exner*cp*dp3d*heating = dp3d*U dot diss(U)
         ! and thus heating =  U dot diss(U) / exner*cp
         ! 
-        ! PE dissipation
-        ! d(PE)/dt = dp3d diss(phi) 
-        !     we want dp3d diss(phi) = exner*cp*dp3d*heating
-        !     heating = diss(phi) / exner*cp
-        !
         ! use hydrostatic pressure for simplicity
         p_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
         do k=1,nlev
@@ -784,14 +790,13 @@ contains
               heating(:,:,k)= (elem(ie)%state%v(:,:,1,k,nt)*vtens(:,:,1,k,ie) + &
                    elem(ie)%state%v(:,:,2,k,nt)*vtens(:,:,2,k,ie)  +&
                    (elem(ie)%state%w_i(:,:,k,nt)*stens(:,:,k,3,ie)  +&
-                     elem(ie)%state%w_i(:,:,k2,nt)*stens(:,:,k2,3,ie))/2  +&
-                   ( stens(:,:,k,4,ie)+stens(:,:,k2,4,ie))/2 ) / &
+                     elem(ie)%state%w_i(:,:,k2,nt)*stens(:,:,k2,3,ie))/2 ) /  +&
                    (exner(:,:,k)*Cp)  
            endif
            
            elem(ie)%state%vtheta_dp(:,:,k,nt)=elem(ie)%state%vtheta_dp(:,:,k,nt) &
                 +stens(:,:,k,2,ie)*hvcoord%dp0(k)*exner0(k)/(exner(:,:,k)*elem(ie)%state%dp3d(:,:,k,nt)&
-                )  ! -heating(:,:,k)
+                ) ! -heating(:,:,k)
         enddo
         
      enddo
