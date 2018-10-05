@@ -122,6 +122,7 @@ contains
     integer                 :: mpicom              ! MPI communicator
     integer                 :: tmp(6)              ! Array for Broadcast
     integer                 :: dbrc
+    logical                 :: isPresent
     character(len=*), parameter :: subname = '(shr_nuopc_time_clockInit): '
     !-------------------------------------------------------------------------------
 
@@ -202,9 +203,14 @@ contains
           call NUOPC_CompAttributeGet(esmdriver, name="restart_pfile", value=restart_pfile, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-          call NUOPC_CompAttributeGet(esmdriver, name="inst_suffix", value=inst_suffix, rc=rc)
+          call NUOPC_CompAttributeGet(esmdriver, name="inst_suffix", isPresent=isPresent, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
+          if(isPresent) then
+             call NUOPC_CompAttributeGet(esmdriver, name="inst_suffix", value=inst_suffix, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          else
+             inst_suffix = ""
+          endif
           if ( len_trim(restart_pfile) == 0 ) then
              rc = ESMF_FAILURE
              call ESMF_LogWrite(trim(subname)//' ERROR restart_pfile must be defined', &
