@@ -45,7 +45,8 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-       applyCAMforcing_dp3d, applyCAMforcing_ps, vertical_mesh_init2
+            applyCAMforcing_dynamics, applyCAMforcing_dynamics_dp, applyCAMforcing_tracers, &
+            convert_thermo_forcing, vertical_mesh_init2
 
 !  type (EdgeBuffer_t) :: edge5
   type (EdgeBuffer_t) :: edge6
@@ -488,18 +489,30 @@ contains
   end subroutine prim_advance_exp
 
 
+! a dummy for now to compile
+  subroutine convert_thermo_forcing(elem,hvcoord,n0,nets,nete)
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: nets,nete
+  integer,                intent(in)    :: n0
+  end subroutine convert_thermo_forcing
 
-!placeholder
-  subroutine applyCAMforcing_dp3d(elem,hvcoord,np1,dt,nets,nete)
+
+
+  subroutine applyCAMforcing_dynamics_dp(elem,hvcoord,np1,dt,nets,nete)
   implicit none
   type (element_t),       intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,nets,nete
-  end subroutine applyCAMforcing_dp3d
 
-!temp solution for theta+ftype0
-  subroutine applyCAMforcing_ps(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
+  call abortmp('Error in __FILE__,__LINE__: theta model doesnt have ftype=3 option and cannot call applyCAMforcing_dynamics_dp')
+
+  end subroutine applyCAMforcing_dynamics_dp
+
+
+  subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
 
   implicit none
   type (element_t),       intent(inout) :: elem(:)
@@ -510,28 +523,12 @@ contains
   ! local
   integer :: i,j,k,ie,q
   real (kind=real_kind) :: v1
-  real (kind=real_kind) :: temperature(np,np,nlev)
-  real (kind=real_kind) :: kappa_star(np,np,nlev)
-  real (kind=real_kind) :: cp_star(np,np,nlev)
-  real (kind=real_kind) :: exner(np,np,nlev)
   real (kind=real_kind) :: dp(np,np,nlev)
-  real (kind=real_kind) :: pnh(np,np,nlev)
-  real (kind=real_kind) :: dpnh(np,np,nlev)
 
   do ie=nets,nete
      ! apply forcing to Qdp
      elem(ie)%derived%FQps(:,:)=0
 
-     ! apply forcing to temperature
-     call get_temperature(elem(ie),temperature,hvcoord,np1)
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
-     do k=1,nlev
-        temperature(:,:,k) = temperature(:,:,k) + dt*elem(ie)%derived%FT(:,:,k)
-     enddo
-
-     
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(q,k,i,j,v1)
 #endif
@@ -584,6 +581,36 @@ contains
         enddo
      enddo
 
+    enddo !ie loop
+  end subroutine applyCAMforcing_tracers
+
+
+! copied dyn lines from tracer call without thinking yet
+  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,dt,nets,nete)
+
+  type (element_t)     ,  intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: np1,nets,nete
+  real (kind=real_kind) :: temperature(np,np,nlev)
+  real (kind=real_kind) :: kappa_star(np,np,nlev)
+  real (kind=real_kind) :: cp_star(np,np,nlev)
+  real (kind=real_kind) :: exner(np,np,nlev)
+  real (kind=real_kind) :: dp(np,np,nlev)
+  real (kind=real_kind) :: pnh(np,np,nlev)
+  real (kind=real_kind) :: dpnh(np,np,nlev)
+  integer :: k,ie
+
+  do ie=nets,nete
+     ! apply forcing to temperature
+     call get_temperature(elem(ie),temperature,hvcoord,np1)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k)
+#endif
+     do k=1,nlev
+        temperature(:,:,k) = temperature(:,:,k) + dt*elem(ie)%derived%FT(:,:,k)
+     enddo
+
      ! now that we have updated Qdp and dp, compute theta_dp_cp from temperature
      call get_kappa_star(kappa_star,elem(ie)%state%Q(:,:,:,1))
      call get_cp_star(cp_star,elem(ie)%state%Q(:,:,:,1))
@@ -594,24 +621,6 @@ contains
      elem(ie)%state%theta_dp_cp(:,:,:,np1) = temperature(:,:,:)*cp_star(:,:,:)&
           *dp(:,:,:)/exner(:,:,:)
 
-    enddo
-    call applyCAMforcing_dynamics(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
-  end subroutine applyCAMforcing_ps
-
-
-
-
-
-  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
-
-  type (element_t)     ,  intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete,np1_qdp
-
-  integer :: k,ie
-
-  do ie=nets,nete
      elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,1:2,:)
      elem(ie)%state%w(:,:,:,np1) = elem(ie)%state%w(:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,3,:)
   enddo

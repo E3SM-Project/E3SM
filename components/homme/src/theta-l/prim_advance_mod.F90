@@ -44,8 +44,8 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-       applycamforcing_ps, applycamforcing_dp3d, &
-       applyCAMforcing_dynamics, vertical_mesh_init2
+       applycamforcing_tracers, applycamforcing_dynamics, &
+       applyCAMforcing_dynamics_dp, convert_thermo_forcing, vertical_mesh_init2
 
 contains
 
@@ -390,7 +390,8 @@ contains
   integer,                intent(in)    :: nets,nete
   integer,                intent(in)    :: n0
   integer                               :: ie,k
-  real(kind=real_kind)                  :: ipressure, exner(np,np), p(np,np), dp(np,np), Rstar(np,np,nlev)
+  real(kind=real_kind)                  :: ipressure(np,np), exner(np,np), p(np,np),&
+                                           dp(np,np), Rstar(np,np,nlev)
 
   do ie=nets,nete
      !would it be better to have 2d array as input instead? or not?
@@ -405,7 +406,7 @@ contains
         p(:,:) = ipressure - dp/2
 
         exner = (p(:,:)/p0)**kappa
-        elem(ie)%state%FT(:,:,k)=elem(ie)%state%FT(:,:,k)*Rstar(:,:,k)/Rgas*dp/exner
+        elem(ie)%derived%FT(:,:,k)=elem(ie)%derived%FT(:,:,k)*Rstar(:,:,k)/Rgas*dp(:,:)/exner(:,:)
      enddo
   enddo
   end subroutine convert_thermo_forcing
@@ -495,7 +496,7 @@ contains
   type (element_t)     ,  intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete,np1_qdp
+  integer,                intent(in)    :: np1,nets,nete
 
   integer :: k,ie
   do ie=nets,nete
@@ -521,7 +522,7 @@ contains
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,nets,nete
   
-  call abortmp(__FILE__LINE__'ERROR: theta-l model doesnt have ftype=3 option and cannot call applyCAMforcing_dynamics_dp')
+  call abortmp('Error: __FILE__,__LINE__ theta-l model doesnt have ftype=3 option and cannot call applyCAMforcing_dynamics_dp')
   end subroutine applyCAMforcing_dynamics_dp
 
 

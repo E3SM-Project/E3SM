@@ -1205,6 +1205,7 @@ contains
 !if called within lagrangian step, it uses lagrangian dp3d
   subroutine applyCAMforcing_dp3d(elem,hvcoord,dyn_timelev,dt_dyn,nets,nete)
   use control_mod, only : ftype
+  use hybvcoord_mod, only : hvcoord_t
   use prim_advance_mod,   only: applycamforcing_dynamics,applycamforcing_dynamics_dp
   implicit none
   type (element_t),       intent(inout) :: elem(:)
@@ -1227,6 +1228,7 @@ contains
 !timestep
   subroutine applyCAMforcing_ps(elem,hvcoord,dyn_timelev,tr_timelev,dt_remap,nets,nete)
   use control_mod, only : ftype
+  use hybvcoord_mod, only : hvcoord_t
   use prim_advance_mod,   only: applycamforcing_dynamics,applycamforcing_tracers
   implicit none
   type (element_t),       intent(inout) :: elem(:)

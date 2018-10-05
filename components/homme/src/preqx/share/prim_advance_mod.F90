@@ -25,8 +25,9 @@ module prim_advance_mod
   implicit none
   private
   save
-  public :: prim_advance_exp, prim_advance_init1, vertical_mesh_init2 !,&
-!            applyCAMforcing_ps, applyCAMforcing_dp3d
+  public :: prim_advance_exp, prim_advance_init1, vertical_mesh_init2, &
+            applyCAMforcing_tracers, applyCAMforcing_dynamics, applyCAMforcing_dynamics_dp, &
+            convert_thermo_forcing
 
   real (kind=real_kind), allocatable :: ur_weights(:)
 
