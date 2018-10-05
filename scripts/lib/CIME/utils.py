@@ -1352,7 +1352,6 @@ def does_file_have_string(filepath, text):
     """
     return os.path.isfile(filepath) and text in open(filepath).read()
 
-
 def is_last_process_complete(filepath, expect_text, fail_text ):
     """
     Search the filepath in reverse order looking for expect_text
@@ -1656,6 +1655,8 @@ def indent_string(the_string, indent_level):
 def verbatim_success_msg(return_val):
     return return_val
 
+CASE_SUCCESS = "success"
+CASE_FAILURE = "error"
 def run_and_log_case_status(func, phase, caseroot='.', custom_success_msg_functor=None):
     append_case_status(phase, "starting", caseroot=caseroot)
     rv = None
@@ -1663,11 +1664,11 @@ def run_and_log_case_status(func, phase, caseroot='.', custom_success_msg_functo
         rv = func()
     except:
         e = sys.exc_info()[1]
-        append_case_status(phase, "error", msg=("\n{}".format(e)), caseroot=caseroot)
+        append_case_status(phase, CASE_FAILURE, msg=("\n{}".format(e)), caseroot=caseroot)
         raise
     else:
         custom_success_msg = custom_success_msg_functor(rv) if custom_success_msg_functor else None
-        append_case_status(phase, "success", msg=custom_success_msg, caseroot=caseroot)
+        append_case_status(phase, CASE_SUCCESS, msg=custom_success_msg, caseroot=caseroot)
 
     return rv
 

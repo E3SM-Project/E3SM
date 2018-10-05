@@ -8,7 +8,7 @@ submit, check_case and check_da_settings are members of class Case in file case.
 """
 from six.moves                      import configparser
 from CIME.XML.standard_module_setup import *
-from CIME.utils                     import expect, run_and_log_case_status, verbatim_success_msg
+from CIME.utils                     import expect, run_and_log_case_status, verbatim_success_msg, CASE_SUCCESS, does_file_have_string
 from CIME.locked_files              import unlock_file, lock_file
 from CIME.test_status               import *
 
@@ -30,14 +30,15 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
         job = case.get_primary_job()
 
     # Check if CONTINUE_RUN value makes sense
-    if job != "case.test":
-        continue_run = case.get_value("CONTINUE_RUN")
+    if job != "case.test" and case.get_value("CONTINUE_RUN"):
         rundir = case.get_value("RUNDIR")
-        if continue_run:
-            expect(os.path.isdir(rundir),
-                   "CONTINUE_RUN is true but RUNDIR {} does not exist".format(rundir))
-            expect(len(glob.glob(os.path.join(rundir, "*.nc"))) > 0,
-                   "CONTINUE_RUN is true but this case does not appear to have been run before")
+        caseroot = case.get_value("CASEROOT")
+        expect(os.path.isdir(rundir),
+               "CONTINUE_RUN is true but RUNDIR {} does not exist".format(rundir))
+        expect(len(glob.glob(os.path.join(rundir, "*.nc"))) > 0,
+               "CONTINUE_RUN is true but this case does not appear to have been run before (no .nc files in RUNDIR)")
+        expect(does_file_have_string(os.path.join(caseroot, "CaseStatus"), "case.run {}".format(CASE_SUCCESS)),
+               "CONTINUE_RUN is true but this case does not appear to have ever run successfully")
 
     # if case.submit is called with the no_batch flag then we assume that this
     # flag will stay in effect for the duration of the RESUBMITs
