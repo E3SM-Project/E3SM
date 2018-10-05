@@ -14,3 +14,6 @@ CreateUnitTest(packs "pack_tests.cpp;pack_kokkos_tests.cpp" scream_share num_mpi
 
 # Test kokkos utils
 CreateUnitTest(kokkos_utils "kokkos_utils_tests.cpp" scream_share num_mpi_ranks config_defines)
+
+# Test fields
+CreateUnitTest(field "field_tests.cpp" scream_share num_mpi_ranks config_defines)
