@@ -93,7 +93,7 @@ class NamelistGenerator(object):
     def __exit__(self, *_):
         return False
 
-    def init_defaults(self, infiles, config, skip_groups=None, skip_entry_loop=None ):
+    def init_defaults(self, infiles, config, skip_groups=None, skip_entry_loop=False):
         """Return array of names of all definition nodes
         """
         # first clean out any settings left over from previous calls
@@ -126,8 +126,8 @@ class NamelistGenerator(object):
         if not skip_entry_loop:
             for entry in entry_nodes:
                 self.add_default(self._definition.get(entry, "id"))
-        else:
-            return [self._definition.get(entry, "id") for entry in entry_nodes]
+
+        return [self._definition.get(entry, "id") for entry in entry_nodes]
 
     @staticmethod
     def quote_string(string):
@@ -144,37 +144,39 @@ class NamelistGenerator(object):
         """Transform a literal list as needed for `get_value`."""
         var_type, _, var_size, = self._definition.split_type_string(name)
         if len(literals) > 0:
-            value = expand_literal_list(literals)
+            values = expand_literal_list(literals)
         else:
-            value = ''
-            return value
-        for i, scalar in enumerate(value):
-            if scalar == '':
-                value[i] = None
-            elif var_type == 'character':
-                value[i] = character_literal_to_string(scalar)
-        if var_size == 1:
-            return value[0]
-        else:
-            return value
+            return ""
 
-    def _to_namelist_literals(self, name, value):
+        for i, scalar in enumerate(values):
+            if scalar == '':
+                values[i] = None
+            elif var_type == 'character':
+                values[i] = character_literal_to_string(scalar)
+
+        if var_size == 1:
+            return values[0]
+        else:
+            return values
+
+    def _to_namelist_literals(self, name, values):
         """Transform a literal list as needed for `set_value`.
 
         This is the inverse of `_to_python_value`, except that many of the
         changes have potentially already been performed.
         """
         var_type, _, var_size, =  self._definition.split_type_string(name)
-        if var_size == 1 and not isinstance(value, list):
-            value = [value]
-        for i, scalar in enumerate(value):
+        if var_size == 1 and not isinstance(values, list):
+            values = [values]
+
+        for i, scalar in enumerate(values):
             if scalar is None:
-                value[i] = ""
+                values[i] = ""
             elif var_type == 'character':
                 expect(not isinstance(scalar, list), name)
-                value[i] = self.quote_string(scalar)
-        return compress_literal_list(value)
+                values[i] = self.quote_string(scalar)
 
+        return compress_literal_list(values)
 
     def get_value(self, name):
         """Get the current value of a given namelist variable.
@@ -294,7 +296,6 @@ class NamelistGenerator(object):
         """ Clean the object just enough to introduce a new instance """
         self.clean_streams()
         self._namelist.clean_groups()
-
 
     def _sub_fields(self, varnames):
         """Substitute indicators with given values in a list of fields.
