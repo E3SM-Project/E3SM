@@ -2,84 +2,75 @@
 
 #include <share/atmosphere_process.hpp>
 #include <share/error_defs.hpp>
+#include <share/util/string_utils.hpp>
+
+#include "atm_processes_scheduling.hpp"
+#include "surface_coupling.hpp"
+#include "dynamics/atmosphere_dynamics.hpp"
 
 namespace scream {
 namespace control {
 
 void AtmosphereDriver::initialize ( /* inputs? */ ) {
-  // Initialize the FieldRepository (FR) for host fields
-  // (i.e., fields that are I/O w.r.t the coupler)
 
   // Create processes, store them in the requested order
-
-  // Check: make sure there is one (and only one) dynamics process, and one (and only one)
-  //        surface coupling process.
-  bool dynamics_found = false, coupling_found = false;
-  for (const auto& atm_subcomp : m_atm_processes) {
-    if (atm_subcomp->type()==AtmosphereProcessType::Coupling) {
-      // We already found a Coupling process. Issue an error.
-      error::runtime_check(!coupling_found,"More than one Coupling process found. This makes no sense. Aborting.\n", -1); 
-      coupling_found = true;
-    }
-    if (atm_subcomp->type()==AtmosphereProcessType::Dynamics) {
-      // We already found a Dynamics process. Issue an error.
-      error::runtime_check(!dynamics_found,"More than one Dynamics process found. This makes no sense. Aborting.\n", -1); 
-      dynamics_found = true;
-    }
-  }
-  if (!dynamics_found) {
-    // We did not find a Dynamics process. Issue an error.
-    error::runtime_abort("No Dynamics process found. This makes no sense. Aborting.\n", -2); 
-  }
-  if (!coupling_found) {
-    // We did not find a Coupling process. Issue an error.
-    error::runtime_abort("No Coupling process found. This makes no sense. Aborting.\n", -2); 
-  }
+  create_atm_processes();
 
   // Initialize the processes
-  for (auto& atm_subcomp : m_atm_processes) {
-    atm_subcomp->initialize( /* inputs ? */ );
+  for (auto& atm_process : m_atm_processes) {
+    atm_process->initialize( /* inputs ? */ );
   }
 
   // Initialize the FR for device fields
   // (i.e., fields that are used by processes during computations)
-
-  // Other? Perhaps setup a registry of fields that need copying
-  // host->device at the beginning of run and device->host at the end of run?
 }
 
 void AtmosphereDriver::run ( /* inputs ? */ ) {
-  // We have some flexibility over the order in which some things happen here.
-  // For instance, do we want to copy (host->device) input fields from coupler
-  // right away or should we do it 'just in time'? This may be irrelevant now
-  // (and therefore do it right away), but it *may*  be relevant if we enable
-  // parallel processes execution (in which case, we may delegate each of these copies
-  // to (one of) the processes that use it).
-
-  // Copy (host->device) data from coupler views
-
-  // Run processes.
-  // Question: are we going to enforce same data structure for all processes?
-  //           If yes, then this step is easy, otherwise we need
-  //           to sync data between each each run call.
-  // Note: if we want to allow parallel processes, we need to
-  //       consider it here. Perhaps a big if, like
-  //
-  // if (parallel_parametrizations) {
-  //   dispatch processes depending on mpi rank
-  // } else {
-  //   plow through processes list in the order in which they are stored.
-  // }
-
-  // Copy (device->host) data to coupler views
+  // Here we have to call the 'run' method on each process that is stored on this rank.
+  for (auto& atm_process : m_atm_processes) {
+    // Run the current process
+    atm_process->run();
+  }
 }
 
 void AtmosphereDriver::finalize ( /* inputs? */ ) {
   // Finalize all processes
-  for (auto& atm_subcomp : m_atm_processes) {
-    atm_subcomp->finalize( /* inputs? */ );
+  for (auto& atm_process : m_atm_processes) {
+    atm_process->finalize( /* inputs? */ );
   }
 }
+
+
+void AtmosphereDriver::create_atm_processes ()  {
+  // Parse some sort of data, to create the schedule of all the atmosphere
+  // processes, including order and parallel/sequential distribution
+
+  ProcessesSchedule schedule;
+  // Parse some sort of data to fill schedule
+
+  // Check: make sure that in the global schedule there is one (and only one) dynamics process,
+  //        as well as one (and only one) surface coupling process. Also, check for no repetitions.
+  error::runtime_check(schedule.check_process_present("Dynamics"),"No Dynamics process found. This makes no sense. Aborting",-1);
+  error::runtime_check(schedule.check_process_present("Surface_Coupling"),"No SurfaceCoupling process found. This makes no sense. Aborting",-1);
+  schedule.check_unique_processes();
+
+  // Assign to each rank a pipeline of processes.
+  std::vector<std::pair<std::string,Comm>> my_pipeline = schedule.get_processes_pipeline(m_atm_comm);
+
+  for (auto& name : my_pipeline) {
+    auto name_upper = util::upper_case(name.first);
+    if (name_upper=="DYNAMICS") {
+      m_atm_processes.push_back(std::make_shared<AtmosphereDynamics>());
+    } else if (name_upper=="SURFACE_COUPLING") {
+      m_atm_processes.push_back(std::make_shared<SurfaceCoupling>());
+    } else {
+      std::string err_msg = "Error! Uknown/unsupported atmosphere process '" + name.first + "'.\n";
+      error::runtime_abort(err_msg,-1);
+    }
+  }
+}
+
+// ==================== STUB for testing ================= //
 
 int driver_stub() {
   // Test that we can at least create an AD...

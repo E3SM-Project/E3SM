@@ -3,6 +3,7 @@
 
 #include <share/field_repository.hpp>
 #include <share/scream_types.hpp>
+#include <share/mpi/scream_comm.hpp>
 
 #include <list>
 #include <memory>
@@ -11,6 +12,7 @@ namespace scream {
 
 // Forward declarations
 class AtmosphereProcess;
+class ProcessesSchedule;
 
 namespace control {
 
@@ -55,9 +57,13 @@ public:
 
 protected:
 
+  void create_atm_processes ();
+
   field_repo_type<ExecViewManaged<Real*>>         m_device_field_repo;
 
   std::list<std::shared_ptr<atm_process_type>>    m_atm_processes;
+
+  Comm   m_atm_comm;
 };
 
 int driver_stub();
