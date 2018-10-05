@@ -143,8 +143,19 @@ def xmlchange_single_value(case, xmlid, xmlval, subgroup, append, force, dryrun)
         xmlval = convert_to_type(xmlval, type_str, xmlid)
 
     if not dryrun:
-        newval = case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
-        expect(newval is not None,"No variable \"%s\" found"%xmlid)
+        result = case.set_value(xmlid, xmlval, subgroup, ignore_type=force, return_file=True)
+        expect(result is not None,"No variable \"%s\" found"%xmlid)
+        filename = result[1]
+
+        if filename.endswith("env_batch.xml"):
+            logger.info("case.submit will auto-regen your batch files, no further user action is needed")
+        elif filename.endswith("env_build.xml"):
+            logger.info("You should consider cleaning and rebuilding your case")
+        elif filename.endswith("env_mach_pes.xml"):
+            logger.info("Changing mach_pes can have a big impact on your case. Please re-run case.setup, and clean/rebuild your case")
+        elif filename.endswith("env_case.xml"):
+            logger.info("You are changing a fundamental property of your case. Please re-run case.setup, and clean/rebuild your case")
+
     else:
         logger.warning("'%s' = '%s'" , xmlid , xmlval )
 
