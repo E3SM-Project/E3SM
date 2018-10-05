@@ -14,7 +14,7 @@ module five_intr
   implicit none
   
   ! This is the number of layers to add between E3SM levels
-  integer :: five_add_nlevels = 1 
+  integer :: five_add_nlevels = 2 
   
   ! The bottom layer to which we will add layers to (set
   !   to a very large value to add all the way to surface)
@@ -29,8 +29,8 @@ module five_intr
   !   because PBUF needs these to be initialized.
   !   TASK: figure out a better way so these can be computed
   !   on the fly and not user specified!
-  integer, parameter :: pver_five = 87
-  integer, parameter :: pverp_five = 88
+  integer, parameter :: pver_five = 102
+  integer, parameter :: pverp_five = 103
   
   ! define physics buffer indicies here for the FIVE
   !  variables added to the PBUF
@@ -40,6 +40,9 @@ module five_intr
 	     v_five_idx, &
 	     pmid_five_idx, &
 	     pint_five_idx 
+	     
+  integer :: five_bot_k, five_top_k ! indicees where
+                                    ! levels are added
   
   contains 
   
@@ -304,6 +307,12 @@ module five_intr
     real(r8) :: v_five_tend(pcols,pver_five)
     real(r8) :: q_five_tend(pcols,pver_five,pcnst)
     
+    real(r8) :: dz_e3sm(pcols,pver)
+    real(r8) :: dz_five(pcols,pver_five)
+    
+    real(r8) :: rho_e3sm(pcols,pver)
+    real(r8) :: rho_five(pcols,pver_five)    
+    
     real(r8) :: pdel_five(pcols,pver_five)
         
     ncol = state%ncol
@@ -314,28 +323,36 @@ module five_intr
         pdel_five(i,k) = pint_five(i,k+1)-pint_five(i,k)
       enddo
     enddo
+    
+    ! Compute grid stuff needed for vertical averaging and tendencies
+    do i=1,ncol
+      call compute_five_grids(state%t(i,:),state%pdel(i,:),state%pmid(i,:),pver,&
+             dz_e3sm(i,:),rho_e3sm(i,:))
+      call compute_five_grids(t_five(i,:),pdel_five(i,:),pmid_five(i,:),pver_five,&
+             dz_five(i,:),rho_five(i,:))
+    enddo
   
     ! First compute a mass weighted average of the five variables onto the 
     !   the lower resolution E3SM grid   
     do i=1,ncol
       ! Mass weighted vertical average for temperature
-      call masswgt_vert_avg(state%t(i,:),t_five(i,:),state%pdel(i,:),pdel_five(i,:),&
+      call masswgt_vert_avg(rho_e3sm(i,:),rho_five(i,:),dz_e3sm(i,:),dz_five(i,:),&
                             state%pint(i,:),pmid_five(i,:),state%pmid(i,:),&
 			    t_five(i,:),t_five_low(i,:))
 			    
       ! Mass weighted vertical average for u wind
-      call masswgt_vert_avg(state%t(i,:),t_five(i,:),state%pdel(i,:),pdel_five(i,:),&
+      call masswgt_vert_avg(rho_e3sm(i,:),rho_five(i,:),dz_e3sm(i,:),dz_five(i,:),&
                             state%pint(i,:),pmid_five(i,:),state%pmid(i,:),&
 			    u_five(i,:),u_five_low(i,:))
 			    
       ! Mass weighted vertical average for v wind
-      call masswgt_vert_avg(state%t(i,:),t_five(i,:),state%pdel(i,:),pdel_five(i,:),&
+      call masswgt_vert_avg(rho_e3sm(i,:),rho_five(i,:),dz_e3sm(i,:),dz_five(i,:),&
                             state%pint(i,:),pmid_five(i,:),state%pmid(i,:),&
 			    v_five(i,:),v_five_low(i,:))			    
       
       ! Mass weighted vertical average for tracers 
       do p=1,pcnst
-        call masswgt_vert_avg(state%t(i,:),t_five(i,:),state%pdel(i,:),pdel_five(i,:),&
+        call masswgt_vert_avg(rho_e3sm(i,:),rho_five(i,:),dz_e3sm(i,:),dz_five(i,:),&
                             state%pint(i,:),pmid_five(i,:),state%pmid(i,:),&
 			    q_five(i,:,p),q_five_low(i,:,p))
       enddo
@@ -394,8 +411,44 @@ module five_intr
   !                                          !
   ! ======================================== !  
   
+  subroutine compute_five_grids(&
+               temp,pdel,pmid,nlev,&
+	       dz,rho)
+	       
+    implicit none
+
+    ! Compute thickness and density on the E3SM
+    !   and FIVE grid	
+    real(r8), intent(in) :: temp(nlev)
+    real(r8), intent(in) :: pdel(nlev)
+    real(r8), intent(in) :: pmid(nlev)  
+    integer, intent(in) :: nlev  
+    
+    real(r8), intent(out) :: dz(nlev)
+    real(r8), intent(out) :: rho(nlev)
+    
+    integer :: k
+    
+    ! Compute density
+    do k=1,nlev
+      rho(k) = pmid(k)/(rair*temp(k))
+    enddo          
+	      
+    ! Compute dz	     
+    do k=1,nlev
+      dz(k) = pdel(k)/(rho(k)*gravit)	      
+    enddo	      
+	      
+    return
+	       
+  end subroutine compute_five_grids	 
+  
+  ! ======================================== !
+  !                                          !
+  ! ======================================== !   
+  
   subroutine masswgt_vert_avg(&
-               t_host,t_high,pdel_host,pdel_high,&
+               rho_host,rho_high,dz_host,dz_high,&
 	       pint_host,pmid_high,pmid_host,&
 	       var_high,var_host)
 	       
@@ -403,43 +456,20 @@ module five_intr
     !  average from the FIVE high resolution grid onto the
     !  E3SM grid
     implicit none
-   
+
+    real(r8), intent(in) :: rho_high(pver_five)
+    real(r8), intent(in) :: rho_host(pver)   
+    real(r8), intent(in) :: dz_high(pver_five)
+    real(r8), intent(in) :: dz_host(pver)
     real(r8), intent(in) :: pmid_high(pver_five)
     real(r8), intent(in) :: pint_host(pverp)
     real(r8), intent(in) :: pmid_host(pver)
     real(r8), intent(in) :: var_high(pver_five)
-    real(r8), intent(in) :: t_host(pver)
-    real(r8), intent(in) :: t_high(pver_five)
-    real(r8), intent(in) :: pdel_host(pver)
-    real(r8), intent(in) :: pdel_high(pver_five)
     real(r8), intent(out) :: var_host(pver)
     
     integer :: i, k, kh
-    real(r8) :: rho_high(pver_five)
-    real(r8) :: rho_host(pver)
+
     real(r8) :: rho_host_avg(pver)
-    real(r8) :: dz_high(pver_five)
-    real(r8) :: dz_host(pver)
-    
-    ! Define the density on the E3SM grid   
-    do k=1,pver
-      rho_host(k) = pmid_host(k)/(rair*t_host(k))
-    enddo
-    
-    ! Compute density on FIVE grid
-    do k=1,pver_five
-      rho_high(k) = pmid_high(k)/(rair*t_high(k))
-    enddo
-    
-    ! define dz on E3SM grid
-    do k=1,pver
-      dz_host(k) = pdel_host(k)/(rho_host(k)*gravit)
-    enddo
-    
-    ! define dz on the FIVE grid
-    do k=1,pver_five
-      dz_high(k) = pdel_high(k)/(rho_high(k)*gravit)
-    enddo
     
     ! Initialize host variable
     var_host(:) = 0._r8
@@ -468,7 +498,6 @@ module five_intr
       rho_host_avg(k) = rho_host_avg(k)/dz_host(k)
       
       ! Compute the mass weighted vertical average
-!      var_host(k) = var_host(k)/(rho_host(k)*dz_host(k))
       var_host(k) = var_host(k)/(rho_host_avg(k)*dz_host(k))
       
     enddo
@@ -508,5 +537,321 @@ module five_intr
     enddo
 
   end subroutine linear_interp  
+  
+  ! ======================================== !
+  !                                          !
+  ! ======================================== !
+  
+  subroutine tendency_low_to_high(&
+               zm_in, zi_in, &
+	       zm_five_in, &
+	       rho_low_in, rho_five_in, &
+	       ten_low,ten_high)
+    implicit none
+    
+    ! Input variables
+    real(r8), intent(in) :: zm_in(pver) ! midpoint levels E3SM
+    real(r8), intent(in) :: zi_in(pverp) ! interface levels E3SM
+    real(r8), intent(in) :: zm_five_in(pver_five) ! midpoint levels for FIVE
+    real(r8), intent(in) :: ten_low(pver)
+    real(r8), intent(in) :: rho_low_in(pver)
+    real(r8), intent(in) :: rho_five_in(pver_five)
+
+    ! Output variables
+    real(r8), intent(out) :: ten_high(pver_five)
+    
+    ! Local variables
+    integer, parameter :: ml=1, mu=1, lda=2*ml+mu+1
+    real(r8) :: zm(pver) ! flipped version of zm_in
+    real(r8) :: zi(pver) ! flipped version of zi_in
+    real(r8) :: df_z(pver) 
+    real(r8) :: rho_low(pver)
+    real(r8) :: rho_zs(pver_five)
+    real(r8) :: zm_five(pver) ! flipped
+    real(r8) :: dz ! distance of lowest level
+    real(r8) :: alpha
+    real(r8) :: adz_dn(pver)
+    real(r8) :: adz_up(pver)
+    real(r8) :: a(lda,pver)
+    real(r8) :: adz(pver) ! ratio of the thickness of scalar levels to dz
+    real(r8) :: adzw(pver) ! ratio of the thickness of w levels to dz
+    real(r8) :: ipiv(pver)
+    integer :: info
+    real(r8) :: weight(pver_five)
+    real(r8) :: rdf_z(pver)
+    real(r8) :: rdf_zs_ml(pver) ! mid-layer target value
+    real(r8) :: df_zs(pver_five)
+    real(r8), dimension(pver) :: rdf_zm, rdf_zm_dn, rdf_zm_up
+    real(r8), dimension(pver) :: c0, c1, c2, c3, ic1, ic2, ic3
+    real(r8) :: b(pver)
+    
+    logical, dimension(pver) :: spurious
+    logical :: cnd1, cnd2, cnd3, cnd4, cnd5
+    
+    integer :: i, i1, i2, i3, i4, i5
+    integer :: k, km3, km2, km1, k00
+    integer :: kp1, kp2, ierr
+    integer :: zi1, zi2
+    integer :: i5zi1
+    
+    ! Construct tendency profile from E3SM grid to FIVE grid
+    
+    ! The constructed tendency profile satisfies layer mean average
+    
+    ! If no levels are added via FIVE just return a copy
+    if (five_add_nlevels .eq. 0) then
+      ten_high(1:pver) = ten_low(1:pver)
+      return
+    endif
+    
+    ! First let's "flip" things so lowest level index = 1
+    do k=1,pver
+      zm(k) = zm_in(pver-k+1)
+      rho_low(k) = rho_low_in(pver-k+1)
+      df_z(k) = ten_low(pver-k+1)
+    enddo
+    
+    do k=1,pverp
+      zi(k) = zi_in(pverp-k+1)
+    enddo
+    
+    do k=1,pver_five
+      zm_five(k) = zm_five_in(pver_five-k+1)
+      rho_zs(k) = rho_five_in(pver_five-k+1)
+    enddo  
+    
+    zi1 = pver-five_bot_k+1
+    zi2 = pver-five_top_k+1
+    
+    dz=zi(2)
+    
+    ! define adz and adzw
+    do k=2,pver
+      adzw(k) = (zm(k)-zm(k-1))/dz
+    enddo
+    adzw(1) = 1._r8
+    
+    adz(1) = 1._r8
+    do k=2,pver-1
+      adz(k) = 0.5*(zm(k+1)-zm(k-1))/dz
+    enddo
+    adz(pver) = adzw(pver)
+    
+    ! Prepare coefficients
+
+    ! If the location of the mid-layer point is optionally specified then following variables
+    ! are required to be computed every time this function is called.
+			
+    ! Distance from the mid-layer level to the host model lower/upper interface value divided
+    ! by dz. Here the mid-layer level is z(k).
+    
+    do k=1,pver
+      adz_dn(k) = (zm(k) - zi(k))/dz
+    enddo
+    
+    do k=1,pver
+      adz_up(k) = (zi(k+1) - zm(k))/dz
+    enddo
+    
+    ! For solving system of equations
+    ! The j-th column of the matrix A is stored in the j-th column of the array a as follows:
+    !    a(ml+mu+1+i-j,j) = A(i,j) for max(1,j-mu)<=i<=min(nzm,j+ml)
+    ! Set up superdiagonal, diagonal, subdiagonal component of the matrix
+    a(:,:) = 0._r8
+    ! Superdiagonal 
+    do k=2,pver
+      a(2,k)=adz_up(k-1)**2/(adz(k)*adzw(k-1))*0.5_r8
+    enddo
+    ! Diagonal
+    k = 1
+    a(3,1) = (adz_dn(1) + adzw(1) + adz_up(1) * adz_dn(2) / adz(2))/adzw(1) * 0.5_r8
+    do k=2,pver
+      kp1=min(k+1,pver)
+      a(3,k) = (adz_up(k-1) * adz_dn(k) / adz(k) + adzw(k) & 
+               + adz_up(k) * adz_dn(k+1) / adz(kp1) ) / adzw(k) * 0.5
+    enddo
+    ! Subdiagonal
+    do k=1, pver
+      a(4,k) = adz_dn(k)**2 / (adz(k) * adzw(k))*0.5
+    enddo
+    
+    ! Factor the matrix with LAPACK, BLAS
+    call dgbtrf( pver, pver, ml, mu, a, lda, ipiv, info )    
+    
+    ! For interpolation
+    i5=0
+    do k=1,zi1-1
+      i5 = i5 + 1
+    enddo
+    
+    i5zi1 = i5
+    do k = zi1, zi2
+      i1 = i5 + 1
+      i2 = i1 + five_add_nlevels / 2 - 1 
+      i3 = i1 + five_add_nlevels / 2
+      i4 = i1 + five_add_nlevels / 2 + 1
+      i5 = i1 + five_add_nlevels 
+      ! weight for linear interpolation
+      weight(i1:i2) = ( zm_five(i1:i2) - zi(k) ) / ( zm(k) - zi(k) )
+      weight(i3) = 1.0_r8
+      weight(i4:i5) = ( zm_five(i4:i5) - zi(k+1) ) / ( zm(k) - zi(k+1) ) 
+      ! c1, c2, c3
+      c0(k) = 2.0 * (zi(k+1) - zi(k))
+      c1(k) = zi(k+1) - zi(k)
+      c2(k) = zm_five(i3) - zi(k)
+      c3(k) = zi(k+1) - zm_five(i3)
+    enddo
+    ic1(:) = 1.0_r8 / c1(:)
+    ic2(:) = 1.0_r8 / c2(:) 
+    ic3(:) = 1.0_r8 / c3(:)
+    
+    ! add flag computed?
+    
+    ! Mass weight inout value
+    rdf_z(:) = rho_low(:) * ten_low(:)
+    
+    ! Solve system of equations to get mid-layer target value
+    ! Solve the linear system with LAPACK, BLAS
+    ! input b wil be solution when output
+    b(:) = rdf_z(:)
+    call dgbtrs('n', pver, ml, mu, 1, a, lda, ipiv, b, pver, info)
+    rdf_zs_ml(:) = b(:)
+    
+    ! Interface target value
+    rdf_zm(1) = rdf_zs_ml(1)
+    do k = 2, pver-1
+      rdf_zm(k) = adz_dn(k) / adz(k) * rdf_zs_ml(k-1) & 
+        + adz_up(k-1) / adz(k) * rdf_zs_ml(k)
+    enddo
+    rdf_zm(pver) = 0.0 !domain top tendency
+    
+    ! Detection and correction of grid-scale violation for df_zm 
+    !  Zerroukat et al. (2005 QJRMS)
+    spurious(:) = .false.
+    do k = 1, pver
+      km3 = MAX( k-3, 1 )
+      km2 = MAX( k-2, 1 )
+      km1 = MAX( k-1, 1 )
+      k00 = MIN( k, pver )
+      kp1 = MIN( k+1, pver )
+      kp2 = MIN( k+2, pver )
+      cnd1 = ( rdf_zm(k) - rdf_z(km1) ) * ( rdf_z(k00) - rdf_zm(k) ) < 0.0
+      cnd2 = ( rdf_z(km1) - rdf_z(km2) ) * ( rdf_z(kp1) - rdf_z(k00) ) >= 0.0
+      cnd3 = ( rdf_z(km1) - rdf_z(km2) ) * ( rdf_z(km2) - rdf_z(km3) ) <= 0.0
+      cnd4 = ( rdf_z(kp1) - rdf_z(k00) ) * ( rdf_z(kp2) - rdf_z(kp1) ) <= 0.0
+      cnd5 = ( rdf_zm(k) - rdf_z(km1) ) * ( rdf_z(km1) - rdf_z(km2) ) <= 0.0
+      if ( cnd1 .and. ( cnd2 .or. cnd3 .or. cnd4 .or. cnd5 ) ) then
+        spurious(k) = .false.
+	alpha = ABS( rdf_zm(k) - rdf_z(k00) ) - ABS( rdf_zm(k) - rdf_z(km1) )
+	alpha = SIGN( 0.5_r8, alpha ) + 0.5_r8 ! Heaviside step function, alpha = 0 or 1
+        rdf_zm(k) = alpha * rdf_z(km1) + ( 1.0_r8 - alpha ) * rdf_z(k00)
+      endif
+    enddo
+    
+    ! Store rdf_zm into rdf_zm_up and rdf_zm_dn
+    rdf_zm_up(:) = rdf_zm(1:pver)
+    rdf_zm_dn(:) = rdf_zm(1:pver)  
+    
+    ! Detection and correction of grid-scale violation for rdf_zs_ml for monotonic layer
+    ! - Recompute rdf_zs_zl with updated rdf_zm
+    ! - For monotonic layer, check if it is bounded between rdf_zm(k) and rdf_zm(k+1)
+    !   If not bounded, assign rdf_zs_ml to closest rdf_zm, and compute other interface value
+    !   and store it into either rdf_zm_up or rdf_zm_dn. That level will have two interface
+    !   values for upper and lower layer.    
+    spurious(:) = .FALSE.
+    do k = 1, pver
+      km1 = MAX( k-1, 1 )
+      kp1 = MIN( k+1, pver )
+      rdf_zs_ml(k) = ic1(k) * ( c0(k)*rdf_z(k) - c2(k)*rdf_zm(k) - c3(k)*rdf_zm(k+1) )
+      cnd1 = ( rdf_z(k) - rdf_z(km1) ) * ( rdf_z(kp1) - rdf_z(k) ) >= 0.0_r8
+      cnd2 = ( rdf_zs_ml(k) - rdf_zm(k) ) * ( rdf_zm(k+1) - rdf_zs_ml(k) ) < 0.0_r8
+      if ( cnd1 .AND. cnd2 ) then
+        ! Inflection within a monotonic layer
+	spurious(k) = .TRUE.
+	alpha = ABS( rdf_zs_ml(k) - rdf_zm(k) ) - ABS( rdf_zs_ml(k) - rdf_zm(k+1) )
+	alpha = SIGN( 0.5_r8, alpha ) + 0.5_r8 ! alpha = 0 or 1
+	rdf_zs_ml(k) = alpha * rdf_zm(k+1) + ( 1.0_r8 - alpha ) * rdf_zm(k)
+	if ( alpha < 0.5_r8 ) then
+	  rdf_zm_up(k) = ic3(k) * ( c0(k)*rdf_z(k) - c1(k)*rdf_zs_ml(k) - c2(k)*rdf_zm(k) )
+	else
+	  rdf_zm_dn(k) = ic2(k) * (c0(k)*rdf_z(k) - c1(k)*rdf_zs_ml(k) - c3(k)*rdf_zm(k+1))
+	endif
+      endif
+    enddo
+    
+    ! Remove discountinuity at interface level as many as possible
+    ! - For monotonic layer, set rdf_z_dn(k) = rdf_z_up(k-1) and rdf_z_up(k) = rdf_z_dn(k+1),
+    !   then re-compute rdf_zs_ml.
+    ! - Check if new rdf_zs_ml is bounded between rdf_zm_dn and rdf_zm_up, and if not, set
+    !   rdf_zs_ml to the closer interface value and compute the other interfaec value.              
+    do k = 1, pver
+      km1 = MAX( k-1, 1 )
+      kp1 = MIN( k+1, pver )
+      cnd1 = ( rdf_zs_ml(k) - rdf_zm_dn(k) ) * ( rdf_zm_up(k) - rdf_zs_ml(k) ) >= 0.0_r8
+      if ( cnd1 ) then
+        ! Monotonic layer
+					
+	! Re-set df_zm_dn and df_zm_up
+	rdf_zm_dn(k) = rdf_zm_up(km1)
+	rdf_zm_up(k) = rdf_zm_dn(kp1)
+	! Re-compute df_zs
+	rdf_zs_ml(k) = ic1(k) * ( c0(k)*rdf_z(k) - c2(k)*rdf_zm_dn(k) - c3(k)*rdf_zm_up(k) )
+	!
+	cnd2 = ( rdf_zs_ml(k) - rdf_zm_dn(k) ) * ( rdf_zm_up(k) - rdf_zs_ml(k) ) < 0.0_r8
+
+	if ( cnd2 ) then
+	  ! Non-monotonic profile
+	  spurious(k) = .TRUE.
+	  alpha = ABS( rdf_zs_ml(k) - rdf_zm_dn(k) ) - ABS( rdf_zs_ml(k) - rdf_zm_up(k) )
+	  alpha = SIGN( 0.5_r8, alpha ) + 0.5_r8
+	  rdf_zs_ml(k) = alpha * rdf_zm_up(k) + ( 1.0_r8 - alpha ) * rdf_zm_dn(k)
+	  if ( alpha < 0.5_r8 ) then
+	    rdf_zm_up(k) = ic3(k) * (c0(k)*rdf_z(k)-c1(k)*rdf_zs_ml(k)-c2(k)*rdf_zm_dn(k))
+	  else
+	    rdf_zm_dn(k) = ic2(k) * (c0(k)*rdf_z(k)-c1(k)*rdf_zs_ml(k)-c3(k)*rdf_zm_up(k))
+	  endif
+	endif
+	
+      endif
+    enddo
+    
+    ! Construct the tendency profile
+    i5 = 0
+    ! Below zi1
+    do k=1,zi1-1
+      i5=i5+1
+      df_zs(i5) = df_z(k)
+    enddo
+
+    ! between zi1 and zi2
+    do k = zi1, zi2
+      i1 = i5 + 1
+      i2 = i1 + five_add_nlevels / 2 - 1 ! i2 = i3-1 or i2 = i1
+      i3 = i1 + five_add_nlevels / 2     ! zs(i3) = z(k)
+      i4 = i1 + five_add_nlevels / 2 + 1 ! i4 = i3+1 or i4 = i5
+      i5 = i1 + five_add_nlevels
+      ! Compute df_zs for all zs levels
+      ! zi(k) < zs(i1:i2) < z(k)
+      df_zs(i1:i2) = ( 1.0_r8 - weight(i1:i2) ) * rdf_zm_dn(k) + weight(i1:i2) * rdf_zs_ml(k)
+      ! zs(i3)
+      df_zs(i3) = rdf_zs_ml(k)
+      ! z(k) < zs(i4:i5) < zi(k+1)
+      df_zs(i4:i5) = ( 1.0_r8 - weight(i4:i5) ) * rdf_zm_up(k) + weight(i4:i5) * rdf_zs_ml(k)
+      ! Non-mass weighted
+      df_zs(i1:i5) = df_zs(i1:i5) / rho_zs(i1:i5)
+    enddo
+    
+    ! Above zi2
+    do k = zi2+1,pver
+      i5 = i5 + 1
+      df_zs(i5) = df_z(k)
+    enddo    
+    
+    ! Finally, "unflip" the tendency
+    do k = 1,pver_five
+      ten_high(k) = df_zs(pver_five-k+1)
+    enddo
+  
+  end subroutine tendency_low_to_high  
 
 end module five_intr

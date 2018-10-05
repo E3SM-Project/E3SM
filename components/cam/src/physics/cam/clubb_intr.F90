@@ -31,7 +31,7 @@ module clubb_intr
 #ifdef FIVE
   use five_intr,     only: pver_five, pverp_five, &
 			   linear_interp, five_syncronize_e3sm, &
-			   masswgt_vert_avg
+			   masswgt_vert_avg, compute_five_grids
 #endif
 
   implicit none
@@ -1318,6 +1318,11 @@ end subroutine clubb_init_cnst
    real(r8) :: thv_five(pver_five)
    real(r8) :: omega_five(pver_five)
    real(r8) :: exner_five(pver_five)
+   
+   real(r8) :: dz_five(pver_five)
+   real(r8) :: rho_five(pver_five)
+   real(r8) :: dz_e3sm(pver)
+   real(r8) :: rho_e3sm(pver)
 #endif
    
 !PMA
@@ -2313,21 +2318,26 @@ end subroutine clubb_init_cnst
       ! Compute temperature on host model grid for density calculation
       call linear_interp(pmid_five(i,:),state1%pmid(i,:),t_five(i,1:pver_five),t_five_host,pver_five,pver)
       
+      call compute_five_grids(state%t(i,:),state%pdel(i,:),state%pmid(i,:),pver,&
+             dz_e3sm(:),rho_e3sm(:))
+      call compute_five_grids(t_five(i,:),pdel_five(:),pmid_five(i,:),pver_five,&
+             dz_five(:),rho_five(:))	     
+      
       ! Compute mass weighted vertical average of variables from FIVE grid to E3SM grid
-      call masswgt_vert_avg(state1%t(i,:),t_five(i,1:pver_five),state1%pdel(i,:),pdel_five(:),&
+      call masswgt_vert_avg(rho_e3sm(:),rho_five(:),dz_e3sm(:),dz_five(:),&
                             state%pint(i,:),pmid_five(i,:),state1%pmid(i,:),&
 			    t_five(i,1:pver_five),t_five_low(i,1:pver))
 			    
-      call masswgt_vert_avg(state1%t(i,:),t_five(i,1:pver_five),state1%pdel(i,:),pdel_five(:),&
+      call masswgt_vert_avg(rho_e3sm(:),rho_five(:),dz_e3sm(:),dz_five(:),&
                             state%pint(i,:),pmid_five(i,:),state1%pmid(i,:),&
 			    u_five(i,1:pver_five),u_five_low(i,1:pver))	
 			    
-      call masswgt_vert_avg(state1%t(i,:),t_five(i,1:pver_five),state1%pdel(i,:),pdel_five(:),&
+      call masswgt_vert_avg(rho_e3sm(:),rho_five(:),dz_e3sm(:),dz_five(:),&
                             state%pint(i,:),pmid_five(i,:),state1%pmid(i,:),&
 			    v_five(i,1:pver_five),v_five_low(i,1:pver))	
 			    
       do p=1,pcnst
-        call masswgt_vert_avg(state1%t(i,:),t_five(i,1:pver_five),state1%pdel(i,:),pdel_five(:),&
+        call masswgt_vert_avg(rho_e3sm(:),rho_five(:),dz_e3sm(:),dz_five(:),&
                               state%pint(i,:),pmid_five(i,:),state1%pmid(i,:),&
 			      q_five(i,1:pver_five,p),q_five_low(i,1:pver,p))        
       enddo		    		    		     
