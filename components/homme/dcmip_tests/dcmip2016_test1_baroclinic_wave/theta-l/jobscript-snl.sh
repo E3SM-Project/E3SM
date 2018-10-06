@@ -60,6 +60,15 @@ prefix=r100    ; run $NCPU
 
 prefix=r50    ; run $NCPU
 
+# high res cases
+#prefix=ne120  ; run $NCPU       # 72 nodes, 2h Anvil:  6s
+#prefix=ne256  ; run $NCPU       # 72 nodes, 2h Anvil:  55s
+                                 # 50 nodes ? 
+                                 # 25 nodes ?   
+#prefix=ne512  ; run $NCPU       # 72 nodes killed.  should work with 
+#prefix=ne1024  ; run $NCPU       # 
+
+
 
 
 
