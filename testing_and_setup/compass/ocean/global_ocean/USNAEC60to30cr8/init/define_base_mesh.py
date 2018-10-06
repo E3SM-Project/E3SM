@@ -52,7 +52,7 @@ def cellWidthVsLatLon():
     params["n_longest"] = 100
     cell_width,lon,lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
 
-    print "****Alutian Islands (East)***"
+    print "****Aleutian Islands (East)***"
     params["region_box"] = ct.Aleutian_Islands_E
     cell_width,lon,lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
 
