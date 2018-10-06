@@ -269,6 +269,7 @@ module cime_comp_mod
   logical  :: t24hr_alarm            ! alarm every twentyfour hours
   logical  :: t1yr_alarm             ! alarm every year, at start of year
   logical  :: pause_alarm            ! pause alarm
+  logical  :: write_hist_alarm       ! seq_timemgr index for driver
   integer  :: drv_index              ! seq_timemgr index for driver
 
   real(r8) :: days_per_year = 365.0  ! days per year
@@ -3087,11 +3088,12 @@ contains
              if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
              if (do_hist_r2x) then
                 call t_drvstartf ('driver_rofpost_histaux', barrier=mpicom_CPLID)
+                write_hist_alarm = t24hr_alarm .or. stop_alarm
                 do eri = 1,num_inst_rof
                    inst_suffix =  component_get_suffix(rof(eri))
                    call seq_hist_writeaux(infodata, EClock_d, rof(eri), flow='c2x', &
                         aname='r2x',dname='domrb',inst_suffix=trim(inst_suffix),  &
-                        nx=rof_nx, ny=rof_ny, nt=1, write_now=t24hr_alarm)
+                        nx=rof_nx, ny=rof_ny, nt=1, write_now=write_hist_alarm)
                 enddo
                 call t_drvstopf ('driver_rofpost_histaux')
              endif
