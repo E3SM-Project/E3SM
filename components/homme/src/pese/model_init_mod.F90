@@ -19,6 +19,23 @@ module model_init_mod
 
 contains
 
+  !_____________________________________________________________________
+  subroutine vertical_mesh_init2(elem, nets, nete, hybrid, hvcoord)
+
+    type (element_t),			intent(inout), target :: elem(:)							! array of element_t structures
+    integer,							intent(in)		:: nets,nete										! start and end element indices
+    type (hybrid_t),			intent(in)		:: hybrid												! mpi/omp data struct
+    type (hvcoord_t),			intent(inout)	:: hvcoord											! hybrid vertical coord data struct
+
+    if (hybrid%masterthread) print *,"initializing PESE dynamics solver"
+
+    ! initialize vertical operators and coordinates
+    call make_vertical_mesh(hybrid, hvcoord)
+
+  end subroutine vertical_mesh_init2
+
+
+
   subroutine model_init2( elem , hybrid, deriv,hvcoord,tl,nets,nete )
 
     type(element_t)   , intent(in) :: elem(:)

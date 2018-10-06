@@ -5,6 +5,8 @@
 !
 !  Man dynamics routines for "theta" nonhydrostatic model
 !  Original version: Mark Taylor 2017/1
+!  
+!  2018/8 TOM sponger layer scaling from P. Lauritzen
 !
 module prim_advance_mod
 
@@ -19,7 +21,7 @@ module prim_advance_mod
   use edge_mod,           only: edge_g, edgevpack_nlyr, edgevunpack_nlyr
   use edgetype_mod,       only: EdgeBuffer_t,  EdgeDescriptor_t, edgedescriptor_t
   use element_mod,        only: element_t
-  use element_state,      only: max_itercnt_perstep,avg_itercnt,max_itererr_perstep
+  use element_state,      only: max_itercnt_perstep,avg_itercnt,max_itererr_perstep, nu_scale_top
   use element_ops,        only: get_temperature, set_theta_ref, state0, get_R_star
   use eos,                only: get_pnh_and_exner,get_phinh,get_dirk_jacobian
   use hybrid_mod,         only: hybrid_t
@@ -45,7 +47,9 @@ module prim_advance_mod
   save
   public :: prim_advance_exp, prim_advance_init1, &
        applycamforcing_ps, applycamforcing_dp3d, &
-       applyCAMforcing_dynamics, vertical_mesh_init2
+       applyCAMforcing_dynamics
+
+
 
 contains
 
@@ -64,20 +68,6 @@ contains
 
   end subroutine prim_advance_init1
 
-
-
-
-
-  subroutine vertical_mesh_init2(elem, nets, nete, hybrid, hvcoord)
-
-    ! additional solver specific initializations (called from prim_init2)
-
-    type (element_t),			intent(inout), target :: elem(:)! array of element_t structures
-    integer,				intent(in) :: nets,nete		! start and end element indices
-    type (hybrid_t),			intent(in) :: hybrid		! mpi/omp data struct
-    type (hvcoord_t),			intent(inout)	:: hvcoord	! hybrid vertical coord data struct
-
-  end subroutine vertical_mesh_init2
 
 
 
@@ -540,7 +530,6 @@ contains
 
   ! local
   real (kind=real_kind) :: eta_ave_w  ! weighting for mean flux terms
-  real (kind=real_kind) :: nu_scale_top
   integer :: k2,k,kptr,i,j,ie,ic,nt,nlyr_tot,ssize
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens
   real (kind=real_kind), dimension(np,np,nlev,4,nets:nete)      :: stens  ! dp3d,theta,w,phi
@@ -660,34 +649,25 @@ contains
            elem(ie)%derived%dpdiss_biharmonic(:,:,:)=elem(ie)%derived%dpdiss_biharmonic(:,:,:)+&
                 eta_ave_w*stens(:,:,:,1,ie)/hypervis_subcycle
         endif
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,lap_s,lap_v,nu_scale_top)
-#endif
            do k=1,nlev
               ! advace in time.
               ! note: DSS commutes with time stepping, so we can time advance and then DSS.
               ! note: weak operators alreayd have mass matrix "included"
 
-              ! add regular diffusion in top 3 layers:
-              if (nu_top>0 .and. k<=3) then
+              ! biharmonic terms need a negative sign:
+              if (nu_top>0 .and. nu_scale_top(k)>1) then
+                 ! add regular diffusion near top
                  lap_s(:,:,1)=laplace_sphere_wk(elem(ie)%state%dp3d       (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_s(:,:,2)=laplace_sphere_wk(elem(ie)%state%vtheta_dp  (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_s(:,:,3)=laplace_sphere_wk(elem(ie)%state%w_i        (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_s(:,:,4)=laplace_sphere_wk(elem(ie)%state%phinh_i    (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
-              endif
 
-              nu_scale_top = 1
-              if (k==1) nu_scale_top=4
-              if (k==2) nu_scale_top=2
-
-              ! biharmonic terms need a negative sign:
-              if (nu_top>0 .and. k<=3) then
-                 vtens(:,:,:,k,ie)=(  -nu*vtens(:,:,:,k,ie) + nu_scale_top*nu_top*lap_v(:,:,:)) ! u and v
-                 stens(:,:,k,1,ie)=(-nu_p*stens(:,:,k,1,ie) + nu_scale_top*nu_top*lap_s(:,:,1)) ! dp3d
-                 stens(:,:,k,2,ie)=(  -nu*stens(:,:,k,2,ie) + nu_scale_top*nu_top*lap_s(:,:,2)) ! theta
-                 stens(:,:,k,3,ie)=(  -nu*stens(:,:,k,3,ie) + nu_scale_top*nu_top*lap_s(:,:,3)) ! w
-                 stens(:,:,k,4,ie)=(-nu_s*stens(:,:,k,4,ie) + nu_scale_top*nu_top*lap_s(:,:,4)) ! phi
+                 vtens(:,:,:,k,ie)=(  -nu*vtens(:,:,:,k,ie) + nu_scale_top(k)*nu_top*lap_v(:,:,:)) ! u and v
+                 stens(:,:,k,1,ie)=(-nu_p*stens(:,:,k,1,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,1)) ! dp3d
+                 stens(:,:,k,2,ie)=(  -nu*stens(:,:,k,2,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,2)) ! theta
+                 stens(:,:,k,3,ie)=(  -nu*stens(:,:,k,3,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,3)) ! w
+                 stens(:,:,k,4,ie)=(-nu_s*stens(:,:,k,4,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,4)) ! phi
               else
                  vtens(:,:,:,k,ie)=-nu  *vtens(:,:,:,k,ie) ! u,v
                  stens(:,:,k,1,ie)=-nu_p*stens(:,:,k,1,ie) ! dp3d

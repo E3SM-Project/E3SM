@@ -9,6 +9,8 @@
 !  most models do nothing.  introduced for preqx_acc to initialize
 !  GPU related data
 !
+!  2018/10 MT: adding TOM pressure-based sponge layer dissipation from P. Lauritzen
+!
 module model_init_mod
 
   use element_mod,        only: element_t
@@ -17,7 +19,7 @@ module model_init_mod
   use hybrid_mod,         only: hybrid_t
   use dimensions_mod,     only: np,nlev,nlevp,nelemd
   use eos          ,      only: get_pnh_and_exner,get_dirk_jacobian
-  use element_state,      only: timelevels
+  use element_state,      only: timelevels, nu_scale_top
   use viscosity_mod,      only: make_c0_vector
   use kinds,              only: real_kind,iulog
   use control_mod,        only: qsplit,theta_hydrostatic_mode
@@ -38,8 +40,9 @@ contains
     integer                           :: nets,nete
 
     ! local variables
-    integer :: ie,t
+    integer :: ie,t,k
     real (kind=real_kind) :: gradtemp(np,np,2,nelemd)
+    real (kind=real_kind) :: ptop_over_press
 
 
     ! other theta specific model initialization should go here    
@@ -65,8 +68,52 @@ contains
     ! unit test for analytic jacobian used by IMEX methods
     if (.not. theta_hydrostatic_mode) &
          call test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)
-  
+
+
+
+    ! 
+    ! compute scaling of sponge layer damping 
+    !
+    if (hybrid%masterthread) write(iulog,*) "sponge layer nu_top viscosity scaling factor"
+    do k=1,nlev
+       !press = (hvcoord%hyam(k)+hvcoord%hybm(k))*hvcoord%ps0
+       !ptop  = hvcoord%hyai(1)*hvcoord%ps0
+       ! sponge layer starts at p=4*ptop 
+       ! 
+       ! some test cases have ptop=200mb
+       ptop_over_press = hvcoord%etai(1) / hvcoord%etam(k)  ! pure sigma coordinates has etai(1)=0
+
+       ! active for p<4*ptop (following cd_core.F90 in CAM-FV)
+       ! CAM 26L and 30L:  top 2 levels
+       ! E3SM 72L:  top 4 levels
+       nu_scale_top(k) = 8*(1+tanh(log(ptop_over_press))) ! active for p<4*ptop
+
+       ! active for p<7*ptop 
+       ! CAM 26L and 30L:  top 3 levels
+       ! E3SM 72L:  top 5 levels
+       !nu_scale_top(k) = 8*(1+.911*tanh(log(ptop_over_press))) ! active for p<6.5*ptop
+
+       if (hybrid%masterthread) then
+          if (nu_scale_top(k)>1) write(iulog,*) "  nu_scale_top ",k,nu_scale_top(k)
+       end if
+    end do
+    
   end subroutine 
+
+
+
+  subroutine vertical_mesh_init2(elem, nets, nete, hybrid, hvcoord)
+
+    ! additional solver specific initializations (called from prim_init2)
+
+    type (element_t),			intent(inout), target :: elem(:)! array of element_t structures
+    integer,				intent(in) :: nets,nete		! start and end element indices
+    type (hybrid_t),			intent(in) :: hybrid		! mpi/omp data struct
+    type (hvcoord_t),			intent(inout)	:: hvcoord	! hybrid vertical coord data struct
+
+
+  end subroutine vertical_mesh_init2
+
 
 
   subroutine test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)

@@ -537,8 +537,7 @@ contains
   !_____________________________________________________________________
   subroutine prim_init2(elem, hybrid, nets, nete, tl, hvcoord)
 
-    use control_mod,          only: runtype, integration, test_case, &
-                                    debug_level, vfile_int, vform, vfile_mid, &
+    use control_mod,          only: runtype, integration, &
                                     topology,rsplit, qsplit, rk_stage_user,&
                                     sub_case, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
                                     hypervis_subcycle_q, moisture, use_moisture
@@ -547,9 +546,8 @@ contains
     use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
     use prim_state_mod,       only: prim_printstate, prim_diag_scalars
     use prim_si_mod,          only: prim_set_mass
-    use prim_advance_mod,     only: vertical_mesh_init2
     use prim_advection_mod,   only: prim_advec_init2
-    use model_init_mod,       only: model_init2
+    use model_init_mod,       only: model_init2, vertical_mesh_init2
     use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
 
 #ifndef CAM
@@ -616,6 +614,7 @@ contains
     logical :: compute_diagnostics
     integer :: qn0
     real (kind=real_kind) :: eta_ave_w
+
 
   interface
     subroutine noxinit(vectorSize,vector,comm,v_container,p_container,j_container) &
@@ -821,6 +820,7 @@ contains
 
     ! timesteps to use for advective stability:  tstep*qsplit and tstep
     call print_cfl(elem,hybrid,nets,nete,dtnu)
+
 
     if (hybrid%masterthread) then
        ! CAM has set tstep based on dtime before calling prim_init2(),

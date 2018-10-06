@@ -45,7 +45,7 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-       applyCAMforcing_dp3d, applyCAMforcing_ps, vertical_mesh_init2
+       applyCAMforcing_dp3d, applyCAMforcing_ps
 
 !  type (EdgeBuffer_t) :: edge5
   type (EdgeBuffer_t) :: edge6
@@ -85,20 +85,6 @@ contains
 
   end subroutine prim_advance_init1
 
-
-
-
-
-  subroutine vertical_mesh_init2(elem, nets, nete, hybrid, hvcoord)
-
-    ! additional solver specific initializations (called from prim_init2)
-
-    type (element_t),			intent(inout), target :: elem(:)! array of element_t structures
-    integer,				intent(in) :: nets,nete		! start and end element indices
-    type (hybrid_t),			intent(in) :: hybrid		! mpi/omp data struct
-    type (hvcoord_t),			intent(inout)	:: hvcoord	! hybrid vertical coord data struct
-
-  end subroutine vertical_mesh_init2
 
 
 
