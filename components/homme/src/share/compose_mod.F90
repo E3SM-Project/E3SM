@@ -1,5 +1,7 @@
 module compose_mod
 
+  implicit none
+
   interface
      subroutine kokkos_init() bind(c)
      end subroutine kokkos_init
@@ -19,10 +21,11 @@ module compose_mod
      end subroutine cedr_init_impl
 
      subroutine slmm_init_impl(comm, transport_alg, np, nlev, qsize, qsize_d, &
-          nelemd, nbr_id_rank, nirptr, sl_nearest_point_lev) bind(c)
+          nelem, nelemd, cubed_sphere_map, lid2gid, lid2facenum, nbr_id_rank, nirptr, &
+          sl_nearest_point_lev) bind(c)
        integer, value, intent(in) :: comm, transport_alg, np, nlev, qsize, qsize_d, &
-            nelemd, sl_nearest_point_lev
-       integer, intent(in) :: nbr_id_rank(:), nirptr(:)
+            nelem, nelemd, cubed_sphere_map, sl_nearest_point_lev
+       integer, intent(in) :: lid2gid(:), lid2facenum(:), nbr_id_rank(:), nirptr(:)
      end subroutine slmm_init_impl
 
      subroutine cedr_set_ie2gci(ie, gci) bind(c)
@@ -152,18 +155,19 @@ module compose_mod
 contains
 
   subroutine compose_init(comm, elem, GridVertex)
-    use dimensions_mod, only : np, nlev, qsize, qsize_d
+    use dimensions_mod, only : np, nlev, qsize, qsize_d, nelem, nelemd
     use element_mod, only : element_t
     use gridgraph_mod, only : GridVertex_t
-    use control_mod, only : semi_lagrange_cdr_alg, transport_alg, semi_lagrange_nearest_point_lev
+    use control_mod, only : semi_lagrange_cdr_alg, transport_alg, cubed_sphere_map, &
+         semi_lagrange_nearest_point_lev
     integer, intent(in) :: comm
     type (element_t), intent(in) :: elem(:)
     type (GridVertex_t), intent(in), target :: GridVertex(:)
-    integer, allocatable :: sc2gci(:), sc2rank(:), nbr_id_rank(:), nirptr(:)
-    integer :: nelem, i, j, k, sc, gid
-
-    nelemd = size(elem)
-    nelem = size(GridVertex)
+    integer, allocatable :: &
+         sc2gci(:), sc2rank(:), &    ! space curve index -> (GID, rank)
+         nbr_id_rank(:), nirptr(:)   ! (GID, rank) in local mesh patch, starting with own
+    integer :: lid2gid(nelemd), lid2facenum(nelemd)
+    integer :: i, j, k, sc, gid
 
     allocate(sc2gci(nelem), sc2rank(nelem))
     do i = 1, nelem
@@ -185,6 +189,8 @@ contains
        do i = 1, nelemd
           nirptr(i) = k - 1
           gid = elem(i)%globalID
+          lid2gid(i) = gid
+          lid2facenum(i) = elem(i)%faceNum
           nbr_id_rank(k) = gid
           nbr_id_rank(k+1) = GridVertex(gid)%processor_number - 1
           k = k + 2
@@ -197,7 +203,8 @@ contains
        end do
        nirptr(nelemd+1) = k - 1
        call slmm_init_impl(comm, transport_alg, np, nlev, qsize, qsize_d, &
-            nelemd, nbr_id_rank, nirptr, semi_lagrange_nearest_point_lev)
+            nelem, nelemd, cubed_sphere_map, lid2gid, lid2facenum, &
+            nbr_id_rank, nirptr, semi_lagrange_nearest_point_lev)
        deallocate(nbr_id_rank, nirptr)
     end if
   end subroutine compose_init
