@@ -22,6 +22,11 @@ module prim_driver_base
   use quadrature_mod,   only: quadrature_t, test_gauss, test_gausslobatto, gausslobatto
   use reduction_mod,    only: reductionbuffer_ordered_1d_t, red_min, red_max, red_max_int, &
                               red_sum, red_sum_int, red_flops, initreductionbuffer
+  use parallel_mod, only : iam, parallel_t, syncmp, syncmp_comm, abortmp, global_shared_buf, nrepro_vars
+#ifdef _MPI
+  use parallel_mod, only : mpiinteger_t, mpi_max
+#endif
+
 #ifndef CAM
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod ,  only : RestFile,readrestart
@@ -59,17 +64,18 @@ contains
     use mass_matrix_mod, only : mass_matrix
     ! --------------------------------
     use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology, cube_init_atomic, &
-                          set_corner_coordinates, assign_node_numbers_to_elem, &
+                          set_corner_coordinates, &
                           set_area_correction_map0, set_area_correction_map2
     ! --------------------------------
     use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
          MeshCubeElemCount, MeshCubeEdgeCount, MeshCubeTopologyCoords
     ! --------------------------------
-    use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph, printmetavertex
+    use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph, &
+         deallocate_metavertex_data, printmetavertex
     ! --------------------------------
     use gridgraph_mod, only : gridvertex_t, gridedge_t, allocate_gridvertex_nbrs, deallocate_gridvertex_nbrs
     ! --------------------------------
-    use schedtype_mod, only : schedule
+    use schedtype_mod, only : schedule, schedule_t
     ! --------------------------------
     use schedule_mod, only : genEdgeSched,  PrintSchedule
     ! --------------------------------
@@ -79,11 +85,6 @@ contains
     ! --------------------------------
 #ifdef TRILINOS
     use prim_implicit_mod, only : prim_implicit_init
-#endif
-    ! --------------------------------
-    use parallel_mod, only : iam, parallel_t, syncmp, abortmp, global_shared_buf, nrepro_vars
-#ifdef _MPI
-    use parallel_mod, only : mpiinteger_t, mpireal_t, mpi_max, mpi_sum, haltmp
 #endif
     ! --------------------------------
     use metis_mod, only : genmetispart
@@ -124,20 +125,16 @@ contains
 
     type (GridVertex_t), target,allocatable :: GridVertex(:)
     type (GridEdge_t),   target,allocatable :: Gridedge(:)
-    type (MetaVertex_t), target,allocatable :: MetaVertex(:)
+    type (MetaVertex_t)                     :: MetaVertex
 
-    integer :: ii,ie, ith
+    integer :: i,ii,ie, ith
     integer :: nets, nete
     integer :: nelem_edge,nedge
     integer :: nstep
     integer :: nlyr
     integer :: iMv
-    integer :: err, ierr, l, j
+    integer :: err, ierr, l, j, task_id
     logical, parameter :: Debug = .FALSE.
-
-    integer  :: i
-    integer,allocatable :: TailPartition(:)
-    integer,allocatable :: HeadPartition(:)
 
     integer total_nelem
     real(kind=real_kind) :: approx_elements_per_task
@@ -207,28 +204,41 @@ contains
     ! ==================================
     call derivinit(deriv1)
 
+    if (MeshUseMeshFile) then
+       nelem = MeshCubeElemCount()
+       nelem_edge = MeshCubeEdgeCount()
+    else
+       nelem      = CubeElemCount()
+       nelem_edge = CubeEdgeCount()
+    end if
+    
+    ! we want to exit elegantly when we are using too many processors.
+    if (nelem < par%nprocs) then
+       call abortmp('Error: too many MPI tasks. set dyn_npes <= nelem')
+    end if
+    
+
+    ! ====================================================
+    ! start domain decomposition
+    ! non-scalable global arrays:  GridVertex, GridEdge
+    ! OOM errors with 64 MPI tasks per node at ne512 on 96GB/node system
+    ! possible solutions:
+    ! 1. have only one MPI task per node compute MetaVertex for all other tasks
+    !    and then MPI_send data.  This is quite difficult because MetaVertex
+    !    contains nested tree of structs, including pointers to other structs that may
+    !    not exist on the receiving MPI task
+    ! 2. Have only one MPI task per node compute Schedule for all other tasks
+    !    Schedule is relatively easy to flatten and send via MPI
+    !    but genEdgeSched() would need to be split into two, a routine to compute Schedule
+    !    and a routine to initialize elem() data from Schedule
+    ! 3. hack for now: loop over MPI tasks per node and only allow one to run at a time
+    !    deallocating global errays at the end of each loop
     ! ===============================================================
-    ! Allocate and initialize the graph (array of GridVertex_t types)
-    ! ===============================================================
+    call t_startf('ScheduleTime')
+    do task_id=1,par%node_nprocs  
+    if ( task_id == par%node_rank + 1 ) then
     if (topology=="cube") then
-
-       if (par%masterproc) then
-          write(iulog,*)"creating cube topology..."
-       end if
-
-       if (MeshUseMeshFile) then
-           nelem = MeshCubeElemCount()
-           nelem_edge = MeshCubeEdgeCount()
-       else
-           nelem      = CubeElemCount()
-           nelem_edge = CubeEdgeCount()
-       end if
-
-       ! we want to exit elegantly when we are using too many processors.
-       if (nelem < par%nprocs) then
-          call abortmp('Error: too many MPI tasks. set dyn_npes <= nelem')
-       end if
-
+       if (par%masterproc) write(iulog,*)"creating cube topology..."
        allocate(GridVertex(nelem))
        allocate(GridEdge(nelem_edge))
 
@@ -286,66 +296,60 @@ contains
     ! ===========================================================
     ! given partition, count number of local element descriptors
     ! ===========================================================
-    allocate(MetaVertex(1))
     allocate(Schedule(1))
 
-    nelem_edge=SIZE(GridEdge)
-
-    allocate(TailPartition(nelem_edge))
-    allocate(HeadPartition(nelem_edge))
-    do i=1,nelem_edge
-       TailPartition(i)=GridEdge(i)%tail%processor_number
-       HeadPartition(i)=GridEdge(i)%head%processor_number
-    enddo
 
     ! ====================================================
     !  Generate the communication graph
     ! ====================================================
-    call initMetaGraph(iam,MetaVertex(1),GridVertex,GridEdge)
+    call initMetaGraph(iam,MetaVertex,GridVertex,GridEdge)
 
-    nelemd = LocalElemCount(MetaVertex(1))
+    nelemd = LocalElemCount(MetaVertex)
     if(par%masterproc .and. Debug) then 
-        call PrintMetaVertex(MetaVertex(1))
+        call PrintMetaVertex(MetaVertex)
     endif
 
     if(nelemd .le. 0) then
        call abortmp('Not yet ready to handle nelemd = 0 yet' )
        stop
     endif
+
+    allocate(elem(nelemd))
+    call allocate_element_desc(elem)
+
+    ! ====================================================
+    !  Generate the communication schedule
+    ! ====================================================
+    call genEdgeSched(elem,iam,Schedule(1),MetaVertex)
+    deallocate(GridEdge)
+    do j =1,nelem
+       call deallocate_gridvertex_nbrs(GridVertex(j))
+    end do
+    deallocate(GridVertex)
+    call deallocate_metavertex_data(MetaVertex)
+
+    endif ! active MPI task
+    if (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method)) then
+       ! no barrier since zoltan algorithms are distributed
+    else
+       ! barrier forces sequency execution per MPI task on this node.
+       call syncmp_comm(par%node_comm)  
+    endif
+    enddo  ! loop over all MPI tasks on this node
+    call t_stopf('ScheduleTime')
+
+
 #ifdef _MPI
     call mpi_allreduce(nelemd,nelemdmax,1,MPIinteger_t,MPI_MAX,par%comm,ierr)
 #else
     nelemdmax=nelemd
 #endif
 
-    if (nelemd>0) then
-       allocate(elem(nelemd))
-       call setup_element_pointers(elem)
-       call allocate_element_desc(elem)
-    endif
-
-    ! ====================================================
-    !  Generate the communication schedule
-    ! ====================================================
-
-    call genEdgeSched(elem,iam,Schedule(1),MetaVertex(1))
-
+    call setup_element_pointers(elem)
 
     allocate(global_shared_buf(nelemd,nrepro_vars))
     global_shared_buf=0.0_real_kind
-    !  nlyr=edge3p1%nlyr
-    !  call MessageStats(nlyr)
-    !  call testchecksum(par,GridEdge)
 
-    ! ========================================================
-    ! load graph information into local element descriptors
-    ! ========================================================
-
-    !  do ii=1,nelemd
-    !     elem(ii)%vertex = MetaVertex(iam)%members(ii)
-    !  enddo
-
-    call syncmp(par)
 
     ! =================================================================
     ! Set number of domains (for 'decompose') equal to number of threads
@@ -402,7 +406,6 @@ contains
            do ie=1,nelemd
                call set_corner_coordinates(elem(ie))
            end do
-           call assign_node_numbers_to_elem(elem, GridVertex)
        end if
        do ie=1,nelemd
           call cube_init_atomic(elem(ie),gp%points)
@@ -482,27 +485,6 @@ contains
 #endif
     !DBG  write(iulog,*) 'prim_init: after call to initRestartFile'
 
-    deallocate(GridEdge)
-    do j =1,nelem
-       call deallocate_gridvertex_nbrs(GridVertex(j))
-    end do
-    deallocate(GridVertex)
-
-    do j = 1, MetaVertex(1)%nmembers
-       call deallocate_gridvertex_nbrs(MetaVertex(1)%members(j))
-    end do
-    do j = 1, MetaVertex(1)%nedges
-       deallocate(MetaVertex(1)%edges(j)%members)
-       deallocate(MetaVertex(1)%edges(j)%edgeptrP)
-       deallocate(MetaVertex(1)%edges(j)%edgeptrS)
-       deallocate(MetaVertex(1)%edges(j)%edgeptrP_ghost)
-    end do
-    deallocate(MetaVertex(1)%edges)
-    deallocate(MetaVertex(1)%members)
-    deallocate(MetaVertex)
-    deallocate(TailPartition)
-    deallocate(HeadPartition)
-
     ! single global edge buffer for all models:
     ! hydrostatic 4*nlev      NH:  6*nlev+1
     ! SL tracers: (qsize+1)*nlev
@@ -543,7 +525,6 @@ contains
                                     hypervis_subcycle_q, moisture, use_moisture
     use global_norms_mod,     only: test_global_integral, print_cfl
     use hybvcoord_mod,        only: hvcoord_t
-    use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
     use prim_state_mod,       only: prim_printstate, prim_diag_scalars
     use prim_si_mod,          only: prim_set_mass
     use prim_advection_mod,   only: prim_advec_init2
@@ -873,7 +854,6 @@ contains
 
     use control_mod,        only: statefreq, ftype, qsplit, rsplit, disable_diagnostics
     use hybvcoord_mod,      only: hvcoord_t
-    use parallel_mod,       only: abortmp
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use vertremap_mod,      only: vertical_remap
     use reduction_mod,      only: parallelmax
@@ -1087,7 +1067,6 @@ contains
     use control_mod,        only: statefreq, integration, ftype, qsplit, nu_p, rsplit
     use control_mod,        only: use_semi_lagrange_transport
     use hybvcoord_mod,      only : hvcoord_t
-    use parallel_mod,       only: abortmp
     use prim_advance_mod,   only: prim_advance_exp
     use prim_advection_mod, only: prim_advec_tracers_remap
     use reduction_mod,      only: parallelmax

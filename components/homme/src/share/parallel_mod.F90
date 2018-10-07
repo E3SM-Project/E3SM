@@ -45,6 +45,9 @@ module parallel_mod
     integer :: root                       ! local root
     integer :: nprocs                     ! number of processes in group
     integer :: comm                       ! local communicator
+    integer :: node_comm                  ! local communicator of all procs per node
+    integer :: node_rank                  ! local rank in node_comm
+    integer :: node_nprocs                ! local rank in node_comm
     logical :: masterproc                
     logical :: dynproc                    ! Designation of a dynamics processor - AaronDonahue
   end type
@@ -120,6 +123,7 @@ contains
 
     integer(kind=int_kind),allocatable                  :: tarray(:)
     integer(kind=int_kind)                              :: namelen,i
+    integer :: node_color
 #ifdef CAM
     integer :: color = 1
     integer :: iam_cam, npes_cam
@@ -199,12 +203,20 @@ contains
     ! ======================================================================
     !   Calculate how many other MPI processes are on my node 
     ! ======================================================================
+    node_color=0
     nmpi_per_node = 0
     do i=1,par%nprocs
       if( TRIM(ADJUSTL(my_name)) .eq. TRIM(ADJUSTL(the_names(i)))   ) then 
         nmpi_per_node = nmpi_per_node + 1
+        if (node_color==0) node_color=i
       endif
     enddo
+    if (node_color==0) call abortmp("initmp: Errror computing procs per node")
+
+    ! create a communicator of all procs per node
+    call mpi_comm_split(par%comm, node_color, par%rank, par%node_comm, ierr)
+    call MPI_comm_rank(par%node_comm,par%node_rank,ierr)
+    call MPI_comm_size(par%node_comm,par%node_nprocs,ierr)
 
     ! =======================================================================
     !  Verify that everybody agrees on this number otherwise do not do 
@@ -217,8 +229,8 @@ contains
       PartitionForNodes=.FALSE.
     else
       PartitionForNodes=.TRUE.
+      if (par%masterproc) write(iulog,*)'number of MPI processes per node: ',nmpi_per_node
     endif
-
 
 
     deallocate(the_names)
@@ -319,6 +331,31 @@ end subroutine haltmp
     endif
 #endif
   end subroutine syncmp
+
+! =====================================
+! syncmp_comm:
+! 
+! same as above, but allow user to specify communicator
+!
+! =====================================
+  subroutine syncmp_comm(comm)
+
+    integer :: comm
+
+#ifdef _MPI
+#include <mpif.h>
+    integer                         :: errorcode,errorlen,ierr
+    character(len=MPI_MAX_ERROR_STRING)               :: errorstring
+
+    call MPI_barrier(comm,ierr)
+
+    if(ierr.eq.MPI_ERROR) then
+      errorcode=ierr
+      call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
+      call abortmp(errorstring)
+    endif
+#endif
+  end subroutine syncmp_comm
 
   ! =============================================
   ! pmin_1d:
