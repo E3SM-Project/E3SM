@@ -232,18 +232,19 @@ contains
     !    Schedule is relatively easy to flatten and send via MPI
     !    but genEdgeSched() would need to be split into two, a routine to compute Schedule
     !    and a routine to initialize elem() data from Schedule
-    ! 3. hack for now: loop over MPI tasks per node and only allow one to run at a time
-    !    deallocating global errays at the end of each loop
+    ! 3. hack for now: loop over MPI tasks per node and only allow "task_id_stride" 
+    !    to run at a time, deallocating global errays at the end of each loop
     ! ===============================================================
     call t_startf('ScheduleTime')
-    ! On Anvil (64GB/node), we can handle 27 copies of GridVertex/GridEdge at ne=512
-    ! So we need to keep nelem*task_id_stride < 42M
+    ! Tuned on Anvil (64GB/node).  for ne=1024, keep nelem*task_id_stide < 20M
     ! if initialization time is too slow, and memory per node > 64GB, this can be increased
-    task_id_stride=max(40000000/nelem,1)
+    task_id_stride=max(20000000/nelem,1)
     if (task_id_stride<par%node_nprocs) then
        if (par%masterproc) write(iulog,*) 'Sequentializing mesh setup to save memory.'
        if (par%masterproc) write(iulog,*) 'active initialization tasks per node: ',task_id_stride
-       if (par%masterproc) write(iulog,*) 'If active init tasks = 1, may run out of memory'
+       if (task_id_stride==1) then
+          if (par%masterproc) write(iulog,*) 'WARNING: may run out of memory during mesh setup'
+       endif
     endif
 
     do task_id=1,par%node_nprocs  

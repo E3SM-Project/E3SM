@@ -65,7 +65,7 @@ prefix=r50    ; run $NCPU
 #prefix=ne256  ; run $NCPU       # 72 nodes, 2h Anvil:  55s
 #prefix=ne512  ; run $NCPU       # 100 nodes 2h Anvil:  611s
                                  # 25 nodes: (runs)
-#prefix=ne1024  ; run $NCPU      # 
+#prefix=ne1024  ; run $NCPU      # 100 nodes 2h Anvi:   RUNNING.  
 
 
 
