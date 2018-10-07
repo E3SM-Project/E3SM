@@ -6,8 +6,11 @@ module parallel_mod
   use kinds, only : real_kind, int_kind, iulog
   ! ---------------------------
   use dimensions_mod, only : nmpi_per_node, nlev, qsize_d
+!
+! Revisions:
+! 2018/10: M. Taylor adding MPI tasks per node subcommunicator
 
-
+!
   implicit none
 
   public 

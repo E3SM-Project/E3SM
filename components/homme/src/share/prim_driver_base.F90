@@ -5,6 +5,7 @@
 ! 08/2016: O. Guba Inserting code for "espilon bubble" reference element map
 ! 03/2018: M. Taylor  fix memory leak
 ! 06/2018: O. Guba  code for new ftypes
+! 10/2018: M. Taylor  sequentialize domain decmposition and schedule setup
 !
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -133,7 +134,7 @@ contains
     integer :: nstep
     integer :: nlyr
     integer :: iMv
-    integer :: err, ierr, l, j, task_id
+    integer :: err, ierr, l, j, task_id, task_id_stride
     logical, parameter :: Debug = .FALSE.
 
     integer total_nelem
@@ -235,109 +236,110 @@ contains
     !    deallocating global errays at the end of each loop
     ! ===============================================================
     call t_startf('ScheduleTime')
+    ! On Anvil (64GB/node), we can handle 27 copies of GridVertex/GridEdge at ne=512
+    ! So we need to keep nelem*task_id_stride < 42M
+    ! if initialization time is too slow, and memory per node > 64GB, this can be increased
+    task_id_stride=max(40000000/nelem,1)
+    if (task_id_stride<par%node_nprocs) then
+       if (par%masterproc) write(iulog,*) 'Sequentializing mesh setup to save memory.'
+       if (par%masterproc) write(iulog,*) 'active initialization tasks per node: ',task_id_stride
+       if (par%masterproc) write(iulog,*) 'If active init tasks = 1, may run out of memory'
+    endif
+
     do task_id=1,par%node_nprocs  
-    if ( task_id == par%node_rank + 1 ) then
-    if (topology=="cube") then
-       if (par%masterproc) write(iulog,*)"creating cube topology..."
-       allocate(GridVertex(nelem))
-       allocate(GridEdge(nelem_edge))
-
-       do j =1,nelem
-          call allocate_gridvertex_nbrs(GridVertex(j))
-       end do
-
-       if (MeshUseMeshFile) then
-           if (par%masterproc) then
-               write(iulog,*) "Set up grid vertex from mesh..."
-           end if
-           call MeshCubeTopologyCoords(GridEdge, GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
-           !MD:TODO: still need to do the coordinate transformation for this case.
-
-
+       if (par%masterproc) write(iulog,'(a,i3,a,i3)') &
+            "sequentialized mesh setup task_id=",task_id,"/",par%node_nprocs
+       if ( task_id == par%node_rank + 1 ) then
+          if (topology=="cube") then
+             if (par%masterproc) write(iulog,*)"creating cube topology..."
+             allocate(GridVertex(nelem))
+             allocate(GridEdge(nelem_edge))
+             
+             do j =1,nelem
+                call allocate_gridvertex_nbrs(GridVertex(j))
+             end do
+          endif
+          if (MeshUseMeshFile) then
+             if (par%masterproc) write(iulog,*) "Set up mesh coordinates..."
+             call MeshCubeTopologyCoords(GridEdge, GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+             !MD:TODO: still need to do the coordinate transformation for this case.
+          else
+             call CubeTopology(GridEdge,GridVertex)
+             if (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method)) then
+                call getfixmeshcoordinates(GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+             endif
+          end if
+          
+          if(par%masterproc) write(iulog,*)"total number of elements nelem = ",nelem
+          
+          !DBG if(par%masterproc) call PrintGridVertex(GridVertex)
+          
+          call t_startf('PartitioningTime')
+          
+          if(partmethod .eq. SFCURVE) then
+             if(par%masterproc) write(iulog,*)"partitioning graph using SF Curve..."
+             !if the partitioning method is space filling curves
+             call genspacepart(GridEdge,GridVertex)
+             if (is_zoltan_task_mapping(z2_map_method)) then
+                if(par%masterproc) write(iulog,*)"mapping graph using zoltan2 task mapping on the result of SF Curve..."
+                call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+             endif
+             !if zoltan2 partitioning method is asked to run.
+          elseif ( is_zoltan_partition(partmethod)) then
+             if(par%masterproc) write(iulog,*)"partitioning graph using zoltan2 partitioning/task mapping..."
+             call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+          else
+             if(par%masterproc) write(iulog,*)"partitioning graph using Metis..."
+             call genmetispart(GridEdge,GridVertex)
+          endif
+          
+          call t_stopf('PartitioningTime')
+          !call printMetrics(GridEdge,GridVertex, par%comm)
+          
+          
+          ! ===========================================================
+          ! given partition, count number of local element descriptors
+          ! ===========================================================
+          allocate(Schedule(1))
+          
+          
+          ! ====================================================
+          !  Generate the communication graph
+          ! ====================================================
+          if(par%masterproc) write(iulog,*)"computing MetaVertex..."
+          call initMetaGraph(iam,MetaVertex,GridVertex,GridEdge)
+          
+          nelemd = LocalElemCount(MetaVertex)
+          if(par%masterproc .and. Debug) call PrintMetaVertex(MetaVertex)
+          if(nelemd .le. 0) call abortmp('Not yet ready to handle nelemd = 0 yet' )
+          
+          allocate(elem(nelemd))
+          call allocate_element_desc(elem)
+          
+          ! ====================================================
+          !  Generate the communication schedule
+          ! ====================================================
+          if(par%masterproc) write(iulog,*)"computing Schedule..."
+          call genEdgeSched(elem,iam,Schedule(1),MetaVertex)
+          deallocate(GridEdge)
+          do j =1,nelem
+             call deallocate_gridvertex_nbrs(GridVertex(j))
+          end do
+          deallocate(GridVertex)
+          call deallocate_metavertex_data(MetaVertex)
+       endif ! active MPI task
+       
+       if (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method)) then
+          ! no barrier since zoltan algorithms are distributed
        else
-           call CubeTopology(GridEdge,GridVertex)
-           if (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method)) then
-              call getfixmeshcoordinates(GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
-           endif
-        end if
-
-       if(par%masterproc)       write(iulog,*)"...done."
-    end if
-    if(par%masterproc) write(iulog,*)"total number of elements nelem = ",nelem
-
-    !DBG if(par%masterproc) call PrintGridVertex(GridVertex)
-
-    call t_startf('PartitioningTime')
-
-    if(partmethod .eq. SFCURVE) then
-       if(par%masterproc) write(iulog,*)"partitioning graph using SF Curve..."
-       !if the partitioning method is space filling curves
-       call genspacepart(GridEdge,GridVertex)
-       if (is_zoltan_task_mapping(z2_map_method)) then
-          if(par%masterproc) write(iulog,*)"mapping graph using zoltan2 task mapping on the result of SF Curve..."
-        call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+          ! barrier forces sequency execution per MPI task on this node.
+          if (mod(task_id,task_id_stride)==0) call syncmp_comm(par%node_comm)  
        endif
-    !if zoltan2 partitioning method is asked to run.
-    elseif ( is_zoltan_partition(partmethod)) then
-        if(par%masterproc) write(iulog,*)"partitioning graph using zoltan2 partitioning/task mapping..."
-        call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
-    else
-        if(par%masterproc) write(iulog,*)"partitioning graph using Metis..."
-       call genmetispart(GridEdge,GridVertex)
-    endif
-
-    call t_stopf('PartitioningTime')
-
-    !call t_startf('PrintMetricTime')
-    !print partitioning and mapping metrics
-    !call printMetrics(GridEdge,GridVertex, par%comm)
-    !call t_stopf('PrintMetricTime')
-
-    ! ===========================================================
-    ! given partition, count number of local element descriptors
-    ! ===========================================================
-    allocate(Schedule(1))
-
-
-    ! ====================================================
-    !  Generate the communication graph
-    ! ====================================================
-    call initMetaGraph(iam,MetaVertex,GridVertex,GridEdge)
-
-    nelemd = LocalElemCount(MetaVertex)
-    if(par%masterproc .and. Debug) then 
-        call PrintMetaVertex(MetaVertex)
-    endif
-
-    if(nelemd .le. 0) then
-       call abortmp('Not yet ready to handle nelemd = 0 yet' )
-       stop
-    endif
-
-    allocate(elem(nelemd))
-    call allocate_element_desc(elem)
-
-    ! ====================================================
-    !  Generate the communication schedule
-    ! ====================================================
-    call genEdgeSched(elem,iam,Schedule(1),MetaVertex)
-    deallocate(GridEdge)
-    do j =1,nelem
-       call deallocate_gridvertex_nbrs(GridVertex(j))
-    end do
-    deallocate(GridVertex)
-    call deallocate_metavertex_data(MetaVertex)
-
-    endif ! active MPI task
-    if (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method)) then
-       ! no barrier since zoltan algorithms are distributed
-    else
-       ! barrier forces sequency execution per MPI task on this node.
-       call syncmp_comm(par%node_comm)  
-    endif
+       
     enddo  ! loop over all MPI tasks on this node
+    if(par%masterproc) write(iulog,*)"done with mesh setup..."
     call t_stopf('ScheduleTime')
-
+    
 
 #ifdef _MPI
     call mpi_allreduce(nelemd,nelemdmax,1,MPIinteger_t,MPI_MAX,par%comm,ierr)
