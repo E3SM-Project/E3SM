@@ -33,8 +33,7 @@ input_filename='OAFlux_MonthAvg_197901-201312.nc'
 input_hostANDfilename="".join([input_hostpath, input_filename])
 #output_hostpath='/work/terai1/ACME/GPCP/'    #!!! change directory to wherever you want to save processed data
 output_hostpath='/p/user_pub/e3sm/zhang40/analysis_data_e3sm_diags/OAFlux/time_series/'    #!!! change directory to wherever you want to save processed data
-output_filename='_197901_201312.nc'
-output_hostANDfilename="".join([output_hostpath, output_filename])
+output_filename='197901_201312.nc'
 
 #==============================================
 # Git has script location

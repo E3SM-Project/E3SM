@@ -38,7 +38,7 @@ input_filename='precip.mon.mean.nc'
 input_hostANDfilename="".join([input_hostpath, input_filename])
 #output_hostpath='/work/terai1/ACME/GPCP/'    #!!! change directory to wherever you want to save processed data
 output_hostpath='/p/user_pub/e3sm/zhang40/analysis_data_e3sm_diags/GPCP/time_series/'    #!!! change directory to wherever you want to save processed data
-output_filename='GPCP_v2.3_197901_201412.nc'
+output_filename='PRCET_197901_201412.nc'
 #==============================================
 # Git has script location
 #GIT_HASH = "~/ACME/PreAndPostProcessingScripts/utils/add_git_hash_to_netcdf_metadata "
