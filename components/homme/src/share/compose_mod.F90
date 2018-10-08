@@ -160,6 +160,7 @@ contains
     use gridgraph_mod, only : GridVertex_t
     use control_mod, only : semi_lagrange_cdr_alg, transport_alg, cubed_sphere_map, &
          semi_lagrange_nearest_point_lev
+
     integer, intent(in) :: comm
     type (element_t), intent(in) :: elem(:)
     type (GridVertex_t), intent(in), target :: GridVertex(:)
@@ -208,5 +209,16 @@ contains
        deallocate(nbr_id_rank, nirptr)
     end if
   end subroutine compose_init
+
+  subroutine compose_repro_sum(send, recv, nlocal, nfld, comm) bind(c)
+    use kinds, only: real_kind
+    use repro_sum_mod, only: repro_sum
+
+    real(kind=real_kind), intent(in) :: send(nlocal,nfld)
+    real(kind=real_kind), intent(out) :: recv(nfld)
+    integer, value, intent(in) :: nlocal, nfld, comm
+
+    call repro_sum(send, recv, nlocal, nlocal, nfld, commid=comm)
+  end subroutine compose_repro_sum
 
 end module compose_mod
