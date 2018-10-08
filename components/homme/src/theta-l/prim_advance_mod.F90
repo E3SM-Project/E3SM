@@ -390,23 +390,25 @@ contains
   integer,                intent(in)    :: nets,nete
   integer,                intent(in)    :: n0
   integer                               :: ie,k
-  real(kind=real_kind)                  :: ipressure(np,np), exner(np,np), p(np,np),&
-                                           dp(np,np), Rstar(np,np,nlev)
+  real(kind=real_kind)                  :: exner(np,np,nlev), dp(np,np,nlev), Rstar(np,np,nlev)
+  real (kind=real_kind)                 :: pnh(np,np,nlev)
+  real (kind=real_kind)                 :: dpnh_dp_i(np,np,nlevp)
 
+! one way to do this
   do ie=nets,nete
      !would it be better to have 2d array as input instead? or not?
      call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
 
-     ipressure = elem(ie)%state%ps_v(:,:,n0)
      do k=1,nlev
-        dp(:,:)=&
+        dp(:,:,k)=&
             ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
             ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(:,:,n0)
-        ipressure = ipressure + dp 
-        p(:,:) = ipressure - dp/2
+     enddo
+     call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,n0),dp,&
+         elem(ie)%state%phinh_i(:,:,:,n0),pnh,exner,dpnh_dp_i)
 
-        exner = (p(:,:)/p0)**kappa
-        elem(ie)%derived%FT(:,:,k)=elem(ie)%derived%FT(:,:,k)*Rstar(:,:,k)/Rgas*dp(:,:)/exner(:,:)
+     do k=1,nlev
+        elem(ie)%derived%FT(:,:,k)=elem(ie)%derived%FT(:,:,k)*Rstar(:,:,k)/Rgas*dp(:,:,k)/exner(:,:,k)
      enddo
   enddo
   end subroutine convert_thermo_forcing
