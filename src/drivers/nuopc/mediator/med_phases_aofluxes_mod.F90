@@ -1,9 +1,8 @@
 module med_phases_aofluxes_mod
 
-  use med_constants_mod , only : R8
-  use med_constants_mod , only : dbug_flag => med_constants_dbug_flag
-  use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
-  use med_internalstate_mod, only : mastertask
+  use med_constants_mod     , only : R8
+  use shr_nuopc_utils_mod   , only : shr_nuopc_memcheck
+  use med_internalstate_mod , only : mastertask
 
   implicit none
   private
@@ -122,9 +121,7 @@ contains
     character(len=*),parameter :: subname='(med_phases_aofluxes_init)'
     !---------------------------------------
 
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
 
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
@@ -206,10 +203,9 @@ contains
     character(len=*),parameter :: subname='(med_phases_aofluxes)'
     !---------------------------------------
 
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
+
     call shr_nuopc_memcheck(subname, 5, mastertask)
     ! Get the clock from the mediator Component
     call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
@@ -245,15 +241,21 @@ contains
             string=trim(compname(compatm))//'2'//trim(compname(compocn)), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBImp(compatm,compocn), &
+            string=trim(subname) //' FBImp('//trim(compname(compatm))//','//trim(compname(compocn))//') ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBImp(compocn,compocn), &
+            string=trim(subname) //' FBImp('//trim(compname(compocn))//','//trim(compname(compocn))//') ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
        ! Calculate atm/ocn fluxes on the destination grid
        call med_aofluxes_run(gcomp, aoflux, rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBMed_aoflux_o, &
-               string=trim(subname) //' FBAMed_aoflux_o' , rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBMed_aoflux_o, &
+            string=trim(subname) //' FBAMed_aoflux_o' , rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     else if (trim(aoflux_grid) == 'atm') then
 
@@ -267,21 +269,17 @@ contains
             string=trim(compname(compocn))//'2'//trim(compname(compatm)), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBImp(compocn,compatm), &
-               string=trim(subname) //' FBImp('//trim(compname(compocn))//','//trim(compname(compatm))//') ', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBImp(compocn,compatm), &
+            string=trim(subname) //' FBImp('//trim(compname(compocn))//','//trim(compname(compatm))//') ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        ! Calculate atm/ocn fluxes on the destination grid
        call med_aofluxes_run(gcomp, aoflux, rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBImp(compocn,compatm), &
-               string=trim(subname) //' FBImp('//trim(compname(compocn))//','//trim(compname(compatm))//') ', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBImp(compocn,compatm), &
+            string=trim(subname) //' FBImp('//trim(compname(compocn))//','//trim(compname(compatm))//') ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     else
 
@@ -346,10 +344,9 @@ contains
 
     !-----------------------------------------------------------------------
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
+
     call shr_nuopc_memcheck(subname, 5, mastertask)
     ! The following is for debugging
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
@@ -465,7 +462,7 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     else
        call ESMF_LogWrite(trim(subname)//" : calculating bottom level potential temperature &
-            - not obtained from atmosphere")
+            - not obtained from atmosphere", ESMF_LOGMSG_INFO, rc=rc)
        allocate(aoflux%thbot(lsize))
        aoflux%calc_thbot = .true.
     end if
@@ -475,7 +472,7 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     else
        call ESMF_LogWrite(trim(subname)//" : calculating bottom level density &
-            - not obtained from atmosphere")
+            - not obtained from atmosphere", ESMF_LOGMSG_INFO, rc=rc)
        allocate(aoflux%dens(lsize))
        aoflux%calc_dens = .true.
     end if
@@ -532,9 +529,7 @@ contains
     ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     ! where (ofrac(:) + ifrac(:) <= 0.0_R8) mask(:) = 0
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine med_aofluxes_init
 
@@ -646,20 +641,19 @@ contains
     write(tmpstr,'(i12,g22.12,i12)') lsize,sum(aoflux%rmask),sum(aoflux%mask)
     call ESMF_LogWrite(trim(subname)//" : maskB= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
+    !----------------------------------
+    ! Update atmosphere/ocean surface fluxes
+    !----------------------------------
+
     if (aoflux%calc_dens) then
-       do n = 1,lsize
+       do n = 1,size(aoflux%dens)
           if (aoflux%mask(n) /= 0) then
              aoflux%dens(n) = aoflux%pbot(n)/(287.058_R8*(1._R8+0.608_R8*aoflux%shum(n))*aoflux%tbot(n)) 
           end if
        end do
     end if
-
-    write(tmpstr,'(g22.12,g22.12)') sum(aoflux%dens),sum(aoflux%tocn)
-    call ESMF_LogWrite(trim(subname)//" : dens,tocn= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
-
-    !----------------------------------
-    ! Update atmosphere/ocean surface fluxes
-    !----------------------------------
+    write(tmpstr,'(g22.12,g22.12,g22.12)') sum(aoflux%dens), minval(aoflux%dens), maxval(aoflux%dens)
+    call ESMF_LogWrite(trim(subname)//" : dens (sum, min, max)= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
     do n = 1,lsize
        if (aoflux%mask(n) /= 0) then
@@ -667,7 +661,7 @@ contains
           if (aoflux%dens(n) < 1.0e-12 .or. aoflux%tocn(n) < 1.0) then
              aoflux%mask(n) = 0
           endif
-        !!aoflux%uGust(n) = 1.5_R8*sqrt(aoflux%uocn(n)**2 + aoflux%vocn(n)**2) ! there is no wind gust data from ocn
+          aoflux%uGust(n) = 1.5_R8*sqrt(aoflux%uocn(n)**2 + aoflux%vocn(n)**2) ! there is no wind gust data from ocn
           aoflux%uGust(n) = 0.0_R8
           aoflux%prec_gust(n) = aoflux%rainc(n)
           ! Note: swdn and swup are set in flux_ocnalb using data from previous timestep
@@ -685,21 +679,18 @@ contains
     write(tmpstr,'(3i12)') lsize,size(aoflux%mask),sum(aoflux%mask)
     call ESMF_LogWrite(trim(subname)//" : mask= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
+    write(tmpstr,'(g22.12,g22.12,g22.12)') sum(aoflux%tocn), minval(aoflux%tocn), maxval(aoflux%tocn)
+    call ESMF_LogWrite(trim(subname)//" : tocn (sum, min, max)= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
+
     if (aoflux%calc_thbot) then
-       do n = 1,lsize
+       do n = 1,size(aoflux%thbot)
           if (aoflux%mask(n) /= 0) then
              aoflux%thbot(n) = aoflux%tbot(n)*((100000._R8/aoflux%pbot(n))**0.286_R8)  
           end if
        end do
+       write(tmpstr,'(g22.12,g22.12,g22.12)') sum(aoflux%thbot), minval(aoflux%thbot), maxval(aoflux%thbot)
+       call ESMF_LogWrite(trim(subname)//" : thbot (sum, min, max)= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
     end if
-
-    do n = 1,lsize
-       write(6,*)'DEBUG: n, mask= ',n,aoflux%mask(n)
-       write(6,*)'DEBUG: n, uocn= ',n,aoflux%uocn(n)
-       write(6,*)'DEBUG: n, vocn= ',n,aoflux%vocn(n)
-       write(6,*)'DEBUG: n, ubot= ',n,aoflux%ubot(n)
-       write(6,*)'DEBUG: n, vbot= ',n,aoflux%vbot(n)
-    end do
 
     call shr_flux_atmocn (&
          lsize, aoflux%zbot, aoflux%ubot, aoflux%vbot, aoflux%thbot, aoflux%prec_gust, gust_fac, &

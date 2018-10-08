@@ -993,6 +993,7 @@
       Iterate atmocn flux calculation a max of this value
     </desc>
     <values>
+      <value cime_model='cesm' COMP_ATM="fv3gfs">2</value>
       <value cime_model='cesm'>5</value>
       <value cime_model='e3sm'>2</value>
     </values>

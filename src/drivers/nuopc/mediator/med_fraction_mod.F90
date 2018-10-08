@@ -800,6 +800,7 @@ contains
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'ofrac', ofrac, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             ofrac(:) = 1._r8 - ifrac(:)
 
              ! This is what is being used for CESM - but does not seem to work for NEMS - need to iron this out
              ! Why is ofrac in FBFrac(compice) being set to 0?
