@@ -753,9 +753,10 @@ contains
         do k=1,nlev
            p_i(:,:,k+1)=p_i(:,:,k) + elem(ie)%state%dp3d(:,:,k,nt)
         enddo
-#if (defined COLUMN_OPENMP)
-!$omp parallel do default(shared), private(k,k2)
-#endif
+        !call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,nt),&
+        !     elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%phinh_i(:,:,:,nt),&
+        !     pnh,exner,dpnh_dp_i)
+
         do k=1,nlev
            ! for w averaging, we didn't compute dissipation at surface, so just use one level
            k2=max(k,nlev)

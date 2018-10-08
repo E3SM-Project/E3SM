@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #SBATCH --job-name dcmip2016-1
-#SBATCH -N 128
+#SBATCH -N 43
 #SBATCH -C knl
 #SBATCH --time=0:30:00
 #SBATCH -q debug
@@ -34,6 +34,15 @@ fi
 NMPI=$NNODES
 let NMPI*=$PER_NODE
 
+
+
+# hydrostatic preqx
+EXEC=../../../test_execs/theta-l-nlev30/theta-l-nlev30
+
+
+function run { 
+local NMPI=$1
+
 echo NODES =            $NNODES
 echo NMPI_PER_NODE =    $PER_NODE
 echo NTHREADS_PER_MPI = $OMP_NUM_THREADS
@@ -41,13 +50,6 @@ mpirun="srun -n $NMPI -N $NNODES -c $VC_PER_MPI $bind"
 echo mpi commnand:
 echo $mpirun
 
-
-# hydrostatic preqx
-EXEC=../../../test_execs/theta-l-nlev30/theta-l-nlev30
-
-function run { 
-local NCPU=$1
-echo "NCPU = $NCPU"
 namelist=namelist-$prefix.nl
 \cp -f $namelist input.nl
 date
@@ -66,27 +68,27 @@ ncl plot-lat-lon-TPLSPS.ncl 'var_choice=3'
 \mv -f movies/dcmip2016_test11.nc    movies/${prefix}_dcmip2016_test11.nc
 }
 
-prefix=r400    ; run $(($NCPU>384?384:NCPU))
+prefix=r400    ; run $(($NMPI>384?384:NMPI))
 
-prefix=r100-dry; run $NCPU
-prefix=r100-h  ; run $NCPU
-prefix=r100    ; run $NCPU
+prefix=r100-dry; run $(($NMPI>5400?5400:NMPI))
+prefix=r100-h  ; run $(($NMPI>5400?5400:NMPI))
+prefix=r100    ; run $(($NMPI>5400?5400:NMPI))
 
-prefix=r50    ; run $NCPU
+prefix=r50    ; run $NMPI
 
 # high res cases
-#prefix=ne120  ; run $NCPU       
-#prefix=ne256  ; run $NCPU       
-#prefix=ne512  ; run $NCPU       
-#prefix=ne1024  ; run $NCPU      
+#prefix=ne120  ; run $NMPI       
+#prefix=ne256  ; run $NMPI       
+#prefix=ne512  ; run $NMPI       
+#prefix=ne1024  ; run $NMPI      
 
 # cori-KNL timings
 #  ne=120  25 nodes, 2h:  23s
 #  ne=256  25 nodes, 2h:  142s
 #  ne=512  64 nodes, 2h:  533s
 #  ne=1024  512 nodes, 270 timsteps:   596s + init 
-#      init time if run 16x8: 400s
-#      init time if run 64x2: 1400s
+#      init time if run 16x8: 133s
+#      init time if run 64x2: 600s
 #
 #
 #

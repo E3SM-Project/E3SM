@@ -227,30 +227,30 @@ contains
     !     compute GridVertex, GridEDge:  22s
     !     compute MetaVertex for 1 task:  8s
     !     compute Schedule for 1 task:    .1s
-    ! consider 36 MPI tasks per node.  some possible solutions:
-    !  1. serialize entire calcluation:  36x(22+8) = 1080s
-    !  2. root computes & bcasts MetaVertex:    22 + 36x8 = 310s
-    !  3. serialize, but allow 3 tasks to be active per node:  (36/3)*(22+8) = 360s
-    !  4. Compute MetaVertex offline
     !
-    ! we are using #3 for now.
+    ! in order to not run out of memory, only allow task_id_stride MPI tasks to be
+    ! active per node, and active tasks must deallocate GridVertex and GridEdge data
+    ! before the next tasks start
     ! ===============================================================
     call t_startf('MeshSetup')
     allocate(Schedule(1))
-    ! Tuned on Anvil (64GB/node).  for ne=1024, keep nelem*task_id_stide < 20M
-    ! if initialization time is too slow, and memory per node > 64GB, this can be increased
-    task_id_stride=max(20000000/nelem,1)
+    ! Anvil (64GB/node).  for ne=1024, keep nelem*task_id_stide < 20M
+    ! cori-KNL:  60M works.  80M OOM.  set default to 50M 
+    ! if OOM errors during initialization, decrease this number
+    ! if initialization time is too slow, and memory per node > 64GB, increase this number
+    task_id_stride=max(51000000/nelem,1)
     if (task_id_stride<par%node_nprocs) then
        if (par%masterproc) write(iulog,*) 'Serializing mesh setup to save memory.'
-       if (par%masterproc) write(iulog,*) 'active initialization tasks per node: ',task_id_stride
-       if (task_id_stride==1) then
-          if (par%masterproc) write(iulog,*) 'WARNING: may run out of memory during mesh setup'
-       endif
+       if (par%masterproc) write(iulog,*)&
+            'active initialization tasks per node: task_id_stride=',task_id_stride
+       if (par%masterproc) write(iulog,*) 'decrease task_id_stride if OOM errors during mesh setup'
     endif
 
     do task_id=1,par%node_nprocs  
-       if (par%masterproc) write(iulog,'(a,i3,a,i3)') &
-            "serializing mesh setup task_id=",task_id,"/",par%node_nprocs
+       if (task_id_stride<par%node_nprocs) then
+          if (par%masterproc) write(iulog,'(a,i3,a,i3)') &
+               "serializing mesh setup task_id=",task_id,"/",par%node_nprocs
+       endif
        if ( task_id == par%node_rank + 1 ) then
           call t_startf('Gridgraph')
           if (topology=="cube") then
