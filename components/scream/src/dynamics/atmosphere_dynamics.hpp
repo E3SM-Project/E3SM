@@ -39,13 +39,17 @@ public:
 
   // These two methods allow the driver to figure out what subcomponent need
   // a given field and what subcomponent updates a given field.
-  const std::list<std::string>&  get_required_fields () const { return m_input_fields;  }
-  const std::list<std::string>&  get_computed_fields () const { return m_output_fields; }
+  const std::list<std::shared_ptr<FieldHeader>>&  get_required_fields () const { return m_input_fields;  }
+  const std::list<std::shared_ptr<FieldHeader>>&  get_computed_fields () const { return m_output_fields; }
+
+  // Setting the field in the atmosphere process
+  void set_required_field (const Field<const Real*, ExecMemSpace, true>& /*f*/) { /* impl */ }
+  void set_computed_field (const Field<      Real*, ExecMemSpace, true>& /*f*/) { /* impl */ }
 
 protected:
 
-  std::list<std::string> m_input_fields;
-  std::list<std::string> m_output_fields;
+  std::list<std::shared_ptr<FieldHeader>> m_input_fields;
+  std::list<std::shared_ptr<FieldHeader>> m_output_fields;
 
   Comm      m_dynamics_comm;
 

@@ -33,16 +33,19 @@ public:
   void finalize ( /* inputs */ );
 
   // Providing a list of required and computed fields
-  const std::list<std::string>&  get_required_fields () const { return m_fields_to_import; }
-  const std::list<std::string>&  get_computed_fields () const { return m_fields_to_export; }
+  const std::list<std::shared_ptr<FieldHeader>>&  get_required_fields () const { return m_fields_to_import; }
+  const std::list<std::shared_ptr<FieldHeader>>&  get_computed_fields () const { return m_fields_to_export; }
+
+  // Setting the field in the atmosphere process
+  void set_required_field (const Field<const Real*, ExecMemSpace, true>& /*f*/) { /* impl */ }
+  void set_computed_field (const Field<      Real*, ExecMemSpace, true>& /*f*/) { /* impl */ }
 
 protected:
 
-  std::list<std::string> m_fields_to_export;
-  std::list<std::string> m_fields_to_import;
+  std::list<std::shared_ptr<FieldHeader>> m_fields_to_export;
+  std::list<std::shared_ptr<FieldHeader>> m_fields_to_import;
 
-  field_repo_type<ExecViewManaged<Real*>>   m_device_field_repo;
-  field_repo_type<HostViewManaged<Real*>>   m_host_field_repo;
+  field_repo_type<HostMemSpace>   m_host_field_repo;
 
   Comm    m_surface_coupling_comm;
 };

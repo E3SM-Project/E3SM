@@ -5,6 +5,8 @@
 #include <list>
 
 #include "share/mpi/scream_comm.hpp"
+#include "share/field_header.hpp"
+#include "share/field.hpp"
 
 namespace scream
 {
@@ -58,10 +60,23 @@ public:
   virtual void run        (/* what inputs? */) = 0;
   virtual void finalize   (/* what inputs? */) = 0;
 
+  // These methods set fields in the atm process. Fields live on device and they are all 1d.
+  // If the process *needs* to store the field as n-dimensional field, use the
+  // 'reshaping' templated "copy-constructor" of Field (see field.hpp for details).
+  // Otherwise, the process could store the 1d view, and reshape it when needed during
+  // the run phase.
+  // NOTE: this method is called by the driver, and feeds fields found in the field repo.
+  //       Therefore, it *should* be safe to even store unmanaged views to the underlying
+  //       kokkos view in the input field, since the field (and the field repo) should
+  //       outlive the atmosphere process.
+
+  virtual void set_required_field (const Field<const Real*, ExecMemSpace, true>& f) = 0;
+  virtual void set_computed_field (const Field<      Real*, ExecMemSpace, true>& f) = 0;
+
   // These two methods allow the driver to figure out what process need
   // a given field and what process updates a given field.
-  virtual const std::list<std::string>&  get_required_fields () const = 0;
-  virtual const std::list<std::string>&  get_computed_fields () const = 0;
+  virtual const std::list<std::shared_ptr<FieldHeader>>&  get_required_fields () const = 0;
+  virtual const std::list<std::shared_ptr<FieldHeader>>&  get_computed_fields () const = 0;
 };
 
 } // namespace scream
