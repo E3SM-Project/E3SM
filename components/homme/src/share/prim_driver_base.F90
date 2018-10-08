@@ -5,7 +5,7 @@
 ! 08/2016: O. Guba Inserting code for "espilon bubble" reference element map
 ! 03/2018: M. Taylor  fix memory leak
 ! 06/2018: O. Guba  code for new ftypes
-! 10/2018: M. Taylor  sequentialize domain decmposition and schedule setup
+! 10/2018: M. Taylor  serialize domain decmposition and schedule setup
 !
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -223,24 +223,25 @@ contains
     ! start domain decomposition
     ! non-scalable global arrays:  GridVertex, GridEdge
     ! OOM errors with 64 MPI tasks per node at ne512 on 96GB/node system
-    ! possible solutions:
-    ! 1. have only one MPI task per node compute MetaVertex for all other tasks
-    !    and then MPI_send data.  This is quite difficult because MetaVertex
-    !    contains nested tree of structs, including pointers to other structs that may
-    !    not exist on the receiving MPI task
-    ! 2. Have only one MPI task per node compute Schedule for all other tasks
-    !    Schedule is relatively easy to flatten and send via MPI
-    !    but genEdgeSched() would need to be split into two, a routine to compute Schedule
-    !    and a routine to initialize elem() data from Schedule
-    ! 3. hack for now: loop over MPI tasks per node and only allow "task_id_stride" 
-    !    to run at a time, deallocating global errays at the end of each loop
+    ! cost breakdown (Anvil, ne1024):   2x higher on KNL
+    !     compute GridVertex, GridEDge:  22s
+    !     compute MetaVertex for 1 task:  8s
+    !     compute Schedule for 1 task:    .1s
+    ! consider 36 MPI tasks per node.  some possible solutions:
+    !  1. serialize entire calcluation:  36x(22+8) = 1080s
+    !  2. root computes & bcasts MetaVertex:    22 + 36x8 = 310s
+    !  3. serialize, but allow 3 tasks to be active per node:  (36/3)*(22+8) = 360s
+    !  4. Compute MetaVertex offline
+    !
+    ! we are using #3 for now.
     ! ===============================================================
-    call t_startf('ScheduleTime')
+    call t_startf('MeshSetup')
+    allocate(Schedule(1))
     ! Tuned on Anvil (64GB/node).  for ne=1024, keep nelem*task_id_stide < 20M
     ! if initialization time is too slow, and memory per node > 64GB, this can be increased
     task_id_stride=max(20000000/nelem,1)
     if (task_id_stride<par%node_nprocs) then
-       if (par%masterproc) write(iulog,*) 'Sequentializing mesh setup to save memory.'
+       if (par%masterproc) write(iulog,*) 'Serializing mesh setup to save memory.'
        if (par%masterproc) write(iulog,*) 'active initialization tasks per node: ',task_id_stride
        if (task_id_stride==1) then
           if (par%masterproc) write(iulog,*) 'WARNING: may run out of memory during mesh setup'
@@ -249,8 +250,9 @@ contains
 
     do task_id=1,par%node_nprocs  
        if (par%masterproc) write(iulog,'(a,i3,a,i3)') &
-            "sequentialized mesh setup task_id=",task_id,"/",par%node_nprocs
+            "serializing mesh setup task_id=",task_id,"/",par%node_nprocs
        if ( task_id == par%node_rank + 1 ) then
+          call t_startf('Gridgraph')
           if (topology=="cube") then
              if (par%masterproc) write(iulog,*)"creating cube topology..."
              allocate(GridVertex(nelem))
@@ -270,13 +272,12 @@ contains
                 call getfixmeshcoordinates(GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
              endif
           end if
-          
+          call t_stopf('Gridgraph')          
           if(par%masterproc) write(iulog,*)"total number of elements nelem = ",nelem
           
           !DBG if(par%masterproc) call PrintGridVertex(GridVertex)
           
-          call t_startf('PartitioningTime')
-          
+          call t_startf('Partitioning')
           if(partmethod .eq. SFCURVE) then
              if(par%masterproc) write(iulog,*)"partitioning graph using SF Curve..."
              !if the partitioning method is space filling curves
@@ -294,21 +295,17 @@ contains
              call genmetispart(GridEdge,GridVertex)
           endif
           
-          call t_stopf('PartitioningTime')
+          call t_stopf('Partitioning')
           !call printMetrics(GridEdge,GridVertex, par%comm)
-          
-          
-          ! ===========================================================
-          ! given partition, count number of local element descriptors
-          ! ===========================================================
-          allocate(Schedule(1))
           
           
           ! ====================================================
           !  Generate the communication graph
           ! ====================================================
+          call t_startf('MetaGraph')
           if(par%masterproc) write(iulog,*)"computing MetaVertex..."
           call initMetaGraph(iam,MetaVertex,GridVertex,GridEdge)
+          call t_stopf('MetaGraph')
           
           nelemd = LocalElemCount(MetaVertex)
           if(par%masterproc .and. Debug) call PrintMetaVertex(MetaVertex)
@@ -321,25 +318,30 @@ contains
           !  Generate the communication schedule
           ! ====================================================
           if(par%masterproc) write(iulog,*)"computing Schedule..."
+          call t_startf('genedgesched')
           call genEdgeSched(elem,iam,Schedule(1),MetaVertex)
+          call t_stopf('genedgesched')
+
           deallocate(GridEdge)
           do j =1,nelem
              call deallocate_gridvertex_nbrs(GridVertex(j))
           end do
           deallocate(GridVertex)
           call deallocate_metavertex_data(MetaVertex)
+
+
        endif ! active MPI task
        
        if (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method)) then
           ! no barrier since zoltan algorithms are distributed
        else
-          ! barrier forces sequency execution per MPI task on this node.
+          ! barrier forces serial execution per MPI task on this node.
           if (mod(task_id,task_id_stride)==0) call syncmp_comm(par%node_comm)  
        endif
        
     enddo  ! loop over all MPI tasks on this node
     if(par%masterproc) write(iulog,*)"done with mesh setup..."
-    call t_stopf('ScheduleTime')
+    call t_stopf('MeshSetup')
     
 
 #ifdef _MPI
