@@ -1165,10 +1165,9 @@
       (*despite 'aux' instead of 'avg' in the name).
       Files are written at time-of-day = 00000, and at the end of the forecast,
       even if that time is not 00000.
-      The averaging period will depend on the forecast length.
-      Forecast length < 24 hour -> averaging period is the forecast length,
-      Forecast length >= 24 hour -> averaging period is 24 hours for files before the last (partial) day
-                                    averaging period is the last (partial) day for the last file.
+      Forecast length less than 24 hours; averaging period is the forecast length,
+      Otherwise; averaging period is 24 hours for files before the last (partial) day,
+                 averaging period is the last (partial) day for the last file.
       default: false
     </desc>
     <values>
