@@ -2,7 +2,7 @@
 ! preqx: namelist for dcmip2016 test1: moist baroclininc wave
 !_______________________________________________________________________
 &ctl_nl
-  nthreads          = 1
+  nthreads          = -1                        ! use OMP_NUM_THREADS
   partmethod        = 4                         ! mesh parition method: 4 = space filling curve
   topology          = "cube"                    ! mesh type: cubed sphere
   test_case         = "dcmip2016_test1"         ! test identifier
