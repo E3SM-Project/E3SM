@@ -84,6 +84,7 @@
 			<var name="indexToParticleID"/>
 			<var name="currentBlock"/>
 			<var name="currentCell"/>
+			<var name="currentCellGlobalID"/>
 			<var name="xParticle"/>
 			<var name="yParticle"/>
 			<var name="zParticle"/>
@@ -248,7 +249,10 @@
 			 description="current block a particle is on"
 		/>
 		<var name="currentCell" type="integer" dimensions="nParticles Time" units="unitless"
-			 description="current cell a particle is on"
+			 description="current local cell a particle is on"
+		/>
+		<var name="currentCellGlobalID" type="integer" dimensions="nParticles Time" units="unitless"
+			 description="current global cell a particle is on"
 		/>
 		<var name="indexToParticleID" type="integer" dimensions="nParticles" units="unitless"
 			 description="designates global ID for a particle"
