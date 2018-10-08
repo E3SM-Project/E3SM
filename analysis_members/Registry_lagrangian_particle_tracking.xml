@@ -88,6 +88,8 @@
 			<var name="xParticle"/>
 			<var name="yParticle"/>
 			<var name="zParticle"/>
+			<var name="lonParticle"/>
+			<var name="latParticle"/>
 			<var name="zLevelParticle"/>
 			<var name="xParticleReset"/>
 			<var name="yParticleReset"/>
@@ -265,6 +267,12 @@
 		/>
 		<var name="zParticle" type="real" dimensions="nParticles Time" units="m"
 			 description="z location of horizontal particle position"
+		/>
+		<var name="lonParticle" type="real" dimensions="nParticles Time" units="m"
+			 description="longitude location of horizontal particle position"
+		/>
+		<var name="latParticle" type="real" dimensions="nParticles Time" units="m"
+			 description="latitude location of horizontal particle position"
 		/>
 		<var name="zLevelParticle" type="real" dimensions="nParticles Time" units="m"
 			 description="z-level for vertical elevation of particle position"
