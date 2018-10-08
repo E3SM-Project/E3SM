@@ -27,7 +27,7 @@ for yr in {1870..2016}; do
         done
 done
 
-ncrcat HadISST2*nc HadISST_187001_201612.nc 
+ncrcat HadISST2*nc SST_187001_201612.nc 
 mv HadISST_187001_201612.nc $time_series_output_path
 ncclimo -a sdd --lnk_flg -c HadISST_PI_187001.nc -s 1870 -e 1900
 ncclimo -a sdd --lnk_flg -c HadISST_PD_187001.nc -s 1999 -e 2016
