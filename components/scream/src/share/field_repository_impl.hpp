@@ -40,4 +40,10 @@ void FieldRepository<MemSpace>::registration_complete () {
   m_registration_completed = true;
 }
 
+template<typename MemSpace>
+void FieldRepository<MemSpace>::clean_up() {
+  m_fields.clear();
+  m_registration_completed = false;
+}
+
 } // namespace scream
