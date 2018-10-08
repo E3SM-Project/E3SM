@@ -1462,7 +1462,7 @@ module ESM
        endif
        cnt=1
 
-       do ntask = rootpe, rootpe+ntasks*stride, stride
+       do ntask = rootpe, (rootpe+ntasks*stride)-1, stride
           petlist(cnt) = ntask
           cnt=cnt+1
        enddo
