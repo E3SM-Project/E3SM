@@ -14,9 +14,9 @@
 #cmakedefine SCREAM_PACK_SIZE ${SCREAM_PACK_SIZE}
 
 // Whether MPI errors should abort
-#cmakedefine01 SCREAM_MPI_ERRORS_ARE_FATAL
+#cmakedefine SCREAM_MPI_ERRORS_ARE_FATAL
 
 // Whether this is a CUDA build
-#cmakedefine01 CUDA_BUILD
+#cmakedefine CUDA_BUILD
 
 #endif // SCREAM_CONFIG_H
