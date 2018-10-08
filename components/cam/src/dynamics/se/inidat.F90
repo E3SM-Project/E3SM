@@ -34,7 +34,7 @@ contains
     use parallel_mod,     only: par
     use bndry_mod,     only: bndry_exchangev
     use constituents, only: cnst_name, cnst_read_iv, qmin
-    use dimensions_mod,     only: nelemd, nlev, np, npsq
+    use dimensions_mod,     only: nelemd, nlev, nlevp, np, npsq
     use dof_mod, only           : putUniquePoints
     use edge_mod, only : edgevpack, edgevunpack, InitEdgeBuffer, FreeEdgeBuffer
     use edgetype_mod, only : EdgeBuffer_t
