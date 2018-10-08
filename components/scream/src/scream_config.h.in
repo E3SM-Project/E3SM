@@ -16,4 +16,7 @@
 // Whether MPI errors should abort
 #cmakedefine01 SCREAM_MPI_ERRORS_ARE_FATAL
 
+// Whether this is a CUDA build
+#cmakedefine01 CUDA_BUILD
+
 #endif // SCREAM_CONFIG_H

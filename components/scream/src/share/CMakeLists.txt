@@ -1,6 +1,7 @@
 set(SHARE_SRC
   error_defs.cpp
   field_header.cpp
+  field_repository.cpp
   scream_session.cpp
   mpi/scream_comm.cpp
   util/scream_utils.cpp
@@ -14,6 +15,7 @@ set(SHARE_HEADERS
   field.hpp
   field_header.hpp
   field_repository.hpp
+  field_repository_impl.hpp
   field_tag.hpp
   scream_session.hpp
   mpi/scream_comm.hpp
