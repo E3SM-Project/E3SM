@@ -1,6 +1,53 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 10-8-2018
+Tag: cime_cesm2_1_rel_01
+Answer Changes: None
+Tests: scripts_regression_test
+Dependencies:
+
+Brief Summary:
+    - Update presaero and CO2 datasets for datm7 to new CMIP6 version.
+    - Better format for seq_flds_YYY_{fluxes,states} log messages.
+    - Attach the instance number to 'cpl' in cpl history file names.
+    - Fix inputdata issue for multi_instance cases.
+
+
+User interface changes: 
+    - Added clim_2010 option for DATM_PRESAERO
+      Added 20tr.latbnd option for DATM_CO2_TSERIES
+      GSWP3v1 and CRUNCEPv7 forcing sets appropriate years for compsets starting with 2010
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+88d9297 Merge pull request #2828 from ekluzek/newpresaero
+6568ded Merge pull request #2824 from kdraeder/kdr_seq_flds_log_msgs
+fcf60c8 Merge pull request #2782 from kdraeder/kdr_fix_cpl_hist_names
+6511798 Merge pull request #2823 from jedwards4b/multi_inst_check_input
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/Tools/archive_metadata
+M       scripts/create_newcase
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/nmlgen.py
+M       src/components/data_comps/datm/cime_config/buildnml
+M       src/components/data_comps/datm/cime_config/config_component.xml
+M       src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M       src/components/data_comps/desp/cime_config/buildnml
+M       src/components/data_comps/dice/cime_config/buildnml
+M       src/components/data_comps/dlnd/cime_config/buildnml
+M       src/components/data_comps/docn/cime_config/buildnml
+M       src/components/data_comps/drof/cime_config/buildnml
+M       src/components/data_comps/dwav/cime_config/buildnml
+M       src/drivers/mct/main/cime_comp_mod.F90
+M       src/drivers/mct/main/seq_hist_mod.F90
+M       src/drivers/mct/shr/seq_flds_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 10-2-2018
 Tag: cime_cesm2_0_rel_06
 Answer Changes: None
