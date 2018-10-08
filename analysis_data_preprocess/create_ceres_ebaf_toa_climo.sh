@@ -32,7 +32,7 @@ for i in "${arr[@]}"
                ncks -O -F -d time,${mth} ${time_series_output_path}ceres_ebaf_toa_time_series${yyyy}.nc ${time_series_output_path}ceres_ebaf_toa_${yyyy}${mm}.nc
             done
         done
-        ncrcat ${time_series_output_path}ceres_ebaf_toa_time_series${yyyy}.nc ${time_series_output_path}ceres_ebaf_toa_v${i}_${start_yr}_${end_yr}.nc
+        ncrcat ${time_series_output_path}ceres_ebaf_toa_time_series${yyyy}.nc ${time_series_output_path}ceres_ebaf_toa_v${i}_${start_yr}01_${end_yr}12.nc
         ncclimo -a sdd --lnk_flg -c ceres_ebaf_toa_${start_yr}01.nc -s $start_yr -e $end_yr -i ${time_series_output_path} -o ${climo_data_output_path}
         cd ${climo_data_output_path}
         for f in ceres_ebaf_toa_*.nc; do mv -v "$f" "${f/toa/toa_v$i}"; done;

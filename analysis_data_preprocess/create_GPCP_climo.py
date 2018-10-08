@@ -61,7 +61,7 @@ endmonth='12'     #end month of the dataset, typically 12
 #^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^
 
 #input_filename="OAFlux_MonthAvg_197901-201312.nc"                           #input file name
-input_filename= rootname+'_'+startyear+startmonth+'-'+endyear+endmonth+'.nc'
+input_filename= rootname+'_'+startyear+startmonth+'_'+endyear+endmonth+'.nc'
 
 input_hostANDfilename="".join([input_hostpath, input_filename])        #string of location+filename of input file
 print input_hostANDfilename

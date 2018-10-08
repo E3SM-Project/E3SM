@@ -34,7 +34,7 @@ do
            ncks -O -F -d time,${mth} ${time_series_output_path}ERA-Interim_yearly_${var}_${yyyy}.nc ${time_series_output_path}ERA-Interim_monthly_${var}_${yyyy}${mm}.nc
         done
     done
-    ncrcat ${time_series_output_path}ERA-Interim_yearly_${var}_${yyyy}.nc ${time_series_output_path}ERA-Interim_${var}_${start_yr}_${end_yr}.nc 
+    ncrcat ${time_series_output_path}ERA-Interim_yearly_${var}_${yyyy}.nc ${time_series_output_path}ERA-Interim_${var}_${start_yr}01_${end_yr}12.nc 
     ncclimo -a sdd --lnk_flg -c ERA-Interim_monthly_${var}_${start_yr}01.nc -s $start_yr -e $end_yr -i ${time_series_output_path} -o ${climo_output_path}
 rm ${time_series_output_path}*yearly*nc
 rm ${time_series_output_path}*monthly*nc

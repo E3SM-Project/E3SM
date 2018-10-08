@@ -22,24 +22,24 @@ do
     var=$(echo $file0 | cut -d'_' -f1)
     vars="$vars $var"
 
-#    for file1 in ${var}_*nc
-#    do
-#        echo $file1
-#        cdo splityear $file1 ${time_series_output_path}MERRA2_yearly_${var}_
-#    done
-#
-#    for yr in $(eval echo "{$start_yr..$end_yr}"); do
-#        echo "$yr"
-#        yyyy=`printf "%04d" $yr`
-#        for mth in {1..12}; do
-#            mm=`printf "%02d" $mth`
-#           ncks -O -F -d time,${mth} ${time_series_output_path}MERRA2_yearly_${var}_${yyyy}.nc ${time_series_output_path}MERRA2_monthly_${var}_${yyyy}${mm}.nc
-#        done
-#    done
-#    ncrcat ${time_series_output_path}MERRA2_yearly_${var}_${yyyy}.nc ${time_series_output_path}MERRA2_${var}_${start_yr}_${end_yr}.nc 
-#    ncclimo -a sdd --lnk_flg -c MERRA2_monthly_${var}_${start_yr}01.nc -s $start_yr -e $end_yr -i ${time_series_output_path} -o ${climo_output_path}
-#rm ${time_series_output_path}*yearly*nc
-#rm ${time_series_output_path}*monthly*nc
+    for file1 in ${var}_*nc
+    do
+        echo $file1
+        cdo splityear $file1 ${time_series_output_path}MERRA2_yearly_${var}_
+    done
+
+    for yr in $(eval echo "{$start_yr..$end_yr}"); do
+        echo "$yr"
+        yyyy=`printf "%04d" $yr`
+        for mth in {1..12}; do
+            mm=`printf "%02d" $mth`
+           ncks -O -F -d time,${mth} ${time_series_output_path}MERRA2_yearly_${var}_${yyyy}.nc ${time_series_output_path}MERRA2_monthly_${var}_${yyyy}${mm}.nc
+        done
+    done
+    ncrcat ${time_series_output_path}MERRA2_yearly_${var}_${yyyy}.nc ${time_series_output_path}MERRA2_${var}_${start_yr}01_${end_yr}12.nc 
+    ncclimo -a sdd --lnk_flg -c MERRA2_monthly_${var}_${start_yr}01.nc -s $start_yr -e $end_yr -i ${time_series_output_path} -o ${climo_output_path}
+rm ${time_series_output_path}*yearly*nc
+rm ${time_series_output_path}*monthly*nc
         
 
 done
