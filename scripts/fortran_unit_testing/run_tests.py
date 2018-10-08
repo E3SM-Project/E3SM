@@ -405,7 +405,7 @@ def _main():
             if ctest_args is not None:
                 ctest_command.extend(ctest_args.split(" "))
 
-            logging.info(ctest_command)
+            logging.info("Running '{}'".format(" ".join(ctest_command)))
             output = run_cmd_no_fail(" ".join(ctest_command), from_dir=label, combine_output=True)
             logging.info(output)
 
