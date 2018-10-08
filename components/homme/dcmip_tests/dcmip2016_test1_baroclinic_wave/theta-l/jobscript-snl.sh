@@ -13,18 +13,21 @@
 # 12 nodes, 10min for r400 an r100
 # 
 
-OMP_NUM_THREADS=1
+export OMP_NUM_THREADS=1
+export OMP_STACKSIZE=16M     #  Cori has 96GB per node. had to lower to 8M on 3K nodes
 NCPU=40
 if [ -n "$PBS_ENVIRONMENT" ]; then
 #  NCPU=$PBS_NNODES
   [ "$PBS_ENVIRONMENT" = "PBS_BATCH" ] && cd $PBS_O_WORKDIR 
   NCPU=$PBS_NNODES
+  let NCPU/=$OMP_NUM_THREADS
 fi
 if [ -n "$SLURM_NNODES" ]; then
     NCPU=$SLURM_NNODES
     let NCPU*=16
     let NCPU/=$OMP_NUM_THREADS
 fi
+let PPN=36/$OMP_NUM_THREADS
 
 # hydrostatic preqx
 EXEC=../../../test_execs/theta-l-nlev30/theta-l-nlev30
@@ -37,7 +40,7 @@ echo "NCPU = $NCPU"
 namelist=namelist-$prefix.nl
 \cp -f $namelist input.nl
 date
-mpirun -np $NCPU $EXEC < input.nl
+mpirun -bind-to=core -ppn $PPN -np $NCPU $EXEC < input.nl
 date
 
 ncl plot-baroclinicwave-init.ncl

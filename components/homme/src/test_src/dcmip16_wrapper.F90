@@ -21,7 +21,7 @@ use element_state,        only: nt=>timelevels
 use hybrid_mod,           only: hybrid_t
 use hybvcoord_mod,        only: hvcoord_t, set_layer_locations
 use kinds,                only: rl=>real_kind, iulog
-use parallel_mod,         only: abortmp
+use parallel_mod,         only: abortmp,iam
 use element_ops,          only: set_state, set_state_i, set_elem_state, get_state, tests_finalize,&
      set_forcing_rayleigh_friction, set_thermostate
 use physical_constants,   only: p0, g, Rgas, kappa, Cp, Rwater_vapor, pi=>dd_pi
@@ -333,9 +333,8 @@ subroutine dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
   real(rl) :: next_sample_time = 0.0
 
   time = time_at(tl%nstep)
-
   ! initialize output file
-  if(next_sample_time == 0.0) then
+  if(next_sample_time == 0.0 .and. hybrid%masterthread) then
     open(unit=10,file=w_filename,    form="formatted",status="UNKNOWN")
     close(10)
 
@@ -348,11 +347,13 @@ subroutine dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
     open(unit=12,file=ps_filename, form="formatted",status="UNKNOWN")
     close(13)
   endif
-
   ! append measurements at regular intervals
   if(time .ge. next_sample_time) then
-
+!$OMP BARRIER
+!$OMP MASTER
     next_sample_time = next_sample_time + sample_period
+!$OMP END MASTER
+!$OMP BARRIER
     pmax_w     = parallelMax(max_w,    hybrid)
     pmax_precl = parallelMax(max_precl,hybrid)
     pmin_ps    = parallelMin(min_ps,   hybrid)
