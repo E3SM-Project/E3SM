@@ -32,8 +32,6 @@ namespace control {
 class AtmosphereDriver
 {
 public:
-  template<typename VT>
-  using field_repo_type = FieldRepository<VT>;
 
   using atm_process_type = AtmosphereProcess;
 
@@ -59,7 +57,7 @@ protected:
 
   void create_atm_processes ();
 
-  field_repo_type<ExecViewManaged<Real*>>         m_device_field_repo;
+  FieldRepository<ExecMemSpace>         m_device_field_repo;
 
   std::list<std::shared_ptr<atm_process_type>>    m_atm_processes;
 
