@@ -59,9 +59,8 @@ class HOMME(SystemTestsCommon):
                 run_cmd_no_fail(cmake_cmd_strict, arg_stdout=os.path.join(exeroot, "homme.bldlog"), combine_output=True, from_dir=exeroot_strict)
 
                 run_cmd_no_fail("{} -j8".format(gmake), arg_stdout=os.path.join(exeroot, "homme.bldlog"), combine_output=True, from_dir=exeroot_fast)
-                post_build(self._case, [os.path.join(exeroot, "homme.bldlog")], build_complete=True)
-
                 run_cmd_no_fail("{} -j8".format(gmake), arg_stdout=os.path.join(exeroot, "homme.bldlog"), combine_output=True, from_dir=exeroot_strict)
+
                 post_build(self._case, [os.path.join(exeroot, "homme.bldlog")], build_complete=True)
             else:
                 cmake_cmd = "cmake -C {}/components/homme/cmake/machineFiles/{}.cmake -DUSE_NUM_PROCS={} {}/components/homme -DHOMME_BASELINE_DIR={}/{} -DCPRNC_DIR={}/..".format(srcroot, mach, procs, srcroot, baselinedir, basename, cprnc)
