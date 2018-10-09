@@ -3089,7 +3089,7 @@ contains
              if (do_hist_r2x) then
                 call t_drvstartf ('driver_rofpost_histaux', barrier=mpicom_CPLID)
                 ! Write coupler's hr2x file at 24 hour marks, 
-                ! and at the end of the forecast, even if that's not at a 24 hour mark.
+                ! and at the end of the run interval, even if that's not at a 24 hour mark.
                 write_hist_alarm = t24hr_alarm .or. stop_alarm
                 do eri = 1,num_inst_rof
                    inst_suffix =  component_get_suffix(rof(eri))
