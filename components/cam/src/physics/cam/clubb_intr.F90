@@ -31,7 +31,8 @@ module clubb_intr
 #ifdef FIVE
   use five_intr,     only: pver_five, pverp_five, &
 			   linear_interp, five_syncronize_e3sm, &
-			   masswgt_vert_avg, compute_five_grids
+			   masswgt_vert_avg, compute_five_grids, &
+			   compute_five_heights
 #endif
 
   implicit none
@@ -1561,7 +1562,7 @@ end subroutine clubb_init_cnst
    
 #ifdef FIVE
    ! Syncronize FIVE variables to E3SM state
-   call five_syncronize_e3sm(state1,dtime,pint_five,pmid_five,t_five,u_five,v_five,q_five) 
+   call five_syncronize_e3sm(state1,dtime,p0_clubb,pint_five,pmid_five,t_five,u_five,v_five,q_five) 
 #endif   
 
    !  At each CLUBB call, initialize mean momentum  and thermo CLUBB state 
@@ -1769,18 +1770,18 @@ end subroutine clubb_init_cnst
       ! instead of doing interpolation.       
 #ifdef FIVE  
 
-      do k=1,pver_clubb
-        p_in_Pa(k) = pmid_five(i,k)
-      enddo 
-
-      ! Compute the Exner values to that using FIVE pressure levels
-      do k=1,pver_five
-        exner_five(k) = 1._r8/(pmid_five(i,k)/p0_clubb)**(rair/cpair)
-      enddo
-      
       ! Compute pdel on five grid
       do k=1,pver_five
         pdel_five(k) = pint_five(i,k+1)-pint_five(i,k)
+      enddo
+
+      do k=1,pver_clubb
+        p_in_Pa(k) = pmid_five(i,k)
+      enddo 
+      
+      ! Compute the Exner values to that using FIVE pressure levels
+      do k=1,pver_five
+        exner_five(k) = 1._r8/(pmid_five(i,k)/p0_clubb)**(rair/cpair)
       enddo
       
       ! Define virtual temperature
@@ -1789,19 +1790,12 @@ end subroutine clubb_init_cnst
 	thv_five(k) = exner_five(k)*tv_five(k)
       enddo
       
-      ! First compute the heights (in [m]) on the FIVE grid
-      ! Do this in a consistent manner how it is done in geopotential.F90
-      
-      zi_g(pverp_clubb) = 0.0_r8 ! Surface always zero by definition
-      do k = pver_clubb, 1, -1
-      
-        hkl = pdel_five(k)/pmid_five(i,k)
-	hkk = 0.5_r8 * hkl
-	
-	zt_g(k) = zi_g(k+1) + (rair/gravit)*tv_five(k)*hkk
-	zi_g(k) = zi_g(k+1) + (rair/gravit)*tv_five(k)*hkl
-      
-      enddo
+      ! Compute heights on the FIVE grid
+      call compute_five_heights(&
+             pmid_five(i,:),pint_five(i,:),t_five(i,:),&
+	     q_five(i,:,ixq),q_five(i,:,ixcldliq),&
+	     pdel_five,pver_five,p0_clubb,&
+	     zt_g(1:pver),zi_g)
       
       !  Thermodynamic ghost point for CLUBB is below surface 
       zt_g(pverp_clubb) = -1._r8*zt_g(pver_clubb)

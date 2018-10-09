@@ -8,7 +8,7 @@ module five_intr
   use physics_types, only: physics_state
   use physics_buffer, only: physics_buffer_desc
   use constituents, only: pcnst
-  use physconst, only: rair, gravit
+  use physconst, only: rair, gravit, cpair, zvir
   use cam_logfile, only: iulog
 
   implicit none
@@ -259,7 +259,7 @@ module five_intr
   ! ======================================== !  
   
   subroutine five_syncronize_e3sm(&
-                state, dtime, &
+                state, dtime, p0, &
 		pint_five,pmid_five, &
 		t_five, u_five, v_five, q_five)
 
@@ -282,6 +282,7 @@ module five_intr
     ! Input/Output variables		
     type(physics_state), intent(in) :: state
     real(r8), intent(in) :: dtime
+    real(r8), intent(in) :: p0 ! reference pressure
     real(r8), intent(in) :: pmid_five(pcols,pver_five)
     real(r8), intent(in) :: pint_five(pcols,pverp_five)
     real(r8), intent(inout) :: t_five(pcols,pver_five)
@@ -314,6 +315,8 @@ module five_intr
     real(r8) :: rho_five(pcols,pver_five)    
     
     real(r8) :: pdel_five(pcols,pver_five)
+    real(r8) :: zm_five(pcols,pver_five)
+    real(r8) :: zi_five(pcols,pverp_five)
         
     ncol = state%ncol
   
@@ -330,6 +333,12 @@ module five_intr
              dz_e3sm(i,:),rho_e3sm(i,:))
       call compute_five_grids(t_five(i,:),pdel_five(i,:),pmid_five(i,:),pver_five,&
              dz_five(i,:),rho_five(i,:))
+    enddo
+    
+    do i=1,ncol
+      call compute_five_heights(pmid_five(i,:),pint_five(i,:),t_five(i,:),&
+             q_five(i,:,1),q_five(i,:,2),pdel_five(i,:),pver_five,p0,&
+	     zm_five(i,:),zi_five(i,:))
     enddo
   
     ! First compute a mass weighted average of the five variables onto the 
@@ -377,6 +386,9 @@ module five_intr
     ! Now interpolate this tendency to the higher resolution FIVE grid 
     !  TASK: interpolation scheme needs to be updated  
     do i=1,ncol
+    
+!      call tendency_low_to_high(state%zm(i,:),state%zi(i,:),   
+    
       call linear_interp(state%pmid(i,:),pmid_five,t_five_tend_low(i,1:pver),&
                       t_five_tend(i,1:pver_five),pver,pver_five)
       call linear_interp(state%pmid(i,:),pmid_five,u_five_tend_low(i,1:pver),&
@@ -442,6 +454,67 @@ module five_intr
     return
 	       
   end subroutine compute_five_grids	 
+  
+  ! ======================================== !
+  !                                          !
+  ! ======================================== ! 
+  
+  subroutine compute_five_heights(&
+               pmid, pint, t, qv, ql, &
+	       pdel, nlev, p0, &
+	       zm, zi)
+	       
+    implicit none
+    
+    ! Input variables
+    real(r8), intent(in) :: pmid(nlev)	 
+    real(r8), intent(in) :: pint(nlev+1)
+    real(r8), intent(in) :: t(nlev)
+    real(r8), intent(in) :: qv(nlev)
+    real(r8), intent(in) :: ql(nlev)
+    real(r8), intent(in) :: pdel(nlev)
+    real(r8), intent(in) :: p0
+    
+    integer, intent(in) :: nlev 
+    
+    ! Output variables
+    real(r8), intent(out) :: zm(nlev)
+    real(r8), intent(out) :: zi(nlev+1)
+
+    ! Local variables
+    real(r8) :: exner(nlev), tv(nlev), thv(nlev)
+    real(r8) :: hkl, hkk
+    
+    integer :: i, k
+    
+    ! Compute the Exner values using pressure
+    do k=1,nlev
+      exner(k) = 1._r8/(pmid(k)/p0)**(rair/cpair)
+    enddo   
+    
+    ! Define virtual temperature
+    do k=1,pver_five
+      tv(k) = t(k)*(1._r8+zvir*qv(k)-ql(k)) 
+      thv(k) = exner(k)*tv(k)
+    enddo 
+    
+    ! First compute the heights (in [m]) on the FIVE grid
+    ! Do this in a consistent manner how it is done in geopotential.F90
+      
+    zi(nlev+1) = 0.0_r8 ! Surface always zero by definition
+    do k = nlev, 1, -1
+      
+      hkl = pdel(k)/pmid(k)
+      hkk = 0.5_r8 * hkl
+	
+      zm(k) = zi(k+1) + (rair/gravit)*tv(k)*hkk
+      zi(k) = zi(k+1) + (rair/gravit)*tv(k)*hkl
+      
+    enddo 
+  
+    return
+  
+  end subroutine compute_five_heights
   
   ! ======================================== !
   !                                          !
