@@ -126,11 +126,11 @@ class HOMME(SystemTestsCommon):
                     shutil.copytree(os.path.join(exeroot_fast, "tests", "baseline"), full_baseline_dir)
 
             elif compare:
-                stat = run_cmd("ctest -E 'cxx|limiters_ut|remap_ut|sphere_op_ut'", arg_stdout=log, combine_output=True, from_dir=exeroot)[0]
+                stat = run_cmd("{} -j 4 check".format(gmake), arg_stdout=log, combine_output=True, from_dir=exeroot)[0]
 
             else:
                 stat = run_cmd("{} -j 4 baseline".format(gmake), arg_stdout=log, combine_output=True, from_dir=exeroot)[0]
-                stat = run_cmd("ctest -E 'cxx|limiters_ut|remap_ut|sphere_op_ut'", arg_stdout=log, combine_output=True, from_dir=exeroot)[0]
+                stat = run_cmd("{} -j 4 check".format(gmake), arg_stdout=log, combine_output=True, from_dir=exeroot)[0]
 
         # Add homme.log output to TestStatus.log so that it can
         # appear on the dashboard. Otherwise, the TestStatus.log
