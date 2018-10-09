@@ -8,43 +8,25 @@ SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR     ${HOMME_SOURCE_DIR}/src/share)
 SET(TEST_SRC_DIR      ${HOMME_SOURCE_DIR}/src/test_src)
 SET(UTILS_TIMING_DIR  ${CMAKE_BINARY_DIR}/utils/cime/src/share/timing)
+SET(ARKODE_DIR        ${HOMME_SOURCE_DIR}/src/arkode)
 
 # Make INCLUDE_DIRS global so the tests can access it
 SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS} ${UTILS_TIMING_DIR} )
 
 # Find F90 files in share and test directories
-FILE(GLOB SHARE_TEST_F90 ${SRC_SHARE_DIR}/*.F90 ${TEST_SRC_DIR}/*.F90)
-
-SET(TARGET_F90
-  ${TARGET_DIR}/bndry_mod.F90
-  ${TARGET_DIR}/derivative_mod.F90
-  ${TARGET_DIR}/edge_mod.F90
-  ${TARGET_DIR}/element_ops.F90
-  ${TARGET_DIR}/element_state.F90
-  ${TARGET_DIR}/eos.F90
-  ${TARGET_DIR}/model_init_mod.F90
-  ${TARGET_DIR}/prim_advance_mod.F90
-  ${TARGET_DIR}/prim_advection_mod.F90
-  ${TARGET_DIR}/prim_driver_mod.F90
-  ${TARGET_DIR}/prim_state_mod.F90
-  ${TARGET_DIR}/vertremap_mod.F90
-  ${TARGET_DIR}/viscosity_mod.F90
-  ${TARGET_DIR}/viscosity_theta.F90
-)
+FILE(GLOB TARGET_F90 ${TARGET_DIR}/*.F90 ${SRC_SHARE_DIR}/*.F90 ${TEST_SRC_DIR}/*.F90)
 
 IF (HOMME_USE_ARKODE)
   SET(TARGET_F90
     ${TARGET_F90}
-    ${TARGET_DIR}/arkode_interface.F90
-    ${TARGET_DIR}/arkode_mod.F90
-    ${TARGET_DIR}/homme_nvector.F90
+    ${ARKODE_DIR}/theta-l/arkode_interface.F90
+    ${ARKODE_DIR}/theta-l/arkode_mod.F90
+    ${ARKODE_DIR}/theta-l/homme_nvector.F90
   )
 ENDIF ()
-    
 
 SET(THETAL_SRCS_F90
   ${TARGET_F90}
-  ${SHARE_TEST_F90}
   ${SRC_DIR}/checksum_mod.F90
   ${SRC_DIR}/common_io_mod.F90
   ${SRC_DIR}/common_movie_mod.F90
@@ -70,10 +52,10 @@ SET(THETAL_SRCS_F90
 
 IF (HOMME_USE_ARKODE)
   SET(THETAL_SRCS_C
-    ${SRC_DIR}/nvector_external.h
-    ${SRC_DIR}/nvector_external.c
-    ${SRC_DIR}/column_linsol.h
-    ${SRC_DIR}/column_linsol.c
+    ${ARKODE_DIR}/nvector_external.h
+    ${ARKODE_DIR}/nvector_external.c
+    ${ARKODE_DIR}/column_linsol.h
+    ${ARKODE_DIR}/column_linsol.c
   )
 ENDIF ()
 
