@@ -823,9 +823,10 @@ contains
       type(ESMF_GeomType_Flag)      :: geomtype
       character(ESMF_MAXSTR),allocatable :: fieldNameList(:)
       type(ESMF_FieldStatus_Flag)   :: fieldStatus
+      integer                       :: dbrc
+      character(len=CX)             :: msgString
       character(len=*),parameter :: subname='(module_MEDIATOR:realizeConnectedGrid)'
-      integer :: dbrc
-      character(len=CX):: msgString
+
 
       !NOTE: All of the Fields that set their TransferOfferGeomObject Attribute
       !NOTE: to "cannot provide" should now have the accepted Grid available.
@@ -851,8 +852,11 @@ contains
       call ESMF_GridCompGet(gcomp, petCount=petCount, rc=rc)
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-      !     do n=1, fieldCount
-      do n=1, min(fieldCount,1)
+      ! do not loop here, assuming that all fields share the
+      ! same grid/mesh and because it is more efficient - if
+      ! a component has fields on multiple grids/meshes, this
+      ! would need to be revisited
+      do n=1, min(fieldCount, 1)
 
          call ESMF_StateGet(State, field=field, itemName=fieldNameList(n), rc=rc)
          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -860,18 +864,25 @@ contains
          call ESMF_FieldGet(field, status=fieldStatus, rc=rc)
          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+         !call NUOPC_GetAttribute(field, name="TransferActionGeomObject", &
+         !     value=transferAction, rc=rc)
+         !if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
          if (fieldStatus==ESMF_FIELDSTATUS_GRIDSET) then
 
-            ! while this is still an empty field, it does now hold a Grid with DistGrid
+            ! The Mediator is accepting a Grid/Mesh passed to it
+            ! through the Connector
+
+            ! While this is still an empty field, it does now hold a Grid/Mesh with DistGrid
             call ESMF_FieldGet(field, geomtype=geomtype, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
             if (geomtype == ESMF_GEOMTYPE_GRID) then
 
-               if (dbug_flag > 1) then
-                  call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n))//'_orig',rc)
-                  if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-               end if
+               !if (dbug_flag > 1) then
+               !   call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n))//'_orig',rc)
+               !   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+               !end if
 
                call ESMF_AttributeGet(field, name="ArbDimCount", value=arbDimCount, &
                     convention="NUOPC", purpose="Instance", rc=rc)
@@ -1099,10 +1110,10 @@ contains
                        ESMF_LOGMSG_INFO, rc=dbrc)
                end if
 
-!               if (dbug_flag > 1) then
-!                  call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n))//'_orig',rc)
-!                  if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-!               end if
+               if (dbug_flag > 1) then
+                  call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n))//'_orig',rc)
+                  if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+               end if
 
                call ESMF_FieldGet(field, mesh=mesh, rc=rc)
                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1142,16 +1153,42 @@ contains
                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
                ! Create a new Grid on the new DistGrid and swap it in the Field
-               newmesh = ESMF_MeshCreate(mesh, nodalDistGrid=distgrid, &
-                    elementDistGrid=distgrid, rc=rc)
-               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-               call ESMF_FieldEmptySet(field, mesh=newmesh, rc=rc)
+               newmesh = ESMF_MeshCreate(distgrid, distgrid, rc=rc)
                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
                ! local clean-up
                deallocate(minIndexPTile, maxIndexPTile, regDecompPTile)
 
+               ! need to check whether to destroy the original mesh?
+               ! call ESMF_MeshDestroy(mesh, rc=rc)
+
+               ! Swap all the Meshes in the State
+
+               ! do n1=n,n
+               do n1=1, fieldCount
+                  ! access a field in the State and set the Mesh
+                  call ESMF_StateGet(State, field=field, itemName=fieldNameList(n1), rc=rc)
+                  if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+                  call ESMF_FieldGet(field, status=fieldStatus, rc=rc)
+                  if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+                  if (fieldStatus==ESMF_FIELDSTATUS_EMPTY) then
+                     call ESMF_FieldEmptySet(field, mesh=newmesh, rc=rc)
+                     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                  endif
+
+                  if (dbug_flag > 1) then
+                     call ESMF_LogWrite(trim(subname)//trim(string)//": attach mesh for "//trim(fieldNameList(n1)), &
+                          ESMF_LOGMSG_INFO, rc=rc)
+                     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                  endif
+
+                  if (dbug_flag > 1) then
+                     call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n1))//'_new',rc)
+                     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                  end if
+               enddo
 
             else  ! geomtype
 
