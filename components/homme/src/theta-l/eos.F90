@@ -18,7 +18,7 @@
 !
 module eos
 
-  use dimensions_mod, only: np, nlev, nlevp, nelemd
+  use dimensions_mod, only: np, nlev, nlevp
   use element_mod,    only: element_t
   use element_state,  only: timelevels, elem_state_t
   use hybvcoord_mod,  only: hvcoord_t

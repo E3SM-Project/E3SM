@@ -17,7 +17,7 @@ module prim_advance_mod
   use derivative_mod,     only: derivative_t, divergence_sphere, gradient_sphere, laplace_sphere_wk,&
     laplace_z, vorticity_sphere, vlaplace_sphere_wk 
   use derivative_mod,     only: subcell_div_fluxes, subcell_dss_fluxes
-  use dimensions_mod,     only: max_corner_elem, nelemd, nlev, nlevp, np, qsize
+  use dimensions_mod,     only: max_corner_elem, nlev, nlevp, np, qsize
   use edge_mod,           only: edge_g, edgevpack_nlyr, edgevunpack_nlyr
   use edgetype_mod,       only: EdgeBuffer_t,  EdgeDescriptor_t, edgedescriptor_t
   use element_mod,        only: element_t
@@ -1039,8 +1039,6 @@ contains
   real (kind=real_kind) ::  v1,v2,w,d_eta_dot_dpdn_dn
   integer :: i,j,k,kptr,ie, nlyr_tot
 
-
-  real (kind=real_kind) ::  wtemp(np,np,nelemd)
 
   call t_startf('compute_andor_apply_rhs')
 

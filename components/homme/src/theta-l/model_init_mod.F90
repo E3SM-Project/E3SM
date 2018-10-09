@@ -17,7 +17,7 @@ module model_init_mod
   use derivative_mod,     only: derivative_t,gradient_sphere
   use hybvcoord_mod, 	  only: hvcoord_t
   use hybrid_mod,         only: hybrid_t
-  use dimensions_mod,     only: np,nlev,nlevp,nelemd
+  use dimensions_mod,     only: np,nlev,nlevp
   use eos          ,      only: get_pnh_and_exner,get_dirk_jacobian
   use element_state,      only: timelevels, nu_scale_top
   use viscosity_mod,      only: make_c0_vector
@@ -41,7 +41,7 @@ contains
 
     ! local variables
     integer :: ie,t,k
-    real (kind=real_kind) :: gradtemp(np,np,2,nelemd)
+    real (kind=real_kind) :: gradtemp(np,np,2,nets:nete)
     real (kind=real_kind) :: ptop_over_press
 
 

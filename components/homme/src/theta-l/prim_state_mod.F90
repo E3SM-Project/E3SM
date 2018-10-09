@@ -5,7 +5,7 @@
 module prim_state_mod
 
   use kinds,            only: real_kind, iulog
-  use dimensions_mod,   only: nlev, np, qsize_d, qsize, nelemd, nlevp
+  use dimensions_mod,   only: nlev, np, qsize_d, qsize, nlevp
   use parallel_mod,     only:  iam, ordered, parallel_t, syncmp
   use parallel_mod,     only: global_shared_buf, global_shared_sum
   use global_norms_mod, only: wrap_repro_sum
