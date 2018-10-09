@@ -711,9 +711,9 @@ subroutine ieflx_gmean(state, tend, pbuf2d, cam_in, cam_out, nstep)
 !DIR$ CONCURRENT
     do lchnk = begchunk, endchunk
 
-       ieflx(:ncol) = ieflx_glob
+       ieflx = ieflx_glob
 
-       call outfld('IEFLX', ieflx(:ncol), pcols, lchnk)
+       call outfld('IEFLX', ieflx, pcols, lchnk)
 
     end do
 

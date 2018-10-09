@@ -20,6 +20,7 @@ module inidat
   use spmd_utils,   only: iam, masterproc
   use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random
   use random_xgc, only: init_ranx, ranx
+  use scamMod, only: single_column, precip_off, scmlat, scmlon
   implicit none
   private
   public read_inidat
@@ -33,13 +34,13 @@ contains
     use parallel_mod,     only: par
     use bndry_mod,     only: bndry_exchangev
     use constituents, only: cnst_name, cnst_read_iv, qmin
-    use dimensions_mod,     only: nelemd, nlev, np, npsq
+    use dimensions_mod,     only: nelemd, nlev, nlevp, np, npsq
     use dof_mod, only           : putUniquePoints
     use edge_mod, only : edgevpack, edgevunpack, InitEdgeBuffer, FreeEdgeBuffer
     use edgetype_mod, only : EdgeBuffer_t
     use ncdio_atm, only : infld
     use shr_vmath_mod, only: shr_vmath_log
-    use hycoef,           only: ps0
+    use hycoef,           only: ps0, hyam, hybm
     use cam_abortutils,     only: endrun
     use pio, only : file_desc_t, io_desc_t, pio_double, pio_get_local_array_size, pio_freedecomp
     use dyn_grid, only : get_horiz_grid_dim_d, dyn_decomp
@@ -57,16 +58,21 @@ contains
     use cam_history_support, only: max_fieldname_len
     use cam_grid_support,    only: cam_grid_get_local_size, cam_grid_get_gcid
     use cam_map_utils,       only: iMap
+    use shr_const_mod,       only: SHR_CONST_PI
+    use scamMod,             only: setiopupdate, readiopdata
+    use se_single_column_mod, only: scm_setinitial
     implicit none
     type(file_desc_t),intent(inout) :: ncid_ini, ncid_topo
     type (dyn_import_t), target, intent(inout) :: dyn_in   ! dynamics import
 
+    real(r8), parameter :: rad2deg = 180.0 / SHR_CONST_PI
     type(element_t), pointer :: elem(:)
     real(r8), allocatable :: tmp(:,:,:)    ! (npsp,nlev,nelemd)
     real(r8), allocatable :: qtmp(:,:)     ! (npsp*nelemd,nlev)
     logical,  allocatable :: tmpmask(:,:)  ! (npsp,nlev,nelemd) unique grid val
     real(r8)              :: temptmp(np,np,nlev)  ! (npsp,nlev,nelemd) unique grid val
     integer :: ie, k, t
+    integer :: indx_scm, ie_scm, i_scm, j_scm
     character(len=max_fieldname_len) :: fieldname
     logical :: found
     integer :: kptr, m_cnst
@@ -86,10 +92,11 @@ contains
     real(r8), parameter :: D0_5 = 0.5_r8
     real(r8), parameter :: D1_0 = 1.0_r8
     real(r8), parameter :: D2_0 = 2.0_r8
+    real(r8) :: scmposlon, minpoint, testlat, testlon, testval 
     character*16 :: subname='READ_INIDAT'
+    logical :: iop_update_surface
 
     integer :: tl
-
     tl = 1
 
     if(par%dynproc) then
@@ -114,6 +121,44 @@ contains
       end if
     end if
 
+!   Determine column closest to SCM point
+    if (single_column) then
+      if (scmlon .lt. 0._r8) then
+        scmposlon=scmlon+360._r8
+      else
+        scmposlon=scmlon
+      endif 
+      minpoint=10000.0_r8
+      ie_scm=0
+      i_scm=0
+      j_scm=0
+      indx_scm=0
+      do ie=1, nelemd
+        indx=1
+        do j=1, np
+          do i=1, np
+            testlat=elem(ie)%spherep(i,j)%lat * rad2deg
+            testlon=elem(ie)%spherep(i,j)%lon * rad2deg
+            if (testlon .lt. 0._r8) testlon=testlon+360._r8
+            testval=abs(scmlat-testlat)+abs(scmposlon-testlon)
+            if (testval .lt. minpoint) then
+              ie_scm=ie
+              indx_scm=indx
+              i_scm=i
+              j_scm=j
+              minpoint=testval
+            endif 
+            indx=indx+1                   
+          enddo
+        enddo
+      enddo
+      
+      if (ie_scm == 0 .or. i_scm == 0 .or. j_scm == 0 .or. indx_scm == 0) then
+        call endrun('Could not find closest SCM point on input datafile')
+      endif
+
+    endif
+
     fieldname = 'U'
     tmp = 0.0_r8
     call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
@@ -128,6 +173,7 @@ contains
        do j = 1, np
           do i = 1, np
              elem(ie)%state%v(i,j,1,:,tl) = tmp(indx,:,ie)
+             if (single_column) elem(ie)%state%v(i,j,1,:,1)=tmp(indx_scm,:,ie_scm)
              indx = indx + 1
           end do
        end do
@@ -146,6 +192,7 @@ contains
        do j = 1, np
           do i = 1, np
              elem(ie)%state%v(i,j,2,:,tl) = tmp(indx,:,ie)
+             if (single_column) elem(ie)%state%v(i,j,2,:,1) = tmp(indx_scm,:,ie_scm)
              indx = indx + 1
           end do
        end do
@@ -166,6 +213,7 @@ contains
        do j = 1, np
           do i = 1, np
              elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
+             if (single_column) elem(ie)%state%T(i,j,:,1) = tmp(indx_scm,:,ie_scm)
              indx = indx + 1
           end do
        end do
@@ -237,9 +285,19 @@ contains
     do m_cnst=1,pcnst
        found = .false.
        if(cnst_read_iv(m_cnst)) then
-          tmp = 0.0_r8
-          call infld(cnst_name(m_cnst), ncid_ini, 'ncol', 'lev',      &
-               1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+
+        ! If precip processes are turned off, do not initialize the field	
+          if (precip_off .and. (cnst_name(m_cnst) .eq. 'RAINQM' .or. cnst_name(m_cnst) .eq. 'SNOWQM' &
+            .or. cnst_name(m_cnst) .eq. 'NUMRAI' .or. cnst_name(m_cnst) .eq. 'NUMSNO')) then	    
+	    found = .false.
+	    
+	  else
+	    
+	    tmp = 0.0_r8
+            call infld(cnst_name(m_cnst), ncid_ini, 'ncol', 'lev',      &
+                 1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+	    
+	  endif
        end if
        if(.not. found) then
 
@@ -317,6 +375,7 @@ contains
           do j = 1, np
              do i = 1, np
                 elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx,:,ie)
+                if (single_column) elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx_scm,:,ie_scm)
                 indx = indx + 1
              end do
           end do
@@ -351,6 +410,7 @@ contains
           do j = 1, np
              do i = 1, np
                 elem(ie)%state%ps_v(i,j,tl) = tmp(indx,1,ie)
+                if (single_column) elem(ie)%state%ps_v(i,j,1) = tmp(indx_scm,1,ie_scm)
                 indx = indx + 1
              end do
           end do
@@ -375,6 +435,7 @@ contains
        do j = 1, np
           do i = 1, np
              elem(ie)%state%phis(i,j) = tmp(indx,1,ie)
+             if (single_column) elem(ie)%state%phis(i,j) = tmp(indx_scm,1,ie_scm)
              indx = indx + 1
           end do
        end do
@@ -462,22 +523,36 @@ contains
     end if
 #endif 
 
-    
+
+    if (single_column) then
+      iop_update_surface = .false.
+      call setiopupdate()
+      call readiopdata(iop_update_surface,hyam,hybm)
+      call scm_setinitial(elem)
+    endif
+
+    if (.not. single_column) then
+
     ! once we've read all the fields we do a boundary exchange to 
     ! update the redundent columns in the dynamics
 
-    if (.false.) then !(elem(1)%model == 1 )then
+#if 0 
+!(elem(1)%model == 1 )then
     if(par%dynproc) then
        call initEdgeBuffer(par, edge, elem, (3+pcnst)*nlev+2)
     end if
-    elseif (.true.) then !(elem(1)%model == 2 )then
+#else 
+!(elem(1)%model == 2 )then
     if(par%dynproc) then
        call initEdgeBuffer(par, edge, elem, (4+pcnst)*nlev+2)
     end if
-    endif
+#endif
 
+#if 0 
+!(elem(1)%model == 1 )then
 
-    if (.false.) then!(elem(1)%model == 1 )then
+!all this does is dss state+Q, this can be routine in homme
+!depending on model
     do ie=1,nelemd
        kptr=0
        call edgeVpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
@@ -505,7 +580,8 @@ contains
        kptr=kptr+nlev
        call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
     end do
-    elseif (.true.) then!(elem(1)%model == 2) then
+#else 
+!(elem(1)%model == 2) then
     do ie=1,nelemd
        kptr=0
        call edgeVpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
@@ -514,14 +590,32 @@ contains
        kptr=kptr+1
        call edgeVpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
        kptr=kptr+2*nlev
-       call edgeVpack(edge, elem(ie)%state%theta_dp_cp(:,:,:,1),nlev,kptr,ie)
+       call edgeVpack(edge, elem(ie)%state%vtheta_dp(:,:,:,1),nlev,kptr,ie)
        kptr=kptr+nlev
        call edgeVpack(edge, elem(ie)%state%w_i(:,:,:,1),nlevp,kptr,ie)
        kptr=kptr+nlevp
        call edgeVpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
     end do
-    endif
-
+    if(par%dynproc) then
+       call bndry_exchangeV(par,edge)
+    end if
+    do ie=1,nelemd
+       kptr=0
+       call edgeVunpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
+       kptr=kptr+1
+       call edgeVunpack(edge, elem(ie)%state%phis,1,kptr,ie)
+       kptr=kptr+1
+       call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
+       kptr=kptr+2*nlev
+       call edgeVunpack(edge, elem(ie)%state%vtheta_dp(:,:,:,1),nlev,kptr,ie)
+       kptr=kptr+nlevp
+       call edgeVunpack(edge, elem(ie)%state%w_i(:,:,:,1),nlevp,kptr,ie)
+       kptr=kptr+nlev
+       call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
+    end do
+#endif
+    
+    endif !NOT single column
 
 
 !$omp parallel do private(ie, t)
@@ -531,9 +625,11 @@ contains
        end do
     end do
 
-    if(par%dynproc) then
-       call FreeEdgeBuffer(edge)
-    end if
+    if (.not. single_column) then
+      if(par%dynproc) then
+        call FreeEdgeBuffer(edge)
+      end if
+    endif
 
     !
     ! This subroutine is used to create nc_topo files, if requested

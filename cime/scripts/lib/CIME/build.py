@@ -4,7 +4,7 @@ functions for building CIME models
 import glob, shutil, time, threading, subprocess
 from CIME.XML.standard_module_setup  import *
 from CIME.utils                 import get_model, analyze_build_log, stringify_bool, run_and_log_case_status, get_timestamp, run_sub_or_cmd, run_cmd, get_batch_script_for_job, gzip_existing_file, safe_copy
-from CIME.provenance            import save_build_provenance
+from CIME.provenance            import save_build_provenance as save_build_provenance_sub
 from CIME.locked_files          import lock_file, unlock_file
 
 logger = logging.getLogger(__name__)
@@ -112,7 +112,7 @@ def _build_checks(case, build_threaded, comp_interface, use_esmf_lib,
     ninst_value  = case.get_value("NINST_VALUE")
     smp_build    = case.get_value("SMP_BUILD")
     build_status = case.get_value("BUILD_STATUS")
-    expect(comp_interface == "mct", "Only supporting mct comp_interface at this time")
+    expect(comp_interface == "mct" or comp_interface == "moab", "Only supporting mct or moab comp_interface at this time")
 
     smpstr = ""
     inststr = ""
@@ -215,7 +215,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
         if (not os.path.exists(shared_item)):
             os.makedirs(shared_item)
     mpilib = case.get_value("MPILIB")
-    libs = ["gptl", comp_interface, "pio", "csm_share"]
+    libs = ["gptl", "mct", "pio", "csm_share"]
     if mpilib == "mpi-serial":
         libs.insert(0, mpilib)
     logs = []
@@ -364,7 +364,8 @@ def _clean_impl(case, cleanlist, clean_all, clean_depends):
     case.flush()
 
 ###############################################################################
-def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
+def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
+                     save_build_provenance):
 ###############################################################################
 
     t1 = time.time()
@@ -385,7 +386,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
 
     comp_classes = case.get_values("COMP_CLASSES")
 
-    case.check_lockedfiles()
+    case.check_lockedfiles(skip="env_batch")
 
     # Retrieve relevant case data
     # This environment variable gets set for cesm Make and
@@ -528,7 +529,8 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
             case.read_xml()
             # Note, doing buildlists will never result in the system thinking the build is complete
 
-    post_build(case, logs, build_complete=not (buildlist or sharedlib_only))
+    post_build(case, logs, build_complete=not (buildlist or sharedlib_only),
+               save_build_provenance=save_build_provenance)
 
     t3 = time.time()
 
@@ -540,13 +542,16 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
     return True
 
 ###############################################################################
-def post_build(case, logs, build_complete=False):
+def post_build(case, logs, build_complete=False, save_build_provenance=True):
 ###############################################################################
     for log in logs:
         gzip_existing_file(log)
 
     if build_complete:
-
+        # must ensure there's an lid
+        lid = os.environ["LID"] if "LID" in os.environ else get_timestamp("%y%m%d-%H%M%S")
+        if save_build_provenance:
+            save_build_provenance_sub(case, lid=lid)
         # Set XML to indicate build complete
         case.set_value("BUILD_COMPLETE", True)
         case.set_value("BUILD_STATUS", 0)
@@ -556,14 +561,12 @@ def post_build(case, logs, build_complete=False):
 
         lock_file("env_build.xml")
 
-        # must ensure there's an lid
-        lid = os.environ["LID"] if "LID" in os.environ else get_timestamp("%y%m%d-%H%M%S")
-        save_build_provenance(case, lid=lid)
 
 ###############################################################################
-def case_build(caseroot, case, sharedlib_only=False, model_only=False, buildlist=None):
+def case_build(caseroot, case, sharedlib_only=False, model_only=False, buildlist=None, save_build_provenance=True):
 ###############################################################################
-    functor = lambda: _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist)
+    functor = lambda: _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
+                                       save_build_provenance)
     return run_and_log_case_status(functor, "case.build", caseroot=caseroot)
 
 ###############################################################################

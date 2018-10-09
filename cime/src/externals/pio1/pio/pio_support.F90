@@ -42,9 +42,7 @@ module pio_support
   public :: pio_readdof
   public :: pio_writedof
   public :: pio_fc_gather_offset
-#ifdef NO_MPI2
-  public :: MPI_TYPE_CREATE_INDEXED_BLOCK
-#endif
+
 
 
   logical, public :: Debug=.FALSE.
@@ -370,25 +368,6 @@ contains
     endif
 
   end subroutine pio_readdof
-
-#ifdef NO_MPI2
-
-  subroutine MPI_TYPE_CREATE_INDEXED_BLOCK(count, blen, disp, oldtype, newtype, ierr)
-    integer, intent(in)  :: count
-    integer, intent(in)  :: blen
-    integer, intent(in)  :: disp(:)
-    integer, intent(in)  :: oldtype
-    integer, intent(out) :: newtype
-    integer :: ierr
-
-    integer :: dblens(count)
-
-    dblens = blen
-#ifndef _MPISERIAL
-    call mpi_type_indexed(count, dblens, disp, oldtype, newtype, ierr)
-#endif
-  end subroutine MPI_TYPE_CREATE_INDEXED_BLOCK
-#endif
 
 !
 !========================================================================

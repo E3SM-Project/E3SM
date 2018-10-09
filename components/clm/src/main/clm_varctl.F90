@@ -342,6 +342,10 @@ module clm_varctl
   logical, public :: ECA_Pconst_RGspin = .false.
 
   !-----------------------------------------------------------------------
+  ! Priority of plant to get symbiotic N fixation, phosphatase
+  logical, public :: NFIX_PTASE_plant = .false.
+
+  !-----------------------------------------------------------------------
   ! Lateral grid connectivity
   !-----------------------------------------------------------------------
   logical, public            :: lateral_connectivity  = .false.

@@ -136,10 +136,10 @@ subroutine prim_run_subcycle(elem,hybrid,nets,nete,dt,tl,hvcoord,nsubstep)
     if (compute_diagnostics) call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
 
     ! loop over rsplit vertically lagrangian timesteps
-    call prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord,compute_diagnostics,1)
+    call prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord,compute_diagnostics,.false.,1)
     do r=2,rsplit
        call TimeLevel_update(tl,"leapfrog")
-       call prim_step(elem, hybrid,nets,nete,dt,tl,hvcoord,.false.,r)
+       call prim_step(elem, hybrid,nets,nete,dt,tl,hvcoord,.false.,.false.,r)
     enddo
 
     ! compute scalar diagnostics if currently active
@@ -205,7 +205,8 @@ subroutine prim_step(elem,hybrid,nets,nete,dt,tl,hvcoord,compute_diagnostics,rst
 
     ! take qsplit dynamics steps, followed by one tracer step
     do n=1,qsplit
-      call prim_advance_exp(elem, deriv1, hvcoord, hybrid, dt, tl, nets, nete, compute_diagnostics)
+      call prim_advance_exp(elem, deriv1, hvcoord, hybrid, dt, tl, nets, nete, compute_diagnostics, &
+           single_column)
       if(n<qsplit) call timelevel_update(tl,"leapfrog")
     enddo
 

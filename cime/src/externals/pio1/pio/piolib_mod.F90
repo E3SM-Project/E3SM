@@ -1453,9 +1453,6 @@ contains
 
   subroutine genindexedblock(lenblocks,basetype,elemtype,filetype,displace)
     use pio_types, only : pio_double, pio_int, pio_real, pio_char
-#ifdef NO_MPI2
-    use pio_support, only : mpi_type_create_indexed_block
-#endif
     integer(i4), intent(in) :: lenblocks     ! length of blocks
     integer(i4), intent(in) :: basetype      ! base mpi type
     integer(i4), intent(inout) :: elemtype   ! elementary mpi type

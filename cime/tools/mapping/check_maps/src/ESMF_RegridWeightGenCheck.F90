@@ -761,9 +761,9 @@ program OfflineTester
       ! destroy and deallocate
         call ESMF_ArrayDestroy(srcArray, rc=status)
         call ESMF_ArrayDestroy(dstArray, rc=status)
-        if (ESMF_LogFoundError(rcToCheck=status, msg=ESMF_LOGERR_PASSTHRU, &
-                               line=__LINE__, file=__FILE__, rcToReturn=rc)) &
-          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+!        if (ESMF_LogFoundError(rcToCheck=status, msg=ESMF_LOGERR_PASSTHRU, &
+!                               line=__LINE__, file=__FILE__, rcToReturn=rc)) &
+!          call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
       call ESMF_Finalize()
 

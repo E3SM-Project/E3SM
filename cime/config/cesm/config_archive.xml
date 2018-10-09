@@ -1,30 +1,4 @@
 <components version="2.0">
-
-  <comp_archive_spec compname="cam" compclass="atm">
-    <rest_file_extension>[ri]</rest_file_extension>
-    <rest_file_extension>rh\d*</rest_file_extension>
-    <rest_file_extension>rs</rest_file_extension>
-    <hist_file_extension>h\d*.*\.nc$</hist_file_extension>
-    <hist_file_extension>e</hist_file_extension>
-    <rest_history_varname>nhfil</rest_history_varname>
-    <rpointer>
-      <rpointer_file>rpointer.atm$NINST_STRING</rpointer_file>
-      <rpointer_content>$CASE.cam$NINST_STRING.r.$DATENAME.nc </rpointer_content>
-    </rpointer>
-    <test_file_names>
-      <tfile disposition="copy">rpointer.atm</tfile>
-      <tfile disposition="copy">rpointer.atm_9999</tfile>
-      <tfile disposition="copy">casename.cam.r.1976-01-01-00000.nc</tfile>
-      <tfile disposition="copy">casename.cam.rh4.1976-01-01-00000.nc</tfile>
-      <tfile disposition="move">casename.cam.h0.1976-01-01-00000.nc</tfile>
-      <tfile disposition="ignore">casename.cam.h0.1976-01-01-00000.nc.base</tfile>
-      <tfile disposition="move">casename.cam_0002.e.postassim.1976-01-01-00000.nc</tfile>
-      <tfile disposition="move">casename.cam_0002.e.preassim.1976-01-01-00000.nc</tfile>
-      <tfile disposition="copy">casename.cam.i.1976-01-01-00000.nc</tfile>
-      <tfile disposition="ignore">anothercasename.cam.i.1976-01-01-00000.nc</tfile>
-    </test_file_names>
-  </comp_archive_spec>
-
   <comp_archive_spec compname="clm" compclass="lnd">
     <rest_file_extension>r</rest_file_extension>
     <rest_file_extension>rh\d?</rest_file_extension>
@@ -47,29 +21,6 @@
       <tfile disposition="ignore">anothercasename.clm2.i.1976-01-01-00000.nc</tfile>
     </test_file_names>
   </comp_archive_spec>
-
-  <comp_archive_spec compname="rtm" compclass="rof">
-    <rest_file_extension>r</rest_file_extension>
-    <rest_file_extension>rh\d*</rest_file_extension>
-    <hist_file_extension>h\d*.*\.nc$</hist_file_extension>
-    <rest_history_varname>locfnh</rest_history_varname>
-    <rpointer>
-      <rpointer_file>rpointer.rof$NINST_STRING</rpointer_file>
-      <rpointer_content>$CASE.rtm$NINST_STRING.r.$DATENAME.nc</rpointer_content>
-    </rpointer>
-  </comp_archive_spec>
-
-  <comp_archive_spec compname="mosart" compclass="rof">
-    <rest_file_extension>r</rest_file_extension>
-    <rest_file_extension>rh\d*</rest_file_extension>
-    <hist_file_extension>h\d*.*\.nc$</hist_file_extension>
-    <rest_history_varname>locfnh</rest_history_varname>
-    <rpointer>
-      <rpointer_file>rpointer.rof$NINST_STRING</rpointer_file>
-      <rpointer_content>$CASE.mosart$NINST_STRING.r.$DATENAME.nc</rpointer_content>
-    </rpointer>
-  </comp_archive_spec>
-
 
   <comp_archive_spec compname="cice" compclass="ice">
     <rest_file_extension>[ri]</rest_file_extension>

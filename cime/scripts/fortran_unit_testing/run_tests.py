@@ -13,7 +13,6 @@ from CIME.XML.machines import Machines
 from CIME.XML.compilers import Compilers
 from CIME.XML.env_mach_specific import EnvMachSpecific
 from xml_test_list import TestSuiteSpec, suites_from_xml
-import subprocess
 import socket
 #=================================================
 # Standard library modules.
@@ -204,7 +203,7 @@ def cmake_stage(name, test_spec_dir, build_optimized, use_mpiserial, mpirun_comm
         if cmake_args is not None:
             cmake_command.extend(cmake_args.split(" "))
 
-        run_cmd_no_fail(" ".join(cmake_command), verbose=True, arg_stdout=None, arg_stderr=subprocess.STDOUT)
+        run_cmd_no_fail(" ".join(cmake_command), combine_output=True)
 
 def make_stage(name, output, make_j, clean=False, verbose=True):
     """Run make in the current working directory.
@@ -223,7 +222,7 @@ def make_stage(name, output, make_j, clean=False, verbose=True):
     if verbose:
         make_command.append("VERBOSE=1")
 
-    run_cmd_no_fail(" ".join(make_command), arg_stdout=None, arg_stderr=subprocess.STDOUT)
+    run_cmd_no_fail(" ".join(make_command), combine_output=True)
 
 def find_pfunit(compilerobj, mpilib, use_openmp):
     """Find the pfunit installation we'll be using, and print its path
@@ -401,8 +400,7 @@ def _main():
             if ctest_args is not None:
                 ctest_command.extend(ctest_args.split(" "))
 
-            run_cmd_no_fail(" ".join(ctest_command), from_dir=label, arg_stdout=None, arg_stderr=subprocess.STDOUT)
-
+            run_cmd_no_fail(" ".join(ctest_command), from_dir=label, combine_output=True)
 
 if __name__ == "__main__":
     _main()

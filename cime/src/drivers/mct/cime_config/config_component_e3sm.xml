@@ -8,7 +8,7 @@
     <group>run_metadata</group>
     <file>env_case.xml</file>
     <desc>run DOI</desc>
-  </entry> 
+  </entry>
 
   <entry id="DRV_THREADING">
     <type>logical</type>
@@ -279,6 +279,7 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU480">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240wLI">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU120">24</value>
@@ -376,6 +377,7 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
+      <value compset="_MPASO" grid="oi%oQU480">6</value>
       <value compset="_MPASO" grid="oi%oQU240">12</value>
       <value compset="_MPASO" grid="oi%oQU240wLI">12</value>
       <value compset="_MPASO" grid="oi%oQU120">24</value>
@@ -442,6 +444,8 @@
       <value compset="_DATM.*_DLND.*_DICE.*_DOCN">$ATM_NCPL</value>
       <value compset="_DATM.*_SLND.*_DICE.*_DOCN">$ATM_NCPL</value>
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">$ATM_NCPL</value>
+      <value compset="_SROF">$ATM_NCPL</value>
+      <value compset="_XROF">$ATM_NCPL</value>
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
@@ -639,6 +643,14 @@
     <file>env_case.xml</file>
     <desc>If set to off, this component set/ grid specification is not scientifically supported.
     If set to on, this component set/ grid specification is scientifically supported</desc>
+  </entry>
+
+  <entry id="MAX_GB_OLD_TEST_DATA">
+    <type>integer</type>
+    <default_value>500</default_value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>How much old test to allow</desc>
   </entry>
 
   <entry id="GLC_NEC">

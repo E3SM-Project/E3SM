@@ -1,0 +1,9 @@
+six
+numpy
+scipy
+pandas
+netCDF4
+matplotlib
+evv4esm>=0.1.1
+livvkit>=2.1.6
+json_tricks==3.11.0

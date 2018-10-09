@@ -9,7 +9,7 @@
 # Disable these because this is our standard setup
 # pylint: disable=wildcard-import,unused-wildcard-import
 
-import os, shutil, sys, glob
+import os, sys, glob
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..","..")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
@@ -17,7 +17,7 @@ sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 from standard_script_setup import *
 from CIME.case import Case
 from CIME.nmlgen import NamelistGenerator
-from CIME.utils import expect
+from CIME.utils import expect, safe_copy
 from CIME.buildnml import create_namelist_infile, parse_input
 
 logger = logging.getLogger(__name__)
@@ -130,8 +130,8 @@ def buildnml(case, caseroot, compname):
         rpointer = "rpointer." + compname
         if (os.path.isfile(os.path.join(rundir,rpointer)) and
             (not os.path.isfile(os.path.join(rundir,rpointer + inst_string)))):
-            shutil.copy(os.path.join(rundir, rpointer),
-                        os.path.join(rundir, rpointer + inst_string))
+            safe_copy(os.path.join(rundir, rpointer),
+                      os.path.join(rundir, rpointer + inst_string))
 
         inst_string_label = inst_string
         if not inst_string_label:
@@ -155,10 +155,10 @@ def buildnml(case, caseroot, compname):
             file_dest = os.path.join(rundir, filename)
             if inst_string:
                 file_dest += inst_string
-            shutil.copy(file_src,file_dest)
+            safe_copy(file_src,file_dest)
 
             for txtfile in glob.glob(os.path.join(confdir, "*txt*")):
-                shutil.copy(txtfile, rundir)
+                safe_copy(txtfile, rundir)
 
 ###############################################################################
 def _main_func():

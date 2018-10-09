@@ -5,7 +5,7 @@ create_dirs and create_namelists are members of Class case from file case.py
 
 from CIME.XML.standard_module_setup import *
 from CIME.utils import run_sub_or_cmd, safe_copy
-import glob
+import time, glob
 logger = logging.getLogger(__name__)
 
 def create_dirs(self):
@@ -70,6 +70,7 @@ def create_namelists(self, component=None):
     models += [models.pop(0)]
     for model in models:
         model_str = model.lower()
+        logger.info("  {} {}".format(time.strftime("%Y-%m-%d %H:%M:%S"),model_str))
         config_file = self.get_value("CONFIG_{}_FILE".format(model_str.upper()))
         config_dir = os.path.dirname(config_file)
         if model_str == "cpl":

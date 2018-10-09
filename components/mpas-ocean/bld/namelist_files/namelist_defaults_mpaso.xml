@@ -44,6 +44,7 @@
 <config_iterative_init_variable>'landIcePressure'</config_iterative_init_variable>
 
 <!-- time_integration -->
+<config_dt ocn_grid="oQU480">'02:00:00'</config_dt>
 <config_dt ocn_grid="oQU240">'01:00:00'</config_dt>
 <config_dt ocn_grid="oQU240wLI">'02:00:00'</config_dt>
 <config_dt ocn_grid="oQU120">'00:30:00'</config_dt>
@@ -81,6 +82,7 @@
 <config_min_pbc_fraction>0.10</config_min_pbc_fraction>
 
 <!-- hmix -->
+<config_hmix_scaleWithMesh ocn_grid="oQU480">.false.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oQU240">.false.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oQU240wLI">.false.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oQU120">.false.</config_hmix_scaleWithMesh>
@@ -107,6 +109,7 @@
 <!-- hmix_del4 -->
 <config_use_mom_del4>.true.</config_use_mom_del4>
 <config_use_tracer_del4>.false.</config_use_tracer_del4>
+<config_mom_del4 ocn_grid="oQU480">2.0e15</config_mom_del4>
 <config_mom_del4 ocn_grid="oQU240">2.0e14</config_mom_del4>
 <config_mom_del4 ocn_grid="oQU240wLI">2.0e14</config_mom_del4>
 <config_mom_del4 ocn_grid="oQU120">2.6e13</config_mom_del4>
@@ -131,6 +134,7 @@
 <config_Leith_visc2_max>2.5e3</config_Leith_visc2_max>
 
 <!-- mesoscale_eddy_parameterization -->
+<config_use_standardGM ocn_grid="oQU480">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oQU240">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oQU240wLI">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oQU120">.true.</config_use_standardGM>
@@ -327,6 +331,7 @@
 <config_n_bcl_iter_mid>2</config_n_bcl_iter_mid>
 <config_n_bcl_iter_end>2</config_n_bcl_iter_end>
 <config_btr_dt>'0000_00:00:15'</config_btr_dt>
+<config_btr_dt ocn_grid="oQU480">'0000_00:05:00'</config_btr_dt>
 <config_btr_dt ocn_grid="oQU240">'0000_00:03:00'</config_btr_dt>
 <config_btr_dt ocn_grid="oQU240wLI">'0000_00:03:00'</config_btr_dt>
 <config_btr_dt ocn_grid="oQU120">'0000_00:01:30'</config_btr_dt>
@@ -793,6 +798,7 @@
 <config_AM_eddyProductVariables_write_on_startup>.false.</config_AM_eddyProductVariables_write_on_startup>
 
 <!-- AM_mocStreamfunction -->
+<config_AM_mocStreamfunction_enable ocn_grid="oQU480">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oQU240">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oQU240wLI">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oQU120">.false.</config_AM_mocStreamfunction_enable>

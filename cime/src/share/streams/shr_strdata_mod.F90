@@ -162,7 +162,7 @@ contains
   !===============================================================================
 
   subroutine shr_strdata_init(SDAT,mpicom,compid,name,scmmode,scmlon,scmlat, &
-       gsmap,ggrid,nxg,nyg,nzg,calendar,reset_domain_mask)
+       gsmap,ggrid,nxg,nyg,nzg,calendar,reset_domain_mask,dmodel_domain_fracname_from_stream)
 
     implicit none
 
@@ -180,6 +180,18 @@ contains
     integer(IN)           ,intent(in),optional :: nzg
     character(len=*)      ,intent(in),optional :: calendar
     logical               ,intent(in),optional :: reset_domain_mask
+
+    ! This variable is applicable for data models that read the model domain from the
+    ! domain of the first stream; it is an error to provide this variable in other
+    ! situations. If present, then we read the data model's domain fraction from the
+    ! first stream file, and this variable provides the name of the frac field on this
+    ! file. If absent, then (if we are taking the model domain from the domain of the
+    ! first stream) we do not read a frac field, and instead we set frac to 1 wherever
+    ! mask is 1, and set frac to 0 wherever mask is 0.
+    !
+    ! BUG(wjs, 2018-05-01, ESMCI/cime#2515) Ideally we'd like to get this frac variable
+    ! name in a more general and robust way; see comments in that issue for more details.
+    character(len=*)      ,intent(in),optional :: dmodel_domain_fracname_from_stream
 
     integer(IN) :: n,m,k         ! generic index
     integer(IN) :: nu,nv         ! u,v index
@@ -204,6 +216,7 @@ contains
     integer(IN), pointer :: dof(:)
     type(mct_sMat):: sMati
     logical       :: lscmmode
+    logical       :: readfrac  ! whether to read fraction from the first stream file
     integer       :: kmask, kfrac
     character(len=*),parameter :: subname = "(shr_strdata_init) "
     character(*),parameter ::   F00 = "('(shr_strdata_init) ',8a)"
@@ -334,6 +347,11 @@ contains
 
     if (present(gsmap)) then
 
+       if (present(dmodel_domain_fracname_from_stream)) then
+          call shr_sys_abort(subname// &
+               ' ERROR: dmodel_domain_fracname_from_stream is irrelevant if gsmap is provided')
+       end if
+
        SDAT%nxg = nxg
        SDAT%nyg = nyg
        SDAT%nzg = nzg
@@ -360,16 +378,30 @@ contains
              call shr_mpi_bcast(hgtName,mpicom)
              call shr_mpi_bcast(maskName,mpicom)
              call shr_mpi_bcast(areaName,mpicom)
+             if (present(dmodel_domain_fracname_from_stream)) then
+                readfrac = .true.
+             else
+                readfrac = .false.
+             end if
              if (lscmmode) then
                 call shr_dmodel_readgrid(SDAT%grid,SDAT%gsmap,SDAT%nxg,SDAT%nyg,SDAT%nzg, &
                      fileName, compid, mpicom, '2d1d', lonName, latName, hgtName, maskName, areaName, &
+                     fracname=dmodel_domain_fracname_from_stream, readfrac=readfrac, &
                      scmmode=lscmmode,scmlon=scmlon,scmlat=scmlat)
              else
                 call shr_dmodel_readgrid(SDAT%grid,SDAT%gsmap,SDAT%nxg,SDAT%nyg,SDAT%nzg, &
-                     fileName, compid, mpicom, '2d1d', lonName, latName, hgtName, maskName, areaName)
+                     fileName, compid, mpicom, '2d1d', lonName, latName, hgtName, maskName, areaName, &
+                     fracname=dmodel_domain_fracname_from_stream, readfrac=readfrac)
              endif
           endif
        else
+          if (present(dmodel_domain_fracname_from_stream)) then
+             write(logunit,*) subname,' ERROR: dmodel_domain_fracname_from_stream'
+             write(logunit,*) 'can only be provided when taking the data model domain'
+             write(logunit,*) 'from the domain of the first stream'
+             write(logunit,*) '(i.e., when the domain file is null).'
+             call shr_sys_abort(subname//' ERROR: dmodel_domain_fracname_from_stream not expected')
+          end if
           if (lscmmode) then
              call shr_dmodel_readgrid(SDAT%grid,SDAT%gsmap,SDAT%nxg,SDAT%nyg,SDAT%nzg, &
                   SDAT%domainfile, compid, mpicom, '2d1d', readfrac=.true., &

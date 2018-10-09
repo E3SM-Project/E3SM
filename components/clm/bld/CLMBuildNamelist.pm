@@ -2335,7 +2335,7 @@ sub setup_logic_params_file {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'paramfile', 
                 'use_fates'=>$nl_flags->{'use_fates'}, 'use_crop'=>$nl_flags->{'use_crop'},'nu_com'=>$nl_flags->{'nu_com'} );
    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fsoilordercon',
-                );   
+                'use_fates'=>$nl_flags->{'use_fates'}, 'use_crop'=>$nl_flags->{'use_crop'},'nu_com'=>$nl_flags->{'nu_com'} );   
   } else {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fpftcon');
   }

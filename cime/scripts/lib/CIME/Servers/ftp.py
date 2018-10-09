@@ -1,5 +1,5 @@
 """
-FTP Server class.  Interact with a server using FTP protocal
+FTP Server class.  Interact with a server using FTP protocol
 """
 # pylint: disable=super-init-not-called
 from CIME.XML.standard_module_setup import *
@@ -15,6 +15,8 @@ class FTP(GenericServer):
         logger.info("server address {} root path {}".format(ftp_server, root_address))
         self.ftp = FTPpy(ftp_server)
 
+        self._ftp_server = address
+
         stat = self.ftp.login(user, passwd)
         logger.debug("login stat {}".format(stat))
         if "Login successful" not in stat:
@@ -25,7 +27,6 @@ class FTP(GenericServer):
         if "Directory successfully changed" not in stat:
             logging.warning("FAIL: Could not cd to server root directory {}\n error {}".format(root_address, stat))
             return None
-        self._ftp_server = address
 
     def fileexists(self, rel_path):
         try:
@@ -33,9 +34,8 @@ class FTP(GenericServer):
         except:
             logger.warning("ERROR from ftp server, trying next server")
             return False
-
         if rel_path not in stat:
-            if not stat[0].startswith(rel_path):
+            if not stat or not stat[0].startswith(rel_path):
                 logging.warning("FAIL: File {} not found.\nerror {}".format(rel_path, stat))
                 return False
         return True

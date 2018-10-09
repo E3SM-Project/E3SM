@@ -3,15 +3,15 @@
 <inputdata>
 <!-- server precidence is order in this file.  Highest preference at top -->
   <server>
-    <protocal>wget</protocal>
+    <protocol>wget</protocol>
     <address>https://web.lcrc.anl.gov/public/e3sm/inputdata/</address>
   </server>
   <server>
-    <protocal>svn</protocal>
+    <protocol>svn</protocol>
     <address>https://acme-svn2.ornl.gov/acme-repo/acme/inputdata</address>
   </server>
   <server>
-    <protocal>svn</protocal>
+    <protocol>svn</protocol>
     <address>https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata</address>
   </server>
 

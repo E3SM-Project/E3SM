@@ -63,7 +63,7 @@ Land            under components/clm/src
 -----------     ------------------------
 Fates           external_models/fates        LBNL, NCAR, LANL    BSD
 Betr            external_models/betr         LBNL                BSD
-MPP             external_models/mpqp         LBNL                BSD
+MPP             external_models/mpp          LBNL                BSD
 
 Atmosphere      under components/cam/src
 -----------     ------------------------

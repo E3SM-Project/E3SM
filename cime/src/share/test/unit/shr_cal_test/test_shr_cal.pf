@@ -5,7 +5,8 @@ module test_shr_cal
   use pfunit_mod
   use shr_cal_mod
   use shr_kind_mod , only : r8 => shr_kind_r8, i4 => shr_kind_in, i8 => shr_kind_i8
-  use esmf, only : ESMF_Initialize, ESMF_Finalize
+  use esmf, only : ESMF_Initialize, ESMF_Finalize, ESMF_Time, ESMF_TimeSet
+  use esmf, only : ESMF_CALKIND_GREGORIAN
 
   implicit none
 
@@ -360,5 +361,36 @@ contains
     @assertEqual('987654-04-05-06789', date_str)
   end subroutine datetod2string_long_basic
 
+  ! ------------------------------------------------------------------------
+  ! Tests of shr_cal_ymds2rday_offset
+  ! ------------------------------------------------------------------------
+
+  @Test
+  subroutine ymds2rdayOffset_basic(this)
+    class(TestShrCal), intent(inout) :: this
+    type(ESMF_Time) :: etime
+    real(r8) :: rdays_offset
+    real(r8) :: expected
+
+    ! Most of the current time settings here are arbitrary. However, the year and month
+    ! are important.
+    call ESMF_TimeSet(etime, yy=2000, mm=4, dd=15, h=1, m=5, s=30, &
+         calkindflag = ESMF_CALKIND_GREGORIAN)
+
+    call shr_cal_ymds2rday_offset(etime=etime, &
+         rdays_offset    = rdays_offset, &
+         years_offset    = -1, &
+         months_offset   = -1, &
+         days_offset     = -2, &
+         seconds_offset = -21600)
+
+    expected = -366._r8 &  ! -1 year, since year-2000 is a leap year
+             -   31._r8 &  ! -1 month, since starting month is April
+             -    2._r8 &  ! -2 days
+             -    0.25_r8  ! -21600 seconds = -0.25 days
+
+    @assertEqual(expected, rdays_offset, tolerance=tol)
+
+  end subroutine ymds2rdayOffset_basic
 
 end module test_shr_cal

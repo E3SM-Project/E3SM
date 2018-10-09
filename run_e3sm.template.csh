@@ -530,7 +530,7 @@ umask 022
 set cime_dir = ${code_root_dir}/${tag_name}/cime
 set create_newcase_exe = $cime_dir/scripts/create_newcase
 if ( -f ${create_newcase_exe} ) then
-  set e3sm_exe = acme.exe
+  set e3sm_exe = e3sm.exe
   set case_setup_exe = $case_scripts_dir/case.setup
   set case_build_exe = $case_scripts_dir/case.build
   set case_run_exe = $case_scripts_dir/.case.run
@@ -562,6 +562,19 @@ endif
 
 if ( `lowercase $case_run_dir` == default ) then
   set case_run_dir = ${e3sm_simulations_dir}/${case_name}/run
+endif
+
+# Default group and permissions on NERSC can be a pain for sharing data
+# within the project. This should take care of it. Create top level 
+# directory and set the default group to 'acme', permissions for 
+# group read access for top level and all files underneath (Chris Golaz).
+if ( $machine == 'cori*' || $machine == 'edison' ) then
+  mkdir -p ${e3sm_simulations_dir}/${case_name}
+  cd ${e3sm_simulations_dir}
+  chgrp acme ${case_name}
+  chmod 750 ${case_name}
+  chmod g+s ${case_name}
+  setfacl -d -m g::rx ${case_name}
 endif
 
 mkdir -p ${case_build_dir}
@@ -1014,22 +1027,12 @@ $preview_namelists_exe
 
 mkdir -p batch_output      ### Make directory that stdout and stderr will go into.
 
-set batch_options = ''
-
 if ( $machine =~ 'cori*' || $machine == edison ) then
-    set batch_options = "--job-name=${job_name} --output=batch_output/${case_name}.o%j"
-
-    sed -i /"#SBATCH \( \)*--job-name"/c"#SBATCH  --job-name=ST+${job_name}"                  $shortterm_archive_script
-    sed -i /"#SBATCH \( \)*--job-name"/a"#SBATCH  --account=${project}"                       $shortterm_archive_script
-    sed -i /"#SBATCH \( \)*--output"/c'#SBATCH  --output=batch_output/ST+'${case_name}'.o%j'  $shortterm_archive_script
-
+    $xmlchange_exe --subgroup case.run BATCH_COMMAND_FLAGS="--job-name=${job_name} --output=batch_output/${case_name}.o%j"
+    $xmlchange_exe --subgroup case.st_archive BATCH_COMMAND_FLAGS="--job-name=ST+${job_name} --output=batch_output/ST+${case_name}.o%j --account=${project}"
 else if ( $machine == titan || $machine == eos ) then
-    sed -i /"#PBS \( \)*-N"/c"#PBS  -N ${job_name}"                                ${case_run_exe}
-    sed -i /"#PBS \( \)*-A"/c"#PBS  -A ${project}"                                 ${case_run_exe}
-    sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' ${case_run_exe}
-
-    sed -i /"#PBS \( \)*-N"/c"#PBS  -N ST+${job_name}"                             $shortterm_archive_script
-    sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' $shortterm_archive_script
+    $xmlchange_exe --subgroup case.run BATCH_COMMAND_FLAGS="-N ${job_name} -A ${project} -o batch_output/${case_name}.o%j"
+    $xmlchange_exe --subgroup case.st_archive BATCH_COMMAND_FLAGS="-N ST+${job_name} -o batch_output/ST+${case_name}.o%j"
 
 else if ( $machine == anvil ) then
 # Priority for Anvil
@@ -1042,7 +1045,7 @@ else if ( $machine == anvil ) then
     set anvil_priority   = default
     if ( `lowercase ${anvil_priority}` != default ) then
 	sed -i 's:qsub:qsub.py:g' env_batch.xml
-	set batch_options="-W x=QOS:pri${anvil_priority}"
+	$xmlchange_exe BATCH_COMMAND_FLAGS="-W x=QOS:pri${anvil_priority}"
     endif
 
 else
@@ -1061,7 +1064,8 @@ endif
 
 ### Only specially authorized people can use the special_e3sm qos on Cori or Edison. Don't uncomment unless you're one.
 #if ( `lowercase $debug_queue` == false && $machine == edison ) then
-#  set batch_options = "${batch_options} --qos=special_e3sm"
+#  set batch_options = `$xmlquery_exe BATCH_COMMAND_FLAGS --value`
+#  $xmlchange_exe BATCH_COMMAND_FLAGS="${batch_options} --qos=special_e3sm"
 #endif
 
 #============================================
@@ -1210,7 +1214,7 @@ else if ( $model_start_type == 'branch' ) then
   cp -s ${restart_files_dir}/${restart_case_name}.cpl.r.${restart_filedate}-00000.nc $case_run_dir
   cp -s ${restart_files_dir}/${restart_case_name}.mosart.r.${restart_filedate}-00000.nc $case_run_dir
   cp -s ${restart_files_dir}/${restart_case_name}.mosart.rh0.${restart_filedate}-00000.nc $case_run_dir
-  cp -s ${restart_files_dir}/mpassi.rst.${restart_filedate}_00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/mpascice.rst.${restart_filedate}_00000.nc $case_run_dir
   cp -s ${restart_files_dir}/mpaso.rst.${restart_filedate}_00000.nc $case_run_dir
   cp -s ${restart_files_dir}/../../atm/hist/${restart_case_name}.cam.h0.${restart_prevdate}.nc $case_run_dir
   cp -s ${restart_files_dir}/../../rof/hist/${restart_case_name}.mosart.h0.${restart_prevdate}.nc $case_run_dir
@@ -1264,8 +1268,8 @@ endif
 
 if ( `lowercase $submit_run` == 'true' ) then
   e3sm_print '         SUBMITTING JOB:'
-  e3sm_print ${case_submit_exe} --batch-args " ${batch_options} "
-  ${case_submit_exe} --batch-args " ${batch_options} "
+  e3sm_print ${case_submit_exe}
+  ${case_submit_exe}
 else
     e3sm_print 'Run NOT submitted because $submit_run = '$submit_run
 endif

@@ -36,12 +36,12 @@ BUILD
 =====
 
 To compile this tool, you need to have the ESMFMKFILE environment variable set.
-The easiest way to do that is to load the ESMF modules. On yellowstone and
-cheyenne, you must already have the intel module loaded. Then load the version
-of ESMF you want to use (as of April 2017, the most recent version available is
-7.0.0):
+The easiest way to do that is to load the ESMF modules. On cheyenne, caldera,
+geyser, or pronghorn you must already have the intel module loaded. Then load the
+version of ESMF you want to use (as of May 2018, the most recent version on the
+NCAR machines is 7.0.0):
 
-Yellowstone:
+Caldera, Geyser, Pronghorn:
 $ module load esmf
 $ module load esmf-7.0.0-ncdfio-uni-O
 
@@ -78,6 +78,6 @@ listed in FILELIST
   --help, -h        Output this usage information
 
 Notes:
-  1) For use on cheyenne, yellowstone, geyser, or caldera only!
+  1) For use on cheyenne, geyser, caldera, or pronghorn only!
   2) Need to set ESMFMKFILE (see comments in Makefile) or compilation will fail
   3) If -rc option is not enabled, -v flag is ignored and verbose / concise will depend on previous compilation

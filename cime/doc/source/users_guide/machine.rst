@@ -25,31 +25,32 @@ config_machines.xml - machine specific file
 
 Each ``<machine>`` tag requires the following input:
 
-- ``DESC``: a text description of the machine
-- ``NODENAME_REGEX``: a regular expression used to identify the machine. It must work on compute nodes as well as login nodes. Use the ``machine`` option for **create_test** or **create_newcase** if this flag is not available.
-- ``OS``: the machine's operating system
-- ``PROXY``: optional http proxy for access to the internet
-- ``COMPILERS``: compilers supported on the machine, in comma-separated list, default first
-- ``MPILIBS``: mpilibs supported on the machine, in comma-separated list, default first
-- ``PROJECT``: a project or account number used for batch jobs; can be overridden in environment or in **$HOME/.cime/config**
-- ``SAVE_TIMING_DIR``: (E3SM only) target directory for archiving timing output
-- ``SAVE_TIMING_DIR_PROJECTS``: (E3SM only) projects whose jobs archive timing output
-- ``CIME_OUTPUT_ROOT``: Base directory for case output; the **bld** and **run** directories are written below here
-- ``DIN_LOC_ROOT``: location of the input data directory
-- ``DIN_LOC_ROOT_CLMFORC``: optional input location for clm forcing data
-- ``DOUT_S_ROOT``: root directory of short-term archive files
-- ``DOUT_L_MSROOT``: root directory on mass store system for long-term archive files
-- ``BASELINE_ROOT``: root directory for system test baseline files
-- ``CCSM_CPRNC``: location of the cprnc tool, which compares model output in testing
-- ``GMAKE``: gnu-compatible make tool; default is "gmake"
-- ``GMAKE_J``: optional number of threads to pass to the gmake flag
-- ``TESTS``: (E3SM only) list of tests to run on the machine
-- ``BATCH_SYSTEM``: batch system used on this machine (none is okay)
-- ``SUPPORTED_BY``: contact information for support for this system
-- ``MAX_TASKS_PER_NODE``: maximum number of threads/tasks per shared memory node on the machine
-- ``MAX_MPITASKS_PER_NODE``: number of physical PES per shared node on the machine. In practice the MPI tasks per node will not exceed this value.
-- ``PROJECT_REQUIRED``: Does this machine require a project to be specified to the batch system?
-- ``mpirun``: The mpi exec to start a job on this machine.
+* ``DESC``: a text description of the machine
+* ``NODENAME_REGEX``: a regular expression used to identify the machine. It must work on compute nodes as well as login nodes.
+  | Use the ``machine`` option for **create_test** or **create_newcase** if this flag is not available.
+* ``OS``: the machine's operating system
+* ``PROXY``: optional http proxy for access to the internet
+* ``COMPILERS``: compilers supported on the machine, in comma-separated list, default first
+* ``MPILIBS``: mpilibs supported on the machine, in comma-separated list, default first
+* ``PROJECT``: a project or account number used for batch jobs; can be overridden in environment or in **$HOME/.cime/config**
+* ``SAVE_TIMING_DIR``: (E3SM only) target directory for archiving timing output
+* ``SAVE_TIMING_DIR_PROJECTS``: (E3SM only) projects whose jobs archive timing output
+* ``CIME_OUTPUT_ROOT``: Base directory for case output; the **bld** and **run** directories are written below here
+* ``DIN_LOC_ROOT``: location of the input data directory
+* ``DIN_LOC_ROOT_CLMFORC``: optional input location for clm forcing data
+* ``DOUT_S_ROOT``: root directory of short-term archive files
+* ``DOUT_L_MSROOT``: root directory on mass store system for long-term archive files
+* ``BASELINE_ROOT``: root directory for system test baseline files
+* ``CCSM_CPRNC``: location of the cprnc tool, which compares model output in testing
+* ``GMAKE``: gnu-compatible make tool; default is "gmake"
+* ``GMAKE_J``: optional number of threads to pass to the gmake flag
+* ``TESTS``: (E3SM only) list of tests to run on the machine
+* ``BATCH_SYSTEM``: batch system used on this machine (none is okay)
+* ``SUPPORTED_BY``: contact information for support for this system
+* ``MAX_TASKS_PER_NODE``: maximum number of threads/tasks per shared memory node on the machine
+* ``MAX_MPITASKS_PER_NODE``: number of physical PES per shared node on the machine. In practice the MPI tasks per node will not exceed this value.
+* ``PROJECT_REQUIRED``: Does this machine require a project to be specified to the batch system?
+* ``mpirun``: The mpi exec to start a job on this machine.
   This is itself an element that has sub-elements that must be filled:
 
   * Must have a required ``<executable>`` element
@@ -58,9 +59,9 @@ Each ``<machine>`` tag requires the following input:
     These specify the arguments to the mpi executable and are dependent on your mpi library implementation.
 
 
-- ``module_system``: How and what modules to load on this system. Module systems allow you to easily load multiple compiler environments on a machine. CIME provides support for two types of module tools: `module <http://www.tacc.utexas.edu/tacc-projects/mclay/lmod>`_ and `soft  <http://www.mcs.anl.gov/hs/software/systems/softenv/softenv-intro.html>`_. If neither of these is available on your machine, simply set ``<module_system type="none"\>``.
+* ``module_system``: How and what modules to load on this system. Module systems allow you to easily load multiple compiler environments on a machine. CIME provides support for two types of module tools: `module <http://www.tacc.utexas.edu/tacc-projects/mclay/lmod>`_ and `soft  <http://www.mcs.anl.gov/hs/software/systems/softenv/softenv-intro.html>`_. If neither of these is available on your machine, simply set ``<module_system type="none"\>``.
 
-- ``environment_variables``: environment_variables to set on the system
+* ``environment_variables``: environment_variables to set on the system
    This contains sub-elements ``<env>`` with the ``name`` attribute specifying the environment variable name, and the element value specifying the corresponding environment variable value. If the element value is not set, the corresponding environment variable will be unset in your shell.
 
    For example, the following sets the environment variable ``OMP_STACKSIZE`` to 256M:
@@ -115,7 +116,7 @@ As is the case for **config_compilers.xml**, the entries in **config_batch.xml**
 
    - the template file that will be used to generate that job,
 
-   - the prerequisites that must be met before the job is submitted, and 
+   - the prerequisites that must be met before the job is submitted, and
 
    - the dependencies that must be satisfied before the job is run.
 
@@ -141,7 +142,7 @@ CIME looks at the xml element ``COMPILERS_SPEC_FILE`` in the **config_files.xml*
     <schema>$CIMEROOT/cime_config/xml_schemas/config_compilers_v2.xsd</schema>
   </entry>
 
-Additional compilers are made avilable by adding entries to the files pointed to by COMPILERS_SPEC_FILE or to a config_compilers.xml file 
+Additional compilers are made avilable by adding entries to the files pointed to by COMPILERS_SPEC_FILE or to a config_compilers.xml file
 in your CIME config directory.
 
 .. _compilerfile:
@@ -184,4 +185,3 @@ To clarify several conventions:
            <base> --host=Linux </base>
         </CONFIG_ARGS>
      </compiler>
-

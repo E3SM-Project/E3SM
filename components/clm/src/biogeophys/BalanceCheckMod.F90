@@ -29,14 +29,14 @@ module BalanceCheckMod
   save
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: BeginWaterBalance  ! Initialize water balance check
-  public :: BalanceCheck       ! Water and energy balance check
+  public :: BeginColWaterBalance  ! Initialize water balance check
+  public :: ColWaterBalanceCheck       ! Water and energy balance check
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine BeginWaterBalance(bounds, &
+  subroutine BeginColWaterBalance(bounds, &
        num_nolakec, filter_nolakec, num_lakec, filter_lakec, &
        num_hydrologyc, filter_hydrologyc, &
        soilhydrology_vars, waterstate_vars)
@@ -141,10 +141,10 @@ contains
 
     end associate 
 
-   end subroutine BeginWaterBalance
+  end subroutine BeginColWaterBalance
 
    !-----------------------------------------------------------------------
-   subroutine BalanceCheck( bounds, num_do_smb_c, filter_do_smb_c, &
+   subroutine ColWaterBalanceCheck( bounds, num_do_smb_c, filter_do_smb_c, &
         atm2lnd_vars, glc2lnd_vars, solarabs_vars, waterflux_vars, waterstate_vars, &
         energyflux_vars, canopystate_vars)
      !
@@ -690,6 +690,6 @@ contains
 
      end associate
 
-   end subroutine BalanceCheck
+   end subroutine ColWaterBalanceCheck
 
 end module BalanceCheckMod

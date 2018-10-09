@@ -62,3 +62,9 @@
 
 /* Whether to use OpenMP4 */
 #cmakedefine OMP4
+
+/* commit sha */
+#define HOMME_SHA1 "${LAST_GIT_COMMIT_SHA}"
+
+
+

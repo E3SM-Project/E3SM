@@ -16,8 +16,7 @@ module model_init_mod
   use hybvcoord_mod, 	  only: hvcoord_t
   use hybrid_mod,         only: hybrid_t
   use dimensions_mod,     only: np,nlev,nlevp,nelemd
-  use eos          ,      only: get_pnh_and_exner,get_dry_phinh,get_dirk_jacobian
-  use element_ops,        only: get_kappa_star
+  use eos          ,      only: get_pnh_and_exner,get_dirk_jacobian
   use element_state,      only: timelevels
   use viscosity_mod,      only: make_c0_vector
   use kinds,              only: real_kind,iulog
@@ -84,10 +83,9 @@ contains
   real (kind=real_kind) :: Jac2D(nlev,np,np)  , Jac2L(nlev-1,np,np)
   real (kind=real_kind) :: Jac2U(nlev-1,np,np)
   
-  real (kind=real_kind) :: kappa_star(np,np,nlev),kappa_star_i(np,np,nlevp)
   real (kind=real_kind) :: dp3d(np,np,nlev), phis(np,np)
   real (kind=real_kind) :: phi_i(np,np,nlevp)
-  real (kind=real_kind) :: theta_dp_cp(np,np,nlev)
+  real (kind=real_kind) :: vtheta_dp(np,np,nlev)
   real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
   real (kind=real_kind) :: exner(np,np,nlev)
   real (kind=real_kind) :: pnh(np,np,nlev),	pnh_i(np,np,nlevp)
@@ -102,22 +100,16 @@ contains
         dp3d(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
      enddo
-     theta_dp_cp(:,:,:) = elem(ie)%state%theta_dp_cp(:,:,:,tl%n0)
+     vtheta_dp(:,:,:) = elem(ie)%state%vtheta_dp(:,:,:,tl%n0)
      phi_i(:,:,:)         = elem(ie)%state%phinh_i(:,:,:,tl%n0)
      phis(:,:)          = elem(ie)%state%phis(:,:)
      call TimeLevel_Qdp(tl, qsplit, qn0)
-     call get_kappa_star(kappa_star,elem(ie)%state%Q(:,:,:,1))
-     call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi_i,&
-             kappa_star,pnh,exner,dpnh_dp_i,pnh_i_out=pnh_i)
+     call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_i,&
+             pnh,exner,dpnh_dp_i,pnh_i_out=pnh_i)
          
      dt=100.0
-     do k=1,nlev-1
-        kappa_star_i(:,:,k+1) = 0.5D0* (kappa_star(:,:,k+1)+kappa_star(:,:,k))
-     end do
-     kappa_star_i(:,:,1) = kappa_star(:,:,1)
-     kappa_star_i(:,:,nlev+1) = kappa_star(:,:,nlev)
           
-     call get_dirk_jacobian(JacL,JacD,JacU,dt,dp3d,phi_i,phis,kappa_star_i,pnh_i,1,pnh=pnh)
+     call get_dirk_jacobian(JacL,JacD,JacU,dt,dp3d,phi_i,pnh,1)
          
     ! compute infinity norm of the initial Jacobian 
      norminfJ0=0.d0
@@ -150,8 +142,8 @@ contains
         ! that the sweetspot where the finite difference error is minimized is
         ! =================================================================
         epsie=10.d0/(10.d0)**(j+1)
-        call get_dirk_jacobian(Jac2L,Jac2D,Jac2U,dt,dp3d,phi_i,phis,kappa_star_i,pnh_i,0,&
-           epsie,hvcoord=hvcoord,dpnh_dp_i=dpnh_dp_i,theta_dp_cp=theta_dp_cp,kappa_star=kappa_star,pnh=pnh,exner=exner)
+        call get_dirk_jacobian(Jac2L,Jac2D,Jac2U,dt,dp3d,phi_i,pnh,0,&
+           epsie,hvcoord,dpnh_dp_i,vtheta_dp)
     
         if (maxval(abs(JacD(:,:,:)-Jac2D(:,:,:))) > jacerrorvec(j)) then 
            jacerrorvec(j) = maxval(abs(JacD(:,:,:)-Jac2D(:,:,:)))
