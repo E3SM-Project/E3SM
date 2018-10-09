@@ -368,11 +368,12 @@ class Case(object):
 
         return item
 
-    def set_value(self, item, value, subgroup=None, ignore_type=False, allow_undefined=False):
+    def set_value(self, item, value, subgroup=None, ignore_type=False, allow_undefined=False, return_file=False):
         """
         If a file has been defined, and the variable is in the file,
-        then that value will be set in the file object and the file
-        name is returned
+        then that value will be set in the file object and the resovled value
+        is returned unless return_file is True, in which case (resolved_value, filename)
+        is returned where filename is the name of the modified file.
         """
         if item == "CASEROOT":
             self._caseroot = value
@@ -382,7 +383,7 @@ class Case(object):
             result = env_file.set_value(item, value, subgroup, ignore_type)
             if (result is not None):
                 logger.debug("Will rewrite file {} {}".format(env_file.filename, item))
-                return result
+                return (result, env_file.filename) if return_file else result
 
         if len(self._files) == 1:
             expect(allow_undefined or result is not None,

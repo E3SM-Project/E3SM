@@ -173,7 +173,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             else:
                 case.set_value("TOTALPES", case.total_tasks*case.thread_count)
 
-
             # May need to select new batch settings if pelayout changed (e.g. problem is now too big for prev-selected queue)
             env_batch = case.get_env("batch")
             env_batch.set_job_defaults([(case.get_primary_job(), {})], case)
@@ -222,8 +221,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         env_module.make_env_mach_specific_file("csh", case)
         if not non_local:
             env_module.save_all_env_info("software_environment.txt")
-
-        logger.info("You can now run './preview_run' to get more info on how your case will be run")
 
         logger.info("You can now run './preview_run' to get more info on how your case will be run")
 
