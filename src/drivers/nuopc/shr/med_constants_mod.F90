@@ -37,6 +37,6 @@ module med_constants_mod
 
   !-----------------------------------------------------------------------------
   ! TODO: This is not a constant and should be moved elsewhere
-  integer :: med_constants_dbug_flag = 0
+  integer :: med_constants_dbug_flag = 2
 
 end module med_constants_mod

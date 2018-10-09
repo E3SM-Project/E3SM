@@ -798,7 +798,7 @@ contains
       use ESMF                  , only : ESMF_GeomType_Grid, ESMF_AttributeGet, ESMF_DistGridCreate, ESMF_FieldEmptySet
       use ESMF                  , only : ESMF_GridCreate, ESMF_LogWrite, ESMF_LogMsg_Info, ESMF_GridGet, ESMF_Failure
       use ESMF                  , only : ESMF_FieldStatus_Empty, ESMF_FieldStatus_Complete, ESMF_FieldStatus_GridSet
-      use ESMF                  , only : ESMF_GeomType_Mesh
+      use ESMF                  , only : ESMF_GeomType_Mesh, ESMF_MeshGet, ESMF_Mesh, ESMF_MeshCreate
       use shr_nuopc_methods_mod , only: shr_nuopc_methods_Field_GeomPrint
 
       type(ESMF_State)   , intent(inout) :: State
@@ -808,6 +808,7 @@ contains
       ! local variables
       type(ESMF_Field)              :: field
       type(ESMF_Grid)               :: grid
+      type(ESMF_Mesh)               :: mesh, newmesh
       integer                       :: localDeCount
 
       type(ESMF_DistGrid)           :: distgrid
@@ -845,6 +846,9 @@ contains
 
       allocate(fieldNameList(fieldCount))
       call ESMF_StateGet(State, itemNameList=fieldNameList, rc=rc)
+      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+      call ESMF_GridCompGet(gcomp, petCount=petCount, rc=rc)
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
       !     do n=1, fieldCount
@@ -989,8 +993,6 @@ contains
                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
                   ! construct a default regDecompPTile -> TODO: move this into ESMF as default
-                  call ESMF_GridCompGet(gcomp, petCount=petCount, rc=rc)
-                  if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
                   allocate(regDecompPTile(dimCount, tileCount))
                   deCountPTile = petCount/tileCount
@@ -1097,10 +1099,59 @@ contains
                        ESMF_LOGMSG_INFO, rc=dbrc)
                end if
 
-               if (dbug_flag > 1) then
-                  call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n))//'_orig',rc)
-                  if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-               end if
+!               if (dbug_flag > 1) then
+!                  call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n))//'_orig',rc)
+!                  if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+!               end if
+
+               call ESMF_FieldGet(field, mesh=mesh, rc=rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+               call ESMF_MeshGet(mesh, elementDistGrid=distgrid, rc=rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+               call ESMF_DistGridGet(distgrid, dimCount=dimCount, tileCount=tileCount, rc=rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+               ! allocate minIndexPTile and maxIndexPTile accord. to dimCount and tileCount
+               allocate(minIndexPTile(dimCount, tileCount),maxIndexPTile(dimCount, tileCount))
+               ! get minIndex and maxIndex arrays
+               call ESMF_DistGridGet(distgrid, minIndexPTile=minIndexPTile, &
+                    maxIndexPTile=maxIndexPTile, rc=rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+               ! construct a default regDecompPTile -> TODO: move this into ESMF as default
+
+               allocate(regDecompPTile(dimCount, tileCount))
+               deCountPTile = petCount/tileCount
+               extraDEs = max(0, petCount-deCountPTile)
+               do i=1, tileCount
+                  if (i<=extraDEs) then
+                     regDecompPTile(1, i) = deCountPTile + 1
+                  else
+                     regDecompPTile(1, i) = deCountPTile
+                  endif
+                  do j=2, dimCount
+                     regDecompPTile(j, i) = 1
+                  enddo
+               enddo
+               ! create the new DistGrid with the same minIndexPTile and maxIndexPTile,
+               ! but with a default regDecompPTile
+               distgrid = ESMF_DistGridCreate(minIndexPTile=minIndexPTile, &
+                    maxIndexPTile=maxIndexPTile, regDecompPTile=regDecompPTile, rc=rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+               ! Create a new Grid on the new DistGrid and swap it in the Field
+               newmesh = ESMF_MeshCreate(mesh, nodalDistGrid=distgrid, &
+                    elementDistGrid=distgrid, rc=rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+               call ESMF_FieldEmptySet(field, mesh=newmesh, rc=rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+               ! local clean-up
+               deallocate(minIndexPTile, maxIndexPTile, regDecompPTile)
+
 
             else  ! geomtype
 
