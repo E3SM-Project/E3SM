@@ -382,10 +382,10 @@ contains
 !should be called BEFORE applyCAMforcing_tracers, before ps_v is updated
 !that is, theta tendencies are computed wrt the same pressure levels 
 !that were used to compute temperature tendencies
-  subroutine convert_thermo_forcing(elem,hvcoord,n0,nets,nete)
+  subroutine convert_thermo_forcing(elem,hvcoord,n0,dt,nets,nete)
   implicit none
   type (element_t),       intent(inout) :: elem(:)
-!  real (kind=real_kind),  intent(in)    :: dt
+  real (kind=real_kind),  intent(in)    :: dt ! should be dt_physics, so, dt_remap*se_nsplit
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: nets,nete
   integer,                intent(in)    :: n0
@@ -394,6 +394,10 @@ contains
   real (kind=real_kind)                 :: pnh(np,np,nlev)
   real (kind=real_kind)                 :: dpnh_dp_i(np,np,nlevp)
 
+  real(kind=real_kind)                  :: rstarn1(np,np,nlev),rstarn(np,np,nlev)
+  real(kind=real_kind)                  :: qn1(np,np,nlev), tn(np,np,nlev), tn1(np,np,nlev)
+
+#if 0
 ! one way to do this
   do ie=nets,nete
      !would it be better to have 2d array as input instead? or not?
@@ -411,6 +415,27 @@ contains
         elem(ie)%derived%FT(:,:,k)=elem(ie)%derived%FT(:,:,k)*Rstar(:,:,k)/Rgas*dp(:,:,k)/exner(:,:,k)
      enddo
   enddo
+#endif
+
+  do ie=nets,nete
+     call get_R_star(rstarn,elem(ie)%state%Q(:,:,:,1))
+     call get_temperature(elem(ie),tn,hvcoord,n0)
+     !get new Q, T
+     qn1(:,:,:) = elem(ie)%state%Q(:,:,:,1) + dt*elem(ie)%derived%FQ(:,:,:,1)
+     tn1(:,:,:) = tn(:,:,:) + dt*elem(ie)%derived%FT(:,:,:)
+     !get new rstar
+     call get_R_star(rstarn1,qn1)
+     do k=1,nlev
+        dp(:,:,k)=&
+            ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+            ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(:,:,n0)
+     enddo
+     call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,n0),dp,&
+         elem(ie)%state%phinh_i(:,:,:,n0),pnh,exner,dpnh_dp_i)
+     !finally, compute difference for FT
+     elem(ie)%derived%FT(:,:,:) = dp * (rstarn1*tn1 - rstarn*tn) / exner / Rgas
+  enddo   
+
   end subroutine convert_thermo_forcing
 
 

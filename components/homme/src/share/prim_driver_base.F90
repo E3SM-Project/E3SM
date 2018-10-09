@@ -935,7 +935,7 @@ contains
     ! compute HOMME test case forcing
     ! by calling it here, it mimics eam forcings computations in standalone.
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
-    call convert_thermo_forcing(elem,hvcoord,tl%n0,nets,nete)
+    call convert_thermo_forcing(elem,hvcoord,tl%n0,dt_remap,nets,nete)
 #endif
 
     ! Apply CAM Physics forcing
