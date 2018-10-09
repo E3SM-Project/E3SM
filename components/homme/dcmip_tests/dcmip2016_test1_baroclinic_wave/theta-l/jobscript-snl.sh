@@ -15,6 +15,7 @@
 
 export OMP_NUM_THREADS=1
 export OMP_STACKSIZE=16M     #  Cori has 96GB per node. had to lower to 8M on 3K nodes
+export MV2_ENABLE_AFFINITY=0
 NCPU=40
 if [ -n "$PBS_ENVIRONMENT" ]; then
 #  NCPU=$PBS_NNODES
