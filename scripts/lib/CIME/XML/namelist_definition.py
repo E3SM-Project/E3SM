@@ -331,7 +331,13 @@ class NamelistDefinition(EntryID):
         if filename is None:
             variable_template = "Variable {!r}"
         else:
-            variable_template = "Variable {!r} from file " + repr(str(filename))
+            # for the next step we want the name of the original user_nl file not the internal one
+            # We do this by extracting the component name from the filepath string
+            if "Buildconf" in filename and "namelist_infile" in filename:
+                msgfn = "user_nl_" + (filename.split(os.sep)[-2])[:-4]
+            else:
+                msgfn = filename
+            variable_template = "Variable {!r} from file " + repr(str(msgfn))
 
         # Iterate through variables.
         for group_name in namelist.get_group_names():
@@ -369,7 +375,14 @@ class NamelistDefinition(EntryID):
         if filename is None:
             variable_template = "Variable {!s}"
         else:
-            variable_template = "Variable {!r} from file " + repr(str(filename))
+            # for the next step we want the name of the original user_nl file not the internal one
+            # We do this by extracting the component name from the filepath string
+            if "Buildconf" in filename and "namelist_infile" in filename:
+                msgfn = "user_nl_" + (filename.split(os.sep)[-2])[:-4]
+            else:
+                msgfn = filename
+            variable_template = "Variable {!r} from file " + repr(str(msgfn))
+
         groups = {}
         for variable_name in dict_:
             variable_lc = variable_name.lower()
