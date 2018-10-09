@@ -118,7 +118,7 @@ contains
 
 #include <mpif.h>
 
-    integer(kind=int_kind)                              :: ierr,tmp
+    integer(kind=int_kind)                              :: ierr,tmp_min,tmp_max
     integer(kind=int_kind)                              :: FrameNumber
     logical :: running   ! state of MPI at beginning of initmp call
     character(len=MPI_MAX_PROCESSOR_NAME)               :: my_name
@@ -225,14 +225,16 @@ contains
     !  Verify that everybody agrees on this number otherwise do not do 
     !  the multi-level partitioning
     ! =======================================================================
-    call MPI_Allreduce(nmpi_per_node,tmp,1,MPIinteger_t,MPI_BAND,par%comm,ierr)
-    if(tmp .ne. nmpi_per_node) then 
+    call MPI_Allreduce(nmpi_per_node,tmp_min,1,MPIinteger_t,MPI_MIN,par%comm,ierr)
+    call MPI_Allreduce(nmpi_per_node,tmp_max,1,MPIinteger_t,MPI_MAX,par%comm,ierr)
+    if (par%masterproc) write(iulog,*)'number of MPI processes per node: min,max=',&
+         tmp_min,tmp_max
+    if(tmp_min .ne. tmp_max) then 
       if (par%masterproc) write(iulog,*)'initmp:  disagrement accross nodes for nmpi_per_node'
       nmpi_per_node = 1
       PartitionForNodes=.FALSE.
     else
       PartitionForNodes=.TRUE.
-      if (par%masterproc) write(iulog,*)'number of MPI processes per node: ',nmpi_per_node
     endif
 
 
