@@ -11,8 +11,6 @@ module element_state
   private
   integer, public, parameter :: timelevels = 3
 
-  integer, public, parameter :: model = 2 ! 1=preqx, 2=theta 
-
   ! maximum number of Newton iterations taken for an IMEX-RK stage per time-step
   integer, public               :: max_itercnt_perstep
   ! running average of max_itercnt_perstep

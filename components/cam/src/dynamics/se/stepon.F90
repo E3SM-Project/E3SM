@@ -328,7 +328,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
 #if 0
 !disabling all of ftype1 code now
-
+! once we have convert_thermo_forcing working, we can call it,
+!except what is dyn_in?
 
          ! apply forcing to state tl_f
          ! requires forward-in-time timestepping, checked in namelist_mod.F90

@@ -140,8 +140,6 @@ contains
   real (kind=real_kind) :: pfull(np,np,nlev)
   integer :: k
 
-!dry kappa? i m confused
-
 
 #if (defined COLUMN_OPENMP)
   !$omp parallel do default(shared), private(k)

@@ -553,6 +553,7 @@ CONTAINS
                 cnt=cnt+1
 !disabling to move on
 !                elem(ie)%state%T(i,j,k,tl) = var3d(cnt)
+!here we need a routine whcih? we dont have in homme, trivial, assign_thermo_var
              end do
           end do
        end do

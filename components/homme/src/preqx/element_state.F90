@@ -11,7 +11,6 @@ module element_state
   private
   integer, public, parameter :: timelevels = 3
 
-  integer, public, parameter :: model = 1 ! 1=preqx, 2=theta 
 ! =========== PRIMITIVE-EQUATION DATA-STRUCTURES =====================
 
   type, public :: elem_state_t
