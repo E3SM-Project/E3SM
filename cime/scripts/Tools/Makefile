@@ -455,7 +455,6 @@ INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include
 #
 CFLAGS+=$(CPPDEFS)
 CXXFLAGS := $(CFLAGS)
-
 CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
                 MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
                 CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \

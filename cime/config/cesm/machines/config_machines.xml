@@ -144,22 +144,22 @@
     </environment_variables>
   </machine>
 
-  <machine MACH="brutus">
-    <DESC>Brutus Linux Cluster ETH (pgi(9.0-1)/intel(10.1.018) with openi(1.4.1)/mvapich2(1.4rc2), 16 pes/node, batch system LSF, added by UB</DESC>
+  <machine MACH="euler2">
+    <DESC>Euler II Linux Cluster ETH, 24 pes/node, InfiniBand, XeonE5_2680v3, batch system LSF</DESC>
     <OS>LINUX</OS>
-    <COMPILERS>pgi,intel</COMPILERS>
+    <COMPILERS>intel,pgi</COMPILERS>
     <MPILIBS>openmpi,mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>/cluster/work/uwis/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/cluster/work/uwis/ccsm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/cluster/work/uwis/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/cluster/work/uwis/$USER/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/cluster/work/uwis/ccsm/ccsm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/cluster/work/uwis/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <CIME_OUTPUT_ROOT>/cluster/work/climate/$USER</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/cluster/work/climate/cesm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/cluster/work/climate/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/cluster/work/climate/$USER/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/cluster/work/climate/cesm/ccsm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/cluster/work/climate/cesm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>1</GMAKE_J>
     <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
-    <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
+    <SUPPORTED_BY>urs.beyerle -at- env.ethz.ch</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>24</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="mpich">
       <executable>mpirun</executable>
       <arguments>
@@ -169,35 +169,166 @@
       </arguments>
     </mpirun>
     <mpirun mpilib="openmpi">
-      <executable>ompirun</executable>
+      <executable>mpirun</executable>
       <arguments>
       </arguments>
     </mpirun>
     <module_system type="module">
-      <init_path lang="perl">/etc/profile.d/modules.perl</init_path>
+      <init_path lang="python">/cluster/apps/modules/init/python.py</init_path>
       <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
       <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
-      <!-- This is a guess!! -->
-      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/cluster/apps/modules/bin/modulecmd python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
 	<command name="purge"/>
       </modules>
+      <modules>
+	<command name="load">new</command>
+      </modules>
       <modules compiler="intel">
-	<command name="load">intel/10.1.018</command>
-      </modules>
-      <modules compiler="pgi">
-	<command name="load">pgi/9.0-1</command>
-      </modules>
-      <modules mpilib="mpich">
-	<command name="load">mvapich2/1.4rc2</command>
-      </modules>
-      <modules mpilib="openmpi">
-	<command name="load">open_mpi/1.4.1</command>
+	<command name="load">intel/2018.1</command>
       </modules>
       <modules>
-	<command name="load">netcdf/4.0.1</command>
+	<command name="load">netcdf/4.3.1</command>
+      </modules>
+      <modules compiler="pgi">
+	<command name="load">pgi/14.1</command>
+      </modules>
+      <modules mpilib="mpich">
+	<command name="load">mvapich2/1.8.1</command>
+      </modules>
+      <modules mpilib="openmpi">
+	<command name="load">open_mpi/1.6.5</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="OMP_STACKSIZE">64M</env>
+    </environment_variables>
+  </machine>
+
+  <machine MACH="euler3">
+    <DESC>Euler III Linux Cluster ETH, 4 pes/node, Ethernet, XeonE3_1585Lv5, batch system LSF</DESC>
+    <OS>LINUX</OS>
+    <COMPILERS>intel,pgi</COMPILERS>
+    <MPILIBS>openmpi,mpich</MPILIBS>
+    <CIME_OUTPUT_ROOT>/cluster/work/climate/$USER</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/cluster/work/climate/cesm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/cluster/work/climate/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/cluster/work/climate/$USER/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/cluster/work/climate/cesm/ccsm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/cluster/work/climate/cesm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>1</GMAKE_J>
+    <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
+    <SUPPORTED_BY>urs.beyerle -at- env.ethz.ch</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>4</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="mpich">
+      <executable>mpirun</executable>
+      <arguments>
+	<arg name="machine_file">-hostfile $ENV{PBS_JOBID}</arg>
+	<arg name="tasks_per_node"> -ppn $MAX_MPITASKS_PER_NODE</arg>
+	<arg name="num_tasks"> -n {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="openmpi">
+      <executable>mpirun</executable>
+      <arguments>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="python">/cluster/apps/modules/init/python.py</init_path>
+      <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
+      <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
+      <cmd_path lang="python">/cluster/apps/modules/bin/modulecmd python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+	<command name="purge"/>
+      </modules>
+      <modules>
+	<command name="load">new</command>
+      </modules>
+      <modules>
+	<command name="load">interconnect/ethernet</command>
+      </modules>
+      <modules compiler="intel">
+	<command name="load">intel/2018.1</command>
+      </modules>
+      <modules>
+	<command name="load">netcdf/4.3.1</command>
+      </modules>
+      <modules compiler="pgi">
+	<command name="load">pgi/14.1</command>
+      </modules>
+      <modules mpilib="mpich">
+	<command name="load">mvapich2/1.8.1</command>
+      </modules>
+      <modules mpilib="openmpi">
+	<command name="load">open_mpi/1.6.5</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="OMP_STACKSIZE">64M</env>
+    </environment_variables>
+  </machine>
+
+  <machine MACH="euler4">
+    <DESC>Euler IV Linux Cluster ETH, 36 pes/node, InfiniBand, XeonGold_6150, batch system LSF</DESC>
+    <OS>LINUX</OS>
+    <COMPILERS>intel,pgi</COMPILERS>
+    <MPILIBS>openmpi,mpich</MPILIBS>
+    <CIME_OUTPUT_ROOT>/cluster/work/climate/$USER</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/cluster/work/climate/cesm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/cluster/work/climate/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/cluster/work/climate/$USER/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/cluster/work/climate/cesm/ccsm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/cluster/work/climate/cesm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>1</GMAKE_J>
+    <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
+    <SUPPORTED_BY>urs.beyerle -at- env.ethz.ch</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="mpich">
+      <executable>mpirun</executable>
+      <arguments>
+	<arg name="machine_file">-hostfile $ENV{PBS_JOBID}</arg>
+	<arg name="tasks_per_node"> -ppn $MAX_MPITASKS_PER_NODE</arg>
+	<arg name="num_tasks"> -n {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="openmpi">
+      <executable>mpirun</executable>
+      <arguments>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="python">/cluster/apps/modules/init/python.py</init_path>
+      <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
+      <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
+      <cmd_path lang="python">/cluster/apps/modules/bin/modulecmd python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+	<command name="purge"/>
+      </modules>
+      <modules>
+	<command name="load">new</command>
+      </modules>
+      <modules compiler="intel">
+	<command name="load">intel/2018.1</command>
+      </modules>
+      <modules>
+	<command name="load">netcdf/4.3.1</command>
+      </modules>
+      <modules compiler="pgi">
+	<command name="load">pgi/14.1</command>
+      </modules>
+      <modules mpilib="mpich">
+	<command name="load">mvapich2/1.8.1</command>
+      </modules>
+      <modules mpilib="openmpi">
+	<command name="load">open_mpi/1.6.5</command>
       </modules>
     </module_system>
     <environment_variables>
@@ -378,7 +509,10 @@
       <modules compiler="gnu" mpilib="mpi-serial">
 	<command name="load">netcdf/4.6.1</command>
       </modules>
-      <modules compiler="!gnu" mpilib="mpi-serial">
+      <modules compiler="pgi" mpilib="mpi-serial">
+	<command name="load">netcdf/4.4.1.1</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial">
 	<command name="load">netcdf/4.5.0</command>
       </modules>
     </module_system>
@@ -1006,6 +1140,8 @@
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
+      <!-- The following is needed to access qsub from the compute nodes -->
+      <env name="PATH">$ENV{PATH}:/cluster/torque/bin</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
@@ -1622,27 +1758,26 @@
     </environment_variables>
   </machine>
 
-  <machine MACH="rosa">
-    <DESC>CSCS Cray XE6, os is CNL, 32 pes/node, batch system is SLURM</DESC>
+  <machine MACH="daint">
+    <DESC>CSCS Cray XC50, os is SUSE SLES, 12 pes/node, batch system is SLURM</DESC>
     <OS>CNL</OS>
     <COMPILERS>pgi,cray,gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>/scratch/rosa/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/project/s433/cesm_inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/project/s433/cesm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/project/s433/$USER/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/project/s433/ccsm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/project/s433/cesm_tools/ccsm_cprnc/cprnc</CCSM_CPRNC>
+    <CIME_OUTPUT_ROOT>/scratch/snx3000/$USER</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/project/s824/cesm_inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/project/s824/cesm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/project/s824/$USER/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/project/s824/ccsm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/project/s824/cesm_tools/ccsm_cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>12</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>edouard.davin -at- env.ethz.ch</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>12</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
-      <executable>aprun</executable>
+      <executable>srun</executable>
       <arguments>
 	<arg name="num_tasks"> -n {{ total_tasks }}</arg>
-	<arg name="tasks_per_node"> -N $MAX_MPITASKS_PER_NODE</arg>
 	<arg name="thread_count"> -d $ENV{OMP_NUM_THREADS}</arg>
       </arguments>
     </mpirun>
@@ -2009,7 +2144,7 @@
       <executable>aprun</executable>
       <arguments>
 	<arg name="num_tasks" >-n {{ total_tasks }}</arg>
-	<arg name="tasks_per_node" >-N $MAX_MPITASKS_PER_NODE</arg>
+	<arg name="tasks_per_node" >-N {{ tasks_per_node }} </arg>
 	<arg name="thread_count">--cc depth -d $OMP_NUM_THREADS</arg>
 	<arg name="env_omp_stacksize">-e OMP_STACKSIZE=64M</arg>
 	<arg name="env_thread_count">-e OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>

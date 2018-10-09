@@ -883,16 +883,19 @@ class Case(object):
         self.set_value("REALUSER", os.environ["USER"])
 
         # Set project id
-        if project is None:
-            project = get_project(machobj)
         if project is not None:
             self.set_value("PROJECT", project)
-        elif machobj.get_value("PROJECT_REQUIRED"):
-            expect(project is not None, "PROJECT_REQUIRED is true but no project found")
-        # Get charge_account id if it exists
-        charge_account = get_charge_account(machobj)
-        if charge_account is not None:
-            self.set_value("CHARGE_ACCOUNT", charge_account)
+            self.set_value("CHARGE_ACCOUNT", project)
+        else:
+            project = get_project(machobj)
+            if project is not None:
+                self.set_value("PROJECT", project)
+            elif machobj.get_value("PROJECT_REQUIRED"):
+                expect(project is not None, "PROJECT_REQUIRED is true but no project found")
+            # Get charge_account id if it exists
+            charge_account = get_charge_account(machobj)
+            if charge_account is not None:
+                self.set_value("CHARGE_ACCOUNT", charge_account)
 
         # Resolve the CIME_OUTPUT_ROOT variable, other than this
         # we don't want to resolve variables until we need them

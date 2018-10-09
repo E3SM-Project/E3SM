@@ -100,8 +100,7 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics, &
-                              single_column)
+  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
 
 #ifdef ARKODE
     use arkode_mod,     only: parameter_list, update_arkode, get_solution_ptr, &
@@ -119,7 +118,7 @@ contains
     type (TimeLevel_t)   , intent(in)            :: tl
     integer              , intent(in)            :: nets
     integer              , intent(in)            :: nete
-    logical,               intent(in)            :: compute_diagnostics, single_column
+    logical,               intent(in)            :: compute_diagnostics
 
     real (kind=real_kind) :: dt2, time, dt_vis, x, eta_ave_w
     real (kind=real_kind) :: itertol,a1,a2,a3,a4,a5,a6,ahat1,ahat2

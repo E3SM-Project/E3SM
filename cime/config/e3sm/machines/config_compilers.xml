@@ -921,7 +921,7 @@ for mct, etc.
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
-    <base> -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -lpmi -L$ENV{MKL_PATH}/lib/intel64 -lmkl_rt </base>
+    <base> -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -L$ENV{MKL_PATH}/lib/intel64 -lmkl_rt </base>
     <append MPILIB="mpich2"> -mkl=cluster </append>
     <append MPILIB="mpi-serial"> -mkl </append>
   </SLIBS>

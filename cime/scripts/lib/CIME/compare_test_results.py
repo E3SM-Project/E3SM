@@ -1,7 +1,7 @@
 import CIME.compare_namelists, CIME.simple_compare
 from CIME.utils import expect, append_status, EnvironmentContext
 from CIME.test_status import *
-from CIME.hist_utils import compare_baseline
+from CIME.hist_utils import compare_baseline, get_ts_synopsis
 from CIME.case import Case
 
 import os, glob, logging
@@ -142,11 +142,7 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
                             compare_result = TEST_FAIL_STATUS
                             all_pass_or_skip = False
 
-                        # Following the logic in SystemTestsCommon._compare_baseline:
-                        # We'll print the comment if it's a brief one-liner; otherwise
-                        # the comment will only appear in the log file
-                        if "\n" not in detailed_comments:
-                            compare_comment = detailed_comments
+                        compare_comment = get_ts_synopsis(detailed_comments)
 
             brief_result = ""
             if not hist_only:

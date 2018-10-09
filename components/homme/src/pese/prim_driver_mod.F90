@@ -205,8 +205,7 @@ subroutine prim_step(elem,hybrid,nets,nete,dt,tl,hvcoord,compute_diagnostics,rst
 
     ! take qsplit dynamics steps, followed by one tracer step
     do n=1,qsplit
-      call prim_advance_exp(elem, deriv1, hvcoord, hybrid, dt, tl, nets, nete, compute_diagnostics, &
-           single_column)
+      call prim_advance_exp(elem, deriv1, hvcoord, hybrid, dt, tl, nets, nete, compute_diagnostics)
       if(n<qsplit) call timelevel_update(tl,"leapfrog")
     enddo
 
