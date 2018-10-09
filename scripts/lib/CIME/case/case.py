@@ -372,7 +372,8 @@ class Case(object):
         """
         If a file has been defined, and the variable is in the file,
         then that value will be set in the file object and the resovled value
-        is returned
+        is returned unless return_file is True, in which case (resolved_value, filename)
+        is returned where filename is the name of the modified file.
         """
         if item == "CASEROOT":
             self._caseroot = value

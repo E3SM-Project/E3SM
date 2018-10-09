@@ -48,7 +48,7 @@ Examples:
 
 from standard_script_setup import *
 
-from CIME.utils import expect, convert_to_type, append_case_status
+from CIME.utils import expect, convert_to_type, append_case_status, get_batch_script_for_job
 from CIME.case import Case
 
 import re
@@ -147,14 +147,23 @@ def xmlchange_single_value(case, xmlid, xmlval, subgroup, append, force, dryrun)
         expect(result is not None,"No variable \"%s\" found"%xmlid)
         filename = result[1]
 
-        if filename.endswith("env_batch.xml"):
-            logger.info("case.submit will auto-regen your batch files, no further user action is needed")
-        elif filename.endswith("env_build.xml"):
-            logger.info("You should consider cleaning and rebuilding your case")
+        setup_already_run = os.path.exists(get_batch_script_for_job(case.get_primary_job()))
+        build_already_run = case.get_value("BUILD_COMPLETE")
+
+        if filename.endswith("env_build.xml") and build_already_run:
+            logger.info(
+"""For your changes to take effect, run:
+./case.build --clean-all
+./case.build""")
+
         elif filename.endswith("env_mach_pes.xml"):
-            logger.info("Changing mach_pes can have a big impact on your case. Please re-run case.setup, and clean/rebuild your case")
-        elif filename.endswith("env_case.xml"):
-            logger.info("You are changing a fundamental property of your case. Please re-run case.setup, and clean/rebuild your case")
+            if setup_already_run:
+                logger.info("For your changes to take effect, run:\n./case.setup --reset")
+            if build_already_run:
+                if not setup_already_run:
+                    logger.info("For your changes to take effect, run:")
+
+                logger.info("./case.build --clean-all\n./case.build")
 
     else:
         logger.warning("'%s' = '%s'" , xmlid , xmlval )
