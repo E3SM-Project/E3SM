@@ -156,57 +156,59 @@ subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
 
   integer :: i,j,k,ie , ierr                                                  ! loop indices
   real(rl):: lon,lat,ntop                                               ! pointwise coordiantes
-  real(rl):: p,z,u,v,w,T,thetav,phis,ps,rho,q(3),dp                     ! pointwise field values
+  real(rl), dimension(np,np,nlev):: p,z,u,v,w,T,rho,dp                     ! pointwise field values
+  real(rl), dimension(np,np):: ps,phis
+  real(rl), dimension(np,np,nlevp):: w_i,z_i,p_i
+  real(rl) :: thetav,q(3)
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 2: tropical cyclone'
   !use vertical levels specificed in cam30 file
 
   ! set initial conditions
   do ie = nets,nete
+     do k=1,nlevp; do j=1,np; do i=1,np
+
+        ! get surface pressure ps(i,j) at lat, lon, z=0, ignore all other output
+        lon = elem(ie)%spherep(i,j)%lon
+        lat = elem(ie)%spherep(i,j)%lat
+        z_i(i,j,k)=0; call tropical_cyclone_test(lon,lat,p(i,j,1),z_i(i,j,k),1,u(i,j,1),&
+             v(i,j,1),T(i,j,1),thetav,phis(i,j),ps(i,j),rho(i,j,1),q(1))
+
+        ! get hydrostatic pressure at level k
+        p_i(i,j,k)  = p0*hvcoord%hyai(k) + ps(i,j)*hvcoord%hybi(k)
+
+        ! call this only to compute z_i, will ignore all other output
+        call tropical_cyclone_test(lon,lat,p_i(i,j,k),z_i(i,j,k),0,u(i,j,1),v(i,j,1),&
+             T(i,j,1),thetav,phis(i,j),ps(i,j),rho(i,j,1),q(1))
+
+        w_i(i,j,k)  = 0
+
+     enddo; enddo; enddo;
+
      do k=1,nlev; do j=1,np; do i=1,np
 
         ! get surface pressure
         lon = elem(ie)%spherep(i,j)%lon
         lat = elem(ie)%spherep(i,j)%lat
-        z=0; call tropical_cyclone_test(lon,lat,p,z,1,u,v,T,thetav,phis,ps,rho,q(1))
+        z=0; call tropical_cyclone_test(lon,lat,p(i,j,k),z(i,j,k),1,u(i,j,k),v(i,j,k),&
+             T(i,j,k),thetav,phis(i,j),ps(i,j),rho(i,j,k),q(1))
 
         ! get pressure at level midpoints
-        p = p0*hvcoord%hyam(k) + ps*hvcoord%hybm(k)
+        p(i,j,k) = p0*hvcoord%hyam(k) + ps(i,j)*hvcoord%hybm(k)
 
         ! get initial conditions at pressure level p
-        call tropical_cyclone_test(lon,lat,p,z,0,u,v,T,thetav,phis,ps,rho,q(1))
+        call tropical_cyclone_test(lon,lat,p(i,j,k),z(i,j,k),0,u(i,j,k),v(i,j,k),&
+             T(i,j,k),thetav,phis(i,j),ps(i,j),rho(i,j,k),q(1))
 
-        dp = pressure_thickness(ps,k,hvcoord)
-        w  = 0
+        dp(i,j,k) = pressure_thickness(ps(i,j),k,hvcoord)
+        w(i,j,k)  = 0
         q(2)=0
         q(3)=0
 
-        call set_state(u,v,w,T,ps,phis,p,dp,z,g,i,j,k,elem(ie),1,nt)
-        call set_tracers(q,3,dp,i,j,k,lat,lon,elem(ie))
+        call set_tracers(q(:),3,dp(i,j,k),i,j,k,lat,lon,elem(ie))
      enddo; enddo; enddo;
 
-
-
-     do k=1,nlevp; do j=1,np; do i=1,np
-
-        ! get surface pressure
-        lon = elem(ie)%spherep(i,j)%lon
-        lat = elem(ie)%spherep(i,j)%lat
-        z=0; call tropical_cyclone_test(lon,lat,p,z,1,u,v,T,thetav,phis,ps,rho,q(1))
-
-        ! get pressure at level midpoints
-        p = p0*hvcoord%hyai(k) + ps*hvcoord%hybi(k)
-
-        ! get initial conditions at pressure level p
-        call tropical_cyclone_test(lon,lat,p,z,0,u,v,T,thetav,phis,ps,rho,q(1))
-
-        dp = pressure_thickness(ps,k,hvcoord)
-        w  = 0
-
-        call set_state_i(u,v,w,T,ps,phis,p,dp,z,g,i,j,k,elem(ie),1,nt)
-     enddo; enddo; enddo;
-
-
+    call set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,z,z_i,g,elem(ie),1,nt,ntQ=1)
     call tests_finalize(elem(ie),hvcoord,1,nt)
   enddo
 
@@ -415,7 +417,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     precl(:,:,ie) = -1.0d0
 
     ! get current element state
-    call get_state(u,v,w,T,p,dp,ps,rho,z,g,elem(ie),hvcoord,nt,ntQ)
+    call get_state(u,v,w,T,p,dp,ps,rho,z,zi,g,elem(ie),hvcoord,nt,ntQ)
 
     ! compute form of exner pressure expected by Kessler physics
     exner_kess = (p/p0)**(Rgas/Cp)
@@ -438,10 +440,10 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     u0=u; v0=v; T0=T; qv0=qv; qc0=qc; qr0=qr
 
     ! get zi from z
-    zi(:,:,nlevp) = 0 ! phis=0
-    zi(:,:,2:nlev)= (z(:,:,2:nlev)+z(:,:,1:nlev-1))/2.0d0
-    dz_top        = dp(:,:,1)/(rho(:,:,1)*g)
-    zi(:,:,1)     = zi(:,:,2)+dz_top
+!    zi(:,:,nlevp) = 0 ! phis=0
+!    zi(:,:,2:nlev)= (z(:,:,2:nlev)+z(:,:,1:nlev-1))/2.0d0
+!    dz_top        = dp(:,:,1)/(rho(:,:,1)*g)
+!    zi(:,:,1)     = zi(:,:,2)+dz_top
 
     ! apply forcing to columns
     do j=1,np; do i=1,np
@@ -542,7 +544,7 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
     precl(:,:,ie) = -1.0d0
 
     ! get current element state
-    call get_state(u,v,w,T,p,dp,ps,rho,z,g,elem(ie),hvcoord,nt,ntQ)
+    call get_state(u,v,w,T,p,dp,ps,rho,z,zi,g,elem(ie),hvcoord,nt,ntQ)
 
     ! compute form of exner pressure expected by Kessler physics
     exner_kess = (p/p0)**(Rgas/Cp)
@@ -553,6 +555,8 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
     qc  = elem(ie)%state%Qdp(:,:,:,2,ntQ)/dp
     qr  = elem(ie)%state%Qdp(:,:,:,3,ntQ)/dp
 
+    !rho = (1-qv)*rho  ! convert to dry density
+
     ! ensure positivity
     where(qv<0); qv=0; endwhere
     where(qc<0); qc=0; endwhere
@@ -562,10 +566,10 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
     u0=u; v0=v; T0=T; qv0=qv; qc0=qc; qr0=qr
 
     ! get zi from z
-    zi(:,:,nlevp) = 0 ! phis=0
-    zi(:,:,2:nlev)= (z(:,:,2:nlev)+z(:,:,1:nlev-1))/2.0d0
-    dz_top        = dp(:,:,1)/(rho(:,:,1)*g)
-    zi(:,:,1)     = zi(:,:,2)+dz_top
+    !zi(:,:,nlevp) = 0 ! phis=0
+    !zi(:,:,2:nlev)= (z(:,:,2:nlev)+z(:,:,1:nlev-1))/2.0d0
+    !dz_top        = dp(:,:,1)/(rho(:,:,1)*g)
+    !zi(:,:,1)     = zi(:,:,2)+dz_top
 
     ! apply forcing to columns
     do j=1,np; do i=1,np
@@ -598,6 +602,13 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
     enddo; enddo;
 
     ! get temperature from new pressure
+    ! rho(dry mass) didn't change
+    ! rho R* Theta = p/exner  
+    !rho = rho/(1-qv)  ! convert to full desnsity
+    !p_over_exner = (rho*Rgas*theta_kess)
+    !p = (p_over_exner * p0**(-kappa))**(1/1-kappa)
+    !exner = p/p_over_exner
+    
     T = theta_kess*exner_kess
 
     ! set dynamics forcing
@@ -637,6 +648,7 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   real(rl), dimension(np,np,nlev) :: u,v,w,T,theta_kess,rho_kess,exner_kess,p,dp,rho,z,qv,qc,qr
   real(rl), dimension(np,np,nlev) :: T0,qv0,qc0,qr0
   real(rl), dimension(np,np,nlev) :: theta_inv,qv_inv,qc_inv,qr_inv,rho_inv,exner_inv,z_inv ! inverted columns
+  real(rl), dimension(np,np,nlevp):: zi
   real(rl), dimension(np,np)      :: ps
   real(rl) :: max_w, max_precl, min_ps
 
@@ -649,7 +661,7 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     precl(:,:,ie) = 0.0
 
     ! get current element state
-    call get_state(u,v,w,T,p,dp,ps,rho,z,g,elem(ie),hvcoord,nt,ntQ)
+    call get_state(u,v,w,T,p,dp,ps,rho,z,zi,g,elem(ie),hvcoord,nt,ntQ)
 
     ! get mixing ratios
     qv  = elem(ie)%state%Qdp(:,:,:,1,ntQ)/dp
