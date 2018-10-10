@@ -11,8 +11,7 @@ python:
   - '3.6'
 
 env:
-  - CIME_MODEL=cesm
-  - alias gmake=make
+  - CIME_MODEL=cesm; alias gmake=make
 
 script: cd scripts/tests; ./scripts_regression_tests.py --machine centos7-linux   A_RunUnitTests B_CheckCode G_TestMacrosBasic H_TestMakeMacros I_TestCMakeMacros 
 
