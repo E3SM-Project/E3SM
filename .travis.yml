@@ -2,8 +2,6 @@ language: python
 
 before_install:
   - sudo apt-get install -y libxml2-utils
-  - shopt -s expand_aliases
-  - alias gmake=make
 
 install: 
   - pip install pylint
@@ -17,7 +15,7 @@ env:
 
 script: cd scripts/tests; ./scripts_regression_tests.py --machine centos7-linux   A_RunUnitTests B_CheckCode G_TestMacrosBasic H_TestMakeMacros I_TestCMakeMacros 
 
-# In addition to building PRs, also run the build on master whenever
+# In addition to building PRs, also run the build on the following branches whenever
 # it's pushed
 branches:
   only:
