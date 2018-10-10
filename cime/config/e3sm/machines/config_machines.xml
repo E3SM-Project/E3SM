@@ -2266,7 +2266,7 @@
 	     <command name="rm">netcdf</command>
 	   </modules>
 	   <modules compiler="intel">
-	     <command name="load">intel/16.0.1.150</command>
+	     <command name="load">intel/18.0.1.163</command>
 	     <command name="load">papi</command>
 	   </modules>
 	   <modules compiler="cray">
