@@ -193,6 +193,7 @@ class Machines(GenericXML):
 
         if value is None:
             # if all else fails
+            #pylint: disable=assignment-from-none
             value = GenericXML.get_value(self, name)
 
         if resolved:
@@ -305,6 +306,7 @@ class Machines(GenericXML):
     def set_value(self, vid, value, subgroup=None, ignore_type=True):
         tmproot = self.root
         self.root = self.machine_node
+        #pylint: disable=assignment-from-no-return
         result = super(Machines, self).set_value(vid, value, subgroup=subgroup,
                                                ignore_type=ignore_type)
         self.root = tmproot

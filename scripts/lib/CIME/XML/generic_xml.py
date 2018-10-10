@@ -448,6 +448,7 @@ class GenericXML(object):
         for m in reference_re.finditer(item_data):
             var = m.groups()[0]
             logger.debug("find: {}".format(var))
+            #pylint: disable=assignment-from-none
             ref = self.get_value(var)
             if ref is not None:
                 logger.debug("resolve: " + str(ref))
