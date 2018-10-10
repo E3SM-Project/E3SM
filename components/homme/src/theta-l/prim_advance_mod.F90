@@ -46,8 +46,8 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-       applycamforcing_tracers, applycamforcing_dynamics, &
-       applyCAMforcing_dynamics_dp, convert_thermo_forcing
+            applycamforcing_tracers, applycamforcing_dynamics, &
+            applyCAMforcing_dynamics_dp, convert_thermo_forcing
 
 contains
 
