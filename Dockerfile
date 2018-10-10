@@ -27,6 +27,10 @@ RUN conda env update -n base --file conda/e3sm_diags_env_dev.yml && \
 # passed correctly when you run the container.
 ENTRYPOINT ["e3sm_diags"]
 
+# Set an environmental variable so e3sm_diags
+# can know if it's running in a container.
+ENV E3SM_DIAGS_CONTAINER true
+
 # When running the container, you might need to mount WORKDIR
 # to the cwd on the machine running the container, so that
 # the input py and cfg files can be read properly.

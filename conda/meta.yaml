@@ -18,7 +18,7 @@ requirements:
 
   run:
     - python {{ python }}
-    - cdp 1.4.0
+    - cdp 1.4.1
     - vcs 8.0
     - vtk-cdat 8.0.1.8.0
     - vcsaddons 8.0

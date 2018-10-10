@@ -8,10 +8,10 @@ def is_container():
     """
     Returns True if e3sm_diags is running as a container.
     """
-    # If e3sm_diags has a current wording directory as the container's,
-    # then it's probably running as a container.
-    # Why would someone otherwise actually run the diags in a folder 'e3sm_diags_container_cwd'?
-    return os.getcwd() == '/e3sm_diags_container_cwd'
+    # Check if the environmental variable set in the Dockerfile
+    # is present and is True.
+    var = 'E3SM_DIAGS_CONTAINER'
+    return var in os.environ and os.environ[var] == 'true'
 
 def containerize_parameter(params_obj):
     """
