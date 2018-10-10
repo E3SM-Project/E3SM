@@ -9,7 +9,7 @@ python:
   - '3.6'
 env:
   - CIME_MODEL=cesm
-script: cd scripts/tests; ./scripts_regression_tests.py --machine centos7-linux   A_RunUnitTests B_CheckCode
+script: cd scripts/tests; ./scripts_regression_tests.py --machine centos7-linux   A_RunUnitTests B_CheckCode G_TestMacrosBasic H_TestMakeMacros I_TestCMakeMacros 
 
 # In addition to building PRs, also run the build on master whenever
 # it's pushed
