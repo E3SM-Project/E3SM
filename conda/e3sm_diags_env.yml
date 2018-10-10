@@ -9,7 +9,7 @@ dependencies:
   - dv3d=8.0=py27_0
   - vcs=8.0=py27_0
   - vcsaddons=8.0=py27_0
-  - vtk-cdat=8.0.1.8.0=py27_1
+  - vtk-cdat=8.0.1.8.0=py27_mesalib_1
   - asn1crypto=0.24.0=py27_1003
   - backports=1.0=py_2
   - backports.functools_lru_cache=1.5=py_1
@@ -93,6 +93,7 @@ dependencies:
   - lxml=4.2.5=py27hc9114bc_0
   - markupsafe=1.0=py27h470a237_1
   - matplotlib=2.2.3=py27h8e2386c_0
+  - mesalib=17.3.9=hdd5ec5b_0
   - mkl_fft=1.0.6=py27_0
   - mkl_random=1.0.1=py27_0
   - mpi=1.0=mpich
