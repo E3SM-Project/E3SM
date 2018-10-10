@@ -42,6 +42,7 @@ _TESTS = {
                                ("PET_Ln5.ne4_ne4.FC5AV1C-L","allactive-mach-pet"),
                                "PEM_Ln5.ne4_ne4.FC5AV1C-L",
                                ("SMS_D_Ln5.ne4_ne4.FC5AV1C-L", "cam-cosplite_nhtfrq5"),
+                               ("ERS_Ld5.ne4_ne4.FC5AV1C-L", "cam-rrtmgp"),
                                "REP_Ln5.ne4_ne4.FC5AV1C-L")
                               ),
     #atmopheric tests for extra coverage
@@ -76,7 +77,6 @@ _TESTS = {
                          "ERS.f09_g16_g.MALISIA",
                          "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
                          "SMS.f09_g16_a.IGCLM45_MLI",
-                         "ERS_Ld5.ne4_ne4.FC5AV1C-L-RRTMGP",
                         ("SMS_P12x2.ne4_oQU240.A_WCYCL1850","allactive-mach_mods")
                         )),
 
