@@ -57,7 +57,8 @@ module WaterstateType
      real(r8), pointer :: ice1_grc               (:)   ! grc initial gridcell total h2o ice content
      real(r8), pointer :: ice2_grc               (:)   ! grc post land cover change total ice content
      real(r8), pointer :: tws_grc                (:)   ! grc total water storage (mm H2O)
-
+     real(r8), pointer :: tws_month_beg_grc      (:)   ! grc total water storage at the beginning of a month
+     real(r8), pointer :: tws_month_end_grc      (:)   ! grc total water storage at the end of a month
 
      real(r8), pointer :: total_plant_stored_h2o_col(:) ! col water that is bound in plants, including roots, sapwood, leaves, etc
                                                         ! in most cases, the vegetation scheme does not have a dynamic
@@ -228,6 +229,8 @@ contains
     allocate(this%ice1_grc               (begg:endg))                     ; this%ice1_grc               (:)   = nan
     allocate(this%ice2_grc               (begg:endg))                     ; this%ice2_grc               (:)   = nan
     allocate(this%tws_grc                (begg:endg))                     ; this%tws_grc                (:)   = nan
+    allocate(this%tws_month_beg_grc      (begg:endg))                     ; this%tws_month_beg_grc      (:)   = nan
+    allocate(this%tws_month_end_grc      (begg:endg))                     ; this%tws_month_end_grc      (:)   = nan
 
     allocate(this%total_plant_stored_h2o_col(begc:endc))                  ; this%total_plant_stored_h2o_col(:) = nan
 
@@ -393,6 +396,16 @@ contains
     call hist_addfld1d (fname='TWS',  units='mm',  &
          avgflag='A', long_name='total water storage', &
          ptr_lnd=this%tws_grc)
+
+    this%tws_month_beg_grc(begg:endg) = spval
+    call hist_addfld1d (fname='TWS_MONTH_BEGIN',  units='mm',  &
+         avgflag='I', long_name='total water storage at the beginning of a month', &
+         ptr_lnd=this%tws_month_beg_grc)
+
+    this%tws_month_end_grc(begg:endg) = spval
+    call hist_addfld1d (fname='TWS_MONTH_END',  units='mm',  &
+         avgflag='I', long_name='total water storage at the end of a month', &
+         ptr_lnd=this%tws_month_end_grc)
 
     ! Humidity
 
@@ -831,6 +844,7 @@ contains
     use clm_varctl       , only : bound_h2osoi
     use ncdio_pio        , only : file_desc_t, ncd_io, ncd_double
     use restUtilMod
+    use subgridAveMod    , only : c2g
     !
     ! !ARGUMENTS:
     class(waterstate_type) :: this
@@ -1035,6 +1049,17 @@ contains
             dim1name='column', &
             long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%wf_col) 
+    end if
+
+    call restartvar(ncid=ncid, flag=flag, varname='TWS_MONTH_BEGIN', xtype=ncd_double,  &
+         dim1name='gridcell', &
+         long_name='surface watertotal water storage at the beginning of a month', units='mm', &
+          interpinic_flag='interp', readvar=readvar, data=this%tws_month_beg_grc)
+
+    if (flag=='read') then
+       if (.not. readvar) then
+          this%tws_month_beg_grc(bounds%begg:bounds%endg) = 0.0_r8
+       end if
     end if
 
   end subroutine Restart
