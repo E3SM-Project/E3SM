@@ -1,7 +1,7 @@
 language: python
 install: 
-  - "pip install pylint"
-  - "apt-get install libxml2-utils"
+  - pip install pylint
+  - apt-get install libxml2-utils
 python:
   - '2.7'
   - '3.6'
