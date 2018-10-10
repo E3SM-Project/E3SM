@@ -384,8 +384,7 @@ module seaice_core
    subroutine mpas_timestep(domain, itimestep, timeStamp)
 
       use mpas_derived_types
-      use seaice_time_integration
-      use seaice_error, only: seaice_check_critical_error
+      use seaice_time_integration, only: seaice_timestep
 
       implicit none
 
@@ -393,12 +392,7 @@ module seaice_core
       integer, intent(in) :: itimestep
       character(len=*), intent(in) :: timeStamp
 
-      integer :: ierr
-
-      ierr = 0
-      call seaice_timestep(domain, clock, itimestep, ierr)
-
-      call seaice_check_critical_error(domain, ierr)
+      call seaice_timestep(domain, clock, itimestep)
 
    end subroutine mpas_timestep
 

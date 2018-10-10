@@ -2338,7 +2338,6 @@ contains
   subroutine seaice_run_advection_incremental_remap(&
        domain,      &
        clock,       &
-       ierr,        &
        timeLevelIn, &
        updateHaloInitIn,  &
        updateHaloFinalIn)
@@ -2353,9 +2352,6 @@ contains
 
     type (MPAS_Clock_type), intent(in) :: &
          clock     !< Input: clock
-
-    integer, intent(inout) :: &
-         ierr      !< Input/Output: error code
 
     integer, intent(in), optional :: &
          timeLevelIn    !< Input: time level of input fields (1 or 2)
@@ -2397,6 +2393,9 @@ contains
     ! dynamics time step
     real(kind=RKIND), pointer :: &
          dynamicsTimeStep
+
+    logical, pointer :: &
+         abortFlag ! abort flag
 
     ! assign pointers
     dminfo => domain % dminfo
@@ -2462,8 +2461,8 @@ contains
              else
 
                 ! with reuse
-                call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierr)
-                if (ierr /= MPAS_DMPAR_NOERR) then
+                call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierrHalo)
+                if (ierrHalo /= MPAS_DMPAR_NOERR) then
                    call MPAS_log_write("failure to perform reuse halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
                 endif
 
@@ -2562,15 +2561,12 @@ contains
             domain, &
             block, &
             dynamicsTimeStep, &
-            tracersHead, &
-            ierr)
-       if (ierr > 0) exit
+            tracersHead)
 
        block  => block % next
 
     enddo  ! associated(block)
     call mpas_timer_stop("incr remap blocks")
-    if (ierr > 0) return
 
     ! Optional check for conservation of mass and mass*tracer
     ! Note: This check must be done outside the block loop because it requires global sums
@@ -2581,9 +2577,9 @@ contains
        if (verboseRun) call mpas_log_write('Check conservation')
 
        call mpas_timer_start("incr remap tracer cons check")
-       call check_tracer_conservation(dminfo, tracersHead, ierr)
+       call check_tracer_conservation(dminfo, tracersHead, abortFlag)
        call mpas_timer_stop("incr remap tracer cons check")
-       if (ierr > 0) return
+       call seaice_check_critical_error(domain, abortFlag)
 
     endif
 
@@ -2597,9 +2593,9 @@ contains
        if (verboseRun) call mpas_log_write('Check monotonicity')
 
        call mpas_timer_start("incr remap tracer mono check")
-       call check_tracer_monotonicity(domain, tracersHead, ierr)
+       call check_tracer_monotonicity(domain, tracersHead, abortFlag)
        call mpas_timer_stop("incr remap tracer mono check")
-       if (ierr > 0) return
+       call seaice_check_critical_error(domain, abortFlag)
 
     endif
 
@@ -2746,7 +2742,6 @@ contains
        block,       &
        dt,          &
        tracersHead, &
-       ierr,        &
        timeLevelIn)
 
     ! in/out arguments
@@ -2758,9 +2753,6 @@ contains
 
     real(kind=RKIND), intent(in) :: &
          dt           !< Input: time step
-
-    integer, intent(inout) :: &
-         ierr         !< Input/Output: error code
 
     type(tracer_type), pointer :: &
          tracersHead  !< Input/output: pointer to first element of linked list of tracers
@@ -2882,6 +2874,9 @@ contains
     type(tracer_type), pointer :: thisTracer
     integer :: n, m, iEdge, iCat, iLayer, iCell
     integer :: nCategories, nLayers, count
+
+    logical :: &
+         abortFlag ! flag if code aborting
 
     logical, pointer :: &
          configConservationCheck, & ! namelist configuration whether perform conservation check
@@ -3169,6 +3164,7 @@ contains
     !-------------------------------------------------------------------
 
     call mpas_timer_start("incr remap integrate fluxes")
+    abortFlag = .false.
     call integrate_fluxes_over_triangles(&
          tracersHead,          &
          nCells,               &
@@ -3181,12 +3177,10 @@ contains
          indexToCellID,        &
          indexToEdgeID,        &
          block,                &
-         ierr)
+         abortFlag)
     call mpas_timer_stop("incr remap integrate fluxes")
-    if (ierr > 0) then
-       call seaice_critical_error_write_block(domain, block)
-       return
-    endif
+    call seaice_critical_error_write_block(domain, block, abortFlag)
+    call seaice_check_critical_error(domain, abortFlag)
 
     if (verboseFluxes .and. etestOnProc .and. block % localBlockID == etestBlockID) then
        iEdge = etest
@@ -3281,6 +3275,7 @@ contains
     !-------------------------------------------------------------------
 
     call mpas_timer_start("incr remap update tracers")
+    abortFlag = .false.
     call update_mass_and_tracers(&
          nCellsSolve,      &
          nEdgesOnCell,     &
@@ -3291,12 +3286,10 @@ contains
          indexToCellID,    &
          indexToEdgeID,    &
          block, &
-         ierr)
+         abortFlag)
     call mpas_timer_stop("incr remap update tracers")
-    if (ierr > 0) then
-       call seaice_critical_error_write_block(domain, block)
-       return
-    endif
+    call seaice_critical_error_write_block(domain, block, abortFlag)
+    call seaice_check_critical_error(domain, abortFlag)
 
     !-------------------------------------------------------------------
     ! Compute final sums of mass*tracer over the locally owned cells
@@ -6691,7 +6684,7 @@ contains
        indexToCellID,        &
        indexToEdgeID,        &
        block,                &
-       ierr)
+       abortFlag)
 
     type(tracer_type), pointer :: &
          tracersHead      !< Input/output: pointer to first element of linked list of tracers
@@ -6724,8 +6717,8 @@ contains
     type(block_type), intent(in) :: &
          block             !< Input: local block (diagnostic only)
 
-    integer, intent(inout) :: &
-         ierr              !< Input: error code
+    logical, intent(inout) :: &
+         abortFlag         !< Input: error code
 
     ! local variables
 
@@ -6895,7 +6888,7 @@ contains
                                call mpas_log_write('x gradient: $r', MPAS_LOG_ERR, realArgs=(/thisTracer % xGrad2D(iCat,iCell)/))
                                call mpas_log_write('y gradient: $r', MPAS_LOG_ERR, realArgs=(/thisTracer % yGrad2D(iCat,iCell)/))
                                call mpas_log_write('IR negative reconstructed ice area (nDims == 2)', MPAS_LOG_ERR)
-                               ierr = SEAICE_ERROR_IR_NEG_AREA
+                               abortFlag = .true.
                                return
                             endif  ! negative area
                          enddo   ! iCat
@@ -6999,7 +6992,7 @@ contains
                                        realArgs=(/thisTracer % yGrad3D(iLayer,iCat,iCell)/))
                                   call mpas_log_write('MPAS-seaice: IR negative reconstructed ice area (nDims == 3)', &
                                        messageType=MPAS_LOG_ERR)
-                                  ierr = SEAICE_ERROR_IR_NEG_AREA
+                                  abortFlag = .true.
                                   return
                                endif  ! negative area
                             enddo   ! iLayer
@@ -7197,7 +7190,7 @@ contains
        indexToCellID,    &
        indexToEdgeID,    &
        block,            &
-       ierr)
+       abortFlag)
 
     integer, intent(in) :: &
          nCellsSolve       !< Input: number of locally owned cells to be updated
@@ -7223,8 +7216,8 @@ contains
     type(block_type), intent(in) :: &
          block             !< Input: local block (diagnostic only)
 
-    integer, intent(inout) :: &
-         ierr              !< Input/Output: error code
+    logical, intent(inout) :: &
+         abortFlag         !< Input/Output: error flag
 
     ! local variables
 
@@ -7533,7 +7526,7 @@ contains
                            messageType=MPAS_LOG_ERR, &
                            intArgs=(/iCat, iCell, indexToCellID(iCell)/), &
                            realArgs=(/thisTracer % array2D(iCat,iCell)/))
-                      ierr = SEAICE_ERROR_IR_NEG_MASS
+                      abortFlag = .true.
                       return
                    endif
                 enddo
@@ -7549,7 +7542,7 @@ contains
                               messageType=MPAS_LOG_ERR, &
                               intArgs=(/iLayer, iCat, iCell, indexToCellID(iCell)/), &
                               realArgs=(/thisTracer % array3D(iLayer,iCat,iCell)/))
-                         ierr = SEAICE_ERROR_IR_NEG_MASS
+                         abortFlag = .true.
                          return
                       endif
                    enddo
@@ -8177,7 +8170,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine check_tracer_conservation(dminfo, tracersHead, ierr)
+  subroutine check_tracer_conservation(dminfo, tracersHead, abortFlag)
 
     type (dm_info), intent(in) :: dminfo   !< Input: domain info
 
@@ -8185,8 +8178,8 @@ contains
          tracersHead    !< Input/output: pointer to first element of linked list of tracers
                         ! The pointer stays attached to the first tracer, but tracer sums are updated
 
-    integer, intent(inout) :: &
-         ierr           !<Input/Output: error code
+    logical, intent(inout) :: &
+         abortFlag      !< Input/output: abort flag
 
     ! local variables
     type(tracer_type), pointer :: thisTracer
@@ -8242,7 +8235,7 @@ contains
                    call mpas_log_write('Init value, final value: $r $r', MPAS_LOG_ERR, &
                         realArgs=(/thisTracer % globalSumInit2D(iCat), thisTracer % globalSumFinal2D(iCat)/))
                    call mpas_log_write('Difference, ratio: $r $r', MPAS_LOG_ERR, realArgs=(/difference, ratio/))
-                   ierr = SEAICE_ERROR_IR_CONS
+                   abortFlag = .true.
                    return
                 endif
 
@@ -8289,7 +8282,7 @@ contains
                            realArgs=(/thisTracer % globalSumInit3D(iLayer,iCat), thisTracer % globalSumFinal3D(iLayer,iCat)/))
                       call mpas_log_write('Difference, ratio: $r $r', MPAS_LOG_ERR, &
                            realArgs=(/difference, ratio/))
-                      ierr = SEAICE_ERROR_IR_CONS
+                      abortFlag = .true.
                       return
                    endif
 
@@ -8467,7 +8460,7 @@ contains
   !       Might not work to do so without the extended min/max, because local min/max
   !        will not be computed correctly for initially ice-free cells
 
-  subroutine check_tracer_monotonicity(domain, tracersHead, ierr)
+  subroutine check_tracer_monotonicity(domain, tracersHead, abortFlag)
 
     type (domain_type), intent(inout) :: &
          domain        !< Input: domain info
@@ -8476,8 +8469,8 @@ contains
          tracersHead   !< Input/output: pointer to first element of linked list of tracers
                        ! The pointer stays attached to the first tracer, but all tracer sums are updated
 
-    integer, intent(inout) :: &
-         ierr          !<Input/Output: error code
+    logical, intent(inout) :: &
+         abortFlag     !<Input/Output: abort flag
 
     ! local variables
 
@@ -8625,8 +8618,8 @@ contains
                             call mpas_log_write('Tolerance, difference: $r $r', MPAS_LOG_ERR, &
                                  realArgs=(/toleranceMin, thisTracer % localMin2D(iCat,iCell) - thisTracer % array2D(iCat,iCell)/))
                             call mpas_log_write('IR advection, monotonicity violation (min, nDims == 2)', MPAS_LOG_ERR)
-                            ierr = SEAICE_ERROR_IR_MONO
-                            call seaice_critical_error_write_block(domain, block)
+                            abortFlag = .true.
+                            call seaice_critical_error_write_block(domain, block, abortFlag)
                             return
 
                          elseif (thisTracer % array2D(iCat,iCell) > thisTracer % localMax2D(iCat,iCell) + toleranceMax) then
@@ -8643,8 +8636,8 @@ contains
                             call mpas_log_write('Tolerance, difference: $r $r', MPAS_LOG_ERR, &
                                  realArgs=(/toleranceMax, thisTracer % array2D(iCat,iCell) - thisTracer % localMax2D(iCat,iCell)/))
                             call mpas_log_write('IR advection, monotonicity violation (max, nDims == 2)', MPAS_LOG_ERR)
-                            ierr = SEAICE_ERROR_IR_MONO
-                            call seaice_critical_error_write_block(domain, block)
+                            abortFlag = .true.
+                            call seaice_critical_error_write_block(domain, block, abortFlag)
                             return
 
                          endif
@@ -8758,8 +8751,8 @@ contains
                                call mpas_log_write('Tolerance, difference: $r $r', MPAS_LOG_ERR, &
                                     realArgs=(/toleranceMin, thisTracer % localMin3D(iLayer,iCat,iCell) - thisTracer % array3D(iLayer,iCat,iCell)/))
                                call mpas_log_write('IR advection, monotonicity violation (min, nDims == 3)', MPAS_LOG_ERR)
-                               ierr = SEAICE_ERROR_IR_MONO
-                               call seaice_critical_error_write_block(domain, block)
+                               abortFlag = .true.
+                               call seaice_critical_error_write_block(domain, block, abortFlag)
                                return
 
                             elseif (thisTracer % array3D(iLayer,iCat,iCell) > &
@@ -8777,8 +8770,8 @@ contains
                                call mpas_log_write('Tolerance, difference: $r $r', MPAS_LOG_ERR, &
                                     realArgs=(/toleranceMax, thisTracer % array3D(iLayer,iCat,iCell) - thisTracer % localMax3D(iLayer,iCat,iCell)/))
                                call mpas_log_write('IR advection, monotonicity violation (max, nDims == 3)', MPAS_LOG_ERR)
-                               ierr = SEAICE_ERROR_IR_MONO
-                               call seaice_critical_error_write_block(domain, block)
+                               abortFlag = .true.
+                               call seaice_critical_error_write_block(domain, block, abortFlag)
                                return
 
                             endif
