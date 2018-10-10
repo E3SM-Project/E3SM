@@ -189,6 +189,9 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
     def _check_for_memleak(self):
         pass
 
+    def _st_archive_case_test(self):
+        pass
+
     # ------------------------------------------------------------------------
     # Fake implementations of methods that are typically provided by
     # SystemTestsCompareTwo

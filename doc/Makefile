@@ -16,7 +16,7 @@ help:
 
 # exit 0 is to prevent the api rule from being run by the catchall target
 # and generating an error. 
-api: CIME_api Tools_api Tools_user
+api: CIME_api Tools_api Tools_user 
 	exit 0
 
 CIME_api: 
@@ -27,6 +27,7 @@ Tools_api:
 
 Tools_user:
 	rm -f $(SOURCEDIR)/$@/*.rst
+	rm -f $(SOURCEDIR)/$@/temp_files/*.*
 	./tools_autodoc.py
 
 .PHONY: help Makefile CIME_api Tools_api Tools_user

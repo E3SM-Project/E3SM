@@ -549,6 +549,10 @@ class TestScheduler(object):
         envtest.set_value("COMPARE_BASELINE", self._baseline_cmp_name is not None)
         envtest.set_value("CCSM_CPRNC", self._machobj.get_value("CCSM_CPRNC", resolved=False))
         tput_tolerance = self._machobj.get_value("TEST_TPUT_TOLERANCE", resolved=False)
+        if test in self._test_data and "options" in self._test_data[test] and \
+           "tput_tolerance" in self._test_data[test]['options']:
+            tput_tolerance = self._test_data[test]['options']['tput_tolerance']
+
         envtest.set_value("TEST_TPUT_TOLERANCE", 0.25 if tput_tolerance is None else tput_tolerance)
 
         # Add the test instructions from config_test to env_test in the case

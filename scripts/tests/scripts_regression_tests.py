@@ -15,9 +15,10 @@ LIB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),"..","lib")
 sys.path.append(LIB_DIR)
 # Remove all pyc files to ensure we're testing the right things
 import subprocess, argparse
-subprocess.call('/bin/rm $(find . -name "*.pyc")', shell=True, cwd=LIB_DIR)
-from six import assertRaisesRegex
+subprocess.call('/bin/rm -f $(find . -name "*.pyc")', shell=True, cwd=LIB_DIR)
 import six
+from six import assertRaisesRegex
+
 
 import collections
 
@@ -302,7 +303,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         # this should not fail with a locked file issue
         run_cmd_assert_result(self, "./case.build",from_dir=testdir, expected_stat=0)
 
-        run_cmd_assert_result(self, "./case.st_archive --test", from_dir=testdir)
+        run_cmd_assert_result(self, "./case.st_archive --test-all", from_dir=testdir)
 
         cls._do_teardown.append(testdir)
 

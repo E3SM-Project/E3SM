@@ -27,7 +27,7 @@ $CESMDATAROOT/inputdata/validation/ensembles
 $CESMDATAROOT/inputdata/validation/uf_ensembles
 
 (2) If a new ensemble (and summary file) needs to be created, the
-ensemble.sh script in this directory can first be used (see
+ensemble.sh (or ensemble.py) script in this directory can first be used (see
 'ensemble.sh -h' for additional details) to create the ensemble. This
 script creates and compiles a case, then creates clones of the
 original case, with the pertlim in user_nl_cam is slightly modified
@@ -38,12 +38,16 @@ For example, for CAM-ECT:
 
 ./ensemble.sh --case /glade/scratch/cesm_user/cesm_tag/ensemble/ensemble.cesm_tag.000 --mach cheyenne --compset F2000 --res f19_f19 --compiler intel --ensemble 151
 
+	      (or, replace "ensemble.sh" with "python ensemble.py")
+
 For example, for UF-CAM-ECT:
 
 ./ensemble.sh --case /glade/scratch/cesm_user/cesm_tag/uf_ensemble/ensemble.cesm_tag.uf.000 --mach cheyenne --compset F2000 --res f19_f19 --compiler intel --ensemble 350 --uf
 
-Notes: -case name must end in ".000"
-       -ensemble size must be specified, suggested defaults are 151
+	      (or, replace "ensemble.sh" with "python ensemble.py")
+
+Notes: -case name must end in ".000" and include the full path
+       -ensemble size must be specified, suggested defaults are 151 
        for CAM-ECT and 350 for UF-CAM-ECT. Note that the ensemble size
        needs to be larger than the number of variables that ECT will
        evaluate.

@@ -5,7 +5,7 @@ Script to create a new CIME Case Control System (CSS) experimental case.
 """
 
 from Tools.standard_script_setup import *
-from CIME.utils         import expect, get_model
+from CIME.utils         import expect, get_model, get_cime_config
 from CIME.case          import Case
 from argparse           import RawTextHelpFormatter
 
@@ -14,23 +14,26 @@ logger = logging.getLogger(__name__)
 ###############################################################################
 def parse_command_line(args, cimeroot, description):
 ###############################################################################
-
-    model = get_model()
-
     parser = argparse.ArgumentParser(description=description,
                                      formatter_class=RawTextHelpFormatter)
 
     CIME.utils.setup_standard_logging_options(parser)
+    try:
+        cime_config = get_cime_config()
+    except:
+        cime_config = None
 
-    parser.add_argument("--case", "-case", required=True,
+    parser.add_argument("--case", "-case", required=True, metavar="CASENAME",
                         help="(required) Specify the case name. "
-                        "\nIf not a full pathname, then the case is created under then current working directory.")
+                        "\nIf this is simply a name (not a path), the case directory is created in the current working directory."
+                        "\nThis can also be a relative or absolute path specifying where the case should be created;"
+                        "\nwith this usage, the name of the case will be the last component of the path.")
 
     parser.add_argument("--compset", "-compset", required=True,
                         help="(required) Specify a compset. "
                         "\nTo see list of current compsets, use the utility ./query_config --compsets in this directory.\n")
 
-    parser.add_argument("--res", "-res", required=True,
+    parser.add_argument("--res", "-res", required=True, metavar="GRID",
                         help="(required) Specify a model grid resolution. "
                         "\nTo see list of current model resolutions, use the utility "
                         "\n./query_config --grids in this directory.")
@@ -90,7 +93,12 @@ def parse_command_line(args, cimeroot, description):
                         "\nThis should be a copy of config/config_grids.xml with the new user grid changes added to it. "
                         "\nThis argument is required if --user-grid is an argument.")
 
-    parser.add_argument("--srcroot", default=os.path.dirname(cimeroot),
+    if cime_config and cime_config.has_option('main','SRCROOT'):
+        srcroot_default = cime_config.get('main', 'srcroot')
+    else:
+        srcroot_default = os.path.dirname(cimeroot)
+
+    parser.add_argument("--srcroot", default=srcroot_default,
                         help="Alternative pathname for source root directory. "
                         "The default is cimeroot/../")
 
@@ -99,11 +107,14 @@ def parse_command_line(args, cimeroot, description):
 
     # The following is a deprecated option
     parser.add_argument("--script-root", dest="script_root", default=None, help=argparse.SUPPRESS)
+    if cime_config:
+        model = get_model()
+    else:
+        model = None
 
     if model == "cesm":
         parser.add_argument("--run-unsupported", action="store_true",
                             help="Force the creation of a case that is not tested or supported by CESM developers.")
-
     # hidden argument indicating called from create_test
     # Indicates that create_newcase was called from create_test - do not use otherwise.
     parser.add_argument("--test", "-test", action="store_true", help=argparse.SUPPRESS)
@@ -156,6 +167,8 @@ def parse_command_line(args, cimeroot, description):
 
     if args.input_dir is not None:
         args.input_dir = os.path.abspath(args.input_dir)
+    elif cime_config and cime_config.has_option("main","input_dir"):
+        args.input_dir = os.path.abspath(cime_config.get("main","input_dir"))
 
     return args.case, args.compset, args.res, args.machine, args.compiler,\
         args.mpilib, args.project, args.pecount, \

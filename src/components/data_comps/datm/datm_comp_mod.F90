@@ -312,9 +312,6 @@ CONTAINS
        k = mct_aVect_indexRA(SDATM%grid%data,'frac')
        SDATM%grid%data%rAttr(k,:) = 1.0_R8
 
-       !--- set data needed for cosz t-interp method ---
-       call shr_strdata_setOrbs(SDATM,orbEccen,orbMvelpp,orbLambm0,orbObliqr,idt)
-
        if (my_task == master_task) then
           call shr_strdata_print(SDATM,'ATM data')
        endif
@@ -551,9 +548,24 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     call t_adj_detailf(+2)
-    call datm_comp_run(EClock, x2a, a2x, &
-         SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, logunit, nextsw_cday)
+    call datm_comp_run( &
+         EClock = EClock, &
+         x2a = x2a, &
+         a2x = a2x, &
+         SDATM = SDATM, &
+         gsmap = gsmap, &
+         ggrid = ggrid, &
+         mpicom = mpicom, &
+         compid = compid, &
+         my_task = my_task, &
+         master_task = master_task, &
+         inst_suffix = inst_suffix, &
+         logunit = logunit, &
+         orbEccen = orbEccen, &
+         orbMvelpp = orbMvelpp, &
+         orbLambm0 = orbLambm0, &
+         orbObliqr = orbObliqr, &
+         nextsw_cday = nextsw_cday)
     call t_adj_detailf(-2)
 
     call t_stopf('DATM_INIT')
@@ -563,7 +575,9 @@ CONTAINS
   !===============================================================================
   subroutine datm_comp_run(EClock, x2a, a2x, &
        SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, nextsw_cday, case_name)
+       inst_suffix, logunit, &
+       orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
+       nextsw_cday, case_name)
 
     ! !DESCRIPTION: run method for datm model
 
@@ -582,6 +596,10 @@ CONTAINS
     integer(IN)            , intent(in)    :: master_task      ! task number of master task
     character(len=*)       , intent(in)    :: inst_suffix      ! char string associated with instance
     integer(IN)            , intent(in)    :: logunit          ! logging unit number
+    real(R8)               , intent(in)    :: orbEccen         ! orb eccentricity (unit-less)
+    real(R8)               , intent(in)    :: orbMvelpp        ! orb moving vernal eq (radians)
+    real(R8)               , intent(in)    :: orbLambm0        ! orb mean long of perhelion (radians)
+    real(R8)               , intent(in)    :: orbObliqr        ! orb obliquity (radians)
     real(R8)               , intent(out)   :: nextsw_cday      ! calendar of next atm sw
     character(CL)          , intent(in), optional :: case_name ! case name
 
@@ -636,6 +654,9 @@ CONTAINS
     call t_startf('datm')
 
     nextsw_cday = datm_shr_getNextRadCDay( CurrentYMD, CurrentTOD, stepno, idt, iradsw, calendar )
+
+    !--- set data needed for cosz t-interp method ---
+    call shr_strdata_setOrbs(SDATM,orbEccen,orbMvelpp,orbLambm0,orbObliqr,idt)
 
     !--- copy all fields from streams to a2x as default ---
 

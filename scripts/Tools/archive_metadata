@@ -848,7 +848,6 @@ def create_readme(case_dict):
     Create a generic README.archive file
     """
     logger.debug('create_readme')
-
     os.chdir(case_dict['archive_temp_dir'])
 
     fname = open('README.archive', 'w')
@@ -1155,7 +1154,6 @@ def populate_local_repo(case_dict, ignore_logs, ignore_timing):
                 shutil.rmtree('./logs')
             except OSError:
                 logger.warning('in "populate_local_repo" - Unable to remove "logs" in archive_temp_dir.')
-
         if os.path.isdir('./postprocess/logs'):
             os.chdir('./postprocess')
             try:
