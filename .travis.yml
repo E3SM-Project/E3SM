@@ -2,6 +2,8 @@ language: python
 
 before_install:
   - sudo apt-get install -y libxml2-utils
+  - shopt -s expand_aliases
+  - alias gmake=make
 
 install: 
   - pip install pylint
@@ -11,7 +13,7 @@ python:
   - '3.6'
 
 env:
-  - CIME_MODEL=cesm; alias gmake=make
+  - CIME_MODEL=cesm
 
 script: cd scripts/tests; ./scripts_regression_tests.py --machine centos7-linux   A_RunUnitTests B_CheckCode G_TestMacrosBasic H_TestMakeMacros I_TestCMakeMacros 
 
