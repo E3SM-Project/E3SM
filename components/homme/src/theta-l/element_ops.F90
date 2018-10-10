@@ -15,7 +15,7 @@
 !     copy state variables from one timelevel to another timelevel 
 !  set_thermostate()    
 !     initial condition interface used by DCMIP 2008 tests, old HOMME tests
-!  set_state()
+!  set_state(), set_state_i()
 !     initial condition interface used by DCMIP 2012 tests
 !  set_elem_state()
 !     initial condition interface used by DCMIP 2016 tests
@@ -28,6 +28,8 @@
 !  tests_finalize()
 !     initialize geopotential to be in hydrostatic balance
 !     used by DCMIP2012, 2016 tests
+!  set_forcing_rayleigh_friction()
+!     apply rayleigh friction to prognostic variables, used by some DCMIP2016 tests
 !
 !  Accessory routines used by the above:
 !  get_pottemp()
@@ -55,7 +57,6 @@ module element_ops
   use physical_constants, only : p0, Cp, Rgas, Rwater_vapor, Cpwater_vapor, kappa, g, dd_pi
   use control_mod,    only: use_moisture, theta_hydrostatic_mode
   use eos,            only: get_pnh_and_exner, get_phinh
-  use prim_si_mod,    only: preq_hydrostatic_v2
   implicit none
   private
 
@@ -427,7 +428,7 @@ contains
   end subroutine set_elem_state
 
   !_____________________________________________________________________
-  subroutine get_state(u,v,w,T,pnh,dp,ps,rho,zm,g,elem,hvcoord,nt,ntQ)
+  subroutine get_state(u,v,w,T,pnh,dp,ps,rho,zm,zi,g,elem,hvcoord,nt,ntQ)
     ! get state variables at layer midpoints
     ! used by idealized tests to compute idealized physics forcing terms
     ! currently all forcing is done on u,v and T/theta - no forcing
@@ -435,6 +436,7 @@ contains
     ! if we add a test case that computes forcing for interface variables
 
     real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,pnh,dp,zm,rho
+    real(real_kind), dimension(np,np,nlevp), intent(inout) :: zi
     real(real_kind), dimension(np,np),      intent(inout) :: ps
     real(real_kind), intent(in)    :: g
     integer,         intent(in)    :: nt,ntQ
@@ -480,6 +482,9 @@ contains
 
     do k=1,nlev
        zm(:,:,k) = (phi_i(:,:,k)+phi_i(:,:,k+1))/(2*g)
+    end do
+    do k=1,nlevp
+       zi(:,:,k) = phi_i(:,:,k)/g
     end do
 
   end subroutine get_state
