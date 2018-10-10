@@ -53,7 +53,7 @@ module element_ops
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod,   only: abortmp
   use physical_constants, only : p0, Cp, Rgas, Rwater_vapor, Cpwater_vapor, kappa, g, dd_pi
-  use control_mod,    only: use_moisture, use_cpstar, theta_hydrostatic_mode
+  use control_mod,    only: use_moisture, theta_hydrostatic_mode
   use eos,            only: get_pnh_and_exner, get_phinh
   use prim_si_mod,    only: preq_hydrostatic_v2
   implicit none
@@ -596,7 +596,7 @@ contains
   real (kind=real_kind), intent(in) :: Q(np,np,nlev)
 
   integer :: k
-  if (use_moisture .and. use_cpstar==1) then
+  if (use_moisture) then
 #if (defined COLUMN_OPENMP)
   !$omp parallel do default(shared), private(k)
 #endif

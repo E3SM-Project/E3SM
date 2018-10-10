@@ -5,6 +5,8 @@
 !
 !  Man dynamics routines for "theta" nonhydrostatic model
 !  Original version: Mark Taylor 2017/1
+!  
+!  2018/8 TOM sponger layer scaling from P. Lauritzen
 !
 module prim_advance_mod
 
@@ -15,11 +17,11 @@ module prim_advance_mod
   use derivative_mod,     only: derivative_t, divergence_sphere, gradient_sphere, laplace_sphere_wk,&
     laplace_z, vorticity_sphere, vlaplace_sphere_wk 
   use derivative_mod,     only: subcell_div_fluxes, subcell_dss_fluxes
-  use dimensions_mod,     only: max_corner_elem, nelemd, nlev, nlevp, np, qsize
+  use dimensions_mod,     only: max_corner_elem, nlev, nlevp, np, qsize
   use edge_mod,           only: edge_g, edgevpack_nlyr, edgevunpack_nlyr
   use edgetype_mod,       only: EdgeBuffer_t,  EdgeDescriptor_t, edgedescriptor_t
   use element_mod,        only: element_t
-  use element_state,      only: max_itercnt_perstep,avg_itercnt,max_itererr_perstep
+  use element_state,      only: max_itercnt_perstep,avg_itercnt,max_itererr_perstep, nu_scale_top
   use element_ops,        only: get_temperature, set_theta_ref, state0, get_R_star
   use eos,                only: get_pnh_and_exner,get_phinh,get_dirk_jacobian
   use hybrid_mod,         only: hybrid_t
@@ -45,7 +47,7 @@ module prim_advance_mod
   save
   public :: prim_advance_exp, prim_advance_init1, &
        applycamforcing_tracers, applycamforcing_dynamics, &
-       applyCAMforcing_dynamics_dp, convert_thermo_forcing, vertical_mesh_init2
+       applyCAMforcing_dynamics_dp, convert_thermo_forcing
 
 contains
 
@@ -63,22 +65,6 @@ contains
 
 
   end subroutine prim_advance_init1
-
-
-
-
-
-  subroutine vertical_mesh_init2(elem, nets, nete, hybrid, hvcoord)
-
-    ! additional solver specific initializations (called from prim_init2)
-
-    type (element_t), intent(inout), target :: elem(:)! array of element_t structures
-    integer, intent(in) :: nets,nete! start and end element indices
-    type (hybrid_t),intent(in) :: hybrid! mpi/omp data struct
-    type (hvcoord_t),intent(inout):: hvcoord! hybrid vertical coord data struct
-
-  end subroutine vertical_mesh_init2
-
 
 
 
@@ -276,7 +262,7 @@ contains
       ahat1 = 0
       ahat5 = 1
 
-
+#if 1
       ! IMEX-KGO254 most stable coefficients
       dhat2 = 1d0
       dhat3 = 1d0
@@ -284,24 +270,27 @@ contains
       ahat4 = 1d0/2d0-dhat4
       dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
         (ahat5-dhat3-dhat2-dhat4)
+#endif
 
-
+#if 0
       ! IMEX-KGO254c coefficients
-      !dhat2 = 5/6d0
-      !dhat3 = 5/6d0
-      !dhat4 = 2/3d0
-      !ahat4 = 1/2d0-dhat4
-      ! dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
-      !  (ahat5-dhat3-dhat2-dhat4)
+      dhat2 = 5/6d0
+      dhat3 = 5/6d0
+      dhat4 = 2/3d0
+      ahat4 = 1/2d0-dhat4
+      dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
+           (ahat5-dhat3-dhat2-dhat4)
+#endif
 
+#if 0
       ! IMEX-KGO254b coefficients NOT GOOD
-!      dhat2 = 1./6.
-!      dhat3 = 1./6.
-!      dhat4 = 1./6.
-!      ahat4 = 1./2.-dhat4
-!!      dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
-!       (ahat5-dhat3-dhat2-dhat4)
-
+      dhat2 = 1./6.
+      dhat3 = 1./6.
+      dhat4 = 1./6.
+      ahat4 = 1./2.-dhat4
+      dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
+           (ahat5-dhat3-dhat2-dhat4)
+#endif
 
       ! IMEX-KG254
       ahat3 = (- ahat4*ahat5*dhat1 - ahat4*ahat5*dhat2+ ahat5*dhat1*dhat2 + ahat5*dhat1*dhat3 +&
@@ -574,7 +563,6 @@ contains
 
   ! local
   real (kind=real_kind) :: eta_ave_w  ! weighting for mean flux terms
-  real (kind=real_kind) :: nu_scale_top
   integer :: k2,k,kptr,i,j,ie,ic,nt,nlyr_tot,ssize
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens
   real (kind=real_kind), dimension(np,np,nlev,4,nets:nete)      :: stens  ! dp3d,theta,w,phi
@@ -639,13 +627,21 @@ contains
              elem(ie)%state%vtheta_dp(:,:,k,nt)/elem(ie)%state%dp3d(:,:,k,nt)
      enddo
 
-!     call set_theta_ref(hvcoord,elem(ie)%state%dp3d(:,:,:,nt),theta_ref(:,:,:,ie))
+#if 0
+     ! reference state based only on ps:
      call set_theta_ref(hvcoord,dp_ref(:,:,:,ie),theta_ref(:,:,:,ie))
 
      ! compute vtheta_dp_ref, store in 'heating' as temp array:
      heating(:,:,:)=theta_ref(:,:,:,ie)*dp_ref(:,:,:,ie)
      call get_phinh(hvcoord,elem(ie)%state%phis,&
           heating(:,:,:),dp_ref(:,:,:,ie),phi_ref(:,:,:,ie))
+#endif
+#if 1
+     ! most realistic reference state based on hydrostatic pressure
+     call set_theta_ref(hvcoord,elem(ie)%state%dp3d(:,:,:,nt),theta_ref(:,:,:,ie))
+     call get_phinh(hvcoord,elem(ie)%state%phis,&
+          elem(ie)%state%vtheta_dp(:,:,:,nt),elem(ie)%state%dp3d(:,:,:,nt),phi_ref(:,:,:,ie))
+#endif
 
 #if 0
      ! disable reference background states
@@ -686,34 +682,25 @@ contains
            elem(ie)%derived%dpdiss_biharmonic(:,:,:)=elem(ie)%derived%dpdiss_biharmonic(:,:,:)+&
                 eta_ave_w*stens(:,:,:,1,ie)/hypervis_subcycle
         endif
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,lap_s,lap_v,nu_scale_top)
-#endif
            do k=1,nlev
               ! advace in time.
               ! note: DSS commutes with time stepping, so we can time advance and then DSS.
               ! note: weak operators alreayd have mass matrix "included"
 
-              ! add regular diffusion in top 3 layers:
-              if (nu_top>0 .and. k<=3) then
+              ! biharmonic terms need a negative sign:
+              if (nu_top>0 .and. nu_scale_top(k)>1) then
+                 ! add regular diffusion near top
                  lap_s(:,:,1)=laplace_sphere_wk(elem(ie)%state%dp3d       (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_s(:,:,2)=laplace_sphere_wk(elem(ie)%state%vtheta_dp  (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_s(:,:,3)=laplace_sphere_wk(elem(ie)%state%w_i        (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_s(:,:,4)=laplace_sphere_wk(elem(ie)%state%phinh_i    (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
-              endif
 
-              nu_scale_top = 1
-              if (k==1) nu_scale_top=4
-              if (k==2) nu_scale_top=2
-
-              ! biharmonic terms need a negative sign:
-              if (nu_top>0 .and. k<=3) then
-                 vtens(:,:,:,k,ie)=(  -nu*vtens(:,:,:,k,ie) + nu_scale_top*nu_top*lap_v(:,:,:)) ! u and v
-                 stens(:,:,k,1,ie)=(-nu_p*stens(:,:,k,1,ie) + nu_scale_top*nu_top*lap_s(:,:,1)) ! dp3d
-                 stens(:,:,k,2,ie)=(  -nu*stens(:,:,k,2,ie) + nu_scale_top*nu_top*lap_s(:,:,2)) ! theta
-                 stens(:,:,k,3,ie)=(  -nu*stens(:,:,k,3,ie) + nu_scale_top*nu_top*lap_s(:,:,3)) ! w
-                 stens(:,:,k,4,ie)=(-nu_s*stens(:,:,k,4,ie) + nu_scale_top*nu_top*lap_s(:,:,4)) ! phi
+                 vtens(:,:,:,k,ie)=(  -nu*vtens(:,:,:,k,ie) + nu_scale_top(k)*nu_top*lap_v(:,:,:)) ! u and v
+                 stens(:,:,k,1,ie)=(-nu_p*stens(:,:,k,1,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,1)) ! dp3d
+                 stens(:,:,k,2,ie)=(  -nu*stens(:,:,k,2,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,2)) ! theta
+                 stens(:,:,k,3,ie)=(  -nu*stens(:,:,k,3,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,3)) ! w
+                 stens(:,:,k,4,ie)=(-nu_s*stens(:,:,k,4,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,4)) ! phi
               else
                  vtens(:,:,:,k,ie)=-nu  *vtens(:,:,:,k,ie) ! u,v
                  stens(:,:,k,1,ie)=-nu_p*stens(:,:,k,1,ie) ! dp3d
@@ -794,19 +781,15 @@ contains
         ! we want exner*cp*dp3d*heating = dp3d*U dot diss(U)
         ! and thus heating =  U dot diss(U) / exner*cp
         ! 
-        ! PE dissipation
-        ! d(PE)/dt = dp3d diss(phi) 
-        !     we want dp3d diss(phi) = exner*cp*dp3d*heating
-        !     heating = diss(phi) / exner*cp
-        !
         ! use hydrostatic pressure for simplicity
         p_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
         do k=1,nlev
            p_i(:,:,k+1)=p_i(:,:,k) + elem(ie)%state%dp3d(:,:,k,nt)
         enddo
-#if (defined COLUMN_OPENMP)
-!$omp parallel do default(shared), private(k,k2)
-#endif
+        !call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,nt),&
+        !     elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%phinh_i(:,:,:,nt),&
+        !     pnh,exner,dpnh_dp_i)
+
         do k=1,nlev
            ! for w averaging, we didn't compute dissipation at surface, so just use one level
            k2=max(k,nlev)
@@ -821,14 +804,13 @@ contains
               heating(:,:,k)= (elem(ie)%state%v(:,:,1,k,nt)*vtens(:,:,1,k,ie) + &
                    elem(ie)%state%v(:,:,2,k,nt)*vtens(:,:,2,k,ie)  +&
                    (elem(ie)%state%w_i(:,:,k,nt)*stens(:,:,k,3,ie)  +&
-                     elem(ie)%state%w_i(:,:,k2,nt)*stens(:,:,k2,3,ie))/2  +&
-                   ( stens(:,:,k,4,ie)+stens(:,:,k2,4,ie))/2 ) / &
+                     elem(ie)%state%w_i(:,:,k2,nt)*stens(:,:,k2,3,ie))/2 ) /  +&
                    (exner(:,:,k)*Cp)  
            endif
            
            elem(ie)%state%vtheta_dp(:,:,k,nt)=elem(ie)%state%vtheta_dp(:,:,k,nt) &
-                +stens(:,:,k,2,ie)*hvcoord%dp0(k)*exner0(k)/(exner(:,:,k)*elem(ie)%state%dp3d(:,:,k,nt))&
-                -heating(:,:,k)
+                +stens(:,:,k,2,ie)*hvcoord%dp0(k)*exner0(k)/(exner(:,:,k)*elem(ie)%state%dp3d(:,:,k,nt)&
+                ) ! -heating(:,:,k)
         enddo
         
      enddo
@@ -1090,8 +1072,6 @@ contains
   real (kind=real_kind) ::  v1,v2,w,d_eta_dot_dpdn_dn
   integer :: i,j,k,kptr,ie, nlyr_tot
 
-
-  real (kind=real_kind) ::  wtemp(np,np,nelemd)
 
   call t_startf('compute_andor_apply_rhs')
 

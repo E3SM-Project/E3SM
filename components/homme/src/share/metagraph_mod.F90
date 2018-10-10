@@ -11,7 +11,8 @@ module metagraph_mod
 !
   use kinds, only : int_kind, iulog
   use gridgraph_mod, only : gridvertex_t, gridedge_t, &
-       allocate_gridvertex_nbrs, assignment ( = )
+       deallocate_gridvertex_nbrs, allocate_gridvertex_nbrs, assignment ( = )
+
   use pio_types ! _EXTERNAL
 
   implicit none 
@@ -47,6 +48,7 @@ module metagraph_mod
   public :: edge_uses_vertex
   public :: PrintMetaEdge, PrintMetaVertex
   public :: LocalElemCount
+  public :: deallocate_metavertex_data
   !public :: MetaEdgeCount
   public :: initMetaGraph
 
@@ -175,6 +177,30 @@ contains
 
 
   end function LocalElemCount
+
+
+  subroutine deallocate_metavertex_data(Vertex) 
+    implicit none
+
+    type (MetaVertex_t),intent(in)  :: Vertex
+    integer :: j
+
+    do j = 1, Vertex%nmembers
+       call deallocate_gridvertex_nbrs(Vertex%members(j))
+    end do
+    do j = 1, Vertex%nedges
+       deallocate(Vertex%edges(j)%members)
+       deallocate(Vertex%edges(j)%edgeptrP)
+       deallocate(Vertex%edges(j)%edgeptrS)
+       deallocate(Vertex%edges(j)%edgeptrP_ghost)
+    end do
+    deallocate(Vertex%edges)
+    deallocate(Vertex%members)
+
+  end subroutine
+
+
+
 
   function edge_uses_vertex(Vertex,Edge) result(log)
 
