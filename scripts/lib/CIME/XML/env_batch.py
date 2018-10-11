@@ -95,7 +95,7 @@ class EnvBatch(EnvBase):
         else:
             if subgroup == "PRIMARY":
                 subgroup = "case.test" if "case.test" in self.get_jobs() else "case.run"
-
+            #pylint: disable=assignment-from-none
             value = super(EnvBatch, self).get_value(item, attribute=attribute, resolved=resolved, subgroup=subgroup)
 
         return value

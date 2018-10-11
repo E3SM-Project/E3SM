@@ -354,7 +354,7 @@
     <DOUT_S_ROOT>$ENV{HOME}/cesm/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{HOME}/cesm/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$ENV{HOME}/cesm/tools/cime/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE>gmake</GMAKE>
+    <GMAKE>make</GMAKE>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
     <SUPPORTED_BY>me@my.address</SUPPORTED_BY>

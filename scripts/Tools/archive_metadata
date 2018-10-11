@@ -20,19 +20,12 @@ import ssl
 import subprocess
 import sys
 from string import Template
-import urllib
-import urllib2
 
 from standard_script_setup import *
 from CIME.case       import Case
 from CIME.utils      import is_last_process_complete
-
-# import handler for config file
-
-if sys.version_info[0] == 2:
-    from ConfigParser import SafeConfigParser as config_parser
-else:
-    from configparser import ConfigParser as config_parser
+# six is for py2/py3 compatibility
+from six.moves      import configparser, urllib
 
 # define global constants
 logger = logging.getLogger(__name__)
@@ -101,7 +94,7 @@ class PasswordPromptAction(argparse.Action):
         conf_path = os.path.join(home, ".subversion/cmip6.conf")
         if os.path.exists(conf_path):
             # read the .cmip6.conf file
-            config = config_parser()
+            config = configparser.SafeConfigParser()
             config.read(conf_path)
             password = config.get('svn', 'password')
         else:
@@ -624,16 +617,16 @@ def check_expdb_case(case_dict, username, password):
                  'queryType':'checkCaseExists',
                  'expType':case_dict['expType']}
     data = json.dumps(data_dict)
-    params = urllib.urlencode(dict(username=username, password=password, data=data))
+    params = urllib.parse.urlencode(dict(username=username, password=password, data=data))
     try:
-        response = urllib2.urlopen(url=case_dict['query_expdb_url'], data=params, context=_context)
+        response = urllib.request.urlopen(case_dict['query_expdb_url'], params, context=_context)
         html = response.read()
         if html.find('True'):
             exists = True
-    except urllib2.HTTPError as http_e:
+    except urllib.error.HTTPError as http_e:
         logger.info('ERROR archive_metadata HTTP post failed "%s"', http_e.code)
         sys.exit(1)
-    except urllib2.URLError as url_e:
+    except urllib.error.URLError as url_e:
         logger.info('ERROR archive_metadata URL failed "%s"', url_e.reason)
         sys.exit(1)
 
@@ -658,13 +651,13 @@ def query_expdb_cmip6(case_dict, username, password):
                  'queryType':'CMIP6GlobalAtts',
                  'expType':'CMIP6'}
     data = json.dumps(data_dict)
-    params = urllib.urlencode(dict(username=username, password=password, data=data))
+    params = urllib.parse.urlencode(dict(username=username, password=password, data=data))
     try:
-        response = urllib2.urlopen(url=case_dict['query_expdb_url'], data=params, context=_context)
+        response = urllib.request.urlopen(case_dict['query_expdb_url'], params, context=_context)
         output = json.load(response)
-    except urllib2.HTTPError as http_e:
+    except urllib.error.HTTPError as http_e:
         logger.info('ERROR archive_metadata HTTP post failed "%s"', http_e.code)
-    except urllib2.URLError as url_e:
+    except urllib.error.URLError as url_e:
         logger.info('ERROR archive_metadata URL failed "%s"', url_e.reason)
 
     if output:
@@ -695,7 +688,7 @@ def create_json(case_dict):
     filename = '{0}/archive_files/json.{1}'.format(case_dict['workdir'],
                                                    datetime.datetime.now().strftime('%Y%m%d-%H%M%S'))
     with io.open(filename, 'w', encoding='utf-8') as fname:
-        fname.write(unicode(json.dumps(case_dict, indent=4, sort_keys=True, ensure_ascii=True)))
+        fname.write(json.dumps(case_dict, indent=4, sort_keys=True, ensure_ascii=True).encode("utf-8"))
         fname.close()
 
 # ---------------------------------------------------------------------
@@ -712,15 +705,15 @@ def post_json(case_dict, username, password):
     """
     logger.debug('post_json')
 
-    case_dict['COMPSET'] = urllib.quote(case_dict['COMPSET'])
-    case_dict['GRID'] = urllib.quote(case_dict['GRID'])
+    case_dict['COMPSET'] = urllib.parse.quote(case_dict['COMPSET'])
+    case_dict['GRID'] = urllib.parse.quote(case_dict['GRID'])
     data = json.dumps(case_dict)
-    params = urllib.urlencode(dict(username=username, password=password, data=data))
+    params = urllib.parse.urlencode(dict(username=username, password=password, data=data))
     try:
-        urllib2.urlopen(url=case_dict['json_expdb_url'], data=params, context=_context)
-    except urllib2.HTTPError as http_e:
+        urllib.request.urlopen(case_dict['json_expdb_url'], params, context=_context)
+    except urllib.error.HTTPError as http_e:
         logger.info('ERROR archive_metadata HTTP post failed "%s"', http_e.code)
-    except urllib2.URLError as url_e:
+    except urllib.error.URLError as url_e:
         logger.info('ERROR archive_metadata URL failed "%s"', url_e.reason)
 
 # ---------------------------------------------------------------------
@@ -1518,5 +1511,5 @@ if __name__ == "__main__":
         __status__ = main_func(commandline_options(sys.argv))
         sys.exit(__status__)
     except Exception as error:
-        print str(error)
+        print("{}".format(str(error)))
         sys.exit(1)
