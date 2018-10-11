@@ -22,6 +22,7 @@ module WaterBudgetMod
   public :: WaterBudget_Accum
   !public :: WaterBudget_Sum_Local
   public :: WaterBudget_Print
+  public :: WaterBudget_Restart
 
   !--- F for flux ---
 
@@ -31,7 +32,7 @@ module WaterBudgetMod
   integer, parameter :: f_roff = 4
   integer, parameter :: f_ioff = 5
 
-  integer, parameter :: f_size = f_ioff
+  integer, parameter, public :: f_size = f_ioff
 
   character(len=12),parameter :: fname(f_size) = &
        (/&
@@ -59,7 +60,7 @@ module WaterBudgetMod
   integer, parameter :: s_wwa_end   = 14
   integer, parameter :: s_w_errh2o  = 15
 
-  integer, parameter :: s_size = s_w_errh2o
+  integer, parameter, public :: s_size = s_w_errh2o
 
   character(len=12),parameter :: sname(s_size) = &
        (/&
@@ -88,7 +89,7 @@ module WaterBudgetMod
   integer, parameter :: p_ann  = 4
   integer, parameter :: p_inf  = 5
 
-  integer, parameter :: p_size = p_inf
+  integer, parameter, public :: p_size = p_inf
 
   character(len=8),parameter :: pname(p_size) = &
        (/'    inst','   daily',' monthly','  annual','all_time' /)
@@ -98,8 +99,7 @@ module WaterBudgetMod
   real(r8) :: budg_fluxN(f_size, p_size)
 
   real(r8) :: budg_stateL(s_size, p_size)
-  real(r8) :: budg_stateG(s_size, p_size)
-  real(r8) :: budg_stateN(s_size, p_size)
+  real(r8), public :: budg_stateG(s_size, p_size)
 
   logical,save :: first_time = .true.
 
@@ -162,42 +162,36 @@ contains
           budg_fluxN  (:,p_inst)   = 0.0_r8
           budg_stateL (:,p_inst)   = 0.0_r8
           budg_stateG (:,p_inst)   = 0.0_r8
-          budg_stateN (:,p_inst  ) = 0.0_r8
        elseif (trim(mode) == 'day') then
           budg_fluxL  (:,p_day)    = 0.0_r8
           budg_fluxG  (:,p_day)    = 0.0_r8
           budg_fluxN  (:,p_day)    = 0.0_r8
           budg_stateL (:,p_day)    = 0.0_r8
           budg_stateG (:,p_day)    = 0.0_r8
-          budg_stateN (:,p_day)    = 0.0_r8
        elseif (trim(mode) == 'mon') then
           budg_fluxL  (:,p_mon)    = 0.0_r8
           budg_fluxG  (:,p_mon)    = 0.0_r8
           budg_fluxN  (:,p_mon)    = 0.0_r8
           budg_stateL (:,p_mon)    = 0.0_r8
           budg_stateG (:,p_mon)    = 0.0_r8
-          budg_stateN (:,p_mon)    = 0.0_r8
        elseif (trim(mode) == 'ann') then
           budg_fluxL  (:,p_ann)    = 0.0_r8
           budg_fluxG  (:,p_ann)    = 0.0_r8
           budg_fluxN  (:,p_ann)    = 0.0_r8
           budg_stateL (:,p_ann)    = 0.0_r8
           budg_stateG (:,p_ann)    = 0.0_r8
-          budg_stateN (:,p_ann)    = 0.0_r8
        elseif (trim(mode) == 'inf') then
           budg_fluxL  (:,p_inf)    = 0.0_r8
           budg_fluxG  (:,p_inf)    = 0.0_r8
           budg_fluxN  (:,p_inf)    = 0.0_r8
           budg_stateL (:,p_inf)    = 0.0_r8
           budg_stateG (:,p_inf)    = 0.0_r8
-          budg_stateN (:,p_inf)    = 0.0_r8
        elseif (trim(mode) == 'all') then
           budg_fluxL  (:,:)        = 0.0_r8
           budg_fluxG  (:,:)        = 0.0_r8
           budg_fluxN  (:,:)        = 0.0_r8
           budg_stateL (:,:)        = 0.0_r8
           budg_stateG (:,:)        = 0.0_r8
-          budg_stateN (:,:)        = 0.0_r8
        else
           call shr_sys_abort(subname//' ERROR in mode '//trim(mode))
        endif
@@ -262,7 +256,7 @@ contains
        endif
        nf = s_w_errh2o  ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + budg_stateL(nf, p_inst)
     end do
-    budg_fluxN(:,:) = budg_fluxN(:,:) + 1
+    budg_fluxN(:,:) = budg_fluxN(:,:) + 1._r8
     
   end subroutine WaterBudget_Accum
 
@@ -518,5 +512,152 @@ contains
     end do
 
   end subroutine WaterBudget_Print
+
+  !-----------------------------------------------------------------------
+  subroutine WaterBudget_Restart(bounds, ncid, flag)
+    !
+    use ncdio_pio, only : file_desc_t, ncd_io, ncd_double, ncd_int
+    use ncdio_pio, only : ncd_defvar
+    !
+    implicit none
+    !
+    type(bounds_type), intent(in)    :: bounds
+    type(file_desc_t), intent(inout) :: ncid   ! netcdf id
+    character(len=*) , intent(in)    :: flag   ! 'read' or 'write'
+    !
+    character(len=*),parameter :: subname = 'WaterBudget_Restart'
+
+    select case (trim(flag))
+    case ('define')
+       call WaterBudget_Restart_Define(bounds, ncid)
+    case ('write')
+       call WaterBudget_Restart_Write(bounds, ncid, flag)
+    case ('read')
+       call WaterBudget_Restart_Read(bounds, ncid, flag)
+    case default
+       write(iulog,*) trim(subname),' ERROR: unknown flag = ',flag
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end select
+
+  end subroutine WaterBudget_Restart
+
+  !-----------------------------------------------------------------------
+  subroutine WaterBudget_Restart_Define(bounds, ncid)
+    !
+    use ncdio_pio, only : file_desc_t, ncd_io, ncd_double, ncd_defvar
+    !
+    implicit none
+    !
+    type(bounds_type), intent(in)    :: bounds
+    type(file_desc_t), intent(inout) :: ncid   ! netcdf id
+
+    call ncd_defvar(varname='budg_fluxG', xtype=ncd_double, &
+         dim1name='budg_flux', &
+         long_name='budg_fluxG', units='mm', ncid=ncid)
+
+    call ncd_defvar(varname='budg_fluxN', xtype=ncd_double, &
+         dim1name='budg_flux', &
+         long_name='budg_fluxN', units='-', ncid=ncid)
+
+    call ncd_defvar(varname='budg_stateG', xtype=ncd_double, &
+         dim1name='budg_state', &
+         long_name='budg_stateG', units='mm', ncid=ncid)
+
+  end subroutine WaterBudget_Restart_Define
+
+  !-----------------------------------------------------------------------
+  subroutine WaterBudget_Restart_Write(bounds, ncid, flag)
+    !
+    use ncdio_pio   , only : file_desc_t, ncd_io, ncd_double, ncd_int
+    use ncdio_pio   , only : ncd_defvar
+    use spmdMod     , only : mpicom
+    use shr_mpi_mod , only : shr_mpi_sum
+    !
+    implicit none
+    !
+    type(bounds_type), intent(in)    :: bounds
+    type(file_desc_t), intent(inout) :: ncid   ! netcdf id
+    character(len=*) , intent(in)    :: flag   ! 'read' or 'write'
+    !
+    ! !LOCAL VARIABLES:
+    real(r8) :: budg_fluxGtmp(f_size,p_size) ! temporary sum
+    real(r8) :: budg_fluxG_1D (f_size*p_size)
+    real(r8) :: budg_fluxN_1D (f_size*p_size)
+    real(r8) :: budg_stateG_1D(s_size*p_size)
+    integer  :: f, s, p, count
+    character(*),parameter :: subName = '(WaterBudget_Restart_Write) '
+
+    call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName)
+
+    ! Copy data from 2D into 1D array
+    count = 0
+    do f = 1, f_size
+       do p = 1, p_size
+          count = count + 1
+          budg_fluxG_1D(count) = budg_fluxG(f,p) + budg_fluxGtmp(f,p)
+          budg_fluxN_1D(count) = budg_fluxN(f,p)
+       end do
+    end do
+
+    ! Copy data from 2D into 1D array
+    count = 0
+    do s = 1, s_size
+       do p = 1, p_size
+          count = count + 1
+          budg_stateG_1D(count) = budg_stateG(s,p)
+       end do
+    end do
+
+    call ncd_io(flag=flag, varname='budg_fluxG', data=budg_fluxG_1D, ncid=ncid)
+    call ncd_io(flag=flag, varname='budg_fluxN', data=budg_fluxN_1D, ncid=ncid)
+    call ncd_io(flag=flag, varname='budg_stateG', data=budg_stateG_1D, ncid=ncid)
+
+  end subroutine WaterBudget_Restart_Write
+
+  !-----------------------------------------------------------------------
+  subroutine WaterBudget_Restart_Read(bounds, ncid, flag)
+    !
+    use ncdio_pio, only : file_desc_t, ncd_io, ncd_double, ncd_int
+    use ncdio_pio, only : ncd_defvar
+    !
+    implicit none
+    !
+    type(bounds_type), intent(in)    :: bounds
+    type(file_desc_t), intent(inout) :: ncid   ! netcdf id
+    character(len=*) , intent(in)    :: flag   ! 'read' or 'write'
+    !
+    ! !LOCAL VARIABLES:
+    real(r8) :: budg_fluxG_1D (f_size*p_size)
+    real(r8) :: budg_fluxN_1D (f_size*p_size)
+    real(r8) :: budg_stateG_1D(s_size*p_size)
+    integer  :: f, s, p, count
+
+    call ncd_io(flag=flag, varname='budg_fluxG', data=budg_fluxG_1D, ncid=ncid)
+    call ncd_io(flag=flag, varname='budg_fluxN', data=budg_fluxN_1D, ncid=ncid)
+    call ncd_io(flag=flag, varname='budg_stateG', data=budg_stateG_1D, ncid=ncid)
+
+    ! Copy data from 1D into 2D array
+    count = 0
+    do f = 1, f_size
+       do p = 1, p_size
+          count = count + 1
+          budg_fluxG(f,p) = budg_fluxG_1D(count)
+          budg_fluxN(f,p) = budg_fluxN_1D(count)
+       end do
+    end do
+
+    ! Copy data from 1D into 2D array
+    count = 0
+    do s = 1, s_size
+       do p = 1, p_size
+          count = count + 1
+          budg_stateG(s,p) = budg_stateG_1D(count)
+          if (masterproc) then
+             budg_stateL(s,p) = budg_stateG_1D(count)
+          end if
+       end do
+    end do
+
+  end subroutine WaterBudget_Restart_Read
 
 end module WaterBudgetMod
