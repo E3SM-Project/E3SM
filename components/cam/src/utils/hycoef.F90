@@ -164,24 +164,6 @@ subroutine hycoef_init(file)
    alev(:plev) = 0.01_r8*ps0*(hyam(:plev) + hybm(:plev))
    ailev(:plevp) = 0.01_r8*ps0*(hyai(:plevp) + hybi(:plevp))
 
-   formula_terms%a_name       =  'hyam'
-   formula_terms%a_long_name  =  'hybrid A coefficient at layer midpoints'
-   formula_terms%a_values     => hyam
-   formula_terms%b_name       =  'hybm'
-   formula_terms%b_long_name  =  'hybrid B coefficient at layer midpoints'
-   formula_terms%b_values     => hybm
-   formula_terms%p0_name      =  'P0'
-   formula_terms%p0_long_name = 'reference pressure'
-   formula_terms%p0_units     =  'Pa'
-   formula_terms%p0_value     =  ps0
-   formula_terms%ps_name      =  'PS'
-
-   call add_vert_coord('lev', plev,                                         &
-        'hybrid level at midpoints (1000*(A+B))', 'hPa', alev,              &
-        positive='down',                                                    &
-        standard_name='atmosphere_hybrid_sigma_pressure_coordinate',        &
-        formula_terms=formula_terms, bounds_name='lev_bnds', bounds_dim1=2,bounds_dim2=plev)
-
    formula_terms%a_name       =  'hyai'
    formula_terms%a_long_name  =  'hybrid A coefficient at layer interfaces'
    formula_terms%a_values     => hyai
@@ -199,6 +181,25 @@ subroutine hycoef_init(file)
         positive='down',                                                    &
         standard_name='atmosphere_hybrid_sigma_pressure_coordinate',        &
         formula_terms=formula_terms)
+
+   formula_terms%a_name       =  'hyam'
+   formula_terms%a_long_name  =  'hybrid A coefficient at layer midpoints'
+   formula_terms%a_values     => hyam
+   formula_terms%b_name       =  'hybm'
+   formula_terms%b_long_name  =  'hybrid B coefficient at layer midpoints'
+   formula_terms%b_values     => hybm
+   formula_terms%p0_name      =  'P0'
+   formula_terms%p0_long_name = 'reference pressure'
+   formula_terms%p0_units     =  'Pa'
+   formula_terms%p0_value     =  ps0
+   formula_terms%ps_name      =  'PS'
+
+   call add_vert_coord('lev', plev,                                         &
+        'hybrid level at midpoints (1000*(A+B))', 'hPa', alev,              &
+        positive='down',                                                    &
+        standard_name='atmosphere_hybrid_sigma_pressure_coordinate',        &
+        formula_terms=formula_terms, bounds_name='lev_bnds', bounds_dim1=2, &
+        bounds_dim2=plev,ancillary_name='ilev', anc_dim = plevp)
 
    if (masterproc) then
       write(iulog,'(a)')' Layer Locations (*1000) '

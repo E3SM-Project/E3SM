@@ -245,10 +245,12 @@ module cam_history_support
     character(len=max_chars) :: units = ''        ! 'units' attribute
     character(len=max_chars) :: bounds_name = ''  ! 'bounds' attribute (& name of bounds variable)
     character(len=max_chars) :: standard_name = ''! 'standard_name' attribute
+    character(len=max_chars) :: ancillary_name = ''! 'ancillary_name' attribute
     character(len=4)         :: positive = ''     ! 'positive' attribute ('up' or 'down')
     integer,  pointer        :: integer_values(:) => null() ! dim values if integral
     real(r8), pointer        :: real_values(:) => null() ! dim values if real
     real(r8), pointer        :: bounds(:,:) => null() ! dim bounds
+    real(r8), pointer        :: anc(:) => null()      ! ancillary variable
     type(formula_terms_t)    :: formula_terms     ! vars for formula terms
     logical                  :: integer_dim       ! .true. iff dim has integral values
     logical                  :: vertical_coord    ! .true. iff dim is vertical
@@ -1464,7 +1466,8 @@ contains
   end subroutine add_hist_coord_r8
 
   subroutine add_vert_coord(name, vlen, long_name, units, values,            &
-       positive, standard_name, formula_terms,bounds_name,bounds_dim1, bounds_dim2)
+       positive, standard_name, formula_terms,bounds_name,bounds_dim1,       &
+       bounds_dim2, ancillary_name, anc_dim)
 
     ! Input variables
     character(len=*),      intent(in)                    :: name
@@ -1478,6 +1481,8 @@ contains
     character(len=*),      intent(in),          optional :: bounds_name
     integer,               intent(in),          optional :: bounds_dim1
     integer,               intent(in),          optional :: bounds_dim2
+    character(len=*),      intent(in),          optional :: ancillary_name
+    integer,               intent(in),          optional :: anc_dim
 
     ! Local variable
     integer                                              :: i
@@ -1504,11 +1509,17 @@ contains
        allocate(hist_coords(i)%bounds(bounds_dim1,bounds_dim2))
     endif
 
+    if (present(ancillary_name).and. present(anc_dim)) then
+       hist_coords(i)%ancillary_name= ancillary_name
+       allocate(hist_coords(i)%anc(anc_dim))
+    endif
+
   end subroutine add_vert_coord
 
   subroutine write_hist_coord_attr(File, mdimind, boundsdim, dimonly, mdimid)
     use pio, only: file_desc_t, var_desc_t, pio_put_att, pio_noerr,           &
-                   pio_int, pio_double, pio_inq_varid, pio_def_var
+                   pio_int, pio_double, pio_inq_varid, pio_def_var,           &
+                   pio_inq_dimid
     use cam_pio_utils, only: cam_pio_def_dim, cam_pio_def_var
 
     ! Input variables
@@ -1525,6 +1536,7 @@ contains
     character(len=max_chars)         :: formula_terms  ! Constructed string
     integer                          :: ierr
     integer                          :: dtype
+    integer                          :: dimid_anc       ! dimid for ancillary variable
     logical                          :: defvar         ! True if var exists
 
     ! Check to see if the dimension already exists in the file
@@ -1583,6 +1595,11 @@ contains
           ierr=pio_put_att(File, vardesc, 'bounds', trim(hist_coords(mdimind)%bounds_name))
           call cam_pio_handle_error(ierr, 'Error writing "bounds" attr in write_hist_coord_attr')
         end if
+        !ancillary name
+        if(associated(hist_coords(mdimind)%anc)) then
+           ierr=pio_put_att(File, vardesc, 'ancillary_name', trim(hist_coords(mdimind)%ancillary_name))
+           call cam_pio_handle_error(ierr, 'Error writing "ancillary_name" attr in write_hist_coord_attr')
+        endif
       end if
 
       ! Now, we need to define and populate the associated bounds variable
@@ -1597,6 +1614,13 @@ contains
         end if
         call cam_pio_def_var(File, trim(hist_coords(mdimind)%bounds_name),    &
              pio_double, (/boundsdim,dimid/), vardesc, existOK=.false.)
+      end if
+
+      ! Now, we need to define and populate the associated ancillary variable
+      if (associated(hist_coords(mdimind)%anc)) then
+         ierr = pio_inq_dimid( File, trim(adjustl(hist_coords(mdimind)%ancillary_name)), dimid_anc )
+         call cam_pio_def_var(File, 'anc',    &
+              pio_double, (/dimid_anc/), vardesc, existOK=.false.)
       end if
 
       ! See if we have formula_terms variables to define
