@@ -4,7 +4,7 @@ Interface to the env_batch.xml file.  This class inherits from EnvBase
 
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_base import EnvBase
-from CIME.utils import transform_vars, get_cime_root, convert_to_seconds, format_time, get_cime_config, get_batch_script_for_job
+from CIME.utils import transform_vars, get_cime_root, convert_to_seconds, format_time, get_cime_config, get_batch_script_for_job, get_logging_options
 
 from collections import OrderedDict
 import stat, re, math
@@ -95,7 +95,7 @@ class EnvBatch(EnvBase):
         else:
             if subgroup == "PRIMARY":
                 subgroup = "case.test" if "case.test" in self.get_jobs() else "case.run"
-
+            #pylint: disable=assignment-from-none
             value = super(EnvBatch, self).get_value(item, attribute=attribute, resolved=resolved, subgroup=subgroup)
 
         return value
@@ -546,8 +546,9 @@ class EnvBatch(EnvBase):
         """
         args = self._build_run_args(job, no_batch, **run_args)
         run_args_str = " ".join(param for _, param in args.values())
-        if run_args_str is None:
-            return ""
+        logging_options = get_logging_options()
+        if logging_options:
+            run_args_str += " {}".format(logging_options)
 
         batch_env_flag = self.get_value("batch_env", subgroup=None)
         if not batch_env_flag:

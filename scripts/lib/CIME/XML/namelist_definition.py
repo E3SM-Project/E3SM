@@ -320,6 +320,19 @@ class NamelistDefinition(EntryID):
         if user_cannot_modify is not None:
             expect(False,
                    "Cannot change {} in user_nl file: {}".format(name, user_cannot_modify))
+    def _generate_variable_template(self, filename):
+        # Improve error reporting when a file name is provided.
+        if filename is None:
+            variable_template = "Variable {!r}"
+        else:
+            # for the next step we want the name of the original user_nl file not the internal one
+            # We do this by extracting the component name from the filepath string
+            if "Buildconf" in filename and "namelist_infile" in filename:
+                msgfn = "user_nl_" + (filename.split(os.sep)[-2])[:-4]
+            else:
+                msgfn = filename
+            variable_template = "Variable {!r} from file " + repr(str(msgfn))
+        return variable_template
 
     def validate(self, namelist,filename=None):
         """Validate a namelist object against this definition.
@@ -327,11 +340,7 @@ class NamelistDefinition(EntryID):
         The optional `filename` argument can be used to assist in error
         reporting when the namelist comes from a specific, known file.
         """
-        # Improve error reporting when a file name is provided.
-        if filename is None:
-            variable_template = "Variable {!r}"
-        else:
-            variable_template = "Variable {!r} from file " + repr(str(filename))
+        variable_template = self._generate_variable_template(filename)
 
         # Iterate through variables.
         for group_name in namelist.get_group_names():
@@ -366,10 +375,7 @@ class NamelistDefinition(EntryID):
         reporting when the namelist comes from a specific, known file.
         """
         # Improve error reporting when a file name is provided.
-        if filename is None:
-            variable_template = "Variable {!s}"
-        else:
-            variable_template = "Variable {!r} from file " + repr(str(filename))
+        variable_template = self._generate_variable_template(filename)
         groups = {}
         for variable_name in dict_:
             variable_lc = variable_name.lower()
