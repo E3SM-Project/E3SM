@@ -705,5 +705,4 @@ class NamelistGenerator(object):
                              skip_comps=skip_comps, atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt)
         if data_list_path is not None:
             # append to input_data_list file
-            with open(data_list_path, "a") as input_data_list:
-                self._write_input_files(input_data_list)
+            self._write_input_files(data_list_path)
