@@ -660,15 +660,25 @@
       <env name="HDF5_PATH">$ENV{HDF5_PATH}</env>
       <env name="NETCDF_PATH">$ENV{NETCDF_PATH}</env>
       <!--  env name="PNETCDF_PATH">$ENV{NETCDF_PATH}</env> -->
+      <!-- for CLM-PFLOTRAN coupling, the PETSC_PATH must be defined specifically upon machines -->
+      <!-- the following is PETSc v.3.8.x or above -->
       <env name="PETSC_PATH">$ENV{PETSC_DIR}</env>
     </environment_variables>       
 
+    <!-- hack for PFLOTRAN coupling to build ELM model.
+         this is a temporary solution, and user must manually edit the following
+         in 'env_mach_specific.xml' after case.setup,
+         Otherwise, model will build/run as non-PFLOTRAN coupled.
+      IF building with PFLOTRAN codes, in addition to the following options,
+      you must modify 'CLM_USE_PETSC' in 'env_build.xml' to be 'TRUE'.
+    -->
     <environment_variables>
-      <!-- hack for PFLOTRAN coupling (this is a temporary solution, 
-          and user must manually edit the following in 'env_mach_specific.xml' after case.setup)-->
       <env name="CLM_PFLOTRAN_COUPLED">FALSE</env>
       <env name="CLM_PFLOTRAN_COLMODE">FALSE</env>
-      <env name="CLM_PFLOTRAN_SOURCE_DIR">/Users/$USER/mygitlab/pflotran-interface/src/clm-pflotran</env>
+      <!-- The following implies that pflotran codes are pre-built as libpflotran.a -->
+      <!-- env name="CLM_PFLOTRAN_SOURCE_DIR">/Users/$USER/mygitlab/pflotran-interface/src/clm-pflotran</env> -->
+      <!-- The following implies that codes are included in ELM external directory -->
+      <env name="CLM_PFLOTRAN_SOURCE_DIR">$SRCROOT/components/clm/src/external_models/pflotran-interface/src/clm-pflotran</env>
     </environment_variables>       
 </machine>
 
@@ -2035,28 +2045,30 @@
       </module_system>
 
       <!-- for CLM-PFLOTRAN coupling, the PETSC_PATH must be defined specifically upon machines -->
-      <!-- the following is PETSc v.3.8.x -->
+      <!-- the following is PETSc v.3.8.x or above -->
       <environment_variables compiler="gnu" mpilib="openmpi">
-        <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc-x/openmpi-1.10-gcc-5.3</env>
+        <!-- env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc4pf/openmpi-1.10-gcc-5.3</env> --> <!-- PETSc v3.7.x -->
+        <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc-x/openmpi-1.10-gcc-5.3</env> <!-- PETSc v3.8.x or above -->
       </environment_variables>
       
       <!-- hack for PFLOTRAN coupling to build ELM model.
        this is a temporary solution, and user must manually edit the following
        in 'env_mach_specific.xml' after case.setup,
        Otherwise, model will build/run as non-PFLOTRAN coupled.
+       IF building with PFLOTRAN codes, in addition to the following options,
+       you must modify 'CLM_USE_PETSC' in 'env_build.xml' to be 'TRUE'.
        -->
       <environment_variables>
         <env name="CLM_PFLOTRAN_COUPLED">FALSE</env>
         <env name="CLM_PFLOTRAN_COLMODE">FALSE</env>
-        <env name="CLM_PFLOTRAN_SOURCE_DIR">/lustre/or-hydra/cades-ccsi/proj-shared/models/pflotran-interface/src/clm-pflotran</env>
+        <!-- The following pflotran is with PETSc-v3.7.x on CADES-->
+        <!--  env name="CLM_PFLOTRAN_SOURCE_DIR">/lustre/or-hydra/cades-ccsi/proj-shared/models/pflotran-interface/src/clm-pflotran</env> -->
+        <!-- The following pflotran is with PETSc-v3.8.x or above on CADES-->
+        <!-- env name="CLM_PFLOTRAN_SOURCE_DIR">/lustre/or-hydra/cades-ccsi/proj-shared/models/pflotran-interface-v3.8x/src/clm-pflotran</env> -->
+        <!-- The following implies that codes are included in ELM external directory -->
+        <env name="CLM_PFLOTRAN_SOURCE_DIR">$SRCROOT/components/clm/src/external_models/pflotran-interface/src/clm-pflotran</env>
       </environment_variables>
-      <environment_variables>
-       <!-- hack for PFLOTRAN coupling (this is a temporary solution, and user must manually edit it after case.setup)-->
-       <env name="CLM_PFLOTRAN_COUPLED">FALSE</env>
-       <env name="CLM_PFLOTRAN_COLMODE">FALSE</env>
-       <!-- dir for pflotran source code -->
-       <env name="CLM_PFLOTRAN_SOURCE_DIR">/lustre/or-hydra/cades-ccsi/$USER/models/pflotran-interface/src/clm-pflotran</env>
-      </environment_variables>
+      
 </machine>
 
 <machine MACH="titan">

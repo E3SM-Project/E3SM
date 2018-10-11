@@ -664,6 +664,7 @@ sub write_filepath_cesmbld
 		     "external_models/emi/src/em/ptm",
 		     "external_models/emi/src/em/vsfm",
 		     "external_models/emi/src/data_types",
+		     "external_models/pflotran-interface/src/clm-pflotran",
 		     "utils", 
 		     "cpl" );
 
