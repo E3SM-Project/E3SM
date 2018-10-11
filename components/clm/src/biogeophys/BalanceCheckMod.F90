@@ -794,7 +794,7 @@ contains
             h2ocan_patch(bounds%begp:bounds%endp), &
             h2ocan_col(bounds%begc:bounds%endc))
 
-      wa_local_col(:) = wa(:)
+      wa_local_col(bounds%begc:bounds%endc) = wa(bounds%begc:bounds%endc)
 
       do f = 1, num_nolakec
          c = filter_nolakec(f)
@@ -990,7 +990,7 @@ contains
 
        dtime = get_step_size()
 
-       wa_local_col(:) = wa(:)
+       wa_local_col(bounds%begc:bounds%endc) = wa(bounds%begc:bounds%endc)
 
        do c = bounds%begc,bounds%endc
           g = col_pp%gridcell(c)
