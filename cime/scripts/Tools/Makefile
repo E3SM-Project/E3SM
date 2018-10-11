@@ -234,6 +234,18 @@ ifeq ($(strip $(USE_PETSC)), TRUE)
   # Get the "PETSC_LIB" list an env var
   include $(PETSC_PATH)/lib/petsc/conf/variables
 
+  # for CLM-PFLOTRAN coupling
+  ifeq ($(MODEL),clm)
+    ifeq ($(strip $(CLM_PFLOTRAN_COUPLED)), TRUE)
+      ifneq ($(strip $(CLM_PFLOTRAN_SOURCE_DIR)),)
+        CPPDEFS += -DCLM_PFLOTRAN
+        ifeq ($(strip $(CLM_PFLOTRAN_COLMODE)), TRUE)
+          CPPDEFS += -DCOLUMN_MODE
+        endif
+      endif
+    endif
+  endif  
+
 endif
 
 # Set Trilinos info if it is being used

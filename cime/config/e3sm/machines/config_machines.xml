@@ -609,7 +609,8 @@
     <MPILIBS>openmpi,mpich</MPILIBS>
     <RUNDIR>$ENV{HOME}/projects/acme/scratch/$CASE/run</RUNDIR>
     <EXEROOT>$ENV{HOME}/projects/acme/scratch/$CASE/bld</EXEROOT>
-    <DIN_LOC_ROOT>$ENV{HOME}/projects/acme/cesm-inputdata</DIN_LOC_ROOT>    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/acme/ptclm-data</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>$ENV{HOME}/projects/acme/cesm-inputdata</DIN_LOC_ROOT>    
+    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/acme/ptclm-data</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$ENV{HOME}/projects/acme/scratch/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/projects/acme/scratch</CIME_OUTPUT_ROOT>
@@ -622,6 +623,62 @@
     <GMAKE_J>4</GMAKE_J>
     <MAX_TASKS_PER_NODE>4</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>2</MAX_MPITASKS_PER_NODE>
+</machine>
+
+<machine MACH="mymac">
+    <DESC>Mac OS/X workstation or laptop</DESC>
+    <NODENAME_REGEX>macbook-pro.local</NODENAME_REGEX>
+    <TESTS>acme_user</TESTS>
+    <OS>Darwin</OS>
+    <COMPILERS>gnu,pgi</COMPILERS>
+    <MPILIBS>mpich,mpi-serial</MPILIBS>
+    <RUNDIR>$ENV{HOME}/project_acme/scratch/$CASE/run</RUNDIR>
+    <EXEROOT>$ENV{HOME}/project_acme/scratch/$CASE/bld</EXEROOT>
+    <DIN_LOC_ROOT>$ENV{HOME}/project_acme/cesm-inputdata</DIN_LOC_ROOT>    
+    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/project_acme/cesm-inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$ENV{HOME}/project_acme/scratch/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <CESMSCRATCHROOT>$ENV{HOME}/project_acme/scratch</CESMSCRATCHROOT>
+	<SAVE_TIMING_DIR>$CASEROOT/timings</SAVE_TIMING_DIR>
+    <CCSM_BASELINE>$ENV{HOME}/project_acme/baselines</CCSM_BASELINE>
+    <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
+    <SUPPORTED_BY>YOUR_NAME</SUPPORTED_BY>
+    <GMAKE>/usr/bin/make</GMAKE>
+    <GMAKE_J>1</GMAKE_J>
+    <MAX_TASKS_PER_NODE>1</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>1</MAX_MPITASKS_PER_NODE>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <BATCHQUERY></BATCHQUERY>
+    <BATCHSUBMIT></BATCHSUBMIT>
+    <mpirun mpilib="default">
+      <executable>$ENV{MPI_ROOT}/bin/mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -np $TOTALPES</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="none"></module_system>   
+    <environment_variables>
+      <env name="PATH">/usr/local/CMake.App/Contents/bin/:/usr/local/bin/:/opt/local/sbin/:/opt/local/bin:/usr/bin/:/bin/</env>   <!--This is for Cmake, needed by PIO -->
+    </environment_variables>       
+    <environment_variables>
+      <!-- NOTE: the following $ENV{} must be available in your .bashrc, otherwise explicitly give the directories -->
+      <env name="CC_ROOT">$ENV{CC_ROOT}</env>
+      <env name="FC_ROOT">$ENV{CC_ROOT}</env>
+      <env name="MPI_ROOT">$ENV{MPI_ROOT}</env>
+      <env name="HDF5_PATH">$ENV{HDF5_PATH}</env>
+      <env name="NETCDF_PATH">$ENV{NETCDF_PATH}</env>
+      <!--  env name="PNETCDF_PATH">$ENV{NETCDF_PATH}</env> -->
+      <env name="PETSC_PATH">$ENV{PETSC_DIR}</env>
+    </environment_variables>       
+
+    <environment_variables>
+      <!-- hack for PFLOTRAN coupling (this is a temporary solution, 
+          and user must manually edit the following in 'env_mach_specific.xml' after case.setup)-->
+      <env name="CLM_PFLOTRAN_COUPLED">FALSE</env>
+      <env name="CLM_PFLOTRAN_COLMODE">FALSE</env>
+      <env name="CLM_PFLOTRAN_SOURCE_DIR">/Users/$USER/mygitlab/pflotran-interface/src/clm-pflotran</env>
+      <!-- env name="CLM_PFLOTRAN_SOURCE_DIR">$SRCROOT/components/clm/src/external_models/pflotran-interface/src/clm-pflotran</env> -->
+    </environment_variables>       
 </machine>
 
 <machine MACH="linux-generic">
@@ -2024,37 +2081,6 @@
 	 </environment_variables>
 </machine>
 
-
-<machine MACH="oic5">
-         <DESC>ORNL XK6, os is Linux, 32 pes/node, batch system is PBS</DESC>
-         <NODENAME_REGEX>oic5</NODENAME_REGEX>
-         <TESTS>e3sm_developer</TESTS>
-         <COMPILERS>gnu</COMPILERS>
-         <MPILIBS>mpich,openmpi</MPILIBS>
-         <RUNDIR>/home/$USER/models/ACME/run/$CASE/run</RUNDIR>
-         <EXEROOT>/home/$USER/models/ACME/run/$CASE/bld</EXEROOT>
-         <CIME_OUTPUT_ROOT>/home/$USER/models/ACME</CIME_OUTPUT_ROOT>
-         <DIN_LOC_ROOT>/home/zdr/models/ccsm_inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/home/zdr/models/ccsm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/home/$USER/models/ACME/run/archive/$CASE</DOUT_S_ROOT>
-         <OS>LINUX</OS>
-	 <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
-         <SUPPORTED_BY>dmricciuto</SUPPORTED_BY>
-         <GMAKE_J>32</GMAKE_J>
-	 <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
-         <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
-         <mpirun mpilib="mpich">
-              <executable args="default">/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpirun </executable>
-	      <arguments>
-			<arg name="num_tasks"> -np {{ total_tasks }}</arg>
-                        <arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
-	      </arguments>
-         </mpirun>
-         <mpirun mpilib = "mpi-serial">
-              <executable> </executable>
-         </mpirun>
-</machine>
-
 <machine MACH="cades">
    <!-- customize these fields as appropriate for your system (max tasks) and
                               desired layout (change '${group}/${USER}' to your
@@ -2118,7 +2144,19 @@
 
       <!-- for CLM-PFLOTRAN coupling, the PETSC_PATH must be defined specifically upon machines -->
       <environment_variables compiler="gnu" mpilib="openmpi">
-        <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc4pf/openmpi-1.10-gcc-5.3</env>
+        <!-- env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc4pf/openmpi-1.10-gcc-5.3</env> --> <!-- PETSc v3.7.x -->
+        <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc-x/openmpi-1.10-gcc-5.3</env> <!-- PETSc v3.8.x or above -->
+      </environment_variables>
+      
+      <environment_variables>
+        <!-- hack for PFLOTRAN coupling (this is a temporary solution,
+          and user must manually edit the following in 'env_mach_specific.xml' after case.setup)-->
+        <env name="CLM_PFLOTRAN_COUPLED">FALSE</env>
+        <env name="CLM_PFLOTRAN_COLMODE">FALSE</env>
+        <!-- The following pflotran is with PETSc-v3.7.x on CADES-->
+        <!--  env name="CLM_PFLOTRAN_SOURCE_DIR">/lustre/or-hydra/cades-ccsi/proj-shared/models/pflotran-interface/src/clm-pflotran</env> -->
+        <!-- The following pflotran is with PETSc-v3.8.x or above on CADES-->
+        <env name="CLM_PFLOTRAN_SOURCE_DIR">/lustre/or-hydra/cades-ccsi/proj-shared/models/pflotran-interface-v3.8x/src/clm-pflotran</env>
       </environment_variables>
 </machine>
 
