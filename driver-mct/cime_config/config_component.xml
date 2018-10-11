@@ -52,6 +52,15 @@
     <desc>full pathname of case</desc>
   </entry>
 
+  <entry id="NONLOCAL">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>user is not on the requested machine</desc>
+  </entry>
+
   <entry id="CASETOOLS">
     <type>char</type>
     <default_value>$CASEROOT/Tools</default_value>
@@ -649,7 +658,7 @@
 
   <entry id="COMP_INTERFACE">
     <type>char</type>
-    <valid_values>mct,nuopc</valid_values>
+    <valid_values>mct,nuopc,moab</valid_values>
     <default_value>mct</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
@@ -2677,6 +2686,16 @@
    <file>env_batch.xml</file>
    <desc>whether the PROJECT value is required on this machine</desc>
  </entry>
+
+ <entry id="COMPARE_TO_NUOPC">
+   <type>logical</type>
+   <valid_values>TRUE,FALSE</valid_values>
+   <default_value>FALSE</default_value>
+   <group>comparison_to_nuopc</group>
+   <file>env_build.xml</file>
+   <desc>TRUE=>turn on CPP variable COMPARE_TO_NUOPC</desc>
+ </entry>
+
 
  <help>
     =========================================
