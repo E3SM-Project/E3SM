@@ -13,7 +13,7 @@ import subprocess
 SHIFTER_COMMAND = 'shifter --volume=$REFERENCE_DATA_PATH:/reference_data_path'
 SHIFTER_COMMAND += ' --volume=$TEST_DATA_PATH:/test_data_path --volume=$RESULTS_DIR:/results_dir'
 # TODO: Use the 'e3sm' channel in the future instead of 'zshaheen'.
-SHIFTER_COMMAND += ' --image=docker:zshaheen/e3sm_diags:latest'
+SHIFTER_COMMAND += ' --image=docker:e3sm/e3sm_diags:latest'
 # Shifter doesn't use the entrypoint defined in the Dockerfile, so we need to specify what command to use.
 SHIFTER_COMMAND += ' -- e3sm_diags'
 
