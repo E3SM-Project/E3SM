@@ -2976,7 +2976,8 @@ def make_pylint_test(pyfile, all_files):
     def test(self):
         if B_CheckCode.all_results is None:
             B_CheckCode.all_results = check_code(all_files)
-        result = B_CheckCode.all_results[pyfile] # pylint: disable=unsubscriptable-object
+        #pylint: disable=unsubscriptable-object
+        result = B_CheckCode.all_results[pyfile]
         self.assertTrue(result == "", msg=result)
 
     return test

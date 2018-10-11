@@ -766,7 +766,7 @@ class Case(object):
 
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
-                  pesfile=None,user_grid=False, gridfile=None,
+                  pesfile=None, gridfile=None,
                   multi_driver=False, ninst=1, test=False,
                   walltime=None, queue=None, output_root=None,
                   run_unsupported=False, answer=None,
@@ -782,11 +782,10 @@ class Case(object):
         compset_alias, science_support = self._set_compset(compset_name, files, driver)
 
         self._components = self.get_compset_components()
+
         #--------------------------------------------
         # grid
         #--------------------------------------------
-        if user_grid is True and gridfile is not None:
-            self.set_value("GRIDS_SPEC_FILE", gridfile)
         grids = Grids(gridfile)
 
         gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname)
@@ -1437,7 +1436,7 @@ directory, NOT in this subdirectory."""
     def create(self, casename, srcroot, compset_name, grid_name,
                user_mods_dir=None, machine_name=None,
                project=None, pecount=None, compiler=None, mpilib=None,
-               pesfile=None,user_grid=False, gridfile=None,
+               pesfile=None, gridfile=None,
                multi_driver=False, ninst=1, test=False,
                walltime=None, queue=None, output_root=None,
                run_unsupported=False, answer=None,
@@ -1452,7 +1451,7 @@ directory, NOT in this subdirectory."""
             self.configure(compset_name, grid_name, machine_name=machine_name,
                            project=project,
                            pecount=pecount, compiler=compiler, mpilib=mpilib,
-                           pesfile=pesfile,user_grid=user_grid, gridfile=gridfile,
+                           pesfile=pesfile, gridfile=gridfile,
                            multi_driver=multi_driver, ninst=ninst, test=test,
                            walltime=walltime, queue=queue,
                            output_root=output_root,
