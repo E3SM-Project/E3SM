@@ -14,6 +14,7 @@ module five_intr
   implicit none
   
   ! This is the number of layers to add between E3SM levels
+  !  NOTE: This must be an EVEN number
   integer :: five_add_nlevels = 2 
   
   ! The bottom layer to which we will add layers to (set
@@ -155,8 +156,10 @@ module five_intr
     real(r8) :: v_five(pcols,pver_five)
     
     integer :: ncol, i, p, lchnk, k, kh, ki, n
+    integer :: low_ind, high_ind
     
     real(r8) :: pint_host(pcols,pverp)
+    real(r8) :: pmid_host(pcols,pver)
     real(r8) :: pint_five(pcols,pverp_five) ! interface on 
     real(r8) :: pmid_five(pcols,pver_five)
     real :: incr   
@@ -166,6 +169,7 @@ module five_intr
     
       ncol = phys_state(lchnk)%ncol ! number of columns in this chunk
       pint_host = phys_state(lchnk)%pint ! E3SM interface pressures
+      pmid_host = phys_state(lchnk)%pmid ! E3SM midpoint pressures
       pbuf2d_chunk => pbuf_get_chunk(pbuf2d,lchnk)
     
       ! First define the FIVE grid.
@@ -177,7 +181,9 @@ module five_intr
       !
       ! Add layers to the interface grid, then interpolate
       ! onto the pmid grid
-      do i=1,ncol       
+      do i=1,ncol 
+        low_ind = pver
+	high_ind = 1      
         kh=1 ! kh is layer index on FIVE grid
         do k=1,pverp ! k is layer index on E3SM grid
           
@@ -188,6 +194,10 @@ module five_intr
 	  ! we want to add layers to
 	  if (pint_host(i,k) .le. five_bot_toadd .and. &
 	      pint_host(i,k) .ge. five_top_toadd) then
+	  
+	    ! save the indicee
+	    if (high_ind .eq. 1) high_ind = k
+	    low_ind = k
 	  
 	    ! If we are inside the portion of grid we want to add layers
 	    ! to then compute the pressure increment (resolution)
@@ -202,7 +212,12 @@ module five_intr
 	  endif
 	  
 	enddo
-	write(iulog,*) 'NUMBER OF FIVE LEVELS', kh-1
+	
+	! Save the indicees of the layers
+	five_bot_k = low_ind
+	five_top_k = high_ind 
+	
+	write(iulog,*) 'NUMBER OF FIVE LEVELS', kh-1, five_bot_k, five_top_k
 
       enddo
       
@@ -383,23 +398,26 @@ module five_intr
       enddo
     enddo
 
-    ! Now interpolate this tendency to the higher resolution FIVE grid 
-    !  TASK: interpolation scheme needs to be updated  
+    ! Now interpolate this tendency to the higher resolution FIVE grid, 
+    !   using the interpolation method of Sheng and Zwiers (1998), 
+    !   as documented in Yamaguchi et al. (2011) 
     do i=1,ncol
     
-!      call tendency_low_to_high(state%zm(i,:),state%zi(i,:),   
-    
-      call linear_interp(state%pmid(i,:),pmid_five,t_five_tend_low(i,1:pver),&
-                      t_five_tend(i,1:pver_five),pver,pver_five)
-      call linear_interp(state%pmid(i,:),pmid_five,u_five_tend_low(i,1:pver),&
-                      u_five_tend(i,1:pver_five),pver,pver_five)	
-      call linear_interp(state%pmid(i,:),pmid_five,v_five_tend_low(i,1:pver),&
-                      v_five_tend(i,1:pver_five),pver,pver_five)	
+      call tendency_low_to_high(state%zm(i,:),state%zi(i,:),zm_five(i,:),&
+             rho_e3sm(i,:),rho_five(i,:),t_five_tend_low(i,:),t_five_tend(i,:)) 
+	     
+      call tendency_low_to_high(state%zm(i,:),state%zi(i,:),zm_five(i,:),&
+             rho_e3sm(i,:),rho_five(i,:),u_five_tend_low(i,:),u_five_tend(i,:))
+	     
+      call tendency_low_to_high(state%zm(i,:),state%zi(i,:),zm_five(i,:),&
+             rho_e3sm(i,:),rho_five(i,:),v_five_tend_low(i,:),v_five_tend(i,:))
+	     
       do p=1,pcnst
-        call linear_interp(state%pmid(i,:),pmid_five,q_five_tend_low(i,1:pver,p), &
-                      q_five_tend(i,1:pver_five,p),pver,pver_five)
-      enddo	
-    enddo      	      
+        call tendency_low_to_high(state%zm(i,:),state%zi(i,:),zm_five(i,:),&
+             rho_e3sm(i,:),rho_five(i,:),q_five_tend_low(i,:,p),q_five_tend(i,:,p))     
+      enddo	     	             	
+      
+    enddo      	     
 
     ! Finally, update FIVE prognostic variables based on this tendency
     do k=1,pver_five
@@ -636,11 +654,11 @@ module five_intr
     ! Local variables
     integer, parameter :: ml=1, mu=1, lda=2*ml+mu+1
     real(r8) :: zm(pver) ! flipped version of zm_in
-    real(r8) :: zi(pver) ! flipped version of zi_in
+    real(r8) :: zi(pverp) ! flipped version of zi_in
     real(r8) :: df_z(pver) 
     real(r8) :: rho_low(pver)
     real(r8) :: rho_zs(pver_five)
-    real(r8) :: zm_five(pver) ! flipped
+    real(r8) :: zm_five(pver_five) ! flipped
     real(r8) :: dz ! distance of lowest level
     real(r8) :: alpha
     real(r8) :: adz_dn(pver)
@@ -654,12 +672,15 @@ module five_intr
     real(r8) :: rdf_z(pver)
     real(r8) :: rdf_zs_ml(pver) ! mid-layer target value
     real(r8) :: df_zs(pver_five)
-    real(r8), dimension(pver) :: rdf_zm, rdf_zm_dn, rdf_zm_up
+    real(r8), dimension(pverp) :: rdf_zm
+    real(r8), dimension(pver) :: rdf_zm_dn, rdf_zm_up
     real(r8), dimension(pver) :: c0, c1, c2, c3, ic1, ic2, ic3
     real(r8) :: b(pver)
     
     logical, dimension(pver) :: spurious
     logical :: cnd1, cnd2, cnd3, cnd4, cnd5
+    
+    logical :: do_limit
     
     integer :: i, i1, i2, i3, i4, i5
     integer :: k, km3, km2, km1, k00
@@ -741,7 +762,8 @@ module five_intr
     do k=2,pver
       kp1=min(k+1,pver)
       a(3,k) = (adz_up(k-1) * adz_dn(k) / adz(k) + adzw(k) & 
-               + adz_up(k) * adz_dn(k+1) / adz(kp1) ) / adzw(k) * 0.5
+               + adz_up(k) * adz_dn(kp1) / adz(kp1) ) / adzw(k) * 0.5
+	       !+ adz_dn(kp1) used to be adz_dn(k)
     enddo
     ! Subdiagonal
     do k=1, pver
@@ -757,6 +779,15 @@ module five_intr
       i5 = i5 + 1
     enddo
     
+    c1(:) = 0._r8
+    c2(:) = 0._r8
+    c3(:) = 0._r8
+    ic1(:) = 0._r8
+    ic2(:) = 0._r8
+    ic3(:) = 0._r8
+    
+    weight(:) = 0._r8
+    
     i5zi1 = i5
     do k = zi1, zi2
       i1 = i5 + 1
@@ -769,19 +800,20 @@ module five_intr
       weight(i3) = 1.0_r8
       weight(i4:i5) = ( zm_five(i4:i5) - zi(k+1) ) / ( zm(k) - zi(k+1) ) 
       ! c1, c2, c3
-      c0(k) = 2.0 * (zi(k+1) - zi(k))
+      c0(k) = 2.0_r8 * (zi(k+1) - zi(k))
       c1(k) = zi(k+1) - zi(k)
       c2(k) = zm_five(i3) - zi(k)
       c3(k) = zi(k+1) - zm_five(i3)
+      
+      ic1(k) = 1.0_r8 / c1(k)
+      ic2(k) = 1.0_r8 / c2(k) 
+      ic3(k) = 1.0_r8 / c3(k)            
     enddo
-    ic1(:) = 1.0_r8 / c1(:)
-    ic2(:) = 1.0_r8 / c2(:) 
-    ic3(:) = 1.0_r8 / c3(:)
-    
+   
     ! add flag computed?
     
     ! Mass weight inout value
-    rdf_z(:) = rho_low(:) * ten_low(:)
+    rdf_z(:) = rho_low(:) * df_z(:)
     
     ! Solve system of equations to get mid-layer target value
     ! Solve the linear system with LAPACK, BLAS
@@ -792,11 +824,14 @@ module five_intr
     
     ! Interface target value
     rdf_zm(1) = rdf_zs_ml(1)
-    do k = 2, pver-1
+    do k = 2, pver
       rdf_zm(k) = adz_dn(k) / adz(k) * rdf_zs_ml(k-1) & 
         + adz_up(k-1) / adz(k) * rdf_zs_ml(k)
     enddo
-    rdf_zm(pver) = 0.0 !domain top tendency
+    rdf_zm(pverp) = 0.0_r8 !domain top tendency
+    
+    do_limit = .true.
+    if (do_limit) then 
     
     ! Detection and correction of grid-scale violation for df_zm 
     !  Zerroukat et al. (2005 QJRMS)
@@ -822,7 +857,7 @@ module five_intr
     enddo
     
     ! Store rdf_zm into rdf_zm_up and rdf_zm_dn
-    rdf_zm_up(:) = rdf_zm(1:pver)
+    rdf_zm_up(:) = rdf_zm(2:pverp)
     rdf_zm_dn(:) = rdf_zm(1:pver)  
     
     ! Detection and correction of grid-scale violation for rdf_zs_ml for monotonic layer
@@ -835,19 +870,19 @@ module five_intr
     do k = 1, pver
       km1 = MAX( k-1, 1 )
       kp1 = MIN( k+1, pver )
-      rdf_zs_ml(k) = ic1(k) * ( c0(k)*rdf_z(k) - c2(k)*rdf_zm(k) - c3(k)*rdf_zm(k+1) )
+      rdf_zs_ml(k) = ic1(k) * ( c0(k)*rdf_z(k) - c2(k)*rdf_zm(k) - c3(k)*rdf_zm(k+1) ) !+PAB change
       cnd1 = ( rdf_z(k) - rdf_z(km1) ) * ( rdf_z(kp1) - rdf_z(k) ) >= 0.0_r8
-      cnd2 = ( rdf_zs_ml(k) - rdf_zm(k) ) * ( rdf_zm(k+1) - rdf_zs_ml(k) ) < 0.0_r8
+      cnd2 = ( rdf_zs_ml(k) - rdf_zm(k) ) * ( rdf_zm(k+1) - rdf_zs_ml(k) ) < 0.0_r8 !+PAB change
       if ( cnd1 .AND. cnd2 ) then
         ! Inflection within a monotonic layer
 	spurious(k) = .TRUE.
-	alpha = ABS( rdf_zs_ml(k) - rdf_zm(k) ) - ABS( rdf_zs_ml(k) - rdf_zm(k+1) )
+	alpha = ABS( rdf_zs_ml(k) - rdf_zm(k) ) - ABS( rdf_zs_ml(k) - rdf_zm(k+1) ) !+PAB change
 	alpha = SIGN( 0.5_r8, alpha ) + 0.5_r8 ! alpha = 0 or 1
-	rdf_zs_ml(k) = alpha * rdf_zm(k+1) + ( 1.0_r8 - alpha ) * rdf_zm(k)
+	rdf_zs_ml(k) = alpha * rdf_zm(k+1) + ( 1.0_r8 - alpha ) * rdf_zm(k) !+PAB change
 	if ( alpha < 0.5_r8 ) then
 	  rdf_zm_up(k) = ic3(k) * ( c0(k)*rdf_z(k) - c1(k)*rdf_zs_ml(k) - c2(k)*rdf_zm(k) )
 	else
-	  rdf_zm_dn(k) = ic2(k) * (c0(k)*rdf_z(k) - c1(k)*rdf_zs_ml(k) - c3(k)*rdf_zm(k+1))
+	  rdf_zm_dn(k) = ic2(k) * (c0(k)*rdf_z(k) - c1(k)*rdf_zs_ml(k) - c3(k)*rdf_zm(k+1)) !+PAB change
 	endif
       endif
     enddo
@@ -887,6 +922,13 @@ module five_intr
 	
       endif
     enddo
+    
+    else
+    
+    rdf_zm_up(:) = rdf_zm(2:pverp)
+    rdf_zm_dn(:) = rdf_zm(1:pver)
+    
+    endif
     
     ! Construct the tendency profile
     i5 = 0
