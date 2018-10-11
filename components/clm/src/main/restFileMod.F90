@@ -109,6 +109,7 @@ contains
     ! Define/write CLM restart file.
     !
     use WaterBudgetMod, only : WaterBudget_Restart
+    use clm_varctl    , only : do_budgets
     !
     implicit none
     !
@@ -274,7 +275,9 @@ contains
        call hist_restart_ncd (bounds, ncid, flag='define', rdate=rdate )
     end if
 
-    call WaterBudget_Restart(bounds, ncid, flag='define')
+    if (do_budgets) then
+       call WaterBudget_Restart(bounds, ncid, flag='define')
+    end if
 
     call restFile_enddef( ncid )
 
@@ -384,7 +387,9 @@ contains
 
     call hist_restart_ncd (bounds, ncid, flag='write' )
 
-    call WaterBudget_Restart(bounds, ncid, flag='write')
+    if (do_budgets) then
+       call WaterBudget_Restart(bounds, ncid, flag='write')
+    end if
 
     ! --------------------------------------------
     ! Close restart file and write restart pointer file
