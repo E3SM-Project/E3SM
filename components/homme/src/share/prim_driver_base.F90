@@ -867,6 +867,7 @@ contains
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
     use prim_advance_mod,   only: convert_thermo_forcing
+    use prim_advance_mod,   only: applycamforcing_tracers22
 
     implicit none
 
@@ -920,7 +921,7 @@ contains
     ! compute HOMME test case forcing
     ! by calling it here, it mimics eam forcings computations in standalone.
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
-    call convert_thermo_forcing(elem,hvcoord,tl%n0,dt_remap,nets,nete)
+    call convert_thermo_forcing(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 #endif
 
     ! Apply CAM Physics forcing
@@ -932,6 +933,7 @@ contains
     !   ftype=-1: do not apply forcing
 
     call applyCAMforcing_ps(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
+!    call applyCAMforcing_tracers22(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 
     if (compute_diagnostics) then
     ! E(1) Energy after CAM forcing
@@ -1214,6 +1216,7 @@ contains
   use control_mod, only : ftype
   use hybvcoord_mod, only : hvcoord_t
   use prim_advance_mod,   only: applycamforcing_dynamics,applycamforcing_tracers
+  use prim_advance_mod,   only: applycamforcing_tracers22
   implicit none
   type (element_t),       intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt_remap
@@ -1224,6 +1227,7 @@ contains
   if (ftype==0) then
     call applyCAMforcing_dynamics(elem,hvcoord,dyn_timelev,dt_remap,nets,nete)
     call applyCAMforcing_tracers(elem,hvcoord,dyn_timelev,tr_timelev,dt_remap,nets,nete)
+!    call applyCAMforcing_tracers22(elem,hvcoord,dyn_timelev,tr_timelev,dt_remap,nets,nete)
   elseif (ftype==2) then
     call ApplyCAMForcing_dynamics(elem,hvcoord,dyn_timelev,dt_remap,nets,nete)
   endif

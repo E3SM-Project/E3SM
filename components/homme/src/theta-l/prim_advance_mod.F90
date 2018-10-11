@@ -47,7 +47,8 @@ module prim_advance_mod
   save
   public :: prim_advance_exp, prim_advance_init1, &
             applycamforcing_tracers, applycamforcing_dynamics, &
-            applyCAMforcing_dynamics_dp, convert_thermo_forcing
+            applyCAMforcing_dynamics_dp, convert_thermo_forcing, &
+ applycamforcing_tracers22
 
 contains
 
@@ -365,46 +366,27 @@ contains
     call t_stopf('prim_advance_exp')
   end subroutine prim_advance_exp
 
+!----------------------------- CONVERT-THETMO-FORCING ----------------------------
 
 !converting T tendencies to theta, can be called from homme and EAM
 !tests and EAM return thermo tendencies in T, this call converts them to theta
 !should be called BEFORE applyCAMforcing_tracers, before ps_v is updated
 !that is, theta tendencies are computed wrt the same pressure levels 
 !that were used to compute temperature tendencies
-  subroutine convert_thermo_forcing(elem,hvcoord,n0,dt,nets,nete)
+  subroutine convert_thermo_forcing(elem,hvcoord,n0,n0q,dt,nets,nete)
   implicit none
   type (element_t),       intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt ! should be dt_physics, so, dt_remap*se_nsplit
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: nets,nete
-  integer,                intent(in)    :: n0
-  integer                               :: ie,k
-  real(kind=real_kind)                  :: exner(np,np,nlev), dp(np,np,nlev), Rstar(np,np,nlev)
+  integer,                intent(in)    :: n0,n0q
+  integer                               :: ie,i,j,k,q
+  real(kind=real_kind)                  :: exner(np,np,nlev), dp(np,np,nlev)
   real (kind=real_kind)                 :: pnh(np,np,nlev)
   real (kind=real_kind)                 :: dpnh_dp_i(np,np,nlevp)
 
-  real(kind=real_kind)                  :: rstarn1(np,np,nlev),rstarn(np,np,nlev)
-  real(kind=real_kind)                  :: qn1(np,np,nlev), tn1(np,np,nlev)
-
-#if 0
-! one way to do this
-  do ie=nets,nete
-     !would it be better to have 2d array as input instead? or not?
-     call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
-
-     do k=1,nlev
-        dp(:,:,k)=&
-            ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-            ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(:,:,n0)
-     enddo
-     call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,n0),dp,&
-         elem(ie)%state%phinh_i(:,:,:,n0),pnh,exner,dpnh_dp_i)
-
-     do k=1,nlev
-        elem(ie)%derived%FT(:,:,k)=elem(ie)%derived%FT(:,:,k)*Rstar(:,:,k)/Rgas*dp(:,:,k)/exner(:,:,k)
-     enddo
-  enddo
-#endif
+  real(kind=real_kind)                  :: rstarn1(np,np,nlev)
+  real(kind=real_kind)                  :: qn1(np,np,nlev), tn1(np,np,nlev), v1
 
   do ie=nets,nete
      do k=1,nlev
@@ -414,7 +396,30 @@ contains
      enddo
      call get_temperature(elem(ie),tn1,hvcoord,n0)
      !get new Q, T
-     qn1(:,:,:) = elem(ie)%state%Q(:,:,:,1) + dt*elem(ie)%derived%FQ(:,:,:,1)/dp(:,:,:)
+     !for Q we cannot use state%Q becauae EAM recomputes it wrt 'new' density,
+     ! se we used old Qdp. in standalone homme Q may not be computed prop at
+     ! t=0?
+     !qn1(:,:,:) = elem(ie)%state%Q(:,:,:,1) + dt*elem(ie)%derived%FQ(:,:,:,1)/dp(:,:,:)
+
+     q = 1
+     do k=1,nlev
+        do j=1,np
+           do i=1,np
+              v1 = dt*elem(ie)%derived%FQ(i,j,k,q)
+              if (elem(ie)%state%Qdp(i,j,k,q,n0q) + v1 < 0 .and. v1<0)then
+!print *,'HEREEEEEEEEEE'
+                 if (elem(ie)%state%Qdp(i,j,k,q,n0q) < 0 ) then
+                    v1=0  ! Q already negative, dont make it more so
+                 else
+                    v1 = -elem(ie)%state%Qdp(i,j,k,q,n0q)
+                 endif
+              endif
+              !elem(ie)%state%Qdp(i,j,k,q,np1_qdp) =elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
+              qn1(i,j,k) = (elem(ie)%state%Qdp(i,j,k,q,n0q)+v1)/dp(i,j,k)
+           enddo
+        enddo
+     enddo
+     !qn1(:,:,:) = (elem(ie)%state%Qdp(:,:,:,1,n0q) + dt*elem(ie)%derived%FQ(:,:,:,1))/dp(:,:,:)
      tn1(:,:,:) = tn1(:,:,:) + dt*elem(ie)%derived%FT(:,:,:)
      !get new rstar
      call get_R_star(rstarn1,qn1)
@@ -422,11 +427,145 @@ contains
          elem(ie)%state%phinh_i(:,:,:,n0),pnh,exner,dpnh_dp_i)
      !finally, compute difference for FT
      elem(ie)%derived%FT(:,:,:) = &
-(Rstar(:,:,:)/Rgas)*tn1(:,:,:)*dp(:,:,:)/exner(:,:,:) -&
-                       elem(ie)%state%vtheta_dp(:,:,:,n0)
+         (rstarn1(:,:,:)/Rgas*tn1(:,:,:)*dp(:,:,:)/exner(:,:,:) -&
+          elem(ie)%state%vtheta_dp(:,:,:,n0))/dt
+
+     !elem(ie)%state%vtheta_dp(:,:,:,n0) = &
+     !     (rstarn1(:,:,:)/Rgas)*tn1(:,:,:)*dp(:,:,:)/exner(:,:,:)
+
   enddo   
 
   end subroutine convert_thermo_forcing
+
+
+
+!----------------------------- APPLY22 ----------------------------
+
+ subroutine applyCAMforcing_tracers22(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
+
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: np1,nets,nete,np1_qdp
+
+  ! local
+  integer :: i,j,k,ie,q
+  real (kind=real_kind) :: v1
+  real (kind=real_kind) :: temperature(np,np,nlev)
+  real (kind=real_kind) :: Rstar(np,np,nlev)
+  real (kind=real_kind) :: exner(np,np,nlev)
+  real (kind=real_kind) :: dp(np,np,nlev)
+  real (kind=real_kind) :: dp_old(np,np,nlev)
+  real (kind=real_kind) :: pnh(np,np,nlev)
+  real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
+
+  do ie=nets,nete
+     ! apply forcing to Qdp
+     elem(ie)%derived%FQps(:,:)=0
+
+     ! apply forcing to temperature
+     call get_temperature(elem(ie),temperature,hvcoord,np1)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k)
+#endif
+     do k=1,nlev
+        temperature(:,:,k) = temperature(:,:,k) + dt*elem(ie)%derived%FT(:,:,k)
+     enddo
+
+
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(q,k,i,j,v1)
+#endif
+     do q=1,qsize
+        do k=1,nlev
+           do j=1,np
+              do i=1,np
+                 v1 = dt*elem(ie)%derived%FQ(i,j,k,q)
+                 !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
+                 if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0)then
+print *,'HEREEEEEEEEEE'
+                    !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
+                    if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
+                       v1=0  ! Q already negative, dont make it more so
+                    else
+                       !v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
+                       v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
+                    endif
+                 endif
+                 !elem(ie)%state%Qdp(i,j,k,q,np1) =
+                 !elem(ie)%state%Qdp(i,j,k,q,np1)+v1
+                 elem(ie)%state%Qdp(i,j,k,q,np1_qdp) =elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
+                 if (q==1) then
+                    elem(ie)%derived%FQps(i,j)=elem(ie)%derived%FQps(i,j)+v1/dt
+                 endif
+              enddo
+           enddo
+        enddo
+     enddo
+
+     do k=1,nlev
+        dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+             ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(:,:,np1)
+        elem(ie)%state%Q(:,:,k,1) =elem(ie)%state%Qdp(:,:,k,1,np1_qdp)/dp(:,:,k)
+     enddo
+
+     ! now that we have updated Qdp and dp, compute vtheta_dp from temperature
+     call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),dp,&
+         elem(ie)%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i)
+
+     call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
+     elem(ie)%state%vtheta_dp(:,:,:,np1) = &
+          (Rstar(:,:,:)/Rgas)*temperature(:,:,:)*dp(:,:,:)/exner(:,:,:)
+
+
+     !
+     ! Now update ps and recompute Q to be consistent with Qdp
+     !
+     if (use_moisture) then
+        ! to conserve dry mass in the precese of Q1 forcing:
+        elem(ie)%state%ps_v(:,:,np1) = elem(ie)%state%ps_v(:,:,np1) + &
+             dt*elem(ie)%derived%FQps(:,:)
+     endif
+
+     ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
+     do k=1,nlev
+        dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+             ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(:,:,np1)
+     enddo
+     do q=1,qsize
+        do k=1,nlev
+           elem(ie)%state%Q(:,:,k,q) =elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp(:,:,k)
+
+        enddo
+     enddo
+
+  enddo
+  call applyCAMforcing_dynamics22(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
+  end subroutine applyCAMforcing_tracers22
+
+  subroutine applyCAMforcing_dynamics22(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
+
+  type (element_t)     ,  intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: np1,nets,nete,np1_qdp
+
+  integer :: k,ie
+  do ie=nets,nete
+     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,1:2,:)
+     elem(ie)%state%w_i(:,:,1:nlev,np1) = elem(ie)%state%w_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FM(:,:,3,:)
+
+     ! finally update w at the surface: 
+     elem(ie)%state%w_i(:,:,nlevp,np1) =(elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
+          elem(ie)%state%v(:,:,2,nlev,np1)*elem(ie)%derived%gradphis(:,:,2))/g
+  enddo
+
+  end subroutine applyCAMforcing_dynamics22
+
+
+
+!----------------------------- APPLYCAMFORCING-TRACERS ----------------------------
 
 
 !THIS IS REPEATED CODE NOW, MOVE TO PRIM-DRIVER?
@@ -507,6 +646,8 @@ contains
 
   end subroutine applyCAMforcing_tracers
 
+
+!----------------------------- APPLYCAMFORCING-DYNAMICS ----------------------------
 
   subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,dt,nets,nete)
 
