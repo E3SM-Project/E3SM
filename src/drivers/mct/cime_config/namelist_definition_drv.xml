@@ -1164,7 +1164,13 @@
     <category>history</category>
     <group>seq_infodata_inparm</group>
     <desc>
-      turns on coupler history stream for daily average runoff to coupler fields.
+      turns on coupler history stream for average* runoff to coupler fields
+      (*despite the lack of an averaging time span in the name).
+      Files are written at time-of-day = 00000, and at the end of the run interval,
+      even if that time is not 00000.
+      Run length less than 24 hours; averaging period is the run length,
+      Otherwise; averaging period is 24 hours for files before the last (partial) day,
+                 averaging period is the last (partial) day for the last file.
       default: false
     </desc>
     <values>
