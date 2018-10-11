@@ -384,7 +384,7 @@ contains
   real (kind=real_kind)                 :: dpnh_dp_i(np,np,nlevp)
 
   real(kind=real_kind)                  :: rstarn1(np,np,nlev),rstarn(np,np,nlev)
-  real(kind=real_kind)                  :: qn1(np,np,nlev), tn(np,np,nlev), tn1(np,np,nlev)
+  real(kind=real_kind)                  :: qn1(np,np,nlev), tn1(np,np,nlev)
 
 #if 0
 ! one way to do this
@@ -407,22 +407,23 @@ contains
 #endif
 
   do ie=nets,nete
-     call get_R_star(rstarn,elem(ie)%state%Q(:,:,:,1))
-     call get_temperature(elem(ie),tn,hvcoord,n0)
-     !get new Q, T
-     qn1(:,:,:) = elem(ie)%state%Q(:,:,:,1) + dt*elem(ie)%derived%FQ(:,:,:,1)
-     tn1(:,:,:) = tn(:,:,:) + dt*elem(ie)%derived%FT(:,:,:)
-     !get new rstar
-     call get_R_star(rstarn1,qn1)
      do k=1,nlev
         dp(:,:,k)=&
             ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
             ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(:,:,n0)
      enddo
+     call get_temperature(elem(ie),tn1,hvcoord,n0)
+     !get new Q, T
+     qn1(:,:,:) = elem(ie)%state%Q(:,:,:,1) + dt*elem(ie)%derived%FQ(:,:,:,1)/dp(:,:,:)
+     tn1(:,:,:) = tn1(:,:,:) + dt*elem(ie)%derived%FT(:,:,:)
+     !get new rstar
+     call get_R_star(rstarn1,qn1)
      call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,n0),dp,&
          elem(ie)%state%phinh_i(:,:,:,n0),pnh,exner,dpnh_dp_i)
      !finally, compute difference for FT
-     elem(ie)%derived%FT(:,:,:) = dp * (rstarn1*tn1 - rstarn*tn) / exner / Rgas
+     elem(ie)%derived%FT(:,:,:) = &
+(Rstar(:,:,:)/Rgas)*tn1(:,:,:)*dp(:,:,:)/exner(:,:,:) -&
+                       elem(ie)%state%vtheta_dp(:,:,:,n0)
   enddo   
 
   end subroutine convert_thermo_forcing
