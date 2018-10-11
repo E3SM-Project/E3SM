@@ -96,6 +96,13 @@ SET (HOMME_USE_KOKKOS FALSE)
 IF (${BUILD_HOMME_PREQX_KOKKOS})
   SET (HOMME_USE_KOKKOS TRUE)
   SET (HOMME_USE_CXX TRUE)
+  IF (NOT ${BUILD_HOMME_PREQX})
+    # If we build theta kokkos, we also build theta, so we can compare
+    MESSAGE (STATUS "Setting manually disabled BUILD_HOMME_PREQX to ON, since BUILD_HOMME_PREQX_KOKKOS is ON.")
+  ENDIF ()
+
+  # We need to compare against F90 implementation, so turn this on
+  SET (BUILD_HOMME_PREQX TRUE)
 ENDIF ()
 
 IF (${HOMME_USE_CXX})
