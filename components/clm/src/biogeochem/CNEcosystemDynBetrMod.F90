@@ -365,7 +365,7 @@ module CNEcosystemDynBetrMod
        call t_stopf('CNUpdate1')
 !       if(get_nstep()/=23)then
        call t_startf('CNGapMortality')
-!       call nitrogenstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)    
+!       call nitrogenstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
        call CNGapMortality( num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dgvs_vars, cnstate_vars, &
             carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
@@ -446,6 +446,7 @@ module CNEcosystemDynBetrMod
 
        call PStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             phosphorusflux_vars, phosphorusstate_vars)
+
 !       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'loc3')
 !       if(get_nstep()/=3)then
        call CNWoodProducts(num_soilc, filter_soilc, &
@@ -458,6 +459,7 @@ module CNEcosystemDynBetrMod
             phosphorusstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
             nitrogenflux_vars, phosphorusflux_vars)
 !       endif
+
        call CNFireArea(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             atm2lnd_vars, temperature_vars, energyflux_vars, soilhydrology_vars, waterstate_vars, &
             cnstate_vars, carbonstate_vars)

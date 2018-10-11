@@ -200,7 +200,7 @@ contains
   logical :: readv            ! read variable in or not
 
   allocate(km_minsurf_nh4_vr(1:nlevdecomp_full,0:nsoilorder))
-  call ncd_io('KM_MINSURF_NH4_vr',km_minsurf_nh4_vr, 'read', ncid, readvar=readv)  
+  call ncd_io('KM_MINSURF_NH4_vr',km_minsurf_nh4_vr, 'read', ncid, readvar=readv)
   if ( .not. readv ) call endrun(msg=' ERROR: error in reading in soil order KM_MINSURF_P_vr'//errMsg(__FILE__, __LINE__))
   end subroutine readCNAllocBeTRParams
 !!-------------------------------------------------------------------------------------------------
@@ -912,7 +912,7 @@ contains
       decomp_eff_pcompet_b(c,j) = 0._r8
       do p = col_pp%pfti(c), col_pp%pftf(c)
         if (veg_pp%active(p) .and. (veg_pp%itype(p) /= noveg)) then
-          plant_eff_frootc_vr_patch(p,j) = frootc(p) * froot_prof(p,j) 
+          plant_eff_frootc_vr_patch(p,j) = frootc(p) * froot_prof(p,j)
 
           if (cnallocate_carbon_only() .or. cnallocate_carbonphosphorus_only()) then
             plant_nh4_vmax_vr_patch(p,j)  = 0._r8
@@ -937,7 +937,7 @@ contains
           plant_eff_frootc_vr_patch(p,j) = plant_eff_frootc_vr_patch(p,j) * veg_pp%wtcol(p)
           plant_eff_ncompet_b(p,j) = e_plant_scalar*frootc(p)*froot_prof(p,j) * veg_pp%wtcol(p)
           plant_eff_pcompet_b(p,j) = e_plant_scalar*frootc(p)*froot_prof(p,j) * veg_pp%wtcol(p)
-          
+
         else
           plant_nh4_km_vr_patch(p,j) = spval
           plant_no3_km_vr_patch(p,j) = spval
@@ -1353,15 +1353,20 @@ contains
          froot_curmr(p) = froot_mr(p) * curmr_ratio
          froot_xsmr(p) = froot_mr(p) * xsmr_ratio
          froot_mr(p) =  froot_curmr(p) + froot_xsmr(p)
-         livestem_curmr(p) = livestem_mr(p) * curmr_ratio
-         livestem_xsmr(p) = livestem_mr(p) * xsmr_ratio
-         livestem_mr(p) =  livestem_curmr(p) + livestem_xsmr(p)
-         livecroot_curmr(p) = livecroot_mr(p) * curmr_ratio
-         livecroot_xsmr(p) = livecroot_mr(p) * xsmr_ratio
-         livecroot_mr(p) =  livecroot_curmr(p) + livecroot_xsmr(p)
-         grain_curmr(p) = grain_mr(p) * curmr_ratio
-         grain_xsmr(p) = grain_mr(p) * xsmr_ratio
-
+         if (woody(ivt(p)) == 1._r8 .or. ivt(p) >= npcropmin) then
+           livestem_curmr(p) = livestem_mr(p) * curmr_ratio
+           livestem_xsmr(p) = livestem_mr(p) * xsmr_ratio
+           livestem_mr(p) =  livestem_curmr(p) + livestem_xsmr(p)
+         endif
+         if (woody(ivt(p)) == 1._r8) then
+           livecroot_curmr(p) = livecroot_mr(p) * curmr_ratio
+           livecroot_xsmr(p) = livecroot_mr(p) * xsmr_ratio
+           livecroot_mr(p) =  livecroot_curmr(p) + livecroot_xsmr(p)
+         endif
+         if (ivt(p) >= npcropmin)then
+           grain_curmr(p) = grain_mr(p) * curmr_ratio
+           grain_xsmr(p) = grain_mr(p) * xsmr_ratio
+         endif
          ! no allocation when available c is negative
          availc(p) = max(availc(p),0.0_r8)
          ! test for an xsmrpool deficit
@@ -1742,7 +1747,7 @@ contains
               supplement_to_sminn_surf(p) = 0._r8
             else
               supplement_to_sminn_surf(p) = supplement_to_sminn_surf(p)-plant_n_buffer_patch(p)/dt
-              plant_n_buffer_patch(p) = 0._r8 
+              plant_n_buffer_patch(p) = 0._r8
             endif
           else if (cnallocate_carbon_only() .or. cnallocate_carbonnitrogen_only()) then
             if(get_nstep()==23)write(iulog,*)'p',p,supplement_to_sminp_surf(p)

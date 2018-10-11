@@ -130,95 +130,10 @@ contains
             ! seeding fluxes, from dynamic landcover
             cs%seedc_col(c) = cs%seedc_col(c) - cf%dwt_seedc_to_leaf_col(c) * dt
             cs%seedc_col(c) = cs%seedc_col(c) - cf%dwt_seedc_to_deadstem_col(c) * dt
-            cs%decomp_som2c_vr_col(c,1:nlevdecomp) = cs%decomp_cpools_vr_col(c,1:nlevdecomp,6)
          end do
       end if
 
-
-
-      if (.not. is_active_betr_bgc .and. .not.(use_pflotran .and. pf_cmode) .and. .not.use_fates ) then
-
-         ! plant to litter fluxes
-
-         do j = 1,nlevdecomp
-            ! column loop
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               ! phenology and dynamic land cover fluxes
-               cf%decomp_cpools_sourcesink_col(c,j,i_met_lit) = &
-                    ( cf%phenology_c_to_litr_met_c_col(c,j) + cf%dwt_frootc_to_litr_met_c_col(c,j) ) *dt
-               cf%decomp_cpools_sourcesink_col(c,j,i_cel_lit) = &
-                    ( cf%phenology_c_to_litr_cel_c_col(c,j) + cf%dwt_frootc_to_litr_cel_c_col(c,j) ) *dt
-               cf%decomp_cpools_sourcesink_col(c,j,i_lig_lit) = &
-                    ( cf%phenology_c_to_litr_lig_c_col(c,j) + cf%dwt_frootc_to_litr_lig_c_col(c,j) ) *dt
-               cf%decomp_cpools_sourcesink_col(c,j,i_cwd) = &
-                    ( cf%dwt_livecrootc_to_cwdc_col(c,j) + cf%dwt_deadcrootc_to_cwdc_col(c,j) ) *dt
-            end do
-         end do
-
-         ! litter and SOM HR fluxes
-         do k = 1, ndecomp_cascade_transitions
-            do j = 1,nlevdecomp
-               ! column loop
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  cf%decomp_cpools_sourcesink_col(c,j,cascade_donor_pool(k)) = &
-                       cf%decomp_cpools_sourcesink_col(c,j,cascade_donor_pool(k)) &
-                       - ( cf%decomp_cascade_hr_vr_col(c,j,k) + cf%decomp_cascade_ctransfer_vr_col(c,j,k)) *dt
-               end do
-            end do
-         end do
-         do k = 1, ndecomp_cascade_transitions
-            if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
-               do j = 1,nlevdecomp
-                  ! column loop
-                  do fc = 1,num_soilc
-                     c = filter_soilc(fc)
-                     cf%decomp_cpools_sourcesink_col(c,j,cascade_receiver_pool(k)) = &
-                          cf%decomp_cpools_sourcesink_col(c,j,cascade_receiver_pool(k)) &
-                          + cf%decomp_cascade_ctransfer_vr_col(c,j,k)*dt
-                  end do
-               end do
-            end if
-         end do
-
-      elseif( use_fates ) then
-
-         ! The following pools were updated via the FATES interface
-         ! cf%decomp_cpools_sourcesink_col(c,j,i_met_lit)
-         ! cf%decomp_cpools_sourcesink_col(c,j,i_cel_lit)
-         ! cf%decomp_cpools_sourcesink_col(c,j,i_lig_lit)
-
-         ! litter and SOM HR fluxes
-         do k = 1, ndecomp_cascade_transitions
-            do j = 1,nlevdecomp
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  cf%decomp_cpools_sourcesink_col(c,j,cascade_donor_pool(k)) = &
-                        cf%decomp_cpools_sourcesink_col(c,j,cascade_donor_pool(k)) &
-                        - ( cf%decomp_cascade_hr_vr_col(c,j,k) + cf%decomp_cascade_ctransfer_vr_col(c,j,k)) *dt
-               end do
-            end do
-         end do
-         do k = 1, ndecomp_cascade_transitions
-            if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
-               do j = 1,nlevdecomp
-                  do fc = 1,num_soilc
-                     c = filter_soilc(fc)
-                     cf%decomp_cpools_sourcesink_col(c,j,cascade_receiver_pool(k)) = &
-                           cf%decomp_cpools_sourcesink_col(c,j,cascade_receiver_pool(k)) &
-                           + cf%decomp_cascade_ctransfer_vr_col(c,j,k)*dt
-                  end do
-               end do
-            end if
-         end do
-
-
-   endif   !end if is_active_betr_bgc()
-
-
    if (.not.use_fates) then
-
       ! patch loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)
@@ -228,15 +143,15 @@ contains
          cs%leafc_xfer_patch(p)      = cs%leafc_xfer_patch(p)  - cf%leafc_xfer_to_leafc_patch(p)*dt
          cs%frootc_patch(p)          = cs%frootc_patch(p)      + cf%frootc_xfer_to_frootc_patch(p)*dt
          cs%frootc_xfer_patch(p)     = cs%frootc_xfer_patch(p) - cf%frootc_xfer_to_frootc_patch(p)*dt
-             if (woody(ivt(p)) == 1._r8) then
-                cs%livestemc_patch(p)       = cs%livestemc_patch(p)       + cf%livestemc_xfer_to_livestemc_patch(p)*dt
-                cs%livestemc_xfer_patch(p)  = cs%livestemc_xfer_patch(p)  - cf%livestemc_xfer_to_livestemc_patch(p)*dt
-                cs%deadstemc_patch(p)       = cs%deadstemc_patch(p)       + cf%deadstemc_xfer_to_deadstemc_patch(p)*dt
-                cs%deadstemc_xfer_patch(p)  = cs%deadstemc_xfer_patch(p)  - cf%deadstemc_xfer_to_deadstemc_patch(p)*dt
-                cs%livecrootc_patch(p)      = cs%livecrootc_patch(p)      + cf%livecrootc_xfer_to_livecrootc_patch(p)*dt
-                cs%livecrootc_xfer_patch(p) = cs%livecrootc_xfer_patch(p) - cf%livecrootc_xfer_to_livecrootc_patch(p)*dt
-                cs%deadcrootc_patch(p)      = cs%deadcrootc_patch(p)      + cf%deadcrootc_xfer_to_deadcrootc_patch(p)*dt
-                cs%deadcrootc_xfer_patch(p) = cs%deadcrootc_xfer_patch(p) - cf%deadcrootc_xfer_to_deadcrootc_patch(p)*dt
+         if (woody(ivt(p)) == 1._r8) then
+           cs%livestemc_patch(p)       = cs%livestemc_patch(p)       + cf%livestemc_xfer_to_livestemc_patch(p)*dt
+           cs%livestemc_xfer_patch(p)  = cs%livestemc_xfer_patch(p)  - cf%livestemc_xfer_to_livestemc_patch(p)*dt
+           cs%deadstemc_patch(p)       = cs%deadstemc_patch(p)       + cf%deadstemc_xfer_to_deadstemc_patch(p)*dt
+           cs%deadstemc_xfer_patch(p)  = cs%deadstemc_xfer_patch(p)  - cf%deadstemc_xfer_to_deadstemc_patch(p)*dt
+           cs%livecrootc_patch(p)      = cs%livecrootc_patch(p)      + cf%livecrootc_xfer_to_livecrootc_patch(p)*dt
+           cs%livecrootc_xfer_patch(p) = cs%livecrootc_xfer_patch(p) - cf%livecrootc_xfer_to_livecrootc_patch(p)*dt
+           cs%deadcrootc_patch(p)      = cs%deadcrootc_patch(p)      + cf%deadcrootc_xfer_to_deadcrootc_patch(p)*dt
+           cs%deadcrootc_xfer_patch(p) = cs%deadcrootc_xfer_patch(p) - cf%deadcrootc_xfer_to_deadcrootc_patch(p)*dt
          end if
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
             ! lines here for consistency; the transfer terms are zero
@@ -261,6 +176,7 @@ contains
             cs%livestemc_patch(p)  = cs%livestemc_patch(p)  - cf%livestemc_to_litter_patch(p)*dt
             cs%grainc_patch(p)     = cs%grainc_patch(p)     - cf%grainc_to_food_patch(p)*dt
          end if
+
          cflx_tmp=0._r8; cflx_scalar=1._r8
          ! maintenance respiration fluxes from cpool
          cs%cpool_patch(p) = cs%cpool_patch(p) - cf%leaf_curmr_patch(p)*dt
@@ -273,7 +189,6 @@ contains
             cs%cpool_patch(p) = cs%cpool_patch(p) - cf%livestem_curmr_patch(p)*dt
             cs%cpool_patch(p) = cs%cpool_patch(p) - cf%grain_curmr_patch(p)*dt
          end if
-
 
          ! growth respiration fluxes for current growth
          cs%cpool_patch(p) = cs%cpool_patch(p) - cf%cpool_leaf_gr_patch(p)*dt
@@ -315,7 +230,7 @@ contains
             cflx_tmp = cflx_tmp + cf%cpool_to_livecrootc_patch(p)*dt
             cflx_tmp = cflx_tmp + cf%cpool_to_livecrootc_storage_patch(p)*dt
             cflx_tmp = cflx_tmp + cf%cpool_to_deadcrootc_patch(p)*dt
-            cflx_tmp = cflx_tmp + cf%cpool_to_deadcrootc_storage_patch(p)*dt
+            cflx_tmp = cflx_tmp + cf%cpool_to_grain_stoorage_patch(p)*dt
          end if
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
             cflx_tmp = cflx_tmp + cf%cpool_to_livestemc_patch(p)*dt
@@ -323,7 +238,7 @@ contains
             cflx_tmp = cflx_tmp + cf%cpool_to_grainc_patch(p)*dt
             cflx_tmp = cflx_tmp + cf%cpool_to_grainc_storage_patch(p)*dt
          end if
-         
+
          ! growth respiration stored for release during transfer growth
          cflx_tmp = cflx_tmp + cf%cpool_to_gresp_storage_patch(p)*dt
          if(cs%cpool_patch(p) >= cflx_tmp)then
@@ -334,17 +249,21 @@ contains
            endif
            cs%cpool_patch(p) = 0._r8
          endif
+
          ! maintenance respiration fluxes from xsmrpool
          cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) + cf%cpool_to_xsmrpool_patch(p)*dt*cflx_scalar
          cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) - cf%leaf_xsmr_patch(p)*dt
          cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) - cf%froot_xsmr_patch(p)*dt
+
          if (nu_com .ne. 'RD') then
             cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) - cf%xsmrpool_turnover_patch(p)*dt
          end if
+
          if (woody(ivt(p)) == 1._r8) then
             cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) - cf%livestem_xsmr_patch(p)*dt
             cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) - cf%livecroot_xsmr_patch(p)*dt
          end if
+
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
             cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) - cf%livestem_xsmr_patch(p)*dt
             cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) - cf%grain_xsmr_patch(p)*dt
