@@ -190,12 +190,6 @@ class Machines(GenericXML):
             node = self.get_optional_child(name, root=self.machine_node, attributes=attributes)
             if node is not None:
                 value = self.text(node)
-
-        if value is None:
-            # if all else fails
-            #pylint: disable=assignment-from-none
-            value = GenericXML.get_value(self, name)
-
         if resolved:
             if value is not None:
                 value = self.get_resolved_value(value)
@@ -334,7 +328,9 @@ class Machines(GenericXML):
                 print("      max_tasks/node ",self.text(max_tasks_per_node))
 
     def return_values(self):
-        # return a dictionary of machine info
+        """ return a dictionary of machine info
+        This routine is used by external tools in https://github.com/NCAR/CESM_xml2html
+        """
         machines = self.get_children("machine")
         mach_dict = dict()
         logger.debug("Machines return values")

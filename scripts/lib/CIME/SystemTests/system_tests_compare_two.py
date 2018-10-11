@@ -38,6 +38,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case import Case
 from CIME.utils import get_model
+from CIME.test_status import *
 
 import shutil, os, glob
 
@@ -107,7 +108,8 @@ class SystemTestsCompareTwo(SystemTestsCommon):
 
         self._setup_cases_if_not_yet_done()
 
-        self._multisubmit = multisubmit
+        self._multisubmit = multisubmit and self._case1.get_value("BATCH_SYSTEM") != "none"
+
     # ========================================================================
     # Methods that MUST be implemented by specific tests that inherit from this
     # base class
@@ -215,6 +217,12 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         # First run
         if not self._multisubmit or first_phase:
             logger.info('Doing first run: ' + self._run_one_description)
+
+            # Add a PENDing compare phase so that we'll notice if the second part of compare two
+            # doesn't run.
+            with self._test_status:
+                self._test_status.set_status("{}_{}_{}".format(COMPARE_PHASE, self._run_one_suffix, self._run_two_suffix), TEST_PEND_STATUS)
+
             self._activate_case1()
             self._case_one_custom_prerun_action()
             self.run_indv(suffix = self._run_one_suffix)

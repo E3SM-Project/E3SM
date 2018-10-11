@@ -409,7 +409,7 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
         arg_stderr = _convert_to_fd(arg_stdout, from_dir)
 
     if (verbose != False and (verbose or logger.isEnabledFor(logging.DEBUG))):
-        logger.info("RUN: {}".format(cmd))
+        logger.info("RUN: {}\nFROM: {}".format(cmd, os.getcwd() if from_dir is None else from_dir))
 
     if (input_str is not None):
         stdin = subprocess.PIPE
@@ -427,12 +427,12 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     output, errput = proc.communicate(input_str)
     if output is not None:
         try:
-            output = output.decode('utf-8').strip()
+            output = output.decode('utf-8', errors='ignore').strip()
         except AttributeError:
             pass
     if errput is not None:
         try:
-            errput = errput.decode('utf-8').strip()
+            errput = errput.decode('utf-8', errors='ignore').strip()
         except AttributeError:
             pass
 
@@ -1656,6 +1656,8 @@ def indent_string(the_string, indent_level):
 def verbatim_success_msg(return_val):
     return return_val
 
+CASE_SUCCESS = "success"
+CASE_FAILURE = "error"
 def run_and_log_case_status(func, phase, caseroot='.', custom_success_msg_functor=None):
     append_case_status(phase, "starting", caseroot=caseroot)
     rv = None
@@ -1663,11 +1665,11 @@ def run_and_log_case_status(func, phase, caseroot='.', custom_success_msg_functo
         rv = func()
     except:
         e = sys.exc_info()[1]
-        append_case_status(phase, "error", msg=("\n{}".format(e)), caseroot=caseroot)
+        append_case_status(phase, CASE_FAILURE, msg=("\n{}".format(e)), caseroot=caseroot)
         raise
     else:
         custom_success_msg = custom_success_msg_functor(rv) if custom_success_msg_functor else None
-        append_case_status(phase, "success", msg=custom_success_msg, caseroot=caseroot)
+        append_case_status(phase, CASE_SUCCESS, msg=custom_success_msg, caseroot=caseroot)
 
     return rv
 
@@ -1756,3 +1758,17 @@ def run_bld_cmd_ensure_logging(cmd, arg_logger, from_dir=None):
 
 def get_batch_script_for_job(job):
     return job if "st_archive" in job else "." + job
+
+def string_in_list(_string, _list):
+    """Case insensitive search for string in list
+    returns the matching list value
+    >>> string_in_list("Brack",["bar", "bracK", "foo"])
+    'bracK'
+    >>> string_in_list("foo", ["FFO", "FOO", "foo2", "foo3"])
+    'FOO'
+    >>> string_in_list("foo", ["FFO", "foo2", "foo3"])
+    """
+    for x in _list:
+        if _string.lower() == x.lower():
+            return x
+    return None

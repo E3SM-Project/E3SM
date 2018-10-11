@@ -605,6 +605,15 @@
     </queues>
   </batch_system>
 
+  <batch_system type="pbs" MACH="theia" >
+    <submit_args>
+      <arg flag="-l procs=" name=" $TOTALPES"/>
+    </submit_args>
+    <queues>
+      <queue walltimemax="01:00:00" nodemin="1" nodemax="35">batch</queue>
+    </queues>
+  </batch_system>
+
   <batch_jobs>
     <!-- order matters, with no-batch jobs will be run in the order listed here -->
     <job name="case.run">

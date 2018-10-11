@@ -804,6 +804,9 @@ using a fortran linker.
     <append MPILIB="mvapich2"> -mkl=cluster </append>
   </SLIBS>
   <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">/fs/cgd/csm/tools/pFUnit/pFUnit3.2.8_hobart_Intel15.0.2_noMPI_noOpenMP</PFUNIT_PATH>
+  <FFLAGS>
+    <append MODEL="mom"> -r8 </append>
+  </FFLAGS>
 </compiler>
 
 <compiler MACH="hobart" COMPILER="nag">
@@ -1117,29 +1120,12 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
-<compiler MACH="yellowstone">
-  <CPPDEFS>
-    <!-- these flags enable nano timers -->
-    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
-  </CPPDEFS>
-  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
-</compiler>
-
 <compiler MACH="cheyenne" COMPILER="gnu">
   <CPPDEFS>
     <append MODEL="pio1"> -DNO_MPIMOD </append>
   </CPPDEFS>
   <SLIBS>
     <append> -ldl </append>
-  </SLIBS>
-</compiler>
-
-<compiler MACH="cheyenne" COMPILER="pgi">
-  <SLIBS>
-    <append> -llapack -lblas </append>
-    <append MPILIB="mpi-serial"> -ldl </append>
   </SLIBS>
 </compiler>
 
@@ -1152,6 +1138,7 @@ using a fortran linker.
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
 </compiler>
+
 <compiler MACH="cheyenne" COMPILER="intel">
   <CFLAGS>
     <append> -qopt-report -xCORE_AVX2 -no-fma</append>
@@ -1166,6 +1153,16 @@ using a fortran linker.
   <PFUNIT_PATH MPILIB="mpt" compile_threaded="true">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_MPI_openMP</PFUNIT_PATH>
   <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+  <FFLAGS>
+    <append MODEL="mom"> -r8 </append>
+  </FFLAGS>
+</compiler>
+
+<compiler MACH="cheyenne" COMPILER="pgi">
+  <SLIBS>
+    <append> -llapack -lblas </append>
+    <append MPILIB="mpi-serial"> -ldl </append>
+  </SLIBS>
 </compiler>
 
 <compiler MACH="laramie">
@@ -1223,52 +1220,6 @@ using a fortran linker.
   <LAPACK_LIBDIR>/global/software/sl-6.x86_64/modules/intel/2016.1.150/lapack/3.6.0-intel/lib</LAPACK_LIBDIR>
 </compiler>
 
-<compiler MACH="yellowstone" COMPILER="gnu">
-  <LAPACK_LIBDIR> /glade/apps/opt/lib </LAPACK_LIBDIR>
-  <SCC MPILIB="mpi-serial">gcc</SCC>
-  <SFC MPILIB="mpi-serial">gfortran</SFC>
-</compiler>
-
-<compiler MACH="yellowstone" COMPILER="intel">
-  <CFLAGS>
-    <append MPILIB="mpich2">  -xHost </append>
-  </CFLAGS>
-  <CPPDEFS>
-    <append MPILIB="mpich2"> -DINTEL_MKL -DHAVE_SSE2 </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append MPILIB="mpich2">  -xHost </append>
-  </FFLAGS>
-  <MPICXX MPILIB="mpich2">mpiicpc</MPICXX>
-  <PAPI_INC MPILIB="mpich2"> /glade/apps/opt/papi/5.3.0/intel/12.1.5/include/</PAPI_INC>
-  <PAPI_LIB MPILIB="mpich2">/glade/apps/opt/papi/5.3.0/intel/12.1.5/lib64 </PAPI_LIB>
-  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.1_yellowstone_Intel15.0.1_noMPI_noOpenMP</PFUNIT_PATH>
-  <PFUNIT_PATH MPILIB="mpich2" compile_threaded="true">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.1_Intel15.0.1_MPI</PFUNIT_PATH>
-  <!-- Needed due to the way that netcdf is loaded on yellowstone -->
-  <SCC MPILIB="mpi-serial">icc</SCC>
-  <SFC MPILIB="mpi-serial">ifort</SFC>
-  <SCC MPILIB="mpich2">${MPICC}</SCC>
-  <SFC MPILIB="mpich2">${MPIFC}</SFC>
-  <SLIBS>
-    <append MPILIB="mpich2"> -Wl,-rpath ${PAPI_LIB} -L${PAPI_LIB} -lpapi</append>
-  </SLIBS>
-  <TRILINOS_PATH MPILIB="mpich2">$ENV{TRILINOS_PATH}</TRILINOS_PATH>
-</compiler>
-
-<compiler MACH="yellowstone" COMPILER="pgi">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O </append>
-  </CFLAGS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O </append>
-  </FFLAGS>
-  <SLIBS>
-    <append> -llapack -lblas </append>
-  </SLIBS>
-  <SCC MPILIB="mpi-serial">pgcc</SCC>
-  <SFC MPILIB="mpi-serial">pgfortran</SFC>
-</compiler>
-
 <compiler COMPILER="intel" MACH="lbl-lr3">
   <CPPDEFS>
     <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
@@ -1309,6 +1260,16 @@ using a fortran linker.
   <CPPDEFS>
      <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
   </CPPDEFS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="theia">
+  <MPICC> mpiicc  </MPICC>
+  <MPICXX> mpiicpc </MPICXX>
+  <MPIFC> mpiifort </MPIFC>
+  <NETCDF_PATH>/apps/netcdf/4.3.0-intel</NETCDF_PATH>
+  <FFLAGS>
+    <append MODEL="mom"> -r8 </append>
+  </FFLAGS>
 </compiler>
 
 </config_compilers>

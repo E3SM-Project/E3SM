@@ -51,7 +51,7 @@ contains
        if (shr_log_level>0) write(s_logunit,*) ' tfreeze_option is minus1p8'
        tfrz_option = TFREEZE_OPTION_MINUS1P8
     elseif (trim(tfreeze_option) == 'linear_salt') then
-       if (shr_log_level>0)write(s_logunit,*) ' tfreeze_option is linear_salt'
+       if (shr_log_level>0) write(s_logunit,*) ' tfreeze_option is linear_salt'
        tfrz_option = TFREEZE_OPTION_LINEAR_SALT
     elseif (trim(tfreeze_option) == 'mushy') then
        if (shr_log_level>0) write(s_logunit,*) ' tfreeze_option is mushy'
