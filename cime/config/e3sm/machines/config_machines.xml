@@ -1689,6 +1689,8 @@
     <COMPILERS>intel,gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>/home/azamat/acme/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/home/azamat/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
