@@ -689,6 +689,10 @@ else ifeq ($(NETCDF_SEPARATE), TRUE)
                 -D NetCDF_Fortran_PATH:PATH=$(NETCDF_FORTRAN_PATH)
 endif
 
+ifdef HDF5_PATH
+        CMAKE_OPTS += -D HDF5_PATH:STRING="$(HDF5_PATH)"
+endif
+
 ifdef PNETCDF_PATH
 	CMAKE_OPTS += -D PnetCDF_PATH:STRING="$(PNETCDF_PATH)"
 else
