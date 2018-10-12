@@ -1,0 +1,13 @@
+Items that need to be implemented
+
+1.  Hydrostatic boundary conditions
+2.  Boundary velocities for including in cell centered velocity calcs
+3.  Break through curves
+4.  Checkpoints
+5.  Create waypoints for each time in srcs/sink
+6.  For boundary connections, sign of dist(3) will change with z axis is 
+      inverted
+7.  Need a data structure other than velocitybc and xxbc for storing 
+      boundary condition and source/sink parameters
+8.  Src/sink initialization and updates
+9.  Support saturation as apposed to pressure for bcs and initial conditions

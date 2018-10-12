@@ -1,0 +1,11 @@
+Setting up new unit tests
+=========================
+
+* Create a new test module : test_XXXX.pf
+  Where XXXX is the name of the original module.
+  Note that the extension is "pf" not F90 because this file is processed by pFUnit!
+
+* Add your new test suite to testSuites.inc : ADD_TEST_SUITE(Test_XXXX_suite)
+  Where XXXX is the original module name
+
+* Add the pflotran module's object file to the PFLOTRAN_OBJS list in the Makefile.

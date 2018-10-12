@@ -1,0 +1,136 @@
+module Test_Geometry_module
+
+  use pFUnit_mod
+
+  implicit none
+
+#include "petsc/finclude/petscsys.h"
+
+  public :: Test_Geometry
+
+  interface Test_Geometry
+     module procedure newTest_Geometry
+  end interface Test_Geometry
+
+  @TestCase
+  type, extends(TestCase) :: Test_Geometry
+     procedure(runMethod), pointer :: userMethod => null()
+   contains
+     procedure :: setUp
+     procedure :: tearDown
+     procedure :: runMethod
+  end type Test_Geometry
+
+contains
+
+! ************************************************************************** !
+
+  function newTest_Geometry(name, userMethod) result(test)
+
+    implicit none
+
+    character(len=*), intent(in) :: name
+    procedure(runMethod) :: userMethod
+
+    type(Test_Geometry) :: test
+
+    call test%setName(name)
+    test%userMethod => userMethod
+
+  end function newTest_Geometry
+
+! ************************************************************************** !
+
+  subroutine setUp(this)
+    implicit none
+    class (Test_Geometry), intent(inout) :: this
+    ! Init objects and common setup routines go here
+  end subroutine setUp
+
+! ************************************************************************** !
+
+  subroutine tearDown(this)
+    implicit none
+    class (Test_Geometry), intent(inout) :: this
+    ! destroy routines go here
+  end subroutine tearDown
+
+! ************************************************************************** !
+
+  subroutine runMethod(this)
+    implicit none
+    class (Test_Geometry), intent(inout) :: this
+    call this%userMethod()
+  end subroutine runMethod
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testGeometry_XXX(this)
+    !
+    ! Verify that the linear interpolation returns the correct value
+    ! for the middle of the range.
+    !
+
+    use Geometry_module
+
+    implicit none
+
+    class (Test_Geometry), intent(inout) :: this
+
+    PetscReal, parameter :: x1 = 1.d0
+    PetscReal, parameter :: y1 = -2.d0
+    PetscReal, parameter :: z1 = 0.d0
+    PetscReal, parameter :: x2 = 3.d0
+    PetscReal, parameter :: y2 = 1.d0
+    PetscReal, parameter :: z2 = 4.d0
+    PetscReal, parameter :: x3 = 0.d0
+    PetscReal, parameter :: y3 = -1.d0
+    PetscReal, parameter :: z3 = 2.d0
+
+    PetscReal :: x12, y12, z12
+    PetscReal :: x13, y13, z13
+
+    PetscReal :: A, B, C, D
+    PetscReal :: z
+    PetscReal :: dz_dx, dz_dy
+
+    type(plane_type) :: plane
+
+    x12 = x2-x1
+    y12 = y2-y1
+    z12 = z2-z1
+
+    x13 = x3-x1
+    y13 = y3-y1
+    z13 = z3-z1
+
+    A = y12*z13-z12*y13
+    B = z12*x13-x12*z13
+    C = x12*y13-y12*x13
+    D = -1.d0*(A*x1+B*y1+C*z1)
+
+    call GeometryComputePlaneWithPoints(plane,x1,y1,z1,x2,y2,z2,x3,y3,z3)
+
+    @assertEqual(A, plane%A, 1.0d-16)
+    @assertEqual(B, plane%B, 1.0d-16)
+    @assertEqual(C, plane%C, 1.0d-16)
+    @assertEqual(D, plane%D, 1.0d-16)
+
+    z = GeometryGetPlaneZIntercept(plane,x1,y1)
+    @assertEqual(z1, z, 1.0d-16)
+
+    z = GeometryGetPlaneZIntercept(plane,x2,y2)
+    @assertEqual(z2, z, 1.0d-16)
+
+    z = GeometryGetPlaneZIntercept(plane,x3,y3)
+    @assertEqual(z3, z, 1.0d-16)
+
+    call GeomGetPlaneGradientinXandY(plane,dz_dx,dz_dy)
+    @assertEqual(-0.4d0, dz_dx, 1.0d-16)
+    @assertEqual(1.6d0, dz_dy, 1.0d-16)
+
+  end subroutine testGeometry_XXX
+
+end module Test_Geometry_module
+
