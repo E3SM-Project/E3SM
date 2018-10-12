@@ -106,7 +106,7 @@ def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
     # but users may have broken links to modify files locally.  In this case
     # copy the locally modified file.   We only want to do this for files that
     # already exist in the clone.
-
+    #pylint: disable=protected-access
     self._copy_user_modified_to_clone(self.get_value("CASEROOT"), newcase.get_value("CASEROOT"))
     self._copy_user_modified_to_clone(self.get_value("CASETOOLS"), newcase.get_value("CASETOOLS"))
 
@@ -170,7 +170,7 @@ def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
     newcase.case_setup()
 
     return newcase
-
+# pylint: disable=unused-argument
 def _copy_user_modified_to_clone(self, origpath, newpath):
     """
     If file_ exists and is a link in newpath, and exists but is not a
