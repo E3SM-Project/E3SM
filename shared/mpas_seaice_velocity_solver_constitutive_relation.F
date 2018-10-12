@@ -158,6 +158,7 @@ contains
        replacementPressure, &
        areaCell, &
        dtElastic)
+!$omp declare simd(seaice_evp_constitutive_relation)
 
     real(kind=RKIND), intent(inout) :: &
          stress11, & !< Input/Output:
@@ -237,6 +238,7 @@ contains
        icePressure, &
        replacementPressure, &
        areaCell)
+!$omp declare simd(seaice_evp_constitutive_relation_revised)
 
     real(kind=RKIND), intent(inout) :: &
          stress11, & !< Input/Output:
@@ -312,6 +314,7 @@ contains
        strain11, &
        strain22, &
        strain12)
+!$omp declare simd(seaice_linear_constitutive_relation)
 
     real(kind=RKIND), intent(out) :: &
          stress11, & !< Output:
