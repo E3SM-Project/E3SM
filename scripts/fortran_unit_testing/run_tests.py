@@ -157,13 +157,6 @@ def cmake_stage(name, test_spec_dir, build_optimized, use_mpiserial, mpirun_comm
                               that need it
     build_optimized (logical) - If True, we'll build in optimized rather than debug mode
     """
-    # Clear CMake cache.
-    if clean:
-        pwd_contents = os.listdir(os.getcwd())
-        if "CMakeCache.txt" in pwd_contents:
-            os.remove("CMakeCache.txt")
-        if "CMakeFiles" in pwd_contents:
-            rmtree("CMakeFiles")
 
     if not os.path.isfile("CMakeCache.txt"):
 
@@ -293,6 +286,14 @@ def _main():
 
     # Switch to the build directory.
     os.chdir(build_dir)
+    if clean:
+        pwd_contents = os.listdir(os.getcwd())
+        # Clear CMake cache.
+        for file_ in pwd_contents:
+            if file_ in ("CMakeCache.txt", "Macros.cmake", "env_mach_specific.xml") or file_.startswith('Depends'):
+                os.remove(file_)
+        if "CMakeFiles" in pwd_contents:
+            rmtree("CMakeFiles")
 
     #=================================================
     # Functions to perform various stages of build.
