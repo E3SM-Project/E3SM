@@ -1180,6 +1180,9 @@ contains
 
   end subroutine prim_step
 
+
+!----------------------------- APPLYCAMFORCING-DP3D ----------------------------
+
 !ftype logic
 !should be called with dt_dynamics timestep. 
 !if called on eulerian levels (like at the very beginning, in first of qsplit
@@ -1187,9 +1190,9 @@ contains
 !prim_step), make sure that dp3d is updated before, based on ps_v.
 !if called within lagrangian step, it uses lagrangian dp3d
   subroutine applyCAMforcing_dp3d(elem,hvcoord,dyn_timelev,dt_dyn,nets,nete)
-  use control_mod, only : ftype
-  use hybvcoord_mod, only : hvcoord_t
-  use prim_advance_mod,   only: applycamforcing_dynamics,applycamforcing_dynamics_dp
+  use control_mod,        only : ftype
+  use hybvcoord_mod,      only : hvcoord_t
+  use prim_advance_mod,   only : applycamforcing_dynamics,applycamforcing_dynamics_dp
   implicit none
   type (element_t),       intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt_dyn
@@ -1206,13 +1209,15 @@ contains
   end subroutine applyCAMforcing_dp3d
 
 
+!----------------------------- APPLYCAMFORCING-PS ----------------------------
+
 !ftype logic
 !should be called with dt_remap, on 'eulerian' levels, only before homme remap
 !timestep
   subroutine applyCAMforcing_ps(elem,hvcoord,dyn_timelev,tr_timelev,dt_remap,nets,nete)
-  use control_mod, only : ftype
-  use hybvcoord_mod, only : hvcoord_t
-  use prim_advance_mod,   only: applycamforcing_dynamics,applycamforcing_tracers
+  use control_mod,        only : ftype
+  use hybvcoord_mod,      only : hvcoord_t
+  use prim_advance_mod,   only : applycamforcing_dynamics
   implicit none
   type (element_t),       intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt_remap
@@ -1240,7 +1245,78 @@ contains
   end subroutine applyCAMforcing_ps
 
 
+!----------------------------- APPLYCAMFORCING-TRACERS ----------------------------
 
+  subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
+
+  use control_mod,        only : use_moisture
+  use hybvcoord_mod,      only : hvcoord_t
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: np1,nets,nete,np1_qdp
+
+  ! local
+  integer :: i,j,k,ie,q
+  real (kind=real_kind) :: v1
+  real (kind=real_kind) :: temperature(np,np,nlev)
+  real (kind=real_kind) :: Rstar(np,np,nlev)
+  real (kind=real_kind) :: exner(np,np,nlev)
+  real (kind=real_kind) :: dp(np,np,nlev)
+  real (kind=real_kind) :: pnh(np,np,nlev)
+  real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
+
+  do ie=nets,nete
+     ! apply forcing to Qdp
+     elem(ie)%derived%FQps(:,:)=0
+
+     do q=1,qsize
+        do k=1,nlev
+           do j=1,np
+              do i=1,np
+                 v1 = dt*elem(ie)%derived%FQ(i,j,k,q)
+                 !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
+                 if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
+                    !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
+                    if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
+                       v1=0  ! Q already negative, dont make it more so
+                    else
+                       !v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
+                       v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
+                    endif
+                 endif
+                 !elem(ie)%state%Qdp(i,j,k,q,np1) =
+                 !elem(ie)%state%Qdp(i,j,k,q,np1)+v1
+                 elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
+                 if (q==1) then
+                    elem(ie)%derived%FQps(i,j)=elem(ie)%derived%FQps(i,j)+v1/dt
+                 endif
+              enddo
+           enddo
+        enddo
+     enddo
+
+     if (use_moisture) then
+        ! to conserve dry mass in the precese of Q1 forcing:
+        elem(ie)%state%ps_v(:,:,np1) = elem(ie)%state%ps_v(:,:,np1) + &
+             dt*elem(ie)%derived%FQps(:,:)
+     endif
+
+
+     ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
+     do k=1,nlev
+        dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+     enddo
+     do q=1,qsize
+        do k=1,nlev
+           elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp(:,:,k)
+        enddo
+     enddo
+  enddo
+
+  end subroutine applyCAMforcing_tracers
 
 
 
@@ -1431,7 +1507,7 @@ contains
       enddo
     enddo
     
-  end subroutine         
+  end subroutine set_prescribed_scm        
     
 end module prim_driver_base
 

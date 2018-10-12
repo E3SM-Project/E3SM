@@ -25,9 +25,8 @@ module prim_advance_mod
   implicit none
   private
   save
-  public :: prim_advance_exp, prim_advance_init1, vertical_mesh_init2, &
-            applyCAMforcing_tracers, applyCAMforcing_dynamics, applyCAMforcing_dynamics_dp, &
-            convert_thermo_forcing
+  public :: prim_advance_exp, prim_advance_init1, &
+            applyCAMforcing_dynamics, applyCAMforcing_dynamics_dp, convert_thermo_forcing
 
   real (kind=real_kind), allocatable :: ur_weights(:)
 
@@ -732,12 +731,13 @@ contains
 
 
 !for preqx model this routine does nothing
-  subroutine convert_thermo_forcing(elem,hvcoord,n0,nets,nete)
+  subroutine convert_thermo_forcing(elem,hvcoord,n0,n0qdp,dt,nets,nete)
   implicit none
   type (element_t),       intent(inout) :: elem(:)
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: nets,nete
-  integer,                intent(in)    :: n0
+  integer,                intent(in)    :: n0,n0qdp
+  real (kind=real_kind),  intent(in)    :: dt
   end subroutine convert_thermo_forcing
 
 
