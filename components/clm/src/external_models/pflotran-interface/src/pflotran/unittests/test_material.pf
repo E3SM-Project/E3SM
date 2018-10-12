@@ -1,0 +1,128 @@
+module Test_Material_module
+
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+  use pFUnit_mod
+  use Material_Aux_class
+  use Option_module
+
+  implicit none
+
+
+  public :: Test_Material
+
+  interface Test_Material
+     module procedure newTest_Material
+  end interface Test_Material
+
+! ************************************************************************** !
+  @TestCase
+  type, extends(TestCase) :: Test_Material
+      type(option_type), pointer :: option
+      class(material_auxvar_type), pointer :: material
+      procedure(runMethod), pointer :: userMethod => null()
+    contains
+      procedure :: setUp     
+      procedure :: tearDown
+      procedure :: runMethod
+  end type Test_Material
+
+contains
+
+! ************************************************************************** !
+
+  function newTest_Material(name, userMethod) result(test)
+
+    implicit none
+
+    character(len=*), intent(in) :: name
+    procedure(runMethod) :: userMethod
+
+    type(Test_Material) :: test
+
+    call test%setName(name)
+    test%userMethod => userMethod
+
+  end function newTest_Material
+
+! ************************************************************************** !
+
+  subroutine setUp(this)
+
+    use PFLOTRAN_Constants_module, only : MAXSTRINGLENGTH
+
+    implicit none
+
+    class(Test_Material), intent(inout) :: this
+    character(len=MAXSTRINGLENGTH) :: error_string
+
+    this%option => OptionCreate()
+
+    soil_compressibility_index = 1
+    soil_reference_pressure_index = 2
+    max_material_index = 2
+
+    allocate(this%material)
+    call MaterialAuxVarInit(this%material,this%option)
+
+  end subroutine setUp
+
+! ************************************************************************** !
+
+  subroutine tearDown(this)
+
+    implicit none
+    class (Test_Material), intent(inout) :: this
+
+    call OptionDestroy(this%option)
+    call MaterialAuxVarStrip(this%material)
+
+  end subroutine tearDown
+
+! ************************************************************************** !
+
+  subroutine runMethod(this)
+    implicit none
+    class (Test_Material), intent(inout) :: this
+    call this%userMethod()
+  end subroutine runMethod
+
+! ************************************************************************** !
+
+  @Test
+  subroutine test_soil_compressibility_linear(this)
+
+    implicit none
+
+    class(Test_Material), intent(inout) :: this
+    
+    PetscReal :: value
+    PetscReal, parameter :: tolerance = 1.d-14
+    PetscReal :: pressure
+    PetscReal :: compressed_porosity
+    PetscReal :: dcompressed_porosity_dp
+    character(len=128) :: string
+
+    this%material%porosity_base = 0.25d0
+    this%material%soil_properties(soil_compressibility_index) = 1.d-7
+    this%material%soil_properties(soil_reference_pressure_index) = 2.d6
+
+    pressure = 101325.d0
+    call MaterialCompressSoilLinear(this%material,pressure, &
+                                    compressed_porosity, &
+                                    dcompressed_porosity_dp)
+
+    string = 'MaterialCompressSoilLinear compressed_porosity'
+    value = 6.01325d-2
+    @assertEqual(value,compressed_porosity,tolerance,string)
+
+    string = 'MaterialCompressSoilLinear dcompressed_porosity_dp'
+    value = 1.d-7
+    @assertEqual(value,dcompressed_porosity_dp,tolerance,string)
+
+  end subroutine test_soil_compressibility_linear
+
+! ************************************************************************** !
+
+end module Test_Material_module
+

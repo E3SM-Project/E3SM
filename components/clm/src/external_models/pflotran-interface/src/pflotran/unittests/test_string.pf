@@ -1,0 +1,201 @@
+module Test_String_module
+
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+  use pFUnit_mod
+
+  implicit none
+
+  public :: Test_String
+
+  interface Test_String
+     module procedure newTest_String
+  end interface Test_String
+
+  @TestCase
+  type, extends(TestCase) :: Test_String
+     procedure(runMethod), pointer :: userMethod => null()
+   contains
+     procedure :: setUp
+     procedure :: tearDown
+     procedure :: runMethod
+  end type Test_String
+
+contains
+
+! ************************************************************************** !
+
+  function newTest_String(name, userMethod) result(test)
+
+    implicit none
+
+    character(len=*), intent(in) :: name
+    procedure(runMethod) :: userMethod
+
+    type(Test_String) :: test
+
+    call test%setName(name)
+    test%userMethod => userMethod
+
+  end function newTest_String
+
+! ************************************************************************** !
+
+  subroutine setUp(this)
+    implicit none
+    class (Test_String), intent(inout) :: this
+    ! Init objects and common setup routines go here
+  end subroutine setUp
+
+! ************************************************************************** !
+
+  subroutine tearDown(this)
+    implicit none
+    class (Test_String), intent(inout) :: this
+    ! destroy routines go here
+  end subroutine tearDown
+
+! ************************************************************************** !
+
+  subroutine runMethod(this)
+    implicit none
+    class (Test_String), intent(inout) :: this
+    call this%userMethod()
+  end subroutine runMethod
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testString_Compare1_Same(this)
+    !
+    ! Verify that StringCompare for N characters returns true when
+    ! they are the same.
+    !
+
+    use PFLOTRAN_Constants_module, only : MAXSTRINGLENGTH
+    use String_module, only : StringCompare
+
+    implicit none
+
+    class (Test_String), intent(inout) :: this
+
+    character(len=MAXSTRINGLENGTH) :: str1, str2
+    PetscInt :: temp_int
+    PetscBool :: compare
+
+    str1 = "This is a test. This is only a test."
+    str2 = "This is a test. This is not a test."
+    temp_int = 10
+    compare = StringCompare(str1, str2, temp_int)
+    @assertTrue(compare)
+
+  end subroutine testString_Compare1_Same
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testString_Compare1_Different(this)
+    !
+    ! Verify that StringCompare for N characters returns false when
+    ! they are different.
+    !
+
+    use PFLOTRAN_Constants_module, only : MAXSTRINGLENGTH
+    use String_module, only : StringCompare
+
+    implicit none
+
+    class (Test_String), intent(inout) :: this
+
+    character(len=MAXSTRINGLENGTH) :: str1, str2
+    PetscInt :: temp_int
+    PetscBool :: compare
+
+    str1 = "This is a test. This is only a test."
+    str2 = "This is a test. This is not a test."
+    temp_int = 30
+    compare = StringCompare(str1, str2, temp_int)
+    @assertFalse(compare)
+
+  end subroutine testString_Compare1_Different
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testString_Compare2_Length(this)
+    !
+    ! Verify that StringCompare returns false when
+    ! strings are different lengths.
+    !
+
+    use PFLOTRAN_Constants_module, only : MAXSTRINGLENGTH
+    use String_module, only : StringCompare
+
+    implicit none
+
+    class (Test_String), intent(inout) :: this
+
+    character(len=MAXSTRINGLENGTH) :: str1, str2
+    PetscBool :: compare
+
+    str1 = "This is a test. This is only a test."
+    str2 = "This is a test. This is only a test"
+    compare = StringCompare(str1, str2)
+    @assertFalse(compare)
+
+  end subroutine testString_Compare2_Length
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testString_Compare2_EqualLengthDifferent(this)
+    !
+    ! Verify that StringCompare returns false when
+    ! equal length strings are different.
+    !
+
+    use PFLOTRAN_Constants_module, only : MAXSTRINGLENGTH
+    use String_module, only : StringCompare
+
+    implicit none
+
+    class (Test_String), intent(inout) :: this
+
+    character(len=MAXSTRINGLENGTH) :: str1, str2
+    PetscBool :: compare
+
+    str1 = "This is a test. This is only a test."
+    str2 = "This is a test. This is onl ya test."
+    compare = StringCompare(str1, str2)
+    @assertFalse(compare)
+
+  end subroutine testString_Compare2_EqualLengthDifferent
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testString_Compare2_EqualLengthSame(this)
+    !
+    ! Verify that StringCompare returns true when
+    ! equal length strings are the same.
+    !
+
+    use PFLOTRAN_Constants_module, only : MAXSTRINGLENGTH
+    use String_module, only : StringCompare
+
+    implicit none
+
+    class (Test_String), intent(inout) :: this
+
+    character(len=MAXSTRINGLENGTH) :: str1, str2
+    PetscBool :: compare
+
+    str1 = "This is a test. This is only a test."
+    str2 = "This is a test. This is only a test."
+    compare = StringCompare(str1, str2)
+    @assertTrue(compare)
+
+  end subroutine testString_Compare2_EqualLengthSame
+
+end module Test_String_module
+

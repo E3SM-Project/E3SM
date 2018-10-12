@@ -1,0 +1,830 @@
+#
+#Description - 1D BGC (Column only) CLM-CTC reaction network 
+#
+
+SIMULATION
+  SIMULATION_TYPE SUBSURFACE
+  PROCESS_MODELS
+
+    SUBSURFACE_TRANSPORT transport
+      GLOBAL_IMPLICIT
+      TEMPERATURE_DEPENDENT_DIFFUSION
+      ITOL_RELATIVE_UPDATE
+      
+    /
+
+  /
+END
+
+!=========================== I. SUBSURFACE Simulation =============================
+SUBSURFACE
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+! ONLY used when NO flow-mode on for BGC only coupling
+! (PFLOTRAN version since May 2018)
+SPECIFIED_VELOCITY
+  UNIFORM? YES
+  DATASET 0.d0 0.d0 0.d0 
+END
+
+#
+#+++++++++++++++++++++++ I. DOMAINS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#
+skip    ! if skipped MAPPING_FILES, CLM grids will be enforced to replace PF-mesh defined below (discretization/region) 
+#======================= I-0. CLM <==> PFLOTRAN domain mapping files ==========
+MAPPING_FILES                   
+!
+END
+noskip
+
+#======================= I-1. discretization ===================================
+GRID
+  TYPE structured
+  ORIGIN 0.d0 0.d0 0.d0
+  NXYZ 1 1 15
+  DXYZ 
+     -1.d20 
+     +1.d20 
+     13.851152141963599d0 \ 
+     11.126150294204420d0 \ 
+     6.7483512780057175d0 \ 
+     4.0930819526214002d0 \ 
+     2.4825796969813321d0 \     
+     1.5057607013992766d0 \
+     0.91329003158906108d0 \
+     0.55393840536868488d0 \
+     0.33598062644843263d0 \
+     0.20378255101043175d0 \
+     0.12360036510228053d0 \
+     7.4967410986208557d-002 \
+     4.5470033242413201d-002 \
+     2.7578969259676251d-002 \
+     1.7512817916255204d-002
+  /
+END
+
+PROC 1 1 1
+
+#======================= I-2.regions ===========================================
+
+REGION top
+  COORDINATES
+    -1.d20 -1.d20 42.103197276099188d0
+    1.d20 1.d20 42.103197276099188d0
+  /
+  FACE TOP
+END
+
+REGION bottom
+  COORDINATES
+    -1.d20 -1.d20 0.0d0
+    1.d20 1.d20 0.0d0
+  /
+  FACE BOTTOM
+END
+
+REGION all
+  COORDINATES
+    -1.d20 -1.d20 0.d0
+    1.d20 1.d20 42.103197276099188d0
+  /
+  FACE TOP
+END
+
+REGION horizon01
+  COORDINATES
+    -1.d20 -1.d20 42.012635455680844d0         ! top 3 CLM-layers of ~0.09 m
+    1.d20 1.d20 42.103197276099188d0
+  /
+END
+
+REGION horizon02
+  COORDINATES
+    -1.d20 -1.d20 41.103197276d0
+    1.d20 1.0d20 42.012635455680844d0
+  /
+END
+
+REGION horizon03
+  COORDINATES
+    -1.d20 -1.d20 0.0d0
+    1.d20 1.0d20 41.103197276d0
+  /
+END
+
+#
+#++++++++++++++++++++ II. COUPLERS ++++++++++++++++++++++++++++++++++++++++++++++++++
+#
+#==================== II-1. condition couplers ================================
+INITIAL_CONDITION initial_coupler
+  TRANSPORT_CONDITION initial_trans
+  REGION all
+END
+
+SOURCE_SINK clm_et_ss
+  TRANSPORT_CONDITION zero_bcs
+  REGION all
+END
+
+BOUNDARY_CONDITION clm_gwflux_bc
+  TRANSPORT_CONDITION zero_bcs
+  REGION top
+END
+
+!BOUNDARY_CONDITION clm_bflux_bc
+!  TRANSPORT_CONDITION zero_bcs
+!  REGION bottom
+!END
+
+
+
+#===================== II-2. stratigraphy couplers ============================
+
+STRATA
+  REGION horizon01
+  MATERIAL soil01
+END
+
+STRATA
+  REGION horizon02
+  MATERIAL soil02 
+END
+
+STRATA
+  REGION horizon03
+  MATERIAL soil03 
+END
+
+#
+#++++++++++++++++++++ III. SOLVERS ++++++++++++++++++++++++++++++++++++++++++++++++++
+#
+#==================== III-1. solver options ===================================
+LINEAR_SOLVER TRANSPORT
+  SOLVER ITERATIVE   ! with default KSP_TYPE of BCGS and BJACOBI of PC_TYPE 
+  PC_TYPE JACOBI     ! default (iterative): BJACOBI. JACOBI may be much faster
+  !KSP_TYPE GMRES    ! default: BCGS. NOT much difference 
+  
+END
+
+NEWTON_SOLVER TRANSPORT
+  ATOL 1.0D-20
+  RTOL 1.0D-15
+  STOL 1.0D-10         ! at least 1.0d-8, better 1.d-10 for convergency (otherwise N Balance issue, especially N Half_saturations are very small!)
+  ITOL 1.0D-08
+
+  MAXIT 30
+  MAXF 100
+END
+
+#++++++++++++++++++++ IV. TIMERS ++++++++++++++++++++++++++++++++++++++++++++++++++++
+#
+#===================== IV-1. timer options ===================================
+TIME
+  FINAL_TIME 0.0208333d-2 d
+  INITIAL_TIMESTEP_SIZE 1800.0 s
+  MINIMUM_TIMESTEP_SIZE 6.0d-1 s   ! this should be the min. with a few steps, otherwise trouble
+  MAXIMUM_TIMESTEP_SIZE 1800.0 s
+END
+
+#
+#++++++++++++++++++++ V. OUTPUTS ++++++++++++++++++++++++++++++++++++++++++++++++++
+#
+#==================== V-1. output options ===================================
+OUTPUT
+  !SCREEN OFF 
+  SCREEN PERIODIC 12
+  !PERIODIC TIME 1800 s   ! this is good for directly comparing two outputs
+  !PERIODIC TIMESTEP 1   ! this is good for checking PF each time-step
+  !FORMAT HDF5
+  !NO_INITIAL
+END
+
+!DEBUG
+!  PRINT_SOLUTION
+!  PRINT_RESIDUAL
+!  PRINT_JACOBIAN  
+!END
+
+#
+#+++++++++++++++++++++ VI. FLOWS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#
+#===================== VI-1. EOS ==============================================
+REFERENCE_LIQUID_DENSITY 1.d3         ! if <1.d-40, will use EOSwater to calculate all water properties
+
+#===================== VI-2. fluid properties =================================
+FLUID_PROPERTY
+  DIFFUSION_COEFFICIENT 1.d-6
+END
+REFERENCE_PRESSURE 101325.d0
+REFERENCE_TEMPERATURE 25.d0
+
+#===================== VI-3. porous media material properties =================
+MATERIAL_PROPERTY soil01
+  ID 1
+  POROSITY 0.55676865928547548d0
+  SOIL_COMPRESSIBILITY_FUNCTION DEFAULT     ! BRAGFLO compressed porosity has mathematical issue at high pressure
+  ! 1d-7~1d-8 equivalent to ice expansion of volume, upon 'default' or 'BRAGFLO'
+  ! beyond this range may cause tiny-time stepping
+  SOIL_COMPRESSIBILITY 1.d-07               ! 1d-7~1d-8 is a critical value for freezing expansion in soil;
+  SOIL_REFERENCE_PRESSURE 101325.d0
+  ROCK_DENSITY 2650.0d0
+  SPECIFIC_HEAT 830.0d0
+  THERMAL_CONDUCTIVITY_DRY 0.12037926674717922d0
+  THERMAL_CONDUCTIVITY_WET 1.6082691464310437d0
+  THERMAL_COND_EXPONENT 0.45d0
+  THERMAL_CONDUCTIVITY_FROZEN 2.29d+00
+  THERMAL_COND_EXPONENT_FROZEN 0.95d0
+  CHARACTERISTIC_CURVES sf01
+  PERMEABILITY
+    PERM_X 6.5870260083342112E-013
+    PERM_Y 6.5870260083342112E-013
+    PERM_Z 6.5870260083342112E-013
+  /
+END
+
+MATERIAL_PROPERTY soil02
+  ID 2
+  POROSITY 0.55676865928547548d0
+  SOIL_COMPRESSIBILITY_FUNCTION DEFAULT
+  SOIL_COMPRESSIBILITY 1.d-7
+  SOIL_REFERENCE_PRESSURE 101325.d0
+  ROCK_DENSITY 2650.0d0
+  SPECIFIC_HEAT 830.0d0
+  THERMAL_CONDUCTIVITY_DRY 0.067180647617325243d0
+  THERMAL_CONDUCTIVITY_WET 0.98433212495906131d0
+  THERMAL_COND_EXPONENT 0.45d0
+  THERMAL_CONDUCTIVITY_FROZEN 2.29d+00
+  THERMAL_COND_EXPONENT_FROZEN 0.95d0
+  CHARACTERISTIC_CURVES sf02
+  PERMEABILITY
+    PERM_X 9.8326021941404848E-012
+    PERM_Y 9.8326021941404848E-012
+    PERM_Z 9.8326021941404848E-012
+  /
+END
+
+MATERIAL_PROPERTY soil03
+  ID 3
+  POROSITY 0.55676865928547548d-50
+  SOIL_COMPRESSIBILITY_FUNCTION DEFAULT
+  SOIL_COMPRESSIBILITY 1.d-7
+  SOIL_REFERENCE_PRESSURE 101325.d0
+  ROCK_DENSITY 2650.0d0
+  SPECIFIC_HEAT 830.0d0
+  THERMAL_CONDUCTIVITY_DRY 0.21305962479458840d0
+  THERMAL_CONDUCTIVITY_WET 2.4912297033230200d0
+  THERMAL_COND_EXPONENT 0.45d0
+  THERMAL_CONDUCTIVITY_FROZEN 2.29d+00
+  THERMAL_COND_EXPONENT_FROZEN 0.95d0
+  CHARACTERISTIC_CURVES sf03
+  PERMEABILITY
+    PERM_X 3.4564505546807766E-013
+    PERM_Y 3.4564505546807766E-013
+    PERM_Z 3.4564505546807766E-013
+  /
+END
+
+#===================== VI-4. porous media saturation functions ================
+! parameters for saturation functions called in ‘material properties’ above 
+
+CHARACTERISTIC_CURVES sf01
+  SATURATION_FUNCTION BROOKS_COREY    
+    !SMOOTH                             ! this option may have issue - NaN or Inf PC (TODO - checking)
+    LIQUID_RESIDUAL_SATURATION 0.10d0
+    MAX_CAPILLARY_PRESSURE 1.d8
+    ALPHA 2.93d-04
+    LAMBDA 0.2120d0
+  /
+  PERMEABILITY_FUNCTION BURDINE_BC_LIQ
+    LIQUID_RESIDUAL_SATURATION 0.10d0
+    LAMBDA 0.2120d0
+  /
+END
+
+CHARACTERISTIC_CURVES sf02
+  SATURATION_FUNCTION BROOKS_COREY    
+    !SMOOTH
+    LIQUID_RESIDUAL_SATURATION 0.10d0
+    MAX_CAPILLARY_PRESSURE 1.d8
+    ALPHA 12.348921855466133d-04
+    LAMBDA 0.21434131142170340d0
+  /
+  PERMEABILITY_FUNCTION BURDINE_BC_LIQ
+    LIQUID_RESIDUAL_SATURATION 0.10d0
+    LAMBDA 0.21434131142170340d0
+  /
+END
+
+CHARACTERISTIC_CURVES sf03
+  SATURATION_FUNCTION BROOKS_COREY    
+    !SMOOTH
+    LIQUID_RESIDUAL_SATURATION 0.10d0
+    MAX_CAPILLARY_PRESSURE 1.d8
+    ALPHA 4.9162164157150624d-04
+    LAMBDA 0.23912003825920611d0
+  /
+  PERMEABILITY_FUNCTION BURDINE_BC_LIQ
+    LIQUID_RESIDUAL_SATURATION 0.10d0
+    LAMBDA 0.23912003825920611d0
+  /
+END
+
+
+#
+#++++++++++++++++++++ VII. CHEMICAL REACTIVE TRANSPORT ++++++++++++++++++++++++++++++++++++++++++++++
+#
+#==================== VII-1. chemistry ========================================
+CHEMISTRY
+#  LOG_FORMULATION
+  
+  TRUNCATE_CONCENTRATION 1.0D-20
+
+  ONLY_VERTICAL_TRANSPORT
+
+  DATABASE ./CLM-CN_database.dat    ! this database is for all active species without sec./redox reactions at present
+
+  PRIMARY_SPECIES
+    CO2(aq)          ! (1)
+    CH4(aq)          ! (2) inactive (reserved for development)
+    DOM              ! (3) inactive (reserved for development)
+    NO3-             ! (4)
+    NO2-             ! (5) inactive (reserved for development)
+    N2O(aq)          ! (6)
+    N2(aq)           ! (7)
+    NH4+             ! (8)
+    H+               ! (9)
+  END
+
+  IMMOBILE_SPECIES
+    SOIL1           ! (10)
+    SOIL2           ! (11)
+    SOIL3           ! (12)
+    SOIL4           ! (13)
+    LITR1C          ! (14)
+    LITR2C          ! (15)
+    LITR3C          ! (16)
+    LITR1N          ! (17)
+    LITR2N          ! (18)
+    LITR3N          ! (19)
+    CWDC            ! (20)
+    CWDN            ! (21)
+    NH4sorb         ! (22) NH4 in absorbed state used in absorption sandbox
+    PlantN          ! (23) total plant N pool
+    Plantndemand    ! (24) accumulative plant uptake (for tracking)
+    Plantnh4uptake  ! (25) accumulative plant uptake (for tracking)
+    Plantno3uptake  ! (26) accumulative plant uptake (for tracking)
+    NGASmin         ! (27) accumulative N gas emission from mineralization (for tracking)
+    NGASnitr        ! (28) accumulative N gas emission from nitrification (for tracking)
+    NGASdeni        ! (29) accumulative N gas emission from denitrification (for tracking)
+    CO2imm          ! (30) gas CO2 related process not ready, so it's assumed as immobile species.
+    N2Oimm          ! (31) gas N2O related process not ready, so it's assumed as immobile species.
+    N2imm           ! (32) gas N2 related process not ready, so it's assumed as immobile species.
+    !
+    ! two sets of tracking variables for soil C decomposition network by two blocks of 'skip ...noskip' as following        
+    !
+!skip ! the following tracks sum of org. C/N mineral productants.               
+    HRimm           ! (33) Total CO2 released (HR) during decomposition
+    Nmin            ! (34) Total Gross Soil Inorg. N mineralized during decomposition
+    Nimp            ! (35) Total Potential Soil Inorg. N immoblized during decomposition
+    Nimm            ! (36) Total Actual Soil Inorg. N immoblized during decomposition
+!noskip    
+    !
+skip ! the following tracks individual org. C/N reactive network, usually computation expensive
+    SOIL1CHR        ! (33) CO2 released (HR)  from SOIL1
+    SOIL2CHR        ! (34) CO2 released (HR)  from SOIL2
+    SOIL3CHR        ! (35) CO2 released (HR)  from SOIL3
+    SOIL4CHR        ! (36) CO2 released (HR)  from SOIL4
+    LITR1CHR        ! (37) CO2 released (HR)  from LITR1
+    LITR2CHR        ! (38) CO2 released (HR)  from LITR2
+    LITR3CHR        ! (39) CO2 released (HR)  from LITR3
+    CWDCHR          ! (40) CO2 released (HR)  from CWD
+    SOIL1NMIN       ! (41) Gross Soil Inorg. N mineralized from SOIL1
+    SOIL2NMIN       ! (42) Gross Soil Inorg. N mineralized from SOIL2
+    SOIL3NMIN       ! (43) Gross Soil Inorg. N mineralized from SOIL3
+    SOIL4NMIN       ! (44) Gross Soil Inorg. N mineralized from SOIL4
+    LITR1NMIN       ! (45) Gross Soil Inorg. N mineralized from LITR1
+    LITR2NMIN       ! (46) Gross Soil Inorg. N mineralized from LITR2
+    LITR3NMIN       ! (47) Gross Soil Inorg. N mineralized from LITR3
+    CWDNMIN         ! (48) Gross Soil Inorg. N mineralized from CWD
+    SOIL1NIMP       ! (49) Potential Soil Inorg. N immoblized to SOIL1
+    SOIL2NIMP       ! (50) Potential Soil Inorg. N immoblized to SOIL2
+    SOIL3NIMP       ! (51) Potential Soil Inorg. N immoblized to SOIL3
+    SOIL4NIMP       ! (52) Potential Soil Inorg. N immoblized to SOIL4
+    LITR1NIMP       ! (53) Potential Soil Inorg. N immoblized to LITR1
+    LITR2NIMP       ! (54) Potential Soil Inorg. N immoblized to LITR2
+    LITR3NIMP       ! (55) Potential Soil Inorg. N immoblized to LITR3
+    CWDNIMP         ! (56) Potential Soil Inorg. N immoblized to CWD
+    SOIL1NIMM       ! (57) Actual Soil Inorg. N immoblized to SOIL1
+    SOIL2NIMM       ! (58) Actual Soil Inorg. N immoblized to SOIL2
+    SOIL3NIMM       ! (59) Actual Soil Inorg. N immoblized to SOIL3
+    SOIL4NIMM       ! (60) Actual Soil Inorg. N immoblized to SOIL4
+    LITR1NIMM       ! (61) Actual Soil Inorg. N immoblized to LITR1
+    LITR2NIMM       ! (62) Actual Soil Inorg. N immoblized to LITR2
+    LITR3NIMM       ! (63) Actual Soil Inorg. N immoblized to LITR3
+    CWDNIMM         ! (64) Actual Soil Inorg. N immoblized to CWD
+noskip
+
+  END
+
+  REACTION_SANDBOX
+
+    # CLM-CN SOM decomposition sandboxes
+    SOMDECOMP
+      TEMPERATURE_RESPONSE_FUNCTION
+         Q10 1.5d0
+      /
+      
+      DECOMP_DEPTH_EFOLDING 0.50d0
+      
+      POOLS   ! CN ratio
+        SOIL1  12.d0 
+        SOIL2  12.d0
+        SOIL3  10.d0
+        SOIL4  10.d0
+        LITR1
+        LITR2    
+        LITR3
+        CWD
+      /
+     
+      REACTION
+        UPSTREAM_POOL CWD
+        DOWNSTREAM_POOL LITR2 0.76d0           ! sum of fractions to LITR2+LITR3 = 1. (NO hr!)
+        DOWNSTREAM_POOL LITR3 0.24d0
+        RATE_DECOMPOSITION 0.00010 1/d         ! CLM-CN fragmentation rate k:
+      /
+
+      REACTION
+        UPSTREAM_POOL LITR1
+        DOWNSTREAM_POOL SOIL1 0.61d0
+        RATE_DECOMPOSITION 1.204 1/d           ! CLM-CN dec. rate k:
+      /
+
+      REACTION
+        UPSTREAM_POOL LITR2    
+        DOWNSTREAM_POOL SOIL2 0.45d0
+        RATE_DECOMPOSITION 0.0726 1/d          ! CLM-CN dec. rate k: 
+      /
+
+      REACTION
+        UPSTREAM_POOL LITR3
+        DOWNSTREAM_POOL SOIL3 0.71d0
+        RATE_DECOMPOSITION 0.0141 1/d          ! CLM-CN dec. rate k: 
+      /
+
+      REACTION
+        UPSTREAM_POOL SOIL1
+        DOWNSTREAM_POOL SOIL2 0.72d0
+        RATE_DECOMPOSITION 0.0726 1/d          ! CLM-CN dec. rate k: 
+      /
+      REACTION
+        UPSTREAM_POOL SOIL2
+        DOWNSTREAM_POOL SOIL3 0.54d0
+        RATE_DECOMPOSITION 0.0141 1/d          ! CLM-CN dec. rate k:
+      /
+      REACTION
+        UPSTREAM_POOL SOIL3
+        DOWNSTREAM_POOL SOIL4 0.45d0
+        RATE_DECOMPOSITION 0.00141 1/d         ! CLM-CN dec. rate k: 
+        RATE_AD_FACTOR 10.0d0                  ! Accelerated decomposition factor
+      /       
+      REACTION
+        UPSTREAM_POOL SOIL4
+        RATE_DECOMPOSITION 0.00010 1/d         ! CLM-CN dec. rate k: 
+        RATE_AD_FACTOR 100.0d0                 ! Accelerated decomposition factor
+      END
+      
+      AMMONIUM_HALF_SATURATION 1.0d-5          ! unit: moles/m3 soil - much faster if <1.d-5 (~1.d-10 g/gsoil)
+      NITRATE_HALF_SATURATION 1.0d-5
+      AMMONIUM_INHIBITION_NITRATE 10.0d0        ! ratio of NH4/NO3
+
+      N2O_FRAC_MINERALIZATION 0.02d0
+      
+    END
+
+    #gaseous emission when gas-species's aqueous phase over-saturation
+    DEGAS
+      KINETIC_CONSTANT_CO2  1.d-5   
+      KINETIC_CONSTANT_N2O  1.d-5   
+      KINETIC_CONSTANT_N2  1.d-5   
+    END
+
+    # inorganic N process sandboxes
+    PLANTN
+      AMMONIUM_HALF_SATURATION 1.0d-05
+      NITRATE_HALF_SATURATION 1.0d-05
+      AMMONIUM_INHIBITION_NITRATE 10.0d0
+    END
+
+    NITRIFICATION
+      NITRIFICATION_RATE_COEF 1.d-5         ! max. nitrification rate (1/s)
+      N2O_RATE_COEF_NITRIFICATION 3.5d-8    ! max. n2o production rate during nitrification (1/s)
+      AMMONIUM_HALF_SATURATION 1.0d-05
+    END
+
+    DENITRIFICATION
+      DENITRIFICATION_RATE_COEF 2.5d-5      ! max. denitrification rate (1/s)
+      NITRATE_HALF_SATURATION 1.0d-05
+    END
+
+skip   !issue not yet solved here (tiny time-step)
+    LANGMUIR
+      NAME_AQ   NH4+                       ! de-absorbed specie name in aqueous species list
+      NAME_SORB NH4sorb                    ! absorbed specie name in immobile species list
+      EQUILIBRIUM_CONSTANT 1.0d5           ! Ka/Kd (Kl in Langmuir isotherm model), with Ceq in moles/L and Csorbed in moles/m3 
+      KINETIC_CONSTANT 1.0d0              ! 1/s (cannot over 1)
+      S_MAX 1.0d-1                         ! sorption capacity (moles/m3)
+    END
+noskip
+
+  END
+
+# output list will be turned off, if coupled with CLM
+  OUTPUT
+    NO3-
+    NH4+
+    SOIL1
+    SOIL2
+    SOIL3
+    SOIL4
+    LITR1C
+    LITR2C
+    LITR3C
+    CWDC
+    LITR1N
+    LITR2N
+    LITR3N
+    CWDN
+    Plantndemand
+    Plantnh4uptake
+    Plantno3uptake
+    NGASmin
+    NGASnitr
+    NGASdeni
+    HRimm
+    Nmin
+    Nimp
+    Nimm
+    total  
+  END
+   
+END
+
+#==================== VII-3. transport conditions =============================
+TRANSPORT_CONDITION initial_trans
+  TYPE zero_gradient
+  CONSTRAINT_LIST
+    0.d0 initial_constraint
+  /
+END
+
+TRANSPORT_CONDITION zero_bcs
+  TYPE zero_gradient
+  CONSTRAINT_LIST
+    0.d0 zero_trans
+  /
+END
+
+#=================== VII-4. transport constraints ============================
+CONSTRAINT initial_constraint
+  CONCENTRATIONS
+    CO2(aq)    1.d-20 T
+    CH4(aq)    1.d-20 T
+    DOM        1.d-20 T
+    NO3-       1.d-20 T
+    NO2-       1.d-20 T
+    N2O(aq)    1.d-20 T
+    N2(aq)     1.d-20 T
+    NH4+       1.d-20 T
+    H+         6.0    PH
+  /
+  IMMOBILE
+    SOIL1       1.d-20 ! moles C/m^3
+    SOIL2       1.d-20
+    SOIL3       1.d-20
+    SOIL4       1.d-20
+    CWDC       1.d-20
+    LITR1C     0.1852d-3
+    LITR2C     0.4578d-3
+    LITR3C     0.2662d-3
+    LITR1N     0.00508954d-3
+    LITR2N     0.01258096d-3
+    LITR3N     0.00731553d-3
+    CWDN       0.2d-22
+    NH4sorb     1.d-20
+    PlantN      1.d-20
+    Plantndemand   1.d-20     ! 0-resetting its value at end of a CLM time-step, when coupled
+    Plantnh4uptake 1.d-20     ! 0-resetting its value at end of a CLM time-step, when coupled
+    Plantno3uptake 1.d-20     ! 0-resetting its value at end of a CLM time-step, when coupled
+    NGASmin     1.d-20        ! 0-resetting its value at end of a CLM time-step, when coupled
+    NGASnitr    1.d-20        ! 0-resetting its value at end of a CLM time-step, when coupled
+    NGASdeni    1.d-20        ! 0-resetting its value at end of a CLM time-step, when coupled
+    CO2imm      1.56d-2       ! ~ 350 ppmv in air (44.6 moles/m3) 
+    N2Oimm      1.383d-5      ! ~ 310 ppbv
+    N2imm       34.87d0       ! 0.78084
+!skip
+    HRimm       1.d-20  
+    Nmin        1.d-20  
+    Nimm        1.d-20  
+    Nimp        1.d-20  
+!noskip
+skip
+    SOIL1CHR    1.d-20  
+    SOIL2CHR    1.d-20  
+    SOIL3CHR    1.d-20  
+    SOIL4CHR    1.d-20  
+    LITR1CHR    1.d-20  
+    LITR2CHR    1.d-20  
+    LITR3CHR    1.d-20  
+    CWDCHR      1.d-20  
+    SOIL1NMIN    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled  
+    SOIL2NMIN    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled  
+    SOIL3NMIN    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    SOIL4NMIN    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    LITR1NMIN    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    LITR2NMIN    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    LITR3NMIN    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    CWDNMIN      1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    SOIL1NIMP    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    SOIL2NIMP    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    SOIL3NIMP    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    SOIL4NIMP    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    LITR1NIMP    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    LITR2NIMP    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    LITR3NIMP    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    CWDNIMP      1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    SOIL1NIMM    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    SOIL2NIMM    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    SOIL3NIMM    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    SOIL4NIMM    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    LITR1NIMM    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    LITR2NIMM    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    LITR3NIMM    1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+    CWDNIMM      1.d-20      ! 0-resetting its value at end of a CLM time-step, when coupled
+noskip
+  /
+END
+
+CONSTRAINT zero_trans
+  CONCENTRATIONS
+    CO2(aq)    1.d-20 T
+    CH4(aq)    1.d-20 T
+    DOM        1.d-20 T
+    NO3-       1.d-20 T
+    NO2-       1.d-20 T
+    N2O(aq)    1.d-20 T
+    N2(aq)     1.d-20 T
+    NH4+       1.d-20 T
+    H+         6.0    PH
+  /
+END
+
+#=========================== VII-5. mass transfer species ==========================
+RT_MASS_TRANSFER NO3-
+  IDOF 4
+  DATASET NO3-
+END
+
+RT_MASS_TRANSFER NH4+
+  IDOF 8
+  DATASET NH4+
+END
+
+RT_MASS_TRANSFER SOIL1
+  IDOF 10
+  DATASET SOIL1
+END
+
+RT_MASS_TRANSFER SOIL2
+  IDOF 11
+  DATASET SOIL2
+END
+
+RT_MASS_TRANSFER SOIL3
+  IDOF 12
+  DATASET SOIL3
+END
+
+RT_MASS_TRANSFER SOIL4
+  IDOF 13
+  DATASET SOIL4
+END
+
+RT_MASS_TRANSFER LITR1C
+  IDOF 14
+  DATASET LITR1C
+END
+
+RT_MASS_TRANSFER LITR2C
+  IDOF 15
+  DATASET LITR2C
+END
+
+RT_MASS_TRANSFER LITR3C
+  IDOF 16
+  DATASET LITR3C
+END
+
+RT_MASS_TRANSFER LITR1N
+  IDOF 17
+  DATASET LITR1N
+END
+
+RT_MASS_TRANSFER LITR2N
+  IDOF 18
+  DATASET LITR2N
+END
+
+RT_MASS_TRANSFER LITR3N
+  IDOF 19
+  DATASET LITR3N
+END
+
+RT_MASS_TRANSFER CWDC
+  IDOF 20
+  DATASET CWDC
+END
+
+RT_MASS_TRANSFER CWDN
+  IDOF 21
+  DATASET CWDN
+END
+
+#=================== VII-6. mass-transfer datasets ===============================
+DATASET GLOBAL NH4+
+  FILENAME dummy.h5
+  HDF5_DATASET_NAME NH4+
+END
+
+DATASET GLOBAL NO3-
+  FILENAME dummy.h5
+  HDF5_DATASET_NAME NO3-
+END
+
+DATASET GLOBAL SOIL1
+  FILENAME dummy.h5
+  HDF5_DATASET_NAME SOIL1
+END
+
+DATASET GLOBAL SOIL2
+  FILENAME dummy.h5
+  HDF5_DATASET_NAME SOIL2
+END
+
+DATASET GLOBAL SOIL3
+  FILENAME dummy.h5
+  HDF5_DATASET_NAME SOIL3
+END
+
+DATASET GLOBAL SOIL4
+  FILENAME dummy.h5
+  HDF5_DATASET_NAME SOIL4
+END
+
+DATASET GLOBAL LITR1C
+  FILENAME dummy.h5
+  HDF5_DATASET_NAME LITR1C
+END
+
+DATASET GLOBAL LITR2C
+  FILENAME dummy.h5
+  HDF5_DATASET_NAME LITR2C
+END
+
+DATASET GLOBAL LITR3C
+  FILENAME dummy.h5
+  HDF5_DATASET_NAME LITR3C
+END
+
+DATASET GLOBAL LITR1N
+  FILENAME dummy.h5
+  HDF5_DATASET_NAME LITR1N
+END
+
+DATASET GLOBAL LITR2N
+  FILENAME dummy.h5
+  HDF5_DATASET_NAME LITR2N
+END
+
+DATASET GLOBAL LITR3N
+  FILENAME dummy.h5
+  HDF5_DATASET_NAME LITR3N
+END
+
+DATASET GLOBAL CWDC
+  FILENAME dummy.h5
+  HDF5_DATASET_NAME CWDC
+END
+
+DATASET GLOBAL CWDN
+  FILENAME dummy.h5
+  HDF5_DATASET_NAME CWDN
+END
+
+#
+
+END_SUBSURFACE
+
+#
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+

@@ -1,0 +1,6 @@
+1.  Compile PETSc with tau_cc.py script in PETSC_DIR/bin.
+2.  Compile pflotran substituting tau_f90.sh for FC & FLINKER, but do not instrument at source level as doing so generated too many errors in the source.  Instead use compile level through:
+
+FC = /ccs/proj/geo002/tau/tau-2.19.1/craycnl/bin/tau_f90.sh -optCompInst -tau_makefile=$(TAU_MAKEFILE)
+FLINKER = /ccs/proj/geo002/tau/tau-2.19.1/craycnl/bin/tau_f90.sh -optCompInst -tau_makefile=$(TAU_MAKEFILE)
+

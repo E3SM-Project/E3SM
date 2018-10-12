@@ -1,0 +1,284 @@
+module Test_EOS_Water_module
+
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+  use pFUnit_mod
+  use EOS_Water_module
+
+  implicit none
+
+  public :: Test_EOS_Water
+
+  interface Test_EOS_Water
+     module procedure newTest_EOS_Water
+  end interface Test_EOS_Water
+
+  @TestCase
+  type, extends(TestCase) :: Test_EOS_Water
+     procedure(runMethod), pointer :: userMethod => null()
+   contains
+     procedure :: setUp
+     procedure :: tearDown
+     procedure :: runMethod
+  end type Test_EOS_Water
+
+contains
+
+! ************************************************************************** !
+
+  function newTest_EOS_Water(name, userMethod) result(test)
+
+    implicit none
+
+    character(len=*), intent(in) :: name
+    procedure(runMethod) :: userMethod
+
+    type(Test_EOS_Water) :: test
+
+    call test%setName(name)
+    test%userMethod => userMethod
+
+  end function newTest_EOS_Water
+
+! ************************************************************************** !
+
+  subroutine setUp(this)
+    implicit none
+    class (Test_EOS_Water), intent(inout) :: this
+
+    call EOSWaterInit()
+
+  end subroutine setUp
+
+! ************************************************************************** !
+
+  subroutine tearDown(this)
+    implicit none
+    class (Test_EOS_Water), intent(inout) :: this
+    ! Destroy calls would go here
+  end subroutine tearDown
+
+! ************************************************************************** !
+
+  subroutine runMethod(this)
+    implicit none
+    class (Test_EOS_Water), intent(inout) :: this
+    call this%userMethod()
+  end subroutine runMethod
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testEOSWater_VerifyDefault(this)
+    !
+    ! verify that the default from EOSWaterInit passes the verify
+    ! test.
+    !
+    use PFLOTRAN_Constants_module, only : MAXSTRINGLENGTH
+
+    implicit none
+
+    class (Test_EOS_Water), intent(inout) :: this
+
+    PetscErrorCode :: ierr
+    character(len=MAXSTRINGLENGTH) :: error_string
+
+    call EOSWaterVerify(ierr, error_string)
+    @assertEqual(0, ierr)
+
+  end subroutine testEOSWater_VerifyDefault
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testEOSWater_ConstantDensity(this)
+    !
+    ! verify that the EOSWaterSetDensityConstant() followed by
+    ! EOSWaterDensity() correctly returns the constant density
+    !
+    use PFLOTRAN_Constants_module, only : MAXSTRINGLENGTH
+
+    implicit none
+
+    class (Test_EOS_Water), intent(inout) :: this
+
+    PetscErrorCode :: ierr
+    character(len=MAXSTRINGLENGTH) :: error_string
+
+    PetscReal, parameter :: density = 1234.5
+    PetscReal, parameter :: temperature = -23.4
+    PetscReal, parameter :: pressure = 1.0
+    PetscReal :: aux(1)
+    PetscReal :: dw, dwmol, dwp, dwt
+
+    call EOSWaterInit()
+
+    aux(1) = density
+    call EOSWaterSetDensity('CONSTANT',aux)
+
+    call EOSWaterVerify(ierr, error_string)
+    @assertEqual(0, ierr)
+
+    call EOSWaterDensity(temperature, pressure, dw, dwmol, &
+         dwp, dwt, ierr)
+    @assertEqual(density, dw, 1.0d-16)
+
+  end subroutine testEOSWater_ConstantDensity
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testEOSWater_DensitySTP(this)
+    !
+    ! verify that EOSWaterDensity returns the correct density at
+    ! NIST standard temperature and pressure (20C, 101.325 kPa absolute)
+    !
+    use PFLOTRAN_Constants_module, only : MAXSTRINGLENGTH
+
+    implicit none
+
+    class (Test_EOS_Water), intent(inout) :: this
+
+    PetscErrorCode :: ierr
+    character(len=MAXSTRINGLENGTH) :: error_string
+
+    PetscReal, parameter :: temperature = 20.0d0
+    PetscReal, parameter :: pressure = 101325.0d0
+    PetscReal :: density
+    PetscReal :: saturation_pressure
+    PetscReal :: viscosity
+    PetscReal :: dum1
+    PetscReal :: value
+
+    call EOSWaterInit()
+
+    call EOSWaterDensity(temperature, pressure, density, dum1, ierr)
+    value = 998.32340486329440d0
+    @assertEqual(value, density,  1.0d-16)
+
+    call EOSWaterSaturationPressure(temperature, saturation_pressure, ierr)
+    value = 2330.6458955821176d0
+    @assertEqual(value, saturation_pressure,  1.0d-16)
+
+    call EOSWaterViscosity(temperature, pressure, saturation_pressure, &
+                           viscosity, ierr)
+    value = 1.0017364592757613d-003
+    @assertEqual(value, viscosity,  1.0d-16)
+
+  end subroutine testEOSWater_DensitySTP
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testEOSWater_BatzleAndWang(this)
+    !
+    ! verify that the EOSWaterSetXXX('BATZLE_AND_WANG') followed by
+    ! EOSWaterXXX() correctly returns the correct values
+    !
+    use PFLOTRAN_Constants_module, only : MAXSTRINGLENGTH
+
+    implicit none
+
+    class (Test_EOS_Water), intent(inout) :: this
+
+    PetscErrorCode :: ierr
+    character(len=MAXSTRINGLENGTH) :: error_string
+
+    PetscReal :: temperature
+    PetscReal :: pressure
+    PetscReal :: saturation_pressure
+    PetscReal :: dsaturation_pressure
+    PetscReal :: dw, dwmol, dwp, dwt, vw, dvw_dt, dvw_dp, dvw_dps
+    PetscReal :: value
+
+    call EOSWaterInit()
+
+    call EOSWaterSetDensity('BATZLE_AND_WANG')
+    call EOSWaterSetViscosity('BATZLE_AND_WANG')
+
+    call EOSWaterVerify(ierr, error_string)
+    @assertEqual(0, ierr)
+
+    temperature = 20.d0
+    pressure = 101325.d0 
+    saturation_pressure = 0.d0
+    dsaturation_pressure = 0.d0
+
+    call EOSWaterDensity(temperature, pressure, dw, dwmol, &
+         dwp, dwt, ierr)
+
+    value = 0.99714012903770011d3
+    @assertEqual(value, dw, 1.0d-16)
+!    value = 4.5522041154999997d-001
+    value = 2.5268488496470232d-008
+    @assertEqual(value, dwp, 1.0d-16)
+    value = -1.1658919743036282d-002
+    @assertEqual(value, dwt, 1.0d-16)
+
+    saturation_pressure = 0.d0
+    call EOSWaterViscosity(temperature, pressure, saturation_pressure, &
+                           vw, ierr)
+    value = 0.98080392683703244d-3
+    @assertEqual(value, vw,  1.0d-16)
+
+  end subroutine testEOSWater_BatzleAndWang
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testEOSWater_BatzleAndWangExt(this)
+    !
+    ! verify that the EOSWaterSetXXX('BATZLE_AND_WANG') followed by
+    ! EOSWaterXXX() correctly returns the correct values
+    !
+    use PFLOTRAN_Constants_module, only : MAXSTRINGLENGTH
+
+    implicit none
+
+    class (Test_EOS_Water), intent(inout) :: this
+
+    PetscErrorCode :: ierr
+    character(len=MAXSTRINGLENGTH) :: error_string
+
+    PetscReal :: temperature
+    PetscReal :: pressure
+    PetscReal :: saturation_pressure
+    PetscReal :: dsaturation_pressure
+    PetscReal :: aux(1)
+    PetscReal :: dw, dwmol, dwp, dwt, vw, dvw_dt, dvw_dp, dvw_dps
+    PetscReal :: value
+
+    call EOSWaterInit()
+
+    call EOSWaterSetDensity('BATZLE_AND_WANG')
+    call EOSWaterSetViscosity('BATZLE_AND_WANG')
+
+    call EOSWaterVerify(ierr, error_string)
+    @assertEqual(0, ierr)
+
+    temperature = 20.d0
+    pressure = 101325.d0 
+    saturation_pressure = 0.d0
+    dsaturation_pressure = 0.d0
+
+    aux(1) = 0.14d0
+    call EOSWaterDensityExt(temperature, pressure, aux, dw, dwmol, &
+         dwp, dwt, ierr)
+
+    value = 1.0983801969415001d3
+    @assertEqual(value, dw, 1.0d-16)
+    value = 2.3990910610068976d-008
+    @assertEqual(value, dwp, 1.0d-16)
+    value = -1.3700017546907872d-002
+    @assertEqual(value, dwt, 1.0d-16)
+
+    saturation_pressure = 0.d0
+    call EOSWaterViscosityExt(temperature, pressure, saturation_pressure, aux, &
+                           vw, ierr)
+    value = 1.2993992003751142d-003
+    @assertEqual(value, vw,  1.0d-16)
+
+  end subroutine testEOSWater_BatzleAndWangExt
+
+end module Test_EOS_Water_module
+

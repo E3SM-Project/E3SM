@@ -1,0 +1,273 @@
+module Test_Utility_module
+
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+  use pFUnit_mod
+
+  implicit none
+
+  public :: Test_Utility
+
+  interface Test_Utility
+     module procedure newTest_Utility
+  end interface Test_Utility
+
+  @TestCase
+  type, extends(TestCase) :: Test_Utility
+     procedure(runMethod), pointer :: userMethod => null()
+   contains
+     procedure :: setUp
+     procedure :: tearDown
+     procedure :: runMethod
+  end type Test_Utility
+
+contains
+
+! ************************************************************************** !
+
+  function newTest_Utility(name, userMethod) result(test)
+
+    implicit none
+
+    character(len=*), intent(in) :: name
+    procedure(runMethod) :: userMethod
+
+    type(Test_Utility) :: test
+
+    call test%setName(name)
+    test%userMethod => userMethod
+
+  end function newTest_Utility
+
+! ************************************************************************** !
+
+  subroutine setUp(this)
+    implicit none
+    class (Test_Utility), intent(inout) :: this
+    ! Init objects and common setup routines go here
+  end subroutine setUp
+
+! ************************************************************************** !
+
+  subroutine tearDown(this)
+    implicit none
+    class (Test_Utility), intent(inout) :: this
+    ! destroy routines go here
+  end subroutine tearDown
+
+! ************************************************************************** !
+
+  subroutine runMethod(this)
+    implicit none
+    class (Test_Utility), intent(inout) :: this
+    call this%userMethod()
+  end subroutine runMethod
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testUtility_InterpolateMiddle(this)
+    !
+    ! Verify that the linear interpolation returns the correct value
+    ! for the middle of the range.
+    !
+
+    use Utility_module, only : Interpolate
+
+    implicit none
+
+    class (Test_Utility), intent(inout) :: this
+
+    PetscReal, parameter :: x_low = 1.0d0
+    PetscReal, parameter :: x_high = 2.0d0
+    PetscReal, parameter :: x = 1.5d0
+    PetscReal, parameter :: y_low = 100.0d0
+    PetscReal, parameter :: y_high = 110.0d0
+    PetscReal :: y
+
+    call Interpolate(x_high, x_low, x, y_high, y_low, y)
+
+    @assertEqual(105.0d0, y, 1.0d-16)
+
+  end subroutine testUtility_InterpolateMiddle
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testUtility_InterpolateXSame(this)
+    !
+    ! Verify that the linear interpolation returns y_low when x_high ~= x_low
+    !
+
+    use Utility_module, only : Interpolate
+
+    implicit none
+
+    class (Test_Utility), intent(inout) :: this
+
+    PetscReal, parameter :: x_low = 1.0d0
+    PetscReal, parameter :: x_high = 1.0000000000001d0
+    PetscReal, parameter :: x = 1.00000000000005d0
+    PetscReal, parameter :: y_low = 100.0d0
+    PetscReal, parameter :: y_high = 110.0d0
+    PetscReal :: y
+
+    call Interpolate(x_high, x_low, x, y_high, y_low, y)
+
+    @assertEqual(y_low, y, 1.0d-16)
+
+  end subroutine testUtility_InterpolateXSame
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testUtility_InterpolateExtrapolateLow(this)
+    !
+    ! Verify that the linear interpolation extrapolates correctly for x < x_low
+    !
+
+    use Utility_module, only : Interpolate
+
+    implicit none
+
+    class (Test_Utility), intent(inout) :: this
+
+    PetscReal, parameter :: x_low = 1.0d0
+    PetscReal, parameter :: x_high = 2.0d0
+    PetscReal, parameter :: x = -1.0d0
+    PetscReal, parameter :: y_low = 100.0d0
+    PetscReal, parameter :: y_high = 110.0d0
+    PetscReal :: y
+
+    call Interpolate(x_high, x_low, x, y_high, y_low, y)
+
+    @assertEqual(80.0d0, y, 1.0d-16)
+
+  end subroutine testUtility_InterpolateExtrapolateLow
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testUtility_InterpolateExtrapolateHigh(this)
+    !
+    ! Verify that the linear interpolation extrapolates correctly for x > x_high
+    !
+
+    use Utility_module, only : Interpolate
+
+    implicit none
+
+    class (Test_Utility), intent(inout) :: this
+
+    PetscReal, parameter :: x_low = 1.0d0
+    PetscReal, parameter :: x_high = 2.0d0
+    PetscReal, parameter :: x = 3.0d0
+    PetscReal, parameter :: y_low = 100.0d0
+    PetscReal, parameter :: y_high = 110.0d0
+    PetscReal :: y
+
+    call Interpolate(x_high, x_low, x, y_high, y_low, y)
+
+    @assertEqual(120.0d0, y, 1.0d-16)
+
+  end subroutine testUtility_InterpolateExtrapolateHigh
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testUtility_InverseNorm(this)
+    !
+    ! Verify that the linear interpolation extrapolates correctly for x > x_high
+    !
+
+    use Utility_module, only : InverseNorm
+
+    implicit none
+
+    class (Test_Utility), intent(inout) :: this
+
+    PetscReal, parameter :: p1 = 0.01d0
+    PetscReal, parameter :: p2 = 0.25d0
+    PetscReal, parameter :: p3 = 0.75d0
+    PetscReal, parameter :: p4 = 0.99d0
+    PetscReal :: calc_value
+    PetscReal :: value
+    PetscReal :: derivative, num_derivative, calc_value2, ppert, pert
+    PetscReal, parameter :: tolerance = 1.d-12
+    character(len=128) :: string
+  
+    string = 'InverseNorm(p1) in Test_Utility_module'
+    call InverseNorm(p1,calc_value,PETSC_TRUE,derivative)
+    value = -2.3263478743880279d0
+    @assertEqual(value, calc_value, dabs(value)*tolerance, string)
+    string = 'Derivative of InverseNorm(p1) in Test_Utility_module'
+    value = 37.520436803844717d0
+    @assertEqual(value, derivative, dabs(value)*tolerance, string)
+
+    string = 'InverseNorm(p2) in Test_Utility_module'
+    call InverseNorm(p2,calc_value,PETSC_TRUE,derivative)
+    value = -0.67448975022342250d0
+    @assertEqual(value, calc_value, dabs(value)*tolerance, string)
+    string = 'Derivative of InverseNorm(p2) in Test_Utility_module'
+    value = 3.1468650515211789d0
+    @assertEqual(value, derivative, dabs(value)*tolerance, string)
+
+    string = 'InverseNorm(p3) in Test_Utility_module'
+    call InverseNorm(p3,calc_value,PETSC_TRUE,derivative)
+    value = 0.67448975022342250d0
+    @assertEqual(value, calc_value, dabs(value)*tolerance, string)
+    string = 'Derivative of InverseNorm(p3) in Test_Utility_module'
+    value = 3.1468650515211789d0
+    @assertEqual(value, derivative, dabs(value)*tolerance, string)
+
+    string = 'InverseNorm(p4) in Test_Utility_module'
+    call InverseNorm(p4,calc_value,PETSC_TRUE,derivative)
+    value = 2.3263478743880279d0
+    @assertEqual(value, calc_value, dabs(value)*tolerance, string)
+    string = 'Derivative of InverseNorm(p4) in Test_Utility_module'
+    value = 37.520436803844689d0
+    @assertEqual(value, derivative, dabs(value)*tolerance, string)
+
+  end subroutine testUtility_InverseNorm
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testUtility_Erf(this)
+    !
+    ! Verify that the linear interpolation extrapolates correctly for x > x_high
+    !
+
+    use Utility_module, only : Erf_
+
+    implicit none
+
+    class (Test_Utility), intent(inout) :: this
+
+    PetscReal, parameter :: x1 = 4.5d0
+    PetscReal, parameter :: x2 = 0.9d0
+    PetscReal, parameter :: x3 = 0.1d0
+    PetscReal :: calc_value
+    PetscReal :: value
+    PetscReal, parameter :: tolerance = 1.d-12
+    character(len=128) :: string
+  
+    string = 'Erf_(x1) in Test_Utility_module'
+    calc_value = Erf_(x1)
+    value = 0.99999999980338394d0
+    @assertEqual(value, calc_value, dabs(value)*tolerance, string)
+
+    string = 'Erf_(x2) in Test_Utility_module'
+    calc_value = Erf_(x2)
+    value = 0.79690821242283227d0
+    @assertEqual(value, calc_value, dabs(value)*tolerance, string)
+
+    string = 'Erf_(x3) in Test_Utility_module'
+    calc_value = Erf_(x3)
+    value = 0.11246291601828486d0
+    @assertEqual(value, calc_value, dabs(value)*tolerance, string)
+
+  end subroutine testUtility_Erf
+
+end module Test_Utility_module
+
