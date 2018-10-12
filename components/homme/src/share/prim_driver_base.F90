@@ -867,7 +867,6 @@ contains
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
     use prim_advance_mod,   only: convert_thermo_forcing
-    use prim_advance_mod,   only: applycamforcing_tracers22
 
     implicit none
 
@@ -933,7 +932,6 @@ contains
     !   ftype=-1: do not apply forcing
 
     call applyCAMforcing_ps(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
-!    call applyCAMforcing_tracers22(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 
     if (compute_diagnostics) then
     ! E(1) Energy after CAM forcing
@@ -985,9 +983,9 @@ contains
       call t_stopf("prim_step_rX")
       do r=2,rsplit
         call TimeLevel_update(tl,"leapfrog")
-	call t_startf("prim_step_rX")
+        call t_startf("prim_step_rX")
         call prim_step_scm(elem, nets, nete, dt, tl, hvcoord)
-	call t_stopf("prim_step_rX")
+        call t_stopf("prim_step_rX")
       enddo
 
     endif
@@ -1098,7 +1096,6 @@ contains
     use prim_advection_mod, only: prim_advec_tracers_remap
     use reduction_mod,      only: parallelmax
     use time_mod,           only: time_at,TimeLevel_t, timelevel_update, nsplit
-!    use prim_advance_mod,   only: applycamforcing_dp3d
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
 
     type(element_t),      intent(inout) :: elem(:)
@@ -1216,7 +1213,6 @@ contains
   use control_mod, only : ftype
   use hybvcoord_mod, only : hvcoord_t
   use prim_advance_mod,   only: applycamforcing_dynamics,applycamforcing_tracers
-  use prim_advance_mod,   only: applycamforcing_tracers22
   implicit none
   type (element_t),       intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt_remap
@@ -1227,7 +1223,6 @@ contains
   if (ftype==0) then
     call applyCAMforcing_dynamics(elem,hvcoord,dyn_timelev,dt_remap,nets,nete)
     call applyCAMforcing_tracers(elem,hvcoord,dyn_timelev,tr_timelev,dt_remap,nets,nete)
-!    call applyCAMforcing_tracers22(elem,hvcoord,dyn_timelev,tr_timelev,dt_remap,nets,nete)
   elseif (ftype==2) then
     call ApplyCAMForcing_dynamics(elem,hvcoord,dyn_timelev,dt_remap,nets,nete)
   endif
