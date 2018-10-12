@@ -6801,13 +6801,10 @@ contains
        else  ! nParents = 1, 2 or 3
 
           parentTracer => thisTracer % parent
-
-       endif
-
-       if (verboseFluxes) then
-          if (thisTracer % nParents > 0) then
+          if (verboseFluxes) then
              call mpas_log_write('Parent: '//trim(parentTracer % tracerName))
           endif
+
        endif
 
        ! Integrate the fluxes of this tracer (for each category and layer) over each triangle of each edge.
@@ -6815,6 +6812,7 @@ contains
 
        if (thisTracer % ndims == 2) then
 
+          !$omp parallel do default(shared) private(iTri,iCell,tracerIntegral2D,iqp,iCat)
           do iEdge = 1, nEdges
              if (maskEdge(iEdge) == 1) then
 
@@ -6822,86 +6820,43 @@ contains
 
                    if (triangleArea(iTri,iEdge) /= 0.0_RKIND) then
 
-                      ! In the following arrays:
-                      ! 1st index of triangleValue2D = category; 2nd index = QP
-                      ! 1st index of center/xGrad/yGrad = category
-                      ! 1st index of xTriangle/yTriangle = QP
-                      ! 1st index of tracerIntegral2D = category
-                      ! 1st index of edgeFlux2D = category
-
                       ! identify the cell where the triangle is located
                       iCell = iCellTriangle(iTri,iEdge)
 
+                      tracerIntegral2D(:) = 0.0_RKIND
                       ! evaluate the tracer at each quadrature point
                       do iqp = 1, nQuadPoints
-                         thisTracer % triangleValue2D(:,iqp,iTri,iEdge) = &
-                              thisTracer % center2D(:,iCell)                             &
-                            + thisTracer % xGrad2D(:,iCell) * xTriangle(iqp,iTri,iEdge)  &
-                            + thisTracer % yGrad2D(:,iCell) * yTriangle(iqp,iTri,iEdge)
-                      enddo
-
-                      ! evaluate the product mass*tracer at each quadrature point (using parent tracer info computed already)
-                      ! In nParents = 0, this is mass
-                      ! If nParents = 1, this is mass*tracer1
-                      ! If nParents = 2, this is mass*tracer1*tracer2
-                      ! If nParents = 3, this is mass*tracer1*tracer2*tracer3
-                      ! Note: Parent tracer must have ndims = 2
-                      thisTracer % triangleValue2D(:,:,iTri,iEdge) = parentTracer % triangleValue2D(:,:,iTri,iEdge)  &
-                                                                     * thisTracer % triangleValue2D(:,:,iTri,iEdge)
-
-                      ! integrate over the triangle by summing over quadrature points
-                      tracerIntegral2D(:) = 0.0_RKIND
-                      do iqp = 1, nQuadPoints
-                         tracerIntegral2D(:) = tracerIntegral2D(:) &
-                                             + weightQuadPoint(iqp) * thisTracer % triangleValue2D(:,iqp,iTri,iEdge)
-                      enddo
-
+                         do iCat = 1, nCategories
+                            ! eval the product mass*tracer at each quadrature point (using parent tracer info computed already)
+                            ! In nParents = 0, this is mass
+                            ! If nParents = 1, this is mass*tracer1
+                            ! If nParents = 2, this is mass*tracer1*tracer2
+                            ! If nParents = 3, this is mass*tracer1*tracer2*tracer3
+                            ! Note: Parent tracer must have ndims = 2
+                            thisTracer % triangleValue2D(iCat,iqp,iTri,iEdge) = &
+                               parentTracer % triangleValue2D(iCat,iqp,iTri,iEdge) * &
+                               ( thisTracer % center2D(iCat,iCell) &
+                               + thisTracer %  xGrad2D(iCat,iCell) * xTriangle(iqp,iTri,iEdge)  &
+                               + thisTracer %  yGrad2D(iCat,iCell) * yTriangle(iqp,iTri,iEdge)  &
+                               )
+                            ! integrate over the triangle by summing over quadrature points
+                            tracerIntegral2D(iCat) = tracerIntegral2D(iCat) &
+                               + weightQuadPoint(iqp) * thisTracer % triangleValue2D(iCat,iqp,iTri,iEdge)
+                         enddo ! iCat
+                      enddo    ! iqp
                       ! increment the area-weighted flux across the edge
                       thisTracer % edgeFlux2D(:,iEdge) = thisTracer % edgeFlux2D(:,iEdge) &
                                                        + triangleArea(iTri,iEdge) * tracerIntegral2D(:)
-
                    endif ! triangleArea /= 0
-
                 enddo    ! nTriPerEdgeRemap
-
              endif       ! maskEdge = 1
           enddo          ! nEdges
-
-          ! Check for negative reconstructed ice area
-          if (trim(thisTracer % tracerName) == 'iceAreaCategory') then
-             do iEdge = 1, nEdges
-                do iTri = 1, nTriPerEdgeRemap
-                   if (triangleArea(iTri,iEdge) /= 0.0_RKIND) then
-                      iCell = iCellTriangle(iTri,iEdge)
-                      do iqp = 1, nQuadPoints
-                         do iCat = 1, nCategories
-                            if (thisTracer % triangleValue2D(iCat,iqp,iTri,iEdge) < 0.0_RKIND) then
-                               call mpas_log_write('Negative reconstructed ice area', MPAS_LOG_ERR)
-                               call mpas_log_write('nCells = $i', MPAS_LOG_ERR, intArgs=(/nCells/))
-                               call mpas_log_write('iCat, iCell, global iCell: $i $i $i', MPAS_LOG_ERR, &
-                                    intArgs=(/iCat, iCell, indexToCellID(iCell)/))
-                               call mpas_log_write('iEdge, global iEdge, iTri, iqp: $i $i $i $i', MPAS_LOG_ERR, &
-                                    intArgs=(/iEdge, indexToEdgeID(iEdge), iTri, iqp/))
-                               call mpas_log_write('triangle area: $r', MPAS_LOG_ERR, realArgs=(/triangleArea(iTri,iEdge)/))
-                               call mpas_log_write('tracer val: $r', MPAS_LOG_ERR, realArgs=(/thisTracer % triangleValue2D(iCat,iqp,iTri,iEdge)/))
-                               call mpas_log_write('center val: $r', MPAS_LOG_ERR, realArgs=(/thisTracer % center2D(iCat,iCell)/))
-                               call mpas_log_write('x gradient: $r', MPAS_LOG_ERR, realArgs=(/thisTracer % xGrad2D(iCat,iCell)/))
-                               call mpas_log_write('y gradient: $r', MPAS_LOG_ERR, realArgs=(/thisTracer % yGrad2D(iCat,iCell)/))
-                               call mpas_log_write('IR negative reconstructed ice area (nDims == 2)', MPAS_LOG_ERR)
-                               abortFlag = .true.
-                               return
-                            endif  ! negative area
-                         enddo   ! iCat
-                      enddo   ! iqp
-                   endif   ! triangleArea > 0
-                enddo   ! iTri
-             enddo   ! iEdge
-          endif   ! iceAreaCategory
 
           deallocate(tracerIntegral2D)
 
        elseif (thisTracer % ndims == 3) then
 
+          !$omp parallel do default(shared) private(iTri,iCell,tracerIntegral3D,iqp,iCat,iLayer)
           do iEdge = 1, nEdges
              if (maskEdge(iEdge) == 1) then
 
@@ -6909,106 +6864,108 @@ contains
 
                    if (triangleArea(iTri,iEdge) /= 0.0_RKIND) then
 
-                      ! In the following arrays:
-                      ! 1st index of triangleValue3D = layer; 2nd index = category; 3rd index = QP
-                      ! 1st index of center/xGrad/yGrad = layer; 2nd index = category
-                      ! 1st index of xTriangle/yTriangle = QP
-                      ! 1st index of tracerIntegral = layer; 2nd index = category
-                      ! 1st index of edgeFlux = layer; 2nd index = category
-
                       ! identify the cell where the triangle is located
                       iCell = iCellTriangle(iTri,iEdge)
 
-                      ! evaluate the tracer at each quadrature point
-                      do iqp = 1, nQuadPoints
-                         thisTracer % triangleValue3D(:,:,iqp,iTri,iEdge) = &
-                              thisTracer % center3D(:,:,iCell)   &
-                            + thisTracer % xGrad3D(:,:,iCell) * xTriangle(iqp,iTri,iEdge)  &
-                            + thisTracer % yGrad3D(:,:,iCell) * yTriangle(iqp,iTri,iEdge)
-                      enddo
-
-                      ! evaluate the product mass*tracer at each quadrature point (using parent tracer info computed already)
-                      ! In nParents = 0, this is mass
-                      ! If nParents = 1, this is mass*tracer1
-                      ! If nParents = 2, this is mass*tracer1*tracer2
-                      ! If nParents = 3, this is mass*tracer1*tracer2*tracer3
-                      ! Note: Parent tracer can have ndims = 2 or 3
-                      if (parentTracer % ndims == 2) then
-                         do iLayer = 1, nLayers
-                            thisTracer % triangleValue3D(iLayer,:,:,iTri,iEdge) = &
-                                 parentTracer % triangleValue2D(:,:,iTri,iEdge) * &
-                                 thisTracer % triangleValue3D(iLayer,:,:,iTri,iEdge)
-                         enddo
-                      else  ! parents has ndims = 3
-                         thisTracer % triangleValue3D(:,:,:,iTri,iEdge) = parentTracer % triangleValue3D(:,:,:,iTri,iEdge) &
-                                                                          * thisTracer % triangleValue3D(:,:,:,iTri,iEdge)
-                      endif
-
-                      ! integrate over the triangle by summing over quadrature points
                       tracerIntegral3D(:,:) = 0.0_RKIND
-                      do iqp = 1, nQuadPoints
-                         tracerIntegral3D(:,:) = tracerIntegral3D(:,:) &
-                                               + weightQuadPoint(iqp) * thisTracer % triangleValue3D(:,:,iqp,iTri,iEdge)
-                      enddo
-
-                      ! increment the area-weighted flux across the edge
-                      thisTracer % edgeFlux3D(:,:,iEdge) = thisTracer % edgeFlux3D(:,:,iEdge) &
-                                                         + triangleArea(iTri,iEdge) * tracerIntegral3D(:,:)
-
-                   endif ! triangleArea /= 0
-
-                enddo    ! nTriPerEdgeRemap
-
-             endif       ! maskEdge = 1
-          enddo          ! nEdges
-
-          ! Check for negative reconstructed ice area
-          if (trim(thisTracer % tracerName) == 'iceAreaCategory') then
-             do iEdge = 1, nEdges
-                do iTri = 1, nTriPerEdgeRemap
-                   if (triangleArea(iTri,iEdge) /= 0.0_RKIND) then
-                      iCell = iCellTriangle(iTri,iEdge)
+                      ! evaluate the tracer at each quadrature point
                       do iqp = 1, nQuadPoints
                          do iCat = 1, nCategories
                             do iLayer = 1, nLayers
-                               if (thisTracer % triangleValue3D(iLayer,iCat,iqp,iTri,iEdge) < 0.0_RKIND) then
-                                  call mpas_log_write('Negative reconstructed ice area', messageType=MPAS_LOG_ERR)
-                                  call mpas_log_write('nCells = $i', messageType=MPAS_LOG_ERR, intArgs=(/nCells/))
-                                  call mpas_log_write('iLayer, iCat, iCell, global iCell: $i $i $i $i', &
-                                       messageType=MPAS_LOG_ERR, &
-                                       intArgs=(/iLayer, iCat, iCell, indexToCellID(iCell)/))
-                                  call mpas_log_write('iEdge, global iEdge, iTri, iqp: $i $i $i $i', &
-                                       messageType=MPAS_LOG_ERR, &
-                                       intArgs=(/iEdge, indexToEdgeID(iEdge), iTri, iqp/))
-                                  call mpas_log_write('triangle area: $r', messageType=MPAS_LOG_ERR, &
-                                       realArgs=(/triangleArea(iTri,iEdge)/))
-                                  call mpas_log_write('tracer val: $r', messageType=MPAS_LOG_ERR, &
-                                       realArgs=(/thisTracer % triangleValue3D(iLayer,iCat,iqp,iTri,iEdge)/))
-                                  call mpas_log_write('center val: $r', messageType=MPAS_LOG_ERR, &
-                                       realArgs=(/thisTracer % center3D(iLayer,iCat,iCell)/))
-                                  call mpas_log_write('x gradient: $r', messageType=MPAS_LOG_ERR, &
-                                       realArgs=(/thisTracer % xGrad3D(iLayer,iCat,iCell)/))
-                                  call mpas_log_write('y gradient: $r', messageType=MPAS_LOG_ERR, &
-                                       realArgs=(/thisTracer % yGrad3D(iLayer,iCat,iCell)/))
-                                  call mpas_log_write('MPAS-seaice: IR negative reconstructed ice area (nDims == 3)', &
-                                       messageType=MPAS_LOG_ERR)
-                                  abortFlag = .true.
-                                  return
-                               endif  ! negative area
-                            enddo   ! iLayer
-                         enddo   ! iCat
-                      enddo   ! iqp
-                   endif   ! triangleArea > 0
-                enddo   ! iTri
-             enddo   ! iEdge
-          endif   ! iceAreaCategory
-
+                               if (parentTracer % ndims == 2) then
+                                  ! eval the product mass*tracer at each quadrature point (using parent tracer info
+                                  !    computed already)
+                                  ! In nParents = 0, this is mass
+                                  ! If nParents = 1, this is mass*tracer1
+                                  ! If nParents = 2, this is mass*tracer1*tracer2
+                                  ! If nParents = 3, this is mass*tracer1*tracer2*tracer3
+                                  ! Note: Parent tracer can have ndims = 2 or 3
+                                  thisTracer % triangleValue3D(iLayer,iCat,iqp,iTri,iEdge) = &
+                                     parentTracer % triangleValue2D(iCat,iqp,iTri,iEdge) * &
+                                     ( thisTracer % center3D(iLayer,iCat,iCell) &
+                                     + thisTracer %  xGrad3D(iLayer,iCat,iCell) * xTriangle(iqp,iTri,iEdge)  &
+                                     + thisTracer %  yGrad3D(iLayer,iCat,iCell) * yTriangle(iqp,iTri,iEdge)  &
+                                     )
+                               else  ! parents has ndims = 3
+                                  thisTracer % triangleValue3D(iLayer,iCat,iqp,iTri,iEdge) = &
+                                     parentTracer % triangleValue3D(iLayer,iCat,iqp,iTri,iEdge) * &
+                                     ( thisTracer % center3D(iLayer,iCat,iCell) &
+                                     + thisTracer %  xGrad3D(iLayer,iCat,iCell) * xTriangle(iqp,iTri,iEdge)  &
+                                     + thisTracer %  yGrad3D(iLayer,iCat,iCell) * yTriangle(iqp,iTri,iEdge)  &
+                                     )
+                               endif
+                               ! integrate over the triangle by summing over quadrature points
+                               tracerIntegral3D(iLayer,iCat) = tracerIntegral3D(iLayer,iCat) &
+                                  + weightQuadPoint(iqp) * thisTracer % triangleValue3D(iLayer,iCat,iqp,iTri,iEdge)
+                            enddo ! iLayer
+                         enddo    ! iCat
+                      enddo       ! iqp
+                      ! increment the area-weighted flux across the edge
+                      thisTracer % edgeFlux3D(:,:,iEdge) = thisTracer % edgeFlux3D(:,:,iEdge) &
+                                                         + triangleArea(iTri,iEdge) * tracerIntegral3D(:,:)
+                   endif ! triangleArea /= 0
+                enddo    ! nTriPerEdgeRemap
+             endif       ! maskEdge = 1
+          enddo          ! nEdges
           deallocate(tracerIntegral3D)
 
        endif   ! ndims
 
-       ! clean up
+       ! Check for negative reconstructed ice area
+       if (trim(thisTracer % tracerName) == 'iceAreaCategory') then
+          do iEdge = 1, nEdges
+             do iTri = 1, nTriPerEdgeRemap
+                if (triangleArea(iTri,iEdge) /= 0.0_RKIND) then
+                   iCell = iCellTriangle(iTri,iEdge)
+                   do iqp = 1, nQuadPoints
+                      do iCat = 1, nCategories
+                         if (thisTracer % ndims == 2) then
+                            if (thisTracer % triangleValue2D(iCat,iqp,iTri,iEdge) < 0.0_RKIND) then
+                               call mpas_log_write('MPAS-seaice: IR negative reconstructed ice area', messageType=MPAS_LOG_ERR)
+                               call mpas_log_write('nCells, iCat, iCell, global iCell: $i $i $i $i',  messageType=MPAS_LOG_ERR, &
+                                    intArgs=(/nCells, iCat, iCell, indexToCellID(iCell)/))
+                               call mpas_log_write('iEdge, global iEdge, iTri, iqp: $i $i $i $i', messageType=MPAS_LOG_ERR, &
+                                    intArgs=(/iEdge, indexToEdgeID(iEdge), iTri, iqp/))
+                               call mpas_log_write('triangle area, tracer, center, xGrad2D, yGrad2D: $r $r $r $r $r', &
+                                    messageType=MPAS_LOG_CRIT, & ! abort
+                                    realArgs=(/triangleArea(iTri,iEdge), &
+                                               thisTracer%triangleValue2D(iCat,iqp,iTri,iEdge), &
+                                               thisTracer%center2D(iCat,iCell), &
+                                               thisTracer% xGrad2D(iCat,iCell), &
+                                               thisTracer% yGrad2D(iCat,iCell) /))
+                               abortFlag = .true.
+                               return
+                            endif  ! negative 2D area
+                         elseif (thisTracer % ndims == 3) then
+                            do iLayer = 1, nLayers
+                               if (thisTracer % triangleValue3D(iLayer,iCat,iqp,iTri,iEdge) < 0.0_RKIND) then
+                                  call mpas_log_write('MPAS-seaice: IR negative reconstructed ice area', messageType=MPAS_LOG_ERR)
+                                  call mpas_log_write('nCells, iLayer, iCat, iCell, global iCell: $i $i $i $i $i', &
+                                       messageType=MPAS_LOG_ERR, &
+                                       intArgs=(/nCells, iLayer, iCat, iCell, indexToCellID(iCell)/))
+                                  call mpas_log_write('iEdge, global iEdge, iTri, iqp: $i $i $i $i', &
+                                       messageType=MPAS_LOG_ERR, &
+                                       intArgs=(/iEdge, indexToEdgeID(iEdge), iTri, iqp/))
+                                  call mpas_log_write('triangle area, tracer, center, xGrad3D, yGrad3D: $r $r $r $r $r', &
+                                       messageType=MPAS_LOG_ERR, &
+                                       realArgs=(/triangleArea(iTri,iEdge), &
+                                                  thisTracer%triangleValue3D(iLayer,iCat,iqp,iTri,iEdge), &
+                                                  thisTracer%center3D(iLayer,iCat,iCell), &
+                                                  thisTracer% xGrad3D(iLayer,iCat,iCell), &
+                                                  thisTracer% yGrad3D(iLayer,iCat,iCell) /))
+                                  abortFlag = .true.
+                                  return
+                               endif  ! negative 3D area
+                            enddo   ! iLayer
+                         endif   ! ndims
+                      enddo   ! iCat
+                   enddo   ! iqp
+                endif   ! triangleArea > 0
+             enddo   ! iTri
+          enddo   ! iEdge
+       endif   ! iceAreaCategory
 
+       ! clean up
        if (associated(dummyTracer)) then
           if (dummyTracer % ndims == 2) then
              if (associated(dummyTracer % triangleValue2D)) deallocate(dummyTracer % triangleValue2D)

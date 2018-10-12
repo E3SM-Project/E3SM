@@ -38,8 +38,8 @@ module seaice_advection_incremental_remap_tracers
                            ! (nLayer1, nLayer2, nCategories, nCells) for 3D
 
       ! tracer arrays
-      real(kind=RKIND), dimension(:,:),     pointer :: array2D => null()
-      real(kind=RKIND), dimension(:,:,:),   pointer :: array3D => null()
+      real(kind=RKIND), dimension(:,:),   contiguous, pointer :: array2D => null()
+      real(kind=RKIND), dimension(:,:,:), contiguous, pointer :: array3D => null()
 
       ! mass*tracer products
       ! = mass for mass field
@@ -70,14 +70,14 @@ module seaice_advection_incremental_remap_tracers
       ! fluxes across cell edges
       !                   (nCategories, nEdges) for 2D
       !          (nLayers, nCategories, nEdges) for 3D
-      real(kind=RKIND), dimension(:,:),     pointer :: edgeFlux2D => null()
-      real(kind=RKIND), dimension(:,:,:),   pointer :: edgeFlux3D => null()
+      real(kind=RKIND), dimension(:,:),   contiguous, pointer :: edgeFlux2D => null()
+      real(kind=RKIND), dimension(:,:,:), contiguous, pointer :: edgeFlux3D => null()
 
       ! tracer values at each quadrature point of departure triangles
       !                  (nCategories, nQuadPoints, nTriPerEdge, nEdges) for 2D
       !          (nLayers,nCategories, nQuadPoints, nTriPerEdge, nEdges) for 3D
-      real(kind=RKIND), dimension(:,:,:,:),     pointer :: triangleValue2D => null()
-      real(kind=RKIND), dimension(:,:,:,:,:),   pointer :: triangleValue3D => null()
+      real(kind=RKIND), dimension(:,:,:,:),   contiguous, pointer :: triangleValue2D => null()
+      real(kind=RKIND), dimension(:,:,:,:,:), contiguous, pointer :: triangleValue3D => null()
 
       ! coordinates of barycenter associated with this tracer
       ! The term 'barycenter' refers to a center of mass or related quantity, as distinct from the geometric center.
@@ -99,14 +99,14 @@ module seaice_advection_incremental_remap_tracers
       !  difference from the value at the barycenter.
       ! xGrad and yGrad are the gradient components defined at the cell center
 
-      real(kind=RKIND), dimension(:,:),     pointer :: center2D => null()
-      real(kind=RKIND), dimension(:,:,:),   pointer :: center3D => null()
+      real(kind=RKIND), dimension(:,:),   contiguous, pointer :: center2D => null()
+      real(kind=RKIND), dimension(:,:,:), contiguous, pointer :: center3D => null()
 
-      real(kind=RKIND), dimension(:,:),     pointer :: xGrad2D => null()
-      real(kind=RKIND), dimension(:,:,:),   pointer :: xGrad3D => null()
+      real(kind=RKIND), dimension(:,:),   contiguous, pointer :: xGrad2D => null()
+      real(kind=RKIND), dimension(:,:,:), contiguous, pointer :: xGrad3D => null()
 
-      real(kind=RKIND), dimension(:,:),     pointer :: yGrad2D => null()
-      real(kind=RKIND), dimension(:,:,:),   pointer :: yGrad3D => null()
+      real(kind=RKIND), dimension(:,:),   contiguous, pointer :: yGrad2D => null()
+      real(kind=RKIND), dimension(:,:,:), contiguous, pointer :: yGrad3D => null()
 
       ! pointer to parent tracer
       type(tracer_type), pointer :: parent => null()
