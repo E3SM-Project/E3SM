@@ -1,6 +1,70 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 11-12-2018
+Tag: cime_cesm2_1_rel_02
+Answer Changes: None
+Tests: Z_FullSystemTest, scripts_regression_tests, hand tests
+Dependencies:
+
+Brief Summary:
+    - Add a default value of idmap_ignore for certain mapping files.
+    - Improve clean function.
+    - Add ability for testfile to contain comments.
+    - Clean and alphabetize (by MACH name) the config/cesm/machines/*.xml files. 
+    - Improve case clone functionality.
+    - Improve error message for issues in user_nl_* namelist files.
+    - Write cpl.hr2x files at ENDOFRUN when forecast is < 24 hours.
+    - Backporting PR #2833(Propagate logging settings to submitted jobs) to maint-5.6 branch.
+    - Remove overzelous debug code.
+    - Change default for flux_convergence for all but 1 degree case.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+fd439ba Merge pull request #2845 from jedwards4b/improve_idmap_test
+be6c214 Merge pull request #2844 from jedwards4b/run_tests_clean
+c2cab2f Merge pull request #2838 from jedwards4b/testfile_comments
+d68fa9c Merge pull request #2849 from jedwards4b/cleanup_xml
+cb81444 Merge pull request #2843 from jedwards4b/clone_modified_Tools
+f3f5f69 Merge pull request #2840 from jedwards4b/user_nl_error_msg
+61132ee Merge pull request #2832 from kdraeder/hr2x_at_endofrun
+d3457ec Merge pull request #2842 from jedwards4b/propagate_logging
+ad9c0f5 Merge pull request #2839 from jedwards4b/remove_debug_code
+6a7d374 Merge pull request #2837 from jedwards4b/tuning1.9
+
+
+Modified files: git diff --name-status [previous_tag]
+M       .travis.yml
+M       config/cesm/machines/config_batch.xml
+M       config/cesm/machines/config_compilers.xml
+M       config/cesm/machines/config_machines.xml
+M       scripts/Tools/archive_metadata
+M       scripts/create_newcase
+M       scripts/create_test
+M       scripts/fortran_unit_testing/run_tests.py
+M       scripts/lib/CIME/XML/batch.py
+M       scripts/lib/CIME/XML/compilers.py
+M       scripts/lib/CIME/XML/env_batch.py
+M       scripts/lib/CIME/XML/generic_xml.py
+M       scripts/lib/CIME/XML/machines.py
+M       scripts/lib/CIME/XML/namelist_definition.py
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/case/case_clone.py
+M       scripts/lib/CIME/nmlgen.py
+M       scripts/tests/scripts_regression_tests.py
+M       src/CMake/FindpFUnit.cmake
+M       src/drivers/mct/cime_config/buildnml
+M       src/drivers/mct/cime_config/config_component.xml
+M       src/drivers/mct/cime_config/namelist_definition_drv.xml
+M       src/drivers/mct/main/cime_comp_mod.F90
+M       src/share/streams/shr_stream_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 10-8-2018
 Tag: cime_cesm2_1_rel_01
 Answer Changes: None
