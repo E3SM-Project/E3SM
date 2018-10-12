@@ -230,7 +230,7 @@ contains
             cflx_tmp = cflx_tmp + cf%cpool_to_livecrootc_patch(p)*dt
             cflx_tmp = cflx_tmp + cf%cpool_to_livecrootc_storage_patch(p)*dt
             cflx_tmp = cflx_tmp + cf%cpool_to_deadcrootc_patch(p)*dt
-            cflx_tmp = cflx_tmp + cf%cpool_to_grain_stoorage_patch(p)*dt
+            cflx_tmp = cflx_tmp + cf%cpool_to_deadcrootc_storage_patch(p)*dt
          end if
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
             cflx_tmp = cflx_tmp + cf%cpool_to_livestemc_patch(p)*dt
