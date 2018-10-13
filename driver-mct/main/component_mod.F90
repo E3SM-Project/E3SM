@@ -386,10 +386,14 @@ contains
                 if (iamroot_CPLID) then
                    write(logunit,F0I) 'creating dom_cx'
                    call shr_sys_flush(logunit)
-                end if
+                end igit cof
                 call seq_mctext_gGridInit(comp(1))
 
-                mpi_tag = comp(1)%cplcompid*1000+1*10+1
+                if (size(comp) > 1) then
+                    mpi_tag = comp(eci)%cplcompid*100+eci*10+1
+                else
+                    mpi_tag = comp(eci)%cplcompid*10000+eci*10+1
+                end if
                 if (mpi_tag > max_mpi_tag) then
                    write(logunit, F1I) 'MPI message tag ',mpi_tag,' exceeds max ',max_mpi_tag
                    call shr_sys_abort(subname//' ERROR: Max mpi tag exceeded')
@@ -580,7 +584,11 @@ contains
        if (comp(eci)%iamin_cplcompid) then
 
           ! Map component domain from coupler to component processes
-          mpi_tag = comp(eci)%cplcompid*1000+eci*10+5
+          if ( num_inst > 1) then
+             mpi_tag = comp(eci)%cplcompid*100+eci*10+5
+          else
+             mpi_tag = comp(eci)%cplcompid*10000+eci*10+5
+          end if
           if (mpi_tag > max_mpi_tag) then
              write(logunit, F1I) 'MPI message tag ',mpi_tag,' exceeds max ',max_mpi_tag
              call shr_sys_abort(subname//' ERROR: Max mpi tag exceeded')
@@ -603,7 +611,11 @@ contains
           endif
 
           ! Map corrected initial component AVs from component to coupler pes
-          mpi_tag = comp(eci)%cplcompid*1000+eci*10+7
+          if (num_inst > 1) then
+              mpi_tag = comp(eci)%cplcompid*100+eci*10+7
+          else
+              mpi_tag = comp(eci)%cplcompid*10000+eci*10+7
+          end if
           if (mpi_tag > max_mpi_tag) then
              write(logunit, F1I) 'MPI message tag ',mpi_tag,' exceeds max ',max_mpi_tag
              call shr_sys_abort(subname//' ERROR: Max mpi tag exceeded')
@@ -868,14 +880,22 @@ contains
           end if
 
           if (flow == 'x2c') then ! coupler to component
-             mpi_tag = comp(eci)%cplcompid*1000+eci*10+2
+             if ( size(comp) > 1) then
+                mpi_tag = comp(eci)%cplcompid*100+eci*10+2
+             else
+                mpi_tag = comp(eci)%cplcompid*10000+eci*10+2
+             end if
              if (mpi_tag > max_mpi_tag) then
                 write(logunit, F1I) 'MPI message tag ',mpi_tag,' exceeds max ',max_mpi_tag
                 call shr_sys_abort(subname//' ERROR: Max mpi tag exceeded')
              end if
              call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%x2c_cx, comp(eci)%x2c_cc, msgtag=mpi_tag)
           else if (flow == 'c2x') then ! component to coupler
-             mpi_tag = comp(eci)%cplcompid*1000+eci*10+4
+             if ( size(comp) > 1) then
+                mpi_tag = comp(eci)%cplcompid*100+eci*10+4
+             else
+                mpi_tag = comp(eci)%cplcompid*10000+eci*10+4
+             end if
              if (mpi_tag > max_mpi_tag) then
                 write(logunit, F1I) 'MPI message tag ',mpi_tag,' exceeds max ',max_mpi_tag
                 call shr_sys_abort(subname//' ERROR: Max mpi tag exceeded')
