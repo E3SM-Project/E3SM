@@ -373,6 +373,9 @@ contains
 !that is, theta tendencies are computed wrt the same pressure levels 
 !that were used to compute temperature tendencies
   subroutine convert_thermo_forcing(elem,hvcoord,n0,n0q,dt,nets,nete)
+
+!CLEAN UNUSED MODS/VARS AFTER THIS IS FINALIZED
+  use control_mod,        only : use_moisture
   implicit none
   type (element_t),       intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt ! should be dt_physics, so, dt_remap*se_nsplit
@@ -386,7 +389,9 @@ contains
 
   real(kind=real_kind)                  :: rstarn1(np,np,nlev)
   real(kind=real_kind)                  :: qn1(np,np,nlev), tn1(np,np,nlev), v1
+  real(kind=real_kind)                  :: psn1(np,np)
 
+#if 0
   do ie=nets,nete
      do k=1,nlev
         dp(:,:,k)=&
@@ -424,11 +429,65 @@ contains
          elem(ie)%state%phinh_i(:,:,:,n0),pnh,exner,dpnh_dp_i)
 
      !finally, compute difference for FT
+     ! this method is using old dp, old exner, new r* (not new new), new t
      elem(ie)%derived%FT(:,:,:) = &
          (rstarn1(:,:,:)/Rgas*tn1(:,:,:)*dp(:,:,:)/exner(:,:,:) -&
           elem(ie)%state%vtheta_dp(:,:,:,n0))/dt
 
   enddo   
+#endif
+
+!new forcing
+  do ie=nets,nete
+     call get_temperature(elem(ie),tn1,hvcoord,n0)
+     ! semi-epeated code from applycamforcing_tracers
+     psn1(:,:) = 0.0
+     q = 1
+     do k=1,nlev
+        do j=1,np
+           do i=1,np
+              v1 = dt*elem(ie)%derived%FQ(i,j,k,q)
+              if (elem(ie)%state%Qdp(i,j,k,q,n0q) + v1 < 0 .and. v1<0)then
+                 if (elem(ie)%state%Qdp(i,j,k,q,n0q) < 0 ) then
+                    v1=0  ! Q already negative, dont make it more so
+                 else
+                    v1 = -elem(ie)%state%Qdp(i,j,k,q,n0q)
+                 endif
+              endif
+              !new qdp
+              qn1(i,j,k) = elem(ie)%state%Qdp(i,j,k,q,n0q)+v1
+              psn1(i,j) = psn1(i,j) + v1/dt 
+           enddo
+        enddo
+     enddo
+
+     if (use_moisture) then
+        psn1(:,:) = elem(ie)%state%ps_v(:,:,n0) + dt*psn1(:,:)
+     endif
+
+     do k=1,nlev
+        dp(:,:,k)=&
+            ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+            ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*psn1(:,:)
+        !new q
+        qn1(:,:,k) = qn1(:,:,k)/dp(:,:,k)
+     enddo
+
+     tn1(:,:,:) = tn1(:,:,:) + dt*elem(ie)%derived%FT(:,:,:)
+
+     call get_R_star(rstarn1,qn1)
+
+     call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,n0),dp,&
+         elem(ie)%state%phinh_i(:,:,:,n0),pnh,exner,dpnh_dp_i)
+
+     !finally, compute difference for FT
+     ! this method is using new dp, new exner, new-new r*, new t
+     elem(ie)%derived%FT(:,:,:) = &
+         (rstarn1(:,:,:)/Rgas*tn1(:,:,:)*dp(:,:,:)/exner(:,:,:) -&
+          elem(ie)%state%vtheta_dp(:,:,:,n0))/dt
+
+  enddo
+
 
   end subroutine convert_thermo_forcing
 
