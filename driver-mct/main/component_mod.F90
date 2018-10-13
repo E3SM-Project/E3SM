@@ -106,7 +106,7 @@ contains
     call seq_comm_getinfo(CPLID, mpicom=mpicom_CPLID, iamroot=iamroot_CPLID, nthreads=nthreads_CPLID)
     iamin_CPLID = seq_comm_iamin(CPLID)
 
-    ! MPI spec. garuntees at least 32768 tags available, but most implementations will have more.
+    ! MPI spec. guarantees at least 32768 tags available, but most implementations will have more.
     call mpi_attr_get(MPI_COMM_WORLD, MPI_TAG_UB, max_mpi_tag, flag, ierr)
 
     ! Initialize component type variables
@@ -386,7 +386,7 @@ contains
                 if (iamroot_CPLID) then
                    write(logunit,F0I) 'creating dom_cx'
                    call shr_sys_flush(logunit)
-                end igit cof
+                end if
                 call seq_mctext_gGridInit(comp(1))
 
                 if (size(comp) > 1) then
