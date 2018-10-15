@@ -27,12 +27,21 @@ class _TimingParser:
         self.finlines = None
         self.fout = None
         self.adays=0
+        self._driver = case.get_value("COMP_INTERFACE")
         self.models = {}
 
     def write(self, text):
         self.fout.write(text)
 
     def prttime(self, label, offset=None, div=None, coff=-999):
+        if self._driver == "mct":
+            self._prttime_mct(label, offset, div, coff)
+        else if self._driver == "nuopc":
+#            self._prttime_nuopc(label, offset, div, coff)
+        else:
+            expect(False, "Timing not supported for driver {}".format(self._driver))
+
+    def _prttime_mct(self, label, offset=None, div=None, coff=-999):
         if offset is None:
             offset=self.models['CPL'].offset
         if div is None:

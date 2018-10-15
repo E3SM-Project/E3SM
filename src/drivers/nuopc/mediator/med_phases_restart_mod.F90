@@ -43,7 +43,7 @@ contains
     use med_io_mod            , only : med_io_write, med_io_wopen, med_io_enddef
     use med_io_mod            , only : med_io_close, med_io_date2yyyymmdd
     use med_io_mod            , only : med_io_sec2hms
-
+    use perf_mod              , only : t_startf, t_stopf
 
     ! Input/output variables
     type(ESMF_GridComp)  :: gcomp
@@ -90,6 +90,7 @@ contains
     character(len=*), parameter :: subname='(med_phases_restart_write)'
     !---------------------------------------
 
+    call t_startf('MED:'//subname)
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
@@ -321,6 +322,7 @@ contains
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_restart_write
 
@@ -342,7 +344,7 @@ contains
     use shr_file_mod          , only : shr_file_getUnit, shr_file_freeUnit
     use shr_mpi_mod           , only : shr_mpi_bcast
     use med_io_mod            , only : med_io_read
-
+    use perf_mod              , only : t_startf, t_stopf
     ! Input/output variables
     type(ESMF_GridComp)              :: gcomp
     integer, intent(out)             :: rc
@@ -366,7 +368,7 @@ contains
     logical   :: isPresent
     character(len=*), parameter :: subname='(med_phases_restart_read)'
     !---------------------------------------
-
+    call t_startf('MED:'//subname)
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
@@ -489,6 +491,7 @@ contains
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_restart_read
 
