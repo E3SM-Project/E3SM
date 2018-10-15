@@ -474,15 +474,73 @@ contains
   end subroutine prim_advance_exp
 
 
-! THIS NEEDS TO BE SYNC-ED WITH WHAT WAS DONE FOR THETA-L
-! a dummy for now to compile
-  subroutine convert_thermo_forcing(elem,hvcoord,n0,n0qdp,dt,nets,nete)
+  subroutine convert_thermo_forcing(elem,hvcoord,n0,n0q,dt,nets,nete)
+  use control_mod,        only : use_moisture
   implicit none
   type (element_t),       intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt ! should be dt_physics, so, dt_remap*se_nsplit
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: nets,nete
-  integer,                intent(in)    :: n0,n0qdp
-  real (kind=real_kind),  intent(in)    :: dt
+  integer,                intent(in)    :: n0,n0q
+  integer                               :: ie,i,j,k,q
+  real(kind=real_kind)                  :: exner(np,np,nlev), dp(np,np,nlev)
+  real (kind=real_kind)                 :: pnh(np,np,nlev)
+  real (kind=real_kind)                 :: dpnh(np,np,nlev)
+  real(kind=real_kind)                  :: kappa_star(np,np,nlev),cp_star(np,np,nlev)
+  real(kind=real_kind)                  :: qn1(np,np,nlev), tn1(np,np,nlev), v1
+  real(kind=real_kind)                  :: psn1(np,np)
+
+!new forcing
+  do ie=nets,nete
+     call get_temperature(elem(ie),tn1,hvcoord,n0)
+     ! semi-epeated code from applycamforcing_tracers
+     psn1(:,:) = 0.0
+     q = 1
+     do k=1,nlev
+        do j=1,np
+           do i=1,np
+              v1 = dt*elem(ie)%derived%FQ(i,j,k,q)
+              if (elem(ie)%state%Qdp(i,j,k,q,n0q) + v1 < 0 .and. v1<0)then
+                 if (elem(ie)%state%Qdp(i,j,k,q,n0q) < 0 ) then
+                    v1=0  ! Q already negative, dont make it more so
+                 else
+                    v1 = -elem(ie)%state%Qdp(i,j,k,q,n0q)
+                 endif
+              endif
+              !new qdp
+              qn1(i,j,k) = elem(ie)%state%Qdp(i,j,k,q,n0q)+v1
+              psn1(i,j) = psn1(i,j) + v1/dt
+           enddo
+        enddo
+     enddo
+
+     if (use_moisture) then
+        psn1(:,:) = elem(ie)%state%ps_v(:,:,n0) + dt*psn1(:,:)
+     endif
+
+     do k=1,nlev
+        dp(:,:,k)=&
+            ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+            ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*psn1(:,:)
+        !new q
+        qn1(:,:,k) = qn1(:,:,k)/dp(:,:,k)
+     enddo
+
+     tn1(:,:,:) = tn1(:,:,:) + dt*elem(ie)%derived%FT(:,:,:)
+
+     call get_kappa_star(kappa_star,qn1)
+     call get_cp_star(cp_star,qn1)
+     call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,n0),dp,&
+          elem(ie)%state%phinh(:,:,:,n0),elem(ie)%state%phis(:,:),kappa_star,&
+          pnh,dpnh,exner)
+
+     !finally, compute difference for FT
+     ! this method is using new dp, new exner, new-new r*, new t
+     elem(ie)%derived%FT(:,:,:) = &
+         ( tn1(:,:,:)*cp_star(:,:,:)*dp(:,:,:)/exner(:,:,:) -&
+           elem(ie)%state%theta_dp_cp(:,:,:,n0)                  )/dt
+
+  enddo
   end subroutine convert_thermo_forcing
 
 
@@ -517,24 +575,8 @@ contains
   integer :: k,ie
 
   do ie=nets,nete
-     ! apply forcing to temperature
-     call get_temperature(elem(ie),temperature,hvcoord,np1)
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
-     do k=1,nlev
-        temperature(:,:,k) = temperature(:,:,k) + dt*elem(ie)%derived%FT(:,:,k)
-     enddo
-
-     ! now that we have updated Qdp and dp, compute theta_dp_cp from temperature
-     call get_kappa_star(kappa_star,elem(ie)%state%Q(:,:,:,1))
-     call get_cp_star(cp_star,elem(ie)%state%Q(:,:,:,1))
-     call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp,&
-          elem(ie)%state%phinh(:,:,:,np1),elem(ie)%state%phis(:,:),kappa_star,&
-          pnh,dpnh,exner)
-
-     elem(ie)%state%theta_dp_cp(:,:,:,np1) = temperature(:,:,:)*cp_star(:,:,:)&
-          *dp(:,:,:)/exner(:,:,:)
+     elem(ie)%state%theta_dp_cp(:,:,:,np1) = elem(ie)%state%theta_dp_cp(:,:,:,np1) + &
+                                             dt*elem(ie)%derived%FT(:,:,:)
 
      elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,1:2,:)
      elem(ie)%state%w(:,:,:,np1) = elem(ie)%state%w(:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,3,:)
