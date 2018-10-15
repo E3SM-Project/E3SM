@@ -1440,7 +1440,8 @@ void extendMaskByOneLayer(int const* verticesMask_F,
 void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
     double const * beta_F, double const* stiffnessFactor_F, 
     double const * temperature_F, double const * smb_F, double eps) {
-        
+
+  int vertexLayerShift = (Ordering == 0) ? 1 : nLayers + 1;
   elevationData.assign(nVertices, 1e10);
   thicknessData.assign(nVertices, 1e10);
   bedTopographyData.assign(nVertices, 1e10);
@@ -1551,11 +1552,16 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
          // which is unphysical and can cause large slopes and other issues.
          if (bedTopographyData[iV] < 0.0) {
             //std::cout<<"non-floating boundary below sea level at iV="<<iV<<std::endl;
+            if (std::find(dirichletNodesIDs.begin(), dirichletNodesIDs.end(), iV*vertexLayerShift) == dirichletNodesIDs.end()) { // Don't do this if location is a Dirichlet node!
+               //std::cout<<"  non-floating boundary below sea level node is Dirichlet so skipping. iV="<<iV<<std::endl;
+            } else {
+            //for (int i = 0; i < dirichletNodesIDs.size(); i++)
+            //            std::cout << dirichletNodesIDs.at(i) << ' ';  // print entire list of Diri nodes for debugging.
             thicknessData[iV] = eps*2.0; // insert special small value here to make identifying these points easier in exo output
             elevationData[iV] = (rho_ocean / rho_ice - 1.0) * thicknessData[iV];  // floating surface
             betaData[iV] = 0.0; // free slip under floating ice
+            }
          } // if below sea level
-
       }  // floating or not
     } // is boundary
   }  // vertex loop
