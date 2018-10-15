@@ -117,15 +117,15 @@ void Diagnostics::prim_energy_halftimes (const bool before_advance, const int iv
   const Elements& elements = Context::singleton().get<Elements>();
   const Tracers& tracers = Context::singleton().get<Tracers>();
 
-  auto h_ps_v = Kokkos::create_mirror_view(elements.m_ps_v);
-  auto h_phis = Kokkos::create_mirror_view(elements.m_phis);
-  auto h_T = Kokkos::create_mirror_view(elements.m_t);
-  auto h_v = Kokkos::create_mirror_view(elements.m_v);
+  auto h_ps_v = Kokkos::create_mirror_view(elements.m_state.m_ps_v);
+  auto h_phis = Kokkos::create_mirror_view(elements.m_geometry.m_phis);
+  auto h_T = Kokkos::create_mirror_view(elements.m_state.m_t);
+  auto h_v = Kokkos::create_mirror_view(elements.m_state.m_v);
   auto qdp_h = Kokkos::create_mirror_view(tracers.qdp);
-  Kokkos::deep_copy(h_ps_v, elements.m_ps_v);
-  Kokkos::deep_copy(h_phis, elements.m_phis);
-  Kokkos::deep_copy(h_T, elements.m_t);
-  Kokkos::deep_copy(h_v, elements.m_v);
+  Kokkos::deep_copy(h_ps_v, elements.m_state.m_ps_v);
+  Kokkos::deep_copy(h_phis, elements.m_geometry.m_phis);
+  Kokkos::deep_copy(h_T, elements.m_state.m_t);
+  Kokkos::deep_copy(h_v, elements.m_state.m_v);
 
   if (params.use_cpstar) {
     Kokkos::deep_copy(qdp_h, tracers.qdp);

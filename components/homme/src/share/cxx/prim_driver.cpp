@@ -94,10 +94,10 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
   const auto hybrid_ai_delta = hvcoord.hybrid_ai_delta;
   const auto hybrid_bi_delta = hvcoord.hybrid_bi_delta;
   const auto ps0 = hvcoord.ps0;
-  const auto ps_v = elements.m_ps_v;
+  const auto ps_v = elements.m_state.m_ps_v;
   {
-    const auto dp3d = elements.m_dp3d;
-    const auto n0 = tl.n0;
+    const auto dp3d = elements.m_state.m_dp3d;
+    const auto tln0 = tl.n0;
     Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace> (0,elements.num_elems()*NP*NP*NUM_LEV),
                          KOKKOS_LAMBDA(const int idx) {
       const int ie   = ((idx / NUM_LEV) / NP) / NP;
@@ -105,8 +105,8 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
       const int jgp  =  (idx / NUM_LEV) % NP;
       const int ilev =   idx % NUM_LEV;
 
-      dp3d(ie,n0,igp,jgp,ilev) = hybrid_ai_delta[ilev]*ps0
-                               + hybrid_bi_delta[ilev]*ps_v(ie,n0,igp,jgp);
+      dp3d(ie,tln0,igp,jgp,ilev) = hybrid_ai_delta[ilev]*ps0
+                                 + hybrid_bi_delta[ilev]*ps_v(ie,tln0,igp,jgp);
     });
   }
   ExecSpace::fence();
@@ -182,7 +182,7 @@ void update_q (const int np1_qdp, const int np1)
 
   // Get ps_v from Elements
   Elements& elements = Context::singleton().get<Elements>();
-  auto ps_v = elements.m_ps_v;
+  auto ps_v = elements.m_state.m_ps_v;
 
   // Get the tracers concentration and mass from Tracers
   Tracers& tracers = Context::singleton().get<Tracers>();

@@ -9,7 +9,9 @@
 
 #include "Context.hpp"
 #include "ReferenceElement.hpp"
-#include "Elements.hpp"
+#include "ElementsGeometry.hpp"
+#include "ElementsDerivedState.hpp"
+#include "ElementsBuffers.hpp"
 #include "ErrorDefs.hpp"
 #include "EulerStepFunctor.hpp"
 #include "HommexxEnums.hpp"
@@ -95,12 +97,14 @@ class EulerStepFunctorImpl {
 
   using deriv_type = ReferenceElement::deriv_type;
 
-  const Elements      m_elements;
-  const Tracers       m_tracers;
-  const deriv_type    m_deriv;
-  const HybridVCoord  m_hvcoord;
-  EulerStepData       m_data;
-  SphereOperators     m_sphere_ops;
+  const ElementsGeometry      m_geometry;
+  const ElementsBuffers       m_buffers;
+  const ElementsDerivedState  m_derived_state;
+  const Tracers               m_tracers;
+  const deriv_type            m_deriv;
+  const HybridVCoord          m_hvcoord;
+  EulerStepData               m_data;
+  SphereOperators             m_sphere_ops;
 
   bool                m_kernel_will_run_limiters;
 
@@ -112,13 +116,15 @@ class EulerStepFunctorImpl {
 public:
 
   EulerStepFunctorImpl ()
-   : m_elements   (Context::singleton().get<Elements>())
-   , m_tracers    (Context::singleton().get<Tracers>())
-   , m_deriv      (Context::singleton().get<ReferenceElement>().get_deriv())
-   , m_hvcoord    (Context::singleton().get<HybridVCoord>())
-   , m_sphere_ops (Context::singleton().get<SphereOperators>())
+   : m_geometry      (Context::singleton().get<ElementsGeometry>())
+   , m_buffers       (Context::singleton().get<ElementsBuffers>())
+   , m_derived_state (Context::singleton().get<ElementsDerivedState>())
+   , m_tracers       (Context::singleton().get<Tracers>())
+   , m_deriv         (Context::singleton().get<ReferenceElement>().get_deriv())
+   , m_hvcoord       (Context::singleton().get<HybridVCoord>())
+   , m_sphere_ops    (Context::singleton().get<SphereOperators>())
   {
-    m_sphere_ops.setup(m_elements,Context::singleton().get<ReferenceElement>());
+    m_sphere_ops.setup(m_geometry,Context::singleton().get<ReferenceElement>());
   }
 
   void reset (const SimulationParams& params) {
@@ -137,7 +143,7 @@ public:
     }
 
     // This will fit the needs of all calls to sphere operators.
-    m_sphere_ops.allocate_buffers(Homme::get_default_team_policy<ExecSpace>(m_elements.num_elems()*m_data.qsize));
+    m_sphere_ops.allocate_buffers(Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems()*m_data.qsize));
   }
 
   void init_boundary_exchanges () {
@@ -152,9 +158,9 @@ public:
         be.set_buffers_manager(bm_exchange);
         be.set_num_fields(0, 0, m_data.qsize+1);
         be.register_field(m_tracers.qdp, np1_qdp, m_data.qsize, 0);
-        be.register_field(dssi == 0 ? m_elements.m_eta_dot_dpdn :
-                          dssi == 1 ? m_elements.m_omega_p :
-                          m_elements.m_derived_divdp_proj);
+        be.register_field(dssi == 0 ? m_derived_state.m_eta_dot_dpdn :
+                          dssi == 1 ? m_derived_state.m_omega_p :
+                          m_derived_state.m_divdp_proj);
         be.registration_completed();
       }
     }
@@ -207,11 +213,11 @@ public:
 
     if(m_data.nu_p > 0){
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace, BIHPreNup>(
-                             m_elements.num_elems() * m_data.qsize),
+                             m_geometry.num_elems() * m_data.qsize),
                          *this);
     }else{
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace, BIHPreNoNup>(
-                             m_elements.num_elems() * m_data.qsize),
+                             m_geometry.num_elems() * m_data.qsize),
                          *this);
 
     }
@@ -226,11 +232,11 @@ public:
 
     if(m_data.consthv){
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace, BIHPostConstHV>(
-                             m_elements.num_elems() * m_data.qsize),
+                             m_geometry.num_elems() * m_data.qsize),
                          *this);
     }else{
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace, BIHPostTensorHV>(
-                             m_elements.num_elems() * m_data.qsize),
+                             m_geometry.num_elems() * m_data.qsize),
                          *this);
     }
     ExecSpace::fence();
@@ -258,7 +264,7 @@ public:
   void dpdiss_adjustment (KernelVariables & kv, const TeamMember& team) const {
 
     const auto qtens_biharmonic = Homme::subview(m_tracers.qtens_biharmonic, kv.ie, kv.iq);
-      const auto dpdiss_ave = Homme::subview(m_elements.m_derived_dpdiss_ave, kv.ie);
+      const auto dpdiss_ave = Homme::subview(m_derived_state.m_dpdiss_ave, kv.ie);
       Kokkos::parallel_for (
         Kokkos::TeamThreadRange(team, NP*NP),
         [&] (const int loop_idx) {
@@ -288,9 +294,8 @@ public:
   KOKKOS_INLINE_FUNCTION
   void operator() (const BIHPostTensorHV&, const TeamMember& team) const {
     KernelVariables kv(team,m_data.qsize);
-    const auto& e = m_elements;
     const auto qtens_biharmonic = Homme::subview(m_tracers.qtens_biharmonic, kv.ie, kv.iq);
-    const auto tensor = Homme::subview(e.m_tensorvisc, kv.ie);
+    const auto tensor = Homme::subview(m_geometry.m_tensorvisc, kv.ie);
     team.team_barrier();
     m_sphere_ops.laplace_tensor(kv, tensor, qtens_biharmonic, qtens_biharmonic);
     // divergence_sphere_wk provides the barrier.
@@ -301,7 +306,7 @@ public:
   void rhsviss_adjustment (KernelVariables & kv, const TeamMember & team) const {
     const auto qtens_biharmonic = Homme::subview(m_tracers.qtens_biharmonic, kv.ie, kv.iq);
     const auto f = -m_data.rhs_viss * m_data.dt * m_data.nu_q;
-    const auto spheremp = Homme::subview(m_elements.m_spheremp, kv.ie);
+    const auto spheremp = Homme::subview(m_geometry.m_spheremp, kv.ie);
       Kokkos::parallel_for (
         Kokkos::TeamThreadRange(team, NP*NP),
         [&] (const int loop_idx) {
@@ -325,13 +330,13 @@ public:
     profiling_resume();
     Kokkos::parallel_for(
       Homme::get_default_team_policy<ExecSpace, AALSetupPhase>(
-        m_elements.num_elems()),
+        m_geometry.num_elems()),
       *this);
     ExecSpace::fence();
     m_kernel_will_run_limiters = true;
     Kokkos::parallel_for(
       Homme::get_default_team_policy<ExecSpace, AALTracerPhase>(
-        m_elements.num_elems() * m_data.qsize),
+        m_geometry.num_elems() * m_data.qsize),
       *this);
     ExecSpace::fence();
     m_kernel_will_run_limiters = false;
@@ -358,7 +363,7 @@ public:
 
     Kokkos::parallel_for(
         Homme::get_default_team_policy<ExecSpace, PrecomputeDivDp>(
-            m_elements.num_elems()),
+            m_geometry.num_elems()),
         *this);
 
     ExecSpace::fence();
@@ -369,16 +374,16 @@ public:
   void operator()(const PrecomputeDivDp &, const TeamMember &team) const {
     KernelVariables kv(team);
     m_sphere_ops.divergence_sphere(kv,
-                      Homme::subview(m_elements.m_derived_vn0, kv.ie),
-                      Homme::subview(m_elements.m_derived_divdp, kv.ie));
+                      Homme::subview(m_derived_state.m_vn0, kv.ie),
+                      Homme::subview(m_derived_state.m_divdp, kv.ie));
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, NP * NP),
                          [&](const int idx) {
       const int igp = idx / NP;
       const int jgp = idx % NP;
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NUM_LEV),
                            [&](const int ilev) {
-        m_elements.m_derived_divdp_proj(kv.ie, igp, jgp, ilev) =
-            m_elements.m_derived_divdp(kv.ie, igp, jgp, ilev);
+        m_derived_state.m_divdp_proj(kv.ie, igp, jgp, ilev) =
+            m_derived_state.m_divdp(kv.ie, igp, jgp, ilev);
       });
     });
   }
@@ -388,7 +393,7 @@ public:
     const auto qdp = m_tracers.qdp;
     const Real rkstage = 3.0;
     Kokkos::parallel_for(
-      Homme::get_default_team_policy<ExecSpace>(m_elements.num_elems()*m_data.qsize),
+      Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems()*m_data.qsize),
       KOKKOS_LAMBDA(const TeamMember& team) {
         KernelVariables kv(team, qsize);
         const auto qdp_n0 = Homme::subview(qdp, kv.ie, n0_qdp, kv.iq);
@@ -411,14 +416,13 @@ public:
 
   // TODO make GPUable.
   void compute_dp () {
-    const auto& e = m_elements;
     const auto& c = m_data;
-    const auto dp = e.m_derived_dp;
-    const auto divdp_proj = e.m_derived_divdp_proj;
+    const auto dp = m_derived_state.m_dp;
+    const auto divdp_proj = m_derived_state.m_divdp_proj;
     const auto rhsmdt = c.rhs_multiplier * c.dt;
-    const auto buf = e.buffers.pressure;
+    const auto buf = m_buffers.pressure;
     Kokkos::parallel_for(
-      Homme::get_default_team_policy<ExecSpace>(m_elements.num_elems()),
+      Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems()),
       KOKKOS_LAMBDA (const TeamMember& team) {
         KernelVariables kv(team);
         Kokkos::parallel_for (
@@ -446,10 +450,10 @@ public:
     const Real rhs_multiplier = m_data.rhs_multiplier;
     const int n0_qdp = m_data.n0_qdp;
     const auto qdp = m_tracers.qdp;
-    const auto dp = m_elements.buffers.pressure;
+    const auto dp = m_buffers.pressure;
     const auto qtens_biharmonic = m_tracers.qtens_biharmonic;
     const auto qlim = m_tracers.qlim;
-    const auto num_parallel_iterations = m_elements.num_elems() * m_data.qsize;
+    const auto num_parallel_iterations = m_geometry.num_elems() * m_data.qsize;
     ThreadPreferences tp;
     tp.max_threads_usable = NUM_LEV;
     tp.max_vectors_usable = 1;
@@ -503,7 +507,7 @@ public:
   void minmax_and_biharmonic() {
     neighbor_minmax_start();
     compute_biharmonic_pre();
-    m_mmqb_be->exchange(m_elements.m_rspheremp);
+    m_mmqb_be->exchange(m_geometry.m_rspheremp);
     compute_biharmonic_post();
     neighbor_minmax_finish();
   }
@@ -515,7 +519,7 @@ public:
 
   void exchange_qdp_dss_var () {
     const int idx = 3*m_data.np1_qdp + static_cast<int>(m_data.DSSopt);
-    m_bes[idx]->exchange(m_elements.m_rspheremp);
+    m_bes[idx]->exchange(m_geometry.m_rspheremp);
   }
 
   void euler_step(const int np1_qdp, const int n0_qdp, const Real dt,
@@ -591,16 +595,15 @@ private:
   KOKKOS_INLINE_FUNCTION
   void compute_2d_advection_step (const KernelVariables& kv) const {
     const auto& c = m_data;
-    const auto& e = m_elements;
     const bool lim_quasi_monotone
       = EulerStepFunctor::is_quasi_monotone(c.limiter_option);
     const bool add_ps_diss = c.nu_p > 0 && c.rhs_viss != 0.0;
     const Real diss_fac = add_ps_diss ? -c.rhs_viss * c.dt * c.nu_q : 0;
     const auto& f_dss = (c.DSSopt == DSSOption::ETA ?
-                         e.m_eta_dot_dpdn :
+                         m_derived_state.m_eta_dot_dpdn :
                          c.DSSopt == DSSOption::OMEGA ?
-                         e.m_omega_p :
-                         e.m_derived_divdp_proj);
+                         m_derived_state.m_omega_p :
+                         m_derived_state.m_divdp_proj);
     Kokkos::parallel_for (
       Kokkos::TeamThreadRange(kv.team, NP*NP),
       [&] (const int loop_idx) {
@@ -609,25 +612,25 @@ private:
         Kokkos::parallel_for(
           Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
           [&] (const int& k) {
-            const auto dp = e.buffers.pressure(kv.ie,i,j,k);
-            e.buffers.vstar(kv.ie,0,i,j,k) = e.m_derived_vn0(kv.ie,0,i,j,k) / dp;
-            e.buffers.vstar(kv.ie,1,i,j,k) = e.m_derived_vn0(kv.ie,1,i,j,k) / dp;
+            const auto dp = m_buffers.pressure(kv.ie,i,j,k);
+            m_buffers.vstar(kv.ie,0,i,j,k) = m_derived_state.m_vn0(kv.ie,0,i,j,k) / dp;
+            m_buffers.vstar(kv.ie,1,i,j,k) = m_derived_state.m_vn0(kv.ie,1,i,j,k) / dp;
             if (lim_quasi_monotone) {
               //! Note that the term dpdissk is independent of Q
               //! UN-DSS'ed dp at timelevel n0+1:
-              e.buffers.dpdissk(kv.ie,i,j,k) = dp - c.dt * e.m_derived_divdp(kv.ie,i,j,k);
+              m_buffers.dpdissk(kv.ie,i,j,k) = dp - c.dt * m_derived_state.m_divdp(kv.ie,i,j,k);
               if (add_ps_diss) {
                 //! add contribution from UN-DSS'ed PS dissipation
                 //!          dpdiss(:,:) = ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) *
                 //!          elem(ie)%derived%psdiss_biharmonic(:,:)
-                e.buffers.dpdissk(kv.ie,i,j,k) += diss_fac *
-                  e.m_derived_dpdiss_biharmonic(kv.ie,i,j,k) / e.m_spheremp(kv.ie,i,j);
+                m_buffers.dpdissk(kv.ie,i,j,k) += diss_fac *
+                  m_derived_state.m_dpdiss_biharmonic(kv.ie,i,j,k) / m_geometry.m_spheremp(kv.ie,i,j);
               }
             }
             //! also DSS extra field
             //! note: eta_dot_dpdn is actually dimension nlev+1, but nlev+1 data is
             //! all zero so we only have to DSS 1:nlev
-            f_dss(kv.ie,i,j,k) *= e.m_spheremp(kv.ie,i,j);
+            f_dss(kv.ie,i,j,k) *= m_geometry.m_spheremp(kv.ie,i,j);
           });
       });
   }
@@ -636,7 +639,7 @@ private:
   void compute_qtens (const KernelVariables& kv) const {
     m_sphere_ops.divergence_sphere_update(
       kv, -m_data.dt, m_data.rhs_viss != 0.0,
-      Homme::subview(m_elements.buffers.vstar, kv.ie),
+      Homme::subview(m_buffers.vstar, kv.ie),
       Homme::subview(m_tracers.qdp, kv.ie, m_data.n0_qdp, kv.iq),
       // On input, qtens_biharmonic if add_hyperviscosity, undefined
       // if not; on output, qtens.
@@ -645,8 +648,8 @@ private:
 
   KOKKOS_INLINE_FUNCTION
   void limiter_optim_iter_full (const KernelVariables& kv) const {
-    const auto sphweights = Homme::subview(m_elements.m_spheremp, kv.ie);
-    const auto dpmass = Homme::subview(m_elements.buffers.dpdissk, kv.ie);
+    const auto sphweights = Homme::subview(m_geometry.m_spheremp, kv.ie);
+    const auto dpmass = Homme::subview(m_buffers.dpdissk, kv.ie);
     const auto ptens = Homme::subview(m_tracers.qtens_biharmonic, kv.ie, kv.iq);
     const auto qlim = Homme::subview(m_tracers.qlim, kv.ie, kv.iq);
     if ( ! OnGpu<ExecSpace>::value && kv.team.team_size() == 1)
@@ -659,8 +662,8 @@ private:
 
   KOKKOS_INLINE_FUNCTION
   void limiter_clip_and_sum (const KernelVariables& kv) const {
-    const auto sphweights = Homme::subview(m_elements.m_spheremp, kv.ie);
-    const auto dpmass = Homme::subview(m_elements.buffers.dpdissk, kv.ie);
+    const auto sphweights = Homme::subview(m_geometry.m_spheremp, kv.ie);
+    const auto dpmass = Homme::subview(m_buffers.dpdissk, kv.ie);
     const auto ptens = Homme::subview(m_tracers.qtens_biharmonic, kv.ie, kv.iq);
     const auto qlim = Homme::subview(m_tracers.qlim, kv.ie, kv.iq);
 
@@ -679,7 +682,7 @@ private:
   void apply_spheremp (const KernelVariables& kv) const {
     const auto qdp = Homme::subview(m_tracers.qdp, kv.ie, m_data.np1_qdp, kv.iq);
     const auto qtens = Homme::subview(m_tracers.qtens_biharmonic, kv.ie, kv.iq);
-    const auto spheremp = Homme::subview(m_elements.m_spheremp, kv.ie);
+    const auto spheremp = Homme::subview(m_geometry.m_spheremp, kv.ie);
     Kokkos::parallel_for (
       Kokkos::TeamThreadRange(kv.team, NP * NP),
       [&] (const int loop_idx) {
@@ -1106,6 +1109,6 @@ KOKKOS_INLINE_FUNCTION void SerialLimiter<ExecSpace>
 # undef forij
 } // end SerialLimiter
 
-}
+} // namespace Homme
 
-#endif
+#endif // HOMMEXX_EULER_STEP_FUNCTOR_IMPL_HPP

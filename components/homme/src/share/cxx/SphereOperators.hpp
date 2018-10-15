@@ -8,7 +8,7 @@
 #define HOMMEXX_SPHERE_OPERATORS_HPP
 
 #include "Types.hpp"
-#include "Elements.hpp"
+#include "ElementsGeometry.hpp"
 #include "ReferenceElement.hpp"
 #include "Dimensions.hpp"
 #include "KernelVariables.hpp"
@@ -29,21 +29,21 @@ public:
 
   SphereOperators () = default;
 
-  SphereOperators (const Elements& elements, const ReferenceElement& ref_FE) {
-    setup(elements,ref_FE);
+  SphereOperators (const ElementsGeometry& geometry, const ReferenceElement& ref_FE) {
+    setup(geometry,ref_FE);
   }
 
-  void setup (const Elements& elements, const ReferenceElement& ref_FE) {
+  void setup (const ElementsGeometry& geometry, const ReferenceElement& ref_FE) {
     // Get reference element stuff
     dvv = ref_FE.get_deriv();
     m_mp = ref_FE.get_mass();
 
     // Get all needed 2d fields from elements
-    m_d        = elements.m_d;
-    m_dinv     = elements.m_dinv;
-    m_metdet   = elements.m_metdet;
-    m_metinv   = elements.m_metinv;
-    m_spheremp = elements.m_spheremp;
+    m_d        = geometry.m_d;
+    m_dinv     = geometry.m_dinv;
+    m_metdet   = geometry.m_metdet;
+    m_metinv   = geometry.m_metinv;
+    m_spheremp = geometry.m_spheremp;
   }
 
   // This one is used in the unit tests

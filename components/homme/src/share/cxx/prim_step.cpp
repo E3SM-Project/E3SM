@@ -41,13 +41,13 @@ void prim_step (const Real dt, const bool compute_diagnostics)
   // ===============
   GPTLstart("tl-s deep_copy+derived_dp");
   {
-    const auto eta_dot_dpdn = elements.m_eta_dot_dpdn;
-    const auto derived_vn0 = elements.m_derived_vn0;
-    const auto omega_p = elements.m_omega_p;
-    const auto derived_dpdiss_ave = elements.m_derived_dpdiss_ave;
-    const auto derived_dpdiss_biharmonic = elements.m_derived_dpdiss_biharmonic;
-    const auto derived_dp = elements.m_derived_dp;
-    const auto dp3d = elements.m_dp3d;
+    const auto eta_dot_dpdn = elements.m_derived.m_eta_dot_dpdn;
+    const auto derived_vn0 = elements.m_derived.m_vn0;
+    const auto omega_p = elements.m_derived.m_omega_p;
+    const auto derived_dpdiss_ave = elements.m_derived.m_dpdiss_ave;
+    const auto derived_dpdiss_biharmonic = elements.m_derived.m_dpdiss_biharmonic;
+    const auto derived_dp = elements.m_derived.m_dp;
+    const auto dp3d = elements.m_state.m_dp3d;
     Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace> (0,elements.num_elems()*NP*NP*NUM_LEV),
                          KOKKOS_LAMBDA(const int idx) {
       const int ie   = ((idx / NUM_LEV) / NP) / NP;

@@ -20,7 +20,7 @@ TEST_CASE("dp3d_intervals", "Testing Elements::random_init") {
   elements.random_init(num_elems, max_pressure);
   HostViewManaged<Scalar * [NUM_TIME_LEVELS][NP][NP][NUM_LEV]> dp3d("host dp3d",
                                                                     num_elems);
-  Kokkos::deep_copy(dp3d, elements.m_dp3d);
+  Kokkos::deep_copy(dp3d, elements.m_state.m_dp3d);
   for (int ie = 0; ie < num_elems; ++ie) {
     for (int tl = 0; tl < NUM_TIME_LEVELS; ++tl) {
       for (int igp = 0; igp < NP; ++igp) {
@@ -49,8 +49,8 @@ TEST_CASE("d_dinv_check", "Testing Elements::random_init") {
   elements.random_init(num_elems);
   HostViewManaged<Real * [2][2][NP][NP]> d("host d", num_elems);
   HostViewManaged<Real * [2][2][NP][NP]> dinv("host dinv", num_elems);
-  Kokkos::deep_copy(d, elements.m_d);
-  Kokkos::deep_copy(dinv, elements.m_dinv);
+  Kokkos::deep_copy(d, elements.m_geometry.m_d);
+  Kokkos::deep_copy(dinv, elements.m_geometry.m_dinv);
   for (int ie = 0; ie < num_elems; ++ie) {
     for (int igp = 0; igp < NP; ++igp) {
       for (int jgp = 0; jgp < NP; ++jgp) {

@@ -2,7 +2,6 @@
 
 #include <limits>
 
-#include "Elements.hpp"
 #include "Dimensions.hpp"
 #include "KernelVariables.hpp"
 #include "SphereOperators.hpp"
@@ -173,7 +172,7 @@ class compute_sphere_operator_test {
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagDefault &,
-                  TeamMember team) const {
+                  TeamMember /* team */) const {
       // do nothing or print a message
   };
 
@@ -303,10 +302,6 @@ TEST_CASE("testing_laplace_simple_sl",
         REQUIRE(
             !std::isnan(testing_laplace.scalar_output_host(
                 ie, igp, jgp)));
-        Real rel_error = compare_answers(
-                    local_fortran_output(igp, jgp),
-                    testing_laplace.scalar_output_host(
-                        ie, igp, jgp));
         REQUIRE(local_fortran_output(igp, jgp) ==
                     testing_laplace.scalar_output_host(
                         ie, igp, jgp));

@@ -131,7 +131,7 @@ void cxx_push_results_to_f90(F90Ptr &elem_state_v_ptr, F90Ptr &elem_state_temp_p
                              F90Ptr &elem_Q_ptr, F90Ptr &elem_state_ps_v_ptr,
                              F90Ptr &elem_derived_omega_p_ptr) {
   Elements &elements = Context::singleton().get<Elements>();
-  elements.push_4d(elem_state_v_ptr, elem_state_temp_ptr, elem_state_dp3d_ptr);
+  elements.m_state.push_to_f90_pointers(elem_state_v_ptr, elem_state_temp_ptr, elem_state_dp3d_ptr);
 
   Tracers &tracers = Context::singleton().get<Tracers>();
   tracers.push_qdp(elem_state_Qdp_ptr);
@@ -142,13 +142,12 @@ void cxx_push_results_to_f90(F90Ptr &elem_state_v_ptr, F90Ptr &elem_state_temp_p
   HostViewUnmanaged<Real * [NUM_TIME_LEVELS][NP][NP]> ps_v_f90(
       elem_state_ps_v_ptr, elements.num_elems());
 
-  decltype(elements.m_ps_v)::HostMirror ps_v_host =
-      Kokkos::create_mirror_view(elements.m_ps_v);
+  auto ps_v_host = Kokkos::create_mirror_view(elements.m_state.m_ps_v);
 
-  Kokkos::deep_copy(ps_v_host, elements.m_ps_v);
+  Kokkos::deep_copy(ps_v_host, elements.m_state.m_ps_v);
   Kokkos::deep_copy(ps_v_f90, ps_v_host);
 
-  sync_to_host(elements.m_omega_p,
+  sync_to_host(elements.m_derived.m_omega_p,
                HostViewUnmanaged<Real * [NUM_PHYSICAL_LEV][NP][NP]>(
                    elem_derived_omega_p_ptr, elements.num_elems()));
   sync_to_host(tracers.Q,
@@ -164,10 +163,10 @@ void cxx_push_forcing_to_f90(F90Ptr elem_derived_FM, F90Ptr elem_derived_FT,
 
   HostViewUnmanaged<Real * [NUM_PHYSICAL_LEV][2][NP][NP]> fm_f90(
       elem_derived_FM, elements.num_elems());
-  sync_to_host(elements.m_fm, fm_f90);
+  sync_to_host(elements.m_derived.m_fm, fm_f90);
   HostViewUnmanaged<Real * [NUM_PHYSICAL_LEV][NP][NP]> ft_f90(
       elem_derived_FT, elements.num_elems());
-  sync_to_host(elements.m_ft, ft_f90);
+  sync_to_host(elements.m_derived.m_ft, ft_f90);
 
   const SimulationParams &params = Context::singleton().get<SimulationParams>();
   if (params.ftype == ForcingAlg::FORCING_DEBUG) {
@@ -187,11 +186,11 @@ void f90_push_forcing_to_cxx(F90Ptr elem_derived_FM, F90Ptr elem_derived_FT,
 
   HostViewUnmanaged<Real * [NUM_PHYSICAL_LEV][2][NP][NP]> fm_f90(
       elem_derived_FM, elements.num_elems());
-  sync_to_device(fm_f90, elements.m_fm);
+  sync_to_device(fm_f90, elements.m_derived.m_fm);
 
   HostViewUnmanaged<Real * [NUM_PHYSICAL_LEV][NP][NP]> ft_f90(
       elem_derived_FT, elements.num_elems());
-  sync_to_device(ft_f90, elements.m_ft);
+  sync_to_device(ft_f90, elements.m_derived.m_ft);
 
   const SimulationParams &params = Context::singleton().get<SimulationParams>();
   Tracers &tracers = Context::singleton().get<Tracers>();
@@ -235,6 +234,18 @@ void init_elements_c (const int& num_elems)
   // Init also the tracers structure
   Tracers& t = Context::singleton().get<Tracers> ();
   t.init(num_elems,params.qsize);
+
+  // In the context, we register also ElementsGeometry, ElementsDerivedState, and ElementsBuffers,
+  // making sure they store the same views as in the subobjects of Elements.
+  // This allows objects that need only a piece of Elements, to grab it from the Context,
+  // while still knowing that what they grab contains the same views as the object stored in the
+  // Elements inside the Context
+  ElementsGeometry& geometry = Context::singleton().get<ElementsGeometry>();
+  geometry = r.m_geometry;
+  ElementsDerivedState& derived = Context::singleton().get<ElementsDerivedState>();
+  derived = r.m_derived;
+  ElementsBuffers& buffers = Context::singleton().get<ElementsBuffers>();
+  buffers = r.m_buffers;
 }
 
 void init_functors_c ()
@@ -292,25 +303,17 @@ void init_elements_2d_c (const int& ie, CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor
   const SimulationParams& params = Context::singleton().get<SimulationParams>();
 
   const bool consthv = (params.hypervis_scaling==0.0);
-  e.init_2d(ie,D,Dinv,fcor,spheremp,rspheremp,metdet,metinv,phis,tensorvisc,vec_sph2cart,consthv);
+  e.m_geometry.init(ie,D,Dinv,fcor,spheremp,rspheremp,metdet,metinv,phis,tensorvisc,vec_sph2cart,consthv);
 }
 
 void init_elements_states_c (CF90Ptr& elem_state_v_ptr,   CF90Ptr& elem_state_temp_ptr, CF90Ptr& elem_state_dp3d_ptr,
                              CF90Ptr& elem_state_Qdp_ptr, CF90Ptr& elem_state_ps_v_ptr)
 {
   Elements& elements = Context::singleton().get<Elements> ();
-  elements.pull_4d(elem_state_v_ptr,elem_state_temp_ptr,elem_state_dp3d_ptr);
+  elements.m_state.pull_from_f90_pointers(elem_state_v_ptr,elem_state_temp_ptr,elem_state_dp3d_ptr,elem_state_ps_v_ptr);
   Tracers &tracers = Context::singleton().get<Tracers>();
   tracers.pull_qdp(elem_state_Qdp_ptr);
 
-  // F90 ptrs to arrays (np,np,num_time_levels,nelemd) can be stuffed directly in an unmanaged view
-  // with scalar Real*[NUM_TIME_LEVELS][NP][NP] (with runtime dimension nelemd)
-  HostViewUnmanaged<const Real*[NUM_TIME_LEVELS][NP][NP]> ps_v_f90(elem_state_ps_v_ptr,elements.num_elems());
-
-  decltype(elements.m_ps_v)::HostMirror ps_v_host = Kokkos::create_mirror_view(elements.m_ps_v);
-
-  Kokkos::deep_copy(ps_v_host,ps_v_f90);
-  Kokkos::deep_copy(elements.m_ps_v,ps_v_host);
 }
 
 void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr,  F90Ptr& elem_accum_qmass_ptr,

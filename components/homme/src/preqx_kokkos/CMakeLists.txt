@@ -146,6 +146,10 @@ SET(PREQX_DEPS_CXX
   ${SRC_SHARE_DIR}/cxx/Context.cpp
   ${SRC_SHARE_DIR}/cxx/Diagnostics.cpp
   ${SRC_SHARE_DIR}/cxx/Elements.cpp
+  ${SRC_SHARE_DIR}/cxx/ElementsBuffers.cpp
+  ${SRC_SHARE_DIR}/cxx/ElementsDerivedState.cpp
+  ${SRC_SHARE_DIR}/cxx/ElementsGeometry.cpp
+  ${SRC_SHARE_DIR}/cxx/ElementsState.cpp
   ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
   ${SRC_SHARE_DIR}/cxx/EulerStepFunctor.cpp
   ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp

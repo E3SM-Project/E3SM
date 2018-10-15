@@ -116,7 +116,7 @@ void CaarFunctor::run (const int nm1, const int n0, const int np1,
   ExecSpace::fence();
   GPTLstop("caar compute");
   start_timer("caar_bexchV");
-  m_caar_impl->m_bes[np1]->exchange(m_caar_impl->m_elements.m_rspheremp);
+  m_caar_impl->m_bes[np1]->exchange(m_caar_impl->m_elements.m_geometry.m_rspheremp);
   stop_timer("caar_bexchV");
   profiling_pause();
 }

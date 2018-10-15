@@ -2,7 +2,6 @@
 
 #include <limits>
 
-#include "Elements.hpp"
 #include "Dimensions.hpp"
 #include "KernelVariables.hpp"
 #include "SphereOperators.hpp"
@@ -338,7 +337,7 @@ class compute_sphere_operator_test_ml {
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagDefault &,
-                  const TeamMember& team) const {
+                  const TeamMember& /* team */) const {
       // do nothing or print a message
   };
 

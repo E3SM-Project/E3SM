@@ -138,9 +138,9 @@ void u3_5stage_timestep(const int nm1, const int n0, const int np1, const int n0
 
   // Compute (5u1-u0)/4 and store it in timelevel nm1
   {
-    const auto t = elements.m_t;
-    const auto v = elements.m_v;
-    const auto dp3d = elements.m_dp3d;
+    const auto t    = elements.m_state.m_t;
+    const auto v    = elements.m_state.m_v;
+    const auto dp3d = elements.m_state.m_dp3d;
     Kokkos::parallel_for(
       Kokkos::RangePolicy<ExecSpace>(0, elements.num_elems()*NP*NP*NUM_LEV),
       KOKKOS_LAMBDA(const int it) {
