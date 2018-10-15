@@ -374,7 +374,11 @@ contains
 !that were used to compute temperature tendencies
   subroutine convert_thermo_forcing(elem,hvcoord,n0,n0q,dt,nets,nete)
   use control_mod,        only : use_moisture
+
   implicit none
+
+  real(kind=real_kind)   :: x,y,noreast, nw, se, sw 
+
   type (element_t),       intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt ! should be dt_physics, so, dt_remap*se_nsplit
   type (hvcoord_t),       intent(in)    :: hvcoord
@@ -388,6 +392,83 @@ contains
   real(kind=real_kind)                  :: rstarn1(np,np,nlev)
   real(kind=real_kind)                  :: qn1(np,np,nlev), tn1(np,np,nlev), v1
   real(kind=real_kind)                  :: psn1(np,np)
+
+  real(kind=real_kind)                  :: gp(np)
+
+#if 1
+  gp(1) = -1; gp(4) = 1; gp(2) =  -0.4472135955; gp(3) = 0.4472135955;
+!smooth out vapor
+
+        do ie=nets,nete
+          do k=1,nlev
+            noreast = elem(ie)%derived%FQ(np,np,k,1)
+            nw = elem(ie)%derived%FQ(1,np,k,1)
+            se = elem(ie)%derived%FQ(np,1,k,1)
+            sw = elem(ie)%derived%FQ(1,1,k,1)
+            do i=1,np
+                x = gp(i)
+                do j=1,np
+                    y = gp(j)
+                    elem(ie)%derived%FQ(i,j,k,1) = 0.25d0*( &
+                                            (1.0d0-x)*(1.0d0-y)*sw + &
+                                            (1.0d0-x)*(y+1.0d0)*nw + &
+                                            (x+1.0d0)*(1.0d0-y)*se + &
+                                            (x+1.0d0)*(y+1.0d0)*noreast)
+                end do
+            end do
+
+            noreast = elem(ie)%derived%FT(np,np,k)
+            nw = elem(ie)%derived%FT(1,np,k)
+            se = elem(ie)%derived%FT(np,1,k)
+            sw = elem(ie)%derived%FT(1,1,k)
+            do i=1,np
+                x = gp(i)
+                do j=1,np
+                    y = gp(j)
+                    elem(ie)%derived%FT(i,j,k) = 0.25d0*( &
+                                            (1.0d0-x)*(1.0d0-y)*sw + &
+                                            (1.0d0-x)*(y+1.0d0)*nw + &
+                                            (x+1.0d0)*(1.0d0-y)*se + &
+                                            (x+1.0d0)*(y+1.0d0)*noreast)
+                end do
+            end do
+
+            noreast = elem(ie)%derived%FM(np,np,1,k)
+            nw = elem(ie)%derived%FM(1,np,1,k)
+            se = elem(ie)%derived%FM(np,1,1,k)
+            sw = elem(ie)%derived%FM(1,1,1,k)
+            do i=1,np
+                x = gp(i)
+                do j=1,np
+                    y = gp(j)
+                    elem(ie)%derived%FM(i,j,1,k) = 0.25d0*( &
+                                            (1.0d0-x)*(1.0d0-y)*sw + &
+                                            (1.0d0-x)*(y+1.0d0)*nw + &
+                                            (x+1.0d0)*(1.0d0-y)*se + &
+                                            (x+1.0d0)*(y+1.0d0)*noreast)
+                end do
+            end do
+            noreast = elem(ie)%derived%FM(np,np,2,k)
+            nw = elem(ie)%derived%FM(1,np,2,k)
+            se = elem(ie)%derived%FM(np,1,2,k)
+            sw = elem(ie)%derived%FM(1,1,2,k)
+            do i=1,np
+                x = gp(i)
+                do j=1,np
+                    y = gp(j)
+                    elem(ie)%derived%FM(i,j,2,k) = 0.25d0*( &
+                                            (1.0d0-x)*(1.0d0-y)*sw + &
+                                            (1.0d0-x)*(y+1.0d0)*nw + &
+                                            (x+1.0d0)*(1.0d0-y)*se + &
+                                            (x+1.0d0)*(y+1.0d0)*noreast)
+                end do
+            end do
+
+          end do!k
+        end do!ie
+#endif
+
+
 
 !new forcing
   do ie=nets,nete
