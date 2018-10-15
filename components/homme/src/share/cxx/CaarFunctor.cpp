@@ -8,6 +8,9 @@
 #include "CaarFunctorImpl.hpp"
 #include "Context.hpp"
 #include "SimulationParams.hpp"
+#include "ReferenceElement.hpp"
+#include "SphereOperators.hpp"
+#include "HybridVCoord.hpp"
 
 #include "profiling.hpp"
 #include "ErrorDefs.hpp"
@@ -21,27 +24,29 @@ namespace Homme {
 CaarFunctor::CaarFunctor()
  : m_policy (Homme::get_default_team_policy<ExecSpace>(Context::singleton().get<Elements>().num_elems()))
 {
-  Elements&        elements   = Context::singleton().get<Elements>();
-  Tracers&         tracers    = Context::singleton().get<Tracers>();
-  Derivative&      derivative = Context::singleton().get<Derivative>();
-  HybridVCoord&    hvcoord    = Context::singleton().get<HybridVCoord>();
-  SphereOperators& sphere_ops = Context::singleton().get<SphereOperators>(elements,derivative);
-  const int        rsplit     = Context::singleton().get<SimulationParams>().rsplit;
+  Elements&         elements   = Context::singleton().get<Elements>();
+  Tracers&          tracers    = Context::singleton().get<Tracers>();
+  ReferenceElement& ref_FE     = Context::singleton().get<ReferenceElement>();
+  HybridVCoord&     hvcoord    = Context::singleton().get<HybridVCoord>();
+  SphereOperators&  sphere_ops = Context::singleton().get<SphereOperators>();
+  const int         rsplit     = Context::singleton().get<SimulationParams>().rsplit;
+
+  sphere_ops.setup(elements,ref_FE);
 
   // Build functor impl
-  m_caar_impl.reset(new CaarFunctorImpl(elements,tracers,derivative,hvcoord,sphere_ops,rsplit));
+  m_caar_impl.reset(new CaarFunctorImpl(elements,tracers,ref_FE,hvcoord,sphere_ops,rsplit));
   m_caar_impl->m_sphere_ops.allocate_buffers(m_policy);
 }
 
 CaarFunctor::CaarFunctor(const Elements &elements, const Tracers &tracers,
-                         const Derivative &derivative,
+                         const ReferenceElement &ref_FE,
                          const HybridVCoord &hvcoord,
                          const SphereOperators &sphere_ops, 
                          const int rsplit)
     : m_policy(
           Homme::get_default_team_policy<ExecSpace>(elements.num_elems())) {
   // Build functor impl
-  m_caar_impl.reset(new CaarFunctorImpl(elements, tracers, derivative, hvcoord,
+  m_caar_impl.reset(new CaarFunctorImpl(elements, tracers, ref_FE, hvcoord,
                                         sphere_ops, rsplit));
   m_caar_impl->m_sphere_ops.allocate_buffers(m_policy);
 }

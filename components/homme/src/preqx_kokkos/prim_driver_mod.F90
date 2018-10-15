@@ -126,13 +126,13 @@ module prim_driver_mod
     use prim_state_mod,   only : prim_printstate
 
     interface
-      subroutine init_derivative_c (dvv_ptr) bind(c)
+      subroutine init_reference_element_c (deriv_ptr, mass_ptr) bind(c)
         use iso_c_binding, only : c_ptr
         !
         ! Inputs
         !
-        type (c_ptr), intent(in) :: dvv_ptr
-      end subroutine init_derivative_c
+        type (c_ptr), intent(in) :: deriv_ptr, mass_ptr
+      end subroutine init_reference_element_c
       subroutine init_simulation_params_c (remap_alg, limiter_option, rsplit, qsplit, time_step_type,    &
                                            qsize, state_frequency, nu, nu_p, nu_q, nu_s, nu_div, nu_top, &
                                            hypervis_order, hypervis_subcycle, hypervis_scaling,          &
@@ -159,7 +159,7 @@ module prim_driver_mod
       subroutine init_functors_c () bind(c)
       end subroutine init_functors_c
       subroutine init_elements_2d_c (ie, D_ptr, Dinv_ptr, elem_fcor_ptr,                  &
-                                     elem_mp_ptr, elem_spheremp_ptr, elem_rspheremp_ptr,      &
+                                     elem_spheremp_ptr, elem_rspheremp_ptr,      &
                                      elem_metdet_ptr, elem_metinv_ptr, phis_ptr,              &
                                      tensorvisc_ptr, vec_sph2cart_ptr) bind(c)
         use iso_c_binding, only : c_ptr, c_int
@@ -168,7 +168,7 @@ module prim_driver_mod
         !
         integer (kind=c_int), intent(in) :: ie
         type (c_ptr) , intent(in) :: D_ptr, Dinv_ptr, elem_fcor_ptr
-        type (c_ptr) , intent(in) :: elem_mp_ptr, elem_spheremp_ptr, elem_rspheremp_ptr
+        type (c_ptr) , intent(in) :: elem_spheremp_ptr, elem_rspheremp_ptr
         type (c_ptr) , intent(in) :: elem_metdet_ptr, elem_metinv_ptr, phis_ptr
         type (c_ptr) , intent(in) :: tensorvisc_ptr, vec_sph2cart_ptr
       end subroutine init_elements_2d_c
@@ -235,7 +235,7 @@ module prim_driver_mod
 
     type (c_ptr) :: hybrid_am_ptr, hybrid_ai_ptr, hybrid_bm_ptr, hybrid_bi_ptr
     type (c_ptr) :: elem_D_ptr, elem_Dinv_ptr, elem_fcor_ptr
-    type (c_ptr) :: elem_mp_ptr, elem_spheremp_ptr, elem_rspheremp_ptr
+    type (c_ptr) :: elem_spheremp_ptr, elem_rspheremp_ptr
     type (c_ptr) :: elem_metdet_ptr, elem_metinv_ptr, elem_state_phis_ptr
     type (c_ptr) :: elem_state_v_ptr, elem_state_temp_ptr, elem_state_dp3d_ptr
     type (c_ptr) :: elem_state_q_ptr, elem_state_Qdp_ptr, elem_state_ps_v_ptr
@@ -249,7 +249,8 @@ module prim_driver_mod
 
     ! Initialize the C++ derivative structure
     dvv = deriv1%dvv
-    call init_derivative_c(c_loc(dvv))
+    elem_mp = elem(1)%mp
+    call init_reference_element_c(c_loc(dvv),c_loc(elem_mp))
 
     ! Fill the simulation params structures in C++
     use_semi_lagrange_transport = transport_alg > 0
@@ -269,7 +270,6 @@ module prim_driver_mod
     elem_D_ptr            = c_loc(elem_D)
     elem_Dinv_ptr         = c_loc(elem_Dinv)
     elem_fcor_ptr         = c_loc(elem_fcor)
-    elem_mp_ptr           = c_loc(elem_mp)
     elem_spheremp_ptr     = c_loc(elem_spheremp)
     elem_rspheremp_ptr    = c_loc(elem_rspheremp)
     elem_metdet_ptr       = c_loc(elem_metdet)
@@ -282,7 +282,6 @@ module prim_driver_mod
       elem_D            = elem(ie)%D
       elem_Dinv         = elem(ie)%Dinv
       elem_fcor         = elem(ie)%fcor
-      elem_mp           = elem(ie)%mp
       elem_spheremp     = elem(ie)%spheremp
       elem_rspheremp    = elem(ie)%rspheremp
       elem_metdet       = elem(ie)%metdet
@@ -291,7 +290,7 @@ module prim_driver_mod
       elem_tensorvisc   = elem(ie)%tensorVisc
       elem_vec_sph2cart = elem(ie)%vec_sphere2cart
       call init_elements_2d_c (ie-1, elem_D_ptr, elem_Dinv_ptr, elem_fcor_ptr,        &
-                               elem_mp_ptr, elem_spheremp_ptr, elem_rspheremp_ptr,    &
+                               elem_spheremp_ptr, elem_rspheremp_ptr,    &
                                elem_metdet_ptr, elem_metinv_ptr, elem_state_phis_ptr, &
                                elem_tensorvisc_ptr, elem_vec_sph2cart_ptr)
     enddo

@@ -6,7 +6,6 @@
 
 #include "CaarFunctor.hpp"
 #include "Context.hpp"
-#include "Derivative.hpp"
 #include "Diagnostics.hpp"
 #include "Elements.hpp"
 #include "ErrorDefs.hpp"
@@ -14,6 +13,7 @@
 #include "HommexxEnums.hpp"
 #include "HybridVCoord.hpp"
 #include "HyperviscosityFunctor.hpp"
+#include "ReferenceElement.hpp"
 #include "SimulationParams.hpp"
 #include "SphereOperators.hpp"
 #include "TimeLevel.hpp"
@@ -207,10 +207,10 @@ void f90_push_forcing_to_cxx(F90Ptr elem_derived_FM, F90Ptr elem_derived_FT,
   tracers.push_qdp(elem_state_Qdp_ptr);
 }
 
-void init_derivative_c (CF90Ptr& dvv)
+void init_reference_element_c (CF90Ptr& deriv, CF90Ptr& mass)
 {
-  Derivative& deriv = Context::singleton().get<Derivative> ();
-  deriv.init(dvv);
+  ReferenceElement& ref_FE = Context::singleton().get<ReferenceElement> ();
+  ref_FE.init(deriv,mass);
 }
 
 void init_time_level_c (const int& nm1, const int& n0, const int& np1,
@@ -258,13 +258,20 @@ void init_functors_c ()
 
   auto& elems   = Context::singleton().get<Elements>();
   auto& tracers = Context::singleton().get<Tracers>();
-  auto& deriv   = Context::singleton().get<Derivative>();
+  auto& ref_FE  = Context::singleton().get<ReferenceElement>();
   auto& hvcoord = Context::singleton().get<HybridVCoord>();
   auto& params  = Context::singleton().get<SimulationParams>();
 
+  // Check that the above structures have been inited
+  Errors::runtime_check(elems.inited(),    "Error! You must initialize the Elements structure before initializing the functors.\n", -1);
+  Errors::runtime_check(tracers.inited(),  "Error! You must initialize the Tracers structure before initializing the functors.\n", -1);
+  Errors::runtime_check(ref_FE.inited(),   "Error! You must initialize the ReferenceElement structure before initializing the functors.\n", -1);
+  Errors::runtime_check(hvcoord.m_inited,  "Error! You must initialize the HybridVCoord structure before initializing the functors.\n", -1);
+  Errors::runtime_check(params.params_set, "Error! You must initialize the SimulationParams structure before initializing the functors.\n", -1);
+
   // First, sphere operators
-  auto& sph_op = Context::singleton().get<SphereOperators>(elems,deriv);
-  auto& caar   = Context::singleton().get<CaarFunctor>(elems,tracers,deriv,hvcoord,sph_op,params.rsplit);
+  auto& sph_op = Context::singleton().get<SphereOperators>(elems,ref_FE);
+  auto& caar   = Context::singleton().get<CaarFunctor>(elems,tracers,ref_FE,hvcoord,sph_op,params.rsplit);
   auto& esf    = Context::singleton().get<EulerStepFunctor>();
   auto& hvf    = Context::singleton().get<HyperviscosityFunctor>();
   auto& vrm    = Context::singleton().get<VerticalRemapManager>();
@@ -277,15 +284,15 @@ void init_functors_c ()
 }
 
 void init_elements_2d_c (const int& ie, CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor,
-                         CF90Ptr& mp, CF90Ptr& spheremp, CF90Ptr& rspheremp,
+                         CF90Ptr& spheremp, CF90Ptr& rspheremp,
                          CF90Ptr& metdet, CF90Ptr& metinv, CF90Ptr& phis,
                          CF90Ptr &tensorvisc, CF90Ptr &vec_sph2cart)
 {
-  Elements& r = Context::singleton().get<Elements> ();
+  Elements& e = Context::singleton().get<Elements> ();
   const SimulationParams& params = Context::singleton().get<SimulationParams>();
 
   const bool consthv = (params.hypervis_scaling==0.0);
-  r.init_2d(ie,D,Dinv,fcor,mp,spheremp,rspheremp,metdet,metinv,phis,tensorvisc,vec_sph2cart,consthv);
+  e.init_2d(ie,D,Dinv,fcor,spheremp,rspheremp,metdet,metinv,phis,tensorvisc,vec_sph2cart,consthv);
 }
 
 void init_elements_states_c (CF90Ptr& elem_state_v_ptr,   CF90Ptr& elem_state_temp_ptr, CF90Ptr& elem_state_dp3d_ptr,

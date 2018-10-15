@@ -7,9 +7,6 @@
 #ifndef HOMMEXX_CAAR_FUNCTOR_HPP
 #define HOMMEXX_CAAR_FUNCTOR_HPP
 
-#include "Derivative.hpp"
-#include "HybridVCoord.hpp"
-#include "SphereOperators.hpp"
 #include "Types.hpp"
 #include <memory>
 
@@ -20,12 +17,15 @@ struct CaarFunctorImpl;
 
 class Elements;
 class Tracers;
+class ReferenceElement;
+class SphereOperators;
+class HybridVCoord;
 
 class CaarFunctor {
 public:
   CaarFunctor();
   CaarFunctor(const Elements &elements, const Tracers &tracers,
-              const Derivative &derivative, const HybridVCoord &hvcoord,
+              const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
               const SphereOperators &sphere_ops, 
               const int rsplit);
   CaarFunctor(const CaarFunctor &) = delete;

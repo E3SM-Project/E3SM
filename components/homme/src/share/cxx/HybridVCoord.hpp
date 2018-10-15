@@ -14,7 +14,7 @@ namespace Homme
 
 struct HybridVCoord
 {
-  HybridVCoord () = default;
+  HybridVCoord () : m_inited(false) {}
 
   // This method should only be called from the host
   void init(const Real ps0_in,
@@ -38,6 +38,8 @@ struct HybridVCoord
   ExecViewManaged<Scalar[NUM_LEV]> hybrid_bi_delta;
 
   ExecViewManaged<Scalar[NUM_LEV]> dp0;
+
+  bool m_inited;
 };
 
 } // namespace Homme

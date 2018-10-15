@@ -22,7 +22,6 @@ void Elements::init(const int num_elems, const bool consthv) {
   buffers.init(num_elems);
 
   m_fcor = ExecViewManaged<Real * [NP][NP]>("FCOR", m_num_elems);
-  m_mp = ExecViewManaged<Real * [NP][NP]>("MP", m_num_elems);
   m_spheremp = ExecViewManaged<Real * [NP][NP]>("SPHEREMP", m_num_elems);
   m_rspheremp = ExecViewManaged<Real * [NP][NP]>("RSPHEREMP", m_num_elems);
   m_metinv = ExecViewManaged<Real * [2][2][NP][NP]>("METINV", m_num_elems);
@@ -75,10 +74,12 @@ void Elements::init(const int num_elems, const bool consthv) {
     "derived_dpdiss_biharmonic", m_num_elems);
   m_derived_dpdiss_ave = ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>(
     "derived_dpdiss_ave", m_num_elems);
+
+  m_inited = true;
 }
 
 void Elements::init_2d(const int ie, CF90Ptr &D, CF90Ptr &Dinv, CF90Ptr &fcor,
-                       CF90Ptr &mp, CF90Ptr &spheremp, CF90Ptr &rspheremp,
+                       CF90Ptr &spheremp, CF90Ptr &rspheremp,
                        CF90Ptr &metdet, CF90Ptr &metinv, CF90Ptr &phis,
                        CF90Ptr &tensorvisc, 
                        CF90Ptr &vec_sph2cart,
@@ -94,7 +95,6 @@ void Elements::init_2d(const int ie, CF90Ptr &D, CF90Ptr &Dinv, CF90Ptr &fcor,
 
   ScalarView::HostMirror h_fcor      = Kokkos::create_mirror_view(Homme::subview(m_fcor,ie));
   ScalarView::HostMirror h_metdet    = Kokkos::create_mirror_view(Homme::subview(m_metdet,ie));
-  ScalarView::HostMirror h_mp        = Kokkos::create_mirror_view(Homme::subview(m_mp,ie));
   ScalarView::HostMirror h_spheremp  = Kokkos::create_mirror_view(Homme::subview(m_spheremp,ie));
   ScalarView::HostMirror h_rspheremp = Kokkos::create_mirror_view(Homme::subview(m_rspheremp,ie));
   ScalarView::HostMirror h_phis      = Kokkos::create_mirror_view(Homme::subview(m_phis,ie));
@@ -111,7 +111,6 @@ void Elements::init_2d(const int ie, CF90Ptr &D, CF90Ptr &Dinv, CF90Ptr &fcor,
 
   ScalarViewF90 h_fcor_f90         (fcor);
   ScalarViewF90 h_metdet_f90       (metdet);
-  ScalarViewF90 h_mp_f90           (mp);
   ScalarViewF90 h_spheremp_f90     (spheremp);
   ScalarViewF90 h_rspheremp_f90    (rspheremp);
   ScalarViewF90 h_phis_f90         (phis);
@@ -125,7 +124,6 @@ void Elements::init_2d(const int ie, CF90Ptr &D, CF90Ptr &Dinv, CF90Ptr &fcor,
   for (int igp = 0; igp < NP; ++igp) {
     for (int jgp = 0; jgp < NP; ++jgp) {
       h_fcor      (igp, jgp) = h_fcor_f90      (igp,jgp);
-      h_mp        (igp, jgp) = h_mp_f90        (igp, jgp);
       h_spheremp  (igp, jgp) = h_spheremp_f90  (igp,jgp);
       h_rspheremp (igp, jgp) = h_rspheremp_f90 (igp,jgp);
       h_metdet    (igp, jgp) = h_metdet_f90    (igp,jgp);
@@ -170,7 +168,6 @@ void Elements::init_2d(const int ie, CF90Ptr &D, CF90Ptr &Dinv, CF90Ptr &fcor,
   Kokkos::deep_copy(Homme::subview(m_fcor,ie), h_fcor);
   Kokkos::deep_copy(Homme::subview(m_metinv,ie), h_metinv);
   Kokkos::deep_copy(Homme::subview(m_metdet,ie), h_metdet);
-  Kokkos::deep_copy(Homme::subview(m_mp,ie), h_mp);
   Kokkos::deep_copy(Homme::subview(m_spheremp,ie), h_spheremp);
   Kokkos::deep_copy(Homme::subview(m_rspheremp,ie), h_rspheremp);
   Kokkos::deep_copy(Homme::subview(m_phis,ie), h_phis);
@@ -200,7 +197,6 @@ void Elements::random_init(int num_elems, Real max_pressure, const HybridVCoord&
   std::uniform_real_distribution<Real> random_dist(min_value, 1.0 / min_value);
 
   genRandArray(m_fcor, engine, random_dist);
-  genRandArray(m_mp, engine, random_dist);
   genRandArray(m_spheremp, engine, random_dist);
   genRandArray(m_rspheremp, engine, random_dist);
   genRandArray(m_metdet, engine, random_dist);

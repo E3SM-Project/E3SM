@@ -6,10 +6,11 @@
 
 #include "CaarFunctor.hpp"
 #include "Context.hpp"
+#include "Elements.hpp"
+#include "ErrorDefs.hpp"
 #include "HyperviscosityFunctor.hpp"
 #include "SimulationParams.hpp"
 #include "TimeLevel.hpp"
-#include "ErrorDefs.hpp"
 #include "mpi/BoundaryExchange.hpp"
 
 #include "profiling.hpp"

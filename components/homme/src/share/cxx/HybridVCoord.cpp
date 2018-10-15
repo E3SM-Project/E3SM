@@ -51,6 +51,8 @@ void HybridVCoord::init(const Real ps0_in,
   //  assert(hybrid_bi_ptr != nullptr);
 
   compute_deltas();
+
+  m_inited = true;
 }
 
 void HybridVCoord::random_init(int seed) {
@@ -138,6 +140,8 @@ void HybridVCoord::random_init(int seed) {
   hybrid_ai0 = host_hybrid_ai(0);
 
   compute_deltas();
+
+  m_inited = true;
 }
 
 void HybridVCoord::compute_deltas ()

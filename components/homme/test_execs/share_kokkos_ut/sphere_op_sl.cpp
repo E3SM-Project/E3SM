@@ -116,7 +116,7 @@ class compute_sphere_operator_test {
     Kokkos::deep_copy(dvv_d, dvv_host);
 
     // Set device views in SphereOperators
-    ExecViewManaged<Real*      [NP][NP]> mp_d("",num_elems);  // Unused by this test, but needed by sphere_ops
+    ExecViewManaged<Real       [NP][NP]> mp_d("");  // Unused by this test, but needed by sphere_ops
     ExecViewManaged<Real*[2][2][NP][NP]> metinv_d("",num_elems);  // Unused by this test, but needed by sphere_ops
     sphere_ops.set_views(dvv_d,d_d,dinv_d,metinv_d,metdet_d,spheremp_d,mp_d);
   }

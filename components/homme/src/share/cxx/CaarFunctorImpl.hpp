@@ -11,7 +11,7 @@
 #include "Elements.hpp"
 #include "Tracers.hpp"
 #include "HybridVCoord.hpp"
-#include "Derivative.hpp"
+#include "ReferenceElement.hpp"
 #include "KernelVariables.hpp"
 #include "SphereOperators.hpp"
 
@@ -44,24 +44,27 @@ struct CaarFunctorImpl {
     bool      compute_diagnostics;
   };
 
+  using deriv_type = ReferenceElement::deriv_type;
+
   CaarData              m_data;
   const HybridVCoord    m_hvcoord;
   const Elements        m_elements;
   const Tracers         m_tracers;
-  const Derivative      m_deriv;
+  const deriv_type      m_deriv;
+
   SphereOperators       m_sphere_ops;
 
   Kokkos::Array<std::shared_ptr<BoundaryExchange>, NUM_TIME_LEVELS> m_bes;
 
   CaarFunctorImpl(const Elements &elements, const Tracers &tracers,
-                  const Derivative &derivative, const HybridVCoord &hvcoord,
+                  const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
                   const SphereOperators &sphere_ops, 
                   const int rsplit)
       : m_data(rsplit)
       , m_hvcoord(hvcoord)
       , m_elements(elements)
       , m_tracers(tracers)
-      , m_deriv(derivative)
+      , m_deriv(ref_FE.get_deriv())
       , m_sphere_ops(sphere_ops) {
     // Nothing to be done here
   }

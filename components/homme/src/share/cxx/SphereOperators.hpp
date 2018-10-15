@@ -9,7 +9,7 @@
 
 #include "Types.hpp"
 #include "Elements.hpp"
-#include "Derivative.hpp"
+#include "ReferenceElement.hpp"
 #include "Dimensions.hpp"
 #include "KernelVariables.hpp"
 #include "PhysicalConstants.hpp"
@@ -29,10 +29,14 @@ public:
 
   SphereOperators () = default;
 
-  SphereOperators (const Elements& elements, const Derivative& derivative)
-  {
-    // Get dvv
-    dvv = derivative.get_dvv();
+  SphereOperators (const Elements& elements, const ReferenceElement& ref_FE) {
+    setup(elements,ref_FE);
+  }
+
+  void setup (const Elements& elements, const ReferenceElement& ref_FE) {
+    // Get reference element stuff
+    dvv = ref_FE.get_deriv();
+    m_mp = ref_FE.get_mass();
 
     // Get all needed 2d fields from elements
     m_d        = elements.m_d;
@@ -40,7 +44,6 @@ public:
     m_metdet   = elements.m_metdet;
     m_metinv   = elements.m_metinv;
     m_spheremp = elements.m_spheremp;
-    m_mp       = elements.m_mp;
   }
 
   // This one is used in the unit tests
@@ -50,7 +53,7 @@ public:
                   const ExecViewManaged<const Real * [2][2][NP][NP]>  metinv,
                   const ExecViewManaged<const Real *       [NP][NP]>  metdet,
                   const ExecViewManaged<const Real *       [NP][NP]>  spheremp,
-                  const ExecViewManaged<const Real *       [NP][NP]>  mp)
+                  const ExecViewManaged<const Real         [NP][NP]>  mp)
   {
     dvv = dvv_in;
     m_d = d;
@@ -643,7 +646,6 @@ public:
     static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
 
     const auto& D = Homme::subview(m_d, kv.ie);
-    const auto& mp = Homme::subview(m_mp, kv.ie);
     const auto& sphere_buf = Homme::subview(vector_buf_ml,kv.team_idx,0);
     constexpr int np_squared = NP * NP;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared), [&](const int loop_idx) {
@@ -655,8 +657,8 @@ public:
         sb0 = 0;
         sb1 = 0;
         for (int jgp = 0; jgp < NP; ++jgp) {
-          sb0 -= mp(jgp,mgp)*scalar(jgp,mgp,ilev)*dvv(jgp,ngp);
-          sb1 += mp(ngp,jgp)*scalar(ngp,jgp,ilev)*dvv(jgp,mgp);
+          sb0 -= m_mp(jgp,mgp)*scalar(jgp,mgp,ilev)*dvv(jgp,ngp);
+          sb1 += m_mp(ngp,jgp)*scalar(ngp,jgp,ilev)*dvv(jgp,mgp);
         }
       });
     });
@@ -687,7 +689,6 @@ public:
     static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
 
     const auto& D = Homme::subview(m_d, kv.ie);
-    const auto& mp = Homme::subview(m_mp, kv.ie);
     constexpr int np_squared = NP * NP;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared), [&](const int loop_idx) {
       const int ngp = loop_idx / NP;
@@ -695,8 +696,8 @@ public:
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV_REQUEST), [&] (const int& ilev) {
         Scalar sb0, sb1;
         for (int jgp = 0; jgp < NP; ++jgp) {
-          sb0 -= mp(jgp,mgp)*scalar(jgp,mgp,ilev)*dvv(jgp,ngp);
-          sb1 += mp(ngp,jgp)*scalar(ngp,jgp,ilev)*dvv(jgp,mgp);
+          sb0 -= m_mp(jgp,mgp)*scalar(jgp,mgp,ilev)*dvv(jgp,ngp);
+          sb1 += m_mp(ngp,jgp)*scalar(ngp,jgp,ilev)*dvv(jgp,mgp);
         }
         curls(0,ngp,mgp,ilev) = beta*curls(0,ngp,mgp,ilev) + alpha *
                                 ( D(0,0,ngp,mgp)*sb0 + D(1,0,ngp,mgp)*sb1 )
@@ -718,7 +719,6 @@ public:
     static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
 
     const auto& D = Homme::subview(m_d, kv.ie);
-    const auto& mp = Homme::subview(m_mp, kv.ie);
     const auto& metinv = Homme::subview(m_metinv, kv.ie);
     const auto& metdet = Homme::subview(m_metdet, kv.ie);
     constexpr int np_squared = NP * NP;
@@ -728,8 +728,8 @@ public:
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV_REQUEST), [&] (const int& ilev) {
         Scalar b0, b1;
         for (int jgp = 0; jgp < NP; ++jgp) {
-          const auto& mpnj = mp(ngp,jgp);
-          const auto& mpjm = mp(jgp,mgp);
+          const auto& mpnj = m_mp(ngp,jgp);
+          const auto& mpjm = m_mp(jgp,mgp);
           const auto& md = metdet(ngp,mgp);
           const auto& snj = scalar(ngp,jgp,ilev);
           const auto& sjm = scalar(jgp,mgp,ilev);
@@ -821,7 +821,6 @@ public:
   {
     static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
 
-    const auto& D = Homme::subview(m_d, kv.ie);
     const auto& spheremp = Homme::subview(m_spheremp, kv.ie);
     const auto& div           = Homme::subview(scalar_buf_ml,kv.team_idx,0);
     const auto& vort          = Homme::subview(scalar_buf_ml,kv.team_idx,0);
@@ -873,8 +872,8 @@ public:
 
 private:
   ExecViewManaged<const Real [NP][NP]>          dvv;
+  ExecViewManaged<const Real [NP][NP]>          m_mp;
 
-  ExecViewManaged<const Real * [NP][NP]>        m_mp;
   ExecViewManaged<const Real * [NP][NP]>        m_spheremp;
   ExecViewManaged<const Real * [NP][NP]>        m_rspheremp;
   ExecViewManaged<const Real * [2][2][NP][NP]>  m_metinv;

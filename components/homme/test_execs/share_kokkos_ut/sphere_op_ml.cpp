@@ -197,7 +197,7 @@ class compute_sphere_operator_test_ml {
     Kokkos::deep_copy(spheremp_d, spheremp_host);
 
     // mp
-    ExecViewManaged<Real * [NP][NP]> mp_d("",num_elems);
+    ExecViewManaged<Real [NP][NP]> mp_d("");
     mp_host = Kokkos::create_mirror_view(mp_d);
     genRandArray(mp_host,
                  engine,
@@ -283,7 +283,7 @@ class compute_sphere_operator_test_ml {
       spheremp_host;
   const int spheremp_len = NP * NP;
 
-  ExecViewManaged<Real * [NP][NP]>::HostMirror mp_host;
+  ExecViewManaged<Real [NP][NP]>::HostMirror mp_host;
   const int mp_len = NP * NP;
 
   ExecViewManaged<Real[NP][NP]>::HostMirror dvv_host;
@@ -969,7 +969,7 @@ TEST_CASE("Testing curl_sphere_wk_testcov() multilevel",
             sf[_i][_j] = testing_curl.scalar_input_host(
                 ie, _i, _j, level)[v];
             mpf[_i][_j] =
-                testing_curl.mp_host(ie, _i, _j);
+                testing_curl.mp_host(_i, _j);
             dvvf[_i][_j] = testing_curl.dvv_host(_i, _j);
 
             for(int _d1 = 0; _d1 < 2; _d1++)
@@ -1037,7 +1037,7 @@ TEST_CASE("Testing grad_sphere_wk_testcov() multilevel",
             sf[_i][_j] = testing_grad.scalar_input_host(
                 ie, _i, _j, level)[v];
             mpf[_i][_j] =
-                testing_grad.mp_host(ie, _i, _j);
+                testing_grad.mp_host(_i, _j);
             metdetf[_i][_j] =
                 testing_grad.metdet_host(ie, _i, _j);
             dvvf[_i][_j] = testing_grad.dvv_host(_i, _j);
@@ -1218,7 +1218,7 @@ TEST_CASE("Testing vlaplace_sphere_wk_contra() multilevel",
                     ie, 1, _i, _j, level)[v];
 
             mpf[_i][_j] =
-                testing_vlaplace.mp_host(ie, _i, _j);
+                testing_vlaplace.mp_host(_i, _j);
             sphf[_i][_j] = testing_vlaplace.spheremp_host(
                 ie, _i, _j);
             metdetf[_i][_j] = testing_vlaplace.metdet_host(

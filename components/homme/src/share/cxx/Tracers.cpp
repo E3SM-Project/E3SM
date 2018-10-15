@@ -30,6 +30,8 @@ void Tracers::init(const int num_elems, const int num_tracers)
   qdp = decltype(qdp)("tracers mass", num_elems);
   qtens_biharmonic = decltype(qtens_biharmonic)("qtens(_biharmonic)", num_elems);
   qlim = decltype(qlim)("qlim", num_elems);
+
+  m_inited = true;
 }
 
 void Tracers::random_init() {
@@ -41,6 +43,8 @@ void Tracers::random_init() {
   genRandArray(qdp, engine, random_dist);
   genRandArray(qtens_biharmonic, engine, random_dist);
   genRandArray(qlim, engine, random_dist);
+
+  m_inited = true;
 }
 
 void Tracers::pull_qdp(CF90Ptr &state_qdp) {

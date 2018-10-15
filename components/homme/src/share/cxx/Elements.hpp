@@ -19,7 +19,6 @@ public:
   // Coriolis term
   ExecViewManaged<Real * [NP][NP]> m_fcor;
   // Quadrature weights and metric tensor
-  ExecViewManaged<Real * [NP][NP]>        m_mp;
   ExecViewManaged<Real * [NP][NP]>        m_spheremp;
   ExecViewManaged<Real * [NP][NP]>        m_rspheremp;
   ExecViewManaged<Real * [2][2][NP][NP]>  m_metinv;
@@ -123,9 +122,10 @@ public:
     ExecViewManaged<clock_t *> kernel_end_times;
   } buffers;
 
-  Elements() = default;
+  Elements() : m_inited(false) {}
 
   void init(const int num_elems, const bool consthv);
+  bool inited () const { return m_inited; }
 
   void random_init(int num_elems, Real max_pressure = 1.0);
   void random_init(int num_elems, Real max_pressure, const HybridVCoord& hvcoord);
@@ -135,12 +135,10 @@ public:
 
   // Fill the exec space views with data coming from F90 pointers
   void init_2d(const int ie, CF90Ptr &D, CF90Ptr &Dinv, CF90Ptr &fcor,
-               CF90Ptr &mp, CF90Ptr &spheremp, CF90Ptr &rspheremp,
+               CF90Ptr &spheremp, CF90Ptr &rspheremp,
                CF90Ptr &metdet, CF90Ptr &metinv, 
-               CF90Ptr &phis,
-               CF90Ptr &tensorvisc,
-               CF90Ptr &vec_sph2cart,
-               const bool consthv);
+               CF90Ptr &phis, CF90Ptr &tensorvisc,
+               CF90Ptr &vec_sph2cart, const bool consthv);
 
   // Fill the exec space views with data coming from F90 pointers
   void pull_from_f90_pointers(CF90Ptr &state_v, CF90Ptr &state_t,
@@ -167,6 +165,8 @@ public:
 
 private:
   int m_num_elems;
+
+  bool m_inited;
 };
 
 } // Homme
