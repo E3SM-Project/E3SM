@@ -151,10 +151,10 @@
         <xs:element ref="PROJECT_REQUIRED" minOccurs="0" maxOccurs="1"/>
 	<!-- mpirun: The mpi exec to start a job on this machine
 	     see detail below-->
-	<xs:element minOccurs="0" maxOccurs="unbounded" ref="mpirun"/>
+	<xs:element ref="mpirun" minOccurs="1" maxOccurs="unbounded" />
 	<!-- module_system: how and what modules to load on this system ,
 	     see detail below -->
-        <xs:element ref="module_system" minOccurs="0" maxOccurs="1"/>
+        <xs:element ref="module_system" minOccurs="1" maxOccurs="1"/>
 	<!-- environment_variables: environment_variables to set on this system,
 	  see detail below-->
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="environment_variables"/>
