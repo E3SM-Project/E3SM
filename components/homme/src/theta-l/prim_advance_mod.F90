@@ -588,14 +588,9 @@ contains
              (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps_ref(:,:)
      enddo
 
-     do k=1,nlev
-        ! convert vtheta_dp -> theta
-        elem(ie)%state%vtheta_dp(:,:,k,nt)=&
-             elem(ie)%state%vtheta_dp(:,:,k,nt)/elem(ie)%state%dp3d(:,:,k,nt)
-     enddo
 
 #if 0
-     ! reference state based only on ps:
+     ! phi_ref,theta_ref depend only on ps:
      call set_theta_ref(hvcoord,dp_ref(:,:,:,ie),theta_ref(:,:,:,ie))
 
      ! compute vtheta_dp_ref, store in 'heating' as temp array:
@@ -604,18 +599,27 @@ contains
           heating(:,:,:),dp_ref(:,:,:,ie),phi_ref(:,:,:,ie))
 #endif
 #if 1
-     ! most realistic reference state based on hydrostatic pressure
-     call set_theta_ref(hvcoord,elem(ie)%state%dp3d(:,:,:,nt),theta_ref(:,:,:,ie))
+     ! phi_ref depends only on ps, theta_ref depends on dp3d
+     call set_theta_ref(hvcoord,dp_ref(:,:,:,ie),theta_ref(:,:,:,ie))
+     exner(:,:,:)=theta_ref(:,:,:,ie)*dp_ref(:,:,:,ie) ! use as temp array
      call get_phinh(hvcoord,elem(ie)%state%phis,&
-          elem(ie)%state%vtheta_dp(:,:,:,nt),elem(ie)%state%dp3d(:,:,:,nt),phi_ref(:,:,:,ie))
-#endif
+          exner(:,:,:),dp_ref(:,:,:,ie),phi_ref(:,:,:,ie))
 
+     call set_theta_ref(hvcoord,elem(ie)%state%dp3d(:,:,:,nt),theta_ref(:,:,:,ie))
+#endif
 #if 0
-     ! disable reference background states
+     ! no reference state, for testing
      theta_ref(:,:,:,ie)=0
      phi_ref(:,:,:,ie)=0
      dp_ref(:,:,:,ie)=0
 #endif
+
+
+     ! convert vtheta_dp -> theta
+     do k=1,nlev
+        elem(ie)%state%vtheta_dp(:,:,k,nt)=&
+             elem(ie)%state%vtheta_dp(:,:,k,nt)/elem(ie)%state%dp3d(:,:,k,nt)
+     enddo
   enddo
 
 

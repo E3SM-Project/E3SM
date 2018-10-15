@@ -497,7 +497,8 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     elem(ie)%derived%FM(:,:,1,:) = (u - u0)/dt
     elem(ie)%derived%FM(:,:,2,:) = (v - v0)/dt
     !elem(ie)%derived%FT(:,:,:)   = (T - T0)/dt
-    elem(ie)%derived%FT(:,:,:)   = exner_new*(theta_kess - theta0)/dt  ! good!
+    elem(ie)%derived%FT(:,:,:)   = exner_new*(theta_kess - theta0)/dt  
+!    elem(ie)%derived%FT(:,:,:)   = exner_kess*(theta_kess - theta0)/dt  
 
     ! set tracer-mass forcing
     ! set tracer-mass forcing. conserve tracer mass
@@ -625,7 +626,6 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
     elem(ie)%derived%FM(:,:,2,:) = (v - v0)/dt
     !elem(ie)%derived%FT(:,:,:)   = exner_kess*(theta_kess - theta0)/dt
     elem(ie)%derived%FT(:,:,:)   = exner_new*(theta_kess - theta0)/dt  ! a little better than above
-
 
     ! set tracer-mass forcing. conserve tracer mass
     elem(ie)%derived%FQ(:,:,:,1) = (rho_dry/rho)*dp*(qv-qv0)/dt
