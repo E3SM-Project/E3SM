@@ -7,9 +7,6 @@
 #ifndef HOMMEXX_HYPERVISCOSITY_FUNCTOR_HPP
 #define HOMMEXX_HYPERVISCOSITY_FUNCTOR_HPP
 
-#include "Elements.hpp"
-#include "Derivative.hpp"
-#include "SimulationParams.hpp"
 #include "Types.hpp"
 
 #include <memory>
@@ -23,7 +20,7 @@ class HyperviscosityFunctor
 {
 public:
 
-  HyperviscosityFunctor (const SimulationParams& params, const Elements& elements, const Derivative& deriv);
+  HyperviscosityFunctor ();
 
   ~HyperviscosityFunctor ();
 

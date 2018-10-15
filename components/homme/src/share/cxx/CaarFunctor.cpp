@@ -19,14 +19,14 @@
 namespace Homme {
 
 CaarFunctor::CaarFunctor()
- : m_policy (Homme::get_default_team_policy<ExecSpace>(Context::singleton().get_elements().num_elems()))
+ : m_policy (Homme::get_default_team_policy<ExecSpace>(Context::singleton().get<Elements>().num_elems()))
 {
-  Elements&        elements   = Context::singleton().get_elements();
-  Tracers&         tracers    = Context::singleton().get_tracers();
-  Derivative&      derivative = Context::singleton().get_derivative();
-  HybridVCoord&    hvcoord    = Context::singleton().get_hvcoord();
-  SphereOperators& sphere_ops = Context::singleton().get_sphere_operators();
-  const int        rsplit     = Context::singleton().get_simulation_params().rsplit;
+  Elements&        elements   = Context::singleton().get<Elements>();
+  Tracers&         tracers    = Context::singleton().get<Tracers>();
+  Derivative&      derivative = Context::singleton().get<Derivative>();
+  HybridVCoord&    hvcoord    = Context::singleton().get<HybridVCoord>();
+  SphereOperators& sphere_ops = Context::singleton().get<SphereOperators>(elements,derivative);
+  const int        rsplit     = Context::singleton().get<SimulationParams>().rsplit;
 
   // Build functor impl
   m_caar_impl.reset(new CaarFunctorImpl(elements,tracers,derivative,hvcoord,sphere_ops,rsplit));

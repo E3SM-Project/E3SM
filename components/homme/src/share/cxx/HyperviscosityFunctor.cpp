@@ -7,11 +7,21 @@
 #include "HyperviscosityFunctor.hpp"
 #include "HyperviscosityFunctorImpl.hpp"
 
+#include "Context.hpp"
+#include "Elements.hpp"
+#include "Derivative.hpp"
+#include "SimulationParams.hpp"
+
 namespace Homme
 {
 
-HyperviscosityFunctor::HyperviscosityFunctor (const SimulationParams& params, const Elements& elements, const Derivative& deriv)
+HyperviscosityFunctor::HyperviscosityFunctor ()
 {
+  auto& c = Context::singleton();
+  auto& params   = c.get<SimulationParams>();
+  auto& elements = c.get<Elements>();
+  auto& deriv    = c.get<Derivative>();
+
   m_hvf_impl.reset (new HyperviscosityFunctorImpl(params,elements,deriv));
 }
 

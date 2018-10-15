@@ -19,7 +19,7 @@ void prim_advec_tracers_remap (const Real dt);
 // ----------- IMPLEMENTATION ---------- //
 
 void prim_advec_tracers_remap (const Real dt) {
-  SimulationParams& params = Context::singleton().get_simulation_params();
+  SimulationParams& params = Context::singleton().get<SimulationParams>();
 
   if (params.use_semi_lagrangian_transport) {
     Errors::option_error("prim_advec_tracers_remap","use_semi_lagrangian_transport",
@@ -33,15 +33,15 @@ void prim_advec_tracers_remap_RK2 (const Real dt)
 {
   GPTLstart("tl-at prim_advec_tracers_remap_RK2");
   // Get control and simulation params
-  SimulationParams& params = Context::singleton().get_simulation_params();
+  SimulationParams& params = Context::singleton().get<SimulationParams>();
   assert(params.params_set);
 
   // Get time info and update tracers time levels
-  TimeLevel& tl = Context::singleton().get_time_level();
+  TimeLevel& tl = Context::singleton().get<TimeLevel>();
   tl.update_tracers_levels(params.qsplit);
 
   // Get the ESF
-  EulerStepFunctor& esf = Context::singleton().get_euler_step_functor();
+  EulerStepFunctor& esf = Context::singleton().get<EulerStepFunctor>();
   esf.reset(params);
 
   // Precompute divdp

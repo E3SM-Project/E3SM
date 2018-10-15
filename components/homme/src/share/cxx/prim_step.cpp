@@ -21,14 +21,14 @@ void prim_step (const Real dt, const bool compute_diagnostics)
 {
   GPTLstart("tl-s prim_step");
   // Get control and simulation params
-  SimulationParams& params = Context::singleton().get_simulation_params();
+  SimulationParams& params = Context::singleton().get<SimulationParams>();
   assert(params.params_set);
 
   // Get the elements structure
-  Elements& elements = Context::singleton().get_elements();
+  Elements& elements = Context::singleton().get<Elements>();
 
   // Get the time level info
-  TimeLevel& tl = Context::singleton().get_time_level();
+  TimeLevel& tl = Context::singleton().get<TimeLevel>();
 
   if (params.use_semi_lagrangian_transport) {
     Errors::option_error("prim_step", "use_semi_lagrangian_transport",params.use_semi_lagrangian_transport);

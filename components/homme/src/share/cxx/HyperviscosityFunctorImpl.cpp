@@ -8,8 +8,8 @@
 #include "HyperviscosityFunctorImpl.hpp"
 #include "profiling.hpp"
 
-#include "mpi/MpiContext.hpp"
 #include "mpi/BoundaryExchange.hpp"
+#include "mpi/BuffersManager.hpp"
 
 namespace Homme
 {
@@ -18,7 +18,7 @@ HyperviscosityFunctorImpl::HyperviscosityFunctorImpl (const SimulationParams& pa
  : m_elements   (elements)
  , m_deriv      (deriv)
  , m_data       (params.hypervis_subcycle,params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,params.nu_p,params.nu_s,params.hypervis_scaling)
- , m_sphere_ops (Context::singleton().get_sphere_operators())
+ , m_sphere_ops (Context::singleton().get<SphereOperators>(elements,deriv))
 {
   // Sanity check
   assert(params.params_set);
@@ -46,7 +46,8 @@ HyperviscosityFunctorImpl::HyperviscosityFunctorImpl (const SimulationParams& pa
 void HyperviscosityFunctorImpl::init_boundary_exchanges () {
   m_be = std::make_shared<BoundaryExchange>();
   auto& be = *m_be;
-  auto bm_exchange = MpiContext::singleton().get_buffers_manager(MPI_EXCHANGE);
+  auto connectivity = Context::singleton().get_ptr<Connectivity>();
+  auto bm_exchange = Context::singleton().get<BuffersManagerMap>(connectivity)[MPI_EXCHANGE];
   be.set_buffers_manager(bm_exchange);
   be.set_num_fields(0, 0, 4);
   be.register_field(m_elements.buffers.vtens, 2, 0);

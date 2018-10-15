@@ -60,10 +60,10 @@ struct VerticalRemapManager::Impl {
 };
 
 VerticalRemapManager::VerticalRemapManager() {
-  const auto &h = Context::singleton().get_hvcoord();
-  const auto &p = Context::singleton().get_simulation_params();
-  const auto &e = Context::singleton().get_elements();
-  const auto &t = Context::singleton().get_tracers();
+  const auto &h = Context::singleton().get<HybridVCoord>();
+  const auto &p = Context::singleton().get<SimulationParams>();
+  const auto &e = Context::singleton().get<Elements>();
+  const auto &t = Context::singleton().get<Tracers>();
   assert(p.params_set);
   p_.reset(new Impl(p, e, t, h));
 }

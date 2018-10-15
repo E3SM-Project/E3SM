@@ -27,14 +27,14 @@ void prim_advance_exp (const int nm1, const int n0, const int np1,
 {
   GPTLstart("tl-ae prim_advance_exp");
   // Get simulation params
-  SimulationParams& params = Context::singleton().get_simulation_params();
+  SimulationParams& params = Context::singleton().get<SimulationParams>();
 
   // Note: In the following, all the checks are superfluous, since we already check that
   //       the options are supported when we init the simulation params. However, this way
   //       we remind ourselves that in these cases there is some missing code to convert from Fortran
 
   // Get time level info, and determine the tracers time level
-  TimeLevel& tl = Context::singleton().get_time_level();
+  TimeLevel& tl = Context::singleton().get<TimeLevel>();
   tl.n0_qdp= -1;
   if (params.moisture == MoistDry::MOIST) {
     tl.update_tracers_levels(params.qsplit);
@@ -95,7 +95,7 @@ void prim_advance_exp (const int nm1, const int n0, const int np1,
 
   } else if (params.time_step_type<=10) {
     // Get and run the HVF
-    HyperviscosityFunctor& functor = Context::singleton().get_hyperviscosity_functor();
+    HyperviscosityFunctor& functor = Context::singleton().get<HyperviscosityFunctor>();
     GPTLstart("tl-ae advance_hypervis_dp");
     functor.run(np1,dt,eta_ave_w);
     GPTLstop("tl-ae advance_hypervis_dp");
@@ -115,10 +115,10 @@ void u3_5stage_timestep(const int nm1, const int n0, const int np1, const int n0
 {
   GPTLstart("tl-ae U3-5stage_timestep");
   // Get elements structure
-  Elements& elements = Context::singleton().get_elements();
+  Elements& elements = Context::singleton().get<Elements>();
 
   // Create the functor
-  CaarFunctor& functor = Context::singleton().get_caar_functor();
+  CaarFunctor& functor = Context::singleton().get<CaarFunctor>();
   functor.set_n0_qdp(n0_qdp);
 
   // ===================== RK STAGES ===================== //

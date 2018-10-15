@@ -19,7 +19,7 @@
 #include "Tracers.hpp"
 #include "profiling.hpp"
 #include "mpi/BoundaryExchange.hpp"
-#include "mpi/MpiContext.hpp"
+#include "mpi/BuffersManager.hpp"
 #include "utilities/SubviewUtils.hpp"
 #include "utilities/VectorUtils.hpp"
 #include "vector/vector_pragmas.hpp"
@@ -110,11 +110,11 @@ class EulerStepFunctorImpl {
 public:
 
   EulerStepFunctorImpl ()
-   : m_elements   (Context::singleton().get_elements())
-   , m_tracers    (Context::singleton().get_tracers())
-   , m_deriv      (Context::singleton().get_derivative())
-   , m_hvcoord    (Context::singleton().get_hvcoord())
-   , m_sphere_ops (Context::singleton().get_sphere_operators())
+   : m_elements   (Context::singleton().get<Elements>())
+   , m_tracers    (Context::singleton().get<Tracers>())
+   , m_deriv      (Context::singleton().get<Derivative>())
+   , m_hvcoord    (Context::singleton().get<HybridVCoord>())
+   , m_sphere_ops (Context::singleton().get<SphereOperators>(m_elements,m_deriv))
   {
   }
 
@@ -140,7 +140,8 @@ public:
   void init_boundary_exchanges () {
     assert(m_data.qsize >= 0); // after reset() called
 
-    auto bm_exchange = MpiContext::singleton().get_buffers_manager(MPI_EXCHANGE);
+    auto connectivity = Context::singleton().get_ptr<Connectivity>();
+    auto bm_exchange = Context::singleton().get<BuffersManagerMap>(connectivity)[MPI_EXCHANGE];
     for (int np1_qdp = 0, k = 0; np1_qdp < Q_NUM_TIME_LEVELS; ++np1_qdp) {
       for (int dssi = 0; dssi < 3; ++dssi, ++k) {
         m_bes[k] = std::make_shared<BoundaryExchange>();
@@ -164,7 +165,7 @@ public:
     }
 
     {
-      auto bm_exchange_minmax = MpiContext::singleton().get_buffers_manager(MPI_EXCHANGE_MIN_MAX);
+      auto bm_exchange_minmax = Context::singleton().get<BuffersManagerMap>(connectivity)[MPI_EXCHANGE_MIN_MAX];
       m_mm_be = std::make_shared<BoundaryExchange>();
       BoundaryExchange& be = *m_mm_be;
       be.set_buffers_manager(bm_exchange_minmax);

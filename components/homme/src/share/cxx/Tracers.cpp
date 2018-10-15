@@ -9,6 +9,7 @@
 
 #include "Tracers.hpp"
 #include "Context.hpp"
+#include "Elements.hpp"
 #include "SimulationParams.hpp"
 
 #include "utilities/SyncUtils.hpp"
@@ -17,8 +18,14 @@
 namespace Homme {
 
 Tracers::Tracers(const int num_elems, const int num_tracers)
-  : nt(num_tracers)
 {
+  init (num_elems, num_tracers);
+}
+
+void Tracers::init(const int num_elems, const int num_tracers)
+{
+  nt = num_tracers;
+
   Q = decltype(Q)("tracers concentration", num_elems);
   qdp = decltype(qdp)("tracers mass", num_elems);
   qtens_biharmonic = decltype(qtens_biharmonic)("qtens(_biharmonic)", num_elems);

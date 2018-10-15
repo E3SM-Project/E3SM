@@ -15,9 +15,10 @@
 #include "HybridVCoord.hpp"
 #include "HyperviscosityFunctor.hpp"
 #include "SimulationParams.hpp"
+#include "SphereOperators.hpp"
 #include "TimeLevel.hpp"
 #include "Tracers.hpp"
-#include "mpi/MpiContext.hpp"
+#include "VerticalRemapManager.hpp"
 #include "mpi/BoundaryExchange.hpp"
 #include "mpi/BuffersManager.hpp"
 
@@ -55,7 +56,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   Errors::check_option("init_simulation_params_c","nu_div",nu_div,0.0,Errors::ComparisonOp::GT);
 
   // Get the simulation params struct
-  SimulationParams& params = Context::singleton().get_simulation_params();
+  SimulationParams& params = Context::singleton().get<SimulationParams>();
 
   if (remap_alg==1) {
     params.remap_alg = RemapAlg::PPM_MIRRORED;
@@ -121,7 +122,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
 void init_hvcoord_c (const Real& ps0, CRCPtr& hybrid_am_ptr, CRCPtr& hybrid_ai_ptr,
                                       CRCPtr& hybrid_bm_ptr, CRCPtr& hybrid_bi_ptr)
 {
-  HybridVCoord& hvcoord = Context::singleton().get_hvcoord();
+  HybridVCoord& hvcoord = Context::singleton().get<HybridVCoord>();
   hvcoord.init(ps0,hybrid_am_ptr,hybrid_ai_ptr,hybrid_bm_ptr,hybrid_bi_ptr);
 }
 
@@ -129,10 +130,10 @@ void cxx_push_results_to_f90(F90Ptr &elem_state_v_ptr, F90Ptr &elem_state_temp_p
                              F90Ptr &elem_state_dp3d_ptr, F90Ptr &elem_state_Qdp_ptr,
                              F90Ptr &elem_Q_ptr, F90Ptr &elem_state_ps_v_ptr,
                              F90Ptr &elem_derived_omega_p_ptr) {
-  Elements &elements = Context::singleton().get_elements();
+  Elements &elements = Context::singleton().get<Elements>();
   elements.push_4d(elem_state_v_ptr, elem_state_temp_ptr, elem_state_dp3d_ptr);
 
-  Tracers &tracers = Context::singleton().get_tracers();
+  Tracers &tracers = Context::singleton().get<Tracers>();
   tracers.push_qdp(elem_state_Qdp_ptr);
 
   // F90 ptrs to arrays (np,np,num_time_levels,nelemd) can be stuffed directly
@@ -158,8 +159,8 @@ void cxx_push_results_to_f90(F90Ptr &elem_state_v_ptr, F90Ptr &elem_state_temp_p
 // Probably not needed
 void cxx_push_forcing_to_f90(F90Ptr elem_derived_FM, F90Ptr elem_derived_FT,
                              F90Ptr elem_derived_FQ) {
-  Elements &elements = Context::singleton().get_elements();
-  Tracers &tracers = Context::singleton().get_tracers();
+  Elements &elements = Context::singleton().get<Elements>();
+  Tracers &tracers = Context::singleton().get<Tracers>();
 
   HostViewUnmanaged<Real * [NUM_PHYSICAL_LEV][2][NP][NP]> fm_f90(
       elem_derived_FM, elements.num_elems());
@@ -168,7 +169,7 @@ void cxx_push_forcing_to_f90(F90Ptr elem_derived_FM, F90Ptr elem_derived_FT,
       elem_derived_FT, elements.num_elems());
   sync_to_host(elements.m_ft, ft_f90);
 
-  const SimulationParams &params = Context::singleton().get_simulation_params();
+  const SimulationParams &params = Context::singleton().get<SimulationParams>();
   if (params.ftype == ForcingAlg::FORCING_DEBUG) {
     if (tracers.fq.data() == nullptr) {
       tracers.fq = decltype(tracers.fq)("fq", elements.num_elems());
@@ -182,7 +183,7 @@ void cxx_push_forcing_to_f90(F90Ptr elem_derived_FM, F90Ptr elem_derived_FT,
 void f90_push_forcing_to_cxx(F90Ptr elem_derived_FM, F90Ptr elem_derived_FT,
                              F90Ptr elem_derived_FQ,
                              F90Ptr elem_state_Qdp_ptr) {
-  Elements &elements = Context::singleton().get_elements();
+  Elements &elements = Context::singleton().get<Elements>();
 
   HostViewUnmanaged<Real * [NUM_PHYSICAL_LEV][2][NP][NP]> fm_f90(
       elem_derived_FM, elements.num_elems());
@@ -192,8 +193,8 @@ void f90_push_forcing_to_cxx(F90Ptr elem_derived_FM, F90Ptr elem_derived_FT,
       elem_derived_FT, elements.num_elems());
   sync_to_device(ft_f90, elements.m_ft);
 
-  const SimulationParams &params = Context::singleton().get_simulation_params();
-  Tracers &tracers = Context::singleton().get_tracers();
+  const SimulationParams &params = Context::singleton().get<SimulationParams>();
+  Tracers &tracers = Context::singleton().get<Tracers>();
   if (params.ftype == ForcingAlg::FORCING_DEBUG) {
     if (tracers.fq.data() == nullptr) {
       tracers.fq = decltype(tracers.fq)("fq", elements.num_elems());
@@ -208,14 +209,14 @@ void f90_push_forcing_to_cxx(F90Ptr elem_derived_FM, F90Ptr elem_derived_FT,
 
 void init_derivative_c (CF90Ptr& dvv)
 {
-  Derivative& deriv = Context::singleton().get_derivative ();
+  Derivative& deriv = Context::singleton().get<Derivative> ();
   deriv.init(dvv);
 }
 
 void init_time_level_c (const int& nm1, const int& n0, const int& np1,
                         const int& nstep, const int& nstep0)
 {
-  TimeLevel& tl = Context::singleton().get_time_level ();
+  TimeLevel& tl = Context::singleton().get<TimeLevel>();
   tl.nm1    = nm1-1;
   tl.n0     = n0-1;
   tl.np1    = np1-1;
@@ -225,11 +226,54 @@ void init_time_level_c (const int& nm1, const int& n0, const int& np1,
 
 void init_elements_c (const int& num_elems)
 {
-  Elements& r = Context::singleton().get_elements ();
-  const SimulationParams& params = Context::singleton().get_simulation_params();
+  Elements& r = Context::singleton().get<Elements> ();
+  const SimulationParams& params = Context::singleton().get<SimulationParams>();
 
   const bool consthv = (params.hypervis_scaling==0.0);
   r.init (num_elems, consthv);
+
+  // Init also the tracers structure
+  Tracers& t = Context::singleton().get<Tracers> ();
+  t.init(num_elems,params.qsize);
+}
+
+void init_functors_c ()
+{
+  // We init all the functors in the Context, so that every call to
+  // Context::singleton().get<[FunctorName]>()
+  // will return a functor already initialized.
+  // This avoids the risk of having a class doing
+  //   FunctorName f = Context::singleton().get<FunctorName>();
+  //   f.init(some_args);
+  // and then, somewhere else, we find
+  //   FunctorName f = Context::singleton().get<FunctorName>(some_args);
+  // The problem is that the first call created an uninitialized functor,
+  // *copied it*, and initialized the copy. The second call to get,
+  // sees that there is *already* an object of type FunctorName in the
+  // Context, and therefore does *not* create a FunctorName object.
+  // A solution would be to make the second call could as the first one (with an
+  // init call right after). However, we can also initialize all functors here
+  // once and for all, so that the user does not have to initialize them when
+  // calling them.
+
+  auto& elems   = Context::singleton().get<Elements>();
+  auto& tracers = Context::singleton().get<Tracers>();
+  auto& deriv   = Context::singleton().get<Derivative>();
+  auto& hvcoord = Context::singleton().get<HybridVCoord>();
+  auto& params  = Context::singleton().get<SimulationParams>();
+
+  // First, sphere operators
+  auto& sph_op = Context::singleton().get<SphereOperators>(elems,deriv);
+  auto& caar   = Context::singleton().get<CaarFunctor>(elems,tracers,deriv,hvcoord,sph_op,params.rsplit);
+  auto& esf    = Context::singleton().get<EulerStepFunctor>();
+  auto& hvf    = Context::singleton().get<HyperviscosityFunctor>();
+  auto& vrm    = Context::singleton().get<VerticalRemapManager>();
+
+  // Silence compiler warnings
+  (void) caar;
+  (void) esf;
+  (void) hvf;
+  (void) vrm;
 }
 
 void init_elements_2d_c (const int& ie, CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor,
@@ -237,8 +281,8 @@ void init_elements_2d_c (const int& ie, CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor
                          CF90Ptr& metdet, CF90Ptr& metinv, CF90Ptr& phis,
                          CF90Ptr &tensorvisc, CF90Ptr &vec_sph2cart)
 {
-  Elements& r = Context::singleton().get_elements ();
-  const SimulationParams& params = Context::singleton().get_simulation_params();
+  Elements& r = Context::singleton().get<Elements> ();
+  const SimulationParams& params = Context::singleton().get<SimulationParams>();
 
   const bool consthv = (params.hypervis_scaling==0.0);
   r.init_2d(ie,D,Dinv,fcor,mp,spheremp,rspheremp,metdet,metinv,phis,tensorvisc,vec_sph2cart,consthv);
@@ -247,9 +291,9 @@ void init_elements_2d_c (const int& ie, CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor
 void init_elements_states_c (CF90Ptr& elem_state_v_ptr,   CF90Ptr& elem_state_temp_ptr, CF90Ptr& elem_state_dp3d_ptr,
                              CF90Ptr& elem_state_Qdp_ptr, CF90Ptr& elem_state_ps_v_ptr)
 {
-  Elements& elements = Context::singleton().get_elements ();
+  Elements& elements = Context::singleton().get<Elements> ();
   elements.pull_4d(elem_state_v_ptr,elem_state_temp_ptr,elem_state_dp3d_ptr);
-  Tracers &tracers = Context::singleton().get_tracers();
+  Tracers &tracers = Context::singleton().get<Tracers>();
   tracers.pull_qdp(elem_state_Qdp_ptr);
 
   // F90 ptrs to arrays (np,np,num_time_levels,nelemd) can be stuffed directly in an unmanaged view
@@ -266,8 +310,8 @@ void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr, 
                          F90Ptr& elem_accum_q1mass_ptr, F90Ptr& elem_accum_iener_ptr, F90Ptr& elem_accum_iener_wet_ptr,
                          F90Ptr& elem_accum_kener_ptr, F90Ptr& elem_accum_pener_ptr)
 {
-  Elements& elements = Context::singleton().get_elements ();
-  Diagnostics& diagnostics = Context::singleton().get_diagnostics ();
+  Elements& elements = Context::singleton().get<Elements> ();
+  Diagnostics& diagnostics = Context::singleton().get<Diagnostics> ();
 
   diagnostics.init(elements.num_elems(), elem_state_q_ptr, elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr,
                    elem_accum_iener_ptr, elem_accum_iener_wet_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr);
@@ -275,19 +319,20 @@ void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr, 
 
 void init_boundary_exchanges_c ()
 {
-  SimulationParams& params = Context::singleton().get_simulation_params();
+  SimulationParams& params = Context::singleton().get<SimulationParams>();
 
   // Euler BEs
-  auto& esf = Context::singleton().get_euler_step_functor();
+  auto& esf = Context::singleton().get<EulerStepFunctor>();
   esf.reset(params);
   esf.init_boundary_exchanges();
 
   // RK stages BE's
-  auto& cf = Context::singleton().get_caar_functor();
-  cf.init_boundary_exchanges(MpiContext::singleton().get_buffers_manager(MPI_EXCHANGE));
+  auto& cf = Context::singleton().get<CaarFunctor>();
+  auto connectivity = Context::singleton().get_ptr<Connectivity>();
+  cf.init_boundary_exchanges(Context::singleton().get<BuffersManagerMap>(connectivity)[MPI_EXCHANGE]);
 
   // HyperviscosityFunctor's BE's
-  auto& hvf = Context::singleton().get_hyperviscosity_functor();
+  auto& hvf = Context::singleton().get<HyperviscosityFunctor>();
   hvf.init_boundary_exchanges();
 }
 

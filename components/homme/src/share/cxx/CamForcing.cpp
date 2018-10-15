@@ -148,15 +148,15 @@ void tracer_forcing(
 
 void apply_cam_forcing(const Real &dt) {
   GPTLstart("ApplyCAMForcing");
-  const Elements &elems = Context::singleton().get_elements();
-  const TimeLevel &tl = Context::singleton().get_time_level();
+  const Elements &elems = Context::singleton().get<Elements>();
+  const TimeLevel &tl = Context::singleton().get<TimeLevel>();
 
   state_forcing(elems.m_ft, elems.m_fm, tl.n0, dt, elems.m_t, elems.m_v);
 
   const SimulationParams &sim_params =
-      Context::singleton().get_simulation_params();
-  const HybridVCoord &hvcoord = Context::singleton().get_hvcoord();
-  Tracers &tracers = Context::singleton().get_tracers();
+      Context::singleton().get<SimulationParams>();
+  const HybridVCoord &hvcoord = Context::singleton().get<HybridVCoord>();
+  Tracers &tracers = Context::singleton().get<Tracers>();
   if(tracers.fq.data() == nullptr) {
     tracers.fq = decltype(tracers.fq)("fq", elems.num_elems());
   }
@@ -167,8 +167,8 @@ void apply_cam_forcing(const Real &dt) {
 
 void apply_cam_forcing_dynamics(const Real &dt) {
   GPTLstart("ApplyCAMForcing_dynamics");
-  const Elements &elems = Context::singleton().get_elements();
-  const TimeLevel &tl = Context::singleton().get_time_level();
+  const Elements &elems = Context::singleton().get<Elements>();
+  const TimeLevel &tl = Context::singleton().get<TimeLevel>();
   state_forcing(elems.m_ft, elems.m_fm, tl.n0, dt, elems.m_t, elems.m_v);
   GPTLstop("ApplyCAMForcing_dynamics");
 }

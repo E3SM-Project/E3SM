@@ -13,6 +13,8 @@
 #include <map>
 #include <memory>
 
+#include "MpiHelpers.hpp"
+
 namespace Homme
 {
 
@@ -266,6 +268,36 @@ BuffersManager::get_blackhole_recv_buffer () const
   assert(m_views_are_valid);
   return m_blackhole_recv_buffer;
 }
+
+// BuffersManagerMap contains a BuffersManager for each type of BoundaryExchange
+struct BuffersManagerMap {
+public:
+  BuffersManagerMap () {
+    m_bmm[MPI_EXCHANGE] = std::make_shared<BuffersManager>();
+    m_bmm[MPI_EXCHANGE_MIN_MAX] = std::make_shared<BuffersManager>();
+  }
+
+  BuffersManagerMap (std::shared_ptr<Connectivity> connectivity)
+   : BuffersManagerMap()
+  {
+    set_connectivity(connectivity);
+  }
+
+  void set_connectivity (std::shared_ptr<Connectivity> connectivity) {
+    m_bmm[MPI_EXCHANGE]->set_connectivity(connectivity);
+    m_bmm[MPI_EXCHANGE_MIN_MAX]->set_connectivity(connectivity);
+  }
+
+  std::shared_ptr<BuffersManager> operator() (int exchange_type) const {
+    return m_bmm.at(exchange_type);
+  }
+  std::shared_ptr<BuffersManager> operator[] (int exchange_type) const {
+    return m_bmm.at(exchange_type);
+  }
+
+private:
+  std::map<int,std::shared_ptr<BuffersManager>> m_bmm;
+};
 
 } // namespace Homme
 

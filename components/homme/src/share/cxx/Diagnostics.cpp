@@ -37,11 +37,11 @@ void Diagnostics::init (const int num_elems, F90Ptr& elem_state_q_ptr, F90Ptr& e
 void Diagnostics::prim_diag_scalars (const bool before_advance, const int ivar)
 {
   // Get simulation params
-  SimulationParams& params = Context::singleton().get_simulation_params();
+  SimulationParams& params = Context::singleton().get<SimulationParams>();
   assert(params.params_set);
 
   // Get time info
-  TimeLevel& tl = Context::singleton().get_time_level();
+  TimeLevel& tl = Context::singleton().get<TimeLevel>();
 
   // Make sure tracers timelevels are updated
   tl.update_tracers_levels(params.qsplit);
@@ -55,7 +55,7 @@ void Diagnostics::prim_diag_scalars (const bool before_advance, const int ivar)
   }
 
   if (params.time_step_type>0) {
-    const Tracers& tracers = Context::singleton().get_tracers();
+    const Tracers& tracers = Context::singleton().get<Tracers>();
 
     sync_to_host(tracers.Q,h_Q);
 
@@ -88,11 +88,11 @@ void Diagnostics::prim_diag_scalars (const bool before_advance, const int ivar)
 void Diagnostics::prim_energy_halftimes (const bool before_advance, const int ivar)
 {
   // Get simulation params
-  SimulationParams& params = Context::singleton().get_simulation_params();
+  SimulationParams& params = Context::singleton().get<SimulationParams>();
   assert(params.params_set);
 
   // Get time info
-  TimeLevel& tl = Context::singleton().get_time_level();
+  TimeLevel& tl = Context::singleton().get<TimeLevel>();
 
   // Make sure tracers timelevels are updated
   tl.update_tracers_levels(params.qsplit);
@@ -108,14 +108,14 @@ void Diagnostics::prim_energy_halftimes (const bool before_advance, const int iv
   }
 
   // Getting stuff we need on host
-  const HybridVCoord& hvcoord = Context::singleton().get_hvcoord();
+  const HybridVCoord& hvcoord = Context::singleton().get<HybridVCoord>();
   auto dhyai = Kokkos::create_mirror_view(hvcoord.hybrid_ai_delta);
   auto dhybi = Kokkos::create_mirror_view(hvcoord.hybrid_bi_delta);
   Kokkos::deep_copy(dhyai,hvcoord.hybrid_ai_delta);
   Kokkos::deep_copy(dhybi,hvcoord.hybrid_bi_delta);
 
-  const Elements& elements = Context::singleton().get_elements();
-  const Tracers& tracers = Context::singleton().get_tracers();
+  const Elements& elements = Context::singleton().get<Elements>();
+  const Tracers& tracers = Context::singleton().get<Tracers>();
 
   auto h_ps_v = Kokkos::create_mirror_view(elements.m_ps_v);
   auto h_phis = Kokkos::create_mirror_view(elements.m_phis);

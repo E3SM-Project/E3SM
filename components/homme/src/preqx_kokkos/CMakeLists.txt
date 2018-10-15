@@ -161,7 +161,6 @@ SET(PREQX_DEPS_CXX
   ${SRC_SHARE_DIR}/cxx/mpi/BuffersManager.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Connectivity.cpp
-  ${SRC_SHARE_DIR}/cxx/mpi/MpiContext.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/mpi_cxx_f90_interface.cpp
   ${SRC_SHARE_DIR}/cxx/prim_advance_exp.cpp
   ${SRC_SHARE_DIR}/cxx/prim_advec_tracers_remap.cpp

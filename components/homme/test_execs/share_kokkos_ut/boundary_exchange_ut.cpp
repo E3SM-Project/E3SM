@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "mpi/MpiContext.hpp"
+#include "Context.hpp"
 #include "mpi/BuffersManager.hpp"
 #include "mpi/BoundaryExchange.hpp"
 #include "mpi/Connectivity.hpp"
@@ -64,7 +64,7 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
 
   // Create connectivity
   init_connectivity_f90(num_min_max_fields_1d,num_scalar_fields_2d, num_scalar_fields_3d, num_vector_fields_3d, DIM);
-  std::shared_ptr<Connectivity> connectivity = MpiContext::singleton().get_connectivity();
+  std::shared_ptr<Connectivity> connectivity = Context::singleton().get_ptr<Connectivity>();
 
   // Retrieve local number of elements
   int num_elements = connectivity->get_num_local_elements();
@@ -92,8 +92,8 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
   field_4d_cxx_host = Kokkos::create_mirror_view(field_4d_cxx);
 
   // Get the buffers manager
-  std::shared_ptr<BuffersManager> buffers_manager = MpiContext::singleton().get_buffers_manager(MPI_EXCHANGE);
-  std::shared_ptr<BuffersManager> buffers_manager_min_max = MpiContext::singleton().get_buffers_manager(MPI_EXCHANGE_MIN_MAX);
+  std::shared_ptr<BuffersManager> buffers_manager = Context::singleton().get<BuffersManagerMap>()[MPI_EXCHANGE];
+  std::shared_ptr<BuffersManager> buffers_manager_min_max = Context::singleton().get<BuffersManagerMap>()[MPI_EXCHANGE_MIN_MAX];
 
   // Create boundary exchanges
   std::shared_ptr<BoundaryExchange> be1 = std::make_shared<BoundaryExchange>(connectivity,buffers_manager);
