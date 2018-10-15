@@ -10,7 +10,7 @@ module dcmip16_wrapper
 ! Implementation of the dcmip2012 dycore tests for the preqx dynamics target
 
 use dcmip12_wrapper,      only: pressure_thickness, set_tracers, get_evenly_spaced_z, set_hybrid_coefficients
-use control_mod,          only: test_case, dcmip16_pbl_type, dcmip16_prec_type, use_moisture
+use control_mod,          only: test_case, dcmip16_pbl_type, dcmip16_prec_type, use_moisture, theta_hydrostatic_mode
 use baroclinic_wave,      only: baroclinic_wave_test
 use supercell,            only: supercell_init, supercell_test, supercell_z
 use tropical_cyclone,     only: tropical_cyclone_test
@@ -398,6 +398,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   integer :: i,j,k,ie                                                     ! loop indices
   real(rl), dimension(np,np,nlev) :: u,v,w,T,exner_kess,theta_kess,p,dp,rho,z,qv,qc,qr
   real(rl), dimension(np,np,nlev) :: u0,v0,T0,qv0,qc0,qr0,cl,cl2,ddt_cl,ddt_cl2
+  real(rl), dimension(np,np,nlev) :: theta0,exner_new,rho_dry,rho_new,Rstar,p_pk
   real(rl), dimension(nlev)       :: u_c,v_c,p_c,qv_c,qc_c,qr_c,rho_c,z_c, th_c
   real(rl) :: max_w, max_precl, min_ps
   real(rl) :: lat, lon, dz_top(np,np), zi(np,np,nlevp),zi_c(nlevp), ps(np,np)
@@ -436,14 +437,17 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     where(qc<0); qc=0; endwhere
     where(qr<0); qr=0; endwhere
 
+
+    rho_dry = (1-qv)*rho  ! convert to dry density using wet mixing ratio
+
+    ! convert to dry mixing ratios
+    qv  = qv*rho/rho_dry
+    qc  = qc*rho/rho_dry
+    qr  = qr*rho/rho_dry
+
     ! save un-forced prognostics
     u0=u; v0=v; T0=T; qv0=qv; qc0=qc; qr0=qr
-
-    ! get zi from z
-!    zi(:,:,nlevp) = 0 ! phis=0
-!    zi(:,:,2:nlev)= (z(:,:,2:nlev)+z(:,:,1:nlev-1))/2.0d0
-!    dz_top        = dp(:,:,1)/(rho(:,:,1)*g)
-!    zi(:,:,1)     = zi(:,:,2)+dz_top
+    theta0 = theta_kess
 
     ! apply forcing to columns
     do j=1,np; do i=1,np
@@ -455,7 +459,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       qc_c = qc (i,j,nlev:1:-1)
       qr_c = qr (i,j,nlev:1:-1)
       p_c  = p  (i,j,nlev:1:-1)
-      rho_c= rho(i,j,nlev:1:-1)
+      rho_c= rho_dry(i,j,nlev:1:-1)
       z_c  = z  (i,j,nlev:1:-1)
       zi_c = zi (i,j,nlevp:1:-1)
       th_c = theta_kess(i,j,nlev:1:-1)
@@ -482,18 +486,25 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     enddo; enddo;
 
-    ! get temperature from new pressure
-    T = theta_kess*exner_kess
+
+    rho_new = rho_dry*(1+qv)
+    Rstar = (Rgas+(Rwater_vapor-Rgas)*qv*rho_dry/rho_new)
+    !exner_new = p/(rho_new*Rstar*theta_kess)
+    p_pk = rho_new*Rstar*theta_kess
+    exner_new = ( p_pk / p0)**( (Rgas/Cp) / ( 1 - (Rgas/Cp)))
 
     ! set dynamics forcing
     elem(ie)%derived%FM(:,:,1,:) = (u - u0)/dt
     elem(ie)%derived%FM(:,:,2,:) = (v - v0)/dt
-    elem(ie)%derived%FT(:,:,:)   = (T - T0)/dt
+    !elem(ie)%derived%FT(:,:,:)   = (T - T0)/dt
+    elem(ie)%derived%FT(:,:,:)   = exner_new*(theta_kess - theta0)/dt  
+!    elem(ie)%derived%FT(:,:,:)   = exner_kess*(theta_kess - theta0)/dt  
 
     ! set tracer-mass forcing
-    qi=1; elem(ie)%derived%FQ(:,:,:,qi) = dp*(qv-qv0)/dt
-    qi=2; elem(ie)%derived%FQ(:,:,:,qi) = dp*(qc-qc0)/dt
-    qi=3; elem(ie)%derived%FQ(:,:,:,qi) = dp*(qr-qr0)/dt
+    ! set tracer-mass forcing. conserve tracer mass
+    elem(ie)%derived%FQ(:,:,:,1) = (rho_dry/rho)*dp*(qv-qv0)/dt
+    elem(ie)%derived%FQ(:,:,:,2) = (rho_dry/rho)*dp*(qc-qc0)/dt
+    elem(ie)%derived%FQ(:,:,:,3) = (rho_dry/rho)*dp*(qr-qr0)/dt
 
     qi=4; elem(ie)%derived%FQ(:,:,:,qi) = dp*ddt_cl
     qi=5; elem(ie)%derived%FQ(:,:,:,qi) = dp*ddt_cl2
@@ -524,6 +535,7 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
   integer :: i,j,k,ie                                                     ! loop indices
   real(rl), dimension(np,np,nlev) :: u,v,w,T,exner_kess,theta_kess,p,dp,rho,z,qv,qc,qr
   real(rl), dimension(np,np,nlev) :: u0,v0,T0,qv0,qc0,qr0
+  real(rl), dimension(np,np,nlev) :: theta0,exner_new,rho_dry,rho_new,Rstar,p_pk
   real(rl), dimension(nlev)       :: u_c,v_c,p_c,qv_c,qc_c,qr_c,rho_c,z_c, th_c
   real(rl) :: max_w, max_precl, min_ps
   real(rl) :: lat, dz_top(np,np), zi(np,np,nlevp),zi_c(nlevp), ps(np,np)
@@ -550,26 +562,28 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
     exner_kess = (p/p0)**(Rgas/Cp)
     theta_kess = T/exner_kess
 
-    ! get mixing ratios
+    ! get wet mixing ratios
     qv  = elem(ie)%state%Qdp(:,:,:,1,ntQ)/dp
     qc  = elem(ie)%state%Qdp(:,:,:,2,ntQ)/dp
     qr  = elem(ie)%state%Qdp(:,:,:,3,ntQ)/dp
-
-    !rho = (1-qv)*rho  ! convert to dry density
 
     ! ensure positivity
     where(qv<0); qv=0; endwhere
     where(qc<0); qc=0; endwhere
     where(qr<0); qr=0; endwhere
 
-    ! save un-forced prognostics
-    u0=u; v0=v; T0=T; qv0=qv; qc0=qc; qr0=qr
+    rho_dry = (1-qv)*rho  ! convert to dry density using wet mixing ratio
 
-    ! get zi from z
-    !zi(:,:,nlevp) = 0 ! phis=0
-    !zi(:,:,2:nlev)= (z(:,:,2:nlev)+z(:,:,1:nlev-1))/2.0d0
-    !dz_top        = dp(:,:,1)/(rho(:,:,1)*g)
-    !zi(:,:,1)     = zi(:,:,2)+dz_top
+    ! convert to dry mixing ratios
+    qv  = qv*rho/rho_dry
+    qc  = qc*rho/rho_dry
+    qr  = qr*rho/rho_dry
+
+
+    ! save un-forced prognostics (DRY)
+    u0=u; v0=v; T0=T; qv0=qv; qc0=qc; qr0=qr
+    theta0=theta_kess
+
 
     ! apply forcing to columns
     do j=1,np; do i=1,np
@@ -581,7 +595,7 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
       qc_c = qc (i,j,nlev:1:-1)
       qr_c = qr (i,j,nlev:1:-1)
       p_c  = p  (i,j,nlev:1:-1)
-      rho_c= rho(i,j,nlev:1:-1)
+      rho_c= rho_dry(i,j,nlev:1:-1)
       z_c  = z  (i,j,nlev:1:-1)
       zi_c = zi (i,j,nlevp:1:-1)
       th_c = theta_kess(i,j,nlev:1:-1)
@@ -600,26 +614,24 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
       theta_kess(i,j,:) = th_c(nlev:1:-1)
 
     enddo; enddo;
+    rho_new = rho_dry*(1+qv)
+    Rstar = (Rgas+(Rwater_vapor-Rgas)*qv*rho_dry/rho_new)
+    !exner_new = p/(rho_new*Rstar*theta_kess)
+    p_pk = rho_new*Rstar*theta_kess
+    exner_new = ( p_pk / p0)**( (Rgas/Cp) / ( 1 - (Rgas/Cp)))
 
-    ! get temperature from new pressure
-    ! rho(dry mass) didn't change
-    ! rho R* Theta = p/exner  
-    !rho = rho/(1-qv)  ! convert to full desnsity
-    !p_over_exner = (rho*Rgas*theta_kess)
-    !p = (p_over_exner * p0**(-kappa))**(1/1-kappa)
-    !exner = p/p_over_exner
-    
-    T = theta_kess*exner_kess
 
     ! set dynamics forcing
     elem(ie)%derived%FM(:,:,1,:) = (u - u0)/dt
     elem(ie)%derived%FM(:,:,2,:) = (v - v0)/dt
-    elem(ie)%derived%FT(:,:,:)   = (T - T0)/dt
+    !elem(ie)%derived%FT(:,:,:)   = exner_kess*(theta_kess - theta0)/dt
+    elem(ie)%derived%FT(:,:,:)   = exner_new*(theta_kess - theta0)/dt  ! a little better than above
 
-    ! set tracer-mass forcing
-    elem(ie)%derived%FQ(:,:,:,1) = dp*(qv-qv0)/dt
-    elem(ie)%derived%FQ(:,:,:,2) = dp*(qc-qc0)/dt
-    elem(ie)%derived%FQ(:,:,:,3) = dp*(qr-qr0)/dt
+    ! set tracer-mass forcing. conserve tracer mass
+    elem(ie)%derived%FQ(:,:,:,1) = (rho_dry/rho)*dp*(qv-qv0)/dt
+    elem(ie)%derived%FQ(:,:,:,2) = (rho_dry/rho)*dp*(qc-qc0)/dt
+    elem(ie)%derived%FQ(:,:,:,3) = (rho_dry/rho)*dp*(qr-qr0)/dt
+
 
     ! perform measurements of max w, and max prect
     max_w     = max( max_w    , maxval(w    ) )
@@ -645,8 +657,9 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   integer :: i,j,k,ie                                                     ! loop indices
   real(rl):: lat
-  real(rl), dimension(np,np,nlev) :: u,v,w,T,theta_kess,rho_kess,exner_kess,p,dp,rho,z,qv,qc,qr
+  real(rl), dimension(np,np,nlev) :: u,v,w,T,theta_kess,exner_kess,p,dp,rho,z,qv,qc,qr
   real(rl), dimension(np,np,nlev) :: T0,qv0,qc0,qr0
+  real(rl), dimension(np,np,nlev) :: theta0,exner_new,rho_dry,rho_new,Rstar,p_pk
   real(rl), dimension(np,np,nlev) :: theta_inv,qv_inv,qc_inv,qr_inv,rho_inv,exner_inv,z_inv ! inverted columns
   real(rl), dimension(np,np,nlevp):: zi
   real(rl), dimension(np,np)      :: ps
@@ -673,20 +686,29 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     where(qc<0); qc=0; endwhere
     where(qr<0); qr=0; endwhere
 
-    ! save un-forced prognostics
-    T0=T; qv0=qv; qc0=qc; qr0=qr
+    rho_dry = (1-qv)*rho  ! convert to dry density using wet mixing ratio
+
+    ! convert to dry mixing ratios
+    qv  = qv*rho/rho_dry
+    qc  = qc*rho/rho_dry
+    qr  = qr*rho/rho_dry
+
 
     ! compute form of exner pressure expected by Kessler physics
     exner_kess = (p/p0)**(Rgas/Cp)
-    rho_kess   = p/(Rgas*T)
     theta_kess = T/exner_kess
+
+    ! save un-forced prognostics
+    T0=T; qv0=qv; qc0=qc; qr0=qr
+    theta0 = theta_kess
+
 
     ! invert columns (increasing z)
     theta_inv= theta_kess(:,:,nlev:1:-1)
     qv_inv   = qv   (:,:,nlev:1:-1)
     qc_inv   = qc   (:,:,nlev:1:-1)
     qr_inv   = qr   (:,:,nlev:1:-1)
-    rho_inv  = rho_kess  (:,:,nlev:1:-1)
+    rho_inv  = rho_dry  (:,:,nlev:1:-1)
     exner_inv= exner_kess(:,:,nlev:1:-1)
     z_inv    = z    (:,:,nlev:1:-1)
 
@@ -713,17 +735,25 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     qv    = qv_inv   (:,:,nlev:1:-1)
     qc    = qc_inv   (:,:,nlev:1:-1)
     qr    = qr_inv   (:,:,nlev:1:-1)
-    T     = theta_kess*exner_kess
+
+
+
+    rho_new = rho_dry*(1+qv)
+    Rstar = (Rgas+(Rwater_vapor-Rgas)*qv*rho_dry/rho_new)
+    !exner_new = p/(rho_new*Rstar*theta_kess)
+    p_pk = rho_new*Rstar*theta_kess
+    exner_new = ( p_pk / p0)**( (Rgas/Cp) / ( 1 - (Rgas/Cp)))
+
 
     ! set dynamics forcing
     elem(ie)%derived%FM(:,:,1,:) = 0
     elem(ie)%derived%FM(:,:,2,:) = 0
-    elem(ie)%derived%FT(:,:,:)   = (T - T0)/dt
+    elem(ie)%derived%FT(:,:,:)   = exner_new*(theta_kess - theta0)/dt  
 
-    ! set tracer-mass forcing
-    elem(ie)%derived%FQ(:,:,:,1) = dp*(qv-qv0)/dt
-    elem(ie)%derived%FQ(:,:,:,2) = dp*(qc-qc0)/dt
-    elem(ie)%derived%FQ(:,:,:,3) = dp*(qr-qr0)/dt
+    ! set tracer-mass forcing. conserve tracer mass
+    elem(ie)%derived%FQ(:,:,:,1) = (rho_dry/rho)*dp*(qv-qv0)/dt
+    elem(ie)%derived%FQ(:,:,:,2) = (rho_dry/rho)*dp*(qc-qc0)/dt
+    elem(ie)%derived%FQ(:,:,:,3) = (rho_dry/rho)*dp*(qr-qr0)/dt
 
     ! perform measurements of max w, and max prect
     max_w     = max( max_w    , maxval(w    ) )
