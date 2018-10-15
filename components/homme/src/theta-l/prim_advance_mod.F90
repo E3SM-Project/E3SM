@@ -592,11 +592,9 @@ contains
 #if 0
      ! phi_ref,theta_ref depend only on ps:
      call set_theta_ref(hvcoord,dp_ref(:,:,:,ie),theta_ref(:,:,:,ie))
-
-     ! compute vtheta_dp_ref, store in 'heating' as temp array:
-     heating(:,:,:)=theta_ref(:,:,:,ie)*dp_ref(:,:,:,ie)
+     exner(:,:,:)=theta_ref(:,:,:,ie)*dp_ref(:,:,:,ie) ! use as temp array
      call get_phinh(hvcoord,elem(ie)%state%phis,&
-          heating(:,:,:),dp_ref(:,:,:,ie),phi_ref(:,:,:,ie))
+          exner(:,:,:),dp_ref(:,:,:,ie),phi_ref(:,:,:,ie))
 #endif
 #if 1
      ! phi_ref depends only on ps, theta_ref depends on dp3d
