@@ -175,6 +175,7 @@ module med_fraction_mod
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FieldRegrid
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_fldChk
     use med_map_mod           , only : med_map_Fractions_init
     use med_internalstate_mod , only : InternalState
 
@@ -311,17 +312,14 @@ module med_fraction_mod
     !---------------------------------------
 
     if (is_local%wrap%comp_present(compglc)) then
-
-       call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compglc), 'gfrac', dataPtr1, rc=rc)
        ! If 'gfrac' and 'frac' exists, then copy 'frac' to 'gfrac'
        ! TODO: implement a more general scheme that hard-wiring the name 'frac'
-       if (.not. shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) then
+       if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBfrac(compglc), 'gfrac', rc=rc) .and. &
+            shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compglc, compglc), 'frac', rc=rc)) then
+          call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compglc), 'gfrac', dataPtr1, rc=rc)
           call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImp(compglc,compglc), 'frac' , dataPtr2, rc=rc)
-          if (.not. shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) then
-             dataPtr1 = dataPtr2
-          endif
+          dataPtr1 = dataPtr2
        endif
-
     endif
 
     !---------------------------------------
