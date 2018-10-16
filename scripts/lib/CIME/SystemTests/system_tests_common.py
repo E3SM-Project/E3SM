@@ -451,7 +451,7 @@ class SystemTestsCommon(object):
             basecmp_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), baseline_name)
             newestcpllogfiles = self._get_latest_cpl_logs()
             for cpllog in newestcpllogfiles:
-                m = re.search(r"/({}.*.log).*.gz".format(self._cpllog),cpllog)
+                m = re.search(r"/({}.*.log).*.gz".format(self._cpllog), cpllog)
                 if m is not None:
                     baselog = os.path.join(basecmp_dir, m.group(1))+".gz"
                 if baselog is None or not os.path.isfile(baselog):
