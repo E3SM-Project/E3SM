@@ -12,7 +12,6 @@ import subprocess
 # Change these commands if needed.
 SHIFTER_COMMAND = 'shifter --volume=$REFERENCE_DATA_PATH:/reference_data_path'
 SHIFTER_COMMAND += ' --volume=$TEST_DATA_PATH:/test_data_path --volume=$RESULTS_DIR:/results_dir'
-# TODO: Use the 'e3sm' channel in the future instead of 'zshaheen'.
 SHIFTER_COMMAND += ' --image=docker:e3sm/e3sm_diags:latest'
 # Shifter doesn't use the entrypoint defined in the Dockerfile, so we need to specify what command to use.
 SHIFTER_COMMAND += ' -- e3sm_diags'
@@ -36,7 +35,7 @@ def run_cmd(cmd):
 
 
 def run_container(args):
-    e3sm_diags_args = get_user_args_from_e3sm_diags()
+    e3sm_diags_args = get_user_args_for_e3sm_diags()
 
     # Append the e3sm_diags arguments to the container command.
     if args.shifter:
@@ -112,17 +111,13 @@ def set_env_vars(args):
     test_data_path = os.path.abspath(test_data_path)
     results_dir = os.path.abspath(results_dir)
 
-    # print('reference_data_path', reference_data_path)
-    # print('test_data_path', test_data_path)
-    # print('results_dir', results_dir)
-
     # Then set them as the environmental variables.
     os.environ['REFERENCE_DATA_PATH'] = reference_data_path
     os.environ['TEST_DATA_PATH'] = test_data_path
     os.environ['RESULTS_DIR'] = results_dir
 
 
-def get_user_args_from_e3sm_diags():
+def get_user_args_for_e3sm_diags():
     """
     Extract the correct passed in arguments from this script that are needed for e3sm_diags.
     """
@@ -154,6 +149,12 @@ parser.add_argument(
     '--results_dir',
     dest='results_dir',
     help='Path of where to save the results.',
+    required=False)
+parser.add_argument(
+    '--container_version',
+    dest='container_version',
+    help='Which version of the container to use.',
+    default='latest',
     required=False)
 # A separate group of arguments for the container runtimes.
 group = parser.add_mutually_exclusive_group(required=True)
