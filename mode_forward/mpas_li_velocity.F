@@ -939,7 +939,7 @@ contains
 !
 !  routine remove_fast_ice
 !
-!> \brief  Removes floating ice with a fast surface speed, presumably an iceberg
+!> \brief  Removes ice with a fast surface speed, presumably an iceberg
 !> \author Matt Hoffman
 !> \date   March 2018
 !> \details
@@ -990,7 +990,7 @@ contains
 
       cellCount = 0
       do iCell = 1, nCells
-         if (li_mask_is_floating_ice(cellMask(iCell)) .and. (surfaceSpeed(iCell) > highSpeed)) then
+         if (li_mask_is_ice(cellMask(iCell)) .and. (surfaceSpeed(iCell) > highSpeed)) then
          ! "fast" ice that is removed is added to the calving flux
             calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
             thickness(iCell) = 0.0_RKIND
