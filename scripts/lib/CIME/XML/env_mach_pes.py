@@ -94,7 +94,7 @@ class EnvMachPes(EnvBase):
 
     def get_tasks_per_node(self, total_tasks, max_thread_count):
         expect(total_tasks > 0,"totaltasks > 0 expected, totaltasks = {}".format(total_tasks))
-        tasks_per_node = min(self.get_value("MAX_TASKS_PER_NODE")/ max_thread_count,
+        tasks_per_node = min(self.get_value("MAX_TASKS_PER_NODE")// max_thread_count,
                              self.get_value("MAX_MPITASKS_PER_NODE"), total_tasks)
         return tasks_per_node if tasks_per_node > 0 else 1
 
