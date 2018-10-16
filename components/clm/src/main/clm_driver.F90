@@ -143,6 +143,8 @@ module clm_driver
   use clm_interface_pflotranMod   , only : clm_pf_finalize
   !----------------------------------------------------------------------------
   use WaterBudgetMod              , only : WaterBudget_Reset, WaterBudget_Run, WaterBudget_Accum, WaterBudget_Print
+  use WaterBudgetMod              , only : WaterBudget_SetBeginningMonthlyStates
+  use WaterBudgetMod              , only : WaterBudget_SetEndingMonthlyStates
   use clm_varctl                  , only : do_budgets, budget_inst, budget_daily, budget_month
   use clm_varctl                  , only : budget_ann, budget_ltann, budget_ltend
 
@@ -386,6 +388,39 @@ contains
             filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
             soilhydrology_vars, waterstate_vars)
        call t_stopf('begwbal')
+
+       if (use_cn) then
+          call t_startf('begcnpbal')
+          call carbonstate_vars%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               filter(nc)%num_soilp, filter(nc)%soilp)
+
+          call nitrogenstate_vars%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               filter(nc)%num_soilp, filter(nc)%soilp)
+
+          call phosphorusstate_vars%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               filter(nc)%num_soilp, filter(nc)%soilp)
+
+          call BeginColCBalance(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               carbonstate_vars)
+
+          call BeginColNBalance(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               nitrogenstate_vars)
+
+          call BeginColPBalance(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               phosphorusstate_vars)
+          call t_stopf('begcnpbal')
+       end if
+
+       if (do_budgets) then
+          call WaterBudget_SetBeginningMonthlyStates(bounds_clump, waterstate_vars)
+       endif
+
     end do
     !$OMP END PARALLEL DO
 
@@ -1107,6 +1142,8 @@ contains
             waterstate_vars, energyflux_vars, canopystate_vars        , &
             soilhydrology_vars)
        call t_stopf('gridbalchk')
+
+       call WaterBudget_SetEndingMonthlyStates(bounds_proc, waterstate_vars)
 
        if (.not. use_fates)then
           if (use_cn) then

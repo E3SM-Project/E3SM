@@ -1056,11 +1056,9 @@ contains
          long_name='surface watertotal water storage at the beginning of a month', units='mm', &
           interpinic_flag='interp', readvar=readvar, data=this%tws_month_beg_grc)
 
-    if (flag=='read') then
-       if (.not. readvar) then
-          this%tws_month_beg_grc(bounds%begg:bounds%endg) = 0.0_r8
-       end if
-    end if
+    call restartvar(ncid=ncid, flag=flag, varname='ENDWB_COL', xtype=ncd_double, &
+         dim1name='column', long_name='col-level water mass end of the time step', &
+         units='mm', interpinic_flag='interp', readvar=readvar, data=this%endwb_col)
 
   end subroutine Restart
 
