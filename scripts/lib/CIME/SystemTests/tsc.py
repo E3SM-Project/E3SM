@@ -44,7 +44,7 @@ class TSC(SystemTestsCommon):
         # Only want this to happen once. It will impact the sharedlib build
         # so it has to happen there.
         if not model_only:
-            logging.warn("Starting to build multi-instance exe")
+            logging.warning("Starting to build multi-instance exe")
             for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
                 ntasks = self._case.get_value("NTASKS_%s"%comp)
                 self._case.set_value("ROOTPE_%s"%comp, 0)
