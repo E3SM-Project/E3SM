@@ -2,6 +2,7 @@ module five_intr
 
 !-------------------------------------------
 ! Module to interface FIVE with E3SM physics packages
+!
 
   use shr_kind_mod,  only: r8=>shr_kind_r8
   use ppgrid,           only : pcols, pver, pverp, begchunk, endchunk
@@ -14,7 +15,8 @@ module five_intr
   implicit none
   
   ! This is the number of layers to add between E3SM levels
-  !  NOTE: This must be an EVEN number
+  !  NOTE: This must be an EVEN number, due to limitations
+  !  in the tendency interpolation scheme
   integer :: five_add_nlevels = 2 
   
   ! The bottom layer to which we will add layers to (set
@@ -160,7 +162,7 @@ module five_intr
     
     real(r8) :: pint_host(pcols,pverp)
     real(r8) :: pmid_host(pcols,pver)
-    real(r8) :: pint_five(pcols,pverp_five) ! interface on 
+    real(r8) :: pint_five(pcols,pverp_five) 
     real(r8) :: pmid_five(pcols,pver_five)
     real :: incr   
     
@@ -350,6 +352,7 @@ module five_intr
              dz_five(i,:),rho_five(i,:))
     enddo
     
+    ! Compute height arrays needed for mass weighted averaging and interpolation
     do i=1,ncol
       call compute_five_heights(pmid_five(i,:),pint_five(i,:),t_five(i,:),&
              q_five(i,:,1),q_five(i,:,2),pdel_five(i,:),pver_five,p0,&
@@ -400,7 +403,7 @@ module five_intr
 
     ! Now interpolate this tendency to the higher resolution FIVE grid, 
     !   using the interpolation method of Sheng and Zwiers (1998), 
-    !   as documented in Yamaguchi et al. (2011) 
+    !   as documented in Yamaguchi et al. (2017) Appendix B
     do i=1,ncol
     
       call tendency_low_to_high(state%zm(i,:),state%zi(i,:),zm_five(i,:),&
@@ -419,7 +422,8 @@ module five_intr
       
     enddo      	     
 
-    ! Finally, update FIVE prognostic variables based on this tendency
+    ! Finally, update FIVE prognostic variables based on this tendency, so 
+    !   complete syncronization with E3SM
     do k=1,pver_five
       do i=1,ncol
         t_five(i,k) = t_five(i,k) + dtime * t_five_tend(i,k)
@@ -482,6 +486,7 @@ module five_intr
 	       pdel, nlev, p0, &
 	       zm, zi)
 	       
+    ! Compute heights for the FIVE grid
     implicit none
     
     ! Input variables
@@ -638,6 +643,17 @@ module five_intr
 	       zm_five_in, &
 	       rho_low_in, rho_five_in, &
 	       ten_low,ten_high)
+
+    ! Subroutine to compute the tendency from the low
+    !   resolution to high resolution E3SM grid.  This code
+    !   was adopted from the FIVE implementation into SAM,
+    !   obtained by Peter Bogenschutz from Tak Yamaguchi.
+    !   SAM code assumes that the surface is index 1, whereas
+    !   E3SM assumes that the surface is index pver(p).  Thus,
+    !   for simplicity, we need to "flip" the arrays.  
+    ! This interpolation routine is based on that of 
+    !   Sheng and Zwiers (1998) and implemented as 
+    !   documented in Yamaguchi et al. (2017) appendix B.
     implicit none
     
     ! Input variables

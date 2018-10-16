@@ -225,8 +225,7 @@ subroutine phys_register
        
 #ifdef FIVE
        call five_register_e3sm()
-#endif
-       
+#endif     
 
        call pbuf_add_field('PREC_STR',  'physpkg',dtype_r8,(/pcols/),prec_str_idx)
        call pbuf_add_field('SNOW_STR',  'physpkg',dtype_r8,(/pcols/),snow_str_idx)
@@ -716,9 +715,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use ionosphere,	    only: ionos_init  ! Initialization of ionosphere module (WACCM-X)
     use majorsp_diffusion,  only: mspd_init   ! Initialization of major species diffusion module (WACCM-X)
     use clubb_intr,         only: clubb_ini_cam
-!#ifdef FIVE
-!    use five_intr,          only: five_init_e3sm
-!#endif
     use sslt_rebin,         only: sslt_rebin_init
     use tropopause,         only: tropopause_init
     use solar_data,         only: solar_data_init
@@ -870,10 +866,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     ! initiate CLUBB within CAM
     if (do_clubb_sgs) call clubb_ini_cam(pbuf2d,dp1)
-    
-!#ifdef FIVE
-!    call five_init_e3sm(phys_state,pbuf2d)
-!#endif
 
     call qbo_init
 

@@ -192,7 +192,11 @@ subroutine microp_aero_init
    case ('diag_TKE')
       tke_idx      = pbuf_get_index('tke')   
    case ('CLUBB_SGS')
+#ifdef FIVE
+      wp2_idx = pbuf_get_index('WP2_nadv_five')
+#else
       wp2_idx = pbuf_get_index('WP2_nadv')
+#endif
    case default
       kvh_idx      = pbuf_get_index('kvh')
    end select

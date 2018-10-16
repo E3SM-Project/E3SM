@@ -30,9 +30,10 @@ module clubb_intr
   use cam_history_support, only: fillvalue
 #ifdef FIVE
   use five_intr,     only: pver_five, pverp_five, &
-			   linear_interp, five_syncronize_e3sm, &
-			   masswgt_vert_avg, compute_five_grids, &
-			   compute_five_heights
+                           five_syncronize_e3sm, &
+			   compute_five_grids, &
+			   compute_five_heights, &
+			   masswgt_vert_avg, linear_interp
 #endif
 
   implicit none
@@ -184,7 +185,8 @@ module clubb_intr
     u_five_idx, &
     v_five_idx, &
     pmid_five_idx, &
-    pint_five_idx 
+    pint_five_idx, &
+    wp2_five_idx
  
   integer, public :: & 
     ixthlp2 = 0, &
@@ -221,7 +223,8 @@ module clubb_intr
   !  levels used by E3SM.  Either way, the variables "pverp_clubb" and 
   !  "pver_clubb" is defined.   
   ! The addition of these variables is a crucial component for allowing
-  !  CLUBB to be run on a different vertical grid than E3SM
+  !  CLUBB to be run on a different vertical grid than E3SM.  Any variable
+  !  that will be fed into CLUBB should use these dimensions
 #ifdef FIVE
    integer, parameter :: pverp_clubb = pverp_five
    integer, parameter :: pver_clubb = pver_five
@@ -298,8 +301,7 @@ module clubb_intr
     !  The reason is that these variables are saved timestep to timestep and only
     !  used in CLUBB.  Thus, interpolation to/from the E3SM grid is not required.  
     !  NOTE: an exception to this is the WP2_nadv variable, because this variable 
-    !  is used for aerosol activation.  TASK: an additional variable will need to be defined 
-    !  to account for this.   
+    !  is used for aerosol activation.   
     call pbuf_add_field('RAD_CLUBB',  'global', dtype_r8, (/pcols,pver_clubb/),               radf_idx)    
     call pbuf_add_field('WP2_nadv',        'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), wp2_idx)
     call pbuf_add_field('WP3_nadv',        'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), wp3_idx)
@@ -311,7 +313,14 @@ module clubb_intr
     call pbuf_add_field('UP2_nadv',        'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), up2_idx)
     call pbuf_add_field('VP2_nadv',        'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), vp2_idx)    
     call pbuf_add_field('UPWP',       'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), upwp_idx)
-    call pbuf_add_field('VPWP',       'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), vpwp_idx)       
+    call pbuf_add_field('VPWP',       'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), vpwp_idx)      
+     
+#ifdef FIVE
+    ! Define a PBUF field for WP2 to be used on the low resolution E3SM grid, if FIVE is used
+    !   this is the only turbulent moment that is passed to another E3SM parameterization, 
+    !   thus must be interpolated and saved on the E3SM grid.
+    call pbuf_add_field('WP2_nadv_five', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wp2_five_idx)
+#endif 
 
 #endif 
 
@@ -567,13 +576,8 @@ end subroutine clubb_init_cnst
     integer :: lptr
 
     ! Define the height arrays to initialize CLUBB
-#ifdef FIVE
-    real(r8)  :: zt_g(pverp_five)                        ! Height dummy array
-    real(r8)  :: zi_g(pverp_five)                        ! Height dummy array
-#else
-    real(r8)  :: zt_g(pverp)
-    real(r8)  :: zi_g(pverp)
-#endif
+    real(r8)  :: zt_g(pverp_clubb)                        ! Height dummy array
+    real(r8)  :: zi_g(pverp_clubb)                        ! Height dummy array
 
     !----- Begin Code -----
 
@@ -912,6 +916,10 @@ end subroutine clubb_init_cnst
        call pbuf_set_field(pbuf2d, kvh_idx,     0.0_r8)
        call pbuf_set_field(pbuf2d, fice_idx,    0.0_r8)
        call pbuf_set_field(pbuf2d, radf_idx,    0.0_r8)
+       
+#ifdef FIVE
+       call pbuf_set_field(pbuf2d, wp2_five_idx, w_tol_sqd)
+#endif
 
     endif
    
@@ -1041,9 +1049,10 @@ end subroutine clubb_init_cnst
    real(r8) :: frac_limit, ic_limit
 
    ! Input/output variables to/from CLUBB need to be changed so that their 
-   !  dimensions are of the "pver(p)_clubb" variety (i.e on the high resolution grid).  
+   !  dimensions are of the "pver(p)_clubb" variety (i.e so it is set up to be used 
+   !  on the high resolution grid).  
    ! If a variable has dimensions of "pver(p)" this means that this variable is directly 
-   ! related to the E3SM grid as opposed to the CLUBB grid.   
+   ! related to the E3SM grid and not fed in directly (or indirectly) to the CLUBB parameterization.   
    real(r8) :: dtime                            ! CLUBB time step                              [s]   
    real(r8) :: edsclr_in(pverp_clubb,edsclr_dim)      ! Scalars to be diffused through CLUBB         [units vary]
    real(r8) :: wp2_in(pverp_clubb)                    ! vertical velocity variance (CLUBB)           [m^2/s^2]
@@ -1085,6 +1094,8 @@ end subroutine clubb_init_cnst
    
    real(r8) :: edsclr(pverp_clubb,edsclr_dim)
    
+   !  A number of "in" variables are defined for easier bookkeeping 
+   !   with all the interpolation and "flipping" done
    real(r8) :: zt_g_in(pverp_clubb)
    real(r8) :: zi_g_in(pverp_clubb)
    real(r8) :: wm_zt_in(pverp_clubb)
@@ -1270,7 +1281,8 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: vp2      ! north-south wind variance                    [m^2/s^2]
 
 !  Note that the pointers for "thlm", "rtm", "um", and "vm" are removed, as they were deemed 
-!   not neccessary since these variables are always initialized from E3SM state
+!   not neccessary since these variables are always initialized from E3SM state, thus no need
+!   to save from timestep to timestep.  
    real(r8), pointer, dimension(:,:) :: upwp     ! east-west momentum flux                      [m^2/s^2]
    real(r8), pointer, dimension(:,:) :: vpwp     ! north-south momentum flux                    [m^2/s^2] 
    real(r8), pointer, dimension(:,:) :: cld      ! cloud fraction                               [fraction]
@@ -1305,6 +1317,7 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:,:) :: q_five
    real(r8), pointer, dimension(:,:) :: pmid_five
    real(r8), pointer, dimension(:,:) :: pint_five
+   real(r8), pointer, dimension(:,:) :: wp2_five
    
    real(r8) :: t_five_host(pver)
    
@@ -1438,7 +1451,9 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, u_five_idx,    u_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_five,1/))
    call pbuf_get_field(pbuf, v_five_idx,    v_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_five,1/))
    call pbuf_get_field(pbuf, pmid_five_idx,    pmid_five,      start=(/1,1,1/), kount=(/pcols,pver_five,1/)) 
-   call pbuf_get_field(pbuf, pint_five_idx,    pint_five,      start=(/1,1,1/), kount=(/pcols,pverp_five,1/))     
+   call pbuf_get_field(pbuf, pint_five_idx,    pint_five,      start=(/1,1,1/), kount=(/pcols,pverp_five,1/))  
+   
+   call pbuf_get_field(pbuf, wp2_five_idx,     wp2_five,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))      
 #endif 
 
    ! Intialize the apply_const variable (note special logic is due to eularian backstepping)
@@ -1562,13 +1577,16 @@ end subroutine clubb_init_cnst
    
 #ifdef FIVE
    ! Syncronize FIVE variables to E3SM state
+   !  This is a crucial component to using FIVE within E3SM
    call five_syncronize_e3sm(state1,dtime,p0_clubb,pint_five,pmid_five,t_five,u_five,v_five,q_five) 
 #endif   
 
    !  At each CLUBB call, initialize mean momentum  and thermo CLUBB state 
    !  from the CAM state
    !  If we are calling FIVE, we do NOT want to initialize from the state, since
-   !    we have already syncronized FIVE variables to E3SM state
+   !    we have already syncronized FIVE variables to E3SM state.  If FIVE is 
+   !    used we will feed in the FIVE variables to the appropriate input arrays
+   !    a little further down
 #ifndef FIVE   
    do k=1,pver   ! loop over levels
      do i=1,ncol ! loop over columns
@@ -1749,7 +1767,8 @@ end subroutine clubb_init_cnst
       
 #endif
 
-      ! do the following regardless if FIVE is called or not
+      ! do the following regardless if FIVE is called or not, as these
+      !  inputs could not be derived from the FIVE grid
       do k=1,pver   
         rfrzm_pre(k)           = state1%q(i,k,ixcldice)   
         radf_pre(k)            = radf_clubb(i,k)
@@ -2318,18 +2337,22 @@ end subroutine clubb_init_cnst
              dz_five(:),rho_five(:))	     
       
       ! Compute mass weighted vertical average of variables from FIVE grid to E3SM grid
+      ! For temperature 
       call masswgt_vert_avg(rho_e3sm(:),rho_five(:),dz_e3sm(:),dz_five(:),&
                             state%pint(i,:),pmid_five(i,:),state1%pmid(i,:),&
 			    t_five(i,1:pver_five),t_five_low(i,1:pver))
 			    
+      ! For zonal wind
       call masswgt_vert_avg(rho_e3sm(:),rho_five(:),dz_e3sm(:),dz_five(:),&
                             state%pint(i,:),pmid_five(i,:),state1%pmid(i,:),&
 			    u_five(i,1:pver_five),u_five_low(i,1:pver))	
-			    
+			
+      ! For meridional wind    
       call masswgt_vert_avg(rho_e3sm(:),rho_five(:),dz_e3sm(:),dz_five(:),&
                             state%pint(i,:),pmid_five(i,:),state1%pmid(i,:),&
 			    v_five(i,1:pver_five),v_five_low(i,1:pver))	
-			    
+	
+      ! For moisture and tracers		    
       do p=1,pcnst
         call masswgt_vert_avg(rho_e3sm(:),rho_five(:),dz_e3sm(:),dz_five(:),&
                               state%pint(i,:),pmid_five(i,:),state1%pmid(i,:),&
@@ -2368,6 +2391,9 @@ end subroutine clubb_init_cnst
       call linear_interp(pmid_five(i,:),state1%pmid(i,:),zi_out_pre(1:pver_five),zi_out(i,1:pver),pver_five,pver)
       call linear_interp(pmid_five(i,:),state1%pmid(i,:),khzm_pre(1:pver_five),khzm(i,1:pver),pver_five,pver)
       call linear_interp(pmid_five(i,:),state1%pmid(i,:),qclvar_pre(1:pver_five),qclvar(i,1:pver),pver_five,pver)
+      
+      call linear_interp(pmid_five(i,:),state1%pmid(i,:),wp2(i,1:pver_five),wp2_five(i,1:pver),pver_five,pver)
+      wp2_five(i,pverp) = wp2_five(i,pver) ! set lower boundary 
  
 #else 
       ! If FIVE is not used, then simply just copy the arrays over
