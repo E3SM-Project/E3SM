@@ -5,7 +5,7 @@ Script to create a new CIME Case Control System (CSS) experimental case.
 """
 
 from Tools.standard_script_setup import *
-from CIME.utils         import expect, get_model, get_cime_config
+from CIME.utils         import expect, get_model, get_cime_config, get_cime_default_driver
 from CIME.case          import Case
 from argparse           import RawTextHelpFormatter
 
@@ -135,9 +135,9 @@ def parse_command_line(args, cimeroot, description):
 
     parser.add_argument("-i", "--input-dir",
                         help="Use a non-default location for input files. This will change the xml value of DIN_LOC_ROOT.")
-
-    # Select a driver. No selection implies mct driver
-    parser.add_argument("--driver", help=argparse.SUPPRESS)
+    parser.add_argument("--driver", default=get_cime_default_driver(),
+                        choices=('mct','nuopc', 'moab'),
+                        help=argparse.SUPPRESS)
 
     parser.add_argument("-n", "--non-local", action="store_true",
                         help="Use when you've requested a machine that you aren't on. "
@@ -158,10 +158,6 @@ def parse_command_line(args, cimeroot, description):
         expect(os.path.isfile(args.pesfile),
                "Pes specification file {} cannot be found ".format(args.pesfile))
 
-    if args.user_grid:
-        expect(args.gridfile is not None,
-               "User grid specification file must be set if the user grid is requested")
-
     run_unsupported = False
     if model == "cesm":
         run_unsupported = args.run_unsupported
@@ -177,7 +173,7 @@ def parse_command_line(args, cimeroot, description):
     return args.case, args.compset, args.res, args.machine, args.compiler,\
         args.mpilib, args.project, args.pecount, \
         args.user_mods_dir, args.pesfile, \
-        args.user_grid, args.gridfile, args.srcroot, args.test, args.multi_driver, \
+        args.gridfile, args.srcroot, args.test, args.multi_driver, \
         args.ninst, args.walltime, args.queue, args.output_root, args.script_root, \
         run_unsupported, args.answer, args.input_dir, args.driver, args.non_local
 
@@ -189,7 +185,7 @@ def _main_func(description):
     casename, compset, grid, machine, compiler, \
         mpilib, project, pecount,  \
         user_mods_dir, pesfile, \
-        user_grid, gridfile, srcroot, test, multi_driver, ninst, walltime, \
+        gridfile, srcroot, test, multi_driver, ninst, walltime, \
         queue, output_root, script_root, run_unsupported, \
         answer, input_dir, driver, non_local = parse_command_line(sys.argv, cimeroot, description)
 
@@ -212,7 +208,7 @@ def _main_func(description):
         case.create(casename, srcroot, compset, grid, user_mods_dir=user_mods_dir,
                     machine_name=machine, project=project,
                     pecount=pecount, compiler=compiler, mpilib=mpilib,
-                    pesfile=pesfile,user_grid=user_grid, gridfile=gridfile,
+                    pesfile=pesfile,gridfile=gridfile,
                     multi_driver=multi_driver, ninst=ninst, test=test,
                     walltime=walltime, queue=queue, output_root=output_root,
                     run_unsupported=run_unsupported, answer=answer,
