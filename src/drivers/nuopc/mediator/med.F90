@@ -797,8 +797,9 @@ contains
       use ESMF                  , only : ESMF_FieldGet, ESMF_DistGridGet, ESMF_GridCompGet
       use ESMF                  , only : ESMF_GeomType_Grid, ESMF_AttributeGet, ESMF_DistGridCreate, ESMF_FieldEmptySet
       use ESMF                  , only : ESMF_GridCreate, ESMF_LogWrite, ESMF_LogMsg_Info, ESMF_GridGet, ESMF_Failure
+      use ESMF                  , only : ESMF_LogMsg_Warning
       use ESMF                  , only : ESMF_FieldStatus_Empty, ESMF_FieldStatus_Complete, ESMF_FieldStatus_GridSet
-      use ESMF                  , only : ESMF_GeomType_Mesh, ESMF_MeshGet, ESMF_Mesh, ESMF_MeshCreate
+      use ESMF                  , only : ESMF_GeomType_Mesh, ESMF_MeshGet, ESMF_Mesh, ESMF_MeshEmptyCreate
       use shr_nuopc_methods_mod , only: shr_nuopc_methods_Field_GeomPrint
 
       type(ESMF_State)   , intent(inout) :: State
@@ -812,6 +813,8 @@ contains
       integer                       :: localDeCount
 
       type(ESMF_DistGrid)           :: distgrid
+      type(ESMF_DistGrid)           :: nodaldistgrid, newnodaldistgrid
+      type(ESMF_DistGrid)           :: elemdistgrid, newelemdistgrid
       type(ESMF_DistGridConnection), allocatable :: connectionList(:)
       integer                       :: arbDimCount
       integer                       :: dimCount, tileCount, petCount
@@ -1086,22 +1089,27 @@ contains
                   call ESMF_FieldGet(field, status=fieldStatus, rc=rc)
                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-                  if (fieldStatus==ESMF_FIELDSTATUS_EMPTY) then
+                  if (fieldStatus==ESMF_FIELDSTATUS_EMPTY .or. fieldStatus==ESMF_FIELDSTATUS_GRIDSET) then
                      call ESMF_FieldEmptySet(field, grid=grid, rc=rc)
                      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                     if (dbug_flag > 1) then
+                        call ESMF_LogWrite(trim(subname)//trim(string)//": attach grid for "//trim(fieldNameList(n1)), &
+                             ESMF_LOGMSG_INFO, rc=rc)
+                        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                     endif
+                     if (dbug_flag > 1) then
+                        call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n1))//'_new',rc)
+                        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                     end if
+                  else
+                     if (dbug_flag > 1) then
+                        call ESMF_LogWrite(trim(subname)//trim(string)//": NOT replacing grid for field: "//trim(fieldNameList(n1)), &
+                             ESMF_LOGMSG_WARNING, rc=rc)
+                        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                     endif
                   endif
-
-                  if (dbug_flag > 1) then
-                     call ESMF_LogWrite(trim(subname)//trim(string)//": attach grid for "//trim(fieldNameList(n1)), &
-                          ESMF_LOGMSG_INFO, rc=rc)
-                     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                  endif
-
-                  if (dbug_flag > 1) then
-                     call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n1))//'_new',rc)
-                     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                  end if
                enddo
+
 
             elseif (geomtype == ESMF_GEOMTYPE_MESH) then
 
@@ -1118,49 +1126,44 @@ contains
                call ESMF_FieldGet(field, mesh=mesh, rc=rc)
                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-               call ESMF_MeshGet(mesh, elementDistGrid=distgrid, rc=rc)
+               call ESMF_MeshGet(mesh, elementDistGrid=elemDistGrid, & 
+                    nodalDistGrid=nodalDistGrid, rc=rc)
                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-               call ESMF_DistGridGet(distgrid, dimCount=dimCount, tileCount=tileCount, rc=rc)
+               call ESMF_DistGridGet(elemDistGrid, dimCount=dimCount, tileCount=tileCount, rc=rc)
                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
                ! allocate minIndexPTile and maxIndexPTile accord. to dimCount and tileCount
                allocate(minIndexPTile(dimCount, tileCount),maxIndexPTile(dimCount, tileCount))
                ! get minIndex and maxIndex arrays
-               call ESMF_DistGridGet(distgrid, minIndexPTile=minIndexPTile, &
+               call ESMF_DistGridGet(elemDistGrid, minIndexPTile=minIndexPTile, &
                     maxIndexPTile=maxIndexPTile, rc=rc)
                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-               ! construct a default regDecompPTile -> TODO: move this into ESMF as default
+               ! use default regular decomposition
+               newelemdistgrid = ESMF_DistGridCreate(minIndexPTile=minIndexPTile, &
+                    maxIndexPTile=maxIndexPTile, rc=rc)
+               deallocate(minIndexPTile, maxIndexPTile)
 
-               allocate(regDecompPTile(dimCount, tileCount))
-               deCountPTile = petCount/tileCount
-               extraDEs = max(0, petCount-deCountPTile)
-               do i=1, tileCount
-                  if (i<=extraDEs) then
-                     regDecompPTile(1, i) = deCountPTile + 1
-                  else
-                     regDecompPTile(1, i) = deCountPTile
-                  endif
-                  do j=2, dimCount
-                     regDecompPTile(j, i) = 1
-                  enddo
-               enddo
-               ! create the new DistGrid with the same minIndexPTile and maxIndexPTile,
-               ! but with a default regDecompPTile
-               distgrid = ESMF_DistGridCreate(minIndexPTile=minIndexPTile, &
-                    maxIndexPTile=maxIndexPTile, regDecompPTile=regDecompPTile, rc=rc)
+               call ESMF_DistGridGet(nodalDistGrid, dimCount=dimCount, tileCount=tileCount, rc=rc)
                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+               ! allocate minIndexPTile and maxIndexPTile accord. to dimCount and tileCount
+               allocate(minIndexPTile(dimCount, tileCount),maxIndexPTile(dimCount, tileCount))
+               ! get minIndex and maxIndex arrays
+               call ESMF_DistGridGet(nodalDistGrid, minIndexPTile=minIndexPTile, &
+                    maxIndexPTile=maxIndexPTile, rc=rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+               ! use default regular decomposition
+               newnodaldistgrid = ESMF_DistGridCreate(minIndexPTile=minIndexPTile, &
+                    maxIndexPTile=maxIndexPTile, rc=rc)
+               deallocate(minIndexPTile, maxIndexPTile)
 
                ! Create a new Grid on the new DistGrid and swap it in the Field
-               newmesh = ESMF_MeshCreate(distgrid, distgrid, rc=rc)
+               newmesh = ESMF_MeshEmptyCreate(elementDistGrid=newelemdistgrid, & 
+                    nodalDistGrid=newnodalDistGrid, rc=rc)
                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-               ! local clean-up
-               deallocate(minIndexPTile, maxIndexPTile, regDecompPTile)
-
-               ! need to check whether to destroy the original mesh?
-               ! call ESMF_MeshDestroy(mesh, rc=rc)
 
                ! Swap all the Meshes in the State
 
@@ -1173,21 +1176,25 @@ contains
                   call ESMF_FieldGet(field, status=fieldStatus, rc=rc)
                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-                  if (fieldStatus==ESMF_FIELDSTATUS_EMPTY) then
+                  if (fieldStatus==ESMF_FIELDSTATUS_EMPTY .or. fieldStatus==ESMF_FIELDSTATUS_GRIDSET) then
                      call ESMF_FieldEmptySet(field, mesh=newmesh, rc=rc)
                      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                  endif
-
-                  if (dbug_flag > 1) then
-                     call ESMF_LogWrite(trim(subname)//trim(string)//": attach mesh for "//trim(fieldNameList(n1)), &
-                          ESMF_LOGMSG_INFO, rc=rc)
-                     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                  endif
-
-                  if (dbug_flag > 1) then
-                     call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n1))//'_new',rc)
-                     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                  end if
+                     if (dbug_flag > 1) then
+                        call ESMF_LogWrite(trim(subname)//trim(string)//": attach mesh for "//trim(fieldNameList(n1)), &
+                             ESMF_LOGMSG_INFO, rc=rc)
+                        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                     endif
+                     if (dbug_flag > 1) then
+                        call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n1))//'_new',rc)
+                        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                     end if
+                  else                     
+                     if (dbug_flag > 1) then
+                        call ESMF_LogWrite(trim(subname)//trim(string)//": NOT replacing mesh for field: "//trim(fieldNameList(n1)), &
+                             ESMF_LOGMSG_WARNING, rc=rc)
+                        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                     endif
+                  endif                  
                enddo
 
             else  ! geomtype
