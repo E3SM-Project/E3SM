@@ -8,7 +8,9 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
     def __init__(self):
         self.case_id = ''
         self.reference_data_path = ''
+        self.ref_timeseries_input = False
         self.test_data_path = ''
+        self.test_timeseries_input = False
         self.viewer_descr = {}
 
         self.sets = []

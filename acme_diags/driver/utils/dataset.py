@@ -4,6 +4,7 @@ This data can either be climatology files or timeseries files.
 Derived variables are also supported.
 """
 import os
+import glob
 import collections
 import traceback
 import cdms2
@@ -83,16 +84,12 @@ class Dataset():
         if self.ref and self.is_timeseries():
             # Get the reference variable from timeseries files.
             data_path = self.parameters.reference_data_path
-            start_yr = self.parameters.ref_start_yr
-            end_yr = self.parameters.ref_end_yr
-            variables = self._get_timeseries_var(data_path, start_yr, end_yr, season)
+            variables = self._get_timeseries_var(data_path, season)
             
         elif self.test and self.is_timeseries():
             # Get the test variable from timeseries files.
             data_path = self.parameters.test_data_path
-            start_yr = self.parameters.test_start_yr
-            end_yr = self.parameters.test_end_yr
-            variables = self._get_timeseries_var(data_path, start_yr, end_yr, season)
+            variables = self._get_timeseries_var(data_path, season)
 
         elif self.ref:
             # Get the reference variable from climo files.
@@ -296,7 +293,7 @@ class Dataset():
             return vars_to_func_dict[k]
 
 
-    def _get_timeseries_var(self, data_path, start_yr, end_yr, season):
+    def _get_timeseries_var(self, data_path, season):
         """
         For a given season and timeseries input data,
         get the variable (self.var).
@@ -317,11 +314,11 @@ class Dataset():
             # Get the first valid variables and functions from possible vars.
             # Ex: {('PRECC', 'PRECL'): func}
             # These are checked, so there are valid timeseries files in data_path for these variables.
-            vars_to_func_dict = self._get_first_valid_vars_timeseries(possible_vars_and_funcs, data_path, start_yr, end_yr)
+            vars_to_func_dict = self._get_first_valid_vars_timeseries(possible_vars_and_funcs, data_path)
 
             # Open the files of the variables and get the cdms2.TransientVariables.
             # Ex: [PRECC, PRECL], where both are TransientVariables.
-            variables = self._get_original_vars_timeseries(vars_to_func_dict, data_path, start_yr, end_yr)
+            variables = self._get_original_vars_timeseries(vars_to_func_dict, data_path)
 
             # Get the corresponding function.
             # Ex: The func in {('PRECC', 'PRECL'): func}.
@@ -338,18 +335,18 @@ class Dataset():
             #     Any extra variables must come from PRECC_{start_yr}01_{end_yr}12.nc.
             first_orig_var = vars_to_func_dict.keys()[0][0]
             for extra_var in self.extra_vars:
-                v = self._get_var_from_timeseries_file(first_orig_var, data_path, start_yr, end_yr, var_to_get=extra_var)
+                v = self._get_var_from_timeseries_file(first_orig_var, data_path, var_to_get=extra_var)
                 return_variables.append(v)
 
         # Or if the timeseries file for the var exists, get that.
-        elif self._does_timeseries_file_exist(self.var, data_path, start_yr, end_yr):
+        elif self._get_timeseries_file_path(self.var, data_path):
             # Find {var}_{start_yr}01_{end_yr}12.nc in data_path and get var from it.
-            v = self._get_var_from_timeseries_file(self.var, data_path, start_yr, end_yr)
+            v = self._get_var_from_timeseries_file(self.var, data_path)
             return_variables.append(v)
 
             # Also get any extra vars.
             for extra_var in self.extra_vars:
-                v = self._get_var_from_timeseries_file(self.var, data_path, start_yr, end_yr, var_to_get=extra_var)
+                v = self._get_var_from_timeseries_file(self.var, data_path, var_to_get=extra_var)
                 return_variables.append(v)
 
         # Otherwise, there's an error.
@@ -363,7 +360,7 @@ class Dataset():
         return [self.climo_fcn(v, season) for v in return_variables]
 
 
-    def _get_first_valid_vars_timeseries(self, vars_to_func_dict, data_path, start_yr, end_yr):
+    def _get_first_valid_vars_timeseries(self, vars_to_func_dict, data_path):
         """
         Given an OrderedDict of a list of variables to a function
             ex: {('PRECC', 'PRECL'): func, ('var2',): func2},
@@ -379,7 +376,7 @@ class Dataset():
 
         for list_of_vars in possible_vars:
             # Check that there are files in data_path that exist for all variables in list_of_vars.
-            if all(self._does_timeseries_file_exist(var, data_path, start_yr, end_yr)
+            if all(self._get_timeseries_file_path(var, data_path)
                     for var in list_of_vars):
                 # All of the variables (list_of_vars) have files in data_path.
                 # Return the corresponding dict.
@@ -388,7 +385,7 @@ class Dataset():
         # None of the entries in the derived vars dictionary are valid,
         # so try to get the var directly.
         # Only try this if there is a corresponding file for var in data_path.
-        if self._does_timeseries_file_exist(self.var, data_path, start_yr, end_yr):
+        if self._get_timeseries_file_path(self.var, data_path):
             # The below will just cause var to get extracted in {var}_{start_yr}01_{end_yr}12.nc.
             return {(self.var,): lambda x: x}
 
@@ -398,32 +395,46 @@ class Dataset():
         raise RuntimeError(msg)
 
 
-    def _does_timeseries_file_exist(self, var, data_path, start_yr, end_yr):
+    def _get_timeseries_file_path(self, var, data_path):
         """
-        Returns True if a file exists in data_path in the form:
+        Returns the file path if a file exists in data_path in the form:
             {var}_{start_yr}01_{end_yr}12.nc
         Or
             {self.parameters.ref_name}/{var}_{start_yr}01_{end_yr}12.nc
+        This is equivalent to returning True if the file exists.
+
+        If there are multiple files that exist for a variable
+        (with different start_yr or end_yr), return ''.
+        This is equivalent to returning False.
         """
-        file_name = '{}_{}01_{}12.nc'.format(var, start_yr, end_yr)
+        file_name = '{}_*.nc'.format(var)
         path = os.path.join(data_path, file_name)
-        if os.path.exists(path):
-            return True
+        matches = sorted(glob.glob(path))
+        if len(matches) == 1:
+            return matches[0]
+        elif len(matches) >= 2:
+            # There should not be more that one file per var.
+            return ''
         
-        # Try looking for the file with the ref_name prepended to it.
+        # If nothing was found, try looking for the file with
+        # the ref_name prepended to it.
         ref_name = getattr(self.parameters, 'ref_name', '')
         path = os.path.join(data_path, ref_name, file_name)
-        # If it's not here, then the file doesn't exist.
-        return os.path.exists(path)
+        matches = sorted(glob.glob(path))
+        # Again, there should only be one file per var in this new location.
+        if len(matches) == 1:
+            return matches[0]
+        else:
+            return ''
 
 
-    def _get_original_vars_timeseries(self, vars_to_func_dict, data_path, start_yr, end_yr):
+    def _get_original_vars_timeseries(self, vars_to_func_dict, data_path):
         """
         Given a dictionary in the form {(vars): func}, get the vars
         from files in data_path as cdms2.TransientVariables.
 
-        These vars were checked to actually be in data_path.
-        start_yr and end_yr are used to get the filenames.
+        These vars were checked to actually be in
+        data_path in _get_first_valid_vars_timeseries().
         """
         # Since there's only one set of vars, we get the first
         # and only set of vars from the dictionary.
@@ -431,31 +442,28 @@ class Dataset():
 
         variables = []
         for var in vars_to_get:
-            v = self._get_var_from_timeseries_file(var, data_path, start_yr, end_yr)
+            v = self._get_var_from_timeseries_file(var, data_path)
             variables.append(v)
         
         return variables
 
 
-    def _get_var_from_timeseries_file(self, var, data_path, start_yr, end_yr, var_to_get=''):
+    def _get_var_from_timeseries_file(self, var, data_path, var_to_get=''):
         """
-        Get var from this file located in data_path:
-            {var}_{start_yr}01_{end_yr}12.nc
-        Or
-            {self.parameters.ref_name}/{var}_{start_yr}01_{end_yr}12.nc
+        Get the actual var from the timeseries file for var.
         If var_to_get is defined, get that from the file instead of var.
+
+        This function is only called after it's checked that a file
+        for this var exists in data_path.
+        The checking is done in _get_first_valid_vars_timeseries().
         """
+        path = self._get_timeseries_file_path(var, data_path)
+
         start_time_slice, end_time_slice = self.get_start_end_time_slice()
 
         start_time_slice = int(start_time_slice)
         end_time_slice = int(end_time_slice)
         
-        file_name = '{}_{}01_{}12.nc'.format(var, start_yr, end_yr)
-        path = os.path.join(data_path, file_name)
-        if not os.path.exists(path):
-            ref_name = getattr(self.parameters, 'ref_name', '')
-            path = os.path.join(data_path, ref_name, file_name)
-
         var = var_to_get if var_to_get else var
         with cdms2.open(path) as f:
             return f(var, time=slice(start_time_slice, end_time_slice+1))(squeeze=1)
