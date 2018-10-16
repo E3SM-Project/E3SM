@@ -320,7 +320,13 @@ class Machines(CIME.XML.machines.Machines):
                 desc = self.text(self.get_child("DESC"))
                 os_  = self.text(self.get_child("OS"))
                 compilers = self.text(self.get_child("COMPILERS"))
-
+                mpilibnodes = self.get_children("MPILIBS", root=self.machine_node)
+                mpilibs = []
+                for node in mpilibnodes:
+                    mpilibs.extend(self.text(node).split(','))
+                # This does not include the possible depedancy of mpilib on compiler
+                # it simply provides a list of mpilibs available on the machine
+                mpilibs = list(set(mpilibs))
                 max_tasks_per_node = self.text(self.get_child("MAX_TASKS_PER_NODE"))
                 mpitasks_node = self.get_optional_child("MAX_MPITASKS_PER_NODE")
                 max_mpitasks_per_node = self.text(mpitasks_node) if mpitasks_node else max_tasks_per_node
@@ -330,6 +336,7 @@ class Machines(CIME.XML.machines.Machines):
                 print("  {} : {} ".format(name, desc))
                 print("      os             ", os_)
                 print("      compilers      ",compilers)
+                print("      mpilibs        ",mpilibs)
                 if max_mpitasks_per_node is not None:
                     print("      pes/node       ",max_mpitasks_per_node)
                 if max_tasks_per_node is not None:
