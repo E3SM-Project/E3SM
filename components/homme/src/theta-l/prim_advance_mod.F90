@@ -395,10 +395,8 @@ contains
 
   real(kind=real_kind)                  :: gp(np)
 
-#if 1
+#if 0
   gp(1) = -1; gp(4) = 1; gp(2) =  -0.4472135955; gp(3) = 0.4472135955;
-!smooth out vapor
-
         do ie=nets,nete
           do k=1,nlev
             noreast = elem(ie)%derived%FQ(np,np,k,1)
