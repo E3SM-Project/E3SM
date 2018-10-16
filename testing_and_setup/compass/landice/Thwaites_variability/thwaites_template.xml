@@ -86,7 +86,7 @@
                         <attribute name="output_interval">0000-00-01_00:00:00</attribute>
                         <attribute name="reference_time">0000-01-01_00:00:00</attribute>
                         <attribute name="clobber_mode">overwrite</attribute>
-                        <attribute name="io_type">netcdf</attribute>
+                        <!-- <attribute name="io_type">netcdf</attribute> -->
                         <add_contents>
                                 <member name="xtime" type="var"/>
                                 <member name="deltat" type="var"/>

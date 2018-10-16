@@ -1,4 +1,4 @@
-<regression_suite name="standard_integration_test_suite">
+<regression_suite name="sia_integration_test_suite">
 
         <!-- SIA tests -->
         <test name="Dome restart test" core="landice" configuration="dome" resolution="2000m" test="restart_test">

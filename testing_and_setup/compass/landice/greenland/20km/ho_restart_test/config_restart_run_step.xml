@@ -54,14 +54,14 @@
                         <argument flag="-f">landice_grid.nc</argument>
                 </step>
                 <step executable="./metis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
-                        <argument flag="graph.info">4</argument>
+                        <argument flag="graph.info">12</argument>
                 </step>
 
                 <!-- Run the first part of the run -->
-                <model_run procs="4" threads="1" namelist="namelist.landice" streams="streams.landice"/>
+                <model_run procs="12" threads="1" namelist="namelist.landice" streams="streams.landice"/>
 
                 <!-- Run the restart part of the run -->
-                <model_run procs="4" threads="1" namelist="namelist.landice.rst" streams="streams.landice"/>
+                <model_run procs="12" threads="1" namelist="namelist.landice.rst" streams="streams.landice"/>
         </run_script>
 </config>
 
