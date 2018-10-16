@@ -5,15 +5,12 @@ module shr_flds_mod
 
    implicit none
    public
-   save
 
    !----------------------------------------------------------------------------
    ! for the domain
    !----------------------------------------------------------------------------
 
-   ! These are set by the call to seq_flds_set in seq_flds_mod
-
-   character(CXX) :: seq_flds_dom_coord
-   character(CXX) :: seq_flds_dom_other
+   character(CXX) :: shr_flds_dom_coord
+   character(CXX) :: shr_flds_dom_other
 
 end module shr_flds_mod
