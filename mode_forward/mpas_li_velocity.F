@@ -971,15 +971,16 @@ contains
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
+      real(kind=RKIND), pointer :: config_unrealistic_velocity
       integer, pointer :: nCells
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell
       real(kind=RKIND), dimension(:), pointer :: thickness, calvingThickness
       integer, dimension(:), pointer :: cellMask
-      real(kind=RKIND), parameter :: highSpeed = 0.00318471337_RKIND ! 100,000 m/yr in m/s
       integer :: iCell, iEdgeOnCell, iEdge
       integer :: cellCount
 
+      call mpas_pool_get_config(liConfigs, 'config_unrealistic_velocity', config_unrealistic_velocity)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
@@ -990,7 +991,7 @@ contains
 
       cellCount = 0
       do iCell = 1, nCells
-         if (li_mask_is_ice(cellMask(iCell)) .and. (surfaceSpeed(iCell) > highSpeed)) then
+         if (li_mask_is_ice(cellMask(iCell)) .and. (surfaceSpeed(iCell) > config_unrealistic_velocity)) then
          ! "fast" ice that is removed is added to the calving flux
             calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
             thickness(iCell) = 0.0_RKIND
@@ -1006,7 +1007,8 @@ contains
       end do
 
       if (cellCount > 0) then
-         call mpas_log_write("Removed $i cells due to speeds greater than $r m/s.", intArgs=(/cellCount/), realArgs=(/highSpeed/))
+         call mpas_log_write("Removed $i cells due to speeds greater than $r m/s.", &
+            intArgs=(/cellCount/), realArgs=(/config_unrealistic_velocity/))
       endif
 
    !--------------------------------------------------------------------
