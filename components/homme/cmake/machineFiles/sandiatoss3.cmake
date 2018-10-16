@@ -44,7 +44,7 @@ SET (CMAKE_C_COMPILER mpicc CACHE FILEPATH "")
 SET (CMAKE_CXX_COMPILER mpicc CACHE FILEPATH "")
 
 # Openmpi 1.8 only
-SET (USE_MPI_OPTIONS "--bind-to core" CACHE FILEPATH "")
+SET (USE_MPI_OPTIONS " --map-by node:SPAN " CACHE FILEPATH "")
 
 # Openmpi 1.6
 #SET (USE_MPI_OPTIONS "-loadbalance" CACHE FILEPATH "")
