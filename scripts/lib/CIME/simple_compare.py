@@ -1,4 +1,4 @@
-import os, re, json
+import os, re
 
 from CIME.utils import expect
 
