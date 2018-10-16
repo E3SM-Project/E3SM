@@ -32,5 +32,9 @@
                 <script name="setup_and_run_testcase.py"/>
         </test>
 
+        <test name="HO GIS restart test" core="landice" configuration="greenland" resolution="20km" test="ho_restart_test">
+                <script name="setup_and_run_testcase.py"/>
+        </test>
+
 </regression_suite>
 
