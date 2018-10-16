@@ -52,7 +52,6 @@ contains
     use clm_varcon       , only : spval
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall 
     use column_varcon    , only : icol_road_perv, icol_road_imperv
-    use clm_time_manager , only : get_curr_date, get_prev_date, get_nstep
     !
     ! !ARGUMENTS:
     type(bounds_type)         , intent(in)    :: bounds     
@@ -68,7 +67,6 @@ contains
     ! !LOCAL VARIABLES:
     integer :: c, p, f, j, fc                  ! indices
     real(r8):: h2osoi_vol
-    integer :: year, mon, day, sec
     !-----------------------------------------------------------------------
 
     associate(                                                         & 
@@ -82,8 +80,7 @@ contains
          zwt                    =>    soilhydrology_vars%zwt_col                 , & ! Input:  [real(r8) (:)   ]  water table depth (m)                   
          wa                     =>    soilhydrology_vars%wa_col                  , & ! Output: [real(r8) (:)   ]  water in the unconfined aquifer (mm)    
          h2ocan_col             =>    waterstate_vars%h2ocan_col                 , & ! Output: [real(r8) (:)   ]  canopy water (mm H2O) (column level)    
-         begwb                  =>    waterstate_vars%begwb_col                  , & ! Output: [real(r8) (:)   ]  water mass begining of the time step
-         tws_month_beg_grc      =>    waterstate_vars%tws_month_beg_grc            & ! Output: [real(r8) (:)   ]  grid-level water mass at the begining of a month
+         begwb                  =>    waterstate_vars%begwb_col                    & ! Output: [real(r8) (:)   ]  water mass begining of the time step
          )
 
       ! Determine beginning water balance for time step
@@ -146,16 +143,6 @@ contains
          begwb(c) = h2osno(c)
       end do
 
-      ! If this is the beginning of a month, save grid-level total water storage
-      call get_prev_date(year, mon, day, sec);
-
-      if (day == 1 .and. sec == 0) then
-         call c2g( bounds, &
-              begwb(bounds%begc:bounds%endc), &
-              tws_month_beg_grc(bounds%begg:bounds%endg), &
-              c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
-      endif
-
     end associate
 
   end subroutine BeginColWaterBalance
@@ -211,7 +198,6 @@ contains
      integer  :: indexp,indexc,indexl,indexg            ! index of first found in search loop
      real(r8) :: forc_rain_col(bounds%begc:bounds%endc) ! column level rain rate [mm/s]
      real(r8) :: forc_snow_col(bounds%begc:bounds%endc) ! column level snow rate [mm/s]
-     integer  :: year, mon, day, sec
      !-----------------------------------------------------------------------
 
      associate(                                                                         & 
@@ -301,25 +287,13 @@ contains
           ftid                       =>    surfalb_vars%ftid_patch                    , & ! Input:  [real(r8) (:,:)]  down diffuse flux below canopy per unit direct flux
           ftii                       =>    surfalb_vars%ftii_patch                    , & ! Input:  [real(r8) (:,:)]  down diffuse flux below canopy per unit diffuse flux
 
-          netrad                     =>    energyflux_vars%netrad_patch               , & ! Output: [real(r8) (:)   ]  net radiation (positive downward) (W/m**2)
-          tws_month_end_grc          =>    waterstate_vars%tws_month_end_grc            & ! Output: [real(r8) (:)   ]  water mass at the end of a month
+          netrad                     =>    energyflux_vars%netrad_patch                 & ! Output: [real(r8) (:)   ]  net radiation (positive downward) (W/m**2)
           )
 
        ! Get step size and time step
 
        nstep = get_nstep()
        dtime = get_step_size()
-
-       ! If this is the end of a month, save grid-level total water storage
-       call get_curr_date(year, mon, day, sec);
-       if (nstep >= 1 .and. (day == 1 .and. sec == 0)) then
-          call c2g( bounds, &
-               endwb(bounds%begc:bounds%endc), &
-               tws_month_end_grc(bounds%begg:bounds%endg), &
-               c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
-       else
-          tws_month_end_grc(bounds%begg:bounds%endg) = spval
-       end if
 
        ! Determine column level incoming snow and rain
        ! Assume no incident precipitation on urban wall columns (as in CanopyHydrologyMod.F90).
@@ -832,13 +806,33 @@ contains
          enddo
       end do
 
-      call c2g(bounds, begwb_col             , begwb_grc          , c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
-      call c2g(bounds, wa_local_col          , beg_wa_grc         , c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
-      call c2g(bounds, h2ocan_col            , beg_h2ocan_grc     , c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
-      call c2g(bounds, h2osno                , beg_h2osno_grc     , c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
-      call c2g(bounds, h2osfc                , beg_h2osfc_grc     , c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
-      call c2g(bounds, h2osoi_liq_depth_intg , beg_h2osoi_liq_grc , c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
-      call c2g(bounds, h2osoi_ice_depth_intg , beg_h2osoi_ice_grc , c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+      call c2g(bounds, begwb_col(bounds%begc:bounds%endc), &
+           begwb_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, wa_local_col(bounds%begc:bounds%endc), &
+           beg_wa_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, h2ocan_col(bounds%begc:bounds%endc), &
+           beg_h2ocan_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, h2osno(bounds%begc:bounds%endc), &
+           beg_h2osno_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, h2osfc(bounds%begc:bounds%endc), &
+           beg_h2osfc_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, h2osoi_liq_depth_intg(bounds%begc:bounds%endc), &
+           beg_h2osoi_liq_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, h2osoi_ice_depth_intg(bounds%begc:bounds%endc), &
+           beg_h2osoi_ice_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
       
     end associate
 
@@ -1028,14 +1022,37 @@ contains
 
       end do
 
-      call c2g(bounds, endwb_col             , endwb_grc          , c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
-      call c2g(bounds, wa_local_col          , end_wa_grc         , c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
-      call c2g(bounds, h2ocan_col            , end_h2ocan_grc     , c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
-      call c2g(bounds, h2osno_col            , end_h2osno_grc     , c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
-      call c2g(bounds, h2osfc_col            , end_h2osfc_grc     , c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
-      call c2g(bounds, h2osoi_liq_depth_intg , end_h2osoi_liq_grc , c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
-      call c2g(bounds, h2osoi_ice_depth_intg , end_h2osoi_ice_grc , c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
-      call c2g(bounds, errh2o                , errh2o_grc         , c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+      call c2g(bounds, endwb_col(bounds%begc:bounds%endc)             , &
+           endwb_grc(bounds%begg:bounds%endg)                         , &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, wa_local_col(bounds%begc:bounds%endc)          , &
+           end_wa_grc(bounds%begg:bounds%endg)                        , &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, h2ocan_col(bounds%begc:bounds%endc)            , &
+           end_h2ocan_grc(bounds%begg:bounds%endg)                    , &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, h2osno_col(bounds%begc:bounds%endc)            , &
+           end_h2osno_grc(bounds%begg:bounds%endg)                    , &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, h2osfc_col(bounds%begc:bounds%endc)            , &
+           end_h2osfc_grc(bounds%begg:bounds%endg)                    , &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, h2osoi_liq_depth_intg(bounds%begc:bounds%endc) , &
+           end_h2osoi_liq_grc(bounds%begg:bounds%endg)                , &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, h2osoi_ice_depth_intg(bounds%begc:bounds%endc) , &
+           end_h2osoi_ice_grc(bounds%begg:bounds%endg)                , &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, errh2o(bounds%begc:bounds%endc)                , &
+           errh2o_grc(bounds%begg:bounds%endg)                        , &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
 
     end associate
 
