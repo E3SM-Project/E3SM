@@ -56,19 +56,20 @@ def _get_acme_logo_path(root_dir, html_path):
     return pth
 
 
-def _add_header(path, version, model_name, time, logo_path):
+def _add_header(path, version, test, ref, time, logo_path):
     """Add the header to the html located at path"""
 
     # We're inserting the following in the body under navbar navbar-default
     # <div id="e3sm-header" style="background-color:#dbe6c5; float:left; width:45%">
     # 	<p style="margin-left:5em">
     # 		<b>E3SM Diagnostics Package [VERSION]</b><br>
-    # 		Test model name: [SOMETHING]<br>
-    # 		Date created: [DATE]<br>
+    # 		Test: [SOMETHING]<br>
+    # 		Reference: [SOMETHING]<br>
+    # 		Created: [DATE]<br>
     # 	</p>
     # </div>
     # <div id="e3sm-header2" style="background-color:#dbe6c5; float:right; width:55%">
-    # 	<img src="e3sm_logo.png" alt="logo" style="width:161px; height:70px; background-color:#dbe6c5">
+    # 	<img src="e3sm_logo.png" alt="logo" style="width:201px; height:91px; background-color:#dbe6c5">
     # </div>
 
     soup = BeautifulSoup(open(path), "lxml")
@@ -85,10 +86,13 @@ def _add_header(path, version, model_name, time, logo_path):
     bolded_title.append(soup.new_tag("br"))
     p.append(bolded_title)
 
-    p.append("Model: {}".format(model_name))
+    p.append("Test: {}".format(test))
     p.append(soup.new_tag("br"))
 
-    p.append("Created {}".format(time))
+    p.append("Reference: {}".format(ref))
+    p.append(soup.new_tag("br"))
+
+    p.append("Created: {}".format(time))
 
     header_div.append(p)
     soup.body.insert(0, header_div)
@@ -96,7 +100,7 @@ def _add_header(path, version, model_name, time, logo_path):
     img_div = soup.new_tag("div", id="e3sm-header2",
                            style="background-color:#dbe6c5; float:right; width:55%")
     img = soup.new_tag("img", src=logo_path, alt="logo",
-                       style="width:161px; height:71px; background-color:#dbe6c5")
+                       style="width:201px; height:91px; background-color:#dbe6c5")
     img_div.append(img)
     soup.body.insert(1, img_div)
 
@@ -132,8 +136,13 @@ def _extras(root_dir, parameters):
 
     for f in index_files:
         path = _get_acme_logo_path(root_dir, f)
-        _add_header(f, acme_diags.__version__,
-                    parameters[0].test_name, dt, path)
+        if parameters[0].run_type == 'model_vs_model':
+            _add_header(f, acme_diags.__version__, parameters[0].test_name,
+                parameters[0].ref_name, dt, path)
+        elif parameters[0].run_type == 'model_vs_obs':
+            ref = 'Observation and Reanalysis'
+            _add_header(f, acme_diags.__version__, parameters[0].test_name,
+                ref, dt, path)
         h1_to_h3(f)
 
     _edit_table_html(root_dir)
