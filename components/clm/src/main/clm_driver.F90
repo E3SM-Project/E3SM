@@ -1143,7 +1143,7 @@ contains
             soilhydrology_vars)
        call t_stopf('gridbalchk')
 
-       call WaterBudget_SetEndingMonthlyStates(bounds_proc, waterstate_vars)
+       call WaterBudget_SetEndingMonthlyStates(bounds_clump, waterstate_vars)
 
        if (.not. use_fates)then
           if (use_cn) then
