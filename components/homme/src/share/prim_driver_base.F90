@@ -65,7 +65,7 @@ contains
     use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
          MeshCubeElemCount, MeshCubeEdgeCount, MeshCubeTopologyCoords
     ! --------------------------------
-    use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph, printmetavertex
+    use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph, printmetavertex, destroymetagraph
     ! --------------------------------
     use gridgraph_mod, only : gridvertex_t, gridedge_t, allocate_gridvertex_nbrs, deallocate_gridvertex_nbrs
     ! --------------------------------
@@ -104,6 +104,8 @@ contains
     ! --------------------------------
     use edge_mod, only : initedgebuffer, edge_g
     ! --------------------------------
+    use scalable_grid_init_mod, only: sgi_init_grid, sgi_check, sgi_finalize
+    ! --------------------------------
 #ifndef CAM
     use repro_sum_mod,      only: repro_sum, repro_sum_defaultopts, repro_sum_setopts
 #else
@@ -122,9 +124,10 @@ contains
     type (domain1d_t),  pointer     :: dom_mt(:)
     type (timelevel_t), intent(out) :: Tl
 
-    type (GridVertex_t), target,allocatable :: GridVertex(:)
+    type (GridVertex_t), pointer :: GridVertex(:)
     type (GridEdge_t),   target,allocatable :: Gridedge(:)
-    type (MetaVertex_t), target,allocatable :: MetaVertex(:)
+    type (MetaVertex_t) :: MetaVertex
+    logical :: can_scalably_init_grid
 
     integer :: ii,ie, ith
     integer :: nets, nete
@@ -136,8 +139,6 @@ contains
     logical, parameter :: Debug = .FALSE.
 
     integer  :: i
-    integer,allocatable :: TailPartition(:)
-    integer,allocatable :: HeadPartition(:)
 
     integer total_nelem
     real(kind=real_kind) :: approx_elements_per_task
@@ -210,23 +211,33 @@ contains
     ! ===============================================================
     ! Allocate and initialize the graph (array of GridVertex_t types)
     ! ===============================================================
-    if (topology=="cube") then
+    if (MeshUseMeshFile) then
+       nelem = MeshCubeElemCount()
+       nelem_edge = MeshCubeEdgeCount()
+    else
+       nelem      = CubeElemCount()
+       nelem_edge = CubeEdgeCount()
+    end if
+
+    ! we want to exit elegantly when we are using too many processors.
+    if (nelem < par%nprocs) then
+       call abortmp('Error: too many MPI tasks. set dyn_npes <= nelem')
+    end if
+
+    can_scalably_init_grid = &
+         topology == "cube" .and. &
+         .not. MeshUseMeshFile .and. &
+         partmethod .eq. SFCURVE .and. &
+         .not. (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method))
+
+    if (can_scalably_init_grid) then
+       call sgi_init_grid(par, GridVertex, MetaVertex)
+    end if
+
+    if (topology=="cube" .and. .not. can_scalably_init_grid) then
 
        if (par%masterproc) then
           write(iulog,*)"creating cube topology..."
-       end if
-
-       if (MeshUseMeshFile) then
-           nelem = MeshCubeElemCount()
-           nelem_edge = MeshCubeEdgeCount()
-       else
-           nelem      = CubeElemCount()
-           nelem_edge = CubeEdgeCount()
-       end if
-
-       ! we want to exit elegantly when we are using too many processors.
-       if (nelem < par%nprocs) then
-          call abortmp('Error: too many MPI tasks. set dyn_npes <= nelem')
        end if
 
        allocate(GridVertex(nelem))
@@ -259,6 +270,7 @@ contains
 
     call t_startf('PartitioningTime')
 
+    if (.not. can_scalably_init_grid) then
     if(partmethod .eq. SFCURVE) then
        if(par%masterproc) write(iulog,*)"partitioning graph using SF Curve..."
        !if the partitioning method is space filling curves
@@ -275,6 +287,7 @@ contains
         if(par%masterproc) write(iulog,*)"partitioning graph using Metis..."
        call genmetispart(GridEdge,GridVertex)
     endif
+    endif ! .not. can_scalably_init_grid
 
     call t_stopf('PartitioningTime')
 
@@ -286,26 +299,21 @@ contains
     ! ===========================================================
     ! given partition, count number of local element descriptors
     ! ===========================================================
-    allocate(MetaVertex(1))
     allocate(Schedule(1))
 
     nelem_edge=SIZE(GridEdge)
 
-    allocate(TailPartition(nelem_edge))
-    allocate(HeadPartition(nelem_edge))
-    do i=1,nelem_edge
-       TailPartition(i)=GridEdge(i)%tail%processor_number
-       HeadPartition(i)=GridEdge(i)%head%processor_number
-    enddo
-
     ! ====================================================
     !  Generate the communication graph
     ! ====================================================
-    call initMetaGraph(iam,MetaVertex(1),GridVertex,GridEdge)
+    if (.not. can_scalably_init_grid) then
+       call initMetaGraph(iam,MetaVertex,GridVertex,GridEdge)
+       deallocate(GridEdge)
+    end if
 
-    nelemd = LocalElemCount(MetaVertex(1))
+    nelemd = LocalElemCount(MetaVertex)
     if(par%masterproc .and. Debug) then 
-        call PrintMetaVertex(MetaVertex(1))
+        call PrintMetaVertex(MetaVertex)
     endif
 
     if(nelemd .le. 0) then
@@ -328,7 +336,7 @@ contains
     !  Generate the communication schedule
     ! ====================================================
 
-    call genEdgeSched(elem,iam,Schedule(1),MetaVertex(1))
+    call genEdgeSched(elem,iam,Schedule(1),MetaVertex)
 
 
     allocate(global_shared_buf(nelemd,nrepro_vars))
@@ -402,7 +410,8 @@ contains
            do ie=1,nelemd
                call set_corner_coordinates(elem(ie))
            end do
-           call assign_node_numbers_to_elem(elem, GridVertex)
+           ! This is not used any longer.
+           !call assign_node_numbers_to_elem(elem, GridVertex)
        end if
        do ie=1,nelemd
           call cube_init_atomic(elem(ie),gp%points)
@@ -482,26 +491,15 @@ contains
 #endif
     !DBG  write(iulog,*) 'prim_init: after call to initRestartFile'
 
-    deallocate(GridEdge)
-    do j =1,nelem
-       call deallocate_gridvertex_nbrs(GridVertex(j))
-    end do
-    deallocate(GridVertex)
-
-    do j = 1, MetaVertex(1)%nmembers
-       call deallocate_gridvertex_nbrs(MetaVertex(1)%members(j))
-    end do
-    do j = 1, MetaVertex(1)%nedges
-       deallocate(MetaVertex(1)%edges(j)%members)
-       deallocate(MetaVertex(1)%edges(j)%edgeptrP)
-       deallocate(MetaVertex(1)%edges(j)%edgeptrS)
-       deallocate(MetaVertex(1)%edges(j)%edgeptrP_ghost)
-    end do
-    deallocate(MetaVertex(1)%edges)
-    deallocate(MetaVertex(1)%members)
-    deallocate(MetaVertex)
-    deallocate(TailPartition)
-    deallocate(HeadPartition)
+    if (can_scalably_init_grid) then
+       call sgi_finalize()
+    else
+       call destroyMetaGraph(MetaVertex)
+       do j =1,nelem
+          call deallocate_gridvertex_nbrs(GridVertex(j))
+       end do
+       deallocate(GridVertex)
+    end if
 
     ! single global edge buffer for all models:
     ! hydrostatic 4*nlev      NH:  6*nlev+1
