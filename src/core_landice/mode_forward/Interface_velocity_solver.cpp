@@ -1526,7 +1526,7 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
            //if(!(cellsMask_F[c] & ice_present_bit_value)) continue;
            if((cellsMask_F[c] & dynamic_ice_bit_value)) {
            double elev = thickness_F[c] + lowerSurface_F[c]; // - 1e-8*std::sqrt(pow(xCell_F[c0],2)+std::pow(yCell_F[c0],2));
-           std::cout << "  elev="<<elev<<std::endl;
+           //std::cout << "  elev="<<elev<<std::endl;
            if (elev < elevTemp) {
              elevTemp = elev;
              bdExtensionMap[iV] = c;
