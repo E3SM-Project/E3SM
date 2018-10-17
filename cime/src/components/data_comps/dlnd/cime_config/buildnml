@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
 ####################################################################################
-def _create_namelists(case, confdir, inst_string, infile, nmlgen):
+def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path):
 ####################################################################################
     """Write out the namelist for this component.
 
@@ -56,14 +56,6 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     logger.debug("DLND mode is {}".format(dlnd_mode))
     logger.debug("DLND grid is {}".format(lnd_grid))
     logger.debug("DLND glc_nec is {}".format(glc_nec))
-
-    #----------------------------------------------------
-    # Clear out old data.
-    #----------------------------------------------------
-    data_list_path = os.path.join(case.get_case_root(), "Buildconf",
-                                  "dlnd.input_data_list")
-    if os.path.exists(data_list_path):
-        os.remove(data_list_path)
 
     #----------------------------------------------------
     # Create configuration information.
@@ -145,7 +137,8 @@ def buildnml(case, caseroot, compname):
 
     rundir = case.get_value("RUNDIR")
     ninst = case.get_value("NINST_LND")
-
+    if ninst is None:
+        ninst = case.get_value("NINST")
     confdir = os.path.join(caseroot,"Buildconf",compname + "conf")
     if not os.path.isdir(confdir):
         os.makedirs(confdir)
@@ -170,6 +163,14 @@ def buildnml(case, caseroot, compname):
 
     # Create the namelist generator object - independent of instance
     nmlgen = NamelistGenerator(case, definition_file, files=files)
+    #----------------------------------------------------
+    # Clear out old data.
+    #----------------------------------------------------
+    data_list_path = os.path.join(case.get_case_root(), "Buildconf",
+                                  "dlnd.input_data_list")
+    if os.path.exists(data_list_path):
+        os.remove(data_list_path)
+
     #----------------------------------------------------
     # Loop over instances
     #----------------------------------------------------
@@ -200,7 +201,7 @@ def buildnml(case, caseroot, compname):
         namelist_infile = [infile]
 
         # create namelist and stream file(s) data component
-        _create_namelists(case, confdir, inst_string, namelist_infile, nmlgen)
+        _create_namelists(case, confdir, inst_string, namelist_infile, nmlgen, data_list_path)
 
         # copy namelist files and stream text files, to rundir
         if os.path.isdir(rundir):

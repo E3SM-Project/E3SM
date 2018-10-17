@@ -156,7 +156,7 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
     # SystemTestsCommon
     # ------------------------------------------------------------------------
 
-    def run_indv(self, suffix="base", st_archive=False):
+    def run_indv(self, suffix="base", st_archive=False, is_batch=True):
         """
         This fake implementation appends to the log and raises an exception if
         it's supposed to

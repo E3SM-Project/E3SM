@@ -411,15 +411,15 @@ contains
     real(r8)              :: curr_time    ! Time interval since reference time
     real(r8)              :: prev_time    ! Time interval since reference time
     real(r8)              :: avg_time     ! Average time of tavg
-    integer(IN)           :: yy, mm, dd     ! year,  month,  day
+    integer(IN)           :: yy, mm, dd   ! year,  month,  day
     integer(IN)           :: fk           ! index
     character(CL)         :: time_units   ! units of time variable
     character(CL)         :: calendar     ! calendar type
     integer(IN)           :: lsize        ! local size of an aVect
     character(CL)         :: case_name    ! case name
     character(CL)         :: hist_file    ! Local path to history filename
-    logical               :: whead, wdata  ! flags write header vs. data
-    integer(IN)           :: iidx ! component instance counter
+    logical               :: whead, wdata ! flags write header vs. data
+    integer(IN)           :: iidx         ! component instance counter
 
     type(mct_aVect), save  :: a2x_ax_avg(num_inst_atm)   ! tavg aVect/bundle
     type(mct_aVect), save  :: x2a_ax_avg(num_inst_atm)
@@ -974,23 +974,24 @@ contains
 
   !===============================================================================
 
-  subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
+  subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, inst_suffix, &
        nx, ny, nt, write_now, flds, tbnds1_offset, yr_offset, av_to_write)
 
     implicit none
 
     !--- arguments ---
     type (seq_infodata_type) , intent(inout)        :: infodata
-    type(ESMF_Clock)         , intent(in)           :: EClock_d  ! driver clock
-    type(component_type)     , intent(in)           :: comp      ! component instance
-    character(len=3)         , intent(in)           :: flow      ! 'x2c' or 'c2x'
-    character(*)             , intent(in)           :: aname     ! avect name for hist file
-    character(*)             , intent(in)           :: dname     ! domain name for hist file
-    integer(IN)              , intent(in)           :: nx        ! 2d global size nx
-    integer(IN)              , intent(in)           :: ny        ! 2d global size ny
-    integer(IN)              , intent(in)           :: nt        ! number of time samples per file
-    logical                  , optional, intent(in) :: write_now ! write a sample now, if not used, write every call
-    character(*)             , optional, intent(in) :: flds      ! list of fields to write
+    type(ESMF_Clock)         , intent(in)           :: EClock_d    ! driver clock
+    type(component_type)     , intent(in)           :: comp        ! component instance
+    character(len=3)         , intent(in)           :: flow        ! 'x2c' or 'c2x'
+    character(*)             , intent(in)           :: aname       ! avect name for hist file
+    character(*)             , intent(in)           :: dname       ! domain name for hist file
+    character(*)             , intent(in)           :: inst_suffix ! instance number part of file name
+    integer(IN)              , intent(in)           :: nx          ! 2d global size nx
+    integer(IN)              , intent(in)           :: ny          ! 2d global size ny
+    integer(IN)              , intent(in)           :: nt          ! number of time samples per file
+    logical                  , optional, intent(in) :: write_now   ! write a sample now, if not used, write every call
+    character(*)             , optional, intent(in) :: flds        ! list of fields to write
 
     ! Offset for starting time bound, in fractional days. This should be negative. If
     ! tbnds1_offset is provided, then: When it's time to write the file, create the lower
@@ -1041,7 +1042,7 @@ contains
     logical                  :: lwrite_now
     logical                  :: whead, wdata  ! for writing restart/history cdf files
     real(r8)                 :: tbnds(2)
-    character(len=12) :: date_str
+    character(len=16) :: date_str
 
     integer(IN), parameter   :: maxout = 20
     integer(IN)       , save :: ntout = 0
@@ -1163,9 +1164,9 @@ contains
              if (present(yr_offset)) then
                 yy = yy + yr_offset
              end if
-             call shr_cal_ymdtod2string(date_str, yy, mm, dd)
-             write(hist_file(found), "(6a)") &
-                  trim(case_name),'.cpl.h',trim(aname),'.',trim(date_str), '.nc'
+             call shr_cal_ymdtod2string(date_str, yy, mm, dd, curr_tod)
+             write(hist_file(found), "(8a)") &
+                  trim(case_name),'.cpl',trim(inst_suffix),'.h',trim(aname),'.',trim(date_str), '.nc'
           else
              fk1 = 2
           endif
@@ -1282,19 +1283,20 @@ contains
 
   !===============================================================================
 
-  subroutine seq_hist_spewav(infodata, aname, gsmap, av, nx, ny, nt, write_now, flds)
+  subroutine seq_hist_spewav(infodata, aname, inst_suffix, gsmap, av, nx, ny, nt, write_now, flds)
 
     implicit none
 
     type(seq_infodata_type) , intent(in)    :: infodata
-    character(*)    , intent(in)           :: aname     ! avect name for hist file
-    type(mct_gsmap) , intent(in)           :: gsmap     ! gsmap
-    type(mct_aVect) , intent(in)           :: av        ! avect
-    integer(IN)     , intent(in)           :: nx        ! 2d global size nx
-    integer(IN)     , intent(in)           :: ny        ! 2d global size ny
-    integer(IN)     , intent(in)           :: nt        ! number of time samples per file
-    logical         , intent(in), optional :: write_now ! write a sample now,  if not used,  write every call
-    character(*)    , intent(in), optional :: flds      ! list of fields to write
+    character(*)    , intent(in)           :: aname       ! avect name for hist file
+    character(*)    , intent(in)           :: inst_suffix ! instance number part of file name
+    type(mct_gsmap) , intent(in)           :: gsmap       ! gsmap
+    type(mct_aVect) , intent(in)           :: av          ! avect
+    integer(IN)     , intent(in)           :: nx          ! 2d global size nx
+    integer(IN)     , intent(in)           :: ny          ! 2d global size ny
+    integer(IN)     , intent(in)           :: nt          ! number of time samples per file
+    logical         , intent(in), optional :: write_now   ! write a sample now,  if not used,  write every call
+    character(*)    , intent(in), optional :: flds        ! list of fields to write
 
     !--- local ---
     character(CL)           :: case_name         ! case name
@@ -1398,7 +1400,7 @@ contains
              fk1 = 1
              call seq_infodata_GetData( infodata,  case_name=case_name)
              write(hist_file(found), "(a, i4.4, a)") &
-                  trim(case_name)//'.cpl.h'//trim(aname)//'.', nfiles(found), '.nc'
+                  trim(case_name)//'.cpl'//trim(inst_suffix)//'.h'//trim(aname)//'.', nfiles(found), '.nc'
           else
              fk1 = 2
           endif
