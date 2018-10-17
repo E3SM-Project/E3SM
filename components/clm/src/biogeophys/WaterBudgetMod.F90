@@ -428,9 +428,6 @@ contains
        if (ip==p_inf .and. mon==1 .and. day==1 .and. sec==0) then
           plev = max(plev,budg_print_ltann)
        endif
-       if (ip==p_inf) then
-          plev = max(plev,budg_print_ltend)
-       endif
 
        if (plev > 0) then
           unit_conversion = 1.d0/(4.0_r8*shr_const_pi)*1.0e6_r8
@@ -445,6 +442,7 @@ contains
           if (ip == p_day .and. get_nstep() == 1) cycle
           if (ip == p_mon .and. get_nstep() == 1) cycle
           if (ip == p_ann .and. get_nstep() == 1) cycle
+          if (ip == p_inf .and. get_nstep() == 1) cycle
 
           if (masterproc) then
              write(iulog,*)''
@@ -509,7 +507,6 @@ contains
                   -budg_stateG(s_w_errh2o ,ip) *unit_conversion, &
                   (budg_stateG(s_w_end     ,ip) - budg_stateG(s_w_beg     ,ip))*unit_conversion
              write(iulog,'(143("-"),"|",23("-"))')
-             !stop
           end if
        end if
     end do
