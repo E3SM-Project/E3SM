@@ -97,6 +97,14 @@ use ref_pres,       only: top_lev=>trop_cloud_top_lev
 use subcol_utils,   only: subcol_get_scheme
 use perf_mod,       only: t_startf, t_stopf
 use scamMod,        only: precip_off
+#ifdef FIVE
+use five_intr,      only: pver_five, pverp_five, &
+                          five_syncronize_e3sm, &
+			  compute_five_grids, &
+			  compute_five_heights, &
+			  masswgt_vert_avg, linear_interp, &
+                          find_level_match_index
+#endif
 
 implicit none
 private
@@ -178,7 +186,13 @@ integer :: &
    ls_flxsnw_idx,      &
    relvar_idx,         &
    cmeliq_idx,         &
-   accre_enhan_idx
+   accre_enhan_idx,    &
+   t_five_idx, &
+   q_five_idx, &
+   u_five_idx, &
+   v_five_idx, &
+   pmid_five_idx, &
+   pint_five_idx  
 
 ! Fields for UNICON
 integer :: &
@@ -252,6 +266,14 @@ integer :: &
    real(r8) :: nicons                   = huge(1.0_r8)
    logical  :: mg_prc_coeff_fix_in      = .false. !temporary variable to maintain BFB, MUST be removed
    logical  :: rrtmg_temp_fix           = .false. !temporary variable to maintain BFB, MUST be removed
+   
+#ifdef FIVE
+   integer, parameter :: pverp_micro = pverp_five
+   integer, parameter :: pver_micro = pver_five
+#else
+   integer, parameter :: pverp_micro = pverp
+   integer, parameter :: pver_micro = pver
+#endif   
 
 interface p
    module procedure p1
@@ -1025,6 +1047,15 @@ subroutine micro_mg_cam_init(pbuf2d)
    snow_sed_idx = pbuf_get_index('SNOW_SED')
    prec_pcw_idx = pbuf_get_index('PREC_PCW')
    snow_pcw_idx = pbuf_get_index('SNOW_PCW')
+   
+#ifdef FIVE
+    t_five_idx = pbuf_get_index('T_FIVE')
+    q_five_idx = pbuf_get_index('Q_FIVE')
+    u_five_idx = pbuf_get_index('U_FIVE')
+    v_five_idx = pbuf_get_index('V_FIVE')
+    pmid_five_idx = pbuf_get_index('PMID_FIVE')
+    pint_five_idx = pbuf_get_index('PINT_FIVE')
+#endif   
 
    cmeliq_idx = pbuf_get_index('CMELIQ')
 
@@ -1142,6 +1173,16 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), pointer :: mu(:,:)           ! Size distribution shape parameter for radiation
    real(r8), pointer :: lambdac(:,:)      ! Size distribution slope parameter for radiation
    real(r8), pointer :: des(:,:)          ! Snow effective diameter (m)
+   
+#ifdef FIVE
+   ! Define the pointer arrays needed for FIVE
+   real(r8), pointer, dimension(:,:) :: t_five
+   real(r8), pointer, dimension(:,:) :: u_five
+   real(r8), pointer, dimension(:,:) :: v_five
+   real(r8), pointer, dimension(:,:,:) :: q_five
+   real(r8), pointer, dimension(:,:) :: pmid_five
+   real(r8), pointer, dimension(:,:) :: pint_five
+#endif   
 
    real(r8) :: rho(state%psetcols,pver)
    real(r8) :: cldmax(state%psetcols,pver)
@@ -1533,6 +1574,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8) :: nr_grid(pcols,pver)
    real(r8) :: qs_grid(pcols,pver)
    real(r8) :: ns_grid(pcols,pver)
+   integer :: top_lev_five(pcols)
 
    real(r8), pointer :: cmeliq_grid(:,:)
 
@@ -1572,11 +1614,13 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), pointer :: nsout_grid_ptr(:,:)
 
    integer :: nlev   ! number of levels where cloud physics is done
+   integer :: nlev_five
    integer :: mgncol ! size of mgcols
    integer, allocatable :: mgcols(:) ! Columns with microphysics performed
 
    logical :: use_subcol_microp
    integer :: col_type ! Flag to store whether accessing grid or sub-columns in pbuf_get_field
+
 
    character(128) :: errstring   ! return status (non-blank for error return)
 
@@ -1584,6 +1628,9 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), parameter :: dcon   = 25.e-6_r8         ! Convective size distribution effective radius (meters)
    real(r8), parameter :: mucon  = 5.3_r8            ! Convective size distribution shape parameter
    real(r8), parameter :: deicon = 50._r8            ! Convective ice effective diameter (meters)
+#ifdef FIVE
+   real(r8), parameter :: p0_five_ref = 100000._r8   ! Is this right?
+#endif
 
    real(r8), pointer :: pckdptr(:,:)
 
@@ -1757,9 +1804,30 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       call pbuf_get_field(pbuf, am_evp_st_idx,   am_evp_st_grid)
    end if
    
+#ifdef FIVE
+   call pbuf_get_field(pbuf, t_five_idx,    t_five,    start=(/1,1,itim_old/), kount=(/pcols,pver_micro,1/))
+   call pbuf_get_field(pbuf, q_five_idx,    q_five,     start=(/1,1,1,itim_old/), kount=(/pcols,pver_micro,pcnst,1/))
+   call pbuf_get_field(pbuf, u_five_idx,    u_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_micro,1/))
+   call pbuf_get_field(pbuf, v_five_idx,    v_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_micro,1/))
+   call pbuf_get_field(pbuf, pmid_five_idx,    pmid_five,      start=(/1,1,1/), kount=(/pcols,pver_micro,1/)) 
+   call pbuf_get_field(pbuf, pint_five_idx,    pint_five,      start=(/1,1,1/), kount=(/pcols,pverp_micro,1/))      
+#endif    
+   
    !-------------------------------------------------------------------------------------
    ! Microphysics assumes 'liquid stratus frac = ice stratus frac
    !                      = max( liquid stratus frac, ice stratus frac )'.
+
+#ifdef FIVE   
+   ! Find top level index for FIVE
+   do i = 1, ncol
+     call find_level_match_index(state%pmid(i,:),pmid_five(i,:),pint_five(i,:),&
+                               top_lev, top_lev_five(i))  			        
+   enddo
+   ! Right now just do for one column, since they are all the same
+   !   With adapative FIVE, this will need to be dynamic
+   nlev_five  = pver_five - top_lev_five(1) + 1      
+#endif
+   
    alst_mic => ast
    aist_mic => ast
 
@@ -1830,7 +1898,17 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
            state%q(:,:,ixcldice), state%q(:,:,ixrain), state%q(:,:,ixsnow), &
            mgncol, mgcols)
    end select
+   
+#ifdef FIVE
+   ! Syncronize FIVE variables to E3SM state
+   !  This is a crucial component to using FIVE within E3SM
+   call five_syncronize_e3sm(state_loc,dtime,p0_five_ref,pint_five,pmid_five,t_five,u_five,v_five,q_five) 
+#endif 
 
+   !+PAB Microphysics "packs" input.  Meaning that it takes the input and 
+   !  figures out which columns actually contain clouds to run microphysics on.  
+   !  i.e. if there is no cloud then that column will be stripped out.  It looks like 
+   !  we need to "massage" the data for FIVE BEFORE this packer is called.
    packer = MGPacker(psetcols, pver, mgcols, top_lev)
    post_proc = MGPostProc(packer)
 

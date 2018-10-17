@@ -983,6 +983,49 @@ module five_intr
       ten_high(k) = df_zs(pver_five-k+1)
     enddo
   
-  end subroutine tendency_low_to_high  
+  end subroutine tendency_low_to_high 
+  
+  ! ======================================== !
+  !                                          !
+  ! ======================================== !
+  
+  subroutine find_level_match_index(&
+           e3sm_pmid,five_pmid,five_pint,top_lev_e3sm,top_lev_five)
+  
+    ! Purpose is to find FIVE level indicee that matches
+    !  the level of a given e3sm level indicee
+    implicit none
+  
+    real(r8), intent(in) :: e3sm_pmid(pver)
+    real(r8), intent(in) :: five_pmid(pver)
+    real(r8), intent(in) :: five_pint(pverp)
+    integer, intent(in) :: top_lev_e3sm
+    integer, intent(out) :: top_lev_five
+    
+    real(r8) :: pmid_target
+    integer :: i, k
+    
+    pmid_target = e3sm_pmid(top_lev_e3sm)
+    
+    do k=1,pver_five
+      ! if the pressures have not been modified, then just
+      !   retun the indicee where they are equal
+      if (five_pmid(k) .eq. pmid_target) then
+        top_lev_five = k
+	return
+      endif     
+
+      ! IF the best above didn't pass then see where
+      !  the level lies between pressure interfaces      
+      if (five_pint(k) .lt. pmid_target .and. &
+          five_pint(k+1) .gt. pmid_target) then
+        top_lev_five = k
+	return	  
+      endif	      
+    enddo
+    
+  return    
+  
+  end subroutine    
 
 end module five_intr
