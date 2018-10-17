@@ -42,7 +42,7 @@ module lnd_disagg_forc
 contains
 
   !-----------------------------------------------------------------------
-  subroutine downscale_atmo_state_to_topounit(g, i, topi, topf, x2l, top_as)
+  subroutine downscale_atmo_state_to_topounit(g, i, t, x2l, top_as)
     !
     ! !DESCRIPTION:
     ! Downscale atmospheric forcing fields from gridcell to topounit
@@ -61,13 +61,12 @@ contains
     ! !ARGUMENTS:
     type(integer)                    , intent(in)    :: g  
     type(integer)                    , intent(in)    :: i
-    type(integer)                    , intent(in)    :: topi  
-    type(integer)                    , intent(in)    :: topf
+    type(integer)                    , intent(in)    :: t
     real(r8)                         , intent(in)    :: x2l(:,:)
     type(topounit_atmospheric_state) , intent(inout) :: top_as
     !
     ! !LOCAL VARIABLES:
-    integer :: t, l, c, fc         ! indices
+    integer :: l, c, fc         ! indices
     integer :: clo, cc
 
     ! temporaries for topo downscaling
@@ -87,7 +86,6 @@ contains
       ! Downscale forc_t, forc_th, forc_q, forc_pbot, and forc_rho to columns.
       ! For glacier_mec columns the downscaling is based on surface elevation.
       ! For other columns the downscaling is a simple copy (above).
-      do t = topi, topf
 
          top_as%tbot(t)    = x2l(index_x2l_Sa_tbot,i)      ! forc_txy  Atm state K
          top_as%thbot(t)   = x2l(index_x2l_Sa_ptem,i)      ! forc_thxy Atm state K
@@ -145,12 +143,10 @@ contains
 	 top_as%qbot(t) = qbot_t
 	 top_as%pbot(t) = pbot_t
 
-      end do
-
 !      call downscale_longwave_top(bounds, atm2lnd_vars, top_pp, top_es)
 
 !      call check_downscale_consistency(bounds, atm2lnd_vars)
 
-  end subroutine downscale_atmo_state_to_top
+  end subroutine downscale_atmo_state_to_topounit
 
 end module lnd_disagg_forc

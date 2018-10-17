@@ -979,7 +979,7 @@ contains
          top_as%ubot(topo)    = x2l(index_x2l_Sa_u,i)         ! forc_uxy  Atm state m/s
          top_as%vbot(topo)    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
          top_as%zbot(topo)    = x2l(index_x2l_Sa_z,i)         ! zgcmxy    Atm state m
-	 call downscale_atmo_state_to_topounit(g, i, grc_pp%topi(g), grc_pp%topf(g), x2l, top_as)
+	 call downscale_atmo_state_to_topounit(g, i, topo, x2l, top_as)
 
          ! assign the forcing fields derived from other inputs
          ! Horizontal windspeed (m/s)
