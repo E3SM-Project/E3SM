@@ -58,7 +58,7 @@ contains
     use med_infodata_mod      , only : med_infodata
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_reset
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_copy
-
+    use perf_mod              , only : t_startf, t_stopf
     ! input/output variables
     type(ESMF_GridComp)          :: gcomp
     character(len=*), intent(in) :: type
@@ -73,6 +73,7 @@ contains
     integer             :: dbrc
     character(len=*),parameter :: subname='(med_connectors_prep_generic)'
     !---------------------------------------------
+    call t_startf('MED:'//subname)
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//trim(type)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -196,6 +197,7 @@ contains
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//trim(type)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_connectors_prep_generic
 
@@ -210,7 +212,7 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
     use med_infodata_mod      , only : med_infodata
     use med_infodata_mod      , only : med_infodata_CopyStateToInfodata
-
+    use perf_mod              , only : t_startf, t_stopf
     ! input/output variables
     type(ESMF_GridComp)           :: gcomp
     character(len=*), intent(in)  :: type
@@ -225,6 +227,7 @@ contains
 
     ! Note: for information obtained by the mediator always write out the state
     ! if statewrite_flag is .true.
+    call t_startf('MED:'//subname)
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//trim(type)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -333,12 +336,14 @@ contains
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//trim(type)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_connectors_post_generic
 
   !-----------------------------------------------------------------------------
 
   subroutine med_connectors_prep_med2atm(gcomp, rc)
+    use perf_mod, only : t_startf, t_stopf
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -346,6 +351,7 @@ contains
     integer             :: dbrc
     character(len=*),parameter :: subname='(med_connectors_prep_med2atm)'
     !---------------------------------------------
+    call t_startf('MED:'//subname)
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -358,6 +364,7 @@ contains
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_connectors_prep_med2atm
 

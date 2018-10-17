@@ -32,7 +32,7 @@ module med_phases_prep_atm_mod
     use med_map_mod             , only : med_map_FB_Regrid_Norm
     use med_phases_ocnalb_mod   , only : med_phases_ocnalb_mapo2a
     use med_internalstate_mod   , only : InternalState, mastertask
-
+    use perf_mod                , only : t_startf, t_stopf
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -52,6 +52,7 @@ module med_phases_prep_atm_mod
     integer                       :: dbrc
 
     !-------------------------------------------------------------------------------
+    call t_startf('MED:'//subname)
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
@@ -228,6 +229,7 @@ module med_phases_prep_atm_mod
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_prep_atm
 

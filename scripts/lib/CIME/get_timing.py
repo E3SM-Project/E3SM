@@ -27,12 +27,22 @@ class _TimingParser:
         self.finlines = None
         self.fout = None
         self.adays=0
+        self._driver = case.get_value("COMP_INTERFACE")
         self.models = {}
 
     def write(self, text):
         self.fout.write(text)
 
     def prttime(self, label, offset=None, div=None, coff=-999):
+        if self._driver == "mct":
+            self._prttime_mct(label, offset, div, coff)
+        elif self._driver == "nuopc":
+            pass
+            #            self._prttime_nuopc(label, offset, div, coff)
+        else:
+            expect(False, "Timing not supported for driver {}".format(self._driver))
+
+    def _prttime_mct(self, label, offset=None, div=None, coff=-999):
         if offset is None:
             offset=self.models['CPL'].offset
         if div is None:
@@ -64,8 +74,10 @@ class _TimingParser:
         ncount = 0
 
         heading = '"' + heading_padded.strip() + '"'
+        expression = re.compile(re.escape(heading)+r"\s*(\d+)\s*\d+\s*(\S+)")
+
         for line in self.finlines:
-            m = re.match(r'\s*{}\s*(\d+)\s*\d+\s*(\S+)'.format(heading), line)
+            m = expression.match(line)
             if m:
                 nprocs = int(float(m.groups()[0]))
                 ncount = int(float(m.groups()[1]))
@@ -213,7 +225,13 @@ class _TimingParser:
         else:
             logger.warning("Unknown NCPL_BASE_PERIOD={}".format(ncpl_base_period))
 
-        nprocs, ncount = self.gettime2('CPL:CLOCK_ADVANCE ')
+
+        # at this point the routine becomes driver specific
+        if self._driver == 'mct':
+            nprocs, ncount = self.gettime2('CPL:CLOCK_ADVANCE ')
+        elif self._driver == 'nuopc':
+            nprocs, ncount = self.gettime2('MED:(med_fraction_init)')
+
         nsteps = ncount / nprocs
 
         adays = nsteps*tlen/ncpl
@@ -269,35 +287,36 @@ class _TimingParser:
             self.write("  {} = {:<8s}   {:<6d}      {:<6d}   {:<6d} x {:<6d}  {:<6d} ({:<6d}) \n".format(m.name.lower(), comp_label, (m.ntasks*m.nthrds *smt_factor), m.rootpe, m.ntasks, m.nthrds, m.ninst, m.pstrid))
             if m.nthrds > maxthrds:
                 maxthrds = m.nthrds
-        nmax  = self.gettime(' CPL:INIT ')[1]
-        tmax  = self.gettime(' CPL:RUN_LOOP ')[1]
-        wtmin = self.gettime(' CPL:TPROF_WRITE ')[0]
-        fmax  = self.gettime(' CPL:FINAL ')[1]
-        for k in components:
-            if k != "CPL":
-                m = self.models[k]
-            m.tmin, m.tmax, _ = self.gettime(' CPL:{}_RUN '.format(m.name))
-        otmin, otmax, _ = self.gettime(' CPL:OCNT_RUN ')
+        if self._driver == 'mct':
+            nmax  = self.gettime(' CPL:INIT ')[1]
+            tmax  = self.gettime(' CPL:RUN_LOOP ')[1]
+            wtmin = self.gettime(' CPL:TPROF_WRITE ')[0]
+            fmax  = self.gettime(' CPL:FINAL ')[1]
+            for k in components:
+                if k != "CPL":
+                    m = self.models[k]
+                m.tmin, m.tmax, _ = self.gettime(' CPL:{}_RUN '.format(m.name))
+            otmin, otmax, _ = self.gettime(' CPL:OCNT_RUN ')
 
-        # pick OCNT_RUN for tight coupling
-        if otmax > ocn.tmax:
-            ocn.tmin = otmin
-            ocn.tmax = otmax
+            # pick OCNT_RUN for tight coupling
+            if otmax > ocn.tmax:
+                ocn.tmin = otmin
+                ocn.tmax = otmax
 
-        cpl.tmin, cpl.tmax, _ = self.gettime(' CPL:RUN ')
-        xmax = self.gettime(' CPL:COMM ')[1]
-        ocnwaittime = self.gettime(' CPL:C2O_INITWAIT')[0]
+            cpl.tmin, cpl.tmax, _ = self.gettime(' CPL:RUN ')
+            xmax = self.gettime(' CPL:COMM ')[1]
+            ocnwaittime = self.gettime(' CPL:C2O_INITWAIT')[0]
 
-        if odays != 0:
-            ocnrunitime = ocn.tmax * (adays/odays - 1.0)
-        else:
-            ocnrunitime = 0.0
+            if odays != 0:
+                ocnrunitime = ocn.tmax * (adays/odays - 1.0)
+            else:
+                ocnrunitime = 0.0
 
 
-        correction = max(0, ocnrunitime - ocnwaittime)
+            correction = max(0, ocnrunitime - ocnwaittime)
 
-        tmax = tmax + wtmin + correction
-        ocn.tmax += ocnrunitime
+            tmax = tmax + wtmin + correction
+            ocn.tmax += ocnrunitime
 
         for m in self.models.values():
             m.tmaxr = 0
@@ -354,248 +373,248 @@ class _TimingParser:
         hoffset = 1
         self.write("   NOTE: min:max driver timers (seconds/day):   \n")
 
-        for k in ["CPL", "OCN", "LND", "ROF", "ICE", "ATM", "GLC", "WAV"]:
+        for k in self.case.get_values("COMP_CLASSES"):
             m = self.models[k]
             xspace = (pstrlen+hoffset+m.offset) * ' '
             self.write(" {} {} (pes {:d} to {:d}) \n".format(xspace, k, m.rootpe, m.pemax))
         self.write("\n")
+        if self._driver == "mct":
+            self.prttime(' CPL:CLOCK_ADVANCE ')
+            self.prttime(' CPL:OCNPRE1_BARRIER ')
+            self.prttime(' CPL:OCNPRE1 ')
+            self.prttime(' CPL:ATMOCN1_BARRIER ')
+            self.prttime(' CPL:ATMOCN1 ')
+            self.prttime(' CPL:OCNPREP_BARRIER ')
+            self.prttime(' CPL:OCNPREP ')
+            self.prttime(' CPL:C2O_BARRIER ', offset=ocn.offset, div=odays,
+                         coff=cpl.offset)
+            self.prttime(' CPL:C2O ', offset=ocn.offset, div=odays, coff=cpl.offset)
+            self.prttime(' CPL:LNDPREP_BARRIER ')
+            self.prttime(' CPL:LNDPREP ')
+            self.prttime(' CPL:C2L_BARRIER ', offset=lnd.offset, coff=cpl.offset)
+            self.prttime(' CPL:C2L ', offset=lnd.offset, coff=cpl.offset)
+            self.prttime(' CPL:ICEPREP_BARRIER ')
+            self.prttime(' CPL:ICEPREP ')
+            self.prttime(' CPL:C2I_BARRIER ', offset=ice.offset, coff=cpl.offset)
+            self.prttime(' CPL:C2I ', offset=ice.offset, coff=cpl.offset)
+            self.prttime(' CPL:WAVPREP_BARRIER ')
+            self.prttime(' CPL:WAVPREP ')
+            self.prttime(' CPL:C2W_BARRIER ', offset=ice.offset, coff=cpl.offset)
+            self.prttime(' CPL:C2W ', offset=ice.offset, coff=cpl.offset)
+            self.prttime(' CPL:ROFPREP_BARRIER ')
+            self.prttime(' CPL:ROFPREP ')
+            self.prttime(' CPL:C2R_BARRIER ', offset=rof.offset, coff=cpl.offset)
+            self.prttime(' CPL:C2R ', offset=rof.offset, coff=cpl.offset)
+            self.prttime(' CPL:ICE_RUN_BARRIER ', offset=ice.offset)
+            self.prttime(' CPL:ICE_RUN ', offset=ice.offset)
+            self.prttime(' CPL:LND_RUN_BARRIER ', offset=lnd.offset)
+            self.prttime(' CPL:LND_RUN ', offset=lnd.offset)
+            self.prttime(' CPL:ROF_RUN_BARRIER ', offset=rof.offset)
+            self.prttime(' CPL:ROF_RUN ', offset=rof.offset)
+            self.prttime(' CPL:WAV_RUN_BARRIER ', offset=rof.offset)
+            self.prttime(' CPL:WAV_RUN ', offset=rof.offset)
+            self.prttime(' CPL:OCNT_RUN_BARRIER ', offset=ocn.offset, div=odays)
+            self.prttime(' CPL:OCNT_RUN ', offset=ocn.offset, div=odays)
+            self.prttime(' CPL:O2CT_BARRIER ', offset=ocn.offset, div=odays,
+                         coff=cpl.offset)
+            self.prttime(' CPL:O2CT ', offset=ocn.offset, div=odays,
+                         coff=cpl.offset)
+            self.prttime(' CPL:OCNPOSTT_BARRIER ')
+            self.prttime(' CPL:OCNPOSTT ')
+            self.prttime(' CPL:ATMOCNP_BARRIER ')
+            self.prttime(' CPL:ATMOCNP ')
+            self.prttime(' CPL:L2C_BARRIER ', offset=lnd.offset, coff=cpl.offset)
+            self.prttime(' CPL:L2C ', offset=lnd.offset, div=cpl.offset)
+            self.prttime(' CPL:LNDPOST_BARRIER ')
+            self.prttime(' CPL:LNDPOST ')
+            self.prttime(' CPL:GLCPREP_BARRIER ')
+            self.prttime(' CPL:GLCPREP ')
+            self.prttime(' CPL:C2G_BARRIER ', offset=glc.offset, coff=cpl.offset)
+            self.prttime(' CPL:C2G ', offset=glc.offset, coff=cpl.offset)
+            self.prttime(' CPL:R2C_BARRIER ', offset=rof.offset, coff=cpl.offset)
+            self.prttime(' CPL:R2C ', offset=rof.offset, coff=cpl.offset)
+            self.prttime(' CPL:ROFPOST_BARRIER ')
+            self.prttime(' CPL:ROFPOST ')
+            self.prttime(' CPL:BUDGET1_BARRIER ')
+            self.prttime(' CPL:BUDGET1 ')
+            self.prttime(' CPL:I2C_BARRIER ', offset=ice.offset, coff=cpl.offset)
+            self.prttime(' CPL:I2C ', offset=ice.offset, coff=cpl.offset)
+            self.prttime(' CPL:ICEPOST_BARRIER ')
+            self.prttime(' CPL:ICEPOST ')
+            self.prttime(' CPL:FRACSET_BARRIER ')
+            self.prttime(' CPL:FRACSET ')
+            self.prttime(' CPL:ATMOCN2_BARRIER ')
+            self.prttime(' CPL:ATMOCN2 ')
+            self.prttime(' CPL:OCNPRE2_BARRIER ')
+            self.prttime(' CPL:OCNPRE2 ')
+            self.prttime(' CPL:C2O2_BARRIER ', offset=ocn.offset, div=odays,
+                         coff=cpl.offset)
+            self.prttime(' CPL:C2O2 ', offset=ocn.offset, div=odays,
+                         coff=cpl.offset)
+            self.prttime(' CPL:ATMOCNQ_BARRIER')
+            self.prttime(' CPL:ATMOCNQ ')
+            self.prttime(' CPL:ATMPREP_BARRIER ')
+            self.prttime(' CPL:ATMPREP ')
+            self.prttime(' CPL:C2A_BARRIER ', offset=atm.offset, coff=cpl.offset)
+            self.prttime(' CPL:C2A ', offset=atm.offset, coff=cpl.offset)
+            self.prttime(' CPL:OCN_RUN_BARRIER ', offset=ocn.offset, div=odays)
+            self.prttime(' CPL:OCN_RUN ', offset=ocn.offset, div=odays)
+            self.prttime(' CPL:ATM_RUN_BARRIER ', offset=atm.offset)
+            self.prttime(' CPL:ATM_RUN ', offset=atm.offset)
+            self.prttime(' CPL:GLC_RUN_BARRIER ', offset=glc.offset)
+            self.prttime(' CPL:GLC_RUN ', offset=glc.offset)
+            self.prttime(' CPL:W2C_BARRIER ', offset=glc.offset, coff=cpl.offset)
+            self.prttime(' CPL:W2C ', offset=glc.offset, coff=cpl.offset)
+            self.prttime(' CPL:WAVPOST_BARRIER ')
+            self.prttime(' CPL:WAVPOST ', cpl.offset)
+            self.prttime(' CPL:G2C_BARRIER ', offset=glc.offset, coff=cpl.offset)
+            self.prttime(' CPL:G2C ', offset=glc.offset, coff=cpl.offset)
+            self.prttime(' CPL:GLCPOST_BARRIER ')
+            self.prttime(' CPL:GLCPOST ')
+            self.prttime(' CPL:A2C_BARRIER ', offset=atm.offset, coff=cpl.offset)
+            self.prttime(' CPL:A2C ', offset=atm.offset, coff=cpl.offset)
+            self.prttime(' CPL:ATMPOST_BARRIER ')
+            self.prttime(' CPL:ATMPOST ')
+            self.prttime(' CPL:BUDGET2_BARRIER ')
+            self.prttime(' CPL:BUDGET2 ')
+            self.prttime(' CPL:BUDGET3_BARRIER ')
+            self.prttime(' CPL:BUDGET3 ')
+            self.prttime(' CPL:BUDGETF_BARRIER ')
+            self.prttime(' CPL:BUDGETF ')
+            self.prttime(' CPL:O2C_BARRIER ', offset=ocn.offset,
+                         div=odays, coff=cpl.offset)
+            self.prttime(' CPL:O2C ', offset=ocn.offset, div=odays, coff=cpl.offset)
+            self.prttime(' CPL:OCNPOST_BARRIER ')
+            self.prttime(' CPL:OCNPOST ')
+            self.prttime(' CPL:RESTART_BARRIER ')
+            self.prttime(' CPL:RESTART')
+            self.prttime(' CPL:HISTORY_BARRIER ')
+            self.prttime(' CPL:HISTORY ')
+            self.prttime(' CPL:TSTAMP_WRITE ')
+            self.prttime(' CPL:TPROF_WRITE ')
+            self.prttime(' CPL:RUN_LOOP_BSTOP ')
 
-        self.prttime(' CPL:CLOCK_ADVANCE ')
-        self.prttime(' CPL:OCNPRE1_BARRIER ')
-        self.prttime(' CPL:OCNPRE1 ')
-        self.prttime(' CPL:ATMOCN1_BARRIER ')
-        self.prttime(' CPL:ATMOCN1 ')
-        self.prttime(' CPL:OCNPREP_BARRIER ')
-        self.prttime(' CPL:OCNPREP ')
-        self.prttime(' CPL:C2O_BARRIER ', offset=ocn.offset, div=odays,
-                     coff=cpl.offset)
-        self.prttime(' CPL:C2O ', offset=ocn.offset, div=odays, coff=cpl.offset)
-        self.prttime(' CPL:LNDPREP_BARRIER ')
-        self.prttime(' CPL:LNDPREP ')
-        self.prttime(' CPL:C2L_BARRIER ', offset=lnd.offset, coff=cpl.offset)
-        self.prttime(' CPL:C2L ', offset=lnd.offset, coff=cpl.offset)
-        self.prttime(' CPL:ICEPREP_BARRIER ')
-        self.prttime(' CPL:ICEPREP ')
-        self.prttime(' CPL:C2I_BARRIER ', offset=ice.offset, coff=cpl.offset)
-        self.prttime(' CPL:C2I ', offset=ice.offset, coff=cpl.offset)
-        self.prttime(' CPL:WAVPREP_BARRIER ')
-        self.prttime(' CPL:WAVPREP ')
-        self.prttime(' CPL:C2W_BARRIER ', offset=ice.offset, coff=cpl.offset)
-        self.prttime(' CPL:C2W ', offset=ice.offset, coff=cpl.offset)
-        self.prttime(' CPL:ROFPREP_BARRIER ')
-        self.prttime(' CPL:ROFPREP ')
-        self.prttime(' CPL:C2R_BARRIER ', offset=rof.offset, coff=cpl.offset)
-        self.prttime(' CPL:C2R ', offset=rof.offset, coff=cpl.offset)
-        self.prttime(' CPL:ICE_RUN_BARRIER ', offset=ice.offset)
-        self.prttime(' CPL:ICE_RUN ', offset=ice.offset)
-        self.prttime(' CPL:LND_RUN_BARRIER ', offset=lnd.offset)
-        self.prttime(' CPL:LND_RUN ', offset=lnd.offset)
-        self.prttime(' CPL:ROF_RUN_BARRIER ', offset=rof.offset)
-        self.prttime(' CPL:ROF_RUN ', offset=rof.offset)
-        self.prttime(' CPL:WAV_RUN_BARRIER ', offset=rof.offset)
-        self.prttime(' CPL:WAV_RUN ', offset=rof.offset)
-        self.prttime(' CPL:OCNT_RUN_BARRIER ', offset=ocn.offset, div=odays)
-        self.prttime(' CPL:OCNT_RUN ', offset=ocn.offset, div=odays)
-        self.prttime(' CPL:O2CT_BARRIER ', offset=ocn.offset, div=odays,
-                     coff=cpl.offset)
-        self.prttime(' CPL:O2CT ', offset=ocn.offset, div=odays,
-                     coff=cpl.offset)
-        self.prttime(' CPL:OCNPOSTT_BARRIER ')
-        self.prttime(' CPL:OCNPOSTT ')
-        self.prttime(' CPL:ATMOCNP_BARRIER ')
-        self.prttime(' CPL:ATMOCNP ')
-        self.prttime(' CPL:L2C_BARRIER ', offset=lnd.offset, coff=cpl.offset)
-        self.prttime(' CPL:L2C ', offset=lnd.offset, div=cpl.offset)
-        self.prttime(' CPL:LNDPOST_BARRIER ')
-        self.prttime(' CPL:LNDPOST ')
-        self.prttime(' CPL:GLCPREP_BARRIER ')
-        self.prttime(' CPL:GLCPREP ')
-        self.prttime(' CPL:C2G_BARRIER ', offset=glc.offset, coff=cpl.offset)
-        self.prttime(' CPL:C2G ', offset=glc.offset, coff=cpl.offset)
-        self.prttime(' CPL:R2C_BARRIER ', offset=rof.offset, coff=cpl.offset)
-        self.prttime(' CPL:R2C ', offset=rof.offset, coff=cpl.offset)
-        self.prttime(' CPL:ROFPOST_BARRIER ')
-        self.prttime(' CPL:ROFPOST ')
-        self.prttime(' CPL:BUDGET1_BARRIER ')
-        self.prttime(' CPL:BUDGET1 ')
-        self.prttime(' CPL:I2C_BARRIER ', offset=ice.offset, coff=cpl.offset)
-        self.prttime(' CPL:I2C ', offset=ice.offset, coff=cpl.offset)
-        self.prttime(' CPL:ICEPOST_BARRIER ')
-        self.prttime(' CPL:ICEPOST ')
-        self.prttime(' CPL:FRACSET_BARRIER ')
-        self.prttime(' CPL:FRACSET ')
-        self.prttime(' CPL:ATMOCN2_BARRIER ')
-        self.prttime(' CPL:ATMOCN2 ')
-        self.prttime(' CPL:OCNPRE2_BARRIER ')
-        self.prttime(' CPL:OCNPRE2 ')
-        self.prttime(' CPL:C2O2_BARRIER ', offset=ocn.offset, div=odays,
-                     coff=cpl.offset)
-        self.prttime(' CPL:C2O2 ', offset=ocn.offset, div=odays,
-                     coff=cpl.offset)
-        self.prttime(' CPL:ATMOCNQ_BARRIER')
-        self.prttime(' CPL:ATMOCNQ ')
-        self.prttime(' CPL:ATMPREP_BARRIER ')
-        self.prttime(' CPL:ATMPREP ')
-        self.prttime(' CPL:C2A_BARRIER ', offset=atm.offset, coff=cpl.offset)
-        self.prttime(' CPL:C2A ', offset=atm.offset, coff=cpl.offset)
-        self.prttime(' CPL:OCN_RUN_BARRIER ', offset=ocn.offset, div=odays)
-        self.prttime(' CPL:OCN_RUN ', offset=ocn.offset, div=odays)
-        self.prttime(' CPL:ATM_RUN_BARRIER ', offset=atm.offset)
-        self.prttime(' CPL:ATM_RUN ', offset=atm.offset)
-        self.prttime(' CPL:GLC_RUN_BARRIER ', offset=glc.offset)
-        self.prttime(' CPL:GLC_RUN ', offset=glc.offset)
-        self.prttime(' CPL:W2C_BARRIER ', offset=glc.offset, coff=cpl.offset)
-        self.prttime(' CPL:W2C ', offset=glc.offset, coff=cpl.offset)
-        self.prttime(' CPL:WAVPOST_BARRIER ')
-        self.prttime(' CPL:WAVPOST ', cpl.offset)
-        self.prttime(' CPL:G2C_BARRIER ', offset=glc.offset, coff=cpl.offset)
-        self.prttime(' CPL:G2C ', offset=glc.offset, coff=cpl.offset)
-        self.prttime(' CPL:GLCPOST_BARRIER ')
-        self.prttime(' CPL:GLCPOST ')
-        self.prttime(' CPL:A2C_BARRIER ', offset=atm.offset, coff=cpl.offset)
-        self.prttime(' CPL:A2C ', offset=atm.offset, coff=cpl.offset)
-        self.prttime(' CPL:ATMPOST_BARRIER ')
-        self.prttime(' CPL:ATMPOST ')
-        self.prttime(' CPL:BUDGET2_BARRIER ')
-        self.prttime(' CPL:BUDGET2 ')
-        self.prttime(' CPL:BUDGET3_BARRIER ')
-        self.prttime(' CPL:BUDGET3 ')
-        self.prttime(' CPL:BUDGETF_BARRIER ')
-        self.prttime(' CPL:BUDGETF ')
-        self.prttime(' CPL:O2C_BARRIER ', offset=ocn.offset,
-                     div=odays, coff=cpl.offset)
-        self.prttime(' CPL:O2C ', offset=ocn.offset, div=odays, coff=cpl.offset)
-        self.prttime(' CPL:OCNPOST_BARRIER ')
-        self.prttime(' CPL:OCNPOST ')
-        self.prttime(' CPL:RESTART_BARRIER ')
-        self.prttime(' CPL:RESTART')
-        self.prttime(' CPL:HISTORY_BARRIER ')
-        self.prttime(' CPL:HISTORY ')
-        self.prttime(' CPL:TSTAMP_WRITE ')
-        self.prttime(' CPL:TPROF_WRITE ')
-        self.prttime(' CPL:RUN_LOOP_BSTOP ')
+            self.write("\n\n")
+            self.write("More info on coupler timing:\n")
 
-        self.write("\n\n")
-        self.write("More info on coupler timing:\n")
+            self.write("\n")
+            self.prttime(' CPL:OCNPRE1 ')
+            self.prttime(' CPL:ocnpre1_atm2ocn ')
 
-        self.write("\n")
-        self.prttime(' CPL:OCNPRE1 ')
-        self.prttime(' CPL:ocnpre1_atm2ocn ')
+            self.write("\n")
+            self.prttime(' CPL:OCNPREP ')
+            self.prttime(' CPL:OCNPRE2 ')
+            self.prttime(' CPL:ocnprep_avg ')
+            self.prttime(' CPL:ocnprep_diagav ')
 
-        self.write("\n")
-        self.prttime(' CPL:OCNPREP ')
-        self.prttime(' CPL:OCNPRE2 ')
-        self.prttime(' CPL:ocnprep_avg ')
-        self.prttime(' CPL:ocnprep_diagav ')
+            self.write("\n")
+            self.prttime(' CPL:LNDPREP ')
+            self.prttime(' CPL:lndprep_atm2lnd ')
+            self.prttime(' CPL:lndprep_mrgx2l ')
+            self.prttime(' CPL:lndprep_diagav ')
 
-        self.write("\n")
-        self.prttime(' CPL:LNDPREP ')
-        self.prttime(' CPL:lndprep_atm2lnd ')
-        self.prttime(' CPL:lndprep_mrgx2l ')
-        self.prttime(' CPL:lndprep_diagav ')
+            self.write("\n")
+            self.prttime(' CPL:ICEPREP ')
+            self.prttime(' CPL:iceprep_ocn2ice ')
+            self.prttime(' CPL:iceprep_atm2ice ')
+            self.prttime(' CPL:iceprep_mrgx2i ')
+            self.prttime(' CPL:iceprep_diagav ')
 
-        self.write("\n")
-        self.prttime(' CPL:ICEPREP ')
-        self.prttime(' CPL:iceprep_ocn2ice ')
-        self.prttime(' CPL:iceprep_atm2ice ')
-        self.prttime(' CPL:iceprep_mrgx2i ')
-        self.prttime(' CPL:iceprep_diagav ')
+            self.write("\n")
+            self.prttime(' CPL:WAVPREP ')
+            self.prttime(' CPL:wavprep_atm2wav ')
+            self.prttime(' CPL:wavprep_ocn2wav ')
+            self.prttime(' CPL:wavprep_ice2wav ')
+            self.prttime(' CPL:wavprep_mrgx2w ')
+            self.prttime(' CPL:wavprep_diagav ')
 
-        self.write("\n")
-        self.prttime(' CPL:WAVPREP ')
-        self.prttime(' CPL:wavprep_atm2wav ')
-        self.prttime(' CPL:wavprep_ocn2wav ')
-        self.prttime(' CPL:wavprep_ice2wav ')
-        self.prttime(' CPL:wavprep_mrgx2w ')
-        self.prttime(' CPL:wavprep_diagav ')
+            self.write("\n")
+            self.prttime(' CPL:ROFPREP ')
+            self.prttime(' CPL:rofprep_l2xavg ')
+            self.prttime(' CPL:rofprep_lnd2rof ')
+            self.prttime(' CPL:rofprep_mrgx2r ')
+            self.prttime(' CPL:rofprep_diagav ')
 
-        self.write("\n")
-        self.prttime(' CPL:ROFPREP ')
-        self.prttime(' CPL:rofprep_l2xavg ')
-        self.prttime(' CPL:rofprep_lnd2rof ')
-        self.prttime(' CPL:rofprep_mrgx2r ')
-        self.prttime(' CPL:rofprep_diagav ')
+            self.write("\n")
+            self.prttime(' CPL:GLCPREP ')
+            self.prttime(' CPL:glcprep_avg ')
+            self.prttime(' CPL:glcprep_lnd2glc ')
+            self.prttime(' CPL:glcprep_mrgx2g ')
+            self.prttime(' CPL:glcprep_diagav ')
 
-        self.write("\n")
-        self.prttime(' CPL:GLCPREP ')
-        self.prttime(' CPL:glcprep_avg ')
-        self.prttime(' CPL:glcprep_lnd2glc ')
-        self.prttime(' CPL:glcprep_mrgx2g ')
-        self.prttime(' CPL:glcprep_diagav ')
+            self.write("\n")
+            self.prttime(' CPL:ATMPREP ')
+            self.prttime(' CPL:atmprep_xao2atm ')
+            self.prttime(' CPL:atmprep_ocn2atm ')
+            self.prttime(' CPL:atmprep_alb2atm ')
+            self.prttime(' CPL:atmprep_ice2atm ')
+            self.prttime(' CPL:atmprep_lnd2atm ')
+            self.prttime(' CPL:atmprep_mrgx2a ')
+            self.prttime(' CPL:atmprep_diagav ')
 
-        self.write("\n")
-        self.prttime(' CPL:ATMPREP ')
-        self.prttime(' CPL:atmprep_xao2atm ')
-        self.prttime(' CPL:atmprep_ocn2atm ')
-        self.prttime(' CPL:atmprep_alb2atm ')
-        self.prttime(' CPL:atmprep_ice2atm ')
-        self.prttime(' CPL:atmprep_lnd2atm ')
-        self.prttime(' CPL:atmprep_mrgx2a ')
-        self.prttime(' CPL:atmprep_diagav ')
+            self.write("\n")
+            self.prttime(' CPL:ATMOCNP ')
+            self.prttime(' CPL:ATMOCN1 ')
+            self.prttime(' CPL:ATMOCN2 ')
+            self.prttime(' CPL:atmocnp_ice2ocn ')
+            self.prttime(' CPL:atmocnp_wav2ocn ')
+            self.prttime(' CPL:atmocnp_fluxo ')
+            self.prttime(' CPL:atmocnp_fluxe ')
+            self.prttime(' CPL:atmocnp_mrgx2o ')
+            self.prttime(' CPL:atmocnp_accum ')
+            self.prttime(' CPL:atmocnp_ocnalb ')
 
-        self.write("\n")
-        self.prttime(' CPL:ATMOCNP ')
-        self.prttime(' CPL:ATMOCN1 ')
-        self.prttime(' CPL:ATMOCN2 ')
-        self.prttime(' CPL:atmocnp_ice2ocn ')
-        self.prttime(' CPL:atmocnp_wav2ocn ')
-        self.prttime(' CPL:atmocnp_fluxo ')
-        self.prttime(' CPL:atmocnp_fluxe ')
-        self.prttime(' CPL:atmocnp_mrgx2o ')
-        self.prttime(' CPL:atmocnp_accum ')
-        self.prttime(' CPL:atmocnp_ocnalb ')
+            self.write("\n")
+            self.prttime(' CPL:ATMOCNQ ')
+            self.prttime(' CPL:atmocnq_ocn2atm ')
+            self.prttime(' CPL:atmocnq_fluxa ')
+            self.prttime(' CPL:atmocnq_atm2ocnf ')
 
-        self.write("\n")
-        self.prttime(' CPL:ATMOCNQ ')
-        self.prttime(' CPL:atmocnq_ocn2atm ')
-        self.prttime(' CPL:atmocnq_fluxa ')
-        self.prttime(' CPL:atmocnq_atm2ocnf ')
+            self.write("\n")
+            self.prttime(' CPL:OCNPOSTT ')
+            self.prttime(' CPL:OCNPOST ')
+            self.prttime(' CPL:ocnpost_diagav ')
 
-        self.write("\n")
-        self.prttime(' CPL:OCNPOSTT ')
-        self.prttime(' CPL:OCNPOST ')
-        self.prttime(' CPL:ocnpost_diagav ')
+            self.write("\n")
+            self.prttime(' CPL:LNDPOST ')
+            self.prttime(' CPL:lndpost_diagav ')
+            self.prttime(' CPL:lndpost_acc2lr ')
+            self.prttime(' CPL:lndpost_acc2lg ')
 
-        self.write("\n")
-        self.prttime(' CPL:LNDPOST ')
-        self.prttime(' CPL:lndpost_diagav ')
-        self.prttime(' CPL:lndpost_acc2lr ')
-        self.prttime(' CPL:lndpost_acc2lg ')
+            self.write("\n")
+            self.prttime(' CPL:ROFOST ')
+            self.prttime(' CPL:rofpost_diagav ')
+            self.prttime(' CPL:rofpost_histaux ')
+            self.prttime(' CPL:rofpost_rof2lnd ')
+            self.prttime(' CPL:rofpost_rof2ice ')
+            self.prttime(' CPL:rofpost_rof2ocn ')
 
-        self.write("\n")
-        self.prttime(' CPL:ROFOST ')
-        self.prttime(' CPL:rofpost_diagav ')
-        self.prttime(' CPL:rofpost_histaux ')
-        self.prttime(' CPL:rofpost_rof2lnd ')
-        self.prttime(' CPL:rofpost_rof2ice ')
-        self.prttime(' CPL:rofpost_rof2ocn ')
+            self.write("\n")
+            self.prttime(' CPL:ICEPOST ')
+            self.prttime(' CPL:icepost_diagav ')
 
-        self.write("\n")
-        self.prttime(' CPL:ICEPOST ')
-        self.prttime(' CPL:icepost_diagav ')
+            self.write("\n")
+            self.prttime(' CPL:WAVPOST ')
+            self.prttime(' CPL:wavpost_diagav ')
 
-        self.write("\n")
-        self.prttime(' CPL:WAVPOST ')
-        self.prttime(' CPL:wavpost_diagav ')
+            self.write("\n")
+            self.prttime(' CPL:GLCPOST ')
+            self.prttime(' CPL:glcpost_diagav ')
+            self.prttime(' CPL:glcpost_glc2lnd ')
+            self.prttime(' CPL:glcpost_glc2ice ')
+            self.prttime(' CPL:glcpost_glc2ocn ')
 
-        self.write("\n")
-        self.prttime(' CPL:GLCPOST ')
-        self.prttime(' CPL:glcpost_diagav ')
-        self.prttime(' CPL:glcpost_glc2lnd ')
-        self.prttime(' CPL:glcpost_glc2ice ')
-        self.prttime(' CPL:glcpost_glc2ocn ')
+            self.write("\n")
+            self.prttime(' CPL:ATMPOST ')
+            self.prttime(' CPL:atmpost_diagav ')
 
-        self.write("\n")
-        self.prttime(' CPL:ATMPOST ')
-        self.prttime(' CPL:atmpost_diagav ')
-
-        self.write("\n")
-        self.prttime(' CPL:BUDGET ')
-        self.prttime(' CPL:BUDGET1 ')
-        self.prttime(' CPL:BUDGET2 ')
-        self.prttime(' CPL:BUDGET3 ')
-        self.prttime(' CPL:BUDGETF ')
-        self.write("\n\n")
+            self.write("\n")
+            self.prttime(' CPL:BUDGET ')
+            self.prttime(' CPL:BUDGET1 ')
+            self.prttime(' CPL:BUDGET2 ')
+            self.prttime(' CPL:BUDGET3 ')
+            self.prttime(' CPL:BUDGETF ')
+            self.write("\n\n")
 
         self.fout.close()
 
