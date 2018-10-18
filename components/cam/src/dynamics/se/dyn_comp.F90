@@ -226,6 +226,7 @@ CONTAINS
     use comsrf,           only: landm, sgh, sgh30
     use nctopo_util_mod,  only: nctopo_util_driver
     use cam_instance,     only: inst_index
+    use element_ops,      only: set_thermostate
 
     type (dyn_import_t), intent(inout) :: dyn_in
 

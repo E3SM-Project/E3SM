@@ -21,6 +21,7 @@ module inidat
   use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random
   use random_xgc, only: init_ranx, ranx
   use scamMod, only: single_column, precip_off, scmlat, scmlon
+  use element_ops, only: set_thermostate, get_temperature, copy_state
   implicit none
   private
   public read_inidat
@@ -457,7 +458,7 @@ contains
 !do ne need to nullify here? in case some points are missed???
 !so, let's do this tho not clear why
        temptmp(:,:,:) = 0.0_r8
-       call set_termostate(elem(ie),temptmp,hvcoord,tl)
+       call set_thermostate(elem(ie),temptmp,hvcoord,tl)
 
        indx = 1
        do j = 1, np
@@ -468,7 +469,7 @@ contains
              indx = indx + 1
           end do
        end do
-       call set_termostate(elem(ie),temptmp,hvcoord,tl)
+       call set_thermostate(elem(ie),temptmp,hvcoord,tl)
     end do !ie
 
     if (pertlim .ne. D0_0) then
@@ -516,7 +517,7 @@ contains
             end do !k
           end do
         end do! i
-        call set_termostate(elem(ie),temptmp,hvcoord,tl)
+        call set_thermostate(elem(ie),temptmp,hvcoord,tl)
       end do! ie
 
       deallocate(rndm_seed)

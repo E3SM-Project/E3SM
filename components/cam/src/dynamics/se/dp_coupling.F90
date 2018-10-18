@@ -20,12 +20,13 @@ module dp_coupling
   use ppgrid,         only: begchunk, endchunk, pcols, pver, pverp
   use element_mod,    only: element_t
   use control_mod,    only: smooth_phis_numcycle
-  use cam_logfile,    only : iulog
+  use cam_logfile,    only: iulog
   use spmd_dyn,       only: local_dp_map, block_buf_nrecs, chunk_buf_nrecs
-  use spmd_utils,   only: mpicom, iam
-  use perf_mod,    only : t_startf, t_stopf, t_barrierf
-  use parallel_mod, only : par
+  use spmd_utils,     only: mpicom, iam
+  use perf_mod,       only: t_startf, t_stopf, t_barrierf
+  use parallel_mod,   only: par
   use scamMod,        only: single_column
+  use element_ops,    only: get_temperature
   private
   public :: d_p_coupling, p_d_coupling
 !===============================================================================
@@ -113,7 +114,7 @@ CONTAINS
        do ie=1,nelemd
           ncols = elem(ie)%idxP%NumUniquePts
 
-          call get_temperature(elem,temperature,hvcoord,tl_f)
+          call get_temperature(elem(ie),temperature,hvcoord,tl_f)
 
           call UniquePoints(elem(ie)%idxP, elem(ie)%state%ps_v(:,:,tl_f), ps_tmp(1:ncols,ie))
           
