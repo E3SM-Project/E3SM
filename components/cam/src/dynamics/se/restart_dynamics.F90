@@ -224,19 +224,11 @@ CONTAINS
        do k=1,nlev
           do j=1,np
              do i=1,np
+!                var3d(i,j,ie,k) = elem(ie)%state%T(i,j,k,tl)
                 var3d(i,j,ie,k) = temperature(i,j,k)
              end do
           end do
        end do
-
-!original code, bar3d has diff indexing
-!       do k=1,nlev
-!          do j=1,np
-!             do i=1,np
-!                var3d(i,j,ie,k) = elem(ie)%state%T(i,j,k,tl)
-!             end do
-!          end do
-!       end do
 
     end do
 
