@@ -181,9 +181,20 @@
 		            description="Constant value of the basal heat flux (positive upward)."
 		            possible_values="Any positive real value"
 		/>
-		<nml_option name="config_basal_mass_bal_float" type="character" default_value="none" units="unitless"
+	</nml_record>
+
+        <nml_record name="iceshelf_melt" in_defaults="true">
+                <nml_option name="config_basal_mass_bal_float" type="character" default_value="none" units="unitless"
 		            description="Selection of the method for computing the basal mass balance of floating ice.  'none' sets the basalMassBal field to 0 everywhere.  'file' uses without modification whatever value was read in through an input or forcing file or the value set by an ESM coupler.  'constant', 'mismip', 'seroussi' use hardcoded fields defined in the code."
 		            possible_values="'none', 'file', 'constant', 'mismip', 'seroussi'"
+                />
+                <nml_option name="config_bmlt_float_flux" type="real" default_value="0.0" units="W m^{-2}"
+		            description="Value of the constant heat flux applied to the base of floating ice (positive upward)."
+		            possible_values="Any positive real value"
+		/>
+		<nml_option name="config_bmlt_float_xlimit" type="real" default_value="0.0" units="m"
+		            description="x value defining region where bmlt_float_flux is applied; melt only where abs(x) is greater than xlimit."
+		            possible_values="Any positive real value"
 		/>
 		<nml_option name="config_basal_mass_bal_seroussi_amplitude" type="real" default_value="0.0" units="m"
 		            description="amplitude on the depth adjustment applied to the Seroussi subglacial melt parameterization"
@@ -197,15 +208,7 @@
 		            description="phase of the periodic depth adjustment applied to the Seroussi subglacial melt parameterization. Units are cycles, i.e., 0-1"
 		            possible_values="any positive real value"
 		/>
-		<nml_option name="config_bmlt_float_flux" type="real" default_value="0.0" units="W m^{-2}"
-		            description="Value of the constant heat flux applied to the base of floating ice (positive upward)."
-		            possible_values="Any positive real value"
-		/>
-		<nml_option name="config_bmlt_float_xlimit" type="real" default_value="0.0" units="m"
-		            description="x value defining region where bmlt_float_flux is applied; melt only where abs(x) is greater than xlimit."
-		            possible_values="Any positive real value"
-		/>
-	</nml_record>
+        </nml_record>
 
 	<nml_record name="physical_parameters" in_defaults="true">
 		<nml_option name="config_ice_density" type="real" default_value="910.0" units="kg m^{-3}"
