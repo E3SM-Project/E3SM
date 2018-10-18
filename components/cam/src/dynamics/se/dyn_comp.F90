@@ -214,8 +214,7 @@ CONTAINS
 
 
   subroutine dyn_init2(dyn_in)
-    use dimensions_mod,   only: nlev, nelemd
-    use dyn_comp,         only: hvcoord
+    use dimensions_mod,   only: np, nlev, nelemd
     use prim_driver_mod,  only: prim_init2
     use prim_si_mod,  only: prim_set_mass
     use hybrid_mod,       only: hybrid_create
