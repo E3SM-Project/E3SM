@@ -543,9 +543,11 @@ class Dataset():
         for this var exists in data_path.
         The checking is done in _get_first_valid_vars_timeseries().
         """
-        var = var_to_get if var_to_get else var
         start_time_idx, end_time_idx = self._get_start_and_end_time_indices(var)
 
-        path = self._get_timeseries_file_path(var, data_path) 
+        path = self._get_timeseries_file_path(var, data_path)
+        var = var_to_get if var_to_get else var
+        
         with cdms2.open(path) as f:
             return f(var, time=slice(start_time_idx, end_time_idx+1))(squeeze=1)
+

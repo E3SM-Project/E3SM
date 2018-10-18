@@ -81,11 +81,13 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         if not hasattr(self, 'backend'):
             print("You need to define the 'backend' parameter to 'vcs' or 'mpl'/'matplotlib'/'cartopy'.")
             sys.exit()
+        # TODO: Enable when merged with code on master.
+        # The new cdp with the selector fixes things.
         # When running with time-series input, the start and end years must be provided.
         # We can't have default values because there aren't any good values that work for all cases.
-        if self.ref_timeseries_input and not (hasattr(self, 'ref_start_yr') and hasattr(self, 'ref_end_yr')):
-            print("You need to define both the 'ref_start_yr' and 'ref_end_yr' parameter.")
-            sys.exit()
-        if self.test_timeseries_input and not (hasattr(self, 'test_start_yr') and hasattr(self, 'test_end_yr')):
-            print("You need to define both the 'test_start_yr' and 'test_end_yr' parameter.")
-            sys.exit()
+        # if self.ref_timeseries_input and not (hasattr(self, 'ref_start_yr') and hasattr(self, 'ref_end_yr')):
+        #     print("You need to define both the 'ref_start_yr' and 'ref_end_yr' parameter.")
+        #     sys.exit()
+        # if self.test_timeseries_input and not (hasattr(self, 'test_start_yr') and hasattr(self, 'test_end_yr')):
+        #     print("You need to define both the 'test_start_yr' and 'test_end_yr' parameter.")
+        #     sys.exit()
