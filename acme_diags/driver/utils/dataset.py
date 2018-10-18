@@ -5,6 +5,7 @@ Derived variables are also supported.
 """
 import os
 import glob
+import re
 import collections
 import traceback
 import cdms2
@@ -160,39 +161,110 @@ class Dataset():
             return f.getglobal(attr)
 
 
-    def get_start_end_time_slice(self):
+    def get_start_and_end_years(self):
         """
-        Get the start and end years used when
-        slicing the timeseries input data.
+        Get the user-defined start and end years.
+        """
+        if self.ref:
+            start_yr = getattr(self.parameters, 'ref_start_yr')
+            end_yr = getattr(self.parameters, 'ref_end_yr')
+
+        else:
+            start_yr = getattr(self.parameters, 'test_start_yr')
+            end_yr = getattr(self.parameters, 'test_end_yr')
+
+        return start_yr, end_yr
+
+
+    def _get_start_yr_from_fname(self, var, path):
+        """
+        Based of var, get the start year from the timeseries file
+        located in path.
+        The expected file format is:
+            {var}_{start_yr}01_{end_yr}12.nc
+        """
+        timeseries_path = self._get_timeseries_file_path(var, path)
+
+        if not timeseries_path:
+            msg = 'There\'s no file for {} in {}'.format(var, path)
+            raise IOError(msg)
+
+        file_name = timeseries_path.split('/')[-1]
+        re_str = r'(?:{}_)(.*)(?:01_)'.format(var)
+        match = re.match(re_str, file_name).group(1)
+        if len(match) != 4:
+            msg = 'Got an invalid value {} when '.format(match)
+            msg += 'parsing the start year from the filename.'
+            raise RuntimeError(msg)
+
+        return match
+
+
+    def _get_end_yr_from_fname(self, var, path):
+        """
+        Based of var, get the end year from the timeseries file
+        located in path.
+        The expected file format is:
+            {var}_{start_yr}01_{end_yr}12.nc
+        """
+        timeseries_path = self._get_timeseries_file_path(var, path)
+
+        if not timeseries_path:
+            msg = 'There\'s no file for {} in {}'.format(var, path)
+            raise IOError(msg)
+
+        file_name = timeseries_path.split('/')[-1]
+        re_str = r'(?:.*01_)(.*)(?:12.nc)'
+        match = re.match(re_str, file_name).group(1)
+        if len(match) != 4:
+            msg = 'Got an invalid value {} when '.format(match)
+            msg += 'parsing the end year from the filename.'
+            raise RuntimeError(msg)
+
+        return match
+
+
+    def _get_start_and_end_time_indices(self, var):
+        """
+        Get the start and end years as slices.
+
+        This is based off the passed in var because we need the
+        file that the var corresponds to calculate the offset.
         """
         if not self.is_timeseries():
             msg = 'Input data is not timeseries, can\'t get start and end years.'
             raise RuntimeError(msg)
 
-        # If neither *_start_time_slice or *_end_time_slice are defined,
-        # then just used start_yr and end_yr.
-        if self.ref:
-            #start_yr = self.parameters.ref_start_yr
-            #end_yr = self.parameters.ref_end_yr
+        # This is from the user's input.
+        # Ex: 1980, 1989
+        start_yr, end_yr = self.get_start_and_end_years()
+        start_yr, end_yr = int(start_yr), int(end_yr)
 
-            #start_time_slice = getattr(self.parameters, 'ref_start_time_slice', start_yr)
-            #end_time_slice = getattr(self.parameters, 'ref_end_time_slice', end_yr)
+        # Get the start and end years based on the file corresponding to var.
+        # Ex1: 1950, 2015
+        # Ex2: 1980, 2015
+        path = self.parameters.reference_data_path if self.ref else self.parameters.test_data_path
+        start_yr_file = self._get_start_yr_from_fname(var, path)
+        end_yr_file = self._get_end_yr_from_fname(var, path)
+        start_yr_file, end_yr_file = int(start_yr_file), int(end_yr_file)
 
-            start_time_slice = getattr(self.parameters, 'ref_start_time_slice')
-            end_time_slice = getattr(self.parameters, 'ref_end_time_slice')
+        # Calculate the offset, which is needed for when *_yr >= *_yr_file.
+        # TODO: What do we do when *_yr < *_yr_file?
+        # CDMS will probably just throw an error.
+        # Ex1: 1980 - 1950 = 30
+        # Ex2: 1980 - 1980 = 0
+        offset = start_yr - start_yr_file
 
-        else:
-            #start_yr = self.parameters.test_start_yr
-            #end_yr = self.parameters.test_end_yr
+        # Using the offset, and user inputted years (start_yr, end_yr), calculate the indices.
+        # Ex1: 0, 9
+        # Ex2: 0, 9
+        start_slice, end_slice = 0, end_yr - start_yr
+        # Ex1: 0+30, 9+30 = 30, 39
+        # Ex2: 0+0, 9+0 = 0, 9
+        start_slice, end_slice = start_slice + offset, end_slice + offset
 
-            #start_time_slice = getattr(self.parameters, 'test_start_time_slice', start_yr)
-            #end_time_slice = getattr(self.parameters, 'test_end_time_slice', end_yr)
-
-            start_time_slice = getattr(self.parameters, 'test_start_time_slice')
-            end_time_slice = getattr(self.parameters, 'test_end_time_slice')
-
-
-        return start_time_slice, end_time_slice
+        # We multiply by 12 since it's monthly data.
+        return start_slice*12, end_slice*12
 
 
     def _get_climo_var(self, filename):
@@ -420,8 +492,9 @@ class Dataset():
         if len(matches) == 1:
             return matches[0]
         elif len(matches) >= 2:
-            # There should not be more that one file per var.
-            return ''
+            msg = 'For the variable {} you have two timeseries files in the '.format(var)
+            msg += 'directory: {} This currently isn\'t supported.'.format(data_path)
+            raise RuntimeError(msg)
         
         # If nothing was found, try looking for the file with
         # the ref_name prepended to it.
@@ -431,7 +504,13 @@ class Dataset():
         # Again, there should only be one file per var in this new location.
         if len(matches) == 1:
             return matches[0]
+        elif len(matches) >= 2:
+            msg = 'For the variable {} you have two timeseries files in the '.format(var)
+            msg += 'directory: {} This currently isn\'t supported.'.format(data_path)
+            raise RuntimeError(msg)
         else:
+            # There's no where else to search, there's no valid file.
+            # Since '' is False, nothing will be done for var.
             return ''
 
 
@@ -464,13 +543,9 @@ class Dataset():
         for this var exists in data_path.
         The checking is done in _get_first_valid_vars_timeseries().
         """
-        path = self._get_timeseries_file_path(var, data_path)
-
-        start_time_slice, end_time_slice = self.get_start_end_time_slice()
-
-        start_time_slice = int(start_time_slice)
-        end_time_slice = int(end_time_slice)
-        
         var = var_to_get if var_to_get else var
+        start_time_idx, end_time_idx = self._get_start_and_end_time_indices(var)
+
+        path = self._get_timeseries_file_path(var, data_path) 
         with cdms2.open(path) as f:
-            return f(var, time=slice(start_time_slice, end_time_slice+1))(squeeze=1)
+            return f(var, time=slice(start_time_idx, end_time_idx+1))(squeeze=1)

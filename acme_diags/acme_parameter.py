@@ -68,10 +68,10 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
 
     def check_values(self):
         if not hasattr(
-                self, 'reference_data_path') or self.reference_data_path == '':
+                self, 'reference_data_path') or not self.reference_data_path:
             print('You need to specify reference_data_path in the parameters file or in the command line using --reference_data_path')
             sys.exit()
-        if not hasattr(self, 'test_data_path') or self.test_data_path == '':
+        if not hasattr(self, 'test_data_path') or not self.test_data_path:
             print('You need to specify test_data_path in the parameters file or in the command line using --test_data_path')
             sys.exit()
         if hasattr(self, 'multiprocessing') and hasattr(
@@ -80,4 +80,12 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
             sys.exit()
         if not hasattr(self, 'backend'):
             print("You need to define the 'backend' parameter to 'vcs' or 'mpl'/'matplotlib'/'cartopy'.")
+            sys.exit()
+        # When running with time-series input, the start and end years must be provided.
+        # We can't have default values because there aren't any good values that work for all cases.
+        if self.ref_timeseries_input and not (hasattr(self, 'ref_start_yr') and hasattr(self, 'ref_end_yr')):
+            print("You need to define both the 'ref_start_yr' and 'ref_end_yr' parameter.")
+            sys.exit()
+        if self.test_timeseries_input and not (hasattr(self, 'test_start_yr') and hasattr(self, 'test_end_yr')):
+            print("You need to define both the 'test_start_yr' and 'test_end_yr' parameter.")
             sys.exit()
