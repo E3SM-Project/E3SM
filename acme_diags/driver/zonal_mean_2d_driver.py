@@ -157,8 +157,10 @@ def run_diag(parameter):
                     mv2.units = 'mm/day'
 
             if mv1.getLevel() and mv2.getLevel():  # for variables with z axis:
-                # plev = parameter.plevs
-                plev = numpy.logspace(2.0, 3.0, num=17)
+                if parameter.zonal_mean_2d_plevs:
+                    plev = parameter.zonal_mean_2d_plevs
+                else:
+                    plev = numpy.logspace(2.0, 3.0, num=17)
                 # plev = [30.,50.,70.,100.,150.,200.,250.,300.,400.,500.,600.,700.,775.,850.,925.,1000.]
                 print('Selected pressure level: {}'.format(plev))
                 f_ins = [f_mod, f_obs]
