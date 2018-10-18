@@ -327,6 +327,12 @@ module li_iceshelf_melt
                     config_sea_level, config_ice_density, nCellsSolve, err_tmp)
             err = ior(err, err_tmp)
 
+         elseif (trim(config_basal_mass_bal_float) == 'temperature_profile') then
+
+            call iceshelf_melt_param_from_temp_profile(nCellsSolve, lowerSurface, cellMask, &
+                    config_sea_level, config_ice_density, config_print_thermal_info, floatingBasalMassBal, err_tmp)
+            err = ior(err, err_tmp)
+
          else
 
             call mpas_log_write('Unknown option selected for config_basal_mass_bal_float:' // &
@@ -344,6 +350,7 @@ module li_iceshelf_melt
 
 
     end subroutine li_basal_melt_floating_ice
+!-----------------------------------------------------------------------
 
 
 !***********************************************************************
@@ -381,13 +388,13 @@ module li_iceshelf_melt
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
-      real(kind=RKIND), pointer :: daysSinceStart
-      real (kind=RKIND), dimension(:), pointer :: lowerSurface  !< lower surface elevation (m)
-      integer, dimension(:), pointer :: &
+      real(kind=RKIND), pointer, intent(in) :: daysSinceStart
+      real (kind=RKIND), dimension(:), pointer, intent(in) :: lowerSurface  !< lower surface elevation (m)
+      integer, dimension(:), pointer, intent(in) :: &
            cellMask                    !< bit mask describing whether ice is floating, dynamically active, etc.
-      real(kind=RKIND), pointer :: &
+      real(kind=RKIND), pointer, intent(in) :: &
            config_sea_level !< sea level (m) relative to z = 0
-      real (kind=RKIND), pointer :: config_ice_density !< ice density
+      real (kind=RKIND), pointer, intent(in) :: config_ice_density !< ice density
       integer, pointer :: &
            nCellsSolve                 !< number of locally owned cells
 
@@ -398,14 +405,13 @@ module li_iceshelf_melt
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
-      real (kind=RKIND), dimension(:), pointer :: &
+      real (kind=RKIND), dimension(:), pointer, intent(out) :: &
            floatingBasalMassBal      !< basal mass balance for floating ice
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-      ! basal melt parameters for Seroussi param.
       real (kind=RKIND) :: slopeSer  ! slope of relation between depth and melt rate
       real (kind=RKIND) :: interceptSer  ! depth at which melting goes to 0
       real (kind=RKIND) :: maxMeltSer  ! maximum allowable melt rate
@@ -464,11 +470,222 @@ module li_iceshelf_melt
 
 
     end subroutine basal_melt_thwaites_seroussi
+!-----------------------------------------------------------------------
 
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine iceshelf_melt_param_from_temp_profile
+!
+!> \brief Calculate ice shelf melt rate using parameterization based on ocean temperature profile
+!> \author Matthew Hoffman, based on parameterization developed by Xylar Asay-Davis
+!> \date   October 2018
+!> \details  Melt rate parameterization by Xylar Asay-Davis used in Thwaites variability paper
+!> in prep. by Hoffman et al.
+!> Parameterization takes a ocean temperature profile and sill depth as input.
+!> The temp. profile is adjusted for cavity temperature behind the sill,
+!> assuming constant temp. below the sill depth.
+!> Then a local temp profile in the boundary layer is estimated assuming exponential
+!> decay from the cavity profile to a plume profile at infinite distance downstream
+!> from the grounding line, accounting for the pressure-melt temperature.
+!> The melt rate is calculated as proportional to the  product of the boundary layer
+!> temperature profile and the mean cavity temperature.
+!-----------------------------------------------------------------------
 
-    !***********************************************************************
+    subroutine iceshelf_melt_param_from_temp_profile(nCellsSolve, lowerSurface, cellMask, &
+                    config_sea_level, config_ice_density, print_debug, floatingBasalMassBal, err)
 
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      integer, intent(in) :: nCellsSolve !< number of locally owned cells
+      real (kind=RKIND), dimension(:), intent(in) :: lowerSurface !< ice shelf draft
+      integer, dimension(:), intent(in) :: cellMask !< bitmask on cells
+      real (kind=RKIND), intent(in) :: config_sea_level, config_ice_density
+      logical, intent(in) :: print_debug
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), dimension(:), intent(out) :: floatingBasalMassBal !< BMB for ice shelves
+      integer, intent(out) :: err
+
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      ! Some constants - could be made into namelist parameters as needed
+      real(kind=RKIND), parameter :: slopeDraft = 1.0e-2_RKIND  !< characteristic slope of ice shelf draft
+      real(kind=RKIND), parameter :: plumeThickness = 30.0_RKIND  !< characteristic plume thickness (m)
+      real(kind=RKIND), parameter :: E0 = 0.036_RKIND !< entrainment parameter (Jenkins 1991)
+      real(kind=RKIND), parameter :: Stanton = 5.9e-4_RKIND !< Stanton number (Jenking et al. 2010)
+
+      ! All depths are written as elevation relative to sea level (negative values)
+      ! variables describing regional profile (likely to make nl options)
+      real(kind=RKIND) :: zThermoclineTop !< depth at top of thermocline (temp assumed constant above this)
+      real(kind=RKIND) :: zThermoclineBot !< depth at bottom of thermocline (temp assumed constant below this)
+      real(kind=RKIND) :: TThermoclineTop !< temperature at top of thermocline (constant shallow water mass temp.)
+      real(kind=RKIND) :: TThermoclineBot !< temperature at bottom of thermocline (constant deep water mass temp.)
+
+      ! variables that are general to any depth
+      real(kind=RKIND) :: zSill !< sill depth
+      real(kind=RKIND) :: TSill !< temperature at the sill depth
+      real(kind=RKIND) :: zGL !< grounding line depth
+      real(kind=RKIND) :: TGL !< temperature at grounding line depth
+      real(kind=RKIND) :: zCavityMin !< arbitrary depth minimum depth of cavity (a typical draft near calving front)
+      real(kind=RKIND) :: TFmean !< mean thermal forcing within the cavity
+      real(kind=RKIND) :: kappa !< constant for non-local, quadratic melt param. (likely to make a nl option)
+      real(kind=RKIND) :: zCavityDepth !< depth below which mean thermal forcing is averaged
+      ! variables specific to a given depth
+      real(kind=RKIND) :: draft !< elevation of ice shelf draft (m)
+      real(kind=RKIND) :: Tregional !< regional temperature at given depth (comes from imposed profile)
+      real(kind=RKIND) :: Tcavity !< temperature in cavity at given depth
+      real(kind=RKIND) :: Tfreeze !< freezing temperature at given depth
+      real(kind=RKIND) :: Tinfinity !< limit of exponential decay of T at given depth
+      real(kind=RKIND) :: Tplume !< temperature in plume at a given depth
+      real(kind=RKIND) :: zeta !< length scale of decay of plume temperature
+
+      ! other
+      integer :: nLevels
+      integer :: iCell, z
+      real(kind=RKIND) :: zr
+
+      err = 0
+
+      ! Specify temp. profile (likely to become nl options)
+      zThermoclineTop = -200.0_RKIND
+      zThermoclineBot = -600.0_RKIND
+      TThermoclineTop = -1.0_RKIND
+      TThermoclineBot = 1.2_RKIND
+
+      ! Calculate variables independent of depth
+      kappa = 6.0_RKIND ! likely to become nl option
+      zSill = -700.0_RKIND ! likely to become nl option
+      zGL = -1000.0_RKIND ! to come from global reduction of GL depth
+      zeta = slopeDraft * plumeThickness / (E0 * slopeDraft + Stanton)
+      zCavityDepth = -200.0_RKIND ! depth below which mean thermal forcing is averaged
+      zCavityDepth = 0.0_RKIND ! TODO: REMOVE
+
+      ! calculate temperature at sill
+      if (zSill >= zThermoclineTop) then
+         TSill = TThermoclineTop
+      elseif (zSill <= zThermoclineBot) then
+         TSill = TThermoclineBot
+      else
+         TSill = (TThermoclineTop - TThermoclineBot) * &
+                 (zSill - zThermoclineBot) / (zThermoclineTop - zThermoclineBot) + zThermoclineBot
+      endif
+      if (print_debug) then
+         call mpas_log_write("TSill=$r at zSill=$r", realArgs=(/TSill, zSill/))
+      endif
+
+      ! calculate temperature at GL (allowing for no sill - sill deeper than GL depth)
+      if (zGL < zSill) then
+         TGL = TSill
+      elseif (zGL >= zThermoclineTop) then
+         TGL = TThermoclineTop
+      elseif (zGL <= zThermoclineBot) then
+         TGL = TThermoclineBot
+      else
+         TGL = (TThermoclineTop - TThermoclineBot) * &
+                 (zGL - zThermoclineBot) / (zThermoclineTop - zThermoclineBot) + TThermoclineBot
+      endif
+      if (print_debug) then
+         call mpas_log_write("TGL=$r at zGL=$r", realArgs=(/TGL, zGL/))
+      endif
+
+      ! Need to calculate a mean thermal forcing within the plume
+      ! Ideally this would be a function of the ice shelf hypsometry,
+      ! but for simplicity calculate assuming a linear (ramp) ice shelf shape.
+      ! Average between the GL depth and an arbitrary ice shelf thickness at calving front.
+      ! (We think that is better than averaging all the way to surface, even if that thin
+      !  shelf thickness does not match that of the modeled ice shelf.)
+      TFmean = 0.0_RKIND
+      nLevels = 0
+      !do z = ceiling(zGL), floor(zCavityMin), 1 ! Discretize in 1 m increments
+      do z = ceiling(-1100.0), floor(zCavityMin), 1 ! Discretize in 1 m increments
+         zr = real(z, kind=RKIND) ! convert once to real data type
+         nLevels = nLevels + 1
+         ! calculate Tcavity for this depth (allowing for no sill - sill deeper than GL depth)
+         if (zr < zSill) then
+            Tcavity = TSill
+         elseif (zr >= zThermoclineTop) then
+            Tcavity = TThermoclineTop
+         elseif (zr <= zThermoclineBot) then
+            Tcavity = TThermoclineBot
+         else
+            Tcavity = (TThermoclineTop - TThermoclineBot) * &
+                 (zr - zThermoclineBot) / (zThermoclineTop - zThermoclineBot) + TThermoclineBot
+         endif
+         ! calculate Tfreeze for this depth
+         Tfreeze = ocean_freezing_temperature(zr)
+         ! calculate Tinfinity for this depth
+         Tinfinity = (E0 * slopeDraft * Tcavity + Stanton * Tfreeze) / (E0 * slopeDraft + Stanton)
+         ! calculate Tplume for this depth
+         Tplume = Tinfinity + (TGL - Tinfinity) * exp(min(-1.0_RKIND * (zr - zGL) / zeta, 0.0_RKIND))
+         ! now add to sum of TFmean
+         TFmean = TFmean + (Tplume - Tfreeze)
+      enddo
+      ! now find the average
+      if (nLevels > 0) then
+         TFmean = TFmean / real(nLevels, kind=RKIND)
+      else
+         call mpas_log_write("iceshelf_melt_param_from_temp_profile found 0 levels over which to average mean thermal forcing!",&
+               MPAS_LOG_ERR)
+         err = ior(err, 1)
+      endif
+      if (print_debug) then
+         call mpas_log_write("TFmean=$r", realArgs=(/TFmean/))
+      endif
+
+      ! Now calculate melt rate at each grid cell
+      do iCell = 1, nCellsSolve
+         if (li_mask_is_floating_ice(cellMask(iCell))) then
+            draft = lowerSurface(iCell) - config_sea_level
+            ! calculate Tcavity for this depth (allowing for no sill - sill deeper than GL depth)
+            if (draft < zSill) then
+               Tcavity = TSill
+            elseif (draft >= zThermoclineTop) then
+               Tcavity = TThermoclineTop
+            elseif (draft <= zThermoclineBot) then
+               Tcavity = TThermoclineBot
+            else
+               Tcavity = (TThermoclineTop - TThermoclineBot) * &
+                    (draft - zThermoclineBot) / (zThermoclineTop - zThermoclineBot) + TThermoclineBot
+            endif
+            ! calculate Tfreeze for this depth
+            Tfreeze = ocean_freezing_temperature(draft)
+            ! calculate Tinfinity for this depth
+            Tinfinity = (E0 * slopeDraft * Tcavity + Stanton * Tfreeze) / (E0 * slopeDraft + Stanton)
+            ! calculate Tplume for this depth
+            Tplume = Tinfinity + (TGL - Tinfinity) * exp(min(-1.0_RKIND * (draft - zGL) / zeta, 0.0_RKIND))
+            ! now add to sum of TFmean
+            floatingBasalMassBal(iCell) = kappa * TFmean * (Tplume - Tfreeze) ! in m/yr, +=melting
+            !floatingBasalMassBal(iCell) = Tplume
+         else
+            floatingBasalMassBal(iCell) = 0.0_RKIND
+         endif
+      enddo
+      ! TODO:UNCOMMENT LATER!
+      !floatingBasalMassBal(:) = floatingBasalMassBal(:) * (-1.0_RKIND) * config_ice_density / scyr ! convert to BMB
+
+    end subroutine iceshelf_melt_param_from_temp_profile
+!-----------------------------------------------------------------------
+
+
+    function ocean_freezing_temperature(depth) result(temp)
+      real(kind=RKIND), intent(in) :: depth
+      real(kind=RKIND), parameter :: Sref = 34.4_RKIND  !< Reference salinity (made up, typical for MISOMIP1)
+      real(kind=RKIND) :: temp
+
+      ! function to calculate freezing temperature from Jenkins (1991)
+      temp = 0.0901_RKIND - 0.0575_RKIND * SRef + 7.61e-4_RKIND * depth
+
+    end function ocean_freezing_temperature
+!-----------------------------------------------------------------------
+
+
+  !***********************************************************************
   end module li_iceshelf_melt
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
