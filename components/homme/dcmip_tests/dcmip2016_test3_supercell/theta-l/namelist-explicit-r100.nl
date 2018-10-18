@@ -8,7 +8,7 @@
   test_case         = "dcmip2016_test3"         ! test identifier
   ne                = 30                        ! number of elements per cube face
   qsize             = 3                         ! num tracer fields
-  nmax              = 3200                      ! 7200s(120min)/tstep
+  nmax              = 3600                      ! 7200s(120min)/tstep
   statefreq         = 180                       ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run

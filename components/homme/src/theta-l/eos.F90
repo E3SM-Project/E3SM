@@ -64,7 +64,7 @@ implicit none
   real (kind=real_kind) :: pnh_i(np,np,nlevp)  
   real (kind=real_kind) :: dp3d_i(np,np,nlevp)
   real (kind=real_kind) :: pi_i(np,np,nlevp) 
-  integer :: i,j,k
+  integer :: i,j,k,k2
 
   ! hydrostatic pressure
   pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
@@ -104,7 +104,17 @@ implicit none
               endif
            enddo
         enddo
-        call abortmp('error: rho<0')
+        do i=1,np
+           do j=1,np
+              if ( p_over_exner(i,j,k)<0 ) then
+                 print *,'vertical column:'
+                 do k2=1,nlev
+                    write(*,'(i3,4f14.4)') k2,phi_i(i,j,k2),dp3d(i,j,k2),vtheta_dp(i,j,k2)
+                 enddo
+                 call abortmp('error: rho<0')
+              endif
+           enddo
+        enddo
      endif
     
      pnh(:,:,k) = p0 * (p_over_exner(:,:,k)/p0)**(1/(1-kappa))
