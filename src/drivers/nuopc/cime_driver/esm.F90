@@ -325,7 +325,7 @@ module ESM
     ! Perform restarts if appropriate
     !-------------------------------------------
 
-    call InitRestart(driver, logunit, rc)
+    call InitRestart(driver, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (pio_file_is_open(pioid)) then
