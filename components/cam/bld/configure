@@ -2796,7 +2796,6 @@ sub write_filepath
 	      print $fh "$camsrcdir/homme/src/preqx_acc\n";
         print $fh "$camsrcdir/homme/src/preqx/share\n";
       }
-#thats a question
       elsif($opts{'dyn_target'} eq 'theta-l') {
               print $fh "$camsrcdir/homme/src/theta-l\n";
       }

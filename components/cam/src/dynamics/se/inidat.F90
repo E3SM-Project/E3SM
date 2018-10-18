@@ -198,6 +198,7 @@ contains
        end do
     end do
 
+!moving this down since for theta state%vtheta_dp needs pressure to init
 #if 0
     fieldname = 'T'
     tmp = 0.0_r8
@@ -265,7 +266,6 @@ contains
     end if
 #endif 
 
-!what s this?
     if (associated(ldof)) then
        call endrun(trim(subname)//': ldof should not be associated')
     end if
@@ -342,7 +342,7 @@ contains
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' set to 0.'
               qtmp = 0.0_r8
           end if
-          ! Since the rest of processing uses tmp,  thencopy qtmp into tmp
+          ! Since the rest of processing uses tmp, copy qtmp into tmp
           do ie = 1, nelemd
             do k=1,nlev
               do i = 1, npsq
@@ -443,7 +443,6 @@ contains
 
 
 #if 1 
-! theta needs p inited before T
     fieldname = 'T'
     tmp = 0.0_r8
     call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
@@ -453,16 +452,17 @@ contains
     end if
 
     do ie=1,nelemd
-!preqx
+!old code
 !       elem(ie)%state%T=0.0_r8
-!do ne need to nullify here?
-!       temptmp(:,:,:) = 0.0_r8
-!       call set_termostate(elem(ie),temptmp,hvcoord,tl)
+!do ne need to nullify here? in case some points are missed???
+!so, let's do this tho not clear why
+       temptmp(:,:,:) = 0.0_r8
+       call set_termostate(elem(ie),temptmp,hvcoord,tl)
 
        indx = 1
        do j = 1, np
           do i = 1, np
-             !preqx
+             !old code
              !elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
              temptmp(i,j,:) = tmp(indx,:,ie)
              indx = indx + 1
@@ -510,7 +510,7 @@ contains
                 call random_number(pertval)
               endif
               pertval = D2_0*pertlim*(D0_5 - pertval)
-!preqx
+!old code
 !              elem(ie)%state%T(i,j,k,tl) = elem(ie)%state%T(i,j,k,tl)*(D1_0 + pertval)
               temptmp(i,j,k) = temptmp(i,j,k)*(D1_0 + pertval)
             end do !k
@@ -537,19 +537,19 @@ contains
     ! update the redundent columns in the dynamics
 
 #if 0 
-!(elem(1)%model == 1 )then
+! model == preqx
     if(par%dynproc) then
        call initEdgeBuffer(par, edge, elem, (3+pcnst)*nlev+2)
     end if
 #else 
-!(elem(1)%model == 2 )then
+! model == theta-l
     if(par%dynproc) then
        call initEdgeBuffer(par, edge, elem, (4+pcnst)*nlev+2)
     end if
 #endif
 
 #if 0 
-!(elem(1)%model == 1 )then
+! model == preqx
 
 !all this does is dss state+Q, this can be routine in homme
 !depending on model
@@ -581,7 +581,7 @@ contains
        call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
     end do
 #else 
-!(elem(1)%model == 2) then
+! model == theta-l
     do ie=1,nelemd
        kptr=0
        call edgeVpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)

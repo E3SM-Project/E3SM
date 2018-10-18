@@ -151,7 +151,7 @@ implicit none
   end subroutine get_pnh_and_exner
 
 
-
+!og why is it called get, not set?
   !_____________________________________________________________________
   subroutine get_phinh(hvcoord,phis,vtheta_dp,dp,phi_i)
 !

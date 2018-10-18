@@ -353,6 +353,7 @@ contains
           (p(:,:,k)/p0)**(-kappa)
   enddo
 
+!computes and sets hydrostatic phi, copies state to all timelevels
   call tests_finalize(elem,hvcoord,nt)
 
   end subroutine set_thermostate
@@ -540,6 +541,8 @@ contains
   elem%derived%FM(:,:,3,:) = f_d * ( elem%state%w_i(:,:,1:nlev,n)  )
   end subroutine 
 
+
+!name?
   !_____________________________________________________________________
   subroutine tests_finalize(elem,hvcoord,ns,ie)
 
@@ -583,6 +586,7 @@ contains
     if (ns .ne. tl) call copy_state(elem,ns,tl)
   enddo
 
+!saves state in some structure state0 for stand-alone
   if(present(ie)) call save_initial_state(elem%state,ie)
 
 

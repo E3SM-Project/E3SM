@@ -215,6 +215,7 @@ CONTAINS
 
   subroutine dyn_init2(dyn_in)
     use dimensions_mod,   only: nlev, nelemd
+    use dyn_comp,         only: hvcoord
     use prim_driver_mod,  only: prim_init2
     use prim_si_mod,  only: prim_set_mass
     use hybrid_mod,       only: hybrid_create
@@ -231,10 +232,11 @@ CONTAINS
 
     type(element_t),    pointer :: elem(:)
 
-    integer :: ithr, nets, nete, ie, k
+    integer :: ithr, nets, nete, ie, k, tlev
     real(r8), parameter :: Tinit=300.0_r8
     real(r8) :: dyn_ps0
     type(hybrid_t) :: hybrid
+    real(r8) :: temperature(np,np,nlev)
 
     elem  => dyn_in%elem
 
@@ -279,18 +281,20 @@ CONTAINS
                 elem(ie)%state%ps_v(:,:,:) =dyn_ps0
 
                 elem(ie)%state%phis(:,:)=0.0_r8
-!not sure what to do here? 
-!the closest would be to move this line after assignment of q (so kappa is well
-!defined), and compute dp, then compute theta=Tinit/Exner, Exner=(p/po)^kappa,
-!then do thetacpdp=theta*cp*dp...
 
-!disabling to get other calls
-!use set_thermostate here
-!                elem(ie)%state%T(:,:,:,:) =Tinit
+                temperature(:,:,:) = Tinit
 
                 elem(ie)%state%v(:,:,:,:,:) =0.0_r8
 
                 elem(ie)%state%q(:,:,:,:)=0.0_r8
+                
+                !for theta model, this routine will compute vtheta_dp, phi at time level tlev and will set 
+                !all other time levels to timelevel tlev.
+                !in preqx, this routine sets T for timelevel tlev only, so, we need to
+                !call it 3 times
+                do tlev=1,3
+                  call set_thermostate(elem(ie),temperature,hvcoord,tlev)
+                enddo
 
              end do
           end if
