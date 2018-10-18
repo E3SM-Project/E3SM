@@ -20,7 +20,6 @@ import ssl
 import subprocess
 import sys
 from string import Template
-import yaml
 
 from standard_script_setup import *
 from CIME.case       import Case
@@ -593,19 +592,15 @@ def check_expdb_case(case_dict, username, password):
                  'expType':case_dict['expType']}
     data = json.dumps(data_dict)
     params = urllib.parse.urlencode(dict(username=username, password=password, data=data))
-    raw_output = ''
     try:
         response = urllib.request.urlopen(case_dict['query_expdb_url'], params, context=_context)
-        raw_output = response.read()
+        output = json.loads(response.read().decode())
     except urllib.error.HTTPError as http_e:
         logger.info('ERROR archive_metadata HTTP post failed "%s"', http_e.code)
         sys.exit(1)
     except urllib.error.URLError as url_e:
         logger.info('ERROR archive_metadata URL failed "%s"', url_e.reason)
         sys.exit(1)
-
-    if raw_output:
-        output = yaml.safe_load(raw_output)
 
     return int(output['case_id'])
 
@@ -665,8 +660,11 @@ def create_json(case_dict):
 
     filename = '{0}/archive_files/json.{1}'.format(case_dict['workdir'],
                                                    datetime.datetime.now().strftime('%Y%m%d-%H%M%S'))
-    with io.open(filename, 'w', encoding='utf-8') as fname:
-        fname.write(unicode(json.dumps(case_dict, indent=4, sort_keys=True, ensure_ascii=True)))
+    with io.open(filename, 'wb') as fname:
+        jstr = str(json.dumps(case_dict, indent=4, sort_keys=True, ensure_ascii=False))
+        if isinstance(jstr, str):
+            jstr = jstr.decode('utf-8')
+        fname.write(jstr)
         fname.close()
 
 # ---------------------------------------------------------------------
