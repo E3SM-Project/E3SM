@@ -49,9 +49,9 @@ _svn_error_template = Template('in "$function" - SVN client unavailable\n'
                                'SVN error executing command "$cmd". \n'
                                '$error: $strerror')
 _ignore_patterns = ['*.pyc', '^.git', 'tmp', '.svn', '*~']
-_pp_xml_vars = {'atm'        : 'ATMDIAG_OUTPUT_ROOT_PATH',
+_pp_xml_vars = {'atm'        : 'ATMDIAG_test_path_climo',
                 'glc'        : '',
-                'lnd'        : 'LNDDIAG_OUTPUT_ROOT_PATH',
+                'lnd'        : 'LNDDIAG_PTMPDIR_1',
                 'ice'        : 'ICEDIAG_PATH_CLIMO_CONT',
                 'ocn'        : 'OCNDIAG_TAVGDIR',
                 'rof'        : '',
@@ -228,29 +228,6 @@ def get_case_vars(case_dict, case):
     return case_dict
 
 # ---------------------------------------------------------------------
-def bytes_2_human(n):
-# ---------------------------------------------------------------------
-    """bytes to human
-    http://code.activestate.com/recipes/578019
-    >>> bytes_2_human(10000)
-     '9.8K'
-     >>> bytes_2_human(100001221)
-     '95.4M'
-
-    """
-    logger.debug('bytes_2_human')
-    symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
-    prefix = {}
-    for i, s in enumerate(symbols):
-        prefix[s] = 1 << (i+1)*10
-    for s in reversed(symbols):
-        if n >= prefix[s]:
-            value = float(n) / prefix[s]
-            return '%.1f%s' % (value, s)
-
-    return "%sB" % n
-
-# ---------------------------------------------------------------------
 def get_disk_usage(path):
 # ---------------------------------------------------------------------
     """get_disk_usage
@@ -261,7 +238,6 @@ def get_disk_usage(path):
     """
     logger.debug('get_disk_usage')
     total_size = 0
-    raw_size = 0
     cwd = os.getcwd()
     if os.path.exists(path):
         os.chdir(path)
@@ -272,37 +248,46 @@ def get_disk_usage(path):
         except subprocess.CalledProcessError:
             msg = "Error executing command = '{0}'".format(cmd)
             logger.warning(msg)
+    os.chdir(cwd)
+    return int(total_size)
+
+
+# ---------------------------------------------------------------------
+def get_ocn_disk_usage(path):
+# ---------------------------------------------------------------------
+    """get_ocn_disk_usage
+    return the total disk usage in bytes for a given path.
+
+    Arguments:
+        path - path to start
+    """
+    logger.debug('get_ocn_disk_usage')
+    total_size = 0
+    paths = glob.glob(path)
+    for path in paths:
+        total_size += get_disk_usage(path)
     return int(total_size)
 
 # ---------------------------------------------------------------------
-def get_pp_path(pp_dir, comp, subdir):
+def get_pp_path(pp_dir, process):
 # ---------------------------------------------------------------------
     """get_pp_path
-    return the path to postprocessing
+    return the XML path for process
 
     Arguments:
-        root_path - path to start
-        comp - component name
-        subdir - postprocess subdir
+        pp_dir  - path to postprocess directory
+        process - process name
     """
     logger.debug('get_pp_path')
 
     cwd = os.getcwd()
     os.chdir(pp_dir)
 
-    pp_path = ''
-    if comp == 'timeseries':
+    pp_path_var = ''
+    if process == 'timeseries':
         pp_path_var = _pp_xml_vars['timeseries']
-        subdir = ''
-    elif subdir == 'timeseries' or comp in ['glc', 'rof']:
-        pp_path_var = _pp_xml_vars['timeseries']
-        subdir = '{0}/proc/tseries'.format(comp)
-    elif comp == 'xconform':
+    elif process == 'xconform':
         pp_path_var = _pp_xml_vars['xconform']
-    elif comp == 'ocn' and subdir == 'diag':
-        pp_path_var = 'OCNDIAG_WORKDIR'
-    else:
-        pp_path_var = _pp_xml_vars[comp]
 
     cmd = ['./pp_config', '--get', pp_path_var, '--value']
     try:
@@ -311,13 +296,10 @@ def get_pp_path(pp_dir, comp, subdir):
         msg = "Error executing command = '{0}'".format(cmd)
         logger.warning(msg)
 
-    # construct the final path basaed on comp and subdir
-    pp_path = pp_path.rstrip()
-    if len(pp_path) > 2:
-        if (comp not in ['timeseries', 'xconform', 'ice', 'ocn']):
-            pp_path = os.path.join(pp_path, subdir)
-        elif comp == 'ice' and subdir == 'diag':
-            pp_path = pp_path.replace('climo', 'diag', 1)
+    if (len(pp_path) > 2):
+        pp_path = pp_path.rstrip()
+    else:
+        pp_path = ''
 
     os.chdir(cwd)
     return pp_path
@@ -366,7 +348,6 @@ def get_pp_status(case_dict):
     msg_avg = dict()
     msg_diags = dict()
     diag_comps = ['atm', 'ice', 'lnd', 'ocn']
-    tseries_comps = ['atm', 'glc', 'ice', 'lnd', 'ocn', 'rof']
 
     pp_dir = os.path.join(case_dict['CASEROOT'], 'postprocess')
     pp_log_dir = os.path.join(case_dict['CASEROOT'], 'postprocess', 'logs')
@@ -387,15 +368,21 @@ def get_pp_status(case_dict):
     msg_diags['ocn'] = "Successfully completed generating ocean diagnostics"
     case_dict['ocn_avg_dates'] = case_dict['ocn_diag_dates'] = get_diag_dates('ocn', pp_dir)
 
+
     for comp in diag_comps:
         case_dict[comp+'_avg_status'] = 'Unknown'
         case_dict[comp+'_diag_status'] = 'Unknown'
 
-        case_dict[comp+'_avg_path'] = ''
-        case_dict[comp+'_avg_size'] = 0
-
-        case_dict[comp+'_diag_path'] = ''
-        case_dict[comp+'_diag_size'] = 0
+        if (comp != 'ocn'):
+            case_dict[comp+'_avg_path'] = os.path.join(case_dict['DOUT_S_ROOT'], comp, 'proc/climo')
+            case_dict[comp+'_avg_size'] = get_disk_usage(case_dict[comp+'_avg_path'])
+            case_dict[comp+'_diag_path'] = os.path.join(case_dict['DOUT_S_ROOT'], comp, 'proc/diag')
+            case_dict[comp+'_diag_size'] = get_disk_usage(case_dict[comp+'_diag_path'])
+        else:
+            case_dict[comp+'_avg_path'] = os.path.join(case_dict['DOUT_S_ROOT'], comp, 'proc/climo*')
+            case_dict[comp+'_avg_size'] = get_ocn_disk_usage(case_dict[comp+'_avg_path'])
+            case_dict[comp+'_diag_path'] = os.path.join(case_dict['DOUT_S_ROOT'], comp, 'proc/diag*')
+            case_dict[comp+'_diag_size'] = get_ocn_disk_usage(case_dict[comp+'_diag_path'])
 
         avg_logs = list()
         avg_file_pattern = ("{0}/{1}_averages.log.*".format(pp_log_dir, comp))
@@ -409,12 +396,6 @@ def get_pp_status(case_dict):
             else:
                 case_dict[comp+'_avg_status'] = 'Started'
 
-            # get path and the file sizes
-            case_dict[comp+'_avg_size'] = 0
-            case_dict[comp+'_avg_path'] = get_pp_path(pp_dir, comp, 'climo')
-            if case_dict[comp+'_avg_path'] is not None:
-                case_dict[comp+'_avg_size'] = get_disk_usage(case_dict[comp+'_avg_path'])
-
         diag_logs = list()
         diag_file_pattern = ("{0}/{1}_diagnostics.log.*".format(pp_log_dir, comp))
         diag_logs = glob.glob(diag_file_pattern)
@@ -426,15 +407,9 @@ def get_pp_status(case_dict):
             else:
                 case_dict[comp+'_diag_status'] = 'Started'
 
-            # get path and the file sizes
-            case_dict[comp+'_diag_size'] = 0
-            case_dict[comp+'_diag_path'] = get_pp_path(pp_dir, comp, 'diag')
-            if case_dict[comp+'_diag_path'] is not None:
-                case_dict[comp+'_diag_size'] = get_disk_usage(case_dict[comp+'_diag_path'])
-
-    # get timeseries status
+    # get overall timeseries status
     case_dict['timeseries_status'] = 'Unknown'
-    case_dict['timeseries_path'] = get_pp_path(pp_dir, 'timeseries', '')
+    case_dict['timeseries_path'] = get_pp_path(pp_dir, 'timeseries')
     case_dict['timeseries_size'] = 0
     case_dict['timeseries_dates'] = '{0}-{1}'.format(case_dict['RUN_STARTDATE'].replace("-", ""),
                                                      case_dict['RUN_STARTDATE'].replace("-", ""))
@@ -450,10 +425,11 @@ def get_pp_status(case_dict):
             case_dict['timeseries_status'] = 'Succeeded'
         else:
             case_dict['timeseries_status'] = 'Started'
+        sta_dates = case_dict['sta_last_date'].split("-")
         case_dict['timeseries_dates'] = '{0}-{1}'.format(case_dict['RUN_STARTDATE'].replace("-", ""),
-                                                         case_dict['sta_last_date'].replace("-", ""))
+                                                         ''.join(sta_dates[:-1]))
         for comp in _pp_tseries_comps:
-            tseries_path = "{0}/{1}".format(case_dict['timeseries_path'], comp)
+            tseries_path = "{0}/{1}/proc/tseries".format(case_dict['timeseries_path'], comp)
             case_dict['timeseries_size'] += get_disk_usage(tseries_path)
 
     # get iconform status = this initializes files in the POSTPROCESS_PATH
@@ -475,9 +451,13 @@ def get_pp_status(case_dict):
             case_dict['iconform_status'] = 'Started'
 
     # get xconform status
+    case_dict['xconform_path'] = ''
+    case_dict['xconform_path'] = get_pp_path(pp_dir, 'xconform')
+    if (len(case_dict['xconform_path']) > 2):
+        case_dict['xconform_path'] = os.path.join(case_dict['xconform_path'], case_dict['case_id'])
     case_dict['xconform_status'] = 'Unknown'
-    case_dict['xconform_path'] = get_pp_path(pp_dir, 'xconform', subdir=case_dict['case_id'])
     case_dict['xconform_size'] = get_disk_usage(case_dict['xconform_path'])
+
     # TODO - check the date ranges once we have conformed data
     case_dict['xconform_dates'] = case_dict['timeseries_dates']
 
@@ -615,7 +595,7 @@ def check_expdb_case(case_dict, username, password):
     params = urllib.parse.urlencode(dict(username=username, password=password, data=data))
     raw_output = ''
     try:
-        response = urllib.request.urlopen(url=case_dict['query_expdb_url'], data=params, context=_context)
+        response = urllib.request.urlopen(case_dict['query_expdb_url'], params, context=_context)
         raw_output = response.read()
     except urllib.error.HTTPError as http_e:
         logger.info('ERROR archive_metadata HTTP post failed "%s"', http_e.code)
