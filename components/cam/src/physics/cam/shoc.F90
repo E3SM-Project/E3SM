@@ -38,6 +38,7 @@ logical, parameter :: dothetal_skew = .false.
 real(r8), parameter :: sqrt2 = sqrt(2._r8)
 real(r8), parameter :: sqrtpi = sqrt(2._r8*3.14_r8)
 real(r8), parameter :: basetemp = 300._r8
+real(r8), parameter :: basepres = 100000._r8
 
 real(r8), parameter :: maxlen = 2000.0_r8
 real(r8), parameter :: maxtke = 5.0_r8
@@ -82,10 +83,11 @@ subroutine shoc_main ( &
      u_wind, v_wind,cldliq,qtracers,&     ! Input/Output
      wthv_sec,&                           ! Input/Output
      shoc_cldfrac,shoc_ql,&               ! Output
-     shoc_mix, tk, tkh,&                  ! Output (diagnostic)
+     shoc_mix, tk, tkh, isotropy,&        ! Output (diagnostic)
      w_sec, thl_sec, qw_sec, qwthl_sec,&  ! Output (diagnostic)
      wthl_sec, wqw_sec, wtke_sec,&        ! Output (diagnostic)
-     uw_sec, vw_sec, w3)                  ! Output (diagnostic)    
+     uw_sec, vw_sec, w3,&                 ! Output (diagnostic)    
+     wqls_sec)
 
   implicit none
   
@@ -141,6 +143,7 @@ subroutine shoc_main ( &
   real(r8) :: uw_sec(shcol,nlevi)
   real(r8) :: vw_sec(shcol,nlevi)
   real(r8) :: w3(shcol,nlev)
+  real(r8) :: wqls_sec(shcol,nlev)
 
   ! local variables
   real(r8) :: wtracer_sec(shcol,nlevi,num_qtracers)
@@ -199,7 +202,9 @@ subroutine shoc_main ( &
 	 dz_zt,dz_zi,&                        ! Input
 	 zt_grid,zi_grid,&                    ! Input
 	 w3)                                  ! Output
-	 
+	
+!         w3(:,:)=0._r8
+ 
   ! Update thetal, qw, tracers, and wind components
   !   based on SGS mixing
   call update_prognostics(&
@@ -218,7 +223,8 @@ subroutine shoc_main ( &
 	 wthl_sec,w_sec,&                     ! Input
 	 wqw_sec,qwthl_sec,w3,pres,&          ! Input
 	 zt_grid,zi_grid,&                    ! Input
-	 shoc_cldfrac,shoc_ql,wthv_sec)       ! Output
+	 shoc_cldfrac,shoc_ql,&               ! Output
+         wqls_sec,wthv_sec)                   ! Output
 	
   return
      
@@ -483,8 +489,8 @@ subroutine diag_second_shoc_moments(&
       grid_dz=1._r8/dz_zi(i,k) ! Define the vertical grid difference
       grid_dz2=(1._r8/dz_zi(i,k))**2 !squared
     
-!      sm=isotropy_zi(i,k)*tkh_zi(i,k) ! coefficient for variances
-      sm=shoc_mix_zi(i,k)**2
+      sm=isotropy_zi(i,k)*tkh_zi(i,k) ! coefficient for variances
+!      sm=shoc_mix_zi(i,k)**2
       
       ! Compute variance of thetal
       thl_sec(i,k)=thl2tune*sm*grid_dz2*(thetal(i,k)-thetal(i,kb))**2
@@ -702,7 +708,8 @@ subroutine shoc_assumed_pdf(&
 	     wthl_sec,w_sec, &                  ! Input
 	     wqw_sec,qwthl_sec,w3,pres, &       ! Input
 	     zt_grid,zi_grid,&                  ! Input
-	     shoc_cldfrac,shoc_ql,wthv_sec)     ! Output
+	     shoc_cldfrac,shoc_ql,&             ! Output
+             wqls,wthv_sec)                     ! Output
 
   ! Purpose of this subroutine is calculate the 
   !  double Gaussian PDF of SHOC, which is the centerpiece
@@ -736,6 +743,7 @@ subroutine shoc_assumed_pdf(&
   real(r8), intent(out) :: shoc_cldfrac(shcol,nlev) ! SGS cloud fraction [-]
   real(r8), intent(out) :: shoc_ql(shcol,nlev) ! SGS liquid water mixing ratio [kg/kg]
   real(r8), intent(out) :: wthv_sec(shcol,nlev) ! SGS buoyancy flux [K m/s]
+  real(r8), intent(out) :: wqls(shcol,nlev)
 
   ! Local variables
   integer i,j,k,dothis,nmicro_fields
@@ -759,7 +767,7 @@ subroutine shoc_assumed_pdf(&
   real(r8) esval1_1, esval2_1, esval1_2, esval2_2, om1, om2
   real(r8) lstarn1, lstarn2, sqrtw2, sqrtthl, sqrtqt
   real(r8) sqrtstd1, sqrtstd2, tsign, tvar, sqrtw2t
-  real(r8) wqls, wqis, skip, epsterm
+  real(r8) wqis, skip, epsterm
   real(r8) sqrtqw2_1, sqrtqw2_2, sqrtthl2_1, sqrtthl2_2
   real(r8) corrtest1, corrtest2, thl_tol, rt_tol, w_tol_sqd, w_thresh
   
@@ -820,23 +828,23 @@ subroutine shoc_assumed_pdf(&
       Skew_w=w3var/w_sec(i,k)**(3./2.)
 
       if (w_sec(i,k) .le. w_tol_sqd) then
-        Skew_w=0.
+        Skew_w=0._r8
         w1_1=w_first
         w1_2=w_first
-        w2_1=0.
-        w2_2=0.
-        a=0.5
+        w2_1=0._r8
+        w2_2=0._r8
+        a=0.5_r8
       else
 
-        w2_1=0.4
-        w2_2=0.4
+        w2_1=0.4_r8
+        w2_2=0.4_r8
 
-        a=max(0.01,min(0.5*(1.-Skew_w*sqrt(1./(4.*(1.-w2_1)**3+Skew_w**2))),0.99))
+        a=max(0.01_r8,min(0.5_r8*(1._r8-Skew_w*sqrt(1._r8/(4._r8*(1._r8-w2_1)**3+Skew_w**2))),0.99_r8))
 
-        sqrtw2t=sqrt(1.-w2_1)
+        sqrtw2t=sqrt(1._r8-w2_1)
 
-        w1_1=sqrt((1.-a)/a)*sqrtw2t
-        w1_2=-1.*sqrt(a/(1.-a))*sqrtw2t
+        w1_1=sqrt((1._r8-a)/a)*sqrtw2t
+        w1_2=-1._r8*sqrt(a/(1._r8-a))*sqrtw2t
 
         w2_1=w2_1*w_sec(i,k)
         w2_2=w2_2*w_sec(i,k)
@@ -847,41 +855,41 @@ subroutine shoc_assumed_pdf(&
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !  FIND PARAMETERS FOR THETAL
     
-      corrtest1=max(-1.0,min(1.0,wthlsec/(sqrtw2*sqrtthl)))
+      corrtest1=max(-1._r8,min(1._r8,wthlsec/(sqrtw2*sqrtthl)))
 
       if (thlsec .le. thl_tol**2 .or. abs(w1_2-w1_1) .le. w_thresh) then
         thl1_1=thl_first
         thl1_2=thl_first
-        thl2_1=0.
-        thl2_2=0.
-        sqrtthl2_1=0.
-        sqrtthl2_2=0.
+        thl2_1=0._r8
+        thl2_2=0._r8
+        sqrtthl2_1=0._r8
+        sqrtthl2_2=0._r8
       else
 
-        thl1_1=(-1.*corrtest1)/w1_2
-        thl1_2=(-1.*corrtest1)/w1_1
+        thl1_1=(-1._r8*corrtest1)/w1_2
+        thl1_2=(-1._r8*corrtest1)/w1_1
       
         if (dothetal_skew) then
           tsign=abs(thl1_2-thl1_1)
 	
-	  if (tsign .gt. 0.4) then
-	    Skew_thl=1.2*Skew_w
-	  else if (tsign .le. 0.2) then
-	    Skew_thl=0.0
+	  if (tsign .gt. 0.4_r8) then
+	    Skew_thl=1.2_r8*Skew_w
+	  else if (tsign .le. 0.2_r8) then
+	    Skew_thl=0.0_r8
 	  else
-	    Skew_thl=((1.2*Skew_w)/0.2)*(tsign-0.2)
+	    Skew_thl=((1.2_r8*Skew_w)/0.2_r8)*(tsign-0.2_r8)
 	  endif 
         else
-          Skew_thl = 0.0
+          Skew_thl = 0.0_r8
         endif
 	
-        thl2_1=min(100.,max(0.,(3.*thl1_2*(1.-a*thl1_1**2-(1.-a)*thl1_2**2) &     
-	    -(Skew_thl-a*thl1_1**3-(1.-a)*thl1_2**3))/ &
-	    (3.*a*(thl1_2-thl1_1))))*thlsec
+        thl2_1=min(100._r8,max(0._r8,(3._r8*thl1_2*(1._r8-a*thl1_1**2-(1._r8-a)*thl1_2**2) &     
+	    -(Skew_thl-a*thl1_1**3-(1._r8-a)*thl1_2**3))/ &
+	    (3._r8*a*(thl1_2-thl1_1))))*thlsec
       
-        thl2_2=min(100.,max(0.,(-3.*thl1_1*(1.-a*thl1_1**2-(1.-a)*thl1_2**2) &
-          +(Skew_thl-a*thl1_1**3-(1.-a)*thl1_2**3))/ &
-          (3.*(1.-a)*(thl1_2-thl1_1))))*thlsec
+        thl2_2=min(100._r8,max(0._r8,(-3._r8*thl1_1*(1._r8-a*thl1_1**2-(1._r8-a)*thl1_2**2) &
+          +(Skew_thl-a*thl1_1**3-(1._r8-a)*thl1_2**3))/ &
+          (3._r8*(1._r8-a)*(thl1_2-thl1_1))))*thlsec
 
         thl1_1=thl1_1*sqrtthl+thl_first
         thl1_2=thl1_2*sqrtthl+thl_first
@@ -894,37 +902,37 @@ subroutine shoc_assumed_pdf(&
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !  FIND PARAMETERS FOR TOTAL WATER MIXING RATIO
 
-      corrtest2=max(-1.0,min(1.0,wqwsec/(sqrtw2*sqrtqt)))
+      corrtest2=max(-1.0_r8,min(1.0_r8,wqwsec/(sqrtw2*sqrtqt)))
 
       if (qwsec .le. rt_tol**2 .or. abs(w1_2-w1_1) .le. w_thresh) then
         qw1_1=qw_first
         qw1_2=qw_first
-        qw2_1=0.
-        qw2_2=0.
-        sqrtqw2_1=0.
-        sqrtqw2_2=0.
+        qw2_1=0._r8
+        qw2_2=0._r8
+        sqrtqw2_1=0._r8
+        sqrtqw2_2=0._r8
       else
 
-        qw1_1=(-1.*corrtest2)/w1_2
-        qw1_2=(-1.*corrtest2)/w1_1      
+        qw1_1=(-1._r8*corrtest2)/w1_2
+        qw1_2=(-1._r8*corrtest2)/w1_1      
 
         tsign=abs(qw1_2-qw1_1)
 
-        if (tsign .gt. 0.4) then
-          Skew_qw=1.2*Skew_w
-        else if (tsign .le. 0.2) then
-          Skew_qw=0.
+        if (tsign .gt. 0.4_r8) then
+          Skew_qw=1.2_r8*Skew_w
+        else if (tsign .le. 0.2_r8) then
+          Skew_qw=0._r8
         else
-          Skew_qw=((1.2*Skew_w)/0.2)*(tsign-0.2)
+          Skew_qw=((1.2_r8*Skew_w)/0.2_r8)*(tsign-0.2_r8)
         endif
 
-        qw2_1=min(100.,max(0.,(3.*qw1_2*(1.-a*qw1_1**2-(1.-a)*qw1_2**2) &
-          -(Skew_qw-a*qw1_1**3-(1.-a)*qw1_2**3))/ &
-          (3.*a*(qw1_2-qw1_1))))*qwsec
+        qw2_1=min(100._r8,max(0._r8,(3._r8*qw1_2*(1._r8-a*qw1_1**2-(1._r8-a)*qw1_2**2) &
+          -(Skew_qw-a*qw1_1**3-(1._r8-a)*qw1_2**3))/ &
+          (3._r8*a*(qw1_2-qw1_1))))*qwsec
 
-        qw2_2=min(100.,max(0.,(-3.*qw1_1*(1.-a*qw1_1**2-(1.-a)*qw1_2**2) &
-          +(Skew_qw-a*qw1_1**3-(1.-a)*qw1_2**3))/ &
-          (3.*(1.-a)*(qw1_2-qw1_1))))*qwsec
+        qw2_2=min(100._r8,max(0._r8,(-3._r8*qw1_1*(1._r8-a*qw1_1**2-(1._r8-a)*qw1_2**2) &
+          +(Skew_qw-a*qw1_1**3-(1._r8-a)*qw1_2**3))/ &
+          (3._r8*(1._r8-a)*(qw1_2-qw1_1))))*qwsec
 
         qw1_1=qw1_1*sqrtqt+qw_first
         qw1_2=qw1_2*sqrtqt+qw_first
@@ -943,13 +951,13 @@ subroutine shoc_assumed_pdf(&
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !  FIND WITHIN-PLUME CORRELATIONS 
 
-      testvar=(a*sqrtqw2_1*sqrtthl2_1+(1.-a)*sqrtqw2_2*sqrtthl2_2)
+      testvar=(a*sqrtqw2_1*sqrtthl2_1+(1._r8-a)*sqrtqw2_2*sqrtthl2_2)
 
-      if (testvar .eq. 0) then
-        r_qwthl_1=0.
+      if (testvar .eq. 0._r8) then
+        r_qwthl_1=0._r8
       else
-        r_qwthl_1=max(-1.0,min(1.0,(qwthlsec-a*(qw1_1-qw_first) &
-	  *(thl1_1-thl_first)-(1.-a)*(qw1_2-qw_first) &
+        r_qwthl_1=max(-1.0_r8,min(1.0_r8,(qwthlsec-a*(qw1_1-qw_first) &
+	  *(thl1_1-thl_first)-(1._r8-a)*(qw1_2-qw_first) &
 	  *(thl1_2-thl_first))/testvar))
       endif    
       
@@ -961,13 +969,13 @@ subroutine shoc_assumed_pdf(&
 
       ! Now compute qs
 
-      esval1_1=0.
-      esval1_2=0.
-      om1=1.
-      om2=1. 
+      esval1_1=0._r8
+      esval1_2=0._r8
+      om1=1._r8
+      om2=1._r8 
      
       ! +DPAB, change call to consistent esatw_crm
-      esval1_1=esatw_shoc(Tl1_1)*100.
+      esval1_1=esatw_shoc(Tl1_1)*100._r8
       lstarn1=lcond 
 	
       qs1=0.622_r8*esval1_1/max(esval1_1,pval-esval1_1)
@@ -981,28 +989,28 @@ subroutine shoc_assumed_pdf(&
         beta2=beta1
       else
         esval1_2=esatw_shoc(Tl1_2)*100._r8  
-        qs2=0.622*esval1_2/max(esval1_2,pval-esval1_2)
+        qs2=0.622_r8*esval1_2/max(esval1_2,pval-esval1_2)
         beta2=(rgas/rv)*(lstarn2/(rgas*Tl1_2))*(lstarn2/(cp*Tl1_2)) 
       endif      
 
       !!!!!  Now compute cloud stuff
       !!!!!!  compute s term    
       
-      s1=qw1_1-qs1*((1.+beta1*qw1_1)/(1.+beta1*qs1))
-      cthl1=((1.+beta1*qw1_1)/(1.+beta1*qs1)**2)*(cp/lcond) &
-        *beta1*qs1*(pval/100000.)**(rgas/cp)
+      s1=qw1_1-qs1*((1._r8+beta1*qw1_1)/(1._r8+beta1*qs1))
+      cthl1=((1._r8+beta1*qw1_1)/(1._r8+beta1*qs1)**2)*(cp/lcond) &
+        *beta1*qs1*(pval/100000._r8)**(rgas/cp)
 
-      cqt1=1./(1.+beta1*qs1)
-      std_s1=sqrt(max(0.,cthl1**2*thl2_1+cqt1**2*qw2_1-2.*cthl1 &
+      cqt1=1._r8/(1._r8+beta1*qs1)
+      std_s1=sqrt(max(0._r8,cthl1**2*thl2_1+cqt1**2*qw2_1-2._r8*cthl1 &
         *sqrtthl2_1*cqt1*sqrtqw2_1*r_qwthl_1))
 	
       qn1=0._r8
       C1=0._r8
       
-      if (std_s1 .ne. 0) then
-        C1=0.5*(1.+erf(s1/(sqrt2*std_s1)))
+      if (std_s1 .ne. 0.0_r8) then
+        C1=0.5_r8*(1._r8+erf(s1/(sqrt2*std_s1)))
 	IF (C1 .ne. C1) C1 = 0._r8
-        IF (C1 .ne. 0._r8) qn1=s1*C1+(std_s1/sqrtpi)*exp(-0.5*(s1/std_s1)**2)
+        IF (C1 .ne. 0._r8) qn1=s1*C1+(std_s1/sqrtpi)*exp(-0.5_r8*(s1/std_s1)**2)
       else
         if (s1 .gt. 0._r8) then
           C1=1.0_r8
@@ -1023,11 +1031,11 @@ subroutine shoc_assumed_pdf(&
         qn2=qn1
       else
         
-        s2=qw1_2-qs2*((1.+beta2*qw1_2)/(1.+beta2*qs2))
-        cthl2=((1.+beta2*qw1_2)/(1.+beta2*qs2)**2)*(cp/lcond) &
-	  *beta2*qs2*(pval/100000.)**(rgas/cp)
-        cqt2=1./(1.+beta2*qs2)
-        std_s2=sqrt(max(0.,cthl2**2*thl2_2+cqt2**2*qw2_2-2.*cthl2* &
+        s2=qw1_2-qs2*((1._r8+beta2*qw1_2)/(1._r8+beta2*qs2))
+        cthl2=((1._r8+beta2*qw1_2)/(1._r8+beta2*qs2)**2)*(cp/lcond) &
+	  *beta2*qs2*(pval/100000._r8)**(rgas/cp)
+        cqt2=1._r8/(1._r8+beta2*qs2)
+        std_s2=sqrt(max(0._r8,cthl2**2*thl2_2+cqt2**2*qw2_2-2._r8*cthl2* &
 	  sqrtthl2_2*cqt2*sqrtqw2_2*r_qwthl_1))
 
         qn2=0._r8
@@ -1046,7 +1054,7 @@ subroutine shoc_assumed_pdf(&
 
       endif
       
-      shoc_cldfrac(i,k) = min(1.,a*C1+(1._r8-a)*C2)
+      shoc_cldfrac(i,k) = min(1._r8,a*C1+(1._r8-a)*C2)
       
       ql1=min(qn1,qw1_1)
       ql2=min(qn2,qw1_2)
@@ -1056,9 +1064,10 @@ subroutine shoc_assumed_pdf(&
       ! update temperature here? +PAB
       
       ! Begin to compute the buoyancy flux +DPAB, CHECK DEFINITION!!!!
-      wqls=a*((w1_1-w_first)*ql1)+(1._r8-a)*((w1_2-w_first)*ql2)
-      wthv_sec(i,k)=wthlsec+((1._r8-epsterm)/epsterm)*basetemp* &
-        wqwsec+((lcond/cp)-(1._r8/epsterm)*basetemp)*wqls
+      wqls(i,k)=a*((w1_1-w_first)*ql1)+(1._r8-a)*((w1_2-w_first)*ql2)
+      wthv_sec(i,k)=wthlsec+((1._r8-epsterm)/epsterm)*basetemp*wqwsec &
+        +((lcond/cp)*(basepres/pval)**(rgas/cp)-(1._r8/epsterm)*basetemp)*wqls(i,k)  
+!        +((lcond/cp)-(1._r8/epsterm)*basetemp)*wqls
 	
 	
     enddo  ! end i loop here
@@ -1147,13 +1156,13 @@ subroutine shoc_tke(&
   enddo
   
   shear_prod(:,nlevi) = 0._r8
-  
+ 
   call linear_interp(zi_grid,zt_grid,shear_prod,shear_prod_zt,nlevi,nlev,shcol,largeneg)
-  
+
   do k=1,nlev
     do i=1,shcol
     
-      tk_in=Ck*shoc_mix(i,k)*sqrt(tke(i,k))
+      tk_in=Ck*zi_grid(i,1)*sqrt(tke(i,k))
       smix=shoc_mix(i,k)
       a_prod_bu=(ggr/basetemp)*wthv_sec(i,k)
       buoy_sgs=-1._r8*a_prod_bu/(Pr*(tk_in+0.001_r8))
@@ -1180,11 +1189,18 @@ subroutine shoc_tke(&
       tscale1=(2._r8*tke(i,k))/a_diss
       lambda=0.04_r8
       if (buoy_sgs_save .le. 0) lambda=0._r8
+      if (tke(i,k) .lt. mintke .and. tscale1 .gt. 2000._r8) then
+        lambda=40._r8 
+        if (buoy_sgs_save .lt. 0) buoy_sgs_save=-1._r8*buoy_sgs_save
+      endif
+!      lambda=1._r8
+!      isotropy(i,k) = tscale1
       isotropy(i,k)=min(2000._r8,tscale1/(1._r8+lambda*buoy_sgs_save*tscale1**2))
-   
+!      write(*,*) 'ISOTROPY ', isotropy(i,k), tke(i,k), a_diss, Cee, shoc_mix(i,k), buoy_sgs, a_prod_bu, buoy_sgs_save, tscale1
+ 
       tk(i,k)=Ck*smix*sqrt(tke(i,k))
-      tkh(i,k)=Ck*smix*sqrt(tke(i,k))
-!      tkh(i,k)=Ck*isotropy(i,k)*tke(i,k)              
+!      tkh(i,k)=Ck*smix*sqrt(tke(i,k))
+      tkh(i,k)=Ck*isotropy(i,k)*tke(i,k)              
    
       tke(i,k) = max(mintke,tke(i,k))
  
@@ -1230,7 +1246,7 @@ subroutine shoc_length(&
   real(r8), intent(out) :: shoc_mix(shcol,nlev) ! SHOC mixing length [m]
 
   ! local variables
-  integer i, j, k, kk
+  integer i, j, k, kk, kt
   integer kl, ku, kb, kc, dothis, kli, kui
   real(r8) :: deep_thresh, deep_thick, cloud_thick, lstarn, thresh
   real(r8) :: cldmix, vonk, thedel, depth
@@ -1238,6 +1254,7 @@ subroutine shoc_length(&
   real(r8) :: thv_up, thv_dn, thedz, tscale, thefac, thecoef, thegam, norm
   real(r8) :: stabterm, conv_var, tkes, mmax, cldthresh
   logical lf, indexr
+  logical doclouddef
   real(r8) :: conv_vel(shcol,nlev)
   
   real(r8) :: numer(shcol)
@@ -1321,7 +1338,11 @@ subroutine shoc_length(&
       conv_vel(i,k) = conv_vel(i,k-1)+2.5_r8*dz_zt(i,k)*(ggr/basetemp)*wthv_sec(i,k)
     enddo ! end i loop (column loop)
   enddo ! end k loop (vertical loop)
-  
+ 
+  doclouddef = .true.
+
+  if (doclouddef) then
+ 
   do i=1,shcol
   
     if (cldarr(i) .eq. 1) then
@@ -1366,15 +1387,25 @@ subroutine shoc_length(&
 	
     endif ! end cldarr conditional  
 	
-  enddo ! end i loop 
+  enddo ! end i loop
+
+  endif 
 	   
   do k=1,nlev
     do i=1,shcol
-      
+     
+!      shoc_mix(i,k)=0.1_r8*shoc_mix(i,k)
+ 
       shoc_mix(i,k)=min(maxlen,shoc_mix(i,k))
       shoc_mix(i,k)=max(0.1*dz_zt(i,k),shoc_mix(i,k))
 
       shoc_mix(i,k)=min(sqrt(host_dx(i)*host_dy(i)),shoc_mix(i,k))
+
+!      kt=k+1
+!      if (k .eq. nlev) kt=k
+!      if (cldin(i,kt) .eq. cldthresh .and. cldin(i,k) .gt. cldthresh) then
+!        shoc_mix(i,k)=0.1*dz_zt(i,k)
+!      endif
 
     enddo
   enddo 

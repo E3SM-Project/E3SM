@@ -343,12 +343,14 @@ end function shoc_implements_cnst
     call addfld('THL_SEC',(/'ilev'/), 'A', 'K2', 'Temperature variance')
     call addfld('QW_SEC',(/'ilev'/), 'A', 'kg2/kg2', 'Moisture variance')
     call addfld('QWTHL_SEC',(/'ilev'/), 'A', 'K kg/kg', 'Temperature and moisture correlation')
-    call addfld('WTHL_SEC',(/'ilev'/), 'A', 'K m/s', 'Heat flux')
-    call addfld('WQW_SEC',(/'ilev'/), 'A', 'kg/kg m/s', 'Moisture flux')
+    call addfld('WTHL_SEC',(/'ilev'/), 'A', 'W/m2', 'Heat flux')
+    call addfld('WQW_SEC',(/'ilev'/), 'A', 'W/m2', 'Moisture flux')
     call addfld('WTKE_SEC',(/'ilev'/), 'A', 'm3/s3', 'Vertical flux of turbulence')
     call addfld('UW_SEC',(/'ilev'/), 'A', 'm2/s2', 'Momentum flux')
     call addfld('VW_SEC',(/'ilev'/), 'A', 'm2/s2', 'Momentum flux')
     call addfld('W3',(/'lev'/), 'A', 'm3/s3', 'Third moment vertical velocity')
+    call addfld('WQL_SEC',(/'lev'/),'A', 'W/m2', 'Liquid water flux')
+    call addfld('ISOTROPY',(/'lev'/),'A', 's', 'timescale')
 
     call add_default('SHOC_TKE', 1, ' ')
     call add_default('WTHV_SEC', 1, ' ')
@@ -365,6 +367,8 @@ end function shoc_implements_cnst
     call add_default('UW_SEC', 1, ' ')
     call add_default('VW_SEC', 1, ' ')
     call add_default('W3', 1, ' ')
+    call add_default('WQL_SEC', 1, ' ')
+    call add_default('ISOTROPY',1,' ')
     ! ---------------------------------------------------------------!
     ! Initialize SHOC                                                !
     ! ---------------------------------------------------------------!
@@ -505,19 +509,27 @@ end function shoc_implements_cnst
    real(r8) :: zi_g(pcols,pverp)
    real(r8) :: cloud_frac(pcols,pver)          ! CLUBB cloud fraction                          [fraction]
    real(r8) :: dlf2(pcols,pver)
+   real(r8) :: isotropy(pcols,pver)
    real(r8) :: host_dx_in(pcols), host_dy_in(pcols)  
    real(r8) :: shoc_mix_out(pcols,pver), tk_out(pcols,pver), tkh_out(pcols,pver)
+   real(r8) :: isotropy_out(pcols,pver)
    real(r8) :: w_sec_out(pcols,pver), thl_sec_out(pcols,pverp)
    real(r8) :: qw_sec_out(pcols,pverp), qwthl_sec_out(pcols,pverp)
    real(r8) :: wthl_sec_out(pcols,pverp), wqw_sec_out(pcols,pverp)
    real(r8) :: wtke_sec_out(pcols,pverp), uw_sec_out(pcols,pverp)
    real(r8) :: vw_sec_out(pcols,pverp), w3_out(pcols,pver)
+   real(r8) :: wqls_out(pcols,pver)
    real(r8) :: shoc_mix(pcols,pver), tk(pcols,pver), tkh(pcols,pver)
    real(r8) :: w_sec(pcols,pver), thl_sec(pcols,pverp)
    real(r8) :: qw_sec(pcols,pverp), qwthl_sec(pcols,pverp)
    real(r8) :: wthl_sec(pcols,pverp), wqw_sec(pcols,pverp)
    real(r8) :: wtke_sec(pcols,pverp), uw_sec(pcols,pverp)
-   real(r8) :: vw_sec(pcols,pverp), w3(pcols,pver)
+   real(r8) :: vw_sec(pcols,pverp), w3(pcols,pver), wqls(pcols,pver)
+
+   real(r8) :: wthl_output(pcols,pverp)
+   real(r8) :: wqw_output(pcols,pverp)
+   real(r8) :: wthv_output(pcols,pver)
+   real(r8) :: wql_output(pcols,pver)
 
    real(r8) :: obklen(pcols), ustar2(pcols), kinheat(pcols), kinwat(pcols)
    real(r8) :: dummy2(pcols), dummy3(pcols), kbfs(pcols), th(pcols,pver), thv(pcols,pver)
@@ -624,7 +636,7 @@ end function shoc_implements_cnst
    !  instances when a 5 min time step will not be possible (based on 
    !  host model time step or on macro-micro sub-stepping   
    
-   dtime = 300._r8  !+DPAB, probably want to make this a namelist variable
+   dtime = 20._r8  !+DPAB, probably want to make this a namelist variable
    
    !  Now check to see if dtime is greater than the host model 
    !    (or sub stepped) time step.  If it is, then simply 
@@ -823,10 +835,13 @@ end function shoc_implements_cnst
 	  um_in, vm_in, rcm_in, edsclr_in, &                   ! Input/Output
 	  wthv_in, &                                           ! Input/Output
 	  cloudfrac_shoc, rcm_shoc, &                          ! Output
-          shoc_mix_out, tk_out, tkh_out, &                     ! Output (diagnostic)
+          shoc_mix_out, tk_out, tkh_out, isotropy_out, &       ! Output (diagnostic)
           w_sec_out, thl_sec_out, qw_sec_out, qwthl_sec_out, & ! Output (diagnostic)          
           wthl_sec_out, wqw_sec_out, wtke_sec_out, &           ! Output (diagnostic)
-          uw_sec_out, vw_sec_out, w3_out)                      ! Output (diagnostic)
+          uw_sec_out, vw_sec_out, w3_out, &                    ! Output (diagnostic)
+          wqls_out)
+
+         rcm_in(:,:) = rcm_shoc(:,:)
 
    enddo  ! end time loop
    
@@ -850,8 +865,10 @@ end function shoc_implements_cnst
        shoc_mix(i,k) = shoc_mix_out(i,pver-k+1)
        tk(i,k) = tk_out(i,pver-k+1)
        tkh(i,k) = tkh_out(i,pver-k+1)
+       isotropy(i,k) = isotropy_out(i,pver-k+1)
        w3(i,k) = w3_out(i,pver-k+1)
        w_sec(i,k) = w_sec_out(i,pver-k+1)
+       wqls(i,k) = wqls_out(i,pver-k+1)
  
      enddo
    enddo
@@ -889,10 +906,10 @@ end function shoc_implements_cnst
      enddo    
    enddo     
   
-   write(*,*) 'TafterSHOC ', shoc_t(1,:)
-   write(*,*) 'RTMafterSHOC ', rtm(1,:)
-   write(*,*) 'RCMafterSHOC ', rcm(1,:)
-   write(*,*) 'TKEafterSHOC ', tke(1,:)
+!   write(*,*) 'TafterSHOC ', shoc_t(1,:)
+!   write(*,*) 'RTMafterSHOC ', rtm(1,:)
+!   write(*,*) 'RCMafterSHOC ', rcm(1,:)
+!   write(*,*) 'TKEafterSHOC ', tke(1,:)
  
    ! Based on these integrals, compute the total energy before and after CLUBB call
    do i=1,ncol
@@ -951,14 +968,14 @@ end function shoc_implements_cnst
    
    cmeliq(:,:) = ptend_loc%q(:,:,ixcldliq)
   
-   write(*,*) 'STATETbefore ', state1%t(1,:)
+!   write(*,*) 'STATETbefore ', state1%t(1,:)
  
    ! Update physics tendencies
    call physics_ptend_init(ptend_all, state%psetcols, 'shoc')
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
    call physics_update(state1,ptend_loc,hdtime)
    
-   write(*,*) 'STATETafter ', state%t(1,:)
+!   write(*,*) 'STATETafter ', state%t(1,:)
 
    ! ------------------------------------------------------------ !
    ! ------------------------------------------------------------ ! 
@@ -1161,8 +1178,22 @@ end function shoc_implements_cnst
     ! Output fields
     !---------------------------------------------------------!
 
+    do k=1,pverp
+      do i=1,ncol
+        wthl_output(i,k) = wthl_sec(i,k) * rrho_i(i,pverp-k+1) * cpair
+        wqw_output(i,k) = wqw_sec(i,k) * rrho_i(i,pverp-k+1) * latvap 
+      enddo
+    enddo
+
+    do k=1,pver
+      do i=1,ncol
+        wthv_output(i,k) = wthv(i,k) * rrho(i,pver-k+1) * cpair
+        wql_output(i,k) = wqls(i,k) * rrho(i,pver-k+1) * latvap 
+      enddo
+    enddo
+
     call outfld('SHOC_TKE', tke, pcols, lchnk)
-    call outfld('WTHV_SEC', wthv, pcols, lchnk)
+    call outfld('WTHV_SEC', wthv_output, pcols, lchnk)
     call outfld('SHOC_MIX', shoc_mix, pcols, lchnk)
     call outfld('TK', tk, pcols, lchnk)
     call outfld('TKH', tkh, pcols, lchnk)
@@ -1170,13 +1201,14 @@ end function shoc_implements_cnst
     call outfld('THL_SEC', thl_sec, pcols, lchnk)
     call outfld('QW_SEC', qw_sec, pcols, lchnk)
     call outfld('QWTHL_SEC', qwthl_sec, pcols, lchnk)
-    call outfld('WTHL_SEC', wthl_sec, pcols, lchnk)
-    call outfld('WQW_SEC', wqw_sec, pcols, lchnk)
+    call outfld('WTHL_SEC', wthl_output, pcols, lchnk)
+    call outfld('WQW_SEC', wqw_output, pcols, lchnk)
     call outfld('WTKE_SEC', wtke_sec, pcols, lchnk)
     call outfld('UW_SEC', uw_sec, pcols, lchnk)
     call outfld('VW_SEC', vw_sec, pcols, lchnk)
     call outfld('W3', w3, pcols, lchnk)
-
+    call outfld('WQL_SEC',wql_output, pcols, lchnk)
+    call outfld('ISOTROPY',isotropy, pcols,lchnk)
 
 	 
     return
