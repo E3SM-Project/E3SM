@@ -172,18 +172,25 @@ class Dataset():
         # If neither *_start_time_slice or *_end_time_slice are defined,
         # then just used start_yr and end_yr.
         if self.ref:
-            start_yr = self.parameters.ref_start_yr
-            end_yr = self.parameters.ref_end_yr
+            #start_yr = self.parameters.ref_start_yr
+            #end_yr = self.parameters.ref_end_yr
 
-            start_time_slice = getattr(self.parameters, 'ref_start_time_slice', start_yr)
-            end_time_slice = getattr(self.parameters, 'ref_end_time_slice', end_yr)
+            #start_time_slice = getattr(self.parameters, 'ref_start_time_slice', start_yr)
+            #end_time_slice = getattr(self.parameters, 'ref_end_time_slice', end_yr)
+
+            start_time_slice = getattr(self.parameters, 'ref_start_time_slice')
+            end_time_slice = getattr(self.parameters, 'ref_end_time_slice')
 
         else:
-            start_yr = self.parameters.test_start_yr
-            end_yr = self.parameters.test_end_yr
+            #start_yr = self.parameters.test_start_yr
+            #end_yr = self.parameters.test_end_yr
 
-            start_time_slice = getattr(self.parameters, 'test_start_time_slice', start_yr)
-            end_time_slice = getattr(self.parameters, 'test_end_time_slice', end_yr)
+            #start_time_slice = getattr(self.parameters, 'test_start_time_slice', start_yr)
+            #end_time_slice = getattr(self.parameters, 'test_end_time_slice', end_yr)
+
+            start_time_slice = getattr(self.parameters, 'test_start_time_slice')
+            end_time_slice = getattr(self.parameters, 'test_end_time_slice')
+
 
         return start_time_slice, end_time_slice
 
