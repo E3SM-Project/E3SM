@@ -65,6 +65,12 @@ _TESTS = {
                         )
                        ),
 
+    #atmopheric nbfb tests
+    "e3sm_atm_nbfb" : (None, None,
+                                 ("PGN_P1x1.ne4_ne4.FC5AV1C-L",
+                                  "TSC.ne4_ne4.FC5AV1C-L")
+                                 ),
+
     "e3sm_developer" : (("e3sm_land_developer","e3sm_atm_developer"), "0:45:00",
                         ("ERS.f19_g16_rx1.A",
                          "ERS.ne30_g16_rx1.A",
