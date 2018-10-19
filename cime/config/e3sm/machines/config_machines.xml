@@ -2074,8 +2074,18 @@
       </module_system>
 
       <!-- for CLM-PFLOTRAN coupling, the PETSC_PATH must be defined specifically upon machines -->
+      <!-- NOTE: for this verson of CLM, the PETSC version is v3.7.x -->
       <environment_variables compiler="gnu" mpilib="openmpi">
         <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc4pf/openmpi-1.10-gcc-5.3</env>
+      </environment_variables>
+      
+      <!-- hack for PFLOTRAN coupling (this is a temporary solution,
+       and user must manually edit the following in 'env_mach_specific.xml' after case.setup)-->
+      <environment_variables>
+        <env name="CLM_PFLOTRAN_COUPLED">FALSE</env>
+        <env name="CLM_PFLOTRAN_COLMODE">FALSE</env>
+        <!-- env name="CLM_PFLOTRAN_SOURCE_DIR">/lustre/or-hydra/cades-ccsi/proj-shared/models/pflotran-interface/src/clm-pflotran</env> -->
+        <env name="CLM_PFLOTRAN_SOURCE_DIR">$SRCROOT/components/clm/src/external-models/pflotran-interface/src/clm-pflotran</env>
       </environment_variables>
 </machine>
 
