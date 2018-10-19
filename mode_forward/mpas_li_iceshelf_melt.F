@@ -742,22 +742,29 @@ module li_iceshelf_melt
       real (kind=RKIND), dimension(:), pointer :: lowerSurface ! lower surface elevation (m)
 
       real (kind=RKIND), dimension(:), pointer :: areaCell ! cell area (m^2)
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: cellsOnCell
 
       real(kind=RKIND) :: sumGLdepth, sumGLarea
       real(kind=RKIND) :: sumCFdepth, sumCFarea
-      integer :: iCell
+      integer :: iCell, jCell
       real(kind=RKIND), dimension(4) :: localSums, globalSums
 
       err = 0
 
       ! Calculate average GL and CF depths on this processor, looping over blocks.
       ! Note that these are somewhat approximate calculations.
-      ! The GL cell mask is the last grounded cell, not the first floating cell,
-      ! but the assumption is that this difference is not important
-      ! (determining the first floating cell is currently substantially more work.)
+      ! Note that the GL in cellMask includes grounded cells next to open ocean,
+      ! which we do NOT want included, so instead we here identify the GL depth at
+      ! cells that are floating and have a grounded neighbor.
+      ! (Also, the GL cell mask identifies the last grounded cell, not the first floating cell,
+      ! which also isn't what we want.)
       ! Also, ideally the weighted average for GL and CF depths would be weighted
-      ! based on GL and CF lengths.  Again that is substantially more work for little
-      ! expected improvement, so I instead use cell area weighted averages.
+      ! based on GL and CF lengths.  That is substantially more work for little
+      ! expected improvement (and we would have to make a decision about what elevation to
+      ! assign to edges), so I instead use cell area weighted averages.
+      ! The GL and CF depths do not need to be highly accurate, so these approximations
+      ! are assumed to be fine.
       sumGLdepth = 0.0_RKIND
       sumGLarea = 0.0_RKIND
       sumCFdepth = 0.0_RKIND
@@ -769,15 +776,23 @@ module li_iceshelf_melt
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+         call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
          do iCell = 1, nCellsSolve
-            if (li_mask_is_grounding_line(cellMask(iCell))) then
-               ! accumulate area-weighted GL depth and area
-               sumGLdepth = sumGLdepth + lowerSurface(iCell) * areaCell(iCell)
-               sumGLarea = sumGLarea + areaCell(iCell)
-               call mpas_log_write("GL cell: $i, $r, $r", intArgs=(/iCell/), realArgs=(/lowerSurface(iCell), areaCell(iCell)/))
+            if (li_mask_is_floating_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell))) then
+               ! See if a neighbor is grounded ice
+               do jCell = 1, nEdgesOnCell(iCell)
+                  if (li_mask_is_grounded_ice(cellMask(cellsOnCell(jCell, iCell)))) then
+                     ! we found the first floating cell
+                     sumGLdepth = sumGLdepth + lowerSurface(iCell) * areaCell(iCell)
+                     sumGLarea = sumGLarea + areaCell(iCell)
+                     !call mpas_log_write("GL cell: $i, $r, $r", intArgs=(/iCell/), realArgs=(/lowerSurface(iCell), areaCell(iCell)/))
+                     exit  ! skip the rest of the loop around neighbors
+                  endif
+               enddo
             endif
             if (li_mask_is_floating_ice(cellMask(iCell)) .and. li_mask_is_dynamic_margin(cellMask(iCell))) then
                ! accumulate area-weighted CF depth and area
