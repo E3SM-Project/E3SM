@@ -345,6 +345,7 @@ contains
     real(r8) :: dsmpds                                       !temporary variable
     real(r8) :: dhkds                                        !temporary variable
     real(r8) :: hktmp                                        !temporary variable
+    real(r8) :: delta_z_zwt                                  ! distance from soil interface to water depth (mm)
     !-----------------------------------------------------------------------
 
     associate(& 
@@ -490,8 +491,10 @@ contains
          j = nlev2bed(c)
          if(jwt(c) == nlevbed) then 
             tempi = 1._r8
-            temp0 = (((sucsat(c,j)+zwtmm(c)-zimm(c,j))/sucsat(c,j)))**(1._r8-1._r8/bsw(c,j))
-            vol_eq(c,j+1) = -sucsat(c,j)*watsat(c,j)/(1._r8-1._r8/bsw(c,j))/(zwtmm(c)-zimm(c,j))*(tempi-temp0)
+	    delta_z_zwt= zwtmm(c)-zimm(c,j)
+	    if(delta_z_zwt==0._r8) delta_z_zwt= 1._r8 !make a hypothetical thin layer (1 mm)
+            temp0 = (((sucsat(c,j)+delta_z_zwt)/sucsat(c,j)))**(1._r8-1._r8/bsw(c,j))
+	    vol_eq(c,j+1) = -sucsat(c,j)*watsat(c,j)/(1._r8-1._r8/bsw(c,j))/(delta_z_zwt)*(tempi-temp0)
             vol_eq(c,j+1) = max(vol_eq(c,j+1),0.0_r8)
             vol_eq(c,j+1) = min(watsat(c,j),vol_eq(c,j+1))
             zq(c,j+1) = -sucsat(c,j)*(max(vol_eq(c,j+1)/watsat(c,j),0.01_r8))**(-bsw(c,j))
