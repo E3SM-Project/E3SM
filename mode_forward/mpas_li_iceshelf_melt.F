@@ -564,7 +564,6 @@ module li_iceshelf_melt
       zGL = -1000.0_RKIND ! to come from global reduction of GL depth
       zeta = slopeDraft * plumeThickness / (E0 * slopeDraft + Stanton)
       zCavityDepth = -200.0_RKIND ! depth below which mean thermal forcing is averaged
-      zCavityDepth = 0.0_RKIND ! TODO: REMOVE
 
       ! calculate temperature at sill
       if (zSill >= zThermoclineTop) then
@@ -602,8 +601,7 @@ module li_iceshelf_melt
       !  shelf thickness does not match that of the modeled ice shelf.)
       TFmean = 0.0_RKIND
       nLevels = 0
-      !do z = ceiling(zGL), floor(zCavityMin), 1 ! Discretize in 1 m increments
-      do z = ceiling(-1100.0), floor(zCavityMin), 1 ! Discretize in 1 m increments
+      do z = ceiling(zGL), floor(zCavityMin), 1 ! Discretize in 1 m increments
          zr = real(z, kind=RKIND) ! convert once to real data type
          nLevels = nLevels + 1
          ! calculate Tcavity for this depth (allowing for no sill - sill deeper than GL depth)
@@ -666,8 +664,7 @@ module li_iceshelf_melt
             floatingBasalMassBal(iCell) = 0.0_RKIND
          endif
       enddo
-      ! TODO:UNCOMMENT LATER!
-      !floatingBasalMassBal(:) = floatingBasalMassBal(:) * (-1.0_RKIND) * config_ice_density / scyr ! convert to BMB
+      floatingBasalMassBal(:) = floatingBasalMassBal(:) * (-1.0_RKIND) * config_ice_density / scyr ! convert to BMB
 
     end subroutine iceshelf_melt_param_from_temp_profile
 !-----------------------------------------------------------------------
