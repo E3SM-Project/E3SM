@@ -531,6 +531,9 @@ module li_iceshelf_melt
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
+      real(kind=RKIND), pointer :: config_temperature_profile_melt_scale_factor !< kappa below
+      real(kind=RKIND), pointer :: config_temperature_profile_sill_elevation !< sill depth
+
       ! Some constants - could be made into namelist parameters as needed
       real(kind=RKIND), parameter :: slopeDraft = 1.0e-2_RKIND  !< characteristic slope of ice shelf draft
       real(kind=RKIND), parameter :: plumeThickness = 30.0_RKIND  !< characteristic plume thickness (m)
@@ -573,9 +576,13 @@ module li_iceshelf_melt
       TThermoclineBot = 1.2_RKIND
 
       ! Calculate variables independent of depth
-      kappa = 6.0_RKIND ! likely to become nl option
-      zSill = -700.0_RKIND ! likely to become nl option
       zeta = slopeDraft * plumeThickness / (E0 * slopeDraft + Stanton)
+
+      ! get namelist options
+      call mpas_pool_get_config(liConfigs, 'config_temperature_profile_melt_scale_factor', config_temperature_profile_melt_scale_factor)
+      kappa = config_temperature_profile_melt_scale_factor
+      call mpas_pool_get_config(liConfigs, 'config_temperature_profile_sill_elevation', config_temperature_profile_sill_elevation)
+      zSill = config_temperature_profile_sill_elevation
 
       ! calculate temperature at sill
       if (zSill >= zThermoclineTop) then
@@ -587,6 +594,7 @@ module li_iceshelf_melt
                  (zSill - zThermoclineBot) / (zThermoclineTop - zThermoclineBot) + zThermoclineBot
       endif
       if (print_debug) then
+         call mpas_log_write("kappa=$r", realArgs=(/kappa/))
          call mpas_log_write("TSill=$r at zSill=$r", realArgs=(/TSill, zSill/))
       endif
 

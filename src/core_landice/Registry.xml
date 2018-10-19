@@ -208,6 +208,14 @@
 		            description="phase of the periodic depth adjustment applied to the Seroussi subglacial melt parameterization. Units are cycles, i.e., 0-1"
 		            possible_values="any positive real value"
 		/>
+                <nml_option name="config_temperature_profile_melt_scale_factor" type="real" default_value="6.0" units="m yr^-1 (deg C)^-2"
+		            description="The scale factor in the 'temperature_profile' melt parameterization that converts a product of two ocean temperatures to a melt rate.  Called kappa in code."
+		            possible_values="any positive real value"
+		/>
+                <nml_option name="config_temperature_profile_sill_elevation" type="real" default_value="-700.0" units="m above datum"
+		            description="The still elevation used by the 'temperature_profile' melt parameterization.  Positive is above sea level."
+		            possible_values="any real value, but only negative values make sense"
+		/>
         </nml_record>
 
 	<nml_record name="physical_parameters" in_defaults="true">
