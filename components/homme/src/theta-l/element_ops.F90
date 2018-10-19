@@ -339,8 +339,12 @@ contains
 
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
-  real (kind=real_kind) :: dp(np,np,nlev)
+  real (kind=real_kind) :: dp(np,np,nlev), aaa
   integer :: k
+
+!print *, 'in set_thermostate --------------------- '
+!print *, 'tl, hvcoord', nt, hvcoord 
+!print *, 'temperature', temperature
 
   do k=1,nlev
      p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
@@ -352,6 +356,21 @@ contains
      elem%state%vtheta_dp(:,:,k,nt)=dp(:,:,k)*temperature(:,:,k)* &
           (p(:,:,k)/p0)**(-kappa)
   enddo
+
+  aaa = sum(elem%state%vtheta_dp(:,:,:,nt))
+  
+if(aaa /= aaa) then 
+  print *, 'in set_thermostate --------------------- '
+  print *, 'tl, hvcoord', nt, hvcoord 
+  print *, 'temperature', temperature
+  print *, aaa
+  print *, 'p',p
+  print *, 'dp', dp
+  print *, 'kappa,p0', kappa, p0
+  print *, 'ps_v', elem%state%ps_v(:,:,nt)
+  print *, 'hyam', hvcoord%hyam(:)
+  stop
+endif
 
 !computes and sets hydrostatic phi, copies state to all timelevels
   call tests_finalize(elem,hvcoord,nt)
@@ -568,6 +587,8 @@ contains
   enddo
 
   ntQ=1
+
+!get phi_i
   call get_phinh(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,ns),dp,&
        elem%state%phinh_i(:,:,:,ns))
 
@@ -586,7 +607,7 @@ contains
     if (ns .ne. tl) call copy_state(elem,ns,tl)
   enddo
 
-!saves state in some structure state0 for stand-alone
+!saves state in some structure state0 for stand-alone homme
   if(present(ie)) call save_initial_state(elem%state,ie)
 
 

@@ -79,7 +79,7 @@ CONTAINS
   ! Initialize the dynamical core
 
     use pio,                 only: file_desc_t
-    use hycoef,              only: hycoef_init
+    use hycoef,              only: hycoef_init, hyam, hybm, hyai, hybi, ps0
     use ref_pres,            only: ref_pres_init
 
     use pmgrid,              only: dyndecomp_set
@@ -111,6 +111,8 @@ CONTAINS
     integer :: neltmp(3)
     integer :: npes_se
     integer :: npes_se_stride
+
+    real(r8) :: dyn_ps0
 
     !----------------------------------------------------------------------
 
@@ -210,6 +212,21 @@ CONTAINS
     ! Physics-grid will be defined later by phys_grid_init
     call define_cam_grids()
 
+
+#if 1
+    !why store ps0 in a temp?
+    dyn_ps0=ps0
+    hvcoord%hyam=hyam
+    hvcoord%hyai=hyai
+    hvcoord%hybm=hybm
+    hvcoord%hybi=hybi
+    hvcoord%ps0=dyn_ps0
+
+    call set_layer_locations(hvcoord,.false.,par%masterproc)
+#endif
+
+
+
   end subroutine dyn_init1
 
 
@@ -218,7 +235,7 @@ CONTAINS
     use prim_driver_mod,  only: prim_init2
     use prim_si_mod,  only: prim_set_mass
     use hybrid_mod,       only: hybrid_create
-    use hycoef,           only: hyam, hybm, hyai, hybi, ps0
+    use hycoef,           only: ps0
     use parallel_mod,     only: par
     use time_mod,         only: time_at
     use control_mod,      only: moisture, runtype
@@ -234,20 +251,10 @@ CONTAINS
 
     integer :: ithr, nets, nete, ie, k, tlev
     real(r8), parameter :: Tinit=300.0_r8
-    real(r8) :: dyn_ps0
     type(hybrid_t) :: hybrid
     real(r8) :: temperature(np,np,nlev)
 
     elem  => dyn_in%elem
-
-    dyn_ps0=ps0
-    hvcoord%hyam=hyam
-    hvcoord%hyai=hyai
-    hvcoord%hybm=hybm
-    hvcoord%hybi=hybi
-    hvcoord%ps0=dyn_ps0  
-
-    call set_layer_locations(hvcoord,.false.,par%masterproc)
 
     if(par%dynproc) then
 
@@ -278,7 +285,7 @@ CONTAINS
           moisture='dry'
           if(runtype == 0) then
              do ie=nets,nete
-                elem(ie)%state%ps_v(:,:,:) =dyn_ps0
+                elem(ie)%state%ps_v(:,:,:) = ps0
 
                 elem(ie)%state%phis(:,:)=0.0_r8
 

@@ -291,7 +291,7 @@ contains
        global_shared_buf(ie,9) = Wsum_local(ie)
        global_shared_buf(ie,10)= dpsum_local(ie)
        global_shared_buf(ie,11)= phisum_local(ie)
-       global_shared_buf(ie,12)=thetasum_local(ie)
+       global_shared_buf(ie,12)= thetasum_local(ie)
     end do
 
     !JMD This is a Thread Safe Reduction 

@@ -71,13 +71,14 @@ contains
     real(r8), allocatable :: tmp(:,:,:)    ! (npsp,nlev,nelemd)
     real(r8), allocatable :: qtmp(:,:)     ! (npsp*nelemd,nlev)
     logical,  allocatable :: tmpmask(:,:)  ! (npsp,nlev,nelemd) unique grid val
-    real(r8)              :: temptmp(np,np,nlev)  ! (npsp,nlev,nelemd) unique grid val
+    real(r8)              :: temptmp(np,np,nlev) 
     integer :: ie, k, t
     integer :: indx_scm, ie_scm, i_scm, j_scm
     character(len=max_fieldname_len) :: fieldname
     logical :: found
     integer :: kptr, m_cnst
-    type(EdgeBuffer_t) :: edge
+!what's better, use 1 big buffer twise or 1 big and 1 small?
+    type(EdgeBuffer_t) :: edge, edge_surf
     integer :: lsize
 
     integer,parameter :: pcnst = PCNST
@@ -443,6 +444,42 @@ contains
     end do
 
 
+!dss ps and phis or if-statements 'if ps_v .neq. 0' for each gll point in set_thermostate? best guess that
+!dss is faster.
+#if 0 
+! model == preqx
+#else 
+! model == theta-l
+    if(par%dynproc) then
+       call initEdgeBuffer(par, edge_surf, elem, 2)
+    end if
+#endif
+
+#if 0 
+! model == preqx
+#else 
+! model == theta-l
+    do ie=1,nelemd
+       kptr=0
+       call edgeVpack(edge_surf, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
+       kptr=kptr+1
+       call edgeVpack(edge_surf, elem(ie)%state%phis,1,kptr,ie)
+    end do
+    if(par%dynproc) then
+       call bndry_exchangeV(par,edge_surf)
+    end if
+    do ie=1,nelemd
+       kptr=0
+       call edgeVunpack(edge_surf, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
+       kptr=kptr+1
+       call edgeVunpack(edge_surf, elem(ie)%state%phis,1,kptr,ie)
+    end do
+#endif
+
+
+
+
+
 #if 1 
     fieldname = 'T'
     tmp = 0.0_r8
@@ -453,11 +490,20 @@ contains
     end if
 
     do ie=1,nelemd
+
+!TEMP CODE, what's the best way to do this? call homme routine
+! init_state_vars_for_eam?
+!it seems to not be zero even with this statement, where is it init-ed again?
+       elem(ie)%state%w_i(:,:,:,:) = 0.0_r8
+
+
 !old code
 !       elem(ie)%state%T=0.0_r8
 !do ne need to nullify here? in case some points are missed???
 !so, let's do this tho not clear why
        temptmp(:,:,:) = 0.0_r8
+
+!in preqx this will set T at tl, in theta this will set all timelevels
        call set_thermostate(elem(ie),temptmp,hvcoord,tl)
 
        indx = 1
@@ -469,6 +515,7 @@ contains
              indx = indx + 1
           end do
        end do
+!in preqx this will set T at tl, in theta this will set all timelevels
        call set_thermostate(elem(ie),temptmp,hvcoord,tl)
     end do !ie
 
@@ -517,13 +564,15 @@ contains
             end do !k
           end do
         end do! i
+!in preqx this will set T at tl, in theta this will set all timelevels
         call set_thermostate(elem(ie),temptmp,hvcoord,tl)
       end do! ie
 
       deallocate(rndm_seed)
-    end if
-#endif 
+    end if !if pertlim neq 0
 
+#endif 
+!stop
 
     if (single_column) then
       iop_update_surface = .false.

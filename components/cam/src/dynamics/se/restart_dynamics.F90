@@ -533,6 +533,8 @@ CONTAINS
 
     end do
 
+!RESTART FOR THETA NH NEEDS 2 MORE VARIABLES STORED
+
 !same as for idealized phys init before, temp will be set based on q(1) and
 !dp,... so, moving this call down
     call pio_setframe(File,tdesc, t)
