@@ -1440,7 +1440,13 @@ class T_TestRunRestart(TestCreateTestCommon):
     ###########################################################################
     def test_run_restart(self):
     ###########################################################################
-        self._create_test(["NODEFAIL_P1.f09_g16.X"], test_id=self._baseline_name)
+        driver = CIME.utils.get_cime_default_driver()
+        if driver == "mct":
+            walltime="00:15:00"
+        else:
+            walltime="00:30:00"
+
+        self._create_test(["--walltime "+walltime,"NODEFAIL_P1.f09_g16.X"], test_id=self._baseline_name)
 
         casedir = os.path.join(self._testroot,
                                "{}.{}".format(CIME.utils.get_full_test_name("NODEFAIL_P1.f09_g16.X", machine=self._machine, compiler=self._compiler), self._baseline_name))
@@ -1453,7 +1459,13 @@ class T_TestRunRestart(TestCreateTestCommon):
     ###########################################################################
     def test_run_restart_too_many_fails(self):
     ###########################################################################
-        self._create_test(["NODEFAIL_P1.f09_g16.X"], test_id=self._baseline_name, env_changes="NODEFAIL_NUM_FAILS=5", run_errors=True)
+        driver = CIME.utils.get_cime_default_driver()
+        if driver == "mct":
+            walltime="00:15:00"
+        else:
+            walltime="00:30:00"
+
+        self._create_test(["--walltime "+walltime,"NODEFAIL_P1.f09_g16.X"], test_id=self._baseline_name, env_changes="NODEFAIL_NUM_FAILS=5", run_errors=True)
 
         casedir = os.path.join(self._testroot,
                                "{}.{}".format(CIME.utils.get_full_test_name("NODEFAIL_P1.f09_g16.X", machine=self._machine, compiler=self._compiler), self._baseline_name))

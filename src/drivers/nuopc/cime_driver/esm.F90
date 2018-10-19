@@ -48,6 +48,7 @@ module ESM
     use NUOPC_Driver , only : driver_routine_SS             => SetServices
     use NUOPC_Driver , only : driver_label_SetModelServices => label_SetModelServices
     use NUOPC_Driver , only : driver_label_SetRunSequence   => label_SetRunSequence
+    use NUOPC_Driver , only : driver_label_Finalize         => label_Finalize
     use ESMF         , only : ESMF_GridComp, ESMF_Config, ESMF_GridCompSet, ESMF_ConfigLoadFile
     use ESMF         , only : ESMF_ConfigCreate, ESMF_METHOD_INITIALIZE
     use ESMF         , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO
@@ -90,6 +91,11 @@ module ESM
     !
     call NUOPC_CompSetInternalEntryPoint(driver, ESMF_METHOD_INITIALIZE, &
       phaseLabelList=(/"IPDv05p1"/), userRoutine=InitAdvertize, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Set a finalize method
+    call NUOPC_CompSpecialize(driver, specLabel=driver_label_Finalize, &
+         specRoutine=esm_finalize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Create, open and set the config
@@ -135,6 +141,7 @@ module ESM
     use glc_comp_nuopc        , only : GLCSetServices => SetServices
     use shr_pio_mod           , only : shr_pio_init1
     use pio                   , only : pio_file_is_open, pio_closefile, file_desc_t
+    use perf_mod              , only : t_initf
     use shr_nuopc_time_mod    , only : shr_nuopc_time_clockInit
     use shr_log_mod           , only : shrlogunit=> shr_log_unit
 
@@ -161,6 +168,7 @@ module ESM
     character(len=512)     :: logfile
     integer                :: global_comm
     logical                :: isPresent
+    integer                :: maxthreads
     integer                :: dbrc
     character(len=*), parameter    :: subname = "(esm.F90:SetModelServices)"
     !-------------------------------------------
@@ -253,7 +261,8 @@ module ESM
     ! Initialize component pe layouts
     !-------------------------------------------
 
-    call esm_init_pelayout(driver)
+    call esm_init_pelayout(driver, maxthreads)
+
     !-------------------------------------------
     ! Reset log unit for mediator
     !-------------------------------------------
@@ -295,12 +304,19 @@ module ESM
     end if
 
     !-------------------------------------------
-    ! Perform restarts if appropriate
+    ! Timer initialization (has to be after pelayouts are determined)
     !-------------------------------------------
+
+    call t_initf(nlfilename, LogPrint=.true., mpicom=global_comm, &
+         mastertask=mastertask, MaxThreads=maxthreads)
 
     ! finish the pio initialization (this calls shr_pio_init2)
     call InitPIO(driver, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !-------------------------------------------
+    ! Perform restarts if appropriate
+    !-------------------------------------------
 
     call InitRestart(driver, logunit, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -470,7 +486,6 @@ module ESM
     use seq_comm_mct , only : seq_comm_setnthreads, seq_comm_getnthreads
     use seq_comm_mct , only : seq_comm_iamin, seq_comm_name, seq_comm_namelen, seq_comm_iamroot
     use seq_comm_mct , only : seq_comm_getinfo => seq_comm_setptrs
-    use perf_mod     , only : t_initf
 
     ! input/output variables
     type(ESMF_GridComp), intent(inout) :: driver
@@ -600,8 +615,6 @@ module ESM
     !----------------------------------------------------------
     ! Initialize timing library
     !----------------------------------------------------------
-
-    call t_initf(nlfilename, LogPrint=.true., mpicom=mpicom_GLOID, mastertask=mastertask, MaxThreads=maxthreads)
 
     !----------------------------------------------------------
     ! Test Threading Setup in driver happens to be valid on all pes for all IDs
@@ -1159,7 +1172,6 @@ module ESM
     ! Now add component specific attributes
     call ReadAttributes(gcomp, config, trim(compname)//"_attributes::", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    print *,__FILE__,__LINE__,trim(compname)
     call ReadAttributes(gcomp, config, "ALLCOMP_attributes::", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -1319,7 +1331,7 @@ module ESM
 
   end subroutine InitAdvertize
 
-  subroutine esm_init_pelayout(driver)
+  subroutine esm_init_pelayout(driver, maxthreads)
     use ESMF, only : ESMF_GridComp, ESMF_GridCompGet, ESMF_VM, ESMF_VMGet
     use ESMF, only : ESMF_LogWrite, ESMF_SUCCESS, ESMF_LOGMSG_INFO, ESMF_Config
     use ESMF, only : ESMF_ConfigGetLen, ESMF_LogFoundAllocError, ESMF_ConfigGetAttribute
@@ -1346,6 +1358,7 @@ module ESM
     use mct_mod, only : mct_world_init
 
     type(ESMF_GridComp) :: driver
+    integer, intent(out) :: maxthreads ! maximum number of threads any component
     type(ESMF_GridComp) :: child
     type(ESMF_VM) :: vm
     type(ESMF_Config) :: config
@@ -1374,7 +1387,7 @@ module ESM
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
-
+    maxthreads = 1
     call ESMF_GridCompGet(driver, vm=vm, config=config, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -1430,6 +1443,8 @@ module ESM
        call NUOPC_CompAttributeGet(driver, name=trim(namestr)//'_nthreads', value=cvalue, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) nthrds
+
+       if(nthrds > maxthreads) maxthreads = nthrds
 
        call NUOPC_CompAttributeGet(driver, name=trim(namestr)//'_rootpe', value=cvalue, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1574,5 +1589,45 @@ module ESM
     deallocate(petlist, comms, comps)
 
   end subroutine esm_init_pelayout
+
+  subroutine esm_finalize(driver, rc)
+    use ESMF,  only : ESMF_GridComp, ESMF_GridCompGet, ESMF_VM, ESMF_VMGet
+    use ESMF,  only : ESMF_SUCCESS
+    use NUOPC, only : NUOPC_CompAttributeGet
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
+    use perf_mod, only : t_prf, t_finalizef
+    use med_constants_mod, only : CL
+
+    type(ESMF_GridComp) :: driver
+    integer, intent(out) :: rc
+    character(CL) :: timing_dir        ! timing directory
+    character(len=5) :: inst_suffix
+    logical :: isPresent
+    type(ESMF_VM) :: vm
+    integer       :: mpicomm
+
+    rc = ESMF_SUCCESS
+    call ESMF_GridCompGet(driver, vm=vm, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_VMGet(vm, mpiCommunicator=mpicomm, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call NUOPC_CompAttributeGet(driver, name="timing_dir",value=timing_dir, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call NUOPC_CompAttributeGet(driver, name="inst_suffix", isPresent=isPresent, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (isPresent) then
+       call NUOPC_CompAttributeGet(driver, name="inst_suffix", value=inst_suffix, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       inst_suffix = ""
+    endif
+    call t_prf(trim(timing_dir)//'/model_timing'//trim(inst_suffix), &
+         mpicom=mpicomm)
+
+    call t_finalizef()
+
+  end subroutine esm_finalize
 
 end module ESM
