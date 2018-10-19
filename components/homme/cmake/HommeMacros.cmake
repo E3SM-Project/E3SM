@@ -5,12 +5,56 @@ function (prc var)
   message("${var} ${${var}}")
 endfunction ()
 
+# Macro to create config file. The macro creates a temporary config
+# file first. If the config file in the build directory does not
+# exist or it is different from the temporary one, then the config
+# file is updated. This avoid rebuilding the (almost) entire homme
+# every time cmake is run.
+
+MACRO (HommeConfigFile CONFIG_FILE_IN CONFIG_FILE_C CONFIG_FILE_F90)
+
+  CONFIGURE_FILE (${CONFIG_FILE_IN} ${CONFIG_FILE_C}.tmp)
+
+  # Assume by default that config file is out of date
+  SET (OUT_OF_DATE TRUE)
+
+  # If config file in binary dir exists, we check whether the new one would be different
+  IF (EXISTS ${CONFIG_FILE_C})
+
+    # We rely on FILE macro rather than running diff, since it is
+    # more portable (guaranteed to work regardless of underlying system)
+    FILE (READ ${CONFIG_FILE_C} CONFIG_FILE_C_STR)
+    FILE (READ ${CONFIG_FILE_C}.tmp CONFIG_FILE_C_TMP_STR)
+
+    IF (${CONFIG_FILE_C_STR} STREQUAL ${CONFIG_FILE_C_TMP_STR})
+      # config file was present and appears unchanged
+      SET (OUT_OF_DATE FALSE)
+    ENDIF()
+
+    FILE (REMOVE ${CONFIG_FILE_C}.tmp)
+  ENDIF ()
+
+  # If out of date (either missing or different), adjust
+  IF (OUT_OF_DATE)
+
+    # Run the configure macro
+    CONFIGURE_FILE (${CONFIG_FILE_IN} ${CONFIG_FILE_C})
+
+    # Run sed to change '/*...*/' comments into '!/*...*/'
+    EXECUTE_PROCESS(COMMAND sed "s;^/;!/;g"
+                    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                    INPUT_FILE ${CONFIG_FILE_C}
+                    OUTPUT_FILE ${CONFIG_FILE_F90})
+  ENDIF()
+
+ENDMACRO (HommeConfigFile)
+
 # Macro to create the individual tests
-macro(createTestExec execName execType macroNP macroNC 
+macro(createTestExec execName execType macroNP macroNC
                      macroPLEV macroUSE_PIO macroWITH_ENERGY macroQSIZE_D)
 
 # before calling this macro, be sure that these are set locally:
-# EXEC_INCLUDE_DIRS 
+# EXEC_INCLUDE_DIRS
 # EXEC_SOURCES
 
   # Set the include directories
@@ -42,42 +86,51 @@ macro(createTestExec execName execType macroNP macroNC
 
   IF (${macroWITH_ENERGY})
     SET(ENERGY_DIAGNOSTICS TRUE)
-  ELSE() 
+  ELSE()
     SET(ENERGY_DIAGNOSTICS)
   ENDIF ()
 
   IF (${macroQSIZE_D})
     SET(QSIZE_D ${macroQSIZE_D})
-  ELSE() 
+  ELSE()
     SET(QSIZE_D)
   ENDIF ()
 
 
   # This is needed to compile the test executables with the correct options
+  SET(THIS_CONFIG_IN ${HOMME_SOURCE_DIR}/src/${execType}/config.h.cmake.in)
   SET(THIS_CONFIG_HC ${CMAKE_CURRENT_BINARY_DIR}/config.h.c)
   SET(THIS_CONFIG_H ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
   # First configure the file (which formats the file as C)
-  CONFIGURE_FILE(${HOMME_SOURCE_DIR}/src/${execType}/config.h.cmake.in ${THIS_CONFIG_HC})
-
-  # Next reformat the file as Fortran by appending comment lines with an exclamation mark
-  EXECUTE_PROCESS(COMMAND sed "s;^/;!/;g"
-                     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-                     INPUT_FILE ${THIS_CONFIG_HC}
-                     OUTPUT_FILE ${THIS_CONFIG_H})
+  HommeConfigFile (${THIS_CONFIG_IN} ${THIS_CONFIG_HC} ${THIS_CONFIG_H} )
 
   ADD_DEFINITIONS(-DHAVE_CONFIG_H)
-  
-  ADD_EXECUTABLE(${execName} ${EXEC_SOURCES})
 
-  # Add this executable to a list 
+  ADD_EXECUTABLE(${execName} ${EXEC_SOURCES})
+  SET_TARGET_PROPERTIES(${execName} PROPERTIES LINKER_LANGUAGE Fortran)
+
+  IF (${CXXLIB_SUPPORTED})
+    MESSAGE(STATUS "   Linking Fortran with -cxxlib")
+    TARGET_LINK_LIBRARIES(${execName} -cxxlib)
+  ENDIF ()
+
+  STRING(TOUPPER "${PERFORMANCE_PROFILE}" PERF_PROF_UPPER)
+  IF ("${PERF_PROF_UPPER}" STREQUAL "VTUNE")
+    TARGET_LINK_LIBRARIES(${execName} ittnotify)
+  ENDIF ()
+
+  # Add this executable to a list
   SET(EXEC_LIST ${EXEC_LIST} ${execName} CACHE INTERNAL "List of configured executables")
 
   TARGET_LINK_LIBRARIES(${execName} pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+  IF (DEFINED USE_KOKKOS_KERNELS)
+    link_to_kokkos(${execName})
+  ENDIF ()
 
-  # Move the module files out of the way so the parallel build 
+  # Move the module files out of the way so the parallel build
   # doesn't have a race condition
-  SET_TARGET_PROPERTIES(${execName} 
+  SET_TARGET_PROPERTIES(${execName}
                         PROPERTIES Fortran_MODULE_DIRECTORY ${EXEC_MODULE_DIR})
 
   IF (HOMME_USE_MKL)
@@ -101,28 +154,30 @@ macro(createTestExec execName execType macroNP macroNC
 
 endmacro(createTestExec)
 
-
-
 macro (copyDirFiles testDir)
   # Copy all of the files into the binary dir
-  FOREACH (singleFile ${NAMELIST_FILES}) 
-    FILE(COPY ${singleFile} DESTINATION ${testDir})
-  ENDFOREACH () 
-  FOREACH (singleFile ${VCOORD_FILES}) 
+  FOREACH (singleFile ${NAMELIST_FILES})
+    # Some namelist contain cmake variable, to generate
+    # multiple testcases with different ne or ndays,
+    # so use CONFIGURE_FILE, to replace variables with values
+    GET_FILENAME_COMPONENT(fileName ${singleFile} NAME)
+    CONFIGURE_FILE(${singleFile} ${testDir}/${fileName})
+  ENDFOREACH ()
+  FOREACH (singleFile ${VCOORD_FILES})
     FILE(COPY ${singleFile} DESTINATION ${testDir}/vcoord)
-  ENDFOREACH () 
-  FOREACH (singleFile ${MESH_FILES}) 
+  ENDFOREACH ()
+  FOREACH (singleFile ${MESH_FILES})
     FILE(COPY ${singleFile} DESTINATION ${testDir})
-  ENDFOREACH () 
-  FOREACH (singleFile ${NCL_FILES}) 
+  ENDFOREACH ()
+  FOREACH (singleFile ${NCL_FILES})
     FILE(COPY ${singleFile} DESTINATION ${testDir})
-  ENDFOREACH () 
-  FOREACH (singleFile ${MESH_FILES}) 
+  ENDFOREACH ()
+  FOREACH (singleFile ${MESH_FILES})
     FILE(COPY ${singleFile} DESTINATION ${testDir})
-  ENDFOREACH () 
-  FOREACH (singleFile ${TRILINOS_XML_FILE}) 
+  ENDFOREACH ()
+  FOREACH (singleFile ${TRILINOS_XML_FILE})
     FILE(COPY ${singleFile} DESTINATION ${testDir})
-  ENDFOREACH () 
+  ENDFOREACH ()
 
 
 
@@ -172,7 +227,7 @@ macro (setUpTestDir TEST_DIR)
     #IF (USE_NUM_PROCS)
       #FILE(APPEND ${THIS_TEST_SCRIPT} "num_cpus=${USE_NUM_PROCS}\n") # new line
       SET(NUM_CPUS ${USE_NUM_PROCS})
-    ELSEIF (${NUM_CPUS} GREATER ${MAX_NUM_PROCS}) 
+    ELSEIF (${NUM_CPUS} GREATER ${MAX_NUM_PROCS})
       ##MESSAGE(STATUS "For ${TEST_NAME} the requested number of CPU processes is larger than the number available")
       ##MESSAGE(STATUS "  Changing NUM_CPU from ${NUM_CPUS} to ${MAX_NUM_PROCS}")
       ##SET(NUM_CPUS ${MAX_NUM_PROCS})
@@ -183,8 +238,9 @@ macro (setUpTestDir TEST_DIR)
   FILE(APPEND ${THIS_TEST_SCRIPT} "NUM_CPUS=${NUM_CPUS}\n") # new line
   FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
   SET (TEST_INDEX 1)
-  FOREACH (singleFile ${NAMELIST_FILES}) 
-    FILE(APPEND ${THIS_TEST_SCRIPT} "TEST_${TEST_INDEX}=\"${CMAKE_CURRENT_BINARY_DIR}/${EXEC_NAME}/${EXEC_NAME} < ${singleFile}\"\n")
+  FOREACH (singleFile ${NAMELIST_FILES})
+    GET_FILENAME_COMPONENT(fileName ${singleFile} NAME)
+    FILE(APPEND ${THIS_TEST_SCRIPT} "TEST_${TEST_INDEX}=\"${CMAKE_CURRENT_BINARY_DIR}/${EXEC_NAME}/${EXEC_NAME} < ${TEST_DIR}/${fileName}\"\n")
     FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
     MATH(EXPR TEST_INDEX "${TEST_INDEX} + 1")
   ENDFOREACH ()
@@ -193,6 +249,12 @@ macro (setUpTestDir TEST_DIR)
   FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
 
   # openMP runs
+
+  IF (EXEC_NAME MATCHES "kokkos$")
+    #not doing logic around omp_num_mpi...
+    FILE(APPEND ${THIS_TEST_SCRIPT} "OMP_NUMBER_THREADS_KOKKOS=${OMP_NUM_THREADS}\n") # new line
+  ENDIF()
+
   IF (NOT "${OMP_NAMELIST_FILES}" STREQUAL "")
     IF (${ENABLE_HORIZ_OPENMP})
       FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND}===============================\n")
@@ -209,11 +271,11 @@ macro (setUpTestDir TEST_DIR)
       FILE(APPEND ${THIS_TEST_SCRIPT} "OMP_NUMBER_THREADS=${OMP_NUM_THREADS}\n") # new line
       FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
       SET (TEST_INDEX 1)
-      FOREACH (singleFile ${OMP_NAMELIST_FILES}) 
+      FOREACH (singleFile ${OMP_NAMELIST_FILES})
         FILE(APPEND ${THIS_TEST_SCRIPT} "OMP_TEST_${TEST_INDEX}=\"${CMAKE_CURRENT_BINARY_DIR}/${EXEC_NAME}/${EXEC_NAME} < ${singleFile}\"\n")
         FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
         MATH(EXPR TEST_INDEX "${TEST_INDEX} + 1")
-      ENDFOREACH () 
+      ENDFOREACH ()
       MATH(EXPR TEST_INDEX "${TEST_INDEX} - 1")
       FILE(APPEND ${THIS_TEST_SCRIPT} "OMP_NUM_TESTS=${TEST_INDEX}\n") # new line
     ELSE ()
@@ -229,25 +291,25 @@ macro (setUpTestDir TEST_DIR)
 
   # Deal with the Netcdf output files
   FILE(APPEND ${THIS_TEST_SCRIPT} "NC_OUTPUT_FILES=\"")
-  FOREACH (singleFile ${NC_OUTPUT_FILES}) 
+  FOREACH (singleFile ${NC_OUTPUT_FILES})
     FILE(APPEND ${THIS_TEST_SCRIPT} "${singleFile} ")
   ENDFOREACH ()
   # Add the OPENMP netcdf outpuf files
   IF (${ENABLE_HORIZ_OPENMP})
-    FOREACH (singleFile ${OMP_NC_OUTPUT_FILES}) 
+    FOREACH (singleFile ${OMP_NC_OUTPUT_FILES})
       FILE(APPEND ${THIS_TEST_SCRIPT} "${singleFile} ")
     ENDFOREACH ()
-  ENDIF() 
+  ENDIF()
   FILE(APPEND ${THIS_TEST_SCRIPT} "\"\n")
 
   FILE(APPEND ${THIS_TEST_SCRIPT} "NC_OUTPUT_REF=\"")
-  FOREACH (singleFile ${NC_OUTPUT_REF}) 
+  FOREACH (singleFile ${NC_OUTPUT_REF})
     FILE(APPEND ${THIS_TEST_SCRIPT} "${singleFile} ")
   ENDFOREACH ()
   FILE(APPEND ${THIS_TEST_SCRIPT} "\"\n")
 
   FILE(APPEND ${THIS_TEST_SCRIPT} "NC_OUTPUT_CHECKREF=\"")
-  FOREACH (singleFile ${NC_OUTPUT_CHECKREF}) 
+  FOREACH (singleFile ${NC_OUTPUT_CHECKREF})
     FILE(APPEND ${THIS_TEST_SCRIPT} "${singleFile} ")
   ENDFOREACH ()
   FILE(APPEND ${THIS_TEST_SCRIPT} "\"\n")
@@ -285,45 +347,45 @@ macro(printTestSummary)
   MESSAGE(STATUS "Summary of test ${TEST_NAME}")
   IF (NOT "${NAMELIST_FILES}" STREQUAL "")
     MESSAGE(STATUS "  namelist_files=")
-    FOREACH (singleFile ${NAMELIST_FILES}) 
+    FOREACH (singleFile ${NAMELIST_FILES})
       MESSAGE(STATUS "    ${singleFile}")
-    ENDFOREACH () 
+    ENDFOREACH ()
   ENDIF ()
   IF (NOT "${VCOORD_FILES}" STREQUAL "")
     MESSAGE(STATUS "  vcoord_files=")
-    FOREACH (singleFile ${VCOORD_FILES}) 
+    FOREACH (singleFile ${VCOORD_FILES})
       MESSAGE(STATUS "    ${singleFile}")
-    ENDFOREACH () 
+    ENDFOREACH ()
   ENDIF ()
   IF (NOT "${MESH_FILES}" STREQUAL "")
     MESSAGE(STATUS "  mesh_files=")
-    FOREACH (singleFile ${MESH_FILES}) 
+    FOREACH (singleFile ${MESH_FILES})
       MESSAGE(STATUS "    ${singleFile}")
-    ENDFOREACH () 
+    ENDFOREACH ()
   ENDIF ()
   IF (NOT "${NCL_FILES}" STREQUAL "")
     MESSAGE(STATUS "  ncl_files=")
-    FOREACH (singleFile ${NCL_FILES}) 
+    FOREACH (singleFile ${NCL_FILES})
       MESSAGE(STATUS "    ${singleFile}")
-    ENDFOREACH () 
+    ENDFOREACH ()
   ENDIF ()
   IF (NOT "${NC_OUTPUT_FILES}" STREQUAL "")
     MESSAGE(STATUS "  nc_output_files=")
-    FOREACH (singleFile ${NC_OUTPUT_FILES}) 
+    FOREACH (singleFile ${NC_OUTPUT_FILES})
       MESSAGE(STATUS "    ${singleFile}")
-    ENDFOREACH () 
+    ENDFOREACH ()
   ENDIF ()
   IF (NOT "${NC_OUTPUT_REF}" STREQUAL "")
     MESSAGE(STATUS "  nc_output_files=")
-    FOREACH (singleFile ${NC_OUTPUT_REF}) 
+    FOREACH (singleFile ${NC_OUTPUT_REF})
       MESSAGE(STATUS "    ${singleFile}")
-    ENDFOREACH () 
+    ENDFOREACH ()
   ENDIF ()
   IF (NOT "${NC_OUTPUT_CHECKREF}" STREQUAL "")
     MESSAGE(STATUS "  nc_output_files=")
-    FOREACH (singleFile ${NC_OUTPUT_CHECKREF}) 
+    FOREACH (singleFile ${NC_OUTPUT_CHECKREF})
       MESSAGE(STATUS "    ${singleFile}")
-    ENDFOREACH () 
+    ENDFOREACH ()
   ENDIF ()
   IF (NOT "${TESTCASE_REF_TOL}" STREQUAL "")
     MESSAGE(STATUS "  testcase_ref_tol=")
@@ -331,30 +393,78 @@ macro(printTestSummary)
   ENDIF ()
   IF (NOT "${MESH_FILES}" STREQUAL "")
     MESSAGE(STATUS "  mesh_files=")
-    FOREACH (singleFile ${MESH_FILES}) 
+    FOREACH (singleFile ${MESH_FILES})
       MESSAGE(STATUS "    ${singleFile}")
-    ENDFOREACH () 
+    ENDFOREACH ()
   ENDIF ()
   IF (NOT "${OMP_NAMELIST_FILES}" STREQUAL "")
     MESSAGE(STATUS "  omp_namelist_files=")
-    FOREACH (singleFile ${OMP_NAMELIST_FILES}) 
+    FOREACH (singleFile ${OMP_NAMELIST_FILES})
       MESSAGE(STATUS "    ${singleFile}")
-    ENDFOREACH () 
+    ENDFOREACH ()
   ENDIF ()
   IF (NOT "${OMP_NC_OUTPUT_FILES}" STREQUAL "")
     MESSAGE(STATUS "  omp_nc_output_files=")
-    FOREACH (singleFile ${OMP_NC_OUTPUT_FILES}) 
+    FOREACH (singleFile ${OMP_NC_OUTPUT_FILES})
       MESSAGE(STATUS "    ${singleFile}")
-    ENDFOREACH () 
+    ENDFOREACH ()
   ENDIF ()
   IF (NOT "${TRILINOS_XML_FILE}" STREQUAL "")
     MESSAGE(STATUS "  trilinos_xml_file=")
-    FOREACH (singleFile ${TRILINOS_XML_FILE}) 
+    FOREACH (singleFile ${TRILINOS_XML_FILE})
       MESSAGE(STATUS "    ${singleFile}")
-    ENDFOREACH () 
+    ENDFOREACH ()
   ENDIF ()
- 
+
 endmacro(printTestSummary)
+
+macro (set_homme_tests_parameters testFile profile)
+  if ("${testFile}" MATCHES ".*-moist.*")
+    if ("${profile}" STREQUAL "dev")
+      set (HOMME_TEST_NE 2)
+      set (HOMME_TEST_NDAYS 1)
+    elseif ("${profile}" STREQUAL "short")
+      set (HOMME_TEST_NE 4)
+      set (HOMME_TEST_NDAYS 1)
+    else ()
+      set (HOMME_TEST_NE 4)
+      set (HOMME_TEST_NDAYS 2)
+    endif ()
+  elseif ("${testFile}" MATCHES ".*-tensorhv-dry.*" )
+    if ("${profile}" STREQUAL "dev")
+      set (HOMME_TEST_NE 2)
+      set (HOMME_TEST_NDAYS 1)
+    elseif ("${profile}" STREQUAL "short")
+      set (HOMME_TEST_NE 4)
+      set (HOMME_TEST_NDAYS 1)
+    else ()
+      set (HOMME_TEST_NE 4)
+      set (HOMME_TEST_NDAYS 2)
+    endif ()
+  elseif ("${testFile}" MATCHES ".*-q6-dry.*" )
+    if ("${profile}" STREQUAL "dev")
+      set (HOMME_TEST_NE 2)
+      set (HOMME_TEST_NDAYS 1)
+    elseif ("${profile}" STREQUAL "short")
+      set (HOMME_TEST_NE 4)
+      set (HOMME_TEST_NDAYS 1)
+    else ()
+      set (HOMME_TEST_NE 12)
+      set (HOMME_TEST_NDAYS 1)
+    endif ()
+  else ()
+    if ("${profile}" STREQUAL "dev")
+      set (HOMME_TEST_NE 2)
+      set (HOMME_TEST_NDAYS 1)
+    elseif ("${profile}" STREQUAL "short")
+      set (HOMME_TEST_NE 4)
+      set (HOMME_TEST_NDAYS 9)
+    else ()
+      set (HOMME_TEST_NE 12)
+      set (HOMME_TEST_NDAYS 9)
+    endif ()
+  endif ()
+endmacro ()
 
 # Macro to create the individual tests
 macro(createTest testFile)
@@ -367,6 +477,11 @@ macro(createTest testFile)
 
   INCLUDE(${THIS_TEST_INPUT})
 
+  IF (DEFINED PROFILE)
+    set_homme_tests_parameters(${testFile} ${PROFILE})
+    set (TEST_NAME "${TEST_NAME}-ne${HOMME_TEST_NE}-ndays${HOMME_TEST_NDAYS}")
+  ENDIF ()
+
   FILE(GLOB NAMELIST_FILES ${NAMELIST_FILES})
   FILE(GLOB VCOORD_FILES ${VCOORD_FILES})
   FILE(GLOB NCL_FILES ${NCL_FILES})
@@ -376,12 +491,12 @@ macro(createTest testFile)
 
   # Determine if the executable this tests depeds upon is built
   LIST(FIND EXEC_LIST ${EXEC_NAME} FIND_INDEX)
-  
-  IF (${FIND_INDEX} LESS 0) 
-    MESSAGE(STATUS "Not configuring test ${TEST_NAME} since it depends upon the executable ${EXEC_NAME} 
+
+  IF (${FIND_INDEX} LESS 0)
+    MESSAGE(STATUS "Not configuring test ${TEST_NAME} since it depends upon the executable ${EXEC_NAME}
                     which isn't built with this configuration")
   ELSE ()
-   
+
     MESSAGE(STATUS "Adding test: ${TEST_NAME}, using exec ${EXEC_NAME}")
 
     OPTION(TEST_SUMMARY "Print out information about the tests" OFF)
@@ -404,7 +519,7 @@ macro(createTest testFile)
 
       SET(THIS_TEST "${TEST_NAME}-diff")
 
-      # When run through the queue the runs are submitted and ran in 
+      # When run through the queue the runs are submitted and ran in
       #   submitAndRunTests, and diffed in the subsequent tests
       ADD_TEST(NAME ${THIS_TEST}
                COMMAND ${CMAKE_BINARY_DIR}/tests/diff_output.sh ${TEST_NAME})
@@ -416,9 +531,9 @@ macro(createTest testFile)
 
       SET(THIS_TEST "${TEST_NAME}")
 
-      # When not run through a queue each run is ran and then diffed. This is handled by 
-      #  the submit_tests.sh script 
-      ADD_TEST(NAME ${THIS_TEST} 
+      # When not run through a queue each run is ran and then diffed. This is handled by
+      #  the submit_tests.sh script
+      ADD_TEST(NAME ${THIS_TEST}
                COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "${THIS_TEST_RUN_SCRIPT}" "${TEST_NAME}"
                DEPENDS ${EXEC_NAME})
 
@@ -426,6 +541,10 @@ macro(createTest testFile)
 
     # Force cprnc to be built when the individual test is run
     SET_TESTS_PROPERTIES(${THIS_TEST} PROPERTIES DEPENDS cprnc)
+
+    IF (DEFINED PROFILE)
+      SET_TESTS_PROPERTIES(${THIS_TEST} PROPERTIES LABELS ${PROFILE})
+    ENDIF()
 
     # Individual target to rerun and diff the tests
     SET(THIS_TEST_INDIV "test-${TEST_NAME}")
@@ -435,7 +554,7 @@ macro(createTest testFile)
 
     ADD_DEPENDENCIES(${THIS_TEST_INDIV} ${EXEC_NAME})
 
-    # Check target 
+    # Check target
     ADD_DEPENDENCIES(check ${EXEC_NAME})
 
     # Baseline target
@@ -444,22 +563,84 @@ macro(createTest testFile)
     # Force cprnc to be built when the individual test is run
     ADD_DEPENDENCIES(${THIS_TEST_INDIV} cprnc)
 
+    # This helped in some builds on GPU, where the test hanged for a VERY long time
+    IF (NOT "${TIMEOUT}" STREQUAL "")
+      SET_TESTS_PROPERTIES(${THIS_TEST} PROPERTIES TIMEOUT ${TIMEOUT})
+    ENDIF ()
+
     # Now make the Individual targets
     #ADD_CUSTOM_COMMAND(TARGET ${THIS_TEST_INDIV}
     #                   COMMENT "Running the HOMME regression test: ${THIS_TEST}"
-    #                   POST_BUILD COMMAND ${CMAKE_CTEST_COMMAND} ARGS --output-on-failure -R ${THIS_TEST_INDIV} 
+    #                   POST_BUILD COMMAND ${CMAKE_CTEST_COMMAND} ARGS --output-on-failure -R ${THIS_TEST_INDIV}
     #                   WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
   ENDIF ()
 endmacro(createTest)
 
-macro(createTests testList)
- 
+macro (createTests testList)
   FOREACH (test ${${testList}})
     createTest(${test})
   ENDFOREACH ()
-endmacro(createTests)
+endmacro (createTests)
 
+macro(createTestsWithProfile testList testsProfile)
+  SET (PROFILE ${testsProfile})
+  FOREACH (test ${${testList}})
+    createTest(${test})
+  ENDFOREACH ()
+  UNSET(PROFILE)
+endmacro(createTestsWithProfile)
+
+# Make a list of all testing profiles no more intensive than the given profile.
+function (make_profiles_up_to profile profiles)
+  string (TOLOWER "${profile}" profile_ci)
+  set (tmp)
+  if ("${profile_ci}" STREQUAL "dev")
+    list (APPEND tmp "dev")
+  elseif ("${profile_ci}" STREQUAL "short")
+    list (APPEND tmp "dev")
+    list (APPEND tmp "short")
+  elseif ("${profile_ci}" STREQUAL "nightly")
+    list (APPEND tmp "dev")
+    list (APPEND tmp "short")
+    list (APPEND tmp "nightly")
+  else ()
+    message (FATAL_ERROR "Testing profile '${profile}' not implemented.")
+  endif ()
+  set (profiles "${tmp}" PARENT_SCOPE)
+endfunction ()
+
+MACRO(CREATE_CXX_VS_F90_TESTS_WITH_PROFILE TESTS_LIST testProfile)
+
+  FOREACH (TEST ${${TESTS_LIST}})
+    SET (TEST_FILE_F90 "${TEST}.cmake")
+
+    set_homme_tests_parameters(${TEST} ${testProfile})
+    set (PROFILE ${testProfile})
+    INCLUDE (${HOMME_SOURCE_DIR}/test/reg_test/run_tests/${TEST_FILE_F90})
+
+    SET (TEST_NAME_SUFFIX "ne${HOMME_TEST_NE}-ndays${HOMME_TEST_NDAYS}")
+    SET (F90_TEST_NAME "${TEST}-${TEST_NAME_SUFFIX}")
+    SET (CXX_TEST_NAME "${TEST}-kokkos-${TEST_NAME_SUFFIX}")
+    SET (F90_DIR ${HOMME_BINARY_DIR}/tests/${F90_TEST_NAME})
+    SET (CXX_DIR ${HOMME_BINARY_DIR}/tests/${CXX_TEST_NAME})
+
+    # Compare netcdf output files bit-for-bit AND compare diagnostic lines
+    # in the raw output files
+    SET (TEST_NAME "${TEST}-${TEST_NAME_SUFFIX}_cxx_vs_f90")
+    MESSAGE ("-- Creating cxx-f90 comparison test ${TEST_NAME}")
+
+    CONFIGURE_FILE (${HOMME_SOURCE_DIR}/cmake/CxxVsF90.cmake.in
+                    ${HOMME_BINARY_DIR}/tests/${CXX_TEST_NAME}/CxxVsF90.cmake @ONLY)
+
+    ADD_TEST (NAME "${TEST_NAME}"
+              COMMAND ${CMAKE_COMMAND} -P CxxVsF90.cmake
+              WORKING_DIRECTORY ${HOMME_BINARY_DIR}/tests/${CXX_TEST_NAME})
+
+    SET_TESTS_PROPERTIES(${TEST_NAME} PROPERTIES DEPENDS "${F90_TEST_NAME};${CXX_TEST_NAME}"
+      LABELS ${testProfile})
+  ENDFOREACH ()
+ENDMACRO(CREATE_CXX_VS_F90_TESTS_WITH_PROFILE)
 
 macro(testQuadPrec HOMME_QUAD_PREC)
 
@@ -513,7 +694,7 @@ macro(setCustomCompilerFlags CUSTOM_FLAGS_FILE SRCS_ALL)
   # Compile the rest of the files with the original flags
   SET_SOURCE_FILES_PROPERTIES(${${SRCS_ALL}} PROPERTIES COMPILE_FLAGS
                               "${CMAKE_Fortran_FLAGS_ORIG}")
-  
+
   # Add the custom files back in to the list of all files
   SET(${SRCS_ALL} ${${SRCS_ALL}} ${CUSTOM_FLAG_FILES})
 

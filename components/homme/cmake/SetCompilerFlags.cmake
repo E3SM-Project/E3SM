@@ -1,7 +1,9 @@
 ##############################################################################
 # Compiler specific options
 ##############################################################################
+
 SET(CMAKE_Fortran_FLAGS "")
+
 MESSAGE(STATUS "CMAKE_Fortran_COMPILER_ID = ${CMAKE_Fortran_COMPILER_ID}")
 # Need this for a fix in repro_sum_mod
 IF (${CMAKE_Fortran_COMPILER_ID} STREQUAL XL)
@@ -22,10 +24,13 @@ ELSE ()
   ELSEIF (CMAKE_Fortran_COMPILER_ID STREQUAL Intel)
     SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -assume byterecl")
     SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fp-model fast -ftz")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fp-model fast -ftz")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fp-model fast -ftz")
     #SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fp-model fast -qopt-report=5 -ftz")
     #SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -mP2OPT_hpo_matrix_opt_framework=0 -fp-model fast -qopt-report=5 -ftz")
 
     SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -diag-disable 8291")
+
     # remark #8291: Recommended relationship between field width 'W' and the number of fractional digits 'D' in this edit descriptor is 'W>=D+7'.
 
     # Needed by csm_share
@@ -48,6 +53,36 @@ ELSE ()
  ENDIF ()
 ENDIF ()
 
+IF (${HOMME_USE_CXX})
+  IF (DEFINED BASE_CPPFLAGS)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${BASE_CPPFLAGS}")
+  ENDIF ()
+
+  # C++ Flags
+
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+
+  INCLUDE(CheckCXXCompilerFlag)
+  CHECK_CXX_COMPILER_FLAG("-std=c++11" CXX11_SUPPORTED)
+  IF (${CXX11_SUPPORTED})
+    SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+  ELSEIF (${HOMME_USE_KOKKOS})
+    MESSAGE (FATAL_ERROR "Kokkos needs C++11, but the C++ compiler does not support it.")
+  ENDIF ()
+  CHECK_CXX_COMPILER_FLAG("-cxxlib" CXXLIB_SUPPORTED)
+
+  # Handle Cuda.
+  FIND_PACKAGE(CUDA QUIET)
+  IF (${CUDA_FOUND})
+    STRING (FIND ${CMAKE_CXX_COMPILER} "nvcc" pos)
+    IF (${pos} GREATER -1)
+      SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda -DCUDA_BUILD")
+    ELSE ()
+      MESSAGE ("Cuda was found, but the C++ compiler is not nvcc_wrapper, so building without Cuda support.")
+    ENDIF ()
+  ENDIF ()
+ENDIF()
+
 ##############################################################################
 # Optimization flags
 # 1) OPT_FLAGS if specified sets the Fortran,C, and CXX optimization flags
@@ -60,7 +95,6 @@ IF (OPT_FLAGS)
   SET (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OPT_FLAGS}")
   SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPT_FLAGS}")
   SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPT_FLAGS}")
-
 ELSE ()
 
   IF (OPT_FFLAGS)
@@ -82,7 +116,7 @@ ELSE ()
       SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -O2")
     ENDIF ()
   ENDIF ()
- 
+
   IF (OPT_CFLAGS)
     SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPT_CFLAGS}")
   ELSE ()
@@ -91,7 +125,7 @@ ELSE ()
     ELSEIF (CMAKE_C_COMPILER_ID STREQUAL PGI)
     ELSEIF (CMAKE_C_COMPILER_ID STREQUAL PathScale)
     ELSEIF (CMAKE_C_COMPILER_ID STREQUAL Intel)
-      SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
+      SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
       #SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mavx -DTEMP_INTEL_COMPILER_WORKAROUND_001")
     ELSEIF (CMAKE_C_COMPILER_ID STREQUAL XL)
       SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -qmaxmem=-1")
@@ -104,11 +138,11 @@ ELSE ()
     SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPT_CXXFLAGS}")
   ELSE ()
     IF (CMAKE_CXX_COMPILER_ID STREQUAL GNU)
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
     ELSEIF (CMAKE_CXX_COMPILER_ID STREQUAL PGI)
     ELSEIF (CMAKE_CXX_COMPILER_ID STREQUAL PathScale)
     ELSEIF (CMAKE_CXX_COMPILER_ID STREQUAL Intel)
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
       #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx -DTEMP_INTEL_COMPILER_WORKAROUND_001")
     ELSEIF (CMAKE_CXX_COMPILER_ID STREQUAL XL)
       SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -qmaxmem=-1")
@@ -116,6 +150,7 @@ ELSE ()
       SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
     ENDIF ()
   ENDIF ()
+
 ENDIF ()
 
 ##############################################################################
@@ -162,6 +197,10 @@ ELSE ()
 
 ENDIF ()
 
+OPTION(DEBUG_TRACE "Enables TRACE level debugging checks. Very slow" FALSE)
+IF (${DEBUG_TRACE})
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG_TRACE")
+ENDIF ()
 
 ##############################################################################
 # OpenMP
@@ -169,20 +208,25 @@ ENDIF ()
 #   1) HORIZ_OPENMP OpenMP over elements (standard OPENMP)
 #   2) COLUMN_OPENMP OpenMP within an element (previously called ELEMENT_OPENMP)
 # COLUMN_OPENMP will be disabled by the openACC exectuables.
+#
+# Kokkos does not distinguish between the two because it does not use
+# nested OpenMP. Nested OpenMP is the reason the two are distinguished in the
+# Fortran code.
 ##############################################################################
+
 OPTION(ENABLE_OPENMP "OpenMP across elements" TRUE)
 OPTION(ENABLE_HORIZ_OPENMP "OpenMP across elements" TRUE)
 OPTION(ENABLE_COLUMN_OPENMP "OpenMP within an element" FALSE)
 
 # If OpenMP is turned off also turn off ENABLE_HORIZ_OPENMP
-IF (NOT ${ENABLE_OPENMP}) 
-  SET(ENABLE_HORIZ_OPENMP FALSE) 
-  SET(ENABLE_COLUMN_OPENMP FALSE) 
+IF (NOT ${ENABLE_OPENMP})
+  SET(ENABLE_HORIZ_OPENMP FALSE)
+  SET(ENABLE_COLUMN_OPENMP FALSE)
 ENDIF ()
 
 ##############################################################################
 IF (ENABLE_HORIZ_OPENMP OR ENABLE_COLUMN_OPENMP)
-  IF(NOT ${CMAKE_Fortran_COMPILER_ID} STREQUAL Cray) 
+  IF(NOT ${CMAKE_Fortran_COMPILER_ID} STREQUAL Cray)
     FIND_PACKAGE(OpenMP)
     IF(OPENMP_FOUND)
       MESSAGE(STATUS "Found OpenMP Flags")
@@ -214,7 +258,7 @@ IF (ENABLE_HORIZ_OPENMP OR ENABLE_COLUMN_OPENMP)
    SET(HORIZ_OPENMP TRUE BOOL "Threading in the horizontal direction")
    MESSAGE(STATUS "  Using HORIZ_OPENMP")
  ENDIF ()
- 
+
  IF (${ENABLE_COLUMN_OPENMP})
    # Set this as global so it can be picked up by all executables
 #   SET(COLUMN_OPENMP TRUE CACHE BOOL "Threading in the horizontal direction")
@@ -224,23 +268,26 @@ IF (ENABLE_HORIZ_OPENMP OR ENABLE_COLUMN_OPENMP)
 ENDIF ()
 ##############################################################################
 
-
 ##############################################################################
 # Intel Phi (MIC) specific flags - only supporting the Intel compiler
 ##############################################################################
 OPTION(ENABLE_INTEL_PHI "Whether to build with Intel Xeon Phi (MIC) support" FALSE)
+
 IF (ENABLE_INTEL_PHI)
   IF (NOT ${CMAKE_Fortran_COMPILER_ID} STREQUAL Intel)
     MESSAGE(FATAL_ERROR "Intel Phi acceleration only supported through the Intel compiler")
   ELSE ()
     SET(INTEL_PHI_FLAGS "-mmic")
+    # TODO: think about changing the line above with the following commented one
+    # SET(INTEL_PHI_FLAGS "-xMIC-AVX512")
+    SET(AVX_VERSION "512")
     SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${INTEL_PHI_FLAGS}")
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  ${INTEL_PHI_FLAGS}")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${INTEL_PHI_FLAGS}")
     # CMake magic for cross-compilation
-    SET(CMAKE_SYSTEM_NAME Linux) 
-    SET(CMAKE_SYSTEM_PROCESSOR k1om) 
-    SET(CMAKE_SYSTEM_VERSION 1) 
+    SET(CMAKE_SYSTEM_NAME Linux)
+    SET(CMAKE_SYSTEM_PROCESSOR k1om)
+    SET(CMAKE_SYSTEM_VERSION 1)
     SET(_CMAKE_TOOLCHAIN_PREFIX  x86_64-k1om-linux-)
     # Specify the location of the target environment
     IF (TARGET_ROOT_PATH)
@@ -248,6 +295,45 @@ IF (ENABLE_INTEL_PHI)
     ELSE ()
       SET(CMAKE_FIND_ROOT_PATH /usr/linux-k1om-4.7)
     ENDIF ()
+  ENDIF ()
+ENDIF ()
+
+##############################################################################
+# Compiler FLAGS for AVX1 and AVX2 (CXX compiler only)
+##############################################################################
+IF (${HOMME_USE_CXX})
+  IF (NOT DEFINED AVX_VERSION)
+    INCLUDE(FindAVX)
+    FindAVX()
+    IF (AVX512_FOUND)
+      SET(AVX_VERSION "512")
+    ELSEIF (AVX2_FOUND)
+      SET(AVX_VERSION "2")
+    ELSEIF (AVX_FOUND)
+      SET(AVX_VERSION "1")
+    ELSE ()
+      SET(AVX_VERSION "0")
+    ENDIF ()
+  ENDIF ()
+
+  IF (AVX_VERSION STREQUAL "512")
+    IF (NOT ENABLE_INTEL_PHI)
+      IF (CMAKE_CXX_COMPILER_ID STREQUAL Intel)
+        SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xCORE-AVX512")
+      ENDIF()
+    ENDIF()
+  ELSEIF (AVX_VERSION STREQUAL "2")
+    IF (CMAKE_CXX_COMPILER_ID STREQUAL GNU)
+      SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2")
+    ELSEIF (CMAKE_CXX_COMPILER_ID STREQUAL Intel)
+      SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xCORE-AVX2")
+    ENDIF()
+  ELSEIF (AVX_VERSION STREQUAL "1")
+    IF (CMAKE_CXX_COMPILER_ID STREQUAL GNU)
+      SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx")
+    ELSEIF (CMAKE_CXX_COMPILER_ID STREQUAL Intel)
+      SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xAVX")
+    ENDIF()
   ENDIF ()
 ENDIF ()
 
@@ -274,5 +360,3 @@ ENDIF ()
 IF (FORCE_LINKER_FLAGS)
   SET(CMAKE_EXE_LINKER_FLAGS ${FORCE_LINKER_FLAGS})
 ENDIF ()
-
-
