@@ -163,11 +163,20 @@ module li_iceshelf_melt
            bmlt_float_z0 = -100._RKIND              ! scale for ice draft (m)
                                                     ! MISMIP+ default value = -100 m
 
+      real(kind=RKIND) :: meanGLdepth, meanCFdepth ! ice shelf draft stats needed by the temperature_profile method:
+                                                   ! mean grounding line depth, mean calving front depth
+
 
       err = 0
       err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
+      call mpas_pool_get_config(liConfigs, 'config_print_thermal_info', config_print_thermal_info)
+
+      if (config_print_thermal_info) then
+         call mpas_log_write('Solving for basal melting of floating ice, config_basal_mass_bal_float = ' // &
+              trim(config_basal_mass_bal_float) )
+      endif
 
       ! Simple options handled here
       if (trim(config_basal_mass_bal_float) == 'none') then
@@ -194,16 +203,20 @@ module li_iceshelf_melt
       endif
 
       ! get rest of config variables
-      call mpas_pool_get_config(liConfigs, 'config_print_thermal_info', config_print_thermal_info)
       call mpas_pool_get_config(liConfigs, 'config_thermal_thickness', config_thermal_thickness)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_config(liConfigs, 'config_bmlt_float_flux', config_bmlt_float_flux)
       call mpas_pool_get_config(liConfigs, 'config_bmlt_float_xlimit', config_bmlt_float_xlimit)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
 
-      if (config_print_thermal_info) then
-         call mpas_log_write('Solving for basal melting of floating ice, config_basal_mass_bal_float = ' // &
-              trim(config_basal_mass_bal_float) )
+      ! The temp-profile method needs a global reduction before it can operate, so do that here
+      ! before the main option block
+      if (trim(config_basal_mass_bal_float) == 'temperature_profile') then
+         call calc_iceshelf_draft_info(domain, meanGLdepth, meanCFdepth, err_tmp)
+         err = ior(err, err_tmp)
+         if (config_print_thermal_info) then
+            call mpas_log_write('meanGLdepth=$r, meanCFdepth=$r', realArgs=(/meanGLdepth, meanCFdepth/))
+         endif
       endif
 
       ! block loop
@@ -681,6 +694,119 @@ module li_iceshelf_melt
     end function ocean_freezing_temperature
 !-----------------------------------------------------------------------
 
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine calc_iceshelf_draft_info
+!
+!> \brief Calculate mean grounding line and calving front depths underneath ice shelves
+!> \author Matthew Hoffman
+!> \date   October 2018
+!> \details The mean grounding line and calving front depths are used by the
+!> temperature_profile iceshelf melt method, but must be calculated before the
+!> method is called because they require a global reduce.
+!-----------------------------------------------------------------------
+
+    subroutine calc_iceshelf_draft_info(domain, meanGLdepth, meanCFdepth, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), intent(out) :: meanGLdepth !< mean grounding line depth
+      real (kind=RKIND), intent(out) :: meanCFdepth !< mean calving front depth
+      integer, intent(out) :: err
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      type (block_type), pointer :: block
+
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: geometryPool
+
+      integer, pointer :: &
+           nCellsSolve                 ! number of locally owned cells
+
+      logical, pointer :: &
+           config_print_thermal_info   ! if true, print debug info
+
+      integer, dimension(:), pointer :: &
+           cellMask                    ! bit mask describing whether ice is floating, dynamically active, etc.
+
+      real (kind=RKIND), dimension(:), pointer :: lowerSurface ! lower surface elevation (m)
+
+      real (kind=RKIND), dimension(:), pointer :: areaCell ! cell area (m^2)
+
+      real(kind=RKIND) :: sumGLdepth, sumGLarea
+      real(kind=RKIND) :: sumCFdepth, sumCFarea
+      integer :: iCell
+      real(kind=RKIND), dimension(4) :: localSums, globalSums
+
+      err = 0
+
+      ! Calculate average GL and CF depths on this processor, looping over blocks.
+      ! Note that these are somewhat approximate calculations.
+      ! The GL cell mask is the last grounded cell, not the first floating cell,
+      ! but the assumption is that this difference is not important
+      ! (determining the first floating cell is currently substantially more work.)
+      ! Also, ideally the weighted average for GL and CF depths would be weighted
+      ! based on GL and CF lengths.  Again that is substantially more work for little
+      ! expected improvement, so I instead use cell area weighted averages.
+      sumGLdepth = 0.0_RKIND
+      sumGLarea = 0.0_RKIND
+      sumCFdepth = 0.0_RKIND
+      sumCFarea = 0.0_RKIND
+      ! block loop
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+         do iCell = 1, nCellsSolve
+            if (li_mask_is_grounding_line(cellMask(iCell))) then
+               ! accumulate area-weighted GL depth and area
+               sumGLdepth = sumGLdepth + lowerSurface(iCell) * areaCell(iCell)
+               sumGLarea = sumGLarea + areaCell(iCell)
+               call mpas_log_write("GL cell: $i, $r, $r", intArgs=(/iCell/), realArgs=(/lowerSurface(iCell), areaCell(iCell)/))
+            endif
+            if (li_mask_is_floating_ice(cellMask(iCell)) .and. li_mask_is_dynamic_margin(cellMask(iCell))) then
+               ! accumulate area-weighted CF depth and area
+               sumCFdepth = sumCFdepth + lowerSurface(iCell) * areaCell(iCell)
+               sumCFarea = sumCFarea + areaCell(iCell)
+            endif
+         enddo
+
+         block => block % next
+      enddo   ! associated(block)
+
+      ! fill array so we only need one global reduce
+      localSums = (/sumGLdepth, sumGLarea, sumCFdepth, sumCFarea/)
+      ! sum up over all procs
+      call mpas_dmpar_sum_real_array(domain % dminfo, 4, localSums(:), globalSums(:))
+      ! Calculate average values
+      if (globalSums(2) > 0.0_RKIND) then
+         meanGLdepth = globalSums(1) / globalSums(2)
+      else
+         meanGLdepth = 0.0_RKIND
+      endif
+      if (globalSums(4) > 0.0_RKIND) then
+         meanCFdepth = globalSums(3) / globalSums(4)
+      else
+         meanCFdepth = 0.0_RKIND
+      endif
+
+    end subroutine calc_iceshelf_draft_info
+!-----------------------------------------------------------------------
 
   !***********************************************************************
   end module li_iceshelf_melt
