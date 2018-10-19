@@ -343,7 +343,8 @@ module li_iceshelf_melt
          elseif (trim(config_basal_mass_bal_float) == 'temperature_profile') then
 
             call iceshelf_melt_param_from_temp_profile(nCellsSolve, lowerSurface, cellMask, &
-                    config_sea_level, config_ice_density, config_print_thermal_info, floatingBasalMassBal, err_tmp)
+                    config_sea_level, config_ice_density, config_print_thermal_info, &
+                    meanGLdepth, meanCFdepth, floatingBasalMassBal, err_tmp)
             err = ior(err, err_tmp)
 
          else
@@ -506,7 +507,7 @@ module li_iceshelf_melt
 !-----------------------------------------------------------------------
 
     subroutine iceshelf_melt_param_from_temp_profile(nCellsSolve, lowerSurface, cellMask, &
-                    config_sea_level, config_ice_density, print_debug, floatingBasalMassBal, err)
+                    config_sea_level, config_ice_density, print_debug, zGL, zCavityMax, floatingBasalMassBal, err)
 
       !-----------------------------------------------------------------
       ! input variables
@@ -516,6 +517,9 @@ module li_iceshelf_melt
       integer, dimension(:), intent(in) :: cellMask !< bitmask on cells
       real (kind=RKIND), intent(in) :: config_sea_level, config_ice_density
       logical, intent(in) :: print_debug
+      real(kind=RKIND), intent(in) :: zGL, &  !< mean grounding line elevation (m),
+                                              !< it's a scalar now, but eventually may want smoothed spatial field
+                                      zCavityMax !< depth below which mean thermal forcing is averaged
 
       !-----------------------------------------------------------------
       ! output variables
@@ -543,12 +547,9 @@ module li_iceshelf_melt
       ! variables that are general to any depth
       real(kind=RKIND) :: zSill !< sill depth
       real(kind=RKIND) :: TSill !< temperature at the sill depth
-      real(kind=RKIND) :: zGL !< grounding line depth
       real(kind=RKIND) :: TGL !< temperature at grounding line depth
-      real(kind=RKIND) :: zCavityMin !< arbitrary depth minimum depth of cavity (a typical draft near calving front)
       real(kind=RKIND) :: TFmean !< mean thermal forcing within the cavity
       real(kind=RKIND) :: kappa !< constant for non-local, quadratic melt param. (likely to make a nl option)
-      real(kind=RKIND) :: zCavityDepth !< depth below which mean thermal forcing is averaged
       ! variables specific to a given depth
       real(kind=RKIND) :: draft !< elevation of ice shelf draft (m)
       real(kind=RKIND) :: Tregional !< regional temperature at given depth (comes from imposed profile)
@@ -574,9 +575,7 @@ module li_iceshelf_melt
       ! Calculate variables independent of depth
       kappa = 6.0_RKIND ! likely to become nl option
       zSill = -700.0_RKIND ! likely to become nl option
-      zGL = -1000.0_RKIND ! to come from global reduction of GL depth
       zeta = slopeDraft * plumeThickness / (E0 * slopeDraft + Stanton)
-      zCavityDepth = -200.0_RKIND ! depth below which mean thermal forcing is averaged
 
       ! calculate temperature at sill
       if (zSill >= zThermoclineTop) then
@@ -614,7 +613,7 @@ module li_iceshelf_melt
       !  shelf thickness does not match that of the modeled ice shelf.)
       TFmean = 0.0_RKIND
       nLevels = 0
-      do z = ceiling(zGL), floor(zCavityMin), 1 ! Discretize in 1 m increments
+      do z = ceiling(zGL), floor(zCavityMax), 1 ! Discretize in 1 m increments
          zr = real(z, kind=RKIND) ! convert once to real data type
          nLevels = nLevels + 1
          ! calculate Tcavity for this depth (allowing for no sill - sill deeper than GL depth)
