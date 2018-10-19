@@ -470,6 +470,7 @@ module ocn_comp_nuopc
     integer                 :: day           ! day in month
     integer                 :: modeldt       ! model timestep
     integer                 :: dbrc
+    character(len=CL)       :: cvalue
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
@@ -565,11 +566,15 @@ module ocn_comp_nuopc
     endif
 
     if (my_task == master_task) then
-       call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing OCN from: ", rc=rc)
+       call ESMF_ClockPrint(clock, options="currTime", unit=cvalue, &
+            preString="------>Advancing OCN from: ", rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       write(logunit, *) trim(cvalue)
 
-       call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
+       call ESMF_ClockPrint(clock, options="stopTime", unit=cvalue, &
+            preString="--------------------------------> to: ", rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       write(logunit, *) trim(cvalue)
     end if
 
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)

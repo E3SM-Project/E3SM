@@ -510,10 +510,14 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        if (my_task == master_task) then
-          call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing LND from: ", rc=rc)
+          call ESMF_ClockPrint(clock, options="currTime", unit=cvalue, &
+               preString="------>Advancing LND from: ", rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
+          write(logunit, *) trim(cvalue)
+          call ESMF_ClockPrint(clock, options="stopTime", unit=cvalue, &
+               preString="--------------------------------> to: ", rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          write(logunit, *) trim(cvalue)
        end if
 
        call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)

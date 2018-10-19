@@ -506,6 +506,7 @@ contains
     integer                 :: day           ! day in month
     real(R8)                :: cosarg        ! for setting ice temp pattern
     real(R8)                :: jday, jday0   ! elapsed day counters
+    character(len=CL)       :: cvalue
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
@@ -616,11 +617,15 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        if (my_task == master_task) then
-          call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing ICE from: ", rc=rc)
+          call ESMF_ClockPrint(clock, options="currTime", unit=cvalue, &
+               preString="------>Advancing ICE from: ", rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          write(logunit, *) trim(cvalue)
 
-          call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
+          call ESMF_ClockPrint(clock, options="stopTime", unit=cvalue, &
+               preString="--------------------------------> to: ", rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          write(logunit, *) trim(cvalue)
        end if
     end if
 
