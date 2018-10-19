@@ -545,7 +545,7 @@ contains
 #else 
 ! model == theta-l
     if(par%dynproc) then
-       call initEdgeBuffer(par, edge, elem, (4+pcnst)*nlev+2)
+       call initEdgeBuffer(par, edge, elem, (5+pcnst)*nlev+2)
     end if
 #endif
 
