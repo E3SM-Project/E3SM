@@ -34,17 +34,18 @@ def disp_usage(callType):
     print '  --walltime <hr:mn> Amount of walltime requested (default = 4:30 (CAM-ECT) 2:00 (POP-ECT), or 0:10 with --uf enabled)'
     print '  --compiler <name>  Compiler to use (default = same as Machine default) '
     print '  --compset <name>   Compset to use (default = F2000climo (CAM-ECT) or G (POP-ECT))'
-    print '  --res <name>       Resolution to run (default = f19_f19)'
+    print '  --res <name>       Resolution to run (default = f19_f19 (CAM-ECT) or T62_g17 (POP-ECT))'
     print '  --uf               Enable ninth time step runs (ultra-fast mode for CAM-ECT) - otherwise the default is 12-month runs'
     if callType == 'ensemble.py': 
        print '  --nb               Disables auto building the root case of the ensemble'
        print '  --ns               Disables auto submitting any members of the ensemble'
        print '  --ensemble <size>  Build the ensemble (instead of building case(s) with random pertlim values for verification),'
-       print '                     and specify the number of ensemble members to generate (e.g.: 151 for CAM-ECT annual averages or 350 for ultra-fast CAM-ECT mode or 40 for POP-ECT)'
+       print '                     and specify the number of ensemble members to generate (e.g.: 151 for CAM-ECT annual averages '
+       print '                     or 350 for ultra-fast CAM-ECT mode or 40 for POP-ECT)'
     else:
        print '  --nb               Disables building (and submitting) the single case'
        print '  --ns               Disables submitting the single case'
-    print '  --help, -h        Prints out this usage message'
+    print '  --help, -h         Prints out this usage message'
 
 ########
 def process_args_dict(caller, caller_argv):
@@ -192,7 +193,7 @@ def process_args_dict(caller, caller_argv):
         if os.path.isdir(case_dir) == False:
             print('Error: Need a valid full path with the case name (--case).')
             sys.exit()
-    #defaults for resolution and case  
+    #defaults for resolution and case
     if opts_dict['ect'] == 'pop':
         if opts_dict['compset'] == 'NONE':
             opts_dict['compset'] = 'G'
@@ -231,7 +232,7 @@ def single_case(opts_dict, case_flags, stat_dir):
     print('STATUS: create_newcase flags = ' + case_flags)
     command = './create_newcase ' + case_flags
     ret = os.system(command)
-    #print(ret)
+
     if (ret != 0):
         print('ERROR: create_newcase returned a non-zero exit code.')
         sys.exit()
@@ -239,8 +240,8 @@ def single_case(opts_dict, case_flags, stat_dir):
     #modify namelist settings 
     this_case = opts_dict['case']
     print('STATUS: case  = ' + this_case)
-    ret = os.chdir(this_case)              
-                  
+    ret = os.chdir(this_case)
+    
     command = 'chmod u+w *'
     ret = os.system(command)
 
