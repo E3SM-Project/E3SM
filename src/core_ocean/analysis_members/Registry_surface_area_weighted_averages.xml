@@ -1,5 +1,5 @@
 	<dims>
-		<dim name="nSfcAreaWeightedAvgFields" definition="30" units="unitless"
+		<dim name="nSfcAreaWeightedAvgFields" definition="32" units="unitless"
 			 description="A number equal to or greater than the number of var arrays in the surfaceAreaWeightedAveragesAM var structure below."
 		/>
 		<dim name="nOceanRegions" definition="7" units="unitless"
