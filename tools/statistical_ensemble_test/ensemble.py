@@ -180,7 +180,7 @@ def main(argv):
         if opts_dict['ect'] == 'pop':
             print ("STATUS: ---POP-ECT VERIFICATION CASE COMPLETE---")
             print ("Set up one case using the following init_ts_perturb value:")
-            print get_pertlim_uf(rand_ints[0]) 
+            print get_pertlim_uf(rand_ints[0])
         else:
             print ("STATUS: ---CAM-ECT VERIFICATION CASES COMPLETE---")
             print ("Set up three cases using the following pertlim values:")
