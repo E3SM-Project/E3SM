@@ -23,7 +23,7 @@ module prim_advance_mod
   use element_mod,        only: element_t
   use element_state,      only: max_itercnt_perstep,avg_itercnt,max_itererr_perstep, nu_scale_top
   use element_ops,        only: get_temperature, set_theta_ref, state0, get_R_star
-  use eos,                only: get_pnh_and_exner,get_phinh,get_dirk_jacobian
+  use eos,                only: get_pnh_and_exner,get_theta_from_T,get_phinh,get_dirk_jacobian
   use hybrid_mod,         only: hybrid_t
   use hybvcoord_mod,      only: hvcoord_t
   use kinds,              only: iulog, real_kind
@@ -395,78 +395,6 @@ contains
 
   real(kind=real_kind)                  :: gp(np)
 
-#if 0
-  gp(1) = -1; gp(4) = 1; gp(2) =  -0.4472135955; gp(3) = 0.4472135955;
-        do ie=nets,nete
-          do k=1,nlev
-            noreast = elem(ie)%derived%FQ(np,np,k,1)
-            nw = elem(ie)%derived%FQ(1,np,k,1)
-            se = elem(ie)%derived%FQ(np,1,k,1)
-            sw = elem(ie)%derived%FQ(1,1,k,1)
-            do i=1,np
-                x = gp(i)
-                do j=1,np
-                    y = gp(j)
-                    elem(ie)%derived%FQ(i,j,k,1) = 0.25d0*( &
-                                            (1.0d0-x)*(1.0d0-y)*sw + &
-                                            (1.0d0-x)*(y+1.0d0)*nw + &
-                                            (x+1.0d0)*(1.0d0-y)*se + &
-                                            (x+1.0d0)*(y+1.0d0)*noreast)
-                end do
-            end do
-
-            noreast = elem(ie)%derived%FT(np,np,k)
-            nw = elem(ie)%derived%FT(1,np,k)
-            se = elem(ie)%derived%FT(np,1,k)
-            sw = elem(ie)%derived%FT(1,1,k)
-            do i=1,np
-                x = gp(i)
-                do j=1,np
-                    y = gp(j)
-                    elem(ie)%derived%FT(i,j,k) = 0.25d0*( &
-                                            (1.0d0-x)*(1.0d0-y)*sw + &
-                                            (1.0d0-x)*(y+1.0d0)*nw + &
-                                            (x+1.0d0)*(1.0d0-y)*se + &
-                                            (x+1.0d0)*(y+1.0d0)*noreast)
-                end do
-            end do
-
-            noreast = elem(ie)%derived%FM(np,np,1,k)
-            nw = elem(ie)%derived%FM(1,np,1,k)
-            se = elem(ie)%derived%FM(np,1,1,k)
-            sw = elem(ie)%derived%FM(1,1,1,k)
-            do i=1,np
-                x = gp(i)
-                do j=1,np
-                    y = gp(j)
-                    elem(ie)%derived%FM(i,j,1,k) = 0.25d0*( &
-                                            (1.0d0-x)*(1.0d0-y)*sw + &
-                                            (1.0d0-x)*(y+1.0d0)*nw + &
-                                            (x+1.0d0)*(1.0d0-y)*se + &
-                                            (x+1.0d0)*(y+1.0d0)*noreast)
-                end do
-            end do
-            noreast = elem(ie)%derived%FM(np,np,2,k)
-            nw = elem(ie)%derived%FM(1,np,2,k)
-            se = elem(ie)%derived%FM(np,1,2,k)
-            sw = elem(ie)%derived%FM(1,1,2,k)
-            do i=1,np
-                x = gp(i)
-                do j=1,np
-                    y = gp(j)
-                    elem(ie)%derived%FM(i,j,2,k) = 0.25d0*( &
-                                            (1.0d0-x)*(1.0d0-y)*sw + &
-                                            (1.0d0-x)*(y+1.0d0)*nw + &
-                                            (x+1.0d0)*(1.0d0-y)*se + &
-                                            (x+1.0d0)*(y+1.0d0)*noreast)
-                end do
-            end do
-
-          end do!k
-        end do!ie
-#endif
-
-
 
 !new forcing
   do ie=nets,nete
@@ -518,7 +446,6 @@ contains
           elem(ie)%state%vtheta_dp(:,:,:,n0))/dt
 
   enddo
-
 
   end subroutine convert_thermo_forcing
 

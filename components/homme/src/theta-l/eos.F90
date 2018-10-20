@@ -64,7 +64,7 @@ implicit none
   real (kind=real_kind) :: pnh_i(np,np,nlevp)  
   real (kind=real_kind) :: dp3d_i(np,np,nlevp)
   real (kind=real_kind) :: pi_i(np,np,nlevp) 
-  integer :: i,j,k
+  integer :: i,j,k,k2
 
   ! hydrostatic pressure
   pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
@@ -104,7 +104,17 @@ implicit none
               endif
            enddo
         enddo
-        call abortmp('error: rho<0')
+        do i=1,np
+           do j=1,np
+              if ( p_over_exner(i,j,k)<0 ) then
+                 print *,'vertical column:'
+                 do k2=1,nlev
+                    write(*,'(i3,4f14.4)') k2,phi_i(i,j,k2),dp3d(i,j,k2),vtheta_dp(i,j,k2)
+                 enddo
+                 call abortmp('error: rho<0')
+              endif
+           enddo
+        enddo
      endif
     
      pnh(:,:,k) = p0 * (p_over_exner(:,:,k)/p0)**(1/(1-kappa))
@@ -148,6 +158,58 @@ implicit none
    
   endif ! hydrostatic/nonhydrostatic version
   end subroutine get_pnh_and_exner
+
+
+
+subroutine get_theta_from_T(hvcoord,Rstar,temperature,dp3d,phi_i,vtheta_dp)
+implicit none
+!
+! Use Equation of State to compute vtheta_dp from Temperature
+!
+!      p_over_exner   =  -Rstar T dp / (dphi/ds)
+!
+! input:  dp3d, phi, phis, T, Rstar
+! output:  vtheta_dp
+!
+  type (hvcoord_t),     intent(in)  :: hvcoord             ! hybrid vertical coordinate struct
+  real (kind=real_kind), intent(in) :: Rstar(np,np,nlev)   
+  real (kind=real_kind), intent(in) :: temperature(np,np,nlev)   
+  real (kind=real_kind), intent(in) :: dp3d(np,np,nlev)   
+  real (kind=real_kind), intent(in) :: phi_i(np,np,nlevp)
+  real (kind=real_kind), intent(out) :: vtheta_dp(np,np,nlev)   
+
+  !   local
+  real (kind=real_kind) :: exner(np,np,nlev)
+  real (kind=real_kind) :: pi(np,np,nlev)
+  real (kind=real_kind) :: pi_i(np,np,nlevp)
+  integer :: k
+
+  if (theta_hydrostatic_mode) then
+     ! hydrostatic pressure
+     pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+     do k=1,nlev
+        pi_i(:,:,k+1)=pi_i(:,:,k) + dp3d(:,:,k)
+     enddo
+     do k=1,nlev
+        pi(:,:,k)=pi_i(:,:,k) + dp3d(:,:,k)/2
+     enddo
+     
+     ! hydrostatic pressure
+     exner  = (pi/p0)**kappa
+  else
+
+     do k=1,nlev
+        pi(:,:,k) = Rstar(:,:,k)*temperature(:,:,k)*dp3d(:,:,k)/ &
+          (phi_i(:,:,k)-phi_i(:,:,k+1))
+     enddo
+     exner = (pi/p0)**kappa
+
+  endif ! hydrostatic/nonhydrostatic version
+   
+  vtheta_dp = &
+       (Rstar(:,:,:)/Rgas)*temperature(:,:,:)*dp3d(:,:,:)/exner(:,:,:)
+
+  end subroutine get_theta_from_T
 
 
 
