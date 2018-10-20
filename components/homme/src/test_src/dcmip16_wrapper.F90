@@ -398,7 +398,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   integer :: i,j,k,ie                                                     ! loop indices
   real(rl), dimension(np,np,nlev) :: u,v,w,T,exner_kess,theta_kess,p,dp,rho,z,qv,qc,qr
   real(rl), dimension(np,np,nlev) :: u0,v0,T0,qv0,qc0,qr0,cl,cl2,ddt_cl,ddt_cl2
-  real(rl), dimension(np,np,nlev) :: theta0,exner_new,rho_dry,rho_new,Rstar,p_pk
+  real(rl), dimension(np,np,nlev) :: rho_dry,rho_new,Rstar,p_pk
   real(rl), dimension(nlev)       :: u_c,v_c,p_c,qv_c,qc_c,qr_c,rho_c,z_c, th_c
   real(rl) :: max_w, max_precl, min_ps
   real(rl) :: lat, lon, dz_top(np,np), zi(np,np,nlevp),zi_c(nlevp), ps(np,np)
@@ -447,7 +447,6 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     ! save un-forced prognostics
     u0=u; v0=v; T0=T; qv0=qv; qc0=qc; qr0=qr
-    theta0 = theta_kess
 
     ! apply forcing to columns
     do j=1,np; do i=1,np
@@ -489,18 +488,15 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     rho_new = rho_dry*(1+qv)
     Rstar = (Rgas+(Rwater_vapor-Rgas)*qv*rho_dry/rho_new)
-    !exner_new = p/(rho_new*Rstar*theta_kess)
     p_pk = rho_new*Rstar*theta_kess
-    exner_new = ( p_pk / p0)**( (Rgas/Cp) / ( 1 - (Rgas/Cp)))
+    exner_kess = ( p_pk / p0)**( (Rgas/Cp) / ( 1 - (Rgas/Cp)))
+    T = exner_kess*theta_kess
 
     ! set dynamics forcing
     elem(ie)%derived%FM(:,:,1,:) = (u - u0)/dt
     elem(ie)%derived%FM(:,:,2,:) = (v - v0)/dt
-    !elem(ie)%derived%FT(:,:,:)   = (T - T0)/dt
-    elem(ie)%derived%FT(:,:,:)   = exner_new*(theta_kess - theta0)/dt  
-!    elem(ie)%derived%FT(:,:,:)   = exner_kess*(theta_kess - theta0)/dt  
+    elem(ie)%derived%FT(:,:,:)   = (T - T0)/dt
 
-    ! set tracer-mass forcing
     ! set tracer-mass forcing. conserve tracer mass
     elem(ie)%derived%FQ(:,:,:,1) = (rho_dry/rho)*dp*(qv-qv0)/dt
     elem(ie)%derived%FQ(:,:,:,2) = (rho_dry/rho)*dp*(qc-qc0)/dt
@@ -535,7 +531,7 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
   integer :: i,j,k,ie                                                     ! loop indices
   real(rl), dimension(np,np,nlev) :: u,v,w,T,exner_kess,theta_kess,p,dp,rho,z,qv,qc,qr
   real(rl), dimension(np,np,nlev) :: u0,v0,T0,qv0,qc0,qr0
-  real(rl), dimension(np,np,nlev) :: theta0,exner_new,rho_dry,rho_new,Rstar,p_pk
+  real(rl), dimension(np,np,nlev) :: rho_dry,rho_new,Rstar,p_pk
   real(rl), dimension(nlev)       :: u_c,v_c,p_c,qv_c,qc_c,qr_c,rho_c,z_c, th_c
   real(rl) :: max_w, max_precl, min_ps
   real(rl) :: lat, dz_top(np,np), zi(np,np,nlevp),zi_c(nlevp), ps(np,np)
@@ -582,7 +578,6 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
 
     ! save un-forced prognostics (DRY)
     u0=u; v0=v; T0=T; qv0=qv; qc0=qc; qr0=qr
-    theta0=theta_kess
 
 
     ! apply forcing to columns
@@ -616,16 +611,16 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
     enddo; enddo;
     rho_new = rho_dry*(1+qv)
     Rstar = (Rgas+(Rwater_vapor-Rgas)*qv*rho_dry/rho_new)
-    !exner_new = p/(rho_new*Rstar*theta_kess)
     p_pk = rho_new*Rstar*theta_kess
-    exner_new = ( p_pk / p0)**( (Rgas/Cp) / ( 1 - (Rgas/Cp)))
+    exner_kess = ( p_pk / p0)**( (Rgas/Cp) / ( 1 - (Rgas/Cp)))
+    T = exner_kess*theta_kess
 
 
     ! set dynamics forcing
     elem(ie)%derived%FM(:,:,1,:) = (u - u0)/dt
     elem(ie)%derived%FM(:,:,2,:) = (v - v0)/dt
-    !elem(ie)%derived%FT(:,:,:)   = exner_kess*(theta_kess - theta0)/dt
-    elem(ie)%derived%FT(:,:,:)   = exner_new*(theta_kess - theta0)/dt  ! a little better than above
+    elem(ie)%derived%FT(:,:,:)   = (T-T0)/dt
+
 
     ! set tracer-mass forcing. conserve tracer mass
     elem(ie)%derived%FQ(:,:,:,1) = (rho_dry/rho)*dp*(qv-qv0)/dt
@@ -659,7 +654,7 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   real(rl):: lat
   real(rl), dimension(np,np,nlev) :: u,v,w,T,theta_kess,exner_kess,p,dp,rho,z,qv,qc,qr
   real(rl), dimension(np,np,nlev) :: T0,qv0,qc0,qr0
-  real(rl), dimension(np,np,nlev) :: theta0,exner_new,rho_dry,rho_new,Rstar,p_pk
+  real(rl), dimension(np,np,nlev) :: rho_dry,rho_new,Rstar,p_pk
   real(rl), dimension(np,np,nlev) :: theta_inv,qv_inv,qc_inv,qr_inv,rho_inv,exner_inv,z_inv ! inverted columns
   real(rl), dimension(np,np,nlevp):: zi
   real(rl), dimension(np,np)      :: ps
@@ -700,7 +695,6 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     ! save un-forced prognostics
     T0=T; qv0=qv; qc0=qc; qr0=qr
-    theta0 = theta_kess
 
 
     ! invert columns (increasing z)
@@ -740,15 +734,14 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     rho_new = rho_dry*(1+qv)
     Rstar = (Rgas+(Rwater_vapor-Rgas)*qv*rho_dry/rho_new)
-    !exner_new = p/(rho_new*Rstar*theta_kess)
     p_pk = rho_new*Rstar*theta_kess
-    exner_new = ( p_pk / p0)**( (Rgas/Cp) / ( 1 - (Rgas/Cp)))
-
+    exner_kess = ( p_pk / p0)**( (Rgas/Cp) / ( 1 - (Rgas/Cp)))
+    T = exner_kess*theta_kess
 
     ! set dynamics forcing
     elem(ie)%derived%FM(:,:,1,:) = 0
     elem(ie)%derived%FM(:,:,2,:) = 0
-    elem(ie)%derived%FT(:,:,:)   = exner_new*(theta_kess - theta0)/dt  
+    elem(ie)%derived%FT(:,:,:)   = (T-T0)/dt
 
     ! set tracer-mass forcing. conserve tracer mass
     elem(ie)%derived%FQ(:,:,:,1) = (rho_dry/rho)*dp*(qv-qv0)/dt

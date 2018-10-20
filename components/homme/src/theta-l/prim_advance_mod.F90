@@ -23,7 +23,7 @@ module prim_advance_mod
   use element_mod,        only: element_t
   use element_state,      only: max_itercnt_perstep,avg_itercnt,max_itererr_perstep, nu_scale_top
   use element_ops,        only: get_temperature, set_theta_ref, state0, get_R_star
-  use eos,                only: get_pnh_and_exner,get_phinh,get_dirk_jacobian
+  use eos,                only: get_pnh_and_exner,get_theta_from_T,get_phinh,get_dirk_jacobian
   use hybrid_mod,         only: hybrid_t
   use hybvcoord_mod,      only: hvcoord_t
   use kinds,              only: iulog, real_kind
@@ -409,17 +409,11 @@ contains
 
      ! apply forcing to temperature
      call get_temperature(elem(ie),temperature,hvcoord,np1)
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
      do k=1,nlev
         temperature(:,:,k) = temperature(:,:,k) + dt*elem(ie)%derived%FT(:,:,k)
      enddo
 
-     
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k,i,j,v1)
-#endif
+
      do q=1,qsize
         do k=1,nlev
            do j=1,np
@@ -453,16 +447,10 @@ contains
 
 
      ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k)
-#endif
      do k=1,nlev
         dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
      enddo
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k)
-#endif
      do q=1,qsize
         do k=1,nlev
            elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp(:,:,k)
@@ -470,13 +458,10 @@ contains
      enddo
 
      ! now that we have updated Qdp and dp, compute vtheta_dp from temperature
-     call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),dp,&
-         elem(ie)%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i)
-
      call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
-     elem(ie)%state%vtheta_dp(:,:,:,np1) = &
-          (Rstar(:,:,:)/Rgas)*temperature(:,:,:)*&
-          dp(:,:,:)/exner(:,:,:)
+     call get_theta_from_T(hvcoord,Rstar,temperature,dp,&
+          elem(ie)%state%phinh_i(:,:,:,np1),elem(ie)%state%vtheta_dp(:,:,:,np1))
+
 
   enddo
   call applyCAMforcing_dynamics(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
