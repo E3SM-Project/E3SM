@@ -168,6 +168,19 @@ contains
   end subroutine get_temperature
 
   !_____________________________________________________________________
+  subroutine get_omega_p(elem,omega_p,hvcoord,nt)
+  implicit none
+
+  type (element_t), intent(in)        :: elem
+  real (kind=real_kind), intent(out)  :: omega_p(np,np,nlev)
+  type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid
+  integer, intent(in) :: nt
+
+  omega_p(:,:,k) = elem%derived%omega_p(:,:,k)
+
+  end subroutine get_omega_p
+
+  !_____________________________________________________________________
   subroutine copy_state(elem,nin,nout)
   implicit none
   

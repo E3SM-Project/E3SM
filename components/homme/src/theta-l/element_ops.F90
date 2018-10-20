@@ -62,7 +62,7 @@ module element_ops
   type(elem_state_t), dimension(:), allocatable :: state0 ! storage for save_initial_state routine
 
   public get_field, get_state
-  public get_temperature, get_phi, get_R_star
+  public get_temperature, get_phi, get_R_star, get_omega_p
   public set_thermostate, set_state, set_state_i, set_elem_state
   public set_forcing_rayleigh_friction, set_theta_ref
   public copy_state, tests_finalize
@@ -200,6 +200,35 @@ contains
   enddo
 
   end subroutine get_temperature
+
+
+  !_____________________________________________________________________
+  subroutine get_omega_p(elem,omega_p,hvcoord,nt)
+  !
+  ! Should only be called outside timestep loop, state variables on reference
+  ! levels
+  !
+  implicit none
+
+  type (element_t), intent(in)        :: elem
+  real (kind=real_kind), intent(out)  :: omega_p(np,np,nlev)
+  type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid
+  integer, intent(in) :: nt
+
+  !   local
+  real (kind=real_kind) :: dp(np,np,nlev)
+  integer :: k
+
+  do k=1,nlev
+     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
+  enddo
+
+  do k=1,nlev
+     omega_p(:,:,k)= elem%derived%omega_p(:,:,k)/dp(:,:,k)
+  enddo
+
+  end subroutine get_omega_p
 
 
   !_____________________________________________________________________

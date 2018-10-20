@@ -26,7 +26,7 @@ module dp_coupling
   use perf_mod,       only: t_startf, t_stopf, t_barrierf
   use parallel_mod,   only: par
   use scamMod,        only: single_column
-  use element_ops,    only: get_temperature
+  use element_ops,    only: get_temperature, get_omega_p
   private
   public :: d_p_coupling, p_d_coupling
 !===============================================================================
@@ -88,6 +88,7 @@ CONTAINS
     type(physics_buffer_desc), pointer :: pbuf_chnk(:)
 
     real (kind=real_kind) :: temperature(np,np,nlev) 
+    real (kind=real_kind) :: omega_dyn(np,np,nlev) 
     !----------------------------------------------------------------------
 
     nullify(pbuf_chnk)
@@ -113,19 +114,28 @@ CONTAINS
        call t_startf('UniquePoints')
        do ie=1,nelemd
           ncols = elem(ie)%idxP%NumUniquePts
+          call UniquePoints(elem(ie)%idxP, elem(ie)%state%ps_v(:,:,tl_f), ps_tmp(1:ncols,ie))
 
           call get_temperature(elem(ie),temperature,hvcoord,tl_f)
 
-          call UniquePoints(elem(ie)%idxP, elem(ie)%state%ps_v(:,:,tl_f), ps_tmp(1:ncols,ie))
-          
+!print *, 'IN DP COUPLING _______________________', ie
+!print *, 'temperature',temperature
+
+          !old call
           !call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%state%T(:,:,:,tl_f), T_tmp(1:ncols,:,ie))
           call UniquePoints(elem(ie)%idxP, nlev, temperature, T_tmp(1:ncols,:,ie))
+
           call UniquePoints(elem(ie)%idxP, 2, nlev, elem(ie)%state%V(:,:,:,:,tl_f), uv_tmp(1:ncols,:,:,ie))
-          call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%derived%omega_p, omega_tmp(1:ncols,:,ie))
+
+          call get_omega_p(elem(ie), omega_dyn, hvcoord, tl_f)
+          !old call
+          !call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%derived%omega_p, omega_tmp(1:ncols,:,ie))
+          call UniquePoints(elem(ie)%idxP, nlev, omega_dyn, omega_tmp(1:ncols,:,ie))
 
           call UniquePoints(elem(ie)%idxP, elem(ie)%state%phis, phis_tmp(1:ncols,ie))
           call UniquePoints(elem(ie)%idxP, nlev,pcnst, elem(ie)%state%Q(:,:,:,:), Q_tmp(1:ncols,:,:,ie))
        end do
+!stop
        call t_stopf('UniquePoints')
 
        if (use_gw_front) call gws_src_fnct(elem, tl_f, frontgf, frontga)
