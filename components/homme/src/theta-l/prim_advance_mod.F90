@@ -385,7 +385,7 @@ contains
   integer,                intent(in)    :: nets,nete
   integer,                intent(in)    :: n0,n0q
   integer                               :: ie,i,j,k,q
-  real(kind=real_kind)                  :: exner(np,np,nlev), dp(np,np,nlev)
+  real(kind=real_kind)                  :: vthn1(np,np,nlev), dp(np,np,nlev)
   real (kind=real_kind)                 :: pnh(np,np,nlev)
   real (kind=real_kind)                 :: dpnh_dp_i(np,np,nlevp)
 
@@ -436,14 +436,13 @@ contains
 
      call get_R_star(rstarn1,qn1)
 
-     call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,n0),dp,&
-         elem(ie)%state%phinh_i(:,:,:,n0),pnh,exner,dpnh_dp_i)
+     call get_theta_from_T(hvcoord,rstarn1,tn1,dp,&
+          elem(ie)%state%phinh_i(:,:,:,n0),vthn1)
 
      !finally, compute difference for FT
      ! this method is using new dp, new exner, new-new r*, new t
      elem(ie)%derived%FT(:,:,:) = &
-         (rstarn1(:,:,:)/Rgas*tn1(:,:,:)*dp(:,:,:)/exner(:,:,:) -&
-          elem(ie)%state%vtheta_dp(:,:,:,n0))/dt
+         (vthn1 - elem(ie)%state%vtheta_dp(:,:,:,n0))/dt
 
   enddo
 
