@@ -9,11 +9,11 @@
   ne                = 1024                       ! number of elements per cube face
   qsize             = 6                         ! num tracer fields
 !  ndays             = 1
-  nmax              = 270                       ! 
-  statefreq         = 18                        ! number of steps between screen dumps
+  nmax              = 810                       ! run for 7200s (2h)
+  statefreq         = 30                        ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run
-  tstep             = 9                        ! 20 was unstable
+  tstep             = 9
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 7
   rsplit            = 6
