@@ -485,11 +485,16 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     enddo; enddo;
 
-
-    rho_new = rho_dry*(1+qv)
-    Rstar = (Rgas+(Rwater_vapor-Rgas)*qv*rho_dry/rho_new)
-    p_pk = rho_new*Rstar*theta_kess
-    exner_kess = ( p_pk / p0)**( (Rgas/Cp) / ( 1 - (Rgas/Cp)))
+    if (theta_hydrostatic_mode) then
+       ! hydrostatic model assumes physics does not change pressure
+       ! so assume T,PHI change, with P held fixed
+       ! ps_v will be adjusted after physics to conserve dry mass
+    else
+       rho_new = rho_dry*(1+qv)
+       Rstar = (Rgas+(Rwater_vapor-Rgas)*qv*rho_dry/rho_new)
+       p_pk = rho_new*Rstar*theta_kess
+       exner_kess = ( p_pk / p0)**( (Rgas/Cp) / ( 1 - (Rgas/Cp)))
+    endif
     T = exner_kess*theta_kess
 
     ! set dynamics forcing
@@ -609,10 +614,16 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
       theta_kess(i,j,:) = th_c(nlev:1:-1)
 
     enddo; enddo;
-    rho_new = rho_dry*(1+qv)
-    Rstar = (Rgas+(Rwater_vapor-Rgas)*qv*rho_dry/rho_new)
-    p_pk = rho_new*Rstar*theta_kess
-    exner_kess = ( p_pk / p0)**( (Rgas/Cp) / ( 1 - (Rgas/Cp)))
+    if (theta_hydrostatic_mode) then
+       ! hydrostatic model assumes physics does not change pressure
+       ! so assume T,PHI change, with P held fixed
+       ! ps_v will be adjusted after physics to conserve dry mass
+    else
+       rho_new = rho_dry*(1+qv)
+       Rstar = (Rgas+(Rwater_vapor-Rgas)*qv*rho_dry/rho_new)
+       p_pk = rho_new*Rstar*theta_kess
+       exner_kess = ( p_pk / p0)**( (Rgas/Cp) / ( 1 - (Rgas/Cp)))
+    endif
     T = exner_kess*theta_kess
 
 
@@ -731,11 +742,16 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     qr    = qr_inv   (:,:,nlev:1:-1)
 
 
-
-    rho_new = rho_dry*(1+qv)
-    Rstar = (Rgas+(Rwater_vapor-Rgas)*qv*rho_dry/rho_new)
-    p_pk = rho_new*Rstar*theta_kess
-    exner_kess = ( p_pk / p0)**( (Rgas/Cp) / ( 1 - (Rgas/Cp)))
+    if (theta_hydrostatic_mode) then
+       ! hydrostatic model assumes physics does not change pressure
+       ! so assume T,PHI change, with P held fixed
+       ! ps_v will be adjusted after physics to conserve dry mass
+    else
+       rho_new = rho_dry*(1+qv)
+       Rstar = (Rgas+(Rwater_vapor-Rgas)*qv*rho_dry/rho_new)
+       p_pk = rho_new*Rstar*theta_kess
+       exner_kess = ( p_pk / p0)**( (Rgas/Cp) / ( 1 - (Rgas/Cp)))
+    endif
     T = exner_kess*theta_kess
 
     ! set dynamics forcing
