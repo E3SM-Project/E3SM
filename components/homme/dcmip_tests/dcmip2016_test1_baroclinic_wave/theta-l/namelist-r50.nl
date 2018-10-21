@@ -15,7 +15,7 @@
   tstep             = 150                       ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 7
-  rsplit            = 1                         ! r50 crashes with rsplit>1
+  rsplit            = 6                         ! r50 crashes with rsplit>1
   qsplit            = 1
   nu                = 1.1e14                      ! default= 1e15*(ne30/ne60)**3.2 = 1.1e14
   nu_s              = 1.1e14
@@ -26,7 +26,7 @@
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   moisture          = 'wet'
   theta_hydrostatic_mode = .false.
-  dcmip16_prec_type = 0                          ! 0=kessler physics
+  dcmip16_prec_type = 1                          ! 0=kessler physics
   dcmip16_pbl_type  = -1                         ! 0=reed-jablonowski pbl, -1 = none
 /
 &vert_nl

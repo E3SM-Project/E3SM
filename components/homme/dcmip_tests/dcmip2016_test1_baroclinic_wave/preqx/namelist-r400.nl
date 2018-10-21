@@ -25,7 +25,7 @@
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   moisture          = 'wet'
-  dcmip16_prec_type = 0                         ! 0=kessler physics
+  dcmip16_prec_type = 1                         ! 0=kessler physics
   dcmip16_pbl_type  = -1                        ! 0=reed-jablonowski pbl, -1 = none
 /
 &vert_nl
