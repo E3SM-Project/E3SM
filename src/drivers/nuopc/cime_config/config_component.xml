@@ -1213,13 +1213,19 @@
     <file>env_run.xml</file>
     <desc>atm domain file</desc>
   </entry>
-
   <entry id="ATM_DOMAIN_PATH">
     <type>char</type>
     <default_value>$DIN_LOC_ROOT/share/domains</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>path of atm domain file</desc>
+  </entry>
+  <entry id="ATM_DOMAIN_UGRID">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm ugrid file (full pathname)</desc>
   </entry>
 
   <entry id="LND_DOMAIN_FILE">
@@ -1229,13 +1235,19 @@
     <file>env_run.xml</file>
     <desc>lnd domain file</desc>
   </entry>
-
   <entry id="LND_DOMAIN_PATH">
     <type>char</type>
     <default_value>$DIN_LOC_ROOT/share/domains</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>path of lnd domain file</desc>
+  </entry>
+  <entry id="LND_DOMAIN_UGRID">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>lnd ugrid file (full pathname)</desc>
   </entry>
 
   <entry id="ROF_DOMAIN_FILE">
@@ -1245,13 +1257,19 @@
     <file>env_run.xml</file>
     <desc>rof domain file</desc>
   </entry>
-
   <entry id="ROF_DOMAIN_PATH">
     <type>char</type>
     <default_value>$DIN_LOC_ROOT/share/domains</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>path of rof domain file</desc>
+  </entry>
+  <entry id="ROF_DOMAIN_UGRID">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>rof ugrid file (full pathname)</desc>
   </entry>
 
   <entry id="WAV_DOMAIN_FILE">
@@ -1261,13 +1279,19 @@
     <file>env_run.xml</file>
     <desc>wav domain file</desc>
   </entry>
-
   <entry id="WAV_DOMAIN_PATH">
     <type>char</type>
     <default_value>$DIN_LOC_ROOT/share/domains</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>path of wav domain file</desc>
+  </entry>
+  <entry id="WAV_DOMAIN_UGRID">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>wav ugrid file (full pathname)</desc>
   </entry>
 
   <entry id="ICE_DOMAIN_FILE">
@@ -1277,13 +1301,19 @@
     <file>env_run.xml</file>
     <desc>ice domain file</desc>
   </entry>
-
   <entry id="ICE_DOMAIN_PATH">
     <type>char</type>
     <default_value>$DIN_LOC_ROOT/share/domains</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>path of ice domain file</desc>
+  </entry>
+  <entry id="ICE_DOMAIN_UGRID">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ice ugrid file (full pahtname)</desc>
   </entry>
 
   <entry id="OCN_DOMAIN_FILE">
@@ -1293,13 +1323,19 @@
     <file>env_run.xml</file>
     <desc>ocn domain file</desc>
   </entry>
-
   <entry id="OCN_DOMAIN_PATH">
     <type>char</type>
     <default_value>$DIN_LOC_ROOT/share/domains</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>path of ocn domain file</desc>
+  </entry>
+  <entry id="OCN_DOMAIN_UGRID">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn ugrid file (full pathname)</desc>
   </entry>
 
   <entry id="GLC_DOMAIN_FILE">
@@ -1309,13 +1345,19 @@
     <file>env_run.xml</file>
     <desc>glc domain file</desc>
   </entry>
-
   <entry id="GLC_DOMAIN_PATH">
     <type>char</type>
     <default_value>$DIN_LOC_ROOT/share/domains</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>path of glc domain file</desc>
+  </entry>
+  <entry id="GLC_DOMAIN_UGRID">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc ugrid file (full pathname)</desc>
   </entry>
 
   <!--- map files -->

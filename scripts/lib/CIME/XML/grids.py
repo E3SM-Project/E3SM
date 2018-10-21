@@ -38,7 +38,7 @@ class Grids(GenericXML):
 
         return gridnames
 
-    def get_grid_info(self, name, compset):
+    def get_grid_info(self, name, compset, driver):
         """
         Find the matching grid node
         """
@@ -65,7 +65,7 @@ class Grids(GenericXML):
         gridinfo["GRID"] = lname
 
         # determine domains given component_grids
-        domains  = self._get_domains(component_grids, atmlevregex, lndlevregex)
+        domains  = self._get_domains(component_grids, atmlevregex, lndlevregex, driver)
 
         gridinfo.update(domains)
 
@@ -199,7 +199,7 @@ class Grids(GenericXML):
         component_grids = gridRE.split(name)[1:]
         return component_grids
 
-    def _get_domains(self, component_grids, atmlevregex, lndlevregex):
+    def _get_domains(self, component_grids, atmlevregex, lndlevregex, driver):
         """ determine domains dictionary for config_grids.xml v2 schema"""
         # use component_grids to create grids dictionary
         # TODO: this should be in XML, not here
@@ -232,9 +232,9 @@ class Grids(GenericXML):
                 if not comp_name == "MASK":
                     domains[comp_name + "_NX"] = int(self.get_element_text("nx", root=domain_node))
                     domains[comp_name + "_NY"] = int(self.get_element_text("ny", root=domain_node))
+                    file_name  = comp_name + "_DOMAIN_FILE"
+                    path_name  = comp_name + "_DOMAIN_PATH"
 
-                    file_name = comp_name + "_DOMAIN_FILE"
-                    path_name = comp_name + "_DOMAIN_PATH"
                 domains[comp_name + "_GRID"] = grid_name
                 file_nodes = self.get_children("file", root=domain_node)
                 for file_node in file_nodes:
@@ -261,6 +261,13 @@ class Grids(GenericXML):
                         path = os.path.dirname(domain_name)
                         if len(path) > 0:
                             domains[path_name] = path
+
+                ugrid_nodes = self.get_children("ugrid", root=domain_node)
+                for ugrid_node in ugrid_nodes:
+                    driver_attrib = self.get(ugrid_node, "driver")
+                    if driver == driver_attrib:
+                        ugrid_name = comp_name + "_DOMAIN_UGRID"
+                        domains[ugrid_name] = self.text(ugrid_node)
         return domains
 
     def _get_gridmaps(self, component_grids):

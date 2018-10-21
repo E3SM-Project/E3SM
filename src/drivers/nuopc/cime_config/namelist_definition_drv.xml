@@ -996,87 +996,87 @@
     </values>
   </entry>
 
-  <entry id="gnam_atm" modify_via_xml="ATM_GRID">
+  <entry id="ugrid_atm" modify_via_xml="ATM_DOMAIN_UGRID">
     <type>char</type>
     <category>mapping</category>
-    <group>MED_attributes</group>
+    <group>ATM_attributes</group>
     <desc>
-      ATM_GRID values passed into driver.
+      UGRID description of atm grid
     </desc>
     <values>
-      <value>$ATM_GRID</value>
+      <value>$ATM_DOMAIN_UGRID</value>
     </values>
   </entry>
 
-  <entry id="gnam_lnd" modify_via_xml="LND_GRID">
+  <entry id="ugrid_lnd" modify_via_xml="LND_DOMAIN_UGRID">
     <type>char</type>
     <category>mapping</category>
-    <group>MED_attributes</group>
+    <group>LND_attributes</group>
     <desc>
-      LND_GRID values passed into driver.
+      UGRID description of lnd grid
     </desc>
     <values>
-      <value>$LND_GRID</value>
+      <value>$LND_DOMAIN_UGRID</value>
     </values>
   </entry>
 
-  <entry id="gnam_ocn" modify_via_xml="OCN_GRID">
+  <entry id="ugrid_ocn" modify_via_xml="OCN_DOMAIN_UGRID">
     <type>char</type>
     <category>mapping</category>
-    <group>MED_attributes</group>
+    <group>OCN_attributes</group>
     <desc>
-      OCN_GRID values passed into driver.
+      UGRID description of ocn grid
     </desc>
     <values>
-      <value>$OCN_GRID</value>
+      <value>$OCN_DOMAIN_UGRID</value>
     </values>
   </entry>
 
-  <entry id="gnam_ice" modify_via_xml="ICE_GRID">
+  <entry id="ugrid_ice" modify_via_xml="ICE_DOMAIN_UGRID">
     <type>char</type>
     <category>mapping</category>
-    <group>MED_attributes</group>
+    <group>ICE_attributes</group>
     <desc>
-      ICE_GRID values passed into driver.
+      UGRID description of ice grid
     </desc>
     <values>
-      <value>$ICE_GRID</value>
+      <value>$ICE_DOMAIN_UGRID</value>
     </values>
   </entry>
 
-  <entry id="gnam_rof" modify_via_xml="ROF_GRID">
+  <entry id="ugrid_rof" modify_via_xml="ROF_DOMAIN_UGRID">
     <type>char</type>
     <category>mapping</category>
-    <group>MED_attributes</group>
+    <group>ROF_attributes</group>
     <desc>
-      ROF_GRID values passed into driver.
+      UGRID description of rof grid
     </desc>
     <values>
-      <value>$ROF_GRID</value>
+      <value>$ROF_DOMAIN_UGRID</value>
     </values>
   </entry>
 
-  <entry id="gnam_glc" modify_via_xml="GLC_GRID">
+  <entry id="ugrid_glc" modify_via_xml="GLC_DOMAIN_UGRID">
     <type>char</type>
     <category>mapping</category>
-    <group>MED_attributes</group>
+    <group>GLC_attributes</group>
     <desc>
-      GLC_GRID values passed into driver.
+      UGRID description of glc grid
     </desc>
     <values>
-      <value>$GLC_GRID</value>
+      <value>$GLC_DOMAIN_UGRID</value>
     </values>
   </entry>
 
-  <entry id="gnam_wav" modify_via_xml="WAV_GRID">
+  <entry id="ugrid_wav" modify_via_xml="WAV_DOMAIN_UGRID">
     <type>char</type>
     <category>mapping</category>
-    <group>MED_attributes</group>
+    <group>WAV_attributes</group>
     <desc>
-      WAV_GRID values passed into driver.
+      UGRID description of wav grid
     </desc>
     <values>
-      <value>$WAV_GRID</value>
+      <value>$WAV_DOMAIN_UGRID</value>
     </values>
   </entry>
 

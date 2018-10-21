@@ -1081,6 +1081,7 @@
       <nx>72</nx> <ny>46</ny>
       <file grid="atm|lnd">domain.lnd.fv4x5_gx3v7.091218.nc</file>
       <file grid="ocnice">domain.ocn.4x5_gx3v7_100120.nc</file>
+      <ugrid driver="nuopc">$DIN_LOC_ROOT/share/domains_ugrid/fv4x5_050615_ugrid.nc</ugrid> 
       <desc>4x5 is FV 4-deg grid:</desc>
     </domain>
 

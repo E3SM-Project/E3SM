@@ -5,12 +5,13 @@ module datm_comp_mod
 
   ! !USES:
   use NUOPC                 , only : NUOPC_Advertise
-  use ESMF                  , only : ESMF_State, ESMF_SUCCESS
+  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State 
+  use ESMF                  , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
   use perf_mod              , only : t_startf, t_stopf
   use perf_mod              , only : t_adj_detailf, t_barrierf
   use mct_mod               , only : mct_rearr, mct_gsmap_lsize, mct_rearr_init, mct_gsmap, mct_ggrid
   use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
-  use mct_mod               , only : mct_avect_init, mct_avect_lsize, mct_avect_clean, mct_aVect
+  use mct_mod               , only : mct_avect_init, mct_avect_lsize, mct_avect_clean, mct_aVect, mct_gsmap_init
   use shr_const_mod         , only : SHR_CONST_SPVAL
   use shr_const_mod         , only : SHR_CONST_TKFRZ
   use shr_const_mod         , only : SHR_CONST_PI
@@ -28,7 +29,7 @@ module datm_comp_mod
   use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
   use shr_strdata_mod       , only : shr_strdata_setOrbs, shr_strdata_print, shr_strdata_restRead
   use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
-  use shr_dmodel_mod        , only : shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
+  use shr_dmodel_mod        , only : shr_dmodel_rearrGGrid
   use shr_dmodel_mod        , only : shr_dmodel_translate_list, shr_dmodel_translateAV_list
   use shr_nuopc_scalars_mod , only : flds_scalar_name
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
@@ -62,7 +63,11 @@ module datm_comp_mod
   ! Private data
   !--------------------------------------------------------------------------
 
-  character(len=3)           :: myModelName = 'atm'   ! user defined model name
+  type(mct_gsMap), target    :: gsMap_target
+  type(mct_gGrid), target    :: ggrid_target
+  type(mct_gsMap), pointer   :: gsMap
+  type(mct_gGrid), pointer   :: ggrid
+
   integer                    :: dbug = 1              ! debug level (higher is more)
   real(R8)                   :: tbotmax               ! units detector
   real(R8)                   :: tdewmax               ! units detector
@@ -447,11 +452,11 @@ contains
   !===============================================================================
 
   subroutine datm_comp_init(x2a, a2x, &
-       SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+       SDATM, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
        scmMode, scmlat, scmlon, &
        orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
-       calendar, modeldt, current_ymd, current_tod, current_mon, atm_prognostic)
+       calendar, modeldt, current_ymd, current_tod, current_mon, atm_prognostic, mesh)
 
     use dshr_nuopc_mod, only : dshr_fld_add
 
@@ -461,8 +466,6 @@ contains
     type(mct_aVect)        , intent(inout) :: x2a
     type(mct_aVect)        , intent(inout) :: a2x
     type(shr_strdata_type) , intent(inout) :: SDATM          ! model shr_strdata instance (output)
-    type(mct_gsMap)        , pointer       :: gsMap          ! model global sep map (output)
-    type(mct_gGrid)        , pointer       :: ggrid          ! model ggrid (output)
     integer(IN)            , intent(in)    :: mpicom         ! mpi communicator
     integer(IN)            , intent(in)    :: compid         ! mct comp id
     integer(IN)            , intent(in)    :: my_task        ! my task in mpi communicator mpicom
@@ -484,6 +487,7 @@ contains
     integer                , intent(in)    :: current_tod    ! model sec into model date
     integer                , intent(in)    :: current_mon    ! model month
     logical                , intent(in)    :: atm_prognostic ! if true, need x2a data
+    type(ESMF_Mesh)        , intent(inout) :: mesh  
 
     !--- local variables ---
     integer(IN)   :: n,k            ! generic counters
@@ -496,11 +500,19 @@ contains
     integer(IN)   :: nu             ! unit number
     integer(IN)   :: stepno         ! step number
 
+    type(ESMF_DistGrid)          :: distGrid
+    integer, allocatable, target :: gindex(:)
+    integer                      :: rc
+    integer                      :: ndim
+
     !--- formats ---
     character(*), parameter :: F00   ="('(datm_comp_init) ',8a)"
     character(*), parameter :: F05   ="('(datm_comp_init) ',a,2f10.4)"
     character(*), parameter :: subName ="(datm_comp_init)"
     !-------------------------------------------------------------------------------
+
+    gsmap => gsmap_target
+    ggrid => ggrid_target
 
     call t_startf('DATM_INIT')
 
@@ -547,17 +559,26 @@ contains
     call t_stopf('datm_strdata_init')
 
     !----------------------------------------------------------------------------
-    ! Initialize MCT global seg map, 1d decomp, gsmap
+    ! Initialize MCT global seg map for data component
     !----------------------------------------------------------------------------
 
     call t_startf('datm_initgsmaps')
     if (my_task == master_task) write(logunit,F00) ' initialize gsmaps'
 
-    ! create a data model global seqmap (gsmap) given the data model global grid sizes
-    ! NOTE: gsmap is initialized using the decomp read in from the datm_in namelist
-    ! (which by default is"1d")
-    call shr_dmodel_gsmapcreate(gsmap, SDATM%nxg*SDATM%nyg, compid, mpicom, decomp)
-    lsize = mct_gsmap_lsize(gsmap,mpicom)
+    ! create a data model global seqmap (gsmap) given the mesh
+    ! distgrid and the data model global grid sizes
+
+    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc) 
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    
+    call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    allocate(gindex(lsize))
+    call ESMF_distGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call mct_gsMap_init( gsmap, gindex, mpicom, compid, lsize, SDATM%nxg*SDATM%nyg)
+    deallocate(gindex)
 
     ! create a rearranger from the data model SDATM%gsmap to gsmap
     call mct_rearr_init(SDATM%gsmap, gsmap, mpicom, rearr)
@@ -740,8 +761,6 @@ contains
          x2a=x2a, &
          a2x=a2x, &
          SDATM=SDATM, &
-         gsmap=gsmap, &
-         ggrid=ggrid, &
          mpicom=mpicom, &
          compid=compid, &
          my_task=my_task, &
@@ -768,7 +787,7 @@ contains
   !===============================================================================
 
   subroutine datm_comp_run(x2a, a2x, &
-       SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+       SDATM, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, &
        orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
        write_restart, target_ymd, target_tod, target_mon, modeldt, calendar, &
@@ -780,8 +799,6 @@ contains
     type(mct_aVect)        , intent(inout) :: x2a
     type(mct_aVect)        , intent(inout) :: a2x
     type(shr_strdata_type) , intent(inout) :: SDATM
-    type(mct_gsMap)        , pointer       :: gsMap
-    type(mct_gGrid)        , pointer       :: ggrid
     integer(IN)            , intent(in)    :: mpicom           ! mpi communicator
     integer(IN)            , intent(in)    :: compid           ! mct comp id
     integer(IN)            , intent(in)    :: my_task          ! my task in mpi communicator mpicom
@@ -1372,7 +1389,7 @@ contains
     !----------------------------------------------------------------------------
 
     if (my_task == master_task) then
-       write(logunit,F04) trim(myModelName),': model date ', target_ymd,target_tod
+       write(logunit,F04) 'datm : model date ', target_ymd,target_tod
     end if
 
     firstcall = .false.

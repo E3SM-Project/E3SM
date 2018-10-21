@@ -27,16 +27,16 @@ module atm_comp_nuopc
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_Diagnose
-  use shr_nuopc_grid_mod    , only : shr_nuopc_grid_Meshinit
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
   use shr_strdata_mod       , only : shr_strdata_type
+  use shr_const_mod         , only : SHR_CONST_SPVAL
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax, fld_list_realize
   use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use datm_shr_mod          , only : datm_shr_read_namelists
   use datm_shr_mod          , only : iradsw, datm_shr_getNextRadCDay
   use datm_comp_mod         , only : datm_comp_init, datm_comp_run, datm_comp_advertise
-  use mct_mod
+  use mct_mod               , only : mct_Avect, mct_Avect_info 
 
   implicit none
   private ! except
@@ -52,17 +52,12 @@ module atm_comp_nuopc
   ! Private module data
   !--------------------------------------------------------------------------
 
-  integer                    :: fldsToAtm_num = 0
-  integer                    :: fldsFrAtm_num = 0
-  type (fld_list_type)       :: fldsToAtm(fldsMax)
-  type (fld_list_type)       :: fldsFrAtm(fldsMax)
+  integer                  :: fldsToAtm_num = 0
+  integer                  :: fldsFrAtm_num = 0
+  type (fld_list_type)     :: fldsToAtm(fldsMax)
+  type (fld_list_type)     :: fldsFrAtm(fldsMax)
 
-  character(len=3)         :: myModelName = 'atm'       ! user defined model name
   type(shr_strdata_type)   :: SDATM
-  type(mct_gsMap), target  :: gsMap_target
-  type(mct_gGrid), target  :: ggrid_target
-  type(mct_gsMap), pointer :: gsMap
-  type(mct_gGrid), pointer :: ggrid
   type(mct_aVect)          :: x2d
   type(mct_aVect)          :: d2x
   integer                  :: compid                    ! mct comp id
@@ -142,8 +137,10 @@ contains
   !===============================================================================
 
   subroutine InitializeAdvertise(gcomp, importState, exportState, clock, rc)
+
     use shr_nuopc_utils_mod, only : shr_nuopc_set_component_logging
     use shr_nuopc_utils_mod, only : shr_nuopc_get_component_instance
+
     type(ESMF_GridComp)  :: gcomp
     type(ESMF_State)     :: importState, exportState
     type(ESMF_Clock)     :: clock
@@ -265,11 +262,9 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    character(ESMF_MAXSTR)  :: convCIM, purpComp
-    type(ESMF_Grid)         :: Egrid
+    type(ESMF_Mesh)         :: Emesh
     type(ESMF_TIME)         :: currTime
     type(ESMF_TimeInterval) :: timeStep
-    type(ESMF_Mesh)         :: Emesh
     type(ESMF_Calendar)     :: esmf_calendar             ! esmf calendar
     type(ESMF_CalKind_Flag) :: esmf_caltype              ! esmf calendar type
     integer                 :: current_ymd               ! model date
@@ -286,15 +281,9 @@ contains
     integer                 :: shrlogunit                ! original log unit
     integer                 :: shrloglev                 ! original log level
     logical                 :: read_restart              ! start from restart
-    integer                 :: ierr                      ! error code
     logical                 :: scmMode = .false.         ! single column mode
     real(R8)                :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)                :: scmLon  = shr_const_SPVAL ! single column lon
-    logical                 :: connected                 ! is field connected?
-    integer                 :: lsize
-    integer                 :: iam
-    real(r8), pointer       :: lon(:),lat(:)
-    integer , pointer       :: gindex(:)
     real(R8)                :: orbEccen                  ! orb eccentricity (unit-less)
     real(R8)                :: orbMvelpp                 ! orb moving vernal eq (radians)
     real(R8)                :: orbLambm0                 ! orb mean long of perhelion (radians)
@@ -389,19 +378,24 @@ contains
 
     nextsw_cday = datm_shr_getNextRadCDay( current_ymd, current_tod, stepno, modeldt, iradsw, calendar )
 
+    !--------------------------------
+    ! Generate the mesh
+    !--------------------------------
+
+    call NUOPC_CompAttributeGet(gcomp, name='ugrid_atm', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    Emesh = ESMF_MeshCreate(filename=trim(cvalue), fileformat=ESMF_FILEFORMAT_UGRID, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     !----------------------------------------------------------------------------
     ! Initialize model
     !----------------------------------------------------------------------------
-
-    gsmap => gsmap_target
-    ggrid => ggrid_target
 
     call datm_comp_init(&
          x2a=x2d, &
          a2x=d2x, &
          SDATM=SDATM, &
-         gsmap=gsmap, &
-         ggrid=ggrid, &
          mpicom=mpicom, &
          compid=compid, &
          my_task=my_task,&
@@ -422,30 +416,8 @@ contains
          current_ymd=current_ymd, &
          current_tod=current_tod, &
          current_mon=current_mon, &
-         atm_prognostic=atm_prognostic)
-
-    !--------------------------------
-    ! Generate the mesh
-    !--------------------------------
-
-    nx_global = SDATM%nxg
-    ny_global = SDATM%nyg
-    lsize = mct_gsMap_lsize(gsMap, mpicom)
-    allocate(lon(lsize))
-    allocate(lat(lsize))
-    allocate(gindex(lsize))
-
-    call mpi_comm_rank(mpicom, iam, ierr)
-    call mct_gGrid_exportRattr(ggrid,'lon',lon,lsize)
-    call mct_gGrid_exportRattr(ggrid,'lat',lat,lsize)
-    call mct_gsMap_OrderedPoints(gsMap_target, iam, gindex)
-
-    call shr_nuopc_grid_MeshInit(gcomp, nx_global, ny_global, mpicom, gindex, lon, lat, Emesh, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    deallocate(lon)
-    deallocate(lat)
-    deallocate(gindex)
+         atm_prognostic=atm_prognostic, &
+         mesh=EMesh)
 
     !--------------------------------
     ! realize the actively coupled fields, now that a mesh is established
@@ -482,6 +454,8 @@ contains
     call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_a2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    nx_global = SDATM%nxg
+    ny_global = SDATM%nyg
     call shr_nuopc_methods_State_SetScalar(dble(nx_global),flds_scalar_index_nx, exportState, mpicom, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -644,8 +618,6 @@ contains
          x2a=x2d, &
          a2x=d2x, &
          SDATM=SDATM, &
-         gsmap=gsmap, &
-         ggrid=ggrid, &
          mpicom=mpicom, &
          compid=compid, &
          my_task=my_task, &
@@ -728,7 +700,7 @@ contains
     if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
     if (my_task == master_task) then
        write(logunit,F91)
-       write(logunit,F00) trim(myModelName),': end of main integration loop'
+       write(logunit,F00) 'datm : end of main integration loop'
        write(logunit,F91)
     end if
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
