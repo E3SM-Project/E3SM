@@ -317,7 +317,7 @@ contains
     integer , intent(in) :: nprimvars
     integer , intent(in) :: nr
     real(r8), intent(in) :: pscal(1:nprimvars)
-    real(r8), intent(in) :: spm_d
+    type(sparseMat_type), intent(in) :: spm_d
     real(r8), intent(out):: rscal(1:nr)
     ! !LOCAL VARIABLES:
     integer :: jj, ii, id
@@ -325,8 +325,8 @@ contains
     rscal(:)=1._r8
     do ii=1, spm_d%szrow
       do jj = 1, spm_d%ncol(ii)
-        id = spm%pB(ii)+jj-1
-        rscal(spm%icol(id)) = min(pscal(ii),rscal(spm%icol(id)))
+        id = spm_d%pB(ii)+jj-1
+        rscal(spm_d%icol(id)) = min(pscal(ii),rscal(spm_d%icol(id)))
       enddo
     enddo
 
@@ -369,11 +369,13 @@ contains
 
   integer :: it
   real(r8) :: rscal(nreactions)
+  real(r8) :: pscal(nvars)
   real(r8) :: d_dt(nvars)
   real(r8) :: p_dt(nvars)
   integer :: errinfo
   type(lom_type) :: lom
-
+  logical :: lneg
+  integer, parameter :: itmax=40
   it=0
   rscal=0._r8
   do
@@ -392,8 +394,10 @@ contains
       call endrun(msg='ERROR:: in spm_axpy '//errMsg(__FILE__, __LINE__))
     endif
     call lom%calc_state_pscal(spm_d%szrow, dtime, ystates, p_dt,  d_dt, &
-      pscal, lneg)
-
+      pscal, lneg, errinfo)
+    if(errinfo<0)then
+      call endrun(msg='ERROR:: in calc_state_pscal '//errMsg(__FILE__, __LINE__))
+    endif
     if(lneg .and. it<=itmax)then
       call lom%calc_reaction_rscal(spm_d%szrow, spm_d%szcol,  pscal, &
         spm_d,rscal)

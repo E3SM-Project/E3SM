@@ -7,8 +7,12 @@ module PhenologyFLuxLimitMod
 ! The current implementation does not use sparse
 ! matrix, future version should consider this possibility.
 
-  use LSparseMatMod, only : sparseMat_type, flux_correction
-
+  use LSparseMatMod               , only : sparseMat_type, flux_correction,spm_list_type
+  use shr_kind_mod                , only : r8 => shr_kind_r8
+  use VegetationType              , only : veg_pp
+  use VegetationPropertiesType    , only : veg_vp
+  use clm_time_manager            , only : get_step_size
+  use pftvarcon                   , only : npcropmin
 implicit none
   private
 #define mov(a,b) a=b
@@ -42,6 +46,7 @@ implicit none
   integer :: f_cpool_to_leafc
   integer :: f_cpool_to_leafc_storage
   integer :: f_cpool_to_frootc
+  integer :: f_cpool_to_frootc_storage
   integer :: f_cpool_to_xsmrpool
   integer :: f_cpool_to_gresp_storage
   integer :: f_cpool_to_ar
@@ -100,17 +105,23 @@ implicit none
   integer :: s_retransn
   integer :: s_grainn
   integer :: s_grainn_xfer
+  integer :: s_grainn_storage
 
   integer :: f_npool_to_leafn
+  integer :: f_npool_to_leafn_storage
   integer :: f_npool_to_frootn
+  integer :: f_npool_to_frootn_storage
   integer :: f_npool_to_livestemn_storage
   integer :: f_npool_to_liverootn_storage
   integer :: f_npool_to_livestemn
   integer :: f_npool_to_livecrootn
+  integer :: f_npool_to_livecrootn_storage
   integer :: f_npool_to_deadstemn
   integer :: f_npool_to_deadcrootn
   integer :: f_npool_to_deadstemn_storage
   integer :: f_npool_to_deadcrootn_storage
+  integer :: f_npool_to_grainn
+  integer :: f_npool_to_grainn_storage
   integer :: f_leafn_to_retransn
   integer :: f_leafn_to_litter
   integer :: f_leafn_xfer_to_leafn
@@ -135,6 +146,7 @@ implicit none
   integer :: f_grainn_xfer_to_grainn
   integer :: f_grainn_to_food
   integer :: f_retransn_to_npool
+  integer :: f_supplement_to_sminn_surf
   integer :: n_carbon_fluxes
   integer :: n_nutrient_fluxes
   integer :: n_carbon_states
@@ -150,7 +162,7 @@ contains
 
   implicit none
   integer, intent(inout) :: id
-  integer :: id
+  integer :: ans
   id=id+1
   ans=id
   end function ic_next
@@ -445,8 +457,8 @@ contains
   call spm_list_insert(spm_list, 1._r8, f_livecrootn_xfer_to_livecrootn  , s_livecrootn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_livecrootn_storage_to_xfer     , s_livecrootn_xfer,nelms)
   call spm_list_insert(spm_list, 1._r8, f_npool_to_livecrootn_storage    , s_livecrootn_storage, nelms)
-  call spm_list_insert(spm_list, 1._r8, f_npool_to_deadcrootn            , s_deadcrootn, nelms
-  call spm_list_insert(spm_list, 1._r8, f_livecrootn_to_deadcrootn       , s_deadcrootn, nelms))
+  call spm_list_insert(spm_list, 1._r8, f_npool_to_deadcrootn            , s_deadcrootn, nelms)
+  call spm_list_insert(spm_list, 1._r8, f_livecrootn_to_deadcrootn       , s_deadcrootn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_deadcrootn_xfer_to_deadcrootn  , s_deadcrootn,nelms)
   call spm_list_insert(spm_list, 1._r8, f_deadcrootn_storage_to_xfer     , s_deadcrootn_xfer,nelms)
   call spm_list_insert(spm_list, 1._r8, f_npool_to_deadcrootn_storage    , s_deadcrootn_storage, nelms)
@@ -470,7 +482,16 @@ contains
       phosphorusflux_vars, phosphorusstate_vars)
 
     use decompMod           , only : bounds_type
+    use CropType                  , only : crop_type
+    use CNStateType               , only : cnstate_type
+    use CNCarbonFluxType          , only : carbonflux_type
+    use CNCarbonStateType         , only : carbonstate_type
+    use CNNitrogenFluxType        , only : nitrogenflux_type
+    use CNNitrogenStateType       , only : nitrogenstate_type
+    use PhosphorusFluxType        , only : phosphorusflux_type
+    use PhosphorusStateType       , only : phosphorusstate_type
 
+    implicit none
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
@@ -511,7 +532,9 @@ contains
       carbonflux_vars, carbonstate_vars)
 
     use decompMod           , only : bounds_type
-
+    use CropType                  , only : crop_type
+    use CNCarbonFluxType          , only : carbonflux_type
+    use CNCarbonStateType         , only : carbonstate_type
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
@@ -526,6 +549,8 @@ contains
   real(r8) :: ystates(n_carbon_states)
   real(r8) :: rfluxes(n_carbon_fluxes)
   real(r8) :: rscal
+  real(r8) :: dt
+  real(r8) :: ar_p
   associate(                                                    &
          ivt                   =>    veg_pp%itype             , & ! Input:  [integer  (:)     ]  pft vegetation type
          woody                 =>    veg_vp%woody             , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
@@ -741,7 +766,10 @@ contains
       nitrogenflux_vars, nitrogenstate_vars)
 
     use decompMod           , only : bounds_type
-
+    use CNStateType               , only : cnstate_type
+    use CNNitrogenFluxType        , only : nitrogenflux_type
+    use CNNitrogenStateType       , only : nitrogenstate_type
+    implicit none
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
@@ -755,7 +783,7 @@ contains
   integer :: fp, p
   real(r8) :: ystates(n_nutrient_states)
   real(r8) :: rfluxes(n_nutrient_fluxes)
-
+  real(r8) :: dt
   associate(                                                       &
          ivt                   => veg_pp%itype                   , & ! Input:  [integer  (:)     ]  pft vegetation type
          woody                 => veg_vp%woody                   , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
@@ -919,7 +947,10 @@ contains
       phosphorusflux_vars, phosphorusstate_vars)
 
     use decompMod           , only : bounds_type
-
+    use CNStateType               , only : cnstate_type
+    use PhosphorusFluxType        , only : phosphorusflux_type
+    use PhosphorusStateType       , only : phosphorusstate_type
+    implicit none
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
@@ -969,6 +1000,7 @@ contains
       mov(ystates(s_deadcrootn)          , ps%deadcrootp_patch(p))
       mov(ystates(s_deadcrootn_xfer)     , ps%deadcrootp_xfer_patch(p))
       mov(ystates(s_deadcrootn_storage)  , ps%deadcrootp_storage_patch(p))
+    endif
     if (ivt(p) >= npcropmin) then
       mov(ystates(s_grainn)              , ps%grainp_patch(p))
       mov(ystates(s_grainn_xfer)         , ps%grainp_xfer_patch(p))
@@ -977,7 +1009,7 @@ contains
       mov(ystates(s_livestemn_xfer)      , ps%livestemp_xfer_patch(p))
       mov(ystates(s_livestemn_storage)   , ps%livestemp_storage_patch(p))
     endif
-    mov(ystates(s_retransn)              = ps%retransp_patch(p))
+    mov(ystates(s_retransn)              , ps%retransp_patch(p))
 
     rfluxes(:) = 0._r8
     !assemble reactive fluxes
