@@ -163,8 +163,8 @@ module li_iceshelf_melt
            bmlt_float_z0 = -100._RKIND              ! scale for ice draft (m)
                                                     ! MISMIP+ default value = -100 m
 
-      real(kind=RKIND) :: meanGLdepth, meanCFdepth ! ice shelf draft stats needed by the temperature_profile method:
-                                                   ! mean grounding line depth, mean calving front depth
+      real(kind=RKIND) :: GLdepth, CFdepth ! ice shelf draft stats needed by the temperature_profile method:
+                                           ! characteristic grounding line depth, calving front depth
 
 
       err = 0
@@ -212,10 +212,10 @@ module li_iceshelf_melt
       ! The temp-profile method needs a global reduction before it can operate, so do that here
       ! before the main option block
       if (trim(config_basal_mass_bal_float) == 'temperature_profile') then
-         call calc_iceshelf_draft_info(domain, meanGLdepth, meanCFdepth, err_tmp)
+         call calc_iceshelf_draft_info(domain, GLdepth, CFdepth, err_tmp)
          err = ior(err, err_tmp)
          if (config_print_thermal_info) then
-            call mpas_log_write('meanGLdepth=$r, meanCFdepth=$r', realArgs=(/meanGLdepth, meanCFdepth/))
+            call mpas_log_write('GLdepth=$r, CFdepth=$r', realArgs=(/GLdepth, CFdepth/))
          endif
       endif
 
@@ -344,7 +344,7 @@ module li_iceshelf_melt
 
             call iceshelf_melt_param_from_temp_profile(nCellsSolve, lowerSurface, cellMask, &
                     config_sea_level, config_ice_density, config_print_thermal_info, &
-                    meanGLdepth, meanCFdepth, floatingBasalMassBal, err_tmp)
+                    GLdepth, CFdepth, floatingBasalMassBal, err_tmp)
             err = ior(err, err_tmp)
 
          else
@@ -706,15 +706,19 @@ module li_iceshelf_melt
 !
 !  !  routine calc_iceshelf_draft_info
 !
-!> \brief Calculate mean grounding line and calving front depths underneath ice shelves
+!> \brief Calculate characteristic grounding line and calving front depths underneath ice shelves
 !> \author Matthew Hoffman
 !> \date   October 2018
-!> \details The mean grounding line and calving front depths are used by the
+!> \details Grounding line and calving front depths are used by the
 !> temperature_profile iceshelf melt method, but must be calculated before the
 !> method is called because they require a global reduce.
+!> Different options for how to calculated these depths could be implemented.
+!> For the GL depth, an approximation of the mean depth of deepest 10% of the
+!> grounding line is used.  For the CF depth, the mean of the calving front
+!> is used.
 !-----------------------------------------------------------------------
 
-    subroutine calc_iceshelf_draft_info(domain, meanGLdepth, meanCFdepth, err)
+    subroutine calc_iceshelf_draft_info(domain, GLdepth, CFdepth, err)
 
       !-----------------------------------------------------------------
       ! input variables
@@ -725,8 +729,8 @@ module li_iceshelf_melt
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
-      real (kind=RKIND), intent(out) :: meanGLdepth !< mean grounding line depth
-      real (kind=RKIND), intent(out) :: meanCFdepth !< mean calving front depth
+      real (kind=RKIND), intent(out) :: GLdepth !< mean grounding line depth
+      real (kind=RKIND), intent(out) :: CFdepth !< mean calving front depth
       integer, intent(out) :: err
 
       !-----------------------------------------------------------------
@@ -743,6 +747,9 @@ module li_iceshelf_melt
       logical, pointer :: &
            config_print_thermal_info   ! if true, print debug info
 
+      real(kind=RKIND), pointer :: &
+           config_sea_level ! sea level (m) relative to z = 0
+
       integer, dimension(:), pointer :: &
            cellMask                    ! bit mask describing whether ice is floating, dynamically active, etc.
 
@@ -752,13 +759,34 @@ module li_iceshelf_melt
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnCell
 
-      real(kind=RKIND) :: sumGLdepth, sumGLarea
       real(kind=RKIND) :: sumCFdepth, sumCFarea
-      real(kind=RKIND) :: minGLdepth
       integer :: iCell, jCell
-      real(kind=RKIND), dimension(4) :: localSums, globalSums
+      real(kind=RKIND), dimension(2) :: localCFSums, globalCFSums ! Vars for CF global reduction
+
+      real(kind=RKIND), parameter :: binWidth = 10.0_RKIND !< width of depth bins in meters
+      real(kind=RKIND), parameter :: binMinimum = -4000.0_RKIND !< depth of bottom of deepest bin in meters
+      integer, parameter :: nBinsMax = 500 !< Maximum possible number of bins - needs to be set to cover the range 
+                                        !< defined by the previous two variables and sea level (which is run-time configurable)
+      integer :: nBins !< number of bins - calculated below
+      real(kind=RKIND), dimension(nBinsMax) :: binDepth !< depth in m at bottom of each bin
+      real(kind=RKIND), dimension(nBinsMax) :: binWeightSum !< sum of cell weights in this bin
+      real(kind=RKIND), dimension(nBinsMax) :: binWeightedDepthSum !< weighted-depth sum over cells in this bin
+      real(kind=RKIND), dimension(2*nBinsMax) :: localGLSums, globalGLSums ! Vars for GL global reduction
+      real(kind=RKIND) :: cumBinWeightedDepthSum, cumBinWeightSum !< cumulative sums over bins for final calculation
+      real(kind=RKIND) :: totalBinWeight !< sum of weights in all bins
+      real(kind=RKIND), parameter :: weightThreshold = 0.10_RKIND !< fraction of deepest GL depths to average overn
+
+      integer :: indexBin
+
 
       err = 0
+
+      ! need to first determine bin info (could happen on init, but cheap to recompute each timestep)
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+      nBins = ceiling((config_sea_level - binMinimum) / binWidth)  ! round up
+      do indexBin = 1, nBins
+         binDepth = binMinimum + real(indexBin-1, kind=RKIND) * binWidth ! calc. lower limit of each bin
+      enddo
 
       ! Calculate average GL and CF depths on this processor, looping over blocks.
       ! Note that these are somewhat approximate calculations.
@@ -773,11 +801,11 @@ module li_iceshelf_melt
       ! assign to edges), so I instead use cell area weighted averages.
       ! The GL and CF depths do not need to be highly accurate, so these approximations
       ! are assumed to be fine.
-      sumGLdepth = 0.0_RKIND
-      sumGLarea = 0.0_RKIND
+      binWeightSum(:) = 0.0_RKIND
+      binWeightedDepthSum(:) = 0.0_RKIND
       sumCFdepth = 0.0_RKIND
       sumCFarea = 0.0_RKIND
-      minGLdepth = 0.0_RKIND
+      ! init bins for GL calcs
       ! block loop
       block => domain % blocklist
       do while (associated(block))
@@ -791,19 +819,36 @@ module li_iceshelf_melt
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
          do iCell = 1, nCellsSolve
+            ! First calc. GL stat
             if (li_mask_is_floating_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell))) then
                ! See if a neighbor is grounded ice
                do jCell = 1, nEdgesOnCell(iCell)
-                  if (li_mask_is_grounded_ice(cellMask(cellsOnCell(jCell, iCell)))) then
-                     ! we found the first floating cell
-                     sumGLdepth = sumGLdepth + lowerSurface(iCell) * areaCell(iCell)
-                     sumGLarea = sumGLarea + areaCell(iCell)
+                  if (li_mask_is_grounded_ice(cellMask(cellsOnCell(jCell, iCell)))) then ! we found the first floating cell
+                     ! check for reasonable values first
+                     if (lowerSurface(iCell) < binMinimum) then
+                        call mpas_log_write("calc_iceshelf_draft_info found a grounding line depth below the minimum search depth of $r."&
+                                // "  Adjust binMinimum and related parameters and recompile.", MPAS_LOG_ERR, realArgs = (/binMinimum/))
+                        err = ior(err, 1)
+                        return
+                     elseif (lowerSurface(iCell) > config_sea_level) then
+                        call mpas_log_write("calc_iceshelf_draft_info found a grounding line depth above sea level."&
+                                // "  Adjust hard-coded parameters and recompile.", MPAS_LOG_ERR)
+                        err = ior(err, 1)
+                        return
+                     endif
+                     ! Find which bin this location falls in
+                     indexBin = floor((lowerSurface(iCell) - binMinimum) / binWidth) + 1
+
+
+                     ! Use the sqrt of cell area as the weighting function (it should be a linear measure, not an area measure)
+                     binWeightedDepthSum(indexBin) = binWeightedDepthSum(indexBin) + lowerSurface(iCell) * sqrt(areaCell(iCell))
+                     binWeightSum(indexBin) = binWeightSum(indexBin) + sqrt(areaCell(iCell))
                      !call mpas_log_write("GL cell: $i, $r, $r", intArgs=(/iCell/), realArgs=(/lowerSurface(iCell), areaCell(iCell)/))
-                     minGLdepth = min(minGLdepth, lowerSurface(iCell))
                      exit  ! skip the rest of the loop around neighbors
                   endif
                enddo
             endif
+            ! Now calc. CF stat
             if (li_mask_is_floating_ice(cellMask(iCell)) .and. li_mask_is_dynamic_margin(cellMask(iCell))) then
                ! accumulate area-weighted CF depth and area
                sumCFdepth = sumCFdepth + lowerSurface(iCell) * areaCell(iCell)
@@ -814,23 +859,43 @@ module li_iceshelf_melt
          block => block % next
       enddo   ! associated(block)
 
-      ! fill array so we only need one global reduce
-      localSums = (/sumGLdepth, sumGLarea, sumCFdepth, sumCFarea/)
-      ! sum up over all procs
-      call mpas_dmpar_sum_real_array(domain % dminfo, 4, localSums(:), globalSums(:))
-      ! Calculate average values
-      !if (globalSums(2) > 0.0_RKIND) then
-      !   meanGLdepth = globalSums(1) / globalSums(2)
-      !else
-      !   meanGLdepth = 0.0_RKIND
-      !endif
-      if (globalSums(4) > 0.0_RKIND) then
-         meanCFdepth = globalSums(3) / globalSums(4)
+      ! --- Global reduction for GL stat ---
+      ! pack communication array
+      localGLSums(1:nBins) = binWeightedDepthSum(1:nBins)
+      localGLSums(nBins+1:2*nBins) = binWeightSum(1:nBins)
+      ! global reduction
+      call mpas_dmpar_sum_real_array(domain % dminfo, 2*nBins, localGLSums(:), globalGLSums(:))
+      ! unpack communication array
+      binWeightedDepthSum(1:nBins) = globalGLSums(1:nBins)
+      binWeightSum(1:nBins) = globalGLSums(nBins+1:2*nBins)
+      ! sum up through bins until threshold is reached
+      totalBinWeight = sum(binWeightSum(1:nBins))
+      if (totalBinweight > 0.0_RKIND) then
+         cumBinWeightedDepthSum = 0.0_RKIND
+         cumBinWeightSum = 0.0_RKIND
+         do indexBin = 1, nBins
+            cumBinWeightedDepthSum = cumBinWeightedDepthSum + binWeightedDepthSum(indexBin)
+            cumBinWeightSum = cumBinWeightSum + binWeightSum(indexBin)
+            ! check if we've reached threshold
+            if (cumBinWeightSum / totalBinweight > weightThreshold) then
+               ! We reached the desired threshold of deepest samples.  Make final calculation and quit.
+               GLdepth = cumBinWeightedDepthSum / cumBinWeightSum
+               exit  ! skip the rest of the loop over bins
+            endif
+         enddo
       else
-         meanCFdepth = 0.0_RKIND
+              ! Most likely situation: no GL!  So do nothing.
       endif
 
-      call mpas_dmpar_min_real(domain % dminfo, minGLdepth, meanGLdepth)  !sticking it into 'meanGLdepth'
+      ! --- Global reduction for CF stat ---
+      localCFSums = (/sumCFdepth, sumCFarea/)
+      ! sum up over all procs
+      call mpas_dmpar_sum_real_array(domain % dminfo, 2, localCFSums(:), globalCFSums(:))
+      if (globalCFSums(2) > 0.0_RKIND) then
+         CFdepth = globalCFSums(1) / globalCFSums(2)
+      else
+         CFdepth = 0.0_RKIND
+      endif
 
     end subroutine calc_iceshelf_draft_info
 !-----------------------------------------------------------------------
