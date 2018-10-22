@@ -1458,9 +1458,10 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
   //import fields
   for (int index = 0; index < nVertices; index++) {
     int iCell = vertexToFCell[index];
-    thicknessData[index] = std::max(thickness_F[iCell] / unit_length, eps);
+    thicknessData[index] = std::max(thickness_F[iCell] / unit_length, eps * 3.0);
     bedTopographyData[index] = bedTopography_F[iCell] / unit_length;
-    elevationData[index] = lowerSurface_F[iCell] / unit_length + thicknessData[index];
+    elevationData[index] = std::max( lowerSurface_F[iCell] / unit_length + thicknessData[index],
+                    (rho_ocean / rho_ice - 1.0) * thicknessData[index]);
     if (beta_F != 0)
       betaData[index] = beta_F[iCell] / unit_length;
     if (smb_F != 0)
@@ -1555,6 +1556,7 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
             if (std::find(dirichletNodesIDs.begin(), dirichletNodesIDs.end(), iV*vertexLayerShift) == dirichletNodesIDs.end()) { // Don't do this if location is a Dirichlet node!
                //std::cout<<"  non-floating boundary below sea level node is Dirichlet so skipping. iV="<<iV<<std::endl;
             } else {
+               //std::cout<<"  non-floating boundary below sea level node is NOT Dirichlet so continuing. iV="<<iV<<std::endl;
             //for (int i = 0; i < dirichletNodesIDs.size(); i++)
             //            std::cout << dirichletNodesIDs.at(i) << ' ';  // print entire list of Diri nodes for debugging.
             thicknessData[iV] = eps*2.0; // insert special small value here to make identifying these points easier in exo output
