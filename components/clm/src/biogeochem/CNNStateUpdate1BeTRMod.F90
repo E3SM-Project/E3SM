@@ -151,33 +151,34 @@ contains
          ! deployment from retranslocation pool
          ns%npool_patch(p)    = ns%npool_patch(p)    + nf%retransn_to_npool_patch(p)*dt
          ns%retransn_patch(p) = ns%retransn_patch(p) - nf%retransn_to_npool_patch(p)*dt
-         nflx_tmp=0._r8; nflx_scalar=1._r8
-         nflx_tmp = nflx_tmp + nf%npool_to_leafn_patch(p)*dt
-         nflx_tmp = nflx_tmp + nf%npool_to_leafn_storage_patch(p)*dt
-         nflx_tmp = nflx_tmp + nf%npool_to_frootn_patch(p)*dt
-         nflx_tmp = nflx_tmp + nf%npool_to_frootn_storage_patch(p)*dt
-         if (woody(ivt(p)) == 1._r8) then
-            nflx_tmp = nflx_tmp + nf%npool_to_livestemn_patch(p)*dt
-            nflx_tmp = nflx_tmp + nf%npool_to_livestemn_storage_patch(p)*dt
-            nflx_tmp = nflx_tmp + nf%npool_to_deadstemn_patch(p)*dt
-            nflx_tmp = nflx_tmp + nf%npool_to_deadstemn_storage_patch(p)*dt
-            nflx_tmp = nflx_tmp + nf%npool_to_livecrootn_patch(p)*dt
-            nflx_tmp = nflx_tmp + nf%npool_to_livecrootn_storage_patch(p)*dt
-            nflx_tmp = nflx_tmp + nf%npool_to_deadcrootn_patch(p)*dt
-            nflx_tmp = nflx_tmp + nf%npool_to_deadcrootn_storage_patch(p)*dt
-         endif
-         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
-            nflx_tmp = nflx_tmp + nf%npool_to_livestemn_patch(p)*dt
-            nflx_tmp = nflx_tmp + nf%npool_to_livestemn_storage_patch(p)*dt
-            nflx_tmp = nflx_tmp + nf%npool_to_grainn_patch(p)*dt
-            nflx_tmp = nflx_tmp + nf%npool_to_grainn_storage_patch(p)*dt
-         endif
-         if (ns%npool_patch(p) < nflx_tmp)then
-           if(nflx_tmp>0._r8)then
-             nflx_scalar = max(ns%npool_patch(p)/nflx_tmp,1._r8)*0.9999_r8
-           else
-             nflx_scalar = 0._r8
-           endif
+         !nflx_tmp=0._r8;
+         nflx_scalar=1._r8
+         !nflx_tmp = nflx_tmp + nf%npool_to_leafn_patch(p)*dt
+         !nflx_tmp = nflx_tmp + nf%npool_to_leafn_storage_patch(p)*dt
+         !nflx_tmp = nflx_tmp + nf%npool_to_frootn_patch(p)*dt
+         !nflx_tmp = nflx_tmp + nf%npool_to_frootn_storage_patch(p)*dt
+         !if (woody(ivt(p)) == 1._r8) then
+        !    nflx_tmp = nflx_tmp + nf%npool_to_livestemn_patch(p)*dt
+        !    nflx_tmp = nflx_tmp + nf%npool_to_livestemn_storage_patch(p)*dt
+        !    nflx_tmp = nflx_tmp + nf%npool_to_deadstemn_patch(p)*dt
+        !    nflx_tmp = nflx_tmp + nf%npool_to_deadstemn_storage_patch(p)*dt
+        !    nflx_tmp = nflx_tmp + nf%npool_to_livecrootn_patch(p)*dt
+        !    nflx_tmp = nflx_tmp + nf%npool_to_livecrootn_storage_patch(p)*dt
+        !    nflx_tmp = nflx_tmp + nf%npool_to_deadcrootn_patch(p)*dt
+        !    nflx_tmp = nflx_tmp + nf%npool_to_deadcrootn_storage_patch(p)*dt
+         !endif
+         !if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+          !  nflx_tmp = nflx_tmp + nf%npool_to_livestemn_patch(p)*dt
+        !    nflx_tmp = nflx_tmp + nf%npool_to_livestemn_storage_patch(p)*dt
+        !    nflx_tmp = nflx_tmp + nf%npool_to_grainn_patch(p)*dt
+        !    nflx_tmp = nflx_tmp + nf%npool_to_grainn_storage_patch(p)*dt
+        ! endif
+        ! if (ns%npool_patch(p) < nflx_tmp)then
+        !   if(nflx_tmp>0._r8)then
+        !     nflx_scalar = max(ns%npool_patch(p)/nflx_tmp,1._r8)*0.9999_r8
+        !   else
+        !     nflx_scalar = 0._r8
+        !   endif
            nf%npool_to_leafn_patch(p) = nf%npool_to_leafn_patch(p)*nflx_scalar
            nf%npool_to_leafn_storage_patch(p) = nf%npool_to_leafn_storage_patch(p)*nflx_scalar
            nf%npool_to_frootn_patch(p) = nf%npool_to_frootn_patch(p)*nflx_scalar
@@ -218,7 +219,7 @@ contains
             ns%livecrootn_storage_patch(p) = ns%livecrootn_storage_patch(p) + nf%npool_to_livecrootn_storage_patch(p)*dt
             ns%deadcrootn_patch(p)         = ns%deadcrootn_patch(p)         + nf%npool_to_deadcrootn_patch(p)*dt
             ns%deadcrootn_storage_patch(p) = ns%deadcrootn_storage_patch(p) + nf%npool_to_deadcrootn_storage_patch(p)*dt
-        
+
             ns%npool_patch(p) = ns%npool_patch(p) - nf%npool_to_livestemn_patch(p)*dt
             ns%npool_patch(p) = ns%npool_patch(p) - nf%npool_to_livestemn_storage_patch(p)*dt
             ns%npool_patch(p) = ns%npool_patch(p) - nf%npool_to_deadstemn_patch(p)*dt

@@ -177,7 +177,8 @@ contains
             cs%grainc_patch(p)     = cs%grainc_patch(p)     - cf%grainc_to_food_patch(p)*dt
          end if
 
-         cflx_tmp=0._r8; cflx_scalar=1._r8
+         !cflx_tmp=0._r8;
+         cflx_scalar=1._r8
          ! maintenance respiration fluxes from cpool
          cs%cpool_patch(p) = cs%cpool_patch(p) - cf%leaf_curmr_patch(p)*dt
          cs%cpool_patch(p) = cs%cpool_patch(p) - cf%froot_curmr_patch(p)*dt
@@ -217,38 +218,39 @@ contains
            cs%cpool_patch(p) = cs%cpool_patch(p) - cf%cpool_livestem_storage_gr_patch(p)*dt
            cs%cpool_patch(p) = cs%cpool_patch(p) - cf%cpool_grain_storage_gr_patch(p)*dt
          end if
-         cflx_tmp = cflx_tmp + cf%cpool_to_xsmrpool_patch(p)*dt
-         cflx_tmp = cflx_tmp + cf%cpool_to_leafc_patch(p)*dt
-         cflx_tmp = cflx_tmp + cf%cpool_to_leafc_storage_patch(p)*dt
-         cflx_tmp = cflx_tmp + cf%cpool_to_frootc_patch(p)*dt
-         cflx_tmp = cflx_tmp + cf%cpool_to_frootc_storage_patch(p)*dt
-         if (woody(ivt(p)) == 1._r8) then
-            cflx_tmp = cflx_tmp + cf%cpool_to_livestemc_patch(p)*dt
-            cflx_tmp = cflx_tmp + cf%cpool_to_livestemc_storage_patch(p)*dt
-            cflx_tmp = cflx_tmp + cf%cpool_to_deadstemc_patch(p)*dt
-            cflx_tmp = cflx_tmp + cf%cpool_to_deadstemc_storage_patch(p)*dt
-            cflx_tmp = cflx_tmp + cf%cpool_to_livecrootc_patch(p)*dt
-            cflx_tmp = cflx_tmp + cf%cpool_to_livecrootc_storage_patch(p)*dt
-            cflx_tmp = cflx_tmp + cf%cpool_to_deadcrootc_patch(p)*dt
-            cflx_tmp = cflx_tmp + cf%cpool_to_deadcrootc_storage_patch(p)*dt
-         end if
-         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
-            cflx_tmp = cflx_tmp + cf%cpool_to_livestemc_patch(p)*dt
-            cflx_tmp = cflx_tmp + cf%cpool_to_livestemc_storage_patch(p)*dt
-            cflx_tmp = cflx_tmp + cf%cpool_to_grainc_patch(p)*dt
-            cflx_tmp = cflx_tmp + cf%cpool_to_grainc_storage_patch(p)*dt
-         end if
+
+         !cflx_tmp = cflx_tmp + cf%cpool_to_xsmrpool_patch(p)*dt
+         !cflx_tmp = cflx_tmp + cf%cpool_to_leafc_patch(p)*dt
+         !cflx_tmp = cflx_tmp + cf%cpool_to_leafc_storage_patch(p)*dt
+         !cflx_tmp = cflx_tmp + cf%cpool_to_frootc_patch(p)*dt
+         !cflx_tmp = cflx_tmp + cf%cpool_to_frootc_storage_patch(p)*dt
+         !if (woody(ivt(p)) == 1._r8) then
+        !    cflx_tmp = cflx_tmp + cf%cpool_to_livestemc_patch(p)*dt
+        !    cflx_tmp = cflx_tmp + cf%cpool_to_livestemc_storage_patch(p)*dt
+        !    cflx_tmp = cflx_tmp + cf%cpool_to_deadstemc_patch(p)*dt
+        !    cflx_tmp = cflx_tmp + cf%cpool_to_deadstemc_storage_patch(p)*dt
+        !    cflx_tmp = cflx_tmp + cf%cpool_to_livecrootc_patch(p)*dt
+        !    cflx_tmp = cflx_tmp + cf%cpool_to_livecrootc_storage_patch(p)*dt
+        !    cflx_tmp = cflx_tmp + cf%cpool_to_deadcrootc_patch(p)*dt
+        !    cflx_tmp = cflx_tmp + cf%cpool_to_deadcrootc_storage_patch(p)*dt
+        ! end if
+        ! if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+        !    cflx_tmp = cflx_tmp + cf%cpool_to_livestemc_patch(p)*dt
+        !    cflx_tmp = cflx_tmp + cf%cpool_to_livestemc_storage_patch(p)*dt
+        !    cflx_tmp = cflx_tmp + cf%cpool_to_grainc_patch(p)*dt
+        !    cflx_tmp = cflx_tmp + cf%cpool_to_grainc_storage_patch(p)*dt
+        ! end if
 
          ! growth respiration stored for release during transfer growth
-         cflx_tmp = cflx_tmp + cf%cpool_to_gresp_storage_patch(p)*dt
-         if(cs%cpool_patch(p) >= cflx_tmp)then
-           cs%cpool_patch(p) = cs%cpool_patch(p) - cflx_tmp
-         else
-           if(cflx_tmp>0._r8)then
-             cflx_scalar = cs%cpool_patch(p)/cflx_tmp
-           endif
-           cs%cpool_patch(p) = 0._r8
-         endif
+         !cflx_tmp = cflx_tmp + cf%cpool_to_gresp_storage_patch(p)*dt
+         !if(cs%cpool_patch(p) >= cflx_tmp)then
+        !   cs%cpool_patch(p) = cs%cpool_patch(p) - cflx_tmp
+        ! else
+        !   if(cflx_tmp>0._r8)then
+        !     cflx_scalar = cs%cpool_patch(p)/cflx_tmp
+        !   endif
+        !   cs%cpool_patch(p) = 0._r8
+         !endif
 
          ! maintenance respiration fluxes from xsmrpool
          cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) + cf%cpool_to_xsmrpool_patch(p)*dt*cflx_scalar
