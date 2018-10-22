@@ -155,6 +155,8 @@ implicit none
   class(sparseMat_type), pointer :: spm_carbon_p,spm_carbon_d
   class(sparseMat_type), pointer :: spm_nutrient_p,spm_nutrient_d
   type(spm_list_type), pointer :: spm_list
+  public :: InitPhenoFluxLimiter
+  public :: phenology_flux_limiter
 contains
 
 
@@ -167,7 +169,7 @@ contains
   ans=id
   end function ic_next
   !-------------------------------------------------------------------------------
-  subroutine init_counters()
+  subroutine init_phenofluxl_counters()
 
   implicit none
   integer :: id
@@ -304,7 +306,7 @@ contains
   f_retransn_to_npool             = ic_next(id)
   f_supplement_to_sminn_surf      = ic_next(id)
   n_nutrient_fluxes = id
-  end subroutine init_counters
+  end subroutine init_phenofluxl_counters
   !-------------------------------------------------------------------------------
   subroutine InitPhenoFluxLimiter()
 
@@ -314,7 +316,7 @@ contains
   integer :: nelms
   type(spm_list_type), pointer :: spm_list
 
-  call init_counters
+  call init_phenofluxl_counters
 
   call spm_list_init(spm_list, -1._r8, f_cpool_to_leafc                , s_cpool, nelms)
   call spm_list_insert(spm_list, -1._r8, f_cpool_to_leafc_storage      , s_cpool, nelms)

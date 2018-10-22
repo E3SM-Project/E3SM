@@ -69,7 +69,7 @@ module CNEcosystemDynBetrMod
     use CNNDynamicsMod            , only : CNNDeposition,CNNFixation, CNNFert, CNSoyfix
     use CNMRespMod                , only : CNMResp
     use CNDecompMod               , only : CNDecompAlloc
-    use CNPhenologyMod            , only : CNPhenology
+    use CNPhenologyMod            , only : CNPhenology, CNLitterToColumn
     use CNGRespMod                , only : CNGResp
     use CNCStateUpdate1BeTRMod    , only : CStateUpdate1,CStateUpdate0
     use CNNStateUpdate1BeTRMod    , only : NStateUpdate1
@@ -97,6 +97,7 @@ module CNEcosystemDynBetrMod
     use PDynamicsMod              , only : PDeposition,PWeathering,PBiochemMin_Ptaseact
     use CNVerticalProfileMod      , only : decomp_vertprofiles
     use CNRootDynMod              , only : CNRootDyn
+    use PhenologyFLuxLimitMod     , only : phenology_flux_limiter
     use abortutils          , only : endrun
     use shr_log_mod         , only : errMsg => shr_log_errMsg
     implicit none
@@ -326,6 +327,18 @@ module CNEcosystemDynBetrMod
        !--------------------------------------------
        ! Update1
        !--------------------------------------------
+       call phenology_flux_limiter(bounds, num_soilc, filter_soilc,&
+           num_soilp, filter_soilp, crop_vars, cnstate_vars,  &
+           carbonflux_vars, carbonstate_vars, &
+           c13_carbonflux_vars, c13_carbonstate_vars, &
+           c14_carbonflux_vars, c14_carbonstate_vars, &
+           nitrogenflux_vars, nitrogenstate_vars, &
+           phosphorusflux_vars, phosphorusstate_vars)
+
+      ! gather all patch-level litterfall fluxes to the column for litter C and N inputs
+
+       call CNLitterToColumn(num_soilc, filter_soilc, &
+         cnstate_vars, carbonflux_vars, nitrogenflux_vars,phosphorusflux_vars)
 
        call t_startf('CNUpdate1')
 
