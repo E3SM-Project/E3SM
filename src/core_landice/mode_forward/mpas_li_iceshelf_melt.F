@@ -754,6 +754,7 @@ module li_iceshelf_melt
 
       real(kind=RKIND) :: sumGLdepth, sumGLarea
       real(kind=RKIND) :: sumCFdepth, sumCFarea
+      real(kind=RKIND) :: minGLdepth
       integer :: iCell, jCell
       real(kind=RKIND), dimension(4) :: localSums, globalSums
 
@@ -776,6 +777,7 @@ module li_iceshelf_melt
       sumGLarea = 0.0_RKIND
       sumCFdepth = 0.0_RKIND
       sumCFarea = 0.0_RKIND
+      minGLdepth = 0.0_RKIND
       ! block loop
       block => domain % blocklist
       do while (associated(block))
@@ -797,6 +799,7 @@ module li_iceshelf_melt
                      sumGLdepth = sumGLdepth + lowerSurface(iCell) * areaCell(iCell)
                      sumGLarea = sumGLarea + areaCell(iCell)
                      !call mpas_log_write("GL cell: $i, $r, $r", intArgs=(/iCell/), realArgs=(/lowerSurface(iCell), areaCell(iCell)/))
+                     minGLdepth = min(minGLdepth, lowerSurface(iCell))
                      exit  ! skip the rest of the loop around neighbors
                   endif
                enddo
@@ -816,16 +819,18 @@ module li_iceshelf_melt
       ! sum up over all procs
       call mpas_dmpar_sum_real_array(domain % dminfo, 4, localSums(:), globalSums(:))
       ! Calculate average values
-      if (globalSums(2) > 0.0_RKIND) then
-         meanGLdepth = globalSums(1) / globalSums(2)
-      else
-         meanGLdepth = 0.0_RKIND
-      endif
+      !if (globalSums(2) > 0.0_RKIND) then
+      !   meanGLdepth = globalSums(1) / globalSums(2)
+      !else
+      !   meanGLdepth = 0.0_RKIND
+      !endif
       if (globalSums(4) > 0.0_RKIND) then
          meanCFdepth = globalSums(3) / globalSums(4)
       else
          meanCFdepth = 0.0_RKIND
       endif
+
+      call mpas_dmpar_min_real(domain % dminfo, minGLdepth, meanGLdepth)  !sticking it into 'meanGLdepth'
 
     end subroutine calc_iceshelf_draft_info
 !-----------------------------------------------------------------------
