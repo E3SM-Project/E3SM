@@ -178,7 +178,6 @@
 
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
@@ -320,8 +319,6 @@
 
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <environment_variables>
 
@@ -477,8 +474,6 @@
 
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
@@ -580,7 +575,6 @@
 
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
@@ -619,7 +613,6 @@
     <module_system type="none"/>
     <RUNDIR>$ENV{HOME}/projects/acme/scratch/$CASE/run</RUNDIR>
     <EXEROOT>$ENV{HOME}/projects/acme/scratch/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <!-- cmake -DCMAKE_Fortran_COMPILER=/opt/local/bin/mpif90-mpich-gcc48 -DHDF5_DIR=/opt/local -DNetcdf_INCLUDE_DIR=/opt/local/include .. -->
     <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
   </machine>
@@ -651,7 +644,6 @@
     <module_system type="none"/>
     <RUNDIR>$ENV{HOME}/projects/acme/scratch/$CASE/run</RUNDIR>
     <EXEROOT>$ENV{HOME}/projects/acme/scratch/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <!-- cmake -DCMAKE_Fortran_COMPILER=/opt/local/bin/mpif90-mpich-gcc48 -DHDF5_DIR=/opt/local -DNetcdf_INCLUDE_DIR=/opt/local/include .. -->
     <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
   </machine>
@@ -719,7 +711,6 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
     <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
@@ -772,7 +763,6 @@
     </module_system>
     <RUNDIR>$ENV{HOME}/projects/e3sm/scratch/$CASE/run</RUNDIR>
     <EXEROOT>$ENV{HOME}/projects/e3sm/scratch/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <environment_variables>
       <env name="NETCDF_C_PATH">$ENV{NETCDF_ROOT}</env>
       <env name="NETCDF_FORTRAN_PATH">$ENV{NETCDFF_ROOT}</env>
@@ -816,7 +806,6 @@
     </module_system>
     <RUNDIR>$ENV{HOME}/projects/e3sm/scratch/$CASE/run</RUNDIR>
     <EXEROOT>$ENV{HOME}/projects/e3sm/scratch/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <environment_variables>
       <env name="NETCDF_C_PATH">$ENV{NETCDF_ROOT}</env>
       <env name="NETCDF_FORTRAN_PATH">$ENV{NETCDFF_ROOT}</env>
@@ -870,9 +859,6 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <BATCHQUERY/>
-    <BATCHSUBMIT/>
     <environment_variables>
       <env name="NETCDF_PATH">$SHELL{dirname $(dirname $(which ncdump))}</env>
     </environment_variables>
@@ -950,9 +936,7 @@
     <RUNDIR>/gscratch/$USER/acme_scratch/sandiatoss3/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <!-- complete path to a short term archiving directory -->
-    <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
     <!-- path to the cprnc tool used to compare netcdf history files in testing -->
-    <PIO_BUFFER_SIZE_LIMIT>1</PIO_BUFFER_SIZE_LIMIT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
 
     <environment_variables>
@@ -1025,9 +1009,7 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <!-- complete path to a short term archiving directory -->
-    <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
     <!-- path to the cprnc tool used to compare netcdf history files in testing -->
-    <PIO_BUFFER_SIZE_LIMIT>1</PIO_BUFFER_SIZE_LIMIT>
     <environment_variables>
       <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
       <env name="NETCDF_INCLUDES">$ENV{SEMS_NETCDF_ROOT}/include</env>
@@ -1128,7 +1110,6 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>/lcrc/project/ACME/$USER/archive/$CASE</DOUT_L_MSROOT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <environment_variables>
       <env name="NETCDFROOT">$SHELL{dirname $(dirname $(which ncdump))}</env>
@@ -1230,7 +1211,6 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>/lcrc/project/ACME/$USER/archive/$CASE</DOUT_L_MSROOT>
     <environment_variables>
       <env name="NETCDF_PATH">$SHELL{which nf-config | xargs dirname | xargs dirname}</env>
     </environment_variables>
@@ -1324,8 +1304,6 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <environment_variables>
       <env name="NETCDF_C_PATH">$SHELL{which nc-config | xargs dirname | xargs dirname}</env>
@@ -1391,8 +1369,6 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>/home/$USER/csm/$CASE/</DOUT_L_MSROOT>
-    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <environment_variables>
       <env name="MPI_TYPE_MAX">10000</env>
@@ -1452,8 +1428,6 @@
     </module_system>
     <RUNDIR>/p/lscratchh/$CCSMUSER/ACME/$CASE/run</RUNDIR>
     <EXEROOT>/p/lscratchh/$CCSMUSER/$CASE/bld</EXEROOT>
-    <DOUT_L_HTAR>FALSE</DOUT_L_HTAR>
-    <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <environment_variables compiler="intel">
       <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</env>
     </environment_variables>
@@ -1504,8 +1478,6 @@
     </module_system>
     <RUNDIR>/p/lscratchh/$CCSMUSER/ACME/$CASE/run</RUNDIR>
     <EXEROOT>/p/lscratchh/$CCSMUSER/$CASE/bld</EXEROOT>
-    <DOUT_L_HTAR>FALSE</DOUT_L_HTAR>
-    <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <environment_variables compiler="intel">
       <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</env>
     </environment_variables>
@@ -1561,8 +1533,6 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>/home/$USER/csm/$CASE/</DOUT_L_MSROOT>
-    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <environment_variables>
       <env name="MPI_TYPE_MAX">10000</env>
@@ -1667,8 +1637,6 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>$CIME_OUTPUT_ROOT/csm/$CASE</DOUT_L_MSROOT>
-    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
@@ -1754,8 +1722,6 @@
     </module_system>
     <RUNDIR>/lustre/$USER/csmruns/$CASE/run</RUNDIR>
     <EXEROOT>/lustre/$USER/csmruns/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/lustre/$USER/</CESMSCRATCHROOT>
-    <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <environment_variables>
       <env name="MKLROOT">$ENV{MKLROOT} </env>
       <env name="NETCDF_PATH">$ENV{NETCDF_LIB}/../</env>
@@ -1828,7 +1794,6 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/csmruns/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/csmruns/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
       <env name="NETCDF_HOME">$ENV{NETCDF_ROOT}</env>
@@ -1947,7 +1912,6 @@
     </module_system>
     <RUNDIR>/pic/scratch/$USER/csmruns/$CASE/run</RUNDIR>
     <EXEROOT>/pic/scratch/$USER/csmruns/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
       <env name="NETCDF_HOME">$ENV{NETCDF_LIB}/../</env>
@@ -2052,7 +2016,6 @@
       prefered location). -->
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <!-- for CLM-PFLOTRAN coupling, the PETSC_PATH must be defined specifically upon machines -->
     <environment_variables compiler="gnu" mpilib="openmpi">
       <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc4pf/openmpi-1.10-gcc-5.3</env>
@@ -2187,9 +2150,7 @@
     </module_system>
     <RUNDIR>$ENV{PROJWORK}/$PROJECT/$USER/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <!-- difference to MAX_TASKS_PER_NODE-->
-    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
 
     <!-- Default -->
@@ -2295,8 +2256,6 @@
     </module_system>
     <RUNDIR>$ENV{MEMBERWORK}/$PROJECT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
@@ -2384,7 +2343,6 @@
     </module_system>
     <RUNDIR>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
     <EXEROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <environment_variables>
       <env name="PNETCDF_HINTS">romio_ds_write=disable;romio_ds_read=disable;romio_cb_write=enable;romio_cb_read=enable</env>
     </environment_variables>
@@ -2469,7 +2427,6 @@
     </module_system>
     <RUNDIR>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
     <EXEROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <environment_variables>
       <env name="LD_LIBRARY_PATH">$ENV{LD_LIBRARY_PATH}:$ENV{NETCDF_ROOT}/lib</env>
     </environment_variables>
@@ -2512,7 +2469,6 @@
     <!--<DOUT_S>FALSE</DOUT_S>-->
     <!-- logical for short term archiving -->
     <!-- complete path to a short term archiving directory -->
-    <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>
     <!-- complete path to a long term archiving directory -->
     <!-- where the cesm testing scripts write and read baseline results -->
     <!-- path to the cprnc tool used to compare netcdf history files in testing -->
@@ -2554,7 +2510,6 @@
     <!--<DOUT_S>FALSE</DOUT_S>-->
     <!-- logical for short term archiving -->
     <!-- complete path to a short term archiving directory -->
-    <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>
     <!-- complete path to a long term archiving directory -->
     <!-- where the cesm testing scripts write and read baseline results -->
     <!-- path to the cprnc tool used to compare netcdf history files in testing -->
@@ -2621,7 +2576,6 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
   </machine>
 
   <machine MACH="lawrencium-lr2">
@@ -2685,7 +2639,6 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
   </machine>
 
   <machine MACH="eddi">
@@ -2717,7 +2670,6 @@
       </arguments>
     </mpirun>
     <module_system type="none"/>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
   </machine>
 
   <machine MACH="summitdev">
@@ -2812,8 +2764,6 @@
     </module_system>
     <RUNDIR>/lustre/atlas/scratch/$ENV{USER}/$PROJECT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON</PIO_CONFIG_OPTS>
 
     <!-- Useful jsrun options:
      -n	(hyphen-hyphen)nrs	Number of resource sets
@@ -2939,9 +2889,7 @@
     <!-- <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm_scratch/$PROJECT</CIME_OUTPUT_ROOT> -->
     <RUNDIR>/gpfs/alpinetds/scratch/$ENV{USER}/$PROJECT/e3sm/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <!-- 1 core/socket not available for application, so 168 = 42cores*4 in smt4 mode  -->
-    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
 
     <!-- Useful jsrun options:
      -n	(hyphen-hyphen)nrs	Number of resource sets

@@ -57,17 +57,8 @@
   <xs:element name="default_run_misc_suffix" type="xs:string"/>
   <xs:element name="RUNDIR" type="xs:string"/>
   <xs:element name="EXEROOT" type="xs:string"/>
-  <xs:element name="CESMSCRATCHROOT" type="xs:string"/>
-  <xs:element name="DOUT_L_HTAR" type="xs:string"/>
-  <xs:element name="DOUT_L_MSROOT" type="xs:string"/>
-  <xs:element name="PIO_CONFIG_OPTS" type="xs:string"/>
-  <xs:element name="PIO_BUFFER_SIZE_LIMIT" type="xs:string"/>
   <xs:element name="TEST_TPUT_TOLERANCE" type="xs:string"/>
   <xs:element name="MAX_GB_OLD_TEST_DATA" type="xs:string"/>
-  <xs:element name="BATCHQUERY" type="xs:string"/>
-  <xs:element name="BATCHSUBMIT" type="xs:string"/>
-
-
 
 
   <!-- complex elements -->
@@ -173,15 +164,8 @@
           see detail below-->
         <xs:element ref="RUNDIR" minOccurs="0" maxOccurs="1"/>
         <xs:element ref="EXEROOT" minOccurs="0" maxOccurs="1"/>
-        <xs:element ref="CESMSCRATCHROOT" minOccurs="0" maxOccurs="1"/>
-        <xs:element ref="DOUT_L_HTAR" minOccurs="0" maxOccurs="1"/>
-        <xs:element ref="DOUT_L_MSROOT" minOccurs="0" maxOccurs="1"/>
-        <xs:element ref="PIO_CONFIG_OPTS" minOccurs="0" maxOccurs="1"/>
-        <xs:element ref="PIO_BUFFER_SIZE_LIMIT" minOccurs="0" maxOccurs="1"/>
         <xs:element ref="TEST_TPUT_TOLERANCE" minOccurs="0" maxOccurs="1"/>
         <xs:element ref="MAX_GB_OLD_TEST_DATA" minOccurs="0" maxOccurs="1"/>
-        <xs:element ref="BATCHQUERY" minOccurs="0" maxOccurs="1"/>
-        <xs:element ref="BATCHSUBMIT" minOccurs="0" maxOccurs="1"/>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="environment_variables"/>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="resource_limits"/>
       </xs:sequence>
