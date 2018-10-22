@@ -739,7 +739,6 @@ contains
       if (.not.config_use_standardGM) return
 
       call mpas_pool_get_config(ocnConfigs, 'config_gravWaveSpeed_trunc',config_gravWaveSpeed_trunc)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_standardGM',config_use_standardGM)
       call mpas_pool_get_config(ocnConfigs, 'config_standardGM_tracer_kappa',config_standardGM_tracer_kappa)
       call mpas_pool_get_config(ocnConfigs, 'config_GM_Bolus_kappa_function',config_GM_Bolus_kappa_function)
       call mpas_pool_get_config(ocnConfigs, 'config_GM_Bolus_kappa_min',config_GM_Bolus_kappa_min)
