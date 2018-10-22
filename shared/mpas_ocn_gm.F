@@ -715,6 +715,8 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
+      real (kind=RKIND) :: avgCellDiameter, sqrtPiInv
+
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: diagnosticsPool
@@ -724,11 +726,12 @@ contains
       real (kind=RKIND), pointer :: config_GM_Bolus_kappa_max
       real (kind=RKIND), pointer :: config_GM_Bolus_cell_size_min
       real (kind=RKIND), pointer :: config_GM_Bolus_cell_size_max
+      real (kind=RKIND), dimension(:), pointer :: areaCell
 
       integer :: iEdge
       integer, pointer :: nEdges
-      real(kind=RKIND), dimension(:), pointer   :: dcEdge
       real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa
+      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOncell, edgeSignOnCell
 
       err = 0
 
@@ -757,8 +760,9 @@ contains
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-         call mpas_pool_get_array(meshPool, 'dcEdge',  dcEdge)
+         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(diagnosticsPool, 'gmBolusKappa', gmBolusKappa)
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
          ! initialize Bolus kappa array
          if (config_GM_Bolus_kappa_function == 'constant') then
@@ -768,17 +772,19 @@ contains
             end do
             !$omp end do
          else if (config_GM_Bolus_kappa_function == 'ramp') then
+            sqrtPiInv = 1.0_RKIND / sqrt(pii)
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
-               if (dcEdge(iEdge) <= config_GM_Bolus_cell_size_min) then
+               avgCellDiameter = sqrtPiInv*(sqrt(areaCell(cellsOnEdge(1,iEdge))) + sqrt(areaCell(cellsOnEdge(2,iEdge))))
+               if (avgCellDiameter <= config_GM_Bolus_cell_size_min) then
                   gmBolusKappa(iEdge) = config_GM_Bolus_kappa_min
-               else if (dcEdge(iEdge) >= config_GM_Bolus_cell_size_max) then
+               else if (avgCellDiameter >= config_GM_Bolus_cell_size_max) then
                   gmBolusKappa(iEdge) = config_GM_Bolus_kappa_max
                else
                   gmBolusKappa(iEdge) = config_GM_Bolus_kappa_min + &
                       (config_GM_Bolus_kappa_max - config_GM_Bolus_kappa_min) &
                      /(config_GM_Bolus_cell_size_max - config_GM_Bolus_cell_size_min) &
-                     *(dcEdge(iEdge) - config_GM_Bolus_cell_size_min)
+                     *(avgCellDiameter - config_GM_Bolus_cell_size_min)
                end if
             end do
             !$omp end do

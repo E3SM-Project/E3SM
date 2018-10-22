@@ -406,11 +406,11 @@
 					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$, min value in ramp as a function of dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp."
 					possible_values="Any positive real value."
 		/>
-		<nml_option name="config_GM_Bolus_cell_size_min" type="real" default_value="20000.0" units="m"
+		<nml_option name="config_GM_Bolus_cell_size_min" type="real" default_value="20e3" units="m"
 					description="Minimum value in grid cell size for GM $kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp."
 					possible_values="Any positive real value."
 		/>
-		<nml_option name="config_GM_Bolus_cell_size_max" type="real" default_value="30000.0" units="m"
+		<nml_option name="config_GM_Bolus_cell_size_max" type="real" default_value="30e3" units="m"
 					description="Maximum value in grid cell size for GM $kappa$ ramp function.  Here cell size refers to dcEdge"
 					possible_values="Any positive real value."
 		/>
