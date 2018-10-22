@@ -581,6 +581,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     real(r8) :: budg_fluxGtmp(f_size,p_size) ! temporary sum
+    real(r8) :: budg_stateGtmp(s_size,p_size) ! temporary sum
     real(r8) :: budg_fluxG_1D (f_size*p_size)
     real(r8) :: budg_fluxN_1D (f_size*p_size)
     real(r8) :: budg_stateG_1D(s_size*p_size)
@@ -588,6 +589,7 @@ contains
     character(*),parameter :: subName = '(WaterBudget_Restart_Write) '
 
     call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName)
+    call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName)
 
     ! Copy data from 2D into 1D array
     count = 0
@@ -604,7 +606,7 @@ contains
     do s = 1, s_size
        do p = 1, p_size
           count = count + 1
-          budg_stateG_1D(count) = budg_stateG(s,p)
+          budg_stateG_1D(count) = budg_stateGtmp(s,p)
        end do
     end do
 
@@ -647,16 +649,15 @@ contains
     end do
 
     ! Copy data from 1D into 2D array
-    count = 0
-    do s = 1, s_size
-       do p = 1, p_size
-          count = count + 1
-          budg_stateG(s,p) = budg_stateG_1D(count)
-          if (masterproc) then
+    if (masterproc) then
+       count = 0
+       do s = 1, s_size
+          do p = 1, p_size
+             count = count + 1
              budg_stateL(s,p) = budg_stateG_1D(count)
-          end if
+          end do
        end do
-    end do
+    end if
 
   end subroutine WaterBudget_Restart_Read
 
