@@ -32,6 +32,37 @@ def get_set_name(set_name):
     raise RuntimeError('Invalid set option: {}'.format(set_name))
 
 
+def get_name_and_yrs(parameters, dataset, season):
+    """
+    Given either test or ref data, get the name of the data
+    (test_name or reference_name), along with the years averaged.
+    """
+    if dataset.test:
+        if parameters.short_test_name:
+            name_yrs = parameters.short_test_name
+        else:
+            name_yrs = parameters.test_name
+    else:
+        if parameters.short_ref_name:
+            name_yrs = parameters.short_ref_name
+        else:
+            # TODO: Or is this ref_name?
+            name_yrs = parameters.reference_name
+
+    if dataset.is_climo():
+        try:
+            yrs_averaged = dataset.get_attr_from_climo('yrs_averaged', season)
+            name_yrs = '{} ({})'.format(name_yrs, yrs_averaged)
+        except:
+            print("No 'yrs_averaged' exists in the global attributes.")
+    else:
+        start_yr, end_yr = dataset.get_start_and_end_years()
+        yrs_averaged = '{}-{}'.format(start_yr, end_yr)
+        name_yrs = '{} ({})'.format(name_yrs, yrs_averaged)
+    
+    return name_yrs
+
+
 def _findfile(path_name, data_name, season):
     """Locate file name based on data_name and season."""
     dir_files = sorted(os.listdir(path_name))

@@ -77,21 +77,9 @@ def run_diag(parameter):
     ref_data = utils.dataset.Dataset(parameter, ref=True)    
 
     for season in seasons:
-        if parameter.short_test_name:
-            parameter.test_name_yrs = parameter.short_test_name
-        else:
-            parameter.test_name_yrs = parameter.test_name
-        
-        try:
-            if test_data.is_climo():
-                yrs_averaged = test_data.get_attr_from_climo('yrs_averaged', season)
-            else:
-                start_yr, end_yr = test_data.get_start_and_end_years()
-                yrs_averaged = '{}-{}'.format(start_yr, end_yr)
-            parameter.test_name_yrs = parameter.test_name_yrs + ' (' + yrs_averaged +')'
-        except:
-            print('No yrs_averaged exists in global attributes')
-            parameter.test_name_yrs = parameter.test_name_yrs
+        # Get the name of the data, appended with the years averaged.
+        parameter.test_name_yrs = utils.general.get_name_and_yrs(parameter, test_data, season)
+        parameter.ref_name_yrs = utils.general.get_name_and_yrs(parameter, ref_data, season)
         
         for var in variables:
             print('Variable: {}'.format(var))
