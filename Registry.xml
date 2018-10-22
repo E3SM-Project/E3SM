@@ -213,8 +213,16 @@
 		            possible_values="any positive real value"
 		/>
                 <nml_option name="config_temperature_profile_sill_elevation" type="real" default_value="-700.0" units="m above datum"
-		            description="The still elevation used by the 'temperature_profile' melt parameterization.  Positive is above sea level."
+		            description="The sill elevation used by the 'temperature_profile' melt parameterization.  Positive is above sea level."
 		            possible_values="any real value, but only negative values make sense"
+		/>
+                <nml_option name="config_temperature_profile_plume_thickness" type="real" default_value="30.0" units="m"
+		            description="The plume thickness parameter used by the 'temperature_profile' melt parameterization."
+		            possible_values="any positive real value"
+		/>
+                <nml_option name="config_temperature_profile_draft_slope" type="real" default_value="1.0e-2" units="unitless"
+		            description="The parameter defining the slope of the ice sheld draft that is used by the 'temperature_profile' melt parameterization."
+		            possible_values="any positive real value"
 		/>
         </nml_record>
 
