@@ -2202,11 +2202,11 @@ contains
          albedoVisibleDiffuseCategory, &
          albedoIRDirectCategory, &
          albedoIRDiffuseCategory, &
-         snowFractionCategory,&
-         iceAsymmtryParameterDirect,     &
-         iceAsymmtryParameterDiffuse,     &
-         iceSingleScatterAlbedoDirect,      &
-         iceSingleScatterAlbedoDiffuse,      &
+         snowFractionCategory, &
+         iceAsymmtryParameterDirect, &
+         iceAsymmtryParameterDiffuse, &
+         iceSingleScatterAlbedoDirect, &
+         iceSingleScatterAlbedoDiffuse, &
          iceMassExtinctionCrossSectionDirect, &
          iceMassExtinctionCrossSectionDiffuse, &
          aerosolAsymmetryParameter5band, &
@@ -2234,7 +2234,7 @@ contains
          iceBodyAerosol, &
          brineFraction, &
          modalBCabsorptionParameter, &
-         bioTracerShortwave,  &
+         bioTracerShortwave, &
          modalBCabsorptionParameter5band
 
 
