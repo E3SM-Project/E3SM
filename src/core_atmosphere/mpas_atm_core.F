@@ -633,20 +633,6 @@ module atm_core
 
          call mpas_atm_diag_update()
          call mpas_atm_diag_compute()
-
-         if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
-            block_ptr => domain % blocklist
-            do while (associated(block_ptr))
-
-               call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
-               call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
-               call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
-               call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
-               call atm_compute_restart_diagnostics(state, 1, diag, mesh)
-
-               block_ptr => block_ptr % next
-            end do
-         end if
          call mpas_dmpar_get_time(diag_stop_time)
 
          call mpas_dmpar_get_time(output_start_time)
@@ -750,52 +736,6 @@ module atm_core
    end subroutine atm_compute_output_diagnostics
    
    
-   subroutine atm_compute_restart_diagnostics(state, time_lev, diag, mesh)
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Compute diagnostic fields for a domain to be written to restart files
-   !
-   ! Input: state - contains model prognostic fields
-   !        mesh  - contains grid metadata
-   !
-   ! Output: state - upon returning, diagnostic fields will have be computed
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   
-      use mpas_constants
-   
-      implicit none
-   
-      type (mpas_pool_type), intent(inout) :: state
-      integer, intent(in) :: time_lev                 ! which time level to use from state
-      type (mpas_pool_type), intent(inout) :: diag
-      type (mpas_pool_type), intent(in) :: mesh
-   
-      integer :: iCell, k
-      integer, pointer :: nCells, nVertLevels, index_qv
-      real (kind=RKIND), dimension(:,:), pointer :: theta, rho, theta_m, rho_zz, zz
-      real (kind=RKIND), dimension(:,:,:), pointer :: scalars
-
-      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
-      call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
-      call mpas_pool_get_dimension(state, 'index_qv', index_qv)
-
-      call mpas_pool_get_array(state, 'theta_m', theta_m, time_lev)
-      call mpas_pool_get_array(state, 'rho_zz', rho_zz, time_lev)
-      call mpas_pool_get_array(state, 'scalars', scalars, time_lev)
-
-      call mpas_pool_get_array(diag, 'theta', theta)
-      call mpas_pool_get_array(diag, 'rho', rho)
-
-      call mpas_pool_get_array(mesh, 'zz', zz)
-
-      do iCell=1,nCells
-         do k=1,nVertLevels
-            theta(k,iCell) = theta_m(k,iCell) / (1.0_RKIND + rvord * scalars(index_qv,k,iCell))
-            rho(k,iCell) = rho_zz(k,iCell) * zz(k,iCell)
-         end do
-      end do
-   
-   end subroutine atm_compute_restart_diagnostics
-
    subroutine atm_reset_diagnostics(diag, diag_physics)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! reset some diagnostics after output
