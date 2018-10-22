@@ -328,28 +328,23 @@ class Machines(GenericXML):
                 print("      max_tasks/node ",self.text(max_tasks_per_node))
 
     def return_values(self):
-        # return a dictionary of machine info
+        """ return a dictionary of machine info
+        This routine is used by external tools in https://github.com/NCAR/CESM_xml2html
+        """
         machines = self.get_children("machine")
         mach_dict = dict()
-        logger.info("Machines return values")
+        logger.debug("Machines return values")
         for machine in machines:
             name = self.get(machine, "MACH")
-            
             desc = self.get_child("DESC", root=machine)
             mach_dict[(name,"description")] = self.text(desc)
-            
             os_  = self.get_child("OS", root=machine)
             mach_dict[(name,"os")] = self.text(os_)
-            
             compilers = self.get_child("COMPILERS", root=machine)
             mach_dict[(name,"compilers")] = self.text(compilers)
-            
             max_tasks_per_node = self.get_child("MAX_TASKS_PER_NODE", root=machine)
-            if max_tasks_per_node is not None:
-                mach_dict[(name,"max_tasks_per_node")] = self.text(max_tasks_per_node)
-
+            mach_dict[(name,"max_tasks_per_node")] = self.text(max_tasks_per_node)
             max_mpitasks_per_node = self.get_child("MAX_MPITASKS_PER_NODE", root=machine)
-            if max_mpitasks_per_node is not None:
-                mach_dict[(name,"max_mpitasks_per_node")] = self.text( max_mpitasks_per_node)
+            mach_dict[(name,"max_mpitasks_per_node")] = self.text(max_mpitasks_per_node)
 
         return mach_dict

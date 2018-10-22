@@ -88,6 +88,7 @@
       <arg name="num_tasks" > -n {{ total_tasks }}</arg>
       <arg name="thread_count"> -c $SHELL{echo 48/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
       <arg name="binding"> $SHELL{if [ 24 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+      <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
   </mpirun>
   <module_system type="module">
@@ -125,10 +126,10 @@
 
     <modules>
       <command name="rm">craype</command>
-      <command name="load">craype/2.5.12</command>
+      <command name="load">craype/2.5.14</command>
       <command name="load">craype-ivybridge</command>
       <command name="rm">pmi</command>
-      <command name="load">pmi/5.0.12</command>
+      <command name="load">pmi/5.0.13</command>
       <command name="rm">cray-mpich</command>
       <command name="load">cray-mpich/7.7.0</command>
     </modules>
@@ -136,7 +137,7 @@
     <modules compiler="intel">
       <command name="load">PrgEnv-intel/6.0.4</command>
       <command name="rm">intel</command>
-      <command name="load">intel/17.0.2.174</command>
+      <command name="load">intel/18.0.1.163</command>
       <command name="rm">cray-libsci</command>
     </modules>
 
@@ -151,9 +152,9 @@
       <command name="rm">PrgEnv-intel</command>
       <command name="load">PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
-      <command name="load">gcc/6.3.0</command>
+      <command name="load">gcc/7.3.0</command>
       <command name="rm">cray-libsci</command>
-      <command name="load">cray-libsci/17.06.1</command>
+      <command name="load">cray-libsci/18.03.1</command>
     </modules>
 
     <modules compiler="gnu7">
@@ -235,6 +236,7 @@
       <arg name="num_tasks" > -n {{ total_tasks }}</arg>
       <arg name="thread_count">-c $SHELL{echo 64/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
       <arg name="binding"> $SHELL{if [ 32 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+      <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
   </mpirun>
   <module_system type="module">
@@ -374,6 +376,7 @@
       <arg name="num_tasks" > -n {{ total_tasks }}</arg>
       <arg name="thread_count">-c $SHELL{echo 272/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
       <arg name="binding"> $SHELL{if [ 68 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+      <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
   </mpirun>
   <module_system type="module">
@@ -411,6 +414,7 @@
       <command name="rm">zlib</command>
 
       <!-- first load basic defaults, then remove/swap/load as necessary -->
+      <command name="load">python/2.7-anaconda-5.2</command>
       <command name="load">craype</command>
       <command name="load">PrgEnv-intel</command>
       <command name="load">cray-mpich</command>
@@ -1718,6 +1722,74 @@
     </module_system>
 </machine>
 
+<machine MACH="jlse">
+    <DESC>ANL experimental/evaluation cluster, batch system is cobalt</DESC>
+    <NODENAME_REGEX>jlse.*</NODENAME_REGEX>
+    <TESTS>acme_developer</TESTS>
+    <COMPILERS>intel,gnu</COMPILERS>
+    <MPILIBS>mpich</MPILIBS>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <DIN_LOC_ROOT>/home/azamat/acme/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/home/azamat/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>$ENV{HOME}/acme/csm/$CASE</DOUT_L_MSROOT>
+    <BASELINE_ROOT>$ENV{HOME}/acme/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/home/azamat/acme/tools/cprnc</CCSM_CPRNC>
+    <OS>LINUX</OS>
+    <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <GMAKE_J>8</GMAKE_J>
+    <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+        <arguments>
+          <arg name="num_tasks"> -n $TOTALPES</arg>
+        </arguments>
+    </mpirun>
+    <module_system type="soft">
+      <init_path lang="sh">/etc/bashrc</init_path>
+      <cmd_path lang="sh">source</cmd_path>
+      <modules>
+        <command name="">/soft/compilers/intel/compilers_and_libraries/linux/bin/compilervars.sh intel64</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="MPICH_ENV_DISPLAY">1</env>
+      <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_CPUMASK_DISPLAY">1</env>
+      <env name="MPICH_MEMORY_REPORT">1</env>
+      <env name="PATH">/home/azamat/perl5/bin:$ENV{PATH}</env>
+      <env name="PERL5LIB">/home/azamat/perl5/lib/perl5</env>
+      <env name="PERL_LOCAL_LIB_ROOT">/home/azamat/perl5</env>
+      <env name="PERL_MB_OPT">"--install_base \"/home/azamat/perl5\""</env>
+      <env name="PERL_MM_OPT">"INSTALL_BASE=/home/azamat/perl5"</env>
+    </environment_variables>
+    <environment_variables compiler="intel">
+      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.3.3.1c-4.2cxx-4.4.2f/intel18</env>
+      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.6.1/intel18</env>
+      <env name="I_MPI_DEBUG">10</env>
+      <env name="I_MPI_PIN_CELL">core</env>
+    </environment_variables>
+    <environment_variables compiler="!intel">
+      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.3.3.1c-4.2cxx-4.4.2f/gnu-arm</env>
+      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.6.1/gnu-arm</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" compiler="intel">
+      <env name="KMP_AFFINITY">verbose,granularity=thread,scatter</env>
+      <env name="OMP_STACKSIZE">256M</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" compiler="!intel">
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
+      <env name="OMP_STACKSIZE">256M</env>
+    </environment_variables>
+</machine>
+
 <machine MACH="sooty">
     <DESC>PNL cluster, OS is Linux, batch system is SLURM</DESC>
     <NODENAME_REGEX>sooty</NODENAME_REGEX>
@@ -1831,10 +1903,10 @@
       </arguments>
     </mpirun>
     <module_system type="module">
-      <init_path lang="python">/opt/lmod/5.0.1/init/env_modules_python.py</init_path>
+      <init_path lang="python">/opt/lmod/7.3.28/init/env_modules_python.py</init_path>
       <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
       <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
-      <cmd_path lang="python">/opt/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="python">/opt/lmod/7.3.28/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
@@ -2299,7 +2371,7 @@
 	     <command name="rm">netcdf</command>
 	   </modules>
 	   <modules compiler="intel">
-	     <command name="load">intel/16.0.1.150</command>
+	     <command name="load">intel/18.0.1.163</command>
 	     <command name="load">papi</command>
 	   </modules>
 	   <modules compiler="cray">
