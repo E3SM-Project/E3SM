@@ -81,8 +81,8 @@ def run_diag(parameter):
             if test_data.is_climo():
                 yrs_averaged = test_data.get_attr_from_climo('yrs_averaged', season)
             else:
-                start_time_slice, end_time_slice = test_data.get_start_end_time_slice()
-                yrs_averaged = '{}-{}'.format(start_time_slice, end_time_slice)
+                start_yr, end_yr = test_data.get_start_and_end_years()
+                yrs_averaged = '{}-{}'.format(start_yr, end_yr)
             parameter.test_name_yrs = parameter.test_name_yrs + ' (' + yrs_averaged +')'
         except:
             print('No yrs_averaged exists in global attributes')
