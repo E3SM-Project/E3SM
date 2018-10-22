@@ -1081,17 +1081,36 @@ contains
     call t_stopf("copy_qdp_h2d")
 #endif
 
-    ! Loop over rsplit vertically lagrangian timesiteps
-    call t_startf("prim_step_rX")
-    call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, compute_diagnostics,single_column)
-    call t_stopf("prim_step_rX")
+    if (.not. single_column) then 
 
-    do r=2,rsplit
-       call TimeLevel_update(tl,"leapfrog")
-       call t_startf("prim_step_rX")
-       call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, .false., single_column)
-       call t_stopf("prim_step_rX")
-    enddo
+      ! Loop over rsplit vertically lagrangian timesiteps
+      call t_startf("prim_step_rX")
+      call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, compute_diagnostics)
+      call t_stopf("prim_step_rX")
+
+      do r=2,rsplit
+        call TimeLevel_update(tl,"leapfrog")
+        call t_startf("prim_step_rX")
+        call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, .false.)
+        call t_stopf("prim_step_rX")
+      enddo
+
+    else 
+
+      ! Single Column Case
+      ! Loop over rsplit vertically lagrangian timesiteps
+      call t_startf("prim_step_rX")    
+      call prim_step_scm(elem, nets, nete, dt, tl, hvcoord)
+      call t_stopf("prim_step_rX")
+      do r=2,rsplit
+        call TimeLevel_update(tl,"leapfrog")
+	call t_startf("prim_step_rX")
+        call prim_step_scm(elem, nets, nete, dt, tl, hvcoord)
+	call t_stopf("prim_step_rX")
+      enddo
+
+    endif
+    
     ! defer final timelevel update until after remap and diagnostics
     !compute timelevels for tracers (no longer the same as dynamics)
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
@@ -1173,7 +1192,7 @@ contains
 
 
 
-  subroutine prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord, compute_diagnostics,single_column)
+  subroutine prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord, compute_diagnostics)
   !
   !   Take qsplit dynamics steps and one tracer step
   !   for vertically lagrangian option, this subroutine does only the horizontal step
@@ -1215,7 +1234,6 @@ contains
     real (kind=real_kind)                          :: maxcflx, maxcfly
     real (kind=real_kind) :: dp_np1(np,np)
     logical :: compute_diagnostics
-    logical :: single_column
 
     dt_q = dt*qsplit
  
@@ -1226,7 +1244,7 @@ contains
     do ie=nets,nete
       elem(ie)%derived%eta_dot_dpdn=0     ! mean vertical mass flux
       elem(ie)%derived%vn0=0              ! mean horizontal mass flux
-      if (.not. single_column) elem(ie)%derived%omega_p=0
+      elem(ie)%derived%omega_p=0
       if (nu_p>0) then
          elem(ie)%derived%dpdiss_ave=0
          elem(ie)%derived%dpdiss_biharmonic=0
@@ -1245,14 +1263,13 @@ contains
     ! ===============
     call t_startf("prim_step_dyn")
     call prim_advance_exp(elem, deriv1, hvcoord,   &
-         hybrid, dt, tl, nets, nete, compute_diagnostics, &
-	 single_column)
+         hybrid, dt, tl, nets, nete, compute_diagnostics)
     do n=2,qsplit
        call TimeLevel_update(tl,"leapfrog")
 !applyCAMforcing_dp3d should be glued to the call of prim_advance_exp
 !energy diagnostics is broken for ftype 3,4
        call ApplyCAMforcing_dp3d(elem,hvcoord,tl%n0,dt,nets,nete)
-       call prim_advance_exp(elem, deriv1, hvcoord,hybrid, dt, tl, nets, nete, .false., single_column)
+       call prim_advance_exp(elem, deriv1, hvcoord,hybrid, dt, tl, nets, nete, .false.)
        ! defer final timelevel update until after Q update.
     enddo
     call t_stopf("prim_step_dyn")
@@ -1276,17 +1293,101 @@ contains
     !   if tracer scheme needs v on lagrangian levels it has to vertically interpolate
     !   if tracer scheme needs dp3d, it needs to derive it from ps_v
 
-    if (.not. single_column) then
-      call t_startf("prim_step_advec")
-      if (qsize > 0) then
-        call t_startf("PAT_remap")
-        call Prim_Advec_Tracers_remap(elem, deriv1,hvcoord,hybrid,dt_q,tl,nets,nete)
-        call t_stopf("PAT_remap")
-      end if
-      call t_stopf("prim_step_advec")
-    endif
+    call t_startf("prim_step_advec")
+    if (qsize > 0) then
+      call t_startf("PAT_remap")
+      call Prim_Advec_Tracers_remap(elem, deriv1,hvcoord,hybrid,dt_q,tl,nets,nete)
+      call t_stopf("PAT_remap")
+    end if
+    call t_stopf("prim_step_advec")
 
   end subroutine prim_step
+  
+  
+  subroutine prim_step_scm(elem, nets,nete, dt, tl, hvcoord)
+  !
+  !   prim_step version for single column model (SCM)
+  !   Here we simply want to compute the floating level tendency
+  !    based on the prescribed large scale vertical velocity
+  !   Take qsplit dynamics steps and one tracer step
+  !   for vertically lagrangian option, this subroutine does only the horizontal step
+  !
+  !   input:
+  !       tl%nm1   not used
+  !       tl%n0    data at time t
+  !       tl%np1   new values at t+dt_q
+  !
+  !   then we update timelevel pointers:
+  !       tl%nm1 = tl%n0
+  !       tl%n0  = tl%np1
+  !   so that:
+  !       tl%nm1   tracers:  t    dynamics:  t+(qsplit-1)*dt
+  !       tl%n0    time t + dt_q
+  !
+  !
+    use control_mod,        only: statefreq, integration, ftype, qsplit, nu_p, rsplit
+    use control_mod,        only: use_semi_lagrange_transport
+    use hybvcoord_mod,      only : hvcoord_t
+    use parallel_mod,       only: abortmp
+    use prim_advance_mod,   only: prim_advance_exp
+    use reduction_mod,      only: parallelmax
+    use time_mod,           only: time_at,TimeLevel_t, timelevel_update, timelevel_qdp, nsplit
+    use prim_advance_mod,   only: applycamforcing_dp3d
+    use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
+
+    type(element_t),      intent(inout) :: elem(:)
+    type(hvcoord_t),      intent(in)    :: hvcoord  ! hybrid vertical coordinate struct
+    integer,              intent(in)    :: nets     ! starting thread element number (private)
+    integer,              intent(in)    :: nete     ! ending thread element number   (private)
+    real(kind=real_kind), intent(in)    :: dt       ! "timestep dependent" timestep
+    type(TimeLevel_t),    intent(inout) :: tl
+
+    real(kind=real_kind) :: st, st1, dp, dt_q
+    integer :: ie, t, q,k,i,j,n,qn0
+    real (kind=real_kind)                          :: maxcflx, maxcfly
+    real (kind=real_kind) :: dp_np1(np,np)
+
+    dt_q = dt*qsplit
+ 
+    ! ===============
+    ! initialize mean flux accumulation variables and save some variables at n0
+    ! for use by advection
+    ! ===============
+    do ie=nets,nete
+      elem(ie)%derived%eta_dot_dpdn=0     ! mean vertical mass flux
+      elem(ie)%derived%vn0=0              ! mean horizontal mass flux
+      if (nu_p>0) then
+         elem(ie)%derived%dpdiss_ave=0
+         elem(ie)%derived%dpdiss_biharmonic=0
+      endif
+      if (use_semi_lagrange_transport) then
+        elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,tl%n0)
+      end if
+      elem(ie)%derived%dp(:,:,:)=elem(ie)%state%dp3d(:,:,:,tl%n0)
+    enddo
+
+    ! ===============
+    ! Dynamical Step
+    ! ===============
+    
+    call TimeLevel_Qdp(tl, qsplit, qn0)  ! compute current Qdp() timelevel 
+    call set_prescribed_scm(elem,dt,tl)
+    
+    do n=2,qsplit
+ 
+      call TimeLevel_update(tl,"leapfrog")
+      !applyCAMforcing_dp3d should be glued to the call of prim_advance_exp
+      !energy diagnostics is broken for ftype 3,4
+      call ApplyCAMforcing_dp3d(elem,hvcoord,tl%n0,dt,nets,nete)       
+      ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature      
+      call TimeLevel_Qdp(tl, qsplit, qn0)  ! compute current Qdp() timelevel      
+      
+      ! call the single column forcing
+      call set_prescribed_scm(elem,dt,tl)
+      
+    enddo
+
+  end subroutine prim_step_scm  
 
 
 !=======================================================================================================!
@@ -1346,6 +1447,49 @@ contains
     call smooth_phis(sgh30dyn,elem,hybrid,deriv1,nets,nete,minf,smooth_sgh_numcycle)
 
     end subroutine smooth_topo_datasets
+    
+  !_____________________________________________________________________
+  subroutine set_prescribed_scm(elem,dt,tl)
+  
+    ! Update the floating levels based on the prescribed
+    !  large scale vertical velocity for single column model
+
+    use dimensions_mod, only: qsize
+    use time_mod, only: timelevel_qdp
+    use control_mod, only: qsplit  
+    use time_mod,       only: timelevel_t
+
+    type (element_t),      intent(inout), target  :: elem(:) 
+    real (kind=real_kind), intent(in)             :: dt
+    type (TimeLevel_t)   , intent(in)             :: tl
+    
+    real (kind=real_kind) :: dp(np,np)! pressure thickness, vflux
+    real(kind=real_kind)  :: eta_dot_dpdn(np,np,nlevp)
+    
+    integer :: ie,k,p,n0,np1,n0_qdp,np1_qdp
+
+    n0    = tl%n0
+    np1   = tl%np1
+
+    call TimeLevel_Qdp(tl, qsplit, n0_qdp, np1_qdp)
+    
+    do k=1,nlev
+      eta_dot_dpdn(:,:,k)=elem(1)%derived%omega_p(1,1,k)   
+    enddo  
+    eta_dot_dpdn(:,:,nlev+1) = eta_dot_dpdn(:,:,nlev) 
+    
+    do k=1,nlev
+      elem(1)%state%dp3d(:,:,k,np1) = elem(1)%state%dp3d(:,:,k,n0) &
+        + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))    
+    enddo       
+
+    do p=1,qsize
+      do k=1,nlev
+        elem(1)%state%Qdp(:,:,k,p,np1_qdp)=elem(1)%state%Q(:,:,k,p)*elem(1)%state%dp3d(:,:,k,np1)
+      enddo
+    enddo
+    
+  end subroutine         
     
 end module prim_driver_base
 

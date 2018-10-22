@@ -30,7 +30,9 @@ module lnd2atmMod
   use TemperatureType      , only : temperature_type
   use WaterFluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
-  use GridcellType         , only : grc_pp                
+  use GridcellType         , only : grc_pp     
+
+  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -55,6 +57,7 @@ contains
     !
     ! !USES:
     use clm_varcon, only : sb
+    
     !
     ! !ARGUMENTS:
     type(bounds_type)     , intent(in)    :: bounds  
@@ -65,11 +68,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: g                                    ! index
-    real(r8), parameter :: amC   = 12.0_r8          ! Atomic mass number for Carbon
-    real(r8), parameter :: amO   = 16.0_r8          ! Atomic mass number for Oxygen
-    real(r8), parameter :: amCO2 = amC + 2.0_r8*amO ! Atomic mass number for CO2
-    ! The following converts g of C to kg of CO2
-    real(r8), parameter :: convertgC2kgCO2 = 1.0e-3_r8 * (amCO2/amC)
+    
     !------------------------------------------------------------------------
 
     call c2g(bounds, &

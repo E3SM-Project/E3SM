@@ -104,8 +104,7 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics, &
-                              single_column)
+  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
 
     type (element_t),      intent(inout), target :: elem(:)
     type (derivative_t),   intent(in)            :: deriv
@@ -116,7 +115,6 @@ contains
     integer              , intent(in)            :: nets
     integer              , intent(in)            :: nete
     logical,               intent(in)            :: compute_diagnostics
-    logical,               intent(in)            :: single_column
 
     real (kind=real_kind) :: dt2, time, dt_vis, x, eta_ave_w
     real (kind=real_kind) :: itertol,statesave(nets:nete,np,np,nlev,6)

@@ -10,12 +10,12 @@ they can be run outside the context of TestScheduler.
 
 import traceback, stat, threading, time, glob
 from collections import OrderedDict
+
 from CIME.XML.standard_module_setup import *
-import CIME.compare_namelists
-import CIME.utils
 import six
 from get_tests import get_recommended_test_time
-from CIME.utils import append_status, append_testlog, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name, get_model, convert_to_seconds
+from CIME.utils import append_status, append_testlog, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name, get_model, \
+    convert_to_seconds, get_cime_root, get_project, get_timestamp, get_python_libs_root
 from CIME.test_status import *
 from CIME.XML.machines import Machines
 from CIME.XML.generic_xml import GenericXML
@@ -27,7 +27,8 @@ from CIME.case import Case
 from CIME.wait_for_tests import wait_for_tests
 from CIME.provenance import get_recommended_test_time_based_on_past
 from CIME.locked_files import lock_file
-import CIME.test_utils
+from CIME.cs_status_creator import create_cs_status
+from CIME.hist_utils import generate_teststatus
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +122,7 @@ class TestScheduler(object):
                  force_procs=None, force_threads=None, mpilib=None,
                  input_dir=None, pesfile=None, mail_user=None, mail_type=None, allow_pnl=False, non_local=False):
     ###########################################################################
-        self._cime_root       = CIME.utils.get_cime_root()
+        self._cime_root       = get_cime_root()
         self._cime_model      = get_model()
         self._save_timing     = save_timing
         self._queue           = queue
@@ -151,7 +152,7 @@ class TestScheduler(object):
         self._output_root = output_root
         # Figure out what project to use
         if project is None:
-            self._project = CIME.utils.get_project()
+            self._project = get_project()
             if self._project is None:
                 self._project = self._machobj.get_value("PROJECT")
         else:
@@ -175,7 +176,7 @@ class TestScheduler(object):
             self._test_root = self._test_root.replace("$PROJECT", self._project)
 
         self._test_root = os.path.abspath(self._test_root)
-        self._test_id   = test_id if test_id is not None else CIME.utils.get_timestamp()
+        self._test_id   = test_id if test_id is not None else get_timestamp()
 
         self._compiler = self._machobj.get_default_compiler() if compiler is None else compiler
 
@@ -411,7 +412,7 @@ class TestScheduler(object):
         test_dir = self._get_test_dir(test)
 
         _, case_opts, grid, compset,\
-            machine, compiler, test_mods = CIME.utils.parse_test_name(test)
+            machine, compiler, test_mods = parse_test_name(test)
 
         create_newcase_cmd = "{} --case {} --res {} --compset {}"\
                              " --test".format(os.path.join(self._cime_root, "scripts", "create_newcase"),
@@ -486,7 +487,7 @@ class TestScheduler(object):
         else:
             # We need to hard code the queue for this test on cheyenne
             # otherwise it runs in share and fails intermittently
-            test_case = CIME.utils.parse_test_name(test)[0]
+            test_case = parse_test_name(test)[0]
             if test_case == "NODEFAIL":
                 machine = machine if machine is not None else self._machobj.get_machine_name()
                 if machine == "cheyenne":
@@ -513,7 +514,7 @@ class TestScheduler(object):
     ###########################################################################
     def _xml_phase(self, test):
     ###########################################################################
-        test_case = CIME.utils.parse_test_name(test)[0]
+        test_case = parse_test_name(test)[0]
 
         # Create, fill and write an envtest object
         test_dir = self._get_test_dir(test)
@@ -564,7 +565,7 @@ class TestScheduler(object):
         testnode = config_test.get_test_node(test_case)
         envtest.add_test(testnode)
         # Determine the test_case from the test name
-        test_case, case_opts = CIME.utils.parse_test_name(test)[:2]
+        test_case, case_opts = parse_test_name(test)[:2]
 
         # Determine case_opts from the test_case
         if case_opts is not None:
@@ -856,19 +857,10 @@ class TestScheduler(object):
     def _setup_cs_files(self):
     ###########################################################################
         try:
-            python_libs_root = CIME.utils.get_python_libs_root()
-            template_file = os.path.join(python_libs_root, "cs.status.template")
-            template = open(template_file, "r").read()
-            template = template.replace("<PATH>",
-                                        os.path.join(self._cime_root,"scripts","Tools")).replace\
-                                        ("<TESTID>", self._test_id).replace\
-                                        ("<TESTROOT>", self._test_root)
-            if not os.path.exists(self._test_root):
-                os.makedirs(self._test_root)
-            cs_status_file = os.path.join(self._test_root, "cs.status.{}".format(self._test_id))
-            with open(cs_status_file, "w") as fd:
-                fd.write(template)
-            os.chmod(cs_status_file, os.stat(cs_status_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
+            python_libs_root = get_python_libs_root()
+
+            create_cs_status(test_root=self._test_root,
+                             test_id=self._test_id)
 
             template_file = os.path.join(python_libs_root, "cs.submit.template")
             template = open(template_file, "r").read()
@@ -928,6 +920,15 @@ class TestScheduler(object):
         GenericXML.DISABLE_CACHING = False
 
         expect(threading.active_count() == 1, "Leftover threads?")
+
+        # Copy TestStatus files to baselines for tests that have already failed.
+        if get_model() == "cesm":
+            for test in self._tests:
+                status = self._get_test_data(test)[1]
+                if status not in [TEST_PASS_STATUS, TEST_PEND_STATUS] and self._baseline_gen_name:
+                    basegen_case_fullpath = os.path.join(self._baseline_root,self._baseline_gen_name, test)
+                    test_dir = self._get_test_dir(test)
+                    generate_teststatus(test_dir, basegen_case_fullpath)
 
         wait_handles_report = False
         if not self._no_run and not self._no_batch:

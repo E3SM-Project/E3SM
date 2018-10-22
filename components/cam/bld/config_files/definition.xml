@@ -60,9 +60,9 @@ Switch to turn on/off advecting CLUBB moments: 0 => no, 1 => yes
 PBL package: uw (University of Washington), hb (Holtslag and Boville), hbr
  (Holtslag, Boville, and Rasch), clubb_sgs.
 </entry>
-<entry id="rad" valid_values="rrtmg,camrt" value="">
+<entry id="rad" valid_values="rrtmg,rrtmgp,camrt" value="">
 Radiative transfer calculation: 
-camrt (CAM3 and CAM4 RT package), rrtmg (RRTMG package from AER).
+camrt (CAM3 and CAM4 RT package), rrtmg (RRTMG package from AER), rrtmgp (RRTMGP package from AER).
 </entry>
 <entry id="carma" valid_values="none,bc_strat,cirrus,cirrus_dust,dust,meteor_impact,meteor_smoke,mixed_sulfate,pmc,pmc_sulfate,sea_salt,sulfate,tholin,test_detrain,test_growth,test_passive,test_radiative,test_swelling,test_tracers,test_tracers2" value="none">
 CARMA sectional microphysics: 

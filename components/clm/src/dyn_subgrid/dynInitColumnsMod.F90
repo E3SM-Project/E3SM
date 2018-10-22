@@ -16,7 +16,7 @@ module dynInitColumnsMod
   use TemperatureType   , only : temperature_type
   use SoilHydrologyType , only : soilhydrology_type
   use WaterstateType    , only : waterstate_type
-  use GridcellType      , only : grc_pp
+  use TopounitType      , only : top_pp
   use LandunitType      , only : lun_pp
   use ColumnType        , only : col_pp
   !
@@ -242,7 +242,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     logical :: found  ! whether a suitable template column has been found
-    integer :: g,l,c  ! indices of grid cell, landunit, column
+    integer :: t,l,c  ! indices of topounit, landunit, column
     
     character(len=*), parameter :: subname = 'initial_template_col'
     !-----------------------------------------------------------------------
@@ -250,8 +250,8 @@ contains
     SHR_ASSERT_ALL((ubound(cactive_prior) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
     found = .false.
-    g = col_pp%gridcell(c_new)
-    l = grc_pp%landunit_indices(landunit_type, g)
+    t = col_pp%topounit(c_new)
+    l = top_pp%landunit_indices(landunit_type, t)
 
     ! If this landunit exists on this grid cell...
     if (l /= ispval) then

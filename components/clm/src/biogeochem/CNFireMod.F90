@@ -354,6 +354,8 @@ contains
      end do
      !   
      ! Calculate noncrop column variables
+     ! 5/22/2018, PET: switched the use of column-weight-on-gridcell, to column-weight-on-topounit
+     ! in the calculation of summed weight for tropical trees
      !
      do fc = 1,num_soilc
         c = filter_soilc(fc)
@@ -387,15 +389,15 @@ contains
                     end if
                  end if
                  if( veg_pp%itype(p) == nbrdlf_evr_trp_tree .and. veg_pp%wtcol(p)  >  0._r8 )then
-                    trotr1_col(c)=trotr1_col(c)+veg_pp%wtcol(p)*col_pp%wtgcell(c)
+                    trotr1_col(c)=trotr1_col(c)+veg_pp%wtcol(p)*col_pp%wttopounit(c)
                  end if
                  if( veg_pp%itype(p) == nbrdlf_dcd_trp_tree .and. veg_pp%wtcol(p)  >  0._r8 )then
-                    trotr2_col(c)=trotr2_col(c)+veg_pp%wtcol(p)*col_pp%wtgcell(c)
+                    trotr2_col(c)=trotr2_col(c)+veg_pp%wtcol(p)*col_pp%wttopounit(c)
                  end if
                  if (transient_landcover) then    !true when landuse data is used
                     if( veg_pp%itype(p) == nbrdlf_evr_trp_tree .or. veg_pp%itype(p) == nbrdlf_dcd_trp_tree )then
                        if(lfpftd(p) > 0._r8)then
-                          dtrotr_col(c)=dtrotr_col(c)+lfpftd(p)*col_pp%wtgcell(c)
+                          dtrotr_col(c)=dtrotr_col(c)+lfpftd(p)*col_pp%wttopounit(c)
                        end if
                     end if
                  end if
