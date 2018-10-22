@@ -839,8 +839,6 @@
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/home/climate1/acme/baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/home/climate1/acme/cprnc/build/cprnc</CCSM_CPRNC>
-    <BATCHQUERY></BATCHQUERY>
-    <BATCHSUBMIT></BATCHSUBMIT>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
     <GMAKE>make</GMAKE>
     <GMAKE_J>32</GMAKE_J>

@@ -22,7 +22,6 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
 
     caseroot = case.get_value("CASEROOT")
     din_loc_root = case.get_value("DIN_LOC_ROOT")
-    batchsubmit = case.get_value("BATCHSUBMIT")
     rundir = case.get_value("RUNDIR")
     build_complete = case.get_value("BUILD_COMPLETE")
 
@@ -41,17 +40,6 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
 
     # load the module environment...
     case.load_env(reset=True)
-
-    # set environment variables
-
-    if batchsubmit is None or len(batchsubmit) == 0:
-        os.environ["LBQUERY"] = "FALSE"
-        os.environ["BATCHQUERY"] = "undefined"
-    elif batchsubmit == 'UNSET':
-        os.environ["LBQUERY"] = "FALSE"
-        os.environ["BATCHQUERY"] = "undefined"
-    else:
-        os.environ["LBQUERY"] = "TRUE"
 
     # create the timing directories, optionally cleaning them if needed.
     if os.path.isdir(os.path.join(rundir, "timing")):
