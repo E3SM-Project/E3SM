@@ -45,6 +45,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.test_units = ''
 
         self.reference_name = ''
+        self.short_ref_name = ''
         self.reference_title = ''
         # self.reference_colormap = 'viridis'
         self.reference_colormap = 'cet_rainbow.rgb'
