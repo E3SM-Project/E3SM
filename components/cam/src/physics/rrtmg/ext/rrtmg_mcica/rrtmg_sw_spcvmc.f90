@@ -417,6 +417,8 @@
 !               zomco(jk) = zomco(jk) / ztauo(jk)
 
 ! Clear-sky optical parameters including aerosols
+               if (ztaug(ikl,iw) .lt. 0.0_r8) ztaug(ikl,iw) = 0.0_r8
+
                ztauc(jk) = ztaur(ikl,iw) + ztaug(ikl,iw) + ptaua(ikl,ibm)
                zomcc(jk) = ztaur(ikl,iw) * 1.0_r8 + ptaua(ikl,ibm) * pomga(ikl,ibm)
                zgcc(jk) = pasya(ikl,ibm) * pomga(ikl,ibm) * ptaua(ikl,ibm) / zomcc(jk)

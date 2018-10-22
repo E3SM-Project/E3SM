@@ -1,0 +1,17 @@
+{
+  "@context": "https://raw.githubusercontent.com/mbjones/codemeta/master/codemeta.jsonld",
+  "@type": "SoftwareSourceCode",
+  "author": [
+    {
+      "@type": "Organization",
+      "name": "E3SM Project",
+    }
+  ],
+  "identifier": "http://dx.doi.org/10.11578/E3SM/dc.20180418.36",
+  "codeRepository": "https://github.com/E3SM-Project/E3SM",
+  "datePublished": "2018-04-20",
+  "keywords": "climate modeling",
+  "license": "BSD",
+  "title": "Energy Exascale Earth System Model",
+  "version": "v1.0.0"
+}

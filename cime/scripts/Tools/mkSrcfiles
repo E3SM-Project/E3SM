@@ -28,10 +28,18 @@ foreach $dir (@paths) {  # (could check that directories exist here)
 # Loop through the directories and add each filename as a hash key.  This
 # automatically eliminates redunancies.
 %src = ();
+my $skip_prefix = $ENV{mkSrcfiles_skip_prefix};
+
 foreach $dir (@paths) {
     @filenames = (glob("$dir/*.[Ffc]"), glob("$dir/*.[Ff]90"), glob("$dir/*.cpp"));
     foreach $filename (@filenames) {
 	$filename =~ s!.*/!!;                   # remove part before last slash
+	if (defined $skip_prefix){
+	    if ($filename =~ /^${skip_prefix}/){
+		print "WARNING: Skipping file $dir/$filename Source files beginning in $skip_prefix are ignored\n";
+		next;
+	    }
+	}
 	$src{$filename} = 1;
     }
     @templates = glob("$dir/*.F90.in");

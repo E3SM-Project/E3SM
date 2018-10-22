@@ -1,6 +1,0 @@
-#define TYPEDOUBLE 102
-#define TYPEINT 103
-#define TYPETEXT 100
-#define TYPELONG 104
-#define TYPEREAL 101	
-#define TYPELOGICAL 105	

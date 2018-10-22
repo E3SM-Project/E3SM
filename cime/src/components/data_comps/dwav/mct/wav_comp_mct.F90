@@ -76,16 +76,18 @@ CONTAINS
     logical           :: scmMode = .false.         ! single column mode
     real(R8)          :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)          :: scmLon  = shr_const_SPVAL ! single column lon
+    logical           :: post_assim = .false.      ! Run is post-DA
     character(*), parameter :: subName = "(wav_init_mct) "
     !-------------------------------------------------------------------------------
 
     ! Set cdata pointers
     call seq_cdata_setptrs(cdata, &
-         id=compid, &
-         mpicom=mpicom, &
-         gsMap=gsmap, &
-         dom=ggrid, &
-         infodata=infodata)
+         id=compid,               &
+         mpicom=mpicom,           &
+         gsMap=gsmap,             &
+         dom=ggrid,               &
+         infodata=infodata,       &
+         post_assimilation=post_assim)
 
     ! Obtain infodata variables
     call seq_infodata_getData(infodata, &
@@ -142,6 +144,19 @@ CONTAINS
     end if
 
     ! NOTE: the following will never be called if wav_present is .false.
+
+    ! Diagnostic print statement to test DATA_ASSIMILATION_WAV XML variable
+    !   usage (and therefore a proxy for other component types).
+    if (my_task == master_task) then
+       if (post_assim) then
+          write(logunit, *) subName//': Post data assimilation signal'
+       else if (read_restart) then
+          write(logunit, *) subName//': Restart run'
+       else
+          write(logunit, *) subName//': Initial run'
+       end if
+       call shr_sys_flush(logunit)
+    end if
 
     !----------------------------------------------------------------------------
     ! Initialize dwav
@@ -210,7 +225,7 @@ CONTAINS
 
     call dwav_comp_run(EClock, x2w, w2x, &
          SDWAV, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, logunit, read_restart, case_name)
+         inst_suffix, logunit, case_name)
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)

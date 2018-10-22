@@ -9,7 +9,7 @@ more.
 
 from CIME.BuildTools.macrowriterbase import MacroWriterBase
 from CIME.XML.standard_module_setup import *
-logger = logging.getLogger(__name__)
+#logger = logging.getLogger(__name__)
 
 # This is not the most useful check.
 # pylint: disable=invalid-name

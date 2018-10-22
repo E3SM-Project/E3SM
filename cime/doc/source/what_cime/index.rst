@@ -29,26 +29,26 @@ Overview
 
 CIME is comprised of:
 
-1. A default coupled model architecture:
+1. A Case Control System to support configuration, compilation, execution, system testing and unit testing of a earth system model:
+
+    i. Scripts to enable simple generation of model executables and associated input files for different scientific cases, component resolutions and combinations of full, data and stub components with a handful of commands.
+    ii. Testing utilities to run defined system tests and report results for different configurations of the coupled system.
+
+2. A default coupled model architecture:
 
     i. A programmer interface and libraries to implement a hub-and-spoke inter-component coupling architecture.
-    ii. An implementation of a “hub” that needs 7 components (atm, ocn, lnd, sea-ice, land-ice, river, wave). a.k.a. “the driver”.
+    ii. An implementation of a "hub" that needs 7 components (atm, ocn, lnd, sea-ice, land-ice, river, wave). a.k.a. “the driver”.
     iii. The ability to allow active and data components to be mixed in any combination as long as each component implements the coupling programmer interface.
 
-2. Non-active Data and Stub components:
+3. Non-active Data and Stub components:
 
     i. “Data-only” versions of 6 of the 7 components that can replace active components at build-time.
     ii. “Stub” versions of all 7 components for building a complete system.
 
-3. Additional libraries useful in scientific applications in general and climate models in particular.
+4. Source code for externall libraries useful in scientific applications in general and climate models in particular.
     i.  Parallel I/O library.
     ii. The Model Coupling Toolkit.
     iii. Timing library.
-
-4. A system of scripts (python) to support case configuration, executable compilation, workflow, system testing and unit testing infrastructure:
-
-    i. Scripts to enable simple generation of model executables and associated input files for different scientific cases, component resolutions and combinations of full, data and stub components with a handful of commands.
-    ii. Testing utilities to run defined system tests and report results for different configurations of the coupled system.
 
 5. Additional stand-alone tools:
 
@@ -58,10 +58,10 @@ CIME is comprised of:
     iv. Netcdf file comparison program (for bit-for-bit).
 
 *************************
-Where is CIME developed?
+Development
 *************************
 
-CIME is an open-source, public repository hosted under the Earth
+CIME is developed in an open-source, public repository hosted under the Earth
 System Model Computational Infrastructure (ESMCI) organization on
 Github at http://github.com/ESMCI/cime.
 

@@ -1,9 +1,9 @@
 """
 Implementation of the CIME pause/resume test: Tests having driver
 'pause' (write cpl restart file) and 'resume' (read cpl restart file)
-without changing restart file. Compare to non-pause/resume run.
+possibly changing the restart file. Compared to non-pause/resume run.
 Test can also be run with other component combinations.
-
+Test requires DESP component to function correctly.
 """
 
 import os.path
@@ -13,7 +13,6 @@ import glob
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
 from CIME.utils import expect
 from CIME.hist_utils import cprnc
-from CIME.case_setup import case_setup
 
 ###############################################################################
 class PRE(SystemTestsCompareTwo):
@@ -21,7 +20,7 @@ class PRE(SystemTestsCompareTwo):
     """
     Implementation of the CIME pause/resume test: Tests having driver
     'pause' (write cpl and/or other restart file(s)) and 'resume'
-    (read cpl and/or other restart file(s)) without changing restart
+    (read cpl and/or other restart file(s)) possibly changing restart
     file. Compare to non-pause/resume run.
     """
 
@@ -39,7 +38,7 @@ class PRE(SystemTestsCompareTwo):
     ###########################################################################
     def _case_one_setup(self):
     ###########################################################################
-        case_setup(self._case, test_mode=True, reset=True)
+        pass
 
     ###########################################################################
     def _case_two_setup(self):
@@ -59,11 +58,11 @@ class PRE(SystemTestsCompareTwo):
         self._case.set_value("PAUSE_OPTION", stopopt)
         self._case.set_value("PAUSE_N", pausen)
         comps = self._case.get_values("COMP_CLASSES")
-        data_assimilation = []
+        pause_active = []
         for comp in comps:
-            data_assimilation.append(self._case.get_value("DATA_ASSIMILATION_{}".format(comp)))
+            pause_active.append(self._case.get_value("PAUSE_ACTIVE_{}".format(comp)))
 
-        expect(any(data_assimilation), "No Data_Assimilation flag is set")
+        expect(any(pause_active), "No pause_active flag is set")
 
         self._case.flush()
 
@@ -83,7 +82,7 @@ class PRE(SystemTestsCompareTwo):
         multi_driver = self._case.get_value("MULTI_DRIVER")
         comps = self._case.get_values("COMP_CLASSES")
         for comp in comps:
-            if not self._case.get_value("DATA_ASSIMILATION_{}".format(comp)):
+            if not self._case.get_value("PAUSE_ACTIVE_{}".format(comp)):
                 continue
             if comp == "CPL":
                 if multi_driver:

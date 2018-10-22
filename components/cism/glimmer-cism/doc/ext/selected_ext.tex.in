@@ -1,8 +1,0 @@
-\setboolean{have_ext}{false}
-\setboolean{have_erosion}{@build_extension_erosion@}
-\setboolean{have_libphaml}{@build_extension_libphaml@}
-
-\ifthenelse{\boolean{have_erosion}}{\setboolean{have_ext}{true}}{}
-\ifthenelse{\boolean{have_libphaml}}{\setboolean{have_ext}{true}}{}
-
-

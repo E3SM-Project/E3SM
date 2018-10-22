@@ -132,7 +132,7 @@ contains
 
     deallocate (length, displ, procname)
 
-100 format(//,i3," pes participating in computation for CLM")
+100 format(//,i7," pes participating in computation for CLM")
 200 format(/,35('-'))
 220 format(/,"NODE#",2x,"NAME")
 250 format("(",i5,")",2x,100a1,//)

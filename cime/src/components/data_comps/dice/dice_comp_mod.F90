@@ -80,6 +80,9 @@ module dice_comp_mod
   integer(IN) :: kiFrac,kt,kavsdr,kanidr,kavsdf,kanidf,kswnet,kmelth,kmeltw
   integer(IN) :: ksen,klat,klwup,kevap,ktauxa,ktauya,ktref,kqref,kswpen,ktauxo,ktauyo,ksalt
   integer(IN) :: ksalinity
+  integer(IN) :: kbcpho, kbcphi, kflxdst
+  integer(IN) :: kbcphidry, kbcphodry, kbcphiwet, kocphidry, kocphodry, kocphiwet
+  integer(IN) :: kdstdry1, kdstdry2, kdstdry3, kdstdry4, kdstwet1, kdstwet2, kdstwet3, kdstwet4
 
   ! optional per thickness category fields
   integer(IN) :: kiFrac_01,kswpen_iFrac_01
@@ -93,35 +96,9 @@ module dice_comp_mod
   !  real(R8)    , pointer :: ifrac0(:)
 
   !--------------------------------------------------------------------------
-  integer(IN),parameter :: ktrans = 42
-  character(16),parameter  :: avofld(1:ktrans) = &
-       (/"So_t            ","So_s            ","So_u            ","So_v            ", &
-       "So_dhdx         ","So_dhdy         ","Fioo_q          ","Sa_z            ", &
-       "Sa_u            ","Sa_v            ","Sa_ptem         ","Sa_tbot         ", &
-       "Sa_shum         ","Sa_dens         ","Faxa_swndr      ","Faxa_swvdr      ", &
-       "Faxa_swndf      ","Faxa_swvdf      ","Faxa_lwdn       ","Faxa_rain       ", &
-       "Faxa_snow       ","Si_t            ","Si_tref         ","Si_qref         ", &
-       "Si_ifrac        ","Si_avsdr        ","Si_anidr        ","Si_avsdf        ", &
-       "Si_anidf        ","Faii_taux       ","Faii_tauy       ","Faii_lat        ", &
-       "Faii_sen        ","Faii_lwup       ","Faii_evap       ","Faii_swnet      ", &
-       "Fioi_swpen      ","Fioi_melth      ","Fioi_meltw      ","Fioi_salt       ", &
-       "Fioi_taux       ","Fioi_tauy       " /)
-
-  character(16),parameter  :: avifld(1:ktrans) = &
-       (/"to              ","s               ","uo              ","vo              ", &
-       "dhdx            ","dhdy            ","q               ","z               ", &
-       "ua              ","va              ","ptem            ","tbot            ", &
-       "shum            ","dens            ","swndr           ","swvdr           ", &
-       "swndf           ","swvdf           ","lwdn            ","rain            ", &
-       "snow            ","t               ","tref            ","qref            ", &
-       "ifrac           ","avsdr           ","anidr           ","avsdf           ", &
-       "anidf           ","tauxa           ","tauya           ","lat             ", &
-       "sen             ","lwup            ","evap            ","swnet           ", &
-       "swpen           ","melth           ","meltw           ","salt            ", &
-       "tauxo           ","tauyo           " /)
-  !--------------------------------------------------------------------------
-
-  save
+  integer(IN),parameter :: ktrans = 1
+  character(16),parameter  :: avofld(1:ktrans) = (/"Si_ifrac        "/)
+  character(16),parameter  :: avifld(1:ktrans) = (/"ifrac           "/)
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
@@ -159,8 +136,6 @@ CONTAINS
     real(R8)               , intent(in)    :: scmLon               ! single column lon
 
     !--- local variables ---
-    integer(IN)   :: n,k         ! generic counters
-    integer(IN)   :: ierr        ! error code
     integer(IN)   :: lsize       ! local size
     integer(IN)   :: kfld        ! field reference
     logical       :: exists      ! file existance logical
@@ -276,9 +251,11 @@ CONTAINS
     ktauxo = mct_aVect_indexRA(i2x,'Fioi_taux')
     ktauyo = mct_aVect_indexRA(i2x,'Fioi_tauy')
     ksalt  = mct_aVect_indexRA(i2x,'Fioi_salt')
+    kbcpho = mct_aVect_indexRA(i2x,'Fioi_bcpho')
+    kbcphi = mct_aVect_indexRA(i2x,'Fioi_bcphi')
+    kflxdst= mct_aVect_indexRA(i2x,'Fioi_flxdst')
 
     ! optional per thickness category fields
-
     if (seq_flds_i2o_per_cat) then
        kiFrac_01       = mct_aVect_indexRA(i2x,'Si_ifrac_01')
        kswpen_iFrac_01 = mct_aVect_indexRA(i2x,'PFioi_swpen_ifrac_01')
@@ -287,19 +264,33 @@ CONTAINS
     call mct_aVect_init(x2i, rList=seq_flds_x2i_fields, lsize=lsize)
     call mct_aVect_zero(x2i)
 
-    kswvdr = mct_aVect_indexRA(x2i,'Faxa_swvdr')
-    kswndr = mct_aVect_indexRA(x2i,'Faxa_swndr')
-    kswvdf = mct_aVect_indexRA(x2i,'Faxa_swvdf')
-    kswndf = mct_aVect_indexRA(x2i,'Faxa_swndf')
-    kq     = mct_aVect_indexRA(x2i,'Fioo_q')
-    kz     = mct_aVect_indexRA(x2i,'Sa_z')
-    kua    = mct_aVect_indexRA(x2i,'Sa_u')
-    kva    = mct_aVect_indexRA(x2i,'Sa_v')
-    kptem  = mct_aVect_indexRA(x2i,'Sa_ptem')
-    kshum  = mct_aVect_indexRA(x2i,'Sa_shum')
-    kdens  = mct_aVect_indexRA(x2i,'Sa_dens')
-    ktbot  = mct_aVect_indexRA(x2i,'Sa_tbot')
+    kswvdr    = mct_aVect_indexRA(x2i,'Faxa_swvdr')
+    kswndr    = mct_aVect_indexRA(x2i,'Faxa_swndr')
+    kswvdf    = mct_aVect_indexRA(x2i,'Faxa_swvdf')
+    kswndf    = mct_aVect_indexRA(x2i,'Faxa_swndf')
+    kq        = mct_aVect_indexRA(x2i,'Fioo_q')
+    kz        = mct_aVect_indexRA(x2i,'Sa_z')
+    kua       = mct_aVect_indexRA(x2i,'Sa_u')
+    kva       = mct_aVect_indexRA(x2i,'Sa_v')
+    kptem     = mct_aVect_indexRA(x2i,'Sa_ptem')
+    kshum     = mct_aVect_indexRA(x2i,'Sa_shum')
+    kdens     = mct_aVect_indexRA(x2i,'Sa_dens')
+    ktbot     = mct_aVect_indexRA(x2i,'Sa_tbot')
     ksalinity = mct_aVect_indexRA(x2i,'So_s')
+    kbcphidry = mct_aVect_indexRA(x2i,'Faxa_bcphidry')
+    kbcphodry = mct_aVect_indexRA(x2i,'Faxa_bcphodry')
+    kbcphiwet = mct_aVect_indexRA(x2i,'Faxa_bcphiwet')
+    kocphidry = mct_aVect_indexRA(x2i,'Faxa_ocphidry')
+    kocphodry = mct_aVect_indexRA(x2i,'Faxa_ocphodry')
+    kocphiwet = mct_aVect_indexRA(x2i,'Faxa_ocphiwet')
+    kdstdry1  = mct_aVect_indexRA(x2i,'Faxa_dstdry1')
+    kdstdry2  = mct_aVect_indexRA(x2i,'Faxa_dstdry2')
+    kdstdry3  = mct_aVect_indexRA(x2i,'Faxa_dstdry3')
+    kdstdry4  = mct_aVect_indexRA(x2i,'Faxa_dstdry4')
+    kdstwet1  = mct_aVect_indexRA(x2i,'Faxa_dstwet1')
+    kdstwet2  = mct_aVect_indexRA(x2i,'Faxa_dstwet2')
+    kdstwet3  = mct_aVect_indexRA(x2i,'Faxa_dstwet3')
+    kdstwet4  = mct_aVect_indexRA(x2i,'Faxa_dstwet4')
 
     ! call mct_aVect_init(avstrm, rList=flds_strm, lsize=lsize)
     ! call mct_aVect_zero(avstrm)
@@ -524,9 +515,9 @@ CONTAINS
           !--- newly recv'd swdn goes with previously sent albedo ---
           !--- but albedos are (currently) time invariant         ---
           i2x%rAttr(kswnet,n) = (1.0_R8 - i2x%rAttr(kavsdr,n))*x2i%rAttr(kswvdr,n) &
-               &                   + (1.0_R8 - i2x%rAttr(kanidr,n))*x2i%rAttr(kswndr,n) &
-               &                   + (1.0_R8 - i2x%rAttr(kavsdf,n))*x2i%rAttr(kswvdf,n) &
-               &                   + (1.0_R8 - i2x%rAttr(kanidf,n))*x2i%rAttr(kswndf,n)
+                              + (1.0_R8 - i2x%rAttr(kanidr,n))*x2i%rAttr(kswndr,n) &
+                              + (1.0_R8 - i2x%rAttr(kavsdf,n))*x2i%rAttr(kswvdf,n) &
+                              + (1.0_R8 - i2x%rAttr(kanidf,n))*x2i%rAttr(kswndf,n)
 
           !--- compute melt/freeze water balance, adjust iFrac  -------------
           if ( .not. flux_Qacc ) then ! Q accumulation option is OFF
@@ -590,8 +581,9 @@ CONTAINS
        end do
 
        ! compute atm/ice surface fluxes
-       call shr_flux_atmIce(iMask  ,x2i%rAttr(kz,:)     ,x2i%rAttr(kua,:)    ,x2i%rAttr(kva,:), &
-            x2i%rAttr(kptem,:) ,x2i%rAttr(kshum,:)  ,x2i%rAttr(kdens,:)  ,x2i%rAttr(ktbot,:),  &
+       call shr_flux_atmIce(&
+            iMask              ,x2i%rAttr(kz,:)     ,x2i%rAttr(kua,:)    ,x2i%rAttr(kva,:)  , &
+            x2i%rAttr(kptem,:) ,x2i%rAttr(kshum,:)  ,x2i%rAttr(kdens,:)  ,x2i%rAttr(ktbot,:), &
             i2x%rAttr(kt,:)    ,i2x%rAttr(ksen,:)   ,i2x%rAttr(klat,:)   ,i2x%rAttr(klwup,:), &
             i2x%rAttr(kevap,:) ,i2x%rAttr(ktauxa,:) ,i2x%rAttr(ktauya,:) ,i2x%rAttr(ktref,:), &
             i2x%rAttr(kqref,:) )
@@ -622,6 +614,16 @@ CONTAINS
           !         iFrac0(n) = i2x%rAttr(kiFrac,n)
        end do
 
+       ! Compute outgoing aerosol fluxes
+       do n = 1,lsize
+          i2x%rAttr(kbcpho ,n) = x2i%rAttr(kbcphodry,n)
+          i2x%rAttr(kbcphi ,n) = x2i%rAttr(kbcphidry,n) + x2i%rAttr(kbcphiwet,n)
+          i2x%rAttr(kflxdst,n) = x2i%rAttr(kdstdry1,n) + x2i%rAttr(kdstwet1,n) &
+                               + x2i%rAttr(kdstdry2,n) + x2i%rAttr(kdstwet2,n) &
+                               + x2i%rAttr(kdstdry3,n) + x2i%rAttr(kdstwet3,n) &
+                               + x2i%rAttr(kdstdry4,n) + x2i%rAttr(kdstwet4,n)
+       end do
+
     end select
 
     !-------------------------------------------------
@@ -643,7 +645,6 @@ CONTAINS
 
     if (write_restart) then
        call t_startf('dice_restart')
-       ! Write rpointer file
        call shr_cal_ymdtod2string(date_str, yy, mm, dd, currentTOD)
        write(rest_file,"(6a)") &
             trim(case_name), '.dice',trim(inst_suffix),'.r.', &
@@ -659,7 +660,6 @@ CONTAINS
           close(nu)
           call shr_file_freeUnit(nu)
        endif
-       ! Write restart info
        if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),currentYMD,currentTOD
        call shr_pcdf_readwrite('write',SDICE%pio_subsystem, SDICE%io_type, &
             trim(rest_file),mpicom,gsmap,clobber=.true.,rf1=water,rf1n='water')

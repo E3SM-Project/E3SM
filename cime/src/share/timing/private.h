@@ -10,7 +10,9 @@
 #include <sys/time.h>
 
 #ifndef NO_COMM_F2C
+#ifndef HAVE_COMM_F2C
 #define HAVE_COMM_F2C
+#endif
 #endif
 
 #ifndef MIN

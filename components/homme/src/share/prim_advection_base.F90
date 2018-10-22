@@ -54,7 +54,7 @@ module prim_advection_base
   use time_mod, only           : TimeLevel_t, TimeLevel_Qdp
   use control_mod, only        : integration, test_case, hypervis_order, &
          nu_q, nu_p, limiter_option, hypervis_subcycle_q, rsplit
-  use edge_mod, only           : edgevpack, edgevunpack, initedgebuffer, initedgesbuffer, edgevunpackmin
+  use edge_mod, only           : initedgesbuffer, edge_g, edgevpack_nlyr, edgevunpack_nlyr
   use edgetype_mod, only       : EdgeDescriptor_t, EdgeBuffer_t
   use hybrid_mod, only         : hybrid_t
   use bndry_mod, only          : bndry_exchangev
@@ -75,7 +75,7 @@ module prim_advection_base
   public :: Prim_Advec_Tracers_remap_rk2   
 
 
-  type (EdgeBuffer_t)      :: edgeAdv, edgeAdvp1, edgeAdvQminmax
+  type (EdgeBuffer_t)      :: edgeAdvQminmax
 
   integer,parameter :: DSSeta = 1
   integer,parameter :: DSSomega = 2
@@ -104,29 +104,11 @@ contains
 
 
     integer :: ie
-    ! Shared buffer pointers.
-    ! Using "=> null()" in a subroutine is usually bad, because it makes
-    ! the variable have an implicit "save", and therefore shared between
-    ! threads. But in this case we want shared pointers.
-    real(kind=real_kind), pointer :: buf_ptr(:) => null()
-    real(kind=real_kind), pointer :: receive_ptr(:) => null()
-
-
-    ! this might be called with qsize=0
-    ! allocate largest one first
-    ! Currently this is never freed. If it was, only this first one should
-    ! be freed, as only it knows the true size of the buffer.
-    call initEdgeBuffer(par,edgeAdvp1,elem,qsize*nlev + nlev)
-    call initEdgeBuffer(par,edgeAdv,elem,qsize*nlev)
 
     ! This is a different type of buffer pointer allocation 
     ! used for determine the minimum and maximum value from 
     ! neighboring  elements
     call initEdgeSBuffer(par,edgeAdvQminmax,elem,qsize*nlev*2)
-
-    ! Don't actually want these saved, if this is ever called twice.
-    nullify(buf_ptr)
-    nullify(receive_ptr)
 
     ! this static array is shared by all threads, so dimension for all threads (nelemd), not nets:nete:
     allocate (qmin(nlev,qsize,nelemd))
@@ -222,14 +204,14 @@ contains
       ! dissipation was applied in RHS.
     else
       call t_startf('ah_scalar')
-      call advance_hypervis_scalar(edgeadv,elem,hvcoord,hybrid,deriv,tl%np1,np1_qdp,nets,nete,dt)
+      call advance_hypervis_scalar(elem,hvcoord,hybrid,deriv,tl%np1,np1_qdp,nets,nete,dt)
       call t_stopf('ah_scalar')
     endif
 !    call extrae_user_function(0)
 
     ! physical viscosity for supercell test case
     if (dcmip16_mu_s>0) then
-        call advance_physical_vis(edgeadv,elem,hvcoord,hybrid,deriv,tl%np1,np1_qdp,nets,nete,dt,dcmip16_mu_s)
+        call advance_physical_vis(elem,hvcoord,hybrid,deriv,tl%np1,np1_qdp,nets,nete,dt,dcmip16_mu_s)
      endif
 
     call t_stopf('prim_advec_tracers_remap_rk2')
@@ -295,7 +277,6 @@ contains
   use element_mod    , only : element_t
   use derivative_mod , only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere, &
                               limiter_optim_iter_full, limiter_clip_and_sum
-  use edge_mod       , only : edgevpack, edgevunpack
   use bndry_mod      , only : bndry_exchangev
   use hybvcoord_mod  , only : hvcoord_t
   implicit none
@@ -424,7 +405,7 @@ OMP_SIMD
 !      call biharmonic_wk_scalar_minmax( elem , qtens_biharmonic , deriv , edgeAdvQ3 , hybrid , &
 !           nets , nete , qmin(:,:,nets:nete) , qmax(:,:,nets:nete) )
       call neighbor_minmax_start(hybrid,edgeAdvQminmax,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
-      call biharmonic_wk_scalar(elem,qtens_biharmonic,deriv,edgeAdv,hybrid,nets,nete) 
+      call biharmonic_wk_scalar(elem,qtens_biharmonic,deriv,edge_g,hybrid,nets,nete) 
       do ie = nets , nete
 #if (defined COLUMN_OPENMP_notB4B)
 !$omp parallel do private(k, q)
@@ -486,7 +467,7 @@ OMP_SIMD
       ! also DSS extra field
       DSSvar(:,:,k) = elem(ie)%spheremp(:,:) * DSSvar(:,:,k)
     enddo
-    call edgeVpack( edgeAdvp1 , DSSvar(:,:,1:nlev) , nlev , nlev*qsize , ie)
+    call edgeVpack_nlyr( edge_g , elem(ie)%desc, DSSvar(:,:,1:nlev) , nlev , nlev*qsize , nlev*(qsize+1))
 
     ! advance Qdp
 #if (defined COLUMN_OPENMP)
@@ -530,12 +511,12 @@ OMP_SIMD
         call limiter2d_zero( elem(ie)%state%Qdp(:,:,:,q,np1_qdp))
       endif
 
-      call edgeVpack(edgeAdvp1 , elem(ie)%state%Qdp(:,:,:,q,np1_qdp) , nlev , nlev*(q-1) , ie )
+      call edgeVpack_nlyr(edge_g , elem(ie)%desc, elem(ie)%state%Qdp(:,:,:,q,np1_qdp) , nlev , nlev*(q-1) , nlev*(qsize+1) )
     enddo
   enddo ! ie loop
 
   call t_startf('eus_bexchV')
-  call bndry_exchangeV( hybrid , edgeAdvp1 )
+  call bndry_exchangeV( hybrid , edge_g )
   call t_stopf('eus_bexchV')
 
   do ie = nets , nete
@@ -543,7 +524,7 @@ OMP_SIMD
     if ( DSSopt == DSSomega       ) DSSvar => elem(ie)%derived%omega_p(:,:,:)
     if ( DSSopt == DSSdiv_vdp_ave ) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
 
-    call edgeVunpack( edgeAdvp1 , DSSvar(:,:,1:nlev) , nlev , qsize*nlev , ie )
+    call edgeVunpack_nlyr(edge_g , elem(ie)%desc, DSSvar(:,:,1:nlev) , nlev , qsize*nlev, (qsize+1)*nlev)
 OMP_SIMD
     do k = 1 , nlev
       DSSvar(:,:,k) = DSSvar(:,:,k) * elem(ie)%rspheremp(:,:)
@@ -553,7 +534,7 @@ OMP_SIMD
 !$omp parallel do private(q,k)
 #endif
     do q = 1 , qsize
-      call edgeVunpack( edgeAdvp1 , elem(ie)%state%Qdp(:,:,:,q,np1_qdp) , nlev , nlev*(q-1) , ie )
+      call edgeVunpack_nlyr(edge_g , elem(ie)%desc, elem(ie)%state%Qdp(:,:,:,q,np1_qdp) , nlev , nlev*(q-1), (qsize+1)*nlev)
       do k = 1 , nlev    !  Potential loop inversion (AAM)
         elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%rspheremp(:,:) * elem(ie)%state%Qdp(:,:,k,q,np1_qdp)
       enddo
@@ -622,7 +603,7 @@ OMP_SIMD
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
 
-  subroutine advance_hypervis_scalar(edgeAdv,elem, hvcoord , hybrid , deriv , nt , nt_qdp , nets , nete , dt2 )
+  subroutine advance_hypervis_scalar(elem, hvcoord , hybrid , deriv , nt , nt_qdp , nets , nete , dt2 )
   !  hyperviscsoity operator for foward-in-time scheme
   !  take one timestep of:
   !          Q(:,:,:,np) = Q(:,:,:,np) +  dt2*nu*laplacian**order ( Q )
@@ -633,12 +614,9 @@ OMP_SIMD
   use hybrid_mod     , only : hybrid_t
   use element_mod    , only : element_t
   use derivative_mod , only : derivative_t
-  use edge_mod       , only : edgevpack, edgevunpack
-  use edgetype_mod   , only : EdgeBuffer_t
   use bndry_mod      , only : bndry_exchangev
   use perf_mod       , only : t_startf, t_stopf                          ! _EXTERNAL
   implicit none
-  type (EdgeBuffer_t)  , intent(inout)         :: edgeAdv
   type (element_t)     , intent(inout), target :: elem(:)
   type (hvcoord_t)     , intent(in   )         :: hvcoord
   type (hybrid_t)      , intent(in   )         :: hybrid
@@ -702,7 +680,7 @@ OMP_SIMD
     enddo ! ie loop
 
     ! compute biharmonic operator. Qtens = input and output
-    call biharmonic_wk_scalar( elem , Qtens , deriv , edgeAdv , hybrid , nets , nete )
+    call biharmonic_wk_scalar( elem , Qtens , deriv , edge_g , hybrid , nets , nete )
 
     do ie = nets , nete
 #if (defined COLUMN_OPENMP)
@@ -726,15 +704,15 @@ OMP_SIMD
         endif
 
       enddo
-      call edgeVpack  ( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , ie )
+      call edgeVpack_nlyr(edge_g , elem(ie)%desc, elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , qsize*nlev )
     enddo ! ie loop
 
     call t_startf('ah_scalar_bexchV')
-    call bndry_exchangeV( hybrid , edgeAdv )
+    call bndry_exchangeV( hybrid , edge_g )
     call t_stopf('ah_scalar_bexchV')
 
     do ie = nets , nete
-      call edgeVunpack( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , ie )
+      call edgeVunpack_nlyr(edge_g , elem(ie)%desc, elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0, qsize*nlev)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(q,k) collapse(2)
 #endif
@@ -759,7 +737,7 @@ OMP_SIMD
 
 
 
-  subroutine advance_physical_vis(edgeAdv,elem,hvcoord,hybrid,deriv,nt,nt_qdp,nets,nete,dt,mu)
+  subroutine advance_physical_vis(elem,hvcoord,hybrid,deriv,nt,nt_qdp,nets,nete,dt,mu)
   !
   !  take one timestep of of physical viscosity (single laplace operator) for
   !  all tracers in both horizontal and vertical
@@ -778,12 +756,9 @@ OMP_SIMD
   use element_mod    , only : element_t
   use element_ops    , only : state0
   use derivative_mod , only : derivative_t, laplace_z, laplace_sphere_wk
-  use edge_mod       , only : edgevpack, edgevunpack
-  use edgetype_mod   , only : EdgeBuffer_t
   use bndry_mod      , only : bndry_exchangev
   use perf_mod       , only : t_startf, t_stopf                          ! _EXTERNAL
   implicit none
-  type (EdgeBuffer_t)  , intent(inout)         :: edgeAdv
   type (element_t)     , intent(inout), target :: elem(:)
   type (hvcoord_t)     , intent(in   )         :: hvcoord
   type (hybrid_t)      , intent(in   )         :: hybrid
@@ -825,13 +800,13 @@ OMP_SIMD
         endif
 
       enddo
-      call edgeVpack  ( edgeAdv,elem(ie)%state%Qdp(:,:,:,:,nt_qdp),qsize*nlev,0,ie )
+      call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%Qdp(:,:,:,:,nt_qdp),qsize*nlev,0,qsize*nlev)
     enddo ! ie loop
 
-    call bndry_exchangeV( hybrid,edgeAdv )
+    call bndry_exchangeV( hybrid,edge_g )
 
     do ie=nets,nete
-      call edgeVunpack( edgeAdv,elem(ie)%state%Qdp(:,:,:,:,nt_qdp),qsize*nlev,0,ie )
+      call edgeVunpack_nlyr(edge_g,elem(ie)%desc, elem(ie)%state%Qdp(:,:,:,:,nt_qdp),qsize*nlev,0,qsize*nlev)
       do q=1,qsize
         ! apply inverse mass matrix
         do k=1,nlev

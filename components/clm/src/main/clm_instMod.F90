@@ -5,7 +5,7 @@ module clm_instMod
   use shr_kind_mod               , only : r8 => shr_kind_r8
   use shr_log_mod                , only : errMsg => shr_log_errMsg
   use decompMod                  , only : bounds_type, get_proc_bounds
-  use clm_varctl                 , only : use_cn, use_voc, use_c13, use_c14, use_ed, use_betr
+  use clm_varctl                 , only : use_cn, use_voc, use_c13, use_c14, use_fates, use_betr
   !-----------------------------------------
   ! Definition of component types
   !-----------------------------------------
@@ -144,7 +144,7 @@ contains
     if (use_voc ) then
        call vocemis_vars%Init(bounds_proc)
     end if
-    if (use_cn .or. use_ed) then
+    if (use_cn .or. use_fates) then
 
        ! Note - always initialize the memory for the c13_carbonstate_vars and
        ! c14_carbonstate_vars data structure so that they can be used in
@@ -210,7 +210,7 @@ contains
     end if
     
     ! Initialize the Functionaly Assembled Terrestrial Ecosystem Simulator (FATES)
-    if (use_ed) then
+    if (use_fates) then
        call alm_fates%Init(bounds_proc)
     end if
        

@@ -214,6 +214,8 @@ contains
        
        ! Create mct river runoff export state
        call rof_export_mct( r2x_r )
+    else
+       call seq_infodata_PutData(infodata, rofice_present=.false.)
     end if
 
     ! Fill in infodata

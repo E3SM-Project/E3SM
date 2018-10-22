@@ -11,6 +11,14 @@ module element_state
   private
   integer, public, parameter :: timelevels = 3
 
+  ! maximum number of Newton iterations taken for an IMEX-RK stage per time-step
+  integer, public               :: max_itercnt_perstep
+  ! running average of max_itercnt_perstep
+  real (kind=real_kind), public :: avg_itercnt=0.0
+  ! maximum error of Newton iteration for an IMEX-RK stage per time-step
+  real (kind=real_kind), public :: max_itererr_perstep
+
+
 ! =========== PRIMITIVE-EQUATION DATA-STRUCTURES =====================
 
   type, public :: elem_state_t
@@ -23,7 +31,7 @@ module element_state
 
     real (kind=real_kind) :: v   (np,np,2,nlev,timelevels)        ! horizontal velocity 
     real (kind=real_kind) :: w_i (np,np,nlevp,timelevels)         ! vertical velocity at interfaces
-    real (kind=real_kind) :: theta_dp_cp(np,np,nlev,timelevels)   ! potential temperature                       
+    real (kind=real_kind) :: vtheta_dp(np,np,nlev,timelevels)     ! virtual potential temperature (mass)
     real (kind=real_kind) :: phinh_i(np,np,nlevp,timelevels)      ! geopotential used by NH model at interfaces
     real (kind=real_kind) :: dp3d(np,np,nlev,timelevels)          ! delta p on levels                  
     real (kind=real_kind) :: ps_v(np,np,timelevels)               ! surface pressure                   
@@ -61,7 +69,6 @@ module element_state
     real (kind=real_kind) :: FQps(np,np)                   ! forcing of FQ on ps_v
 
     real (kind=real_kind) :: gradphis(np,np,2)   ! grad phi at the surface, computed once in model initialization
-
   end type derived_state_t
   
 
@@ -117,4 +124,5 @@ module element_state
 
 
 contains
+
 end module 

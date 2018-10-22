@@ -93,12 +93,10 @@ module clm_varctl
   character(len=fname_len), public :: fatmlndfrc = ' '        ! lnd frac file on atm grid
   character(len=fname_len), public :: fatmtopo   = ' '        ! topography on atm grid
   character(len=fname_len), public :: flndtopo   = ' '        ! topography on lnd grid
-  character(len=fname_len), public :: flanduse_timeseries    = ' '        ! dynamic landuse dataset
   character(len=fname_len), public :: paramfile  = ' '        ! ASCII data file with PFT physiological constants
   character(len=fname_len), public :: nrevsn     = ' '        ! restart data file name for branch run
   character(len=fname_len), public :: fsnowoptics  = ' '      ! snow optical properties file name
   character(len=fname_len), public :: fsnowaging   = ' '      ! snow aging parameters file name
- !! X. YANG  : add soil order dependent parameter file
   character(len=fname_len), public :: fsoilordercon    = ' '  ! ASCII data file with soil order dependent  constants
 
   !----------------------------------------------------------
@@ -189,7 +187,7 @@ module clm_varctl
   !  FATES switches
   !----------------------------------------------------------
 
-  logical, public            :: use_ed = .false.              ! true => use  ED
+  logical, public            :: use_fates = .false.              ! true => use  ED
   logical, public            :: use_fates_spitfire = .false.  ! true => use spitfire model
   logical, public            :: use_fates_logging = .false.            ! true => turn on logging module
   logical, public            :: use_fates_planthydro = .false.         ! true => turn on fates hydro
@@ -338,6 +336,14 @@ module clm_varctl
   ! forest N/P fertilization
   logical, public :: forest_fert_exp = .false. 
 
+  !-----------------------------------------------------------------------
+  ! ECA regular spinup with P on, keep labile, secondary, occluded, parent 
+  ! material P being constant or not
+  logical, public :: ECA_Pconst_RGspin = .false.
+
+  !-----------------------------------------------------------------------
+  ! Priority of plant to get symbiotic N fixation, phosphatase
+  logical, public :: NFIX_PTASE_plant = .false.
 
   !-----------------------------------------------------------------------
   ! Lateral grid connectivity

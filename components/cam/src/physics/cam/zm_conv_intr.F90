@@ -248,7 +248,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
    use cam_history,   only: outfld
    use physics_types, only: physics_state, physics_ptend
-   use physics_types, only: physics_ptend_init, physics_update
+   use physics_types, only: physics_ptend_init
+   use physics_update_mod, only: physics_update
    use physics_types, only: physics_state_copy, physics_state_dealloc
    use physics_types, only: physics_ptend_sum, physics_ptend_dealloc
 

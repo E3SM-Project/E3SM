@@ -82,12 +82,16 @@ contains
                if (.not.(use_pflotran .and. pf_cmode)) then
                    ! column level nitrogen fluxes from fire
                    ! pft-level wood to column-level CWD (uncombusted wood)
-                   ns%decomp_npools_vr_col(c,j,i_cwd) = ns%decomp_npools_vr_col(c,j,i_cwd) + nf%fire_mortality_n_to_cwdn_col(c,j) * dt
+                   ns%decomp_npools_vr_col(c,j,i_cwd) = ns%decomp_npools_vr_col(c,j,i_cwd) &
+                        + nf%fire_mortality_n_to_cwdn_col(c,j) * dt
 
                    ! pft-level wood to column-level litter (uncombusted wood)
-                   ns%decomp_npools_vr_col(c,j,i_met_lit) = ns%decomp_npools_vr_col(c,j,i_met_lit) + nf%m_n_to_litr_met_fire_col(c,j)* dt
-                   ns%decomp_npools_vr_col(c,j,i_cel_lit) = ns%decomp_npools_vr_col(c,j,i_cel_lit) + nf%m_n_to_litr_cel_fire_col(c,j)* dt
-                   ns%decomp_npools_vr_col(c,j,i_lig_lit) = ns%decomp_npools_vr_col(c,j,i_lig_lit) + nf%m_n_to_litr_lig_fire_col(c,j)* dt
+                   ns%decomp_npools_vr_col(c,j,i_met_lit) = ns%decomp_npools_vr_col(c,j,i_met_lit) &
+                        + nf%m_n_to_litr_met_fire_col(c,j)* dt
+                   ns%decomp_npools_vr_col(c,j,i_cel_lit) = ns%decomp_npools_vr_col(c,j,i_cel_lit) &
+                        + nf%m_n_to_litr_cel_fire_col(c,j)* dt
+                   ns%decomp_npools_vr_col(c,j,i_lig_lit) = ns%decomp_npools_vr_col(c,j,i_lig_lit) &
+                        + nf%m_n_to_litr_lig_fire_col(c,j)* dt
                end if !(.not.(use_pflotran .and. pf_cmode))
             end do ! end of column loop
          end do

@@ -813,7 +813,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
           dpt1(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t1)
        enddo
-       call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,t1_qdp),dpt1)
+       call get_kappa_star(kappa_star,elem(ie)%state%Q(:,:,:,1))
        call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,t1),dpt1,&
             elem(ie)%state%phinh(:,:,:,t1), &
             elem(ie)%state%phis(:,:),kappa_star,pnh,dpnh,exner,exner_i,pnh_i)

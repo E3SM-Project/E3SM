@@ -75,7 +75,7 @@ class Component(EntryID):
 
         for valnode in self.get_children("value", root=values):
             # loop through all the keys in valnode (value nodes) attributes
-            for key,value in self.attrib(valnode).iteritems():
+            for key,value in self.attrib(valnode).items():
                 # determine if key is in attributes dictionary
                 match_count = 0
                 if attributes is not None and key in attributes:
@@ -274,18 +274,45 @@ class Component(EntryID):
         """
         print values for help and description in target config_component.xml file
         """
-        rootnode = self.get_child("help")
-        helptext = self.text(rootnode)
-
-        rootnode = self.get_child("description")
-        compsets = {}
-        descs = self.get_children("desc", root=rootnode)
-        for desc in descs:
-            attrib = self.get(desc, "compset")
-            text = self.text(desc)
-            compsets[attrib] = text
-
+        helpnode = self.get_child("help")
+        helptext = self.text(helpnode)
         logger.info(" {}".format(helptext))
-        for v in sorted(compsets.items()):
-            label, definition = v
-            logger.info("   {:20s} : {}".format(label, definition))
+        entries = self.get_children("entry")
+        for entry in entries:
+            name = self.get(entry, "id")
+            text = self.text(self.get_child("desc", root=entry))
+            logger.info("   {:20s} : {}".format(name, text.encode('utf-8')))
+
+    def return_values(self):
+        """
+        return a list of hashes from target config_component.xml file
+        This routine is used by external tools in https://github.com/NCAR/CESM_xml2html
+        """
+        entry_dict = dict()
+        items = list()
+        helpnode = self.get_optional_child("help")
+        if helpnode:
+            helptext = self.text(helpnode)
+        else:
+            helptext = ''
+        entries = self.get_children("entry")
+        for entry in entries:
+            item = dict()
+            name = self.get(entry, "id")
+            datatype = self.text(self.get_child("type", root=entry))
+            valid_values = self.get_valid_values(name)
+            default_value = self.get_default_value(node=entry)
+            group = self.text(self.get_child("group", root=entry))
+            filename = self.text(self.get_child("file", root=entry))
+            text = self.text(self.get_child("desc", root=entry))
+            item = {"name":name,
+                    "datatype":datatype,
+                    "valid_values":valid_values,
+                    "value":default_value,
+                    "group":group,
+                    "filename":filename,
+                    "desc":text.encode('utf-8')}
+            items.append(item)
+        entry_dict = {"items" : items}
+
+        return helptext, entry_dict

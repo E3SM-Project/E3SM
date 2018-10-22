@@ -470,8 +470,7 @@ contains
     type(mct_gGrid), pointer :: dom_a
     type(mct_gsMap), pointer :: gsmap_o
     type(mct_gGrid), pointer :: dom_o
-    integer(in)              :: kw,ka,ko,iw,ia,io,n
-    character(len=128)       :: strat
+    integer(in)              :: ka,ko,ia,io,n
     integer                  :: ier
     integer                  :: mytask
     integer(in)              :: kmsk            ! field indices
@@ -687,31 +686,30 @@ contains
     ! Local variables
     !
     type(mct_gGrid), pointer :: dom_o
-    logical		:: flux_albav		! flux avg option
-    integer(in)		:: n,i			! indices
-    real(r8)		:: rlat			! gridcell latitude in radians
-    real(r8)		:: rlon			! gridcell longitude in radians
-    real(r8)		:: cosz			! Cosine of solar zenith angle
-    real(r8)		:: eccen		! Earth orbit eccentricity
-    real(r8)		:: mvelpp		! Earth orbit
-    real(r8)		:: lambm0		! Earth orbit
-    real(r8)		:: obliqr		! Earth orbit
-    real(r8)		:: delta		! Solar declination angle  in radians
-    real(r8)		:: eccf			! Earth orbit eccentricity factor
-    real(r8)		:: calday		! calendar day including fraction, at 0e
-    real(r8)		:: nextsw_cday		! calendar day of next atm shortwave
-    real(r8)		:: anidr		! albedo: near infrared, direct
-    real(r8)		:: avsdr		! albedo: visible      , direct
-    real(r8)		:: anidf		! albedo: near infrared, diffuse
-    real(r8)		:: avsdf		! albedo: visible      , diffuse
-    real(r8)		:: swdnc		! temporary swdn
-    real(r8)		:: swupc		! temporary swup
-    integer(in)		:: ID			! comm ID
-    integer(in)		:: ier			! error code
-    integer(in)		:: kx,kr		! fractions indices
-    integer(in)		:: klat,klon,kmsk	! field indices
-    logical		:: update_alb		! was albedo updated
-    logical,save	:: first_call = .true.
+    logical             :: flux_albav           ! flux avg option
+    integer(in)         :: n                  ! indices
+    real(r8)            :: rlat                 ! gridcell latitude in radians
+    real(r8)            :: rlon                 ! gridcell longitude in radians
+    real(r8)            :: cosz                 ! Cosine of solar zenith angle
+    real(r8)            :: eccen                ! Earth orbit eccentricity
+    real(r8)            :: mvelpp               ! Earth orbit
+    real(r8)            :: lambm0               ! Earth orbit
+    real(r8)            :: obliqr               ! Earth orbit
+    real(r8)            :: delta                ! Solar declination angle  in radians
+    real(r8)            :: eccf                 ! Earth orbit eccentricity factor
+    real(r8)            :: calday               ! calendar day including fraction, at 0e
+    real(r8)            :: nextsw_cday          ! calendar day of next atm shortwave
+    real(r8)            :: anidr                ! albedo: near infrared, direct
+    real(r8)            :: avsdr                ! albedo: visible      , direct
+    real(r8)            :: anidf                ! albedo: near infrared, diffuse
+    real(r8)            :: avsdf                ! albedo: visible      , diffuse
+    real(r8)            :: swdnc                ! temporary swdn
+    real(r8)            :: swupc                ! temporary swup
+    integer(in)         :: ier                  ! error code
+    integer(in)         :: kx,kr                ! fractions indices
+    integer(in)         :: klat,klon       ! field indices
+    logical             :: update_alb           ! was albedo updated
+    logical,save        :: first_call = .true.
     !
     real(r8),parameter :: albdif = 0.06_r8 ! 60 deg reference albedo, diffuse
     real(r8),parameter :: albdir = 0.07_r8 ! 60 deg reference albedo, direct
@@ -885,8 +883,8 @@ contains
     type(mct_aVect) :: xaop_o
     type(mct_aVect) :: fractions_oe
 
-    integer(in) :: kw,ka,ko,iw,ia,io,kf
-    integer(in) :: n,i          ! indices
+    integer(in) :: kw,ka,ko,ia,io,kf
+    integer(in) :: n          ! indices
     logical     :: dead_comps   ! .true.  => dead components are used
     integer(in) :: index_tref
     integer(in) :: index_qref
@@ -1188,25 +1186,9 @@ contains
     !
     logical     :: flux_albav   ! flux avg option
     logical     :: dead_comps   ! .true.  => dead components are used
-    integer(in) :: n,i          ! indices
-    real(r8)    :: rlat         ! gridcell latitude in radians
-    real(r8)    :: rlon         ! gridcell longitude in radians
-    real(r8)    :: cosz         ! Cosine of solar zenith angle
-    real(r8)    :: eccen        ! Earth orbit eccentricity
-    real(r8)    :: mvelpp       ! Earth orbit
-    real(r8)    :: lambm0       ! Earth orbit
-    real(r8)    :: obliqr       ! Earth orbit
-    real(r8)    :: delta        ! Solar declination angle  in radians
-    real(r8)    :: eccf         ! Earth orbit eccentricity factor
-    real(r8)    :: calday       ! calendar day including fraction, at 0e
-    real(r8)    :: nextsw_cday  ! calendar day of next atm shortwave
-    real(r8)    :: anidr        ! albedo: near infrared, direct
-    real(r8)    :: avsdr        ! albedo: visible      , direct
-    real(r8)    :: anidf        ! albedo: near infrared, diffuse
-    real(r8)    :: avsdf        ! albedo: visible      , diffuse
+    integer(in) :: n            ! indices
     real(r8)    :: gust_fac = huge(1.0_r8) !wind gust factor
     integer(in) :: nloc, nloca, nloco    ! number of gridcells
-    integer(in) :: ID           ! comm ID
     logical,save:: first_call = .true.
     logical     :: cold_start      ! .true. to initialize internal fields in shr_flux diurnal
     logical     :: read_restart    ! .true. => continue run
@@ -1476,7 +1458,7 @@ contains
           if ( index_xao_Faox_evap_HDO /= 0 ) xao%rAttr(index_xao_Faox_evap_HDO,n) = evap_HDO(n)
           if ( index_xao_Faox_evap_18O /= 0 ) xao%rAttr(index_xao_Faox_evap_18O,n) = evap_18O(n)
           xao%rAttr(index_xao_So_tref  ,n) = tref(n)
-	  xao%rAttr(index_xao_So_qref  ,n) = qref(n)
+          xao%rAttr(index_xao_So_qref  ,n) = qref(n)
           xao%rAttr(index_xao_So_ustar ,n) = ustar(n)  ! friction velocity
           xao%rAttr(index_xao_So_re    ,n) = re(n)     ! reynolds number
           xao%rAttr(index_xao_So_ssq   ,n) = ssq(n)    ! s.hum. saturation at Ts

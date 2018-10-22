@@ -839,10 +839,14 @@
          
          status = nf90_close(fid)
 
-         write (nu_diag,*) "MGFICE ext_cff_mss_bc = ", kaer_bc_tab(1,1), kaer_bc_tab(2,1), kaer_bc_tab(1,2), kaer_bc_tab(3,1),kaer_bc_tab(3,10) 
-         write (nu_diag,*) "MGFICE ss_alb_bc = ", waer_bc_tab(1,1), waer_bc_tab(2,1), waer_bc_tab(1,2), waer_bc_tab(3,1), waer_bc_tab(3,10)
-         write (nu_diag,*) "MGFICE asm_prm_bc = ", gaer_bc_tab(1,1), gaer_bc_tab(2,1), gaer_bc_tab(1,2), gaer_bc_tab(3,1), gaer_bc_tab(3,10)
-         write (nu_diag,*) "MGFICE bcenh = ", bcenh(1,1,1), bcenh(1,2,1), bcenh(1,1,2), bcenh(2,1,1), bcenh(3,10,1), bcenh(3,1,8), bcenh(3,10,8)
+         write (nu_diag,*) "MGFICE ext_cff_mss_bc = ", kaer_bc_tab(1,1), kaer_bc_tab(2,1), kaer_bc_tab(1,2), kaer_bc_tab(3,1), &
+              kaer_bc_tab(3,10) 
+         write (nu_diag,*) "MGFICE ss_alb_bc = ", waer_bc_tab(1,1), waer_bc_tab(2,1), waer_bc_tab(1,2), waer_bc_tab(3,1), &
+              waer_bc_tab(3,10)
+         write (nu_diag,*) "MGFICE asm_prm_bc = ", gaer_bc_tab(1,1), gaer_bc_tab(2,1), gaer_bc_tab(1,2), gaer_bc_tab(3,1), &
+              gaer_bc_tab(3,10)
+         write (nu_diag,*) "MGFICE bcenh = ", bcenh(1,1,1), bcenh(1,2,1), bcenh(1,1,2), bcenh(2,1,1), bcenh(3,10,1), bcenh(3,1,8),&
+              bcenh(3,10,8)
 
       endif
 

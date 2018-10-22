@@ -126,7 +126,7 @@ contains
          cinput_rootfr(begp:endp, :)     = 0._r8
          col_cinput_rootfr(begc:endc, :) = 0._r8
 
-         if ( exponential_rooting_profile .and. .not. use_dynroot ) then
+         if ( exponential_rooting_profile ) then
             if ( .not. pftspecific_rootingprofile ) then
                ! define rooting profile from exponential parameters
                do j = 1, nlevdecomp
@@ -255,7 +255,8 @@ contains
             nfixation_prof_sum = nfixation_prof_sum + nfixation_prof(c,j) *  dzsoi_decomp(j)
             pdep_prof_sum = pdep_prof_sum + pdep_prof(c,j) *  dzsoi_decomp(j)
          end do
-         if ( ( abs(ndep_prof_sum - 1._r8) > delta ) .or.  ( abs(nfixation_prof_sum - 1._r8) > delta ) .or. ( abs(pdep_prof_sum - 1._r8) > delta )  ) then
+         if ( ( abs(ndep_prof_sum - 1._r8) > delta ) .or.  ( abs(nfixation_prof_sum - 1._r8) > delta ) .or. &
+              ( abs(pdep_prof_sum - 1._r8) > delta )  ) then
             write(iulog, *) 'profile sums: ', ndep_prof_sum, nfixation_prof_sum, pdep_prof_sum
             write(iulog, *) 'c: ', c
             write(iulog, *) 'altmax_lastyear_indx: ', altmax_lastyear_indx(c)

@@ -6,7 +6,6 @@ This does two runs: In the first we run a three member ensemble using the
 """
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
-from CIME.case_setup import case_setup
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +26,6 @@ class MCC(SystemTestsCompareTwo):
         # number of requested couplers.
         self._case.set_value("MULTI_DRIVER",True)
         self._case.set_value("NINST", self._test_instances)
-        case_setup(self._case, test_mode=False, reset=True)
 
     def _case_two_setup(self):
         self._case.set_value("NINST", 1)
-        case_setup(self._case, test_mode=True, reset=True)

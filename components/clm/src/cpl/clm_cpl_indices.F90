@@ -265,7 +265,7 @@ contains
     do num = 0,glc_nec_max 
     
        write(cnum,'(i2.2)') num
-       name = 'Sg_frac' // cnum
+       name = 'Sg_ice_covered' // cnum
        index_x2l_Sg_frac(num)   = mct_avect_indexra(x2l,trim(name),perrwith='quiet') 
        name = 'Sg_topo' // cnum
        index_x2l_Sg_topo(num)   = mct_avect_indexra(x2l,trim(name),perrwith='quiet')

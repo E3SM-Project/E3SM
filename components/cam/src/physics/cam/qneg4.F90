@@ -22,6 +22,7 @@ subroutine qneg4 (subnam  ,lchnk   ,ncol    ,ztodt   ,        &
    use physconst,    only: gravit, latvap
    use constituents, only: qmin, pcnst
    use cam_logfile,  only: iulog
+   use phys_control, only: print_fixer_message
 
    implicit none
 
@@ -77,7 +78,7 @@ subroutine qneg4 (subnam  ,lchnk   ,ncol    ,ztodt   ,        &
 !
 ! Write out worst value if excess
 !
-   if (nptsexc.gt.0) then
+   if (nptsexc.gt.0 .and. print_fixer_message) then
       worst = 0._r8
       do ii=1,nptsexc
          i = indxexc(ii)

@@ -27,6 +27,7 @@ module clubb_intr
   use pbl_utils,     only: calc_ustar, calc_obklen
   use perf_mod,      only: t_startf, t_stopf
   use mpishorthand
+  use cam_history_support, only: fillvalue
 
   implicit none
 
@@ -754,8 +755,7 @@ end subroutine clubb_init_cnst
     call addfld ('DPDLFICE', (/ 'lev' /),  'A',        'kg/kg/s', 'Detrained ice from deep convection')  
     call addfld ('DPDLFT', (/ 'lev' /),  'A',        'K/s', 'T-tendency due to deep convective detrainment') 
     call addfld ('RELVAR', (/ 'lev' /),  'A',        '-', 'Relative cloud water variance')
-
-
+    call addfld ('RELVARC', (/ 'lev' /),  'A',        '-', 'Relative cloud water variance', flag_xyfill=.true.,fill_value=fillvalue)
     call addfld ('CONCLD', (/ 'lev' /),  'A',        'fraction', 'Convective cloud cover')
     call addfld ('CMELIQ', (/ 'lev' /),  'A',        'kg/kg/s', 'Rate of cond-evap of liq within the cloud')
 
@@ -903,7 +903,9 @@ end subroutine clubb_init_cnst
 
    use physics_types,  only: physics_state, physics_ptend, &
                              physics_state_copy, physics_ptend_init, &
-                             physics_ptend_sum, physics_update
+                             physics_ptend_sum
+
+   use physics_update_mod, only: physics_update
 
    use physics_buffer, only: pbuf_get_index, pbuf_old_tim_idx, pbuf_get_field, &
                              pbuf_set_field, physics_buffer_desc
@@ -1204,7 +1206,8 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: prer_evap
    real(r8), pointer, dimension(:,:) :: qrl
    real(r8), pointer, dimension(:,:) :: radf_clubb
-
+!PMA
+   real(r8)  relvarc(pcols,pver)
    real(r8)  stend(pcols,pver)
    real(r8)  qvtend(pcols,pver)
    real(r8)  qitend(pcols,pver)
@@ -1249,7 +1252,7 @@ end subroutine clubb_init_cnst
  !  Initialize physics tendency arrays, copy the state to state1 array to use in this routine
 
    if (.not. micro_do_icesupersat) then    
-     call physics_ptend_init(ptend_loc,state%psetcols, 'clubb', ls=.true., lu=.true., lv=.true., lq=lq)
+     call physics_ptend_init(ptend_loc,state%psetcols, 'clubb_ice1', ls=.true., lu=.true., lv=.true., lq=lq)
    endif
 
    call physics_state_copy(state,state1)
@@ -1257,7 +1260,7 @@ end subroutine clubb_init_cnst
    if (micro_do_icesupersat) then
      naai_idx      = pbuf_get_index('NAAI')
      call pbuf_get_field(pbuf, naai_idx, naai)
-     call physics_ptend_init(ptend_all, state%psetcols, 'clubb')
+     call physics_ptend_init(ptend_all, state%psetcols, 'clubb_ice2')
    endif
 
    !  Determine number of columns and which chunk computation is to be performed on
@@ -1530,7 +1533,7 @@ end subroutine clubb_init_cnst
     endif
    
    if (micro_do_icesupersat) then
-     call physics_ptend_init(ptend_loc,state%psetcols, 'clubb', ls=.true., lu=.true., lv=.true., lq=lq)
+     call physics_ptend_init(ptend_loc,state%psetcols, 'clubb_ice3', ls=.true., lu=.true., lv=.true., lq=lq)
    endif
 
    ! ------------------------------------------------- !
@@ -2124,7 +2127,7 @@ end subroutine clubb_init_cnst
 
    !  Update physics tendencies     
    if (.not. micro_do_icesupersat) then
-      call physics_ptend_init(ptend_all, state%psetcols, 'clubb')
+      call physics_ptend_init(ptend_all, state%psetcols, 'clubb_ice4')
    endif
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
    call physics_update(state1,ptend_loc,hdtime)
@@ -2153,7 +2156,7 @@ end subroutine clubb_init_cnst
    lqice(ixnumliq) = .true.
    lqice(ixnumice) = .true.
     
-   call physics_ptend_init(ptend_loc,state%psetcols, 'clubb', ls=.true., lq=lqice)
+   call physics_ptend_init(ptend_loc,state%psetcols, 'clubb_det', ls=.true., lq=lqice)
    
    call t_startf('ice_cloud_detrain_diag')
    do k=1,pver
@@ -2226,10 +2229,15 @@ end subroutine clubb_init_cnst
 !
 !
 
+   relvarc(:ncol,:pver)=fillvalue
+
    if (deep_scheme .ne. 'CLUBB_SGS') then    
       if (relvar_fix) then    
          where (rcm(:ncol,:pver) > qsmall .and. qclvar(:ncol,:pver) /= 0._r8)  &
               relvar(:ncol,:pver) = min(relvarmax,max(relvarmin,rcm(:ncol,:pver)**2/max(qsmall,  &
+              cloud_frac(:ncol,:pver)*qclvar(:ncol,:pver)-  &
+              (1._r8-cloud_frac(:ncol,:pver))*rcm(:ncol,:pver)**2)))
+              relvarc(:ncol,:pver) = min(relvarmax,max(relvarmin,rcm(:ncol,:pver)**2/max(qsmall,  &
               cloud_frac(:ncol,:pver)*qclvar(:ncol,:pver)-  &
               (1._r8-cloud_frac(:ncol,:pver))*rcm(:ncol,:pver)**2)))
       else
@@ -2443,6 +2451,7 @@ end subroutine clubb_init_cnst
  
    !  Output calls of variables goes here
    call outfld( 'RELVAR',           relvar,                  pcols, lchnk )
+   call outfld( 'RELVARC',          relvarc,                 pcols, lchnk )
    call outfld( 'RHO_CLUBB',        rho,                     pcols, lchnk )
    call outfld( 'WP2_CLUBB',        wp2,                     pcols, lchnk )
    call outfld( 'UP2_CLUBB',        up2,                     pcols, lchnk )
@@ -2599,7 +2608,7 @@ end subroutine clubb_init_cnst
     call cnst_get_ind('Q',ixq)
     
     lq(:) = .TRUE.
-    call physics_ptend_init(ptend, state%psetcols, 'clubb', lq=lq)
+    call physics_ptend_init(ptend, state%psetcols, 'clubb_srf', lq=lq)
     
     ncol = state%ncol
     

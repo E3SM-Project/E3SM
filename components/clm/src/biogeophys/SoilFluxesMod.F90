@@ -82,7 +82,8 @@ contains
     real(r8) :: fsno_eff
     !-----------------------------------------------------------------------
 
-    associate(                                                                & 
+    associate(                                                                &
+         eflx_h2osfc_to_snow_col => energyflux_vars%eflx_h2osfc_to_snow_col , & ! Input:  [real(r8) (:)   ]  col snow melt to h2osfc heat flux (W/m**2)
          forc_lwrad              => atm2lnd_vars%forc_lwrad_downscaled_col  , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
 
          frac_veg_nosno          => canopystate_vars%frac_veg_nosno_patch   , & ! Input:  [integer (:)    ]  fraction of veg not covered by snow (0/1 now) [-]
@@ -369,6 +370,8 @@ contains
          errsoi_patch(p) = eflx_soil_grnd(p) - xmf(c) - xmf_h2osfc(c) &
               - frac_h2osfc(c)*(t_h2osfc(c)-t_h2osfc_bef(c)) &
               *(c_h2osfc(c)/dtime)
+
+         errsoi_patch(p) =  errsoi_patch(p)+eflx_h2osfc_to_snow_col(c)
 
          ! For urban sunwall, shadewall, and roof columns, the "soil" energy balance check
          ! must include the heat flux from the interior of the building.

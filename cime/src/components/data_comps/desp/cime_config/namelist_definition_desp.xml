@@ -41,7 +41,8 @@
       The mode of operation for the DESP model.
       NOCHANGE: report  status of model 'pause' but make no changes
       DATATEST: make a roundoff change  to the restart files of the
-                components in the 'DATA_ASSIMILATION' XML variable.
+                components with their 'PAUSE_ACTIVE_XXX' XML variable
+                set to TRUE.
       Default: NOCHANGE
     </desc>
     <values>

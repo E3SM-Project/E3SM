@@ -5,43 +5,46 @@
 
 .. _users-guide1:
 
-#################################################
-CIME User's Guide Part 1: Beginner - Basic Usage
-#################################################
+#######################################
+Case Control System Part 1: Basic Usage
+#######################################
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :numbered:
 
    introduction-and-overview.rst
-   case-basics.rst
    create-a-case.rst
    setting-up-a-case.rst
    building-a-case.rst
    running-a-case.rst
-   customizing-a-case.rst
    cloning-a-case.rst
+   cime-change-namelist.rst
+   cime-config.rst
    troubleshooting.rst
 
 .. _users-guide2:
 
 #######################################################################################
-CIME User's Guide Part 2: Intermediate - CIME Internals, Porting, Testing and Use Cases
+Case Control System Part 2: Configuration, Porting, Testing and Use Cases
 #######################################################################################
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :numbered:
 
    cime-internals.rst
+   compsets.rst
+   grids.rst
+   machine.rst
+   pes-threads.rst
    porting-cime.rst
-   optimizing-processor-layout.rst
+   timers.rst
    testing.rst
    unit_testing.rst
    multi-instance.rst
-   adding-cases.rst
-   use_cases/use-cases.rst
-
+   workflows.rst
+   cime-dir.rst
 
 Indices and tables
 ==================
@@ -49,4 +52,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

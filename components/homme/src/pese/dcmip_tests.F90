@@ -1,13 +1,14 @@
 !
 ! DCMIP Tests for the PESE Target
 !_______________________________________________________________________
+module dcmip12_wrapper
 #ifndef CAM
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-module dcmip12_wrapper
+
 
 ! Implementation of the dcmip2012 dycore tests for the PESE dynamics target
 
@@ -785,6 +786,7 @@ subroutine set_tracers(q,nq, dp,i,j,k,lat,lon,elem)
   enddo
 
 end subroutine
-end module dcmip12_wrapper
+
 
 #endif
+end module dcmip12_wrapper

@@ -93,10 +93,6 @@ class Batch(GenericXML):
         if node is not None:
             value = self.text(node)
 
-        if value is None:
-            # if all else fails
-            value = GenericXML.get_value(self, name, attribute, resolved, subgroup)
-
         if resolved:
             if value is not None:
                 value = self.get_resolved_value(value)
@@ -112,11 +108,11 @@ class Batch(GenericXML):
         """
         jobs = []
         bnode = self.get_child("batch_jobs")
-        for jnode in self.get_children(root=bnode, no_validate=True):
+        for jnode in self.get_children(root=bnode):
             if self.name(jnode) == "job":
                 name = self.get(jnode, "name")
                 jdict = {}
-                for child in self.get_children(root=jnode, no_validate=True):
+                for child in self.get_children(root=jnode):
                     jdict[self.name(child)] = self.text(child)
 
             jobs.append((name, jdict))

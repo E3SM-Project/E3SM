@@ -154,9 +154,10 @@ contains
                 else   !when water content of ths top layer is more than that at F.C.
                    soilbeta(c) = 1._r8
                 end if
-                if ( use_vsfm .and. &
-                     ((wx < watmin(c,1)) .or. (soilp_col(c,1) < sucmin(c,1)))) then
-                   soilbeta(c) = 0._r8
+                if ( use_vsfm ) then 
+                   if ((wx < watmin(c,1)) .or. (soilp_col(c,1) < sucmin(c,1))) then
+                      soilbeta(c) = 0._r8
+                   end if
                 end if
              else if (col_pp%itype(c) == icol_road_perv) then
                 if (.not. use_vsfm) then

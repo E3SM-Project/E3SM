@@ -17,6 +17,14 @@ class EnvMachPes(EnvBase):
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_mach_pes.xsd")
         EnvBase.__init__(self, case_root, infile, schema=schema)
 
+    def add_comment(self, comment):
+        if comment is not None:
+            node = self.make_child("comment", text=comment)
+            # make_child adds to the end of the file but we want it to follow the header
+            # so we need to remove it and add it in the correct position
+            self.remove_child(node)
+            self.add_child(node, position=1)
+
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None, max_mpitasks_per_node=None): # pylint: disable=arguments-differ
         # Special variable NINST_MAX is used to determine the number of
         # drivers in multi-driver mode.
@@ -51,6 +59,9 @@ class EnvMachPes(EnvBase):
                 ninst = self.get_value("NINST_{}".format(comp))
                 expect(ninst == ninst_max,
                        "All components must have the same NINST value in multi_driver mode.  NINST_{}={} shoud be {}".format(comp,ninst,ninst_max))
+        if "NTASKS" in vid or "NTHRDS" in vid:
+            expect(value != 0, "Cannot set NTASKS or NTHRDS to 0")
+
 
         return EnvBase.set_value(self, vid, value, subgroup=subgroup, ignore_type=ignore_type)
 

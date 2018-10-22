@@ -143,7 +143,7 @@ $(EXENAME): $(OBJS)
 	$(LINKER) -o $@ $(OBJS) $(SLIBS) $(LDFLAGS)
 
 clean:
-	$(RM) -f $(OBJS) $(EXENAME) *.mod
+	$(RM) -f $(OBJS) $(EXENAME) *.mod *.optrpt
 
 distclean: clean
 	../../../configure --clean

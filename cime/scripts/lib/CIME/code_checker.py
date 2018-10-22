@@ -7,6 +7,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.utils import run_cmd, run_cmd_no_fail, expect, get_cime_root, is_python_executable
 
 from multiprocessing.dummy import Pool as ThreadPool
+#pylint: disable=import-error
 from distutils.spawn import find_executable
 
 logger = logging.getLogger(__name__)
@@ -61,6 +62,9 @@ def _should_pylint_skip(filepath):
         if dir_to_skip + "/" in filepath:
             return True
         if filepath == "scripts/lib/six.py":
+            return True
+        # intended to be temporary, file needs update
+        if filepath.endswith("archive_metadata"):
             return True
 
     return False

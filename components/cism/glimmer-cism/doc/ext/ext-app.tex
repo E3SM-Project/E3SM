@@ -1,8 +1,0 @@
-\input{\dir/selected_ext.tex}
-
-\let\olddir\dir
-
-\ifthenelse{\boolean{have_libphaml}} {
-      \renewcommand{\dir}{\olddir/libphaml}
-      \input{\dir/libphaml-app.tex}
-    }{}

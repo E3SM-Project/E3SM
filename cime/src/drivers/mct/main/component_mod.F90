@@ -27,7 +27,7 @@ module component_mod
   use seq_map_mod
   use t_drv_timers_mod
   use component_type_mod
-  use seq_cdata_mod,    only : seq_cdata
+  use seq_cdata_mod,    only : seq_cdata, seq_cdata_init
   use mct_mod   ! mct_ wrappers for mct lib
   use perf_mod
   use ESMF
@@ -72,6 +72,7 @@ contains
 
   subroutine component_init_pre(comp, compid, cplcompid, cplallcompid, &
        infodata, ntype)
+    use seq_timemgr_mod, only: seq_timemgr_data_assimilation_active
 
     !---------------------------------------------------------------
     ! Initialize driver rearrangers and AVs on driver
@@ -134,24 +135,36 @@ contains
        allocate(comp(eci)%dom_cc)
        allocate(comp(eci)%gsmap_cc)
        allocate(comp(eci)%cdata_cc)
-       comp(eci)%cdata_cc%name     = 'cdata_'//ntype(1:1)//ntype(1:1)
-       comp(eci)%cdata_cc%ID       =  comp(eci)%compid
-       comp(eci)%cdata_cc%mpicom   =  comp(eci)%mpicom_compid
-       comp(eci)%cdata_cc%dom      => comp(eci)%dom_cc
-       comp(eci)%cdata_cc%gsmap    => comp(eci)%gsmap_cc
-       comp(eci)%cdata_cc%infodata => infodata
+       call seq_cdata_init(comp(eci)%cdata_cc, comp(eci)%compid,              &
+            'cdata_'//ntype(1:1)//ntype(1:1), comp(eci)%dom_cc,               &
+            comp(eci)%gsmap_cc, infodata, seq_timemgr_data_assimilation_active(ntype(1:3)))
 
        ! Determine initial value of comp_present in infodata - to do - add this to component
-
 #ifdef CPRPGI
-       if (comp(1)%oneletterid == 'a') call seq_infodata_getData(infodata, atm_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'l') call seq_infodata_getData(infodata, lnd_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'i') call seq_infodata_getData(infodata, ice_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'o') call seq_infodata_getData(infodata, ocn_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'r') call seq_infodata_getData(infodata, rof_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'g') call seq_infodata_getData(infodata, glc_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'w') call seq_infodata_getData(infodata, wav_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'e') call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'a') then
+          call seq_infodata_getData(infodata, atm_present=comp(eci)%present)
+       end if
+       if (comp(1)%oneletterid == 'l') then
+          call seq_infodata_getData(infodata, lnd_present=comp(eci)%present)
+       end if
+       if (comp(1)%oneletterid == 'i') then
+          call seq_infodata_getData(infodata, ice_present=comp(eci)%present)
+       end if
+       if (comp(1)%oneletterid == 'o') then
+          call seq_infodata_getData(infodata, ocn_present=comp(eci)%present)
+       end if
+       if (comp(1)%oneletterid == 'r') then
+          call seq_infodata_getData(infodata, rof_present=comp(eci)%present)
+       end if
+       if (comp(1)%oneletterid == 'g') then
+          call seq_infodata_getData(infodata, glc_present=comp(eci)%present)
+       end if
+       if (comp(1)%oneletterid == 'w') then
+          call seq_infodata_getData(infodata, wav_present=comp(eci)%present)
+       end if
+       if (comp(1)%oneletterid == 'e') then
+          call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+       end if
 #else
        call seq_infodata_getData(comp(1)%oneletterid, infodata, comp_present=comp(eci)%present)
 #endif
@@ -366,7 +379,7 @@ contains
                    call shr_sys_flush(logunit)
                 end if
                 call seq_mctext_gGridInit(comp(1))
-                call seq_map_map_exchange(comp(1), flow='c2x', dom_flag=.true., msgtag=comp(1)%cplcompid*100+1*10+1)
+                call seq_map_map_exchange(comp(1), flow='c2x', dom_flag=.true., msgtag=comp(1)%cplcompid*10000+1*10+1)
              else if (eci > 1) then
                 if (iamroot_CPLID) then
                    write(logunit,F0I) 'comparing comp domain ensemble number ',eci
@@ -550,7 +563,7 @@ contains
 
           ! Map component domain from coupler to component processes
           call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%dom_cx%data, &
-               comp(eci)%dom_cc%data, msgtag=comp(eci)%cplcompid*100+eci*10+5)
+               comp(eci)%dom_cc%data, msgtag=comp(eci)%cplcompid*10000+eci*10+5)
 
           ! For only component pes
           if (comp(eci)%iamin_compid) then
@@ -569,7 +582,7 @@ contains
 
           ! Map corrected initial component AVs from component to coupler pes
           call seq_map_map(comp(eci)%mapper_cc2x, comp(eci)%c2x_cc, &
-               comp(eci)%c2x_cx, msgtag=comp(eci)%cplcompid*100+eci*10+7)
+               comp(eci)%c2x_cx, msgtag=comp(eci)%cplcompid*10000+eci*10+7)
 
        endif
     enddo
@@ -828,10 +841,10 @@ contains
 
           if (flow == 'x2c') then ! coupler to component
              call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%x2c_cx, comp(eci)%x2c_cc, &
-                  msgtag=comp(eci)%cplcompid*100+eci*10+2)
+                  msgtag=comp(eci)%cplcompid*10000+eci*10+2)
           else if (flow == 'c2x') then ! component to coupler
              call seq_map_map(comp(eci)%mapper_Cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, &
-                  msgtag=comp(eci)%cplcompid*100+eci*10+4)
+                  msgtag=comp(eci)%cplcompid*10000+eci*10+4)
           end if
 
           if (present(timer_map_exch)) then

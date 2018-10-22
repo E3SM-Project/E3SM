@@ -1,0 +1,108 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
+
+<definitions_variables>
+
+  <entry id="COMP_OCN">
+    <type>char</type>
+    <valid_values>mpaso</valid_values>
+    <default_value>mpaso</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of ocean component</desc>
+  </entry>
+
+  <entry id="MPASO_FORCING">
+        <type>char</type>
+        <valid_values>active_atm,core_forced</valid_values>
+        <default_value>active_atm</default_value>
+        <values>
+           <value compset="MPASO_">active_atm</value>
+           <value compset="_MPASO%COREFORCED">core_forced</value>
+        </values>
+        <group>case_comp</group>
+        <file>env_case.xml</file>
+        <desc>Option to describe the MPASO surface forcing</desc>
+  </entry>
+
+  <entry id="MPASO_BGC">
+        <type>char</type>
+        <valid_values></valid_values>
+        <default_value>no_bgc</default_value>
+        <values>
+           <value compset="MPASO_">no_bgc</value>
+           <value compset="_MPASO%OECO">eco_only</value>
+           <value compset="_MPASO%OECOODMS">eco_and_dms</value>
+           <value compset="_MPASO%OECOODOC">eco_and_macromolecules</value>
+           <value compset="_MPASO%OECOODMSODOC">eco_and_dms_and_macromolecules</value>
+           <value compset="_MPASO%OIECO">eco_only</value>
+           <value compset="_MPASO%OIECOOIDMS">eco_and_dms</value>
+           <value compset="_MPASO%OIECOOIDOC">eco_and_macromolecules</value>
+           <value compset="_MPASO%OIECOOIDMSOIDOC">eco_and_dms_and_macromolecules</value>
+           <value compset="_MPASO%TOIECO">eco_only</value>
+        </values>
+        <group>case_comp</group>
+        <file>env_case.xml</file>
+        <desc>Option to enable the ecosystem model within MPASO</desc>
+ </entry>
+
+  <entry id="OCN_CO2_TYPE">
+        <type>char</type>
+        <valid_values>none,constant,prognostic,diagnostic,bcrc,bcrd,bdrc,bdrd</valid_values>
+        <default_value>constant</default_value>
+        <values>
+           <value compset="MPASO_">none</value>
+           <value compset="2000_DATM.*_MPASO%OECO">constant</value>
+           <value compset="1850_DATM.*_MPASO%OECO">constant</value>
+           <value compset="20TR_DATM.*_MPASO%OECO">diagnostic</value>
+           <value compset="2000_DATM.*_MPASO%OIECO">constant</value>
+           <value compset="1850_DATM.*_MPASO%OIECO">constant</value>
+           <value compset="20TR_DATM.*_MPASO%OIECO">diagnostic</value>
+           <value compset="2000_CAM5.*_MPASO%OIECO">constant</value>
+           <value compset="1850_CAM5.*_MPASO%OIECO">constant</value>
+           <value compset="20TR_CAM5.*_MPASO%OIECO.*_BGC%BCRC">bcrc</value>
+           <value compset="20TR_CAM5.*_MPASO%OIECO.*_BGC%BCRD">bcrd</value>
+           <value compset="20TR_CAM5.*_MPASO%OIECO.*_BGC%BDRC">bdrc</value>
+           <value compset="20TR_CAM5.*_MPASO%OIECO.*_BGC%BDRD">bdrd</value>
+           <value compset="SSP5_CAM5.*_MPASO%OIECO.*_BGC%BCRC">bcrc</value>
+           <value compset="SSP5_CAM5.*_MPASO%OIECO.*_BGC%BCRD">bcrd</value>
+           <value compset="SSP5_CAM5.*_MPASO%OIECO.*_BGC%BDRC">bdrc</value>
+           <value compset="SSP5_CAM5.*_MPASO%OIECO.*_BGC%BDRD">bdrd</value>
+        </values>
+        <group>case_comp</group>
+        <file>env_case.xml</file>
+        <desc>Option to specify how atmospheric CO2 is set in MPASO</desc>
+ </entry>
+
+  <entry id="MPASI_BGC">
+        <type>char</type>
+        <valid_values></valid_values>
+        <default_value>no_ice_bgc</default_value>
+        <values>
+           <value compset="MPASO_">no_ice_bgc</value>
+           <value compset="_MPASO%OECO">no_ice_bgc</value>
+           <value compset="_MPASO%OECOODMS">no_ice_bgc</value>
+           <value compset="_MPASO%OECOODOC">no_ice_bgc</value>
+           <value compset="_MPASO%OECOODMSODOC">no_ice_bgc</value>
+           <value compset="_MPASO%OIECO">ice_bgc</value>
+           <value compset="_MPASO%OIECOOIDMS">ice_bgc</value>
+           <value compset="_MPASO%OIECOOIDOC">ice_bgc</value>
+           <value compset="_MPASO%OIECOOIDMSOIDOC">ice_bgc</value>
+        </values>
+        <group>case_comp</group>
+        <file>env_case.xml</file>
+        <desc>Option to couple ocean bgc with sea ice bgc</desc>
+ </entry>
+
+  <description>
+    <desc compset="_MPASO">mpas ocean default:</desc>
+  </description>
+
+  <help>
+    =========================================
+    MPASO naming conventions
+    =========================================
+  </help>
+
+</definitions_variables>

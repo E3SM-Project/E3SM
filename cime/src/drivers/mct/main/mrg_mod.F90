@@ -271,7 +271,6 @@ contains
     !
     integer :: i
     real(r8):: flux_epbalfact
-    character(len=cl) :: flux_epbal
     type(seq_infodata_type),pointer :: infodata
     integer, save :: index_a2x_Faxa_rainc
     integer, save :: index_a2x_Faxa_rainl
@@ -406,7 +405,6 @@ contains
     ! Local variables
     !
     integer :: i
-    type(seq_infodata_type),pointer :: infodata
     integer, save :: index_l2x_Flrl_rofliq
     integer, save :: index_l2x_Flrl_rofice
     integer, save :: index_x2r_Flrl_rofliq
@@ -509,7 +507,7 @@ contains
     !
     ! Local variables
     !
-    integer  :: n,ka,ki,ko,kir,kor
+    integer  :: n,ki,ko,kir,kor
     integer  :: lsize
     real(r8) :: ifrac,ifracr
     real(r8) :: afrac,afracr
@@ -519,7 +517,6 @@ contains
     real(r8) :: fswabsv, fswabsi             ! sw
     integer  :: noflds,naflds,niflds,nxflds
     integer  :: kof,kaf,kif,kxf
-    character(len=cl) :: flux_epbal
     character(CL) :: field_ocn   ! string converted to char
     character(CL) :: field_atm   ! string converted to char
     character(CL) :: field_ice   ! string converted to char
@@ -572,7 +569,7 @@ contains
     integer, save :: index_x2o_Faxa_prec_HDO
 
     logical, save, pointer :: amerge(:),imerge(:),xmerge(:)
-    integer, save, pointer :: aindx(:), iindx(:), oindx(:), xindx(:)
+    integer, save, pointer :: aindx(:), iindx(:), xindx(:)
     logical, save :: first_time = .true.
     logical, save :: flds_wiso  = .false.
     character(*),parameter :: subName = '(mrg_x2o_run_mct) '

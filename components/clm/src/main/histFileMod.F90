@@ -12,7 +12,7 @@ module histFileMod
   use shr_sys_mod    , only : shr_sys_flush
   use spmdMod        , only : masterproc
   use abortutils     , only : endrun
-  use clm_varctl     , only : iulog, use_vertsoilc, use_ed
+  use clm_varctl     , only : iulog, use_vertsoilc, use_fates
   use clm_varcon     , only : spval, ispval, dzsoi_decomp 
   use clm_varcon     , only : grlnd, nameg, namel, namec, namep
   use decompMod      , only : get_proc_bounds, get_proc_global, bounds_type
@@ -25,6 +25,7 @@ module histFileMod
   use EDTypesMod        , only : nlevleaf_fates   => nlevleaf
   use FatesInterfaceMod , only : nlevsclass_fates => nlevsclass
   use FatesInterfaceMod , only : nlevage_fates    => nlevage
+  use FatesInterfaceMod , only : nlevheight_fates => nlevheight
   use EDTypesMod        , only : nfsc_fates       => nfsc
   use EDTypesMod        , only : ncwd_fates       => ncwd
   use FatesInterfaceMod , only : numpft_fates     => numpft
@@ -1846,7 +1847,7 @@ contains
     call ncd_defdim( lnfid, 'levdcmp', nlevdecomp_full, dimid)
     call ncd_defdim( lnfid, 'levtrc', nlevtrc_full, dimid)    
     
-    if(use_ed)then
+    if(use_fates)then
        call ncd_defdim(lnfid, 'fates_levscag', nlevsclass_fates * nlevage_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levscls', nlevsclass_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levpft', numpft_fates, dimid)
@@ -1857,6 +1858,9 @@ contains
        call ncd_defdim(lnfid, 'fates_levcan', nclmax_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcnlf', nlevleaf_fates * nclmax_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcnlfpf', nlevleaf_fates * nclmax_fates * numpft_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levscagpf', nlevsclass_fates * nlevage_fates * numpft_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levagepft', nlevage_fates * numpft_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levheight', nlevheight_fates, dimid)
     end if
 
     if ( .not. lhistrest )then
@@ -2264,6 +2268,13 @@ contains
     use FatesInterfaceMod, only : fates_hdim_canmap_levcnlfpf
     use FatesInterfaceMod, only : fates_hdim_lfmap_levcnlfpf
     use FatesInterfaceMod, only : fates_hdim_pftmap_levcnlfpf
+    use FatesInterfaceMod, only : fates_hdim_levheight
+    use FatesInterfaceMod, only : fates_hdim_scmap_levscagpft
+    use FatesInterfaceMod, only : fates_hdim_agmap_levscagpft
+    use FatesInterfaceMod, only : fates_hdim_pftmap_levscagpft
+    use FatesInterfaceMod, only : fates_hdim_agmap_levagepft
+    use FatesInterfaceMod, only : fates_hdim_pftmap_levagepft
+
 
     !
     ! !ARGUMENTS:
@@ -2315,7 +2326,7 @@ contains
           call ncd_defvar(varname='levdcmp', xtype=tape(t)%ncprec, dim1name='levdcmp', &
                 long_name='coordinate soil levels', units='m', ncid=nfid(t))
 
-          if(use_ed)then
+          if(use_fates)then
 
              call ncd_defvar(varname='fates_levscls', xtype=tape(t)%ncprec, dim1name='fates_levscls', &
                    long_name='FATES diameter size class lower bound', units='cm', ncid=nfid(t))
@@ -2347,6 +2358,18 @@ contains
                    long_name='FATES leaf level of combined canopy x leaf x pft dimension', ncid=nfid(t))
              call ncd_defvar(varname='fates_pftmap_levcnlfpf',xtype=ncd_int, dim1name='fates_levcnlfpf', &
                    long_name='FATES PFT level of combined canopy x leaf x pft dimension', ncid=nfid(t))
+             call ncd_defvar(varname='fates_levheight',xtype=tape(t)%ncprec, dim1name='fates_levheight', &
+                  long_name='FATES height (m)', ncid=nfid(t))
+             call ncd_defvar(varname='fates_scmap_levscagpft', xtype=ncd_int, dim1name='fates_levscagpf', &
+                  long_name='FATES size-class map into size x patch age x pft', units='-', ncid=nfid(t))
+             call ncd_defvar(varname='fates_agmap_levscagpft', xtype=ncd_int, dim1name='fates_levscagpf', &
+                  long_name='FATES age-class map into size x patch age x pft', units='-', ncid=nfid(t))
+             call ncd_defvar(varname='fates_pftmap_levscagpft', xtype=ncd_int, dim1name='fates_levscagpf', &
+                  long_name='FATES pft map into size x patch age x pft', units='-', ncid=nfid(t))
+             call ncd_defvar(varname='fates_pftmap_levagepft', xtype=ncd_int, dim1name='fates_levagepft', &
+                  long_name='FATES pft map into patch age x pft', units='-', ncid=nfid(t))
+             call ncd_defvar(varname='fates_agmap_levagepft', xtype=ncd_int, dim1name='fates_levagepft', &
+                   long_name='FATES age-class map into patch age x pft', units='-', ncid=nfid(t))
           end if
 
        elseif (mode == 'write') then
@@ -2359,7 +2382,7 @@ contains
              zsoi_1d(1) = 1._r8
              call ncd_io(varname='levdcmp', data=zsoi_1d, ncid=nfid(t), flag='write')
           end if
-          if(use_ed)then
+          if(use_fates)then
              call ncd_io(varname='fates_scmap_levscag',data=fates_hdim_scmap_levscag, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_agmap_levscag',data=fates_hdim_agmap_levscag, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_levscls',data=fates_hdim_levsclass, ncid=nfid(t), flag='write')
@@ -2375,6 +2398,12 @@ contains
              call ncd_io(varname='fates_canmap_levcnlfpf',data=fates_hdim_canmap_levcnlfpf, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_lfmap_levcnlfpf',data=fates_hdim_lfmap_levcnlfpf, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_pftmap_levcnlfpf',data=fates_hdim_pftmap_levcnlfpf, ncid=nfid(t), flag='write')
+             call ncd_io(varname='fates_levheight',data=fates_hdim_levheight, ncid=nfid(t), flag='write')
+             call ncd_io(varname='fates_scmap_levscagpft',data=fates_hdim_scmap_levscagpft, ncid=nfid(t), flag='write')
+             call ncd_io(varname='fates_agmap_levscagpft',data=fates_hdim_agmap_levscagpft, ncid=nfid(t), flag='write')
+             call ncd_io(varname='fates_pftmap_levscagpft',data=fates_hdim_pftmap_levscagpft, ncid=nfid(t), flag='write')
+             call ncd_io(varname='fates_pftmap_levagepft',data=fates_hdim_pftmap_levagepft, ncid=nfid(t), flag='write')
+             call ncd_io(varname='fates_agmap_levagepft',data=fates_hdim_agmap_levagepft, ncid=nfid(t), flag='write')
           end if
 
        endif
@@ -4485,6 +4514,12 @@ contains
        num2d = nlevleaf_fates * nclmax_fates
     case ('fates_levcnlfpf')
        num2d = nlevleaf_fates * nclmax_fates * numpft_fates
+    case ('fates_levheight')
+       num2d = nlevheight_fates
+    case ('fates_levscagpf')
+       num2d = nlevsclass_fates*nlevage_fates*numpft_fates
+    case ('fates_levagepft')
+       num2d = nlevage_fates*numpft_fates
     case default
        write(iulog,*) trim(subname),' ERROR: unsupported 2d type ',type2d, &
           ' currently supported types for multi level fields are: ', &

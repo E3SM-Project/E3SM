@@ -25,7 +25,7 @@ contains
  !-----------------------------------------------------------------------
  subroutine FatesReadParameters()
 
-   use clm_varctl, only : use_ed, paramfile, fates_paramfile
+   use clm_varctl, only : use_fates, paramfile, fates_paramfile
    use spmdMod, only : masterproc
 
    use FatesParametersInterface, only : fates_parameters_type
@@ -40,7 +40,7 @@ contains
    class(fates_parameters_type), allocatable :: fates_params
    logical :: is_host_file
 
-   if (use_ed) then
+   if (use_fates) then
       if (masterproc) then
          write(fates_log(), *) 'clmfates_parameterinterfaceMod.F90::'//trim(subname)//' :: CLM reading ED/FATES '//' parameters '
       end if
@@ -70,7 +70,7 @@ contains
  !-----------------------------------------------------------------------
  subroutine FatesReadPFTs()
 
-   use clm_varctl, only : use_ed, paramfile, fates_paramfile
+   use clm_varctl, only : use_fates, paramfile, fates_paramfile
    use spmdMod, only : masterproc
 
    use FatesParametersInterface, only : fates_parameters_type
@@ -88,7 +88,7 @@ contains
    character(len=256) :: locfn ! local file name
    type(file_desc_t)  :: ncid  ! pio netCDF file id
 
-   if (use_ed) then
+   if (use_fates) then
       if (masterproc) then
          write(fates_log(), *) 'clmfates_interfaceMod.F90::'//trim(subname)//' :: CLM reading ED/FATES '//' PFTs '
       end if

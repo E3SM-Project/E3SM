@@ -3,7 +3,10 @@ Common interface to XML files, this is an abstract class and is expected to
 be used by other XML interface modules and not directly.
 """
 from CIME.XML.standard_module_setup import *
+from CIME.utils import safe_copy
+
 import xml.etree.ElementTree as ET
+#pylint: disable=import-error
 from distutils.spawn import find_executable
 import getpass
 import six
@@ -32,32 +35,35 @@ class _Element(object): # private class, don't want users constructing directly 
 
 class GenericXML(object):
 
-    def __init__(self, infile=None, schema=None, root_name_override=None, root_attrib_override=None):
+    _FILEMAP = {}
+    DISABLE_CACHING = False
+
+    def __init__(self, infile=None, schema=None, root_name_override=None, root_attrib_override=None, read_only=True):
         """
         Initialize an object
         """
         logger.debug("Initializing {}".format(infile))
         self.tree = None
         self.root = None
-
-        if infile == None:
-            # if file is not defined just return
-            self.filename = None
+        self.locked = False
+        self.read_only = read_only
+        self.filename = infile
+        self.needsrewrite = False
+        if infile is None:
             return
 
         if os.path.isfile(infile) and os.access(infile, os.R_OK):
             # If file is defined and exists, read it
-            self.filename = infile
             self.read(infile, schema)
         else:
             # if file does not exist create a root xml element
             # and set it's id to file
-
+            expect(not self.read_only, "Makes no sense to have empty read-only file")
             logger.debug("File {} does not exists.".format(infile))
             expect("$" not in infile,"File path not fully resolved {}".format(infile))
 
-            self.filename = infile
             root = _Element(ET.Element("xml"))
+
             if root_name_override:
                 self.root = self.make_child(root_name_override, root=root, attributes=root_attrib_override)
             else:
@@ -69,22 +75,63 @@ class GenericXML(object):
         """
         Read and parse an xml file into the object
         """
-        logger.debug("read: " + infile)
-        file_open = (lambda x: open(x, 'r', encoding='utf-8')) if six.PY3 else (lambda x: open(x, 'r'))
-        with file_open(infile) as fd:
-            self.read_fd(fd)
+        if not self.DISABLE_CACHING and infile in self._FILEMAP and self.read_only:
+            logger.debug("read (cached): " + infile)
+            expect(self.read_only or not self.filename or not self.needsrewrite, "Reading into object marked for rewrite, file {}"
+                   .format(self.filename))
+            self.tree, self.root = self._FILEMAP[infile]
+        else:
+            logger.debug("read: " + infile)
+            file_open = (lambda x: open(x, 'r', encoding='utf-8')) if six.PY3 else (lambda x: open(x, 'r'))
+            with file_open(infile) as fd:
+                self.read_fd(fd)
 
-        if schema is not None and self.get_version() > 1.0:
-            self.validate_xml_file(infile, schema)
+            if schema is not None and self.get_version() > 1.0:
+                self.validate_xml_file(infile, schema)
 
-        logger.debug("File version is {}".format(str(self.get_version())))
+            logger.debug("File version is {}".format(str(self.get_version())))
+
+            self._FILEMAP[infile] = (self.tree, self.root)
 
     def read_fd(self, fd):
+        expect(self.read_only or not self.filename or not self.needsrewrite, "Reading into object marked for rewrite, file {}"               .format(self.filename))
         if self.tree:
-            self.add_child(_Element(ET.parse(fd).getroot()))
+            addroot = _Element(ET.parse(fd).getroot())
+            read_only = self.read_only
+            # we need to override the read_only mechanism here to append the xml object
+            if read_only:
+                self.read_only = False
+            if addroot.xml_element.tag == self.name(self.root):
+                for child in self.get_children(root=addroot):
+                    self.add_child(child)
+            else:
+                self.add_child(addroot)
+            if read_only:
+                self.read_only = True
         else:
             self.tree = ET.parse(fd)
             self.root = _Element(self.tree.getroot())
+
+    def lock(self):
+        """
+        A subclass is doing caching, we need to lock the tree structure
+        in order to avoid invalidating cache.
+        """
+        self.locked = True
+
+    def unlock(self):
+        self.locked = False
+
+    def change_file(self, newfile, copy=False):
+        if copy:
+            new_case = os.path.dirname(newfile)
+            if not os.path.exists(new_case):
+                os.makedirs(new_case)
+            safe_copy(self.filename, newfile)
+
+        self.tree = None
+        self.filename = newfile
+        self.read(newfile)
 
     #
     # API for individual node operations
@@ -97,9 +144,18 @@ class GenericXML(object):
         return attrib_name in node.xml_element.attrib
 
     def set(self, node, attrib_name, value):
-        return node.xml_element.set(attrib_name, value)
+        expect(not self.read_only, "locked")
+        if attrib_name == "id":
+            expect(not self.locked, "locked")
+        if self.get(node, attrib_name) != value:
+            self.needsrewrite = True
+            return node.xml_element.set(attrib_name, value)
 
     def pop(self, node, attrib_name):
+        expect(not self.read_only, "locked")
+        if attrib_name == "id":
+            expect(not self.locked, "locked")
+        self.needsrewrite = True
         return node.xml_element.attrib.pop(attrib_name)
 
     def attrib(self, node):
@@ -107,10 +163,16 @@ class GenericXML(object):
         return None if node.xml_element.attrib is None else dict(node.xml_element.attrib)
 
     def set_name(self, node, name):
-        node.xml_element.tag = name
+        expect(not self.read_only, "locked")
+        if node.xml_element.tag != name:
+            self.needsrewrite = True
+            node.xml_element.tag = name
 
     def set_text(self, node, text):
-        node.xml_element.text = text
+        expect(not self.read_only, "locked")
+        if node.xml_element.text != text:
+            node.xml_element.text = text
+            self.needsrewrite = True
 
     def name(self, node):
         return node.xml_element.tag
@@ -118,22 +180,31 @@ class GenericXML(object):
     def text(self, node):
         return node.xml_element.text
 
-    def add_child(self, node, root=None):
+    def add_child(self, node, root=None, position=None):
         """
         Add element node to self at root
         """
+        expect(not self.locked and not self.read_only, "locked")
+        self.needsrewrite = True
         root = root if root is not None else self.root
-        root.xml_element.append(node.xml_element)
+        if position is not None:
+            root.xml_element.insert(position, node.xml_element)
+        else:
+            root.xml_element.append(node.xml_element)
 
     def copy(self, node):
         return deepcopy(node)
 
     def remove_child(self, node, root=None):
+        expect(not self.locked and not self.read_only, "locked")
+        self.needsrewrite = True
         root = root if root is not None else self.root
         root.xml_element.remove(node.xml_element)
 
     def make_child(self, name, attributes=None, root=None, text=None):
+        expect(not self.locked and not self.read_only, "locked")
         root = root if root is not None else self.root
+        self.needsrewrite = True
         if attributes is None:
             node = _Element(ET.SubElement(root.xml_element, name))
         else:
@@ -144,7 +215,7 @@ class GenericXML(object):
 
         return node
 
-    def get_children(self, name=None, attributes=None, root=None, no_validate=False):
+    def get_children(self, name=None, attributes=None, root=None):
         """
         This is the critical function, its interface and performance are crucial.
 
@@ -163,7 +234,7 @@ class GenericXML(object):
                     continue
                 else:
                     match = True
-                    for key, value in attributes.iteritems():
+                    for key, value in attributes.items():
                         if key not in child.attrib:
                             match = False
                             break
@@ -176,15 +247,6 @@ class GenericXML(object):
                         continue
 
             children.append(_Element(child))
-
-        # Remove
-        if not no_validate:
-            validate = self.scan_children(name, attributes=attributes, root=root)
-            assert validate == children, "Validation failed for {}, {}\nScan found {} elements, get_children found {}".format(name, attributes, len(validate), len(children))
-            # if validate != children:
-            #     import pdb
-            #     pdb.set_trace()
-            #     validate = self.scan_children(name, attributes=attributes, root=root)
 
         return children
 
@@ -223,24 +285,32 @@ class GenericXML(object):
         version = 1.0 if version is None else float(version)
         return version
 
-    def write(self, outfile=None):
+    def write(self, outfile=None, force_write=False):
         """
         Write an xml file from data in self
         """
+        if not (self.needsrewrite or force_write):
+            return
+
         if outfile is None:
             outfile = self.filename
 
-        logger.debug("write: " + outfile)
+        logger.debug("write: " + (outfile if isinstance(outfile, six.string_types) else str(outfile)))
 
         xmlstr = self.get_raw_record()
 
         # xmllint provides a better format option for the output file
         xmllint = find_executable("xmllint")
         if xmllint is not None:
-            run_cmd_no_fail("{} --format --output {} -".format(xmllint, outfile), input_str=xmlstr)
+            if isinstance(outfile, six.string_types):
+                run_cmd_no_fail("{} --format --output {} -".format(xmllint, outfile), input_str=xmlstr)
+            else:
+                outfile.write(run_cmd_no_fail("{} --format -".format(xmllint), input_str=xmlstr))
+
         else:
             with open(outfile,'w') as xmlout:
                 xmlout.write(xmlstr)
+        self.needsrewrite = False
 
     def scan_child(self, nodename, attributes=None, root=None):
         """
@@ -330,7 +400,9 @@ class GenericXML(object):
         for node in valnodes:
             self.set_text(node, value)
 
-    def get_resolved_value(self, raw_value):
+        return value if valnodes else None
+
+    def get_resolved_value(self, raw_value, allow_unresolved_envvars=False):
         """
         A value in the xml file may contain references to other xml
         variables or to environment variables. These are refered to in
@@ -365,8 +437,10 @@ class GenericXML(object):
             logger.debug("look for {} in env".format(item_data))
             env_var = m.groups()[0]
             env_var_exists = env_var in os.environ
-            expect(env_var_exists, "Undefined env var '{}'".format(env_var))
-            item_data = item_data.replace(m.group(), os.environ[env_var])
+            if not allow_unresolved_envvars:
+                expect(env_var_exists, "Undefined env var '{}'".format(env_var))
+            if env_var_exists:
+                item_data = item_data.replace(m.group(), os.environ[env_var])
 
         for s in shell_ref_re.finditer(item_data):
             logger.debug("execute {} in shell".format(item_data))
@@ -376,7 +450,11 @@ class GenericXML(object):
         for m in reference_re.finditer(item_data):
             var = m.groups()[0]
             logger.debug("find: {}".format(var))
-            ref = self.get_value(var)
+
+            # The overridden versions of this method do not simply return None
+            # so the pylint should not be flagging this
+            ref = self.get_value(var) # pylint: disable=assignment-from-none
+
             if ref is not None:
                 logger.debug("resolve: " + str(ref))
                 item_data = item_data.replace(m.group(), self.get_resolved_value(str(ref)))

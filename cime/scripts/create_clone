@@ -4,56 +4,50 @@ from Tools.standard_script_setup import *
 
 from CIME.utils import expect
 from CIME.case  import Case
+from argparse   import RawTextHelpFormatter
 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
 def parse_command_line(args):
 ###############################################################################
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=RawTextHelpFormatter)
 
     CIME.utils.setup_standard_logging_options(parser)
 
     parser.add_argument("--case", "-case", required=True,
-                        help="(required) Specify a new case name. "
-                        "If not a full pathname, then the case is created "
-			"under then current working directory ")
+                        help="(required) Specify a new case name. If not a full pathname, "
+                        "\nthe new case will be created under then current working directory.")
 
     parser.add_argument("--clone", "-clone", required=True,
-                        help="(required) Specify a case to be cloned."
-                        "If not a full pathname, then the case to be cloned"
-                        "is assumed to be under then current working directory ")
+                        help="(required) Specify a case to be cloned. If not a full pathname, "
+                        "\nthe case to be cloned is assumed to be under then current working directory.")
 
     parser.add_argument("--user-mods-dir",
-                        help="Path to directory with user_nl_* files and xmlchange "
-                        "commands to utilize. This can also include SourceMods. "
-                        "This can be an absolute path, a path relative to the "
-                        "current directory, or a path relative to "
-                        "cime_config/usermods_dirs/ under the primary component "
-                        "for the given compset (for example, in an F compset "
-                        "whose primary component is cam, '--user-mods-dir foo' "
-                        "could be found in $SRCROOT/components/cam/cime_config/usermods_dirs/foo). "
-                        "If this argument is used in conjunction with the --keepexe flag, then "
-                        "no changes will be permitted to the env_build.xml in the --case entry directory. ")
+                        help="Full pathname to a directory containing any combination of user_nl_* files "
+                        "\nand shell_commands script (typically containing xmlchange commands). "
+                        "\nThe directory can also contain an SourceMods/ directory with the same structure "
+                        "\nas would be found in a case directory. If this argument is used in conjunction "
+                        "\nwith the --keepexe flag, then no changes will be permitted to the env_build.xml "
+                        "\nin the newly created case directory. ")
 
     parser.add_argument("--keepexe", "-keepexe", action="store_true",
-                        help="Sets EXEROOT to point to original build, it is highly recommended"
-                        "that the original case be built before cloning if using the --keepexe flag "
-                        "This flag will make SourceMods in the --case entry directory a symbolic link "
-                        " to the SourceMods in the --clone entry directory ")
+                        help="Sets EXEROOT to point to original build. It is HIGHLY recommended "
+                        "\nthat the original case be built BEFORE cloning it if the --keepexe flag is specfied. "
+                        "\nThis flag will make the SourceMods/ directory in the newly created case directory a "
+                        "\nsymbolic link to the SourceMods/ directory in the original case directory. ")
 
     parser.add_argument("--mach-dir", "-mach_dir",
-                        help="Specify the locations of the Machines directory, other than the default"
-                        "The default is CIMEROOT/machines")
+                        help="Specify the locations of the Machines directory, other than the default. "
+                        "\nThe default is CIMEROOT/machines.")
 
     parser.add_argument("--project", "-project",
-                        help="Specify a project id"
-			"default: user-specified environment variable PROJECT or ACCOUNT"
-			"or read from ~/.cesm_proj or ~/.ccsm_proj")
+                        help="Specify a project id. The default is the user-specified environment variable"
+			"\nvariable PROJECT or ACCOUNT or read from ~/.cesm_proj.")
 
     parser.add_argument("--cime-output-root",
-                        help="Specify the root output directory"
-			"default: setting in case, create_clone will fail if this directory is not writable")
+                        help="Specify the root output directory. The default is the setting in the original"
+                        "\ncase directory. NOTE: create_clone will fail if this directory is not writable.")
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 

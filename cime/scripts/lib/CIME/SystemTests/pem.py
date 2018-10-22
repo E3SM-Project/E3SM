@@ -9,7 +9,6 @@ are modified the second time.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.case_setup import case_setup
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
 
 logger = logging.getLogger(__name__)
@@ -31,4 +30,4 @@ class PEM(SystemTestsCompareTwo):
             ntasks = self._case.get_value("NTASKS_{}".format(comp))
             if ( ntasks > 1 ):
                 self._case.set_value("NTASKS_{}".format(comp), int(ntasks/2))
-        case_setup(self._case, reset=True)
+        self._case.case_setup(test_mode=True, reset=True)

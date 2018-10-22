@@ -44,6 +44,8 @@ module controlMod
   use clm_varctl              , only: nu_com, use_var_soil_thick
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
   use clm_varctl              , only: forest_fert_exp
+  use clm_varctl              , only: ECA_Pconst_RGspin
+  use clm_varctl              , only: NFIX_PTASE_plant
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -142,7 +144,7 @@ contains
 
     namelist /clm_inparm/  &
          fsurdat, fatmtopo, flndtopo, &
-         paramfile, flanduse_timeseries,  fsnowoptics, fsnowaging,fsoilordercon
+         paramfile, fsnowoptics, fsnowaging,fsoilordercon
 
 
     ! History, restart options
@@ -166,6 +168,10 @@ contains
          nu_com_nfix
     namelist /clm_inparm/ &
          forest_fert_exp
+    namelist /clm_inparm/ &
+         ECA_Pconst_RGspin
+    namelist /clm_inparm/ &
+         NFIX_PTASE_plant
          
     namelist /clm_inparm/  &
          suplnitro,suplphos
@@ -217,7 +223,7 @@ contains
 
     namelist /clm_inparm / use_c13, use_c14
 
-    namelist /clm_inparm/ fates_paramfile, use_ed,      &
+    namelist /clm_inparm/ fates_paramfile, use_fates,      &
           use_fates_spitfire, use_fates_logging,        &
           use_fates_planthydro, use_fates_ed_st3,       &
           use_fates_ed_prescribed_phys,                 &
@@ -348,22 +354,22 @@ contains
        end if
 
        ! Check compatibility with the FATES model 
-       if ( use_ed ) then
+       if ( use_fates ) then
 
           use_voc = .false.
 
           if ( use_cn) then
-             call endrun(msg=' ERROR: use_cn and use_ed cannot both be set to true.'//&
+             call endrun(msg=' ERROR: use_cn and use_fates cannot both be set to true.'//&
                    errMsg(__FILE__, __LINE__))
           end if
           
           if ( use_crop ) then
-             call endrun(msg=' ERROR: use_crop and use_ed cannot both be set to true.'//&
+             call endrun(msg=' ERROR: use_crop and use_fates cannot both be set to true.'//&
                    errMsg(__FILE__, __LINE__))
           end if
           
           if( use_lch4 ) then
-             call endrun(msg=' ERROR: use_lch4 (methane) and use_ed cannot both be set to true.'//&
+             call endrun(msg=' ERROR: use_lch4 (methane) and use_fates cannot both be set to true.'//&
                    errMsg(__FILE__, __LINE__))
           end if
 
@@ -383,11 +389,6 @@ contains
        if (use_crop .and. .not. create_crop_landunit) then
           call endrun(msg=' ERROR: prognostic crop Patches require create_crop_landunit=.true.'//&
             errMsg(__FILE__, __LINE__))
-       end if
-       
-       if (use_crop .and. flanduse_timeseries /= ' ') then
-          call endrun(msg=' ERROR: prognostic crop is incompatible with transient landuse'//&
-               errMsg(__FILE__, __LINE__))
        end if
        
        if (.not. use_crop .and. irrigate) then
@@ -457,15 +458,6 @@ contains
     ! ----------------------------------------------------------------------
     ! consistency checks
     ! ----------------------------------------------------------------------
-
-    if (flanduse_timeseries /= ' ' .and. create_crop_landunit) then
-       call endrun(msg=' ERROR:: dynamic landuse is currently not supported with create_crop_landunit option'//&
-            errMsg(__FILE__, __LINE__))
-    end if
-    if (flanduse_timeseries /= ' ' .and. use_cndv) then
-       call endrun(msg=' ERROR:: dynamic landuse is currently not supported with CNDV option'//&
-            errMsg(__FILE__, __LINE__))
-    end if
 
     ! Consistency settings for co2 type
     if (co2_type /= 'constant' .and. co2_type /= 'prognostic' .and. co2_type /= 'diagnostic') then
@@ -607,7 +599,6 @@ contains
     call mpi_bcast (flndtopo, len(flndtopo) ,MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (paramfile, len(paramfile) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fsoilordercon, len(fsoilordercon) , MPI_CHARACTER, 0, mpicom, ier)
-    call mpi_bcast (flanduse_timeseries , len(flanduse_timeseries) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fsnowoptics, len(fsnowoptics),  MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fsnowaging,  len(fsnowaging),   MPI_CHARACTER, 0, mpicom, ier)
 
@@ -638,12 +629,14 @@ contains
     call mpi_bcast (nu_com_phosphatase, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (nu_com_nfix, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (forest_fert_exp, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (ECA_Pconst_RGspin, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (NFIX_PTASE_plant, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! isotopes
     call mpi_bcast (use_c13, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_c14, 1, MPI_LOGICAL, 0, mpicom, ier)
 
-    call mpi_bcast (use_ed, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fates, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_spitfire, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (fates_paramfile, len(fates_paramfile) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (use_fates_logging, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -988,8 +981,8 @@ contains
                    'as compared with 0.60, 0.40 for cold frozen lakes with no snow.'
 
     ! FATES
-    write(iulog, *) '    use_ed = ', use_ed
-    if (use_ed) then
+    write(iulog, *) '    use_fates = ', use_fates
+    if (use_fates) then
        write(iulog, *) '    use_fates_spitfire = ', use_fates_spitfire
        write(iulog, *) '    use_fates_logging = ', use_fates_logging
        write(iulog, *) '    fates_paramfile = ', fates_paramfile

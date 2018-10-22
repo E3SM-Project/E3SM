@@ -66,6 +66,7 @@ public :: &
      micro_mg_tend
 
 integer, parameter :: r8 = selected_real_kind(12)      ! 8 byte real
+logical            :: pergro_mods = .false.
 
 logical  :: dcs_tdep
 
@@ -165,6 +166,8 @@ subroutine micro_mg_init( &
 ! 
 !-----------------------------------------------------------------------
 
+use phys_control, only: phys_getopts
+
 integer,          intent(in)  :: kind            ! Kind used for reals
 real(r8),         intent(in)  :: gravit
 real(r8),         intent(in)  :: rair
@@ -190,6 +193,7 @@ real(r8) surften       ! surface tension of water w/respect to air (N/m)
 real(r8) arg
 !-----------------------------------------------------------------------
 
+call phys_getopts(pergro_mods_out=pergro_mods)
 errstring = ' '
 
 if( kind .ne. r8 ) then
@@ -297,9 +301,11 @@ Dcs = micro_mg_dcs
 dcs_tdep = micro_mg_dcs_tdep
 
 ! smallest mixing ratio considered in microphysics
-
-qsmall = 1.e-18_r8  
-
+if(pergro_mods) then
+   qsmall = 1.e-8_r8   !1.e-18_r8  !BSINGH: Changed the threshold for pergro [this mod is climate changing ]
+else
+   qsmall = 1.e-18_r8
+endif
 ! immersion freezing parameters, bigg 1953
 
 bimm = 100._r8
@@ -843,7 +849,7 @@ real(r8) :: frztmp
 
 logical  :: do_clubb_sgs
 
-#ifdef MODIFY_ACTIVATE || USE_UNICON
+#if defined(MODIFY_ACTIVATE) || defined(USE_UNICON)
 ! Move droplet activation
 real(r8) :: ncold(pcols,pver)
 #endif
@@ -928,7 +934,7 @@ mincld=0.0001_r8
 q(1:ncol,1:pver)=qn(1:ncol,1:pver)
 t(1:ncol,1:pver)=tn(1:ncol,1:pver)
 
-#ifdef MODIFY_ACTIVATE || USE_UNICON
+#if defined(MODIFY_ACTIVATE) || defined(USE_UNICON)
 !++ag/hm 8/17/12
 !initialize aerosol number
 dum2l(1:ncol,1:pver) = 0._r8
@@ -966,7 +972,7 @@ do k=1,pver
 
       dz(i,k)= pdel(i,k)/(rho(i,k)*g)
 
-#ifdef MODIFY_ACTIVATE || USE_UNICON
+#if defined(MODIFY_ACTIVATE) || defined(USE_UNICON)
       ! droplet activation
       ! hm, modify 5/12/11 
       ! get provisional droplet number after activation. This is used for
@@ -1048,7 +1054,7 @@ rainrt1(1:ncol,1:pver) = 0._r8
 ! initialize precip fraction and output tendencies
 cldmax(1:ncol,1:pver)=mincld
 
-#ifdef MODIFY_ACTIVATE || USE_UNICON
+#if defined(MODIFY_ACTIVATE) || defined(USE_UNICON)
 !++ag/hm 8/17/12: Activation moved above
 #else
 !initialize aerosol number
@@ -1095,6 +1101,10 @@ do k=top_lev,pver
 
       icldm(i,k)=max(icecldf(i,k),mincld)
       lcldm(i,k)=max(liqcldf(i,k),mincld)
+      if(pergro_mods) then
+         !pjr - BSINGH - Added by phil R. as a temporary solution to avoid temprature divergence in pergro test         
+         if (cldm(i,k).gt.0.9999999_r8) cldm(i,k) = 0.9999999_r8 !BSINGH
+      endif
 
       ! subcolumns, set cloud fraction variables to one
       ! if cloud water or ice is present, if not present
@@ -1639,7 +1649,7 @@ do i=1,ncol
 
          cmeout(i,k) = cmeout(i,k)+cmei(i,k)
 
-#ifdef MODIFY_ACTIVATE || USE_UNICON
+#if defined(MODIFY_ACTIVATE) || defined(USE_UNICON)
          !--ag/hm 8/12/2012  Activation moved above.
 #else
          !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -2428,7 +2438,7 @@ do i=1,ncol
          ! include mixing timescale  (mtime)
 
          qce=(qc(i,k) - berg(i,k)*deltat)
-#ifdef MODIFY_ACTIVATE || USE_UNICON
+#if defined(MODIFY_ACTIVATE) || defined(USE_UNICON)
          !++ag/hm 8/17/12, modify for moving activation before microphysics
          nce=nc(i,k)
 #else
@@ -2654,7 +2664,7 @@ do i=1,ncol
 
          ! multiply activation/nucleation by mtime to account for fast timescale
 
-#ifdef MODIFY_ACTIVATE || USE_UNICON
+#if defined(MODIFY_ACTIVATE) || defined(USE_UNICON)
          !++ag/hm 8/17/12, don't include activation tendency (already included earlier)
          nctend(i,k) = nctend(i,k)+ &
 #else
@@ -2683,7 +2693,7 @@ do i=1,ncol
          ! maximum (existing N + source terms*dt), which is possible due to
          ! fast nucleation timescale
 
-#ifdef MODIFY_ACTIVATE || USE_UNICON
+#if defined(MODIFY_ACTIVATE) || defined(USE_UNICON)
          !++ag/hm 8/17/12, don't include timescale for droplet activation - not needed with
          ! Ghan formulation based on mixing 
 #else
@@ -3321,7 +3331,7 @@ do i=1,ncol
 
    do k=top_lev,pver
 
-#ifdef MODIFY_ACTIVATE || USE_UNICON
+#if defined(MODIFY_ACTIVATE) || defined(USE_UNICON)
       !++ag/hm 8/17/12, modify for activation tendency
       ! *note: this still includes conditional on npccnin that should be removed
       nctend(i,k)=nctend(i,k)+max(0._r8,npccnin(i,k))

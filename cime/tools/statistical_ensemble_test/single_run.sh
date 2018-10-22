@@ -4,7 +4,7 @@
 # $Id$
 # $URL$
 #
-# Sets up a 12-month or nine time step ne30_ne30 run
+# Sets up a 12-month(default) or nine time step run
 #
 #==============================================================================
 
@@ -13,93 +13,46 @@
 #==============================================================================
 
 usage() {
-  echo "USAGE: $ThisScript --case CASE ---mach MACH [--pertlim PERTLIM] [--mach_pes ENV_MACH_PES_FILE] [--np NP] [--npocn NPOCN] [--npice NPICE] [--nt NTHRDS] [--walltime WALLTIME] [--account ACCOUNT_NUM] [--compiler COMPILER] [--compset COMPSET --res RES] [--nb] [--ns] [--uf] [--ensemble ENS_SIZE] [--usr_nl_cam \"VARIABLE1=VALUE1 VARIABLE2=VALUE2\"] [--cam_src_mod \"FILE1 FILE2 ... FILEN\"]"
-  echo ''
-  echo 'Sets up CESM cases for either an ensemble of runs or a size 3 test set (default).'\
-       'Use pyCECT utilities to create the ensemble summary file or to evaluate the small' \
-       'test set of runs against the ensemble.'
-  echo ''
-  echo 'Required flags:'
-  echo '  --case           Case name passed on to create_newcase'
-  echo '  --mach           Machine name passed on to create_newcase'
-  echo ''
-  echo 'Optional flags:'
-  if [ $ThisScript = "single_run.sh" ]; then
-    echo '  --pertlim     Run CAM with non-zero pertlim'
-  fi
-  echo '  --mach_pes    Use specified env_mach_pes file'
-  echo '  --np,         Number of processors requested (default = Machines default)'
-  echo '  --npocn       Number of processors requested for ocean (default = Machines default)'
-  echo '  --npice       Number of processors requested for ice (default = Machines default)'
-  echo '                           Note: npice and npocn will = np if np is specified and other two are not'
-  echo '  --nt          Number of threads for each component (default = Machines default)'
-  echo '  --walltime    Amount of walltime requested (default = 4:30)'
-  echo '  --account     Account number to use in job scripts (default = machine default)'
-  echo '  --compiler    Compiler to use '
-  echo '  --compset     Compset to use (default = F2000_DEV)'
-  echo '  --res         Resolution to run (default = ne30_ne30'
-  echo '  --uf          Enable ninth time step runs (ultra-fast mode)'
+
   if [ $ThisScript = "ensemble.sh" ]; then
-    echo '  --nb          Disables building the root case of the ensemble.'
-    echo '  --ns          Disables submitting any members of the ensemble.'
-    echo '  --ensemble    Build the ensemble (instead of building 3 cases with random pertlim values),'
-    echo '                and specify the number of ensemble members to generate (e.g.: 151 or 350 for ultra-fast mode)'
-    echo '  --test_suite  Flag to indicate this is run from the CESM test script (makes assumption about case directory)'
-  else
-    echo '  --nb       Disables building (and submitting) the single case.'
-    echo '  --ns       Disables submitting the single case.'
+    
+      echo "USAGE: $ThisScript --case CASE ---mach MACH [--project PROJECT_NUM] [--walltime WALLTIME] [--compiler COMPILER] [--compset COMPSET] [--res RES] [--nb] [--ns] [--uf] [--ensemble ENS_SIZE]"
+      echo ''
+      echo 'Sets up CESM cases for either an ensemble of runs or a size 3 test set (default).'\
+       'Use pyCECT utilities to create an ensemble summary file or to evaluate the small' \
+       'test set of runs against the ensemble.'
+ else
+      echo "USAGE: $ThisScript --case CASE ---mach MACH [--project PROJECT_NUM] [--pertlim PERTLIM] [--walltime WALLTIME] [--compiler COMPILER] [--compset COMPSET] [--res RES] [--nb] [--ns] [--uf]"
+      echo ''
+      echo 'Sets up a single CESM case (typically called via ensemble.sh).'
+ fi
+    echo ''
+    echo 'Required flags:'
+    echo '  --case <name>    Case name passed on to create_newcase'
+    echo '  --mach <name>    Machine name passed on to create_newcase'
+   echo ''
+    echo 'Optional flags (+ all "--" options to create_newcase): '
+    echo '  --project <num>  Project number to charge in job scripts'
+  if [ $ThisScript = "single_run.sh" ]; then
+    echo '  --pertlim <num>     Run CAM with non-zero pertlim'
   fi
-  echo '  --usr_nl_cam    Include specified variables setting in user_nl_cam'
-  echo '  --cam_src_mod   Include specified files in CAM SourceMod dir'
-  echo '  -h, --help      Output this usage information'
+  echo '  --walltime <hr:mn> Amount of walltime requested (default = 4:30, or 0:10 with --uf enabled)'
+  echo '  --compiler <name>  Compiler to use (default = same as Machine default) '
+  echo '  --compset <name>   Compset to use (default = F2000)'
+  echo '  --res <name>       Resolution to run (default = f19_f19)'
+  echo '  --uf               Enable ninth time step runs (ultra-fast mode) - otherwise the default is 12-month runs'
+  if [ $ThisScript = "ensemble.sh" ]; then
+    echo '  --nb               Disables auto building the root case of the ensemble.'
+    echo '  --ns               Disables auto submitting any members of the ensemble.'
+    echo '  --ensemble <size>  Build the ensemble (instead of building 3 cases with random pertlim values for verification),'
+    echo '                     and specify the number of ensemble members to generate (e.g.: 151 for annual averages or 350 for ultra-fast mode)'
+  else
+    echo '  --nb               Disables building (and submitting) the single case.'
+    echo '  --ns               Disables submitting the single case.'
+  fi
+  echo '  -h, --help         Output this usage information'
 }
 
-#==============================================================================
-# Subroutine to fix run script
-#==============================================================================
-
-fix_run_script() {
-
-  if [ -z "$1" ]; then
-    #FileName=$CASENAME
-    FileName='case'
-  else
-    FileName=$1
-  fi
-  echo "Checking to see if anything needs to be changed in $FileName.run..."
-
-  # Adjust walltime
-  if [ ! -z "$WalltimePrefix" ]; then
-    cp $FileName.run $FileName.tmp
-    echo "Changing wall time in $FileName.run to $WallTime"
-    sed s/"$WalltimePrefix".\*/"${WalltimePrefix}$WallTime"/ $FileName.tmp > $FileName.run
-    rm -f $FileName.tmp
-  else
-    echo "WARNING: Do not know how to change requested walltime on $MACH,"\
-         "Just using default."
-  fi
-
-  # Adjust account (if requested)
-  if [ ! -z "$ACCOUNT" ]; then
-    if [ -z "$AccountPrefix" ]; then
-      echo "ERROR: can not set account on $MACH because \$AccountPrefix is not set."
-      exit 1
-    fi
-    echo "Setting account in $FileName.run to $ACCOUNT"
-    cp $FileName.run $FileName.tmp
-    sed s/"$AccountPrefix".\*/"${AccountPrefix}$ACCOUNT"/ $FileName.tmp > $FileName.run
-    rm -f $FileName.tmp
-  fi
-
-  # For Yellowstone, set ptile=16 instead of 32
-#  if [ "$MACH" == "yellowstone" ]; then
-#    cp $FileName.run $FileName.tmp
-#    echo "Changing ptile in $FileName.run to 16"
-#    sed s/"ptile".\*/"ptile=16]\""/ $FileName.tmp > $FileName.run
-#    rm -f $FileName.tmp
-#  fi
-
-}
 
 #==============================================================================
 # Main Program
@@ -109,52 +62,25 @@ ThisScript=$(basename $0)
 ThisDir=$(cd `dirname $0`; pwd -P )
 
 # Default Values
-RES="ne30_ne30"
-COMPSET="F2000_DEV"
-CHANGE_NP=0
-CHANGE_NPICE=0
-CHANGE_NPOCN=0
-# MNL note: at this time, no flag to change ROOTPE all to 0
-#           (no reason to change from default layout!)
-CHANGE_ROOTPE=0
-CHANGE_NTHRDS=0
+RES="f19_f19"
+COMPSET="F2000"
 WallTime="4:30"
 PERTLIM="0"
 nobuild="off"
 nosubmit="off"
-usr_nl_cam_val=()
-cam_src_files=("")
-POP_OUT_ON=0
-CICE_OUT_ON=0
-RTM_OUT_ON=0
-# Large ensemble?
-LENS=0
 UF=0
+WallTimeUser=0
 
-# SCRIPTS_ROOT is only used for generating ensemble!
-SCRIPTS_ROOT=$(cd `dirname $0`; cd ../../scripts; pwd )
-echo "CESM command: create_newcase $NewCaseFlags"
-echo "(Running from: $SCRIPTS_ROOT)"
 # Process input arguments
 while [ $# -gt 0 ]; do
   case $1 in
-    --scripts_root )
-      SCRIPTS_ROOT=$2
-      shift
-    ;;
-    --LENS )
-      LENS=1
-      POP_OUT_ON=1
-      CICE_OUT_ON=1
-      RTM_OUT_ON=1
-    ;;
     --case )
       NewCaseFlags="$NewCaseFlags $1 $2"
       CASE=$2
       CASENAME=$(basename $CASE)
       shift
     ;;
-    --mach )
+    --mach ) 
       NewCaseFlags="$NewCaseFlags $1 $2"
       MACH=$2
       shift
@@ -163,32 +89,13 @@ while [ $# -gt 0 ]; do
       PERTLIM="$2"
       shift
     ;;
-    --np )
-      CHANGE_NP=1
-      NP=$2
+     --walltime )
+      WallTimeUser=$2
       shift
     ;;
-    --npocn )
-      CHANGE_NPOCN=1
-      NPOCN=$2
-      shift
-    ;;
-    --npice )
-      CHANGE_NPICE=1
-      NPICE=$2
-      shift
-    ;;
-    --nt )
-      CHANGE_NTHRDS=1
-      NTHRDS=$2
-      shift
-    ;;
-    --walltime )
-      WallTime=$2
-      shift
-    ;;
-    --account )
-      ACCOUNT="$2"
+    --project )
+      PROJECT="$2"
+      NewCaseFlags="$NewCaseFlags $1 $2"
       shift
     ;;
     --compiler )
@@ -210,32 +117,72 @@ while [ $# -gt 0 ]; do
     --ns )
        nosubmit="on"
     ;;
-    --mach_pes)
-      arg_in=$2
-      env_mach_pes_file=$(cd `dirname $arg_in`; pwd -P )/`basename $arg_in`
-      shift
-    ;;
-    --usr_nl_cam )
-      usr_nl_cam_val=("$2")
-      shift
-    ;;
-    --cam_src_mod )
-      cam_src_files=()
-      for arg_in in $2; do
-        cam_src_files+=($(cd `dirname $arg_in`; pwd -P )/`basename $arg_in`)
-      done
-      shift
-    ;;
-    --uf )
+     --uf )
       UF=1
-      WallTime="0:10"
     ;;
     -h|--help )
       usage
       exit 0
     ;;
-    --test_suite|--ensemble )
-      # Ignore these flags, they will be passed from ensemble.sh
+    #other flags to pass through for create_newcase	  
+    --verbose )
+       NewCaseFlags="$NewCaseFlags $1"
+    ;;
+    --silent )
+       NewCaseFlags="$NewCaseFlags $1"
+    ;;
+    --test )
+       NewCaseFlags="$NewCaseFlags $1"
+    ;;
+    --multi-driver )
+       NewCaseFlags="$NewCaseFlags $1"
+    ;;
+    --pecount )
+      NewCaseFlags="$NewCaseFlags $1 $2"
+      shift
+    ;;
+    --nist )
+      NewCaseFlags="$NewCaseFlags $1 $2"
+      shift
+    ;;
+    --mpilib )
+      NewCaseFlags="$NewCaseFlags $1 $2"
+      shift
+    ;;
+    --pesfile )
+      NewCaseFlags="$NewCaseFlags $1 $2"
+      shift
+    ;;
+   --gridfile )
+       NewCaseFlags="$NewCaseFlags $1 $2"
+       shift
+    ;;
+   --srcroot )
+       NewCaseFlags="$NewCaseFlags $1 $2"
+       shift
+    ;;
+  --output-root )
+       NewCaseFlags="$NewCaseFlags $1 $2"
+       shift
+    ;;
+  --script-root )
+       NewCaseFlags="$NewCaseFlags $1 $2"
+       shift
+    ;;
+  --queue )
+       NewCaseFlags="$NewCaseFlags $1 $2"
+       shift
+    ;;
+  --user-mods-dir )
+       NewCaseFlags="$NewCaseFlags $1 $2"
+       shift
+    ;;
+  --input-dir )
+       NewCaseFlags="$NewCaseFlags $1 $2"
+       shift
+    ;;
+   # Ignore these flags, they will be used by ensemble.sh
+    --ensemble )
       shift
     ;;
     * )
@@ -248,6 +195,22 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+# SCRIPTS_ROOT is only used for generating ensemble!
+SCRIPTS_ROOT=$(cd `dirname $0`; cd ../../scripts; pwd )
+echo "STATUS: (Running from: $SCRIPTS_ROOT)"
+
+#if user didn't specify, use default walltime
+if [ "$WallTimeUser" == "0" ]; then
+    echo "STATUS: user did not specify walltime"
+        if [ $UF -eq 1 ]; then
+	echo "STATUS: UF run walltime default..."
+	WallTime="0:10"
+    fi
+else
+    WallTime=$WallTimeUser 
+fi
+
+#machine and case are not optional
 if [ -z "$CASE" ]; then
   echo "Must specify --case argument"
   echo "Invoke $ThisScript -h for usage"
@@ -260,114 +223,17 @@ if [ -z "$MACH" ]; then
   exit 1
 fi
 
-# SET NPOCN and $NPICE if NP is changed
-if [ $CHANGE_NP -eq 1 ]; then
-  if [ $CHANGE_NPOCN -eq 0 ]; then
-    CHANGE_NPOCN=1
-    NPOCN=$NP
-  fi
-  if [ $CHANGE_NPICE -eq 0 ]; then
-    CHANGE_NPICE=1
-    NPICE=$NP
-  fi
-fi
+#res and compset are required for create_newcase, so specify here + walltime + --run_unsupported
+NewCaseFlags="$NewCaseFlags --res $RES --compset $COMPSET --walltime $WallTime --run-unsupported"
 
-# Need to set strings used by sed to update run script (machine-dependent)
-case $MACH in
-  "bluefire" )
-    WalltimePrefix="-W "
-    AccountPrefix="-P "
-  ;;
-  "yellowstone" )
-    WalltimePrefix="-W "
-    AccountPrefix="-P "
-  ;;
-  "janus" )
-    WalltimePrefix="-l walltime="
-    WallTime="$WallTime:00"
-  ;;
-  "frankfurt" )
-    WalltimePrefix="-l walltime="
-    WallTime="$WallTime:00"
-  ;;
-  "hopper" )
-    WalltimePrefix="-l walltime="
-    WallTime="$WallTime:00"
-  ;;
-  "mira" )
-    WalltimePrefix="set wt = "
-  ;;
-  * )
-    echo "WARNING: Nothing machine-specific has been configured for $MACH"
-  ;;
-esac
-
-
-if [ ! -z $ACCOUNT ]; then
-    NewCaseFlags="$NewCaseFlags --res $RES --compset $COMPSET --run-unsupported --project $ACCOUNT"
-else
-    NewCaseFlags="$NewCaseFlags --res $RES --compset $COMPSET --run-unsupported"
-fi
 
 cd $SCRIPTS_ROOT
-echo "Currently in $SCRIPTS_ROOT"
-echo "Flags for create_newcase are $NewCaseFlags"
+echo "STATUS: Currently in $SCRIPTS_ROOT"
+echo "STATUS: Flags for create_newcase are $NewCaseFlags"
 ./create_newcase $NewCaseFlags
 
 cd $CASE
 chmod u+w *
-
-if [ ! -e env_mach_pes.xml.orig ]; then
-  cp env_mach_pes.xml env_mach_pes.xml.orig
-fi
-
-if [ -e $env_mach_pes_file ] && [ ! -z $env_mach_pes_file ]; then
-  rm -f env_mach_pes.xml
-  cp -v $env_mach_pes_file env_mach_pes.xml
-elif [ ! -z $env_mach_pes_file ]; then
-  echo "WARNING: can not find $env_mach_pes_file to replace env_mach_pes.xml"
-else
-  if [ $CHANGE_NP -eq 1 ]; then
-    echo "Changing to run ATM, LND, ROF, CPL, WAV, and GLC on $NP tasks"
-    # Change env_mach_pes to run on NP processes
-    ./xmlchange --file env_mach_pes.xml --id NTASKS_ATM --val $NP
-    ./xmlchange --file env_mach_pes.xml --id NTASKS_LND --val $NP
-    ./xmlchange --file env_mach_pes.xml --id NTASKS_CPL --val $NP
-    ./xmlchange --file env_mach_pes.xml --id NTASKS_GLC --val $NP
-    ./xmlchange --file env_mach_pes.xml --id NTASKS_ROF --val $NP
-    ./xmlchange --file env_mach_pes.xml --id NTASKS_WAV --val $NP
-  fi
-  if [ $CHANGE_NPOCN -eq 1 ]; then
-    echo "Changing to run OCN on $NPOCN tasks"
-    ./xmlchange --file env_mach_pes.xml --id NTASKS_OCN --val $NPOCN
-  fi
-  if [ $CHANGE_NPICE -eq 1 ]; then
-    echo "Changing to run ICE on $NPICE tasks"
-    ./xmlchange --file env_mach_pes.xml --id NTASKS_ICE --val $NPICE
-  fi
-
-  if [ $CHANGE_ROOTPE -eq 1 ]; then
-    # Set rootpe = 0 for all components
-    ./xmlchange --file env_mach_pes.xml --id ROOTPE_ATM --val 0
-    ./xmlchange --file env_mach_pes.xml --id ROOTPE_LND --val 0
-    ./xmlchange --file env_mach_pes.xml --id ROOTPE_ROF --val 0
-    ./xmlchange --file env_mach_pes.xml --id ROOTPE_ICE --val 0
-    ./xmlchange --file env_mach_pes.xml --id ROOTPE_OCN --val 0
-    ./xmlchange --file env_mach_pes.xml --id ROOTPE_CPL --val 0
-  fi
-
-  # Set nthrds = $NTHRDS for all components
-  if [ $CHANGE_NTHRDS -eq 1 ]; then
-    ./xmlchange --file env_mach_pes.xml --id NTHRDS_ATM --val $NTHRDS
-    ./xmlchange --file env_mach_pes.xml --id NTHRDS_LND --val $NTHRDS
-    ./xmlchange --file env_mach_pes.xml --id NTHRDS_ROF --val $NTHRDS
-    ./xmlchange --file env_mach_pes.xml --id NTHRDS_ICE --val $NTHRDS
-    ./xmlchange --file env_mach_pes.xml --id NTHRDS_OCN --val $NTHRDS
-    ./xmlchange --file env_mach_pes.xml --id NTHRDS_CPL --val $NTHRDS
-    ./xmlchange --file env_mach_pes.xml --id NTHRDS_GLC --val $NTHRDS
-    ./xmlchange --file env_mach_pes.xml --id NTHRDS_WAV --val $NTHRDS
-  fi
-fi
 
 # Change env_build to ensure bit-for-bit, disable archiving, disable restart
 # files, and only run for 1 month
@@ -375,6 +241,7 @@ if [ ! -e env_run.xml.orig ]; then
   cp env_run.xml env_run.xml.orig
 fi
 
+echo "STATUS: Adjusting env_run.xml...."
 ./xmlchange --file env_run.xml --id BFBFLAG --val TRUE
 ./xmlchange --file env_run.xml --id DOUT_S --val FALSE
 ./xmlchange --file env_run.xml --id REST_OPTION --val never
@@ -387,14 +254,11 @@ else
   ./xmlchange --file env_run.xml --id STOP_N --val 12
 fi
 
-# Unset LS_COLORS before configure runs
-LS_COLORS=
+echo "STATUS: Running setup....."
 ./case.setup || { echo "Error running case_setup, probably a bad NP value"; exit 1; }
 chmod u+w user_nl_*
-if [ $LENS -eq 1 ]; then
-  cp -f $ThisDir/user_nl_cam_LENS ./user_nl_cam
-fi
 
+echo "STATUS: Adjusting user_nl_* files...."
 # Only edit user_nl_cam if the file exists (otherwise not using CAM!)
 if [ -e user_nl_cam ]; then
   # Have CAM output everything (single precision)
@@ -408,17 +272,9 @@ if [ -e user_nl_cam ]; then
     echo "nhtfrq  = -8760" >> user_nl_cam
   fi
   echo "inithist = 'NONE'" >> user_nl_cam
-  #echo "ndens  = 1" >> user_nl_cam # Double precision
   if [ ! "$PERTLIM" == "0" ]; then
     echo "pertlim = $PERTLIM" >> user_nl_cam
   fi
-
-  # Add user-defined variables to user_nl_cam
-  # (If you did not use the -usr_nl_cam option then $usr_nl_cam_val is empty)
-  for new_variable in $usr_nl_cam_val; do
-    echo "Adding additional variable to user_nl_cam!"
-    echo "$new_variable" >> user_nl_cam
-  done
 fi
 
 # Only edit user_nl_clm if the file exists (otherwise not using CLM!)
@@ -431,15 +287,13 @@ if [ -e user_nl_clm ]; then
     echo "hist_avgflag_pertape = 'A'" >> user_nl_clm
     echo "hist_nhtfrq  = -8760" >> user_nl_clm
   fi
-  # Disable output?
-  #echo "hist_empty_htapes = .true." >> user_nl_clm
 fi
 
 # Disable output from all other components
-if [ -e user_nl_cice ] && [ $CICE_OUT_ON -eq 0 ]; then
+if [ -e user_nl_cice ]; then
   echo "histfreq = 'x','x','x','x','x'" >> user_nl_cice
 fi
-if [ -e user_nl_pop2 ] && [ $POP_OUT_ON -eq 0 ]; then
+if [ -e user_nl_pop2 ]; then
   echo "n_tavg_streams = 1" >> user_nl_pop2
   echo "ldiag_bsf = .false." >> user_nl_pop2
   echo "ldiag_global_tracer_budgets = .false." >> user_nl_pop2
@@ -457,67 +311,19 @@ if [ -e user_nl_pop2 ] && [ $POP_OUT_ON -eq 0 ]; then
   rm -rf SourceMods/src.pop2/gx1v6_tavg_contents
   touch  SourceMods/src.pop2/gx1v6_tavg_contents
 fi
-#echo "do_rtm = .false." >> user_nl_rtm
 
+echo "STATUS: Updating namelists...."
 ./preview_namelists || { echo "Error running preview_namelists"; exit 1; }
-
-fix_run_script
-
-# Copy any files over to SourceMods
-if [ -d SourceMods/src.cam ]; then
-  # (If you did not use the -cam_src_mod option then $cam_src_files is empty)
-  for file in ${cam_src_files[@]}; do
-    if [ -e $file ]; then
-      cp -fv $file SourceMods/src.cam/
-    else
-      echo "WARNING: $file not found!"
-      echo "(Probably a relative path issue, currently in `pwd -P`)"
-    fi
-  done
-fi
-
-# IGNORE THIS FOR NOW!
-if [ 0 == 1 ]; then
-  if [ -z "$EnsembleAvgsFile" ]; then
-    echo "WARNING: not specifying location of netCDF file w/ avgs and standard"\
-         "deviations from ensemble on known good machine. Script will skip checks"
-  else
-    # Add NCL script to run (if ensemble values are stored somewhere)
-    # Check to see if NCL exists
-    NCLCHECK=`command -v ncl || echo NotFound`
-    if [ "$NCLCHECK" == "NotFound" ]; then
-      echo "Can not find ncl in PATH"
-      echo "This tool uses ncl to compare output to an ensemble"
-    else
-      # Note: need NCL 6.1.0 or later!
-      NCL_VER=`ncl -V`
-      NCL_FULL=(`echo $NCL_VER | tr '.' ' '`)
-      NCL_MAIN=${NCL_FULL[0]}
-      NCL_SUB=${NCL_FULL[1]}
-  #    echo "ncl check_variance.ncl | tee check_variance.output" >> $CASENAME.run
-    fi
-  #  cat > check_variance.ncl << EOF
-  #; Update this for annual averages!
-  #EOF
-  fi
-fi
 
 echo "nobuild: $nobuild, nosubmit: $nosubmit"
 # Build executable
 if [ $nobuild != 'on' ]; then
-    if [ "$MACH" == "janus" ]; then
-      ssh janus-compile1 "cd $PWD; ./$CASENAME.build" || { echo "Error building!"; exit 1; }
-    else
-      ./case.build || { echo "Error building!"; exit 1; }
-    fi
+    echo "STATUS: Building exe..."
+    ./case.build || { echo "Error building!"; exit 1; }
 fi
 
 # Submit job to queue
 if [ $nosubmit != 'on' ]; then
-    if [ "$MACH" == "mira" ]; then
-      ./case.run
-    else
-      ./case.submit
-    fi
+    ./case.submit
 fi
 

@@ -33,9 +33,12 @@ null  :=
 EXENAME = cprnc
 RM = rm
 
+NETCDF_PATH ?= $(NETCDF_FORTRAN_PATH)
+
 # Default for the netcdf library and include directories
 LIB_NETCDF := $(NETCDF_PATH)/lib
 INC_NETCDF := $(NETCDF_PATH)/include
+LDFLAGS = -L$(LIB_NETCDF) -lnetcdff
 
 # Determine platform
 UNAMES := $(shell uname -s)

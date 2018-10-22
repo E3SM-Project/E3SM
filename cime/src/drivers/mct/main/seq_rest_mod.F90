@@ -115,8 +115,6 @@ module seq_rest_mod
   logical     :: wav_prognostic         ! .true.  => wav comp expects input
   logical     :: esp_prognostic         ! .true.  => esp comp expects input
 
-  integer(IN) :: info_debug = 0         ! local info_debug level
-
   !--- temporary pointers ---
   type(mct_gsMap), pointer :: gsmap
   type(mct_aVect), pointer :: x2oacc_ox(:)
@@ -160,8 +158,6 @@ contains
     integer(IN)          :: n,n1,n2,n3
     real(r8),allocatable :: ds(:)         ! for reshaping diag data for restart file
     real(r8),allocatable :: ns(:)         ! for reshaping diag data for restart file
-    character(CS)        :: string
-    integer(IN)          :: ierr          ! MPI error return
     character(len=*), parameter :: subname = "(seq_rest_read) "
 
     !-------------------------------------------------------------------------------
@@ -291,7 +287,7 @@ contains
   subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
        atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
        fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-       fractions_rx, fractions_gx, fractions_wx, tag)
+       fractions_rx, fractions_gx, fractions_wx, tag, rest_file)
 
     implicit none
 
@@ -299,13 +295,13 @@ contains
     type(seq_timemgr_type) , intent(inout) :: seq_SyncClock ! contains ptr to driver clock
     type(seq_infodata_type), intent(in)    :: infodata
     type (component_type)       , intent(inout) :: atm(:)
-    type (component_type)       , intent(inout) :: lnd(:)
-    type (component_type)       , intent(inout) :: ice(:)
-    type (component_type)       , intent(inout) :: ocn(:)
-    type (component_type)       , intent(inout) :: rof(:)
-    type (component_type)       , intent(inout) :: glc(:)
-    type (component_type)       , intent(inout) :: wav(:)
-    type (component_type)       , intent(inout) :: esp(:)
+    type (component_type)  , intent(inout) :: lnd(:)
+    type (component_type)  , intent(inout) :: ice(:)
+    type (component_type)  , intent(inout) :: ocn(:)
+    type (component_type)  , intent(inout) :: rof(:)
+    type (component_type)  , intent(inout) :: glc(:)
+    type (component_type)  , intent(inout) :: wav(:)
+    type (component_type)  , intent(inout) :: esp(:)
     type(mct_aVect)        , intent(inout) :: fractions_ax(:)   ! Fractions on atm grid/decomp
     type(mct_aVect)        , intent(inout) :: fractions_lx(:)   ! Fractions on lnd grid/decomp
     type(mct_aVect)        , intent(inout) :: fractions_ix(:)   ! Fractions on ice grid/decomp
@@ -313,7 +309,8 @@ contains
     type(mct_aVect)        , intent(inout) :: fractions_rx(:)   ! Fractions on rof grid/decomp
     type(mct_aVect)        , intent(inout) :: fractions_gx(:)   ! Fractions on glc grid/decomp
     type(mct_aVect)        , intent(inout) :: fractions_wx(:)   ! Fractions on wav grid/decomp
-    character(len=*)       , intent(in) :: tag
+    character(len=*)       , intent(in)    :: tag
+    character(len=CL)      , intent(out)   :: rest_file         ! Restart filename
 
     integer(IN)   :: n,n1,n2,n3,fk
     integer(IN)   :: curr_ymd         ! Current date YYYYMMDD
@@ -326,13 +323,12 @@ contains
     logical       :: whead,wdata      ! flags header/data writing
     logical       :: cplroot          ! root pe on cpl id
     integer(IN)   :: iun              ! unit number
-    character(CL) :: rest_file        ! Local path to restart filename
-    integer(IN)   :: ierr             ! MPI error return
     type(mct_gsMap),pointer :: gsmap
     character(len=6) :: year_char
 
     real(r8),allocatable :: ds(:)     ! for reshaping diag data for restart file
     real(r8),allocatable :: ns(:)     ! for reshaping diag data for restart file
+    character(CL) :: model_doi_url
     character(len=*),parameter :: subname = "(seq_rest_write) "
 
     !-------------------------------------------------------------------------------
@@ -369,7 +365,8 @@ contains
          glc_prognostic=glc_prognostic,      &
          wav_prognostic=wav_prognostic,      &
          esp_prognostic=esp_prognostic,      &
-         case_name=case_name)
+         case_name=case_name,                &
+         model_doi_url=model_doi_url)
 
     ! Write out infodata and time manager data to restart file
 
@@ -413,7 +410,7 @@ contains
        endif
 
        call shr_mpi_bcast(rest_file,mpicom_CPLID)
-       call seq_io_wopen(rest_file,clobber=.true.)
+       call seq_io_wopen(rest_file,clobber=.true., model_doi_url=model_doi_url)
 
        ! loop twice (for perf), first time write header, second time write data
        do fk = 1,2

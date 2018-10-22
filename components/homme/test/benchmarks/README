@@ -1,0 +1,62 @@
+A collection of standard benchmarks for the HOMME dycore
+
+Each directory contains a job script and namelists.  The jobs script should be edited to
+specify:
+
+1. the location of the source code 
+2. the run directory 
+3. the cmake machine file
+4. the namelist to use (some scripts can run a tiny test case for debugging)
+5. srun/mpirun command 
+ 
+The first time the job script is run (or if CMakeLists.txt is not present) the jobscript will
+run cmake to configure the model and compile the executable.
+
+
+
+BENCHMARKS:
+
+
+***ACME v1 ne30 and ne120 ***
+  director:  benchmarking/v1  
+  configuration:
+    72L, 40 tracers
+    v1-tiny.nl     For debugging.  Runs in a couple of minutes on a laptop 
+    v1-ne30.nl     ACME v1 ne30 (1 degree)     Runs in 42s on 18 Edison nodes
+    v1-ne120.nl    ACME v1 ne120 (1/4 degree)  Runs in 12min on 72 Edison nodes
+
+  benchmark is run for 1 day.  360 timesteps. To convert to SYPD:
+     SYPD = (24*3600)/( sec_per_day * 365 )
+
+
+*** NGGPS ***
+   Configuration to match the NGGPS dycore evaluation tests, from the "AVEC" report:
+   http://www.weather.gov/sti/stimodeling_nggps_implementation_atmdynamics
+
+   Jablonowski & Williamson baroclinic instability with 10 checkerboard tracers,
+   128L and 13km resolution.   
+   
+   ACME 2015 data:
+   https://acme-climate.atlassian.net/wiki/spaces/PERF/pages/27066410/HOMME+dycore+transport+performance+on+Edison
+
+   The benchmark reports time (seconds) for a 2h simulation.  The NGGPS operational requirement
+   is 8.5min per day for the full model, with the dycore running at 4.25min/day.
+   Some plots also report speedup relative to 4.25min/day.  
+
+   configuration:
+      128L, 10 tracers (checkerboard pattern)
+      nggps-tiny.nl                For debugging.  Runs in a couple of minutes on a laptop
+      nggps-ne256.nl               Latest namelist for use with ACME v1
+                                   10min on 64 Edison nodes
+   
+      archived:
+      nggps-ne256.nl-20150401      Namelist used for orginal 2015 bencharks with CESM code base
+
+
+   IMPORTANT:
+   We run this benchmark for 4h instead of 2h, so the run times should be divided by 2. 
+   Because HOMME computes extra diagnostics on the first few timesteps and the last timestep, we 
+   wanted to mitigate impact of these diagnostics by running longer so there cost will a smaller total percentage.
+   The diagnostics allows us to very that the code is producing correct results.
+
+   NGGPS published data is 2h time in seconds.  DIVIDE BY 2 FOR THIS METRIC

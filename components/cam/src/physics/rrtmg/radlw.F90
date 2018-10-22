@@ -30,7 +30,7 @@ public ::&
    
 ! Private data
 integer :: ntoplw    ! top level to solve for longwave cooling
-
+logical :: pergro_mods = .false.
 !===============================================================================
 CONTAINS
 !===============================================================================
@@ -39,7 +39,7 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
                         pmid    ,aer_lw_abs,cld       ,tauc_lw,       &
                         qrl     ,qrlc      ,                          &
                         flns    ,flnt      ,flnsc     ,flntc  ,flwds, &
-                        flut    ,flutc     ,fnl       ,fcnl   ,fldsc, &
+                        flut    ,flutc     ,fnl       ,fcnl   ,fldsc,clm_rand_seed, &
                         lu      ,ld        )
 
 !-----------------------------------------------------------------------
@@ -67,6 +67,7 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
 
    real(r8), intent(in) :: cld(pcols,pver)      ! Cloud cover
    real(r8), intent(in) :: tauc_lw(nbndlw,pcols,pver)   ! Cloud longwave optical depth by band
+   integer,  intent(inout) :: clm_rand_seed(pcols,4)            ! rand # seeds for lw
 
 !
 ! Output arguments
@@ -170,7 +171,7 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
 
    call mcica_subcol_lw(lchnk, ncol, rrtmg_levs-1, icld, permuteseed, pmid(:, pverp-rrtmg_levs+1:pverp-1), &
       cld(:, pverp-rrtmg_levs+1:pverp-1), cicewp, cliqwp, rei, rel, tauc_lw(:, :ncol, pverp-rrtmg_levs+1:pverp-1), &
-      cld_stolw, cicewp_stolw, cliqwp_stolw, rei_stolw, rel_stolw, tauc_stolw)
+      cld_stolw, cicewp_stolw, cliqwp_stolw, rei_stolw, rel_stolw, tauc_stolw, clm_rand_seed, pergro_mods)
 
    call t_stopf('mcica_subcol_lw')
 
@@ -307,8 +308,11 @@ subroutine radlw_init()
 !-----------------------------------------------------------------------
 
    use ref_pres, only : pref_mid
+   use phys_control, only: phys_getopts
 
    integer :: k
+   
+   call phys_getopts(pergro_mods_out=pergro_mods)
 
    ! If the top model level is above ~90 km (0.1 Pa), set the top level to compute
    ! longwave cooling to about 80 km (1 Pa)

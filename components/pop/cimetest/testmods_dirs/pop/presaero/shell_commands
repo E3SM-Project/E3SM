@@ -1,2 +1,0 @@
-./xmlchange PIO_TYPENAME=pnetcdf
-./xmlchange DATM_PRESAERO=clim_1850

@@ -78,6 +78,19 @@
       To validate the env_archive.xml file using xmllint, run
       xmllint -schema $SRCROOT/cime/config/xml_schemas/env_archive.xsd env_archive.xml
       from the case root.
+      The patterns below are Python regular expressions.
+      The file names created from these patterns will add an optional digit
+      to them and will enclose them in a pair of '.'.
+      Some useful Python metacharacters are:
+         [] = any single character inside the brackets
+         \d = a digit = [0123456789] = [0-9]
+          ? = 0 or 1 of the previous character
+          * = 0 or more of the previous character (greedy!)
+          + = 1 or more of the previous character (greedy!)
+         \. = a period
+          . = any non-newline character
+      Use them carefully.  They're often confused with shell-type
+      wild card characters.
     </header>
   </file>
 

@@ -26,44 +26,43 @@ def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
         description=description,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+        formatter_class=argparse.RawTextHelpFormatter)
 
     CIME.utils.setup_standard_logging_options(parser)
 
     parser.add_argument("--count", action="store_true",
-                        help="Rather than listing tests, just give counts by category/machine/compiler")
+                        help="Rather than listing tests, just give counts by category/machine/compiler.")
 
     parser.add_argument("--list", dest='list_type',
                         choices = ['category', 'categories',
                                    'machine', 'machines',
                                    'compiler', 'compilers'],
-                        help="Rather than listing tests, list the available options for "
-                        "--xml-category, --xml-machine, or --xml-compiler. "
-                        "(The singular and plural forms are equivalent - so '--list category' "
+                        help="Rather than listing tests, list the available options for\n"
+                        "--xml-category, --xml-machine, or --xml-compiler.\n"
+                        "(The singular and plural forms are equivalent - so '--list category'\n"
                         "is equivalent to '--list categories', etc.)")
 
     parser.add_argument("--show-options", action="store_true",
-                        help="For each test, also show options for that test "
-                        "(wallclock time, memory leak tolerance, etc.). "
+                        help="For each test, also show options for that test\n"
+                        "(wallclock time, memory leak tolerance, etc.).\n"
                         "(Has no effect with --list or --count options.)")
 
     parser.add_argument("--define-testtypes", action="store_true",
-                        help="At the top of the list of tests, define "
-                        "all of the possible test types. "
+                        help="At the top of the list of tests, define all of the possible test types.\n"
                         "(Has no effect with --list or --count options.)")
 
     parser.add_argument("--xml-category",
-                        help="Only include tests in this category; default is all categories")
+                        help="Only include tests in this category; default is all categories.")
 
     parser.add_argument("--xml-machine",
-                        help="Only include tests for this machine; default is all machines")
+                        help="Only include tests for this machine; default is all machines.")
 
     parser.add_argument("--xml-compiler",
-                        help="Only include tests for this compiler; default is all compilers")
+                        help="Only include tests for this compiler; default is all compilers.")
 
     parser.add_argument("--xml-testlist",
-                        help="Path to testlist file from which tests are gathered; "
-                        "default is all files specified in config_files.xml")
+                        help="Path to testlist file from which tests are gathered;\n"
+                        "default is all files specified in config_files.xml.")
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 

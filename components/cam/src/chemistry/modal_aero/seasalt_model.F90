@@ -643,7 +643,8 @@ add_om_species: if ( has_mam_mom ) then
 ! Loop over OM modes
     om_num_mode_loop: do m_om=1,om_num_modes ! modes in which to emit OM
        if (size(om_num_ind) .eq. 1) then
-          call endrun("Error: om_num_ind is a scalar, but attempting to calculate MOM.  Something bad happened!!  We should never get here!")
+          call endrun(&
+          "Error: om_num_ind is a scalar, but attempting to calculate MOM.  Something bad happened!!  We should never get here!")
        end if
        m = om_num_ind(m_om)
        mn=seasalt_indices(nslt+nslt_om+m)

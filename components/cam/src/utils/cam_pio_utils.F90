@@ -307,9 +307,9 @@ contains
   ! cam_pio_var_info: Retrieve variable properties
   !
   !-----------------------------------------------------------------------
-  subroutine cam_pio_var_info(ncid, varid, ndims, dimids, dimlens, dimnames, varname)
+  subroutine cam_pio_var_info(ncid, varid, ndims, dimids, dimlens, dimnames, varname, unlimDimID)
     use pio,        only: PIO_inq_varndims, PIO_inq_vardimid, PIO_inq_dimlen, PIO_inq_dimname
-    use pio,        only: PIO_seterrorhandling, PIO_BCAST_ERROR
+    use pio,        only: PIO_seterrorhandling, PIO_BCAST_ERROR, PIO_inquire
     use cam_abortutils, only: endrun
 
 
@@ -319,6 +319,7 @@ contains
     integer,                     intent(out)   :: ndims
     integer,                     intent(out)   :: dimids(:)
     integer,                     intent(out)   :: dimlens(:)
+    integer,           optional, intent(out)   :: unlimDimID
     character(len=*),  optional, intent(out)   :: dimnames(:)
     character(len=*),  optional, intent(in)    :: varname
 
@@ -361,6 +362,10 @@ contains
         call cam_pio_handle_error(ret, 'CAM_PIO_VAR_INFO: Error with inq dimnames')
       end if
     end do
+    if (present(unlimDimID)) then
+      ret = PIO_inquire(ncid, unlimitedDimID=unlimDimID)
+      call cam_pio_handle_error(ret, 'CAM_PIO_VAR_INFO: Error with inquire')
+    end if
     call PIO_seterrorhandling(ncid, err_handling)
 
   end subroutine cam_pio_var_info

@@ -45,7 +45,7 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-       applyCAMforcing_dynamics, applyCAMforcing, vertical_mesh_init2
+       applyCAMforcing_dp3d, applyCAMforcing_ps, vertical_mesh_init2
 
 !  type (EdgeBuffer_t) :: edge5
   type (EdgeBuffer_t) :: edge6
@@ -489,9 +489,17 @@ contains
 
 
 
+!placeholder
+  subroutine applyCAMforcing_dp3d(elem,hvcoord,np1,dt,nets,nete)
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: np1,nets,nete
+  end subroutine applyCAMforcing_dp3d
 
-
-  subroutine applyCAMforcing(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
+!temp solution for theta+ftype0
+  subroutine applyCAMforcing_ps(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
 
   implicit none
   type (element_t),       intent(inout) :: elem(:)
@@ -515,7 +523,7 @@ contains
      elem(ie)%derived%FQps(:,:)=0
 
      ! apply forcing to temperature
-     call get_temperature(elem(ie),temperature,hvcoord,np1,np1_qdp)
+     call get_temperature(elem(ie),temperature,hvcoord,np1)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
@@ -577,8 +585,8 @@ contains
      enddo
 
      ! now that we have updated Qdp and dp, compute theta_dp_cp from temperature
-     call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,np1_qdp),dp)
-     call get_cp_star(cp_star,elem(ie)%state%Qdp(:,:,:,1,np1_qdp),dp)
+     call get_kappa_star(kappa_star,elem(ie)%state%Q(:,:,:,1))
+     call get_cp_star(cp_star,elem(ie)%state%Q(:,:,:,1))
      call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp,&
           elem(ie)%state%phinh(:,:,:,np1),elem(ie)%state%phis(:,:),kappa_star,&
           pnh,dpnh,exner)
@@ -588,7 +596,7 @@ contains
 
     enddo
     call applyCAMforcing_dynamics(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
-  end subroutine applyCAMforcing
+  end subroutine applyCAMforcing_ps
 
 
 
@@ -1137,7 +1145,7 @@ contains
      theta_cp(:,:,:) = theta_dp_cp(:,:,:)/dp3d(:,:,:)
      phi => elem(ie)%state%phinh(:,:,:,n0)
 
-     call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
+     call get_kappa_star(kappa_star,elem(ie)%state%Q(:,:,:,1))
 
      call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
              kappa_star,pnh,dpnh,exner)
@@ -1620,7 +1628,7 @@ contains
     theta_dp_cp  => elem(ie)%state%theta_dp_cp(:,:,:,np1)
     phi_np1 => elem(ie)%state%phinh(:,:,:,np1)
     phis => elem(ie)%state%phis(:,:)
-    call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
+    call get_kappa_star(kappa_star,elem(ie)%state%Q(:,:,:,1))
     if (theta_hydrostatic_mode) then
       dpnh_dp(:,:,:)=1.d0
     else

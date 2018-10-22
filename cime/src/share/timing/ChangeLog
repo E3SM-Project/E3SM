@@ -1,3 +1,9 @@
+timing_180403: Added GPTLstartstop_val(f) to gptl.h, to provide explicit
+               typing and eliminate compile-time warning for some compilers.
+               Also do not define the CPP tokens HAVE_COMM_F2C and 
+               HAVE_GETTIMEOFDAY in private.h if they have already been
+               defined, also eliminating compile-time warnings.
+               [Patrick Worley]
 timing_171028: Backported GPTLstartstop_val from a more recent version
                of GPTL, added a callcount parameter, and renamed it
                GPTLstartstop_vals. Also added a version for non-null

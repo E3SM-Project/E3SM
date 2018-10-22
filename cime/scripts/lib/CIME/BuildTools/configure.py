@@ -15,9 +15,8 @@ respectively. These can be changed by setting the environment variables
 COMPILER, MPILIB, and DEBUG, respectively.
 """
 
-import shutil
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect
+from CIME.utils import expect, safe_copy
 from CIME.XML.compilers import Compilers
 from CIME.XML.env_mach_specific import EnvMachSpecific
 
@@ -58,13 +57,13 @@ def _copy_depends_files(machine_name, machines_dir, output_dir, compiler):
     outputdfile = os.path.join(output_dir, "Depends.{}.{}".format(machine_name,compiler))
     if os.path.isfile(dfile):
         if not os.path.isfile(outputdfile):
-            shutil.copyfile(dfile, outputdfile)
+            safe_copy(dfile, outputdfile)
     else:
         for dep in (machine_name, compiler):
             dfile = os.path.join(machines_dir, "Depends.{}".format(dep))
             outputdfile = os.path.join(output_dir, "Depends.{}".format(dep))
             if os.path.isfile(dfile) and not os.path.isfile(outputdfile):
-                shutil.copyfile(dfile, outputdfile)
+                safe_copy(dfile, outputdfile)
 
 class FakeCase(object):
 

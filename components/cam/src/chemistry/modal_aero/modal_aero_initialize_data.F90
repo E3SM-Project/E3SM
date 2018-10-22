@@ -173,8 +173,10 @@ contains
 #elif ( defined MODAL_AERO_4MODE_MOM )
        ! mode 3 (coarse dust & seasalt) species
 #if (defined RAIN_EVAP_TO_COARSE_AERO)
-          xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ', 'bc_a3   ','pom_a3  ','soa_a3  ', 'mom_a3  ' /)
-          xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ', 'bc_c3   ','pom_c3  ','soa_c3  ', 'mom_c3  ' /)
+          xname_massptr(:nspec_amode(3),3)   = &
+          (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ', 'bc_a3   ','pom_a3  ','soa_a3  ', 'mom_a3  ' /)
+          xname_massptrcw(:nspec_amode(3),3) = &
+          (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ', 'bc_c3   ','pom_c3  ','soa_c3  ', 'mom_c3  ' /)
           xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ', 'black-c   ','p-organic ', &
                's-organic ', 'm-organic ' /)
 #else

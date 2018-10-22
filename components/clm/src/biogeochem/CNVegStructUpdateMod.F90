@@ -16,7 +16,8 @@ module CNVegStructUpdateMod
   use CNStateType          , only : cnstate_type
   use CNCarbonStateType    , only : carbonstate_type
   use CanopyStateType      , only : canopystate_type
-  use VegetationType            , only : veg_pp                
+  use VegetationType            , only : veg_pp
+  use CropType             , only : crop_type
   !
   implicit none
   save
@@ -31,7 +32,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CNVegStructUpdate(num_soilp, filter_soilp, &
        waterstate_vars, frictionvel_vars, dgvs_vars, cnstate_vars, &
-       carbonstate_vars, canopystate_vars)
+       carbonstate_vars, canopystate_vars, crop_vars)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, use C state variables and epc to diagnose
@@ -52,6 +53,7 @@ contains
     type(cnstate_type)     , intent(inout) :: cnstate_vars
     type(carbonstate_type) , intent(in)    :: carbonstate_vars
     type(canopystate_type) , intent(inout) :: canopystate_vars
+    type(crop_type)        , intent(inout) :: crop_vars
     !
     ! !REVISION HISTORY:
     ! 10/28/03: Created by Peter Thornton
@@ -105,7 +107,7 @@ contains
          deadstemc          =>  carbonstate_vars%deadstemc_patch  ,       & ! Input:  [real(r8) (:) ] (gC/m2) dead stem C                               
 
          farea_burned       =>  cnstate_vars%farea_burned_col     ,       & ! Input:  [real(r8) (:) ] F. Li and S. Levis                                 
-         harvdate           =>  cnstate_vars%harvdate_patch       ,       & ! Input:  [integer  (:) ] harvest date                                       
+         harvdate           =>  crop_vars%harvdate_patch          ,       & ! Input:  [integer  (:) ] harvest date                                       
          htmx               =>  cnstate_vars%htmx_patch           ,       & ! Output: [real(r8) (:) ] max hgt attained by a crop during yr (m)          
          peaklai            =>  cnstate_vars%peaklai_patch        ,       & ! Output: [integer  (:) ] 1: max allowed lai; 0: not at max                  
 

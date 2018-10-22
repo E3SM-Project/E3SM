@@ -5,6 +5,7 @@ module landunit_varcon
   ! Module containing landunit indices and associated variables and routines.
   !
   ! !USES:
+#include "shr_assert.h"
   !
   !
   ! !PUBLIC TYPES:
@@ -42,6 +43,7 @@ module landunit_varcon
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: landunit_varcon_init  ! initialize constants in this module
+  public :: landunit_is_special   ! returns true if this is a special landunit
   
   !
   ! !PRIVATE MEMBER FUNCTIONS:
@@ -69,6 +71,33 @@ contains
 
   end subroutine landunit_varcon_init
   
+  !-----------------------------------------------------------------------
+  function landunit_is_special(ltype) result(is_special)
+    !
+    ! !DESCRIPTION:
+    ! Returns true if the landunit type ltype is a special landunit; returns false otherwise
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    logical :: is_special  ! function result
+    integer :: ltype       ! landunit type of interest
+    !
+    ! !LOCAL VARIABLES:
+
+    character(len=*), parameter :: subname = 'landunit_is_special'
+    !-----------------------------------------------------------------------
+
+    SHR_ASSERT((ltype >= 1 .and. ltype <= max_lunit), subname//': ltype out of bounds')
+
+    if (ltype == istsoil .or. ltype == istcrop) then
+       is_special = .false.
+    else
+       is_special = .true.
+    end if
+
+  end function landunit_is_special
+
   !-----------------------------------------------------------------------
   subroutine set_landunit_names
     !

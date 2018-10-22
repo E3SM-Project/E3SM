@@ -133,7 +133,6 @@ contains
 
     integer(in)                     :: rcode
     type(var_desc_t)                :: varid
-    logical                         :: exists
     character(CL)                   :: name1
     character(*),parameter          :: subName = '(seq_io_read_int1d) '
     logical :: addprefix

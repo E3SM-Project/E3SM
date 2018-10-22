@@ -22,15 +22,21 @@ program cime_driver
   !----------------------------------------------------------------------------
   use shr_kind_mod,  only : r8 => SHR_KIND_R8
   use shr_kind_mod,  only : i8 => SHR_KIND_I8
-  use shr_sys_mod,   only : shr_sys_irtc
+  use shr_kind_mod,  only : CS => SHR_KIND_CS
+  use shr_sys_mod,   only : shr_sys_irtc, shr_sys_abort
   use perf_mod,      only : t_startf, t_adj_detailf, t_stopf, t_startstop_valsf
   use ESMF,          only : ESMF_Initialize, ESMF_Finalize
-  use seq_comm_mct,  only : esmf_logfile_kind
+  use ESMF,          only : ESMF_LogKind_Flag, ESMF_LOGKIND_NONE
+  use ESMF,          only : ESMF_LOGKIND_SINGLE, ESMF_LOGKIND_MULTI
+#if (! defined(USE_ESMF_LIB) ) || (ESMF_VERSION_MAJOR > 7)
+  use ESMF,          only : ESMF_LOGKIND_MULTI_ON_ERROR
+#endif
   use cime_comp_mod, only : cime_pre_init1
   use cime_comp_mod, only : cime_pre_init2
   use cime_comp_mod, only : cime_init
   use cime_comp_mod, only : cime_run
   use cime_comp_mod, only : cime_final
+  use seq_comm_mct,  only : logunit
 
   implicit none
 
@@ -42,11 +48,17 @@ program cime_driver
        cime_pre_init2_time, cime_init_time_adjustment
 
   !--------------------------------------------------------------------------
+  ! For ESMF logging
+  !--------------------------------------------------------------------------
+  character(len=CS)       :: esmf_logfile_option
+  type(ESMF_LogKind_Flag) :: esmf_logfile_kind
+
+  !--------------------------------------------------------------------------
   ! Setup and initialize the communications and logging.
   !--------------------------------------------------------------------------
   beg_count = shr_sys_irtc(irtc_rate)
 
-  call cime_pre_init1()
+  call cime_pre_init1(esmf_logfile_option)
 
   end_count = shr_sys_irtc(irtc_rate)
   cime_pre_init1_time = real( (end_count-beg_count), r8)/real(irtc_rate, r8)
@@ -58,6 +70,24 @@ program cime_driver
   !--------------------------------------------------------------------------
   beg_count = shr_sys_irtc(irtc_rate)
 
+  select case(esmf_logfile_option)
+  case('ESMF_LOGKIND_SINGLE')
+     esmf_logfile_kind = ESMF_LOGKIND_SINGLE
+  case('ESMF_LOGKIND_MULTI')
+     esmf_logfile_kind = ESMF_LOGKIND_MULTI
+  case('ESMF_LOGKIND_MULTI_ON_ERROR')
+#if (! defined(USE_ESMF_LIB) ) || (ESMF_VERSION_MAJOR > 7)
+     esmf_logfile_kind = ESMF_LOGKIND_MULTI_ON_ERROR
+#else
+     write(logunit,*) 'ESMF library version being used: ', ESMF_VERSION_MAJOR
+     call shr_sys_abort('CIME ERROR: invalid ESMF logfile kind for this ESMF library version: ' &
+                        //trim(esmf_logfile_option) )
+#endif
+  case('ESMF_LOGKIND_NONE')
+     esmf_logfile_kind = ESMF_LOGKIND_NONE
+  case default
+     call shr_sys_abort('CIME ERROR: invalid ESMF logfile kind '//trim(esmf_logfile_option))
+  end select
   call ESMF_Initialize(logkindflag=esmf_logfile_kind)
 
   end_count = shr_sys_irtc(irtc_rate)

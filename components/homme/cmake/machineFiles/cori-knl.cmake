@@ -13,31 +13,7 @@ SET (HDF5_DIR $ENV{HDF5_DIR} CACHE FILEPATH "")
 
 SET (MKLROOT $ENV{MKLROOT} CACHE FILEPATH "")
 
-#ZLIB_DIR=/global/common/cori/software/zlib/1.2.8/hsw/intel
-SET (ZLIB_DIR $ENV{ZLIB_DIR} CACHE FILEPATH "")
-SET (ZLIB_LIBRARY ${ZLIB_DIR}/lib/libz.a CACHE FILEPATH "")
-#MESSAGE(STATUS " cori-knl.cmake ENV(ZLIB_DIR)=$ENV{ZLIB_DIR}")
-#MESSAGE(STATUS " cori-knl.cmake ZLIB_DIR=${ZLIB_DIR}")
-#MESSAGE(STATUS " cori-knl.cmake ZLIB_LIBRARY=${ZLIB_LIBRARY}")
-
-EXECUTE_PROCESS(COMMAND which nf-config
-  RESULT_VARIABLE NFCONFIG_PATH_RESULT
-  OUTPUT_VARIABLE NFCONFIG_PATH_OUTPUT
-  ERROR_VARIABLE  NFCONFIG_PATH_ERROR
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-EXECUTE_PROCESS(COMMAND ${NFCONFIG_PATH_OUTPUT} --flibs
-  RESULT_VARIABLE NFCONFIG_RESULT
-  OUTPUT_VARIABLE NFCONFIG_OUTPUT
-  ERROR_VARIABLE  NFCONFIG_ERROR
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-IF (${NFCONFIG_ERROR})
-  MESSAGE(WARNING "${NETCDF_DIR}/bin/nf-config --flibs produced an error. Default linking will be used.")
-ELSE ()
-  SET (ADD_LINKER_FLAGS " ${NFCONFIG_OUTPUT} " CACHE STRING "")
-ENDIF ()
-#MESSAGE(STATUS " cori-knl.cmake NFCONFIG_OUTPUT=${NFCONFIG_OUTPUT}")
+SET (ADD_Fortran_FLAGS "-traceback -craype-verbose" CACHE STRING "")
 
 SET (CMAKE_SYSTEM_NAME Catamount CACHE FILEPATH "")
 
@@ -49,3 +25,36 @@ SET (USE_MPIEXEC "srun" CACHE STRING "")
 SET (USE_MPI_OPTIONS "-c 4 --cpu_bind=cores" CACHE STRING "")
 
 SET (CPRNC_DIR /project/projectdirs/acme/tools/cprnc.cori CACHE FILEPATH "")
+
+# by default, cori env loads haswell mod, do
+# module unload craype-haswell ; module load craype-mic-knl
+#
+# NOTE: 2018/2: none of the below seems necessary as long as these modules are loaded:
+#  module load cray-netcdf-hdf5parallel
+#  module load cray-parallel-netcdf/1.6.1
+#
+#
+# #ZLIB_DIR=/global/common/cori/software/zlib/1.2.8/hsw/intel
+# SET (ZLIB_DIR $ENV{ZLIB_DIR} CACHE FILEPATH "")
+# SET (ZLIB_LIBRARY ${ZLIB_DIR}/lib/libz.a CACHE FILEPATH "")
+#
+#EXECUTE_PROCESS(COMMAND which nf-config
+#  RESULT_VARIABLE NFCONFIG_PATH_RESULT
+#  OUTPUT_VARIABLE NFCONFIG_PATH_OUTPUT
+#  ERROR_VARIABLE  NFCONFIG_PATH_ERROR
+#  OUTPUT_STRIP_TRAILING_WHITESPACE
+#)
+#EXECUTE_PROCESS(COMMAND ${NFCONFIG_PATH_OUTPUT} --flibs
+#  RESULT_VARIABLE NFCONFIG_RESULT
+#  OUTPUT_VARIABLE NFCONFIG_OUTPUT
+#  ERROR_VARIABLE  NFCONFIG_ERROR
+#  OUTPUT_STRIP_TRAILING_WHITESPACE
+#)
+#IF (${NFCONFIG_ERROR})
+#  MESSAGE(WARNING "${NETCDF_DIR}/bin/nf-config --flibs produced an error. Default linking will be us#ed.")
+#ELSE ()
+#  SET (ADD_LINKER_FLAGS " ${NFCONFIG_OUTPUT} " CACHE STRING "")
+#ENDIF ()
+##MESSAGE(STATUS " cori-knl.cmake NFCONFIG_OUTPUT=${NFCONFIG_OUTPUT}")
+
+

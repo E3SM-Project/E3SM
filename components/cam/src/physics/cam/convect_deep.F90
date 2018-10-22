@@ -296,7 +296,11 @@ subroutine convect_deep_tend( &
   ! If we added this, set it.
   if (ttend_dp_idx > 0) then
      call pbuf_get_field(pbuf, ttend_dp_idx, ttend_dp)
-     ttend_dp(:state%ncol,:pver) = ptend%s(:state%ncol,:pver)/cpair
+     if ( allocated(ptend%s) ) then
+        ttend_dp(:state%ncol,:pver) = ptend%s(:state%ncol,:pver)/cpair
+     else
+        ttend_dp(:state%ncol,:pver) = 0.0_r8
+     endif
   end if
 
   call outfld( 'ICWMRDP ', ql  , pcols, state%lchnk )
@@ -351,7 +355,7 @@ subroutine convect_deep_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, &
       call zm_conv_tend_2( state,   ptend,  ztodt,  pbuf,mu, eu, &
      du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class) 
    else
-      call physics_ptend_init(ptend, state%psetcols, 'convect_deep')
+      call physics_ptend_init(ptend, state%psetcols, 'convect_deep2')
    end if
 
 

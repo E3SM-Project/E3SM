@@ -709,6 +709,9 @@ module namelist_mod
     call MPI_bcast(output_type , 9,MPIChar_t,par%root,par%comm,ierr)
     call MPI_bcast(infilenames ,160*MAX_INFILES ,MPIChar_t,par%root,par%comm,ierr)
 
+    ! use maximum available:
+    if (NThreads == -1) NThreads = omp_get_max_threads()
+
     ! sanity check on thread count
     ! HOMME will run if if nthreads > max, but gptl will print out GB of warnings.
     if (NThreads > omp_get_max_threads()) then
@@ -759,8 +762,8 @@ module namelist_mod
     end if
     if (par%masterproc) write (iulog,*) "Mesh File:", trim(mesh_file)
     if (ne.eq.0) then
+       call set_mesh_dimensions()
        if (par%masterproc) write (iulog,*) "Opening Mesh File:", trim(mesh_file)
-      call set_mesh_dimensions()
       call MeshOpen(mesh_file, par)
     end if
     ! set map
@@ -798,6 +801,15 @@ module namelist_mod
        if (hypervis_subcycle_q/=1) then
           call abortmp('limiter 8,84,9 require hypervis_subcycle_q=1')
        endif
+    endif
+#endif
+
+#ifndef CAM
+!standalone homme does not support ftype=1 (cause it is identical to ftype=0).
+!also, standalone ftype=0 is the same as standalone ftype=2.
+    if ((ftype == 0).or.(ftype == 2).or.(ftype == 3).or.(ftype == 4).or.(ftype == -1)) then
+    else
+       call abortmp('Standalone homme supports only se_ftype=-1,0,2,3,4')
     endif
 #endif
 
@@ -990,6 +1002,13 @@ module namelist_mod
        end if
 #endif
 ! ^ ifndef CAM
+
+#ifndef CAM
+#ifdef HOMME_SHA1
+      write(iulog,*)"HOMME SHA = ", HOMME_SHA1
+#endif
+#endif
+
 
 !=======================================================================================================!
     endif

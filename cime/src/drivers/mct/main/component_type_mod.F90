@@ -92,7 +92,6 @@ module component_type_mod
      logical                         :: iamroot_compid
      logical                         :: present ! true => component is present and not stub
      integer                         :: nthreads_compid
-     integer                         :: instn
      character(len=CL)               :: suffix
      character(len=1)                :: oneletterid
      character(len=3)                :: ntype
@@ -150,7 +149,7 @@ contains
 
   function component_get_name(comp)
     type(component_type), intent(in), target :: comp
-    character(len=CL) :: component_get_name
+    character(len=seq_comm_namelen) :: component_get_name
     component_get_name = comp%name
   end function component_get_name
 

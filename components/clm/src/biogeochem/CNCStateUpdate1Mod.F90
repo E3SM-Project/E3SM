@@ -16,22 +16,86 @@ module CNCStateUpdate1Mod
   use CNCarbonFluxType       , only : carbonflux_type
   use CNStateType            , only : cnstate_type
   use CNDecompCascadeConType , only : decomp_cascade_con
-  use VegetationPropertiesType         , only : veg_vp
+  use VegetationPropertiesType, only : veg_vp
   use clm_varctl             , only : nu_com
-  use VegetationType              , only : veg_pp
+  use VegetationType         , only : veg_pp
+  use CropType               , only : crop_type
+  use decompMod              , only : bounds_type
+  use clm_varcon             , only : dzsoi_decomp
   ! bgc interface & pflotran:
-  use clm_varctl             , only : use_pflotran, pf_cmode, use_ed
+  use clm_varctl             , only : use_pflotran, pf_cmode, use_fates
   !
   implicit none
   save
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public:: CStateUpdate1
-  public:: CStateUpdate0
+  public :: CStateUpdateDynPatch
+  public :: CStateUpdate1
+  public :: CStateUpdate0
   !-----------------------------------------------------------------------
 
 contains
+
+  !-----------------------------------------------------------------------
+  subroutine CStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
+       carbonflux_vars, carbonstate_vars)
+    !
+    ! !DESCRIPTION:
+    ! Update carbon states based on fluxes from dyn_cnbal_patch
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)      , intent(in)    :: bounds
+    integer                , intent(in)    :: num_soilc_with_inactive       ! number of columns in soil filter
+    integer                , intent(in)    :: filter_soilc_with_inactive(:) ! soil column filter that includes inactive points
+    type(carbonflux_type)  , intent(in)    :: carbonflux_vars
+    type(carbonstate_type) , intent(inout) :: carbonstate_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: c   ! column index
+    integer  :: fc  ! column filter index
+    integer  :: g   ! gridcell index
+    integer  :: j   ! level index
+    real(r8) :: dt  ! time step (seconds)
+
+    character(len=*), parameter :: subname = 'CStateUpdateDynPatch'
+    !-----------------------------------------------------------------------
+
+    associate( &
+         cf => carbonflux_vars  , &
+         cs => carbonstate_vars   &
+         )
+
+      dt = real( get_step_size(), r8 )
+
+      if (.not.use_fates) then
+
+         do g = bounds%begg, bounds%endg
+            cs%seedc_grc(g) = cs%seedc_grc(g) &
+                 - cf%dwt_seedc_to_leaf_grc(g)     * dt &
+                 - cf%dwt_seedc_to_deadstem_grc(g) * dt
+         end do
+
+         do j = 1,nlevdecomp
+            do fc = 1, num_soilc_with_inactive
+               c = filter_soilc_with_inactive(fc)
+
+               cs%decomp_cpools_vr_col(c,j,i_met_lit) = cs%decomp_cpools_vr_col(c,j,i_met_lit) + &
+                    cf%dwt_frootc_to_litr_met_c_col(c,j) * dt
+               cs%decomp_cpools_vr_col(c,j,i_cel_lit) = cs%decomp_cpools_vr_col(c,j,i_cel_lit) + &
+                    cf%dwt_frootc_to_litr_cel_c_col(c,j) * dt
+               cs%decomp_cpools_vr_col(c,j,i_lig_lit) = cs%decomp_cpools_vr_col(c,j,i_lig_lit) + &
+                    cf%dwt_frootc_to_litr_lig_c_col(c,j) * dt
+               cs%decomp_cpools_vr_col(c,j,i_cwd) = cs%decomp_cpools_vr_col(c,j,i_cwd) + &
+                    ( cf%dwt_livecrootc_to_cwdc_col(c,j) + cf%dwt_deadcrootc_to_cwdc_col(c,j) ) * dt
+
+            end do
+         end do
+      end if
+
+    end associate
+
+  end subroutine CStateUpdateDynPatch
 
   !-----------------------------------------------------------------------
   subroutine CStateUpdate0(&
@@ -78,7 +142,7 @@ contains
   subroutine CStateUpdate1(bounds, &
        num_soilc, filter_soilc, &
        num_soilp, filter_soilp, &
-       cnstate_vars, carbonflux_vars, carbonstate_vars)
+       crop_vars, carbonflux_vars, carbonstate_vars)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic carbon state
@@ -93,7 +157,7 @@ contains
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    type(cnstate_type)     , intent(inout) :: cnstate_vars
+    type(crop_type)        , intent(inout) :: crop_vars
     type(carbonflux_type)  , intent(inout) :: carbonflux_vars
     type(carbonstate_type) , intent(inout) :: carbonstate_vars
     !
@@ -110,7 +174,7 @@ contains
          cascade_donor_pool            =>    decomp_cascade_con%cascade_donor_pool               , & ! Input:  [integer  (:)     ]  which pool is C taken from for a given decomposition step
          cascade_receiver_pool         =>    decomp_cascade_con%cascade_receiver_pool            , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step
 
-         harvdate                      =>    cnstate_vars%harvdate_patch                         , & ! Input:  [integer  (:)     ]  harvest date                                       
+         harvdate                      =>    crop_vars%harvdate_patch                         , & ! Input:  [integer  (:)     ]  harvest date                                       
          
          cf => carbonflux_vars  , &
          cs => carbonstate_vars   &
@@ -122,19 +186,16 @@ contains
 
       ! column level fluxes
 
-      if(.not.use_ed) then
+      if(.not.use_fates) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            ! seeding fluxes, from dynamic landcover
-            cs%seedc_col(c) = cs%seedc_col(c) - cf%dwt_seedc_to_leaf_col(c) * dt
-            cs%seedc_col(c) = cs%seedc_col(c) - cf%dwt_seedc_to_deadstem_col(c) * dt
             cs%decomp_som2c_vr_col(c,1:nlevdecomp) = cs%decomp_cpools_vr_col(c,1:nlevdecomp,6)
          end do
       end if
 
 
       
-      if (.not. is_active_betr_bgc .and. .not.(use_pflotran .and. pf_cmode) .and. .not.use_ed ) then
+      if (.not. is_active_betr_bgc .and. .not.(use_pflotran .and. pf_cmode) .and. .not.use_fates ) then
 
          ! plant to litter fluxes
 
@@ -144,13 +205,11 @@ contains
                c = filter_soilc(fc)
                ! phenology and dynamic land cover fluxes
                cf%decomp_cpools_sourcesink_col(c,j,i_met_lit) = &
-                    ( cf%phenology_c_to_litr_met_c_col(c,j) + cf%dwt_frootc_to_litr_met_c_col(c,j) ) *dt
+                    cf%phenology_c_to_litr_met_c_col(c,j) * dt
                cf%decomp_cpools_sourcesink_col(c,j,i_cel_lit) = &
-                    ( cf%phenology_c_to_litr_cel_c_col(c,j) + cf%dwt_frootc_to_litr_cel_c_col(c,j) ) *dt
+                    cf%phenology_c_to_litr_cel_c_col(c,j) * dt
                cf%decomp_cpools_sourcesink_col(c,j,i_lig_lit) = &
-                    ( cf%phenology_c_to_litr_lig_c_col(c,j) + cf%dwt_frootc_to_litr_lig_c_col(c,j) ) *dt
-               cf%decomp_cpools_sourcesink_col(c,j,i_cwd) = &
-                    ( cf%dwt_livecrootc_to_cwdc_col(c,j) + cf%dwt_deadcrootc_to_cwdc_col(c,j) ) *dt
+                    cf%phenology_c_to_litr_lig_c_col(c,j) * dt
             end do
          end do
 
@@ -180,7 +239,7 @@ contains
             end if
          end do
 
-      elseif( use_ed ) then
+      elseif( use_fates ) then
 
          ! The following pools were updated via the FATES interface
          ! cf%decomp_cpools_sourcesink_col(c,j,i_met_lit)
@@ -215,7 +274,7 @@ contains
    endif   !end if is_active_betr_bgc()
     
 
-   if (.not.use_ed) then
+   if (.not.use_fates) then
     
       ! patch loop
       do fp = 1,num_soilp
@@ -258,6 +317,9 @@ contains
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
             cs%livestemc_patch(p)  = cs%livestemc_patch(p)  - cf%livestemc_to_litter_patch(p)*dt
             cs%grainc_patch(p)     = cs%grainc_patch(p)     - cf%grainc_to_food_patch(p)*dt
+
+            cs%cropseedc_deficit_patch(p) = cs%cropseedc_deficit_patch(p) &
+                 - cf%crop_seedc_to_leaf_patch(p) * dt
          end if
 
          ! maintenance respiration fluxes from cpool

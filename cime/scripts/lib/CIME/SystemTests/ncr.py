@@ -9,9 +9,7 @@ The second is a default build
 NOTE: This is currently untested, and may not be working properly
 """
 from CIME.XML.standard_module_setup import *
-from CIME.case_setup import case_setup
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
-from CIME.check_lockedfiles import *
 
 logger = logging.getLogger(__name__)
 
@@ -60,10 +58,8 @@ class NCR(SystemTestsCompareTwo):
             self._case.set_value("NTASKS_{}".format(comp), ntasks)
         # test_mode must be False here so the case.test file is updated
         # This ensures that the correct number of nodes are used in case it's larger than in case 2
-        case_setup(self._case, test_mode = False, reset = True)
 
     def _case_two_setup(self):
         for comp in self._comp_classes():
             self._case.set_value("NINST_{}".format(comp), str(1))
             self._case.set_value("ROOTPE_{}".format(comp), 0)
-        case_setup(self._case, test_mode = True, reset = True)

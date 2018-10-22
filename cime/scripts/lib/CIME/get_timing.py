@@ -6,8 +6,9 @@ information from a run.
 """
 
 from CIME.XML.standard_module_setup import *
+from CIME.utils import safe_copy
 
-import datetime, shutil, re
+import datetime, re
 
 logger = logging.getLogger(__name__)
 
@@ -185,14 +186,7 @@ class _TimingParser:
         if not os.path.isdir(timingDir):
             os.makedirs(timingDir)
 
-        try:
-            shutil.copyfile(binfilename, finfilename)
-        except Exception as e:
-            if not os.path.isfile(binfilename):
-                logger.critical("File {} not found".format(binfilename))
-            else:
-                logger.critical("Unable to cp {} to {}".format(binfilename, finfilename))
-            raise e
+        safe_copy(binfilename, finfilename)
 
         os.chdir(self.caseroot)
         try:

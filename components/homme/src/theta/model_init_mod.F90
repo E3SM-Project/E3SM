@@ -64,7 +64,7 @@ contains
   real (kind=real_kind) :: dp3d(np,np,nlev), phi(np,np,nlev), phis(np,np)
   real (kind=real_kind) :: theta_dp_cp(np,np,nlev), dpnh_dp(np,np,nlev),dpnh(np,np,nlev)
   real (kind=real_kind) :: exner(np,np,nlev)
-  real (kind=real_kind) :: pnh(np,np,nlev),	pnh_i(np,np,nlevp)
+  real (kind=real_kind) :: pnh(np,np,nlev),pnh_i(np,np,nlevp)
   real (kind=real_kind) :: norminfJ0(np,np)
   
   real (kind=real_kind) :: dt,epsie,maxjacerrorvec(5),maxjacerr
@@ -80,7 +80,7 @@ contains
      phi(:,:,:)         = elem(ie)%state%phinh(:,:,:,tl%n0)
      phis(:,:)          = elem(ie)%state%phis(:,:)
      call TimeLevel_Qdp(tl, qsplit, qn0)
-     call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
+     call get_kappa_star(kappa_star,elem(ie)%state%Q(:,:,:,1))
      if (theta_hydrostatic_mode) then
         dpnh_dp(:,:,:)=1.d0
      else
@@ -125,9 +125,9 @@ contains
         if (maxval(abs(JacD(:,:,:)-Jac2D(:,:,:))) > maxjacerrorvec(j)) then 
            maxjacerrorvec(j) = maxval(abs(JacD(:,:,:)-Jac2D(:,:,:)))
         end if
-       	if (maxval(abs(JacL(:,:,:)-Jac2L(:,:,:))) > maxjacerrorvec(j)) then
+        if (maxval(abs(JacL(:,:,:)-Jac2L(:,:,:))) > maxjacerrorvec(j)) then
            maxjacerrorvec(j) = maxval(abs(JacL(:,:,:)-Jac2L(:,:,:)))
-    	end if
+        end if
         if (maxval(abs(JacU(:,:,:)-Jac2U(:,:,:))) > maxjacerrorvec(j)) then
            maxjacerrorvec(j) = maxval(abs(JacU(:,:,:)-Jac2U(:,:,:)))
         end if

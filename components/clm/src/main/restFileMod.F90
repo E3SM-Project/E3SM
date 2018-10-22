@@ -15,7 +15,7 @@ module restFileMod
   use accumulMod           , only : accumulRest
   use histFileMod          , only : hist_restart_ncd
   use clm_varpar           , only : crop_prog
-  use clm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_cndv, use_ed, use_betr
+  use clm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_cndv, use_fates, use_betr
   use clm_varctl           , only : create_glacier_mec_landunit, iulog 
   use clm_varcon           , only : c13ratio, c14ratio
   use clm_varcon           , only : nameg, namel, namec, namep, nameCohort
@@ -57,6 +57,7 @@ module restFileMod
   use ncdio_pio            , only : ncd_pio_closefile, ncd_defdim, ncd_putatt, ncd_enddef, check_dim
   use ncdio_pio            , only : check_att, ncd_getatt
   use BeTRSimulationALM    , only : betr_simulation_alm_type
+  use CropType             , only : crop_type
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -101,7 +102,7 @@ contains
        waterflux_vars, waterstate_vars,                                               &
        phosphorusstate_vars, phosphorusflux_vars,                                     &
        ep_betr,                                                                       &
-       alm_fates,                                                                     &
+       alm_fates, crop_vars,                                                          &
        rdate, noptr)
     !
     ! !DESCRIPTION:
@@ -137,6 +138,7 @@ contains
     type(phosphorusflux_type)      , intent(in)    :: phosphorusflux_vars
     class(betr_simulation_alm_type), intent(inout):: ep_betr
     type(hlm_fates_interface_type) , intent(inout) :: alm_fates
+    type(crop_type)                , intent(inout) :: crop_vars
     character(len=*)               , intent(in), optional :: rdate     ! restart file time stamp for name
     logical                        , intent(in), optional :: noptr     ! if should NOT write to the restart pointer file
     !
@@ -231,9 +233,11 @@ contains
        call phosphorusflux_vars%Restart(bounds, ncid, flag='define')
        call phosphorusstate_vars%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
 
+       call crop_vars%Restart(bounds, ncid, flag='define')
+
     end if
 
-    if (use_ed) then
+    if (use_fates) then
        call cnstate_vars%Restart(bounds, ncid, flag='define')
        call carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c12', &
                cnstate_vars=cnstate_vars)
@@ -338,9 +342,10 @@ contains
        call phosphorusflux_vars%Restart(bounds, ncid, flag='write')
        call phosphorusstate_vars%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
 
+       call crop_vars%Restart(bounds, ncid, flag='write')
     end if
 
-    if (use_ed) then
+    if (use_fates) then
        call cnstate_vars%Restart(bounds, ncid, flag='write')
        call carbonstate_vars%restart(bounds, ncid, flag='write', &
             carbon_type='c12', cnstate_vars=cnstate_vars)
@@ -403,7 +408,7 @@ contains
        waterflux_vars, waterstate_vars,                                               &
        phosphorusstate_vars,phosphorusflux_vars,                                      &
        ep_betr,                                                                       &
-       alm_fates)
+       alm_fates, glc2lnd_vars, crop_vars)
     !
     ! !DESCRIPTION:
     ! Read a CLM restart file.
@@ -412,6 +417,10 @@ contains
     use subgridRestMod   , only : SubgridRest, subgridRest_read_cleanup
     use accumulMod       , only : accumulRest
     use histFileMod      , only : hist_restart_ncd
+    use glc2lndMod       , only : glc2lnd_type
+    use decompMod        , only : get_proc_clumps, get_clump_bounds
+    use decompMod        , only : bounds_type
+    use reweightMod      , only : reweight_wrapup
     !
     ! !ARGUMENTS:
     character(len=*)               , intent(in)    :: file  ! output netcdf restart file
@@ -443,10 +452,15 @@ contains
     type(phosphorusflux_type)      , intent(inout) :: phosphorusflux_vars
     class(betr_simulation_alm_type), intent(inout) :: ep_betr
     type(hlm_fates_interface_type) , intent(inout) :: alm_fates
+    type(glc2lnd_type)             , intent(inout) :: glc2lnd_vars
+    type(crop_type)                , intent(inout) :: crop_vars
     !
     ! !LOCAL VARIABLES:
-    type(file_desc_t) :: ncid ! netcdf id
-    integer :: i              ! index
+    type(file_desc_t) :: ncid         ! netcdf id
+    integer           :: nc
+    integer           :: i            ! index
+    integer           :: nclumps      ! number of clumps on this processor
+    type(bounds_type) :: bounds_clump ! clump-level bounds
     !-----------------------------------------------------------------------
 
     ! Open file
@@ -458,6 +472,21 @@ contains
     call restFile_dimcheck( ncid )
 
     call SubgridRest(bounds, ncid, flag='read')
+
+    ! Now that we have updated subgrid information, update the filters, active flags,
+    ! etc. accordingly. We do these updates as soon as possible so that the updated
+    ! filters and active flags are available to other restart routines - e.g., for the
+    ! sake of subgridAveMod calls like c2g.
+    !
+    ! The reweight_wrapup call needs to be done inside a clump loop, so we set that up
+    ! here.
+    nclumps = get_proc_clumps()
+    !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
+    do nc = 1, nclumps
+       call get_clump_bounds(nc, bounds_clump)
+       call reweight_wrapup(bounds_clump, glc2lnd_vars%icemask_grc(bounds_clump%begg:bounds_clump%endg))
+    end do
+    !$OMP END PARALLEL DO
 
     call accumulRest( ncid, flag='read' )
 
@@ -521,9 +550,10 @@ contains
        call phosphorusflux_vars%Restart(bounds, ncid, flag='read')
        call phosphorusstate_vars%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
 
+       call crop_vars%Restart(bounds, ncid, flag='read')
     end if
 
-    if (use_ed) then
+    if (use_fates) then
        call cnstate_vars%Restart(bounds, ncid, flag='read')
        call carbonstate_vars%restart(bounds, ncid, flag='read', &
              carbon_type='c12', cnstate_vars=cnstate_vars)
@@ -811,12 +841,13 @@ contains
     ! Read/Write initial data from/to netCDF instantaneous initial data file
     !
     ! !USES:
-    use clm_time_manager , only : get_nstep
-    use clm_varctl       , only : caseid, ctitle, version, username, hostname, fsurdat
-    use clm_varctl       , only : flanduse_timeseries, conventions, source
-    use clm_varpar       , only : numrad, nlevlak, nlevsno, nlevgrnd, nlevurb, nlevcan, nlevtrc_full
-    use clm_varpar       , only : cft_lb, cft_ub, maxpatch_glcmec
-    use decompMod        , only : get_proc_global
+    use clm_time_manager     , only : get_nstep
+    use clm_varctl           , only : caseid, ctitle, version, username, hostname, fsurdat
+    use clm_varctl           , only : conventions, source
+    use clm_varpar           , only : numrad, nlevlak, nlevsno, nlevgrnd, nlevurb, nlevcan, nlevtrc_full
+    use clm_varpar           , only : cft_lb, cft_ub, maxpatch_glcmec
+    use dynSubgridControlMod , only : get_flanduse_timeseries
+    use decompMod            , only : get_proc_global
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid
@@ -875,7 +906,7 @@ contains
     call ncd_putatt(ncid, NCD_GLOBAL, 'case_title'     , trim(ctitle))
     call ncd_putatt(ncid, NCD_GLOBAL, 'case_id'        , trim(caseid))
     call ncd_putatt(ncid, NCD_GLOBAL, 'surface_dataset', trim(fsurdat))
-    call ncd_putatt(ncid, NCD_GLOBAL, 'flanduse_timeseries', trim(flanduse_timeseries))
+    call ncd_putatt(ncid, NCD_GLOBAL, 'flanduse_timeseries', trim(get_flanduse_timeseries()))
     call ncd_putatt(ncid, NCD_GLOBAL, 'title', 'CLM Restart information')
     if (create_glacier_mec_landunit) then
        call ncd_putatt(ncid, ncd_global, 'created_glacier_mec_landunits', 'true')
@@ -1015,7 +1046,7 @@ contains
        call check_dim(ncid, namel, numl)
        call check_dim(ncid, namec, numc)
        call check_dim(ncid, namep, nump)
-       if ( use_ed ) call check_dim(ncid, nameCohort  , numCohort)
+       if ( use_fates ) call check_dim(ncid, nameCohort  , numCohort)
     end if
     call check_dim(ncid, 'levsno'  , nlevsno)
     call check_dim(ncid, 'levgrnd' , nlevgrnd)
@@ -1167,8 +1198,9 @@ contains
     ! Check consistency of the fsurdat value on the restart file and the current fsurdat
     !
     ! !USES:
-    use fileutils  , only : get_filename
-    use clm_varctl , only : fname_len, fsurdat, flanduse_timeseries
+    use fileutils            , only : get_filename
+    use clm_varctl           , only : fname_len, fsurdat
+    use dynSubgridControlMod , only : get_flanduse_timeseries
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid    ! netcdf id
@@ -1186,7 +1218,7 @@ contains
     ! run with an 1850 surface dataset and a pftdyn file, then use the restart file from
     ! that run to start a present-day (non-transient) run, which would use a 2000 surface
     ! dataset.
-    if (flanduse_timeseries /= ' ') then
+    if (get_flanduse_timeseries() /= ' ') then
        call ncd_getatt(ncid, NCD_GLOBAL, 'surface_dataset', fsurdat_rest)
 
        ! Compare file names, ignoring path
@@ -1224,8 +1256,9 @@ contains
     ! Make sure year on the restart file is consistent with the current model year
     !
     ! !USES:
-    use clm_time_manager, only : get_curr_date, get_rest_date
-    use clm_varctl      , only : fname_len, flanduse_timeseries
+    use clm_time_manager     , only : get_curr_date, get_rest_date
+    use clm_varctl           , only : fname_len
+    use dynSubgridControlMod , only : get_flanduse_timeseries
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid    ! netcdf id
@@ -1243,7 +1276,7 @@ contains
     !-----------------------------------------------------------------------
     
     ! Only do this check for a transient run
-    if (flanduse_timeseries /= ' ') then
+    if (get_flanduse_timeseries() /= ' ') then
        ! Determine if the restart file was generated from a transient run; if so, we will
        ! do this consistency check. For backwards compatibility, we allow for the
        ! possibility that the flanduse_timeseries attribute was not on the restart file;

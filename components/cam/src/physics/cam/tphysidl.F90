@@ -15,7 +15,8 @@ subroutine tphysidl(ztodt, state, tend)
    use ppgrid,             only: pcols, pver
    use phys_grid,          only: get_rlat_all_p
    use physics_types,      only: physics_state, physics_tend, physics_ptend, &
-                                 physics_ptend_init, physics_update
+                                 physics_ptend_init
+   use physics_update_mod, only: physics_update
    use physconst,          only: gravit, cappa, rair, cpair
    use cam_abortutils,         only: endrun
    use ref_pres,           only: pref_mid_norm, psurf_ref

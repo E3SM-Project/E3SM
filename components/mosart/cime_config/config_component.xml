@@ -42,6 +42,7 @@
     <default_value>-simyr 2000</default_value>
     <values>
       <value compset="1850.*_MOSART">-simyr 1850</value>
+      <value compset="1950.*_MOSART">-simyr 1950</value>
       <value compset="HIST.*_MOSART">-simyr 1850</value>
       <value compset="PIPD.*_MOSART">-simyr 1850</value>
       <value compset="2000.*_MOSART">-simyr 2000</value>

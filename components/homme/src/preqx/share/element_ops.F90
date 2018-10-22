@@ -56,7 +56,7 @@ contains
 
   select case(name)
 
-    case ('T','temperature'); call get_temperature(elem,field,hvcoord,nt,ntQ)
+    case ('T','temperature'); call get_temperature(elem,field,hvcoord,nt)
     case ('Th','pottemp');    call get_pottemp(elem,field,hvcoord,nt,ntQ)
     case ('geo','phi');       call get_phi(elem,field,hvcoord,nt,ntQ)
 
@@ -156,22 +156,14 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine get_temperature(elem,temperature,hvcoord,nt,ntQ)
+  subroutine get_temperature(elem,temperature,hvcoord,nt)
   implicit none
   
   type (element_t), intent(in)        :: elem
   real (kind=real_kind), intent(out)  :: temperature(np,np,nlev)
   type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
   integer, intent(in) :: nt
-  integer, intent(in) :: ntQ
   
-  !   local
-  real (kind=real_kind) :: p(np,np,nlev)
-  real (kind=real_kind) :: dp(np,np,nlev)
-  real (kind=real_kind) :: kappa_star(np,np,nlev)
-  real (kind=real_kind) :: Qt(np,np,nlev)
-  integer :: k
-
   temperature = elem%state%T(:,:,:,nt)
   
   end subroutine get_temperature

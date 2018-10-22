@@ -23,7 +23,7 @@ $ ./runoff_map < [namelist file]
    so that river runoff sent to the open ocean is treated differently than
    runoff sent to a marginal sea. This step is generally not needed for ice
    runoff, but two maps can be merged with the following command:
-   
+
 $ ./run_merge_mapping_files.sh
 
 See the "MERGE MAPPING FILES" section below for more details.

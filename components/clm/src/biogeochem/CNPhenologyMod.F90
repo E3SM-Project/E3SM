@@ -1409,59 +1409,59 @@ contains
     real(r8) ndays_on ! number of days to fertilize
     !------------------------------------------------------------------------
 
-    associate(                                                             & 
-         ivt               =>    veg_pp%itype                               , & ! Input:  [integer  (:) ]  pft vegetation type                                
+    associate(                                                                   & 
+         ivt                =>    veg_pp%itype                                 , & ! Input:  [integer  (:) ]  pft vegetation type                                
          
-         leaf_long         =>    veg_vp%leaf_long                    , & ! Input:  [real(r8) (:) ]  leaf longevity (yrs)                              
-         froot_long        =>    veg_vp%froot_long                   , & ! Input:   [real(r8) (:) ]  fine root longevity (yrs)                              
+         leaf_long          =>    veg_vp%leaf_long                             , & ! Input:  [real(r8) (:) ]  leaf longevity (yrs)                              
+         froot_long         =>    veg_vp%froot_long                            , & ! Input:  [real(r8) (:) ]  fine root longevity (yrs)                              
 
-         leafcn            =>    veg_vp%leafcn                       , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)                                  
-         fertnitro         =>    veg_vp%fertnitro                    , & ! Input:  [real(r8) (:) ]  max fertilizer to be applied in total (kgN/m2)    
+         leafcn             =>    veg_vp%leafcn                                , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)                                  
+         fertnitro          =>    veg_vp%fertnitro                             , & ! Input:  [real(r8) (:) ]  max fertilizer to be applied in total (kgN/m2)    
          
-         t_ref2m_min       =>    temperature_vars%t_ref2m_min_patch      , & ! Input:  [real(r8) (:) ]  daily minimum of average 2 m height surface air temperature (K)
-         t10               =>    temperature_vars%t_a10_patch            , & ! Input:  [real(r8) (:) ]  10-day running mean of the 2 m temperature (K)    
-         a5tmin            =>    temperature_vars%t_a5min_patch          , & ! Input:  [real(r8) (:) ]  5-day running mean of min 2-m temperature         
-         a10tmin           =>    temperature_vars%t_a10min_patch         , & ! Input:  [real(r8) (:) ]  10-day running mean of min 2-m temperature        
-         gdd020            =>    temperature_vars%gdd020_patch           , & ! Input:  [real(r8) (:) ]  20 yr mean of gdd0                                
-         gdd820            =>    temperature_vars%gdd820_patch           , & ! Input:  [real(r8) (:) ]  20 yr mean of gdd8                                
-         gdd1020           =>    temperature_vars%gdd1020_patch          , & ! Input:  [real(r8) (:) ]  20 yr mean of gdd10                               
-         hui               =>    crop_vars%gddplant_patch                , & ! Input:  [real(r8) (:) ]  gdd since planting (gddplant)                    
-         leafout           =>    crop_vars%gddtsoi_patch                 , & ! Input:  [real(r8) (:) ]  gdd from top soil layer temperature              
+         t_ref2m_min        =>    temperature_vars%t_ref2m_min_patch           , & ! Input:  [real(r8) (:) ]  daily minimum of average 2 m height surface air temperature (K)
+         t10                =>    temperature_vars%t_a10_patch                 , & ! Input:  [real(r8) (:) ]  10-day running mean of the 2 m temperature (K)    
+         a5tmin             =>    temperature_vars%t_a5min_patch               , & ! Input:  [real(r8) (:) ]  5-day running mean of min 2-m temperature         
+         a10tmin            =>    temperature_vars%t_a10min_patch              , & ! Input:  [real(r8) (:) ]  10-day running mean of min 2-m temperature        
+         gdd020             =>    temperature_vars%gdd020_patch                , & ! Input:  [real(r8) (:) ]  20 yr mean of gdd0                                
+         gdd820             =>    temperature_vars%gdd820_patch                , & ! Input:  [real(r8) (:) ]  20 yr mean of gdd8                                
+         gdd1020            =>    temperature_vars%gdd1020_patch               , & ! Input:  [real(r8) (:) ]  20 yr mean of gdd10                               
+         hui                =>    crop_vars%gddplant_patch                     , & ! Input:  [real(r8) (:) ]  gdd since planting (gddplant)                    
+         leafout            =>    crop_vars%gddtsoi_patch                      , & ! Input:  [real(r8) (:) ]  gdd from top soil layer temperature              
          
-         tlai              =>    canopystate_vars%tlai_patch             , & ! Input:  [real(r8) (:) ]  one-sided leaf area index, no burying by snow     
+         tlai               =>    canopystate_vars%tlai_patch                  , & ! Input:  [real(r8) (:) ]  one-sided leaf area index, no burying by snow     
          
-         idop              =>    cnstate_vars%idop_patch                 , & ! Output: [integer  (:) ]  date of planting                                   
-         harvdate          =>    cnstate_vars%harvdate_patch             , & ! Output: [integer  (:) ]  harvest date                                       
-         croplive          =>    cnstate_vars%croplive_patch             , & ! Output: [logical  (:) ]  Flag, true if planted, not harvested               
-         cropplant         =>    cnstate_vars%cropplant_patch            , & ! Output: [logical  (:) ]  Flag, true if crop may be planted                  
-         gddmaturity       =>    cnstate_vars%gddmaturity_patch          , & ! Output: [real(r8) (:) ]  gdd needed to harvest                             
-         huileaf           =>    cnstate_vars%huileaf_patch              , & ! Output: [real(r8) (:) ]  heat unit index needed from planting to leaf emergence
-         huigrain          =>    cnstate_vars%huigrain_patch             , & ! Output: [real(r8) (:) ]  same to reach vegetative maturity                 
-         cumvd             =>    cnstate_vars%cumvd_patch                , & ! Output: [real(r8) (:) ]  cumulative vernalization d?ependence?             
-         hdidx             =>    cnstate_vars%hdidx_patch                , & ! Output: [real(r8) (:) ]  cold hardening index?                             
-         vf                =>    cnstate_vars%vf_patch                   , & ! Output: [real(r8) (:) ]  vernalization factor                              
-         bglfr_leaf        =>    cnstate_vars%bglfr_leaf_patch           , & ! Output: [real(r8) (:) ]  background leaf litterfall rate (1/s)                  
-         bglfr_froot       =>    cnstate_vars%bglfr_froot_patch          , & ! Output: [real(r8) (:) ]  background fine root litterfall rate (1/s)    
-         bgtr              =>    cnstate_vars%bgtr_patch                 , & ! Output: [real(r8) (:) ]  background transfer growth rate (1/s)             
-         lgsf              =>    cnstate_vars%lgsf_patch                 , & ! Output: [real(r8) (:) ]  long growing season factor [0-1]                  
-         onset_flag        =>    cnstate_vars%onset_flag_patch           , & ! Output: [real(r8) (:) ]  onset flag                                        
-         offset_flag       =>    cnstate_vars%offset_flag_patch          , & ! Output: [real(r8) (:) ]  offset flag                                       
-         onset_counter     =>    cnstate_vars%onset_counter_patch        , & ! Output: [real(r8) (:) ]  onset counter                                     
-         offset_counter    =>    cnstate_vars%offset_counter_patch       , & ! Output: [real(r8) (:) ]  offset counter                                    
+         idop               =>    cnstate_vars%idop_patch                      , & ! Output: [integer  (:) ]  date of planting                                   
+         harvdate           =>    crop_vars%harvdate_patch                     , & ! Output: [integer  (:) ]  harvest date                                       
+         croplive           =>    crop_vars%croplive_patch                     , & ! Output: [logical  (:) ]  Flag, true if planted, not harvested               
+         cropplant          =>    crop_vars%cropplant_patch                    , & ! Output: [logical  (:) ]  Flag, true if crop may be planted                  
+         gddmaturity        =>    cnstate_vars%gddmaturity_patch               , & ! Output: [real(r8) (:) ]  gdd needed to harvest                             
+         huileaf            =>    cnstate_vars%huileaf_patch                   , & ! Output: [real(r8) (:) ]  heat unit index needed from planting to leaf emergence
+         huigrain           =>    cnstate_vars%huigrain_patch                  , & ! Output: [real(r8) (:) ]  same to reach vegetative maturity                 
+         cumvd              =>    cnstate_vars%cumvd_patch                     , & ! Output: [real(r8) (:) ]  cumulative vernalization d?ependence?             
+         hdidx              =>    cnstate_vars%hdidx_patch                     , & ! Output: [real(r8) (:) ]  cold hardening index?                             
+         vf                 =>    crop_vars%vf_patch                           , & ! Output: [real(r8) (:) ]  vernalization factor                              
+         bglfr_leaf         =>    cnstate_vars%bglfr_leaf_patch                , & ! Output: [real(r8) (:) ]  background leaf litterfall rate (1/s)                  
+         bglfr_froot        =>    cnstate_vars%bglfr_froot_patch               , & ! Output: [real(r8) (:) ]  background fine root litterfall rate (1/s)    
+         bgtr               =>    cnstate_vars%bgtr_patch                      , & ! Output: [real(r8) (:) ]  background transfer growth rate (1/s)             
+         lgsf               =>    cnstate_vars%lgsf_patch                      , & ! Output: [real(r8) (:) ]  long growing season factor [0-1]                  
+         onset_flag         =>    cnstate_vars%onset_flag_patch                , & ! Output: [real(r8) (:) ]  onset flag                                        
+         offset_flag        =>    cnstate_vars%offset_flag_patch               , & ! Output: [real(r8) (:) ]  offset flag                                       
+         onset_counter      =>    cnstate_vars%onset_counter_patch             , & ! Output: [real(r8) (:) ]  onset counter                                     
+         offset_counter     =>    cnstate_vars%offset_counter_patch            , & ! Output: [real(r8) (:) ]  offset counter                                    
          
-         leafc_xfer        =>    carbonstate_vars%leafc_xfer_patch       , & ! Output: [real(r8) (:) ]  (gC/m2)   leaf C transfer                           
+         leafc_xfer         =>    carbonstate_vars%leafc_xfer_patch            , & ! Output: [real(r8) (:) ]  (gC/m2)   leaf C transfer                           
 
-         dwt_seedc_to_leaf =>    carbonflux_vars%dwt_seedc_to_leaf_col   , & ! Output: [real(r8) (:) ]  (gC/m2/s) seed source to PFT-level                
+         crop_seedc_to_leaf =>    carbonflux_vars%crop_seedc_to_leaf_patch     , & ! Output: [real(r8) (:) ]  (gC/m2/s) seed source to PFT-level                
 
-         fert_counter      =>    nitrogenflux_vars%fert_counter_patch    , & ! Output: [real(r8) (:) ]  >0 fertilize; <=0 not (seconds)                   
-         leafn_xfer        =>    nitrogenstate_vars%leafn_xfer_patch     , & ! Output: [real(r8) (:) ]  (gN/m2)   leaf N transfer                           
-         dwt_seedn_to_leaf =>    nitrogenflux_vars%dwt_seedn_to_leaf_col , & ! Output: [real(r8) (:) ]  (gN/m2/s) seed source to PFT-level                
-         crpyld            =>    crop_vars%crpyld_patch                  , & ! Output:  [real(r8) ):)]  harvested crop (bu/acre)
-         dmyield           =>    crop_vars%dmyield_patch                 , & ! Output:  [real(r8) ):)]  dry matter harvested crop (t/ha)
-         leafcp            =>    veg_vp%leafcp                       , & ! Input:  [real(r8) (:) ]  leaf C:P (gC/gP)                                  
-         leafp_xfer        =>    phosphorusstate_vars%leafp_xfer_patch   , & ! Output: [real(r8) (:) ]  (gP/m2)   leaf P transfer                           
-         dwt_seedp_to_leaf =>    phosphorusflux_vars%dwt_seedp_to_leaf_col , & ! Output: [real(r8) (:) ]  (gP/m2/s) seed source to PFT-level                
-         fert              =>    nitrogenflux_vars%fert_patch              & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep 
+         fert_counter       =>    nitrogenflux_vars%fert_counter_patch         , & ! Output: [real(r8) (:) ]  >0 fertilize; <=0 not (seconds)                   
+         leafn_xfer         =>    nitrogenstate_vars%leafn_xfer_patch          , & ! Output: [real(r8) (:) ]  (gN/m2)   leaf N transfer                           
+         crop_seedn_to_leaf =>    nitrogenflux_vars%crop_seedn_to_leaf_patch   , & ! Output: [real(r8) (:) ]  (gN/m2/s) seed source to PFT-level                
+         crpyld             =>    crop_vars%crpyld_patch                       , & ! Output: [real(r8) ):)]  harvested crop (bu/acre)
+         dmyield            =>    crop_vars%dmyield_patch                      , & ! Output: [real(r8) ):)]  dry matter harvested crop (t/ha)
+         leafcp             =>    veg_vp%leafcp                                , & ! Input:  [real(r8) (:) ]  leaf C:P (gC/gP)                                  
+         leafp_xfer         =>    phosphorusstate_vars%leafp_xfer_patch        , & ! Output: [real(r8) (:) ]  (gP/m2)   leaf P transfer                           
+         crop_seedp_to_leaf =>    phosphorusflux_vars%crop_seedp_to_leaf_patch , & ! Output: [real(r8) (:) ]  (gP/m2/s) seed source to PFT-level                
+         fert               =>    nitrogenflux_vars%fert_patch                   & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep 
          )
 
       ! get time info
@@ -1571,11 +1571,11 @@ contains
                   gddmaturity(p) = hybgdd(ivt(p))
                   leafc_xfer(p)  = 1._r8 ! initial seed at planting to appear
                   leafn_xfer(p)  = leafc_xfer(p) / leafcn(ivt(p)) ! with onset
-                  dwt_seedc_to_leaf(c) = dwt_seedc_to_leaf(c) + leafc_xfer(p)/dt
-                  dwt_seedn_to_leaf(c) = dwt_seedn_to_leaf(c) + leafn_xfer(p)/dt
+                  crop_seedc_to_leaf(p) = leafc_xfer(p)/dt
+                  crop_seedn_to_leaf(p) = leafn_xfer(p)/dt
 
                   leafp_xfer(p)  = leafc_xfer(p) / leafcp(ivt(p)) ! with onset
-                  dwt_seedp_to_leaf(c) = dwt_seedp_to_leaf(c) + leafp_xfer(p)/dt
+                  crop_seedp_to_leaf(p) = leafp_xfer(p)/dt
 
                   ! latest possible date to plant winter cereal and after all other 
                   ! crops were harvested for that year
@@ -1594,11 +1594,11 @@ contains
                   gddmaturity(p) = hybgdd(ivt(p))
                   leafc_xfer(p)  = 1._r8 ! initial seed at planting to appear
                   leafn_xfer(p)  = leafc_xfer(p) / leafcn(ivt(p)) ! with onset
-                  dwt_seedc_to_leaf(c) = dwt_seedc_to_leaf(c) + leafc_xfer(p)/dt
-                  dwt_seedn_to_leaf(c) = dwt_seedn_to_leaf(c) + leafn_xfer(p)/dt
+                  crop_seedc_to_leaf(p) = leafc_xfer(p)/dt
+                  crop_seedn_to_leaf(p) = leafn_xfer(p)/dt
 
                   leafp_xfer(p)  = leafc_xfer(p) / leafcp(ivt(p)) ! with onset
-                  dwt_seedp_to_leaf(c) = dwt_seedp_to_leaf(c) + leafp_xfer(p)/dt
+                  crop_seedp_to_leaf(p) = leafp_xfer(p)/dt
                else
                   gddmaturity(p) = 0._r8
                end if
@@ -1633,11 +1633,11 @@ contains
 
                   leafc_xfer(p) = 1._r8 ! initial seed at planting to appear
                   leafn_xfer(p) = leafc_xfer(p) / leafcn(ivt(p)) ! with onset
-                  dwt_seedc_to_leaf(c) = dwt_seedc_to_leaf(c) + leafc_xfer(p)/dt
-                  dwt_seedn_to_leaf(c) = dwt_seedn_to_leaf(c) + leafn_xfer(p)/dt
+                  crop_seedc_to_leaf(p) = leafc_xfer(p)/dt
+                  crop_seedn_to_leaf(p) = leafn_xfer(p)/dt
 
                   leafp_xfer(p) = leafc_xfer(p) / leafcp(ivt(p)) ! with onset
-                  dwt_seedp_to_leaf(c) = dwt_seedp_to_leaf(c) + leafp_xfer(p)/dt
+                  crop_seedp_to_leaf(p) = leafp_xfer(p)/dt
 
                   ! If hit the max planting julian day -- go ahead and plant
                else if (jday == maxplantjday(ivt(p),h) .and. gdd820(p) > 0._r8 .and. &
@@ -1653,11 +1653,11 @@ contains
 
                   leafc_xfer(p) = 1._r8 ! initial seed at planting to appear
                   leafn_xfer(p) = leafc_xfer(p) / leafcn(ivt(p)) ! with onset
-                  dwt_seedc_to_leaf(c) = dwt_seedc_to_leaf(c) + leafc_xfer(p)/dt
-                  dwt_seedn_to_leaf(c) = dwt_seedn_to_leaf(c) + leafn_xfer(p)/dt
+                  crop_seedc_to_leaf(p) = leafc_xfer(p)/dt
+                  crop_seedn_to_leaf(p) = leafn_xfer(p)/dt
 
                   leafp_xfer(p) = leafc_xfer(p) / leafcp(ivt(p)) ! with onset
-                  dwt_seedp_to_leaf(c) = dwt_seedp_to_leaf(c) + leafp_xfer(p)/dt
+                  crop_seedp_to_leaf(p) = leafp_xfer(p)/dt
                else
                   gddmaturity(p) = 0._r8
                end if
@@ -1754,7 +1754,7 @@ contains
 
             if (t_ref2m_min(p) < 1.e30_r8 .and. vf(p) /= 1._r8 .and. (ivt(p) == nwcereal .or. ivt(p) == nwcerealirrig)) then
                call vernalization(p, &
-                    canopystate_vars, temperature_vars, waterstate_vars, cnstate_vars)
+                    canopystate_vars, temperature_vars, waterstate_vars, cnstate_vars, crop_vars)
             end if
 
             ! days past planting may determine harvest
@@ -1801,9 +1801,9 @@ contains
                   offset_flag(p) = 1._r8
                   offset_counter(p) = dt
                else                      ! plant never emerged from the ground
-                  dwt_seedc_to_leaf(c) = dwt_seedc_to_leaf(c) - leafc_xfer(p)/dt
-                  dwt_seedn_to_leaf(c) = dwt_seedn_to_leaf(c) - leafn_xfer(p)/dt
-                  dwt_seedp_to_leaf(c) = dwt_seedp_to_leaf(c) - leafp_xfer(p)/dt
+                  crop_seedc_to_leaf(p) = crop_seedc_to_leaf(p) - leafc_xfer(p)/dt
+                  crop_seedn_to_leaf(p) = crop_seedn_to_leaf(p) - leafn_xfer(p)/dt
+                  crop_seedp_to_leaf(p) = crop_seedp_to_leaf(p) - leafp_xfer(p)/dt
                   leafc_xfer(p) = 0._r8  ! revert planting transfers
                   leafn_xfer(p) = leafc_xfer(p) / leafcn(ivt(p))
                   leafp_xfer(p) = leafc_xfer(p) / leafcp(ivt(p))
@@ -1831,9 +1831,9 @@ contains
 
          else   ! crop not live
             ! next 2 lines conserve mass if leaf*_xfer > 0 due to interpinic
-            dwt_seedc_to_leaf(c) = dwt_seedc_to_leaf(c) - leafc_xfer(p)/dt
-            dwt_seedn_to_leaf(c) = dwt_seedn_to_leaf(c) - leafn_xfer(p)/dt
-            dwt_seedp_to_leaf(c) = dwt_seedp_to_leaf(c) - leafp_xfer(p)/dt
+            crop_seedc_to_leaf(p) = crop_seedc_to_leaf(p) - leafc_xfer(p)/dt
+            crop_seedn_to_leaf(p) = crop_seedn_to_leaf(p) - leafn_xfer(p)/dt
+            crop_seedp_to_leaf(p) = crop_seedp_to_leaf(p) - leafp_xfer(p)/dt
             onset_counter(p) = 0._r8
             leafc_xfer(p) = 0._r8
             leafn_xfer(p) = leafc_xfer(p) / leafcn(ivt(p))
@@ -1916,7 +1916,8 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine vernalization(p, &
-       canopystate_vars, temperature_vars, waterstate_vars, cnstate_vars)
+       canopystate_vars, temperature_vars, waterstate_vars, cnstate_vars, &
+       crop_vars)
     !
     ! !DESCRIPTION:
     !
@@ -1934,6 +1935,7 @@ contains
     type(temperature_type) , intent(in) :: temperature_vars
     type(waterstate_type)  , intent(in) :: waterstate_vars
     type(cnstate_type)     , intent(inout) :: cnstate_vars
+    type(crop_type)        , intent(inout) :: crop_vars
     !
     ! LOCAL VARAIBLES:
     real(r8) tcrown                     ! ?
@@ -1953,7 +1955,7 @@ contains
 
          hdidx       => cnstate_vars%hdidx_patch           , & ! Output: [real(r8) (:) ]  cold hardening index?                             
          cumvd       => cnstate_vars%cumvd_patch           , & ! Output: [real(r8) (:) ]  cumulative vernalization d?ependence?             
-         vf          => cnstate_vars%vf_patch              , & ! Output: [real(r8) (:) ]  vernalization factor for cereal                   
+         vf          => crop_vars%vf_patch              , & ! Output: [real(r8) (:) ]  vernalization factor for cereal                   
          gddmaturity => cnstate_vars%gddmaturity_patch     , & ! Output: [real(r8) (:) ]  gdd needed to harvest                             
          huigrain    => cnstate_vars%huigrain_patch          & ! Output: [real(r8) (:) ]  heat unit index needed to reach vegetative maturity
          )
@@ -2415,7 +2417,13 @@ contains
          npool_to_livestemn    =>    nitrogenflux_vars%npool_to_livestemn_patch      , &
          ppool_to_leafp        =>    phosphorusflux_vars%ppool_to_leafp_patch        , &
          ppool_to_frootp       =>    phosphorusflux_vars%ppool_to_frootp_patch       , &
-         ppool_to_livestemp    =>    phosphorusflux_vars%ppool_to_livestemp_patch      &
+         ppool_to_livestemp    =>    phosphorusflux_vars%ppool_to_livestemp_patch    , &
+         hrv_leafc_to_prod1c   =>    carbonflux_vars%hrv_leafc_to_prod1c_patch       , & ! Input:  [real(r8) (:)] crop leafc harvested
+         hrv_livestemc_to_prod1c  => carbonflux_vars%hrv_livestemc_to_prod1c_patch   , & ! Input:  [real(r8) (:)] crop stemc harvested
+         hrv_leafn_to_prod1n   =>    nitrogenflux_vars%hrv_leafn_to_prod1n_patch     , & ! Input:  [real(r8) (:)] crop leafn harvested
+         hrv_livestemn_to_prod1n  => nitrogenflux_vars%hrv_livestemn_to_prod1n_patch , & ! Input:  [real(r8) (:)] crop stemn harvested
+         hrv_leafp_to_prod1p   =>    phosphorusflux_vars%hrv_leafp_to_prod1p_patch   , & ! Input:  [real(r8) (:)] crop leafp harvested
+         hrv_livestemp_to_prod1p  => phosphorusflux_vars%hrv_livestemp_to_prod1p_patch & ! Input:  [real(r8) (:)] crop stemp harvested
          )
 
       ! The litterfall transfer rate starts at 0.0 and increases linearly
@@ -2446,24 +2454,37 @@ contains
             end if
 
             if ( nu_com .eq. 'RD') then
-               ! calculate the leaf N litterfall and retranslocation
-               leafn_to_litter(p)   = leafc_to_litter(p)  / lflitcn(ivt(p))
-               leafn_to_retransn(p) = (leafc_to_litter(p) / leafcn(ivt(p))) - leafn_to_litter(p)
-
-               ! calculate fine root N litterfall (no retranslocation of fine root N)
-               frootn_to_litter(p) = frootc_to_litter(p) / frootcn(ivt(p))
-
-               ! calculate the leaf P litterfall and retranslocation
-               leafp_to_litter(p)   = leafc_to_litter(p)  / lflitcp(ivt(p))
-               leafp_to_retransp(p) = (leafc_to_litter(p) / leafcp(ivt(p))) - leafp_to_litter(p)
-
-               ! calculate fine root P litterfall (no retranslocation of fine root N)
-               frootp_to_litter(p) = frootc_to_litter(p) / frootcp(ivt(p))
-                
                if (ivt(p) >= npcropmin) then
-                  livestemn_to_litter(p) = livestemc_to_litter(p) / livewdcn(ivt(p))
-                  livestemp_to_litter(p) = livestemc_to_litter(p) / livewdcp(ivt(p))
-               end if
+                  if (offset_counter(p) == dt) then
+                      t1 = 1.0_r8 / dt
+
+                     ! this assumes that offset_counter == dt for crops
+                     ! if this were ever changed, we'd need to add code to the
+                     ! "else"
+                     leafn_to_litter(p) = (t1 * leafn(p) + npool_to_leafn(p)) - hrv_leafn_to_prod1n(p)
+                     leafp_to_litter(p) = (t1 * leafp(p) + ppool_to_leafp(p)) - hrv_leafp_to_prod1p(p)
+
+                     frootn_to_litter(p) = t1 * frootn(p) + npool_to_frootn(p)
+                     frootp_to_litter(p) = t1 * frootp(p) + ppool_to_frootp(p)
+
+                     livestemn_to_litter(p) = (t1 * livestemn(p) + npool_to_livestemn(p)) - hrv_livestemn_to_prod1n(p)
+                     livestemp_to_litter(p) = (t1 * livestemp(p) + ppool_to_livestemp(p)) - hrv_livestemp_to_prod1p(p)
+                  end if
+               else
+                  ! calculate the leaf N litterfall and retranslocation
+                  leafn_to_litter(p)   = leafc_to_litter(p)  / lflitcn(ivt(p))
+                  leafn_to_retransn(p) = (leafc_to_litter(p) / leafcn(ivt(p))) - leafn_to_litter(p)
+
+                  ! calculate fine root N litterfall (no retranslocation of fine root N)
+                  frootn_to_litter(p) = frootc_to_litter(p) / frootcn(ivt(p))
+
+                  ! calculate the leaf P litterfall and retranslocation
+                  leafp_to_litter(p)   = leafc_to_litter(p)  / lflitcp(ivt(p))
+                  leafp_to_retransp(p) = (leafc_to_litter(p) / leafcp(ivt(p))) - leafp_to_litter(p)
+
+                  ! calculate fine root P litterfall (no retranslocation of fine root N)
+                  frootp_to_litter(p) = frootc_to_litter(p) / frootcp(ivt(p))
+               end if 
             else
                if (offset_counter(p) == dt) then
                   t1 = 1.0_r8 / dt

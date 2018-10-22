@@ -754,7 +754,7 @@ contains
 
          ! calculate qcharge for case jwt < nlevsoi
          if (use_var_soil_thick) then
-            if (jwt(c) <= nlevbed) then
+            if (jwt(c) < nlevbed) then
                wh_zwt = 0._r8   !since wh_zwt = -sucsat - zq_zwt, where zq_zwt = -sucsat
 
                ! Recharge rate qcharge to groundwater (positive to aquifer)

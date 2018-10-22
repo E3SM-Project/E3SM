@@ -3,14 +3,24 @@ Functions for actions pertaining to history files.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.test_status import TEST_NO_BASELINES_COMMENT
+from CIME.test_status import TEST_NO_BASELINES_COMMENT, TEST_STATUS_FILENAME
+from CIME.utils import get_current_commit, get_timestamp, get_model, safe_copy
 
-from CIME.utils import get_current_commit, get_timestamp, get_model
-
-import logging, glob, os, shutil, re, stat, filecmp
+import logging, os, re, stat, filecmp
 logger = logging.getLogger(__name__)
 
 BLESS_LOG_NAME = "bless_log"
+
+NO_COMPARE     = "had no compare counterpart"
+NO_ORIGINAL    = "had no original counterpart"
+DIFF_COMMENT   = "did NOT match"
+# COMPARISON_COMMENT_OPTIONS should include all of the above: these are any of the special
+# comment strings that describe the reason for a comparison failure
+COMPARISON_COMMENT_OPTIONS = set([NO_COMPARE,
+                                  NO_ORIGINAL,
+                                  DIFF_COMMENT])
+# Comments that indicate a true baseline comparison problem - not simply a BFAIL
+NON_BFAIL_COMMENT_OPTIONS = COMPARISON_COMMENT_OPTIONS - set([NO_COMPARE])
 
 def _iter_model_file_substrs(case):
     models = case.get_compset_components()
@@ -18,30 +28,31 @@ def _iter_model_file_substrs(case):
     for model in models:
         yield model
 
-def _get_all_hist_files(testcase, model, from_dir, suffix=""):
+def _get_all_hist_files(model, from_dir, file_extensions, suffix="", ref_case=None):
     suffix = (".{}".format(suffix) if suffix else "")
 
+    test_hists = []
     # Match hist files produced by run
-    test_hists = glob.glob("{}/{}.{}*.h?.nc{}".format(from_dir, testcase, model, suffix))
-    test_hists.extend(glob.glob("{}/{}.{}*.h.nc{}".format(from_dir, testcase, model, suffix)))
+    for extension in file_extensions:
+        if 'initial' in extension:
+            continue
+        if extension.endswith('$'):
+            extension = extension[:-1]
+        string = model+r'\d?_?(\d{4})?\.'+extension+suffix+'$'
+        logger.debug ("Regex is {}".format(string))
+        pfile = re.compile(string)
+        test_hists.extend([os.path.join(from_dir,f) for f in os.listdir(from_dir) if pfile.search(f)])
 
-    # Match multi-instance files produced by run
-    test_hists.extend(glob.glob("{}/{}.{}*.h?.*.nc{}".format(from_dir, testcase, model, suffix)))
-    test_hists.extend(glob.glob("{}/{}.{}*.h.*.nc{}".format(from_dir, testcase, model, suffix)))
+    if ref_case:
+        test_hists = [h for h in test_hists if not (ref_case in os.path.basename(h))]
 
-    # suffix == "" implies baseline comparison, baseline hist files have simpler names
-
-    if suffix == "":
-        test_hists.extend(glob.glob("{}/{}*.h.nc".format(from_dir, model)))
-        test_hists.extend(glob.glob("{}/{}*.h?.nc".format(from_dir, model)))
-        test_hists.extend(glob.glob("{}/{}*.h.*.nc".format(from_dir, model)))
-        test_hists.extend(glob.glob("{}/{}*.h?.*.nc".format(from_dir, model)))
-
+    test_hists = list(set(test_hists))
     test_hists.sort()
+    logger.debug("_get_all_hist_files returns {} for model {}".format(test_hists, model))
     return test_hists
 
-def _get_latest_hist_files(testcase, model, from_dir, suffix=""):
-    test_hists = _get_all_hist_files(testcase, model, from_dir, suffix)
+def _get_latest_hist_files(model, from_dir, file_extensions, suffix="", ref_case=None):
+    test_hists = _get_all_hist_files(model, from_dir, file_extensions, suffix=suffix, ref_case=ref_case)
     latest_files = {}
     histlist = []
     for hist in test_hists:
@@ -62,14 +73,18 @@ def copy(case, suffix):
     suffix - The string suffix you want to add to saved files, this can be used to find them later.
     """
     rundir   = case.get_value("RUNDIR")
-    testcase = case.get_value("CASE")
-
+    ref_case = case.get_value("RUN_REFCASE")
     # Loop over models
+    archive = case.get_env("archive")
     comments = "Copying hist files to suffix '{}'\n".format(suffix)
     num_copied = 0
     for model in _iter_model_file_substrs(case):
         comments += "  Copying hist files for model '{}'\n".format(model)
-        test_hists = _get_latest_hist_files(testcase, model, rundir)
+        if model == 'cpl':
+            file_extensions = archive.get_hist_file_extensions(archive.get_entry('drv'))
+        else:
+            file_extensions = archive.get_hist_file_extensions(archive.get_entry(model))
+        test_hists = _get_latest_hist_files(model, rundir, file_extensions, ref_case=ref_case)
         num_copied += len(test_hists)
         for test_hist in test_hists:
             new_file = "{}.{}".format(test_hist, suffix)
@@ -90,9 +105,44 @@ def copy(case, suffix):
             # because the test system will think that run1's files were output
             # by run2. But we live with that downside for the sake of the reason
             # noted above.)
-            shutil.copy(test_hist, new_file)
+            safe_copy(test_hist, new_file)
 
     expect(num_copied > 0, "copy failed: no hist files found in rundir '{}'".format(rundir))
+
+    return comments
+
+def rename_all_hist_files(case, suffix):
+    """Renaming all hist files in a case, adding the given suffix.
+
+    case - The case containing the files you want to save
+    suffix - The string suffix you want to add to saved files, this can be used to find them later.
+    """
+    rundir   = case.get_value("RUNDIR")
+    ref_case = case.get_value("RUN_REFCASE")
+    # Loop over models
+    archive = case.get_env("archive")
+    comments = "Renaming hist files by adding suffix '{}'\n".format(suffix)
+    num_renamed = 0
+    for model in _iter_model_file_substrs(case):
+        comments += "  Renaming hist files for model '{}'\n".format(model)
+        if model == 'cpl':
+            file_extensions = archive.get_hist_file_extensions(archive.get_entry('drv'))
+        else:
+            file_extensions = archive.get_hist_file_extensions(archive.get_entry(model))
+        test_hists = _get_all_hist_files(model, rundir, file_extensions, ref_case=ref_case)
+        num_renamed += len(test_hists)
+        for test_hist in test_hists:
+            new_file = "{}.{}".format(test_hist, suffix)
+            if os.path.exists(new_file):
+                os.remove(new_file)
+
+            comments += "    Renaming '{}' to '{}'\n".format(test_hist, new_file)
+
+           #safe_copy(test_hist, new_file)
+           #os.remove(test_hist)
+            os.rename(test_hist, new_file)
+
+    expect(num_renamed > 0, "renaming failed: no hist files found in rundir '{}'".format(rundir))
 
     return comments
 
@@ -187,22 +237,29 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
     num_compared = 0
     comments = "Comparing hists for case '{}' dir1='{}', suffix1='{}',  dir2='{}' suffix2='{}'\n".format(testcase, from_dir1, suffix1, from_dir2, suffix2)
     multiinst_driver_compare = False
+    archive = case.get_env('archive')
+    ref_case = case.get_value("RUN_REFCASE")
     for model in _iter_model_file_substrs(case):
         if model == 'cpl' and suffix2 == 'multiinst':
             multiinst_driver_compare = True
         comments += "  comparing model '{}'\n".format(model)
-        hists1 = _get_latest_hist_files(testcase, model, from_dir1, suffix1)
-        hists2 = _get_latest_hist_files(testcase, model, from_dir2, suffix2)
+        if model == 'cpl':
+            file_extensions = archive.get_hist_file_extensions(archive.get_entry('drv'))
+        else:
+            file_extensions = archive.get_hist_file_extensions(archive.get_entry(model))
+        hists1 = _get_latest_hist_files(model, from_dir1, file_extensions, suffix1, ref_case)
+        hists2 = _get_latest_hist_files(model, from_dir2, file_extensions, suffix2, ref_case)
         if len(hists1) == 0 and len(hists2) == 0:
             comments += "    no hist files found for model {}\n".format(model)
             continue
 
         one_not_two, two_not_one, match_ups = _hists_match(model, hists1, hists2, suffix1, suffix2)
         for item in one_not_two:
-            comments += "    File '{}' had no counterpart in '{}' with suffix '{}'\n".format(item, from_dir2, suffix2)
+            comments += "    File '{}' {} in '{}' with suffix '{}'\n".format(item, NO_COMPARE, from_dir2, suffix2)
             all_success = False
+
         for item in two_not_one:
-            comments += "    File '{}' had no counterpart in '{}' with suffix '{}'\n".format(item, from_dir1, suffix1)
+            comments += "    File '{}' {} in '{}' with suffix '{}'\n".format(item, NO_ORIGINAL, from_dir1, suffix1)
             all_success = False
 
         num_compared += len(match_ups)
@@ -214,13 +271,13 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
             if success:
                 comments += "    {} matched {}\n".format(hist1, hist2)
             else:
-                comments += "    {} did NOT match {}\n".format(hist1, hist2)
+                comments += "    {} {} {}\n".format(hist1, DIFF_COMMENT, hist2)
                 comments += "    cat " + cprnc_log_file + "\n"
                 expected_log_file = os.path.join(casedir, os.path.basename(cprnc_log_file))
                 if not (os.path.exists(expected_log_file) and filecmp.cmp(cprnc_log_file, expected_log_file)):
                     try:
-                        shutil.copy(cprnc_log_file, casedir)
-                    except OSError:
+                        safe_copy(cprnc_log_file, casedir)
+                    except (OSError, IOError) as _:
                         logger.warning("Could not copy {} to {}".format(cprnc_log_file, casedir))
 
                 all_success = False
@@ -256,7 +313,8 @@ def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, out
     case - the case containing the files
     rundir - the rundir for the case
     outfile_suffix - if non-blank, then the output file name ends with this
-        suffix (with a '.' added before the given suffix)
+        suffix (with a '.' added before the given suffix).
+        Use None to avoid permissions issues in the case dir.
 
     returns (True if the files matched, log_name)
     """
@@ -322,7 +380,7 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
             return False, "ERROR {} baseline directory '{}' does not exist".format(TEST_NO_BASELINES_COMMENT,bdir)
 
     success, comments = _compare_hists(case, rundir, basecmp_dir, outfile_suffix=outfile_suffix)
-    if get_model() == "acme":
+    if get_model() == "e3sm":
         bless_log = os.path.join(basecmp_dir, BLESS_LOG_NAME)
         if os.path.exists(bless_log):
             last_line = open(bless_log, "r").readlines()[-1]
@@ -341,21 +399,26 @@ def get_extension(model, filepath):
     'hi'
     >>> get_extension("cpl", "cpl.h.nc")
     'h'
-    >>> get_extension("cpl", "cpl.h1.nc")
+    >>> get_extension("cpl", "cpl.h1.nc.base")
     'h1'
-    >>> get_extension("cpl", "TESTRUNDIFF_Mmpi-serial.f19_g16_rx1.A.melvin_gnu.C.fake_testing_only_20160816_164150-20160816_164240.cpl.hi.0.nc.base")
+    >>> get_extension("cpl", "TESTRUNDIFF.cpl.hi.0.nc.base")
     'hi'
     >>> get_extension("cpl", "TESTRUNDIFF_Mmpi-serial.f19_g16_rx1.A.melvin_gnu.C.fake_testing_only_20160816_164150-20160816_164240.cpl.h.nc")
     'h'
     >>> get_extension("clm","clm2_0002.h0.1850-01-06-00000.nc")
     '0002.h0'
-    >>> get_extension("pop","PFS.f09_g16.B1850.yellowstone_intel.allactive-default.GC.c2_0_b1f2_int.pop.h.ecosys.nday1.0001-01-02.nc")
+    >>> get_extension("pop","PFS.f09_g16.B1850.cheyenne_intel.allactive-default.GC.c2_0_b1f2_int.pop.h.ecosys.nday1.0001-01-02.nc")
     'h'
+    >>> get_extension("mom", "ga0xnw.mom6.frc._0001_001.nc")
+    'frc'
+    >>> get_extension("mom", "ga0xnw.mom6.sfc.day._0001_001.nc")
+    'sfc'
     """
     basename = os.path.basename(filepath)
-    ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h.?)([.].*[^.])?[.]nc' % model)
+    regex = model+r'\d?_?(\d{4})?\.(\w+)[-\w\.]*\.nc\.?'
+    ext_regex = re.compile(regex)
+    m = ext_regex.search(basename)
 
-    m = ext_regex.match(basename)
     expect(m is not None, "Failed to get extension for file '{}'".format(filepath))
 
     if m.group(1) is not None:
@@ -364,6 +427,20 @@ def get_extension(model, filepath):
         result = m.group(2)
 
     return result
+
+def generate_teststatus(testdir, baseline_dir):
+    """
+    CESM stores it's TestStatus file in baselines. Do not let exceptions
+    escape from this function.
+    """
+    if get_model() == "cesm":
+        try:
+            if not os.path.isdir(baseline_dir):
+                os.makedirs(baseline_dir)
+
+            safe_copy(os.path.join(testdir, TEST_STATUS_FILENAME), baseline_dir)
+        except Exception as e:
+            logger.warning("Could not copy {} to baselines, {}".format(os.path.join(testdir, TEST_STATUS_FILENAME), str(e)))
 
 def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
     """
@@ -376,12 +453,14 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
     returns (SUCCESS, comments)
     """
     rundir   = case.get_value("RUNDIR")
+    ref_case = case.get_value("RUN_REFCASE")
     if baseline_dir is None:
         baselineroot = case.get_value("BASELINE_ROOT")
         basegen_dir = os.path.join(baselineroot, case.get_value("BASEGEN_CASE"))
     else:
         basegen_dir = baseline_dir
     testcase = case.get_value("CASE")
+    archive = case.get_env('archive')
 
     if not os.path.isdir(basegen_dir):
         os.makedirs(basegen_dir)
@@ -394,7 +473,11 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
     num_gen = 0
     for model in _iter_model_file_substrs(case):
         comments += "  generating for model '{}'\n".format(model)
-        hists =  _get_latest_hist_files(testcase, model, rundir)
+        if model == 'cpl':
+            file_extensions = archive.get_hist_file_extensions(archive.get_entry('drv'))
+        else:
+            file_extensions = archive.get_hist_file_extensions(archive.get_entry(model))
+        hists =  _get_latest_hist_files(model, rundir, file_extensions, ref_case=ref_case)
         logger.debug("latest_files: {}".format(hists))
         num_gen += len(hists)
         for hist in hists:
@@ -403,19 +486,18 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
             if os.path.exists(baseline):
                 os.remove(baseline)
 
-            shutil.copy(hist, baseline)
+            safe_copy(hist, baseline)
             comments += "    generating baseline '{}' from file {}\n".format(baseline, hist)
 
     # copy latest cpl log to baseline
     # drop the date so that the name is generic
-    newestcpllogfile = case.get_latest_cpl_log(coupler_log_path=case.get_value("LOGDIR"))
+    newestcpllogfile = case.get_latest_cpl_log(coupler_log_path=case.get_value("RUNDIR"))
     if newestcpllogfile is None:
-        logger.warning("No cpl.log file found in log directory {}".format(case.get_value("LOGDIR")))
+        logger.warning("No cpl.log file found in directory {}".format(case.get_value("RUNDIR")))
     else:
-        shutil.copyfile(newestcpllogfile,
-                    os.path.join(basegen_dir, "cpl.log.gz"))
+        safe_copy(newestcpllogfile, os.path.join(basegen_dir, "cpl.log.gz"))
 
-    expect(num_gen > 0, "Could not generate any hist files for case '{}', something is seriously wrong".format(testcase))
+    expect(num_gen > 0, "Could not generate any hist files for case '{}', something is seriously wrong".format(os.path.join(rundir, testcase)))
     #make sure permissions are open in baseline directory
     for root, _, files in os.walk(basegen_dir):
         for name in files:
@@ -425,10 +507,52 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
                 # We tried. Not worth hard failure here.
                 pass
 
-    if get_model() == "acme":
+    if get_model() == "e3sm":
         bless_log = os.path.join(basegen_dir, BLESS_LOG_NAME)
         with open(bless_log, "a") as fd:
             fd.write("sha:{} date:{}\n".format(get_current_commit(repo=case.get_value("CIMEROOT")),
                                                get_timestamp(timestamp_format="%Y-%m-%d_%H:%M:%S")))
 
     return True, comments
+
+def get_ts_synopsis(comments):
+    r"""
+    Reduce case diff comments down to a single line synopsis so that we can put
+    something in the TestStatus file. It's expected that the comments provided
+    to this function came from compare_baseline, not compare_tests.
+
+    >>> get_ts_synopsis('')
+    ''
+    >>> get_ts_synopsis('big error')
+    'big error'
+    >>> get_ts_synopsis('big error\n')
+    'big error'
+    >>> get_ts_synopsis('stuff\n    File foo had no compare counterpart in bar with suffix baz\nPass\n')
+    'ERROR BFAIL some baseline files were missing'
+    >>> get_ts_synopsis('stuff\n    File foo did NOT match bar with suffix baz\nPass\n')
+    'DIFF'
+    >>> get_ts_synopsis('stuff\n    File foo did NOT match bar with suffix baz\n    File foo had no compare counterpart in bar with suffix baz\nPass\n')
+    'DIFF'
+    >>> get_ts_synopsis('File foo had no compare counterpart in bar with suffix baz\n File foo had no original counterpart in bar with suffix baz\n')
+    'DIFF'
+    """
+    if not comments:
+        return ""
+    elif "\n" not in comments.strip():
+        return comments.strip()
+    else:
+        has_bfails = False
+        has_real_fails = False
+        for line in comments.splitlines():
+            if NO_COMPARE in line:
+                has_bfails = True
+            for non_bfail_comment in NON_BFAIL_COMMENT_OPTIONS:
+                if non_bfail_comment in line:
+                    has_real_fails = True
+
+        if has_real_fails:
+            return "DIFF"
+        elif has_bfails:
+            return "ERROR {} some baseline files were missing".format(TEST_NO_BASELINES_COMMENT)
+        else:
+            return ""

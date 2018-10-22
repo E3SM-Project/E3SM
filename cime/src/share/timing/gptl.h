@@ -15,7 +15,9 @@
 
 /* following block for camtimers only */
 #ifndef NO_GETTIMEOFDAY
+#ifndef HAVE_GETTIMEOFDAY
 #define HAVE_GETTIMEOFDAY
+#endif
 #endif
 
 #ifdef SPMD
@@ -124,6 +126,8 @@ extern int GPTLstop (const char *);
 extern int GPTLstopf (const char *, const int);
 extern int GPTLstop_handle (const char *, void **);
 extern int GPTLstopf_handle (const char *, const int, void **);
+extern int GPTLstartstop_vals (const char *, double, int);
+extern int GPTLstartstop_valsf (const char *, const int, double, int);
 extern int GPTLstamp (double *, double *, double *);
 extern int GPTLpr_set_append (void);
 extern int GPTLpr_query_append (void);

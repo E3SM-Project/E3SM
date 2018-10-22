@@ -33,8 +33,8 @@ begin
 ymax = max( (/60.0, max(maxw) /) )
 print("ymax="+ymax)
 
-print("maxw="+maxw)
-print("time_s="+time_s)
+;print("maxw="+maxw)
+;print("time_s="+time_s)
 
 ;time_s    = fspan(0.0, 7200.0, 25)
 
