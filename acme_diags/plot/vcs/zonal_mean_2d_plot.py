@@ -59,7 +59,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     diff.long_name = parameter.diff_title
 
     test.id = parameter.test_name_yrs
-    reference.id = parameter.reference_name
+    reference.id = parameter.ref_name_yrs
     diff.id = parameter.diff_name
 
     # model and observation graph

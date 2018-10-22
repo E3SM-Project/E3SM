@@ -159,7 +159,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
 
     if reference.count() > 1:
         plot_panel(1, fig, proj, pole, reference, parameter.contour_levels, parameter.reference_colormap, [
-                   parameter.reference_name, parameter.reference_title, reference.units], parameter, stats=(max2, mean2, min2))
+                   parameter.ref_name_yrs, parameter.reference_title, reference.units], parameter, stats=(max2, mean2, min2))
 
     # Third panel
     min3 = metrics_dict['diff']['min']

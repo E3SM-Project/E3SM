@@ -141,7 +141,7 @@ def plot(reference, test, diff, _, parameter):
     plot_panel(0, fig, _, test, parameter.contour_levels, 'rainbow',
                (parameter.test_name_yrs, parameter.test_title, test.units), parameter)
     plot_panel(1, fig, _, reference, parameter.contour_levels, 'rainbow',
-               (parameter.reference_name, parameter.reference_title, test.units), parameter)
+               (parameter.ref_name_yrs, parameter.reference_title, test.units), parameter)
     plot_panel(2, fig, _, diff, parameter.diff_levels, parameter.diff_colormap,
                (parameter.diff_name, parameter.diff_title, test.units), parameter)
 

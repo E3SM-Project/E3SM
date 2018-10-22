@@ -48,7 +48,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     test_title = "Test" if parameter.test_title == '' else parameter.test_title
     test_title += ' : {}'.format(parameter.test_name_yrs)
     ref_title = "Reference" if parameter.reference_title == '' else parameter.reference_title
-    ref_title += ' : {}'.format(parameter.reference_name)
+    ref_title += ' : {}'.format(parameter.ref_name_yrs)
     fig.text(panel[0][0], panel[0][1]+panel[0][3]+0.03, test_title,
              ha='left', fontdict=plotSideTitle, color='black')
     fig.text(panel[0][0], panel[0][1]+panel[0][3]+0.01, ref_title,
