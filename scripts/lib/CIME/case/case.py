@@ -826,14 +826,9 @@ class Case(object):
             logger.info("Machine is {}".format(machine_name))
 
         nodenames = machobj.get_node_names()
-        expect('mpirun' in nodenames,
-               "The < mpirun > section is required in {}'s machine conig".format(machine_name))
-        expect('module_system' in nodenames,
-               "The < module_system > section is required in {}'s machine conig".format(machine_name))
-
-        nodenames =  [x for x in nodenames if
-                      '_system' not in x and '_variables' not in x and 'mpirun' not in x and\
-                      'COMPILER' not in x and 'MPILIB' not in x]
+        nodenames = [x for x in nodenames if
+                     '_system' not in x and '_variables' not in x and 'mpirun' not in x and\
+                     'COMPILER' not in x and 'MPILIB' not in x]
 
         for nodename in nodenames:
             value = machobj.get_value(nodename, resolved=False)
