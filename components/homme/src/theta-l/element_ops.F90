@@ -155,7 +155,9 @@ contains
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
   call get_R_star(Rstar,elem%state%Q(:,:,:,1))
-  
+ 
+
+!unrelated: does this need moist exner? 
   pottemp(:,:,:) = Rgas*elem%state%vtheta_dp(:,:,:,nt)/(Rstar(:,:,:)*dp(:,:,:))
   
   end subroutine get_pottemp
@@ -216,16 +218,15 @@ contains
   integer, intent(in) :: nt
 
   !   local
-  real (kind=real_kind) :: dp(np,np,nlev)
+  real (kind=real_kind) :: p(np,np,nlev)
   integer :: k
 
   do k=1,nlev
-     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
+     p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
   enddo
 
   do k=1,nlev
-     omega_p(:,:,k)= elem%derived%omega_p(:,:,k)/dp(:,:,k)
+     omega_p(:,:,k)= elem%derived%omega_p(:,:,k)/p(:,:,k)
   enddo
 
   end subroutine get_omega_p
