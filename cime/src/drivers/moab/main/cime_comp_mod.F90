@@ -3523,6 +3523,12 @@ contains
           endif
        endif
 
+       ! send temp from atm to ocean mesh, after projection
+       if (iamin_CPLALLOCNID .and. ocn_c2_atm) then
+         ! migrate that tag from coupler pes to ocean pes
+         call prep_ocn_migrate_moab(infodata)
+       endif
+
        !----------------------------------------------------------
        !| Budget with new fractions
        !----------------------------------------------------------
