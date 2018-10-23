@@ -559,7 +559,7 @@ contains
                 allocate(var3d(np,np,nlev,nelemd))
                 ! velocities are on sphere for primitive equations
                 !print *,'JRUB using zeta_C0' !This seems to be what is used 
-                call compute_zeta_i_C0(var3d,elem,par,n0)
+                call compute_zeta_i_C0(var3d,elem,par,n0, hvcoord)
                 !call compute_zeta_C0(var3d,elem,par,n0)
                 st=1
                 do ie=1,nelemd

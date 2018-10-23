@@ -12,7 +12,6 @@ module derivative_mod_base
   use element_mod,    only : element_t
   use control_mod,    only : hypervis_scaling, hypervis_power
   use physical_constants, only : rrearth, g !JRUB g
-  use prim_si_mod,    only : preq_vertgrad !JRUB
 
 implicit none
 private
@@ -1201,11 +1200,13 @@ contains
 
   end function vorticity_sphere
 
-  function vorticity_i_sphere(v,deriv,elem,k) result(vort)
+  function vorticity_i_sphere(v,deriv,elem,k, hvcoord) result(vort)
 !   JRUB adapting vorticity_sphere to compute zonal component of vorticity instead
 !   input:  v = velocity in lat-lon coordinates
 !   ouput:  spherical vorticity of v
 !
+    use hybvcoord_mod,        only: hvcoord_t
+    type (hvcoord_t),   intent(in) :: hvcoord  ! hybrid vertical coordinate struct
 
     type (derivative_t), intent(in) :: deriv
     type (element_t), intent(in) :: elem
@@ -1251,13 +1252,17 @@ contains
           !enddo
        enddo
     enddo
+    
+    !balu per MT dp3d invalid here. Need to check if tl%n0 is the right time index to use here
+    !dp2d  = elem%state%dp3d(:,:,k,tl%n0)  !JRUB time levels are nm1,n0,np1 then n0 =2
+    dp2d = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,tl%n0)
 
-    dp2d  = elem%state%dp3d(:,:,k,2)  !JRUB time levels are nm1,n0,np1 then n0 =2
     dvdp(:,:) = (vco(:,:,3) - vco(:,:,1) ) / dp2d
-    dphidp = (elem%state%phinh_i(:,:,k+1,2) - elem%state%phinh_i(:,:,k,2)) / dp2d
+    dphidp = (elem%state%phinh_i(:,:,k+1,tl%n0) - elem%state%phinh_i(:,:,k,tl%n0)) / dp2d
     dvdz = -g * dvdp / dphidp 
 
-    w_int = 0.5_real_kind * (elem%state%w_i(:,:,k,2) + elem%state%w_i(:,:,k+1,2))
+    w_int = 0.5_real_kind * (elem%state%w_i(:,:,k,tl%n0) + elem%state%w_i(:,:,k+1,tl%n0))
 
     do j=1,np
        do l=1,np
@@ -1285,11 +1290,13 @@ contains
   end function vorticity_i_sphere
 
 
-  function vorticity_j_sphere(v,deriv,elem,k) result(vort)
+  function vorticity_j_sphere(v,deriv,elem,k, hvcoord) result(vort)
 !   JRUB adapting vorticity_sphere to compute meridional component of vorticity instead
 !   input:  v = velocity in lat-lon coordinates
 !   ouput:  spherical vorticity of v
 !
+    use hybvcoord_mod,        only: hvcoord_t
+    type (hvcoord_t),   intent(in) :: hvcoord  ! hybrid vertical coordinate struct
 
     type (derivative_t), intent(in) :: deriv
     type (element_t), intent(in) :: elem
@@ -1330,12 +1337,14 @@ contains
        enddo
     enddo
 
-    dp2d  = elem%state%dp3d(:,:,k,2)  !JRUB time levels are nm1,n0,np1 then n0 =2
+    !balu dp2d  = elem%state%dp3d(:,:,k,tl%n0)  !JRUB time levels are nm1,n0,np1 then n0 =2
+    dp2d = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,tl%n0)
     dudp(:,:) = (vco(:,:,3) - vco(:,:,1) ) / dp2d
-    dphidp = (elem%state%phinh_i(:,:,k+1,2) - elem%state%phinh_i(:,:,k,2)) / dp2d
+    dphidp = (elem%state%phinh_i(:,:,k+1,tl%n0) - elem%state%phinh_i(:,:,k,tl%n0)) / dp2d
     dudz = -g * dudp / dphidp 
 
-    w_int = 0.5_real_kind * (elem%state%w_i(:,:,k,2) + elem%state%w_i(:,:,k+1,2))
+    w_int = 0.5_real_kind * (elem%state%w_i(:,:,k,tl%n0) + elem%state%w_i(:,:,k+1,tl%n0))
 
     do j=1,np
        do l=1,np

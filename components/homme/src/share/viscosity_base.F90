@@ -464,7 +464,7 @@ enddo
 call make_C0(zeta,elem,hybrid,nets,nete)
 end subroutine
 
-subroutine compute_zeta_i_C0_hybrid(zeta,elem,hybrid,nets,nete,nt)
+subroutine compute_zeta_i_C0_hybrid(zeta,elem,hybrid,nets,nete,nt, hvcoord)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! JRUB added to compute -component of relative vorticity
 ! compute C0 vorticity.  That is, solve:  
@@ -474,6 +474,8 @@ subroutine compute_zeta_i_C0_hybrid(zeta,elem,hybrid,nets,nete,nt)
 !    output: zeta(:,:,:,:)   
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+use hybvcoord_mod,        only: hvcoord_t
+type (hvcoord_t),   intent(in) :: hvcoord  ! hybrid vertical coordinate struct
 
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
@@ -502,7 +504,7 @@ do k=1,nlev
    !dp3d  => elem(ie)%state%dp3d(:,:,k,nt)  !JRUB 
    !call preq_vertgrad(elem(ie)%state%v(:,:,:,k,nt),dp3d,u_grad)    !JRUB
    !call preq_vertgrad(elem(ie)%state%v(:,:,:,k,nt),dp3d,v_grad)    !JRUB
-   zeta(:,:,k,ie)=vorticity_i_sphere(elem(ie)%state%v(:,:,:,:,nt),deriv,elem(ie),k)
+   zeta(:,:,k,ie)=vorticity_i_sphere(elem(ie)%state%v(:,:,:,:,nt),deriv,elem(ie),k, hvcoord)
    !zeta(:,:,k,ie)=vorticity_i_sphere(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie))
 enddo
 
@@ -511,7 +513,7 @@ enddo
 call make_C0(zeta,elem,hybrid,nets,nete)
 end subroutine
 
-subroutine compute_zeta_j_C0_hybrid(zeta,elem,hybrid,nets,nete,nt)
+subroutine compute_zeta_j_C0_hybrid(zeta,elem,hybrid,nets,nete,nt, hvcoord)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! JRUB added to compute -component of relative vorticity
 ! compute C0 vorticity.  That is, solve:  
@@ -521,6 +523,9 @@ subroutine compute_zeta_j_C0_hybrid(zeta,elem,hybrid,nets,nete,nt)
 !    output: zeta(:,:,:,:)   
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+use hybvcoord_mod,        only: hvcoord_t
+type (hvcoord_t),   intent(in) :: hvcoord  ! hybrid vertical coordinate struct
 
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
@@ -545,7 +550,7 @@ do ie=nets,nete
 do k=1,nlev
    !    zeta(:,:,k,ie)=elem(ie)%state%zeta(:,:,k)
    !zeta(:,:,k,ie)=vorticity_sphere(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie)) !JRUB commented out
-   zeta(:,:,k,ie)=vorticity_j_sphere(elem(ie)%state%v(:,:,:,:,nt),deriv,elem(ie),k)
+   zeta(:,:,k,ie)=vorticity_j_sphere(elem(ie)%state%v(:,:,:,:,nt),deriv,elem(ie),k, hvcoord)
 enddo
 
 enddo
