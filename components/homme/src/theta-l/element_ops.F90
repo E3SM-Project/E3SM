@@ -367,7 +367,7 @@ contains
   integer, intent(in)               :: nt  
 
   !   local
-  real (kind=real_kind) :: p(np,np,nlev)
+  real (kind=real_kind) :: p(np,np,nlev), rstar(np,np,nlev)
   real (kind=real_kind) :: dp(np,np,nlev), aaa
   integer :: k
 
@@ -381,9 +381,14 @@ contains
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
 
+  call get_R_star(Rstar,elem%state%Q(:,:,:,1))
+
   do k=1,nlev
-     elem%state%vtheta_dp(:,:,k,nt)=dp(:,:,k)*temperature(:,:,k)* &
-          (p(:,:,k)/p0)**(-kappa)
+     !old
+     !elem%state%vtheta_dp(:,:,k,nt)=dp(:,:,k)*temperature(:,:,k)*(p(:,:,k)/p0)**(-kappa)
+! this is exact inversion of get_temperature in case of hydro
+!however there will be lorenz3 routine get_theta_fromT like that.
+     elem%state%vtheta_dp(:,:,k,nt)=rstar(:,:,k)/Rgas*dp(:,:,k)*temperature(:,:,k)*(p(:,:,k)/p0)**(-kappa)
   enddo
 
   aaa = sum(elem%state%vtheta_dp(:,:,:,nt))

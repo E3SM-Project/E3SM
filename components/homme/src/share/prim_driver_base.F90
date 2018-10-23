@@ -901,6 +901,9 @@ contains
     integer :: n0_qdp,np1_qdp,r,nstep_end,nets_in,nete_in
     logical :: compute_diagnostics
 
+
+print *, 'OG BEFORE SUB'
+
     ! compute timesteps for tracer transport and vertical remap
 
     dt_q      = dt*qsplit
@@ -1062,6 +1065,10 @@ contains
     if (compute_diagnostics) then
        call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete)
     end if
+
+
+print *, 'OG AFTER SUB'
+
   end subroutine prim_run_subcycle
 
 

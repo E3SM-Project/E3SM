@@ -444,14 +444,15 @@ contains
     end do
 
 
-!dss ps and phis or if-statements 'if ps_v .neq. 0' for each gll point in set_thermostate? best guess that
+!dss ps, phis, vapor or if-statements 'if ps_v .neq. 0' for each gll point in set_thermostate? best guess that
 !dss is faster.
+
 #if 0 
 ! model == preqx
 #else 
 ! model == theta-l
     if(par%dynproc) then
-       call initEdgeBuffer(par, edge_surf, elem, 2)
+       call initEdgeBuffer(par, edge_surf, elem, 2+nlev)
     end if
 #endif
 
@@ -459,20 +460,26 @@ contains
 ! model == preqx
 #else 
 ! model == theta-l
+
+! BETTER CODING PRACTICE, get a var for tl=1 here
     do ie=1,nelemd
        kptr=0
-       call edgeVpack(edge_surf, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
+       call edgeVpack(edge_surf, elem(ie)%state%ps_v(:,:,1),1,   kptr,ie)
        kptr=kptr+1
-       call edgeVpack(edge_surf, elem(ie)%state%phis,1,kptr,ie)
+       call edgeVpack(edge_surf, elem(ie)%state%phis,       1,   kptr,ie)
+       kptr=kptr+1
+       call edgeVpack(edge_surf, elem(ie)%state%Q(:,:,:,1), nlev,kptr,ie)
     end do
     if(par%dynproc) then
        call bndry_exchangeV(par,edge_surf)
     end if
     do ie=1,nelemd
        kptr=0
-       call edgeVunpack(edge_surf, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
+       call edgeVunpack(edge_surf, elem(ie)%state%ps_v(:,:,1),1,   kptr,ie)
        kptr=kptr+1
-       call edgeVunpack(edge_surf, elem(ie)%state%phis,1,kptr,ie)
+       call edgeVunpack(edge_surf, elem(ie)%state%phis,       1,   kptr,ie)
+       kptr=kptr+1
+       call edgeVunpack(edge_surf, elem(ie)%state%Q(:,:,:,1), nlev,kptr,ie)
     end do
 #endif
 
@@ -678,6 +685,8 @@ contains
     if (.not. single_column) then
       if(par%dynproc) then
         call FreeEdgeBuffer(edge)
+!technically edge_surf is not always there, but this code will go to homme
+        call FreeEdgeBuffer(edge_surf)
       end if
     endif
 
