@@ -186,9 +186,11 @@ contains
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
-  call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp(:,:,:))
-  
-  pottemp(:,:,:) = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star(:,:,:)*dp(:,:,:))
+  !balu call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp(:,:,:))
+  call get_R_star(Rstar,elem%state%Q(:,:,:,1))
+
+  !balu pottemp(:,:,:) = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star(:,:,:)*dp(:,:,:))
+  pottemp(:,:,:) = Rgas*elem%state%vtheta_dp(:,:,:,nt)/(Rstar(:,:,:)*dp(:,:,:))
 
   do k=1,nlev
      grad(:,:,k) = gradient_i_sphere(pottemp(:,:,k),deriv,elem%Dinv) 
@@ -223,9 +225,11 @@ contains
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
-  call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp(:,:,:))
-  
-  pottemp(:,:,:) = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star(:,:,:)*dp(:,:,:))
+  !balu call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp(:,:,:))
+  call get_R_star(Rstar,elem%state%Q(:,:,:,1))
+
+  !balu pottemp(:,:,:) = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star(:,:,:)*dp(:,:,:))
+  pottemp(:,:,:) = Rgas*elem%state%vtheta_dp(:,:,:,nt)/(Rstar(:,:,:)*dp(:,:,:))
 
   do k=1,nlev
      grad(:,:,k) = gradient_j_sphere(pottemp(:,:,k),deriv,elem%Dinv) 
@@ -270,9 +274,11 @@ contains
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
-  call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp(:,:,:))
+  !balu call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp(:,:,:))
+  call get_R_star(Rstar,elem%state%Q(:,:,:,1))
   
-  pottemp(:,:,:) = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star(:,:,:)*dp(:,:,:))
+  !balu pottemp(:,:,:) = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star(:,:,:)*dp(:,:,:))
+  pottemp(:,:,:) = Rgas*elem%state%vtheta_dp(:,:,:,nt)/(Rstar(:,:,:)*dp(:,:,:))
 
   do k=1,nlev
      dp2d  = elem%state%dp3d(:,:,k,2)  !JRUB time levels are nm1,n0,np1 then n0 =2
@@ -294,7 +300,7 @@ contains
  
      dthetadp(:,:) = (theta_tmp(:,:,3) - theta_tmp(:,:,1) ) / dp2d !
 
-     dphidp = (elem%state%phinh_i(:,:,k+1,2) - elem%state%phinh_i(:,:,k,2)) / dp2d
+     dphidp = (elem%state%phinh_i(:,:,k+1,tl%n0) - elem%state%phinh_i(:,:,k,tl%n0)) / dp2d !balu per MT
      dthetadz = -g * dthetadp / dphidp 
 
      grad(:,:,k) = dthetadz
@@ -357,7 +363,7 @@ contains
   real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
   integer :: k
   
-
+  
   do k=1,nlev
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
@@ -370,8 +376,6 @@ contains
      dpnh_dp(:,:,k)=(dpnh_dp_i(:,:,k)+dpnh_dp_i(:,:,k+1))/2
      !write(iulog,*) "tdiag dpnh_dp JRUB", SUM(dpnh_dp(:,:,k))
   enddo
-
-
   end subroutine 
 
   !_____________________________________________________________________
