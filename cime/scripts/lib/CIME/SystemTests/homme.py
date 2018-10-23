@@ -39,14 +39,11 @@ class HOMME(SystemTestsCommon):
                 basename = ""
                 baselinedir = exeroot
 
-            if (mach in ["sandiatoss3", "anvil"]):
+            if (mach in ["sandiatoss3"]):
                 exeroot_fast = os.path.join(exeroot, "fast")
                 exeroot_strict = os.path.join(exeroot, "strict")
 
-                if (mach in ["sandiatoss3"]):
-                    preqx_kokkos_args = "-DBUILD_HOMME_PREQX_KOKKOS=ON -DKOKKOS_PATH=/home/onguba/kokkos/build-omp-nodebug"
-                else:
-                    preqx_kokkos_args = "-DBUILD_HOMME_PREQX_KOKKOS=ON -DKOKKOS_PATH=/home/onguba/kokkos/build-serial-omp-nodebug"
+                preqx_kokkos_args = "-DBUILD_HOMME_PREQX_KOKKOS=ON -DKOKKOS_PATH=/home/onguba/kokkos/build-omp-nodebug"
 
                 os.mkdir(exeroot_fast)
                 os.mkdir(exeroot_strict)
@@ -83,7 +80,7 @@ class HOMME(SystemTestsCommon):
         if os.path.exists(log):
             os.remove(log)
 
-        if (mach in ["anvil", "sandiatoss3"]):
+        if (mach in ["sandiatoss3"]):
             exeroot_fast = os.path.join(exeroot, "fast")
             exeroot_strict = os.path.join(exeroot, "strict")
 
