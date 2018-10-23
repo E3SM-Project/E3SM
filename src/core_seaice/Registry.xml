@@ -2173,6 +2173,9 @@
 		<!-- other column packages -->
 		<package name="pkgColumnFormDrag" description=""/>
 
+		<!-- iceberg packages -->
+		<package name="pkgBergs" description=""/>
+
 		<!-- testing system test -->
 		<package name="pkgTestingSystemTest" description=""/>
 
@@ -3504,12 +3507,12 @@
 	</var_struct>
 
 	<!-- fluxes from data icebergs -->
-	<var_struct name="iceberg_forcing" time_levs="1">
+	<var_struct name="iceberg_forcing" time_levs="1" packages="pkgBergs">
 		<var name="bergFreshWaterFluxData"		type="real"	dimensions="nCells Time"		name_in_code="bergFreshWaterFluxData"/>
 	</var_struct>
 
 	<!-- fluxes from icebergs to ocean -->
-	<var_struct name="iceberg_fluxes" time_levs="1" packages="pkgColumnPackage">
+	<var_struct name="iceberg_fluxes" time_levs="1" packages="pkgBergs">
 		<var name="bergFreshWaterFlux"			type="real"	dimensions="nCells Time"		name_in_code="bergFreshWaterFlux"/>
 		<var name="bergLatentHeatFlux"			type="real"	dimensions="nCells Time"		name_in_code="bergLatentHeatFlux"/>
 	</var_struct>
