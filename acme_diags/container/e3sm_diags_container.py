@@ -12,7 +12,7 @@ import subprocess
 # Change these commands if needed.
 SHIFTER_COMMAND = 'shifter --volume=$REFERENCE_DATA_PATH:/reference_data_path'
 SHIFTER_COMMAND += ' --volume=$TEST_DATA_PATH:/test_data_path --volume=$RESULTS_DIR:/results_dir'
-SHIFTER_COMMAND += ' --image=docker:e3sm/e3sm_diags:latest'
+SHIFTER_COMMAND += ' --image=docker:e3sm/e3sm_diags:{}'
 # Shifter doesn't use the entrypoint defined in the Dockerfile, so we need to specify what command to use.
 SHIFTER_COMMAND += ' -- e3sm_diags'
 
@@ -21,7 +21,7 @@ DOCKER_COMMAND += ' --mount type=bind,source=$TEST_DATA_PATH,target=/test_data_p
 DOCKER_COMMAND += ' --mount type=bind,source=$RESULTS_DIR,target=/results_dir'
 # Docker needs the cwd mounted as well, otherwise the input parameter files will not be found.
 DOCKER_COMMAND += ' --mount type=bind,source="$(pwd)",target=/e3sm_diags_container_cwd'
-DOCKER_COMMAND += ' e3sm_diags:latest'
+DOCKER_COMMAND += ' e3sm_diags:{}'
 
 
 def run_cmd(cmd):
@@ -39,12 +39,14 @@ def run_container(args):
 
     # Append the e3sm_diags arguments to the container command.
     if args.shifter:
-        cmd = SHIFTER_COMMAND + ' ' + ' '.join(e3sm_diags_args)
+        cmd = SHIFTER_COMMAND.format(args.container_version)
+        cmd += ' ' + ' '.join(e3sm_diags_args)
         run_cmd(cmd)
     elif args.singularity:
         raise RuntimeError('This is not implemented yet! Please understand.')
     elif args.docker:
-        cmd = DOCKER_COMMAND + ' ' + ' '.join(e3sm_diags_args)
+        cmd = DOCKER_COMMAND.format(args.container_version)
+        cmd += ' ' + ' '.join(e3sm_diags_args)
         run_cmd(cmd)
     else:
         msg = 'Invalid container runtime option. Please choose '
@@ -124,7 +126,8 @@ def get_user_args_for_e3sm_diags():
     params_to_ignore = ['e3sm_diags_container', 'python', 'e3sm_diags_container.py',
                         '--shifter', '--singularity', '--docker']
 
-    return [a for a in sys.argv if a not in params_to_ignore]
+    # Commands must be in '' so it works correctly.
+    return ["'{}'".format(a) for a in sys.argv if a not in params_to_ignore]
 
 
 # For this preprocessing step, these are the only parameters we care about.
