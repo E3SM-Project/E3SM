@@ -1934,7 +1934,7 @@ contains
       oceanShortwaveFlux,          &
       oceanFreshWaterFlux,         &
       oceanSaltFlux,               &
-      bergFreshWaterFlux,          &
+      bergFreshwaterFlux,          &
       bergLatentHeatFlux,          &
       oceanNitrateFlux,            &
       oceanSilicateFlux,           &
@@ -2021,7 +2021,7 @@ contains
       if (config_use_data_icebergs) then
          call MPAS_pool_get_subpool(block_ptr % structs, "iceberg_fluxes", icebergFluxes)
 
-         call MPAS_pool_get_array(icebergFluxes, "bergFreshWaterFlux", bergFreshWaterFlux)
+         call MPAS_pool_get_array(icebergFluxes, "bergFreshwaterFlux", bergFreshwaterFlux)
          call MPAS_pool_get_array(icebergFluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
       endif
 
@@ -2099,6 +2099,11 @@ contains
          !-------states-------------------- 
          i2x_i % rAttr(index_i2x_Si_ifrac ,n)    = ailohi
 
+         if (config_use_data_icebergs) then
+            i2x_i % rAttr(index_i2x_Fioi_bergw,n) = bergFreshwaterFlux(i)
+            i2x_i % rAttr(index_i2x_Fioi_bergh,n) = bergLatentHeatFlux(i)
+         endif
+
          if ( ailohi > 0.0_RKIND ) then
 
             !-------states-------------------- 
@@ -2135,11 +2140,6 @@ contains
             i2x_i % rAttr(index_i2x_Fioi_salt ,n) = oceanSaltFlux(i)
             i2x_i % rAttr(index_i2x_Fioi_taux ,n) = tauxo
             i2x_i % rAttr(index_i2x_Fioi_tauy ,n) = tauyo
-
-            if (config_use_data_icebergs) then
-               i2x_i % rAttr(index_i2x_Fioi_bergw,n) = bergFreshWaterFlux(i)
-               i2x_i % rAttr(index_i2x_Fioi_bergh,n) = bergLatentHeatFlux(i)
-            endif
 
             ! export biogeochemistry fields, if configured
             if (config_use_column_biogeochemistry) then

@@ -166,8 +166,8 @@ contains
     index_i2x_Fioi_salt     = mct_avect_indexra(i2x,'Fioi_salt')
     index_i2x_Fioi_taux     = mct_avect_indexra(i2x,'Fioi_taux')
     index_i2x_Fioi_tauy     = mct_avect_indexra(i2x,'Fioi_tauy')
-    index_i2x_Fioi_bergh    = mct_avect_indexra(i2x,'Fioi_bergh')
-    index_i2x_Fioi_bergw    = mct_avect_indexra(i2x,'Fioi_bergw')
+    index_i2x_Fioi_bergh    = mct_avect_indexra(i2x,'PFioi_bergh')
+    index_i2x_Fioi_bergw    = mct_avect_indexra(i2x,'PFioi_bergw')
 
     index_i2x_Fioi_algae1   = mct_avect_indexra(i2x,'Fioi_algae1',perrWith='quiet')
     index_i2x_Fioi_algae2   = mct_avect_indexra(i2x,'Fioi_algae2',perrWith='quiet')
