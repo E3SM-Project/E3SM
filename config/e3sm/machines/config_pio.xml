@@ -85,22 +85,6 @@
   </entry>
   -->
 
-  <entry id="PIO_BUILD_TIMING">
-    <values>
-      <value MACH="cori-haswell">1</value>
-      <value MACH="cori-knl">1</value>
-      <value MACH="bebop">1</value>
-      <value MACH="cetus">1</value>
-      <value MACH="mira">1</value>
-      <value MACH="theta">1</value>
-      <value MACH="titan">1</value>
-      <value MACH="eos">1</value>
-      <value MACH="summitdev">1</value>
-      <value MACH="summit">1</value>
-    </values>
-  </entry>
-
-
   <entry id="PIO_BUFFER_SIZE_LIMIT">
     <values>
       <value MACH="sandiatoss3">1</value>
