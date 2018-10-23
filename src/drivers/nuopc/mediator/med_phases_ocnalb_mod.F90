@@ -60,7 +60,7 @@ contains
     use med_constants_mod     , only : CL, R8
     use med_constants_mod     , only : dbug_flag =>med_constants_dbug_flag
     use esmFlds               , only : compatm, compocn
-
+    use perf_mod              , only : t_startf, t_stopf
     ! Arguments
     type(ESMF_GridComp)               :: gcomp
     type(ocnalb_type) , intent(inout) :: ocnalb
@@ -83,7 +83,7 @@ contains
     integer                  :: dbrc
     character(*), parameter  :: subname = '(med_phases_ocnalb_init) '
     !-----------------------------------------------------------------------
-
+    call t_startf('MED:'//subname)
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
@@ -163,6 +163,7 @@ contains
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_ocnalb_init
 
@@ -196,7 +197,7 @@ contains
     use shr_nuopc_scalars_mod , only : flds_scalar_num
     use shr_nuopc_scalars_mod , only : flds_scalar_index_nextsw_cday
     use esmFlds               , only : compatm, compocn
-
+    use perf_mod              , only : t_startf, t_stopf
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -237,7 +238,7 @@ contains
     logical                 :: first_call = .true.
     character(len=*)  , parameter :: subname='(med_phases_ocnalb_run)'
     !---------------------------------------
-
+    call t_startf('MED:'//subname)
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
@@ -380,6 +381,7 @@ contains
        call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBMed_ocnalb_o, string=trim(subname)//' FBMed_ocnalb_o', rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_ocnalb_run
 
@@ -400,7 +402,7 @@ contains
     use med_constants_mod     , only : dbug_flag =>med_constants_dbug_flag
     use esmFlds               , only : fldListMed_ocnalb_o
     use esmFlds               , only : compatm, compocn
-
+    use perf_mod              , only : t_startf, t_stopf
     ! Arguments
     type(ESMF_GridComp)    :: gcomp
     integer, intent(out)   :: rc
@@ -410,6 +412,7 @@ contains
     integer             :: dbrc
     character(*), parameter :: subName =   '(med_ocnalb_mapo2a) '
     !-----------------------------------------------------------------------
+    call t_startf('MED:'//subname)
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -431,6 +434,7 @@ contains
          is_local%wrap%RH(compocn,compatm,:), &
          string='FBMed_ocnalb_o_To_FBMed_ocnalb_a', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_ocnalb_mapo2a
 

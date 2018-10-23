@@ -142,7 +142,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                         ntasks = ninst
                     else:
                         expect(False, "NINST_{} value {:d} greater than NTASKS_{} {:d}".format(comp, ninst, comp, ntasks))
-                case.set_value("NTASKS_PER_INST_{}".format(comp), int(ntasks / ninst))
+                case.set_value("NTASKS_PER_INST_{}".format(comp), max(1,int(ntasks / ninst)))
 
         if os.path.exists(get_batch_script_for_job(case.get_primary_job())):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
@@ -171,7 +171,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                 case.set_value("TOTALPES", int(case.total_tasks * max(1.0,float(case.thread_count) / smt_factor)))
             else:
                 case.set_value("TOTALPES", case.total_tasks*case.thread_count)
-
 
             # May need to select new batch settings if pelayout changed (e.g. problem is now too big for prev-selected queue)
             env_batch = case.get_env("batch")
@@ -221,8 +220,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         env_module.make_env_mach_specific_file("csh", case)
         if not non_local:
             env_module.save_all_env_info("software_environment.txt")
-
-        logger.info("You can now run './preview_run' to get more info on how your case will be run")
 
         logger.info("You can now run './preview_run' to get more info on how your case will be run")
 

@@ -1,6 +1,115 @@
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
+Date: 10-8-2018
+Tag: cime_cesm2_1_rel_01
+Answer Changes: None
+Tests: scripts_regression_test
+Dependencies:
+
+Brief Summary:
+    - Update presaero and CO2 datasets for datm7 to new CMIP6 version.
+    - Better format for seq_flds_YYY_{fluxes,states} log messages.
+    - Attach the instance number to 'cpl' in cpl history file names.
+    - Fix inputdata issue for multi_instance cases.
+
+
+User interface changes:
+    - Added clim_2010 option for DATM_PRESAERO
+      Added 20tr.latbnd option for DATM_CO2_TSERIES
+      GSWP3v1 and CRUNCEPv7 forcing sets appropriate years for compsets starting with 2010
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+88d9297 Merge pull request #2828 from ekluzek/newpresaero
+6568ded Merge pull request #2824 from kdraeder/kdr_seq_flds_log_msgs
+fcf60c8 Merge pull request #2782 from kdraeder/kdr_fix_cpl_hist_names
+6511798 Merge pull request #2823 from jedwards4b/multi_inst_check_input
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/Tools/archive_metadata
+M       scripts/create_newcase
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/nmlgen.py
+M       src/components/data_comps/datm/cime_config/buildnml
+M       src/components/data_comps/datm/cime_config/config_component.xml
+M       src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M       src/components/data_comps/desp/cime_config/buildnml
+M       src/components/data_comps/dice/cime_config/buildnml
+M       src/components/data_comps/dlnd/cime_config/buildnml
+M       src/components/data_comps/docn/cime_config/buildnml
+M       src/components/data_comps/drof/cime_config/buildnml
+M       src/components/data_comps/dwav/cime_config/buildnml
+M       src/drivers/mct/main/cime_comp_mod.F90
+M       src/drivers/mct/main/seq_hist_mod.F90
+M       src/drivers/mct/shr/seq_flds_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer
+Date: 10-2-2018
+Tag: cime_cesm2_0_rel_06
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Archive_metadata updates for CMIP6 experiments.
+    - OS is not generic env var.
+    - New machines at ETH and CSCS.
+    - Update ESMF library on cheyenne.
+    - Fix documentation for histaux_r2x namelist variable.
+    - Dont allow zero ntasks nthrds.
+    - Add lapack and blas libraries to pgi compile on cheyenne.
+    - Updates for compatibility with XML to html tools.
+    - Remove additional rad->deg conversion to radians when creating ocean
+      domain files.
+    - ESMF logging fix.
+
+User interface changes:
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+12e1c4d41 (HEAD -> maint-5.6, origin/maint-5.6) Merge pull request #2815 from bertinia/maint-5.6_archive_metadata
+767511a79 OS is not generic env var
+bec49f0c2 Merge pull request #2807 from beyerle/euler_daint
+9e74b8ab3 Merge pull request #2806 from ESMCI/fischer/ESMF_710r
+0f20ab46e Merge pull request #2774 from billsacks/fix_histaux_r2x_docs
+1c10e58e8 Merge pull request #2768 from jedwards4b/dont_allow_zero_ntasks_nthrds
+6a1069ce3 Merge pull request #2753 from jedwards4b/pgi_lapack
+5a0a56721 Merge pull request #2742 from bertinia/maint-5.6-component-return-values
+cbf8f2216 Merge pull request #2736 from jtruesdal/domainfix
+2e34a0305 Merge pull request #2733 from gold2718/esmf_log_fix
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_grids.xml
+M       config/cesm/machines/config_batch.xml
+M       config/cesm/machines/config_compilers.xml
+M       config/cesm/machines/config_machines.xml
+M       scripts/Tools/archive_metadata
+M       scripts/lib/CIME/XML/component.py
+M       scripts/lib/CIME/XML/compsets.py
+M       scripts/lib/CIME/XML/env_mach_pes.py
+M       scripts/lib/CIME/XML/machines.py
+M       scripts/lib/CIME/utils.py
+M       src/components/data_comps/docn/cime_config/config_component.xml
+M       src/drivers/mct/cime_config/config_component.xml
+M       src/drivers/mct/cime_config/namelist_definition_drv.xml
+M       src/drivers/mct/main/cime_comp_mod.F90
+M       src/drivers/mct/main/cime_driver.F90
+M       src/drivers/mct/shr/seq_comm_mct.F90
+M       src/drivers/mct/shr/seq_infodata_mod.F90
+M       src/share/esmf_wrf_timemgr/ESMF_Stubs.F90
+M       tools/mapping/gen_domain_files/src/gen_domain.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer
+Date: 7-24-2018
+Tag: cime_cesm2_0_rel_05
 Date: 8-30-2018
 Tag: cime5.7.3
 Answer Changes: None
@@ -16,10 +125,10 @@ Brief Summary:
     - Add options to cs.status to allow just summarizing failures.
     - Fix DAE test for scripts_regression_tests.
 
-User interface changes: 
+User interface changes:
     - Adds some optional arguments to cs.status, but no other changes.
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 33b347b Merge pull request #2794 from billsacks/fix_eri
 442c6a6 Merge pull request #2789 from billsacks/no_bfail_if_no_original
 bc8166b Merge pull request #2785 from billsacks/fix_create_test
@@ -51,11 +160,11 @@ M       src/share/util/mct_mod.F90
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 8-23-2018
 Tag: cime5.7.2
 Answer Changes: None
-Tests: scripts_regression_tests 
+Tests: scripts_regression_tests
 Dependencies:
 
 Brief Summary:
@@ -66,9 +175,9 @@ Brief Summary:
    - Re-implementation of pause/resume with a few features.
    - Allow TestStatus file to be copied into baselines.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 c4f0206 add a comment to special interfaces
 b4bb592 Merge branch 'mymaint-5.6'
 aa3c8db Merge pull request #2765 from gold2718/fix_dwav
@@ -114,7 +223,7 @@ M       tools/mapping/gen_domain_files/src/gen_domain.F90
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 8-20-2018
 Tag: cime5.7.1
 Answer Changes: None
@@ -150,9 +259,9 @@ Brief Summary:
     - Use ConfigParser rather than SafeConfigParser.
     - Merge acme split 2018-06-25.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 84d14aeac Merge pull request #2759 from gold2718/dae_test_improve
 f1349f993 Merge pull request #2755 from billsacks/custom_cs_status
 86c25a010 Merge pull request #2750 from ESMCI/jgfouca/fix_fortran_unit_tests
@@ -176,7 +285,7 @@ d52719d86 (tag: to-acme-2018-07-06) Merge pull request #2704 from ESMCI/jgfouca/
 516831614 Merge pull request #2703 from ESMCI/jgfouca/compilers_fix
 290b78033 Merge pull request #2696 from ESMCI/jgfouca/e3sm_mgmt_autohandle_ez_confs
 25630d675 (tag: to-acme-2018-06-28) Merge pull request #2694 from bertinia/maint-5.6-machines
-1f4215d1f Merge pull request #2691 from jedwards4b/compsets 
+1f4215d1f Merge pull request #2691 from jedwards4b/compsets
 fc534795f Merge pull request #2692 from ESMCI/mfdeakin-sandia/lsf-fix
 b76de49d5 Merge pull request #2680 from ESMCI/mfdeakin-sandia/case_submit/config_no_interpolate
 4948d663b Merge pull request #2689 from ESMCI/jgfouca/branch-for-acme-split-2018-06-25

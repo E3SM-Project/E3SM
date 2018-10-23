@@ -405,7 +405,9 @@ def _main():
             if ctest_args is not None:
                 ctest_command.extend(ctest_args.split(" "))
 
-            run_cmd_no_fail(" ".join(ctest_command), from_dir=label, combine_output=True)
+            logger.info("Running '{}'".format(" ".join(ctest_command)))
+            output = run_cmd_no_fail(" ".join(ctest_command), from_dir=label, combine_output=True)
+            logger.info(output)
 
 if __name__ == "__main__":
     _main()

@@ -122,6 +122,7 @@ contains
     integer                 :: mpicom              ! MPI communicator
     integer                 :: tmp(6)              ! Array for Broadcast
     integer                 :: dbrc
+    logical                 :: isPresent
     character(len=*), parameter :: subname = '(shr_nuopc_time_clockInit): '
     !-------------------------------------------------------------------------------
 
@@ -202,9 +203,14 @@ contains
           call NUOPC_CompAttributeGet(esmdriver, name="restart_pfile", value=restart_pfile, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-          call NUOPC_CompAttributeGet(esmdriver, name="inst_suffix", value=inst_suffix, rc=rc)
+          call NUOPC_CompAttributeGet(esmdriver, name="inst_suffix", isPresent=isPresent, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
+          if(isPresent) then
+             call NUOPC_CompAttributeGet(esmdriver, name="inst_suffix", value=inst_suffix, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          else
+             inst_suffix = ""
+          endif
           if ( len_trim(restart_pfile) == 0 ) then
              rc = ESMF_FAILURE
              call ESMF_LogWrite(trim(subname)//' ERROR restart_pfile must be defined', &
@@ -269,38 +275,40 @@ contains
     call shr_nuopc_time_date2ymd(start_ymd, yr, mon, day)
     call ESMF_TimeSet( StartTime, yy=yr, mm=mon, dd=day, s=start_tod, calendar=calendar, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    write(tmpstr,'(i10)') start_ymd
-    call ESMF_LogWrite(trim(subname)//': driver start_ymd: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
-    write(logunit,*)   trim(subname)//': driver start_ymd: '// trim(tmpstr)
-    write(tmpstr,'(i10)') start_tod
-    call ESMF_LogWrite(trim(subname)//': driver start_tod: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
-    write(logunit,*)   trim(subname)//': driver start_tod: '// trim(tmpstr)
+    if(mastertask .or. dbug_flag > 2) then
+       write(tmpstr,'(i10)') start_ymd
+       call ESMF_LogWrite(trim(subname)//': driver start_ymd: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+       write(logunit,*)   trim(subname)//': driver start_ymd: '// trim(tmpstr)
+       write(tmpstr,'(i10)') start_tod
+       call ESMF_LogWrite(trim(subname)//': driver start_tod: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+       write(logunit,*)   trim(subname)//': driver start_tod: '// trim(tmpstr)
+    endif
 
     ! Determine reference time
     call shr_nuopc_time_date2ymd(ref_ymd, yr, mon, day)
     call ESMF_TimeSet( RefTime, yy=yr, mm=mon, dd=day, s=ref_tod, calendar=calendar, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    write(tmpstr,'(i10)') ref_ymd
-    call ESMF_LogWrite(trim(subname)//': driver ref_ymd: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
-    write(logunit,*)   trim(subname)//': driver ref_ymd: '// trim(tmpstr)
-    write(tmpstr,'(i10)') ref_tod
-    call ESMF_LogWrite(trim(subname)//': driver ref_tod: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
-    write(logunit,*)   trim(subname)//': driver ref_tod: '// trim(tmpstr)
-
+    if(mastertask .or. dbug_flag > 2) then
+       write(tmpstr,'(i10)') ref_ymd
+       call ESMF_LogWrite(trim(subname)//': driver ref_ymd: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+       write(logunit,*)   trim(subname)//': driver ref_ymd: '// trim(tmpstr)
+       write(tmpstr,'(i10)') ref_tod
+       call ESMF_LogWrite(trim(subname)//': driver ref_tod: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+       write(logunit,*)   trim(subname)//': driver ref_tod: '// trim(tmpstr)
+    endif
     ! Determine current time
     call shr_nuopc_time_date2ymd(curr_ymd, yr, mon, day)
     call ESMF_TimeSet( CurrTime, yy=yr, mm=mon, dd=day, s=curr_tod, calendar=calendar, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    write(tmpstr,'(i10)') curr_ymd
-    call ESMF_LogWrite(trim(subname)//': driver curr_ymd: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
-    write(logunit,*)   trim(subname)//': driver curr_ymd: '// trim(tmpstr)
-    write(tmpstr,'(i10)') curr_tod
-    call ESMF_LogWrite(trim(subname)//': driver curr_tod: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
-    write(logunit,*)   trim(subname)//': driver curr_tod: '// trim(tmpstr)
-
+    if(mastertask .or. dbug_flag > 2) then
+       write(tmpstr,'(i10)') curr_ymd
+       call ESMF_LogWrite(trim(subname)//': driver curr_ymd: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+       write(logunit,*)   trim(subname)//': driver curr_ymd: '// trim(tmpstr)
+       write(tmpstr,'(i10)') curr_tod
+       call ESMF_LogWrite(trim(subname)//': driver curr_tod: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+       write(logunit,*)   trim(subname)//': driver curr_tod: '// trim(tmpstr)
+    endif
     !---------------------------------------------------------------------------
     ! Determine driver clock timestep
     !---------------------------------------------------------------------------
@@ -352,11 +360,11 @@ contains
     dtime_drv = min(dtime_drv, rof_cpl_dt)
     dtime_drv = min(dtime_drv, wav_cpl_dt)
     dtime_drv = min(dtime_drv, esp_cpl_dt)
-
-    write(tmpstr,'(i10)') dtime_drv
-    call ESMF_LogWrite(trim(subname)//': driver time interval is : '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
-    write(logunit,*)   trim(subname)//': driver time interval is : '// trim(tmpstr)
-
+    if(mastertask .or. dbug_flag > 2) then
+       write(tmpstr,'(i10)') dtime_drv
+       call ESMF_LogWrite(trim(subname)//': driver time interval is : '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
+       write(logunit,*)   trim(subname)//': driver time interval is : '// trim(tmpstr)
+    endif
     call ESMF_TimeIntervalSet( TimeStep, s=dtime_drv, rc=rc )
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -401,13 +409,14 @@ contains
        stop_ymd = 99990101
        stop_tod = 0
     endif
-    write(tmpstr,'(i10)') stop_ymd
-    call ESMF_LogWrite(trim(subname)//': driver stop_ymd: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
-    write(logunit,*)   trim(subname)//': driver stop_ymd: '// trim(tmpstr)
-    write(tmpstr,'(i10)') stop_tod
-    call ESMF_LogWrite(trim(subname)//': driver stop_tod: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
-    write(logunit,*)   trim(subname)//': driver stop_tod: '// trim(tmpstr)
-
+    if(mastertask .or. dbug_flag > 2) then
+       write(tmpstr,'(i10)') stop_ymd
+       call ESMF_LogWrite(trim(subname)//': driver stop_ymd: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+       write(logunit,*)   trim(subname)//': driver stop_ymd: '// trim(tmpstr)
+       write(tmpstr,'(i10)') stop_tod
+       call ESMF_LogWrite(trim(subname)//': driver stop_tod: '// trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+       write(logunit,*)   trim(subname)//': driver stop_tod: '// trim(tmpstr)
+    endif
     call shr_nuopc_time_alarmInit(clock, &
          alarm   = alarm_stop,           &
          option  = stop_option,          &

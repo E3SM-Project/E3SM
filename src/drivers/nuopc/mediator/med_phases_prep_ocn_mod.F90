@@ -32,6 +32,7 @@ contains
     use med_map_mod           , only : med_map_FB_Regrid_Norm
     use esmFlds               , only : fldListFr
     use esmFlds               , only : compocn, ncomps, compname
+    use perf_mod              , only : t_startf, t_stopf
 
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -43,7 +44,7 @@ contains
     integer :: dbrc
 
     !-------------------------------------------------------------------------------
-
+    call t_startf('MED:'//subname)
     if (dbug_flag > 5) then
        call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
     endif
@@ -93,6 +94,7 @@ contains
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        endif
     enddo
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_prep_ocn_map
 
@@ -111,7 +113,7 @@ contains
     use med_merge_mod         , only : med_merge_auto
     use esmFlds               , only : fldListTo
     use esmFlds               , only : compocn, compname, compatm, compice
-
+    use perf_mod              , only : t_startf, t_stopf
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -136,9 +138,10 @@ contains
     integer                     :: dbrc
     ! TODO: the calculation needs to be set at run time based on receiving it from the ocean
     real(R8)                    :: flux_epbalfact = 1._R8
-    logical                     :: first_call = .true. 
+    logical                     :: first_call = .true.
     character(len=*), parameter :: subname='(med_phases_prep_ocn_merge)'
     !---------------------------------------
+    call t_startf('MED:'//subname)
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
@@ -351,6 +354,7 @@ contains
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_prep_ocn_merge
 
@@ -365,7 +369,8 @@ contains
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_accum
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
     use med_internalstate_mod   , only : InternalState, mastertask
-    use esmFlds, only: compocn
+    use esmFlds                 , only : compocn
+    use perf_mod                , only : t_startf, t_stopf
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -380,6 +385,7 @@ contains
     character(len=*), parameter :: subname='(med_phases_accum_fast)'
     integer :: dbrc
     !---------------------------------------
+    call t_startf('MED:'//subname)
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -455,6 +461,7 @@ contains
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_prep_ocn_accum_fast
 
@@ -471,7 +478,8 @@ contains
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_average
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_copy
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_reset
-    use esmFlds, only : compocn
+    use esmFlds                 , only : compocn
+    use perf_mod                , only : t_startf, t_stopf
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -486,6 +494,7 @@ contains
     character(len=*),parameter  :: subname='(med_phases_prep_ocn_accum_avg)'
     integer :: dbrc
     !---------------------------------------
+    call t_startf('MED:'//subname)
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -560,6 +569,7 @@ contains
             string=trim(subname)//' FBExpAccum(compocn) after avg ', rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_prep_ocn_accum_avg
 
