@@ -21,7 +21,7 @@ DOCKER_COMMAND += ' --mount type=bind,source=$TEST_DATA_PATH,target=/test_data_p
 DOCKER_COMMAND += ' --mount type=bind,source=$RESULTS_DIR,target=/results_dir'
 # Docker needs the cwd mounted as well, otherwise the input parameter files will not be found.
 DOCKER_COMMAND += ' --mount type=bind,source="$(pwd)",target=/e3sm_diags_container_cwd'
-DOCKER_COMMAND += ' e3sm_diags:{}'
+DOCKER_COMMAND += ' e3sm/e3sm_diags:{}'
 
 
 def run_cmd(cmd):
