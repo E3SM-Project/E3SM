@@ -2152,7 +2152,12 @@ class L_TestSaveTimings(TestCreateTestCommon):
     def simple_test(self, manual_timing=False):
     ###########################################################################
         timing_flag = "" if manual_timing else "--save-timing"
-        self._create_test(["SMS_Ln9_P1.f19_g16_rx1.A", timing_flag, "--walltime=0:15:00"], test_id=self._baseline_name)
+        driver = CIME.utils.get_cime_default_driver()
+        if driver == "mct":
+            walltime="00:15:00"
+        else:
+            walltime="00:30:00"
+        self._create_test(["SMS_Ln9_P1.f19_g16_rx1.A", timing_flag, "--walltime="+walltime], test_id=self._baseline_name)
 
         statuses = glob.glob("%s/*%s/TestStatus" % (self._testroot, self._baseline_name))
         self.assertEqual(len(statuses), 1, msg="Should have had exactly one match, found %s" % statuses)

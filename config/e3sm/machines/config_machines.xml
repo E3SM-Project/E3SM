@@ -84,7 +84,8 @@
         <arg name="num_tasks"> -n {{ total_tasks }}</arg>
         <arg name="thread_count"> -c $SHELL{echo 48/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
         <arg name="binding"> $SHELL{if [ 24 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
-      </arguments>
+        <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
+    </arguments>
     </mpirun>
     <module_system type="module">
       <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
@@ -121,10 +122,10 @@
 
       <modules>
         <command name="rm">craype</command>
-        <command name="load">craype/2.5.12</command>
+        <command name="load">craype/2.5.14</command>
         <command name="load">craype-ivybridge</command>
         <command name="rm">pmi</command>
-        <command name="load">pmi/5.0.12</command>
+        <command name="load">pmi/5.0.13</command>
         <command name="rm">cray-mpich</command>
         <command name="load">cray-mpich/7.7.0</command>
       </modules>
@@ -132,7 +133,7 @@
       <modules compiler="intel">
         <command name="load">PrgEnv-intel/6.0.4</command>
         <command name="rm">intel</command>
-        <command name="load">intel/17.0.2.174</command>
+        <command name="load">intel/18.0.1.163</command>
         <command name="rm">cray-libsci</command>
       </modules>
 
@@ -147,9 +148,9 @@
         <command name="rm">PrgEnv-intel</command>
         <command name="load">PrgEnv-gnu/6.0.4</command>
         <command name="rm">gcc</command>
-        <command name="load">gcc/6.3.0</command>
+        <command name="load">gcc/7.3.0</command>
         <command name="rm">cray-libsci</command>
-        <command name="load">cray-libsci/17.06.1</command>
+        <command name="load">cray-libsci/18.03.1</command>
       </modules>
 
       <modules compiler="gnu7">
@@ -229,7 +230,8 @@
         <arg name="num_tasks"> -n {{ total_tasks }}</arg>
         <arg name="thread_count">-c $SHELL{echo 64/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
         <arg name="binding"> $SHELL{if [ 32 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
-      </arguments>
+        <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
+    </arguments>
     </mpirun>
     <module_system type="module">
       <init_path lang="perl">/opt/modules/default/init/perl</init_path>
@@ -366,7 +368,8 @@
         <arg name="num_tasks"> -n {{ total_tasks }}</arg>
         <arg name="thread_count">-c $SHELL{echo 272/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
         <arg name="binding"> $SHELL{if [ 68 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
-      </arguments>
+        <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
+    </arguments>
     </mpirun>
     <module_system type="module">
       <init_path lang="perl">/opt/modules/default/init/perl</init_path>
@@ -403,6 +406,7 @@
         <command name="rm">zlib</command>
 
         <!-- first load basic defaults, then remove/swap/load as necessary -->
+        <command name="load">python/2.7-anaconda-5.2</command>
         <command name="load">craype</command>
         <command name="load">PrgEnv-intel</command>
         <command name="load">cray-mpich</command>
@@ -1766,10 +1770,10 @@
       </arguments>
     </mpirun>
     <module_system type="module">
-      <init_path lang="python">/opt/lmod/5.0.1/init/env_modules_python.py</init_path>
+      <init_path lang="python">/opt/lmod/7.3.28/init/env_modules_python.py</init_path>
       <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
       <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
-      <cmd_path lang="python">/opt/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="python">/opt/lmod/7.3.28/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
@@ -2229,7 +2233,7 @@
         <command name="rm">netcdf</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/16.0.1.150</command>
+        <command name="load">intel/18.0.1.163</command>
         <command name="load">papi</command>
       </modules>
       <modules compiler="cray">

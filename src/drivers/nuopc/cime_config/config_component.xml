@@ -748,6 +748,18 @@
       If TRUE, the component libraries are always built with OpenMP capability.</desc>
   </entry>
 
+  <entry id="FORCE_BUILD_SMP">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies always build model for openmp capability
+      If FALSE, component libraries are built with OpenMP capability only if
+      the NTHREADS_ setting for that component is greater than 1 in env_mach_pes.xml.
+      If TRUE, the component libraries are always built with OpenMP capability.</desc>
+  </entry>
+
   <entry id="SMP_PRESENT">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>

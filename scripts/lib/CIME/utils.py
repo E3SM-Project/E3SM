@@ -177,7 +177,7 @@ def _read_cime_config_file():
     allowed_sections = ("main", "create_test")
 
     allowed_in_main = ("cime_model", "project", "charge_account", "srcroot", "mail_type",
-                       "mail_user", "machine", "mpilib", "compiler", "input_dir")
+                       "mail_user", "machine", "mpilib", "compiler", "input_dir", "cime_driver")
     allowed_in_create_test = ("mail_type", "mail_user", "save_timing", "single_submit",
                               "test_root", "output_root", "baseline_root", "clean",
                               "machine", "mpilib", "compiler", "parallel_jobs", "proc_pool",
@@ -243,6 +243,21 @@ def get_cime_root(case=None):
 
     logger.debug( "CIMEROOT is " + cimeroot)
     return cimeroot
+
+def get_cime_default_driver():
+    driver = os.environ.get("CIME_DRIVER")
+    if driver:
+        logger.debug("Setting CIME_DRIVER={} from environment".format(driver))
+    else:
+        cime_config = get_cime_config()
+        if (cime_config.has_option('main','CIME_DRIVER')):
+            driver = cime_config.get('main','CIME_DRIVER')
+            if driver:
+                logger.debug("Setting CIME_driver={} from ~/.cime/config".format(driver))
+    if not driver:
+        driver = "mct"
+    expect(driver in ("mct", "nuopc", "moab"),"Attempt to set invalid driver {}".format(driver))
+    return driver
 
 def set_model(model):
     """

@@ -348,15 +348,9 @@ class Case(object):
         return result
 
     def get_resolved_value(self, item, recurse=0, allow_unresolved_envvars=False):
-        #reference_re = re.compile(r'\${?(\w+)}?')
         num_unresolved = item.count("$") if item else 0
         recurse_limit = 10
         if (num_unresolved > 0 and recurse < recurse_limit ):
-            # for m in reference_re.finditer(item):
-            #     var = m.groups()[0]
-            #     if var in self.lookups:
-            #         item = item.replace(m.group(), self.lookups[var])
-
             for env_file in self._env_entryid_files:
                 item = env_file.get_resolved_value(item,
                                                    allow_unresolved_envvars=allow_unresolved_envvars)

@@ -5,7 +5,7 @@ Script to create a new CIME Case Control System (CSS) experimental case.
 """
 
 from Tools.standard_script_setup import *
-from CIME.utils         import expect, get_model, get_cime_config
+from CIME.utils         import expect, get_model, get_cime_config, get_cime_default_driver
 from CIME.case          import Case
 from argparse           import RawTextHelpFormatter
 
@@ -135,7 +135,7 @@ def parse_command_line(args, cimeroot, description):
 
     parser.add_argument("-i", "--input-dir",
                         help="Use a non-default location for input files. This will change the xml value of DIN_LOC_ROOT.")
-    parser.add_argument("--driver", default="mct",
+    parser.add_argument("--driver", default=get_cime_default_driver(),
                         choices=('mct','nuopc', 'moab'),
                         help=argparse.SUPPRESS)
 
