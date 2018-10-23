@@ -956,7 +956,8 @@ contains
                 allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))  ! np,np,nlev,3(1) JRUB
                 !call derivinit(deriv)
                 do ie=1,nelemd
-                   call get_field(elem(ie),'gradpottemp_i',temp3d,hvcoord,n0,n0_Q)
+                   !call get_field(elem(ie),'gradpottemp_i',temp3d,hvcoord,n0,n0_Q)
+                   call get_gradpottemp_i(elem(ie),temp3d,hvcoord,n0,n0_Q, par)
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_scalar(interpdata(ie), temp3d, &
                         np, nlev, datall(st:en,:))
@@ -974,7 +975,8 @@ contains
                 allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))  ! np,np,nlev,3(1) JRUB
                 !call derivinit(deriv)
                 do ie=1,nelemd
-                   call get_field(elem(ie),'gradpottemp_j',temp3d,hvcoord,n0,n0_Q)
+                   !call get_field(elem(ie),'gradpottemp_j',temp3d,hvcoord,n0,n0_Q)
+                   call get_gradpottemp_j(elem(ie),temp3d,hvcoord,n0,n0_Q, par)
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_scalar(interpdata(ie), temp3d, &
                         np, nlev, datall(st:en,:))

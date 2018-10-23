@@ -87,6 +87,9 @@ contains
   select case(name)
     case ('temperature','T'); call get_temperature(elem,field,hvcoord,nt)
     case ('pottemp','Th');    call get_pottemp(elem,field,hvcoord,nt,ntQ)
+    case ('gradpottemp_i','gradTh_i');    call get_gradpottemp_i(elem,field,hvcoord,nt,ntQ)
+    case ('gradpottemp_j','gradTh_j');    call get_gradpottemp_j(elem,field,hvcoord,nt,ntQ)
+    case ('gradpottemp_k','gradTh_k');    call get_gradpottemp_k(elem,field,hvcoord,nt,ntQ)
     case ('phi','geo');       call get_phi(elem,field,phi_i,hvcoord,nt,ntQ)
     case ('dpnh_dp');         call get_dpnh_dp(elem,field,hvcoord,nt,ntQ)
     case ('pnh');             call get_nonhydro_pressure(elem,field,tmp  ,hvcoord,nt,ntQ)
@@ -160,7 +163,7 @@ contains
   
   end subroutine get_pottemp
   !_____________________________________________________________________
-  subroutine get_gradpottemp_i(elem,grad,hvcoord,nt,ntQ)
+  subroutine get_gradpottemp_i(elem,grad,hvcoord,nt,ntQ, par)
   ! JRUB
   ! Should only be called outside timestep loop, state variables on reference levels
   !
@@ -196,6 +199,8 @@ contains
      grad(:,:,k) = gradient_i_sphere(pottemp(:,:,k),deriv,elem%Dinv) 
   enddo
   
+  call grad_C0(grad,elem, par)
+
   end subroutine get_gradpottemp_i
 
    !_____________________________________________________________________
