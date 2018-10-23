@@ -61,7 +61,7 @@
                   filename_template="forcing/data_icebergs.nc"
                   filename_interval="none"
                   input_interval="none" >
-    <var name="bergFreshWaterFluxData"/>
+    <var name="bergFreshwaterFluxData"/>
     <var name="xtime" />
 </stream>
 

@@ -1883,7 +1883,7 @@
 				input_interval="none"
 				clobber_mode="replace_files"
 				runtime_format="single_file">
-			<var name="bergFreshWaterFluxData"/>
+			<var name="bergFreshwaterFluxData"/>
 		</stream>
 
 		<!-- Aerosols input -->
@@ -3508,12 +3508,12 @@
 
 	<!-- fluxes from data icebergs -->
 	<var_struct name="iceberg_forcing" time_levs="1" packages="pkgBergs">
-		<var name="bergFreshWaterFluxData"		type="real"	dimensions="nCells Time"		name_in_code="bergFreshWaterFluxData"/>
+		<var name="bergFreshwaterFluxData"		type="real"	dimensions="nCells Time"		name_in_code="bergFreshwaterFluxData"/>
 	</var_struct>
 
 	<!-- fluxes from icebergs to ocean -->
 	<var_struct name="iceberg_fluxes" time_levs="1" packages="pkgBergs">
-		<var name="bergFreshWaterFlux"			type="real"	dimensions="nCells Time"		name_in_code="bergFreshWaterFlux"/>
+		<var name="bergFreshwaterFlux"			type="real"	dimensions="nCells Time"		name_in_code="bergFreshwaterFlux"/>
 		<var name="bergLatentHeatFlux"			type="real"	dimensions="nCells Time"		name_in_code="bergLatentHeatFlux"/>
 	</var_struct>
 

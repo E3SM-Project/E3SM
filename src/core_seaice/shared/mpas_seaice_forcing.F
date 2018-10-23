@@ -1654,10 +1654,10 @@ contains
          domain % streamManager, &
          seaiceForcingGroups, &
          "seaice_data_iceberg_forcing_monthly", &
-         "bergFreshWaterFluxData", &
+         "bergFreshwaterFluxData", &
          "dataIcebergForcing", &
          "iceberg_forcing", &
-         "bergFreshWaterFluxData", &
+         "bergFreshwaterFluxData", &
          "linear", &
          forcingReferenceTimeMonthly, &
          forcingIntervalMonthly)
@@ -1743,8 +1743,8 @@ contains
          nCellsSolve
 
     real(kind=RKIND), dimension(:), pointer :: &
-         bergFreshWaterFluxData, & ! iceberg freshwater flux read in from file (kg/m^2/s)
-         bergFreshWaterFlux, & ! iceberg freshwater flux for ocean (kg/m^2/s)
+         bergFreshwaterFluxData, & ! iceberg freshwater flux read in from file (kg/m^2/s)
+         bergFreshwaterFlux, & ! iceberg freshwater flux for ocean (kg/m^2/s)
          bergLatentHeatFlux ! iceberg latent heat flux for ocean (J/m^2/s)
 
     integer :: &
@@ -1764,14 +1764,14 @@ contains
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
 
-       call MPAS_pool_get_array(iceberg_forcing, "bergFreshWaterFluxData", bergFreshWaterFluxData)
-       call MPAS_pool_get_array(iceberg_fluxes, "bergFreshWaterFlux", bergFreshWaterFlux)
+       call MPAS_pool_get_array(iceberg_forcing, "bergFreshwaterFluxData", bergFreshwaterFluxData)
+       call MPAS_pool_get_array(iceberg_fluxes, "bergFreshwaterFlux", bergFreshwaterFlux)
        call MPAS_pool_get_array(iceberg_fluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
 
        do iCell = 1, nCellsSolve
 
-          bergFreshWaterFlux(iCell) = bergFreshWaterFluxData(iCell)
-          bergLatentHeatFlux(iCell) = bergFreshWaterFluxData(iCell) * &
+          bergFreshwaterFlux(iCell) = bergFreshwaterFluxData(iCell)
+          bergLatentHeatFlux(iCell) = bergFreshwaterFluxData(iCell) * &
                                      (seaiceLatentHeatMelting - specificHeatFreshIce*bergTemperature)
 
        enddo
@@ -1949,7 +1949,7 @@ contains
          oceanShortwaveFlux
 
     real(kind=RKIND), dimension(:), pointer :: &
-         bergFreshWaterFlux, &
+         bergFreshwaterFlux, &
          bergLatentHeatFlux
 
     real(kind=RKIND), dimension(:), pointer :: &
@@ -2038,10 +2038,10 @@ contains
 
           call MPAS_pool_get_subpool(block % structs, "iceberg_fluxes", icebergFluxes)
 
-          call MPAS_pool_get_array(icebergFluxes, "bergFreshWaterFlux", bergFreshWaterFlux)
+          call MPAS_pool_get_array(icebergFluxes, "bergFreshwaterFlux", bergFreshwaterFlux)
           call MPAS_pool_get_array(icebergFluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
 
-          bergFreshWaterFlux = 0.0_RKIND
+          bergFreshwaterFlux = 0.0_RKIND
           bergLatentHeatFlux = 0.0_RKIND
 
        endif
