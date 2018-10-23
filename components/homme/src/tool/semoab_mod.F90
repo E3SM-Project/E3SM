@@ -25,7 +25,7 @@ module semoab_mod
   save
 
   integer local_map(np,np) !  what is the index of gll point (i,j) in a local moabconn(start: start+(np-1)*(np-1)*4-1)
-  integer, target, allocatable :: moabconn(:) ! will have the connectivity in terms of local index in verts
+  integer, allocatable :: moabconn(:) ! will have the connectivity in terms of local index in verts
   integer                         num_calls_export
   
 contains
@@ -44,11 +44,11 @@ contains
     integer ierr, i, j, ie, iv, block_ID, k, numvals
     integer icol, irow, je, linx ! local indices in fine el connect
 
-    real(kind=real_kind), allocatable, target :: moab_vert_coords(:)
+    real(kind=real_kind), allocatable :: moab_vert_coords(:)
 
     integer moab_dim_cquads, ix, idx, nverts, nverts_c ! used for indexing in loops; nverts will have the number of local vertices
 
-    integer nelemd  ! do not confuse this with dimensions_mod::nelemd
+    integer nelemd2  ! do not confuse this with dimensions_mod::nelemd
 
 ! do we really need this?
     integer , external :: iMOAB_CreateVertices, iMOAB_WriteMesh, iMOAB_CreateElements, &
@@ -56,11 +56,12 @@ contains
         iMOAB_SetIntTagStorage, iMOAB_ReduceTagsMax, iMOAB_GetIntTagStorage
 
     integer(kind=long_kind), dimension(:), allocatable :: gdofv
+    !  this will be moab vertex handle locally
+    integer, dimension(:), allocatable :: moabvh
     integer, dimension(:), allocatable :: indx  !  this will be ordered
 
-    !  this will be moab vertex handle locally
-    integer, target, allocatable :: moabvh(:), vdone(:), elemids(:), vgids(:), gdofel(:)
-    integer, target, allocatable :: vdone_c(:), moabconn_c(:), moabvh_c(:)
+    integer, dimension(:), allocatable :: vdone, elemids, vgids, gdofel
+    integer, dimension(:), allocatable :: vdone_c, moabconn_c, moabvh_c
     integer  currentval, dimcoord, dimen, num_el, mbtype, nve
 
     character*100 outfile, wopts, localmeshfile, lnum, tagname, newtagg
@@ -90,7 +91,7 @@ contains
      enddo
      local_map(np, np) = ((np-1)*(np-1)-1)*4 + 3
 
-     nelemd = (nete-nets+1)*(np-1)*(np-1)
+     nelemd2 = (nete-nets+1)*(np-1)*(np-1)
      moab_dim_cquads = (nete-nets+1)*4*(np-1)*(np-1)
 
      if(par%masterproc) then
@@ -98,7 +99,7 @@ contains
      endif
 
      allocate(gdofv(moab_dim_cquads))
-     allocate(elemids(nelemd))
+     allocate(elemids(nelemd2))
 
      k=0 !   will be the index for element global dofs
      do ie=nets,nete
@@ -115,13 +116,15 @@ contains
      enddo
 
 !     order according to global dofs
+
+     allocate(moabvh(moab_dim_cquads))
      allocate(indx(moab_dim_cquads))
+
+     allocate(moabconn(moab_dim_cquads))
      call IndexSet(moab_dim_cquads, indx)
      call IndexSort(moab_dim_cquads, indx, gdofv, descend=.false.)
 !      after sort, gdofv( indx(i)) < gdofv( indx(i+1) )
-     allocate(moabvh(moab_dim_cquads))
 
-     allocate(moabconn(moab_dim_cquads))
      idx=1
      currentval = gdofv( indx(1))
      do ix=1,moab_dim_cquads
@@ -182,7 +185,7 @@ contains
       if (ierr > 0 )  &
         call endrun('Error: fail to create MOAB vertices ')
 
-      num_el = nelemd
+      num_el = nelemd2
       mbtype = 3 !  quadrilateral
       nve = 4;
       block_ID = 200 ! this will be for coarse mesh
@@ -240,7 +243,7 @@ contains
 
       ! set global id tag for elements
       ent_type = 1 ! now set the global id tag on elements
-      ierr = iMOAB_SetIntTagStorage ( MHFID, newtagg, nelemd , ent_type, elemids)
+      ierr = iMOAB_SetIntTagStorage ( MHFID, newtagg, nelemd2 , ent_type, elemids)
       if (ierr > 0 )  &
         call endrun('Error: fail to set global id tag for elements')
 
@@ -284,10 +287,10 @@ contains
 
 
 !    now create the coarse mesh, but the global dofs will come from fine mesh, after solving
-     nelemd = nete-nets+1
+     nelemd2 = nete-nets+1
      moab_dim_cquads = (nete-nets+1)*4
 
-     allocate(gdofel(nelemd*np*np))
+     allocate(gdofel(nelemd2*np*np))
      k=0 !   will be the index for element global dofs
      do ie=nets,nete
        ix = ie-nets
@@ -377,7 +380,7 @@ contains
         call endrun('Error: fail to set GDOFV tag for vertices')
       ! set global id tag for coarse elements, too; they will start at nets, end at nete
       ent_type = 1 ! now set the global id tag on elements
-      ierr = iMOAB_SetIntTagStorage ( MHID, newtagg, nelemd , ent_type, elemids)
+      ierr = iMOAB_SetIntTagStorage ( MHID, newtagg, nelemd2 , ent_type, elemids)
       if (ierr > 0 )  &
         call endrun('Error: fail to set global id tag for vertices')
 
@@ -395,9 +398,9 @@ contains
       ! now set the values
       ! set global dofs tag for coarse elements, too; they will start at nets, end at nete
       ent_type = 1 ! now set the global id tag on elements
-      numvals = nelemd*np*np ! input is the total number of values
+      numvals = nelemd2*np*np ! input is the total number of values
       ! form gdofel from vgids
-      do ie=1, nelemd
+      do ie=1, nelemd2
         ix = (ie-1)*np*np ! ie: index in coarse element
         je = (ie-1) * 4 * (np-1) * (np -1) !  index in moabconn array
         ! vgids are global ids for fine vertices (1,nverts)
@@ -490,7 +493,7 @@ contains
     integer, external :: iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
     integer :: size_tag_array, nvalperelem, ie, i, j, je, ix, ent_type, idx
 
-    real(kind=real_kind), allocatable, target :: valuesTag(:)
+    real(kind=real_kind), allocatable :: valuesTag(:)
     character*100 outfile, wopts, tagname, lnum
 
     ! count number of calls

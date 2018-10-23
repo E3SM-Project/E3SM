@@ -1051,9 +1051,18 @@ contains
       call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
       call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
 
-      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
+      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (ocean)
         !  send mesh to coupler
         ierr = iMOAB_SendMesh(mpoid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+
+        ! define here the tag that will be projected back from atmosphere
+        !  TODO where do we want to define this?
+        tagnameProj = 'a2oTAG_proj'//CHAR(0)
+        tagtype = 1  ! dense, double
+        numco = 1 !  one value per cell
+        ierr = iMOAB_DefineTagStorage(mpoid, tagnameProj, tagtype, numco,  tagindex )
+
+
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
         appname = "COUPLE_MPASO"//CHAR(0)
