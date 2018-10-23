@@ -1404,8 +1404,8 @@ contains
        if (first_time) then
           index_x2o_Fioi_melth  = mct_aVect_indexRA(x2o_o,'Fioi_melth')
           index_x2o_Fioi_meltw  = mct_aVect_indexRA(x2o_o,'Fioi_meltw')
-          index_x2o_Fioi_bergh  = mct_aVect_indexRA(x2o_o,'Fioi_bergh')
-          index_x2o_Fioi_bergw  = mct_aVect_indexRA(x2o_o,'Fioi_bergw')
+          index_x2o_Fioi_bergh  = mct_aVect_indexRA(x2o_o,'PFioi_bergh')
+          index_x2o_Fioi_bergw  = mct_aVect_indexRA(x2o_o,'PFioi_bergw')
           index_x2o_Fioi_salt   = mct_aVect_indexRA(x2o_o,'Fioi_salt')
           index_x2o_Foxx_swnet  = mct_aVect_indexRA(x2o_o,'Foxx_swnet')
           index_x2o_Faxa_lwdn   = mct_aVect_indexRA(x2o_o,'Faxa_lwdn')
