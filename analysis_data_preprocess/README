@@ -28,4 +28,4 @@ B. Generate climo and time-series for each datasets:
 7. OAFLUX
   -Run create_OAFLUX_climo.py for surface heat flux from WHOI OAFLUX
 
-As of Aug 29th 2018, climos of other variables used in E3SM diags are used from data distributed with NCAR's AMWG diagnostics package. 
+As of Oct 24th 2018, climos of other variables (CRU_IPCC, cloud simulators related[COSP], SSMI) used in E3SM diags are used from data distributed with NCAR's AMWG diagnostics package. 
