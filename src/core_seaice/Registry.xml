@@ -2202,8 +2202,8 @@
 		<!-- forcing -->
 		<package name="pkgForcing" description="On if the framework forcing is being used"/>
 
-    <!-- Snicar -->
-    <package name="pkgSnicar" description="add snicar 5 bands snow SSP in CICE"/>
+                <!-- Snicar -->
+                <package name="pkgSnicar" description="add snicar 5 bands snow SSP in CICE"/>
 	</packages>
 
 <!--TODO WHL - Convert iceVolume and snowVolume to iceThickness and snowThickness (and change the source code accordingly) -->

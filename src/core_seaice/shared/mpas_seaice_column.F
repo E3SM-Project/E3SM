@@ -2144,7 +2144,7 @@ contains
          ponds, &
          aerosols, &
          biogeochemistry, &
-         snicar_variables
+         snicar
 
     ! configs
     real(kind=RKIND), pointer :: &
@@ -2301,7 +2301,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "ponds", ponds)
        call MPAS_pool_get_subpool(block % structs, "aerosols", aerosols)
        call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
-       call MPAS_pool_get_subpool(block % structs, "snicar_variables", snicar_variables)
+       call MPAS_pool_get_subpool(block % structs, "snicar", snicar)
 
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
 
@@ -2372,20 +2372,20 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "verticalGrid", verticalGrid)
 
        ! snicar 5-band snow IOPs
-       call MPAS_pool_get_array(snicar_variables, "iceAsymmtryParameterDirect",iceAsymmtryParameterDirect)
-       call MPAS_pool_get_array(snicar_variables, "iceAsymmtryParameterDiffuse",iceAsymmtryParameterDiffuse)
-       call MPAS_pool_get_array(snicar_variables, "iceSingleScatterAlbedoDirect", iceSingleScatterAlbedoDirect)
-       call MPAS_pool_get_array(snicar_variables, "iceSingleScatterAlbedoDiffuse", iceSingleScatterAlbedoDiffuse)
-       call MPAS_pool_get_array(snicar_variables, "iceMassExtinctionCrossSectionDirect", iceMassExtinctionCrossSectionDirect)
-       call MPAS_pool_get_array(snicar_variables, "iceMassExtinctionCrossSectionDiffuse", iceMassExtinctionCrossSectionDiffuse)
-       call MPAS_pool_get_array(snicar_variables, "aerosolMassExtinctionCrossSection5band", aerosolMassExtinctionCrossSection5band)
-       call MPAS_pool_get_array(snicar_variables, "aerosolSingleScatterAlbedo5band", aerosolSingleScatterAlbedo5band)
-       call MPAS_pool_get_array(snicar_variables,"aerosolAsymmetryParameter5band", aerosolAsymmetryParameter5band)
-       call MPAS_pool_get_array(snicar_variables, "modalMassExtinctionCrossSection5band", modalMassExtinctionCrossSection5band)
-       call MPAS_pool_get_array(snicar_variables,"modalSingleScatterAlbedo5band", modalSingleScatterAlbedo5band)
-       call MPAS_pool_get_array(snicar_variables, "modalAsymmetryParameter5band", modalAsymmetryParameter5band)
-       call MPAS_pool_get_array(snicar_variables, "modalBCabsorptionParameter5band", modalBCabsorptionParameter5band)
-
+       call MPAS_pool_get_array(snicar, "iceAsymmtryParameterDirect", iceAsymmtryParameterDirect)
+       call MPAS_pool_get_array(snicar, "iceAsymmtryParameterDiffuse", iceAsymmtryParameterDiffuse)
+       call MPAS_pool_get_array(snicar, "iceSingleScatterAlbedoDirect", iceSingleScatterAlbedoDirect)
+       call MPAS_pool_get_array(snicar, "iceSingleScatterAlbedoDiffuse", iceSingleScatterAlbedoDiffuse)
+       call MPAS_pool_get_array(snicar, "iceMassExtinctionCrossSectionDirect", iceMassExtinctionCrossSectionDirect)
+       call MPAS_pool_get_array(snicar, "iceMassExtinctionCrossSectionDiffuse", iceMassExtinctionCrossSectionDiffuse)
+       call MPAS_pool_get_array(snicar, "aerosolMassExtinctionCrossSection5band", aerosolMassExtinctionCrossSection5band)
+       call MPAS_pool_get_array(snicar, "aerosolSingleScatterAlbedo5band", aerosolSingleScatterAlbedo5band)
+       call MPAS_pool_get_array(snicar, "aerosolAsymmetryParameter5band", aerosolAsymmetryParameter5band)
+       call MPAS_pool_get_array(snicar, "modalMassExtinctionCrossSection5band", modalMassExtinctionCrossSection5band)
+       call MPAS_pool_get_array(snicar, "modalSingleScatterAlbedo5band", modalSingleScatterAlbedo5band)
+       call MPAS_pool_get_array(snicar, "modalAsymmetryParameter5band", modalAsymmetryParameter5band)
+       call MPAS_pool_get_array(snicar, "modalBCabsorptionParameter5band", modalBCabsorptionParameter5band)
+       
        ! calendar type
        call MPAS_pool_get_config(block % configs, "config_calendar_type", config_calendar_type)
        if (trim(config_calendar_type) == "gregorian") then
