@@ -58,8 +58,8 @@ module atm_comp_nuopc
   type (fld_list_type)     :: fldsFrAtm(fldsMax)
 
   type(shr_strdata_type)   :: SDATM
-  type(mct_aVect)          :: x2d
-  type(mct_aVect)          :: d2x
+  type(mct_aVect)          :: x2a
+  type(mct_aVect)          :: a2x
   integer                  :: compid                    ! mct comp id
   integer                  :: mpicom                    ! mpi communicator
   integer                  :: my_task                   ! my task in mpi communicator mpicom
@@ -382,42 +382,23 @@ contains
     ! Generate the mesh
     !--------------------------------
 
-    call NUOPC_CompAttributeGet(gcomp, name='ugrid_atm', value=cvalue, rc=rc)
+    call NUOPC_CompAttributeGet(gcomp, name='mesh_atm', value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    Emesh = ESMF_MeshCreate(filename=trim(cvalue), fileformat=ESMF_FILEFORMAT_UGRID, rc=rc)
+    Emesh = ESMF_MeshCreate(filename=trim(cvalue), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !----------------------------------------------------------------------------
     ! Initialize model
     !----------------------------------------------------------------------------
 
-    call datm_comp_init(&
-         x2a=x2d, &
-         a2x=d2x, &
-         SDATM=SDATM, &
-         mpicom=mpicom, &
-         compid=compid, &
-         my_task=my_task,&
-         master_task=master_task, &
-         inst_suffix=inst_suffix, &
-         inst_name=inst_name, &
-         logunit=logunit, &
-         read_restart=read_restart, &
-         scmMode=scmMode, &
-         scmlat=scmlat, &
-         scmlon=scmlon, &
-         orbEccen=orbEccen, &
-         orbMvelpp=orbMvelpp, &
-         orbLambm0=orbLambm0, &
-         orbObliqr=orbObliqr, &
-         calendar=calendar, &
-         modeldt=modeldt, &
-         current_ymd=current_ymd, &
-         current_tod=current_tod, &
-         current_mon=current_mon, &
-         atm_prognostic=atm_prognostic, &
-         mesh=EMesh)
+    call datm_comp_init(x2a, a2x, &
+         SDATM, mpicom, compid, my_task, master_task, &
+         inst_suffix, inst_name,  logunit, read_restart, &
+         scmMode, scmlat, scmlon, &
+         orbEccen, orbMvelpp,  orbLambm0, orbObliqr, &
+         calendar,  modeldt, current_ymd, current_tod, current_mon, &
+         atm_prognostic, EMesh)
 
     !--------------------------------
     ! realize the actively coupled fields, now that a mesh is established
@@ -447,11 +428,11 @@ contains
 
     !--------------------------------
     ! Pack export state
-    ! Copy from d2x to exportState
+    ! Copy from a2x to exportState
     ! Set the coupling scalars
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_a2x, exportState, grid_option='mesh', rc=rc)
+    call shr_nuopc_grid_ArrayToState(a2x%rattr, flds_a2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     nx_global = SDATM%nxg
@@ -474,7 +455,7 @@ contains
 
     if (dbug > 1) then
        if (my_task == master_task) then
-          call mct_aVect_info(2, d2x, istr='initial diag'//':AV')
+          call mct_aVect_info(2, a2x, istr='initial diag'//':AV')
        end if
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -560,7 +541,7 @@ contains
     !--------------------------------
 
     if (atm_prognostic) then
-       call shr_nuopc_grid_StateToArray(importState, x2d%rattr, flds_x2a, grid_option='mesh', rc=rc)
+       call shr_nuopc_grid_StateToArray(importState, x2a%rattr, flds_x2a, grid_option='mesh', rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
@@ -614,28 +595,12 @@ contains
 
     ! Advance the model
 
-    call datm_comp_run(&
-         x2a=x2d, &
-         a2x=d2x, &
-         SDATM=SDATM, &
-         mpicom=mpicom, &
-         compid=compid, &
-         my_task=my_task, &
-         master_task=master_task, &
-         inst_suffix=inst_suffix, &
-         logunit=logunit, &
-         orbEccen=orbEccen, &
-         orbMvelpp=orbMvelpp, &
-         orbLambm0=orbLambm0, &
-         orbObliqr=orbObliqr, &
-         write_restart=write_restart, &
-         target_ymd=nextYMD, &
-         target_tod=nextTOD, &
-         target_mon=mon, &
-         calendar=calendar, &
-         modeldt=modeldt, &
-         case_name=case_name, &
-         atm_prognostic=atm_prognostic)
+    call datm_comp_run( x2a, a2x, &
+         SDATM, mpicom, compid, my_task, master_task, &
+         inst_suffix, logunit, &
+         orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
+         write_restart, nextYMD, nextTOD, mon, modeldt, calendar, &
+         atm_prognostic, case_name)
 
     ! Use nextYMD and nextTOD here since since the component - clock is advance at the END of the time interval
     nextsw_cday = datm_shr_getNextRadCDay( nextYMD, nextTOD, stepno, modeldt, iradsw, calendar )
@@ -644,7 +609,7 @@ contains
     ! Pack export state
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_a2x, exportState, grid_option='mesh', rc=rc)
+    call shr_nuopc_grid_ArrayToState(a2x%rattr, flds_a2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call shr_nuopc_methods_State_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState, mpicom, &
@@ -657,7 +622,7 @@ contains
 
     if (dbug > 1) then
        if (my_task == master_task) then
-          call mct_aVect_info(2, d2x, istr='run diag'//':AV', pe=localPet)
+          call mct_aVect_info(2, a2x, istr='run diag'//':AV', pe=localPet)
        end if
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

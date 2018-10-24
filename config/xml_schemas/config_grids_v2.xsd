@@ -87,7 +87,7 @@
         <xs:element ref="nx"/>
         <xs:element ref="ny"/>
         <xs:element ref="file" minOccurs="0" maxOccurs="unbounded"/>
-        <xs:element ref="ugrid" minOccurs="0"/>
+        <xs:element ref="mesh" minOccurs="0"/>
         <xs:element ref="desc"/>
         <xs:element ref="support" minOccurs="0"/>
       </xs:sequence>
@@ -95,7 +95,7 @@
     </xs:complexType>
   </xs:element>
 
-  <xs:element name="ugrid">
+  <xs:element name="mesh">
     <xs:complexType mixed="true">
       <xs:attribute ref="driver"/>
     </xs:complexType>

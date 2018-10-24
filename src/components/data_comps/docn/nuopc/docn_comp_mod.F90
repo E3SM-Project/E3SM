@@ -6,12 +6,15 @@ module docn_comp_mod
   ! !USES:
   use shr_pcdf_mod          , only : shr_pcdf_readwrite
   use NUOPC                 , only : NUOPC_Advertise
+  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State 
+  use ESMF                  , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
   use ESMF                  , only : ESMF_State, ESMF_LOGMSG_INFO, ESMF_LogWrite
   use perf_mod              , only : t_startf, t_stopf
   use perf_mod              , only : t_adj_detailf, t_barrierf
   use mct_mod               , only : mct_rearr, mct_gsmap_lsize, mct_rearr_init, mct_gsmap, mct_ggrid
   use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
   use mct_mod               , only : mct_avect_init, mct_avect_lsize, mct_avect_clean, mct_aVect
+  use mct_mod               , only : mct_gsmap_init
   use med_constants_mod     , only : IN, R8, I8, CS, CL, CXX
   use shr_const_mod         , only : shr_const_cpsw, shr_const_rhosw, shr_const_TkFrz
   use shr_const_mod         , only : shr_const_TkFrzSw, shr_const_latice, shr_const_ocn_ref_sal
@@ -53,6 +56,11 @@ module docn_comp_mod
   !--------------------------------------------------------------------------
   ! Private data
   !--------------------------------------------------------------------------
+
+  type(mct_gsMap), target    :: gsMap_target
+  type(mct_gGrid), target    :: ggrid_target
+  type(mct_gsMap), pointer   :: gsMap
+  type(mct_gGrid), pointer   :: ggrid
 
   real(R8),parameter         :: cpsw    = shr_const_cpsw        ! specific heat of sea h2o ~ J/kg/K
   real(R8),parameter         :: rhosw   = shr_const_rhosw       ! density of sea water ~ kg/m^3
@@ -229,9 +237,9 @@ contains
   !===============================================================================
 
   subroutine docn_comp_init(x2o, o2x, &
-       SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+       SDOCN, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
-       scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, modeldt)
+       scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, modeldt, mesh)
 
     ! !DESCRIPTION: initialize docn model
     use pio        , only : iosystem_desc_t
@@ -240,8 +248,6 @@ contains
     ! !INPUT/OUTPUT PARAMETERS:
     type(mct_aVect)        , intent(inout) :: x2o, o2x       ! input/output attribute vectors
     type(shr_strdata_type) , intent(inout) :: SDOCN          ! model shr_strdata instance (output)
-    type(mct_gsMap)        , pointer       :: gsMap          ! model global seg map (output)
-    type(mct_gGrid)        , pointer       :: ggrid          ! model ggrid (output)
     integer(IN)            , intent(in)    :: mpicom         ! mpi communicator
     integer(IN)            , intent(in)    :: compid         ! mct comp id
     integer(IN)            , intent(in)    :: my_task        ! my task in mpi communicator mpicom
@@ -257,15 +263,19 @@ contains
     integer                , intent(in)    :: current_ymd    ! model date
     integer                , intent(in)    :: current_tod    ! model sec into model date
     integer                , intent(in)    :: modeldt        ! model time step
+    type(ESMF_Mesh)        , intent(in)    :: mesh           ! ESMF docn mesh 
 
     !--- local variables ---
-    integer(IN)   :: n,k      ! generic counters
-    integer(IN)   :: lsize    ! local size
-    integer(IN)   :: kfld     ! fld index
-    integer(IN)   :: cnt      ! counter
-    logical       :: exists   ! file existance
-    logical       :: exists1  ! file existance
-    integer(IN)   :: nu       ! unit number
+    integer(IN)                    :: n,k      ! generic counters
+    integer(IN)                    :: lsize    ! local size
+    integer(IN)                    :: kfld     ! fld index
+    integer(IN)                    :: cnt      ! counter
+    logical                        :: exists   ! file existance
+    logical                        :: exists1  ! file existance
+    integer(IN)                    :: nu       ! unit number
+    type(ESMF_DistGrid)            :: distGrid
+    integer, allocatable, target   :: gindex(:)
+    integer                        :: rc
     type(iosystem_desc_t), pointer :: ocn_pio_subsystem
 
     !--- formats ---
@@ -274,6 +284,9 @@ contains
     character(*), parameter :: F06   = "('(docn_comp_init) ',a,f10.4)"
     character(*), parameter :: subName = "(docn_comp_init) "
     !-------------------------------------------------------------------------------
+
+    gsmap => gsmap_target
+    ggrid => ggrid_target
 
     call t_startf('DOCN_INIT')
 
@@ -320,11 +333,20 @@ contains
     call t_startf('docn_initgsmaps')
     if (my_task == master_task) write(logunit,F00) ' initialize gsmaps'
 
-    ! create a data model global seqmap (gsmap) given the data model global grid sizes
-    ! NOTE: gsmap is initialized using the decomp read in from the docn_in namelist
-    ! (which by default is "1d")
-    call shr_dmodel_gsmapcreate(gsmap, SDOCN%nxg*SDOCN%nyg, compid, mpicom, decomp)
-    lsize = mct_gsmap_lsize(gsmap, mpicom)
+    ! create a data model global seqmap (gsmap) given the mesh
+    ! distgrid and the data model global grid sizes
+
+    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc) 
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    
+    call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    allocate(gindex(lsize))
+    call ESMF_distGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call mct_gsMap_init( gsmap, gindex, mpicom, compid, lsize, SDOCN%nxg*SDOCN%nyg)
+    deallocate(gindex)
 
     ! create a rearranger from the data model SDOCN%gsmap to gsmap
     call mct_rearr_init(SDOCN%gsmap, gsmap, mpicom, rearr)
@@ -481,8 +503,6 @@ contains
          x2o=x2o, &
          o2x=o2x, &
          SDOCN=SDOCN, &
-         gsmap=gsmap, &
-         ggrid=ggrid, &
          mpicom=mpicom, &
          compid=compid, &
          my_task=my_task, &
@@ -514,7 +534,7 @@ contains
   !===============================================================================
 
   subroutine docn_comp_run(x2o, o2x, &
-       SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+       SDOCN, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
        target_ymd, target_tod, modeldt, case_name)
 
@@ -525,8 +545,6 @@ contains
     type(mct_aVect)        , intent(inout) :: x2o
     type(mct_aVect)        , intent(inout) :: o2x
     type(shr_strdata_type) , intent(inout) :: SDOCN
-    type(mct_gsMap)        , pointer       :: gsMap
-    type(mct_gGrid)        , pointer       :: ggrid
     integer(IN)            , intent(in)    :: mpicom        ! mpi communicator
     integer(IN)            , intent(in)    :: compid        ! mct comp id
     integer(IN)            , intent(in)    :: my_task       ! my task in mpi communicator mpicom

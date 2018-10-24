@@ -996,87 +996,87 @@
     </values>
   </entry>
 
-  <entry id="ugrid_atm" modify_via_xml="ATM_DOMAIN_UGRID">
+  <entry id="mesh_atm" modify_via_xml="ATM_DOMAIN_MESH">
     <type>char</type>
     <category>mapping</category>
     <group>ATM_attributes</group>
     <desc>
-      UGRID description of atm grid
+      MESH description of atm grid
     </desc>
     <values>
-      <value>$ATM_DOMAIN_UGRID</value>
+      <value>$ATM_DOMAIN_MESH</value>
     </values>
   </entry>
 
-  <entry id="ugrid_lnd" modify_via_xml="LND_DOMAIN_UGRID">
+  <entry id="mesh_lnd" modify_via_xml="LND_DOMAIN_MESH">
     <type>char</type>
     <category>mapping</category>
     <group>LND_attributes</group>
     <desc>
-      UGRID description of lnd grid
+      MESH description of lnd grid
     </desc>
     <values>
-      <value>$LND_DOMAIN_UGRID</value>
+      <value>$LND_DOMAIN_MESH</value>
     </values>
   </entry>
 
-  <entry id="ugrid_ocn" modify_via_xml="OCN_DOMAIN_UGRID">
+  <entry id="mesh_ocn" modify_via_xml="OCN_DOMAIN_MESH">
     <type>char</type>
     <category>mapping</category>
     <group>OCN_attributes</group>
     <desc>
-      UGRID description of ocn grid
+      MESH description of ocn grid
     </desc>
     <values>
-      <value>$OCN_DOMAIN_UGRID</value>
+      <value>$OCN_DOMAIN_MESH</value>
     </values>
   </entry>
 
-  <entry id="ugrid_ice" modify_via_xml="ICE_DOMAIN_UGRID">
+  <entry id="mesh_ice" modify_via_xml="ICE_DOMAIN_MESH">
     <type>char</type>
     <category>mapping</category>
     <group>ICE_attributes</group>
     <desc>
-      UGRID description of ice grid
+      MESH description of ice grid
     </desc>
     <values>
-      <value>$ICE_DOMAIN_UGRID</value>
+      <value>$ICE_DOMAIN_MESH</value>
     </values>
   </entry>
 
-  <entry id="ugrid_rof" modify_via_xml="ROF_DOMAIN_UGRID">
+  <entry id="mesh_rof" modify_via_xml="ROF_DOMAIN_MESH">
     <type>char</type>
     <category>mapping</category>
     <group>ROF_attributes</group>
     <desc>
-      UGRID description of rof grid
+      MESH description of rof grid
     </desc>
     <values>
-      <value>$ROF_DOMAIN_UGRID</value>
+      <value>$ROF_DOMAIN_MESH</value>
     </values>
   </entry>
 
-  <entry id="ugrid_glc" modify_via_xml="GLC_DOMAIN_UGRID">
+  <entry id="mesh_glc" modify_via_xml="GLC_DOMAIN_MESH">
     <type>char</type>
     <category>mapping</category>
     <group>GLC_attributes</group>
     <desc>
-      UGRID description of glc grid
+      MESH description of glc grid
     </desc>
     <values>
-      <value>$GLC_DOMAIN_UGRID</value>
+      <value>$GLC_DOMAIN_MESH</value>
     </values>
   </entry>
 
-  <entry id="ugrid_wav" modify_via_xml="WAV_DOMAIN_UGRID">
+  <entry id="mesh_wav" modify_via_xml="WAV_DOMAIN_MESH">
     <type>char</type>
     <category>mapping</category>
     <group>WAV_attributes</group>
     <desc>
-      UGRID description of wav grid
+      MESH description of wav grid
     </desc>
     <values>
-      <value>$WAV_DOMAIN_UGRID</value>
+      <value>$WAV_DOMAIN_MESH</value>
     </values>
   </entry>
 

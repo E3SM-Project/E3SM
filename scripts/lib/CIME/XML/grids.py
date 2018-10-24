@@ -232,8 +232,9 @@ class Grids(GenericXML):
                 if not comp_name == "MASK":
                     domains[comp_name + "_NX"] = int(self.get_element_text("nx", root=domain_node))
                     domains[comp_name + "_NY"] = int(self.get_element_text("ny", root=domain_node))
-                    file_name  = comp_name + "_DOMAIN_FILE"
-                    path_name  = comp_name + "_DOMAIN_PATH"
+                    file_name = comp_name + "_DOMAIN_FILE"
+                    path_name = comp_name + "_DOMAIN_PATH"
+                    mesh_name = comp_name + "_DOMAIN_MESH"
 
                 domains[comp_name + "_GRID"] = grid_name
                 file_nodes = self.get_children("file", root=domain_node)
@@ -262,12 +263,11 @@ class Grids(GenericXML):
                         if len(path) > 0:
                             domains[path_name] = path
 
-                ugrid_nodes = self.get_children("ugrid", root=domain_node)
-                for ugrid_node in ugrid_nodes:
-                    driver_attrib = self.get(ugrid_node, "driver")
+                mesh_nodes = self.get_children("mesh", root=domain_node)
+                for mesh_node in mesh_nodes:
+                    driver_attrib = self.get(mesh_node, "driver")
                     if driver == driver_attrib:
-                        ugrid_name = comp_name + "_DOMAIN_UGRID"
-                        domains[ugrid_name] = self.text(ugrid_node)
+                        domains[mesh_name] = self.text(mesh_node)
         return domains
 
     def _get_gridmaps(self, component_grids):

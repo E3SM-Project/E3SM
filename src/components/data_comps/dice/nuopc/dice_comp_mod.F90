@@ -5,14 +5,15 @@
 module dice_comp_mod
 
   ! !USES:
-  use shr_pcdf_mod
   use NUOPC                  , only : NUOPC_Advertise
-  use ESMF                   , only : ESMF_State
+  use ESMF                   , only : ESMF_State, ESMF_SUCCESS, ESMF_State 
+  use ESMF                   , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
   use perf_mod               , only : t_startf, t_stopf
   use perf_mod               , only : t_adj_detailf, t_barrierf
   use mct_mod                , only : mct_rearr, mct_gsmap_lsize, mct_rearr_init, mct_gsmap, mct_ggrid
   use mct_mod                , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
   use mct_mod                , only : mct_avect_init, mct_avect_lsize, mct_avect_clean, mct_aVect
+  use mct_mod                , only : mct_gsmap_init
   use med_constants_mod      , only : IN, R8, I8, CS, CL, CXX
   use shr_const_mod          , only : shr_const_pi, shr_const_spval, shr_const_tkfrz, shr_const_latice
   use shr_file_mod           , only : shr_file_getunit, shr_file_freeunit
@@ -27,6 +28,7 @@ module dice_comp_mod
   use shr_strdata_mod        , only : shr_strdata_print, shr_strdata_restRead
   use shr_strdata_mod        , only : shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod         , only : shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid, shr_dmodel_translateAV
+  use shr_pcdf_mod
 
   use dshr_nuopc_mod         , only : fld_list_type, dshr_fld_add
   use dice_shr_mod           , only : datamode       ! namelist input
@@ -55,6 +57,11 @@ module dice_comp_mod
   !--------------------------------------------------------------------------
   ! Private data
   !--------------------------------------------------------------------------
+
+  type(mct_gsMap), target    :: gsMap_target
+  type(mct_gGrid), target    :: ggrid_target
+  type(mct_gsMap), pointer   :: gsMap
+  type(mct_gGrid), pointer   :: ggrid
 
   real(R8),parameter         :: pi     = shr_const_pi      ! pi
   real(R8),parameter         :: spval  = shr_const_spval   ! flags invalid data
@@ -341,9 +348,9 @@ contains
 
   subroutine dice_comp_init(x2i, i2x, &
        flds_x2i_fields, flds_i2x_fields, flds_i2o_per_cat, &
-       SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+       SDICE, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
-       scmMode, scmlat, scmlon, calendar)
+       scmMode, scmlat, scmlon, calendar, mesh)
 
     ! !DESCRIPTION: initialize dice model
 
@@ -353,8 +360,6 @@ contains
     character(len=*)       , intent(in)    :: flds_i2x_fields  ! fields to mediator
     logical                , intent(in)    :: flds_i2o_per_cat ! .true. if select per ice thickness fields from ice
     type(shr_strdata_type) , intent(inout) :: SDICE            ! dice shr_strdata instance (output)
-    type(mct_gsMap)        , pointer       :: gsMap            ! model global seg map (output)
-    type(mct_gGrid)        , pointer       :: ggrid            ! model ggrid (output)
     integer(IN)            , intent(in)    :: mpicom           ! mpi communicator
     integer(IN)            , intent(in)    :: compid           ! mct comp id
     integer(IN)            , intent(in)    :: my_task          ! my task in mpi communicator mpicom
@@ -367,20 +372,27 @@ contains
     real(R8)               , intent(in)    :: scmLat           ! single column lat
     real(R8)               , intent(in)    :: scmLon           ! single column lon
     character(len=*)       , intent(in)    :: calendar         ! calendar type
+    type(ESMF_Mesh)        , intent(in)    :: mesh             ! ESMF dice mesh 
 
     !--- local variables ---
-    integer(IN)   :: n,k            ! generic counters
-    integer(IN)   :: ierr           ! error code
-    integer(IN)   :: lsize          ! local size
-    integer(IN)   :: kfld           ! field reference
-    logical       :: exists,exists1 ! file existance logical
-    integer(IN)   :: nu             ! unit number
+    integer(IN)                  :: n,k            ! generic counters
+    integer(IN)                  :: ierr           ! error code
+    integer(IN)                  :: lsize          ! local size
+    integer(IN)                  :: kfld           ! field reference
+    logical                      :: exists,exists1 ! file existance logical
+    integer(IN)                  :: nu             ! unit number
+    type(ESMF_DistGrid)          :: distGrid
+    integer, allocatable, target :: gindex(:)
+    integer                      :: rc
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dice_comp_init) ',8a)"
     character(*), parameter :: F01   = "('(dice_comp_init) ',a,2f10.4)"
     character(*), parameter :: subName = "(dice_comp_init) "
     !-------------------------------------------------------------------------------
+
+    gsmap => gsmap_target
+    ggrid => ggrid_target
 
     call t_startf('DICE_INIT')
 
@@ -421,11 +433,20 @@ contains
     call t_startf('dice_initgsmaps')
     if (my_task == master_task) write(logunit,F00) ' initialize gsmaps'
 
-    ! create a data model global seqmap (gsmap) given the data model global grid sizes
-    ! NOTE: gsmap is initialized using the decomp read in from the dice_in namelist
-    ! (which by default is "1d")
-    call shr_dmodel_gsmapcreate(gsmap, SDICE%nxg*SDICE%nyg, compid, mpicom, decomp)
-    lsize = mct_gsmap_lsize(gsmap, mpicom)
+    ! create a data model global seqmap (gsmap) given the mesh
+    ! distgrid and the data model global grid sizes
+
+    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc) 
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    
+    call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    allocate(gindex(lsize))
+    call ESMF_distGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call mct_gsMap_init( gsmap, gindex, mpicom, compid, lsize, SDICE%nxg*SDICE%nyg)
+    deallocate(gindex)
 
     ! create a rearranger from the data model SDICE%gsmap to gsmap
     call mct_rearr_init(SDICE%gsmap, gsmap, mpicom, rearr)
@@ -551,7 +572,7 @@ contains
   !===============================================================================
 
   subroutine dice_comp_run(x2i, i2x, flds_i2o_per_cat, &
-       SDICE, gsmap, ggrid, mpicom, my_task, master_task, &
+       SDICE, mpicom, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
        calendar, modeldt, target_ymd, target_tod, cosArg, case_name )
 
@@ -562,8 +583,6 @@ contains
     type(mct_aVect)        , intent(inout) :: i2x
     logical                , intent(in)    :: flds_i2o_per_cat     ! .true. if select per ice thickness fields from ice
     type(shr_strdata_type) , intent(inout) :: SDICE
-    type(mct_gsMap)        , pointer       :: gsMap
-    type(mct_gGrid)        , pointer       :: ggrid
     integer(IN)            , intent(in)    :: mpicom               ! mpi communicator
     integer(IN)            , intent(in)    :: my_task              ! my task in mpi communicator mpicom
     integer(IN)            , intent(in)    :: master_task          ! task number of master task

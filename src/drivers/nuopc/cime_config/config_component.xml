@@ -1220,12 +1220,12 @@
     <file>env_run.xml</file>
     <desc>path of atm domain file</desc>
   </entry>
-  <entry id="ATM_DOMAIN_UGRID">
+  <entry id="ATM_DOMAIN_MESH">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
-    <desc>atm ugrid file (full pathname)</desc>
+    <desc>atm mesh file (full pathname)</desc>
   </entry>
 
   <entry id="LND_DOMAIN_FILE">
@@ -1242,12 +1242,12 @@
     <file>env_run.xml</file>
     <desc>path of lnd domain file</desc>
   </entry>
-  <entry id="LND_DOMAIN_UGRID">
+  <entry id="LND_DOMAIN_MESH">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
-    <desc>lnd ugrid file (full pathname)</desc>
+    <desc>lnd mesh file (full pathname)</desc>
   </entry>
 
   <entry id="ROF_DOMAIN_FILE">
@@ -1264,12 +1264,12 @@
     <file>env_run.xml</file>
     <desc>path of rof domain file</desc>
   </entry>
-  <entry id="ROF_DOMAIN_UGRID">
+  <entry id="ROF_DOMAIN_MESH">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
-    <desc>rof ugrid file (full pathname)</desc>
+    <desc>rof mesh file (full pathname)</desc>
   </entry>
 
   <entry id="WAV_DOMAIN_FILE">
@@ -1286,12 +1286,12 @@
     <file>env_run.xml</file>
     <desc>path of wav domain file</desc>
   </entry>
-  <entry id="WAV_DOMAIN_UGRID">
+  <entry id="WAV_DOMAIN_MESH">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
-    <desc>wav ugrid file (full pathname)</desc>
+    <desc>wav mesh file (full pathname)</desc>
   </entry>
 
   <entry id="ICE_DOMAIN_FILE">
@@ -1308,12 +1308,12 @@
     <file>env_run.xml</file>
     <desc>path of ice domain file</desc>
   </entry>
-  <entry id="ICE_DOMAIN_UGRID">
+  <entry id="ICE_DOMAIN_MESH">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
-    <desc>ice ugrid file (full pahtname)</desc>
+    <desc>ice mesh file (full pahtname)</desc>
   </entry>
 
   <entry id="OCN_DOMAIN_FILE">
@@ -1330,12 +1330,12 @@
     <file>env_run.xml</file>
     <desc>path of ocn domain file</desc>
   </entry>
-  <entry id="OCN_DOMAIN_UGRID">
+  <entry id="OCN_DOMAIN_MESH">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
-    <desc>ocn ugrid file (full pathname)</desc>
+    <desc>ocn mesh file (full pathname)</desc>
   </entry>
 
   <entry id="GLC_DOMAIN_FILE">
@@ -1352,12 +1352,12 @@
     <file>env_run.xml</file>
     <desc>path of glc domain file</desc>
   </entry>
-  <entry id="GLC_DOMAIN_UGRID">
+  <entry id="GLC_DOMAIN_MESH">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
-    <desc>glc ugrid file (full pathname)</desc>
+    <desc>glc mesh file (full pathname)</desc>
   </entry>
 
   <!--- map files -->

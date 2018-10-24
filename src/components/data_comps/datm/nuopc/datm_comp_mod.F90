@@ -456,7 +456,8 @@ contains
        inst_suffix, inst_name, logunit, read_restart, &
        scmMode, scmlat, scmlon, &
        orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
-       calendar, modeldt, current_ymd, current_tod, current_mon, atm_prognostic, mesh)
+       calendar, modeldt, current_ymd, current_tod, current_mon, &
+       atm_prognostic, mesh)
 
     use dshr_nuopc_mod, only : dshr_fld_add
 
@@ -490,20 +491,18 @@ contains
     type(ESMF_Mesh)        , intent(inout) :: mesh  
 
     !--- local variables ---
-    integer(IN)   :: n,k            ! generic counters
-    integer(IN)   :: lsize          ! local size
-    integer(IN)   :: kmask          ! field reference
-    integer(IN)   :: klat           ! field reference
-    integer(IN)   :: kfld           ! fld index
-    integer(IN)   :: cnt            ! counter
-    logical       :: exists,exists1 ! filename existance
-    integer(IN)   :: nu             ! unit number
-    integer(IN)   :: stepno         ! step number
-
+    integer(IN)                  :: n,k            ! generic counters
+    integer(IN)                  :: lsize          ! local size
+    integer(IN)                  :: kmask          ! field reference
+    integer(IN)                  :: klat           ! field reference
+    integer(IN)                  :: kfld           ! fld index
+    integer(IN)                  :: cnt            ! counter
+    logical                      :: exists,exists1 ! filename existance
+    integer(IN)                  :: nu             ! unit number
+    integer(IN)                  :: stepno         ! step number
     type(ESMF_DistGrid)          :: distGrid
     integer, allocatable, target :: gindex(:)
     integer                      :: rc
-    integer                      :: ndim
 
     !--- formats ---
     character(*), parameter :: F00   ="('(datm_comp_init) ',8a)"

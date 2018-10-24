@@ -30,11 +30,12 @@ module ocn_comp_nuopc
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
   use shr_strdata_mod       , only : shr_strdata_type
+  use shr_const_mod         , only : SHR_CONST_SPVAL
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax, fld_list_realize
   use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use docn_shr_mod          , only : docn_shr_read_namelists
   use docn_comp_mod         , only : docn_comp_init, docn_comp_run, docn_comp_advertise
-  use mct_mod
+  use mct_mod               , only : mct_Avect, mct_Avect_info 
 
   implicit none
 
@@ -56,12 +57,7 @@ module ocn_comp_nuopc
   type (fld_list_type)     :: fldsToOcn(fldsMax)
   type (fld_list_type)     :: fldsFrOcn(fldsMax)
 
-  character(len=3)         :: myModelName = 'ocn'       ! user defined model name
   type(shr_strdata_type)   :: SDOCN
-  type(mct_gsMap), target  :: gsMap_target
-  type(mct_gGrid), target  :: ggrid_target
-  type(mct_gsMap), pointer :: gsMap
-  type(mct_gGrid), pointer :: ggrid
   type(mct_aVect)          :: x2o
   type(mct_aVect)          :: o2x
   integer                  :: compid                    ! mct comp id
@@ -256,12 +252,6 @@ module ocn_comp_nuopc
     logical                 :: scmMode = .false.         ! single column mode
     real(R8)                :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)                :: scmLon  = shr_const_SPVAL ! single column lon
-    logical                 :: connected                 ! is field connected?
-    integer                 :: klon, klat
-    integer                 :: lsize
-    integer                 :: iam
-    real(r8), pointer       :: lon(:),lat(:)
-    integer , pointer       :: gindex(:)
     integer                 :: dbrc
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
@@ -330,42 +320,24 @@ module ocn_comp_nuopc
     call ESMF_TimeIntervalGet( timeStep, s=modeldt, rc=rc )
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    !--------------------------------
+    ! Generate the mesh
+    !--------------------------------
+
+    call NUOPC_CompAttributeGet(gcomp, name='mesh_ocn', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    Emesh = ESMF_MeshCreate(filename=trim(cvalue), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     !----------------------------------------------------------------------------
     ! Initialize model
     !----------------------------------------------------------------------------
 
-    gsmap => gsmap_target
-    ggrid => ggrid_target
-
     call docn_comp_init(x2o, o2x, &
-         SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+         SDOCN, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
-         scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, modeldt)
-
-    !--------------------------------
-    ! generate the mesh
-    !--------------------------------
-
-    nx_global = SDOCN%nxg
-    ny_global = SDOCN%nyg
-    lsize = mct_gsMap_lsize(gsMap, mpicom)
-    allocate(lon(lsize))
-    allocate(lat(lsize))
-    allocate(gindex(lsize))
-    klat = mct_aVect_indexRA(ggrid%data, 'lat')
-    klon = mct_aVect_indexRA(ggrid%data, 'lon')
-
-    call mpi_comm_rank(mpicom, iam, ierr)
-    call mct_gGrid_exportRattr(ggrid,'lon',lon,lsize)
-    call mct_gGrid_exportRattr(ggrid,'lat',lat,lsize)
-    call mct_gsMap_OrderedPoints(gsMap_target, iam, gindex)
-
-    call shr_nuopc_grid_MeshInit(gcomp, nx_global, ny_global, mpicom, gindex, lon, lat, Emesh, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    deallocate(lon)
-    deallocate(lat)
-    deallocate(gindex)
+         scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, modeldt, Emesh)
 
     !--------------------------------
     ! realize the actively coupled fields, now that a mesh is established
@@ -408,6 +380,8 @@ module ocn_comp_nuopc
     call shr_nuopc_grid_ArrayToState(o2x%rattr, flds_o2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    nx_global = SDOCN%nxg
+    ny_global = SDOCN%nyg
     call shr_nuopc_methods_State_SetScalar(dble(nx_global),flds_scalar_index_nx, exportState, mpicom, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -541,7 +515,7 @@ module ocn_comp_nuopc
     ! Advance the model
 
     call docn_comp_run(x2o, o2x, &
-         SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+         SDOCN, mpicom, compid, my_task, master_task, &
          inst_suffix, logunit, read_restart, write_restart, &
          nextYMD, nextTOD, modeldt, case_name=case_name)
 
@@ -595,7 +569,7 @@ module ocn_comp_nuopc
     rc = ESMF_SUCCESS
     if (my_task == master_task) then
        write(logunit,F91)
-       write(logunit,F00) trim(myModelName),': end of main integration loop'
+       write(logunit,F00) 'docn : end of main integration loop'
        write(logunit,F91)
     end if
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
