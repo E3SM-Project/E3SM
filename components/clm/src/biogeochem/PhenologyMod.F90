@@ -909,7 +909,8 @@ contains
          
          soilpsi                             =>    soilstate_vars%soilpsi_col                            , & ! Input:  [real(r8)  (:,:) ]  soil water potential in each soil layer (MPa)   
          
-         t_soisno                            =>    col_es%t_soisno                         , & ! Input:  [real(r8)  (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
+         t_soisno                            =>    col_es%t_soisno                                       , & ! Input:  [real(r8)  (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
+         h2osfc                              =>    col_ws%h2osfc                                         , & ! Input:  [real(r8) (:)   ]  surface water (mm)
          
          prec10                              =>    top_af%prec10d                                        , & ! Input:  [real(r8) (:)    ]  10-day running mean precipitation, mm H2O/s
          dormant_flag                        =>    cnstate_vars%dormant_flag_patch                       , & ! Output:  [real(r8) (:)   ]  dormancy flag                                     
@@ -1225,14 +1226,14 @@ contains
                ! if soil water potential lower than critical value, accumulate
                ! as stress in offset soil water index
 
-               if (psi <= soilpsi_off) then
+               if (psi <= soilpsi_off .or. h2osfc(c) >= 120) then ! h20sfc in mm 29/8/2018 TAO
                   offset_swi(p) = offset_swi(p) + fracday
 
                   ! if the offset soil water index exceeds critical value, and
                   ! if this is not the middle of a previously initiated onset period,
                   ! then set flag to start the offset period and reset index variables
 
-                  if (offset_swi(p) >= crit_offset_swi .and. onset_flag(p) == 0._r8) offset_flag(p) = 1._r8
+                  if (offset_swi(p) >= 10 .and. onset_flag(p) == 0._r8) offset_flag(p) = 1._r8 !crit_offset_swi 29/8/2018 TAO
 
                   ! if soil water potential higher than critical value, reduce the
                   ! offset water stress index.  By this mechanism, there must be a
