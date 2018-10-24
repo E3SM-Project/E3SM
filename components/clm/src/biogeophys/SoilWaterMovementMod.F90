@@ -491,7 +491,7 @@ contains
          j = nlev2bed(c)
          if(jwt(c) == nlevbed) then 
             tempi = 1._r8
-	    delta_z_zwt= zwtmm(c)-zimm(c,j)
+            delta_z_zwt= zwtmm(c)-zimm(c,j)
 	    if(abs(delta_z_zwt) < 0.0001_r8) then
 	      vol_eq(c,j+1)= watsat(c,j) !The 11-th layer completely saturated as it is the same as water table depth
 	    else
