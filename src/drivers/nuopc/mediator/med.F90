@@ -75,7 +75,7 @@ contains
     use med_phases_ocnalb_mod   , only: med_phases_ocnalb_run
     use med_phases_aofluxes_mod , only: med_phases_aofluxes_run
     use med_fraction_mod        , only: med_fraction_init, med_fraction_set
-
+    use med_phases_profile_mod  , only: med_phases_profile
 
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -163,6 +163,17 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
          specPhaseLabel="med_phases_restart_write", specRoutine=med_phases_restart_write, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !------------------
+    ! setup mediator profile phase
+    !------------------
+
+    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
+         phaseLabelList=(/"med_phases_profile"/), userRoutine=mediator_routine_Run, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
+         specPhaseLabel="med_phases_profile", specRoutine=med_phases_profile, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !------------------
@@ -1395,6 +1406,7 @@ contains
     use med_phases_prep_ocn_mod , only : med_phases_prep_ocn_merge
     use med_phases_prep_ocn_mod , only : med_phases_prep_ocn_accum_fast
     use med_phases_prep_ocn_mod , only : med_phases_prep_ocn_accum_avg
+    use med_phases_profile_mod  , only : med_phases_profile
     use med_phases_ocnalb_mod   , only : med_phases_ocnalb_run
     use med_phases_aofluxes_mod , only : med_phases_aofluxes_run
     use med_connectors_mod      , only : med_connectors_prep_med2atm
@@ -1413,6 +1425,7 @@ contains
     use med_connectors_mod      , only : med_connectors_post_glc2med
     use med_map_mod             , only : med_map_MapNorm_init, med_map_RouteHandles_init
     use med_io_mod              , only : med_io_init
+
 
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
@@ -1897,7 +1910,7 @@ contains
          call med_phases_restart_read(gcomp, rc)
          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        endif
-
+       call med_phases_profile(gcomp, rc)
     else
        call NUOPC_CompAttributeSet(gcomp, name="InitializeDataComplete", value="false", rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1938,6 +1951,7 @@ contains
     integer                  :: restart_n            ! Number until restart interval
     integer                  :: restart_ymd          ! Restart date (YYYYMMDD)
     type(ESMF_ALARM)         :: restart_alarm
+    type(ESMF_ALARM)         :: med_profile_alarm
     integer                  :: first_time = .true.
     integer                  :: dbrc
     character(len=*),parameter :: subname='(module_MED:SetRunClock)'
@@ -1975,7 +1989,7 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
-    ! set restart alarm
+    ! set restart alarm and med log summary alarm
     !--------------------------------
 
     if (first_time) then
@@ -1998,6 +2012,14 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call ESMF_AlarmSet(restart_alarm, clock=mediatorclock, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       ! med_profile alarm hard coded to daily
+       call shr_nuopc_time_alarmInit(mediatorclock, med_profile_alarm, 'ndays', &
+            opt_n   = 5,           &
+            alarmname = 'med_profile_alarm', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call ESMF_AlarmSet(med_profile_alarm, clock=mediatorclock, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        first_time = .false.

@@ -77,6 +77,7 @@
             ATM -> MED :remapMethod=redist
             MED med_connectors_post_atm2med
             MED med_phases_history_write
+	    MED med_phases_profile
 	  @
 	  OCN
   	  OCN -> MED :remapMethod=redist
