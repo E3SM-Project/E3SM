@@ -252,7 +252,7 @@ contains
     call CNStressDecidPhenology(num_soilp, filter_soilp,   &
          soilstate_vars, atm2lnd_vars, temperature_vars, cnstate_vars, &
          carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
-         phosphorusstate_vars,phosphorusflux_vars)
+         phosphorusstate_vars,phosphorusflux_vars, waterstate_vars)
 
     if (doalb .and. num_pcropp > 0 ) then
        call CropPhenology(num_pcropp, filter_pcropp, &
@@ -868,7 +868,7 @@ contains
   subroutine CNStressDecidPhenology (num_soilp, filter_soilp , &                                            
        soilstate_vars, atm2lnd_vars, temperature_vars, cnstate_vars        , &
        carbonstate_vars, nitrogenstate_vars, carbonflux_vars,nitrogenflux_vars,&
-       phosphorusstate_vars,phosphorusflux_vars)
+       phosphorusstate_vars,phosphorusflux_vars, waterstate_vars)
     !
     ! !DESCRIPTION:
     ! This routine handles phenology for vegetation types, such as grasses and
@@ -899,6 +899,7 @@ contains
     type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+    type(waterstate_type)    , intent(in)    :: waterstate_vars
     !
     ! !LOCAL VARIABLES:
     real(r8),parameter :: secspqtrday = secspday / 4  ! seconds per quarter day
@@ -912,6 +913,7 @@ contains
 
     associate(                                                                                             & 
          ivt                                 =>    veg_pp%itype                                             , & ! Input:  [integer   (:)   ]  pft vegetation type                                
+         h2osfc           =>    waterstate_vars%h2osfc_col          , & ! Output: [real(r8) (:)   ]  surface water (mm)
          dayl                                =>    grc_pp%dayl                                              , & ! Input:  [real(r8)  (:)   ]  daylength (s)
          
          leaf_long                           =>    veg_vp%leaf_long                                  , & ! Input:  [real(r8)  (:)   ]  leaf longevity (yrs)                              
@@ -1237,14 +1239,14 @@ contains
                ! if soil water potential lower than critical value, accumulate
                ! as stress in offset soil water index
 
-               if (psi <= soilpsi_off) then
+               if (psi <= soilpsi_off .or. h2osfc(c) >= 120) then ! h20sfc in mm 29/8/2018 TAO
                   offset_swi(p) = offset_swi(p) + fracday
 
                   ! if the offset soil water index exceeds critical value, and
                   ! if this is not the middle of a previously initiated onset period,
                   ! then set flag to start the offset period and reset index variables
 
-                  if (offset_swi(p) >= crit_offset_swi .and. onset_flag(p) == 0._r8) offset_flag(p) = 1._r8
+                  if (offset_swi(p) >= 10 .and. onset_flag(p) == 0._r8) offset_flag(p) = 1._r8 !crit_offset_swi 29/8/2018 TAO
 
                   ! if soil water potential higher than critical value, reduce the
                   ! offset water stress index.  By this mechanism, there must be a
