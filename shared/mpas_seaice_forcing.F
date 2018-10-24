@@ -1656,7 +1656,7 @@ contains
          "seaice_data_iceberg_forcing_monthly", &
          "bergFreshwaterFluxData", &
          "dataIcebergForcing", &
-         "iceberg_forcing", &
+         "berg_forcing", &
          "bergFreshwaterFluxData", &
          "linear", &
          forcingReferenceTimeMonthly, &
@@ -1736,8 +1736,8 @@ contains
 
     type(MPAS_pool_type), pointer :: &
          mesh, &
-         iceberg_forcing, &
-         iceberg_fluxes
+         berg_forcing, &
+         berg_fluxes
 
     integer, pointer :: &
          nCellsSolve
@@ -1759,14 +1759,14 @@ contains
     do while (associated(block))
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-       call MPAS_pool_get_subpool(block % structs, "iceberg_forcing", iceberg_forcing)
-       call MPAS_pool_get_subpool(block % structs, "iceberg_fluxes", iceberg_fluxes)
+       call MPAS_pool_get_subpool(block % structs, "berg_forcing", berg_forcing)
+       call MPAS_pool_get_subpool(block % structs, "berg_fluxes", berg_fluxes)
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
 
-       call MPAS_pool_get_array(iceberg_forcing, "bergFreshwaterFluxData", bergFreshwaterFluxData)
-       call MPAS_pool_get_array(iceberg_fluxes, "bergFreshwaterFlux", bergFreshwaterFlux)
-       call MPAS_pool_get_array(iceberg_fluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
+       call MPAS_pool_get_array(berg_forcing, "bergFreshwaterFluxData", bergFreshwaterFluxData)
+       call MPAS_pool_get_array(berg_fluxes, "bergFreshwaterFlux", bergFreshwaterFlux)
+       call MPAS_pool_get_array(berg_fluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
 
        do iCell = 1, nCellsSolve
 
@@ -2036,7 +2036,7 @@ contains
 
        if (config_use_data_icebergs) then
 
-          call MPAS_pool_get_subpool(block % structs, "iceberg_fluxes", icebergFluxes)
+          call MPAS_pool_get_subpool(block % structs, "berg_fluxes", icebergFluxes)
 
           call MPAS_pool_get_array(icebergFluxes, "bergFreshwaterFlux", bergFreshwaterFlux)
           call MPAS_pool_get_array(icebergFluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
