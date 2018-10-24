@@ -492,12 +492,12 @@ contains
          if(jwt(c) == nlevbed) then 
             tempi = 1._r8
             delta_z_zwt= zwtmm(c)-zimm(c,j)
-	    if(abs(delta_z_zwt) < 0.0001_r8) then
-	      vol_eq(c,j+1)= watsat(c,j) !The 11-th layer completely saturated as it is the same as water table depth
-	    else
+            if(abs(delta_z_zwt) < 0.0001_r8) then
+              vol_eq(c,j+1)= watsat(c,j) !The 11-th layer completely saturated as it is the same as water table depth
+            else
               temp0 = (((sucsat(c,j)+delta_z_zwt)/sucsat(c,j)))**(1._r8-1._r8/bsw(c,j))
-	      vol_eq(c,j+1) = -sucsat(c,j)*watsat(c,j)/(1._r8-1._r8/bsw(c,j))/delta_z_zwt*(tempi-temp0)
-	    endif
+              vol_eq(c,j+1) = -sucsat(c,j)*watsat(c,j)/(1._r8-1._r8/bsw(c,j))/delta_z_zwt*(tempi-temp0)
+            endif
             vol_eq(c,j+1) = max(vol_eq(c,j+1),0.0_r8)
             vol_eq(c,j+1) = min(watsat(c,j),vol_eq(c,j+1))
             zq(c,j+1) = -sucsat(c,j)*(max(vol_eq(c,j+1)/watsat(c,j),0.01_r8))**(-bsw(c,j))
