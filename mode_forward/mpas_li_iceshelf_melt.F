@@ -344,7 +344,7 @@ module li_iceshelf_melt
 
             call iceshelf_melt_param_from_temp_profile(nCellsSolve, lowerSurface, cellMask, &
                     config_sea_level, config_ice_density, config_print_thermal_info, &
-                    GLdepth, CFdepth, floatingBasalMassBal, err_tmp)
+                    GLdepth, CFdepth, daysSinceStart, floatingBasalMassBal, err_tmp)
             err = ior(err, err_tmp)
 
          else
@@ -507,7 +507,7 @@ module li_iceshelf_melt
 !-----------------------------------------------------------------------
 
     subroutine iceshelf_melt_param_from_temp_profile(nCellsSolve, lowerSurface, cellMask, &
-                    config_sea_level, config_ice_density, print_debug, zGL, zCavityMax, floatingBasalMassBal, err)
+                    config_sea_level, config_ice_density, print_debug, zGL, zCavityMax, daysSinceStart, floatingBasalMassBal, err)
 
       !-----------------------------------------------------------------
       ! input variables
@@ -520,6 +520,7 @@ module li_iceshelf_melt
       real(kind=RKIND), intent(in) :: zGL, &  !< mean grounding line elevation (m),
                                               !< it's a scalar now, but eventually may want smoothed spatial field
                                       zCavityMax !< depth below which mean thermal forcing is averaged
+      real(kind=RKIND), pointer, intent(in) :: daysSinceStart
 
       !-----------------------------------------------------------------
       ! output variables
@@ -531,30 +532,37 @@ module li_iceshelf_melt
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-      real(kind=RKIND), pointer :: config_temperature_profile_melt_scale_factor !< kappa below
-      real(kind=RKIND), pointer :: config_temperature_profile_sill_elevation !< sill depth
-      real(kind=RKIND), pointer :: config_temperature_profile_plume_thickness !< plumeThickness below
-      real(kind=RKIND), pointer :: config_temperature_profile_draft_slope !< slopeDraft below
 
       ! parameters for param.
-      real(kind=RKIND) :: slopeDraft !< characteristic slope of ice shelf draft
-      real(kind=RKIND) :: plumeThickness !< characteristic plume thickness (m)
+      real(kind=RKIND), pointer :: slopeDraft !< characteristic slope of ice shelf draft
+      real(kind=RKIND), pointer :: plumeThickness !< characteristic plume thickness (m)
       real(kind=RKIND), parameter :: E0 = 0.036_RKIND !< entrainment parameter (Jenkins 1991)
       real(kind=RKIND), parameter :: Stanton = 5.9e-4_RKIND !< Stanton number (Jenkins et al. 2010)
 
       ! All depths are written as elevation relative to sea level (negative values)
-      ! variables describing regional profile (likely to make nl options)
-      real(kind=RKIND) :: zThermoclineTop !< depth at top of thermocline (temp assumed constant above this)
-      real(kind=RKIND) :: zThermoclineBot !< depth at bottom of thermocline (temp assumed constant below this)
-      real(kind=RKIND) :: TThermoclineTop !< temperature at top of thermocline (constant shallow water mass temp.)
-      real(kind=RKIND) :: TThermoclineBot !< temperature at bottom of thermocline (constant deep water mass temp.)
+      ! variables describing regional profile
+      real(kind=RKIND), pointer :: zThermoclineTopBase 
+         !< depth at top of thermocline (temp assumed constant above this), before variability adjustment
+      real(kind=RKIND), pointer :: zThermoclineBotBase 
+         !< depth at bottom of thermocline (temp assumed constant below this), before variability adjustment
+      real(kind=RKIND) :: zThermoclineTop 
+         !< depth at top of thermocline (temp assumed constant above this), after variability adjustment
+      real(kind=RKIND) :: zThermoclineBot 
+         !< depth at bottom of thermocline (temp assumed constant below this), after variability adjustment
+      real(kind=RKIND), pointer :: TThermoclineTop !< temperature at top of thermocline (constant shallow water mass temp.)
+      real(kind=RKIND), pointer :: TThermoclineBot !< temperature at bottom of thermocline (constant deep water mass temp.)
+
+      real(kind=RKIND), pointer :: variabilityAmplitude !< amplitude in optional sinusoidal variability applied to thermocline depths
+      real(kind=RKIND), pointer :: variabilityPeriod !< period in optional sinusoidal variability applied to thermocline depths
+      real(kind=RKIND), pointer :: variabilityPhase !< phase in optional sinusoidal variability applied to thermocline depths
+      real(kind=RKIND) :: depthOffset !< depth offset in thermocline depths due to variability
 
       ! variables that are general to any depth
-      real(kind=RKIND) :: zSill !< sill depth
+      real(kind=RKIND), pointer :: zSill !< sill depth
       real(kind=RKIND) :: TSill !< temperature at the sill depth
       real(kind=RKIND) :: TGL !< temperature at grounding line depth
       real(kind=RKIND) :: TFmean !< mean thermal forcing within the cavity
-      real(kind=RKIND) :: kappa !< constant for non-local, quadratic melt param. (likely to make a nl option)
+      real(kind=RKIND), pointer :: kappa !< constant for non-local, quadratic melt param.
       ! variables specific to a given depth
       real(kind=RKIND) :: draft !< elevation of ice shelf draft (m)
       real(kind=RKIND) :: Tregional !< regional temperature at given depth (comes from imposed profile)
@@ -571,21 +579,31 @@ module li_iceshelf_melt
 
       err = 0
 
-      ! Specify temp. profile (likely to become nl options)
-      zThermoclineTop = -200.0_RKIND
-      zThermoclineBot = -600.0_RKIND
-      TThermoclineTop = -1.0_RKIND
-      TThermoclineBot = 1.2_RKIND
-
       ! get namelist options
-      call mpas_pool_get_config(liConfigs, 'config_temperature_profile_melt_scale_factor', config_temperature_profile_melt_scale_factor)
-      kappa = config_temperature_profile_melt_scale_factor
-      call mpas_pool_get_config(liConfigs, 'config_temperature_profile_sill_elevation', config_temperature_profile_sill_elevation)
-      zSill = config_temperature_profile_sill_elevation
-      call mpas_pool_get_config(liConfigs, 'config_temperature_profile_plume_thickness', config_temperature_profile_plume_thickness)
-      plumeThickness = config_temperature_profile_plume_thickness
-      call mpas_pool_get_config(liConfigs, 'config_temperature_profile_draft_slope', config_temperature_profile_draft_slope)
-      slopeDraft = config_temperature_profile_draft_slope
+      call mpas_pool_get_config(liConfigs, 'config_temperature_profile_melt_scale_factor', kappa)
+      call mpas_pool_get_config(liConfigs, 'config_temperature_profile_sill_elevation', zSill)
+      call mpas_pool_get_config(liConfigs, 'config_temperature_profile_plume_thickness', plumeThickness)
+      call mpas_pool_get_config(liConfigs, 'config_temperature_profile_draft_slope', slopeDraft)
+      ! Get temp. profile parameters
+      call mpas_pool_get_config(liConfigs, 'config_temperature_profile_thermocline_upper_depth', zThermoclineTopBase)
+      call mpas_pool_get_config(liConfigs, 'config_temperature_profile_thermocline_upper_temp', TThermoclineTop)
+      call mpas_pool_get_config(liConfigs, 'config_temperature_profile_thermocline_lower_depth', zThermoclineBotBase)
+      call mpas_pool_get_config(liConfigs, 'config_temperature_profile_thermocline_lower_temp', TThermoclineBot)
+      ! Get variability parameters
+      call mpas_pool_get_config(liConfigs, 'config_temperature_profile_variability_amplitude', variabilityAmplitude)
+      call mpas_pool_get_config(liConfigs, 'config_temperature_profile_variability_period', variabilityPeriod)
+      call mpas_pool_get_config(liConfigs, 'config_temperature_profile_variability_phase', variabilityPhase)
+
+
+      ! Account for variability in thermocline depth
+      if (variabilityPhase <= 0.0_RKIND) then
+         call mpas_log_write("Value for config_temperature_profile_variability_phase must be a positive real value.", MPAS_LOG_ERR)
+         err = ior(err, 1)
+      endif
+      depthOffset = variabilityAmplitude * sin( (2.0_RKIND * pii / variabilityPeriod) * (daysSinceStart/365.0_RKIND) &
+                    + 2.0_RKIND * pii * variabilityPhase)
+      zThermoclineTop = zThermoclineTopBase + depthOffset
+      zThermoclineBot = zThermoclineBotBase + depthOffset
 
       ! Calculate variables independent of depth
       zeta = slopeDraft * plumeThickness / (E0 * slopeDraft + Stanton)

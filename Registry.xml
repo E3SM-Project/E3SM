@@ -207,7 +207,8 @@
                 <nml_option name="config_basal_mass_bal_seroussi_phase" type="real" default_value="0.0" units="cycles"
 		            description="phase of the periodic depth adjustment applied to the Seroussi subglacial melt parameterization. Units are cycles, i.e., 0-1"
 		            possible_values="any positive real value"
-		/>
+                            />
+                <!-- Options related to temperature profile ice shelf basal melt param. -->
                 <nml_option name="config_temperature_profile_melt_scale_factor" type="real" default_value="6.0" units="m yr^-1 (deg C)^-2"
 		            description="The scale factor in the 'temperature_profile' melt parameterization that converts a product of two ocean temperatures to a melt rate.  Called kappa in code."
 		            possible_values="any positive real value"
@@ -224,6 +225,35 @@
 		            description="The parameter defining the slope of the ice sheld draft that is used by the 'temperature_profile' melt parameterization."
 		            possible_values="any positive real value"
 		/>
+                <nml_option name="config_temperature_profile_thermocline_upper_depth" type="real" default_value="-200.0" units="m"
+		            description="The parameter defining depth of the top of the ocean thermocline used by the 'temperature_profile' melt parameterization."
+		            possible_values="any real value, but only negative values makes sense"
+		/>
+                <nml_option name="config_temperature_profile_thermocline_upper_temp" type="real" default_value="-1.0" units="degrees Celsius"
+		            description="The parameter defining the ocean temperature at the top of the thermocline used by the 'temperature_profile' melt parameterization."
+		            possible_values="any real value"
+		/>
+                <nml_option name="config_temperature_profile_thermocline_lower_depth" type="real" default_value="-600.0" units="m"
+		            description="The parameter defining depth of the bottom of the ocean thermocline used by the 'temperature_profile' melt parameterization."
+		            possible_values="any real value, but only negative values makes sense"
+		/>
+                <nml_option name="config_temperature_profile_thermocline_lower_temp" type="real" default_value="1.2" units="degrees Celsius"
+		            description="The parameter defining the ocean temperature at the bottom of the thermocline used by the 'temperature_profile' melt parameterization."
+		            possible_values="any real value"
+                />
+                <nml_option name="config_temperature_profile_variability_amplitude" type="real" default_value="0.0" units="m"
+		            description="amplitude on the depth adjustment applied to the 'temperature_profile' melt parameterization"
+		            possible_values="any positive real value"
+		/>
+                <nml_option name="config_temperature_profile_variability_period" type="real" default_value="1.0" units="a"
+		            description="period of the periodic depth adjustment applied to the 'temperature_profile' melt parameterization"
+		            possible_values="any positive real value"
+		/>
+                <nml_option name="config_temperature_profile_variability_phase" type="real" default_value="0.0" units="cycles"
+		            description="phase of the periodic depth adjustment applied to the 'temperature_profile' melt parameterization. Units are cycles, i.e., 0-1"
+		            possible_values="any positive real value"
+		/>
+
         </nml_record>
 
 	<nml_record name="physical_parameters" in_defaults="true">
