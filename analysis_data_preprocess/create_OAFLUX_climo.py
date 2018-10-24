@@ -53,7 +53,7 @@ userinitials="CZ"
 
 #input_hostpath="/work/terai1/ACME/OAFLUX/"               #location of input data
 #output_hostpath="/work/terai1/ACME/OAFLUX/" #location to save climatology files
-input_hostpath="/p/user_pub/e3sm/zhang40/analysis_data_e3sm_diags/OAFLUX/"               #location of input data
+input_hostpath="/p/user_pub/e3sm/zhang40/analysis_data_e3sm_diags/OAFlux/"               #location of input data
 output_hostpath="".join([input_hostpath,'climatology/']) #location to save climatology files
 input_filename="OAFlux_MonthAvg_197901-201312.nc"                           #orig file name
 
@@ -241,7 +241,8 @@ for fi in fisc:
 #        setattr(f_out,to_out[0],to_out[1])
     setattr(f_out,'season',fi)
     year_str="".join([startyear,'-',endyear])
-    setattr(f_out,'years',year_str)
+    setattr(f_out,'yrs_averaged',year_str)
+    setattr(f_out,'data_name','OAFlux')
     local                       = pytz.timezone("America/Los_Angeles")
     time_now                    = datetime.datetime.now();
     local_time_now              = time_now.replace(tzinfo = local)
