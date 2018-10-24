@@ -2015,7 +2015,7 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        ! med_profile alarm hard coded to daily
        call shr_nuopc_time_alarmInit(mediatorclock, med_profile_alarm, 'ndays', &
-            opt_n   = 5,           &
+            opt_n   = 1,           &
             alarmname = 'med_profile_alarm', rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 

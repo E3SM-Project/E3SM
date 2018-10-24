@@ -138,8 +138,9 @@ contains
        ! 1 model day/ x seconds = 1/365 yrs/ (wallclockelapsed s/86400spd
        ypd = ringdays*86400.0_R8/(365.0_R8*wallclockelapsed)
        avgdt = accumulated_time/real(iterations)
+
        write(logunit,101) 'Model Date: ',trim(nexttimestr), ' wall clock = ',trim(walltimestr),' avg dt = ', &
-            accumulated_time/real(iterations), ' dt = ',wallclockelapsed,' rate = ',ypd,' ypd'
+            accumulated_time/(ringdays*real(iterations)), 's/day, dt = ',wallclockelapsed/ringdays,'s/day, rate = ',ypd,' ypd'
        call shr_mem_getusage(msize,mrss,.true.)
 
        write(logunit,105) ' memory_write: model date = ',trim(nexttimestr), &
