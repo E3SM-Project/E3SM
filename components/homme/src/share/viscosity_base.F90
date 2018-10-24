@@ -372,6 +372,23 @@ call compute_zeta_i_C0_hybrid(zeta,elem,hybrid,1,nelemd,nt)
 
 end subroutine
 
+
+
+subroutine grad_C0(grad,elem,par)
+type (parallel_t), intent(in) :: par
+type (element_t)     , intent(in), target :: elem(:)
+real (kind=real_kind), dimension(np,np,nlev,nelemd) :: grad
+
+! local
+type (hybrid_t)              :: hybrid
+! single thread
+hybrid = hybrid_create(par,0,1)
+
+call make_C0(grad,elem,hybrid,1, nelemd)
+end subroutine
+
+
+
 subroutine compute_zeta_j_C0_par(zeta,elem,par,nt)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! JRUB added for j-component ofrelative vorticity
