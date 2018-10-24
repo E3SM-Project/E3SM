@@ -2391,8 +2391,8 @@ contains
                call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
             end if
 
-            ! Test seaIceFreshWaterFlux
-            fieldName = 'snowFlux'
+            ! Test icebergHeatFlux
+            fieldName = 'icebergHeatFlux'
             minValue = HUGE(minValue)
             maxValue = -HUGE(maxValue)
             call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
@@ -2404,6 +2404,31 @@ contains
                call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
             end if
 
+            ! Test seaIceFreshWaterFlux
+            fieldName = 'seaIceFreshWaterFlux'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test icebergFreshWaterFlux
+            fieldName = 'icebergFreshWaterFlux'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
 
             ! Test rainFlux
             fieldName = 'rainFlux'

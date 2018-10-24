@@ -261,7 +261,7 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
       real (kind=RKIND), dimension(:), pointer :: evaporationFlux, snowFlux
-      real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, riverRunoffFlux, iceRunoffFlux
+      real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, icebergFreshWaterFlux, riverRunoffFlux, iceRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: rainFlux, landIceFreshwaterFlux
       real (kind=RKIND), dimension(:), pointer :: accumulatedLandIceMass, accumulatedLandIceHeat, &
           accumulatedLandIceFrazilMass
@@ -383,6 +383,7 @@ contains
          call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
          call mpas_pool_get_array(forcingPool, 'snowFlux', snowFlux)
          call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFlux)
+         call mpas_pool_get_array(forcingPool, 'icebergFreshWaterFlux', icebergFreshWaterFlux)
          call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
          call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
          call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
@@ -831,6 +832,28 @@ contains
          verticalSumMaxes(variableIndex) = maxes(variableIndex)
 
 
+         ! icebergFreshWaterFlux
+         variableIndex = variableIndex + 1
+         if ( associated(icebergFreshWaterFlux) ) then
+            call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
+                         areaCell(1:nCellsSolve), &
+                         icebergFreshWaterFlux(1:nCellsSolve), sums_tmp(variableIndex), &
+                         sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
+                         maxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+         end if
+         sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
+         sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
+         mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
+         maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
+         verticalSumMins(variableIndex) = mins(variableIndex)
+         verticalSumMaxes(variableIndex) = maxes(variableIndex)
+
+
          ! riverRunoffFlux
          variableIndex = variableIndex + 1
          if ( associated(riverRunoffFlux) ) then
@@ -1244,6 +1267,14 @@ contains
       netFreshwaterInput = netFreshwaterInput + sums(variableIndex) * dt/rho_sw
 
       ! seaIceFreshWaterFlux
+      variableIndex = variableIndex + 1
+      averages(variableIndex) = sums(variableIndex)/(areaCellGlobal)
+      rms(variableIndex) = sqrt(sumSquares(variableIndex)/(areaCellGlobal))
+
+      ! continue accumulating fresh water inputs
+      netFreshwaterInput = netFreshwaterInput + sums(variableIndex) * dt/rho_sw
+
+      ! icebergFreshWaterFlux
       variableIndex = variableIndex + 1
       averages(variableIndex) = sums(variableIndex)/(areaCellGlobal)
       rms(variableIndex) = sqrt(sumSquares(variableIndex)/(areaCellGlobal))
