@@ -169,8 +169,7 @@ contains
   end subroutine       
 
   !_____________________________________________________________________
-  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics, &
-               single_column)
+  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
 
     use bndry_mod,      only: bndry_exchangev
     use control_mod,    only: prescribed_wind, qsplit, tstep_type, rsplit, qsplit, integration
@@ -194,7 +193,6 @@ contains
     integer              , intent(in)            :: nets
     integer              , intent(in)            :: nete
     logical,               intent(in)            :: compute_diagnostics
-    logical,               intent(in)            :: single_column
 
     real (kind=real_kind) ::  dt2, time, dt_vis, x, eta_ave_w
 
@@ -282,11 +280,6 @@ contains
        method = tstep_type                ! other RK variants
     endif
     
-    if (single_column) then
-      call set_prescribed_scm(elem,hvcoord,dt,tl)
-      return
-    endif
-
 #ifndef CAM
     ! if "prescribed wind" set dynamics explicitly and skip time-integration
     if (prescribed_wind ==1 ) then

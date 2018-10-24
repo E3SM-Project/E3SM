@@ -73,7 +73,6 @@ SET (SRC_SHARE_F90
   ${SRC_SHARE_DIR}/prim_advection_base.F90
   ${SRC_SHARE_DIR}/prim_derived_type_mod.F90
   ${SRC_SHARE_DIR}/prim_driver_base.F90
-  ${SRC_SHARE_DIR}/prim_cxx_driver_base.F90
   ${SRC_SHARE_DIR}/prim_implicit_mod.F90
   ${SRC_SHARE_DIR}/prim_si_mod.F90
   ${SRC_SHARE_DIR}/quadrature_mod.F90
