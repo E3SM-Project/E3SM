@@ -683,28 +683,34 @@ module li_iceshelf_melt
       ! Now calculate melt rate at each grid cell
       do iCell = 1, nCellsSolve
          if (li_mask_is_floating_ice(cellMask(iCell))) then
-            draft = lowerSurface(iCell) - config_sea_level
-            ! calculate Tcavity for this depth (allowing for no sill - sill deeper than GL depth)
-            if (draft < zSill) then
-               Tcavity = TSill
-            elseif (draft >= zThermoclineTop) then
-               Tcavity = TThermoclineTop
-            elseif (draft <= zThermoclineBot) then
-               Tcavity = TThermoclineBot
+            if (lowerSurface(iCell) < -20.0_RKIND) then
+               ! Shut off melt at an arbitrary shallow depth to prevent ice from melting out entirely
+               floatingBasalMassBal(iCell) = 0.0_RKIND
             else
-               Tcavity = (TThermoclineTop - TThermoclineBot) * &
-                    (draft - zThermoclineBot) / (zThermoclineTop - zThermoclineBot) + TThermoclineBot
+               ! Calculate melt rate here
+               draft = lowerSurface(iCell) - config_sea_level
+               ! calculate Tcavity for this depth (allowing for no sill - sill deeper than GL depth)
+               if (draft < zSill) then
+                  Tcavity = TSill
+               elseif (draft >= zThermoclineTop) then
+                  Tcavity = TThermoclineTop
+               elseif (draft <= zThermoclineBot) then
+                  Tcavity = TThermoclineBot
+               else
+                  Tcavity = (TThermoclineTop - TThermoclineBot) * &
+                       (draft - zThermoclineBot) / (zThermoclineTop - zThermoclineBot) + TThermoclineBot
+               endif
+               ! calculate Tfreeze for this depth
+               Tfreeze = ocean_freezing_temperature(draft)
+               ! calculate Tinfinity for this depth
+               Tinfinity = (E0 * slopeDraft * Tcavity + Stanton * Tfreeze) / (E0 * slopeDraft + Stanton)
+               ! calculate Tplume for this depth
+               Tplume = Tinfinity + (TGL - Tinfinity) * exp(min(-1.0_RKIND * (draft - zGL) / zeta, 0.0_RKIND))
+               ! now add to sum of TFmean
+               floatingBasalMassBal(iCell) = kappa * TFmean * (Tplume - Tfreeze) ! in m/yr, +=melting
+               !floatingBasalMassBal(iCell) = Tplume
             endif
-            ! calculate Tfreeze for this depth
-            Tfreeze = ocean_freezing_temperature(draft)
-            ! calculate Tinfinity for this depth
-            Tinfinity = (E0 * slopeDraft * Tcavity + Stanton * Tfreeze) / (E0 * slopeDraft + Stanton)
-            ! calculate Tplume for this depth
-            Tplume = Tinfinity + (TGL - Tinfinity) * exp(min(-1.0_RKIND * (draft - zGL) / zeta, 0.0_RKIND))
-            ! now add to sum of TFmean
-            floatingBasalMassBal(iCell) = kappa * TFmean * (Tplume - Tfreeze) ! in m/yr, +=melting
-            !floatingBasalMassBal(iCell) = Tplume
-         else
+         else ! not floating
             floatingBasalMassBal(iCell) = 0.0_RKIND
          endif
       enddo
