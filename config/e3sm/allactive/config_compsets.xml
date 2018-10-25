@@ -214,8 +214,23 @@
 <!-- E3SM v1 cryosphere compsets -->
 
 <compset>
+  <alias>A_WCYCL1850-DIB</alias>
+  <lname>1850_CAM5%AV1C-L_CLM45%SPBC_MPASCICE%DIB_MPASO%IB_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
   <alias>A_WCYCL1850-DIB-ISMF</alias>
   <lname>1850_CAM5%AV1C-L_CLM45%SPBC_MPASCICE%DIB_MPASO%IBISMF_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>A_WCYCL1850-DIB_CMIP6</alias>
+  <lname>1850_CAM5%CMIP6_CLM45%SPBC_MPASCICE%DIB_MPASO%IB_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>A_WCYCL1850-DIB-ISMF_CMIP6</alias>
+  <lname>1850_CAM5%CMIP6_CLM45%SPBC_MPASCICE%DIB_MPASO%IBISMF_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <!-- E3SM backup compsets -->
