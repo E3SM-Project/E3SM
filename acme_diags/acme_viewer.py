@@ -15,6 +15,7 @@ from cdp.cdp_viewer import OutputViewer
 import acme_diags
 from acme_diags.driver.utils import get_set_name
 from acme_diags.plot.cartopy.taylor_diagram import TaylorDiagram
+from acme_diags import container
 
 # Dict of
 # {
@@ -510,6 +511,9 @@ def create_metadata(parameter):
     if 'parameters' in supported_cmd_args:
         supported_cmd_args.remove('parameters')
 
+    if container.is_container():
+        container.decontainerize_parameter(parameter)
+
     for param_name in parameter.__dict__:
         param = parameter.__dict__[param_name]
         # we don't want to include blank values
@@ -549,6 +553,7 @@ def create_viewer(root_dir, parameters, ext):
     _add_pages_and_top_row(viewer, parameters)
 
     for parameter in parameters:
+        results_dir = parameter.results_dir
         for set_num in parameter.sets:
             set_num = get_set_name(set_num)
 
@@ -585,7 +590,7 @@ def create_viewer(root_dir, parameters, ext):
                                 row_name_and_fnm.append((row_name, fnm))
 
                         if set_num in ['lat_lon', '5']:
-                            metrics_path = os.path.join(parameter.results_dir, '{}'.format(set_num), parameter.case_id, fnm)
+                            metrics_path = os.path.join(results_dir, '{}'.format(set_num), parameter.case_id, fnm)
                             if os.path.exists(metrics_path + '.json'):
                                 _add_to_lat_lon_metrics_table(metrics_path, season, row_name)
                             else:
@@ -605,6 +610,7 @@ def create_viewer(root_dir, parameters, ext):
                             # format fnm to support relative paths
                             ROW_INFO[set_num][parameter.case_id][row_name][season]['image_path'] = os.path.join(
                                 '..', '{}'.format(set_num), parameter.case_id, fnm)
+                            # If ran in a container, create_metadata() will modify *_data_path and results_dir to their original value.
                             ROW_INFO[set_num][parameter.case_id][row_name][season]['metadata'] = create_metadata(parameter)
 
     # add all of the files in from the case_id/ folder in ANN, DJF, MAM, JJA,

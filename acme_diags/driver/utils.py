@@ -8,8 +8,8 @@ import cdutil
 import MV2
 import genutil
 import cdms2
+from acme_diags import container
 from acme_diags.derivations.default_regions import regions_specs
-
 
 SET_NAME_MAPPING = {
     ('3', 'zonal_mean_xy'): 'zonal_mean_xy',
@@ -225,13 +225,20 @@ def save_ncfiles(set_num, test, ref, diff, parameter):
         file_diff.close()
 
 
-def get_output_dir(set_num, parameter):
-    """Get the directory of where to save the outputs for a run."""
-    pth = os.path.join(parameter.results_dir,
+def get_output_dir(set_num, parameter, ignore_container=False):
+    """
+    Get the directory of where to save the outputs for a run.
+    If ignore_container is True and the software is being ran in a container,
+      get the path that the user passed in.
+    """
+    results_dir = parameter.results_dir
+    if ignore_container and container.is_container():
+        results_dir = parameter.orig_results_dir
+    
+    pth = os.path.join(results_dir,
                        '{}'.format(set_num), parameter.case_id)
     if not os.path.exists(pth):
-        # When running diags in parallel, sometimes another process will create
-        # the dir
+        # When running diags in parallel, sometimes another process will create the dir.
         try:
             os.makedirs(pth, 0o775)
         except OSError as e:

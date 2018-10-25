@@ -130,6 +130,10 @@ def plot(reference, test, diff, metrics_dict, parameter):
             vcs_canvas.pdf(fnm)
         elif f == 'svg':
             vcs_canvas.svg(fnm)
+        # Get the filename that the user has passed in and display that.
+        # When running in a container, the paths are modified.
+        fnm = os.path.join(get_output_dir(parameter.current_set, parameter,
+            ignore_container=True), parameter.output_file)
         print('Plot saved in: ' + fnm + '.' + f)
 
     vcs_canvas.clear()

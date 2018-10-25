@@ -18,12 +18,12 @@ requirements:
 
   run:
     - python {{ python }}
-    - cdp 1.4.0
+    - cdp 1.4.1
     - vcs 8.0
     - vtk-cdat 8.0.1.8.0
     - vcsaddons 8.0
     - dv3d 8.0
-    - cdms2 3.0
+    - cdms2 3.0.1
     - cdutil 8.0
     - genutil 8.0
     - cdtime 3.0
