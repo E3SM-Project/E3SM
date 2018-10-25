@@ -124,10 +124,25 @@ def get_user_args_for_e3sm_diags():
     Extract the correct passed in arguments from this script that are needed for e3sm_diags.
     """
     params_to_ignore = ['e3sm_diags_container', 'python', 'e3sm_diags_container.py',
-                        '--shifter', '--singularity', '--docker']
+                        '--shifter', '--singularity', '--docker', '--container_version']
 
-    # Commands must be in '' so it works correctly.
-    return ["'{}'".format(a) for a in sys.argv if a not in params_to_ignore]
+    e3sm_diags_args = []
+
+    i = 0
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+        if arg not in params_to_ignore:
+            # Commands must be in '' so it works correctly. 
+            e3sm_diags_args.append("'{}'".format(arg))
+            i += 1
+        elif arg == '--container_version':
+            # Skip the 'container_version' arg, as well as the version specified.
+            # That's why we skip by two.
+            i += 2
+        else:
+            i += 1
+
+    return e3sm_diags_args
 
 
 # For this preprocessing step, these are the only parameters we care about.
