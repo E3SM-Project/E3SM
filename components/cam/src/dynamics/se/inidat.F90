@@ -416,8 +416,11 @@ contains
                 indx = indx + 1
              end do
           end do
-    end do
 
+!print *, 'ie',ie
+!print *, elem(ie)%state%ps_v(:,:,1)
+    end do
+!stop
 
     if ( (ideal_phys .or. aqua_planet)) then
        tmp(:,1,:) = 0._r8
@@ -480,14 +483,37 @@ contains
        call edgeVunpack(edge_surf, elem(ie)%state%phis,       1,   kptr,ie)
        kptr=kptr+1
        call edgeVunpack(edge_surf, elem(ie)%state%Q(:,:,:,1), nlev,kptr,ie)
+
+!print *, 'ie',ie
+!print *, 'dss', elem(ie)%state%ps_v(:,:,1)
+
+
     end do
+!stop
 #endif
 
 
 
 
 
-#if 1 
+#if 1
+
+! make sep loop for now, fuse later
+
+    do ie=1,nelemd
+!TEMP CODE, what's the best way to do this? call homme routine
+! init_state_vars_for_eam?
+!it seems to not be zero even with this statement, where is it init-ed again?
+
+!where in homme w_i and phinh_i are inited in hydro runs?
+       elem(ie)%state%w_i(:,:,:,:) = 0.0_r8
+       elem(ie)%state%phinh_i(:,:,:,:) = 0.0_r8
+       elem(ie)%derived%omega_p(:,:,:) = 0.0_r8
+    enddo
+
+
+
+ 
     fieldname = 'T'
     tmp = 0.0_r8
     call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
@@ -497,12 +523,6 @@ contains
     end if
 
     do ie=1,nelemd
-
-!TEMP CODE, what's the best way to do this? call homme routine
-! init_state_vars_for_eam?
-!it seems to not be zero even with this statement, where is it init-ed again?
-       elem(ie)%state%w_i(:,:,:,:) = 0.0_r8
-
 
 !old code
 !       elem(ie)%state%T=0.0_r8
@@ -601,7 +621,10 @@ contains
 #else 
 ! model == theta-l
     if(par%dynproc) then
-       call initEdgeBuffer(par, edge, elem, (5+pcnst)*nlev+2)
+!making this buffer smaller since 3 vars are already dss
+!for now ignore w_i, phi, but not in NH
+!total number of levels then: 2*nlev + nlev + tracers-1
+       call initEdgeBuffer(par, edge, elem, (3+pcnst-1)*nlev)
     end if
 #endif
 
@@ -641,34 +664,31 @@ contains
 ! model == theta-l
     do ie=1,nelemd
        kptr=0
-       call edgeVpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
-       kptr=kptr+1
-       call edgeVpack(edge, elem(ie)%state%phis,1,kptr,ie)
-       kptr=kptr+1
        call edgeVpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
        kptr=kptr+2*nlev
        call edgeVpack(edge, elem(ie)%state%vtheta_dp(:,:,:,1),nlev,kptr,ie)
        kptr=kptr+nlev
-       call edgeVpack(edge, elem(ie)%state%w_i(:,:,:,1),nlevp,kptr,ie)
-       kptr=kptr+nlevp
-       call edgeVpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
+       do m_cnst=2,pcnst
+          call edgeVpack(edge, elem(ie)%state%Q(:,:,:,m_cnst),nlev,kptr,ie)
+          kptr=kptr+nlev
+       enddo
     end do
     if(par%dynproc) then
        call bndry_exchangeV(par,edge)
     end if
     do ie=1,nelemd
        kptr=0
-       call edgeVunpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
-       kptr=kptr+1
-       call edgeVunpack(edge, elem(ie)%state%phis,1,kptr,ie)
-       kptr=kptr+1
        call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
        kptr=kptr+2*nlev
        call edgeVunpack(edge, elem(ie)%state%vtheta_dp(:,:,:,1),nlev,kptr,ie)
-       kptr=kptr+nlevp
-       call edgeVunpack(edge, elem(ie)%state%w_i(:,:,:,1),nlevp,kptr,ie)
        kptr=kptr+nlev
-       call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
+       do m_cnst=2,pcnst
+          call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,m_cnst),nlev,kptr,ie)
+          kptr=kptr+nlev
+       enddo
+
+!print *, 'ie',ie
+!print *, '2ND dss', elem(ie)%state%ps_v(:,:,1)
     end do
 #endif
     
@@ -697,6 +717,12 @@ contains
     call nctopo_util_inidat(ncid_topo,elem)
 
     deallocate(tmp)
+
+!do ie=1,nelemd
+!print *, 'ie',ie
+!print *, 'END ROUTINE', elem(ie)%state%ps_v(:,:,1)
+!enddo
+!stop
 
   end subroutine read_inidat
 

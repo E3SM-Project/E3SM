@@ -239,7 +239,7 @@ subroutine cam_run1(cam_in, cam_out)
    call t_startf ('stepon_run1')
    call stepon_run1( dtime, phys_state, phys_tend, pbuf2d, dyn_in, dyn_out )
    call t_stopf  ('stepon_run1')
-
+print * ,'OG> end of stepon_run11'
    !
    !----------------------------------------------------------
    ! PHYS_RUN Call the Physics package
@@ -247,9 +247,12 @@ subroutine cam_run1(cam_in, cam_out)
    !
    call t_barrierf ('sync_phys_run1', mpicom)
    call t_startf ('phys_run1')
+
+print * ,'OG> begin phys_run11'
    call phys_run1(phys_state, dtime, phys_tend, pbuf2d,  cam_in, cam_out)
    call t_stopf  ('phys_run1')
 
+print * ,'OG> end of phys_run11'
 end subroutine cam_run1
 
 !

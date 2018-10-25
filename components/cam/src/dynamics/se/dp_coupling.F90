@@ -134,6 +134,17 @@ CONTAINS
 
           call UniquePoints(elem(ie)%idxP, elem(ie)%state%phis, phis_tmp(1:ncols,ie))
           call UniquePoints(elem(ie)%idxP, nlev,pcnst, elem(ie)%state%Q(:,:,:,:), Q_tmp(1:ncols,:,:,ie))
+
+
+!print *, 'ie', ie
+!print *, elem(ie)%state%ps_v(1,1,tl_f)
+!print *, temperature(1,1,1)
+!print *, elem(ie)%state%v(1,1,1,1,tl_f)
+!print *, elem(ie)%state%v(1,1,2,1,tl_f)
+!print *, elem(ie)%derived%omega_p(1,1,1)
+!print *, elem(ie)%state%Q(1,1,1,1)
+!call flush(*)
+
        end do
 !stop
        call t_stopf('UniquePoints')

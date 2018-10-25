@@ -904,6 +904,17 @@ contains
 
 print *, 'OG BEFORE SUB'
 
+do ie=nets,nets
+print *, 'ie', ie
+print *, elem(ie)%state%ps_v(1,1,tl%nstep0)
+print *, elem(ie)%state%vtheta_dp(1,1,1,tl%nstep0)
+print *, elem(ie)%state%v(1,1,1,1,tl%nstep0)
+print *, elem(ie)%state%v(1,1,2,1,tl%nstep0)
+print *, elem(ie)%derived%omega_p(1,1,1)
+print *, elem(ie)%state%Q(1,1,1,tl%nstep0)
+enddo
+
+
     ! compute timesteps for tracer transport and vertical remap
 
     dt_q      = dt*qsplit
@@ -1068,6 +1079,17 @@ print *, 'OG BEFORE SUB'
 
 
 print *, 'OG AFTER SUB'
+do ie=nets,nets
+print *, 'ie', ie
+print *, elem(ie)%state%ps_v(1,1,tl%nstep0)
+print *, elem(ie)%state%vtheta_dp(1,1,1,tl%nstep0)
+print *, elem(ie)%state%v(1,1,1,1,tl%nstep0)
+print *, elem(ie)%state%v(1,1,2,1,tl%nstep0)
+print *, elem(ie)%derived%omega_p(1,1,1)
+print *, elem(ie)%state%Q(1,1,1,tl%nstep0)
+enddo
+
+
 
   end subroutine prim_run_subcycle
 

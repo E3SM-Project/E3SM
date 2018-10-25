@@ -179,6 +179,8 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
    type (physics_buffer_desc), pointer :: pbuf2d(:,:)
 
+
+print *, 'OG> BEGIN STEPON_RUN1 dp coupling'
 !-----------------------------------------------------------------------
 
    ! NOTE: dtime_out computed here must match formula below
@@ -197,8 +199,10 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
    
    call t_barrierf('sync_d_p_coupling', mpicom)
    call t_startf('d_p_coupling')
+print *, 'OG> BEGIN DPCOUPLING dp coupling'
    call d_p_coupling (phys_state, phys_tend,  pbuf2d, dyn_out )
    call t_stopf('d_p_coupling')
+print *, 'OG> END DPCOUPLIGN dp coupling'
    
   ! Determine whether it is time for an IOP update;
   ! doiopupdate set to true if model time step > next available IOP 
@@ -211,6 +215,7 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
     if (doiopupdate) call readiopdata( iop_update_surface,hyam,hybm )
   endif   
    
+print *, 'end RUN1'
 end subroutine stepon_run1
 
 subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
@@ -238,10 +243,17 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
    dtime = get_step_size()
 
+print *, 'BEGIN RUN2 pd coupling'
+
+
    ! copy from phys structures -> dynamics structures
    call t_barrierf('sync_p_d_coupling', mpicom)
    call t_startf('p_d_coupling')
+
+print *, 'BEGIN PD COUPLING'
    call p_d_coupling(phys_state, phys_tend,  dyn_in)
+print *, 'END PD COUPLING'
+
    call t_stopf('p_d_coupling')
 
    if(.not.par%dynproc) return
@@ -536,6 +548,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    
    
    
+print *, 'END RUN2'
    end subroutine stepon_run2
    
 

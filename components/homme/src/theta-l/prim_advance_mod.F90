@@ -402,6 +402,9 @@ contains
   real (kind=real_kind) :: pnh(np,np,nlev)
   real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
 
+
+#if 0
+
   do ie=nets,nete
      ! apply forcing to Qdp
      elem(ie)%derived%FQps(:,:)=0
@@ -479,6 +482,8 @@ contains
 
   enddo
   call applyCAMforcing_dynamics(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
+
+#endif
   end subroutine applyCAMforcing_ps
 
 
