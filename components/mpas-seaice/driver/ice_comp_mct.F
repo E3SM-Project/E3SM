@@ -836,8 +836,7 @@ contains
         if (debugOn) call mpas_log_write('   Starting forward update', masterOnly=.true.)
         call mpas_timer_start("time integration", .false.)
         ierr = 0
-        call seaice_timestep(domain, domain % clock, itimestep, ierr)
-        call seaice_check_critical_error(domain, ierr)
+        call seaice_timestep(domain, domain % clock, itimestep)
         call mpas_timer_stop("time integration")
         if (debugOn) call mpas_log_write('   Finished forward update', masterOnly=.true.)
 
