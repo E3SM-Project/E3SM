@@ -656,6 +656,42 @@
     </mpirun>
 </machine>
 
+<machine MACH="linux-fc27">
+    <DESC>Linux Fedora Core 27 workstation or laptop</DESC>
+    <NODENAME_REGEX>none</NODENAME_REGEX>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <module_system type="none"></module_system>
+    <OS>LINUX</OS>
+    <TESTS>e3sm_developer</TESTS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <RUNDIR>$ENV{HOME}/E3SM/cases/$CASE/run</RUNDIR>
+    <EXEROOT>$ENV{HOME}/E3SM/cases/$CASE/bld</EXEROOT>
+    <DIN_LOC_ROOT>$ENV{HOME}/E3SM/input/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/E3SM/input/ptclm-data</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$ENV{HOME}/E3SM/cases/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/E3SM/cases</CIME_OUTPUT_ROOT>
+    <BASELINE_ROOT>$ENV{HOME}/E3SM/cases/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>$ENV{HOME}/E3SM/cime/tools/cprnc/build</CCSM_CPRNC>
+    <SUPPORTED_BY>mdeakin at sandia dot gov</SUPPORTED_BY>
+    <GMAKE_J>4</GMAKE_J>
+    <MAX_TASKS_PER_NODE>4</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>2</MAX_MPITASKS_PER_NODE>
+    <environment_variables>
+      <!-- NETCDF_C_PATH and NETCDF_FORTRAN_PATH must be specified to set INC_NETCDF_FORTRAN -->
+      <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which ncdump))}</env>
+      <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which ncdump))}</env>
+      <env name="INC_NETCDF_FORTRAN">/usr/lib64/gfortran/modules</env>
+    </environment_variables>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -np {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+</machine>
+
 <machine MACH="melvin">
     <DESC>Linux workstation for Jenkins testing</DESC>
     <NODENAME_REGEX>(melvin|watson|s999964|climate|penn|sems)</NODENAME_REGEX>
