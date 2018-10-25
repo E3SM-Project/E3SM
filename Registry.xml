@@ -285,7 +285,7 @@
 			units="unitless" description="The maximum number of points in any group."
 		/>
 		<dim name="nForcingGroupsMax"
-			definition="4"
+			definition="5"
 			description="The maximum number of forcing groups defined in the core."
 		/>
 	</dims>
@@ -1638,6 +1638,10 @@
 			description=""
 			possible_values="true or false"
 		/>
+		<nml_option name="config_use_data_icebergs" type="logical" default_value="false" units="unitless"
+			description="Use data iceberg meltwater forcing"
+			possible_values="true or false"
+		/>
 	</nml_record>
 
 	<nml_record name="diagnostics" in_defaults="true">
@@ -1871,6 +1875,15 @@
 			<var name="seaSurfaceTiltV"/>
 			<var name="oceanMixedLayerDepth"/>
 			<var name="oceanHeatFluxConvergence"/>
+		</stream>
+		<stream name="dataIcebergForcing"
+				type="input"
+				filename_template="forcing/data_icebergs.nc"
+				filename_interval="none"
+				input_interval="none"
+				clobber_mode="replace_files"
+				runtime_format="single_file">
+			<var name="bergFreshwaterFluxData"/>
 		</stream>
 
 		<!-- Aerosols input -->
@@ -2159,6 +2172,9 @@
 
 		<!-- other column packages -->
 		<package name="pkgColumnFormDrag" description=""/>
+
+		<!-- iceberg packages -->
+		<package name="pkgBergs" description=""/>
 
 		<!-- testing system test -->
 		<package name="pkgTestingSystemTest" description=""/>
@@ -3488,6 +3504,17 @@
 		<var name="oceanHeatFluxArea"			type="real"	dimensions="nCells Time"		name_in_code="oceanHeatFluxArea"/>
 		<var name="oceanShortwaveFluxArea"		type="real"	dimensions="nCells Time"		name_in_code="oceanShortwaveFluxArea"/>
 		<var name="oceanHeatFluxIceBottom"		type="real"	dimensions="nCells Time"		name_in_code="oceanHeatFluxIceBottom"/>
+	</var_struct>
+
+	<!-- fluxes from data icebergs -->
+	<var_struct name="berg_forcing" time_levs="1" packages="pkgBergs">
+		<var name="bergFreshwaterFluxData"		type="real"	dimensions="nCells Time"		name_in_code="bergFreshwaterFluxData"/>
+	</var_struct>
+
+	<!-- fluxes from icebergs to ocean -->
+	<var_struct name="berg_fluxes" time_levs="1" packages="pkgBergs">
+		<var name="bergFreshwaterFlux"			type="real"	dimensions="nCells Time"		name_in_code="bergFreshwaterFlux"/>
+		<var name="bergLatentHeatFlux"			type="real"	dimensions="nCells Time"		name_in_code="bergLatentHeatFlux"/>
 	</var_struct>
 
 	<!-- ocean atmosphere interaction -->

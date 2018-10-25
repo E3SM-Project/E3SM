@@ -524,7 +524,7 @@ contains
             abortFlag, &
             abortMessage)
        call colpkg_get_warnings(warnings)
-       call column_write_warnings(warnings)
+       call column_write_warnings(warnings, abortFlag)
 
        if (abortFlag) then
           call mpas_log_write("colpkg_init_orbit: "//trim(abortMessage), messageType=MPAS_LOG_CRIT)
@@ -834,13 +834,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_column_predynamics_time_integration(domain, clock, ierr)
+  subroutine seaice_column_predynamics_time_integration(domain, clock)
 
     type(domain_type), intent(inout) :: domain
 
     type(MPAS_clock_type), intent(in) :: clock
-
-    integer, intent(inout) :: ierr
 
     logical, pointer :: &
          config_use_column_package, &
@@ -883,9 +881,8 @@ contains
 
        call mpas_timer_start("Column vertical thermodynamics")
        if (config_use_column_vertical_thermodynamics) &
-            call column_vertical_thermodynamics(domain, clock, ierr)
+            call column_vertical_thermodynamics(domain, clock)
        call mpas_timer_stop("Column vertical thermodynamics")
-       if (config_use_column_vertical_thermodynamics .and. ierr > 0) return
 
        !-----------------------------------------------------------------
        ! Biogeochemistry
@@ -893,9 +890,8 @@ contains
 
        call mpas_timer_start("Column biogeochemistry")
        if (config_use_column_biogeochemistry) &
-            call column_biogeochemistry(domain, ierr)
+            call column_biogeochemistry(domain)
        call mpas_timer_stop("Column biogeochemistry")
-       if (config_use_column_biogeochemistry .and. ierr > 0) return
 
        !-----------------------------------------------------------------
        ! ITD thermodynamics
@@ -903,9 +899,8 @@ contains
 
        call mpas_timer_start("Column ITD thermodynamics")
        if (config_use_column_itd_thermodynamics) &
-            call column_itd_thermodynamics(domain, clock, ierr)
+            call column_itd_thermodynamics(domain, clock)
        call mpas_timer_stop("Column ITD thermodynamics")
-       if (config_use_column_itd_thermodynamics .and. ierr > 0) return
 
        !-----------------------------------------------------------------
        ! Update the aggregated state variables
@@ -940,13 +935,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_column_dynamics_time_integration(domain, clock, ierr)
+  subroutine seaice_column_dynamics_time_integration(domain, clock)
 
     type(domain_type), intent(inout) :: domain
 
     type(MPAS_clock_type), intent(in) :: clock
-
-    integer, intent(inout) :: ierr
 
     logical, pointer :: &
          config_use_column_package, &
@@ -984,9 +977,8 @@ contains
 
        call mpas_timer_start("Column ridging")
        if (config_use_column_ridging) &
-            call column_ridging(domain, ierr)
+            call column_ridging(domain)
        call mpas_timer_stop("Column ridging")
-       if (config_use_column_ridging .and. ierr > 0) return
 
        !-----------------------------------------------------------------
        ! Update the aggregated state variables
@@ -1061,7 +1053,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine column_vertical_thermodynamics(domain, clock, ierr)
+  subroutine column_vertical_thermodynamics(domain, clock)
 
     use ice_colpkg, only: &
          colpkg_step_therm1, &
@@ -1074,8 +1066,6 @@ contains
     type(domain_type), intent(inout) :: domain
 
     type(MPAS_clock_type), intent(in) :: clock
-
-    integer, intent(inout) :: ierr
 
     type(block_type), pointer :: block
 
@@ -1447,6 +1437,10 @@ contains
 
        endif
 
+       ! code abort
+       abortFlag = .false.
+       abortMessage = ""
+
        ! loop over cells
        do iCell = 1, nCellsSolve
 
@@ -1488,9 +1482,6 @@ contains
           else
              northernHemisphereMask = .false.
           endif
-
-          abortFlag = .false.
-          abortMessage = ""
 
           call colpkg_clear_warnings()
           call colpkg_step_therm1(&
@@ -1618,16 +1609,10 @@ contains
                abortFlag, &
                abortMessage)
           call colpkg_get_warnings(warnings)
-          call column_write_warnings(warnings)
+          call column_write_warnings(warnings, abortFlag)
 
           ! code abort
-          if (abortFlag) then
-             call mpas_log_write("column_vertical_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
-             ierr = SEAICE_ERROR_COL_VERT_THERM
-             call seaice_critical_error_write_block(domain, block)
-             return
-          endif
+          if (abortFlag) exit
 
           ! aerosol
           if (config_use_aerosols) then
@@ -1656,6 +1641,14 @@ contains
 
        enddo ! iCell
 
+       ! code abort
+       if (abortFlag) then
+          call mpas_log_write("column_vertical_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
+          call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
+       endif ! columnAbort
+       call seaice_critical_error_write_block(domain, block, abortFlag)
+       call seaice_check_critical_error(domain, abortFlag)
+
        ! aerosols
        deallocate(specificSnowAerosol)
        deallocate(specificIceAerosol)
@@ -1677,7 +1670,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine column_itd_thermodynamics(domain, clock, ierr)
+  subroutine column_itd_thermodynamics(domain, clock)
 
     use ice_colpkg, only: &
          colpkg_step_therm2, &
@@ -1687,8 +1680,6 @@ contains
     type(domain_type), intent(inout) :: domain
 
     type(MPAS_clock_type), intent(in) :: clock
-
-    integer, intent(inout) :: ierr
 
     type(block_type), pointer :: block
 
@@ -1876,6 +1867,10 @@ contains
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
 
+       ! code abort
+       abortFlag = .false.
+       abortMessage = ""
+
        do iCell = 1, nCellsSolve
 
           ! newly formed ice
@@ -1891,9 +1886,6 @@ contains
 
           ! set the category tracer array
           call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
-
-          abortFlag = .false.
-          abortMessage = ""
 
           call colpkg_clear_warnings()
           call colpkg_step_therm2(&
@@ -1944,7 +1936,7 @@ contains
                freezeOnset(iCell), &
                dayOfYear)
           call colpkg_get_warnings(warnings)
-          call column_write_warnings(warnings)
+          call column_write_warnings(warnings, abortFlag)
 
           ! update
           do iCategory = 1, nCategories
@@ -1956,15 +1948,17 @@ contains
           call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           ! code abort
-          if (abortFlag) then
-             call mpas_log_write("column_itd_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
-             ierr = SEAICE_ERROR_COL_ITD_THERM
-             call seaice_critical_error_write_block(domain, block)
-             return
-          endif
+          if (abortFlag) exit
 
        enddo ! iCell
+
+       ! code abort
+       if (abortFlag) then
+          call mpas_log_write("column_itd_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
+          call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
+       endif
+       call seaice_critical_error_write_block(domain, block, abortFlag)
+       call seaice_check_critical_error(domain, abortFlag)
 
        ! newly formed ice
        deallocate(newlyFormedIceLogical)
@@ -2467,7 +2461,7 @@ contains
                .false., &
                lInitialization)
           call colpkg_get_warnings(warnings)
-          call column_write_warnings(warnings)
+          call column_write_warnings(warnings, .false.)
 
           ! set the category tracer array
           call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
@@ -2495,7 +2489,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine column_ridging(domain, ierr)
+  subroutine column_ridging(domain)
 
     use ice_colpkg, only: &
          colpkg_step_ridge, &
@@ -2503,8 +2497,6 @@ contains
          colpkg_clear_warnings
 
     type(domain_type), intent(inout) :: domain
-
-    integer, intent(inout) :: ierr
 
     type(block_type), pointer :: block
 
@@ -2677,6 +2669,10 @@ contains
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
 
+       ! code abort
+       abortFlag = .false.
+       abortMessage = ""
+
        do iCell = 1, nCellsSolve
 
           ! newly formed ice
@@ -2686,9 +2682,6 @@ contains
 
           ! set the category tracer array
           call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
-
-          abortFlag = .false.
-          abortMessage = ""
 
           call colpkg_clear_warnings()
           call colpkg_step_ridge(&
@@ -2736,7 +2729,7 @@ contains
                abortFlag, &
                abortMessage)
           call colpkg_get_warnings(warnings)
-          call column_write_warnings(warnings)
+          call column_write_warnings(warnings, abortFlag)
 
           ! update
           do iCategory = 1, nCategories
@@ -2748,15 +2741,17 @@ contains
           call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           ! code abort
-          if (abortFlag) then
-             call mpas_log_write("column_ridging: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
-             ierr = SEAICE_ERROR_COL_RIDGING
-             call seaice_critical_error_write_block(domain, block)
-             return
-          endif
+          if (abortFlag) exit
 
        enddo ! iCell
+
+       ! code abort
+       if (abortFlag) then
+          call mpas_log_write("column_ridging: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
+          call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
+       endif
+       call seaice_critical_error_write_block(domain, block, abortFlag)
+       call seaice_check_critical_error(domain, abortFlag)
 
        ! newly formed ice
        deallocate(newlyFormedIceLogical)
@@ -2778,7 +2773,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine column_biogeochemistry(domain, ierr)
+  subroutine column_biogeochemistry(domain)
 
     use ice_colpkg, only: &
          colpkg_biogeochemistry, &
@@ -2790,8 +2785,6 @@ contains
          seaicePuny
 
     type(domain_type), intent(inout) :: domain
-
-    integer, intent(inout) :: ierr
 
     type(block_type), pointer :: block
 
@@ -3088,6 +3081,10 @@ contains
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
 
+       ! code abort
+       abortFlag = .false.
+       abortMessage = ""
+
        do iCell = 1, nCellsSolve
 
           ! newly formed ice
@@ -3143,8 +3140,6 @@ contains
              iBioData = ciceTracerObject % index_LayerIndexToDataArray(iBioTracers)
              oceanBioConcentrationsUsed(iBioTracers) = oceanBioConcentrations(iBioData,iCell)
           enddo ! iBioTracers
-
-          abortFlag = .false.
 
           call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
@@ -3223,16 +3218,10 @@ contains
                abortFlag, &
                abortMessage)
           call colpkg_get_warnings(warnings)
-          call column_write_warnings(warnings)
+          call column_write_warnings(warnings, abortFlag)
 
           ! code abort
-          if (abortFlag) then
-             call mpas_log_write("column_biogeochemistry: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
-             ierr = SEAICE_ERROR_COL_BGC
-             call seaice_critical_error_write_block(domain, block)
-             return
-          endif
+          if (abortFlag) exit
 
           call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
@@ -3262,6 +3251,14 @@ contains
           if (.not. rayleighCriteria) rayleighCriteriaReal(iCell) = 0.0_RKIND
 
        enddo ! iCell
+
+       ! code abort
+       if (abortFlag) then
+          call mpas_log_write("column_biogeochemistry: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
+          call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
+       endif
+       call seaice_critical_error_write_block(domain, block, abortFlag)
+       call seaice_check_critical_error(domain, abortFlag)
 
        deallocate(newlyFormedIceLogical)
        deallocate(oceanBioConcentrationsUsed)
@@ -13269,19 +13266,26 @@ contains
 ! Warning messages
 !-----------------------------------------------------------------------
 
-  subroutine column_write_warnings(warnings)
+  subroutine column_write_warnings(warnings, logAsErrors)
 
     character(len=strKINDWarnings), dimension(:), intent(in) :: &
          warnings
 
+    logical, intent(in) :: &
+         logAsErrors
+
     integer :: &
          iWarning
 
-    do iWarning = 1, size(warnings)
-
-       call mpas_log_write(trim(warnings(iWarning)), messageType=MPAS_LOG_WARN)
-
-    enddo ! iWarning
+    if (logAsErrors) then
+       do iWarning = 1, size(warnings)
+          call mpas_log_write(trim(warnings(iWarning)), messageType=MPAS_LOG_ERR)
+       enddo ! iWarning
+    else
+       do iWarning = 1, size(warnings)
+          call mpas_log_write(trim(warnings(iWarning)), messageType=MPAS_LOG_WARN)
+       enddo ! iWarning
+    endif
 
   end subroutine column_write_warnings
 
