@@ -5,12 +5,14 @@ module drof_comp_mod
 
   ! !USES:
   use NUOPC                 , only : NUOPC_Advertise
-  use ESMF                  , only : ESMF_State, ESMF_SUCCESS
+  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State 
+  use ESMF                  , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
   use perf_mod              , only : t_startf, t_stopf
   use perf_mod              , only : t_adj_detailf, t_barrierf
   use mct_mod               , only : mct_rearr, mct_gsmap_lsize, mct_rearr_init, mct_gsmap, mct_ggrid
   use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
   use mct_mod               , only : mct_avect_init, mct_avect_lsize, mct_avect_clean, mct_aVect
+  use mct_mod               , only : mct_gsmap_init
   use shr_sys_mod           , only : shr_sys_abort
   use shr_kind_mod          , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_kind_mod          , only : CXX=>SHR_KIND_CXX 
@@ -33,7 +35,6 @@ module drof_comp_mod
   use drof_shr_mod          , only : rest_file_strm ! namelist input
   use drof_shr_mod          , only : nullstr
 
-  !
   ! !PUBLIC TYPES:
   implicit none
   private ! except
@@ -49,6 +50,11 @@ module drof_comp_mod
   !--------------------------------------------------------------------------
   ! Private data
   !--------------------------------------------------------------------------
+
+  type(mct_gsMap), target     :: gsMap_target
+  type(mct_gGrid), target     :: ggrid_target
+  type(mct_gsMap), pointer    :: gsMap
+  type(mct_gGrid), pointer    :: ggrid
 
   type(mct_rearr)             :: rearr
   character(len=CS), pointer  :: avifld(:) ! character array for field names coming from streams
@@ -130,17 +136,15 @@ contains
   !===============================================================================
 
   subroutine drof_comp_init(x2r, r2x, &
-       SDROF, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+       SDROF, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
-       target_ymd, target_tod, calendar)
+       target_ymd, target_tod, calendar, mesh)
 
     ! !DESCRIPTION: initialize drof model
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(mct_aVect)        , intent(inout) :: x2r, r2x     ! input/output attribute vectors
     type(shr_strdata_type) , intent(inout) :: SDROF        ! model shr_strdata instance (output)
-    type(mct_gsMap)        , pointer       :: gsMap        ! model global seg map (output)
-    type(mct_gGrid)        , pointer       :: ggrid        ! model ggrid (output)
     integer(IN)            , intent(in)    :: mpicom       ! mpi communicator
     integer(IN)            , intent(in)    :: compid       ! mct comp id
     integer(IN)            , intent(in)    :: my_task      ! my task in mpi communicator mpicom
@@ -152,19 +156,27 @@ contains
     integer                , intent(in)    :: target_ymd   ! model date
     integer                , intent(in)    :: target_tod   ! model sec into model date
     character(len=*)       , intent(in)    :: calendar     ! model calendar
+    type(ESMF_Mesh)        , intent(in)    :: mesh         ! ESMF docn mesh 
 
     !--- local variables ---
-    integer(IN)   :: n,k     ! generic counters
-    integer(IN)   :: ierr    ! error code
-    integer(IN)   :: lsize   ! local size
-    logical       :: exists  ! file existance logical
-    logical       :: exists1 ! file existance logical
-    integer(IN)   :: nu      ! unit number
+    integer(IN)                  :: n,k     ! generic counters
+    integer(IN)                  :: ierr    ! error code
+    integer(IN)                  :: lsize   ! local size
+    logical                      :: exists  ! file existance logical
+    logical                      :: exists1 ! file existance logical
+    integer(IN)                  :: nu      ! unit number
+    type(ESMF_DistGrid)          :: distGrid
+    integer, allocatable, target :: gindex(:)
+    integer                      :: rc
+    logical                      :: write_restart
 
     !--- formats ---
     character(*), parameter :: F00   = "('(drof_comp_init) ',8a)"
     character(*), parameter :: subName = "(drof_comp_init) "
     !-------------------------------------------------------------------------------
+
+    gsmap => gsmap_target
+    ggrid => ggrid_target
 
     call t_startf('DROF_INIT')
 
@@ -193,17 +205,26 @@ contains
     call t_stopf('drof_strdata_init')
 
     !----------------------------------------------------------------------------
-    ! Initialize MCT global seg map, 1d decomp
+    ! Initialize MCT global seg map
     !----------------------------------------------------------------------------
 
     call t_startf('drof_initgsmaps')
     if (my_task == master_task) write(logunit,F00) ' initialize gsmaps'
 
-    ! create a data model global seqmap (gsmap) given the data model global grid sizes
-    ! NOTE: gsmap is initialized using the decomp read in from the drof_in namelist
-    ! (which by default is "1d")
-    call shr_dmodel_gsmapcreate(gsmap, SDROF%nxg*SDROF%nyg, compid, mpicom, decomp)
-    lsize = mct_gsmap_lsize(gsmap,mpicom)
+    ! create a data model global seqmap (gsmap) given the mesh
+    ! distgrid and the data model global grid sizes
+
+    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc) 
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    
+    call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    allocate(gindex(lsize))
+    call ESMF_distGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call mct_gsMap_init( gsmap, gindex, mpicom, compid, lsize, SDROF%nxg*SDROF%nyg)
+    deallocate(gindex)
 
     ! create a rearranger from the data model SDROF%gsmap to gsmap
     call mct_rearr_init(SDROF%gsmap, gsmap, mpicom, rearr)
@@ -303,22 +324,11 @@ contains
 
     call t_adj_detailf(+2)
 
-    call drof_comp_run(&
-         x2r=x2r, & 
-         r2x=r2x, &
-         SDROF=SDROF, &
-         gsmap=gsmap, &
-         ggrid=ggrid, &
-         mpicom=mpicom, &
-         compid=compid, &
-         my_task=my_task, &
-         master_task=master_task, &
-         inst_suffix=inst_suffix, &
-         logunit=logunit, &
-         read_restart=read_restart, &
-         write_restart=.false., &
-         target_ymd=target_ymd, &
-         target_tod=target_tod)
+    write_restart=.false.
+    call drof_comp_run(x2r, r2x, &
+         SDROF, mpicom, compid, my_task, master_task, &
+         inst_suffix, logunit, read_restart, write_restart, &
+         target_ymd, target_tod)
 
     if (my_task == master_task) write(logunit,F00) 'drof_comp_init done'
 
@@ -331,7 +341,7 @@ contains
   !===============================================================================
 
   subroutine drof_comp_run(x2r, r2x, &
-       SDROF, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+       SDROF, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
        target_ymd, target_tod, case_name)
 
@@ -341,8 +351,6 @@ contains
     type(mct_aVect)        , intent(inout) :: x2r
     type(mct_aVect)        , intent(inout) :: r2x
     type(shr_strdata_type) , intent(inout) :: SDROF
-    type(mct_gsMap)        , pointer       :: gsMap
-    type(mct_gGrid)        , pointer       :: ggrid
     integer(IN)            , intent(in)    :: mpicom           ! mpi communicator
     integer(IN)            , intent(in)    :: compid           ! mct comp id
     integer(IN)            , intent(in)    :: my_task          ! my task in mpi communicator mpicom

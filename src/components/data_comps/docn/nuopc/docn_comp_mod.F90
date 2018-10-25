@@ -327,7 +327,7 @@ contains
     call t_stopf('docn_strdata_init')
 
     !----------------------------------------------------------------------------
-    ! Initialize data model MCT global seg map, 1d decomp
+    ! Initialize data model MCT global seg map
     !----------------------------------------------------------------------------
 
     call t_startf('docn_initgsmaps')

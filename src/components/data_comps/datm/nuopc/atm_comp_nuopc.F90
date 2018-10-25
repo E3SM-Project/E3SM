@@ -275,9 +275,7 @@ contains
     integer(I8)             :: stepno                    ! step number
     integer                 :: modeldt                   ! integer timestep
     real(R8)                :: nextsw_cday               ! calendar of next atm sw
-    integer                 :: nx_global, ny_global
-    integer                 :: n
-    character(len=256)      :: cvalue
+    character(len=256)      :: cvalue                    ! character string for input config
     integer                 :: shrlogunit                ! original log unit
     integer                 :: shrloglev                 ! original log level
     logical                 :: read_restart              ! start from restart
@@ -288,7 +286,8 @@ contains
     real(R8)                :: orbMvelpp                 ! orb moving vernal eq (radians)
     real(R8)                :: orbLambm0                 ! orb mean long of perhelion (radians)
     real(R8)                :: orbObliqr                 ! orb obliquity (radians)
-    character(len=*) , parameter :: subname=trim(modName)//':(InitializeRealize) '
+    character(len=*), parameter :: F00   = "('atm_comp_nuopc: ')',8a)"
+    character(len=*), parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
     ! TODO: read_restart, scmlat, scmlon, orbeccen, orbmvelpp, orblambm0, orbobliqr needs to be obtained
@@ -388,6 +387,10 @@ contains
     Emesh = ESMF_MeshCreate(filename=trim(cvalue), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    if (my_task == master_task) then
+       write(logunit,F00) " (rof_comp_nuopc): obtaining datm mesh from " // trim(cvalue)
+    end if
+
     !----------------------------------------------------------------------------
     ! Initialize model
     !----------------------------------------------------------------------------
@@ -435,13 +438,11 @@ contains
     call shr_nuopc_grid_ArrayToState(a2x%rattr, flds_a2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    nx_global = SDATM%nxg
-    ny_global = SDATM%nyg
-    call shr_nuopc_methods_State_SetScalar(dble(nx_global),flds_scalar_index_nx, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(dble(SDATM%nxg),flds_scalar_index_nx, exportState, mpicom, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(ny_global),flds_scalar_index_ny, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(dble(SDATM%nyg),flds_scalar_index_ny, exportState, mpicom, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 

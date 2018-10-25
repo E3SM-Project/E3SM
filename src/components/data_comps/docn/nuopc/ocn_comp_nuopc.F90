@@ -26,7 +26,6 @@ module ocn_comp_nuopc
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_Diagnose
-  use shr_nuopc_grid_mod    , only : shr_nuopc_grid_Meshinit
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
   use shr_strdata_mod       , only : shr_strdata_type

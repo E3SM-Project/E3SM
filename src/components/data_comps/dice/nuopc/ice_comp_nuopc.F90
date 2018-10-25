@@ -26,7 +26,6 @@ module ice_comp_nuopc
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_Diagnose
-  use shr_nuopc_grid_mod    , only : shr_nuopc_grid_Meshinit
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
   use shr_const_mod         , only : SHR_CONST_SPVAL
