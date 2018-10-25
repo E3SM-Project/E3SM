@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<config case="base_mesh">
+
+	<add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
+	<add_executable source="cell_culler"    dest="MpasCellCuller.x"/>
+
+	<add_link source_path="jigsaw_to_MPAS"      source="build_mesh_compass.py"           dest="build_mesh.py"/>
+	<add_link source_path="jigsaw_to_MPAS"      source="jigsaw_driver.m"                 dest="jigsaw_driver.m"/>
+	<add_link source_path="jigsaw_to_MPAS"      source="triangle_jigsaw_to_netcdf.py"    dest="triangle_jigsaw_to_netcdf.py"/>
+	<add_link source_path="jigsaw_to_MPAS"      source="mesh_definition_tools.py"        dest="mesh_definition_tools.py"/>
+	<add_link source_path="jigsaw_to_MPAS"      source="coastal_tools.py"                dest="coastal_tools.py"/>
+	<add_link source_path="script_test_dir"     source="define_base_mesh.py"             dest="define_base_mesh.py"/>
+	<add_link source_path="jigsaw-geo-matlab"   source="."                               dest="jigsaw-geo-matlab"/>
+        <add_link source_path="bathymetry_database" source="SRTM15_plus/earth_relief_15s.nc" dest="earth_relief_15s.nc"/>
+
+	<run_script name="run.py">
+		<step executable="./build_mesh.py">
+		</step>
+	</run_script>
+
+</config>

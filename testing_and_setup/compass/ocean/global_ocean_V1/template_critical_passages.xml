@@ -1,0 +1,16 @@
+<template>
+	<namelist>
+		<option name="config_global_ocean_deepen_critical_passages">.true.</option>
+	</namelist>
+	<streams>
+		<stream name="critical_passages">
+			<attribute name="filename_template">critical_passages.nc</attribute>
+			<attribute name="input_interval">initial_only</attribute>
+			<attribute name="type">input</attribute>
+			<add_contents>
+				<member name="transectCellMasks" type="var"/>
+				<member name="depthTransects" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

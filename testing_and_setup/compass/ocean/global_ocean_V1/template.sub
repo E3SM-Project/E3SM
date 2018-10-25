@@ -1,0 +1,17 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --time=4:00:00
+#SBATCH --account=climateacme
+#SBATCH --job-name=compass
+#SBATCH --output=compass.o%j
+#SBATCH --error=compass.e%j
+#SBATCH --qos=interactive
+#SBATCH --mail-user=sbrus@lanl,gov
+#SBATCH --mail-type=all
+
+ml
+module unload python/anaconda-2.7-climate
+
+python run.py
+
+

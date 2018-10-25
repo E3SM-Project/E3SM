@@ -699,6 +699,10 @@
 					description="Timescale for relaxation of the ssh gradient for coupling. A value of 0.0 (default) removes any relaxation and gives instantaneous response."
 					possible_values="Any positive real number."
 		/>
+		<nml_option name="config_remove_AIS_coupler_runoff" type="logical" default_value=".false." units="unitless"
+					description="If true, solid and liquid runoff from the Antarctic Ice Sheet (below 60S latitude) coming from the coupled is zeroed in the coupler import routines.  To be used with data iceberg fluxes coming from the sea ice model."
+					possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<nml_record name="shortwaveRadiation" mode="init;forward">
 		<nml_option name="config_sw_absorption_type" type="character" default_value="none" units="unitless"
@@ -1676,10 +1680,12 @@
 			<var name="longWaveHeatFluxUp"/>
 			<var name="longWaveHeatFluxDown"/>
 			<var name="seaIceHeatFlux"/>
+			<var name="icebergHeatFlux"/>
 			<var name="shortWaveHeatFlux"/>
 			<var name="evaporationFlux"/>
 			<var name="seaIceSalinityFlux"/>
 			<var name="seaIceFreshWaterFlux"/>
+			<var name="icebergFreshWaterFlux"/>
 			<var name="riverRunoffFlux"/>
 			<var name="iceRunoffFlux"/>
 			<var name="rainFlux"/>
@@ -2742,6 +2748,10 @@
 			 description="Sea ice heat flux at cell centers from coupler. Positive into the ocean."
 			 packages="activeTracersBulkRestoringPKG"
 		/>
+		<var name="icebergHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+			 description="Iceberg heat flux at cell centers from coupler. Positive into the ocean."
+			 packages="activeTracersBulkRestoringPKG"
+		/>
 		<var name="shortWaveHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
 			 description="Short wave flux at cell centers from coupler. Positive into the ocean."
 			 packages="activeTracersBulkRestoringPKG;ecosysTracersPKG"
@@ -2761,12 +2771,32 @@
 			 description="Fresh water flux from sea ice at cell centers from coupler. Positive into the ocean."
 			 packages="thicknessBulkPKG"
 		/>
+		<var name="icebergFreshWaterFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from iceberg melt at cell centers from coupler. Positive into the ocean."
+			 packages="thicknessBulkPKG"
+		/>
 		<var name="riverRunoffFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from river runoff at cell centers from coupler. Positive into the ocean."
 			 packages="thicknessBulkPKG"
 		/>
+		<var name="removedRiverRunoffFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from river runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
+			 packages="thicknessBulkPKG"
+		/>
+		<var name="totalRemovedRiverRunoffFlux" type="real" dimensions="Time" units="kg s^{-1}"
+			 description="Global sum of fresh water flux from river runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
+			 packages="thicknessBulkPKG"
+		/>
 		<var name="iceRunoffFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from ice runoff at cell centers from coupler. Positive into the ocean."
+			 packages="thicknessBulkPKG;activeTracersBulkRestoringPKG"
+		/>
+		<var name="removedIceRunoffFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from ice runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
+			 packages="thicknessBulkPKG;activeTracersBulkRestoringPKG"
+		/>
+		<var name="totalRemovedIceRunoffFlux" type="real" dimensions="Time" units="kg s^{-1}"
+			 description="Global sum of fresh water flux from ice runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
 			 packages="thicknessBulkPKG;activeTracersBulkRestoringPKG"
 		/>
 		<var name="rainFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"

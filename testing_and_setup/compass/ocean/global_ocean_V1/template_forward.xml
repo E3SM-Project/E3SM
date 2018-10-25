@@ -1,0 +1,19 @@
+<template>
+	<namelist>
+		<option name="config_ocean_run_mode">'forward'</option>
+		<option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
+		<option name="config_time_integrator">'split_explicit'</option>
+		<option name="config_use_mom_del4">.true.</option>
+		<option name="config_use_cvmix">.true.</option>
+		<option name="config_use_cvmix_background">.true.</option>
+		<option name="config_use_cvmix_convection">.true.</option>
+		<option name="config_use_cvmix_shear">.true.</option>
+		<option name="config_use_cvmix_kpp">.true.</option>
+		<option name="config_cvmix_shear_mixing_scheme">'KPP'</option>
+		<option name="config_pressure_gradient_type">'Jacobian_from_TS'</option>
+		<option name="config_eos_type">'jm'</option>
+		<option name="config_implicit_bottom_drag_coeff">1.0e-3</option>
+		<option name="config_use_bulk_wind_stress">.true.</option>
+		<option name="config_use_activeTracers_surface_restoring">.true.</option>
+	</namelist>
+</template>
