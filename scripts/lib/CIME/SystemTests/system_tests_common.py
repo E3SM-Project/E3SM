@@ -209,7 +209,7 @@ class SystemTestsCommon(object):
         self._case.load_env(reset=True)
         self._caseroot = case.get_value("CASEROOT")
 
-    def run_indv(self, suffix="base", st_archive=False, is_batch=True):
+    def run_indv(self, suffix="base", st_archive=False):
         """
         Perform an individual run. Raises an EXCEPTION on fail.
         """
@@ -217,6 +217,7 @@ class SystemTestsCommon(object):
         stop_option = self._case.get_value("STOP_OPTION")
         run_type    = self._case.get_value("RUN_TYPE")
         rundir      = self._case.get_value("RUNDIR")
+        is_batch    = self._case.get_value("BATCH_SYSTEM") != "none"
 
         # remove any cprnc output leftover from previous runs
         for compout in glob.iglob(os.path.join(rundir,"*.cprnc.out")):
@@ -536,7 +537,7 @@ class FakeTest(SystemTestsCommon):
 
             build.post_build(self._case, [], build_complete=True)
 
-    def run_indv(self, suffix="base", st_archive=False, is_batch=True):
+    def run_indv(self, suffix="base", st_archive=False):
         mpilib = self._case.get_value("MPILIB")
         # This flag is needed by mpt to run a script under mpiexec
         if mpilib == "mpt":
