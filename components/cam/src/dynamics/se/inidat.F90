@@ -200,74 +200,6 @@ contains
        end do
     end do
 
-!moving this down since for theta state%vtheta_dp needs pressure to init
-#if 0
-    fieldname = 'T'
-    tmp = 0.0_r8
-    call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
-         1, nlev, 1, nelemd, tmp, found, gridname='GLL')
-    if(.not. found) then
-       call endrun('Could not find T field on input datafile')
-    end if
-
-    do ie=1,nelemd
-       elem(ie)%state%T=0.0_r8
-       indx = 1
-       do j = 1, np
-          do i = 1, np
-             elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
-             if (single_column) elem(ie)%state%T(i,j,:,1) = tmp(indx_scm,:,ie_scm)
-             indx = indx + 1
-          end do
-       end do
-    end do !ie
-
-    if (pertlim .ne. D0_0) then
-      if(masterproc) then
-        write(iulog,*) trim(subname), ': Adding random perturbation bounded', &
-                       'by +/- ', pertlim, ' to initial temperature field'
-      end if
-
-      if (new_random) then
-        rndm_seed_sz = 1
-      else
-        call random_seed(size=rndm_seed_sz)
-      endif
-      allocate(rndm_seed(rndm_seed_sz))
-
-      do ie=1,nelemd
-        ! seed random number generator based on element ID
-        ! (possibly include a flag to allow clock-based random seeding)
-        rndm_seed(:) = elem(ie)%GlobalId
-        if (seed_custom > 0) rndm_seed(:) = ieor( rndm_seed(1) , int(seed_custom,kind(rndm_seed(1))) )
-        if (seed_clock) then
-          call system_clock(sysclk)
-          rndm_seed(:) = ieor( sysclk , int(rndm_seed(1),kind(sysclk)) )
-        endif
-        if (new_random) then
-          call init_ranx(rndm_seed(1))
-        else
-          call random_seed(put=rndm_seed)
-        endif
-        do i=1,np
-          do j=1,np
-            do k=1,nlev
-              if (new_random) then
-                pertval = ranx()
-              else
-                call random_number(pertval)
-              endif
-              pertval = D2_0*pertlim*(D0_5 - pertval)
-              elem(ie)%state%T(i,j,k,tl) = elem(ie)%state%T(i,j,k,tl)*(D1_0 + pertval)
-            end do
-          end do
-        end do
-      end do
-
-      deallocate(rndm_seed)
-    end if
-#endif 
-
     if (associated(ldof)) then
        call endrun(trim(subname)//': ldof should not be associated')
     end if
@@ -416,11 +348,7 @@ contains
                 indx = indx + 1
              end do
           end do
-
-!print *, 'ie',ie
-!print *, elem(ie)%state%ps_v(:,:,1)
     end do
-!stop
 
     if ( (ideal_phys .or. aqua_planet)) then
        tmp(:,1,:) = 0._r8
@@ -446,7 +374,6 @@ contains
        end do
     end do
 
-
 !dss ps, phis, vapor or if-statements 'if ps_v .neq. 0' for each gll point in set_thermostate? best guess that
 !dss is faster.
 
@@ -463,7 +390,6 @@ contains
 ! model == preqx
 #else 
 ! model == theta-l
-
 ! BETTER CODING PRACTICE, get a var for tl=1 here
     do ie=1,nelemd
        kptr=0
@@ -483,36 +409,21 @@ contains
        call edgeVunpack(edge_surf, elem(ie)%state%phis,       1,   kptr,ie)
        kptr=kptr+1
        call edgeVunpack(edge_surf, elem(ie)%state%Q(:,:,:,1), nlev,kptr,ie)
-
-!print *, 'ie',ie
-!print *, 'dss', elem(ie)%state%ps_v(:,:,1)
-
-
     end do
-!stop
 #endif
 
 
 
-
-
-#if 1
-
 ! make sep loop for now, fuse later
-
     do ie=1,nelemd
 !TEMP CODE, what's the best way to do this? call homme routine
 ! init_state_vars_for_eam?
 !it seems to not be zero even with this statement, where is it init-ed again?
-
 !where in homme w_i and phinh_i are inited in hydro runs?
        elem(ie)%state%w_i(:,:,:,:) = 0.0_r8
        elem(ie)%state%phinh_i(:,:,:,:) = 0.0_r8
        elem(ie)%derived%omega_p(:,:,:) = 0.0_r8
     enddo
-
-
-
  
     fieldname = 'T'
     tmp = 0.0_r8
@@ -597,9 +508,6 @@ contains
 
       deallocate(rndm_seed)
     end if !if pertlim neq 0
-
-#endif 
-!stop
 
     if (single_column) then
       iop_update_surface = .false.
@@ -686,12 +594,8 @@ contains
           call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,m_cnst),nlev,kptr,ie)
           kptr=kptr+nlev
        enddo
-
-!print *, 'ie',ie
-!print *, '2ND dss', elem(ie)%state%ps_v(:,:,1)
     end do
 #endif
-    
     endif !NOT single column
 
 
@@ -717,12 +621,6 @@ contains
     call nctopo_util_inidat(ncid_topo,elem)
 
     deallocate(tmp)
-
-!do ie=1,nelemd
-!print *, 'ie',ie
-!print *, 'END ROUTINE', elem(ie)%state%ps_v(:,:,1)
-!enddo
-!stop
 
   end subroutine read_inidat
 
