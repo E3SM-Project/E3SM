@@ -366,6 +366,7 @@
     <desc>cime model</desc>
     <values>
       <value cime_model='cesm'>cesm</value>
+      <value cime_model='e3sm'>e3sm</value>
     </values>
   </entry>
 
