@@ -840,7 +840,7 @@
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
-      <mask>gx1v6</mask>
+      <mask>tx0.1v2</mask>
     </model_grid>
 
     <!--- mali grids -->
@@ -1485,6 +1485,8 @@
       <ny>1</ny>
       <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne240np4_gx1v6.111226.nc</file>
       <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne240np4_gx1v6.111226.nc</file>
+      <file grid="atm|lnd" mask="tx0.1v2">$DIN_LOC_ROOT/share/domains/domain.lnd.ne240np4_tx0.1v2.170822.nc</file>
+      <file grid="ice|ocn" mask="tx0.1v2">$DIN_LOC_ROOT/share/domains/domain.ocn.ne240np4_tx0.1v2.170822.nc</file>
       <desc>ne240np4 is Spectral Elem 1/8-deg grid:</desc>
     </domain>
 
@@ -2015,6 +2017,13 @@
       <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne240np4/map_ne240np4_to_gx1v6_aave_110428.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/gx1v6/map_gx1v6_to_ne240np4_aave_110428.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/gx1v6/map_gx1v6_to_ne240np4_aave_110428.nc</map>
+    </gridmap>
+    <gridmap atm_grid="ne240np4" ocn_grid="tx0.1v2">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne240np4/map_ne240np4_to_tx0.1v2_aave_110419.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne240np4/map_ne240np4_to_tx0.1v2_native_120327.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne240np4/map_ne240np4_to_tx0.1v2_native_120327.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/tx0.1v2/map_tx0.1v2_to_ne240np4_aave_110419.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/tx0.1v2/map_tx0.1v2_to_ne240np4_aave_110419.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne240np4" lnd_grid="0.23x0.31">

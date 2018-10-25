@@ -1,0 +1,40 @@
+#ifndef HOMMEXX_CONFIG_H
+#define HOMMEXX_CONFIG_H
+
+// Whether the CUDA exec space has been selected
+#cmakedefine HOMMEXX_CUDA_SPACE
+
+// Whether the OpenMP exec space has been selected
+#cmakedefine HOMMEXX_OPENMP_SPACE
+
+// Whether the Threads exec space has been selected
+#cmakedefine HOMMEXX_THREADS_SPACE
+
+// Whether the Serial exec space has been selected
+#cmakedefine HOMMEXX_SERIAL_SPACE
+
+// Whether the Default Kokkos exec space has been selected
+#cmakedefine HOMMEXX_DEFAULT_SPACE
+
+// Whether the debug parts of cxx code should be compiled or not
+#cmakedefine HOMMEXX_DEBUG
+
+// Whether the MPI operations have to be performed directly on the device
+#cmakedefine01 HOMMEXX_MPI_ON_DEVICE
+
+// Whether the GPU build should be bit-for-bit with the CPU build
+#cmakedefine01 HOMMEXX_GPU_BFB_WITH_CPU
+
+// Minimum and maximum number of warps to provide to a team
+#cmakedefine HOMMEXX_CUDA_MIN_WARP_PER_TEAM ${HOMMEXX_CUDA_MIN_WARP_PER_TEAM}
+#cmakedefine HOMMEXX_CUDA_MAX_WARP_PER_TEAM ${HOMMEXX_CUDA_MAX_WARP_PER_TEAM}
+
+// The version of AVX available on the host
+#define HOMMEXX_AVX_VERSION ${AVX_VERSION}
+
+// User-defined VECTOR_SIZE; used if AVX_VERSION is 0 and Cuda is not active
+#define HOMMEXX_VECTOR_SIZE ${HOMMEXX_VECTOR_SIZE}
+
+#define HOMMEXX_SHA1 "${LAST_GIT_COMMIT_SHA}"
+
+#endif
