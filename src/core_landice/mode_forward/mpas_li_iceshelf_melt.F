@@ -596,8 +596,8 @@ module li_iceshelf_melt
 
 
       ! Account for variability in thermocline depth
-      if (variabilityPhase <= 0.0_RKIND) then
-         call mpas_log_write("Value for config_temperature_profile_variability_phase must be a positive real value.", MPAS_LOG_ERR)
+      if (variabilityPeriod <= 0.0_RKIND) then
+         call mpas_log_write("Value for config_temperature_profile_variability_period must be a positive real value.", MPAS_LOG_ERR)
          err = ior(err, 1)
       endif
       depthOffset = variabilityAmplitude * sin( (2.0_RKIND * pii / variabilityPeriod) * (daysSinceStart/365.0_RKIND) &
