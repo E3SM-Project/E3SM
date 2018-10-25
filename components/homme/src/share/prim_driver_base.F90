@@ -103,6 +103,9 @@ contains
     ! ==================================
     call prim_init1_geometry(elem,par,dom_mt)
 
+    ! Cleanup the tmp stuff used in prim_init1_geometry
+    call prim_init1_cleanup ()
+
     ! ==================================
     ! Initialize element pointers (if any)
     ! ==================================
@@ -124,9 +127,6 @@ contains
 
     ! Initialize the time levels
     call TimeLevel_init(tl)
-
-    ! Cleanup the tmp stuff used in prim_init1_geometry
-    call prim_init1_cleanup ()
 
     if(par%masterproc) write(iulog,*) 'end of prim_init1'
   end subroutine prim_init1
