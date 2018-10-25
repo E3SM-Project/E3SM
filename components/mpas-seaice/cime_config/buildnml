@@ -146,12 +146,12 @@ def buildnml(case, caseroot, compname):
         grid_prefix += 'seaice.RRS30-10wLI'
         decomp_date += '160930'
         decomp_prefix += 'mpas-cice.graph.info.'
-        data_iceberg_file += 'data_iceberg_181022.RRS30to10v3wLI.nc'
     elif ice_grid == 'oRRS30to10v3wLI':
         grid_date += '171109'
         grid_prefix += 'seaice.RRS30to10v3wLI'
         decomp_date += '171109'
         decomp_prefix += 'mpas-cice.graph.info.'
+        data_iceberg_file += 'data_iceberg_181022.RRS30to10v3wLI.nc'
     elif ice_grid == 'oRRS18to6':
         grid_date += '160830'
         grid_prefix += 'seaice.RRS.18to6km'
