@@ -44,7 +44,7 @@ module prim_driver_base
   ! Service variables used to partition the mesh.
   ! Note: GridEdge and MeshVertex are public, cause kokkos targets need to access them
   type (GridVertex_t), pointer :: GridVertex(:)
-  type (GridEdge_t),   public, target,allocatable :: GridEdge(:)
+  type (GridEdge_t),   public, pointer :: GridEdge(:)
   type (MetaVertex_t), public :: MetaVertex
   logical :: can_scalably_init_grid
 
@@ -293,14 +293,13 @@ contains
     end if
 
     can_scalably_init_grid = &
-         .false. .and. &
          topology == "cube" .and. &
          .not. MeshUseMeshFile .and. &
          partmethod .eq. SFCURVE .and. &
          .not. (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method))
 
     if (can_scalably_init_grid) then
-       call sgi_init_grid(par, GridVertex, MetaVertex)
+       call sgi_init_grid(par, GridVertex, GridEdge, MetaVertex)
     end if
 
     if (topology=="cube" .and. .not. can_scalably_init_grid) then
@@ -340,22 +339,22 @@ contains
     call t_startf('PartitioningTime')
 
     if (.not. can_scalably_init_grid) then
-    if(partmethod .eq. SFCURVE) then
-       if(par%masterproc) write(iulog,*)"partitioning graph using SF Curve..."
-       !if the partitioning method is space filling curves
-       call genspacepart(GridEdge,GridVertex)
-       if (is_zoltan_task_mapping(z2_map_method)) then
-          if(par%masterproc) write(iulog,*)"mapping graph using zoltan2 task mapping on the result of SF Curve..."
-        call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+       if(partmethod .eq. SFCURVE) then
+          if(par%masterproc) write(iulog,*)"partitioning graph using SF Curve..."
+          !if the partitioning method is space filling curves
+          call genspacepart(GridEdge,GridVertex)
+          if (is_zoltan_task_mapping(z2_map_method)) then
+             if(par%masterproc) write(iulog,*)"mapping graph using zoltan2 task mapping on the result of SF Curve..."
+             call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+          endif
+          !if zoltan2 partitioning method is asked to run.
+       elseif ( is_zoltan_partition(partmethod)) then
+          if(par%masterproc) write(iulog,*)"partitioning graph using zoltan2 partitioning/task mapping..."
+          call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+       else
+          if(par%masterproc) write(iulog,*)"partitioning graph using Metis..."
+          call genmetispart(GridEdge,GridVertex)
        endif
-    !if zoltan2 partitioning method is asked to run.
-    elseif ( is_zoltan_partition(partmethod)) then
-        if(par%masterproc) write(iulog,*)"partitioning graph using zoltan2 partitioning/task mapping..."
-        call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
-    else
-        if(par%masterproc) write(iulog,*)"partitioning graph using Metis..."
-       call genmetispart(GridEdge,GridVertex)
-    endif
     endif ! .not. can_scalably_init_grid
 
     call t_stopf('PartitioningTime')
@@ -377,7 +376,6 @@ contains
     ! ====================================================
     if (.not. can_scalably_init_grid) then
        call initMetaGraph(iam,MetaVertex,GridVertex,GridEdge)
-       deallocate(GridEdge)
     end if
 
     nelemd = LocalElemCount(MetaVertex)
@@ -592,11 +590,10 @@ contains
 
     integer :: j
 
-    nelem = SIZE(GridVertex)
-
     if (can_scalably_init_grid) then
        call sgi_finalize()
     else
+       deallocate(GridEdge)
        call destroyMetaGraph(MetaVertex)
        do j =1,nelem
           call deallocate_gridvertex_nbrs(GridVertex(j))

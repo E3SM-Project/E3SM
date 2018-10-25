@@ -10,9 +10,9 @@ module scalable_grid_init_mod
   public :: &
 
     ! (Almost) scalably generate MetaVertex. SFC generation is still unscalable,
-    ! but ne must be > 10K before it becomes a concern. Also provide GridVertex.
-    ! sgi_finalize will deallocate both GridVertex and MetaVertex, in addition
-    ! to internal data.
+    ! but ne must be > 10K before it becomes a concern. Also provide GridVertex
+    ! and GridEdge. sgi_finalize will deallocate GridVertex, GridEdge, and
+    ! MetaVertex, in addition to internal data.
     sgi_init_grid, &
 
     ! Deallocate data used in grid initialization. This is separate from
@@ -43,12 +43,13 @@ module scalable_grid_init_mod
 
 contains
 
-  subroutine sgi_init_grid(par, GridVertex, MetaVertex)
+  subroutine sgi_init_grid(par, GridVertex, GridEdge, MetaVertex)
     use dimensions_mod, only: nelem, ne
     use metagraph_mod, only: initMetaGraph
 
     type (parallel_t), intent(in) :: par
     type (GridVertex_t), pointer, intent(out) :: GridVertex(:)
+    type (GridEdge_t), pointer, intent(out) :: GridEdge(:)
     type (MetaVertex_t), intent(out), target :: MetaVertex
     type (GridManager_t), pointer :: gm
     integer, allocatable :: sfctest(:)
@@ -127,6 +128,7 @@ contains
     call sgi_CubeTopology_phase2(gm)
     call initMetaGraph(gm%rank + 1, MetaVertex, gm%gv, gm%ge)
     GridVertex => gm%gv
+    GridEdge => gm%ge
   end subroutine sgi_init_grid
 
   subroutine sgi_finalize()
