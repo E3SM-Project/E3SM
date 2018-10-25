@@ -22,20 +22,6 @@ module seaice_error
   private
   save
 
-  ! column critical error codes
-  integer, parameter, public :: &
-       SEAICE_ERROR_COL_VERT_THERM = 10, &
-       SEAICE_ERROR_COL_ITD_THERM  = 11, &
-       SEAICE_ERROR_COL_RIDGING    = 12, &
-       SEAICE_ERROR_COL_BGC        = 13
-
-  ! incremental remap critical error codes
-  integer, parameter, public :: &
-       SEAICE_ERROR_IR_NEG_AREA    = 20, &
-       SEAICE_ERROR_IR_NEG_MASS    = 21, &
-       SEAICE_ERROR_IR_MONO        = 22, &
-       SEAICE_ERROR_IR_CONS        = 23
-
   ! public routines
   public :: &
        seaice_critical_error_write_block, &
@@ -55,7 +41,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_critical_error_write_block(domain, block)
+  subroutine seaice_critical_error_write_block(domain, block, abortFlag)
 
     type(domain_type), intent(in) :: &
          domain
@@ -63,12 +49,19 @@ contains
     type(block_type), intent(in) :: &
          block
 
-    ! write out block streams
-    call mpas_stream_mgr_block_write(&
-         domain % streamManager, &
-         writeBlock=block, &
-         streamID='abort_block', &
-         forceWriteNow=.true.)
+    logical, intent(in) :: &
+         abortFlag
+
+    if (abortFlag) then
+
+       ! write out block streams
+       call mpas_stream_mgr_block_write(&
+            domain % streamManager, &
+            writeBlock=block, &
+            streamID='abort_block', &
+            forceWriteNow=.true.)
+
+    endif ! abortFlag
 
   end subroutine seaice_critical_error_write_block
 
@@ -84,27 +77,29 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_check_critical_error(domain, ierr)
+  subroutine seaice_check_critical_error(domain, abortFlag)
 
     use mpas_dmpar, only: mpas_dmpar_max_int
 
-    type(domain_type), intent(inout) :: &
+    type(domain_type), intent(in) :: &
          domain !< Input/Output:
 
-    integer, intent(in) :: &
-         ierr
+    logical, intent(in) :: &
+         abortFlag
 
     logical, pointer :: &
          config_full_abort_write
 
     integer :: &
+         ierr, &
          ierrmax
 
     call MPAS_pool_get_config(domain % configs, "config_full_abort_write", config_full_abort_write)
-
     if (config_full_abort_write) then
 
        ! find if anyone failed
+       ierr = 0
+       if (abortFlag) ierr = 1
        call mpas_dmpar_max_int(domain % dminfo, ierr, ierrmax)
        if (ierrmax > 0) then
 
@@ -115,46 +110,9 @@ contains
     endif
 
     ! check if a critical error occured
-    if (ierr > 0) then
-
-       ! kill the model
-       call mpas_log_write("Runtime error $i: "//trim(error_string(ierr)), &
-            messageType=MPAS_LOG_CRIT, intArgs=(/ierr/))
-
-    endif
+    if (abortFlag) call mpas_log_write("Runtime error", messageType=MPAS_LOG_CRIT)
 
   end subroutine seaice_check_critical_error
-
-  !-----------------------------------------------------------------------
-
-  function error_string(ierr) result(errorStr)
-
-    character(len=strKIND) :: errorStr
-
-    integer, intent(in) :: ierr
-
-    select case(ierr)
-    case(SEAICE_ERROR_COL_VERT_THERM)
-       errorStr = "Column: Vertical Thermodynamics"
-    case(SEAICE_ERROR_COL_ITD_THERM)
-       errorStr = "Column: ITD thermodynamics"
-    case(SEAICE_ERROR_COL_RIDGING)
-       errorStr = "Column: Ridging"
-    case(SEAICE_ERROR_COL_BGC)
-       errorStr = "Column: BGC"
-    case(SEAICE_ERROR_IR_NEG_AREA)
-       errorStr = "IR: Negative area"
-    case(SEAICE_ERROR_IR_NEG_MASS)
-       errorStr = "IR: Negative mass"
-    case(SEAICE_ERROR_IR_MONO)
-       errorStr = "IR: Monotonicity violation"
-    case(SEAICE_ERROR_IR_CONS)
-       errorStr = "IR: Conservation violation"
-    case default
-       errorStr = "Unknown error code"
-    end select
-
-  end function error_string
 
   !-----------------------------------------------------------------------
 

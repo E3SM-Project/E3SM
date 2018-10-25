@@ -1,10 +1,3 @@
-! Copyright (c) 2013,  Los Alamos National Security, LLC (LANS)
-! and the University Corporation for Atmospheric Research (UCAR).
-!
-! Unless noted otherwise source code is licensed under the BSD license.
-! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
-!
 module seaice_core_interface
 
    use mpas_derived_types
@@ -110,6 +103,9 @@ module seaice_core_interface
 
       ! set up analysis member packages
       call seaice_analysis_setup_packages(configPool, packagePool, iocontext, ierr)
+
+      ! icebergs
+      call setup_packages_bergs(configPool, packagePool, ierr)
 
       ! testing system test
       call setup_packages_other(configPool, packagePool, ierr)
@@ -528,6 +524,43 @@ module seaice_core_interface
      !pkgColumnFormDragActive = .true.
 
    end subroutine setup_packages_column_physics!}}}
+
+   !***********************************************************************
+   !
+   !  routine setup_packages_bergs
+   !
+   !> \brief   Setup icebergs package
+   !> \author  Darin Comeau
+   !> \date    19 May 2017
+   !> \details This routine is intended to set the icebergs package PkgBergs
+   !> as active/deactive based on the namelist option config_use_bergs.
+   !
+   !-----------------------------------------------------------------------
+
+   subroutine setup_packages_bergs(configPool, packagePool, ierr)!{{{
+
+     type (mpas_pool_type), intent(in) :: configPool
+     type (mpas_pool_type), intent(in) :: packagePool
+     integer, intent(out) :: ierr
+
+          ! icebergs package
+     logical, pointer :: &
+          config_use_data_icebergs
+
+     logical, pointer :: &
+          pkgBergsActive
+
+     ierr = 0
+
+     !-----------------------------------------------------------------------
+     ! iceberg routines
+     !-----------------------------------------------------------------------
+
+     call MPAS_pool_get_config(configPool, "config_use_data_icebergs", config_use_data_icebergs)
+     call MPAS_pool_get_package(packagePool, "pkgBergsActive", pkgBergsActive)
+     pkgBergsActive = config_use_data_icebergs
+
+   end subroutine setup_packages_bergs!}}}
 
    !***********************************************************************
    !

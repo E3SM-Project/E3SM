@@ -68,9 +68,11 @@ contains
     type (domain_type) :: domain
 
     logical, pointer :: &
-         config_use_forcing
+         config_use_forcing, &
+         config_use_data_icebergs
 
     call MPAS_pool_get_config(domain % configs, "config_use_forcing", config_use_forcing)
+    call MPAS_pool_get_config(domain % configs, "config_use_data_icebergs", config_use_data_icebergs)
 
     if (config_use_forcing) then
 
@@ -81,6 +83,9 @@ contains
        call init_oceanic_forcing(domain)
 
     endif
+
+    ! init the data iceberg forcing
+    if (config_use_data_icebergs) call init_data_iceberg_forcing(domain)
 
   end subroutine seaice_forcing_init
 
@@ -310,9 +315,11 @@ contains
          firstTimeStep
 
     logical, pointer :: &
-         config_use_forcing
+         config_use_forcing, &
+         config_use_data_icebergs
 
     call MPAS_pool_get_config(domain % configs, "config_use_forcing", config_use_forcing)
+    call MPAS_pool_get_config(domain % configs, "config_use_data_icebergs", config_use_data_icebergs)
 
     if (config_use_forcing) then
 
@@ -326,6 +333,16 @@ contains
             domain, &
             simulationClock, &
             firstTimeStep)
+
+    endif
+
+    ! data iceberg forcing
+    if (config_use_data_icebergs) then
+
+       call data_iceberg_forcing(&
+            streamManager, &
+            domain, &
+            simulationClock)
 
     endif
 
@@ -1591,6 +1608,180 @@ contains
   end subroutine post_oceanic_coupling
 
 !-----------------------------------------------------------------------
+! data iceberg forcing
+!-----------------------------------------------------------------------
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_data_iceberg_forcing
+!
+!> \brief
+!> \author Darin Comeau, LANL
+!> \date 27th August 2018
+!> \details This initializes the data iceberg forcing group.
+!>
+!-----------------------------------------------------------------------
+
+  subroutine init_data_iceberg_forcing(domain)
+
+    type (domain_type) :: domain
+
+    logical, pointer :: &
+         config_do_restart
+
+    character(len=strKIND) :: &
+         forcingIntervalMonthly, &
+         forcingReferenceTimeMonthly
+
+    ! get configuration options
+    call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
+
+    forcingIntervalMonthly = "00-01-00_00:00:00"
+    forcingReferenceTimeMonthly = "0001-01-15_00:00:00"
+
+    ! create own data iceberg forcing group
+    call MPAS_forcing_init_group(&
+         seaiceForcingGroups, &
+         "seaice_data_iceberg_forcing_monthly", &
+         domain, &
+         '0000-01-01_00:00:00', &
+         '0000-01-01_00:00:00', &
+         '0001-00-00_00:00:00', &
+         config_do_restart)
+
+    ! iceberg freshwater fluxes
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_data_iceberg_forcing_monthly", &
+         "bergFreshwaterFluxData", &
+         "dataIcebergForcing", &
+         "berg_forcing", &
+         "bergFreshwaterFluxData", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    call MPAS_forcing_init_field_data(&
+         seaiceForcingGroups, &
+         "seaice_data_iceberg_forcing_monthly", &
+         domain % streamManager, &
+         config_do_restart, &
+         .false.)
+
+  end subroutine init_data_iceberg_forcing
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  data_iceberg_forcing
+!
+!> \brief
+!> \author Darin Comeau, LANL
+!> \date 27th Aug 2018
+!> \details This routine is the timestep for getting and setting fluxes
+!> from data icebergs.
+!
+!-----------------------------------------------------------------------
+
+  subroutine data_iceberg_forcing(&
+       streamManager, &
+       domain, &
+       simulationClock)
+
+    type (MPAS_streamManager_type), intent(inout) :: streamManager
+
+    type (domain_type) :: domain
+
+    type (MPAS_clock_type) :: simulationClock ! dc is this being used?
+
+    real(kind=RKIND), pointer :: &
+         config_dt
+
+    call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
+
+    ! use the forcing layer to get data
+    call MPAS_forcing_get_forcing(&
+       seaiceForcingGroups, &
+       "seaice_data_iceberg_forcing_monthly", &
+       streamManager, &
+       config_dt)
+
+    call get_data_iceberg_fluxes(domain)
+
+  end subroutine data_iceberg_forcing
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  get_data_iceberg_fluxes
+!
+!> \brief   Initialize with icebergs calving mass
+!> \author  Darin Comeau, LANL
+!> \date    20 Aug 2018
+!> \details This routine is intended to initialize the set data iceberg
+!> meltwater and latent heat fluxes from a forcing file of monthly
+!> climatologies.
+!
+!-----------------------------------------------------------------------
+
+  subroutine get_data_iceberg_fluxes(domain)
+
+    use seaice_constants, only: &
+         seaiceLatentHeatMelting ! latent heat of melting of fresh ice (J/kg)
+
+    type(domain_type), intent(inout) :: &
+         domain
+
+    type(block_type), pointer :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         mesh, &
+         berg_forcing, &
+         berg_fluxes
+
+    integer, pointer :: &
+         nCellsSolve
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         bergFreshwaterFluxData, & ! iceberg freshwater flux read in from file (kg/m^2/s)
+         bergFreshwaterFlux, & ! iceberg freshwater flux for ocean (kg/m^2/s)
+         bergLatentHeatFlux ! iceberg latent heat flux for ocean (J/m^2/s)
+
+    integer :: &
+         iCell
+
+    ! dc including as parameters here so as not to create new namelist options
+    real(kind=RKIND), parameter :: &
+         specificHeatFreshIce = 2106.0_RKIND, & ! specific heat of fresh ice J * kg^-1 * K^-1
+         bergTemperature = -4.0_RKIND           ! iceberg temperature, assumed constant
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+       call MPAS_pool_get_subpool(block % structs, "berg_forcing", berg_forcing)
+       call MPAS_pool_get_subpool(block % structs, "berg_fluxes", berg_fluxes)
+
+       call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+
+       call MPAS_pool_get_array(berg_forcing, "bergFreshwaterFluxData", bergFreshwaterFluxData)
+       call MPAS_pool_get_array(berg_fluxes, "bergFreshwaterFlux", bergFreshwaterFlux)
+       call MPAS_pool_get_array(berg_fluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
+
+       do iCell = 1, nCellsSolve
+
+          bergFreshwaterFlux(iCell) = bergFreshwaterFluxData(iCell)
+          bergLatentHeatFlux(iCell) = bergFreshwaterFluxData(iCell) * &
+                                     (seaiceLatentHeatMelting - specificHeatFreshIce*bergTemperature)
+
+       enddo
+
+       block => block % next
+    enddo
+
+  end subroutine get_data_iceberg_fluxes
+
+!-----------------------------------------------------------------------
 ! coupler fluxes initialization
 !-----------------------------------------------------------------------
 
@@ -1748,6 +1939,7 @@ contains
 
     type(MPAS_pool_type), pointer :: &
          oceanFluxes, &
+         icebergFluxes, &
          biogeochemistry
 
     real(kind=RKIND), dimension(:), pointer :: &
@@ -1755,6 +1947,10 @@ contains
          oceanSaltFlux, &
          oceanHeatFlux, &
          oceanShortwaveFlux
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         bergFreshwaterFlux, &
+         bergLatentHeatFlux
 
     real(kind=RKIND), dimension(:), pointer :: &
          oceanNitrateFlux, &
@@ -1776,7 +1972,8 @@ contains
          oceanDissolvedIronFlux
 
     logical, pointer :: &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_data_icebergs
 
     block => domain % blocklist
     do while (associated(block))
@@ -1831,6 +2028,21 @@ contains
           oceanParticulateIronFlux = 0.0_RKIND
           oceanDissolvedIronFlux   = 0.0_RKIND
           oceanDustIronFlux        = 0.0_RKIND
+
+       endif
+
+       ! data icebergs
+       call MPAS_pool_get_config(block % configs, "config_use_data_icebergs", config_use_data_icebergs)
+
+       if (config_use_data_icebergs) then
+
+          call MPAS_pool_get_subpool(block % structs, "berg_fluxes", icebergFluxes)
+
+          call MPAS_pool_get_array(icebergFluxes, "bergFreshwaterFlux", bergFreshwaterFlux)
+          call MPAS_pool_get_array(icebergFluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
+
+          bergFreshwaterFlux = 0.0_RKIND
+          bergLatentHeatFlux = 0.0_RKIND
 
        endif
 

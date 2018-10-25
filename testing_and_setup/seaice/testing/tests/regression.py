@@ -6,7 +6,7 @@ from testing_utils import *
 
 #-------------------------------------------------------------------------
 
-def regression(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain, configuration, options, check):
+def regression(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain, configuration, options, check, oversubscribe):
 
     # find available directory name
     iTest = 1
@@ -36,7 +36,7 @@ def regression(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain, configuratio
     streamChanges = [{"streamName":"restart", "attributeName":"output_interval", "newValue":"24:00:00"}, \
                      {"streamName":"output" , "attributeName":"output_interval", "newValue":"none"}]
 
-    if (run_model("development", mpasDevelopmentDir, domainsDir, domain, configuration, nmlChanges, streamChanges, nProcs, logfile) != 0):
+    if (run_model("development", mpasDevelopmentDir, domainsDir, domain, configuration, nmlChanges, streamChanges, nProcs, logfile, oversubscribe) != 0):
         run_failed("regression")
         os.chdir("..")
         return 1
@@ -51,7 +51,7 @@ def regression(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain, configuratio
     streamChanges = [{"streamName":"restart", "attributeName":"output_interval", "newValue":"24:00:00"}, \
                      {"streamName":"output" , "attributeName":"output_interval", "newValue":"none"}]
 
-    if (run_model("base", mpasBaseDir, domainsDir, domain, configuration, nmlChanges, streamChanges, nProcs, logfile) != 0):
+    if (run_model("base", mpasBaseDir, domainsDir, domain, configuration, nmlChanges, streamChanges, nProcs, logfile, oversubscribe) != 0):
         run_failed("regression")
         os.chdir("..")
         return 1

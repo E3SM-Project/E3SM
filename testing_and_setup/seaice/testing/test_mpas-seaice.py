@@ -17,12 +17,13 @@ colour_init()
 # command line arguments
 parser = argparse.ArgumentParser(description='Test MPAS-Seaice')
 
-parser.add_argument("-d", "--dev",        required=True,  dest="mpasDevelopmentDir",                 help="MPAS development directory to test")
-parser.add_argument("-b", "--base",       required=False, dest="mpasBaseDir",                        help="MPAS base directory to compare against")
-parser.add_argument("-t", "--testsuite",  required=False, dest="testSuite",                          help="Input test suite xml file")
-parser.add_argument("-o", "--domainsdir", required=False, dest="domainsDir",                         help="Domains directory")
-parser.add_argument("-a", "--avail",      required=False, dest="avail",         action='store_true', help="Print available tests to stdout")
-parser.add_argument("-c", "--check",      required=False, dest="check",         action='store_true', help="Check that the testing system is working")
+parser.add_argument("-d", "--dev",           required=True,  dest="mpasDevelopmentDir",                 help="MPAS development directory to test")
+parser.add_argument("-b", "--base",          required=False, dest="mpasBaseDir",                        help="MPAS base directory to compare against")
+parser.add_argument("-t", "--testsuite",     required=False, dest="testSuite",                          help="Input test suite xml file")
+parser.add_argument("-o", "--domainsdir",    required=False, dest="domainsDir",                         help="Domains directory")
+parser.add_argument("-a", "--avail",         required=False, dest="avail",         action='store_true', help="Print available tests to stdout")
+parser.add_argument("-c", "--check",         required=False, dest="check",         action='store_true', help="Check that the testing system is working")
+parser.add_argument("-s", "--oversubscribe", required=False, dest="oversubscribe", action='store_true', help="Oversubscribe processors in mpi calls")
 
 args = parser.parse_args()
 
@@ -123,9 +124,9 @@ for configuration in testsuite:
                     module = imp.load_source(testAvail["name"], os.path.dirname(os.path.abspath(__file__)) + "/tests/" + testAvail["name"]+".py")
                     test_function = getattr(module, testAvail["name"])
                     if (testAvail["needsBase"]):
-                        failed = test_function(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain.get('name'), configuration.get('name'), options, args.check)
+                        failed = test_function(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain.get('name'), configuration.get('name'), options, args.check, args.oversubscribe)
                     else:
-                        failed = test_function(mpasDevelopmentDir,              domainsDir, domain.get('name'), configuration.get('name'), options, args.check)
+                        failed = test_function(mpasDevelopmentDir,              domainsDir, domain.get('name'), configuration.get('name'), options, args.check, args.oversubscribe)
 
                     nTests = nTests + 1
                     nFails = nFails + failed
