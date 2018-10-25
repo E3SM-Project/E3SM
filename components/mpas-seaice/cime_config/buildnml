@@ -427,7 +427,7 @@ def buildnml(case, caseroot, compname):
             lines.append('                  filename_interval="none"')
             lines.append('                  input_interval="none" >')
             lines.append('')
-            lines.append('    <var name="bergFreshWaterFluxData"/>')
+            lines.append('    <var name="bergFreshwaterFluxData"/>')
             lines.append('    <var name="xtime"/>')
             lines.append('</stream>')
             lines.append('')
