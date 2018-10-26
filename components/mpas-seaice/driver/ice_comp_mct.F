@@ -2018,7 +2018,7 @@ contains
       call MPAS_pool_get_array(oceanFluxes, 'oceanSaltFlux', oceanSaltFlux)
 
       if (config_use_data_icebergs) then
-         call MPAS_pool_get_subpool(block_ptr % structs, "iceberg_fluxes", icebergFluxes)
+         call MPAS_pool_get_subpool(block_ptr % structs, "berg_fluxes", icebergFluxes)
 
          call MPAS_pool_get_array(icebergFluxes, "bergFreshwaterFlux", bergFreshwaterFlux)
          call MPAS_pool_get_array(icebergFluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
