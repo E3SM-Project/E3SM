@@ -683,7 +683,7 @@ module li_iceshelf_melt
       ! Now calculate melt rate at each grid cell
       do iCell = 1, nCellsSolve
          if (li_mask_is_floating_ice(cellMask(iCell))) then
-            if (lowerSurface(iCell) < -20.0_RKIND) then
+            if (lowerSurface(iCell) > -20.0_RKIND) then
                ! Shut off melt at an arbitrary shallow depth to prevent ice from melting out entirely
                floatingBasalMassBal(iCell) = 0.0_RKIND
             else
