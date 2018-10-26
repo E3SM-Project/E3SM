@@ -1257,7 +1257,7 @@ directory, NOT in this subdirectory."""
 
         mpirun_cmd_override = self.get_value("MPI_RUN_COMMAND")
         if mpirun_cmd_override not in ["", None, "UNSET"]:
-            return mpirun_cmd_override + " " + run_exe + " " + run_misc_suffix
+            return self.get_resolved_value(mpirun_cmd_override + " " + run_exe + " " + run_misc_suffix)
 
         # Things that will have to be matched against mpirun element attributes
         mpi_attribs = {
