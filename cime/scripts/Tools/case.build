@@ -47,8 +47,6 @@ from standard_script_setup import *
 import CIME.build as build
 from CIME.case            import Case
 from CIME.utils           import find_system_test
-from CIME.XML.files       import Files
-from CIME.XML.component   import Component
 from CIME.test_status     import *
 
 ###############################################################################
@@ -66,10 +64,12 @@ def parse_command_line(args, description):
 
     mutex_group = parser.add_mutually_exclusive_group()
 
-    files = Files()
-    config_file = files.get_value("CONFIG_CPL_FILE")
-    component = Component(config_file, "CPL")
-    comps = [x.lower() for x in component.get_valid_model_components()]
+    # TODO mvertens: the following is hard-wired - otherwise it does not work with nuopc
+    # files = Files()
+    # config_file = files.get_value("CONFIG_CPL_FILE")
+    # component = Component(config_file, "CPL")
+    # comps = [x.lower() for x in component.get_valid_model_components()]
+    comps = ["cpl","atm","lnd","ice","ocn","rof","glc","wav","esp"]
     libs  = ["csmshare", "mct", "pio", "gptl"]
     allobjs = comps + libs
 
