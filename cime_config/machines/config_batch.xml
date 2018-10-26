@@ -546,11 +546,11 @@
    <batch_system MACH="cades" type="slurm" >
          <submit_args>
            <arg flag="-A ccsi"/>
-           <arg flag="--mem=128G"/>
+           <arg flag="--mem=0G"/>
            <arg flag="--ntasks-per-node 32"/>
          </submit_args>
          <queues>
-           <queue default="true">burst</queue>
+           <queue default="true">batch</queue>
          </queues>
    </batch_system>
 

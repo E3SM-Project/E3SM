@@ -2859,13 +2859,13 @@
     <NODENAME_REGEX>or-condo</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>gnu,intel</COMPILERS>
-    <MPILIBS>openmpi</MPILIBS>
-    <CIME_OUTPUT_ROOT>/lustre/or-hydra/cades-ccsi/scratch/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <MPILIBS>mpi-serial,openmpi</MPILIBS>
+    <CIME_OUTPUT_ROOT>/lustre/or-scratch/cades-ccsi/scratch/$USER</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/lustre/or-scratch/cades-ccsi/proj-shared/project_acme/e3sm_inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lustre/or-scratch/cades-ccsi/proj-shared/project_acme/e3sm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/lustre/or-hydra/cades-ccsi/proj-shared/tools/cprnc.orcondo</CCSM_CPRNC>
+    <BASELINE_ROOT>/lustre/or-scratch/cades-ccsi/proj-shared/project_acme/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/lustre/or-scratch/cades-ccsi/proj-shared/tools/cprnc.orcondo</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
@@ -2896,12 +2896,21 @@
       </modules>
       <modules compiler="gnu">
         <command name="load">PE-gnu</command>
+        <command name="load">perl</command>
       </modules>
       <modules>
-        <command name="load">mkl/2017</command>
+        <command name="load">mkl/2018.1.163</command> <!-- this shall generate 3 env vars: MKLROOT, MKLROOT_INC, MKLROOT_LIB -->
         <command name="load">cmake/3.12.0</command>
-        <command name="load">python/2.7.12</command>
+        <command name="load">python/2.7.13</command>
         <command name="load">nco/4.6.9</command>
+      </modules>
+      <!-- by default, PE-gnu/1.0-->
+      <modules compiler="gnu" mpilib="mpi-serial">
+        <command name="load">netcdf/4.3.3.1</command>
+        <command name="load">pnetcdf/1.9.0</command>
+      </modules>
+      <!-- by default, PE-gnu/1.0-->
+      <modules compiler="gnu" mpilib="openmpi">
         <command name="load">hdf5-parallel/1.8.17</command>
         <command name="load">netcdf-hdf5parallel/4.3.3.1</command>
         <command name="load">pnetcdf/1.9.0</command>
@@ -2915,10 +2924,24 @@
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <!-- for CLM-PFLOTRAN coupling, the PETSC_PATH must be defined specifically upon machines -->
     <environment_variables compiler="gnu" mpilib="openmpi">
-      <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc4pf/openmpi-1.10-gcc-5.3</env>
+      <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc-x/openmpi-1.10-gcc-5.3</env>
     </environment_variables>
-    <environment_variables>
-      <env name="PERL5LIB">/software/user_tools/current/cades-ccsi/perl5/lib/perl5/</env>
+    <environment_variables compiler="gnu" mpilib="!mpi-serial">
+      <!-- The following IS TOTALLY from user's local .bashrc/.bash_profile ENV settings-->
+      <env name="HDF5_PATH">$ENV{HDF5_PATH}</env>
+      <env name="NETCDF_PATH">$ENV{NETCDF_PATH}</env>
+      <env name="NETCDF_FORTRAN_PATH">$ENV{NETCDF_PATH}</env>
+      <env name="PNETCDF_PATH">$ENV{PNETCDF_PATH}</env>
+      <env name="LAPACK_LIBDIR">$ENV{BLASLAPACK_LIBDIR}</env>
+      <env name="PERL5LIB">/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/perl/5.30.1/centos7.2_gnu5.3.0/lib/perl5/</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="mpi-serial">
+      <env name="NETCDF_PATH">/software/dev_tools/swtree/cs400/netcdf/4.3.3.1/centos7.2_gnu5.3.0/</env>
+      <env name="NETCDF_C_PATH">/software/dev_tools/swtree/cs400/netcdf/4.3.3.1/centos7.2_gnu5.3.0/</env>
+      <env name="NETCDF_FORTRAN_PATH">/software/dev_tools/swtree/cs400/netcdf/4.3.3.1/centos7.2_gnu5.3.0/</env>
+      <env name="PNETCDF_PATH">$ENV{PNETCDF_PATH}</env>
+      <env name="LAPACK_LIBDIR">$ENV{BLASLAPACK_LIBDIR}</env>
+      <env name="PERL5LIB">/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/perl/5.30.1/centos7.2_gnu5.3.0/lib/perl5/</env>
     </environment_variables>
 
   </machine>
