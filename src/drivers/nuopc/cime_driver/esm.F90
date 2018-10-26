@@ -50,15 +50,15 @@ module ESM
     use NUOPC_Driver , only : driver_label_SetRunSequence   => label_SetRunSequence
     use NUOPC_Driver , only : driver_label_Finalize         => label_Finalize
     use ESMF         , only : ESMF_GridComp, ESMF_Config, ESMF_GridCompSet, ESMF_ConfigLoadFile
-    use ESMF         , only : ESMF_ConfigCreate, ESMF_METHOD_INITIALIZE
+    use ESMF         , only : ESMF_METHOD_INITIALIZE
     use ESMF         , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO
 
     type(ESMF_GridComp)  :: driver
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Config) :: config
     integer           :: dbrc
+    type(ESMF_Config)    :: runSeq
     character(len=*), parameter :: subname = "(esm.F90:SetServices)"
     !---------------------------------------
 
@@ -99,13 +99,8 @@ module ESM
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Create, open and set the config
-    config = ESMF_ConfigCreate(rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_ConfigLoadFile(config, "cesm.runconfig", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_GridCompSet(driver, config=config, rc=rc)
+    call ESMF_GridCompSet(driver, configFile="nuopc.runconfig", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug_flag > 5) then
@@ -343,7 +338,7 @@ module ESM
   subroutine SetRunSequence(driver, rc)
     use ESMF                  , only : ESMF_GridComp, ESMF_LogWrite, ESMF_SUCCESS, ESMF_LOGMSG_INFO
     use ESMF                  , only : ESMF_Time, ESMF_TimeInterval, ESMF_Clock, ESMF_Config
-    use ESMF                  , only : ESMF_GridCompGet
+    use ESMF                  , only : ESMF_GridCompGet, ESMF_ConfigLoadFile, ESMF_ConfigCreate
     use NUOPC                 , only : NUOPC_FreeFormat, NUOPC_FreeFormatPrint, NUOPC_FreeFormatDestroy
     use NUOPC                 , only : NUOPC_FreeFormatCreate
     use NUOPC_Driver          , only : NUOPC_DriverIngestRunSequence, NUOPC_DriverSetRunSequence
@@ -354,7 +349,7 @@ module ESM
 
     ! local variables
     integer                 :: localrc
-    type(ESMF_Config)       :: config
+    type(ESMF_Config)       :: runSeq
     type(NUOPC_FreeFormat)  :: runSeqFF
     integer                 :: dbrc
     character(len=*), parameter :: subname = "(esm.F90:SetRunSequence)"
@@ -368,11 +363,15 @@ module ESM
     ! Run Sequence and Connectors
     !--------
 
-    ! read free format run sequence from config
-    call ESMF_GridCompGet(driver, config=config, rc=rc)
+    ! read free format run sequence
+
+    runSeq = ESMF_ConfigCreate(rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    runSeqFF = NUOPC_FreeFormatCreate(config, label="runSeq::", rc=rc)
+    call ESMF_ConfigLoadFile(runSeq, "nuopc.runseq", rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    runSeqFF = NUOPC_FreeFormatCreate(runSeq, label="runSeq::", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_DriverIngestRunSequence(driver, runSeqFF, autoAddConnectors=.true., rc=rc)
@@ -1712,9 +1711,7 @@ module ESM
     integer                 :: year, month, day, seconds
     character(len=*), parameter :: subname='GetRestartFileToWrite'
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=rc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=rc)
     rc = ESMF_SUCCESS
 
     call NUOPC_CompAttributeGet(gcomp, name='case_name', value=casename, &
@@ -1766,9 +1763,7 @@ module ESM
        close(nu)
        call shr_file_freeUnit(nu)
     endif
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": returning", ESMF_LOGMSG_INFO, rc=rc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": returning", ESMF_LOGMSG_INFO, rc=rc)
 
   end subroutine GetRestartFileToWrite
 
@@ -1837,9 +1832,7 @@ module ESM
             value=trim(restartname), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": returning", ESMF_LOGMSG_INFO, rc=rc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": returning", ESMF_LOGMSG_INFO, rc=rc)
 
   end subroutine GetRestartFileToRead
 
