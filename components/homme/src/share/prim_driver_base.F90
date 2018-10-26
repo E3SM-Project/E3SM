@@ -5,6 +5,7 @@
 ! 08/2016: O. Guba Inserting code for "espilon bubble" reference element map
 ! 03/2018: M. Taylor  fix memory leak
 ! 06/2018: O. Guba  code for new ftypes
+! 10/2018: M. Taylor  serialize domain decmposition and schedule setup
 !
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -22,6 +23,11 @@ module prim_driver_base
   use quadrature_mod,   only: quadrature_t, test_gauss, test_gausslobatto, gausslobatto
   use reduction_mod,    only: reductionbuffer_ordered_1d_t, red_min, red_max, red_max_int, &
                               red_sum, red_sum_int, red_flops, initreductionbuffer
+  use parallel_mod, only : iam, parallel_t, syncmp, syncmp_comm, abortmp, global_shared_buf, nrepro_vars
+#ifdef _MPI
+  use parallel_mod, only : mpiinteger_t, mpi_max
+#endif
+
 #ifndef CAM
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod ,  only : RestFile,readrestart
@@ -59,17 +65,18 @@ contains
     use mass_matrix_mod, only : mass_matrix
     ! --------------------------------
     use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology, cube_init_atomic, &
-                          set_corner_coordinates, assign_node_numbers_to_elem, &
+                          set_corner_coordinates, &
                           set_area_correction_map0, set_area_correction_map2
     ! --------------------------------
     use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
          MeshCubeElemCount, MeshCubeEdgeCount, MeshCubeTopologyCoords
     ! --------------------------------
-    use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph, printmetavertex
+    use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph, &
+         deallocate_metavertex_data, printmetavertex
     ! --------------------------------
     use gridgraph_mod, only : gridvertex_t, gridedge_t, allocate_gridvertex_nbrs, deallocate_gridvertex_nbrs
     ! --------------------------------
-    use schedtype_mod, only : schedule
+    use schedtype_mod, only : schedule, schedule_t
     ! --------------------------------
     use schedule_mod, only : genEdgeSched,  PrintSchedule
     ! --------------------------------
@@ -79,11 +86,6 @@ contains
     ! --------------------------------
 #ifdef TRILINOS
     use prim_implicit_mod, only : prim_implicit_init
-#endif
-    ! --------------------------------
-    use parallel_mod, only : iam, parallel_t, syncmp, abortmp, global_shared_buf, nrepro_vars
-#ifdef _MPI
-    use parallel_mod, only : mpiinteger_t, mpireal_t, mpi_max, mpi_sum, haltmp
 #endif
     ! --------------------------------
     use metis_mod, only : genmetispart
@@ -124,20 +126,16 @@ contains
 
     type (GridVertex_t), target,allocatable :: GridVertex(:)
     type (GridEdge_t),   target,allocatable :: Gridedge(:)
-    type (MetaVertex_t), target,allocatable :: MetaVertex(:)
+    type (MetaVertex_t)                     :: MetaVertex
 
-    integer :: ii,ie, ith
+    integer :: i,ii,ie, ith
     integer :: nets, nete
     integer :: nelem_edge,nedge
     integer :: nstep
     integer :: nlyr
     integer :: iMv
-    integer :: err, ierr, l, j
+    integer :: err, ierr, l, j, task_id, task_id_stride
     logical, parameter :: Debug = .FALSE.
-
-    integer  :: i
-    integer,allocatable :: TailPartition(:)
-    integer,allocatable :: HeadPartition(:)
 
     integer total_nelem
     real(kind=real_kind) :: approx_elements_per_task
@@ -207,145 +205,156 @@ contains
     ! ==================================
     call derivinit(deriv1)
 
-    ! ===============================================================
-    ! Allocate and initialize the graph (array of GridVertex_t types)
-    ! ===============================================================
-    if (topology=="cube") then
-
-       if (par%masterproc) then
-          write(iulog,*)"creating cube topology..."
-       end if
-
-       if (MeshUseMeshFile) then
-           nelem = MeshCubeElemCount()
-           nelem_edge = MeshCubeEdgeCount()
-       else
-           nelem      = CubeElemCount()
-           nelem_edge = CubeEdgeCount()
-       end if
-
-       ! we want to exit elegantly when we are using too many processors.
-       if (nelem < par%nprocs) then
-          call abortmp('Error: too many MPI tasks. set dyn_npes <= nelem')
-       end if
-
-       allocate(GridVertex(nelem))
-       allocate(GridEdge(nelem_edge))
-
-       do j =1,nelem
-          call allocate_gridvertex_nbrs(GridVertex(j))
-       end do
-
-       if (MeshUseMeshFile) then
-           if (par%masterproc) then
-               write(iulog,*) "Set up grid vertex from mesh..."
-           end if
-           call MeshCubeTopologyCoords(GridEdge, GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
-           !MD:TODO: still need to do the coordinate transformation for this case.
-
-
-       else
-           call CubeTopology(GridEdge,GridVertex)
-           if (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method)) then
-              call getfixmeshcoordinates(GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
-           endif
-        end if
-
-       if(par%masterproc)       write(iulog,*)"...done."
-    end if
-    if(par%masterproc) write(iulog,*)"total number of elements nelem = ",nelem
-
-    !DBG if(par%masterproc) call PrintGridVertex(GridVertex)
-
-    call t_startf('PartitioningTime')
-
-    if(partmethod .eq. SFCURVE) then
-       if(par%masterproc) write(iulog,*)"partitioning graph using SF Curve..."
-       !if the partitioning method is space filling curves
-       call genspacepart(GridEdge,GridVertex)
-       if (is_zoltan_task_mapping(z2_map_method)) then
-          if(par%masterproc) write(iulog,*)"mapping graph using zoltan2 task mapping on the result of SF Curve..."
-        call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
-       endif
-    !if zoltan2 partitioning method is asked to run.
-    elseif ( is_zoltan_partition(partmethod)) then
-        if(par%masterproc) write(iulog,*)"partitioning graph using zoltan2 partitioning/task mapping..."
-        call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+    if (MeshUseMeshFile) then
+       nelem = MeshCubeElemCount()
+       nelem_edge = MeshCubeEdgeCount()
     else
-        if(par%masterproc) write(iulog,*)"partitioning graph using Metis..."
-       call genmetispart(GridEdge,GridVertex)
-    endif
+       nelem      = CubeElemCount()
+       nelem_edge = CubeEdgeCount()
+    end if
+    
+    ! we want to exit elegantly when we are using too many processors.
+    if (nelem < par%nprocs) then
+       call abortmp('Error: too many MPI tasks. set dyn_npes <= nelem')
+    end if
+    
 
-    call t_stopf('PartitioningTime')
-
-    !call t_startf('PrintMetricTime')
-    !print partitioning and mapping metrics
-    !call printMetrics(GridEdge,GridVertex, par%comm)
-    !call t_stopf('PrintMetricTime')
-
-    ! ===========================================================
-    ! given partition, count number of local element descriptors
-    ! ===========================================================
-    allocate(MetaVertex(1))
+    ! ====================================================
+    ! start domain decomposition
+    ! non-scalable global arrays:  GridVertex, GridEdge
+    ! OOM errors with 64 MPI tasks per node at ne512 on 96GB/node system
+    ! cost breakdown (Anvil, ne1024):   2x higher on KNL
+    !     compute GridVertex, GridEDge:  22s
+    !     compute MetaVertex for 1 task:  8s
+    !     compute Schedule for 1 task:    .1s
+    !
+    ! in order to not run out of memory, only allow task_id_stride MPI tasks to be
+    ! active per node, and active tasks must deallocate GridVertex and GridEdge data
+    ! before the next tasks start
+    ! ===============================================================
+    call t_startf('MeshSetup')
     allocate(Schedule(1))
-
-    nelem_edge=SIZE(GridEdge)
-
-    allocate(TailPartition(nelem_edge))
-    allocate(HeadPartition(nelem_edge))
-    do i=1,nelem_edge
-       TailPartition(i)=GridEdge(i)%tail%processor_number
-       HeadPartition(i)=GridEdge(i)%head%processor_number
-    enddo
-
-    ! ====================================================
-    !  Generate the communication graph
-    ! ====================================================
-    call initMetaGraph(iam,MetaVertex(1),GridVertex,GridEdge)
-
-    nelemd = LocalElemCount(MetaVertex(1))
-    if(par%masterproc .and. Debug) then 
-        call PrintMetaVertex(MetaVertex(1))
+    ! Anvil (64GB/node).  for ne=1024, keep nelem*task_id_stide < 20M
+    ! cori-KNL:  60M works.  80M OOM.  set default to 50M 
+    ! if OOM errors during initialization, decrease this number
+    ! if initialization time is too slow, and memory per node > 64GB, increase this number
+    task_id_stride=max(51000000/nelem,1)
+    if (task_id_stride<par%node_nprocs) then
+       if (par%masterproc) write(iulog,*) 'Serializing mesh setup to save memory.'
+       if (par%masterproc) write(iulog,*)&
+            'active initialization tasks per node: task_id_stride=',task_id_stride
+       if (par%masterproc) write(iulog,*) 'decrease task_id_stride if OOM errors during mesh setup'
     endif
 
-    if(nelemd .le. 0) then
-       call abortmp('Not yet ready to handle nelemd = 0 yet' )
-       stop
-    endif
+    do task_id=1,par%node_nprocs  
+       if (task_id_stride<par%node_nprocs) then
+          if (par%masterproc) write(iulog,'(a,i3,a,i3)') &
+               "serializing mesh setup task_id=",task_id,"/",par%node_nprocs
+       endif
+       if ( task_id == par%node_rank + 1 ) then
+          call t_startf('Gridgraph')
+          if (topology=="cube") then
+             if (par%masterproc) write(iulog,*)"creating cube topology..."
+             allocate(GridVertex(nelem))
+             allocate(GridEdge(nelem_edge))
+             
+             do j =1,nelem
+                call allocate_gridvertex_nbrs(GridVertex(j))
+             end do
+          endif
+          if (MeshUseMeshFile) then
+             if (par%masterproc) write(iulog,*) "Set up mesh coordinates..."
+             call MeshCubeTopologyCoords(GridEdge, GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+             !MD:TODO: still need to do the coordinate transformation for this case.
+          else
+             call CubeTopology(GridEdge,GridVertex)
+             if (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method)) then
+                call getfixmeshcoordinates(GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+             endif
+          end if
+          call t_stopf('Gridgraph')          
+          if(par%masterproc) write(iulog,*)"total number of elements nelem = ",nelem
+          
+          !DBG if(par%masterproc) call PrintGridVertex(GridVertex)
+          
+          call t_startf('Partitioning')
+          if(partmethod .eq. SFCURVE) then
+             if(par%masterproc) write(iulog,*)"partitioning graph using SF Curve..."
+             !if the partitioning method is space filling curves
+             call genspacepart(GridEdge,GridVertex)
+             if (is_zoltan_task_mapping(z2_map_method)) then
+                if(par%masterproc) write(iulog,*)"mapping graph using zoltan2 task mapping on the result of SF Curve..."
+                call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+             endif
+             !if zoltan2 partitioning method is asked to run.
+          elseif ( is_zoltan_partition(partmethod)) then
+             if(par%masterproc) write(iulog,*)"partitioning graph using zoltan2 partitioning/task mapping..."
+             call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+          else
+             if(par%masterproc) write(iulog,*)"partitioning graph using Metis..."
+             call genmetispart(GridEdge,GridVertex)
+          endif
+          
+          call t_stopf('Partitioning')
+          !call printMetrics(GridEdge,GridVertex, par%comm)
+          
+          
+          ! ====================================================
+          !  Generate the communication graph
+          ! ====================================================
+          call t_startf('MetaGraph')
+          if(par%masterproc) write(iulog,*)"computing MetaVertex..."
+          call initMetaGraph(iam,MetaVertex,GridVertex,GridEdge)
+          call t_stopf('MetaGraph')
+          
+          nelemd = LocalElemCount(MetaVertex)
+          if(par%masterproc .and. Debug) call PrintMetaVertex(MetaVertex)
+          if(nelemd .le. 0) call abortmp('Not yet ready to handle nelemd = 0 yet' )
+          
+          allocate(elem(nelemd))
+          call allocate_element_desc(elem)
+          
+          ! ====================================================
+          !  Generate the communication schedule
+          ! ====================================================
+          if(par%masterproc) write(iulog,*)"computing Schedule..."
+          call t_startf('genedgesched')
+          call genEdgeSched(elem,iam,Schedule(1),MetaVertex)
+          call t_stopf('genedgesched')
+
+          deallocate(GridEdge)
+          do j =1,nelem
+             call deallocate_gridvertex_nbrs(GridVertex(j))
+          end do
+          deallocate(GridVertex)
+          call deallocate_metavertex_data(MetaVertex)
+
+
+       endif ! active MPI task
+       
+       if (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method)) then
+          ! no barrier since zoltan algorithms are distributed
+       else
+          ! barrier forces serial execution per MPI task on this node.
+          if (mod(task_id,task_id_stride)==0) call syncmp_comm(par%node_comm)  
+       endif
+       
+    enddo  ! loop over all MPI tasks on this node
+    if(par%masterproc) write(iulog,*)"done with mesh setup..."
+    call t_stopf('MeshSetup')
+    
+
 #ifdef _MPI
     call mpi_allreduce(nelemd,nelemdmax,1,MPIinteger_t,MPI_MAX,par%comm,ierr)
 #else
     nelemdmax=nelemd
 #endif
 
-    if (nelemd>0) then
-       allocate(elem(nelemd))
-       call setup_element_pointers(elem)
-       call allocate_element_desc(elem)
-    endif
-
-    ! ====================================================
-    !  Generate the communication schedule
-    ! ====================================================
-
-    call genEdgeSched(elem,iam,Schedule(1),MetaVertex(1))
-
+    call setup_element_pointers(elem)
 
     allocate(global_shared_buf(nelemd,nrepro_vars))
     global_shared_buf=0.0_real_kind
-    !  nlyr=edge3p1%nlyr
-    !  call MessageStats(nlyr)
-    !  call testchecksum(par,GridEdge)
 
-    ! ========================================================
-    ! load graph information into local element descriptors
-    ! ========================================================
-
-    !  do ii=1,nelemd
-    !     elem(ii)%vertex = MetaVertex(iam)%members(ii)
-    !  enddo
-
-    call syncmp(par)
 
     ! =================================================================
     ! Set number of domains (for 'decompose') equal to number of threads
@@ -402,7 +411,6 @@ contains
            do ie=1,nelemd
                call set_corner_coordinates(elem(ie))
            end do
-           call assign_node_numbers_to_elem(elem, GridVertex)
        end if
        do ie=1,nelemd
           call cube_init_atomic(elem(ie),gp%points)
@@ -482,27 +490,6 @@ contains
 #endif
     !DBG  write(iulog,*) 'prim_init: after call to initRestartFile'
 
-    deallocate(GridEdge)
-    do j =1,nelem
-       call deallocate_gridvertex_nbrs(GridVertex(j))
-    end do
-    deallocate(GridVertex)
-
-    do j = 1, MetaVertex(1)%nmembers
-       call deallocate_gridvertex_nbrs(MetaVertex(1)%members(j))
-    end do
-    do j = 1, MetaVertex(1)%nedges
-       deallocate(MetaVertex(1)%edges(j)%members)
-       deallocate(MetaVertex(1)%edges(j)%edgeptrP)
-       deallocate(MetaVertex(1)%edges(j)%edgeptrS)
-       deallocate(MetaVertex(1)%edges(j)%edgeptrP_ghost)
-    end do
-    deallocate(MetaVertex(1)%edges)
-    deallocate(MetaVertex(1)%members)
-    deallocate(MetaVertex)
-    deallocate(TailPartition)
-    deallocate(HeadPartition)
-
     ! single global edge buffer for all models:
     ! hydrostatic 4*nlev      NH:  6*nlev+1
     ! SL tracers: (qsize+1)*nlev
@@ -537,19 +524,16 @@ contains
   !_____________________________________________________________________
   subroutine prim_init2(elem, hybrid, nets, nete, tl, hvcoord)
 
-    use control_mod,          only: runtype, integration, test_case, &
-                                    debug_level, vfile_int, vform, vfile_mid, &
+    use control_mod,          only: runtype, integration, &
                                     topology,rsplit, qsplit, rk_stage_user,&
                                     sub_case, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
                                     hypervis_subcycle_q, moisture, use_moisture
     use global_norms_mod,     only: test_global_integral, print_cfl
     use hybvcoord_mod,        only: hvcoord_t
-    use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
     use prim_state_mod,       only: prim_printstate, prim_diag_scalars
     use prim_si_mod,          only: prim_set_mass
-    use prim_advance_mod,     only: vertical_mesh_init2
     use prim_advection_mod,   only: prim_advec_init2
-    use model_init_mod,       only: model_init2
+    use model_init_mod,       only: model_init2, vertical_mesh_init2
     use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
 
 #ifndef CAM
@@ -616,6 +600,7 @@ contains
     logical :: compute_diagnostics
     integer :: qn0
     real (kind=real_kind) :: eta_ave_w
+
 
   interface
     subroutine noxinit(vectorSize,vector,comm,v_container,p_container,j_container) &
@@ -822,6 +807,7 @@ contains
     ! timesteps to use for advective stability:  tstep*qsplit and tstep
     call print_cfl(elem,hybrid,nets,nete,dtnu)
 
+
     if (hybrid%masterthread) then
        ! CAM has set tstep based on dtime before calling prim_init2(),
        ! so only now does HOMME learn the timstep.  print them out:
@@ -873,7 +859,6 @@ contains
 
     use control_mod,        only: statefreq, ftype, qsplit, rsplit, disable_diagnostics
     use hybvcoord_mod,      only: hvcoord_t
-    use parallel_mod,       only: abortmp
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use vertremap_mod,      only: vertical_remap
     use reduction_mod,      only: parallelmax
@@ -881,7 +866,7 @@ contains
 #if USE_OPENACC
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
-    use prim_advance_mod,   only: applycamforcing_ps
+    use prim_advance_mod,   only: convert_thermo_forcing
 
     implicit none
 
@@ -949,6 +934,7 @@ enddo
     ! compute HOMME test case forcing
     ! by calling it here, it mimics eam forcings computations in standalone.
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
+    call convert_thermo_forcing(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 #endif
 
     ! Apply CAM Physics forcing
@@ -988,17 +974,36 @@ enddo
     call t_stopf("copy_qdp_h2d")
 #endif
 
-    ! Loop over rsplit vertically lagrangian timesiteps
-    call t_startf("prim_step_rX")
-    call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, compute_diagnostics,single_column)
-    call t_stopf("prim_step_rX")
+    if (.not. single_column) then 
 
-    do r=2,rsplit
-       call TimeLevel_update(tl,"leapfrog")
-       call t_startf("prim_step_rX")
-       call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, .false., single_column)
-       call t_stopf("prim_step_rX")
-    enddo
+      ! Loop over rsplit vertically lagrangian timesiteps
+      call t_startf("prim_step_rX")
+      call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, compute_diagnostics)
+      call t_stopf("prim_step_rX")
+
+      do r=2,rsplit
+        call TimeLevel_update(tl,"leapfrog")
+        call t_startf("prim_step_rX")
+        call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, .false.)
+        call t_stopf("prim_step_rX")
+      enddo
+
+    else 
+
+      ! Single Column Case
+      ! Loop over rsplit vertically lagrangian timesiteps
+      call t_startf("prim_step_rX")    
+      call prim_step_scm(elem, nets, nete, dt, tl, hvcoord)
+      call t_stopf("prim_step_rX")
+      do r=2,rsplit
+        call TimeLevel_update(tl,"leapfrog")
+        call t_startf("prim_step_rX")
+        call prim_step_scm(elem, nets, nete, dt, tl, hvcoord)
+        call t_stopf("prim_step_rX")
+      enddo
+
+    endif
+    
     ! defer final timelevel update until after remap and diagnostics
     !compute timelevels for tracers (no longer the same as dynamics)
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
@@ -1095,7 +1100,7 @@ enddo
 
 
 
-  subroutine prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord, compute_diagnostics,single_column)
+  subroutine prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord, compute_diagnostics)
   !
   !   Take qsplit dynamics steps and one tracer step
   !   for vertically lagrangian option, this subroutine does only the horizontal step
@@ -1116,12 +1121,10 @@ enddo
     use control_mod,        only: statefreq, integration, ftype, qsplit, nu_p, rsplit
     use control_mod,        only: use_semi_lagrange_transport
     use hybvcoord_mod,      only : hvcoord_t
-    use parallel_mod,       only: abortmp
     use prim_advance_mod,   only: prim_advance_exp
     use prim_advection_mod, only: prim_advec_tracers_remap
     use reduction_mod,      only: parallelmax
     use time_mod,           only: time_at,TimeLevel_t, timelevel_update, nsplit
-    use prim_advance_mod,   only: applycamforcing_dp3d
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
 
     type(element_t),      intent(inout) :: elem(:)
@@ -1137,8 +1140,6 @@ enddo
     real (kind=real_kind)                          :: maxcflx, maxcfly
     real (kind=real_kind) :: dp_np1(np,np)
     logical :: compute_diagnostics
-    logical :: single_column
-
 
     dt_q = dt*qsplit
  
@@ -1149,7 +1150,7 @@ enddo
     do ie=nets,nete
       elem(ie)%derived%eta_dot_dpdn=0     ! mean vertical mass flux
       elem(ie)%derived%vn0=0              ! mean horizontal mass flux
-      if (.not. single_column) elem(ie)%derived%omega_p=0
+      elem(ie)%derived%omega_p=0
       if (nu_p>0) then
          elem(ie)%derived%dpdiss_ave=0
          elem(ie)%derived%dpdiss_biharmonic=0
@@ -1168,14 +1169,13 @@ enddo
     ! ===============
     call t_startf("prim_step_dyn")
     call prim_advance_exp(elem, deriv1, hvcoord,   &
-         hybrid, dt, tl, nets, nete, compute_diagnostics, &
-	 single_column)
+         hybrid, dt, tl, nets, nete, compute_diagnostics)
     do n=2,qsplit
        call TimeLevel_update(tl,"leapfrog")
 !applyCAMforcing_dp3d should be glued to the call of prim_advance_exp
 !energy diagnostics is broken for ftype 3,4
        call ApplyCAMforcing_dp3d(elem,hvcoord,tl%n0,dt,nets,nete)
-       call prim_advance_exp(elem, deriv1, hvcoord,hybrid, dt, tl, nets, nete, .false., single_column)
+       call prim_advance_exp(elem, deriv1, hvcoord,hybrid, dt, tl, nets, nete, .false.)
        ! defer final timelevel update until after Q update.
     enddo
     call t_stopf("prim_step_dyn")
@@ -1199,17 +1199,242 @@ enddo
     !   if tracer scheme needs v on lagrangian levels it has to vertically interpolate
     !   if tracer scheme needs dp3d, it needs to derive it from ps_v
 
-    if (.not. single_column) then
-      call t_startf("prim_step_advec")
-      if (qsize > 0) then
-        call t_startf("PAT_remap")
-        call Prim_Advec_Tracers_remap(elem, deriv1,hvcoord,hybrid,dt_q,tl,nets,nete)
-        call t_stopf("PAT_remap")
-      end if
-      call t_stopf("prim_step_advec")
-    endif
+    call t_startf("prim_step_advec")
+    if (qsize > 0) then
+      call t_startf("PAT_remap")
+      call Prim_Advec_Tracers_remap(elem, deriv1,hvcoord,hybrid,dt_q,tl,nets,nete)
+      call t_stopf("PAT_remap")
+    end if
+    call t_stopf("prim_step_advec")
 
   end subroutine prim_step
+
+
+!----------------------------- APPLYCAMFORCING-DP3D ----------------------------
+
+!ftype logic
+!should be called with dt_dynamics timestep. 
+!if called on eulerian levels (like at the very beginning, in first of qsplit
+!calls of
+!prim_step), make sure that dp3d is updated before, based on ps_v.
+!if called within lagrangian step, it uses lagrangian dp3d
+  subroutine applyCAMforcing_dp3d(elem,hvcoord,dyn_timelev,dt_dyn,nets,nete)
+  use control_mod,        only : ftype
+  use hybvcoord_mod,      only : hvcoord_t
+  use prim_advance_mod,   only : applycamforcing_dynamics,applycamforcing_dynamics_dp
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt_dyn
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: dyn_timelev,nets,nete
+
+  call t_startf("ApplyCAMForcing")
+  if (ftype == 3) then
+    call ApplyCAMForcing_dynamics_dp(elem,hvcoord,dyn_timelev,dt_dyn,nets,nete)
+  elseif (ftype == 4) then
+    call ApplyCAMForcing_dynamics   (elem,hvcoord,dyn_timelev,dt_dyn,nets,nete)
+  endif
+  call t_stopf("ApplyCAMForcing")
+  end subroutine applyCAMforcing_dp3d
+
+
+!----------------------------- APPLYCAMFORCING-PS ----------------------------
+
+!ftype logic
+!should be called with dt_remap, on 'eulerian' levels, only before homme remap
+!timestep
+  subroutine applyCAMforcing_ps(elem,hvcoord,dyn_timelev,tr_timelev,dt_remap,nets,nete)
+  use control_mod,        only : ftype
+  use hybvcoord_mod,      only : hvcoord_t
+  use prim_advance_mod,   only : applycamforcing_dynamics
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt_remap
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: dyn_timelev,tr_timelev,nets,nete
+
+  call t_startf("ApplyCAMForcing")
+  if (ftype==0) then
+    call applyCAMforcing_dynamics(elem,hvcoord,dyn_timelev,dt_remap,nets,nete)
+    call applyCAMforcing_tracers(elem,hvcoord,dyn_timelev,tr_timelev,dt_remap,nets,nete)
+  elseif (ftype==2) then
+    call ApplyCAMForcing_dynamics(elem,hvcoord,dyn_timelev,dt_remap,nets,nete)
+  endif
+#ifndef CAM
+  ! for standalone homme, we need tracer tendencies injected similarly to CAM
+  ! for ftypes of interest, 2,3,4.
+  ! standalone homme does not support ftype=1 (because in standalone version,
+  ! it is identical to ftype=0).
+  ! leaving option ftype=-1 for standalone homme when no forcing is applied ever
+  if ((ftype /= 0 ).and.(ftype > 0)) then
+    call ApplyCAMForcing_tracers (elem,hvcoord,dyn_timelev,tr_timelev,dt_remap,nets,nete)
+  endif
+#endif
+  call t_stopf("ApplyCAMForcing")
+  end subroutine applyCAMforcing_ps
+
+
+!----------------------------- APPLYCAMFORCING-TRACERS ----------------------------
+
+  subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
+
+  use control_mod,        only : use_moisture
+  use hybvcoord_mod,      only : hvcoord_t
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: np1,nets,nete,np1_qdp
+
+  ! local
+  integer :: i,j,k,ie,q
+  real (kind=real_kind) :: v1
+  real (kind=real_kind) :: temperature(np,np,nlev)
+  real (kind=real_kind) :: Rstar(np,np,nlev)
+  real (kind=real_kind) :: exner(np,np,nlev)
+  real (kind=real_kind) :: dp(np,np,nlev)
+  real (kind=real_kind) :: pnh(np,np,nlev)
+  real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
+
+  do ie=nets,nete
+     ! apply forcing to Qdp
+     elem(ie)%derived%FQps(:,:)=0
+
+     do q=1,qsize
+        do k=1,nlev
+           do j=1,np
+              do i=1,np
+                 v1 = dt*elem(ie)%derived%FQ(i,j,k,q)
+                 !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
+                 if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
+                    !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
+                    if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
+                       v1=0  ! Q already negative, dont make it more so
+                    else
+                       !v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
+                       v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
+                    endif
+                 endif
+                 !elem(ie)%state%Qdp(i,j,k,q,np1) =
+                 !elem(ie)%state%Qdp(i,j,k,q,np1)+v1
+                 elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
+                 if (q==1) then
+                    elem(ie)%derived%FQps(i,j)=elem(ie)%derived%FQps(i,j)+v1/dt
+                 endif
+              enddo
+           enddo
+        enddo
+     enddo
+
+     if (use_moisture) then
+        ! to conserve dry mass in the precese of Q1 forcing:
+        elem(ie)%state%ps_v(:,:,np1) = elem(ie)%state%ps_v(:,:,np1) + &
+             dt*elem(ie)%derived%FQps(:,:)
+     endif
+
+
+     ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
+     do k=1,nlev
+        dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+     enddo
+     do q=1,qsize
+        do k=1,nlev
+           elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp(:,:,k)
+        enddo
+     enddo
+  enddo
+
+  end subroutine applyCAMforcing_tracers
+
+
+
+  
+  
+  subroutine prim_step_scm(elem, nets,nete, dt, tl, hvcoord)
+  !
+  !   prim_step version for single column model (SCM)
+  !   Here we simply want to compute the floating level tendency
+  !    based on the prescribed large scale vertical velocity
+  !   Take qsplit dynamics steps and one tracer step
+  !   for vertically lagrangian option, this subroutine does only the horizontal step
+  !
+  !   input:
+  !       tl%nm1   not used
+  !       tl%n0    data at time t
+  !       tl%np1   new values at t+dt_q
+  !
+  !   then we update timelevel pointers:
+  !       tl%nm1 = tl%n0
+  !       tl%n0  = tl%np1
+  !   so that:
+  !       tl%nm1   tracers:  t    dynamics:  t+(qsplit-1)*dt
+  !       tl%n0    time t + dt_q
+  !
+  !
+    use control_mod,        only: statefreq, integration, ftype, qsplit, nu_p, rsplit
+    use control_mod,        only: use_semi_lagrange_transport
+    use hybvcoord_mod,      only : hvcoord_t
+    use parallel_mod,       only: abortmp
+    use prim_advance_mod,   only: prim_advance_exp
+    use reduction_mod,      only: parallelmax
+    use time_mod,           only: time_at,TimeLevel_t, timelevel_update, timelevel_qdp, nsplit
+!    use prim_advance_mod,   only: applycamforcing_dp3d
+    use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
+
+    type(element_t),      intent(inout) :: elem(:)
+    type(hvcoord_t),      intent(in)    :: hvcoord  ! hybrid vertical coordinate struct
+    integer,              intent(in)    :: nets     ! starting thread element number (private)
+    integer,              intent(in)    :: nete     ! ending thread element number   (private)
+    real(kind=real_kind), intent(in)    :: dt       ! "timestep dependent" timestep
+    type(TimeLevel_t),    intent(inout) :: tl
+
+    real(kind=real_kind) :: st, st1, dp, dt_q
+    integer :: ie, t, q,k,i,j,n,qn0
+    real (kind=real_kind)                          :: maxcflx, maxcfly
+    real (kind=real_kind) :: dp_np1(np,np)
+
+    dt_q = dt*qsplit
+ 
+    ! ===============
+    ! initialize mean flux accumulation variables and save some variables at n0
+    ! for use by advection
+    ! ===============
+    do ie=nets,nete
+      elem(ie)%derived%eta_dot_dpdn=0     ! mean vertical mass flux
+      elem(ie)%derived%vn0=0              ! mean horizontal mass flux
+      if (nu_p>0) then
+         elem(ie)%derived%dpdiss_ave=0
+         elem(ie)%derived%dpdiss_biharmonic=0
+      endif
+      if (use_semi_lagrange_transport) then
+        elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,tl%n0)
+      end if
+      elem(ie)%derived%dp(:,:,:)=elem(ie)%state%dp3d(:,:,:,tl%n0)
+    enddo
+
+    ! ===============
+    ! Dynamical Step
+    ! ===============
+    
+    call TimeLevel_Qdp(tl, qsplit, qn0)  ! compute current Qdp() timelevel 
+    call set_prescribed_scm(elem,dt,tl)
+    
+    do n=2,qsplit
+ 
+      call TimeLevel_update(tl,"leapfrog")
+      !applyCAMforcing_dp3d should be glued to the call of prim_advance_exp
+      !energy diagnostics is broken for ftype 3,4
+      call ApplyCAMforcing_dp3d(elem,hvcoord,tl%n0,dt,nets,nete)       
+      ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature      
+      call TimeLevel_Qdp(tl, qsplit, qn0)  ! compute current Qdp() timelevel      
+      
+      ! call the single column forcing
+      call set_prescribed_scm(elem,dt,tl)
+      
+    enddo
+
+  end subroutine prim_step_scm  
 
 
 !=======================================================================================================!
@@ -1269,6 +1494,49 @@ enddo
     call smooth_phis(sgh30dyn,elem,hybrid,deriv1,nets,nete,minf,smooth_sgh_numcycle)
 
     end subroutine smooth_topo_datasets
+    
+  !_____________________________________________________________________
+  subroutine set_prescribed_scm(elem,dt,tl)
+  
+    ! Update the floating levels based on the prescribed
+    !  large scale vertical velocity for single column model
+
+    use dimensions_mod, only: qsize
+    use time_mod, only: timelevel_qdp
+    use control_mod, only: qsplit  
+    use time_mod,       only: timelevel_t
+
+    type (element_t),      intent(inout), target  :: elem(:) 
+    real (kind=real_kind), intent(in)             :: dt
+    type (TimeLevel_t)   , intent(in)             :: tl
+    
+    real (kind=real_kind) :: dp(np,np)! pressure thickness, vflux
+    real(kind=real_kind)  :: eta_dot_dpdn(np,np,nlevp)
+    
+    integer :: ie,k,p,n0,np1,n0_qdp,np1_qdp
+
+    n0    = tl%n0
+    np1   = tl%np1
+
+    call TimeLevel_Qdp(tl, qsplit, n0_qdp, np1_qdp)
+    
+    do k=1,nlev
+      eta_dot_dpdn(:,:,k)=elem(1)%derived%omega_p(1,1,k)   
+    enddo  
+    eta_dot_dpdn(:,:,nlev+1) = eta_dot_dpdn(:,:,nlev) 
+    
+    do k=1,nlev
+      elem(1)%state%dp3d(:,:,k,np1) = elem(1)%state%dp3d(:,:,k,n0) &
+        + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))    
+    enddo       
+
+    do p=1,qsize
+      do k=1,nlev
+        elem(1)%state%Qdp(:,:,k,p,np1_qdp)=elem(1)%state%Q(:,:,k,p)*elem(1)%state%dp3d(:,:,k,np1)
+      enddo
+    enddo
+    
+  end subroutine set_prescribed_scm        
     
 end module prim_driver_base
 

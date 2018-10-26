@@ -26,8 +26,7 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-            applyCAMforcing_ps, applyCAMforcing_dp3d, &
-            vertical_mesh_init2
+            applyCAMforcing_dynamics, applyCAMforcing_dynamics_dp, convert_thermo_forcing
 
   real (kind=real_kind), allocatable :: ur_weights(:)
 
@@ -60,19 +59,6 @@ contains
 
     end subroutine prim_advance_init1
 
-  !_____________________________________________________________________
-  subroutine vertical_mesh_init2(elem, nets, nete, hybrid, hvcoord)
-
-    ! additional solver specific initializations (called from prim_init2)
-
-    type (element_t),			intent(inout), target :: elem(:)! array of element_t structures
-    integer,				intent(in) :: nets,nete		! start and end element indices
-    type (hybrid_t),			intent(in) :: hybrid		! mpi/omp data struct
-    type (hvcoord_t),			intent(inout)	:: hvcoord	! hybrid vertical coord data struct
-
-  end subroutine vertical_mesh_init2
-
-    
 #ifndef CAM
   !_____________________________________________________________________
   subroutine set_prescribed_wind(elem,deriv,hybrid,hv,dt,tl,nets,nete,eta_ave_w)
@@ -127,51 +113,10 @@ contains
 
     enddo
   end subroutine
-#endif
+#endif     
 
   !_____________________________________________________________________
-  subroutine set_prescribed_scm(elem,hv,dt,tl)
-
-    use dimensions_mod, only: qsize
-    use time_mod, only: timelevel_qdp
-    use control_mod, only: qsplit  
-
-    type (element_t),      intent(inout), target  :: elem(:) 
-    type (hvcoord_t),      intent(inout)          :: hv
-    real (kind=real_kind), intent(in)             :: dt
-    type (TimeLevel_t)   , intent(in)             :: tl
-    
-    real (kind=real_kind) :: dp(np,np)! pressure thickness, vflux
-    real(kind=real_kind)  :: eta_dot_dpdn(np,np,nlevp)
-    
-    integer :: ie,k,p,n0,np1,n0_qdp,np1_qdp
-
-    n0    = tl%n0
-    np1   = tl%np1
-
-    call TimeLevel_Qdp(tl, qsplit, n0_qdp, np1_qdp)
-    
-    do k=1,nlev
-      eta_dot_dpdn(:,:,k)=elem(1)%derived%omega_p(1,1,k)   
-    enddo  
-    eta_dot_dpdn(:,:,nlev+1) = eta_dot_dpdn(:,:,nlev) 
-    
-    do k=1,nlev
-      elem(1)%state%dp3d(:,:,k,np1) = elem(1)%state%dp3d(:,:,k,n0) &
-        + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))    
-    enddo       
-
-    do p=1,qsize
-      do k=1,nlev
-        elem(1)%state%Qdp(:,:,k,p,np1_qdp)=elem(1)%state%Q(:,:,k,p)*elem(1)%state%dp3d(:,:,k,np1)
-      enddo
-    enddo
-    
-  end subroutine       
-
-  !_____________________________________________________________________
-  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics, &
-               single_column)
+  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
 
     use bndry_mod,      only: bndry_exchangev
     use control_mod,    only: prescribed_wind, qsplit, tstep_type, rsplit, qsplit, integration
@@ -195,7 +140,6 @@ contains
     integer              , intent(in)            :: nets
     integer              , intent(in)            :: nete
     logical,               intent(in)            :: compute_diagnostics
-    logical,               intent(in)            :: single_column
 
     real (kind=real_kind) ::  dt2, time, dt_vis, x, eta_ave_w
 
@@ -281,11 +225,6 @@ contains
        eta_ave_w=ur_weights(qsplit_stage+1)
     else
        method = tstep_type                ! other RK variants
-    endif
-    
-    if (single_column) then
-      call set_prescribed_scm(elem,hvcoord,dt,tl)
-      return
     endif
 
 #ifndef CAM
@@ -608,7 +547,7 @@ contains
 !pw call t_adj_detailf(-1)
   end subroutine prim_advance_exp
 
-
+#if 0
 !ftype logic
 !should be called with dt_remap, on 'eulerian' levels, only before homme remap timestep
   subroutine applyCAMforcing_ps(elem,hvcoord,dyn_timelev,tr_timelev,dt_remap,nets,nete)
@@ -661,7 +600,7 @@ contains
   endif
   call t_stopf("ApplyCAMForcing")
   end subroutine applyCAMforcing_dp3d
-
+#endif
 
 !applies tracer tendencies and adjusts ps depending on moisture
   subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
@@ -677,7 +616,7 @@ contains
   ! local
   integer :: i,j,k,ie,q
   real (kind=real_kind) :: v1,dp
-  real (kind=real_kind) :: beta(np,np),E0(np,np),ED(np,np),dp0m1(np,np),dpsum(np,np)
+!  real (kind=real_kind) :: beta(np,np),E0(np,np),ED(np,np),dp0m1(np,np),dpsum(np,np)
 
   do ie=nets,nete
      ! apply forcing to Qdp
@@ -789,6 +728,18 @@ contains
      enddo
   enddo
   end subroutine applyCAMforcing_dynamics_dp
+
+
+!for preqx model this routine does nothing
+  subroutine convert_thermo_forcing(elem,hvcoord,n0,n0qdp,dt,nets,nete)
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: nets,nete
+  integer,                intent(in)    :: n0,n0qdp
+  real (kind=real_kind),  intent(in)    :: dt
+  end subroutine convert_thermo_forcing
+
 
 
   subroutine advance_hypervis_dp(elem,hvcoord,hybrid,deriv,nt,nets,nete,dt2,eta_ave_w)
@@ -1180,7 +1131,7 @@ contains
 ! dont thread this because of k-1 dependence:
      p(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0 + dp(:,:,1)/2
      do k=2,nlev
-        p(:,:,k)=p(:,:,k-1) + dp(:,:,k-1)/2 + dp(:,:,k)/2
+        p(:,:,k)=p(:,:,k-1) + (dp(:,:,k-1) + dp(:,:,k))/2
      enddo
 
 #if (defined COLUMN_OPENMP)
@@ -1377,13 +1328,13 @@ contains
 
               vtens1(i,j,k) =   - v_vadv(i,j,1,k)                           &
                    + v2*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
-                   - vtemp(i,j,1) - glnps1
+                   - (vtemp(i,j,1) + glnps1)
               !
               ! phl: add forcing term to zonal wind u
               !
               vtens2(i,j,k) =   - v_vadv(i,j,2,k)                            &
                    - v1*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
-                   - vtemp(i,j,2) - glnps2
+                   - (vtemp(i,j,2) + glnps2)
               !
               ! phl: add forcing term to meridional wind v
               !
