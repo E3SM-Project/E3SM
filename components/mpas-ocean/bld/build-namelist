@@ -200,6 +200,7 @@ print $fh  <<"EOF";
 <?xml version="1.0"?>
 <config_definition>
 <entry id="ocn_grid" value="$OCN_GRID">
+<entry id="ocn_forcing" value="$OCN_FORCING">
 <entry id="decomp_prefix" value="$decomp_prefix">
 <entry id="date_stamp" value="$date_stamp">
 </config_definition>
@@ -446,6 +447,7 @@ my $ntasks = $NTASKS_OCN / $NINST_OCN;
 if ($CONTINUE_RUN eq 'TRUE') {$RUN_TYPE = "continue";}
 
 print "MPASO build-namelist: ocn_grid is $OCN_GRID \n";
+print "MPASO build-namelist: ocn_forcing is $OCN_FORCING \n";
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { print "CIME inputdata root directory: $DIN_LOC_ROOT$eol"; }
