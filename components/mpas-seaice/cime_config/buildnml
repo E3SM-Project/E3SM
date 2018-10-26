@@ -637,7 +637,7 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="uAirVelocity"/>')
         lines.append('    <var name="vAirVelocity"/>')
         if iceberg_mode != 'none':
-            lines.append('    <var name="bergFreshWaterFlux"/>')
+            lines.append('    <var name="bergFreshwaterFlux"/>')
             lines.append('    <var name="bergLatentHeatFlux"/>')
 
         if ice_bgc == 'ice_bgc':
