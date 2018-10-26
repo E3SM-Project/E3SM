@@ -2083,9 +2083,9 @@
       </modules>
       <modules>
         <command name="load">mkl/2017</command>
-        <command name="load">/lustre/or-hydra/cades-ccsi/proj-shared/tools/cmake/3.6.1</command>
-        <command name="load">python/2.7.12</command>
-        <command name="load">/lustre/or-hydra/cades-ccsi/proj-shared/tools/nco/4.6.4</command>
+        <command name="load">cmake/3.11.0</command>
+        <command name="load">python/2.7.13</command>
+        <command name="load">nco/4.6.9</command>
         <command name="load">hdf5-parallel/1.8.17</command>
         <command name="load">netcdf-hdf5parallel/4.3.3.1</command>
         <command name="load">pnetcdf/1.9.0</command>
@@ -2097,10 +2097,6 @@
       prefered location). -->
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <!-- for CLM-PFLOTRAN coupling, the PETSC_PATH must be defined specifically upon machines -->
-    <environment_variables compiler="gnu" mpilib="openmpi">
-      <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc4pf/openmpi-1.10-gcc-5.3</env>
-    </environment_variables>
   </machine>
 
   <machine MACH="titan">
