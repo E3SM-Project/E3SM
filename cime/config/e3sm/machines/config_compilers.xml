@@ -925,14 +925,13 @@ for mct, etc.
 <compiler MACH="cades" COMPILER="gnu">
   <CFLAGS>
     <append compile_threaded="true"> -fopenmp </append>
+    <append> -I$(NETCDF_PATH)/include -I$(HDF5_PATH)/include </append>
   </CFLAGS>
   <CMAKE_OPTS>
     <append MODEL="cism"> -D CISM_GNU=ON </append>
   </CMAKE_OPTS>
   <CPPDEFS>
     <append> -DFORTRANUNDERSCORE -DNO_R16</append>
-    <!-- <append MODEL="clm"> -DCLM_PFLOTRAN </append>
-         <append MODEL="clm"> -DCOLUMN_MODE </append> -->
   </CPPDEFS>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
   <FC_AUTO_R8>
@@ -944,7 +943,7 @@ for mct, etc.
     <base> -O -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none -fno-range-check</base>
     <append compile_threaded="true"> -fopenmp </append>
     <append DEBUG="TRUE"> -g -Wall </append>
-    <!-- <append MODEL="clm"> -I/lustre/or-hydra/cades-ccsi/$USER/models/pflotran-interface/src/clm-pflotran</append> -->
+    <append> -I$(NETCDF_PATH)/include -I$(HDF5_PATH)/include </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
@@ -962,7 +961,7 @@ for mct, etc.
   <LDFLAGS>
     <append compile_threaded="true"> -fopenmp </append>
     <append MODEL="driver"> -L$NETCDF_PATH/lib -Wl,-rpath=$NETCDF_PATH/lib -lnetcdff -lnetcdf </append>
-    <!-- <append MODEL="driver"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran $ENV{PETSC_LIB} </append> -->
+    <append MODEL="driver"> -L$HDF5_PATH/lib -Wl,-rpath=$HDF5_PATH/lib -lhdf5_hl -lhdf5 -lhdf5hl_fortran -lhdf5_fortran </append>
   </LDFLAGS>
   <MPICC>mpicc</MPICC>
   <MPICXX>mpic++</MPICXX>
