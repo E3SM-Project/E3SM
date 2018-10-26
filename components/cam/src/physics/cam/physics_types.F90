@@ -3,7 +3,7 @@
 !-------------------------------------------------------------------------------
 module physics_types
 
-  use shr_kind_mod, only: r8 => shr_kind_r8
+  use shr_kind_mod, only: r8 => shr_kind_r8, r4 => shr_kind_r4
   use ppgrid,       only: pcols, pver, psubcols
   use constituents, only: pcnst, qmin, cnst_name
   use geopotential, only: geopotential_dse
@@ -211,6 +211,8 @@ contains
     use phys_control, only: phys_getopts
     use physconst,    only: physconst_update ! Routine which updates physconst variables (WACCM-X)
     use ppgrid,       only: begchunk, endchunk
+    use spmd_utils,   only: masterproc
+    use time_manager, only: is_first_step
 
 !------------------------------Arguments--------------------------------
     type(physics_ptend), intent(inout)  :: ptend   ! Parameterization tendencies
@@ -278,6 +280,7 @@ contains
 
     call t_startf ('physics_update_main')
     call reduce_ptend_precesion(ptend)
+    if(masterproc .and. is_first_step()) write(iulog,*)'PREC_INFO:Using pseudo reduced precision'
     !-----------------------------------------------------------------------
     ! cpairv_loc and rairv_loc need to be allocated to a size which matches state and ptend
     ! If psetcols == pcols, the cpairv is the correct size and just copy
@@ -505,27 +508,27 @@ contains
     type(physics_ptend), intent(inout)  :: ptend
     
     if (ptend%ls) then
-       ptend%s = dble(real(ptend%s))
-       ptend%hflux_srf = dble(real(ptend%hflux_srf))
-       ptend%hflux_top = dble(real(ptend%hflux_top))
+       ptend%s         = real(real(ptend%s        , kind=r4), kind=r8)
+       ptend%hflux_srf = real(real(ptend%hflux_srf, kind=r4), kind=r8)
+       ptend%hflux_top = real(real(ptend%hflux_top, kind=r4), kind=r8)
     end if
     
     if (ptend%lu) then
-       ptend%u = dble(real(ptend%u))
-       ptend%taux_srf  = dble(real(ptend%taux_srf))
-       ptend%taux_top  = dble(real(ptend%taux_top))
+       ptend%u         = real(real(ptend%u       , kind=r4), kind=r8)
+       ptend%taux_srf  = real(real(ptend%taux_srf, kind=r4), kind=r8)
+       ptend%taux_top  = real(real(ptend%taux_top, kind=r4), kind=r8)
     end if
     
     if (ptend%lv) then
-       ptend%v = dble(real(ptend%v))
-       ptend%tauy_srf  = dble(real(ptend%tauy_srf))
-       ptend%tauy_top  = dble(real(ptend%tauy_top))
+       ptend%v         = real(real(ptend%v       , kind=r4), kind=r8)
+       ptend%tauy_srf  = real(real(ptend%tauy_srf, kind=r4), kind=r8)
+       ptend%tauy_top  = real(real(ptend%tauy_top, kind=r4), kind=r8)
     end if
     
     if (any(ptend%lq(:))) then
-       ptend%q = dble(real(ptend%q))
-       ptend%cflx_srf  = dble(real(ptend%cflx_srf))
-       ptend%cflx_top  = dble(real(ptend%cflx_top))
+       ptend%q         = real(real(ptend%q       , kind=r4), kind=r8)
+       ptend%cflx_srf  = real(real(ptend%cflx_srf, kind=r4), kind=r8)
+       ptend%cflx_top  = real(real(ptend%cflx_top, kind=r4), kind=r8)
     end if
     
   end subroutine reduce_ptend_precesion
