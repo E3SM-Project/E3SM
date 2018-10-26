@@ -19,6 +19,7 @@ set (OMP_NUM_THREADS 1)
 # Specify test options, used to replace the cmake variables in the namelist
 SET (HOMME_TEST_QSIZE 4)
 SET (HOMME_TEST_RSPLIT 3)
+SET (HOMME_TEST_TIME_STEP 300)
 SET (HOMME_TEST_MOISTURE notdry)
 SET (HOMME_TEST_VCOORD_INT_FILE acme-72i.ascii)
 SET (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
