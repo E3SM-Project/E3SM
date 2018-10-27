@@ -87,6 +87,7 @@ SET (SRC_SHARE_F90
   ${SRC_SHARE_DIR}/vertremap_base.F90
   ${SRC_SHARE_DIR}/viscosity_base.F90
   ${SRC_SHARE_DIR}/zoltan_mod.F90
+  ${SRC_SHARE_DIR}/scalable_grid_init_mod.F90
 )
 
 SET(TEST_SRC_F90

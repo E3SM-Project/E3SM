@@ -92,7 +92,7 @@ module prim_driver_mod
     ! ==================================
     ! Initialize C++ mpi communication structures
     ! ==================================
-    call init_cxx_connectivity(nelemd,GridEdge,MetaVertex(1),par)
+    call init_cxx_connectivity(nelemd,GridEdge,MetaVertex,par)
 
     ! Initialize the time levels
     call TimeLevel_init(tl)
