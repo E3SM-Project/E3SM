@@ -184,10 +184,12 @@ module CNEcosystemDynBetrMod
                nitrogenflux_vars)
 
        end if
+!       if(get_nstep()/=23)then
        call CNMResp(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             canopystate_vars, soilstate_vars, temperature_vars, photosyns_vars, &
             carbonflux_vars, carbonstate_vars, nitrogenstate_vars)
        call t_stopf('CNMResp')
+!       endif
 !       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'afresp')
        ! for P competition purpose, calculate P fluxes that will potentially increase solution P pool
        ! then competitors take up solution P
@@ -275,11 +277,12 @@ module CNEcosystemDynBetrMod
       !--------------------------------------------
        ! Growth respiration
        !--------------------------------------------
-
+!       if(get_nstep()/=23)then
        call t_startf('CNGResp')
        call CNGResp(num_soilp, filter_soilp, &
             carbonflux_vars)
        call t_stopf('CNGResp')
+!       endif
        call carbonflux_vars%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
 
        if(use_c13) then
@@ -327,6 +330,7 @@ module CNEcosystemDynBetrMod
        !--------------------------------------------
        ! Update1
        !--------------------------------------------
+!       if(get_nstep()/=23)then
        call phenology_flux_limiter(bounds, num_soilc, filter_soilc,&
            num_soilp, filter_soilp, crop_vars, cnstate_vars,  &
            carbonflux_vars, carbonstate_vars, &
@@ -334,11 +338,11 @@ module CNEcosystemDynBetrMod
            c14_carbonflux_vars, c14_carbonstate_vars, &
            nitrogenflux_vars, nitrogenstate_vars, &
            phosphorusflux_vars, phosphorusstate_vars)
-
       ! gather all patch-level litterfall fluxes to the column for litter C and N inputs
 
        call CNLitterToColumn(num_soilc, filter_soilc, &
          cnstate_vars, carbonflux_vars, nitrogenflux_vars,phosphorusflux_vars)
+!       endif
 
        call t_startf('CNUpdate1')
 
@@ -424,12 +428,13 @@ module CNEcosystemDynBetrMod
 !       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'loc2')
 !       print*,'after update2'
 !       call nitrogenstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+!       if(get_nstep()/=23)then
        if (get_do_harvest()) then
           call CNHarvest(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
                phosphorusstate_vars, phosphorusflux_vars)
-       end if
-
+!       end if
+       endif
        if ( use_c13 ) then
           call CIsoFlux2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, carbonflux_vars, carbonstate_vars, &

@@ -7,7 +7,7 @@ module CNCStateUpdate1BeTRMod
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use clm_varpar             , only : ndecomp_cascade_transitions, nlevdecomp
-  use clm_time_manager       , only : get_step_size
+  use clm_time_manager       , only : get_step_size,get_nstep
   use clm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use pftvarcon              , only : npcropmin, nc3crop
   use abortutils             , only : endrun
@@ -137,7 +137,6 @@ contains
       ! patch loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)
-
          ! phenology: transfer growth fluxes
          cs%leafc_patch(p)           = cs%leafc_patch(p)       + cf%leafc_xfer_to_leafc_patch(p)*dt
          cs%leafc_xfer_patch(p)      = cs%leafc_xfer_patch(p)  - cf%leafc_xfer_to_leafc_patch(p)*dt
@@ -176,9 +175,7 @@ contains
             cs%livestemc_patch(p)  = cs%livestemc_patch(p)  - cf%livestemc_to_litter_patch(p)*dt
             cs%grainc_patch(p)     = cs%grainc_patch(p)     - cf%grainc_to_food_patch(p)*dt
          end if
-
          !cflx_tmp=0._r8;
-         cflx_scalar=1._r8
          ! maintenance respiration fluxes from cpool
          cs%cpool_patch(p) = cs%cpool_patch(p) - cf%leaf_curmr_patch(p)*dt
          cs%cpool_patch(p) = cs%cpool_patch(p) - cf%froot_curmr_patch(p)*dt
@@ -219,44 +216,12 @@ contains
            cs%cpool_patch(p) = cs%cpool_patch(p) - cf%cpool_grain_storage_gr_patch(p)*dt
          end if
 
-         !cflx_tmp = cflx_tmp + cf%cpool_to_xsmrpool_patch(p)*dt
-         !cflx_tmp = cflx_tmp + cf%cpool_to_leafc_patch(p)*dt
-         !cflx_tmp = cflx_tmp + cf%cpool_to_leafc_storage_patch(p)*dt
-         !cflx_tmp = cflx_tmp + cf%cpool_to_frootc_patch(p)*dt
-         !cflx_tmp = cflx_tmp + cf%cpool_to_frootc_storage_patch(p)*dt
-         !if (woody(ivt(p)) == 1._r8) then
-        !    cflx_tmp = cflx_tmp + cf%cpool_to_livestemc_patch(p)*dt
-        !    cflx_tmp = cflx_tmp + cf%cpool_to_livestemc_storage_patch(p)*dt
-        !    cflx_tmp = cflx_tmp + cf%cpool_to_deadstemc_patch(p)*dt
-        !    cflx_tmp = cflx_tmp + cf%cpool_to_deadstemc_storage_patch(p)*dt
-        !    cflx_tmp = cflx_tmp + cf%cpool_to_livecrootc_patch(p)*dt
-        !    cflx_tmp = cflx_tmp + cf%cpool_to_livecrootc_storage_patch(p)*dt
-        !    cflx_tmp = cflx_tmp + cf%cpool_to_deadcrootc_patch(p)*dt
-        !    cflx_tmp = cflx_tmp + cf%cpool_to_deadcrootc_storage_patch(p)*dt
-        ! end if
-        ! if (ivt(p) >= npcropmin) then ! skip 2 generic crops
-        !    cflx_tmp = cflx_tmp + cf%cpool_to_livestemc_patch(p)*dt
-        !    cflx_tmp = cflx_tmp + cf%cpool_to_livestemc_storage_patch(p)*dt
-        !    cflx_tmp = cflx_tmp + cf%cpool_to_grainc_patch(p)*dt
-        !    cflx_tmp = cflx_tmp + cf%cpool_to_grainc_storage_patch(p)*dt
-        ! end if
-
-         ! growth respiration stored for release during transfer growth
-         !cflx_tmp = cflx_tmp + cf%cpool_to_gresp_storage_patch(p)*dt
-         !if(cs%cpool_patch(p) >= cflx_tmp)then
-        !   cs%cpool_patch(p) = cs%cpool_patch(p) - cflx_tmp
-        ! else
-        !   if(cflx_tmp>0._r8)then
-        !     cflx_scalar = cs%cpool_patch(p)/cflx_tmp
-        !   endif
-        !   cs%cpool_patch(p) = 0._r8
-         !endif
 
          ! maintenance respiration fluxes from xsmrpool
-         cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) + cf%cpool_to_xsmrpool_patch(p)*dt*cflx_scalar
+         cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) + cf%cpool_to_xsmrpool_patch(p)*dt
+         cs%cpool_patch(p)    = cs%cpool_patch(p)    - cf%cpool_to_xsmrpool_patch(p)*dt
          cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) - cf%leaf_xsmr_patch(p)*dt
          cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) - cf%froot_xsmr_patch(p)*dt
-
          if (nu_com .ne. 'RD') then
             cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) - cf%xsmrpool_turnover_patch(p)*dt
          end if
@@ -276,25 +241,41 @@ contains
          end if
 
          ! allocation fluxes
-         cs%leafc_patch(p)           = cs%leafc_patch(p)          + cf%cpool_to_leafc_patch(p)*dt*cflx_scalar
-         cs%leafc_storage_patch(p)   = cs%leafc_storage_patch(p)  + cf%cpool_to_leafc_storage_patch(p)*dt*cflx_scalar
-         cs%frootc_patch(p)          = cs%frootc_patch(p)         + cf%cpool_to_frootc_patch(p)*dt*cflx_scalar
-         cs%frootc_storage_patch(p)  = cs%frootc_storage_patch(p) + cf%cpool_to_frootc_storage_patch(p)*dt*cflx_scalar
+         cs%leafc_patch(p)           = cs%leafc_patch(p)          + cf%cpool_to_leafc_patch(p)*dt
+         cs%cpool_patch(p)           = cs%cpool_patch(p)          - cf%cpool_to_leafc_patch(p)*dt
+         cs%leafc_storage_patch(p)   = cs%leafc_storage_patch(p)  + cf%cpool_to_leafc_storage_patch(p)*dt
+         cs%cpool_patch(p)           = cs%cpool_patch(p)          - cf%cpool_to_leafc_storage_patch(p)*dt
+         cs%frootc_patch(p)          = cs%frootc_patch(p)         + cf%cpool_to_frootc_patch(p)*dt
+         cs%cpool_patch(p)           = cs%cpool_patch(p)          - cf%cpool_to_frootc_patch(p)*dt
+         cs%frootc_storage_patch(p)  = cs%frootc_storage_patch(p) + cf%cpool_to_frootc_storage_patch(p)*dt
+         cs%cpool_patch(p)           = cs%cpool_patch(p)          - cf%cpool_to_frootc_storage_patch(p)*dt
          if (woody(ivt(p)) == 1._r8) then
-            cs%livestemc_patch(p)           = cs%livestemc_patch(p)          + cf%cpool_to_livestemc_patch(p)*dt*cflx_scalar
-            cs%livestemc_storage_patch(p)   = cs%livestemc_storage_patch(p)  + cf%cpool_to_livestemc_storage_patch(p)*dt*cflx_scalar
-            cs%deadstemc_patch(p)           = cs%deadstemc_patch(p)          + cf%cpool_to_deadstemc_patch(p)*dt*cflx_scalar
-            cs%deadstemc_storage_patch(p)   = cs%deadstemc_storage_patch(p)  + cf%cpool_to_deadstemc_storage_patch(p)*dt*cflx_scalar
-            cs%livecrootc_patch(p)          = cs%livecrootc_patch(p)         + cf%cpool_to_livecrootc_patch(p)*dt*cflx_scalar
-            cs%livecrootc_storage_patch(p)  = cs%livecrootc_storage_patch(p) + cf%cpool_to_livecrootc_storage_patch(p)*dt*cflx_scalar
-            cs%deadcrootc_patch(p)          = cs%deadcrootc_patch(p)         + cf%cpool_to_deadcrootc_patch(p)*dt*cflx_scalar
-            cs%deadcrootc_storage_patch(p)  = cs%deadcrootc_storage_patch(p) + cf%cpool_to_deadcrootc_storage_patch(p)*dt*cflx_scalar
+            cs%livestemc_patch(p)           = cs%livestemc_patch(p)          + cf%cpool_to_livestemc_patch(p)*dt
+            cs%cpool_patch(p)               = cs%cpool_patch(p)              - cf%cpool_to_livestemc_patch(p)*dt
+            cs%livestemc_storage_patch(p)   = cs%livestemc_storage_patch(p)  + cf%cpool_to_livestemc_storage_patch(p)*dt
+            cs%cpool_patch(p)               = cs%cpool_patch(p)              - cf%cpool_to_livestemc_storage_patch(p)*dt
+            cs%deadstemc_patch(p)           = cs%deadstemc_patch(p)          + cf%cpool_to_deadstemc_patch(p)*dt
+            cs%cpool_patch(p)               = cs%cpool_patch(p)              - cf%cpool_to_deadstemc_patch(p)*dt
+            cs%deadstemc_storage_patch(p)   = cs%deadstemc_storage_patch(p)  + cf%cpool_to_deadstemc_storage_patch(p)*dt
+            cs%cpool_patch(p)               = cs%cpool_patch(p)              - cf%cpool_to_deadstemc_storage_patch(p)*dt
+            cs%livecrootc_patch(p)          = cs%livecrootc_patch(p)         + cf%cpool_to_livecrootc_patch(p)*dt
+            cs%cpool_patch(p)               = cs%cpool_patch(p)              - cf%cpool_to_livecrootc_patch(p)*dt
+            cs%livecrootc_storage_patch(p)  = cs%livecrootc_storage_patch(p) + cf%cpool_to_livecrootc_storage_patch(p)*dt
+            cs%cpool_patch(p)               = cs%cpool_patch(p)              - cf%cpool_to_livecrootc_storage_patch(p)*dt
+            cs%deadcrootc_patch(p)          = cs%deadcrootc_patch(p)         + cf%cpool_to_deadcrootc_patch(p)*dt
+            cs%cpool_patch(p)               = cs%cpool_patch(p)              - cf%cpool_to_deadcrootc_patch(p)*dt
+            cs%deadcrootc_storage_patch(p)  = cs%deadcrootc_storage_patch(p) + cf%cpool_to_deadcrootc_storage_patch(p)*dt
+            cs%cpool_patch(p)               = cs%cpool_patch(p)              - cf%cpool_to_deadcrootc_storage_patch(p)*dt
          end if
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
-            cs%livestemc_patch(p)           = cs%livestemc_patch(p)          + cf%cpool_to_livestemc_patch(p)*dt*cflx_scalar
-            cs%livestemc_storage_patch(p)   = cs%livestemc_storage_patch(p)  + cf%cpool_to_livestemc_storage_patch(p)*dt*cflx_scalar
-            cs%grainc_patch(p)              = cs%grainc_patch(p)             + cf%cpool_to_grainc_patch(p)*dt*cflx_scalar
-            cs%grainc_storage_patch(p)      = cs%grainc_storage_patch(p)     + cf%cpool_to_grainc_storage_patch(p)*dt*cflx_scalar
+            cs%livestemc_patch(p)           = cs%livestemc_patch(p)          + cf%cpool_to_livestemc_patch(p)*dt
+            cs%cpool_patch(p)               = cs%cpool_patch(p)              - cf%cpool_to_livestemc_patch(p)*dt
+            cs%livestemc_storage_patch(p)   = cs%livestemc_storage_patch(p)  + cf%cpool_to_livestemc_storage_patch(p)*dt
+            cs%cpool_patch(p)               = cs%cpool_patch(p)              - cf%cpool_to_livestemc_storage_patch(p)*dt
+            cs%grainc_patch(p)              = cs%grainc_patch(p)             + cf%cpool_to_grainc_patch(p)*dt
+            cs%cpool_patch(p)               = cs%cpool_patch(p)              - cf%cpool_to_grainc_patch(p)*dt
+            cs%grainc_storage_patch(p)      = cs%grainc_storage_patch(p)     + cf%cpool_to_grainc_storage_patch(p)*dt
+            cs%cpool_patch(p)               = cs%cpool_patch(p)              - cf%cpool_to_grainc_storage_patch(p)*dt
          end if
 
 
@@ -312,7 +293,8 @@ contains
             cs%gresp_xfer_patch(p) = cs%gresp_xfer_patch(p) - cf%transfer_grain_gr_patch(p)*dt
          end if
 
-         cs%gresp_storage_patch(p) = cs%gresp_storage_patch(p) + cf%cpool_to_gresp_storage_patch(p)*dt*cflx_scalar
+         cs%gresp_storage_patch(p) = cs%gresp_storage_patch(p) + cf%cpool_to_gresp_storage_patch(p)*dt
+         cs%cpool_patch(p) = cs%cpool_patch(p) - cf%cpool_to_gresp_storage_patch(p)*dt
 
          ! move storage pools into transfer pools
          cs%leafc_storage_patch(p)  = cs%leafc_storage_patch(p)  - cf%leafc_storage_to_xfer_patch(p)*dt

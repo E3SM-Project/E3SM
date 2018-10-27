@@ -134,23 +134,26 @@ contains
   real(r8), intent(in) :: a
   integer , intent(in) :: nx
   integer , intent(in) :: ny
-  real(r8), intent(in) :: x(nx)
+  real(r8), intent(in) :: x(ny)
   type(sparseMat_type), intent(in) :: spm
-  real(r8), intent(inout) :: y(ny)
+  real(r8), intent(inout) :: y(nx)
   integer, intent(out) :: errinfo
 
   integer :: ii, jj, id
+  real(r8) :: dy
   errinfo=0
-  if(nx /=spm%szcol .or. ny /= spm%szrow)then
+  if(nx /=spm%szrow .or. ny /= spm%szcol)then
     errinfo=-1
     return
   endif
 
   do ii = 1, spm%szrow
+    dy = 0._r8
     do jj = 1, spm%ncol(ii)
       id = spm%pB(ii)+jj-1
-      y(ii)=y(ii)+a*spm%val(id)*x(spm%icol(id))
+      dy=dy+spm%val(id)*x(spm%icol(id))
     enddo
+    y(ii) = y(ii) + a*dy
   enddo
   end subroutine spm_axpy
 !---------------------------------------------------------------
@@ -381,14 +384,14 @@ contains
   do
     !obtain the destruction fluxes
     d_dt(:)=0._r8
-    call spm_axpy(spm_d%szrow, spm_d%szcol, dtime, rfluxes, spm_d, d_dt, errinfo)
+    call spm_axpy(spm_d%szrow, spm_d%szcol, 1._r8, rfluxes, spm_d, d_dt, errinfo)
 
     if(errinfo<0)then
       call endrun(msg='ERROR:: in spm_axpy'//errMsg(__FILE__, __LINE__))
     endif
     !obtain the production fluxes
     p_dt(:)=0._r8
-    call spm_axpy(spm_p%szrow, spm_d%szcol, dtime, rfluxes, spm_p, p_dt, errinfo)
+    call spm_axpy(spm_p%szrow, spm_d%szcol, 1._r8, rfluxes, spm_p, p_dt, errinfo)
 
     if(errinfo<0)then
       call endrun(msg='ERROR:: in spm_axpy '//errMsg(__FILE__, __LINE__))

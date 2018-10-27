@@ -176,60 +176,6 @@ contains
          ! deployment from retranslocation pool
          ps%ppool_patch(p)    = ps%ppool_patch(p)    + pf%retransp_to_ppool_patch(p)*dt
          ps%retransp_patch(p) = ps%retransp_patch(p) - pf%retransp_to_ppool_patch(p)*dt
-         if(.not. (cnallocate_carbonnitrogen_only() .or. CNAllocate_Carbon_only()))then
-           !pflx_tmp=0._r8;
-           pflx_scalar=1._r8
-           ! allocation fluxes
-           !pflx_tmp = pflx_tmp + pf%ppool_to_leafp_patch(p)*dt
-           !pflx_tmp = pflx_tmp + pf%ppool_to_leafp_storage_patch(p)*dt
-           !pflx_tmp = pflx_tmp + pf%ppool_to_frootp_patch(p)*dt
-           !pflx_tmp = pflx_tmp + pf%ppool_to_frootp_storage_patch(p)*dt
-           !if (woody(ivt(p)) == 1._r8) then
-          !   pflx_tmp = pflx_tmp + pf%ppool_to_livestemp_patch(p)*dt
-          !   pflx_tmp = pflx_tmp + pf%ppool_to_livestemp_storage_patch(p)*dt
-          !   pflx_tmp = pflx_tmp + pf%ppool_to_deadstemp_patch(p)*dt
-          !   pflx_tmp = pflx_tmp + pf%ppool_to_deadstemp_storage_patch(p)*dt
-          !   pflx_tmp = pflx_tmp + pf%ppool_to_livecrootp_patch(p)*dt
-          !   pflx_tmp = pflx_tmp + pf%ppool_to_livecrootp_storage_patch(p)*dt
-          !   pflx_tmp = pflx_tmp + pf%ppool_to_deadcrootp_patch(p)*dt
-        !     pflx_tmp = pflx_tmp + pf%ppool_to_deadcrootp_storage_patch(p)*dt
-        !   end if
-
-        !   if (ivt(p) >= npcropmin) then ! skip 2 generic crops
-        !     pflx_tmp = pflx_tmp + pf%ppool_to_livestemp_patch(p)*dt
-        !     pflx_tmp = pflx_tmp + pf%ppool_to_livestemp_storage_patch(p)*dt
-        !     pflx_tmp = pflx_tmp + pf%ppool_to_grainp_patch(p)*dt
-        !     pflx_tmp = pflx_tmp + pf%ppool_to_grainp_storage_patch(p)*dt
-        !   endif
-
-        !   if(ps%ppool_patch(p) < pflx_tmp)then
-        !     if(pflx_tmp>0._r8)then
-        !       pflx_scalar = max(ps%ppool_patch(p)/pflx_tmp,1._r8)*0.9999_r8
-        !     else
-        !       pflx_scalar = 0._r8
-        !     endif
-             pf%ppool_to_leafp_patch(p)          = pf%ppool_to_leafp_patch(p) * pflx_scalar
-             pf%ppool_to_leafp_storage_patch(p)  = pf%ppool_to_leafp_storage_patch(p) * pflx_scalar
-             pf%ppool_to_frootp_patch(p)         = pf%ppool_to_frootp_patch(p) * pflx_scalar
-             pf%ppool_to_frootp_storage_patch(p) = pf%ppool_to_frootp_storage_patch(p) * pflx_scalar
-             if (woody(ivt(p)) == 1._r8) then
-               pf%ppool_to_livestemp_patch(p)          = pf%ppool_to_livestemp_patch(p) * pflx_scalar
-               pf%ppool_to_livestemp_storage_patch(p)  = pf%ppool_to_livestemp_storage_patch(p) * pflx_scalar
-               pf%ppool_to_deadstemp_patch(p)          = pf%ppool_to_deadstemp_patch(p) * pflx_scalar
-               pf%ppool_to_deadstemp_storage_patch(p)  = pf%ppool_to_deadstemp_storage_patch(p) * pflx_scalar
-               pf%ppool_to_livecrootp_patch(p)         =  pf%ppool_to_livecrootp_patch(p) * pflx_scalar
-               pf%ppool_to_livecrootp_storage_patch(p) = pf%ppool_to_livecrootp_storage_patch(p) * pflx_scalar
-               pf%ppool_to_deadcrootp_patch(p)         = pf%ppool_to_deadcrootp_patch(p) * pflx_scalar
-               pf%ppool_to_deadcrootp_storage_patch(p) = pf%ppool_to_deadcrootp_storage_patch(p) * pflx_scalar
-             endif
-             if (ivt(p) >= npcropmin) then
-               pf%ppool_to_livestemp_patch(p)         = pf%ppool_to_livestemp_patch(p) * pflx_scalar
-               pf%ppool_to_livestemp_storage_patch(p) = pf%ppool_to_livestemp_storage_patch(p) * pflx_scalar
-               pf%ppool_to_grainp_patch(p)            = pf%ppool_to_grainp_patch(p) * pflx_scalar
-               pf%ppool_to_grainp_storage_patch(p)    = pf%ppool_to_grainp_storage_patch(p) * pflx_scalar
-             endif
-           endif
-         endif
 
          ps%leafp_patch(p)           = ps%leafp_patch(p)          + pf%ppool_to_leafp_patch(p)*dt
          ps%leafp_storage_patch(p)   = ps%leafp_storage_patch(p)  + pf%ppool_to_leafp_storage_patch(p)*dt

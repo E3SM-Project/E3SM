@@ -988,7 +988,7 @@ contains
     use clm_varpar       , only:  nlevdecomp !!nlevsoi,
     use clm_varcon       , only: nitrif_n2o_loss_frac, secspday
 !    use landunit_varcon  , only: istsoil, istcrop
-    use clm_time_manager , only: get_nstep
+    use clm_time_manager , only: get_nstep,get_step_size
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -1042,6 +1042,7 @@ contains
     real(r8), parameter :: taup = 3600._r8 !turnover of the abstract plant p storage
     real(r8), parameter :: taun = 3600._r8 !turnover of the abstract plant n storage
     real(r8):: xsmr_ratio                 ! ratio of mr comes from non-structue carobn hydrate pool
+    real(r8):: dt
     !-----------------------------------------------------------------------
 
     associate(                                                                                 &
@@ -1196,7 +1197,7 @@ contains
          c13cf => c13_carbonflux_vars, &
          c14cf => c14_carbonflux_vars  &
          )
-
+      dt = real( get_step_size(), r8 )
 !
 !    !-------------------------------------------------------------------
      ! set space-and-time parameters from parameter file
@@ -1353,6 +1354,12 @@ contains
          froot_curmr(p) = froot_mr(p) * curmr_ratio
          froot_xsmr(p) = froot_mr(p) * xsmr_ratio
          froot_mr(p) =  froot_curmr(p) + froot_xsmr(p)
+         if(get_nstep()==23 .and. p==5)then
+           print*,'cnalloc froot_xsmr',froot_xsmr(p)*dt
+           print*,'cnalloc froot_curmr',froot_curmr(p)*dt
+           print*,'cnalloc froo mr',froot_mr(p)*dt
+           print*,'cnalloc leaf mr',leaf_mr(p)*dt
+         endif
          if (woody(ivt(p)) == 1._r8 .or. ivt(p) >= npcropmin) then
            livestem_curmr(p) = livestem_mr(p) * curmr_ratio
            livestem_xsmr(p) = livestem_mr(p) * xsmr_ratio

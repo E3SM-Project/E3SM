@@ -273,7 +273,7 @@ contains
   f_npool_to_livestemn            = ic_next(id)
   f_npool_to_livestemn_storage    = ic_next(id)
   f_npool_to_livecrootn           = ic_next(id)
-  f_npool_to_livecrootn_storage    = ic_next(id)
+  f_npool_to_livecrootn_storage   = ic_next(id)
   f_npool_to_deadstemn            = ic_next(id)
   f_npool_to_deadcrootn           = ic_next(id)
   f_npool_to_deadstemn_storage    = ic_next(id)
@@ -434,7 +434,7 @@ contains
   call spm_list_insert(spm_list, -1._r8, f_grainn_xfer_to_grainn        , s_grainn_xfer,nelms)
   call spm_list_insert(spm_list, -1._r8, f_retransn_to_npool            , s_retransn, nelms)
 
-  call spm_list_to_mat(spm_list, spm_nutrient_d, nelms, f_retransn_to_npool)
+  call spm_list_to_mat(spm_list, spm_nutrient_d, nelms, f_supplement_to_sminn_surf)
 
   call spm_list_init(spm_list, 1._r8, f_retransn_to_npool                , s_npool, nelms)
   call spm_list_insert(spm_list, 1._r8, f_supplement_to_sminn_surf       , s_npool, nelms)
@@ -882,9 +882,9 @@ contains
 
     mov(rfluxes(f_retransn_to_npool)             , nf%retransn_to_npool_patch(p))
     mov(rfluxes(f_supplement_to_sminn_surf)      , nf%supplement_to_sminn_surf_patch(p))
-
-   call flux_correction(spm_nutrient_d%szrow, spm_nutrient_d%szcol, spm_nutrient_p, &
-    spm_nutrient_d, dt, ystates, rfluxes)
+  
+    call flux_correction(spm_nutrient_d%szrow, spm_nutrient_d%szcol, spm_nutrient_p, &
+      spm_nutrient_d, dt, ystates, rfluxes)
 
     !correct the fluxes
     imov(rfluxes(f_npool_to_leafn)                , nf%npool_to_leafn_patch(p))
