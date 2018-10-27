@@ -1460,4 +1460,71 @@ contains
     prep_ocn_get_mapper_Sw2o => mapper_Sw2o
   end function prep_ocn_get_mapper_Sw2o
 
+  ! exposed method to migrate projected tag from coupler pes to ocean pes
+  subroutine prep_ocn_migrate_moab(infodata)
+  !---------------------------------------------------------------
+    ! Description
+    ! After a2oTAG_proj was computed on ocn mesh on coupler, it needs to be migrated to the ocean pes
+    !  maybe the ocean solver will use it (later)?
+    ! in this method, ocn temp on coupler pes from atm is moved to ocean pes
+    ! Arguments
+    type(seq_infodata_type) , intent(in)    :: infodata
+
+    integer :: ierr
+
+    logical                          :: atm_present    ! .true.  => atm is present
+    logical                          :: ocn_present    ! .true.  => ocn is present
+    integer                  :: id_join
+    integer                  :: mpicom_join
+    integer                  :: atmid
+    character*32             :: dm1, dm2, tagName
+    character*32             :: outfile, wopts, tagnameProj
+    integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
+
+    integer, external :: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers
+    integer, external :: iMOAB_WriteMesh
+
+    call seq_infodata_getData(infodata, &
+         atm_present=atm_present,       &
+         ocn_present=ocn_present)
+
+  !  it involves initial ocn app; mpoid; also migrated ocn mesh mesh on coupler pes, mbaxid
+  ! after this, the sending of tags from coupler pes to ocn pes will use initial graph
+       !  (not processed for coverage)
+  ! how to get mpicomm for joint ocn + coupler
+    id_join = ocn(1)%cplcompid
+    ocnid   = ocn(1)%compid
+    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
+
+    ! now send the tag a2oTAG_proj from ocn on coupler pes towards original ocean mesh
+    tagName = 'a2oTAG_proj'//CHAR(0) ! it is defined in prep_atm_mod.F90!!!
+
+    if (mboxid .ge. 0) then !  send because we are on coupler pes
+
+      ! basically, use the initial partitioning
+      ierr = iMOAB_SendElementTag(mboxid, id_join, ocnid, tagName, mpicom_join)
+
+    endif
+    if (mpoid .ge. 0 ) then !  we are on ocean pes, for sure
+      ! receive on ocean pes, a tag that was computed on coupler pes
+       ierr = iMOAB_ReceiveElementTag(mpoid, id_join, ocnid, tagName, mpicom_join)
+    !CHECKRC(ierr, "cannot receive tag values")
+    endif
+
+    ! we can now free the sender buffers
+    if (mboxid .ge. 0) then
+       ierr = iMOAB_FreeSenderBuffers(mboxid, mpicom_join, id_join)
+       ! CHECKRC(ierr, "cannot free buffers used to send projected tag towards the ocean mesh")
+    endif
+
+    if (mpoid .ge. 0 ) then !  we are on ocean pes, for sure
+
+      outfile = 'wholeMPAS_proj.h5m'//CHAR(0)
+      wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
+      ierr = iMOAB_WriteMesh(mpoid, trim(outfile), trim(wopts))
+
+    !CHECKRC(ierr, "cannot receive tag values")
+    endif
+
+  end subroutine prep_ocn_migrate_moab
 end module prep_ocn_mod
