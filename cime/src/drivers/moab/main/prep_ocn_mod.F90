@@ -1415,9 +1415,7 @@ contains
     ocnid   = ocn(1)%compid
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
 
-
-
-    ! now send the tag a2oTAG_proj from ocn on coupler pes(pid1) towards original ocean mesh (pid3)
+    ! now send the tag a2oTAG_proj from ocn on coupler pes towards original ocean mesh
     tagName = 'a2oTAG_proj'//CHAR(0) ! it is defined in prep_atm_mod.F90!!!
 
     if (mboxid .ge. 0) then !  send because we are on coupler pes
@@ -1426,8 +1424,8 @@ contains
       ierr = iMOAB_SendElementTag(mboxid, id_join, ocnid, tagName, mpicom_join)
 
     endif
-    if (mpoid .ge. 0 ) then !  we are on coupler pes, for sure
-      ! receive on atm on coupler pes, that was redistributed according to coverage
+    if (mpoid .ge. 0 ) then !  we are on ocean pes, for sure
+      ! receive on ocean pes, a tag that was computed on coupler pes
        ierr = iMOAB_ReceiveElementTag(mpoid, id_join, ocnid, tagName, mpicom_join)
     !CHECKRC(ierr, "cannot receive tag values")
     endif
@@ -1435,7 +1433,7 @@ contains
     ! we can now free the sender buffers
     if (mboxid .ge. 0) then
        ierr = iMOAB_FreeSenderBuffers(mboxid, mpicom_join, id_join)
-       ! CHECKRC(ierr, "cannot free buffers used to resend atm mesh tag towards the coverage mesh")
+       ! CHECKRC(ierr, "cannot free buffers used to send projected tag towards the ocean mesh")
     endif
 
     if (mpoid .ge. 0 ) then !  we are on ocean pes, for sure
