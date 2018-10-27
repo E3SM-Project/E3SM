@@ -22,7 +22,7 @@ use physics_buffer,   only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
 use wv_saturation,    only: qsat
 use phys_control,     only: phys_getopts
 use ref_pres,         only: top_lev => trop_cloud_top_lev
-#if !defined(CPRINTEL)
+#ifndef HAVE_ERF_INTRINSICS
 use shr_spfn_mod,     only: erf => shr_spfn_erf
 #endif
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_mode_num, rad_cnst_get_aer_mmr, &
