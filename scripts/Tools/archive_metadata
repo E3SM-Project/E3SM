@@ -37,8 +37,7 @@ _xml_vars = ['CASE', 'COMPILER', 'COMPSET', 'CONTINUE_RUN', 'DOUT_S', 'DOUT_S_RO
              'STOP_N', 'STOP_OPTION', 'USER']
 _run_vars = ['JOB_QUEUE', 'JOB_WALLCLOCK_TIME', 'PROJECT']
 _archive_list = ['Buildconf', 'CaseDocs', 'CaseStatus', 'LockedFiles',
-                 'Macros.make', 'README.case', 'SourceMods', 'software_environment.txt',
-                 'timing', 'logs', 'postprocess/logs']
+                 'Macros.make', 'README.case', 'SourceMods', 'software_environment.txt']
 _call_template = Template('in "$function" - Ignoring SVN repo update\n'
                           'SVN error executing command "$cmd". \n'
                           '$error: $strerror')
@@ -453,7 +452,7 @@ def get_pp_status(case_dict):
     case_dict['xconform_path'] = ''
     case_dict['xconform_path'] = get_pp_path(pp_dir, 'xconform')
     if (len(case_dict['xconform_path']) > 2):
-        case_dict['xconform_path'] = os.path.join(case_dict['xconform_path'], case_dict['case_id'])
+        case_dict['xconform_path'] = os.path.join(case_dict['xconform_path'], str(case_dict['case_id']))
     case_dict['xconform_status'] = 'Unknown'
     case_dict['xconform_size'] = get_disk_usage(case_dict['xconform_path'])
 
@@ -839,15 +838,16 @@ def update_repo_add_file(filename, dir1, dir2):
     src = os.path.join(dir1, filename)
     dest = os.path.join(dir2, filename)
     logger.debug('left_only: '+src+' -> '+dest)
-    shutil.copy2(src, dest)
-    cmd = ['svn', 'add', dest]
-    try:
-        subprocess.check_call(cmd)
-    except subprocess.CalledProcessError as error:
-        msg = _call_template.substitute(function='update_lcoal_repo', cmd=cmd,
-                                        error=error.returncode, strerror=error.output)
-        logger.warning(msg)
-        raise SVNException(msg)
+    if not os.path.exists(dest):
+        shutil.copy2(src, dest)
+        cmd = ['svn', 'add', dest]
+        try:
+            subprocess.check_call(cmd)
+        except subprocess.CalledProcessError as error:
+            msg = _call_template.substitute(function='update_lcoal_repo', cmd=cmd,
+                                            error=error.returncode, strerror=error.output)
+            logger.warning(msg)
+            raise SVNException(msg)
 
 # ---------------------------------------------------------------------
 def update_repo_rm_file(filename, dir1, dir2):
@@ -908,7 +908,7 @@ def compare_dir_trees(dir1, dir2, archive_list):
                 new_dir1 = os.path.join(dir1, filename)
                 new_dir2 = os.path.join(dir2, filename)
                 os.makedirs(new_dir2)
-                cmd = ['svn', 'add', '--depth=empty', new_dir2]
+                cmd = ['svn', 'add', new_dir2]
                 try:
                     subprocess.check_call(cmd)
                 except subprocess.CalledProcessError as error:
@@ -918,8 +918,8 @@ def compare_dir_trees(dir1, dir2, archive_list):
                     raise SVNException(msg)
 
                 # recurse through this new subdir
-                archive_list = archive_list + filename
-                compare_dir_trees(new_dir1, new_dir2, archive_list)
+                new_archive_list = [filename]
+                compare_dir_trees(new_dir1, new_dir2, new_archive_list)
 
     # files need to be removed from svn repo that are no longer in the caseroot
     if right_only:
@@ -973,7 +973,7 @@ def update_local_repo(case_dict, ignore_logs, ignore_timing):
 
     # check if ignore_logs is specified
     if ignore_logs:
-        os.chdir(case_dict['archive_temp_dir'])
+        os.chdir(to_dir)
         if os.path.isdir('./logs'):
             try:
                 shutil.rmtree('./logs')
@@ -1005,6 +1005,24 @@ def update_local_repo(case_dict, ignore_logs, ignore_timing):
                                                 error=error.returncode, strerror=error.output)
                 logger.warning(msg)
                 raise SVNException(msg)
+    else:
+        # add log files
+        if os.path.exists('{0}/logs'.format(from_dir)):
+            if not os.path.exists('{0}/logs'.format(to_dir)):
+                os.makedirs('{0}/logs'.format(to_dir))
+            os.chdir(os.path.join(from_dir, 'logs'))
+            for filename in glob.glob('*.*'):
+                update_repo_add_file(filename, os.path.join(from_dir, 'logs'), 
+                                     os.path.join(to_dir, 'logs'))
+
+        if os.path.exists('{0}/postprocess/logs'.format(from_dir)):
+            if not os.path.exists('{0}/postprocess/logs'.format(to_dir)):
+                os.makedirs('{0}/postprocess/logs'.format(to_dir))
+            os.chdir(os.path.join(from_dir, 'postprocess/logs'))
+            for filename in glob.glob('*.*'):
+                update_repo_add_file(filename, os.path.join(from_dir, 'postprocess', 'logs'), 
+                                     os.path.join(to_dir, 'postprocess', 'logs'))
+            
 
     # check if ignore_timing is specified
     if ignore_timing:
@@ -1023,6 +1041,16 @@ def update_local_repo(case_dict, ignore_logs, ignore_timing):
                                                 error=error.returncode, strerror=error.output)
                 logger.warning(msg)
                 raise SVNException(msg)
+    else:
+        # add timing files
+        if os.path.exists('{0}/timing'.format(from_dir)):
+            if not os.path.exists('{0}/timing'.format(to_dir)):
+                os.makedirs('{0}/timing'.format(to_dir))
+            os.chdir(os.path.join(from_dir, 'timing'))
+            for filename in glob.glob('*.*'):
+                update_repo_add_file(filename, os.path.join(from_dir, 'timing'), 
+                                     os.path.join(to_dir, 'timing'))
+
 
 # ---------------------------------------------------------------------
 def populate_local_repo(case_dict, ignore_logs, ignore_timing):
