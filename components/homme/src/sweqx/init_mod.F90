@@ -34,7 +34,7 @@ contains
                            MeshCubeEdgeCount
     ! --------------------------------
     use cube_mod, only : cube_init_atomic, set_corner_coordinates, &
-         assign_node_numbers_to_elem, set_area_correction_map2
+        set_area_correction_map2
 
     ! --------------------------------
     use edge_mod, only : initedgebuffer
@@ -282,7 +282,7 @@ contains
           do ie=1,nelemd
              call set_corner_coordinates(elem(ie))
           enddo
-          call assign_node_numbers_to_elem(elem, GridVertex)
+          !call assign_node_numbers_to_elem(elem, GridVertex)
        endif
 
        do ie=1,nelemd

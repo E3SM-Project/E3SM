@@ -18,6 +18,9 @@ module element_state
   ! maximum error of Newton iteration for an IMEX-RK stage per time-step
   real (kind=real_kind), public :: max_itererr_perstep
 
+  ! pressure based TOM sponge layer
+  real (kind=real_kind),public :: nu_scale_top(nlev)
+
 
 ! =========== PRIMITIVE-EQUATION DATA-STRUCTURES =====================
 

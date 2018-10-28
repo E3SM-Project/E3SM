@@ -7,6 +7,7 @@ module spacecurve_mod
 !
 ! Revisions:
 ! Mark Taylor: 2018/3  Remove memory leaks, make most routines private
+! Mark Taylor: 2018/10 add more deallocates
 !
   use kinds, only : iulog
   implicit none
@@ -18,9 +19,8 @@ module spacecurve_mod
   end type factor_t
 
 
-  integer,public, dimension(:,:), allocatable :: ordered
-  integer,public, dimension(:,:), allocatable :: dir     ! direction to move along each level
-  integer,public, dimension(:)  , allocatable :: pos     ! position along each of the axes
+  integer, dimension(:,:), allocatable :: ordered
+  integer, dimension(:)  , allocatable :: pos     ! position along each of the axes
 
   integer,public                              :: maxdim  ! dimensionality of entire space
   integer,public                              :: vcnt   ! visitation count
@@ -781,67 +781,6 @@ contains
     ierr = 0
   end function IncrementCurve
   !---------------------------------------------------------
-  recursive function hilbert_old(l,d,ma,md,ja,jd) result(ierr)
-
-    integer  :: l,d             ! log base 2 of levels and dimensions left
-    integer  :: ma,md           ! main axis and direction 
-    integer  :: ja,jd           ! joiner axis and direction 
-
-    integer  :: ierr
-    integer  :: axis
-    integer  :: ll
-
-    if(verbose) write(iulog,10) l,d,ma,md,ja,jd,pos(0),pos(1)
-    ll = l     ! Copy this to a temporary variable 
-    if(d == 0) then 
-       ll=ll-1
-       if(ll == 0) then 
-          return 
-       endif
-       axis = ja
-       if(dir(ll,axis) /= jd) then     ! do not move away from joiner plane 
-          axis = MOD(axis+1,maxdim)    ! next axis
-       endif
-       if(verbose) write(iulog,*)'hilbert_old: call hilbert_old(l,d) #1:'
-       ierr = hilbert_old(ll,maxdim,axis,dir(ll,axis),ja,jd) 
-       dir(ll,ja) = -dir(ll,ja)
-       return 
-    endif
-    axis = MOD(ma+1,maxdim)
-    if(verbose) write(iulog,*)'hilbert_old: before call hilbert_old(l,d) #2:'
-    ierr = hilbert_old(ll,d-1,axis,dir(ll,axis),ma,md)
-    if(verbose) write(iulog,*)'hilbert_old:  after call hilbert_old(l,d) #2:'
-    if(verbose) write(iulog,30) l,d,ma,md,ja,jd,pos(0),pos(1)
-
-
-    pos(ma) = pos(ma) + md
-    dir(ll,ma) = - dir(ll,ma)
-
-    !----------------------------------
-    !  Mark this node as visited 
-    !----------------------------------
-    if(verbose) write(iulog,20) l,d,ma,md,ja,jd,pos(0),pos(1)
-    vcnt=vcnt+1
-    if(verbose) write(iulog,15) pos(0)+1,pos(1)+1,vcnt 
-    if(verbose) write(iulog,*)'  '
-    if(verbose) write(iulog,*)'  '
-    ordered(pos(0)+1,pos(1)+1)=vcnt
-
-    if(verbose) write(iulog,*)'hilbert_old: before call hilbert_old(l,d) #3:'
-    ierr = hilbert_old(ll,d-1,axis,dir(ll,axis),ja,jd)
-    if(verbose) write(iulog,*)'hilbert_old:  after call hilbert_old(l,d) #3:'
-
-10  format('hilbert_old: Entering hilbert_old (l,d,ma,md,ja,jd) are: ', &
-         2(i4),'  [',2(i3),'][',2(i3),']',2(i3))
-15  format('hilbert_old: mark element {x,y,ordered}:',3(i4))
-20  format('hilbert_old: Before visit code (l,d,ma,md,ja,jd) are:', &
-         2(i4),'  [',2(i3),'][',2(i3),']',2(i3))
-
-30  format('hilbert_old:  after call hilbert_old(l,d) #2: (l,d,ma,md,ja,jd are:', &
-         2(i4),'  [',2(i3),'][',2(i3),']',2(i3))
-
-  end function hilbert_old
-  !---------------------------------------------------------
   function log2( n)
 
     implicit none
@@ -1037,10 +976,11 @@ contains
        ordered(:,:) = 0
 
        call map(level)
-       deallocate(fact%factors)
-
-
        Mesh(:,:) = ordered(:,:)
+
+       deallocate(fact%factors)
+       deallocate(ordered)
+       deallocate(pos)
 
      end subroutine GenSpaceCurve
      !------------------------------------------------------------------------------------------------------- 

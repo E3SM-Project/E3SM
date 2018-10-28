@@ -85,7 +85,7 @@ endif
          ! we have a problem with the tensor in that we cant seperate
          ! div and curl components.  So we do, with tensor V:
          ! nu * (del V del ) * ( nu_ratio * grad(div) - curl(curl))
-         nu_ratio1=(nu_div/nu)**2   ! preserve buggy scaling
+         nu_ratio1=(nu_div/nu)    ! do not match buggy scaling used by PREQX model
          nu_ratio2=1
       else
          nu_ratio1=nu_div/nu
