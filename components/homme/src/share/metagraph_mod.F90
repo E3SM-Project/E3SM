@@ -48,7 +48,7 @@ module metagraph_mod
   public :: PrintMetaEdge, PrintMetaVertex
   public :: LocalElemCount
   !public :: MetaEdgeCount
-  public :: initMetaGraph
+  public :: initMetaGraph, destroyMetaGraph
 
   interface assignment ( = )
      module procedure copy_metaedge
@@ -479,5 +479,23 @@ contains
 
   end subroutine initMetaGraph
 
+  subroutine destroyMetaGraph(MetaVertex)
+    use gridgraph_mod, only: deallocate_gridvertex_nbrs
+
+    type (MetaVertex_t), intent(inout) :: MetaVertex
+    integer :: j
+
+    do j = 1, MetaVertex%nmembers
+       call deallocate_gridvertex_nbrs(MetaVertex%members(j))
+    end do
+    do j = 1, MetaVertex%nedges
+       deallocate(MetaVertex%edges(j)%members)
+       deallocate(MetaVertex%edges(j)%edgeptrP)
+       deallocate(MetaVertex%edges(j)%edgeptrS)
+       deallocate(MetaVertex%edges(j)%edgeptrP_ghost)
+    end do
+    deallocate(MetaVertex%edges)
+    deallocate(MetaVertex%members)
+  end subroutine destroyMetaGraph
 
 end module metagraph_mod
