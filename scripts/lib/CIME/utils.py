@@ -948,11 +948,11 @@ def get_charge_account(machobj=None, project=None):
     >>> import CIME.XML.machines
     >>> machobj = CIME.XML.machines.Machines(machine="theta")
     >>> project = get_project(machobj)
-    >>> charge_account = get_charge_account(machobj)
+    >>> charge_account = get_charge_account(machobj, project)
     >>> project == charge_account
     True
     >>> os.environ["CHARGE_ACCOUNT"] = "ChargeAccount"
-    >>> get_charge_account(machobj)
+    >>> get_charge_account(machobj, project)
     'ChargeAccount'
     >>> del os.environ["CHARGE_ACCOUNT"]
     """
