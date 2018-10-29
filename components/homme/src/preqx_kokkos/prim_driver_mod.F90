@@ -80,6 +80,14 @@ module prim_driver_mod
     call prim_init1_geometry(elem,par,dom_mt)
 
     ! ==================================
+    ! Initialize C++ mpi communication structures
+    ! ==================================
+    call init_cxx_connectivity(nelemd,GridEdge,MetaVertex,par)
+
+    ! Cleanup the tmp stuff used in prim_init1_geometry
+    call prim_init1_cleanup()
+
+    ! ==================================
     ! Initialize element pointers
     ! ==================================
     call setup_element_pointers(elem)
@@ -89,16 +97,8 @@ module prim_driver_mod
     ! ==================================
     call prim_init1_elem_arrays(elem,par)
 
-    ! ==================================
-    ! Initialize C++ mpi communication structures
-    ! ==================================
-    call init_cxx_connectivity(nelemd,GridEdge,MetaVertex,par)
-
     ! Initialize the time levels
     call TimeLevel_init(tl)
-
-    ! Cleanup the tmp stuff used in prim_init1_geometry
-    call prim_init1_cleanup()
 
     if(par%masterproc) write(iulog,*) 'end of prim_init1'
   end subroutine prim_init1

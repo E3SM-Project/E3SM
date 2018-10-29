@@ -103,6 +103,9 @@ contains
     ! ==================================
     call prim_init1_geometry(elem,par,dom_mt)
 
+    ! Cleanup the tmp stuff used in prim_init1_geometry
+    call prim_init1_cleanup ()
+
     ! ==================================
     ! Initialize element pointers (if any)
     ! ==================================
