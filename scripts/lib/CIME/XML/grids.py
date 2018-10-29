@@ -229,6 +229,8 @@ class Grids(GenericXML):
                                                   root=self.get_child("domains"))
             if domain_node is not None:
                 comp_name = grid[0].upper()
+
+                # determine xml variable name
                 if not comp_name == "MASK":
                     domains[comp_name + "_NX"] = int(self.get_element_text("nx", root=domain_node))
                     domains[comp_name + "_NY"] = int(self.get_element_text("ny", root=domain_node))
@@ -236,7 +238,9 @@ class Grids(GenericXML):
                     path_name = comp_name + "_DOMAIN_PATH"
                     mesh_name = comp_name + "_DOMAIN_MESH"
 
+                # set up dictionary of domain files for every component
                 domains[comp_name + "_GRID"] = grid_name
+
                 file_nodes = self.get_children("file", root=domain_node)
                 for file_node in file_nodes:
                     grid_attrib = self.get(file_node, "grid")

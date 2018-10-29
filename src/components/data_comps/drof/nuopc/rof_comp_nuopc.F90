@@ -297,7 +297,7 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (my_task == master_task) then
-       write(logunit,F00) " obtaining drof mesh from " // trim(cvalue)
+       write(logunit,*) " obtaining drof mesh from " // trim(cvalue)
     end if
 
     !----------------------------------------------------------------------------

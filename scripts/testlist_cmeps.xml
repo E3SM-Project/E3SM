@@ -81,7 +81,7 @@
     </options>
   </test>
 
-  <test compset="F2000Nuopc" grid="f19_g16" name="SMS_Vnuopc_Ln5" testmods="cam/nuopc_cap">
+  <test compset="F2000Nuopc" grid="f19_g17" name="SMS_Vnuopc_Ln5" testmods="cam/nuopc_cap">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
       <machine name="theia" compiler="intel" category="prealpha"/>
@@ -91,7 +91,7 @@
     </options>
   </test>
 
-  <test compset="F2000Nuopc" grid="f19_g16" name="SMS_Vmct_Ln5" testmods="cam/nuopc_cap">
+  <test compset="F2000Nuopc" grid="f19_g17" name="SMS_Vmct_Ln5" testmods="cam/nuopc_cap">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
       <machine name="theia" compiler="intel" category="prealpha"/>
@@ -101,7 +101,7 @@
     </options>
   </test>
 
-  <test compset="X" grid="f19_g16" name="SMS_Vnuopc">
+  <test compset="X" grid="f19_g17" name="SMS_Vnuopc">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
       <machine name="theia" compiler="intel" category="prealpha"/>
@@ -111,7 +111,7 @@
     </options>
   </test>
 
-  <test compset="X" grid="f19_g16" name="SMS_Vmct">
+  <test compset="X" grid="f19_g17" name="SMS_Vmct">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
       <machine name="theia" compiler="intel" category="prealpha"/>
@@ -180,7 +180,6 @@
       <option name="wallclock"> 00:10:00 </option>
     </options>
   </test>
-
 
   <test compset="BMOM" grid="f19_g16" name="ERR_Vnuopc_Ld5" testmods="allactive/nuopc_cap_io">
     <machines>
@@ -262,7 +261,7 @@
     </options>
   </test>
 
-  <test compset="F2000Nuopc" grid="f19_g16" name="ERS_Vnuopc_Ln5" testmods="cam/nuopc_cap">
+  <test compset="F2000Nuopc" grid="f19_g17" name="ERS_Vnuopc_Ln5" testmods="cam/nuopc_cap">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
       <machine name="theia" compiler="intel" category="prealpha"/>
@@ -272,7 +271,7 @@
     </options>
   </test>
 
-  <test compset="F2000Nuopc" grid="f19_g16" name="ERS_Vmct_Ln5" testmods="cam/nuopc_cap">
+  <test compset="F2000Nuopc" grid="f19_g17" name="ERS_Vmct_Ln5" testmods="cam/nuopc_cap">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
       <machine name="theia" compiler="intel" category="prealpha"/>
@@ -282,7 +281,7 @@
     </options>
   </test>
 
-  <test compset="X" grid="f19_g16" name="ERS_Vnuopc_Ln9">
+  <test compset="X" grid="f19_g17" name="ERS_Vnuopc_Ln9">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
       <machine name="theia" compiler="intel" category="prealpha"/>
@@ -292,7 +291,7 @@
     </options>
   </test>
 
-  <test compset="X" grid="f19_g16" name="ERS_Vmct_Ln9">
+  <test compset="X" grid="f19_g17" name="ERS_Vmct_Ln9">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
       <machine name="theia" compiler="intel" category="prealpha"/>

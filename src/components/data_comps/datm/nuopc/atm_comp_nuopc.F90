@@ -286,7 +286,6 @@ contains
     real(R8)                :: orbMvelpp                 ! orb moving vernal eq (radians)
     real(R8)                :: orbLambm0                 ! orb mean long of perhelion (radians)
     real(R8)                :: orbObliqr                 ! orb obliquity (radians)
-    character(len=*), parameter :: F00   = "('atm_comp_nuopc: ')',8a)"
     character(len=*), parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
@@ -388,7 +387,7 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (my_task == master_task) then
-       write(logunit,F00) " (rof_comp_nuopc): obtaining datm mesh from " // trim(cvalue)
+       write(logunit,*) " (datm_comp_nuopc): obtaining datm mesh from " // trim(cvalue)
     end if
 
     !----------------------------------------------------------------------------
