@@ -1537,7 +1537,6 @@ module ESM
           pelist(2,1) = rootpe+ntasks-1
           pelist(3,1) = stride
           call seq_comm_setcomm(CPLID, pelist, nthreads=nthrds, iname='CPL')
-          print *,__FILE__,__LINE__,CPLID
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), MEDSetServices, petList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
@@ -1638,11 +1637,7 @@ module ESM
           comms(i+1) = MPI_COMM_NULL
        endif
     enddo
-    print *, __FILE__,__LINE__,"Here ", componentcount, " comms: ", comms, " comps: ",comps
-
     call mct_world_init(componentCount, GLOBAL_COMM, comms, comps)
-    print *,__FILE__,__LINE__
-
     deallocate(petlist, comms, comps)
 
   end subroutine esm_init_pelayout
