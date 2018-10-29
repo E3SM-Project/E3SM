@@ -72,8 +72,20 @@ res@gsnYAxisIrregular2Linear = True
   geo   = datafile->geo(0,::-1,:,:)
   ps    = datafile->ps (0,::-1,:  )
 
+  nlon = dimsizes(datafile->lon)
+  ilon0   = 0          ; location of perturbation
+  ilon1   = nlon/2     ; +180 degrees
+
+; original dcmip 2016 NCL script plots:
+;  T, theta,qv  at ilon1     
+;  u,p          at ilon0
+;  pp  perturbation from ilon0 and ilon1
+;  but then we dont see the purturbation in T and theta, so
+;  we plot at ilon0
+;
+
   print("max u="+max(u))
-  print("max u xsection="+max(u(:,:,0)))
+  print("max u xsection="+max(u(:,:,ilon0))+" lon="+lon(ilon0))
 
   ;_________________________________________________
   ; Interpolate fields from eta coord to z coord
@@ -99,7 +111,7 @@ res@gsnYAxisIrregular2Linear = True
 
   p  = p/100
   qv = qv*1000
-  pp = p(:,:,180)-p(:,:,0)
+  pp = p(:,:,ilon0)-p(:,:,ilon1)
 
   copy_VarCoords(p(:,:,0), pp)
 ;print("pp="+pp)
@@ -120,7 +132,7 @@ res@gsnYAxisIrregular2Linear = True
 ;  p     = rho * 287.0 * t / 100.0
 ;  copy_VarCoords(rho, p)
 
-;  pp    = p(0,:,:,0) - p(0,:,:,180)
+;  pp    = p(0,:,:,0) - p(0,:,:,ilon0)
 ;  copy_VarCoords(p(0,:,:,0), pp)
 ; ps    = (p(0,0,:,:) * lev(1) - p(0,1,:,:) * lev(0)) / (lev(1) - lev(0))
 ;  copy_VarCoords(rho(0,0,:,:), ps)
@@ -152,7 +164,7 @@ res@gsnYAxisIrregular2Linear = True
   res_t@tiYAxisString     = "Altitude (km)"
   res_t@gsnCenterString   = "Temperature"
   res_t@gsnRightString    = "(K)"
-  plot(0) = gsn_csm_contour(wks,t(:,:,180),res_t)
+  plot(0) = gsn_csm_contour(wks,t(:,:,ilon0),res_t)
 
   res_theta@cnLevelSelectionMode= "ExplicitLevels"
   res_theta@cnLevels = (/250., 260., 270., 280., 290., 300., 310., 320., 330., 340., 350., 360., 380., 400., 450., 500., 550., 600., 650., 700./)
@@ -160,7 +172,7 @@ res@gsnYAxisIrregular2Linear = True
   res_theta@tiYAxisString     = "Altitude (km)"
   res_theta@gsnCenterString   = "Potential Temperature"
   res_theta@gsnRightString    = "(K)"
-  plot(1) = gsn_csm_contour(wks,theta(:,:,180),res_theta)
+  plot(1) = gsn_csm_contour(wks,theta(:,:,ilon0),res_theta)
 
 ; ---
 
@@ -174,7 +186,7 @@ res@gsnYAxisIrregular2Linear = True
   res_u@tiYAxisString     = "Altitude (km)"
   res_u@gsnCenterString   = "Zonal velocity"
   res_u@gsnRightString    = "(m/s)"
-  plot(2) = gsn_csm_contour(wks,u(:,:,180),res_u)
+  plot(2) = gsn_csm_contour(wks,u(:,:,ilon0),res_u)
 
   res_qv@cnLevelSelectionMode= "ManualLevels"
   res_qv@cnLevelSpacingF   = 2.0
@@ -184,7 +196,7 @@ res@gsnYAxisIrregular2Linear = True
   res_qv@tiYAxisString     = "Altitude (km)"
   res_qv@gsnCenterString   = "Specific Humidity"
   res_qv@gsnRightString    = "(g/kg)"
-  plot(3) = gsn_csm_contour(wks,qv(:,:,180),res_qv)
+  plot(3) = gsn_csm_contour(wks,qv(:,:,ilon0),res_qv)
 
 ; ---
 

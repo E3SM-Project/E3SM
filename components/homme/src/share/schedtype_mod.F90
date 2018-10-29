@@ -41,8 +41,6 @@ module schedtype_mod
   end type Schedule_t
 
   type (Schedule_t), public, allocatable, target  :: Schedule(:)
-  type (Schedule_t), public, allocatable, target  :: gSchedule(:)
-  type (Schedule_t), public, allocatable, target  :: sSchedule(:)
 
 
 end module schedtype_mod
