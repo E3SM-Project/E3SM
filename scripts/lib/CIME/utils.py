@@ -936,7 +936,7 @@ def get_project(machobj=None):
     logger.info("No project info available")
     return None
 
-def get_charge_account(machobj=None):
+def get_charge_account(machobj=None, project=None):
     """
     Hierarchy for choosing CHARGE_ACCOUNT:
     1. Environment variable CHARGE_ACCOUNT
@@ -975,7 +975,7 @@ def get_charge_account(machobj=None):
             return charge_account
 
     logger.info("No charge_account info available, using value from PROJECT")
-    return get_project(machobj)
+    return project
 
 def find_files(rootdir, pattern):
     """
