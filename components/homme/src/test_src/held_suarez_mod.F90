@@ -9,7 +9,7 @@ module held_suarez_mod
   use dimensions_mod,         only: nlev,np,qsize
   use element_mod,            only: element_t
   use element_state,          only: timelevels
-  use element_ops,            only: get_field, set_thermostate
+  use element_ops,            only: set_thermostate, get_temperature
   use hybrid_mod,             only: hybrid_t
   use hybvcoord_mod,          only: hvcoord_t
   use kinds,                  only: real_kind, iulog
@@ -48,7 +48,7 @@ contains
     integer                                 :: i,j,k,q
 
     dtf_q = dt
-    call get_field(elemin,'temperature',temperature,hvcoord,nm1,nm1_Q)
+    call get_temperature(elemin,temperature,hvcoord,nm1)
         
     do j=1,np
        do i=1,np

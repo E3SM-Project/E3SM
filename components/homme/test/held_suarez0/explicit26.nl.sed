@@ -6,38 +6,21 @@ test_case     = "held_suarez0"
 ne            = NE
 ndays         = 400
 statefreq     = SFREQ
-tstep_type    = 1
+tstep_type    = 5
 qsize         = 1
-rsplit        = 0
+rsplit        = 3
 restartfreq   =  30
 restartfile   = "restart/R0001"
 restartdir    = "./restart/"
 !restartdir    = "bglockless:./restart/"
 runtype       = RUNTYPE
 tstep         = TSTEP
-smooth        = 0
 integration   = "explicit"
 nu            = NU1
 nu_s          = NU2
 nu_p          = NUP
-hypervis_order = ORDER
-hypervis_subcycle = SUBCYCLE
-/
-&solver_nl
-precon_method = "block_jacobi"
-maxits        = 100
-tol           = 1.e-12
-debug_level   = 0
-/
-&filter_nl
-filter_type   = "taylor"
-transfer_type = "bv"
-filter_freq   = 0
-filter_mu     = 0.05D0
-p_bv          = 12.0D0
-s_bv          = .666666666666666666D0
-wght_fm       = 0.10D0
-kcut_fm       = 2
+hypervis_order = 2
+hypervis_subcycle = 1
 /
 &vert_nl
 vform         = "ccm"
