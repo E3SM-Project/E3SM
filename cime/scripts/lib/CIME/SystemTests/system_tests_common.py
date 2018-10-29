@@ -145,15 +145,16 @@ class SystemTestsCommon(object):
             self.run_phase()
 
             if self._case.get_value("GENERATE_BASELINE"):
-                self._generate_baseline()
+                self._phase_modifying_call(GENERATE_PHASE, self._generate_baseline)
 
             if self._case.get_value("COMPARE_BASELINE"):
-                self._compare_baseline()
+                self._phase_modifying_call(BASELINE_PHASE,   self._compare_baseline)
+                self._phase_modifying_call(MEMCOMP_PHASE,    self._compare_memory)
+                self._phase_modifying_call(THROUGHPUT_PHASE, self._compare_throughput)
 
-            self._check_for_memleak()
+            self._phase_modifying_call(MEMLEAK_PHASE, self._check_for_memleak)
 
-            self._st_archive_case_test()
-
+            self._phase_modifying_call(STARCHIVE_PHASE, self._st_archive_case_test)
 
         except BaseException as e:
             success = False
@@ -175,6 +176,10 @@ class SystemTestsCommon(object):
 
         if success and get_model() == "e3sm":
             save_test_time(self._case.get_value("BASELINE_ROOT"), self._casebaseid, time_taken)
+
+        if get_model() == "cesm" and self._case.get_value("GENERATE_BASELINE"):
+            baseline_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
+            generate_teststatus(self._caseroot, baseline_dir)
 
         # We return success if the run phase worked; memleaks, diffs will not be taken into account
         # with this return value.
@@ -290,7 +295,6 @@ class SystemTestsCommon(object):
             else:
                 self._test_status.set_status(STARCHIVE_PHASE, TEST_FAIL_STATUS)
 
-
     def _get_mem_usage(self, cpllog):
         """
         Examine memory usage as recorded in the cpl log file and look for unexpected
@@ -326,16 +330,33 @@ class SystemTestsCommon(object):
                     return float(m.group(1))
         return None
 
+    def _phase_modifying_call(self, phase, function):
+        """
+        Ensures that unexpected exceptions from phases will result in a FAIL result
+        in the TestStatus file for that phase.
+        """
+        try:
+            function()
+        except BaseException as e:
+            msg = e.__str__()
+            excmsg = "Exception during {}:\n{}\n{}".format(phase, msg, traceback.format_exc())
+
+            logger.warning(excmsg)
+            append_testlog(excmsg)
+
+            with self._test_status:
+                self._test_status.set_status(phase, TEST_FAIL_STATUS, comments="exception")
+
     def _check_for_memleak(self):
         """
         Examine memory usage as recorded in the cpl log file and look for unexpected
         increases.
         """
-        latestcpllogs = self._get_latest_cpl_logs()
-        for cpllog in latestcpllogs:
-            memlist = self._get_mem_usage(cpllog)
+        with self._test_status:
+            latestcpllogs = self._get_latest_cpl_logs()
+            for cpllog in latestcpllogs:
+                memlist = self._get_mem_usage(cpllog)
 
-            with self._test_status:
                 if len(memlist)<3:
                     self._test_status.set_status(MEMLEAK_PHASE, TEST_PASS_STATUS, comments="insuffiencient data for memleak test")
                 else:
@@ -396,21 +417,11 @@ class SystemTestsCommon(object):
 
         return lastcpllogs
 
-    def _compare_baseline(self):
-        """
-        compare the current test output to a baseline result
-        """
+    def _compare_memory(self):
         with self._test_status:
-            # compare baseline
-            success, comments = compare_baseline(self._case)
-            append_testlog(comments)
-            status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
-            baseline_name = self._case.get_value("BASECMP_CASE")
-            ts_comments = (os.path.dirname(baseline_name) + ": " + comments) if "\n" not in comments else os.path.dirname(baseline_name)
-            self._test_status.set_status(BASELINE_PHASE, status, comments=ts_comments)
-            basecmp_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), baseline_name)
-
             # compare memory usage to baseline
+            baseline_name = self._case.get_value("BASECMP_CASE")
+            basecmp_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), baseline_name)
             newestcpllogfiles = self._get_latest_cpl_logs()
             if len(newestcpllogfiles) > 0:
                 memlist = self._get_mem_usage(newestcpllogfiles[0])
@@ -433,6 +444,21 @@ class SystemTestsCommon(object):
                         self._test_status.set_status(MEMCOMP_PHASE, TEST_FAIL_STATUS, comments=comment)
                         append_testlog(comment)
 
+    def _compare_throughput(self):
+        with self._test_status:
+            # compare memory usage to baseline
+            baseline_name = self._case.get_value("BASECMP_CASE")
+            basecmp_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), baseline_name)
+            newestcpllogfiles = self._get_latest_cpl_logs()
+            for cpllog in newestcpllogfiles:
+                m = re.search(r"/(cpl.*.log).*.gz",cpllog)
+                if m is not None:
+                    baselog = os.path.join(basecmp_dir, m.group(1))+".gz"
+                if baselog is None or not os.path.isfile(baselog):
+                    # for backward compatibility
+                    baselog = os.path.join(basecmp_dir, "cpl.log")
+
+                if os.path.isfile(baselog):
                     # compare throughput to baseline
                     current = self._get_throughput(cpllog)
                     baseline = self._get_throughput(baselog)
@@ -450,6 +476,19 @@ class SystemTestsCommon(object):
                             self._test_status.set_status(THROUGHPUT_PHASE, TEST_FAIL_STATUS, comments=comment)
                             append_testlog(comment)
 
+    def _compare_baseline(self):
+        """
+        compare the current test output to a baseline result
+        """
+        with self._test_status:
+            # compare baseline
+            success, comments = compare_baseline(self._case)
+            append_testlog(comments)
+            status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
+            baseline_name = self._case.get_value("BASECMP_CASE")
+            ts_comments = os.path.dirname(baseline_name) + ": " + get_ts_synopsis(comments)
+            self._test_status.set_status(BASELINE_PHASE, status, comments=ts_comments)
+
     def _generate_baseline(self):
         """
         generate a new baseline case based on the current test
@@ -460,7 +499,7 @@ class SystemTestsCommon(object):
             append_testlog(comments)
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
             baseline_name = self._case.get_value("BASEGEN_CASE")
-            self._test_status.set_status("{}".format(GENERATE_PHASE), status, comments=os.path.dirname(baseline_name))
+            self._test_status.set_status(GENERATE_PHASE, status, comments=os.path.dirname(baseline_name))
             basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
             # copy latest cpl log to baseline
             # drop the date so that the name is generic
@@ -593,6 +632,11 @@ class TESTRUNFAILEXC(TESTRUNPASS):
 
     def run_phase(self):
         raise RuntimeError("Exception from run_phase")
+
+class TESTRUNSTARCFAIL(TESTRUNPASS):
+
+    def _st_archive_case_test(self):
+        raise RuntimeError("Exception from st archive")
 
 class TESTBUILDFAIL(TESTRUNPASS):
 

@@ -127,51 +127,10 @@ contains
 
     enddo
   end subroutine
-#endif
+#endif     
 
   !_____________________________________________________________________
-  subroutine set_prescribed_scm(elem,hv,dt,tl)
-
-    use dimensions_mod, only: qsize
-    use time_mod, only: timelevel_qdp
-    use control_mod, only: qsplit  
-
-    type (element_t),      intent(inout), target  :: elem(:) 
-    type (hvcoord_t),      intent(inout)          :: hv
-    real (kind=real_kind), intent(in)             :: dt
-    type (TimeLevel_t)   , intent(in)             :: tl
-    
-    real (kind=real_kind) :: dp(np,np)! pressure thickness, vflux
-    real(kind=real_kind)  :: eta_dot_dpdn(np,np,nlevp)
-    
-    integer :: ie,k,p,n0,np1,n0_qdp,np1_qdp
-
-    n0    = tl%n0
-    np1   = tl%np1
-
-    call TimeLevel_Qdp(tl, qsplit, n0_qdp, np1_qdp)
-    
-    do k=1,nlev
-      eta_dot_dpdn(:,:,k)=elem(1)%derived%omega_p(1,1,k)   
-    enddo  
-    eta_dot_dpdn(:,:,nlev+1) = eta_dot_dpdn(:,:,nlev) 
-    
-    do k=1,nlev
-      elem(1)%state%dp3d(:,:,k,np1) = elem(1)%state%dp3d(:,:,k,n0) &
-        + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))    
-    enddo       
-
-    do p=1,qsize
-      do k=1,nlev
-        elem(1)%state%Qdp(:,:,k,p,np1_qdp)=elem(1)%state%Q(:,:,k,p)*elem(1)%state%dp3d(:,:,k,np1)
-      enddo
-    enddo
-    
-  end subroutine       
-
-  !_____________________________________________________________________
-  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics, &
-               single_column)
+  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
 
     use bndry_mod,      only: bndry_exchangev
     use control_mod,    only: prescribed_wind, qsplit, tstep_type, rsplit, qsplit, integration
@@ -195,7 +154,6 @@ contains
     integer              , intent(in)            :: nets
     integer              , intent(in)            :: nete
     logical,               intent(in)            :: compute_diagnostics
-    logical,               intent(in)            :: single_column
 
     real (kind=real_kind) ::  dt2, time, dt_vis, x, eta_ave_w
 
@@ -281,11 +239,6 @@ contains
        eta_ave_w=ur_weights(qsplit_stage+1)
     else
        method = tstep_type                ! other RK variants
-    endif
-    
-    if (single_column) then
-      call set_prescribed_scm(elem,hvcoord,dt,tl)
-      return
     endif
 
 #ifndef CAM
@@ -1180,7 +1133,7 @@ contains
 ! dont thread this because of k-1 dependence:
      p(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0 + dp(:,:,1)/2
      do k=2,nlev
-        p(:,:,k)=p(:,:,k-1) + dp(:,:,k-1)/2 + dp(:,:,k)/2
+        p(:,:,k)=p(:,:,k-1) + (dp(:,:,k-1) + dp(:,:,k))/2
      enddo
 
 #if (defined COLUMN_OPENMP)
@@ -1377,13 +1330,13 @@ contains
 
               vtens1(i,j,k) =   - v_vadv(i,j,1,k)                           &
                    + v2*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
-                   - vtemp(i,j,1) - glnps1
+                   - (vtemp(i,j,1) + glnps1)
               !
               ! phl: add forcing term to zonal wind u
               !
               vtens2(i,j,k) =   - v_vadv(i,j,2,k)                            &
                    - v1*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
-                   - vtemp(i,j,2) - glnps2
+                   - (vtemp(i,j,2) + glnps2)
               !
               ! phl: add forcing term to meridional wind v
               !

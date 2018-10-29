@@ -969,10 +969,6 @@ if ($chem_rad_passive or $aqua_mode) {
     add_default($nl, 'atm_dep_flux', 'val'=>'.false.');
 }
 
-# The aerosol optics depend on which radiative transfer model is used due to differing
-# wavelength bands used.
-my $rrtmg = $rad_pkg eq 'rrtmg' ? 1 : 0;
-
 # @aero_names contains the names of the entities (bulk aerosols and modes)
 # that are externally mixed in aerosol optics calculation.  These entities are all
 # associated with a file that contains their physical and optical properties.
@@ -1480,20 +1476,20 @@ if ($aer_model eq 'mam' ) {
   }
 
   if ($rad_prog_sslt) {
-    if ($rrtmg) {
-	push(@aero_names, "SSLT01", "SSLT02", "SSLT03", "SSLT04");
-	push(@aerosources, "A:", "A:", "A:", "A:" );
+    if ($rad_pkg eq 'rrtmg' or $rad_pkg eq 'rrtmgp') {
+	    push(@aero_names, "SSLT01", "SSLT02", "SSLT03", "SSLT04");
+	    push(@aerosources, "A:", "A:", "A:", "A:" );
     } else {
-	push(@aero_names, "SSLTA", "SSLTC");
-	push(@aerosources, "N:", "N:");
+	    push(@aero_names, "SSLTA", "SSLTC");
+	    push(@aerosources, "N:", "N:");
     }
   } elsif ($moz_aero_data =~ /$TRUE/io ) {
-    if ($rrtmg) {
+    if ($rad_pkg eq 'rrtmg' or $rad_pkg eq 'rrtmgp') {
         push(@aero_names, "sslt1", "sslt2", "sslt3", "sslt4");
         push(@aerosources, "N:", "N:", "N:", "N:" );
     } else {
-	push(@aero_names, "SSLTA", "SSLTC");
-	push(@aerosources, "N:", "N:");
+	    push(@aero_names, "SSLTA", "SSLTC");
+	    push(@aerosources, "N:", "N:");
     }
   } elsif ($cam3_aero_data =~ /$TRUE/io ) {
     push(@aero_names, "cam3_ssam", "cam3_sscm");
@@ -1570,7 +1566,11 @@ if ($carma eq 'bc_strat') {
     }
 }
 
-if ($rrtmg) {
+# TODO: recreate files for RRTMGP with different band ordering from RRTMG. 
+# For now, we swap bands at runtime, based on how we know the bands have
+# changed, but we should do this in a more intelligent way (i.e., encode
+# band information into files, and check when we read them in).
+if ($rad_pkg eq 'rrtmg' or $rad_pkg eq 'rrtmgp') {
 
   # CARMA Microphysics - RRTMG Only
   #
@@ -1615,11 +1615,17 @@ if ($nl->get_value('strat_aero_feedback') =~ /$TRUE/io) {
 add_default($nl, 'rad_climate', 'val'=>$radval);
 
 # Cloud optics
-if ($rrtmg) {
+if ($rad_pkg eq 'rrtmg' or $rad_pkg eq 'rrtmgp') {
     add_default($nl, 'liqcldoptics');
     add_default($nl, 'icecldoptics');
     add_default($nl, 'liqopticsfile');
     add_default($nl, 'iceopticsfile');
+}
+
+# Gaseous absorption coefficients files for RRTMGP
+if ($rad_pkg eq 'rrtmgp') {
+    add_default($nl, 'rrtmgp_coefficients_file_sw');
+    add_default($nl, 'rrtmgp_coefficients_file_lw');
 }
 
 # Volcanic Aerosol Mass climatology dataset
@@ -4708,19 +4714,18 @@ sub add_default {
 
     # if no value is found then exit w/ error (unless 'nofail' option set)
     unless (defined $val) {
-	unless ($opts{'nofail'}) {
-	    print "$ProgName - ERROR: No default value found for $var\n".
-		"user defined attributes:\n";
-	    foreach my $key (keys(%opts)) {
-		if ($key ne 'nofail' and $key ne 'val') {
-		    print "key=$key  val=$opts{$key}\n";
-		}
-	    }
-	    die;
-	}
-	else {
-	    return;
-	}
+        unless ($opts{'nofail'}) {
+            print "$ProgName - ERROR: No default value found for $var\n".
+            "user defined attributes:\n";
+            foreach my $key (keys(%opts)) {
+                if ($key ne 'nofail' and $key ne 'val') {
+                    print "key=$key  val=$opts{$key}\n";
+                }
+            }
+            die;
+        } else {
+            return;
+        }
     }
 
     # query the definition to find out if the variable is an input pathname

@@ -3,6 +3,7 @@
 #ifndef NDEBUG
 # define NDEBUG
 #endif
+#undef NDEBUG
 // Uncomment this to look for MPI-related memory leaks.
 //#define COMPOSE_DEBUG_MPI
 
