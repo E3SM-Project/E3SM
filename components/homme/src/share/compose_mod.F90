@@ -154,31 +154,49 @@ module compose_mod
 
 contains
 
-  subroutine compose_init(comm, elem, GridVertex)
+  subroutine compose_init(par, elem, GridVertex)
+    use parallel_mod, only: parallel_t, abortmp
     use dimensions_mod, only : np, nlev, qsize, qsize_d, nelem, nelemd
     use element_mod, only : element_t
     use gridgraph_mod, only : GridVertex_t
     use control_mod, only : semi_lagrange_cdr_alg, transport_alg, cubed_sphere_map, &
          semi_lagrange_nearest_point_lev
+    use scalable_grid_init_mod, only : sgi_is_initialized, sgi_get_rank2sfc, &
+         sgi_gid2igv
 
-    integer, intent(in) :: comm
+    type (parallel_t), intent(in) :: par
     type (element_t), intent(in) :: elem(:)
     type (GridVertex_t), intent(in), target :: GridVertex(:)
     integer, allocatable :: &
-         sc2gci(:), sc2rank(:), &    ! space curve index -> (GID, rank)
-         nbr_id_rank(:), nirptr(:)   ! (GID, rank) in local mesh patch, starting with own
+         nbr_id_rank(:), nirptr(:) ! (GID, rank) in local mesh patch, starting with own
     integer :: lid2gid(nelemd), lid2facenum(nelemd)
-    integer :: i, j, k, sc, gid
+    integer :: i, j, k, sfc, gid, igv
+    ! To map SFC index to IDs and ranks
+    logical :: use_sgi, owned
+    integer, allocatable :: owned_ids(:)
+    integer, pointer :: rank2sfc(:) => null()
 
-    allocate(sc2gci(nelem), sc2rank(nelem))
-    do i = 1, nelem
-       sc = GridVertex(i)%SpaceCurve + 1
-       sc2gci(sc) = i - 1
-       sc2rank(sc) = GridVertex(i)%processor_number - 1
-    end do
-    call cedr_init_impl(comm, semi_lagrange_cdr_alg, sc2gci, sc2rank, &
+    use_sgi = sgi_is_initialized()
+
+    if (semi_lagrange_cdr_alg == 2 .or. semi_lagrange_cdr_alg == 20) then
+       if (.not. use_sgi) then
+          call abortmp('COMPOSE> CEDR algorithm QLT requires &
+               &scalable grid initialization.')
+       end if
+       call sgi_get_rank2sfc(rank2sfc)
+       allocate(owned_ids(size(GridVertex)))
+       j = rank2sfc(par%rank+1)
+       do i = 1, size(GridVertex)
+          sfc = GridVertex(i)%SpaceCurve
+          owned = sfc >= j .and. sfc < rank2sfc(par%rank+2)
+          if (owned) then
+             owned_ids(sfc - j + 1) = GridVertex(i)%number - 1
+          end if
+       end do
+    end if
+    call cedr_init_impl(par%comm, semi_lagrange_cdr_alg, owned_ids, rank2sfc, &
          nelem, nelemd, nlev)
-    deallocate(sc2gci, sc2rank)
+    if (allocated(owned_ids)) deallocate(owned_ids)
 
     if (transport_alg > 1) then
        k = 0
@@ -193,17 +211,27 @@ contains
           lid2gid(i) = gid
           lid2facenum(i) = elem(i)%faceNum
           nbr_id_rank(k) = gid
-          nbr_id_rank(k+1) = GridVertex(gid)%processor_number - 1
+          if (use_sgi) then
+             igv = sgi_gid2igv(gid)
+          else
+             igv = gid
+          end if
+          nbr_id_rank(k+1) = GridVertex(igv)%processor_number - 1
           k = k + 2
           do j = 1, size(elem(i)%desc%globalID_neigh_corners)
              gid = elem(i)%desc%globalID_neigh_corners(j)
+             if (use_sgi) then
+                igv = sgi_gid2igv(gid)
+             else
+                igv = gid
+             end if
              nbr_id_rank(k) = gid
-             nbr_id_rank(k+1) = GridVertex(gid)%processor_number - 1
+             nbr_id_rank(k+1) = GridVertex(igv)%processor_number - 1
              k = k + 2
           end do
        end do
        nirptr(nelemd+1) = k - 1
-       call slmm_init_impl(comm, transport_alg, np, nlev, qsize, qsize_d, &
+       call slmm_init_impl(par%comm, transport_alg, np, nlev, qsize, qsize_d, &
             nelem, nelemd, cubed_sphere_map, lid2gid, lid2facenum, &
             nbr_id_rank, nirptr, semi_lagrange_nearest_point_lev)
        deallocate(nbr_id_rank, nirptr)

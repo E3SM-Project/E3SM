@@ -103,9 +103,6 @@ contains
     ! ==================================
     call prim_init1_geometry(elem,par,dom_mt)
 
-    ! Cleanup the tmp stuff used in prim_init1_geometry
-    call prim_init1_cleanup ()
-
     ! ==================================
     ! Initialize element pointers (if any)
     ! ==================================
@@ -298,7 +295,6 @@ contains
     end if
 
     can_scalably_init_grid = &
-         .false. .and. &   ! TEMPORARY FOR MERGE COMMIT
          topology == "cube" .and. &
          .not. MeshUseMeshFile .and. &
          partmethod .eq. SFCURVE .and. &
@@ -605,7 +601,7 @@ contains
 
     call kokkos_init()
     if (transport_alg > 0 .and. semi_lagrange_cdr_alg > 1) then
-       call compose_init(par%comm, elem, GridVertex)
+       call compose_init(par, elem, GridVertex)
        !call cedr_unittest(par%comm, ierr)
        if (par%masterproc) then
           write(iulog,*) "CEDR unittest returned", ierr

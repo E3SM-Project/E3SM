@@ -3,7 +3,6 @@
 #ifndef NDEBUG
 # define NDEBUG
 #endif
-#undef NDEBUG
 // Uncomment this to look for MPI-related memory leaks.
 //#define COMPOSE_DEBUG_MPI
 
@@ -332,7 +331,7 @@ struct CDR {
     const Real& Qm_min, const Real& Qm_max,
     // If mass conservation is requested, provide the previous Qm, which will be
     // summed to give the desired global mass.
-    const Real Qm_prev = -1) = 0;
+    const Real Qm_prev = std::numeric_limits<Real>::infinity()) = 0;
 
   // Run the QLT algorithm with the values set by set_{rho,Q}. It is an error to
   // call this function from a parallel region.
@@ -504,7 +503,7 @@ public:
   KOKKOS_INLINE_FUNCTION
   void set_Qm(const Int& lclcellidx, const Int& tracer_idx,
               const Real& Qm, const Real& Qm_min, const Real& Qm_max,
-              const Real Qm_prev = -1) override;
+              const Real Qm_prev = std::numeric_limits<Real>::infinity()) override;
 
   void run() override;
 
@@ -705,7 +704,7 @@ public:
   KOKKOS_INLINE_FUNCTION
   void set_Qm(const Int& lclcellidx, const Int& tracer_idx,
               const Real& Qm, const Real& Qm_min, const Real& Qm_max,
-              const Real Qm_prev = -1) override;
+              const Real Qm_prev = std::numeric_limits<Real>::infinity()) override;
 
   void run() override;
 
@@ -734,7 +733,6 @@ protected:
   RealList d_, send_, recv_;
 
   void reduce_locally();
-  void fill_locally();
   void reduce_globally();
   void finish_locally();
 };
@@ -1249,7 +1247,7 @@ void QLT<ES>::set_Qm (const Int& lclcellidx, const Int& tracer_idx,
       cedr_kernel_throw_if(true, "set_Q: invalid problem_type.");
     }
     if (problem_type & ProblemType::conserve) {
-      cedr_kernel_throw_if(Qm_prev < -0.5,
+      cedr_kernel_throw_if(Qm_prev == std::numeric_limits<Real>::infinity(),
                            "Qm_prev was not provided to set_Q.");
       bd[3] = Qm_prev;
     }
@@ -1966,18 +1964,18 @@ void NodeSets::print (std::ostream& os) const {
 }
 
 // Find tree depth, assign ranks to non-leaf nodes, and init 'reserved'.
-Int init_tree (const tree::Node::Ptr& node, Int& id) {
+Int init_tree (const Int& my_rank, const tree::Node::Ptr& node, Int& id) {
   node->reserved = nullptr;
   Int depth = 0;
   for (Int i = 0; i < node->nkids; ++i) {
     cedr_assert(node.get() == node->kids[i]->parent);
-    depth = std::max(depth, init_tree(node->kids[i], id));
+    depth = std::max(depth, init_tree(my_rank, node->kids[i], id));
   }
   if (node->nkids) {
     node->rank = node->kids[0]->rank;
     node->cellidx = id++;
   } else {
-    cedr_throw_if(node->cellidx < 0 || node->cellidx >= id,
+    cedr_throw_if(node->rank == my_rank && node->cellidx < 0 || node->cellidx >= id,
                   "cellidx is " << node->cellidx << " but should be between " <<
                   0 << " and " << id);
   }
@@ -2146,7 +2144,7 @@ NodeSets::ConstPtr analyze (const Parallel::Ptr& p, const Int& ncells,
   const auto nodesets = std::make_shared<NodeSets>();
   cedr_assert( ! tree->parent);
   Int id = ncells;
-  const Int depth = init_tree(tree, id);
+  const Int depth = init_tree(p->rank(), tree, id);
   nodesets->levels.resize(depth);
   level_schedule_and_collect(*nodesets, p->rank(), tree);
   consolidate(*nodesets);
@@ -2834,7 +2832,7 @@ Int CAAS<ES>::get_num_tracers () const {
 
 template <typename ES>
 void CAAS<ES>::reduce_locally () {
-  const bool user_reduces = user_reducer_;
+  const bool user_reduces = user_reducer_ != nullptr;
   const Int nt = probs_.size();
   Int k = 0;
   Int os = nlclcells_;
@@ -4180,17 +4178,32 @@ namespace qlt = cedr::qlt;
 using cedr::Int;
 using cedr::Real;
 
+Int rank2sfc_search (const Int* rank2sfc, const Int& nrank, const Int& sfc) {
+  Int lo = 0, hi = nrank+1;
+  while (hi > lo + 1) {
+    const Int mid = (lo + hi)/2;
+    if (sfc >= rank2sfc[mid])
+      lo = mid;
+    else
+      hi = mid;
+  }
+  return lo;
+}
+
 // Change leaf node->cellidx from index into space-filling curve to global cell
-// index.
-void renumber (const Int* sc2gci, const Int* sc2rank,
-               const qlt::tree::Node::Ptr& node) {
+// index. owned_ids is in SFC index order for this rank.
+void renumber (const Int nrank, const Int nelem, const Int my_rank, const Int* owned_ids,
+               const Int* rank2sfc, const qlt::tree::Node::Ptr& node) {
   if (node->nkids)
     for (Int k = 0; k < node->nkids; ++k)
-      renumber(sc2gci, sc2rank, node->kids[k]);
+      renumber(nrank, nelem, my_rank, owned_ids, rank2sfc, node->kids[k]);
   else {
-    const Int ci = node->cellidx;
-    node->cellidx = sc2gci[ci];
-    node->rank = sc2rank[ci];
+    const Int sfc = node->cellidx;
+    node->rank = rank2sfc_search(rank2sfc, nrank, sfc);
+    cedr_assert(node->rank >= 0 && node->rank < nrank);
+    node->cellidx = node->rank == my_rank ? owned_ids[sfc - rank2sfc[my_rank]] : -1;
+    cedr_assert((node->rank != my_rank && node->cellidx == -1) ||
+                (node->rank == my_rank && node->cellidx >= 0 && node->cellidx < nelem));
   }
 }
 
@@ -4215,10 +4228,11 @@ void add_sub_levels (const qlt::tree::Node::Ptr& node, const Int nsublev,
 }
 
 // Recurse to each leaf and call add_sub_levels above.
-void add_sub_levels (const qlt::tree::Node::Ptr& node, const Int nsublev) {
+void add_sub_levels (const Int my_rank, const qlt::tree::Node::Ptr& node,
+                     const Int nsublev) {
   if (node->nkids)
     for (Int k = 0; k < node->nkids; ++k)
-      add_sub_levels(node->kids[k], nsublev);
+      add_sub_levels(my_rank, node->kids[k], nsublev);
   else {
     const Int gci = node->cellidx;
     const Int rank = node->rank;
@@ -4228,14 +4242,14 @@ void add_sub_levels (const qlt::tree::Node::Ptr& node, const Int nsublev) {
 
 qlt::tree::Node::Ptr
 make_tree (const cedr::mpi::Parallel::Ptr& p, const Int nelem,
-           const Int* sc2gci, const Int* sc2rank,
-           const Int nsublev) {
+           const Int* owned_ids, const Int* rank2sfc, const Int nsublev) {
   // Partition 0:nelem-1, the space-filling curve space.
   auto tree = qlt::tree::make_tree_over_1d_mesh(p, nelem);
   // Renumber so that node->cellidx records the global element number, and
   // associate the correct rank with the element.
-  renumber(sc2gci, sc2rank, tree);
-  add_sub_levels(tree, nsublev);
+  const auto my_rank = p->rank();
+  renumber(p->size(), nelem, my_rank, owned_ids, rank2sfc, tree);
+  add_sub_levels(my_rank, tree, nsublev);
   return tree;
 }
 
@@ -4293,7 +4307,7 @@ struct CDR {
   std::vector<Int> ie2lci; // Map Homme ie to CDR local cell index (lclcellidx).
 
   CDR (Int cdr_alg_, Int ngblcell_, Int nlclcell_, Int nlev_,
-       const Int* sc2gci, const Int* sc2rank,
+       const Int* owned_ids, const Int* rank2sfc,
        const cedr::mpi::Parallel::Ptr& p_, Int fcomm)
     : alg(Alg::convert(cdr_alg_)), ncell(ngblcell_), nlclcell(nlclcell_),
       nlev(nlev_),
@@ -4302,7 +4316,7 @@ struct CDR {
       p(p_), inited_tracers_(false)
   {
     if (Alg::is_qlt(alg)) {
-      tree = make_tree(p, ncell, sc2gci, sc2rank, nsublev);
+      tree = make_tree(p, ncell, owned_ids, rank2sfc, nsublev);
       cdr = std::make_shared<QLTT>(p, ncell*nsublev, tree);
     } else if (Alg::is_caas(alg)) {
       const auto caas = std::make_shared<CAAST>(
@@ -4338,7 +4352,7 @@ void init_ie2lci (CDR& q) {
     }
   } else {
     for (size_t ie = 0; ie < q.ie2gci.size(); ++ie)
-      for (Int sbli = 0; sbli < q.nsublev; ++sbli){
+      for (Int sbli = 0; sbli < q.nsublev; ++sbli) {
         const Int id = q.nsublev*ie + sbli;
         q.ie2lci[id] = id;
       }
@@ -4479,6 +4493,30 @@ void run (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_r,
           //todo Generalize to one rhom field per level. Until then, we're not
           // getting QLT's safety benefit.
           if (ti == 0) cdr.cdr->set_rhom(lci, 0, volume);
+          if (Qm_prev < -0.5) {
+            static bool first = true;
+            if (first) {
+              first = false;
+              std::stringstream ss;
+              ss << "Qm_prev < -0.5: Qm_prev = " << Qm_prev
+                 << " on rank " << cdr.p->rank()
+                 << " at (ie,gid,spli,k0,q,ti,sbli,lci,k,n0_qdp,tl_np1) = ("
+                 << ie << "," << cdr.ie2gci[ie] << "," << spli << "," << k0 << ","
+                 << q << "," << ti << "," << sbli << "," << lci << "," << k << ","
+                 << d.n0_qdp << "," << d.tl_np1 << ")\n";
+              ss << "Qdp(:,:,k,q,n0_qdp) = [";
+              for (Int j = 0; j < np; ++j)
+                for (Int i = 0; i < np; ++i)
+                  ss << " " << qdp_p(i,j,k,q,d.n0_qdp);
+              ss << "]\n";
+              ss << "dp3d(:,:,k,tl_np1) = [";
+              for (Int j = 0; j < np; ++j)
+                for (Int i = 0; i < np; ++i)
+                  ss << " " << dp3d_c(i,j,k,d.tl_np1);
+              ss << "]\n";
+              pr(ss.str());
+            }
+          }
           cdr.cdr->set_Qm(lci, ti, Qm, Qm_min, Qm_max, Qm_prev);
         }
       }
@@ -4775,12 +4813,12 @@ static homme::CDR::Ptr g_cdr;
 
 extern "C" void
 cedr_init_impl (const homme::Int fcomm, const homme::Int cdr_alg,
-                const homme::Int** sc2gci, const homme::Int** sc2rank,
+                const homme::Int** owned_ids, const homme::Int** rank2sfc,
                 const homme::Int gbl_ncell, const homme::Int lcl_ncell,
                 const homme::Int nlev) {
   const auto p = cedr::mpi::make_parallel(MPI_Comm_f2c(fcomm));
   g_cdr = std::make_shared<homme::CDR>(cdr_alg, gbl_ncell, lcl_ncell, nlev,
-                                       *sc2gci, *sc2rank, p, fcomm);
+                                       *owned_ids, *rank2sfc, p, fcomm);
 }
 
 extern "C" void cedr_unittest (const homme::Int fcomm, homme::Int* nerrp) {

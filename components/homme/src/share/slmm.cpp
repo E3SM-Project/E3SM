@@ -4,7 +4,6 @@
 #ifndef NDEBUG
 # define NDEBUG
 #endif
-#undef NDEBUG
 
 // Uncomment this to look for MPI-related memory leaks.
 //#define COMPOSE_DEBUG_MPI
@@ -4880,7 +4879,7 @@ Int getbuf (Buffer& buf, const Int& os, Int& i1, Int& i2) {
    with one pass. Departure point and q messages are formatted as follows:
     xs: (#x-in-rank    int
          pad           i
-         (lid          i     only packed if #x in lid > 0
+         (lid-on-rank  i     only packed if #x in lid > 0
           #x-in-lid    i     > 0
           (lev         i     only packed if #x in (lid,lev) > 0
            #x          i     > 0
