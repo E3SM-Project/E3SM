@@ -51,7 +51,7 @@ OPTIONS
      -ocn_iceberg          variable for defining if the ocn model is expecting coupling fields
                            for icebergs from the seaice model
                            Options are: false, true
-     -ocn_ismf             variable for defining how the ocn model will handle ice sheet melt
+     -ocn_ismf             variable for defining how the ocn model will handle ice shelf melt
                            fluxes
                            Options are: false, true
      -decomp_prefix        decomp_prefix variable
