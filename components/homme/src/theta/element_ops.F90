@@ -305,6 +305,60 @@ contains
 
        
 
+  subroutine get_phi_i(elem,phi_i,hvcoord,nt,ntQ)
+    implicit none
+    
+    type (element_t),       intent(in)  :: elem
+    type (hvcoord_t),       intent(in)  :: hvcoord
+    real (kind=real_kind),  intent(out) :: phi_i(np,np,nlevp)
+    integer,                intent(in)  :: nt
+    integer,                intent(in)  :: ntQ
+    
+    real (kind=real_kind), dimension(np,np,nlev) :: dp,dpnh,kappa_star
+    real (kind=real_kind) :: phi(np,np,nlev)
+    real (kind=real_kind) :: pnh(np,np,nlev)
+    real (kind=real_kind) :: exner(np,np,nlev)
+    real (kind=real_kind) :: temp(np,np,nlev)
+    integer :: k
+
+    ! compute hydrostatic version first:
+
+    do k=1,nlev
+       dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+            (hvcoord%hybi(k+1)-hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
+    enddo
+    
+    call get_kappa_star(kappa_star,elem%state%Q(:,:,:,1))
+    
+    call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
+         dp,elem%state%phinh(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
+         pnh,dpnh,exner)
+    
+    do k=1,nlev
+       !temp(:,:,k) = theta_dp_cp(:,:,k)*(exner_i(:,:,k+1)-exner_i(:,:,k))/dp3d(:,:,k)           
+       temp(:,:,k) = kappa_star(:,:,k)*elem%state%theta_dp_cp(:,:,k,nt)*exner(:,:,k)/pnh(:,:,k)
+    enddo
+    
+    phi_i(:,:,nlevp) = elem%state%phis(:,:)
+    ! traditional Hydrostatic integral
+    do k=nlev,1,-1
+       phi_i(:,:,k)=phi_i(:,:,k+1)+temp(:,:,k)
+    enddo
+    
+    if (.not. theta_hydrostatic_mode) then
+       phi = elem%state%phinh(:,:,:,nt)
+       ! average phinh 
+       phi_i(:,:,2:nlev)= (phi(:,:,2:nlev)+phi(:,:,1:nlev-1))/2
+
+       ! boundaries:
+       phi_i(:,:,nlevp) = elem%state%phis(:,:)
+       phi_i(:,:,1)     = phi(:,:,1)+temp(:,:,1)/2
+    endif
+    
+  end subroutine
+
+       
+
 
 
 
@@ -454,12 +508,13 @@ contains
   end subroutine set_elem_state
 
   !_____________________________________________________________________
-  subroutine get_state(u,v,w,T,pnh,dp,ps,rho,zm,g,elem,hvcoord,nt,ntQ)
+  subroutine get_state(u,v,w,T,pnh,dp,ps,rho,zm,zi,g,elem,hvcoord,nt,ntQ)
 
     ! get state variables at layer midpoints
     ! used by idealized tests to compute idealized physics forcing terms
 
     real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,pnh,dp,zm,rho
+    real(real_kind), dimension(np,np,nlevp), intent(inout) :: zi
     real(real_kind), dimension(np,np),      intent(inout) :: ps
     real(real_kind), intent(in)    :: g
     integer,         intent(in)    :: nt,ntQ
@@ -492,13 +547,11 @@ contains
     if(theta_hydrostatic_mode) then
        w = -(elem%derived%omega_p*pnh)/(rho*g)
        
-       do k=1,nlev
-          !temp(:,:,k) = theta_dp_cp(:,:,k)*(exner_i(:,:,k+1)-exner_i(:,:,k))/dp3d(:,:,k)           
-          temp(:,:,k) = kappa_star(:,:,k)*elem%state%theta_dp_cp(:,:,k,nt)*exner(:,:,k)/pnh(:,:,k)
-       enddo
-       call preq_hydrostatic_v2(phi,elem%state%phis,temp)
     endif
-    zm  = phi/g   
+    call get_phi(elem,zm,hvcoord,nt,ntQ); zm=zm/g
+    call get_phi_i(elem,zi,hvcoord,nt,ntQ); zi=zi/g
+
+    
 
   end subroutine get_state
 

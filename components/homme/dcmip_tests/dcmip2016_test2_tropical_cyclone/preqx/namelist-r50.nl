@@ -15,7 +15,7 @@
   tstep             = 150                       ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 5
-  rsplit            = 3
+  rsplit            = 6
   qsplit            = 1
   nu                = 1.1e14                    ! default= 1e15*(ne30/ne60)**3.2 = 1.1e14
   nu_s              = 1.1e14
@@ -25,7 +25,7 @@
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   moisture          = 'wet'
-  dcmip16_prec_type = 0                         ! 0=kessler,     1= reed-jablonowski
+  dcmip16_prec_type = 1                         ! 0=kessler,     1= reed-jablonowski
   dcmip16_pbl_type  = 0                         ! 0=basic pbl,   1= bryan pbl
 /
 &vert_nl

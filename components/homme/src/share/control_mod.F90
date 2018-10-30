@@ -41,8 +41,9 @@ module control_mod
   ! Leftover for transport_alg = 1
   logical, public  :: use_semi_lagrange_transport_local_conservation  = .false.
 
-! set to .true. to run the theta nonydrostatic model in hydrostatic mode
-  logical, public :: theta_hydrostatic_mode = .false.  
+! flag used by preqx, theta-l and theta-c models
+! should be renamed to "hydrostatic_mode"
+  logical, public :: theta_hydrostatic_mode
 
 
   integer, public  :: tstep_type= 5                           ! preqx timestepping options

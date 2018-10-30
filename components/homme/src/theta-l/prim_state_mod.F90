@@ -5,13 +5,13 @@
 module prim_state_mod
 
   use kinds,            only: real_kind, iulog
-  use dimensions_mod,   only: nlev, np, qsize_d, qsize, nelemd, nlevp
+  use dimensions_mod,   only: nlev, np, qsize_d, qsize, nlevp
   use parallel_mod,     only:  iam, ordered, parallel_t, syncmp
   use parallel_mod,     only: global_shared_buf, global_shared_sum
   use global_norms_mod, only: wrap_repro_sum
   use hybrid_mod,       only: hybrid_t
   use time_mod,         only: tstep, secpday, timelevel_t, TimeLevel_Qdp, time_at
-  use control_mod,      only: integration, test_case,  moisture, &
+  use control_mod,      only: integration, test_case,  use_moisture, &
                               qsplit, ftype, rsplit,&
                               theta_hydrostatic_mode
   use hybvcoord_mod,    only: hvcoord_t
@@ -642,7 +642,7 @@ contains
 
 
     if(hybrid%masterthread) then 
-       if(moisture /= "dry")then
+       if(use_moisture)then
           if (qsize>=1) then
              write(iulog,'(a,E23.15,a,E23.15,a)') "    dry M = ",Mass-Q1mass(1),' kg/m^2'
           endif

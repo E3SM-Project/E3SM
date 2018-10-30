@@ -10,10 +10,10 @@
   ne                = 7                         ! number of elements per cube face
   qsize             = 0                         ! num tracer fields
   ndays             = 6                         ! num simulation days: 0 = use nmax steps
-  statefreq         = 25                        ! number of steps between screen dumps
+  statefreq         = 36                        ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 = new run
-  tstep             = 300                       ! largest timestep in seconds
+  tstep             = 1200                      ! largest timestep in seconds
   rsplit            = 3
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 5                         ! 1 => default method

@@ -215,7 +215,7 @@ contains
     use mass_matrix_mod, only : mass_matrix
     ! --------------------------------
     use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology, cube_init_atomic, &
-                          set_corner_coordinates, assign_node_numbers_to_elem, &
+                          set_corner_coordinates, &
                           set_area_correction_map0, set_area_correction_map2
     ! --------------------------------
     use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
@@ -478,8 +478,6 @@ contains
            do ie=1,nelemd
                call set_corner_coordinates(elem(ie))
            end do
-           ! This is not used any longer.
-           !call assign_node_numbers_to_elem(elem, GridVertex)
        end if
        do ie=1,nelemd
           call cube_init_atomic(elem(ie),gp%points)
@@ -675,9 +673,8 @@ contains
     use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
     use prim_state_mod,       only: prim_printstate, prim_diag_scalars
     use prim_si_mod,          only: prim_set_mass
-    use prim_advance_mod,     only: vertical_mesh_init2
     use prim_advection_mod,   only: prim_advec_init2
-    use model_init_mod,       only: model_init2
+    use model_init_mod,       only: model_init2, vertical_mesh_init2
     use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
 
 #ifndef CAM

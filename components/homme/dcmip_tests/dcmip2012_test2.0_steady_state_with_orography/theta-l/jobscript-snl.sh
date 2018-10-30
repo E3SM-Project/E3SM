@@ -12,7 +12,7 @@
 #XXSBATCH --time=0:10:00
 #PBS -q acme
 #PBS -l walltime=0:30:00
-#PBS -l nodes=10    
+#PBS -l nodes=20    
 
 
 set OMP_NUM_THREADS = 1
@@ -27,8 +27,9 @@ if ( ${?SLURM_NNODES} ) then
     @ NCPU /= $OMP_NUM_THREADS
 endif
 
-# hydrostatic theta
 set EXEC = ../../../test_execs/theta-l-nlev30/theta-l-nlev30    
+
+# hydrostatic theta
 set namelist = namelist-h.nl
 \cp -f $namelist input.nl
 mpirun -np $NCPU $EXEC < input.nl
@@ -39,7 +40,6 @@ ncl test200-range.ncl
 \mv -f movies/dcmip2012_test2_01.nc  movies/hydro_dcmip2012_test2_01.nc 
 
 # nonhydrostatic theta
-set EXEC = ../../../test_execs/theta-nlev30/theta-nlev30
 set namelist = namelist-nh.nl
 \cp -f $namelist input.nl
 mpirun -np $NCPU $EXEC < input.nl

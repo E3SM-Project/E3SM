@@ -76,7 +76,7 @@ module cube_mod
   public  :: cube_assemble
   public  :: vmap,dmap
   public  :: set_corner_coordinates
-  public  :: assign_node_numbers_to_elem
+!  public  :: assign_node_numbers_to_elem
 
 
   public  :: CubeEdgeCount
@@ -851,7 +851,7 @@ contains
 #endif
   end subroutine set_corner_coordinates
 
-
+#if 0
   subroutine assign_node_numbers_to_elem(elements, GridVertex)
     use element_mod,    only : element_t
     use control_mod,    only : north, south, east, west, neast, seast, swest, nwest
@@ -928,6 +928,7 @@ contains
 !      elements(el)%node_numbers = connectivity(elements(el)%vertex%number, :)
 !    end do
   end subroutine assign_node_numbers_to_elem
+#endif
 
 
   ! ================================================
