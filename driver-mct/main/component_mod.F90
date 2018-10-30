@@ -63,8 +63,6 @@ module component_mod
   integer  :: mpicom_GLOID, mpicom_CPLID           ! GLOID, CPLID mpi communicator
   integer  :: nthreads_GLOID, nthreads_CPLID
   logical  :: drv_threading
-  integer (kind=MPI_ADDRESS_KIND) :: max_mpi_tag
-
 
   !===============================================================================
 
@@ -105,9 +103,6 @@ contains
     call seq_comm_getinfo(GLOID, mpicom=mpicom_GLOID, iamroot=iamroot_GLOID, nthreads=nthreads_GLOID)
     call seq_comm_getinfo(CPLID, mpicom=mpicom_CPLID, iamroot=iamroot_CPLID, nthreads=nthreads_CPLID)
     iamin_CPLID = seq_comm_iamin(CPLID)
-
-    ! MPI spec. guarantees at least 32768 tags available, but most implementations will have more.
-    call mpi_attr_get(MPI_COMM_WORLD, MPI_TAG_UB, max_mpi_tag, flag, ierr)
 
     ! Initialize component type variables
     do eci = 1,size(comp)
@@ -332,7 +327,6 @@ contains
     type(mct_gGrid) :: dom_tmp   ! temporary
     character(*), parameter :: subname = '(component_init_cx)'
     character(*), parameter :: F0I = "('"//subname//" : ', A, 2i8 )"
-    character(*), parameter :: F1I = "('"//subname//" : ', A, I10, A, I10 )"
     !---------------------------------------------------------------
 
     ! Initialize driver rearrangers and AVs on driver
@@ -393,10 +387,6 @@ contains
                     mpi_tag = comp(eci)%cplcompid*100+eci*10+1
                 else
                     mpi_tag = comp(eci)%cplcompid*10000+eci*10+1
-                end if
-                if (mpi_tag > max_mpi_tag) then
-                   write(logunit, F1I) 'MPI message tag ',mpi_tag,' exceeds max ',max_mpi_tag
-                   call shr_sys_abort(subname//' ERROR: Max mpi tag exceeded')
                 end if
                 call seq_map_map_exchange(comp(1), flow='c2x', dom_flag=.true., msgtag=mpi_tag)
 
@@ -574,7 +564,6 @@ contains
     integer :: eci, num_inst
     integer :: mpi_tag
     character(*), parameter :: subname = '(component_init_areacor)'
-    character(*), parameter :: F1I = "('"//subname//" : ', A, I10, A, I10 )"
     !---------------------------------------------------------------
 
     num_inst = size(comp)
@@ -588,10 +577,6 @@ contains
              mpi_tag = comp(eci)%cplcompid*100+eci*10+5
           else
              mpi_tag = comp(eci)%cplcompid*10000+eci*10+5
-          end if
-          if (mpi_tag > max_mpi_tag) then
-             write(logunit, F1I) 'MPI message tag ',mpi_tag,' exceeds max ',max_mpi_tag
-             call shr_sys_abort(subname//' ERROR: Max mpi tag exceeded')
           end if
           call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%dom_cx%data, comp(eci)%dom_cc%data, msgtag=mpi_tag)
 
@@ -615,10 +600,6 @@ contains
               mpi_tag = comp(eci)%cplcompid*100+eci*10+7
           else
               mpi_tag = comp(eci)%cplcompid*10000+eci*10+7
-          end if
-          if (mpi_tag > max_mpi_tag) then
-             write(logunit, F1I) 'MPI message tag ',mpi_tag,' exceeds max ',max_mpi_tag
-             call shr_sys_abort(subname//' ERROR: Max mpi tag exceeded')
           end if
           call seq_map_map(comp(eci)%mapper_cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, msgtag=mpi_tag)
 
@@ -856,7 +837,6 @@ contains
     integer :: ierr
     integer :: mpi_tag
     character(*), parameter :: subname = '(component_exch)'
-    character(*), parameter :: F1I = "('"//subname//" : ', A, I10, A, I10 )"
     !---------------------------------------------------------------
 
     if (present(timer_barrier))  then
@@ -885,20 +865,12 @@ contains
              else
                 mpi_tag = comp(eci)%cplcompid*10000+eci*10+2
              end if
-             if (mpi_tag > max_mpi_tag) then
-                write(logunit, F1I) 'MPI message tag ',mpi_tag,' exceeds max ',max_mpi_tag
-                call shr_sys_abort(subname//' ERROR: Max mpi tag exceeded')
-             end if
              call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%x2c_cx, comp(eci)%x2c_cc, msgtag=mpi_tag)
           else if (flow == 'c2x') then ! component to coupler
              if ( size(comp) > 1) then
                 mpi_tag = comp(eci)%cplcompid*100+eci*10+4
              else
                 mpi_tag = comp(eci)%cplcompid*10000+eci*10+4
-             end if
-             if (mpi_tag > max_mpi_tag) then
-                write(logunit, F1I) 'MPI message tag ',mpi_tag,' exceeds max ',max_mpi_tag
-                call shr_sys_abort(subname//' ERROR: Max mpi tag exceeded')
              end if
              call seq_map_map(comp(eci)%mapper_Cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, msgtag=mpi_tag)
           end if
