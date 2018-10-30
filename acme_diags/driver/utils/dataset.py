@@ -192,12 +192,11 @@ class Dataset():
         file_name = timeseries_path.split('/')[-1]
         re_str = r'(?:{}_)(.*)(?:01_)'.format(var)
         match = re.match(re_str, file_name).group(1)
-        if len(match) != 4:
-            msg = 'Got an invalid value {} when '.format(match)
-            msg += 'parsing the start year from the filename.'
-            raise RuntimeError(msg)
 
-        return match
+        # If we have a file like PRECT_SOMETHING_000101_001012.nc,
+        # we'd capture 'SOMETHING_0001'.
+        # Returning the last 4 characters works for cases like this.
+        return match[-4:]
 
 
     def _get_end_yr_from_fname(self, var, path):
@@ -216,12 +215,8 @@ class Dataset():
         file_name = timeseries_path.split('/')[-1]
         re_str = r'(?:.*01_)(.*)(?:12.nc)'
         match = re.match(re_str, file_name).group(1)
-        if len(match) != 4:
-            msg = 'Got an invalid value {} when '.format(match)
-            msg += 'parsing the end year from the filename.'
-            raise RuntimeError(msg)
 
-        return match
+        return match[-4:]
 
 
     def _get_start_and_end_time_indices(self, var):
