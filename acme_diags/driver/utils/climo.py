@@ -61,12 +61,6 @@ def climo(var, season):
 
 
     trans_var = cdms2.createVariable(climo)(squeeze=1)
-    """
-    temp = cdms2.createVariable(
-                climo, grid=var.getGrid(),
-                axis=[var.getAxis(0), var.getAxis(1), var.getAxis(2), var.getAxis(3)],
-                id=var.id)(squeeze=1)
-    """
     # Losing the grid after a squeeze is normal, we need to set it again.
     trans_var.setGrid(var.getGrid())
     # Set the correct axis as well.
@@ -75,7 +69,15 @@ def climo(var, season):
     if var.getLevel():
         # If it's a 3D variable, set the last axis.
         trans_var.setAxis(2, var.getAxis(3))
-    # Copy any missing attributes.
+    
+    # Copy any missing attributes from var to trans_var.
+    # The below doesn't work, since MaskedArrays apparently
+    # can't be set as attributes from another object. 
+    # for attr in dir(var):
+    #     if not attr.startswith('__'):
+    #         old_attr = getattr(var, attr)
+    #         setattr(trans_var, attr, old_attr)
+
     trans_var.attributes = var.attributes
     trans_var.units = var.units
     trans_var.id = var.id
