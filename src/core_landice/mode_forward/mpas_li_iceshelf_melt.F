@@ -615,7 +615,7 @@ module li_iceshelf_melt
          TSill = TThermoclineBot
       else
          TSill = (TThermoclineTop - TThermoclineBot) * &
-                 (zSill - zThermoclineBot) / (zThermoclineTop - zThermoclineBot) + zThermoclineBot
+                 (zSill - zThermoclineBot) / (zThermoclineTop - zThermoclineBot) + TThermoclineBot
       endif
       if (print_debug) then
          call mpas_log_write("kappa=$r, plumeThickness=$r, slopeDraft=$r, zeta=$r", realArgs=(/kappa, plumeThickness, slopeDraft, zeta/))
