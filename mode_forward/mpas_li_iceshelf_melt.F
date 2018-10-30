@@ -804,7 +804,7 @@ module li_iceshelf_melt
       real(kind=RKIND), dimension(2*nBinsMax) :: localGLSums, globalGLSums ! Vars for GL global reduction
       real(kind=RKIND) :: cumBinWeightedDepthSum, cumBinWeightSum !< cumulative sums over bins for final calculation
       real(kind=RKIND) :: totalBinWeight !< sum of weights in all bins
-      real(kind=RKIND), parameter :: weightThreshold = 0.10_RKIND !< fraction of deepest GL depths to average overn
+      real(kind=RKIND), parameter :: weightThreshold = 0.25_RKIND !< fraction of deepest GL depths to average overn
 
       integer :: indexBin
 
