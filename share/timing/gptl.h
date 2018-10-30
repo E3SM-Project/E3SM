@@ -62,7 +62,9 @@ typedef enum {
   GPTLdopr_collision  = 15, /* Print hastable collision info (true) */
   GPTLprint_method    = 16, /* Tree print method: first parent, last parent
 			       most frequent, or full tree (most frequent) */
-  GPTLtablesize       = 50, /* per-thread size of hash table (1024) */
+  GPTLprint_mode      = 50, /* Write mode for output file (overwrite, append) */
+  GPTLtablesize       = 51, /* per-thread size of hash table (1024) */
+  GPTLmaxthreads      = 52, /* maximum number of threads */
   /*
   ** These are derived counters based on PAPI counters. All default to false
   */
@@ -77,9 +79,10 @@ typedef enum {
   GPTL_LSTPL2M       = 25, /* Load-stores per L2 miss */
   GPTL_L3MRT         = 26, /* L3 read miss rate (fraction) */
   /*
-  ** New ACME option for GPTL
+  ** New ESMF options for GPTL
   */
-  GPTLprofile_ovhd   = 27  /* Direct measurement of profiling overhead (false) */
+  GPTLprofile_ovhd   = 27, /* Direct measurement of profiling overhead (false) */
+  GPTLdopr_quotes    = 28  /* Add double quotes to timer names on output (false) */
 } Option;
 
 /*
@@ -109,6 +112,15 @@ typedef enum {
 } Method;
 
 /*
+** Whether to overwrite or append to output file
+*/
+
+typedef enum {
+  GPTLprint_write   = 1,  /* overwrite */
+  GPTLprint_append  = 2,  /* append */
+} PRMode;
+
+/*
 ** Function prototypes
 */
 
@@ -118,6 +130,9 @@ extern "C" {
 
 extern int GPTLsetoption (const int, const int);
 extern int GPTLinitialize (void);
+extern int GPTLprefix_set (const char *);
+extern int GPTLprefix_setf (const char *, const int);
+extern int GPTLprefix_unset (void);
 extern int GPTLstart (const char *);
 extern int GPTLstart_handle (const char *, void **);
 extern int GPTLstartf (const char *, const int);
@@ -129,10 +144,8 @@ extern int GPTLstopf_handle (const char *, const int, void **);
 extern int GPTLstartstop_vals (const char *, double, int);
 extern int GPTLstartstop_valsf (const char *, const int, double, int);
 extern int GPTLstamp (double *, double *, double *);
-extern int GPTLpr_set_append (void);
-extern int GPTLpr_query_append (void);
-extern int GPTLpr_set_write (void);
-extern int GPTLpr_query_write (void);
+extern int GPTLprint_mode_query (void);
+extern int GPTLprint_mode_set (const int);
 extern int GPTLpr (const int);
 extern int GPTLpr_file (const char *);
 
