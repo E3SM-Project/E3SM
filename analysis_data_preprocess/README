@@ -10,8 +10,8 @@ B. Generate climo and time-series for each datasets:
   -Run create_GPCP_climo.py to generate climatology from time series data
 
 2. HadISST
+  -Run fix_HadISST_timebounds_sic_mask.py to fix overlapping timebounds inherented from original file
   -Run create_HadISST_climo.py for both time series and climo (PI[1870-1900], PD[1999-2016], CL[1999-2011])
-  -Run fix_HadISST_timebounds.py to fix overlapping timebounds inherented from original file
 
 3. CERES-EBAF
   -Run create_ceres_ebaf_surface_climo.sh for CERES-EBAF surface Ed4.0 and Ed2.8
