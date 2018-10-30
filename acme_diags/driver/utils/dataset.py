@@ -193,10 +193,12 @@ class Dataset():
         re_str = r'(?:{}_)(.*)(?:01_)'.format(var)
         match = re.match(re_str, file_name).group(1)
 
-        # If we have a file like PRECT_SOMETHING_000101_001012.nc,
-        # we'd capture 'SOMETHING_0001'.
-        # Returning the last 4 characters works for cases like this.
-        return match[-4:]
+        if len(match) != 4:
+            msg = 'Got an invalid value {} when '.format(match)
+            msg += 'parsing the start year from the filename.'
+            raise RuntimeError(msg)
+
+        return match
 
 
     def _get_end_yr_from_fname(self, var, path):
@@ -216,7 +218,12 @@ class Dataset():
         re_str = r'(?:.*01_)(.*)(?:12.nc)'
         match = re.match(re_str, file_name).group(1)
 
-        return match[-4:]
+        if len(match) != 4:
+            msg = 'Got an invalid value {} when '.format(match)
+            msg += 'parsing the end year from the filename.'
+            raise RuntimeError(msg)
+
+        return match
 
 
     def _get_start_and_end_time_indices(self, var):
@@ -481,9 +488,16 @@ class Dataset():
         (with different start_yr or end_yr), return ''.
         This is equivalent to returning False.
         """
-        file_name = '{}_*.nc'.format(var)
-        path = os.path.join(data_path, file_name)
-        matches = sorted(glob.glob(path))
+        # Get all of the nc file paths in data_path.
+        path = os.path.join(data_path, '*.nc')
+        files = sorted(glob.glob(path))
+
+        # Everything between '{var}_' and '.nc' in a
+        # time-series file is always 13 characters.
+        re_str = var + r'_.{13}.nc'
+        re_str = os.path.join(data_path, re_str)
+        matches = [f for f in files if re.search(re_str, f)]
+
         if len(matches) == 1:
             return matches[0]
         elif len(matches) >= 2:
@@ -494,8 +508,12 @@ class Dataset():
         # If nothing was found, try looking for the file with
         # the ref_name prepended to it.
         ref_name = getattr(self.parameters, 'ref_name', '')
-        path = os.path.join(data_path, ref_name, file_name)
-        matches = sorted(glob.glob(path))
+        path = os.path.join(data_path, ref_name, '*.nc')
+        files = sorted(glob.glob(path))
+
+        re_str = var + r'_.{13}.nc'
+        re_str = os.path.join(data_path, ref_name, re_str)
+        matches = [f for f in files if re.search(re_str, f)]
         # Again, there should only be one file per var in this new location.
         if len(matches) == 1:
             return matches[0]
@@ -545,4 +563,3 @@ class Dataset():
         
         with cdms2.open(path) as f:
             return f(var, time=slice(start_time_idx, end_time_idx+1))(squeeze=1)
-
