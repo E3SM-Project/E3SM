@@ -23,7 +23,6 @@ module clm_driver
   use abortutils             , only : endrun
   !
   use dynSubgridDriverMod    , only : dynSubgrid_driver
-  use BalanceCheckMod        , only : BeginWaterBalance, BalanceCheck
   use BalanceCheckMod        , only : BeginColWaterBalance, ColWaterBalanceCheck
   use BalanceCheckMod        , only : BeginGridWaterBalance, GridBalanceCheck
   !
