@@ -11,10 +11,12 @@ B. Generate climo and time-series for each datasets:
 
 2. HadISST
   -Run create_HadISST_climo.py for both time series and climo (PI[1870-1900], PD[1999-2016], CL[1999-2011])
+  -Run fix_HadISST_timebounds.py to fix overlapping timebounds inherented from original file
 
 3. CERES-EBAF
   -Run create_ceres_ebaf_surface_climo.sh for CERES-EBAF surface Ed4.0 and Ed2.8
   -Run create_ceres_ebaf_toa_climo.sh  for CERES-EBAF toa Ed4.0 and Ed2.8
+  -Modify split_vars.py to split varibles in a multi-variable file
 
 4. ERA-Interim
   -Run create_ERA-Interim_climo.sh for ERA-Interim reanalysis data
