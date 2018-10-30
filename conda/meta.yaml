@@ -1,15 +1,13 @@
 package:
     name: e3sm_diags
-    version: {{ environ['VERSION'] }}
+    version: 1.5.0
 
 source:
     git_url: https://github.com/E3SM-Project/acme_diags
+    git_rev: v1.5.0
 
 build:
     script: python setup.py install
-    script_env:
-     - VERSION
-     - CONDA_BLD_PATH
 
 requirements:
   build:
@@ -18,12 +16,12 @@ requirements:
 
   run:
     - python {{ python }}
-    - cdp 1.3.3
+    - cdp 1.4.1
     - vcs 8.0
     - vtk-cdat 8.0.1.8.0
     - vcsaddons 8.0
     - dv3d 8.0
-    - cdms2 3.0
+    - cdms2 3.0.1
     - cdutil 8.0
     - genutil 8.0
     - cdtime 3.0

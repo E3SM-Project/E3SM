@@ -143,10 +143,14 @@ def run_diag(parameter):
                         # Saving the metrics as a json.
                         metrics_dict['unit'] = mv1_reg.units
                         fnm = os.path.join(utils.general.get_output_dir(
-                            parameter.current_set, parameter), parameter.output_file)
-                        with open(fnm + '.json' , 'w') as outfile:
-                             json.dump(metrics_dict,outfile)
-                        print('Metrics saved in: ' + fnm + '.json')
+                            parameter.current_set, parameter), parameter.output_file + '.json')
+                        with open(fnm, 'w') as outfile:
+                             json.dump(metrics_dict, outfile)
+                        # Get the filename that the user has passed in and display that.
+                        # When running in a container, the paths are modified.
+                        fnm = os.path.join(utils.general.get_output_dir(parameter.current_set,
+                            parameter, ignore_container=True), parameter.output_file + '.json')
+                        print('Metrics saved in: ' + fnm)
 
                         parameter.var_region = region
                         plot(parameter.current_set, mv2_domain,
@@ -189,10 +193,14 @@ def run_diag(parameter):
                     # Saving the metrics as a json.
                     metrics_dict['unit'] = mv1_reg.units
                     fnm = os.path.join(utils.general.get_output_dir(
-                        parameter.current_set, parameter), parameter.output_file)
-                    with open(fnm + '.json' , 'w') as outfile:
-                         json.dump(metrics_dict,outfile)
-                    print('Metrics saved in: ' + fnm + '.json')
+                        parameter.current_set, parameter), parameter.output_file + '.json')
+                    with open(fnm, 'w') as outfile:
+                            json.dump(metrics_dict, outfile)
+                    # Get the filename that the user has passed in and display that.
+                    # When running in a container, the paths are modified.
+                    fnm = os.path.join(utils.general.get_output_dir(parameter.current_set,
+                        parameter, ignore_container=True), parameter.output_file + '.json')
+                    print('Metrics saved in: ' + fnm)
 
                     parameter.var_region = region
                     plot(parameter.current_set, mv2_domain,

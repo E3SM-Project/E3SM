@@ -22,7 +22,7 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
         self.add_argument(
             '--reference_data_path',
             dest='reference_data_path',
-            help='Path for the reference climatologies.',
+            help='Path for the reference data.',
             required=False)
 
         self.add_argument(
@@ -81,7 +81,7 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
         self.add_argument(
             '--test_data_path',
             dest='test_data_path',
-            help='Path for the test climatologies.',
+            help='Path for the test data.',
             required=False)
 
         self.add_argument(

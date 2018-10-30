@@ -8,8 +8,8 @@ import cdutil
 import MV2
 import genutil
 import cdms2
+from acme_diags import container
 from acme_diags.derivations.default_regions import regions_specs
-
 
 SET_NAME_MAPPING = {
     ('3', 'zonal_mean_xy'): 'zonal_mean_xy',
@@ -76,18 +76,12 @@ def _findfile(path_name, data_name, season):
     raise IOError("No file found for {} and {} in {}".format(data_name, season, path_name))
 
 
-def _chown(path, user, group=-1):
-    """Chown the path with the user and group"""
-    uid = pwd.getpwnam(user).pw_uid
-    if group != -1:
-        group = grp.getgrnam(group).gr_gid
-    os.chown(path, uid, group)
-
-
 def get_test_filename(parameters, season):
     """Return the test file name based on
     the season and other parameters"""
     if hasattr(parameters, 'test_file'):
+        print(parameters.test_data_path)
+        print(parameters.test_file)
         fnm = os.path.join(parameters.test_data_path, parameters.test_file)
         if not os.path.exists(fnm):
             raise IOError('File not found: {}'.format(fnm))
@@ -276,36 +270,38 @@ def save_ncfiles(set_num, test, ref, diff, parameter):
         test_pth = os.path.join(pth, parameter.output_file + '_test.nc')
         with cdms2.open(test_pth, 'w+') as file_test:
             file_test.write(test)
-        _chown(test_pth, parameter.user)
 
         # Save reference file
         ref.id = parameter.var_id
         ref_pth = os.path.join(pth, parameter.output_file + '_ref.nc')
         with cdms2.open(ref_pth, 'w+') as file_ref:
             file_ref.write(ref)
-        _chown(ref_pth, parameter.user)
 
         # Save difference file
         diff.id = parameter.var_id + '(test - reference)'
         diff_pth = os.path.join(pth, parameter.output_file + '_diff.nc')
         with cdms2.open(diff_pth, 'w+') as file_diff:
             file_diff.write(diff)
-        _chown(diff_pth, parameter.user)
 
 
-def get_output_dir(set_num, parameter):
-    """Get the directory of where to save the outputs for a run."""
-    pth = os.path.join(parameter.results_dir,
+def get_output_dir(set_num, parameter, ignore_container=False):
+    """
+    Get the directory of where to save the outputs for a run.
+    If ignore_container is True and the software is being ran in a container,
+      get the path that the user passed in.
+    """
+    results_dir = parameter.results_dir
+    if ignore_container and container.is_container():
+        results_dir = parameter.orig_results_dir
+    
+    pth = os.path.join(results_dir,
                        '{}'.format(set_num), parameter.case_id)
     if not os.path.exists(pth):
-        # When running diags in parallel, sometimes another process will create
-        # the dir
+        # When running diags in parallel, sometimes another process will create the dir.
         try:
             os.makedirs(pth, 0o775)
         except OSError as e:
             if e.errno != os.errno.EEXIST:
                 raise
-    _chown(os.path.join(parameter.results_dir,
-                        '{}'.format(set_num)), parameter.user)
-    _chown(pth, parameter.user)
+
     return pth

@@ -15,6 +15,7 @@ from cdp.cdp_viewer import OutputViewer
 import acme_diags
 from acme_diags.driver.utils.general import get_set_name
 from acme_diags.plot.cartopy.taylor_diagram import TaylorDiagram
+from acme_diags import container
 
 # Dict of
 # {
@@ -56,19 +57,20 @@ def _get_acme_logo_path(root_dir, html_path):
     return pth
 
 
-def _add_header(path, version, model_name, time, logo_path):
+def _add_header(path, version, test, ref, time, logo_path):
     """Add the header to the html located at path"""
 
     # We're inserting the following in the body under navbar navbar-default
     # <div id="e3sm-header" style="background-color:#dbe6c5; float:left; width:45%">
     # 	<p style="margin-left:5em">
     # 		<b>E3SM Diagnostics Package [VERSION]</b><br>
-    # 		Test model name: [SOMETHING]<br>
-    # 		Date created: [DATE]<br>
+    # 		Test: [SOMETHING]<br>
+    # 		Reference: [SOMETHING]<br>
+    # 		Created: [DATE]<br>
     # 	</p>
     # </div>
     # <div id="e3sm-header2" style="background-color:#dbe6c5; float:right; width:55%">
-    # 	<img src="e3sm_logo.png" alt="logo" style="width:161px; height:70px; background-color:#dbe6c5">
+    # 	<img src="e3sm_logo.png" alt="logo" style="width:201px; height:91px; background-color:#dbe6c5">
     # </div>
 
     soup = BeautifulSoup(open(path), "lxml")
@@ -85,10 +87,13 @@ def _add_header(path, version, model_name, time, logo_path):
     bolded_title.append(soup.new_tag("br"))
     p.append(bolded_title)
 
-    p.append("Model: {}".format(model_name))
+    p.append("Test: {}".format(test))
     p.append(soup.new_tag("br"))
 
-    p.append("Created {}".format(time))
+    p.append("Reference: {}".format(ref))
+    p.append(soup.new_tag("br"))
+
+    p.append("Created: {}".format(time))
 
     header_div.append(p)
     soup.body.insert(0, header_div)
@@ -96,7 +101,7 @@ def _add_header(path, version, model_name, time, logo_path):
     img_div = soup.new_tag("div", id="e3sm-header2",
                            style="background-color:#dbe6c5; float:right; width:55%")
     img = soup.new_tag("img", src=logo_path, alt="logo",
-                       style="width:161px; height:71px; background-color:#dbe6c5")
+                       style="width:201px; height:91px; background-color:#dbe6c5")
     img_div.append(img)
     soup.body.insert(1, img_div)
 
@@ -132,8 +137,13 @@ def _extras(root_dir, parameters):
 
     for f in index_files:
         path = _get_acme_logo_path(root_dir, f)
-        _add_header(f, acme_diags.__version__,
-                    parameters[0].test_name, dt, path)
+        if parameters[0].run_type == 'model_vs_model':
+            _add_header(f, acme_diags.__version__, parameters[0].test_name,
+                parameters[0].ref_name, dt, path)
+        elif parameters[0].run_type == 'model_vs_obs':
+            ref = 'Observation and Reanalysis'
+            _add_header(f, acme_diags.__version__, parameters[0].test_name,
+                ref, dt, path)
         h1_to_h3(f)
 
     _edit_table_html(root_dir)
@@ -285,7 +295,7 @@ def _create_csv_from_dict_taylor_diag(output_dir, season, test_name, run_type, r
                 baseline_text = 'E3SMv0_B1850'
                 ax.text(0.6, 0.95, baseline_text, ha='left', va='center', transform=ax.transAxes,color=color[1], fontsize=12)
 
-        model_text = 'test model: ' +test_name
+        model_text = 'test model: ' + test_name
         ax.text(0.6, 1, model_text, ha='left', va='center', transform=ax.transAxes,color=color[0], fontsize=12)
         if run_type == 'model_vs_model':
             ax.text(0.6, 0.95, 'ref. model: '+ref_name, ha='left', va='center', transform=ax.transAxes,color='k', fontsize=12)
@@ -295,12 +305,13 @@ def _create_csv_from_dict_taylor_diag(output_dir, season, test_name, run_type, r
 
     return taylor_diag_path
 
-def _cvs_to_html(csv_path, season, test_name):
+def _cvs_to_html(csv_path, season, test_name, ref_name):
     """Convert the csv for a season located at csv_path to an HTML, returning the path to the HTML"""
     html_path = csv_path.replace('csv', 'html')
 
     with open(html_path, 'w') as htmlfile:
-        htmlfile.write('<p><th><b>Model Name: {}</b></th></p>'.format(test_name))
+        htmlfile.write('<p><b>Test: {}</b><br>'.format(test_name))
+        htmlfile.write('<b>Reference: {}</b></p>'.format(ref_name))
         htmlfile.write('<p><th><b>{} Mean </b></th></p>'.format(season))
         htmlfile.write('<table>')
 
@@ -449,7 +460,9 @@ def generate_lat_lon_metrics_table(viewer, root_dir, parameters):
 
     for season in LAT_LON_TABLE_INFO:
         csv_path = _create_csv_from_dict(table_dir, season, parameters[0].test_name, parameters[0].run_type)
-        html_path = _cvs_to_html(csv_path, season, parameters[0].test_name)
+        test_name = parameters[0].test_name
+        ref_name = 'Observation and Reanalysis' if parameters[0].run_type == 'model_vs_obs' else parameters[0].ref_name
+        html_path = _cvs_to_html(csv_path, season, test_name, ref_name)
 
         # Ex: change this: /Users/zshaheen/output_dir/viewer/table-data/ANN_metrics_table.html
         # to this: viewer/table-data/ANN_metrics_table.html
@@ -499,6 +512,9 @@ def create_metadata(parameter):
     if 'parameters' in supported_cmd_args:
         supported_cmd_args.remove('parameters')
 
+    if container.is_container():
+        container.decontainerize_parameter(parameter)
+
     for param_name in parameter.__dict__:
         param = parameter.__dict__[param_name]
         # we don't want to include blank values
@@ -538,6 +554,7 @@ def create_viewer(root_dir, parameters, ext):
     _add_pages_and_top_row(viewer, parameters)
 
     for parameter in parameters:
+        results_dir = parameter.results_dir
         for set_num in parameter.sets:
             set_num = get_set_name(set_num)
 
@@ -574,7 +591,7 @@ def create_viewer(root_dir, parameters, ext):
                                 row_name_and_fnm.append((row_name, fnm))
 
                         if set_num in ['lat_lon', '5']:
-                            metrics_path = os.path.join(parameter.results_dir, '{}'.format(set_num), parameter.case_id, fnm)
+                            metrics_path = os.path.join(results_dir, '{}'.format(set_num), parameter.case_id, fnm)
                             if os.path.exists(metrics_path + '.json'):
                                 _add_to_lat_lon_metrics_table(metrics_path, season, row_name)
                             else:
@@ -594,6 +611,7 @@ def create_viewer(root_dir, parameters, ext):
                             # format fnm to support relative paths
                             ROW_INFO[set_num][parameter.case_id][row_name][season]['image_path'] = os.path.join(
                                 '..', '{}'.format(set_num), parameter.case_id, fnm)
+                            # If ran in a container, create_metadata() will modify *_data_path and results_dir to their original value.
                             ROW_INFO[set_num][parameter.case_id][row_name][season]['metadata'] = create_metadata(parameter)
 
     # add all of the files in from the case_id/ folder in ANN, DJF, MAM, JJA,

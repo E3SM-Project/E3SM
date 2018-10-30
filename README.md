@@ -14,7 +14,9 @@
 ## Documentation <a name="doc"></a>
 * [Documentation Website](https://e3sm-project.github.io/acme_diags)
 * Examples:
-  * [Quick Start Guide for AIMS4/ACME1](https://e3sm-project.github.io/acme_diags/docs/html/quick-guide-aims4.html)
+  * [Quick Start Guide for NERSC Edison](https://e3sm-project.github.io/acme_diags/docs/html/quickguides/quick-guide-edison-shifter.html)
+  * [Quick Start Guide for AIMS4/ACME1](https://e3sm-project.github.io/acme_diags/docs/html/quickguides/quick-guide-aims4.html)
+  * [Quick Start Guide for OLCF Rhea](https://e3sm-project.github.io/acme_diags/docs/html/quickguides/quick-guide-rhea.html)
   * [Model vs Model Comparison](https://github.com/E3SM-Project/acme_diags/blob/master/examples/model-vs-model/model-vs-model.ipynb)
   * [Observation vs Observation Comparison](https://github.com/E3SM-Project/acme_diags/blob/master/examples/obs-vs-obs/obs-vs-obs.ipynb)
   * [Model vs Observation](https://github.com/E3SM-Project/acme_diags/blob/master/examples/model-vs-obs/model-vs-obs.ipynb)

@@ -65,7 +65,7 @@ data_files = [
 
 setup(
     name="e3sm_diags",
-    version="1.3.4",
+    version="1.5.0",
     author="Chengzhu (Jill) Zhang, Zeshawn Shaheen",
     author_email="zhang40@llnl.gov, shaheen2@llnl.gov",
     description="E3SM Diagnostics",
@@ -75,7 +75,7 @@ setup(
     entry_points={
         'console_scripts': [
             'e3sm_diags=acme_diags.acme_diags_driver:main',
-            'acme_diags=acme_diags.acme_diags_driver:main'
+            'acme_diags=acme_diags.acme_diags_driver:main',
+            'e3sm_diags_vars=acme_diags.acme_diags_vars:main'
     ]}
-
 )

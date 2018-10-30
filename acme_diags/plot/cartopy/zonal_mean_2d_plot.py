@@ -8,7 +8,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from cartopy.mpl.ticker import LatitudeFormatter
-from acme_diags.driver.utils.general import get_output_dir, _chown
+from acme_diags.driver.utils.general import get_output_dir
 from acme_diags.plot import get_colormap
 
 plotTitle = {'fontsize': 11.5}
@@ -167,11 +167,14 @@ def plot(reference, test, diff, metrics_dict, parameter):
     # Save figure
     for f in parameter.output_format:
         f = f.lower().split('.')[-1]
-        fnm = os.path.join(get_output_dir(
-            parameter.current_set, parameter), parameter.output_file)
-        plt.savefig(fnm + '.' + f)
-        _chown(fnm + '.' + f, parameter.user)
-        print('Plot saved in: ' + fnm + '.' + f)
+        fnm = os.path.join(get_output_dir(parameter.current_set,
+            parameter), parameter.output_file + '.' + f)
+        plt.savefig(fnm)
+        # Get the filename that the user has passed in and display that.
+        # When running in a container, the paths are modified.
+        fnm = os.path.join(get_output_dir(parameter.current_set, parameter,
+            ignore_container=True), parameter.output_file + '.' + f)
+        print('Plot saved in: ' + fnm)
 
     # Save individual subplots
     for f in parameter.output_format_subplot:
@@ -186,11 +189,15 @@ def plot(reference, test, diff, metrics_dict, parameter):
             subpage = subpage + np.array(border).reshape(2,2)
             subpage = list(((subpage)*page).flatten())
             extent = matplotlib.transforms.Bbox.from_extents(*subpage)
-            # Save suplot
+            # Save subplot
             fname = fnm + '.%i.' %(i) + f
             plt.savefig(fname, bbox_inches=extent)
-            _chown(fname, parameter.user)
+
+            orig_fnm = os.path.join(get_output_dir(parameter.current_set, parameter,
+                ignore_container=True), parameter.output_file)
+            fname = orig_fnm + '.%i.' %(i) + f
             print('Sub-plot saved in: ' + fname)
+            
             i += 1
 
     plt.close()

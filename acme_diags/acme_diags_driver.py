@@ -4,6 +4,7 @@ from __future__ import print_function
 import os
 # Must be done before any CDAT library is called.
 os.environ['UVCDAT_ANONYMOUS_LOG'] = 'no'
+os.environ['CDAT_ANONYMOUS_LOG'] = 'no'
 # Needed for when using hdf5 >= 1.10.0,
 # without this, errors are thrown on Edison compute nodes.
 os.environ['HDF5_USE_FILE_LOCKING'] = 'FALSE'
@@ -22,25 +23,24 @@ import acme_diags
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_viewer import create_viewer
 from acme_diags.driver import utils
+from acme_diags import container
 
 
-def _get_default_diags(set_num, dataset, run_type):
+def _get_default_diags(set_name, run_type):
     """
-    Returns the path for the default diags corresponding to set_num.
+    Returns the path for the default diags for plotset set_name.
+    These are different depending on the run_type.
     """
-    set_num = utils.general.get_set_name(set_num)
+    set_num = utils.general.get_set_name(set_name)
 
-    if dataset and run_type == 'model_vs_obs':  # either 'ACME' or 'AMWG', use the jsons
-        fnm = '{}_{}.json'.format(set_num, dataset)
-    else:  # use the cfgs
-        fnm = '{}_{}.cfg'.format(set_num, run_type)
-
-    folder = '{}'.format(set_num)
+    folder = '{}'.format(set_name)
+    fnm = '{}_{}.cfg'.format(set_name, run_type)
     pth = os.path.join(acme_diags.INSTALL_PATH, folder, fnm)
-    print('Using {} for {}'.format(pth, set_num))
+
+    print('Using {} for {}.'.format(pth, set_name))
     if not os.path.exists(pth):
         raise RuntimeError(
-            "Plotting via set '{}' not supported, file {} not installed".format(set_num, fnm))
+            "Plotting via set '{}' not supported, file {} not installed".format(set_name, fnm))
     return pth
 
 
@@ -88,6 +88,8 @@ def _save_parameter_files(results_dir, parser):
     cmd_used = ' '.join(sys.argv)
     fnm = os.path.join(results_dir, 'cmd_used.txt')
     with open(fnm, 'w') as f:
+        if container.is_container():
+            f.write('# e3sm_diags was ran in a container.\n')
         f.write(cmd_used)
     print('Saved command used to: {}'.format(fnm))
 
@@ -100,7 +102,7 @@ def _save_parameter_files(results_dir, parser):
         else:
             with open(fnm, 'r') as f:
                 contents = ''.join(f.readlines())
-            # Remove any path, just keep the filename
+            # Remove any path, just keep the filename.
             new_fnm = fnm.split('/')[-1]
             new_fnm = os.path.join(results_dir, new_fnm)
             with open(new_fnm, 'w') as f:
@@ -114,7 +116,7 @@ def _save_parameter_files(results_dir, parser):
         else:
             with open(fnm, 'r') as f:
                 contents = ''.join(f.readlines())
-            # Remove any path, just keep the filename
+            # Remove any path, just keep the filename.
             new_fnm = fnm.split('/')[-1]
             new_fnm = os.path.join(results_dir, new_fnm)
             with open(new_fnm, 'w') as f:
@@ -136,6 +138,37 @@ def save_provenance(results_dir, parser):
         traceback.print_exc()
 
     _save_parameter_files(results_dir, parser)
+
+
+def get_parameters(parser=ACMEParser()):
+    """
+    Get the parameters from the parser.
+    """
+    args = parser.view_args()
+
+    # There weren't any arguments defined.
+    if not any(getattr(args, arg) for arg in vars(args)):
+        parser.print_help()
+        sys.exit()
+
+    if args.parameters and not args.other_parameters:  # -p only
+        original_parameter = parser.get_orig_parameters(argparse_vals_only=False)
+
+        # Load the default cfg files.
+        run_type = getattr(original_parameter, 'run_type', 'model_vs_obs')
+        default_diags_paths = [_get_default_diags(set_name, run_type) for set_name in utils.general.SET_NAMES]
+
+        other_parameters = parser.get_other_parameters(files_to_open=default_diags_paths, argparse_vals_only=False)
+
+        parameters = parser.get_parameters(orig_parameters=original_parameter,
+            other_parameters=other_parameters, cmd_default_vars=False, argparse_vals_only=False)
+
+    else:
+        parameters = parser.get_parameters(cmd_default_vars=False, argparse_vals_only=False)
+
+    parser.check_values_of_params(parameters)
+
+    return parameters
 
 
 def run_diag(parameters):
@@ -164,69 +197,19 @@ def run_diag(parameters):
 
 def main():
     parser = ACMEParser()
-    args = parser.view_args()
-
-    # There weren't any arguments defined
-    if not any(getattr(args, arg) for arg in vars(args)):
-        parser.print_help()
-        sys.exit()
-
-    if args.parameters and not args.other_parameters:  # -p only
-        cmdline_parameter = parser.get_cmdline_parameters()
-        # If just a -p with no command line parameters, check the py for errors
-        # Otherwise don't check for errors, the command line args might have some missing ones
-        check_values = True if not cmdline_parameter else False
-        original_parameter = parser.get_orig_parameters(check_values)
-
-        # Special case, until selector parameter is added.
-        if hasattr(cmdline_parameter, 'sets'):
-            original_parameter.sets = cmdline_parameter.sets
-        elif not hasattr(original_parameter, 'sets'):
-            original_parameter.sets = utils.general.SET_NAMES
-
-        # load the default cfg files
-        default_diags_paths = []
-        for set_num in original_parameter.sets:
-            run_type = 'model_vs_obs'
-            dataset = ''
-            if hasattr(original_parameter, 'dataset'):
-                dataset = original_parameter.dataset
-            if hasattr(original_parameter, 'run_type'):
-                run_type = original_parameter.run_type
-            default_diags_paths.append(_get_default_diags(set_num, dataset, run_type))
-
-        other_parameters = parser.get_other_parameters(files_to_open=default_diags_paths)
-
-        # Don't put the sets from the Python parameters to each of the parameters.
-        # Ex. if sets=[5, 7] in the Python parameters, don't change sets in the
-        # default jsons like lat_lon_ACME_default.json
-        vars_to_ignore = ['sets']
-        parameters = parser.get_parameters(cmdline_parameters=cmdline_parameter,
-            orig_parameters=original_parameter, other_parameters=other_parameters,
-            vars_to_ignore=vars_to_ignore, cmd_default_vars=False)
-
-    elif not args.parameters and args.other_parameters:  # -d only
-        cmdline_parameter = parser.get_cmdline_parameters()
-        other_parameters = parser.get_other_parameters()
-        parameters = parser.get_parameters(cmdline_parameters=cmdline_parameter, 
-            other_parameters=other_parameters, cmd_default_vars=False)
-
-    else:  # -p and -d, or just command line arguments
-        parameters = parser.get_parameters(cmd_default_vars=False)
-
-    dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    for p in parameters:
-        # needed for distributed running
-        # chown of all generated files to the user who ran the diags
-        p.user = getpass.getuser()
-
-        if not hasattr(p, 'results_dir'):
-            p.results_dir = '{}-{}'.format('e3sm_diags_results', dt)
+    parameters = get_parameters(parser)
 
     if not os.path.exists(parameters[0].results_dir):
         os.makedirs(parameters[0].results_dir, 0o775)
     if not parameters[0].no_viewer:  # Only save provenance for full runs.
         save_provenance(parameters[0].results_dir, parser)
+
+    if container.is_container():
+        print('Running e3sm_diags in a container.')
+        # Parameters will decontainerized by the viewer later.
+        # That's to make sure the command shown in the viewer works with or without the viewer.
+        for p in parameters:
+            container.containerize_parameter(p)
 
     if parameters[0].multiprocessing:
         parameters = cdp.cdp_run.multiprocess(run_diag, parameters)
@@ -239,7 +222,7 @@ def main():
 
     if not parameters:
         print('There was not a single valid diagnostics run, no viewer created.')
-    else:        
+    else:
         if parameters[0].no_viewer:
             print('Viewer not created because the no_viewer parameter is True.')
         else:
@@ -247,7 +230,8 @@ def main():
             if not os.path.exists(pth):
                 os.makedirs(pth)
             create_viewer(pth, parameters, parameters[0].output_format[0])
-
+            path = os.path.join(parameters[0].results_dir, 'viewer')
+            print('Viewer HTML generated at {}/index.html'.format(path))
 
 if __name__ == '__main__':
     main()
