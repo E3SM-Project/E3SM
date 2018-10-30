@@ -2801,6 +2801,10 @@ end subroutine clubb_init_cnst
    !  use the aist_vector function to compute the ice cloud fraction                   !
    ! --------------------------------------------------------------------------------- !  
 
+   ! PAB comment.  With FIVE, we probably want to compute this on the FIVE grid, using the 
+   !  FIVE variables.  This way, variables such as "ast", "alst", and "aist" (variables used
+   !  for microphysics) etc. can be saved on the high resolution grid and will not have to be
+   !  interpolated each CLUBB/microphysics substep
    call t_startf('ice_cloud_frac_diag')
    do k=1,pver
       call aist_vector(state1%q(:,k,ixq),state1%t(:,k),state1%pmid(:,k),state1%q(:,k,ixcldice), &

@@ -11,6 +11,7 @@ module five_intr
   use constituents, only: pcnst
   use physconst, only: rair, gravit, cpair, zvir
   use cam_logfile, only: iulog
+  use cam_history_support, only: add_hist_coord
 
   implicit none
   
@@ -119,6 +120,13 @@ module five_intr
     ! Probably also need to save things like cloud fraction
     call pbuf_add_field('PMID_FIVE', 'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), pmid_five_idx)
     call pbuf_add_field('PINT_FIVE', 'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), pint_five_idx)
+    
+    ! To give us flexibility for outputting variables on FIVE grid, we
+    !  need to define new coordinate here via "add_hist_coord".  Note that
+    !  since the FIVE pressure values are needed to do this (pmid_five and pint_five),
+    !  it is likely that we will need to move the call to define pressure levels up
+    !  so that they will be computed by the time it gets here.  
+    ! "add_hist_coord" call appears to have worked down below.... We'll see ;) 
   
   end subroutine five_register_e3sm 
   
@@ -268,7 +276,7 @@ module five_intr
       enddo
     
     enddo
-  
+    
   end subroutine init_five_profiles
   
   ! ======================================== !
