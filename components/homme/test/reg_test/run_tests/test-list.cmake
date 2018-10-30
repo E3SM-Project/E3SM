@@ -16,7 +16,6 @@ SET(HOMME_TESTS
   thetanh-test22.cmake
   thetah-TC.cmake
   thetanh-TC.cmake
-  thetanh-c-TC.cmake
   thetanhwet-TC.cmake
   templates.cmake
 )
