@@ -49,7 +49,7 @@
         </values>
         <group>case_comp</group>
         <file>env_case.xml</file>
-        <desc>Option to describe how MPASO will hanlde landice melt fluxes</desc>
+        <desc>Option to describe how MPASO will handle ice shelf melt fluxes</desc>
   </entry>
 
   <entry id="MPASO_BGC">
