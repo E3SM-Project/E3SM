@@ -7,7 +7,7 @@
   topology          = "cube"                    ! mesh type: cubed sphere
   test_case         = "dcmip2016_test1"         ! test identifier
   ne                = 30                        ! number of elements per cube face
-  qsize             = 5                         ! num tracer fields
+  qsize             = 6                         ! num tracer fields
   ndays             = 30
   statefreq         = 72                        ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
@@ -26,7 +26,7 @@
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   moisture          = 'wet'
   theta_hydrostatic_mode = .true.
-  dcmip16_prec_type = 0                          ! 0=kessler physics
+  dcmip16_prec_type = 1                          ! 0=kessler physics
   dcmip16_pbl_type  = -1                         ! 0=reed-jablonowski pbl, -1 = none
 /
 &vert_nl

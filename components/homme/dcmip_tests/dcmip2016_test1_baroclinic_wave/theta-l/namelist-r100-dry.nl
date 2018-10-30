@@ -2,12 +2,12 @@
 ! preqx: namelist for dcmip2016 test1: moist baroclinic wave
 !_______________________________________________________________________
 &ctl_nl
-  nthreads          = 1
+  nthreads          = -1                        ! use OMP_NUM_THREADS
   partmethod        = 4                         ! mesh parition method: 4 = space filling curve
   topology          = "cube"                    ! mesh type: cubed sphere
   test_case         = "dcmip2016_test1"         ! test identifier
   ne                = 30                        ! number of elements per cube face
-  qsize             = 5                         ! num tracer fields
+  qsize             = 6                         ! num tracer fields
   ndays             = 30
   statefreq         = 72                        ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
@@ -15,7 +15,7 @@
   tstep             = 300                       ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 7
-  rsplit            = 3
+  rsplit            = 6
   qsplit            = 1
   nu                = 1e15                      ! default= 1e15*(ne30/ne30)**3.2 = 1e15
   nu_s              = 1e15

@@ -360,6 +360,11 @@ module namelist_mod
     use_semi_lagrange_transport_local_conservation   = .false.
     disable_diagnostics = .false.
 
+    theta_hydrostatic_mode = .true.    ! for preqx, this must be .true.
+#if ( defined MODEL_THETA_C || defined MODEL_THETA_L ) 
+    theta_hydrostatic_mode = .false.   ! default NH
+#endif
+
 
     ! =======================
     ! Read namelist variables
