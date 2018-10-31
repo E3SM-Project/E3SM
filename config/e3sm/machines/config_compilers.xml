@@ -1125,6 +1125,7 @@ for mct, etc.
     <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </base>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</append>
     <append MPILIB="impi"> -xMIC-AVX512 </append>
+    <append> -DHAVE_ERF_INTRINSICS </append>
   </FFLAGS>
   <MPICC MPILIB="impi"> mpiicc </MPICC>
   <MPICXX MPILIB="impi"> mpiicpc </MPICXX>
