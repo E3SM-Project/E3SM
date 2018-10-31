@@ -434,7 +434,7 @@ def get_extension(model, filepath):
     ext_regexes.append(r'\w+')
 
     for ext_regex in ext_regexes:
-        full_regex_str = model+r'\d?_?(\d{4})?\.('+ext_regex+')[-\w\.]*\.nc\.?'
+        full_regex_str = model+r'\d?_?(\d{4})?\.('+ext_regex+r')[-\w\.]*\.nc\.?'
         full_regex = re.compile(full_regex_str)
         m = full_regex.search(basename)
         if m is not None:
