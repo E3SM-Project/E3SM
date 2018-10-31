@@ -23,7 +23,7 @@ module clm_driver
   use abortutils             , only : endrun
   !
   use dynSubgridDriverMod    , only : dynSubgrid_driver
-  use BalanceCheckMod        , only : BeginColWaterBalance, ColWaterBalanceCheck
+  use BalanceCheckMod        , only : BeginWaterBalance, BalanceCheck
   use BalanceCheckMod        , only : BeginGridWaterBalance, GridBalanceCheck
   !
   use CanopyTemperatureMod   , only : CanopyTemperature ! (formerly Biogeophysics1Mod)
@@ -387,35 +387,6 @@ contains
             filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
             soilhydrology_vars, waterstate_vars)
        call t_stopf('begwbal')
-
-       if (use_cn) then
-          call t_startf('begcnpbal')
-          call carbonstate_vars%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp)
-
-          call nitrogenstate_vars%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp)
-
-          call phosphorusstate_vars%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp)
-
-          call BeginColCBalance(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               carbonstate_vars)
-
-          call BeginColNBalance(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               nitrogenstate_vars)
-
-          call BeginColPBalance(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               phosphorusstate_vars)
-          call t_stopf('begcnpbal')
-       end if
-
        if (do_budgets) then
           call WaterBudget_SetBeginningMonthlyStates(bounds_clump, waterstate_vars)
        endif

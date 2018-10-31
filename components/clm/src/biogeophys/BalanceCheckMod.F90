@@ -29,8 +29,8 @@ module BalanceCheckMod
   save
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: BeginColWaterBalance  ! Initialize water balance check
-  public :: ColWaterBalanceCheck  ! Water and energy balance check
+  public :: BeginWaterBalance  ! Initialize water balance check
+  public :: BalanceCheck       ! Water and energy balance check
   public :: BeginGridWaterBalance
   public :: GridBalanceCheck
   !-----------------------------------------------------------------------
