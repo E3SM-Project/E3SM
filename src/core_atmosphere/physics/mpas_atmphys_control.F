@@ -18,7 +18,8 @@
  private
  public:: physics_namelist_check, &
           physics_registry_init,  &
-          physics_tables_init
+          physics_tables_init,    &
+          physics_compatibility_check
 
  logical,public:: moist_physics
 
@@ -416,6 +417,81 @@
  endif
 
  end subroutine physics_tables_init
+
+!=================================================================================================================
+!  routine physics_compatibility_check()
+!
+!> \brief Checks physics input fields and options for compatibility
+!> \author Miles Curry and Michael Duda
+!> \date   25 October 2018
+!> \details
+!>  This routine checks the input fields and run-time options provided
+!>  by the user for compatibility. For example, two run-time options may
+!>  be mutually exclusive, or an option may require that a certain input
+!>  field is provided. The checks performed by this routine are only for
+!>  physics related fields and options.
+!>
+!>  A value of 0 is returned if there are no incompatibilities among
+!>  the provided input fields and run-time options, and a non-zero value
+!>  otherwise.
+!>
+ subroutine physics_compatibility_check(dminfo, blockList, streamManager, ierr)
+!=================================================================================================================
+
+ implicit none
+
+ type (dm_info), pointer :: dminfo
+ type (block_type), pointer :: blockList
+ type (MPAS_streamManager_type), pointer :: streamManager
+ integer, intent(out) :: ierr
+
+ real (kind=RKIND) :: maxvar2d_local, maxvar2d_global
+ real (kind=RKIND), dimension(:), pointer :: var2d
+ integer, pointer :: nCellsSolve
+ character (len=StrKIND), pointer :: gwdo_scheme
+ type (block_type), pointer :: block
+ type (mpas_pool_type), pointer :: meshPool
+ type (mpas_pool_type), pointer :: sfc_inputPool
+
+ ierr = 0
+
+ call mpas_pool_get_config(blocklist % configs, 'config_gwdo_scheme', gwdo_scheme)
+
+ if (trim(gwdo_scheme) /= 'off') then
+     maxvar2d_local = -huge(maxvar2d_local)
+     block => blockList
+     do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'sfc_input', sfc_inputPool)
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_array(sfc_inputPool, 'var2d', var2d)
+
+         maxvar2d_local = max(maxvar2d_local, maxval(var2d(1:nCellsSolve)))
+
+         block => block % next
+     end do
+
+     call mpas_dmpar_max_real(dminfo, maxvar2d_local, maxvar2d_global)
+
+     if (maxvar2d_global <= 0.0_RKIND) then
+         call mpas_log_write('*******************************************************************************', &
+                             messageType=MPAS_LOG_ERR)
+         call mpas_log_write('The GWDO scheme requires valid var2d, con, oa{1,2,3,4}, and ol{1,2,3,4} fields,', &
+                             messageType=MPAS_LOG_ERR)
+         call mpas_log_write('but these fields appear to be zero everywhere in the model input.', &
+                             messageType=MPAS_LOG_ERR)
+         call mpas_log_write('Either set config_gwdo_scheme = ''off'' in the &physics namelist, or generate', &
+                             messageType=MPAS_LOG_ERR)
+         call mpas_log_write('the GWDO static fields with the init_atmosphere core.', &
+                             messageType=MPAS_LOG_ERR)
+         call mpas_log_write('*******************************************************************************', &
+                             messageType=MPAS_LOG_ERR)
+         ierr = ierr + 1
+     end if
+
+ end if
+
+ end subroutine physics_compatibility_check
 
 !=================================================================================================================
  end module mpas_atmphys_control
