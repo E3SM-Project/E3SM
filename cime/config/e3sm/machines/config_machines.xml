@@ -88,6 +88,7 @@
       <arg name="num_tasks" > -n {{ total_tasks }}</arg>
       <arg name="thread_count"> -c $SHELL{echo 48/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
       <arg name="binding"> $SHELL{if [ 24 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+      <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
   </mpirun>
   <module_system type="module">
@@ -125,10 +126,10 @@
 
     <modules>
       <command name="rm">craype</command>
-      <command name="load">craype/2.5.12</command>
+      <command name="load">craype/2.5.14</command>
       <command name="load">craype-ivybridge</command>
       <command name="rm">pmi</command>
-      <command name="load">pmi/5.0.12</command>
+      <command name="load">pmi/5.0.13</command>
       <command name="rm">cray-mpich</command>
       <command name="load">cray-mpich/7.7.0</command>
     </modules>
@@ -136,7 +137,7 @@
     <modules compiler="intel">
       <command name="load">PrgEnv-intel/6.0.4</command>
       <command name="rm">intel</command>
-      <command name="load">intel/17.0.2.174</command>
+      <command name="load">intel/18.0.1.163</command>
       <command name="rm">cray-libsci</command>
     </modules>
 
@@ -151,9 +152,9 @@
       <command name="rm">PrgEnv-intel</command>
       <command name="load">PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
-      <command name="load">gcc/6.3.0</command>
+      <command name="load">gcc/7.3.0</command>
       <command name="rm">cray-libsci</command>
-      <command name="load">cray-libsci/17.06.1</command>
+      <command name="load">cray-libsci/18.03.1</command>
     </modules>
 
     <modules compiler="gnu7">
@@ -235,6 +236,7 @@
       <arg name="num_tasks" > -n {{ total_tasks }}</arg>
       <arg name="thread_count">-c $SHELL{echo 64/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
       <arg name="binding"> $SHELL{if [ 32 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+      <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
   </mpirun>
   <module_system type="module">
@@ -374,6 +376,7 @@
       <arg name="num_tasks" > -n {{ total_tasks }}</arg>
       <arg name="thread_count">-c $SHELL{echo 272/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
       <arg name="binding"> $SHELL{if [ 68 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+      <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
   </mpirun>
   <module_system type="module">
@@ -1823,21 +1826,20 @@
   </machine>
 
   <machine MACH="cascade">
-    <DESC>PNL Intel KNC cluster, OS is Linux, batch system is SLURM</DESC>
+    <DESC>PNNL Intel KNC cluster, OS is Linux, batch system is SLURM</DESC>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
-    <MPILIBS>mvapich2</MPILIBS>
+    <MPILIBS>impi,mvapich2</MPILIBS>
     <NODENAME_REGEX>glogin</NODENAME_REGEX>
-    <CESMSCRATCHROOT>/dtemp/$USER</CESMSCRATCHROOT>
-    <RUNDIR>/dtemp/$USER/csmruns/$CASE/run</RUNDIR>
-    <EXEROOT>/dtemp/$USER/csmruns/$CASE/bld</EXEROOT>
-    <CIME_OUTPUT_ROOT>/dtemp/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/dtemp/sing201/acme/inputdata/</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/dtemp/sing201/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/dtemp/sing201/$USER/archive/$CASE</DOUT_S_ROOT>
+    <CIME_OUTPUT_ROOT>/dtemp/$PROJECT/$USER</CIME_OUTPUT_ROOT>
+    <RUNDIR>$CIME_OUTPUT_ROOT/csmruns/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/csmruns/$CASE/bld</EXEROOT>
+    <DIN_LOC_ROOT>/dtemp/st49401/sing201/acme/inputdata/</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/dtemp/st49401/sing201/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/dtemp/sing201/acme/acme_baselines</CCSM_BASELINE>
-    <CCSM_CPRNC>/dtemp/sing201/acme/acme_baselines/cprnc/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>$CIME_OUTPUT_ROOT/acme/acme_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>$CIME_OUTPUT_ROOT/acme/acme_baselines/cprnc/cprnc</CCSM_CPRNC>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>balwinder.singh -at- pnnl.gov</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
@@ -1846,6 +1848,12 @@
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="mpi-serial">
       <executable></executable>
+    </mpirun>
+    <mpirun mpilib="impi">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -np {{ total_tasks }}</arg>
+      </arguments>
     </mpirun>
     <mpirun mpilib="mvapich2">
       <executable>srun</executable>
@@ -1857,10 +1865,10 @@
       </arguments>
     </mpirun>
     <module_system type="module">
-      <init_path lang="python">/opt/lmod/5.0.1/init/env_modules_python.py</init_path>
+      <init_path lang="python">/opt/lmod/7.3.28/init/env_modules_python.py</init_path>
       <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
       <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
-      <cmd_path lang="python">/opt/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="python">/opt/lmod/7.3.28/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
@@ -1870,8 +1878,11 @@
 	<command name="load">python/2.7.9</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">intel/15.0.090</command>
+	<command name="load">intel/ips_18</command>
 	<command name="load">mkl/14.0</command>
+      </modules>
+      <modules mpilib="impi">
+        <command name="load">impi/4.1.2.040</command>
       </modules>
       <modules mpilib="mvapich2">
 	<command name="load">mvapich2/1.9</command>
@@ -2321,7 +2332,7 @@
 	     <command name="rm">netcdf</command>
 	   </modules>
 	   <modules compiler="intel">
-	     <command name="load">intel/16.0.1.150</command>
+	     <command name="load">intel/18.0.1.163</command>
 	     <command name="load">papi</command>
 	   </modules>
 	   <modules compiler="cray">

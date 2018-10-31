@@ -367,10 +367,13 @@
 
     <batch_system MACH="cascade" type="slurm">
       <directives>
-	<directive>--mail-user=email@pnnl.gov</directive>
+	<directive>--output=slurm.out</directive>
+	<directive>--error=slurm.err</directive>
       </directives>
       <queues>
-	<queue walltimemax="00:30:00" default="true">small</queue>
+	<queue walltimemax="00:59:00" nodemin="1"  nodemax="15"  >small</queue>
+	<queue walltimemax="00:59:00" nodemin="16" nodemax="127" >medium</queue>
+	<queue walltimemax="00:59:00" nodemin="128" default="true" >large</queue>
       </queues>
     </batch_system>
 

@@ -690,7 +690,6 @@ for mct, etc.
   </FFLAGS>
 </compiler>
 
-<!-- Intel v18 is default on cori-knl and cori-haswell -->
 <compiler MACH="anlworkstation" COMPILER="gnu">
   <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
   <CFLAGS>
@@ -960,7 +959,7 @@ for mct, etc.
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
-    <base> -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -lpmi -L$ENV{MKL_PATH}/lib/intel64 -lmkl_rt </base>
+    <base> -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -L$ENV{MKL_PATH}/lib/intel64 -lmkl_rt </base>
     <append MPILIB="mpich2"> -mkl=cluster </append>
     <append MPILIB="mpi-serial"> -mkl </append>
   </SLIBS>
@@ -1168,6 +1167,7 @@ for mct, etc.
     <base> --host=Linux </base>
   </CONFIG_ARGS>
   <FFLAGS>
+    <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </base>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </append>
   </FFLAGS>
   <PETSC_PATH>$ENV{PETSC_DIR}</PETSC_PATH>
@@ -1180,7 +1180,7 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
-<!-- Edison still uses v17, but has an intel18 compiler option -->
+<!-- Edison still has intel18 compiler option for backward compat -->
 <compiler MACH="edison" COMPILER="intel18">
   <CFLAGS>
     <base> -O2 -fp-model precise -std=gnu99 </base>
@@ -1232,7 +1232,6 @@ for mct, etc.
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
-<!-- Use Intel MPI with intel compiler on cori-knl -->
 <compiler MACH="eos" COMPILER="intel">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
