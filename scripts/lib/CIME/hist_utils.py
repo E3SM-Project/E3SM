@@ -421,18 +421,24 @@ def get_extension(model, filepath):
     """
     basename = os.path.basename(filepath)
     m = None
+    ext_regexes = []
+
+    # First add any model-specific extension regexes; these will be checked before the
+    # general regex
     if model == "mom":
-        # Need to check 'sfc.day' specially: the embedded '.' messes up the general-purpose regex
-        ext = r'sfc\.day'
-        regex = model+r'\d?_?(\d{4})?\.('+ext+')[-\w\.]*\.nc\.?'
-        ext_regex = re.compile(regex)
-        m = ext_regex.search(basename)
+        # Need to check 'sfc.day' specially: the embedded '.' messes up the
+        # general-purpose regex
+        ext_regexes.append(r'sfc\.day')
 
-    if m is None:
-        regex = model+r'\d?_?(\d{4})?\.(\w+)[-\w\.]*\.nc\.?'
-        ext_regex = re.compile(regex)
-        m = ext_regex.search(basename)
+    # Now add the general-purpose extension regex
+    ext_regexes.append(r'\w+')
 
+    for ext_regex in ext_regexes:
+        full_regex_str = model+r'\d?_?(\d{4})?\.('+ext_regex+')[-\w\.]*\.nc\.?'
+        full_regex = re.compile(full_regex_str)
+        m = full_regex.search(basename)
+        if m is not None:
+            break
 
     expect(m is not None, "Failed to get extension for file '{}'".format(filepath))
 
