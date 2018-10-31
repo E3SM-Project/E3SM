@@ -258,11 +258,12 @@ class Dataset():
         offset = start_yr - start_yr_file
 
         # Using the offset, and user inputted years (start_yr, end_yr), calculate the indices.
-        # Ex1: 0, 9
-        # Ex2: 0, 9
-        start_slice, end_slice = 0, end_yr - start_yr
-        # Ex1: 0+30, 9+30 = 30, 39
-        # Ex2: 0+0, 9+0 = 0, 9
+        # The +1 is because we want to include the end_yr as well.
+        # Ex1: 0, 10
+        # Ex2: 0, 10
+        start_slice, end_slice = 0, end_yr - start_yr + 1
+        # Ex1: 0+30, 10+30 = 30, 40
+        # Ex2: 0+0, 10+0 = 0, 10
         start_slice, end_slice = start_slice + offset, end_slice + offset
 
         # We multiply by 12 since it's monthly data.
@@ -557,9 +558,8 @@ class Dataset():
         The checking is done in _get_first_valid_vars_timeseries().
         """
         start_time_idx, end_time_idx = self._get_start_and_end_time_indices(var)
-
         path = self._get_timeseries_file_path(var, data_path)
         var = var_to_get if var_to_get else var
         
         with cdms2.open(path) as f:
-            return f(var, time=slice(start_time_idx, end_time_idx+1))(squeeze=1)
+            return f(var, time=slice(start_time_idx, end_time_idx))(squeeze=1)
