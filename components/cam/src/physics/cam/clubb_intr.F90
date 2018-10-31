@@ -114,6 +114,7 @@ module clubb_intr
 !  Constant parameters
   logical, parameter, private :: &
     l_uv_nudge       = .false.,       &  ! Use u/v nudging (not used)
+    l_input_fields   = .false.,       &
     l_implemented    = .true.,        &  ! Implemented in a host model (always true)
     l_host_applies_sfc_fluxes = .false.  ! Whether the host model applies the surface fluxes
     
@@ -443,7 +444,6 @@ end subroutine clubb_init_cnst
       call mpibcast(clubb_tk1,                1,   mpir8,   0, mpicom)
       call mpibcast(clubb_tk2,                1,   mpir8,   0, mpicom)
       call mpibcast(relvar_fix,               1,   mpilog,  0, mpicom)
-      call mpibcast(clubb_use_sgv,            1,   mpilog,   0, mpicom)
 #endif
 
     !  Overwrite defaults if they are true
@@ -679,11 +679,11 @@ end subroutine clubb_init_cnst
            hydromet_dim,  sclr_dim, &                                 ! In
            sclr_tol, edsclr_dim, clubb_params, &                      ! In
            l_host_applies_sfc_fluxes, &                               ! In
-           l_uv_nudge, saturation_equation,  &                        ! In
+           l_uv_nudge, saturation_equation, l_input_fields,  &        ! In
            l_implemented, grid_type, zi_g(2), zi_g(1), zi_g(pverp), & ! In
-           zi_g(1:pverp), zt_g(1:pverp), zi_g(1), &                   ! In
-           err_code )
+           zi_g(1:pverp), zt_g(1:pverp), zi_g(1)) 
 !$OMP END PARALLEL
+
 
     ! ----------------------------------------------------------------- !
     ! Set-up HB diffusion.  Only initialized to diagnose PBL depth      !
@@ -1019,12 +1019,18 @@ end subroutine clubb_init_cnst
    real(r8) :: dtime                            ! CLUBB time step                              [s]   
    real(r8) :: edsclr_in(pverp,edsclr_dim)      ! Scalars to be diffused through CLUBB         [units vary]
    real(r8) :: wp2_in(pverp)                    ! vertical velocity variance (CLUBB)           [m^2/s^2]
+   real(r8) :: wp2thvp(pverp)                   ! thermodynamic levels (< w'^2 th_v' >)        [m^2/s^2 K]
    real(r8) :: wp3_in(pverp)                    ! third moment vertical velocity               [m^3/s^3]
    real(r8) :: wpthlp_in(pverp)                 ! turbulent flux of thetal                     [K m/s]
+   real(r8) :: wpthvp_in(pverp)                    ! momentum levels (< w' th_v' > )              [kg/kg K]
    real(r8) :: wprtp_in(pverp)                  ! turbulent flux of total water                [kg/kg m/s]
    real(r8) :: rtpthlp_in(pverp)                ! covariance of thetal and qt                  [kg/kg K]
+   real(r8) :: rtpthvp(pverp)                   ! momentum levels (< r_t' th_v' > )            [kg/kg K]
    real(r8) :: rtp2_in(pverp)                   ! total water variance                         [kg^2/k^2]
+   real(r8) :: rtp3(pverp)                      ! thermodynamic levels (r_t'^3 )               [(kg/kg)^3]
    real(r8) :: thlp2_in(pverp)                  ! thetal variance                              [K^2]
+   real(r8) :: thlp3(pverp)                     ! thermodynamic levels (th_l'^3)               [K^3] 
+   real(r8) :: thlpthvp(pverp)                  ! momentum levels (< th_l' th_v' >)            [K^2]
    real(r8) :: up2_in(pverp)                    ! meridional wind variance                     [m^2/s^2]
    real(r8) :: vp2_in(pverp)                    ! zonal wind variance                          [m^2/s^2]
    real(r8) :: upwp_in(pverp)                   ! meridional wind flux                         [m^2/s^2]
@@ -1085,6 +1091,7 @@ end subroutine clubb_init_cnst
    real(r8) :: wprtp_sfc                        ! w' r_t' at surface                            [(kg m)/( kg s)]
    real(r8) :: upwp_sfc                         ! u'w' at surface                               [m^2/s^2]
    real(r8) :: vpwp_sfc                         ! v'w' at surface                               [m^2/s^2]   
+   real(r8) :: sclrpthvp(pverp)                 ! momentum levels (< sclr' th_v' >)             [units vary]
    real(r8) :: sclrm_forcing(pverp,sclr_dim)    ! Passive scalar forcing                        [{units vary}/s]
    real(r8) :: wpsclrp_sfc(sclr_dim)            ! Scalar flux at surface                        [{units vary} m/s]
    real(r8) :: edsclrm_forcing(pverp,edsclr_dim)! Eddy passive scalar forcing                   [{units vary}/s]
@@ -1179,6 +1186,7 @@ end subroutine clubb_init_cnst
    real(r8), dimension(nparams)          :: clubb_params                ! These adjustable CLUBB parameters (C1, C2 ...)
    real(r8), dimension(sclr_dim)         :: sclr_tol                    ! Tolerance on passive scalar       [units vary]
    type(pdf_parameter), dimension(pverp) :: pdf_params                  ! PDF parameters                    [units vary]
+   type(pdf_parameter), dimension(pverp) :: pdf_params_zm               ! PDF parameters on momentum levels [units vary]
    character(len=200)                    :: temp1, sub                  ! Strings needed for CLUBB output
    logical                               :: l_Lscale_plume_centered, l_use_ice_latent
 
@@ -1232,8 +1240,7 @@ end subroutine clubb_init_cnst
    real(r8)  qvtend(pcols,pver)
    real(r8)  qitend(pcols,pver)
    real(r8)  initend(pcols,pver)
-   logical            :: lqice(pcnst)
-   integer :: ktopi(pcols)
+   logical :: lqice(pcnst)
    
    integer :: ixorg
 
@@ -1742,7 +1749,7 @@ end subroutine clubb_init_cnst
         begin_height, end_height)
  
       call setup_parameters(zi_g(2), clubb_params, pverp, grid_type, &
-        zi_g(begin_height:end_height), zt_g(begin_height:end_height), err_code)
+        zi_g(begin_height:end_height), zt_g(begin_height:end_height))
  
       !  Compute some inputs from the thermodynamic grid
       !  to the momentum grid
@@ -1904,34 +1911,104 @@ end subroutine clubb_init_cnst
 
          !  Advance CLUBB CORE one timestep in the future
          call t_startf('advance_clubb_core')
+         !Balli- to do: check whether initent-ins and intent-inouts are actually what they say
+
          call advance_clubb_core &
-            ( l_implemented, dtime, fcor, sfc_elevation, hydromet_dim, &
-            thlm_forcing, rtm_forcing, um_forcing, vm_forcing, &
-            sclrm_forcing, edsclrm_forcing, wprtp_forcing, &  
-            wpthlp_forcing, rtp2_forcing, thlp2_forcing, &
-            rtpthlp_forcing, wm_zm, wm_zt, &      
-            wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, &
-            wpsclrp_sfc, wpedsclrp_sfc, &       
-            p_in_Pa, rho_zm, rho_in, exner, &
-            rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &
-            invrs_rho_ds_zt, thv_ds_zm, thv_ds_zt, hydromet, &
-            rfrzm, radf, do_expldiff, &
+              ( l_implemented, dtime, fcor, sfc_elevation, hydromet_dim, & ! intent(in)
+              thlm_forcing, rtm_forcing, um_forcing, vm_forcing, &         ! intent(in)
+              sclrm_forcing, edsclrm_forcing, wprtp_forcing, &             ! intent(in)
+              wpthlp_forcing, rtp2_forcing, thlp2_forcing, &               ! intent(in)
+              rtpthlp_forcing, wm_zm, wm_zt, &                             ! intent(in)
+              wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, &                 ! intent(in)
+              wpsclrp_sfc, wpedsclrp_sfc, &                                ! intent(in)
+              p_in_Pa, rho_zm, rho_in, exner, &                            ! intent(in)
+              rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &                     ! intent(in)
+              invrs_rho_ds_zt, thv_ds_zm, thv_ds_zt, hydromet, &           ! intent(in)
+              rfrzm, radf, &                                               ! intent(in)
 #ifdef CLUBBND_CAM
-            varmu2, &
+              varmu2, &                                                    ! intent(in)
 #endif
-            wphydrometp, wp2hmp, rtphmp_zt, thlphmp_zt, &
-            host_dx, host_dy, &
-            um_in, vm_in, upwp_in, &
-            vpwp_in, up2_in, vp2_in, &
-            thlm_in, rtm_in, wprtp_in, wpthlp_in, &
-            wp2_in, wp3_in, rtp2_in, &
-            thlp2_in, rtpthlp_in, &
-            sclrm, sclrp2, sclrprtp, sclrpthlp, &        
-            wpsclrp, edsclr_in, err_code, &
-            rcm_out, wprcp_out, cloud_frac_out, ice_supersat_frac, &
-            rcm_in_layer_out, cloud_cover_out, &
-            khzm_out, khzt_out, qclvar_out, thlprcp_out, &
-            pdf_params)
+              wphydrometp, wp2hmp, rtphmp_zt, thlphmp_zt, &                ! intent(in)
+              host_dx, host_dy, &                                          ! intent(in)
+              um_in, vm_in, upwp_in, &                                     ! intent(inout)
+              vpwp_in, up2_in, vp2_in, &                                   ! intent(inout)
+              thlm_in, rtm_in, wprtp_in, wpthlp_in, &                      ! intent(inout)
+              wp2_in, wp3_in, rtp2_in, &                                   ! intent(inout)
+              rtp3, thlp2_in, thlp3, rtpthlp_in, &                         ! intent(inout)
+              sclrm,   &                                                   ! intent(inout)
+              sclrp2, sclrprtp, sclrpthlp, &                               ! intent(inout)
+              wpsclrp, edsclr_in, &                                        ! intent(inout)
+              rcm_out, cloud_frac_out, &                                   ! intent(inout)
+              wpthvp_in, wp2thvp, rtpthvp, thlpthvp, &                        ! intent(inout)
+              sclrpthvp, &                                                 ! intent(inout)
+              pdf_params, pdf_params_zm, &                                 ! intent(inout)
+              khzm_out, khzt_out, qclvar_out, thlprcp_out, &               ! intent(out)
+              wprcp_out, ice_supersat_frac, &                              ! intent(out)
+              rcm_in_layer_out, cloud_cover_out )                          ! intent(out)
+
+
+
+          !call advance_clubb_core &
+          !    l_implemented, dtime, fcor, sfc_elevation, hydromet_dim, & ! intent(in)
+          !    thlm_forcing, rtm_forcing, um_forcing, vm_forcing, & ! intent(in)
+          !    sclrm_forcing, edsclrm_forcing, wprtp_forcing, &     ! intent(in)
+          !    wpthlp_forcing, rtp2_forcing, thlp2_forcing, &       ! intent(in)
+          !    rtpthlp_forcing, wm_zm, wm_zt, &                     ! intent(in)
+          !    wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, &         ! intent(in)
+          !    wpsclrp_sfc, wpedsclrp_sfc, &                        ! intent(in)
+          !    p_in_Pa, rho_zm, rho, exner, &                       ! intent(in)
+          !    rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &             ! intent(in)
+          !    invrs_rho_ds_zt, thv_ds_zm, thv_ds_zt, hydromet, &   ! intent(in)
+          !    rfrzm, radf, &                                       ! intent(in)
+          !    varmu, &                                             ! intent(in)
+          !    wphydrometp, wp2hmp, rtphmp_zt, thlphmp_zt, &        ! intent(in)
+          !    host_dx, host_dy, &                                  ! intent(in)
+          !    um, vm, upwp, vpwp, up2, vp2, &                      ! intent(inout)
+          !    thlm, rtm, wprtp, wpthlp, &                          ! intent(inout)
+          !    wp2, wp3, rtp2, rtp3, thlp2, thlp3, rtpthlp, &       ! intent(inout)
+          !    sclrm,   &                                           ! intent(inout)
+          !    sclrp2, sclrprtp, sclrpthlp, &                       ! intent(inout)
+          !    wpsclrp, edsclrm, &                                  ! intent(inout)
+          !    rcm, cloud_frac, &                                   ! intent(inout)
+          !    wpthvp, wp2thvp, rtpthvp, thlpthvp, &                ! intent(inout)
+          !    sclrpthvp, &                                         ! intent(inout)
+          !    pdf_params, pdf_params_zm, &                         ! intent(inout)
+          !    khzm, khzt, &                                        ! intent(out)
+          !    qclvar, thlprcp_out, &                               ! intent(out)
+          !    wprcp, ice_supersat_frac, &                          ! intent(out)
+          !    rcm_in_layer, cloud_cover )                          ! intent(out)
+
+
+
+
+         !call advance_clubb_core &
+         !   ( l_implemented, dtime, fcor, sfc_elevation, hydromet_dim, &
+         !   thlm_forcing, rtm_forcing, um_forcing, vm_forcing, &
+         !   sclrm_forcing, edsclrm_forcing, wprtp_forcing, &  
+         !   wpthlp_forcing, rtp2_forcing, thlp2_forcing, &
+         !   rtpthlp_forcing, wm_zm, wm_zt, &      
+         !   wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, &
+         !   wpsclrp_sfc, wpedsclrp_sfc, &       
+         !   p_in_Pa, rho_zm, rho_in, exner, &
+         !   rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &
+         !   invrs_rho_ds_zt, thv_ds_zm, thv_ds_zt, hydromet, &
+         !   rfrzm, radf, do_expldiff, &
+#ifdef CLUBBND_CAM
+         !   varmu2, &
+#endif
+         !   wphydrometp, wp2hmp, rtphmp_zt, thlphmp_zt, &
+         !   host_dx, host_dy, &
+         !   um_in, vm_in, upwp_in, &
+         !   vpwp_in, up2_in, vp2_in, &
+         !   thlm_in, rtm_in, wprtp_in, wpthlp_in, &
+         !   wp2_in, wp3_in, rtp2_in, &
+         !   thlp2_in, rtpthlp_in, &
+         !   sclrm, sclrp2, sclrprtp, sclrpthlp, &        
+         !   wpsclrp, edsclr_in, err_code, &
+         !   rcm_out, wprcp_out, cloud_frac_out, ice_supersat_frac, &
+         !   rcm_in_layer_out, cloud_cover_out, &
+         !   khzm_out, khzt_out, qclvar_out, thlprcp_out, &
+         !   pdf_params)
          call t_stopf('advance_clubb_core')
 
          if (do_rainturb) then
