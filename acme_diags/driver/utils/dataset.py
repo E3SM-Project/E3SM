@@ -250,6 +250,12 @@ class Dataset():
         end_yr_file = self._get_end_yr_from_fname(var, path)
         start_yr_file, end_yr_file = int(start_yr_file), int(end_yr_file)
 
+        # Check that the user-inputted year range can work for the file associated to var.
+        if end_yr_file - start_yr_file < end_yr - start_yr:
+            msg = 'For {}, the years you\'re trying to slice ({}, {})'.format(var, start_yr, end_yr)
+            msg += ' don\'t fit within the year ranges for the file ({}, {}).'.format(start_yr_file, end_yr_file)
+            raise RuntimeError(msg)
+
         # Calculate the offset, which is needed for when *_yr >= *_yr_file.
         # TODO: What do we do when *_yr < *_yr_file?
         # CDMS will probably just throw an error.
