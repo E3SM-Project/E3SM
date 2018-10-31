@@ -1,5 +1,5 @@
 !---------------------------------------------------------------------------
-! $Id: Nc_Ncn_eqns.F90 7130 2014-07-29 23:29:54Z raut@uwm.edu $
+! $Id$
 !===============================================================================
 module Nc_Ncn_eqns
 
@@ -92,7 +92,7 @@ module Nc_Ncn_eqns
   ! |  |                                                       |
   ! |  |                                                       |
   ! |  |                                                       |
-  ! |  |--(intent in)-------microphys_schemes-------------(intent in)
+  ! |  |--(intent in)-------calc_microphys_scheme_tendcies-------------(intent in)
   ! |  |                            |
   ! |  |                            |
   ! |  |                call a microphysics scheme
@@ -275,8 +275,8 @@ contains
 
     use constants_clubb, only: &
         one,            & ! Constant(s)
-        zero,           &
-        cloud_frac_min
+        cloud_frac_min, &
+        eps
 
     use clubb_precision, only: &
         core_rknd  ! Variable(s)
@@ -317,7 +317,7 @@ contains
     cloud_frac = mixt_frac * cloud_frac_1 + ( one - mixt_frac ) * cloud_frac_2
 
     if ( cloud_frac > cloud_frac_min &
-         .and. const_corr_chi_Ncn * const_Ncnp2_on_Ncnm2 /= zero ) then
+         .and. abs(const_corr_chi_Ncn * const_Ncnp2_on_Ncnm2) > eps ) then
 
        ! There is cloud found at this grid level.  Additionally, Ncn varies.
        ! Calculate Nc_in_cloud.
@@ -771,9 +771,6 @@ contains
         chi_tol,  &
         Ncn_tol
 
-    use anl_erf, only: &
-        erfc  ! Procedure(s)
-
     use clubb_precision, only: &
         core_rknd  ! Variable(s)
 
@@ -894,9 +891,6 @@ contains
         zero,     &
         chi_tol
 
-    use anl_erf, only: &
-        erfc  ! Procedure(s)
-
     use clubb_precision, only: &
         core_rknd  ! Variable(s)
 
@@ -931,23 +925,12 @@ contains
 
        endif
 
-
-    elseif ( const_Ncnp2_on_Ncnm2 == zero ) then
-
-       ! The ith PDF component variance of Ncn is 0.
-
-       bivar_Ncnm_eqn_comp &
-       = one_half * erfc( - ( mu_chi_i / ( sqrt_2 * sigma_chi_i ) ) )
-
-
     else
 
        ! Both chi and Ncn vary in the ith PDF component. 
 
        bivar_Ncnm_eqn_comp &
-       = one_half &
-         * erfc( - ( one / sqrt_2 ) &
-                   * ( ( mu_chi_i / sigma_chi_i ) &
+       = one_half * erfc( - ( one / sqrt_2 ) * ( ( mu_chi_i / sigma_chi_i ) &
                        + const_corr_chi_Ncn * sqrt( const_Ncnp2_on_Ncnm2 ) ) )
 
 
