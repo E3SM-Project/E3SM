@@ -15,6 +15,8 @@ module physics_types
   use phys_control, only: waccmx_is, use_mass_borrower
   use shr_const_mod,only: shr_const_rwv
   use perf_mod,     only: t_startf, t_stopf
+  use spmd_utils,   only: masterproc
+  use time_manager, only: is_first_step
 
   implicit none
   private          ! Make default type private to the module
@@ -211,8 +213,6 @@ contains
     use phys_control, only: phys_getopts
     use physconst,    only: physconst_update ! Routine which updates physconst variables (WACCM-X)
     use ppgrid,       only: begchunk, endchunk
-    use spmd_utils,   only: masterproc
-    use time_manager, only: is_first_step
 
 !------------------------------Arguments--------------------------------
     type(physics_ptend), intent(inout)  :: ptend   ! Parameterization tendencies
@@ -250,6 +250,8 @@ contains
     ! Whether to do validation of state on each call.
     logical :: state_debug_checks
 
+    logical, parameter :: reduce_prc = .false., red_prc_update = .true.
+
     !-----------------------------------------------------------------------
 
     ! The column radiation model does not update the state
@@ -279,8 +281,9 @@ contains
     end if
 
     call t_startf ('physics_update_main')
-    call reduce_ptend_precesion(ptend)
-    if(masterproc .and. is_first_step()) write(iulog,*)'PREC_INFO:Using pseudo reduced precision'
+    if (reduce_prc) then
+       call reduce_precesion(ptend, state)
+    endif
     !-----------------------------------------------------------------------
     ! cpairv_loc and rairv_loc need to be allocated to a size which matches state and ptend
     ! If psetcols == pcols, the cpairv is the correct size and just copy
@@ -312,7 +315,11 @@ contains
     ! Update u,v fields
     if(ptend%lu) then
        do k = ptend%top_level, ptend%bot_level
-          state%u  (:ncol,k) = state%u  (:ncol,k) + ptend%u(:ncol,k) * dt
+          if(red_prc_update) then
+             call r4_update_col(state%u(:ncol,k),ptend%u(:ncol,k),dt,ncol)
+          else
+             state%u  (:ncol,k) = state%u  (:ncol,k) + ptend%u(:ncol,k) * dt
+          endif
           if (present(tend)) &
                tend%dudt(:ncol,k) = tend%dudt(:ncol,k) + ptend%u(:ncol,k)
        end do
@@ -320,7 +327,11 @@ contains
 
     if(ptend%lv) then
        do k = ptend%top_level, ptend%bot_level
-          state%v  (:ncol,k) = state%v  (:ncol,k) + ptend%v(:ncol,k) * dt
+          if(red_prc_update) then
+             call r4_update_col(state%v(:ncol,k),ptend%v(:ncol,k),dt,ncol)
+          else
+             state%v  (:ncol,k) = state%v  (:ncol,k) + ptend%v(:ncol,k) * dt
+          endif
           if (present(tend)) &
                tend%dvdt(:ncol,k) = tend%dvdt(:ncol,k) + ptend%v(:ncol,k)
        end do
@@ -339,7 +350,11 @@ contains
     do m = 1, pcnst
        if(ptend%lq(m)) then
           do k = ptend%top_level, ptend%bot_level
-             state%q(:ncol,k,m) = state%q(:ncol,k,m) + ptend%q(:ncol,k,m) * dt
+             if(red_prc_update) then
+                call r4_update_col(state%q(:ncol,k,m),ptend%q(:ncol,k,m),dt,ncol)
+             else                
+                state%q(:ncol,k,m) = state%q(:ncol,k,m) + ptend%q(:ncol,k,m) * dt
+             endif
           end do
 
           ! now test for mixing ratios which are too small
@@ -432,7 +447,11 @@ contains
     !-------------------------------------------------------------------------------------------
     if(ptend%ls) then
        do k = ptend%top_level, ptend%bot_level
-          state%s(:ncol,k)   = state%s(:ncol,k)   + ptend%s(:ncol,k) * dt
+          if(red_prc_update) then
+             call r4_update_col(state%s(:ncol,k),ptend%s(:ncol,k),dt,ncol)
+          else
+             state%s(:ncol,k)   = state%s(:ncol,k)   + ptend%s(:ncol,k) * dt
+          endif
           if (present(tend)) &
                tend%dtdt(:ncol,k) = tend%dtdt(:ncol,k) + ptend%s(:ncol,k)/cpairv_loc(:ncol,k,state%lchnk)
        end do
@@ -499,39 +518,89 @@ contains
 
 !===============================================================================
 
-  subroutine reduce_ptend_precesion (ptend)
+  subroutine reduce_precesion (ptend, state)
     !-----------------------------------------------------------------------
-    ! This subroutine reduces precision of all real datatypes in ptend
+    ! This subroutine reduces precision of all real datatypes
     !-----------------------------------------------------------------------
-    
+
     !arguments
     type(physics_ptend), intent(inout)  :: ptend
+    type(physics_state), intent(inout), optional  :: state 
     
     if (ptend%ls) then
        ptend%s         = real(real(ptend%s        , kind=r4), kind=r8)
        ptend%hflux_srf = real(real(ptend%hflux_srf, kind=r4), kind=r8)
        ptend%hflux_top = real(real(ptend%hflux_top, kind=r4), kind=r8)
+       if(present(state))then
+          state%s     = real(real(state%s         , kind=r4), kind=r8)                   
+       endif
     end if
     
     if (ptend%lu) then
        ptend%u         = real(real(ptend%u       , kind=r4), kind=r8)
        ptend%taux_srf  = real(real(ptend%taux_srf, kind=r4), kind=r8)
        ptend%taux_top  = real(real(ptend%taux_top, kind=r4), kind=r8)
+       if(present(state))then
+          state%u      = real(real(state%u       , kind=r4), kind=r8)
+       endif
     end if
     
     if (ptend%lv) then
        ptend%v         = real(real(ptend%v       , kind=r4), kind=r8)
        ptend%tauy_srf  = real(real(ptend%tauy_srf, kind=r4), kind=r8)
        ptend%tauy_top  = real(real(ptend%tauy_top, kind=r4), kind=r8)
+       if(present(state))then
+          state%v      = real(real(state%v       , kind=r4), kind=r8)
+       endif
     end if
     
     if (any(ptend%lq(:))) then
        ptend%q         = real(real(ptend%q       , kind=r4), kind=r8)
        ptend%cflx_srf  = real(real(ptend%cflx_srf, kind=r4), kind=r8)
        ptend%cflx_top  = real(real(ptend%cflx_top, kind=r4), kind=r8)
+        if(present(state))then
+          state%q      = real(real(state%q       , kind=r4), kind=r8)
+       endif
     end if
+
+    if(masterproc .and. is_first_step()) then
+       if(present(state))then
+          write(iulog,*)'PREC_INFO:Using pseudo reduced precision ptend AND state '
+       else
+          write(iulog,*)'PREC_INFO:Using pseudo reduced precision ptend ONLY '
+       endif
+    endif
+
+
     
-  end subroutine reduce_ptend_precesion
+  end subroutine reduce_precesion
+
+!===============================================================================
+
+  subroutine r4_update_col(state_r8(:),ptend_r8(:),dt, ncol)
+    
+    !arguments
+    !intent-ins
+    integer,  intent(in)    :: ncol
+    real(r8), intent(in)    :: ptend_r8(:), dt
+    
+    !intent-inouts
+    real(r8), intent(inout) :: state_r8(:)
+    logical, save :: printed = .true.
+
+    !local
+    real(r4) :: state_r4(ncol), ptend_r4(ncol)
+
+    state_r4(:ncol)    = real(state_r8(:ncol), kind=r4) + real(ptend_r8(:ncol), kind=r4) * real(dt, kind=r4)
+    state_r8(:ncol)    = real(state_r4(:ncol), kind=r8)
+
+    if(masterproc .and. is_first_step() .and. printed) then
+       printed = .false.
+       write(iulog,*)'PREC_INFO: Using pseudo reduced precision while updating state'
+    endif
+
+
+  end subroutine r4_update_col
 
 !===============================================================================
 
