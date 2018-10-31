@@ -422,19 +422,16 @@ def get_extension(model, filepath):
     basename = os.path.basename(filepath)
     m = None
     if model == "mom":
-        for ext in ('frc', 'sfc.day', 'prog', 'hmz', 'hm'):
-            regex_str = r'.*' + model + r'[^_]*_?([0-9]{4})?[.](' + ext + r'.?)([.].*[^.])?[.]nc'
-            ext_regex = re.compile(regex_str)
-            m = ext_regex.match(basename)
-            if m is not None:
-                break
-    elif model == 'cice':
-        ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h_inst.?)([.].*[^.])?[.]nc' % model)
-        m = ext_regex.match(basename)
+        # Need to check 'sfc.day' specially: the embedded '.' messes up the general-purpose regex
+        ext = r'sfc\.day'
+        regex = model+r'\d?_?(\d{4})?\.('+ext+')[-\w\.]*\.nc\.?'
+        ext_regex = re.compile(regex)
+        m = ext_regex.search(basename)
 
     if m is None:
-        ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h.?)([.].*[^.])?[.]nc' % model)
-        m = ext_regex.match(basename)
+        regex = model+r'\d?_?(\d{4})?\.(\w+)[-\w\.]*\.nc\.?'
+        ext_regex = re.compile(regex)
+        m = ext_regex.search(basename)
 
 
     expect(m is not None, "Failed to get extension for file '{}'".format(filepath))
