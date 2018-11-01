@@ -344,6 +344,8 @@ contains
              rlat = const_deg2rad * ocnalb%lats(n)
              rlon = const_deg2rad * ocnalb%lons(n)
              cosz = shr_orb_cosz( nextsw_cday, rlat, rlon, delta )
+             write(6,100)n,rlat,rlon,cosz
+100          format('DEBUG: n,rlat,rlon,cosz= ',i6,2x,3(d20.14,2x))
              if (cosz  >  0.0_r8) then !--- sun hit --
                 ocnalb%anidr(n) = (.026_r8/(cosz**1.7_r8 + 0.065_r8)) +   &
                                   (.150_r8*(cosz         - 0.100_r8 ) *   &

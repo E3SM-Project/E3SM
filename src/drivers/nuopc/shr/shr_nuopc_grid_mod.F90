@@ -619,70 +619,38 @@ contains
     integer          , intent(out)   :: rc
 
     !----- local -----
-    integer(IN)       :: nflds, lsize, n, nf, DE
+    integer(IN)       :: nflds, lsize, n, nf
     character(len=CS) :: fldname
     type(ESMF_Field)  :: lfield
-    real(R8), pointer :: farray2(:,:)
     real(R8), pointer :: farray1(:)
     integer           :: dbrc
     character(*),parameter :: subName = "(shr_nuopc_grid_ArrayToState)"
     !----------------------------------------------------------
 
     rc = ESMF_SUCCESS
+    call shr_nuopc_methods_State_reset(state, value = 0._r8, rc=rc)
 
-    call shr_nuopc_methods_State_reset(state, value = -9999._R8, rc=rc)
-
-    nflds = shr_string_listGetNum(rList)
     lsize = size(array, dim=2)
-
+    nflds = shr_string_listGetNum(rList)
     do nf = 1,nflds
-
-      rc = ESMF_SUCCESS
       call shr_string_listGetName(rList, nf, fldname, dbrc)
+
       call ESMF_StateGet(state, itemName=trim(fldname), field=lfield, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU)) then
-
-        if (dbug_flag > 2) then
-           call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" not found on state", &
-                ESMF_LOGMSG_INFO, rc=dbrc)
-        end if
-
-      elseif (grid_option == "grid_de") then
-
-        if (dbug_flag > 2) then
-           call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" copy", ESMF_LOGMSG_INFO, rc=dbrc)
-        end if
-        do n = 1,lsize
-          DE = n-1
-          call ESMF_FieldGet(lfield, localDE=DE, farrayPtr=farray2, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-          farray2(1,1) = array(nf,n)
-        enddo
-
-      elseif (grid_option == 'mesh' .or. grid_option == 'arb') then
-
-        if (dbug_flag > 2) then
-           call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" copy", ESMF_LOGMSG_INFO, rc=dbrc)
-        end if
-        call ESMF_FieldGet(lfield, farrayPtr=farray1, rc=rc)
-        do n = 1,lsize
-           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-           farray1(n) = array(nf,n)
-        enddo
-        if (dbug_flag > 2) then
-           write(tmpstr,'(a,3g13.6)') trim(subname)//":"//trim(fldname)//"=",&
-                minval(farray1),maxval(farray1),sum(farray1)
-           call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
-        end if
-
+         call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" not found on state", &
+              ESMF_LOGMSG_INFO, rc=dbrc)
       else
+         call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" copy", ESMF_LOGMSG_INFO, rc=dbrc)
+         call ESMF_FieldGet(lfield, farrayPtr=farray1, rc=rc)
+         do n = 1,lsize
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+            farray1(n) = array(nf,n)
+         enddo
 
-         if (dbug_flag > 2) then
-            call ESMF_LogWrite(trim(subname)//": fldname = "//&
-                 trim(fldname)//" copy skipped due to grid_option", ESMF_LOGMSG_INFO, rc=dbrc)
-         end if
-     endif
-
+         write(tmpstr,'(a,3g13.6)') trim(subname)//":"//trim(fldname)//"=",&
+              minval(farray1),maxval(farray1),sum(farray1)
+         call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+      end if
     enddo
 
   end subroutine shr_nuopc_grid_ArrayToState
@@ -706,10 +674,9 @@ contains
     integer          , intent(out)   :: rc
 
     !----- local -----
-    integer(IN)       :: nflds, lsize, n, nf, DE
+    integer(IN)       :: nflds, lsize, n, nf
     character(len=CS) :: fldname
     type(ESMF_Field)  :: lfield
-    real(R8), pointer :: farray2(:,:)
     real(R8), pointer :: farray1(:)
     integer           :: dbrc
     character(*),parameter :: subName = "(shr_nuopc_grid_StateToArray)"
@@ -721,51 +688,22 @@ contains
     lsize = size(array, dim=2)
 
     do nf = 1,nflds
-
-      rc = ESMF_SUCCESS
       call shr_string_listGetName(rList, nf, fldname, dbrc)
       call ESMF_StateGet(state, itemName=trim(fldname), field=lfield, rc=rc)
 
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU)) then
-
-        if (dbug_flag > 2) then
-           call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" not found on state", ESMF_LOGMSG_INFO, rc=dbrc)
-        end if
-
-      elseif (grid_option == "grid_de") then
-
-        if (dbug_flag > 2) then
-           call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" copy", ESMF_LOGMSG_INFO, rc=dbrc)
-        end if
-        do n = 1,lsize
-          DE = n-1
-          call ESMF_FieldGet(lfield, localDE=DE, farrayPtr=farray2, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-          array(nf,n) = farray2(1,1)
-        enddo
-
-      elseif (grid_option == 'mesh' .or. grid_option == 'arb') then
-
-        if (dbug_flag > 2) then
-           call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" copy", ESMF_LOGMSG_INFO, rc=dbrc)
-        end if
+         call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" not found on state", &
+              ESMF_LOGMSG_INFO, rc=dbrc)
+      else
+        call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" copy", ESMF_LOGMSG_INFO, rc=dbrc)
         call ESMF_FieldGet(lfield, farrayPtr=farray1, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
         do n = 1,lsize
           array(nf,n) = farray1(n)
         enddo
-        if (dbug_flag > 2) then
-           write(tmpstr,'(a,3g13.6)') trim(subname)//":"//trim(fldname)//"=",&
-                minval(farray1),maxval(farray1),sum(farray1)
-           call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
-        end if
-
-      else
-
-        if (dbug_flag > 2) then
-           call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//&
-                " copy skipped due to grid_option", ESMF_LOGMSG_INFO, rc=dbrc)
-        end if
+        write(tmpstr,'(a,3g13.6)') trim(subname)//":"//trim(fldname)//"=",&
+             minval(farray1),maxval(farray1),sum(farray1)
+        call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
 
       endif
 

@@ -437,7 +437,7 @@ contains
     use ESMF  , only : ESMF_GridComp, ESMF_State, ESMF_Clock, ESMF_VM, ESMF_SUCCESS
     use ESMF  , only : ESMF_UtilString2Int, ESMF_GridCompGet, ESMF_VMGet, ESMF_AttributeGet
     use ESMF  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_METHOD_INITIALIZE
-    use ESMF , only : ESMF_GridCompGet
+    use ESMF  , only : ESMF_GridCompGet
     use NUOPC , only : NUOPC_CompFilterPhaseMap
     use med_internalstate_mod, only : mastertask
 
@@ -475,18 +475,13 @@ contains
 
     write(msgString,'(A,i6)') trim(subname)//' dbug_flag = ',dbug_flag
     call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
-
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
 
     ! Switch to IPDv03 by filtering all other phaseMap entries
     call NUOPC_CompFilterPhaseMap(gcomp, ESMF_METHOD_INITIALIZE, acceptStringList=(/"IPDv03p"/), rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine InitializeP0
 
@@ -528,9 +523,7 @@ contains
     character(len=*),parameter :: subname='(module_MED:InitializeIPDv03p1)'
     !-----------------------------------------------------------
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
 
     !------------------
@@ -632,9 +625,7 @@ contains
        end if
     end do ! end of ncomps loop
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine InitializeIPDv03p1
 
@@ -680,9 +671,7 @@ contains
     character(len=*),parameter :: subname='(module_MED:InitializeIPDv03p3)'
     !-----------------------------------------------------------
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
 
     ! Get the internal state from Component.
@@ -711,9 +700,7 @@ contains
       endif
     enddo
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine InitializeIPDv03p3
 
@@ -752,9 +739,7 @@ contains
     character(len=*),parameter :: subname='(module_MED:realizeConnectedGrid)'
     !-----------------------------------------------------------
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
 
     ! Get the internal state from the mediator gridded component.
@@ -767,9 +752,7 @@ contains
     !------------------
 
     do n1 = 1,ncomps
-       if (dbug_flag > 5) then
-          call ESMF_LogWrite(trim(subname)//": calling for component "//trim(compname(n1)), ESMF_LOGMSG_INFO, rc=dbrc)
-       end if
+       call ESMF_LogWrite(trim(subname)//": calling for component "//trim(compname(n1)), ESMF_LOGMSG_INFO, rc=dbrc)
        if (ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc)) then
           call realizeConnectedGrid(is_local%wrap%NStateImp(n1), trim(compname(n1))//'Imp', rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -778,14 +761,9 @@ contains
           call realizeConnectedGrid(is_local%wrap%NStateExp(n1), trim(compname(n1))//'Exp', rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        endif
-       if (dbug_flag > 5) then
-          call ESMF_LogWrite(trim(subname)//": finished for component "//trim(compname(n1)), ESMF_LOGMSG_INFO, rc=dbrc)
-       end if
+       call ESMF_LogWrite(trim(subname)//": finished for component "//trim(compname(n1)), ESMF_LOGMSG_INFO, rc=dbrc)
     enddo
-
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
 
   contains  !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -840,9 +818,7 @@ contains
       !TODO: quick implementation, do it for each field one by one
       !TODO: commented out below are application to other fields
 
-      if (dbug_flag > 5) then
-         call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-      endif
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
       rc = ESMF_Success
 
       call ESMF_StateGet(State, itemCount=fieldCount, rc=rc)
@@ -891,12 +867,10 @@ contains
                     convention="NUOPC", purpose="Instance", rc=rc)
                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-               if (dbug_flag > 1) then
-                  call ESMF_LogWrite(trim(subname)//": geomtype is ESMF_GEOMTYPE_GRID for "//trim(fieldnameList(n)), &
-                       ESMF_LOGMSG_INFO, rc=dbrc)
-                  write(msgString,'(A,i8)') trim(subname)//':arbdimcount =',arbdimcount
-                  call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=dbrc)
-               endif
+               call ESMF_LogWrite(trim(subname)//": geomtype is ESMF_GEOMTYPE_GRID for "//trim(fieldnameList(n)), &
+                    ESMF_LOGMSG_INFO, rc=dbrc)
+               write(msgString,'(A,i8)') trim(subname)//':arbdimcount =',arbdimcount
+               call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=dbrc)
 
                ! make decision on whether the incoming Grid is arbDistr or not
                if (arbDimCount>0) then
@@ -913,10 +887,8 @@ contains
 
                   if (grid_arbopt == "grid_reg") then
 
-                     if (dbug_flag > 1) then
-                        call ESMF_LogWrite(trim(subname)//trim(string)//": accept arb2reg grid for "//trim(fieldNameList(n)), &
-                             ESMF_LOGMSG_INFO, rc=dbrc)
-                     endif
+                     call ESMF_LogWrite(trim(subname)//trim(string)//": accept arb2reg grid for "//trim(fieldNameList(n)), &
+                          ESMF_LOGMSG_INFO, rc=dbrc)
 
                      ! Use a regDecomp representation for the grid
                      ! first get tile min/max, only single tile supported for arbDistr Grid
@@ -957,10 +929,8 @@ contains
                      ! natural number of DEs (maybe same number as acceptor PETs), and then
                      ! redistribute the arbSeqIndexList. Here simply keep the DEs of the
                      ! provider Grid.
-                     if (dbug_flag > 1) then
-                        call ESMF_LogWrite(trim(subname)//trim(string)//": accept arb2arb grid for "//trim(fieldNameList(n)), &
-                             ESMF_LOGMSG_INFO, rc=dbrc)
-                     endif
+                     call ESMF_LogWrite(trim(subname)//trim(string)//": accept arb2arb grid for "//trim(fieldNameList(n)), &
+                          ESMF_LOGMSG_INFO, rc=dbrc)
 
                   else   ! grid_arbopt
 
@@ -977,10 +947,8 @@ contains
                   ! The provider defined as non arb grid
 
                   ! access localDeCount to show this is a real Grid
-                  if (dbug_flag > 1) then
-                     call ESMF_LogWrite(trim(subname)//trim(string)//": accept reg2reg grid for "//&
-                          trim(fieldNameList(n)), ESMF_LOGMSG_INFO, rc=dbrc)
-                  endif
+                  call ESMF_LogWrite(trim(subname)//trim(string)//": accept reg2reg grid for "//&
+                       trim(fieldNameList(n)), ESMF_LOGMSG_INFO, rc=dbrc)
 
                   call ESMF_FieldGet(field, grid=grid, rc=rc)
                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1050,10 +1018,9 @@ contains
                           maxIndexPTile=maxIndexPTile, regDecompPTile=regDecompPTile, &
                           connectionList=connectionList, rc=rc)
                      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                     if (dbug_flag > 1) then
-                        call ESMF_LogWrite(trim(subname)//trim(string)//': distgrid with dimcount=2', ESMF_LOGMSG_INFO, rc=rc)
-                        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                     endif
+
+                     call ESMF_LogWrite(trim(subname)//trim(string)//': distgrid with dimcount=2', ESMF_LOGMSG_INFO, rc=rc)
+                     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
                      ! Create a new Grid on the new DistGrid and swap it in the Field
                      grid = ESMF_GridCreate(distgrid, gridEdgeLWidth=(/0,0/), gridEdgeUWidth=(/0,1/), rc=rc)
@@ -1062,10 +1029,9 @@ contains
                      distgrid = ESMF_DistGridCreate(minIndexPTile=minIndexPTile, &
                           maxIndexPTile=maxIndexPTile, regDecompPTile=regDecompPTile, rc=rc)
                      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                     if (dbug_flag > 1) then
-                        call ESMF_LogWrite(trim(subname)//trim(string)//': distgrid with dimcount=1', ESMF_LOGMSG_INFO, rc=rc)
-                        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                     endif
+
+                     call ESMF_LogWrite(trim(subname)//trim(string)//': distgrid with dimcount=1', ESMF_LOGMSG_INFO, rc=rc)
+                     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
                      ! Create a new Grid on the new DistGrid and swap it in the Field
                      grid = ESMF_GridCreate(distgrid, gridEdgeLWidth=(/0/), gridEdgeUWidth=(/0/), rc=rc)
@@ -1079,8 +1045,6 @@ contains
                endif  ! arbdimCount
 
                ! Swap all the Grids in the State
-
-               ! do n1=n,n
                do n1=1, fieldCount
                   ! access a field in the State and set the Grid
                   call ESMF_StateGet(State, field=field, itemName=fieldNameList(n1), rc=rc)
@@ -1092,31 +1056,27 @@ contains
                   if (fieldStatus==ESMF_FIELDSTATUS_EMPTY .or. fieldStatus==ESMF_FIELDSTATUS_GRIDSET) then
                      call ESMF_FieldEmptySet(field, grid=grid, rc=rc)
                      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                     if (dbug_flag > 1) then
-                        call ESMF_LogWrite(trim(subname)//trim(string)//": attach grid for "//trim(fieldNameList(n1)), &
-                             ESMF_LOGMSG_INFO, rc=rc)
-                        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                     endif
+
+                     call ESMF_LogWrite(trim(subname)//trim(string)//": attach grid for "//trim(fieldNameList(n1)), &
+                          ESMF_LOGMSG_INFO, rc=rc)
+                     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
                      if (dbug_flag > 1) then
                         call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n1))//'_new',rc)
                         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                      end if
                   else
-                     if (dbug_flag > 1) then
-                        call ESMF_LogWrite(trim(subname)//trim(string)//": NOT replacing grid for field: "//trim(fieldNameList(n1)), &
-                             ESMF_LOGMSG_WARNING, rc=rc)
-                        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                     endif
+                     call ESMF_LogWrite(trim(subname)//trim(string)//": NOT replacing grid for field: "//&
+                          trim(fieldNameList(n1)), ESMF_LOGMSG_WARNING, rc=rc)
+                     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                   endif
                enddo
 
 
             elseif (geomtype == ESMF_GEOMTYPE_MESH) then
 
-               if (dbug_flag > 1) then
-                  call ESMF_LogWrite(trim(subname)//": geomtype is ESMF_GEOMTYPE_MESH for "//trim(fieldnameList(n)), &
-                       ESMF_LOGMSG_INFO, rc=dbrc)
-               end if
+               call ESMF_LogWrite(trim(subname)//": geomtype is ESMF_GEOMTYPE_MESH for "//trim(fieldnameList(n)), &
+                    ESMF_LOGMSG_INFO, rc=dbrc)
 
                if (dbug_flag > 1) then
                   call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n))//'_orig',rc)
@@ -1126,48 +1086,26 @@ contains
                call ESMF_FieldGet(field, mesh=mesh, rc=rc)
                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-               call ESMF_MeshGet(mesh, elementDistGrid=elemDistGrid, & 
-                    nodalDistGrid=nodalDistGrid, rc=rc)
+               call ESMF_MeshGet(mesh, elementDistGrid=elemDistGrid, rc=rc)
                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-               call ESMF_DistGridGet(elemDistGrid, dimCount=dimCount, tileCount=tileCount, rc=rc)
+               newelemDistGrid = ESMF_DistGridCreate(elemDistGrid, balanceflag=.true., rc=rc)
                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-               ! allocate minIndexPTile and maxIndexPTile accord. to dimCount and tileCount
-               allocate(minIndexPTile(dimCount, tileCount),maxIndexPTile(dimCount, tileCount))
-               ! get minIndex and maxIndex arrays
-               call ESMF_DistGridGet(elemDistGrid, minIndexPTile=minIndexPTile, &
-                    maxIndexPTile=maxIndexPTile, rc=rc)
-               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+               ! call ESMF_MeshGet(mesh, nodalDistGrid=nodalDistGrid, rc=rc)
+               ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-               ! use default regular decomposition
-               newelemdistgrid = ESMF_DistGridCreate(minIndexPTile=minIndexPTile, &
-                    maxIndexPTile=maxIndexPTile, rc=rc)
-               deallocate(minIndexPTile, maxIndexPTile)
-
-               call ESMF_DistGridGet(nodalDistGrid, dimCount=dimCount, tileCount=tileCount, rc=rc)
-               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-               ! allocate minIndexPTile and maxIndexPTile accord. to dimCount and tileCount
-               allocate(minIndexPTile(dimCount, tileCount),maxIndexPTile(dimCount, tileCount))
-               ! get minIndex and maxIndex arrays
-               call ESMF_DistGridGet(nodalDistGrid, minIndexPTile=minIndexPTile, &
-                    maxIndexPTile=maxIndexPTile, rc=rc)
-               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-               ! use default regular decomposition
-               newnodaldistgrid = ESMF_DistGridCreate(minIndexPTile=minIndexPTile, &
-                    maxIndexPTile=maxIndexPTile, rc=rc)
-               deallocate(minIndexPTile, maxIndexPTile)
+               ! newnodalDistGrid = ESMF_DistGridCreate(nodalDistGrid, balanceflag=.true., rc=rc)
+               ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
                ! Create a new Grid on the new DistGrid and swap it in the Field
-               newmesh = ESMF_MeshEmptyCreate(elementDistGrid=newelemdistgrid, & 
-                    nodalDistGrid=newnodalDistGrid, rc=rc)
+               ! newmesh = ESMF_MeshEmptyCreate(elementDistGrid=newelemDistGrid, nodalDistGrid=newnodalDistGrid, rc=rc)
+               ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+               newmesh = ESMF_MeshEmptyCreate(elementDistGrid=newelemDistGrid, rc=rc)
                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
                ! Swap all the Meshes in the State
-
-               ! do n1=n,n
                do n1=1, fieldCount
                   ! access a field in the State and set the Mesh
                   call ESMF_StateGet(State, field=field, itemName=fieldNameList(n1), rc=rc)
@@ -1179,21 +1117,19 @@ contains
                   if (fieldStatus==ESMF_FIELDSTATUS_EMPTY .or. fieldStatus==ESMF_FIELDSTATUS_GRIDSET) then
                      call ESMF_FieldEmptySet(field, mesh=newmesh, rc=rc)
                      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                     if (dbug_flag > 1) then
-                        call ESMF_LogWrite(trim(subname)//trim(string)//": attach mesh for "//trim(fieldNameList(n1)), &
-                             ESMF_LOGMSG_INFO, rc=rc)
-                        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                     endif
+
+                     call ESMF_LogWrite(trim(subname)//trim(string)//": attach mesh for "//&
+                          trim(fieldNameList(n1)), ESMF_LOGMSG_INFO, rc=rc)
+                     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
                      if (dbug_flag > 1) then
                         call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n1))//'_new',rc)
                         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                      end if
                   else                     
-                     if (dbug_flag > 1) then
-                        call ESMF_LogWrite(trim(subname)//trim(string)//": NOT replacing mesh for field: "//trim(fieldNameList(n1)), &
-                             ESMF_LOGMSG_WARNING, rc=rc)
-                        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                     endif
+                     call ESMF_LogWrite(trim(subname)//trim(string)//": NOT replacing mesh for field: "//&
+                          trim(fieldNameList(n1)), ESMF_LOGMSG_WARNING, rc=rc)
+                     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                   endif                  
                enddo
 
@@ -1227,9 +1163,7 @@ contains
 
       deallocate(fieldNameList)
 
-      if (dbug_flag > 5) then
-         call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-      endif
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
 
     end subroutine realizeConnectedGrid
 
@@ -1263,9 +1197,7 @@ contains
     integer :: dbrc
     !-----------------------------------------------------------
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
 
     rc = ESMF_SUCCESS
 
@@ -1280,10 +1212,8 @@ contains
     do n1 = 1,ncomps
 
       if (ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc)) then
-        if (dbug_flag > 5) then
-           call ESMF_LogWrite(trim(subname)//": calling completeFieldInitialize import states from "//trim(compname(n1)), &
-                ESMF_LOGMSG_INFO, rc=dbrc)
-        end if
+         call ESMF_LogWrite(trim(subname)//": calling completeFieldInitialize import states from "//trim(compname(n1)), &
+              ESMF_LOGMSG_INFO, rc=dbrc)
         call completeFieldInitialization(is_local%wrap%NStateImp(n1), rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -1292,10 +1222,8 @@ contains
       endif
 
       if (ESMF_StateIsCreated(is_local%wrap%NStateExp(n1),rc=rc)) then
-        if (dbug_flag > 5) then
-           call ESMF_LogWrite(trim(subname)//": calling completeFieldInitialize export states to "//trim(compname(n1)), &
-                ESMF_LOGMSG_INFO, rc=dbrc)
-        end if
+         call ESMF_LogWrite(trim(subname)//": calling completeFieldInitialize export states to "//trim(compname(n1)), &
+              ESMF_LOGMSG_INFO, rc=dbrc)
         call completeFieldInitialization(is_local%wrap%NStateExp(n1), rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -1312,9 +1240,7 @@ contains
       endif
     enddo
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
 
   contains  !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -1345,10 +1271,7 @@ contains
       type(ESMF_GeomType_Flag)    :: geomtype
       character(len=*),parameter  :: subname='(module_MED:completeFieldInitialization)'
 
-      if (dbug_flag > 5) then
-        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-      endif
-
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
       rc = ESMF_Success
 
       call shr_nuopc_methods_State_GetNumFields(State, fieldCount, rc=rc)
@@ -1387,11 +1310,8 @@ contains
           endif
 
           if (fieldStatus==ESMF_FIELDSTATUS_GRIDSET) then
-            if (dbug_flag > 1) then
-              call ESMF_LogWrite(subname//" is allocating field memory for field "//trim(fieldName), &
-                   ESMF_LOGMSG_INFO, rc=rc)
-              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            endif
+            call ESMF_LogWrite(subname//" is allocating field memory for field "//trim(fieldName), &
+                 ESMF_LOGMSG_INFO, rc=rc)
             call ESMF_FieldEmptyComplete(fieldList(n), typekind=ESMF_TYPEKIND_R8, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           endif   ! fieldStatus
@@ -1405,9 +1325,7 @@ contains
         deallocate(fieldList)
       endif
 
-      if (dbug_flag > 5) then
-        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-      endif
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
 
     end subroutine completeFieldInitialization
 
@@ -1527,10 +1445,7 @@ contains
     character(len=*), parameter        :: subname='(module_MED:DataInitialize)'
     !-----------------------------------------------------------
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
 
     call NUOPC_CompAttributeSet(gcomp, name="InitializeDataComplete", value="false", rc=rc)
@@ -1556,10 +1471,8 @@ contains
     if (first_call) then
 
       ! initialize the present flags in the mediator
-      if (dbug_flag > 1) then
-        call ESMF_LogWrite("Starting to initialize present flags", ESMF_LOGMSG_INFO)
-        call ESMF_LogFlush()
-      endif
+       call ESMF_LogWrite("Starting to initialize present flags", ESMF_LOGMSG_INFO)
+       call ESMF_LogFlush()
 
       !----------------------------------------------------------
       !--- Check present flags
@@ -1581,10 +1494,8 @@ contains
       !    must be allowed, bundles created, and both sides have some fields
       !----------------------------------------------------------
 
-      if (dbug_flag > 1) then
-        call ESMF_LogWrite("Starting to initialize active flags", ESMF_LOGMSG_INFO)
-        call ESMF_LogFlush()
-      endif
+      call ESMF_LogWrite("Starting to initialize active flags", ESMF_LOGMSG_INFO)
+      call ESMF_LogFlush()
 
       ! initialize med_coupling_active
       is_local%wrap%med_coupling_active(:,:) = .false.
@@ -1647,10 +1558,8 @@ contains
       ! Initialize connector count
       !----------------------------------------------------------
 
-      if (dbug_flag > 1) then
-        call ESMF_LogWrite("Starting to Create FBs", ESMF_LOGMSG_INFO)
-        call ESMF_LogFlush()
-      endif
+      call ESMF_LogWrite("Starting to Create FBs", ESMF_LOGMSG_INFO)
+      call ESMF_LogFlush()
 
       is_local%wrap%conn_prep_cnt(:) = 0
       is_local%wrap%conn_post_cnt(:) = 0
