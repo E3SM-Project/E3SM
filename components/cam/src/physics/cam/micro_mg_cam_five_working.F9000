@@ -1834,6 +1834,12 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    !                      = max( liquid stratus frac, ice stratus frac )'.
 
 #ifdef FIVE   
+
+   ! Syncronize FIVE variables to E3SM state
+   !  This is a crucial component to using FIVE within E3SM
+   call five_syncronize_e3sm(state_loc,dtime,p0_five_ref,pint_five,pmid_five,&
+                             t_five,u_five,v_five,q_five)
+
    ! Find top level index for FIVE
    do i = 1, ncol
      call find_level_match_index(state%pmid(i,:),pmid_five(i,:),pint_five(i,:),&
@@ -1931,13 +1937,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
            state%q(:,:,ixcldice), state%q(:,:,ixrain), state%q(:,:,ixsnow), &
            mgncol, mgcols)
    end select
-   
-#ifdef FIVE
-   ! Syncronize FIVE variables to E3SM state
-   !  This is a crucial component to using FIVE within E3SM
-   call five_syncronize_e3sm(state_loc,dtime,p0_five_ref,pint_five,pmid_five,&
-                             t_five,u_five,v_five,q_five) 
-#endif 
 
    !+PAB Microphysics "packs" input.  Meaning that it takes the input and 
    !  figures out which columns actually contain clouds to run microphysics on.  

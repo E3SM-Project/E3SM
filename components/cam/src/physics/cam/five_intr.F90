@@ -18,6 +18,11 @@ module five_intr
   !  NOTE: This must be an EVEN number, due to limitations
   !  in the tendency interpolation scheme
   integer :: five_add_nlevels = 2 
+    
+  ! Determine which layers you want to add levels to.  NOTE:
+  !  this refers to the base or reference pressure profiles
+  !  (as pressure levels can change from time step to time step
+  !  in an E3SM simulation).
   
   ! The bottom layer to which we will add layers to (set
   !   to a very large value to add all the way to surface, though
@@ -44,6 +49,8 @@ module five_intr
   real(r8) :: hyam_five(pver_five)
   real(r8) :: hybi_five(pverp_five)
   real(r8) :: hybm_five(pver_five)
+  
+  real(r8), parameter :: ps0 = 1.0e5_r8
   
   ! define physics buffer indicies here for the FIVE
   !  variables added to the PBUF
@@ -145,10 +152,11 @@ module five_intr
     !   can be written to CAM history tapes.  
     !   NOTE: that the pressure values determined here
     !   will not necessarily be the values used in the 
-    !   simulation.  This is because SCM often times specifies
-    !   a surface value.  Here we will find the hybrid points
+    !   simulation.  This is because pressure levels can 
+    !   vary from timestep to timestep based on surface pressure.
+    !   Here we will find the hybrid points
     !   and the actual pressure values will be computed in
-    !   init_five_profiles
+    !   init_five_profiles.
     
     use cam_history_support, only: add_vert_coord
     
@@ -165,14 +173,17 @@ module five_intr
     ! Local variables
     integer :: low_ind, high_ind
     integer :: kh, ki, k, i
-    real(r8) :: incr, incr2, incr3, ps0
+    real(r8) :: incr, incr2, incr3
     
     low_ind = pver
     high_ind = 1   
     
     ! Note that here we are actually adding "layers" to the
-    !   coordinate points, because these will be the same 
-    !   no matter what the reference pressure is  
+    !   hybrid coordinates.  The reason is that the 
+    !   pressure levels of E3SM can change from time step
+    !   to timestep based on the surface pressure.  
+    !   The hybrid coordinates are the only thing related to
+    !   the height profile that remains constant.    
     kh=1 ! kh is layer index on FIVE grid
     do k=1,pverp ! k is layer index on E3SM grid
 
@@ -217,7 +228,6 @@ module five_intr
     !  the reference and base pressure will be the same
     !  i.e. ps0 = 1.0e5_r8
     
-    ps0 = 1.0e5_r8
     ailev_five(:pverp_five) = ps0*(hyai_five(:pverp_five) + hybi_five(:pverp_five)) 
     
     ! Now define five_mid layers
@@ -284,7 +294,14 @@ module five_intr
     real(r8) :: pint_five(pcols,pverp_five) 
     real(r8) :: pmid_five(pcols,pver_five)
     real(r8) :: incr   
-    real(r8) :: ps0, psr
+    real(r8) :: psr
+    
+    ! Really most of this code below may not be needed
+    !   At the first time FIVE is syncronized with E3SM
+    !   the FIVE states should be naturally updated.
+    !   All FIVE variables could be initialized to zero.  
+    !   However, will keep for now.  Can experiment in the
+    !   future with removing.  
     
     ! Loop over all the physics "chunks" in E3SM
     do lchnk = begchunk,endchunk
@@ -296,9 +313,8 @@ module five_intr
       
       ! Now define five interface layers
       !  Note that here the base and reference pressures could
-      !  be different, most likely in an SCM run 
+      !  be different
       do i=1,ncol
-        ps0 = 1.0e5_r8
 	psr = pint_host(i,pverp)
 	pint_five(i,:pverp_five) = ps0*hyai_five(:pverp_five) + psr*hybi_five(:pverp_five)
       enddo
@@ -380,8 +396,8 @@ module five_intr
     type(physics_state), intent(in) :: state
     real(r8), intent(in) :: dtime
     real(r8), intent(in) :: p0 ! reference pressure
-    real(r8), intent(in) :: pmid_five(pcols,pver_five)
-    real(r8), intent(in) :: pint_five(pcols,pverp_five)
+    real(r8), intent(inout) :: pmid_five(pcols,pver_five)
+    real(r8), intent(inout) :: pint_five(pcols,pverp_five)
     real(r8), intent(inout) :: t_five(pcols,pver_five)
     real(r8), intent(inout) :: u_five(pcols,pver_five)
     real(r8), intent(inout) :: v_five(pcols,pver_five)
@@ -414,8 +430,25 @@ module five_intr
     real(r8) :: pdel_five(pcols,pver_five)
     real(r8) :: zm_five(pcols,pver_five)
     real(r8) :: zi_five(pcols,pverp_five)
+    
+    real(r8) :: psr
         
     ncol = state%ncol
+    
+    ! First update the FIVE pressure levels using
+    !   the hybrid coordinates and the host model 
+    !   surface pressure
+    do i=1,ncol
+      psr = state%pint(i,pverp)
+      pint_five(i,:pverp_five) = ps0*hyai_five(:pverp_five) + psr*hybi_five(:pverp_five)
+    enddo
+      
+    ! Now define five_mid layers
+    do i=1,ncol
+      do k=1,pver_five
+        pmid_five(i,k) = (pint_five(i,k)+pint_five(i,k+1))/2.0_r8
+      enddo
+    enddo 
   
     ! Compute pressure differences on FIVE grid  
     do k=1,pver_five
