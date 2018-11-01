@@ -1018,10 +1018,10 @@ contains
              avgflag='A', long_name='C13 total wood product C', &
              ptr_col=this%totprodc_col)
 
-       this%seedc_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C13_SEEDC', units='gC13/m^2', &
-            avgflag='A', long_name='C13 pool for seeding new PFTs via dynamic landcover', &
-            ptr_gcell=this%seedc_grc)
+!       this%seedc_grc(begg:endg) = spval
+!       call hist_addfld1d (fname='C13_SEEDC', units='gC13/m^2', &
+!            avgflag='A', long_name='C13 pool for seeding new PFTs via dynamic landcover', &
+!            ptr_gcell=this%seedc_grc)
 
        if (use_crop) then
           this%grainc_patch(begp:endp) = spval
