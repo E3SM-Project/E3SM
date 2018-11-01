@@ -2501,8 +2501,8 @@
     </gridmap>
 
     <gridmap ocn_grid="oRRS30to10v3wLI" rof_grid="rx1">
-      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_rx1_to_oRRS30to10v3wLI-masked_smoothed.r150e300.171116.nc</map>
-      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_rx1_to_oRRS30to10v3wLI-masked_smoothed.r150e300.171116.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_rx1_to_oRRS30to10v3wLI-masked_smoothed.r150e300.180611.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_rx1_to_oRRS30to10v3wLI-masked_smoothed.r150e300.180611.nc</map>
     </gridmap>
 
     <gridmap ocn_grid="oRRS18to6" rof_grid="rx1">
