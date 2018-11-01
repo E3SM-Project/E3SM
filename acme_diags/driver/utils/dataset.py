@@ -256,6 +256,16 @@ class Dataset():
             msg += ' don\'t fit within the year ranges for the file ({}, {}).'.format(start_yr_file, end_yr_file)
             raise RuntimeError(msg)
 
+        if start_yr < start_yr_file:
+            msg = 'The inputted start year ({}) is less'.format(start_yr)
+            msg += ' than that of the file ({}).'.format(start_yr_file)
+            raise RuntimeError(msg)
+
+        if end_yr > end_yr_file:
+            msg = 'The inputted end year ({}) is greater'.format(end_yr)
+            msg += ' than that of the file ({}).'.format(end_yr_file)
+            raise RuntimeError(msg)
+
         # Calculate the offset, which is needed for when *_yr >= *_yr_file.
         # TODO: What do we do when *_yr < *_yr_file?
         # CDMS will probably just throw an error.
@@ -566,6 +576,6 @@ class Dataset():
         start_time_idx, end_time_idx = self._get_start_and_end_time_indices(var)
         path = self._get_timeseries_file_path(var, data_path)
         var = var_to_get if var_to_get else var
-        
+
         with cdms2.open(path) as f:
             return f(var, time=slice(start_time_idx, end_time_idx))(squeeze=1)
