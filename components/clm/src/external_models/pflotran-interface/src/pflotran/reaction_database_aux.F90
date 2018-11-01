@@ -70,7 +70,8 @@ function DatabaseRxnCreateFromRxnString(reaction_string, &
   ! Author: Glenn Hammond
   ! Date: 10/30/12
   ! 
-
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
   use String_module
   use Input_Aux_module
@@ -115,11 +116,12 @@ function DatabaseRxnCreateFromRxnString(reaction_string, &
     select case(word)
       case('+')
       case('-')
-      case('=','<=>','<->')
+      case('=','<=>','<->','->','=>')
       case default
       ! try reading as double precision
       string2 = word
-      if (.not.StringStartsWithAlpha(string2)) then
+      if (.not.StringStartsWithAlpha(string2) .and. &
+          StringIntegerDoubleOrWord(string2) /= STRING_IS_A_WORD) then
         ! the word is the stoichiometry value
       else
         ! check water
@@ -166,12 +168,13 @@ function DatabaseRxnCreateFromRxnString(reaction_string, &
         else
           negative_flag = PETSC_TRUE
         endif
-      case('=','<=>','<->')
+      case('=','<=>','<->','->','=>')
         midpoint = icount
       case default
         ! try reading as double precision
         string2 = word
-        if (.not.StringStartsWithAlpha(string2)) then
+        if (.not.StringStartsWithAlpha(string2) .and. &
+            StringIntegerDoubleOrWord(string2) /= STRING_IS_A_WORD) then
           ! negate if a product
           call InputReadDouble(string2,option,value,ierr)
           if (ierr /= 0) then
@@ -287,6 +290,8 @@ subroutine BasisAlignSpeciesInRxn(num_basis_species,basis_names, &
   ! Date: 10/07/08
   ! 
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
   use String_module
   
@@ -362,6 +367,8 @@ subroutine BasisSubSpeciesInGasOrSecRxn(name1,dbaserxn1,dbaserxn2,scale)
   ! Date: 10/06/08
   ! 
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use String_module
 
   implicit none
@@ -458,7 +465,8 @@ subroutine BasisSubSpeciesInMineralRxn(name,sec_dbaserxn,mnrl_dbaserxn,scale)
   ! Author: Glenn Hammond
   ! Date: 10/06/08
   ! 
-
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use String_module
   
   implicit none
@@ -556,7 +564,8 @@ function DatabaseCheckLegitimateLogKs(dbaserxn,species_name,temperatures, &
   ! Author: Glenn Hammond
   ! Date: 01/07/13
   ! 
-
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
   
   implicit none

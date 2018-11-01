@@ -2,16 +2,12 @@ module Reaction_Aux_module
   
   use Reaction_Database_Aux_module
   use Reaction_Mineral_Aux_module
-  use Reaction_Microbial_Aux_module
   use Reaction_Immobile_Aux_module
-  use Reaction_Surface_Complexation_Aux_module
   use Reaction_Gas_Aux_module
   
-#ifdef SOLID_SOLUTION  
-  use Reaction_Solid_Soln_Aux_module
-#endif
-
   use PFLOTRAN_Constants_module
+  use Generic_module
+  use petscsys
 
   implicit none
   
@@ -180,6 +176,8 @@ module Reaction_Aux_module
     type(radioactive_decay_rxn_type), pointer :: radioactive_decay_rxn_list
     type(kd_rxn_type), pointer :: kd_rxn_list
     type(aq_species_type), pointer :: redox_species_list
+    type(generic_parameter_type), pointer :: aq_diffusion_coefficients
+    type(generic_parameter_type), pointer :: gas_diffusion_coefficients
     PetscInt :: act_coef_update_frequency
     PetscInt :: act_coef_update_algorithm
     PetscBool :: checkpoint_activity_coefs
@@ -189,19 +187,16 @@ module Reaction_Aux_module
     PetscBool :: calculate_tracer_age
     
     ! new reaction objects
-    type(surface_complexation_type), pointer :: surface_complexation
     type(mineral_type), pointer :: mineral
-    type(microbial_type), pointer :: microbial
     type(immobile_type), pointer :: immobile
     type(gas_type), pointer :: gas
     
     ! secondary continuum reaction objects
     type(kd_rxn_type), pointer :: sec_cont_kd_rxn_list
     
-#ifdef SOLID_SOLUTION    
-    type(solid_solution_type), pointer :: solid_solution_list
-#endif    
-    
+    ! phases
+    PetscInt :: nphase
+
     ! compressed arrays for efficient computation
     ! primary aqueous complexes
     PetscInt :: ncomp
@@ -386,6 +381,7 @@ module Reaction_Aux_module
             ColloidConstraintDestroy, &
             IonExchangeRxnCreate, &
             IonExchangeCationCreate, &
+            ReactionInputRecord, &
             ReactionDestroy, &
             LogKeh
              
@@ -400,7 +396,6 @@ function ReactionCreate()
   ! Author: Glenn Hammond
   ! Date: 05/02/08
   ! 
-
   implicit none
   
   type(reaction_type), pointer :: ReactionCreate
@@ -458,18 +453,16 @@ function ReactionCreate()
   nullify(reaction%general_rxn_list)
   nullify(reaction%kd_rxn_list)
   nullify(reaction%redox_species_list)
+  nullify(reaction%aq_diffusion_coefficients)
+  nullify(reaction%gas_diffusion_coefficients)
   
   nullify(reaction%sec_cont_kd_rxn_list)
   
   ! new reaction objects
-  reaction%surface_complexation => SurfaceComplexationCreate()
   reaction%mineral => MineralCreate()
-  reaction%microbial => MicrobialCreate()
+
   reaction%immobile => ImmobileCreate()
   reaction%gas => GasCreate()
-#ifdef SOLID_SOLUTION  
-  nullify(reaction%solid_solution_list)
-#endif
   
   nullify(reaction%primary_species_names)
   nullify(reaction%secondary_species_names)
@@ -628,7 +621,6 @@ function AqueousSpeciesCreate()
   ! Author: Glenn Hammond
   ! Date: 05/02/08
   ! 
-
   implicit none
   
   type(aq_species_type), pointer :: AqueousSpeciesCreate
@@ -659,7 +651,6 @@ function ColloidCreate()
   ! Author: Glenn Hammond
   ! Date: 02/24/10
   ! 
-
   implicit none
   
   type(colloid_type), pointer :: ColloidCreate
@@ -745,7 +736,6 @@ function RadioactiveDecayRxnCreate()
   ! Author: Glenn Hammond
   ! Date: 01/07/14
   ! 
-
   implicit none
     
   type(radioactive_decay_rxn_type), pointer :: RadioactiveDecayRxnCreate
@@ -774,7 +764,6 @@ function GeneralRxnCreate()
   ! Author: Glenn Hammond
   ! Date: 09/03/10
   ! 
-
   implicit none
     
   type(general_rxn_type), pointer :: GeneralRxnCreate
@@ -834,7 +823,6 @@ function AqueousSpeciesConstraintCreate(reaction,option)
   ! Author: Glenn Hammond
   ! Date: 10/14/08
   ! 
-
   use Option_module
   
   implicit none
@@ -1003,7 +991,6 @@ function GetPrimarySpeciesIDFromName1(name,reaction,option)
   ! Author: Glenn Hammond
   ! Date: 10/30/12
   ! 
-
   use Option_module
   use String_module
   
@@ -1596,6 +1583,172 @@ end function logkeh
 
 ! ************************************************************************** !
 
+subroutine ReactionInputRecord(rxn)
+  ! 
+  ! Prints ingested chemistry and reactive transport information to the input 
+  ! record file.
+  ! 
+  ! Author: Jenn Frederick
+  ! Date: 04/12/2016
+  ! 
+  use Reaction_Immobile_Aux_module
+
+  implicit none
+
+  type(reaction_type), pointer :: rxn
+  
+  type(aq_species_type), pointer :: cur_aq_species
+  type(gas_species_type), pointer :: cur_gas_species
+  type(immobile_species_type), pointer :: cur_imm_species
+  type(radioactive_decay_rxn_type), pointer :: cur_rad_decay_rxn
+  type(kd_rxn_type), pointer :: cur_kd_rxn
+  character(len=MAXWORDLENGTH) :: word1, word2
+  character(len=MAXSTRINGLENGTH) :: string
+  PetscInt :: id = INPUT_RECORD_UNIT
+
+  write(id,'(a)') ' '
+  write(id,'(a)') '---------------------------------------------------------&
+       &-----------------------'
+  write(id,'(a29)',advance='no') '---------------------------: '
+  write(id,'(a)') 'CHEMISTRY'
+  
+  if (.not.associated(rxn)) return
+  
+! --------- primary species list ---------------------------------------------
+  if (associated(rxn%primary_species_list)) then
+    write(id,'(a29)',advance='no') 'primary species list: '
+    cur_aq_species => rxn%primary_species_list
+    write(id,'(a)') trim(cur_aq_species%name)
+    cur_aq_species => cur_aq_species%next
+    do
+      if (.not.associated(cur_aq_species)) exit
+      write(id,'(a29)',advance='no') ' '
+      write(id,'(a)') trim(cur_aq_species%name)
+      cur_aq_species => cur_aq_species%next
+    enddo
+    write(id,'(a29)') '---------------------------: '
+  endif
+! --------- secondary species list -------------------------------------------
+  if (associated(rxn%secondary_species_list)) then
+    write(id,'(a29)',advance='no') 'secondary species list: '
+    cur_aq_species => rxn%secondary_species_list
+    write(id,'(a)') trim(cur_aq_species%name)
+    cur_aq_species => cur_aq_species%next
+    do
+      if (.not.associated(cur_aq_species)) exit
+      write(id,'(a29)',advance='no') ' '
+      write(id,'(a)') trim(cur_aq_species%name)
+      cur_aq_species => cur_aq_species%next
+    enddo
+    write(id,'(a29)') '---------------------------: '
+  endif
+! --------- active gas species list ------------------------------------------
+  if (associated(rxn%gas%list)) then
+    write(id,'(a29)',advance='no') 'active gas species list: '
+    cur_gas_species => rxn%gas%list
+    write(id,'(a)') trim(cur_gas_species%name)
+    cur_gas_species => cur_gas_species%next
+    do
+      if (.not.associated(cur_gas_species)) exit
+      if (cur_gas_species%itype == ACTIVE_GAS .or. &
+          cur_gas_species%itype == ACTIVE_AND_PASSIVE_GAS) then
+        write(id,'(a29)',advance='no') ' '
+        write(id,'(a)') trim(cur_gas_species%name)
+      endif
+      cur_gas_species => cur_gas_species%next
+    enddo
+    write(id,'(a29)') '---------------------------: '
+  endif
+! --------- passive gas species list -----------------------------------------
+  if (associated(rxn%gas%list)) then
+    write(id,'(a29)',advance='no') 'passive gas species list: '
+    cur_gas_species => rxn%gas%list
+    write(id,'(a)') trim(cur_gas_species%name)
+    cur_gas_species => cur_gas_species%next
+    do
+      if (.not.associated(cur_gas_species)) exit
+      if (cur_gas_species%itype == PASSIVE_GAS .or. &
+          cur_gas_species%itype == ACTIVE_AND_PASSIVE_GAS) then
+        write(id,'(a29)',advance='no') ' '
+        write(id,'(a)') trim(cur_gas_species%name)
+      endif
+      cur_gas_species => cur_gas_species%next
+    enddo
+    write(id,'(a29)') '---------------------------: '
+  endif
+! --------- immobile species list --------------------------------------------
+  if (associated(rxn%immobile%list)) then
+    write(id,'(a29)',advance='no') 'immobile species list: '
+    cur_imm_species => rxn%immobile%list
+    write(id,'(a)') trim(cur_imm_species%name)
+    cur_imm_species => cur_imm_species%next
+    do
+      if (.not.associated(cur_imm_species)) exit
+      write(id,'(a29)',advance='no') ' '
+      write(id,'(a)') trim(cur_imm_species%name)
+      cur_imm_species => cur_imm_species%next
+    enddo
+    write(id,'(a29)') '---------------------------: '
+  endif
+  
+! --------- radioactive decay reaction list ----------------------------------
+  if (associated(rxn%radioactive_decay_rxn_list)) then
+    cur_rad_decay_rxn => rxn%radioactive_decay_rxn_list
+    do
+      if (.not.associated(cur_rad_decay_rxn)) exit
+      write(id,'(a29)',advance='no') 'radioactive decay reaction: '
+      write(id,'(a)') adjustl(trim(cur_rad_decay_rxn%reaction))  
+      write(id,'(a29)',advance='no') 'decay rate: '
+      write(word1,*) cur_rad_decay_rxn%rate_constant
+      write(id,'(a)') adjustl(trim(word1)) // ' 1/sec'
+      
+      write(id,'(a29)') '---------------------------: '
+      cur_rad_decay_rxn => cur_rad_decay_rxn%next
+    enddo
+  endif
+  
+! --------- sorption isotherm reaction list ----------------------------------
+  if (associated(rxn%kd_rxn_list)) then
+    cur_kd_rxn => rxn%kd_rxn_list
+    do
+      if (.not.associated(cur_kd_rxn)) exit
+      write(id,'(a29)',advance='no') 'sorption, isotherm reaction: '
+      write(id,'(a)') adjustl(trim(cur_kd_rxn%species_name))  
+      write(id,'(a29)',advance='no') 'type: '
+      select case (cur_kd_rxn%itype)
+        case (SORPTION_LINEAR)
+          write(id,'(a)') 'linear sorption'
+        case (SORPTION_LANGMUIR)
+          write(id,'(a)') 'langmuir sorption'
+          write(id,'(a29)',advance='no') 'langmuir b: '
+          write(word1,*) cur_kd_rxn%Langmuir_B
+          write(id,'(a)') adjustl(trim(word1)) 
+        case (SORPTION_FREUNDLICH)
+          write(id,'(a)') 'freundlich sorption'
+          write(id,'(a29)',advance='no') 'freundlich n: '
+          write(word1,*) cur_kd_rxn%Freundlich_N
+          write(id,'(a)') adjustl(trim(word1))
+      end select
+      if (len_trim(cur_kd_rxn%kd_mineral_name) > 0) then
+        write(id,'(a29)',advance='no') 'Kd mineral name: '
+        write(id,'(a)') adjustl(trim(cur_kd_rxn%kd_mineral_name))
+        word2 = ' L/kg'
+      else
+        word2 = ' kg/m^3'
+      endif
+      write(id,'(a29)',advance='no') 'distribution coeff. / Kd: '
+      write(word1,*) cur_kd_rxn%Kd
+      write(id,'(a)') adjustl(trim(word1)) // adjustl(trim(word2))
+      
+      write(id,'(a29)') '---------------------------: '
+      cur_kd_rxn => cur_kd_rxn%next
+    enddo
+  endif
+  
+end subroutine ReactionInputRecord
+
+! ************************************************************************** !
+
 subroutine SpeciesIndexDestroy(species_idx)
   ! 
   ! Deallocates a species index object
@@ -1643,6 +1796,7 @@ subroutine AqueousSpeciesListDestroy(aq_species_list)
   ! Date: 09/03/10
   ! 
 
+  !TODO(geh): make these destructors recursive
   implicit none
     
   type(aq_species_type), pointer :: aq_species_list  
@@ -1896,8 +2050,8 @@ subroutine ReactionDestroy(reaction,option)
   type(mineral_rxn_type), pointer :: mineral, prev_mineral
   type(colloid_type), pointer :: colloid, prev_colloid
   type(ion_exchange_rxn_type), pointer :: ionxrxn, prev_ionxrxn
-  type(surface_complexation_rxn_type), pointer :: srfcplxrxn, prev_srfcplxrxn
   type(general_rxn_type), pointer :: general_rxn, prev_general_rxn
+
   type(radioactive_decay_rxn_type), pointer :: radioactive_decay_rxn, &
                                                prev_radioactive_decay_rxn
   type(kd_rxn_type), pointer :: kd_rxn, prev_kd_rxn
@@ -1980,14 +2134,9 @@ subroutine ReactionDestroy(reaction,option)
     nullify(reaction%sec_cont_kd_rxn_list)
   endif
 
-  call SurfaceComplexationDestroy(reaction%surface_complexation)
   call MineralDestroy(reaction%mineral)
-  call MicrobialDestroy(reaction%microbial)
   call ImmobileDestroy(reaction%immobile)
   call GasDestroy(reaction%gas)
-#ifdef SOLID_SOLUTION  
-  call SolidSolutionDestroy(reaction%solid_solution_list)
-#endif  
 
   if (associated(reaction%dbase_temperatures)) &
     deallocate(reaction%dbase_temperatures)
@@ -1997,6 +2146,9 @@ subroutine ReactionDestroy(reaction,option)
   if (associated(reaction%redox_species_list)) &
     call AqueousSpeciesListDestroy(reaction%redox_species_list)
   nullify(reaction%redox_species_list)
+
+  call GenericParameterDestroy(reaction%aq_diffusion_coefficients)
+  call GenericParameterDestroy(reaction%gas_diffusion_coefficients)
   
   call DeallocateArray(reaction%primary_species_names)
   call DeallocateArray(reaction%secondary_species_names)

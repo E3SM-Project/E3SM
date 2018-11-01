@@ -1,5 +1,6 @@
 module Communicator_Structured_class
-
+#include "petsc/finclude/petscdmda.h"
+  use petscdmda
   use Communicator_Base_module
   use Grid_Structured_module  
   
@@ -8,16 +9,6 @@ module Communicator_Structured_class
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
-  
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
-#include "petsc/finclude/petscdm.h"
-#include "petsc/finclude/petscdm.h90"
-#include "petsc/finclude/petscdmda.h"
 
   type, public, extends(communicator_type) :: structured_communicator_type
     DM :: dm
@@ -57,7 +48,7 @@ function StructuredCommunicatorCreate()
   class(structured_communicator_type), pointer :: communicator
   
   allocate(communicator)
-  communicator%dm = 0
+  communicator%dm = PETSC_NULL_DM
 
   StructuredCommunicatorCreate => communicator  
   
@@ -251,12 +242,12 @@ subroutine StructuredCommunicatorDestroy(this)
   
   PetscErrorCode :: ierr
   
-  if (this%dm /= 0) then
+  if (this%dm /= PETSC_NULL_DM) then
     !geh: all DMs are currently destroyed in realization.  This DM is solely
     !     a pointer.  This will need to change, but skip for now.
     !call DMDestroy(this%dm,ierr)
   endif
-  this%dm = 0
+  this%dm = PETSC_NULL_DM
   
 end subroutine StructuredCommunicatorDestroy
 

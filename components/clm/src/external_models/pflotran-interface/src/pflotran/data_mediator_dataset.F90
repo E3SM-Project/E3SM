@@ -1,5 +1,6 @@
 module Data_Mediator_Dataset_class
- 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use PFLOTRAN_Constants_module
   use Data_Mediator_Base_class
   use Dataset_Global_HDF5_class
@@ -8,10 +9,6 @@ module Data_Mediator_Dataset_class
 
   private
 
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
- 
   type, public, extends(data_mediator_base_type) :: data_mediator_dataset_type
     PetscInt :: idof
     class(dataset_global_hdf5_type), pointer :: dataset
@@ -112,7 +109,8 @@ subroutine DataMediatorDatasetInit(data_mediator, discretization, &
   ! Author: Glenn Hammond
   ! Date: 05/09/13
   ! 
-
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Discretization_module
   use Dataset_Base_class
   use Dataset_Common_HDF5_class
@@ -120,9 +118,6 @@ subroutine DataMediatorDatasetInit(data_mediator, discretization, &
   use String_module
 
   implicit none
-  
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"  
   
   class(data_mediator_dataset_type) :: data_mediator
   type(discretization_type) :: discretization
@@ -196,13 +191,12 @@ recursive subroutine DataMediatorDatasetUpdate(this,data_mediator_vec,option)
   ! Author: Glenn Hammond
   ! Date: 05/01/13
   ! 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Option_module
   use String_module
   
   implicit none
-  
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"  
   
   class(data_mediator_dataset_type) :: this
   Vec :: data_mediator_vec

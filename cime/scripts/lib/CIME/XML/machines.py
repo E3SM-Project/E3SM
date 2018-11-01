@@ -4,7 +4,7 @@ Interface to the config_machines.xml file.  This class inherits from GenericXML.
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.files import Files
-from CIME.utils import convert_to_unknown_type
+from CIME.utils import convert_to_unknown_type, get_cime_config
 
 import socket
 
@@ -46,7 +46,11 @@ class Machines(GenericXML):
             if "CIME_MACHINE" in os.environ:
                 machine = os.environ["CIME_MACHINE"]
             else:
-                machine = self.probe_machine_name()
+                cime_config = get_cime_config()
+                if cime_config.has_option("main", "machine"):
+                    machine = cime_config.get("main", "machine")
+                if machine is None:
+                    machine = self.probe_machine_name()
 
         expect(machine is not None, "Could not initialize machine object from {} or {}".format(infile, local_infile))
         self.set_machine(machine)
@@ -229,7 +233,13 @@ class Machines(GenericXML):
         """
         Get the compiler to use from the list of COMPILERS
         """
-        return self.get_field_from_list("COMPILERS")
+        cime_config = get_cime_config()
+        if cime_config.has_option('main','COMPILER'):
+            value = cime_config.get('main', 'COMPILER')
+            expect(self.is_valid_compiler(value), "User-selected compiler {} is not supported on machine {}".format(value, self.machine))
+        else:
+            value = self.get_field_from_list("COMPILERS")
+        return value
 
     def get_default_MPIlib(self, attributes=None):
         """

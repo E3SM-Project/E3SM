@@ -235,13 +235,12 @@ subroutine SurfaceGlobalSetAuxVarVecLoc(surf_realization,vec_loc,ivar,isubvar)
   ! Date: 03/07/13
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Realization_Surface_class
   use Patch_module
 
   implicit none
-  
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"  
 
   class(realization_surface_type) :: surf_realization
   Vec :: vec_loc
@@ -270,6 +269,8 @@ subroutine SurfaceGlobalSetAuxVarVecLocPatch(surf_realization,vec_loc,ivar,isubv
   ! Date: 03/07/13
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Realization_Surface_class
   use Patch_module
   use Grid_module
@@ -279,9 +280,6 @@ subroutine SurfaceGlobalSetAuxVarVecLocPatch(surf_realization,vec_loc,ivar,isubv
                                SURFACE_LIQUID_DENSITY
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   class(realization_surface_type) :: surf_realization
   Vec :: vec_loc

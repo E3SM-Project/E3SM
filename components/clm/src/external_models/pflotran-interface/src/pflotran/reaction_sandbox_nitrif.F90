@@ -1,7 +1,9 @@
 module Reaction_Sandbox_Nitrif_class
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+
   use Reaction_Sandbox_Base_class
-  
   use Global_Aux_module
   use Reactive_Transport_Aux_module
   use PFLOTRAN_Constants_module
@@ -11,9 +13,7 @@ module Reaction_Sandbox_Nitrif_class
   
   private
   
-#include "petsc/finclude/petscsys.h"
-
-  PetscInt, parameter :: TEMPERATURE_RESPONSE_FUNCTION_CLM4 = 1 
+  PetscInt, parameter :: TEMPERATURE_RESPONSE_FUNCTION_CLMCN = 1
   PetscInt, parameter :: TEMPERATURE_RESPONSE_FUNCTION_Q10 = 2 
 
   type, public, &
@@ -66,7 +66,7 @@ function NitrifCreate()
   NitrifCreate%k_nitr_max = 1.d-6               ! 1/s
   NitrifCreate%k_nitr_n2o = 3.5d-8              ! 1/s
   NitrifCreate%half_saturation = 1.0d-10
-  NitrifCreate%temperature_response_function = TEMPERATURE_RESPONSE_FUNCTION_CLM4
+  NitrifCreate%temperature_response_function = TEMPERATURE_RESPONSE_FUNCTION_CLMCN
   NitrifCreate%Q10 = 1.5d0
   NitrifCreate%x0eps = 1.0d-20
   nullify(NitrifCreate%next)
@@ -117,8 +117,8 @@ subroutine NitrifRead(this,input,option)
           call StringToUpper(word)   
 
           select case(trim(word))
-            case('CLM4')
-              this%temperature_response_function = TEMPERATURE_RESPONSE_FUNCTION_CLM4    
+            case('CLMCN')
+              this%temperature_response_function = TEMPERATURE_RESPONSE_FUNCTION_CLMCN
             case('Q10')
               this%temperature_response_function = TEMPERATURE_RESPONSE_FUNCTION_Q10    
               call InputReadDouble(input,option,this%Q10)  
@@ -126,7 +126,7 @@ subroutine NitrifRead(this,input,option)
                 'CHEMISTRY,REACTION_SANDBOX_NITRIFICATION,TEMPERATURE RESPONSE FUNCTION')
             case default
               option%io_buffer = 'CHEMISTRY,REACTION_SANDBOX,NITRIFICATION,TEMPERATURE RESPONSE FUNCTION keyword: ' // &
-                trim(word) // ' not recognized.'
+                trim(word) // ' not recognized - Valid keyword: "CLMCN","Q10"'
               call printErrMsg(option)
           end select
         enddo 
@@ -245,14 +245,13 @@ subroutine NitrifReact(this,Residual,Jacobian,compute_derivative, &
   use CLM_RspFuncs_module
 
 #ifdef CLM_PFLOTRAN
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use clm_pflotran_interface_data
 #endif
   
   implicit none
 
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-  
   class(reaction_sandbox_nitrif_type) :: this
   type(option_type) :: option
   type(reaction_type) :: reaction
@@ -276,7 +275,6 @@ subroutine NitrifReact(this,Residual,Jacobian,compute_derivative, &
   PetscInt :: ires_nh4s, ires_nh4, ires_no3, ires_n2o, ires
   PetscInt :: ires_ngasnit
 
-  PetscScalar, pointer :: bulkdensity(:)
   PetscReal :: c_nh4      ! mole/L
   PetscReal :: s_nh4      ! mole/m3
   PetscReal :: c_nh4_ugg  ! ug ammonium N / g soil
@@ -288,6 +286,10 @@ subroutine NitrifReact(this,Residual,Jacobian,compute_derivative, &
   PetscReal :: theta      ! m3/m3 bulk
   PetscReal :: L_water    ! L(kg)/m3 bulk
   PetscReal :: temp_real, feps0, dfeps0_dx
+
+#ifdef CLM_PFLOTRAN
+  PetscScalar, pointer :: bulkdensity(:)
+#endif
 
 !---------------------------------------------------------------------------------
 

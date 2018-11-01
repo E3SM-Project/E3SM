@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Jenkins runs this script to perform a test of an e3sm 
+Jenkins runs this script to perform a test of an e3sm
 test suite. Essentially, a wrapper around create_test and
 wait_for_tests that handles cleanup of old test results and
 ensures that the batch system is left in a clean state.
@@ -41,6 +41,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     CIME.utils.setup_standard_logging_options(parser)
 
+    default_baseline = CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root())
+    default_baseline = default_baseline.replace(".", "_").replace("/", "_") # Dots or slashes will mess things up
+
     parser.add_argument("-g", "--generate-baselines", action="store_true",
                         help="Generate baselines")
 
@@ -59,7 +62,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-p", "--cdash-project", default=CIME.wait_for_tests.E3SM_MAIN_CDASH,
                         help="The name of the CDash project where results should be uploaded")
 
-    parser.add_argument("-b", "--baseline-name", default=CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root()),
+    parser.add_argument("-b", "--baseline-name", default=default_baseline,
                         help="Baseline name for baselines to use. Also impacts dashboard job name. Useful for testing a branch other than next or master")
 
     parser.add_argument("-O", "--override-baseline-name",

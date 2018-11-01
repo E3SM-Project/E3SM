@@ -611,9 +611,9 @@ contains
 
     type(trfile),        intent(inout) :: file
     type(trfld),         intent(inout) :: flds(:)
-    type(physics_state), intent(in)    :: state(begchunk:endchunk)
+    type(physics_state), optional, intent(in)    :: state(begchunk:endchunk)
     
-    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    type(physics_buffer_desc), optional, pointer :: pbuf2d(:,:)
     integer :: ncol
     real(r8) :: data_time
     real(r8) :: t(pcols,pver)          ! input temperature (K)
@@ -639,7 +639,11 @@ contains
     ! Should not impact other runs?
        if ( file%curr_mod_time >= data_time ) then
           call t_startf('read_next_trcdata')
-          call read_next_trcdata(state, flds, file )
+          if(present(state)) then
+             call read_next_trcdata(flds, file, state )
+          else
+             call read_next_trcdata(flds, file)
+          endif
           call t_stopf('read_next_trcdata')
           if(masterproc) write(iulog,*) 'READ_NEXT_TRCDATA ', flds%fldnam
        end if
@@ -649,7 +653,11 @@ contains
     ! need to interpolate the data, regardless
     ! each mpi task needs to interpolate
     call t_startf('interpolate_trcdata')
-    call interpolate_trcdata( state, flds, file, pbuf2d )
+    if(present(state)) then
+       call interpolate_trcdata(flds, file, state, pbuf2d )
+    else
+       call interpolate_trcdata(flds, file)
+    endif
     call t_stopf('interpolate_trcdata')
 
     file%initialized = .true.
@@ -1100,7 +1108,7 @@ contains
 
 !------------------------------------------------------------------------
 !------------------------------------------------------------------------
-  subroutine read_next_trcdata(state, flds, file )
+  subroutine read_next_trcdata(flds, file, state )
     
     use shr_const_mod, only:pi => shr_const_pi
     use physics_types,only : physics_state
@@ -1114,7 +1122,7 @@ contains
 
     type (trfile), intent(inout) :: file
     type (trfld),intent(inout) :: flds(:)
-    type(physics_state), intent(in)    :: state(begchunk:endchunk)
+    type(physics_state), optional, intent(in)    :: state(begchunk:endchunk)
     
     integer :: recnos(4),i,f,nflds      ! 
     integer :: cnt4(4)            ! array of counts for each dimension
@@ -1160,7 +1168,10 @@ contains
                       scm_dgnum(n)**3)*exp(4.5_r8*(log(scm_std(n))**2) )) 
         enddo
       enddo
-      
+      if(.not. present(state)) then
+         call endrun ('tracer_data.F90(subr read_next_trcdata):' // &
+              'computing rho - STATE must be passed as an argument if single_column and scm_observed_aero are TRUE')
+      endif
       do k = 1, pver
         do ii = 1, state(begchunk)%ncol
           rho(ii,k) = state(begchunk)%pmid(ii,k)/(rair*state(begchunk)%t(ii,k))
@@ -1285,6 +1296,11 @@ contains
              ! data read from the forcing file.  
              !
              if(single_column .and. scm_observed_aero) then
+                if(.not. present(state)) then
+                   call endrun ('tracer_data.F90(subr read_next_trcdata):' // &
+                        'call replace_aero_data - STATE must be passed as an '  // & 
+                        'argument if single_column and scm_observed_aero are TRUE' )
+                endif
                 kk=index(trim(flds(f)%fldnam),'_')-1
                 if(index(trim(flds(f)%fldnam),'1') > 0 .and.index(trim(flds(f)%fldnam),'log') < 1) then
                      if(flds(f)%fldnam(1:kk).eq.arnam(1).and.index(trim(flds(f)%fldnam),'log') < 1) then
@@ -1705,19 +1721,20 @@ contains
 
 !------------------------------------------------------------------------------
 
-  subroutine interpolate_trcdata( state, flds, file, pbuf2d )
+  subroutine interpolate_trcdata( flds, file, state, pbuf2d )
     use mo_util,      only : rebin
     use physics_types,only : physics_state
     use physconst,    only : cday
     use physics_buffer, only : physics_buffer_desc, pbuf_get_field
+    use phys_grid,      only : get_ncols_p
 
     implicit none
 
-    type(physics_state), intent(in) :: state(begchunk:endchunk)                 
+    type(physics_state), optional, intent(in) :: state(begchunk:endchunk)                 
     type (trfld),        intent(inout) :: flds(:)
     type (trfile),       intent(inout) :: file
     
-    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    type(physics_buffer_desc), optional, pointer :: pbuf2d(:,:)
 
 
     real(r8) :: fact1, fact2
@@ -1740,7 +1757,7 @@ contains
        fact2 = 1._r8-fact1
 !$OMP PARALLEL DO PRIVATE (C, NCOL, F)
        do c = begchunk,endchunk
-          ncol = state(c)%ncol
+          ncol = get_ncols_p(c)
           if ( file%has_ps ) then
              file%ps_in(1)%data(:ncol,c) = fact1*file%ps_in(1)%data(:ncol,c) + fact2*file%ps_in(3)%data(:ncol,c) 
           endif
@@ -1755,7 +1772,7 @@ contains
 
 !$OMP PARALLEL DO PRIVATE (C, NCOL, F)
        do c = begchunk,endchunk
-          ncol = state(c)%ncol
+          ncol = get_ncols_p(c)
           if ( file%has_ps ) then
              file%ps_in(2)%data(:ncol,c) = fact1*file%ps_in(2)%data(:ncol,c) + fact2*file%ps_in(4)%data(:ncol,c) 
           endif
@@ -1807,11 +1824,15 @@ contains
 !$OMP PARALLEL DO PRIVATE (C, NCOL, PS, I, K, PIN, DATAIN, MODEL_Z, DATA_OUT)
        do c = begchunk,endchunk
           if (flds(f)%pbuf_ndx>0) then
+             if(.not.present(pbuf2d)) then                
+                call endrun ('tracer_data.F90(subr interpolate_trcdata):' // &
+                     'pbuf2d must be passed as an argument for pbuf_get_field subr call')
+             endif
              call pbuf_get_field(pbuf2d, c, flds(f)%pbuf_ndx, data_out)
           else
              data_out => data_out3d(:,:,c+chnk_offset)
           endif
-          ncol = state(c)%ncol
+          ncol = get_ncols_p(c)
           if (file%alt_data) then
 
              if (fact2 == 0) then  ! This needed as %data is not set if fact2=0 (and lahey compiler core dumps)
@@ -1819,6 +1840,10 @@ contains
              else
                 datain(:ncol,:) = fact1*flds(f)%input(nm)%data(:ncol,:,c) + fact2*flds(f)%input(np)%data(:ncol,:,c) 
              end if
+             if(.not. present(state)) then
+                call endrun ('tracer_data.F90(subr interpolate_trcdata):' // &
+                     'STATE must be passed as an argument for rebin subr call' )                
+             endif
              do i = 1,ncol
                 model_z(1:pverp) = m2km * state(c)%zi(i,pverp:1:-1)
                 call rebin( file%nlev, pver, file%ilevs, model_z, datain(i,:), data_out(i,:) )
@@ -1864,10 +1889,18 @@ contains
                 if ( file%top_bndry ) then
                    call vert_interp_ub(ncol, file%nlev, file%levs,  datain(:ncol,:), data_out(:ncol,:) )
                 else if(file%conserve_column) then
+                   if(.not. present(state)) then
+                      call endrun ('tracer_data.F90(subr interpolate_trcdata):' // & 
+                           'STATE must be passed as an argument for vert_interp_mixrat' )
+                   endif
                    call vert_interp_mixrat(ncol,file%nlev,pver,state(c)%pint, &
                         datain, data_out(:,:), &
                         file%p0,ps,file%hyai,file%hybi)
                 else
+                   if(.not. present(state)) then
+                      call endrun ('tracer_data.F90(subr interpolate_trcdata):' // &
+                           'STATE must be passed as an argument for vert_interp' )
+                   endif
                    call vert_interp(ncol, file%nlev, pin, state(c)%pmid, datain, data_out(:,:) )
                 endif
              endif

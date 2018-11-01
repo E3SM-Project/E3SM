@@ -1,7 +1,7 @@
 module Reaction_Mineral_Aux_module
   
+  use petscsys
   use Reaction_Database_Aux_module
-
   use PFLOTRAN_Constants_module
 
   implicit none
@@ -70,6 +70,9 @@ module Reaction_Mineral_Aux_module
     PetscReal, pointer :: constraint_area(:)
     character(len=MAXWORDLENGTH), pointer :: constraint_vol_frac_string(:)
     character(len=MAXWORDLENGTH), pointer :: constraint_area_string(:)
+    character(len=MAXWORDLENGTH), pointer :: constraint_area_units(:)
+    PetscReal, pointer :: constraint_area_conv_factor(:)
+    PetscBool, pointer :: area_per_unit_mass(:)
     PetscBool, pointer :: external_vol_frac_dataset(:)
     PetscBool, pointer :: external_area_dataset(:)
   end type mineral_constraint_type
@@ -137,6 +140,7 @@ module Reaction_Mineral_Aux_module
             GetMineralNames, &
             GetMineralIDFromName, &
             GetKineticMineralIDFromName, &
+            GetMineralFromName, &
             TransitionStateTheoryRxnCreate, &
             TransitionStatePrefactorCreate, &
             TSPrefactorSpeciesCreate, &
@@ -158,7 +162,8 @@ function MineralCreate()
   ! Author: Glenn Hammond
   ! Date: 08/16/12
   ! 
-
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   implicit none
   
   type(mineral_type), pointer :: MineralCreate
@@ -231,7 +236,8 @@ function MineralRxnCreate()
   ! Author: Glenn Hammond
   ! Date: 05/02/08
   ! 
-
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   implicit none
   
   type(mineral_rxn_type), pointer :: MineralRxnCreate
@@ -355,7 +361,6 @@ function MineralConstraintCreate(mineral,option)
   ! Author: Glenn Hammond
   ! Date: 10/14/08
   ! 
-
   use Option_module
   
   implicit none
@@ -370,13 +375,19 @@ function MineralConstraintCreate(mineral,option)
   allocate(constraint%names(mineral%nkinmnrl))
   constraint%names = ''
   allocate(constraint%constraint_vol_frac(mineral%nkinmnrl))
-  constraint%constraint_vol_frac = 0.d0
+  constraint%constraint_vol_frac = UNINITIALIZED_DOUBLE
   allocate(constraint%constraint_area(mineral%nkinmnrl))
-  constraint%constraint_area = 0.d0
+  constraint%constraint_area = UNINITIALIZED_DOUBLE
   allocate(constraint%constraint_vol_frac_string(mineral%nkinmnrl))
   constraint%constraint_vol_frac_string = ''
   allocate(constraint%constraint_area_string(mineral%nkinmnrl))
   constraint%constraint_area_string = ''
+  allocate(constraint%constraint_area_units(mineral%nkinmnrl))
+  constraint%constraint_area_units = ''
+  allocate(constraint%constraint_area_conv_factor(mineral%nkinmnrl))
+  constraint%constraint_area_conv_factor = UNINITIALIZED_DOUBLE
+  allocate(constraint%area_per_unit_mass(mineral%nkinmnrl))
+  constraint%area_per_unit_mass = PETSC_FALSE
   allocate(constraint%external_vol_frac_dataset(mineral%nkinmnrl))
   constraint%external_vol_frac_dataset = PETSC_FALSE
   allocate(constraint%external_area_dataset(mineral%nkinmnrl))
@@ -385,6 +396,32 @@ function MineralConstraintCreate(mineral,option)
   MineralConstraintCreate => constraint
 
 end function MineralConstraintCreate
+
+! ************************************************************************** !
+
+function GetMineralFromName(name,mineral)
+  ! 
+  ! Returns the mineral corresponding to the name
+  ! 
+  ! Author: Glenn Hammond
+  ! Date: 11/22/17
+  ! 
+  use String_module
+
+  implicit none
+
+  character(len=MAXWORDLENGTH) :: name
+  type(mineral_type) :: mineral
+
+  type(mineral_rxn_type), pointer :: GetMineralFromName
+
+  GetMineralFromName => mineral%mineral_list
+  do
+    if (StringCompare(name,GetMineralFromName%name,MAXWORDLENGTH)) return
+    GetMineralFromName => GetMineralFromName%next
+  enddo
+
+end function GetMineralFromName
 
 ! ************************************************************************** !
 
@@ -457,6 +494,7 @@ function GetMineralIDFromName1(name,mineral,option)
   ! Author: Glenn Hammond
   ! Date: 09/04/08
   ! 
+#include "petsc/finclude/petscsys.h"
   use Option_module
   use String_module
   
@@ -537,6 +575,8 @@ function GetKineticMineralIDFromName(name,mineral,option)
   ! Author: Glenn Hammond
   ! Date: 03/11/13
   ! 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
   use String_module
   
@@ -677,6 +717,9 @@ subroutine MineralConstraintDestroy(constraint)
   call DeallocateArray(constraint%constraint_area)
   call DeallocateArray(constraint%constraint_vol_frac_string)
   call DeallocateArray(constraint%constraint_area_string)
+  call DeallocateArray(constraint%constraint_area_units)
+  call DeallocateArray(constraint%constraint_area_conv_factor)
+  call DeallocateArray(constraint%area_per_unit_mass)
   call DeallocateArray(constraint%external_area_dataset)
   call DeallocateArray(constraint%external_vol_frac_dataset)
   

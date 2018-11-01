@@ -1,5 +1,7 @@
 module Data_Mediator_Base_class
- 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
+
   use Dataset_Global_HDF5_class
   
   use PFLOTRAN_Constants_module
@@ -7,10 +9,6 @@ module Data_Mediator_Base_class
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
  
   type, public :: data_mediator_base_type
     character(len=MAXWORDLENGTH) :: name
@@ -77,12 +75,11 @@ recursive subroutine DataMediatorBaseUpdate(this,data_mediator_vec,option)
   ! Author: Glenn Hammond
   ! Date: 03/23/15
   ! 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Option_module
   
   implicit none
-  
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"  
 
   class(data_mediator_base_type) :: this
   Vec :: data_mediator_vec

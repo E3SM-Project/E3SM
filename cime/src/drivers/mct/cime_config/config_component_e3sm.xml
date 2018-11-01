@@ -2,6 +2,14 @@
 
 <entry_id version="2.0">
 
+  <entry id="MODEL_DOI_URL">
+    <type>char</type>
+    <default_value>https://doi.org/10.11578/E3SM/dc.20180418.36</default_value>
+    <group>run_metadata</group>
+    <file>env_case.xml</file>
+    <desc>run DOI</desc>
+  </entry>
+
   <entry id="DRV_THREADING">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
@@ -164,22 +172,26 @@
 
   <entry id="CCSM_BGC">
     <type>char</type>
-    <valid_values>none,CO2A,CO2A_OI,CO2B,CO2C,CO2_DMSA</valid_values>
+    <valid_values>none,CO2A,CO2A_OI,CO2B,CO2C,CO2C_OI,CO2_DMSA</valid_values>
     <default_value>none</default_value>
     <values match="last">
       <value compset="_CAM\d+"     >CO2A</value>
       <value compset="_DATM"    >none</value>
       <value compset="_BGC%BPRP">CO2C</value>
-      <value compset="_BGC%BDRD">CO2C</value>
       <value compset="HIST.*_DATM%(QIA|CRU|GSW)">CO2A</value>
       <value compset="20TR.*_DATM%(QIA|CRU|GSW)">CO2A</value>
       <value compset="RCP.*_DATM%(QIA|CRU|GSW)" >CO2A</value>
       <value compset="_DATM%IAF.*_MPASO%OECO" >CO2A</value>
       <value compset="_MPASCICE%BGC.*_MPASO%OIECO" >CO2A_OI</value>
       <value compset="_MPASCICE%BGC.*_MPASO%TOIECO_" >CO2A_OI</value>
-      <value compset="_BGC%BCRD">CO2C</value>
-      <value compset="_BGC%BDRC">CO2C</value>
-      <value compset="_BGC%BCRC">CO2C</value>
+      <value compset="_MPASCICE_MPASO_.*_BGC%BCRC" >CO2C</value>
+      <value compset="_MPASCICE_MPASO_.*_BGC%BCRD" >CO2C</value>
+      <value compset="_MPASCICE_MPASO_.*_BGC%BDRC" >CO2C</value>
+      <value compset="_MPASCICE_MPASO_.*_BGC%BDRD" >CO2C</value>
+      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BCRC" >CO2C_OI</value>
+      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BCRD" >CO2C_OI</value>
+      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BDRC" >CO2C_OI</value>
+      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BDRD" >CO2C_OI</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -430,6 +442,8 @@
       <value compset="_DATM.*_DLND.*_DICE.*_DOCN">$ATM_NCPL</value>
       <value compset="_DATM.*_SLND.*_DICE.*_DOCN">$ATM_NCPL</value>
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">$ATM_NCPL</value>
+      <value compset="_SROF">$ATM_NCPL</value>
+      <value compset="_XROF">$ATM_NCPL</value>
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>

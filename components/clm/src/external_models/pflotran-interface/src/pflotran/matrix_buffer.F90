@@ -1,5 +1,7 @@
 module Matrix_Buffer_module
 
+#include "petsc/finclude/petscmat.h"
+  use petscmat
   use Grid_module
  
   use PFLOTRAN_Constants_module
@@ -7,13 +9,6 @@ module Matrix_Buffer_module
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-  
 
   type, public :: matrix_buffer_type
     PetscInt :: matrix_type

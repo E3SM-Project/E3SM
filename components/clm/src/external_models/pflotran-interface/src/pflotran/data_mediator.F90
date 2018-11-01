@@ -1,12 +1,13 @@
 module Data_Mediator_module
  
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+
   use Data_Mediator_Base_class
   
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
 
   public :: DataMediatorInit, &
             DataMediatorUpdate, &
@@ -43,12 +44,11 @@ subroutine DataMediatorUpdate(data_mediator_list,vec,option)
   ! Author: Glenn Hammond
   ! Date: 03/25/15
   ! 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Option_module
   
   implicit none
-  
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"  
   
   class(data_mediator_base_type), pointer :: data_mediator_list
   Vec :: vec

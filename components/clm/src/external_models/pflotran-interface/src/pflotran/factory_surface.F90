@@ -1,14 +1,15 @@
 module Factory_Surface_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Simulation_Surface_class
 
   use PFLOTRAN_Constants_module
-
+  use Utility_module, only : Equal
+  
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
 
   public :: SurfaceInitialize, &
             SurfaceInitializePostPETSc, &
@@ -117,7 +118,7 @@ subroutine SurfaceJumpStart(simulation)
   
   option => surf_realization%option
 
-  call PetscOptionsHasName(PETSC_NULL_OBJECT, &
+  call PetscOptionsHasName(PETSC_NULL_OPTIONS, &
                            PETSC_NULL_CHARACTER, "-vecload_block_size", & 
                            failure, ierr);CHKERRQ(ierr)
                              
@@ -566,6 +567,8 @@ subroutine SurfaceReadInput(surf_realization,surf_flow_solver,waypoint_list, &
                       call InputReadWord(input,option,word,PETSC_TRUE)
                       call InputErrorMsg(input,option,'end time units', &
                                          'SURF_OUTPUT,PERIODIC,TIME')
+                      units_conversion = UnitsConvertToInternal(word, &
+                                         internal_units,option)
                       temp_real2 = temp_real2 * units_conversion
                       do
                         waypoint => WaypointCreate()
@@ -719,7 +722,7 @@ subroutine SurfaceReadInput(surf_realization,surf_flow_solver,waypoint_list, &
             output_option%print_hdf5_aveg_mass_flowrate = aveg_mass_flowrate
             output_option%print_hdf5_aveg_energy_flowrate = aveg_energy_flowrate
             if (aveg_mass_flowrate.or.aveg_energy_flowrate) then
-              if (output_option%periodic_snap_output_time_incr==0.d0) then
+              if (Equal(output_option%periodic_snap_output_time_incr,0.d0)) then
                 option%io_buffer = 'Keyword: AVEGRAGE_FLOWRATES/ ' // &
                   'AVEGRAGE_MASS_FLOWRATE/ENERGY_FLOWRATE defined without' // &
                   ' PERIODIC TIME being set.'

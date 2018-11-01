@@ -1,5 +1,8 @@
 module Dataset_Base_class
  
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+
   use Time_Storage_module
   
   use PFLOTRAN_Constants_module
@@ -7,8 +10,6 @@ module Dataset_Base_class
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
 
   type, public :: dataset_base_type
     character(len=MAXWORDLENGTH) :: name
@@ -39,6 +40,7 @@ module Dataset_Base_class
             DatasetBaseReorder, &
             DatasetBaseGetPointer, &
             DatasetBaseAddToList, &
+            DatasetBaseGetNameInfo, &
             DatasetBasePrint, &
             DatasetBaseStrip, &
             DatasetBaseDestroy
@@ -329,6 +331,7 @@ subroutine DatasetBaseReorder(this,option)
   
   PetscReal, allocatable :: temp_real(:)
   PetscInt :: i, j, k, l
+  PetscInt :: length_1d
   PetscInt :: dims(4), n1, n1Xn2, n1Xn2Xn3
   PetscInt :: count, index
   PetscReal, pointer :: rarray(:)
@@ -351,11 +354,11 @@ subroutine DatasetBaseReorder(this,option)
   ! Not necessary for 1D arrays
   if (maxval(dims(2:)) == 1) return
   
-  l = 1
+  length_1d = 1
   do i = 1, size(dims)
-    l = l*dims(i)
+    length_1d = length_1d*dims(i)
   enddo
-  allocate(temp_real(l))
+  allocate(temp_real(length_1d))
   
   n1 = dims(1)
   n1Xn2 = n1*dims(2)
@@ -373,7 +376,9 @@ subroutine DatasetBaseReorder(this,option)
     enddo
   enddo  
 
-  rarray = temp_real
+  !geh: had to add 1:length_1d since in some cases, rarray is larger
+  !     than the specified size based on "dims". not sure why....
+  rarray(1:length_1d) = temp_real
   deallocate(temp_real)
   
 end subroutine DatasetBaseReorder
@@ -478,6 +483,34 @@ function DatasetBaseGetPointer(dataset_list, dataset_name, debug_string, &
   endif
 
 end function DatasetBaseGetPointer
+
+! ************************************************************************** !
+
+function DatasetBaseGetNameInfo(this)
+  ! 
+  ! Returns naming information for dataset
+  ! 
+  ! Author: Glenn Hammond
+  ! Date: 02/20/18
+  ! 
+  implicit none
+
+  class(dataset_base_type) :: this
+
+  character(len=MAXSTRINGLENGTH) :: DatasetBaseGetNameInfo
+
+  character(len=MAXSTRINGLENGTH) :: string
+
+  string = ''
+  if (len_trim(this%name) > 0) then
+    string = 'NAME: "' // trim(this%name) // '"'
+  endif
+  if (len_trim(this%filename) > 0) then
+    string = trim(string) // ' FILENAME: "' // trim(this%filename) // '"'
+  endif
+  DatasetBaseGetNameInfo = string
+
+end function DatasetBaseGetNameInfo
 
 ! ************************************************************************** !
 

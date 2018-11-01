@@ -1,5 +1,7 @@
 module Observation_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Region_module
   use Connection_module
   
@@ -9,7 +11,6 @@ module Observation_module
   
   private
   
-#include "petsc/finclude/petscsys.h"
 
   PetscInt, parameter, public :: OBSERVATION_SCALAR = 1
   PetscInt, parameter, public :: OBSERVATION_FLUX = 2

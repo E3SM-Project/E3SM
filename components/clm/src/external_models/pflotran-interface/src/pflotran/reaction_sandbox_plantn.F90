@@ -1,5 +1,8 @@
 module Reaction_Sandbox_PlantN_class
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+
   use Reaction_Sandbox_Base_class
   use Global_Aux_module
   use Reactive_Transport_Aux_module
@@ -10,8 +13,6 @@ module Reaction_Sandbox_PlantN_class
   
   private
   
-#include "petsc/finclude/petscsys.h"
-
   type, public, &
     extends(reaction_sandbox_base_type) :: reaction_sandbox_plantn_type
     PetscInt  :: ispec_nh4
@@ -239,14 +240,13 @@ subroutine PlantNReact(this,Residual,Jacobian,compute_derivative, &
   use CLM_RspFuncs_module
 
 #ifdef CLM_PFLOTRAN
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use clm_pflotran_interface_data
 #endif
   
   implicit none
 
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-  
   class(reaction_sandbox_plantn_type) :: this
   type(option_type) :: option
   type(reaction_type) :: reaction

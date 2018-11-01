@@ -22,6 +22,7 @@ module Simulation_Surface_class
     type(waypoint_list_type), pointer :: waypoint_list_surface
   contains
     procedure, public :: Init => SurfaceSimulationInit
+    procedure, public :: InputRecord => SurfaceSimInputRecord
     procedure, public :: InitializeRun => SurfaceInitializeRun
     procedure, public :: FinalizeRun => SurfaceFinalizeRun
     procedure, public :: Strip => SurfaceSimulationStrip
@@ -82,6 +83,32 @@ subroutine SurfaceSimulationInit(this,option)
   this%waypoint_list_surface => WaypointListCreate()
   
 end subroutine SurfaceSimulationInit
+
+! ************************************************************************** !
+
+subroutine SurfaceSimInputRecord(this)
+  ! 
+  ! Writes ingested information to the input record file.
+  ! 
+  ! Author: Jenn Frederick, SNL
+  ! Date: 03/17/2016
+  ! 
+  use Output_module
+  
+  implicit none
+  
+  class(simulation_surface_type) :: this
+
+  character(len=MAXWORDLENGTH) :: word
+  PetscInt :: id = INPUT_RECORD_UNIT
+ 
+  write(id,'(a29)',advance='no') 'simulation type: '
+  write(id,'(a)') 'surface'
+
+  ! print output file information
+  call OutputInputRecord(this%output_option,this%waypoint_list_surface)
+
+end subroutine SurfaceSimInputRecord
 
 ! ************************************************************************** !
 

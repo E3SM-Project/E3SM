@@ -15,8 +15,10 @@ module Timestepper_Steady_class
 
   contains
 
+ !   procedure, public :: Init => TimestepperSteadyInit
     procedure, public :: StepDT => TimestepperSteadyStepDT
     procedure, public :: UpdateDT => TimestepperSteadyUpdateDT
+    procedure, public :: InputRecord => TimestepperSteadyInputRecord
 
   end type timestepper_steady_type
 
@@ -124,7 +126,6 @@ subroutine TimestepperSteadyCreateFromBE(timestepper_BE)
   stepper%tfac(13) = timestepper_BE%tfac(13)  
   
   stepper%solver => timestepper_BE%solver
-  stepper%convergence_context => timestepper_BE%convergence_context
 
   timestepper_BE => stepper
 
@@ -180,6 +181,8 @@ subroutine TimestepperSteadyStepDT(this, process_model, stop_flag)
   ! Date: 01/01/14, 04/07/2015
   ! 
 
+#include "petsc/finclude/petscsnes.h"
+  use petscsnes
   use PM_Base_class
   use Option_module
   use Output_module, only : Output
@@ -187,12 +190,6 @@ subroutine TimestepperSteadyStepDT(this, process_model, stop_flag)
   use Solver_module
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscviewer.h"
-#include "petsc/finclude/petscsnes.h"
 
   class(timestepper_steady_type) :: this
   class(pm_base_type) :: process_model
@@ -227,7 +224,7 @@ subroutine TimestepperSteadyStepDT(this, process_model, stop_flag)
 
   call PetscTime(log_start_time, ierr);CHKERRQ(ierr)
 
-  call SNESSolve(solver%snes, PETSC_NULL_OBJECT, &
+  call SNESSolve(solver%snes, PETSC_NULL_VEC, &
                  process_model%solution_vec, ierr);CHKERRQ(ierr)
 
   call PetscTime(log_end_time, ierr);CHKERRQ(ierr)
@@ -267,7 +264,7 @@ subroutine TimestepperSteadyStepDT(this, process_model, stop_flag)
   this%num_linear_iterations = num_linear_iterations  
 
   ! print screen output
-  call SNESGetFunction(solver%snes,residual_vec,PETSC_NULL_OBJECT, &
+  call SNESGetFunction(solver%snes,residual_vec,PETSC_NULL_FUNCTION, &
                        PETSC_NULL_INTEGER,ierr);CHKERRQ(ierr)
   call VecNorm(residual_vec,NORM_2,fnorm,ierr);CHKERRQ(ierr)
   call VecNorm(residual_vec,NORM_INFINITY,inorm,ierr);CHKERRQ(ierr)
@@ -303,5 +300,28 @@ subroutine TimestepperSteadyStepDT(this, process_model, stop_flag)
 end subroutine TimestepperSteadyStepDT
 
 ! ************************************************************************** !
+
+subroutine TimestepperSteadyInputRecord(this)
+  ! 
+  ! Prints information about the time stepper to the input record.
+  ! To get a## format, must match that in simulation types.
+  ! 
+  ! Author: Jenn Frederick, SNL
+  ! Date: 03/17/2016
+  ! 
+  
+  implicit none
+  
+  class(timestepper_steady_type) :: this
+
+  PetscInt :: id
+  character(len=MAXWORDLENGTH) :: word
+   
+  id = INPUT_RECORD_UNIT
+
+  write(id,'(a29)',advance='no') 'pmc timestepper: '
+  write(id,'(a)') this%name
+
+end subroutine TimestepperSteadyInputRecord
 
 end module Timestepper_Steady_class

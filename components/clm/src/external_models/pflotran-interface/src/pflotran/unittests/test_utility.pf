@@ -1,10 +1,10 @@
 module Test_Utility_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use pFUnit_mod
 
   implicit none
-
-#include "petsc/finclude/petscsys.h"
 
   public :: Test_Utility
 
@@ -171,6 +171,103 @@ contains
     @assertEqual(120.0d0, y, 1.0d-16)
 
   end subroutine testUtility_InterpolateExtrapolateHigh
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testUtility_InverseNorm(this)
+    !
+    ! Verify that the linear interpolation extrapolates correctly for x > x_high
+    !
+
+    use Utility_module, only : InverseNorm
+
+    implicit none
+
+    class (Test_Utility), intent(inout) :: this
+
+    PetscReal, parameter :: p1 = 0.01d0
+    PetscReal, parameter :: p2 = 0.25d0
+    PetscReal, parameter :: p3 = 0.75d0
+    PetscReal, parameter :: p4 = 0.99d0
+    PetscReal :: calc_value
+    PetscReal :: value
+    PetscReal :: derivative, num_derivative, calc_value2, ppert, pert
+    PetscReal, parameter :: tolerance = 1.d-12
+    character(len=128) :: string
+  
+    string = 'InverseNorm(p1) in Test_Utility_module'
+    call InverseNorm(p1,calc_value,PETSC_TRUE,derivative)
+    value = -2.3263478743880279d0
+    @assertEqual(value, calc_value, dabs(value)*tolerance, string)
+    string = 'Derivative of InverseNorm(p1) in Test_Utility_module'
+    value = 37.520436803844717d0
+    @assertEqual(value, derivative, dabs(value)*tolerance, string)
+
+    string = 'InverseNorm(p2) in Test_Utility_module'
+    call InverseNorm(p2,calc_value,PETSC_TRUE,derivative)
+    value = -0.67448975022342250d0
+    @assertEqual(value, calc_value, dabs(value)*tolerance, string)
+    string = 'Derivative of InverseNorm(p2) in Test_Utility_module'
+    value = 3.1468650515211789d0
+    @assertEqual(value, derivative, dabs(value)*tolerance, string)
+
+    string = 'InverseNorm(p3) in Test_Utility_module'
+    call InverseNorm(p3,calc_value,PETSC_TRUE,derivative)
+    value = 0.67448975022342250d0
+    @assertEqual(value, calc_value, dabs(value)*tolerance, string)
+    string = 'Derivative of InverseNorm(p3) in Test_Utility_module'
+    value = 3.1468650515211789d0
+    @assertEqual(value, derivative, dabs(value)*tolerance, string)
+
+    string = 'InverseNorm(p4) in Test_Utility_module'
+    call InverseNorm(p4,calc_value,PETSC_TRUE,derivative)
+    value = 2.3263478743880279d0
+    @assertEqual(value, calc_value, dabs(value)*tolerance, string)
+    string = 'Derivative of InverseNorm(p4) in Test_Utility_module'
+    value = 37.520436803844689d0
+    @assertEqual(value, derivative, dabs(value)*tolerance, string)
+
+  end subroutine testUtility_InverseNorm
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testUtility_Erf(this)
+    !
+    ! Verify that the linear interpolation extrapolates correctly for x > x_high
+    !
+
+    use Utility_module, only : Erf_
+
+    implicit none
+
+    class (Test_Utility), intent(inout) :: this
+
+    PetscReal, parameter :: x1 = 4.5d0
+    PetscReal, parameter :: x2 = 0.9d0
+    PetscReal, parameter :: x3 = 0.1d0
+    PetscReal :: calc_value
+    PetscReal :: value
+    PetscReal, parameter :: tolerance = 1.d-12
+    character(len=128) :: string
+  
+    string = 'Erf_(x1) in Test_Utility_module'
+    calc_value = Erf_(x1)
+    value = 0.99999999980338394d0
+    @assertEqual(value, calc_value, dabs(value)*tolerance, string)
+
+    string = 'Erf_(x2) in Test_Utility_module'
+    calc_value = Erf_(x2)
+    value = 0.79690821242283227d0
+    @assertEqual(value, calc_value, dabs(value)*tolerance, string)
+
+    string = 'Erf_(x3) in Test_Utility_module'
+    calc_value = Erf_(x3)
+    value = 0.11246291601828486d0
+    @assertEqual(value, calc_value, dabs(value)*tolerance, string)
+
+  end subroutine testUtility_Erf
 
 end module Test_Utility_module
 

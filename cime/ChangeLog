@@ -1,6 +1,741 @@
 ======================================================================
 
 Originator: Chris Fischer
+Date: 5-22-2018
+Tag: cime_cesm2_0_rel_03
+Answer Changes: None
+Tests: scripts_regression_tests, build tests on Cori.
+Dependencies:
+
+Brief Summary: Third release candidate.
+    - Update environment modules for Cori.
+    - Change PRE.f09_f09.ADESP_TEST.hobart_nag test to f19_f19.
+    - Tweaks to cism-specific documentation.
+    - Update for Sphinx v1.7 and doc version 5.6.
+    - More doc updates.
+    - Maint 5.6 - documentation updates.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+ed9ced8 Merge pull request #2619 from ESMCI/fischer/nersc
+c1dade4 Merge pull request #2618 from ESMCI/fischer/testfix
+1f41bc6 Merge pull request #2617 from billsacks/update_cism_doc
+08f12ea Merge pull request #2616 from bertinia/maint-5.6
+72ed273 Merge pull request #2615 from ESMCI/mvertens/more_doc_updates
+7049dab Merge pull request #2614 from bertinia/maint-5.6
+
+Modified files: git diff --name-status [previous_tag]
+M	.gitignore
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/template.case.run
+M	config/cesm/machines/template.case.test
+M	config/cesm/machines/template.st_archive
+M	doc/Makefile
+M	doc/README
+D	doc/source/README
+M	doc/source/conf.py
+M	doc/source/users_guide/building-a-case.rst
+A	doc/source/users_guide/cime-change-namelist.rst
+M	doc/source/users_guide/cloning-a-case.rst
+M	doc/source/users_guide/compsets.rst
+M	doc/source/users_guide/create-a-case.rst
+M	doc/source/users_guide/grids.rst
+M	doc/source/users_guide/index.rst
+M	doc/source/users_guide/introduction-and-overview.rst
+M	doc/source/users_guide/machine.rst
+M	doc/source/users_guide/pes-threads.rst
+M	doc/source/users_guide/porting-cime.rst
+M	doc/source/users_guide/running-a-case.rst
+M	doc/source/users_guide/setting-up-a-case.rst
+M	doc/source/users_guide/testing.rst
+M	doc/source/users_guide/timers.rst
+M	doc/source/users_guide/troubleshooting.rst
+M	doc/source/users_guide/unit_testing.rst
+D	doc/source/users_guide/use_cases/basics-a-basic-example.rst
+D	doc/source/users_guide/use_cases/basics-setting-up-a-branch-or-hybrid-run.rst
+D	doc/source/users_guide/use_cases/cesm-nml.rst
+D	doc/source/users_guide/use_cases/datamod-nml.rst
+D	doc/source/users_guide/use_cases/driver-nml.rst
+D	doc/source/users_guide/use_cases/namelist-gen.rst
+D	doc/source/users_guide/use_cases/use-cases.rst
+A	doc/source/users_guide/workflows.rst
+M	doc/tools_autodoc.cfg
+M	doc/tools_autodoc.py
+M	scripts/Tools/xmlquery
+D	scripts/manage_pes
+M	src/drivers/mct/cime_config/testdefs/testlist_drv.xml
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 5-17-2018
+Tag: cime_cesm2_0_rel_02
+Answer Changes: Round Off for Cheyenne gnu
+Tests: scripts_regression_tests, prealpha gnu tests on cheyenne
+Dependencies:
+
+Brief Summary:
+    - Update Cheyenne gnu compiler to 7.3.0
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+    Merge pull request #2611 from ESMCI/fischer/gnu7
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_compilers.xml
+M       config/cesm/machines/config_machines.xml
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 5-17-2018
+Tag: cime_cesm2_0_rel_01
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Move cam section out of config archive.
+    - Add commas to output using --value.
+    - Fix multisubmit tests were not resubmitting.
+    - A new script to add additional metadata for stat ensemble test.
+    - Fix formatting issue.
+    - Update iyear for 2000 runs.
+    - Merge branch 'master' of github.com:ESMCI/cime
+    - These grids are needed for cime standalone testing.
+    - Updated the wrappers for the ESMF mapping tools to work on NCAR machines. 
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+950cda0 Merge pull request #2608 from jedwards4b/config_archive_dist
+2e997e0 Merge pull request #2607 from jedwards4b/xmlquery_multivalue
+f1d501f Merge pull request #2600 from jedwards4b/test_issues
+5c256ec Merge pull request #2582 from jedwards4b/stattest_add_metadata
+8ce38a4 fix formatting issue
+6c53cfc Merge pull request #2594 from jedwards4b/orb_iyear_2000
+c04da3c Merge branch 'master' of github.com:ESMCI/cime
+166a40c these grids are needed for cime standalone testing
+7cef855 Merge pull request #2589 from mnlevy1981/mlevy/mapping_on_geyser
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_archive.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/template.case.test
+M	config/cesm/machines/template.st_archive
+M	scripts/Tools/xmlquery
+M	scripts/lib/CIME/SystemTests/pet.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M	scripts/lib/CIME/XML/env_base.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/case/case_st_archive.py
+M	scripts/lib/CIME/test_scheduler.py
+M	src/components/data_comps/datm/datm_comp_mod.F90
+M	src/components/data_comps/datm/mct/atm_comp_mct.F90
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	tools/mapping/check_maps/README
+M	tools/mapping/check_maps/check_map.sh
+M	tools/mapping/check_maps/src/ESMF_RegridWeightGenCheck.F90
+M	tools/mapping/check_maps/src/Makefile
+M	tools/mapping/gen_domain_files/src/.gitignore
+M	tools/mapping/gen_domain_files/src/Makefile
+A	tools/mapping/gen_mapping_files/.gitignore
+M	tools/mapping/gen_mapping_files/README
+M	tools/mapping/gen_mapping_files/gen_ESMF_mapping_file/.gitignore
+M	tools/mapping/gen_mapping_files/gen_ESMF_mapping_file/README
+M	tools/mapping/gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh
+D	tools/mapping/gen_mapping_files/gen_ESMF_mapping_file/regridbatch.yellowstone.sh
+M	tools/mapping/gen_mapping_files/gen_cesm_maps.sh
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/.gitignore
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/Makefile
+M	tools/mapping/map_field/.gitignore
+M	tools/mapping/map_field/README
+M	tools/mapping/map_field/src/Makefile
+M	tools/statistical_ensemble_test/README
+A	tools/statistical_ensemble_test/addmetadata.sh
+A	tools/statistical_ensemble_test/ensemble.py
+A	tools/statistical_ensemble_test/single_run.py
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 5-14-2018
+Tag: cime5.6.7
+Answer Changes: None
+Tests: scripts_regression_tests, xmlquery --listall --file env_run.xml
+Dependencies:
+
+Brief Summary:
+    - xmlquery fix.
+    - Fixes an issue when selecting mpilib on cheyenne.
+    - Fixed some print format bugs left over from the string rewrite of a year ago.
+    - Documentation updates, including major updates to --help for scripts.
+    - Need to append config files.
+    - Get model_version working.
+    - Adds T85_T85_mg17 grid.
+    - Correct spelling of protocol.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+5a54b88 Merge pull request #2588 from jedwards4b/xmlquery_fix
+0b07cb5 Merge pull request #2591 from jedwards4b/configure_mpilib
+5f4c8e4 Merge pull request #2586 from gold2718/pelayout_fixes
+6ebcd23 Merge pull request #2585 from ESMCI/mvertens/documentation_updates
+940e29c need this to append config files
+72a1cf6 Merge pull request #2579 from ekluzek/clm50r1/cime5.6.3
+b86853d Merge pull request #2575 from jedwards4b/newgrid
+fcebaad Merge pull request #2571 from jedwards4b/misspelling_protocol
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_grids.xml
+M	config/cesm/config_inputdata.xml
+M	config/e3sm/config_inputdata.xml
+M	config/xml_schemas/config_inputdata.xsd
+M	doc/source/conf.py
+M	doc/source/users_guide/building-a-case.rst
+M	doc/source/users_guide/cime-config.rst
+M	doc/source/users_guide/cloning-a-case.rst
+M	doc/source/users_guide/porting-cime.rst
+M	doc/source/users_guide/running-a-case.rst
+M	doc/source/users_guide/testing.rst
+M	scripts/Tools/case.build
+M	scripts/Tools/case.cmpgen_namelists
+M	scripts/Tools/case.qstatus
+M	scripts/Tools/case.setup
+M	scripts/Tools/case.submit
+M	scripts/Tools/check_case
+M	scripts/Tools/check_input_data
+M	scripts/Tools/pelayout
+M	scripts/Tools/preview_namelists
+M	scripts/Tools/preview_run
+M	scripts/Tools/xmlchange
+M	scripts/Tools/xmlquery
+M	scripts/create_clone
+M	scripts/create_newcase
+M	scripts/create_test
+M	scripts/lib/CIME/Servers/ftp.py
+M	scripts/lib/CIME/Servers/gftp.py
+M	scripts/lib/CIME/Servers/svn.py
+M	scripts/lib/CIME/Servers/wget.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/XML/inputdata.py
+M	scripts/lib/CIME/case/check_input_data.py
+M	scripts/lib/CIME/utils.py
+M	scripts/query_config
+M	scripts/query_testlists
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	tools/configure
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 5-02-2018
+Tag: cime5.6.3
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary:
+    - Fix config write of logical.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+974839b fix config write of logical
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/Tools/case.submit
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 5-01-2018
+Tag: cime5.6.2
+Answer Changes: None
+Tests: load_balancing_test.py
+       hand tested create_newcase --case foo --compset QSC6 --res f19_f19_mg17 
+Dependencies:
+
+Brief Summary:
+    - Refine distinction of E vs Q compset.
+    - Update load balance tool.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+b2a19cd Merge pull request #2525 from jedwards4b/better_distinguish_compset_Q_from_E
+28b8634 Merge pull request #2520 from ESMCI/sarich/update-loadbalancingtool
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/lib/CIME/case/case.py
+M       tools/load_balancing_tool/load_balancing_submit.py
+M       tools/load_balancing_tool/tests/load_balancing_test.py
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer
+Date: 5-01-2018
+Tag: cime5.6.1
+Answer Changes: None, PR #2195 has roundoff for code not currently used.
+Tests: scripts_regression_tests, code_checker, by-hand
+Dependencies:
+
+Brief Summary:
+    - Refine cheyenne retry method.
+    - Save submit options for resubmit.
+    - Need schema description for NODE_FAIL_REGEX.
+    - Use nodefail code for cheyenne.
+    - Make st_archive handle DART's restart history files.
+    - Check input logic fix.
+    - Only check for rundir if not a test.
+    - Jgfouca/branch for acme split 2018-04-26.
+    - Correct equations of the form **(1/3) to be **(1.0_R8/3.0_R8) to evaluate correctly.
+    - Remove debug print statements.
+    - Revert change to cheyenne mpt.
+    - Remove manage_testlist.
+    - Testreporter fix.
+    - Match entire string for XML attribute selectors for env_mach_specific.
+    - Fix undefined variable in some circumstances.
+    - wait_for_tests needs to upload case2 logs if there are some
+    - Another fix for testreporter.py.
+
+User interface changes: 
+    - manage_testlist was removed.
+    - Changes to matching behavior in env_mach_specific.
+    - New option to wait_for_tests.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+5af0e02 Merge pull request #2516 from jedwards4b/refine_retry
+5e8a173 Merge pull request #2518 from jedwards4b/save_submit_options
+1d7a27d need schema description for NODE_FAIL_REGEX
+879249b Merge pull request #2509 from jedwards4b/cheyenne_nodefail
+40cf173 Merge pull request #2491 from kdraeder/dart_rh_files
+988eff2 Merge pull request #2501 from jedwards4b/check_input_logic_fix
+7ee7a0d Merge pull request #2508 from jedwards4b/test_init_fix
+fbe0814 Merge pull request #2505 from ESMCI/jgfouca/branch-for-acme-split-2018-04-26
+8977e55 Merge pull request #2195 from jedwards4b/diurnal_atmocn_flux_bugfix
+4e489b7 remove debug print statements
+438e1f0 revert change to cheyenne mpt
+2e0ba3b Merge pull request #2503 from ESMCI/fischer/rm_manage_testlist
+cf19590 Merge pull request #2502 from ESMCI/fischer/testreporter_fix
+1a7dac9 Merge pull request #2499 from ESMCI/jgfouca/match_entire_string
+71be68f Fix undefined variable in some circumstances
+6673d6a Merge pull request #2498 from ESMCI/jgfouca/wait_for_tests_case2
+8360ddc Merge pull request #2494 from ESMCI/fischer/test_reporter
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_archive.xml
+M	config/cesm/machines/config_machines.xml
+M	config/e3sm/allactive/config_compsets.xml
+M	config/e3sm/allactive/config_pesall.xml
+M	config/e3sm/config_archive.xml
+M	config/e3sm/config_files.xml
+M	config/e3sm/config_grids.xml
+M	config/e3sm/config_inputdata.xml
+M	config/e3sm/machines/Depends.titan.pgi
+M	config/e3sm/machines/config_batch.xml
+M	config/e3sm/machines/config_compilers.xml
+M	config/e3sm/machines/config_machines.xml
+M	config/e3sm/testmods_dirs/allactive/v1cmip6/user_nl_cam
+M	config/e3sm/tests.py
+A	config/e3sm/usermods_dirs/README
+D	config/e3sm/usermods_dirs/b1850/shell_commands
+D	config/e3sm/usermods_dirs/b1850_cism/include_user_mods
+D	config/e3sm/usermods_dirs/b1850_cism/user_nl_cism
+M	config/xml_schemas/config_machines.xsd
+M	doc/source/users_guide/testing.rst
+M	scripts/Tools/case.submit
+M	scripts/Tools/jenkins_generic_job
+M	scripts/Tools/wait_for_tests
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/XML/test_reporter.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/case/case_run.py
+M	scripts/lib/CIME/case/case_st_archive.py
+M	scripts/lib/CIME/case/case_submit.py
+M	scripts/lib/CIME/case/check_input_data.py
+M	scripts/lib/CIME/wait_for_tests.py
+M	scripts/lib/get_tests.py
+D	scripts/manage_testlists
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_e3sm.xml
+M	src/drivers/mct/main/cime_comp_mod.F90
+M	src/share/util/shr_flux_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 4-19-2018
+Tag: cime5.6.0
+Answer Changes: None
+Tests: scripts_regression_tests 
+Dependencies:
+
+Brief Summary:
+    - Don't access data servers if no data is needed.
+    - Add a test of the st_archive capability.
+    - Improve help message for resubmitting to dash.
+    - Simple compare improvement.
+    - Force the NODEFAIL test to run on the cheyenne regular queue.
+    - Download refcase from servers for hybrid.
+    - Add a warning if an unsupported testlist.xml is encountered.
+    - Replace TOTALPES with total_tasks.
+    - Fix massive misuse of TOTALPES for mpi -np all across e3sm.
+    - Fix test_scheduler's computation of procs needed for a test.
+    - Transition CIME to using a custom util for copying files.
+    - Minor fix to help msgs for options for e3sm mgmt tools.
+
+User interface changes: 
+    - case.st_archive now has a --test option.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+0cd58a7 Merge pull request #2489 from jedwards4b/nodatanoserver
+aeb0f47 Merge pull request #2470 from jedwards4b/st_archive_test
+f1c2759 Improve help message for resubmitting to dash
+afc640c Merge pull request #2487 from jedwards4b/simple_compare_improvement
+9410812 Merge pull request #2486 from jedwards4b/nodefail_fix
+d3c73b7 Merge pull request #2481 from jedwards4b/cid_decesm
+b0afec2 Merge pull request #2482 from jedwards4b/testlist_format
+3874d08 replace TOTALPES with total_tasks
+28265be Fix massive misuse of TOTALPES for mpi -np all across e3sm
+9344b16 Merge pull request #2479 from ESMCI/jgfouca/fix_test_sched_procs_needed
+f48c994 Merge pull request #2475 from ESMCI/jgfouca/safer_copy
+adae0ae Minor fix to help msgs for options for e3sm mgmt tools
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_archive.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/template.st_archive
+M	config/e3sm/config_archive.xml
+M	config/e3sm/machines/config_machines.xml
+M	config/e3sm/machines/template.st_archive
+M	config/xml_schemas/config_archive.xsd
+M	scripts/Tools/e3sm_cime_merge
+M	scripts/Tools/e3sm_cime_split
+M	scripts/lib/CIME/BuildTools/configure.py
+M	scripts/lib/CIME/Servers/ftp.py
+M	scripts/lib/CIME/Servers/gftp.py
+M	scripts/lib/CIME/Servers/svn.py
+M	scripts/lib/CIME/Servers/wget.py
+M	scripts/lib/CIME/SystemTests/eri.py
+M	scripts/lib/CIME/SystemTests/err.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M	scripts/lib/CIME/XML/archive.py
+A	scripts/lib/CIME/XML/archive_base.py
+M	scripts/lib/CIME/XML/env_archive.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/XML/testlist.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/case/case_clone.py
+M	scripts/lib/CIME/case/case_cmpgen_namelists.py
+M	scripts/lib/CIME/case/case_run.py
+M	scripts/lib/CIME/case/case_setup.py
+M	scripts/lib/CIME/case/case_st_archive.py
+M	scripts/lib/CIME/case/check_input_data.py
+M	scripts/lib/CIME/case/preview_namelists.py
+M	scripts/lib/CIME/get_timing.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/locked_files.py
+M	scripts/lib/CIME/simple_compare.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/user_mod_support.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/CIME/wait_for_tests.py
+M	scripts/lib/jenkins_generic_job.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/drivers/mct/cime_config/config_archive.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 4-17-2018
+Tag: cime5.4.0-alpha.30
+Answer Changes: None
+Tests: scripts_regression_tests, code checker 
+Dependencies:
+
+Brief Summary:
+    - Change the CESM inputdata server precedence order to gridftp, svn, ftp, wget.
+    - Fix totalpes to properly include threads.
+    - Refactor BUILD_THREADED case value.
+
+User interface changes: 
+    - New FORCE_BUILD_THREADED.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+9af0120 Merge pull request #2477 from ESMCI/fischer/gftp_svn_ftp
+d556876 Merge pull request #2465 from jedwards4b/fix_totalpes
+ed78b14 Merge pull request #2466 from ESMCI/jgfouca/refactor_build_threaded
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_inputdata.xml
+M       config/cesm/machines/config_batch.xml
+M       config/config_tests.xml
+M       scripts/Tools/Makefile
+M       scripts/create_test
+M       scripts/fortran_unit_testing/run_tests.py
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/case/case_setup.py
+M       scripts/lib/CIME/hist_utils.py
+M       scripts/lib/CIME/test_utils.py
+M       scripts/manage_pes
+M       scripts/manage_testlists
+M       scripts/tests/scripts_regression_tests.py
+M       src/build_scripts/buildlib.gptl
+M       src/build_scripts/buildlib.pio
+M       src/drivers/mct/cime_config/config_component.xml
+
+======================================================================
+
+======================================================================
+Originator: Chris Fischer 
+Date: 4-13-2018
+Tag: cime5.4.0-alpha.29
+Answer Changes: None
+Tests: scripts_regression_tests
+       code_checker, testing by hand
+Dependencies:
+
+Brief Summary:
+    - Fix variable initialization.
+    - Add model doi url to seq_infodata and to cpl history global attributes.
+    - Remove the LOGDIR variable and stop copying logs back to the case directory.
+    - Fix env_mach_specific.sh file when module init is None.
+    - Support renamed glimmer-cism directory; add README files to SourceMods directories.
+    - Add f10_f10_mg37 grid.
+    - Update casename restrictions.
+    - Update statistical ensemble test for new verison of CESM.
+    - Add PEM test to cime developer.
+    - Add inputdata servers for grid ftp, ftp, and wget.
+    - Use --no-logging in call to checkout_externals.
+    - Add support for stampede2-skx and stampede2-knl at TACC.
+    - split_test_py
+    - Merge commit '20e3277dd143e4058ffa0ef610180c199cbb6ea1'
+    - E3SM split.
+    - PEA and PEM need to call case_setup for case2.
+    - Revert small piece of #2299.
+    - Fixes the potential leak reported by address sanitizer in PIO.
+    - Reorganize Users Guide part 1 and 2 content.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+057e8a5 fix variable initialization
+4913315 Merge pull request #2468 from ESMCI/mvertens/model_doi_url
+37985f4 Merge pull request #2461 from jedwards4b/remove_logdir
+f1f498f Merge pull request #2464 from ESMCI/jgfouca/never_source_none
+b16ec34 Merge pull request #2462 from billsacks/rename_glimmer_cism_v2
+0cead4e Merge pull request #2463 from ESMCI/fischer/f10_f10_mg37
+08e05e2 Merge pull request #2460 from jedwards4b/update_casename_restrictions
+578a7ab Merge pull request #2447 from allibco/master
+356cec0 Merge pull request #2449 from ESMCI/jgfouca/add_pem_test_to_cimedev
+a1d7814 Merge pull request #2439 from jedwards4b/addgridftp
+0126382 Merge pull request #2444 from billsacks/manic_no_logging
+dd58d01 Merge pull request #2440 from ESMCI/fischer/stampede2
+9febe47 Merge branch 'jgfouca/split_test_py'
+35a70fc Merge commit '20e3277dd143e4058ffa0ef610180c199cbb6ea1'
+b06a755 Merge pull request #2433 from ESMCI/jgfouca/branch-for-acme-split-2018-04-09
+f18bc36 Merge pull request #2437 from jedwards4b/fixpeaandpem
+826c8ec Merge pull request #2434 from ESMCI/jgfouca/minor_seq_comm_mct_revert
+35ce6f1 Merge pull request #2432 from ESMCI/mfdeakin-sandia/fix_pio_reported_leak
+67088a3 Merge pull request #2407 from ESMCI/rljacob/docs/reorg-ug
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_grids.xml
+M	config/cesm/config_inputdata.xml
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/e3sm/allactive/config_compsets.xml
+M	config/e3sm/allactive/config_pesall.xml
+M	config/e3sm/config_archive.xml
+M	config/e3sm/config_files.xml
+A	config/e3sm/machines/Depends.summit.ibm
+A	config/e3sm/machines/Depends.theta.intel
+M	config/e3sm/machines/config_batch.xml
+M	config/e3sm/machines/config_compilers.xml
+M	config/e3sm/machines/config_machines.xml
+D	config/e3sm/testmods_dirs/allactive/cam/cosplite/user_nl_cam
+D	config/e3sm/testmods_dirs/allactive/cam/cosplite/xmlchange_cmnds
+D	config/e3sm/testmods_dirs/allactive/cam/cosplite_nhtfrq5/user_nl_cam
+D	config/e3sm/testmods_dirs/allactive/cam/cosplite_nhtfrq5/xmlchange_cmnds
+D	config/e3sm/testmods_dirs/allactive/cam/outfrq9s/user_nl_cam
+D	config/e3sm/testmods_dirs/allactive/cam/outfrq9s/user_nl_clm
+D	config/e3sm/testmods_dirs/allactive/cam/outfrq9s/xmlchange_cmnds
+D	config/e3sm/testmods_dirs/allactive/cam/rtm_null/xmlchange_cmnds
+D	config/e3sm/testmods_dirs/allactive/clm/betr/xmlchange_cmnds
+D	config/e3sm/testmods_dirs/allactive/clm/bgcexp/user_nl_clm
+D	config/e3sm/testmods_dirs/allactive/clm/bgcexp/xmlchange_cmnds
+D	config/e3sm/testmods_dirs/allactive/clm/bgcinterface/user_nl_clm
+D	config/e3sm/testmods_dirs/allactive/clm/eca/user_nl_clm
+D	config/e3sm/testmods_dirs/allactive/clm/fates/user_nl_clm
+D	config/e3sm/testmods_dirs/allactive/clm/rd/user_nl_clm
+D	config/e3sm/testmods_dirs/allactive/clm/vst/user_nl_clm
+D	config/e3sm/testmods_dirs/allactive/drv/y100k
+D	config/e3sm/testmods_dirs/allactive/force_netcdf_pio/xmlchange_cmnds
+A	config/e3sm/testmods_dirs/allactive/v1cmip6/shell_commands
+D	config/e3sm/testmods_dirs/allactive/v1cmip6/xmlchange_cmnds
+A	config/e3sm/tests.py
+M	config/xml_schemas/config_inputdata.xsd
+M	doc/source/index.rst
+D	doc/source/users_guide/adding-cases.rst
+D	doc/source/users_guide/case-basics.rst
+A	doc/source/users_guide/cime-config.rst
+M	doc/source/users_guide/cime-internals.rst
+A	doc/source/users_guide/compsets.rst
+M	doc/source/users_guide/create-a-case.rst
+D	doc/source/users_guide/creating-new-compsets.rst
+D	doc/source/users_guide/customizing-a-case.rst
+A	doc/source/users_guide/grids.rst
+M	doc/source/users_guide/index.rst
+A	doc/source/users_guide/machine.rst
+D	doc/source/users_guide/optimizing-processor-layout.rst
+A	doc/source/users_guide/pes-threads.rst
+M	doc/source/users_guide/porting-cime.rst
+M	doc/source/users_guide/running-a-case.rst
+M	doc/source/users_guide/testing.rst
+A	doc/source/users_guide/timers.rst
+M	doc/source/users_guide/use_cases/basics-a-basic-example.rst
+D	doc/source/users_guide/use_cases/basics-mpi-example.rst
+A	doc/source/users_guide/use_cases/cesm-nml.rst
+A	doc/source/users_guide/use_cases/datamod-nml.rst
+A	doc/source/users_guide/use_cases/driver-nml.rst
+A	doc/source/users_guide/use_cases/namelist-gen.rst
+M	doc/source/users_guide/use_cases/use-cases.rst
+M	scripts/Tools/Makefile
+M	scripts/Tools/list_e3sm_tests
+D	scripts/Tools/update_e3sm_tests
+M	scripts/create_test
+M	scripts/lib/CIME/Servers/__init__.py
+M	scripts/lib/CIME/Servers/ftp.py
+A	scripts/lib/CIME/Servers/gftp.py
+M	scripts/lib/CIME/SystemTests/pea.py
+M	scripts/lib/CIME/SystemTests/pem.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/case/case_clone.py
+M	scripts/lib/CIME/case/case_run.py
+M	scripts/lib/CIME/case/check_input_data.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/provenance.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/utils.py
+A	scripts/lib/get_tests.py
+D	scripts/lib/update_e3sm_tests.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	src/drivers/mct/cime_config/config_component_e3sm.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/main/seq_hist_mod.F90
+M	src/drivers/mct/main/seq_io_mod.F90
+M	src/drivers/mct/shr/seq_comm_mct.F90
+M	src/drivers/mct/shr/seq_infodata_mod.F90
+M	src/externals/pio1/pio/piodarray.F90.in
+M	src/share/timing/ChangeLog
+M	src/share/timing/gptl.h
+M	src/share/timing/private.h
+M	tools/statistical_ensemble_test/README
+M	tools/statistical_ensemble_test/ensemble.sh
+M	tools/statistical_ensemble_test/single_run.sh
+======================================================================
+======================================================================
+
+Originator: Chris Fischer 
+Date: 4-06-2018
+Tag: cime5.4.0-alpha.28
+Answer Changes: None
+Tests: ERI.f09_g17.B1850.cheyenne_intel.allactive-defaultio 
+       scripts_regression_tests.py
+       code_checker
+Dependencies:
+
+Brief Summary:
+    - py3 fix
+    - Fix for ERI test.
+    - More fixes for archiver and tests.
+    - cime_bisect improvements.
+    - ERS and ERI tests need skip_pnl=False.
+    - More fixes related to cesm testing.
+    - CESM test fixes.
+    - Refactor crucial run_sub_or_cmd method.
+    - Restore shell batch capability.
+
+User interface changes: 
+    - New custom script option.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+35fd3d1 py3 fix
+6c6d3b5 Merge pull request #2429 from jedwards4b/eri_fix
+83ef1ba Merge pull request #2426 from jedwards4b/archiver_and_test_fixes
+58f020d Merge pull request #2425 from ESMCI/jgfouca/cime_bisect_improvements
+3c3fdeb Merge pull request #2424 from jedwards4b/cesm_sta_fixes
+603d5da Merge pull request #2423 from jedwards4b/cesm_sta_fixes
+fc83e87 Merge pull request #2422 from jedwards4b/cesm_sta_fixes
+7602f4b Merge pull request #2420 from ESMCI/jgfouca/refactor_run_sub_or_cmd
+d9e3cdf Merge pull request #2419 from ESMCI/jgfouca/restore_shell_batch
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_archive.xml
+M       scripts/Tools/cime_bisect
+M       scripts/Tools/mkSrcfiles
+M       scripts/lib/CIME/SystemTests/eri.py
+M       scripts/lib/CIME/SystemTests/erp.py
+M       scripts/lib/CIME/SystemTests/ers.py
+M       scripts/lib/CIME/SystemTests/irt.py
+M       scripts/lib/CIME/SystemTests/nck.py
+M       scripts/lib/CIME/SystemTests/seq.py
+M       scripts/lib/CIME/SystemTests/system_tests_common.py
+M       scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M       scripts/lib/CIME/XML/env_batch.py
+M       scripts/lib/CIME/build.py
+M       scripts/lib/CIME/case/case_run.py
+M       scripts/lib/CIME/case/case_setup.py
+M       scripts/lib/CIME/case/case_st_archive.py
+M       scripts/lib/CIME/test_scheduler.py
+M       scripts/lib/CIME/utils.py
+M       src/drivers/mct/cime_config/config_archive.xml
+M       src/share/util/shr_scam_mod.F90
+
+
+======================================================================
+
+
+======================================================================
+
+Originator: Chris Fischer
 Date: 4-03-2018
 Tag: cime5.4.0-alpha.27
 Answer Changes: None
@@ -388,7 +1123,7 @@ Brief Summary:
 User interface changes: 
     - (cesm only) create_test and query_testlist now have --supported-only flag
     - New allow_error attribute for module systems. 
-    - check_input_data replace --svn-loc with --server and --protocal
+    - check_input_data replace --svn-loc with --server and --protocol
     - Some Tools with "acme" in the name now say "e3sm".
 
 PR summary: git log --oneline --first-parent [previous_tag]..master 
@@ -1096,7 +1831,7 @@ Brief Summary:
 User interface changes: 
     - (cesm only) create_test and query_testlist now have --supported-only flag
     - New allow_error attribute for module systems. 
-    - check_input_data replace --svn-loc with --server and --protocal
+    - check_input_data replace --svn-loc with --server and --protocol
     - Some Tools with "acme" in the name now say "e3sm".
 
 PR summary: git log --oneline --first-parent [previous_tag]..master 

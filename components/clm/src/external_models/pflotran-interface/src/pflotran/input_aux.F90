@@ -1,5 +1,7 @@
 module Input_Aux_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
 
   use PFLOTRAN_Constants_module
@@ -8,12 +10,12 @@ module Input_Aux_module
 
   private
 
-#include "petsc/finclude/petscsys.h"
 
   type, public :: input_type 
     PetscInt :: fid
     PetscErrorCode :: ierr
-    character(len=MAXWORDLENGTH) :: filename
+    character(len=MAXSTRINGLENGTH) :: path
+    character(len=MAXSTRINGLENGTH) :: filename
     character(len=MAXSTRINGLENGTH) :: buf
     character(len=MAXSTRINGLENGTH) :: err_buf
     character(len=MAXSTRINGLENGTH) :: err_buf2
@@ -33,6 +35,12 @@ module Input_Aux_module
 
   type(input_dbase_type), pointer, public :: dbase => null()
 
+  interface InputCreate
+    module procedure InputCreate1
+    module procedure InputCreate2
+    module procedure InputCreate3
+  end interface
+  
   interface InputReadWord
     module procedure InputReadWord1
     module procedure InputReadWord2
@@ -123,13 +131,96 @@ module Input_Aux_module
             InputDbaseDestroy, &
             InputPushExternalFile, &
             InputReadWordDbaseCompatible, &
-            InputReadAndConvertUnits
+            InputReadAndConvertUnits, &
+            InputRewind, &
+            InputCloseNestedFiles, &
+            InputReadFileDirNamePrefix, &
+            UnitReadAndConversionFactor
 
 contains
 
 ! ************************************************************************** !
 
-function InputCreate(fid,filename,option)
+function InputCreate1(fid,path,filename,option)
+  ! 
+  ! Allocates and initializes a new Input object
+  ! 
+  ! Author: Glenn Hammond
+  ! Date: 11/10/08
+  ! 
+
+  use Option_module
+
+  implicit none
+  
+  PetscInt :: fid
+  character(len=*) :: path
+  character(len=*) :: filename
+  type(option_type) :: option
+  
+  type(input_type), pointer :: InputCreate1
+  PetscInt :: istatus  
+  PetscInt :: islash  
+  character(len=MAXSTRINGLENGTH) :: local_path
+  character(len=MAXSTRINGLENGTH) :: full_path
+  type(input_type), pointer :: input
+  
+  allocate(input)
+  input%fid = fid
+  input%path = ''
+  input%filename = ''
+  input%ierr = 0
+  input%buf = ''
+  input%err_buf = ''
+  input%err_buf2 = ''
+  input%broadcast_read = PETSC_FALSE
+  input%force_units = PETSC_FALSE
+  nullify(input%parent)
+
+  
+  local_path = ''
+  ! split the filename into a path and filename
+                              ! backwards search
+  islash = index(filename,'/',PETSC_TRUE)
+  if (islash > 0) then
+    local_path(1:islash) = filename(1:islash)
+    input%filename(1:len_trim(filename)-islash) = &
+      filename(islash+1:len_trim(filename))
+  else
+    input%filename = filename
+  endif
+
+  ! If the path starts with a '/', then it is not relative, but absolute. 
+  ! Do not add the externally passed path.
+  local_path = adjustl(local_path)
+  if (index(local_path,'/') == 1) then
+    input%path = local_path
+  else
+    input%path = trim(path) // trim(local_path)
+  endif
+
+  if (fid == MAX_IN_UNIT) then
+    option%io_buffer = 'MAX_IN_UNIT in pflotran_constants.h must be &
+      &increased to accommodate a larger number of embedded files.'
+    call printErrMsg(option)
+  endif
+
+  full_path = trim(input%path) // trim(input%filename)
+  open(unit=input%fid,file=full_path,status="old",iostat=istatus)
+  !TODO(geh): update the error messaging
+  if (istatus /= 0) then
+    if (len_trim(full_path) == 0) full_path = '<blank>'
+    option%io_buffer = 'File: "' // trim(full_path) // '" not found.'
+    call printErrMsg(option)
+  endif
+  
+  InputCreate1 => input
+  
+end function InputCreate1
+
+! ************************************************************************** !
+
+function InputCreate2(fid,filename,option)
   ! 
   ! Allocates and initializes a new Input object
   ! 
@@ -145,38 +236,37 @@ function InputCreate(fid,filename,option)
   character(len=*) :: filename
   type(option_type) :: option
   
-  type(input_type), pointer :: InputCreate
-  PetscInt :: status  
-  type(input_type), pointer :: input
-  
-  allocate(input)
+  type(input_type), pointer :: InputCreate2
+  character(len=MAXWORDLENGTH) :: word
 
-  input%fid = fid
-  input%filename = filename
-  input%ierr = 0
-  input%buf = ''
-  input%err_buf = ''
-  input%err_buf2 = ''
-  input%broadcast_read = PETSC_FALSE
-  input%force_units = PETSC_FALSE
-  nullify(input%parent)
+  word = ''
+  InputCreate2 => InputCreate1(fid,word,filename,option)
   
-  if (fid == MAX_IN_UNIT) then
-    option%io_buffer = 'MAX_IN_UNIT in pflotran_constants.h must be increased to' // &
-      ' accommodate a larger number of embedded files.'
-    call printErrMsg(option)
-  endif
+end function InputCreate2
 
-  open(unit=input%fid,file=filename,status="old",iostat=status)
-  if (status /= 0) then
-    if (len_trim(filename) == 0) filename = '<blank>'
-    option%io_buffer = 'File: "' // trim(filename) // '" not found.'
-    call printErrMsg(option)
-  endif
+! ************************************************************************** !
+
+function InputCreate3(input,filename,option)
+  ! 
+  ! Allocates and initializes a new input object without a path
+  ! 
+  ! Author: Glenn Hammond
+  ! Date: 09/28/17
+  ! 
+
+  use Option_module
+
+  implicit none
   
-  InputCreate => input
+  type(input_type), pointer :: input ! note that this is the old input object
+  character(len=MAXSTRINGLENGTH) :: filename
+  type(option_type) :: option
   
-end function InputCreate
+  type(input_type), pointer :: InputCreate3
+
+  InputCreate3 => InputCreate1(input%fid + 1,input%path,filename,option)
+  
+end function InputCreate3
 
 ! ************************************************************************** !
 
@@ -687,7 +777,7 @@ subroutine InputReadPflotranStringSlave(input, option)
     call StringToUpper(word)
     
     if (word(1:13) == 'EXTERNAL_FILE') then
-      ! have to stip the card 'EXTERNAL_FILE' from the buffer
+      ! have to strip the card 'EXTERNAL_FILE' from the buffer
       call InputReadWord(input,option,word,PETSC_TRUE)
       ! push a new input file to stack
       call InputPushExternalFile(input,option)
@@ -1116,6 +1206,48 @@ end subroutine InputReadPath
 
 ! ************************************************************************** !
 
+subroutine InputReadFileDirNamePrefix(prefix,name_prefix,directory)
+  ! 
+  ! Reads in file_name_prefix and file_directory given the full file_prefix
+  !
+  ! Author: Paolo Orsini
+  ! Date: 08/10/17
+  ! 
+
+  use String_module
+
+  implicit none
+
+  character(len=MAXSTRINGLENGTH), intent(in) :: prefix
+  character(len=MAXSTRINGLENGTH), intent(out) :: name_prefix
+  character(len=MAXSTRINGLENGTH), intent(out) :: directory
+
+  character(len=MAXSTRINGLENGTH), pointer :: strings(:)
+  character(len=MAXSTRINGLENGTH) :: string_tmp
+  PetscInt :: i_dir
+
+  string_tmp = trim(prefix)
+
+  strings => StringSplit(string_tmp,'/')
+
+  name_prefix = adjustl(trim(strings(size(strings))))
+
+  directory = ''
+  if ( size(strings) > 1 ) then
+    do i_dir = 1, size(strings) - 1 
+      if ( i_dir == (size(strings) - 1) ) then 
+        directory = adjustl(trim(directory)) // adjustl(trim(strings(i_dir)))
+      else
+        directory = adjustl(trim(directory)) &
+                    // adjustl(trim(strings(i_dir))) // '/'
+      end if
+    end do
+  end if
+
+end subroutine InputReadFileDirNamePrefix
+
+! ************************************************************************** !
+
 subroutine InputFindStringInFile1(input, option, string)
   ! 
   ! Rewinds file and finds the first occurrence of
@@ -1184,7 +1316,7 @@ subroutine InputFindStringInFile2(input, option, string, print_warning)
   ! the file.
   if (InputError(input)) then
     input%ierr = 0
-    rewind(input%fid)
+    call InputRewind(input)
     do 
       call InputReadPflotranString(input,option)
       if (InputError(input)) exit
@@ -1629,7 +1761,7 @@ subroutine InputReadFilenames(option,filenames)
   if (InputError(input)) then
     ! if the FILENAMES card is not included, we will assume that only
     ! filenames exist in the file.
-    rewind(input%fid)
+    call InputRewind(input)
   else
     card_found = PETSC_TRUE
   endif
@@ -1645,7 +1777,7 @@ subroutine InputReadFilenames(option,filenames)
   
   allocate(filenames(filename_count))
   filenames = ''
-  rewind(input%fid) 
+  call InputRewind(input)
 
   if (card_found) then
     string = "FILENAMES"
@@ -1668,47 +1800,110 @@ end subroutine InputReadFilenames
 
 ! ************************************************************************** !
 
-function InputGetLineCount(input)
+function InputGetLineCount(input,option)
+
+  use String_module
 
   implicit none
   
   type(input_type), pointer :: input
+  type(option_type) :: option
+
   PetscInt :: line_count
   PetscInt :: InputGetLineCount
 
-  rewind(input%fid)
+  character(len=MAXSTRINGLENGTH) :: tempstring
+  character(len=MAXWORDLENGTH) :: word
+
+  call InputRewind(input)
 
   line_count = 0
   do
-    read(input%fid, '(a512)', iostat=input%ierr)
+#if 1
+    read(input%fid,'(a512)',iostat=input%ierr) input%buf
+    call StringAdjustl(input%buf)
+
+    if (InputError(input)) then
+      ! check to see if another file is on the stack
+      if (InputPopExternalFile(input)) then
+        cycle
+      else
+        exit
+      endif
+    endif
+
+    tempstring = input%buf
+    call InputReadWord(tempstring,word,PETSC_TRUE,input%ierr)
+    call StringToUpper(word)
+
+    if (word(1:13) == 'EXTERNAL_FILE') then
+      ! have to strip the card 'EXTERNAL_FILE' from the buffer
+      call InputReadWord(input,option,word,PETSC_TRUE)
+      ! push a new input file to stack
+      call InputPushExternalFile(input,option)
+    endif 
+#else
+    call InputReadPflotranString(input,option)
     if (InputError(input)) exit
+#endif
     line_count = line_count + 1
   enddo
-  
+
   InputGetLineCount = line_count
-  
+
 end function InputGetLineCount
 
 ! ************************************************************************** !
 
-subroutine InputReadToBuffer(input, buffer)
+subroutine InputReadToBuffer(input, buffer, option)
+
+  use String_module
 
   implicit none
   
   type(input_type), pointer :: input
   character(len=MAXSTRINGLENGTH) :: buffer(:)
-  character(len=MAXSTRINGLENGTH) :: string
-  PetscInt :: line
+  type(option_type) :: option
 
-  rewind(input%fid)
-  line = 0
+  character(len=MAXSTRINGLENGTH) :: tempstring
+  character(len=MAXWORDLENGTH) :: word
+  PetscInt :: line_count
+
+  call InputRewind(input)
+
+  line_count = 0
   do
-    read(input%fid, '(a512)', iostat=input%ierr) string
+#if 1
+    read(input%fid,'(a512)',iostat=input%ierr) input%buf
+    call StringAdjustl(input%buf)
+
+    if (InputError(input)) then
+      ! check to see if another file is on the stack
+      if (InputPopExternalFile(input)) then
+        cycle
+      else
+        exit
+      endif
+    endif
+
+    tempstring = input%buf
+    call InputReadWord(tempstring,word,PETSC_TRUE,input%ierr)
+    call StringToUpper(word)
+
+    if (word(1:13) == 'EXTERNAL_FILE') then
+      ! have to strip the card 'EXTERNAL_FILE' from the buffer
+      call InputReadWord(input,option,word,PETSC_TRUE)
+      ! push a new input file to stack
+      call InputPushExternalFile(input,option)
+    endif 
+#else
+    call InputReadPflotranString(input,option)
     if (InputError(input)) exit
-    line = line + 1
-    buffer(line) = string
-  end do
-  
+#endif
+    line_count = line_count + 1
+    buffer(line_count) = input%buf
+  enddo
+
 end subroutine InputReadToBuffer
 
 ! ************************************************************************** !
@@ -1772,11 +1967,11 @@ subroutine InputReadASCIIDbase(filename,option)
       call InputReadWord(input,option,word,PETSC_TRUE)
       call InputErrorMsg(input,option,'value','ASCII Dbase')
       select case(StringIntegerDoubleOrWord(word))
-        case(STRING_IS_INTEGER)
+        case(STRING_IS_AN_INTEGER)
           num_ints = num_ints + 1
-        case(STRING_IS_DOUBLE)
+        case(STRING_IS_A_DOUBLE)
           num_reals = num_reals + 1
-        case(STRING_IS_WORD)
+        case(STRING_IS_A_WORD)
           num_words = num_words + 1
       end select
     endif
@@ -1797,7 +1992,7 @@ subroutine InputReadASCIIDbase(filename,option)
   allocate(words(num_values_in_dataset))
   words = ''
   
-  rewind(input%fid)
+  call InputRewind(input)
   allocate(dbase)
   if (num_ints > 0) then
     allocate(dbase%icard(num_ints))
@@ -1852,17 +2047,17 @@ subroutine InputReadASCIIDbase(filename,option)
       value_type = StringIntegerDoubleOrWord(string)
       string = words(value_index)
       select case(value_type)
-        case(STRING_IS_INTEGER)
+        case(STRING_IS_AN_INTEGER)
           num_ints = num_ints + 1
           dbase%icard(num_ints) = adjustl(object_name)
           call InputReadInt(string,option,dbase%ivalue(num_ints),input%ierr)
           call InputErrorMsg(input,option,'ivalue','ASCII Dbase '//object_name)
-        case(STRING_IS_DOUBLE)
+        case(STRING_IS_A_DOUBLE)
           num_reals = num_reals + 1
           dbase%rcard(num_reals) = adjustl(object_name)
           call InputReadDouble(string,option,dbase%rvalue(num_reals),input%ierr)
           call InputErrorMsg(input,option,'rvalue','ASCII Dbase '//object_name)
-        case(STRING_IS_WORD)
+        case(STRING_IS_A_WORD)
           num_words = num_words + 1
           dbase%ccard(num_words) = adjustl(object_name)
           dbase%cvalue(num_words) = words(value_index)
@@ -2234,6 +2429,53 @@ end subroutine InputReadAndConvertUnits
 
 ! ************************************************************************** !
 
+function UnitReadAndConversionFactor(input,internal_units, &
+                                     keyword_string,option)
+  ! 
+  ! Reads units if they exist and returns the units conversion factor.
+  ! If force_unit == true throws an error if units are not present
+  ! 
+  ! Author: Paolo Orsini
+  ! Date: 07/27/17
+  ! 
+  use Option_module
+  use Units_module
+  
+  implicit none
+ 
+  type(input_type) :: input
+  character(len=*) :: internal_units
+  character(len=*) :: keyword_string
+  type(option_type) :: option
+
+  PetscReal :: UnitReadAndConversionFactor
+
+  character(len=MAXWORDLENGTH) :: units
+  character(len=MAXWORDLENGTH) :: internal_units_word
+  character(len=MAXSTRINGLENGTH) :: string
+
+  call InputReadWord(input,option,units,PETSC_TRUE)
+  if (input%ierr == 0) then
+    if (len_trim(internal_units) < 1) then
+      option%io_buffer = 'No internal units provided in &
+                         & UnitReadAndConversionFactor()'
+      call printErrMsg(option)
+    endif
+    internal_units_word = trim(internal_units)
+    UnitReadAndConversionFactor =  &
+                   UnitsConvertToInternal(units,internal_units_word,option)
+  else
+    input%err_buf = keyword_string
+    call InputCheckMandatoryUnits(input,option)
+    string = trim(keyword_string) // ' units'
+    call InputDefaultMsg(input,option,string)
+    UnitReadAndConversionFactor = 1.0d0
+  endif
+  
+end function UnitReadAndConversionFactor
+
+! ************************************************************************** !
+
 subroutine InputPushExternalFile(input,option)
   ! 
   ! Looks up double precision value in database
@@ -2253,7 +2495,7 @@ subroutine InputPushExternalFile(input,option)
   
   call InputReadNChars(input,option,string,MAXSTRINGLENGTH,PETSC_TRUE)
   call InputErrorMsg(input,option,'filename','EXTERNAL_FILE')
-  input_child => InputCreate(input%fid+1,string,option) 
+  input_child => InputCreate(input,string,option) 
   input_child%parent => input
   input => input_child
 
@@ -2279,13 +2521,58 @@ function InputPopExternalFile(input)
   InputPopExternalFile = PETSC_FALSE
   if (associated(input%parent)) then
     input_parent => input%parent
-    call InputDestroy(input)
+    call InputDestroySingleLevel(input)
     input => input_parent
     nullify(input_parent)
     InputPopExternalFile = PETSC_TRUE
   endif
 
 end function InputPopExternalFile
+
+! ************************************************************************** !
+
+subroutine InputCloseNestedFiles(input)
+  ! 
+  ! Closes all files opened through the EXTERNAL_FILE cards.
+  ! 
+  ! Author: Glenn Hammond
+  ! Date: 09/27/17
+  ! 
+  implicit none
+
+  type(input_type), pointer :: input
+
+  ! With the EXTERNAL_FILE card, files may be nested.  The following loop
+  ! un-nests the input deck back to the main input file.
+  do
+    if (InputPopExternalFile(input)) then
+      cycle
+    else
+      exit
+    endif
+  enddo
+  rewind(input%fid)
+
+end subroutine InputCloseNestedFiles
+
+! ************************************************************************** !
+
+subroutine InputRewind(input)
+  ! 
+  ! Rewinds the input deck taking into count the EXTERNAL_FILE card 
+  ! capability.
+  ! 
+  ! Author: Glenn Hammond
+  ! Date: 09/27/17
+  ! 
+  implicit none
+
+  type(input_type), pointer :: input
+
+  call InputCloseNestedFiles(input)
+  rewind(input%fid)
+
+end subroutine InputRewind
 
 ! ************************************************************************** !
 
@@ -2321,17 +2608,45 @@ end subroutine InputDbaseDestroy
 
 ! ************************************************************************** !
 
-subroutine InputDestroy(input)
+subroutine InputDestroySingleLevel(input)
   ! 
-  ! Deallocates an input object
+  ! Deallocates a single input object within a linked list of nested
+  ! input objects.
   ! 
   ! Author: Glenn Hammond
-  ! Date: 11/10/08
+  ! Date: 09/27/17
   ! 
 
   implicit none
   
   type(input_type), pointer :: input
+  
+  if (input%fid /= 0) close(input%fid)
+  input%fid = 0
+  deallocate(input)
+  nullify(input)
+  
+end subroutine InputDestroySingleLevel
+
+! ************************************************************************** !
+
+recursive subroutine InputDestroy(input)
+  ! 
+  ! Deallocates all input objects, included those in a nestd linked list 
+  ! created due to the EXTERNAL_FILE capability.
+  ! 
+  ! Author: Glenn Hammond
+  ! Date: 11/10/08, 09/27/17
+  ! 
+
+  implicit none
+  
+  type(input_type), pointer :: input
+
+  ! destroy any parents first
+  if (associated(input%parent)) then
+    call InputDestroy(input%parent)
+  endif
   
   if (input%fid /= 0) close(input%fid)
   input%fid = 0

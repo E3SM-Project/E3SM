@@ -1,5 +1,6 @@
 module PM_Surface_Flow_class
-
+#include "petsc/finclude/petscts.h"
+  use petscts
   use PM_Base_class
   use PM_Surface_class
   use PFLOTRAN_Constants_module
@@ -7,15 +8,6 @@ module PM_Surface_Flow_class
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
-#include "petsc/finclude/petscsnes.h"
-#include "petsc/finclude/petscts.h"
 
   type, public, extends(pm_surface_type) :: pm_surface_flow_type
   contains
@@ -27,6 +19,7 @@ module PM_Surface_Flow_class
     procedure, public :: Destroy => PMSurfaceFlowDestroy
     procedure, public :: RHSFunction => PMSurfaceFlowRHSFunction
     procedure, public :: UpdateAuxVars => PMSurfaceFlowUpdateAuxVars
+    procedure, public :: InputRecord => PMSurfaceFlowInputRecord
   end type pm_surface_flow_type
 
   public :: PMSurfaceFlowCreate, &
@@ -181,7 +174,8 @@ end subroutine PMSurfaceFlowRHSFunction
 ! ************************************************************************** !
 
 subroutine PMSurfaceFlowUpdateTimestep(this,dt,dt_min,dt_max,iacceleration, &
-                                    num_newton_iterations,tfac)
+                                       num_newton_iterations,tfac, &
+                                       time_step_max_growth_factor)
   ! 
   ! This routine
   ! 
@@ -199,6 +193,7 @@ subroutine PMSurfaceFlowUpdateTimestep(this,dt,dt_min,dt_max,iacceleration, &
   PetscInt :: iacceleration
   PetscInt :: num_newton_iterations
   PetscReal :: tfac(:)
+  PetscReal :: time_step_max_growth_factor
 
   PetscReal :: dt_max_glb
   PetscErrorCode :: ierr
@@ -207,7 +202,8 @@ subroutine PMSurfaceFlowUpdateTimestep(this,dt,dt_min,dt_max,iacceleration, &
   call SurfaceFlowComputeMaxDt(this%surf_realization,dt_max_loc)
   call MPI_Allreduce(dt_max_loc,dt_max_glb,ONE_INTEGER_MPI,MPI_DOUBLE_PRECISION, &
                      MPI_MIN,this%option%mycomm,ierr)
-  dt = min(0.9d0*dt_max_glb,this%surf_realization%dt_max)
+  dt = min(0.9d0*dt_max_glb,this%surf_realization%dt_max, &
+           time_step_max_growth_factor*dt)
 
 end subroutine PMSurfaceFlowUpdateTimestep
 
@@ -247,16 +243,14 @@ subroutine PMSurfaceFlowPostSolve(this)
   ! 
   ! Author: Gautam Bisht, LBNL
   ! Date: 04/11/13
-  ! 
-
+  !
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Discretization_module
   use Surface_Field_module
   use Surface_Flow_module
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   class(pm_surface_flow_type) :: this
 
@@ -301,6 +295,30 @@ end subroutine PMSurfaceFlowUpdateAuxVars
 
 ! ************************************************************************** !
 
+subroutine PMSurfaceFlowInputRecord(this)
+  ! 
+  ! Writes ingested information to the input record file.
+  ! 
+  ! Author: Jenn Frederick, SNL
+  ! Date: 03/21/2016
+  ! 
+  
+  implicit none
+  
+  class(pm_surface_flow_type) :: this
+
+  character(len=MAXWORDLENGTH) :: word
+  PetscInt :: id
+
+  id = INPUT_RECORD_UNIT
+
+  write(id,'(a29)',advance='no') 'pm: '
+  write(id,'(a)') this%name
+
+end subroutine PMSurfaceFlowInputRecord
+
+! ************************************************************************** !
+
 subroutine PMSurfaceFlowDestroy(this)
   ! 
   ! This routine
@@ -321,6 +339,9 @@ subroutine PMSurfaceFlowDestroy(this)
   call printMsg(this%option,'PMSurfaceFlowDestroy()')
 #endif
 
+#ifndef SIMPLIFY
+!  call SurfaceFlowDestroy(this%surf_realization)
+#endif
   call this%comm1%Destroy()
 
 end subroutine PMSurfaceFlowDestroy

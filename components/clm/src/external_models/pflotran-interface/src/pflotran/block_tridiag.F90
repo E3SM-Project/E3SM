@@ -1,7 +1,8 @@
 module Block_Tridiag_module
 
 #include "petsc/finclude/petscsys.h"
-
+  use petscsys
+  use Utility_module, only : Equal
   private
 
   public :: decbt, &
@@ -400,7 +401,7 @@ subroutine dec (n, ndim, a, ip, ier)
     if (m .eq. k) goto 20
     a(m,k) = a(k,k)
     a(k,k) = t
- 20     if (t .eq. 0.d0) goto 80
+ 20     if (Equal(t,0.d0)) goto 80
 
 !  store multipliers in a(i,k), i = k+1,...,n. -
     t = 1.d0/t
@@ -413,7 +414,7 @@ subroutine dec (n, ndim, a, ip, ier)
       t = a(m,j)
       a(m,j) = a(k,j)
       a(k,j) = t
-      if (t .ne. 0.d0) then
+      if (.not. Equal(t,0.d0)) then
         do i = kp1,n
           a(i,j) = a(i,j) + a(i,k)*t
         enddo
@@ -422,7 +423,7 @@ subroutine dec (n, ndim, a, ip, ier)
   enddo
 
 70   k = n
-     if (a(n,n) .eq. 0.d0) goto 80
+     if (Equal(a(n,n),0.d0)) goto 80
      return
 
 80   ier = k

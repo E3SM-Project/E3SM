@@ -1,6 +1,8 @@
 module Grid_Unstructured_Aux_module
 
 !  use Connection_module
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Grid_Unstructured_Cell_module
   use Geometry_module
   
@@ -9,15 +11,14 @@ module Grid_Unstructured_Aux_module
   implicit none
 
   private 
-  
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscis.h"
-#include "petsc/finclude/petscis.h90"
+
 #if defined(SCORPIO)
   include "scorpiof.h"
 #endif
+
+  PetscInt, parameter, public :: UGRID_UPWIND_FRACTION_PT_PROJ = 1
+  PetscInt, parameter, public :: UGRID_UPWIND_FRACTION_CELL_VOL = 2
+  PetscInt, parameter, public :: UGRID_UPWIND_FRACTION_ABS_DIST = 3
   
   type, public :: grid_unstructured_type
     ! variables for all unstructured grids
@@ -46,6 +47,7 @@ module Grid_Unstructured_Aux_module
     PetscInt, pointer :: cell_vertices(:,:) ! vertices for each grid cell (NO LONGER zero-based)
     PetscInt, pointer :: face_to_cell_ghosted(:,:) !
     PetscInt, pointer :: connection_to_face(:)
+    PetscInt :: upwind_fraction_method ! method used to calculate upwind fraction
 !geh: Should not need face_to_vertex_nindex() as one could use face_to_vertex() 
 !     and vertex_ids_nindex() to get the same result.
 !gb: face_to_vertex_natural is required in GridLocalizeRegionsForUGrid() and needs
@@ -63,6 +65,7 @@ module Grid_Unstructured_Aux_module
     type(point3d_type), pointer :: vertices(:)
     type(point3d_type), pointer :: face_centroid(:)
     PetscReal, pointer :: face_area(:)
+    PetscInt, pointer :: nat_ids_of_other_grid(:)
   end type grid_unstructured_type
   
   type, public :: unstructured_explicit_type
@@ -173,6 +176,7 @@ module Grid_Unstructured_Aux_module
             UGridPartition, &
             UGridNaturalToPetsc, &
             UGridCreateOldVec, &
+            UGridCalculateDist, &
             UGridExplicitDestroy
 
 contains
@@ -194,23 +198,23 @@ function UGDMCreate()
   type(ugdm_type), pointer :: ugdm
 
   allocate(ugdm)
-  ugdm%is_ghosted_local = 0
-  ugdm%is_local_local = 0
-  ugdm%is_ghosted_petsc = 0
-  ugdm%is_local_petsc = 0
-  ugdm%is_ghosts_local = 0
-  ugdm%is_ghosts_petsc = 0
-  ugdm%is_local_natural = 0
-  ugdm%scatter_ltog = 0
-  ugdm%scatter_gtol = 0
-  ugdm%scatter_ltol  = 0
-  ugdm%scatter_gton = 0
+  ugdm%is_ghosted_local = PETSC_NULL_IS
+  ugdm%is_local_local = PETSC_NULL_IS
+  ugdm%is_ghosted_petsc = PETSC_NULL_IS
+  ugdm%is_local_petsc = PETSC_NULL_IS
+  ugdm%is_ghosts_local = PETSC_NULL_IS
+  ugdm%is_ghosts_petsc = PETSC_NULL_IS
+  ugdm%is_local_natural = PETSC_NULL_IS
+  ugdm%scatter_ltog = PETSC_NULL_VECSCATTER
+  ugdm%scatter_gtol = PETSC_NULL_VECSCATTER
+  ugdm%scatter_ltol  = PETSC_NULL_VECSCATTER
+  ugdm%scatter_gton = PETSC_NULL_VECSCATTER
   ugdm%mapping_ltog = 0
-  ugdm%global_vec = 0
-  ugdm%local_vec = 0
-  ugdm%scatter_bet_grids = 0
-  ugdm%scatter_bet_grids_1dof = 0
-  ugdm%scatter_bet_grids_ndof = 0
+  ugdm%global_vec = PETSC_NULL_VEC
+  ugdm%local_vec = PETSC_NULL_VEC
+  ugdm%scatter_bet_grids = PETSC_NULL_VECSCATTER
+  ugdm%scatter_bet_grids_1dof = PETSC_NULL_VECSCATTER
+  ugdm%scatter_bet_grids_ndof = PETSC_NULL_VECSCATTER
   ugdm%ao_natural_to_petsc = 0 ! this is solely a pointer, do not destroy
   UGDMCreate => ugdm
 
@@ -268,7 +272,10 @@ function UGridCreate()
   nullify(unstructured_grid%connection_to_face)
   nullify(unstructured_grid%face_centroid)
   nullify(unstructured_grid%face_area)
-  
+  nullify(unstructured_grid%nat_ids_of_other_grid)
+
+  unstructured_grid%upwind_fraction_method = UGRID_UPWIND_FRACTION_PT_PROJ
+
   UGridCreate => unstructured_grid
   
 end function UGridCreate
@@ -381,20 +388,12 @@ subroutine UGridCreateUGDM(unstructured_grid,ugdm,ndof,option)
   ! Date: 09/30/09
   ! 
   
+#include "petsc/finclude/petscdm.h"
+  use petscdm
   use Option_module
   use Utility_module, only: reallocateIntArray
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
-#include "petsc/finclude/petscdm.h"  
-#include "petsc/finclude/petscdm.h90"
-#include "petsc/finclude/petscis.h"
-#include "petsc/finclude/petscis.h90"
-#include "petsc/finclude/petscviewer.h"
   
   type(grid_unstructured_type) :: unstructured_grid
   type(ugdm_type), pointer :: ugdm
@@ -727,14 +726,12 @@ subroutine UGridCreateUGDMShell(unstructured_grid,da,ugdm,ndof,option)
   ! Author: Gautam Bisht, LBNL
   ! Date: 11/10/15
   ! 
-
+#include "petsc/finclude/petscdmda.h"
+  use petscdmda
   use Option_module
   use Utility_module, only: reallocateIntArray
   
   implicit none
-
-#include "petsc/finclude/petscdm.h90"
-#include "petsc/finclude/petscdmda.h"
 
   type(grid_unstructured_type) :: unstructured_grid
   DM :: da
@@ -785,6 +782,8 @@ subroutine UGridDMCreateJacobian(unstructured_grid,ugdm,mat_type,J,option)
   ! Author: Glenn Hammond
   ! Date: 11/05/09
   ! 
+#include "petsc/finclude/petscmat.h"
+  use petscmat
 
   use Option_module
   
@@ -985,15 +984,11 @@ subroutine UGridPartition(ugrid,option,Dual_mat,is_new, &
   ! Date: 10/05/12
   ! 
 
+#include "petsc/finclude/petscmat.h"
+  use petscmat
   use Option_module
   
   implicit none
-
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
-#include "petsc/finclude/petscis.h"
-#include "petsc/finclude/petscis.h90"
-#include "petsc/finclude/petscviewer.h"
   
   type(grid_unstructured_type) :: ugrid
   type(option_type) :: option
@@ -1004,6 +999,7 @@ subroutine UGridPartition(ugrid,option,Dual_mat,is_new, &
   MatPartitioning :: Part
   PetscInt, allocatable :: cell_counts(:)
   PetscInt :: iflag
+  PetscInt :: tempint
   PetscViewer :: viewer
   PetscInt :: local_vertex_offset
   PetscErrorCode :: ierr
@@ -1040,8 +1036,8 @@ subroutine UGridPartition(ugrid,option,Dual_mat,is_new, &
   allocate(cell_counts(option%mycommsize))
   ! ISPartitioningCount takes a ISPartitioning and determines the number of  
   ! resulting elements on each (partition) process - petsc
-  call ISPartitioningCount(is_new,option%mycommsize,cell_counts, &
-                           ierr);CHKERRQ(ierr)
+  tempint = option%mycommsize
+  call ISPartitioningCount(is_new,tempint,cell_counts,ierr);CHKERRQ(ierr)
   num_cells_local_new = cell_counts(option%myrank+1) 
   call MPI_Allreduce(num_cells_local_new,iflag,ONE_INTEGER_MPI,MPIU_INTEGER, &
                      MPI_MIN,option%mycomm,ierr)
@@ -1064,13 +1060,11 @@ subroutine UGridCreateOldVec(ugrid,option,elements_old, &
   ! Author: Glenn Hammond
   ! Date: 11/01/09
   ! 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Option_module                  
 
   implicit none
-
-#include "petsc/finclude/petscis.h"
-#include "petsc/finclude/petscis.h90"
-#include "petsc/finclude/petscviewer.h"
 
   type(grid_unstructured_type) :: ugrid
   type(option_type) :: option
@@ -1135,16 +1129,12 @@ subroutine UGridNaturalToPetsc(ugrid,option,elements_old,elements_local, &
   ! Date: 11/01/09
   ! 
 
+#include "petsc/finclude/petscmat.h"
+  use petscmat
   use Option_module
   use Utility_module, only: reallocateIntArray, DeallocateArray
   
   implicit none
-
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
-#include "petsc/finclude/petscis.h"
-#include "petsc/finclude/petscis.h90"
-#include "petsc/finclude/petscviewer.h"
 
   type(grid_unstructured_type) :: ugrid
   type(option_type) :: option
@@ -1194,7 +1184,7 @@ subroutine UGridNaturalToPetsc(ugrid,option,elements_old,elements_local, &
 
   ! scatter all the cell data from the old decomposition (as read in in 
   ! parallel) to the more parmetis-calculated decomposition
-  call VecScatterCreate(elements_old,PETSC_NULL_OBJECT,elements_natural,is_scatter, &
+  call VecScatterCreate(elements_old,PETSC_NULL_IS,elements_natural,is_scatter, &
                         vec_scatter,ierr);CHKERRQ(ierr)
   call ISDestroy(is_scatter,ierr);CHKERRQ(ierr)
   call VecScatterBegin(vec_scatter,elements_old,elements_natural, &
@@ -1723,7 +1713,8 @@ subroutine UGridDestroy(unstructured_grid)
     deallocate(unstructured_grid%face_centroid)
   nullify(unstructured_grid%face_centroid)  
   call DeallocateArray(unstructured_grid%face_area)
-  
+  call DeallocateArray(unstructured_grid%nat_ids_of_other_grid)
+
   deallocate(unstructured_grid)
   nullify(unstructured_grid)
 
@@ -1746,24 +1737,56 @@ subroutine UGridDMDestroy(ugdm)
   PetscErrorCode :: ierr
     
   if (.not.associated(ugdm)) return
-  
-  call ISDestroy(ugdm%is_ghosted_local,ierr);CHKERRQ(ierr)
-  call ISDestroy(ugdm%is_local_local,ierr);CHKERRQ(ierr)
-  call ISDestroy(ugdm%is_ghosted_petsc,ierr);CHKERRQ(ierr)
-  call ISDestroy(ugdm%is_local_petsc,ierr);CHKERRQ(ierr)
-  call ISDestroy(ugdm%is_ghosts_local,ierr);CHKERRQ(ierr)
-  call ISDestroy(ugdm%is_ghosts_petsc,ierr);CHKERRQ(ierr)
-  call ISDestroy(ugdm%is_local_natural,ierr);CHKERRQ(ierr)
-  call VecScatterDestroy(ugdm%scatter_ltog,ierr);CHKERRQ(ierr)
-  call VecScatterDestroy(ugdm%scatter_gtol,ierr);CHKERRQ(ierr)
-  call VecScatterDestroy(ugdm%scatter_ltol,ierr);CHKERRQ(ierr)
-  call VecScatterDestroy(ugdm%scatter_gton,ierr);CHKERRQ(ierr)
+
+  if (ugdm%is_ghosted_local /= PETSC_NULL_IS) then
+    call ISDestroy(ugdm%is_ghosted_local,ierr);CHKERRQ(ierr)
+  endif
+  if (ugdm%is_local_local /= PETSC_NULL_IS) then
+    call ISDestroy(ugdm%is_local_local,ierr);CHKERRQ(ierr)
+  endif
+  if (ugdm%is_ghosted_petsc /= PETSC_NULL_IS) then
+    call ISDestroy(ugdm%is_ghosted_petsc,ierr);CHKERRQ(ierr)
+  endif
+  if (ugdm%is_local_petsc /= PETSC_NULL_IS) then
+    call ISDestroy(ugdm%is_local_petsc,ierr);CHKERRQ(ierr)
+  endif
+  if (ugdm%is_ghosts_local /= PETSC_NULL_IS) then
+    call ISDestroy(ugdm%is_ghosts_local,ierr);CHKERRQ(ierr)
+  endif
+  if (ugdm%is_ghosts_petsc /= PETSC_NULL_IS) then
+    call ISDestroy(ugdm%is_ghosts_petsc,ierr);CHKERRQ(ierr)
+  endif
+  if (ugdm%is_local_natural /= PETSC_NULL_IS) then
+    call ISDestroy(ugdm%is_local_natural,ierr);CHKERRQ(ierr)
+  endif
+  if (ugdm%scatter_ltog /= PETSC_NULL_VECSCATTER) then
+    call VecScatterDestroy(ugdm%scatter_ltog,ierr);CHKERRQ(ierr)
+  endif
+  if (ugdm%scatter_gtol /= PETSC_NULL_VECSCATTER) then
+    call VecScatterDestroy(ugdm%scatter_gtol,ierr);CHKERRQ(ierr)
+  endif
+  if (ugdm%scatter_ltol /= PETSC_NULL_VECSCATTER) then
+    call VecScatterDestroy(ugdm%scatter_ltol,ierr);CHKERRQ(ierr)
+  endif
+  if (ugdm%scatter_gton /= PETSC_NULL_VECSCATTER) then
+    call VecScatterDestroy(ugdm%scatter_gton,ierr);CHKERRQ(ierr)
+  endif
   call ISLocalToGlobalMappingDestroy(ugdm%mapping_ltog,ierr);CHKERRQ(ierr)
-  call VecDestroy(ugdm%global_vec,ierr);CHKERRQ(ierr)
-  call VecDestroy(ugdm%local_vec,ierr);CHKERRQ(ierr)
-  call VecScatterDestroy(ugdm%scatter_bet_grids,ierr);CHKERRQ(ierr)
-  call VecScatterDestroy(ugdm%scatter_bet_grids_1dof,ierr);CHKERRQ(ierr)
-  call VecScatterDestroy(ugdm%scatter_bet_grids_ndof,ierr);CHKERRQ(ierr)
+  if (ugdm%global_vec /= PETSC_NULL_VEC) then
+    call VecDestroy(ugdm%global_vec,ierr);CHKERRQ(ierr)
+  endif
+  if (ugdm%local_vec /= PETSC_NULL_VEC) then
+    call VecDestroy(ugdm%local_vec,ierr);CHKERRQ(ierr)
+  endif
+  if (ugdm%scatter_bet_grids /= PETSC_NULL_VECSCATTER) then
+    call VecScatterDestroy(ugdm%scatter_bet_grids,ierr);CHKERRQ(ierr)
+  endif
+  if (ugdm%scatter_bet_grids_1dof /= PETSC_NULL_VECSCATTER) then
+    call VecScatterDestroy(ugdm%scatter_bet_grids_1dof,ierr);CHKERRQ(ierr)
+  endif
+  if (ugdm%scatter_bet_grids_ndof /= PETSC_NULL_VECSCATTER) then
+    call VecScatterDestroy(ugdm%scatter_bet_grids_ndof,ierr);CHKERRQ(ierr)
+  endif
   ! ugdm%ao_natural_to_petsc is a pointer to ugrid%ao_natural_to_petsc.  Do
   ! not destroy here.
   ugdm%ao_natural_to_petsc = 0 
@@ -1849,23 +1872,117 @@ subroutine UGridPolyhedraDestroy(polyhedra_grid)
   if (associated(polyhedra_grid%vertex_coordinates)) &
     deallocate(polyhedra_grid%vertex_coordinates)
   nullify(polyhedra_grid%vertex_coordinates)
-  if (associated(polyhedra_grid%ugridf2pgridf)) deallocate(polyhedra_grid%ugridf2pgridf)
+  if (associated(polyhedra_grid%ugridf2pgridf)) &
+    deallocate(polyhedra_grid%ugridf2pgridf)
   nullify(polyhedra_grid%ugridf2pgridf)
 
-  if (associated(polyhedra_grid%uface_localids)) deallocate(polyhedra_grid%uface_localids)
+  if (associated(polyhedra_grid%uface_localids)) &
+    deallocate(polyhedra_grid%uface_localids)
   nullify(polyhedra_grid%uface_localids)
-  if (associated(polyhedra_grid%uface_nverts)) deallocate(polyhedra_grid%uface_nverts)
+  if (associated(polyhedra_grid%uface_nverts)) &
+    deallocate(polyhedra_grid%uface_nverts)
   nullify(polyhedra_grid%uface_nverts)
-  if (associated(polyhedra_grid%uface_natvertids)) deallocate(polyhedra_grid%uface_natvertids)
+  if (associated(polyhedra_grid%uface_natvertids)) &
+    deallocate(polyhedra_grid%uface_natvertids)
   nullify(polyhedra_grid%uface_natvertids)
-  if (associated(polyhedra_grid%uface_left_natcellids)) deallocate(polyhedra_grid%uface_left_natcellids)
+  if (associated(polyhedra_grid%uface_left_natcellids)) &
+    deallocate(polyhedra_grid%uface_left_natcellids)
   nullify(polyhedra_grid%uface_left_natcellids)
-  if (associated(polyhedra_grid%uface_right_natcellids)) deallocate(polyhedra_grid%uface_right_natcellids)
+  if (associated(polyhedra_grid%uface_right_natcellids)) &
+    deallocate(polyhedra_grid%uface_right_natcellids)
   nullify(polyhedra_grid%uface_right_natcellids)
 
   deallocate(polyhedra_grid)
   nullify(polyhedra_grid)
 
 end subroutine UGridPolyhedraDestroy
+
+! ************************************************************************** !
+
+subroutine UGridCalculateDist(pt_up, pt_dn, pt_center, vol_up, vol_dn, &
+                              approach,dist,error,option)
+  !
+  ! Calculate the distance, unit vector and upwind fraction between to grid
+  ! cell centers
+  !
+  ! Author: Glenn Hammond
+  ! Date: 03/16/18
+  !
+
+  use Option_module
+  use Utility_module
+
+  implicit none
+
+  PetscReal, intent(in) :: pt_up(3)
+  PetscReal, intent(in) :: pt_dn(3)
+  PetscReal, intent(in) :: pt_center(3)
+  PetscReal, intent(in) :: vol_up
+  PetscReal, intent(in) :: vol_dn
+  PetscInt, intent(in) :: approach
+  PetscReal, intent(out) :: dist(-1:3)
+  PetscBool :: error
+  type(option_type) :: option
+
+  PetscReal :: v(3)
+  PetscReal :: v_up(3), v_dn(3)
+  PetscReal :: unit_vector(3)
+  PetscReal :: v_up_projected(3)
+  PetscReal :: upwind_fraction
+  PetscReal :: distance
+  PetscReal :: distance_up, distance_dn
+  character(len=MAXSTRINGLENGTH) :: string
+
+  dist = 0
+  v(:) = pt_dn(:) - pt_up(:)
+  v_up(:) = pt_center(:) - pt_up(:)
+  distance = sqrt(DotProduct(v,v))
+  unit_vector = v / distance
+
+  select case(approach)
+    case(UGRID_UPWIND_FRACTION_PT_PROJ)
+      ! project upwind vector (vector between upwind cell center and face
+      ! centroid) onto vector between cell centers
+      v_up_projected = DotProduct(unit_vector,v_up)*unit_vector
+      upwind_fraction = sqrt(DotProduct(v_up_projected,v_up_projected))/distance
+      if (upwind_fraction > 1.d0 .or. minval(v_up*unit_vector) < 0.d0) then
+        error = PETSC_TRUE
+        write(string,'(2(es16.9,","),es16.9)') pt_center(:)
+        option%io_buffer = 'Face (' // trim(adjustl(string)) // ') cannot &
+          &be projected onto the vector between cell centers ('
+        write(string,'(2(es16.9,","),es16.9)') pt_up(:)
+        option%io_buffer = trim(option%io_buffer) // trim(adjustl(string)) // &
+          ') and ('
+        write(string,'(2(es16.9,","),es16.9)') pt_dn(:)
+        option%io_buffer = trim(option%io_buffer) // trim(adjustl(string)) // &
+          ').'
+        if (upwind_fraction > 1.d0) then
+          write(string,'(es10.3)') upwind_fraction
+          option%io_buffer = trim(option%io_buffer) // ' Upwind fraction: ' // &
+            trim(adjustl(string)) // ';'
+        endif
+        if (minval(v_up*unit_vector) < 0.d0) then
+          write(string,'(2(es16.9,","),es16.9)') (v_up*unit_vector)
+            option%io_buffer = trim(option%io_buffer) // &
+              ' v_up*unit_vector: (' // &
+              trim(adjustl(string)) // ');'
+        endif
+        option%io_buffer = trim(option%io_buffer) // ' Please check the &
+          &location of the cell centers and face center.'
+        call printMsgByRank(option)
+      endif
+    case(UGRID_UPWIND_FRACTION_CELL_VOL)
+      upwind_fraction = vol_up / (vol_up+vol_dn)
+    case(UGRID_UPWIND_FRACTION_ABS_DIST)
+      v_dn(:) = pt_dn(:) - pt_center(:)
+      distance_up = sqrt(DotProduct(v_up,v_up))
+      distance_dn = sqrt(DotProduct(v_dn,v_dn))
+      upwind_fraction = distance_up / (distance_up + distance_dn)
+  end select
+  dist(-1) = upwind_fraction
+  dist(0) = distance
+  dist(1:3) = unit_vector
+
+end subroutine UGridCalculateDist
 
 end module Grid_Unstructured_Aux_module

@@ -7,11 +7,9 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.XML.machines      import Machines
 from CIME.BuildTools.configure import configure
-from CIME.utils             import get_cime_root, run_and_log_case_status, get_model, get_batch_script_for_job
+from CIME.utils             import get_cime_root, run_and_log_case_status, get_model, get_batch_script_for_job, safe_copy
 from CIME.test_status       import *
 from CIME.locked_files      import unlock_file, lock_file
-
-import shutil
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +39,7 @@ def _build_usernl_files(case, model, comp):
             expect(ninst_model==ninst_max,"MULTI_DRIVER mode, all components must have same NINST value.  NINST_{} != {}".format(model,ninst_max))
     if comp == "cpl":
         if not os.path.exists("user_nl_cpl"):
-            shutil.copy(os.path.join(model_dir, "user_nl_cpl"), ".")
+            safe_copy(os.path.join(model_dir, "user_nl_cpl"), ".")
     else:
         if ninst == 1:
             ninst = case.get_value("NINST_{}".format(model))
@@ -55,14 +53,14 @@ def _build_usernl_files(case, model, comp):
                     # to user_nl_foo_INST; otherwise, copy the original
                     # user_nl_foo from model_dir
                     if os.path.exists(nlfile):
-                        shutil.copy(nlfile, inst_nlfile)
+                        safe_copy(nlfile, inst_nlfile)
                     elif os.path.exists(model_nl):
-                        shutil.copy(model_nl, inst_nlfile)
+                        safe_copy(model_nl, inst_nlfile)
         else:
             # ninst = 1
             if not os.path.exists(nlfile):
                 if os.path.exists(model_nl):
-                    shutil.copy(model_nl, nlfile)
+                    safe_copy(model_nl, nlfile)
 
 ###############################################################################
 def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
@@ -112,10 +110,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         # Check ninst.
         # In CIME there can be multiple instances of each component model (an ensemble) NINST is the instance of that component.
         multi_driver = case.get_value("MULTI_DRIVER")
-        nthrds = 1
         for comp in models:
             ntasks = case.get_value("NTASKS_{}".format(comp))
-            nthrds = max(nthrds,case.get_value("NTHRDS_{}".format(comp)))
             if comp == "CPL":
                 continue
             ninst  = case.get_value("NINST_{}".format(comp))
@@ -131,8 +127,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                     else:
                         expect(False, "NINST_{} value {:d} greater than NTASKS_{} {:d}".format(comp, ninst, comp, ntasks))
                 case.set_value("NTASKS_PER_INST_{}".format(comp), int(ntasks / ninst))
-        if nthrds > 1:
-            case.set_value("BUILD_THREADED",True)
 
         if os.path.exists(get_batch_script_for_job(case.get_primary_job())):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
@@ -152,21 +146,26 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
             case.initialize_derived_attributes()
 
-            cost_per_node = 16 if case.get_value("MACH") == "yellowstone" else case.get_value("MAX_MPITASKS_PER_NODE")
+            cost_per_node = case.get_value("COSTPES_PER_NODE")
             case.set_value("COST_PES", case.num_nodes * cost_per_node)
-            case.set_value("TOTALPES", case.total_tasks)
-            case.set_value("SMP_PRESENT", case.get_build_threaded())
+            threaded = case.get_build_threaded()
+            case.set_value("SMP_PRESENT", threaded)
+            if threaded and case.total_tasks * case.thread_count > cost_per_node:
+                smt_factor = max(1.0,int(case.get_value("MAX_TASKS_PER_NODE") / cost_per_node))
+                case.set_value("TOTALPES", int(case.total_tasks * max(1.0,float(case.thread_count) / smt_factor)))
+            else:
+                case.set_value("TOTALPES", case.total_tasks*case.thread_count)
+
+
+            # May need to select new batch settings if pelayout changed (e.g. problem is now too big for prev-selected queue)
+            env_batch = case.get_env("batch")
+            env_batch.set_job_defaults([(case.get_primary_job(), {})], case)
 
             # create batch files
-            env_batch = case.get_env("batch")
             env_batch.make_all_batch_files(case)
             if get_model() == "e3sm" and not case.get_value("TEST"):
                 input_batch_script = os.path.join(case.get_value("MACHDIR"), "template.case.run.sh")
                 env_batch.make_batch_script(input_batch_script, "case.run", case, outfile=get_batch_script_for_job("case.run.sh"))
-
-            # May need to select new batch settings if pelayout changed (e.g. problem is now too big for prev-selected queue)
-            env_batch.set_job_defaults([(case.get_primary_job(), {})], case)
-            case.schedule_rewrite(env_batch)
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked
@@ -205,6 +204,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         env_module.make_env_mach_specific_file("sh", case)
         env_module.make_env_mach_specific_file("csh", case)
         env_module.save_all_env_info("software_environment.txt")
+
+        logger.info("You can now run './preview_run' to get more info on how your case will be run")
 
 ###############################################################################
 def case_setup(self, clean=False, test_mode=False, reset=False):

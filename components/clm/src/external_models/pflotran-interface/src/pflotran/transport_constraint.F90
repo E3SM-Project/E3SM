@@ -4,7 +4,6 @@ module Transport_Constraint_module
   use Reactive_Transport_Aux_module
   use Global_Aux_module
   
-  use Reaction_Surface_Complexation_Aux_module  
   use Reaction_Mineral_Aux_module
   use Reaction_Immobile_Aux_module
   
@@ -34,7 +33,7 @@ module Transport_Constraint_module
     type(aq_species_constraint_type), pointer :: aqueous_species
     type(guess_constraint_type), pointer :: free_ion_guess
     type(mineral_constraint_type), pointer :: minerals
-    type(srfcplx_constraint_type), pointer :: surface_complexes
+
     type(colloid_constraint_type), pointer :: colloids
     type(immobile_constraint_type), pointer :: immobile_species
     PetscBool :: requires_equilibration
@@ -60,7 +59,7 @@ module Transport_Constraint_module
     type(aq_species_constraint_type), pointer :: aqueous_species
     type(guess_constraint_type), pointer :: free_ion_guess
     type(mineral_constraint_type), pointer :: minerals
-    type(srfcplx_constraint_type), pointer :: surface_complexes
+
     type(colloid_constraint_type), pointer :: colloids
     type(immobile_constraint_type), pointer :: immobile_species
     type(global_auxvar_type), pointer :: global_auxvar
@@ -91,7 +90,8 @@ function TranConstraintCreate(option)
   ! Author: Glenn Hammond
   ! Date: 10/14/08
   ! 
-
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
   
   implicit none
@@ -105,7 +105,7 @@ function TranConstraintCreate(option)
   nullify(constraint%aqueous_species)
   nullify(constraint%free_ion_guess)
   nullify(constraint%minerals)
-  nullify(constraint%surface_complexes)
+
   nullify(constraint%colloids)
   nullify(constraint%immobile_species)
   nullify(constraint%next)
@@ -141,7 +141,7 @@ function TranConstraintCouplerCreate(option)
   nullify(coupler%aqueous_species)
   nullify(coupler%free_ion_guess)
   nullify(coupler%minerals)
-  nullify(coupler%surface_complexes)
+
   nullify(coupler%colloids)
   nullify(coupler%immobile_species)
   
@@ -168,6 +168,8 @@ subroutine TranConstraintRead(constraint,reaction,input,option)
   ! Date: 10/14/08
   ! 
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
   use Input_Aux_module
   use Units_module
@@ -186,12 +188,12 @@ subroutine TranConstraintRead(constraint,reaction,input,option)
   character(len=MAXWORDLENGTH) :: internal_units
   character(len=MAXSTRINGLENGTH) :: block_string
   PetscInt :: icomp, imnrl, iimmobile
-  PetscInt :: isrfcplx
+
   PetscInt :: length
   type(aq_species_constraint_type), pointer :: aq_species_constraint
   type(guess_constraint_type), pointer :: free_ion_guess_constraint
   type(mineral_constraint_type), pointer :: mineral_constraint
-  type(srfcplx_constraint_type), pointer :: srfcplx_constraint
+
   type(colloid_constraint_type), pointer :: colloid_constraint
   type(immobile_constraint_type), pointer :: immobile_constraint
   PetscErrorCode :: ierr
@@ -295,7 +297,8 @@ subroutine TranConstraintRead(constraint,reaction,input,option)
               call InputReadWord(input,option,aq_species_constraint% &
                                  constraint_aux_string(icomp), &
                                  PETSC_TRUE)
-              call InputErrorMsg(input,option,'constraint name',block_string)
+              call InputErrorMsg(input,option,'constraining species name', &
+                                 block_string)
             else
               call InputReadWord(input,option,word,PETSC_FALSE)
               if (input%ierr == 0) then
@@ -425,9 +428,6 @@ subroutine TranConstraintRead(constraint,reaction,input,option)
             call InputErrorMsg(input,option,'dataset name', &
                                trim(block_string) // ' VOL FRAC')
             mineral_constraint%external_voL_frac_dataset(imnrl) = PETSC_TRUE
-            ! set vol frac to NaN to catch bugs
-            tempreal = -1.d0
-            mineral_constraint%constraint_vol_frac(imnrl) = sqrt(tempreal)
           else
             call InputReadDouble(input,option, &
                                  mineral_constraint%constraint_vol_frac(imnrl))
@@ -444,38 +444,20 @@ subroutine TranConstraintRead(constraint,reaction,input,option)
             call InputErrorMsg(input,option,'dataset name', &
                                trim(block_string) // ' SURF AREA')
             mineral_constraint%external_area_dataset(imnrl) = PETSC_TRUE
-            ! set surface area to NaN to catch bugs
-            tempreal = -1.d0
-            mineral_constraint%constraint_area(imnrl) = sqrt(tempreal)
-            ! read units if they exist
-            internal_units = 'm^2/m^3'
-            call InputReadWord(input,option,word,PETSC_TRUE)
-            if (.not.InputError(input)) then
-              ! convert just to ensure that the units were properly set
-              tempreal = UnitsConvertToInternal(word,internal_units,option)
-              option%io_buffer = 'If mineral specific surface areas are ' // &
-                'defined through a DATASET, their units must be SI ' // &
-                '[m^2/m^3].  Unit conversion cannot be performed as ' // &
-                'currently implemented.'
-              call printErrMsg(option)        
-            endif
           else
             ! specific surface area
             call InputReadDouble(input,option, &
                                  mineral_constraint%constraint_area(imnrl))
             call InputErrorMsg(input,option,'surface area',block_string)
-            ! read units if they exist
-            internal_units = 'm^2/m^3'
-            call InputReadWord(input,option,word,PETSC_TRUE)
-            if (InputError(input)) then
-              input%err_buf = trim(mineral_constraint%names(imnrl)) // &
-                               ' SPECIFIC SURFACE_AREA UNITS'
-              call InputDefaultMsg(input,option)
-            else
-              mineral_constraint%constraint_area(imnrl) = &
-                mineral_constraint%constraint_area(imnrl) * &
-                UnitsConvertToInternal(word,internal_units,option)
-            endif
+          endif
+          ! read units if they exist. conversion takes place later
+          call InputReadWord(input,option,mineral_constraint% &
+                             constraint_area_units(imnrl),PETSC_TRUE)
+          if (InputError(input)) then
+            mineral_constraint%constraint_area_units(imnrl) = 'm^2/m^3'
+            input%err_buf = trim(mineral_constraint%names(imnrl)) // &
+                             ' SPECIFIC SURFACE_AREA UNITS'
+            call InputDefaultMsg(input,option)
           endif
         enddo  
         
@@ -493,54 +475,7 @@ subroutine TranConstraintRead(constraint,reaction,input,option)
           call MineralConstraintDestroy(constraint%minerals)
         endif
         constraint%minerals => mineral_constraint 
-                            
-      case('SURFACE_COMPLEXES')
-      
-        srfcplx_constraint => &
-          SurfaceComplexConstraintCreate(reaction%surface_complexation,option)
 
-        block_string = 'CONSTRAINT, SURFACE_COMPLEXES'
-        isrfcplx = 0
-        do
-          call InputReadPflotranString(input,option)
-          call InputReadStringErrorMsg(input,option,block_string)
-          
-          if (InputCheckExit(input,option)) exit          
-          
-          isrfcplx = isrfcplx + 1
-
-          if (isrfcplx > reaction%surface_complexation%nkinsrfcplx) then
-            option%io_buffer = &
-                     'Number of surface complex constraints exceeds ' // &
-                     'number of kinetic surface complexes in constraint: ' // &
-                      trim(constraint%name)
-            call printErrMsg(option)
-          endif
-          
-          call InputReadWord(input,option,srfcplx_constraint%names(isrfcplx), &
-                          PETSC_TRUE)
-          call InputErrorMsg(input,option,'surface complex name',block_string)
-          option%io_buffer = 'Constraint Surface Complex: ' // &
-                             trim(srfcplx_constraint%names(isrfcplx))
-          call printMsg(option)
-          call InputReadDouble(input,option, &
-                               srfcplx_constraint%constraint_conc(isrfcplx))
-          call InputErrorMsg(input,option,'concentration',block_string)
-        enddo  
-        
-        if (isrfcplx < reaction%surface_complexation%nkinsrfcplx) then
-          option%io_buffer = &
-                   'Number of surface complex constraints is less than ' // &
-                   'number of kinetic surface complexes in surface ' // &
-                   'complex constraint.'
-          call printErrMsg(option)        
-        endif
-        
-        if (associated(constraint%surface_complexes)) then
-          call SurfaceComplexConstraintDestroy(constraint%surface_complexes)
-        endif
-        constraint%surface_complexes => srfcplx_constraint
-         
       case('COLL','COLLOIDS')
 
         colloid_constraint => ColloidConstraintCreate(reaction,option)
@@ -793,9 +728,6 @@ subroutine TranConstraintDestroy(constraint)
   if (associated(constraint%minerals)) &
     call MineralConstraintDestroy(constraint%minerals)
   nullify(constraint%minerals)
-  if (associated(constraint%surface_complexes)) &
-    call SurfaceComplexConstraintDestroy(constraint%surface_complexes)
-  nullify(constraint%surface_complexes)
   if (associated(constraint%colloids)) &
     call ColloidConstraintDestroy(constraint%colloids)
   nullify(constraint%colloids)
@@ -879,7 +811,7 @@ subroutine TranConstraintCouplerDestroy(coupler_list)
     nullify(prev_coupler%global_auxvar)
     nullify(prev_coupler%aqueous_species)
     nullify(prev_coupler%minerals)
-    nullify(prev_coupler%surface_complexes)
+
     nullify(prev_coupler%colloids)
     nullify(prev_coupler%immobile_species)
     nullify(prev_coupler%next)

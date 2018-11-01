@@ -70,13 +70,20 @@ contains
     !
     ! Verify that the linear interpolation returns the correct value
     ! for the middle of the range.
-    !
+    ! Verify at http://www.ambrsoft.com/TrigoCalc/Plan3D/PlaneLineIntersection_.htm
 
     use Geometry_module
 
     implicit none
 
     class (Test_Geometry), intent(inout) :: this
+
+    type(point3d_type) :: point1
+    type(point3d_type) :: point2
+    type(point3d_type) :: point3
+    type(point3d_type) :: point4
+    type(point3d_type) :: point5
+    type(point3d_type) :: intercept
 
     PetscReal, parameter :: x1 = 1.d0
     PetscReal, parameter :: y1 = -2.d0
@@ -88,14 +95,38 @@ contains
     PetscReal, parameter :: y3 = -1.d0
     PetscReal, parameter :: z3 = 2.d0
 
+    PetscReal, parameter :: x4 = (x1 + x2 + x3) / 3.d0
+    PetscReal, parameter :: y4 = (y1 + y2 + y3) / 3.d0
+    PetscReal, parameter :: z4 = (z1 + z2 + z3) / 3.d0
+
+    PetscReal :: x5
+    PetscReal :: y5
+    PetscReal :: z5
+
     PetscReal :: x12, y12, z12
     PetscReal :: x13, y13, z13
 
     PetscReal :: A, B, C, D
     PetscReal :: z
     PetscReal :: dz_dx, dz_dy
+    PetscReal :: tempreal
 
     type(plane_type) :: plane
+    type(plane_type) :: plane2
+
+    point1%x = x1
+    point1%y = y1
+    point1%z = z1
+    point2%x = x2
+    point2%y = y2
+    point2%z = z2
+    point3%x = x3
+    point3%y = y3
+    point3%z = z3
+
+    point4%x = x4
+    point4%y = y4
+    point4%z = z4
 
     x12 = x2-x1
     y12 = y2-y1
@@ -110,27 +141,186 @@ contains
     C = x12*y13-y12*x13
     D = -1.d0*(A*x1+B*y1+C*z1)
 
-    call GeometryComputePlaneWithPoints(plane,x1,y1,z1,x2,y2,z2,x3,y3,z3)
+    tempreal = sqrt(A*A+B*B+C*C)
 
+    ! create a point 2m away from plane at point 4
+    x5 = x4 + A/tempreal * 2.d0
+    y5 = y4 + B/tempreal * 2.d0
+    z5 = z4 + C/tempreal * 2.d0
+
+    point5%x = x5
+    point5%y = y5
+    point5%z = z5
+
+    call GeometryComputePlaneWithPoints(plane,point1,point2,point3)
     @assertEqual(A, plane%A, 1.0d-16)
     @assertEqual(B, plane%B, 1.0d-16)
     @assertEqual(C, plane%C, 1.0d-16)
     @assertEqual(D, plane%D, 1.0d-16)
 
-    z = GeometryGetPlaneZIntercept(plane,x1,y1)
-    @assertEqual(z1, z, 1.0d-16)
+    z = GeometryGetPlaneZIntercept(plane,point1%x, point1%y)
+    @assertEqual(point1%z, z, 1.0d-16)
 
-    z = GeometryGetPlaneZIntercept(plane,x2,y2)
-    @assertEqual(z2, z, 1.0d-16)
+    z = GeometryGetPlaneZIntercept(plane,point2%x,point2%y)
+    @assertEqual(point2%z, z, 1.0d-16)
 
-    z = GeometryGetPlaneZIntercept(plane,x3,y3)
-    @assertEqual(z3, z, 1.0d-16)
+    z = GeometryGetPlaneZIntercept(plane,point3%x,point3%y)
+    @assertEqual(point3%z, z, 1.0d-16)
 
     call GeomGetPlaneGradientinXandY(plane,dz_dx,dz_dy)
     @assertEqual(-0.4d0, dz_dx, 1.0d-16)
     @assertEqual(1.6d0, dz_dy, 1.0d-16)
 
+    call GeomComputePlaneWithGradients(plane2, &
+                                       point3%x,point3%y,point3%z, &
+                                       dz_dx,dz_dy)
+    ! the equation differs by a factor of 5 at point3
+    tempreal = 5.d0
+    @assertEqual(plane2%A*tempreal, plane%A, 1.0d-14)
+    @assertEqual(plane2%B*tempreal, plane%B, 1.0d-14)
+    @assertEqual(plane2%C*tempreal, plane%C, 1.0d-14)
+    @assertEqual(plane2%D*tempreal, plane%D, 1.0d-14)
+   
+
+    ! point4 should be in plane
+    tempreal = GeomComputeDistanceFromPlane(plane,point4)
+    @assertEqual(0.d0, tempreal, 1.0d-16)
+
+    ! point5 should be 2m from plane
+    tempreal = GeomComputeDistanceFromPlane(plane,point5)
+    @assertEqual(2.d0, tempreal, 1.0d-16)
+
+    ! point5 intercept should be point4
+    call GeometryProjectPointOntoPlane(plane,point5,intercept)
+    @assertEqual(point4%x, intercept%x, 1.0d-14)
+    @assertEqual(point4%y, intercept%y, 1.0d-14)
+    @assertEqual(point4%z, intercept%z, 1.0d-14)
+
+    ! intercept of line between point4 and point5 should be point4
+    call GeometryGetPlaneIntercept(plane,point4,point5,intercept)
+    @assertEqual(point4%x, intercept%x, 1.0d-14)
+    @assertEqual(point4%y, intercept%y, 1.0d-14)
+    @assertEqual(point4%z, intercept%z, 1.0d-14)
+
   end subroutine testGeometry_XXX
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testGeometry_Example3(this)
+    !
+    ! Third example (numbered left to right) from http://www.ambrsoft.com/
+    !   TrigoCalc/Plan3D/PlaneLineIntersection_.htm
+
+    use Geometry_module
+
+    implicit none
+
+    class (Test_Geometry), intent(inout) :: this
+
+    type(point3d_type) :: point1
+    type(point3d_type) :: point2
+    type(point3d_type) :: intercept
+
+    PetscReal, parameter :: x1 = -1.d0
+    PetscReal, parameter :: y1 = 0.d0 
+    PetscReal, parameter :: z1 = -2.d0
+    PetscReal, parameter :: x2 = -2.d0
+    PetscReal, parameter :: y2 = 0.d0
+    PetscReal, parameter :: z2 = -4.d0
+
+    type(plane_type) :: plane
+
+    point1%x = x1
+    point1%y = y1
+    point1%z = z1
+    point2%x = x2
+    point2%y = y2
+    point2%z = z2
+
+    plane%A = 1.d0
+    plane%B = 0.d0
+    plane%C = 2.d0
+    plane%D = 3.d0
+
+    call GeometryGetPlaneIntercept(plane,point1,point2,intercept)
+    @assertEqual(-0.6d0, intercept%x, 1.0d-14)
+    @assertEqual(0.d0, intercept%y, 1.0d-14)
+    @assertEqual(-1.2d0, intercept%z, 1.0d-14)
+
+  end subroutine testGeometry_Example3
+
+! ************************************************************************** !
+
+  @Test
+  subroutine testGeometry_Example4(this)
+    !
+    ! Fourth example (numbered left to right) from http://www.ambrsoft.com/
+    !   TrigoCalc/Plan3D/PlaneLineIntersection_.htm
+
+    use Geometry_module
+
+    implicit none
+
+    class (Test_Geometry), intent(inout) :: this
+
+    type(point3d_type) :: pointa
+    type(point3d_type) :: pointb
+    type(point3d_type) :: pointc
+    type(point3d_type) :: point1
+    type(point3d_type) :: point2
+    type(point3d_type) :: intercept
+
+    PetscReal, parameter :: xa = -1.d0
+    PetscReal, parameter :: ya = 2.d0
+    PetscReal, parameter :: za = 4.d0
+    PetscReal, parameter :: xb = 2.d0
+    PetscReal, parameter :: yb = 1.d0
+    PetscReal, parameter :: zb = 3.d0
+    PetscReal, parameter :: xc = 1.d0
+    PetscReal, parameter :: yc = 3.d0
+    PetscReal, parameter :: zc = 2.d0
+
+    PetscReal, parameter :: x1 = 4.d0
+    PetscReal, parameter :: y1 = 1.d0 
+    PetscReal, parameter :: z1 = 1.d0
+    PetscReal, parameter :: x2 = 8.d0
+    PetscReal, parameter :: y2 = -2.d0
+    PetscReal, parameter :: z2 = -2.d0
+
+    type(plane_type) :: plane
+
+    pointa%x = xa
+    pointa%y = ya
+    pointa%z = za
+    pointb%x = xb
+    pointb%y = yb
+    pointb%z = zb
+    pointc%x = xc
+    pointc%y = yc
+    pointc%z = zc
+
+    point1%x = x1
+    point1%y = y1
+    point1%z = z1
+    point2%x = x2
+    point2%y = y2
+    point2%z = z2
+
+    call GeometryComputePlaneWithPoints(plane,pointa,pointb,pointc)
+    @assertEqual(3.d0, plane%A, 1.0d-16)
+    @assertEqual(4.d0, plane%B, 1.0d-16)
+    @assertEqual(5.d0, plane%C, 1.0d-16)
+    @assertEqual(-25.d0, plane%D, 1.0d-16)
+
+    call GeometryGetPlaneIntercept(plane,point1,point2,intercept)
+    @assertEqual(2.9333333333333333d0, intercept%x, 1.0d-14)
+    @assertEqual(1.8d0, intercept%y, 1.0d-14)
+    @assertEqual(1.8d0, intercept%z, 1.0d-14)
+
+  end subroutine testGeometry_Example4
+
+! ************************************************************************** !
 
 end module Test_Geometry_module
 

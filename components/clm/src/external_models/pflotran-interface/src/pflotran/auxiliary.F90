@@ -1,8 +1,9 @@
 module Auxiliary_module
   
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Global_Aux_module
   use TH_Aux_module
-  use Richards_Aux_module
   use Reactive_Transport_Aux_module
   use Material_Aux_class
   use Secondary_Continuum_Aux_module
@@ -14,13 +15,11 @@ module Auxiliary_module
 
   private
 
-#include "petsc/finclude/petscsys.h"
-
   type, public :: auxiliary_type 
     type(global_type), pointer :: Global
     type(reactive_transport_type), pointer :: RT
     type(th_type), pointer :: TH
-    type(richards_type), pointer :: Richards
+
     type(material_type), pointer :: Material
     type(sc_heat_type), pointer :: SC_heat
     type(sc_rt_type), pointer :: SC_RT
@@ -49,7 +48,6 @@ subroutine AuxInit(aux)
   nullify(aux%Global)
   nullify(aux%RT)
   nullify(aux%TH)
-  nullify(aux%Richards)
   
   nullify(aux%Material)
   nullify(aux%SC_heat)
@@ -75,7 +73,7 @@ subroutine AuxDestroy(aux)
   call GlobalAuxDestroy(aux%Global)
   call RTAuxDestroy(aux%RT)
   call THAuxDestroy(aux%TH)
-  call RichardsAuxDestroy(aux%Richards)
+
   call MaterialAuxDestroy(aux%Material)
   call SecondaryAuxHeatDestroy(aux%SC_heat)
   call SecondaryAuxRTDestroy(aux%SC_RT)
@@ -83,7 +81,7 @@ subroutine AuxDestroy(aux)
   
   nullify(aux%Global)
   nullify(aux%RT)
-  nullify(aux%Richards)
+
   nullify(aux%Material)
   nullify(aux%SC_Heat)
   nullify(aux%SC_RT)

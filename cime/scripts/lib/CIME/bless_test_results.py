@@ -31,9 +31,9 @@ def bless_namelists(test_name, test_dir, report_only, force, baseline_name, base
                 return False, "Could not determine baseline root"
 
         create_test_gen_args = " -g {} ".format(baseline_name if get_model() == "cesm" else " -g -b {} ".format(baseline_name))
-        stat, _, err = run_cmd("{}/create_test {} -n {} --baseline-root {} -o".format(get_scripts_root(), test_name, create_test_gen_args, baseline_root))
+        stat, out, _ = run_cmd("{}/create_test {} -n {} --baseline-root {} -o".format(get_scripts_root(), test_name, create_test_gen_args, baseline_root), combine_output=True)
         if stat != 0:
-            return False, "Namelist regen failed: '{}'".format(err)
+            return False, "Namelist regen failed: '{}'".format(out)
         else:
             return True, None
     else:

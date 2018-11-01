@@ -3,9 +3,9 @@ module Variables_module
   implicit none
 
   private
-  
+
 #include "petsc/finclude/petscsys.h"
-  
+
   ! variables definitions
   PetscInt, parameter, public :: X_COORDINATE =             1
   PetscInt, parameter, public :: Y_COORDINATE =             2
@@ -73,7 +73,7 @@ module Variables_module
   PetscInt, parameter, public :: SURFACE_LIQUID_HEAD        = 62
   PetscInt, parameter, public :: SURFACE_LIQUID_TEMPERATURE = 63
   PetscInt, parameter, public :: SURFACE_LIQUID_DENSITY     = 64
-  
+
   PetscInt, parameter, public :: EH = 65
   PetscInt, parameter, public :: PE = 66
   PetscInt, parameter, public :: O2 = 67
@@ -81,7 +81,7 @@ module Variables_module
   PetscInt, parameter, public :: PERMEABILITY_XY =         68
   PetscInt, parameter, public :: PERMEABILITY_YZ =         69
   PetscInt, parameter, public :: PERMEABILITY_XZ =         70
-  
+
   PetscInt, parameter, public :: GEOMECH_DISP_X          = 71
   PetscInt, parameter, public :: GEOMECH_DISP_Y          = 72
   PetscInt, parameter, public :: GEOMECH_DISP_Z          = 73
@@ -98,7 +98,7 @@ module Variables_module
   PetscInt, parameter, public :: STRESS_YZ               = 84
   PetscInt, parameter, public :: STRESS_ZX               = 85
   PetscInt, parameter, public :: GEOMECH_MATERIAL_ID     = 86
-  PetscInt, parameter, public :: GEOMECH_REL_DISP_X      = 87 
+  PetscInt, parameter, public :: GEOMECH_REL_DISP_X      = 87
   PetscInt, parameter, public :: GEOMECH_REL_DISP_Y      = 88
   PetscInt, parameter, public :: GEOMECH_REL_DISP_Z      = 89
 
@@ -114,15 +114,15 @@ module Variables_module
   PetscInt, parameter, public :: LIQUID_HEAD             = 98
 
   PetscInt, parameter, public :: GAS_CONCENTRATION       = 99
-  
+
   PetscInt, parameter, public :: SEC_MIN_RATE            = 100
   PetscInt, parameter, public :: SEC_MIN_SI              = 101
   PetscInt, parameter, public :: RESIDUAL                = 102
   PetscInt, parameter, public :: MINERAL_POROSITY        = 103
-  
+
   PetscInt, parameter, public :: SOIL_COMPRESSIBILITY    = 104
   PetscInt, parameter, public :: SOIL_REFERENCE_PRESSURE = 105
-  
+
   PetscInt, parameter, public :: LIQUID_MASS_FRACTION    = 106
   PetscInt, parameter, public :: GAS_MASS_FRACTION       = 107
 
@@ -138,5 +138,19 @@ module Variables_module
 
   PetscInt, parameter, public :: NATURAL_ID              = 114
   PetscInt, parameter, public :: REACTION_AUXILIARY      = 115
+
+  PetscInt, parameter, public :: OIL_VISCOSITY           = 116
+
+  PetscInt, parameter, public :: OIL_MOLE_FRACTION       = 115
+  PetscInt, parameter, public :: SOLVENT_SATURATION      = 116
+  PetscInt, parameter, public :: CAPILLARY_PRESSURE_OGC  = 117
+  PetscInt, parameter, public :: FRACTURE                = 118
+
+  PetscInt, parameter, public :: GAS_PERMEABILITY        = 119
+  PetscInt, parameter, public :: GAS_PERMEABILITY_X      = 120
+  PetscInt, parameter, public :: GAS_PERMEABILITY_Y      = 121
+  PetscInt, parameter, public :: GAS_PERMEABILITY_Z      = 122
+
+  PetscInt, parameter, public :: BUBBLE_POINT            = 123
 
 end module Variables_module

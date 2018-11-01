@@ -64,8 +64,8 @@
   </compset>
 
   <compset>
-    <alias>ADLND</alias>
-    <lname>2000_SATM_DLND%SCPL_SICE_SOCN_SROF_SGLC_SWAV</lname>
+    <alias>A1850DLND</alias>
+    <lname>1850_SATM_DLND%SCPL_SICE_SOCN_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>

@@ -1,12 +1,13 @@
 module Init_Subsurface_Tran_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use PFLOTRAN_Constants_module
 
   implicit none
 
   private
 
-#include "petsc/finclude/petscsys.h"
 
   public :: InitSubsurfTranSetupRealization
   
@@ -42,13 +43,21 @@ subroutine InitSubsurfTranSetupRealization(realization)
   ! initialize densities and saturations
   if (option%nflowdof == 0) then
     call GlobalSetAuxVarScalar(realization,option%reference_pressure, &
-                                LIQUID_PRESSURE)
+                               LIQUID_PRESSURE)
     call GlobalSetAuxVarScalar(realization,option%reference_temperature, &
-                                TEMPERATURE)
+                               TEMPERATURE)
     call GlobalSetAuxVarScalar(realization,option%reference_saturation, &
-                                LIQUID_SATURATION)
-    call GlobalSetAuxVarScalar(realization,option%reference_water_density, &
-                                LIQUID_DENSITY)
+                               LIQUID_SATURATION)
+    call GlobalSetAuxVarScalar(realization, &
+                               option%reference_density(option%liquid_phase), &
+                               LIQUID_DENSITY)
+    if (option%transport%nphase > 1) then
+      call GlobalSetAuxVarScalar(realization,1.d0-option%reference_saturation, &
+                                 GAS_SATURATION)
+      call GlobalSetAuxVarScalar(realization, &
+                                 option%reference_density(option%gas_phase), &
+                                 GAS_DENSITY)
+    endif
   else
     call GlobalUpdateAuxVars(realization,TIME_T,0.d0)
     call GlobalWeightAuxVars(realization,0.d0)

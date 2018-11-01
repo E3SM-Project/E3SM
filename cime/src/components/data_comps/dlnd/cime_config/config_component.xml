@@ -48,9 +48,6 @@
     <type>char</type>
     <valid_values></valid_values>
     <default_value>null</default_value>
-    <values match="last">
-      <value compset="_DLND%SCPL" grid="l%0.9x1.25">$LND_DOMAIN_PATH/$LND_DOMAIN_FILE</value>
-    </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
     <desc>
@@ -67,11 +64,7 @@
     <type>char</type>
     <default_value>UNSET</default_value>
     <values match="last">
-      <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG20TRCN.f09_g16.002_c121001</value>
-      <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG1850CN.f09_g16.002_c121001</value>
-      <value compset="HIST.*_DLND%SCPL" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG20TRCN.f09_g16.002_c121001</value>
-      <value compset="RCP8.*_DLND%SCPL" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BGRCP85CN.f09_g16.002_c121001</value>
-      <value compset="20TR.*_DLND%SCPL" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG20TRCN.f09_g16.002_c121001</value>
+      <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/i.e20.I1850Clm50Sp.f09_g17.001_c180502</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
@@ -82,11 +75,7 @@
     <type>char</type>
     <default_value>UNSET</default_value>
     <values match="last">
-      <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">b.e10.BG20TRCN.f09_g16.002</value>
-      <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">b.e10.BG1850CN.f09_g16.002</value>
-      <value compset="HIST.*_DLND%SCPL" grid="l%0.9x1.25">b.e10.BG20TRCN.f09_g16.002</value>
-      <value compset="20TR.*_DLND%SCPL" grid="l%0.9x1.25">b.e10.BG20TRCN.f09_g16.002</value>
-      <value compset="RCP8.*_DLND%SCPL" grid="l%0.9x1.25">b.e10.BGRCP85CN.f09_g16.002</value>
+      <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">i.e20.I1850Clm50Sp.f09_g17.001</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
@@ -97,11 +86,7 @@
     <type>integer</type>
     <default_value>-999</default_value>
     <values match="last">
-      <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">1</value>
       <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">1</value>
-      <value compset="HIST.*_DLND%SCPL" grid="l%0.9x1.25">1850</value>
-      <value compset="20TR.*_DLND%SCPL" grid="l%0.9x1.25">1850</value>
-      <value compset="RCP8.*_DLND%SCPL" grid="l%0.9x1.25">2006</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
@@ -124,11 +109,7 @@
     <type>integer</type>
     <default_value>-999</default_value>
     <values match="last">
-      <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">1976</value>
-      <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">26</value>
-      <value compset="HIST.*_DLND%SCPL" grid="l%0.9x1.25">1850</value>
-      <value compset="20TR.*_DLND%SCPL" grid="l%0.9x1.25">1850</value>
-      <value compset="RCP8.*_DLND%SCPL" grid="l%0.9x1.25">2006</value>
+      <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">1</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
@@ -139,11 +120,7 @@
     <type>integer</type>
     <default_value>-999</default_value>
     <values match="last">
-      <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">2005</value>
-      <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">100</value>
-      <value compset="HIST.*_DLND%SCPL" grid="l%0.9x1.25">2005</value>
-      <value compset="20TR.*_DLND%SCPL" grid="l%0.9x1.25">2005</value>
-      <value compset="RCP8.*_DLND%SCPL" grid="l%0.9x1.25">2100</value>
+      <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">30</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>

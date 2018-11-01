@@ -1,12 +1,12 @@
 module Grid_Unstructured_Cell_module
  
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use PFLOTRAN_Constants_module
 
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
 
   ! grid cell type
   PetscInt, parameter, public :: HEX_TYPE          = 1

@@ -2,14 +2,15 @@ module Matrix_Block_Aux_module
 
   ! this module cannot depend on any other modules beside Option_module
 
+#include "petsc/finclude/petscsys.h"
+   use petscsys
   use PFLOTRAN_Constants_module
 
   implicit none
   
   private 
 
-#include "petsc/finclude/petscsys.h"
- 
+
   type, public :: matrix_block_auxvar_type
 
     PetscReal, pointer :: dtotal(:,:,:)

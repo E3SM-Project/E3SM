@@ -1,5 +1,8 @@
 module Reaction_Sandbox_SomDec_class
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+
   use Reaction_Sandbox_Base_class
   use Global_Aux_module
   use Reactive_Transport_Aux_module
@@ -15,8 +18,6 @@ module Reaction_Sandbox_SomDec_class
   
   private
   
-#include "petsc/finclude/petscsys.h"
-
   type, public, &
     extends(reaction_sandbox_base_type) :: reaction_sandbox_somdec_type
 
@@ -116,8 +117,8 @@ function SomDecCreate()
   allocate(SomDecCreate)
 
 #ifdef CLM_PFLOTRAN
-  SomDecCreate%temperature_response_function=TEMPERATURE_RESPONSE_FUNCTION_CLM4
-  SomDecCreate%moisture_response_function = MOISTURE_RESPONSE_FUNCTION_CLM4
+  SomDecCreate%temperature_response_function=TEMPERATURE_RESPONSE_FUNCTION_CLMCN
+  SomDecCreate%moisture_response_function = MOISTURE_RESPONSE_FUNCTION_CLMCN
 #endif
 
   SomDecCreate%Q10 = 1.5d0
@@ -236,9 +237,9 @@ subroutine SomDecRead(this,input,option)
          call StringToUpper(word)   
 
             select case(trim(word))
-              case('CLM4')
+              case('CLMCN')
                   this%temperature_response_function = &
-                       TEMPERATURE_RESPONSE_FUNCTION_CLM4    
+                       TEMPERATURE_RESPONSE_FUNCTION_CLMCN
               case('Q10') 
                   this%temperature_response_function = &
                        TEMPERATURE_RESPONSE_FUNCTION_Q10    
@@ -248,7 +249,7 @@ subroutine SomDecRead(this,input,option)
               case default
                   option%io_buffer = 'CHEMISTRY,REACTION_SANDBOX,SomDec,' // &
                                 'TEMPERATURE RESPONSE FUNCTION keyword: ' // &
-                                     trim(word) // ' not recognized.'
+                                     trim(word) // ' not recognized - Valid keyword: "CLMCN","Q10". '
                   call printErrMsg(option)
             end select
          enddo 
@@ -264,13 +265,13 @@ subroutine SomDecRead(this,input,option)
          call StringToUpper(word)   
 
             select case(trim(word))
-              case('CLM4')
-                  this%moisture_response_function = MOISTURE_RESPONSE_FUNCTION_CLM4    
+              case('CLMCN')
+                  this%moisture_response_function = MOISTURE_RESPONSE_FUNCTION_CLMCN
               case('DLEM')
                   this%moisture_response_function = MOISTURE_RESPONSE_FUNCTION_DLEM    
               case default
                   option%io_buffer = 'CHEMISTRY,REACTION_SANDBOX,SomDecomp,TEMPERATURE RESPONSE FUNCTION keyword: ' // &
-                                     trim(word) // ' not recognized.'
+                                     trim(word) // ' not recognized - Valid keyword: "CLMCN","DLEM".'
                   call printErrMsg(option)
             end select
          enddo 
@@ -930,13 +931,13 @@ subroutine SomDecReact(this,Residual,Jacobian,compute_derivative,rt_auxvar, &
   use Material_Aux_class, only : material_auxvar_type
 
 #ifdef CLM_PFLOTRAN
+#include "petsc/finclude/petscvec.h"
+  use petscvec
+
   use clm_pflotran_interface_data
 #endif
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   class(reaction_sandbox_somdec_type) :: this
   type(option_type) :: option
@@ -956,9 +957,11 @@ subroutine SomDecReact(this,Residual,Jacobian,compute_derivative,rt_auxvar, &
   PetscInt  :: ghosted_id
   PetscErrorCode :: ierr
   PetscInt, parameter :: iphase = 1
+#ifdef CLM_PFLOTRAN
   PetscScalar, pointer :: zsoi_pf_loc(:)
   PetscScalar, pointer :: kd_scalar_pf_loc(:)
   PetscScalar, pointer :: xfactor_pf_loc(:)
+#endif
 
   PetscReal :: temp_real
   PetscReal :: c_uc, c_un    ! concentration (mole/m3 or mole/L, upon species type) => mole/m3bulk if needed
@@ -1042,30 +1045,28 @@ subroutine SomDecReact(this,Residual,Jacobian,compute_derivative,rt_auxvar, &
 
   ! moisture response function
 #ifdef CLM_PFLOTRAN
-  if (option%nflowspec>0) then
-
-    if(this%moisture_response_function == MOISTURE_RESPONSE_FUNCTION_CLM4) then
+  if(option%nflowspec>0) then
+    if(this%moisture_response_function == MOISTURE_RESPONSE_FUNCTION_CLMCN) then
       f_w = GetMoistureResponse(theta, ghosted_id, this%moisture_response_function)
     elseif(this%moisture_response_function == MOISTURE_RESPONSE_FUNCTION_DLEM) then
       f_w = GetMoistureResponse(theta, ghosted_id, this%moisture_response_function)
     endif
 
   else
+    ! if NO flow-mode, i.e. BGC only coupled with CLM, directly read-in factors from CLM
     call VecGetArrayReadF90(clm_pf_idata%w_scalar_pfs, xfactor_pf_loc, ierr)
     CHKERRQ(ierr)
     f_w = xfactor_pf_loc(ghosted_id)
     call VecRestoreArrayReadF90(clm_pf_idata%w_scalar_pfs, xfactor_pf_loc, ierr)
     CHKERRQ(ierr)
-    ! multiplying O-Scalar from CLM
+    !multiplying O-Scalar as well
     call VecGetArrayReadF90(clm_pf_idata%o_scalar_pfs, xfactor_pf_loc, ierr)
     CHKERRQ(ierr)
-    f_w = f_w*xfactor_pf_loc(ghosted_id)
+    f_w = f_w * xfactor_pf_loc(ghosted_id)
     call VecRestoreArrayReadF90(clm_pf_idata%o_scalar_pfs, xfactor_pf_loc, ierr)
     CHKERRQ(ierr)
 
   endif
-
-
 #else
   f_w = 1.0d0
 #endif
@@ -1077,13 +1078,16 @@ subroutine SomDecReact(this,Residual,Jacobian,compute_derivative,rt_auxvar, &
 #ifdef CLM_PFLOTRAN
   if (option%nflowspec>0) then
     f_t = GetTemperatureResponse(tc,this%temperature_response_function, this%Q10)
+
   else
+    ! if NO flow-mode, i.e. BGC only coupled with CLM, directly read-in factors from CLM
     call VecGetArrayReadF90(clm_pf_idata%t_scalar_pfs, xfactor_pf_loc, ierr)
     CHKERRQ(ierr)
     f_t = xfactor_pf_loc(ghosted_id)
     call VecRestoreArrayReadF90(clm_pf_idata%t_scalar_pfs, xfactor_pf_loc, ierr)
     CHKERRQ(ierr)
   endif
+
 #else
   f_t = 1.0d0
 #endif
@@ -1120,6 +1124,8 @@ subroutine SomDecReact(this,Residual,Jacobian,compute_derivative,rt_auxvar, &
   !----------------------------------------------------------------------------------------------
 
   net_nmin_rate     = 0.0d0
+  nmin = 0.d0
+  nimm = 0.d0
 
   do irxn = 1, this%nrxn
   
@@ -1303,9 +1309,6 @@ subroutine SomDecReact1(this,Residual,Jacobian,compute_derivative, reaction,  &
   use Material_Aux_class, only : material_auxvar_type
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   class(reaction_sandbox_somdec_type) :: this
   type(option_type) :: option
@@ -1670,9 +1673,6 @@ subroutine SomDecReact2(this,Residual,Jacobian,compute_derivative, reaction, &
 
   implicit none
 
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-
   class(reaction_sandbox_somdec_type) :: this
   type(option_type) :: option
   type(reaction_type) :: reaction
@@ -1908,6 +1908,7 @@ subroutine SomDecReact2(this,Residual,Jacobian,compute_derivative, reaction, &
     endif
     dfnh4_dnh4 = dfnh4_dnh4*feps0 + fnh4 * dfeps0_dx
     fnh4 = fnh4 * feps0
+
   endif
   !
   if(this%species_id_no3 > 0) then
@@ -2561,9 +2562,6 @@ subroutine SomDecNemission(this,Residual,Jacobian,compute_derivative,rt_auxvar, 
 
   implicit none
 
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-
   class(reaction_sandbox_somdec_type) :: this
   type(option_type) :: option
   type(reaction_type) :: reaction
@@ -2645,7 +2643,7 @@ subroutine SomDecNemission(this,Residual,Jacobian,compute_derivative,rt_auxvar, 
                  rt_auxvar%sec_act_coef(abs(reaction%species_idx%h_ion_id)))
       endif
     endif
-    f_ph = 0.56 + atan(rpi * 0.45 * (-5.0 + ph))/rpi
+    f_ph = 0.56d0 + atan(rpi * 0.45d0 * (-5.0d0 + ph))/rpi
 
     if(f_t > this%x0eps .and. f_w > this%x0eps .and. f_ph > this%x0eps) then
       f_t = min(f_t, 1.0d0)

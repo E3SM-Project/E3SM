@@ -101,7 +101,8 @@ subroutine CLM_CN_Read(this,input,option)
   ! Author: Glenn Hammond
   ! Date: 02/04/13
   ! 
-
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
   use String_module
   use Input_Aux_module
@@ -322,7 +323,8 @@ subroutine CLM_CN_Map(this,reaction,option)
   ! Author: Glenn Hammond
   ! Date: 02/04/13
   ! 
-
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Reaction_Aux_module, only : reaction_type
   use Option_module
   use String_module
@@ -478,7 +480,8 @@ subroutine CLM_CN_React(this,Residual,Jacobian,compute_derivative,rt_auxvar, &
   ! Author: Glenn Hammond
   ! Date: 02/04/13
   ! 
-
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
   use Reaction_Aux_module, only : reaction_type
   use Material_Aux_class, only : material_auxvar_type

@@ -1,13 +1,13 @@
 module Geometry_module
  
+#include "petsc/finclude/petscsys.h"
+   use petscsys
   use PFLOTRAN_Constants_module
 
   implicit none
 
   private
 
-#include "petsc/finclude/petscsys.h"
- 
   type, public :: point3d_type
     PetscInt :: id
     PetscReal :: x

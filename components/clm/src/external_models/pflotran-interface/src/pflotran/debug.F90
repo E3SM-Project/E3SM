@@ -1,12 +1,13 @@
 module Debug_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use PFLOTRAN_Constants_module
 
   implicit none
   
   private
   
-#include "petsc/finclude/petscsys.h"
 
   type, public :: debug_type
     PetscBool :: vecview_residual
@@ -141,10 +142,9 @@ subroutine DebugCreateViewer(debug,viewer_name_prefix,option,viewer)
   !
 
   use Option_module
-  implicit none
-
 #include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscviewer.h"
+  use petscsys
+  implicit none
 
   type(debug_type), pointer :: debug
   character(len=MAXSTRINGLENGTH), intent(in) :: viewer_name_prefix

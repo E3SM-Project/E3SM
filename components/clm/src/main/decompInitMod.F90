@@ -11,7 +11,7 @@ module decompInitMod
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use spmdMod         , only : masterproc, iam, npes, mpicom, comp_id
   use abortutils      , only : endrun
-  use clm_varctl      , only : iulog, use_ed
+  use clm_varctl      , only : iulog, use_fates
   use clm_varcon      , only : grlnd
   use GridcellType    , only : grc_pp
   use LandunitType    , only : lun_pp                
@@ -670,7 +670,7 @@ contains
     pstart(:) = 0
     allocate(pcount(begg:endg))
     pcount(:) = 0
-    if ( use_ed ) then
+    if ( use_fates ) then
        allocate(coStart(begg:endg))
        coStart(:) = 0
     endif
@@ -761,7 +761,7 @@ contains
     endif
     call scatter_data_from_master(pstart, arrayglob, grlnd)
 
-    if ( use_ed ) then
+    if ( use_fates ) then
        arrayglob(:) = 0
        call gather_data_to_master(coCount, arrayglob, grlnd)
        if (masterproc) then
@@ -849,7 +849,7 @@ contains
     call mct_gsMap_init(gsmap_patch_gdc2glo, gindex, mpicom, comp_id, locsize, globsize)
     deallocate(gindex)
 
-    if ( use_ed ) then
+    if ( use_fates ) then
        ! ED cohort gsMap
        allocate(gindex(begCohort:endCohort))
        ioff(:) = 0
@@ -870,7 +870,7 @@ contains
     deallocate(lstart, lcount)
     deallocate(cstart, ccount)
     deallocate(pstart, pcount)
-    if ( use_ed ) then
+    if ( use_fates ) then
        deallocate(coStart,coCount)
     endif
     deallocate(ioff)

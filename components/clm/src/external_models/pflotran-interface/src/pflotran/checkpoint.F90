@@ -1,21 +1,11 @@
 module Checkpoint_module
-
+#include "petsc/finclude/petscdm.h"
+  use petscdm
   use PFLOTRAN_Constants_module
 
   implicit none
   
   private
-
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscdm.h"
-#include "petsc/finclude/petscdm.h90"
-#include "petsc/finclude/petscdef.h"
-#include "petsc/finclude/petscis.h"
-#include "petsc/finclude/petscis.h90"
-#include "petsc/finclude/petsclog.h"
-#include "petsc/finclude/petscviewer.h"
 
   type :: checkpoint_header_type
     PetscInt :: version
@@ -40,9 +30,10 @@ module Checkpoint_module
 
   interface PetscBagGetData
     subroutine PetscBagGetData(bag,header,ierr)
+#include "petsc/finclude/petscsys.h"
+      use petscsys
       import :: checkpoint_header_type
       implicit none
-#include "petsc/finclude/petscbag.h"
       PetscBag :: bag
       type(checkpoint_header_type), pointer :: header
       PetscErrorCode :: ierr
@@ -70,6 +61,7 @@ module Checkpoint_module
             CheckPointReadCompatibilityHDF5, &
 #endif
             CheckpointPeriodicTimeWaypoints, &
+            CheckpointInputRecord, &
             CheckpointRead
 
 contains
@@ -171,12 +163,11 @@ subroutine CheckpointOpenFileForWriteBinary(viewer,append_name,option)
   ! Date: 07/26/13
   ! 
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
 
   implicit none
-
-#include "petsc/finclude/petscviewer.h"
-#include "petsc/finclude/petscbag.h"
 
   PetscViewer :: viewer
   character(len=MAXSTRINGLENGTH) :: append_name
@@ -229,12 +220,11 @@ subroutine CheckPointWriteCompatibilityBinary(viewer,option)
   ! Author: Glenn Hammond
   ! Date: 003/26/15
   ! 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
   
   implicit none
-
-#include "petsc/finclude/petscviewer.h"
-#include "petsc/finclude/petscbag.h"
 
   PetscViewer :: viewer
   type(option_type) :: option
@@ -285,12 +275,11 @@ subroutine CheckPointReadCompatibilityBinary(viewer,option)
   ! Author: Glenn Hammond
   ! Date: 003/26/15
   ! 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
   
   implicit none
-
-#include "petsc/finclude/petscviewer.h"
-#include "petsc/finclude/petscbag.h"
 
   PetscViewer :: viewer
   type(option_type) :: option
@@ -350,7 +339,8 @@ subroutine CheckpointFlowProcessModelBinary(viewer,realization)
   ! Author: Glenn Hammond
   ! Date: 07/26/13
   ! 
-
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Option_module
   use Realization_Subsurface_class
   use Field_module
@@ -362,10 +352,6 @@ subroutine CheckpointFlowProcessModelBinary(viewer,realization)
                                PERMEABILITY_Z, STATE
   
   implicit none
-
-#include "petsc/finclude/petscviewer.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   PetscViewer :: viewer
   class(realization_subsurface_type) :: realization
@@ -382,7 +368,7 @@ subroutine CheckpointFlowProcessModelBinary(viewer,realization)
   discretization => realization%discretization
   grid => realization%patch%grid
   
-  global_vec = 0
+  global_vec = PETSC_NULL_VEC
   
   if (option%nflowdof > 0) then
     call DiscretizationCreateVector(realization%discretization,ONEDOF, &
@@ -396,7 +382,7 @@ subroutine CheckpointFlowProcessModelBinary(viewer,realization)
     ! that indicates what phases are present, as well as the 'var' vector 
     ! that holds variables derived from the primary ones via the translator.
     select case(option%iflowmode)
-      case(TH_MODE,RICHARDS_MODE)
+      case(TH_MODE)
         call DiscretizationLocalToGlobal(realization%discretization, &
                                          field%iphas_loc,global_vec,ONEDOF)
         call VecView(global_vec, viewer, ierr);CHKERRQ(ierr)
@@ -429,7 +415,7 @@ subroutine CheckpointFlowProcessModelBinary(viewer,realization)
   
   endif
   
-  if (global_vec /= 0) then
+  if (global_vec /= PETSC_NULL_VEC) then
     call VecDestroy(global_vec,ierr);CHKERRQ(ierr)
   endif  
   
@@ -444,7 +430,9 @@ subroutine RestartFlowProcessModelBinary(viewer,realization)
   ! Author: Glenn Hammond
   ! Date: 07/26/13
   ! 
-
+#include "petsc/finclude/petscvec.h"
+  use petscvec
+      
   use Option_module
   use Realization_Subsurface_class
   use Field_module
@@ -456,10 +444,6 @@ subroutine RestartFlowProcessModelBinary(viewer,realization)
                                PERMEABILITY_Z, STATE
   
   implicit none
-
-#include "petsc/finclude/petscviewer.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   PetscViewer :: viewer
   class(realization_subsurface_type) :: realization
@@ -476,7 +460,7 @@ subroutine RestartFlowProcessModelBinary(viewer,realization)
   discretization => realization%discretization
   grid => realization%patch%grid
   
-  global_vec = 0
+  global_vec = PETSC_NULL_VEC
   
   if (option%nflowdof > 0) then
     call DiscretizationCreateVector(realization%discretization,ONEDOF, &
@@ -488,7 +472,7 @@ subroutine RestartFlowProcessModelBinary(viewer,realization)
     call VecCopy(field%flow_xx,field%flow_yy,ierr);CHKERRQ(ierr)
 
     select case(option%iflowmode)
-      case(TH_MODE,RICHARDS_MODE)
+      case(TH_MODE)
         call VecLoad(global_vec,viewer,ierr);CHKERRQ(ierr)
         call DiscretizationGlobalToLocal(discretization,global_vec, &
                                          field%iphas_loc,ONEDOF)
@@ -520,7 +504,7 @@ subroutine RestartFlowProcessModelBinary(viewer,realization)
                                   field%work_loc,PERMEABILITY_Z,ZERO_INTEGER)
   endif
   
-  if (global_vec /= 0) then
+  if (global_vec /= PETSC_NULL_VEC) then
     call VecDestroy(global_vec,ierr);CHKERRQ(ierr)
   endif  
   
@@ -687,7 +671,9 @@ subroutine CheckPointWriteIntDatasetHDF5(chk_grp_id, dataset_name, dataset_rank,
   PetscErrorCode :: hdf5_flag
   PetscMPIInt, parameter :: ON=1, OFF=0
 
-  PetscInt, pointer :: data_int_array(:)
+  ! must be 'integer' so that ibuffer does not switch to 64-bit integers 
+  ! when PETSc is configured with --with-64-bit-indices=yes.
+  integer, pointer :: data_int_array(:)
 
   call h5screate_simple_f(dataset_rank, dims, memory_space_id, hdf5_err, dims)
 
@@ -744,14 +730,13 @@ subroutine CheckPointWriteRealDatasetHDF5(chk_grp_id, dataset_name, dataset_rank
   ! Author: Gautam Bisht
   ! Date: 07/30/15
   ! 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
   use hdf5
   use HDF5_module, only : trick_hdf5
   
   implicit none
-
-#include "petsc/finclude/petscviewer.h"
-#include "petsc/finclude/petscbag.h"
 
 #if defined(SCORPIO_WRITE)
   integer :: chk_grp_id
@@ -868,7 +853,9 @@ subroutine CheckPointReadIntDatasetHDF5(chk_grp_id, dataset_name, dataset_rank, 
   PetscErrorCode :: hdf5_flag
   PetscMPIInt, parameter :: ON=1, OFF=0
 
-  PetscInt, pointer :: data_int_array(:)
+  ! must be 'integer' so that ibuffer does not switch to 64-bit integers 
+  ! when PETSc is configured with --with-64-bit-indices=yes.
+  integer, pointer :: data_int_array(:)
 
   call h5screate_simple_f(dataset_rank, dims, memory_space_id, hdf5_err, dims)
 
@@ -1020,7 +1007,9 @@ subroutine CheckPointWriteCompatibilityHDF5(chk_grp_id, option)
 
   PetscMPIInt :: dataset_rank
   character(len=MAXSTRINGLENGTH) :: dataset_name
-  PetscInt, pointer :: int_array(:)
+  ! must be 'integer' so that ibuffer does not switch to 64-bit integers 
+  ! when PETSc is configured with --with-64-bit-indices=yes.
+  integer, pointer :: int_array(:)
 
   dataset_name = "Revision Number" // CHAR(0)
 
@@ -1082,7 +1071,9 @@ subroutine CheckPointReadCompatibilityHDF5(chk_grp_id, option)
 
   PetscMPIInt :: dataset_rank
   character(len=MAXSTRINGLENGTH) :: dataset_name
-  PetscInt, pointer :: int_array(:)
+  ! must be 'integer' so that ibuffer does not switch to 64-bit integers 
+  ! when PETSc is configured with --with-64-bit-indices=yes.
+  integer, pointer :: int_array(:)
   character(len=MAXWORDLENGTH) :: word, word2
 
   dataset_name = "Revision Number" // CHAR(0)
@@ -1128,6 +1119,8 @@ subroutine CheckpointFlowProcessModelHDF5(pm_grp_id, realization)
   ! Author: Glenn Hammond
   ! Date: 07/26/13
   !
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Option_module
   use Realization_Subsurface_class
   use Field_module
@@ -1140,9 +1133,6 @@ subroutine CheckpointFlowProcessModelHDF5(pm_grp_id, realization)
   use hdf5
   use HDF5_module, only : HDF5WriteDataSetFromVec
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
 #if defined(SCORPIO_WRITE)
   integer :: pm_grp_id
@@ -1165,7 +1155,7 @@ subroutine CheckpointFlowProcessModelHDF5(pm_grp_id, realization)
   discretization => realization%discretization
   grid => realization%patch%grid
 
-  global_vec = 0
+  global_vec = PETSC_NULL_VEC
 
   if (option%nflowdof > 0) then
      call DiscretizationCreateVector(realization%discretization, NFLOWDOF, &
@@ -1188,7 +1178,7 @@ subroutine CheckpointFlowProcessModelHDF5(pm_grp_id, realization)
     ! that indicates what phases are present, as well as the 'var' vector
     ! that holds variables derived from the primary ones via the translator.
     select case(option%iflowmode)
-      case(TH_MODE,RICHARDS_MODE)
+      case(TH_MODE)
         call DiscretizationLocalToGlobal(realization%discretization, &
                                          field%iphas_loc,global_vec,ONEDOF)
 
@@ -1258,6 +1248,8 @@ subroutine RestartFlowProcessModelHDF5(pm_grp_id, realization)
   ! Author: Gautam Bisht, LBNL
   ! Date: 08/16/2015
   !
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Option_module
   use Realization_Subsurface_class
   use Field_module
@@ -1270,9 +1262,6 @@ subroutine RestartFlowProcessModelHDF5(pm_grp_id, realization)
   use hdf5
   use HDF5_module, only : HDF5ReadDataSetInVec
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
 #if defined(SCORPIO_WRITE)
   integer :: pm_grp_id
@@ -1295,7 +1284,7 @@ subroutine RestartFlowProcessModelHDF5(pm_grp_id, realization)
   discretization => realization%discretization
   grid => realization%patch%grid
 
-  global_vec = 0
+  global_vec = PETSC_NULL_VEC
 
   if (option%nflowdof > 0) then
     call DiscretizationCreateVector(realization%discretization, NFLOWDOF, &
@@ -1323,7 +1312,7 @@ subroutine RestartFlowProcessModelHDF5(pm_grp_id, realization)
     ! that holds variables derived from the primary ones via the translator.
     dataset_name = "State" // CHAR(0)
     select case(option%iflowmode)
-      case(TH_MODE,RICHARDS_MODE)
+      case(TH_MODE)
         call HDF5ReadDataSetInVec(dataset_name, option, natural_vec, &
              pm_grp_id, H5T_NATIVE_DOUBLE)
         call DiscretizationNaturalToGlobal(discretization, natural_vec, &
@@ -1599,7 +1588,7 @@ subroutine CheckpointPeriodicTimeWaypoints(checkpoint_option,waypoint_list)
         call WaypointInsertInList(waypoint,waypoint_list)
         if ((num_waypoints > warning_num_waypoints) .and. &
             OptionPrintToScreen(option)) then
-          call PrintProgressBarInt(floor(num_waypoints),10,k)
+          call PrintProgressBarInt(num_waypoints,TEN_INTEGER,k)
         endif
       enddo
     endif
@@ -1608,5 +1597,80 @@ subroutine CheckpointPeriodicTimeWaypoints(checkpoint_option,waypoint_list)
 end subroutine CheckpointPeriodicTimeWaypoints
   
 ! ************************************************************************** !
+
+subroutine CheckpointInputRecord(checkpoint_option,waypoint_list)
+  ! 
+  ! Writes ingested information to the input record file.
+  ! 
+  ! Author: Jenn Frederick, SNL
+  ! Date: 03/17/2016
+  !  
+  use Output_Aux_module
+  use Waypoint_module
+
+  implicit none
+
+  type(checkpoint_option_type), pointer :: checkpoint_option
+  type(waypoint_list_type), pointer :: waypoint_list
+  
+  type(waypoint_type), pointer :: cur_waypoint
+  character(len=MAXWORDLENGTH) :: word
+  character(len=MAXSTRINGLENGTH) :: string
+  PetscBool :: checkpoints_found
+  PetscInt :: id = INPUT_RECORD_UNIT
+
+  write(id,'(a)') ' '
+    write(id,'(a)') '---------------------------------------------------------&
+                    &-----------------------'
+  write(id,'(a29)',advance='no') '---------------------------: '
+  write(id,'(a)') 'CHECKPOINTS'
+
+  if (associated(checkpoint_option)) then
+    write(id,'(a29)',advance='no') 'periodic timestep: '
+    if (checkpoint_option%periodic_ts_incr == 0) then
+      write(id,'(a)') 'OFF'
+    else
+      write(id,'(a)') 'ON'
+      write(id,'(a29)',advance='no') 'timestep increment: '
+      write(word,*) checkpoint_option%periodic_ts_incr
+      write(id,'(a)') adjustl(trim(word))
+    endif
+
+    write(id,'(a29)',advance='no') 'periodic time: '
+    if (checkpoint_option%periodic_time_incr <= 0) then
+      write(id,'(a)') 'OFF'
+    else
+      write(id,'(a)') 'ON'
+      write(id,'(a29)',advance='no') 'time increment: '
+      write(word,*) checkpoint_option%periodic_time_incr * &
+                    checkpoint_option%tconv
+      write(id,'(a)') adjustl(trim(word)) // &
+                      adjustl(trim(checkpoint_option%tunit))
+    endif
+  endif
+
+  string = ''
+  checkpoints_found = PETSC_FALSE
+  write(id,'(a29)',advance='no') 'specific times: '
+  cur_waypoint => waypoint_list%first
+  do
+    if (.not.associated(cur_waypoint)) exit
+    if (cur_waypoint%print_checkpoint) then
+      checkpoints_found = PETSC_TRUE
+      write(word,*) cur_waypoint%time*checkpoint_option%tconv
+      string = trim(string) // adjustl(trim(word)) // ','
+    endif
+    cur_waypoint => cur_waypoint%next
+  enddo
+  if (checkpoints_found) then
+    write(id,'(a)') 'ON'
+    write(id,'(a29)',advance='no') 'times (' // &
+                                    trim(checkpoint_option%tunit) // '): '
+    write(id,'(a)') trim(string)
+  else
+    write(id,'(a)') 'OFF'
+  endif
+  
+end subroutine CheckpointInputRecord
 
 end module Checkpoint_module

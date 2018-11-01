@@ -128,6 +128,12 @@ parent material phosphorus to change, during Regular Spinup,
 for ECA model
 </entry>
 
+<entry id="NFIX_PTASE_plant" type="logical" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+If TRUE consider priority of plant to get a fraction of 
+symbiotic N fixation and P phosphatase
+</entry>
+
 <entry id="create_crop_landunit" type="logical" category="clm_physics"
        group="clm_inparm" valid_values="" >
 If TRUE, separate the vegetated landunit into a crop landunit and a natural vegetation landunit
@@ -236,9 +242,9 @@ Toggle to turn on the BeTR
 (BETR = 'on' is EXPERIMENTAL NOT SUPPORTED!)
 </entry>
 
-<entry id="use_ed" type="logical" category="physics"
+<entry id="use_fates" type="logical" category="physics"
         group="clm_inparm" valid_values="" value=".false.">
-Toggle to turn on the ED (fates)
+Toggle to turn on the FATES
 (ED = 'on' is EXPERIMENTAL NOT SUPPORTED!)
 </entry>
 

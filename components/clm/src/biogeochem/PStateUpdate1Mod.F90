@@ -26,6 +26,7 @@ module PStateUpdate1Mod
   use clm_time_manager       , only : get_curr_date
   use CNStateType            , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
   use clm_varctl             , only : forest_fert_exp
+  use clm_varctl             , only : NFIX_PTASE_plant
   !
   implicit none
   save
@@ -237,6 +238,7 @@ contains
          ps%ppool_patch(p) = &
               ps%ppool_patch(p) + pf%sminp_to_ppool_patch(p)*dt
          if (nu_com .ne. 'RD') ps%ppool_patch(p) = ps%ppool_patch(p) + pf%supplement_to_plantp(p)*dt
+         if (NFIX_PTASE_plant) ps%ppool_patch(p) = ps%ppool_patch(p) + pf%biochem_pmin_to_plant_patch(p)*dt
 
          ! deployment from retranslocation pool
          ps%ppool_patch(p)    = ps%ppool_patch(p)    + pf%retransp_to_ppool_patch(p)*dt

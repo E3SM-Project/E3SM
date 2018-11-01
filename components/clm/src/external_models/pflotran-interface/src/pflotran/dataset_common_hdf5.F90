@@ -1,5 +1,8 @@
 module Dataset_Common_HDF5_class
  
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+
   use Dataset_Base_class
   
   use PFLOTRAN_Constants_module
@@ -7,8 +10,6 @@ module Dataset_Common_HDF5_class
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
 
   type, public, extends(dataset_base_type) :: dataset_common_hdf5_type
     character(len=MAXWORDLENGTH) :: hdf5_dataset_name
@@ -25,6 +26,7 @@ module Dataset_Common_HDF5_class
             DatasetCommonHDF5ReadSelectCase, &
             DatasetCommonHDF5Load, &
             DatasetCommonHDF5IsCellIndexed, &
+            DatasetCommonHDF5GetNameInfo, & 
             DatasetCommonHDF5Print, &
             DatasetCommonHDF5Strip, &
             DatasetCommonHDF5Destroy
@@ -150,6 +152,12 @@ subroutine DatasetCommonHDF5Read(this,input,option)
   
   character(len=MAXWORDLENGTH) :: keyword
   PetscBool :: found
+
+#if !defined(PETSC_HAVE_HDF5)
+  option%io_buffer = 'HDF5 formatted datasets not supported &
+    &unless PFLOTRAN is compiled with HDF5 libraries enabled.'
+  call printErrMsg(option)
+#endif
 
   input%ierr = 0
   do
@@ -542,6 +550,32 @@ function DatasetCommonHDF5GetPointer(dataset_list, dataset_name, &
   end select
 
 end function DatasetCommonHDF5GetPointer
+
+! ************************************************************************** !
+
+function DatasetCommonHDF5GetNameInfo(this)
+  ! 
+  ! Returns naming information for dataset
+  ! 
+  ! Author: Glenn Hammond
+  ! Date: 02/20/18
+  ! 
+  implicit none
+
+  class(dataset_common_hdf5_type) :: this
+
+  character(len=MAXSTRINGLENGTH) :: DatasetCommonHDF5GetNameInfo
+
+  character(len=MAXSTRINGLENGTH) :: string
+
+  string = DatasetBaseGetNameInfo(this)
+  if (len_trim(this%hdf5_dataset_name) > 0) then
+    string = trim(string) // ' HDF5_DATASET_NAME: "' // &
+             trim(this%hdf5_dataset_name) // '"'
+  endif
+  DatasetCommonHDF5GetNameInfo = string
+
+end function DatasetCommonHDF5GetNameInfo
 
 ! ************************************************************************** !
 

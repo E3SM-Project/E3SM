@@ -1,7 +1,9 @@
 module Reaction_Sandbox_degas_class
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+
   use Reaction_Sandbox_Base_class
-  
   use Global_Aux_module
   use Reactive_Transport_Aux_module
   use PFLOTRAN_Constants_module
@@ -10,8 +12,6 @@ module Reaction_Sandbox_degas_class
   
   private
   
-#include "petsc/finclude/petscsys.h"
-
   type, public, &
     extends(reaction_sandbox_base_type) :: reaction_sandbox_degas_type
     PetscInt  :: ispec_co2a, ispec_n2oa, ispec_n2a
@@ -209,28 +209,18 @@ subroutine degasReact(this,Residual,Jacobian,compute_derivative, &
 
   use Option_module
   use Reaction_Aux_module
-  use TH_Aux_module
   use Material_Aux_class, only : material_auxvar_type
-  use co2eos_module, only: duanco2, HENRY_co2_noderiv     ! co2eos.F90
 
 
-#ifdef CLM_PFLOTRAN
-  use clm_pflotran_interface_data
-#endif
   
   implicit none
 
-#ifdef CLM_PFLOTRAN
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#endif
-  
+
   class(reaction_sandbox_degas_type) :: this  
   type(option_type) :: option
   type(reaction_type) :: reaction
   type(reactive_transport_auxvar_type) :: rt_auxvar
   type(global_auxvar_type) :: global_auxvar
-  type(TH_auxvar_type) :: th_auxvar
   class(material_auxvar_type) :: material_auxvar
 
   PetscBool :: compute_derivative
@@ -282,8 +272,7 @@ subroutine degasReact(this,Residual,Jacobian,compute_derivative, &
   lsat = 0.50d0  ! 50% saturation assumed as default
   isat = 0.d0
 
-  if (option%iflowmode == RICHARDS_MODE .or. &
-      option%iflowmode == TH_MODE) then
+  if (option%iflowmode == TH_MODE) then
 
       air_press = max(air_press, global_auxvar%pres(1))      ! total (air)gas pressure: water pressure if over atm. press., otherwise atm. press.
       lsat = global_auxvar%sat(1)

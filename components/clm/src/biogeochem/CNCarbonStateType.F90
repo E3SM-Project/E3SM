@@ -18,7 +18,7 @@ module CNCarbonStateType
   use subgridAveMod          , only : p2c
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
-  use clm_varctl             , only : nu_com, use_ed
+  use clm_varctl             , only : nu_com, use_fates
   use VegetationType         , only : veg_pp
 
   ! bgc interface & pflotran
@@ -175,7 +175,7 @@ contains
     begp = bounds%begp; endp = bounds%endp
     begc = bounds%begc; endc = bounds%endc
 
-    if ( .not. use_ed ) then
+    if ( .not. use_fates ) then
        allocate(this%leafc_patch              (begp :endp))                   ;     this%leafc_patch              (:)   = nan
        allocate(this%leafc_storage_patch      (begp :endp))                   ;     this%leafc_storage_patch      (:)   = nan
        allocate(this%leafc_xfer_patch         (begp :endp))                   ;     this%leafc_xfer_patch         (:)   = nan
@@ -303,7 +303,7 @@ contains
     ! this restriction and identify which output state variables
     ! have all the required information.
 
-    if ( use_ed ) then
+    if ( use_fates ) then
        if (carbon_type == 'c12') then
           if ( nlevdecomp_full > 1 ) then
              this%totlitc_1m_col(begc:endc) = spval
@@ -1129,7 +1129,7 @@ contains
     end do
 
 
-    if ( .not. use_ed ) then
+    if ( .not. use_fates ) then
        !-----------------------------------------------
        ! initialize patch-level carbon state variables
        !-----------------------------------------------
@@ -1252,7 +1252,7 @@ contains
           endif
 
        end do
-    endif ! .not. use_ed
+    endif ! .not. use_fates
     
     ! initialize column-level variables
     do c = bounds%begc, bounds%endc
@@ -1404,7 +1404,7 @@ contains
        end if
     end if
 
-    if ( .not. use_ed ) then
+    if ( .not. use_fates ) then
        
        !--------------------------------
        ! patch carbon state variables (c12)
@@ -2352,7 +2352,7 @@ contains
                interpinic_flag='interp', readvar=readvar, data=this%grainc_xfer_patch)
        end if
 
-    endif  ! .not. use_ed
+    endif  ! .not. use_fates
     
     !--------------------------------
     ! column carbon state variables
@@ -2804,7 +2804,7 @@ contains
     integer :: fi,i,j,k,l     ! loop index
     !------------------------------------------------------------------------
 
-    if ( .not. use_ed ) then
+    if ( .not. use_fates ) then
        do fi = 1,num_patch
           i = filter_patch(fi)
 
@@ -2848,7 +2848,7 @@ contains
              this%grainc_xfer_patch(i)     = value_patch
           end do
        endif
-    endif ! .not. use_ed
+    endif ! .not. use_fates
     
     do fi = 1,num_column
        i = filter_column(fi)
@@ -2946,7 +2946,7 @@ contains
 
     ! calculate patch -level summary of carbon state
 
-    if (use_ed) return
+    if (use_fates) return
 
     do fp = 1,num_soilp
        p = filter_soilp(fp)

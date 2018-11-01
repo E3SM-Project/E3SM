@@ -1,5 +1,7 @@
 module Grid_module
 
+#include "petsc/finclude/petscmat.h"
+  use petscmat
   use Grid_Structured_module
   use Grid_Unstructured_module
   use Grid_Unstructured_Aux_module
@@ -11,14 +13,6 @@ module Grid_module
   implicit none
 
   private
- 
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscis.h"
-#include "petsc/finclude/petscis.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
 
   type, public :: grid_type 
   
@@ -114,7 +108,8 @@ module Grid_module
             GridGetGhostedNeighborsWithCorners, &
             GridMapCellsInPolVol, &
             GridGetLocalIDFromCoordinate, &
-            GridRestrictRegionalConnect
+            GridRestrictRegionalConnect, &
+            GridPrintExtents
   
 contains
 
@@ -218,7 +213,9 @@ subroutine GridComputeInternalConnect(grid,option,ugdm)
     case(EXPLICIT_UNSTRUCTURED_GRID)
       connection_set => &
         UGridExplicitSetInternConnect(grid%unstructured_grid%explicit_grid, &
-                                        option)
+                                      grid%unstructured_grid% &
+                                        upwind_fraction_method, &
+                                      option)
     case(POLYHEDRA_UNSTRUCTURED_GRID)
       connection_set => &
         UGridPolyhedraComputeInternConnect(grid%unstructured_grid, &
@@ -394,6 +391,9 @@ subroutine GridMapIndices(grid, dm_ptr, sgrid_stencil_type,option)
   ! Date: 10/24/07
   ! 
 
+#include "petsc/finclude/petscdm.h"
+  use petscdm
+
   use Option_module
   use DM_Kludge_module
 
@@ -555,15 +555,14 @@ subroutine GridComputeVolumes(grid,volume,option)
   ! Date: 10/25/07
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Option_module
   use Grid_Unstructured_Explicit_module
   use Grid_Unstructured_Polyhedra_module
   
   implicit none
 
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-  
   type(grid_type) :: grid
   type(option_type) :: option
   Vec :: volume
@@ -594,12 +593,11 @@ subroutine GridComputeAreas(grid,area,option)
   ! Date: 03/07/2012
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Option_module
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
   
   type(grid_type) :: grid
   type(option_type) :: option
@@ -683,7 +681,7 @@ subroutine GridLocalizeRegions(grid,region_list,option)
           'for unstructured region DEFINED_BY_VERTEX_IDS'
         call printErrMsg(option)
       case (DEFINED_BY_SIDESET_UGRID)
-        call UGridMapSideSet(grid%unstructured_grid, &
+        call UGridMapSideSet2(grid%unstructured_grid, &
                              region%sideset%face_vertices, &
                              region%sideset%nfaces,region%name, &
                              option,region%cell_ids,region%faces)
@@ -742,18 +740,13 @@ subroutine GridLocalizeRegionsFromCellIDs(grid, region, option)
   ! Author: Gautam Bisht, Glenn Hammond
   ! Date: 5/30/2011, 09/14/16
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Option_module
   use Region_module
   use Utility_module
 
   implicit none
-  
-#include "petsc/finclude/petsclog.h"
-#include "petsc/finclude/petscviewer.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscis.h"
-#include "petsc/finclude/petscis.h90"
 
   type(grid_type) :: grid
   type(region_type) :: region
@@ -1066,12 +1059,10 @@ subroutine GridCopyIntegerArrayToVec(grid, array,vector,num_values)
   ! Author: Glenn Hammond
   ! Date: 12/18/07
   ! 
-
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   implicit none
 
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-  
   type(grid_type) :: grid
   PetscInt :: array(:)
   Vec :: vector
@@ -1096,11 +1087,9 @@ subroutine GridCopyRealArrayToVec(grid,array,vector,num_values)
   ! Author: Glenn Hammond
   ! Date: 12/18/07
   ! 
-
-  implicit none
-  
 #include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
+  use petscvec
+  implicit none
     
   type(grid_type) :: grid
   PetscReal :: array(:)
@@ -1126,11 +1115,9 @@ subroutine GridCopyVecToIntegerArray(grid,array,vector,num_values)
   ! Author: Glenn Hammond
   ! Date: 12/18/07
   ! 
-
-  implicit none
-
 #include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
+  use petscvec
+  implicit none
   
   type(grid_type) :: grid
   PetscInt :: array(:)
@@ -1163,11 +1150,9 @@ subroutine GridCopyVecToRealArray(grid,array,vector,num_values)
   ! Author: Glenn Hammond
   ! Date: 12/18/07
   ! 
-
-  implicit none
-  
 #include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
+  use petscvec
+  implicit none
     
   type(grid_type) :: grid
   PetscReal :: array(:)
@@ -2157,5 +2142,57 @@ subroutine GridGetLocalIDFromCoordinate(grid,coordinate,option,local_id)
     
 end subroutine GridGetLocalIDFromCoordinate
 
+! ************************************************************************** !
+
+subroutine GridPrintExtents(grid,option)
+  ! 
+  ! Prints the extents of the gridded domain.
+  ! 
+  ! Author: Glenn Hammond
+  ! Date: 02/20/18
+  ! 
+  use Option_module
+
+  implicit none
+
+  type(grid_type) :: grid
+  type(option_type) :: option
+
+  character(len=MAXSTRINGLENGTH) :: string
+  character(len=MAXWORDLENGTH) :: word1, word2
+
+  write(word1,*) grid%x_min_global
+  write(word2,*) grid%x_max_global
+  write(string,*) 'X: ', trim(adjustl(word1)), ' - ', trim(adjustl(word2))
+  if (OptionPrintToScreen(option)) then
+    write(*,*) 'Extent of Gridded Domain'
+    write(*,*) trim(string)
+  endif
+  if (OptionPrintToFile(option)) then
+    write(option%fid_out,*) 'Extent of Gridded Domain'
+    write(option%fid_out,*) trim(string)
+  endif
+  write(word1,*) grid%y_min_global
+  write(word2,*) grid%y_max_global
+  write(string,*) 'Y: ', trim(adjustl(word1)), ' - ', trim(adjustl(word2))
+  if (OptionPrintToScreen(option)) then
+    write(*,*) trim(string)
+  endif
+  if (OptionPrintToFile(option)) then
+    write(option%fid_out,*) trim(string)
+  endif
+  write(word1,*) grid%z_min_global
+  write(word2,*) grid%z_max_global
+  write(string,*) 'Z: ', trim(adjustl(word1)), ' - ', trim(adjustl(word2))
+  if (OptionPrintToScreen(option)) then
+    write(*,*) trim(string)
+    write(*,*)
+  endif
+  if (OptionPrintToFile(option)) then
+    write(option%fid_out,*) trim(string)
+    write(option%fid_out,*)
+  endif
+
+end subroutine GridPrintExtents
 
 end module Grid_module

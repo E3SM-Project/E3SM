@@ -1,5 +1,6 @@
 module Communicator_Unstructured_class
-
+#include "petsc/finclude/petscdm.h"
+  use petscdm
   use Communicator_Base_module
   use Grid_Unstructured_module
   use Grid_Unstructured_Aux_module
@@ -10,17 +11,6 @@ module Communicator_Unstructured_class
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
-  
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
-#include "petsc/finclude/petscdm.h"
-#include "petsc/finclude/petscdm.h90"
-#include "petsc/finclude/petscdmshell.h90"
-
 
   type, public, extends(communicator_type) :: unstructured_communicator_type
     DM :: dm
@@ -62,7 +52,7 @@ function UnstructuredCommunicatorCreate()
   
   allocate(communicator)
   nullify(communicator%ugdm)
-  communicator%dm = 0
+  communicator%dm = PETSC_NULL_DM
 
   UnstructuredCommunicatorCreate => communicator  
   
@@ -265,10 +255,10 @@ subroutine UnstructuredCommunicatorDestroy(this)
     !call UGridDMDestroy(this%ugdm)
   endif
   nullify(this%ugdm)
-  if (this%dm /= 0) then
+  if (this%dm /= PETSC_NULL_DM) then
     !call DMDestroy(this%dm,ierr)
   endif
-  this%dm = 0  
+  this%dm = PETSC_NULL_DM 
   
 end subroutine UnstructuredCommunicatorDestroy
 

@@ -1,5 +1,6 @@
 module DM_Kludge_module
-  
+#include "petsc/finclude/petscdm.h"
+  use petscdm
   use Grid_Unstructured_Aux_module, only : ugdm_type
   
   use PFLOTRAN_Constants_module
@@ -7,13 +8,6 @@ module DM_Kludge_module
   implicit none
 
   private
- 
-#include "petsc/finclude/petscsys.h"
-
-#include "petsc/finclude/petscdm.h"
-#include "petsc/finclude/petscdm.h90"
-#include "petsc/finclude/petscdmda.h"
-#include "petsc/finclude/petscdmshell.h90"
 
   type, public :: dm_ptr_type
     DM :: dm  ! PETSc DM

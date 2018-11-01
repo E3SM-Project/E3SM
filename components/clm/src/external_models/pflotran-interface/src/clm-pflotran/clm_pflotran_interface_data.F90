@@ -12,25 +12,12 @@ module clm_pflotran_interface_data
 !            '*_srf_': for variables with 2D-grids at ground surface, which may or may not same as '_subsurf_'. NOTE that it's not supported now.
 ! Revised by Fengming Yuan, CCSI-ORNL @May-2015
 
-
-  implicit none
-
 #include "petsc/finclude/petscsys.h"
-
-#if PETSC_VERSION_GE(3,8,0)
 #include "petsc/finclude/petscvec.h"
   use petscsys
   use petscvec
 
   implicit none
-#endif
-
-! note: the following appears NOT good if putting before 'implicit none'
-! for PETSC 3.7.x, BUT excluding 3.7.5 (for xsdk-0.2 or earlier - needs more checking here!!!)
-#if (PETSC_VERSION_GE(3,7,0) && PETSC_VERSION_LT(3,8,0))
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#endif
 
   private
 
@@ -289,12 +276,10 @@ module clm_pflotran_interface_data
   ! -----BGC vecs from CLM (mpi, ghosted) to PF (seq, local)
   !
   ! the following can be directly used to drive BGC
-  Vec :: h2osoi_vol_clmp                ! volume soil water content (inc. ice and liq water)
   Vec :: t_scalar_clmp                  ! temperature response function value from CLM for decomposition reations
   Vec :: w_scalar_clmp                  ! soil moisture response function value from CLM for decomposition reations
   Vec :: o_scalar_clmp                  ! soil anoxic response function value from CLM for decomposition and/or CH4/NOx processes
   Vec :: depth_scalar_clmp              ! soil depth response function value from CLM for decomposition reations
-  Vec :: h2osoi_vol_pfs
   Vec :: t_scalar_pfs
   Vec :: w_scalar_pfs
   Vec :: o_scalar_pfs
@@ -557,120 +542,120 @@ contains
     clm_pf_idata%ngpf_srf  = 0
 
     !
-    clm_pf_idata%zsoil_clmp      = 0
-    clm_pf_idata%zsoil_pfs       = 0
-    clm_pf_idata%zsoil_pfp       = 0
-    clm_pf_idata%zsoil_clms      = 0
-    clm_pf_idata%dxsoil_clmp     = 0
-    clm_pf_idata%dxsoil_pfs      = 0
-    clm_pf_idata%dysoil_clmp     = 0
-    clm_pf_idata%dysoil_pfs      = 0
-    clm_pf_idata%dzsoil_clmp     = 0
-    clm_pf_idata%dzsoil_pfs      = 0
-    clm_pf_idata%xsoil_clmp      = 0
-    clm_pf_idata%xsoil_pfs       = 0
-    clm_pf_idata%ysoil_clmp      = 0
-    clm_pf_idata%ysoil_pfs       = 0
-    clm_pf_idata%zisoil_clmp     = 0
-    clm_pf_idata%zisoil_pfs      = 0
+    clm_pf_idata%zsoil_clmp      = PETSC_NULL_VEC
+    clm_pf_idata%zsoil_pfs       = PETSC_NULL_VEC
+    clm_pf_idata%zsoil_pfp       = PETSC_NULL_VEC
+    clm_pf_idata%zsoil_clms      = PETSC_NULL_VEC
+    clm_pf_idata%dxsoil_clmp     = PETSC_NULL_VEC
+    clm_pf_idata%dxsoil_pfs      = PETSC_NULL_VEC
+    clm_pf_idata%dysoil_clmp     = PETSC_NULL_VEC
+    clm_pf_idata%dysoil_pfs      = PETSC_NULL_VEC
+    clm_pf_idata%dzsoil_clmp     = PETSC_NULL_VEC
+    clm_pf_idata%dzsoil_pfs      = PETSC_NULL_VEC
+    clm_pf_idata%xsoil_clmp      = PETSC_NULL_VEC
+    clm_pf_idata%xsoil_pfs       = PETSC_NULL_VEC
+    clm_pf_idata%ysoil_clmp      = PETSC_NULL_VEC
+    clm_pf_idata%ysoil_pfs       = PETSC_NULL_VEC
+    clm_pf_idata%zisoil_clmp     = PETSC_NULL_VEC
+    clm_pf_idata%zisoil_pfs      = PETSC_NULL_VEC
 
-    clm_pf_idata%area_subsurf_clmp     = 0
-    clm_pf_idata%area_subsurf_pfs      = 0
-    clm_pf_idata%area_subsurf_pfp      = 0
-    clm_pf_idata%area_subsurf_clms     = 0
+    clm_pf_idata%area_subsurf_clmp     = PETSC_NULL_VEC
+    clm_pf_idata%area_subsurf_pfs      = PETSC_NULL_VEC
+    clm_pf_idata%area_subsurf_pfp      = PETSC_NULL_VEC
+    clm_pf_idata%area_subsurf_clms     = PETSC_NULL_VEC
 
-    clm_pf_idata%area_top_face_clmp = 0
-    clm_pf_idata%area_top_face_pfs  = 0
-    clm_pf_idata%area_top_face_pfp  = 0
-    clm_pf_idata%area_top_face_clms = 0
+    clm_pf_idata%area_top_face_clmp = PETSC_NULL_VEC
+    clm_pf_idata%area_top_face_pfs  = PETSC_NULL_VEC
+    clm_pf_idata%area_top_face_pfp  = PETSC_NULL_VEC
+    clm_pf_idata%area_top_face_clms = PETSC_NULL_VEC
 
-    clm_pf_idata%cellid_clmp     = 0
-    clm_pf_idata%cellid_pfs      = 0
-    clm_pf_idata%cellid_pfp      = 0
-    clm_pf_idata%cellid_clms     = 0
+    clm_pf_idata%cellid_clmp     = PETSC_NULL_VEC
+    clm_pf_idata%cellid_pfs      = PETSC_NULL_VEC
+    clm_pf_idata%cellid_pfp      = PETSC_NULL_VEC
+    clm_pf_idata%cellid_clms     = PETSC_NULL_VEC
 
-    clm_pf_idata%cellid_2dtop_clmp     = 0
-    clm_pf_idata%cellid_2dtop_pfs      = 0
-    clm_pf_idata%cellid_2dtop_pfp      = 0
-    clm_pf_idata%cellid_2dtop_clms     = 0
+    clm_pf_idata%cellid_2dtop_clmp     = PETSC_NULL_VEC
+    clm_pf_idata%cellid_2dtop_pfs      = PETSC_NULL_VEC
+    clm_pf_idata%cellid_2dtop_pfp      = PETSC_NULL_VEC
+    clm_pf_idata%cellid_2dtop_clms     = PETSC_NULL_VEC
 
     !-------------
     clm_pf_idata%head_based = PETSC_TRUE
     clm_pf_idata%pressure_reference = 1.01325d5
 
     !--------------------------------------------------------------------
-    clm_pf_idata%hksat_x_clmp = 0
-    clm_pf_idata%hksat_y_clmp = 0
-    clm_pf_idata%hksat_z_clmp = 0
-    clm_pf_idata%watsat_clmp  = 0
-    clm_pf_idata%watfc_clmp   = 0
-    clm_pf_idata%bulkdensity_dry_clmp = 0
-    clm_pf_idata%effporosity_clmp     = 0
+    clm_pf_idata%hksat_x_clmp = PETSC_NULL_VEC
+    clm_pf_idata%hksat_y_clmp = PETSC_NULL_VEC
+    clm_pf_idata%hksat_z_clmp = PETSC_NULL_VEC
+    clm_pf_idata%watsat_clmp  = PETSC_NULL_VEC
+    clm_pf_idata%watfc_clmp   = PETSC_NULL_VEC
+    clm_pf_idata%bulkdensity_dry_clmp = PETSC_NULL_VEC
+    clm_pf_idata%effporosity_clmp     = PETSC_NULL_VEC
 
-    clm_pf_idata%tkwet_clmp  = 0
-    clm_pf_idata%tkdry_clmp  = 0
-    clm_pf_idata%tkfrz_clmp  = 0
-    clm_pf_idata%hcvsol_clmp = 0
+    clm_pf_idata%tkwet_clmp  = PETSC_NULL_VEC
+    clm_pf_idata%tkdry_clmp  = PETSC_NULL_VEC
+    clm_pf_idata%tkfrz_clmp  = PETSC_NULL_VEC
+    clm_pf_idata%hcvsol_clmp = PETSC_NULL_VEC
 
-    clm_pf_idata%hksat_x_pfs = 0
-    clm_pf_idata%hksat_y_pfs = 0
-    clm_pf_idata%hksat_z_pfs = 0
-    clm_pf_idata%watsat_pfs  = 0
-    clm_pf_idata%watfc_pfs   = 0
-    clm_pf_idata%bulkdensity_dry_pfs = 0
-    clm_pf_idata%effporosity_pfs     = 0
+    clm_pf_idata%hksat_x_pfs = PETSC_NULL_VEC
+    clm_pf_idata%hksat_y_pfs = PETSC_NULL_VEC
+    clm_pf_idata%hksat_z_pfs = PETSC_NULL_VEC
+    clm_pf_idata%watsat_pfs  = PETSC_NULL_VEC
+    clm_pf_idata%watfc_pfs   = PETSC_NULL_VEC
+    clm_pf_idata%bulkdensity_dry_pfs = PETSC_NULL_VEC
+    clm_pf_idata%effporosity_pfs     = PETSC_NULL_VEC
 
-    clm_pf_idata%tkwet_pfs  = 0
-    clm_pf_idata%tkdry_pfs  = 0
-    clm_pf_idata%tkfrz_pfs  = 0
-    clm_pf_idata%hcvsol_pfs = 0
+    clm_pf_idata%tkwet_pfs  = PETSC_NULL_VEC
+    clm_pf_idata%tkdry_pfs  = PETSC_NULL_VEC
+    clm_pf_idata%tkfrz_pfs  = PETSC_NULL_VEC
+    clm_pf_idata%hcvsol_pfs = PETSC_NULL_VEC
 
-    clm_pf_idata%sucsat_clmp = 0
-    clm_pf_idata%bsw_clmp    = 0
-    clm_pf_idata%sucsat_pfs  = 0
-    clm_pf_idata%bsw_pfs     = 0
+    clm_pf_idata%sucsat_clmp = PETSC_NULL_VEC
+    clm_pf_idata%bsw_clmp    = PETSC_NULL_VEC
+    clm_pf_idata%sucsat_pfs  = PETSC_NULL_VEC
+    clm_pf_idata%bsw_pfs     = PETSC_NULL_VEC
    
    !--------------------------------------------------------------------
-    clm_pf_idata%sr_pcwmax_pfp   = 0
-    clm_pf_idata%pcwmax_pfp      = 0
-    clm_pf_idata%effporosity_pfp = 0
-    clm_pf_idata%sr_pcwmax_clms  = 0
-    clm_pf_idata%pcwmax_clms     = 0
-    clm_pf_idata%effporosity_clms= 0
+    clm_pf_idata%sr_pcwmax_pfp   = PETSC_NULL_VEC
+    clm_pf_idata%pcwmax_pfp      = PETSC_NULL_VEC
+    clm_pf_idata%effporosity_pfp = PETSC_NULL_VEC
+    clm_pf_idata%sr_pcwmax_clms  = PETSC_NULL_VEC
+    clm_pf_idata%pcwmax_clms     = PETSC_NULL_VEC
+    clm_pf_idata%effporosity_clms= PETSC_NULL_VEC
 
    !--------------------------------------------------------------------
-    clm_pf_idata%press_ref_clmp = 0
-    clm_pf_idata%press_ref_pfs  = 0
+    clm_pf_idata%press_ref_clmp = PETSC_NULL_VEC
+    clm_pf_idata%press_ref_pfs  = PETSC_NULL_VEC
     !
-    clm_pf_idata%press_clmp    = 0
-    clm_pf_idata%soilpsi_clmp  = 0
-    clm_pf_idata%soillsat_clmp = 0
-    clm_pf_idata%soilisat_clmp = 0
-    clm_pf_idata%soilliq_clmp  = 0
-    clm_pf_idata%soilice_clmp  = 0
-    clm_pf_idata%soilt_clmp    = 0
-    clm_pf_idata%press_pfs      = 0
-    clm_pf_idata%soilpsi_pfs    = 0
-    clm_pf_idata%soillsat_pfs   = 0
-    clm_pf_idata%soilisat_pfs   = 0
-    clm_pf_idata%soilliq_pfs    = 0
-    clm_pf_idata%soilice_pfs    = 0
-    clm_pf_idata%soilt_pfs      = 0
+    clm_pf_idata%press_clmp    = PETSC_NULL_VEC
+    clm_pf_idata%soilpsi_clmp  = PETSC_NULL_VEC
+    clm_pf_idata%soillsat_clmp = PETSC_NULL_VEC
+    clm_pf_idata%soilisat_clmp = PETSC_NULL_VEC
+    clm_pf_idata%soilliq_clmp  = PETSC_NULL_VEC
+    clm_pf_idata%soilice_clmp  = PETSC_NULL_VEC
+    clm_pf_idata%soilt_clmp    = PETSC_NULL_VEC
+    clm_pf_idata%press_pfs      = PETSC_NULL_VEC
+    clm_pf_idata%soilpsi_pfs    = PETSC_NULL_VEC
+    clm_pf_idata%soillsat_pfs   = PETSC_NULL_VEC
+    clm_pf_idata%soilisat_pfs   = PETSC_NULL_VEC
+    clm_pf_idata%soilliq_pfs    = PETSC_NULL_VEC
+    clm_pf_idata%soilice_pfs    = PETSC_NULL_VEC
+    clm_pf_idata%soilt_pfs      = PETSC_NULL_VEC
     !
-    clm_pf_idata%press_pfp    = 0
-    clm_pf_idata%soilpsi_pfp  = 0
-    clm_pf_idata%soillsat_pfp = 0
-    clm_pf_idata%soilisat_pfp = 0
-    clm_pf_idata%soilliq_pfp  = 0
-    clm_pf_idata%soilice_pfp  = 0
-    clm_pf_idata%soilt_pfp    = 0
-    clm_pf_idata%press_clms      = 0
-    clm_pf_idata%soilpsi_clms    = 0
-    clm_pf_idata%soillsat_clms   = 0
-    clm_pf_idata%soilisat_clms   = 0
-    clm_pf_idata%soilliq_clms    = 0
-    clm_pf_idata%soilice_clms    = 0
-    clm_pf_idata%soilt_clms      = 0
+    clm_pf_idata%press_pfp    = PETSC_NULL_VEC
+    clm_pf_idata%soilpsi_pfp  = PETSC_NULL_VEC
+    clm_pf_idata%soillsat_pfp = PETSC_NULL_VEC
+    clm_pf_idata%soilisat_pfp = PETSC_NULL_VEC
+    clm_pf_idata%soilliq_pfp  = PETSC_NULL_VEC
+    clm_pf_idata%soilice_pfp  = PETSC_NULL_VEC
+    clm_pf_idata%soilt_pfp    = PETSC_NULL_VEC
+    clm_pf_idata%press_clms      = PETSC_NULL_VEC
+    clm_pf_idata%soilpsi_clms    = PETSC_NULL_VEC
+    clm_pf_idata%soillsat_clms   = PETSC_NULL_VEC
+    clm_pf_idata%soilisat_clms   = PETSC_NULL_VEC
+    clm_pf_idata%soilliq_clms    = PETSC_NULL_VEC
+    clm_pf_idata%soilice_clms    = PETSC_NULL_VEC
+    clm_pf_idata%soilt_clms      = PETSC_NULL_VEC
 
     !------------------------------------------------------------------
     clm_pf_idata%N_molecular_weight = 14.0067d0
@@ -712,178 +697,176 @@ contains
     clm_pf_idata%ispec_n2o = 0
 
    !--------------------------------------------------------------------
-    clm_pf_idata%h2osoi_vol_clmp   = 0
-    clm_pf_idata%t_scalar_clmp     = 0
-    clm_pf_idata%w_scalar_clmp     = 0
-    clm_pf_idata%o_scalar_clmp     = 0
-    clm_pf_idata%depth_scalar_clmp = 0
-    clm_pf_idata%h2osoi_vol_pfs    = 0
-    clm_pf_idata%t_scalar_pfs      = 0
-    clm_pf_idata%w_scalar_pfs      = 0
-    clm_pf_idata%o_scalar_pfs      = 0
-    clm_pf_idata%depth_scalar_pfs  = 0
+    clm_pf_idata%t_scalar_clmp     = PETSC_NULL_VEC
+    clm_pf_idata%w_scalar_clmp     = PETSC_NULL_VEC
+    clm_pf_idata%o_scalar_clmp     = PETSC_NULL_VEC
+    clm_pf_idata%depth_scalar_clmp = PETSC_NULL_VEC
+    clm_pf_idata%t_scalar_pfs      = PETSC_NULL_VEC
+    clm_pf_idata%w_scalar_pfs      = PETSC_NULL_VEC
+    clm_pf_idata%o_scalar_pfs      = PETSC_NULL_VEC
+    clm_pf_idata%depth_scalar_pfs  = PETSC_NULL_VEC
 
-    clm_pf_idata%decomp_cpools_vr_clmp = 0
-    clm_pf_idata%decomp_npools_vr_clmp = 0
-    clm_pf_idata%kscalar_decomp_c_clmp = 0
+    clm_pf_idata%decomp_cpools_vr_clmp = PETSC_NULL_VEC
+    clm_pf_idata%decomp_npools_vr_clmp = PETSC_NULL_VEC
+    clm_pf_idata%kscalar_decomp_c_clmp = PETSC_NULL_VEC
 
-    clm_pf_idata%smin_no3_vr_clmp      = 0
-    clm_pf_idata%smin_nh4_vr_clmp      = 0
-    clm_pf_idata%smin_nh4sorb_vr_clmp  = 0
+    clm_pf_idata%smin_no3_vr_clmp      = PETSC_NULL_VEC
+    clm_pf_idata%smin_nh4_vr_clmp      = PETSC_NULL_VEC
+    clm_pf_idata%smin_nh4sorb_vr_clmp  = PETSC_NULL_VEC
 
-    clm_pf_idata%decomp_cpools_vr_pfs = 0
-    clm_pf_idata%decomp_npools_vr_pfs = 0
-    clm_pf_idata%kscalar_decomp_c_pfs = 0
+    clm_pf_idata%decomp_cpools_vr_pfs = PETSC_NULL_VEC
+    clm_pf_idata%decomp_npools_vr_pfs = PETSC_NULL_VEC
+    clm_pf_idata%kscalar_decomp_c_pfs = PETSC_NULL_VEC
 
-    clm_pf_idata%smin_no3_vr_pfs      = 0
-    clm_pf_idata%smin_nh4_vr_pfs      = 0
-    clm_pf_idata%smin_nh4sorb_vr_pfs  = 0
+    clm_pf_idata%smin_no3_vr_pfs      = PETSC_NULL_VEC
+    clm_pf_idata%smin_nh4_vr_pfs      = PETSC_NULL_VEC
+    clm_pf_idata%smin_nh4sorb_vr_pfs  = PETSC_NULL_VEC
 
-    clm_pf_idata%rate_decomp_c_clmp         = 0
-    clm_pf_idata%rate_decomp_n_clmp         = 0
-    clm_pf_idata%rate_smin_no3_clmp         = 0
-    clm_pf_idata%rate_smin_nh4_clmp         = 0
-    clm_pf_idata%rate_plantndemand_clmp     = 0
+    clm_pf_idata%rate_decomp_c_clmp         = PETSC_NULL_VEC
+    clm_pf_idata%rate_decomp_n_clmp         = PETSC_NULL_VEC
+    clm_pf_idata%rate_smin_no3_clmp         = PETSC_NULL_VEC
+    clm_pf_idata%rate_smin_nh4_clmp         = PETSC_NULL_VEC
+    clm_pf_idata%rate_plantndemand_clmp     = PETSC_NULL_VEC
 
-    clm_pf_idata%rate_decomp_c_pfs         = 0
-    clm_pf_idata%rate_decomp_n_pfs         = 0
-    clm_pf_idata%rate_smin_no3_pfs         = 0
-    clm_pf_idata%rate_smin_nh4_pfs         = 0
-    clm_pf_idata%rate_plantndemand_pfs     = 0
+    clm_pf_idata%rate_decomp_c_pfs         = PETSC_NULL_VEC
+    clm_pf_idata%rate_decomp_n_pfs         = PETSC_NULL_VEC
+    clm_pf_idata%rate_smin_no3_pfs         = PETSC_NULL_VEC
+    clm_pf_idata%rate_smin_nh4_pfs         = PETSC_NULL_VEC
+    clm_pf_idata%rate_plantndemand_pfs     = PETSC_NULL_VEC
 
    !--------------------------------------------------------------------
     ! for C-N states
-    clm_pf_idata%decomp_cpools_vr_pfp  = 0
-    clm_pf_idata%decomp_npools_vr_pfp  = 0
-    clm_pf_idata%smin_no3_vr_pfp       = 0
-    clm_pf_idata%smin_nh4_vr_pfp       = 0
-    clm_pf_idata%smin_nh4sorb_vr_pfp   = 0
-    clm_pf_idata%decomp_cpools_vr_clms = 0
-    clm_pf_idata%decomp_npools_vr_clms = 0
-    clm_pf_idata%smin_no3_vr_clms      = 0
-    clm_pf_idata%smin_nh4_vr_clms      = 0
-    clm_pf_idata%smin_nh4sorb_vr_clms  = 0
+    clm_pf_idata%decomp_cpools_vr_pfp  = PETSC_NULL_VEC
+    clm_pf_idata%decomp_npools_vr_pfp  = PETSC_NULL_VEC
+    clm_pf_idata%smin_no3_vr_pfp       = PETSC_NULL_VEC
+    clm_pf_idata%smin_nh4_vr_pfp       = PETSC_NULL_VEC
+    clm_pf_idata%smin_nh4sorb_vr_pfp   = PETSC_NULL_VEC
+    clm_pf_idata%decomp_cpools_vr_clms = PETSC_NULL_VEC
+    clm_pf_idata%decomp_npools_vr_clms = PETSC_NULL_VEC
+    clm_pf_idata%smin_no3_vr_clms      = PETSC_NULL_VEC
+    clm_pf_idata%smin_nh4_vr_clms      = PETSC_NULL_VEC
+    clm_pf_idata%smin_nh4sorb_vr_clms  = PETSC_NULL_VEC
 
     ! for root N extraction calculation
-    clm_pf_idata%accextrnh4_vr_pfp       = 0
-    clm_pf_idata%accextrnh4_vr_clms      = 0
-    clm_pf_idata%accextrno3_vr_pfp       = 0
-    clm_pf_idata%accextrno3_vr_clms      = 0
+    clm_pf_idata%accextrnh4_vr_pfp       = PETSC_NULL_VEC
+    clm_pf_idata%accextrnh4_vr_clms      = PETSC_NULL_VEC
+    clm_pf_idata%accextrno3_vr_pfp       = PETSC_NULL_VEC
+    clm_pf_idata%accextrno3_vr_clms      = PETSC_NULL_VEC
 
     ! for soil hr calculation
-    clm_pf_idata%gco2_vr_pfp            = 0
-    clm_pf_idata%gco2_vr_clms           = 0
-    clm_pf_idata%gco2_vr_clmp           = 0
-    clm_pf_idata%gco2_vr_pfs            = 0
+    clm_pf_idata%gco2_vr_pfp            = PETSC_NULL_VEC
+    clm_pf_idata%gco2_vr_clms           = PETSC_NULL_VEC
+    clm_pf_idata%gco2_vr_clmp           = PETSC_NULL_VEC
+    clm_pf_idata%gco2_vr_pfs            = PETSC_NULL_VEC
 
     ! for N2 gas emission calculation
-    clm_pf_idata%gn2_vr_pfp       = 0
-    clm_pf_idata%gn2_vr_clms      = 0
-    clm_pf_idata%gn2_vr_clmp      = 0
-    clm_pf_idata%gn2_vr_pfs       = 0
+    clm_pf_idata%gn2_vr_pfp       = PETSC_NULL_VEC
+    clm_pf_idata%gn2_vr_clms      = PETSC_NULL_VEC
+    clm_pf_idata%gn2_vr_clmp      = PETSC_NULL_VEC
+    clm_pf_idata%gn2_vr_pfs       = PETSC_NULL_VEC
 
     ! for N2O gas emission calculation
-    clm_pf_idata%gn2o_vr_pfp       = 0
-    clm_pf_idata%gn2o_vr_clms      = 0
-    clm_pf_idata%gn2o_vr_clmp      = 0
-    clm_pf_idata%gn2o_vr_pfs       = 0
+    clm_pf_idata%gn2o_vr_pfp       = PETSC_NULL_VEC
+    clm_pf_idata%gn2o_vr_clms      = PETSC_NULL_VEC
+    clm_pf_idata%gn2o_vr_clmp      = PETSC_NULL_VEC
+    clm_pf_idata%gn2o_vr_pfs       = PETSC_NULL_VEC
 
     ! for tracking variables in C-N cycle
-    clm_pf_idata%acchr_vr_pfp       = 0
-    clm_pf_idata%acchr_vr_clms      = 0
-    clm_pf_idata%acctothr_vr_pfp    = 0
-    clm_pf_idata%acctothr_vr_clms   = 0
+    clm_pf_idata%acchr_vr_pfp       = PETSC_NULL_VEC
+    clm_pf_idata%acchr_vr_clms      = PETSC_NULL_VEC
+    clm_pf_idata%acctothr_vr_pfp    = PETSC_NULL_VEC
+    clm_pf_idata%acctothr_vr_clms   = PETSC_NULL_VEC
 
-    clm_pf_idata%accnmin_vr_pfp       = 0
-    clm_pf_idata%accnmin_vr_clms      = 0
-    clm_pf_idata%acctotnmin_vr_pfp    = 0
-    clm_pf_idata%acctotnmin_vr_clms   = 0
+    clm_pf_idata%accnmin_vr_pfp       = PETSC_NULL_VEC
+    clm_pf_idata%accnmin_vr_clms      = PETSC_NULL_VEC
+    clm_pf_idata%acctotnmin_vr_pfp    = PETSC_NULL_VEC
+    clm_pf_idata%acctotnmin_vr_clms   = PETSC_NULL_VEC
 
-    clm_pf_idata%accnimmp_vr_pfp      = 0
-    clm_pf_idata%accnimmp_vr_clms     = 0
-    clm_pf_idata%acctotnimmp_vr_pfp   = 0
-    clm_pf_idata%acctotnimmp_vr_clms  = 0
+    clm_pf_idata%accnimmp_vr_pfp      = PETSC_NULL_VEC
+    clm_pf_idata%accnimmp_vr_clms     = PETSC_NULL_VEC
+    clm_pf_idata%acctotnimmp_vr_pfp   = PETSC_NULL_VEC
+    clm_pf_idata%acctotnimmp_vr_clms  = PETSC_NULL_VEC
 
-    clm_pf_idata%accnimm_vr_pfp       = 0
-    clm_pf_idata%accnimm_vr_clms      = 0
-    clm_pf_idata%acctotnimm_vr_pfp    = 0
-    clm_pf_idata%acctotnimm_vr_clms   = 0
+    clm_pf_idata%accnimm_vr_pfp       = PETSC_NULL_VEC
+    clm_pf_idata%accnimm_vr_clms      = PETSC_NULL_VEC
+    clm_pf_idata%acctotnimm_vr_pfp    = PETSC_NULL_VEC
+    clm_pf_idata%acctotnimm_vr_clms   = PETSC_NULL_VEC
 
-    clm_pf_idata%accngasmin_vr_pfp        = 0
-    clm_pf_idata%accngasmin_vr_clms       = 0
+    clm_pf_idata%accngasmin_vr_pfp        = PETSC_NULL_VEC
+    clm_pf_idata%accngasmin_vr_clms       = PETSC_NULL_VEC
 
-    clm_pf_idata%accngasnitr_vr_pfp       = 0
-    clm_pf_idata%accngasnitr_vr_clms      = 0
+    clm_pf_idata%accngasnitr_vr_pfp       = PETSC_NULL_VEC
+    clm_pf_idata%accngasnitr_vr_clms      = PETSC_NULL_VEC
 
-    clm_pf_idata%accngasdeni_vr_pfp       = 0
-    clm_pf_idata%accngasdeni_vr_clms      = 0
+    clm_pf_idata%accngasdeni_vr_pfp       = PETSC_NULL_VEC
+    clm_pf_idata%accngasdeni_vr_clms      = PETSC_NULL_VEC
 
     ! aq. chemical species boundary flux
 
-    clm_pf_idata%f_nh4_subsurf_pfp   = 0
-    clm_pf_idata%f_nh4_subsurf_clms  = 0
-    clm_pf_idata%f_nh4_subbase_pfp   = 0
-    clm_pf_idata%f_nh4_subbase_clms  = 0
-    clm_pf_idata%f_no3_subsurf_pfp   = 0
-    clm_pf_idata%f_no3_subsurf_clms  = 0
-    clm_pf_idata%f_no3_subbase_pfp   = 0
-    clm_pf_idata%f_no3_subbase_clms  = 0
+    clm_pf_idata%f_nh4_subsurf_pfp   = PETSC_NULL_VEC
+    clm_pf_idata%f_nh4_subsurf_clms  = PETSC_NULL_VEC
+    clm_pf_idata%f_nh4_subbase_pfp   = PETSC_NULL_VEC
+    clm_pf_idata%f_nh4_subbase_clms  = PETSC_NULL_VEC
+    clm_pf_idata%f_no3_subsurf_pfp   = PETSC_NULL_VEC
+    clm_pf_idata%f_no3_subsurf_clms  = PETSC_NULL_VEC
+    clm_pf_idata%f_no3_subbase_pfp   = PETSC_NULL_VEC
+    clm_pf_idata%f_no3_subbase_clms  = PETSC_NULL_VEC
 
    !--------------------------------------------------------------------
 
-    clm_pf_idata%qflow_clmp = 0
-    clm_pf_idata%qflow_pfs  = 0
-    clm_pf_idata%qflowt_clmp= 0
-    clm_pf_idata%qflowt_pfs = 0
-    clm_pf_idata%eflow_clmp = 0
-    clm_pf_idata%eflow_pfs  = 0
+    clm_pf_idata%qflow_clmp = PETSC_NULL_VEC
+    clm_pf_idata%qflow_pfs  = PETSC_NULL_VEC
+    clm_pf_idata%qflowt_clmp= PETSC_NULL_VEC
+    clm_pf_idata%qflowt_pfs = PETSC_NULL_VEC
+    clm_pf_idata%eflow_clmp = PETSC_NULL_VEC
+    clm_pf_idata%eflow_pfs  = PETSC_NULL_VEC
 
-    clm_pf_idata%press_maxponding_clmp = 0
-    clm_pf_idata%press_maxponding_pfs  = 0
-    clm_pf_idata%press_subsurf_clmp = 0
-    clm_pf_idata%press_subsurf_pfs  = 0
-    clm_pf_idata%press_subbase_clmp = 0
-    clm_pf_idata%press_subbase_pfs  = 0
+    clm_pf_idata%press_maxponding_clmp = PETSC_NULL_VEC
+    clm_pf_idata%press_maxponding_pfs  = PETSC_NULL_VEC
+    clm_pf_idata%press_subsurf_clmp = PETSC_NULL_VEC
+    clm_pf_idata%press_subsurf_pfs  = PETSC_NULL_VEC
+    clm_pf_idata%press_subbase_clmp = PETSC_NULL_VEC
+    clm_pf_idata%press_subbase_pfs  = PETSC_NULL_VEC
 
-    clm_pf_idata%qfluxw_subsurf_clmp  = 0
-    clm_pf_idata%qfluxw_subsurf_pfs   = 0
-    clm_pf_idata%qfluxev_subsurf_clmp = 0
-    clm_pf_idata%qfluxev_subsurf_pfs  = 0
-    clm_pf_idata%qfluxw_subbase_clmp  = 0
-    clm_pf_idata%qfluxw_subbase_pfs   = 0
+    clm_pf_idata%qfluxw_subsurf_clmp  = PETSC_NULL_VEC
+    clm_pf_idata%qfluxw_subsurf_pfs   = PETSC_NULL_VEC
+    clm_pf_idata%qfluxev_subsurf_clmp = PETSC_NULL_VEC
+    clm_pf_idata%qfluxev_subsurf_pfs  = PETSC_NULL_VEC
+    clm_pf_idata%qfluxw_subbase_clmp  = PETSC_NULL_VEC
+    clm_pf_idata%qfluxw_subbase_pfs   = PETSC_NULL_VEC
 
-    clm_pf_idata%gtemp_subsurf_clmp = 0
-    clm_pf_idata%gtemp_subsurf_pfs  = 0
-    clm_pf_idata%eflux_subsurf_clmp = 0
-    clm_pf_idata%eflux_subsurf_pfs  = 0
-    clm_pf_idata%efluxr_subsurf_clmp= 0
-    clm_pf_idata%efluxr_subsurf_pfs = 0
-    clm_pf_idata%efluxl_subsurf_clmp= 0
-    clm_pf_idata%efluxl_subsurf_pfs = 0
-    clm_pf_idata%gtemp_subbase_clmp = 0
-    clm_pf_idata%gtemp_subbase_pfs  = 0
-    clm_pf_idata%eflux_subbase_clmp = 0
-    clm_pf_idata%eflux_subbase_pfs  = 0
+    clm_pf_idata%gtemp_subsurf_clmp = PETSC_NULL_VEC
+    clm_pf_idata%gtemp_subsurf_pfs  = PETSC_NULL_VEC
+    clm_pf_idata%eflux_subsurf_clmp = PETSC_NULL_VEC
+    clm_pf_idata%eflux_subsurf_pfs  = PETSC_NULL_VEC
+    clm_pf_idata%efluxr_subsurf_clmp= PETSC_NULL_VEC
+    clm_pf_idata%efluxr_subsurf_pfs = PETSC_NULL_VEC
+    clm_pf_idata%efluxl_subsurf_clmp= PETSC_NULL_VEC
+    clm_pf_idata%efluxl_subsurf_pfs = PETSC_NULL_VEC
+    clm_pf_idata%gtemp_subbase_clmp = PETSC_NULL_VEC
+    clm_pf_idata%gtemp_subbase_pfs  = PETSC_NULL_VEC
+    clm_pf_idata%eflux_subbase_clmp = PETSC_NULL_VEC
+    clm_pf_idata%eflux_subbase_pfs  = PETSC_NULL_VEC
 
     !---------------
     ! water/energy boundary flux
-    clm_pf_idata%qinfl_subsurf_pfp   = 0
-    clm_pf_idata%qinfl_subsurf_clms  = 0
-    clm_pf_idata%qsurf_subsurf_pfp   = 0
-    clm_pf_idata%qsurf_subsurf_clms  = 0
-    clm_pf_idata%qflux_subbase_pfp   = 0
-    clm_pf_idata%qflux_subbase_clms  = 0
-    clm_pf_idata%eflux_subsurf_pfp   = 0
-    clm_pf_idata%eflux_subsurf_clms  = 0
-    clm_pf_idata%eflux_subbase_pfp   = 0
-    clm_pf_idata%eflux_subbase_clms  = 0
+    clm_pf_idata%qinfl_subsurf_pfp   = PETSC_NULL_VEC
+    clm_pf_idata%qinfl_subsurf_clms  = PETSC_NULL_VEC
+    clm_pf_idata%qsurf_subsurf_pfp   = PETSC_NULL_VEC
+    clm_pf_idata%qsurf_subsurf_clms  = PETSC_NULL_VEC
+    clm_pf_idata%qflux_subbase_pfp   = PETSC_NULL_VEC
+    clm_pf_idata%qflux_subbase_clms  = PETSC_NULL_VEC
+    clm_pf_idata%eflux_subsurf_pfp   = PETSC_NULL_VEC
+    clm_pf_idata%eflux_subsurf_clms  = PETSC_NULL_VEC
+    clm_pf_idata%eflux_subbase_pfp   = PETSC_NULL_VEC
+    clm_pf_idata%eflux_subbase_clms  = PETSC_NULL_VEC
 
-    clm_pf_idata%qflow_pfp   = 0
-    clm_pf_idata%qflow_clms  = 0
-    clm_pf_idata%qflowt_pfp  = 0
-    clm_pf_idata%qflowt_clms = 0
-    clm_pf_idata%eflow_pfp   = 0
-    clm_pf_idata%eflow_clms  = 0
+    clm_pf_idata%qflow_pfp   = PETSC_NULL_VEC
+    clm_pf_idata%qflow_clms  = PETSC_NULL_VEC
+    clm_pf_idata%qflowt_pfp  = PETSC_NULL_VEC
+    clm_pf_idata%qflowt_clms = PETSC_NULL_VEC
+    clm_pf_idata%eflow_pfp   = PETSC_NULL_VEC
+    clm_pf_idata%eflow_clms  = PETSC_NULL_VEC
 
   end subroutine CLMPFLOTRANIDataInit
 
@@ -1074,7 +1057,6 @@ contains
 
     call VecDuplicate(clm_pf_idata%zsoil_clmp,clm_pf_idata%kscalar_decomp_c_clmp,ierr)
 
-    call VecDuplicate(clm_pf_idata%zsoil_clmp,clm_pf_idata%h2osoi_vol_clmp,ierr)
     call VecDuplicate(clm_pf_idata%zsoil_clmp,clm_pf_idata%t_scalar_clmp,ierr)
     call VecDuplicate(clm_pf_idata%zsoil_clmp,clm_pf_idata%w_scalar_clmp,ierr)
     call VecDuplicate(clm_pf_idata%zsoil_clmp,clm_pf_idata%o_scalar_clmp,ierr)
@@ -1092,7 +1074,6 @@ contains
 
     call VecDuplicate(clm_pf_idata%zsoil_pfs, clm_pf_idata%kscalar_decomp_c_pfs,ierr)
 
-    call VecDuplicate(clm_pf_idata%zsoil_pfs,clm_pf_idata%h2osoi_vol_pfs,ierr)
     call VecDuplicate(clm_pf_idata%zsoil_pfs,clm_pf_idata%t_scalar_pfs,ierr)
     call VecDuplicate(clm_pf_idata%zsoil_pfs,clm_pf_idata%w_scalar_pfs,ierr)
     call VecDuplicate(clm_pf_idata%zsoil_pfs,clm_pf_idata%o_scalar_pfs,ierr)
@@ -1308,211 +1289,211 @@ contains
 
     !----------------------------------------------------------------------------------
 
-    if(clm_pf_idata%zsoil_clmp /= 0) &
+    if(clm_pf_idata%zsoil_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%zsoil_clmp,ierr)
-    if(clm_pf_idata%zsoil_pfs /= 0) &
+    if(clm_pf_idata%zsoil_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%zsoil_pfs,ierr)
-    if(clm_pf_idata%zsoil_pfp /= 0) &
+    if(clm_pf_idata%zsoil_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%zsoil_pfp,ierr)
-    if(clm_pf_idata%zsoil_clms /= 0) &
+    if(clm_pf_idata%zsoil_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%zsoil_clms,ierr)
 
-    if(clm_pf_idata%xsoil_clmp /= 0) &
+    if(clm_pf_idata%xsoil_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%xsoil_clmp,ierr)
-    if(clm_pf_idata%xsoil_pfs /= 0) &
+    if(clm_pf_idata%xsoil_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%xsoil_pfs,ierr)
-    if(clm_pf_idata%ysoil_clmp /= 0) &
+    if(clm_pf_idata%ysoil_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%ysoil_clmp,ierr)
-    if(clm_pf_idata%ysoil_pfs /= 0) &
+    if(clm_pf_idata%ysoil_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%ysoil_pfs,ierr)
-    if(clm_pf_idata%zisoil_clmp /= 0) &
+    if(clm_pf_idata%zisoil_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%zisoil_clmp,ierr)
-    if(clm_pf_idata%zisoil_pfs /= 0) &
+    if(clm_pf_idata%zisoil_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%zisoil_pfs,ierr)
 
-    if(clm_pf_idata%dxsoil_clmp /= 0) &
+    if(clm_pf_idata%dxsoil_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%dxsoil_clmp,ierr)
-    if(clm_pf_idata%dxsoil_pfs /= 0) &
+    if(clm_pf_idata%dxsoil_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%dxsoil_pfs,ierr)
-    if(clm_pf_idata%dysoil_clmp /= 0) &
+    if(clm_pf_idata%dysoil_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%dysoil_clmp,ierr)
-    if(clm_pf_idata%dysoil_pfs /= 0) &
+    if(clm_pf_idata%dysoil_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%dysoil_pfs,ierr)
-    if(clm_pf_idata%dzsoil_clmp /= 0) &
+    if(clm_pf_idata%dzsoil_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%dzsoil_clmp,ierr)
-    if(clm_pf_idata%dzsoil_pfs /= 0) &
+    if(clm_pf_idata%dzsoil_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%dzsoil_pfs,ierr)
 
-    if(clm_pf_idata%area_subsurf_clmp  /= 0) &
+    if(clm_pf_idata%area_subsurf_clmp  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%area_subsurf_clmp,ierr)
-    if(clm_pf_idata%area_subsurf_pfs  /= 0) &
+    if(clm_pf_idata%area_subsurf_pfs  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%area_subsurf_pfs,ierr)
-    if(clm_pf_idata%area_subsurf_pfp  /= 0) &
+    if(clm_pf_idata%area_subsurf_pfp  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%area_subsurf_pfp,ierr)
-    if(clm_pf_idata%area_subsurf_clms  /= 0) &
+    if(clm_pf_idata%area_subsurf_clms  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%area_subsurf_clms,ierr)
 
-    if(clm_pf_idata%area_top_face_clmp  /= 0) &
+    if(clm_pf_idata%area_top_face_clmp  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%area_top_face_clmp,ierr)
-    if(clm_pf_idata%area_top_face_pfs  /= 0) &
+    if(clm_pf_idata%area_top_face_pfs  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%area_top_face_pfs,ierr)
-    if(clm_pf_idata%area_top_face_pfp  /= 0) &
+    if(clm_pf_idata%area_top_face_pfp  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%area_top_face_pfp,ierr)
-    if(clm_pf_idata%area_top_face_clms  /= 0) &
+    if(clm_pf_idata%area_top_face_clms  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%area_top_face_clms,ierr)
 
     !----
-    if(clm_pf_idata%cellid_clmp  /= 0) &
+    if(clm_pf_idata%cellid_clmp  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%cellid_clmp,ierr)
-    if(clm_pf_idata%cellid_2dtop_clmp  /= 0) &
+    if(clm_pf_idata%cellid_2dtop_clmp  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%cellid_2dtop_clmp,ierr)
-    if(clm_pf_idata%cellid_pfs  /= 0) &
+    if(clm_pf_idata%cellid_pfs  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%cellid_pfs,ierr)
-    if(clm_pf_idata%cellid_2dtop_pfs  /= 0) &
+    if(clm_pf_idata%cellid_2dtop_pfs  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%cellid_2dtop_pfs,ierr)
-    if(clm_pf_idata%hksat_x_clmp  /= 0) &
+    if(clm_pf_idata%hksat_x_clmp  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%hksat_x_clmp,ierr)
-    if(clm_pf_idata%hksat_y_clmp  /= 0) &
+    if(clm_pf_idata%hksat_y_clmp  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%hksat_y_clmp,ierr)
-    if(clm_pf_idata%hksat_z_clmp  /= 0) &
+    if(clm_pf_idata%hksat_z_clmp  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%hksat_z_clmp,ierr)
-    if(clm_pf_idata%sucsat_clmp  /= 0) &
+    if(clm_pf_idata%sucsat_clmp  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%sucsat_clmp,ierr)
-    if(clm_pf_idata%watsat_clmp  /= 0) &
+    if(clm_pf_idata%watsat_clmp  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%watsat_clmp,ierr)
-    if(clm_pf_idata%bsw_clmp  /= 0) &
+    if(clm_pf_idata%bsw_clmp  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%bsw_clmp,ierr)
-    if(clm_pf_idata%watfc_clmp  /= 0) &
+    if(clm_pf_idata%watfc_clmp  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%watfc_clmp,ierr)
-    if(clm_pf_idata%bulkdensity_dry_clmp  /= 0) &
+    if(clm_pf_idata%bulkdensity_dry_clmp  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%bulkdensity_dry_clmp,ierr)
 
-    if(clm_pf_idata%cellid_pfp  /= 0) &
+    if(clm_pf_idata%cellid_pfp  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%cellid_pfp,ierr)
-    if(clm_pf_idata%cellid_2dtop_pfp  /= 0) &
+    if(clm_pf_idata%cellid_2dtop_pfp  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%cellid_2dtop_pfp,ierr)
-    if(clm_pf_idata%cellid_clms  /= 0) &
+    if(clm_pf_idata%cellid_clms  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%cellid_clms,ierr)
-    if(clm_pf_idata%cellid_2dtop_pfs  /= 0) &
+    if(clm_pf_idata%cellid_2dtop_pfs  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%cellid_2dtop_clms,ierr)
-    if(clm_pf_idata%tkwet_clmp  /= 0) &
+    if(clm_pf_idata%tkwet_clmp  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%tkwet_clmp,ierr)
-    if(clm_pf_idata%tkdry_clmp  /= 0) &
+    if(clm_pf_idata%tkdry_clmp  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%tkdry_clmp,ierr)
-    if(clm_pf_idata%tkfrz_clmp  /= 0) &
+    if(clm_pf_idata%tkfrz_clmp  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%tkfrz_clmp,ierr)
-    if(clm_pf_idata%hcvsol_clmp  /= 0) &
+    if(clm_pf_idata%hcvsol_clmp  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%hcvsol_clmp,ierr)
 
-    if(clm_pf_idata%hksat_x_pfs  /= 0) &
+    if(clm_pf_idata%hksat_x_pfs  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%hksat_x_pfs,ierr)
-    if(clm_pf_idata%hksat_y_pfs  /= 0) &
+    if(clm_pf_idata%hksat_y_pfs  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%hksat_y_pfs,ierr)
-    if(clm_pf_idata%hksat_z_pfs  /= 0) &
+    if(clm_pf_idata%hksat_z_pfs  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%hksat_z_pfs,ierr)
-    if(clm_pf_idata%sucsat_pfs  /= 0) &
+    if(clm_pf_idata%sucsat_pfs  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%sucsat_pfs,ierr)
-    if(clm_pf_idata%watsat_pfs  /= 0) &
+    if(clm_pf_idata%watsat_pfs  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%watsat_pfs,ierr)
-    if(clm_pf_idata%bsw_pfs  /= 0) &
+    if(clm_pf_idata%bsw_pfs  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%bsw_pfs,ierr)
-    if(clm_pf_idata%watfc_pfs  /= 0) &
+    if(clm_pf_idata%watfc_pfs  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%watfc_pfs,ierr)
-    if(clm_pf_idata%bulkdensity_dry_pfs  /= 0) &
+    if(clm_pf_idata%bulkdensity_dry_pfs  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%bulkdensity_dry_pfs,ierr)
-    if(clm_pf_idata%effporosity_clmp /= 0) &
+    if(clm_pf_idata%effporosity_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%effporosity_clmp,ierr)
-    if(clm_pf_idata%effporosity_pfs /= 0) &
+    if(clm_pf_idata%effporosity_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%effporosity_pfs,ierr)
 
     !----
-    if(clm_pf_idata%tkwet_pfs  /= 0) &
+    if(clm_pf_idata%tkwet_pfs  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%tkwet_pfs,ierr)
-    if(clm_pf_idata%tkdry_pfs  /= 0) &
+    if(clm_pf_idata%tkdry_pfs  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%tkdry_pfs,ierr)
-    if(clm_pf_idata%tkfrz_pfs  /= 0) &
+    if(clm_pf_idata%tkfrz_pfs  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%tkfrz_pfs,ierr)
-    if(clm_pf_idata%hcvsol_pfs  /= 0) &
+    if(clm_pf_idata%hcvsol_pfs  /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%hcvsol_pfs,ierr)
 
     ! -----
-    if(clm_pf_idata%sr_pcwmax_pfp /= 0) &
+    if(clm_pf_idata%sr_pcwmax_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%sr_pcwmax_pfp,ierr)
-    if(clm_pf_idata%pcwmax_pfp /= 0) &
+    if(clm_pf_idata%pcwmax_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%pcwmax_pfp,ierr)
-    if(clm_pf_idata%sr_pcwmax_clms /= 0) &
+    if(clm_pf_idata%sr_pcwmax_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%sr_pcwmax_clms,ierr)
-    if(clm_pf_idata%pcwmax_clms /= 0) &
+    if(clm_pf_idata%pcwmax_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%pcwmax_clms,ierr)
-    if(clm_pf_idata%effporosity_pfp /= 0) &
+    if(clm_pf_idata%effporosity_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%effporosity_pfp,ierr)
-    if(clm_pf_idata%effporosity_clms /= 0) &
+    if(clm_pf_idata%effporosity_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%effporosity_clms,ierr)
 
     !----
-    if(clm_pf_idata%press_ref_clmp /= 0) &
+    if(clm_pf_idata%press_ref_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%press_ref_clmp,ierr)
-    if(clm_pf_idata%press_clmp /= 0) &
+    if(clm_pf_idata%press_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%press_clmp,ierr)
-    if(clm_pf_idata%soilpsi_clmp /= 0) &
+    if(clm_pf_idata%soilpsi_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%soilpsi_clmp,ierr)
-    if(clm_pf_idata%soillsat_clmp /= 0) &
+    if(clm_pf_idata%soillsat_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%soillsat_clmp,ierr)
-    if(clm_pf_idata%soilisat_clmp /= 0) &
+    if(clm_pf_idata%soilisat_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%soilisat_clmp,ierr)
-    if(clm_pf_idata%soilliq_clmp /= 0) &
+    if(clm_pf_idata%soilliq_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%soilliq_clmp,ierr)
-    if(clm_pf_idata%soilice_clmp /= 0) &
+    if(clm_pf_idata%soilice_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%soilice_clmp,ierr)
-    if(clm_pf_idata%soilt_clmp /= 0) &
+    if(clm_pf_idata%soilt_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%soilt_clmp,ierr)
     
-    if(clm_pf_idata%press_ref_pfs /= 0) &
+    if(clm_pf_idata%press_ref_pfs /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%press_ref_pfs,ierr)
-    if(clm_pf_idata%press_pfs /= 0) &
+    if(clm_pf_idata%press_pfs /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%press_pfs,ierr)
-    if(clm_pf_idata%soilpsi_pfs /= 0) &
+    if(clm_pf_idata%soilpsi_pfs /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%soilpsi_pfs,ierr)
-    if(clm_pf_idata%soillsat_pfs /= 0) &
+    if(clm_pf_idata%soillsat_pfs /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%soillsat_pfs,ierr)
-    if(clm_pf_idata%soilisat_pfs /= 0) &
+    if(clm_pf_idata%soilisat_pfs /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%soilisat_pfs,ierr)
-    if(clm_pf_idata%soilliq_pfs /= 0) &
+    if(clm_pf_idata%soilliq_pfs /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%soilliq_pfs,ierr)
-    if(clm_pf_idata%soilice_pfs /= 0) &
+    if(clm_pf_idata%soilice_pfs /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%soilice_pfs,ierr)
-    if(clm_pf_idata%soilt_pfs /= 0) &
+    if(clm_pf_idata%soilt_pfs /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%soilt_pfs,ierr)
 
     !----
-    if(clm_pf_idata%press_pfp /= 0) &
+    if(clm_pf_idata%press_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%press_pfp,ierr)
-    if(clm_pf_idata%soilpsi_pfp /= 0) &
+    if(clm_pf_idata%soilpsi_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%soilpsi_pfp,ierr)
-    if(clm_pf_idata%soillsat_pfp /= 0) &
+    if(clm_pf_idata%soillsat_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%soillsat_pfp,ierr)
-    if(clm_pf_idata%soilisat_pfp /= 0) &
+    if(clm_pf_idata%soilisat_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%soilisat_pfp,ierr)
-    if(clm_pf_idata%soilliq_pfp /= 0) &
+    if(clm_pf_idata%soilliq_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%soilliq_pfp,ierr)
-    if(clm_pf_idata%soilice_pfp /= 0) &
+    if(clm_pf_idata%soilice_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%soilice_pfp,ierr)
-    if(clm_pf_idata%soilt_pfp /= 0) &
+    if(clm_pf_idata%soilt_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%soilt_pfp,ierr)
 
-    if(clm_pf_idata%press_clms /= 0) &
+    if(clm_pf_idata%press_clms /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%press_clms,ierr)
-    if(clm_pf_idata%soilpsi_clms /= 0) &
+    if(clm_pf_idata%soilpsi_clms /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%soilpsi_clms,ierr)
-    if(clm_pf_idata%soillsat_clms /= 0) &
+    if(clm_pf_idata%soillsat_clms /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%soillsat_clms,ierr)
-    if(clm_pf_idata%soilisat_clms /= 0) &
+    if(clm_pf_idata%soilisat_clms /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%soilisat_clms,ierr)
-    if(clm_pf_idata%soilliq_clms /= 0) &
+    if(clm_pf_idata%soilliq_clms /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%soilliq_clms,ierr)
-    if(clm_pf_idata%soilice_clms /= 0) &
+    if(clm_pf_idata%soilice_clms /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%soilice_clms,ierr)
-    if(clm_pf_idata%soilt_clms /= 0) &
+    if(clm_pf_idata%soilt_clms /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%soilt_clms,ierr)
 
     ! -----------------------------------------------------------------------------------------------------------
@@ -1544,320 +1525,316 @@ contains
     deallocate(clm_pf_idata%decomp_pool_name)
 
     ! soil C/N pools (initial)
-    if(clm_pf_idata%decomp_cpools_vr_clmp /= 0) &
+    if(clm_pf_idata%decomp_cpools_vr_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%decomp_cpools_vr_clmp,ierr)
-    if(clm_pf_idata%decomp_npools_vr_clmp /= 0) &
+    if(clm_pf_idata%decomp_npools_vr_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%decomp_npools_vr_clmp,ierr)
 
-    if(clm_pf_idata%kscalar_decomp_c_clmp /= 0) &
+    if(clm_pf_idata%kscalar_decomp_c_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%kscalar_decomp_c_clmp,ierr)
 
-    if(clm_pf_idata%h2osoi_vol_clmp /= 0) &
-       call VecDestroy(clm_pf_idata%h2osoi_vol_clmp,ierr)
-    if(clm_pf_idata%t_scalar_clmp /= 0) &
+    if(clm_pf_idata%t_scalar_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%t_scalar_clmp,ierr)
-    if(clm_pf_idata%w_scalar_clmp /= 0) &
+    if(clm_pf_idata%w_scalar_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%w_scalar_clmp,ierr)
-    if(clm_pf_idata%o_scalar_clmp /= 0) &
+    if(clm_pf_idata%o_scalar_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%o_scalar_clmp,ierr)
-    if(clm_pf_idata%depth_scalar_clmp /= 0) &
+    if(clm_pf_idata%depth_scalar_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%depth_scalar_clmp,ierr)
 
-    if(clm_pf_idata%smin_no3_vr_clmp /= 0) &
+    if(clm_pf_idata%smin_no3_vr_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%smin_no3_vr_clmp,ierr)
-    if(clm_pf_idata%smin_nh4_vr_clmp /= 0) &
+    if(clm_pf_idata%smin_nh4_vr_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%smin_nh4_vr_clmp,ierr)
-    if(clm_pf_idata%smin_nh4sorb_vr_clmp /= 0) &
+    if(clm_pf_idata%smin_nh4sorb_vr_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%smin_nh4sorb_vr_clmp,ierr)
 
     !
-    if(clm_pf_idata%decomp_cpools_vr_pfs /= 0) &
+    if(clm_pf_idata%decomp_cpools_vr_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%decomp_cpools_vr_pfs,ierr)
-    if(clm_pf_idata%decomp_npools_vr_pfs /= 0) &
+    if(clm_pf_idata%decomp_npools_vr_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%decomp_npools_vr_pfs,ierr)
 
-    if(clm_pf_idata%kscalar_decomp_c_pfs /= 0) &
+    if(clm_pf_idata%kscalar_decomp_c_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%kscalar_decomp_c_pfs,ierr)
 
-    if(clm_pf_idata%h2osoi_vol_pfs /= 0) &
-       call VecDestroy(clm_pf_idata%h2osoi_vol_pfs,ierr)
-    if(clm_pf_idata%t_scalar_pfs /= 0) &
+    if(clm_pf_idata%t_scalar_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%t_scalar_pfs,ierr)
-    if(clm_pf_idata%w_scalar_pfs /= 0) &
+    if(clm_pf_idata%w_scalar_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%w_scalar_pfs,ierr)
-    if(clm_pf_idata%o_scalar_pfs /= 0) &
+    if(clm_pf_idata%o_scalar_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%o_scalar_pfs,ierr)
-    if(clm_pf_idata%depth_scalar_pfs /= 0) &
+    if(clm_pf_idata%depth_scalar_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%depth_scalar_pfs,ierr)
 
-    if(clm_pf_idata%smin_no3_vr_pfs /= 0) &
+    if(clm_pf_idata%smin_no3_vr_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%smin_no3_vr_pfs,ierr)
-    if(clm_pf_idata%smin_nh4_vr_pfs /= 0) &
+    if(clm_pf_idata%smin_nh4_vr_pfs /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%smin_nh4_vr_pfs,ierr)
-    if(clm_pf_idata%smin_nh4sorb_vr_pfs /= 0) &
+    if(clm_pf_idata%smin_nh4sorb_vr_pfs /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%smin_nh4sorb_vr_pfs,ierr)
 
 
     ! soil C/N fluxes at interface (source/sink)
-    if(clm_pf_idata%rate_decomp_c_clmp /= 0) &
+    if(clm_pf_idata%rate_decomp_c_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%rate_decomp_c_clmp,ierr)
-    if(clm_pf_idata%rate_decomp_n_clmp /= 0) &
+    if(clm_pf_idata%rate_decomp_n_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%rate_decomp_n_clmp,ierr)
 
-    if(clm_pf_idata%rate_plantndemand_clmp /= 0) &
+    if(clm_pf_idata%rate_plantndemand_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%rate_plantndemand_clmp,ierr)
-    if(clm_pf_idata%rate_smin_no3_clmp /= 0) &
+    if(clm_pf_idata%rate_smin_no3_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%rate_smin_no3_clmp,ierr)
-    if(clm_pf_idata%rate_smin_nh4_clmp /= 0) &
+    if(clm_pf_idata%rate_smin_nh4_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%rate_smin_nh4_clmp,ierr)
 
-    if(clm_pf_idata%rate_decomp_c_pfs /= 0) &
+    if(clm_pf_idata%rate_decomp_c_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%rate_decomp_c_pfs,ierr)
-    if(clm_pf_idata%rate_decomp_n_pfs /= 0) &
+    if(clm_pf_idata%rate_decomp_n_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%rate_decomp_n_pfs,ierr)
 
-    if(clm_pf_idata%rate_plantndemand_pfs /= 0) &
+    if(clm_pf_idata%rate_plantndemand_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%rate_plantndemand_pfs,ierr)
-    if(clm_pf_idata%rate_smin_no3_pfs /= 0) &
+    if(clm_pf_idata%rate_smin_no3_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%rate_smin_no3_pfs,ierr)
-    if(clm_pf_idata%rate_smin_nh4_pfs /= 0) &
+    if(clm_pf_idata%rate_smin_nh4_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%rate_smin_nh4_pfs,ierr)
 
     !------
-    if(clm_pf_idata%decomp_cpools_vr_pfp /= 0) &
+    if(clm_pf_idata%decomp_cpools_vr_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%decomp_cpools_vr_pfp,ierr)
-    if(clm_pf_idata%decomp_npools_vr_pfp /= 0) &
+    if(clm_pf_idata%decomp_npools_vr_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%decomp_npools_vr_pfp,ierr)
-    if(clm_pf_idata%smin_no3_vr_pfp /= 0) &
+    if(clm_pf_idata%smin_no3_vr_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%smin_no3_vr_pfp,ierr)
-    if(clm_pf_idata%smin_nh4_vr_pfp /= 0) &
+    if(clm_pf_idata%smin_nh4_vr_pfp /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%smin_nh4_vr_pfp,ierr)
-    if(clm_pf_idata%smin_nh4sorb_vr_pfp /= 0) &
+    if(clm_pf_idata%smin_nh4sorb_vr_pfp /= PETSC_NULL_VEC) &
       call VecDestroy(clm_pf_idata%smin_nh4sorb_vr_pfp,ierr)
 
-    if(clm_pf_idata%decomp_cpools_vr_clms /= 0) &
+    if(clm_pf_idata%decomp_cpools_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%decomp_cpools_vr_clms,ierr)
-    if(clm_pf_idata%decomp_npools_vr_clms /= 0) &
+    if(clm_pf_idata%decomp_npools_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%decomp_npools_vr_clms,ierr)
-    if(clm_pf_idata%smin_no3_vr_clms /= 0) &
+    if(clm_pf_idata%smin_no3_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%smin_no3_vr_clms,ierr)
-    if(clm_pf_idata%smin_nh4_vr_clms /= 0) &
+    if(clm_pf_idata%smin_nh4_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%smin_nh4_vr_clms,ierr)
-    if(clm_pf_idata%smin_nh4sorb_vr_clms /= 0) &
+    if(clm_pf_idata%smin_nh4sorb_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%smin_nh4sorb_vr_clms,ierr)
 
     ! -----------
-    if(clm_pf_idata%accextrnh4_vr_pfp /= 0) &
+    if(clm_pf_idata%accextrnh4_vr_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%accextrnh4_vr_pfp,ierr)
-    if(clm_pf_idata%accextrno3_vr_pfp /= 0) &
+    if(clm_pf_idata%accextrno3_vr_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%accextrno3_vr_pfp,ierr)
-    if(clm_pf_idata%accextrnh4_vr_clms /= 0) &
+    if(clm_pf_idata%accextrnh4_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%accextrnh4_vr_clms,ierr)
-    if(clm_pf_idata%accextrno3_vr_clms /= 0) &
+    if(clm_pf_idata%accextrno3_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%accextrno3_vr_clms,ierr)
 
-    if(clm_pf_idata%gco2_vr_pfp /= 0) &
+    if(clm_pf_idata%gco2_vr_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%gco2_vr_pfp,ierr)
-    if(clm_pf_idata%gco2_vr_clms /= 0) &
+    if(clm_pf_idata%gco2_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%gco2_vr_clms,ierr)
-    if(clm_pf_idata%gco2_vr_clmp /= 0) &
+    if(clm_pf_idata%gco2_vr_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%gco2_vr_clmp,ierr)
-    if(clm_pf_idata%gco2_vr_pfs /= 0) &
+    if(clm_pf_idata%gco2_vr_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%gco2_vr_pfs,ierr)
 
-    if(clm_pf_idata%gn2_vr_pfp /= 0) &
+    if(clm_pf_idata%gn2_vr_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%gn2_vr_pfp,ierr)
-    if(clm_pf_idata%gn2_vr_clms /= 0) &
+    if(clm_pf_idata%gn2_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%gn2_vr_clms,ierr)
-    if(clm_pf_idata%gn2_vr_clmp /= 0) &
+    if(clm_pf_idata%gn2_vr_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%gn2_vr_clmp,ierr)
-    if(clm_pf_idata%gn2_vr_pfs /= 0) &
+    if(clm_pf_idata%gn2_vr_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%gn2_vr_pfs,ierr)
 
-    if(clm_pf_idata%gn2o_vr_pfp /= 0) &
+    if(clm_pf_idata%gn2o_vr_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%gn2o_vr_pfp,ierr)
-    if(clm_pf_idata%gn2o_vr_clms /= 0) &
+    if(clm_pf_idata%gn2o_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%gn2o_vr_clms,ierr)
-    if(clm_pf_idata%gn2o_vr_clmp /= 0) &
+    if(clm_pf_idata%gn2o_vr_clmp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%gn2o_vr_clmp,ierr)
-    if(clm_pf_idata%gn2o_vr_pfs /= 0) &
+    if(clm_pf_idata%gn2o_vr_pfs /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%gn2o_vr_pfs,ierr)
 
-    if(clm_pf_idata%acchr_vr_pfp /= 0) &
+    if(clm_pf_idata%acchr_vr_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%acchr_vr_pfp,ierr)
-    if(clm_pf_idata%acchr_vr_clms /= 0) &
+    if(clm_pf_idata%acchr_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%acchr_vr_clms,ierr)
 
-    if(clm_pf_idata%acctothr_vr_pfp /= 0) &
+    if(clm_pf_idata%acctothr_vr_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%acctothr_vr_pfp,ierr)
-    if(clm_pf_idata%acctothr_vr_clms /= 0) &
+    if(clm_pf_idata%acctothr_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%acctothr_vr_clms,ierr)
 
-    if(clm_pf_idata%accnmin_vr_pfp /= 0) &
+    if(clm_pf_idata%accnmin_vr_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%accnmin_vr_pfp,ierr)
-    if(clm_pf_idata%accnmin_vr_clms /= 0) &
+    if(clm_pf_idata%accnmin_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%accnmin_vr_clms,ierr)
 
-    if(clm_pf_idata%acctotnmin_vr_pfp /= 0) &
+    if(clm_pf_idata%acctotnmin_vr_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%acctotnmin_vr_pfp,ierr)
-    if(clm_pf_idata%acctotnmin_vr_clms /= 0) &
+    if(clm_pf_idata%acctotnmin_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%acctotnmin_vr_clms,ierr)
 
-    if(clm_pf_idata%accnimmp_vr_pfp /= 0) &
+    if(clm_pf_idata%accnimmp_vr_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%accnimmp_vr_pfp,ierr)
-    if(clm_pf_idata%accnimmp_vr_clms /= 0) &
+    if(clm_pf_idata%accnimmp_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%accnimmp_vr_clms,ierr)
 
-    if(clm_pf_idata%acctotnimmp_vr_pfp /= 0) &
+    if(clm_pf_idata%acctotnimmp_vr_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%acctotnimmp_vr_pfp,ierr)
-    if(clm_pf_idata%acctotnimmp_vr_clms /= 0) &
+    if(clm_pf_idata%acctotnimmp_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%acctotnimmp_vr_clms,ierr)
 
-    if(clm_pf_idata%accnimm_vr_pfp /= 0) &
+    if(clm_pf_idata%accnimm_vr_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%accnimm_vr_pfp,ierr)
-    if(clm_pf_idata%accnimm_vr_clms /= 0) &
+    if(clm_pf_idata%accnimm_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%accnimm_vr_clms,ierr)
 
-    if(clm_pf_idata%acctotnimm_vr_pfp /= 0) &
+    if(clm_pf_idata%acctotnimm_vr_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%acctotnimm_vr_pfp,ierr)
-    if(clm_pf_idata%acctotnimm_vr_clms /= 0) &
+    if(clm_pf_idata%acctotnimm_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%acctotnimm_vr_clms,ierr)
 
-    if(clm_pf_idata%accngasmin_vr_pfp /= 0) &
+    if(clm_pf_idata%accngasmin_vr_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%accngasmin_vr_pfp,ierr)
-    if(clm_pf_idata%accngasmin_vr_clms /= 0) &
+    if(clm_pf_idata%accngasmin_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%accngasmin_vr_clms,ierr)
 
-    if(clm_pf_idata%accngasnitr_vr_pfp /= 0) &
+    if(clm_pf_idata%accngasnitr_vr_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%accngasnitr_vr_pfp,ierr)
-    if(clm_pf_idata%accngasnitr_vr_clms /= 0) &
+    if(clm_pf_idata%accngasnitr_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%accngasnitr_vr_clms,ierr)
 
-    if(clm_pf_idata%accngasdeni_vr_pfp /= 0) &
+    if(clm_pf_idata%accngasdeni_vr_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%accngasdeni_vr_pfp,ierr)
-    if(clm_pf_idata%accngasdeni_vr_clms /= 0) &
+    if(clm_pf_idata%accngasdeni_vr_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%accngasdeni_vr_clms,ierr)
 
     !-------
-    if(clm_pf_idata%f_nh4_subsurf_pfp /= 0) &
+    if(clm_pf_idata%f_nh4_subsurf_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%f_nh4_subsurf_pfp,ierr)
-    if(clm_pf_idata%f_nh4_subsurf_clms /= 0) &
+    if(clm_pf_idata%f_nh4_subsurf_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%f_nh4_subsurf_clms,ierr)
-    if(clm_pf_idata%f_nh4_subbase_pfp /= 0) &
+    if(clm_pf_idata%f_nh4_subbase_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%f_nh4_subbase_pfp,ierr)
-    if(clm_pf_idata%f_nh4_subbase_clms /= 0) &
+    if(clm_pf_idata%f_nh4_subbase_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%f_nh4_subbase_clms,ierr)
 
-    if(clm_pf_idata%f_no3_subsurf_pfp /= 0) &
+    if(clm_pf_idata%f_no3_subsurf_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%f_no3_subsurf_pfp,ierr)
-    if(clm_pf_idata%f_no3_subsurf_clms /= 0) &
+    if(clm_pf_idata%f_no3_subsurf_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%f_no3_subsurf_clms,ierr)
-    if(clm_pf_idata%f_no3_subbase_pfp /= 0) &
+    if(clm_pf_idata%f_no3_subbase_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%f_no3_subbase_pfp,ierr)
-    if(clm_pf_idata%f_no3_subbase_clms /= 0) &
+    if(clm_pf_idata%f_no3_subbase_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%f_no3_subbase_clms,ierr)
     !
     ! -----------------------------------------------------------------------------------------------------------
     !-----
-    if(clm_pf_idata%qflow_clmp  /= 0) &
+    if(clm_pf_idata%qflow_clmp  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%qflow_clmp,ierr)
-    if(clm_pf_idata%qflow_pfs  /= 0) &
+    if(clm_pf_idata%qflow_pfs  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%qflow_pfs,ierr)
-    if(clm_pf_idata%qflowt_clmp  /= 0) &
+    if(clm_pf_idata%qflowt_clmp  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%qflowt_clmp,ierr)
-    if(clm_pf_idata%qflowt_pfs  /= 0) &
+    if(clm_pf_idata%qflowt_pfs  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%qflowt_pfs,ierr)
-    if(clm_pf_idata%eflow_clmp  /= 0) &
+    if(clm_pf_idata%eflow_clmp  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%eflow_clmp,ierr)
-    if(clm_pf_idata%eflow_pfs  /= 0) &
+    if(clm_pf_idata%eflow_pfs  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%eflow_pfs,ierr)
 
     !-----
-    if(clm_pf_idata%press_maxponding_clmp  /= 0) &
+    if(clm_pf_idata%press_maxponding_clmp  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%press_maxponding_clmp,ierr)
-    if(clm_pf_idata%press_maxponding_pfs  /= 0) &
+    if(clm_pf_idata%press_maxponding_pfs  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%press_maxponding_pfs,ierr)
-    if(clm_pf_idata%press_subsurf_clmp  /= 0) &
+    if(clm_pf_idata%press_subsurf_clmp  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%press_subsurf_clmp,ierr)
-    if(clm_pf_idata%press_subsurf_pfs  /= 0) &
+    if(clm_pf_idata%press_subsurf_pfs  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%press_subsurf_pfs,ierr)
-    if(clm_pf_idata%press_subbase_clmp  /= 0) &
+    if(clm_pf_idata%press_subbase_clmp  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%press_subbase_clmp,ierr)
-    if(clm_pf_idata%press_subbase_pfs  /= 0) &
+    if(clm_pf_idata%press_subbase_pfs  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%press_subbase_pfs,ierr)
-    if(clm_pf_idata%qfluxw_subsurf_clmp  /= 0) &
+    if(clm_pf_idata%qfluxw_subsurf_clmp  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%qfluxw_subsurf_clmp,ierr)
-    if(clm_pf_idata%qfluxw_subsurf_pfs  /= 0) &
+    if(clm_pf_idata%qfluxw_subsurf_pfs  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%qfluxw_subsurf_pfs,ierr)
-    if(clm_pf_idata%qfluxw_subbase_clmp  /= 0) &
+    if(clm_pf_idata%qfluxw_subbase_clmp  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%qfluxw_subbase_clmp,ierr)
-    if(clm_pf_idata%qfluxw_subbase_pfs  /= 0) &
+    if(clm_pf_idata%qfluxw_subbase_pfs  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%qfluxw_subbase_pfs,ierr)
-    if(clm_pf_idata%qfluxev_subsurf_clmp  /= 0) &
+    if(clm_pf_idata%qfluxev_subsurf_clmp  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%qfluxev_subsurf_clmp,ierr)
-    if(clm_pf_idata%qfluxev_subsurf_pfs  /= 0) &
+    if(clm_pf_idata%qfluxev_subsurf_pfs  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%qfluxev_subsurf_pfs,ierr)
 
-    if(clm_pf_idata%efluxr_subsurf_clmp  /= 0) &
+    if(clm_pf_idata%efluxr_subsurf_clmp  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%efluxr_subsurf_clmp,ierr)
-    if(clm_pf_idata%efluxr_subsurf_pfs  /= 0) &
+    if(clm_pf_idata%efluxr_subsurf_pfs  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%efluxr_subsurf_pfs,ierr)
-    if(clm_pf_idata%efluxl_subsurf_clmp  /= 0) &
+    if(clm_pf_idata%efluxl_subsurf_clmp  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%efluxl_subsurf_clmp,ierr)
-    if(clm_pf_idata%efluxl_subsurf_pfs  /= 0) &
+    if(clm_pf_idata%efluxl_subsurf_pfs  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%efluxl_subsurf_pfs,ierr)
-    if(clm_pf_idata%eflux_subsurf_clmp  /= 0) &
+    if(clm_pf_idata%eflux_subsurf_clmp  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%eflux_subsurf_clmp,ierr)
-    if(clm_pf_idata%eflux_subsurf_pfs  /= 0) &
+    if(clm_pf_idata%eflux_subsurf_pfs  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%eflux_subsurf_pfs,ierr)
-    if(clm_pf_idata%gtemp_subsurf_clmp  /= 0) &
+    if(clm_pf_idata%gtemp_subsurf_clmp  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%gtemp_subsurf_clmp,ierr)
-    if(clm_pf_idata%gtemp_subsurf_pfs  /= 0) &
+    if(clm_pf_idata%gtemp_subsurf_pfs  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%gtemp_subsurf_pfs,ierr)
-    if(clm_pf_idata%eflux_subbase_clmp  /= 0) &
+    if(clm_pf_idata%eflux_subbase_clmp  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%eflux_subbase_clmp,ierr)
-    if(clm_pf_idata%eflux_subbase_pfs  /= 0) &
+    if(clm_pf_idata%eflux_subbase_pfs  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%eflux_subbase_pfs,ierr)
-    if(clm_pf_idata%gtemp_subbase_clmp  /= 0) &
+    if(clm_pf_idata%gtemp_subbase_clmp  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%gtemp_subbase_clmp,ierr)
-    if(clm_pf_idata%gtemp_subbase_pfs  /= 0) &
+    if(clm_pf_idata%gtemp_subbase_pfs  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%gtemp_subbase_pfs,ierr)
 
     !------------------
-    if(clm_pf_idata%qinfl_subsurf_pfp /= 0) &
+    if(clm_pf_idata%qinfl_subsurf_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%qinfl_subsurf_pfp,ierr)
-    if(clm_pf_idata%qinfl_subsurf_clms /= 0) &
+    if(clm_pf_idata%qinfl_subsurf_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%qinfl_subsurf_clms,ierr)
-    if(clm_pf_idata%qsurf_subsurf_pfp /= 0) &
+    if(clm_pf_idata%qsurf_subsurf_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%qsurf_subsurf_pfp,ierr)
-    if(clm_pf_idata%qsurf_subsurf_clms /= 0) &
+    if(clm_pf_idata%qsurf_subsurf_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%qsurf_subsurf_clms,ierr)
-    if(clm_pf_idata%qflux_subbase_pfp /= 0) &
+    if(clm_pf_idata%qflux_subbase_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%qflux_subbase_pfp,ierr)
-    if(clm_pf_idata%qflux_subbase_clms /= 0) &
+    if(clm_pf_idata%qflux_subbase_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%qflux_subbase_clms,ierr)
 
-    if(clm_pf_idata%eflux_subsurf_pfp /= 0) &
+    if(clm_pf_idata%eflux_subsurf_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%eflux_subsurf_pfp,ierr)
-    if(clm_pf_idata%eflux_subsurf_clms /= 0) &
+    if(clm_pf_idata%eflux_subsurf_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%eflux_subsurf_clms,ierr)
-    if(clm_pf_idata%eflux_subbase_pfp /= 0) &
+    if(clm_pf_idata%eflux_subbase_pfp /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%eflux_subbase_pfp,ierr)
-    if(clm_pf_idata%eflux_subbase_clms /= 0) &
+    if(clm_pf_idata%eflux_subbase_clms /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%eflux_subbase_clms,ierr)
 
     !-----
-    if(clm_pf_idata%qflow_pfp  /= 0) &
+    if(clm_pf_idata%qflow_pfp  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%qflow_pfp,ierr)
-    if(clm_pf_idata%qflow_clms  /= 0) &
+    if(clm_pf_idata%qflow_clms  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%qflow_clms,ierr)
-    if(clm_pf_idata%qflowt_pfp  /= 0) &
+    if(clm_pf_idata%qflowt_pfp  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%qflowt_pfp,ierr)
-    if(clm_pf_idata%qflowt_clms  /= 0) &
+    if(clm_pf_idata%qflowt_clms  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%qflowt_clms,ierr)
-    if(clm_pf_idata%eflow_pfp  /= 0) &
+    if(clm_pf_idata%eflow_pfp  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%eflow_pfp,ierr)
-    if(clm_pf_idata%eflow_clms  /= 0) &
+    if(clm_pf_idata%eflow_clms  /= PETSC_NULL_VEC) &
        call VecDestroy(clm_pf_idata%eflow_clms,ierr)
 
     ! -----------------------------------------------------------------------------------------------------------

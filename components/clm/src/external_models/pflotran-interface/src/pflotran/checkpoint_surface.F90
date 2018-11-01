@@ -1,10 +1,10 @@
 module Checkpoint_Surface_Header_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
 
 ! We must manually specify the number of bytes required for the 
 ! checkpoint header ('surface_bagsize'), since sizeof() is not supported by 
@@ -45,7 +45,8 @@ module Checkpoint_Surface_Header_module
 end module Checkpoint_Surface_Header_module
 
 module Checkpoint_Surface_module
-
+#include "petsc/finclude/petscdm.h"
+  use petscdm
   use Checkpoint_Surface_Header_module
 
   use PFLOTRAN_Constants_module
@@ -57,18 +58,6 @@ module Checkpoint_Surface_module
   public :: SurfaceCheckpointBinary, SurfaceRestartBinary
   public :: SurfaceCheckpointProcessModelBinary, &
             SurfaceRestartProcessModelBinary
-
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscdm.h"
-#include "petsc/finclude/petscdm.h90"
-#include "petsc/finclude/petscdef.h"
-#include "petsc/finclude/petscis.h"
-#include "petsc/finclude/petscis.h90"
-#include "petsc/finclude/petsclog.h"
-#include "petsc/finclude/petscviewer.h"
-#include "petsc/finclude/petscbag.h"
 
 Interface PetscBagGetData
 Subroutine PetscBagGetData(bag,ctx,ierr)
@@ -188,7 +177,7 @@ subroutine SurfaceCheckpointBinary(surf_realization, &
     call VecView(global_vec,viewer,ierr);CHKERRQ(ierr)
   endif
 
-  if (global_vec /= 0) then
+  if (global_vec /= PETSC_NULL_VEC) then
     call VecDestroy(global_vec,ierr);CHKERRQ(ierr)
   endif
 
@@ -337,7 +326,7 @@ subroutine SurfaceRestartBinary(surf_realization, surf_flow_prev_dt, surf_flow_r
   endif
 
   ! We are finished, so clean up.
-  if (global_vec /= 0) then
+  if (global_vec /= PETSC_NULL_VEC) then
     call VecDestroy(global_vec,ierr);CHKERRQ(ierr)
   endif
 
@@ -432,6 +421,8 @@ subroutine SurfaceCheckpointProcessModelBinary(viewer, surf_realization)
   ! Date: 09/19/13
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Realization_Surface_class
   use Surface_Field_module
   use Grid_module
@@ -440,10 +431,6 @@ subroutine SurfaceCheckpointProcessModelBinary(viewer, surf_realization)
   use Option_module
 
   implicit none
-
-#include "petsc/finclude/petscviewer.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   class(realization_surface_type) :: surf_realization
   PetscViewer :: viewer
@@ -460,7 +447,7 @@ subroutine SurfaceCheckpointProcessModelBinary(viewer, surf_realization)
   discretization => surf_realization%discretization
   grid => discretization%grid
 
-  global_vec = 0
+  global_vec = PETSC_NULL_VEC
   !--------------------------------------------------------------------
   ! Dump all the relevant vectors.
   !--------------------------------------------------------------------
@@ -478,7 +465,7 @@ subroutine SurfaceCheckpointProcessModelBinary(viewer, surf_realization)
     call VecView(global_vec,viewer,ierr);CHKERRQ(ierr)
   endif
 
-  if (global_vec /= 0) then
+  if (global_vec /= PETSC_NULL_VEC) then
     call VecDestroy(global_vec,ierr);CHKERRQ(ierr)
   endif
 
@@ -519,7 +506,7 @@ subroutine SurfaceRestartProcessModelBinary(viewer,surf_realization)
   discretization => surf_realization%discretization
   grid => discretization%grid
 
-  global_vec = 0
+  global_vec = PETSC_NULL_VEC
 
   if (option%surf_flow_on) then
     call DiscretizationCreateVector(discretization,ONEDOF, &
@@ -536,7 +523,7 @@ subroutine SurfaceRestartProcessModelBinary(viewer,surf_realization)
   endif
 
   ! We are finished, so clean up.
-  if (global_vec /= 0) then
+  if (global_vec /= PETSC_NULL_VEC) then
     call VecDestroy(global_vec,ierr);CHKERRQ(ierr)
   endif
 

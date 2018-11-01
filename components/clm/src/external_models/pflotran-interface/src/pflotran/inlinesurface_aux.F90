@@ -1,10 +1,11 @@
 module InlineSurface_Aux_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   implicit none
 
   private
 
-#include "petsc/finclude/petscsys.h"
 
   type, public :: inlinesurface_auxvar_type
 

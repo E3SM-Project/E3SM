@@ -179,7 +179,7 @@ contains
 
 
 !    ! (FATES-INTERF)  Move this call to inside alm_fates%init()
-!    if(use_ed) then
+!    if(use_fates) then
 !       call ed_hist_scpfmaps()
 !    end if
 

@@ -37,6 +37,7 @@ module seq_io_mod
   use mct_mod           ! mct wrappers
   use pio
   use component_type_mod
+  use seq_infodata_mod, only: seq_infodata_type
 
   implicit none
   private
@@ -131,13 +132,14 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_io_wopen(filename,clobber,file_ind)
+  subroutine seq_io_wopen(filename,clobber,file_ind, model_doi_url)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
     character(*),intent(in) :: filename
     logical,optional,intent(in):: clobber
     integer,optional,intent(in):: file_ind
+    character(CL), optional, intent(in)  :: model_doi_url
 
     !EOP
 
@@ -148,6 +150,7 @@ contains
     integer :: nmode
     integer :: lfile_ind
     character(CL)  :: lversion
+    character(CL)  :: lmodel_doi_url
     character(*),parameter :: subName = '(seq_io_wopen) '
 
     !-------------------------------------------------------------------------------
@@ -159,10 +162,13 @@ contains
     lclobber = .false.
     if (present(clobber)) lclobber=clobber
 
+    lmodel_doi_url = 'unset'
+    if (present(model_doi_url)) lmodel_doi_url = model_doi_url
+
     lfile_ind = 0
     if (present(file_ind)) lfile_ind=file_ind
 
-    call seq_comm_setptrs(CPLID,iam=iam,mpicom=mpicom)
+    call seq_comm_setptrs(CPLID, iam=iam, mpicom=mpicom) 
 
     if (.not. pio_file_is_open(cpl_io_file(lfile_ind))) then
        ! filename not open
@@ -181,6 +187,7 @@ contains
              rcode = pio_createfile(cpl_io_subsystem, cpl_io_file(lfile_ind), cpl_pio_iotype, trim(filename), nmode)
              if(iam==0) write(logunit,*) subname,' create file ',trim(filename)
              rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"file_version",version)
+             rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"model_doi_url",lmodel_doi_url)
           else
 
              rcode = pio_openfile(cpl_io_subsystem, cpl_io_file(lfile_ind), cpl_pio_iotype, trim(filename), pio_write)
@@ -193,6 +200,7 @@ contains
                 rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"file_version",version)
                 rcode = pio_enddef(cpl_io_file(lfile_ind))
              endif
+
           endif
        else
           nmode = pio_noclobber
@@ -204,6 +212,7 @@ contains
           rcode = pio_createfile(cpl_io_subsystem, cpl_io_file(lfile_ind), cpl_pio_iotype, trim(filename), nmode)
           if(iam==0) write(logunit,*) subname,' create file ',trim(filename)
           rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"file_version",version)
+          rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"model_doi_url",lmodel_doi_url)
        endif
     elseif (trim(wfilename) /= trim(filename)) then
        ! filename is open, better match open filename

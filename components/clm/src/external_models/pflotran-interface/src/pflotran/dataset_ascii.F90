@@ -1,5 +1,8 @@
 module Dataset_Ascii_class
  
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+
   use Dataset_Base_class
   
   use PFLOTRAN_Constants_module
@@ -8,22 +11,17 @@ module Dataset_Ascii_class
 
   private
 
-#include "petsc/finclude/petscsys.h"
-
   type, public, extends(dataset_base_type) :: dataset_ascii_type
     PetscInt :: array_width
   end type dataset_ascii_type
-  
-  interface DatasetAsciiRead
-    module procedure DatasetAsciiOpenAndLoad
-    module procedure DatasetAsciiLoad
-  end interface
   
   public :: DatasetAsciiCreate, &
             DatasetAsciiInit, &
             DatasetAsciiVerify, &
             DatasetAsciiCast, &
-            DatasetAsciiRead, &
+            DatasetAsciiReadFile, &
+            DatasetAsciiReadList, &
+            DatasetAsciiReadSingle, &
             DatasetAsciiUpdate, &
             DatasetAsciiPrint, &
             DatasetAsciiDestroy
@@ -103,7 +101,8 @@ end subroutine DatasetAsciiInit
 
 ! ************************************************************************** !
 
-subroutine DatasetAsciiOpenandLoad(this,filename,data_units_category,option)
+subroutine DatasetAsciiReadFile(this,filename,data_external_units, &
+                                data_internal_units,error_string,option)
   ! 
   ! Opens a file and calls the load routine.
   ! 
@@ -118,20 +117,24 @@ subroutine DatasetAsciiOpenandLoad(this,filename,data_units_category,option)
   
   class(dataset_ascii_type) :: this
   character(len=MAXSTRINGLENGTH) :: filename
-  character(len=MAXSTRINGLENGTH) :: data_units_category
+  character(len=*) :: data_external_units
+  character(len=*) :: data_internal_units
+  character(len=*) :: error_string
   type(option_type) :: option
   
   type(input_type), pointer :: input
   
   input => InputCreate(IUNIT_TEMP,filename,option)
-  call DatasetAsciiLoad(this,input,data_units_category,option)
+  call DatasetAsciiReadList(this,input,data_external_units, &
+                            data_internal_units,error_string,option)
   call InputDestroy(input)
 
-end subroutine DatasetAsciiOpenandLoad
+end subroutine DatasetAsciiReadFile
 
 ! ************************************************************************** !
 
-subroutine DatasetAsciiLoad(this,input,data_internal_units,option)
+subroutine DatasetAsciiReadList(this,input,data_external_units, &
+                                data_internal_units,error_string,option)
   ! 
   ! Reads a text-based dataset from an ASCII file.
   ! 
@@ -150,12 +153,14 @@ subroutine DatasetAsciiLoad(this,input,data_internal_units,option)
   
   class(dataset_ascii_type) :: this
   type(input_type), pointer :: input
+  character(len=*) :: data_external_units
   character(len=*) :: data_internal_units
+  character(len=*) :: error_string
   type(option_type) :: option
 
   character(len=MAXWORDLENGTH) :: time_units
   character(len=MAXSTRINGLENGTH) :: string, data_units
-  character(len=MAXSTRINGLENGTH), pointer :: internal_unit_strings(:) 
+  character(len=MAXSTRINGLENGTH), pointer :: internal_data_units_strings(:) 
   character(len=MAXWORDLENGTH) :: word, internal_units
   PetscReal, pointer :: temp_array(:,:)
   PetscReal :: temp_time
@@ -164,13 +169,15 @@ subroutine DatasetAsciiLoad(this,input,data_internal_units,option)
   PetscInt :: row_count, column_count, data_count, i, k
   PetscInt :: default_interpolation_method
   PetscBool :: force_units_for_all_data
+  PetscBool :: is_cyclic
   PetscErrorCode :: ierr
   
   time_units = ''
   data_units = ''
+  is_cyclic = PETSC_FALSE
   max_size = 1000
   
-  internal_unit_strings => StringSplit(data_internal_units,',')
+  internal_data_units_strings => StringSplit(data_internal_units,',')
 
   row_count = 0
   ierr = 0
@@ -186,24 +193,26 @@ subroutine DatasetAsciiLoad(this,input,data_internal_units,option)
       string = input%buf
       ierr = 0
       call InputReadWord(string,word,PETSC_TRUE,ierr)
-      call InputErrorMsg(input,option,'KEYWORD','CONDITION (LIST or FILE)')
+      call InputErrorMsg(input,option,'KEYWORD',error_string)
       call StringToUpper(word)
       select case(word)
         case('HEADER')
           call InputReadWord(string,word,PETSC_TRUE,ierr)
-          call InputErrorMsg(input,option,'header','CONDITION (LIST or FILE)')
+          call InputErrorMsg(input,option,'HEADER',error_string)
           this%header = trim(input%buf)
+          cycle
+        case('CYCLIC')
+          is_cyclic = PETSC_TRUE
           cycle
         case('TIME_UNITS')
           call InputReadWord(string,time_units,PETSC_TRUE,ierr)
           input%ierr = ierr
-          call InputErrorMsg(input,option,'TIME_UNITS', &
-                             'CONDITION (LIST or FILE)')
+          call InputErrorMsg(input,option,'TIME_UNITS',error_string)
           cycle
         case('INTERPOLATION')
           call InputReadWord(string,word,PETSC_TRUE,ierr)
           input%ierr = ierr
-          call InputErrorMsg(input,option,'INTERPOLATION','CONDITION')   
+          call InputErrorMsg(input,option,'INTERPOLATION',error_string)   
           call StringToUpper(word)
           select case(word)
             case('STEP')
@@ -211,8 +220,8 @@ subroutine DatasetAsciiLoad(this,input,data_internal_units,option)
             case('LINEAR') 
               default_interpolation_method = INTERPOLATION_LINEAR
             case default
-              call InputKeywordUnrecognized(word,'CONDITION,INTERPOLATION', &
-                                            option)
+              error_string = trim(error_string) // 'INTERPOLATION'
+              call InputKeywordUnrecognized(word,error_string,option)
           end select
           cycle
         case('DATA_UNITS')
@@ -220,8 +229,7 @@ subroutine DatasetAsciiLoad(this,input,data_internal_units,option)
           ! entire string
           data_units = adjustl(string)
           if (len_trim(data_units) < 1) then
-            call InputErrorMsg(input,option,'DATA_UNITS', &
-                               'CONDITION (LIST or FILE)')
+            call InputErrorMsg(input,option,'DATA_UNITS',error_string)
           endif
           cycle
         case default
@@ -259,6 +267,8 @@ subroutine DatasetAsciiLoad(this,input,data_internal_units,option)
   if (row_count == 0) then
     option%io_buffer = 'No values provided in Ascii Dataset.'
     call printErrMsg(option)
+  else if (row_count == 1) then
+    default_interpolation_method = INTERPOLATION_STEP
   endif
   
   this%data_type = DATASET_REAL
@@ -268,6 +278,7 @@ subroutine DatasetAsciiLoad(this,input,data_internal_units,option)
   this%dims(1) = data_count
   this%dims(2) = row_count
   this%time_storage => TimeStorageCreate()
+  this%time_storage%is_cyclic = is_cyclic
   this%time_storage%max_time_index = row_count
   allocate(this%time_storage%times(row_count))
   this%time_storage%times = temp_array(1,1:row_count)
@@ -282,6 +293,7 @@ subroutine DatasetAsciiLoad(this,input,data_internal_units,option)
                                  this%time_storage%times(:)
   endif
   ! data units conversion
+  data_external_units = trim(data_units)
   if (len_trim(data_units) > 0) then
     ! set flag to determine whether we check for data units for each
     ! data column.  if only one data unit is provided, it is applied
@@ -297,14 +309,13 @@ subroutine DatasetAsciiLoad(this,input,data_internal_units,option)
         ierr = 0
         call InputReadWord(data_units,word,PETSC_TRUE,ierr)
         input%ierr = ierr
-        call InputErrorMsg(input,option,'DATA_UNITS','CONDITION FILE')
-        conversion = UnitsConvertToInternal(word,internal_unit_strings(i), &
-                                            option)
+        call InputErrorMsg(input,option,'DATA_UNITS',error_string)
+        internal_units = trim(internal_data_units_strings( &
+                           min(i,size(internal_data_units_strings))))
+        conversion = UnitsConvertToInternal(word,internal_units,option)
       endif
       temp_array(i+1,:) = conversion * temp_array(i+1,:)
     enddo
-    deallocate(internal_unit_strings)
-    nullify(internal_unit_strings)
   else
     call InputCheckMandatoryUnits(input,option)
   endif
@@ -333,12 +344,106 @@ subroutine DatasetAsciiLoad(this,input,data_internal_units,option)
   else
     this%array_width = data_count
   endif
+
+  if (size(internal_data_units_strings) /= this%array_width .and. &
+      size(internal_data_units_strings) /= 1) then
+    write(word,*) size(internal_data_units_strings)
+    option%io_buffer = 'Incorrect internal data units (' // &
+      trim(adjustl(word)) // '): ' // error_string
+    call printErrMsg(option)
+  endif
+
+  deallocate(internal_data_units_strings)
+  nullify(internal_data_units_strings)
   
   if (default_interpolation_method /= INTERPOLATION_NULL) then
     this%time_storage%time_interpolation_method = default_interpolation_method
   endif
+
+end subroutine DatasetAsciiReadList
+
+! ************************************************************************** !
+
+subroutine DatasetAsciiReadSingle(this,input,data_external_units, &
+                                  data_internal_units,error_string,option)
+  ! 
+  ! Reads single line dataset with no time data into ascii dataset.
+  ! 
+  ! Author: Glenn Hammond
+  ! Date: 01/15/18
+  ! 
+
+  use Input_Aux_module
+  use String_module
+  use Option_module
+  use Units_module, only : UnitsConvertToInternal
+
+  implicit none
   
-end subroutine DatasetAsciiLoad
+  class(dataset_ascii_type) :: this
+  type(input_type), pointer :: input
+  character(len=*) :: data_external_units
+  character(len=*) :: data_internal_units
+  character(len=*) :: error_string
+  type(option_type) :: option
+
+  character(len=MAXSTRINGLENGTH) :: string
+  character(len=MAXWORDLENGTH) :: word, internal_units
+  character(len=MAXSTRINGLENGTH), pointer :: internal_data_units_strings(:) 
+  character(len=MAXSTRINGLENGTH), pointer :: external_data_units_strings(:) 
+  PetscInt :: icol
+
+  nullify(external_data_units_strings)
+
+  data_external_units = ''
+  internal_data_units_strings => StringSplit(data_internal_units,',')
+
+  ! read data
+  allocate(this%rarray(this%array_width))
+  do icol=1,this%array_width
+    call InputReadDouble(input,option,this%rarray(icol))
+    write(input%err_buf,'(a,i2)') 'DatasetAsciiReadSingle: &
+                                  & dataset_values, icol = ', icol
+    input%err_buf2 = error_string
+    call InputErrorMsg(input,option)
+  enddo
+
+  ! read units
+  if (len_trim(input%buf) == 0) then
+    call InputCheckMandatoryUnits(input,option)
+    word = trim(error_string) // ' UNITS'
+    call InputDefaultMsg(input,option,word)
+  else
+    string = adjustl(input%buf) ! remove leading blanks
+    external_data_units_strings => StringSplit(string,' ')
+    do icol=1,this%array_width
+      if (icol == 1 .or. size(external_data_units_strings) > 1) then
+        call InputReadWord(input,option,word,PETSC_TRUE)
+        call InputErrorMsg(input,option,'units',error_string)
+      endif
+      internal_units = trim(internal_data_units_strings( &
+                            min(icol,size(internal_data_units_strings))))
+      this%rarray(icol) = &
+        UnitsConvertToInternal(word,internal_units,option) * this%rarray(icol)
+      data_external_units = trim(data_external_units) // ' ' // trim(word)
+    enddo
+  endif
+
+  if (size(internal_data_units_strings) /= this%array_width .and. &
+      size(internal_data_units_strings) /= 1) then
+    write(word,*) size(internal_data_units_strings)
+    option%io_buffer = 'Incorrect internal data units (' // &
+      trim(adjustl(word)) // '): ' // error_string
+    call printErrMsg(option)
+  endif
+
+  deallocate(internal_data_units_strings)
+  nullify(internal_data_units_strings)
+  if (associated(external_data_units_strings)) &
+    deallocate(external_data_units_strings)
+  nullify(external_data_units_strings)
+
+end subroutine DatasetAsciiReadSingle
 
 ! ************************************************************************** !
 

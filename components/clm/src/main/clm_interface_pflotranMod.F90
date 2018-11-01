@@ -1063,19 +1063,21 @@ contains
     endif
 
     ! coupled module controls betweeen PFLOTRAN and CLM45
-    if(pflotran_m%option%iflowmode==RICHARDS_MODE) then
-      pf_hmode = .true.
-      pf_tmode = .false.
-      pf_frzmode = .false.
+    if(pflotran_m%option%iflowmode/=NULL_MODE) then
+       pf_hmode = .true.
+       if (pflotran_m%option%use_isothermal) then
+         pf_tmode = .false.
+      else
+         pf_tmode = .true.
+      endif
 
-    elseif(pflotran_m%option%iflowmode==TH_MODE) then
-      pf_hmode = .true.
-      pf_tmode = .true.
       if (pflotran_m%option%use_th_freezing) then
          pf_frzmode = .true.
       else
          pf_frzmode = .false.
       endif
+    else
+      pf_hmode = .false.
     endif
 
     if(pflotran_m%option%ntrandof.gt.0) then
@@ -3637,7 +3639,7 @@ contains
   subroutine update_soil_bgc_pf2clm(clm_interface_data, bounds, filters, ifilter)
 ! TODO: add phosphorus vars
     use ColumnType              , only : col_pp
-    use clm_varctl              , only : iulog, use_ed
+    use clm_varctl              , only : iulog, use_fates
     use CNDecompCascadeConType  , only : decomp_cascade_con
     use clm_varpar              , only : ndecomp_pools, nlevdecomp_full
     use clm_varctl              , only : pf_hmode
@@ -4540,7 +4542,7 @@ contains
     !
     ! !USES:
     use clm_time_manager, only : get_step_size, get_nstep
-    use clm_varctl      , only : iulog, use_ed
+    use clm_varctl      , only : iulog, use_fates
     use clm_varpar      , only : ndecomp_pools, nlevdecomp, nlevdecomp_full
     use clm_varcon      , only : dzsoi_decomp
     ! !ARGUMENTS:
@@ -4603,7 +4605,7 @@ contains
         end if
     end do
 
-    if (.not. use_ed) then
+    if (.not. use_fates) then
          if (err_found) then
             fc = err_index
             write(iulog,'(A,70(1h-))')">>>--------  PFLOTRAN Mass Balance Check:beg  "
@@ -4613,7 +4615,7 @@ contains
                                     pf_cinputs(fc)*dtime,pf_coutputs(fc)*dtime,pf_cbeg(fc),pf_cend(fc)
             write(iulog,'(A,70(1h-))')">>>--------  PFLOTRAN Mass Balance Check:end  "
          end if
-    end if !(.not. use_ed)
+    end if !(.not. use_fates)
     end associate
     end subroutine clm_pf_CBalanceCheck
 !--------------------------------------------------------------------------------------
@@ -4625,7 +4627,7 @@ contains
     !
     ! !USES:
     use clm_time_manager, only : get_step_size,get_nstep
-    use clm_varctl      , only : iulog, use_ed
+    use clm_varctl      , only : iulog, use_fates
     use clm_varpar      , only : ndecomp_pools, nlevdecomp, nlevdecomp_full
     use clm_varcon      , only : dzsoi_decomp
     ! !ARGUMENTS:
@@ -4809,7 +4811,7 @@ contains
         end do
     end do
 
-    if (.not. use_ed) then
+    if (.not. use_fates) then
          if (err_found) then
             fc = err_index
             write(iulog,'(A,70(1h-))')">>>--------  PFLOTRAN Mass Balance Check:beg  "
@@ -4851,7 +4853,7 @@ contains
 !            end do
             write(iulog,'(A,70(1h-))')">>>--------  PFLOTRAN Mass Balance Check:end  "
         end if
-    end if !(.not. use_ed)
+    end if !(.not. use_fates)
     end associate
     end subroutine clm_pf_NBalanceCheck
 !--------------------------------------------------------------------------------------

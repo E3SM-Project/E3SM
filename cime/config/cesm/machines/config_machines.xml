@@ -72,7 +72,7 @@
     <mpirun mpilib="default">
       <executable>aprun</executable>
       <arguments>
-	<arg name="num_tasks"> -n $TOTALPES</arg>
+	<arg name="num_tasks"> -n {{ total_tasks }}</arg>
 	<!-- <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg> -->
 	<arg name="tasks_per_node"> -N $MAX_MPITASKS_PER_NODE</arg>
 	<arg name="thread_count"> -d $ENV{OMP_NUM_THREADS}</arg>
@@ -152,7 +152,7 @@
       <arguments>
 	<arg name="machine_file">-hostfile $ENV{PBS_JOBID}</arg>
 	<arg name="tasks_per_node"> -ppn $MAX_MPITASKS_PER_NODE</arg>
-	<arg name="num_tasks"> -n $TOTALPES</arg>
+	<arg name="num_tasks"> -n {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="openmpi">
@@ -253,6 +253,10 @@
   <machine MACH="cheyenne">
     <DESC>NCAR SGI platform, os is Linux, 36 pes/node, batch system is PBS</DESC>
     <NODENAME_REGEX>.*.cheyenne.ucar.edu</NODENAME_REGEX>
+    <!-- MPT sometimes timesout at model start time, the next two lines cause
+    case_run.py to detect the timeout and retry FORCE_SPARE_NODES times -->
+    <MPIRUN_RETRY_REGEX>MPT: xmpi_net_accept_timeo/accept() timeout</MPIRUN_RETRY_REGEX>
+    <MPIRUN_RETRY_COUNT>10</MPIRUN_RETRY_COUNT>
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu,pgi</COMPILERS>
     <MPILIBS compiler="intel" >mpt,openmpi</MPILIBS>
@@ -274,7 +278,7 @@
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
       <arguments>
-	<arg name="anum_tasks"> -np $TOTALPES</arg>
+	<arg name="anum_tasks"> -np {{ total_tasks }}</arg>
 	<arg name="labelstdout">-p "%g:"</arg>
 	<!-- the omplace argument needs to be last -->
 	<arg name="zthreadplacement"> omplace -tm open64 </arg>
@@ -283,7 +287,7 @@
     <mpirun mpilib="mpt" queue="share">
       <executable>mpirun `hostname`</executable>
       <arguments>
-	<arg name="anum_tasks"> -np $TOTALPES</arg>
+	<arg name="anum_tasks"> -np {{ total_tasks }}</arg>
 	<!-- the omplace argument needs to be last -->
 	<arg name="zthreadplacement"> omplace -tm open64 </arg>
       </arguments>
@@ -291,7 +295,7 @@
     <mpirun mpilib="openmpi">
       <executable>mpirun</executable>
       <arguments>
-	<arg name="anum_tasks"> -np $TOTALPES</arg>
+	<arg name="anum_tasks"> -np {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="default" unit_testing="true">
@@ -334,15 +338,15 @@
 	<command name="load">esmf-7.0.0-ncdfio-uni-O</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gnu/6.3.0</command>
-        <command name="load">openblas/0.2.14</command>
+        <command name="load">gnu/7.3.0</command>
+        <command name="load">openblas/0.2.20</command>
       </modules>
       <modules mpilib="mpt" compiler="gnu">
 	<command name="load">mpt/2.16</command>
-	<command name="load">netcdf-mpi/4.4.1.1</command>
+	<command name="load">netcdf-mpi/4.6.1</command>
       </modules>
       <modules mpilib="mpt" compiler="intel">
-	<command name="load">mpt/2.15f</command>
+	<command name="load">mpt/2.16</command>
 	<command name="load">netcdf-mpi/4.5.0</command>
 	<command name="load">pnetcdf/1.9.0</command>
       </modules>
@@ -352,13 +356,16 @@
 	<command name="load">pnetcdf/1.9.0</command>
       </modules>
       <modules mpilib="openmpi">
-	<command name="load">openmpi/2.1.0</command>
-	<command name="load">netcdf/4.4.1.1</command>
+	<command name="load">openmpi/3.0.1</command>
+	<command name="load">netcdf/4.6.1</command>
       </modules>
       <modules>
 	<command name="load">ncarcompilers/0.4.1</command>
       </modules>
-      <modules mpilib="mpi-serial">
+      <modules compiler="gnu" mpilib="mpi-serial">
+	<command name="load">netcdf/4.6.1</command>
+      </modules>
+      <modules compiler="!gnu" mpilib="mpi-serial">
 	<command name="load">netcdf/4.5.0</command>
       </modules>
     </module_system>
@@ -366,12 +373,10 @@
       <env name="OMP_STACKSIZE">256M</env>
       <env name="TMPDIR">/glade/scratch/$USER</env>
       <env name="MPI_TYPE_DEPTH">16</env>
+      <env name="MPI_IB_CONGESTED">1</env>
       <env name="MPI_USE_ARRAY"/>
     </environment_variables>
     <environment_variables unit_testing="true">
-      <!-- It's possible that we also need to set:
-	   LD_LIBRARY_PATH=/opt/sgi/mpt/mpt-2.15/lib:$LD_LIBRARY_PATH
-      -->
       <env name="MPI_USE_ARRAY">false</env>
     </environment_variables>
     <environment_variables queue="share">
@@ -404,7 +409,7 @@
       <executable>srun</executable>
       <arguments>
 	<arg name="mpi">--mpi=none</arg>
-	<arg name="num_tasks">--ntasks=$TOTALPES</arg>
+	<arg name="num_tasks">--ntasks={{ total_tasks }}</arg>
 	<arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
 	<arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
       </arguments>
@@ -412,7 +417,7 @@
     <mpirun mpilib="mvapich">
       <executable>srun</executable>
       <arguments>
-	<arg name="num_tasks">--ntasks=$TOTALPES</arg>
+	<arg name="num_tasks">--ntasks={{ total_tasks }}</arg>
 	<arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
 	<arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
       </arguments>
@@ -420,13 +425,13 @@
     <mpirun mpilib="intelmpi">
       <executable>mpirun</executable>
       <arguments>
-	<arg name="num_tasks">-n $TOTALPES</arg>
+	<arg name="num_tasks">-n {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="openmpi">
       <executable>mpirun</executable>
       <arguments>
-	<arg name="num_tasks">-n $TOTALPES</arg>
+	<arg name="num_tasks">-n {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -500,7 +505,7 @@
       <executable>srun</executable>
       <arguments>
 	<arg name="label"> --label</arg>
-	<arg name="num_tasks" > -n $TOTALPES</arg>
+	<arg name="num_tasks" > -n {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -555,7 +560,7 @@
       <modules>
 	<command name="load">cray-memkind</command>
 	<command name="load">papi/5.5.1.3</command>
-	<command name="swap">craype craype/2.5.12.3</command>
+	<command name="swap">craype craype/2.5.12</command>
       </modules>
       <modules>
 	<command name="switch">cray-libsci/17.09.1</command>
@@ -604,7 +609,7 @@
       <executable>srun</executable>
       <arguments>
 	<arg name="label"> --label</arg>
-	<arg name="num_tasks" > -n $TOTALPES</arg>
+	<arg name="num_tasks" > -n {{ total_tasks }}</arg>
 	<arg name="binding"> -c 4 --cpu_bind=cores</arg>
       </arguments>
     </mpirun>
@@ -658,7 +663,7 @@
       <modules>
 	<command name="load">cray-memkind</command>
 	<command name="load">craype-mic-knl</command>
-	<command name="swap">craype craype/2.5.12.3</command>
+	<command name="swap">craype craype/2.5.12</command>
       </modules>
       <modules>
 	<command name="switch">cray-libsci/17.09.1</command>
@@ -703,7 +708,7 @@
     <mpirun mpilib="mvapich">
       <executable>srun</executable>
       <arguments>
-	<arg name="num_tasks"> --ntasks=$TOTALPES</arg>
+	<arg name="num_tasks"> --ntasks={{ total_tasks }}</arg>
 	<arg name="cpubind"> --cpu_bind=sockets</arg>
 	<arg name="cpubind"> --cpu_bind=verbose</arg>
 	<arg name="killonbadexit"> --kill-on-bad-exit</arg>
@@ -713,7 +718,7 @@
       <executable>srun</executable>
       <arguments>
 	<arg name="mpinone"> --mpi=none</arg>
-	<arg name="num_tasks"> --ntasks=$TOTALPES</arg>
+	<arg name="num_tasks"> --ntasks={{ total_tasks }}</arg>
 	<arg name="cpubind"> --cpu_bind=sockets</arg>
 	<arg name="cpubind"> --cpu_bind=verbose</arg>
 	<arg name="killonbadexit"> --kill-on-bad-exit</arg>
@@ -761,7 +766,7 @@
       <executable>srun</executable>
       <arguments>
 	<arg name="label"> --label</arg>
-	<arg name="num_tasks" > -n $TOTALPES</arg>
+	<arg name="num_tasks" > -n {{ total_tasks }}</arg>
 	<arg name="thread_count" > -c $ENV{OMP_NUM_THREADS}</arg>
       </arguments>
     </mpirun>
@@ -860,7 +865,7 @@
       <executable>aprun</executable>
       <arguments>
 	<arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
-	<arg name="num_tasks" > -n $TOTALPES</arg>
+	<arg name="num_tasks" > -n {{ total_tasks }}</arg>
 	<arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
 	<arg name="tasks_per_node" > -N $MAX_MPITASKS_PER_NODE</arg>
 	<arg name="thread_count" > -d $ENV{OMP_NUM_THREADS}</arg>
@@ -926,13 +931,13 @@
       <executable>mpiexec</executable>
       <arguments>
 	<arg name="machine_file">--machinefile $ENV{PBS_NODEFILE}</arg>
-	<arg name="num_tasks"> -n $TOTALPES </arg>
+	<arg name="num_tasks"> -n {{ total_tasks }} </arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="openmpi">
       <executable>mpiexec</executable>
       <arguments>
-	<arg name="num_tasks"> -n $TOTALPES </arg>
+	<arg name="num_tasks"> -n {{ total_tasks }} </arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -1015,7 +1020,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-	<arg name="anum_tasks"> -np $TOTALPES</arg>
+	<arg name="anum_tasks"> -np {{ total_tasks }}</arg>
 	<arg name="labelstdout">-prepend-rank</arg>
       </arguments>
     </mpirun>
@@ -1117,7 +1122,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-	<arg name="num_tasks">-np $TOTALPES</arg>
+	<arg name="num_tasks">-np {{ total_tasks }}</arg>
 	<arg name="tasks_per_node"> -npernode $MAX_MPITASKS_PER_NODE </arg>
       </arguments>
     </mpirun>
@@ -1148,7 +1153,7 @@
       </modules>
     </module_system>
   </machine>
-  
+
   <machine MACH="lawrencium-lr2">
     <DESC>Lawrencium LR2 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
     <OS>LINUX</OS>
@@ -1169,7 +1174,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -np $TOTALPES</arg>
+        <arg name="num_tasks"> -np {{ total_tasks }}</arg>
         <arg name="tasks_per_node"> -npernode $MAX_MPITASKS_PER_NODE</arg>
       </arguments>
     </mpirun>
@@ -1225,7 +1230,8 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-	<arg name="num_tasks"> -np $TOTALPES</arg>
+        <arg name="num_tasks"> -np {{ total_tasks }}</arg>
+        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to hwthread</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -1238,24 +1244,38 @@
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <modules>
-	<command name="purge"/>
-	<command name="load">sems-env</command>
-	<command name="load">sems-git</command>
-	<command name="load">sems-python/2.7.9</command>
-	<command name="load">sems-gcc/5.1.0</command>
-	<command name="load">sems-openmpi/1.8.7</command>
-	<command name="load">sems-cmake/2.8.12</command>
-	<command name="load">sems-netcdf/4.3.2/parallel</command>
+        <command name="purge"/>
+        <command name="load">sems-env</command>
+        <command name="load">acme-env</command>
+        <command name="load">sems-git</command>
+        <command name="load">sems-python/2.7.9</command>
+        <command name="load">sems-cmake/2.8.12</command>
+      </modules>
+      <modules compiler="gnu">
+        <command name="load">sems-gcc/5.3.0</command>
+      </modules>
+      <modules compiler="intel">
+        <command name="load">sems-intel/16.0.3</command>
+      </modules>
+      <modules mpilib="mpi-serial">
+        <command name="load">sems-netcdf/4.4.1/exo</command>
+        <command name="load">acme-pfunit/3.2.8/base</command>
+      </modules>
+      <modules mpilib="!mpi-serial">
+        <command name="load">sems-openmpi/1.8.7</command>
+        <command name="load">sems-netcdf/4.4.1/exo_parallel</command>
       </modules>
     </module_system>
     <environment_variables>
       <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
+      <env name="OMP_STACKSIZE">64M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
     </environment_variables>
   </machine>
-
 
   <machine MACH="mira">
     <DESC>ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt</DESC>
@@ -1282,7 +1302,7 @@
 	<!-- Ranks per node!! -->
 	<arg name="tasks_per_node"> --ranks-per-node $MAX_MPITASKS_PER_NODE</arg>
 	<!-- Total MPI Tasks -->
-	<arg name="num_tasks"> --np $TOTALPES</arg>
+	<arg name="num_tasks"> --np {{ total_tasks }}</arg>
 	<arg name="locargs">--block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
 	<arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
 	<arg name="omp_stacksize"> --envs OMP_STACKSIZE=32M</arg>
@@ -1330,7 +1350,7 @@
       <executable>mpiexec_mpt</executable>
       <arguments>
 	<arg name="mpi">--mpi=none</arg>
-	<arg name="num_tasks">-n=$TOTALPES</arg>
+	<arg name="num_tasks">-n={{ total_tasks }}</arg>
 	<arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
       </arguments>
     </mpirun>
@@ -1374,7 +1394,7 @@
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
       <arguments>
-	<arg name="num_tasks">-n $TOTALPES</arg>
+	<arg name="num_tasks">-n {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -1428,7 +1448,7 @@
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
       <arguments>
-	<arg name="num_tasks">-n $TOTALPES</arg>
+	<arg name="num_tasks">-n {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -1482,7 +1502,7 @@
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
       <arguments>
-	<arg name="num_tasks">-n $TOTALPES</arg>
+	<arg name="num_tasks">-n {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -1536,7 +1556,7 @@
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
       <arguments>
-	<arg name="num_tasks">-n $TOTALPES</arg>
+	<arg name="num_tasks">-n {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -1589,7 +1609,7 @@
     <mpirun mpilib="default">
       <executable>aprun</executable>
       <arguments>
-	<arg name="num_tasks"> -n $TOTALPES</arg>
+	<arg name="num_tasks"> -n {{ total_tasks }}</arg>
 	<arg name="tasks_per_node"> -N $MAX_MPITASKS_PER_NODE</arg>
 	<arg name="thread_count"> -d $ENV{OMP_NUM_THREADS}</arg>
       </arguments>
@@ -1625,7 +1645,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-	<arg name="num_tasks"> -np $TOTALPES</arg>
+	<arg name="num_tasks"> -np {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -1679,7 +1699,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-	<arg name="num_tasks"> -np $TOTALPES</arg>
+	<arg name="num_tasks"> -np {{ total_tasks }}</arg>
 	<arg name="tasks_per_node"> -npernode $MAX_MPITASKS_PER_NODE</arg>
       </arguments>
     </mpirun>
@@ -1956,7 +1976,7 @@
     <mpirun mpilib="default">
       <executable>aprun</executable>
       <arguments>
-	<arg name="num_tasks" >-n $TOTALPES</arg>
+	<arg name="num_tasks" >-n {{ total_tasks }}</arg>
 	<arg name="tasks_per_node" >-N $MAX_MPITASKS_PER_NODE</arg>
 	<arg name="thread_count">--cc depth -d $OMP_NUM_THREADS</arg>
 	<arg name="env_omp_stacksize">-e OMP_STACKSIZE=64M</arg>
@@ -2050,7 +2070,7 @@
     <mpirun mpilib="default" threaded="false">
       <executable>TARGET_PROCESSOR_LIST=AUTO_SELECT $ENV{CESMDATAROOT}/tools/bin/mpirun </executable>
       <arguments>
-	<arg name="anum_tasks"> -n $TOTALPES</arg>
+	<arg name="anum_tasks"> -n {{ total_tasks }}</arg>
 	<arg name="tasks_per_node"> -tpn {{ tasks_per_node }} </arg>
 	<arg name="bindtool">$ENV{CESMDATAROOT}/tools/bin/launch </arg>
       </arguments>
@@ -2058,7 +2078,7 @@
     <mpirun mpilib="default" threaded="true">
       <executable>unset MP_PE_AFFINITY; unset MP_TASK_AFFINITY; unset MP_CPU_BIND_LIST; $ENV{CESMDATAROOT}/tools/bin/mpirun </executable>
       <arguments>
-	<arg name="anum_tasks"> -n $TOTALPES</arg>
+	<arg name="anum_tasks"> -n {{ total_tasks }}</arg>
 	<arg name="tasks_per_node"> -tpn {{ tasks_per_node }} </arg>
 	<arg name="bindtool">$ENV{CESMDATAROOT}/tools/bin/hybrid_launch </arg>
       </arguments>
@@ -2066,7 +2086,7 @@
     <mpirun compiler="gnu">
       <executable> $ENV{CESMDATAROOT}/tools/bin/mpirun </executable>
       <arguments>
-	<arg name="anum_tasks"> -n $TOTALPES</arg>
+	<arg name="anum_tasks"> -n {{ total_tasks }}</arg>
 	<arg name="tasks_per_node"> -tpn {{ tasks_per_node }} </arg>
       </arguments>
     </mpirun>
@@ -2092,7 +2112,6 @@
       <modules compiler="intel">
 	<command name="load">intel/15.0.3</command>
 	<command name="load">mkl/11.1.2</command>
-	<command name="load">trilinos/11.10.2</command>
 	<command name="load">esmf</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE">
@@ -2178,7 +2197,7 @@
       <mpirun mpilib="default">
           <executable>mpirun</executable>
           <arguments>
-              <arg name="num_tasks">-np $TOTALPES</arg>
+              <arg name="num_tasks">-np {{ total_tasks }}</arg>
               <arg name="tasks_per_node">-npernode $MAX_TASKS_PER_NODE</arg>
           </arguments>
       </mpirun>

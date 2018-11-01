@@ -80,7 +80,8 @@ function ImmobileCreate()
   ! Author: Glenn Hammond
   ! Date: 01/11/13
   ! 
-
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   implicit none
   
   type(immobile_type), pointer :: ImmobileCreate
@@ -112,7 +113,8 @@ function ImmobileSpeciesCreate()
   ! Author: Glenn Hammond
   ! Date: 01/02/13
   ! 
-
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   implicit none
   
   type(immobile_species_type), pointer :: ImmobileSpeciesCreate
@@ -139,7 +141,8 @@ function ImmobileConstraintCreate(immobile,option)
   ! Author: Glenn Hammond
   ! Date: 01/07/13
   ! 
-
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
   
   implicit none
@@ -173,7 +176,8 @@ function ImmobileDecayRxnCreate()
   ! Author: Glenn Hammond
   ! Date: 03/31/15
   ! 
-
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   implicit none
     
   type(immobile_decay_rxn_type), pointer :: ImmobileDecayRxnCreate
@@ -228,7 +232,8 @@ function GetImmobileSpeciesIDFromName1(name,immobile,option)
   ! Author: Glenn Hammond
   ! Date: 01/28/13
   ! 
-
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
   use String_module
   

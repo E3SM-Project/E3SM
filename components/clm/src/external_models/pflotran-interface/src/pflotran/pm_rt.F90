@@ -1,5 +1,6 @@
 module PM_RT_class
-
+#include "petsc/finclude/petscsnes.h"
+  use petscsnes
   use PM_Base_class
 !geh: using Reactive_Transport_module here fails with gfortran (internal 
 !     compiler error)
@@ -13,14 +14,6 @@ module PM_RT_class
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
-#include "petsc/finclude/petscsnes.h"
 
   type, public, extends(pm_base_type) :: pm_rt_type
     class(realization_subsurface_type), pointer :: realization
@@ -39,6 +32,7 @@ module PM_RT_class
     PetscBool :: temperature_dependent_diffusion
     ! for transport only
     PetscBool :: transient_porosity
+    PetscBool :: include_gas_phase
   contains
     procedure, public :: Setup => PMRTSetup
     procedure, public :: Read => PMRTRead
@@ -55,6 +49,7 @@ module PM_RT_class
     procedure, public :: AcceptSolution => PMRTAcceptSolution
     procedure, public :: CheckUpdatePre => PMRTCheckUpdatePre
     procedure, public :: CheckUpdatePost => PMRTCheckUpdatePost
+    procedure, public :: CheckConvergence => PMRTCheckConvergence
     procedure, public :: TimeCut => PMRTTimeCut
     procedure, public :: UpdateSolution => PMRTUpdateSolution1
     procedure, public :: UpdateAuxVars => PMRTUpdateAuxVars
@@ -65,6 +60,7 @@ module PM_RT_class
     procedure, public :: CheckpointHDF5 => PMRTCheckpointHDF5
     procedure, public :: RestartBinary => PMRTRestartBinary
     procedure, public :: RestartHDF5 => PMRTRestartHDF5
+    procedure, public :: InputRecord => PMRTInputRecord
     procedure, public :: Destroy => PMRTDestroy
   end type pm_rt_type
   
@@ -115,6 +111,7 @@ function PMRTCreate()
   rt_pm%temperature_dependent_diffusion = PETSC_FALSE
   ! these flags can only be true for transport only
   rt_pm%transient_porosity = PETSC_FALSE
+  rt_pm%include_gas_phase = PETSC_FALSE
 
   call PMBaseInit(rt_pm)
   rt_pm%name = 'Reactive Transport'
@@ -173,12 +170,15 @@ subroutine PMRTRead(this,input)
         this%check_post_convergence = PETSC_TRUE
       case('NUMERICAL_JACOBIAN')
         option%transport%numerical_derivatives = PETSC_TRUE
+      case('INCLUDE_GAS_PHASE')
+        this%include_gas_phase = PETSC_TRUE
+        option%transport%nphase = 2
       case('TEMPERATURE_DEPENDENT_DIFFUSION')
         this%temperature_dependent_diffusion = PETSC_TRUE
       case('MAX_CFL')
         call InputReadDouble(input,option,this%cfl_governor)
         call InputErrorMsg(input,option,'MAX_CFL', &
-                         'SUBSURFACE_TRANSPORT OPTIONS')
+                           'SUBSURFACE_TRANSPORT OPTIONS')
       case default
         call InputKeywordUnrecognized(word,error_string,option)
     end select
@@ -289,8 +289,7 @@ recursive subroutine PMRTInitializeRun(this)
   ! Date: 03/18/13
   ! 
 
-  use Reactive_Transport_module, only : RTUpdateEquilibriumState, &
-                                        RTJumpStartKineticSorption
+  use Reactive_Transport_module, only : RTUpdateEquilibriumState
   use Condition_Control_module
   use Reaction_Aux_module, only : ACT_COEF_FREQUENCY_OFF
   use Reactive_Transport_module, only : RTUpdateAuxVars, &
@@ -348,9 +347,7 @@ recursive subroutine PMRTInitializeRun(this)
         '(non-restarted) simulation.'
       call printErrMsg(this%option)
     endif
-    call RTJumpStartKineticSorption(this%realization)
   endif
-  ! check on MAX_STEPS < 0 to quit after initialization.
 #endif  
     
 end subroutine PMRTInitializeRun
@@ -586,7 +583,8 @@ end function PMRTAcceptSolution
 ! ************************************************************************** !
 
 subroutine PMRTUpdateTimestep(this,dt,dt_min,dt_max,iacceleration, &
-                              num_newton_iterations,tfac)
+                              num_newton_iterations,tfac, &
+                              time_step_max_growth_factor)
   ! 
   ! Author: Glenn Hammond
   ! Date: 03/14/13
@@ -600,6 +598,7 @@ subroutine PMRTUpdateTimestep(this,dt,dt_min,dt_max,iacceleration, &
   PetscInt :: iacceleration
   PetscInt :: num_newton_iterations
   PetscReal :: tfac(:)
+  PetscReal :: time_step_max_growth_factor
   
   PetscReal :: dtt, uvf, dt_vf, dt_tfac, fac
   PetscInt :: ifac
@@ -644,7 +643,7 @@ subroutine PMRTUpdateTimestep(this,dt,dt_min,dt_max,iacceleration, &
     endif
   endif
 
-  if (dtt > 2.d0 * dt) dtt = 2.d0 * dt
+  dtt = min(time_step_max_growth_factor*dt,dtt)
   if (dtt > dt_max) dtt = dt_max
   ! geh: see comment above under flow stepper
   dtt = max(dtt,dt_min)
@@ -965,6 +964,32 @@ end subroutine PMRTCheckUpdatePost
 
 ! ************************************************************************** !
 
+subroutine PMRTCheckConvergence(this,snes,it,xnorm,unorm,fnorm,reason,ierr)
+  !
+  ! Author: Glenn Hammond
+  ! Date: 11/15/17
+  ! 
+  use Convergence_module
+
+  implicit none
+
+  class(pm_rt_type) :: this
+  SNES :: snes
+  PetscInt :: it
+  PetscReal :: xnorm
+  PetscReal :: unorm
+  PetscReal :: fnorm
+  SNESConvergedReason :: reason
+  PetscErrorCode :: ierr
+
+  call ConvergenceTest(snes,it,xnorm,unorm,fnorm,reason, &
+                       this%realization%patch%grid, &
+                       this%option,this%solver,ierr)
+
+end subroutine PMRTCheckConvergence
+
+! ************************************************************************** !
+
 subroutine PMRTTimeCut(this)
   ! 
   ! Author: Glenn Hammond
@@ -1031,8 +1056,7 @@ subroutine PMRTUpdateSolution2(this, update_kinetics)
   
   ! begin from RealizationUpdate()
   call TranConditionUpdate(this%realization%transport_conditions, &
-                           this%realization%option, &
-                           this%realization%option%time)
+                           this%realization%option)
   if (associated(this%realization%uniform_velocity_dataset)) then
     call RealizUpdateUniformVelocity(this%realization)
   endif  
@@ -1166,14 +1190,15 @@ subroutine PMRTCheckpointBinary(this,viewer)
   ! Author: Glenn Hammond
   ! Date: 07/29/13
   ! 
-
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Option_module
   use Realization_Subsurface_class
   use Realization_Base_class
   use Field_module
   use Discretization_module
   use Grid_module
-  use Reactive_Transport_module, only : RTCheckpointKineticSorptionBinary  
+
   use Reaction_Aux_module, only : ACT_COEF_FREQUENCY_OFF
   use Variables_module, only : PRIMARY_ACTIVITY_COEF, &
                                SECONDARY_ACTIVITY_COEF, &
@@ -1182,19 +1207,15 @@ subroutine PMRTCheckpointBinary(this,viewer)
   
   implicit none
 
-#include "petsc/finclude/petscviewer.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscbag.h"      
-
   interface PetscBagGetData
 
 ! ************************************************************************** !
 
     subroutine PetscBagGetData(bag,header,ierr)
+#include "petsc/finclude/petscsys.h"
+      use petscsys
       import :: pm_rt_header_type
       implicit none
-#include "petsc/finclude/petscbag.h"      
       PetscBag :: bag
       class(pm_rt_header_type), pointer :: header
       PetscErrorCode :: ierr
@@ -1225,7 +1246,7 @@ subroutine PMRTCheckpointBinary(this,viewer)
   discretization => realization%discretization
   grid => realization%patch%grid
   
-  global_vec = 0
+  global_vec = PETSC_NULL_VEC
 
   bagsize = size(transfer(dummy_header,dummy_char))
   
@@ -1255,7 +1276,7 @@ subroutine PMRTCheckpointBinary(this,viewer)
   if (option%ntrandof > 0) then
     call VecView(field%tran_xx, viewer, ierr);CHKERRQ(ierr)
     ! create a global vec for writing below 
-    if (global_vec == 0) then
+    if (global_vec == PETSC_NULL_VEC) then
       call DiscretizationCreateVector(realization%discretization,ONEDOF, &
                                       global_vec,GLOBAL,option)
     endif
@@ -1282,12 +1303,6 @@ subroutine PMRTCheckpointBinary(this,viewer)
         call VecView(global_vec,viewer,ierr);CHKERRQ(ierr)
       enddo
     endif
-    ! sorbed concentrations for multirate kinetic sorption
-    if (realization%reaction%surface_complexation%nkinmrsrfcplxrxn > 0 .and. &
-        .not.option%transport%no_checkpoint_kinetic_sorption) then
-      ! PETSC_TRUE flag indicates write to file
-      call RTCheckpointKineticSorptionBinary(realization,viewer,PETSC_TRUE)
-    endif
     ! auxiliary data for reactions (e.g. cumulative mass)
     if (realization%reaction%nauxiliary> 0) then
       do i = 1, realization%reaction%nauxiliary
@@ -1298,7 +1313,7 @@ subroutine PMRTCheckpointBinary(this,viewer)
     endif
   endif
 
-  if (global_vec /= 0) then
+  if (global_vec /= PETSC_NULL_VEC) then
     call VecDestroy(global_vec,ierr);CHKERRQ(ierr)
   endif
   
@@ -1313,15 +1328,15 @@ subroutine PMRTRestartBinary(this,viewer)
   ! Author: Glenn Hammond
   ! Date: 07/29/13
   ! 
-
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Option_module
   use Realization_Subsurface_class
   use Realization_Base_class
   use Field_module
   use Discretization_module
   use Grid_module
-  use Reactive_Transport_module, only : RTCheckpointKineticSorptionBinary, &
-                                        RTUpdateAuxVars
+  use Reactive_Transport_module, only : RTUpdateAuxVars
   use Reaction_Aux_module, only : ACT_COEF_FREQUENCY_OFF
   use Variables_module, only : PRIMARY_ACTIVITY_COEF, &
                                SECONDARY_ACTIVITY_COEF, &
@@ -1330,19 +1345,15 @@ subroutine PMRTRestartBinary(this,viewer)
   
   implicit none
 
-#include "petsc/finclude/petscviewer.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscbag.h"      
-
   interface PetscBagGetData
 
 ! ************************************************************************** !
 
     subroutine PetscBagGetData(bag,header,ierr)
+#include "petsc/finclude/petscsys.h"
+      use petscsys
       import :: pm_rt_header_type
       implicit none
-#include "petsc/finclude/petscbag.h"      
       PetscBag :: bag
       class(pm_rt_header_type), pointer :: header
       PetscErrorCode :: ierr
@@ -1373,8 +1384,8 @@ subroutine PMRTRestartBinary(this,viewer)
   discretization => realization%discretization
   grid => realization%patch%grid
   
-  global_vec = 0
-  local_vec = 0
+  global_vec = PETSC_NULL_VEC
+  local_vec = PETSC_NULL_VEC
   
   bagsize = size(transfer(dummy_header,dummy_char))
 
@@ -1392,7 +1403,7 @@ subroutine PMRTRestartBinary(this,viewer)
                                     field%tran_xx_loc,NTRANDOF)
   call VecCopy(field%tran_xx,field%tran_yy,ierr);CHKERRQ(ierr)
 
-  if (global_vec == 0) then
+  if (global_vec == PETSC_NULL_VEC) then
     call DiscretizationCreateVector(realization%discretization,ONEDOF, &
                                     global_vec,GLOBAL,option)
   endif    
@@ -1425,16 +1436,6 @@ subroutine PMRTRestartBinary(this,viewer)
       endif
     enddo
   endif
-  ! sorbed concentrations for multirate kinetic sorption
-  if (realization%reaction%surface_complexation%nkinmrsrfcplxrxn > 0 .and. &
-      .not.option%transport%no_checkpoint_kinetic_sorption .and. &
-      ! we need to fix this.  We need something to skip over the reading
-      ! of sorbed concentrations altogether if they do not exist in the
-      ! checkpoint file
-      .not.option%transport%no_restart_kinetic_sorption) then
-    ! PETSC_FALSE flag indicates read from file
-    call RTCheckpointKineticSorptionBinary(realization,viewer,PETSC_FALSE)
-  endif
   ! auxiliary data for reactions (e.g. cumulative mass)
   if (realization%reaction%nauxiliary> 0) then
     do i = 1, realization%reaction%nauxiliary
@@ -1445,10 +1446,10 @@ subroutine PMRTRestartBinary(this,viewer)
   endif
     
   ! We are finished, so clean up.
-  if (global_vec /= 0) then
+  if (global_vec /= PETSC_NULL_VEC) then
     call VecDestroy(global_vec,ierr);CHKERRQ(ierr)
   endif
-  if (local_vec /= 0) then
+  if (local_vec /= PETSC_NULL_VEC) then
     call VecDestroy(local_vec,ierr);CHKERRQ(ierr)
   endif
   
@@ -1483,13 +1484,15 @@ subroutine PMRTCheckpointHDF5(this, pm_grp_id)
   stop
 #else
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Option_module
   use Realization_Subsurface_class
   use Realization_Base_class
   use Field_module
   use Discretization_module
   use Grid_module
-  use Reactive_Transport_module, only : RTCheckpointKineticSorptionHDF5
+
   use Reaction_Aux_module, only : ACT_COEF_FREQUENCY_OFF
   use Variables_module, only : PRIMARY_ACTIVITY_COEF, &
                                SECONDARY_ACTIVITY_COEF, &
@@ -1500,9 +1503,6 @@ subroutine PMRTCheckpointHDF5(this, pm_grp_id)
   use HDF5_module, only : HDF5WriteDataSetFromVec
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   class(pm_rt_type) :: this
 #if defined(SCORPIO_WRITE)
@@ -1525,7 +1525,9 @@ subroutine PMRTCheckpointHDF5(this, pm_grp_id)
 
   PetscMPIInt :: dataset_rank
   character(len=MAXSTRINGLENGTH) :: dataset_name
-  PetscInt, pointer :: int_array(:)
+  ! must be 'integer' so that ibuffer does not switch to 64-bit integers 
+  ! when PETSc is configured with --with-64-bit-indices=yes.
+  integer, pointer :: int_array(:)
 
   class(realization_subsurface_type), pointer :: realization
   type(option_type), pointer :: option
@@ -1569,12 +1571,14 @@ subroutine PMRTCheckpointHDF5(this, pm_grp_id)
 
   dataset_name = "Checkpoint_Activity_Coefs" // CHAR(0)
   call CheckPointWriteIntDatasetHDF5(pm_grp_id, dataset_name, dataset_rank, &
-                                     dims, start, length, stride, int_array, option)
+                                     dims, start, length, stride, &
+                                     int_array, option)
 
   dataset_name = "NDOF" // CHAR(0)
   int_array(1) = option%ntrandof
   call CheckPointWriteIntDatasetHDF5(pm_grp_id, dataset_name, dataset_rank, &
-                                     dims, start, length, stride, int_array, option)
+                                     dims, start, length, stride, &
+                                     int_array, option)
 
   !geh: %ndof should be pushed down to the base class, but this is not possible
   !     as long as option%ntrandof is used.
@@ -1583,8 +1587,9 @@ subroutine PMRTCheckpointHDF5(this, pm_grp_id)
 
     call DiscretizationCreateVector(realization%discretization, NTRANDOF, &
                                      natural_vec, NATURAL, option)
-    call DiscretizationGlobalToNatural(realization%discretization, field%tran_xx, &
-                                        natural_vec, NTRANDOF)
+    call DiscretizationGlobalToNatural(realization%discretization, &
+                                       field%tran_xx, &
+                                       natural_vec, NTRANDOF)
     dataset_name = "Primary_Variable" // CHAR(0)
     call HDF5WriteDataSetFromVec(dataset_name, option, natural_vec, &
            pm_grp_id, H5T_NATIVE_DOUBLE)
@@ -1603,8 +1608,8 @@ subroutine PMRTCheckpointHDF5(this, pm_grp_id)
       do i = 1, realization%reaction%naqcomp
         call RealizationGetVariable(realization,global_vec, &
                                     PRIMARY_ACTIVITY_COEF,i)
-        call DiscretizationGlobalToNatural(realization%discretization, global_vec, &
-                                        natural_vec, ONEDOF)
+        call DiscretizationGlobalToNatural(realization%discretization, &
+                                           global_vec, natural_vec, ONEDOF)
         write(dataset_name,*) i
         dataset_name = 'Aq_comp_' // trim(adjustl(dataset_name))
         call HDF5WriteDataSetFromVec(dataset_name, option, natural_vec, &
@@ -1614,8 +1619,8 @@ subroutine PMRTCheckpointHDF5(this, pm_grp_id)
       do i = 1, realization%reaction%neqcplx
         call RealizationGetVariable(realization,global_vec, &
                                    SECONDARY_ACTIVITY_COEF,i)
-        call DiscretizationGlobalToNatural(realization%discretization, global_vec, &
-                                        natural_vec, ONEDOF)
+        call DiscretizationGlobalToNatural(realization%discretization, &
+                                           global_vec, natural_vec, ONEDOF)
         write(dataset_name,*) i
         dataset_name = 'Eq_cplx_' // trim(adjustl(dataset_name))
         call HDF5WriteDataSetFromVec(dataset_name, option, natural_vec, &
@@ -1635,12 +1640,6 @@ subroutine PMRTCheckpointHDF5(this, pm_grp_id)
         call HDF5WriteDataSetFromVec(dataset_name, option, natural_vec, &
            pm_grp_id, H5T_NATIVE_DOUBLE)
       enddo
-    endif
-
-    if (realization%reaction%surface_complexation%nkinmrsrfcplxrxn > 0 .and. &
-        .not.option%transport%no_checkpoint_kinetic_sorption) then
-      ! PETSC_TRUE flag indicates write to file
-      call RTCheckpointKineticSorptionHDF5(realization, pm_grp_id, PETSC_TRUE)
     endif
 
     ! auxiliary data for reactions (e.g. cumulative mass)
@@ -1684,14 +1683,15 @@ subroutine PMRTRestartHDF5(this, pm_grp_id)
   stop
 #else
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Option_module
   use Realization_Subsurface_class
   use Realization_Base_class
   use Field_module
   use Discretization_module
   use Grid_module
-  use Reactive_Transport_module, only : RTCheckpointKineticSorptionHDF5, &
-                                        RTUpdateAuxVars
+  use Reactive_Transport_module, only : RTUpdateAuxVars
   use Reaction_Aux_module, only : ACT_COEF_FREQUENCY_OFF
   use Variables_module, only : PRIMARY_ACTIVITY_COEF, &
                                SECONDARY_ACTIVITY_COEF, &
@@ -1702,9 +1702,6 @@ subroutine PMRTRestartHDF5(this, pm_grp_id)
   use HDF5_module, only : HDF5ReadDataSetInVec
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   class(pm_rt_type) :: this
 #if defined(SCORPIO_WRITE)
@@ -1727,7 +1724,9 @@ subroutine PMRTRestartHDF5(this, pm_grp_id)
 
   PetscMPIInt :: dataset_rank
   character(len=MAXSTRINGLENGTH) :: dataset_name
-  PetscInt, pointer :: int_array(:)
+  ! must be 'integer' so that ibuffer does not switch to 64-bit integers 
+  ! when PETSc is configured with --with-64-bit-indices=yes.
+  integer, pointer :: int_array(:)
 
   class(realization_subsurface_type), pointer :: realization
   type(option_type), pointer :: option
@@ -1761,13 +1760,15 @@ subroutine PMRTRestartHDF5(this, pm_grp_id)
 
   dataset_name = "Checkpoint_Activity_Coefs" // CHAR(0)
   call CheckPointReadIntDatasetHDF5(pm_grp_id, dataset_name, dataset_rank, &
-                                     dims, start, length, stride, int_array, option)
+                                    dims, start, length, stride, &
+                                    int_array, option)
   checkpoint_activity_coefs = int_array(1)
   
   dataset_name = "NDOF" // CHAR(0)
   int_array(1) = option%ntrandof
   call CheckPointReadIntDatasetHDF5(pm_grp_id, dataset_name, dataset_rank, &
-                                    dims, start, length, stride, int_array, option)
+                                    dims, start, length, stride, &
+                                    int_array, option)
   option%ntrandof = int_array(1)
   
   !geh: %ndof should be pushed down to the base class, but this is not possible
@@ -1780,7 +1781,8 @@ subroutine PMRTRestartHDF5(this, pm_grp_id)
     dataset_name = "Primary_Variable" // CHAR(0)
     call HDF5ReadDataSetInVec(dataset_name, option, natural_vec, &
                              pm_grp_id, H5T_NATIVE_DOUBLE)
-    call DiscretizationNaturalToGlobal(discretization, natural_vec, field%tran_xx, &
+    call DiscretizationNaturalToGlobal(discretization, natural_vec, &
+                                       field%tran_xx, &
                                        NTRANDOF)
     call DiscretizationGlobalToLocal(discretization,field%tran_xx, &
                                     field%tran_xx_loc,NTRANDOF)
@@ -1843,12 +1845,6 @@ subroutine PMRTRestartHDF5(this, pm_grp_id)
       enddo
     endif
 
-    if (realization%reaction%surface_complexation%nkinmrsrfcplxrxn > 0 .and. &
-        .not.option%transport%no_checkpoint_kinetic_sorption) then
-      ! PETSC_TRUE flag indicates write to file
-      call RTCheckpointKineticSorptionHDF5(realization, pm_grp_id, PETSC_TRUE)
-    endif
-
     ! auxiliary data for reactions (e.g. cumulative mass)
     if (realization%reaction%nauxiliary> 0) then
       do i = 1, realization%reaction%nauxiliary
@@ -1887,6 +1883,30 @@ subroutine PMRTRestartHDF5(this, pm_grp_id)
 #endif
 
 end subroutine PMRTRestartHDF5
+
+! ************************************************************************** !
+
+subroutine PMRTInputRecord(this)
+  ! 
+  ! Writes ingested information to the input record file.
+  ! 
+  ! Author: Jenn Frederick, SNL
+  ! Date: 03/21/2016
+  ! 
+  
+  implicit none
+  
+  class(pm_rt_type) :: this
+
+  character(len=MAXWORDLENGTH) :: word
+  PetscInt :: id
+
+  id = INPUT_RECORD_UNIT
+
+  write(id,'(a29)',advance='no') 'pm: '
+  write(id,'(a)') this%name
+
+end subroutine PMRTInputRecord
 
 ! ************************************************************************** !
 

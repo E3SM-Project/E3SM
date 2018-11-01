@@ -2,15 +2,13 @@ module Surface_Field_module
 
 ! IMPORTANT NOTE: This module can have no dependencies on other modules!!!
  
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use PFLOTRAN_Constants_module
 
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   type, public :: surface_field_type
 
@@ -67,33 +65,33 @@ function SurfaceFieldCreate()
   allocate(surface_field)
 
   ! nullify PetscVecs
-  surface_field%mannings0 = 0
-  surface_field%mannings_loc = 0
+  surface_field%mannings0 = PETSC_NULL_VEC
+  surface_field%mannings_loc = PETSC_NULL_VEC
 
-  surface_field%work = 0
-  surface_field%work_loc = 0
+  surface_field%work = PETSC_NULL_VEC
+  surface_field%work_loc = PETSC_NULL_VEC
 
-  surface_field%area = 0
+  surface_field%area = PETSC_NULL_VEC
   
-  surface_field%flow_r = 0
-  surface_field%flow_xx = 0
-  surface_field%flow_xx_loc = 0
-  surface_field%flow_dxx = 0
-  surface_field%flow_yy = 0
-  surface_field%flow_accum = 0
+  surface_field%flow_r = PETSC_NULL_VEC
+  surface_field%flow_xx = PETSC_NULL_VEC
+  surface_field%flow_xx_loc = PETSC_NULL_VEC
+  surface_field%flow_dxx = PETSC_NULL_VEC
+  surface_field%flow_yy = PETSC_NULL_VEC
+  surface_field%flow_accum = PETSC_NULL_VEC
   
-  surface_field%press_subsurf = 0
+  surface_field%press_subsurf = PETSC_NULL_VEC
 
-  surface_field%subsurf_temp_vec_1dof = 0
-  surface_field%subsurf_temp_vec_ndof = 0
+  surface_field%subsurf_temp_vec_1dof = PETSC_NULL_VEC
+  surface_field%subsurf_temp_vec_ndof = PETSC_NULL_VEC
 
   nullify(surface_field%avg_vars_vec)
   surface_field%nvars = 0
 
-  surface_field%flowrate_inst = 0
-  surface_field%flowrate_aveg = 0
+  surface_field%flowrate_inst = PETSC_NULL_VEC
+  surface_field%flowrate_aveg = PETSC_NULL_VEC
 
-  surface_field%temp_subsurf = 0
+  surface_field%temp_subsurf = PETSC_NULL_VEC
 
   SurfaceFieldCreate => surface_field
 
@@ -117,51 +115,51 @@ subroutine SurfaceFieldDestroy(surface_field)
   PetscInt :: ivar
 
   ! Destroy PetscVecs
-  if (surface_field%mannings0 /= 0) then
+  if (surface_field%mannings0 /= PETSC_NULL_VEC) then
     call VecDestroy(surface_field%mannings0,ierr);CHKERRQ(ierr)
   endif
-  if (surface_field%mannings_loc /= 0) then
+  if (surface_field%mannings_loc /= PETSC_NULL_VEC) then
     call VecDestroy(surface_field%mannings_loc,ierr);CHKERRQ(ierr)
   endif
 
-  if (surface_field%work /= 0) then
+  if (surface_field%work /= PETSC_NULL_VEC) then
     call VecDestroy(surface_field%work,ierr);CHKERRQ(ierr)
   endif
-  if (surface_field%work_loc  /= 0) then
+  if (surface_field%work_loc  /= PETSC_NULL_VEC) then
     call VecDestroy(surface_field%work_loc,ierr);CHKERRQ(ierr)
   endif
 
-  if (surface_field%area  /= 0) then
+  if (surface_field%area  /= PETSC_NULL_VEC) then
     call VecDestroy(surface_field%area,ierr);CHKERRQ(ierr)
   endif
   
-  if (surface_field%press_subsurf /= 0) then
+  if (surface_field%press_subsurf /= PETSC_NULL_VEC) then
     call VecDestroy(surface_field%press_subsurf,ierr);CHKERRQ(ierr)
   endif
 
-  if (surface_field%flow_r /= 0) then
+  if (surface_field%flow_r /= PETSC_NULL_VEC) then
     call VecDestroy(surface_field%flow_r,ierr);CHKERRQ(ierr)
   endif
-  if (surface_field%flow_xx /= 0) then
+  if (surface_field%flow_xx /= PETSC_NULL_VEC) then
     call VecDestroy(surface_field%flow_xx,ierr);CHKERRQ(ierr)
   endif
-  if (surface_field%flow_xx_loc /= 0) then
+  if (surface_field%flow_xx_loc /= PETSC_NULL_VEC) then
     call VecDestroy(surface_field%flow_xx_loc,ierr);CHKERRQ(ierr)
   endif
-  if (surface_field%flow_dxx /= 0) then
+  if (surface_field%flow_dxx /= PETSC_NULL_VEC) then
     call VecDestroy(surface_field%flow_dxx,ierr);CHKERRQ(ierr)
   endif
-  if (surface_field%flow_yy /= 0) then
+  if (surface_field%flow_yy /= PETSC_NULL_VEC) then
     call VecDestroy(surface_field%flow_yy,ierr);CHKERRQ(ierr)
   endif
-  if (surface_field%flow_accum /= 0) then
+  if (surface_field%flow_accum /= PETSC_NULL_VEC) then
     call VecDestroy(surface_field%flow_accum,ierr);CHKERRQ(ierr)
   endif
   
-  if (surface_field%subsurf_temp_vec_1dof/=0) then
+  if (surface_field%subsurf_temp_vec_1dof/= PETSC_NULL_VEC) then
     call VecDestroy(surface_field%subsurf_temp_vec_1dof,ierr);CHKERRQ(ierr)
   endif
-  if (surface_field%subsurf_temp_vec_ndof/=0) then
+  if (surface_field%subsurf_temp_vec_ndof/= PETSC_NULL_VEC) then
     call VecDestroy(surface_field%subsurf_temp_vec_ndof,ierr);CHKERRQ(ierr)
   endif
 
@@ -169,14 +167,14 @@ subroutine SurfaceFieldDestroy(surface_field)
     call VecDestroy(surface_field%avg_vars_vec(ivar),ierr);CHKERRQ(ierr)
   enddo
 
-  if (surface_field%flowrate_inst/=0) then
+  if (surface_field%flowrate_inst/= PETSC_NULL_VEC) then
     call VecDestroy(surface_field%flowrate_inst,ierr);CHKERRQ(ierr)
   endif
-  if (surface_field%flowrate_aveg/=0) then
+  if (surface_field%flowrate_aveg/= PETSC_NULL_VEC) then
     call VecDestroy(surface_field%flowrate_aveg,ierr);CHKERRQ(ierr)
   endif
 
-  if (surface_field%temp_subsurf /=0 ) then
+  if (surface_field%temp_subsurf /= PETSC_NULL_VEC ) then
     call VecDestroy(surface_field%temp_subsurf,ierr);CHKERRQ(ierr)
   endif
 

@@ -10,7 +10,6 @@ module HDF5_Aux_module
   implicit none
 
 #include "petsc/finclude/petscsys.h"
-
   private
 
   PetscInt, parameter, public :: HDF5_READ_BUFFER_SIZE = 1000000
@@ -19,7 +18,7 @@ module HDF5_Aux_module
   PetscErrorCode :: ierr
 
 #if defined(PETSC_HAVE_HDF5)
-  PetscMPIInt :: hdf5_err
+  integer :: hdf5_err
   PetscMPIInt :: io_rank_mpi
 ! 64-bit stuff
 #ifdef PETSC_USE_64BIT_INDICES
@@ -33,6 +32,8 @@ module HDF5_Aux_module
 #ifdef SCORPIO
             HDF5ReadDatasetInteger2D, &
             HDF5ReadDatasetReal2D, &
+            HDF5ReadDatasetReal1D, &
+            HDF5ReadDataset
             HDF5GroupExists, &
             HDF5DatasetExists, &
 #else
@@ -62,6 +63,8 @@ subroutine HDF5ReadNDimRealArray(option,file_id,dataset_name,ndims,dims, &
   ! Date: 01/13/10
   ! 
 
+#include <petsc/finclude/petscsys.h>
+  use petscsys
   use hdf5
   
   use Option_module
@@ -79,7 +82,6 @@ subroutine HDF5ReadNDimRealArray(option,file_id,dataset_name,ndims,dims, &
   integer(HID_T) :: memory_space_id
   integer(HID_T) :: data_set_id
   integer(HID_T) :: prop_id
-  integer :: ndims_hdf5
   integer(HSIZE_T), allocatable :: dims_h5(:), max_dims_h5(:)
   integer(HSIZE_T) :: offset(1), length(1), stride(1)
   PetscMPIInt :: rank_mpi
@@ -87,6 +89,7 @@ subroutine HDF5ReadNDimRealArray(option,file_id,dataset_name,ndims,dims, &
   integer(HSIZE_T) :: num_reals_in_dataset
   PetscInt :: temp_int, i, index
   PetscMPIInt :: int_mpi
+  integer :: ndims_hdf5
   
   call PetscLogEventBegin(logging%event_read_ndim_real_array_hdf5, &
                           ierr);CHKERRQ(ierr)
@@ -239,6 +242,10 @@ end subroutine HDF5ReadDatasetInteger2D
 
 subroutine HDF5ReadDatasetReal2D(filename,dataset_name,read_option,option, &
            data,data_dims,dataset_dims)
+  ! 
+  ! Author: Gautam Bisht
+  ! Date: 05/13/2010
+  ! 
   use hdf5
   use Option_module
   
@@ -283,6 +290,7 @@ subroutine HDF5ReadDatasetReal2D(filename,dataset_name,read_option,option, &
   
   data_dims(1) = dataset_dims(1)/option%mycommsize
   data_dims(2) = dataset_dims(2)
+  !write(*,*), 'dataset_dims ',dataset_dims(:)
 
   remainder = dataset_dims(1) - data_dims(1)*option%mycommsize
   if (option%myrank < remainder) data_dims(1) = data_dims(1) + 1
@@ -310,9 +318,98 @@ subroutine HDF5ReadDatasetReal2D(filename,dataset_name,read_option,option, &
 end subroutine HDF5ReadDatasetReal2D
 #endif
 
+#if defined(PARALLELIO_LIB)
+
+! ************************************************************************** !
+
+subroutine HDF5ReadDatasetReal1D(filename,dataset_name,read_option,option, &
+           data,data_dims,dataset_dims)
+  ! 
+  ! Author: Gautam Bisht
+  ! Date: 05/13/2010
+  ! 
+
+  use hdf5
+  use Option_module
+  
+  implicit none
+  
+#if defined(PARALLELIO_LIB)
+  include "piof.h"  
+#endif
+
+  ! in
+  character(len=MAXSTRINGLENGTH) :: filename
+  character(len=MAXSTRINGLENGTH) :: dataset_name
+  integer                        :: read_option
+  type(option_type)              :: option
+  
+  ! out
+  PetscReal,pointer              :: data(:)
+  PetscInt                       :: data_dims(1)
+  PetscInt                       :: dataset_dims(1)
+  
+  ! local
+  integer :: file_id
+  integer :: ndims
+  PetscInt :: ii, remainder
+
+  PetscErrorCode :: ierr
+  
+  ! Open file collectively
+  filename = trim(filename) // CHAR(0)
+  call parallelIO_open_file(filename, option%ioread_group_id, FILE_READONLY, file_id, ierr)
+
+  ! Get dataset dimnesions
+  call parallelIO_get_dataset_ndims(ndims, file_id, dataset_name, option%ioread_group_id, ierr)
+  if (ndims.ne.1) then
+    option%io_buffer='Dimension of ' // dataset_name // ' dataset in ' // filename // &
+	   ' is not equal to 1.'
+	call printErrMsg(option)
+  endif
+  
+  ! Get size of each dimension
+  call parallelIO_get_dataset_dims(dataset_dims, file_id, dataset_name, option%ioread_group_id, ierr)
+  
+  data_dims(1) = dataset_dims(1)/option%mycommsize
+
+  remainder = dataset_dims(1) - data_dims(1)*option%mycommsize
+  if (option%myrank < remainder) data_dims(1) = data_dims(1) + 1
+
+  
+  allocate(data(data_dims(1)))
+  
+  !call parallelIO_get_dataset_dims(dataset_dims, file_id, dataset_name, option%ioread_group_id, ierr)
+
+  ! Read the dataset collectively
+  call parallelIO_read_dataset( data, PIO_DOUBLE, ndims, dataset_dims, data_dims, & 
+            file_id, dataset_name, option%ioread_group_id, NONUNIFORM_CONTIGUOUS_READ, ierr)
+  
+  !data_dims(1) = data_dims(1) + data_dims(2)
+  !data_dims(2) = data_dims(1) - data_dims(2)
+  !data_dims(1) = data_dims(1) - data_dims(2)
+
+  !dataset_dims(1) = dataset_dims(1) + dataset_dims(2)
+  !dataset_dims(2) = dataset_dims(1) - dataset_dims(2)
+  !dataset_dims(1) = dataset_dims(1) - dataset_dims(2)
+
+  ! Close file
+  call parallelIO_close_file( file_id, option%ioread_group_id, ierr)  
+
+end subroutine HDF5ReadDatasetReal1D
+
+#endif 
+! PARALLELIO_LIB
+
 ! ************************************************************************** !
 
 function HDF5GroupExists(filename,group_name,option)
+  ! 
+  ! Returns true if a group exists
+  ! 
+  ! Author: Glenn Hammond
+  ! Date: 03/26/2012
+  ! 
   ! 
   ! SCORPIO
   ! Returns true if a group exists
@@ -321,6 +418,8 @@ function HDF5GroupExists(filename,group_name,option)
   ! Date: 03/26/2012
   ! 
 
+#include <petsc/finclude/petscsys.h>
+  use petscsys
   use hdf5
   use Option_module
   
@@ -415,6 +514,8 @@ function HDF5DatasetExists(filename,group_name,dataset_name,option)
   ! Date: 04/30/2015
   !
 
+#include <petsc/finclude/petscsys.h>
+  use petscsys
   use hdf5
   use Option_module
 
@@ -529,6 +630,8 @@ subroutine HDF5ReadDbase(filename,option)
   ! Author: Glenn Hammond
   ! Date: 08/19/14
   ! 
+#include <petsc/finclude/petscsys.h>
+  use petscsys
   use Option_module
   use String_module
   use Input_Aux_module, only : dbase
@@ -542,7 +645,9 @@ subroutine HDF5ReadDbase(filename,option)
   character(len=MAXWORDLENGTH), allocatable :: wbuffer(:)
   character(len=MAXWORDLENGTH) :: wbuffer_word
   PetscReal, allocatable :: rbuffer(:)
-  PetscInt, allocatable :: ibuffer(:)
+  ! must be 'integer' so that ibuffer does not switch to 64-bit integers 
+  ! when PETSc is configured with --with-64-bit-indices=yes.
+  integer, allocatable :: ibuffer(:)
   PetscInt :: dummy_int
   PetscInt :: value_index
   character(len=MAXSTRINGLENGTH) :: string
@@ -550,12 +655,8 @@ subroutine HDF5ReadDbase(filename,option)
   character(len=MAXWORDLENGTH) :: word
 #if defined(PETSC_HAVE_HDF5)  
   integer(HID_T) :: file_id
-  integer :: num_objects
-  integer :: i_object
-  integer :: object_type
   integer(HID_T) :: prop_id
   integer(HID_T) :: dataset_id
-  integer :: class_id
   integer(HID_T) :: datatype_id
   integer(HID_T) :: datatype_id2
   integer(HID_T) :: file_space_id
@@ -567,8 +668,12 @@ subroutine HDF5ReadDbase(filename,option)
   integer(HSIZE_T) :: offset(1), length(1), stride(1)
   PetscMPIInt :: rank_mpi
   PetscMPIInt :: int_mpi
-  PetscMPIInt :: hdf5_err
 #endif
+  integer :: num_objects
+  integer :: i_object
+  integer :: object_type
+  integer :: class_id
+  integer :: hdf5_err
   PetscInt :: num_ints
   PetscInt :: num_reals
   PetscInt :: num_words
@@ -789,7 +894,7 @@ subroutine HDF5OpenFileReadOnly(filename,file_id,prop_id,option)
   integer(HID_T) :: prop_id
   type(option_type) :: option
   
-  PetscMPIInt :: hdf5_err
+  integer :: hdf5_err
 
   call h5fopen_f(filename,H5F_ACC_RDONLY_F,file_id,hdf5_err,prop_id)
   if (hdf5_err /= 0) then

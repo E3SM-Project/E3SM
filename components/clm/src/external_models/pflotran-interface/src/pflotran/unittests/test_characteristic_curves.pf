@@ -1,12 +1,15 @@
 module Test_Characteristic_Curves_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use pFUnit_mod
   use Characteristic_Curves_module
+  use Characteristic_Curves_Base_module
+  use Characteristic_Curves_Common_module
   use Option_module
 
   implicit none
 
-#include "petsc/finclude/petscsys.h"
 
   public :: Test_Characteristic_Curves
 
@@ -57,10 +60,12 @@ contains
 
   subroutine setUp(this)
 
+    use PFLOTRAN_Constants_module, only : MAXSTRINGLENGTH
+
     implicit none
 
     class(Test_Characteristic_Curves), intent(inout) :: this
-    character(len=512) :: err
+    character(len=MAXSTRINGLENGTH) :: error_string
 
     this%option => OptionCreate()
 
@@ -93,7 +98,9 @@ contains
       class default
         print *, 'not Burdine BC Gas type'
     end select
-    call this%cc_bcb%saturation_function%SetupPolynomials(this%option,err)
+    error_string = 'pFUnit Brooks Corey saturation function'
+    call this%cc_bcb%saturation_function%SetupPolynomials(this%option, &
+                                                          error_string)
 
   ! Setting up the characteristic curve for Brooks Corey Mualem
     this%cc_bcm => CharacteristicCurvesCreate()
@@ -165,18 +172,6 @@ contains
         sf%Srg = 0.01d0
       class default
         print *, 'not Burdine VG Gas type'
-    end select
-
-  ! Setting up the characteristic curve for van Genuchten TOUGH2 IRP7
-    this%cc_vgt => CharacteristicCurvesCreate()
-    ! do not set up saturation function as it is tested with cc_vgm
-    this%cc_vgt%gas_rel_perm_function => RPF_TOUGH2_IRP7_Gas_Create()
-    this%cc_vgt%gas_rel_perm_function%Sr = 0.143d0
-    select type(sf=>this%cc_vgt%gas_rel_perm_function)
-      class is(rpf_TOUGH2_IRP7_gas_type)
-        sf%Srg = 0.01d0
-      class default
-        print *, 'not TOUGH2 IRP7 Gas type'
     end select
 
   ! Setting up the characteristic curve for Linear Mualem
@@ -291,7 +286,7 @@ contains
       class default
         print *, 'no constant saturation function type in setUp'
     end select
-
+    
   end subroutine setUp
 
 ! ************************************************************************** !
@@ -474,6 +469,7 @@ contains
     class (Test_Characteristic_Curves), intent(inout) :: this
 
     PetscReal :: capillary_pressure
+    PetscReal :: dpc_dsatl
     PetscReal :: liquid_saturation
     PetscReal :: value
     PetscReal, parameter :: tolerance = 1.d-8
@@ -489,11 +485,15 @@ contains
     end select
     call this%cc_bcb%saturation_function% &
          CapillaryPressure(liquid_saturation, &
-                           capillary_pressure, this%option)
+                           capillary_pressure, dpc_dsatl, this%option)
     string = 'Brooks-Corey capillary pressure as a function of &
              &liquid saturation barely within polynomial fit'
     value = 54.068777590990067d0
     @assertEqual(value, capillary_pressure, dabs(value)*tolerance, string)
+    string = 'Brooks-Corey derivative of capillary pressure as a function of &
+             &liquid saturation barely within polynomial fit'
+    value = -7.7231957793806121d6
+    @assertEqual(value, dpc_dsatl, dabs(value)*tolerance, string)
 
     ! capillary pressure = f(saturation) slightly within polynomial fit
     select type(sf=>this%cc_bcb%saturation_function)
@@ -504,11 +504,15 @@ contains
     end select
     call this%cc_bcb%saturation_function% &
          CapillaryPressure(liquid_saturation, &
-                           capillary_pressure, this%option)
+                           capillary_pressure, dpc_dsatl, this%option)
     string = 'Brooks-Corey capillary pressure as a function of &
              &liquid saturation well within polynomial fit'
     value = 106436.99642977261d0
     @assertEqual(value, capillary_pressure, dabs(value)*tolerance, string)
+    string = 'Brooks-Corey derivative of capillary pressure as a function of &
+             &liquid saturation well within polynomial fit'
+    value = -1.9672548074671443d5
+    @assertEqual(value, dpc_dsatl, dabs(value)*tolerance, string)
 
     ! capillary pressure = f(saturation) above polynomial fit
     select type(sf=>this%cc_bcb%saturation_function)
@@ -519,11 +523,15 @@ contains
     end select
     call this%cc_bcb%saturation_function% &
          CapillaryPressure(liquid_saturation, &
-                           capillary_pressure, this%option)
+                           capillary_pressure, dpc_dsatl, this%option)
     string = 'Brooks-Corey capillary pressure as a function of &
              &liquid saturation above within polynomial fit'
     value = 109024.42772683989d0
     @assertEqual(value, capillary_pressure, dabs(value)*tolerance, string)
+    string = 'Brooks-Corey derivative of capillary pressure as a function of &
+             &liquid saturation above within polynomial fit'
+    value = -2.0492439614025093d5
+    @assertEqual(value, dpc_dsatl, dabs(value)*tolerance, string)
 
   end subroutine testcp_Brooks_Corey
 
@@ -536,9 +544,7 @@ contains
 
     class(Test_Characteristic_Curves), intent(inout) :: this
 
-    PetscReal :: capillary_pressure
     PetscReal :: liquid_saturation
-    PetscReal :: dsat_pres
     PetscReal :: value
     PetscReal :: dkr_sat
     PetscReal :: relative_permeability
@@ -583,9 +589,7 @@ contains
 
     class(Test_Characteristic_Curves), intent(inout) :: this
 
-    PetscReal :: capillary_pressure
     PetscReal :: liquid_saturation
-    PetscReal :: dsat_pres
     PetscReal :: value
     PetscReal :: dkr_sat
     PetscReal :: relative_permeability
@@ -637,7 +641,6 @@ contains
     PetscReal :: value
     PetscReal :: dkr_sat
     PetscReal :: dkr_p
-    PetscReal :: rel_perm
     PetscReal, parameter :: tolerance = 1.d-8
     character(len=128) :: string
 
@@ -710,6 +713,7 @@ contains
     class(Test_Characteristic_Curves), intent(inout) :: this
 
     PetscReal :: capillary_pressure
+    PetscReal :: dpc_dsatl
     PetscReal :: liquid_saturation
     PetscReal :: value
     PetscReal, parameter :: tolerance = 1.d-8
@@ -720,11 +724,15 @@ contains
     liquid_saturation = 0.5d0
     call this%cc_vgm%saturation_function% &
          CapillaryPressure(liquid_saturation, &
-                           capillary_pressure, this%option)
+                           capillary_pressure, dpc_dsatl, this%option)
     string = 'van Genuchten-Mualem capillary pressure as a function of &
              &saturation'
     value = 38910.985405751228d0
     @assertEqual(value, capillary_pressure, dabs(value)*tolerance, string)
+    string = 'van Genuchten-Mualem derivative of capillary pressure as a &
+              &function of saturation'
+    value = -1.2074621994359563d5
+    @assertEqual(value, dpc_dsatl, dabs(value)*tolerance, string)
 
   end subroutine testcp_van_Genuchten
 
@@ -821,39 +829,6 @@ contains
 ! ************************************************************************** !
 
   @Test
-  subroutine testrpf_TOUGH2_IRP7_gas(this)
-
-    implicit none
-
-    class(Test_Characteristic_Curves), intent(inout) :: this
-
-    PetscReal :: liquid_saturation
-    PetscReal :: relative_permeability
-    PetscReal :: dkr_sat
-    PetscReal :: value
-    PetscReal, parameter :: tolerance = 1.d-8
-    character(len=128) :: string
-
-    ! liquid relative permeability = f(saturation)
-    liquid_saturation = 0.5d0
-
-    ! gas relative permeability = f(saturation)
-    call this%cc_vgt%gas_rel_perm_function% &
-         RelativePermeability(liquid_saturation, relative_permeability, & 
-                              dkr_sat, this%option)
-    string = 'TOUGH2 IRP7 gas relative permeability as a &
-             &function of liquid saturation'
-    value = 0.27522069402853439d0
-    @assertEqual(value, relative_permeability, dabs(value)*tolerance, string)
-    string = 'TOUGH2 IRP7 derivative of gas relative permeability as a &
-             &function of liquid saturation'
-    value = -1.4564360410147879d0
-    @assertEqual(value, dkr_sat, dabs(value)*tolerance, string)
-  end subroutine testrpf_TOUGH2_IRP7_gas
-
-! ************************************************************************** !
-
-  @Test
   subroutine testsf_Linear(this)
     
     implicit none
@@ -867,7 +842,6 @@ contains
     PetscReal :: value
     PetscReal :: dkr_sat
     PetscReal :: dkr_p
-    PetscReal :: rel_perm
     PetscReal, parameter :: tolerance = 1.d-8
     character(len=128) :: string
 
@@ -940,6 +914,7 @@ contains
     class(Test_Characteristic_Curves), intent(inout) :: this
 
     PetscReal :: capillary_pressure
+    PetscReal :: dpc_dsatl
     PetscReal :: liquid_saturation
     PetscReal :: value
     PetscReal, parameter :: tolerance = 1.d-8
@@ -950,11 +925,15 @@ contains
     liquid_saturation = 0.5d0
     call this%cc_lm%saturation_function% &
          CapillaryPressure(liquid_saturation, &
-                           capillary_pressure, this%option)
+                           capillary_pressure, dpc_dsatl, this%option)
     string = 'Linear capillary pressure as a function of &
              &saturation'
     value = 58292873.507671818d0
     @assertEqual(value, capillary_pressure, dabs(value)*tolerance, string)
+    string = 'Linear derivative of capillary pressure as a function of &
+             &saturation'
+    value = -1.1654657280764198d8
+    @assertEqual(value, dpc_dsatl, dabs(value)*tolerance, string)
 
   end subroutine testcp_Linear
 
@@ -1102,6 +1081,7 @@ contains
     class(Test_Characteristic_Curves), intent(inout) :: this
 
     PetscReal :: capillary_pressure
+    PetscReal :: dpc_dsatl
     PetscReal :: liquid_saturation
     PetscReal :: value
     PetscReal, parameter :: tolerance = 1.d-8
@@ -1112,11 +1092,15 @@ contains
     liquid_saturation = 2.5d-1
     call this%cc_mk3%saturation_function% &
          CapillaryPressure(liquid_saturation, &
-                           capillary_pressure, this%option)
+                           capillary_pressure, dpc_dsatl, this%option)
     string = '3-parameter modified Kosugi capillary pressure as a '//&
          &'function of saturation'
     value = 17707.010438883957d0
     @assertEqual(value, capillary_pressure, dabs(value)*tolerance, string)
+    string = '3-parameter modified Kosugi derivative of capillary ' // &
+         'pressure as a function of saturation'
+    value = -24500.406539923177d0
+    @assertEqual(value, dpc_dsatl, dabs(value)*tolerance, string)
 
   end subroutine testcp_modified_kosugi_3param
 
@@ -1175,6 +1159,7 @@ contains
     class(Test_Characteristic_Curves), intent(inout) :: this
 
     PetscReal :: capillary_pressure
+    PetscReal :: dpc_dsatl
     PetscReal :: liquid_saturation
     PetscReal :: value
     PetscReal, parameter :: tolerance = 1.d-8
@@ -1185,11 +1170,15 @@ contains
     liquid_saturation = 2.5d-1
     call this%cc_mk4%saturation_function% &
          CapillaryPressure(liquid_saturation, &
-                           capillary_pressure, this%option)
+                           capillary_pressure, dpc_dsatl, this%option)
     string = '4-parameter modified Kosugi capillary pressure as a '//&
          &'function of saturation'
     value = 15671.942098006928d0
     @assertEqual(value, capillary_pressure, dabs(value)*tolerance, string)
+    string = 'r-parameter modified Kosugi derivative of capillary ' // &
+         'pressure as a function of saturation'
+    value = -19192.362637570313d0
+    @assertEqual(value, dpc_dsatl, dabs(value)*tolerance, string)
 
   end subroutine testcp_modified_kosugi_4param
 
@@ -1248,6 +1237,7 @@ contains
     class(Test_Characteristic_Curves), intent(inout) :: this
 
     PetscReal :: capillary_pressure
+    PetscReal :: dpc_dsatl
     PetscReal :: liquid_saturation
     PetscReal :: dsat_pres
     PetscReal :: value
@@ -1271,12 +1261,14 @@ contains
     call this%cc_const%saturation_function% &
                                     CapillaryPressure(liquid_saturation, &
                                                       capillary_pressure, &
+                                                      dpc_dsatl, &
                                                       this%option)
     string = 'Constant saturation function capillary pressure'
     value = 1.d5
     @assertEqual(value, capillary_pressure, dabs(value)*tolerance, string)
 
   end subroutine testsf_constant
+  
 
 ! ************************************************************************** !
 

@@ -42,6 +42,8 @@ subroutine SSSandboxInit(option)
   ! Author: Glenn Hammond
   ! Date: 04/11/14
   ! 
+#include <petsc/finclude/petscsys.h>
+  use petscsys
   use Option_module
   implicit none
   type(option_type) :: option
@@ -88,6 +90,8 @@ subroutine SSSandboxRead2(local_sandbox_list,input,option)
   ! Date: 04/11/14
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Option_module
   use String_module
   use Input_Aux_module
@@ -223,16 +227,13 @@ subroutine SSSandbox(residual,Jacobian,compute_derivative, &
   ! Date: 04/11/14
   ! 
 
+#include "petsc/finclude/petscmat.h"
+  use petscmat
   use Option_module
   use Grid_module
   use Material_Aux_class, only: material_auxvar_type
   
   implicit none
-  
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
 
   PetscBool :: compute_derivative
   Vec :: residual
@@ -283,7 +284,7 @@ end subroutine SSSandbox
 
 ! ************************************************************************** !
 
-subroutine SSSandboxUpdate(sandbox_list,time,option,output_option)
+subroutine SSSandboxUpdate(sandbox_list,option,output_option)
   ! 
   ! Updates datasets associated with a sandbox, if they exist
   ! 
@@ -296,7 +297,6 @@ subroutine SSSandboxUpdate(sandbox_list,time,option,output_option)
   implicit none
 
   class(srcsink_sandbox_base_type), pointer :: sandbox_list
-  PetscReal :: time
   type(option_type) :: option
   type(output_option_type) :: output_option
 
@@ -305,7 +305,7 @@ subroutine SSSandboxUpdate(sandbox_list,time,option,output_option)
   cur_sandbox => sandbox_list
   do
     if (.not.associated(cur_sandbox)) exit
-    call cur_sandbox%Update(time,option)
+    call cur_sandbox%Update(option)
     cur_sandbox => cur_sandbox%next
   enddo 
   
@@ -399,7 +399,7 @@ subroutine SSSandboxOutputHeader(sandbox_list,grid,option,output_option)
              ' ' // trim(adjustl(y_string)) // &
              ' ' // trim(adjustl(z_string)) // ')'
     select case(option%iflowmode)
-      case(RICHARDS_MODE, TH_MODE)
+      case(TH_MODE)
         variable_string = ' Water'
         ! cumulative
         units_string = 'kg'
@@ -410,7 +410,6 @@ subroutine SSSandboxOutputHeader(sandbox_list,grid,option,output_option)
         call OutputWriteToHeader(IUNIT_TEMP,variable_string,units_string, &
                                  cell_string,icolumn)
     end select
-
     select case(option%iflowmode)
       case(TH_MODE)
         variable_string = ' Gas Component'
@@ -432,7 +431,6 @@ subroutine SSSandboxOutputHeader(sandbox_list,grid,option,output_option)
         call OutputWriteToHeader(IUNIT_TEMP,variable_string,units_string, &
                                  cell_string,icolumn)
     end select
-
     cur_srcsink => cur_srcsink%next
   enddo
   
@@ -467,8 +465,6 @@ subroutine SSSandboxOutput(sandbox_list,option,output_option)
 
   flow_dof_scale = 1.d0
   select case(option%iflowmode)
-    case(RICHARDS_MODE)
-      flow_dof_scale(1) = FMWH2O
     case(TH_MODE)
       flow_dof_scale(1) = FMWH2O
   end select  

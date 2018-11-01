@@ -1,5 +1,7 @@
 module Grid_Unstructured_module
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Connection_module
   use Grid_Unstructured_Aux_module
   use Grid_Unstructured_Cell_module
@@ -9,12 +11,7 @@ module Grid_Unstructured_module
   implicit none
 
   private 
-  
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscis.h"
-#include "petsc/finclude/petscis.h90"
+
 #if defined(SCORPIO)
   include "scorpiof.h"
 #endif
@@ -49,6 +46,7 @@ module Grid_Unstructured_module
             UGridGetCellsInRectangle, &
             UGridEnsureRightHandRule, &
             UGridMapSideSet, &
+            UGridMapSideSet2, &
             UGridGrowStencilSupport, &
             UGridMapBoundFacesInPolVol
 
@@ -611,14 +609,15 @@ subroutine UGridReadHDF5SurfGrid(unstructured_grid,filename,option)
   PetscInt :: num_vertices_local
   PetscInt :: num_vertices_local_save
   PetscInt :: remainder
-  PetscInt, pointer :: int_buffer(:,:)
+  ! must be 'integer' so that ibuffer does not switch to 64-bit integers
+  ! when PETSc is configured with --with-64-bit-indices=yes.
+  integer, pointer :: int_buffer(:,:)
   PetscReal, pointer :: double_buffer(:,:)
   PetscInt, parameter :: max_nvert_per_cell = 8  
   PetscErrorCode :: ierr
 
 #if defined(PETSC_HAVE_HDF5)
   integer(HID_T) :: file_id
-  integer :: ndims
   integer(HID_T) :: grp_id, grp_id2
   integer(HID_T) :: prop_id
   integer(HID_T) :: data_set_id
@@ -629,6 +628,7 @@ subroutine UGridReadHDF5SurfGrid(unstructured_grid,filename,option)
   integer(HSIZE_T), allocatable :: dims_h5(:), max_dims_h5(:)
   integer(HSIZE_T) :: offset(2), length(2), stride(2), block(2), dims(2)
 #endif
+  integer :: ndims_h5
 
   ! Initialize FORTRAN predefined datatypes
   call h5open_f(hdf5_err)
@@ -660,16 +660,16 @@ subroutine UGridReadHDF5SurfGrid(unstructured_grid,filename,option)
   call h5dget_space_f(data_set_id, data_space_id, hdf5_err)
   
   ! Get number of dimensions and check
-  call h5sget_simple_extent_ndims_f(data_space_id, ndims, hdf5_err)
-  if (ndims /= 2) then
+  call h5sget_simple_extent_ndims_f(data_space_id, ndims_h5, hdf5_err)
+  if (ndims_h5 /= 2) then
     option%io_buffer='Dimension of Domain/Cells dataset in ' // trim(filename) // &
           ' is not equal to 2.'
     call printErrMsg(option)
   endif
   
   ! Allocate memory
-  allocate(dims_h5(ndims))
-  allocate(max_dims_h5(ndims))
+  allocate(dims_h5(ndims_h5))
+  allocate(max_dims_h5(ndims_h5))
   
   ! Get dimensions of dataset
   call h5sget_simple_extent_dims_f(data_space_id, dims_h5, max_dims_h5, &
@@ -754,16 +754,16 @@ subroutine UGridReadHDF5SurfGrid(unstructured_grid,filename,option)
   call h5dget_space_f(data_set_id, data_space_id, hdf5_err)
   
   ! Get number of dimensions and check
-  call h5sget_simple_extent_ndims_f(data_space_id, ndims, hdf5_err)
-  if (ndims /= 2) then
+  call h5sget_simple_extent_ndims_f(data_space_id, ndims_h5, hdf5_err)
+  if (ndims_h5 /= 2) then
     option%io_buffer='Dimension of Domain/Vertices dataset in ' // trim(filename) // &
           ' is not equal to 2.'
     call printErrMsg(option)
   endif
   
   ! Allocate memory
-  allocate(dims_h5(ndims))
-  allocate(max_dims_h5(ndims))
+  allocate(dims_h5(ndims_h5))
+  allocate(max_dims_h5(ndims_h5))
   
   ! Get dimensions of dataset
   call h5sget_simple_extent_dims_f(data_space_id, dims_h5, max_dims_h5, &
@@ -893,7 +893,9 @@ subroutine UGridReadHDF5(unstructured_grid,filename,option)
   PetscInt :: num_vertices_local
   PetscInt :: num_vertices_local_save
   PetscInt :: remainder
-  PetscInt, pointer :: int_buffer(:,:)
+  ! must be 'integer' so that ibuffer does not switch to 64-bit integers
+  ! when PETSc is configured with --with-64-bit-indices=yes.
+  integer, pointer :: int_buffer(:,:)
   PetscReal, pointer :: double_buffer(:,:)
   PetscInt, parameter :: max_nvert_per_cell = 8  
   PetscInt :: error_count
@@ -901,7 +903,6 @@ subroutine UGridReadHDF5(unstructured_grid,filename,option)
 
 #if defined(PETSC_HAVE_HDF5)
   integer(HID_T) :: file_id
-  integer :: ndims
   integer(HID_T) :: grp_id, grp_id2
   integer(HID_T) :: prop_id
   integer(HID_T) :: data_set_id
@@ -912,6 +913,7 @@ subroutine UGridReadHDF5(unstructured_grid,filename,option)
   integer(HSIZE_T), allocatable :: dims_h5(:), max_dims_h5(:)
   integer(HSIZE_T) :: offset(2), length(2), stride(2), block(2), dims(2)
 #endif
+  integer :: ndims_h5
 
   ! Initialize FORTRAN predefined datatypes
   call h5open_f(hdf5_err)
@@ -943,16 +945,16 @@ subroutine UGridReadHDF5(unstructured_grid,filename,option)
   call h5dget_space_f(data_set_id, data_space_id, hdf5_err)
   
   ! Get number of dimensions and check
-  call h5sget_simple_extent_ndims_f(data_space_id, ndims, hdf5_err)
-  if (ndims /= 2) then
+  call h5sget_simple_extent_ndims_f(data_space_id, ndims_h5, hdf5_err)
+  if (ndims_h5 /= 2) then
     option%io_buffer='Dimension of Domain/Cells dataset in ' // trim(filename) // &
           ' is not equal to 2.'
     call printErrMsg(option)
   endif
   
   ! Allocate memory
-  allocate(dims_h5(ndims))
-  allocate(max_dims_h5(ndims))
+  allocate(dims_h5(ndims_h5))
+  allocate(max_dims_h5(ndims_h5))
   
   ! Get dimensions of dataset
   call h5sget_simple_extent_dims_f(data_space_id, dims_h5, max_dims_h5, &
@@ -1057,16 +1059,16 @@ subroutine UGridReadHDF5(unstructured_grid,filename,option)
   call h5dget_space_f(data_set_id, data_space_id, hdf5_err)
   
   ! Get number of dimensions and check
-  call h5sget_simple_extent_ndims_f(data_space_id, ndims, hdf5_err)
-  if (ndims /= 2) then
+  call h5sget_simple_extent_ndims_f(data_space_id, ndims_h5, hdf5_err)
+  if (ndims_h5 /= 2) then
     option%io_buffer='Dimension of Domain/Vertices dataset in ' // trim(filename) // &
           ' is not equal to 2.'
     call printErrMsg(option)
   endif
   
   ! Allocate memory
-  allocate(dims_h5(ndims))
-  allocate(max_dims_h5(ndims))
+  allocate(dims_h5(ndims_h5))
+  allocate(max_dims_h5(ndims_h5))
   
   ! Get dimensions of dataset
   call h5sget_simple_extent_dims_f(data_space_id, dims_h5, max_dims_h5, &
@@ -1264,20 +1266,12 @@ subroutine UGridDecompose(unstructured_grid,option)
   ! Date: 09/30/09
   ! 
   
+#include "petsc/finclude/petscmat.h"
+  use petscmat
   use Option_module
   use Utility_module, only: reallocateIntArray, SearchOrderedArray
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
-#include "petsc/finclude/petscdm.h" 
-#include "petsc/finclude/petscdm.h90"
-#include "petsc/finclude/petscis.h"
-#include "petsc/finclude/petscis.h90"
-#include "petsc/finclude/petscviewer.h"
   
   type(grid_unstructured_type) :: unstructured_grid
   type(option_type) :: option
@@ -3251,14 +3245,11 @@ subroutine UGridMapSideSet(unstructured_grid,face_vertices,n_ss_faces, &
   ! Date: 12/16/11
   ! 
 
+#include "petsc/finclude/petscmat.h"
+  use petscmat
   use Option_module
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
 
   type(grid_unstructured_type) :: unstructured_grid
   PetscInt :: face_vertices(:,:)
@@ -3268,7 +3259,7 @@ subroutine UGridMapSideSet(unstructured_grid,face_vertices,n_ss_faces, &
   PetscInt, pointer :: cell_ids(:)
   PetscInt, pointer :: face_ids(:)
   
-  Mat :: Mat_vert_to_face 
+  Mat :: Mat_vert_to_face
   Vec :: Vertex_vec, Face_vec
   PetscViewer :: viewer
   character(len=MAXSTRINGLENGTH) :: string
@@ -3342,7 +3333,7 @@ subroutine UGridMapSideSet(unstructured_grid,face_vertices,n_ss_faces, &
         boundary_faces(boundary_face_count) = face_id
         call UCellGetNFaceVertsandVerts(option,cell_type,iface,nvertices, &
                                         int_array4)
-        
+
         ! For this matrix:
         !   irow = local face id
         !   icol = natural (global) vertex id
@@ -3376,7 +3367,7 @@ subroutine UGridMapSideSet(unstructured_grid,face_vertices,n_ss_faces, &
   call PetscViewerASCIIOpen(option%mycomm,string,viewer,ierr);CHKERRQ(ierr)
   call MatView(Mat_vert_to_face,viewer,ierr);CHKERRQ(ierr)
   call PetscViewerDestroy(viewer,ierr);CHKERRQ(ierr)
-#endif  
+#endif
 
   call VecCreateMPI(option%mycomm,PETSC_DETERMINE, &
                     unstructured_grid%num_vertices_global, &
@@ -3419,7 +3410,7 @@ subroutine UGridMapSideSet(unstructured_grid,face_vertices,n_ss_faces, &
   call ISView(is_tmp1,viewer,ierr);CHKERRQ(ierr)
   call PetscViewerDestroy(viewer,ierr);CHKERRQ(ierr)
 #endif
-  
+
   nvertices = 0
   do iface = 1, n_ss_faces
     do ivertex = 1, size(face_vertices,1)
@@ -3562,6 +3553,313 @@ end subroutine UGridMapSideSet
 
 ! ************************************************************************** !
 
+subroutine UGridMapSideSet2(unstructured_grid,face_vertices,n_ss_faces, &
+                           region_name,option,cell_ids,face_ids)
+  ! 
+  ! Maps a global boundary side set to the faces of local
+  ! ghosted cells
+  ! 
+  ! Author: Gautam Bisht
+  ! Date: 03/21/17
+  ! 
+
+#include "petsc/finclude/petscmat.h"
+  use petscmat
+  use Option_module
+
+  implicit none
+
+  type(grid_unstructured_type) :: unstructured_grid
+  PetscInt :: face_vertices(:,:)
+  PetscInt :: n_ss_faces
+  character(len=MAXWORDLENGTH) :: region_name
+  type(option_type) :: option
+  PetscInt, pointer :: cell_ids(:)
+  PetscInt, pointer :: face_ids(:)
+
+  Mat :: Mat_vert_to_face
+  Mat :: Mat_region_vert_to_face
+  Mat :: Mat_region_face_to_vert
+  Mat :: Mat_face
+  Mat :: Mat_face_loc
+  PetscViewer :: viewer
+  character(len=MAXSTRINGLENGTH) :: string
+
+  PetscInt :: int_array4(4)
+  PetscInt :: int_array4_0(4)
+  PetscInt, allocatable :: boundary_faces(:)
+  PetscInt, allocatable :: temp_int(:,:)
+  PetscInt :: boundary_face_count
+  PetscInt :: mapped_face_count
+  PetscInt :: nfaces, nvertices
+  PetscInt :: iface, iface2
+  PetscInt :: face_id, face_id2
+  PetscInt :: local_id
+  PetscInt :: cell_type
+  PetscInt :: ivertex, cell_id, vertex_id_local
+  PetscInt :: largest_vert_id, v_id_n
+  PetscInt :: offset
+  PetscInt, pointer :: cell_ids_for_all_boundary_faces(:)
+  PetscInt, pointer :: face_ids_for_all_boundary_faces(:)
+  PetscInt, pointer :: ia_p(:),ja_p(:)
+  PetscInt :: nrow
+  PetscInt :: row, col
+  PetscInt :: min_nverts
+  PetscInt :: ii, jj
+
+  PetscReal :: max_value
+  PetscReal :: real_array4(4)
+  PetscReal :: min_verts_req
+
+  PetscErrorCode :: ierr
+
+  PetscBool :: done
+  PetscScalar, pointer :: aa_v(:)
+
+  ! fill matrix with boundary faces of local cells
+  ! count up the number of boundary faces
+  boundary_face_count = 0
+  do local_id = 1, unstructured_grid%nlmax
+    nfaces = UCellGetNFaces(unstructured_grid%cell_type(local_id),option)
+    do iface = 1, nfaces
+      face_id = unstructured_grid%cell_to_face_ghosted(iface,local_id)
+      if (unstructured_grid%face_to_cell_ghosted(2,face_id) < 1) then
+        ! boundary face, since not connected to 2 cells
+        boundary_face_count = boundary_face_count + 1
+      endif
+    enddo
+  enddo
+
+  call MatCreateAIJ(option%mycomm, &
+                       boundary_face_count, &
+                       PETSC_DETERMINE, &
+                       PETSC_DETERMINE, &
+                       unstructured_grid%num_vertices_global, &
+                       4, &
+                       PETSC_NULL_INTEGER, &
+                       4, &
+                       PETSC_NULL_INTEGER, &
+                       Mat_vert_to_face, &
+                       ierr);CHKERRQ(ierr)
+  call MatZeroEntries(Mat_vert_to_face,ierr);CHKERRQ(ierr)
+  real_array4 = 1.d0
+
+  offset=0
+  call MPI_Exscan(boundary_face_count,offset, &
+                  ONE_INTEGER_MPI,MPIU_INTEGER,MPI_SUM,option%mycomm,ierr)
+
+  allocate(face_ids_for_all_boundary_faces(boundary_face_count))
+  allocate(cell_ids_for_all_boundary_faces(boundary_face_count))
+  face_ids_for_all_boundary_faces = 0
+  boundary_face_count = 0
+  do local_id = 1, unstructured_grid%nlmax
+    cell_type = unstructured_grid%cell_type(local_id)
+    nfaces = UCellGetNFaces(cell_type,option)
+    do iface = 1, nfaces
+      face_id = unstructured_grid%cell_to_face_ghosted(iface,local_id)
+      if (unstructured_grid%face_to_cell_ghosted(2,face_id) < 1) then
+        ! boundary face, since not connected to 2 cells
+        boundary_face_count = boundary_face_count + 1
+        face_ids_for_all_boundary_faces(boundary_face_count) = iface
+        cell_ids_for_all_boundary_faces(boundary_face_count) = local_id
+        call UCellGetNFaceVertsandVerts(option,cell_type,iface,nvertices, &
+                                        int_array4)
+
+        ! For this matrix:
+        !   irow = local face id
+        !   icol = natural (global) vertex id
+        do ivertex = 1, nvertices
+          vertex_id_local = &
+            unstructured_grid%cell_vertices(int_array4(ivertex),local_id)
+          int_array4_0(ivertex) = &
+            unstructured_grid%vertex_ids_natural(vertex_id_local)-1
+        enddo
+        call MatSetValues(Mat_vert_to_face,1,boundary_face_count-1+offset, &
+                          nvertices,int_array4_0,real_array4, &
+                          INSERT_VALUES,ierr);CHKERRQ(ierr)
+      endif
+    enddo
+  enddo
+
+  call MatAssemblyBegin(Mat_vert_to_face,MAT_FINAL_ASSEMBLY, &
+                        ierr);CHKERRQ(ierr)
+  call MatAssemblyEnd(Mat_vert_to_face,MAT_FINAL_ASSEMBLY,ierr);CHKERRQ(ierr)
+
+#if UGRID_DEBUG
+  write(string,*) option%myrank
+  string = adjustl(string)
+  if (unstructured_grid%grid_type == THREE_DIM_GRID) then
+    string = 'Mat_vert_to_face_' // trim(region_name) // '_global' // &
+            '_subsurf.out'
+  else
+    string = 'Mat_vert_to_face_' // trim(region_name) // '_global' // &
+            '_surf.out'
+  endif
+  call PetscViewerASCIIOpen(option%mycomm,string,viewer,ierr);CHKERRQ(ierr)
+  call MatView(Mat_vert_to_face,viewer,ierr);CHKERRQ(ierr)
+  call PetscViewerDestroy(viewer,ierr);CHKERRQ(ierr)
+#endif
+
+  call MatCreateAIJ(option%mycomm, &
+                       n_ss_faces, &
+                       PETSC_DETERMINE, &
+                       PETSC_DETERMINE, &
+                       unstructured_grid%num_vertices_global, &
+                       4, &
+                       PETSC_NULL_INTEGER, &
+                       4, &
+                       PETSC_NULL_INTEGER, &
+                       Mat_region_vert_to_face, &
+                       ierr);CHKERRQ(ierr)
+  call MatZeroEntries(Mat_region_vert_to_face,ierr);CHKERRQ(ierr)
+
+  offset=0
+  call MPI_Exscan(n_ss_faces,offset, &
+                  ONE_INTEGER_MPI,MPIU_INTEGER,MPI_SUM,option%mycomm,ierr)
+
+  do iface = 1, n_ss_faces
+    do ivertex = 1, size(face_vertices,1)
+      if (face_vertices(ivertex,iface) > 0) then
+        call MatSetValue(Mat_region_vert_to_face, &
+                         iface-1+offset, &
+                         face_vertices(ivertex,iface)-1, &
+                         1.d0, &
+                         INSERT_VALUES,ierr);CHKERRQ(ierr)
+
+      endif
+    enddo
+  enddo
+
+  call MatAssemblyBegin(Mat_region_vert_to_face,MAT_FINAL_ASSEMBLY, &
+                        ierr);CHKERRQ(ierr)
+  call MatAssemblyEnd(Mat_region_vert_to_face,MAT_FINAL_ASSEMBLY,ierr);CHKERRQ(ierr)
+
+#if UGRID_DEBUG
+  write(string,*) option%myrank
+  string = adjustl(string)
+  if (unstructured_grid%grid_type == THREE_DIM_GRID) then
+    string = 'Mat_region_vert_to_face_' // trim(region_name) // '_global' // &
+            '_subsurf.out'
+  else
+    string = 'Mat_region_vert_to_face_' // trim(region_name) // '_global' // &
+            '_surf.out'
+  endif
+  call PetscViewerASCIIOpen(option%mycomm,string,viewer,ierr);CHKERRQ(ierr)
+  call MatView(Mat_region_vert_to_face,viewer,ierr);CHKERRQ(ierr)
+  call PetscViewerDestroy(viewer,ierr);CHKERRQ(ierr)
+#endif
+
+  call MatTranspose(Mat_region_vert_to_face, MAT_INITIAL_MATRIX, &
+                    Mat_region_face_to_vert, ierr); CHKERRQ(ierr)
+
+#if UGRID_DEBUG
+  write(string,*) option%myrank
+  string = adjustl(string)
+  if (unstructured_grid%grid_type == THREE_DIM_GRID) then
+    string = 'Mat_region_face_to_vert_' // trim(region_name) // '_global' // &
+            '_subsurf.out'
+  else
+    string = 'Mat_region_face_to_vert_' // trim(region_name) // '_global' // &
+            '_surf.out'
+  endif
+  call PetscViewerASCIIOpen(option%mycomm,string,viewer,ierr);CHKERRQ(ierr)
+  call MatView(Mat_region_face_to_vert,viewer,ierr);CHKERRQ(ierr)
+  call PetscViewerDestroy(viewer,ierr);CHKERRQ(ierr)
+#endif
+
+  call MatMatMult(Mat_vert_to_face, Mat_region_face_to_vert, MAT_INITIAL_MATRIX, PETSC_DEFAULT_REAL, &
+                           Mat_face, ierr); CHKERRQ(ierr)
+
+#if UGRID_DEBUG
+  write(string,*) option%myrank
+  string = adjustl(string)
+  if (unstructured_grid%grid_type == THREE_DIM_GRID) then
+    string = 'Mat_face_' // trim(region_name) // '_global' // &
+            '_subsurf.out'
+  else
+    string = 'Mat_face_' // trim(region_name) // '_global' // &
+            '_surf.out'
+  endif
+  call PetscViewerASCIIOpen(option%mycomm,string,viewer,ierr);CHKERRQ(ierr)
+  call MatView(Mat_face,viewer,ierr);CHKERRQ(ierr)
+  call PetscViewerDestroy(viewer,ierr);CHKERRQ(ierr)
+#endif
+
+  if (option%mycommsize > 1) then
+    ! From the MPI-Matrix get the local-matrix
+    call MatMPIAIJGetLocalMat(Mat_face,MAT_INITIAL_MATRIX,Mat_face_loc, &
+                              ierr);CHKERRQ(ierr)
+    ! Get i and j indices of the local-matrix
+    call MatGetRowIJF90(Mat_face_loc,ONE_INTEGER,PETSC_FALSE,PETSC_FALSE, &
+                        nrow,ia_p,ja_p,done,ierr);CHKERRQ(ierr)
+    ! Get values stored in the local-matrix
+    call MatSeqAIJGetArrayF90(Mat_face_loc,aa_v,ierr);CHKERRQ(ierr)
+  else
+    ! Get i and j indices of the local-matrix
+    call MatGetRowIJF90(Mat_face,ONE_INTEGER,PETSC_FALSE,PETSC_FALSE, &
+                        nrow,ia_p,ja_p,done,ierr);CHKERRQ(ierr)
+    ! Get values stored in the local-matrix
+    call MatSeqAIJGetArrayF90(Mat_face,aa_v,ierr);CHKERRQ(ierr)
+  endif
+
+  min_nverts = 3
+  if (unstructured_grid%grid_type == THREE_DIM_GRID) min_nverts = 3
+  if (unstructured_grid%grid_type == TWO_DIM_GRID  ) min_nverts = 2
+
+  ! Determine the total number of faces mapped
+  mapped_face_count = 0
+  row = 1
+  col = 0
+  do ii = 1,nrow
+    max_value = 0.d0
+    do jj = ia_p(ii),ia_p(ii + 1) - 1
+      if (aa_v(jj) > max_value) then
+        max_value = aa_v(jj)
+      endif
+    enddo
+    if (max_value >= min_nverts) then
+      mapped_face_count = mapped_face_count + 1
+    endif
+  enddo
+
+  allocate(cell_ids(mapped_face_count))
+  allocate(face_ids(mapped_face_count))
+
+  ! Determine the total number of faces mapped
+  mapped_face_count = 0
+  row = 1
+  col = 0
+  do ii = 1,nrow
+    max_value = 0.d0
+    do jj = ia_p(ii),ia_p(ii + 1) - 1
+      if (aa_v(jj) > max_value) then
+        max_value = aa_v(jj)
+      endif
+    enddo
+    if (max_value >= min_nverts) then
+      mapped_face_count = mapped_face_count + 1
+      cell_ids(mapped_face_count) = cell_ids_for_all_boundary_faces(ii)
+      face_ids(mapped_face_count) = face_ids_for_all_boundary_faces(ii)
+    endif
+  enddo
+
+  if (option%mycommsize>1) then
+    call MatSeqAIJRestoreArrayF90(Mat_face_loc,aa_v,ierr);CHKERRQ(ierr)
+    call MatDestroy(Mat_face_loc,ierr);CHKERRQ(ierr)
+  else
+    call MatSeqAIJRestoreArrayF90(Mat_face,aa_v,ierr);CHKERRQ(ierr)
+  endif
+
+  call MatDestroy(Mat_vert_to_face,ierr);CHKERRQ(ierr)
+  call MatDestroy(Mat_region_vert_to_face,ierr);CHKERRQ(ierr)
+  call MatDestroy(Mat_region_face_to_vert,ierr);CHKERRQ(ierr)
+  deallocate(face_ids_for_all_boundary_faces)
+  deallocate(cell_ids_for_all_boundary_faces)
+
+end subroutine UGridMapSideSet2
+
+! ************************************************************************** !
+
 subroutine UGridMapBoundFacesInPolVol(unstructured_grid,polygonal_volume, &
                                       region_name,option, &
                                       cell_ids,face_ids)
@@ -3666,14 +3964,11 @@ subroutine UGridGetBoundaryFaces(unstructured_grid,option,boundary_faces)
   ! Date: 01/12/12
   ! 
 
+#include "petsc/finclude/petscmat.h"
+  use petscmat
   use Option_module
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
 
   type(grid_unstructured_type) :: unstructured_grid
   PetscInt, pointer :: boundary_faces(:)
@@ -3737,14 +4032,11 @@ subroutine UGridGrowStencilSupport(unstructured_grid,stencil_width, &
   ! Date: 09/17/12
   ! 
 
+#include "petsc/finclude/petscmat.h"
+  use petscmat
   use Option_module
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
 
   type(grid_unstructured_type) :: unstructured_grid
   type(option_type) :: option
@@ -3996,14 +4288,11 @@ subroutine UGridFindCellIDsAfterGrowingStencilWidthByOne(Mat_vert_to_cell, &
   ! Date: 09/17/12
   ! 
 
+#include "petsc/finclude/petscmat.h"
+  use petscmat
   use Option_module
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
 
   type(option_type) :: option
   Mat :: Mat_vert_to_cell
@@ -4160,15 +4449,11 @@ subroutine UGridFindNewGhostCellIDsAfterGrowingStencilWidth(unstructured_grid, &
   ! Author: Gautam Bisht, LBNL
   ! Date: 09/17/12
   ! 
-              
+#include "petsc/finclude/petscmat.h"
+  use petscmat
   use Option_module
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
 
   type(grid_unstructured_type) :: unstructured_grid
   PetscInt :: cids_new(:)
@@ -4409,14 +4694,11 @@ subroutine UGridUpdateMeshAfterGrowingStencilWidth(unstructured_grid, &
   ! 
 
 
+#include "petsc/finclude/petscmat.h"
+  use petscmat
   use Option_module
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
 
   type(grid_unstructured_type) :: unstructured_grid
   type(option_type) :: option

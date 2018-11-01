@@ -3,6 +3,10 @@
 #endif
 
 module ll_mod
+!
+! Revisions:
+! 2018/3 Mark Taylor, fix memory leak
+!
   implicit none
   private
   type :: node_t
@@ -75,7 +79,8 @@ contains
        deallocate(temp_node%next)
        temp_node => temp_node%prev
     enddo
-
+    deallocate(List%first)
+    
   end subroutine LLFree
 
   subroutine LLInsertEdge(EdgeList,src,dest,eNum)

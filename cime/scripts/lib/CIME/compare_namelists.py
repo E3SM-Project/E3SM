@@ -52,7 +52,7 @@ def _normalize_lists(value_str):
 def _interpret_value(value_str, filename):
 ###############################################################################
     comma_re = re.compile(r'\s*,\s*')
-    dict_re = re.compile(r"^'(\S+)\s*->\s*(\S+)'")
+    dict_re = re.compile(r"^'(\S+)\s*->\s*(\S+)\s*'")
 
     value_str = _normalize_lists(value_str)
 
@@ -536,7 +536,6 @@ def compare_namelist_files(gold_file, compare_file, case=None):
 
     gold_namelists = _parse_namelists(open(gold_file, "r").readlines(), gold_file)
     comp_namelists = _parse_namelists(open(compare_file, "r").readlines(), compare_file)
-
     comments = _compare_namelists(gold_namelists, comp_namelists, case)
     return comments == "", comments
 

@@ -21,7 +21,7 @@ module CNCStateUpdate1Mod
   use VegetationType         , only : veg_pp
   use CropType               , only : crop_type
   ! bgc interface & pflotran:
-  use clm_varctl             , only : use_pflotran, pf_cmode, use_ed
+  use clm_varctl             , only : use_pflotran, pf_cmode, use_fates
   !
   implicit none
   save
@@ -123,7 +123,7 @@ contains
 
       ! column level fluxes
 
-      if(.not.use_ed) then
+      if(.not.use_fates) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             ! seeding fluxes, from dynamic landcover
@@ -135,7 +135,7 @@ contains
 
 
       
-      if (.not. is_active_betr_bgc .and. .not.(use_pflotran .and. pf_cmode) .and. .not.use_ed ) then
+      if (.not. is_active_betr_bgc .and. .not.(use_pflotran .and. pf_cmode) .and. .not.use_fates ) then
 
          ! plant to litter fluxes
 
@@ -181,7 +181,7 @@ contains
             end if
          end do
 
-      elseif( use_ed ) then
+      elseif( use_fates ) then
 
          ! The following pools were updated via the FATES interface
          ! cf%decomp_cpools_sourcesink_col(c,j,i_met_lit)
@@ -216,7 +216,7 @@ contains
    endif   !end if is_active_betr_bgc()
     
 
-   if (.not.use_ed) then
+   if (.not.use_fates) then
     
       ! patch loop
       do fp = 1,num_soilp

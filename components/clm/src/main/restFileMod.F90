@@ -15,7 +15,7 @@ module restFileMod
   use accumulMod           , only : accumulRest
   use histFileMod          , only : hist_restart_ncd
   use clm_varpar           , only : crop_prog
-  use clm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_cndv, use_ed, use_betr
+  use clm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_cndv, use_fates, use_betr
   use clm_varctl           , only : create_glacier_mec_landunit, iulog 
   use clm_varcon           , only : c13ratio, c14ratio
   use clm_varcon           , only : nameg, namel, namec, namep, nameCohort
@@ -245,7 +245,7 @@ contains
 
     end if
 
-    if (use_ed) then
+    if (use_fates) then
        call cnstate_vars%Restart(bounds, ncid, flag='define')
        call carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c12', &
                cnstate_vars=cnstate_vars)
@@ -355,7 +355,7 @@ contains
        call crop_vars%Restart(bounds, ncid, flag='write')
     end if
 
-    if (use_ed) then
+    if (use_fates) then
        call cnstate_vars%Restart(bounds, ncid, flag='write')
        call carbonstate_vars%restart(bounds, ncid, flag='write', &
             carbon_type='c12', cnstate_vars=cnstate_vars)
@@ -569,7 +569,7 @@ contains
        call crop_vars%Restart(bounds, ncid, flag='read')
     end if
 
-    if (use_ed) then
+    if (use_fates) then
        call cnstate_vars%Restart(bounds, ncid, flag='read')
        call carbonstate_vars%restart(bounds, ncid, flag='read', &
              carbon_type='c12', cnstate_vars=cnstate_vars)
@@ -1064,7 +1064,7 @@ contains
        call check_dim(ncid, namel, numl)
        call check_dim(ncid, namec, numc)
        call check_dim(ncid, namep, nump)
-       if ( use_ed ) call check_dim(ncid, nameCohort  , numCohort)
+       if ( use_fates ) call check_dim(ncid, nameCohort  , numCohort)
     end if
     call check_dim(ncid, 'levsno'  , nlevsno)
     call check_dim(ncid, 'levgrnd' , nlevgrnd)

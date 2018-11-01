@@ -40,7 +40,7 @@ function TimeStorageCreate()
   ! Author: Glenn Hammond
   ! Date: 10/26/11, 05/03/13
   ! 
-
+  use petscsys
   implicit none
   
   type(time_storage_type), pointer :: time_storage
@@ -74,6 +74,7 @@ subroutine TimeStorageVerify(default_time, time_storage, &
   ! Date: 10/26/11, 05/03/13
   ! 
 
+  use petscsys
   use Option_module
 
   implicit none
@@ -242,6 +243,7 @@ subroutine TimeStorageUpdate(time_storage)
   ! Date: 10/26/11, 05/03/13
   ! 
 
+  use petscsys
   use Option_module
   
   implicit none

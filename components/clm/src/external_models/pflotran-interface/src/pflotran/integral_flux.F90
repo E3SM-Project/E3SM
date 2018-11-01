@@ -1,5 +1,7 @@
 module Integral_Flux_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Geometry_module
   
   use PFLOTRAN_Constants_module
@@ -8,7 +10,6 @@ module Integral_Flux_module
   
   private
   
-#include "petsc/finclude/petscsys.h"
 
   PetscInt, parameter, public :: INTEGRATE_FLOW = 1
   PetscInt, parameter, public :: INTEGRATE_TRANSPORT = 2

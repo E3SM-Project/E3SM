@@ -1,5 +1,7 @@
 module Output_EKG_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Output_Aux_module
   
   use PFLOTRAN_Constants_module
@@ -7,8 +9,6 @@ module Output_EKG_module
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
 
   PetscInt, parameter, public :: IUNIT_EKG = 87
 

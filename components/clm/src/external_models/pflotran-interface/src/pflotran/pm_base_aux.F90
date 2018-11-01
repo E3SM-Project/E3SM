@@ -1,13 +1,13 @@
 module PM_Base_Aux_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use AuxVars_Base_module
   use PFLOTRAN_Constants_module
 
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
 
   type, public :: pm_base_aux_type 
     PetscInt :: n_inactive_rows

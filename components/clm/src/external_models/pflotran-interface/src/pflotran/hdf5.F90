@@ -1,12 +1,12 @@
 module HDF5_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Logging_module
 
   use PFLOTRAN_Constants_module
 
   implicit none
-
-#include "petsc/finclude/petscsys.h"
 
   private
   
@@ -427,7 +427,9 @@ subroutine HDF5WriteStructuredDataSet(name,array,file_id,data_type,option, &
       call h5dwrite_f(data_set_id,data_type,int_array_i4,dims, &
                       hdf5_err,memory_space_id,file_space_id,prop_id)
       call PetscLogEventEnd(logging%event_h5dwrite_f,ierr);CHKERRQ(ierr)
-      call DeallocateArray(int_array_i4)
+      ! cannot use DeallocateArray since int_array_i4 may not be PetscInt
+      deallocate(int_array_i4)
+      nullify(int_array_i4)
     else
       allocate(double_array(nx_local*ny_local*nz_local))
       count = 0
@@ -446,8 +448,8 @@ subroutine HDF5WriteStructuredDataSet(name,array,file_id,data_type,option, &
       call PetscLogEventEnd(logging%event_h5dwrite_f,ierr);CHKERRQ(ierr)
       call DeallocateArray(double_array)
     endif
-    call h5pclose_f(prop_id,hdf5_err)
   endif
+  call h5pclose_f(prop_id,hdf5_err)
   call h5dclose_f(data_set_id,hdf5_err)
   call h5sclose_f(file_space_id,hdf5_err)
   call h5sclose_f(memory_space_id,hdf5_err)
@@ -595,7 +597,7 @@ subroutine HDF5ReadIndices(grid,option,file_id,dataset_name,dataset_size, &
   integer(HID_T) :: prop_id
   integer(HSIZE_T) :: dims(3)
   integer(HSIZE_T) :: offset(3), length(3), stride(3)
-  PetscMPIInt :: ndims
+  integer :: ndims_h5
   PetscMPIInt :: rank_mpi
   ! seeting to MPIInt to ensure i4
   integer, allocatable :: indices_i4(:)
@@ -624,11 +626,11 @@ subroutine HDF5ReadIndices(grid,option,file_id,dataset_name,dataset_size, &
   endif
   call h5dget_space_f(data_set_id,file_space_id,hdf5_err)
   ! should be a rank=1 data space
-  call h5sget_simple_extent_ndims_f(file_space_id,ndims,hdf5_err)
-  if (ndims /= 1) then
+  call h5sget_simple_extent_ndims_f(file_space_id,ndims_h5,hdf5_err)
+  if (ndims_h5 /= 1) then
     write(option%io_buffer, &
           '(a," data space dimension (",i2,"D) must be 1D.")') &
-          trim(dataset_name), ndims
+          trim(dataset_name), ndims_h5
     call printErrMsg(option)
   endif
   call h5sget_simple_extent_npoints_f(file_space_id,num_data_in_file,hdf5_err)
@@ -702,7 +704,8 @@ subroutine HDF5ReadArray(discretization,grid,option,file_id,dataset_name, &
   ! Author: Glenn Hammond
   ! Date: 01/12/08
   ! 
-                         
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use hdf5
   
   use Option_module
@@ -711,9 +714,6 @@ subroutine HDF5ReadArray(discretization,grid,option,file_id,dataset_name, &
   use Utility_module, only : DeallocateArray
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
 #if defined(SCORPIO)
  
@@ -850,9 +850,9 @@ subroutine HDF5ReadArray(discretization,grid,option,file_id,dataset_name, &
   integer(HSIZE_T) :: dims(3)
   integer(HSIZE_T) :: offset(3), length(3), stride(3)
   PetscMPIInt :: rank_mpi
-  PetscMPIInt :: ndims
   integer(HSIZE_T) :: num_data_in_file
   integer(SIZE_T) :: string_size
+  integer :: ndims_h5
   Vec :: natural_vec
   PetscInt :: i, istart, iend
   PetscReal, allocatable :: real_buffer(:)
@@ -874,11 +874,11 @@ subroutine HDF5ReadArray(discretization,grid,option,file_id,dataset_name, &
   endif
   call h5dget_space_f(data_set_id,file_space_id,hdf5_err)
   ! should be a rank=1 data space
-  call h5sget_simple_extent_ndims_f(file_space_id,ndims,hdf5_err)
-  if (ndims /= 1) then
+  call h5sget_simple_extent_ndims_f(file_space_id,ndims_h5,hdf5_err)
+  if (ndims_h5 /= 1) then
     write(option%io_buffer, &
           '(a," data space dimension (",i2,"D) must be 1D.")') &
-          trim(dataset_name), ndims
+          trim(dataset_name), ndims_h5
     call printErrMsg(option)
   endif
   call h5sget_simple_extent_npoints_f(file_space_id,num_data_in_file,hdf5_err)
@@ -1075,6 +1075,8 @@ subroutine HDF5ReadRegionFromFile(grid,region,filename,option)
   ! Date: 1/3/08
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
 #if defined(PETSC_HAVE_HDF5)
   use hdf5
 #endif
@@ -1088,9 +1090,6 @@ subroutine HDF5ReadRegionFromFile(grid,region,filename,option)
   use Utility_module, only : DeallocateArray
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   type(option_type), pointer :: option
   type(region_type) :: region
@@ -1204,6 +1203,8 @@ subroutine HDF5ReadRegionDefinedByVertex(option,region,filename)
   ! Date: 10/21/11
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
 #if defined(PETSC_HAVE_HDF5)
   use hdf5
 #endif
@@ -1219,9 +1220,6 @@ subroutine HDF5ReadRegionDefinedByVertex(option,region,filename)
 
   implicit none
 
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-
   !class(realization_subsurface_type) :: realization
   type(option_type), pointer :: option
   type(region_type) :: region
@@ -1235,12 +1233,13 @@ subroutine HDF5ReadRegionDefinedByVertex(option,region,filename)
   PetscInt :: remainder
   PetscInt :: istart, iend, ii, jj
   PetscInt, pointer :: int_buffer_1d(:)
-  PetscInt, pointer :: int_buffer_2d(:,:)
+  ! must be 'integer' so that ibuffer does not switch to 64-bit integers
+  ! when PETSc is configured with --with-64-bit-indices=yes.
+  integer, pointer :: int_buffer_2d(:,:)
   character(len=MAXSTRINGLENGTH) :: string
   character(len=MAXSTRINGLENGTH) :: string2
 
 #if defined(PETSC_HAVE_HDF5)
-  integer :: ndims
   integer(HID_T) :: file_id
   integer(HID_T) :: prop_id
   integer(HID_T) :: data_set_id
@@ -1250,6 +1249,7 @@ subroutine HDF5ReadRegionDefinedByVertex(option,region,filename)
   integer(HSIZE_T) :: length(2), offset(2)
   integer(SIZE_T) :: string_size
 #endif
+  integer :: ndims_h5
 
 
 #if !defined(PETSC_HAVE_HDF5)
@@ -1287,16 +1287,16 @@ subroutine HDF5ReadRegionDefinedByVertex(option,region,filename)
   call h5dget_space_f(data_set_id,data_space_id,hdf5_err)
 
   ! Get number of dimensions and check
-  call h5sget_simple_extent_ndims_f(data_space_id,ndims,hdf5_err)
-  if (ndims /= 2) then
+  call h5sget_simple_extent_ndims_f(data_space_id,ndims_h5,hdf5_err)
+  if (ndims_h5 /= 2) then
     option%io_buffer='Dimension of '//string//' dataset in ' // trim(filename) // &
      ' is /= 2.'
   call printErrMsg(option)
   endif
 
   ! Allocate memory
-  allocate(dims_h5(ndims))
-  allocate(max_dims_h5(ndims))
+  allocate(dims_h5(ndims_h5))
+  allocate(max_dims_h5(ndims_h5))
 
   ! Get dimensions of dataset
   call h5sget_simple_extent_dims_f(data_space_id,dims_h5,max_dims_h5,hdf5_err)
@@ -1359,7 +1359,9 @@ subroutine HDF5ReadRegionDefinedByVertex(option,region,filename)
         sideset%face_vertices(jj,ii) = int_buffer_2d(jj,ii)
      enddo
   enddo
-  call DeallocateArray(int_buffer_2d)
+  ! cannot use DeallocateArray since int_array_i4 may not be PetscInt
+  deallocate(int_buffer_2d)
+  nullify(int_buffer_2d)
 
   deallocate(dims_h5)
   deallocate(max_dims_h5)
@@ -1389,6 +1391,8 @@ subroutine HDF5ReadCellIndexedIntegerArray(realization,global_vec,filename, &
   ! Date: 1/3/08; 02/18/09
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
 #if defined(PETSC_HAVE_HDF5)
   use hdf5
 #endif
@@ -1403,9 +1407,6 @@ subroutine HDF5ReadCellIndexedIntegerArray(realization,global_vec,filename, &
   use Utility_module, only : DeallocateArray
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   class(realization_subsurface_type) :: realization
   Vec :: global_vec
@@ -1606,6 +1607,8 @@ subroutine HDF5ReadCellIndexedRealArray(realization,global_vec,filename, &
   ! Date: 01/16/09, 02/18/09
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
 #if defined(PETSC_HAVE_HDF5)
   use hdf5
 #endif
@@ -1620,9 +1623,6 @@ subroutine HDF5ReadCellIndexedRealArray(realization,global_vec,filename, &
   use Utility_module, only : DeallocateArray
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   class(realization_subsurface_type) :: realization
   Vec :: global_vec
@@ -1824,6 +1824,8 @@ subroutine HDF5WriteStructDataSetFromVec(name,realization_base,vec,file_id,data_
   ! Date: 10/25/07
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use hdf5
   use Realization_Base_class, only : realization_base_type
   use Grid_module
@@ -1832,9 +1834,6 @@ subroutine HDF5WriteStructDataSetFromVec(name,realization_base,vec,file_id,data_
   use Utility_module, only : DeallocateArray
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   character(len=*) :: name
   class(realization_base_type) :: realization_base
@@ -1881,6 +1880,8 @@ subroutine HDF5WriteDataSetFromVec(name,option,vec,file_id,data_type)
   ! Date: 05/31/12
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use hdf5
   use Realization_Subsurface_class
   use Grid_module
@@ -1889,9 +1890,6 @@ subroutine HDF5WriteDataSetFromVec(name,option,vec,file_id,data_type)
   use Utility_module, only : DeallocateArray
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   character(len=32) :: name
   Vec :: vec
@@ -1914,7 +1912,9 @@ subroutine HDF5WriteDataSetFromVec(name,option,vec,file_id,data_type)
   integer(HSIZE_T) :: start(3), length(3), stride(3)
   PetscInt :: istart
   PetscInt :: local_size,global_size,i
-  PetscInt, pointer :: int_array(:)
+  ! must be 'integer' so that ibuffer does not switch to 64-bit integers
+  ! when PETSc is configured with --with-64-bit-indices=yes.
+  integer, pointer :: int_array(:)
   PetscReal, pointer :: double_array(:)
 
   call VecGetLocalSize(vec,local_size,ierr);CHKERRQ(ierr)
@@ -1999,7 +1999,9 @@ subroutine HDF5WriteDataSetFromVec(name,option,vec,file_id,data_type)
                     hdf5_err,memory_space_id,file_space_id,prop_id)
     call PetscLogEventEnd(logging%event_h5dwrite_f,ierr);CHKERRQ(ierr)
 
-    call DeallocateArray(int_array)
+    ! cannot use DeallocateArray since int_array_i4 may not be PetscInt
+    deallocate(int_array)
+    nullify(int_array)
     call h5pclose_f(prop_id,hdf5_err)
   endif
 
@@ -2018,6 +2020,8 @@ subroutine HDF5ReadDataSetInVec(name, option, vec, file_id, data_type)
   ! Date: 08/16/2015
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use hdf5
   use Realization_Subsurface_class
   use Grid_module
@@ -2026,9 +2030,6 @@ subroutine HDF5ReadDataSetInVec(name, option, vec, file_id, data_type)
   use Utility_module, only : DeallocateArray
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   character(len=32) :: name
   Vec :: vec
@@ -2051,7 +2052,9 @@ subroutine HDF5ReadDataSetInVec(name, option, vec, file_id, data_type)
   integer(HSIZE_T) :: start(3), length(3), stride(3)
   PetscInt :: istart
   PetscInt :: local_size,global_size,i
-  PetscInt, pointer :: int_array(:)
+  ! must be 'integer' so that ibuffer does not switch to 64-bit integers
+  ! when PETSc is configured with --with-64-bit-indices=yes.
+  integer, pointer :: int_array(:)
   PetscReal, pointer :: double_array(:)
 
   call VecGetLocalSize(vec,local_size,ierr);CHKERRQ(ierr)
@@ -2138,7 +2141,9 @@ subroutine HDF5ReadDataSetInVec(name, option, vec, file_id, data_type)
     enddo
     call VecRestoreArrayF90(vec,vec_ptr,ierr);CHKERRQ(ierr)
 
-    call DeallocateArray(int_array)
+    ! cannot use DeallocateArray since int_array_i4 may not be PetscInt
+    deallocate(int_array)
+    nullify(int_array)
     call h5pclose_f(prop_id,hdf5_err)
   endif
 

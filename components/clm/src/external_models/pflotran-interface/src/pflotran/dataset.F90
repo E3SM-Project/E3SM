@@ -1,5 +1,8 @@
 module Dataset_module
  
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+
   use Dataset_Base_class
   use Dataset_Ascii_class
   use Dataset_Common_HDF5_class
@@ -13,8 +16,6 @@ module Dataset_module
 
   private
   
-#include "petsc/finclude/petscsys.h"
-
   public :: DatasetRead, &
             DatasetScreenForNonCellIndexed, &
             DatasetLoad, &
@@ -183,7 +184,6 @@ subroutine DatasetVerify(dataset,default_time_storage,header,option)
   type(option_type) :: option
 
   PetscBool :: dataset_error 
-  type(time_storage_type), pointer :: default
 
   if (.not.associated(dataset)) return
 
@@ -215,7 +215,7 @@ end subroutine DatasetVerify
 
 ! ************************************************************************** !
 
-recursive subroutine DatasetUpdate(dataset,time,option)
+recursive subroutine DatasetUpdate(dataset,option)
   ! 
   ! Updates a dataset based on type
   ! 
@@ -227,7 +227,6 @@ recursive subroutine DatasetUpdate(dataset,time,option)
   
   implicit none
   
-  PetscReal :: time
   class(dataset_base_type), pointer :: dataset
   type(option_type) :: option
 
@@ -236,7 +235,7 @@ recursive subroutine DatasetUpdate(dataset,time,option)
   if (.not.associated(dataset)) return
 
   if (associated(dataset%time_storage)) then
-    dataset%time_storage%cur_time = time
+    dataset%time_storage%cur_time = option%time
   endif
   select type (selector => dataset)
     class is (dataset_ascii_type)
@@ -355,7 +354,8 @@ subroutine DatasetFindInList(list,dataset_base,default_time_storage, &
         if (associated(dataset_base%time_storage)) then
           dataset_base%time_storage%force_update = PETSC_TRUE  
         endif
-        call DatasetUpdate(dataset_base,time,option)
+        option%time = time
+        call DatasetUpdate(dataset_base,option)
     end select
   endif
 

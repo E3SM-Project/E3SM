@@ -1,14 +1,15 @@
 module Timestepper_Surface_class
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Timestepper_Base_class
   use Solver_module
   use Waypoint_module
 
   use PFLOTRAN_Constants_module
-
+  use Utility_module, only : Equal
+  
   implicit none
-
-#include "petsc/finclude/petscsys.h"
 
   private
 
@@ -22,6 +23,7 @@ module Timestepper_Surface_class
     procedure, public :: RestartBinary => TimestepperSurfaceRestartBinary
     procedure, public :: Reset => TimestepperSurfaceReset
     procedure, public :: SetTargetTime => TimestepperSurfaceSetTargetTime
+    procedure, public :: InputRecord => TimestepperSurfInputRecord
     procedure, public :: Strip => TimestepperSurfaceStrip
     procedure, public :: StepDT => TimestepperSurfaceStepDT
   end type timestepper_surface_type
@@ -35,9 +37,10 @@ module Timestepper_Surface_class
 
   interface PetscBagGetData
     subroutine PetscBagGetData(bag,header,ierr)
+#include "petsc/finclude/petscsys.h"
+      use petscsys
       import :: timestepper_surface_header_type
       implicit none
-#include "petsc/finclude/petscbag.h"
       PetscBag :: bag
       class(timestepper_surface_header_type), pointer :: header
       PetscErrorCode :: ierr
@@ -158,7 +161,7 @@ subroutine TimestepperSurfaceSetTargetTime(this,sync_time,option,stop_flag, &
     dt = max_time - target_time
     target_time = target_time + dt
 
-    if (max_time == cur_waypoint%time) then
+    if (Equal(max_time,cur_waypoint%time)) then
       if (cur_waypoint%print_snap_output) snapshot_plot_flag = PETSC_TRUE
       if (cur_waypoint%print_checkpoint) checkpoint_flag = PETSC_TRUE
     endif
@@ -208,6 +211,8 @@ subroutine TimestepperSurfaceStepDT(this,process_model,stop_flag)
   ! Date: 07/03/13
   ! 
 
+#include "petsc/finclude/petscts.h"
+  use petscts
   use PM_Base_class
   use PM_Surface_Flow_class
   use Option_module
@@ -215,11 +220,6 @@ subroutine TimestepperSurfaceStepDT(this,process_model,stop_flag)
   use Surface_Flow_module
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscsnes.h"
-#include "petsc/finclude/petscts.h"  
 
   class(timestepper_surface_type) :: this
   class(pm_base_type) :: process_model
@@ -238,6 +238,9 @@ subroutine TimestepperSurfaceStepDT(this,process_model,stop_flag)
   call process_model%PreSolve()
 
   call TSSetTimeStep(solver%ts,option%surf_flow_dt,ierr);CHKERRQ(ierr)
+#if (PETSC_VERSION_MINOR >= 8)
+  call TSSetStepNumber(solver%ts,ZERO_INTEGER,ierr);CHKERRQ(ierr)
+#endif
   call TSSetExactFinalTime(solver%ts,TS_EXACTFINALTIME_MATCHSTEP, &
                            ierr);CHKERRQ(ierr)
   call TSSolve(solver%ts,process_model%solution_vec,ierr);CHKERRQ(ierr)
@@ -336,12 +339,11 @@ subroutine TimestepperSurfaceRegisterHeader(this,bag,header)
   ! Date: 09/19/13
   ! 
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
 
   implicit none
-
-#include "petsc/finclude/petscviewer.h"
-#include "petsc/finclude/petscbag.h"
 
   class(timestepper_surface_type) :: this
   class(timestepper_surface_header_type) :: header
@@ -475,6 +477,35 @@ subroutine TimestepperSurfacePrintInfo(this,option)
   call SolverPrintLinearInfo(this%solver,this%name,option)
   
 end subroutine TimestepperSurfacePrintInfo
+
+! ************************************************************************** !
+
+subroutine TimestepperSurfInputRecord(this)
+  ! 
+  ! Prints information about the time stepper to the input record.
+  ! To get a## format, must match that in simulation types.
+  ! 
+  ! Author: Jenn Frederick, SNL
+  ! Date: 03/17/2016
+  ! 
+  
+  implicit none
+  
+  class(timestepper_surface_type) :: this
+
+  PetscInt :: id
+  character(len=MAXWORDLENGTH) :: word
+   
+  id = INPUT_RECORD_UNIT
+
+  write(id,'(a29)',advance='no') 'pmc timestepper: '
+  write(id,'(a)') this%name
+
+  write(id,'(a29)',advance='no') 'max timestep size: '
+  write(word,*) this%dt_max_allowable
+  write(id,'(a)') trim(adjustl(word)) // ' sec'
+
+end subroutine TimestepperSurfInputRecord
 
 ! ************************************************************************** !
 

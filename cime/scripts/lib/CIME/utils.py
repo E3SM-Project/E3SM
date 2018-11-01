@@ -56,6 +56,25 @@ def redirect_logger(new_target, logger_name):
         root_log.handlers = orig_root_loggers
         log.handlers = orig_handlers
 
+class IndentFormatter(logging.Formatter):
+    def __init__(self, indent, fmt=None, datefmt=None):
+        logging.Formatter.__init__(self, fmt, datefmt)
+        self._indent = indent
+
+    def format(self, record):
+        record.msg = "{}{}".format(self._indent, record.msg)
+        out = logging.Formatter.format(self, record)
+        return out
+
+def set_logger_indent(indent):
+    root_log = logging.getLogger()
+    root_log.handlers = []
+    formatter = IndentFormatter(indent)
+
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    root_log.addHandler(handler)
+
 class EnvironmentContext(object):
     """
     Context manager for environment variables
@@ -126,9 +145,15 @@ def check_name(fullname, additional_chars=None, fullpath=False):
     True
     >>> check_name("/some/file/path/case.name", fullpath=True)
     True
+    >>> check_name("mycase+mods")
+    False
+    >>> check_name("mycase?mods")
+    False
+    >>> check_name("mycase*mods")
+    False
     """
 
-    chars = '<>/{}[\]~`@:' # pylint: disable=anomalous-backslash-in-string
+    chars = '+*?<>/{}[\]~`@:' # pylint: disable=anomalous-backslash-in-string
     if additional_chars is not None:
         chars += additional_chars
     if fullpath:
@@ -149,12 +174,30 @@ def _read_cime_config_file():
     CIME_MODEL=e3sm,cesm
     PROJECT=someprojectnumber
     """
+    allowed_sections = ("main", "create_test")
+
+    allowed_in_main = ("cime_model", "project", "charge_account", "srcroot", "mail_type",
+                       "mail_user", "machine", "mpilib", "compiler", "input_dir")
+    allowed_in_create_test = ("mail_type", "mail_user", "save_timing", "single_submit",
+                              "test_root", "output_root", "baseline_root", "clean",
+                              "machine", "mpilib", "compiler", "parallel_jobs", "proc_pool",
+                              "walltime", "job_queue", "allow_baseline_overwrite", "wait",
+                              "force_procs", "force_threads", "input_dir", "pesfile", "retry",
+                              "walltime")
 
     cime_config_file = os.path.abspath(os.path.join(os.path.expanduser("~"),
                                                   ".cime","config"))
     cime_config = configparser.SafeConfigParser()
     if(os.path.isfile(cime_config_file)):
         cime_config.read(cime_config_file)
+        for section in cime_config.sections():
+            expect(section in allowed_sections,"Unknown section {} in .cime/config\nallowed sections are {}".format(section, allowed_sections))
+        if cime_config.has_section('main'):
+            for item,_ in cime_config.items('main'):
+                expect(item in allowed_in_main,"Unknown option in config section \"main\": \"{}\"\nallowed options are {}".format(item, allowed_in_main))
+        if cime_config.has_section('create_test'):
+            for item,_ in cime_config.items('create_test'):
+                expect(item in allowed_in_create_test,"Unknown option in config section \"test\": \"{}\"\nallowed options are {}".format(item, allowed_in_create_test))
     else:
         logger.debug("File {} not found".format(cime_config_file))
         cime_config.add_section('main')
@@ -206,6 +249,8 @@ def set_model(model):
     Set the model to be used in this session
     """
     cime_config = get_cime_config()
+    if not cime_config.has_section('main'):
+        cime_config.add_section('main')
     cime_config.set('main','CIME_MODEL',model)
 
 def get_model():
@@ -232,7 +277,11 @@ def get_model():
 
     # One last try
     if (model is None):
-        srcroot = os.path.dirname(os.path.abspath(get_cime_root()))
+        srcroot = None
+        if cime_config.has_section('main') and cime_config.has_option('main', 'SRCROOT'):
+            srcroot = cime_config.get('main','SRCROOT')
+        if srcroot is None:
+            srcroot = os.path.dirname(os.path.abspath(get_cime_root()))
         if os.path.isfile(os.path.join(srcroot, "SVN_EXTERNAL_DIRECTORIES")) \
            or os.path.isdir(os.path.join(srcroot, "manage_externals")):
             model = 'cesm'
@@ -332,7 +381,7 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from
         if logfile:
             expect(False, "{} FAILED, cat {}".format(fullcmd, logfile))
         else:
-            expect(False, "{} FAILED, see above")
+            expect(False, "{} FAILED, see above".format(fullcmd))
 
     # refresh case xml object from file
     if case is not None:
@@ -378,12 +427,12 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     output, errput = proc.communicate(input_str)
     if output is not None:
         try:
-            output = output.decode('utf-8').strip()
+            output = output.decode('utf-8', errors='ignore').strip()
         except AttributeError:
             pass
     if errput is not None:
         try:
-            errput = errput.decode('utf-8').strip()
+            errput = errput.decode('utf-8', errors='ignore').strip()
         except AttributeError:
             pass
 
@@ -718,7 +767,47 @@ def match_any(item, re_list):
 
     return False
 
-def safe_copy(src_dir, tgt_dir, file_map):
+def safe_copy(src_path, tgt_path):
+    """
+    A flexbile and safe copy routine. Will try to copy file and metadata, but this
+    can fail if the current user doesn't own the tgt file. A fallback data-only copy is
+    attempted in this case. Works even if overwriting a read-only file.
+
+    tgt_path can be a directory, src_path must be a file
+
+    most of the complexity here is handling the case where the tgt_path file already
+    exists. This problem does not exist for the tree operations so we don't need to wrap those.
+    """
+
+    tgt_path = os.path.join(tgt_path, os.path.basename(src_path)) if os.path.isdir(tgt_path) else tgt_path
+
+    # Handle pre-existing file
+    if os.path.isfile(tgt_path):
+        st = os.stat(tgt_path)
+        owner_uid = st.st_uid
+
+        # Handle read-only files if possible
+        if not os.access(tgt_path, os.W_OK):
+            if owner_uid == os.getuid():
+                # I am the owner, make writeable
+                os.chmod(st.st_mode | statlib.S_IWRITE)
+            else:
+                # I won't be able to copy this file
+                raise OSError("Cannot copy over file {}, it is readonly and you are not the owner".format(tgt_path))
+
+        if owner_uid == os.getuid():
+            # I am the owner, copy file contents, permissions, and metadata
+            shutil.copy2(src_path, tgt_path)
+        else:
+            # I am not the owner, just copy file contents
+            shutil.copyfile(src_path, tgt_path)
+
+    else:
+        # We are making a new file, copy file contents, permissions, and metadata.
+        # This can fail if the underlying directory is not writable by current user.
+        shutil.copy2(src_path, tgt_path)
+
+def safe_recursive_copy(src_dir, tgt_dir, file_map):
     """
     Copies a set of files from one dir to another. Works even if overwriting a
     read-only file. Files can be relative paths and the relative path will be
@@ -728,9 +817,7 @@ def safe_copy(src_dir, tgt_dir, file_map):
         full_tgt = os.path.join(tgt_dir, tgt_file)
         full_src = src_file if os.path.isabs(src_file) else os.path.join(src_dir, src_file)
         expect(os.path.isfile(full_src), "Source dir '{}' missing file '{}'".format(src_dir, src_file))
-        if (os.path.isfile(full_tgt)):
-            os.remove(full_tgt)
-        shutil.copy2(full_src, full_tgt)
+        safe_copy(full_src, full_tgt)
 
 def symlink_force(target, link_name):
     """
@@ -932,7 +1019,8 @@ def parse_args_and_handle_standard_logging_options(args, parser=None):
 
     # scripts_regression_tests is the only thing that should pass a None argument in parser
     if parser is not None:
-        _check_for_invalid_args(args[1:])
+        if "--help" not in args[1:]:
+            _check_for_invalid_args(args[1:])
         args = parser.parse_args(args[1:])
 
     # --verbose adds to the message format but does not impact the log level
@@ -958,7 +1046,6 @@ def parse_args_and_handle_standard_logging_options(args, parser=None):
     else:
         root_logger.setLevel(logging.INFO)
     return args
-
 
 def get_logging_options():
     """
@@ -1435,8 +1522,8 @@ def ls_sorted_by_mtime(path):
 
 def get_lids(case):
     model = case.get_value("MODEL")
-    logdir = case.get_value("LOGDIR")
-    return _get_most_recent_lid_impl(glob.glob("{}/{}.log*".format(logdir, model)))
+    rundir = case.get_value("RUNDIR")
+    return _get_most_recent_lid_impl(glob.glob("{}/{}.log*".format(rundir, model)))
 
 def new_lid():
     lid = time.strftime("%y%m%d-%H%M%S")
@@ -1509,7 +1596,7 @@ def copy_umask(src, dst):
     Preserves all file metadata except making sure new file obeys umask
     """
     curr_umask = get_umask()
-    shutil.copy2(src, dst)
+    safe_copy(src, dst)
     octal_base = 0o777 if os.access(src, os.X_OK) else 0o666
     dst = os.path.join(dst, os.path.basename(src)) if os.path.isdir(dst) else dst
     os.chmod(dst, octal_base - curr_umask)
@@ -1518,6 +1605,24 @@ def stringify_bool(val):
     val = False if val is None else val
     expect(type(val) is bool, "Wrong type for val '{}'".format(repr(val)))
     return "TRUE" if val else "FALSE"
+
+def indent_string(the_string, indent_level):
+    """Indents the given string by a given number of spaces
+
+    Args:
+       the_string: str
+       indent_level: int
+
+    Returns a new string that is the same as the_string, except that
+    each line is indented by 'indent_level' spaces.
+
+    In python3, this can be done with textwrap.indent.
+    """
+
+    lines = the_string.splitlines(True)
+    padding = ' ' * indent_level
+    lines_indented = [padding + line for line in lines]
+    return ''.join(lines_indented)
 
 def verbatim_success_msg(return_val):
     return return_val
@@ -1544,14 +1649,14 @@ def _check_for_invalid_args(args):
             if " " in arg or arg.startswith("--"):
                 continue
             if arg.startswith("-") and len(arg) > 2:
-                sys.stderr.write( "WARNING: The {} argument is depricated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(arg))
+                sys.stderr.write( "WARNING: The {} argument is deprecated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(arg))
 
 def add_mail_type_args(parser):
-    parser.add_argument("--mail-user", help="email to be used for batch notification.")
+    parser.add_argument("--mail-user", help="Email to be used for batch notification.")
 
     parser.add_argument("-M", "--mail-type", action="append",
-                        help="when to send user email. Options are: never, all, begin, end, fail."
-                        "You can specify multiple types with either comma-separate args or multiple -M flags")
+                        help="When to send user email. Options are: never, all, begin, end, fail.\n"
+                        "You can specify multiple types with either comma-separated args or multiple -M flags.")
 
 def resolve_mail_type_args(args):
     if args.mail_type is not None:
@@ -1568,7 +1673,7 @@ def resolve_mail_type_args(args):
 def copyifnewer(src, dest):
     """ if dest does not exist or is older than src copy src to dest """
     if not os.path.isfile(dest) or not filecmp.cmp(src, dest):
-        shutil.copy2(src, dest)
+        safe_copy(src, dest)
 
 class SharedArea(object):
     """

@@ -1,23 +1,17 @@
 module PM_Base_class
 
+#include "petsc/finclude/petscts.h"
+  use petscts
   use Option_module
   use Output_Aux_module
   use Realization_Base_class
+  use Solver_module
 
   use PFLOTRAN_Constants_module
 
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
-#include "petsc/finclude/petscsnes.h"
-#include "petsc/finclude/petscts.h"
 
   type, public :: pm_base_type
     character(len=MAXWORDLENGTH) :: name
@@ -26,12 +20,16 @@ module PM_Base_class
     Vec :: solution_vec
     Vec :: residual_vec
     PetscBool :: print_ekg
+    !TODO(geh): remove solver and place required convergence settings elsewhere
+    type(solver_type), pointer :: solver
     class(realization_base_type), pointer :: realization_base
     class(pm_base_type), pointer :: next
   contains
     procedure, public :: Setup => PMBaseSetup
     procedure, public :: Read => PMBaseRead
     procedure, public :: InitializeRun => PMBaseThisOnly
+    procedure, public :: InputRecord => PMBaseInputRecord
+    procedure, public :: SetSolver => PMBaseSetSolver
     procedure, public :: FinalizeRun => PMBaseThisOnly
     procedure, public :: Residual => PMBaseResidual
     procedure, public :: Jacobian => PMBaseJacobian
@@ -44,6 +42,7 @@ module PM_Base_class
     procedure, public :: AcceptSolution => PMBaseFunctionThisOnly
     procedure, public :: CheckUpdatePre => PMBaseCheckUpdatePre
     procedure, public :: CheckUpdatePost => PMBaseCheckUpdatePost
+    procedure, public :: CheckConvergence => PMBaseCheckConvergence
     procedure, public :: TimeCut => PMBaseThisOnly
     procedure, public :: UpdateSolution => PMBaseThisOnly
     procedure, public :: UpdateAuxVars => PMBaseThisOnly
@@ -62,6 +61,7 @@ module PM_Base_class
   end type pm_base_header_type
     
   public :: PMBaseInit, &
+            PMBaseInputRecord, &
             PMBaseResidual, &
             PMBaseJacobian, &
             PMBaseRHSFunction
@@ -81,8 +81,9 @@ subroutine PMBaseInit(this)
   nullify(this%option)
   nullify(this%output_option)
   nullify(this%realization_base)
-  this%solution_vec = 0
-  this%residual_vec = 0
+  nullify(this%solver)
+  this%solution_vec = PETSC_NULL_VEC
+  this%residual_vec = PETSC_NULL_VEC
   this%print_ekg = PETSC_FALSE
   nullify(this%next)
   
@@ -107,6 +108,15 @@ subroutine PMBaseSetup(this)
   print *, 'Must extend PMBaseSetup for: ' // trim(this%name)
   stop
 end subroutine PMBaseSetup
+
+! ************************************************************************** !
+
+subroutine PMBaseInputRecord(this)
+  implicit none
+  class(pm_base_type) :: this
+  print *, 'Must extend PMBaseInputRecord for: ' // trim(this%name)
+  stop
+end subroutine PMBaseInputRecord
 
 ! ************************************************************************** !
 
@@ -137,7 +147,8 @@ end subroutine PMBaseJacobian
 ! ************************************************************************** !
 
 subroutine PMBaseUpdateTimestep(this,dt,dt_min,dt_max,iacceleration, &
-                                num_newton_iterations,tfac)
+                                num_newton_iterations,tfac, &
+                                time_step_max_growth_factor)
   implicit none
   class(pm_base_type) :: this
   PetscReal :: dt
@@ -145,6 +156,7 @@ subroutine PMBaseUpdateTimestep(this,dt,dt_min,dt_max,iacceleration, &
   PetscInt :: iacceleration
   PetscInt :: num_newton_iterations
   PetscReal :: tfac(:)
+  PetscReal :: time_step_max_growth_factor
   print *, 'Must extend PMBaseUpdateTimestep for: ' // trim(this%name)
   stop
 end subroutine PMBaseUpdateTimestep
@@ -179,6 +191,22 @@ subroutine PMBaseCheckUpdatePost(this,line_search,X0,dX,X1,dX_changed, &
   print *, 'Must extend PMBaseCheckUpdatePost for: ' // trim(this%name)
   stop
 end subroutine PMBaseCheckUpdatePost
+
+! ************************************************************************** !
+
+subroutine PMBaseCheckConvergence(this,snes,it,xnorm,unorm,fnorm,reason,ierr)
+  implicit none
+  class(pm_base_type) :: this
+  SNES :: snes
+  PetscInt :: it
+  PetscReal :: xnorm
+  PetscReal :: unorm
+  PetscReal :: fnorm
+  SNESConvergedReason :: reason
+  PetscErrorCode :: ierr
+  print *, 'Must extend PMBaseCheckConvergence for: ' // trim(this%name)
+  stop
+end subroutine PMBaseCheckConvergence
 
 ! ************************************************************************** !
 
@@ -230,6 +258,25 @@ subroutine PMBaseComputeMassBalance(this,mass_balance_array)
   print *, 'Must extend PMBaseComputeMassBalance for: ' // trim(this%name)
   stop
 end subroutine PMBaseComputeMassBalance
+
+
+! ************************************************************************** !
+
+subroutine PMBaseSetSolver(this,solver)
+  ! 
+  ! Author: Glenn Hammond
+  ! Date: 11/15/17
+
+  use Solver_module
+
+  implicit none
+
+  class(pm_base_type) :: this
+  type(solver_type), pointer :: solver
+
+  this%solver => solver
+
+end subroutine PMBaseSetSolver
 
 ! ************************************************************************** !
 

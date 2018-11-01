@@ -1,12 +1,12 @@
 module AuxVars_Base_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use PFLOTRAN_Constants_module
 
   implicit none
   
   private 
-
-#include "petsc/finclude/petscsys.h"
 
   type, public :: auxvar_base_type
     PetscReal :: effective_porosity ! factors in compressibility - common to all modes??

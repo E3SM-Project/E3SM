@@ -64,19 +64,19 @@ def test_to_string(test, category_field_width=0, test_field_width=0, show_option
                              option is always printed, if present)
 
     Basic functionality:
-    >>> mytest = {'name': 'SMS.f19_g16.A.yellowstone_intel', 'category': 'prealpha', 'options': {}}
+    >>> mytest = {'name': 'SMS.f19_g16.A.cheyenne_intel', 'category': 'prealpha', 'options': {}}
     >>> test_to_string(mytest, 10)
-    'prealpha  : SMS.f19_g16.A.yellowstone_intel'
+    'prealpha  : SMS.f19_g16.A.cheyenne_intel'
 
     Printing comments:
-    >>> mytest = {'name': 'SMS.f19_g16.A.yellowstone_intel', 'category': 'prealpha', 'options': {'comment': 'my remarks'}}
+    >>> mytest = {'name': 'SMS.f19_g16.A.cheyenne_intel', 'category': 'prealpha', 'options': {'comment': 'my remarks'}}
     >>> test_to_string(mytest, 10)
-    'prealpha  : SMS.f19_g16.A.yellowstone_intel # my remarks'
+    'prealpha  : SMS.f19_g16.A.cheyenne_intel # my remarks'
 
     Printing other options, too:
-    >>> mytest = {'name': 'SMS.f19_g16.A.yellowstone_intel', 'category': 'prealpha', 'options': {'comment': 'my remarks', 'wallclock': '0:20', 'memleak_tolerance': 0.2}}
+    >>> mytest = {'name': 'SMS.f19_g16.A.cheyenne_intel', 'category': 'prealpha', 'options': {'comment': 'my remarks', 'wallclock': '0:20', 'memleak_tolerance': 0.2}}
     >>> test_to_string(mytest, 10, show_options=True)
-    'prealpha  : SMS.f19_g16.A.yellowstone_intel # my remarks  # memleak_tolerance: 0.2  # wallclock: 0:20'
+    'prealpha  : SMS.f19_g16.A.cheyenne_intel # my remarks  # memleak_tolerance: 0.2  # wallclock: 0:20'
     """
 
     mystr = "%-*s: %-*s"%(category_field_width, test['category'], test_field_width, test['name'])

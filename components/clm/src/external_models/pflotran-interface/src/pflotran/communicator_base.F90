@@ -1,13 +1,12 @@
 module Communicator_Base_module
 
-  use PFLOTRAN_Constants_module
+#include "petsc/finclude/petscvec.h"
+   use petscvec
+   use PFLOTRAN_Constants_module
 
   implicit none
 
   private
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   type, abstract, public :: communicator_type
   contains
@@ -30,6 +29,7 @@ module Communicator_Base_module
       class(communicator_type) :: this
 #else
     subroutine SetDM(this,dm_ptr)
+      use petscdm
       use DM_Kludge_module
       import communicator_type
       implicit none
@@ -39,6 +39,8 @@ module Communicator_Base_module
     end subroutine
   
     subroutine VecToVec(this,source,destination)
+#include "petsc/finclude/petscvec.h"
+      use petscvec
       import communicator_type
       implicit none
       class(communicator_type) :: this
@@ -75,12 +77,12 @@ subroutine CommCreateProcessorGroups(option,num_groups)
   ! Author: Glenn Hammond
   ! Date: 08/11/09
   ! 
-
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
   
   implicit none
   
-#include "petsc/finclude/petscsys.h"
 
   type(option_type) :: option
   PetscInt :: num_groups

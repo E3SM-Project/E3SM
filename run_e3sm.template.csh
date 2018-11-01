@@ -11,7 +11,7 @@
 ### BASIC INFO ABOUT RUN
 set job_name       = A_WCYCL1850_template
 set compset        = A_WCYCL1850
-set resolution     = ne4np4_oQU240
+set resolution     = ne4_oQU240
 set machine        = default
 set walltime       = default
 setenv project       default
@@ -208,7 +208,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.20
+set script_ver = 3.0.22
 
 #===========================================
 # DEFINE ALIASES
@@ -538,6 +538,7 @@ if ( -f ${create_newcase_exe} ) then
   set xmlchange_exe = $case_scripts_dir/xmlchange
   set xmlquery_exe = $case_scripts_dir/xmlquery
   set shortterm_archive_script = $case_scripts_dir/case.st_archive
+  set preview_namelists_exe = $case_scripts_dir/preview_namelists
 else                                                                   # No version of create_newcase found
   e3sm_print 'ERROR: ${create_newcase_exe} not found'
   e3sm_print '       This is most likely because fetch_code should be true.'
@@ -986,6 +987,11 @@ else
     exit 297
   endif
 endif
+
+# Some user_nl settings won't be updated to *_in files under the run directory
+# until namelists are built again.
+# Call preview_namelists to make sure *_in and user_nl files are consistent.
+$preview_namelists_exe
 
 #============================================
 # BATCH JOB OPTIONS

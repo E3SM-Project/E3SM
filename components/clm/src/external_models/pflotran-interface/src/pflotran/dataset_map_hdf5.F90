@@ -1,5 +1,8 @@
 module Dataset_Map_HDF5_class
  
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+
   use Dataset_Common_HDF5_class
   
   use PFLOTRAN_Constants_module
@@ -7,8 +10,6 @@ module Dataset_Map_HDF5_class
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
 
   type, public, extends(dataset_common_hdf5_type) :: dataset_map_hdf5_type
     character(len=MAXSTRINGLENGTH) :: h5_dataset_map_name
@@ -230,12 +231,12 @@ subroutine DatasetMapHDF5ReadData(this,option)
   integer(HID_T) :: prop_id
   integer(HID_T) :: grp_id
   integer(HID_T) :: attribute_id
-  integer :: ndims_h5
   integer(HID_T) :: atype_id
   integer(HSIZE_T), allocatable :: dims_h5(:), max_dims_h5(:)
   integer(HSIZE_T) :: attribute_dim(3)
   integer(HSIZE_T) :: offset(4), length(4), stride(4)
   integer(HSIZE_T) :: num_data_values
+  integer :: ndims_h5
   PetscInt :: i, temp_array(4)
   PetscInt :: time_dim, num_times
   PetscInt :: num_dims_in_h5_file, num_times_in_h5_file
@@ -435,15 +436,18 @@ subroutine DatasetMapHDF5ReadMap(this,option)
   integer(HID_T) :: dataset_id
   integer(HID_T) :: prop_id
   integer(HID_T) :: grp_id
-  integer :: ndims_hdf5
   integer(HSIZE_T), allocatable :: dims_h5(:), max_dims_h5(:)
   integer(HSIZE_T) :: offset(2), length(2)
+  integer :: ndims_hdf5
   PetscInt :: i
   PetscMPIInt :: array_rank_mpi
   PetscMPIInt :: hdf5_err
   PetscInt :: nids_local, remainder, istart, iend
   PetscErrorCode :: ierr
   character(len=MAXWORDLENGTH) :: dataset_name
+  ! must be 'integer' so that ibuffer does not switch to 64-bit integers 
+  ! when PETSc is configured with --with-64-bit-indices=yes.
+  integer, allocatable :: tempint_array(:,:)
 
   call PetscLogEventBegin(logging%event_dataset_map_hdf5_read, &
                           ierr);CHKERRQ(ierr)
@@ -531,10 +535,12 @@ subroutine DatasetMapHDF5ReadMap(this,option)
   
   ! Initialize data buffer
   allocate(this%mapping(length(1), length(2)))
+  allocate(tempint_array(length(1), length(2)))
 
   ! Read the dataset collectively
-  call h5dread_f(dataset_id, H5T_NATIVE_INTEGER, this%mapping, &
+  call h5dread_f(dataset_id, H5T_NATIVE_INTEGER, tempint_array, &
                  dims_h5, hdf5_err, memory_space_id, file_space_id,prop_id)
+  this%mapping = tempint_array
 
   call h5pclose_f(prop_id,hdf5_err)
 

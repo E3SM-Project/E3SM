@@ -1,22 +1,18 @@
 module Output_Surface_module
 
+#include "petsc/finclude/petscdm.h"
+  use petscdm
   use Logging_module 
   use Output_Aux_module
   use Output_Common_module
   use Output_HDF5_module
   
   use PFLOTRAN_Constants_module
-
+  use Utility_module, only : Equal
+  
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscdm.h"
-#include "petsc/finclude/petscdm.h90"
-#include "petsc/finclude/petsclog.h"
 
 #if defined(SCORPIO_WRITE)
   include "scorpiof.h"
@@ -248,7 +244,7 @@ subroutine OutputHydrograph(surf_realization)
     do iconn = 1, cur_connection_set%num_connections
       sum_connection = sum_connection + 1
       !patch%boundary_velocities(1,sum_connection)
-      sum_flux = sum_flux + patch%boundary_flow_fluxes(RICHARDS_PRESSURE_DOF,sum_connection)
+      sum_flux = sum_flux + patch%boundary_flow_fluxes(TH_PRESSURE_DOF,sum_connection)
     enddo
     
     call MPI_Reduce(sum_flux,sum_flux_global, &
@@ -424,9 +420,9 @@ subroutine OutputSurfaceHDF5UGridXDMF(surf_realization,realization, &
           first = PETSC_FALSE
         endif
       case (AVERAGED_VARS)
-        if (mod((option%time-output_option%periodic_snap_output_time_incr)/ &
-                output_option%periodic_snap_output_time_incr, &
-                dble(output_option%times_per_h5_file))==0) then
+        if (Equal(mod((option%time-output_option%periodic_snap_output_time_incr)/ &
+             output_option%periodic_snap_output_time_incr, &
+             dble(output_option%times_per_h5_file)),0.d0)) then
           first = PETSC_TRUE
         else
           first = PETSC_FALSE
@@ -681,7 +677,9 @@ subroutine WriteHDF5CoordinatesUGridXDMF(surf_realization,realization, &
 
   PetscReal, pointer :: vec_ptr(:)
   Vec :: global_vec, natural_vec
-  PetscInt, pointer :: int_array(:)
+  ! must be 'integer' so that ibuffer does not switch to 64-bit integers 
+  ! when PETSc is configured with --with-64-bit-indices=yes.
+  integer, pointer :: int_array(:)
   type(ugdm_type),pointer :: ugdm_element,ugdm_cell
 
   PetscInt :: TRI_ID_XDMF = 4
@@ -1145,6 +1143,8 @@ subroutine OutputSurfaceGetVarFromArray(surf_realization,vec,ivar,isubvar,isubva
   ! Date: 01/30/13
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Realization_Surface_class, only : realization_surface_type, &
                                         RealizSurfGetVariable
   use Grid_module
@@ -1152,10 +1152,6 @@ subroutine OutputSurfaceGetVarFromArray(surf_realization,vec,ivar,isubvar,isubva
   use Field_module
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petsclog.h"
 
   class(realization_surface_type) :: surf_realization
   Vec :: vec
@@ -1429,6 +1425,8 @@ subroutine OutputSurfaceGetFlowrates(surf_realization)
   ! Date: 03/25/2013
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use hdf5
   use HDF5_module
   use Realization_Surface_class, only : realization_surface_type
@@ -1445,11 +1443,6 @@ subroutine OutputSurfaceGetFlowrates(surf_realization)
   use Surface_Field_module
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petsclog.h"
-#include "petsc/finclude/petscsys.h"
 
   class(realization_surface_type) :: surf_realization
   type(option_type), pointer :: option
@@ -1641,6 +1634,8 @@ subroutine WriteHDF5SurfaceFlowratesUGrid(surf_realization,file_id,var_list_type
   ! Date: 03/25/2013
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use hdf5
   use HDF5_module
   use Realization_Surface_class, only : realization_surface_type
@@ -1657,11 +1652,6 @@ subroutine WriteHDF5SurfaceFlowratesUGrid(surf_realization,file_id,var_list_type
   use Surface_Field_module
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petsclog.h"
-#include "petsc/finclude/petscsys.h"
 
   class(realization_surface_type) :: surf_realization
   type(option_type), pointer :: option
@@ -1756,8 +1746,6 @@ subroutine WriteHDF5SurfaceFlowratesUGrid(surf_realization,file_id,var_list_type
   call printErrMsg(option)
 #else
   select case(option%iflowmode)
-    case (RICHARDS_MODE)
-      ndof=1
     case (TH_MODE)
       ndof=1
       if (output_option%print_hdf5_mass_flowrate.and.output_option%print_hdf5_energy_flowrate) ndof = 2
@@ -1796,8 +1784,6 @@ subroutine WriteHDF5SurfaceFlowratesUGrid(surf_realization,file_id,var_list_type
     if (dof==2 .and. (.not.energy_flowrate)) exit
 
     select case(option%iflowmode)
-      case(RICHARDS_MODE)
-        string = "Mass_Flowrate [kg_s]" // CHAR(0)
       case(TH_MODE)
         if (dof==1) then
           string = "Mass_Flowrate [kg_s]" // CHAR(0)

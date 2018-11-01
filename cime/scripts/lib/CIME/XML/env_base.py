@@ -106,7 +106,7 @@ class EnvBase(EntryID):
                     comp = attribute["compclass"]
                 return vid, comp, True
         else:
-            if hasattr(self, "_components"):
+            if hasattr(self, "_components") and self._components:
                 new_vid = None
                 for comp in self._components:
                     if vid.endswith('_'+comp):

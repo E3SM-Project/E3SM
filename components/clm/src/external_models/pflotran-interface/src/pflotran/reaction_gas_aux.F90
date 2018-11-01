@@ -77,6 +77,8 @@ function GasCreate()
   ! Date: 08/01/16
   ! 
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   implicit none
   
   type(gas_type), pointer :: GasCreate
@@ -122,7 +124,8 @@ function GasSpeciesCreate()
   ! Author: Glenn Hammond
   ! Date: 05/02/08
   ! 
-
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   implicit none
   
   type(gas_species_type), pointer :: GasSpeciesCreate
@@ -235,7 +238,7 @@ function GasGetIDFromName(gas_species_list,name)
   PetscInt :: GasGetIDFromName
   type(gas_species_type), pointer :: gas_species
 
-  GasGetIDFromName = -1
+  GasGetIDFromName = UNINITIALIZED_INTEGER
  
   gas_species => gas_species_list
   do

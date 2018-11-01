@@ -1,5 +1,6 @@
 module Timestepper_Base_class
  
+#include "petsc/finclude/petscsys.h"
   use Waypoint_module 
  
   use PFLOTRAN_Constants_module
@@ -8,7 +9,6 @@ module Timestepper_Base_class
 
   private
   
-#include "petsc/finclude/petscsys.h"
  
   PetscInt, parameter, public :: TS_CONTINUE = 0
   PetscInt, parameter, public :: TS_STOP_END_SIMULATION = 1
@@ -24,10 +24,11 @@ module Timestepper_Base_class
 
     PetscInt :: max_time_step                ! Maximum number of time steps to be taken by the code.
     PetscInt :: max_time_step_cuts           ! Maximum number of timestep cuts within one time step.
-    PetscReal :: time_step_reduction_factor  ! scaling factor by which timestep is reduced.
-    PetscInt :: constant_time_step_threshold        ! Steps needed after cutting to increase time step
+    PetscReal :: time_step_reduction_factor  ! Scaling factor by which timestep is reduced.
+    PetscReal :: time_step_max_growth_factor ! Maximum scaling factor by which timestep is increasd.
+    PetscInt :: constant_time_step_threshold ! Steps needed after cutting to increase time step
 
-    PetscInt :: cumulative_time_step_cuts       ! Total number of cuts in the timestep taken.    
+    PetscInt :: cumulative_time_step_cuts    ! Total number of cuts in the timestep taken.    
     PetscReal :: cumulative_solver_time
     
     PetscReal :: dt
@@ -37,6 +38,7 @@ module Timestepper_Base_class
     PetscReal :: dt_max
     PetscBool :: revert_dt
     PetscInt :: num_contig_revert_due_to_sync
+    PetscInt :: max_num_contig_revert
     
     PetscBool :: init_to_steady_state
     PetscBool :: run_as_steady_state
@@ -68,6 +70,7 @@ module Timestepper_Base_class
     procedure, public :: Reset => TimestepperBaseReset
     procedure, public :: WallClockStop => TimestepperBaseWallClockStop
     procedure, public :: PrintInfo => TimestepperBasePrintInfo
+    procedure, public :: InputRecord => TimestepperBaseInputRecord
     procedure, public :: FinalizeRun => TimestepperBaseFinalizeRun
     procedure, public :: Strip => TimestepperBaseStrip
     procedure, public :: Destroy => TimestepperBaseDestroy
@@ -93,7 +96,8 @@ module Timestepper_Base_class
             TimestepperBaseGetHeader, &
             TimestepperBaseReset, &
             TimestepperBaseRegisterHeader, &
-            TimestepperBasePrintInfo
+            TimestepperBasePrintInfo, &
+            TimestepperBaseInputRecord
 
 contains
 
@@ -130,6 +134,8 @@ subroutine TimestepperBaseInit(this)
   ! Date: 07/01/13
   ! 
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   implicit none
   
   class(timestepper_base_type) :: this
@@ -141,6 +147,7 @@ subroutine TimestepperBaseInit(this)
   this%max_time_step = 999999
   this%max_time_step_cuts = 16
   this%time_step_reduction_factor = 0.5d0
+  this%time_step_max_growth_factor = 2.d0
   this%constant_time_step_threshold = 5
 
   this%cumulative_time_step_cuts = 0    
@@ -167,6 +174,7 @@ subroutine TimestepperBaseInit(this)
   nullify(this%prev_waypoint)
   this%revert_dt = PETSC_FALSE
   this%num_contig_revert_due_to_sync = 0
+  this%max_num_contig_revert = 2
   this%print_ekg = PETSC_FALSE
   
 end subroutine TimestepperBaseInit
@@ -234,6 +242,8 @@ subroutine TimestepperBaseProcessKeyword(this,input,option,keyword)
   ! Date: 03/20/13
   ! 
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
   use String_module
   use Input_Aux_module
@@ -251,32 +261,36 @@ subroutine TimestepperBaseProcessKeyword(this,input,option,keyword)
       call InputReadInt(input,option,this%constant_time_step_threshold)
       call InputErrorMsg(input,option,'num_constant_time_steps_after_ts_cut', &
                          'TIMESTEPPER')
-
     case('MAX_STEPS')
       call InputReadInt(input,option,this%max_time_step)
       call InputErrorMsg(input,option,'max_time_step','TIMESTEPPER')
-  
     case('MAX_TS_CUTS')
       call InputReadInt(input,option,this%max_time_step_cuts)
       call InputErrorMsg(input,option,'max_time_step_cuts','TIMESTEPPER')
-        
+    case('MAX_NUM_CONTIGUOUS_REVERTS')
+      call InputReadInt(input,option,this%max_num_contig_revert)
+      call InputErrorMsg(input,option,'max_num_contig_reverts','TIMESTEPPER')
     case('TIMESTEP_REDUCTION_FACTOR')
       call InputReadDouble(input,option,this%time_step_reduction_factor)
       call InputErrorMsg(input,option,'timestep reduction factor','TIMESTEPPER')
-        
+    case('TIMESTEP_MAXIMUM_GROWTH_FACTOR')
+      call InputReadDouble(input,option,this%time_step_max_growth_factor)
+      call InputErrorMsg(input,option,'timestep maximum growth factor', &
+                         'TIMESTEPPER')
+    case('TIMESTEP_OVERSTEP_TOLERANCE')
+      call InputReadDouble(input,option,this%time_step_tolerance)
+      call InputErrorMsg(input,option,'timestep overstep tolerance', &
+                         'TIMESTEPPER')
     case('INITIALIZE_TO_STEADY_STATE')
       this%init_to_steady_state = PETSC_TRUE
       call InputReadDouble(input,option,this%steady_state_rel_tol)
       call InputErrorMsg(input,option,'steady state convergence relative &
                          &tolerance','TIMESTEPPER')
-
     case('RUN_AS_STEADY_STATE')
       this%run_as_steady_state = PETSC_TRUE
-
     case('PRINT_EKG')
       this%print_ekg = PETSC_TRUE
       option%print_ekg = PETSC_TRUE
-
     case('MAX_PRESSURE_CHANGE','MAX_TEMPERATURE_CHANGE', &
          'MAX_CONCENTRATION_CHANGE','MAX_SATURATION_CHANGE', &
          'PRESSURE_DAMPENING_FACTOR','SATURATION_CHANGE_LIMIT', &
@@ -326,6 +340,8 @@ subroutine TimestepperBaseSetTargetTime(this,sync_time,option,stop_flag, &
   ! Date: 03/20/13
   ! 
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
   
   implicit none
@@ -373,11 +389,12 @@ subroutine TimestepperBaseSetTargetTime(this,sync_time,option,stop_flag, &
   else
     ! If the maximum time step size decreased in the past step, need to set
     ! the time step size to the minimum of the this%prev_dt and 
-    ! this%dt_max.  However, if we have to revert twice in a row, throw 
-    ! away the old time step and move on.
-    if (this%revert_dt .and. &
-        this%num_contig_revert_due_to_sync < 2) then
-      this%dt = min(this%prev_dt,this%dt_max)
+    ! this%dt_max.  However, if we have to revert "max_num_contig_revert" 
+    ! times in a row, throw away the old time step and move on.
+    if (this%revert_dt) then
+      if (this%num_contig_revert_due_to_sync < this%max_num_contig_revert) then
+        this%dt = min(this%prev_dt,this%dt_max)
+      endif
     endif
   endif
   this%revert_dt = PETSC_FALSE ! reset back to false
@@ -582,6 +599,8 @@ subroutine TimestepperBasePrintInfo(this,option)
     write(*,'("max cuts:",x,a)') trim(adjustl(string))
     write(string,*) this%time_step_reduction_factor
     write(*,'("ts reduction factor:",x,a)') trim(adjustl(string))
+    write(string,*) this%time_step_max_growth_factor
+    write(*,'("ts maximum growth factor:",x,a)') trim(adjustl(string))
   endif
   if (OptionPrintToFile(option)) then
     write(option%fid_out,*) 
@@ -595,9 +614,36 @@ subroutine TimestepperBasePrintInfo(this,option)
     write(option%fid_out,'("max cuts:",x,a)') trim(adjustl(string))
     write(string,*) this%time_step_reduction_factor
     write(option%fid_out,'("ts reduction factor:",x,a)') trim(adjustl(string))
+    write(string,*) this%time_step_max_growth_factor
+    write(option%fid_out,'("ts maximum growth factor:",x,a)') &
+      trim(adjustl(string))
   endif    
 
 end subroutine TimestepperBasePrintInfo
+
+! ************************************************************************** !
+
+subroutine TimestepperBaseInputRecord(this)
+  ! 
+  ! Prints information about the time stepper to the input record.
+  ! 
+  ! Author: Jenn Frederick, SNL
+  ! Date: 03/17/2016
+  ! 
+  
+  implicit none
+  
+  class(timestepper_base_type) :: this
+
+#ifdef DEBUG
+  write(*,*) 'TimestepperBaseInputRecord()'
+#endif
+
+  write(*,*) 'TimestepperBaseInputRecord must be extended for &
+             &each timestepper mode.'
+  stop
+
+end subroutine TimestepperBaseInputRecord
 
 ! ************************************************************************** !
 
@@ -610,11 +656,13 @@ subroutine TimestepperBaseCheckpointBinary(this,viewer,option)
   ! Date: 07/25/13
   ! 
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
 
   implicit none
 
-#include "petsc/finclude/petscviewer.h"
+
 
   class(timestepper_base_type) :: this
   PetscViewer :: viewer
@@ -680,12 +728,12 @@ subroutine TimestepperBaseRegisterHeader(this,bag,header)
   ! Author: Glenn Hammond
   ! Date: 07/30/13
   ! 
-
+#include "petsc/finclude/petscsys.h"  
+  use petscsys
   use Option_module
 
   implicit none
   
-#include "petsc/finclude/petscbag.h"  
 
   class(timestepper_base_type) :: this
   class(stepper_base_header_type) :: header
@@ -722,11 +770,12 @@ subroutine TimestepperBaseSetHeader(this,bag,header)
   ! Date: 07/25/13
   ! 
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
 
   implicit none
   
-#include "petsc/finclude/petscbag.h"  
 
   class(timestepper_base_type) :: this
   class(stepper_base_header_type) :: header
@@ -759,11 +808,11 @@ subroutine TimestepperBaseRestartBinary(this,viewer,option)
   ! Date: 07/25/13
   ! 
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
 
   implicit none
-
-#include "petsc/finclude/petscviewer.h"
 
   class(timestepper_base_type) :: this
   PetscViewer :: viewer
@@ -784,11 +833,12 @@ subroutine TimestepperBaseGetHeader(this,header)
   ! Date: 07/25/13
   ! 
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
 
   implicit none
   
-#include "petsc/finclude/petscbag.h"  
 
   class(timestepper_base_type) :: this
   class(stepper_base_header_type) :: header
@@ -814,6 +864,8 @@ subroutine TimestepperBaseReset(this)
   ! Date: 01/20/14
   ! 
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   implicit none
   
 
@@ -839,6 +891,8 @@ function TimestepperBaseWallClockStop(this,option)
   ! Author: Glenn Hammond
   ! Date: 08/08/14
   ! 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
 
   implicit none
@@ -895,6 +949,8 @@ recursive subroutine TimestepperBaseFinalizeRun(this,option)
   ! Date: 07/22/13
   ! 
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
   
   implicit none

@@ -1,5 +1,7 @@
 module Output_Common_module
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Logging_module 
   use Output_Aux_module
   
@@ -11,10 +13,6 @@ module Output_Common_module
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   PetscInt, save, public :: max_local_size_saved = -1
 
@@ -45,7 +43,8 @@ module Output_Common_module
 !            OutputXMFAttributeExplicit, &
             OutputGetExplicitIDsFlowrates, &
             OutputGetExplicitAuxVars, &
-            OutputGetExplicitCellInfo
+            OutputGetExplicitCellInfo, &
+            OutputCollectVelocityOrFlux
               
 contains
 
@@ -165,13 +164,11 @@ subroutine OutputGetVariableArray(realization_base,vec,variable)
   ! Date: 10/25/07
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Realization_Base_class, only : RealizationGetVariable
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petsclog.h"
 
   class(realization_base_type) :: realization_base
   Vec :: vec
@@ -199,13 +196,11 @@ subroutine OutputConvertArrayToNatural(indices,array,local_size,global_size,opti
   ! Author: Glenn Hammond
   ! Date: 10/25/07
   ! 
-
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Option_module
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   PetscInt :: local_size, global_size
   PetscInt :: indices(:)
@@ -347,14 +342,13 @@ subroutine OutputGetCellCenteredVelocities(realization_base,vec_x,vec_y, &
   ! Author: Glenn Hammond
   ! Date: 10/25/07; refactored 01/31/14
   ! 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Logging_module
   use Patch_module
   use Grid_module
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   class(realization_base_type) :: realization_base
   Vec :: vec_x,vec_y,vec_z
@@ -400,13 +394,12 @@ subroutine OutputGetCellCoordinates(grid,vec,direction)
   ! Date: 10/25/07
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Grid_module
   use Variables_module
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   type(grid_type) :: grid
   Vec :: vec
@@ -446,14 +439,13 @@ subroutine OutputGetVertexCoordinates(grid,vec,direction,option)
   ! Date: 11/01/2011
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Grid_module
   use Option_module
   use Variables_module, only : X_COORDINATE, Y_COORDINATE, Z_COORDINATE
   
   implicit none
-  
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   type(grid_type) :: grid
   Vec :: vec
@@ -524,14 +516,13 @@ subroutine OutputGetCellVertices(grid, vec)
   ! Date: 05/31/12
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Grid_module
   use Grid_Unstructured_Aux_module
   use Grid_Unstructured_Cell_module
 
   implicit none
-  
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   type(grid_type) :: grid
   type(grid_unstructured_type),pointer :: ugrid
@@ -617,14 +608,13 @@ subroutine OutputGetCellVerticesExplicit(grid, vec)
   ! Date: 07/16/13
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Grid_module
   use Grid_Unstructured_Aux_module
   use Grid_Unstructured_Cell_module
 
   implicit none
-  
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   type(grid_type) :: grid
   type(grid_unstructured_type),pointer :: ugrid
@@ -896,6 +886,8 @@ subroutine OutputGetFaceVelUGrid(realization_base)
   ! Date: 06/15/2016
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use HDF5_module
   use Realization_Base_class, only : realization_base_type
   use Patch_module
@@ -911,11 +903,6 @@ subroutine OutputGetFaceVelUGrid(realization_base)
   use Field_module
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petsclog.h"
-#include "petsc/finclude/petscsys.h"
 
   class(realization_base_type) :: realization_base
 
@@ -1198,6 +1185,8 @@ subroutine OutputGetFaceFlowrateUGrid(realization_base)
   ! Date: 06/15/2016
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use HDF5_module
   use Realization_Base_class, only : realization_base_type
   use Patch_module
@@ -1213,11 +1202,6 @@ subroutine OutputGetFaceFlowrateUGrid(realization_base)
   use Field_module
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petsclog.h"
-#include "petsc/finclude/petscsys.h"
 
   class(realization_base_type) :: realization_base
 
@@ -1432,6 +1416,8 @@ subroutine OutputGetExplicitIDsFlowrates(realization_base,count,vec_proc, &
   ! Date: 04/24/13
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Realization_Base_class, only : realization_base_type
   use Patch_module
   use Grid_module
@@ -1441,11 +1427,6 @@ subroutine OutputGetExplicitIDsFlowrates(realization_base,count,vec_proc, &
   use Connection_module
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petsclog.h"
-#include "petsc/finclude/petscsys.h"
 
   class(realization_base_type) :: realization_base
   type(option_type), pointer :: option
@@ -1589,6 +1570,8 @@ subroutine OutputGetExplicitFlowrates(realization_base,count,vec_proc, &
   ! Date: 04/24/13
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Realization_Base_class, only : realization_base_type
   use Patch_module
   use Grid_module
@@ -1598,11 +1581,6 @@ subroutine OutputGetExplicitFlowrates(realization_base,count,vec_proc, &
   use Connection_module
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petsclog.h"
-#include "petsc/finclude/petscsys.h"
 
   class(realization_base_type) :: realization_base
   type(option_type), pointer :: option
@@ -1677,6 +1655,8 @@ subroutine OutputGetExplicitAuxVars(realization_base,count,vec_proc,density)
   ! Date: 07/17/13
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Realization_Base_class, only : realization_base_type
   use Patch_module
   use Grid_module
@@ -1685,15 +1665,9 @@ subroutine OutputGetExplicitAuxVars(realization_base,count,vec_proc,density)
   use Field_module
   use Connection_module
   use Global_Aux_module
-  use Richards_Aux_module
   use Material_Aux_class
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petsclog.h"
-#include "petsc/finclude/petscsys.h"
 
   class(realization_base_type) :: realization_base
   type(option_type), pointer :: option
@@ -1787,7 +1761,8 @@ subroutine OutputGetExplicitCellInfo(realization_base,num_cells,ids,sat,por, &
   ! Author: Satish Karra, LANL
   ! Date: 08/21/13
   ! 
-                                     
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Realization_Base_class, only : realization_base_type
   use Patch_module
   use Grid_module
@@ -1798,11 +1773,6 @@ subroutine OutputGetExplicitCellInfo(realization_base,num_cells,ids,sat,por, &
   use Global_Aux_module
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petsclog.h"
-#include "petsc/finclude/petscsys.h"
 
   class(realization_base_type) :: realization_base
   type(option_type), pointer :: option
@@ -1845,5 +1815,226 @@ subroutine OutputGetExplicitCellInfo(realization_base,num_cells,ids,sat,por, &
   enddo
 
 end subroutine OutputGetExplicitCellInfo
+
+! ************************************************************************** !
+
+subroutine OutputCollectVelocityOrFlux(realization_base, iphase, direction, &
+                                       output_flux, array)
+  ! 
+  ! Accumulates fluxes or velocities for a structured grid into a 1D array.
+  ! This routine is called for HDF5 and Tecplot flux/velocity output.
+  ! 
+  ! Author: Glenn Hammond
+  ! Date: 03/26/18
+  ! 
+  use Realization_Base_class, only : realization_base_type
+  use Discretization_module
+  use Patch_module
+  use Grid_module
+  use Grid_Structured_module
+  use Option_module
+  use Field_module
+  use Connection_module
+  use Coupler_module
+  use DM_Kludge_module
+  
+  implicit none
+
+  class(realization_base_type) :: realization_base
+  PetscInt :: iphase
+  PetscInt :: direction
+  PetscBool :: output_flux
+  PetscReal :: array(*)
+
+  type(discretization_type), pointer :: discretization
+  type(patch_type), pointer :: patch
+  type(grid_type), pointer :: grid
+  type(field_type), pointer :: field
+  type(grid_structured_type), pointer :: structured_grid
+  type(option_type), pointer :: option
+  type(dm_ptr_type), pointer :: dm_ptr
+
+  PetscInt :: local_id, ghosted_id
+  PetscInt :: local_size
+  PetscInt :: nx_local, ny_local, nz_local
+  PetscInt :: i, j, k
+  PetscReal :: scale, value, dist(-1:3)
+  PetscReal :: face_location_pert
+  PetscReal :: max_global
+  PetscReal :: min_global
+  PetscReal, pointer :: coord_ptr(:)
+  PetscReal, pointer :: vec_ptr(:)
+  PetscReal, parameter :: perturbation = 1.d-6
+  PetscInt :: count, iconn, sum_connection
+
+  Vec :: local_vec
+  Vec :: global_vec
+  PetscErrorCode :: ierr
+
+  type(connection_set_list_type), pointer :: connection_set_list
+  type(connection_set_type), pointer :: cur_connection_set
+  type(coupler_type), pointer :: boundary_condition
+
+  discretization => realization_base%discretization
+  patch => realization_base%patch
+  grid => patch%grid
+  structured_grid => grid%structured_grid
+  option => realization_base%option
+  field => realization_base%field
+
+  local_size = grid%nlmax
+!GEH - Structured Grid Dependence - Begin
+  nx_local = structured_grid%nlx
+  ny_local = structured_grid%nly
+  nz_local = structured_grid%nlz
+  select case(direction)
+    case(X_DIRECTION)
+      if (structured_grid%gxe-structured_grid%lxe == 0) then
+        local_size = grid%nlmax-structured_grid%nlyz
+        nx_local = structured_grid%nlx-1
+      endif
+    case(Y_DIRECTION)
+      if (structured_grid%gye-structured_grid%lye == 0) then
+        local_size = grid%nlmax-structured_grid%nlxz
+        ny_local = structured_grid%nly-1
+      endif
+    case(Z_DIRECTION)
+      if (structured_grid%gze-structured_grid%lze == 0) then
+        local_size = grid%nlmax-structured_grid%nlxy
+        nz_local = structured_grid%nlz-1
+      endif
+  end select
+
+
+  ! must use a local vec so that potential boundary values can be 
+  ! accumulated across ghosted cells
+  call DiscretizationCreateVector(discretization,ONEDOF,local_vec,LOCAL, &
+                                  option) 
+  call VecZeroEntries(local_vec,ierr);CHKERRQ(ierr)
+  call VecGetArrayF90(local_vec,vec_ptr,ierr);CHKERRQ(ierr)
+  
+  ! place interior velocities in a vector
+  connection_set_list => grid%internal_connection_set_list
+  cur_connection_set => connection_set_list%first
+  sum_connection = 0
+  do 
+    if (.not.associated(cur_connection_set)) exit
+    do iconn = 1, cur_connection_set%num_connections
+      sum_connection = sum_connection + 1
+      ghosted_id = cur_connection_set%id_up(iconn)
+      local_id = grid%nG2L(ghosted_id) ! = zero for ghost nodes
+      ! velocities are stored as the downwind face of the upwind cell
+      if (local_id <= 0 .or. &
+          dabs(cur_connection_set%dist(direction,iconn)) < 0.99d0) cycle
+      if (output_flux) then
+        ! iphase here is really the dof
+        vec_ptr(ghosted_id) = patch%internal_flow_fluxes(iphase,sum_connection)
+      else
+        vec_ptr(ghosted_id) = patch%internal_velocities(iphase,sum_connection)
+      endif
+    enddo
+    cur_connection_set => cur_connection_set%next
+  enddo
+
+  ! add contribution of boundary velocities
+  select case(direction)
+    case(X_DIRECTION)
+      coord_ptr => grid%x
+      max_global = grid%x_max_global
+      min_global = grid%x_min_global
+    case(Y_DIRECTION)
+      coord_ptr => grid%y
+      max_global = grid%y_max_global
+      min_global = grid%y_min_global
+    case(Z_DIRECTION)
+      coord_ptr => grid%z
+      max_global = grid%z_max_global
+      min_global = grid%z_min_global
+  end select
+  boundary_condition => patch%boundary_condition_list%first 
+  sum_connection = 0
+  do
+    if (.not.associated(boundary_condition)) exit
+    cur_connection_set => boundary_condition%connection_set
+    do iconn = 1, cur_connection_set%num_connections
+      sum_connection = sum_connection + 1
+      local_id = cur_connection_set%id_dn(iconn)
+      ghosted_id = grid%nL2G(local_id)
+      dist = cur_connection_set%dist(:,iconn)
+      if (dabs(dist(direction)) < 0.99d0) cycle
+      scale = 1.d0
+      if (dist(direction) < 0.d0) scale = -1.d0
+      ! if the connection is on the domain boundary, we need to skip it.
+      ! use a small perturbation to determine 
+      face_location_pert = coord_ptr(ghosted_id) - &
+                         (1.d0+perturbation)*dist(0)*dist(direction)
+      if (face_location_pert >= max_global .or. &
+          face_location_pert <= min_global) then
+        cycle
+      endif
+      ! velocities are stored as the downwind face of the upwind cell.
+      ! if the direction is positive, then the value needs to be assigned
+      ! to the downwind face of the next cell upwind in the specified 
+      ! direction.
+      select case(direction)
+        case(X_DIRECTION)
+          if (scale > 0.d0) ghosted_id = ghosted_id - 1
+        case(Y_DIRECTION)
+          if (scale > 0.d0) ghosted_id = ghosted_id - structured_grid%ngx
+        case(Z_DIRECTION)
+          if (scale > 0.d0) ghosted_id = ghosted_id - structured_grid%ngxy
+      end select
+      if (ghosted_id <= 0) then
+        option%io_buffer = 'Negative ghosted id in OutputFluxVelocities&
+          &TecplotBlk while adding boundary values. Please contact &
+          &pflotran-dev@googlegroups.com with this message.'
+        call printErrMsgByRank(option)
+      endif
+      ! I don't know why one would do this, but it is possible that a 
+      ! boundary condition could be applied to an interior face shared
+      ! by two active cells. Thus, we must sum.
+      if (output_flux) then
+        value = patch%boundary_flow_fluxes(iphase,sum_connection)
+      else
+        value = patch%boundary_velocities(iphase,sum_connection)
+      endif
+      vec_ptr(ghosted_id) = vec_ptr(ghosted_id) + scale*value
+    enddo
+    boundary_condition => boundary_condition%next 
+  enddo
+  call VecRestoreArrayF90(local_vec,vec_ptr,ierr);CHKERRQ(ierr)
+
+  ! sum values across processes
+  dm_ptr => DiscretizationGetDMPtrFromIndex(discretization,ONEDOF)
+  ! for a given cell, ghosted values for that cell may only be summed
+  ! using DMLocalToGlobalBegin/End with ADD_VALUES. LocalToLocal does not
+  ! work
+  call DiscretizationCreateVector(discretization,ONEDOF,global_vec,GLOBAL, &
+                                  option) 
+  call VecZeroEntries(global_vec,ierr);CHKERRQ(ierr)
+  call DMLocalToGlobalBegin(dm_ptr%dm,local_vec,ADD_VALUES,global_vec, &
+                            ierr);CHKERRQ(ierr)
+  call DMLocalToGlobalEnd(dm_ptr%dm,local_vec,ADD_VALUES,global_vec, &
+                          ierr);CHKERRQ(ierr)
+
+  call VecGetArrayF90(global_vec,vec_ptr,ierr);CHKERRQ(ierr)
+  ! write out data set 
+  count = 0 
+  do k=1,nz_local 
+    do j=1,ny_local 
+      do i=1,nx_local 
+        count = count + 1 
+        local_id = i+(j-1)*structured_grid%nlx+ &
+                   (k-1)*structured_grid%nlxy 
+        array(count) = vec_ptr(local_id)
+      enddo 
+    enddo 
+  enddo 
+  call VecRestoreArrayF90(global_vec,vec_ptr,ierr);CHKERRQ(ierr)
+   
+  call VecDestroy(local_vec,ierr);CHKERRQ(ierr)
+  call VecDestroy(global_vec,ierr);CHKERRQ(ierr)
+
+end subroutine OutputCollectVelocityOrFlux
 
 end module Output_Common_module

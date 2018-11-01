@@ -1,5 +1,8 @@
 module Dataset_Global_HDF5_class
  
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+
   use Dataset_Common_HDF5_class
   use DM_Kludge_module
   
@@ -8,8 +11,6 @@ module Dataset_Global_HDF5_class
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
 
   type, public, extends(dataset_common_hdf5_type) :: dataset_global_hdf5_type
     PetscInt :: local_size    ! local number of entries on this process
@@ -164,20 +165,14 @@ subroutine DatasetGlobalHDF5ReadData(this,option,data_type)
   ! Author: Glenn Hammond
   ! Date: 01/12/08
   ! 
-                         
+#include "petsc/finclude/petscdmda.h"
+  use petscdmda
   use hdf5
   use Logging_module
   use Option_module
   use HDF5_Aux_module
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscdm.h"
-#include "petsc/finclude/petscdm.h90"
-#include "petsc/finclude/petscdmda.h"
-#include "petsc/finclude/petscviewer.h"
 
 ! Default HDF5 Mechanism 
  
@@ -209,7 +204,7 @@ subroutine DatasetGlobalHDF5ReadData(this,option,data_type)
   
   call PetscLogEventBegin(logging%event_read_array_hdf5,ierr);CHKERRQ(ierr)
 
-  if (this%dm_wrapper%dm /= 0) then
+  if (this%dm_wrapper%dm /= PETSC_NULL_DM) then
     call DMCreateGlobalVector(this%dm_wrapper%dm,global_vec, &
                               ierr);CHKERRQ(ierr)
     call DMDACreateNaturalVector(this%dm_wrapper%dm,natural_vec, &

@@ -1,5 +1,8 @@
 module Dataset_Gridded_HDF5_class
  
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+
   use Dataset_Common_HDF5_class
   
   use PFLOTRAN_Constants_module
@@ -7,8 +10,6 @@ module Dataset_Gridded_HDF5_class
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
 
   type, public, extends(dataset_common_hdf5_type) :: dataset_gridded_hdf5_type
     PetscBool :: is_cell_centered
@@ -35,6 +36,7 @@ module Dataset_Gridded_HDF5_class
             DatasetGriddedHDF5Cast, &
             DatasetGriddedHDF5Load, &
             DatasetGriddedHDF5InterpolateReal, &
+            DatasetGriddedHDF5GetNameInfo, &
             DatasetGriddedHDF5Print, &
             DatasetGriddedHDF5Strip, &
             DatasetGriddedHDF5Destroy
@@ -179,13 +181,13 @@ subroutine DatasetGriddedHDF5ReadData(this,option)
   integer(HID_T) :: prop_id
   integer(HID_T) :: grp_id
   integer(HID_T) :: attribute_id
-  integer :: ndims_h5
   integer(HID_T) :: atype_id
   integer(HSIZE_T), allocatable :: dims_h5(:), max_dims_h5(:)
   integer(HSIZE_T) :: attribute_dim(3)
   integer(HSIZE_T) :: offset(4), length(4), stride(4)
   integer(HSIZE_T) :: num_data_values
   integer(SIZE_T) size_t_int
+  integer :: ndims_h5
   PetscInt :: i, temp_int, temp_array(4)
   PetscInt :: num_spatial_dims, time_dim, num_times
   PetscInt :: num_dims_in_h5_file, num_times_in_h5_file
@@ -194,7 +196,11 @@ subroutine DatasetGriddedHDF5ReadData(this,option)
   PetscBool :: first_time
   PetscMPIInt :: hdf5_err
   PetscErrorCode :: ierr
+  ! must be 'integer' so that ibuffer does not switch to 64-bit integers 
+  ! when PETSc is configured with --with-64-bit-indices=yes.
+  integer :: tempint
   PetscLogDouble :: tstart, tend
+
   character(len=MAXWORDLENGTH) :: attribute_name, dataset_name, word
 
   call PetscLogEventBegin(logging%event_dataset_gridded_hdf5_read, &
@@ -313,15 +319,16 @@ subroutine DatasetGriddedHDF5ReadData(this,option)
           call printErrMsg(option)
       end select
     endif
-    ! this%max_buffer_size is initially set to UNINITIALIZED_INTEGER to force initializaion
-    ! either here, or in the reading of the dataset block.
+    ! this%max_buffer_size is initially set to UNINITIALIZED_INTEGER to 
+    ! force initializaion either here, or in the reading of the dataset block.
     attribute_name = "Max Buffer Size"
     call H5aexists_f(grp_id,attribute_name,attribute_exists,hdf5_err)
     if (attribute_exists .and. this%max_buffer_size < 0) then
       call h5aopen_f(grp_id,attribute_name,attribute_id,hdf5_err)
       attribute_dim(1) = 1
-      call h5aread_f(attribute_id,H5T_NATIVE_INTEGER,this%max_buffer_size, &
+      call h5aread_f(attribute_id,H5T_NATIVE_INTEGER,tempint, &
                      attribute_dim,hdf5_err)
+      this%max_buffer_size = tempint
       call h5aclose_f(attribute_id,hdf5_err)
     else if (this%max_buffer_size < 0) then
       this%max_buffer_size = default_max_buffer_size
@@ -449,7 +456,8 @@ subroutine DatasetGriddedHDF5ReadData(this,option)
   length = 1
   ! length (or size) must be adjusted according to the size of the 
   ! remaining data in the file
-  this%buffer_nslice = min(this%max_buffer_size,(num_times-this%buffer_slice_offset))
+  this%buffer_nslice = min(this%max_buffer_size, &
+                           (num_times-this%buffer_slice_offset))
   if (time_dim > 0) then
     length(1) = size(this%rarray) * this%buffer_nslice
   else
@@ -460,8 +468,8 @@ subroutine DatasetGriddedHDF5ReadData(this,option)
   if (option%myrank == option%io_rank) then
 #endif
 
-  call h5screate_simple_f(array_rank_mpi,length,memory_space_id,hdf5_err,length)    
-
+  call h5screate_simple_f(array_rank_mpi,length,memory_space_id, &
+                          hdf5_err,length)    
   length = 1
   stride = 1
   offset = 0
@@ -710,19 +718,20 @@ subroutine DatasetGriddedHDF5InterpolateReal(this,xx,yy,zz,real_value,option)
             select case(this%data_dim)
               case(DIM_X)
                 write(option%io_buffer,*) 'X value (', xx, &
-                  ') outside of X bounds (', this%origin(1), this%extent(1), &
-                  '), i =' 
+                  ') outside of dataset X bounds (', this%origin(1), &
+                  this%extent(1), '), i = ' // trim(word)
               case(DIM_Y)
                 write(option%io_buffer,*) 'Y value (', yy, &
-                  ') outside of Y bounds (', this%origin(2), this%extent(2), &
-                  '), j =' 
+                  ') outside of dataset Y bounds (', this%origin(2), &
+                  this%extent(2), '), j = ' // trim(word)
               case(DIM_Z)
                 write(option%io_buffer,*) 'Z value (', zz, &
-                  ') outside of Z bounds (', this%origin(3), this%extent(3), &
-                  '), k =' 
+                  ') outside of dataset Z bounds (', this%origin(3), &
+                  this%extent(3), '), k = ' // trim(word)
             end select
-            option%io_buffer = trim(option%io_buffer) // ' ' // &
-              trim(word) // ' for gridded dataset "' // trim(this%name) // '".'
+            option%io_buffer = trim(option%io_buffer) // &
+              ' for ' // trim(DatasetGriddedHDF5GetNameInfo(this)) // &
+              ' - See "Extent of Gridded Domain" above.'
             call printErrMsgByRank(option)
           endif
           index = i
@@ -748,14 +757,13 @@ subroutine DatasetGriddedHDF5InterpolateReal(this,xx,yy,zz,real_value,option)
             select case(this%data_dim)
               case(DIM_XY,DIM_XZ)
                 write(option%io_buffer,*) 'X value (', xx, &
-                  ') outside of X bounds (', this%origin(1), this%extent(1), &
-                  '), i =' 
+                  ') outside of dataset X bounds (', this%origin(1), &
+                  this%extent(1), '), i = ' // trim(word)
               case(DIM_YZ)
                 write(option%io_buffer,*) 'Y value (', yy, &
-                  ') outside of Y bounds (', this%origin(2), this%extent(2), &
-                  '), j =' 
+                  ') outside of dataset Y bounds (', this%origin(2), &
+                  this%extent(2), '), j = ' // trim(word)
             end select
-            option%io_buffer = trim(option%io_buffer) // ' ' // word
             call printMsgByRank(option)
           endif
           if (j < 1 .or. j_upper > this%dims(2)) then
@@ -765,20 +773,20 @@ subroutine DatasetGriddedHDF5InterpolateReal(this,xx,yy,zz,real_value,option)
             select case(this%data_dim)
               case(DIM_XY)
                 write(option%io_buffer,*) 'Y value (', yy, &
-                  ') outside of Y bounds (', this%origin(2), this%extent(2), &
-                  '), j =' 
+                  ') outside of dataset Y bounds (', this%origin(2), &
+                  this%extent(2), '), j = ' // trim(word)
               case(DIM_YZ,DIM_XZ)
                 write(option%io_buffer,*) 'Z value (', zz, &
-                  ') outside of Z bounds (', this%origin(3), this%extent(3), &
-                  '), k =' 
+                  ') outside of dataset Z bounds (', this%origin(3), &
+                  this%extent(3), &
+                  '), k = ' // trim(word)
             end select
-            option%io_buffer = trim(option%io_buffer) // ' ' // word
+            option%io_buffer = trim(option%io_buffer) // ' ' // trim(word)
             call printMsgByRank(option)
           endif
           if (lerr) then
-            word = this%name
-            option%io_buffer = 'gridded dataset "' // trim(word) // &
-                               '" out of bounds.'
+            option%io_buffer = trim(DatasetGriddedHDF5GetNameInfo(this)) // &
+              ' - See "Extent of Gridded Domain" above.'
             call printErrMsgByRank(option)
           endif
           ii = i
@@ -812,8 +820,8 @@ subroutine DatasetGriddedHDF5InterpolateReal(this,xx,yy,zz,real_value,option)
             write(word,*) i
             word = adjustl(word)
             write(option%io_buffer,*) 'X value (', xx, &
-              ') outside of X bounds (', this%origin(1), this%extent(1), &
-              '), i = ' // trim(word)
+              ') outside of dataset X bounds (', this%origin(1), &
+              this%extent(1), '), i = ' // trim(word)
             call printMsgByRank(option)
           endif
           if (j < 1 .or. j_upper > this%dims(2)) then
@@ -821,8 +829,8 @@ subroutine DatasetGriddedHDF5InterpolateReal(this,xx,yy,zz,real_value,option)
             write(word,*) j
             word = adjustl(word)
             write(option%io_buffer,*) 'Y value (', yy, &
-              ') outside of Y bounds (', this%origin(2), this%extent(2), &
-              '), j = ' // trim(word)
+              ') outside of dataset Y bounds (', this%origin(2), &
+              this%extent(2), '), j = ' // trim(word)
             call printMsgByRank(option)
           endif
           if (k < 1 .or. k_upper > this%dims(3)) then
@@ -830,14 +838,13 @@ subroutine DatasetGriddedHDF5InterpolateReal(this,xx,yy,zz,real_value,option)
             write(word,*) k
             word = adjustl(word)
             write(option%io_buffer,*) 'Z value (', zz, &
-              ') outside of Z bounds (', this%origin(3), this%extent(3), &
-              '), k = ' // trim(word)
+              ') outside of dataset Z bounds (', this%origin(3), &
+              this%extent(3), '), k = ' // trim(word)
             call printMsgByRank(option)
           endif
           if (lerr) then
-            word = this%name
-            option%io_buffer = 'gridded dataset "' // trim(word) // &
-                               '" out of bounds.'
+            option%io_buffer = trim(DatasetGriddedHDF5GetNameInfo(this)) // &
+              ' - See "Extent of Gridded Domain" above.'
             call printErrMsgByRank(option)
           endif
           ii = i
@@ -874,19 +881,20 @@ subroutine DatasetGriddedHDF5InterpolateReal(this,xx,yy,zz,real_value,option)
             select case(this%data_dim)
               case(DIM_X)
                 write(option%io_buffer,*) 'X value (', xx, &
-                  ') outside of X bounds (', this%origin(1), this%extent(1), &
-                  '), i =' 
+                  ') outside of dataset X bounds (', this%origin(1), &
+                  this%extent(1), '), i = ' // trim(word)
               case(DIM_Y)
                 write(option%io_buffer,*) 'Y value (', yy, &
-                  ') outside of Y bounds (', this%origin(2), this%extent(2), &
-                  '), j =' 
+                  ') outside of dataset Y bounds (', this%origin(2), &
+                  this%extent(2), '), j = ' // trim(word)
               case(DIM_Z)
                 write(option%io_buffer,*) 'Z value (', zz, &
-                  ') outside of Z bounds (', this%origin(3), this%extent(3), &
-                  '), k =' 
+                  ') outside of dataset Z bounds (', this%origin(3), &
+                  this%extent(3), '), k = ' // trim(word)
             end select
-            option%io_buffer = trim(option%io_buffer) // ' ' // &
-              trim(word) // ' for gridded dataset "' // trim(this%name) // '".'
+            option%io_buffer = trim(option%io_buffer) // &
+              ' for ' // trim(DatasetGriddedHDF5GetNameInfo(this)) // &
+              ' - See "Extent of Gridded Domain" above.'
             call printErrMsgByRank(option)
           endif
           dx = this%discretization(1)
@@ -897,37 +905,40 @@ subroutine DatasetGriddedHDF5InterpolateReal(this,xx,yy,zz,real_value,option)
           real_value = v1 + (x-x1)/dx*(v2-v1)
         case(DIM_XY,DIM_XZ,DIM_YZ)
           if (i < 1 .or. i+1 > this%dims(1)) then
+            lerr = PETSC_TRUE
             write(word,*) i
             word = adjustl(word)
             select case(this%data_dim)
               case(DIM_XY,DIM_XZ)
                 write(option%io_buffer,*) 'X value (', xx, &
-                  ') outside of X bounds (', this%origin(1), this%extent(1), &
-                  '), i =' 
+                  ') outside of dataset X bounds (', this%origin(1), &
+                  this%extent(1), '), i = ' // trim(word)
               case(DIM_YZ)
                 write(option%io_buffer,*) 'Y value (', yy, &
-                  ') outside of Y bounds (', this%origin(2), this%extent(2), &
-                  '), j =' 
+                  ') outside of dataset Y bounds (', this%origin(2), &
+                  this%extent(2), '), j = ' // trim(word)
             end select
-            option%io_buffer = trim(option%io_buffer) // ' ' // &
-              trim(word) // ' for gridded dataset "' // trim(this%name) // '".'
-            call printErrMsgByRank(option)
+            call printMsgByRank(option)
           endif
           if (j < 1 .or. j+1 > this%dims(2)) then
+            lerr = PETSC_TRUE
             write(word,*) j
             word = adjustl(word)
             select case(this%data_dim)
               case(DIM_XY)
                 write(option%io_buffer,*) 'Y value (', yy, &
-                  ') outside of Y bounds (', this%origin(2), this%extent(2), &
-                  '), j =' 
+                  ') outside of dataset Y bounds (', this%origin(2), &
+                  this%extent(2), '), j = ' // trim(word)
               case(DIM_YZ,DIM_XZ)
                 write(option%io_buffer,*) 'Z value (', zz, &
-                  ') outside of Z bounds (', this%origin(3), this%extent(3), &
-                  '), k =' 
+                  ') outside of dataset Z bounds (', this%origin(3), &
+                  this%extent(3), '), k = ' // trim(word)
             end select
-            option%io_buffer = trim(option%io_buffer) // ' ' // &
-              trim(word) // ' for gridded dataset "' // trim(this%name) // '".'
+            call printMsgByRank(option)
+          endif
+          if (lerr) then
+            option%io_buffer = trim(DatasetGriddedHDF5GetNameInfo(this)) // &
+              ' - See "Extent of Gridded Domain" above.'
             call printErrMsgByRank(option)
           endif
           dx = this%discretization(1)
@@ -1072,6 +1083,28 @@ subroutine DatasetGriddedHDF5GetIndices(this,xx,yy,zz,i,j,k,x,y,z)
   endif  
   
 end subroutine DatasetGriddedHDF5GetIndices
+
+! ************************************************************************** !
+
+function DatasetGriddedHDF5GetNameInfo(this)
+  ! 
+  ! Returns naming information for dataset
+  ! 
+  ! Author: Glenn Hammond
+  ! Date: 02/20/18
+  ! 
+  implicit none
+
+  class(dataset_gridded_hdf5_type) :: this
+
+  character(len=MAXSTRINGLENGTH) :: DatasetGriddedHDF5GetNameInfo
+
+  character(len=MAXSTRINGLENGTH) :: string
+
+  string = 'GRIDDED DATASET - ' // trim(DatasetCommonHDF5GetNameInfo(this))
+  DatasetGriddedHDF5GetNameInfo = string
+
+end function DatasetGriddedHDF5GetNameInfo
 
 ! ************************************************************************** !
 

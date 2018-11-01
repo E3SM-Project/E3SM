@@ -1,5 +1,7 @@
 module Regression_module
  
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Output_Aux_module
   
   use PFLOTRAN_Constants_module
@@ -7,10 +9,6 @@ module Regression_module
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
  
   type, public :: regression_type
     type(regression_variable_type), pointer :: variable_list
@@ -59,10 +57,10 @@ function RegressionCreate()
   regression%num_cells_per_process = 0
   regression%all_cells = PETSC_FALSE
   nullify(regression%cells_per_process_natural_ids)
-  regression%natural_cell_id_vec = 0
-  regression%cells_per_process_vec = 0
-  regression%scatter_natural_cell_id_gtos = 0
-  regression%scatter_cells_per_process_gtos = 0
+  regression%natural_cell_id_vec = PETSC_NULL_VEC
+  regression%cells_per_process_vec =  PETSC_NULL_VEC
+  regression%scatter_natural_cell_id_gtos = PETSC_NULL_VECSCATTER
+  regression%scatter_cells_per_process_gtos = PETSC_NULL_VECSCATTER
   nullify(regression%next)
   RegressionCreate => regression
 
@@ -193,7 +191,8 @@ subroutine RegressionCreateMapping(regression,realization)
   ! Author: Glenn Hammond
   ! Date: 10/12/12
   ! 
-
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Option_module
   use Realization_Subsurface_class
   use Grid_module
@@ -201,10 +200,6 @@ subroutine RegressionCreateMapping(regression,realization)
   use Utility_module
   
   implicit none
-  
-#include "petsc/finclude/petscis.h"
-#include "petsc/finclude/petscis.h90"
-#include "petsc/finclude/petscviewer.h"
 
   type(regression_type), pointer :: regression
   class(realization_subsurface_type) :: realization
@@ -309,7 +304,7 @@ subroutine RegressionCreateMapping(regression,realization)
 
     ! create scatter context
     call VecScatterCreate(realization%field%work,is_petsc, &
-                          regression%natural_cell_id_vec,PETSC_NULL_OBJECT, &
+                          regression%natural_cell_id_vec,PETSC_NULL_IS, &
                           regression%scatter_natural_cell_id_gtos, &
                           ierr);CHKERRQ(ierr)
 
@@ -388,7 +383,7 @@ subroutine RegressionCreateMapping(regression,realization)
                          ierr);CHKERRQ(ierr)
 
     call VecScatterCreate(temp_vec,temp_is, &
-                          regression%cells_per_process_vec,PETSC_NULL_OBJECT, &
+                          regression%cells_per_process_vec,PETSC_NULL_IS, &
                           temp_scatter,ierr);CHKERRQ(ierr)
     call ISDestroy(temp_is,ierr);CHKERRQ(ierr)
  
@@ -431,7 +426,7 @@ subroutine RegressionCreateMapping(regression,realization)
 
     call VecScatterCreate(realization%field%work,is_petsc, &
                           regression%cells_per_process_vec, &
-                          PETSC_NULL_OBJECT, &
+                          PETSC_NULL_IS, &
                           regression%scatter_cells_per_process_gtos, &
                           ierr);CHKERRQ(ierr)
     call ISDestroy(is_petsc,ierr);CHKERRQ(ierr)
@@ -880,17 +875,17 @@ subroutine RegressionDestroy(regression)
   call DeallocateArray(regression%natural_cell_ids)
   regression%num_cells_per_process = 0
   call DeallocateArray(regression%cells_per_process_natural_ids)
-  if (regression%natural_cell_id_vec /= 0) then
+  if (regression%natural_cell_id_vec /= PETSC_NULL_VEC) then
     call VecDestroy(regression%natural_cell_id_vec,ierr);CHKERRQ(ierr)
   endif
-  if (regression%cells_per_process_vec /= 0) then
+  if (regression%cells_per_process_vec /= PETSC_NULL_VEC) then
     call VecDestroy(regression%cells_per_process_vec,ierr);CHKERRQ(ierr)
   endif
-  if (regression%scatter_natural_cell_id_gtos /= 0) then
+  if (regression%scatter_natural_cell_id_gtos /= PETSC_NULL_VECSCATTER) then
     call VecScatterDestroy(regression%scatter_natural_cell_id_gtos, &
                            ierr);CHKERRQ(ierr)
   endif
-  if (regression%scatter_cells_per_process_gtos /= 0) then
+  if (regression%scatter_cells_per_process_gtos /= PETSC_NULL_VECSCATTER) then
     call VecScatterDestroy(regression%scatter_cells_per_process_gtos, &
                            ierr);CHKERRQ(ierr)
   endif

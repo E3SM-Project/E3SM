@@ -11,9 +11,11 @@ module co2_data_flux
   use phys_grid,      only : scatter_field_to_chunk, get_ncols_p
   use error_messages, only : alloc_err, handle_ncerr, handle_err
   use cam_abortutils,     only : endrun
-  use netcdf
-  use error_messages, only : handle_ncerr  
+  use netcdf,         only : nf90_inq_dimid, nf90_inquire_dimension, nf90_inq_varid, nf90_get_var, nf90_open
   use cam_logfile,    only : iulog
+#ifdef CO2_BILIN_REGRID
+  use tracer_data,    only : trfld, trfile, trcdata_init, advance_trcdata
+#endif
   
 #if ( defined SPMD )
   use mpishorthand, only: mpicom, mpiint, mpir8
@@ -59,6 +61,10 @@ TYPE :: read_interp
   integer :: ncid_f             ! netcdf id for dataset       
   integer :: fluxid             ! netcdf id for dataset flux      
   real(r8), pointer :: xvar(:,:,:) ! work space for dataset  
+#ifdef CO2_BILIN_REGRID
+  type(trfld),  pointer, dimension(:)   :: fields
+  type(trfile)                          :: file
+#endif
  
 END TYPE read_interp
 !-------------------------------------------------------------------------------------------------
@@ -67,7 +73,7 @@ contains
  
 !===============================================================================
 
-subroutine read_data_flux (input_file, xin)
+subroutine read_data_flux (input_file, xin, state, pbuf2d)
  
 !-------------------------------------------------------------------------------              
 ! Do initial read of time-varying 2d(lat,lon NetCDF dataset, 
@@ -77,6 +83,9 @@ subroutine read_data_flux (input_file, xin)
   use time_manager, only : get_curr_date, get_curr_calday, &
                            is_perpetual, get_perp_date, get_step_size, is_first_step
   use ioFileMod,    only : getfil
+  
+  use physics_types,  only: physics_state
+  use physics_buffer, only: physics_buffer_desc
 
   implicit none
  
@@ -84,6 +93,8 @@ subroutine read_data_flux (input_file, xin)
 ! Dummy arguments
   character(len=*),   intent(in)    :: input_file
   TYPE(read_interp),  intent(inout) :: xin   
+  type(physics_state),       pointer :: state(:)
+  type(physics_buffer_desc), pointer :: pbuf2d(:,:)
  
   integer lonid                 ! netcdf id for longitude variable
   integer latid                 ! netcdf id for latitude variable
@@ -104,15 +115,33 @@ subroutine read_data_flux (input_file, xin)
   integer  :: ncsec             ! current time of day [seconds]
   real(r8) calday               ! calendar day (includes yr if no cycling)
   real(r8) caldayloc            ! calendar day (includes yr if no cycling)
- 
-  xin%nm_f = 1
-  xin%np_f = 2
- 
+#ifdef CO2_BILIN_REGRID
+  character(len=32)  :: specifier(1) = ''
+#endif
+
 ! Allocate space for data.
  
   allocate( xin%co2flx(pcols,begchunk:endchunk), stat=istat )
   call alloc_err( istat, 'CO2FLUX_READ', 'co2flx', &
        pcols*(endchunk-begchunk+1) )
+
+
+#ifdef CO2_BILIN_REGRID
+  allocate (xin%file%in_pbuf(1))
+  xin%file%in_pbuf(1) = .false.
+
+  specifier(1)    = 'CO2_flux' !name of variable to read from file
+
+! Open file and initialize "fields" and "file" derived types
+! Some of the arguments passed here are hardwired which can be replaced with variables
+! if need be.
+  call trcdata_init(specifier, input_file , '', '', xin%fields, xin%file, .false., 0, 0, 0, 'SERIAL')
+
+#else
+ 
+  xin%nm_f = 1
+  xin%np_f = 2
+ 
  
   allocate( xin%co2bdy(pcols,begchunk:endchunk,2), stat=istat )
   call alloc_err( istat, 'CO2FLUX_READ', 'co2bdy', &
@@ -260,6 +289,7 @@ subroutine read_data_flux (input_file, xin)
 
   call scatter_field_to_chunk ( 1,1,2,cnt3(1), xin%xvar, xin%co2bdy )
 
+#endif
   return
 end subroutine read_data_flux
  
@@ -276,6 +306,9 @@ subroutine interp_time_flux (xin, prev_timestep)
   use time_manager, only : get_curr_date, get_curr_calday, &
                           is_perpetual, get_perp_date, get_step_size, is_first_step
   use interpolate_data,   only : get_timeinterp_factors
+#ifdef CO2_BILIN_REGRID
+  use ppgrid,           only: pver, pverp
+#endif
  
   logical, intent(in), optional     :: prev_timestep ! If using previous timestep, set to true
   TYPE(read_interp),  intent(inout) :: xin
@@ -297,6 +330,21 @@ subroutine interp_time_flux (xin, prev_timestep)
   logical :: previous
   logical :: co2cyc=.false.
  
+#ifdef CO2_BILIN_REGRID
+  integer :: icol      ! indices
+
+  !Read next data if needed and interpolate (space and time)
+  call advance_trcdata( xin%fields, xin%file)
+
+  !Assign 
+  do lchnk   = begchunk, endchunk
+     ncol    = get_ncols_p(lchnk)
+     do icol = 1, ncol
+        xin%co2flx(icol,lchnk) = xin%fields(1)%data(icol, 1,lchnk)
+     end do
+  end do
+
+#else
 !-----------------------------------------------------------------------
  
 ! SPMD: Master does all the work.  Sends needed info to slaves
@@ -399,6 +447,7 @@ subroutine interp_time_flux (xin, prev_timestep)
         end do
      end do
 
+#endif
   return
 end subroutine interp_time_flux
 

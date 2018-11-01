@@ -22,20 +22,8 @@ import argparse
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
-    parser = argparse.ArgumentParser(
-        usage="""\n{0} [<testname>] [--verbose]
-OR
-{0} --help
-
-\033[1mEXAMPLES:\033[0m
-    \033[1;32m# case.test SMS\033[0m
-    > {0}
-""".format(os.path.basename(args[0])),
-
-description=description,
-
-formatter_class=argparse.ArgumentDefaultsHelpFormatter
-)
+    parser = argparse.ArgumentParser(description=description,
+                                     formatter_class=argparse.RawTextHelpFormatter)
 
     CIME.utils.setup_standard_logging_options(parser)
 
@@ -47,6 +35,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument("--reset", action="store_true",
                         help="Reset the case to its original state as defined by config_tests.xml")
+
+    parser.add_argument("--resubmit", action="store_true",
+                        help="Ignored in tests, but needed for all templates")
 
     parser.add_argument("--skip-preview-namelist", action="store_true",
                         help="Skip calling preview-namelist during case.run")

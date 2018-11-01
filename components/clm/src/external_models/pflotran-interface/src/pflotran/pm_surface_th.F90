@@ -1,5 +1,7 @@
 module PM_Surface_TH_class
 
+#include "petsc/finclude/petscts.h"
+  use petscts
   use PM_Base_class
   use PM_Surface_class
   use Realization_Surface_class
@@ -13,15 +15,6 @@ module PM_Surface_TH_class
 
   private
 
-#include "petsc/finclude/petscsys.h"
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
-#include "petsc/finclude/petscsnes.h"
-#include "petsc/finclude/petscts.h"
-
   type, public, extends(pm_surface_type) :: pm_surface_th_type
   contains
     procedure, public :: Read => PMSurfaceTHRead
@@ -32,6 +25,7 @@ module PM_Surface_TH_class
     procedure, public :: Destroy => PMSurfaceTHDestroy
     procedure, public :: RHSFunction => PMSurfaceTHRHSFunction
     procedure, public :: UpdateAuxVars => PMSurfaceTHUpdateAuxVars
+    procedure, public :: InputRecord => PMSurfaceTHInputRecord
   end type pm_surface_th_type
 
   public :: PMSurfaceTHCreate, &
@@ -188,7 +182,8 @@ end subroutine PMSurfaceTHRHSFunction
 ! ************************************************************************** !
 
 subroutine PMSurfaceTHUpdateTimestep(this,dt,dt_min,dt_max,iacceleration, &
-                                    num_newton_iterations,tfac)
+                                     num_newton_iterations,tfac, &
+                                     time_step_max_growth_factor)
   ! 
   ! This routine
   ! 
@@ -206,6 +201,7 @@ subroutine PMSurfaceTHUpdateTimestep(this,dt,dt_min,dt_max,iacceleration, &
   PetscInt :: iacceleration
   PetscInt :: num_newton_iterations
   PetscReal :: tfac(:)
+  PetscReal :: time_step_max_growth_factor
 
   PetscReal :: dt_max_glb
   PetscErrorCode :: ierr
@@ -214,7 +210,8 @@ subroutine PMSurfaceTHUpdateTimestep(this,dt,dt_min,dt_max,iacceleration, &
   call SurfaceTHComputeMaxDt(this%surf_realization,dt_max_loc)
   call MPI_Allreduce(dt_max_loc,dt_max_glb,ONE_INTEGER_MPI,MPI_DOUBLE_PRECISION, &
                      MPI_MIN,this%option%mycomm,ierr)
-  dt = min(0.9d0*dt_max_glb,this%surf_realization%dt_max)
+  dt = min(0.9d0*dt_max_glb,this%surf_realization%dt_max, &
+           time_step_max_growth_factor*dt)
 
 end subroutine PMSurfaceTHUpdateTimestep
 
@@ -256,15 +253,14 @@ subroutine PMSurfaceTHPostSolve(this)
   ! Date: 07/23/13
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Grid_module
   use Discretization_module
   use Surface_Field_module
   use Surface_TH_module
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   class(pm_surface_th_type) :: this
 
@@ -322,6 +318,30 @@ subroutine PMSurfaceTHUpdateAuxVars(this)
   call SurfaceTHUpdateAuxVars(this%surf_realization)
 
 end subroutine PMSurfaceTHUpdateAuxVars
+
+! ************************************************************************** !
+
+subroutine PMSurfaceTHInputRecord(this)
+  ! 
+  ! Writes ingested information to the input record file.
+  ! 
+  ! Author: Jenn Frederick, SNL
+  ! Date: 03/21/2016
+  ! 
+  
+  implicit none
+  
+  class(pm_surface_th_type) :: this
+
+  character(len=MAXWORDLENGTH) :: word
+  PetscInt :: id
+
+  id = INPUT_RECORD_UNIT
+
+  write(id,'(a29)',advance='no') 'pm: '
+  write(id,'(a)') this%name
+
+end subroutine PMSurfaceTHInputRecord
 
 ! ************************************************************************** !
 

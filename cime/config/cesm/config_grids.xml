@@ -158,13 +158,6 @@
       <mask>gx3v7</mask>
     </model_grid>
 
-    <model_grid alias="T42_T42" not_compset="_POP">
-      <grid name="atm">T42</grid>
-      <grid name="lnd">T42</grid>
-      <grid name="ocnice">T42</grid>
-      <mask>usgs</mask>
-    </model_grid>
-
     <model_grid alias="T42_T42_musgs" not_compset="_POP">
       <grid name="atm">T42</grid>
       <grid name="lnd">T42</grid>
@@ -172,7 +165,7 @@
       <mask>usgs</mask>
     </model_grid>
 
-    <model_grid alias="T42_T42_mg17" not_compset="_POP">
+    <model_grid alias="T42_T42" not_compset="_POP">
       <grid name="atm">T42</grid>
       <grid name="lnd">T42</grid>
       <grid name="ocnice">T42</grid>
@@ -186,11 +179,25 @@
       <mask>gx1v6</mask>
     </model_grid>
 
-    <model_grid alias="T85_T85" not_compset="_POP">
+    <model_grid alias="T42_T42_mg17" not_compset="_POP">
+      <grid name="atm">T42</grid>
+      <grid name="lnd">T42</grid>
+      <grid name="ocnice">T42</grid>
+      <mask>gx1v7</mask>
+    </model_grid>
+
+    <model_grid alias="T85_T85_mg16" not_compset="_POP">
       <grid name="atm">T85</grid>
       <grid name="lnd">T85</grid>
       <grid name="ocnice">T85</grid>
-      <mask>usgs</mask>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="T85_T85_mg17" not_compset="_POP">
+      <grid name="atm">T85</grid>
+      <grid name="lnd">T85</grid>
+      <grid name="ocnice">T85</grid>
+      <mask>gx1v7</mask>
     </model_grid>
 
     <model_grid alias="T85_T85_musgs" not_compset="_POP">
@@ -391,13 +398,6 @@
       <mask>gx1v7</mask>
     </model_grid>
 
-    <model_grid alias="f09_f09" not_compset="_POP">
-      <grid name="atm">0.9x1.25</grid>
-      <grid name="lnd">0.9x1.25</grid>
-      <grid name="ocnice">0.9x1.25</grid>
-      <mask>gx1v6</mask>
-    </model_grid>
-
     <model_grid alias="f09_f09_mnull" compset="_DOCN%SAQUAP|DOCN%DAQUAP" >
       <grid name="atm">0.9x1.25</grid>
       <grid name="lnd">0.9x1.25</grid>
@@ -416,6 +416,13 @@
       <grid name="atm">0.9x1.25</grid>
       <grid name="lnd">0.9x1.25</grid>
       <grid name="ocnice">0.9x1.25</grid>
+      <mask>gx1v7</mask>
+    </model_grid>
+
+    <model_grid alias="f05_f05_mg17" not_compset="_POP" >
+      <grid name="atm">0.47x0.63</grid>
+      <grid name="lnd">0.47x0.63</grid>
+      <grid name="ocnice">0.47x0.63</grid>
       <mask>gx1v7</mask>
     </model_grid>
 
@@ -529,14 +536,14 @@
       <mask>gx1v7</mask>
     </model_grid>
 
-    <model_grid alias="f19_f19" not_compset="_POP">
+    <model_grid alias="f19_f19_mg16" not_compset="_POP">
       <grid name="atm">1.9x2.5</grid>
       <grid name="lnd">1.9x2.5</grid>
       <grid name="ocnice">1.9x2.5</grid>
       <mask>gx1v6</mask>
     </model_grid>
 
-    <model_grid alias="f19_f19_mg16" not_compset="_POP">
+    <model_grid alias="f19_f19" not_compset="_POP">
       <grid name="atm">1.9x2.5</grid>
       <grid name="lnd">1.9x2.5</grid>
       <grid name="ocnice">1.9x2.5</grid>
@@ -564,13 +571,6 @@
       <mask>gx3v7</mask>
     </model_grid>
 
-    <model_grid alias="f02_f02" not_compset="_POP">
-      <grid name="atm">0.23x0.31</grid>
-      <grid name="lnd">0.23x0.31</grid>
-      <grid name="ocnice">0.23x0.31</grid>
-      <mask>gx1v6</mask>
-    </model_grid>
-
     <model_grid alias="f02_f02_mg16" not_compset="_POP">
       <grid name="atm">0.23x0.31</grid>
       <grid name="lnd">0.23x0.31</grid>
@@ -583,13 +583,6 @@
       <grid name="lnd">0.23x0.31</grid>
       <grid name="ocnice">0.23x0.31</grid>
       <mask>gx1v7</mask>
-    </model_grid>
-
-    <model_grid alias="f25_f25" not_compset="_POP">
-      <grid name="atm">2.5x3.33</grid>
-      <grid name="lnd">2.5x3.33</grid>
-      <grid name="ocnice">2.5x3.33</grid>
-      <mask>gx1v6</mask>
     </model_grid>
 
     <model_grid alias="f25_f25_mg16" not_compset="_POP">
@@ -606,13 +599,6 @@
       <mask>gx1v7</mask>
     </model_grid>
 
-    <model_grid alias="f45_f45" not_compset="_POP">
-      <grid name="atm">4x5</grid>
-      <grid name="lnd">4x5</grid>
-      <grid name="ocnice">4x5</grid>
-      <mask>gx3v7</mask>
-    </model_grid>
-
     <model_grid alias="f45_f45_mg37" not_compset="_POP">
       <grid name="atm">4x5</grid>
       <grid name="lnd">4x5</grid>
@@ -620,11 +606,11 @@
       <mask>gx3v7</mask>
     </model_grid>
 
-    <model_grid alias="f10_f10" not_compset="_POP">
+    <model_grid alias="f10_f10_mg37" not_compset="_POP">
       <grid name="atm">10x15</grid>
       <grid name="lnd">10x15</grid>
       <grid name="ocnice">10x15</grid>
-      <mask>usgs</mask>
+      <mask>gx3v7</mask>
     </model_grid>
 
     <model_grid alias="f10_f10_musgs" not_compset="_POP">
@@ -632,6 +618,13 @@
       <grid name="lnd">10x15</grid>
       <grid name="ocnice">10x15</grid>
       <mask>usgs</mask>
+    </model_grid>
+
+    <model_grid alias="f10_g37">
+      <grid name="atm">10x15</grid>
+      <grid name="lnd">10x15</grid>
+      <grid name="ocnice">gx3v7</grid>
+      <mask>gx3v7</mask>
     </model_grid>
 
     <!--  spectral element grids -->
@@ -794,6 +787,13 @@
       <grid name="lnd">ne240np4</grid>
       <grid name="ocnice">ne240np4</grid>
       <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="ne240_ne240_mg17" not_compset="_POP">
+      <grid name="atm">ne240np4</grid>
+      <grid name="lnd">ne240np4</grid>
+      <grid name="ocnice">ne240np4</grid>
+      <mask>gx1v7</mask>
     </model_grid>
 
     <!--  spectral element grids with 2x2 FVM physics grid -->
@@ -1051,6 +1051,8 @@
       <nx>576</nx>  <ny>384</ny>
       <file grid="atm|lnd" mask="gx1v6">domain.lnd.fv0.47x0.63_gx1v6.090407.nc</file>
       <file grid="ocnice"  mask="gx1v6">domain.ocn.0.47x0.63_gx1v6_090408.nc</file>
+      <file grid="atm|lnd" mask="gx1v7">domain.lnd.fv0.47x0.63_gx1v7.180521.nc</file>
+      <file grid="ocnice"  mask="gx1v7">domain.ocn.fv0.47x0.63_gx1v7.180521.nc</file>
       <desc>0.47x0.63 is FV 1/2-deg grid:</desc>
     </domain>
 
@@ -1091,8 +1093,10 @@
 
     <domain name="10x15">
       <nx>24</nx>   <ny>19</ny>
-      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.fv10x15_USGS.110713.nc</file>
-      <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.clm/domain.camocn.10x15_USGS_070807.nc</file>
+      <file grid="atm|lnd" mask="usgs">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.fv10x15_USGS.110713.nc</file>
+      <file grid="ocnice"  mask="usgs">$DIN_LOC_ROOT/share/domains/domain.clm/domain.ocn.fv10x15_USGS_070807.nc</file>
+      <file grid="atm|lnd" mask="gx3v7">$DIN_LOC_ROOT/share/domains/domain.lnd.fv10x15_gx3v7.180321.nc</file>
+      <file grid="ocnice"  mask="gx3v7">$DIN_LOC_ROOT/share/domains/domain.ocn.fv10x15_gx3v7.180321.nc</file>
       <desc>10x15 is FV 10-deg grid:</desc>
       <support>For low resolution testing</support>
     </domain>
@@ -1908,8 +1912,8 @@
     </gridmap>
 
     <gridmap rof_grid="rx1" ocn_grid="gx3v7" >
-      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_gx3v7_nnsm_e1000r500_170413.nc</map>
-      <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_gx3v7_nnsm_e1000r500_170413.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_gx3v7_nnsm_e1000r500_180430.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_gx3v7_nnsm_e1000r500_180430.nc</map>
     </gridmap>
     <gridmap rof_grid="rx1" ocn_grid="gx1v6" >
       <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_gx1v6_nn_open_ocean_nnsm_e1000r300_marginal_sea_170503.nc</map>
@@ -1937,8 +1941,8 @@
     </gridmap>
 
     <gridmap rof_grid="r05" ocn_grid="gx3v7" >
-      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx3v7_nnsm_e1000r500_170413.nc</map>
-      <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx3v7_nnsm_e1000r500_170413.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx3v7_nnsm_e1000r500_180430.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx3v7_nnsm_e1000r500_180430.nc</map>
     </gridmap>
     <gridmap rof_grid="r05" ocn_grid="gx1v6" >
       <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx1v6_nn_open_ocean_nnsm_e1000r300_marginal_sea_170503.nc</map>
@@ -1986,6 +1990,13 @@
     <!-- ====================  -->
     <!-- GLC: gland4           -->
     <!-- ====================  -->
+
+    <gridmap lnd_grid="0.47x0.63" glc_grid="gland4" >
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/fv0.47x0.63/map_fv0.47x0.63_TO_gland4km_aave.171105.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/fv0.47x0.63/map_fv0.47x0.63_TO_gland4km_blin.171105.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_fv0.47x0.63_aave.171105.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_fv0.47x0.63_aave.171105.nc</map>
+    </gridmap>
 
     <gridmap lnd_grid="0.9x1.25" glc_grid="gland4" >
       <map name="LND2GLC_FMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland4km_aave.170429.nc</map>
@@ -2206,8 +2217,8 @@
     <!-- POP's estuary box model is currently not active for gx3v7, so
          we need nnsm maps for liquid as well as ice. -->
     <gridmap ocn_grid="gx3v7" glc_grid="gland4" >
-      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/gland4km/map_gland4km_to_gx3v7_nnsm_e1000r500_171105.nc</map>
-      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/gland4km/map_gland4km_to_gx3v7_nnsm_e1000r500_171105.nc</map>
+      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/gland4km/map_gland4km_to_gx3v7_nnsm_e1000r500_180502.nc</map>
+      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/gland4km/map_gland4km_to_gx3v7_nnsm_e1000r500_180502.nc</map>
     </gridmap>
 
     <gridmap ocn_grid="gx1v6" glc_grid="gland5UM" >
@@ -2221,8 +2232,8 @@
     <!-- POP's estuary box model is currently not active for gx3v7, so
          we need nnsm maps for liquid as well as ice. -->
     <gridmap ocn_grid="gx3v7" glc_grid="gland5UM" >
-      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/gland5km/map_gland5km_to_gx3v7_nnsm_e1000r500_171105.nc</map>
-      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/gland5km/map_gland5km_to_gx3v7_nnsm_e1000r500_171105.nc</map>
+      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/gland5km/map_gland5km_to_gx3v7_nnsm_e1000r500_180502.nc</map>
+      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/gland5km/map_gland5km_to_gx3v7_nnsm_e1000r500_180502.nc</map>
     </gridmap>
 
     <gridmap ocn_grid="gx1v6" glc_grid="gland20" >
@@ -2236,8 +2247,8 @@
     <!-- POP's estuary box model is currently not active for gx3v7, so
          we need nnsm maps for liquid as well as ice. -->
     <gridmap ocn_grid="gx3v7" glc_grid="gland20" >
-      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/gland20km/map_gland20km_to_gx3v7_nnsm_e1000r500_171105.nc</map>
-      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/gland20km/map_gland20km_to_gx3v7_nnsm_e1000r500_171105.nc</map>
+      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/gland20km/map_gland20km_to_gx3v7_nnsm_e1000r500_180502.nc</map>
+      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/gland20km/map_gland20km_to_gx3v7_nnsm_e1000r500_180502.nc</map>
     </gridmap>
 
   </gridmaps>

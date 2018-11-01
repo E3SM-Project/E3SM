@@ -3,7 +3,7 @@ create_clone is a member of the Case class from file case.py
 """
 import os, glob, shutil
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect
+from CIME.utils import expect, check_name, safe_copy
 from CIME.user_mod_support import apply_user_mods
 from CIME.locked_files         import lock_file
 from CIME.simple_compare            import compare_files
@@ -28,6 +28,8 @@ def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
     expect(not os.path.isdir(newcaseroot),
            "New caseroot directory {} already exists".format(newcaseroot))
     newcasename = os.path.basename(newcaseroot)
+    expect(check_name(newcasename),
+           "New case name invalid {} ".format(newcasename))
     newcase_cimeroot = os.path.abspath(get_cime_root())
 
     # create clone from case to case
@@ -106,7 +108,7 @@ def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
     files = glob.glob(cloneroot + '/user_*')
 
     for item in files:
-        shutil.copy(item, newcaseroot)
+        safe_copy(item, newcaseroot)
 
     # copy SourceMod and Buildconf files
     # if symlinks exist, copy rather than follow links
@@ -124,8 +126,8 @@ def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
         if keepexe:
             # If keepexe CANNOT change any env_build.xml variables - so make a temporary copy of
             # env_build.xml and verify that it has not been modified
-            shutil.copy(os.path.join(newcaseroot, "env_build.xml"),
-                        os.path.join(newcaseroot, "LockedFiles", "env_build.xml"))
+            safe_copy(os.path.join(newcaseroot, "env_build.xml"),
+                      os.path.join(newcaseroot, "LockedFiles", "env_build.xml"))
 
         # Now apply contents of user_mods directory
         apply_user_mods(newcase_root, user_mods_dir, keepexe=keepexe)

@@ -1,13 +1,13 @@
 module Fluid_module
  
+#include "petsc/finclude/petscsys.h"
+  use petscsys 
   use PFLOTRAN_Constants_module
 
   implicit none
 
   private
 
-#include "petsc/finclude/petscsys.h"
- 
   type, public :: fluid_property_type
     PetscReal :: tort_bin_diff
     PetscReal :: vap_air_diff_coef

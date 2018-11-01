@@ -1,12 +1,13 @@
 module Units_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use PFLOTRAN_Constants_module
 
   implicit none
   
   private
   
-#include "petsc/finclude/petscsys.h"
   
   public :: UnitsConvertToInternal, UnitsConvertToExternal
   
@@ -337,7 +338,8 @@ subroutine UnitsCategory(unit,unit_category,error,error_msg)
 
   do while (k < 4)
     select case(trim(unit(k)))
-      case('cm^3','l','L','ml','mL','dm^3','m^3','gal','gallon')
+      case('cm^3','l','L','ml','mL','dm^3','m^3','gal','gallon',&
+           'bbl','cf','Mcf')
         unit_category(k) = 'volume'
       case('cm^2','dm^2','m^2','km^2')
         unit_category(k) = 'area'
@@ -346,6 +348,8 @@ subroutine UnitsCategory(unit,unit_category,error,error_msg)
       case('s','sec','second','min','minute','h','hr','hour','d','day','w', &
            'week','mo','month','y','yr','year')
         unit_category(k) = 'time'
+      case('Pa.s','cP','centiPoise','Poise','P')
+        unit_category(k) = 'viscosity'
       case('J','kJ','MJ')
         unit_category(k) = 'energy'
       case('W','kW','MW')
@@ -360,7 +364,7 @@ subroutine UnitsCategory(unit,unit_category,error,error_msg)
         unit_category(k) = 'temperature'
         error_msg = 'Kelvin temperature units are not supported. Use Celcius.' 
         error = PETSC_TRUE
-      case('Pa','kPa','MPa','Bar')
+      case('Pa','kPa','MPa','Bar','psi')
         unit_category(k) = 'pressure'
       case('M','mM')
         unit_category(k) = 'concentration'
@@ -411,6 +415,13 @@ subroutine UnitsConvertToSI(unit,conversion_factor,error,error_msg)
       conversion_factor = 1.d0
     case('gal','gallon')
       conversion_factor = 3.785411784d-3
+    case('cf')
+      conversion_factor = 0.02831685
+    case('Mcf') !In Field units M means 1000
+      conversion_factor = 0.02831685d3
+    case('bbl')
+      conversion_factor = 0.1589873141
+    case('')
   !---> AREA ---> (meter^2)
     case('cm^2')
       conversion_factor = 1.d-4
@@ -443,9 +454,15 @@ subroutine UnitsConvertToSI(unit,conversion_factor,error,error_msg)
     case('w','week')
       conversion_factor = 7.d0*24.d0*3600.d0 
     case('mo','month')
-      conversion_factor = 365.d0/12.d0*24.d0*3600.d0 
+      conversion_factor = DAYS_PER_YEAR/12.d0*24.d0*3600.d0 
     case('y','yr','year')
-      conversion_factor = 365.d0*24.d0*3600.d0
+      conversion_factor = DAYS_PER_YEAR*24.d0*3600.d0
+    case('Pa.s')
+      conversion_factor = 1.0
+    case('cP','centiPoise')
+      conversion_factor = 1.d-3
+    case('P','Poise')
+      conversion_factor = 1.d-1 
   ! ---> ENERGY ---> (Joule)
     case('J')   
       conversion_factor = 1.d0
@@ -486,6 +503,8 @@ subroutine UnitsConvertToSI(unit,conversion_factor,error,error_msg)
       conversion_factor = 1.d6
     case('Bar')
       conversion_factor = 1.d5
+    case('psi')
+      conversion_factor = 6894.757
   ! ---> CONCENTRATION ---> (M)
     case('M') 
       conversion_factor = 1.d0

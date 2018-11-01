@@ -6,9 +6,9 @@ Troubleshooting
 Troubleshooting case creation
 -----------------------------
 
-Generally, **create_newcase** errors are reported to the terminal and should provide some guidance about what caused them.
+Generally, `create_newcase  <../Tools_user/create_newcase.html>`_ errors are reported to the terminal and should provide some guidance about what caused them.
 
-If **create_newcase** fails on a relatively generic error, first check to make sure the command-line arguments match the interface's specification. See the help text to review usage.
+If `create_newcase  <../Tools_user/create_newcase.html>`_ fails on a relatively generic error, first check to make sure the command-line arguments match the interface's specification. See the help text to review usage.
 ::
 
    > create_newcase --help
@@ -17,13 +17,13 @@ Troubleshooting job submission
 -------------------------------
 
 Most problems associated with submission or launch are site-specific.
-The batch and run aspects of the **case.submit** script are created by parsing the variables in **$CASEROOT/env_batch.xml** file.
+The batch and run aspects of the `case.submit  <../Tools_user/case.submit.html>`_ script are created by parsing the variables in **$CASEROOT/env_batch.xml** file.
 
 Take these steps to check for problems:
 
 1. Review the batch submission options in **$CASEROOT/env_batch.xml**. Confirm that they are consistent with the site-specific batch environment, and that the queue names, time limits, and hardware processor request make sense and are consistent with the case.
 
-2. Make sure that **case.submit** uses the correct batch job tool for submitting the **case.run** script. Depending on the batch environment, it might be **bsub**, **qsub** or another command. Also confirm if a redirection "<" character is required. The information for how **case.submit** submits jobs appears at the end of the standard output stream.
+2. Make sure that `case.submit  <../Tools_user/case.submit.html>`_ uses the correct batch job tool for submitting the `case.submit  <../Tools_user/case.submit.html>`_ script. Depending on the batch environment, it might be **bsub**, **qsub** or another command. Also confirm if a redirection "<" character is required. The information for how **case.submit** submits jobs appears at the end of the standard output stream.
 
 Troubleshooting runtime problems
 ---------------------------------
@@ -33,11 +33,11 @@ To see if a run completed successfully, check the last several lines of the **cp
 Check these things first when a job fails:
 
 - Did the model time out?
- 
+
 - Was a disk quota limit hit?
- 
+
 - Did a machine go down?
- 
+
 - Did a file system become full?
 
 If any of those things happened, take appropriate corrective action (see suggestions below) and resubmit the job.
@@ -57,7 +57,7 @@ If it is not clear that any of the above caused a case to fail, there are severa
 
 - Check any automated email from the job about why a job failed. Some sites' batch schedulers send these.
 
-- Check the archive directory: **$DOUT_S_ROOT/$CASE**.   If a case failed, the log files 
+- Check the archive directory: **$DOUT_S_ROOT/$CASE**.   If a case failed, the log files
   or data may still have been archived.
 
 **Common errors**

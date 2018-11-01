@@ -55,7 +55,8 @@ function SurfaceTHAuxCreate(option)
   ! Author: Gautam Bisht, LBNL
   ! Date: 03/07/13
   ! 
-
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
 
   implicit none
@@ -155,7 +156,8 @@ subroutine SurfaceTHAuxVarCompute(xx,auxvar,global_auxvar, &
   ! Author: Gautam Bisht, LBNL
   ! Date: 03/07/13
   ! 
-
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
   use Surface_Global_Aux_module
   

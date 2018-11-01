@@ -6,16 +6,14 @@ module Condition_Control_module
   ! and below.  Routines in this module will loop over realization, levels,
   ! and patches without calling underlying level/patch versions of the
   ! subroutines, which is common in realization.F90 - GEH
- 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
+
   use PFLOTRAN_Constants_module
 
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   public :: CondControlAssignFlowInitCond, &
             CondControlAssignTranInitCond, &
@@ -33,7 +31,8 @@ subroutine CondControlAssignFlowInitCond(realization)
   ! Author: Glenn Hammond
   ! Date: 11/02/07, 10/18/11
   ! 
-
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Realization_Subsurface_class
   use Discretization_module
   use Region_module
@@ -52,9 +51,6 @@ subroutine CondControlAssignFlowInitCond(realization)
   use Global_Aux_module
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
   
   class(realization_subsurface_type) :: realization
   
@@ -81,7 +77,9 @@ subroutine CondControlAssignFlowInitCond(realization)
   PetscInt :: offset, istate
   PetscReal :: x(realization%option%nflowdof)
   PetscReal :: temperature, p_sat
-  PetscReal :: tempreal
+  PetscReal :: tempreal,pru,sou,sgu,pbu
+  PetscInt :: saturated_state
+  type(global_auxvar_type), pointer :: global_auxvars(:)
 
   option => realization%option
   discretization => realization%discretization
@@ -215,6 +213,8 @@ subroutine CondControlAssignTranInitCond(realization)
   ! Author: Glenn Hammond
   ! Date: 11/02/07, 10/18/11
   ! 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
 
   use Realization_Subsurface_class
   use Discretization_module
@@ -237,16 +237,15 @@ subroutine CondControlAssignTranInitCond(realization)
   use HDF5_module
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
   
   class(realization_subsurface_type) :: realization
   
   PetscInt :: icell, iconn, idof, isub_condition, temp_int, iimmobile
   PetscInt :: local_id, ghosted_id, iend, ibegin
   PetscInt :: irxn, isite, imnrl, ikinrxn
-  PetscReal, pointer :: xx_p(:), xx_loc_p(:), vec_p(:)
+  PetscReal, pointer :: xx_p(:), xx_loc_p(:), vec_p(:), vec_p2(:)
+  Vec :: vec1_loc
+  Vec :: vec2_loc
   PetscErrorCode :: ierr
   
   type(option_type), pointer :: option
@@ -284,6 +283,8 @@ subroutine CondControlAssignTranInitCond(realization)
   reaction => realization%reaction
   
   iphase = 1
+  vec1_loc = PETSC_NULL_VEC
+  vec2_loc = PETSC_NULL_VEC
   
   cur_patch => realization%patch_list%first
   do
@@ -335,17 +336,22 @@ subroutine CondControlAssignTranInitCond(realization)
                           constraint_coupler%minerals% &
                             constraint_vol_frac_string(imnrl), &
                           string,option)
+            if (vec1_loc == PETSC_NULL_VEC) then
+              ! cannot use field%work_loc as it is used within ConditionCo...
+              call VecDuplicate(field%work_loc,vec1_loc, &
+                                ierr);CHKERRQ(ierr)
+            endif 
             idof = ONE_INTEGER
             call ConditionControlMapDatasetToVec(realization,dataset,idof, &
-                                                  field%work_loc,LOCAL)
-            call VecGetArrayF90(field%work_loc,vec_p,ierr);CHKERRQ(ierr)
+                                                 vec1_loc,LOCAL)
+            call VecGetArrayF90(vec1_loc,vec_p,ierr);CHKERRQ(ierr)
             do icell=1,initial_condition%region%num_cells
               local_id = initial_condition%region%cell_ids(icell)
               ghosted_id = grid%nL2G(local_id)
               rt_auxvars(ghosted_id)%mnrl_volfrac0(imnrl) = vec_p(ghosted_id)
               rt_auxvars(ghosted_id)%mnrl_volfrac(imnrl) = vec_p(ghosted_id)
             enddo
-            call VecRestoreArrayF90(field%work_loc,vec_p,ierr);CHKERRQ(ierr)
+            call VecRestoreArrayF90(vec1_loc,vec_p,ierr);CHKERRQ(ierr)
           endif
         enddo
       endif
@@ -360,17 +366,48 @@ subroutine CondControlAssignTranInitCond(realization)
                           constraint_coupler%minerals% &
                           constraint_area_string(imnrl), &
                           string,option)
+            if (vec1_loc == PETSC_NULL_VEC) then
+              ! cannot use field%work_loc as it is used within ConditionCo...
+              call VecDuplicate(field%work_loc,vec1_loc, &
+                                ierr);CHKERRQ(ierr)
+            endif 
             idof = ONE_INTEGER
             call ConditionControlMapDatasetToVec(realization,dataset,idof, &
-                                                  field%work_loc,LOCAL)
-            call VecGetArrayF90(field%work_loc,vec_p,ierr);CHKERRQ(ierr)
+                                                 vec1_loc,LOCAL)
+            call VecScale(vec1_loc,constraint_coupler%minerals% &
+                            constraint_area_conv_factor(imnrl), &
+                          ierr);CHKERRQ(ierr)
+            if (constraint_coupler%minerals%area_per_unit_mass(imnrl)) then
+              if (constraint_coupler%minerals% &
+                    external_vol_frac_dataset(imnrl)) then
+                dataset => DatasetBaseGetPointer(realization%datasets, &
+                              constraint_coupler%minerals% &
+                                constraint_vol_frac_string(imnrl), &
+                              string,option)
+                if (vec2_loc == PETSC_NULL_VEC) then
+                  call VecDuplicate(vec1_loc,vec2_loc, &
+                                    ierr);CHKERRQ(ierr)
+                endif 
+                idof = ONE_INTEGER
+                call ConditionControlMapDatasetToVec(realization,dataset, &
+                                                     idof,vec2_loc,LOCAL)
+                call VecPointwiseMult(vec1_loc,vec1_loc, &
+                                      vec2_loc,ierr);CHKERRQ(ierr)
+              else
+                call VecScale(vec1_loc, &
+                              constraint_coupler%minerals% &
+                                constraint_vol_frac(imnrl), &
+                              ierr);CHKERRQ(ierr)
+              endif
+            endif
+            call VecGetArrayF90(vec1_loc,vec_p,ierr);CHKERRQ(ierr)
             do icell=1,initial_condition%region%num_cells
               local_id = initial_condition%region%cell_ids(icell)
               ghosted_id = grid%nL2G(local_id)
               rt_auxvars(ghosted_id)%mnrl_area0(imnrl) = vec_p(ghosted_id)
               rt_auxvars(ghosted_id)%mnrl_area(imnrl) = vec_p(ghosted_id)
             enddo
-            call VecRestoreArrayF90(field%work_loc,vec_p,ierr);CHKERRQ(ierr)
+            call VecRestoreArrayF90(vec1_loc,vec_p,ierr);CHKERRQ(ierr)
           endif
         enddo
       endif
@@ -384,16 +421,21 @@ subroutine CondControlAssignTranInitCond(realization)
             dataset => DatasetBaseGetPointer(realization%datasets, &
                 constraint_coupler%immobile_species%constraint_aux_string(iimmobile), &
                 string,option)
+            if (vec1_loc == PETSC_NULL_VEC) then
+              ! cannot use field%work_loc as it is used within ConditionCo...
+              call VecDuplicate(field%work_loc,vec1_loc, &
+                                ierr);CHKERRQ(ierr)
+            endif 
             idof = ONE_INTEGER
             call ConditionControlMapDatasetToVec(realization,dataset,idof, &
-                                                  field%work_loc,LOCAL)
-            call VecGetArrayF90(field%work_loc,vec_p,ierr);CHKERRQ(ierr)
+                                                 vec1_loc,LOCAL)
+            call VecGetArrayF90(vec1_loc,vec_p,ierr);CHKERRQ(ierr)
             do icell=1,initial_condition%region%num_cells
               local_id = initial_condition%region%cell_ids(icell)
               ghosted_id = grid%nL2G(local_id)
               rt_auxvars(ghosted_id)%immobile(iimmobile) = vec_p(ghosted_id)
             enddo
-            call VecRestoreArrayF90(field%work_loc,vec_p,ierr);CHKERRQ(ierr)
+            call VecRestoreArrayF90(vec1_loc,vec_p,ierr);CHKERRQ(ierr)
           endif
         enddo
       endif
@@ -437,7 +479,6 @@ subroutine CondControlAssignTranInitCond(realization)
               constraint_coupler%aqueous_species, &
               constraint_coupler%free_ion_guess, &
               constraint_coupler%minerals, &
-              constraint_coupler%surface_complexes, &
               constraint_coupler%colloids, &
               constraint_coupler%immobile_species, &
               constraint_coupler%num_iterations, &
@@ -453,7 +494,6 @@ subroutine CondControlAssignTranInitCond(realization)
               constraint_coupler%aqueous_species, &
               constraint_coupler%free_ion_guess, &
               constraint_coupler%minerals, &
-              constraint_coupler%surface_complexes, &
               constraint_coupler%colloids, &
               constraint_coupler%immobile_species, &
               constraint_coupler%num_iterations, &
@@ -495,31 +535,6 @@ subroutine CondControlAssignTranInitCond(realization)
                 constraint_coupler%minerals%constraint_area(imnrl)
             endif
           enddo
-        endif
-        ! kinetic surface complexes
-        if (associated(constraint_coupler%surface_complexes)) then
-          do idof = 1, reaction%surface_complexation%nkinsrfcplx
-            rt_auxvars(ghosted_id)%kinsrfcplx_conc(idof,-1) = & !geh: to catch bug
-              constraint_coupler%surface_complexes%constraint_conc(idof)
-          enddo
-          do ikinrxn = 1, reaction%surface_complexation%nkinsrfcplxrxn
-            irxn = reaction%surface_complexation%kinsrfcplxrxn_to_srfcplxrxn(ikinrxn)
-            isite = reaction%surface_complexation%srfcplxrxn_to_surf(irxn)
-            rt_auxvars(ghosted_id)%kinsrfcplx_free_site_conc(isite) = &
-              constraint_coupler%surface_complexes%basis_free_site_conc(isite)
-          enddo
-        endif
-        ! this is for the multi-rate surface complexation model
-        if (reaction%surface_complexation%nkinmrsrfcplxrxn > 0 .and. &
-          ! geh: if we re-equilibrate at each grid cell, we do not want to
-          ! overwrite the reequilibrated values with those from the constraint
-            .not. re_equilibrate_at_each_cell) then
-          ! copy over total sorbed concentration
-          rt_auxvars(ghosted_id)%kinmr_total_sorb = &
-            constraint_coupler%rt_auxvar%kinmr_total_sorb
-          ! copy over free site concentration
-          rt_auxvars(ghosted_id)%srfcplxrxn_free_site_conc = &
-            constraint_coupler%rt_auxvar%srfcplxrxn_free_site_conc
         endif
         ! colloids fractions
         if (associated(constraint_coupler%colloids)) then
@@ -634,6 +649,13 @@ subroutine CondControlAssignTranInitCond(realization)
     call RTUpdateAuxVars(realization,PETSC_TRUE,PETSC_FALSE,PETSC_TRUE)
   endif
 
+  if (vec1_loc /= PETSC_NULL_VEC) then
+    call VecDestroy(vec1_loc,ierr);CHKERRQ(ierr)
+  endif
+  if (vec2_loc /= PETSC_NULL_VEC) then
+    call VecDestroy(vec2_loc,ierr);CHKERRQ(ierr)
+  endif
+
 end subroutine CondControlAssignTranInitCond
 
 ! ************************************************************************** !
@@ -647,6 +669,8 @@ subroutine ConditionControlMapDatasetToVec(realization,dataset,idof, &
   ! Author: Glenn Hammond
   ! Date: 03/23/12
   ! 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Realization_Subsurface_class
   use Option_module
   use Field_module
@@ -657,9 +681,7 @@ subroutine ConditionControlMapDatasetToVec(realization,dataset,idof, &
 
   implicit none
   
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"  
-  
+
   class(realization_subsurface_type) :: realization
   class(dataset_base_type), pointer :: dataset
   PetscInt :: idof
@@ -674,6 +696,7 @@ subroutine ConditionControlMapDatasetToVec(realization,dataset,idof, &
   field => realization%field
   option => realization%option
   
+  call VecZeroEntries(field%work,ierr);CHKERRQ(ierr)
   if (associated(dataset)) then
     select type(dataset)
       class is (dataset_common_hdf5_type)
@@ -712,7 +735,9 @@ subroutine CondControlScaleSourceSink(realization)
   ! Author: Glenn Hammond
   ! Date: 09/03/08, 10/18/11
   ! 
-
+#include "petsc/finclude/petscdmda.h"
+  use petscdmda
+      
   use Realization_Subsurface_class
   use Discretization_module
   use Region_module
@@ -727,11 +752,6 @@ subroutine CondControlScaleSourceSink(realization)
   use Variables_module, only : PERMEABILITY_X
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscdmda.h"
-
   
   class(realization_subsurface_type) :: realization
   
@@ -788,7 +808,7 @@ subroutine CondControlScaleSourceSink(realization)
         ghosted_id = grid%nL2G(local_id)
 
         select case(option%iflowmode)
-          case(RICHARDS_MODE)
+          case(TH_MODE)
               call GridGetGhostedNeighbors(grid,ghosted_id,DMDA_STENCIL_STAR, &
                                           x_width,y_width,z_width, &
                                           x_count,y_count,z_count, &
@@ -826,8 +846,7 @@ subroutine CondControlScaleSourceSink(realization)
                             grid%structured_grid%dy(neighbor_ghosted_id)
               enddo
               vec_ptr(local_id) = vec_ptr(local_id) + sum
-          case(TH_MODE)
-        end select
+         end select
 
       enddo
         
@@ -840,10 +859,9 @@ subroutine CondControlScaleSourceSink(realization)
       do iconn = 1, cur_connection_set%num_connections      
         local_id = cur_connection_set%id_dn(iconn)
         select case(option%iflowmode)
-          case(RICHARDS_MODE)
+          case(TH_MODE)
             cur_source_sink%flow_aux_real_var(ONE_INTEGER,iconn) = &
               vec_ptr(local_id)
-          case(TH_MODE)
         end select
 
       enddo
@@ -867,6 +885,8 @@ subroutine CondControlReadTransportIC(realization,filename)
   ! Date: 03/05/10
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Realization_Subsurface_class
   use Option_module
   use Field_module
@@ -878,9 +898,6 @@ subroutine CondControlReadTransportIC(realization,filename)
   use HDF5_module
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
   
   class(realization_subsurface_type) :: realization
   character(len=MAXSTRINGLENGTH) :: filename
@@ -953,6 +970,8 @@ end subroutine CondControlReadTransportIC
 
 subroutine CondControlAssignFlowInitCondSurface(surf_realization)
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Realization_Surface_class
   use Discretization_module
   use Region_module
@@ -967,9 +986,6 @@ subroutine CondControlAssignFlowInitCondSurface(surf_realization)
   use Surface_Global_Aux_module
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
   
   class(realization_surface_type) :: surf_realization
   
@@ -1012,7 +1028,7 @@ subroutine CondControlAssignFlowInitCondSurface(surf_realization)
 
     select case(option%iflowmode)
       
-      case (RICHARDS_MODE,TH_MODE)
+      case (TH_MODE)
         ! assign initial conditions values to domain
         call VecGetArrayF90(surf_field%flow_xx,xx_p, ierr);CHKERRQ(ierr)
     

@@ -583,12 +583,7 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
 
       !This turned out a big optimization, remembering that only parts of the PPM algorithm depends on the data, namely the
       !limiting. So anything that depends only on the grid is pre-computed outside the tracer loop.
-      if (vert_remap_q_alg == 1) then
-         ! call old version only for BFB compatibility
-         ppmdx(:,:) = compute_ppm_grids_old( dpo )
-      else
-         ppmdx(:,:) = compute_ppm_grids( dpo )
-      endif
+      ppmdx(:,:) = compute_ppm_grids( dpo )
 
       !From here, we loop over tracers for only those portions which depend on tracer data, which includes PPM limiting and
       !mass accumulation
@@ -632,53 +627,6 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
   call t_stopf('remap_Q_ppm')
 end subroutine remap_Q_ppm
 
-
-!=======================================================================================================!
-
-! New version supports q_alg=3 but is not BFB with old code with -O3 optimization
-! old version should be removed seperate commit with tests rebaselined
-
-!THis compute grid-based coefficients from Collela & Woodward 1984.
-function compute_ppm_grids_old( dx )   result(rslt)
-  use control_mod, only: vert_remap_q_alg
-  implicit none
-  real(kind=real_kind), intent(in) :: dx(-1:nlev+2)  !grid spacings
-  real(kind=real_kind)             :: rslt(10,0:nlev+1)  !grid spacings
-  integer :: j
-  integer :: indB, indE
-
-  !Calculate grid-based coefficients for stage 1 of compute_ppm
-  if (vert_remap_q_alg == 2) then
-    indB = 2
-    indE = nlev-1
-  else
-    indB = 0
-    indE = nlev+1
-  endif
-  do j = indB , indE
-    rslt( 1,j) = dx(j) / ( dx(j-1) + dx(j) + dx(j+1) )
-    rslt( 2,j) = ( 2.*dx(j-1) + dx(j) ) / ( dx(j+1) + dx(j) )
-    rslt( 3,j) = ( dx(j) + 2.*dx(j+1) ) / ( dx(j-1) + dx(j) )
-  enddo
-
-  !Caculate grid-based coefficients for stage 2 of compute_ppm
-  if (vert_remap_q_alg == 2) then
-    indB = 2
-    indE = nlev-2
-  else
-    indB = 0
-    indE = nlev
-  endif
-  do j = indB , indE
-    rslt( 4,j) = dx(j) / ( dx(j) + dx(j+1) )
-    rslt( 5,j) = 1. / sum( dx(j-1:j+2) )
-    rslt( 6,j) = ( 2. * dx(j+1) * dx(j) ) / ( dx(j) + dx(j+1 ) )
-    rslt( 7,j) = ( dx(j-1) + dx(j  ) ) / ( 2. * dx(j  ) + dx(j+1) )
-    rslt( 8,j) = ( dx(j+2) + dx(j+1) ) / ( 2. * dx(j+1) + dx(j  ) )
-    rslt( 9,j) = dx(j  ) * ( dx(j-1) + dx(j  ) ) / ( 2.*dx(j  ) +    dx(j+1) )
-    rslt(10,j) = dx(j+1) * ( dx(j+1) + dx(j+2) ) / (    dx(j  ) + 2.*dx(j+1) )
-  enddo
-end function compute_ppm_grids_old
 
 !THis compute grid-based coefficients from Collela & Woodward 1984.
 function compute_ppm_grids( dx )   result(rslt)

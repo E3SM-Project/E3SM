@@ -84,11 +84,11 @@ for mct, etc.
 
 
 <!-- hacking of mach/compiler generated 'Macros.make' for coupling with pflotran -->
-<!-- ideally it should go with CLM configuration/compsets -->
+<!-- ideally it should go with CLM configuration -->
 <compiler>
-  <ADD_FFLAGS  MODEL="clm" CLM_PFLOTRAN_COUPLED="TRUE"> -I$(CLM_PFLOTRAN_SOURCE_DIR)  -I$(PETSC_PATH)/include -I$(HDF5_PATH)/include</ADD_FFLAGS>
-  <ADD_CPPDEFS MODEL="clm" CLM_PFLOTRAN_COUPLED="TRUE"> -DCLM_PFLOTRAN  -DSMOOTHING2</ADD_CPPDEFS>
-  <ADD_CPPDEFS MODEL="clm" CLM_PFLOTRAN_COUPLED="TRUE" CLM_PFLOTRAN_COLMODE="TRUE"> -DCOLUMN_MODE </ADD_CPPDEFS>
+  <ADD_FFLAGS  MODEL="clm"    CLM_PFLOTRAN_COUPLED="TRUE"> -I$(PETSC_PATH)/include </ADD_FFLAGS>
+  <ADD_CPPDEFS MODEL="clm"    CLM_PFLOTRAN_COUPLED="TRUE"> -DCLM_PFLOTRAN </ADD_CPPDEFS>
+  <ADD_CPPDEFS MODEL="clm"    CLM_PFLOTRAN_COUPLED="TRUE" CLM_PFLOTRAN_COLMODE="TRUE"> -DCOLUMN_MODE </ADD_CPPDEFS>
   <ADD_LDFLAGS MODEL="driver" CLM_PFLOTRAN_COUPLED="TRUE"> -L$(PETSC_PATH)/lib -lpetsc -lmetis -lparmetis </ADD_LDFLAGS>
 </compiler>
 <!-- end of hacking 'Macros.make' for coupling with pflotran -->
@@ -162,7 +162,7 @@ for mct, etc.
 
 
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DCPRPGI </ADD_CPPDEFS>
-  <CFLAGS> -gopt -Mlist  -time </CFLAGS>
+  <CFLAGS> -gopt -time </CFLAGS>
 
   <ADD_CFLAGS compile_threaded="false"> </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="false"> </ADD_FFLAGS>
@@ -230,13 +230,12 @@ for mct, etc.
   <!--                     * inv: invalid operands         -->
   <!--                     * divz divide by zero           -->
   <!--                     * ovf: floating point overflow   -->
-  <!--  -Mlist          => Create a listing file             -->
   <!--  -F              => leaves file.f for each preprocessed file.F file  -->
   <!--  -time           => Print execution time for each compiler step  -->
 
 
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DUSE_CUDA_FORTRAN -DCPRPGI </ADD_CPPDEFS>
-  <CFLAGS> -Mlist -time </CFLAGS>
+  <CFLAGS> -time </CFLAGS>
 
   <ADD_CFLAGS compile_threaded="false"> </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="false"> </ADD_FFLAGS>
@@ -249,7 +248,7 @@ for mct, etc.
   <FREEFLAGS> -Mfree </FREEFLAGS>
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
 
-  <FFLAGS>  -i4 -Mlist  -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee  </FFLAGS>
+  <FFLAGS>  -i4 -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee  </FFLAGS>
   <ADD_FFLAGS MODEL="cam"> </ADD_FFLAGS>
   <FFLAGS_NOOPT> -O0 -g -Ktrap=fp -Mbounds -Kieee  </FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="false"> </ADD_FFLAGS_NOOPT>
@@ -467,30 +466,31 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="gnu" MACH="mymac" >
-  <CFLAGS> -mcmodel=small </CFLAGS>
     <!-- for Mac OSX high sierra, clang-based gcc may have issue with '-mcmodel=medium' for libcsm_share.a, as following
          ld: in ../../gnu/mpich/nodebug/nothreads/mct/noesmf/c1a1l1i1o1r1g1w1e1/lib/libcsm_share.a(dSFMT.o), 
              in section __TEXT,__text reloc 3: length != 2 and X86_64_RELOC_GOT not supported file 
              '../../gnu/mpich/nodebug/nothreads/mct/noesmf/c1a1l1i1o1r1g1w1e1/lib/libcsm_share.a' for architecture x86_64
          collect2: error: ld returned 1 exit status 
     -->
+  <CFLAGS> -mcmodel=small </CFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -fopenmp </ADD_CFLAGS>
-  <ADD_CFLAGS  DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</ADD_CFLAGS>
-  <ADD_CFLAGS  DEBUG="FALSE"> -O </ADD_CFLAGS>
-  <ADD_CFLAGS  MODEL="csm_share"> -std=c99 </ADD_CFLAGS>
-
-  <FFLAGS> -mcmodel=small -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none</FFLAGS>
-  <ADD_FFLAGS compile_threaded="true"> -fopenmp   </ADD_FFLAGS>
-  <ADD_FFLAGS DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</ADD_FFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O </ADD_FFLAGS>
-
+  <ADD_CFLAGS> -I$(NETCDF_PATH)/include -I$(HDF5_PATH)/include </ADD_CFLAGS>
+  <ADD_CFLAGS DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow </ADD_CFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O </ADD_CFLAGS>
+  <ADD_CFLAGS MODEL="csm_share"> -std=c99 </ADD_CFLAGS>
+  <FFLAGS> -mcmodel=small</FFLAGS>
+  <ADD_FFLAGS> -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </ADD_FFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -fopenmp  </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O  </ADD_FFLAGS>
+  <ADD_FFLAGS> -I$(NETCDF_PATH)/include -I$(HDF5_PATH)/include </ADD_FFLAGS>
   <ADD_LDFLAGS compile_threaded="true"> -fopenmp </ADD_LDFLAGS>
   <ADD_LDFLAGS> -framework Accelerate </ADD_LDFLAGS>
-  <ADD_LDFLAGS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf </ADD_LDFLAGS>
-  <ADD_LDFLAGS>-L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -lhdf5hl_fortran -lhdf5_fortran </ADD_LDFLAGS>
-  <!--ADD_LDFLAGS>-L$(PNETCDF_PATH)/lib -lpnetcdf </ADD_LDFLAGS> -->
-  <ADD_LDFLAGS>-L$(CC_ROOT)/lib -lgomp </ADD_LDFLAGS> 
-  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -framework Accelerate </ADD_SLIBS>
+  <ADD_LDFLAGS MODEL="driver"> -L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf \
+              -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -lhdf5hl_fortran -lhdf5_fortran \
+              -L$(CC_ROOT)/lib -lgomp </ADD_LDFLAGS>
+              <!-- ADD_LDFLAGS MODEL="driver">-L$(PNETCDF_PATH)/lib -lpnetcdf </ADD_LDFLAGS> -->
+  <ADD_SLIBS> -L$(NETCDF_PATH) -lnetcdff -lnetcdf -framework Accelerate </ADD_SLIBS>
   <SFC>$(FC_ROOT)/bin/gfortran</SFC>
   <SCC>$(CC_ROOT)/bin/gcc</SCC>
   <SCXX>$(CC_ROOT)/bin/g++</SCXX>
@@ -579,8 +579,7 @@ for mct, etc.
 
 <compiler OS="Darwin">
    <ADD_CPPDEFS> -DSYSDARWIN </ADD_CPPDEFS>
-   <!-- The following may cause duplicate symbol issue -->
-   <!-- ADD_LDFLAGS MODEL="driver"> -all_load </ADD_LDFLAGS> -->
+   <!--  ADD_LDFLAGS MODEL="driver"> -all_load </ADD_LDFLAGS> -->
 </compiler>
 
 <compiler COMPILER="intel" OS="Darwin" >
@@ -673,7 +672,7 @@ for mct, etc.
 <!-- Intel v18 is default on cori-knl and cori-haswell -->
 <compiler COMPILER="intel" MACH="cori-knl">
   <FFLAGS> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </FFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align -fpe0</ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</ADD_FFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
@@ -1078,7 +1077,7 @@ for mct, etc.
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <ADD_FFLAGS> -qzerosize -qfree=f90 -qxlf2003=polymorphic</ADD_FFLAGS>
   <ADD_FFLAGS_NOOPT> -O0 -g -qfree=f90  </ADD_FFLAGS_NOOPT>
-  <ADD_LDFLAGS>-lxlfmath -lxlf90_r -lxlopt -lxl -lxlsmp -L$(NETCDF_C_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(ESSL_PATH)/lib64 -lessl -L$(NETLIB_LAPACK_PATH)/lib -llapack</ADD_LDFLAGS>
+  <ADD_LDFLAGS>-lxlopt -lxl -lxlsmp -L$(NETCDF_C_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(ESSL_PATH)/lib64 -lessl -L$(NETLIB_LAPACK_PATH)/lib -llapack</ADD_LDFLAGS>
   <ADD_LDFLAGS MPILIB="!mpi-serial"> -L$(PNETCDF_PATH)/lib -lpnetcdf -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 </ADD_LDFLAGS>
   <ADD_FFLAGS> -qspillsize=2500 -qextname=flush </ADD_FFLAGS>
   <ADD_CPPDEFS> -DLINUX  </ADD_CPPDEFS>
@@ -1189,8 +1188,8 @@ for mct, etc.
   <SFC> ifort </SFC>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
-  <FFLAGS>-convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml</FFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align -fpe0</ADD_FFLAGS>
+  <FFLAGS>-convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent</FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align -fp-speculation=off</ADD_FFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
@@ -1204,6 +1203,8 @@ for mct, etc.
 <compiler COMPILER="gnu" MACH="theta">
   <ADD_SLIBS>$(shell nf-config --flibs)</ADD_SLIBS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
 </compiler>
 
 <compiler COMPILER="pgi" MACH="blues">

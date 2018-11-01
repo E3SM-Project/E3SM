@@ -957,7 +957,7 @@ contains
     ! Determine weight arrays for non-dynamic landuse mode
     !
     ! !USES:
-    use clm_varctl      , only : create_crop_landunit, use_ed
+    use clm_varctl      , only : create_crop_landunit, use_fates
     use clm_varctl      , only : irrigate
     use clm_varpar      , only : natpft_lb, natpft_ub, natpft_size, cft_lb, cft_ub, cft_size
     use clm_varpar      , only : crop_prog
@@ -1018,7 +1018,7 @@ contains
 
     else if ( cft_dim_exists .and. .not. create_crop_landunit )then
        if ( masterproc ) write(iulog,*) "WARNING: New CFT-based format surface datasets should be run with create_crop_landunit=T"
-       if ( use_ed ) then
+       if ( use_fates ) then
           if ( masterproc ) write(iulog,*) "WARNING: When fates is on we allow new CFT based surface datasets ", &
                                            "to be used with create_crop_land FALSE"
           cftsize = 2

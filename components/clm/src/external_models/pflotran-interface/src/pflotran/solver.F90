@@ -1,29 +1,14 @@
 module Solver_module
  
+#include "petsc/finclude/petscts.h"
+  use petscts
   use PFLOTRAN_Constants_module
+  use CPR_Preconditioner_module
+  use Solver_CPR_module
 
   implicit none
 
   private
- 
-#include "petsc/finclude/petscsys.h"
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
-#include "petsc/finclude/petscksp.h"
-#include "petsc/finclude/petscpc.h"
-#include "petsc/finclude/petscsnes.h"
-#include "petsc/finclude/petscts.h"
-! If the PETSc release is 3.3 or lower, then include petscpcmg.h.
-! If using an older version of petsc-dev and petscpcmg.h is required, 
-! it can be used by having the makefile turn on HAVE_PETSCPCMG_H.
-#if (((PETSC_VERSION_RELEASE) && ((PETSC_VERSION_MAJOR<3) || ((PETSC_VERSION_MAJOR==3) && (PETSC_VERSION_MINOR<=3)))) || (HAVE_PETSCPCMG_H))
-#include "petsc/finclude/petscpcmg.h"
-#endif
-
-!#include "petsc/finclude/petscpcmg.h"
 
   type, public :: solver_type
     PetscInt :: itype            ! type: flow or transport
@@ -55,6 +40,7 @@ module Solver_module
     PetscInt :: galerkin_mg_levels_x
     PetscInt :: galerkin_mg_levels_y
     PetscInt :: galerkin_mg_levels_z
+    PetscBool :: verbose_error_msg
 
     ! Jacobian matrix
     Mat :: J    ! Jacobian
@@ -83,6 +69,9 @@ module Solver_module
     PetscBool :: print_linear_iterations
     PetscBool :: check_infinity_norm
     PetscBool :: print_ekg
+
+    ! added for CPR option:
+    type(cpr_pc_type), pointer :: cprstash
             
   end type solver_type
   
@@ -96,7 +85,8 @@ module Solver_module
             SolverPrintNewtonInfo, &
             SolverPrintLinearInfo, &
             SolverCheckCommandLine, &
-            SolverLinearPrintFailedReason
+            SolverLinearPrintFailedReason, &
+            SolverNewtonPrintFailedReason
   
 contains
 
@@ -133,7 +123,7 @@ function SolverCreate()
   solver%newton_atol = PETSC_DEFAULT_REAL
   solver%newton_rtol = PETSC_DEFAULT_REAL
   solver%newton_stol = PETSC_DEFAULT_REAL
-  solver%newton_dtol = PETSC_DEFAULT_REAL 
+  solver%newton_dtol = 1.d20 
   solver%max_norm = 1.d20     ! set to a large value
   solver%newton_inf_res_tol = UNINITIALIZED_DOUBLE
   solver%newton_inf_upd_tol = UNINITIALIZED_DOUBLE
@@ -149,20 +139,22 @@ function SolverCreate()
   solver%galerkin_mg_levels_x = 1
   solver%galerkin_mg_levels_y = 1
   solver%galerkin_mg_levels_z = 1
+
+  solver%verbose_error_msg = PETSC_FALSE
   
-  solver%J = 0
-  solver%Jpre = 0
+  solver%J = PETSC_NULL_MAT
+  solver%Jpre = PETSC_NULL_MAT
   solver%J_mat_type = MATBAIJ
   solver%Jpre_mat_type = ''
 !  solver%interpolation = 0
   nullify(solver%interpolation)
-  solver%matfdcoloring = 0
-  solver%snes = 0
+  solver%matfdcoloring = PETSC_NULL_MATFDCOLORING
+  solver%snes = PETSC_NULL_SNES
   solver%ksp_type = KSPBCGS
   solver%pc_type = ""
-  solver%ksp = 0
-  solver%pc = 0
-  solver%ts = 0
+  solver%ksp = PETSC_NULL_KSP
+  solver%pc = PETSC_NULL_PC
+  solver%ts = PETSC_NULL_TS
   
   solver%inexact_newton = PETSC_FALSE
   
@@ -171,9 +163,11 @@ function SolverCreate()
   solver%print_linear_iterations = PETSC_FALSE
   solver%check_infinity_norm = PETSC_TRUE
   solver%print_ekg = PETSC_FALSE
+
+  nullify(solver%cprstash)
     
   SolverCreate => solver
-  
+   
 end function SolverCreate
 
 ! ************************************************************************** !
@@ -231,7 +225,11 @@ subroutine SolverSetSNESOptions(solver, option)
     call KSPSetType(solver%ksp,solver%ksp_type,ierr);CHKERRQ(ierr)
   endif
   if (len_trim(solver%pc_type) > 1) then
-    call PCSetType(solver%pc,solver%pc_type,ierr);CHKERRQ(ierr)
+    if (associated(solver%cprstash)) then
+      call SolverCPRInit(solver%J, solver%cprstash, solver%pc, ierr, option)
+    else
+      call PCSetType(solver%pc,solver%pc_type,ierr);CHKERRQ(ierr)
+    endif
   endif
 
   call KSPSetTolerances(solver%ksp,solver%linear_rtol,solver%linear_atol, &
@@ -256,6 +254,8 @@ subroutine SolverSetSNESOptions(solver, option)
   call SNESSetTolerances(solver%snes, solver%newton_atol, solver%newton_rtol, &
                          solver%newton_stol,solver%newton_max_iterations, &
                          solver%newton_maxf,ierr);CHKERRQ(ierr)
+  call SNESSetDivergenceTolerance(solver%snes,solver%newton_dtol, &
+                                  ierr);CHKERRQ(ierr)
 
   ! set inexact newton, currently applies default settings
   if (solver%inexact_newton) then
@@ -268,7 +268,7 @@ subroutine SolverSetSNESOptions(solver, option)
   if (solver%use_galerkin_mg) then
     call PCSetType(solver%pc, PCMG,ierr);CHKERRQ(ierr)
     call PCMGSetLevels(solver%pc, solver%galerkin_mg_levels, &
-                       PETSC_NULL_OBJECT,ierr);CHKERRQ(ierr)
+                       MPI_COMM_NULL,ierr);CHKERRQ(ierr)
     do i=1,solver%galerkin_mg_levels-1
       call PCMGSetInterpolation(solver%pc, i, solver%interpolation(i), &
                                 ierr);CHKERRQ(ierr)
@@ -283,25 +283,46 @@ subroutine SolverSetSNESOptions(solver, option)
   ! the below must come after SNESSetFromOptions
   ! PETSc no longer performs a shift on matrix diagonals by default.  We 
   ! force the shift since it helps alleviate zero pivots.
+  ! Note that if the preconditioner type does not support a shift, the shift 
+  ! we've set is ignored; we don't need to check to see if the type supports 
+  ! a shift before calling this.
   call PCFactorSetShiftType(solver%pc,MAT_SHIFT_INBLOCKS,ierr);CHKERRQ(ierr)
-  if (solver%pc_type == PCBJACOBI) then
+  if (solver%pc_type == PCBJACOBI .or. solver%pc_type == PCASM .or. &
+      solver%pc_type == PCGASM) then
     call KSPSetup(solver%ksp,ierr);CHKERRQ(ierr)
-    call PCBJacobiGetSubKSP(solver%pc,nsub_ksp,first_sub_ksp, &
-                            PETSC_NULL_OBJECT,ierr);CHKERRQ(ierr)
+    select case(solver%pc_type)
+      case(PCBJACOBI)
+        call PCBJacobiGetSubKSP(solver%pc,nsub_ksp,first_sub_ksp, &
+                                PETSC_NULL_KSP,ierr);CHKERRQ(ierr)
+      case(PCASM)
+        call PCASMGetSubKSP(solver%pc,nsub_ksp,first_sub_ksp, &
+                            PETSC_NULL_KSP,ierr);CHKERRQ(ierr)
+      case(PCGASM)
+#if (PETSC_VERSION_MINOR >= 8)
+        call PCGASMGetSubKSP(solver%pc,nsub_ksp,first_sub_ksp, &
+                             PETSC_NULL_KSP,ierr);CHKERRQ(ierr)
+#endif
+    end select
     allocate(sub_ksps(nsub_ksp))
-    sub_ksps = 0
-    call PCBJacobiGetSubKSP(solver%pc,nsub_ksp,first_sub_ksp, &
+    select case(solver%pc_type)
+      case(PCBJACOBI)
+        call PCBJacobiGetSubKSP(solver%pc,nsub_ksp,first_sub_ksp, &
+                                sub_ksps,ierr);CHKERRQ(ierr)
+      case(PCASM)
+        call PCASMGetSubKSP(solver%pc,nsub_ksp,first_sub_ksp, &
                             sub_ksps,ierr);CHKERRQ(ierr)
+      case(PCGASM)
+#if (PETSC_VERSION_MINOR >= 8)
+        call PCGASMGetSubKSP(solver%pc,nsub_ksp,first_sub_ksp, &
+                             sub_ksps,ierr);CHKERRQ(ierr)
+#endif
+    end select
     do i = 1, nsub_ksp
       call KSPGetPC(sub_ksps(i),pc,ierr);CHKERRQ(ierr)
       call PCFactorSetShiftType(pc,MAT_SHIFT_INBLOCKS,ierr);CHKERRQ(ierr)
     enddo
     deallocate(sub_ksps)
     nullify(sub_ksps)
-  elseif (.not.(solver%pc_type == PCLU .or. solver%pc_type == PCILU)) then
-    option%io_buffer = 'PCFactorShiftType for PC ' // &
-      trim(solver%pc_type) // ' is not supported at this time.'
-    call printErrMsg(option)
   endif
   
   if (Initialized(solver%linear_zero_pivot_tol)) then
@@ -310,9 +331,9 @@ subroutine SolverSetSNESOptions(solver, option)
     if (solver%pc_type == PCBJACOBI) then
       call KSPSetup(solver%ksp,ierr);CHKERRQ(ierr)
       call PCBJacobiGetSubKSP(solver%pc,nsub_ksp,first_sub_ksp, &
-                              PETSC_NULL_OBJECT,ierr);CHKERRQ(ierr)
+                              PETSC_NULL_KSP,ierr);CHKERRQ(ierr)
       allocate(sub_ksps(nsub_ksp))
-      sub_ksps = 0
+      sub_ksps = PETSC_NULL_KSP
       call PCBJacobiGetSubKSP(solver%pc,nsub_ksp,first_sub_ksp, &
                               sub_ksps,ierr);CHKERRQ(ierr)
       do i = 1, nsub_ksp
@@ -463,6 +484,10 @@ subroutine SolverReadLinear(solver,input,option)
             solver%pc_type = PCHYPRE
           case('SHELL')
             solver%pc_type = PCSHELL
+          case('CPR')
+            solver%pc_type = PCSHELL
+            allocate(solver%cprstash)
+            call SolverCPRInitializeStorage(solver%cprstash)
           case default
             option%io_buffer  = 'Preconditioner type: ' // trim(word) // &
                                 ' unknown.'
@@ -486,7 +511,7 @@ subroutine SolverReadLinear(solver,input,option)
               select case(trim(word))
                 case('pilut','parasails','boomeramg','euclid')
                   string = trim(prefix) // 'pc_hypre_type'
-                  call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+                  call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                             trim(string),trim(word), &
                                             ierr);CHKERRQ(ierr)
                 case default
@@ -502,11 +527,11 @@ subroutine SolverReadLinear(solver,input,option)
               string = trim(prefix) // 'pc_hypre_boomeramg_cycle_type'
               select case(trim(word))
                 case('V')
-                  call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+                  call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                             trim(string),'1', &
                                             ierr);CHKERRQ(ierr)
                 case('W')
-                  call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+                  call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                             trim(string),'2', &
                                             ierr);CHKERRQ(ierr)
                 case default
@@ -519,7 +544,7 @@ subroutine SolverReadLinear(solver,input,option)
               call InputErrorMsg(input,option,'BoomerAMG maximum levels', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_max_levels'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_MAX_ITER')
@@ -527,7 +552,7 @@ subroutine SolverReadLinear(solver,input,option)
               call InputErrorMsg(input,option,'BoomerAMG maximum iterations', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_max_iter'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_TOL')
@@ -536,7 +561,7 @@ subroutine SolverReadLinear(solver,input,option)
                                  'BoomerAMG convergence tolerance', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_tol'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_TRUNCFACTOR')
@@ -545,7 +570,7 @@ subroutine SolverReadLinear(solver,input,option)
                                  'BoomerAMG interpolation truncation factor', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_truncfactor'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_AGG_NL')
@@ -554,7 +579,7 @@ subroutine SolverReadLinear(solver,input,option)
                                  'BoomerAMG # levels aggressive coarsening', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_agg_nl'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_AGG_NUM_PATHS')
@@ -563,7 +588,7 @@ subroutine SolverReadLinear(solver,input,option)
                                 'BoomerAMG # paths for aggressive coarsening', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_agg_num_paths'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_STRONG_THRESHOLD')
@@ -572,7 +597,7 @@ subroutine SolverReadLinear(solver,input,option)
                                 'BoomerAMG threshold for strong connectivity', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_strong_threshold'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_GRID_SWEEPS_ALL')
@@ -581,7 +606,7 @@ subroutine SolverReadLinear(solver,input,option)
                          'BoomerAMG number of grid sweeps up and down cycles', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_grid_sweeps_all'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_GRID_SWEEPS_DOWN')
@@ -590,7 +615,7 @@ subroutine SolverReadLinear(solver,input,option)
                                 'BoomerAMG number of grid sweeps down cycles', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_grid_sweeps_down'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_GRID_SWEEPS_UP')
@@ -599,7 +624,7 @@ subroutine SolverReadLinear(solver,input,option)
                                   'BoomerAMG number of grid sweeps up cycles', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_grid_sweeps_up'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_GRID_SWEEPS_COARSE')
@@ -608,7 +633,7 @@ subroutine SolverReadLinear(solver,input,option)
                            'BoomerAMG number of grid sweeps for coarse level', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_grid_sweeps_coarse'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_RELAX_TYPE_ALL')
@@ -617,7 +642,7 @@ subroutine SolverReadLinear(solver,input,option)
                            'BoomerAMG relaxation type for up and down cycles', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_relax_type_all'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_RELAX_TYPE_DOWN')
@@ -626,7 +651,7 @@ subroutine SolverReadLinear(solver,input,option)
                                   'BoomerAMG relaxation type for down cycles', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_relax_type_down'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_RELAX_TYPE_UP')
@@ -635,7 +660,7 @@ subroutine SolverReadLinear(solver,input,option)
                                  'BoomerAMG relaxation type for up cycles', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_relax_type_up'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_RELAX_TYPE_COARSE')
@@ -644,7 +669,7 @@ subroutine SolverReadLinear(solver,input,option)
                                  'BoomerAMG relaxation type for coarse grids', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_relax_type_coarse'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_RELAX_WEIGHT_ALL')
@@ -653,7 +678,7 @@ subroutine SolverReadLinear(solver,input,option)
                                  'BoomerAMG relaxation weight for all levels', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_relax_weight_all'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_RELAX_WEIGHT_LEVEL')
@@ -664,7 +689,7 @@ subroutine SolverReadLinear(solver,input,option)
                                  'LINEAR SOLVER, HYPRE options')  
               word = trim(word) // ' ' // trim(word2)
               string = trim(prefix) // 'pc_hypre_boomeramg_relax_weight_level'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_OUTER_RELAX_WEIGHT_ALL')
@@ -674,7 +699,7 @@ subroutine SolverReadLinear(solver,input,option)
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) //  &
                        'pc_hypre_boomeramg_outer_relax_weight_all'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_OUTER_RELAX_WEIGHT_LEVEL')
@@ -686,19 +711,19 @@ subroutine SolverReadLinear(solver,input,option)
               word = trim(word) // ' ' // trim(word2)
               string = trim(prefix) // &
                        'pc_hypre_boomeramg_outer_relax_weight_level'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_NO_CF')
               string = trim(prefix) // 'pc_hypre_boomeramg_no_CF'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),'',ierr);CHKERRQ(ierr)
             case('BOOMERAMG_MEASURE_TYPE')
               call InputReadWord(input,option,word,PETSC_TRUE)
               call InputErrorMsg(input,option,'BoomerAMG measure type', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_measure_type'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_COARSEN_TYPE')
@@ -706,7 +731,7 @@ subroutine SolverReadLinear(solver,input,option)
               call InputErrorMsg(input,option,'BoomerAMG coarsen type', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_coarsen_type'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_INTERPOLATION_TYPE','BOOMERAMG_INTERP_TYPE')
@@ -714,7 +739,7 @@ subroutine SolverReadLinear(solver,input,option)
               call InputErrorMsg(input,option,'BoomerAMG interpolation type', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_interp_type'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),trim(word), &
                                         ierr);CHKERRQ(ierr)
             case('BOOMERAMG_NODAL_COARSEN')
@@ -723,7 +748,7 @@ subroutine SolverReadLinear(solver,input,option)
                                  'BoomerAMG set nodal coarsening', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_nodal_coarsen'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),'',ierr);CHKERRQ(ierr)
             case('BOOMERAMG_NODAL_RELAXATION')
               call InputReadWord(input,option,word,PETSC_TRUE)
@@ -731,7 +756,7 @@ subroutine SolverReadLinear(solver,input,option)
                                  'BoomerAMG nodal relaxation via Schwarz', &
                                  'LINEAR SOLVER, HYPRE options')  
               string = trim(prefix) // 'pc_hypre_boomeramg_nodal_relaxation'
-              call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+              call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                         trim(string),'',ierr);CHKERRQ(ierr)
             case default
               option%io_buffer  = 'HYPRE option: ' // trim(keyword) // &
@@ -767,9 +792,36 @@ subroutine SolverReadLinear(solver,input,option)
       case('MUMPS')
         string = trim(prefix) // 'pc_factor_mat_solver_package'
         word = 'mumps'
-        call PetscOptionsSetValue(PETSC_NULL_OBJECT, &
+        call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
                                   trim(string),trim(word),ierr);CHKERRQ(ierr)
-   
+
+      case ('CPR_OPTIONS')
+        call SolverCPRRead(solver%cprstash, input,option, ierr)
+
+      case ('VERBOSE_ERROR_MESSAGING')
+        solver%verbose_error_msg = PETSC_TRUE 
+
+      case('GMRES_RESTART')
+        ! Equivalent to 
+        ! -[prefix]_ksp_gmres_restart x
+        ! on command line
+        call InputReadWord(input,option,word,PETSC_TRUE)
+        call InputErrorMsg(input,option, &
+                           'GMRES restart','LINEAR SOLVER')  
+        string = trim(prefix) // 'ksp_gmres_restart'
+        call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
+                                  trim(string),trim(word), &
+                                  ierr);CHKERRQ(ierr)
+
+      case('GMRES_MODIFIED_GS')
+        ! Equivalent to 
+        ! -[prefix]_ksp_gmres_modifiedgramschmidt
+        ! on command line
+        string = trim(prefix) // 'ksp_gmres_modifiedgramschmidt'
+        word = ''
+        call PetscOptionsSetValue(PETSC_NULL_OPTIONS, &
+                                  trim(string),trim(word),ierr);CHKERRQ(ierr)
+
       case default
         call InputKeywordUnrecognized(keyword,'LINEAR_SOLVER',option)
     end select 
@@ -942,6 +994,9 @@ subroutine SolverReadNewton(solver,input,option)
             call printErrMsg(option)
         end select
         
+      case ('VERBOSE_ERROR_MESSAGING')
+        solver%verbose_error_msg = PETSC_TRUE 
+
       case default
         call InputKeywordUnrecognized(keyword,'NEWTON_SOLVER',option)
     end select 
@@ -1149,18 +1204,18 @@ subroutine SolverCheckCommandLine(solver)
   character(len=MAXSTRINGLENGTH) :: mat_type
   PetscBool :: is_present
 
-  if (solver%snes /= 0) then
+  if (solver%snes /= PETSC_NULL_SNES) then
     call SNESGetOptionsPrefix(solver%snes, prefix, ierr);CHKERRQ(ierr)
   else
     prefix = PETSC_NULL_CHARACTER
   endif
 
   ! Parse the options to determine if the matrix type has been specified.
-  call PetscOptionsGetString(PETSC_NULL_OBJECT,prefix, '-mat_type', mat_type, &
+  call PetscOptionsGetString(PETSC_NULL_OPTIONS,prefix, '-mat_type', mat_type, &
                              is_present,ierr);CHKERRQ(ierr)
   if (is_present) solver%J_mat_type = trim(mat_type)
   
-  call PetscOptionsGetString(PETSC_NULL_OBJECT,prefix, '-pre_mat_type', &
+  call PetscOptionsGetString(PETSC_NULL_OPTIONS,prefix, '-pre_mat_type', &
                              mat_type, is_present,ierr);CHKERRQ(ierr)
   if (is_present) solver%Jpre_mat_type = trim(mat_type)
 
@@ -1171,7 +1226,7 @@ subroutine SolverCheckCommandLine(solver)
   ! it is possible to set the number of levels in each direction 
   ! individually via options such as '-galerkin_mg_x N', which would 
   ! override the number of levels in the x direction set by '-galerkin_mg'.
-  call PetscOptionsGetInt(PETSC_NULL_OBJECT,prefix, '-galerkin_mg', &
+  call PetscOptionsGetInt(PETSC_NULL_OPTIONS,prefix, '-galerkin_mg', &
                           solver%galerkin_mg_levels, solver%use_galerkin_mg, &
                           ierr);CHKERRQ(ierr)
   if (solver%use_galerkin_mg) then
@@ -1180,15 +1235,15 @@ subroutine SolverCheckCommandLine(solver)
     solver%galerkin_mg_levels_z = solver%galerkin_mg_levels
   endif
 
-  call PetscOptionsGetInt(PETSC_NULL_OBJECT,prefix, '-galerkin_mg_x', &
+  call PetscOptionsGetInt(PETSC_NULL_OPTIONS,prefix, '-galerkin_mg_x', &
                           solver%galerkin_mg_levels_x, is_present, &
                           ierr);CHKERRQ(ierr)
   if (is_present) solver%use_galerkin_mg = PETSC_TRUE
-  call PetscOptionsGetInt(PETSC_NULL_OBJECT,prefix, '-galerkin_mg_y', &
+  call PetscOptionsGetInt(PETSC_NULL_OPTIONS,prefix, '-galerkin_mg_y', &
                           solver%galerkin_mg_levels_y, is_present, &
                           ierr);CHKERRQ(ierr)
   if (is_present) solver%use_galerkin_mg = PETSC_TRUE
-  call PetscOptionsGetInt(PETSC_NULL_OBJECT,prefix, '-galerkin_mg_z', &
+  call PetscOptionsGetInt(PETSC_NULL_OPTIONS,prefix, '-galerkin_mg_z', &
                           solver%galerkin_mg_levels_z, is_present, &
                           ierr);CHKERRQ(ierr)
   if (is_present) solver%use_galerkin_mg = PETSC_TRUE
@@ -1203,6 +1258,118 @@ subroutine SolverCheckCommandLine(solver)
                              
 
 end subroutine SolverCheckCommandLine
+
+! ************************************************************************** !
+
+subroutine SolverNewtonPrintFailedReason(solver,option)    
+  ! 
+  ! Prints the reason for the solver failing
+  ! 
+  ! Author: Glenn Hammond
+  ! Date: 03/02/16
+  ! 
+  use Option_module
+
+  implicit none
+  
+  type(solver_type) :: solver
+  type(option_type) :: option
+
+  SNESConvergedReason :: snes_reason
+  character(len=MAXWORDLENGTH) :: word
+  character(len=MAXSTRINGLENGTH) :: error_string
+  PetscReal :: abstol, rtol, stol, divtol
+  PetscInt :: maxit, maxf
+  PetscErrorCode :: ierr
+
+  call SNESGetConvergedReason(solver%snes,snes_reason,ierr);CHKERRQ(ierr)
+  call SNESGetTolerances(solver%snes,abstol,rtol,stol,maxit,maxf, &
+                         ierr);CHKERRQ(ierr)
+  select case(snes_reason)
+    case(SNES_DIVERGED_FUNCTION_DOMAIN)
+      if (solver%verbose_error_msg) then
+        error_string = 'The new solution location passed to the function &
+          &is not in the domain of F.'
+      else
+        error_string = 'SNES_DIVERGED_FUNCTION_DOMAIN'
+      endif
+    case(SNES_DIVERGED_FUNCTION_COUNT)
+      if (solver%verbose_error_msg) then
+        write(word,*) maxf
+        error_string = 'The user provided function has been called &
+          &more times than the final argument (' // trim(adjustl(word)) // &
+          ') in SNESSetTolerances().'
+      else
+        error_string = 'SNES_DIVERGED_FUNCTION_COUNT'
+      endif
+    case(SNES_DIVERGED_LINEAR_SOLVE)
+      if (solver%verbose_error_msg) then
+        error_string = 'The linear solver failed.'
+      else
+        error_string = 'SNES_DIVERGED_LINEAR_SOLVE'
+      endif
+    case(SNES_DIVERGED_FNORM_NAN)
+      if (solver%verbose_error_msg) then
+        error_string = 'The norm of the residual is &
+          &not a number (NaN). It is likely that the residual has NaNs &
+          &in it.  This could be caused by errors in boundary conditions, &
+          &using a constitutive relation evaluated outside prescribed &
+          &bounds or a bug.'
+      else
+        error_string = 'SNES_DIVERGED_FNORM_NAN'
+      endif
+    case(SNES_DIVERGED_MAX_IT)
+      if (solver%verbose_error_msg) then
+        write(word,*) maxit
+        error_string = 'The maximum number of Newton iterations (' // &
+        trim(adjustl(word)) // ') was reached.'
+      else
+        error_string = 'SNES_DIVERGED_MAX_IT'
+      endif
+    case(SNES_DIVERGED_LINE_SEARCH)
+      if (solver%verbose_error_msg) then
+        error_string = 'The line search failed.'
+      else
+        error_string = 'SNES_DIVERGED_LINE_SEARCH'
+      endif
+    case(SNES_DIVERGED_INNER)
+      if (solver%verbose_error_msg) then
+        error_string = 'The inner solver failed.'
+      else
+        error_string = 'SNES_DIVERGED_INNER'
+      endif
+    case(SNES_DIVERGED_LOCAL_MIN)
+      if (solver%verbose_error_msg) then
+        error_string = '|| J^T b || is small, implying convergence to a &
+          &local minimum of F().' 
+      else
+        error_string = 'SNES_DIVERGED_LOCAL_MIN'
+      endif
+    case(SNES_DIVERGED_DTOL)
+      if (solver%verbose_error_msg) then
+        call SNESGetDivergenceTolerance(solver%snes,divtol,ierr);CHKERRQ(ierr)
+        write(word,'(es12.4)') divtol
+        error_string = 'The nonlinear residual has diverged based on &
+          &||F|| > divtol*||F_initial||, where divtol = ' // &
+          trim(adjustl(word)) // '.'
+      else
+        error_string = 'SNES_DIVERGED_DTOL'
+      endif
+    case default
+      write(word,*) snes_reason 
+      error_string = 'Unknown(' // &
+        trim(adjustl(word)) // ').'
+  end select
+  option%io_buffer = 'Newton solver reason: ' // trim(error_string)
+  call printMsg(option)
+
+  ! print out subsequent information specific to each case
+  select case(snes_reason)
+    case(SNES_DIVERGED_LINEAR_SOLVE)
+      call SolverLinearPrintFailedReason(solver,option)    
+  end select
+
+end subroutine SolverNewtonPrintFailedReason
 
 ! ************************************************************************** !
 
@@ -1229,127 +1396,172 @@ subroutine SolverLinearPrintFailedReason(solver,option)
   PetscInt :: first_sub_ksp
   KSPConvergedReason :: ksp_reason
   PCFailedReason :: pc_failed_reason, global_pc_failed_reason
+  character(len=MAXSTRINGLENGTH) :: error_string
   character(len=MAXSTRINGLENGTH) :: string
   PetscReal :: zero_pivot_tol, zero_pivot
   character(len=MAXWORDLENGTH) :: word, word2
   PetscInt :: irow, temp_int
+  PetscReal :: rtol, abstol, dtol
+  PetscReal :: rnorm
+  PetscInt :: maxits
   PetscErrorCode :: ierr
 
   call KSPGetConvergedReason(solver%ksp,ksp_reason,ierr);CHKERRQ(ierr)
+  call KSPGetTolerances(solver%ksp,rtol,abstol,dtol,maxits,ierr);CHKERRQ(ierr)
   select case(ksp_reason)
     case(KSP_DIVERGED_ITS)
-      option%io_buffer = ' -> KSPReason: Diverged due to iterations'
+      if (solver%verbose_error_msg) then
+        write(word,*) maxits
+        error_string = 'The linear solver took too many iterations, beyond &
+          &the allowable number set by maxits ('// trim(adjustl(word)) // ').'
+      else
+        error_string = 'KSP_DIVERGED_ITS'
+      endif
     case(KSP_DIVERGED_DTOL)
-      option%io_buffer = ' -> KSPReason: Diverged due to dtol'
+      if (solver%verbose_error_msg) then
+        call KSPGetResidualNorm(solver%ksp,rnorm,ierr);CHKERRQ(ierr)
+        write(word,'(es12.4)') rnorm
+        error_string = 'The linear solver diverged due to dtol based on &
+          &the equation: norm(r) >= dtol*norm(b) where r = b-Ax for the &
+          &linear system Ax=b within the Krylov solver. norm(r) = ' // &
+          trim(adjustl(word)) // ').'
+      else
+        error_string = 'KSP_DIVERGED_DTOL'
+      endif
     case(KSP_DIVERGED_BREAKDOWN)
-      option%io_buffer = ' -> KSPReason: Diverged due to breakdown'
+      if (solver%verbose_error_msg) then
+        error_string = 'A breakdown in the Krylov method was detected &
+          &so the method could not continue to enlarge the Krylov space. &
+          &Could be due to a singlular matrix or preconditioner.'
+      else
+        error_string = 'KSP_DIVERGED_BREAKDOWN'
+      endif
     case(KSP_DIVERGED_BREAKDOWN_BICG)
-      option%io_buffer = ' -> KSPReason: Diverged due to breakdown bicg'
+      if (solver%verbose_error_msg) then
+        error_string = 'A breakdown in the KSPBICG method was detected &
+          &so the method could not continue to enlarge the Krylov space.'
+      else
+        error_string = 'KSP_DIVERGED_BREAKDOWN_BICG'
+      endif
     case(KSP_DIVERGED_NONSYMMETRIC)
-      option%io_buffer = ' -> KSPReason: Diverged due to nonsymmetric'
+      if (solver%verbose_error_msg) then
+        ! must use '"' instead of "'" due to parentheses
+        error_string = "It appears the operator or preconditioner is not &
+          &symmetric and this Krylov method (KSPCG, KSPMINRES, KSPCR)&
+          &requires symmetry."
+      else
+        error_string = 'KSP_DIVERGED_NONSYMMETRIC'
+      endif
     case(KSP_DIVERGED_INDEFINITE_PC)
-      option%io_buffer = ' -> KSPReason: Diverged due to indefinite PC'
+      if (solver%verbose_error_msg) then
+        ! must use '"' instead of "'" due to parentheses
+        error_string = "It appears the preconditioner is indefinite (has &
+          &both positive and negative eigenvalues) and this Krylov method &
+          &(KSPCG) requires it to be positive definite. This can happen &
+          &with the PCICC preconditioner, use -pc_factor_shift_positive_&
+          &definite to force the PCICC preconditioner to generate a &
+          &positive definite preconditioner."
+      else
+        error_string = 'KSP_DIVERGED_INDEFINITE_PC'
+      endif
     case(KSP_DIVERGED_NANORINF)
-      option%io_buffer = ' -> KSPReason: Diverged due to NaN or Inf PC'
+      if (solver%verbose_error_msg) then
+        error_string = 'The linear solver produced a NaN (not a number) &
+          for Inf (infinite number) likely due to a divide by zero (0/0).'
+      else
+        error_string = 'KSP_DIVERGED_NANORINF'
+      endif
     case(KSP_DIVERGED_INDEFINITE_MAT)
-      option%io_buffer = ' -> KSPReason: Diverged due to indefinite matix'
+      if (solver%verbose_error_msg) then
+        error_string = 'The linear solver failed due to an indefinite matrix.'
+      else
+        error_string = 'KSP_DIVERGED_INDEFINITE_MAT'
+      endif
     case(KSP_DIVERGED_PCSETUP_FAILED)
-      option%io_buffer = ' -> KSPReason: Diverged due to PC setup failed'
-      pc = solver%pc
-      call PCGetType(pc,pc_type,ierr);CHKERRQ(ierr)
-      call PCGetSetUpFailedReason(pc,pc_failed_reason, &
-                                  ierr);CHKERRQ(ierr)
-      ! have to perform global reduction on pc_failed_reason
-      temp_int = pc_failed_reason
-      call MPI_Allreduce(MPI_IN_PLACE,temp_int,ONE_INTEGER_MPI, &
-                         MPI_INTEGER,MPI_MAX,option%mycomm,ierr)
-      global_pc_failed_reason = temp_int
-      if (global_pc_failed_reason == PC_SUBPC_ERROR) then
-        if (pc_type == PCBJACOBI) then
-          call PCBJacobiGetSubKSP(pc,nsub_ksp,first_sub_ksp, &
-                                  PETSC_NULL_OBJECT,ierr);CHKERRQ(ierr)
-          allocate(sub_ksps(nsub_ksp))
-          sub_ksps = 0
-          call PCBJacobiGetSubKSP(pc,nsub_ksp,first_sub_ksp, &
-                                  sub_ksps,ierr);CHKERRQ(ierr)
-          if (nsub_ksp > 1) then
-            option%io_buffer = 'NSUB_KSP > 1.  What to do?  Email pflotran&
-              &-dev@googlegroups.com.'
+      if (solver%verbose_error_msg) then
+        error_string = 'Preconditioner setup failed.'
+        pc = solver%pc
+        call PCGetType(pc,pc_type,ierr);CHKERRQ(ierr)
+        call PCGetSetUpFailedReason(pc,pc_failed_reason, &
+                                    ierr);CHKERRQ(ierr)
+        ! have to perform global reduction on pc_failed_reason
+        temp_int = pc_failed_reason
+        call MPI_Allreduce(MPI_IN_PLACE,temp_int,ONE_INTEGER_MPI, &
+                           MPI_INTEGER,MPI_MAX,option%mycomm,ierr)
+        global_pc_failed_reason = temp_int
+        if (global_pc_failed_reason == PC_SUBPC_ERROR) then
+          if (pc_type == PCBJACOBI) then
+            call PCBJacobiGetSubKSP(pc,nsub_ksp,first_sub_ksp, &
+                                    PETSC_NULL_KSP,ierr);CHKERRQ(ierr)
+            allocate(sub_ksps(nsub_ksp))
+            sub_ksps = PETSC_NULL_KSP
+            call PCBJacobiGetSubKSP(pc,nsub_ksp,first_sub_ksp, &
+                                    sub_ksps,ierr);CHKERRQ(ierr)
+            if (nsub_ksp > 1) then
+              option%io_buffer = 'NSUB_KSP > 1.  What to do?  Email pflotran&
+                &-dev@googlegroups.com.'
+              call printErrMsg(option)
+            endif
+            do i = 1, nsub_ksp
+              call KSPGetPC(sub_ksps(i),pc,ierr);CHKERRQ(ierr)
+              call PCGetSetUpFailedReason(pc,pc_failed_reason, &
+                                          ierr);CHKERRQ(ierr)
+            enddo
+            deallocate(sub_ksps)
+            nullify(sub_ksps)
+          else
+            option%io_buffer = 'Error in SUB PC of unknown type "' // &
+              trim(pc_type) // '".'
             call printErrMsg(option)
           endif
-          do i = 1, nsub_ksp
-            call KSPGetPC(sub_ksps(i),pc,ierr);CHKERRQ(ierr)
-            call PCGetSetUpFailedReason(pc,pc_failed_reason, &
-                                        ierr);CHKERRQ(ierr)
-          enddo
-          deallocate(sub_ksps)
-          nullify(sub_ksps)
-        else
-          option%io_buffer = 'Error in SUB PC of unknown type "' // &
-            trim(pc_type) // '".'
-          call printErrMsg(option)
         endif
+        ! have to perform global reduction (again) on pc_failed_reason
+        temp_int = pc_failed_reason
+        call MPI_Allreduce(MPI_IN_PLACE,temp_int,ONE_INTEGER_MPI, &
+                           MPI_INTEGER,MPI_MAX,option%mycomm,ierr)
+        global_pc_failed_reason = temp_int
+        select case(global_pc_failed_reason)
+          case(PC_FACTOR_STRUCT_ZEROPIVOT,PC_FACTOR_NUMERIC_ZEROPIVOT)
+            select case(solver%itype)
+              case(FLOW_CLASS)
+                string = 'Flow'
+              case(TRANSPORT_CLASS)
+                string = 'Transport'
+            end select
+            call PCFactorGetZeroPivot(pc,zero_pivot_tol, &
+                                      ierr);CHKERRQ(ierr)
+            write(word,*) zero_pivot_tol
+            ! In parallel, some processes will not have a zero pivot and
+            ! will report zero as the error.  We must skip these processes.
+            zero_pivot = 1.d20
+            ! note that this is not the global pc reason
+            select case(pc_failed_reason)
+              case(PC_FACTOR_STRUCT_ZEROPIVOT,PC_FACTOR_NUMERIC_ZEROPIVOT)
+              call PCFactorGetMatrix(pc,mat,ierr);CHKERRQ(ierr)
+              call MatFactorGetErrorZeroPivot(mat,zero_pivot,irow, &
+                                              ierr);CHKERRQ(ierr)
+            end select
+            call MPI_Allreduce(MPI_IN_PLACE,zero_pivot,ONE_INTEGER_MPI, &
+                               MPI_DOUBLE_PRECISION,MPI_MIN,option%mycomm,ierr)
+            write(word2,*) zero_pivot
+            option%io_buffer = 'PC Setup failed for ' // trim(string) // &
+              '. The ' // trim(string) // ' preconditioner zero pivot &
+              &tolerance (' // trim(adjustl(word)) // &
+              ') is too large due to a zero pivot of ' // &
+              trim(adjustl(word2)) // '. Please set a ZERO_PIVOT_TOL smaller &
+              &than that value or email pflotran-dev@googlegroups.com with &
+              &this information for guidance.'
+            call printErrMsg(option)
+        end select
+      else
+        error_string = 'KSP_DIVERGED_PCSETUP_FAILED'
       endif
-
-#if PETSC_VERSION_GT(3,7,3)
-      ! 'PCFactorGetZeroPivot()' only available after v3.7.3
-
-      ! have to perform global reduction (again) on pc_failed_reason
-      temp_int = pc_failed_reason
-      call MPI_Allreduce(MPI_IN_PLACE,temp_int,ONE_INTEGER_MPI, &
-                         MPI_INTEGER,MPI_MAX,option%mycomm,ierr)
-      global_pc_failed_reason = temp_int
-      select case(global_pc_failed_reason)
-        case(PC_FACTOR_STRUCT_ZEROPIVOT,PC_FACTOR_NUMERIC_ZEROPIVOT)
-          select case(solver%itype)
-            case(FLOW_CLASS)
-              string = 'Flow'
-            case(TRANSPORT_CLASS)
-              string = 'Transport'
-          end select
-          call PCFactorGetZeroPivot(pc,zero_pivot_tol, &
-                                    ierr);CHKERRQ(ierr)
-          write(word,*) zero_pivot_tol
-
-#if PETSC_VERSION_GT(3,7,6)
-          ! 'MatFactorGetZeroPivot()' only available after v3.7.6,
-          !  (Actually tag xsdk-0.2.0 and later, which VERSIONED as v3.7.5-non-released)
-
-          ! In parallel, some processes will not have a zero pivot and
-          ! will report zero as the error.  We must skip these processes.
-          zero_pivot = 1.d20
-          ! note that this is not the global pc reason
-          select case(pc_failed_reason)
-            case(PC_FACTOR_STRUCT_ZEROPIVOT,PC_FACTOR_NUMERIC_ZEROPIVOT)
-            call PCFactorGetMatrix(pc,mat,ierr);CHKERRQ(ierr)
-            call MatFactorGetErrorZeroPivot(mat,zero_pivot,irow, &
-                                            ierr);CHKERRQ(ierr)
-          end select
-          call MPI_Allreduce(MPI_IN_PLACE,zero_pivot,ONE_INTEGER_MPI, &
-                             MPI_DOUBLE_PRECISION,MPI_MIN,option%mycomm,ierr)
-          write(word2,*) zero_pivot
-#endif
-          option%io_buffer = 'PC Setup failed for ' // trim(string) // &
-            '. The ' // trim(string) // ' preconditioner zero pivot &
-            &tolerance (' // trim(adjustl(word)) // &
-#if PETSC_VERSION_GT(3,7,6)
-            ') is too large due to a zero pivot of ' // &
-            trim(adjustl(word2)) // '. Please set a ZERO_PIVOT_TOL smaller &
-            &than that value or email pflotran-dev@googlegroups.com with &
-            &this information for guildance.'
-#else
-            ') is too large. Please run PFLOTRAN with STOP_ON_FAILURE &
-            &added to the respective SOLVER block to determine the &
-            &needed ZERO_PIVOT_TOL in that solver block.'
-#endif
-          call printErrMsg(option)
-      end select
-#endif
-
     case default
-      write(option%io_buffer,'('' -> KSPReason: Unknown: '',i2)') &
-        ksp_reason
+      write(word,*) ksp_reason 
+      option%io_buffer = 'Unknown(' // &
+        trim(adjustl(word)) // ').'
   end select
+  option%io_buffer = 'Linear solver reason: ' // trim(error_string)
   call printMsg(option)
 
 end subroutine SolverLinearPrintFailedReason
@@ -1363,7 +1575,9 @@ subroutine SolverDestroy(solver)
   ! Author: Glenn Hammond
   ! Date: 11/01/07
   ! 
-
+  
+  use String_module
+   
   implicit none
   
   type(solver_type), pointer :: solver
@@ -1374,11 +1588,11 @@ subroutine SolverDestroy(solver)
   if (.not.associated(solver)) return
 
   if (solver%Jpre == solver%J) then
-    solver%Jpre = 0
-  else if (solver%Jpre /= 0) then
+    solver%Jpre = PETSC_NULL_MAT
+  else if (solver%Jpre /= PETSC_NULL_MAT) then
     call MatDestroy(solver%Jpre,ierr);CHKERRQ(ierr)
   endif
-  if (solver%J /= 0) then
+  if (solver%J /= PETSC_NULL_MAT) then
     call MatDestroy(solver%J,ierr);CHKERRQ(ierr)
   endif
   if (associated(solver%interpolation)) then
@@ -1387,19 +1601,58 @@ subroutine SolverDestroy(solver)
     enddo
     deallocate(solver%interpolation)
   endif
-  if (solver%matfdcoloring /= 0) then
+  if (solver%matfdcoloring /= PETSC_NULL_MATFDCOLORING) then
     call MatFDColoringDestroy(solver%matfdcoloring,ierr);CHKERRQ(ierr)
   endif
 
-  if (solver%snes /= 0) then
+  if (solver%snes /= PETSC_NULL_SNES) then
     call SNESDestroy(solver%snes,ierr);CHKERRQ(ierr)
   endif
-  if (solver%ts /= 0) then
+  if (solver%ts /= PETSC_NULL_TS) then
     call TSDestroy(solver%ts,ierr);CHKERRQ(ierr)
   endif
 
-  solver%ksp = 0
-  solver%pc = 0
+  solver%ksp = PETSC_NULL_KSP
+  solver%pc = PETSC_NULL_PC
+
+  if (associated(solver%cprstash)) then
+
+      call DeallocateWorkersInCPRStash(solver%cprstash)
+
+      if (solver%cprstash%T1_KSP /= PETSC_NULL_KSP) then
+        call KSPDestroy(solver%cprstash%T1_KSP, ierr);CHKERRQ(ierr)
+      endif
+      if (solver%cprstash%T1_PC /= PETSC_NULL_PC) then
+        call PCDestroy(solver%cprstash%T1_PC, ierr);CHKERRQ(ierr)
+      endif
+      if (solver%cprstash%T2_PC /= PETSC_NULL_PC) then
+        call PCDestroy(solver%cprstash%T2_PC, ierr);CHKERRQ(ierr)
+      endif
+
+      if (solver%cprstash%Ap /= PETSC_NULL_MAT) then
+        call MatDestroy(solver%cprstash%Ap, ierr);CHKERRQ(ierr)
+      endif
+      if (solver%cprstash%T1r /= PETSC_NULL_VEC) then
+        call VecDestroy(solver%cprstash%T1r, ierr);CHKERRQ(ierr)
+      endif
+      if (solver%cprstash%r2 /= PETSC_NULL_VEC) then
+        call VecDestroy(solver%cprstash%r2, ierr);CHKERRQ(ierr)
+      endif
+      if (solver%cprstash%s /= PETSC_NULL_VEC) then
+        call VecDestroy(solver%cprstash%s, ierr);CHKERRQ(ierr)
+      endif
+      if (solver%cprstash%z /= PETSC_NULL_VEC) then
+        call VecDestroy(solver%cprstash%z, ierr);CHKERRQ(ierr)
+      endif
+      if (solver%cprstash%factors1vec /= PETSC_NULL_VEC) then
+        call VecDestroy(solver%cprstash%factors1vec, ierr);CHKERRQ(ierr)
+      endif
+      if (solver%cprstash%factors2vec /= PETSC_NULL_VEC) then
+        call VecDestroy(solver%cprstash%factors2vec, ierr);CHKERRQ(ierr)
+      endif
+      deallocate(solver%cprstash)
+      nullify(solver%cprstash)
+    endif
     
   deallocate(solver)
   nullify(solver)

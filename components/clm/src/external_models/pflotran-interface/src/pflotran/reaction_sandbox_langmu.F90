@@ -1,7 +1,9 @@
 module Reaction_Sandbox_Langmuir_class
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+
   use Reaction_Sandbox_Base_class
-  
   use Global_Aux_module
   use Reactive_Transport_Aux_module
   use PFLOTRAN_Constants_module
@@ -10,8 +12,6 @@ module Reaction_Sandbox_Langmuir_class
   
   private
   
-#include "petsc/finclude/petscsys.h"
-
   type, public, &
     extends(reaction_sandbox_base_type) :: reaction_sandbox_langmuir_type
     character(len=MAXWORDLENGTH) :: name_aq
@@ -192,9 +192,6 @@ subroutine LangmuirReact(this,Residual,Jacobian,compute_derivative, &
 
   implicit none
 
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-  
   class(reaction_sandbox_langmuir_type) :: this  
   type(option_type) :: option
   type(reaction_type) :: reaction

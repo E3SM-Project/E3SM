@@ -1,7 +1,9 @@
 module Reaction_Sandbox_Denitr_class
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+
   use Reaction_Sandbox_Base_class
-  
   use Global_Aux_module
   use Reactive_Transport_Aux_module
   use PFLOTRAN_Constants_module
@@ -11,10 +13,8 @@ module Reaction_Sandbox_Denitr_class
   
   private
   
-#include "petsc/finclude/petscsys.h"
-
-  PetscInt, parameter :: TEMPERATURE_RESPONSE_FUNCTION_CLM4 = 1 
-  PetscInt, parameter :: TEMPERATURE_RESPONSE_FUNCTION_Q10 = 2 
+  PetscInt, parameter :: TEMPERATURE_RESPONSE_FUNCTION_CLMCN = 1
+  PetscInt, parameter :: TEMPERATURE_RESPONSE_FUNCTION_Q10   = 2
 
   type, public, &
     extends(reaction_sandbox_base_type) :: reaction_sandbox_denitr_type
@@ -60,7 +60,7 @@ function DenitrCreate()
   DenitrCreate%ispec_ngasdeni = 0
 
   DenitrCreate%half_saturation = 1.0d-15
-  DenitrCreate%temperature_response_function = TEMPERATURE_RESPONSE_FUNCTION_CLM4
+  DenitrCreate%temperature_response_function = TEMPERATURE_RESPONSE_FUNCTION_CLMCN
   DenitrCreate%Q10 = 1.5d0
   DenitrCreate%k_deni_max = 2.5d-6  ! max. denitrification rate (1/sec)
   DenitrCreate%x0eps = 1.0d-20
@@ -113,8 +113,8 @@ subroutine DenitrRead(this,input,option)
           call StringToUpper(word)   
 
           select case(trim(word))
-            case('CLM4')
-              this%temperature_response_function = TEMPERATURE_RESPONSE_FUNCTION_CLM4    
+            case('CLMCN')
+              this%temperature_response_function = TEMPERATURE_RESPONSE_FUNCTION_CLMCN
             case('Q10')
               this%temperature_response_function = TEMPERATURE_RESPONSE_FUNCTION_Q10    
               call InputReadDouble(input,option,this%Q10)  
@@ -122,7 +122,7 @@ subroutine DenitrRead(this,input,option)
                 'CHEMISTRY,REACTION_SANDBOX_DENITRIFICATION,TEMPERATURE RESPONSE FUNCTION')
             case default
               option%io_buffer = 'CHEMISTRY,REACTION_SANDBOX,DENITRIFICATION,TEMPERATURE RESPONSE FUNCTION keyword: ' // &
-                trim(word) // ' not recognized.'
+                trim(word) // ' not recognized - Valid keyword: "CLMCN","Q10" '
               call printErrMsg(option)
           end select
         enddo 
@@ -223,15 +223,12 @@ subroutine DenitrReact(this,Residual,Jacobian,compute_derivative, &
   use CLM_RspFuncs_module
 
 #ifdef CLM_PFLOTRAN
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use clm_pflotran_interface_data
 #endif
 
   implicit none
-
-#ifdef CLM_PFLOTRAN
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#endif
 
   class(reaction_sandbox_denitr_type) :: this
   type(option_type) :: option

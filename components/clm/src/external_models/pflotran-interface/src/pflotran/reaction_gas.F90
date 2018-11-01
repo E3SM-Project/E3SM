@@ -15,8 +15,7 @@ module Reaction_Gas_module
 
   
   public :: RGasRead, &
-            RTotalGas, &
-            RTotalCO2
+            RTotalGas
 
 contains
 
@@ -29,7 +28,8 @@ subroutine RGasRead(gas_species_list,gas_type,error_msg,input,option)
   ! Author: Glenn Hammond
   ! Date: 01/02/13/ 08/01/16
   ! 
-
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Option_module
   use String_module
   use Input_Aux_module
@@ -108,8 +108,6 @@ subroutine RTotalGas(rt_auxvar,global_auxvar,reaction,option)
   PetscReal :: gas_concentration
   type(gas_type), pointer :: gas
   
-  if (option%nphase < 2) return
-  
   rt_auxvar%total(:,iphase) = 0.d0 !debugging 
   
   gas => reaction%gas
@@ -169,130 +167,5 @@ end subroutine RTotalGas
 
 ! ************************************************************************** !
 
-subroutine RTotalCO2(rt_auxvar,global_auxvar,reaction,option)
-  ! 
-  ! Computes the total component concentrations and derivative with
-  ! respect to free-ion for CO2 modes; this is legacy cod3
-  ! 
-  ! Author: Glenn Hammond, but originally by Chuan Lu
-  ! Date: 08/01/16
-  ! 
-
-  use Option_module
-  use EOS_Water_module
-  use co2eos_module, only: Henry_duan_sun
-
-  implicit none
-  
-  type(reactive_transport_auxvar_type) :: rt_auxvar
-  type(global_auxvar_type) :: global_auxvar
-  type(reaction_type) :: reaction
-  type(option_type) :: option
-
-  PetscErrorCode :: ierr
-  PetscInt :: iphase
-  PetscInt :: icomp
-  PetscReal :: tempreal
-  PetscReal :: dg,dddt,dddp,fg,dfgdp,dfgdt,eng,hg,dhdt,dhdp,visg,dvdt,dvdp,&
-               yco2,pco2,sat_pressure,lngamco2
-  PetscReal :: den_kg_per_L
-  PetscReal :: den
-  PetscReal :: lnQK
-  PetscReal :: m_cl, m_na, muco2, xmass
-  PetscReal :: pressure, temperature, xphico2
-  PetscInt :: ieqgas
-
-! *********** Add SC phase and gas contributions ***********************  
-  ! CO2-specific
-  iphase = 2
-
-  if (iphase > option%nphase) return 
-  rt_auxvar%total(:,iphase) = 0.D0
-  rt_auxvar%aqueous%dtotal(:,:,iphase) = 0.D0
-
-  if (associated(global_auxvar%xmass)) xmass = global_auxvar%xmass(iphase)
-  den_kg_per_L = global_auxvar%den_kg(iphase)*xmass*1.d-3
-
-  if (global_auxvar%sat(iphase) > 1.D-20) then
-    do ieqgas = 1, reaction%gas%npassive_gas ! all gas phase species are secondary
-
-      pressure = global_auxvar%pres(2)
-      temperature = global_auxvar%temp
-      xphico2 = global_auxvar%fugacoeff(1)
-      den = global_auxvar%den(2)
- 
-      call EOSWaterSaturationPressure(temperature, sat_pressure, ierr)
-      pco2 = pressure - sat_pressure
-!     call co2_span_wagner(pressure*1.D-6,temperature+273.15D0,dg,dddt,dddp,fg, &
-!              dfgdp,dfgdt,eng,hg,dhdt,dhdp,visg,dvdt,dvdp,option%itable)
-!
-!            fg = fg*1D6
-!            xphico2 = fg / pco2
-!            global_auxvar%fugacoeff(1) = xphico2
-
-
-      if (abs(reaction%species_idx%co2_gas_id) == ieqgas ) then
-
-        if (reaction%species_idx%na_ion_id /= 0 .and. reaction%species_idx%cl_ion_id /= 0) then
-          m_na = rt_auxvar%pri_molal(reaction%species_idx%na_ion_id)
-          m_cl = rt_auxvar%pri_molal(reaction%species_idx%cl_ion_id)
-          call Henry_duan_sun(temperature,pressure*1D-5,muco2, &
-                lngamco2,m_na,m_cl)
-        else
-          call Henry_duan_sun(temperature,pressure*1D-5,muco2, &
-                lngamco2,option%m_nacl,option%m_nacl)
-        endif
-        !lnQk = - log(muco2) 
-        lnQk = - log(muco2)-lngamco2
-           
-      else   
-        lngamco2 = 0.d0
-        lnQK = -reaction%gas%acteqlogK(ieqgas)*LOG_TO_LN
-      endif 
-          
-      if (reaction%gas%acteqh2oid(ieqgas) > 0) then
-        lnQK = lnQK + reaction%gas%acteqh2ostoich(ieqgas)*rt_auxvar%ln_act_h2o
-      endif
-   
-   ! contribute to %total          
-   !     do i = 1, ncomp
-   ! removed loop over species, suppose only one primary species is related
-      icomp = reaction%gas%acteqspecid(1,ieqgas)
-      pressure = pressure * 1.D-5
-        
-!     rt_auxvar%gas_pp(ieqgas) = &
-!         exp(lnQK+lngamco2)*rt_auxvar%pri_molal(icomp) &
-!         /(IDEAL_GAS_CONSTANT*1.d-2*(temperature+273.15D0)*xphico2)
-
-!     This form includes factor Z in pV = ZRT for nonideal gas
-      rt_auxvar%gas_pp(ieqgas) = &
-          exp(lnQK)*rt_auxvar%pri_act_coef(icomp)*rt_auxvar%pri_molal(icomp)* &
-          den/pressure/xphico2
-
-      rt_auxvar%total(icomp,iphase) = rt_auxvar%total(icomp,iphase) + &
-          reaction%gas%acteqstoich(1,ieqgas)* &
-          rt_auxvar%gas_pp(ieqgas)
-
-!       print *,'RTotal: ',icomp,ieqgas,pressure, temperature, xphico2, &
-!         global_auxvar%sat(iphase),rt_auxvar%gas_pp(ieqgas), &
-!         rt_auxvar%pri_act_coef(icomp)*exp(lnQK)*rt_auxvar%pri_molal(icomp) &
-!         /pressure/xphico2*den
-
-
-   ! contribute to %dtotal
-   !      tempreal = exp(lnQK+lngamco2)/pressure/xphico2*den
-!     tempreal = rt_auxvar%pri_act_coef(icomp)*exp(lnQK) &
-!         /pressure/xphico2*den
-      tempreal = rt_auxvar%gas_pp(ieqgas)/rt_auxvar%pri_molal(icomp)
-      rt_auxvar%aqueous%dtotal(icomp,icomp,iphase) = &
-          rt_auxvar%aqueous%dtotal(icomp,icomp,iphase) + &
-          reaction%gas%acteqstoich(1,ieqgas)*tempreal
-    enddo
-  ! rt_auxvar%total(:,iphase) = rt_auxvar%total(:,iphase)!*den_kg_per_L
-  ! units of dtotal = kg water/L water
-  ! rt_auxvar%dtotal(:, :,iphase) = rt_auxvar%dtotal(:,:,iphase)!*den_kg_per_L
-  endif
-
-end subroutine RTotalCO2
   
 end module Reaction_Gas_module

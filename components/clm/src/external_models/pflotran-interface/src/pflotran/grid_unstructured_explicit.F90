@@ -1,5 +1,7 @@
 module Grid_Unstructured_Explicit_module
   
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Geometry_module
   use Grid_Unstructured_Aux_module
   
@@ -8,12 +10,7 @@ module Grid_Unstructured_Explicit_module
   implicit none
 
   private 
-  
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscis.h"
-#include "petsc/finclude/petscis.h90"
+
 #if defined(SCORPIO)
   include "scorpiof.h"
 #endif
@@ -440,22 +437,13 @@ subroutine UGridExplicitDecompose(ugrid,option)
   ! Author: Glenn Hammond
   ! Date: 05/17/12
   ! 
-
+#include "petsc/finclude/petscdm.h"
+  use petscdm
   use Option_module
   use Utility_module, only: reallocateIntArray, SearchOrderedArray
   
   implicit none
 
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
-#include "petsc/finclude/petscdm.h" 
-#include "petsc/finclude/petscdm.h90"
-#include "petsc/finclude/petscis.h"
-#include "petsc/finclude/petscis.h90"
-#include "petsc/finclude/petscviewer.h"
-  
   type(grid_unstructured_type) :: ugrid
   type(option_type) :: option
 
@@ -1249,7 +1237,8 @@ end subroutine UGridExplicitSetCellCentroids
 
 ! ************************************************************************** !
 
-function UGridExplicitSetInternConnect(explicit_grid,option)
+function UGridExplicitSetInternConnect(explicit_grid,upwind_fraction_method, &
+                                       option)
   ! 
   ! Sets up the internal connectivity within
   ! the connectivity object
@@ -1267,14 +1256,17 @@ function UGridExplicitSetInternConnect(explicit_grid,option)
   type(connection_set_type), pointer :: UGridExplicitSetInternConnect
   
   type(unstructured_explicit_type) :: explicit_grid
+  PetscInt :: upwind_fraction_method
   type(option_type) :: option
   
   type(connection_set_type), pointer :: connections
   PetscInt :: num_connections
   PetscInt :: iconn
   PetscInt :: id_up, id_dn
-  PetscReal :: v(3), v_up(3), v_dn(3)
+  PetscReal :: pt_up(3), pt_dn(3), pt_center(3)
+  PetscReal :: v(3), v_up(3), unit_vector(3), v_up_projected(3)
   PetscReal :: distance
+  PetscReal :: upwind_fraction
   character(len=MAXSTRINGLENGTH) :: string
   PetscBool :: error 
   
@@ -1288,40 +1280,86 @@ function UGridExplicitSetInternConnect(explicit_grid,option)
     connections%id_up(iconn) = id_up
     connections%id_dn(iconn) = id_dn
     
+    pt_up(1) = explicit_grid%cell_centroids(id_up)%x
+    pt_up(2) = explicit_grid%cell_centroids(id_up)%y
+    pt_up(3) = explicit_grid%cell_centroids(id_up)%z
+
+    pt_dn(1) = explicit_grid%cell_centroids(id_dn)%x
+    pt_dn(2) = explicit_grid%cell_centroids(id_dn)%y
+    pt_dn(3) = explicit_grid%cell_centroids(id_dn)%z
+
+    pt_center(1) = explicit_grid%face_centroids(iconn)%x
+    pt_center(2) = explicit_grid%face_centroids(iconn)%y
+    pt_center(3) = explicit_grid%face_centroids(iconn)%z
+#if 0
+    v(1) = explicit_grid%cell_centroids(id_dn)%x - &
+           explicit_grid%cell_centroids(id_up)%x
+    v(2) = explicit_grid%cell_centroids(id_dn)%y - &
+           explicit_grid%cell_centroids(id_up)%y
+    v(3) = explicit_grid%cell_centroids(id_dn)%z - &
+           explicit_grid%cell_centroids(id_up)%z
+    ! project upwind vector (vector between upwind cell center and face
+    ! centroid) onto vector between cell centers
     v_up(1) = explicit_grid%face_centroids(iconn)%x - &
               explicit_grid%cell_centroids(id_up)%x
     v_up(2) = explicit_grid%face_centroids(iconn)%y - &
               explicit_grid%cell_centroids(id_up)%y
     v_up(3) = explicit_grid%face_centroids(iconn)%z - &
               explicit_grid%cell_centroids(id_up)%z
-
-    v_dn(1) = explicit_grid%cell_centroids(id_dn)%x - &
-              explicit_grid%face_centroids(iconn)%x
-    v_dn(2) = explicit_grid%cell_centroids(id_dn)%y - &
-              explicit_grid%face_centroids(iconn)%y
-    v_dn(3) = explicit_grid%cell_centroids(id_dn)%z - &
-              explicit_grid%face_centroids(iconn)%z
-
-    v = v_up + v_dn
     distance = sqrt(DotProduct(v,v))
-    if (dabs(distance) < 1.d-40) then
+    unit_vector = v / distance
+    v_up_projected = DotProduct(unit_vector,v_up)*unit_vector
+    upwind_fraction = sqrt(DotProduct(v_up_projected,v_up_projected))/distance
+    if (upwind_fraction > 1.d0 .or. minval(v_up*unit_vector) < 0.d0) then
+      error = PETSC_TRUE
       write(string,'(2(es16.9,","),es16.9)') &
         explicit_grid%face_centroids(iconn)%x, &
         explicit_grid%face_centroids(iconn)%y, &
         explicit_grid%face_centroids(iconn)%z
-      error = PETSC_TRUE
-      option%io_buffer = 'Coincident cell and face centroids found at (' // &
-        trim(adjustl(string)) // ') '
+      option%io_buffer = 'Face (' // trim(adjustl(string)) // ') cannot &
+        &be projected onto the vector between cell centers ('
+      write(string,'(2(es16.9,","),es16.9)') &
+        explicit_grid%cell_centroids(id_up)%x, &
+        explicit_grid%cell_centroids(id_up)%y, &
+        explicit_grid%cell_centroids(id_up)%z
+      option%io_buffer = trim(option%io_buffer) // trim(adjustl(string)) // &
+        ') and ('
+      write(string,'(2(es16.9,","),es16.9)') &
+        explicit_grid%cell_centroids(id_dn)%x, &
+        explicit_grid%cell_centroids(id_dn)%y, &
+        explicit_grid%cell_centroids(id_dn)%z
+      option%io_buffer = trim(option%io_buffer) // trim(adjustl(string)) // &
+        ').'
+      if (upwind_fraction > 1.d0) then
+        write(string,'(es10.3)') upwind_fraction
+        option%io_buffer = trim(option%io_buffer) // ' Upwind fraction: ' // &
+          trim(adjustl(string)) // ';'
+      endif
+      if (minval(v_up*unit_vector) < 0.d0) then
+        write(string,'(2(es16.9,","),es16.9)') (v_up*unit_vector)
+          option%io_buffer = trim(option%io_buffer) // &
+            ' v_up*unit_vector: (' // &
+            trim(adjustl(string)) // ');'
+      endif
+      option%io_buffer = trim(option%io_buffer) // ' Please check the &
+        &location of the cell centers and face center.'
       call printMsgByRank(option)
     endif
-    connections%dist(-1,iconn) = sqrt(DotProduct(v_up,v_up))/distance
+    connections%dist(-1,iconn) = upwind_fraction
     connections%dist(0,iconn) = distance
-    connections%dist(1:3,iconn) = v/distance
+    connections%dist(1:3,iconn) = unit_vector
+#else
+    call UGridCalculateDist(pt_up,pt_dn,pt_center, &
+                            explicit_grid%cell_volumes(id_up), &
+                            explicit_grid%cell_volumes(id_dn), &
+                            upwind_fraction_method, &
+                            connections%dist(:,iconn),error,option)
+#endif
     connections%area(iconn) = explicit_grid%face_areas(iconn)
   enddo
   if (error) then
-    option%io_buffer = 'Coincident cell and face centroids found in ' // &
-      'UGridExplicitSetInternConnect().  See details above.'
+    option%io_buffer = 'Errors in UGridExplicitSetInternConnect(). &
+      &See details above.'
     call printErrMsgByRank(option)
   endif
   

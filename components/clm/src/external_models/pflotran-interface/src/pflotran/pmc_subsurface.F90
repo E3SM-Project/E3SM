@@ -86,6 +86,8 @@ subroutine PMCSubsurfaceSetupSolvers(this)
   ! Author: Glenn Hammond
   ! Date: 03/18/13
   ! 
+#include "petsc/finclude/petscsnes.h"
+  use petscsnes
   use Convergence_module
   use Discretization_module
   use Option_module
@@ -93,7 +95,7 @@ subroutine PMCSubsurfaceSetupSolvers(this)
   use PM_Base_Pointer_module
   use PM_Base_class
   use PM_Subsurface_Flow_class
-  use PM_Richards_class
+
   use PM_TH_class
   use PM_RT_class
   use Secondary_Continuum_module, only : SecondaryRTUpdateIterate  
@@ -102,13 +104,6 @@ subroutine PMCSubsurfaceSetupSolvers(this)
   use Timestepper_BE_class
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
-#include "petsc/finclude/petscsnes.h"
-#include "petsc/finclude/petscpc.h" 
 
   class(pmc_subsurface_type) :: this
 
@@ -131,13 +126,14 @@ subroutine PMCSubsurfaceSetupSolvers(this)
         call SolverCreateSNES(solver,option%mycomm)
         call SNESGetLineSearch(ts%solver%snes,linesearch, &
                                ierr);CHKERRQ(ierr)
-      
+        ! set solver pointer within pm for convergence purposes
+        call this%pm_ptr%pm%SetSolver(solver)
         select type(pm => this%pm_ptr%pm)
   ! ----- subsurface flow
           class is(pm_subsurface_flow_type)
             call printMsg(option,"  Beginning setup of FLOW SNES ")
             if (solver%J_mat_type == MATAIJ .and. &
-                option%iflowmode /= RICHARDS_MODE) then
+                option%iflowmode /= TH_MODE) then
               option%io_buffer = 'AIJ matrix not supported for current &
                 &mode: '// option%flowmode
               call printErrMsg(option)
@@ -148,8 +144,6 @@ subroutine PMCSubsurfaceSetupSolvers(this)
               select case(option%iflowmode)
                 case(TH_MODE)
                   write(*,'(" mode = TH: p, T")')
-                case(RICHARDS_MODE)
-                  write(*,'(" mode = Richards: p")')  
               end select
             endif
 
@@ -162,6 +156,10 @@ subroutine PMCSubsurfaceSetupSolvers(this)
               else
                 solver%Jpre_mat_type = MATBAIJ
               endif
+            endif
+
+           if (associated(solver%cprstash)) then
+              call CPRWorkersCreate(pm, solver, option)
             endif
 
             call DiscretizationCreateJacobian(pm%realization%discretization, &
@@ -198,7 +196,7 @@ subroutine PMCSubsurfaceSetupSolvers(this)
             ! verbosity > 0.
             if (option%verbosity >= 2) then
               string = '-flow_snes_view'
-              call PetscOptionsInsertString(PETSC_NULL_OBJECT,string, &
+              call PetscOptionsInsertString(PETSC_NULL_OPTIONS,string, &
                                             ierr);CHKERRQ(ierr)
             endif
 
@@ -212,16 +210,18 @@ subroutine PMCSubsurfaceSetupSolvers(this)
             ! solver.  --RTM
             if (pm%realization%discretization%itype == STRUCTURED_GRID) then
               call PCSetDM(solver%pc, &
-                           pm%realization%discretization%dm_nflowdof, &
+                           pm%realization%discretization%dm_nflowdof%dm, &
                            ierr);CHKERRQ(ierr)
             endif
 
-            ! shell for custom convergence test.  The default SNES convergence
-            ! test is call within this function.
-            ts%convergence_context => ConvergenceContextCreate(solver,option, &
-                                                   pm%realization%patch%grid)
-            call SNESSetConvergenceTest(solver%snes,ConvergenceTest, &
-                                        ts%convergence_context, &
+            call SNESSetConvergenceTest(solver%snes, &
+#if defined(USE_PM_AS_PETSC_CONTEXT)
+                                        PMCheckConvergence, &
+                                        this%pm_ptr%pm, &
+#else
+                                        PMCheckConvergencePtr, &
+                                        this%pm_ptr, &
+#endif
                                         PETSC_NULL_FUNCTION,ierr);CHKERRQ(ierr)
             if (pm%check_post_convergence) then
               call SNESLineSearchSetPostCheck(linesearch, &
@@ -238,19 +238,7 @@ subroutine PMCSubsurfaceSetupSolvers(this)
             endif
             select type(pm)
             !-------------------------------------
-              class is(pm_richards_type)
-                if (Initialized(pm%pressure_dampening_factor) .or. &
-                    Initialized(pm%saturation_change_limit)) then
-                  call SNESLineSearchSetPreCheck(linesearch, &
-#if defined(USE_PM_AS_PETSC_CONTEXT)
-                                                 PMCheckUpdatePre, &
-                                                 this%pm_ptr%pm, &
-#else
-                                                 PMCheckUpdatePrePtr, &
-                                                 this%pm_ptr, &
-#endif
-                                                 ierr);CHKERRQ(ierr)
-                endif   
+              !TODO(geh): Can't these be consolidated?
             !-------------------------------------
               class is(pm_th_type)
                 if (Initialized(pm%pressure_dampening_factor) .or. &
@@ -339,7 +327,7 @@ subroutine PMCSubsurfaceSetupSolvers(this)
               ! verbosity > 0.
               if (option%verbosity >= 2) then
                 string = '-tran_snes_view'
-                call PetscOptionsInsertString(PETSC_NULL_OBJECT, &
+                call PetscOptionsInsertString(PETSC_NULL_OPTIONS, &
                                               string, ierr);CHKERRQ(ierr)
               endif
 
@@ -347,13 +335,14 @@ subroutine PMCSubsurfaceSetupSolvers(this)
 
             if (option%transport%reactive_transport_coupling == &
                 GLOBAL_IMPLICIT) then
-              ! shell for custom convergence test.  The default SNES 
-              ! convergence test is call within this function. 
-              ts%convergence_context => &
-                ConvergenceContextCreate(solver,option, &
-                                         pm%realization%patch%grid)
-              call SNESSetConvergenceTest(solver%snes,ConvergenceTest, &
-                                        ts%convergence_context, &
+              call SNESSetConvergenceTest(solver%snes, &
+#if defined(USE_PM_AS_PETSC_CONTEXT)
+                                        PMCheckConvergence, &
+                                        this%pm_ptr%pm, &
+#else
+                                        PMCheckConvergencePtr, &
+                                        this%pm_ptr, &
+#endif
                                         PETSC_NULL_FUNCTION,ierr);CHKERRQ(ierr)
             endif
             if (pm%print_EKG .or. option%use_mc .or. &
@@ -457,6 +446,8 @@ subroutine PMCSubsurfaceGetAuxDataFromSurf(this)
   ! Date: 08/22/13
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Connection_module
   use Coupler_module
   use Field_module
@@ -469,9 +460,6 @@ subroutine PMCSubsurfaceGetAuxDataFromSurf(this)
   use EOS_Water_module
 
   implicit none
-  
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   class(pmc_subsurface_type) :: this
   
@@ -506,7 +494,7 @@ subroutine PMCSubsurfaceGetAuxDataFromSurf(this)
     select type (pmc => this)
       class is (pmc_subsurface_type)
 
-      if (this%sim_aux%subsurf_mflux_exchange_with_surf /= 0) then
+      if (this%sim_aux%subsurf_mflux_exchange_with_surf /= PETSC_NULL_VEC) then
         ! PETSc Vector to store relevant mass-flux data between
         ! surface-subsurface model exists
 
@@ -516,85 +504,6 @@ subroutine PMCSubsurfaceGetAuxDataFromSurf(this)
         option     => pmc%realization%option
 
         select case(this%option%iflowmode)
-          case (RICHARDS_MODE)
-            call VecScatterBegin(pmc%sim_aux%surf_to_subsurf, &
-                                 pmc%sim_aux%surf_mflux_exchange_with_subsurf, &
-                                 pmc%sim_aux%subsurf_mflux_exchange_with_surf, &
-                                 INSERT_VALUES,SCATTER_FORWARD, &
-                                 ierr);CHKERRQ(ierr)
-            call VecScatterEnd(pmc%sim_aux%surf_to_subsurf, &
-                               pmc%sim_aux%surf_mflux_exchange_with_subsurf, &
-                               pmc%sim_aux%subsurf_mflux_exchange_with_surf, &
-                               INSERT_VALUES,SCATTER_FORWARD, &
-                               ierr);CHKERRQ(ierr)
-
-            call VecScatterBegin(pmc%sim_aux%surf_to_subsurf, &
-                                 pmc%sim_aux%surf_head, &
-                                 pmc%sim_aux%subsurf_pres_top_bc, &
-                                 INSERT_VALUES,SCATTER_FORWARD, &
-                                 ierr);CHKERRQ(ierr)
-            call VecScatterEnd(pmc%sim_aux%surf_to_subsurf, &
-                               pmc%sim_aux%surf_head, &
-                               pmc%sim_aux%subsurf_pres_top_bc, &
-                               INSERT_VALUES,SCATTER_FORWARD, &
-                               ierr);CHKERRQ(ierr)
-            call EOSWaterdensity(option%reference_temperature, &
-                                 option%reference_pressure,den,dum1,ierr)
-
-#if 0
-            coupler_list => patch%source_sink_list
-            coupler => coupler_list%first
-            do
-              if (.not.associated(coupler)) exit
-
-              ! FLOW
-              if (associated(coupler%flow_aux_real_var)) then
-
-                ! Find the BC from the list of BCs
-                if (StringCompare(coupler%name,'from_surface_ss')) then
-                  coupler_found = PETSC_TRUE
-                  
-                  call VecGetArrayF90(pmc%sim_aux%subsurf_mflux_exchange_with_surf, &
-                                      mflux_p,ierr);CHKERRQ(ierr)
-                  do iconn = 1,coupler%connection_set%num_connections
-                    !coupler%flow_aux_real_var(ONE_INTEGER,iconn) = -mflux_p(iconn)/dt*den
-                  enddo
-                  call VecRestoreArrayF90(pmc%sim_aux%subsurf_mflux_exchange_with_surf, &
-                                          mflux_p,ierr);CHKERRQ(ierr)
-
-                  call VecSet(pmc%sim_aux%surf_mflux_exchange_with_subsurf,0.d0, &
-                              ierr);CHKERRQ(ierr)
-                endif
-              endif
-
-              coupler => coupler%next
-            enddo
-#endif
-
-            coupler_list => patch%boundary_condition_list
-            coupler => coupler_list%first
-            do
-              if (.not.associated(coupler)) exit
-
-              ! FLOW
-              if (associated(coupler%flow_aux_real_var)) then
-                ! Find the BC from the list of BCs
-                if (StringCompare(coupler%name,'from_surface_bc')) then
-                  coupler_found = PETSC_TRUE
-                  call VecGetArrayF90(pmc%sim_aux%subsurf_pres_top_bc, &
-                                      head_p,ierr);CHKERRQ(ierr)
-                  do iconn = 1,coupler%connection_set%num_connections
-                    surfpress = head_p(iconn)*(abs(option%gravity(3)))*den + &
-                                option%reference_pressure
-                    coupler%flow_aux_real_var(RICHARDS_PRESSURE_DOF,iconn) = &
-                    surfpress
-                  enddo
-                  call VecRestoreArrayF90(pmc%sim_aux%subsurf_pres_top_bc, &
-                                          head_p,ierr);CHKERRQ(ierr)
-                endif
-              endif
-              coupler => coupler%next
-            enddo
 
           case (TH_MODE)
             call VecScatterBegin(pmc%sim_aux%surf_to_subsurf, &
@@ -715,6 +624,8 @@ subroutine PMCSubsurfaceSetAuxDataForSurf(this)
   ! Date: 08/21/13
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Grid_module
   use String_module
   use Realization_Subsurface_class
@@ -727,9 +638,6 @@ subroutine PMCSubsurfaceSetAuxDataForSurf(this)
   use EOS_Water_module
 
   implicit none
-  
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   class(pmc_subsurface_type) :: this
   
@@ -763,7 +671,7 @@ subroutine PMCSubsurfaceSetAuxDataForSurf(this)
     select type (pmc => this)
       class is (pmc_subsurface_type)
 
-        if (this%sim_aux%subsurf_pres_top_bc/=0) then
+        if (this%sim_aux%subsurf_pres_top_bc/= PETSC_NULL_VEC) then
           ! PETSc Vector to store relevant subsurface-flow data for
           ! surface-flow model exists
 
@@ -785,15 +693,6 @@ subroutine PMCSubsurfaceSetAuxDataForSurf(this)
               ! Find the BC from the list of BCs
               if (StringCompare(coupler%name,'from_surface_bc')) then
                 select case(this%option%iflowmode)
-                  case (RICHARDS_MODE)
-                    call VecGetArrayF90(this%sim_aux%subsurf_pres_top_bc, &
-                                        pres_top_bc_p,ierr);CHKERRQ(ierr)
-                    do iconn = 1,coupler%connection_set%num_connections
-                      pres_top_bc_p(iconn) = &
-                        coupler%flow_aux_real_var(RICHARDS_PRESSURE_DOF,iconn)
-                    enddo
-                    call VecRestoreArrayF90(this%sim_aux%subsurf_pres_top_bc, &
-                                            pres_top_bc_p,ierr);CHKERRQ(ierr)
                   case (TH_MODE)
                     call VecGetArrayF90(this%sim_aux%subsurf_pres_top_bc, &
                                         pres_top_bc_p,ierr);CHKERRQ(ierr)
@@ -860,6 +759,60 @@ end subroutine PMCSubsurfaceFinalizeRun
 
 ! ************************************************************************** !
 
+subroutine CPRWorkersCreate(pm, solver, option)
+  ! 
+  ! create all the worker/storage matrices/vectors that will be needed for the
+  ! cpr preconditioner
+  !
+  ! Author: Daniel Stone
+  ! Date: Oct 2017 - March 2018
+  ! 
+
+  use PM_Subsurface_Flow_class
+  use Solver_module
+  use Option_module
+  use Discretization_module
+  
+  implicit none
+
+  class(pm_subsurface_flow_type) :: pm
+  class(solver_type) :: solver
+  class(option_type) :: option
+  MatType :: cpr_ap_mat_type
+
+
+
+  cpr_ap_mat_type =  MATAIJ
+  call DiscretizationCreateJacobian(pm%realization%discretization, &
+                                    ONEDOF, &
+                                    cpr_ap_mat_type, &
+                                    solver%cprstash%Ap, &
+                                    option)
+
+  call DiscretizationCreateVector(pm%realization%discretization, &
+                                  NFLOWDOF, solver%cprstash%T1r, &
+                                  GLOBAL, option)
+  call DiscretizationCreateVector(pm%realization%discretization, &
+                                  NFLOWDOF, solver%cprstash%r2, &
+                                  GLOBAL, option)
+
+  call DiscretizationCreateVector(pm%realization%discretization, &
+                                  ONEDOF, solver%cprstash%s,  &
+                                  GLOBAL, option)
+  call DiscretizationCreateVector(pm%realization%discretization, &
+                                  ONEDOF, solver%cprstash%z, &
+                                  GLOBAL, option)
+
+  call DiscretizationCreateVector(pm%realization%discretization, &
+                                  NFLOWDOF, solver%cprstash%factors1vec, &
+                                  GLOBAL, option)
+  call DiscretizationCreateVector(pm%realization%discretization, &
+                                  NFLOWDOF, solver%cprstash%factors2vec, &
+                                  GLOBAL, option)
+end subroutine CPRWorkersCreate
+
+! ************************************************************************** !
+
 subroutine PMCSubsurfaceStrip(this)
   !
   ! Deallocates members of PMC Subsurface.
@@ -913,5 +866,7 @@ recursive subroutine PMCSubsurfaceDestroy(this)
   call PMCSubsurfaceStrip(this)
   
 end subroutine PMCSubsurfaceDestroy
+
+! ************************************************************************** !
   
 end module PMC_Subsurface_class

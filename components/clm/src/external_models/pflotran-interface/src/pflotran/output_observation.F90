@@ -1,5 +1,7 @@
 module Output_Observation_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Logging_module 
   use Output_Aux_module
   use Output_Common_module
@@ -9,8 +11,6 @@ module Output_Observation_module
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
 
   ! flags signifying the first time a routine is called during a given
   ! simulation
@@ -819,12 +819,6 @@ subroutine WriteObservationHeaderForBC(fid,realization_base,coupler_name)
   option => realization_base%option
   reaction => realization_base%reaction
   
-  select case(option%iflowmode)
-    case(RICHARDS_MODE)
-      string = ',"Darcy flux ' // trim(coupler_name) // &
-               ' [m^3/' // trim(realization_base%output_option%tunit) // ']"'
-    case default
-  end select
   write(fid,'(a)',advance="no") trim(string)
 
   if (associated(reaction)) then
@@ -1077,7 +1071,6 @@ subroutine WriteObservationDataForBC(fid,realization_base,patch,connection_set)
     offset = connection_set%offset
     select case(option%iflowmode)
       case(TH_MODE)
-      case(RICHARDS_MODE)
         sum_volumetric_flux = 0.d0
         if (associated(connection_set)) then
           do iconn = 1, connection_set%num_connections
@@ -1651,8 +1644,6 @@ subroutine OutputIntegralFlux(realization_base)
 
   flow_dof_scale = 1.d0
   select case(option%iflowmode)
-    case(RICHARDS_MODE)
-      flow_dof_scale(1) = FMWH2O
     case(TH_MODE)
       flow_dof_scale(1) = FMWH2O
   end select
@@ -1695,7 +1686,7 @@ subroutine OutputIntegralFlux(realization_base)
       do
         if (.not.associated(integral_flux)) exit
         select case(option%iflowmode)
-          case(RICHARDS_MODE,TH_MODE)
+          case(TH_MODE)
             string = trim(integral_flux%name) // ' Water'
             call OutputWriteToHeader(fid,string,'kg','',icol)
             units = 'kg/' // trim(output_option%tunit) // ''
@@ -1856,7 +1847,6 @@ subroutine OutputMassBalance(realization_base)
   use Utility_module
   use Output_Aux_module
   
-  use Richards_module, only : RichardsComputeMassBalance
   use TH_module, only : THComputeMassBalance
   use Reactive_Transport_module, only : RTComputeMassBalance
 
@@ -1965,9 +1955,7 @@ subroutine OutputMassBalance(realization_base)
       endif
       
       select case(option%iflowmode)
-        case(RICHARDS_MODE)
-          call OutputWriteToHeader(fid,'Global Water Mass','kg','',icol)
-          
+
         case(TH_MODE)
           call OutputWriteToHeader(fid,'Global Water Mass in Liquid Phase', &
                                     'kg','',icol)
@@ -2024,13 +2012,6 @@ subroutine OutputMassBalance(realization_base)
         endif
 
         select case(option%iflowmode)
-          case(RICHARDS_MODE)
-            string = trim(coupler%name) // ' Water Mass'
-            call OutputWriteToHeader(fid,string,'kg','',icol)
-            
-            units = 'kg/' // trim(output_option%tunit) // ''
-            string = trim(coupler%name) // ' Water Mass'
-            call OutputWriteToHeader(fid,string,units,'',icol)
           case(TH_MODE)
             string = trim(coupler%name) // ' Water Mass'
             call OutputWriteToHeader(fid,string,'kg','',icol)
@@ -2080,29 +2061,6 @@ subroutine OutputMassBalance(realization_base)
         enddo
       endif
       
-#ifdef YE_FLUX
-!geh      do offset = 1, 4
-!geh        write(word,'(i6)') offset*100
-        select case(option%iflowmode)
-          case(RICHARDS_MODE)
-            write(fid,'(a)',advance="no") ',"' // &
-              'Plane Water Flux [mol/s]"'
-          case(TH_MODE)
-            write(fid,'(a)',advance="no") ',"' // &
-              trim(adjustl(word)) // 'm Water Mass [kg]"'
-        end select
-        
-        if (option%ntrandof > 0) then
-          do i=1,reaction%naqcomp
-            if (reaction%primary_species_print(i)) then
-              write(fid,'(a)',advance="no") ',"' // &
-                  trim(adjustl(word)) // 'm ' // &
-                  trim(reaction%primary_species_names(i)) // ' [mol]"'
-            endif
-          enddo
-        endif
-!geh      enddo
-#endif      
       write(fid,'(a)') '' 
     else
       open(unit=fid,file=filename,action="write",status="old",position="append")
@@ -2135,8 +2093,6 @@ subroutine OutputMassBalance(realization_base)
     select type(realization_base)
       class is(realization_subsurface_type)
         select case(option%iflowmode)
-          case(RICHARDS_MODE)
-            call RichardsComputeMassBalance(realization_base,sum_kg(1,:))
           case(TH_MODE)
             call THComputeMassBalance(realization_base,sum_kg(1,:))
         end select
@@ -2152,7 +2108,7 @@ subroutine OutputMassBalance(realization_base)
 
     if (option%myrank == option%io_rank) then
       select case(option%iflowmode)
-        case(RICHARDS_MODE,TH_MODE)
+        case(TH_MODE)
           do iphase = 1, option%nphase
             do ispec = 1, option%nflowspec
               write(fid,110,advance="no") sum_kg_global(ispec,iphase)
@@ -2303,41 +2259,6 @@ subroutine OutputMassBalance(realization_base)
 #endif
 
       select case(option%iflowmode)
-        case(RICHARDS_MODE)
-          ! print out cumulative H2O flux
-          sum_kg = 0.d0
-          do iconn = 1, coupler%connection_set%num_connections
-            sum_kg = sum_kg + global_auxvars_bc_or_ss(offset+iconn)%mass_balance
-          enddo
-
-          int_mpi = option%nphase
-          call MPI_Reduce(sum_kg,sum_kg_global, &
-                          int_mpi,MPI_DOUBLE_PRECISION,MPI_SUM, &
-                          option%io_rank,option%mycomm,ierr)
-                              
-          if (option%myrank == option%io_rank) then
-            ! change sign for positive in / negative out
-            write(fid,110,advance="no") -sum_kg_global
-          endif
-
-          ! print out H2O flux
-          sum_kg = 0.d0
-          do iconn = 1, coupler%connection_set%num_connections
-            sum_kg = sum_kg + global_auxvars_bc_or_ss(offset+iconn)%mass_balance_delta
-          enddo
-          
-          ! mass_balance_delta units = delta kmol h2o; must convert to delta kg h2o
-          sum_kg = sum_kg*FMWH2O
-
-          int_mpi = option%nphase
-          call MPI_Reduce(sum_kg,sum_kg_global, &
-                          int_mpi,MPI_DOUBLE_PRECISION,MPI_SUM, &
-                          option%io_rank,option%mycomm,ierr)
-                              
-          if (option%myrank == option%io_rank) then
-            ! change sign for positive in / negative out
-            write(fid,110,advance="no") -sum_kg_global*output_option%tconv
-          endif
 
         case(TH_MODE)
           ! print out cumulative H2O flux
@@ -2442,78 +2363,6 @@ subroutine OutputMassBalance(realization_base)
     enddo
   endif
 
-#ifdef YE_FLUX
-
-!geh  do offset = 1, 4
-!geh    iconn = offset*20-1
-
-    !TODO(ye): The flux will be calculated at the plane intersecting the top
-    !          of the kth cell in the z-direction.  You need to update this.
-    k = 30
-
-    if (option%nflowdof > 0) then
-      ! really summation of moles, but we are hijacking the variable
-      sum_mol_ye = 0.d0
-      if (k-1 >= grid%structured_grid%lzs .and. &
-          k-1 < grid%structured_grid%lze) then
-        offset = (grid%structured_grid%ngx-1)*grid%structured_grid%nlyz + &
-                 (grid%structured_grid%ngy-1)*grid%structured_grid%nlxz
-        do j = grid%structured_grid%lys, grid%structured_grid%lye-1
-          do i = grid%structured_grid%lxs, grid%structured_grid%lxe-1
-            iconn = offset + (i-grid%structured_grid%lxs)* &
-                             (grid%structured_grid%ngz-1) + &
-                             (j-grid%structured_grid%lys)* &
-                             grid%structured_grid%nlx* &
-                             (grid%structured_grid%ngz-1) + &
-                             k-grid%structured_grid%lzs+1
-!gehprint *, option%myrank, grid%nG2A(grid%internal_connection_set_list%first%id_up(iconn)), &
-!gehpatch%internal_fluxes(1:option%nflowdof,1,iconn), 'sum_mol_by_conn'
-            sum_mol_ye(1:option%nflowdof) = sum_mol_ye(1:option%nflowdof) + &
-                             patch%internal_flow_fluxes(1:option%nflowdof,iconn)
-          enddo
-        enddo
-      endif
-!geh      int_mpi = option%nphase
-      int_mpi = option%nflowdof
-!gehprint *, option%myrank, sum_mol_ye(1,1), 'sum_mol_ye'
-      call MPI_Reduce(sum_mol_ye,sum_mol_global_ye, &
-                      int_mpi,MPI_DOUBLE_PRECISION,MPI_SUM, &
-                      option%io_rank,option%mycomm,ierr)
-                          
-      if (option%myrank == option%io_rank) then
-        ! change sign for positive in / negative out
-        ! for mphase use:
-        write(fid,110,advance="no") -sum_mol_global_ye(1:option%nflowdof)/option%flow_dt
-
-!     for Richards eqn. use:
-!       write(fid,110,advance="no") -sum_mol_global_ye(1:option%nflowdof)
-      endif
-    endif
-    
-    if (option%ntrandof > 0) then
-
-      sum_mol = 0.d0
-      sum_mol = sum_mol + patch%aux%RT%auxvars(iconn)%mass_balance
-
-      int_mpi = option%nphase*option%ntrandof
-      call MPI_Reduce(sum_mol,sum_mol_global,int_mpi, &
-                      MPI_DOUBLE_PRECISION,MPI_SUM, &
-                      option%io_rank,option%mycomm,ierr)
-
-      if (option%myrank == option%io_rank) then
-        do iphase = 1, option%nphase
-          do icomp = 1, reaction%naqcomp
-            if (reaction%primary_species_print(icomp)) then
-              ! change sign for positive in / negative out
-              write(fid,110,advance="no") -sum_mol_global(icomp,iphase)
-            endif
-          enddo
-        enddo
-      endif
-    endif
-!geh  enddo
-#endif
-  
   if (option%myrank == option%io_rank) then
     write(fid,'(a)') ''
     close(fid)

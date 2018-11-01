@@ -1,14 +1,12 @@
 module Data_Mediator_Vec_class
  
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Data_Mediator_Base_class
 
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
  
   type, public, extends(data_mediator_base_type) :: data_mediator_vec_type
     VecScatter :: scatter_ctx ! scatter context from vec to residual_vec
@@ -40,8 +38,8 @@ function DataMediatorVecCreate()
   
   allocate(data_mediator)
   call DataMediatorBaseCreate(data_mediator)
-  data_mediator%vec = 0
-  data_mediator%scatter_ctx = 0
+  data_mediator%vec = PETSC_NULL_VEC
+  data_mediator%scatter_ctx = PETSC_NULL_VECSCATTER
   DataMediatorVecCreate => data_mediator
 
 end function DataMediatorVecCreate
@@ -56,14 +54,12 @@ recursive subroutine DataMediatorVecUpdate(this,data_mediator_vec,option)
   ! Author: Glenn Hammond
   ! Date: 03/24/15
   ! 
-
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Option_module
   
   implicit none
-  
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"  
-  
+
   class(data_mediator_vec_type) :: this
   Vec :: data_mediator_vec
   type(option_type) :: option  
@@ -105,10 +101,10 @@ recursive subroutine DataMediatorVecStrip(this)
   ! Simply nullify the pointer as the dataset resides in a list to be
   ! destroyed separately.
   !nullify(data_mediator%dataset)
-  if (this%scatter_ctx /= 0) then
+  if (this%scatter_ctx /= PETSC_NULL_VECSCATTER) then
     call VecScatterDestroy(this%scatter_ctx,ierr);CHKERRQ(ierr)
   endif
-  if (this%vec /= 0) then
+  if (this%vec /= PETSC_NULL_VEC) then
     call VecDestroy(this%vec,ierr);CHKERRQ(ierr)
   endif
   

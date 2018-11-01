@@ -1,5 +1,5 @@
 """
-FTP Server class.  Interact with a server using FTP protocal
+FTP Server class.  Interact with a server using FTP protocol
 """
 # pylint: disable=super-init-not-called
 from CIME.XML.standard_module_setup import *
@@ -28,18 +28,36 @@ class FTP(GenericServer):
         self._ftp_server = address
 
     def fileexists(self, rel_path):
-        stat = self.ftp.nlst(rel_path)
-
+        try:
+            stat = self.ftp.nlst(rel_path)
+        except:
+            logger.warning("ERROR from ftp server, trying next server")
+            return False
         if rel_path not in stat:
-            logging.warning("FAIL: File {} not found.\nerror {}".format(rel_path, stat))
-            return None
-        return self
+            if not stat or not stat[0].startswith(rel_path):
+                logging.warning("FAIL: File {} not found.\nerror {}".format(rel_path, stat))
+                return False
+        return True
 
     def getfile(self, rel_path, full_path):
-        stat = self.ftp.retrbinary('RETR {}'.format(rel_path), open(full_path, "wb").write)
+        try:
+            stat = self.ftp.retrbinary('RETR {}'.format(rel_path), open(full_path, "wb").write)
+        except:
+            logger.warning("ERROR from ftp server, trying next server")
+            return False
 
         if (stat != '226 Transfer complete.'):
             logging.warning("FAIL: Failed to retreve file '{}' from FTP repo '{}' stat={}\n".
                             format(rel_path, self._ftp_server, stat))
             return False
         return True
+
+    def getdirectory(self, rel_path, full_path):
+        try:
+            stat = self.ftp.nlst(rel_path)
+        except:
+            logger.warning("ERROR from ftp server, trying next server")
+            return False
+
+        for _file in stat:
+            self.getfile(_file, full_path+os.sep+os.path.basename(_file))

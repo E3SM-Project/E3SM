@@ -209,6 +209,12 @@ module pftvarcon
   real(r8)              :: KM_NIT              ! KM for nitrifier NH4 uptake
   real(r8)              :: KM_DEN              ! KM for denitrifier NO3 uptake
   real(r8), allocatable :: decompmicc_patch_vr(:,:) ! microbial decomposer biomass gC/m3
+  real(r8), allocatable :: alpha_nfix(:)            ! fraction of fixed N goes directly to plant
+  real(r8), allocatable :: alpha_ptase(:)           ! fraction of phosphatase produced P goes directly to plant
+  real(r8), allocatable :: ccost_nfix(:)            ! plant C cost per unit N produced by N2 fixation
+  real(r8), allocatable :: pcost_nfix(:)            ! plant P cost per unit N produced by N2 fixation
+  real(r8), allocatable :: ccost_ptase(:)           ! plant C cost per unit P produced by phosphatase
+  real(r8), allocatable :: ncost_ptase(:)           ! plant N cost per unit P produced by phosphatase
   real(r8), allocatable :: VMAX_NFIX(:)        ! VMAX of symbiotic N2 fixation
   real(r8), allocatable :: KM_NFIX(:)          ! KM of symbiotic N2 fixation
   real(r8), allocatable :: VMAX_PTASE(:)       ! VMAX of biochemical P production
@@ -289,7 +295,7 @@ contains
     use fileutils ,  only : getfil
     use ncdio_pio ,  only : ncd_io, ncd_pio_closefile, ncd_pio_openfile, file_desc_t, &
                             ncd_inqdid, ncd_inqdlen
-    use clm_varctl,  only : paramfile, use_ed
+    use clm_varctl,  only : paramfile, use_fates
     use clm_varctl,  only : use_crop, use_dynroot
     use clm_varcon,  only : tfrz
     use spmdMod   ,  only : masterproc
@@ -473,6 +479,12 @@ contains
     allocate( VMAX_PTASE(0:mxpft))
     allocate( i_vc               (0:mxpft) ) 
     allocate( s_vc               (0:mxpft) ) 
+    allocate( alpha_nfix         (0:mxpft) )
+    allocate( alpha_ptase        (0:mxpft) )
+    allocate( ccost_nfix         (0:mxpft) )
+    allocate( pcost_nfix         (0:mxpft) )
+    allocate( ccost_ptase        (0:mxpft) )
+    allocate( ncost_ptase        (0:mxpft) )
     allocate( VMAX_NFIX          (0:mxpft) )
     allocate( KM_NFIX            (0:mxpft) )
     ! new stoichiometry
@@ -792,6 +804,18 @@ contains
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_DEN'//errMsg(__FILE__, __LINE__))
         call ncd_io('decompmicc_patch_vr',decompmicc_patch_vr, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft decompmicc_patch_vr'//errMsg(__FILE__, __LINE__))
+        call ncd_io('alpha_nfix',alpha_nfix, 'read', ncid, readvar=readv)
+        if ( .not. readv ) alpha_nfix(:)=0._r8
+        call ncd_io('alpha_ptase',alpha_ptase, 'read', ncid, readvar=readv)
+        if ( .not. readv ) alpha_ptase(:)=0._r8
+        call ncd_io('ccost_nfix',ccost_nfix, 'read', ncid, readvar=readv)
+        if ( .not. readv ) ccost_nfix(:)=0._r8
+        call ncd_io('pcost_nfix',pcost_nfix, 'read', ncid, readvar=readv)
+        if ( .not. readv ) pcost_nfix(:)=0._r8
+        call ncd_io('ccost_ptase',ccost_ptase, 'read', ncid, readvar=readv)
+        if ( .not. readv ) ccost_ptase(:)=0._r8
+        call ncd_io('ncost_ptase',ncost_ptase, 'read', ncid, readvar=readv)
+        if ( .not. readv ) ncost_ptase(:)=0._r8
         call ncd_io('VMAX_NFIX',VMAX_NFIX, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in VMAX_NFIX'//errMsg(__FILE__, __LINE__))
         call ncd_io('KM_NFIX',KM_NFIX, 'read', ncid, readvar=readv)  
@@ -919,7 +943,7 @@ contains
        ! (FATES-INTERF) Later, depending on how the team plans to structure the crop model
        ! or other modules that co-exist while FATES is on, we may want to preserve these pft definitions
        ! on non-fates columns.  For now, they are incompatible, and this check is warranted (rgk 04-2017)
-       if(.not. use_ed)then
+       if(.not. use_fates)then
           if ( trim(adjustl(pftname(i))) /= trim(expected_pftnames(i)) )then
              write(iulog,*)'pftconrd: pftname is NOT what is expected, name = ', &
                   trim(pftname(i)), ', expected name = ', trim(expected_pftnames(i))
@@ -965,7 +989,7 @@ contains
        fcur(:) = fcurdv(:)
     end if
 
-    if( .not. use_ed ) then
+    if( .not. use_fates ) then
        if ( npcropmax /= mxpft )then
           call endrun(msg=' ERROR: npcropmax is NOT the last value'//errMsg(__FILE__, __LINE__))
        end if

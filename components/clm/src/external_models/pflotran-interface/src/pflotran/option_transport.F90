@@ -2,14 +2,13 @@ module Option_Transport_module
 
 ! IMPORTANT NOTE: This module can have no dependencies on other modules!!!
  
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use PFLOTRAN_Constants_module
 
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
-
 
   type, public :: transport_option_type 
   
@@ -28,6 +27,8 @@ module Option_Transport_module
     PetscBool :: no_restart_mineral_vol_frac
     PetscBool :: only_vertical_tran
     PetscBool :: numerical_derivatives
+
+    PetscInt :: nphase
         
   end type transport_option_type
   
@@ -123,6 +124,8 @@ subroutine OptionTransportInitRealization(option)
 
   option%inf_rel_update_tol = UNINITIALIZED_DOUBLE
   option%inf_scaled_res_tol = UNINITIALIZED_DOUBLE 
+
+  option%nphase = 1
 
   option%only_vertical_tran = PETSC_FALSE
   

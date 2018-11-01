@@ -1,5 +1,5 @@
-import shutil
 from CIME.XML.standard_module_setup import *
+from CIME.utils import safe_copy
 logger = logging.getLogger(__name__)
 
 LOCKED_DIR = "LockedFiles"
@@ -19,7 +19,7 @@ def lock_file(filename, caseroot=None, newname=None):
     # GenericXML instances that represent this file and all caching that may
     # have involved this file. We should probably seek a safer way of locking
     # files.
-    shutil.copyfile(os.path.join(caseroot, filename), os.path.join(fulllockdir, newname))
+    safe_copy(os.path.join(caseroot, filename), os.path.join(fulllockdir, newname))
 
 def unlock_file(filename, caseroot=None):
     expect("/" not in filename, "Please just provide basename of locked file")

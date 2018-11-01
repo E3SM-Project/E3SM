@@ -25,6 +25,8 @@ module CNNStateUpdate1Mod
   use CNStateType            , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
   use clm_varctl             , only : forest_fert_exp
   use clm_varctl             , only : nu_com
+  use clm_varctl             , only : NFIX_PTASE_plant
+
   !
   implicit none
   save
@@ -366,6 +368,7 @@ contains
          ns%npool_patch(p) = &
               ns%npool_patch(p) + nf%sminn_to_npool_patch(p)*dt
          if (nu_com .ne. 'RD') ns%npool_patch(p) = ns%npool_patch(p) + nf%supplement_to_plantn(p)*dt
+         if (NFIX_PTASE_plant) ns%npool_patch(p) = ns%npool_patch(p) + nf%nfix_to_plantn_patch(p)*dt
 
          ! deployment from retranslocation pool
          ns%npool_patch(p)    = ns%npool_patch(p)    + nf%retransn_to_npool_patch(p)*dt

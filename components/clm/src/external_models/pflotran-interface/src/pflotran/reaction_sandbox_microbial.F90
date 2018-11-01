@@ -9,8 +9,10 @@ module Reaction_Sandbox_Microbial_class
   ! if an inhibitor is specified, the rate is inhibited by I/(C+I)
   ! inhibitors are neither reactant nor product
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+
   use Reaction_Sandbox_Base_class
-  
   use Global_Aux_module
   use Reactive_Transport_Aux_module
   use PFLOTRAN_Constants_module
@@ -24,8 +26,6 @@ module Reaction_Sandbox_Microbial_class
   
   private
   
-#include "petsc/finclude/petscsys.h"
-
   type, public :: rate_type
     character(len=MAXWORDLENGTH) :: name
     PetscReal                    :: value
@@ -204,9 +204,9 @@ subroutine MicrobialRead(this,input,option)
           call StringToUpper(word)   
 
           select case(trim(word))
-            case('CLM4')
+            case('CLMCN')
               this%temperature_response_function = &
-                TEMPERATURE_RESPONSE_FUNCTION_CLM4    
+                TEMPERATURE_RESPONSE_FUNCTION_CLMCN
             case('Q10')
               this%temperature_response_function = &
                 TEMPERATURE_RESPONSE_FUNCTION_Q10    
@@ -219,14 +219,14 @@ subroutine MicrobialRead(this,input,option)
               this%temperature_response_function = &
                 TEMPERATURE_RESPONSE_FUNCTION_DLEM    
               call InputReadDouble(input,option,tmp_real)  
-              call InputErrorMsg(input,option,'Q10', &
+              call InputErrorMsg(input,option,'DLEM', &
                 'CHEMISTRY,REACTION_SANDBOX_Microbial,' // &
                 'TEMPERATURE RESPONSE FUNCTION')
               this%Q10 = tmp_real
             case default
               option%io_buffer = 'CHEMISTRY,REACTION_SANDBOX,Microbial,' // &
                 'TEMPERATURE RESPONSE FUNCTION keyword: ' // &
-                trim(word) // ' not recognized.'
+                trim(word) // ' not recognized - Valid keyword: "CLMCN","Q10" or "DLEM" '
               call printErrMsg(option)
           end select
         enddo 
@@ -243,14 +243,14 @@ subroutine MicrobialRead(this,input,option)
           call StringToUpper(word)   
 
           select case(trim(word))
-            case('CLM4')
-              this%moisture_response_function = MOISTURE_RESPONSE_FUNCTION_CLM4
+            case('CLMCN')
+              this%moisture_response_function = MOISTURE_RESPONSE_FUNCTION_CLMCN
             case('DLEM')
               this%moisture_response_function = MOISTURE_RESPONSE_FUNCTION_DLEM    
             case default
               option%io_buffer = 'CHEMISTRY,REACTION_SANDBOX,Microbial,' // &
                 'TEMPERATURE RESPONSE FUNCTION keyword: ' // &
-                trim(word) // ' not recognized.'
+                trim(word) // ' not recognized  - Valid keyword: "CLMCN","DLEM"'
               call printErrMsg(option)
           end select
         enddo 
@@ -273,8 +273,8 @@ subroutine MicrobialRead(this,input,option)
               this%ph_response_function = PH_RESPONSE_FUNCTION_DLEM    
             case default
               option%io_buffer = 'CHEMISTRY,REACTION_SANDBOX,Microbial,' // &
-                'TEMPERATURE RESPONSE FUNCTION keyword: ' // &
-                trim(word) // ' not recognized.'
+                'PH RESPONSE FUNCTION keyword: ' // &
+                trim(word) // ' not recognized - Valid keyword: "CENTURY","DLEM".'
             call printErrMsg(option)
           end select
         enddo 
@@ -448,16 +448,13 @@ subroutine MicrobialReact(this,Residual,Jacobian,compute_derivative, &
   use Utility_module, only : DeallocateArray
   
 #ifdef CLM_PFLOTRAN
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use clm_pflotran_interface_data
 #endif
   
   implicit none
-  
-#ifdef CLM_PFLOTRAN
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#endif
-  
+
   class(reaction_sandbox_microbial_type) :: this  
   type(option_type) :: option
   type(reaction_type) :: reaction

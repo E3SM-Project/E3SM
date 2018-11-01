@@ -1,11 +1,11 @@
 module Test_EOS_Gas_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use pFUnit_mod
   use EOS_Gas_module
 
   implicit none
-
-#include "petsc/finclude/petscsys.h"
 
   public :: Test_EOS_Gas
 
@@ -147,9 +147,9 @@ contains
 
     PetscReal, parameter :: not_calculated_dden_dt = UNINITIALIZED_DOUBLE
     PetscReal, parameter :: not_calculated_dden_dp = UNINITIALIZED_DOUBLE
-    PetscReal, parameter :: correct_density1 = 7.6981326805322534d-2
-    PetscReal, parameter :: correct_density2 = 0.22973426422005402d0
-    PetscReal, parameter :: correct_density3 = 0.85506278682136605d0
+    PetscReal :: correct_density1
+    PetscReal :: correct_density2
+    PetscReal :: correct_density3
     PetscReal, parameter :: temperature1 = 23.4d0
     PetscReal, parameter :: pressure1 = 1.9d5
     PetscReal, parameter :: temperature2 = 40.01d0
@@ -162,9 +162,23 @@ contains
     PetscReal :: dden_dt
     PetscReal :: dden_dp
     PetscReal, parameter :: tolerance = 1.d-9
+    PetscBool :: use_hydrogen
+    PetscBool :: use_effective_properties
+    PetscBool :: use_cubic_root_solution
 
-    call EOSGasSetDensityRKS(PETSC_TRUE,41.67d0,2.1029d6,0.0d0,0.42747d0, &
-                             0.08664d0)
+    use_hydrogen = PETSC_TRUE
+
+  ! Newton's method for solution with effective properties OFF
+    use_effective_properties = PETSC_FALSE
+    use_cubic_root_solution = PETSC_FALSE
+
+    correct_density1 = 7.6982161383611136d-2 
+    correct_density2 = 0.22974126063080880d0
+    correct_density3 = 0.85516684075321425d0
+
+    call EOSGasSetDensityRKS(use_hydrogen,use_effective_properties, &
+                             use_cubic_root_solution, &
+                             41.67d0,2.1029d6,0.0d0,0.42747d0,0.08664d0)
     call EOSGasVerify(ierr, error_string)
     @assertEqual(0, ierr)
 
@@ -181,11 +195,76 @@ contains
 
     call EOSGasDensity(temperature2, pressure2, density2, &
                        dden_dt, dden_dp, ierr)
-    @assertEqual(correct_density2, density2, dabs(correct_density1)*tolerance)
+    @assertEqual(correct_density2, density2, dabs(correct_density2)*tolerance)
 
     call EOSGasDensity(temperature3, pressure3, density3, &
                        dden_dt, dden_dp, ierr)
-    @assertEqual(correct_density3, density3, dabs(correct_density1)*tolerance)
+    @assertEqual(correct_density3, density3, dabs(correct_density3)*tolerance)
+
+  ! Newton's method for solution with effective properties ON
+    use_effective_properties = PETSC_TRUE
+
+    correct_density1 = 7.6978484736231159d-2
+    correct_density2 = 0.22971082071657448d0
+    correct_density3 = 0.85467420739653210d0
+
+    call EOSGasSetDensityRKS(use_hydrogen,use_effective_properties, &
+                             use_cubic_root_solution, &
+                             41.67d0,2.1029d6,0.0d0,0.42747d0,0.08664d0)
+    call EOSGasVerify(ierr, error_string)
+    @assertEqual(0, ierr)
+
+    call EOSGasDensity(temperature1, pressure1, density1, &
+                       dden_dt, dden_dp, ierr)
+
+    ! The newton iteration within EOSGasDensityRKS tolerance is 1d-10 to
+    ! find the correct volume solution; thus, setting the tolerance to 1d-9.
+    @assertEqual(correct_density1, density1, dabs(correct_density1)*tolerance)
+
+    ! the derivatives are calculated in the Jacobian step.
+    @assertEqual(not_calculated_dden_dt, dden_dt, dabs(correct_density1)*tolerance)
+    @assertEqual(not_calculated_dden_dp, dden_dp, dabs(correct_density1)*tolerance)
+
+    call EOSGasDensity(temperature2, pressure2, density2, &
+                       dden_dt, dden_dp, ierr)
+    @assertEqual(correct_density2, density2, dabs(correct_density2)*tolerance)
+
+    call EOSGasDensity(temperature3, pressure3, density3, &
+                       dden_dt, dden_dp, ierr)
+    @assertEqual(correct_density3, density3, dabs(correct_density3)*tolerance)
+
+  ! cubic root solution with effective properties ON
+    use_effective_properties = PETSC_TRUE
+    use_cubic_root_solution = PETSC_TRUE
+
+    correct_density1 = 7.6978484736231173d-2
+    correct_density2 = 0.22971082071657450d0
+    correct_density3 = 0.85467420739653210d0
+
+    call EOSGasSetDensityRKS(use_hydrogen,use_effective_properties, &
+                             use_cubic_root_solution, &
+                             41.67d0,2.1029d6,0.0d0,0.42747d0,0.08664d0)
+    call EOSGasVerify(ierr, error_string)
+    @assertEqual(0, ierr)
+
+    call EOSGasDensity(temperature1, pressure1, density1, &
+                       dden_dt, dden_dp, ierr)
+
+    ! The newton iteration within EOSGasDensityRKS tolerance is 1d-10 to
+    ! find the correct volume solution; thus, setting the tolerance to 1d-9.
+    @assertEqual(correct_density1, density1, dabs(correct_density1)*tolerance)
+
+    ! the derivatives are calculated in the Jacobian step.
+    @assertEqual(not_calculated_dden_dt, dden_dt, dabs(correct_density1)*tolerance)
+    @assertEqual(not_calculated_dden_dp, dden_dp, dabs(correct_density1)*tolerance)
+
+    call EOSGasDensity(temperature2, pressure2, density2, &
+                       dden_dt, dden_dp, ierr)
+    @assertEqual(correct_density2, density2, dabs(correct_density2)*tolerance)
+
+    call EOSGasDensity(temperature3, pressure3, density3, &
+                       dden_dt, dden_dp, ierr)
+    @assertEqual(correct_density3, density3, dabs(correct_density3)*tolerance)
 
   end subroutine testEOSGas_DensityRKS
 

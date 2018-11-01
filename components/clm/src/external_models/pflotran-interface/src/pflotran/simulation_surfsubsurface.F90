@@ -1,5 +1,7 @@
 module Simulation_Surf_Subsurf_class
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Simulation_Surface_class
   use Simulation_Subsurface_class
   use Regression_module
@@ -12,12 +14,11 @@ module Simulation_Surf_Subsurf_class
   use Waypoint_module
 
   use PFLOTRAN_Constants_module
-
+  use Utility_module, only : Equal
+  
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
 
   type, public, extends(simulation_subsurface_type) :: &
     simulation_surfsubsurface_type
@@ -27,6 +28,7 @@ module Simulation_Surf_Subsurf_class
   contains
     procedure, public :: Init => SurfSubsurfaceSimulationInit
     procedure, public :: InitializeRun => SurfSubsurfaceInitializeRun
+    procedure, public :: InputRecord => SurfSubsurfaceInputRecord
     procedure, public :: FinalizeRun => SurfSubsurfaceFinalizeRun
     procedure, public :: Strip => SurfSubsurfaceSimulationStrip
     procedure, public :: ExecuteRun => SurfSubsurfaceExecuteRun
@@ -98,15 +100,14 @@ subroutine SurfSubsurfaceInitializeRun(this)
   ! Author: Gautam Bisht, LBNL
   ! Date: 06/28/13
   ! 
-
+#include "petsc/finclude/petscviewer.h"
+  use petscsys
   use Logging_module
   use Output_module
   use PMC_Surface_class
 
   implicit none
   
-#include "petsc/finclude/petscviewer.h"
-
   class(simulation_surfsubsurface_type) :: this
 
   class(pmc_base_type), pointer :: cur_process_model_coupler
@@ -126,8 +127,6 @@ subroutine SurfSubsurfaceInitializeRun(this)
     select type(pmc => cur_process_model_coupler)
       class is(pmc_surface_type)
         select case(this%option%iflowmode)
-          case (RICHARDS_MODE)
-            call pmc%PMCSurfaceGetAuxDataAfterRestart()
           case (TH_MODE)
             call pmc%PMCSurfaceGetAuxDataAfterRestart()
           case default
@@ -139,6 +138,32 @@ subroutine SurfSubsurfaceInitializeRun(this)
   endif
 
 end subroutine SurfSubsurfaceInitializeRun
+
+! ************************************************************************** !
+
+subroutine SurfSubsurfaceInputRecord(this)
+  ! 
+  ! Writes ingested information to the input record file.
+  ! 
+  ! Author: Jenn Frederick, SNL
+  ! Date: 03/17/2016
+  ! 
+  use Output_module
+
+  implicit none
+  
+  class(simulation_surfsubsurface_type) :: this
+  
+  character(len=MAXWORDLENGTH) :: word
+  PetscInt :: id = INPUT_RECORD_UNIT
+ 
+  write(id,'(a29)',advance='no') 'simulation type: '
+  write(id,'(a)') 'surface-subsurface'
+
+  ! print output file information
+  call OutputInputRecord(this%output_option,this%waypoint_list_surfsubsurface)
+
+end subroutine SurfSubsurfaceInputRecord
 
 ! ************************************************************************** !
 
@@ -178,7 +203,7 @@ subroutine SurfSubsurfaceExecuteRun(this)
 
     ! If simulation is decoupled surface-subsurface simulation, set
     ! dt_coupling to be dt_max
-    if (this%surf_realization%dt_coupling == 0.d0) &
+    if (Equal(this%surf_realization%dt_coupling,0.d0)) &
       this%surf_realization%dt_coupling = this%surf_realization%dt_max
 
     do
@@ -266,12 +291,12 @@ subroutine SurfSubsurfaceSimulationRunToTime(this,target_time)
   ! Date: 06/27/13
   ! 
 
+#include "petsc/finclude/petscviewer.h"
+  use petscsys
   use Option_module
   use Simulation_Aux_module
 
   implicit none
-
-#include "petsc/finclude/petscviewer.h"
 
   class(simulation_surfsubsurface_type) :: this
   PetscReal :: target_time

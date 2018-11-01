@@ -172,29 +172,10 @@ ENDIF ()
 ADD_SUBDIRECTORY(utils/cime/src/share/timing)
 
 
-# Use CIME's FindNETCDF path
 # CMAKE_CURRENT_SOURCE_DIR == homme
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/CMake" ${CMAKE_MODULE_PATH})
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/pio2/cmake" ${CMAKE_MODULE_PATH})
-
-
-#
-# HOMME uses PIO and does not call netcdf/pnetcdf directly.  So cmake should
-# only configure the PIO library.  But there is a typo when PIO1 sets up 
-# TARGET_LINK_LIBRARIES 
-# Fixed: https://github.com/NCAR/ParallelIO/pull/1067
-# Until this makes it back into ACME, we need to FIND_PACKAGE here...
-#
-SET(NetCDF_PATH ${NETCDF_DIR})
-SET(PnetCDF_PATH ${PNETCDF_DIR})
-FIND_PACKAGE(NetCDF "4.3.3" COMPONENTS C Fortran)
-FIND_PACKAGE(PnetCDF COMPONENTS C Fortran)
-set(NETCDF_LIBRARIES ${NetCDF_Fortran_LIBRARIES})
-set(PNETCDF_LIBRARY ${PnetCDF_Fortran_FOUND})
-set(PNETCDF_LIBRARIES ${PnetCDF_Fortran_LIBRARIES})
-# needed to build cprnc:
-set(NETCDF_INCLUDE_DIR ${NetCDF_Fortran_INCLUDE_DIRS})
 
 
 
@@ -204,6 +185,9 @@ set(NETCDF_INCLUDE_DIR ${NetCDF_Fortran_INCLUDE_DIRS})
 #set search paths for PIO's findNetCDF
 SET(NetCDF_PATH ${NETCDF_DIR})
 SET(PnetCDF_PATH ${PNETCDF_DIR})
+message("** Configuring PIO with:")
+message("-- NetCDF_PATH = ${NetCDF_PATH}")
+message("-- PnetCDF_PATH = ${PnetCDF_PATH}")
 # pio needs cime/externals/genf90/genf90.pl
 SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/genf90)
 ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
@@ -226,7 +210,16 @@ ENDIF ()
 IF (NOT (CPRNC_DIR))
   # compile CPRNC from CIME source code. Requires CIME support for machine
   message("-- CPRNC_BINARY = will compile from source")
+  message("-- If cmake aborts, set CPRNC_DIR to location of external cprnc executable")
+
+  # cprnc's cmake wont search for netcdf, so we have to find it first:
+  FIND_PACKAGE(NetCDF "4.0" COMPONENTS C Fortran)
+  set(NETCDF_LIBRARIES ${NetCDF_Fortran_LIBRARIES})
+  set(NETCDF_INCLUDE_DIR ${NetCDF_Fortran_INCLUDE_DIRS})
+
+  # needed for CPRNC build system
   file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake" "#dummy Macros file for non-CIME machines")
+
   SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
   SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
   ADD_SUBDIRECTORY(utils/cime/tools/cprnc)

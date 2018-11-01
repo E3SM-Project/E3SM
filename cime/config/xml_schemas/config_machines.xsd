@@ -22,6 +22,9 @@
   </xs:simpleType>
   <xs:element name="NODENAME_REGEX" type="xs:string"/>
   <xs:element name="DESC" type="xs:string"/>
+  <xs:element name="NODE_FAIL_REGEX" type="xs:string"/>
+  <xs:element name="MPIRUN_RETRY_REGEX" type="xs:string"/>
+  <xs:element name="MPIRUN_RETRY_COUNT" type="xs:integer"/>
   <xs:element name="OS" type="xs:NCName"/>
   <xs:element name="PROXY" type="xs:string"/>
   <xs:element name="SAVE_TIMING_DIR" type="xs:string" />
@@ -38,6 +41,7 @@
   <xs:element name="CCSM_CPRNC" type="xs:string"/>
   <xs:element name="PERL5LIB" type="xs:string"/>
   <xs:element name="BATCH_SYSTEM" type="xs:NCName"/>
+  <xs:element name="ALLOCATE_SPARE_NODES" type="upperBoolean"/>
   <xs:element name="SUPPORTED_BY" type="xs:string"/>
   <xs:element name="GMAKE_J" type="xs:integer"/>
   <xs:element name="MAX_TASKS_PER_NODE" type="xs:integer"/>
@@ -80,6 +84,13 @@
 	  it must work on compute nodes as well as login nodes, use machine option
 	  to create_test or create_newcase if this flag is not available -->
         <xs:element ref="NODENAME_REGEX" minOccurs="0" maxOccurs="1"/>
+	<!-- regex to look for in log files that will triger retry of mpirun
+	     command on extra allocated nodes -->
+        <xs:element ref="NODE_FAIL_REGEX" minOccurs="0" maxOccurs="1"/>
+	<!-- regex to look for in log files that will triger retry of mpirun command -->
+        <xs:element ref="MPIRUN_RETRY_REGEX" minOccurs="0" maxOccurs="1"/>
+	<!-- Number of retry attempts to make if MPIRUN_RETRY_REGEX matches   -->
+        <xs:element ref="MPIRUN_RETRY_COUNT" minOccurs="0" maxOccurs="1"/>
 	<!-- OS: the operating system of this machine. -->
         <xs:element ref="OS" minOccurs="1" maxOccurs="1"/>
 	<!-- PROXY: optional http proxy for access to the internet-->
@@ -121,6 +132,8 @@
         <xs:element ref="TESTS" minOccurs="0" maxOccurs="1"/>
 	<!-- BATCH_SYSTEM: batch system used on this machine (none is okay) -->
         <xs:element ref="BATCH_SYSTEM" minOccurs="1" maxOccurs="1"/>
+	<!-- ALLOCATE_SPARE_NODES: allocate spare nodes when job is launched default False-->
+        <xs:element ref="ALLOCATE_SPARE_NODES" minOccurs="0" maxOccurs="1"/>
 	<!-- SUPPORTED_BY: contact information for support for this system -->
         <xs:element ref="SUPPORTED_BY" minOccurs="1" maxOccurs="1"/>
 	<!-- MAX_TASKS_PER_NODE: maximum number of threads*tasks per

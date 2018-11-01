@@ -1,12 +1,12 @@
 module Global_Aux_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use PFLOTRAN_Constants_module
 
   implicit none
   
   private 
-
-#include "petsc/finclude/petscsys.h"
 
   type, public :: global_auxvar_type
     PetscInt :: istate
@@ -99,6 +99,8 @@ subroutine GlobalAuxVarInit(auxvar,option)
   
   type(global_auxvar_type) :: auxvar
   type(option_type) :: option
+
+  PetscInt :: nphase
   
   auxvar%istate = 0
   auxvar%temp = 0.d0
@@ -123,34 +125,34 @@ subroutine GlobalAuxVarInit(auxvar,option)
   nullify(auxvar%mass_balance_delta)
   nullify(auxvar%dphi)
 
+  nphase = max(option%nphase,option%transport%nphase)
+
   if (option%nflowdof > 0) then
-    allocate(auxvar%den(option%nphase))
+    allocate(auxvar%den(nphase))
     auxvar%den = 0.d0
   endif
-  allocate(auxvar%pres(option%nphase))
+  allocate(auxvar%pres(nphase))
   auxvar%pres = 0.d0
-  allocate(auxvar%sat(option%nphase))
+  allocate(auxvar%sat(nphase))
   auxvar%sat = 0.d0
-  allocate(auxvar%den_kg(option%nphase))
+  allocate(auxvar%den_kg(nphase))
   auxvar%den_kg = 0.d0
 
   ! need these for reactive transport only if if flow if computed
   if (option%nflowdof > 0 .and. option%ntrandof > 0) then
-    allocate(auxvar%sat_store(option%nphase,TWO_INTEGER))
+    allocate(auxvar%sat_store(nphase,TWO_INTEGER))
     auxvar%sat_store = 0.d0
-    allocate(auxvar%den_kg_store(option%nphase,TWO_INTEGER))
+    allocate(auxvar%den_kg_store(nphase,TWO_INTEGER))
     auxvar%den_kg_store = 0.d0
   endif
  
   select case(option%iflowmode)
-    case(RICHARDS_MODE)
-      !
     case(TH_MODE)
-      allocate(auxvar%pres_store(option%nphase,TWO_INTEGER))
+      allocate(auxvar%pres_store(nphase,TWO_INTEGER))
       auxvar%pres_store = 0.d0
       allocate(auxvar%temp_store(TWO_INTEGER))
       auxvar%temp_store = 0.d0
-      allocate(auxvar%den_store(option%nphase,TWO_INTEGER))
+      allocate(auxvar%den_store(nphase,TWO_INTEGER))
       auxvar%den_store = 0.d0
       nullify(auxvar%xmass)
       nullify(auxvar%fugacoeff)
@@ -166,11 +168,10 @@ subroutine GlobalAuxVarInit(auxvar,option)
     auxvar%m_nacl = 0.d0
   endif
   
-  if (option%iflag /= 0 .and. option%compute_mass_balance_new .and. &
-      (option%nflowspec > 0 .and. option%nphase > 0) ) then
-    allocate(auxvar%mass_balance(option%nflowspec,option%nphase))
+  if (option%iflag /= 0 .and. option%compute_mass_balance_new) then
+    allocate(auxvar%mass_balance(option%nflowspec,nphase))
     auxvar%mass_balance = 0.d0
-    allocate(auxvar%mass_balance_delta(option%nflowspec,option%nphase))
+    allocate(auxvar%mass_balance_delta(option%nflowspec,nphase))
     auxvar%mass_balance_delta = 0.d0
   endif
   

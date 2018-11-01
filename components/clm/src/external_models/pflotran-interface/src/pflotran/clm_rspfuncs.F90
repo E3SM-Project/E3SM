@@ -12,12 +12,12 @@ module CLM_RspFuncs_module
   PetscReal, parameter, public :: rpi = 3.14159265358979323846d0
 
 ! temperature response function
-  PetscInt, parameter, public :: TEMPERATURE_RESPONSE_FUNCTION_CLM4 = 1 
+  PetscInt, parameter, public :: TEMPERATURE_RESPONSE_FUNCTION_CLMCN = 1
   PetscInt, parameter, public :: TEMPERATURE_RESPONSE_FUNCTION_Q10  = 2
   PetscInt, parameter, public :: TEMPERATURE_RESPONSE_FUNCTION_DLEM = 3
 
 ! moisture response function
-  PetscInt, parameter, public :: MOISTURE_RESPONSE_FUNCTION_CLM4 = 1 
+  PetscInt, parameter, public :: MOISTURE_RESPONSE_FUNCTION_CLMCN = 1
   PetscInt, parameter, public :: MOISTURE_RESPONSE_FUNCTION_DLEM = 2
 
 ! pH response function
@@ -62,7 +62,7 @@ function GetTemperatureResponse(tc, itype, Q10)
 
 !     CLM-CN
 !     Equation: F_t = exp(308.56*(1/17.02 - 1/(T - 227.13)))
-      case(TEMPERATURE_RESPONSE_FUNCTION_CLM4) 
+      case(TEMPERATURE_RESPONSE_FUNCTION_CLMCN)
   
           tk = tc + 273.15d0
 
@@ -72,7 +72,7 @@ function GetTemperatureResponse(tc, itype, Q10)
               Ft = 0.d0
           endif
 !     DLEM temperature response function for methane oxidation
-! Tian et al. 2010 Biogeosciences, 7, 2673-2694 Eq. 12
+!     Tian et al. 2010 Biogeosciences, 7, 2673-2694 Eq. 12
       case(TEMPERATURE_RESPONSE_FUNCTION_DLEM)
           if(tc < -5.0d0) then
             Ft = 0.0d0
@@ -92,17 +92,15 @@ end function GetTemperatureResponse
 
 Function GetMoistureResponse(theta, ghosted_id, itype)
 
+
 #ifdef CLM_PFLOTRAN
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use clm_pflotran_interface_data
 #endif
   
   implicit none
   
-#ifdef CLM_PFLOTRAN
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#endif
-
   PetscReal :: F_theta
   ! theta IS soil VWC: 0 - porosity (not adjusted)
   PetscReal :: theta
@@ -130,7 +128,7 @@ Function GetMoistureResponse(theta, ghosted_id, itype)
 
   select case(itype)
 !   CLM-CN
-    case(MOISTURE_RESPONSE_FUNCTION_CLM4) 
+    case(MOISTURE_RESPONSE_FUNCTION_CLMCN)
       call VecGetArrayReadF90(clm_pf_idata%sucsat_pfs, sucsat_pf_loc, ierr)
       CHKERRQ(ierr)
       call VecGetArrayReadF90(clm_pf_idata%bulkdensity_dry_pfs, bd_dry_pf_loc, ierr)   ! 'bd' (kg/m3)
@@ -147,6 +145,10 @@ Function GetMoistureResponse(theta, ghosted_id, itype)
       psi = min(psi, maxpsi)
       if(psi > minpsi) then
         F_theta = log(minpsi/psi)/log(minpsi/maxpsi)
+        ! very wet soil (close to saturated)
+        if(psi>(maxpsi-1.d02)) then
+          F_theta = F_theta*0.10d0   ! 0.10 is an arbitrary value here (but NOT totaly shut off decomp)
+        endif
       else
         F_theta = 0.0d0
       endif
@@ -158,8 +160,8 @@ Function GetMoistureResponse(theta, ghosted_id, itype)
       call VecRestoreArrayReadF90(clm_pf_idata%bsw_pfs, bsw_pf_loc, ierr)
       CHKERRQ(ierr)
 
-! DLEM 
-! Tian et al. 2010 Biogeosciences, 7, 2673-2694 Eq. 13
+!     DLEM
+!     Tian et al. 2010 Biogeosciences, 7, 2673-2694 Eq. 13
     case(MOISTURE_RESPONSE_FUNCTION_DLEM) 
       call VecGetArrayReadF90(clm_pf_idata%effporosity_pfs, porosity_pf_loc, ierr)
       CHKERRQ(ierr)

@@ -1,5 +1,7 @@
 module Init_Subsurface_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   !geh: there can be no dependencies on simulation object in this file
   use PFLOTRAN_Constants_module
 
@@ -7,7 +9,6 @@ module Init_Subsurface_module
 
   private
 
-#include "petsc/finclude/petscsys.h"
 
   public :: InitSubsurfAssignMatIDsToRegns, &
             InitSubsurfAssignMatProperties, &
@@ -129,6 +130,7 @@ subroutine InitSubsurfAssignMatIDsToRegns(realization)
   use Field_module
   use Material_module
   use Material_Aux_class
+  use String_module
   
   implicit none
   
@@ -148,6 +150,11 @@ subroutine InitSubsurfAssignMatIDsToRegns(realization)
   type(material_property_type), pointer :: material_property
   type(region_type), pointer :: region
   class(material_auxvar_type), pointer :: material_auxvars(:)
+#ifdef CLM_PFLOTRAN
+  type(material_property_type), pointer :: material_property_default
+  type(strata_type), pointer :: pre_strata
+  character(len=MAXSTRINGLENGTH) :: string
+#endif
   
   option => realization%option
 
@@ -158,6 +165,41 @@ subroutine InitSubsurfAssignMatIDsToRegns(realization)
     material_auxvars => cur_patch%aux%Material%auxvars
     cur_patch%imat = UNINITIALIZED_INTEGER
     grid => cur_patch%grid
+
+#ifdef CLM_PFLOTRAN
+    ! strata(_list) and material_property are unique for each cell, if CLM coupling with PFLOTRAN
+    if(cur_patch%strata_list%num_strata /= grid%nlmax) then
+      write(string,*) 'num_strata -', cur_patch%strata_list%num_strata, &
+        '; grid number -', grid%nlmax
+      option%io_buffer = 'CLM-PFLOTRAN: strata_list number is ' // &
+              ' not same as grid numbers: ' // &
+              trim(string)
+      call printErrMsg(option)
+    end if
+    strata => cur_patch%strata_list%first
+    do local_id = 1, grid%nlmax
+      ghosted_id = grid%nL2G(local_id)
+
+      ! pointer to material
+      if (cur_patch%surf_or_subsurf_flag == SUBSURFACE) then
+        strata%material_property => &
+            MaterialPropGetPtrFromArray(strata%material_property_name, &
+                                        cur_patch%material_property_array)
+        if (.not.associated(strata%material_property)) then
+          option%io_buffer = 'Material "' // &
+                              trim(strata%material_property_name) // &
+                              '" not found in material list'
+          call printErrMsg(option)
+        endif
+      endif
+
+      cur_patch%imat(ghosted_id) = strata%material_property%internal_id
+
+      strata => strata%next
+
+    end do
+#else
+
     strata => cur_patch%strata_list%first
     do
       if (.not.associated(strata)) exit
@@ -198,6 +240,8 @@ subroutine InitSubsurfAssignMatIDsToRegns(realization)
       endif
       strata => strata%next
     enddo
+#endif
+
     cur_patch => cur_patch%next
   enddo
   
@@ -229,6 +273,8 @@ subroutine InitSubsurfAssignMatProperties(realization)
   ! Author: Glenn Hammond
   ! Date: 10/07/14
   ! 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Realization_Subsurface_class
   use Grid_module
   use Discretization_module
@@ -244,9 +290,6 @@ subroutine InitSubsurfAssignMatProperties(realization)
   use HDF5_module
   
   implicit none
-  
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   class(realization_subsurface_type) :: realization
   
@@ -278,7 +321,8 @@ subroutine InitSubsurfAssignMatProperties(realization)
   PetscInt :: tempint
   PetscReal :: tempreal
   PetscErrorCode :: ierr
-  
+  PetscViewer :: viewer
+
   option => realization%option
   discretization => realization%discretization
   field => realization%field
@@ -310,7 +354,7 @@ subroutine InitSubsurfAssignMatProperties(realization)
     material_id = patch%imat(ghosted_id)
     if (material_id == 0) then
       material_property => null_material_property
-    else if (iabs(material_id) <= &
+    else if (abs(material_id) <= &
              size(patch%material_property_array)) then
       if (material_id < 0) then
         material_property => null_material_property
@@ -345,7 +389,7 @@ subroutine InitSubsurfAssignMatProperties(realization)
       patch%sat_func_id(ghosted_id) = &
         material_property%saturation_function_id
       icap_loc_p(ghosted_id) = material_property%saturation_function_id
-      ithrm_loc_p(ghosted_id) = iabs(material_property%internal_id)
+      ithrm_loc_p(ghosted_id) = abs(material_property%internal_id)
       perm_xx_p(local_id) = material_property%permeability(1,1)
       perm_yy_p(local_id) = material_property%permeability(2,2)
       perm_zz_p(local_id) = material_property%permeability(3,3)
@@ -394,6 +438,22 @@ subroutine InitSubsurfAssignMatProperties(realization)
         call SubsurfReadDatasetToVecWithMask(realization, &
                material_property%porosity_dataset, &
                material_property%internal_id,PETSC_FALSE,field%porosity0)
+        ! if tortuosity is a function of porosity, we must calculate the
+        ! the tortuosity on a cell to cell basis.
+        if (field%tortuosity0 /= PETSC_NULL_VEC .and. &
+            material_property%tortuosity_function_of_porosity) then
+          call VecGetArrayF90(field%porosity0,por0_p,ierr);CHKERRQ(ierr)
+          call VecGetArrayF90(field%tortuosity0,tor0_p,ierr);CHKERRQ(ierr)
+          do local_id = 1, grid%nlmax
+            ghosted_id = grid%nL2G(local_id)
+            if (patch%imat(ghosted_id) == material_property%internal_id) then
+              tor0_p(local_id) = por0_p(local_id)** &
+                material_property%tortuosity_func_porosity_pwr
+            endif
+          enddo
+          call VecRestoreArrayF90(field%porosity0,por0_p,ierr);CHKERRQ(ierr)
+          call VecRestoreArrayF90(field%tortuosity0,tor0_p,ierr);CHKERRQ(ierr)
+        endif
       endif
       if (associated(material_property%tortuosity_dataset)) then
         call SubsurfReadDatasetToVecWithMask(realization, &
@@ -443,22 +503,6 @@ subroutine InitSubsurfAssignMatProperties(realization)
                                TORTUOSITY,ZERO_INTEGER)
 
   ! copy rock properties to neighboring ghost cells
-  call VecGetArrayF90(field%work,vec_p,ierr);CHKERRQ(ierr)
-  do local_id = 1, patch%grid%nlmax
-    vec_p(local_id) = &
-        Material%auxvars(patch%grid%nL2G(local_id))%soil_particle_density
-  enddo
-  call VecRestoreArrayF90(field%work,vec_p,ierr);CHKERRQ(ierr)
-  call DiscretizationGlobalToLocal(discretization,field%work, &
-                                     field%work_loc,ONEDOF)
-  call VecGetArrayF90(field%work_loc,vec_p,ierr);CHKERRQ(ierr)
-  do ghosted_id = 1, patch%grid%ngmax
-      Material%auxvars(ghosted_id)%soil_particle_density = &
-         vec_p(ghosted_id)
-  enddo
-  call VecRestoreArrayF90(field%work_loc,vec_p,ierr);CHKERRQ(ierr)
-
-  ! additional soil properties
   do i = 1, max_material_index
     call VecGetArrayF90(field%work,vec_p,ierr);CHKERRQ(ierr)
     do local_id = 1, patch%grid%nlmax
@@ -489,6 +533,8 @@ subroutine SubsurfReadMaterialIDsFromFile(realization,realization_dependent, &
   ! Date: 1/03/08
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Realization_Subsurface_class
   use Field_module
   use Grid_module
@@ -502,9 +548,6 @@ subroutine SubsurfReadMaterialIDsFromFile(realization,realization_dependent, &
   use HDF5_module
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
   
   class(realization_subsurface_type) :: realization
   PetscBool :: realization_dependent
@@ -587,6 +630,8 @@ subroutine SubsurfReadPermsFromFile(realization,material_property)
   ! Date: 01/19/09
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Realization_Subsurface_class
   use Field_module
   use Grid_module
@@ -600,9 +645,6 @@ subroutine SubsurfReadPermsFromFile(realization,material_property)
   use Dataset_Common_HDF5_class
   
   implicit none
-  
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   class(realization_subsurface_type) :: realization
   type(material_property_type) :: material_property
@@ -738,6 +780,8 @@ subroutine SubsurfReadDatasetToVecWithMask(realization,dataset, &
   ! Author: Glenn Hammond
   ! Date: 01/19/2016
   ! 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
 
   use Realization_Subsurface_class
   use Field_module
@@ -753,9 +797,6 @@ subroutine SubsurfReadDatasetToVecWithMask(realization,dataset, &
   use Dataset_Gridded_HDF5_class
   
   implicit none
-  
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   class(realization_subsurface_type) :: realization
   class(dataset_base_type) :: dataset
@@ -948,13 +989,7 @@ subroutine InitSubsurfaceSetupZeroArrays(realization)
     end select
 #endif
     select case(option%iflowmode)
-      case(RICHARDS_MODE)
-        call InitSubsurfaceCreateZeroArray(realization%patch,dof_is_active, &
-                      realization%patch%aux%Richards%zero_rows_local, &
-                      realization%patch%aux%Richards%zero_rows_local_ghosted, &
-                      realization%patch%aux%Richards%n_zero_rows, &
-                      realization%patch%aux%Richards%inactive_cells_exist, &
-                      option)
+      !TODO(geh): refactors so that we don't need all these variants?
       case(TH_MODE)
         call InitSubsurfaceCreateZeroArray(realization%patch,dof_is_active, &
                       realization%patch%aux%TH%zero_rows_local, &

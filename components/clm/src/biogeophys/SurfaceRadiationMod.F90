@@ -7,7 +7,7 @@ module SurfaceRadiationMod
   ! !USES:
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
-  use clm_varctl        , only : use_snicar_frc, use_ed
+  use clm_varctl        , only : use_snicar_frc, use_fates
   use abortutils        , only : endrun
   use decompMod         , only : bounds_type
   use clm_varcon        , only : namec
@@ -19,12 +19,8 @@ module SurfaceRadiationMod
   use GridcellType      , only : grc_pp                
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
-#ifdef APPLY_POST_DECK_BUGFIXES
   use VegetationType    , only : veg_pp
   use landunit_varcon   , only : istdlak
-#else
-  use VegetationType    , only : veg_pp
-#endif
 
   !
   ! !PRIVATE TYPES:
@@ -552,11 +548,7 @@ contains
                 sabg_soil(p) = sabg(p)
              endif
              ! if no subgrid fluxes, make sure to set both components equal to weighted average
-#ifdef APPLY_POST_DECK_BUGFIXES
              if (subgridflag == 0 .or. lun_pp%itype(l) == istdlak) then 
-#else
-             if (subgridflag == 0) then
-#endif
                 sabg_snow(p) = sabg(p)
                 sabg_soil(p) = sabg(p)
              endif
@@ -648,11 +640,7 @@ contains
 
              ! If shallow snow depth, all solar radiation absorbed in top or top two snow layers
              ! to prevent unrealistic timestep soil warming 
-#ifdef APPLY_POST_DECK_BUGFIXES
              if (subgridflag == 0 .or. lun_pp%itype(l) == istdlak) then 
-#else
-             if (subgridflag == 0) then
-#endif
                 if (snow_depth(c) < 0.10_r8) then
                    if (snl(c) == 0) then
                       sabg_lyr(p,-4:0) = 0._r8

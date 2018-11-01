@@ -1,24 +1,33 @@
 module EOS_Gas_module
  
-  use PFLOTRAN_Constants_module
+#include "petsc/finclude/petscsys.h"
+  use petscsys
 
+  use PFLOTRAN_Constants_module
+  use EOSData_module
+  use Utility_module, only : Equal
+  
   implicit none
 
   private
   
-#include "petsc/finclude/petscsys.h"
-
   ! module variables
+  PetscReal :: fmw_gas           !kg/Kmol
   PetscReal :: constant_density
   PetscReal :: constant_enthalpy
   PetscReal :: constant_viscosity
   PetscReal :: constant_henry
-  PetscBool :: hydrogen
-  PetscReal :: Tc
-  PetscReal :: Pc
-  PetscReal :: acentric
-  PetscReal :: coeff_a
-  PetscReal :: coeff_b
+  !density at reference P and T
+  PetscReal :: reference_density_kg
+  ! specific to RKS EOS
+  PetscBool :: rks_use_hydrogen
+  PetscBool :: rks_use_effect_critical_props
+  PetscBool :: rks_use_cubic_root_solution
+  PetscReal :: rks_Tc
+  PetscReal :: rks_Pc
+  PetscReal :: rks_acentric
+  PetscReal :: rks_coeff_a
+  PetscReal :: rks_coeff_b
   
   ! exponential
   PetscReal :: exponent_reference_density
@@ -32,6 +41,12 @@ module EOS_Gas_module
 #else
   PetscReal, parameter :: T_energy_offset = 273.15d0
 #endif
+
+  ! EOS databases
+  class(eos_database_type), pointer :: eos_dbase
+
+  ! PVT tables - eos_tables
+  class(eos_table_type), pointer :: pvt_table
 
   ! In order to support generic EOS subroutines, we need the following:
   ! 1. An interface declaration that defines the argument list (best to have 
@@ -52,7 +67,7 @@ module EOS_Gas_module
   interface
     subroutine EOSGasViscosityDummy(T, P_comp, P_gas, Rho_comp, V_mix, &
                                     calculate_derivative, dV_dT, dV_dPcomp, &
-                                    dV_dPgas, dV_dRhocomp, ierr)
+                                    dV_dPgas, dV_dRhocomp, ierr, table_idxs)
       implicit none
       PetscReal, intent(in) :: T        ! temperature [C]
       PetscReal, intent(in) :: P_comp   ! air pressure [Pa]
@@ -65,8 +80,9 @@ module EOS_Gas_module
       PetscReal, intent(out) :: dV_dPgas    ! derivative wrt gas pressure
       PetscReal, intent(out) :: dV_dRhocomp ! derivative wrt component density      
       PetscErrorCode, intent(out) :: ierr
+      PetscInt, pointer, optional, intent(inout) :: table_idxs(:)
     end subroutine EOSGasViscosityDummy
-    subroutine EOSGasDensityDummy(T,P,Rho_gas,dRho_dT,dRho_dP,ierr)
+    subroutine EOSGasDensityDummy(T,P,Rho_gas,dRho_dT,dRho_dP,ierr,table_idxs)
       implicit none
       PetscReal, intent(in) :: T        ! temperature [C]
       PetscReal, intent(in) :: P        ! pressure [Pa]
@@ -74,6 +90,7 @@ module EOS_Gas_module
       PetscReal, intent(out) :: dRho_dT ! derivative gas density wrt temperature
       PetscReal, intent(out) :: dRho_dP ! derivative gas density wrt pressuret
       PetscErrorCode, intent(out) :: ierr
+      PetscInt, pointer, optional, intent(inout) :: table_idxs(:)
     end subroutine EOSGasDensityDummy
     subroutine EOSGasEnergyDummy(T,P,H,dH_dT,dH_dP,U,dU_dT,dU_dP,ierr)
       implicit none
@@ -88,7 +105,8 @@ module EOS_Gas_module
       PetscErrorCode, intent(out) :: ierr
     end subroutine EOSGasEnergyDummy
     subroutine EOSGasDensityEnergyDummy(T,P,Rho_gas,dRho_dT,dRho_dP, &
-                                        H,dH_dT,dH_dP,U,dU_dT,dU_dP,ierr)
+                                        H,dH_dT,dH_dP,U,dU_dT,dU_dP,ierr, &
+                                        table_idxs)
       implicit none
       PetscReal, intent(in) :: T        ! temperature [C]
       PetscReal, intent(in) :: P        ! pressure [Pa]
@@ -102,6 +120,7 @@ module EOS_Gas_module
       PetscReal, intent(out) :: dU_dT   ! deriv. internal energy wrt temperature
       PetscReal, intent(out) :: dU_dP   ! deriv. internal energy wrt pressure
       PetscErrorCode, intent(out) :: ierr
+      PetscInt, pointer, optional, intent(inout) :: table_idxs(:)
     end subroutine EOSGasDensityEnergyDummy
     subroutine EOSGasHenryDummy(T,Psat,Hc,calculate_derivative, &
                                 Psat_p,Psat_T,Hc_P,Hc_T)
@@ -148,6 +167,7 @@ module EOS_Gas_module
             EOSGasEnergy, &
             EOSGasDensityEnergy, &
             EOSGasHenry, &
+            EOSGasInputRecord, &
             EOSGasTest
             
   public :: EOSGasSetDensityIdeal, &
@@ -155,11 +175,19 @@ module EOS_Gas_module
             EOSGasSetDensityRKS, &
             EOSGasSetDensityPRMethane, &
             EOSGasSetEnergyIdealMethane, &
+            EOSGasSetFMWConstant, &
+            EOSGasGetFMW, & 
             EOSGasSetDensityConstant, &
             EOSGasSetEnergyConstant, &
             EOSGasSetViscosityConstant, &
             EOSGasSetHenry, &
-            EOSGasSetHenryConstant
+            EOSGasSetHenryConstant, &
+            EOSGasSetEOSDBase, &
+            EOSGasSetReferenceDensity, &
+            EOSGasGetReferenceDensity, &
+            EOSGasSetPVDG, &
+            EOSGasTableProcess, &
+            EOSGasDBaseDestroy
  
   contains
 
@@ -168,11 +196,26 @@ module EOS_Gas_module
 subroutine EOSGasInit()
 
   implicit none
-  
+
+  fmw_gas = UNINITIALIZED_DOUBLE  
   constant_density = UNINITIALIZED_DOUBLE
   constant_viscosity = UNINITIALIZED_DOUBLE
   constant_enthalpy = UNINITIALIZED_DOUBLE
   constant_henry = UNINITIALIZED_DOUBLE
+
+  ! exponential
+  exponent_reference_density = UNINITIALIZED_DOUBLE
+  exponent_reference_pressure = UNINITIALIZED_DOUBLE
+  exponent_gas_compressibility = UNINITIALIZED_DOUBLE
+
+  ! for RKS gas density
+  rks_use_hydrogen = PETSC_FALSE
+  rks_use_effect_critical_props = PETSC_FALSE
+  rks_Tc = UNINITIALIZED_DOUBLE
+  rks_Pc = UNINITIALIZED_DOUBLE
+  rks_acentric = UNINITIALIZED_DOUBLE
+  rks_coeff_a = UNINITIALIZED_DOUBLE
+  rks_coeff_b = UNINITIALIZED_DOUBLE
 
   EOSGasDensityEnergyPtr => EOSGasDensityEnergyGeneral
   EOSGasDensityPtr => EOSGasDensityIdeal
@@ -235,32 +278,32 @@ subroutine EOSGasVerify(ierr,error_string)
   endif
   
   if (associated(EOSGasDensityPtr,EOSGasDensityRKS)) then
-    if (hydrogen) then
+    if (rks_use_hydrogen) then
       ! Assign default hydrogen parameters if not assigned
-      if (Uninitialized(Tc)) then
-        Tc = 41.67d0
+      if (Uninitialized(rks_Tc)) then
+        rks_Tc = 41.67d0
         ierr = 5
         error_string = trim(error_string) // " Tc"
       endif
-      if (Uninitialized(Pc)) then
-        Pc = 2.1029d6
+      if (Uninitialized(rks_Pc)) then
+        rks_Pc = 2.1029d6
         ierr = 5
         error_string = trim(error_string) // " Pc"
       endif
-      if (Uninitialized(coeff_a)) then
-        coeff_a = 0.42747d0
+      if (Uninitialized(rks_coeff_a)) then
+        rks_coeff_a = 0.42747d0
         ierr = 5
         error_string = trim(error_string) // " omega_a"
       endif
-      if (Uninitialized(coeff_b)) then
-        coeff_b = 0.08664d0
+      if (Uninitialized(rks_coeff_b)) then
+        rks_coeff_b = 0.08664d0
         ierr = 5
         error_string = trim(error_string) // " omega_b"
       endif
     else
-      if (Uninitialized(Tc) .or. Uninitialized(coeff_a) .or. &
-        Uninitialized(Pc) .or. Uninitialized(coeff_b) .or. &
-        Uninitialized(acentric)) then
+      if (Uninitialized(rks_Tc) .or. Uninitialized(rks_coeff_a) .or. &
+        Uninitialized(rks_Pc) .or. Uninitialized(rks_coeff_b) .or. &
+        Uninitialized(rks_acentric)) then
           error_string = trim(error_string) // &
           " RKS parameters not set for non-hydrogen gas"
           ierr = 1
@@ -268,6 +311,20 @@ subroutine EOSGasVerify(ierr,error_string)
     endif
   endif
 
+  if (Uninitialized(fmw_gas)) then
+    fmw_gas = FMWAIR
+    !ierr = 6
+    !error_string = trim(error_string) // " FMWAIR"
+  end if
+
+  if ( associated(pvt_table) ) then
+    if(Uninitialized(reference_density_kg)) then
+      error_string = trim(error_string) // &
+      'A reference (e.g. Surface) density must be specified ' // &
+      'using either REFERENCE_DENSITY, SURFACE_DENSITY or STANDARD_DENSITY '
+      ierr = 1
+    end if
+  end if
       
 end subroutine EOSGasVerify
 
@@ -284,23 +341,29 @@ end subroutine EOSGasSetDensityIdeal
 
 ! ************************************************************************** !
 
-subroutine EOSGasSetDensityRKS(h,rks_tc,rks_pc,rks_acen,rks_omegaa,rks_omegab)
+subroutine EOSGasSetDensityRKS(use_hydrogen,use_effective_properties, &
+                               use_cubic_root_solution, &
+                               tc,pc,acen,omegaa,omegab)
 
   implicit none
 
-  PetscBool :: h
-  PetscReal :: rks_tc
-  PetscReal :: rks_pc
-  PetscReal :: rks_acen
-  PetscReal :: rks_omegaa
-  PetscReal :: rks_omegab
+  PetscBool :: use_hydrogen
+  PetscBool :: use_effective_properties
+  PetscBool :: use_cubic_root_solution
+  PetscReal :: tc
+  PetscReal :: pc
+  PetscReal :: acen
+  PetscReal :: omegaa
+  PetscReal :: omegab
   
-  hydrogen = h
-  Tc = rks_tc
-  Pc = rks_pc
-  acentric = rks_acen
-  coeff_a = rks_omegaa
-  coeff_b = rks_omegab
+  rks_use_hydrogen = use_hydrogen
+  rks_use_effect_critical_props = use_effective_properties
+  rks_use_cubic_root_solution = use_cubic_root_solution
+  rks_Tc = tc
+  rks_Pc = pc
+  rks_acentric = acen
+  rks_coeff_a = omegaa
+  rks_coeff_b = omegab
   
   EOSGasDensityEnergyPtr => EOSGasDensityEnergyGeneral
   EOSGasDensityPtr => EOSGasDensityRKS
@@ -339,6 +402,54 @@ subroutine EOSGasSetEnergyIdealMethane()
   EOSGasEnergyPtr => EOSGasEnergyIdealMethane
   
 end subroutine EOSGasSetEnergyIdealMethane
+
+! ************************************************************************** !
+
+subroutine EOSGasSetFMWConstant(input_fmw_gas)
+
+  implicit none
+
+  PetscReal :: input_fmw_gas
+  
+  fmw_gas = input_fmw_gas
+
+end subroutine EOSGasSetFMWConstant
+
+! ************************************************************************** !
+
+function EOSGasGetFMW()
+
+  implicit none
+  
+  PetscReal :: EOSGasGetFMW
+  
+  EOSGasGetFMW = fmw_gas
+  
+end function EOSGasGetFMW
+
+! ************************************************************************** !
+
+subroutine EOSGasSetReferenceDensity(input_ref_density_kg)
+
+  implicit none
+
+  PetscReal :: input_ref_density_kg
+
+  reference_density_kg = input_ref_density_kg
+
+end subroutine EOSGasSetReferenceDensity
+
+! ************************************************************************** !
+
+function EOSGasGetReferenceDensity()
+
+  implicit none
+
+  PetscReal :: EOSGasGetReferenceDensity
+
+  EOSGasGetReferenceDensity = reference_density_kg
+
+end function EOSGasGetReferenceDensity
 
 ! ************************************************************************** !
 
@@ -406,7 +517,8 @@ end subroutine EOSGasSetHenryConstant
 
 ! ************************************************************************** !
 
-subroutine EOSGasViscosityNoDerive(T, P_comp, P_gas, Rho_comp, V_mix, ierr)
+subroutine EOSGasViscosityNoDerive(T, P_comp, P_gas, Rho_comp, V_mix, ierr, &
+                                   table_idxs)
 
   implicit none
 
@@ -416,11 +528,12 @@ subroutine EOSGasViscosityNoDerive(T, P_comp, P_gas, Rho_comp, V_mix, ierr)
   PetscReal, intent(in) :: Rho_comp ! air density [C]
   PetscReal, intent(out) :: V_mix   ! mixture viscosity
   PetscErrorCode, intent(out) :: ierr
+  PetscInt, pointer, optional, intent(inout) :: table_idxs(:)
   
   PetscReal :: dum1, dum2, dum3, dum4
   
   call EOSGasViscosityPtr(T, P_comp, P_gas, Rho_comp, V_mix, PETSC_FALSE, &
-                          dum1,dum2,dum3,dum4,ierr)
+                          dum1,dum2,dum3,dum4,ierr,table_idxs)
   
 end subroutine EOSGasViscosityNoDerive
 
@@ -429,7 +542,8 @@ end subroutine EOSGasViscosityNoDerive
 subroutine EOSGasViscosityDerive(T, P_comp, P_gas, Rho_comp, &
                                  dRho_dT, dRho_dPcomp, dRho_dPgas, &
                                  dPcomp_dT, dPcomp_dPgas, &
-                                 V_mix, dV_dT, dV_dPcomp, dV_dPgas, ierr)
+                                 V_mix, dV_dT, dV_dPcomp, dV_dPgas, ierr, &
+                                 table_idxs)
   implicit none
 
   PetscReal, intent(in) :: T             ! temperature [C]
@@ -446,6 +560,7 @@ subroutine EOSGasViscosityDerive(T, P_comp, P_gas, Rho_comp, &
   PetscReal, intent(out) :: dV_dPcomp    ! derivative gas viscosity wrt gas comp press
   PetscReal, intent(out) :: dV_dPgas     ! derivative gas viscosity wrt gas press
   PetscErrorCode, intent(out) :: ierr
+  PetscInt, pointer, optional, intent(inout) :: table_idxs(:)
   
   !geh: at very low temperatures, the derivative wrt Rhocomp is very sensitive to
   !     the perturbation.  Need a value as large as 1.d-3 at 2C to match analtyical.
@@ -471,7 +586,8 @@ subroutine EOSGasViscosityDerive(T, P_comp, P_gas, Rho_comp, &
     
   ! We have to calcualte the derivative numerically
   call EOSGasViscosityPtr(T, P_comp, P_gas, Rho_comp, V_mix, PETSC_TRUE, &
-                          dV_dT_, dV_dPcomp_, dV_dPgas_, dV_dRhocomp_, ierr)
+                          dV_dT_, dV_dPcomp_, dV_dPgas_, dV_dRhocomp_, ierr, &
+                          table_idxs)
 #if defined(PARTIALS)
   dV_dT_ = dV_dT_ + dV_dRhocomp_*dRho_dT + dV_dPcomp_*dPcomp_dT
   dV_dPgas_ = dV_dPgas_ + dV_dPcomp_*dPcomp_dPgas + dV_dRhocomp_*dRho_dPgas
@@ -484,25 +600,25 @@ subroutine EOSGasViscosityDerive(T, P_comp, P_gas, Rho_comp, &
   pert = pert_tol * T
   T_pert = T + pert
   call EOSGasViscosityPtr(T_pert, P_comp, P_gas, Rho_comp, V_mix_pert, &
-                          PETSC_FALSE,dum1,dum2,dum3,dum4,ierr)
+                          PETSC_FALSE,dum1,dum2,dum3,dum4,ierr,table_idxs)
   dV_dT = dV_dT + (V_mix_pert - V_mix)/pert
   ! gas component pressure
   pert = pert_tol * P_comp
   P_comp_pert = P_comp + pert
   call EOSGasViscosityPtr(T, P_comp_pert, P_gas, Rho_comp, V_mix_pert, &
-                          PETSC_FALSE,dum1,dum2,dum3,dum4,ierr)
+                          PETSC_FALSE,dum1,dum2,dum3,dum4,ierr,table_idxs)
   dV_dPcomp = (V_mix_pert - V_mix)/pert
   ! gas pressure
   pert = pert_tol * P_gas
   P_gas_pert = P_gas + pert
   call EOSGasViscosityPtr(T, P_comp, P_gas_pert, Rho_comp, V_mix_pert, &
-                          PETSC_FALSE,dum1,dum2,dum3,dum4,ierr)
+                          PETSC_FALSE,dum1,dum2,dum3,dum4,ierr,table_idxs)
   dV_dPgas = (V_mix_pert - V_mix)/pert
   ! component density
   pert = pert_tol * Rho_comp
   Rho_comp_pert = Rho_comp + pert
   call EOSGasViscosityPtr(T, P_comp, P_gas, Rho_comp_pert, V_mix_pert, &
-                          PETSC_FALSE,dum1,dum2,dum3,dum4,ierr)
+                          PETSC_FALSE,dum1,dum2,dum3,dum4,ierr,table_idxs)
   dV_dRhocomp = (V_mix_pert - V_mix)/pert
 #if defined(PARTIALS)
   dV_dT = dV_dT + dV_dRhocomp * dRho_dT + dV_dPcomp * dPcomp_dT
@@ -521,7 +637,7 @@ end subroutine EOSGasViscosityDerive
 
 subroutine EOSGasViscosity1(T, P_comp, P_gas, Rho_comp, V_mix, &
                             calculate_derivative, dV_dT, dV_dPcomp, &
-                            dV_dPgas, dV_dRhocomp, ierr)
+                            dV_dPgas, dV_dRhocomp, ierr, table_idxs)
 
   implicit none
 
@@ -536,6 +652,7 @@ subroutine EOSGasViscosity1(T, P_comp, P_gas, Rho_comp, V_mix, &
   PetscReal, intent(out) :: dV_dPgas    ! derivative wrt gas pressure
   PetscReal, intent(out) :: dV_dRhocomp ! derivative wrt component density
   PetscErrorCode, intent(out) :: ierr
+  PetscInt, pointer, optional, intent(inout) :: table_idxs(:)
   
   !geh: copied from gas_eos_mod.F90
   !
@@ -639,6 +756,12 @@ subroutine EOSGasViscosity1(T, P_comp, P_gas, Rho_comp, V_mix, &
   V_mix = visg
   
   if (calculate_derivative) then
+
+    if (xg1 < 1.d-100) then
+      print *, 'Derivatives in EOSGasViscosity1() may not be calculated &
+        &when the water vapor pressure is essentially zero.'
+      stop
+    endif
   
     ! air density (kg)
     ! d = d_air * FMWAIR   
@@ -803,7 +926,7 @@ end subroutine EOSGasViscosity1
 
 subroutine EOSGasViscosityConstant(T, P_comp, P_gas, Rho_comp, V_mix, &
                                    calculate_derivative, dV_dT, dV_dPcomp, &
-                                   dV_dPgas, dV_dRhocomp, ierr)
+                                   dV_dPgas, dV_dRhocomp, ierr, table_idxs)
   implicit none
 
   PetscReal, intent(in) :: T        ! temperature [C]
@@ -817,6 +940,7 @@ subroutine EOSGasViscosityConstant(T, P_comp, P_gas, Rho_comp, V_mix, &
   PetscReal, intent(out) :: dV_dPgas    ! derivative wrt gas pressure
   PetscReal, intent(out) :: dV_dRhocomp ! derivative wrt component density    
   PetscErrorCode, intent(out) :: ierr
+  PetscInt, pointer, optional, intent(inout) :: table_idxs(:)
 
   V_mix = constant_viscosity
   
@@ -829,7 +953,103 @@ end subroutine EOSGasViscosityConstant
 
 ! ************************************************************************** !
 
-subroutine EOSGasDensityNoDerive(T,P,Rho_gas,ierr)
+subroutine EOSGasViscosityEOSDBase(T, P_comp, P_gas, Rho_comp, V_mix, &
+                                   calculate_derivative, dV_dT, dV_dPcomp, &
+                                   dV_dPgas, dV_dRhocomp, ierr, table_idxs)
+  implicit none
+
+  PetscReal, intent(in) :: T        ! temperature [C]
+  PetscReal, intent(in) :: P_comp   ! air pressure [Pa]
+  PetscReal, intent(in) :: P_gas    ! gas pressure [Pa]
+  PetscReal, intent(in) :: Rho_comp ! air density [C]
+  PetscReal, intent(out) :: V_mix   ! mixture viscosity [Pa-s]
+  PetscBool, intent(in) :: calculate_derivative
+  PetscReal, intent(out) :: dV_dT       ! derivative wrt db temperature [Pa-s/C]
+  PetscReal, intent(out) :: dV_dPcomp   ! derivative wrt component pressure [Pa-s/Pa]
+  PetscReal, intent(out) :: dV_dPgas    ! derivative wrt gas pressure [Pa-s/Pa]
+  PetscReal, intent(out) :: dV_dRhocomp ! derivative wrt component density [Pa-s/kmol/m3]
+  PetscErrorCode, intent(out) :: ierr
+  PetscInt, pointer, optional, intent(inout) :: table_idxs(:)
+
+  PetscReal :: NaN
+
+  !ierr initialised in EOSEOSProp 
+  !call eos_dbase%EOSProp(T,P_gas,EOS_VISCOSITY,V_mix,ierr)
+  call eos_dbase%EOSPropGrad(T,P_gas,EOS_VISCOSITY,V_mix,dV_dT,dV_dPgas,ierr)
+
+  dV_dPcomp = 0.0d0
+  dV_dRhocomp = 0.0d0
+
+  ! initialize to derivative to NaN so that not mistakenly used.
+  ! NaN = 0.0
+  ! NaN = 1.0/NaN
+  ! NaN = 0.0d0*NaN
+  ! 
+  ! dV_dT = NaN
+  ! dV_dPcomp = NaN
+  ! dV_dPgas = NaN
+  ! dV_dRhocomp = NaN
+  ! 
+  ! if (calculate_derivative) then
+  !   ! not yet implemented
+  !   ierr = 99 !error 99 points out that deriv are asked but not available yet. 
+  !   print*, "EOSGasViscosityEOSDBase - Viscosity derivatives not supported"
+  !   stop
+  ! end if
+  
+end subroutine EOSGasViscosityEOSDBase
+
+! ************************************************************************** !
+
+subroutine EOSGasViscosityTable(T, P_comp, P_gas, Rho_comp, V_mix, &
+                                   calculate_derivative, dV_dT, dV_dPcomp, &
+                                   dV_dPgas, dV_dRhocomp, ierr, table_idxs)
+  implicit none
+
+  PetscReal, intent(in) :: T        ! temperature [C]
+  PetscReal, intent(in) :: P_comp   ! air pressure [Pa]
+  PetscReal, intent(in) :: P_gas    ! gas pressure [Pa]
+  PetscReal, intent(in) :: Rho_comp ! air density [C]
+  PetscReal, intent(out) :: V_mix   ! mixture viscosity [Pa-s]
+  PetscBool, intent(in) :: calculate_derivative
+  PetscReal, intent(out) :: dV_dT       ! derivative wrt db temperature [Pa-s/C]
+  PetscReal, intent(out) :: dV_dPcomp   ! derivative wrt component pressure [Pa-s/Pa]
+  PetscReal, intent(out) :: dV_dPgas    ! derivative wrt gas pressure [Pa-s/Pa]
+  PetscReal, intent(out) :: dV_dRhocomp ! derivative wrt component density [Pa-s/kmol/m3]
+  PetscErrorCode, intent(out) :: ierr
+  PetscInt, pointer, optional, intent(inout) :: table_idxs(:)
+
+  PetscReal :: NaN
+
+  !call pvt_table%EOSProp(T,P_gas,EOS_VISCOSITY,V_mix,table_idxs,ierr)
+  
+  call pvt_table%EOSPropGrad(T,P_gas,EOS_VISCOSITY,V_mix,dV_dT,dV_dPgas, &
+                             table_idxs,ierr)
+
+  dV_dPcomp = 0.0d0
+  dV_dRhocomp = 0.0d0
+  ! initialize to derivative to NaN so that not mistakenly used.
+  ! NaN = 0.0
+  ! NaN = 1.0/NaN
+  ! NaN = 0.0d0*NaN
+  ! 
+  ! dV_dT = NaN
+  ! dV_dPcomp = NaN
+  ! dV_dPgas = NaN
+  ! dV_dRhocomp = NaN
+  ! 
+  ! if (calculate_derivative) then
+  !   ! not yet implemented
+  !   ierr = 99 !error 99 points out that deriv are asked but not available yet.
+  !   print*, "EOSGasViscosityTable - Viscosity derivatives not supported"
+  !   stop
+  ! end if
+
+end subroutine EOSGasViscosityTable
+
+! ************************************************************************** !
+
+subroutine EOSGasDensityNoDerive(T,P,Rho_gas,ierr,table_idxs)
 
   implicit none
 
@@ -837,17 +1057,18 @@ subroutine EOSGasDensityNoDerive(T,P,Rho_gas,ierr)
   PetscReal, intent(in) :: P        ! pressure [Pa]
   PetscReal, intent(out) :: Rho_gas ! gas density [kmol/m^3]
   PetscErrorCode, intent(out) :: ierr
+  PetscInt, pointer, optional, intent(inout) :: table_idxs(:)
   
   PetscReal :: dum1, dum2
   
   ! derivatives are so cheap, just compute them
-  call EOSGasDensityPtr(T,P,Rho_gas,dum1,dum2,ierr)
+  call EOSGasDensityPtr(T,P,Rho_gas,dum1,dum2,ierr,table_idxs)
   
 end subroutine EOSGasDensityNoDerive
 
 ! ************************************************************************** !
 
-subroutine EOSGasDensityDerive(T,P,Rho_gas,dRho_dT,dRho_dP,ierr)
+subroutine EOSGasDensityDerive(T,P,Rho_gas,dRho_dT,dRho_dP,ierr,table_idxs)
 
   implicit none
 
@@ -857,8 +1078,9 @@ subroutine EOSGasDensityDerive(T,P,Rho_gas,dRho_dT,dRho_dP,ierr)
   PetscReal, intent(out) :: dRho_dT ! derivative gas density wrt temperature
   PetscReal, intent(out) :: dRho_dP ! derivative gas density wrt pressure
   PetscErrorCode, intent(out) :: ierr
+  PetscInt, pointer, optional, intent(inout) :: table_idxs(:)
   
-  call EOSGasDensityPtr(T,P,Rho_gas,dRho_dT,dRho_dP,ierr)
+  call EOSGasDensityPtr(T,P,Rho_gas,dRho_dT,dRho_dP,ierr,table_idxs)
                           
 end subroutine EOSGasDensityDerive
 
@@ -902,7 +1124,7 @@ end subroutine EOSGasEnergyDerive
 
 ! ************************************************************************** !
 
-subroutine EOSGasDenEnthNoDerive(T,P,Rho_gas,H,U,ierr)
+subroutine EOSGasDenEnthNoDerive(T,P,Rho_gas,H,U,ierr,table_idxs)
 
   implicit none
 
@@ -912,18 +1134,19 @@ subroutine EOSGasDenEnthNoDerive(T,P,Rho_gas,H,U,ierr)
   PetscReal, intent(out) :: H       ! enthalpy [J/kmol]
   PetscReal, intent(out) :: U       ! internal energy [J/kmol]
   PetscErrorCode, intent(out) :: ierr
+  PetscInt, pointer, optional, intent(inout) :: table_idxs(:)
   
   PetscReal :: dum1, dum2, dum3, dum4, dum5, dum6
   
   call EOSGasDensityEnergyPtr(T,P,Rho_gas,dum1,dum2, &
-                              H,dum3,dum4,U,dum5,dum6,ierr)
+                              H,dum3,dum4,U,dum5,dum6,ierr,table_idxs)
   
 end subroutine EOSGasDenEnthNoDerive
 
 ! ************************************************************************** !
 
 subroutine EOSGasDenEnthDerive(T,P,Rho_gas,dRho_dT,dRho_dP, &
-                               H,dH_dT,dH_dP,U,dU_dT,dU_dP,ierr)
+                               H,dH_dT,dH_dP,U,dU_dT,dU_dP,ierr,table_idxs)
 
   implicit none
 
@@ -939,16 +1162,18 @@ subroutine EOSGasDenEnthDerive(T,P,Rho_gas,dRho_dT,dRho_dP, &
   PetscReal, intent(out) :: dU_dT   ! deriv. internal energy wrt temperature
   PetscReal, intent(out) :: dU_dP   ! deriv. internal energy wrt pressure
   PetscErrorCode, intent(out) :: ierr
+  PetscInt, pointer, optional, intent(inout) :: table_idxs(:)
   
   call EOSGasDensityEnergyPtr(T,P,Rho_gas,dRho_dT,dRho_dP, &
-                              H,dH_dT,dH_dP,U,dU_dT,dU_dP,ierr)
+                              H,dH_dT,dH_dP,U,dU_dT,dU_dP,ierr,table_idxs)
   
 end subroutine EOSGasDenEnthDerive
 
 ! ************************************************************************** !
 
 subroutine EOSGasDensityEnergyGeneral(T,P,Rho_gas,dRho_dT,dRho_dP, &
-                                      H,dH_dT,dH_dP,U,dU_dT,dU_dP,ierr)
+                                      H,dH_dT,dH_dP,U,dU_dT,dU_dP,ierr,&
+                                      table_idxs)
                                       
   implicit none
   
@@ -964,15 +1189,16 @@ subroutine EOSGasDensityEnergyGeneral(T,P,Rho_gas,dRho_dT,dRho_dP, &
   PetscReal, intent(out) :: dU_dT   ! deriv. internal energy wrt temperature
   PetscReal, intent(out) :: dU_dP   ! deriv. internal energy wrt pressure
   PetscErrorCode, intent(out) :: ierr
+  PetscInt, pointer, optional, intent(inout) :: table_idxs(:)
   
-  call EOSGasDensityPtr(T,P,Rho_gas,dRho_dT,dRho_dP,ierr)
+  call EOSGasDensityPtr(T,P,Rho_gas,dRho_dT,dRho_dP,ierr,table_idxs)
   call EOSGasEnergyPtr(T,P,H,dH_dT,dH_dP,U,dU_dT,dU_dP,ierr)  
   
 end subroutine EOSGasDensityEnergyGeneral
 
 ! ************************************************************************** !
 
-subroutine EOSGasDensityIdeal(T,P,Rho_gas,dRho_dT,dRho_dP,ierr)
+subroutine EOSGasDensityIdeal(T,P,Rho_gas,dRho_dT,dRho_dP,ierr,table_idxs)
 
   implicit none
 
@@ -982,6 +1208,7 @@ subroutine EOSGasDensityIdeal(T,P,Rho_gas,dRho_dT,dRho_dP,ierr)
   PetscReal, intent(out) :: dRho_dT ! derivative gas density wrt temperature
   PetscReal, intent(out) :: dRho_dP ! derivative gas density wrt pressure
   PetscErrorCode, intent(out) :: ierr
+  PetscInt, pointer, optional, intent(inout) :: table_idxs(:)
 
   PetscReal  T_kelvin
 
@@ -995,7 +1222,7 @@ end subroutine EOSGasDensityIdeal
 
 ! ************************************************************************** !
 
-subroutine EOSGasDensityRKS(T,P,Rho_gas,dRho_dT,dRho_dP,ierr)
+subroutine EOSGasDensityRKS(T,P,Rho_gas,dRho_dT,dRho_dP,ierr,table_idxs)
 ! Redlich-Kwong-Soave (RKS) equation of state used in BRAGFLO.  See
 ! Soave, Giorgio, 1972, "Equilibrium constants from a modified Redlich-Kwong
 ! equation of state", Chem. Eng. Sci., V27, pp 1197-1203.
@@ -1014,72 +1241,162 @@ subroutine EOSGasDensityRKS(T,P,Rho_gas,dRho_dT,dRho_dP,ierr)
   PetscReal, intent(out) :: dRho_dT ! derivative gas density wrt temperature
   PetscReal, intent(out) :: dRho_dP ! derivative gas density wrt pressure
   PetscErrorCode, intent(out) :: ierr
+  PetscInt, pointer, optional, intent(inout) :: table_idxs(:)
   
-  PetscReal :: T_kelvin, RT, alpha, a, B , a_RT, p_RT
-  PetscReal :: b2, V, f, dfdV, dVd
-  PetscInt :: i
+  PetscReal :: T_kelvin, RT, alpha
+  PetscReal :: Tc_eff, Pc_eff
   PetscReal :: coeff_alpha
   
+  ! Newton method approach
+  PetscReal :: a_Newton, b_Newton , a_RT, p_RT
+  PetscReal :: b2, V, f, dfdV, dVd
+  PetscInt :: i
+  PetscReal :: coef(4)
+  PetscInt, parameter :: maxit = 50
+
+  PetscReal, parameter :: PMIN = 0.1d0  ! from BRAGFLO line 6580
+  PetscReal :: Pg
+
+  ! analytical cubic root approach
+  PetscReal :: A_cubic, B_cubic
+  PetscReal :: c1, c0, xn, yn, del2, del1, h, theta, z1
+
   !for hydrogen
   ! American Petroleum Institute,
   ! "Technical Data Book-Petroleum Refining" (1977)
   
-  !solver
-  PetscReal :: coef(4)
-  PetscInt, parameter :: maxit = 50
   dRho_dT = UNINITIALIZED_DOUBLE
   dRho_dP = UNINITIALIZED_DOUBLE
   
   T_kelvin = T + 273.15d0
   RT = IDEAL_GAS_CONSTANT * T_kelvin
+
+  if (rks_use_effect_critical_props) then
+    ! Effective critical hydrogen temperature and pressure from BRAGFLO
+    ! Taken from BRAGFLO DENGZ()
+    Tc_eff = rks_Tc/(1.d0+21.8d-3/(T_kelvin*2.01588d-3))
+    Pc_eff = rks_Pc/(1.d0+44.2d-3/(T_kelvin*2.01588d-3))
+  else
+    Tc_eff = rks_Tc
+    Pc_eff = rks_Pc
+  endif
   
-  if (hydrogen) then
+  if (rks_use_hydrogen) then
+  ! geh: commenting out Peter's suggestion that Heeho implemented in favor of
+  !      what is implemented in BRAGFLO.
+#if 0
     ! suggested by Peter Lichtner
     ! this function honors alpha(Tc)=1 while closely fitting Graboski curve from
     ! "A Modified Soave Equation of State for Phase Equilibrium
     !  Calculations. 3. Systems Containing Hydrogen"
-    alpha = EXP(0.340d0*(1-T_kelvin/Tc))
+    alpha = exp(0.340d0*(1.d0-T_kelvin/Tc_eff))
+#else
+    ! from BRAGFLO DENGZ()
+    alpha = 1.202d0*exp(-0.30288d0*(T_kelvin/Tc_eff))
+#endif
   else
-    coeff_alpha = 0.48508d0 + acentric*(1.55171d0 - 0.15613*acentric)
-    alpha = (1.d0 + coeff_alpha*(1.d0 - SQRT(T_Kelvin/Tc)))**2
+    coeff_alpha = 0.48508d0 + rks_acentric*(1.55171d0 - 0.15613*rks_acentric)
+    alpha = (1.d0 + coeff_alpha*(1.d0 - sqrt(T_Kelvin/Tc_eff)))**2.d0
   end if
+
+  if (rks_use_cubic_root_solution) then ! analtyical cubic root soltion
+
+!    Pg = P
+    Pg = max(PMIN,P)
   
-  a = coeff_a * alpha * (IDEAL_GAS_CONSTANT * Tc)**2 / Pc
-  b = coeff_b * IDEAL_GAS_CONSTANT * Tc / Pc
+    A_cubic = rks_coeff_a*alpha*(Pg/Pc_eff)/(T_kelvin/Tc_eff)**2
+    B_cubic = rks_coeff_b*(Pg/Pc_eff)/(T_kelvin/Tc_eff)
+
+    ! Solve the cubic eos for compressibility z = pv/(RT)
+    ! z^3 - z^2 + (A_cubic-B_cubic-B_cubic^2)*z - (A_cubic*B_cubic) = 0
+    ! cubic(a,b,c,d) = (1, -1, c1, c0)
+    c1 = A_cubic-B_cubic-B_cubic*B_cubic
+    c0 = -A_cubic*B_cubic
+
+    ! Analytical solution to cubic root
+    ! See Abramowitz and Stegun pg17 (requires imaginary numbers)
+    ! See Cubic function from Wikipedia, and 
+    ! Nickalls 1993,  A new approach to solving the cubic Cardans solution 
+    ! revealed you get three-real-roots if yn^2 < hn^2, which is the case here
+    ! the first root, z1, is the correct one for gas
+
+    xn = 1.0d0/3.0d0
+    yn = -2.0d0/27.0d0 + c1/3.0d0 + c0
+    del2 = (1.0d0 - 3.0d0*c1)/9.0d0
+    del1 = sqrt(del2)
+    h = 2.0d0 * del2 * del1
+
+    theta = acos(-yn/h)/3.0d0
+    z1 = xn + 2.0d0*del1*cos(theta)
+    ! z2 = xn + 2.0d0*del1*cos(theta + 4.0d0/3.0d0*pi)
+    ! z3 = xn + 2.0d0*del1*cos(theta + 2.0d0/3.0d0*pi)
+
+
+    Rho_gas = Pg/(z1*RT) * 1.0d-3 ! mol/m^3 -> kmol/m^3
+    ! BRAGFLO: if pressure is less than zero, 
+    ! the density is set to 1/10 the density at 1e4 Pa
+    Rho_gas = max(Rho_gas, 1.d0/RT) ! kmol/m^3
+
+    if (Pg < 0.d0) then
+      print *
+      print *, 'EOSGasDensityRKS received a bad pressure: ', Pg
+      print *, 'EOSGasDensityRKS temperature: ', T
+      print *, 'EOSGasDensityRKS calculated a density: ', Pg/(z1*RT)*1.0d-3
+      print *, 'EOSGasDensityRKS reset density to: ', Rho_gas
+      print *
+    endif
+
+  else ! Newton's method
+
+    Pg = max(PMIN,P)
+
+    a_Newton = rks_coeff_a * alpha * (IDEAL_GAS_CONSTANT * Tc_eff)**2.d0 / &
+               Pc_eff
+    b_Newton = rks_coeff_b * IDEAL_GAS_CONSTANT * Tc_eff / Pc_eff
   
-  a_RT = a / RT
-  P_RT = P / RT
-  coef(4) = P / RT
-  coef(3) = 1.0d0
-  coef(2) = a_RT - b - P_RT*b**2
-  coef(1) = a_RT*b
-  V = RT/P  ! initial guess
+    a_RT = a_Newton / RT
+    P_RT = Pg / RT
+    coef(4) = Pg / RT
+    coef(3) = 1.0d0
+    coef(2) = a_RT - b_Newton - P_RT*b_Newton**2.d0
+    coef(1) = a_RT*b_Newton
+    V = RT/Pg  ! initial guess
   
-  !Newton iteration to find a Volume of gas
-  do i = 1, maxit
-    f = V*(V*(coef(4)*V - coef(3)) + coef(2)) - coef(1)
-    dfdV = V*(3.0d0*coef(4)*V - 2.0d0*coef(3)) + coef(2)
-    if (dfdV .ne. 0.d0) then
-      dVd = F/dfdV
-      V = V - dVd
-      if (V .ne. 0.d0) then
-        if (abs(dVd/V) .lt. 1.d-10) then
-          Rho_gas = 1/V * 1d-3 ! mol/m^3 -> kmol/m^3
-          exit
-        end if
+    !Newton iteration to find a Volume of gas
+    do i = 1, maxit
+      f = V*(V*(coef(4)*V - coef(3)) + coef(2)) - coef(1)
+      dfdV = V*(3.0d0*coef(4)*V - 2.0d0*coef(3)) + coef(2)
+      if (.not. Equal(dfdV,0.d0)) then
+        dVd = F/dfdV
+        V = V - dVd
+        if (.not. Equal(V,0.d0)) then
+          if (abs(dVd/V) .lt. 1.d-10) then
+            Rho_gas = 1.d0/V * 1.d-3 ! mol/m^3 -> kmol/m^3
+            exit
+          end if
+        else
+          print *, 'Error: RKS gas density cannot be solved'
+        end if 
       else
-        print *, 'Error: RKS gas density cannot be solved'
-      end if 
-    else
-      print *, 'Error: Zero Slope in Equation of State'
-    end if
-  end do
-  
+        print *, 'Error: Zero Slope in Equation of State'
+      end if
+    end do
+
+    if (Rho_gas < 0.d0) then
+      print *
+      print *, 'EOSGasDensityRKS calculated a negative density: ', Rho_gas
+      print *, 'Stopping....'
+      print *
+      stop
+    endif
+
+  endif
+
 end subroutine EOSGasDensityRKS
 
 ! ************************************************************************** !
 
-subroutine EOSGasDensityPRMethane(T,P,Rho_gas,dRho_dT,dRho_dP,ierr)
+subroutine EOSGasDensityPRMethane(T,P,Rho_gas,dRho_dT,dRho_dP,ierr,table_idxs)
 ! Peng-Robinson (PR) equation of state. This is the uncorrected version 
 ! sufficient for methane. For other higher hydrocarbons one might need
 ! the corrected version published in 1978.
@@ -1099,6 +1416,7 @@ subroutine EOSGasDensityPRMethane(T,P,Rho_gas,dRho_dT,dRho_dP,ierr)
   PetscReal, intent(out) :: dRho_dT ! derivative gas density wrt temperature
   PetscReal, intent(out) :: dRho_dP ! derivative gas density wrt pressure
   PetscErrorCode, intent(out) :: ierr
+  PetscInt, pointer, optional, intent(inout) :: table_idxs(:)
   
   PetscReal :: T_kelvin, RT, alpha,  T_r, Z
   PetscReal :: f, dfdZ, dZd
@@ -1137,10 +1455,10 @@ subroutine EOSGasDensityPRMethane(T,P,Rho_gas,dRho_dT,dRho_dP,ierr)
   do i = 1, maxit
     f = coef(1) * Z**3 + coef(2) * Z**2 + coef(3) * Z + coef(4)
     dfdZ = coef(1) * 3 * Z**2  + coef(2) * 2 * Z + coef(3)
-    if (dfdZ .ne. 0.d0) then
+    if (.not. Equal(dfdZ,0.d0)) then
       dZd = f/dfdZ
       Z = Z - dZd
-      if (Z .ne. 0.d0) then
+      if (.not. Equal(Z,0.d0)) then
         if (abs(dZd/Z) .lt. 1.d-10) then
           Rho_gas = 1.d0/Z * P/RT * 1d-3 ! mol/m^3 -> kmol/m^3
           exit
@@ -1154,6 +1472,82 @@ subroutine EOSGasDensityPRMethane(T,P,Rho_gas,dRho_dT,dRho_dP,ierr)
   end do
   
 end subroutine EOSGasDensityPRMethane
+
+! ************************************************************************** !
+
+subroutine EOSGasDensityEOSDBase(T, P, Rho_gas, dRho_dT, dRho_dP, ierr, &
+                                 table_idxs)
+  !
+  ! Author: Paolo Orsini
+  ! Date: 07/27/17
+  ! 
+  implicit none
+
+  PetscReal, intent(in) :: T        ! temperature [C]
+  PetscReal, intent(in) :: P        ! pressure [Pa]
+  PetscReal, intent(out) :: Rho_gas ! gas density [kmol/m^3]
+  PetscReal, intent(out) :: dRho_dT ! derivative gas density wrt table temperature [kmol/m^3/Pa]
+  PetscReal, intent(out) :: dRho_dP ! derivative gas density wrt table pressure [kmol/m^3/C]
+  PetscErrorCode, intent(out) :: ierr
+  PetscInt, pointer, optional, intent(inout) :: table_idxs(:)
+
+  PetscReal :: NaN
+
+  !ierr initialised in EOSEOSProp 
+  !call eos_dbase%EOSProp(T,P,EOS_DENSITY,Rho_gas,ierr)
+  call eos_dbase%EOSPropGrad(T,P,EOS_DENSITY,Rho_gas,dRho_dT,dRho_dP,ierr)
+
+  !PO todo: conversion when loaidng database to do this operation only once
+           ! conversion to molar density
+           ! kg/m3 * kmol/kg  = kmol/m3
+  Rho_gas = Rho_gas / fmw_gas ! kmol/m^3
+  dRho_dT = dRho_dT / fmw_gas
+  dRho_dP = dRho_dP / fmw_gas
+
+  ! ! initialize to derivative to NaN so that not mistakenly used.
+  ! NaN = 0.0
+  ! NaN = 1.0/NaN
+  ! NaN = 0.0d0*NaN
+  ! dRho_dT = NaN
+  ! dRho_dP = NaN
+
+end subroutine EOSGasDensityEOSDBase
+
+! ************************************************************************** !
+
+subroutine EOSGasDensityTable(T, P, Rho_gas, dRho_dT, dRho_dP, ierr, &
+                                 table_idxs)
+  !
+  ! Author: Paolo Orsini
+  ! Date: 10/30/17
+  !
+
+  implicit none
+
+  PetscReal, intent(in) :: T        ! temperature [C]
+  PetscReal, intent(in) :: P        ! pressure [Pa]
+  PetscReal, intent(out) :: Rho_gas ! oil density [kmol/m^3]
+  PetscReal, intent(out) :: dRho_dT ! derivative oil density wrt table temperature [kmol/m^3/C]
+  PetscReal, intent(out) :: dRho_dP ! derivative oil density wrt table pressure [kmol/m^3/Pa]
+  PetscErrorCode, intent(out) :: ierr
+  PetscInt, pointer, optional, intent(inout) :: table_idxs(:)
+
+  PetscReal :: NaN
+
+  !Rho from pvt table is in kmol/m3
+  !call pvt_table%EOSProp(T,P,EOS_DENSITY,Rho_gas,table_idxs,ierr)
+
+  call pvt_table%EOSPropGrad(T,P,EOS_DENSITY,Rho_gas,dRho_dT,dRho_dP, &
+                             table_idxs,ierr)
+
+  ! initialize to derivative to NaN so that not mistakenly used.
+  ! NaN = 0.0
+  ! NaN = 1.0/NaN
+  ! NaN = 0.0d0*NaN
+  ! dRho_dT = NaN
+  ! dRho_dP = NaN
+
+end subroutine EOSGasDensityTable
 
 ! ************************************************************************** !
 
@@ -1269,7 +1663,54 @@ end subroutine EOSGasEnergyIdeal
 
 ! ************************************************************************** !
 
-subroutine EOSGasDensityConstant(T,P,Rho_gas,dRho_dT,dRho_dP,ierr)
+subroutine EOSGasEnergyEOSDBase(T,P,H,dH_dT,dH_dP,U,dU_dT,dU_dP,ierr)
+    
+  implicit none
+
+  PetscReal, intent(in) :: T        ! temperature [C]
+  PetscReal, intent(in) :: P        ! pressure [Pa]
+  PetscReal, intent(out) :: H       ! enthalpy [J/kmol]
+  PetscReal, intent(out) :: dH_dT   ! derivative enthalpy wrt temperature [J/kmol/C]
+  PetscReal, intent(out) :: dH_dP   ! derivative enthalpy wrt pressure [J/kmol/Pa]
+  PetscReal, intent(out) :: U       ! internal energy [J/kmol]
+  PetscReal, intent(out) :: dU_dT   ! deriv. internal energy wrt temperature [J/kmol/C]
+  PetscReal, intent(out) :: dU_dP   ! deriv. internal energy wrt pressure [J/kmol/Pa]
+  PetscErrorCode, intent(out) :: ierr
+
+  PetscReal :: NaN
+
+  !ierr initialised in EOSProp - PO: should do only one lookup here
+  !call eos_dbase%EOSProp(T,P,EOS_ENTHALPY,H,ierr)
+  !call eos_dbase%EOSProp(T,P,EOS_INTERNAL_ENERGY,U,ierr)
+
+  call eos_dbase%EOSPropGrad(T,P,EOS_ENTHALPY,H,dH_dT,dH_dP,ierr)
+  call eos_dbase%EOSPropGrad(T,P,EOS_INTERNAL_ENERGY,U,dU_dT,dU_dP,ierr)
+  
+  !PO todo: conversion when loaidng database to do this operation only once
+  ! conversion to molar energy
+  ! J/kg * kg/Kmol = J/Kmol
+  H = H  * fmw_gas
+  dH_dT = dH_dT * fmw_gas
+  dH_dP = dH_dP * fmw_gas
+  
+  U = U  * fmw_gas
+  dU_dT = dU_dT * fmw_gas
+  dU_dP = dU_dP * fmw_gas
+
+  ! NaN = 0.0
+  ! NaN = 1.0/NaN
+  ! NaN = 0.0d0*NaN
+  ! 
+  ! dU_dP = NaN
+  ! dU_dT = NaN
+  ! dH_dP = NaN
+  ! dH_dT = NaN
+    
+end subroutine EOSGasEnergyEOSDBase
+
+! ************************************************************************** !
+
+subroutine EOSGasDensityConstant(T,P,Rho_gas,dRho_dT,dRho_dP,ierr,table_idxs)
 
   implicit none
   
@@ -1279,6 +1720,7 @@ subroutine EOSGasDensityConstant(T,P,Rho_gas,dRho_dT,dRho_dP,ierr)
   PetscReal, intent(out) :: dRho_dT ! derivative gas density wrt temperature
   PetscReal, intent(out) :: dRho_dP ! derivative gas density wrt pressure
   PetscErrorCode, intent(out) :: ierr
+  PetscInt, pointer, optional, intent(inout) :: table_idxs(:)
   
   ierr = 0
   Rho_gas = constant_density ! kmol/m^3
@@ -1471,6 +1913,219 @@ subroutine EOSGasHenryConstant(T,Psat,Hc,calculate_derivative, &
     
 end subroutine EOSGasHenryConstant
 
+! **************************************************************************** !
+
+subroutine EOSGasSetEOSDBase(filename,option)
+
+  use Option_module
+
+  implicit none
+
+  character(len=MAXWORDLENGTH) :: filename
+  type(option_type) :: option
+
+  eos_dbase => EOSDatabaseCreate(filename,'gas_database')
+  call eos_dbase%Read(option)
+
+  !set property function pointers
+  EOSGasDensityEnergyPtr => EOSGasDensityEnergyGeneral
+  EOSGasDensityPtr => EOSGasDensityEOSDBase
+  EOSGasEnergyPtr => EOSGasEnergyEOSDBase
+  EOSGasViscosityPtr => EOSGasViscosityEOSDBase
+
+end subroutine EOSGasSetEOSDBase
+
+! **************************************************************************** !
+
+subroutine EOSGasSetPVDG(input,option)
+  !
+  ! Author: Paolo Orsini
+  ! Date: 10/30/17
+  !
+  ! Set up a PVDG table
+
+  use Option_module
+  use Input_Aux_module
+  use Lookup_Table_module
+
+  implicit none
+
+  type(input_type), pointer :: input
+  type(option_type) :: option
+
+  type(lookup_table_var_type), pointer :: db_var => null()
+  character(len=MAXWORDLENGTH) :: internal_units, user_units
+  PetscInt :: data_idx
+
+  pvt_table => EOSTableCreate('PVDG',option)
+
+  pvt_table%num_prop = 2
+  
+  ! units initially assing default values - overwritten by units specified 
+  ! in the table input 
+  internal_units = '' !assign default value by SetDefaultInternalUnits
+  user_units = ''     !assign default value by SetMetricUnits
+  
+  !adding FVF 
+  data_idx = 1 !position of FVF in the table (after pressure)
+  db_var => CreateLookupTableVar(EOS_FVF,internal_units,user_units,data_idx)
+  call pvt_table%AddEOSProp(db_var,option)
+  nullify(db_var)
+
+  !adding VISCOSITY 
+  data_idx = 2 !position of FVF in the table (after pressure)
+  db_var => CreateLookupTableVar(EOS_VISCOSITY,internal_units,user_units, &
+                                 data_idx)
+  call pvt_table%AddEOSProp(db_var,option)
+  nullify(db_var)
+
+  !set Default internal must be called before Set Metric
+  call pvt_table%SetDefaultInternalUnits(option)
+  call pvt_table%SetMetricUnits(option)
+
+  call pvt_table%Read(input,option)
+
+  call EOSTableAddToList(pvt_table,eos_table_list)
+
+  EOSGasDensityEnergyPtr => EOSGasDensityEnergyGeneral
+  EOSGasDensityPtr => EOSGasDensityTable
+  EOSGasViscosityPtr => EOSGasViscosityTable
+
+end subroutine EOSGasSetPVDG
+
+! ************************************************************************** !
+
+subroutine EOSGasTableProcess(option)
+  !
+  ! Author: Paolo Orsini
+  ! Date: 10/30/17
+  !
+  ! Processes gas pvt table - once the entire input deck has been read
+
+  use Option_module
+
+  implicit none
+
+  type(option_type) :: option
+
+  if (.not.associated(pvt_table)) return
+
+  select case(pvt_table%name)
+  case("PVDG")
+      call pvt_table%ConvertFVFtoMolarDensity(fmw_gas,reference_density_kg)
+  end select
+
+end subroutine EOSGasTableProcess
+
+! ************************************************************************** !
+
+subroutine EOSGasInputRecord()
+  ! 
+  ! Prints ingested equation of state information to the input record file.
+  ! 
+  ! Author: Jenn Frederick
+  ! Date: 05/04/2016
+  ! 
+  
+  implicit none
+  
+  character(len=MAXWORDLENGTH) :: word1, word2
+  character(len=MAXSTRINGLENGTH) :: string
+  PetscInt :: id = INPUT_RECORD_UNIT
+
+  write(id,'(a29)',advance='no') '---------------------------: '
+  write(id,'(a)') 'GAS'
+  
+  ! gas density [kg/m^3]
+  if (associated(EOSGasDensityEnergyPtr,EOSGasDensityEnergyGeneral) .and. &
+      associated(EOSGasDensityPtr,EOSGasDensityConstant)) then
+    write(id,'(a29)',advance='no') 'gas density: '
+    write(word1,*) constant_density
+    write(id,'(a)') 'constant, ' // adjustl(trim(word1)) // ' kg/m^3'
+  endif
+  if (associated(EOSGasDensityEnergyPtr,EOSGasDensityEnergyGeneral) .and. &
+      associated(EOSGasDensityPtr,EOSGasDensityRKS)) then
+    write(id,'(a29)',advance='no') 'gas density: '
+    write(id,'(a)') 'rsk'
+    write(id,'(a29)',advance='no') 'critical temperature: '
+    write(word1,*) rks_Tc
+    write(id,'(a)') adjustl(trim(word1)) // ' C'
+    write(id,'(a29)',advance='no') 'critical pressure: '
+    write(word1,*) rks_Pc
+    write(id,'(a)') adjustl(trim(word1)) // ' Pa'
+    if (rks_use_cubic_root_solution) then
+      write(id,'(a29)',advance='no') 'use analytical cubic root solution: True'
+    else
+      write(id,'(a29)',advance='no') 'use analytical cubic root solution: False'
+    endif
+    if (.not.rks_use_hydrogen) then
+      write(id,'(a29)',advance='no') 'acentric factor: '
+      write(word1,*) rks_acentric
+      write(id,'(a)') adjustl(trim(word1)) 
+    endif
+    write(id,'(a29)',advance='no') 'omega A: '
+    write(word1,*) rks_coeff_a
+    write(id,'(a)') adjustl(trim(word1))
+    write(id,'(a29)',advance='no') 'omega B: '
+    write(word1,*) rks_coeff_b
+    write(id,'(a)') adjustl(trim(word1))
+  endif
+  if (associated(EOSGasDensityEnergyPtr,EOSGasDensityEnergyGeneral) .and. &
+      associated(EOSGasDensityPtr,EOSGasDensityPRMethane)) then
+    write(id,'(a29)',advance='no') 'gas density: '
+    write(id,'(a)') 'pr methane'
+  endif
+  if (associated(EOSGasDensityEnergyPtr,EOSGasDensityEnergyGeneral) .and. &
+      associated(EOSGasDensityPtr,EOSGasDensityIdeal)) then
+    write(id,'(a29)',advance='no') 'gas density: '
+    write(id,'(a)') 'default, ideal'
+  endif
+  
+  ! gas viscosity [Pa-s]
+  if (associated(EOSGasViscosityPtr,EOSGasViscosityConstant)) then
+    write(id,'(a29)',advance='no') 'gas viscosity: '
+    write(word1,*) constant_viscosity
+    write(id,'(a)') 'constant, ' // trim(word1) // ' Pa-sec'
+  endif
+  if (associated(EOSGasViscosityPtr,EOSGasViscosity1)) then
+    write(id,'(a29)',advance='no') 'gas viscosity: '
+    write(id,'(a)') 'default'
+  endif
+  
+  ! gas enthalpy [J/kmol]
+  if (associated(EOSGasDensityEnergyPtr,EOSGasDensityEnergyGeneral) .and. &
+      associated(EOSGasEnergyPtr,EOSGasEnergyConstant)) then
+    write(id,'(a29)',advance='no') 'gas enthalpy: '
+    write(word1,*) constant_enthalpy
+    write(id,'(a)') 'constant, ' // trim(word1) // 'J/kmol'
+  endif
+  if (associated(EOSGasDensityEnergyPtr,EOSGasDensityEnergyGeneral) .and. &
+      associated(EOSGasEnergyPtr,EOSGasEnergyIdeal)) then
+    write(id,'(a29)',advance='no') 'gas enthalpy: '
+    write(id,'(a)') 'default, ideal'
+  endif
+  if (associated(EOSGasDensityEnergyPtr,EOSGasDensityEnergyGeneral) .and. &
+      associated(EOSGasEnergyPtr,EOSGasEnergyIdealMethane)) then
+    write(id,'(a29)',advance='no') 'gas enthalpy: '
+    write(id,'(a)') 'ideal methane'
+  endif
+  
+  ! henry's constant
+  if (associated(EOSGasHenryPtr,EOSGasHenryConstant)) then
+    write(id,'(a29)',advance='no') "henry's constant: "
+    write(word1,*) constant_henry
+    write(id,'(a)') 'constant, ' // trim(word1) 
+  endif
+  if (associated(EOSGasHenryPtr,EOSGasHenry_air)) then
+    write(id,'(a29)',advance='no') "henry's constant: "
+    write(id,'(a)') 'default, air'
+  endif
+  
+  write(id,'(a)') '---------------------------------------------------------&
+                  &-----------------------'
+  
+end subroutine EOSGasInputRecord
+
 ! ************************************************************************** !
 
 subroutine EOSGasTest(temp_low,temp_high,pres_low,pres_high, &
@@ -1519,7 +2174,7 @@ subroutine EOSGasTest(temp_low,temp_high,pres_low,pres_high, &
 
   allocate(temp(ntemp))
   temp = UNINITIALIZED_DOUBLE
-  allocate(pres(ntemp))
+  allocate(pres(npres))
   pres = UNINITIALIZED_DOUBLE
   allocate(density_kg(npres,ntemp))
   density_kg = UNINITIALIZED_DOUBLE
@@ -1536,25 +2191,29 @@ subroutine EOSGasTest(temp_low,temp_high,pres_low,pres_high, &
 
   if (uniform_pres) then
     do ipres = 1, npres
-      pres(ipres) = (pres_high-pres_low)/dble(npres-1) * (ipres-1) + pres_low
+      pres(ipres) = &
+        (pres_high-pres_low)/max(dble(npres-1),1.d0) * (ipres-1) + pres_low
     enddo
   else
     ln_high = log(pres_high)
     ln_low = log(pres_low)
     do ipres = 1, npres
-      pres(ipres) = exp((ln_high-ln_low)/dble(npres-1) * (ipres-1) + ln_low)
+      pres(ipres) = &
+        exp((ln_high-ln_low)/max(dble(npres-1),1.d0) * (ipres-1) + ln_low)
     enddo
   endif
 
   if (uniform_temp) then
     do itemp = 1, ntemp
-      temp(itemp) = (temp_high-temp_low)/dble(ntemp-1) * (itemp-1) + temp_low
+      temp(itemp) = &
+        (temp_high-temp_low)/max(dble(ntemp-1),1.d0) * (itemp-1) + temp_low
     enddo
   else
     ln_high = log(temp_high)
     ln_low = log(temp_low)
     do itemp = 1, ntemp
-      temp(itemp) = exp((ln_high-ln_low)/dble(ntemp-1) * (itemp-1) + ln_low)
+      temp(itemp) = &
+        exp((ln_high-ln_low)/max(dble(ntemp-1),1.d0) * (itemp-1) + ln_low)
     enddo
   endif
 
@@ -1635,7 +2294,7 @@ subroutine EOSGasTest(temp_low,temp_high,pres_low,pres_high, &
   endif
   open(unit=IUNIT_TEMP,file=string)
   header = 'T[C], P[Pa], &
-    &Density (' // trim(eos_density_name) // ') [kg/m^3], &
+    &Density (' // trim(eos_density_name) // ') [kmol/m^3], &
     &Enthalpy (' // trim(eos_energy_name) // ') [J/kmol], &
     &Internal Energy (' // trim(eos_energy_name) // ') [J/kmol], &
     &Viscosity (' // trim(eos_viscosity_name) // ') [Pa-s], &
@@ -1663,6 +2322,19 @@ subroutine EOSGasTest(temp_low,temp_high,pres_low,pres_high, &
   deallocate(henry)
 
 end subroutine EOSGasTest
+
+! ************************************************************************** !
+
+subroutine EOSGasDBaseDestroy()
+
+  implicit none
+
+  !destroy databases
+  call EOSDatabaseDestroy(eos_dbase)
+
+  nullify(pvt_table)
+
+end subroutine EOSGasDBaseDestroy
 
 ! ************************************************************************** !
 

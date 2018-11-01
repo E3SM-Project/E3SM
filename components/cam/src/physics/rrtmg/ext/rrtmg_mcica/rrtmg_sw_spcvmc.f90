@@ -417,9 +417,7 @@
 !               zomco(jk) = zomco(jk) / ztauo(jk)
 
 ! Clear-sky optical parameters including aerosols
-#ifdef APPLY_POST_DECK_BUGFIXES
                if (ztaug(ikl,iw) .lt. 0.0_r8) ztaug(ikl,iw) = 0.0_r8
-#endif
 
                ztauc(jk) = ztaur(ikl,iw) + ztaug(ikl,iw) + ptaua(ikl,ibm)
                zomcc(jk) = ztaur(ikl,iw) * 1.0_r8 + ptaua(ikl,ibm) * pomga(ikl,ibm)

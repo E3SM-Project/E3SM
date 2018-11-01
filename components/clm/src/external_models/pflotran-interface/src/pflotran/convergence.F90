@@ -1,5 +1,7 @@
 module Convergence_module
 
+#include "petsc/finclude/petscsnes.h"
+  use petscsnes
   use Solver_module
   use Option_module
   use Grid_module
@@ -9,13 +11,6 @@ module Convergence_module
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscksp.h"
-#include "petsc/finclude/petscsnes.h"
-#include "petsc/finclude/petsclog.h"
 
   type, public :: convergence_context_type
     type(solver_type), pointer :: solver
@@ -60,8 +55,8 @@ end function ConvergenceContextCreate
 
 ! ************************************************************************** !
 
-subroutine ConvergenceTest(snes_,i_iteration,xnorm,unorm,fnorm,reason,context, &
-                           ierr)
+subroutine ConvergenceTest(snes_,i_iteration,xnorm,unorm,fnorm,reason, &
+                           grid,option,solver,ierr)
   ! 
   ! User defined convergence test
   ! 
@@ -77,11 +72,10 @@ subroutine ConvergenceTest(snes_,i_iteration,xnorm,unorm,fnorm,reason,context, &
   PetscReal :: unorm ! 2-norm of update. PETSc refers to this as snorm
   PetscReal :: fnorm ! 2-norm of updated residual
   SNESConvergedReason :: reason
-  type(convergence_context_type) :: context
   PetscErrorCode :: ierr
-  
-  type(solver_type), pointer :: solver
-  type(option_type), pointer :: option
+  type(solver_type) :: solver
+  type(option_type) :: option
+  !TODO(geh): remove calculations based on grid to something for pm specific
   type(grid_type), pointer :: grid
   
   Vec :: solution_vec
@@ -152,9 +146,9 @@ subroutine ConvergenceTest(snes_,i_iteration,xnorm,unorm,fnorm,reason,context, &
 !              SNES_DIVERGED_LOCAL_MIN           = -8, /* || J^T b || is small, implies converged to local minimum of F() */
 !              SNES_CONVERGED_ITERATING          =  0} SNESConvergedReason;
 
-  solver => context%solver
-  option => context%option
-  grid => context%grid
+  residual_vec = tVec(0)
+  solution_vec = tVec(0)
+  update_vec = tVec(0)
 
   if (option%use_touch_options) then
     string = 'detailed_convergence'
@@ -170,7 +164,7 @@ subroutine ConvergenceTest(snes_,i_iteration,xnorm,unorm,fnorm,reason,context, &
   !geh: We must check the convergence here as i_iteration initializes
   !     snes->ttol for subsequent iterations.
   call SNESConvergedDefault(snes_,i_iteration,xnorm,unorm,fnorm,reason, &
-                            PETSC_NULL_OBJECT,ierr);CHKERRQ(ierr)
+                            0,ierr);CHKERRQ(ierr)
 #if 0
   if (i_iteration == 0 .and. &
       option%print_screen_flag .and. solver%print_convergence) then
@@ -192,7 +186,7 @@ subroutine ConvergenceTest(snes_,i_iteration,xnorm,unorm,fnorm,reason,context, &
 !        inorm_residual > solver%max_norm) then
   
   if (option%out_of_table) then
-    reason = -9
+    reason = -19
   endif
    
   if (option%converged) then
@@ -200,11 +194,27 @@ subroutine ConvergenceTest(snes_,i_iteration,xnorm,unorm,fnorm,reason,context, &
     ! set back to false
     option%converged = PETSC_FALSE
   endif
+
+  if (option%convergence /= CONVERGENCE_OFF) then
+    select case(option%convergence)
+      case(CONVERGENCE_CUT_TIMESTEP)
+        reason = -88
+      case(CONVERGENCE_KEEP_ITERATING)
+        reason = 0
+      case(CONVERGENCE_FORCE_ITERATION)
+        reason = 0
+      case(CONVERGENCE_CONVERGED)
+        reason = 999
+    end select
+  endif
+  ! must turn off after each convergence check as a subsequent process
+  ! model may not user this custom test
+  option%convergence = CONVERGENCE_OFF
     
 !  if (reason <= 0 .and. solver%check_infinity_norm) then
   if (solver%check_infinity_norm) then
   
-    call SNESGetFunction(snes_,residual_vec,PETSC_NULL_OBJECT, &
+    call SNESGetFunction(snes_,residual_vec,PETSC_NULL_FUNCTION, &
                          PETSC_NULL_INTEGER,ierr);CHKERRQ(ierr)
 
     call VecNorm(residual_vec,NORM_INFINITY,inorm_residual,ierr);CHKERRQ(ierr)
@@ -228,7 +238,7 @@ subroutine ConvergenceTest(snes_,i_iteration,xnorm,unorm,fnorm,reason,context, &
     endif
     
     if (inorm_residual > solver%max_norm) then
-      reason = -10
+      reason = -20
     endif
  
     ! This is to check if the secondary continuum residual convergences
@@ -250,9 +260,9 @@ subroutine ConvergenceTest(snes_,i_iteration,xnorm,unorm,fnorm,reason,context, &
     if (option%print_screen_flag .and. solver%print_convergence) then
       i = int(reason)
       select case(i)
-        case(-10)
+        case(-20)
           string = 'max_norm'
-        case(-9)
+        case(-19)
           string = 'out_of_EOS_table'
         case(2)
           string = 'atol'
@@ -320,7 +330,7 @@ subroutine ConvergenceTest(snes_,i_iteration,xnorm,unorm,fnorm,reason,context, &
     if (option%print_screen_flag .and. solver%print_convergence) then
       i = int(reason)
       select case(i)
-        case(-9)
+        case(-19)
           string = 'out_of_EOS_table'
         case(2)
           string = 'atol'
@@ -351,11 +361,11 @@ subroutine ConvergenceTest(snes_,i_iteration,xnorm,unorm,fnorm,reason,context, &
     endif
   endif    
 
-  if (solver%print_detailed_convergence) then
+  if (solver%print_detailed_convergence .and. associated(grid)) then
 
     call SNESGetSolution(snes_,solution_vec,ierr);CHKERRQ(ierr)
     ! the ctx object should really be PETSC_NULL_OBJECT.  A bug in petsc
-    call SNESGetFunction(snes_,residual_vec,PETSC_NULL_OBJECT, &
+    call SNESGetFunction(snes_,residual_vec,PETSC_NULL_FUNCTION, &
                          PETSC_NULL_INTEGER, &
                          ierr);CHKERRQ(ierr)
     call SNESGetSolutionUpdate(snes_,update_vec,ierr);CHKERRQ(ierr)

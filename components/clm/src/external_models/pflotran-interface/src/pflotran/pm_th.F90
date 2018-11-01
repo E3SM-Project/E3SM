@@ -1,5 +1,7 @@
 module PM_TH_class
 
+#include "petsc/finclude/petscsnes.h"
+  use petscsnes
   use PM_Base_class
   use PM_Subsurface_Flow_class
 !geh: using TH_module here fails with gfortran (internal compiler error)
@@ -13,14 +15,6 @@ module PM_TH_class
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
-#include "petsc/finclude/petscsnes.h"
 
   type, public, extends(pm_subsurface_flow_type) :: pm_th_type
     class(communicator_type), pointer :: commN
@@ -40,6 +34,7 @@ module PM_TH_class
     procedure, public :: UpdateAuxVars => PMTHUpdateAuxVars
     procedure, public :: MaxChange => PMTHMaxChange
     procedure, public :: ComputeMassBalance => PMTHComputeMassBalance
+    procedure, public :: InputRecord => PMTHInputRecord
     procedure, public :: Destroy => PMTHDestroy
   end type pm_th_type
   
@@ -120,7 +115,8 @@ subroutine PMTHRead(this,input)
     call StringToUpper(word)
 
     found = PETSC_FALSE
-    call PMSubsurfaceFlowReadSelectCase(this,input,word,found,option)
+    call PMSubsurfaceFlowReadSelectCase(this,input,word,found, &
+                                        error_string,option)
     if (found) cycle
     
     select case(trim(word))
@@ -255,6 +251,8 @@ subroutine PMTHPreSolve(this)
   
   class(pm_th_type) :: this
 
+  call PMSubsurfaceFlowPreSolve(this)
+
 end subroutine PMTHPreSolve
 
 ! ************************************************************************** !
@@ -275,7 +273,8 @@ end subroutine PMTHPostSolve
 ! ************************************************************************** !
 
 subroutine PMTHUpdateTimestep(this,dt,dt_min,dt_max,iacceleration, &
-                              num_newton_iterations,tfac)
+                              num_newton_iterations,tfac, &
+                              time_step_max_growth_factor)
   ! 
   ! This routine
   ! 
@@ -292,6 +291,7 @@ subroutine PMTHUpdateTimestep(this,dt,dt_min,dt_max,iacceleration, &
   PetscInt :: iacceleration
   PetscInt :: num_newton_iterations
   PetscReal :: tfac(:)
+  PetscReal :: time_step_max_growth_factor
   
   PetscReal :: fac
   PetscReal :: ut
@@ -332,11 +332,11 @@ subroutine PMTHUpdateTimestep(this,dt,dt_min,dt_max,iacceleration, &
     dtt = min(dt_tfac,dt_u)
   endif
 
-  if (dtt > 2.d0 * dt) dtt = 2.d0 * dt
+  dtt = min(time_step_max_growth_factor*dt,dtt)
   if (dtt > dt_max) dtt = dt_max
   ! geh: There used to be code here that cut the time step if it is too
   !      large relative to the simulation time.  This has been removed.
-  dtt = max(dtt,dt_min/10.d0)
+  dtt = max(dtt,dt_min)
   dt = dtt
 
   call RealizationLimitDTByCFL(this%realization,this%cfl_governor,dt)
@@ -764,6 +764,32 @@ subroutine PMTHComputeMassBalance(this,mass_balance_array)
   call THComputeMassBalance(this%realization,mass_balance_array)
 
 end subroutine PMTHComputeMassBalance
+
+! ************************************************************************** !
+
+subroutine PMTHInputRecord(this)
+  ! 
+  ! Writes ingested information to the input record file.
+  ! 
+  ! Author: Jenn Frederick, SNL
+  ! Date: 03/21/2016
+  ! 
+  
+  implicit none
+  
+  class(pm_th_type) :: this
+
+  character(len=MAXWORDLENGTH) :: word
+  PetscInt :: id
+
+  id = INPUT_RECORD_UNIT
+
+  write(id,'(a29)',advance='no') 'pm: '
+  write(id,'(a)') this%name
+  write(id,'(a29)',advance='no') 'mode: '
+  write(id,'(a)') 'thermo-hydro'
+
+end subroutine PMTHInputRecord
 
 ! ************************************************************************** !
 

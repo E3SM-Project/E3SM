@@ -2,23 +2,25 @@ module Option_Flow_module
 
 ! IMPORTANT NOTE: This module can have no dependencies on other modules!!!
  
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use PFLOTRAN_Constants_module
 
   implicit none
 
   private
 
-#include "petsc/finclude/petscsys.h"
-
-
   type, public :: flow_option_type 
   
     PetscBool :: store_fluxes
     PetscBool :: transient_porosity
+    PetscBool :: creep_closure_on
+    PetscBool :: fracture_on
     PetscBool :: only_vertical_flow
     PetscBool :: density_depends_on_salinity
     PetscBool :: quasi_3d
     PetscBool :: numerical_derivatives
+    PetscBool :: numerical_derivatives_compare
     PetscBool :: only_energy_eq
 
   end type flow_option_type
@@ -99,10 +101,13 @@ subroutine OptionFlowInitRealization(option)
     
   option%store_fluxes = PETSC_FALSE
   option%transient_porosity = PETSC_FALSE
+  option%creep_closure_on = PETSC_FALSE
+  option%fracture_on = PETSC_FALSE
   option%only_vertical_flow = PETSC_FALSE
   option%density_depends_on_salinity = PETSC_FALSE
   option%quasi_3d = PETSC_FALSE
   option%numerical_derivatives = PETSC_FALSE
+  option%numerical_derivatives_compare = PETSC_FALSE
   option%only_energy_eq = PETSC_FALSE
 
 end subroutine OptionFlowInitRealization

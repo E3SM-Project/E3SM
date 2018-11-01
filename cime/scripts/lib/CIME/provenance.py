@@ -5,7 +5,7 @@ Library for saving build/run provenance.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import touch, gzip_existing_file, SharedArea, copy_umask, convert_to_babylonian_time, get_current_commit
+from CIME.utils import touch, gzip_existing_file, SharedArea, copy_umask, convert_to_babylonian_time, get_current_commit, indent_string, run_cmd, run_cmd_no_fail
 
 import tarfile, getpass, signal, glob, shutil, sys
 
@@ -80,10 +80,30 @@ def _save_build_provenance_cesm(case, lid): # pylint: disable=unused-argument
     version = case.get_value("MODEL_VERSION")
     # version has already been recorded
     srcroot = case.get_value("SRCROOT")
-    manic = os.path.join(srcroot, "manage_externals","checkout_externals")
+    manic = os.path.join("manage_externals","checkout_externals")
+    manic_full_path = os.path.join(srcroot, manic)
     out = None
-    if os.path.exists(manic):
-        out = run_cmd_no_fail(manic + " --status --verbose --no-logging", from_dir=srcroot)
+    if os.path.exists(manic_full_path):
+        args = " --status --verbose --no-logging"
+        stat, out, err = run_cmd(manic_full_path + args, from_dir=srcroot)
+        errmsg = """Error gathering provenance information from manage_externals.
+
+manage_externals error message:
+{err}
+
+manage_externals output:
+{out}
+
+To solve this, either:
+
+(1) Find and fix the problem: From {srcroot}, try to get this command to work:
+    {manic}{args}
+
+(2) If you don't need provenance information, rebuild with --skip-provenance-check
+""".format(out=indent_string(out, 4), err=indent_string(err, 4),
+           srcroot=srcroot, manic=manic, args=args)
+        expect(stat==0,errmsg)
+
     caseroot = case.get_value("CASEROOT")
     with open(os.path.join(caseroot, "CaseStatus"), "a") as fd:
         if version is not None and version != "unknown":
@@ -342,8 +362,8 @@ def _save_postrun_timing_e3sm(case, lid):
             globs_to_copy.append("%s*run*%s" % (case.get_value("CASE"), job_id))
 
     globs_to_copy.append("logs/run_environment.txt.{}".format(lid))
-    globs_to_copy.append("logs/e3sm.log.{}.gz".format(lid))
-    globs_to_copy.append("logs/cpl.log.{}.gz".format(lid))
+    globs_to_copy.append(os.path.join(rundir, "e3sm.log.{}.gz".format(lid)))
+    globs_to_copy.append(os.path.join(rundir, "cpl.log.{}.gz".format(lid)))
     globs_to_copy.append("timing/*.{}*".format(lid))
     globs_to_copy.append("CaseStatus")
 

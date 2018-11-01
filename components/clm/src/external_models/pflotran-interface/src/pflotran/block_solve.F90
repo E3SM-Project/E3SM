@@ -1,7 +1,7 @@
 module Block_Solve_module
 
 #include "petsc/finclude/petscsys.h"
-  
+  use petscsys
   private
   
   public :: bl3dfac, &

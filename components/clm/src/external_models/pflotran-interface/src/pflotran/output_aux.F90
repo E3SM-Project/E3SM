@@ -1,13 +1,13 @@
 module Output_Aux_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
+
   use PFLOTRAN_Constants_module
 
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
-!#include "petsc/finclude/petscviewer.h"  
 
   PetscInt, parameter, public :: INSTANTANEOUS_VARS = 1
   PetscInt, parameter, public :: AVERAGED_VARS = 2
@@ -37,6 +37,7 @@ module Output_Aux_module
     PetscBool :: print_final_massbal
   
     PetscBool :: print_hdf5
+    PetscBool :: extend_hdf5_time_format
     PetscBool :: print_hdf5_vel_cent
     PetscBool :: print_hdf5_vel_face
     PetscBool :: print_single_h5_file
@@ -96,13 +97,14 @@ module Output_Aux_module
     PetscBool :: print_hydrograph
     PetscInt :: surf_xmf_vert_len
 
-    PetscReal :: print_vel_unitconv  ! velocity unit coversion - default 1.0, i.e. in 'm/s'
   end type output_option_type
   
   type, public :: output_variable_list_type
     type(output_variable_type), pointer :: first
     type(output_variable_type), pointer :: last
     PetscInt :: nvars
+    PetscBool :: flow_vars
+    PetscBool :: energy_vars
   end type output_variable_list_type
   
   type, public :: output_variable_type
@@ -166,6 +168,7 @@ module Output_Aux_module
             OutputWriteVariableListToHeader, &
             OutputVariableToCategoryString, &
             OutputVariableAppendDefaults, &
+            OpenAndWriteInputRecord, &
             OutputOptionDestroy, &
             OutputVariableListDestroy, &
             CheckpointOptionCreate, &
@@ -191,6 +194,7 @@ function OutputOptionCreate()
   
   allocate(output_option)
   output_option%print_hdf5 = PETSC_FALSE
+  output_option%extend_hdf5_time_format = PETSC_FALSE
   output_option%print_hdf5_vel_cent = PETSC_FALSE
   output_option%print_hdf5_vel_face = PETSC_FALSE
   output_option%print_single_h5_file = PETSC_TRUE
@@ -250,8 +254,6 @@ function OutputOptionCreate()
   
   output_option%print_hydrograph = PETSC_FALSE
 
-  output_option%print_vel_unitconv = 1.d0
-
   OutputOptionCreate => output_option
   
 end function OutputOptionCreate
@@ -277,15 +279,22 @@ function OutputOptionDuplicate(output_option)
   allocate(output_option2)
 
   output_option2%print_hdf5 = output_option%print_hdf5
+  output_option2%extend_hdf5_time_format = &
+    output_option%extend_hdf5_time_format
   output_option2%print_hdf5_vel_cent = output_option%print_hdf5_vel_cent
   output_option2%print_hdf5_vel_face = output_option%print_hdf5_vel_face
   output_option2%print_single_h5_file = output_option%print_single_h5_file
   output_option2%times_per_h5_file = output_option%times_per_h5_file
-  output_option2%print_hdf5_mass_flowrate = output_option%print_hdf5_mass_flowrate
-  output_option2%print_hdf5_energy_flowrate = output_option%print_hdf5_energy_flowrate
-  output_option2%print_hdf5_aveg_mass_flowrate = output_option%print_hdf5_aveg_mass_flowrate
-  output_option2%print_hdf5_aveg_energy_flowrate = output_option%print_hdf5_aveg_energy_flowrate
-  output_option2%print_explicit_flowrate = output_option%print_explicit_flowrate
+  output_option2%print_hdf5_mass_flowrate = &
+    output_option%print_hdf5_mass_flowrate
+  output_option2%print_hdf5_energy_flowrate = &
+    output_option%print_hdf5_energy_flowrate
+  output_option2%print_hdf5_aveg_mass_flowrate = &
+    output_option%print_hdf5_aveg_mass_flowrate
+  output_option2%print_hdf5_aveg_energy_flowrate = &
+    output_option%print_hdf5_aveg_energy_flowrate
+  output_option2%print_explicit_flowrate = &
+    output_option%print_explicit_flowrate
   output_option2%print_tecplot = output_option%print_tecplot
   output_option2%tecplot_format = output_option%tecplot_format
   output_option2%print_tecplot_vel_cent = output_option%print_tecplot_vel_cent
@@ -305,17 +314,24 @@ function OutputOptionDuplicate(output_option)
   output_option2%plot_number = output_option%plot_number
   output_option2%screen_imod = output_option%screen_imod
   output_option2%output_file_imod = output_option%output_file_imod
-  output_option2%periodic_snap_output_ts_imod = output_option%periodic_snap_output_ts_imod
-  output_option2%periodic_obs_output_ts_imod = output_option%periodic_obs_output_ts_imod
-  output_option2%periodic_msbl_output_ts_imod = output_option%periodic_msbl_output_ts_imod
-  output_option2%periodic_snap_output_time_incr = output_option%periodic_snap_output_time_incr
-  output_option2%periodic_obs_output_time_incr = output_option%periodic_obs_output_time_incr
-  output_option2%periodic_msbl_output_time_incr = output_option%periodic_msbl_output_time_incr
+  output_option2%periodic_snap_output_ts_imod = &
+    output_option%periodic_snap_output_ts_imod
+  output_option2%periodic_obs_output_ts_imod = &
+    output_option%periodic_obs_output_ts_imod
+  output_option2%periodic_msbl_output_ts_imod = &
+    output_option%periodic_msbl_output_ts_imod
+  output_option2%periodic_snap_output_time_incr = &
+    output_option%periodic_snap_output_time_incr
+  output_option2%periodic_obs_output_time_incr = &
+    output_option%periodic_obs_output_time_incr
+  output_option2%periodic_msbl_output_time_incr = &
+    output_option%periodic_msbl_output_time_incr
   output_option2%plot_name = output_option%plot_name
   output_option2%aveg_var_time = output_option%aveg_var_time
   output_option2%aveg_var_dtime = output_option%aveg_var_dtime
   output_option2%xmf_vert_len = output_option%xmf_vert_len
-  output_option2%filter_non_state_variables = output_option%filter_non_state_variables
+  output_option2%filter_non_state_variables = &
+    output_option%filter_non_state_variables
 
   nullify(output_option2%output_variable_list)
   nullify(output_option2%output_snap_variable_list)
@@ -343,8 +359,6 @@ function OutputOptionDuplicate(output_option)
   output_option2%tunit = output_option%tunit
   
   output_option2%print_hydrograph = output_option%print_hydrograph
-
-  output_option2%print_vel_unitconv = output_option%print_vel_unitconv
 
   OutputOptionDuplicate => output_option2
   
@@ -521,6 +535,8 @@ function OutputVariableListCreate()
   nullify(output_variable_list%first)
   nullify(output_variable_list%last)
   output_variable_list%nvars = 0
+  output_variable_list%flow_vars = PETSC_TRUE
+  output_variable_list%energy_vars = PETSC_TRUE
   
   OutputVariableListCreate => output_variable_list
   
@@ -884,6 +900,63 @@ subroutine OutputVariableAppendDefaults(output_variable_list,option)
   call OutputVariableAddToList(output_variable_list,output_variable)
   
 end subroutine OutputVariableAppendDefaults
+
+! ************************************************************************** !
+
+subroutine OpenAndWriteInputRecord(option)
+  ! 
+  ! Opens the input record file and begins to write to it.
+  ! 
+  ! Author: Jenn Frederick, SNL
+  ! Date: 03/17/2016
+  ! 
+
+  use Option_module
+
+  implicit none
+  
+  type(option_type), pointer :: option
+
+  character(len=MAXWORDLENGTH) :: word
+  character(len=MAXSTRINGLENGTH) :: filename
+  character(len=8) :: date_word
+  character(len=10) :: time_word
+  character(len=5) :: zone_word
+  PetscInt :: id
+
+  id = option%fid_inputrecord
+  ! the input record file has a .rec extension:
+  filename = trim(option%global_prefix) // trim(option%group_prefix) // '.rec'
+  open(unit=id,file=filename,action="write",status="replace")
+!geh: this call does not work with IBM
+!  call fdate(word)
+  call date_and_time(date_word,time_word,zone_word)
+  if (OptionPrintToFile(option)) then
+    write(id,'(a)') '---------------------------------------------------------&
+                    &-----------------------'
+    write(id,'(a)') '---------------------------------------------------------&
+                    &-----------------------'
+    write(id,'(a)') ' PFLOTRAN INPUT RECORD    ' // date_word(5:6) // '/' //  &
+                    date_word(7:8) // '/' // date_word(1:4) // ' ' //         &
+                    time_word(1:2) // ':' // time_word(3:4) // ' (' //        &
+                    zone_word(1:3) // ':' // zone_word(4:5) // ' UTC)'
+    write(id,'(a)') '---------------------------------------------------------&
+                    &-----------------------'
+    write(id,'(a)') '---------------------------------------------------------&
+                    &-----------------------'
+  
+    write(id,'(a18)',advance='no') 'input file: '  
+    write(id,*) trim(option%global_prefix) // '.in' 
+    
+    write(id,'(a18)',advance='no') 'group: ' 
+    write(id,*) trim(option%group_prefix)
+  
+    write(word,*) option%global_commsize
+    write(id,'(a18)',advance='no') 'n processors: ' 
+    write(id,*) trim(adjustl(word))
+  endif
+
+end subroutine OpenAndWriteInputRecord
 
 ! ************************************************************************** !
 

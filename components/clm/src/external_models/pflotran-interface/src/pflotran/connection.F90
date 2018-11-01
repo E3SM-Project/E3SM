@@ -1,13 +1,12 @@
 module Connection_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use PFLOTRAN_Constants_module
 
   implicit none
 
-#include "petsc/finclude/petscsys.h"
-
   private
-
   type, public :: connection_set_type
     PetscInt :: id
     PetscInt :: itype                  ! connection type (boundary, internal, source sink

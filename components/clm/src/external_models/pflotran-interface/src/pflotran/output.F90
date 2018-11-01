@@ -1,37 +1,24 @@
 module Output_module
 
+#include "petsc/finclude/petscdm.h"
+  use petscdm
   use Logging_module 
   use Output_Aux_module
 
   use Output_HDF5_module
-  use Output_Tecplot_module
-  use Output_VTK_module
   use Output_Observation_module
   
   use PFLOTRAN_Constants_module
-
+  use Utility_module, only : Equal
+  
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscdm.h"
-#include "petsc/finclude/petscdm.h90"
-#include "petsc/finclude/petsclog.h"
 
 #if defined(SCORPIO_WRITE)
   include "scorpiof.h"
 #endif
 
-  PetscInt, parameter :: TECPLOT_INTEGER = 0
-  PetscInt, parameter :: TECPLOT_REAL = 1
-
-  PetscInt, parameter :: VTK_INTEGER = 0
-  PetscInt, parameter :: VTK_REAL = 1
-
-  PetscInt, parameter :: TECPLOT_FILE = 0
   PetscInt, parameter ::  HDF5_FILE = 1
 
   
@@ -46,7 +33,8 @@ module Output_module
             OutputVariableRead, &
             OutputFileRead, &
             OutputInputRecord, &
-            OutputEnsureVariablesExist
+            OutputEnsureVariablesExist, &
+            OutputFindNaNOrInfInVec
 
 contains
 
@@ -77,7 +65,8 @@ end subroutine OutputInit
 
 ! ************************************************************************** !
 
-subroutine OutputFileRead(realization,output_option,waypoint_list,block_name)
+subroutine OutputFileRead(input,realization,output_option, &
+                          waypoint_list,block_name)
   ! 
   ! Reads the *_FILE block within the OUTPUT block.
   ! 
@@ -99,12 +88,12 @@ subroutine OutputFileRead(realization,output_option,waypoint_list,block_name)
 
   implicit none
 
+  type(input_type), pointer :: input
   class(realization_subsurface_type), pointer :: realization
   type(output_option_type), pointer :: output_option
   type(waypoint_list_type), pointer :: waypoint_list
   character(len=*) :: block_name
   
-  type(input_type), pointer :: input
   type(option_type), pointer :: option
   type(patch_type), pointer :: patch
   type(grid_type), pointer :: grid
@@ -124,16 +113,13 @@ subroutine OutputFileRead(realization,output_option,waypoint_list,block_name)
   PetscBool :: fluxes
   PetscBool :: mass_flowrate, energy_flowrate
   PetscBool :: aveg_mass_flowrate, aveg_energy_flowrate
-  PetscReal :: vel_unitconv
 
   option => realization%option
-  input => realization%input
   patch => realization%patch
   if (associated(patch)) grid => patch%grid
 
   vel_cent = PETSC_FALSE
   vel_face = PETSC_FALSE
-  vel_unitconv = 1.0d0
   fluxes = PETSC_FALSE
   mass_flowrate = PETSC_FALSE
   energy_flowrate = PETSC_FALSE
@@ -288,7 +274,6 @@ subroutine OutputFileRead(realization,output_option,waypoint_list,block_name)
                 call InputErrorMsg(input,option,'start time',string)
                 call InputReadWord(input,option,word,PETSC_TRUE)
                 call InputErrorMsg(input,option,'start time units',string)
-                internal_units = 'sec'
                 units_conversion = UnitsConvertToInternal(word, &
                      internal_units,option) 
                 temp_real = temp_real * units_conversion
@@ -301,6 +286,8 @@ subroutine OutputFileRead(realization,output_option,waypoint_list,block_name)
                 call InputErrorMsg(input,option,'end time',string)
                 call InputReadWord(input,option,word,PETSC_TRUE)
                 call InputErrorMsg(input,option,'end time units',string)
+                units_conversion = UnitsConvertToInternal(word, &
+                     internal_units,option) 
                 temp_real2 = temp_real2 * units_conversion
                 select case(trim(block_name))
                   case('SNAPSHOT_FILE')
@@ -438,33 +425,6 @@ subroutine OutputFileRead(realization,output_option,waypoint_list,block_name)
         !.............
           case ('MAD')
             output_option%print_mad = PETSC_TRUE
-        !.................
-          case ('TECPLOT')
-            string = trim(string) // ',TECPLOT'
-            output_option%print_tecplot = PETSC_TRUE
-            call InputReadWord(input,option,word,PETSC_TRUE)
-            call InputErrorMsg(input,option,'TECPLOT format',string) 
-            call StringToUpper(word)
-            select case(trim(word))
-              case('POINT')
-                output_option%tecplot_format = TECPLOT_POINT_FORMAT
-              case('BLOCK')
-                output_option%tecplot_format = TECPLOT_BLOCK_FORMAT
-              case('FEBRICK')
-                output_option%tecplot_format = TECPLOT_FEBRICK_FORMAT
-              case default
-                call InputKeywordUnrecognized(word,string,option)
-            end select
-            if (output_option%tecplot_format == TECPLOT_POINT_FORMAT &
-                 .and. option%mycommsize > 1) then
-              output_option%tecplot_format = TECPLOT_BLOCK_FORMAT
-            endif
-            if (grid%itype == IMPLICIT_UNSTRUCTURED_GRID) then
-              output_option%tecplot_format = TECPLOT_FEBRICK_FORMAT
-            endif
-        !.............
-          case ('VTK')
-            output_option%print_vtk = PETSC_TRUE
         !.............
           case default
             call InputKeywordUnrecognized(word,string,option)
@@ -510,15 +470,6 @@ subroutine OutputFileRead(realization,output_option,waypoint_list,block_name)
         vel_face = PETSC_TRUE
 
 !...................
-      ! in case default 'm/s' unit for velocity is NOT good for data processing,
-      ! may need to do conversion (e.g. velocity is so tiny for VISIT reading in)
-      ! (F.-M. Yuan: 2017-04-20)
-      case('VELOCITY_UNIT_CONVERSION')
-        call InputReadDouble(input,option, vel_unitconv)
-        string = 'OUTPUT,VELOCITY_UNIT_CONVERSION'
-        call InputErrorMsg(input,option,'velocity unit conversion',string)
-
-!...................
       case('FLUXES')
         fluxes = PETSC_TRUE
       case('FLOWRATES','FLOWRATE')
@@ -551,8 +502,6 @@ subroutine OutputFileRead(realization,output_option,waypoint_list,block_name)
          output_option%print_hdf5_vel_cent = PETSC_TRUE
     if (output_option%print_vtk) &
          output_option%print_vtk_vel_cent = PETSC_TRUE
-    if (output_option%print_hdf5) &
-         output_option%print_vel_unitconv = vel_unitconv  ! only do this when in hdf5 format
   endif
 
   if (vel_face) then
@@ -560,8 +509,6 @@ subroutine OutputFileRead(realization,output_option,waypoint_list,block_name)
          output_option%print_tecplot_vel_face = PETSC_TRUE
     if (output_option%print_hdf5) &
          output_option%print_hdf5_vel_face = PETSC_TRUE
-    if (output_option%print_hdf5) &
-         output_option%print_vel_unitconv = vel_unitconv  ! only do this when in hdf5 format
   endif
 
   if (fluxes) then
@@ -569,7 +516,7 @@ subroutine OutputFileRead(realization,output_option,waypoint_list,block_name)
   endif
 
   if(output_option%aveg_output_variable_list%nvars>0) then
-    if(output_option%periodic_snap_output_time_incr==0.d0) then
+    if(Equal(output_option%periodic_snap_output_time_incr,0.d0)) then
       option%io_buffer = 'Keyword: AVERAGE_VARIABLES defined without &
                          &PERIODIC TIME being set.'
       call printErrMsg(option)
@@ -589,7 +536,7 @@ subroutine OutputFileRead(realization,output_option,waypoint_list,block_name)
       output_option%print_hdf5_aveg_mass_flowrate = aveg_mass_flowrate
       output_option%print_hdf5_aveg_energy_flowrate = aveg_energy_flowrate
       if(aveg_mass_flowrate.or.aveg_energy_flowrate) then
-        if(output_option%periodic_snap_output_time_incr==0.d0) then
+        if(Equal(output_option%periodic_snap_output_time_incr,0.d0)) then
           option%io_buffer = 'Keyword: AVEGRAGE_FLOWRATES/&
                              &AVEGRAGE_MASS_FLOWRATE/ENERGY_FLOWRATE &
                              &defined without PERIODIC TIME being set.'
@@ -691,6 +638,12 @@ subroutine OutputVariableRead(input,option,output_variable_list)
         call OutputVariableAddToList(output_variable_list,name, &
                                      OUTPUT_GENERIC,units, &
                                      LIQUID_MOBILITY)
+      case ('LIQUID_VISCOSITY')
+        name = 'Liquid Viscosity'
+        units = 'Pa-s'
+        call OutputVariableAddToList(output_variable_list,name, &
+                                     OUTPUT_GENERIC,units, &
+                                     LIQUID_VISCOSITY)
       case ('LIQUID_ENERGY')
         name = 'Liquid Energy'
         call InputReadWord(input,option,word,PETSC_TRUE)
@@ -801,6 +754,12 @@ subroutine OutputVariableRead(input,option,output_variable_list)
         call OutputVariableAddToList(output_variable_list,name, &
                                      OUTPUT_GENERIC,units, &
                                      OIL_MOBILITY)
+      case ('OIL_VISCOSITY')
+        name = 'Oil Viscosity'
+        units = 'Pa-s'
+        call OutputVariableAddToList(output_variable_list,name, &
+                                     OUTPUT_GENERIC,units, &
+                                     OIL_VISCOSITY)
       case ('OIL_ENERGY')
         name = 'Oil Energy'
         call InputReadWord(input,option,word,PETSC_TRUE)
@@ -820,6 +779,21 @@ subroutine OutputVariableRead(input,option,output_variable_list)
         call OutputVariableAddToList(output_variable_list,name, &
                                      OUTPUT_GENERIC,units, &
                                      OIL_ENERGY,temp_int)
+
+      case ('BUBBLE_POINT')
+        name = 'Bubble Point'
+        units = 'Pa'
+        call OutputVariableAddToList(output_variable_list,name, &
+                                     OUTPUT_PRESSURE,units, &
+                                     BUBBLE_POINT)
+
+      case ('ICE_SATURATION')
+        name = 'Ice Saturation'
+        units = ''
+        call OutputVariableAddToList(output_variable_list,name, &
+                                     OUTPUT_SATURATION,units, &
+                                     ICE_SATURATION)
+
       case ('LIQUID_MOLE_FRACTIONS')
         name = 'X_g^l'
         units = ''
@@ -965,6 +939,24 @@ subroutine OutputVariableRead(input,option,output_variable_list)
         call OutputVariableAddToList(output_variable_list,name, &
                                      OUTPUT_GENERIC,units, &
                                      PERMEABILITY_Z)
+      case ('GAS_PERMEABILITY','GAS_PERMEABILITY_X')
+        units = 'm^2'
+        name = 'Gas Permeability X'
+        call OutputVariableAddToList(output_variable_list,name, &
+                                     OUTPUT_GENERIC,units, &
+                                     GAS_PERMEABILITY)
+      case ('GAS_PERMEABILITY_Y')
+        units = 'm^2'
+        name = 'Gas Permeability Y'
+        call OutputVariableAddToList(output_variable_list,name, &
+                                     OUTPUT_GENERIC,units, &
+                                     GAS_PERMEABILITY_Y)
+      case ('GAS_PERMEABILITY_Z')
+        units = 'm^2'
+        name = 'Gas Permeability Z'
+        call OutputVariableAddToList(output_variable_list,name, &
+                                     OUTPUT_GENERIC,units, &
+                                     GAS_PERMEABILITY_Z)
       case ('SOIL_COMPRESSIBILITY')
         units = ''
         name = 'Compressibility'
@@ -1009,6 +1001,13 @@ subroutine OutputVariableRead(input,option,output_variable_list)
         output_variable%plot_only = PETSC_TRUE ! toggle output off for observation
         output_variable%iformat = 1 ! integer
         call OutputVariableAddToList(output_variable_list,output_variable)
+      case ('FRACTURE')
+        units = ''
+        name = 'Fracture Flag'
+        output_variable => OutputVariableCreate(name,OUTPUT_DISCRETE, &
+                                                units,FRACTURE)
+        output_variable%iformat = 1 ! integer
+        call OutputVariableAddToList(output_variable_list,output_variable)
       case ('MATERIAL_ID_KLUDGE_FOR_VISIT')
         units = ''
         name = 'Kludged material ids for VisIt'
@@ -1017,6 +1016,10 @@ subroutine OutputVariableRead(input,option,output_variable_list)
         output_variable%plot_only = PETSC_TRUE ! toggle output off for observation
         output_variable%iformat = 1 ! integer
         call OutputVariableAddToList(output_variable_list,output_variable)
+      case('NO_FLOW_VARIABLES')
+        output_variable_list%flow_vars = PETSC_FALSE
+      case('NO_ENERGY_VARIABLES')
+        output_variable_list%energy_vars = PETSC_FALSE
       case default
         call InputKeywordUnrecognized(word,'VARIABLES',option)
     end select
@@ -1098,47 +1101,20 @@ subroutine Output(realization_base,snapshot_plot_flag,observation_plot_flag, &
 #endif
       write(option%io_buffer,'(f10.2," Seconds to write HDF5 file.")') &
             tend-tstart
-      if (option%print_screen_flag) &
+#ifndef CLM_PFLOTRAN
       call printMsg(option)
+#endif
     endif
-   
-    if (realization_base%output_option%print_tecplot) then
-      call PetscTime(tstart,ierr);CHKERRQ(ierr)
-      call PetscLogEventBegin(logging%event_output_tecplot,ierr);CHKERRQ(ierr)
-      select case(realization_base%output_option%tecplot_format)
-        case (TECPLOT_POINT_FORMAT)
-          call OutputTecplotPoint(realization_base)
-        case (TECPLOT_BLOCK_FORMAT,TECPLOT_FEBRICK_FORMAT)
-          call OutputTecplotBlock(realization_base)
-      end select
-      call PetscLogEventEnd(logging%event_output_tecplot,ierr);CHKERRQ(ierr)
-      call PetscTime(tend,ierr);CHKERRQ(ierr)
-      write(option%io_buffer,'(f10.2," Seconds to write to Tecplot file(s)")') &
-            tend-tstart
-      call printMsg(option)        
-    endif
-    
+
     if (realization_base%output_option%print_explicit_flowrate) then
       call PetscTime(tstart,ierr);CHKERRQ(ierr)
       call PetscLogEventBegin(logging%event_output_tecplot,ierr);CHKERRQ(ierr)
-      call OutputPrintExplicitFlowrates(realization_base)
+      !call OutputPrintExplicitFlowrates(realization_base)
       call PetscLogEventEnd(logging%event_output_tecplot,ierr);CHKERRQ(ierr)
       call PetscTime(tend,ierr);CHKERRQ(ierr)
       write(option%io_buffer,'(f10.2," Seconds to write to Rates file.")') &
             tend-tstart
       call printMsg(option)        
-    endif
-
-    if (realization_base%output_option%print_vtk) then
-      call PetscTime(tstart,ierr);CHKERRQ(ierr)
-      call PetscLogEventBegin(logging%event_output_vtk,ierr);CHKERRQ(ierr)
-      call OutputVTK(realization_base)
-
-      call PetscLogEventEnd(logging%event_output_vtk,ierr);CHKERRQ(ierr)
-      call PetscTime(tend,ierr);CHKERRQ(ierr)
-      write(option%io_buffer,'(f10.2," Seconds to write to VTK file(s)")') &
-            tend-tstart
-      call printMsg(option) 
     endif
       
     if (realization_base%output_option%print_mad) then
@@ -1152,24 +1128,7 @@ subroutine Output(realization_base,snapshot_plot_flag,observation_plot_flag, &
                              &file(s)")') tend-tstart
       call printMsg(option) 
     endif
-    
-    ! Print secondary continuum variables vs sec. continuum dist.
-    if (option%use_mc) then
-      if (realization_base%output_option%print_tecplot) then
-        call PetscTime(tstart,ierr);CHKERRQ(ierr)
-        call PetscLogEventBegin(logging%event_output_secondary_tecplot, &
-                                ierr);CHKERRQ(ierr)
-        call OutputSecondaryContinuumTecplot(realization_base)
-        call PetscLogEventEnd(logging%event_output_secondary_tecplot, &
-                              ierr);CHKERRQ(ierr)
-        call PetscTime(tend,ierr);CHKERRQ(ierr)
-        write(option%io_buffer,'(f10.2," Seconds to write to secondary' // &
-              ' continuum Tecplot file(s)")') &
-              tend-tstart
-        call printMsg(option) 
-      endif
-    endif
-      
+
     if (option%compute_statistics) then
       call ComputeFlowCellVelocityStats(realization_base)
       call ComputeFlowFluxVelocityStats(realization_base)
@@ -1279,30 +1238,6 @@ subroutine OutputInputRecord(output_option,waypoint_list)
 
   write(id,'(a29)',advance='no') '---------------------------: '
   write(id,'(a)') 'snapshot file output'
-  if (output_option%print_tecplot) then
-    write(id,'(a29)',advance='no') 'format: '
-    if (output_option%tecplot_format == TECPLOT_POINT_FORMAT) then
-      write(id,'(a)') 'tecplot point'
-    endif
-    if (output_option%tecplot_format == TECPLOT_BLOCK_FORMAT) then
-      write(id,'(a)') 'tecplot block'
-    endif
-    if (output_option%tecplot_format == TECPLOT_FEBRICK_FORMAT) then
-      write(id,'(a)') 'tecplot febrick'
-    endif
-    if (output_option%print_fluxes) then
-      write(id,'(a29)',advance='no') ' '
-      write(id,'(a)') 'print fluxes'
-    endif
-    if (output_option%print_tecplot_vel_cent) then
-      write(id,'(a29)',advance='no') ' '
-      write(id,'(a)') 'velocity on cell centers'
-    endif
-    if (output_option%print_tecplot_vel_face) then
-      write(id,'(a29)',advance='no') ' '
-      write(id,'(a)') 'velocity on cell faces'
-    endif
-  endif
   if (output_option%print_hdf5) then
     write(id,'(a29)',advance='no') 'format: '
     if (output_option%print_single_h5_file) then
@@ -2004,10 +1939,12 @@ subroutine OutputPrintCouplers(realization_base,istep)
   endif
 
   select case(option%iflowmode)
-    case(RICHARDS_MODE)
-      allocate(iauxvars(1),auxvar_names(1))
-      iauxvars(1) = RICHARDS_PRESSURE_DOF
-      auxvar_names(1) = 'pressure'
+    case(TH_MODE)
+      allocate(iauxvars(2),auxvar_names(2))
+      iauxvars(1) = TH_PRESSURE_DOF
+      auxvar_names(1) = 'liquid_pressure'
+      iauxvars(2) = TH_TEMPERATURE_DOF
+      auxvar_names(2) = 'temperature'
     case default
       option%io_buffer = &
         'OutputPrintCouplers() not yet supported for this flow mode'
@@ -2052,7 +1989,7 @@ subroutine OutputPrintCouplers(realization_base,istep)
         string = trim(string) // trim(option%group_prefix)
       endif
       string = trim(string) // '.tec'
-      call OutputVectorTecplot(string,word,realization_base,field%work)
+      !call OutputVectorTecplot(string,word,realization_base,field%work)
     enddo
       
   enddo
@@ -2107,7 +2044,7 @@ subroutine OutputPrintRegions(realization_base)
     call VecRestoreArrayF90(field%work,vec_ptr,ierr);CHKERRQ(ierr)
     string = 'region_' // trim(cur_region%name) // '.tec'
     word = 'region'
-    call OutputVectorTecplot(string,word,realization_base,field%work)
+    !call OutputVectorTecplot(string,word,realization_base,field%work)
     cur_region => cur_region%next
   enddo
   
@@ -2221,8 +2158,9 @@ subroutine OutputAvegVars(realization_base)
       call PetscLogEventEnd(logging%event_output_hdf5,ierr);CHKERRQ(ierr)
       call PetscTime(tend,ierr);CHKERRQ(ierr)
       write(option%io_buffer,'(f10.2," Seconds to write HDF5 file.")') tend-tstart
-      if (option%print_screen_flag) &
+#ifndef CLM_PFLOTRAN
       call printMsg(option)
+#endif
     endif
 
     ! Reset the vectors to zero
@@ -2323,5 +2261,69 @@ subroutine OutputListEnsureVariablesExist(output_variable_list,option)
 end subroutine OutputListEnsureVariablesExist
 
 ! ************************************************************************** !
+
+subroutine OutputFindNaNOrInfInVec(vec,grid,option)
+  ! 
+  ! Reports Infs or NaNs in a vector
+  ! 
+  ! Author: Glenn Hammond
+  ! Date: 06/08/18
+  ! 
+  use Grid_module
+  use Option_module
+!geh: ieee_arithmetic is not yet supported by gfortran 4.x or lower
+!  use ieee_arithmetic
+
+  implicit none
+
+  Vec :: vec
+  type(grid_type), pointer :: grid
+  type(option_type) :: option
+
+  PetscReal, pointer :: vec_p(:)
+  PetscInt :: i, idof, icell, block_size, local_size, local_count, exscan_count
+  PetscInt, parameter :: max_number_to_print = 10
+  PetscInt :: iarray(2,max_number_to_print)
+  character(len=MAXWORDLENGTH) :: word
+  PetscErrorCode :: ierr
+
+  iarray = 0
+  call VecGetLocalSize(vec,local_size,ierr);CHKERRQ(ierr)
+  call VecGetBlockSize(vec,block_size,ierr);CHKERRQ(ierr)
+  call VecGetArrayReadF90(vec,vec_p,ierr);CHKERRQ(ierr)
+  local_count = 0
+  do i = 1, local_size
+     if (PetscIsInfOrNanReal(vec_p(i))) then
+!    if (ieee_is_nan(vec_p(i)) .or. .not.ieee_is_finite(vec_p(i))) then
+      local_count = local_count + 1
+      icell = int(float(i-1)/float(block_size))+1
+      iarray(1,local_count) = grid%nG2A(grid%nL2G(icell))
+      idof = i-(icell-1)*block_size
+!      if (ieee_is_nan(vec_p(i))) idof = -idof
+      iarray(2,local_count) = idof
+    endif
+  enddo
+  call VecRestoreArrayReadF90(vec,vec_p,ierr);CHKERRQ(ierr)
+
+  exscan_count = 0
+  call MPI_Exscan(local_count,exscan_count,ONE_INTEGER_MPI, &
+                MPIU_INTEGER,MPI_SUM,option%mycomm,ierr)
+  do i = 1, min(max_number_to_print-exscan_count,local_count)
+    idof = iarray(2,i)
+    if (idof > 0) then
+      option%io_buffer = 'NaN'
+    else
+      option%io_buffer = 'Inf'
+    endif
+    write(word,*) iarray(1,i)
+    option%io_buffer = trim(option%io_buffer) // ' at cell ' // &
+      trim(adjustl(word)) // ' and dof'
+    write(word,*) iabs(idof)
+    option%io_buffer = trim(option%io_buffer) // ' ' // &
+      trim(adjustl(word)) //  '.'
+    call printMsgByRank(option)
+  enddo
+
+end subroutine OutputFindNaNOrInfInVec
 
 end module Output_module

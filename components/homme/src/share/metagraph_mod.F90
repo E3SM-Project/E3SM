@@ -5,6 +5,10 @@
 !************************metagraph_mod.F****************************************
 
 module metagraph_mod
+!
+!  Revisions:
+!  Mark Taylor 2018/3  fix memory leak
+!
   use kinds, only : int_kind, iulog
   use gridgraph_mod, only : gridvertex_t, gridedge_t, &
        allocate_gridvertex_nbrs, assignment ( = )
@@ -339,16 +343,18 @@ contains
     if(Debug) write(iulog,*)'initMetagraph: point #4.1 i,MetaVertex%nmembers',i,MetaVertex%nmembers
     allocate(MetaVertex%members(MetaVertex%nmembers))
 
-    do j=1, MetaVertex%nmembers
-       call allocate_gridvertex_nbrs(MetaVertex%members(j))
-    end do
-
+    ! dont allocate %members - struct will be allocated in the overloaded assignement
+    ! operation below
+!    do j=1, MetaVertex%nmembers
+!       call allocate_gridvertex_nbrs(MetaVertex%members(j))
+!    end do
+    
     if(Debug) write(iulog,*)'initMetagraph: point #5'
 
     !  Set the identity of the members of the MetaVertices
     ic=1
     do j=1,nelem
-       if( GridVertex(j)%processor_number .eq. ThisProcessorNumber) then 
+       if( GridVertex(j)%processor_number .eq. ThisProcessorNumber) then
           MetaVertex%members(ic) = GridVertex(j)
           ic=ic+1
        endif

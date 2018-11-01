@@ -44,6 +44,7 @@ subroutine SaturationUpdateCoupler(coupler,option,grid, &
   PetscReal :: saturation
   PetscReal :: capillary_pressure
   PetscReal :: liquid_pressure
+  PetscReal :: dpc_dsatl
   
   type(flow_condition_type), pointer :: condition
   
@@ -51,8 +52,7 @@ subroutine SaturationUpdateCoupler(coupler,option,grid, &
   
   condition => coupler%flow_condition
 
-  if (option%iflowmode /= RICHARDS_MODE .or. &
-      option%iflowmode /= TH_MODE ) then
+  if (option%iflowmode /= TH_MODE ) then
     option%io_buffer = 'SaturationUpdateCoupler is not set up for this flow mode.'
     call printErrMsg(option)
   endif
@@ -64,11 +64,10 @@ subroutine SaturationUpdateCoupler(coupler,option,grid, &
     local_id = coupler%connection_set%id_dn(iconn)
     ghosted_id = grid%nL2G(local_id)
 
-    if (option%iflowmode == TH_MODE .or. &
-       option%iflowmode == RICHARDS_MODE ) then
+    if (option%iflowmode == TH_MODE ) then
       call characteristic_curves_array( &
              sat_func_id(ghosted_id))%ptr% &
-             saturation_function%CapillaryPressure(saturation,capillary_pressure,option)
+             saturation_function%CapillaryPressure(saturation,capillary_pressure, dpc_dsatl, option)
     endif
 
     liquid_pressure = option%reference_pressure - capillary_pressure

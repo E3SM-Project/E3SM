@@ -13,7 +13,7 @@ from CIME.utils import run_cmd_no_fail
 from CIME.locked_files import unlock_file, LOCKED_DIR
 logger = logging.getLogger(__name__)
 
-import glob
+import glob, six
 
 def check_pelayouts_require_rebuild(self, models):
     """
@@ -98,7 +98,7 @@ def check_lockedfile(self, filebase):
             else:
                 expect(False, "'{}' diff was not handled".format(objname))
 
-def check_lockedfiles(self):
+def check_lockedfiles(self, skip=None):
     """
     Check that all lockedfiles match what's in case
 
@@ -106,10 +106,19 @@ def check_lockedfiles(self):
     """
     caseroot = self.get_value("CASEROOT")
     lockedfiles = glob.glob(os.path.join(caseroot, "LockedFiles", "*.xml"))
+    skip = [] if skip is None else skip
+    skip = [skip] if isinstance(skip, six.string_types) else skip
     for lfile in lockedfiles:
         fpart = os.path.basename(lfile)
         # ignore files used for tests such as env_mach_pes.ERP1.xml by looking for extra dots in the name
         if fpart.count('.') > 1:
             continue
 
-        self.check_lockedfile(fpart)
+        do_skip = False
+        for item in skip:
+            if fpart.startswith(item):
+                do_skip = True
+                break
+
+        if not do_skip:
+            self.check_lockedfile(fpart)

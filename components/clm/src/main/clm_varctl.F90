@@ -187,7 +187,7 @@ module clm_varctl
   !  FATES switches
   !----------------------------------------------------------
 
-  logical, public            :: use_ed = .false.              ! true => use  ED
+  logical, public            :: use_fates = .false.              ! true => use  ED
   logical, public            :: use_fates_spitfire = .false.  ! true => use spitfire model
   logical, public            :: use_fates_logging = .false.            ! true => turn on logging module
   logical, public            :: use_fates_planthydro = .false.         ! true => turn on fates hydro
@@ -341,6 +341,10 @@ module clm_varctl
   ! ECA regular spinup with P on, keep labile, secondary, occluded, parent 
   ! material P being constant or not
   logical, public :: ECA_Pconst_RGspin = .false.
+
+  !-----------------------------------------------------------------------
+  ! Priority of plant to get symbiotic N fixation, phosphatase
+  logical, public :: NFIX_PTASE_plant = .false.
 
   !-----------------------------------------------------------------------
   ! Lateral grid connectivity

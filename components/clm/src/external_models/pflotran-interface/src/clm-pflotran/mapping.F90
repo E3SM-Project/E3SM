@@ -2,18 +2,21 @@
 
 module Mapping_module
 
+#include "petsc/finclude/petscsys.h"
+#include "petsc/finclude/petscvec.h"
+#include "petsc/finclude/petscis.h"
+#include "petsc/finclude/petscmat.h"
+#include "petsc/finclude/petsclog.h"
+#include "petsc/finclude/petscviewer.h"
+  use petscsys
+  use petscvec
+  use petscmat
+
+
   use PFLOTRAN_Constants_module
 
   implicit none
 
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petsclog.h"
-#include "petsc/finclude/petscviewer.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscis.h"
-#include "petsc/finclude/petscis.h90"
-#include "petsc/finclude/petscmat.h"
 
   private
 
@@ -179,14 +182,14 @@ contains
     nullify(map%s2d_icsr)
     nullify(map%s2d_nonzero_rcount_csr)
 
-    map%wts_mat = 0
-    map%s2d_scat_s_gb2disloc = 0
-    map%s_disloc_vec = 0
+    map%wts_mat              = PETSC_NULL_MAT
+    map%s2d_scat_s_gb2disloc = PETSC_NULL_VECSCATTER
+    map%s_disloc_vec         = PETSC_NULL_VEC
 
-    map%clm_nlevsoi = 0
-    map%clm_nlevgrnd = 0
-    map%clm_nlev_mapped = 0
-    map%pflotran_nlev = 0
+    map%clm_nlevsoi          = 0
+    map%clm_nlevgrnd         = 0
+    map%clm_nlev_mapped      = 0
+    map%pflotran_nlev        = 0
     map%pflotran_nlev_mapped = 0
     
     MappingCreate => map
@@ -1564,7 +1567,7 @@ contains
     ! size(wts_mat) = [d_ncells_ghd x s2d_s_ncells_dis]
     !
     call MatCreateSeqAIJ(PETSC_COMM_SELF, map%d_ncells_ghd, &
-         map%s2d_s_ncells_dis, PETSC_NULL_INTEGER, &
+         map%s2d_s_ncells_dis, PETSC_DEFAULT_INTEGER, &    ! PETSC_NULL_INTEGER not works here
          map%s2d_nonzero_rcount_csr, map%wts_mat, ierr)
 
     do ii = 1,map%s2d_s_ncells

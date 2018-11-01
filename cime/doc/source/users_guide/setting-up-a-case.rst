@@ -8,18 +8,20 @@ Setting up a Case
 Calling **case.setup**
 ===================================
 
-After creating a case or changing aspects of a case, such as the pe-layout, call the **case.setup** command from ``$CASEROOT``. This creates additional files and directories in ``$CASEROOT``. They are described below.
+After creating a case or changing aspects of a case, such as the pe-layout, call the `case.setup <../Tools_user/case.setup.html>`_ command from ``$CASEROOT``.
+This creates the following additional files and directories in ``$CASEROOT``:
 
    =============================   ===============================================================================================================================
-   case.run                        Run script containing the batch directives. The directives are generated using the contents
-                                   of **env_mach_pes.xml**. Running ``case.setup --clean`` will remove this file.
+   .case.run                       Run script containing the batch directives. The directives are generated using the contents
+                                   of **env_mach_pes.xml**. Running `case.setup --clean <../Tools_user/case.setup.html>`_  will remove this file. You should
+				   **never** run this script.
 
    Macros.make                     File containing machine-specific makefile directives for your target platform/compiler.
                                    This file is created if it does not already exist.
 
                                    The user can modify the file to change certain aspects of the build, such as compiler flags.
-                                   Running ``case.setup --clean`` will not remove the file once it has been created.
-                                   However. if you remove or rename the Macros.make file, running **case.setup** recreates it.
+                                   Running `case.setup --clean <../Tools_user/case.setup.html>`_  will not remove the file once it has been created.
+                                   However. if you remove or rename the Macros.make file, running `case.setup <../Tools_user/case.setup.html>`_ recreates it.
 
    user_nl_xxx[_NNNN] files        Files where all user modifications to component namelists are made.
 
@@ -34,7 +36,7 @@ After creating a case or changing aspects of a case, such as the pe-layout, call
 
                                    A user_nl file of a given name is created only once.
 
-                                   Calling ``case.setup --clean`` will *not remove* any user_nl files.
+                                   Calling `case.setup --clean <../Tools_user/case.setup.html>`_ will *not remove* any user_nl files.
 
                                    Changing the number of instances in the **env_mach_pes.xml** file will cause only
                                    new user_nl files to be added to ``$CASEROOT``.
@@ -48,7 +50,6 @@ After creating a case or changing aspects of a case, such as the pe-layout, call
                                    the scripts in ``$CASEROOT`` are called. These files are not used by the case but can be
                                    useful for debugging **module load** and environment settings.
 
-   software_environment.txt        This file records some aspects of the computing system on which the case is built, 
+   software_environment.txt        This file records some aspects of the computing system on which the case is built,
                                    such as the shell environment.
    =============================   ===============================================================================================================================
-

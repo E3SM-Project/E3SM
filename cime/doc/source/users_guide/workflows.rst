@@ -1,0 +1,5 @@
+.. _workflows:
+
+*********
+Workflows
+*********

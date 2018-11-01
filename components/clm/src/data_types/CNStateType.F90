@@ -18,7 +18,7 @@ module CNStateType
   use VegetationType      , only : veg_pp                
   use clm_varctl     , only: forest_fert_exp
   use clm_varctl          , only : nu_com
-  use clm_varctl   , only:  use_ed,use_crop
+  use clm_varctl   , only:  use_fates,use_crop
 
   ! 
   ! !PUBLIC TYPES:
@@ -773,7 +773,7 @@ contains
     ! Read in soilorder data 
     ! --------------------------------------------------------------------
 
-    if ( (nu_com .eq. 'RD' .or. nu_com .eq. 'ECA') .and. (use_cn .and. .not. use_ed .and. .not. use_crop) )  then 
+    if ( (nu_com .eq. 'RD' .or. nu_com .eq. 'ECA') .and. (use_cn .and. .not. use_fates .and. .not. use_crop) )  then 
        allocate(soilorder_rdin(bounds%begg:bounds%endg))
        call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
        if (.not. readvar) then

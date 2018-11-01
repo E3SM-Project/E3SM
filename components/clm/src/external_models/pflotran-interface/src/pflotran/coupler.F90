@@ -1,5 +1,7 @@
 module Coupler_module
  
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use Condition_module
   use Connection_module
   use Region_module
@@ -10,8 +12,7 @@ module Coupler_module
 
   private
  
-#include "petsc/finclude/petscsys.h"
-
+      
   ! coupler types
   PetscInt, parameter, public :: INITIAL_COUPLER_TYPE = 1
   PetscInt, parameter, public :: BOUNDARY_COUPLER_TYPE = 2

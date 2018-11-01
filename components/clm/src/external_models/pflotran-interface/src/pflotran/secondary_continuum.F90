@@ -2,23 +2,16 @@
 
 module Secondary_Continuum_module
   
+#include "petsc/finclude/petscsnes.h"
+  use petscsnes
   use Secondary_Continuum_Aux_module
 
   use PFLOTRAN_Constants_module
-
+  use Utility_module, only : Equal
+  
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
-  
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
-#include "petsc/finclude/petscsnes.h"
-#include "petsc/finclude/petscviewer.h"
-#include "petsc/finclude/petsclog.h"
 
   ! secondary continuum cell type
   PetscInt, parameter, public :: SLAB = 0
@@ -354,7 +347,7 @@ subroutine SecondaryContinuumSetProperties(sec_continuum, &
     case("SLAB")
       sec_continuum%itype = SLAB
       sec_continuum%slab%length = sec_continuum_length
-      if (sec_continuum_area == 0.d0) then
+      if (Equal(sec_continuum_area,0.d0)) then
         option%io_buffer = 'Keyword "AREA" not specified for SLAB type ' // &
                            'under SECONDARY_CONTINUUM'
         call printErrMsg(option)
@@ -639,9 +632,19 @@ subroutine SecondaryRTAuxVarInit(ptr,rt_sec_transport_vars,reaction, &
     else
       global_auxvar%pres = option%reference_pressure
       global_auxvar%temp = option%reference_temperature
-      global_auxvar%den_kg = option%reference_water_density
+      global_auxvar%den_kg(option%liquid_phase) = &
+        option%reference_density(option%liquid_phase)
+
     endif
     global_auxvar%sat = option%reference_saturation
+
+    if (option%transport%nphase > option%nphase) then
+      ! gas phase not considered explicitly on flow side
+      global_auxvar%den_kg(option%gas_phase) = &
+        option%reference_density(option%gas_phase)
+      global_auxvar%sat(option%gas_phase) = &
+        1.d0 - global_auxvar%sat(option%liquid_phase)
+    endif
                       
     call ReactionEquilibrateConstraint(rt_auxvar,global_auxvar, &
                           material_auxvar, &
@@ -649,7 +652,6 @@ subroutine SecondaryRTAuxVarInit(ptr,rt_sec_transport_vars,reaction, &
                           constraint%aqueous_species, &
                           constraint%free_ion_guess, &
                           constraint%minerals, &
-                          constraint%surface_complexes, &
                           constraint%colloids, &
                           constraint%immobile_species, &
                           num_iterations, &
@@ -831,7 +833,7 @@ subroutine SecondaryRTResJacMulti(sec_transport_vars,auxvar, &
   do i = 1, ngcells
     call RTAuxVarCopy(rt_auxvar,sec_transport_vars%sec_rt_auxvar(i),option)
     rt_auxvar%pri_molal = conc_upd(:,i)
-    call RTotal(rt_auxvar,global_auxvar,reaction,option)
+    call RTotalAqueous(rt_auxvar,global_auxvar,reaction,option)
     if (reaction%neqsorb > 0) then
       call SecondaryRTotalSorb(rt_auxvar,global_auxvar,material_auxvar,reaction,option)
     endif
@@ -985,7 +987,7 @@ subroutine SecondaryRTResJacMulti(sec_transport_vars,auxvar, &
     call RTAuxVarCopy(rt_auxvar,sec_transport_vars%sec_rt_auxvar(i), &
                       option)
     rt_auxvar%pri_molal = conc_upd(:,i) ! in mol/kg
-    call RTotal(rt_auxvar,global_auxvar,reaction,option)
+    call RTotalAqueous(rt_auxvar,global_auxvar,reaction,option)
     material_auxvar%porosity = porosity
     material_auxvar%volume = vol(i)
     call RReaction(res_react,jac_react,PETSC_TRUE, &
@@ -1143,7 +1145,7 @@ subroutine SecondaryRTResJacMulti(sec_transport_vars,auxvar, &
   call RTAuxVarCopy(rt_auxvar,sec_transport_vars%sec_rt_auxvar(ngcells), &
                     option)
   rt_auxvar%pri_molal = conc_current_M ! in mol/kg
-  call RTotal(rt_auxvar,global_auxvar,reaction,option)
+  call RTotalAqueous(rt_auxvar,global_auxvar,reaction,option)
   total_current_M = rt_auxvar%total(:,1)
   if (reaction%neqcplx > 0) sec_sec_molal_M = rt_auxvar%sec_molal
   call RTAuxVarStrip(rt_auxvar)
@@ -1259,7 +1261,7 @@ subroutine SecondaryRTResJacMulti(sec_transport_vars,auxvar, &
 
       call RTAuxVarCopy(rt_auxvar,auxvar,option)
       rt_auxvar%pri_molal = conc_prim_pert ! in mol/kg
-      call RTotal(rt_auxvar,global_auxvar,reaction,option)
+      call RTotalAqueous(rt_auxvar,global_auxvar,reaction,option)
       total_primary_node_pert = rt_auxvar%total(:,1)
                           
 !================ Calculate the secondary residual =============================        
@@ -1360,7 +1362,7 @@ subroutine SecondaryRTResJacMulti(sec_transport_vars,auxvar, &
       call RTAuxVarCopy(rt_auxvar,sec_transport_vars%sec_rt_auxvar(ngcells), &
                         option)
       rt_auxvar%pri_molal = conc_current_M_pert ! in mol/kg
-      call RTotal(rt_auxvar,global_auxvar,reaction,option)
+      call RTotalAqueous(rt_auxvar,global_auxvar,reaction,option)
       total_current_M_pert = rt_auxvar%total(:,1)
              
       ! Calculate the coupling term
@@ -1514,7 +1516,7 @@ subroutine SecondaryRTUpdateEquilState(sec_transport_vars,global_auxvars, &
   enddo
     
   do i = 1, ngcells
-    call RTotal(sec_transport_vars%sec_rt_auxvar(i),global_auxvars, &
+    call RTotalAqueous(sec_transport_vars%sec_rt_auxvar(i),global_auxvars, &
                 reaction,option)
   enddo
   
@@ -1678,7 +1680,7 @@ subroutine SecondaryRTCheckResidual(sec_transport_vars,auxvar, &
   do i = 1, ngcells
     call RTAuxVarCopy(rt_auxvar,sec_transport_vars%sec_rt_auxvar(i),option)
     rt_auxvar%pri_molal = conc_upd(:,i)
-    call RTotal(rt_auxvar,global_auxvar,reaction,option)
+    call RTotalAqueous(rt_auxvar,global_auxvar,reaction,option)
     if (reaction%neqsorb > 0) then
       call SecondaryRTotalSorb(rt_auxvar,global_auxvar,material_auxvar,reaction,option)
     endif
@@ -1741,7 +1743,7 @@ subroutine SecondaryRTCheckResidual(sec_transport_vars,auxvar, &
     call RTAuxVarCopy(rt_auxvar,sec_transport_vars%sec_rt_auxvar(i), &
                       option)
     rt_auxvar%pri_molal = conc_upd(:,i) ! in mol/kg
-    call RTotal(rt_auxvar,global_auxvar,reaction,option)
+    call RTotalAqueous(rt_auxvar,global_auxvar,reaction,option)
     material_auxvar%porosity = porosity
     material_auxvar%volume = vol(i)
     call RReaction(res_react,jac_react,PETSC_FALSE, &

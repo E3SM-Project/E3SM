@@ -1,5 +1,7 @@
 module PM_Surface_class
 
+#include "petsc/finclude/petscts.h"
+  use petscts
   use PM_Base_class
   use Realization_Surface_class
   use Communicator_Base_module
@@ -9,15 +11,6 @@ module PM_Surface_class
   implicit none
 
   private
-
-#include "petsc/finclude/petscsys.h"
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
-#include "petsc/finclude/petscsnes.h"
-#include "petsc/finclude/petscts.h"
 
   type, public, extends(pm_base_type) :: pm_surface_type
     class(realization_surface_type), pointer :: surf_realization
@@ -36,6 +29,7 @@ module PM_Surface_class
     procedure, public :: CheckpointBinary => PMSurfaceCheckpointBinary
     procedure, public :: RestartBinary => PMSurfaceRestartBinary
     procedure, public :: UpdateAuxVars => PMSurfaceUpdateAuxVars
+    procedure, public :: InputRecord => PMSurfaceInputRecord
   end type pm_surface_type
 
   public :: PMSurfaceCreate, &
@@ -258,8 +252,7 @@ subroutine PMSurfaceUpdateSolution(this)
 
   ! begin from RealizationUpdate()
   call FlowConditionUpdate(this%surf_realization%surf_flow_conditions, &
-                           this%surf_realization%option, &
-                           this%surf_realization%option%time)
+                           this%surf_realization%option)
 
   call RealizSurfAllCouplerAuxVars(this%surf_realization,force_update_flag)
 
@@ -348,6 +341,30 @@ recursive subroutine PMSurfaceFinalizeRun(this)
   endif
 
 end subroutine PMSurfaceFinalizeRun
+
+! ************************************************************************** !
+
+subroutine PMSurfaceInputRecord(this)
+  ! 
+  ! Writes ingested information to the input record file.
+  ! 
+  ! Author: Jenn Frederick, SNL
+  ! Date: 03/21/2016
+  ! 
+  
+  implicit none
+  
+  class(pm_surface_type) :: this
+
+  character(len=MAXWORDLENGTH) :: word
+  PetscInt :: id
+
+  id = INPUT_RECORD_UNIT
+
+  write(id,'(a29)',advance='no') 'pm: '
+  write(id,'(a)') this%name
+
+end subroutine PMSurfaceInputRecord
 
 ! ************************************************************************** !
 

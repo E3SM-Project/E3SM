@@ -73,6 +73,7 @@ module Reactive_Transport_Aux_module
   end type reactive_transport_auxvar_type
 
   type, public :: reactive_transport_param_type
+    PetscInt :: nphase
     PetscInt :: ncomp
     PetscInt :: naqcomp
     PetscInt :: nimcomp
@@ -145,20 +146,22 @@ contains
 
 ! ************************************************************************** !
 
-function RTAuxCreate(option,naqcomp)
+function RTAuxCreate(naqcomp,nphase)
   ! 
   ! Allocate and initialize auxiliary object
   ! 
   ! Author: Glenn Hammond
   ! Date: 02/14/08
   ! 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
 
   use Option_module
 
   implicit none
   
-  type(option_type) :: option
   PetscInt :: naqcomp
+  PetscInt :: nphase
   type(reactive_transport_type), pointer :: RTAuxCreate
   
   type(reactive_transport_type), pointer :: aux
@@ -176,12 +179,13 @@ function RTAuxCreate(option,naqcomp)
   aux%inactive_cells_exist = PETSC_FALSE
 
   allocate(aux%rt_parameter)
-  allocate(aux%rt_parameter%diffusion_coefficient(naqcomp,option%nphase))
+  aux%rt_parameter%naqcomp = naqcomp
+  aux%rt_parameter%nphase = nphase
+  allocate(aux%rt_parameter%diffusion_coefficient(naqcomp,nphase))
   allocate(aux%rt_parameter%diffusion_activation_energy(naqcomp))
   aux%rt_parameter%diffusion_coefficient = 1.d-9
   aux%rt_parameter%diffusion_activation_energy = 0.d0
   aux%rt_parameter%ncomp = 0
-  aux%rt_parameter%naqcomp = 0
   aux%rt_parameter%nimcomp = 0
   aux%rt_parameter%ngas = 0
   aux%rt_parameter%ncoll = 0
@@ -220,26 +224,21 @@ subroutine RTAuxVarInit(auxvar,reaction,option)
 
   use Option_module
   use Reaction_Aux_module
-  use Reaction_Surface_Complexation_Aux_module
 
   implicit none
   
   type(reactive_transport_auxvar_type) :: auxvar
   type(reaction_type) :: reaction
   type(option_type) :: option
-  
-  type(surface_complexation_type), pointer :: surface_complexation
-  
-  surface_complexation => reaction%surface_complexation
-  
+
   allocate(auxvar%pri_molal(reaction%naqcomp))
   auxvar%pri_molal = 0.d0
 
-  allocate(auxvar%total(reaction%naqcomp,option%nphase))
+  allocate(auxvar%total(reaction%naqcomp,reaction%nphase))
   auxvar%total = 0.d0
   auxvar%aqueous => MatrixBlockAuxVarCreate(option)
   call MatrixBlockAuxVarInit(auxvar%aqueous,reaction%naqcomp, &
-                             reaction%naqcomp,option%nphase,option)
+                             reaction%naqcomp,reaction%nphase,option)
   
   if (reaction%neqcplx > 0) then
     allocate(auxvar%sec_molal(reaction%neqcplx))
@@ -272,33 +271,7 @@ subroutine RTAuxVarInit(auxvar,reaction,option)
   nullify(auxvar%kinsrfcplx_conc_kp1)
   nullify(auxvar%kinsrfcplx_free_site_conc)
   nullify(auxvar%kinmr_total_sorb)
-  if (surface_complexation%nsrfcplxrxn > 0) then
-    allocate(auxvar%srfcplxrxn_free_site_conc(surface_complexation%nsrfcplxrxn))
-    auxvar%srfcplxrxn_free_site_conc = 1.d-9 ! initialize to guess
-    if (surface_complexation%neqsrfcplxrxn > 0) then
-      allocate(auxvar%eqsrfcplx_conc(surface_complexation%nsrfcplx))
-      auxvar%eqsrfcplx_conc = 0.d0
-    endif
-    if (surface_complexation%nkinsrfcplxrxn > 0) then
-      !geh: currently hardwired to only 1 reaction
-      allocate(auxvar%kinsrfcplx_conc(surface_complexation%nkinsrfcplx,1))
-      auxvar%kinsrfcplx_conc = 0.d0
 
-      allocate(auxvar%kinsrfcplx_conc_kp1(surface_complexation%nkinsrfcplx,1))
-      auxvar%kinsrfcplx_conc_kp1 = 0.d0
-    endif
-    if (surface_complexation%nkinmrsrfcplxrxn > 0) then
-      ! the zeroth entry here stores the equilibrium concentration used in the 
-      ! update
-      ! the zeroth entry of kinmr_nrate holds the maximum number of rates
-      ! prescribed in a multirate reaction...required for appropriate sizing
-      allocate(auxvar%kinmr_total_sorb(reaction%naqcomp, &
-                                        0:surface_complexation%kinmr_nrate(0), &
-                                        surface_complexation%nkinmrsrfcplxrxn))
-      auxvar%kinmr_total_sorb = 0.d0
-    endif
-  endif
-  
   if (reaction%neqionxrxn > 0) then
     allocate(auxvar%eqionx_ref_cation_sorbed_conc(reaction%neqionxrxn))
     auxvar%eqionx_ref_cation_sorbed_conc = 1.d-9 ! initialize to guess
@@ -348,9 +321,9 @@ subroutine RTAuxVarInit(auxvar,reaction,option)
   auxvar%ln_act_h2o = 0.d0
   
   if (option%iflag /= 0 .and. option%compute_mass_balance_new) then
-    allocate(auxvar%mass_balance(reaction%ncomp,option%nphase))
+    allocate(auxvar%mass_balance(reaction%ncomp,reaction%nphase))
     auxvar%mass_balance = 0.d0
-    allocate(auxvar%mass_balance_delta(reaction%ncomp,option%nphase))
+    allocate(auxvar%mass_balance_delta(reaction%ncomp,reaction%nphase))
     auxvar%mass_balance_delta = 0.d0
   else
     nullify(auxvar%mass_balance)

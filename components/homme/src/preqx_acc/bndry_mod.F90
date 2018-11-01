@@ -99,8 +99,8 @@ contains
 
       !Copy internal data to receive buffer
       do ithr = 1 , hybrid%hthreads
-        iptr   = buffer%moveptr(ithr)
-        length = buffer%moveLength(ithr)
+        iptr   = nlyr*buffer%moveptr0(ithr) + 1   
+        length = nlyr*buffer%moveLength(ithr)
         if(length>0) call copy_ondev_async(buffer%receive(iptr),buffer%buf(iptr),length,maxCycles*2+ithr)
       enddo
 
@@ -230,8 +230,8 @@ contains
       !Copy internal data to receive buffer
       call t_startf('bndry_timing_internal_on_dev_copy')
       do ithr = 1 , hybrid%hthreads
-        iptr   = buffer%moveptr(ithr)
-        length = buffer%moveLength(ithr)
+        iptr   = nlyr*buffer%moveptr0(ithr) + 1
+        length = nlyr*buffer%moveLength(ithr)
         if(length>0) call copy_ondev_async(buffer%receive(iptr),buffer%buf(iptr),length,1)
       enddo
       !$acc wait(1)
@@ -338,8 +338,8 @@ contains
 
       !Copy internal data to receive buffer
       do ithr = 1 , hybrid%hthreads
-        iptr   = buffer%moveptr(ithr)
-        length = buffer%moveLength(ithr)
+        iptr   = nlyr*buffer%moveptr0(ithr) + 1
+        length = nlyr*buffer%moveLength(ithr)
         if(length>0) call copy_ondev_async(buffer%receive(iptr),buffer%buf(iptr),length,maxCycles*2+ithr)
       enddo
 

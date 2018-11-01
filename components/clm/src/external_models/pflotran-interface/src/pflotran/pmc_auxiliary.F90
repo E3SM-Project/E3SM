@@ -1,5 +1,7 @@
 module PMC_Auxiliary_class
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use PMC_Base_class
   use PM_Auxiliary_class
   use Realization_Subsurface_class
@@ -8,10 +10,8 @@ module PMC_Auxiliary_class
 
   implicit none
 
-#include "petsc/finclude/petscsys.h"
   
   private
-
   type, public, extends(pmc_base_type) :: pmc_auxiliary_type
     class(pm_auxiliary_type), pointer :: pm_aux
   contains
@@ -99,6 +99,8 @@ recursive subroutine PMCAuxiliaryRunToTime(this,sync_time,stop_flag)
   
   PetscInt :: local_stop_flag
   PetscErrorCode :: ierr
+
+  if (stop_flag == TS_STOP_FAILURE) return
   
   if (this%stage /= 0) then
     call PetscLogStagePush(this%stage,ierr);CHKERRQ(ierr)
@@ -112,7 +114,9 @@ recursive subroutine PMCAuxiliaryRunToTime(this,sync_time,stop_flag)
   local_stop_flag = TS_CONTINUE
   ! if at end of simulation, skip update of material properties
   if (stop_flag /= TS_STOP_END_SIMULATION) then
-    call this%pm_aux%Evaluate(sync_time,local_stop_flag)
+    ! must use ierr here due to 32-/64-bit integer issues
+    call this%pm_aux%Evaluate(sync_time,ierr)
+    local_stop_flag = ierr
   endif
   
   ! Run underlying process model couplers

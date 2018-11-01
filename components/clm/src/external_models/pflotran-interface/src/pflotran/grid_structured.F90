@@ -1,13 +1,14 @@
 module Grid_Structured_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use PFLOTRAN_Constants_module
-
+  use Utility_module, only : Equal
+  
   implicit none
  
   private
  
-#include "petsc/finclude/petscsys.h"
-
 ! structured grid faces
   PetscInt, parameter, public :: NULL_FACE = 0
   PetscInt, parameter, public :: WEST_FACE = 1
@@ -200,19 +201,14 @@ subroutine StructGridCreateDM(structured_grid,da,ndof,stencil_width, &
   ! Author: Glenn Hammond
   ! Date: 10/22/07
   ! 
-
+#include "petsc/finclude/petscdmda.h"
+  use petscdmda
   use Option_module
 #ifdef CLM_PFLOTRAN
   use clm_pflotran_interface_data
 #endif
         
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscdm.h"
-#include "petsc/finclude/petscdm.h90"
-#include "petsc/finclude/petscdmda.h"
 
   type(option_type) :: option
   type(grid_structured_type) :: structured_grid
@@ -310,6 +306,8 @@ subroutine StructGridCreateDM(structured_grid,da,ndof,stencil_width, &
   endif
 #endif
 
+  call DMSetFromOptions(da,ierr);CHKERRQ(ierr)
+  call DMSetup(da,ierr);CHKERRQ(ierr)
   call DMDAGetInfo(da,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER, &
                    PETSC_NULL_INTEGER,PETSC_NULL_INTEGER, &
                    structured_grid%npx_final,structured_grid%npy_final, &
@@ -331,14 +329,11 @@ subroutine StructGridComputeLocalBounds(structured_grid,da,option)
   ! Date: 03/13/08
   ! 
 
+#include "petsc/finclude/petscdm.h"
+  use petscdm
   use Option_module
   
   implicit none
-     
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscdm.h"
-#include "petsc/finclude/petscdm.h90"
 
   type(grid_structured_type) :: structured_grid
   type(option_type) :: option
@@ -387,6 +382,8 @@ subroutine StructGridCreateVecFromDM(da,vector,vector_type)
   ! Author: Glenn Hammond
   ! Date: 02/08/08
   ! 
+#include "petsc/finclude/petscdm.h"
+  use petscdm
 
   implicit none
 
@@ -757,7 +754,7 @@ subroutine StructGridGetIJKFromCoordinate(structured_grid,x,y,z,i,j,k)
       ! if first cell in x-dir on proc
       if (i_ghosted == structured_grid%istart) then
         ! located on upwind boundary and ghosted
-          if (x == x_upper_face .and. &
+          if (Equal(x,x_upper_face) .and. &
             structured_grid%lxs /= structured_grid%gxs) exit
       endif
       i = i_local 
@@ -776,7 +773,7 @@ subroutine StructGridGetIJKFromCoordinate(structured_grid,x,y,z,i,j,k)
       ! if first cell in y-dir on proc
       if (j_ghosted == structured_grid%jstart) then
         ! located on upwind boundary and ghosted
-        if (y == y_upper_face .and. &
+        if (Equal(y,y_upper_face) .and. &
             structured_grid%lys /= structured_grid%gys) exit
       endif
       j = j_local
@@ -795,7 +792,7 @@ subroutine StructGridGetIJKFromCoordinate(structured_grid,x,y,z,i,j,k)
       ! if first cell in z-dir on proc
       if (k_ghosted == structured_grid%kstart) then
         ! if located on upwind boundary and ghosted, skip
-        if (z == z_upper_face .and. &
+        if (Equal(z,z_upper_face) .and. &
           structured_grid%lzs /= structured_grid%gzs) exit
       endif          
       k = k_local
@@ -1442,14 +1439,12 @@ subroutine StructGridComputeVolumes(radius,structured_grid,option,nL2G,volume)
   ! Date: 10/25/07
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Option_module
   
   implicit none
 
-! These includes are needed for VecRestoreArrayF90() - geh
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-  
   type(grid_structured_type) :: structured_grid
   type(option_type) :: option
   PetscInt :: nL2G(:)
@@ -1525,13 +1520,11 @@ subroutine StructGridMapIndices(structured_grid,stencil_type, &
   ! Date: 10/24/07
   ! 
 
+#include "petsc/finclude/petscdmda.h"
+  use petscdmda
   use Option_module
 
   implicit none
-  
-#include "petsc/finclude/petscdm.h"
-#include "petsc/finclude/petscdm.h90"
-#include "petsc/finclude/petscdmda.h"  
 
   type(grid_structured_type) :: structured_grid
   PetscEnum :: stencil_type
@@ -1648,11 +1641,11 @@ subroutine StructGridGetGhostedNeighbors(structured_grid,ghosted_id, &
   ! Author: Glenn Hammond
   ! Date: 01/28/11
   ! 
-
+#include "petsc/finclude/petscdmda.h"
+  use petscdmda
   use Option_module
 
   implicit none
-#include "petsc/finclude/petscdmda.h"
   
   type(grid_structured_type) :: structured_grid
   type(option_type) :: option
@@ -1827,18 +1820,16 @@ subroutine StructGridCreateTVDGhosts(structured_grid,ndof,global_vec, &
   ! Date: 01/28/11
   ! 
 
+#include "petsc/finclude/petscdm.h"
+  use petscdm
   use Option_module
 
   implicit none
-  
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscviewer.h"
 
   type(grid_structured_type) :: structured_grid
   PetscInt :: ndof
   DM :: dm_1dof
-  Vec :: global_vec
+   Vec :: global_vec
   Vec :: ghost_vec
   VecScatter :: scatter_ctx
   type(option_type) :: option

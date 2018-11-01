@@ -10,7 +10,7 @@ module CanopyStateType
   use landunit_varcon , only : istsoil, istcrop
   use clm_varcon      , only : spval  
   use clm_varpar      , only : nlevcan
-  use clm_varctl      , only : iulog, use_cn, use_ed
+  use clm_varctl      , only : iulog, use_cn, use_fates
   use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp                
   use VegetationType       , only : veg_pp                
@@ -180,7 +180,7 @@ contains
          avgflag='A', long_name='total projected stem area index', &
          ptr_patch=this%tsai_patch)
 
-    if (use_cn .or. use_ed) then
+    if (use_cn .or. use_fates) then
        this%fsun_patch(begp:endp) = spval
        call hist_addfld1d (fname='FSUN', units='proportion', &
             avgflag='A', long_name='sunlit fraction of canopy', &
@@ -197,28 +197,28 @@ contains
          avgflag='A', long_name='shaded projected leaf area index', &
          ptr_patch=this%laisha_patch, set_urb=0._r8)
 
-    if (use_cn .or. use_ed) then
+    if (use_cn .or. use_fates) then
        this%dewmx_patch(begp:endp) = spval
        call hist_addfld1d (fname='DEWMX', units='mm', &
             avgflag='A', long_name='Maximum allowed dew', &
             ptr_patch=this%dewmx_patch, default='inactive')
     end if
 
-    if (use_cn .or. use_ed) then
+    if (use_cn .or. use_fates) then
        this%htop_patch(begp:endp) = spval
        call hist_addfld1d (fname='HTOP', units='m', &
             avgflag='A', long_name='canopy top', &
             ptr_patch=this%htop_patch)
     end if
 
-    if (use_cn .or. use_ed) then
+    if (use_cn .or. use_fates) then
        this%hbot_patch(begp:endp) = spval
        call hist_addfld1d (fname='HBOT', units='m', &
             avgflag='A', long_name='canopy bottom', &
             ptr_patch=this%hbot_patch, default='inactive')
     end if
 
-    if (use_cn .or. use_ed) then
+    if (use_cn .or. use_fates) then
        this%displa_patch(begp:endp) = spval
        call hist_addfld1d (fname='DISPLA', units='m', &
             avgflag='A', long_name='displacement height', &
@@ -527,7 +527,7 @@ contains
        end do
     end if
 
-    if (use_cn .or. use_ed) then
+    if (use_cn .or. use_fates) then
        call restartvar(ncid=ncid, flag=flag, varname='altmax', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%altmax_col) 

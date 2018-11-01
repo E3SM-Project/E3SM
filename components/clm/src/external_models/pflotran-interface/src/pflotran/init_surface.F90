@@ -1,10 +1,11 @@
 module Init_Surface_module
 
+#include "petsc/finclude/petscsys.h"
+  use petscsys
   use PFLOTRAN_Constants_module
 
   implicit none
 
-#include "petsc/finclude/petscsys.h"
 
   public :: SurfaceInitReadRequiredCards, &
             InitSurfaceSetupRealization, &
@@ -13,7 +14,7 @@ contains
 
 ! ************************************************************************** !
 
-subroutine SurfaceInitReadRequiredCards(surf_realization)
+subroutine SurfaceInitReadRequiredCards(surf_realization,input)
   ! 
   ! This routine reads the required input file cards related to surface flows
   ! 
@@ -34,20 +35,17 @@ subroutine SurfaceInitReadRequiredCards(surf_realization)
   implicit none
 
   class(realization_surface_type) :: surf_realization
-  type(discretization_type), pointer :: discretization
+  type(input_type), pointer :: input
 
+  type(discretization_type), pointer :: discretization
   character(len=MAXSTRINGLENGTH) :: string
-  
   type(patch_type), pointer :: patch
   type(grid_type), pointer :: grid
   type(option_type), pointer :: option
-  type(input_type), pointer :: input
   
   patch          => surf_realization%patch
   option         => surf_realization%option
   discretization => surf_realization%discretization
-  
-  input => surf_realization%input
   
 ! Read in select required cards
 !.........................................................................
@@ -196,7 +194,7 @@ subroutine InitSurfaceSetupRealization(surf_realization,subsurf_realization, &
   use Option_module
   use Waypoint_module
   use Condition_Control_module
-  use EOS_Water_module
+  use EOS_module
   
   implicit none
   
@@ -205,26 +203,20 @@ subroutine InitSurfaceSetupRealization(surf_realization,subsurf_realization, &
   type(waypoint_list_type) :: waypoint_list
   
   type(option_type), pointer :: option
-  PetscReal :: dum1
   PetscErrorCode :: ierr
   
   option => surf_realization%option
 
-  ! initialize reference density
-  if (option%reference_water_density < 1.d-40) then
-    call EOSWaterDensity(option%reference_temperature, &
-                         option%reference_pressure, &
-                         option%reference_water_density, &
-                         dum1,ierr)    
-  endif  
-  
+  ! set reference densities if not specified in input file.
+  call EOSReferenceDensity(option)
+
   call RealizSurfCreateDiscretization(surf_realization)
 
   ! Check if surface-flow is compatible with the given flowmode
   select case(option%iflowmode)
-    case(RICHARDS_MODE,TH_MODE)
+    case(TH_MODE)
     case default
-      option%io_buffer = 'For surface-flow only RICHARDS and TH mode implemented'
+      option%io_buffer = 'For surface-flow only TH mode implemented'
       call printErrMsgByRank(option)
   end select
 
@@ -244,9 +236,6 @@ subroutine InitSurfaceSetupRealization(surf_realization,subsurf_realization, &
   call RealizSurfAddWaypointsToList(surf_realization,waypoint_list)
 
   select case(option%iflowmode)
-    case(RICHARDS_MODE)
-      call SurfaceFlowSetup(surf_realization)
-    case default
     case(TH_MODE)
       call SurfaceTHSetup(surf_realization)
   end select
@@ -265,8 +254,6 @@ subroutine InitSurfaceSetupRealization(surf_realization,subsurf_realization, &
   endif
   
   select case(option%iflowmode)
-    case(RICHARDS_MODE)
-      call SurfaceFlowUpdateAuxVars(surf_realization)
     case(TH_MODE)
       call SurfaceTHUpdateAuxVars(surf_realization)
     case default
@@ -285,6 +272,8 @@ subroutine InitSurfaceSetupSolvers(surf_realization,solver,final_time)
   ! Author: Glenn Hammond
   ! Date: 12/04/14
   ! 
+#include "petsc/finclude/petscts.h"
+  use petscts
   use Realization_Surface_class
   use Option_module
   
@@ -295,14 +284,6 @@ subroutine InitSurfaceSetupSolvers(surf_realization,solver,final_time)
   use Surface_TH_module
   
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscmat.h"
-#include "petsc/finclude/petscmat.h90"
-#include "petsc/finclude/petscsnes.h"
-#include "petsc/finclude/petscpc.h"
-#include "petsc/finclude/petscts.h"
   
   class(realization_surface_type) :: surf_realization
   type(solver_type), pointer :: solver
@@ -339,6 +320,8 @@ subroutine SurfaceInitMatPropToRegions(surf_realization)
   ! Date: 02/13/12
   ! 
 
+#include "petsc/finclude/petscvec.h"
+  use petscvec
   use Realization_Surface_class
   use Discretization_module
   use Strata_module
@@ -354,9 +337,6 @@ subroutine SurfaceInitMatPropToRegions(surf_realization)
   use HDF5_module
 
   implicit none
-
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   class(realization_surface_type) :: surf_realization
   

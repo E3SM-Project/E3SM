@@ -12,8 +12,8 @@ from six.moves import input
 from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model
 from CIME.utils                     import get_project, get_charge_account, check_name
-from CIME.utils                     import get_current_commit
-from CIME.locked_files         import LOCKED_DIR, lock_file
+from CIME.utils                     import get_current_commit, safe_copy
+from CIME.locked_files              import LOCKED_DIR, lock_file
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
 from CIME.XML.files                 import Files
@@ -71,7 +71,7 @@ class Case(object):
     from CIME.case.case_test  import case_test
     from CIME.case.case_submit import check_DA_settings, check_case, submit
     from CIME.case.case_st_archive import case_st_archive, restore_from_archive, \
-        archive_last_restarts
+        archive_last_restarts, test_st_archive
     from CIME.case.case_run import case_run
     from CIME.case.case_cmpgen_namelists import case_cmpgen_namelists
     from CIME.case.check_lockedfiles import check_lockedfile, check_lockedfiles, check_pelayouts_require_rebuild
@@ -84,7 +84,6 @@ class Case(object):
             case_root = os.getcwd()
         self._caseroot = case_root
         logger.debug("Initializing Case.")
-        self._env_files_that_need_rewrite = set()
         self._read_only_mode = True
         self._force_read_only = read_only
         self._primary_component = None
@@ -191,16 +190,7 @@ class Case(object):
         self._read_only_mode = True
         return False
 
-    def schedule_rewrite(self, env_file):
-        assert not self._read_only_mode, \
-            "case.py scripts error: attempted to modify an env file while in " \
-            "read-only mode"
-        self._env_files_that_need_rewrite.add(env_file)
-
     def read_xml(self):
-        if self._env_files_that_need_rewrite:
-            expect(False, "Object(s) {} seem to have newer data than the corresponding case file".format(" ".join([env_file.filename for env_file in self._env_files_that_need_rewrite])))
-
         self._env_entryid_files = []
         self._env_entryid_files.append(EnvCase(self._caseroot, components=None))
         components = self._env_entryid_files[0].get_values("COMP_CLASSES")
@@ -251,12 +241,8 @@ class Case(object):
         if not os.path.isdir(self._caseroot):
             # do not flush if caseroot wasnt created
             return
-        if flushall:
-            for env_file in self._files:
-                self.schedule_rewrite(env_file)
-        for env_file in self._env_files_that_need_rewrite:
-            env_file.write()
-        self._env_files_that_need_rewrite = set()
+        for env_file in self._files:
+            env_file.write(force_write=flushall)
 
     def get_values(self, item, attribute=None, resolved=True, subgroup=None):
         for env_file in self._files:
@@ -363,12 +349,12 @@ class Case(object):
         recurse_limit = 10
         if (num_unresolved > 0 and recurse < recurse_limit ):
             for env_file in self._env_entryid_files:
-                item = env_file.get_resolved_value(item, 
+                item = env_file.get_resolved_value(item,
                                                    allow_unresolved_envvars=allow_unresolved_envvars)
             if ("$" not in item):
                 return item
             else:
-                item = self.get_resolved_value(item, recurse=recurse+1, 
+                item = self.get_resolved_value(item, recurse=recurse+1,
                                                allow_unresolved_envvars=allow_unresolved_envvars)
 
         return item
@@ -387,7 +373,6 @@ class Case(object):
             result = env_file.set_value(item, value, subgroup, ignore_type)
             if (result is not None):
                 logger.debug("Will rewrite file {} {}".format(env_file.filename, item))
-                self._env_files_that_need_rewrite.add(env_file)
                 return result
 
         if len(self._files) == 1:
@@ -406,7 +391,6 @@ class Case(object):
             result = env_file.set_valid_values(item, valid_values)
             if (result is not None):
                 logger.debug("Will rewrite file {} {}".format(env_file.filename, item))
-                self._env_files_that_need_rewrite.add(env_file)
                 return result
 
     def set_lookup_value(self, item, value):
@@ -499,7 +483,7 @@ class Case(object):
             # this is a "J" compset
             primary_component = "allactive"
         elif progcomps["ATM"]:
-            if "DOCN%SOM" in self._compsetname:
+            if "DOCN%SOM" in self._compsetname and progcomps["LND"]:
                 # This is an "E" compset
                 primary_component = "allactive"
             else:
@@ -538,7 +522,6 @@ class Case(object):
                                             {"component":component}, resolved=False)
 
         self.set_lookup_value("COMPSETS_SPEC_FILE" ,compset_spec_file)
-
         if pesfile is None:
             self._pesfile = files.get_value("PES_SPEC_FILE", {"component":component})
             pesfile_unresolved = files.get_value("PES_SPEC_FILE", {"component":component}, resolved=False)
@@ -864,7 +847,6 @@ class Case(object):
         # Create env_mach_specific settings from machine info.
         env_mach_specific_obj = self.get_env("mach_specific")
         env_mach_specific_obj.populate(machobj)
-        self.schedule_rewrite(env_mach_specific_obj)
 
         self._setup_mach_pes(pecount, multi_driver, ninst, machine_name, mpilib)
 
@@ -881,7 +863,6 @@ class Case(object):
         logger.debug("archive defaults located in {}".format(infile))
         archive = Archive(infile=infile, files=files)
         archive.setup(env_archive, self._components, files=files)
-        self.schedule_rewrite(env_archive)
 
         self.set_value("COMPSET",self._compsetname)
 
@@ -968,7 +949,6 @@ class Case(object):
             self.set_value("USER_REQUESTED_QUEUE", queue, subgroup=self.get_primary_job())
 
         env_batch.set_job_defaults(bjobs, self)
-        self.schedule_rewrite(env_batch)
 
         # Make sure that parallel IO is not specified if total_tasks==1
         if self.total_tasks == 1:
@@ -1057,40 +1037,52 @@ class Case(object):
 
         if get_model() == "e3sm":
             if os.path.exists(os.path.join(machines_dir, "syslog.{}".format(machine))):
-                shutil.copy(os.path.join(machines_dir, "syslog.{}".format(machine)), os.path.join(casetools, "mach_syslog"))
+                safe_copy(os.path.join(machines_dir, "syslog.{}".format(machine)), os.path.join(casetools, "mach_syslog"))
             else:
-                shutil.copy(os.path.join(machines_dir, "syslog.noop"), os.path.join(casetools, "mach_syslog"))
+                safe_copy(os.path.join(machines_dir, "syslog.noop"), os.path.join(casetools, "mach_syslog"))
 
     def _create_caseroot_sourcemods(self):
         components = self.get_compset_components()
+        components.extend(['share', 'drv'])
+        readme_message = """Put source mods for the {component} library in this directory.
+
+WARNING: SourceMods are not kept under version control, and can easily
+become out of date if changes are made to the source code on which they
+are based. We only recommend using SourceMods for small, short-term
+changes that just apply to one or two cases. For larger or longer-term
+changes, including gradual, incremental changes towards a final
+solution, we highly recommend making changes in the main source tree,
+leveraging version control (git or svn).
+"""
+
         for component in components:
             directory = os.path.join(self._caseroot,"SourceMods","src.{}".format(component))
             if not os.path.exists(directory):
                 os.makedirs(directory)
-
-        directory = os.path.join(self._caseroot, "SourceMods", "src.share")
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-
-        directory = os.path.join(self._caseroot,"SourceMods","src.drv")
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+                # Besides giving some information on SourceMods, this
+                # README file serves one other important purpose: By
+                # putting a file inside each SourceMods subdirectory, we
+                # prevent aggressive scrubbers from scrubbing these
+                # directories due to being empty (which can cause builds
+                # to fail).
+                readme_file = os.path.join(directory, "README")
+                with open(readme_file, "w") as fd:
+                    fd.write(readme_message.format(component=component))
 
         if get_model() == "cesm":
         # Note: this is CESM specific, given that we are referencing cism explitly
             if "cism" in components:
-                directory = os.path.join(self._caseroot, "SourceMods", "src.cism", "glimmer-cism")
+                directory = os.path.join(self._caseroot, "SourceMods", "src.cism", "source_cism")
                 if not os.path.exists(directory):
                     os.makedirs(directory)
-                readme_file = os.path.join(directory, "README")
+                    readme_file = os.path.join(directory, "README")
+                    str_to_write = """Put source mods for the source_cism library in this subdirectory.
+This includes any files from $COMP_ROOT_DIR_GLC/source_cism. Anything
+else (e.g., mods to source_glc or drivers) goes in the src.cism
+directory, NOT in this subdirectory."""
 
-                str_to_write = """
-                Put source mods for the glimmer-cism library in the glimmer-cism subdirectory
-                This includes any files that are in the glimmer-cism subdirectory of $cimeroot/../components/cism
-                Anything else (e.g., mods to source_glc or drivers) goes in this directory, NOT in glimmer-cism/"""
-
-                with open(readme_file, "w") as fd:
-                    fd.write(str_to_write)
+                    with open(readme_file, "w") as fd:
+                        fd.write(str_to_write)
 
     def create_caseroot(self, clone=False):
         if not os.path.exists(self._caseroot):
@@ -1185,14 +1177,15 @@ class Case(object):
         else:
             return comp_user_mods
 
-    def submit_jobs(self, no_batch=False, job=None, prereq=None, skip_pnl=False,
-                    mail_user=None, mail_type=None, batch_args=None,
+    def submit_jobs(self, no_batch=False, job=None, skip_pnl=None, prereq=None, allow_fail=False,
+                    resubmit_immediate=False, mail_user=None, mail_type=None, batch_args=None,
                     dry_run=False):
         env_batch = self.get_env('batch')
-        result =  env_batch.submit_jobs(self, no_batch=no_batch, job=job, user_prereq=prereq,
-                                     skip_pnl=skip_pnl, mail_user=mail_user,
-                                     mail_type=mail_type, batch_args=batch_args,
-                                     dry_run=dry_run)
+        result =  env_batch.submit_jobs(self, no_batch=no_batch, skip_pnl=skip_pnl,
+                                        job=job, user_prereq=prereq, allow_fail=allow_fail,
+                                        resubmit_immediate=resubmit_immediate,
+                                        mail_user=mail_user, mail_type=mail_type,
+                                        batch_args=batch_args, dry_run=dry_run)
         return result
 
     def get_job_info(self):
@@ -1294,7 +1287,7 @@ class Case(object):
         """
         Returns True if current settings require a threaded build/run.
         """
-        force_threaded = self.get_value("BUILD_THREADED")
+        force_threaded = self.get_value("FORCE_BUILD_SMP")
         smp_present = bool(force_threaded) or self.thread_count > 1
         return smp_present
 
@@ -1394,11 +1387,8 @@ class Case(object):
         elif old_object in self._env_generic_files:
             self._env_generic_files.remove(old_object)
             self._env_generic_files.append(new_object)
-        if old_object in self._env_files_that_need_rewrite:
-            self._env_files_that_need_rewrite.remove(old_object)
         self._files.remove(old_object)
         self._files.append(new_object)
-        self.schedule_rewrite(new_object)
 
     def get_latest_cpl_log(self, coupler_log_path=None):
         """

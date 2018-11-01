@@ -4,7 +4,6 @@ module Reaction_Database_hpt_module
   use Reaction_Aux_module
   use Reaction_Database_module
   use Reaction_Database_Aux_module
-  use Reaction_Surface_Complexation_Aux_module
   use Reaction_Mineral_Aux_module
   use Reaction_Gas_Aux_module
 
@@ -43,8 +42,6 @@ subroutine DatabaseRead_hpt(reaction,option)
   type(gas_species_type), pointer :: cur_gas_spec, cur_gas_spec2
   type(mineral_rxn_type), pointer :: cur_mineral, cur_mineral2
   type(colloid_type), pointer :: cur_colloid
-  type(surface_complexation_rxn_type), pointer :: cur_srfcplx_rxn
-  type(surface_complex_type), pointer :: cur_srfcplx, cur_srfcplx2
   
   character(len=MAXSTRINGLENGTH) :: string
   character(len=MAXWORDLENGTH) :: name
@@ -681,9 +678,6 @@ subroutine BasisInit_hpt(reaction,option)
   type(aq_species_type), pointer :: cur_sec_aq_spec2
   type(gas_species_type), pointer :: cur_gas_spec1
   type(gas_species_type), pointer :: cur_gas_spec2
-  type(surface_complexation_rxn_type), pointer :: cur_srfcplx_rxn
-  type(surface_complex_type), pointer :: cur_srfcplx
-  type(surface_complex_type), pointer :: cur_srfcplx2
   type(ion_exchange_rxn_type), pointer :: cur_ionx_rxn
   type(ion_exchange_cation_type), pointer :: cur_cation
   type(general_rxn_type), pointer :: cur_general_rxn

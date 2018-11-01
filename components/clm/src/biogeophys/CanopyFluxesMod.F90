@@ -13,7 +13,7 @@ module CanopyFluxesMod
   use shr_kind_mod          , only : r8 => shr_kind_r8
   use shr_log_mod           , only : errMsg => shr_log_errMsg
   use abortutils            , only : endrun
-  use clm_varctl            , only : iulog, use_cn, use_lch4, use_c13, use_c14, use_cndv, use_ed
+  use clm_varctl            , only : iulog, use_cn, use_lch4, use_c13, use_c14, use_cndv, use_fates
   use clm_varpar            , only : nlevgrnd, nlevsno
   use clm_varcon            , only : namep 
   use pftvarcon             , only : nbrdlf_dcd_tmp_shrub, nsoybean , nsoybeanirrig
@@ -484,7 +484,7 @@ contains
       end do
 
 
-      if (use_ed) then
+      if (use_fates) then
          call alm_fates%prep_canopyfluxes( bounds )
       end if
 
@@ -560,7 +560,7 @@ contains
       ! values require knowledge of the belowground root structure.
       ! --------------------------------------------------------------------------
       
-      if(use_ed)then
+      if(use_fates)then
          call alm_fates%wrap_btran(bounds, fn, filterc_tmp(1:fn), soilstate_vars, waterstate_vars, &
                temperature_vars, energyflux_vars, soil_water_retention_curve)
          
@@ -577,7 +577,7 @@ contains
               waterstate_vars=waterstate_vars,   &
               soil_water_retention_curve=soil_water_retention_curve)
          
-      end if !use_ed
+      end if !use_fates
 
       ! Determine if irrigation is needed (over irrigated soil columns)
 
@@ -714,7 +714,7 @@ contains
       end do
 
       if (found) then
-         if ( .not. use_ed ) then
+         if ( .not. use_fates ) then
             write(iulog,*)'Error: Forcing height is below canopy height for pft index '
             call endrun(decomp_index=index, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
          end if
@@ -846,14 +846,14 @@ contains
             end if
          end do
 
-         if ( use_ed ) then      
+         if ( use_fates ) then      
 
             call alm_fates%wrap_photosynthesis(bounds, fn, filterp(1:fn), &
                   svpts(begp:endp), eah(begp:endp), o2(begp:endp), &
                   co2(begp:endp), rb(begp:endp), dayl_factor(begp:endp), &
                   atm2lnd_vars, temperature_vars, canopystate_vars, photosyns_vars)
 
-         else ! not use_ed
+         else ! not use_fates
 
             call Photosynthesis (bounds, fn, filterp, &
                  svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
@@ -890,7 +890,7 @@ contains
                     phase='sha')
             end if
 
-         end if ! end of if use_ed
+         end if ! end of if use_fates
 
          do f = 1, fn
             p = filterp(f)
@@ -1195,7 +1195,7 @@ contains
 
       end do
 
-      if ( use_ed ) then
+      if ( use_fates ) then
          call alm_fates%wrap_accumulatefluxes(bounds,fn,filterp(1:fn))
          call alm_fates%wrap_hydraulics_drive(bounds,soilstate_vars, &
                waterstate_vars,waterflux_vars,solarabs_vars,energyflux_vars)

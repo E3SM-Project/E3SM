@@ -83,7 +83,7 @@ This will be followed by a list of tests, with a Pass/Fail message for each, lik
          Start  2: seq_map
     2/17 Test  #2: seq_map ..........................   Passed    0.01 sec
          Start  3: glc_elevclass
-    3/17 Test  #3: glc_elevclass ....................   Passed    0.01 sec   
+    3/17 Test  #3: glc_elevclass ....................   Passed    0.01 sec
 
 You will also see a final message like this:
 
@@ -169,9 +169,9 @@ For a serial build, your setting will look like this example:
 
 The ``MPILIB`` attribute should be either:
 
-* ``mpi-serial`` for a pFUnit build where ``-DMPI=NO``, or 
+* ``mpi-serial`` for a pFUnit build where ``-DMPI=NO``, or
 
-* the name of the MPI library you used for a pFUnit build where ``-DMPI=YES``. (For example, you might use ``mpich``, which should be one of the machine's MPI libraries specified by ``MPILIBS`` in **config_machines.xml**.) 
+* the name of the MPI library you used for a pFUnit build where ``-DMPI=YES``. (For example, you might use ``mpich``, which should be one of the machine's MPI libraries specified by ``MPILIBS`` in **config_machines.xml**.)
 
 The ``compile_threaded`` attribute should be either ``true`` or ``false`` depending on the value of ``-DOPENMP``.
 
@@ -180,7 +180,7 @@ Once you have specified the path for your build(s), you should be able to run th
 How to write a new unit test
 ----------------------------
 
-TODO: Need to write this section. This will draw on some of the information in sections 3 and 4 of https://github.com/NCAR/cesm_unit_test_tutorial (though without the clm and cam stuff).
+.. todo:: Need to write this section. This will draw on some of the information in sections 3 and 4 of https://github.com/NCAR/cesm_unit_test_tutorial (though without the clm and cam stuff).
 
 It should also introduce the role of .pf files, which are referenced several paragraphs later as if already explained.
 
@@ -204,11 +204,11 @@ Good unit tests are **"FIRST"**:
 
 Good unit tests test a single, well-defined condition. This generally means that
 you make a single call to the function or subroutine that you're testing, with a
-single set of inputs. Usually you need to run multiple tests in order to test 
-all of the unit's possible behaviors. 
+single set of inputs. Usually you need to run multiple tests in order to test
+all of the unit's possible behaviors.
 
-Testing a single condition in each test makes pinpointing problems easier when a test fails. 
-This also makes it easier to read and understand the tests, allowing them to serve as useful 
+Testing a single condition in each test makes pinpointing problems easier when a test fails.
+This also makes it easier to read and understand the tests, allowing them to serve as useful
 documentation of how the code should operate.
 
 A good unit test has four distinct pieces:
@@ -222,10 +222,10 @@ A good unit test has four distinct pieces:
 #. **Teardown**: For example, deallocating variables. For simple tests, this piece may be empty. If it is needed, however, it is best done in the special tearDown routine discussed in `Defining a test class in order to define setUp and tearDown methods`_ and `More on test teardown`_.**
 
 If you have many tests of the same subroutine, you may find quite a
-lot of duplication. It's good practice to extract major areas of duplication to their own 
-subroutines in the **.pf** file, which your tests can call. This aids the understandability 
-and maintainability of your tests. pFUnit knows which subroutines are tests and which are 
-"helper" routines because of the ``@Test`` directives: You only add a ``@Test`` directive 
+lot of duplication. It's good practice to extract major areas of duplication to their own
+subroutines in the **.pf** file, which your tests can call. This aids the understandability
+and maintainability of your tests. pFUnit knows which subroutines are tests and which are
+"helper" routines because of the ``@Test`` directives: You only add a ``@Test`` directive
 for your tests, not for your helper routines.
 
 More details on writing pFUnit-based unit tests
@@ -258,7 +258,7 @@ Here are some of the most useful:
 
 ``@assertIsFinite(value)``                           Ensures that the result is not NaN or infinity.
 
-``@assertIsNan(value)``                              This can be useful for failure checking - for example, when your 
+``@assertIsNan(value)``                              This can be useful for failure checking - for example, when your
                                                      function returns NaN to signal an error.
 
 =================================================    ===================================================================
@@ -267,13 +267,13 @@ Comparison assertions accept an optional ``tolerance`` argument, which gives the
 tolerance for real-valued comparisons.
 
 All of the assertion methods also accept an optional ``message`` argument, which prints
-a string if the assertion fails. If no message is provided, you will be pointed to the 
+a string if the assertion fails. If no message is provided, you will be pointed to the
 file and line number of the failed assertion.
 
 Defining a test class in order to define setUp and tearDown methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-As noted in the comments in **test_circle.pf**, defining a test class is optional. 
+As noted in the comments in **test_circle.pf**, defining a test class is optional.
 However, defining a minimal test class as shown here with ``TestCircle`` allows you
 use some pFUnit features such as the setUp and tearDown methods.
 
@@ -311,9 +311,9 @@ to deallocate memory. See `More on test teardown`_ for details.
 You can add any data or procedures to the test class. Adding data is
 particularly useful, as this can be a way for the setUp and tearDown methods to
 interact with your tests: The setUp method can fill a class variable with data,
-which your tests can then use (accessed via ``this%somedata``). Conversely, if 
-you want the tearDown method to deallocate a variable, the variable cannot be local 
-to your test subroutine. Instead, you make the variable a member of the class, so 
+which your tests can then use (accessed via ``this%somedata``). Conversely, if
+you want the tearDown method to deallocate a variable, the variable cannot be local
+to your test subroutine. Instead, you make the variable a member of the class, so
 that the tearDown method can access it.
 
 Here is an example. Say you have this variable in your test class:
@@ -323,9 +323,9 @@ Here is an example. Say you have this variable in your test class:
   real(r8), pointer :: somedata(:)
 
 The setUp method can create ``somedata`` if it needs to be the same
-for every test. 
+for every test.
 
-Alternatively, it can be created in each test routine that needs it if it 
+Alternatively, it can be created in each test routine that needs it if it
 differs from test to test. (Some tests don't need it at all.) In that situation,
 create it like this:
 
@@ -357,9 +357,9 @@ All of the tests in a single test executable run one after another. For CIME, th
 means all of the tests that are defined in all **.pf** files in a single test directory.
 
 As a result, tests can interact with each other if you don't clean up after yourself.
-In the best case, you might get a memory leak. In the worst case, the pass/fail status of tests 
-depends on which other tests have run previously, making your unit tests unrepeatable 
-and unreliable. 
+In the best case, you might get a memory leak. In the worst case, the pass/fail status of tests
+depends on which other tests have run previously, making your unit tests unrepeatable
+and unreliable.
 
 **To avoid this:**
 
@@ -367,8 +367,8 @@ and unreliable.
 * Reset any global variables to some known, initial state.
 * Do other, similar cleanup for resources that are shared by multiple tests.
 
-In Fortran2003, allocatable variables are deallocated automatically when they go 
-out of scope, but pointers are not. Explicitly deallocate any pointers that have 
+In Fortran2003, allocatable variables are deallocated automatically when they go
+out of scope, but pointers are not. Explicitly deallocate any pointers that have
 been allocated, either in test setup or in the execution of the routine
 you are testing.
 
@@ -377,8 +377,8 @@ because the tearDown method can access class instance variables, but not subrout
 variables.
 
 CIME makes extensive use of global variables that may be used directly or
-indirectly by a routine you are testing. If your test has allocated or modified 
-any global variables, it is important to reset them to their initial state in the 
+indirectly by a routine you are testing. If your test has allocated or modified
+any global variables, it is important to reset them to their initial state in the
 teardown portion of the test.
 
 Finding more documentation and examples
@@ -402,7 +402,7 @@ Other pFUnit documentation sources
 
 Some pFUnit documentation is available here: http://pfunit.sourceforge.net/.
 
-Extensive documentation and examples are included in the following when you download 
+Extensive documentation and examples are included in the following when you download
 pFUnit from http://sourceforge.net/projects/pfunit/:
 
 * documentation/pFUnit3-ReferenceManual.pdf
