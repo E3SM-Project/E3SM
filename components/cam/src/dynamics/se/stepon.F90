@@ -223,14 +223,14 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use dimensions_mod, only: nlev, nelemd, np, npsq
    use dp_coupling,    only: p_d_coupling
    use parallel_mod,   only: par
-   use dyn_comp,       only: TimeLevel
+   use dyn_comp,       only: TimeLevel, hvcoord
    
-   use time_mod,        only: tstep, phys_tscale, TimeLevel_Qdp   !  dynamics typestep
+   use time_mod,        only: tstep, phys_tscale, TimeLevel_Qdp, nsplit   !  dynamics typestep
    use control_mod,     only: ftype, qsplit, smooth_phis_numcycle
    use hycoef,          only: hyai, hybi, ps0
    use cam_history,     only: outfld, hist_fld_active
    use nctopo_util_mod, only: phisdyn,sghdyn,sgh30dyn
-
+   use prim_advance_mod, only: convert_thermo_forcing
 
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
    type(physics_tend), intent(inout) :: phys_tend(begchunk:endchunk)
@@ -299,7 +299,12 @@ print *, 'END PD COUPLING'
 
       call TimeLevel_Qdp(TimeLevel, qsplit, tl_fQdp)
 
+
+!what are these for?
       dyn_ps0=ps0
+
+      !dt for convert is dt_remap
+      call convert_thermo_forcing(dyn_in%elem,hvcoord,tl_f,tl_fQdp,dtime/nsplit,1,nelemd)
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! ftype=2,3,4:  apply forcing to Q,ps.  Return dynamics tendencies
