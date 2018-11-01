@@ -51,7 +51,7 @@
 
       subroutine mcica_subcol_lw(lchnk, ncol, nlay, icld, permuteseed, play, &
                        cldfrac, ciwp, clwp, rei, rel, tauc, cldfmcl, &
-                       ciwpmcl, clwpmcl, reicmcl, relqmcl, taucmcl, clm_rand_seed, pergro_mods)
+                       ciwpmcl, clwpmcl, reicmcl, relqmcl, taucmcl, clm_rand_seed)
 
 ! ----- Input -----
 ! Control
@@ -63,8 +63,6 @@
                                                         ! permute the seed between each call.
                                                         ! between calls for LW and SW, recommended
                                                         ! permuteseed differes by 'ngpt'
-      logical, intent(in) :: pergro_mods
-
 ! Atmosphere
       real(kind=r8), intent(in) :: play(:,:)          ! layer pressures (mb) 
                                                         !    Dimensions: (ncol,nlay)
@@ -152,14 +150,14 @@
 
 !  Generate the stochastic subcolumns of cloud optical properties for the longwave;
       call generate_stochastic_clouds (ncol, nlay, nsubclw, icld, pmid, cldfrac, clwp, ciwp, tauc, &
-                               cldfmcl, clwpmcl, ciwpmcl, taucmcl, permuteseed, clm_rand_seed, pergro_mods)!BSINGH
+                               cldfmcl, clwpmcl, ciwpmcl, taucmcl, permuteseed, clm_rand_seed)!BSINGH
 
       end subroutine mcica_subcol_lw
 
 
 !-------------------------------------------------------------------------------------------------
       subroutine generate_stochastic_clouds(ncol, nlay, nsubcol, icld, pmid, cld, clwp, ciwp, tauc, &
-                                   cld_stoch, clwp_stoch, ciwp_stoch, tauc_stoch, changeSeed, clm_rand_seed, pergro_mods)!BSINGH  
+                                   cld_stoch, clwp_stoch, ciwp_stoch, tauc_stoch, changeSeed, clm_rand_seed)!BSINGH
 !-------------------------------------------------------------------------------------------------
 
   !----------------------------------------------------------------------------------------------------------------
@@ -230,7 +228,6 @@
       integer, intent(in) :: icld            ! clear/cloud, cloud overlap flag
       integer, intent(in) :: nsubcol         ! number of sub-columns (g-point intervals)
       integer, optional, intent(in) :: changeSeed     ! allows permuting seed
-      logical, intent(in) :: pergro_mods
 
 ! Column state (cloud fraction, cloud water, cloud ice) + variables needed to read physics state 
       real(kind=r8), intent(in) :: pmid(:,:)          ! layer pressure (Pa)
@@ -324,26 +321,12 @@
    
 ! Advance randum number generator by changeseed values
       if (irnd.eq.0) then   
-         if(pergro_mods) then
-            do i=1,ncol
-               seed1(i) = clm_rand_seed (i,1)
-               seed2(i) = clm_rand_seed (i,2)
-               seed3(i) = clm_rand_seed (i,3)
-               seed4(i) = clm_rand_seed (i,4)
-            enddo
-         else
-            ! For kissvec, create a seed that depends on the state of the columns. Maybe not the best way, but it works.  
-            ! Must use pmid from bottom four layers. 
-            do i=1,ncol
-               if (pmid(i,nlay).lt.pmid(i,nlay-1)) then 
-                  call endrun('MCICA_SUBCOL: KISSVEC SEED GENERATOR REQUIRES PMID FROM BOTTOM FOUR LAYERS.')
-               endif
-               seed1(i) = (pmid(i,nlay) - int(pmid(i,nlay)))  * 1000000000
-               seed2(i) = (pmid(i,nlay-1) - int(pmid(i,nlay-1)))  * 1000000000
-               seed3(i) = (pmid(i,nlay-2) - int(pmid(i,nlay-2)))  * 1000000000
-               seed4(i) = (pmid(i,nlay-3) - int(pmid(i,nlay-3)))  * 1000000000
-            enddo
-         endif
+         do i=1,ncol
+            seed1(i) = clm_rand_seed (i,1)
+            seed2(i) = clm_rand_seed (i,2)
+            seed3(i) = clm_rand_seed (i,3)
+            seed4(i) = clm_rand_seed (i,4)
+         enddo
          do i=1,changeSeed
             call kissvec(seed1, seed2, seed3, seed4, rand_num)
          enddo
@@ -553,14 +536,12 @@
       
        !BSINGH - update seeds  
       if (irnd.eq.0) then
-         if(pergro_mods) then
-            do i=1,ncol
-               clm_rand_seed (i,1) = seed1(i)
-               clm_rand_seed (i,2) = seed2(i)
-               clm_rand_seed (i,3) = seed3(i)
-               clm_rand_seed (i,4) = seed4(i)
-            enddo
-         endif
+         do i=1,ncol
+            clm_rand_seed (i,1) = seed1(i)
+            clm_rand_seed (i,2) = seed2(i)
+            clm_rand_seed (i,3) = seed3(i)
+            clm_rand_seed (i,4) = seed4(i)
+         enddo
       endif
 
 

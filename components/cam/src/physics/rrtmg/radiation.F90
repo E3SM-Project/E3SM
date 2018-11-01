@@ -88,7 +88,6 @@ integer, allocatable :: clm_rand_seed(:,:,:)
 
 real(r8) :: dt_avg=0.0_r8  ! time step to use for the shr_orb_cosz calculation, if use_rad_dt_cosz set to true !BSINGH - Added for solar insolation calc.
 
-logical :: pergro_mods = .false. ! for activating pergro mods
 integer :: firstblock, lastblock      ! global block indices
 
 !===============================================================================
@@ -444,8 +443,7 @@ end function radiation_nextsw_cday
     call phys_getopts(history_amwg_out   = history_amwg,    &
                       history_vdiag_out  = history_vdiag,   &
                       history_budget_out = history_budget,  &
-                      history_budget_histfile_num_out = history_budget_histfile_num, &
-                      pergro_mods_out    = pergro_mods)
+                      history_budget_histfile_num_out = history_budget_histfile_num )
 
     ! Determine whether modal aerosols are affecting the climate, and if so
     ! then initialize the modal aerosol optics module
@@ -470,116 +468,114 @@ end function radiation_nextsw_cday
     allocate(cosp_cnt(begchunk:endchunk))
 
     !Modification needed by pergro_mods for generating random numbers
-    if (pergro_mods) then
-       max_chnks_in_blk = maxval(npchunks(:))  !maximum of the number for chunks in each procs
-       allocate(clm_rand_seed(pcols,kiss_seed_num,max_chnks_in_blk), stat=astat)
-       if( astat /= 0 ) then
-          write(iulog,*) 'radiation.F90(rrtmg)-radiation_init: failed to allocate clm_rand_seed; error = ',astat
-          call endrun
-       end if
-
-       allocate(tot_chnk_till_this_prc(0:npes-1), stat=astat )
-       if( astat /= 0 ) then
-          write(errstr,*) 'radiation.F90(rrtmg)-radiation_init: failed to allocate tot_chnk_till_this_prc variable; error = ',astat
-          call endrun (errstr)
-       end if
-       
-       !BSINGH - Build lat lon relationship to chunk and column
-       !Compute maximum number of chunks each processor have
-       if(masterproc) then
-          tot_chnk_till_this_prc(0:npes-1) = huge(1)
-          do ipes = 0, npes - 1
-             tot_chnk_till_this_prc(ipes) = 0
-             do ipes_tmp = 0, ipes-1
-                tot_chnk_till_this_prc(ipes) = tot_chnk_till_this_prc(ipes) + npchunks(ipes_tmp)
-             enddo
+    max_chnks_in_blk = maxval(npchunks(:))  !maximum of the number for chunks in each procs
+    allocate(clm_rand_seed(pcols,kiss_seed_num,max_chnks_in_blk), stat=astat)
+    if( astat /= 0 ) then
+       write(iulog,*) 'radiation.F90(rrtmg)-radiation_init: failed to allocate clm_rand_seed; error = ',astat
+       call endrun
+    end if
+    
+    allocate(tot_chnk_till_this_prc(0:npes-1), stat=astat )
+    if( astat /= 0 ) then
+       write(errstr,*) 'radiation.F90(rrtmg)-radiation_init: failed to allocate tot_chnk_till_this_prc variable; error = ',astat
+       call endrun (errstr)
+    end if
+    
+    !BSINGH - Build lat lon relationship to chunk and column
+    !Compute maximum number of chunks each processor have
+    if(masterproc) then
+       tot_chnk_till_this_prc(0:npes-1) = huge(1)
+       do ipes = 0, npes - 1
+          tot_chnk_till_this_prc(ipes) = 0
+          do ipes_tmp = 0, ipes-1
+             tot_chnk_till_this_prc(ipes) = tot_chnk_till_this_prc(ipes) + npchunks(ipes_tmp)
           enddo
-       endif
-#ifdef SPMD
-       !BSINGH - Ideally we should use mpi_scatter but we are using this variable
-       !in "if(masterproc)" below in phys_run1, so broadcast is iused here
-       call mpibcast(tot_chnk_till_this_prc,npes, mpi_integer, 0, mpicom)
-#endif
-       call get_block_bounds_d(firstblock,lastblock)
-       
-       allocate(clm_id(pcols,max_chnks_in_blk), stat=astat)
-       if( astat /= 0 ) then
-          write(errstr,*) 'radiation.F90(rrtmg)-radiation_init: failed to allocate clm_id; error = ',astat
-          call endrun(errstr)
-       end if
-       
-       allocate(clm_id_mstr(pcols,max_chnks_in_blk,npes), stat=astat)
-       if( astat /= 0 ) then
-          write(errstr,*) 'radiation.F90(rrtmg)-radiation_init: failed to allocate clm_id_mstr; error = ',astat
-          call endrun(errstr)
-       end if
-       !compute all clm ids on masterproc and then scatter it ....
-       if(masterproc) then
-          do igcol = 1, ngcols
-             if (dyn_to_latlon_gcol_map(igcol) .ne. -1) then                
-                chunkid  = knuhcs(igcol)%chunkid
-                icol = knuhcs(igcol)%col
-                iown  = chunks(chunkid)%owner
-                ilchnk = (chunks(chunkid)%lcid - lastblock) - tot_chnk_till_this_prc(iown)
-                clm_id_mstr(icol,ilchnk,iown+1) = igcol
-             endif
-          enddo
-       endif
-       
-#ifdef SPMD
-       !Scatter
-       tot_cols = pcols*max_chnks_in_blk
-       call MPI_Scatter( clm_id_mstr, tot_cols,  mpi_integer, &
-            clm_id,    tot_cols,  mpi_integer, 0,             &
-            mpicom,ierr)
-#else
-       !BSINGH - Haven't tested it.....               
-       call endrun('radiation.F90(rrtmg)-radiation_init: non-mpi compiles are not tested yet for pergro test...')
-#endif       
+       enddo
     endif
+#ifdef SPMD
+    !BSINGH - Ideally we should use mpi_scatter but we are using this variable
+    !in "if(masterproc)" below in phys_run1, so broadcast is used here
+    call mpibcast(tot_chnk_till_this_prc,npes, mpi_integer, 0, mpicom)
+#endif
+    call get_block_bounds_d(firstblock,lastblock)
+    
+    allocate(clm_id(pcols,max_chnks_in_blk), stat=astat)
+    if( astat /= 0 ) then
+       write(errstr,*) 'radiation.F90(rrtmg)-radiation_init: failed to allocate clm_id; error = ',astat
+       call endrun(errstr)
+    end if
+    
+    allocate(clm_id_mstr(pcols,max_chnks_in_blk,npes), stat=astat)
+    if( astat /= 0 ) then
+       write(errstr,*) 'radiation.F90(rrtmg)-radiation_init: failed to allocate clm_id_mstr; error = ',astat
+       call endrun(errstr)
+    end if
+    !compute all clm ids on masterproc and then scatter it ....
+    if(masterproc) then
+       do igcol = 1, ngcols
+          if (dyn_to_latlon_gcol_map(igcol) .ne. -1) then                
+             chunkid  = knuhcs(igcol)%chunkid
+             icol = knuhcs(igcol)%col
+             iown  = chunks(chunkid)%owner
+             ilchnk = (chunks(chunkid)%lcid - lastblock) - tot_chnk_till_this_prc(iown)
+             clm_id_mstr(icol,ilchnk,iown+1) = igcol
+          endif
+       enddo
+    endif
+    
+#ifdef SPMD
+    !Scatter
+    tot_cols = pcols*max_chnks_in_blk
+    call MPI_Scatter( clm_id_mstr, tot_cols,  mpi_integer, &
+         clm_id,    tot_cols,  mpi_integer, 0,             &
+         mpicom,ierr)
+#else
+    !BSINGH - Haven't tested it.....               
+    call endrun('radiation.F90(rrtmg)-radiation_init: non-mpi compiles are not tested yet for pergro test...')
+#endif       
+
        
     if (is_first_restart_step()) then
        cosp_cnt(begchunk:endchunk)=cosp_cnt_init
-       if (pergro_mods) then
-          !--------------------------------------
-          !Read seeds from restart file
-          !--------------------------------------
-          !For restart runs, rad_randn_seedrst array  will already be allocated in the restart_physics.F90
-          
-          do ilchnk = 1, max_chnks_in_blk
-             lchnk = begchunk + (ilchnk -1)
-             ncol = phys_state(lchnk)%ncol
-             do iseed = 1, kiss_seed_num
-                do icol = 1, ncol                
-                   clm_rand_seed(icol,iseed,ilchnk) = rad_randn_seedrst(icol,iseed,lchnk)
-                enddo
+       
+       !--------------------------------------
+       !Read seeds from restart file
+       !--------------------------------------
+       !For restart runs, rad_randn_seedrst array  will already be allocated in the restart_physics.F90
+       
+       do ilchnk = 1, max_chnks_in_blk
+          lchnk = begchunk + (ilchnk -1)
+          ncol = phys_state(lchnk)%ncol
+          do iseed = 1, kiss_seed_num
+             do icol = 1, ncol                
+                clm_rand_seed(icol,iseed,ilchnk) = rad_randn_seedrst(icol,iseed,lchnk)
              enddo
           enddo
-       endif
+       enddo
     else
        cosp_cnt(begchunk:endchunk)=0           
-       if (pergro_mods) then
-          !---------------------------------------
-          !create seeds based off of column ids
-          !---------------------------------------
-          !allocate array rad_randn_seedrst for initial run for  maintaining exact restarts
-          !For restart runs, it will already be allocated in the restart_physics.F90
-          allocate(rad_randn_seedrst(pcols,kiss_seed_num,begchunk:endchunk), stat=astat)
-          if( astat /= 0 ) then
-             write(iulog,*) 'radiation.F90(rrtmg)-radiation_init: failed to allocate rad_randn_seedrst; error = ',astat
-             call endrun
-          end if
-          do ilchnk = 1, max_chnks_in_blk
-             lchnk = begchunk + (ilchnk -1)
-             ncol = phys_state(lchnk)%ncol
-             do iseed = 1, kiss_seed_num
-                do icol = 1, ncol
-                   id = clm_id(icol,ilchnk)
-                   clm_rand_seed(icol,iseed,ilchnk) = id + (iseed -1)
-                enddo
+
+       !---------------------------------------
+       !create seeds based off of column ids
+       !---------------------------------------
+       !allocate array rad_randn_seedrst for initial run for  maintaining exact restarts
+       !For restart runs, it will already be allocated in the restart_physics.F90
+       allocate(rad_randn_seedrst(pcols,kiss_seed_num,begchunk:endchunk), stat=astat)
+       if( astat /= 0 ) then
+          write(iulog,*) 'radiation.F90(rrtmg)-radiation_init: failed to allocate rad_randn_seedrst; error = ',astat
+          call endrun
+       end if
+       do ilchnk = 1, max_chnks_in_blk
+          lchnk = begchunk + (ilchnk -1)
+          ncol = phys_state(lchnk)%ncol
+          do iseed = 1, kiss_seed_num
+             do icol = 1, ncol
+                id = clm_id(icol,ilchnk)
+                clm_rand_seed(icol,iseed,ilchnk) = id + (iseed -1)
              enddo
           enddo
-       endif
+       enddo
+       
     end if
 
 
@@ -1039,14 +1035,10 @@ end function radiation_nextsw_cday
     lchnk = state%lchnk
     ncol = state%ncol
     
-    if(pergro_mods) then
-       ilchnk = (lchnk - lastblock) - tot_chnk_till_this_prc(iam)
-       clm_seed(1:pcols,1:kiss_seed_num) = clm_rand_seed (1:pcols,1:kiss_seed_num,ilchnk)       
-    else
-       !for default simulation, clm_seed should never be used, assign it a value which breaks the simulation if used.
-       clm_seed(1:pcols,1:kiss_seed_num) = huge(1)
-    endif
 
+    ilchnk = (lchnk - lastblock) - tot_chnk_till_this_prc(iam)
+    clm_seed(1:pcols,1:kiss_seed_num) = clm_rand_seed (1:pcols,1:kiss_seed_num,ilchnk)       
+    
     calday = get_curr_calday()
 
     itim_old = pbuf_old_tim_idx()
@@ -1625,14 +1617,13 @@ end function radiation_nextsw_cday
     end if
  
     cam_out%netsw(:ncol) = fsns(:ncol)
-    if (pergro_mods) then
-       !write kissvec seeds for random numbers
-       do iseed = 1, kiss_seed_num    
-          do i = 1, ncol          
-             rad_randn_seedrst(i,iseed,lchnk) = clm_seed(i,iseed)
-          enddo
+
+    !write kissvec seeds for random numbers
+    do iseed = 1, kiss_seed_num    
+       do i = 1, ncol          
+          rad_randn_seedrst(i,iseed,lchnk) = clm_seed(i,iseed)
        enddo
-    endif
+    enddo
 
  end subroutine radiation_tend
 

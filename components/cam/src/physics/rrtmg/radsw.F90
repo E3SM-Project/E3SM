@@ -27,8 +27,6 @@ save
 real(r8) :: fractional_solar_irradiance(1:nbndsw) ! fraction of solar irradiance in each band
 real(r8) :: solar_band_irrad(1:nbndsw) ! rrtmg-assumed solar irradiance in each sw band
 
-logical :: pergro_mods = .false.
-
 ! Public methods
 
 public ::&
@@ -347,10 +345,9 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    call CmpDayNite(r_state%o2vmr,  o2vmr,  Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
    call CmpDayNite(r_state%n2ovmr, n2ovmr, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
 
-   if (pergro_mods) then
-      !BSINGH - rearrange random numbers, only needs to be done for pergro mods
-      call CmpDayNite(clm_rand_seed, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1,4)
-   endif
+   !BSINGH - rearrange random numbers, only needs to be done for pergro mods
+   call CmpDayNite(clm_rand_seed, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1,4)
+   
    ! These fields are no longer input by CAM.
    cicewp = 0.0_r8
    cliqwp = 0.0_r8
@@ -505,7 +502,7 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    call mcica_subcol_sw(lchnk, Nday, rrtmg_levs-1, icld, permuteseed, pmid, &
       cld, cicewp, cliqwp, rei, rel, tauc_sw, ssac_sw, asmc_sw, fsfc_sw, &
       cld_stosw, cicewp_stosw, cliqwp_stosw, rei_stosw, rel_stosw, &
-      tauc_stosw, ssac_stosw, asmc_stosw, fsfc_stosw, clm_rand_seed, pergro_mods) !BSINGH- added rngsw
+      tauc_stosw, ssac_stosw, asmc_stosw, fsfc_stosw, clm_rand_seed) !BSINGH- added rngsw
 
    call t_stopf('mcica_subcol_sw')
 
@@ -636,9 +633,8 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    call ExpDayNite(fsnirtoa,	Nday, IdxDay, Nnite, IdxNite, 1, pcols)
    call ExpDayNite(fsnrtoac,	Nday, IdxDay, Nnite, IdxNite, 1, pcols)
    call ExpDayNite(fsnrtoaq,	Nday, IdxDay, Nnite, IdxNite, 1, pcols)
-   if (pergro_mods) then
-      call ExpDayNite(clm_rand_seed, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1,4)
-   endif
+   call ExpDayNite(clm_rand_seed, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1,4)
+
 
    if (associated(su)) then
       call ExpDayNite(su,	Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp, 1, nbndsw)
@@ -673,9 +669,7 @@ subroutine radsw_init()
 !
 !-----------------------------------------------------------------------
     use radconstants,  only: get_solar_band_fraction_irrad, get_ref_solar_band_irrad
-    use phys_control,  only: phys_getopts
 
-    call phys_getopts(pergro_mods_out=pergro_mods)
     ! get the reference fractional solar irradiance in each band
     call get_solar_band_fraction_irrad(fractional_solar_irradiance)
     call get_ref_solar_band_irrad( solar_band_irrad )

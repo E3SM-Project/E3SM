@@ -60,8 +60,6 @@ integer :: nevapr_shcu_idx     = 0
 integer :: nevapr_dpcu_idx     = 0 
 integer :: ixcldice, ixcldliq
 
-logical :: pergro_mods         = .false.
-
 !==============================================================================
 contains
 !==============================================================================
@@ -89,7 +87,6 @@ subroutine wetdep_init()
 
   call cnst_get_ind('CLDICE', ixcldice)
   call cnst_get_ind('CLDLIQ', ixcldliq)
-  call phys_getopts(pergro_mods_out = pergro_mods)
 
 endsubroutine wetdep_init
 
@@ -763,11 +760,7 @@ main_i_loop: &
             
             ! fraction that is not removed within the cloud
             ! (assumed to be interstitial, and subject to convective transport)
-            if(pergro_mods) then
-               fracp = deltat*srct(i)/(max(cldmabs(i),1.e-4_r8)*max(tracer(i,k),1.e-36_r8))  ! amount removed !BSINGH - phil suggested 2nd approach
-            else
-               fracp = deltat*srct(i)/max(cldmabs(i)*tracer(i,k),1.e-36_r8)  ! amount removed ! original code
-            endif
+            fracp = deltat*srct(i)/(max(cldmabs(i),1.e-4_r8)*max(tracer(i,k),1.e-36_r8))  ! amount removed !BSINGH - phil suggested 2nd approach
             fracp = max(0._r8,min(1._r8,fracp))
             fracis(i,k) = 1._r8 - fracp
 

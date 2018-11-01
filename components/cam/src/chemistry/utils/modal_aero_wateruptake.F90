@@ -37,8 +37,6 @@ integer :: dgnum_idx      = 0
 integer :: dgnumwet_idx   = 0
 integer :: wetdens_ap_idx = 0
 integer :: qaerwat_idx    = 0
-
-logical :: pergro_mods         = .false.
 !===============================================================================
 contains
 !===============================================================================
@@ -84,8 +82,7 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
 
    ! determine default variables
    call phys_getopts(history_aerosol_out = history_aerosol, &
-                     history_verbose_out = history_verbose, &
-                     pergro_mods_out = pergro_mods)
+                     history_verbose_out = history_verbose )
 
    do m = 1, nmodes
       write(trnum, '(i3.3)') m
@@ -195,7 +192,6 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
 
    real(r8) :: es(pcols)             ! saturation vapor pressure
    real(r8) :: qs(pcols)             ! saturation specific humidity
-   real(r8) :: cldn_thresh
    real(r8) :: aerosol_water(pcols,pver) !sum of aerosol water (wat_a1 + wat_a2 + wat_a3 + wat_a4)
    logical :: history_aerosol      ! Output the MAM aerosol variables and tendencies
    logical :: history_verbose      ! produce verbose history output
@@ -351,12 +347,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
          endif
          rh(i,k) = max(rh(i,k), 0.0_r8)
          rh(i,k) = min(rh(i,k), 0.98_r8)
-         if(pergro_mods) then
-            cldn_thresh = 0.9998_r8
-         else			
-            cldn_thresh = 1.0_r8 !original code
-         endif
-         if (cldn(i,k) .lt. cldn_thresh) then !BSINGH 
+         if (cldn(i,k) .lt. 0.9998_r8) then !BSINGH 
             rh(i,k) = (rh(i,k) - cldn(i,k)) / (1.0_r8 - cldn(i,k))  ! clear portion
          end if
          rh(i,k) = max(rh(i,k), 0.0_r8)

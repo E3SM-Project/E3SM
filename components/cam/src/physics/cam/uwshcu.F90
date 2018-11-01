@@ -19,7 +19,6 @@ module uwshcu
      init_uwshcu,        &
      compute_uwshcu,     &
      compute_uwshcu_inv
-  logical             :: pergro_mods = .false.
   integer , parameter :: r8 = selected_real_kind(12)    !  8 byte real
   real(r8), parameter :: unset_r8 = huge(1.0_r8)
   real(r8)            :: xlv                            !  Latent heat of vaporization
@@ -114,8 +113,6 @@ end subroutine uwshcu_readnl
     real(r8), intent(in) :: ep2_in     !  mol wgt water vapor / mol wgt dry air 
 
     character(len=*), parameter :: subname = 'init_uwshcu'
-
-    call phys_getopts(pergro_mods_out = pergro_mods)
 
     ! ------------------------- !
     ! Internal Output Variables !
@@ -2864,10 +2861,7 @@ end subroutine uwshcu_readnl
        ! Below solving equation is clearly wrong ! I should revise this !               !
        ! ------------------------------------------------------------------------------ ! 
        
-       drage_cond = ( drage .eq. 0._r8 )
-       if(pergro_mods) drage_cond = ( drage*dp0(kpen) .lt.  1.e-4_r8)
-!       if( drage .eq. 0._r8 ) then !BSINGH - This is the original code
-       if( drage_cond ) then !BSINGH - Phil suggested modification
+       if( drage*dp0(kpen) .lt.  1.e-4_r8 ) then !BSINGH - Phil suggested modification
            aquad =  ( bogtop - bogbot ) / ( ps0(kpen) - ps0(kpen-1) )
            bquad =  2._r8 * bogbot
            cquad = -wu(kpen-1)**2 * rho0j
@@ -3108,39 +3102,19 @@ end subroutine uwshcu_readnl
                  if( ( emf(k+1)-umf(k)*dp0(k+1)*rei(k+1)*rpen ) .lt. -0.9_r8*dp0(k+1)/g/dt ) limit_emf(i) = 1         
                  emf(k) = max(max(emf(k+1)-umf(k)*dp0(k+1)*rei(k+1)*rpen, -0.1_r8*rhos0j), -0.9_r8*dp0(k+1)/g/dt )    
                  
-                 if(pergro_mods) then
-                    !BSINGH - new code suggected by sungsu
-                    gam_fac = emf(k) / min( -1.e-20_r8, emf(k+1)-umf(k)*dp0(k+1)*rei(k+1)*rpen )
-                    
-                    thlu_emf(k) = ( thlu_emf(k+1) * emf(k+1) * gam_fac + thl0(k+1) * ( emf(k) - emf(k+1) * gam_fac ) ) / emf(k)
-                    qtu_emf(k)  = ( qtu_emf(k+1)  * emf(k+1) * gam_fac + qt0(k+1)  * ( emf(k) - emf(k+1) * gam_fac ) ) / emf(k)
-                    uu_emf(k)   = ( uu_emf(k+1)   * emf(k+1) * gam_fac + u0(k+1)   * ( emf(k) - emf(k+1) * gam_fac ) ) / emf(k)
-                    vu_emf(k)   = ( vu_emf(k+1)   * emf(k+1) * gam_fac + v0(k+1)   * ( emf(k) - emf(k+1) * gam_fac ) ) / emf(k)
-                    do m = 1, ncnst
-                       tru_emf(k,m) = ( tru_emf(k+1,m)  * emf(k+1) * gam_fac + tr0(k+1,m)  * ( emf(k) - emf(k+1) * gam_fac ) ) / emf(k)
-                    enddo
-                    !BSINGH - new code suggected by sungsu ENDS
-                 else
-                    !BSINGH - commenting out the following original code:
-                    if( abs(emf(k)) .gt. abs(emf(k+1)) ) then
-                       thlu_emf(k) = ( thlu_emf(k+1) * emf(k+1) + thl0(k+1) * ( emf(k) - emf(k+1) ) ) / emf(k)
-                       qtu_emf(k)  = ( qtu_emf(k+1)  * emf(k+1) + qt0(k+1)  * ( emf(k) - emf(k+1) ) ) / emf(k)
-                       uu_emf(k)   = ( uu_emf(k+1)   * emf(k+1) + u0(k+1)   * ( emf(k) - emf(k+1) ) ) / emf(k)
-                       vu_emf(k)   = ( vu_emf(k+1)   * emf(k+1) + v0(k+1)   * ( emf(k) - emf(k+1) ) ) / emf(k)
-                       do m = 1, ncnst
-                          tru_emf(k,m)  = ( tru_emf(k+1,m)  * emf(k+1) + tr0(k+1,m)  * ( emf(k) - emf(k+1) ) ) / emf(k)
-                       enddo
-                    else   
-                       thlu_emf(k) = thl0(k+1)
-                       qtu_emf(k)  =  qt0(k+1)
-                       uu_emf(k)   =   u0(k+1)
-                       vu_emf(k)   =   v0(k+1)
-                       do m = 1, ncnst
-                          tru_emf(k,m)  =  tr0(k+1,m)
-                       enddo
-                    endif
-                    !BSINGH -  commenting out the following original code ENDS
-                 endif
+
+                 !BSINGH - new code suggected by sungsu
+                 gam_fac = emf(k) / min( -1.e-20_r8, emf(k+1)-umf(k)*dp0(k+1)*rei(k+1)*rpen )
+                 
+                 thlu_emf(k) = ( thlu_emf(k+1) * emf(k+1) * gam_fac + thl0(k+1) * ( emf(k) - emf(k+1) * gam_fac ) ) / emf(k)
+                 qtu_emf(k)  = ( qtu_emf(k+1)  * emf(k+1) * gam_fac + qt0(k+1)  * ( emf(k) - emf(k+1) * gam_fac ) ) / emf(k)
+                 uu_emf(k)   = ( uu_emf(k+1)   * emf(k+1) * gam_fac + u0(k+1)   * ( emf(k) - emf(k+1) * gam_fac ) ) / emf(k)
+                 vu_emf(k)   = ( vu_emf(k+1)   * emf(k+1) * gam_fac + v0(k+1)   * ( emf(k) - emf(k+1) * gam_fac ) ) / emf(k)
+                 do m = 1, ncnst
+                    tru_emf(k,m) = ( tru_emf(k+1,m)  * emf(k+1) * gam_fac + tr0(k+1,m)  * ( emf(k) - emf(k+1) * gam_fac ) ) / emf(k)
+                 enddo
+                 !BSINGH - new code suggected by sungsu ENDS
+                 
              else ! Alternative Non-Cumulative Penetrative Entrainment
 
                  if( ( -umf(k)*dp0(k+1)*rei(k+1)*rpen ) .lt. -0.1_r8*rhos0j )        limit_emf(i) = 1
