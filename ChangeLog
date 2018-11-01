@@ -1,9 +1,66 @@
 ======================================================================
 
+Originator: Bill Sacks
+Date: 11-01-2018
+Tag: cime5.7.5
+Answer Changes: None
+Tests: scripts_regression_tests, CTSM's aux_clm test suite
+Dependencies:
+
+Brief Summary: Miscellaneous minor bug fixes, including getting
+               mpi-serial working again
+
+User interface changes: none
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+e882c1c06 Merge pull request #2897 from billsacks/fix_histutils_regex
+fc14d5870 Merge pull request #2895 from billsacks/fix_lnd2glc_averaged_now
+beff2289e Merge pull request #2892 from ESMCI/jhkennedy/mpi-serial-2890
+44aa1f2c8 Merge pull request #2888 from ESMCI/jhkennedy/charge-account-2886
+610ac40c5 Merge pull request #2889 from dabail10/pop_som_frc
+a25d2b4c1 Merge pull request #2887 from billsacks/funit_fix_path
+6c7981abd Merge pull request #2872 from billsacks/datm_wiso_typo
+9087ed3ab Merge pull request #2883 from ESMCI/jgfouca/add_nuopc_e3sm_config
+90e595c21 Merge pull request #2882 from jedwards4b/resolve_mpi_run_command
+14bb217ec Merge pull request #2876 from ESMCI/jgfouca/fix_pet_no_batch
+7720b1e83 Merge pull request #2877 from ESMCI/sarich/update-e3sm-config-driver
+ddec7ebf0 Merge pull request #2854 from ESMCI/jhkennedy/machine-missing-2686
+
+Modified files: git diff --name-status [previous_tag]
+M       ChangeLog
+M       config/e3sm/config_files.xml
+M       config/e3sm/machines/config_machines.xml
+M       config/e3sm/machines/config_pio.xml
+M       config/xml_schemas/config_machines.xsd
+M       doc/source/users_guide/cime-config.rst
+M       scripts/create_clone
+M       scripts/create_newcase
+M       scripts/create_test
+M       scripts/lib/CIME/SystemTests/funit.py
+M       scripts/lib/CIME/SystemTests/system_tests_common.py
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/hist_utils.py
+M       scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two.py
+M       scripts/lib/CIME/utils.py
+M       scripts/lib/get_tests.py
+M       src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M       src/components/data_comps/docn/tools/pop_som_frc/README
+M       src/components/data_comps/docn/tools/pop_som_frc/pop_frc_mlann.ncl
+M       src/components/data_comps/docn/tools/pop_som_frc/pop_frc_mlt.ncl
+M       src/drivers/mct/main/cime_comp_mod.F90
+M       src/drivers/mct/main/component_mod.F90
+A       src/drivers/nuopc/cime_config/config_component_e3sm.xml
+M       src/drivers/nuopc/cime_config/namelist_definition_drv.xml
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer
 Date: 10-22-2018
 Tag: cime5.7.4
-Answer Changes: None
+Answer Changes: I compsets (with datm) change answers due to #2828
+                (merged to master as #2847)
 Tests: scripts_regression_tests, by hand
 Dependencies:
 
