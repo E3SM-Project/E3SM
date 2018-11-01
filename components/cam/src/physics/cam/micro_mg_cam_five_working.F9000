@@ -97,6 +97,14 @@ use ref_pres,       only: top_lev=>trop_cloud_top_lev
 use subcol_utils,   only: subcol_get_scheme
 use perf_mod,       only: t_startf, t_stopf
 use scamMod,        only: precip_off
+#ifdef FIVE
+use five_intr,      only: pver_five, pverp_five, &
+                          five_syncronize_e3sm, &
+			  compute_five_grids, &
+			  compute_five_heights, &
+			  masswgt_vert_avg, linear_interp, &
+                          find_level_match_index
+#endif
 
 implicit none
 private
@@ -178,7 +186,13 @@ integer :: &
    ls_flxsnw_idx,      &
    relvar_idx,         &
    cmeliq_idx,         &
-   accre_enhan_idx
+   accre_enhan_idx,    &
+   t_five_idx, &
+   q_five_idx, &
+   u_five_idx, &
+   v_five_idx, &
+   pmid_five_idx, &
+   pint_five_idx  
 
 ! Fields for UNICON
 integer :: &
@@ -252,6 +266,14 @@ integer :: &
    real(r8) :: nicons                   = huge(1.0_r8)
    logical  :: mg_prc_coeff_fix_in      = .false. !temporary variable to maintain BFB, MUST be removed
    logical  :: rrtmg_temp_fix           = .false. !temporary variable to maintain BFB, MUST be removed
+   
+#ifdef FIVE
+   integer, parameter :: pverp_micro = pverp_five 
+   integer, parameter :: pver_micro = pver_five  
+#else
+   integer, parameter :: pverp_micro = pverp
+   integer, parameter :: pver_micro = pver
+#endif   
 
 interface p
    module procedure p1
@@ -445,6 +467,8 @@ subroutine micro_mg_cam_register
   call pbuf_add_field('CLDO','global',dtype_r8,(/pcols,pver,dyn_time_lvls/), cldo_idx)
 
   ! Physics buffer variables for convective cloud properties.
+  ! NOTE: after microphysics call all of the variables associated with these
+  !   PBUF fields will need to be interpolated from the FIVE grid onto the E3SM grid
 
   call pbuf_add_field('QME',        'physpkg',dtype_r8,(/pcols,pver/), qme_idx)
   call pbuf_add_field('PRAIN',      'physpkg',dtype_r8,(/pcols,pver/), prain_idx)
@@ -491,6 +515,7 @@ subroutine micro_mg_cam_register
   call pbuf_add_field('CV_REFFLIQ', 'physpkg',dtype_r8,(/pcols,pver/), cv_reffliq_idx)
   call pbuf_add_field('CV_REFFICE', 'physpkg',dtype_r8,(/pcols,pver/), cv_reffice_idx)
 
+  ! These will not be used in prototype FIVE
   ! CC_* Fields needed by Park macrophysics
   call pbuf_add_field('CC_T',     'global',  dtype_r8, (/pcols,pver,dyn_time_lvls/), cc_t_idx)
   call pbuf_add_field('CC_qv',    'global',  dtype_r8, (/pcols,pver,dyn_time_lvls/), cc_qv_idx)
@@ -500,6 +525,7 @@ subroutine micro_mg_cam_register
   call pbuf_add_field('CC_ni',    'global',  dtype_r8, (/pcols,pver,dyn_time_lvls/), cc_ni_idx)
   call pbuf_add_field('CC_qlst',  'global',  dtype_r8, (/pcols,pver,dyn_time_lvls/), cc_qlst_idx)
 
+  ! Neither will these
   ! Fields for UNICON
   call pbuf_add_field('am_evp_st',  'global', dtype_r8, (/pcols,pver/), am_evp_st_idx)
   call pbuf_add_field('evprain_st', 'global', dtype_r8, (/pcols,pver/), evprain_st_idx)
@@ -749,7 +775,7 @@ subroutine micro_mg_cam_init(pbuf2d)
               &Could not call addfld for constituent with unknown units.")
       endif
    end do
-
+ 
    call addfld(apcnst(ixcldliq), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixcldliq))//' after physics'  )
    call addfld(apcnst(ixcldice), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixcldice))//' after physics'  )
    call addfld(bpcnst(ixcldliq), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixcldliq))//' before physics' )
@@ -761,6 +787,10 @@ subroutine micro_mg_cam_init(pbuf2d)
       call addfld(bpcnst(ixrain), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixrain))//' before physics' )
       call addfld(bpcnst(ixsnow), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixsnow))//' before physics' )
    end if
+
+!  for FIVE purposes, a lot of addfld calls will need to be replaced with dimensions "lev_five"
+!  This will mean that we won't have to unpack and linearly interpolate all of the output, making 
+!  our lives easier (hopefully)
 
    call addfld ('CME', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of cond-evap within the cloud'                      )
    call addfld ('PRODPREC', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of conversion of condensate to precip'              )
@@ -1025,6 +1055,15 @@ subroutine micro_mg_cam_init(pbuf2d)
    snow_sed_idx = pbuf_get_index('SNOW_SED')
    prec_pcw_idx = pbuf_get_index('PREC_PCW')
    snow_pcw_idx = pbuf_get_index('SNOW_PCW')
+   
+#ifdef FIVE
+   t_five_idx = pbuf_get_index('T_FIVE')
+   q_five_idx = pbuf_get_index('Q_FIVE')
+   u_five_idx = pbuf_get_index('U_FIVE')
+   v_five_idx = pbuf_get_index('V_FIVE')
+   pmid_five_idx = pbuf_get_index('PMID_FIVE')
+   pint_five_idx = pbuf_get_index('PINT_FIVE')
+#endif   
 
    cmeliq_idx = pbuf_get_index('CMELIQ')
 
@@ -1142,88 +1181,101 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), pointer :: mu(:,:)           ! Size distribution shape parameter for radiation
    real(r8), pointer :: lambdac(:,:)      ! Size distribution slope parameter for radiation
    real(r8), pointer :: des(:,:)          ! Snow effective diameter (m)
+   
+#ifdef FIVE
+   ! Define the pointer arrays needed for FIVE
+   real(r8), pointer, dimension(:,:) :: t_five
+   real(r8), pointer, dimension(:,:) :: u_five
+   real(r8), pointer, dimension(:,:) :: v_five
+   real(r8), pointer, dimension(:,:,:) :: q_five
+   real(r8), pointer, dimension(:,:) :: pmid_five
+   real(r8), pointer, dimension(:,:) :: pint_five
+   
+   real(r8) :: cldmax_five(state%psetcols,pver_five)
+   real(r8) :: pdel_five(pcols,pver_five)
+#endif   
 
-   real(r8) :: rho(state%psetcols,pver)
-   real(r8) :: cldmax(state%psetcols,pver)
+   real(r8) :: rho(state%psetcols,pver_micro)
+   real(r8) :: cldmax(state%psetcols,pver)  ! Input, will need to be interpolated, keep with pver
 
-   real(r8), target :: rate1cld(state%psetcols,pver) ! array to hold rate1ord_cw2pr_st from microphysics
+   real(r8), target :: rate1cld(state%psetcols,pver_micro) ! array to hold rate1ord_cw2pr_st from microphysics
 
-   real(r8), target :: tlat(state%psetcols,pver)
-   real(r8), target :: qvlat(state%psetcols,pver)
-   real(r8), target :: qcten(state%psetcols,pver)
-   real(r8), target :: qiten(state%psetcols,pver)
-   real(r8), target :: ncten(state%psetcols,pver)
-   real(r8), target :: niten(state%psetcols,pver)
+   real(r8), target :: tlat(state%psetcols,pver_micro)
+   real(r8), target :: qvlat(state%psetcols,pver_micro)
+   real(r8), target :: qcten(state%psetcols,pver_micro)
+   real(r8), target :: qiten(state%psetcols,pver_micro)
+   real(r8), target :: ncten(state%psetcols,pver_micro)
+   real(r8), target :: niten(state%psetcols,pver_micro)
 
-   real(r8), target :: qrten(state%psetcols,pver)
-   real(r8), target :: qsten(state%psetcols,pver)
-   real(r8), target :: nrten(state%psetcols,pver)
-   real(r8), target :: nsten(state%psetcols,pver)
+   real(r8), target :: qrten(state%psetcols,pver_micro)
+   real(r8), target :: qsten(state%psetcols,pver_micro)
+   real(r8), target :: nrten(state%psetcols,pver_micro)
+   real(r8), target :: nsten(state%psetcols,pver_micro)
 
    real(r8), target :: prect(state%psetcols)
    real(r8), target :: preci(state%psetcols)
-   real(r8), target :: am_evp_st(state%psetcols,pver)  ! Area over which precip evaporates
-   real(r8), target :: evapsnow(state%psetcols,pver)   ! Local evaporation of snow
-   real(r8), target :: prodsnow(state%psetcols,pver)   ! Local production of snow
-   real(r8), target :: cmeice(state%psetcols,pver)     ! Rate of cond-evap of ice within the cloud
-   real(r8), target :: qsout(state%psetcols,pver)      ! Snow mixing ratio
-   real(r8), target :: cflx(state%psetcols,pverp)      ! grid-box avg liq condensate flux (kg m^-2 s^-1)
-   real(r8), target :: iflx(state%psetcols,pverp)      ! grid-box avg ice condensate flux (kg m^-2 s^-1)
-   real(r8), target :: rflx(state%psetcols,pverp)      ! grid-box average rain flux (kg m^-2 s^-1)
-   real(r8), target :: sflx(state%psetcols,pverp)      ! grid-box average snow flux (kg m^-2 s^-1)
-   real(r8), target :: qrout(state%psetcols,pver)      ! Rain mixing ratio
-   real(r8), target :: qcsevap(state%psetcols,pver)    ! Evaporation of falling cloud water
-   real(r8), target :: qisevap(state%psetcols,pver)    ! Sublimation of falling cloud ice
-   real(r8), target :: qvres(state%psetcols,pver)      ! Residual condensation term to remove excess saturation
-   real(r8), target :: cmeiout(state%psetcols,pver)    ! Deposition/sublimation rate of cloud ice
-   real(r8), target :: vtrmc(state%psetcols,pver)      ! Mass-weighted cloud water fallspeed
-   real(r8), target :: vtrmi(state%psetcols,pver)      ! Mass-weighted cloud ice fallspeed
-   real(r8), target :: umr(state%psetcols,pver)        ! Mass-weighted rain fallspeed
-   real(r8), target :: ums(state%psetcols,pver)        ! Mass-weighted snow fallspeed
-   real(r8), target :: qcsedten(state%psetcols,pver)   ! Cloud water mixing ratio tendency from sedimentation
-   real(r8), target :: qisedten(state%psetcols,pver)   ! Cloud ice mixing ratio tendency from sedimentation
-   real(r8), target :: qrsedten(state%psetcols,pver)   ! Rain mixing ratio tendency from sedimentation
-   real(r8), target :: qssedten(state%psetcols,pver)   ! Snow mixing ratio tendency from sedimentation
+   real(r8), target :: am_evp_st(state%psetcols,pver_micro)  ! Area over which precip evaporates
+   real(r8), target :: evapsnow(state%psetcols,pver_micro)   ! Local evaporation of snow
+   real(r8), target :: prodsnow(state%psetcols,pver_micro)   ! Local production of snow
+   real(r8), target :: cmeice(state%psetcols,pver_micro)     ! Rate of cond-evap of ice within the cloud
+   real(r8), target :: qsout(state%psetcols,pver_micro)      ! Snow mixing ratio
+   real(r8), target :: cflx(state%psetcols,pverp_micro)      ! grid-box avg liq condensate flux (kg m^-2 s^-1)
+   real(r8), target :: iflx(state%psetcols,pverp_micro)      ! grid-box avg ice condensate flux (kg m^-2 s^-1)
+   real(r8), target :: rflx(state%psetcols,pverp_micro)      ! grid-box average rain flux (kg m^-2 s^-1)
+   real(r8), target :: sflx(state%psetcols,pverp_micro)      ! grid-box average snow flux (kg m^-2 s^-1)
+   real(r8), target :: qrout(state%psetcols,pver_micro)      ! Rain mixing ratio
+   real(r8), target :: qcsevap(state%psetcols,pver_micro)    ! Evaporation of falling cloud water
+   real(r8), target :: qisevap(state%psetcols,pver_micro)    ! Sublimation of falling cloud ice
+   real(r8), target :: qvres(state%psetcols,pver_micro)      ! Residual condensation term to remove excess saturation
+   real(r8), target :: cmeiout(state%psetcols,pver_micro)    ! Deposition/sublimation rate of cloud ice
+   real(r8), target :: vtrmc(state%psetcols,pver_micro)      ! Mass-weighted cloud water fallspeed
+   real(r8), target :: vtrmi(state%psetcols,pver_micro)      ! Mass-weighted cloud ice fallspeed
+   real(r8), target :: umr(state%psetcols,pver_micro)        ! Mass-weighted rain fallspeed
+   real(r8), target :: ums(state%psetcols,pver_micro)        ! Mass-weighted snow fallspeed
+   real(r8), target :: qcsedten(state%psetcols,pver_micro)   ! Cloud water mixing ratio tendency from sedimentation
+   real(r8), target :: qisedten(state%psetcols,pver_micro)   ! Cloud ice mixing ratio tendency from sedimentation
+   real(r8), target :: qrsedten(state%psetcols,pver_micro)   ! Rain mixing ratio tendency from sedimentation
+   real(r8), target :: qssedten(state%psetcols,pver_micro)   ! Snow mixing ratio tendency from sedimentation
 
-   real(r8), target :: prao(state%psetcols,pver)
-   real(r8), target :: prco(state%psetcols,pver)
-   real(r8), target :: mnuccco(state%psetcols,pver)
-   real(r8), target :: mnuccto(state%psetcols,pver)
-   real(r8), target :: msacwio(state%psetcols,pver)
-   real(r8), target :: psacwso(state%psetcols,pver)
-   real(r8), target :: bergso(state%psetcols,pver)
-   real(r8), target :: bergo(state%psetcols,pver)
-   real(r8), target :: melto(state%psetcols,pver)
-   real(r8), target :: homoo(state%psetcols,pver)
-   real(r8), target :: qcreso(state%psetcols,pver)
-   real(r8), target :: prcio(state%psetcols,pver)
-   real(r8), target :: praio(state%psetcols,pver)
-   real(r8), target :: qireso(state%psetcols,pver)
-   real(r8), target :: mnuccro(state%psetcols,pver)
-   real(r8), target :: pracso (state%psetcols,pver)
-   real(r8), target :: meltsdt(state%psetcols,pver)
-   real(r8), target :: frzrdt (state%psetcols,pver)
-   real(r8), target :: mnuccdo(state%psetcols,pver)
-   real(r8), target :: nrout(state%psetcols,pver)
-   real(r8), target :: nsout(state%psetcols,pver)
-   real(r8), target :: refl(state%psetcols,pver)    ! analytic radar reflectivity
-   real(r8), target :: arefl(state%psetcols,pver)   ! average reflectivity will zero points outside valid range
-   real(r8), target :: areflz(state%psetcols,pver)  ! average reflectivity in z.
-   real(r8), target :: frefl(state%psetcols,pver)
-   real(r8), target :: csrfl(state%psetcols,pver)   ! cloudsat reflectivity
-   real(r8), target :: acsrfl(state%psetcols,pver)  ! cloudsat average
-   real(r8), target :: fcsrfl(state%psetcols,pver)
-   real(r8), target :: rercld(state%psetcols,pver)  ! effective radius calculation for rain + cloud
-   real(r8), target :: ncai(state%psetcols,pver)    ! output number conc of ice nuclei available (1/m3)
-   real(r8), target :: ncal(state%psetcols,pver)    ! output number conc of CCN (1/m3)
-   real(r8), target :: qrout2(state%psetcols,pver)
-   real(r8), target :: qsout2(state%psetcols,pver)
-   real(r8), target :: nrout2(state%psetcols,pver)
-   real(r8), target :: nsout2(state%psetcols,pver)
-   real(r8), target :: freqs(state%psetcols,pver)
-   real(r8), target :: freqr(state%psetcols,pver)
-   real(r8), target :: nfice(state%psetcols,pver)
-   real(r8), target :: qcrat(state%psetcols,pver)   ! qc limiter ratio (1=no limit)
+   real(r8), target :: prao(state%psetcols,pver_micro)
+   real(r8), target :: prco(state%psetcols,pver_micro)
+   real(r8), target :: mnuccco(state%psetcols,pver_micro)
+   real(r8), target :: mnuccto(state%psetcols,pver_micro)
+   real(r8), target :: msacwio(state%psetcols,pver_micro)
+   real(r8), target :: psacwso(state%psetcols,pver_micro)
+   real(r8), target :: bergso(state%psetcols,pver_micro)
+   real(r8), target :: bergo(state%psetcols,pver_micro)
+   real(r8), target :: melto(state%psetcols,pver_micro)
+   real(r8), target :: homoo(state%psetcols,pver_micro)
+   real(r8), target :: qcreso(state%psetcols,pver_micro)
+   real(r8), target :: prcio(state%psetcols,pver_micro)
+   real(r8), target :: praio(state%psetcols,pver_micro)
+   real(r8), target :: qireso(state%psetcols,pver_micro)
+   real(r8), target :: mnuccro(state%psetcols,pver_micro)
+   real(r8), target :: pracso (state%psetcols,pver_micro)
+   real(r8), target :: meltsdt(state%psetcols,pver_micro)
+   real(r8), target :: frzrdt (state%psetcols,pver_micro)
+   real(r8), target :: mnuccdo(state%psetcols,pver_micro)
+   real(r8), target :: nrout(state%psetcols,pver_micro)
+   real(r8), target :: nsout(state%psetcols,pver_micro)
+   real(r8), target :: refl(state%psetcols,pver_micro)    ! analytic radar reflectivity
+   real(r8), target :: arefl(state%psetcols,pver_micro)   ! average reflectivity will zero points outside valid range
+   real(r8), target :: areflz(state%psetcols,pver_micro)  ! average reflectivity in z.
+   real(r8), target :: frefl(state%psetcols,pver_micro)
+   real(r8), target :: csrfl(state%psetcols,pver_micro)   ! cloudsat reflectivity
+   real(r8), target :: acsrfl(state%psetcols,pver_micro)  ! cloudsat average
+   real(r8), target :: fcsrfl(state%psetcols,pver_micro)
+   real(r8), target :: rercld(state%psetcols,pver_micro)  ! effective radius calculation for rain + cloud
+   real(r8), target :: ncai(state%psetcols,pver_micro)    ! output number conc of ice nuclei available (1/m3)
+   real(r8), target :: ncal(state%psetcols,pver_micro)    ! output number conc of CCN (1/m3)
+   real(r8), target :: qrout2(state%psetcols,pver_micro)
+   real(r8), target :: qsout2(state%psetcols,pver_micro)
+   real(r8), target :: nrout2(state%psetcols,pver_micro)
+   real(r8), target :: nsout2(state%psetcols,pver_micro)
+   real(r8), target :: freqs(state%psetcols,pver_micro)
+   real(r8), target :: freqr(state%psetcols,pver_micro)
+   real(r8), target :: nfice(state%psetcols,pver_micro)
+   real(r8), target :: qcrat(state%psetcols,pver_micro)   ! qc limiter ratio (1=no limit)
 
    ! Object that packs columns with clouds/precip.
    type(MGPacker) :: packer
@@ -1411,6 +1463,8 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    type(physics_state) :: state_loc
    type(physics_ptend) :: ptend_loc
 
+   ! Appears that most of the variables below are pertaining to output.
+   !  Thus, need to make a decision on how we are dealing with output in FIVE.
    real(r8) :: icecldf(state%psetcols,pver) ! Ice cloud fraction
    real(r8) :: liqcldf(state%psetcols,pver) ! Liquid cloud fraction (combined into cloud)
 
@@ -1493,46 +1547,48 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), pointer :: des_grid(:,:)
    real(r8), pointer :: iclwpst_grid(:,:)
 
-   real(r8) :: rho_grid(pcols,pver)
-   real(r8) :: liqcldf_grid(pcols,pver)
-   real(r8) :: qsout_grid(pcols,pver)
-   real(r8) :: ncic_grid(pcols,pver)
-   real(r8) :: niic_grid(pcols,pver)
-   real(r8) :: rel_fn_grid(pcols,pver)    ! Ice effective drop size at fixed number (indirect effect) (microns) - on grid
-   real(r8) :: qrout_grid(pcols,pver)
-   real(r8) :: drout2_grid(pcols,pver)
-   real(r8) :: dsout2_grid(pcols,pver)
-   real(r8) :: nsout_grid(pcols,pver)
-   real(r8) :: nrout_grid(pcols,pver)
-   real(r8) :: reff_rain_grid(pcols,pver)
-   real(r8) :: reff_snow_grid(pcols,pver)
-   real(r8) :: cld_grid(pcols,pver)
-   real(r8) :: pdel_grid(pcols,pver)
-   real(r8) :: prco_grid(pcols,pver)
-   real(r8) :: prao_grid(pcols,pver)
-   real(r8) :: icecldf_grid(pcols,pver)
-   real(r8) :: icwnc_grid(pcols,pver)
-   real(r8) :: icinc_grid(pcols,pver)
-   real(r8) :: qcreso_grid(pcols,pver)
-   real(r8) :: melto_grid(pcols,pver)
-   real(r8) :: mnuccco_grid(pcols,pver)
-   real(r8) :: mnuccto_grid(pcols,pver)
-   real(r8) :: bergo_grid(pcols,pver)
-   real(r8) :: homoo_grid(pcols,pver)
-   real(r8) :: msacwio_grid(pcols,pver)
-   real(r8) :: psacwso_grid(pcols,pver)
-   real(r8) :: bergso_grid(pcols,pver)
-   real(r8) :: cmeiout_grid(pcols,pver)
-   real(r8) :: qireso_grid(pcols,pver)
-   real(r8) :: prcio_grid(pcols,pver)
-   real(r8) :: praio_grid(pcols,pver)
+   real(r8) :: rho_grid(pcols,pver_micro)
+   real(r8) :: liqcldf_grid(pcols,pver_micro)
+   real(r8) :: qsout_grid(pcols,pver_micro)
+   real(r8) :: ncic_grid(pcols,pver_micro)
+   real(r8) :: niic_grid(pcols,pver_micro)
+   real(r8) :: rel_fn_grid(pcols,pver_micro)    ! Ice effective drop size at fixed number (indirect effect) (microns) - on grid
+   real(r8) :: qrout_grid(pcols,pver_micro)
+   real(r8) :: drout2_grid(pcols,pver_micro)
+   real(r8) :: dsout2_grid(pcols,pver_micro)
+   real(r8) :: nsout_grid(pcols,pver_micro)
+   real(r8) :: nrout_grid(pcols,pver_micro)
+   real(r8) :: reff_rain_grid(pcols,pver_micro)
+   real(r8) :: reff_snow_grid(pcols,pver_micro)
+   real(r8) :: cld_grid(pcols,pver_micro)
+   real(r8) :: pdel_grid(pcols,pver_micro)
+   real(r8) :: prco_grid(pcols,pver_micro)
+   real(r8) :: prao_grid(pcols,pver_micro)
+   real(r8) :: icecldf_grid(pcols,pver_micro)
+   real(r8) :: icwnc_grid(pcols,pver_micro)
+   real(r8) :: icinc_grid(pcols,pver_micro)
+   real(r8) :: qcreso_grid(pcols,pver_micro)
+   real(r8) :: melto_grid(pcols,pver_micro)
+   real(r8) :: mnuccco_grid(pcols,pver_micro)
+   real(r8) :: mnuccto_grid(pcols,pver_micro)
+   real(r8) :: bergo_grid(pcols,pver_micro)
+   real(r8) :: homoo_grid(pcols,pver_micro)
+   real(r8) :: msacwio_grid(pcols,pver_micro)
+   real(r8) :: psacwso_grid(pcols,pver_micro)
+   real(r8) :: bergso_grid(pcols,pver_micro)
+   real(r8) :: cmeiout_grid(pcols,pver_micro)
+   real(r8) :: qireso_grid(pcols,pver_micro)
+   real(r8) :: prcio_grid(pcols,pver_micro)
+   real(r8) :: praio_grid(pcols,pver_micro)
 
-   real(r8) :: nc_grid(pcols,pver)
-   real(r8) :: ni_grid(pcols,pver)
-   real(r8) :: qr_grid(pcols,pver)
-   real(r8) :: nr_grid(pcols,pver)
-   real(r8) :: qs_grid(pcols,pver)
-   real(r8) :: ns_grid(pcols,pver)
+   real(r8) :: nc_grid(pcols,pver_micro)
+   real(r8) :: ni_grid(pcols,pver_micro)
+   real(r8) :: qr_grid(pcols,pver_micro)
+   real(r8) :: nr_grid(pcols,pver_micro)
+   real(r8) :: qs_grid(pcols,pver_micro)
+   real(r8) :: ns_grid(pcols,pver_micro)
+   integer :: top_lev_five(pcols)
+   integer :: top_lev_micro
 
    real(r8), pointer :: cmeliq_grid(:,:)
 
@@ -1572,11 +1628,15 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), pointer :: nsout_grid_ptr(:,:)
 
    integer :: nlev   ! number of levels where cloud physics is done
+   integer :: nlev_five
+   integer :: nlev_micro ! number of levels where cloud physics is done
+                      ! this value will be used whether FIVE is called or not
    integer :: mgncol ! size of mgcols
    integer, allocatable :: mgcols(:) ! Columns with microphysics performed
 
    logical :: use_subcol_microp
    integer :: col_type ! Flag to store whether accessing grid or sub-columns in pbuf_get_field
+
 
    character(128) :: errstring   ! return status (non-blank for error return)
 
@@ -1584,6 +1644,9 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), parameter :: dcon   = 25.e-6_r8         ! Convective size distribution effective radius (meters)
    real(r8), parameter :: mucon  = 5.3_r8            ! Convective size distribution shape parameter
    real(r8), parameter :: deicon = 50._r8            ! Convective ice effective diameter (meters)
+#ifdef FIVE
+   real(r8), parameter :: p0_five_ref = 100000._r8   ! Is this right?
+#endif
 
    real(r8), pointer :: pckdptr(:,:)
 
@@ -1757,9 +1820,47 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       call pbuf_get_field(pbuf, am_evp_st_idx,   am_evp_st_grid)
    end if
    
+#ifdef FIVE
+   call pbuf_get_field(pbuf, t_five_idx,    t_five,    start=(/1,1,itim_old/), kount=(/pcols,pver_micro,1/))
+   call pbuf_get_field(pbuf, q_five_idx,    q_five,     start=(/1,1,1,itim_old/), kount=(/pcols,pver_micro,pcnst,1/))
+   call pbuf_get_field(pbuf, u_five_idx,    u_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_micro,1/))
+   call pbuf_get_field(pbuf, v_five_idx,    v_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_micro,1/))
+   call pbuf_get_field(pbuf, pmid_five_idx,    pmid_five,      start=(/1,1,1/), kount=(/pcols,pver_micro,1/)) 
+   call pbuf_get_field(pbuf, pint_five_idx,    pint_five,      start=(/1,1,1/), kount=(/pcols,pverp_micro,1/))      
+#endif    
+   
    !-------------------------------------------------------------------------------------
    ! Microphysics assumes 'liquid stratus frac = ice stratus frac
    !                      = max( liquid stratus frac, ice stratus frac )'.
+
+#ifdef FIVE   
+   ! Find top level index for FIVE
+   do i = 1, ncol
+     call find_level_match_index(state%pmid(i,:),pmid_five(i,:),pint_five(i,:),&
+                               top_lev, top_lev_five(i))  			        
+   enddo
+   ! Right now just do for one column, since they are all the same
+   !   With adapative FIVE, this will need to be dynamic
+   nlev_five  = pver_five - top_lev_five(1) + 1      
+   
+   ! Define pressue differences
+   do k=1,pver_five
+     do i=1,ncol
+       pdel_five(i,k) = pint_five(i,k+1) - pint_five(i,k)
+     enddo
+   enddo
+#endif
+
+!  Regardless if FIVE is called, define the number of microphysics
+!   levels to be used here
+#ifdef FIVE
+   nlev_micro = nlev_five 
+   top_lev_micro = top_lev_five(1) 
+#else
+   nlev_micro = nlev
+   top_lev_micro = top_lev
+#endif
+   
    alst_mic => ast
    aist_mic => ast
 
@@ -1782,7 +1883,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    iciwpi = 0._r8
 
    do i = 1, ncol
-      do k = top_lev, pver
+      do k = top_lev, pver ! keep these levs the same
          iclwpi(i) = iclwpi(i) + &
               min(state%q(i,k,ixcldliq) / max(mincld,ast(i,k)),0.005_r8) &
               * state%pdel(i,k) / gravit
@@ -1792,7 +1893,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       end do
    end do
 
-   cldo(:ncol,top_lev:pver)=ast(:ncol,top_lev:pver)
+   cldo(:ncol,top_lev:pver)=ast(:ncol,top_lev:pver) ! keep, will need to interpolate cldo
 
    ! Initialize local state from input.
    call physics_state_copy(state, state_loc)
@@ -1830,41 +1931,58 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
            state%q(:,:,ixcldice), state%q(:,:,ixrain), state%q(:,:,ixsnow), &
            mgncol, mgcols)
    end select
+   
+#ifdef FIVE
+   ! Syncronize FIVE variables to E3SM state
+   !  This is a crucial component to using FIVE within E3SM
+   call five_syncronize_e3sm(state_loc,dtime,p0_five_ref,pint_five,pmid_five,&
+                             t_five,u_five,v_five,q_five) 
+#endif 
 
-   packer = MGPacker(psetcols, pver, mgcols, top_lev)
+   !+PAB Microphysics "packs" input.  Meaning that it takes the input and 
+   !  figures out which columns actually contain clouds to run microphysics on.  
+   !  i.e. if there is no cloud then that column will be stripped out.  
+   
+   ! Most of these variables here are outputs.
+   ! The input variables should be easy enough, the challenge will be
+   !   how do we define E3SM output to allow for FIVE levels?  This 
+   !   will be the cleanest method for implementation
+   
+   ! Set up the packer so it is FIVE and microphysics friendly
+   packer = MGPacker(psetcols, pver_micro, mgcols, top_lev_micro)
    post_proc = MGPostProc(packer)
 
-   allocate(packed_rate1ord_cw2pr_st(mgncol,nlev))
+   allocate(packed_rate1ord_cw2pr_st(mgncol,nlev_micro))
    pckdptr => packed_rate1ord_cw2pr_st ! workaround an apparent pgi compiler bug on goldbach
    call post_proc%add_field(p(rate1cld), pckdptr)
-   allocate(packed_tlat(mgncol,nlev))
+   allocate(packed_tlat(mgncol,nlev_micro))
    call post_proc%add_field(p(tlat), p(packed_tlat))
-   allocate(packed_qvlat(mgncol,nlev))
+   allocate(packed_qvlat(mgncol,nlev_micro))
    call post_proc%add_field(p(qvlat), p(packed_qvlat))
-   allocate(packed_qctend(mgncol,nlev))
+   allocate(packed_qctend(mgncol,nlev_micro))
    call post_proc%add_field(p(qcten), p(packed_qctend))
-   allocate(packed_qitend(mgncol,nlev))
+   allocate(packed_qitend(mgncol,nlev_micro))
    call post_proc%add_field(p(qiten), p(packed_qitend))
-   allocate(packed_nctend(mgncol,nlev))
+   allocate(packed_nctend(mgncol,nlev_micro))
    call post_proc%add_field(p(ncten), p(packed_nctend))
-   allocate(packed_nitend(mgncol,nlev))
+   allocate(packed_nitend(mgncol,nlev_micro))
    call post_proc%add_field(p(niten), p(packed_nitend))
 
    if (micro_mg_version > 1) then
-      allocate(packed_qrtend(mgncol,nlev))
+      allocate(packed_qrtend(mgncol,nlev_micro))
       call post_proc%add_field(p(qrten), p(packed_qrtend))
-      allocate(packed_qstend(mgncol,nlev))
+      allocate(packed_qstend(mgncol,nlev_micro))
       call post_proc%add_field(p(qsten), p(packed_qstend))
-      allocate(packed_nrtend(mgncol,nlev))
+      allocate(packed_nrtend(mgncol,nlev_micro))
       call post_proc%add_field(p(nrten), p(packed_nrtend))
-      allocate(packed_nstend(mgncol,nlev))
+      allocate(packed_nstend(mgncol,nlev_micro))
       call post_proc%add_field(p(nsten), p(packed_nstend))
-      allocate(packed_umr(mgncol,nlev))
+      allocate(packed_umr(mgncol,nlev_micro))
       call post_proc%add_field(p(umr), p(packed_umr))
-      allocate(packed_ums(mgncol,nlev))
+      allocate(packed_ums(mgncol,nlev_micro))
       call post_proc%add_field(p(ums), p(packed_ums))
    else if (micro_mg_sub_version == 0) then
-      allocate(packed_am_evp_st(mgncol,nlev))
+      allocate(packed_am_evp_st(mgncol,nlev_micro))
       call post_proc%add_field(p(am_evp_st), p(packed_am_evp_st))
    end if
 
@@ -1872,195 +1990,209 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    call post_proc%add_field(p(prect), p(packed_prect))
    allocate(packed_preci(mgncol))
    call post_proc%add_field(p(preci), p(packed_preci))
-   allocate(packed_nevapr(mgncol,nlev))
+   allocate(packed_nevapr(mgncol,nlev_micro))
    call post_proc%add_field(p(nevapr), p(packed_nevapr))
-   allocate(packed_evapsnow(mgncol,nlev))
+   allocate(packed_evapsnow(mgncol,nlev_micro))
    call post_proc%add_field(p(evapsnow), p(packed_evapsnow))
-   allocate(packed_prain(mgncol,nlev))
+   allocate(packed_prain(mgncol,nlev_micro))
    call post_proc%add_field(p(prain), p(packed_prain))
-   allocate(packed_prodsnow(mgncol,nlev))
+   allocate(packed_prodsnow(mgncol,nlev_micro))
    call post_proc%add_field(p(prodsnow), p(packed_prodsnow))
-   allocate(packed_cmeout(mgncol,nlev))
+   allocate(packed_cmeout(mgncol,nlev_micro))
    call post_proc%add_field(p(cmeice), p(packed_cmeout))
-   allocate(packed_qsout(mgncol,nlev))
+   allocate(packed_qsout(mgncol,nlev_micro))
    call post_proc%add_field(p(qsout), p(packed_qsout))
-   allocate(packed_cflx(mgncol,nlev+1))
+   allocate(packed_cflx(mgncol,nlev_micro+1))
    call post_proc%add_field(p(cflx), p(packed_cflx))
-   allocate(packed_iflx(mgncol,nlev+1))
+   allocate(packed_iflx(mgncol,nlev_micro+1))
    call post_proc%add_field(p(iflx), p(packed_iflx))
-   allocate(packed_rflx(mgncol,nlev+1))
+   allocate(packed_rflx(mgncol,nlev_micro+1))
    call post_proc%add_field(p(rflx), p(packed_rflx))
-   allocate(packed_sflx(mgncol,nlev+1))
+   allocate(packed_sflx(mgncol,nlev_micro+1))
    call post_proc%add_field(p(sflx), p(packed_sflx))
-   allocate(packed_qrout(mgncol,nlev))
+   allocate(packed_qrout(mgncol,nlev_micro))
    call post_proc%add_field(p(qrout), p(packed_qrout))
-   allocate(packed_qcsevap(mgncol,nlev))
+   allocate(packed_qcsevap(mgncol,nlev_micro))
    call post_proc%add_field(p(qcsevap), p(packed_qcsevap))
-   allocate(packed_qisevap(mgncol,nlev))
+   allocate(packed_qisevap(mgncol,nlev_micro))
    call post_proc%add_field(p(qisevap), p(packed_qisevap))
-   allocate(packed_qvres(mgncol,nlev))
+   allocate(packed_qvres(mgncol,nlev_micro))
    call post_proc%add_field(p(qvres), p(packed_qvres))
-   allocate(packed_cmei(mgncol,nlev))
+   allocate(packed_cmei(mgncol,nlev_micro))
    call post_proc%add_field(p(cmeiout), p(packed_cmei))
-   allocate(packed_vtrmc(mgncol,nlev))
+   allocate(packed_vtrmc(mgncol,nlev_micro))
    call post_proc%add_field(p(vtrmc), p(packed_vtrmc))
-   allocate(packed_vtrmi(mgncol,nlev))
+   allocate(packed_vtrmi(mgncol,nlev_micro))
    call post_proc%add_field(p(vtrmi), p(packed_vtrmi))
-   allocate(packed_qcsedten(mgncol,nlev))
+   allocate(packed_qcsedten(mgncol,nlev_micro))
    call post_proc%add_field(p(qcsedten), p(packed_qcsedten))
-   allocate(packed_qisedten(mgncol,nlev))
+   allocate(packed_qisedten(mgncol,nlev_micro))
    call post_proc%add_field(p(qisedten), p(packed_qisedten))
    if (micro_mg_version > 1) then
-      allocate(packed_qrsedten(mgncol,nlev))
+      allocate(packed_qrsedten(mgncol,nlev_micro))
       call post_proc%add_field(p(qrsedten), p(packed_qrsedten))
-      allocate(packed_qssedten(mgncol,nlev))
+      allocate(packed_qssedten(mgncol,nlev_micro))
       call post_proc%add_field(p(qssedten), p(packed_qssedten))
    end if
 
-   allocate(packed_pra(mgncol,nlev))
+   allocate(packed_pra(mgncol,nlev_micro))
    call post_proc%add_field(p(prao), p(packed_pra))
-   allocate(packed_prc(mgncol,nlev))
+   allocate(packed_prc(mgncol,nlev_micro))
    call post_proc%add_field(p(prco), p(packed_prc))
-   allocate(packed_mnuccc(mgncol,nlev))
+   allocate(packed_mnuccc(mgncol,nlev_micro))
    call post_proc%add_field(p(mnuccco), p(packed_mnuccc))
-   allocate(packed_mnucct(mgncol,nlev))
+   allocate(packed_mnucct(mgncol,nlev_micro))
    call post_proc%add_field(p(mnuccto), p(packed_mnucct))
-   allocate(packed_msacwi(mgncol,nlev))
+   allocate(packed_msacwi(mgncol,nlev_micro))
    call post_proc%add_field(p(msacwio), p(packed_msacwi))
-   allocate(packed_psacws(mgncol,nlev))
+   allocate(packed_psacws(mgncol,nlev_micro))
    call post_proc%add_field(p(psacwso), p(packed_psacws))
-   allocate(packed_bergs(mgncol,nlev))
+   allocate(packed_bergs(mgncol,nlev_micro))
    call post_proc%add_field(p(bergso), p(packed_bergs))
-   allocate(packed_berg(mgncol,nlev))
+   allocate(packed_berg(mgncol,nlev_micro))
    call post_proc%add_field(p(bergo), p(packed_berg))
-   allocate(packed_melt(mgncol,nlev))
+   allocate(packed_melt(mgncol,nlev_micro))
    call post_proc%add_field(p(melto), p(packed_melt))
-   allocate(packed_homo(mgncol,nlev))
+   allocate(packed_homo(mgncol,nlev_micro))
    call post_proc%add_field(p(homoo), p(packed_homo))
-   allocate(packed_qcres(mgncol,nlev))
+   allocate(packed_qcres(mgncol,nlev_micro))
    call post_proc%add_field(p(qcreso), p(packed_qcres))
-   allocate(packed_prci(mgncol,nlev))
+   allocate(packed_prci(mgncol,nlev_micro))
    call post_proc%add_field(p(prcio), p(packed_prci))
-   allocate(packed_prai(mgncol,nlev))
+   allocate(packed_prai(mgncol,nlev_micro))
    call post_proc%add_field(p(praio), p(packed_prai))
-   allocate(packed_qires(mgncol,nlev))
+   allocate(packed_qires(mgncol,nlev_micro))
    call post_proc%add_field(p(qireso), p(packed_qires))
-   allocate(packed_mnuccr(mgncol,nlev))
+   allocate(packed_mnuccr(mgncol,nlev_micro))
    call post_proc%add_field(p(mnuccro), p(packed_mnuccr))
-   allocate(packed_pracs(mgncol,nlev))
+   allocate(packed_pracs(mgncol,nlev_micro))
    call post_proc%add_field(p(pracso), p(packed_pracs))
-   allocate(packed_meltsdt(mgncol,nlev))
+   allocate(packed_meltsdt(mgncol,nlev_micro))
    call post_proc%add_field(p(meltsdt), p(packed_meltsdt))
-   allocate(packed_frzrdt(mgncol,nlev))
+   allocate(packed_frzrdt(mgncol,nlev_micro))
    call post_proc%add_field(p(frzrdt), p(packed_frzrdt))
-   allocate(packed_mnuccd(mgncol,nlev))
+   allocate(packed_mnuccd(mgncol,nlev_micro))
    call post_proc%add_field(p(mnuccdo), p(packed_mnuccd))
-   allocate(packed_nrout(mgncol,nlev))
+   allocate(packed_nrout(mgncol,nlev_micro))
    call post_proc%add_field(p(nrout), p(packed_nrout))
-   allocate(packed_nsout(mgncol,nlev))
+   allocate(packed_nsout(mgncol,nlev_micro))
    call post_proc%add_field(p(nsout), p(packed_nsout))
 
-   allocate(packed_refl(mgncol,nlev))
+   allocate(packed_refl(mgncol,nlev_micro))
    call post_proc%add_field(p(refl), p(packed_refl), fillvalue=-9999._r8)
-   allocate(packed_arefl(mgncol,nlev))
+   allocate(packed_arefl(mgncol,nlev_micro))
    call post_proc%add_field(p(arefl), p(packed_arefl))
-   allocate(packed_areflz(mgncol,nlev))
+   allocate(packed_areflz(mgncol,nlev_micro))
    call post_proc%add_field(p(areflz), p(packed_areflz))
-   allocate(packed_frefl(mgncol,nlev))
+   allocate(packed_frefl(mgncol,nlev_micro))
    call post_proc%add_field(p(frefl), p(packed_frefl))
-   allocate(packed_csrfl(mgncol,nlev))
+   allocate(packed_csrfl(mgncol,nlev_micro))
    call post_proc%add_field(p(csrfl), p(packed_csrfl), fillvalue=-9999._r8)
-   allocate(packed_acsrfl(mgncol,nlev))
+   allocate(packed_acsrfl(mgncol,nlev_micro))
    call post_proc%add_field(p(acsrfl), p(packed_acsrfl))
-   allocate(packed_fcsrfl(mgncol,nlev))
+   allocate(packed_fcsrfl(mgncol,nlev_micro))
    call post_proc%add_field(p(fcsrfl), p(packed_fcsrfl))
 
-   allocate(packed_rercld(mgncol,nlev))
+   allocate(packed_rercld(mgncol,nlev_micro))
    call post_proc%add_field(p(rercld), p(packed_rercld))
-   allocate(packed_ncai(mgncol,nlev))
+   allocate(packed_ncai(mgncol,nlev_micro))
    call post_proc%add_field(p(ncai), p(packed_ncai))
-   allocate(packed_ncal(mgncol,nlev))
+   allocate(packed_ncal(mgncol,nlev_micro))
    call post_proc%add_field(p(ncal), p(packed_ncal))
-   allocate(packed_qrout2(mgncol,nlev))
+   allocate(packed_qrout2(mgncol,nlev_micro))
    call post_proc%add_field(p(qrout2), p(packed_qrout2))
-   allocate(packed_qsout2(mgncol,nlev))
+   allocate(packed_qsout2(mgncol,nlev_micro))
    call post_proc%add_field(p(qsout2), p(packed_qsout2))
-   allocate(packed_nrout2(mgncol,nlev))
+   allocate(packed_nrout2(mgncol,nlev_micro))
    call post_proc%add_field(p(nrout2), p(packed_nrout2))
-   allocate(packed_nsout2(mgncol,nlev))
+   allocate(packed_nsout2(mgncol,nlev_micro))
    call post_proc%add_field(p(nsout2), p(packed_nsout2))
-   allocate(packed_freqs(mgncol,nlev))
+   allocate(packed_freqs(mgncol,nlev_micro))
    call post_proc%add_field(p(freqs), p(packed_freqs))
-   allocate(packed_freqr(mgncol,nlev))
+   allocate(packed_freqr(mgncol,nlev_micro))
    call post_proc%add_field(p(freqr), p(packed_freqr))
-   allocate(packed_nfice(mgncol,nlev))
+   allocate(packed_nfice(mgncol,nlev_micro))
    call post_proc%add_field(p(nfice), p(packed_nfice))
    if (micro_mg_version /= 1 .or. micro_mg_sub_version /= 0) then
-      allocate(packed_qcrat(mgncol,nlev))
+      allocate(packed_qcrat(mgncol,nlev_micro))
       call post_proc%add_field(p(qcrat), p(packed_qcrat), fillvalue=1._r8)
    end if
 
    ! The following are all variables related to sizes, where it does not
    ! necessarily make sense to average over time steps. Instead, we keep
    ! the value from the last substep, which is what "accum_null" does.
-   allocate(packed_rel(mgncol,nlev))
+   allocate(packed_rel(mgncol,nlev_micro))
    call post_proc%add_field(p(rel), p(packed_rel), &
         fillvalue=10._r8, accum_method=accum_null)
-   allocate(packed_rei(mgncol,nlev))
+   allocate(packed_rei(mgncol,nlev_micro))
    call post_proc%add_field(p(rei), p(packed_rei), &
         fillvalue=25._r8, accum_method=accum_null)
-   allocate(packed_lambdac(mgncol,nlev))
+   allocate(packed_lambdac(mgncol,nlev_micro))
    call post_proc%add_field(p(lambdac), p(packed_lambdac), &
         accum_method=accum_null)
-   allocate(packed_mu(mgncol,nlev))
+   allocate(packed_mu(mgncol,nlev_micro))
    call post_proc%add_field(p(mu), p(packed_mu), &
         accum_method=accum_null)
-   allocate(packed_des(mgncol,nlev))
+   allocate(packed_des(mgncol,nlev_micro))
    call post_proc%add_field(p(des), p(packed_des), &
         accum_method=accum_null)
-   allocate(packed_dei(mgncol,nlev))
+   allocate(packed_dei(mgncol,nlev_micro))
    call post_proc%add_field(p(dei), p(packed_dei), &
         accum_method=accum_null)
-   allocate(packed_prer_evap(mgncol,nlev))
+   allocate(packed_prer_evap(mgncol,nlev_micro))
    call post_proc%add_field(p(prer_evap), p(packed_prer_evap), &
         accum_method=accum_null)
 
    ! Allocate all the dummies with MG sizes.
-   allocate(rel_fn_dum(mgncol,nlev))
-   allocate(dsout2_dum(mgncol,nlev))
-   allocate(drout_dum(mgncol,nlev))
-   allocate(reff_rain_dum(mgncol,nlev))
-   allocate(reff_snow_dum(mgncol,nlev))
-
+   allocate(rel_fn_dum(mgncol,nlev_micro))
+   allocate(dsout2_dum(mgncol,nlev_micro))
+   allocate(drout_dum(mgncol,nlev_micro))
+   allocate(reff_rain_dum(mgncol,nlev_micro))
+   allocate(reff_snow_dum(mgncol,nlev_micro))
+   
+   ! This area will require attention to detail since this section
+   !  deals with the inputs
    ! Pack input variables that are not updated during substeps.
-   allocate(packed_relvar(mgncol,nlev))
-   packed_relvar = packer%pack(relvar)
-   allocate(packed_accre_enhan(mgncol,nlev))
+   allocate(packed_relvar(mgncol,nlev_micro))  ! These are generated in clubb_intr.F90
+   packed_relvar = packer%pack(relvar)	       !  either we need to interpolate these or 
+   allocate(packed_accre_enhan(mgncol,nlev_micro))  ! just keep on same grid 
    packed_accre_enhan = packer%pack(accre_enhan)
 
-   allocate(packed_p(mgncol,nlev))
+   allocate(packed_p(mgncol,nlev_micro))
+#ifdef FIVE
+   packed_p = packer%pack(pmid_five) 
+#else
    packed_p = packer%pack(state_loc%pmid)
-   allocate(packed_pdel(mgncol,nlev))
+#endif
+   allocate(packed_pdel(mgncol,nlev_micro))
+#ifdef FIVE
+   packed_pdel = packer%pack(pdel_five) 
+#else
    packed_pdel = packer%pack(state_loc%pdel)
+#endif
 
-   allocate(packed_pint(mgncol,nlev+1))
+   allocate(packed_pint(mgncol,nlev_micro+1))
+#ifdef FIVE
+   packed_pint = packer%pack_interface(five_pint) 
+#else
    packed_pint = packer%pack_interface(state_loc%pint)
+#endif
 
-   allocate(packed_cldn(mgncol,nlev))
-   packed_cldn = packer%pack(ast)
-   allocate(packed_liqcldf(mgncol,nlev))
+   allocate(packed_cldn(mgncol,nlev_micro))
+   packed_cldn = packer%pack(ast)       ! either needs to be interpolated, or kept on grid
+   allocate(packed_liqcldf(mgncol,nlev_micro))
    packed_liqcldf = packer%pack(alst_mic)
-   allocate(packed_icecldf(mgncol,nlev))
+   allocate(packed_icecldf(mgncol,nlev_micro))
    packed_icecldf = packer%pack(aist_mic)
 
-   allocate(packed_naai(mgncol,nlev))
-   packed_naai = packer%pack(naai)
-   allocate(packed_npccn(mgncol,nlev))
-   packed_npccn = packer%pack(npccn)
+   allocate(packed_naai(mgncol,nlev_micro))
+   packed_naai = packer%pack(naai) ! needs to be interpolated
+   allocate(packed_npccn(mgncol,nlev_micro))
+   packed_npccn = packer%pack(npccn) ! needs to be interpolated
 
-   allocate(packed_rndst(mgncol,nlev,size(rndst, 3)))
+   allocate(packed_rndst(mgncol,nlev_micro,size(rndst, 3)))
    packed_rndst = packer%pack(rndst)
-   allocate(packed_nacon(mgncol,nlev,size(nacon, 3)))
+   allocate(packed_nacon(mgncol,nlev_micro,size(nacon, 3)))
    packed_nacon = packer%pack(nacon)
 
    if (.not. do_cldice) then
@@ -2090,6 +2222,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    end if
 
    ! Allocate input variables that are updated during substeps.
+   ! +PAB, for FIVE, this will need to be modified to use FIVE variables
    allocate(packed_t(mgncol,nlev))
    allocate(packed_q(mgncol,nlev))
    allocate(packed_qc(mgncol,nlev))

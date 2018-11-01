@@ -79,7 +79,8 @@ CONTAINS
   ! Initialize the dynamical core
 
     use pio,                 only: file_desc_t
-    use hycoef,              only: hycoef_init
+    use hycoef,              only: hycoef_init, ailev, alev, &
+                                   hyai, hyam, hybi, hybm
     use ref_pres,            only: ref_pres_init
 
     use pmgrid,              only: dyndecomp_set
@@ -137,6 +138,11 @@ CONTAINS
 
     ! Initialize hybrid coordinate arrays.
     call hycoef_init(fh)
+
+#ifdef FIVE
+   call init_five_heights(100._r8*ailev,100._r8*alev,&
+          hyai,hyam,hybi,hybm)
+#endif    
 
     ! Initialize physics grid reference pressures (needed by initialize_radbuffer)
     call ref_pres_init()

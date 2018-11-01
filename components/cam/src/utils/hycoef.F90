@@ -37,8 +37,8 @@ real(r8), public :: hypd(plev)        ! reference pressure layer thickness
 real(r8), public, parameter :: ps0 = 1.0e5_r8    ! Base state surface pressure (pascals)
 real(r8), public, parameter :: psr = 1.0e5_r8    ! Reference surface pressure (pascals)
 
-real(r8), target :: alev(plev)    ! level values (pascals) for 'lev' coord
-real(r8), target :: ailev(plevp)  ! interface level values for 'ilev' coord
+real(r8), public, target :: alev(plev)    ! level values (pascals) for 'lev' coord
+real(r8), public, target :: ailev(plevp)  ! interface level values for 'ilev' coord
 
 integer, public :: nprlev       ! number of pure pressure levels at top
 

@@ -10,7 +10,8 @@ use spmd_utils,   only: masterproc
 use constituents, only: pcnst, cnst_name, cnst_longname
 use constituents, only: sflxnam, tendnam, fixcnam, tottnam, hadvnam, vadvnam, cnst_get_ind
 use pmgrid,       only: plev, plevp, dyndecomp_set
-use hycoef,       only: hycoef_init
+use hycoef,       only: hycoef_init, ailev, alev, &
+                        hyai, hyam, hybi, hybm
 use cam_history,  only: addfld, add_default, horiz_only
 use phys_control, only: phys_getopts
 use eul_control_mod, only: dyn_eul_readnl, eul_nsplit
@@ -53,6 +54,9 @@ subroutine dyn_init(file, nlfilename)
    use scamMod,      only: single_column
    use physics_buffer,  only : pbuf_add_field, dtype_r8
    use ppgrid,          only : pcols, pver
+#ifdef FIVE
+   use five_intr, only: init_five_heights
+#endif
 
    ! ARGUMENTS:
    type(file_desc_t), intent(in) :: file       ! PIO file handle for initial or restart file
@@ -89,6 +93,11 @@ subroutine dyn_init(file, nlfilename)
 
    ! Initialize hybrid coordinate arrays
    call hycoef_init(file)
+
+#ifdef FIVE
+   call init_five_heights(100._r8*ailev,100._r8*alev,&
+          hyai,hyam,hybi,hybm)
+#endif
 
    ! Run initgrid (the old initcom) which sets up coordinates and weights
    call initgrid()

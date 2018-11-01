@@ -11,7 +11,6 @@ module five_intr
   use constituents, only: pcnst
   use physconst, only: rair, gravit, cpair, zvir
   use cam_logfile, only: iulog
-  use cam_history_support, only: add_hist_coord
 
   implicit none
   
@@ -21,8 +20,10 @@ module five_intr
   integer :: five_add_nlevels = 2 
   
   ! The bottom layer to which we will add layers to (set
-  !   to a very large value to add all the way to surface)
-  real, parameter :: five_bot_toadd = 100000._r8
+  !   to a very large value to add all the way to surface, though
+  !   currently setting this value to surface results in model
+  !   crashes in SCM, so need to investigate)
+  real, parameter :: five_bot_toadd = 98000._r8
   
   ! The top layer to which we will add layers to
   real, parameter :: five_top_toadd = 80000._r8
@@ -33,8 +34,16 @@ module five_intr
   !   because PBUF needs these to be initialized.
   !   TASK: figure out a better way so these can be computed
   !   on the fly and not user specified!
-  integer, parameter :: pver_five = 102
-  integer, parameter :: pverp_five = 103
+  integer, parameter :: pver_five = 100
+  integer, parameter :: pverp_five = 101
+  
+  ! Pressure values as initialized in hycoef.F90
+  real(r8) :: alev_five(pver_five) ! midpoint FIVE pressures (pascals)
+  real(r8) :: ailev_five(pverp_five) ! interface FIVE pressures (pascals)
+  real(r8) :: hyai_five(pverp_five)
+  real(r8) :: hyam_five(pver_five)
+  real(r8) :: hybi_five(pverp_five)
+  real(r8) :: hybm_five(pver_five)
   
   ! define physics buffer indicies here for the FIVE
   !  variables added to the PBUF
@@ -119,32 +128,134 @@ module five_intr
     ! Define PBUF for non-prognostic variables
     ! Probably also need to save things like cloud fraction
     call pbuf_add_field('PMID_FIVE', 'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), pmid_five_idx)
-    call pbuf_add_field('PINT_FIVE', 'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), pint_five_idx)
-    
-    ! To give us flexibility for outputting variables on FIVE grid, we
-    !  need to define new coordinate here via "add_hist_coord".  Note that
-    !  since the FIVE pressure values are needed to do this (pmid_five and pint_five),
-    !  it is likely that we will need to move the call to define pressure levels up
-    !  so that they will be computed by the time it gets here.  
-    ! "add_hist_coord" call appears to have worked down below.... We'll see ;) 
+    call pbuf_add_field('PINT_FIVE', 'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), pint_five_idx) 
   
   end subroutine five_register_e3sm 
   
   ! ======================================== !
   !                                          !
   ! ======================================== !
+
+  subroutine init_five_heights(ailev,alev, &
+               hyai,hyam,hybi,hybm)
+  
+    ! Purpose is to initialize FIVE heights.  This is called 
+    !   dyn_comp.F90.  We need to do this here to initialize
+    !   height coordinates for output purposes, so output
+    !   can be written to CAM history tapes.  
+    !   NOTE: that the pressure values determined here
+    !   will not necessarily be the values used in the 
+    !   simulation.  This is because SCM often times specifies
+    !   a surface value.  Here we will find the hybrid points
+    !   and the actual pressure values will be computed in
+    !   init_five_profiles
+    
+    use cam_history_support, only: add_vert_coord
+    
+    ! Input variables
+    real(r8), intent(in) :: alev(pver)   ! midpoint pressure from 
+                                         ! E3SM host model
+    real(r8), intent(in) :: ailev(pverp) ! interface pressure from
+                                         ! E3SM host model
+    real(r8), intent(in) :: hyai(pverp)  ! hybrid points from host
+    real(r8), intent(in) :: hyam(pver)
+    real(r8), intent(in) :: hybi(pverp)
+    real(r8), intent(in) :: hybm(pver)
+    
+    ! Local variables
+    integer :: low_ind, high_ind
+    integer :: kh, ki, k, i
+    real(r8) :: incr, incr2, incr3, ps0
+    
+    low_ind = pver
+    high_ind = 1   
+    
+    ! Note that here we are actually adding "layers" to the
+    !   coordinate points, because these will be the same 
+    !   no matter what the reference pressure is  
+    kh=1 ! kh is layer index on FIVE grid
+    do k=1,pverp ! k is layer index on E3SM grid
+
+      ! Copy preexisting points to FIVE grid
+      hyai_five(kh) = hyai(k)
+      hybi_five(kh) = hybi(k)
+      
+      kh=kh+1
+      if (k .eq. pverp) goto 100
+      ! Test to see if this is within the bounds of the grid
+      ! we want to add layers to
+      if (ailev(k) .le. five_bot_toadd .and. &
+        ailev(k) .ge. five_top_toadd) then
+	  
+	! save the indicee
+	if (high_ind .eq. 1) high_ind = k
+	low_ind = k
+	  
+	! If we are inside the portion of grid we want to add layers
+	! to then compute the pressure increment (resolution)
+	incr2=(hyai(k+1)-hyai(k))/(five_add_nlevels+1)
+	incr3=(hybi(k+1)-hybi(k))/(five_add_nlevels+1)
+	    
+	! Define the new layer
+	do ki=1,five_add_nlevels
+	  hyai_five(kh) = hyai_five(kh-1)+incr2
+	  hybi_five(kh) = hybi_five(kh-1)+incr3
+	  kh=kh+1
+	enddo
+	    
+      endif
+	  
+    enddo
+    
+100 continue
+	
+    ! Save the indicees of the layers
+    five_bot_k = low_ind
+    five_top_k = high_ind 
+    
+    ! Now define five interface layers.  At this point
+    !  the reference and base pressure will be the same
+    !  i.e. ps0 = 1.0e5_r8
+    
+    ps0 = 1.0e5_r8
+    ailev_five(:pverp_five) = ps0*(hyai_five(:pverp_five) + hybi_five(:pverp_five)) 
+    
+    ! Now define five_mid layers
+    do k=1,pver_five
+      alev_five(k) = (ailev_five(k)+ailev_five(k+1))/2.0_r8
+    enddo      
+	
+    write(iulog,*) 'NUMBER OF FIVE LEVELS', kh-1, five_bot_k, five_top_k        
+    
+    ! Now add vertical coordinate to the history output field
+    call add_vert_coord('lev_five', pver_five,                               &
+         'FIVE hybrid level at midpoints (1000*(A+B))', 'hPa', alev_five*0.01_r8, &
+         positive='down',                                                    &
+         standard_name='atmosphere_hybrid_sigma_pressure_coordinate')    
+ 
+    call add_vert_coord('ilev_five', pverp_five,                               &
+         'FIVE hybrid level at interfaces (1000*(A+B))', 'hPa', ailev_five*0.01_r8, &
+         positive='down',                                                    &
+         standard_name='atmosphere_hybrid_sigma_pressure_coordinate')	
+    
+  end subroutine init_five_heights 
+  
+  ! ======================================== !
+  !                                          !
+  ! ======================================== !  
   
   subroutine init_five_profiles(phys_state, pbuf2d)
   
     ! Purpose is to initialize FIVE profiles.
     ! 1)  The interface and midlayers are defined for FIVE
-    !     based on the user input
+    !     based on the coordinate values and reference and base
+    !     pressures
     ! 2)  We initialize the FIVE variables from the E3SM state,
     !     then interpolate onto the FIVE grid
 
     use time_manager, only: is_first_step
     use physics_buffer, only: pbuf_set_field, pbuf_get_chunk, &
-                        dyn_time_lvls
+                        dyn_time_lvls			
   
     ! Input/output variables
     type(physics_state), intent(in):: phys_state(begchunk:endchunk)
@@ -172,7 +283,8 @@ module five_intr
     real(r8) :: pmid_host(pcols,pver)
     real(r8) :: pint_five(pcols,pverp_five) 
     real(r8) :: pmid_five(pcols,pver_five)
-    real :: incr   
+    real(r8) :: incr   
+    real(r8) :: ps0, psr
     
     ! Loop over all the physics "chunks" in E3SM
     do lchnk = begchunk,endchunk
@@ -181,54 +293,14 @@ module five_intr
       pint_host = phys_state(lchnk)%pint ! E3SM interface pressures
       pmid_host = phys_state(lchnk)%pmid ! E3SM midpoint pressures
       pbuf2d_chunk => pbuf_get_chunk(pbuf2d,lchnk)
-    
-      ! First define the FIVE grid.
-      ! This is done based on the parameter "five_add_nlevels".
-      ! If this value is set to 1, then one layer will be added in between
-      ! the default E3SM grid, but only in the area of the grid 
-      ! that we twll it to.  This is based on "five_bot_toadd" and
-      ! "five_top_toadd" parameters.    
-      !
-      ! Add layers to the interface grid, then interpolate
-      ! onto the pmid grid
-      do i=1,ncol 
-        low_ind = pver
-	high_ind = 1      
-        kh=1 ! kh is layer index on FIVE grid
-        do k=1,pverp ! k is layer index on E3SM grid
-          
-	  pint_five(i,kh) = pint_host(i,k) ! Copy pre-existing level 
-	                                   ! to FIVE grid
-	  kh=kh+1
-	  ! Test to see if this is within the bounds of the grid
-	  ! we want to add layers to
-	  if (pint_host(i,k) .le. five_bot_toadd .and. &
-	      pint_host(i,k) .ge. five_top_toadd) then
-	  
-	    ! save the indicee
-	    if (high_ind .eq. 1) high_ind = k
-	    low_ind = k
-	  
-	    ! If we are inside the portion of grid we want to add layers
-	    ! to then compute the pressure increment (resolution)
-	    incr=(pint_host(i,k+1)-pint_host(i,k))/(five_add_nlevels+1)
-	    
-	    ! Define the new layer
-	    do ki=1,five_add_nlevels
-	      pint_five(i,kh) = pint_five(i,kh-1)+incr
-	      kh=kh+1
-	    enddo
-	    
-	  endif
-	  
-	enddo
-	
-	! Save the indicees of the layers
-	five_bot_k = low_ind
-	five_top_k = high_ind 
-	
-	write(iulog,*) 'NUMBER OF FIVE LEVELS', kh-1, five_bot_k, five_top_k
-
+      
+      ! Now define five interface layers
+      !  Note that here the base and reference pressures could
+      !  be different, most likely in an SCM run 
+      do i=1,ncol
+        ps0 = 1.0e5_r8
+	psr = pint_host(i,pverp)
+	pint_five(i,:pverp_five) = ps0*hyai_five(:pverp_five) + psr*hybi_five(:pverp_five)
       enddo
       
       ! Now define five_mid layers
@@ -236,7 +308,7 @@ module five_intr
         do k=1,pver_five
 	  pmid_five(i,k) = (pint_five(i,k)+pint_five(i,k+1))/2.0_r8
 	enddo
-      enddo
+      enddo      
     
       ! Now we want to initialize stuff on the FIVE grid.  
       ! Here we initialize the prognostics (temperature, tracers, u, v)
