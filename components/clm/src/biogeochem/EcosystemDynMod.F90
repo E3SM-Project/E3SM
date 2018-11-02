@@ -1,4 +1,4 @@
-module CNEcosystemDynMod
+module EcosystemDynMod
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Ecosystem dynamics: phenology, vegetation
@@ -45,19 +45,19 @@ module CNEcosystemDynMod
   save
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: CNEcosystemDynInit          ! Ecosystem dynamics initialization
-  public :: CNEcosystemDynLeaching      ! Ecosystem dynamics: phenology, vegetation, doing N leaching
+  public :: EcosystemDynInit          ! Ecosystem dynamics initialization
+  public :: EcosystemDynLeaching      ! Ecosystem dynamics: phenology, vegetation, doing N leaching
   !----------------------------------------------------------------------
   ! bgc&th interface & pflotran:
-  ! CNEcosystemDynNoLeaching is divided into 2 subroutines:
-  public :: CNEcosystemDynNoLeaching1   ! Ecosystem dynamics: phenology, vegetation, before doing soil_bgc
-  public :: CNEcosystemDynNoLeaching2   ! Ecosystem dynamics: phenology, vegetation, after doing soil_bgc & before doing N leaching
+  ! EcosystemDynNoLeaching is divided into 2 subroutines:
+  public :: EcosystemDynNoLeaching1   ! Ecosystem dynamics: phenology, vegetation, before doing soil_bgc
+  public :: EcosystemDynNoLeaching2   ! Ecosystem dynamics: phenology, vegetation, after doing soil_bgc & before doing N leaching
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine CNEcosystemDynInit(bounds)
+  subroutine EcosystemDynInit(bounds)
     !
     ! !DESCRIPTION:
     ! Initialzation of the CN Ecosystem dynamics.
@@ -81,12 +81,12 @@ contains
        call C14_init_BombSpike()
     end if
 
-  end subroutine CNEcosystemDynInit
+  end subroutine EcosystemDynInit
 
 
   !-----------------------------------------------------------------------
 
-  subroutine CNEcosystemDynLeaching(bounds, num_soilc, filter_soilc, &
+  subroutine EcosystemDynLeaching(bounds, num_soilc, filter_soilc, &
        num_soilp, filter_soilp, num_pcropp, filter_pcropp, doalb, &
        cnstate_vars, carbonflux_vars, carbonstate_vars, &
        c13_carbonflux_vars, c13_carbonstate_vars, &
@@ -229,11 +229,11 @@ contains
 
     end if !end of if not use_fates block
 
-  end subroutine CNEcosystemDynLeaching
+  end subroutine EcosystemDynLeaching
 
 
 !-------------------------------------------------------------------------------------------------
-  subroutine CNEcosystemDynNoLeaching1(bounds,                          &
+  subroutine EcosystemDynNoLeaching1(bounds,                          &
        num_soilc, filter_soilc,                                         &
        num_soilp, filter_soilp,                                         &
        cnstate_vars, carbonflux_vars, carbonstate_vars,                 &
@@ -246,7 +246,7 @@ contains
        phosphorusflux_vars,phosphorusstate_vars)
     !-------------------------------------------------------------------
     ! bgc interface
-    ! Phase-1 of CNEcosystemDynNoLeaching
+    ! Phase-1 of EcosystemDynNoLeaching
     ! call Allocation1_PlantNPDemand before soil_bgc
     !-------------------------------------------------------------------
 
@@ -461,10 +461,10 @@ contains
 
     end if !end of if not use_fates block
 
-  end subroutine CNEcosystemDynNoLeaching1
+  end subroutine EcosystemDynNoLeaching1
 
 !-------------------------------------------------------------------------------------------------
-  subroutine CNEcosystemDynNoLeaching2(bounds,                                  &
+  subroutine EcosystemDynNoLeaching2(bounds,                                  &
        num_soilc, filter_soilc,                                                 &
        num_soilp, filter_soilp, num_pcropp, filter_pcropp, doalb,               &
        cnstate_vars, carbonflux_vars, carbonstate_vars,                         &
@@ -477,7 +477,7 @@ contains
        phosphorusflux_vars,phosphorusstate_vars)
     !-------------------------------------------------------------------
     ! bgc interface
-    ! Phase-2 of CNEcosystemDynNoLeaching
+    ! Phase-2 of EcosystemDynNoLeaching
     ! call SoilLittDecompAlloc (w/o bgc_interface) & SoilLittDecompAlloc2
     !-------------------------------------------------------------------
 
@@ -853,7 +853,7 @@ contains
        endif    
     end if !end of if not use_fates block
 
-  end subroutine CNEcosystemDynNoLeaching2
+  end subroutine EcosystemDynNoLeaching2
 
   
-end  module CNEcosystemDynMod
+end  module EcosystemDynMod

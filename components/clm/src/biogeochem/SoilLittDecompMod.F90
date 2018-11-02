@@ -104,7 +104,7 @@ contains
     ! clm-bgc soil Module, can be called through clm_bgc_interface
     ! ONLY includes SOM decomposition & nitrification/denitrification (if use_nitrif_denitrif)
     ! CNAllocaiton is divided into 3 subroutines:
-    ! (1) Allocation1_PlantNPDemand  is called in CNEcosystemDynNoLeaching1
+    ! (1) Allocation1_PlantNPDemand  is called in EcosystemDynNoLeaching1
     ! (2) Allocation2_ResolveNPLimit is called in SoilLittDecompAlloc (this subroutine)
     ! (3) Allocation3_PlantCNPAlloc  is called in SoilLittDecompAlloc2
     !-----------------------------------------------------------------------------
@@ -213,7 +213,7 @@ contains
          )
 
       !-------------------------------------------------------------------------------------------------
-      ! call decomp_rate_constants_bgc() or decomp_rate_constants_cn(): now called in CNEcosystemDynNoLeaching1
+      ! call decomp_rate_constants_bgc() or decomp_rate_constants_cn(): now called in EcosystemDynNoLeaching1
       !-------------------------------------------------------------------------------------------------
 
       ! set initial values for potential C and N fluxes
@@ -387,7 +387,7 @@ contains
 
 
 !-------------------------------------------------------------------------------------------------
-! 'call decomp_vertprofiles()' (calc nfixation_prof) is moved to CNEcosystemDynNoLeaching1
+! 'call decomp_vertprofiles()' (calc nfixation_prof) is moved to EcosystemDynNoLeaching1
 ! 'nfixation_prof' is used in 'calc_nuptake_prof' & 'calc_puptake_prof', which are called in Allocation1,2,3
 !-------------------------------------------------------------------------------------------------
       

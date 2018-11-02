@@ -46,7 +46,7 @@ module CNAllocationBeTRMod
 
   !!-----------------------------------------------------------------------------------------------------
   !! CNAllocation is divided into 3 subroutines/phases:
-  private :: Allocation1_PlantNPDemand     !!Plant N/P Demand;       called in CNEcosystemDynNoLeaching1
+  private :: Allocation1_PlantNPDemand     !!Plant N/P Demand;       called in EcosystemDynNoLeaching1
   public :: Allocation3_PlantCNPAlloc     !!Plant C/N/P Allocation; called in SoilLittDecompAlloc2
   !!-----------------------------------------------------------------------------------------------------
   private :: dynamic_plant_alloc        ! dynamic plant carbon allocation based on different nutrient stress
