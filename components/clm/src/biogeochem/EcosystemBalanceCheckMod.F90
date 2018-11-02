@@ -1,4 +1,4 @@
-module CNBalanceCheckMod
+module EcosystemBalanceCheckMod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -1007,4 +1007,4 @@ contains
 
   end subroutine EndGridPBalanceAfterDynSubgridDriver
 
-end module CNBalanceCheckMod
+end module EcosystemBalanceCheckMod

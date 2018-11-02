@@ -53,14 +53,14 @@ module clm_driver
   use CNEcosystemDynMod      , only : CNEcosystemDynLeaching 
   use CNVegStructUpdateMod   , only : CNVegStructUpdate 
   use CNAnnualUpdateMod      , only : CNAnnualUpdate
-  use CNBalanceCheckMod      , only : BeginColCBalance, BeginColNBalance, ColCBalanceCheck, ColNBalanceCheck
-  use CNBalanceCheckMod      , only : BeginColPBalance, ColPBalanceCheck
-  use CNBalanceCheckMod      , only : BeginGridCBalanceBeforeDynSubgridDriver
-  use CNBalanceCheckMod      , only : BeginGridNBalanceBeforeDynSubgridDriver
-  use CNBalanceCheckMod      , only : BeginGridPBalanceBeforeDynSubgridDriver
-  use CNBalanceCheckMod      , only : EndGridCBalanceAfterDynSubgridDriver
-  use CNBalanceCheckMod      , only : EndGridNBalanceAfterDynSubgridDriver
-  use CNBalanceCheckMod      , only : EndGridPBalanceAfterDynSubgridDriver
+  use EcosystemBalanceCheckMod      , only : BeginColCBalance, BeginColNBalance, ColCBalanceCheck, ColNBalanceCheck
+  use EcosystemBalanceCheckMod      , only : BeginColPBalance, ColPBalanceCheck
+  use EcosystemBalanceCheckMod      , only : BeginGridCBalanceBeforeDynSubgridDriver
+  use EcosystemBalanceCheckMod      , only : BeginGridNBalanceBeforeDynSubgridDriver
+  use EcosystemBalanceCheckMod      , only : BeginGridPBalanceBeforeDynSubgridDriver
+  use EcosystemBalanceCheckMod      , only : EndGridCBalanceAfterDynSubgridDriver
+  use EcosystemBalanceCheckMod      , only : EndGridNBalanceAfterDynSubgridDriver
+  use EcosystemBalanceCheckMod      , only : EndGridPBalanceAfterDynSubgridDriver
   use CNVerticalProfileMod   , only : decomp_vertprofiles
   use CNFireMod              , only : CNFireInterp
   use CNDVDriverMod          , only : CNDVDriver, CNDVHIST
