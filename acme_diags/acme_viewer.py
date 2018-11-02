@@ -148,8 +148,9 @@ def _extras(root_dir, parameters):
 
     _edit_table_html(root_dir)
     _add_table_and_taylor_to_viewer_index(root_dir)
+    _add_provenance_to_viewer_index(root_dir)
 
-    
+
 def _add_pages_and_top_row(viewer, parameters):
     """Add the page and columns of the page"""
     set_to_seasons = collections.OrderedDict()  # dict of {set: [seasons]}
@@ -169,6 +170,8 @@ def _add_pages_and_top_row(viewer, parameters):
                 col_labels.append(s)
         viewer.add_page("{}".format(_better_page_name(set_num)), col_labels)
 
+    # Add the provenance page to the end.
+    viewer.add_page('Provenance', [])
 
 def _get_description(var, parameters):
     """Get the description for the variable from the parameters"""
@@ -339,7 +342,6 @@ def _cvs_to_html(csv_path, season, test_name, ref_name):
 
     return html_path
 
-
 def _add_html_to_col(season, season_path, html_path):
     """Since the output viewer doesn't support html images, do this hack.
     For the col in the html at html_path, insert the link to col_path."""
@@ -446,6 +448,23 @@ def _add_table_and_taylor_to_viewer_index(root_dir):
                     td.append(td_to_move_table)
                 if _better_page_name('lat_lon') in a.string and td_to_move_taylor:
                     td.append(td_to_move_taylor)    
+
+    html = soup.prettify("utf-8")
+    with open(index_page, "wb") as f:
+        f.write(html)
+
+def _add_provenance_to_viewer_index(root_dir):
+    """
+    In the index, link 'Provenance' to the prov folder.
+    """
+    index_page = os.path.join(root_dir, 'index.html')
+    soup = BeautifulSoup(open(index_page), "lxml")
+
+    for tr in soup.find_all("tr"):
+        for td in tr.find_all("td"):
+            for a in td.find_all("a"):
+                if 'Provenance' in a.text:
+                    a['href'] = '../prov'
 
     html = soup.prettify("utf-8")
     with open(index_page, "wb") as f:

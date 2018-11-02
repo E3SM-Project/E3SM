@@ -267,8 +267,6 @@ class Dataset():
             raise RuntimeError(msg)
 
         # Calculate the offset, which is needed for when *_yr >= *_yr_file.
-        # TODO: What do we do when *_yr < *_yr_file?
-        # CDMS will probably just throw an error.
         # Ex1: 1980 - 1950 = 30
         # Ex2: 1980 - 1980 = 0
         offset = start_yr - start_yr_file
