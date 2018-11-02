@@ -269,7 +269,7 @@ contains
     integer                  :: id_join
     integer                  :: mpicom_join
     integer                  :: atmid
-    character*32             :: dm1, dm2, dofnameATM, dofnameOCN
+    character*32             :: dm1, dm2, dofnameATM, dofnameOCN, wgtIdef
     integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
 
     integer, external :: iMOAB_CoverageGraph, iMOAB_ComputeScalarProjectionWeights
@@ -289,6 +289,7 @@ contains
     ! it happens over joint communicator
     ierr = iMOAB_CoverageGraph(mpicom_join, mhid,  atmid, mbaxid,  id_join, mbintxoa);
 
+    wgtIdef = 'scalar'//CHAR(0)
     dm1 = "cgll"//CHAR(0)
     dm2 = "fv"//CHAR(0)
     dofnameATM="GLOBAL_DOFS"//CHAR(0)
@@ -299,7 +300,7 @@ contains
     noConserve = 0
     validate = 1
     if (mbintxoa .ge. 0 ) then
-      ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxoa,  &
+      ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxoa, wgtIdef, &
                                                 trim(dm1), orderATM, trim(dm2), orderOCN, &
                                                 volumetric, noConserve, validate, &
                                                 trim(dofnameATM), trim(dofnameOCN) )
@@ -321,7 +322,7 @@ contains
     integer                  :: id_join
     integer                  :: mpicom_join
     integer                  :: atmid
-    character*32             :: dm1, dm2, tagName
+    character*32             :: dm1, dm2, tagName, wgtIdef
     character*32             :: outfile, wopts, tagnameProj
     integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
 
@@ -345,6 +346,7 @@ contains
     ! now send the tag a2oTAG from original atmosphere mhid(pid1) towards migrated coverage mesh (pid3), using the new coverage graph communicator
     tagName = 'a2oTAG'//CHAR(0) ! it is defined in semoab_mod.F90!!!
     tagNameProj = 'a2oTAG_proj'//CHAR(0)
+    wgtIdef = 'scalar'//CHAR(0)
     if (mhid .ge. 0) then !  send because we are on atm pes
 
       ! basically, adjust the migration of the tag we want to project; it was sent initially with
@@ -369,8 +371,9 @@ contains
     ! we could do the projection now, on the ocean mesh, because we are on the coupler pes;
     ! the actual migrate could happen later , from coupler pes to the ocean pes
     if (mbintxoa .ge. 0 ) then !  we are on coupler pes, for sure
-      ! we could apply weights
-      ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxoa, tagName, tagNameProj)
+      ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
+      !  hard coded now, it should be a runtime option in the future
+      ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxoa, wgtIdef, tagName, tagNameProj)
 
       ! we can also write the ocean mesh to file, just to see the projectd tag
       !      write out the mesh file to disk
