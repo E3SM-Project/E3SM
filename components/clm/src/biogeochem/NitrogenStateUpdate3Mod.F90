@@ -1,4 +1,4 @@
-module CNNStateUpdate3Mod
+module NitrogenStateUpdate3Mod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -21,13 +21,13 @@ module CNNStateUpdate3Mod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public:: NStateUpdate3
+  public:: NitrogenStateUpdate3
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine NStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine NitrogenStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        nitrogenflux_vars, nitrogenstate_vars)
     !
     ! !DESCRIPTION:
@@ -168,6 +168,6 @@ contains
 
     end associate 
 
-  end subroutine NStateUpdate3
+  end subroutine NitrogenStateUpdate3
 
-end module CNNStateUpdate3Mod
+end module NitrogenStateUpdate3Mod

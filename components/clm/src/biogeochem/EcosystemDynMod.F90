@@ -106,7 +106,7 @@ contains
     use PDynamicsMod         , only: PWeathering,PAdsorption,PDesorption,POcclusion
     use PDynamicsMod         , only: PBiochemMin,PLeaching
     use NitrogenDynamicsMod       , only: NitrogenLeaching
-    use CNNStateUpdate3Mod   , only: NStateUpdate3
+    use NitrogenStateUpdate3Mod   , only: NitrogenStateUpdate3
     use PStateUpdate3Mod     , only: PStateUpdate3
     use PrecisionControlMod  , only: PrecisionControl
     use perf_mod             , only: t_startf, t_stopf
@@ -193,7 +193,7 @@ contains
 
        call t_startf('CNUpdate3')
 
-       call NStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call NitrogenStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             nitrogenflux_vars, nitrogenstate_vars)
        call t_stopf('CNUpdate3')
 
