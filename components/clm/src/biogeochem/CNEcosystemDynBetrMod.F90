@@ -518,7 +518,7 @@ module CNEcosystemDynBetrMod
     !
     use ColumnType           , only : column_physical_properties_type
     use VegetationType       , only : vegetation_physical_properties_type
-    use CNPrecisionControlMod, only: CNPrecisionControl
+    use PrecisionControlMod  , only: PrecisionControl
     implicit none
     type(bounds_type)        , intent(in)    :: bounds
     type(column_physical_properties_type)        , intent(in)    :: col
@@ -540,7 +540,7 @@ module CNEcosystemDynBetrMod
 
     call t_startf('CNsumBetr')
 
-    call CNPrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+    call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars,phosphorusstate_vars)
 
     call carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'bulk')

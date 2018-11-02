@@ -42,7 +42,7 @@ contains
       use CNDecompCascadeCNMod   , only : decomp_rate_constants_cn
       use CNCStateUpdate1Mod     , only : CStateUpdate1
       use CNSoilLittVertTranspMod, only : CNSoilLittVertTransp
-      use CNPrecisionControlMod  , only : CNPrecisionControl
+      use PrecisionControlMod    , only : PrecisionControl
       use CNCarbonFluxType       , only : carbonflux_type
       use CNCarbonStateType      , only : carbonstate_type
       use CNStateType            , only : cnstate_type
@@ -269,7 +269,7 @@ contains
     ! Added some new logical filters to prevent
     ! above ground precision control calculations with use_fates, as well
     ! bypass on nitrogen calculations
-    call CNPrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+    call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
           carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars,       &
           nitrogenstate_vars,phosphorusstate_vars)
 

@@ -108,7 +108,7 @@ contains
     use CNNDynamicsMod       , only: CNNLeaching
     use CNNStateUpdate3Mod   , only: NStateUpdate3
     use PStateUpdate3Mod     , only: PStateUpdate3
-    use CNPrecisionControlMod, only: CNPrecisionControl
+    use PrecisionControlMod  , only: PrecisionControl
     use perf_mod             , only: t_startf, t_stopf
     use shr_sys_mod          , only: shr_sys_flush
     use PDynamicsMod         , only: PBiochemMin_balance
@@ -204,7 +204,7 @@ contains
        call t_stopf('PUpdate3')
 
        call t_startf('CNPsum')
-       call CNPrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars,phosphorusstate_vars)
 
        call carbonflux_vars%summary_cflux_for_ch4(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)

@@ -1,4 +1,4 @@
-module CNPrecisionControlMod
+module PrecisionControlMod
 
   !----------------------------------------------------------------------- 
   ! !DESCRIPTION:
@@ -21,13 +21,13 @@ module CNPrecisionControlMod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public:: CNPrecisionControl
+  public:: PrecisionControl
   !----------------------------------------------------------------------- 
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine CNPrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars,&
        phosphorusstate_vars)
     !
@@ -858,6 +858,6 @@ contains
 
     end associate
 
- end subroutine CNPrecisionControl
+ end subroutine PrecisionControl
 
-end module CNPrecisionControlMod
+end module PrecisionControlMod
