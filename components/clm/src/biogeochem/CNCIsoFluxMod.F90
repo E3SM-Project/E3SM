@@ -544,7 +544,7 @@ contains
          num_soilp                                              , filter_soilp, 1._r8, 0, isotope)            
 
     ! call routine to shift patch-level gap mortality fluxes to column , for isotopes
-    ! the non-isotope version of this routine is in CNGapMortalityMod.F90.
+    ! the non-isotope version of this routine is in GapMortalityMod.F90.
 
     call CNCIsoGapPftToColumn(num_soilc, filter_soilc, cnstate_vars, isotopeflux_vars)
 
@@ -689,7 +689,7 @@ contains
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     ! call routine to shift patch-level gap mortality fluxes to column, for isotopes
-    ! the non-isotope version of this routine is in CNGapMortalityMod.F90.
+    ! the non-isotope version of this routine is in GapMortalityMod.F90.
 
     call CNCIsoHarvestPftToColumn(num_soilc, filter_soilc, cnstate_vars, isotopeflux_vars)
 

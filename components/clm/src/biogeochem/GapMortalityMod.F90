@@ -1,4 +1,4 @@
-module CNGapMortalityMod
+module GapMortalityMod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -31,8 +31,8 @@ module CNGapMortalityMod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: CNGapMortality
-  public :: readCNGapMortParams
+  public :: GapMortality
+  public :: readGapMortParams
 
   type, private :: CNGapMortParamsType
       real(r8):: am     ! mortality rate based on annual rate, fractional mortality (1/yr)
@@ -45,7 +45,7 @@ module CNGapMortalityMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine readCNGapMortParams ( ncid )
+  subroutine readGapMortParams ( ncid )
     !
     ! !DESCRIPTION:
     ! Read in parameters
@@ -75,10 +75,10 @@ contains
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     CNGapMortParamsInst%k_mort=tempr   
     
-  end subroutine readCNGapMortParams
+  end subroutine readGapMortParams
 
   !-----------------------------------------------------------------------
-  subroutine CNGapMortality (&
+  subroutine GapMortality (&
        num_soilc, filter_soilc, num_soilp, filter_soilp, &
        dgvs_vars, cnstate_vars, &
        carbonstate_vars, nitrogenstate_vars, carbonflux_vars,nitrogenflux_vars,&
@@ -311,7 +311,7 @@ contains
            cnstate_vars, carbonflux_vars, nitrogenflux_vars,phosphorusflux_vars)
 
     end associate
-  end subroutine CNGapMortality
+  end subroutine GapMortality
 
   !-----------------------------------------------------------------------
   subroutine CNGapPftToColumn ( &
@@ -639,4 +639,4 @@ contains
   end subroutine mortality_rate_soilorder
 
 
-end module CNGapMortalityMod
+end module GapMortalityMod

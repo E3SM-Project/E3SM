@@ -84,7 +84,7 @@ contains
     use CNPhenologyBeTRMod       , only : readCNPhenolBeTRParams
     use CNMRespMod               , only : readCNMRespParams
     use CNNDynamicsMod           , only : readCNNDynamicsParams
-    use CNGapMortalityMod        , only : readCNGapMortParams 
+    use GapMortalityMod          , only : readGapMortParams 
     use CNGapMortalityBeTRMod    , only : readCNGapMortBeTRParams
     use CNNitrifDenitrifMod      , only : readCNNitrifDenitrifParams
     use SoilLittVertTranspMod    , only : readSoilLittVertTranspParams
@@ -161,7 +161,7 @@ contains
        if(is_active_betr_bgc)then
          call readCNGapMortBeTRParams (ncid)
        else
-         call readCNGapMortParams (ncid)
+         call readGapMortParams (ncid)
        endif
     end if
 

@@ -266,7 +266,7 @@ contains
 !    use CNCStateUpdate1Mod     , only: CStateUpdate1,CStateUpdate0
 !    use CNNStateUpdate1Mod     , only: NStateUpdate1
 !    use PStateUpdate1Mod       , only: PStateUpdate1
-!    use CNGapMortalityMod      , only: CNGapMortality
+!    use GapMortalityMod      , only: GapMortality
 !    use CNCStateUpdate2Mod     , only: CStateUpdate2, CStateUpdate2h
 !    use CNNStateUpdate2Mod     , only: NStateUpdate2, NStateUpdate2h
 !    use PStateUpdate2Mod       , only: PStateUpdate2, PStateUpdate2h
@@ -496,7 +496,7 @@ contains
     use CNCStateUpdate1Mod     , only: CStateUpdate1,CStateUpdate0
     use CNNStateUpdate1Mod     , only: NStateUpdate1
     use PStateUpdate1Mod       , only: PStateUpdate1
-    use CNGapMortalityMod      , only: CNGapMortality
+    use GapMortalityMod        , only: GapMortality
     use CNCStateUpdate2Mod     , only: CStateUpdate2, CStateUpdate2h
     use CNNStateUpdate2Mod     , only: NStateUpdate2, NStateUpdate2h
     use PStateUpdate2Mod       , only: PStateUpdate2, PStateUpdate2h
@@ -707,7 +707,7 @@ contains
        call t_stopf('SoilLittVertTransp')
 
        call t_startf('CNGapMortality')
-       call CNGapMortality( num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call GapMortality( num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dgvs_vars, cnstate_vars, &
             carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
             phosphorusstate_vars,phosphorusflux_vars )
