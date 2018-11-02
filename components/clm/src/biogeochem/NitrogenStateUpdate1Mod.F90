@@ -1,4 +1,4 @@
-module CNNStateUpdate1Mod
+module NitrogenStateUpdate1Mod
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Module for nitrogen state variable updates, non-mortality fluxes.
@@ -35,14 +35,14 @@ module CNNStateUpdate1Mod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: NStateUpdateDynPatch
-  public :: NStateUpdate1
+  public :: NitrogenStateUpdateDynPatch
+  public :: NitrogenStateUpdate1
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine NStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
+  subroutine NitrogenStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
        nitrogenflux_vars, nitrogenstate_vars)
     !
     ! !DESCRIPTION:
@@ -62,7 +62,7 @@ contains
     integer                                  :: j                             ! level index
     real(r8)                                 :: dt                            ! time step (seconds)
 
-    character(len=*)         , parameter     :: subname = 'NStateUpdateDynPatch'
+    character(len=*)         , parameter     :: subname = 'NitrogenStateUpdateDynPatch'
     !-----------------------------------------------------------------------
 
     associate( &
@@ -100,10 +100,10 @@ contains
 
     end associate
 
-  end subroutine NStateUpdateDynPatch
+  end subroutine NitrogenStateUpdateDynPatch
 
   !-----------------------------------------------------------------------
-  subroutine NStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine NitrogenStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars, nitrogenflux_vars, nitrogenstate_vars)
     !
     ! !DESCRIPTION:
@@ -498,6 +498,6 @@ contains
 
     end associate
 
-  end subroutine NStateUpdate1
+  end subroutine NitrogenStateUpdate1
 
-end module CNNStateUpdate1Mod
+end module NitrogenStateUpdate1Mod

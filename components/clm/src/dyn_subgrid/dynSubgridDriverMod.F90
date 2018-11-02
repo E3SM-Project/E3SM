@@ -179,7 +179,7 @@ contains
     use reweightMod          , only : reweight_wrapup
     use subgridWeightsMod    , only : compute_higher_order_weights, set_subgrid_diagnostic_fields
     use CNCStateUpdate1Mod   , only : CStateUpdateDynPatch
-    use CNNStateUpdate1Mod   , only : NStateUpdateDynPatch
+    use NitrogenStateUpdate1Mod   , only : NitrogenStateUpdateDynPatch
     use PStateUpdate1Mod     , only : PStateUpdateDynPatch
     !
     ! !ARGUMENTS:
@@ -316,7 +316,7 @@ contains
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
                carbonflux_vars, carbonstate_vars)
 
-          call NStateUpdateDynPatch(bounds_clump, &
+          call NitrogenStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
                nitrogenflux_vars, nitrogenstate_vars)
 

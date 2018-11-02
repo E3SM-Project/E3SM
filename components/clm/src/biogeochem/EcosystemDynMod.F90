@@ -264,7 +264,7 @@ contains
 !    use PhenologyMod         , only: Phenology
 !    use CNGRespMod             , only: CNGResp
 !    use CNCStateUpdate1Mod     , only: CStateUpdate1,CStateUpdate0
-!    use CNNStateUpdate1Mod     , only: NStateUpdate1
+!    use NitrogenStateUpdate1Mod     , only: NitrogenStateUpdate1
 !    use PStateUpdate1Mod       , only: PStateUpdate1
 !    use GapMortalityMod      , only: GapMortality
 !    use CNCStateUpdate2Mod     , only: CStateUpdate2, CStateUpdate2h
@@ -494,7 +494,7 @@ contains
     use PhenologyMod         , only: Phenology
     use CNGRespMod             , only: CNGResp
     use CNCStateUpdate1Mod     , only: CStateUpdate1,CStateUpdate0
-    use CNNStateUpdate1Mod     , only: NStateUpdate1
+    use NitrogenStateUpdate1Mod     , only: NitrogenStateUpdate1
     use PStateUpdate1Mod       , only: PStateUpdate1
     use GapMortalityMod        , only: GapMortality
     use CNCStateUpdate2Mod     , only: CStateUpdate2, CStateUpdate2h
@@ -688,7 +688,7 @@ contains
                crop_vars, c14_carbonflux_vars, c14_carbonstate_vars)
        end if
 
-       call NStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call NitrogenStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars, nitrogenflux_vars, nitrogenstate_vars)
 
        call PStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
