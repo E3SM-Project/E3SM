@@ -474,11 +474,6 @@ contains
     logical                             :: unstructured
     real(r8)                            :: lonmin, latmin
 
-!  debug chunks
-    integer :: unitn
-    character (len=32) localmeshfile, lnum
-!  debug
-
 #if ( defined _OPENMP )
     integer omp_get_max_threads
     external omp_get_max_threads
@@ -1372,20 +1367,6 @@ contains
     ! Clean-up
     deallocate(pcols_proc)
     deallocate(npthreads)
-
-    if (masterproc) then
-        unitn = shr_file_getUnit()
-
-        localmeshfile = 'chunks_on_proc.txt'
-        open( unitn, file=trim(localmeshfile))
-        do cid = 1, nchunks
-          ncols = chunks(cid)%ncols
-          write (unitn, *)chunks(cid)%owner, chunks(cid)%lcid, ncols, (chunks(cid)%gcol(i), i=1, ncols)
-        enddo
-
-        close(unitn)
-        call shr_file_freeUnit( unitn )
-    endif
 
     call t_stopf("phys_grid_init")
     call t_adj_detailf(+2)
