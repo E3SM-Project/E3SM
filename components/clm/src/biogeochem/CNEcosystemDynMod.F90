@@ -505,7 +505,7 @@ contains
     use CNCIsoFluxMod          , only: CIsoFlux1, CIsoFlux2, CIsoFlux2h, CIsoFlux3
     use CNC14DecayMod          , only: C14Decay, C14BombSpike
     use CNWoodProductsMod      , only: CNWoodProducts
-    use CNCropHarvestPoolsMod  , only: CNCropHarvestPools
+    use CropHarvestPoolsMod    , only: CropHarvestPools
     use CNSoilLittVertTranspMod, only: CNSoilLittVertTransp
 !    use CNDecompCascadeBGCMod  , only: decomp_rate_constants_bgc
 !    use CNDecompCascadeCNMod   , only: decomp_rate_constants_cn
@@ -791,7 +791,7 @@ contains
             carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars,&
             phosphorusstate_vars,phosphorusflux_vars)
 
-       call CNCropHarvestPools(num_soilc, filter_soilc, &
+       call CropHarvestPools(num_soilc, filter_soilc, &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars, &
             phosphorusstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
             nitrogenflux_vars, phosphorusflux_vars)

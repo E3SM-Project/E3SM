@@ -1,4 +1,4 @@
-module CNCropHarvestPoolsMod
+module CropHarvestPoolsMod
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Calculate loss fluxes from crop harvest pools, and update product pool state variables
@@ -22,19 +22,19 @@ module CNCropHarvestPoolsMod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public:: CNCropHarvestPools
+  public:: CropHarvestPools
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine CNCropHarvestPools(num_soilc, filter_soilc, &
+  subroutine CropHarvestPools(num_soilc, filter_soilc, &
        carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars, phosphorusstate_vars,&
        carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars, phosphorusflux_vars)
     !
     ! !DESCRIPTION:
     ! Update all loss fluxes from crop harvest pools, and update harvest pool state variables
-    ! for both loss and gain terms. GAin terms are calculated in CNCropHarvestPools() for gains
+    ! for both loss and gain terms. GAin terms are calculated in CropHarvestPools() for gains
     ! associated with crop harvest. 
     !
     ! !ARGUMENTS:
@@ -129,6 +129,6 @@ contains
 
     end do ! end of column loop
 
-  end subroutine CNCropHarvestPools
+  end subroutine CropHarvestPools
 
-end module CNCropHarvestPoolsMod
+end module CropHarvestPoolsMod
