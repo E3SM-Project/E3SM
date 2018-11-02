@@ -87,7 +87,7 @@ contains
     use CNGapMortalityMod        , only : readCNGapMortParams 
     use CNGapMortalityBeTRMod    , only : readCNGapMortBeTRParams
     use CNNitrifDenitrifMod      , only : readCNNitrifDenitrifParams
-    use CNSoilLittVertTranspMod  , only : readCNSoilLittVertTranspParams
+    use SoilLittVertTranspMod    , only : readSoilLittVertTranspParams
     use ch4Mod                   , only : readCH4Params
     use clm_varctl               , only : paramfile, iulog, use_betr
     use spmdMod                  , only : masterproc
@@ -142,7 +142,7 @@ contains
             call readCNNitrifDenitrifParams(ncid)
          end if
 
-         call readCNSoilLittVertTranspParams(ncid)
+         call readSoilLittVertTranspParams(ncid)
        
          if (use_lch4) then
             call readCH4Params (ncid)

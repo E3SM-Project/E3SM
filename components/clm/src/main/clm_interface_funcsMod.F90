@@ -1314,7 +1314,7 @@ contains
 
     if (pf_cmode) then
         ! bgc_state_decomp is updated in CLM
-        ! by passing bgc_flux_decomp_sourcesink into CNSoilLittVertTransp
+        ! by passing bgc_flux_decomp_sourcesink into SoilLittVertTransp
         call update_bgc_flux_decomp_sourcesink(clm_bgc_data,    &
                     bounds, num_soilc, filter_soilc,            &
                     carbonflux_vars, nitrogenflux_vars,         &
@@ -1729,7 +1729,7 @@ contains
     character(len=256) :: subname = "update_bgc_data_clm2clm"
 
     ! bgc_state_decomp is updated in CLM
-    ! by passing bgc_flux_decomp_sourcesink into CNSoilLittVertTransp
+    ! by passing bgc_flux_decomp_sourcesink into SoilLittVertTransp
     call update_bgc_flux_decomp_cascade(clm_bgc_data,   &
                 bounds, num_soilc, filter_soilc,        &
                 carbonflux_vars, nitrogenflux_vars,     &

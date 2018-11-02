@@ -30,7 +30,7 @@ module controlMod
   use CNCarbonFluxType        , only: nfix_timeconst
   use CNNitrifDenitrifMod     , only: no_frozen_nitrif_denitrif
   use CNC14DecayMod           , only: use_c14_bombspike, atm_c14_filename
-  use CNSoilLittVertTranspMod , only: som_adv_flux, max_depth_cryoturb
+  use SoilLittVertTranspMod , only: som_adv_flux, max_depth_cryoturb
   use CNVerticalProfileMod    , only: exponential_rooting_profile, rootprof_exp 
   use CNVerticalProfileMod    , only: surfprof_exp, pftspecific_rootingprofile  
   use CNSharedParamsMod       , only: anoxia_wtsat

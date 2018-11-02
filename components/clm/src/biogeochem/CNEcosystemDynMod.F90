@@ -275,7 +275,7 @@ contains
 !    use CNCIsoFluxMod          , only: CIsoFlux1, CIsoFlux2, CIsoFlux2h, CIsoFlux3
 !    use CNC14DecayMod          , only: C14Decay, C14BombSpike
 !    use WoodProductsMod      , only: WoodProducts
-!    use CNSoilLittVertTranspMod, only: CNSoilLittVertTransp
+!    use SoilLittVertTranspMod, only: SoilLittVertTransp
     use CNDecompCascadeBGCMod  , only: decomp_rate_constants_bgc
     use CNDecompCascadeCNMod   , only: decomp_rate_constants_cn
     use CropType               , only: crop_type
@@ -506,7 +506,7 @@ contains
     use CNC14DecayMod          , only: C14Decay, C14BombSpike
     use WoodProductsMod      , only: WoodProducts
     use CropHarvestPoolsMod    , only: CropHarvestPools
-    use CNSoilLittVertTranspMod, only: CNSoilLittVertTransp
+    use SoilLittVertTranspMod, only: SoilLittVertTransp
 !    use CNDecompCascadeBGCMod  , only: decomp_rate_constants_bgc
 !    use CNDecompCascadeCNMod   , only: decomp_rate_constants_cn
     use CropType               , only: crop_type
@@ -696,15 +696,15 @@ contains
 
        call t_stopf('CNUpdate1')
 
-       call t_startf('CNSoilLittVertTransp')
-       call CNSoilLittVertTransp(bounds, &
+       call t_startf('SoilLittVertTransp')
+       call SoilLittVertTransp(bounds, &
             num_soilc, filter_soilc, &
             canopystate_vars, cnstate_vars,                               &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
             carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,    &
             nitrogenstate_vars, nitrogenflux_vars,&
             phosphorusstate_vars,phosphorusflux_vars)
-       call t_stopf('CNSoilLittVertTransp')
+       call t_stopf('SoilLittVertTransp')
 
        call t_startf('CNGapMortality')
        call CNGapMortality( num_soilc, filter_soilc, num_soilp, filter_soilp, &

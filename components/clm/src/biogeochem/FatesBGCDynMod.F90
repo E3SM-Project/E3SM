@@ -41,7 +41,7 @@ contains
       use CNDecompCascadeBGCMod  , only : decomp_rate_constants_bgc
       use CNDecompCascadeCNMod   , only : decomp_rate_constants_cn
       use CNCStateUpdate1Mod     , only : CStateUpdate1
-      use CNSoilLittVertTranspMod, only : CNSoilLittVertTransp
+      use SoilLittVertTranspMod, only : SoilLittVertTransp
       use PrecisionControlMod    , only : PrecisionControl
       use CNCarbonFluxType       , only : carbonflux_type
       use CNCarbonStateType      , only : carbonstate_type
@@ -253,7 +253,7 @@ contains
 
     call t_startf('SoilBiogeochemLittVertTransp')
 
-    call CNSoilLittVertTransp(bounds, &
+    call SoilLittVertTransp(bounds, &
           num_soilc, filter_soilc, &
           canopystate_vars, cnstate_vars,                               &
           carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
