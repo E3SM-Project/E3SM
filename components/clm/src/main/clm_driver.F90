@@ -62,7 +62,7 @@ module clm_driver
   use EcosystemBalanceCheckMod      , only : EndGridNBalanceAfterDynSubgridDriver
   use EcosystemBalanceCheckMod      , only : EndGridPBalanceAfterDynSubgridDriver
   use CNVerticalProfileMod   , only : decomp_vertprofiles
-  use CNFireMod              , only : CNFireInterp
+  use FireMod              , only : FireInterp
   use CNDVDriverMod          , only : CNDVDriver, CNDVHIST
   use SatellitePhenologyMod  , only : SatellitePhenology, interpMonthlyVeg
   use ndepStreamMod          , only : ndep_interp
@@ -471,7 +471,7 @@ contains
        call t_startf('ndep_interp')
        ! PET: switching CN timestep
        call ndep_interp(bounds_proc, atm2lnd_vars)
-       call CNFireInterp(bounds_proc)
+       call FireInterp(bounds_proc)
        call t_stopf('ndep_interp')
     end if
 

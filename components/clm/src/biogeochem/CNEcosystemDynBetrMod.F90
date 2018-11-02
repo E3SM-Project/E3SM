@@ -77,7 +77,7 @@ module CNEcosystemDynBetrMod
     use CNGapMortalityBeTRMod         , only : CNGapMortality
     use CNCStateUpdate2Mod        , only : CStateUpdate2, CStateUpdate2h
     use CNNStateUpdate2BeTRMod        , only : NStateUpdate2, NStateUpdate2h
-    use CNFireMod                 , only : CNFireArea, CNFireFluxes
+    use FireMod                 , only : FireArea, FireFluxes
     use CNCStateUpdate3Mod        , only : CStateUpdate3
     use CNCIsoFluxMod             , only : CIsoFlux1, CIsoFlux2, CIsoFlux2h, CIsoFlux3
     use CNC14DecayMod             , only : C14Decay, C14BombSpike
@@ -451,11 +451,11 @@ module CNEcosystemDynBetrMod
             phosphorusstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
             nitrogenflux_vars, phosphorusflux_vars)
 
-       call CNFireArea(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call FireArea(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             atm2lnd_vars, temperature_vars, energyflux_vars, soilhydrology_vars, waterstate_vars, &
             cnstate_vars, carbonstate_vars)
 
-       call CNFireFluxes(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call FireFluxes(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dgvs_vars, cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
             carbonflux_vars,nitrogenflux_vars,phosphorusstate_vars,phosphorusflux_vars)
 

@@ -1,4 +1,4 @@
-module CNFireMod
+module FireMod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -58,10 +58,10 @@ module CNFireMod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: CNFireInit    ! Initialization of CNFire
-  public :: CNFireInterp  ! Interpolate fire data
-  public :: CNFireArea    ! Calculate fire area
-  public :: CNFireFluxes  ! Calculate fire fluxes
+  public :: FireInit    ! Initialization of CNFire
+  public :: FireInterp  ! Interpolate fire data
+  public :: FireArea    ! Calculate fire area
+  public :: FireFluxes  ! Calculate fire fluxes
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: hdm_init    ! position datasets for dynamic human population density
@@ -82,7 +82,7 @@ module CNFireMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine CNFireInit( bounds )
+  subroutine FireInit( bounds )
     !
     ! !DESCRIPTION:
     ! Initialize CN Fire module
@@ -96,10 +96,10 @@ contains
     call lnfm_init(bounds)
     call lnfm_interp(bounds)
 #endif
-  end subroutine CNFireInit
+  end subroutine FireInit
 
   !-----------------------------------------------------------------------
-  subroutine CNFireInterp(bounds)
+  subroutine FireInterp(bounds)
     !
     ! !DESCRIPTION:
     ! Interpolate CN Fire datasets
@@ -111,10 +111,10 @@ contains
     call hdm_interp(bounds)
     call lnfm_interp(bounds)
 #endif
-  end subroutine CNFireInterp
+  end subroutine FireInterp
 
   !-----------------------------------------------------------------------
-  subroutine CNFireArea (bounds, &
+  subroutine FireArea (bounds, &
        num_soilc, filter_soilc, &
        num_soilp, filter_soilp, &
        atm2lnd_vars, temperature_vars, energyflux_vars, soilhydrology_vars, waterstate_vars, &
@@ -642,16 +642,16 @@ contains
 
    end associate
 
- end subroutine CNFireArea
+ end subroutine FireArea
 
  !-----------------------------------------------------------------------
- subroutine CNFireFluxes (num_soilc, filter_soilc, num_soilp, filter_soilp, &
+ subroutine FireFluxes (num_soilc, filter_soilc, num_soilp, filter_soilp, &
       dgvs_vars, cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
       carbonflux_vars,nitrogenflux_vars,phosphorusstate_vars,phosphorusflux_vars)
    !
    ! !DESCRIPTION:
    ! Fire effects routine for coupled carbon-nitrogen code (CN).
-   ! Relies primarily on estimate of fractional area burned, from CNFireArea().
+   ! Relies primarily on estimate of fractional area burned, from FireArea().
    !
    ! Total fire carbon emissions (g C/m2 land area/yr) 
    !  =avg(COL_FIRE_CLOSS)*seconds_per_year + avg(SOMC_FIRE)*seconds_per_year + 
@@ -1527,7 +1527,7 @@ contains
 
    end associate 
 
- end subroutine CNFireFluxes
+ end subroutine FireFluxes
 
  !-----------------------------------------------------------------------
  subroutine hdm_init( bounds )
@@ -1833,4 +1833,4 @@ subroutine lnfm_interp(bounds )
    
 end subroutine lnfm_interp
 
-end module CNFireMod
+end module FireMod
