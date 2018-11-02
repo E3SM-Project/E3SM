@@ -1,6 +1,6 @@
-module CNPhenologyMod
+module PhenologyMod
   !-----------------------------------------------------------------------
-  ! !MODULE: CNPhenologyMod
+  ! !MODULE: PhenologyMod.F90
   !
   ! !DESCRIPTION:
   ! Module holding routines used in phenology model for coupled carbon
@@ -44,12 +44,12 @@ module CNPhenologyMod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: CNPhenologyInit      ! Initialization
-  public :: CNPhenology          ! Update
-  public :: readCNPhenolParams   ! 
+  public :: PhenologyInit      ! Initialization
+  public :: Phenology          ! Update
+  public :: readPhenolParams   ! 
   !
   ! !PRIVATE DATA MEMBERS:
-  type, private :: CNPnenolParamsType
+  type, private :: PnenolParamsType
      real(r8) :: crit_dayl       ! critical day length for senescence
      real(r8) :: crit_dayl_stress ! critical day length for senescence (stress)
      real(r8) :: cumprec_onset   ! 10-day cumulative precipitation threshold for onset
@@ -63,10 +63,10 @@ module CNPhenologyMod
      real(r8) :: crit_offset_swi ! critical number of water stress days to initiate offset
      real(r8) :: soilpsi_off     ! critical soil water potential for leaf offset
      real(r8) :: lwtop           ! live wood turnover proportion (annual fraction)
-  end type CNPnenolParamsType
+  end type PnenolParamsType
 
-  ! CNPhenolParamsInst is populated in readCNPhenolParams 
-  type(CNPnenolParamsType) ::  CNPhenolParamsInst
+  ! PhenolParamsInst is populated in readPhenolParams 
+  type(PnenolParamsType) ::  PhenolParamsInst
 
   real(r8) :: dt                            ! radiation time step delta t (seconds)
   real(r8) :: fracday                       ! dtime as a fraction of day
@@ -103,7 +103,7 @@ module CNPhenologyMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine readCNPhenolParams ( ncid )
+  subroutine readPhenolParams ( ncid )
     !
     ! !DESCRIPTION:
     !
@@ -129,14 +129,14 @@ contains
     tString='crit_dayl'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNPhenolParamsInst%crit_dayl=tempr
+    PhenolParamsInst%crit_dayl=tempr
 
     tString='crit_dayl_stress'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) then 
         crit_dayl_stress = secspday / 4 !call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     else
-        CNPhenolParamsInst%crit_dayl_stress=tempr
+        PhenolParamsInst%crit_dayl_stress=tempr
     end if
 
     tString='cumprec_onset'
@@ -144,63 +144,63 @@ contains
     if ( .not. readv ) then
         cumprec_onset = 0._r8 !call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     else
-        CNPhenolParamsInst%cumprec_onset=tempr
+        PhenolParamsInst%cumprec_onset=tempr
     end if
 
     tString='ndays_on'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNPhenolParamsInst%ndays_on=tempr
+    PhenolParamsInst%ndays_on=tempr
 
     tString='ndays_off'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNPhenolParamsInst%ndays_off=tempr
+    PhenolParamsInst%ndays_off=tempr
 
     tString='fstor2tran'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNPhenolParamsInst%fstor2tran=tempr
+    PhenolParamsInst%fstor2tran=tempr
 
     tString='crit_onset_fdd'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNPhenolParamsInst%crit_onset_fdd=tempr
+    PhenolParamsInst%crit_onset_fdd=tempr
 
     tString='crit_onset_swi'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNPhenolParamsInst%crit_onset_swi=tempr
+    PhenolParamsInst%crit_onset_swi=tempr
 
     tString='soilpsi_on'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNPhenolParamsInst%soilpsi_on=tempr
+    PhenolParamsInst%soilpsi_on=tempr
 
     tString='crit_offset_fdd'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNPhenolParamsInst%crit_offset_fdd=tempr
+    PhenolParamsInst%crit_offset_fdd=tempr
 
     tString='crit_offset_swi'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNPhenolParamsInst%crit_offset_swi=tempr
+    PhenolParamsInst%crit_offset_swi=tempr
 
     tString='soilpsi_off'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNPhenolParamsInst%soilpsi_off=tempr
+    PhenolParamsInst%soilpsi_off=tempr
 
     tString='lwtop_ann'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNPhenolParamsInst%lwtop=tempr   
+    PhenolParamsInst%lwtop=tempr   
 
-  end subroutine readCNPhenolParams
+  end subroutine readPhenolParams
 
   !-----------------------------------------------------------------------
-  subroutine CNPhenology (num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine Phenology (num_soilc, filter_soilc, num_soilp, filter_soilp, &
        num_pcropp, filter_pcropp, doalb, atm2lnd_vars, &
        waterstate_vars, temperature_vars, crop_vars, canopystate_vars, soilstate_vars, &
        dgvs_vars, cnstate_vars, carbonstate_vars, carbonflux_vars, &
@@ -238,7 +238,7 @@ contains
     ! each of the following phenology type routines includes a filter
     ! to operate only on the relevant patches
 
-    call CNPhenologyClimate(num_soilp, filter_soilp, num_pcropp, filter_pcropp, &
+    call PhenologyClimate(num_soilp, filter_soilp, num_pcropp, filter_pcropp, &
          temperature_vars, cnstate_vars)
 
     call CNEvergreenPhenology(num_soilp, filter_soilp, &
@@ -293,13 +293,13 @@ contains
     call CNLitterToColumn(num_soilc, filter_soilc, &
          cnstate_vars, carbonflux_vars, nitrogenflux_vars,phosphorusflux_vars)
 
-  end subroutine CNPhenology
+  end subroutine Phenology
 
   !-----------------------------------------------------------------------
-  subroutine CNPhenologyInit(bounds)
+  subroutine PhenologyInit(bounds)
     !
     ! !DESCRIPTION:
-    ! Initialization of CNPhenology. Must be called after time-manager is
+    ! Initialization of Phenology. Must be called after time-manager is
     ! initialized, and after ecophyscon file is read in.
     !
     ! !USES:
@@ -320,34 +320,34 @@ contains
 
     ! set constants for CNSeasonDecidPhenology 
     ! (critical daylength from Biome-BGC, v4.1.2)
-    crit_dayl=CNPhenolParamsInst%crit_dayl
+    crit_dayl=PhenolParamsInst%crit_dayl
 
     ! Set constants for CNSeasonDecidPhenology and CNStressDecidPhenology
-    ndays_on=CNPhenolParamsInst%ndays_on
-    ndays_off=CNPhenolParamsInst%ndays_off
+    ndays_on=PhenolParamsInst%ndays_on
+    ndays_off=PhenolParamsInst%ndays_off
 
     ! set transfer parameters
-    fstor2tran=CNPhenolParamsInst%fstor2tran
+    fstor2tran=PhenolParamsInst%fstor2tran
 
     ! -----------------------------------------
     ! Constants for CNStressDecidPhenology
     ! -----------------------------------------
 
     ! onset parameters
-    cumprec_onset=CNPhenolParamsInst%cumprec_onset
-    crit_dayl_stress=CNPhenolParamsInst%crit_dayl_stress
-    crit_onset_fdd=CNPhenolParamsInst%crit_onset_fdd
+    cumprec_onset=PhenolParamsInst%cumprec_onset
+    crit_dayl_stress=PhenolParamsInst%crit_dayl_stress
+    crit_onset_fdd=PhenolParamsInst%crit_onset_fdd
     ! critical onset gdd now being calculated as a function of annual
     ! average 2m temp.
     ! crit_onset_gdd = 150.0 ! c3 grass value
     ! crit_onset_gdd = 1000.0   ! c4 grass value
-    crit_onset_swi=CNPhenolParamsInst%crit_onset_swi
-    soilpsi_on=CNPhenolParamsInst%soilpsi_on
+    crit_onset_swi=PhenolParamsInst%crit_onset_swi
+    soilpsi_on=PhenolParamsInst%soilpsi_on
 
     ! offset parameters
-    crit_offset_fdd=CNPhenolParamsInst%crit_offset_fdd
-    crit_offset_swi=CNPhenolParamsInst%crit_offset_swi
-    soilpsi_off=CNPhenolParamsInst%soilpsi_off    
+    crit_offset_fdd=PhenolParamsInst%crit_offset_fdd
+    crit_offset_swi=PhenolParamsInst%crit_offset_swi
+    soilpsi_off=PhenolParamsInst%soilpsi_off    
 
     ! -----------------------------------------
     ! Constants for CNLivewoodTurnover
@@ -355,7 +355,7 @@ contains
 
     ! set the global parameter for livewood turnover rate
     ! define as an annual fraction (0.7), and convert to fraction per second
-    lwtop=CNPhenolParamsInst%lwtop/31536000.0_r8 !annual fraction converted to per second
+    lwtop=PhenolParamsInst%lwtop/31536000.0_r8 !annual fraction converted to per second
 
     ! -----------------------------------------
     ! Call any subroutine specific initialization routines
@@ -363,10 +363,10 @@ contains
 
     if ( crop_prog ) call CropPhenologyInit(bounds)
 
-  end subroutine CNPhenologyInit
+  end subroutine PhenologyInit
 
   !-----------------------------------------------------------------------
-  subroutine CNPhenologyClimate (num_soilp, filter_soilp, num_pcropp, filter_pcropp, &
+  subroutine PhenologyClimate (num_soilp, filter_soilp, num_pcropp, filter_pcropp, &
        temperature_vars, cnstate_vars)
     !
     ! !DESCRIPTION:
@@ -452,7 +452,7 @@ contains
 
     end associate
 
-  end subroutine CNPhenologyClimate
+  end subroutine PhenologyClimate
 
   !-----------------------------------------------------------------------
   subroutine CNEvergreenPhenology (num_soilp, filter_soilp , &
@@ -3004,4 +3004,4 @@ contains
  end associate
 end subroutine CNCropHarvestPftToColumn
 
-end module CNPhenologyMod
+end module PhenologyMod

@@ -365,7 +365,7 @@ contains
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       ! call routine to shift patch-level litterfall fluxes to column, for isotopes
-      ! the non-isotope version of this routine is called in CNPhenologyMod.F90
+      ! the non-isotope version of this routine is called in PhenologyMod.F90.F90
       ! For later clean-up, it would be possible to generalize this function to operate on a single 
       ! patch-to-column flux.
 

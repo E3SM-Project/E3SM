@@ -64,7 +64,7 @@ contains
     !
     ! !USES:
     use AllocationMod, only : AllocationInit
-    use CNPhenologyMod , only : CNPhenologyInit
+    use PhenologyMod , only : PhenologyInit
     use FireMod      , only : FireInit
     use CNC14DecayMod  , only : C14_init_BombSpike
     !
@@ -74,7 +74,7 @@ contains
     !-----------------------------------------------------------------------
 
     call AllocationInit (bounds)
-    call CNPhenologyInit  (bounds)
+    call PhenologyInit  (bounds)
     call FireInit       (bounds)
     
     if ( use_c14 ) then
@@ -261,7 +261,7 @@ contains
     use PDynamicsMod           , only: PDeposition   
     use CNMRespMod             , only: CNMResp
 !    use SoilLittDecompMod            , only: SoilLittDecompAlloc
-!    use CNPhenologyMod         , only: CNPhenology
+!    use PhenologyMod         , only: Phenology
 !    use CNGRespMod             , only: CNGResp
 !    use CNCStateUpdate1Mod     , only: CStateUpdate1,CStateUpdate0
 !    use CNNStateUpdate1Mod     , only: NStateUpdate1
@@ -491,7 +491,7 @@ contains
 !    use CNNDynamicsMod         , only: CNNDeposition,CNNFixation, CNNFert, CNSoyfix
 !    use CNMRespMod             , only: CNMResp
 !    use SoilLittDecompMod            , only: SoilLittDecompAlloc
-    use CNPhenologyMod         , only: CNPhenology
+    use PhenologyMod         , only: Phenology
     use CNGRespMod             , only: CNGResp
     use CNCStateUpdate1Mod     , only: CStateUpdate1,CStateUpdate0
     use CNNStateUpdate1Mod     , only: NStateUpdate1
@@ -591,18 +591,18 @@ contains
        ! Phenology
        !--------------------------------------------
 
-       ! CNphenology needs to be called after SoilLittDecompAlloc, because it
+       ! Phenology needs to be called after SoilLittDecompAlloc, because it
        ! depends on current time-step fluxes to new growth on the last
        ! litterfall timestep in deciduous systems
 
-       call t_startf('CNPhenology')
-       call CNPhenology(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call t_startf('Phenology')
+       call Phenology(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             num_pcropp, filter_pcropp, doalb, atm2lnd_vars, &
             waterstate_vars, temperature_vars, crop_vars, canopystate_vars, soilstate_vars, &
             dgvs_vars, cnstate_vars, carbonstate_vars, carbonflux_vars, &
             nitrogenstate_vars, nitrogenflux_vars,&
             phosphorusstate_vars,phosphorusflux_vars)
-       call t_stopf('CNPhenology')
+       call t_stopf('Phenology')
 
        !--------------------------------------------
        ! Growth respiration

@@ -80,7 +80,7 @@ contains
     use SoilLittDecompMod              , only : readSoilLittDecompParams
     use CNDecompCascadeBGCMod    , only : readCNDecompBgcParams
     use CNDecompCascadeCNMod     , only : readCNDecompCnParams
-    use CNPhenologyMod           , only : readCNPhenolParams
+    use PhenologyMod             , only : readPhenolParams
     use CNPhenologyBeTRMod       , only : readCNPhenolBeTRParams
     use CNMRespMod               , only : readCNMRespParams
     use CNNDynamicsMod           , only : readCNNDynamicsParams
@@ -154,7 +154,7 @@ contains
        if(is_active_betr_bgc)then
          call readCNPhenolBeTRParams(ncid)
        else
-         call readCNPhenolParams(ncid)
+         call readPhenolParams(ncid)
        endif
        call readCNMRespParams (ncid)
        call readCNNDynamicsParams (ncid)
