@@ -89,7 +89,7 @@ module CNEcosystemDynBetrMod
     use clm_varpar                , only : crop_prog
     use CNCropHarvestPoolsMod     , only : CNCropHarvestPools
     use PlantMicKineticsMod       , only : PlantMicKinetics_type
-    use CNAllocationBetrMod       , only : SetPlantMicNPDemand, CNAllocation3_PlantCNPAlloc
+    use CNAllocationBetrMod       , only : SetPlantMicNPDemand, Allocation3_PlantCNPAlloc
     use CNNStateUpdate3BeTRMod        , only : NStateUpdate3
     use CNNDynamicsMod            , only : CNNFixation_balance
     use PStateUpdate1Mod          , only : PStateUpdate1
@@ -242,7 +242,7 @@ module CNEcosystemDynBetrMod
                nitrogenstate_vars, nitrogenflux_vars)
       endif
       call t_startf('CNAllocation - phase-3')
-      call CNAllocation3_PlantCNPAlloc (bounds                      , &
+      call Allocation3_PlantCNPAlloc (bounds                      , &
                 num_soilc, filter_soilc, num_soilp, filter_soilp    , &
                 canopystate_vars                                    , &
                 cnstate_vars, carbonstate_vars, carbonflux_vars     , &

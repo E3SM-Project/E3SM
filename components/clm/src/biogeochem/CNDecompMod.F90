@@ -104,14 +104,14 @@ contains
     ! clm-bgc soil Module, can be called through clm_bgc_interface
     ! ONLY includes SOM decomposition & nitrification/denitrification (if use_nitrif_denitrif)
     ! CNAllocaiton is divided into 3 subroutines:
-    ! (1) CNAllocation1_PlantNPDemand  is called in CNEcosystemDynNoLeaching1
-    ! (2) CNAllocation2_ResolveNPLimit is called in CNDecompAlloc (this subroutine)
-    ! (3) CNAllocation3_PlantCNPAlloc  is called in CNDecompAlloc2
+    ! (1) Allocation1_PlantNPDemand  is called in CNEcosystemDynNoLeaching1
+    ! (2) Allocation2_ResolveNPLimit is called in CNDecompAlloc (this subroutine)
+    ! (3) Allocation3_PlantCNPAlloc  is called in CNDecompAlloc2
     !-----------------------------------------------------------------------------
 
     ! !USES:
-!    use CNAllocationMod , only: CNAllocation
-    use CNAllocationMod , only: CNAllocation2_ResolveNPLimit ! Phase-2 of CNAllocation
+!    use AllocationMod , only: CNAllocation
+    use AllocationMod , only: Allocation2_ResolveNPLimit ! Phase-2 of CNAllocation
     !
     ! !ARGUMENT:
     type(bounds_type)        , intent(in)    :: bounds   
@@ -388,7 +388,7 @@ contains
 
 !-------------------------------------------------------------------------------------------------
 ! 'call decomp_vertprofiles()' (calc nfixation_prof) is moved to CNEcosystemDynNoLeaching1
-! 'nfixation_prof' is used in 'calc_nuptake_prof' & 'calc_puptake_prof', which are called in CNAllocation1,2,3
+! 'nfixation_prof' is used in 'calc_nuptake_prof' & 'calc_puptake_prof', which are called in Allocation1,2,3
 !-------------------------------------------------------------------------------------------------
       
       if (use_nitrif_denitrif) then ! calculate nitrification and denitrification rates
@@ -403,7 +403,7 @@ contains
       ! for available soil mineral N resource.
       ! in addition, calculate fpi_vr, fpi_p_vr, & fgp
       call t_startf('CNAllocation - phase-2')
-      call CNAllocation2_ResolveNPLimit(bounds,                     &
+      call Allocation2_ResolveNPLimit(bounds,                     &
                num_soilc, filter_soilc, num_soilp, filter_soilp,    &
                cnstate_vars,                                        &
                carbonstate_vars, carbonflux_vars,                   &
@@ -616,12 +616,12 @@ contains
     ! DESCRIPTION:
     ! bgc interface & pflotran:
     ! (1) Simplified codes of CNDecompAlloc subroutine for coupling with pflotran
-    ! (2) call CNAllocation3_PlantCNPAlloc
+    ! (2) call Allocation3_PlantCNPAlloc
     ! (3) calculate net_nmin(c), gross_nmin(c), net_pmin(c), gross_pmin(c)
     !-----------------------------------------------------------------------------
 
     ! !USES:
-    use CNAllocationMod , only: CNAllocation3_PlantCNPAlloc ! Phase-3 of CNAllocation
+    use AllocationMod , only: Allocation3_PlantCNPAlloc ! Phase-3 of CNAllocation
     use atm2lndType     , only: atm2lnd_type
     use clm_time_manager, only: get_step_size
 !    use clm_varpar      , only: nlevdecomp, ndecomp_pools
@@ -817,7 +817,7 @@ contains
       !------------------------------------------------------------------
       ! phase-3 Allocation for plants
       call t_startf('CNAllocation - phase-3')
-      call CNAllocation3_PlantCNPAlloc (bounds                      , &
+      call Allocation3_PlantCNPAlloc (bounds                      , &
                 num_soilc, filter_soilc, num_soilp, filter_soilp    , &
                 canopystate_vars                                    , &
                 cnstate_vars, carbonstate_vars, carbonflux_vars     , &
@@ -828,7 +828,7 @@ contains
       !------------------------------------------------------------------
 
     if(use_pflotran.and.pf_cmode) then
-    ! in CNAllocation3_PlantCNPAlloc():
+    ! in Allocation3_PlantCNPAlloc():
     ! smin_nh4_to_plant_vr(c,j), smin_no3_to_plant_vr(c,j), sminn_to_plant_vr(c,j) may be adjusted
     ! therefore, we need to update smin_no3_vr(c,j) & smin_nh4_vr(c,j)
       do fc = 1,num_soilc

@@ -1,4 +1,4 @@
-module CNAllocationMod
+module AllocationMod
   
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -45,17 +45,17 @@ module CNAllocationMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: readCNAllocParams
-  public :: CNAllocationInit         ! Initialization
-!  public :: CNAllocation             ! run method
+  public :: AllocationInit         ! Initialization
+!  public :: Allocation             ! run method
   !-----------------------------------------------------------------------------------------------------
-  ! CNAllocation is divided into 3 subroutines/phases:
-  public :: CNAllocation1_PlantNPDemand     !Plant N/P Demand;       called in CNEcosystemDynNoLeaching1
-  public :: CNAllocation2_ResolveNPLimit    !Resolve N/P Limitation; called in CNDecompAlloc
-  public :: CNAllocation3_PlantCNPAlloc     !Plant C/N/P Allocation; called in CNDecompAlloc2
+  ! Allocation is divided into 3 subroutines/phases:
+  public :: Allocation1_PlantNPDemand     !Plant N/P Demand;       called in CNEcosystemDynNoLeaching1
+  public :: Allocation2_ResolveNPLimit    !Resolve N/P Limitation; called in CNDecompAlloc
+  public :: Allocation3_PlantCNPAlloc     !Plant C/N/P Allocation; called in CNDecompAlloc2
   !-----------------------------------------------------------------------------------------------------
   public :: dynamic_plant_alloc        ! dynamic plant carbon allocation based on different nutrient stress
 
-  type :: CNAllocParamsType
+  type :: AllocParamsType
      real(r8) :: bdnr              ! bulk denitrification rate (1/s)
      real(r8) :: dayscrecover      ! number of days to recover negative cpool
      real(r8) :: compet_plant_no3  ! (unitless) relative compettiveness of plants for NO3
@@ -64,10 +64,10 @@ module CNAllocationMod
      real(r8) :: compet_decomp_nh4 ! (unitless) relative competitiveness of immobilizers for NH4
      real(r8) :: compet_denit      ! (unitless) relative competitiveness of denitrifiers for NO3
      real(r8) :: compet_nit        ! (unitless) relative competitiveness of nitrifiers for NH4
-  end type CNAllocParamsType
+  end type AllocParamsType
   !
-  ! CNAllocParamsInst is populated in readCNAllocParams which is called in 
-  type(CNAllocParamsType),protected ::  CNAllocParamsInst
+  ! AllocParamsInst is populated in readCNAllocParams which is called in 
+  type(AllocParamsType),protected ::  AllocParamsInst
   !
   ! !PUBLIC DATA MEMBERS:
   character(len=*), parameter, public :: suplnAll='ALL'  ! Supplemental Nitrogen for all PFT's
@@ -120,7 +120,7 @@ contains
     type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
     !
     ! !LOCAL VARIABLES:
-    character(len=32)  :: subname = 'CNAllocParamsType'
+    character(len=32)  :: subname = 'AllocParamsType'
     character(len=100) :: errCode = '-Error reading in parameters file:'
     logical            :: readv ! has variable been read in or not
     real(r8)           :: tempr ! temporary to read in parameter
@@ -132,47 +132,47 @@ contains
     tString='bdnr'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNAllocParamsInst%bdnr=tempr
+    AllocParamsInst%bdnr=tempr
 
     tString='dayscrecover'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNAllocParamsInst%dayscrecover=tempr
+    AllocParamsInst%dayscrecover=tempr
 
     tString='compet_plant_no3'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNAllocParamsInst%compet_plant_no3=tempr
+    AllocParamsInst%compet_plant_no3=tempr
 
     tString='compet_plant_nh4'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNAllocParamsInst%compet_plant_nh4=tempr
+    AllocParamsInst%compet_plant_nh4=tempr
    
     tString='compet_decomp_no3'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNAllocParamsInst%compet_decomp_no3=tempr
+    AllocParamsInst%compet_decomp_no3=tempr
 
     tString='compet_decomp_nh4'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNAllocParamsInst%compet_decomp_nh4=tempr
+    AllocParamsInst%compet_decomp_nh4=tempr
    
     tString='compet_denit'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNAllocParamsInst%compet_denit=tempr
+    AllocParamsInst%compet_denit=tempr
 
     tString='compet_nit'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNAllocParamsInst%compet_nit=tempr   
+    AllocParamsInst%compet_nit=tempr   
 
   end subroutine readCNAllocParams
 
   !-----------------------------------------------------------------------
-  subroutine CNAllocationInit ( bounds)
+  subroutine AllocationInit ( bounds)
     !
     ! !DESCRIPTION:
     !
@@ -191,7 +191,7 @@ contains
     type(bounds_type), intent(in) :: bounds  
     !
     ! !LOCAL VARIABLES:
-    character(len=32) :: subname = 'CNAllocationInit'
+    character(len=32) :: subname = 'AllocationInit'
     integer :: yr, mon, day, sec
     logical :: carbon_only
     logical :: carbonnitrogen_only
@@ -210,8 +210,8 @@ contains
     dt = real( get_step_size(), r8 )
 
     ! set space-and-time parameters from parameter file
-    bdnr         = CNAllocParamsInst%bdnr * (dt/secspday)
-    dayscrecover = CNAllocParamsInst%dayscrecover
+    bdnr         = AllocParamsInst%bdnr * (dt/secspday)
+    dayscrecover = AllocParamsInst%dayscrecover
 
     ! Change namelist settings into private logical variables
     select case(suplnitro)
@@ -285,15 +285,15 @@ contains
     call cnallocate_carbonnitrogen_only_set(carbonnitrogen_only)
     call cnallocate_carbonphosphorus_only_set(carbonphosphorus_only)
 
-  end subroutine CNAllocationInit
+  end subroutine AllocationInit
 
 !-------------------------------------------------------------------------------------------------
-  subroutine CNAllocation1_PlantNPDemand (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine Allocation1_PlantNPDemand (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
        photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,             &
        carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,  &
        nitrogenstate_vars, nitrogenflux_vars,&
        phosphorusstate_vars,phosphorusflux_vars)
-    ! PHASE-1 of CNAllocation: loop over patches to assess the total plant N demand and P demand
+    ! PHASE-1 of Allocation: loop over patches to assess the total plant N demand and P demand
     ! !USES:
     use shr_sys_mod      , only: shr_sys_flush
     use clm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
@@ -1035,7 +1035,7 @@ contains
          call calc_puptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, phosphorusstate_vars, puptake_prof)
       end if
 
-      !! flux_type%var = local var, used in CNAllocation2
+      !! flux_type%var = local var, used in Allocation2
       do fc=1, num_soilc
             c = filter_soilc(fc)
             plant_ndemand_col(c) = col_plant_ndemand(c)
@@ -1055,18 +1055,18 @@ contains
 
     end associate
 
- end subroutine CNAllocation1_PlantNPDemand
+ end subroutine Allocation1_PlantNPDemand
 
 !-------------------------------------------------------------------------------------------------
 
- subroutine CNAllocation2_ResolveNPLimit (bounds, num_soilc, filter_soilc  , &
+ subroutine Allocation2_ResolveNPLimit (bounds, num_soilc, filter_soilc  , &
                             num_soilp, filter_soilp                         , &
                             cnstate_vars                                    , &
                             carbonstate_vars, carbonflux_vars               , &
                             nitrogenstate_vars, nitrogenflux_vars           , &
                             phosphorusstate_vars,phosphorusflux_vars        , &
                             soilstate_vars,waterstate_vars)
-    ! PHASE-2 of CNAllocation:  resolving N/P limitation
+    ! PHASE-2 of Allocation:  resolving N/P limitation
     ! !USES:
     use shr_sys_mod      , only: shr_sys_flush
     use clm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
@@ -1166,10 +1166,10 @@ contains
 
     associate(                                                                                 &
          ivt                          => veg_pp%itype                                             , & ! Input:  [integer  (:) ]  pft vegetation type                                
-         ! new variables due to partition of CNAllocation to 3 subroutines: BEG
+         ! new variables due to partition of Allocation to 3 subroutines: BEG
          plant_ndemand_col            => nitrogenflux_vars%plant_ndemand_col                 , & ! Output:  [real(r8) (:,:) ]
          plant_pdemand_col            => phosphorusflux_vars%plant_pdemand_col               , & ! Output:  [real(r8) (:,:) ]
-         ! new variables due to partition of CNAllocation to 3 subroutines: END
+         ! new variables due to partition of Allocation to 3 subroutines: END
 
          fpg                          => cnstate_vars%fpg_col                                , & ! Output: [real(r8) (:)   ]  fraction of potential gpp (no units)
          fpi                          => cnstate_vars%fpi_col                                , & ! Output: [real(r8) (:)   ]  fraction of potential immobilization (no units)
@@ -1998,13 +1998,13 @@ contains
             ! Relative Demand approach, competition coefficients are all set to one
             ! NO3 leaching is not considered as potential competitors
             ! NH4
-            compet_plant_nh4(:) = CNAllocParamsInst%compet_plant_nh4
-            compet_decomp_nh4 = CNAllocParamsInst%compet_decomp_nh4
-            compet_nit = CNAllocParamsInst%compet_nit
+            compet_plant_nh4(:) = AllocParamsInst%compet_plant_nh4
+            compet_decomp_nh4 = AllocParamsInst%compet_decomp_nh4
+            compet_nit = AllocParamsInst%compet_nit
             ! NO3
-            compet_plant_no3(:) = CNAllocParamsInst%compet_plant_no3
-            compet_decomp_no3 = CNAllocParamsInst%compet_decomp_no3
-            compet_denit = CNAllocParamsInst%compet_denit
+            compet_plant_no3(:) = AllocParamsInst%compet_plant_no3
+            compet_decomp_no3 = AllocParamsInst%compet_decomp_no3
+            compet_denit = AllocParamsInst%compet_denit
 
             ! main column/vertical loop
             do j = 1, nlevdecomp
@@ -2818,17 +2818,17 @@ contains
 
     end associate
     
- end subroutine CNAllocation2_ResolveNPLimit
+ end subroutine Allocation2_ResolveNPLimit
 
 !-------------------------------------------------------------------------------------------------
-  subroutine CNAllocation3_PlantCNPAlloc (bounds            , &
+  subroutine Allocation3_PlantCNPAlloc (bounds            , &
         num_soilc, filter_soilc, num_soilp, filter_soilp    , &
         canopystate_vars                                    , &
         cnstate_vars, carbonstate_vars, carbonflux_vars     , &
         c13_carbonflux_vars, c14_carbonflux_vars            , &
         nitrogenstate_vars, nitrogenflux_vars               , &
         phosphorusstate_vars, phosphorusflux_vars, crop_vars)
-    ! PHASE-3 of CNAllocation: start new pft loop to distribute the available N/P between the
+    ! PHASE-3 of Allocation: start new pft loop to distribute the available N/P between the
     ! competing patches on the basis of relative demand, and allocate C/N/P to new growth and storage
 
     ! !USES:
@@ -4033,12 +4033,12 @@ contains
 
     end associate
 
- end subroutine CNAllocation3_PlantCNPAlloc
+ end subroutine Allocation3_PlantCNPAlloc
 
 !-------------------------------------------------------------------------------------------------
   subroutine calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nitrogenstate_vars, nuptake_prof)
     ! bgc interface & pflotran:
-    ! nuptake_prof is used in CNAllocation1, 2, 3
+    ! nuptake_prof is used in Allocation1, 2, 3
     ! !USES:
     use clm_varpar       , only: nlevdecomp
     ! !ARGUMENTS:
@@ -4112,7 +4112,7 @@ contains
 !-------------------------------------------------------------------------------------------------
   subroutine calc_puptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, phosphorusstate_vars, puptake_prof)
     ! bgc interface & pflotran:
-    ! puptake_prof is used in CNAllocation1, 2, & 3
+    ! puptake_prof is used in Allocation1, 2, & 3
     ! !USES:
     use clm_varpar       , only: nlevdecomp
     ! !ARGUMENTS:
@@ -4253,4 +4253,4 @@ contains
 
 !-----------------------------------------------------------------------
 
-end module CNAllocationMod
+end module AllocationMod

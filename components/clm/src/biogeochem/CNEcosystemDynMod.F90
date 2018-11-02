@@ -37,7 +37,7 @@ module CNEcosystemDynMod
   ! bgc interface & pflotran
   use clm_varctl          , only : use_clm_interface, use_clm_bgc, use_pflotran, pf_cmode, pf_hmode
   use CNVerticalProfileMod   , only : decomp_vertprofiles
-  use CNAllocationMod     , only : nu_com_nfix, nu_com_phosphatase
+  use AllocationMod     , only : nu_com_nfix, nu_com_phosphatase
   use clm_varctl          , only : nu_com
   !
   ! !PUBLIC TYPES:
@@ -63,7 +63,7 @@ contains
     ! Initialzation of the CN Ecosystem dynamics.
     !
     ! !USES:
-    use CNAllocationMod, only : CNAllocationInit
+    use AllocationMod, only : AllocationInit
     use CNPhenologyMod , only : CNPhenologyInit
     use CNFireMod      , only : CNFireInit
     use CNC14DecayMod  , only : C14_init_BombSpike
@@ -73,7 +73,7 @@ contains
     type(bounds_type), intent(in) :: bounds      
     !-----------------------------------------------------------------------
 
-    call CNAllocationInit (bounds)
+    call AllocationInit (bounds)
     call CNPhenologyInit  (bounds)
     call CNFireInit       (bounds)
     
@@ -247,7 +247,7 @@ contains
     !-------------------------------------------------------------------
     ! bgc interface
     ! Phase-1 of CNEcosystemDynNoLeaching
-    ! call CNAllocation1_PlantNPDemand before soil_bgc
+    ! call Allocation1_PlantNPDemand before soil_bgc
     !-------------------------------------------------------------------
 
     ! !DESCRIPTION:
@@ -281,7 +281,7 @@ contains
     use CropType               , only: crop_type
 !    use dynHarvestMod          , only: CNHarvest
     use clm_varpar             , only: crop_prog
-    use CNAllocationMod        , only: CNAllocation1_PlantNPDemand ! Phase-1 of CNAllocation
+    use AllocationMod        , only: Allocation1_PlantNPDemand ! Phase-1 of CNAllocation
 !    use CNDecompMod            , only: CNDecompAlloc2
     use CNNDynamicsMod         , only: CNNLeaching
     use PDynamicsMod           , only: PLeaching
@@ -442,15 +442,15 @@ contains
 
        !-------------------------------------------------------------------------------------------------
        ! 'decomp_vertprofiles' (calc nfixation_prof) is moved from CNDecompAlloc:
-       ! 'nfixation_prof' is used to 'calc_nuptake_prof' & 'calc_puptake_prof', which are called in CNAllocation1,2,3
+       ! 'nfixation_prof' is used to 'calc_nuptake_prof' & 'calc_puptake_prof', which are called in Allocation1,2,3
        call decomp_vertprofiles(bounds,                      &
            num_soilc, filter_soilc, num_soilp, filter_soilp, &
            soilstate_vars, canopystate_vars, cnstate_vars)
        !-------------------------------------------------------------------------------------------------
-       ! CNAllocation1 is always called (w/ or w/o use_clm_interface)
-       ! pflotran: call 'CNAllocation1' to obtain potential N demand for support initial GPP
+       ! Allocation1 is always called (w/ or w/o use_clm_interface)
+       ! pflotran: call 'Allocation1' to obtain potential N demand for support initial GPP
        call t_startf('CNAllocation - phase-1')
-       call CNAllocation1_PlantNPDemand (bounds                             , &
+       call Allocation1_PlantNPDemand (bounds                             , &
                 num_soilc, filter_soilc, num_soilp, filter_soilp            , &
                 photosyns_vars, crop_vars, canopystate_vars, cnstate_vars   , &
                 carbonstate_vars, carbonflux_vars, c13_carbonflux_vars      , &
@@ -514,7 +514,7 @@ contains
     use CNRootDynMod           , only: CNRootDyn
 !    use clm_varpar             , only: crop_prog
 
-!    use CNAllocationMod        , only: cnallocation
+!    use AllocationMod        , only: cnallocation
     use CNDecompMod            , only: CNDecompAlloc
     use CNDecompMod            , only: CNDecompAlloc2 !after CNDecompAlloc
     !
@@ -575,7 +575,7 @@ contains
        !----------------------------------------------------------------
        ! CNDecompAlloc2 is called by both clm-bgc & pflotran
        ! pflotran: call 'CNDecompAlloc2' to calculate some diagnostic variables and 'fpg' for plant N uptake
-       ! pflotran & clm-bgc : 'CNAllocation3_AG' and vertically integrate net and gross mineralization fluxes
+       ! pflotran & clm-bgc : 'Allocation3_AG' and vertically integrate net and gross mineralization fluxes
        call CNDecompAlloc2 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,           &
                 photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars,             &
                 waterstate_vars, cnstate_vars, ch4_vars,                                        &

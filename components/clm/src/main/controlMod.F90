@@ -25,8 +25,8 @@ module controlMod
   use histFileMod             , only: hist_fincl4, hist_fincl5, hist_fincl6, hist_fexcl1, hist_fexcl2, hist_fexcl3
   use histFileMod             , only: hist_fexcl4, hist_fexcl5, hist_fexcl6
   use LakeCon                 , only: deepmixing_depthcrit, deepmixing_mixfact 
-  use CNAllocationMod         , only: suplnitro
-  use CNAllocationMod         , only: suplphos
+  use AllocationMod         , only: suplnitro
+  use AllocationMod         , only: suplphos
   use CNCarbonFluxType        , only: nfix_timeconst
   use CNNitrifDenitrifMod     , only: no_frozen_nitrif_denitrif
   use CNC14DecayMod           , only: use_c14_bombspike, atm_c14_filename
@@ -40,7 +40,7 @@ module controlMod
   use UrbanParamsType         , only: urban_hac, urban_traffic
   use clm_varcon              , only: h2osno_max
   use clm_varctl              , only: use_dynroot
-  use CNAllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
+  use AllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
   use clm_varctl              , only: nu_com, use_var_soil_thick
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
   use clm_varctl              , only: forest_fert_exp
@@ -782,8 +782,8 @@ contains
     !
     ! !USES:
     !
-    use CNAllocationMod, only : suplnitro, suplnNon
-    use CNAllocationMod, only : suplphos, suplpNon
+    use AllocationMod, only : suplnitro, suplnNon
+    use AllocationMod, only : suplphos, suplpNon
     !
     ! !ARGUMENTS:
     implicit none

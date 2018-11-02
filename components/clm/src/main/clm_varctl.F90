@@ -158,7 +158,7 @@ module clm_varctl
   ! used to override an error check on reading in restart files
   logical, public :: override_bgc_restart_mismatch_dump = .false. 
 
-  ! Set in CNAllocationInit (TODO - had to move it here to avoid circular dependency)
+  ! Set in AllocationInit (TODO - had to move it here to avoid circular dependency)
   logical, private:: carbon_only      
   logical, private:: carbonnitrogen_only      
   logical, private:: carbonphosphorus_only      

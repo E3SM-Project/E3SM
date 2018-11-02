@@ -25,7 +25,7 @@ module  PhotosynthesisMod
   use SurfaceAlbedoType   , only : surfalb_type
   use PhotosynthesisType  , only : photosyns_type
   use VegetationType           , only : veg_pp
-  use CNAllocationMod     , only : nu_com_leaf_physiology
+  use AllocationMod     , only : nu_com_leaf_physiology
   use PhosphorusStateType , only : phosphorusstate_type
   use CNNitrogenStateType , only : nitrogenstate_type
   use clm_varctl          , only : cnallocate_carbon_only

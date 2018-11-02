@@ -76,7 +76,7 @@ contains
   subroutine readPrivateParameters
     ! read CN and BGC shared parameters
     !
-    use CNAllocationMod          , only : readCNAllocParams    
+    use AllocationMod          , only : readCNAllocParams    
     use CNDecompMod              , only : readCNDecompParams
     use CNDecompCascadeBGCMod    , only : readCNDecompBgcParams
     use CNDecompCascadeCNMod     , only : readCNDecompCnParams
