@@ -69,7 +69,7 @@ module CNEcosystemDynBetrMod
     ! !USES:
     use CNNDynamicsMod            , only : CNNDeposition,CNNFixation, CNNFert, CNSoyfix
     use CNMRespMod                , only : CNMResp
-    use CNDecompMod               , only : CNDecompAlloc
+    use SoilLittDecompMod               , only : SoilLittDecompAlloc
     use CNPhenologyBeTRMod            , only : CNPhenology
     use CNGRespMod                , only : CNGResp
     use CNCStateUpdate1Mod        , only : CStateUpdate1,CStateUpdate0
@@ -255,7 +255,7 @@ module CNEcosystemDynBetrMod
        ! Phenology
        !--------------------------------------------
 
-       ! CNphenology needs to be called after CNdecompAlloc, because it
+       ! CNphenology needs to be called after SoilLittDecompAlloc, because it
        ! depends on current time-step fluxes to new growth on the last
        ! litterfall timestep in deciduous systems
 

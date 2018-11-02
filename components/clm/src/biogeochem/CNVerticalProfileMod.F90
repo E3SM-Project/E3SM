@@ -48,7 +48,7 @@ contains
     !  here seem to only depend on quantities that are valid over inactive as well as active
     !  points. However, note that this routine is (mistakenly) called from two places
     !  currently - the above note applies to its call from the driver, but its call from
-    !  CNDecompMod uses the standard filters that just apply over active points
+    !  SoilLittDecompMod uses the standard filters that just apply over active points
     ! 
     ! !USES:
     use clm_varcon  , only : zsoi, dzsoi, zisoi, dzsoi_decomp

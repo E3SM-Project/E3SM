@@ -207,7 +207,7 @@ contains
     !--------------------------------------------
 
     ! Calculation of actual immobilization and decomp rates, following
-    ! resolution of plant/heterotroph  competition for mineral N (previously inlined in CNDecompAllocation in CNDecompMod)
+    ! resolution of plant/heterotroph  competition for mineral N (previously inlined in SoilLittDecompAllocation in SoilLittDecompMod)
     !  call SoilBiogeochemDecomp() in CLM
     call t_startf('SoilBiogeochemDecomp')
 

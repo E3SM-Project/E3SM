@@ -260,7 +260,7 @@ contains
     use CNNDynamicsMod         , only: CNNDeposition,CNNFixation, CNNFert, CNSoyfix
     use PDynamicsMod           , only: PDeposition   
     use CNMRespMod             , only: CNMResp
-!    use CNDecompMod            , only: CNDecompAlloc
+!    use SoilLittDecompMod            , only: SoilLittDecompAlloc
 !    use CNPhenologyMod         , only: CNPhenology
 !    use CNGRespMod             , only: CNGResp
 !    use CNCStateUpdate1Mod     , only: CStateUpdate1,CStateUpdate0
@@ -282,7 +282,7 @@ contains
 !    use dynHarvestMod          , only: CNHarvest
     use clm_varpar             , only: crop_prog
     use AllocationMod        , only: Allocation1_PlantNPDemand ! Phase-1 of CNAllocation
-!    use CNDecompMod            , only: CNDecompAlloc2
+!    use SoilLittDecompMod            , only: SoilLittDecompAlloc2
     use CNNDynamicsMod         , only: CNNLeaching
     use PDynamicsMod           , only: PLeaching
     use CNNDynamicsMod         , only: CNNFixation_balance
@@ -441,7 +441,7 @@ contains
        end if
 
        !-------------------------------------------------------------------------------------------------
-       ! 'decomp_vertprofiles' (calc nfixation_prof) is moved from CNDecompAlloc:
+       ! 'decomp_vertprofiles' (calc nfixation_prof) is moved from SoilLittDecompAlloc:
        ! 'nfixation_prof' is used to 'calc_nuptake_prof' & 'calc_puptake_prof', which are called in Allocation1,2,3
        call decomp_vertprofiles(bounds,                      &
            num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -478,7 +478,7 @@ contains
     !-------------------------------------------------------------------
     ! bgc interface
     ! Phase-2 of CNEcosystemDynNoLeaching
-    ! call CNDecompAlloc (w/o bgc_interface) & CNDecompAlloc2
+    ! call SoilLittDecompAlloc (w/o bgc_interface) & SoilLittDecompAlloc2
     !-------------------------------------------------------------------
 
     ! !DESCRIPTION:
@@ -490,7 +490,7 @@ contains
     ! !USES:
 !    use CNNDynamicsMod         , only: CNNDeposition,CNNFixation, CNNFert, CNSoyfix
 !    use CNMRespMod             , only: CNMResp
-!    use CNDecompMod            , only: CNDecompAlloc
+!    use SoilLittDecompMod            , only: SoilLittDecompAlloc
     use CNPhenologyMod         , only: CNPhenology
     use CNGRespMod             , only: CNGResp
     use CNCStateUpdate1Mod     , only: CStateUpdate1,CStateUpdate0
@@ -515,8 +515,8 @@ contains
 !    use clm_varpar             , only: crop_prog
 
 !    use AllocationMod        , only: cnallocation
-    use CNDecompMod            , only: CNDecompAlloc
-    use CNDecompMod            , only: CNDecompAlloc2 !after CNDecompAlloc
+    use SoilLittDecompMod            , only: SoilLittDecompAlloc
+    use SoilLittDecompMod            , only: SoilLittDecompAlloc2 !after SoilLittDecompAlloc
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -558,12 +558,12 @@ contains
     ! only do if ed is off
     if( .not. use_fates ) then
 
-       call t_startf('CNDecompAlloc')
+       call t_startf('SoilLittDecompAlloc')
        !----------------------------------------------------------------
        if(.not.use_clm_interface) then
             ! directly run clm-bgc
             ! if (use_clm_interface & use_clm_bgc), then CNDecomAlloc is called in clm_driver
-            call CNDecompAlloc (bounds, num_soilc, filter_soilc,    &
+            call SoilLittDecompAlloc (bounds, num_soilc, filter_soilc,    &
                        num_soilp, filter_soilp,                     &
                        canopystate_vars, soilstate_vars,            &
                        temperature_vars, waterstate_vars,           &
@@ -573,10 +573,10 @@ contains
                        phosphorusstate_vars,phosphorusflux_vars)
        end if !if(.not.use_clm_interface)
        !----------------------------------------------------------------
-       ! CNDecompAlloc2 is called by both clm-bgc & pflotran
-       ! pflotran: call 'CNDecompAlloc2' to calculate some diagnostic variables and 'fpg' for plant N uptake
+       ! SoilLittDecompAlloc2 is called by both clm-bgc & pflotran
+       ! pflotran: call 'SoilLittDecompAlloc2' to calculate some diagnostic variables and 'fpg' for plant N uptake
        ! pflotran & clm-bgc : 'Allocation3_AG' and vertically integrate net and gross mineralization fluxes
-       call CNDecompAlloc2 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,           &
+       call SoilLittDecompAlloc2 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,           &
                 photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars,             &
                 waterstate_vars, cnstate_vars, ch4_vars,                                        &
                 carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,    &
@@ -584,14 +584,14 @@ contains
                 phosphorusstate_vars,phosphorusflux_vars)
 
        !----------------------------------------------------------------
-       call t_stopf('CNDecompAlloc')
+       call t_stopf('SoilLittDecompAlloc')
        !----------------------------------------------------------------
 
        !--------------------------------------------
        ! Phenology
        !--------------------------------------------
 
-       ! CNphenology needs to be called after CNdecompAlloc, because it
+       ! CNphenology needs to be called after SoilLittDecompAlloc, because it
        ! depends on current time-step fluxes to new growth on the last
        ! litterfall timestep in deciduous systems
 

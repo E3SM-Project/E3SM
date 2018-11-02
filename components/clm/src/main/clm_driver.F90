@@ -918,10 +918,10 @@ contains
                  elseif (use_clm_bgc) then
                     call t_startf('clm-bgc via interface')
                     ! -------------------------------------------------------------------------
-                    ! run clm-bgc (CNDecompAlloc) through interface
-                    ! STEP-2: (1) pass data from clm_interface_data to CNDecompAlloc
-                    ! STEP-2: (2) run CNDecompAlloc
-                    ! STEP-2: (3) update clm_interface_data from CNDecompAlloc
+                    ! run clm-bgc (SoilLittDecompAlloc) through interface
+                    ! STEP-2: (1) pass data from clm_interface_data to SoilLittDecompAlloc
+                    ! STEP-2: (2) run SoilLittDecompAlloc
+                    ! STEP-2: (3) update clm_interface_data from SoilLittDecompAlloc
                     ! -------------------------------------------------------------------------
                     call clm_bgc_run(clm_interface_data, bounds_clump,          &
                            filter(nc)%num_soilc, filter(nc)%soilc,              &

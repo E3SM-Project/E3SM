@@ -1,4 +1,4 @@
-module CNDecompMod
+module SoilLittDecompMod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -44,10 +44,10 @@ module CNDecompMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
 
-  public :: readCNDecompParams
-  public :: CNDecompAlloc
+  public :: readSoilLittDecompParams
+  public :: SoilLittDecompAlloc
   ! pflotran
-  public :: CNDecompAlloc2
+  public :: SoilLittDecompAlloc2
   !
   type, private :: CNDecompParamsType
      real(r8) :: dnp         !denitrification proportion
@@ -59,7 +59,7 @@ module CNDecompMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine readCNDecompParams ( ncid )
+  subroutine readSoilLittDecompParams ( ncid )
     !
     ! !DESCRIPTION:
     ! Read parameters
@@ -86,10 +86,10 @@ contains
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     CNDecompParamsInst%dnp=tempr 
 
-  end subroutine readCNDecompParams
+  end subroutine readSoilLittDecompParams
 
 !-------------------------------------------------------------------------------------------------
-  subroutine CNDecompAlloc (bounds, num_soilc, filter_soilc,    &
+  subroutine SoilLittDecompAlloc (bounds, num_soilc, filter_soilc,    &
                 num_soilp, filter_soilp,                        &
                 canopystate_vars, soilstate_vars,               &
                 temperature_vars, waterstate_vars,              &
@@ -105,8 +105,8 @@ contains
     ! ONLY includes SOM decomposition & nitrification/denitrification (if use_nitrif_denitrif)
     ! CNAllocaiton is divided into 3 subroutines:
     ! (1) Allocation1_PlantNPDemand  is called in CNEcosystemDynNoLeaching1
-    ! (2) Allocation2_ResolveNPLimit is called in CNDecompAlloc (this subroutine)
-    ! (3) Allocation3_PlantCNPAlloc  is called in CNDecompAlloc2
+    ! (2) Allocation2_ResolveNPLimit is called in SoilLittDecompAlloc (this subroutine)
+    ! (3) Allocation3_PlantCNPAlloc  is called in SoilLittDecompAlloc2
     !-----------------------------------------------------------------------------
 
     ! !USES:
@@ -589,7 +589,7 @@ contains
       end if
 
       ! vertically integrate net and gross mineralization fluxes for diagnostic output
-      ! moved to CNDecompAlloc2
+      ! moved to SoilLittDecompAlloc2
 !      do j = 1,nlevdecomp
 !         do fc = 1,num_soilc
 !            c = filter_soilc(fc)
@@ -602,11 +602,11 @@ contains
 
     end associate
 
-  end subroutine CNDecompAlloc
+  end subroutine SoilLittDecompAlloc
 
 !-------------------------------------------------------------------------------------------------
 
-  subroutine CNDecompAlloc2 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,   &
+  subroutine SoilLittDecompAlloc2 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,   &
        photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars,               &
        waterstate_vars, cnstate_vars, ch4_vars,                                          &
        carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,      &
@@ -615,7 +615,7 @@ contains
     !-----------------------------------------------------------------------------
     ! DESCRIPTION:
     ! bgc interface & pflotran:
-    ! (1) Simplified codes of CNDecompAlloc subroutine for coupling with pflotran
+    ! (1) Simplified codes of SoilLittDecompAlloc subroutine for coupling with pflotran
     ! (2) call Allocation3_PlantCNPAlloc
     ! (3) calculate net_nmin(c), gross_nmin(c), net_pmin(c), gross_pmin(c)
     !-----------------------------------------------------------------------------
@@ -861,7 +861,7 @@ contains
          end do
       end do
     end associate
-  end subroutine CNDecompAlloc2
+  end subroutine SoilLittDecompAlloc2
  
   !-------------------------------------------------------------------------------------------------
   !
@@ -932,4 +932,4 @@ contains
 
   !-------------------------------------------------------------------------------------------------
 
-end module CNDecompMod
+end module SoilLittDecompMod

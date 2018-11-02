@@ -77,7 +77,7 @@ contains
     ! read CN and BGC shared parameters
     !
     use AllocationMod          , only : readCNAllocParams    
-    use CNDecompMod              , only : readCNDecompParams
+    use SoilLittDecompMod              , only : readSoilLittDecompParams
     use CNDecompCascadeBGCMod    , only : readCNDecompBgcParams
     use CNDecompCascadeCNMod     , only : readCNDecompCnParams
     use CNPhenologyMod           , only : readCNPhenolParams
@@ -131,7 +131,7 @@ contains
 
        call readCNAllocParams(ncid)
        if(.not. is_active_betr_bgc) then
-         call readCNDecompParams(ncid)
+         call readSoilLittDecompParams(ncid)
          if (use_century_decomp) then
             call readCNDecompBgcParams(ncid)
          else

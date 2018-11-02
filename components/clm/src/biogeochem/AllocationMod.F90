@@ -50,8 +50,8 @@ module AllocationMod
   !-----------------------------------------------------------------------------------------------------
   ! Allocation is divided into 3 subroutines/phases:
   public :: Allocation1_PlantNPDemand     !Plant N/P Demand;       called in CNEcosystemDynNoLeaching1
-  public :: Allocation2_ResolveNPLimit    !Resolve N/P Limitation; called in CNDecompAlloc
-  public :: Allocation3_PlantCNPAlloc     !Plant C/N/P Allocation; called in CNDecompAlloc2
+  public :: Allocation2_ResolveNPLimit    !Resolve N/P Limitation; called in SoilLittDecompAlloc
+  public :: Allocation3_PlantCNPAlloc     !Plant C/N/P Allocation; called in SoilLittDecompAlloc2
   !-----------------------------------------------------------------------------------------------------
   public :: dynamic_plant_alloc        ! dynamic plant carbon allocation based on different nutrient stress
 
