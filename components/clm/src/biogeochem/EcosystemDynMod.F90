@@ -268,7 +268,7 @@ contains
 !    use PStateUpdate1Mod       , only: PStateUpdate1
 !    use GapMortalityMod      , only: GapMortality
 !    use CNCStateUpdate2Mod     , only: CStateUpdate2, CStateUpdate2h
-!    use CNNStateUpdate2Mod     , only: NStateUpdate2, NStateUpdate2h
+!    use NitrogenStateUpdate2Mod     , only: NitrogenStateUpdate2, NitrogenStateUpdate2h
 !    use PStateUpdate2Mod       , only: PStateUpdate2, PStateUpdate2h
 !    use FireMod              , only: FireArea, FireFluxes
 !    use CNCStateUpdate3Mod     , only: CStateUpdate3
@@ -498,7 +498,7 @@ contains
     use PStateUpdate1Mod       , only: PStateUpdate1
     use GapMortalityMod        , only: GapMortality
     use CNCStateUpdate2Mod     , only: CStateUpdate2, CStateUpdate2h
-    use CNNStateUpdate2Mod     , only: NStateUpdate2, NStateUpdate2h
+    use NitrogenStateUpdate2Mod     , only: NitrogenStateUpdate2, NitrogenStateUpdate2h
     use PStateUpdate2Mod       , only: PStateUpdate2, PStateUpdate2h
     use FireMod              , only: FireArea, FireFluxes
     use CNCStateUpdate3Mod     , only: CStateUpdate3
@@ -744,7 +744,7 @@ contains
           call CStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                c14_carbonflux_vars, c14_carbonstate_vars)
        end if
-       call NStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call NitrogenStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             nitrogenflux_vars, nitrogenstate_vars)
 
        call PStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -780,7 +780,7 @@ contains
                c14_carbonflux_vars, c14_carbonstate_vars)
        end if
 
-       call NStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call NitrogenStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             nitrogenflux_vars, nitrogenstate_vars)
 
        call PStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &

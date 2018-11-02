@@ -1,4 +1,4 @@
-module CNNStateUpdate2Mod
+module NitrogenStateUpdate2Mod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -22,14 +22,14 @@ module CNNStateUpdate2Mod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public:: NStateUpdate2
-  public:: NStateUpdate2h
+  public:: NitrogenStateUpdate2
+  public:: NitrogenStateUpdate2h
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine NStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine NitrogenStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        nitrogenflux_vars, nitrogenstate_vars)
     !
     ! !DESCRIPTION:
@@ -117,10 +117,10 @@ contains
 
     end associate
 
-  end subroutine NStateUpdate2
+  end subroutine NitrogenStateUpdate2
 
   !-----------------------------------------------------------------------
-  subroutine NStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine NitrogenStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        nitrogenflux_vars, nitrogenstate_vars)
     !
     ! !DESCRIPTION:
@@ -215,6 +215,6 @@ contains
 
     end associate
 
-  end subroutine NStateUpdate2h
+  end subroutine NitrogenStateUpdate2h
 
-end module CNNStateUpdate2Mod
+end module NitrogenStateUpdate2Mod
