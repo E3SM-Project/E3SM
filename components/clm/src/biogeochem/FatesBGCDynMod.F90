@@ -144,11 +144,11 @@ contains
     ! --------------------------------------------------
 
     ! call t_startf('CNDeposition')
-    ! call CNNDeposition(bounds, &
+    ! call NitrogenDeposition(bounds, &
     !      atm2lnd_inst, soilbiogeochem_nitrogenflux_inst)
     ! call t_stopf('CNDeposition')
     ! if (crop_prog) then
-    !    call CNNFert(bounds, num_soilc,filter_soilc, &
+    !    call NitrogenFert(bounds, num_soilc,filter_soilc, &
     !         cnveg_nitrogenflux_inst, soilbiogeochem_nitrogenflux_inst)
 
     !    call  CNSoyfix (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &

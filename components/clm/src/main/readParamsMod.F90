@@ -83,7 +83,7 @@ contains
     use PhenologyMod             , only : readPhenolParams
     use CNPhenologyBeTRMod       , only : readCNPhenolBeTRParams
     use CNMRespMod               , only : readCNMRespParams
-    use CNNDynamicsMod           , only : readCNNDynamicsParams
+    use NitrogenDynamicsMod           , only : readNitrogenDynamicsParams
     use GapMortalityMod          , only : readGapMortParams 
     use CNGapMortalityBeTRMod    , only : readCNGapMortBeTRParams
     use CNNitrifDenitrifMod      , only : readCNNitrifDenitrifParams
@@ -157,7 +157,7 @@ contains
          call readPhenolParams(ncid)
        endif
        call readCNMRespParams (ncid)
-       call readCNNDynamicsParams (ncid)
+       call readNitrogenDynamicsParams (ncid)
        if(is_active_betr_bgc)then
          call readCNGapMortBeTRParams (ncid)
        else

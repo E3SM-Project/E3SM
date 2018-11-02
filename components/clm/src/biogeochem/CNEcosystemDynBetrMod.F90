@@ -67,7 +67,7 @@ module CNEcosystemDynBetrMod
     ! setup fluxes and parameters for plant-microbe coupling in soibgc
     !
     ! !USES:
-    use CNNDynamicsMod            , only : CNNDeposition,CNNFixation, CNNFert, CNSoyfix
+    use NitrogenDynamicsMod            , only : NitrogenDeposition,NitrogenFixation, NitrogenFert, CNSoyfix
     use CNMRespMod                , only : CNMResp
     use SoilLittDecompMod               , only : SoilLittDecompAlloc
     use CNPhenologyBeTRMod            , only : CNPhenology
@@ -91,7 +91,7 @@ module CNEcosystemDynBetrMod
     use PlantMicKineticsMod       , only : PlantMicKinetics_type
     use CNAllocationBetrMod       , only : SetPlantMicNPDemand, Allocation3_PlantCNPAlloc
     use CNNStateUpdate3BeTRMod        , only : NStateUpdate3
-    use CNNDynamicsMod            , only : CNNFixation_balance
+    use NitrogenDynamicsMod            , only : NitrogenFixation_balance
     use PStateUpdate1Mod          , only : PStateUpdate1
     use PStateUpdate2Mod          , only : PStateUpdate2, PStateUpdate2h
     use PDynamicsMod              , only : PBiochemMin_balance,PDeposition,PWeathering
@@ -171,13 +171,13 @@ module CNEcosystemDynBetrMod
        ! --------------------------------------------------
 
        call t_startf('CNDeposition')
-       call CNNDeposition(bounds, &
+       call NitrogenDeposition(bounds, &
             atm2lnd_vars, nitrogenflux_vars)
        call t_stopf('CNDeposition')
 
        call t_startf('CNMResp')
        if (crop_prog) then
-          call CNNFert(bounds, num_soilc,filter_soilc, &
+          call NitrogenFert(bounds, num_soilc,filter_soilc, &
                nitrogenflux_vars)
 
        end if
@@ -223,7 +223,7 @@ module CNEcosystemDynBetrMod
        call t_startf('CNFixation')
        !nfixation comes after SetPlantMicNPDemand because it needs cnp ratio
        !computed first
-       call CNNFixation_balance( num_soilc, filter_soilc, &
+       call NitrogenFixation_balance( num_soilc, filter_soilc, &
                cnstate_vars, carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars, &
                temperature_vars, waterstate_vars, carbonstate_vars, phosphorusstate_vars)
        call t_stopf('CNFixation')

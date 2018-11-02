@@ -105,7 +105,7 @@ contains
     use spmdMod              , only: masterproc
     use PDynamicsMod         , only: PWeathering,PAdsorption,PDesorption,POcclusion
     use PDynamicsMod         , only: PBiochemMin,PLeaching
-    use CNNDynamicsMod       , only: CNNLeaching
+    use NitrogenDynamicsMod       , only: NitrogenLeaching
     use CNNStateUpdate3Mod   , only: NStateUpdate3
     use PStateUpdate3Mod     , only: PStateUpdate3
     use PrecisionControlMod  , only: PrecisionControl
@@ -183,7 +183,7 @@ contains
        !-----------------------------------------------------------------------
        ! pflotran: when both 'pf-bgc' and 'pf-h' on, no need to call CLM-CN's N leaching module
        if (.not. (pf_cmode .and. pf_hmode)) then
-         call CNNLeaching(bounds, num_soilc, filter_soilc, &
+         call NitrogenLeaching(bounds, num_soilc, filter_soilc, &
             waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
 
          call PLeaching(bounds, num_soilc, filter_soilc, &
@@ -257,7 +257,7 @@ contains
     ! stays synchronized with albedo calculations.
     !
     ! !USES:
-    use CNNDynamicsMod         , only: CNNDeposition,CNNFixation, CNNFert, CNSoyfix
+    use NitrogenDynamicsMod         , only: NitrogenDeposition,NitrogenFixation, NitrogenFert, CNSoyfix
     use PDynamicsMod           , only: PDeposition   
     use CNMRespMod             , only: CNMResp
 !    use SoilLittDecompMod            , only: SoilLittDecompAlloc
@@ -283,9 +283,9 @@ contains
     use clm_varpar             , only: crop_prog
     use AllocationMod        , only: Allocation1_PlantNPDemand ! Phase-1 of CNAllocation
 !    use SoilLittDecompMod            , only: SoilLittDecompAlloc2
-    use CNNDynamicsMod         , only: CNNLeaching
+    use NitrogenDynamicsMod         , only: NitrogenLeaching
     use PDynamicsMod           , only: PLeaching
-    use CNNDynamicsMod         , only: CNNFixation_balance
+    use NitrogenDynamicsMod         , only: NitrogenFixation_balance
     use PDynamicsMod           , only: PWeathering,PAdsorption,PDesorption,POcclusion
     use PDynamicsMod           , only: PBiochemMin,PBiochemMin_balance
   
@@ -367,19 +367,19 @@ contains
        ! --------------------------------------------------
 
        call t_startf('CNDeposition')
-       call CNNDeposition(bounds, &
+       call NitrogenDeposition(bounds, &
             atm2lnd_vars, nitrogenflux_vars)
        call t_stopf('CNDeposition')
 
        if (.not. nu_com_nfix) then 
           call t_startf('CNFixation')
-          call CNNFixation( num_soilc, filter_soilc, &
+          call NitrogenFixation( num_soilc, filter_soilc, &
                waterflux_vars, carbonflux_vars, nitrogenflux_vars)
           call t_stopf('CNFixation')
        else
           ! nu_com_nfix is true
           call t_startf('CNFixation')
-          call CNNFixation_balance( num_soilc, filter_soilc, &
+          call NitrogenFixation_balance( num_soilc, filter_soilc, &
                cnstate_vars, carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars, &
                temperature_vars, waterstate_vars, carbonstate_vars, phosphorusstate_vars)
           call t_stopf('CNFixation')
@@ -387,7 +387,7 @@ contains
 
        call t_startf('CNMResp')
        if (crop_prog) then
-          call CNNFert(bounds, num_soilc,filter_soilc, &
+          call NitrogenFert(bounds, num_soilc,filter_soilc, &
                nitrogenflux_vars)
 
           call CNSoyfix(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -488,7 +488,7 @@ contains
     ! stays synchronized with albedo calculations.
     !
     ! !USES:
-!    use CNNDynamicsMod         , only: CNNDeposition,CNNFixation, CNNFert, CNSoyfix
+!    use NitrogenDynamicsMod         , only: NitrogenDeposition,NitrogenFixation, NitrogenFert, CNSoyfix
 !    use CNMRespMod             , only: CNMResp
 !    use SoilLittDecompMod            , only: SoilLittDecompAlloc
     use PhenologyMod         , only: Phenology

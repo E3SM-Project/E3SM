@@ -1,7 +1,7 @@
-module CNNDynamicsMod
+module NitrogenDynamicsMod
 
   !-----------------------------------------------------------------------
-  ! !MODULE: CNNDynamicsMod
+  ! !MODULE: NitrogenDynamicsMod
   !
   ! !DESCRIPTION:
   ! Module for mineral nitrogen dynamics (deposition, fixation, leaching)
@@ -35,14 +35,14 @@ module CNNDynamicsMod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: CNNDynamicsInit
-  public :: CNNDeposition
-  public :: CNNFixation
-  public :: CNNLeaching
-  public :: CNNFert
+  public :: NitrogenDynamicsInit
+  public :: NitrogenDeposition
+  public :: NitrogenFixation
+  public :: NitrogenLeaching
+  public :: NitrogenFert
   public :: CNSoyfix
-  public :: readCNNDynamicsParams
-  public :: CNNFixation_balance
+  public :: readNitrogenDynamicsParams
+  public :: NitrogenFixation_balance
   
   !
   ! !PRIVATE DATA:
@@ -57,7 +57,7 @@ module CNNDynamicsMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine CNNDynamicsInit ( )
+  subroutine NitrogenDynamicsInit ( )
     !
     ! !DESCRIPTION:
     ! Initialize module variables
@@ -75,10 +75,10 @@ contains
        end if
     end if
    
-  end subroutine CNNDynamicsInit
+  end subroutine NitrogenDynamicsInit
 
   !-----------------------------------------------------------------------
-  subroutine readCNNDynamicsParams ( ncid )
+  subroutine readNitrogenDynamicsParams ( ncid )
     !
     ! !DESCRIPTION:
     ! Read in parameters
@@ -99,7 +99,7 @@ contains
     character(len=100) :: tString ! temp. var for reading
     !-----------------------------------------------------------------------
     
-    call CNNDynamicsInit()
+    call NitrogenDynamicsInit()
 
     tString='sf_minn'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
@@ -111,10 +111,10 @@ contains
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     CNNDynamicsParamsInst%sf_no3=tempr
    
-  end subroutine readCNNDynamicsParams
+  end subroutine readNitrogenDynamicsParams
 
   !-----------------------------------------------------------------------
-  subroutine CNNDeposition( bounds, &
+  subroutine NitrogenDeposition( bounds, &
        atm2lnd_vars, nitrogenflux_vars )
     !
     ! !DESCRIPTION:
@@ -146,10 +146,10 @@ contains
 
     end associate
 
-  end subroutine CNNDeposition
+  end subroutine NitrogenDeposition
 
   !-----------------------------------------------------------------------
-  subroutine CNNFixation(num_soilc, filter_soilc, waterflux_vars, &
+  subroutine NitrogenFixation(num_soilc, filter_soilc, waterflux_vars, &
        carbonflux_vars, nitrogenflux_vars)
     !
     ! !DESCRIPTION:
@@ -225,10 +225,10 @@ contains
 
     end associate
 
-  end subroutine CNNFixation
+  end subroutine NitrogenFixation
  
   !-----------------------------------------------------------------------
-  subroutine CNNLeaching(bounds, num_soilc, filter_soilc, &
+  subroutine NitrogenLeaching(bounds, num_soilc, filter_soilc, &
        waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
     !
     ! !DESCRIPTION:
@@ -437,10 +437,10 @@ contains
       endif
 
     end associate
-  end subroutine CNNLeaching
+  end subroutine NitrogenLeaching
 
   !-----------------------------------------------------------------------
-  subroutine CNNFert(bounds, num_soilc, filter_soilc, &
+  subroutine NitrogenFert(bounds, num_soilc, filter_soilc, &
        nitrogenflux_vars)
     !
     ! !DESCRIPTION:
@@ -469,7 +469,7 @@ contains
            fert_to_sminn(bounds%begc:bounds%endc))
 
     end associate
-  end subroutine CNNFert
+  end subroutine NitrogenFert
 
   !-----------------------------------------------------------------------
   subroutine CNSoyfix (bounds, &
@@ -611,7 +611,7 @@ contains
   end subroutine CNSoyfix
 
   !-----------------------------------------------------------------------
-  subroutine CNNFixation_balance(num_soilc, filter_soilc,cnstate_vars, carbonflux_vars, &
+  subroutine NitrogenFixation_balance(num_soilc, filter_soilc,cnstate_vars, carbonflux_vars, &
              nitrogenstate_vars, nitrogenflux_vars, temperature_vars, waterstate_vars, carbonstate_vars, phosphorusstate_vars)
     !
     ! !DESCRIPTION:
@@ -701,6 +701,6 @@ contains
 
     end associate
 
-  end subroutine CNNFixation_balance
+  end subroutine NitrogenFixation_balance
   
-end module CNNDynamicsMod
+end module NitrogenDynamicsMod
