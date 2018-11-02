@@ -27,9 +27,9 @@ module CNNitrifDenitrifMod
   private
   !
   public :: nitrif_denitrif
-  public :: readCNNitrifDenitrifParams
+  public :: readNitrifDenitrifParams
   !
-  type, private :: CNNitrifDenitrifParamsType
+  type, private :: NitrifDenitrifParamsType
    real(r8) :: k_nitr_max               !  maximum nitrification rate constant (1/s)
    real(r8) :: surface_tension_water    !  surface tension of water(J/m^2), Arah an and Vinten 1995
    real(r8) :: rij_kro_a                !  Arah and Vinten 1995)
@@ -37,9 +37,9 @@ module CNNitrifDenitrifMod
    real(r8) :: rij_kro_beta             !  (Arah and Vinten 1995)
    real(r8) :: rij_kro_gamma            !  (Arah and Vinten 1995)
    real(r8) :: rij_kro_delta            !  (Arah and Vinten 1995)
-  end type CNNitrifDenitrifParamsType
+  end type NitrifDenitrifParamsType
 
-  type(CNNitrifDenitrifParamsType),private ::  CNNitrifDenitrifParamsInst
+  type(NitrifDenitrifParamsType),private ::  NitrifDenitrifParamsInst
 
   logical, public :: no_frozen_nitrif_denitrif = .false.  ! stop nitrification and denitrification in frozen soils
   !-----------------------------------------------------------------------
@@ -47,7 +47,7 @@ module CNNitrifDenitrifMod
 contains
 
   !-----------------------------------------------------------------------  
-  subroutine readCNNitrifDenitrifParams ( ncid )
+  subroutine readNitrifDenitrifParams ( ncid )
     !
     use ncdio_pio    , only: file_desc_t,ncd_io
     !
@@ -55,7 +55,7 @@ contains
     type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
     !
     ! !LOCAL VARIABLES:
-    character(len=32)  :: subname = 'CNNitrifDenitrifParamsType'
+    character(len=32)  :: subname = 'NitrifDenitrifParamsType'
     character(len=100) :: errCode = '-Error reading in parameters file:'
     logical            :: readv ! has variable been read in or not
     real(r8)           :: tempr ! temporary to read in constant
@@ -67,39 +67,39 @@ contains
     tString='k_nitr_max'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNNitrifDenitrifParamsInst%k_nitr_max=tempr
+    NitrifDenitrifParamsInst%k_nitr_max=tempr
 
     tString='surface_tension_water'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNNitrifDenitrifParamsInst%surface_tension_water=tempr
+    NitrifDenitrifParamsInst%surface_tension_water=tempr
 
     tString='rij_kro_a'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNNitrifDenitrifParamsInst%rij_kro_a=tempr
+    NitrifDenitrifParamsInst%rij_kro_a=tempr
 
     tString='rij_kro_alpha'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNNitrifDenitrifParamsInst%rij_kro_alpha=tempr
+    NitrifDenitrifParamsInst%rij_kro_alpha=tempr
 
     tString='rij_kro_beta'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNNitrifDenitrifParamsInst%rij_kro_beta=tempr
+    NitrifDenitrifParamsInst%rij_kro_beta=tempr
 
     tString='rij_kro_gamma'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNNitrifDenitrifParamsInst%rij_kro_gamma=tempr
+    NitrifDenitrifParamsInst%rij_kro_gamma=tempr
 
     tString='rij_kro_delta'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNNitrifDenitrifParamsInst%rij_kro_delta=tempr
+    NitrifDenitrifParamsInst%rij_kro_delta=tempr
 
-  end subroutine readCNNitrifDenitrifParams
+  end subroutine readNitrifDenitrifParams
 
   !-----------------------------------------------------------------------
   subroutine nitrif_denitrif(bounds, num_soilc, filter_soilc, &
@@ -211,16 +211,16 @@ contains
       ! Todo:  FIX(SPM,032414) - the explicit divide gives different results than when that
       ! value is placed in the parameters netcdf file.  To get bfb, keep the 
       ! divide in source.
-      !k_nitr_max = CNNitrifDenitrifParamsInst%k_nitr_max
+      !k_nitr_max = NitrifDenitrifParamsInst%k_nitr_max
 
-      surface_tension_water = CNNitrifDenitrifParamsInst%surface_tension_water
+      surface_tension_water = NitrifDenitrifParamsInst%surface_tension_water
 
       ! Set parameters from simple-structure model to calculate anoxic fratction (Arah and Vinten 1995)
-      rij_kro_a     = CNNitrifDenitrifParamsInst%rij_kro_a
-      rij_kro_alpha = CNNitrifDenitrifParamsInst%rij_kro_alpha
-      rij_kro_beta  = CNNitrifDenitrifParamsInst%rij_kro_beta
-      rij_kro_gamma = CNNitrifDenitrifParamsInst%rij_kro_gamma
-      rij_kro_delta = CNNitrifDenitrifParamsInst%rij_kro_delta
+      rij_kro_a     = NitrifDenitrifParamsInst%rij_kro_a
+      rij_kro_alpha = NitrifDenitrifParamsInst%rij_kro_alpha
+      rij_kro_beta  = NitrifDenitrifParamsInst%rij_kro_beta
+      rij_kro_gamma = NitrifDenitrifParamsInst%rij_kro_gamma
+      rij_kro_delta = NitrifDenitrifParamsInst%rij_kro_delta
 
       organic_max = CNParamsShareInst%organic_max
 

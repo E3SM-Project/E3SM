@@ -86,7 +86,7 @@ contains
     use NitrogenDynamicsMod           , only : readNitrogenDynamicsParams
     use GapMortalityMod          , only : readGapMortParams 
     use CNGapMortalityBeTRMod    , only : readCNGapMortBeTRParams
-    use CNNitrifDenitrifMod      , only : readCNNitrifDenitrifParams
+    use CNNitrifDenitrifMod      , only : readNitrifDenitrifParams
     use SoilLittVertTranspMod    , only : readSoilLittVertTranspParams
     use ch4Mod                   , only : readCH4Params
     use clm_varctl               , only : paramfile, iulog, use_betr
@@ -139,7 +139,7 @@ contains
          end if
        
          if (use_nitrif_denitrif) then
-            call readCNNitrifDenitrifParams(ncid)
+            call readNitrifDenitrifParams(ncid)
          end if
 
          call readSoilLittVertTranspParams(ncid)
