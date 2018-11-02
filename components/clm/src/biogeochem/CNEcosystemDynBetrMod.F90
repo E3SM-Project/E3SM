@@ -81,7 +81,7 @@ module CNEcosystemDynBetrMod
     use CNCStateUpdate3Mod        , only : CStateUpdate3
     use CNCIsoFluxMod             , only : CIsoFlux1, CIsoFlux2, CIsoFlux2h, CIsoFlux3
     use CNC14DecayMod             , only : C14Decay, C14BombSpike
-    use CNWoodProductsMod         , only : CNWoodProducts
+    use WoodProductsMod         , only : WoodProducts
     use CNDecompCascadeBGCMod     , only : decomp_rate_constants_bgc
     use CNDecompCascadeCNMod      , only : decomp_rate_constants_cn
     use CropType                  , only : crop_type
@@ -441,7 +441,7 @@ module CNEcosystemDynBetrMod
        call PStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             phosphorusflux_vars, phosphorusstate_vars)
 
-       call CNWoodProducts(num_soilc, filter_soilc, &
+       call WoodProducts(num_soilc, filter_soilc, &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars, &
             carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars,&
             phosphorusstate_vars,phosphorusflux_vars)

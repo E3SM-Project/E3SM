@@ -168,7 +168,7 @@ contains
                cs%decomp_cpools_vr_col(c,j,i_cwd) = &
                     cs%decomp_cpools_vr_col(c,j,i_cwd) + cf%harvest_c_to_cwdc_col(c,j)  * dt
 
-               ! wood to product pools - states updated in CNWoodProducts()
+               ! wood to product pools - states updated in WoodProducts()
             end do
          end do
 

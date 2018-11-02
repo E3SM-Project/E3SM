@@ -1,4 +1,4 @@
-module CNWoodProductsMod
+module WoodProductsMod
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Calculate loss fluxes from wood products pools, and update product pool state variables
@@ -24,13 +24,13 @@ module CNWoodProductsMod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public:: CNWoodProducts
+  public:: WoodProducts
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine CNWoodProducts(num_soilc, filter_soilc, &
+  subroutine WoodProducts(num_soilc, filter_soilc, &
        cs, c13_cs, c14_cs, ns, &
        cf, c13_cf, c14_cf, nf,&
        ps, pf)
@@ -158,6 +158,6 @@ contains
 
     end do ! end of column loop
 
-  end subroutine CNWoodProducts
+  end subroutine WoodProducts
 
-end module CNWoodProductsMod
+end module WoodProductsMod
