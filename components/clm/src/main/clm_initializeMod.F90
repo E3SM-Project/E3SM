@@ -60,7 +60,7 @@ contains
     use controlMod                , only: control_init, control_print, NLFilename
     use ncdio_pio                 , only: ncd_pio_init
     use initGridCellsMod          , only: initGridCells, initGhostGridCells
-    use ch4varcon                 , only: ch4conrd
+    use CH4varcon                 , only: CH4conrd
     use UrbanParamsType           , only: UrbanInput
     use CLMFatesParamInterfaceMod , only: FatesReadPFTs
     use surfrdMod                 , only: surfrd_get_grid_conn
@@ -349,7 +349,7 @@ contains
     ! look for several optional parameters on surfdata file.
 
     if (use_lch4) then
-       call ch4conrd()
+       call CH4conrd()
     end if
 
     ! Deallocate surface grid dynamic memory for variables that aren't needed elsewhere.

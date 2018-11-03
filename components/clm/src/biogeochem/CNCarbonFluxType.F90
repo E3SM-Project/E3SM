@@ -9,7 +9,7 @@ module CNCarbonFluxType
   use clm_varcon             , only : spval, ispval, dzsoi_decomp
   use landunit_varcon        , only : istsoil, istcrop, istdlak 
   use clm_varctl             , only : use_cndv, use_c13, use_fates 
-  use ch4varcon              , only : allowlakeprod
+  use CH4varcon              , only : allowlakeprod
   use pftvarcon              , only : npcropmin
   use CNDecompCascadeConType , only : decomp_cascade_con
   use VegetationType         , only : veg_pp

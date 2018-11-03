@@ -1,4 +1,4 @@
-module ch4varcon
+module CH4varcon
 
   !-----------------------------------------------------------------------
   ! Module containing CH4 parameters and logical switches and routine to read constants from CLM namelist.
@@ -69,13 +69,13 @@ module ch4varcon
                                     ! Causes slight increase in emissions in the fall and decrease in the spring.
                                     ! Currently hardwired off; small impact.
 
-  public :: ch4conrd ! Read and initialize CH4 constants
+  public :: CH4conrd ! Read and initialize CH4 constants
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine ch4conrd ()
+  subroutine CH4conrd ()
     !
     ! !DESCRIPTION:
     ! Read and initialize CH4 constants
@@ -91,7 +91,7 @@ contains
     integer :: i,j,n                ! loop indices
     integer :: ierr                 ! error code
     integer :: unitn                ! unit for namelist file
-    character(len=32) :: subname = 'ch4conrd'  ! subroutine name
+    character(len=32) :: subname = 'CH4conrd'  ! subroutine name
     !-----------------------------------------------------------------------
 
     ! ----------------------------------------------------------------------
@@ -169,7 +169,7 @@ contains
 
     end if
 
-  end subroutine ch4conrd
+  end subroutine CH4conrd
 
-end module ch4varcon
+end module CH4varcon
 

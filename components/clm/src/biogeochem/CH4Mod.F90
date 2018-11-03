@@ -322,7 +322,7 @@ contains
     use clm_varpar , only : nlevgrnd, nlevdecomp
     use clm_varctl , only : hist_wrtch4diag
     use histFileMod, only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp
-    use ch4varcon  , only : allowlakeprod
+    use CH4varcon  , only : allowlakeprod
     !
     ! !ARGUMENTS:
     class(ch4_type) :: this
@@ -677,7 +677,7 @@ contains
     use clm_varpar      , only : nlevsoi, nlevgrnd, nlevdecomp
     use landunit_varcon , only : istsoil, istdlak, istcrop
     use clm_varctl      , only : iulog
-    use ch4varcon       , only : allowlakeprod, usephfact, fin_use_fsat
+    use CH4varcon       , only : allowlakeprod, usephfact, fin_use_fsat
     use spmdMod         , only : masterproc
     use fileutils       , only : getfil
     use ncdio_pio       
@@ -1059,7 +1059,7 @@ contains
     ! !USES:
     use shr_kind_mod , only : r8 => shr_kind_r8
     use ncdio_pio    , only : file_desc_t,ncd_io
-    use ch4varcon    , only : use_aereoxid_prog
+    use CH4varcon    , only : use_aereoxid_prog
     !
     ! !ARGUMENTS:
     implicit none
@@ -1278,7 +1278,7 @@ contains
     use subgridAveMod      , only : p2c, c2g
     use clm_varpar         , only : nlevgrnd, nlevdecomp
     use pftvarcon          , only : noveg
-    use ch4varcon          , only : replenishlakec, allowlakeprod, ch4offline, fin_use_fsat
+    use CH4varcon          , only : replenishlakec, allowlakeprod, ch4offline, fin_use_fsat
     use clm_varcon         , only : secspday
     !
     ! !ARGUMENTS:
@@ -1893,7 +1893,7 @@ contains
     ! pH (optional), & redox lag factor.
     !
     ! !USES:
-    use ch4varcon          , only: usephfact, anoxicmicrosites, ch4rmcnlim
+    use CH4varcon          , only: usephfact, anoxicmicrosites, ch4rmcnlim
     use clm_varctl         , only: anoxia
     use clm_varpar         , only: nlevdecomp, nlevdecomp_full
     use CNSharedParamsMod  , only: nlev_soildecomp_standard
@@ -2390,7 +2390,7 @@ contains
     use clm_varcon       , only : rpi
     use clm_time_manager , only : get_step_size
     use pftvarcon        , only : nc3_arctic_grass, crop, nc3_nonarctic_grass, nc4_grass, noveg
-    use ch4varcon        , only : transpirationloss, usefrootc, use_aereoxid_prog
+    use CH4varcon        , only : transpirationloss, usefrootc, use_aereoxid_prog
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds    
@@ -2788,7 +2788,7 @@ contains
     ! !USES:
     use clm_time_manager   , only : get_step_size, get_nstep
     use TridiagonalMod     , only : Tridiagonal
-    use ch4varcon          , only : ch4frzout, use_aereoxid_prog
+    use CH4varcon          , only : ch4frzout, use_aereoxid_prog
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds    

@@ -117,7 +117,7 @@ contains
     ! Compute lnd2atm_vars component of gridcell derived type
     !
     ! !USES:
-    use ch4varcon  , only : ch4offline
+    use CH4varcon  , only : ch4offline
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)     :: bounds  
