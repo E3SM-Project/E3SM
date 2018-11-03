@@ -101,6 +101,7 @@ subroutine sl_init1(par, elem)
               end do
            end if
         end do
+        call slmm_init_finalize()
      end if
      if (semi_lagrange_cdr_alg > 1) then
         need_conservation = 1

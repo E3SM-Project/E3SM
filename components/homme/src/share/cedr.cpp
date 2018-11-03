@@ -3,8 +3,10 @@
 #ifndef NDEBUG
 # define NDEBUG
 #endif
+#pragma message "We want assertions"
+#undef NDEBUG
 // Uncomment this to look for MPI-related memory leaks.
-//#define COMPOSE_DEBUG_MPI
+#define COMPOSE_DEBUG_MPI
 
 //>> cedr_kokkos.hpp
 #ifndef INCLUDE_CEDR_KOKKOS_HPP

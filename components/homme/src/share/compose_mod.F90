@@ -104,6 +104,9 @@ module compose_mod
        type(cartesian3D_t), intent(in) :: neigh_corners(:,:), pinside
      end subroutine slmm_init_local_mesh
 
+     subroutine slmm_init_finalize() bind(c)
+     end subroutine slmm_init_finalize
+
      subroutine slmm_check_ref2sphere(ie, sphere_cart_coord) bind(c)
        use coordinate_systems_mod, only : cartesian3D_t
        integer, value, intent(in) :: ie
