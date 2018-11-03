@@ -1,4 +1,4 @@
-module PStateUpdate2Mod
+module PhosphorusStateUpdate2Mod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -23,14 +23,14 @@ module PStateUpdate2Mod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public:: PStateUpdate2
-  public:: PStateUpdate2h
+  public:: PhosphorusStateUpdate2
+  public:: PhosphorusStateUpdate2h
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine PStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine PhosphorusStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        phosphorusflux_vars, phosphorusstate_vars)
     !
     ! !DESCRIPTION:
@@ -120,10 +120,10 @@ contains
 
     end associate
 
-  end subroutine PStateUpdate2
+  end subroutine PhosphorusStateUpdate2
 
   !-----------------------------------------------------------------------
-  subroutine PStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine PhosphorusStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        phosphorusflux_vars, phosphorusstate_vars)
     !
     ! !DESCRIPTION:
@@ -220,6 +220,6 @@ contains
 
     end associate
 
-  end subroutine PStateUpdate2h
+  end subroutine PhosphorusStateUpdate2h
 
-end module PStateUpdate2Mod
+end module PhosphorusStateUpdate2Mod

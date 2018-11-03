@@ -180,7 +180,7 @@ contains
     use subgridWeightsMod    , only : compute_higher_order_weights, set_subgrid_diagnostic_fields
     use CarbonStateUpdate1Mod   , only : CarbonStateUpdateDynPatch
     use NitrogenStateUpdate1Mod   , only : NitrogenStateUpdateDynPatch
-    use PStateUpdate1Mod     , only : PStateUpdateDynPatch
+    use PhosphorusStateUpdate1Mod     , only : PhosphorusStateUpdateDynPatch
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds_proc  ! processor-level bounds
@@ -320,7 +320,7 @@ contains
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
                nitrogenflux_vars, nitrogenstate_vars)
 
-          call PStateUpdateDynPatch(bounds_clump, &
+          call PhosphorusStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
                phosphorusflux_vars, phosphorusstate_vars)
 

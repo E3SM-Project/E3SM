@@ -1,4 +1,4 @@
-module PStateUpdate3Mod
+module PhosphorusStateUpdate3Mod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -29,13 +29,13 @@ module PStateUpdate3Mod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public:: PStateUpdate3
+  public:: PhosphorusStateUpdate3
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine PStateUpdate3(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine PhosphorusStateUpdate3(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars,phosphorusflux_vars, phosphorusstate_vars)
     !
     ! !DESCRIPTION:
@@ -349,6 +349,6 @@ contains
 
     end associate 
 
-  end subroutine PStateUpdate3
+  end subroutine PhosphorusStateUpdate3
 
-end module PStateUpdate3Mod
+end module PhosphorusStateUpdate3Mod

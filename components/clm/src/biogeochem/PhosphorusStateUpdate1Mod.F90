@@ -1,4 +1,4 @@
-module PStateUpdate1Mod
+module PhosphorusStateUpdate1Mod
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Module for phosphorus state variable updates, non-mortality fluxes.
@@ -36,12 +36,12 @@ module PStateUpdate1Mod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: PStateUpdateDynPatch
-  public :: PStateUpdate1
+  public :: PhosphorusStateUpdateDynPatch
+  public :: PhosphorusStateUpdate1
   !-----------------------------------------------------------------------
 
 contains
-  subroutine PStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
+  subroutine PhosphorusStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
        phosphorusflux_vars, phosphorusstate_vars)
     !
     ! !DESCRIPTION:
@@ -61,7 +61,7 @@ contains
     integer                                    :: j                             ! level index
     real(r8)                                   :: dt                            ! time step (seconds)
 
-    character(len=*)           , parameter     :: subname = 'PStateUpdateDynPatch'
+    character(len=*)           , parameter     :: subname = 'PhosphorusStateUpdateDynPatch'
     !-----------------------------------------------------------------------
 
     associate( &
@@ -99,10 +99,10 @@ contains
 
     end associate
 
-  end subroutine PStateUpdateDynPatch
+  end subroutine PhosphorusStateUpdateDynPatch
 
   !-----------------------------------------------------------------------
-  subroutine PStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine PhosphorusStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars, phosphorusflux_vars, phosphorusstate_vars)
     !
     ! !DESCRIPTION:
@@ -369,6 +369,6 @@ contains
 
     end associate
 
-  end subroutine PStateUpdate1
+  end subroutine PhosphorusStateUpdate1
 
-end module PStateUpdate1Mod
+end module PhosphorusStateUpdate1Mod

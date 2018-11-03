@@ -92,8 +92,8 @@ module CNEcosystemDynBetrMod
     use CNAllocationBetrMod       , only : SetPlantMicNPDemand, Allocation3_PlantCNPAlloc
     use CNNStateUpdate3BeTRMod        , only : NStateUpdate3
     use NitrogenDynamicsMod            , only : NitrogenFixation_balance
-    use PStateUpdate1Mod          , only : PStateUpdate1
-    use PStateUpdate2Mod          , only : PStateUpdate2, PStateUpdate2h
+    use PhosphorusStateUpdate1Mod          , only : PhosphorusStateUpdate1
+    use PhosphorusStateUpdate2Mod          , only : PhosphorusStateUpdate2, PhosphorusStateUpdate2h
     use PDynamicsMod              , only : PBiochemMin_balance,PDeposition,PWeathering
     use CNVerticalProfileMod      , only : decomp_vertprofiles
     use CNRootDynMod              , only : CNRootDyn
@@ -356,7 +356,7 @@ module CNEcosystemDynBetrMod
        call NStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars, nitrogenflux_vars, nitrogenstate_vars)
 
-       call PStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call PhosphorusStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars, phosphorusflux_vars, phosphorusstate_vars)
 
        call t_stopf('CNUpdate1')
@@ -402,7 +402,7 @@ module CNEcosystemDynBetrMod
        call NStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             nitrogenflux_vars, nitrogenstate_vars)
 
-       call PStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call PhosphorusStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             phosphorusflux_vars, phosphorusstate_vars)
 
        if (get_do_harvest()) then
@@ -438,7 +438,7 @@ module CNEcosystemDynBetrMod
        call NStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             nitrogenflux_vars, nitrogenstate_vars)
 
-       call PStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call PhosphorusStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             phosphorusflux_vars, phosphorusstate_vars)
 
        call WoodProducts(num_soilc, filter_soilc, &

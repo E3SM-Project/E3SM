@@ -107,7 +107,7 @@ contains
     use PDynamicsMod         , only: PBiochemMin,PLeaching
     use NitrogenDynamicsMod       , only: NitrogenLeaching
     use NitrogenStateUpdate3Mod   , only: NitrogenStateUpdate3
-    use PStateUpdate3Mod     , only: PStateUpdate3
+    use PhosphorusStateUpdate3Mod     , only: PhosphorusStateUpdate3
     use PrecisionControlMod  , only: PrecisionControl
     use perf_mod             , only: t_startf, t_stopf
     use shr_sys_mod          , only: shr_sys_flush
@@ -199,7 +199,7 @@ contains
 
 
        call t_startf('PUpdate3')
-       call PStateUpdate3(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call PhosphorusStateUpdate3(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars,phosphorusflux_vars, phosphorusstate_vars)
        call t_stopf('PUpdate3')
 
@@ -265,11 +265,11 @@ contains
 !    use CNGRespMod             , only: CNGResp
 !    use CarbonStateUpdate1Mod     , only: CarbonStateUpdate1,CarbonStateUpdate0
 !    use NitrogenStateUpdate1Mod     , only: NitrogenStateUpdate1
-!    use PStateUpdate1Mod       , only: PStateUpdate1
+!    use PhosphorusStateUpdate1Mod       , only: PhosphorusStateUpdate1
 !    use GapMortalityMod      , only: GapMortality
 !    use CarbonStateUpdate2Mod     , only: CarbonStateUpdate2, CarbonStateUpdate2h
 !    use NitrogenStateUpdate2Mod     , only: NitrogenStateUpdate2, NitrogenStateUpdate2h
-!    use PStateUpdate2Mod       , only: PStateUpdate2, PStateUpdate2h
+!    use PhosphorusStateUpdate2Mod       , only: PhosphorusStateUpdate2, PhosphorusStateUpdate2h
 !    use FireMod              , only: FireArea, FireFluxes
 !    use CarbonStateUpdate3Mod     , only: CarbonStateUpdate3
 !    use CarbonIsoFluxMod          , only: CarbonIsoFlux1, CarbonIsoFlux2, CarbonIsoFlux2h, CarbonIsoFlux3
@@ -495,11 +495,11 @@ contains
     use CNGRespMod             , only: CNGResp
     use CarbonStateUpdate1Mod     , only: CarbonStateUpdate1,CarbonStateUpdate0
     use NitrogenStateUpdate1Mod     , only: NitrogenStateUpdate1
-    use PStateUpdate1Mod       , only: PStateUpdate1
+    use PhosphorusStateUpdate1Mod       , only: PhosphorusStateUpdate1
     use GapMortalityMod        , only: GapMortality
     use CarbonStateUpdate2Mod     , only: CarbonStateUpdate2, CarbonStateUpdate2h
     use NitrogenStateUpdate2Mod     , only: NitrogenStateUpdate2, NitrogenStateUpdate2h
-    use PStateUpdate2Mod       , only: PStateUpdate2, PStateUpdate2h
+    use PhosphorusStateUpdate2Mod       , only: PhosphorusStateUpdate2, PhosphorusStateUpdate2h
     use FireMod              , only: FireArea, FireFluxes
     use CarbonStateUpdate3Mod     , only: CarbonStateUpdate3
     use CarbonIsoFluxMod          , only: CarbonIsoFlux1, CarbonIsoFlux2, CarbonIsoFlux2h, CarbonIsoFlux3
@@ -691,7 +691,7 @@ contains
        call NitrogenStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars, nitrogenflux_vars, nitrogenstate_vars)
 
-       call PStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call PhosphorusStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars, phosphorusflux_vars, phosphorusstate_vars)
 
        call t_stopf('CNUpdate1')
@@ -747,7 +747,7 @@ contains
        call NitrogenStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             nitrogenflux_vars, nitrogenstate_vars)
 
-       call PStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call PhosphorusStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             phosphorusflux_vars, phosphorusstate_vars)
 
        if (get_do_harvest()) then
@@ -783,7 +783,7 @@ contains
        call NitrogenStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             nitrogenflux_vars, nitrogenstate_vars)
 
-       call PStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call PhosphorusStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             phosphorusflux_vars, phosphorusstate_vars)
 
        call WoodProducts(num_soilc, filter_soilc, &
