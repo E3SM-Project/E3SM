@@ -178,7 +178,7 @@ contains
     use dynEDMod             , only : dyn_ED
     use reweightMod          , only : reweight_wrapup
     use subgridWeightsMod    , only : compute_higher_order_weights, set_subgrid_diagnostic_fields
-    use CNCStateUpdate1Mod   , only : CStateUpdateDynPatch
+    use CarbonStateUpdate1Mod   , only : CarbonStateUpdateDynPatch
     use NitrogenStateUpdate1Mod   , only : NitrogenStateUpdateDynPatch
     use PStateUpdate1Mod     , only : PStateUpdateDynPatch
     !
@@ -312,7 +312,7 @@ contains
                nitrogenstate_vars, nitrogenflux_vars,&
                phosphorusstate_vars,phosphorusflux_vars)
 
-          call CStateUpdateDynPatch(bounds_clump, &
+          call CarbonStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
                carbonflux_vars, carbonstate_vars)
 

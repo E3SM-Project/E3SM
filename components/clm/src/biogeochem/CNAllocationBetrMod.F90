@@ -1509,7 +1509,7 @@ contains
            ! bug fix: set to zero otherwise xsmrpool may grow infinitely when:
            ! (1) at one timestep xsmrpool(p) <0, cpool_to_xsmrpool(p) is set a positive value
            ! (2) later on if xsmrpool(p) >0; then cpool_to_xsmrpool(p) will neither be updated by following codes nor re-set to zero
-           ! (3) each time step in CNCStateUpdate1 xsmrpool(p) = xsmrpool(p) + cpool_to_xsmrpool(p)*dt
+           ! (3) each time step in CarbonStateUpdate1 xsmrpool(p) = xsmrpool(p) + cpool_to_xsmrpool(p)*dt
            cpool_to_xsmrpool(p) = 0.0_r8
 
            ! storage pool turnover

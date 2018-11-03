@@ -1,4 +1,4 @@
-module CNCStateUpdate2Mod
+module CarbonStateUpdate2Mod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -23,14 +23,14 @@ module CNCStateUpdate2Mod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public:: CStateUpdate2
-  public:: CStateUpdate2h
+  public:: CarbonStateUpdate2
+  public:: CarbonStateUpdate2h
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine CStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine CarbonStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        carbonflux_vars, carbonstate_vars)
     !
     ! !DESCRIPTION:
@@ -116,10 +116,10 @@ contains
       end do ! end of patch loop
 
     end associate
-  end subroutine CStateUpdate2
+  end subroutine CarbonStateUpdate2
 
   !-----------------------------------------------------------------------
-  subroutine CStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine CarbonStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        carbonflux_vars, carbonstate_vars)
     !
     ! !DESCRIPTION:
@@ -220,6 +220,6 @@ contains
 
     end associate
 
-  end subroutine CStateUpdate2h
+  end subroutine CarbonStateUpdate2h
 
-end module CNCStateUpdate2Mod
+end module CarbonStateUpdate2Mod

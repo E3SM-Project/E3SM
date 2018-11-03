@@ -1,4 +1,4 @@
-module CNCStateUpdate1Mod
+module CarbonStateUpdate1Mod
 
   !-----------------------------------------------------------------------
   ! Module for carbon state variable update, non-mortality fluxes.
@@ -30,15 +30,15 @@ module CNCStateUpdate1Mod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: CStateUpdateDynPatch
-  public :: CStateUpdate1
-  public :: CStateUpdate0
+  public :: CarbonStateUpdateDynPatch
+  public :: CarbonStateUpdate1
+  public :: CarbonStateUpdate0
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine CStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
+  subroutine CarbonStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
        carbonflux_vars, carbonstate_vars)
     !
     ! !DESCRIPTION:
@@ -58,7 +58,7 @@ contains
     integer  :: j   ! level index
     real(r8) :: dt  ! time step (seconds)
 
-    character(len=*), parameter :: subname = 'CStateUpdateDynPatch'
+    character(len=*), parameter :: subname = 'CarbonStateUpdateDynPatch'
     !-----------------------------------------------------------------------
 
     associate( &
@@ -95,10 +95,10 @@ contains
 
     end associate
 
-  end subroutine CStateUpdateDynPatch
+  end subroutine CarbonStateUpdateDynPatch
 
   !-----------------------------------------------------------------------
-  subroutine CStateUpdate0(&
+  subroutine CarbonStateUpdate0(&
        num_soilp, filter_soilp, &
        carbonflux_vars, carbonstate_vars)
     !
@@ -136,10 +136,10 @@ contains
 
     end associate
 
-  end subroutine CStateUpdate0
+  end subroutine CarbonStateUpdate0
 
   !-----------------------------------------------------------------------
-  subroutine CStateUpdate1(bounds, &
+  subroutine CarbonStateUpdate1(bounds, &
        num_soilc, filter_soilc, &
        num_soilp, filter_soilp, &
        crop_vars, carbonflux_vars, carbonstate_vars)
@@ -472,6 +472,6 @@ contains
 
  end associate
 
-end subroutine CStateUpdate1
+end subroutine CarbonStateUpdate1
 
-end module CNCStateUpdate1Mod
+end module CarbonStateUpdate1Mod

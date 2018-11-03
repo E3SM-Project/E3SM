@@ -1,4 +1,4 @@
-module CNCStateUpdate3Mod
+module CarbonStateUpdate3Mod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -20,13 +20,13 @@ module CNCStateUpdate3Mod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public:: CStateUpdate3
+  public:: CarbonStateUpdate3
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine CStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine CarbonStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
        carbonflux_vars, carbonstate_vars)
     !
     ! !DESCRIPTION:
@@ -150,6 +150,6 @@ contains
       
     end associate
 
-  end subroutine CStateUpdate3
+  end subroutine CarbonStateUpdate3
 
-end module CNCStateUpdate3Mod
+end module CarbonStateUpdate3Mod

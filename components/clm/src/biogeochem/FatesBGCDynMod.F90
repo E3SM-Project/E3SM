@@ -40,7 +40,7 @@ contains
       use clm_varctl             , only : use_century_decomp
       use CNDecompCascadeBGCMod  , only : decomp_rate_constants_bgc
       use CNDecompCascadeCNMod   , only : decomp_rate_constants_cn
-      use CNCStateUpdate1Mod     , only : CStateUpdate1
+      use CarbonStateUpdate1Mod     , only : CarbonStateUpdate1
       use SoilLittVertTranspMod, only : SoilLittVertTransp
       use PrecisionControlMod    , only : PrecisionControl
       use CNCarbonFluxType       , only : carbonflux_type
@@ -242,7 +242,7 @@ contains
 
     ! Update all prognostic carbon state variables (except for gap-phase mortality and fire fluxes)
 
-    call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+    call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             crop_vars, carbonflux_vars, carbonstate_vars)
 
     call t_stopf('BNGCUpdate1')

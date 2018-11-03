@@ -94,7 +94,7 @@ contains
     !
     ! !DESCRIPTION:
     ! Calculate vertical mixing of soil and litter pools.  Also reconcile sources and sinks of these pools 
-    ! calculated in the CStateUpdate1 and NStateUpdate1 subroutines.
+    ! calculated in the CarbonStateUpdate1 and NStateUpdate1 subroutines.
     ! Advection-diffusion code based on algorithm in Patankar (1980)
     ! Initial code by C. Koven and W. Riley
     !
