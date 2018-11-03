@@ -1,7 +1,7 @@
-module PDynamicsMod
+module PhosphorusDynamicsMod
 
   !-----------------------------------------------------------------------
-  ! !MODULE: PDynamicsMod
+  ! !MODULE: PhosphorusDynamicsMod
   !
   ! !DESCRIPTION:
   ! Module for inorganic phosphorus dynamics
@@ -37,20 +37,20 @@ module PDynamicsMod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: PDeposition
-  public :: PWeathering
-  public :: PAdsorption
-  public :: PDesorption
-  public :: POcclusion
-  public :: PBiochemMin
-  public :: PLeaching
-  public :: PBiochemMin_balance
+  public :: PhosphorusDeposition
+  public :: PhosphorusWeathering
+  public :: PhosphorusAdsportion
+  public :: PhosphorusDesoprtion
+  public :: PhosphorusOcclusion
+  public :: PhosphorusBiochemMin
+  public :: PhosphorusLeaching
+  public :: PhosphorusBiochemMin_balance
 
   !-----------------------------------------------------------------------
 
 contains
   !-----------------------------------------------------------------------
-  subroutine PDeposition( bounds, &
+  subroutine PhosphorusDeposition( bounds, &
        atm2lnd_vars, phosphorusflux_vars )
     ! BY X. SHI
     ! !DESCRIPTION:
@@ -82,10 +82,10 @@ contains
 
     end associate
 
-  end subroutine PDeposition
+  end subroutine PhosphorusDeposition
 
   !-----------------------------------------------------------------------
-  subroutine PWeathering(num_soilc, filter_soilc, &
+  subroutine PhosphorusWeathering(num_soilc, filter_soilc, &
        cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
     !
     !
@@ -146,13 +146,13 @@ contains
       enddo
     end associate
 
-  end subroutine PWeathering
+  end subroutine PhosphorusWeathering
   !-----------------------------------------------------------------------
 
 
 
   !-----------------------------------------------------------------------
-  subroutine PAdsorption(num_soilc, filter_soilc, &
+  subroutine PhosphorusAdsportion(num_soilc, filter_soilc, &
        cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
     !
     !
@@ -217,11 +217,11 @@ contains
        end do
     end associate
 
-  end subroutine PAdsorption
+  end subroutine PhosphorusAdsportion
 
 
   !-----------------------------------------------------------------------
-  subroutine PDesorption(num_soilc, filter_soilc, &
+  subroutine PhosphorusDesoprtion(num_soilc, filter_soilc, &
        cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
     !
     !
@@ -285,12 +285,12 @@ contains
        end do
     end associate
 
-  end subroutine PDesorption
+  end subroutine PhosphorusDesoprtion
 
 
 
   !-----------------------------------------------------------------------
-  subroutine POcclusion(num_soilc, filter_soilc, &
+  subroutine PhosphorusOcclusion(num_soilc, filter_soilc, &
        cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
     !
     !
@@ -355,13 +355,13 @@ contains
        end do
     end associate
 
-  end subroutine POcclusion
+  end subroutine PhosphorusOcclusion
 
   !-----------------------------------------------------------------------
 
 
   !-----------------------------------------------------------------------
-  subroutine PLeaching(bounds, num_soilc, filter_soilc, &
+  subroutine PhosphorusLeaching(bounds, num_soilc, filter_soilc, &
        waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
     !
     ! !DESCRIPTION:
@@ -471,7 +471,7 @@ contains
          end do
 
     end associate
-  end subroutine PLeaching
+  end subroutine PhosphorusLeaching
 
 
   !-----------------------------------------------------------------------
@@ -480,7 +480,7 @@ contains
   !-----------------------------------------------------------------------
 
 
-  subroutine PBiochemMin(bounds,num_soilc, filter_soilc, &
+  subroutine PhosphorusBiochemMin(bounds,num_soilc, filter_soilc, &
        cnstate_vars, phosphorusstate_vars, phosphorusflux_vars)
     !
     ! !DESCRIPTION:
@@ -587,13 +587,13 @@ contains
       
     end associate
 
-  end subroutine PBiochemMin
+  end subroutine PhosphorusBiochemMin
 
   !-----------------------------------------------------------------------
 
   !-----------------------------------------------------------------------
   
-  subroutine PBiochemMin_balance(bounds,num_soilc, filter_soilc, &
+  subroutine PhosphorusBiochemMin_balance(bounds,num_soilc, filter_soilc, &
        cnstate_vars,nitrogenstate_vars, phosphorusstate_vars, phosphorusflux_vars)
     !
     ! !DESCRIPTION:
@@ -775,6 +775,6 @@ contains
 
     end associate
 
-  end subroutine PBiochemMin_balance
+  end subroutine PhosphorusBiochemMin_balance
 
-end module PDynamicsMod
+end module PhosphorusDynamicsMod

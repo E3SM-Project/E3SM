@@ -94,7 +94,7 @@ module CNEcosystemDynBetrMod
     use NitrogenDynamicsMod            , only : NitrogenFixation_balance
     use PhosphorusStateUpdate1Mod          , only : PhosphorusStateUpdate1
     use PhosphorusStateUpdate2Mod          , only : PhosphorusStateUpdate2, PhosphorusStateUpdate2h
-    use PDynamicsMod              , only : PBiochemMin_balance,PDeposition,PWeathering
+    use PhosphorusDynamicsMod              , only : PhosphorusBiochemMin_balance,PhosphorusDeposition,PhosphorusWeathering
     use CNVerticalProfileMod      , only : decomp_vertprofiles
     use CNRootDynMod              , only : CNRootDyn
     implicit none
@@ -188,20 +188,20 @@ module CNEcosystemDynBetrMod
 
        ! for P competition purpose, calculate P fluxes that will potentially increase solution P pool
        ! then competitors take up solution P
-       call t_startf('PWeathering')
-       call PWeathering(num_soilc, filter_soilc, &
+       call t_startf('PhosphorusWeathering')
+       call PhosphorusWeathering(num_soilc, filter_soilc, &
                cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-       call t_stopf('PWeathering')
+       call t_stopf('PhosphorusWeathering')
 
 
        ! --------------------------------------------------
        ! Phosphorus Deposition ! X.SHI
        ! --------------------------------------------------
 
-       call t_startf('PDeposition')
-       call PDeposition(bounds, &
+       call t_startf('PhosphorusDeposition')
+       call PhosphorusDeposition(bounds, &
             atm2lnd_vars, phosphorusflux_vars)
-       call t_stopf('PDeposition')
+       call t_stopf('PhosphorusDeposition')
 
        !This specifies the vertical distribution of deposition fluxes and
        !root exudates
@@ -229,10 +229,10 @@ module CNEcosystemDynBetrMod
        call t_stopf('CNFixation')
 
        ! nu_com_phosphatase is true
-       call t_startf('PBiochemMin')
-       call PBiochemMin_balance(bounds,num_soilc, filter_soilc, &
+       call t_startf('PhosphorusBiochemMin')
+       call PhosphorusBiochemMin_balance(bounds,num_soilc, filter_soilc, &
                   cnstate_vars,nitrogenstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-       call t_stopf('PBiochemMin')
+       call t_stopf('PhosphorusBiochemMin')
 
        if (crop_prog) then
           !be careful about CNSoyfix, it is coded by using CTC-RD formulation

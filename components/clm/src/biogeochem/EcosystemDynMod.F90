@@ -103,15 +103,15 @@ contains
     !
     ! !USES:
     use spmdMod              , only: masterproc
-    use PDynamicsMod         , only: PWeathering,PAdsorption,PDesorption,POcclusion
-    use PDynamicsMod         , only: PBiochemMin,PLeaching
+    use PhosphorusDynamicsMod         , only: PhosphorusWeathering,PhosphorusAdsportion,PhosphorusDesoprtion,PhosphorusOcclusion
+    use PhosphorusDynamicsMod         , only: PhosphorusBiochemMin,PhosphorusLeaching
     use NitrogenDynamicsMod       , only: NitrogenLeaching
     use NitrogenStateUpdate3Mod   , only: NitrogenStateUpdate3
     use PhosphorusStateUpdate3Mod     , only: PhosphorusStateUpdate3
     use PrecisionControlMod  , only: PrecisionControl
     use perf_mod             , only: t_startf, t_stopf
     use shr_sys_mod          , only: shr_sys_flush
-    use PDynamicsMod         , only: PBiochemMin_balance
+    use PhosphorusDynamicsMod         , only: PhosphorusBiochemMin_balance
     
     !
     ! !ARGUMENTS:
@@ -146,37 +146,37 @@ contains
     ! only do if ed is off
     if( .not. use_fates) then
        !if(.not.(use_pflotran.and.pf_cmode)) then
-             call t_startf('PWeathering')
-             call PWeathering(num_soilc, filter_soilc, &
+             call t_startf('PhosphorusWeathering')
+             call PhosphorusWeathering(num_soilc, filter_soilc, &
                   cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-             call t_stopf('PWeathering')
+             call t_stopf('PhosphorusWeathering')
 
-             call t_startf('PAdsorption')
-             call PAdsorption(num_soilc, filter_soilc, &
+             call t_startf('PhosphorusAdsportion')
+             call PhosphorusAdsportion(num_soilc, filter_soilc, &
                   cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-             call t_stopf('PAdsorption')
+             call t_stopf('PhosphorusAdsportion')
 
-             call t_startf('PDesorption')
-             call PDesorption(num_soilc, filter_soilc, &
+             call t_startf('PhosphorusDesoprtion')
+             call PhosphorusDesoprtion(num_soilc, filter_soilc, &
                   cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-             call t_stopf('PDesorption')
+             call t_stopf('PhosphorusDesoprtion')
 
-             call t_startf('POcclusion')
-             call POcclusion(num_soilc, filter_soilc, &
+             call t_startf('PhosphorusOcclusion')
+             call PhosphorusOcclusion(num_soilc, filter_soilc, &
                   cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-             call t_stopf('POcclusion')
+             call t_stopf('PhosphorusOcclusion')
 
              if (.not. nu_com_phosphatase) then
-                call t_startf('PBiochemMin')
-                call PBiochemMin(bounds,num_soilc, filter_soilc, &
+                call t_startf('PhosphorusBiochemMin')
+                call PhosphorusBiochemMin(bounds,num_soilc, filter_soilc, &
                      cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-                call t_stopf('PBiochemMin')
+                call t_stopf('PhosphorusBiochemMin')
              else
                 ! nu_com_phosphatase is true
-                !call t_startf('PBiochemMin')
-                !call PBiochemMin_balance(bounds,num_soilc, filter_soilc, &
+                !call t_startf('PhosphorusBiochemMin')
+                !call PhosphorusBiochemMin_balance(bounds,num_soilc, filter_soilc, &
                 !     cnstate_vars,nitrogenstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-                !call t_stopf('PBiochemMin')
+                !call t_stopf('PhosphorusBiochemMin')
              end if
        !end if
        
@@ -186,7 +186,7 @@ contains
          call NitrogenLeaching(bounds, num_soilc, filter_soilc, &
             waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
 
-         call PLeaching(bounds, num_soilc, filter_soilc, &
+         call PhosphorusLeaching(bounds, num_soilc, filter_soilc, &
             waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
        end if !(.not. (pf_cmode .and. pf_hmode))
        !-----------------------------------------------------------------------
@@ -258,7 +258,7 @@ contains
     !
     ! !USES:
     use NitrogenDynamicsMod         , only: NitrogenDeposition,NitrogenFixation, NitrogenFert, CNSoyfix
-    use PDynamicsMod           , only: PDeposition   
+    use PhosphorusDynamicsMod           , only: PhosphorusDeposition   
     use CNMRespMod             , only: CNMResp
 !    use SoilLittDecompMod            , only: SoilLittDecompAlloc
 !    use PhenologyMod         , only: Phenology
@@ -284,10 +284,10 @@ contains
     use AllocationMod        , only: Allocation1_PlantNPDemand ! Phase-1 of CNAllocation
 !    use SoilLittDecompMod            , only: SoilLittDecompAlloc2
     use NitrogenDynamicsMod         , only: NitrogenLeaching
-    use PDynamicsMod           , only: PLeaching
+    use PhosphorusDynamicsMod           , only: PhosphorusLeaching
     use NitrogenDynamicsMod         , only: NitrogenFixation_balance
-    use PDynamicsMod           , only: PWeathering,PAdsorption,PDesorption,POcclusion
-    use PDynamicsMod           , only: PBiochemMin,PBiochemMin_balance
+    use PhosphorusDynamicsMod           , only: PhosphorusWeathering,PhosphorusAdsportion,PhosphorusDesoprtion,PhosphorusOcclusion
+    use PhosphorusDynamicsMod           , only: PhosphorusBiochemMin,PhosphorusBiochemMin_balance
   
     !
     ! !ARGUMENTS:
@@ -402,22 +402,22 @@ contains
        if ( nu_com .ne. 'RD') then
           ! for P competition purpose, calculate P fluxes that will potentially increase solution P pool
           ! then competitors take up solution P
-          call t_startf('PWeathering')
-          call PWeathering(num_soilc, filter_soilc, &
+          call t_startf('PhosphorusWeathering')
+          call PhosphorusWeathering(num_soilc, filter_soilc, &
                cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-          call t_stopf('PWeathering')
+          call t_stopf('PhosphorusWeathering')
 
           if (.not. nu_com_phosphatase) then
-             call t_startf('PBiochemMin')
-             call PBiochemMin(bounds,num_soilc, filter_soilc, &
+             call t_startf('PhosphorusBiochemMin')
+             call PhosphorusBiochemMin(bounds,num_soilc, filter_soilc, &
                   cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-             call t_stopf('PBiochemMin')
+             call t_stopf('PhosphorusBiochemMin')
           else
              ! nu_com_phosphatase is true
-             call t_startf('PBiochemMin')
-             call PBiochemMin_balance(bounds,num_soilc, filter_soilc, &
+             call t_startf('PhosphorusBiochemMin')
+             call PhosphorusBiochemMin_balance(bounds,num_soilc, filter_soilc, &
                   cnstate_vars,nitrogenstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-             call t_stopf('PBiochemMin')
+             call t_stopf('PhosphorusBiochemMin')
           end if
        end if
 
@@ -425,10 +425,10 @@ contains
        ! Phosphorus Deposition ! X.SHI
        ! --------------------------------------------------
 
-       call t_startf('PDeposition')
-       call PDeposition(bounds, &
+       call t_startf('PhosphorusDeposition')
+       call PhosphorusDeposition(bounds, &
             atm2lnd_vars, phosphorusflux_vars)
-       call t_stopf('PDeposition')
+       call t_stopf('PhosphorusDeposition')
 
        !-------------------------------------------------------------------------------------------------
        ! plfotran: 'decomp_rate_constants' must be calculated before entering "clm_interface"
