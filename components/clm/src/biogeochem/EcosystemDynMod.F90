@@ -66,7 +66,7 @@ contains
     use AllocationMod, only : AllocationInit
     use PhenologyMod , only : PhenologyInit
     use FireMod      , only : FireInit
-    use CNC14DecayMod  , only : C14_init_BombSpike
+    use C14DecayMod  , only : C14_init_BombSpike
     !
     ! !ARGUMENTS:
     implicit none
@@ -273,7 +273,7 @@ contains
 !    use FireMod              , only: FireArea, FireFluxes
 !    use CarbonStateUpdate3Mod     , only: CarbonStateUpdate3
 !    use CNCIsoFluxMod          , only: CIsoFlux1, CIsoFlux2, CIsoFlux2h, CIsoFlux3
-!    use CNC14DecayMod          , only: C14Decay, C14BombSpike
+!    use C14DecayMod          , only: C14Decay, C14BombSpike
 !    use WoodProductsMod      , only: WoodProducts
 !    use SoilLittVertTranspMod, only: SoilLittVertTransp
     use CNDecompCascadeBGCMod  , only: decomp_rate_constants_bgc
@@ -503,7 +503,7 @@ contains
     use FireMod              , only: FireArea, FireFluxes
     use CarbonStateUpdate3Mod     , only: CarbonStateUpdate3
     use CNCIsoFluxMod          , only: CIsoFlux1, CIsoFlux2, CIsoFlux2h, CIsoFlux3
-    use CNC14DecayMod          , only: C14Decay, C14BombSpike
+    use C14DecayMod          , only: C14Decay, C14BombSpike
     use WoodProductsMod      , only: WoodProducts
     use CropHarvestPoolsMod    , only: CropHarvestPools
     use SoilLittVertTranspMod, only: SoilLittVertTransp

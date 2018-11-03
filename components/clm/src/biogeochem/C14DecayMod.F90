@@ -1,4 +1,4 @@
-module CNC14DecayMod
+module C14DecayMod
 
   !-----------------------------------------------------------------------
   ! Module for 14-carbon flux variable update, non-mortality fluxes.
@@ -290,4 +290,4 @@ contains
 
   end subroutine C14_init_BombSpike
 
-end module CNC14DecayMod
+end module C14DecayMod

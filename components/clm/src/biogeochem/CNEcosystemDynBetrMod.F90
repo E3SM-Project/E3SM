@@ -80,7 +80,7 @@ module CNEcosystemDynBetrMod
     use FireMod                 , only : FireArea, FireFluxes
     use CarbonStateUpdate3Mod        , only : CarbonStateUpdate3
     use CNCIsoFluxMod             , only : CIsoFlux1, CIsoFlux2, CIsoFlux2h, CIsoFlux3
-    use CNC14DecayMod             , only : C14Decay, C14BombSpike
+    use C14DecayMod             , only : C14Decay, C14BombSpike
     use WoodProductsMod         , only : WoodProducts
     use CNDecompCascadeBGCMod     , only : decomp_rate_constants_bgc
     use CNDecompCascadeCNMod      , only : decomp_rate_constants_cn
