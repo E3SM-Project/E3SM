@@ -68,7 +68,7 @@ module clm_driver
   use ndepStreamMod          , only : ndep_interp
   use pdepStreamMod          , only : pdep_interp
   use ActiveLayerMod         , only : alt_calc
-  use ch4Mod                 , only : ch4
+  use CH4Mod                 , only : CH4
   use DUSTMod                , only : DustDryDep, DustEmission
   use VOCEmissionMod         , only : VOCEmission
   use FatesBGCDynMod         , only : FatesBGCDyn
@@ -1017,7 +1017,7 @@ contains
          if (use_lch4 .and. .not. is_active_betr_bgc) then
            !warning: do not call ch4 before CNAnnualUpdate, which will fail the ch4 model
            call t_startf('ch4')
-           call ch4 (bounds_clump,                                                                  &
+           call CH4 (bounds_clump,                                                                  &
                filter(nc)%num_soilc, filter(nc)%soilc,                                             &
                filter(nc)%num_lakec, filter(nc)%lakec,                                             &
                filter(nc)%num_soilp, filter(nc)%soilp,                                             &

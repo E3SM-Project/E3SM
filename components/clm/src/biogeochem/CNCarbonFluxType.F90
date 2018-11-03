@@ -4053,7 +4053,7 @@ contains
           this%annsum_npp_col(c) = spval
        end if
 
-       this%fphr_col(c,nlevdecomp+1:nlevgrnd) = 0._r8 !used to be in ch4Mod
+       this%fphr_col(c,nlevdecomp+1:nlevgrnd) = 0._r8 !used to be in CH4Mod
        if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%fphr_col(c,nlevdecomp+1:nlevgrnd) = 0._r8 
        else if (lun_pp%itype(l) == istdlak .and. allowlakeprod) then

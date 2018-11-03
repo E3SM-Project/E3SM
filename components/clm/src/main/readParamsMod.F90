@@ -88,7 +88,7 @@ contains
     use CNGapMortalityBeTRMod    , only : readCNGapMortBeTRParams
     use CNNitrifDenitrifMod      , only : readNitrifDenitrifParams
     use SoilLittVertTranspMod    , only : readSoilLittVertTranspParams
-    use ch4Mod                   , only : readCH4Params
+    use CH4Mod                   , only : readCH4Params
     use clm_varctl               , only : paramfile, iulog, use_betr
     use spmdMod                  , only : masterproc
     use fileutils                , only : getfil

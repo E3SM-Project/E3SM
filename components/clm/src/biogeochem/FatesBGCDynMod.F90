@@ -51,7 +51,7 @@ contains
       use TemperatureType        , only : temperature_type
       use CNNitrogenFluxType     , only : nitrogenflux_type
       use CNNitrogenStateType    , only : nitrogenstate_type
-      use ch4Mod                 , only : ch4_type
+      use CH4Mod                 , only : ch4_type
       use PhosphorusStateType    , only : phosphorusstate_type
       use PhosphorusFluxType     , only : phosphorusflux_type
       use CNDecompCascadeConType , only : decomp_cascade_con

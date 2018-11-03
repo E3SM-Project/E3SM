@@ -19,7 +19,7 @@ module CNNitrifDenitrifMod
   use CNCarbonfluxType    , only : carbonflux_type
   use CNNitrogenFluxType  , only : nitrogenflux_type
   use CNNitrogenStateType , only : nitrogenstate_type
-  use ch4Mod              , only : ch4_type
+  use CH4Mod              , only : ch4_type
   use ColumnType          , only : col_pp                
   !
   implicit none

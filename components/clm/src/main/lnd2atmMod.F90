@@ -18,7 +18,7 @@ module lnd2atmMod
   use subgridAveMod        , only : p2g, c2g 
   use lnd2atmType          , only : lnd2atm_type
   use atm2lndType          , only : atm2lnd_type
-  use ch4Mod               , only : ch4_type
+  use CH4Mod               , only : ch4_type
   use CNCarbonFluxType     , only : carbonflux_type
   use DUSTMod              , only : dust_type
   use DryDepVelocity       , only : drydepvel_type

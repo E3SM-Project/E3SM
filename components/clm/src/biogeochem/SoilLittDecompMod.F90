@@ -33,7 +33,7 @@ module SoilLittDecompMod
   use SoilStateType          , only : soilstate_type
   use TemperatureType        , only : temperature_type
   use WaterStateType         , only : waterstate_type
-  use ch4Mod                 , only : ch4_type
+  use CH4Mod                 , only : ch4_type
   use cropType               , only : crop_type
   ! clm interface & pflotran:
   use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode

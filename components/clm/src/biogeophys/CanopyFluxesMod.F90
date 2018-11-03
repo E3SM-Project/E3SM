@@ -35,7 +35,7 @@ module CanopyFluxesMod
   use TemperatureType       , only : temperature_type
   use WaterfluxType         , only : waterflux_type
   use WaterstateType        , only : waterstate_type
-  use ch4Mod                , only : ch4_type
+  use CH4Mod                , only : ch4_type
   use PhotosynthesisType    , only : photosyns_type
   use GridcellType          , only : grc_pp 
   use TopounitType          , only : top_as, top_af  

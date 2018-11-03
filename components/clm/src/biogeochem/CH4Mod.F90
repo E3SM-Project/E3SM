@@ -1,4 +1,4 @@
-module ch4Mod
+module CH4Mod
 
 #include "shr_assert.h"
 
@@ -50,7 +50,7 @@ module ch4Mod
 
   ! !PUBLIC MEMBER FUNCTIONS:
   public  :: readCH4Params
-  public  :: ch4
+  public  :: CH4
 
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: ch4_prod
@@ -1263,7 +1263,7 @@ contains
   end subroutine readCH4Params
 
   !-----------------------------------------------------------------------
-  subroutine ch4 (bounds, &
+  subroutine CH4 (bounds, &
        num_soilc, filter_soilc, &
        num_lakec, filter_lakec, &
        num_soilp, filter_soilp, &
@@ -1878,7 +1878,7 @@ contains
 
     end associate
 
-  end subroutine ch4
+  end subroutine CH4
 
   !-----------------------------------------------------------------------
   subroutine ch4_prod (bounds, num_methc, filter_methc, num_methp, &
@@ -3764,5 +3764,5 @@ contains
 
   end subroutine ch4_annualupdate
 
-end module ch4Mod
+end module CH4Mod
 

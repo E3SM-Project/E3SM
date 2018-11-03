@@ -22,7 +22,7 @@ module CNDecompCascadeCNMod
   use SoilStateType          , only : soilstate_type
   use CanopyStateType        , only : canopystate_type
   use TemperatureType        , only : temperature_type 
-  use ch4Mod                 , only : ch4_type
+  use CH4Mod                 , only : ch4_type
   use ColumnType             , only : col_pp                
   !
   implicit none
