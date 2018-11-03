@@ -23,7 +23,7 @@ module CNNitrogenStateType
   use clm_varctl             , only : use_pflotran, pf_cmode
   use clm_varctl             , only : nu_com, use_crop
   use dynPatchStateUpdaterMod, only : patch_state_updater_type               
-  use CNSpeciesMod           , only : CN_SPECIES_N
+  use SpeciesMod           , only : CN_SPECIES_N
   ! 
   ! !PUBLIC TYPES:
   implicit none

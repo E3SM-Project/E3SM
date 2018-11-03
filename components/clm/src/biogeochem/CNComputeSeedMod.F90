@@ -11,8 +11,8 @@ module CNComputeSeedMod
   use clm_varcon               , only : c3_r2, c4_r2, c14ratio
   use clm_varctl               , only : iulog
   use abortutils               , only : endrun
-  use CNSpeciesMod             , only : CN_SPECIES_C12, CN_SPECIES_C13, CN_SPECIES_C14
-  use CNSpeciesMod             , only : CN_SPECIES_N, CN_SPECIES_P
+  use SpeciesMod             , only : CN_SPECIES_C12, CN_SPECIES_C13, CN_SPECIES_C14
+  use SpeciesMod             , only : CN_SPECIES_N, CN_SPECIES_P
   use VegetationPropertiesType , only : veg_vp
   use VegetationType           , only : veg_pp                
   use LandunitType             , only : lun_pp                
@@ -67,7 +67,7 @@ contains
     !
                                                                                   ! !ARGUMENTS:
     type(bounds_type) , intent(in)     :: bounds
-    integer           , intent(in)     :: species                                 ! which C/N species we're operating on; should be one of the values in CNSpeciesMod
+    integer           , intent(in)     :: species                                 ! which C/N species we're operating on; should be one of the values in SpeciesMod
     real(r8)          , intent(in)     :: leaf_patch( bounds%begp: )              ! current leaf C or N content (g/m2)
     real(r8)          , intent(in)     :: leaf_storage_patch( bounds%begp: )      ! current leaf C or N storage content (g/m2)
     real(r8)          , intent(in)     :: leaf_xfer_patch( bounds%begp: )         ! current leaf C or N xfer content (g/m2)
@@ -232,7 +232,7 @@ contains
     !
     ! !ARGUMENTS:
     real(r8)            :: multiplier ! function result
-    integer, intent(in) :: species    ! which C/N species we're operating on; should be one of the values in CNSpeciesMod
+    integer, intent(in) :: species    ! which C/N species we're operating on; should be one of the values in SpeciesMod
     integer, intent(in) :: pft_type
     integer, intent(in) :: component  ! which plant component; should be one of the COMPONENT_* parameters defined in this module
     !

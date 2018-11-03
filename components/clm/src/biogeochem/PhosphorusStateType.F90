@@ -25,7 +25,7 @@ module PhosphorusStateType
   use pftvarcon              , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr
   use soilorder_varcon       , only : smax, ks_sorption
   use dynPatchStateUpdaterMod      , only : patch_state_updater_type
-  use CNSpeciesMod           , only : CN_SPECIES_P
+  use SpeciesMod           , only : CN_SPECIES_P
   ! 
   ! !PUBLIC TYPES:
   implicit none

@@ -1,4 +1,4 @@
-module CNSpeciesMod
+module SpeciesMod
 
   !-----------------------------------------------------------------------
   ! Module holding information about different species available in the CN code (C, C13,
@@ -68,4 +68,4 @@ contains
   end function species_from_string
 
 
-end module CNSpeciesMod
+end module SpeciesMod
